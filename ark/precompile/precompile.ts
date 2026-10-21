@@ -38,13 +38,9 @@ import {
 	isTypedFn,
 	keyOf,
 	kindNameOf,
-	precompileStandalone,
-	precompileStandaloneModules,
 	traversalKeyOf,
-	writeFixConfig,
 	writeUnprecompilableMessage,
 	type Checks,
-	type Configured,
 	type Optimization,
 	type ValidatorMember,
 	type ValidatorMembers,
@@ -54,7 +50,6 @@ import {
 	type StandaloneExport,
 	type StandaloneFactory,
 	type StandaloneIntrospection,
-	type StandaloneModules,
 	type StandaloneOptions,
 	type ScopeAlias,
 	type UnitReaders
@@ -62,15 +57,7 @@ import {
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join, relative } from "node:path"
 import { fileURLToPath } from "node:url"
-import type {
-	CallExpression,
-	ImportDeclaration,
-	ImportDeclarationSpecifier,
-	MemberExpression,
-	Node,
-	Program,
-	Span
-} from "oxc-parser"
+import type { CallExpression, ImportDeclaration, Node, Span } from "oxc-parser"
 import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
@@ -135,6 +122,47 @@ import {
 	type SiteCandidate,
 	type SiteRead
 } from "./sites.ts"
+import {
+	cacheHint,
+	configurationConflictMessage,
+	configurationConflictReason,
+	configuredHintOf,
+	configuredThreadMessage,
+	copiesHint,
+	frozenHint,
+	hintsByRule,
+	islandHint,
+	islandValueMessage,
+	localeHint,
+	markerHint,
+	nodePackageHint,
+	runtimeImportHint,
+	standardJsonSchemaWithoutStandardMessage,
+	unresolvedHint,
+	versionHint,
+	writeArktypeRuntimeOptionMessage,
+	writeErrorsMismatchMessage,
+	writeMutatesInputMismatchMessage,
+	writeOptionValueMessage,
+	writeSchemaExportHint,
+	writeStandaloneDependencyMessage,
+	writeUnknownMemberMessage,
+	writeUnreadableConfigMessage,
+	writeUnsureHint
+} from "./messages.ts"
+import {
+	commaAfter,
+	firstStatementOf,
+	inlineModules,
+	keepImportedModules,
+	noValidators,
+	pruneArktypeImports,
+	writeConfigFixer,
+	writeParseErrorThrower,
+	writeUnitTable,
+	writeValidators
+} from "./output.ts"
+export * from "./messages.ts"
 
 export type PrecompileMode = "standalone" | "cache"
 
@@ -3794,17 +3822,9 @@ export class Precompiler {
 	}
 }
 
-export const writeUnknownMemberMessage = <member extends string>(
-	member: member
-): writeUnknownMemberMessage<member> =>
-	`members has ${member}, which isn't one of ${memberOptions.map(name => JSON.stringify(name)).join(", ")}`
-
-export type writeUnknownMemberMessage<member extends string> =
-	`members has ${member}, which isn't one of ${string}`
-
 const methodMembers = ["traverse", "from", "toString"] as const
 
-const memberOptions = [
+export const memberOptions = [
 	...defaultMembers,
 	...introspectionMembers,
 	"errorMethods"
@@ -3825,37 +3845,6 @@ const standaloneOptions = [
 	...booleanOptions,
 	...keysOf(enumOptions)
 ] as const
-
-export const writeOptionValueMessage = <
-	option extends string,
-	value extends string,
-	expected extends string
->(
-	option: option,
-	value: value,
-	expected: expected
-): writeOptionValueMessage<option, value, expected> =>
-	`${option} is ${value}, which isn't ${expected}`
-
-export type writeOptionValueMessage<
-	option extends string,
-	value extends string,
-	expected extends string
-> = `${option} is ${value}, which isn't ${expected}`
-
-export const standardJsonSchemaWithoutStandardMessage =
-	'members bakes "~standard.jsonSchema" into "~standard", which it sets false'
-
-export type standardJsonSchemaWithoutStandardMessage =
-	typeof standardJsonSchemaWithoutStandardMessage
-
-export const writeArktypeRuntimeOptionMessage = <option extends string>(
-	option: option
-): writeArktypeRuntimeOptionMessage<option> =>
-	`${option} chooses what a standalone build writes, which runtime: "arktype" doesn't`
-
-export type writeArktypeRuntimeOptionMessage<option extends string> =
-	`${option} chooses what a standalone build writes, which runtime: "arktype" doesn't`
 
 export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 	[
@@ -3888,71 +3877,9 @@ const holdsOtherConfiguration = (files: string | undefined): boolean =>
 	:	Object.keys($ark.config).length > 0 ||
 		(files !== undefined && $ark.resolvedConfig !== undefined)
 
-const writeUnreadableConfigMessage = (path: string) =>
-	`the config module ${path} can't be read`
-
-export const configuredThreadMessage =
-	"arktype in this thread holds a configuration other than the build's, which it can't change once set, so the build must restart in a thread of its own"
-
-export type configuredThreadMessage = typeof configuredThreadMessage
-
-const configurationConflictMessage =
-	"configure() is given other values than arktype in this thread already applied"
-
-const configurationConflictReason =
-	"a module the configuration reads was given anew, as when a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set"
-
-export const writeStandaloneDependencyMessage = <name extends string>(
-	name: name
-): writeStandaloneDependencyMessage<name> =>
-	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it.`
-
-export type writeStandaloneDependencyMessage<name extends string> =
-	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it.`
-
 const ownPackagesByName: Partial<
 	Record<ArkPackage, [root: string, version: string]>
 > = {}
-
-const versionHint =
-	"A precompiled validator is written for the arktype it was built with. Install one version of each, so @ark/precompile imports what the program does."
-
-const copiesHint =
-	"Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
-
-const writeUnsureHint = (fix: string) =>
-	`If it isn't a Type, annotate it with its type. If it is, ${fix}.`
-
-const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
-	R1: `Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`,
-	R2: "arktype runs this callback while defining the type, so the build computes its result. Make it a static helper: one expression or one `return` in the static subset.",
-	R3: "The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
-	R4: `Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".`,
-	unsupported: `Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`,
-	parse: "Fix the definition, or it throws the same ParseError at runtime.",
-	copies: copiesHint
-}
-
-const cacheHint = 'With runtime: "arktype", arktype defines this at runtime.'
-
-const frozenHint = `Keep what you attach in an object of your own, or build with runtime: "arktype".`
-
-const unresolvedHint =
-	"If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it."
-
-const markerHint =
-	"Put // @ark-runtime right before a definition arktype should run, or remove it."
-
-const islandHint = `A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".`
-
-const runtimeImportHint = `Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: "arktype".`
-
-const nodePackageHint = `Read arktype's nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".`
-
-const writeSchemaExportHint = (name: string) =>
-	`Import ${name} from arktype, which a standalone build resolves to its runtime${name === "ArkErrors" ? ", or read type.errors" : ""}.`
-
-const localeHint = `Write errors in a locale in a definition marked // @ark-runtime, or build with runtime: "arktype".`
 
 const localeSpecifier = /^(?:arktype|@ark\/type)\/locales(?:\/|$)/
 
@@ -4009,45 +3936,6 @@ export const specifierOf = (importer: string, file: string): string => {
 	return path.startsWith(".") ? path : `./${path}`
 }
 
-const writeErrorsMismatchMessage = (
-	configured: ErrorDetail,
-	built: ErrorDetail
-): string =>
-	`arktype is configured with errors: "${configured}", where the build's errors are "${built}"`
-
-const writeMutatesInputMismatchMessage = (
-	configured: MutatesInput,
-	built: MutatesInput
-): string =>
-	`arktype is configured with mutatesInput: ${printable(configured)}, where the build's mutatesInput is ${printable(built)}`
-
-// text a standalone validator can't write as arktype does
-const textHints: [pattern: RegExp, hint: string][] = [
-	[
-		/^a scope's configured/,
-		`A standalone validator writes text configured for a code only from configure(). Configure it there, or on each Type with .configure(), or build with runtime: "arktype".`
-	],
-	[
-		/^a configured predicate \w+ that a narrow or morph raises/,
-		`A standalone validator writes what a narrow or morph raises from what it passes to ctx.reject(). Pass the text there, or build with runtime: "arktype".`
-	],
-	[
-		/writer, which reads each branch's errors/,
-		`A standalone validator keeps no union branch's errors. Configure the text as a string, or build with runtime: "arktype".`
-	]
-]
-
-const configuredHintOf = (reasons: string[]): string | undefined => {
-	const option = reasons
-		.map(reason => /^arktype is configured with (\w+)/.exec(reason)?.[1])
-		.find(option => option !== undefined)
-	if (option !== undefined)
-		return `A standalone validator returns what arktype does as the program configures it. Build with the ${option} arktype is configured with.`
-	return textHints.find(([pattern]) =>
-		reasons.some(reason => pattern.test(reason))
-	)?.[1]
-}
-
 const isFoldable = (value: unknown): value is Foldable =>
 	hasArkKind(value, "root") ||
 	hasArkKind(value, "module") ||
@@ -4096,218 +3984,8 @@ const nameOf = (site: Site) =>
 		:	`${site.start}`
 	)
 
-const noValidators: StandaloneModules = {
-	code: "",
-	modules: {},
-	folds: {},
-	checking: [],
-	values: [],
-	unitReaders: {}
-}
-
-// one bad export refuses a whole artifact, so retry each alone
-const writeValidators = (
-	exportsByName: Record<string, StandaloneExport>,
-	opts: StandaloneOptions,
-	refusalsByName: Record<string, string[]>,
-	inline: boolean
-): StandaloneModules => {
-	const write = (names: string[]): StandaloneModules => {
-		const exports = Object.fromEntries(
-			names.map(name => [name, exportsByName[name]])
-		)
-		return (inline ? precompileStandalone : precompileStandaloneModules)(
-			exports,
-			opts
-		)
-	}
-	try {
-		return write(Object.keys(exportsByName))
-	} catch {
-		const writable = Object.keys(exportsByName).filter(name => {
-			try {
-				write([name])
-				return true
-			} catch (e) {
-				refusalsByName[name] = reasonsOf(e)
-				return false
-			}
-		})
-		// e.g. every export under a configured locale
-		return writable.length ? write(writable) : noValidators
-	}
-}
-
-// fixes the configuration as a failed definition does
-const writeParseErrorThrower = (
-	message: string,
-	configured: Configured,
-	progress: Site["progress"]
-) =>
-	`import * as runtime from "arktype/runtime"\n\nfunction throwParseError(${progress ? "progress" : ""}) {\n\t${progress ? `runtime.checkProgress(progress, ${progress[0]}, ${JSON.stringify(progress[1])})\n\t` : ""}${writeFixConfig(configured)}\n\tthrow new runtime.ParseError(${JSON.stringify(message)})\n}\n\nexport { throwParseError as default }\n`
-
-// the runtime's own where nothing was fingerprinted
-const writeConfigFixer = (configured: Configured) =>
-	configured ?
-		`import * as runtime from "arktype/runtime"\n\nfunction fixConfig() {\n\t${writeFixConfig(configured)}\n}\n\nexport { fixConfig as default }\n`
-	:	`import { fixConfig } from "arktype/runtime"\n\nexport { fixConfig as default }\n`
-
-const writeUnitTable = (units: Record<string, string>) =>
-	`import { registerPrecompiledUnits } from "arktype/internal/precompiled.js"\n\nregisterPrecompiledUnits({ ${Object.entries(
-		units
-	)
-		.map(([key, unit]) => `${JSON.stringify(key)}: ${unit}`)
-		.join(", ")} })\n`
-
-// each module runs in a function atop its importer
-const inlineModules = (
-	module: SourceModule,
-	s: MagicString,
-	prefix: string,
-	modules: Record<string, string>,
-	imports: Record<string, Record<string, string>>
-): string => {
-	const importsBySource: Record<string, InlinedImport> = {}
-	let declarations = ""
-	let loaders = 0
-	for (const specifier in imports) {
-		const inlined = new SourceModule(specifier, modules[specifier], specifier)
-		const body = new MagicString(inlined.source)
-		const params: string[] = []
-		const args: string[] = []
-		const localsByName: Record<string, string> = {}
-		for (const statement of inlined.program.body) {
-			if (statement.type === "ImportDeclaration") {
-				const imported = (importsBySource[statement.source.value] ??= {
-					namespace: `${prefix}$${Object.keys(importsBySource).length}`,
-					isPassed: false,
-					locals: {}
-				})
-				// imported by name, so a bundler can drop the exports none read
-				const localOf = (name: string) =>
-					(imported.locals[name] ??= `${imported.namespace}$${name}`)
-				for (const binding of statement.specifiers) {
-					if (binding.type !== "ImportNamespaceSpecifier") {
-						params.push(binding.local.name)
-						args.push(
-							localOf(
-								binding.type === "ImportSpecifier" ?
-									exportNameOf(binding.imported)
-								:	"default"
-							)
-						)
-						continue
-					}
-					const members = membersReadOf(inlined, binding.local.name)
-					if (members) {
-						for (const { start, end, property } of members)
-							body.overwrite(start, end, localOf(property.name))
-						continue
-					}
-					imported.isPassed = true
-					params.push(binding.local.name)
-					args.push(imported.namespace)
-				}
-			} else if (statement.type === "ExportNamedDeclaration") {
-				for (const binding of statement.specifiers) {
-					localsByName[exportNameOf(binding.exported)] = exportNameOf(
-						binding.local
-					)
-				}
-			} else continue
-			body.remove(statement.start, statement.end)
-		}
-		for (const { id, binding } of inlined.scopes.root.unresolved) {
-			if (
-				binding ||
-				!(id.name in module.scopes.root.bindings) ||
-				params.includes(id.name)
-			)
-				continue
-			params.push(id.name)
-			args.push(`globalThis.${id.name}`)
-		}
-		const locals = imports[specifier]
-		const names = Object.keys(locals)
-		const call = `((${params.join(", ")}) => {\n${body.toString().trim()}\n${names.length ? `return { ${names.map(name => `${JSON.stringify(name)}: ${localsByName[name]}`).join(", ")} }\n` : ""}})(${args.join(", ")})`
-		if (!names.length) {
-			declarations += `;${call};\n`
-			continue
-		}
-		// declared, so a cycle can call them before the body runs
-		const exports = `${prefix}$exports${loaders}`
-		const load = `${prefix}$load${loaders++}`
-		declarations += `var ${exports};\nfunction ${load}() {\nreturn (${exports} ??= ${call})\n}\n${names
-			.map(
-				name =>
-					`function ${locals[name]}(...args) {\nreturn ${load}()[${JSON.stringify(name)}](...args)\n}\n`
-			)
-			.join("")}${load}();\n`
-	}
-	if (!declarations) return ""
-	s.prependLeft(firstStatementOf(module.program).start, declarations)
-	return Object.entries(importsBySource)
-		.map(([source, { namespace, isPassed, locals }]) => {
-			const from = JSON.stringify(source)
-			const named = Object.entries(locals).map(
-				([name, local]) => `${name} as ${local}`
-			)
-			let written = isPassed ? `\nimport * as ${namespace} from ${from}` : ""
-			if (named.length)
-				written += `\nimport { ${named.join(", ")} } from ${from}`
-			return written || `\nimport ${from}`
-		})
-		.join("")
-}
-
-interface InlinedImport {
-	namespace: string
-	// whether a module reads the namespace other than by its members
-	isPassed: boolean
-	locals: Record<string, string>
-}
-
-type StaticMember = Extract<MemberExpression, { computed: false }>
-
-// a namespace only read as `ns.name`, or undefined
-const membersReadOf = (
-	module: SourceModule,
-	local: string
-): StaticMember[] | undefined => {
-	const members: StaticMember[] = []
-	for (const { id } of module.scopes.root.bindings[local].references) {
-		const member = id.parent
-		if (
-			member?.type !== "MemberExpression" ||
-			member.computed ||
-			member.object !== id
-		)
-			return
-		members.push(member)
-	}
-	return members
-}
-
 const rangesOf = (sites: Site[]) =>
 	new Map(sites.map(site => [rangeOf(site), site]))
-
-// a comment between declarators can hold a comma
-const commaAfter = (source: string, from: number): number => {
-	for (let i = from; ; i++) {
-		if (source[i] === ",") return i
-		if (source.startsWith("//", i)) i = source.indexOf("\n", i)
-		else if (source.startsWith("/*", i)) i = source.indexOf("*/", i) + 1
-	}
-}
-
-const firstStatementOf = (program: Program) =>
-	program.body.find(
-		statement =>
-			statement.type !== "ExpressionStatement" || !statement.directive
-	)!
-
-const islandValueMessage = (text: string) =>
-	`\`${text}\` is a runtime island's Type, which a precompiled site can't receive`
 
 const isInIsland = (node: Node, module: SourceModule) =>
 	module.islands.some(island => contains(island, node))
@@ -4319,102 +3997,6 @@ const declaredBindingKinds = {
 	function: 1,
 	class: 1
 } satisfies Partial<Record<BindingKind, 1>>
-
-// entries whose exports only sites read, so a standalone build drops them
-const prunedSpecifiers: unknown[] = ["arktype", "arktype/codecs"]
-
-// an import only folded sites read becomes e.g. `import "arktype"`
-const pruneArktypeImports = (
-	module: SourceModule,
-	folded: Span[],
-	s: MagicString
-) => {
-	for (const statement of module.program.body) {
-		if (
-			statement.type !== "ImportDeclaration" ||
-			!prunedSpecifiers.includes(statement.source.value) ||
-			statement.importKind === "type"
-		)
-			continue
-		const kept = statement.specifiers.filter(specifier =>
-			isReadOutside(specifier, folded, module)
-		)
-		if (kept.length < statement.specifiers.length) {
-			s.overwrite(
-				statement.start,
-				statement.source.end,
-				writeImport(kept, statement.source.value, module)
-			)
-		}
-	}
-}
-
-// TypeScript drops imports only folded sites read, so re-add them bare
-const keepImportedModules = (
-	module: SourceModule,
-	folded: Span[],
-	kept: Span[],
-	passed: Binding[],
-	s: MagicString
-) => {
-	for (const statement of module.program.body) {
-		if (
-			statement.type !== "ImportDeclaration" ||
-			prunedSpecifiers.includes(statement.source.value) ||
-			statement.importKind === "type"
-		)
-			continue
-		const values = statement.specifiers.filter(
-			specifier =>
-				specifier.type !== "ImportSpecifier" || specifier.importKind !== "type"
-		)
-		const bindings = values.flatMap(
-			specifier => module.scopes.bindingsById.get(specifier.local) ?? []
-		)
-		const references = bindings.flatMap(binding => binding.references)
-		if (
-			references.length &&
-			references.every(
-				({ id }) =>
-					folded.some(span => contains(span, id)) &&
-					!kept.some(span => contains(span, id))
-			) &&
-			!bindings.some(binding => passed.includes(binding))
-		) {
-			s.appendLeft(
-				statement.end,
-				`\nimport ${module.textOf({ start: statement.source.start, end: statement.end })}`
-			)
-		}
-	}
-}
-
-const isReadOutside = (
-	specifier: ImportDeclarationSpecifier,
-	sites: Span[],
-	module: SourceModule
-) =>
-	!!module.scopes.bindingsById
-		.get(specifier.local)
-		?.references.some(({ id }) => !sites.some(site => contains(site, id)))
-
-const writeImport = (
-	specifiers: ImportDeclarationSpecifier[],
-	source: string,
-	module: SourceModule
-) => {
-	const clauses: string[] = []
-	const named: string[] = []
-	for (const specifier of specifiers) {
-		if (specifier.type === "ImportSpecifier")
-			named.push(module.textOf(specifier))
-		else clauses.push(module.textOf(specifier))
-	}
-	if (named.length) clauses.push(`{ ${named.join(", ")} }`)
-	return clauses.length ?
-			`import ${clauses.join(", ")} from "${source}"`
-		:	`import "${source}"`
-}
 
 const refuse = (site: Site, reasons: string[]): Site => {
 	site.status = "rejected"
@@ -4461,7 +4043,7 @@ const chainOf = (dynamic: DynamicValue): string[] => {
 }
 
 // e.g. a configured writer calling a function in a site's meta
-const reasonsOf = (e: unknown): string[] =>
+export const reasonsOf = (e: unknown): string[] =>
 	e instanceof DynamicValue ? chainOf(e)
 	: e instanceof Error ? [e.message]
 	: [String(e)]
