@@ -444,6 +444,10 @@ const exclusions: [
 			[...precompiled.matchAll(/"code":"([^"]*)"/g)].some(
 				([, code]) => !(code in errorWritersByCode)
 			)
+	],
+	[
+		"reads .encode without arktype/codecs, which the build installs",
+		original => original.includes(".encode requires import")
 	]
 ]
 
