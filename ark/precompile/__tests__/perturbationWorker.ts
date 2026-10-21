@@ -374,7 +374,7 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			}
 			try {
 				const value = create()
-				record(id, { ...observe(value), isPerturbed })
+				record(id, { ...observe(value, world), isPerturbed })
 				return value
 			} catch (e) {
 				record(id, { threw: messageOf(e), isPerturbed })
@@ -403,10 +403,13 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			occurrencesBySite = {}
 			tests = []
 			beforeEachHooks = []
-			// a test's own failures are its suite's to report
+			// a test's own failures are its suite's to report, but a module that
+			// throws as it loads observes nothing after
 			await import(
 				`${pathToFileURL(file.path).href}?run=${index}.${kind}&root`
-			).catch(e => e)
+			).catch(e => {
+				observations.import = { threw: messageOf(e) }
+			})
 			for (const test of tests) {
 				for (const hook of beforeEachHooks)
 					await settle(valueOrError(() => hook.call(context)))
@@ -493,11 +496,16 @@ const firstKeptOf = (errors: ArkErrors): KeptIssue[] => {
 	return [{ code, path: [...path], data }]
 }
 
-// the issues errors "all" finds, any one of which a first-issue validator returns
+// the issues errors "all" finds, any one of which a first-issue validator
+// returns, up to a check that throws
 const allKeptOf = (t: BaseRoot, input: unknown): KeptIssue[] => {
 	const ctx = new ArkTraversal(input, t.$.resolvedConfig)
-	if (t.includesAlias) applyCyclic(t, input, ctx)
-	else t.traverseApply(input, ctx)
+	try {
+		if (t.includesAlias) applyCyclic(t, input, ctx)
+		else t.traverseApply(input, ctx)
+	} catch {
+		// what it found before the throw stays in ctx
+	}
 	return ctx._errors ? keptIssuesOf(ctx._errors as never, false) : []
 }
 
@@ -601,14 +609,26 @@ const isTypedFn = (
 	returns: unknown
 } => typeof value === "function" && "params" in value && "returns" in value
 
-const sample = (validate: (data: unknown) => unknown) =>
-	samples().map(data => {
+// anyOf lists the issues errors "all" finds, as a call's outcome does
+const sample = (
+	validate: (data: unknown) => unknown,
+	anyOf?: (data: unknown) => KeptIssue[]
+) =>
+	samples().map((data, i) => {
 		try {
-			return serialize(validate(data))
+			const out = serialize(validate(data))
+			return anyOf && hasDomain(out, "object") && "errors" in out ?
+					{ ...out, anyOf: serializeIssues(anyOf(samples()[i])) }
+				:	out
 		} catch (e) {
-			return { threw: messageOf(e) }
+			return { threw: messageOf(e), ...(anyOf && found(anyOf(samples()[i]))) }
 		}
 	})
+
+// a check that throws after an issue, one of which a first-issue validator may
+// report instead
+const found = (issues: KeptIssue[]) =>
+	issues.length ? { anyOf: serializeIssues(issues) } : {}
 
 // a call's output, the issues a validator keeps, or what it throws; anyOf
 // lists those errors "all" finds, of which a first-issue validator keeps one
@@ -636,7 +656,7 @@ const outcomeOf = (
 					errors: serializeIssues(issues),
 					...(anyOf && { anyOf: serializeIssues(anyOf()) })
 				}
-			:	{ threw: String(e) }
+			:	{ threw: String(e), ...(anyOf && found(anyOf())) }
 	}
 }
 
@@ -670,7 +690,7 @@ const observeValidation = (
 		})
 	if (!isArk(value) || isTypedFn(value)) {
 		return {
-			...(isTypedFn(value) && observe(value)),
+			...(isTypedFn(value) && observe(value, world)),
 			calls: calls((fn, input) => fn(input))
 		}
 	}
@@ -715,21 +735,21 @@ const observeValidation = (
 	}
 }
 
-const observe = (value: unknown): Observation => {
+const observe = (value: unknown, world: World): Observation => {
 	if (isStandIn(value)) return { module: {} }
 	if (isTypedFn(value)) {
 		return {
 			name: value.name,
 			expression: value.expression,
-			params: observe(value.params),
-			returns: observe(value.returns),
+			params: observe(value.params, world),
+			returns: observe(value.returns, world),
 			samples: sample(value)
 		}
 	}
 	if (isModule(value)) {
 		return {
 			module: Object.fromEntries(
-				Object.entries(value).map(([k, v]) => [k, observe(v)])
+				Object.entries(value).map(([k, v]) => [k, observe(v, world)])
 			)
 		}
 	}
@@ -742,7 +762,12 @@ const observe = (value: unknown): Observation => {
 	return {
 		expression: validate.expression,
 		description: validate.description,
-		samples: sample(validate)
+		samples: sample(
+			validate,
+			world === "original" && firstIssue ?
+				data => allKeptOf(value as never, data)
+			:	undefined
+		)
 	}
 }
 
