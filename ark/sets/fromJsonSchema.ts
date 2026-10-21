@@ -224,7 +224,7 @@ const keywordReaders: KeywordReader[] = [
 		const negated = read(o.not, `${pointer}/not`, ctx)
 		return opaqueRoot(
 			["not", negated.id],
-			`not ${negated.description}`,
+			`other than ${negated.description}`,
 			data => !negated.allows(data)
 		)
 	},
