@@ -416,14 +416,15 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				: js.invoke(v)
 			written.push([caseCondition, caseResult])
 		}
+		const path = this.missPath
 		let otherwise =
 			js.traversalKind === "Allows" ? "false"
 			: js.traversalKind === "Transform" ? "data"
-			: js.unionFails?.(this, value, discriminant.path)
-		if (otherwise === undefined && this.missListsBranches)
-			otherwise = `(${js.ref(this)}.applyBranches(data, ctx), !ctx.failFast)`
+			: this.missListsBranches ?
+				(js.unionFails?.(this) ??
+				`(${js.ref(this)}.applyBranches(data, ctx), !ctx.failFast)`)
+			:	js.unionFails?.(this, path.length ? value : "data", path)
 		if (otherwise === undefined) {
-			const path = this.missPath
 			const serializedPathSegments = path.map(k => js.serialize(k))
 			const absent = () =>
 				path.length ?

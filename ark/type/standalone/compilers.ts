@@ -16,7 +16,7 @@ import {
 	type TraversalKind,
 	type UnionNode
 } from "@ark/schema"
-import { hashOf, throwInternalError } from "@ark/util"
+import { hashOf, throwInternalError, type array } from "@ark/util"
 import { runtimeKeyOf } from "../standalone.ts"
 import {
 	isDescribed,
@@ -126,7 +126,7 @@ class StandaloneCompiler extends TraversalCompiler {
 	override unionFails(
 		node: UnionNode,
 		value?: string,
-		path?: PropertyKey[]
+		path?: array<PropertyKey>
 	): string {
 		if (!path) return `!${this.error(node)}`
 		const context = issueContextOf({
