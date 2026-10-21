@@ -199,6 +199,26 @@ contextualize(() => {
 				attest(R.and(L).json).equals(Expected.json)
 			})
 
+			it("unit range reduces when narrowing an existing range", () => {
+				const Range = rootSchema({
+					...basis,
+					[min]: { rule: 5 },
+					[max]: { rule: 6 }
+				} as never)
+				const Min = rootSchema({ ...basis, [min]: { rule: 6 } } as never)
+				const Max = rootSchema({ ...basis, [max]: { rule: 5 } } as never)
+				const unitOf = (rule: number) =>
+					min === "min" ? rootSchema({ unit: rule })
+					: min === "minLength" ?
+						rootSchema({ ...basis, exactLength: rule } as never)
+					:	rootSchema({ unit: new Date(rule) })
+
+				attest(Range.and(Min).json).equals(unitOf(6).json)
+				attest(Min.and(Range).json).equals(unitOf(6).json)
+				attest(Range.and(Max).json).equals(unitOf(5).json)
+				attest(Max.and(Range).json).equals(unitOf(5).json)
+			})
+
 			it("non-overlapping exclusive", () => {
 				const L = rootSchema({
 					...basis,

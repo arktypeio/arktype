@@ -70,6 +70,18 @@ contextualize(() => {
 			)
 		})
 
+		it("== length from narrowing a length range", () => {
+			const T = type("1 <= string <= 2").and("string >= 2")
+			attest(T.expression).snap("string == 2")
+			attest(T.allows("ab")).equals(true)
+			attest(T.allows("a")).equals(false)
+
+			const Arr = type("string[] <= 2")
+				.and("string[] >= 1")
+				.and("string[] >= 2")
+			attest(Arr.json).equals(type("string[] == 2").json)
+		})
+
 		it("<,<=", () => {
 			const T = type("-5<number<=5")
 			attest(T).type.toString.snap("Type<number, {}>")
