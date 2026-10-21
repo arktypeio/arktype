@@ -25,6 +25,16 @@ import {
 	startupTable
 } from "../bench/bench.ts"
 import snippetContentsById from "../../components/snippets/contentsById.ts"
+import {
+	claims,
+	draftOf,
+	isPending,
+	sizeChart,
+	speedChart,
+	type BenchmarkChart,
+	type Claim,
+	type ClaimId
+} from "../claims.ts"
 import { keywordRowsByTable, type KeywordTableName } from "../keywords.ts"
 import { twoslashLangs, twoslashOptions } from "../shiki.ts"
 import { expandComponents } from "./expand.ts"
@@ -162,6 +172,26 @@ const table = (header: string[], rows: (string | RootContent)[][]): Table => ({
 	}))
 })
 
+const claimMarkdown = (claim: Claim<string>) =>
+	`${draftOf(claim)}${isPending(claim) ? " (pending)" : ""}`
+
+const claimChartMarkdown = (chart: BenchmarkChart): RootContent => ({
+	type: "list",
+	ordered: false,
+	spread: false,
+	children: [
+		`${chart.title} (${chart.unit}, lower is better): ${claimMarkdown(chart.detail)}. Source: ${chart.source.label}, ${chart.source.href}`,
+		...chart.bars.map(
+			bar =>
+				`${bar.name}: ${bar.value === null ? "pending" : bar.value.toLocaleString("en-US")}`
+		)
+	].map(text => ({
+		type: "listItem",
+		spread: false,
+		children: [paragraph(text)]
+	}))
+})
+
 const calloutLabels: Record<string, string> = {
 	info: "Note",
 	warn: "Warning",
@@ -274,6 +304,15 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 				} satisfies Paragraph
 			]
 		}
+		case "Claim":
+			return [paragraph(claimMarkdown(claims[attr(node, "id") as ClaimId]))]
+		case "ClaimCharts":
+			return [
+				...[speedChart, sizeChart].map(claimChartMarkdown),
+				paragraph(
+					`${claimMarkdown(claims.chartsSummary)} Each chart names its benchmark and the options it was built with.`
+				)
+			]
 		case "summary":
 			return [paragraph(toPlainText(node).trim(), true)]
 		case "video": {

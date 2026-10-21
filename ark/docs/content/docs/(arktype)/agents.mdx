@@ -19,12 +19,32 @@ Every page of these docs is available as Markdown by adding `.md` to its URL, e.
 
 [/llms.txt](https://arktype.io/llms.txt) is an index of every page, with a link to its Markdown and a one-line description, following the [llms.txt](https://llmstxt.org) convention. [/llms-full.txt](https://arktype.io/llms-full.txt) has the full text of every ArkType page in one file. Attest's docs are at [/docs/attest/llms.txt](https://arktype.io/docs/attest/llms.txt) and ArkRegex's at [/docs/regex/llms.txt](https://arktype.io/docs/regex/llms.txt).
 
+## Precompile
+
+When an agent runs your local dev, a build step costs it a loop it's good at: build, read the error, fix, rebuild. So [precompiling](/docs/precompile) costs little, and it ships every Type as a standalone validator.
+
+Each problem the build reports names the file, line and column, what it couldn't do, why, and how to fix it:
+
+```
+src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
+  `limit` is a parameter of makeField (src/forms.ts:12:22); its value is known only at runtime
+  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
+```
+
+`npx arktype-precompile --check "src/**/*.ts"` lists every such problem at once without bundling, and [shadow mode](/docs/precompile/advanced#shadow-mode) fails a test wherever a precompiled validator would behave otherwise than arktype. [Troubleshooting](/docs/precompile/troubleshooting) lists the fix for each report.
+
 ## AGENTS.md
 
 If your project has an `AGENTS.md` or `CLAUDE.md`, a line like this keeps agents on ArkType when they add validation:
 
 ```
 Validate untrusted input with ArkType. Docs: https://arktype.io/llms.txt
+```
+
+If you precompile, add:
+
+```
+ArkType definitions are precompiled when the app builds. Fix each precompile error as its hint says; don't set allowUnsafe to get past one.
 ```
 
 ## Building agents

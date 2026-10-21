@@ -1,0 +1,208 @@
+---
+title: Setup
+description: Add precompilation to your bundler, test runner or framework
+---
+
+## Installation
+
+<InstallationTabs pkg="@ark/precompile" dev />
+
+`@ark/precompile` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, like `precompiledForArktype_2_2_8`, so a bundle or Node fails to link it to another version's runtime, e.g. one a stale cache kept. It adds nothing to the bundle.
+
+## Bundlers
+
+`@ark/precompile/unplugin` precompiles a program as your bundler builds it.
+
+<Tabs items={["Vite", "Rollup", "webpack", "Rspack", "esbuild", "Others"]}>
+<Tab value="Vite">
+
+```ts title="vite.config.ts"
+// @noErrors
+import { precompile } from "@ark/precompile/unplugin"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+	plugins: [precompile.vite()]
+})
+```
+
+Vitest runs tests through the same plugin.
+
+</Tab>
+<Tab value="Rollup">
+
+```js title="rollup.config.js"
+// @noErrors
+import { precompile } from "@ark/precompile/unplugin"
+import { nodeResolve } from "@rollup/plugin-node-resolve"
+import typescript from "@rollup/plugin-typescript"
+
+export default {
+	input: "src/main.ts",
+	output: { file: "dist/main.js", format: "es" },
+	plugins: [
+		precompile.rollup(),
+		nodeResolve({ extensions: [".ts", ".js"] }),
+		typescript()
+	]
+}
+```
+
+Rolldown takes `precompile.rolldown()`.
+
+</Tab>
+<Tab value="webpack">
+
+```js title="webpack.config.js"
+import { precompile } from "@ark/precompile/unplugin"
+
+export default {
+	entry: "./src/main.ts",
+	resolve: { extensions: [".ts", ".js"] },
+	module: {
+		rules: [{ test: /\.ts$/, loader: "ts-loader" }]
+	},
+	plugins: [precompile.webpack()]
+}
+```
+
+</Tab>
+<Tab value="Rspack">
+
+```js title="rspack.config.js"
+import { precompile } from "@ark/precompile/unplugin"
+
+export default {
+	entry: "./src/main.ts",
+	resolve: { extensions: [".ts", ".js"] },
+	module: {
+		rules: [
+			{
+				test: /\.ts$/,
+				loader: "builtin:swc-loader",
+				options: { jsc: { parser: { syntax: "typescript" } } },
+				type: "javascript/auto"
+			}
+		]
+	},
+	plugins: [precompile.rspack()]
+}
+```
+
+</Tab>
+<Tab value="esbuild">
+
+```ts title="build.ts"
+// @noErrors
+import { precompile } from "@ark/precompile/unplugin"
+import { build } from "esbuild"
+
+await build({
+	entryPoints: ["src/main.ts"],
+	// required, as precompiled modules import validators the bundle includes
+	bundle: true,
+	outfile: "dist/main.js",
+	plugins: [precompile.esbuild()]
+})
+```
+
+</Tab>
+<Tab value="Others">
+
+Rsbuild takes `precompile.rsbuild()`, Bun's bundler `precompile.bun()` and Farm `precompile.farm()`.
+
+</Tab>
+</Tabs>
+
+By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`. A dependency that imports `arktype` gets `arktype/runtime` too, where defining a Type throws, so the build fails for each such package unless it [opts in](/docs/precompile/advanced#libraries).
+
+## Next
+
+With Turbopack, add the loader as a rule for each extension your definitions and config module are in, and alias arktype's entries to the runtime:
+
+```js title="next.config.js"
+export default {
+	turbopack: {
+		rules: {
+			"*.ts": { loaders: ["@ark/precompile/turbopack"] },
+			"*.tsx": { loaders: ["@ark/precompile/turbopack"] }
+		},
+		resolveAlias: {
+			arktype: "arktype/runtime",
+			"arktype/config": "arktype/runtime",
+			"arktype/errors": "arktype/runtime",
+			"arktype/mutatesInput": "arktype/runtime"
+		}
+	}
+}
+```
+
+The loader fails a module whose `arktype` imports resolve otherwise, naming the aliases to add. With `runtime: "arktype"` or `shadow: true`, leave the aliases out, since the loader fails a module they resolve to the runtime. It reruns when a module's local imports change, and applies a changed configuration once the dev server restarts.
+
+With webpack (`next build --webpack`), add the plugin:
+
+```js title="next.config.js"
+import { precompile } from "@ark/precompile/unplugin"
+
+export default {
+	webpack: config => {
+		config.plugins.push(precompile.webpack())
+		return config
+	}
+}
+```
+
+## Test runners and runtimes
+
+Vitest uses the Vite plugin. For the others, each driver takes the plugin's options, fails on the same errors and resolves `arktype` to `arktype/runtime` where its host allows. The precompiler runs in a worker thread, sharing no module state with your program.
+
+Node 22.15 or later, for `node --test` or any program (pass `--enable-source-maps` for original lines in stack traces):
+
+```ts title="register.ts"
+// run with `node --import ./register.ts --test`
+import { register } from "@ark/precompile/node"
+
+register()
+```
+
+Bun, for `bun test` or any program, from a file listed in `preload` in `bunfig.toml`:
+
+```ts title="preload.ts"
+// @noErrors
+import { precompile } from "@ark/precompile/bun"
+
+Bun.plugin(precompile())
+```
+
+Bun doesn't ask a runtime plugin to resolve packages, so `arktype` resolves to the runtime `cwd` resolves for every importer, and dependencies aren't checked for copies of arktype.
+
+To test that your precompiled validators behave as arktype does, run tests in [shadow mode](/docs/precompile/advanced#shadow-mode).
+
+## Check an existing project
+
+`--check` lists the definitions that can't be precompiled, and why, without bundling:
+
+```sh
+npx arktype-precompile --check "src/**/*.ts"
+```
+
+```
+src/forms.ts:5:21  accepted
+src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
+  `limit` is a parameter of makeField (src/forms.ts:12:22); its value is known only at runtime
+  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
+```
+
+It takes each option that changes what a build refuses, like `--errors none` or `--members '{"assert":false}'`. `--fail-under <percent>` exits with 1 if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
+
+The same analysis is available as `new Precompiler(host).analyze(source, id)` from `@ark/precompile`.
+
+## ESLint
+
+The ESLint rule reports what the build would, as you edit:
+
+```js title="eslint.config.js"
+import { configs } from "@ark/precompile/eslint"
+
+export default [configs.recommended]
+```

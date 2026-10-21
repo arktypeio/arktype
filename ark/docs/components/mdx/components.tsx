@@ -16,6 +16,7 @@ import { ApiMember, ApiMembers } from "./ApiMembers.tsx"
 import { BenchmarkChart } from "./BenchmarkChart.tsx"
 import { Callout } from "./Callout.tsx"
 import { Card, Cards, LinkCard } from "./Cards.tsx"
+import { Claim, ClaimCharts } from "./Claim.tsx"
 import { Pre } from "./CodeFrame.tsx"
 import { Heading } from "./Heading.tsx"
 import { Link } from "./Link.tsx"
@@ -41,6 +42,8 @@ export const mdxComponents: MDXComponents = {
 	Callout,
 	Card,
 	Cards,
+	Claim,
+	ClaimCharts,
 	CodeBlock,
 	GenericKeywordTable,
 	InstallationTabs,

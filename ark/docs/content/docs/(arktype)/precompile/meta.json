@@ -1,0 +1,6 @@
+{
+	"title": "Precompile",
+	"icon": "New",
+	"defaultOpen": true,
+	"pages": ["setup", "validators", "options", "troubleshooting", "advanced"]
+}

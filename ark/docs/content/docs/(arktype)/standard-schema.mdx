@@ -7,6 +7,8 @@ description: Pass a Type to any library that accepts a Standard Schema, and use 
 
 Every Type implements Standard Schema and its JSON Schema extension, [Standard JSON Schema](https://standardschema.dev/json-schema). Wherever a library asks for either, pass the Type itself. [Integrations](/docs/integrations) shows the common ones.
 
+[Precompiled](/docs/precompile) validators implement Standard Schema too, and Standard JSON Schema where their build's [`members`](/docs/precompile/options#members) option sets `~standard.jsonSchema`.
+
 ## Validation
 
 A library validates through `T["~standard"].validate`. On success, the result's `value` is the Type's output, so morphs have already run:

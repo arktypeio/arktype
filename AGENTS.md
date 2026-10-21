@@ -6,6 +6,8 @@ ArkType is TypeScript's 1:1 validator, optimized from editor to runtime. It pars
 
 - [arktype.io/llms.txt](https://arktype.io/llms.txt) indexes the docs (llmstxt.org format) with a link to each page's Markdown, and [arktype.io/llms-full.txt](https://arktype.io/llms-full.txt) is every ArkType page in one file. ArkRegex, Attest, JSON Schema and Internals each have a full file at `arktype.io/docs/<section>/llms.txt`, e.g. [arktype.io/docs/regex/llms.txt](https://arktype.io/docs/regex/llms.txt). Any single page is at its URL plus `.md`. All of it is generated from `ark/docs/content/docs` by `ark/docs/lib/writeMarkdown.ts`.
 - [`ark/type/skills/arktype/SKILL.md`](ark/type/skills/arktype/SKILL.md) is the Agent Skill users install with `npx skills add arktypeio/arktype`. Keep its examples type-checking against the current API.
+- [Precompile](https://arktype.io/docs/precompile) (`ark/docs/content/docs/(arktype)/precompile`) is the reference for `@ark/precompile`; `ark/precompile/README.md` only points to it.
+- Every benchmark number or superlative the docs state lives in `ark/docs/lib/claims.ts`, with the benchmark that backs it, except the homepage's own benchmark, which `ark/docs/lib/bench` computes from its data. Don't state one elsewhere.
 - The [cheat sheet](https://arktype.io/docs/cheat-sheet) (`ark/docs/content/docs/(arktype)/cheat-sheet.mdx`) is an abbreviated version of it covering the most common syntax and gotchas.
 
 ## Commands

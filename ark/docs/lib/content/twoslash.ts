@@ -37,7 +37,8 @@ const snippetPackages = [
 	"json-schema",
 	"fast-check",
 	"sets",
-	"fs"
+	"fs",
+	"precompile"
 ]
 
 const filesUnder = (dir: string): string[] =>
