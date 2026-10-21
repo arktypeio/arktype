@@ -507,7 +507,8 @@ contextualize(() => {
 
 	it("returns a type's output when called with a morph's ctx", () => {
 		const T = type("string").pipe((s, ctx) =>
-			type({ a: "string.trim" })(JSON.parse(s), ctx)
+			// a Type's signature takes only data
+			type({ a: "string.trim" }).internal(JSON.parse(s), ctx)
 		)
 		attest(T('{"a":" x "}')).equals({ a: "x" })
 	})

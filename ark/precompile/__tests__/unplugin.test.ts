@@ -708,7 +708,11 @@ console.log(out.constructor === type.errors, out.count, out.issues[0].data === d
 					'import { Tagged } from "wrapper"\n\nconsole.log(String(Tagged({ tag: 5 })))\n',
 				...packageFiles(
 					"wrapper",
-					{ "index.js": 'export { Tagged } from "tagged"\n' },
+					{
+						"index.js": 'export { Tagged } from "tagged"\n',
+						"index.d.ts":
+							'export declare const Tagged: import("arktype").Type<{ tag: string }>\n'
+					},
 					{ dependencies: { tagged: "1.0.0" } }
 				),
 				...packageFiles(
