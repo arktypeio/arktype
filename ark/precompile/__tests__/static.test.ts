@@ -1422,6 +1422,11 @@ console.log(values.map(v => (v as any).from))`,
 					writeArktypeRuntimeOptionMessage("freeze")
 				],
 				[
+					"countsKeys with runtime arktype",
+					{ runtime: "arktype", countsKeys: true },
+					writeArktypeRuntimeOptionMessage("countsKeys")
+				],
+				[
 					"config false with runtime arktype",
 					{ runtime: "arktype", config: false },
 					writeArktypeRuntimeOptionMessage("config: false")

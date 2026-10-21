@@ -950,10 +950,40 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					this.compileExhaustiveEntry(js, "symbol")
 				)
 			}
-		} else if (this.undeclared === "reject")
+		} else if (this.undeclared === "reject") {
+			if (js.countsKeys && js.traversalKind === "Allows" && !this.sequence)
+				return this.compileKeyCount(js)
 			js.forIn("data", () => this.compileExhaustiveEntry(js, "string"))
+		}
 
 		return js.return(true)
+	}
+
+	// a plain object with as many own enumerable keys as it has declared ones
+	// passes, though one may stand in for a declared key it holds otherwise
+	private compileKeyCount(js: NodeCompiler): NodeCompiler {
+		const declared = [
+			`${this.required?.filter(prop => typeof prop.key === "string").length ?? 0}`
+		]
+		for (const prop of this.optional ?? []) {
+			if (typeof prop.key === "string")
+				declared.push(`+(${js.serialize(prop.key)} in data)`)
+		}
+		js.if("Object.getPrototypeOf(data) === Object.prototype", () =>
+			js
+				.let("n", 0)
+				.forIn("data", () =>
+					js.if("Object.prototype.hasOwnProperty.call(data, k)", () =>
+						js.line("n++")
+					)
+				)
+				.if(`n === ${declared.join(" + ")}`, () => js.return(true))
+		)
+		return js.outline(`${js.nameOf(this.id)}Undeclared`, [], js =>
+			js
+				.forIn("data", () => this.compileExhaustiveEntry(js, "string"))
+				.return(true)
+		)
 	}
 
 	// an Apply reporting one issue checks props as Allows does, stopping where it did

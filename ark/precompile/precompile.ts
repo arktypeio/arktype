@@ -152,6 +152,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	lazy?: boolean | undefined
 	mutatesInput?: MutatesInput | undefined
 	optimize?: Optimization | undefined
+	/** rejects undeclared keys by counting a plain object's own enumerable keys */
+	countsKeys?: boolean | undefined
 	/** also create each site with arktype and throw where they diverge */
 	shadow?: boolean | undefined
 	/** warn rather than fail where the output may throw at runtime */
@@ -481,7 +483,8 @@ export class Precompiler {
 			lazy: opts.lazy !== false,
 			checks,
 			mutatesInput: this.mutatesInput,
-			optimize: opts.optimize ?? "speed"
+			optimize: opts.optimize ?? "speed",
+			countsKeys: opts.countsKeys
 		}
 		this.lackedMembers = new Set(
 			defaultMembers.flatMap(member =>
@@ -3796,7 +3799,7 @@ export type writeUnknownMemberMessage<member extends string> =
 
 const methodMembers = ["traverse", "from", "toString"] as const
 
-const booleanOptions = ["freeze", "lazy"] as const
+const booleanOptions = ["freeze", "lazy", "countsKeys"] as const
 
 const enumOptions = {
 	checks: ["types", "helpers", "none"],

@@ -84,7 +84,7 @@ jobs:
           - '{"mutatesInput": true, "errors": "first"}'
           - '{"mutatesInput": true, "errors": "none"}'
           - '{"mutatesInput": "always", "errors": "first"}'
-          - '{"mutatesInput": "always", "errors": "none"}'
+          - '{"mutatesInput": "always", "errors": "none", "countsKeys": true}'
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4

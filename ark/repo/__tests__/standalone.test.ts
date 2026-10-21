@@ -1819,6 +1819,70 @@ password must be at least length 8`)
 		attest(List([{ j: 1 }]).summary).equals("is invalid")
 	})
 
+	describe("countsKeys", () => {
+		const Strict = type({ "+": "reject", a: "string", "b?": "number" })
+
+		it("rejects an undeclared key", async () => {
+			const { T } = await load({ T: Strict }, { countsKeys: true })
+			attest(T({ a: "", c: 1 }).summary).snap("c must be removed")
+			attest(T({ a: "", b: 0, c: 1 }).summary).snap("c must be removed")
+		})
+
+		it("counts an optional key where present", async () => {
+			const { T } = await load({ T: Strict }, { countsKeys: true })
+			const absent = { a: "" }
+			const present = { a: "", b: 0 }
+			attest(T(absent)).is(absent)
+			attest(T(present)).is(present)
+		})
+
+		it("passes an undeclared key in place of a declared one it doesn't count", async () => {
+			const { T, U } = await load(
+				{ T: Strict, U: type({ "+": "reject", toString: "Function" }) },
+				{ countsKeys: true }
+			)
+			const nonEnumerable = Object.defineProperty({ c: 1 }, "a", {
+				value: ""
+			})
+			const inherited = { c: 1 }
+			attest(T(nonEnumerable)).is(nonEnumerable)
+			attest(U(inherited)).is(inherited)
+			// arktype's own Types, and builds without countsKeys, reject both
+			attest(Strict(nonEnumerable).toString()).snap("c must be removed")
+		})
+
+		it("scans an object whose prototype isn't Object.prototype", async () => {
+			const { T, Empty } = await load(
+				{ T: Strict, Empty: type({ "+": "reject" }) },
+				{ countsKeys: true }
+			)
+			const nullPrototype = Object.defineProperty(
+				Object.assign(Object.create(null), { c: 1 }),
+				"a",
+				{ value: "" }
+			)
+			class Instance {
+				c = 1
+				get a() {
+					return ""
+				}
+			}
+			attest(T(nullPrototype).summary).snap("c must be removed")
+			attest(T(new Instance()).summary).snap("c must be removed")
+			attest(Empty(new Instance()).summary).snap("c must be removed")
+		})
+
+		it("counts a nested object's keys", async () => {
+			const { T } = await load(
+				{ T: type({ a: { b: "string" } }).onDeepUndeclaredKey("reject") },
+				{ countsKeys: true }
+			)
+			const valid = { a: { b: "" } }
+			attest(T(valid)).is(valid)
+			attest(T({ a: { b: "", c: 1 } }).summary).snap("a.c must be removed")
+		})
+	})
+
 	it("configured: false", async () => {
 		const { T } = await load(
 			{ T: type("string") },

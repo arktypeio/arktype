@@ -25,6 +25,9 @@ export const freezes: boolean = testedOptions.freeze !== false
 
 export const mutatesInput: MutatesInput = testedOptions.mutatesInput ?? false
 
+// a count can pass an undeclared key a scan would reject
+export const countsKeys: boolean = testedOptions.countsKeys === true
+
 // errors "none" fails with one root issue and runs no Apply's morphs
 export const detailsErrors: boolean = testedOptions.errors !== "none"
 

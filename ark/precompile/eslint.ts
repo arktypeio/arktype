@@ -64,7 +64,8 @@ const precompilable: Rule.RuleModule = {
 					freeze: { type: "boolean" },
 					lazy: { type: "boolean" },
 					mutatesInput: { enum: [false, true, "always"] },
-					optimize: { enum: ["speed", "size"] }
+					optimize: { enum: ["speed", "size"] },
+					countsKeys: { type: "boolean" }
 				},
 				additionalProperties: false
 			}
