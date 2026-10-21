@@ -31,28 +31,38 @@ import { type } from "arktype"
 const schema = type("5<=string<=10").toJsonSchema()
 ```
 
-## Extra Type Safety
+## Type Safety
 
-If you wish to ensure that your JSON Schema schemas are valid, you can do this too! Simply import the relevant `Schema` type from `@ark/json-schema` like so:
-
-```ts
-import type { JsonSchema } from "arktype"
-
-const integerSchema: JsonSchema.Numeric = {
-	type: "integer",
-	multipleOf: "3" // errors stating that 'multipleOf' must be a number
-}
-```
-
-For string schemas, import `StringSchema` from `@ark/json-schema` instead. Its `pattern` may also be a `RegExp`, whose flags are kept.
+`jsonSchema` validates a schema as you write it and infers the type it describes. At runtime, it returns its input unchanged.
 
 ```ts
-import type { StringSchema } from "@ark/json-schema"
-const stringSchema: StringSchema = {
-	type: "string",
-	minLength: "3" // errors stating that 'minLength' must be a number
-}
+import { jsonSchema } from "@ark/json-schema"
+
+const User = jsonSchema({
+	type: "object",
+	properties: {
+		name: { type: "string" },
+		age: { type: "integer", minimum: 0 }
+	},
+	required: ["name"]
+})
+
+// { name: string; age?: number }
+type User = typeof User.infer
+
+// TypeScript: minLength must be a non-negative integer (was -1)
+jsonSchema({ type: "string", minLength: -1 })
 ```
+
+`jsonSchemaToType` checks and infers its input the same way.
+
+A schema TypeScript can't see as a literal, like one read from a `.json` file, can be cast with `jsonSchema.as`:
+
+```ts
+const User = jsonSchema.as<{ name: string; age?: number }>(userJson)
+```
+
+The underlying types are exported as `jsonSchema.infer` and `jsonSchema.validate`.
 
 ## How it reads JSON Schema
 

@@ -1,12 +1,15 @@
-import type { JsonSchemaOrBoolean } from "@ark/schema"
 import { isArray } from "@ark/util"
 import { parse } from "arksets"
-import { type } from "arktype"
-import type { StringSchema } from "./scope.ts"
+import { type, type Type } from "arktype"
+import type { inferJsonSchema } from "./infer.ts"
+import type { validateJsonSchema } from "./validate.ts"
 
-export const jsonSchemaToType = (
-	jsonSchema: JsonSchemaOrBoolean | StringSchema
-): type<unknown> =>
+export const jsonSchemaToType: <
+	const schema,
+	r = Type<inferJsonSchema<schema>>
+>(
+	schema: validateJsonSchema<schema>
+) => r extends infer _ ? _ : never = schema =>
 	type(
-		parse(isArray(jsonSchema) ? { anyOf: jsonSchema } : jsonSchema) as never
+		parse(isArray(schema) ? { anyOf: schema } : (schema as never)) as never
 	) as never

@@ -15,24 +15,25 @@ Every keyword in a schema applies, and a type's keywords constrain only that typ
 
 A keyword with an invalid value throws, like `#/minLength must be a non-negative integer (was -1)`. A keyword JSON Schema doesn't define is ignored.
 
-`jsonSchemaToType`'s parameter is typed with arktype's `JsonSchema`, which doesn't include every keyword below, like `if` or `dependentRequired`. Those are type errors in a schema written inline, but read like any other in a schema loaded at runtime or passed to ArkSets.
+`jsonSchemaToType` checks a schema written in the call as you write it: an invalid keyword value is a type error, as is each keyword below that throws, except a `$ref` to another document. See [Invalid schemas](/docs/json-schema/from-json-schema#invalid-schemas).
 
 ## Core
 
-| keyword                                                     | support     | notes                                                                           |
-| ----------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------- |
-| `true`, `false`                                             | supported   | `unknown` and `never`                                                           |
-| `type`                                                      | supported   | a name or an array of names. `"object"` excludes arrays                         |
-| `const`, `enum`                                             | supported   | objects and arrays are compared by value                                        |
-| `$ref`                                                      | supported   | a JSON Pointer into the document, like `#/$defs/Node`, including recursive refs |
-| `$ref` to another document, an anchor or in a `$id`         | **throws**  | only refs into the same document are resolved                                   |
-| `$defs`, `definitions`                                      | supported   | read where a `$ref` points to them                                              |
-| `$dynamicRef`, `$recursiveRef`                              | **throws**  |                                                                                 |
-| `title`, `description`, `default`, `examples`, `deprecated` | annotation  | `default` is not applied                                                        |
-| `$schema`                                                   | annotation  | draft-07 or earlier ignores the keywords beside a `$ref`, as those drafts do    |
-| `$id`, `$anchor`, `$comment`, `readOnly`, `writeOnly`       | **ignored** |                                                                                 |
-| `contentEncoding`, `contentMediaType`                       | **ignored** | annotations in 2020-12                                                          |
-| `nullable` (OpenAPI 3.0)                                    | **ignored** | write `type: ["string", "null"]` instead                                        |
+| keyword                                                     | support     | notes                                                                                             |
+| ----------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------- |
+| `true`, `false`                                             | supported   | `unknown` and `never`                                                                             |
+| `type`                                                      | supported   | a name or an array of names. `"object"` excludes arrays                                           |
+| `const`, `enum`                                             | supported   | objects and arrays are compared by value                                                          |
+| `$ref`                                                      | supported   | `#`, a JSON Pointer like `#/$defs/Node`, an anchor or an embedded `$id`, including recursive refs |
+| `$ref` to another document                                  | **throws**  | only refs into the same document are resolved                                                     |
+| `$defs`, `definitions`                                      | supported   | read where a `$ref` points to them                                                                |
+| `$dynamicRef`, `$recursiveRef`                              | **throws**  |                                                                                                   |
+| `title`, `description`, `default`, `examples`, `deprecated` | annotation  | `default` is not applied                                                                          |
+| `$schema`                                                   | annotation  | draft-07 or earlier ignores the keywords beside a `$ref`, as those drafts do                      |
+| `$id`, `$anchor`, `$dynamicAnchor`                          | supported   | identify a schema a `$ref` resolves to. Draft-04 reads `id`                                       |
+| `$comment`, `readOnly`, `writeOnly`                         | **ignored** |                                                                                                   |
+| `contentEncoding`, `contentMediaType`                       | **ignored** | annotations in 2020-12                                                                            |
+| `nullable` (OpenAPI 3.0)                                    | **ignored** | write `type: ["string", "null"]` instead                                                          |
 
 ## Composition
 

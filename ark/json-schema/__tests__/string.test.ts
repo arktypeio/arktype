@@ -21,6 +21,7 @@ contextualize(() => {
 		attest(() =>
 			jsonSchemaToType({
 				type: "string",
+				// @ts-expect-error
 				maxLength
 			})
 		).throws.snap(
@@ -41,6 +42,7 @@ contextualize(() => {
 		attest(() =>
 			jsonSchemaToType({
 				type: "string",
+				// @ts-expect-error
 				minLength
 			})
 		).throws.snap(

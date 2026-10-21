@@ -113,6 +113,7 @@ contextualize(() => {
 	})
 
 	it("maxItems (negative)", () => {
+		// @ts-expect-error
 		attest(() => jsonSchemaToType({ type: "array", maxItems: -1 })).throws.snap(
 			"ParseError: #/maxItems must be a non-negative integer (was -1)"
 		)
@@ -127,6 +128,7 @@ contextualize(() => {
 	})
 
 	it("minItems (negative)", () => {
+		// @ts-expect-error
 		attest(() => jsonSchemaToType({ type: "array", minItems: -1 })).throws.snap(
 			"ParseError: #/minItems must be a non-negative integer (was -1)"
 		)
