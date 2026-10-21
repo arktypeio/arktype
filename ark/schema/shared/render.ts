@@ -115,9 +115,13 @@ const configOf = (
 	config[error.code][slot] ??
 	defaultConfig[error.code][slot]
 
-// a discriminant's description lists cases; its meta is its union's
+// a discriminant's description lists cases unless its union's own value was
+// described; at a key, its meta is the union's around it
 const citesDescription = (error: ArkError): boolean =>
-	error.code !== "discriminant" &&
+	(error.code !== "discriminant" ||
+		(!error.onKey &&
+			error.meta?.description !== undefined &&
+			error.meta.keyword === undefined)) &&
 	error.description !== undefined &&
 	!isDefaultDescription(error, error.description)
 

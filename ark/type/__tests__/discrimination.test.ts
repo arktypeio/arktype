@@ -124,6 +124,14 @@ contextualize(() => {
 		})
 	})
 
+	// https://github.com/arktypeio/arktype/issues/963
+	it("described union discriminated by its value", () => {
+		const Primitive = type("string | number").describe("a primitive")
+		attest(Primitive({}).toString()).snap("must be a primitive (was an object)")
+		const Letter = type("'a' | 'b' | 'c'").describe("a letter")
+		attest(Letter("d").toString()).snap('must be a letter (was "d")')
+	})
+
 	it("indiscriminable", () => {
 		const T = getPlaces().type([
 			"ocean",

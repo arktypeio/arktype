@@ -1547,6 +1547,20 @@ type("string.uuid.v4").toJsonSchema()
 type({ "[string.uuid]": "number" })({})
 ```
 
+### Use a union's description when data misses its discriminated cases
+
+A described union discriminated by the value itself, like `string | number`, listed its cases instead (#963):
+
+```ts
+const Primitive = type("string | number").describe("a primitive")
+
+// was: must be a number or a string (was an object)
+// now: must be a primitive (was an object)
+Primitive({}).toString()
+```
+
+A union discriminated at a key still lists the key's cases, like `kind must be "a" or "b" (was "c")`.
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`
