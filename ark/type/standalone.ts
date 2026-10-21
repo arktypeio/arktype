@@ -2143,7 +2143,9 @@ ${writeFunction(
 			ownsValidator ? `make(parts${configured ? ", configuredOnFail" : ""})`
 			: !this.pipes(members, unconfigured) ?
 				"(data, _, onFail) => rootApply(data, onFail)"
-			:	`(data, pipedFromCtx, onFail${configured ? " = configuredOnFail" : ""}) => pipedFromCtx ? runtime.${this.baking.detailsErrors ? "pipedInto" : "pipedIntoUndetailed"}(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)`
+			: this.baking.detailsErrors ?
+				`(data, pipedFromCtx, onFail${configured ? " = configuredOnFail" : ""}) => rootApply(data, pipedFromCtx ? errors => pipedFromCtx.piped(errors) : onFail)`
+			:	`(data, pipedFromCtx, onFail${configured ? " = configuredOnFail" : ""}) => pipedFromCtx ? runtime.pipedIntoUndetailed(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)`
 		const body = [
 			applier ? `const rootApply = ${applier.apply}`
 			: makes ? "const rootApply = make(parts)"

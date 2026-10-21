@@ -11,7 +11,6 @@ import {
 	errorsOf,
 	FirstIssues,
 	mergeIssues,
-	messageOf,
 	releasePath,
 	runtimeConfig,
 	supportedJsonSchemaTargets,
@@ -205,7 +204,7 @@ export const createValidator = ((
 			onFail: FailHandler | null = configuredOnFail
 		) => {
 			if (!pipedFromCtx) return rootApply(data, onFail)
-			return pipedInto(pipedFromCtx, rootApply(data, null))
+			return rootApply(data, pipedInto(pipedFromCtx))
 		}) satisfies Fn,
 		freeze(Validator.prototype)
 	)
@@ -261,26 +260,11 @@ type ValidatorArgs = [
 	onFail?: FailHandler | null | undefined
 ]
 
-// added where piped, so a morph nesting them still fails
-export const pipedInto = (pipedFromCtx: Traversal, out: unknown): unknown => {
-	if (!(out instanceof ArkErrors)) return out
-	const errors = errorsOf(pipedFromCtx)
-	if (errors._merge) errors._merge(out, pipedFromCtx.path)
-	else {
-		for (const issue of out._) {
-			errors._.push({
-				...issue,
-				path: [...pipedFromCtx.path, ...issue.path],
-				// read by a callback at the old path, so rewritten unless supplied
-				message:
-					issue.message && issue.message === messageOf(issue) ?
-						undefined
-					:	issue.message
-			})
-		}
-	}
-	return errors
-}
+// a validator called with a traversal adds its errors there
+const pipedInto =
+	(ctx: Traversal): FailHandler =>
+	errors =>
+		ctx.piped(errors)
 
 export const pipedIntoUndetailed = (
 	pipedFromCtx: Traversal,
@@ -303,7 +287,7 @@ export const callingRootApply = ((
 ): Fn =>
 	((data: unknown, ...args: ValidatorArgs) =>
 		!args.length ? rootApply(data, configuredOnFail)
-		: args[0] ? pipedInto(args[0], rootApply(data, null))
+		: args[0] ? rootApply(data, pipedInto(args[0]))
 		: rootApply(
 				data,
 				args[1] === undefined ? configuredOnFail : args[1]
@@ -637,7 +621,7 @@ export const applyCallErrors = (
 	const errors = ctx instanceof ArkErrors ? releasePath(ctx) : ctx._errors
 	if (!errors?.count) return data
 	if (args.length) {
-		if (args[0]) return pipedInto(args[0], errors)
+		if (args[0]) return args[0].piped(errors as never)
 		if (args[1] !== undefined) onFail = args[1] as never
 	}
 	return onFail ? onFail(errors) : errors
@@ -716,7 +700,7 @@ export const unreadCallErrors = (
 ): unknown => {
 	const errors = new Ctx(apply, data)
 	if (args.length) {
-		if (args[0]) return pipedInto(args[0], errors)
+		if (args[0]) return args[0].piped(errors as never)
 		if (args[1] !== undefined) onFail = args[1] as never
 	}
 	return typeof onFail === "function" ? onFail(errors) : errors

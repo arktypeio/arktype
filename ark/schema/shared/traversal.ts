@@ -23,6 +23,7 @@ import {
 	issueAt,
 	issueWith,
 	mergeIssues,
+	messageOf,
 	type ArkIssue,
 	type CompactApply,
 	type FailureContext,
@@ -219,6 +220,29 @@ export class InternalTraversal implements FailureContext {
 			else errors._ = [error]
 		}
 		return error
+	}
+
+	/**
+	 * @internal adds the errors of a validator called with this traversal,
+	 * returning its own
+	 */
+	piped(errors: BaseArkErrors): BaseArkErrors {
+		const target = errorsOf(this)
+		if (target._merge) target._merge(errors, this.path)
+		else {
+			for (const issue of errors._) {
+				target._.push({
+					...issue,
+					path: [...this.path, ...issue.path],
+					// read by a callback at the old path, so rewritten unless supplied
+					message:
+						issue.message && issue.message === messageOf(issue) ?
+							undefined
+						:	issue.message
+				})
+			}
+		}
+		return target
 	}
 
 	/** @internal */
