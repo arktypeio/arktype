@@ -38,9 +38,14 @@ import type {
 	TSTypeAliasDeclaration,
 	Span
 } from "oxc-parser"
-import { dirname, join, relative } from "node:path"
+import { dirname, join } from "node:path"
 import { isArkValue } from "./builtins.ts"
-import { dependencyOf, optsIn, type PrecompileHost } from "./host.ts"
+import {
+	dependencyOf,
+	optsIn,
+	printablePathOf,
+	type PrecompileHost
+} from "./host.ts"
 import { SourceModule } from "./module.ts"
 import {
 	exportNameOf,
@@ -543,7 +548,7 @@ export class ModuleGraph {
 	}
 
 	pathOf(id: string): string {
-		return this.cwd === undefined ? id : relative(this.cwd, id)
+		return this.cwd === undefined ? id : printablePathOf(this.cwd, id)
 	}
 
 	add(id: string, source: string, mappings?: string): SourceModule {

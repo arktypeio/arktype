@@ -35,12 +35,13 @@ export const issuesFrom = (file: string): Plugin => ({
 })
 
 // a bare specifier resolves to node_modules, which the build doesn't read
+// its paths are POSIX's, though the precompiler joins them with \ on Windows
 export const memoryHost = (files: Record<string, string>): PrecompileHost => ({
 	resolve: (specifier, importer) =>
 		specifier.startsWith(".") ?
 			posix.join(posix.dirname(importer), specifier)
 		:	`/node_modules/${specifier}/index.js`,
-	readFile: path => files[path]
+	readFile: path => files[path.split("\\").join("/")]
 })
 
 export const analyze = (

@@ -171,8 +171,38 @@ describe("type assertions", () => {
 		// @ts-expect-error
 		attest(() => attest(type.string).equals(type.number)).throws
 			.equals(`AssertionError [ERR_ASSERTION]: Assertion including at least one function or object was not between reference equal items
-Expected: Function(fn)
-Actual: Function(fn)`)
+Expected: number
+Actual: string`)
+	})
+
+	// node:assert's diff of these exhausted memory (#1287)
+	it("does not boom on nested Types", () => {
+		// @ts-expect-error
+		attest(() => attest({ a: type.string }).equals({ a: type.boolean })).throws
+			.snap(`AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+Expected: {"a":"boolean"}
+Actual: {"a":"string"}`)
+	})
+
+	it("does not boom on a schema node", () => {
+		// @ts-expect-error
+		attest(() => attest([type.string.internal]).equals([undefined])).throws
+			.snap(`AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+Expected: ["undefined"]
+Actual: ["string"]`)
+	})
+
+	it("does not boom on a schema node that isn't the one expected", () => {
+		attest(() => attest(type.string.internal).is(type.number.internal)).throws
+			.snap(`AssertionError [ERR_ASSERTION]: Expected values to be reference-equal:
+Expected: number
+Actual: string`)
+	})
+
+	it("diffs plain data as node:assert does", () => {
+		attest(() =>
+			attest(new Map([["a", [1]]])).equals(new Map([["a", [2]]]))
+		).throws("+ actual - expected")
 	})
 
 	it("doesn't boom on ArkErrors vs plain object", () => {
