@@ -15,7 +15,7 @@ Every keyword in a schema applies, and a type's keywords constrain only that typ
 
 A keyword with an invalid value throws, like `#/minLength must be a non-negative integer (was -1)`. A keyword JSON Schema doesn't define is ignored.
 
-`jsonSchemaToType`'s parameter is typed with arktype's `JsonSchema`, which doesn't include every keyword below, like `if` or `dependentRequired`. Those are type errors in a schema written inline, but read like any other in a schema loaded at runtime or passed to ArkSets.
+`jsonSchemaToType` checks a schema written in the call as you write it: an invalid keyword value is a type error, as is each keyword below that throws, except a `$ref` to another document. See [Invalid schemas](/docs/json-schema/from-json-schema#invalid-schemas).
 
 ## Core
 
