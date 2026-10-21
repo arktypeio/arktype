@@ -1,0 +1,8 @@
+{
+	// a consumer without exactOptionalPropertyTypes, where TS drops undefined
+	// from an optional key's type
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"exactOptionalPropertyTypes": false
+	}
+}
