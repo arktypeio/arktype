@@ -760,6 +760,12 @@ console.log(out.constructor === type.errors, out.count, out.issues[0].data === d
 		}
 	})
 
+	it("esbuild writes no NUL into its output", async () => {
+		const standalone = await bundlers.esbuild({}, app, false)
+		attest(standalone.includes("~arktype/")).equals(true)
+		attest(standalone.includes("\0")).equals(false)
+	})
+
 	it("vite standalone for SSR", async () => {
 		const config = viteConfig({})
 		const { output } = (await viteBuild({
