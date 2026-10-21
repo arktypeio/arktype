@@ -1125,18 +1125,21 @@ const T = type({ s: "string" }).pipe((o, ctx) => {
 T({ s: "b" }).toString()
 ```
 
-### Check only string keys for `"+": "reject"`
+### Handle only string keys as undeclared
 
-`"+": "reject"` allows undeclared symbol keys:
+`"+": "reject"` checks only an object's string keys, and `"+": "delete"` outputs only its declared keys. So an undeclared symbol key passes `"reject"`, where it failed, and is dropped by `"delete"`, which kept it:
 
 ```ts
-const T = type({ "+": "reject", a: "string" })
+const s = Symbol("s")
 
 // valid, instead of ArkErrors: value at [Symbol(s)] must be removed
-T({ a: "x", [Symbol("s")]: 1 })
+type({ "+": "reject", a: "string" })({ a: "x", [s]: 1 })
+
+// { a: "x" }, instead of { a: "x", [s]: 1 }
+type({ "+": "delete", a: "string" })({ a: "x", [s]: 1 })
 ```
 
-Looking for them read each object's symbols, which was most of what rejecting undeclared keys cost. Unlike `"reject"`, `"+": "delete"` now removes them.
+Looking for symbol keys read each object's symbols, which cost about four times the rest of a strict object's check.
 
 Reject types that differ only by a symbol key now overlap, so a union of them with a morph is indeterminate:
 
@@ -1150,10 +1153,6 @@ type({ "+": "reject", a: "string.trim" }).or({
 	[s]: "1"
 })
 ```
-
-### Delete undeclared symbol keys
-
-`"+": "delete"` removes undeclared symbol keys, which it previously kept.
 
 ### Return deleting types' keys in the order of their expression
 

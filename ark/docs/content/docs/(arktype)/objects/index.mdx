@@ -278,9 +278,9 @@ const MyClosedObject = type({
 MyClosedObject({ onlyAllowedKey: "ok", extraKey: 1 })
 ```
 
-`"reject"` checks string keys only, so an undeclared symbol key passes, while `"delete"` removes undeclared symbol keys too. Reject types that differ only by a symbol key therefore overlap, and a union of them with a morph is indeterminate.
+Both act on string keys: `"reject"` checks only an object's string keys, and `"delete"` builds a new object holding only its declared keys. So an undeclared symbol key passes `"reject"` and is dropped by `"delete"`, and reject types that differ only by a symbol key overlap, so a union of them with a morph is indeterminate.
 
-`"delete"` builds a new object with the declared keys in the order of the type's expression: required keys, then optional keys, each sorted by name.
+`"delete"`'s output has the declared keys in the order of the type's expression: required keys, then optional keys, each sorted by name.
 
 `.onDeepUndeclaredKey()` applies the same behavior to every nested object:
 

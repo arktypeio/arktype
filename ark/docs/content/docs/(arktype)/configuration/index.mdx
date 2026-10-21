@@ -253,8 +253,10 @@ User({ name: 5, email: "449 Canal St" })
 Like TypeScript, ArkType ignores keys an object doesn't declare by default. There are three behaviors:
 
 - `"ignore"` (default): allow undeclared keys and keep them in the output
-- `"delete"`: allow undeclared keys and remove them from the output
-- `"reject"`: fail on undeclared keys
+- `"delete"`: allow undeclared keys and output only declared ones
+- `"reject"`: fail on undeclared string keys
+
+An undeclared symbol key passes `"reject"` and isn't in `"delete"`'s output.
 
 Set it for one object with [`"+"`](/docs/objects#properties-undeclared), or change the default globally:
 
