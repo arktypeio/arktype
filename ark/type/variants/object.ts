@@ -159,7 +159,7 @@ interface Type<out t extends object = object, in out $ = {}>
 	 */
 	map<
 		transformed extends listable<MappedTypeProp>,
-		r = Type<constructMapped<t, transformed>, $>
+		r = Type<mapped<t, transformed, $>, $>
 	>(
 		// v isn't used directly here but helps TS infer a precise type for transformed
 		flatMapEntry: (entry: typePropOf<t, $>) => transformed
@@ -172,10 +172,13 @@ interface Type<out t extends object = object, in out $ = {}>
 	props: array<typePropOf<t, $>>
 }
 
+// each branch's props, since a union's are mapped per branch
 type typePropOf<o, $> =
-	keyof o extends infer k ?
-		k extends keyof o ?
-			typeProp<o, k, $>
+	o extends unknown ?
+		keyof o extends infer k ?
+			k extends keyof o ?
+				typeProp<o, k, $>
+			:	never
 		:	never
 	:	never
 
@@ -232,6 +235,34 @@ type OptionalMappedTypeProp<k extends Key, v> = merge<
 		default?: v
 	}
 >
+
+// a union is mapped per branch, each built from the props it can produce
+type mapped<t, transformed extends listable<MappedTypeProp>, $> =
+	[t] extends [intersectUnion<t>] ? constructMapped<t, transformed>
+	:	mappedBranches<
+			t,
+			transformed extends array ? transformed[number] : transformed,
+			typePropOf<t, $>,
+			t extends unknown ? keyof t : never,
+			$
+		>
+
+type mappedBranches<branch, prop, entry, key, $> =
+	branch extends unknown ?
+		constructMapped<branch, branchPropsOf<branch, prop, entry, key, $>>
+	:	never
+
+// the branch's own props returned as they were, other props at its keys,
+// and props at keys no branch has
+type branchPropsOf<branch, prop, entry, key, $> =
+	| Extract<prop, typePropOf<branch, $>>
+	| (Exclude<prop, entry> extends infer p ?
+			p extends { key: infer k } ?
+				k extends keyof branch ? p
+				: k extends key ? never
+				: p
+			:	never
+	  :	never)
 
 type constructMapped<t, transformed extends listable<MappedTypeProp>> = show<
 	intersectUnion<

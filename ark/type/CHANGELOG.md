@@ -98,6 +98,34 @@ type("string.url < 100").toJsonSchema()
 
 A JSON Schema validator checks neither keyword unless it's configured to. `string.url` checks `URL.canParse`, which differs from the `uri` format's RFC 3986 at the edges: it accepts a space in a path and rejects a port past 65535. `string.date` still throws, since it accepts whatever `Date` parses, which no format describes.
 
+### Infer `.map()` on a union per branch
+
+`.map()` already mapped each branch of a union at runtime, but its inferred type merged the branches, and its callback's argument held only the keys every branch shares (#1524). The argument now holds each branch's props, and the result is a union of the branches it builds:
+
+```ts
+const T = type({ kind: "'a'", a: "string" })
+	.or({ kind: "'b'", b: "number" })
+	.map(prop => prop)
+
+// was: Type<{ kind: "a" | "b" }>
+// now: Type<{ kind: "a"; a: string } | { kind: "b"; b: number }>
+```
+
+A prop the callback returns unchanged stays in its own branch, and any other goes to each branch with its key, or to every branch if no branch has its key. A changed value can't be traced to the branch it came from, so it's merged across them:
+
+```ts
+const T = type({ name: "'number'", type: "number" })
+	.or({ name: "'string'", type: "string" })
+	.map(prop =>
+		prop.key === "type" ? { ...prop, value: prop.value.array() } : prop
+	)
+
+// Type<
+// 	| { name: "number"; type: number[] | string[] }
+// 	| { name: "string"; type: number[] | string[] }
+// >
+```
+
 ### Return errors as plain objects
 
 The errors in an `ArkErrors`' `issues` are plain objects without getters or methods. Each has the keys its JSON had, in the same order, with `propString` before `expected`:

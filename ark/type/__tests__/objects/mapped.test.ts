@@ -384,4 +384,49 @@ contextualize(() => {
 		}>(T.t)
 		attest(T.expression).snap('{ bar?: number, foo: string = "foot" }')
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1524
+	it("union per branch", () => {
+		const T = type({ name: "'number'", type: "number" })
+			.or({ name: "'string'", type: "string" })
+			.map(prop =>
+				prop.key === "type" ? { ...prop, value: prop.value.array() } : prop
+			)
+		// a changed value can't be traced to its branch, so it's merged
+		attest<
+			| { name: "number"; type: number[] | string[] }
+			| { name: "string"; type: number[] | string[] }
+		>(T.t)
+		attest(T({ name: "number", type: [1] })).equals({
+			name: "number",
+			type: [1]
+		})
+		attest(T({ name: "number", type: ["1"] }).toString()).snap(
+			"type[0] must be a number (was a string)"
+		)
+	})
+
+	it("identity on a discriminated union", () => {
+		const T = type({ kind: "'a'", a: "string" })
+			.or({ kind: "'b'", b: "number" })
+			.map(prop => prop)
+		attest<{ kind: "a"; a: string } | { kind: "b"; b: number }>(T.t)
+	})
+
+	it("rename on a union", () => {
+		const T = type({ a: "string" })
+			.or({ a: "number" })
+			.map(prop => ({ key: "b" as const, value: prop.value }))
+		attest<{ b: string | number }>(T.t)
+		attest(T.expression).snap("{ b: number } | { b: string }")
+	})
+
+	it("union with a branch its other branch narrows", () => {
+		const T = type({ a: "string" })
+			.or({ a: "string", b: "number" })
+			.map(prop => prop)
+		// at runtime the union reduces to its wider branch, which the first covers
+		attest<{ a: string } | { a: string; b: number }>(T.t)
+		attest(T.expression).snap("{ a: string }")
+	})
 })
