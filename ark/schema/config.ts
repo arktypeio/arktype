@@ -1,4 +1,5 @@
 import {
+	envHasCsp,
 	hasDomain,
 	printable,
 	throwParseError,
@@ -122,6 +123,8 @@ export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 /** $ark.config merged over base, with its static locale */
 export const resolveGlobalConfig = (base: ResolvedConfig): ResolvedConfig => {
 	const resolved = mergeConfigs(base, $ark.config)
+	// probed as the config is fixed, so configuring jitless after import skips it
+	resolved.jitless = $ark.config.jitless ?? envHasCsp()
 	// a locale function selects a locale per read, which is en if it returns none
 	;(resolved as { locale: Locale }).locale = configureLocale(
 		$ark.config.locale,

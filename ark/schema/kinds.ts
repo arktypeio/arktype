@@ -1,7 +1,6 @@
 import {
 	domainDescriptions,
 	domainOf,
-	envHasCsp,
 	flatMorph,
 	objectKindDescriptions,
 	printable,
@@ -175,7 +174,7 @@ $ark.defaultConfig = withAlphabetizedKeys(
 		{
 			undeclared: { ...errorWriters, ...errorWritersByCode.undeclared },
 			discriminant: { ...errorWriters, ...errorWritersByCode.discriminant },
-			jitless: $ark.config.jitless ?? envHasCsp(),
+			jitless: false,
 			onUndeclaredKey: "ignore",
 			exactOptionalPropertyTypes: true,
 			numberAllowsNaN: false,
