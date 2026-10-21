@@ -77,6 +77,29 @@ export const isError = (data: unknown) => data instanceof ArkErrors`)
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
 
+		it("exports validators by bare names", () => {
+			const { modules } = precompile(`import { type } from "arktype"
+const max = 64
+export const User = type({ name: \`string <= \${max}\` })
+export const Users = User.array()
+export const Long = type("string").narrow(s => s.length > max)`)
+			attest(
+				normalized(
+					Object.values(modules).flatMap(module =>
+						module.split("\n").filter(line => line.startsWith("export {"))
+					)
+				)
+			).snap([
+				"export { get0 as #0 }",
+				"export { get1 as #1 }",
+				"export { factory0 as #2 }",
+				"export { #3, #3Node }",
+				"export { #4, #4Node }",
+				"export { #5, #5Node }",
+				"export { fixConfig as default }"
+			])
+		})
+
 		it("reads validators created eagerly and checking nothing", () => {
 			const result = precompile(
 				`import { type } from "arktype"
