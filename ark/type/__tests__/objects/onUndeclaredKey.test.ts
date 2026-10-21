@@ -117,6 +117,9 @@ contextualize(() => {
 				d: [{ a: "string" }, "number = 2"]
 			}).onDeepUndeclaredKey("delete")
 
+			attest(T.expression).snap(
+				"{ d: [{ a: string, + (undeclared): delete }, number = 2], + (undeclared): delete }"
+			)
 			attest(T({ ...getExtraneousB(), d: [getExtraneousB()] })).equals({
 				d: [{ a: "ok" }, 2]
 			})

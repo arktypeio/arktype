@@ -505,6 +505,13 @@ contextualize(() => {
 		attest(received === added).equals(true)
 	})
 
+	it("returns a type's output when called with a morph's ctx", () => {
+		const T = type("string").pipe((s, ctx) =>
+			type({ a: "string.trim" })(JSON.parse(s), ctx)
+		)
+		attest(T('{"a":" x "}')).equals({ a: "x" })
+	})
+
 	it("flattens an intersection a piped node raises into the one at its path", () => {
 		// a cyclic node a morph pipes to is applied in its own traversal, whose errors are merged
 		const $ = scope({ node: { s: "(string >= 5) & /^a/", "next?": "node" } })
