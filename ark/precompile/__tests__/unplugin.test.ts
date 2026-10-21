@@ -30,7 +30,7 @@ import {
 	symlinkSync,
 	writeFileSync
 } from "node:fs"
-import { join, relative } from "node:path"
+import { join, relative, sep } from "node:path"
 import { stripVTControlCharacters } from "node:util"
 import { Worker } from "node:worker_threads"
 import {
@@ -195,9 +195,15 @@ const versionOf = (dir: string): string =>
 const arktypeVersion = versionOf("type")
 const schemaVersion = versionOf("schema")
 
-// where a package the precompiler runs on is, from the program's root
+// declarations are keyed by TypeScript's paths, which use / on Windows too
+const tsPath = (path: string) => path.split(sep).join("/")
+
+// where a package the precompiler runs on is, from the program's root, as
+// messages print it
 const ownPath = (dir: string) =>
 	relative(dependencies, fromHere("..", "..", dir))
+		.split(sep)
+		.join("/")
 
 const versionHint =
 	"A precompiled validator is written for the arktype it was built with. Install one version of each, so @ark/precompile imports what the program does."
@@ -786,7 +792,7 @@ console.log(out.constructor === type.errors, out.count, out.issues[0].data === d
 			assets.find(file => file.fileName === "~arktype.d.ts")?.source
 		).equals(
 			emitDeclarations({ cwd: declared }).files[
-				join(declared, "out", "~arktype.d.ts")
+				tsPath(join(declared, "out", "~arktype.d.ts"))
 			]
 		)
 	})
@@ -872,8 +878,8 @@ console.log(out.constructor === type.errors, out.count, out.issues[0].data === d
 		attest(
 			message.includes(
 				writeDeclaredOutsideMessage(
-					join(layouts, "src", "index.d.ts"),
-					join(layouts, "out")
+					tsPath(join(layouts, "src", "index.d.ts")),
+					tsPath(join(layouts, "out"))
 				)
 			)
 		).equals(true)

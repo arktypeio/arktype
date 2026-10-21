@@ -18,7 +18,7 @@ import turbopack from "@ark/precompile/turbopack"
 import type { PrecompilePluginOptions } from "@ark/precompile/unplugin"
 import { spawnSync } from "node:child_process"
 import { mkdirSync, readFileSync, utimesSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+import { join, relative, sep } from "node:path"
 import { pathToFileURL } from "node:url"
 import { configureAfterTypeMessage } from "@ark/schema"
 import {
@@ -92,11 +92,16 @@ const bun = (
 }
 
 // the message of the error a process printed, without its stack
-const thrownMessage = (output: string, root: string, prefix = "Error: ") =>
-	output
-		.slice(output.indexOf(prefix) + prefix.length, output.search(/\n +at /))
+// Node on Windows writes stderr's lines with \r\n, and paths with \
+const thrownMessage = (output: string, root: string, prefix = "Error: ") => {
+	const lines = output.split("\r\n").join("\n")
+	return lines
+		.slice(lines.indexOf(prefix) + prefix.length, lines.search(/\n +at /))
+		.split(`${root}${sep}`)
+		.join("")
 		.split(`${root}/`)
 		.join("")
+}
 
 const islands = fromHere("islands")
 const configured = fromHere("configured")
@@ -505,7 +510,11 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 						resourcePath: join(dir, file),
 						getOptions: () => ({ ...opts, conditions, cwd: dir }),
 						addDependency: dependency =>
-							dependencies.push(dependency.replace(`${dir}/`, "")),
+							dependencies.push(
+								dependency.startsWith(`${dir}${sep}`) ?
+									relative(dir, dependency).split(sep).join("/")
+								:	dependency
+							),
 						emitWarning: warning => {
 							throw warning
 						}
@@ -608,6 +617,8 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 			inFreshProcess(
 				async (dir: string, files: string[], change: Change) => {
 					const fs = await import("node:fs")
+					// as Turbopack passes it, in the platform's form
+					const { join } = await import("node:path")
 					const { default: turbopack } = await import(
 						"@ark/precompile/turbopack"
 					)
@@ -615,7 +626,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 						try {
 							return turbopack.call(
 								{
-									resourcePath: `${dir}/${file}`,
+									resourcePath: join(dir, file),
 									getOptions: () => ({
 										config: "config.ts",
 										conditions: ["ark-ts"],
@@ -626,7 +637,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 										throw warning
 									}
 								},
-								fs.readFileSync(`${dir}/${file}`, "utf8")
+								fs.readFileSync(join(dir, file), "utf8")
 							)
 						} catch (e) {
 							return (e as Error).message

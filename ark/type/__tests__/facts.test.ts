@@ -1,9 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
 import { generic, Hkt, match, scope, type } from "arktype"
-import { fileURLToPath } from "node:url"
 import { precompileUnits } from "./integration/precompiled.ts"
 
-const testFile = fileURLToPath(import.meta.url)
+const testUrl = import.meta.url
 
 let reads: string[] = []
 
@@ -30,10 +29,9 @@ const audit = (trap: string, k: unknown) => {
 	for (const site of sites.slice(2)) {
 		const url = site.getFileName()
 		if (!url?.startsWith("file:")) continue
-		const file = fileURLToPath(url)
-		if (file === testFile || file.endsWith("/ark/util/facts.ts")) return
+		if (url === testUrl || url.endsWith("/ark/util/facts.ts")) return
 		reads.push(
-			`${trap}${typeof k === "string" || typeof k === "symbol" ? ` ${String(k)}` : ""} at ${file.slice(file.indexOf("/ark/") + 1)}:${site.getLineNumber()}`
+			`${trap}${typeof k === "string" || typeof k === "symbol" ? ` ${String(k)}` : ""} at ${url.slice(url.indexOf("/ark/") + 1)}:${site.getLineNumber()}`
 		)
 		return
 	}
