@@ -36,6 +36,24 @@ contextualize(() => {
 		attest(R.and(L).expression).equals(L.and(R).expression)
 	})
 
+	it("an intersection that leaves no props keeps undeclared keys", () => {
+		const Rejected = type({ "a?": "1", "+": "reject" }).and({
+			"b?": "2",
+			"+": "reject"
+		})
+		attest(Rejected.json).snap({ undeclared: "reject", domain: "object" })
+		attest(Rejected({ z: 1 }).toString()).snap("z must be removed")
+		const Deleted = type({ "+": "delete" }).and({})
+		attest(Deleted({ k: 0 })).equals({})
+	})
+
+	it("an open object isn't a subtype of a closed one", () => {
+		const Closed = type({ "+": "reject" })
+		attest(type({}).extends(Closed)).equals(false)
+		attest(Closed.extends({})).equals(true)
+		attest(Closed.or({}).json).snap({ domain: "object" })
+	})
+
 	describe("traversal", () => {
 		const getExtraneousB = () => ({ a: "ok", b: "why?" })
 
