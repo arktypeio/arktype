@@ -431,7 +431,51 @@ contextualize(() => {
 
 		it("union of inclusive bounds", () => {
 			const T = type("number <= 0 | number > 0")
-			attest(T.expression).snap("number <= 0 | number > 0")
+			attest(T.expression).snap("number")
+		})
+
+		it("union of overlapping bounds", () => {
+			attest(type("number > 0 | number < 5").json).equals(type("number").json)
+		})
+
+		it("union of bounds touching at a value", () => {
+			attest(type("number >= 0 | number < 0").json).equals(type("number").json)
+		})
+
+		it("union of overlapping length bounds", () => {
+			attest(type("string >= 3 | string < 5").json).equals(type("string").json)
+		})
+
+		it("union of adjacent length bounds", () => {
+			attest(type("string >= 3 | string <= 2").json).equals(type("string").json)
+		})
+
+		it("union of length bounds at different lengths", () => {
+			const T = type("string >= 5 | string <= 2")
+			attest(T.expression).snap("string <= 2 | string >= 5")
+		})
+
+		it("union of touching Date bounds", () => {
+			attest(type("Date >= d'2000-05-03' | Date < d'2000-05-03'").json).equals(
+				type("Date").json
+			)
+		})
+
+		it("union of overlapping constrained bounds", () => {
+			attest(type("number.integer > 0 | number.integer < 5").json).equals(
+				type("number.integer").json
+			)
+		})
+
+		it("union of overlapping bounds and a subtype", () => {
+			attest(type("number > 0 | number < 5 | number.integer").json).equals(
+				type("number").json
+			)
+		})
+
+		it("union of overlapping ranges", () => {
+			const T = type("0 < number < 10 | 5 < number < 20")
+			attest(T.expression).snap("number < 10 & > 0 | number < 20 & > 5")
 		})
 
 		it("union of length bounds at a length", () => {
@@ -457,6 +501,26 @@ contextualize(() => {
 			])
 			attest(T.branches.length).equals(2)
 			attest(T.allows(Number.NaN)).equals(false)
+		})
+
+		it("union of overlapping bounds allowing NaN", () => {
+			const nanable = { domain: "number", numberAllowsNaN: true } as const
+			const T = rootSchema([
+				{ domain: nanable, min: { rule: 0, exclusive: true } },
+				{ domain: nanable, max: { rule: 5, exclusive: true } }
+			])
+			attest(T.branches.length).equals(2)
+			attest(T.allows(Number.NaN)).equals(false)
+		})
+
+		it("union of overlapping Date bounds allowing invalid Dates", () => {
+			const proto = { proto: Date, dateAllowsInvalid: true } as const
+			const T = rootSchema([
+				{ proto, after: new Date(0) },
+				{ proto, before: new Date(5) }
+			])
+			attest(T.branches.length).equals(2)
+			attest(T.allows(new Date("!"))).equals(false)
 		})
 
 		it("intersection with an excluding bound", () => {

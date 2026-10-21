@@ -634,16 +634,17 @@ export const reduceBranches = ({
 		}
 	}
 	const uniqueBranches = branches.filter((_, i) => uniquenessByIndex[i])
-	return ordered ? uniqueBranches : mergeExcludedValues(uniqueBranches)
+	return ordered ? uniqueBranches : mergeBounds(uniqueBranches)
 }
 
-// branches meeting at a value neither includes, like < 0 and > 0, are one
-// excluding it, like != 0
-const mergeExcludedValues = (
+// branches bounded alike on opposite sides merge: half-lines covering every
+// value, like >= 0 and < 1, into neither bound, and branches meeting at a
+// value neither includes, like < 0 and > 0, into one excluding it, like != 0
+const mergeBounds = (
 	branches: readonly Union.ChildNode[]
 ): readonly Union.ChildNode[] => {
 	for (const l of branches) {
-		// bounds exclude NaN and invalid Dates, which != allows
+		// bounds exclude NaN and invalid Dates, which the basis allows
 		if (
 			!l.hasKind("intersection") ||
 			l.inner.domain?.numberAllowsNaN ||
@@ -658,9 +659,9 @@ const mergeExcludedValues = (
 		for (const r of branches) {
 			if (!r.hasKind("intersection")) continue
 			const lower = r.inner[lowerKind]
-			const excluded = lower && excludedBetween(upper, lower)
+			const gap = lower && gapBetween(upper, lower)
 			if (
-				excluded === undefined ||
+				gap === undefined ||
 				!arrayEquals(
 					childrenExcept(l, upper.kind, lowerKind, excludedKind),
 					childrenExcept(r, upper.kind, lowerKind, excludedKind),
@@ -668,22 +669,38 @@ const mergeExcludedValues = (
 				)
 			)
 				continue
-			const merged = l.$.node("intersection", {
-				...l.inner,
-				[upper.kind]: r.inner[upper.kind],
-				[excludedKind]: [
-					...(l.inner[excludedKind] ?? []),
-					...(r.inner[excludedKind] ?? []),
-					l.$.node(excludedKind, { rule: excluded })
-				]
-			}) as Union.ChildNode
-			return mergeExcludedValues(
-				branches.flatMap(branch =>
-					branch === l ? merged
+			let merged: BaseRoot
+			if (gap === true) {
+				// only half-lines without exclusions cover every value
+				if (
+					l.inner[lowerKind] ||
+					r.inner[upper.kind] ||
+					l.inner[excludedKind] ||
+					r.inner[excludedKind]
+				)
+					continue
+				merged = l.$.node("intersection", {
+					...l.inner,
+					[upper.kind]: undefined
+				})
+			} else {
+				merged = l.$.node("intersection", {
+					...l.inner,
+					[upper.kind]: r.inner[upper.kind],
+					[excludedKind]: [
+						...(l.inner[excludedKind] ?? []),
+						...(r.inner[excludedKind] ?? []),
+						l.$.node(excludedKind, { rule: gap })
+					]
+				})
+			}
+			return reduceBranches({
+				branches: branches.flatMap(branch =>
+					branch === l ? (merged as Union.ChildNode)
 					: branch === r ? []
 					: branch
 				)
-			)
+			})
 		}
 	}
 	return branches
@@ -695,19 +712,31 @@ const lowerKindsByUpper = {
 	before: "after"
 } as const
 
-// the one value between bounds that exclude it. lengths and Dates are integers
-// whose bounds are inclusive, so theirs is between limits 2 apart
-const excludedBetween = (
+// true if every value is below upper or above lower, or else the one value
+// that is neither. lengths and Dates are integers whose bounds are inclusive
+const gapBetween = (
 	upper: UpperNode,
 	lower: LowerNode
-): number | Date | undefined =>
-	upper.hasKind("max") ?
-		upper.exclusive && lower.exclusive && upper.rule === lower.rule ?
-			upper.rule
-		:	undefined
-	: lower.numericLimit - upper.numericLimit !== 2 ? undefined
-	: upper.hasKind("before") ? new Date(upper.numericLimit + 1)
-	: upper.numericLimit + 1
+): true | number | Date | undefined => {
+	const distance = lower.numericLimit - upper.numericLimit
+	if (upper.hasKind("max")) {
+		return (
+			(
+				distance < 0 ||
+					(distance === 0 && !(upper.exclusive && lower.exclusive))
+			) ?
+				true
+			: distance === 0 ? upper.rule
+			: undefined
+		)
+	}
+	return (
+		distance <= 1 ? true
+		: distance !== 2 ? undefined
+		: upper.hasKind("before") ? new Date(upper.numericLimit + 1)
+		: upper.numericLimit + 1
+	)
+}
 
 const childrenExcept = (node: Intersection.Node, ...kinds: NodeKind[]) =>
 	node.children.filter(child => !kinds.includes(child.kind))

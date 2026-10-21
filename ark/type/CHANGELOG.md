@@ -67,6 +67,10 @@ It reduces like the other comparators: `number < 0 | number > 0` is `number != 0
 
 Its errors have the codes `notEqual`, whose `rule` is a number or a `Date`, and `notEqualLength`. A lone `!` still doesn't end a name, so an alias or brand like `a!b` parses as before.
 
+### Reduce unions of bounds covering every value
+
+A union of a lower and an upper bound on one basis that together allow every value is that basis: `number > 0 | number < 5` and `number >= 0 | number < 0` are `number`, `string >= 3 | string <= 2` is `string`, and `Date >= d'2000-01-01' | Date < d'2000-01-01'` is `Date`. Bounds one value apart are `!=` that value, and wider gaps stay a union. A basis allowing `NaN` or invalid Dates, which every bound rejects, keeps the union.
+
 ### Export `Default` and `To` as types
 
 `arktype` exports the `Default` and `To` types an inferred Type holds, so a declaration can name them as `import("arktype").Default`, like `Out` and `Brand`.
