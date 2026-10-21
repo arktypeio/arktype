@@ -362,8 +362,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		const value = `data${discriminant.path.map(k => js.prop(k, true)).join("")}`
 		let condition = value
 
-		if (discriminant.kind === "domain")
-			condition = `typeof ${condition} === "object" ? ${condition} === null ? "null" : "object" : typeof ${condition} === "function" ? "object" : typeof ${condition}`
+		if (discriminant.kind === "domain") condition = compileDomainOf(condition)
 
 		const cases = discriminant.cases
 		const written: SwitchCase[] = []
@@ -495,6 +494,10 @@ export const Union = {
 }
 
 const maxInlinedBranches = 4
+
+// the name of a value's domain, a function's being "object"
+export const compileDomainOf = (value: string): string =>
+	`typeof ${value} === "object" ? ${value} === null ? "null" : "object" : typeof ${value} === "function" ? "object" : typeof ${value}`
 
 // an intersection binds more tightly than a union, so it never needs parens
 const expressBranch = (branch: Union.ChildNode): string =>
