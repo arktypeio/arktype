@@ -1179,7 +1179,7 @@ name is missing`)
 		attest(Object.isFrozen(validator["~standard"].jsonSchema)).equals(true)
 	})
 
-	it("takes only baked targets", async () => {
+	it("takes only targets it was built with", async () => {
 		const T = type({ a: "string" })
 		const { T: validator } = await load(
 			{ T },
@@ -1189,7 +1189,7 @@ name is missing`)
 			T.toJsonSchema({ target: "draft-2020-12" })
 		)
 		attest(() => validator.toJsonSchema({ target: "draft-07" })).throws(
-			bakedJsonSchemaOptionsMessage
+			'a standalone validator\'s JSON Schema takes only a target it was built with; configure({ toJsonSchema }) or build with runtime: "arktype"'
 		)
 	})
 

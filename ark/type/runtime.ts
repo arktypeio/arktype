@@ -1037,7 +1037,7 @@ export type writeIdentityMismatchMessage<
 > = `${label} is not ${expectedLabel}, which it was at build`
 
 export const bakedJsonSchemaOptionsMessage =
-	'a standalone validator\'s JSON Schema takes only a baked target; configure({ toJsonSchema }) or build with runtime: "arktype"'
+	'a standalone validator\'s JSON Schema takes only a target it was built with; configure({ toJsonSchema }) or build with runtime: "arktype"'
 
 export type bakedJsonSchemaOptionsMessage = typeof bakedJsonSchemaOptionsMessage
 
