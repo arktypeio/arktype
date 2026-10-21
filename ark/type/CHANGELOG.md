@@ -358,7 +358,7 @@ export default defineConfig({
 export const User = type({ name: "string > 0" })
 ```
 
-Scopes, Modules, Generics and cyclic Types are precompiled too. A Module becomes a plain object of its validators, and a Scope or Generic an empty object, since resolving an alias or instantiating a Generic needs arktype:
+Scopes, Modules, Generics, cyclic Types, `match`, `type.fn` and codecs are precompiled too. A Module becomes a plain object of its validators, and a Scope or Generic an empty object, since resolving an alias or instantiating a Generic needs arktype:
 
 ```ts
 const $ = scope({
@@ -380,6 +380,7 @@ A validator differs from the Type it replaces:
 - It has `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` only where the build's `members` option sets them, and reads `undefined` for one it lacks.
 - It and its members are frozen, except a Date or RegExp it holds, unless the build sets `freeze: false`.
 - The build refuses what the runtime can't reproduce, like an instance of a class other than Date or RegExp, naming it.
+- A build installs encoding itself, so `.encode` works in a precompiled program that never imports `arktype/codecs`, where arktype throws. A Type with a morph that has no inverse fails the build where its `.encode` is read.
 - It links only to the `arktype/runtime` of the arktype version it was built with, so a runtime from another version fails the build or Node's module linking.
 - Its errors' `issues` are plain objects holding `code`, `path`, `data` and `expected`, the failing node's description, with a plain message like `name must be a string` or `name is invalid` that doesn't say what the value was unless text configured for it does. Errors at one path stay apart, and a union no branch allows is one issue. A validator a morph calls with its `ctx` adds its issues to that validation. `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`.
 - When it rejects an array, it may look for errors only from the first element it rejects, so a getter or `Proxy` trap reading an element before that one runs once rather than twice, and an element that reads differently the second time is judged by its first read.
@@ -414,6 +415,7 @@ Other keys that first differ at a space, `!`, `"` or a backslash keep their orde
 
 - A scope's `references` and `referencesById` are collected when first read rather than as it exports, unless code `@ark/precompile` built with `runtime: "arktype"` is registered or it includes an alias.
 - A node's `traverseAllows`, `traverseApply` and `traverseTransform` are methods of its class, so call them on the node, as in `node.traverseAllows(data, ctx)`, rather than detached, as in `[x].every(node.traverseAllows)`, until the JIT compiles it, which replaces them with compiled functions that run detached. A jitless scope's nodes keep the methods, and `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes still create a `traverseAllows` of their own. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
+- `$.node(kind, input)` takes a node's inner, with children already nodes, rather than the schema format, so `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
 - `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, prereduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context. A node's id is registered as it's created, from its `alias` or kind unless `id` is passed, so a schema that resolves to a node the scope already holds registers none.
 - Derived and memoized keys moved from a node's own enumerable keys to `node.cache`, like the `includes*` flags, `innerEntries`, a structure's `propsByKey`, a node's `assert` and the `expression` of a union, intersection, structure, required prop or index signature; each reads as before, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
 
@@ -867,7 +869,7 @@ A `symbolKey` fallback's result for a symbol-keyed property is now used instead 
 
 JSON Schema's `pattern` has no flags, so `toJsonSchema()` wrote `/^a/i` as `"^a"`, which rejects `"A"`. A flag that changes what a pattern matches now goes to the new `patternFlags` fallback. `d` and `g` are ignored, as is `u` for draft-2020-12, whose patterns are built with it.
 
-An index signature whose key is constrained beyond one pattern, like `[string <= 3]`, was left out. It now goes to the new `indexKey` fallback, or, if undeclared keys are rejected and every declared key matches it, is written with `propertyNames`:
+An index signature whose key is constrained beyond one pattern, like `[string <= 3]`, was left out. It now goes to the new `indexKey` fallback, or, if undeclared keys are rejected or deleted and every declared key matches it, is written with `propertyNames`:
 
 ```ts
 // { type: "object", propertyNames: { type: "string", maxLength: 3 }, additionalProperties: { type: "number" } }
