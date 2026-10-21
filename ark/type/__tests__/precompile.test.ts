@@ -9,7 +9,12 @@ import {
 	writePrecompiledUnits,
 	type BaseScope
 } from "@ark/schema"
-import { flatMorph, isValidDate, liftArray } from "@ark/util"
+import {
+	flatMorph,
+	isPlainObjectOrArray,
+	isValidDate,
+	liftArray
+} from "@ark/util"
 import { keywords, scope, type } from "arktype"
 import * as keywordFunctions from "arktype/internal/keywords/functions.ts"
 import {
@@ -143,6 +148,7 @@ contextualize(() => {
 	it("exports every keyword's predicates and morphs", () => {
 		const exported = new Set<unknown>([
 			liftArray,
+			isPlainObjectOrArray,
 			...Object.values(keywordFunctions),
 			...Object.values(keywordFunctions.normalizationsByForm).flatMap(
 				normalization => [normalization.predicate, normalization.morphs]

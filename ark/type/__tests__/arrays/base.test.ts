@@ -30,7 +30,7 @@ contextualize(() => {
 		attest(T([["foo"]])).snap([["foo"]])
 		attest(T.allows(["foo"])).equals(false)
 		attest(T(["foo"]).toString()).snap(
-			"value at [0] must be an array (was string)"
+			"value at [0] must be an array (was a string)"
 		)
 		attest(T.allows([["foo", 5]])).equals(false)
 		attest(T([["foo", 5]]).toString()).snap(

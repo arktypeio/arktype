@@ -1224,7 +1224,9 @@ name is missing`)
 		const validator = create(length)
 		attest(json).snap({ in: "string", morphs: ["$ark.$hole_length"] })
 		attest(validator.json).snap({ in: "string", morphs: ["$ark.introspected"] })
-		attest(message).snap(`ToJsonSchemaError: {
+		attest(message)
+			.snap(`ToJsonSchemaError: Can't convert "morph" to JSON Schema. Configure fallback.morph to write it:
+{
     code: "morph",
     base: {
         type: "string"
@@ -1506,6 +1508,15 @@ name is missing`)
 			.snap(`Enter your email.
 password must be at least length 8`)
 		attest(validator(null).summary).snap("Enter your login.")
+	})
+
+	it("configured pipe message", async () => {
+		const T = type("string.numeric.parse")
+			.to("number < 3")
+			.configure({ message: "Enter a number below 3." })
+		const { T: validator } = await load({ T })
+		attest(validator("5").summary).equals(T("5").toString())
+		attest(validator("5").summary).snap("Enter a number below 3.")
 	})
 
 	it("configured problem", async () => {

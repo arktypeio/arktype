@@ -30,11 +30,11 @@ cases({
 		class Headers {}
 		strictEqual(
 			type("Date")(new Blob()).toString(),
-			"must be a Date (was object)"
+			"must be a Date (was an object)"
 		)
 		strictEqual(
 			type("Date")(new Headers()).toString(),
-			"must be a Date (was object)"
+			"must be a Date (was an object)"
 		)
 	},
 	rejectsKeywordsOfMissingGlobals: () => {

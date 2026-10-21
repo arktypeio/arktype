@@ -114,6 +114,7 @@ export {
 	baseNameOf,
 	functionNameOf,
 	isNumericString,
+	isPlainObjectOrArray,
 	isValidDate,
 	isWellFormedInteger,
 	jsTypeOfDescriptions,

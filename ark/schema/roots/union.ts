@@ -104,8 +104,11 @@ export type DiscriminantErrorContext = {
 interface DiscriminantErrorContextOf<kind extends DiscriminantKind>
 	extends BaseErrorContext<"discriminant"> {
 	readonly discriminantKind: kind
-	/** the domains or unit values the discriminant expected */
-	readonly cases: readonly (kind extends "domain" ? Domain : unknown)[]
+	/**
+	 * the domains or unit values the discriminant expected, with Array for
+	 * an object case only arrays reach
+	 */
+	readonly cases: readonly (kind extends "domain" ? DomainCase : unknown)[]
 	/** the discriminant is at a key, so meta describes the value around it */
 	readonly onKey: boolean
 	/** the discriminant key is not in its parent; false unless onKey */
@@ -540,15 +543,26 @@ export type DiscriminantCases = {
 	>
 }[DiscriminantKind]
 
+export type DomainCase = Domain | "Array"
+
 const casesOf = (discriminant: Discriminant): DiscriminantCases => {
 	const keys = Object.keys(discriminant.cases).filter(k => k !== "default")
 	return discriminant.kind === "domain" ?
 			{
 				discriminantKind: "domain",
-				cases: Object.freeze(keys.map(k => k.slice(1, -1) as Domain))
+				cases: Object.freeze(
+					keys.map(k =>
+						k === '"object"' && isArrayCase(discriminant.cases[k]) ?
+							"Array"
+						:	(k.slice(1, -1) as Domain)
+					)
+				)
 			}
 		:	{ discriminantKind: "unit", cases: Object.freeze(keys.map(unitOf)) }
 }
+
+const isArrayCase = (caseNode: BaseRoot | true): boolean =>
+	caseNode !== true && caseNode.rawIn.extends($ark.intrinsic.Array.internal)
 
 const metaAtDiscriminant = (
 	meta: ArkEnv.meta,

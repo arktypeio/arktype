@@ -719,7 +719,7 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => type({ foo: "string[] = {}" }))
 				.throws.snap(
-					"ParseError: Default for foo must be an array (was object)"
+					"ParseError: Default for foo must be an array (was an object)"
 				)
 				.type.errors("Default value {} must be assignable to string[]")
 		})
@@ -815,7 +815,7 @@ contextualize(() => {
 					() => type({ foo: [["number[]", "|", "string"], "=", true] })
 				)
 					.throws.snap(
-						"ParseError: Default for foo must be a string or an object (was boolean)"
+						"ParseError: Default for foo must be a string or an array (was boolean)"
 					)
 					.type.errors.snap(
 						"Type 'boolean' is not assignable to type 'defaultFor<string | number[]>'."
@@ -829,7 +829,7 @@ contextualize(() => {
 					() => type("number[]", "|", "string").default(true)
 				)
 					.throws.snap(
-						"ParseError: Default must be a string or an object (was boolean)"
+						"ParseError: Default must be a string or an array (was boolean)"
 					)
 					.type.errors.snap(
 						"Argument of type 'boolean' is not assignable to parameter of type 'defaultFor<string | number[]>'."
@@ -848,7 +848,7 @@ contextualize(() => {
 					foo: type("number[]", "|", "string").default((() => true) as never)
 				})
 				attest(T({}).toString()).snap(
-					"foo must be a string or an object (was boolean)"
+					"foo must be a string or an array (was boolean)"
 				)
 			})
 		})
@@ -1004,7 +1004,7 @@ contextualize(() => {
 
 			// @ts-expect-error
 			attest(type({ foo: ["number[]", "=", () => "bar"] })({}).toString())
-				.snap("foo must be an array (was string)")
+				.snap("foo must be an array (was a string)")
 				.type.errors.snap("Type 'string' is not assignable to type 'number[]'.")
 
 			attest(

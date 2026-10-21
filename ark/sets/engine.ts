@@ -16,7 +16,9 @@ export const setEngine: SetEngine = {
 			...ctx,
 			refs: [],
 			refNamesById: {},
-			refCountsByPrefix: {}
+			refCountsByPrefix: {},
+			path: "",
+			refPathsById: {}
 		})
 }
 

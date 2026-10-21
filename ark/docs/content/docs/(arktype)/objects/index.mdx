@@ -372,18 +372,21 @@ const Merged = type.merge({ a: "string" }, { b: "number" }, { "a?": "1" })
 
 ### escapes [#properties-escapes]
 
-Escape a key's `?`, or a key that is exactly `+` or `...`, with a backslash to use it literally:
+Escape a key's `?`, the `[` of a key in brackets, or a key that is exactly `+` or `...`, with a backslash to use it literally:
 
 ```ts
-// Type<{ "isAdmin?": boolean; "+": string }>
+// Type<{ "isAdmin?": boolean; "+": string; "[id]"?: string }>
 const Escaped = type({
 	"isAdmin\\?": "boolean",
-	"\\+": "string"
+	"\\+": "string",
+	"\\[id]?": "string"
 })
 
 // ArkErrors: value at ["isAdmin?"] must be boolean (was missing)
 Escaped({ "+": "x" })
 ```
+
+An index signature can't be optional, so a key like `"[id]?"` throws a `ParseError` unless its `[` is escaped.
 
 ### keyof [#properties-keyof]
 

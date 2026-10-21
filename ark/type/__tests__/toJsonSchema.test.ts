@@ -159,7 +159,9 @@ contextualize(() => {
 	})
 
 	it("regex flags", () => {
-		attest(() => type(/^a/i).toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+		attest(() => type(/^a/i).toJsonSchema()).throws
+			.snap(`ToJsonSchemaError: Can't convert "patternFlags" to JSON Schema. Configure fallback.patternFlags to write it:
+{
     code: "patternFlags",
     base: {
         type: "string"
@@ -171,7 +173,8 @@ contextualize(() => {
 
 	it("constrained index key", () => {
 		attest(() => type({ "[string <= 3]": "number" }).toJsonSchema()).throws
-			.snap(`ToJsonSchemaError: {
+			.snap(`ToJsonSchemaError: Can't convert "indexKey" to JSON Schema. Configure fallback.indexKey to write it:
+{
     code: "indexKey",
     base: {
         type: "object"
@@ -184,6 +187,15 @@ contextualize(() => {
         type: "number"
     }
 }`)
+	})
+
+	it("error names where its node is", () => {
+		attest(() =>
+			type({ user: { tags: ["string", "...", "Date[]"] } }).toJsonSchema()
+		).throws('Can\'t convert "date" at user.tags[number] to JSON Schema.')
+		attest(() =>
+			type({ "[string]": { "weird key": "Date" } }).toJsonSchema()
+		).throws('Can\'t convert "date" at [string]["weird key"] to JSON Schema.')
 	})
 
 	it("constrained index key with undeclared keys rejected", () => {

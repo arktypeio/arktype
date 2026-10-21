@@ -232,6 +232,95 @@ contextualize(() => {
 			})
 		})
 
+		// https://github.com/arktypeio/arktype/issues/1575
+		it("keeps defaults in the input schema", () => {
+			const T = type({
+				name: 'string = "Anon"',
+				tags: ["string[]", "=", () => ["a"]],
+				n: "string.numeric.parse = '1'"
+			})
+			attest(T["~standard"].jsonSchema.input({ target: "draft-2020-12" })).snap(
+				{
+					$schema: "https://json-schema.org/draft/2020-12/schema",
+					type: "object",
+					properties: {
+						n: {
+							type: "string",
+							pattern:
+								"^(?:(?!^-0\\.?0*(?:[Ee][+-]?\\d+)?$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?)(?:[Ee][+-]?\\d+)?)$",
+							default: "1"
+						},
+						name: { type: "string", default: "Anon" },
+						tags: { type: "array", items: { type: "string" }, default: ["a"] }
+					}
+				}
+			)
+			attest(
+				T["~standard"].jsonSchema.output({ target: "draft-2020-12" })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: {
+					n: { type: "number" },
+					name: { type: "string" },
+					tags: { type: "array", items: { type: "string" } }
+				},
+				required: ["n", "name", "tags"]
+			})
+			attest(
+				type(["number", "string = 'x'"])["~standard"].jsonSchema.input({
+					target: "draft-2020-12"
+				})
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "array",
+				minItems: 1,
+				prefixItems: [{ type: "number" }, { type: "string", default: "x" }],
+				items: false
+			})
+		})
+
+		it('allows keys "delete" removes in the input schema', () => {
+			const T = type({ name: "string" }).onUndeclaredKey("delete")
+			attest(T["~standard"].jsonSchema.input({ target: "draft-2020-12" })).snap(
+				{
+					$schema: "https://json-schema.org/draft/2020-12/schema",
+					type: "object",
+					properties: { name: { type: "string" } },
+					required: ["name"]
+				}
+			)
+			attest(
+				T["~standard"].jsonSchema.output({ target: "draft-2020-12" })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: { name: { type: "string" } },
+				required: ["name"],
+				additionalProperties: false
+			})
+		})
+
+		it("writes a morph's input without its configured fallback", () => {
+			const T = type({ n: "string.integer.parse" })
+			attest(
+				T["~standard"].jsonSchema.input({
+					target: "draft-2020-12",
+					libraryOptions: { fallback: { morph: () => ({ type: "null" }) } }
+				})
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: {
+					n: {
+						type: "string",
+						pattern: "^(?:(?!^-0$)-?(?:(?:0|[1-9]\\d*)))$"
+					}
+				},
+				required: ["n"]
+			})
+		})
+
 		it("generates different input/output schemas for morphs", () => {
 			const T = type({ foo: "string.numeric.parse" })
 			const standard: StandardJSONSchemaV1 = T
@@ -246,7 +335,7 @@ contextualize(() => {
 					foo: {
 						type: "string",
 						pattern:
-							"^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$"
+							"^(?:(?!^-0\\.?0*(?:[Ee][+-]?\\d+)?$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?)(?:[Ee][+-]?\\d+)?)$"
 					}
 				},
 				required: ["foo"]
