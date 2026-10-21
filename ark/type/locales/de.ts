@@ -450,6 +450,27 @@ export const de: Locale.Complete = {
 	},
 	before: dateWriters("spätestens"),
 	after: dateWriters("frühestens"),
+	notEqual: {
+		// "ungleich" takes a dative
+		expected: (e, locale) =>
+			`ungleich ${print(e.rule, locale).replace(/^der /, "dem ")}`,
+		actual: (data, e, locale) => print(data, locale),
+		problem: e => mustBe(e.expected, e.actual)
+	},
+	notEqualLength: {
+		expected: (e, locale) =>
+			typeof e.data === "string" ?
+				`nicht ${length(e.rule, e.data, locale)}`
+			:	`kein Array mit ${elements(e.rule, locale, true)}`,
+		actual: (data, e, locale) => length(data.length, data, locale),
+		// "muss nicht" means "need not"
+		problem: (e, locale) =>
+			`darf nicht ${
+				typeof e.data === "string" ?
+					`${length(e.rule, e.data, locale)} sein`
+				:	`${elements(e.rule, locale)} enthalten`
+			}${was(e.actual)}`
+	},
 	predicate: {
 		expected: predicateOf,
 		actual: (data, e, locale) =>

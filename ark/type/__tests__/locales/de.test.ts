@@ -84,6 +84,12 @@ contextualize(() => {
 			"number % 5 ← 6.5": "muss ein Vielfaches von 5 sein, ist aber 6,5",
 			"number >= 1.5 ← 1.25": "muss mindestens 1,5 sein, ist aber 1,25",
 			"number < -1.5 ← -1.5": "muss kleiner als -1,5 sein, ist aber -1,5",
+			"number != 0 ← 0": "muss ungleich 0 sein, ist aber 0",
+			"number != 1.5 ← 1.5": "muss ungleich 1,5 sein, ist aber 1,5",
+			'string != 2 ← "xx"':
+				"darf nicht 2 Zeichen lang sein, ist aber 2 Zeichen lang",
+			"unknown[] != 2 ← [0,1]":
+				"darf nicht 2 Elemente enthalten, ist aber ein Array mit 2 Elementen",
 			"unknown[] == 1 ← []": "muss genau 1 Element enthalten, ist aber leer",
 			"unknown[] >= 2 ← []": "muss mindestens 2 Elemente enthalten",
 			"Date < 2000 ← 2001-01-01T00:00:00.000Z":
@@ -96,6 +102,8 @@ contextualize(() => {
 				"muss frühestens der 3. Mai 2000, 12:30:00,001 UTC sein, ist aber 1999",
 			"Date <= May 3, 12:30:05.123 ← 2000-12-31T09:05:00.000Z":
 				"muss spätestens der 3. Mai 2000, 12:30:05,123 UTC sein, ist aber der 31. Dezember 2000, 09:05 UTC",
+			"Date != May 3 ← 2000-05-03T00:00:00.000Z":
+				"muss ungleich dem 3. Mai 2000 sein, ist aber der 3. Mai 2000",
 			"enumerated Dates ← 2000-05-05T00:00:00.000Z":
 				"muss der 3. Mai 2000 oder der 4. Mai 2000 sein, ist aber ein Objekt",
 			"narrowed Date ← 2000-05-03T00:00:00.000Z":

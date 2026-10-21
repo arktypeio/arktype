@@ -18,6 +18,8 @@ import type { Max } from "./refinements/max.ts"
 import type { MaxLength } from "./refinements/maxLength.ts"
 import type { Min } from "./refinements/min.ts"
 import type { MinLength } from "./refinements/minLength.ts"
+import type { NotEqual } from "./refinements/notEqual.ts"
+import type { NotEqualLength } from "./refinements/notEqualLength.ts"
 import type { Pattern } from "./refinements/pattern.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { BaseRoot } from "./roots/root.ts"
@@ -60,6 +62,8 @@ export declare namespace Constraint {
 		minLength: MinLength.Schema
 		before: Before.Schema
 		after: After.Schema
+		notEqual: NotEqual.Schema
+		notEqualLength: NotEqualLength.Schema
 		structure: NodeInput<"structure">
 		predicate: Predicate.Schema
 	}
@@ -144,6 +148,8 @@ export const constraintInputOf = <kind extends Constraint.PrimitiveKind>(
 		if (exclusive) limit.setTime(limit.valueOf() + (kind === "after" ? 1 : -1))
 		return { ...input, rule: limit } as never
 	}
+	if (kind === "notEqual" && typeof input.rule === "string")
+		return { ...input, rule: tryParseDate(input.rule, true) } as never
 	if (kind === "pattern" && !input.flags) delete input.flags
 	if (!exclusive) return input as never
 	return (

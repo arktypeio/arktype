@@ -18,10 +18,14 @@ import {
 	type DiscriminatedCases,
 	type Domain,
 	type FlatRef,
+	type Intersection,
 	type IntersectionContext,
+	type LowerNode,
 	type Morph,
+	type NodeKind,
 	type Union,
-	type Unit
+	type Unit,
+	type UpperNode
 } from "@ark/schema"
 import {
 	appendUnique,
@@ -629,8 +633,84 @@ export const reduceBranches = ({
 				uniquenessByIndex[j] = false
 		}
 	}
-	return branches.filter((_, i) => uniquenessByIndex[i])
+	const uniqueBranches = branches.filter((_, i) => uniquenessByIndex[i])
+	return ordered ? uniqueBranches : mergeExcludedValues(uniqueBranches)
 }
+
+// branches meeting at a value neither includes, like < 0 and > 0, are one
+// excluding it, like != 0
+const mergeExcludedValues = (
+	branches: readonly Union.ChildNode[]
+): readonly Union.ChildNode[] => {
+	for (const l of branches) {
+		// bounds exclude NaN and invalid Dates, which != allows
+		if (
+			!l.hasKind("intersection") ||
+			l.inner.domain?.numberAllowsNaN ||
+			l.inner.proto?.dateAllowsInvalid
+		)
+			continue
+		const upper = l.inner.max ?? l.inner.maxLength ?? l.inner.before
+		if (!upper) continue
+		const lowerKind = lowerKindsByUpper[upper.kind]
+		const excludedKind =
+			upper.kind === "maxLength" ? "notEqualLength" : "notEqual"
+		for (const r of branches) {
+			if (!r.hasKind("intersection")) continue
+			const lower = r.inner[lowerKind]
+			const excluded = lower && excludedBetween(upper, lower)
+			if (
+				excluded === undefined ||
+				!arrayEquals(
+					childrenExcept(l, upper.kind, lowerKind, excludedKind),
+					childrenExcept(r, upper.kind, lowerKind, excludedKind),
+					{ isEqual: (l, r) => l.equals(r) }
+				)
+			)
+				continue
+			const merged = l.$.node("intersection", {
+				...l.inner,
+				[upper.kind]: r.inner[upper.kind],
+				[excludedKind]: [
+					...(l.inner[excludedKind] ?? []),
+					...(r.inner[excludedKind] ?? []),
+					l.$.node(excludedKind, { rule: excluded })
+				]
+			}) as Union.ChildNode
+			return mergeExcludedValues(
+				branches.flatMap(branch =>
+					branch === l ? merged
+					: branch === r ? []
+					: branch
+				)
+			)
+		}
+	}
+	return branches
+}
+
+const lowerKindsByUpper = {
+	max: "min",
+	maxLength: "minLength",
+	before: "after"
+} as const
+
+// the one value between bounds that exclude it. lengths and Dates are integers
+// whose bounds are inclusive, so theirs is between limits 2 apart
+const excludedBetween = (
+	upper: UpperNode,
+	lower: LowerNode
+): number | Date | undefined =>
+	upper.hasKind("max") ?
+		upper.exclusive && lower.exclusive && upper.rule === lower.rule ?
+			upper.rule
+		:	undefined
+	: lower.numericLimit - upper.numericLimit !== 2 ? undefined
+	: upper.hasKind("before") ? new Date(upper.numericLimit + 1)
+	: upper.numericLimit + 1
+
+const childrenExcept = (node: Intersection.Node, ...kinds: NodeKind[]) =>
+	node.children.filter(child => !kinds.includes(child.kind))
 
 const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 	if (l.includesAlias || r.includesAlias) {

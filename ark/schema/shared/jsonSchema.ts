@@ -119,6 +119,7 @@ export declare namespace JsonSchema {
 		maxLength?: number
 		pattern?: string
 		format?: string
+		not?: JsonSchema
 	}
 
 	// NB: Technically 'exclusiveMaximum' and 'exclusiveMinimum' are mutually exclusive with 'maximum' and 'minimum', respectively,
@@ -131,6 +132,7 @@ export declare namespace JsonSchema {
 		exclusiveMinimum?: number
 		maximum?: number
 		exclusiveMaximum?: number
+		not?: Const | Enum
 	}
 
 	// NB: Technically 'properties' is required when 'required' is present,
@@ -155,6 +157,7 @@ export declare namespace JsonSchema {
 		maxItems?: number
 		items?: JsonSchemaOrBoolean
 		prefixItems?: readonly Branch[]
+		not?: JsonSchema
 	}
 
 	export type LengthBoundable = String | Array

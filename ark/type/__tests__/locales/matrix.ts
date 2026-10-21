@@ -67,6 +67,10 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 	add("number % 5", $.type("number % 5"), 6.5)
 	add("number >= 1.5", $.type("number >= 1.5"), 1.25)
 	add("number < -1.5", $.type("number < -1.5"), -1.5)
+	add("number != 0", $.type("number != 0"), 0)
+	add("number != 1.5", $.type("number != 1.5"), 1.5)
+	add("string != 2", $.type("string != 2"), x(2))
+	add("unknown[] != 2", $.type("unknown[] != 2"), items(2))
 	add("unknown[] == 1", $.type("unknown[] == 1"), [])
 	add("unknown[] >= 2", $.type("unknown[] >= 2"), [])
 
@@ -87,6 +91,7 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		$.type("Date <= d'2000-05-03T12:30:05.123Z'"),
 		new Date("2000-12-31T09:05:00Z")
 	)
+	add("Date != May 3", $.type("Date != d'2000-05-03'"), new Date("2000-05-03"))
 	add(
 		"enumerated Dates",
 		$.type.enumerated(new Date("2000-05-03"), new Date("2000-05-04")),

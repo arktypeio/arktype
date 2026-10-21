@@ -20,7 +20,7 @@ import type { type } from "./keywords/keywords.ts"
 import type { Type } from "./type.ts"
 export type { arkPrototypes as object } from "./keywords/constructors.ts"
 
-export type Comparator = "<" | "<=" | ">" | ">=" | "=="
+export type Comparator = "<" | "<=" | ">" | ">=" | "==" | "!="
 
 export type RegexLiteral<source extends string = string> = `/${source}/`
 

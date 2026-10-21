@@ -483,6 +483,8 @@ type JsonSchemaOperandByKind = {
 	exactLength: JsonSchema.LengthBoundable
 	max: JsonSchema.Numeric
 	min: JsonSchema.Numeric
+	notEqual: JsonSchema.Numeric
+	notEqualLength: JsonSchema.LengthBoundable
 	maxLength: JsonSchema.LengthBoundable
 	minLength: JsonSchema.LengthBoundable
 	before: JsonSchema
@@ -548,6 +550,41 @@ const reduceJsonSchemaByKind: {
 	min: (node, schema) => {
 		if (node.exclusive) schema.exclusiveMinimum = node.rule
 		else schema.minimum = node.rule
+		return schema
+	},
+	notEqual: (node, schema, ctx) => {
+		if (node.rule instanceof Date) {
+			return ctx.fallback.date({
+				code: "date",
+				base: schema,
+				notEqual: node.rule
+			})
+		}
+		schema.not =
+			schema.not ?
+				{
+					enum: [
+						...("enum" in schema.not ? schema.not.enum : [schema.not.const]),
+						node.rule
+					]
+				}
+			:	{ const: node.rule }
+		return schema
+	},
+	notEqualLength: (node, schema) => {
+		const excluded: JsonSchema =
+			schema.type === "string" ?
+				{ type: "string", minLength: node.rule, maxLength: node.rule }
+			:	{ type: "array", minItems: node.rule, maxItems: node.rule }
+		schema.not =
+			schema.not ?
+				{
+					anyOf: [
+						...("anyOf" in schema.not ? schema.not.anyOf : [schema.not]),
+						excluded
+					]
+				}
+			:	excluded
 		return schema
 	},
 	maxLength: (node, schema) => {

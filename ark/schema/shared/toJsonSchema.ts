@@ -121,12 +121,17 @@ export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 				registeredReference(ctx.unit)
 			:	defaultValueSerializer(ctx.unit)
 		),
-	date: ctx => ({
-		...ctx.base,
-		"x-arktype-proto": "Date",
-		...(ctx.before && { "x-arktype-before": ctx.before.toISOString() }),
-		...(ctx.after && { "x-arktype-after": ctx.after.toISOString() })
-	})
+	date: ctx => {
+		const base = {
+			...ctx.base,
+			"x-arktype-proto": "Date",
+			...(ctx.before && { "x-arktype-before": ctx.before.toISOString() }),
+			...(ctx.after && { "x-arktype-after": ctx.after.toISOString() })
+		}
+		return ctx.notEqual ?
+				appendAnnotation(base, "notEqual", ctx.notEqual.toISOString())
+			:	base
+	}
 }
 
 const keepBase = (ctx: { base: JsonSchema }): never => ctx.base as never
@@ -267,6 +272,7 @@ export declare namespace ToJsonSchema {
 	export interface DateContext extends BaseContext<"date", JsonSchema> {
 		before?: Date
 		after?: Date
+		notEqual?: Date
 	}
 
 	export interface ContextByCode {
