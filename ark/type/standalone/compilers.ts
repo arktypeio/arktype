@@ -23,6 +23,7 @@ import {
 	issueSite,
 	issueSiteOf,
 	undeclaredSite,
+	withoutStrings,
 	writeSiteOf
 } from "./sites.ts"
 
@@ -155,13 +156,13 @@ class StandaloneCompiler extends TraversalCompiler {
 			meta: node.discriminantMeta
 		})
 		const site = issueSite(path.length ? { value: context, path } : context)
-		return `!ctx.failsAt(${this.siteRef(site)}, ${value})`
+		return `!${this.fails("failsAt", `${this.siteRef(site)}, ${value}`)}`
 	}
 
 	override undeclaredFails(node: StructureNode): string {
 		const context = issueContextOf({ code: "undeclared", meta: node.meta })
 		const site = isDescribed(context) ? undeclaredSite : issueSite(context)
-		return `ctx.failsAt(${this.siteRef(site)}, data, k)`
+		return this.fails("failsAt", `${this.siteRef(site)}, data, k`)
 	}
 
 	// a rejected union value reports the union's issue, not its Apply
@@ -288,8 +289,8 @@ class UnifiedCompiler extends StandaloneCompiler {
 	}
 
 	// read where it fails, as a site is, so a unit needn't receive it
-	override get body(): string {
-		return super.body.replace(/\bctx\.(failsAt|failsIn)\(/g, "runtime.$1(ctx, ")
+	override fails(method: "failsAt" | "failsIn", args: string): string {
+		return `runtime.${method}(ctx, ${args})`
 	}
 }
 
@@ -299,7 +300,7 @@ const unifyMembers = (unit: RootUnit): void => {
 	unit.members = [...sourcesByName]
 	for (const [i, node] of unit.declared.entries()) {
 		const source = sourcesByName.get(unit.declaredTraversals[i][0])!
-		if (unifies(node) && /\bctx\./.test(source))
+		if (unifies(node) && /(?<![\w$.])ctx\./.test(withoutStrings(source)))
 			throwInternalError(`Unified traversal reads ctx: ${source}`)
 	}
 }

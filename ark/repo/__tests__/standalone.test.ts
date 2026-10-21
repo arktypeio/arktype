@@ -346,6 +346,69 @@ contextualize(() => {
 		attest(T.allows({ [key]: "x", c: 1 })).equals(true)
 	})
 
+	describe("literals reading as the code around them", () => {
+		const builds: StandaloneOptions[] = [
+			{},
+			{ optimize: "size" },
+			{ errors: "first" },
+			{ errors: "none" },
+			{ mutatesInput: true }
+		]
+
+		// each input fails with at most one issue, so a first-issue build keeps
+		// arktype's, and an errors "none" build only fails where it does
+		const agreesInEachBuild = async (
+			types: Record<string, type.Any>,
+			inputs: unknown[]
+		) => {
+			for (const opts of builds) {
+				const validators = await load(types, opts)
+				for (const [name, t] of Object.entries(types)) {
+					for (const input of inputs) {
+						const outcomeOf = (validator: (data: unknown) => unknown) => {
+							const observed = observe(validator(input), input)
+							return opts.errors === "none" ? "issues" in observed : observed
+						}
+						attest([
+							opts,
+							name,
+							input,
+							validators[name].allows(input),
+							outcomeOf(validators[name])
+						]).equals([opts, name, input, t.allows(input), outcomeOf(t)])
+					}
+				}
+			}
+		}
+
+		it("reports into ctx however a key or unit reads", async () => {
+			await agreesInEachBuild(
+				{
+					Keyed: type({
+						"ctx.failsAt(": "string",
+						"ctx.failsIn(": "string > 1"
+					}),
+					Units: type("'ctx.failsIn(' | 'ctx.failsAt(' | number")
+				},
+				[
+					{ "ctx.failsAt(": "a", "ctx.failsIn(": "ab" },
+					{ "runtime.failsAt(ctx, ": "a", "ctx.failsIn(": "ab" },
+					{ "ctx.failsAt(": "a", "runtime.failsIn(ctx, ": "ab" },
+					"ctx.failsIn(",
+					"runtime.failsIn(ctx, ",
+					0
+				]
+			)
+		})
+
+		it("unifies a Type whose literals read ctx", async () => {
+			await agreesInEachBuild(
+				{ Unit: type("'ctx.x'"), Keyed: type({ "ctx.": "'ctx.'" }) },
+				["ctx.x", "ctx.y", { "ctx.": "ctx." }, { "ctx.": "ctx" }]
+			)
+		})
+	})
+
 	it("size allows as a filter callback", async () => {
 		const { T } = await load(
 			{ T: type({ id: "number", tags: "string[]", "note?": "'a' | 'b'" }) },

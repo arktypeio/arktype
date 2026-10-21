@@ -348,7 +348,15 @@ export abstract class NodeCompiler extends CompiledFunction<
 	}
 
 	error(node: BaseNode, key?: string, data = "data"): string {
-		return `ctx.failsAt(${this.site(node)}, ${data}${key === undefined ? "" : `, ${key}`})`
+		return this.fails(
+			"failsAt",
+			`${this.site(node)}, ${data}${key === undefined ? "" : `, ${key}`}`
+		)
+	}
+
+	// a call reporting a failure into ctx
+	fails(method: "failsAt" | "failsIn", args: string): string {
+		return `ctx.${method}(${args})`
 	}
 
 	requiresContextFor(node: BaseNode, kind = this.traversalKind): boolean {
@@ -426,8 +434,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 			: `!(${condition}) && `
 		// a refined basis Allows rejected failed its basis or its refinement
 		if (checksAllowsFirst && isRefinedBasis(node))
-			return `${allows}ctx.failsAt(${node.basis!.compileCondition(this, value)} ? ${this.site(node.prestructurals[0])} : ${this.site(node.basis!)}, data, ${key})`
-		return `${allows}ctx.failsIn(${this.traversal(node, "Apply")}, ${value}, ${key})`
+			return `${allows}${this.fails("failsAt", `${node.basis!.compileCondition(this, value)} ? ${this.site(node.prestructurals[0])} : ${this.site(node.basis!)}, data, ${key}`)}`
+		return `${allows}${this.fails("failsIn", `${this.traversal(node, "Apply")}, ${value}, ${key}`)}`
 	}
 
 	// a cyclic value is applied inline
