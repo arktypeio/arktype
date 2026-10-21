@@ -31,6 +31,7 @@ import {
 	writeFileSync
 } from "node:fs"
 import { join, relative } from "node:path"
+import { stripVTControlCharacters } from "node:util"
 import { Worker } from "node:worker_threads"
 import {
 	createBuilder,
@@ -955,8 +956,9 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 			() => "",
 			(e: Error) => e.message
 		)
-		// what the plugin threw, after Vite's header naming the module
-		attest(message.split("\nError: ")[1])
+		// what the plugin threw, after Vite's header naming the module, which
+		// Vite colors where it detects a CI
+		attest(stripVTControlCharacters(message).split("\nError: ")[1])
 			.snap(`main.ts:9:21  type({ name: \`string <= \${settings.limit}\` }) cannot be precompiled
   \`settings\` is \`{ limit: Math.random() }\` (main.ts:7:7)
   \`Math.random\` is not one of the build's pure built-ins
