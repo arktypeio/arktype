@@ -2,7 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { jsonSchema } from "@ark/json-schema"
 import type { JsonSchema } from "arktype"
 
-// the runtime parser doesn't support $ref, so inference is checked without it
+// checks inference without reading the schema at runtime
 // like jsonSchemaToType, the result is read back with `infer` so attest's
 // contextual type isn't inferred into jsonSchema.infer
 const inferred = <const schema, r = jsonSchema.infer<schema>>(

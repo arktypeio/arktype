@@ -182,4 +182,26 @@ contextualize(() => {
 		})
 		attest(tUnsatisfiable.allows({ a: true })).equals(false)
 	})
+
+	it("required key declared by another branch", () => {
+		const T = jsonSchemaToType({
+			type: "object",
+			allOf: [
+				{ properties: { foo: { type: "string" } } },
+				{ required: ["foo"] }
+			]
+		})
+		attest(T.infer).type.toString.snap("{ foo: string }")
+		attest(T.expression).snap("{ foo: string }")
+	})
+
+	it("required keys of untyped branches", () => {
+		const T = jsonSchemaToType({
+			type: "object",
+			anyOf: [{ required: ["foo"] }, { required: ["bar"] }]
+		})
+		attest(T.infer).type.toString.snap("{ bar: unknown } | { foo: unknown }")
+		attest(T.expression).snap("{ bar: unknown } | { foo: unknown }")
+		attest(T.allows([])).equals(false)
+	})
 })

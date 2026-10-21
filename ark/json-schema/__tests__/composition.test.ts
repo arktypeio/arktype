@@ -43,4 +43,38 @@ contextualize(() => {
 			'TraversalError: must be at least length 10 or "foo" (was "bar")'
 		)
 	})
+
+	it("every composition keyword applies", () => {
+		const T = jsonSchemaToType({
+			allOf: [{ type: "string" }],
+			anyOf: [{ minLength: 2 }, { const: "a" }],
+			oneOf: [{ maxLength: 3 }, { minLength: 5 }],
+			not: { const: "ab" }
+		})
+		attest(T.allows("a")).equals(true)
+		attest(T.allows("ab")).equals(false)
+		attest(T.allows("abc")).equals(true)
+		attest(T.allows("abcd")).equals(false)
+		attest(T.allows("abcde")).equals(true)
+		attest(T.allows(1)).equals(false)
+	})
+
+	it("if/then/else", () => {
+		const T = jsonSchemaToType({
+			if: { type: "string" },
+			then: { minLength: 2 },
+			else: { type: "number" }
+		})
+		attest<unknown>(T.infer)
+		attest(T.allows("ab")).equals(true)
+		attest(T.allows(1)).equals(true)
+		attest(T.allows("a")).equals(false)
+		attest(T.allows(true)).equals(false)
+	})
+
+	it("then and else without if", () => {
+		const T = jsonSchemaToType({ type: "string", then: false, else: false })
+		attest<string>(T.infer)
+		attest(T.expression).snap("string")
+	})
 })

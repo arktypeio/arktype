@@ -4,7 +4,7 @@ import type { array } from "@ark/util"
 import type { JsonSchema } from "arktype"
 import { prefixItems100 } from "./generated/schemas.ts"
 
-// checks inference for schemas the runtime parser doesn't support yet ($ref, {}, type-less)
+// checks inference without reading the schema at runtime
 // like jsonSchemaToType, the result is read back with `infer` so attest's
 // contextual type isn't inferred into jsonSchema.infer
 const inferred = <const schema, r = jsonSchema.infer<schema>>(

@@ -2,7 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
 import { scope, type, type JsonSchema, type Type } from "arktype"
 
-// checks inference for schemas the runtime parser doesn't support yet ($ref, {}, type-less)
 // like jsonSchemaToType, the result is read back with `infer` so attest's
 // contextual type isn't inferred into jsonSchema.infer
 const inferred = <const schema, r = jsonSchema.infer<schema>>(
@@ -24,14 +23,28 @@ const normalizeIds = (schema: unknown): unknown => {
 	)
 }
 
-/** asserts at runtime that the pasted schema literal is still what arktype emits */
+/** asserts at runtime that the pasted schema literal is still what arktype
+ * emits, and that jsonSchemaToType reads it back as the same expression */
 const assertEmits = (
 	t: type.Any,
 	schema: unknown,
-	opts?: Parameters<type.Any["toJsonSchema"]>[0]
+	opts?: Parameters<type.Any["toJsonSchema"]>[0],
+	readExpression = t.expression
 ) => {
 	const { $schema: _, ...emitted } = t.toJsonSchema(opts) as JsonSchema.Object
 	attest(normalizeIds(emitted)).equals(normalizeIds(schema))
+	attest(
+		normalizeSynthetics(jsonSchemaToType(schema as never).expression)
+	).equals(readExpression)
+}
+
+/** numbers the aliases of cyclic refs, whose names hash their target */
+const normalizeSynthetics = (expression: string): string => {
+	const names: string[] = []
+	return expression.replace(/\bsynthetic[\da-z]+\b/g, name => {
+		if (!names.includes(name)) names.push(name)
+		return `synthetic${names.indexOf(name)}`
+	})
 }
 
 const draft07 = { target: "draft-07" } as const
@@ -338,7 +351,7 @@ contextualize(() => {
 				prefixItems: [{ type: "string" }, { type: "number" }],
 				items: false
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "[string?, number?] == 2")
 			attest<typeof T.infer>(S).type.toString.snap("[string, number]")
 		})
 
@@ -350,7 +363,7 @@ contextualize(() => {
 				items: [{ type: "string" }, { type: "number" }],
 				additionalItems: false
 			})
-			assertEmits(T, S, draft07)
+			assertEmits(T, S, draft07, "[string?, number?] == 2")
 			attest<typeof T.infer>(S).type.toString.snap("[string, number]")
 		})
 
@@ -370,7 +383,7 @@ contextualize(() => {
 				prefixItems: [{ type: "string" }, { type: "number" }],
 				items: false
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "[string?, number?] >= 1")
 			attest<typeof T.infer>(S).type.toString.snap("[string, number?]")
 		})
 
@@ -382,7 +395,7 @@ contextualize(() => {
 				items: [{ type: "string" }, { type: "number" }],
 				additionalItems: false
 			})
-			assertEmits(T, S, draft07)
+			assertEmits(T, S, draft07, "[string?, number?] >= 1")
 			attest<typeof T.infer>(S).type.toString.snap("[string, number?]")
 		})
 
@@ -405,7 +418,7 @@ contextualize(() => {
 				prefixItems: [{ type: "string" }],
 				items: { type: "number" }
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "[string?, ...number[]] >= 1")
 			attest<typeof T.infer>(S).type.toString.snap("[string, ...number[]]")
 		})
 
@@ -417,7 +430,7 @@ contextualize(() => {
 				items: [{ type: "string" }],
 				additionalItems: { type: "number" }
 			})
-			assertEmits(T, S, draft07)
+			assertEmits(T, S, draft07, "[string?, ...number[]] >= 1")
 			attest<typeof T.infer>(S).type.toString.snap("[string, ...number[]]")
 		})
 
@@ -429,7 +442,7 @@ contextualize(() => {
 				prefixItems: [{ type: "string" }, { type: "boolean" }],
 				items: { type: "number" }
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "[string?, boolean?, ...number[]] >= 1")
 			attest<typeof T.infer>(S).type.toString.snap(
 				"[string, boolean?, ...number[]]"
 			)
@@ -443,7 +456,7 @@ contextualize(() => {
 				prefixItems: [{}, { type: "array" }],
 				items: false
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "[unknown?, Array?] == 2")
 			attest<typeof T.infer>(S).type.toString.snap("[unknown, unknown[]]")
 		})
 
@@ -469,7 +482,12 @@ contextualize(() => {
 				],
 				items: false
 			})
-			assertEmits(T, S)
+			assertEmits(
+				T,
+				S,
+				{},
+				"[string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, number?, number?] >= 11"
+			)
 			attest<
 				[
 					string,
@@ -520,7 +538,12 @@ contextualize(() => {
 				],
 				items: false
 			})
-			assertEmits(T, S)
+			assertEmits(
+				T,
+				S,
+				{},
+				"[string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, number?] >= 20"
+			)
 			attest<20 | 21>(S.length)
 			attest<number | undefined, (typeof S)[20]>()
 			attest<string, (typeof S)[19]>()
@@ -707,7 +730,7 @@ contextualize(() => {
 				},
 				required: ["b"]
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "{ b: number, a?: string }")
 			attest<typeof T.inferIn>(S).type.toString.snap(
 				"{ b: number; a?: string }"
 			)
@@ -721,7 +744,7 @@ contextualize(() => {
 					a: { anyOf: [{ type: "string" }, { type: "null" }], default: null }
 				}
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "{ a?: string | null }")
 			attest<typeof T.inferIn>(S)
 		})
 	})
@@ -745,7 +768,7 @@ contextualize(() => {
 				required: ["a"],
 				patternProperties: { "": { type: "number" } }
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "{ [/(?:)/]: number, a: number }")
 			attest<typeof T.infer>(S).type.toString.snap(
 				"{ [x: string]: number; a: number }"
 			)
@@ -770,7 +793,7 @@ contextualize(() => {
 				type: "object",
 				patternProperties: { "": { type: "number" }, "^x-": { type: "string" } }
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "{ [/(?:)/]: number, [/^x-/]: string }")
 			attest<{ [k: string]: string | number }>(S).type.toString.snap(
 				"{ [x: string]: string | number }"
 			)
@@ -870,7 +893,7 @@ contextualize(() => {
 					}
 				}
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "{ value: number, children?: synthetic0[] }")
 			attest<typeof T.infer>(S).type.toString.snap(
 				"{ value: number; children?: cyclic[] }"
 			)
@@ -896,7 +919,7 @@ contextualize(() => {
 					}
 				}
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "{ b?: { a?: synthetic0[] } }")
 			attest<typeof T.infer>(S).type.toString.snap("{ b?: { a?: cyclic[] } }")
 			attest<typeof T.infer | undefined>(S.b?.a?.[0])
 		})
@@ -919,7 +942,7 @@ contextualize(() => {
 					}
 				}
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "{ next: synthetic0 | null, value: string }")
 			attest<typeof T.infer>(S).type.toString.snap(
 				"{ next: cyclic | null; value: string }"
 			)
@@ -940,7 +963,7 @@ contextualize(() => {
 					}
 				}
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "{ [string]: synthetic0 | string }")
 			attest<typeof T.infer>(S).type.toString.snap(
 				"{ [x: string]: string | cyclic }"
 			)
@@ -961,7 +984,7 @@ contextualize(() => {
 					}
 				}
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "(synthetic0 | number)[]")
 			attest<typeof T.infer>(S).type.toString.snap("(number | cyclic)[]")
 			attest<typeof T.infer | number>(S[0])
 			// arktype's own display of the same type, for comparison
@@ -988,7 +1011,12 @@ contextualize(() => {
 					}
 				}
 			})
-			assertEmits(T, S)
+			assertEmits(
+				T,
+				S,
+				{},
+				"{ name: string, best?: synthetic0, friends?: synthetic0[] }"
+			)
 			attest<typeof T.infer>(S).type.toString.snap(
 				"{ name: string; best?: cyclic; friends?: cyclic[] }"
 			)
@@ -1023,7 +1051,12 @@ contextualize(() => {
 					union11: { enum: ["+", "-"] }
 				}
 			})
-			assertEmits(T, S)
+			assertEmits(
+				T,
+				S,
+				{},
+				`{ args: [(synthetic0 | number)?, (synthetic0 | number)?] == 2, op: "+" | "-" }`
+			)
 			attest<typeof T.infer>(S).type.toString.snap(`{
 	args: [number | cyclic, number | cyclic]
 	op: "+" | "-"
@@ -1046,7 +1079,7 @@ contextualize(() => {
 					}
 				}
 			})
-			assertEmits(T, S)
+			assertEmits(T, S, {}, "[string?, synthetic0?] >= 1")
 			attest<[string, unknown?]>(S).type.toString.snap("[string, unknown?]")
 		})
 	})
@@ -1062,13 +1095,18 @@ contextualize(() => {
 				},
 				required: ["at"]
 			})
-			assertEmits(T, S, {
-				fallback: {
-					date: ctx => ({ ...ctx.base, type: "string", format: "date-time" }),
-					domain: ctx =>
-						ctx.domain === "bigint" ? { type: "integer" } : ctx.base
-				}
-			})
+			assertEmits(
+				T,
+				S,
+				{
+					fallback: {
+						date: ctx => ({ ...ctx.base, type: "string", format: "date-time" }),
+						domain: ctx =>
+							ctx.domain === "bigint" ? { type: "integer" } : ctx.base
+					}
+				},
+				"{ at: string, n?: number % 1 }"
+			)
 			attest<{ at: string; n?: number }>(S).type.toString.snap(
 				"{ at: string; n?: number }"
 			)
@@ -1087,7 +1125,12 @@ contextualize(() => {
 				},
 				required: ["n"]
 			})
-			assertEmits(T, S, { fallback: { morph: ctx => ctx.base } })
+			assertEmits(
+				T,
+				S,
+				{ fallback: { morph: ctx => ctx.base } },
+				`{ n: /^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$/ }`
+			)
 			attest<typeof T.inferIn>(S).type.toString.snap("{ n: string }")
 		})
 	})
@@ -1123,9 +1166,8 @@ contextualize(() => {
 				items: false
 			})
 			attest<typeof A.infer>(T.infer).type.toString.snap("[string, number?]")
-			// the runtime parser still treats every prefix element as required
-			attest(T.expression).snap("[string, number]")
-			attest(T.allows(["a"])).equals(false)
+			attest(T.expression).snap("[string?, number?] >= 1")
+			attest(T.allows(["a"])).equals(true)
 		})
 	})
 

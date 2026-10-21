@@ -3,7 +3,7 @@ import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
 import type { JsonSchemaOrBoolean } from "@ark/schema"
 import type { JsonSchema } from "arktype"
 
-// checks schemas the runtime parser doesn't support yet ($ref, {}, type-less)
+// checks inference without reading the schema at runtime
 const inferred = <const schema>(
 	schema: jsonSchema.validate<schema>
 ): jsonSchema.infer<schema> => schema as never
