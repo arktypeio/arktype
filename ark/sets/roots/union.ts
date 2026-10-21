@@ -911,8 +911,7 @@ const mergePropBranches = (
 		l.structure.props.length !== r.structure.props.length ||
 		l.structure.undeclared !== r.structure.undeclared ||
 		!nodesEqual(l.structure.index ?? [], r.structure.index ?? []) ||
-		(l.structure.sequence !== r.structure.sequence &&
-			!l.structure.sequence?.equals(r.structure.sequence)) ||
+		l.structure.sequence?.innerHash !== r.structure.sequence?.innerHash ||
 		!nodesEqual(
 			childrenExcept(l, ["structure"]),
 			childrenExcept(r, ["structure"])

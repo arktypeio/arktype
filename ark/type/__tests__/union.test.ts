@@ -403,6 +403,11 @@ x must be a string (was a number)`)
 			)
 		})
 
+		it("keep an array and an object", () => {
+			const T = type({ a: "string" }).or(type({ a: "number" }).and("string[]"))
+			attest(T.expression).snap("{ a: number } & string[] | { a: string }")
+		})
+
 		it("keep ordered unions", () => {
 			const T = rootSchema({
 				branches: [

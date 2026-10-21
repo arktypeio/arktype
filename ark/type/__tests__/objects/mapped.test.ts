@@ -418,7 +418,7 @@ contextualize(() => {
 			.or({ a: "number" })
 			.map(prop => ({ key: "b" as const, value: prop.value }))
 		attest<{ b: string | number }>(T.t)
-		attest(T.expression).snap("{ b: number } | { b: string }")
+		attest(T.expression).snap("{ b: number | string }")
 	})
 
 	it("union with a branch its other branch narrows", () => {
