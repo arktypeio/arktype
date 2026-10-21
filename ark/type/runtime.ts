@@ -647,6 +647,8 @@ const unreadOf = (Ctx: new () => ArkErrors): UnreadErrors => {
 	}
 	// a Ctx, built without the fields its constructor sets
 	setPrototypeOf(Unread.prototype, Ctx.prototype)
+	// keeps the prototype's own constructor, still not enumerable
+	Unread.prototype.constructor = Ctx
 	return Unread as never
 }
 

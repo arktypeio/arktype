@@ -545,6 +545,20 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 		])
 	})
 
+	it("esbuild errors found once read", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const out = type({ name: "string" })({})
+console.log(out.constructor === type.errors)
+`
+			},
+			fromHere("temp", "unreadErrors")
+		)
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).snap("true\n")
+	})
+
 	it("esbuild an undetailed failure, read later", async () => {
 		const root = writeFixture(
 			{
