@@ -48,6 +48,20 @@ With `m`, `^` and `$` also match at line breaks, so they no longer anchor the in
 regex("^abc$", "m")
 ```
 
+### infer an unbounded run of digits as `string`
+
+`` `${number}` `` doesn't include a run of digits too long to be a finite number, so `\d+`, `\d*` and any unbounded repetition of a digit pattern infer `string` (#1663). A bounded repetition of a union including digits, like `(a|\d){2}`, also no longer drops its other branches:
+
+```ts
+// was: Regex<`${number}`, {}>
+// now: Regex<string, {}>
+regex("^\\d+$")
+
+// was: Regex<`${number}`, {}>
+// now: Regex<"aa" | `${number}${number}` | `${number}a` | `a${number}`, {}>
+regex("^(?:a|\\d){2}$")
+```
+
 ## 0.0.14
 
 ### allow `}` to be escaped

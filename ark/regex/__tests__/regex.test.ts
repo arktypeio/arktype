@@ -225,7 +225,21 @@ contextualize(() => {
 		// https://github.com/arktypeio/arktype/issues/1625
 		it("* over a digit class allows the empty string", () => {
 			const S = regex("^(\\d*)$")
-			attest<Regex<"" | `${number}`, { captures: ["" | `${number}`] }>>(S)
+			attest<Regex<string, { captures: [string] }>>(S)
+		})
+
+		// https://github.com/arktypeio/arktype/issues/1663
+		it("unbounded digits overflow ${number}", () => {
+			const S = regex("^\\d+$")
+			attest<Regex<string, {}>>(S)
+			attest<Regex<`${number}`, {}>>(regex("^\\d{1,3}$"))
+		})
+
+		it("bounded union including digits keeps its other branches", () => {
+			const S = regex("^(?:a|\\d){2}$")
+			attest<
+				Regex<"aa" | `${number}${number}` | `${number}a` | `a${number}`, {}>
+			>(S)
 		})
 
 		it("? over a digit class allows the empty string", () => {
@@ -1483,9 +1497,9 @@ contextualize(() => {
 
 		attest<
 			Regex<
-				`${number}.${number}.${number}`,
+				`${string}.${string}.${string}`,
 				{
-					captures: [`${number}`, `${number}`, `${number}`]
+					captures: [string, string, string]
 				}
 			>
 		>(S)

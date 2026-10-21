@@ -92,7 +92,7 @@ assertEquals<ReturnType<typeof sizeOf>, number>()
 
 export const Id = regex("^id-(\\d+)$")
 
-assertEquals<typeof Id.infer, `id-${number}`>()
+assertEquals<typeof Id.infer, `id-${string}`>()
 
 // @ts-expect-error invalid keywords are type errors
 type({ name: "strng" })
