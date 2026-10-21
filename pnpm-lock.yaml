@@ -144,6 +144,9 @@ importers:
       '@ark/json-schema':
         specifier: workspace:*
         version: link:../json-schema
+      '@ark/precompile':
+        specifier: workspace:*
+        version: link:../precompile
       '@ark/repo':
         specifier: workspace:*
         version: link:../repo
@@ -174,6 +177,9 @@ importers:
       arkregex:
         specifier: workspace:*
         version: link:../regex
+      arksets:
+        specifier: workspace:*
+        version: link:../sets
       arkthemes:
         specifier: workspace:*
         version: link:../themes

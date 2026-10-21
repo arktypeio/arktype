@@ -220,7 +220,7 @@ To reject or delete undeclared keys, set `"+"` in the object, or [configure](/do
 	<SyntaxTab string>
 
 ```ts
-// fail if any key other than "onlyAllowedKey" is present
+// fail if any string key other than "onlyAllowedKey" is present
 const MyClosedObject = type({
 	"+": "reject",
 	onlyAllowedKey: "string"
@@ -244,7 +244,7 @@ const MyOpenObject = type({
     <SyntaxTab fluent>
 
 ```ts
-// fail if any key other than "onlyAllowedKey" is present
+// fail if any string key other than "onlyAllowedKey" is present
 const MyClosedObject = type({
 	onlyAllowedKey: "string"
 }).onUndeclaredKey("reject")
@@ -1057,7 +1057,7 @@ const Recent = type.Date.atOrAfter(tenYearsAgo).earlierThan(Date.now())
 
 </SyntaxTabs>
 
-Descriptions and error messages write dates in UTC. A date at midnight, UTC or local, is written as its calendar date, or just its year on January 1:
+Descriptions and error messages write dates in UTC. A date at UTC midnight is written as its calendar date, or just its year on January 1:
 
 ```ts
 // "a Date and 2023 or later"
