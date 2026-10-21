@@ -290,7 +290,7 @@ export declare namespace s {
 
 	export type previousOperator<s extends StaticState> =
 		s["branches"]["leftBound"] extends {} ?
-			s["branches"]["leftBound"]["comparator"]
+			InvertedComparators[s["branches"]["leftBound"]["comparator"]]
 		: s["branches"]["prefixes"] extends (
 			[...unknown[], infer tail extends string]
 		) ?

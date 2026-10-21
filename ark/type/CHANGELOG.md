@@ -1561,6 +1561,22 @@ Primitive({}).toString()
 
 A union discriminated at a key still lists the key's cases, like `kind must be "a" or "b" (was "c")`.
 
+### Name the comparator missing its right operand
+
+A comparator at the end of a definition threw `Expected an expression`, and after a left bound named the comparator inverted (#1213):
+
+```ts
+// was: ParseError: Expected an expression
+// now: ParseError: Token '>=' requires a right operand
+type("number >=")
+
+// was: ParseError: Token '>' requires a right operand
+// now: ParseError: Token '<' requires a right operand
+type("5 <")
+```
+
+The type error for `"number >="` is the same message, where it was a union of keyword completions.
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`

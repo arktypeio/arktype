@@ -17,7 +17,7 @@ import {
 	type BranchOperator,
 	type Comparator,
 	invertedComparators,
-	type MinComparator,
+	type MaxComparator,
 	minComparators,
 	type OpenLeftBound,
 	type StringifiablePrefixOperator,
@@ -215,12 +215,14 @@ export class RuntimeState {
 	}
 
 	previousOperator():
-		| MinComparator
+		| MaxComparator
 		| StringifiablePrefixOperator
 		| InfixToken
 		| undefined {
 		return (
-			this.branches.leftBound?.comparator ??
+			// left bounds are stored inverted, as they'd be written on the right
+			(this.branches.leftBound &&
+				invertedComparators[this.branches.leftBound.comparator]) ??
 			this.branches.prefixes[this.branches.prefixes.length - 1] ??
 			(this.branches.intersection ? "&"
 			: this.branches.union ? "|"
