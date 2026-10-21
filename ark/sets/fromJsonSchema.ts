@@ -34,28 +34,43 @@ interface ReadContext {
 	document: unknown
 	// draft-07 and earlier ignore the keywords beside a $ref
 	ignoresRefSiblings: boolean
+	// draft-04 identifies a resource with `id`
+	idKey: "$id" | "id"
+	documentResource: Resource
+	// the resource whose base URI a $ref resolves against
+	resource: Resource
+	// indexed the first time a $ref isn't a JSON Pointer
+	resourcesByUri: Record<string, Resource> | undefined
 	rootsByRef: Record<string, BaseRoot>
 	refsBeingRead: string[]
 	// a cyclic ref is named by its target, so it prints alike in any history
 	cyclesByRef: Record<string, BaseParseContext>
-	// a $ref within a nested $id resolves against that $id
-	nestedIds: number
+}
+
+interface Resource {
+	schema: unknown
+	uri: string
 }
 
 export const readJsonSchema = (
 	schema: JsonSchema.Input,
 	document: JsonSchema.Input = schema
 ): BaseRoot => {
+	const $schema = String(isPlainObject(document) && (document as dict).$schema)
+	const documentResource = { schema: document, uri: documentUri }
 	const ctx: ReadContext = {
 		document,
-		ignoresRefSiblings:
-			isPlainObject(document) &&
-			/draft-0[3-7]/.test(String((document as dict).$schema)),
+		ignoresRefSiblings: /draft-0[3-7]/.test($schema),
+		idKey: /draft-0[34]/.test($schema) ? "id" : "$id",
+		documentResource,
+		resource: documentResource,
+		resourcesByUri: undefined,
 		rootsByRef: {},
 		refsBeingRead: [],
-		cyclesByRef: {},
-		nestedIds: 0
+		cyclesByRef: {}
 	}
+	const id = idOf(document, ctx)
+	if (id !== undefined) documentResource.uri = resolveUri(id, documentUri, "#")
 	try {
 		return rootSchemaScope.finalize(defining(() => read(schema, "#", ctx)))
 	} finally {
@@ -73,14 +88,20 @@ const read = (schema: unknown, pointer: string, ctx: ReadContext): BaseRoot => {
 	for (const k in o) checkKeyword(o, k, pointer)
 	if (o.$ref !== undefined && ctx.ignoresRefSiblings)
 		return readRef(o.$ref as string, pointer, ctx)
-	const isNestedResource = o.$id !== undefined && schema !== ctx.document
-	if (isNestedResource) ctx.nestedIds++
+	const enclosing = ctx.resource
+	const id = schema === enclosing.schema ? undefined : idOf(o, ctx)
+	if (id !== undefined) {
+		ctx.resource = {
+			schema,
+			uri: resolveUri(id, enclosing.uri, `${pointer}/${ctx.idKey}`)
+		}
+	}
 	let result = $ark.intrinsic.unknown
 	for (const readKeywords of keywordReaders) {
 		const constraint = readKeywords(o, pointer, ctx)
 		if (constraint) result = intersectRoots(result, constraint)
 	}
-	if (isNestedResource) ctx.nestedIds--
+	ctx.resource = enclosing
 	return withAnnotations(result, o)
 }
 
@@ -91,41 +112,177 @@ type KeywordReader = (
 ) => BaseRoot | undefined
 
 const readRef = (ref: string, pointer: string, ctx: ReadContext): BaseRoot => {
-	if (ref[0] !== "#" || (ref.length > 1 && ref[1] !== "/") || ctx.nestedIds)
-		return throwParseError(writeUnsupportedRefMessage(ref, `${pointer}/$ref`))
-	if (ref in ctx.rootsByRef) return ctx.rootsByRef[ref]
+	const target = resolveRef(ref, pointer, ctx)
+	// refs within the document's own resource are keyed as written
+	const key =
+		target.resource.uri === documentUri ?
+			`#${target.fragment}`
+		:	`${target.resource.uri}#${target.fragment}`
+	if (key in ctx.rootsByRef) return ctx.rootsByRef[key]
 	// a ref within its own target is a cycle, resolved once that's read
-	if (ctx.refsBeingRead.includes(ref)) {
-		ctx.cyclesByRef[ref] ??= rootSchemaScope.openSynthetic(
-			`synthetic${hashOf(`${ref}\n${printable(resolveRef(ref, ctx))}`)}`
+	if (ctx.refsBeingRead.includes(key)) {
+		ctx.cyclesByRef[key] ??= rootSchemaScope.openSynthetic(
+			`synthetic${hashOf(`${key}\n${printable(target.schema)}`)}`
 		)
 		return rootSchemaScope.lazilyResolve(
-			() => ctx.rootsByRef[ref],
-			ctx.cyclesByRef[ref].id
+			() => ctx.rootsByRef[key],
+			ctx.cyclesByRef[key].id
 		)
 	}
-	ctx.refsBeingRead.push(ref)
-	const root = read(resolveRef(ref, ctx), ref, ctx)
+	const enclosing = ctx.resource
+	ctx.resource = target.resource
+	ctx.refsBeingRead.push(key)
+	const root = read(target.schema, ref, ctx)
 	ctx.refsBeingRead.pop()
-	return (ctx.rootsByRef[ref] = root)
+	ctx.resource = enclosing
+	return (ctx.rootsByRef[key] = root)
 }
 
-const resolveRef = (ref: string, ctx: ReadContext): unknown =>
-	ref === "#" ?
-		ctx.document
-	:	ref
-			.slice(2)
-			.split("/")
-			.reduce((target, segment) => {
-				const key = decodeURIComponent(segment)
-					.replace(/~1/g, "/")
-					.replace(/~0/g, "~")
-				return (
-						typeof target === "object" && target !== null && hasOwn(target, key)
-					) ?
-						(target as dict)[key]
-					:	throwParseError(writeUnresolvableRefMessage(ref))
-			}, ctx.document)
+interface RefTarget {
+	schema: unknown
+	// the resource enclosing the target, against which its own refs resolve
+	resource: Resource
+	fragment: string
+}
+
+const resolveRef = (
+	ref: string,
+	pointer: string,
+	ctx: ReadContext
+): RefTarget => {
+	if (ref === "#" || ref.startsWith("#/"))
+		return resolvePointer(ref, ref.slice(1), ctx.resource, ctx)
+	ctx.resourcesByUri ??= indexResources(ctx)
+	let uri: URL
+	try {
+		uri = new URL(ref, ctx.resource.uri)
+	} catch {
+		return throwParseError(writeUnresolvableRefMessage(ref))
+	}
+	const fragment = uri.hash.slice(1)
+	uri.hash = ""
+	const resource = ctx.resourcesByUri[uri.href]
+	if (!resource)
+		return throwParseError(writeUnsupportedRefMessage(ref, `${pointer}/$ref`))
+	if (fragment === "" || fragment[0] === "/")
+		return resolvePointer(ref, fragment, resource, ctx)
+	const anchored = ctx.resourcesByUri[`${uri.href}#${fragment}`]
+	return anchored ?
+			{ schema: anchored.schema, resource, fragment }
+		:	throwParseError(writeUnresolvableRefMessage(ref))
+}
+
+// segments are percent-decoded, then unescaped (RFC 6901)
+const resolvePointer = (
+	ref: string,
+	fragment: string,
+	from: Resource,
+	ctx: ReadContext
+): RefTarget => {
+	let resource = from
+	const target = fragment
+		.split("/")
+		.slice(1)
+		.reduce((target, segment) => {
+			if (target !== resource.schema) {
+				const id = idOf(target, ctx)
+				if (id !== undefined)
+					resource = { schema: target, uri: resolveUri(id, resource.uri, ref) }
+			}
+			const key = decodeURIComponent(segment)
+				.replace(/~1/g, "/")
+				.replace(/~0/g, "~")
+			return (
+					typeof target === "object" && target !== null && hasOwn(target, key)
+				) ?
+					(target as dict)[key]
+				:	throwParseError(writeUnresolvableRefMessage(ref))
+		}, from.schema)
+	return { schema: target, resource, fragment }
+}
+
+// the base URI of a document without an absolute $id
+const documentUri = "arksets:/document"
+
+// the $id that starts a new resource. One that's only a fragment is an anchor.
+const idOf = (schema: unknown, ctx: ReadContext): string | undefined => {
+	if (!isPlainObject(schema)) return
+	const o = schema as dict
+	if (o.$ref !== undefined && ctx.ignoresRefSiblings) return
+	const id = o[ctx.idKey]
+	return typeof id === "string" && id[0] !== "#" ? id : undefined
+}
+
+const resolveUri = (id: string, base: string, pointer: string): string =>
+	uriOf(id, base) ??
+	throwParseError(writeInvalidKeywordMessage(pointer, "a URI reference", id))
+
+const uriOf = (id: string, base: string): string | undefined => {
+	try {
+		const uri = new URL(id, base)
+		uri.hash = ""
+		return uri.href
+	} catch {
+		return
+	}
+}
+
+// every resource by its URI, and every anchored schema by its resource's URI
+// and its anchor
+const indexResources = (ctx: ReadContext): Record<string, Resource> => {
+	const resourcesByUri: Record<string, Resource> = {
+		[ctx.documentResource.uri]: ctx.documentResource
+	}
+	const visited = new Set<unknown>()
+	const visit = (schema: unknown, enclosing: Resource): void => {
+		if (!isPlainObject(schema) || visited.has(schema)) return
+		visited.add(schema)
+		const o = schema as dict
+		const id = schema === ctx.document ? undefined : idOf(o, ctx)
+		// an invalid $id throws where it's read
+		const uri = id === undefined ? undefined : uriOf(id, enclosing.uri)
+		const resource = uri === undefined ? enclosing : { schema, uri }
+		if (uri !== undefined) resourcesByUri[uri] = resource
+		for (const anchor of anchorsOf(o, ctx)) {
+			resourcesByUri[`${resource.uri}#${anchor}`] = {
+				schema,
+				uri: resource.uri
+			}
+		}
+		for (const k in o) {
+			const kind = keywordValueKinds[k]
+			if (kind === "schema") visit(o[k], resource)
+			else if (kind === "items" || kind === "schemas" || kind === "branches")
+				for (const v of isArray(o[k]) ? o[k] : [o[k]]) visit(v, resource)
+			else if (
+				kind === "schemasByKey" ||
+				kind === "dependencies" ||
+				k === "$defs" ||
+				k === "definitions"
+			)
+				for (const v of Object.values(o[k] as dict)) visit(v, resource)
+		}
+		// an OpenAPI document's schemas
+		if (schema === ctx.document && isPlainObject(o.components)) {
+			const { schemas } = o.components as dict
+			if (isPlainObject(schemas))
+				for (const v of Object.values(schemas)) visit(v, resource)
+		}
+	}
+	visit(ctx.document, ctx.documentResource)
+	return resourcesByUri
+}
+
+// before 2019-09, an anchor is an id that's only a fragment
+const anchorsOf = (o: dict, ctx: ReadContext): string[] => {
+	if (o.$ref !== undefined && ctx.ignoresRefSiblings) return []
+	const id = o[ctx.idKey]
+	return [
+		o.$anchor,
+		o.$dynamicAnchor,
+		typeof id === "string" && id[0] === "#" ? id.slice(1) : undefined
+	].filter((anchor): anchor is string => typeof anchor === "string" && !!anchor)
+}
 
 const intersectRoots = (l: BaseRoot, r: BaseRoot): BaseRoot =>
 	intersectNodesRoot(l, r, rootSchemaScope).toNeverIfDisjoint()
@@ -810,7 +967,7 @@ export const writeUnsupportedRefMessage = (
 	ref: string,
 	pointer: string
 ): string =>
-	`${pointer} must be a JSON Pointer into its document like #/$defs/name, outside any nested $id (was ${ref})`
+	`${pointer} must reference a schema in its own document (was ${ref})`
 
 export const writeUnresolvableRefMessage = (ref: string): string =>
 	`$ref ${ref} doesn't resolve to a schema in its document`

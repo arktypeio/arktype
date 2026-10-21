@@ -171,7 +171,7 @@ contextualize(() => {
 		attest(() =>
 			parse({ $ref: "https://example.com/schema.json" })
 		).throws.snap(
-			"ParseError: #/$ref must be a JSON Pointer into its document like #/$defs/name, outside any nested $id (was https://example.com/schema.json)"
+			"ParseError: #/$ref must reference a schema in its own document (was https://example.com/schema.json)"
 		)
 		attest(() => parse({ $ref: "#/$defs/missing" })).throws.snap(
 			"ParseError: $ref #/$defs/missing doesn't resolve to a schema in its document"

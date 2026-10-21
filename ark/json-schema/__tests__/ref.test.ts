@@ -126,6 +126,37 @@ contextualize(() => {
 		attest(t.expression).snap("string")
 	})
 
+	it("embedded resource", () => {
+		const t = jsonSchemaToType({
+			type: "object",
+			properties: {
+				a: {
+					$id: "https://example.com/a",
+					$ref: "#/$defs/value",
+					$defs: { value: { type: "string" } }
+				}
+			},
+			$defs: { value: { type: "number" } }
+		})
+		attest(t.expression).snap("{ a?: string }")
+	})
+
+	it("draft-04 id", () => {
+		const t = jsonSchemaToType({
+			$schema: "http://json-schema.org/draft-04/schema#",
+			type: "object",
+			properties: {
+				a: {
+					id: "https://example.com/a",
+					allOf: [{ $ref: "#/definitions/value" }],
+					definitions: { value: { type: "string" } }
+				}
+			},
+			definitions: { value: { type: "number" } }
+		})
+		attest(t.expression).snap("{ a?: string }")
+	})
+
 	it("OpenAPI components", () => {
 		const t = jsonSchemaToType({
 			$ref: "#/components/schemas/Pet",
@@ -142,6 +173,75 @@ contextualize(() => {
 		attest(t.expression).snap("{ name: string }")
 	})
 
+	it("anchor", () => {
+		const t = jsonSchemaToType({
+			$ref: "#name",
+			$defs: { name: { $anchor: "name", type: "string" } }
+		})
+		attest(t.expression).snap("string")
+	})
+
+	it("fragment $id before 2019-09", () => {
+		const t = jsonSchemaToType({
+			$schema: "http://json-schema.org/draft-07/schema#",
+			$ref: "#name",
+			definitions: { name: { $id: "#name", type: "string" } }
+		})
+		attest(t.expression).snap("string")
+	})
+
+	it("fragment id in draft-04", () => {
+		const t = jsonSchemaToType({
+			$schema: "http://json-schema.org/draft-04/schema#",
+			allOf: [{ $ref: "#name" }],
+			definitions: { name: { id: "#name", type: "string" } }
+		})
+		attest(t.expression).snap("string")
+	})
+
+	it("anchor in an embedded resource", () => {
+		const t = jsonSchemaToType({
+			$id: "https://example.com/root.json",
+			$ref: "item.json#name",
+			$defs: {
+				item: {
+					$id: "item.json",
+					$defs: { name: { $anchor: "name", type: "string" } }
+				},
+				name: { $anchor: "name", type: "number" }
+			}
+		})
+		attest(t.expression).snap("string")
+	})
+
+	it("embedded resource by URI", () => {
+		const t = jsonSchemaToType({
+			$id: "https://example.com/schemas/root.json",
+			type: "object",
+			properties: {
+				a: { $ref: "item.json" },
+				b: { $ref: "https://example.com/schemas/item.json#/$defs/b" }
+			},
+			$defs: {
+				item: {
+					$id: "item.json",
+					type: "string",
+					$defs: { b: { type: "number" } }
+				}
+			}
+		})
+		attest(t.expression).snap("{ a?: string, b?: number }")
+	})
+
+	it("current resource", () => {
+		const t = jsonSchemaToType({
+			type: "object",
+			properties: { self: { $ref: "" } }
+		})
+		attest(t.allows({ self: { self: {} } })).equals(true)
+		attest(t.allows({ self: 1 })).equals(false)
+	})
+
 	it("unresolvable", () => {
 		attest(() =>
 			// @ts-expect-error
@@ -151,11 +251,25 @@ contextualize(() => {
 		)
 	})
 
+	it("unresolvable anchor", () => {
+		attest(() => jsonSchemaToType({ $ref: "#missing" })).throws.snap(
+			"ParseError: $ref #missing doesn't resolve to a schema in its document"
+		)
+	})
+
 	it("another document", () => {
 		attest(() =>
 			jsonSchemaToType({ $ref: "https://example.com/a" })
 		).throws.snap(
-			"ParseError: #/$ref must be a JSON Pointer into its document like #/$defs/name, outside any nested $id (was https://example.com/a)"
+			"ParseError: #/$ref must reference a schema in its own document (was https://example.com/a)"
+		)
+	})
+
+	it("invalid $id", () => {
+		attest(() =>
+			jsonSchemaToType({ properties: { a: { $id: "http://[" } } })
+		).throws.snap(
+			'ParseError: #/properties/a/$id must be a URI reference (was "http://[")'
 		)
 	})
 })

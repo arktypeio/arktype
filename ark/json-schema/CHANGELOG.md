@@ -32,6 +32,23 @@ Inference follows `$ref`s, including recursive ones, composition, conditionals a
 
 A schema TypeScript can't see as a literal, like one read from a `.json` file, can be cast with `jsonSchema.as<t>()`. `jsonSchema.infer` and `jsonSchema.validate` are the underlying types, for writing your own wrappers.
 
+### Resolve `$ref`s to anchors and embedded `$id`s
+
+A `$ref` resolves like a URI against the `$id` of the resource it's in, so it can name an anchor or another resource in the same document, where it threw.
+
+```ts
+const T = jsonSchemaToType({
+	$ref: "#name",
+	$defs: { name: { $anchor: "name", type: "string" } }
+})
+
+// was: throws
+// now: string
+T.expression
+```
+
+A pointer like `#/$defs/a` within a nested `$id` resolves against that resource, where it threw, and within a draft-04 `id`, where it was read against the document. A `$ref` to another document still throws.
+
 ### Read JSON Schema as exactly the values a validator accepts
 
 `jsonSchemaToType` accepts exactly what a 2020-12 validator like ajv accepts, and reads draft-07 forms. Schemas that threw now read, and some that read were wrong:
