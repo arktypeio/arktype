@@ -1,8 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	writeUnclosedGroupMessage,
-	writeUnmatchedGroupCloseMessage,
-	type WhitespaceChar
+	writeUnmatchedGroupCloseMessage
 } from "@ark/util"
 import { regex, type Regex } from "arkregex"
 import { emptyCharacterSetMessage } from "arkregex/internal/charset.ts"
@@ -538,7 +537,9 @@ contextualize(() => {
 
 		it("\\s", () => {
 			const S = regex("^a\\sc$")
-			attest<Regex<`a${WhitespaceChar}c`, {}>>(S)
+			attest<Regex<`a${string}c`, {}>>(S).type.toString.snap(
+				"Regex<`a${string}c`, {}>"
+			)
 		})
 
 		it("\\W", () => {

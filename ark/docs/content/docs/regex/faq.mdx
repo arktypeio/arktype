@@ -22,7 +22,6 @@ const abc = regex("^[abc]$")
 An inferred type is meant to include every string the expression matches. These currently don't:
 
 - `\d` next to an unanchored start or end of a pattern, or followed by `.` or `\w` at the end of a group, infers only `` `${number}` ``. `regex("\\d+")` and ArkType's `type("/\\d+/")` both infer `` `${number}` ``, but match `"abc1"`.
-- `\s` infers `" " | "\n" | "\t"`, but also matches `"\r"`, `"\f"`, `"\v"` and Unicode spaces.
 - The `i` flag isn't applied to character sets, and a backreference repeats its group's exact case: `regex("^[ab]$", "i")` infers `"a" | "b"` but matches `"A"`, and `regex("^(a)\\1$", "i")` infers `"aa" | "AA"` but matches `"aA"`.
 - The `m` flag doesn't affect `^` and `$`: `regex("^abc$", "m")` infers `"abc"`, but matches `"x\nabc"`.
 - A capture inside a lookaround isn't counted, so later captures get the wrong index.

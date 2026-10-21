@@ -28,6 +28,16 @@ regex("^[\\b]$")
 regex("^[\\/]$")
 ```
 
+### infer `\s` as `string`
+
+`\s` matches `\r`, `\f`, `\v` and Unicode spaces as well as `" "`, `"\n"` and `"\t"`, so it's inferred as `string`:
+
+```ts
+// was: Regex<`a${" " | "\n" | "\t"}c`, {}>
+// now: Regex<`a${string}c`, {}>
+regex("^a\\sc$")
+```
+
 ## 0.0.14
 
 ### allow `}` to be escaped
