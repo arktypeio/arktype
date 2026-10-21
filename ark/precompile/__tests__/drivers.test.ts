@@ -63,6 +63,9 @@ const node = (args: string[], opts: PrecompilePluginOptions, cwd = app) =>
 		{ cwd, encoding: "utf8", timeout }
 	)
 
+// Node 22 reports a test run that isn't to a terminal as TAP
+const spec = "--test-reporter=spec"
+
 // options reach the plugin in app/preload.ts through the environment
 const bun = (
 	args: string[],
@@ -255,7 +258,10 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 		})
 
 		it("fails a test file with a rejected site", () => {
-			const { status, stdout } = node(["--test", "roles.ts", "main.ts"], {})
+			const { status, stdout } = node(
+				["--test", spec, "roles.ts", "main.ts"],
+				{}
+			)
 			attest(status).equals(1)
 			attest(
 				stdout
@@ -277,7 +283,7 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 
 		it("checks static helpers under node --test", () => {
 			const { status, stdout } = node(
-				["--experimental-test-module-mocks", "--test", "node.check.ts"],
+				["--experimental-test-module-mocks", "--test", spec, "node.check.ts"],
 				{},
 				checks
 			)
@@ -359,8 +365,12 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 				transpiled
 			)
 			attest(status).equals(1)
+			// the loader hides both, and Node 22 resolves main.ts's imports
+			// before it loads config.ts, where later versions load config.ts first
 			attest(
-				stderr.includes(writeTextlessMessage(join(transpiled, "config.ts")))
+				["config.ts", "main.ts"].some(file =>
+					stderr.includes(writeTextlessMessage(join(transpiled, file)))
+				)
 			).equals(true)
 			attest(
 				node(
