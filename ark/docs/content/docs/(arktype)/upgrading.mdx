@@ -195,6 +195,19 @@ const T = type("number | number.Infinity | number.NegativeInfinity")
 type("object.json")({ at: new Date() })
 ```
 
+### Optional index signatures throw
+
+A key like `"[k]?"` was the literal key `"[k]"`, made optional. It now throws a `ParseError`, since it reads as an optional index signature. Escape its `[` to keep the literal key:
+
+```ts
+// @errors: 2322
+// throws ParseError: Index signature [k] can't be optional. Escape its '[' with a backslash for an optional key named '[k]'
+type({ "[k]?": "string" })
+
+// Type<{ "[k]"?: string }>
+type({ "\\[k]?": "string" })
+```
+
 ### The clone option is removed
 
 Transforming no longer clones the input first. Output shares every value nothing transformed with the input, and a morph receives the validated value itself, so a morph that mutates its argument mutates your data. Remove `clone` from your config.

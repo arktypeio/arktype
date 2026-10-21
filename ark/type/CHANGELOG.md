@@ -161,6 +161,24 @@ type("object.json").toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
 
 `~standard.jsonSchema` leaves the check out, as it does every predicate.
 
+### Throw for an optional index signature
+
+A key like `"[k]?"` parsed as the literal key `"[k]"`, made optional, which is rarely what it means, as in a generic like `type("<k extends string>", { "[k]?": "number" })`. It now throws a `ParseError` and is a type error (#1525):
+
+```ts
+// was: Type<{ "[k]"?: string }>
+// now: ParseError: Index signature [k] can't be optional. Escape its '[' with a backslash for an optional key named '[k]'
+type({ "[k]?": "string" })
+```
+
+To keep the literal key, escape its `[`, which now works for an optional key as it already did for a required one:
+
+```ts
+// was: Type<{ "\\[k]"?: string }>
+// now: Type<{ "[k]"?: string }>
+type({ "\\[k]?": "string" })
+```
+
 ### Add codecs
 
 `codec` from `arktype/codecs` pairs a morph with its inverse. Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:
