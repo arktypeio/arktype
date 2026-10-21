@@ -123,9 +123,12 @@ const isExcludedFrame = (url: string, site: NodeJS.CallSite) =>
 	url.includes("/ark/attest/") ||
 	url.endsWith("/util/lazily.ts") ||
 	url.endsWith("/util/functions.ts") ||
-	["get in", "get out", "assertDefaultValueAssignability"].includes(
-		site.getFunctionName() ?? ""
-	)
+	[
+		"get in",
+		"get out",
+		"get encode",
+		"assertDefaultValueAssignability"
+	].includes(site.getFunctionName() ?? "")
 
 type Caller = "user" | "arktype" | "excluded"
 
