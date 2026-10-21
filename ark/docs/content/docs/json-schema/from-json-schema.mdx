@@ -48,21 +48,45 @@ const user = User.assert({ name: "Ada" })
 
 `.as` is not checked against the schema, so keep the two in sync yourself.
 
+## How it reads JSON Schema
+
+`jsonSchemaToType` reads a schema with [`arksets`](/docs/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts, with ajv as the tiebreaker. Every keyword in a schema applies, local `$ref`s resolve, including recursive ones, and draft-07 forms like `items` arrays and `definitions` are read too:
+
+```ts
+import { jsonSchemaToType } from "@ark/json-schema"
+
+const Tree = jsonSchemaToType({
+	$defs: {
+		Node: {
+			type: "object",
+			properties: {
+				value: { type: "number" },
+				children: { type: "array", items: { $ref: "#/$defs/Node" } }
+			},
+			required: ["value"]
+		}
+	},
+	$ref: "#/$defs/Node"
+})
+
+Tree.allows({ value: 1, children: [{ value: 2 }] }) // true
+```
+
+[Keyword support](/docs/json-schema/support) lists how each keyword is read.
+
 ## Invalid schemas
 
-`jsonSchemaToType` throws if the schema is malformed or uses a keyword it can't convert:
+`jsonSchemaToType` throws a `ParseError` naming the keyword's JSON Pointer if a keyword's value is invalid, or if it can't read the keyword exactly, like `unevaluatedProperties` or a `$ref` to another document:
 
 ```ts
 import { jsonSchemaToType } from "@ark/json-schema"
 // ---cut---
-// TraversalError: minLength must be non-negative (was -1)
+// ParseError: #/minLength must be a non-negative integer (was -1)
 jsonSchemaToType({ type: "string", minLength: -1 })
 
-// ParseError: divisor must be an integer (was 0.5)
-jsonSchemaToType({ type: "number", multipleOf: 0.5 })
+// ParseError: #/pattern must be a valid pattern (was "[")
+jsonSchemaToType({ type: "string", pattern: "[" })
 ```
-
-[Keyword support](/docs/json-schema/support) lists what throws and what is ignored.
 
 ## Typing a schema
 
@@ -77,7 +101,7 @@ const Age = {
 } satisfies JsonSchema.Numeric
 ```
 
-For a string schema, `StringSchema` from `@ark/json-schema` matches what `jsonSchemaToType` reads more closely than `JsonSchema.String`: it leaves out `format`, which is ignored, and its `pattern` can be a `RegExp`:
+For a string schema, `StringSchema` from `@ark/json-schema` matches what `jsonSchemaToType` reads more closely than `JsonSchema.String`: it leaves out `format`, which isn't validated, and its `pattern` can be a `RegExp`, read with its own flags:
 
 ```ts
 import type { StringSchema } from "@ark/json-schema"
@@ -91,7 +115,7 @@ const Slug = {
 
 ## JsonSchemaScope
 
-`JsonSchemaScope` is the [module](/docs/scopes) `jsonSchemaToType` validates its input with. Its `ArraySchema`, `NumberSchema`, `ObjectSchema` and `StringSchema` Types check a schema of that kind without converting it:
+`JsonSchemaScope` is a [module](/docs/scopes) whose `ArraySchema`, `NumberSchema`, `ObjectSchema` and `StringSchema` Types check a schema of that kind without converting it:
 
 ```ts
 import { JsonSchemaScope } from "@ark/json-schema"
@@ -102,4 +126,6 @@ JsonSchemaScope.NumberSchema({ type: "number", minimum: "0" })
 
 ## Back to JSON Schema
 
-A Type from `jsonSchemaToType` has [`toJsonSchema()`](/docs/json-schema/to-json-schema) like any other. Keywords it checks with a `narrow`, like `uniqueItems`, `contains`, `oneOf` and `not`, come back as [`predicate` fallbacks](/docs/json-schema/to-json-schema#fallback-codes), so `toJsonSchema()` throws for them unless you handle that code.
+A Type from `jsonSchemaToType` has [`toJsonSchema()`](/docs/json-schema/to-json-schema) like any other. Keywords [Keyword support](/docs/json-schema/support) lists as opaque, like `uniqueItems`, `not` and `if`, come back as [`predicate` fallbacks](/docs/json-schema/to-json-schema#fallback-codes), so `toJsonSchema()` throws for them unless you handle that code.
+
+To normalize one JSON Schema into another, or to compare JSON Schemas with each other and with Types from other libraries, use [ArkSets](/docs/sets).
