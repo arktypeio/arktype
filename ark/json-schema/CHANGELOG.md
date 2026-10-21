@@ -4,7 +4,7 @@
 
 ### Read JSON Schema as exactly the values a validator accepts
 
-`jsonSchemaToType` accepts exactly what a 2020-12 validator like ajv accepts, and reads draft-07 forms. Schemas that threw now read, and some that read were wrong:
+`jsonSchemaToType` reads a schema as exactly the values a 2020-12 validator like ajv accepts, or throws where it can't, and reads draft-07 forms. Schemas that threw now read, and some that read were wrong:
 
 - `prefixItems` and draft-07 `items` arrays make their elements optional, as JSON Schema does: `[string?, number?, ...unknown[]]`.
 - `{ type: "object" }` no longer allows arrays.

@@ -14,7 +14,7 @@ isSubset(v1, v2) // true
 isSubset(v2, v1) // false: v2 accepts { id: "a" }
 
 intersect(v2, { properties: { age: { maximum: 120 } } }).expression // "{ id: string, age?: number <= 120 }"
-toJsonSchema(v2) // { type: "object", properties: { id: { type: "string" }, age: { type: "number" } }, required: ["id"] }
+toJsonSchema(v2) // { $schema: "https://json-schema.org/draft/2020-12/schema", type: "object", properties: { id: { type: "string" }, age: { type: "number" } }, required: ["id"] }
 
 const Event = z.discriminatedUnion("kind", [
 	z.object({ kind: z.literal("click"), x: z.number() }),
