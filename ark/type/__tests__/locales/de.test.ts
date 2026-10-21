@@ -374,6 +374,14 @@ contextualize(() => {
 		)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1412
+	it("writes constraints described alike once", () => {
+		const Email = type("string.email > 0", "@", "Email is not valid")
+		attest(Email("").toLocaleString(de)).snap(
+			'muss ein Wert gemäß der Beschreibung „Email is not valid“ sein, ist aber ""'
+		)
+	})
+
 	it("can be spread to change one sentence", () => {
 		const deCompact = {
 			...de,
