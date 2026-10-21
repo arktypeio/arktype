@@ -812,9 +812,11 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 		})
 	})
 
-	if (!hasBun()) return
+	describe("bun", function () {
+		before(function () {
+			if (!hasBun()) this.skip()
+		})
 
-	describe("bun", () => {
 		const preload = [
 			"--conditions",
 			"ark-ts",
