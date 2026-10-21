@@ -1101,7 +1101,7 @@ The values are [arktype's `errors`](https://arktype.io/docs/configuration#errors
 
 ### members
 
-`members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true; `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema` default to false. A dropped member reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`.
+`members` decides what a validator has besides validating. `assert`, `meta`, `~standard`, `methods` (`traverse()`, `from()` and `toString()`) and `errorMethods` default to true; `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema` default to false. A dropped member reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`.
 
 Each introspection member set true is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`. A JSON Schema the build can't bake throws where it's read.
 
@@ -1110,6 +1110,10 @@ precompile.vite({
 	members: { assert: false, toJsonSchema: true, "~standard.jsonSchema": true }
 })
 ```
+
+`members: { errorMethods: false }` gives errors only their `count`, `issues` and `summary`. They lack `throw()`, `toJSON()` and `toString()`, so `JSON.stringify` writes their internals, though `instanceof type.errors` still recognizes them. `.assert()` still throws a `TraversalError`. They're the smallest errors a build can return, and reading their issues is slower.
+
+The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for it, or `@ark/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](#errors). With Turbopack, alias `@ark/schema/runtime` to that entry as `errors: "none"` does.
 
 ### optimize
 
