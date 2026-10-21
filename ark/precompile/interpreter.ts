@@ -55,6 +55,7 @@ import {
 	importsValues,
 	isCallableBeforeBody,
 	isOnlyType,
+	isTypeOnlyMember,
 	isSetLast,
 	isIntrospectedProperty,
 	isValidatorMember,
@@ -808,7 +809,9 @@ export class Interpreter {
 		// a read stops at a Type whose validator lacks the member
 		if (
 			base.read.value !== base.value ||
-			(lacksMember(base.value, key) && this.isReadThrough(ctx.site))
+			(lacksMember(base.value, key) &&
+				((hasArkKind(base.value, "root") && isTypeOnlyMember(key)) ||
+					this.isReadThrough(ctx.site)))
 		)
 			return { value, read: base.read }
 		return {

@@ -28,7 +28,6 @@ import "arktype"
 import { #0 as $ark#0 } from "~arktype/#1"
 import { #2 as $ark#2 } from "~arktype/#1"
 import $arkfixConfig from "~arktype/#3"
-import "arktype"
 $arkfixConfig()
 export const A = /* @__PURE__ */ $ark#0()
 // @ark-runtime

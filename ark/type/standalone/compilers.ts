@@ -178,7 +178,7 @@ class InPlaceFirstIssueCompiler extends InPlaceCompiler {
 
 const unifiedByNode = new WeakMap<BaseNode, boolean>()
 
-// a node whose Apply reads ctx only to report, so passed none, it allows
+// whether a node's Apply reads ctx only to report, so called without one it's its Allows
 const unifies = (node: BaseNode): boolean => {
 	let unified = unifiedByNode.get(node)
 	if (unified === undefined) {

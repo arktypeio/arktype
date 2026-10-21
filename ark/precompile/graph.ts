@@ -447,6 +447,7 @@ const typeMemberKinds: Record<string, KindBits> = Object.setPrototypeOf(
 const exportKindOf = (name: ArkExportName): KindBits =>
 	isRuntimeExport(name) ? kinds.data
 	: name === "type" ? kinds.otherArk | kinds.returnsType | kinds.returnsArk
+	: name === "codec" ? typeMethod
 	: kinds.otherArk | kinds.returnsArk
 
 // e.g. a Type for `T.in`, a method for `T.and`, data for `T.expression`
@@ -1522,6 +1523,19 @@ export class ModuleGraph {
 				const owner = node.type === "ThisExpression" && ownerOf(node)
 				if (owner && owner.type === "ObjectExpression")
 					return this.transfer(owner, module, kindOfKey)
+				const statics = node.type === "ThisExpression" && staticOwnerOf(node)
+				// e.g. `static self = this`, which holds nothing until it holds something else
+				if (statics) {
+					if (this.resolving.has(node)) return kinds.data
+					this.resolving.add(node)
+					try {
+						return holderOf(
+							this.heldKindOf({ node: statics, module, kindOfKey })
+						)
+					} finally {
+						this.resolving.delete(node)
+					}
+				}
 				const cls = this.classOf(node, module, kindOfKey)
 				return (
 					cls ? this.instanceKindOf(cls, kindOfKey)
@@ -1749,6 +1763,10 @@ export class ModuleGraph {
 			case "ArrayExpression":
 			case "ClassExpression":
 				return { node, module, kindOfKey }
+			case "ThisExpression": {
+				const cls = staticOwnerOf(node)
+				return cls && { node: cls, module, kindOfKey }
+			}
 			case "Identifier": {
 				const binding = module.scopes.referencesById.get(node)?.binding
 				return (
@@ -2215,6 +2233,10 @@ const isUnsureRead = (
 		!isOnlyType(kind)
 	:	!!(kind & kinds.unknown) && !isContainerMethod(read))
 
+// e.g. `in`, which reads a Type off any Type
+export const isTypeOnlyMember = (name: PropertyKey): boolean =>
+	typeof name === "string" && typeMemberKinds[name] === kinds.type
+
 // e.g. `or`, which a value the build can't see may read off a Type
 export const isTypeMemberRead = (
 	read: string,
@@ -2230,6 +2252,19 @@ const annotate = (kind: KindBits, annotated: KindBits | undefined): KindBits =>
 	annotated === undefined ? kind : (
 		(kind & arkBits) | (kind & ~arkBits ? annotated : 0)
 	)
+
+// the class `this` refers to in its static method, field or block
+const staticOwnerOf = (node: Node): Node | undefined => {
+	const owner = ownerOf(node)
+	if (!owner || owner.type === "ObjectExpression") return
+	let element = node
+	while (element.parent!.type !== "ClassBody") element = element.parent!
+	return (
+			element.type === "StaticBlock" || ("static" in element && element.static)
+		) ?
+			owner
+		:	undefined
+}
 
 // the class or object literal `this` refers to
 const ownerOf = (node: Node): Node | undefined => {

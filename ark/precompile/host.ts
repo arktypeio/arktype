@@ -20,9 +20,11 @@ export interface NodeHostOptions {
 	tsconfig?: string | undefined
 }
 
+const nodeConditions = ["import", "node", "default"]
+
 export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 	const resolveOptions: NapiResolveOptions = {
-		conditionNames: opts?.conditions ?? ["import", "node", "default"],
+		conditionNames: opts?.conditions ?? nodeConditions,
 		extensions: [
 			".ts",
 			".tsx",
@@ -73,6 +75,13 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 			(isAbsolute(importer) ? tsconfigIn(dirname(importer)) : undefined)
 	}
 }
+
+// a development build's, whose arktype/runtime has Node print errors as issues
+export const createDevelopmentHost = (opts?: NodeHostOptions): PrecompileHost =>
+	createNodeHost({
+		...opts,
+		conditions: [...(opts?.conditions ?? nodeConditions), "development"]
+	})
 
 const readFile = (path: string) =>
 	existsSync(path) ? readFileSync(path, "utf8") : undefined
@@ -159,6 +168,9 @@ export const runtimeSpecifiers = [
 	"arktype/errors",
 	"arktype/mutatesInput"
 ]
+
+// what arktype/runtime loads
+export const runtimePackages = ["arktype", "@ark/schema", "@ark/util"]
 
 // shadow mode keeps arktype, resolving only its config to the runtime
 export const resolvesToRuntime = (
@@ -275,6 +287,19 @@ export const writeUncachedModuleMessage = (
 ): string =>
 	`${specifier} was written by a build whose cache kept it in ${dir}, where it no longer is. Delete the bundler's cache to rebuild it.`
 
+// e.g. "@ark/schema" for "@ark/schema/runtime"
+export const packageNameOf = (specifier: string): string =>
+	specifier.split("/", specifier.startsWith("@") ? 2 : 1).join("/")
+
+export const writeExternalizedMessage = (
+	specifier: string,
+	option: string
+): string =>
+	`The build's \`${option}\` option leaves ${specifier} to be loaded at runtime rather than bundled with the runtime the program's precompiled validators use, so the program can load a copy of arktype that isn't theirs, e.g. one whose \`type.errors\` isn't the class of their errors. Remove ${packageNameOf(specifier)} from \`${option}\`.`
+
+export const writeUnwrittenModuleMessage = (specifier: string): string =>
+	`${specifier} is imported by a module this build didn't precompile, as one a cache kept from an earlier build is. Keep that cache from storing the modules @ark/precompile transforms, or delete it.`
+
 // `resolved` is where it resolves other than to arktype/runtime
 export const writeAliasMessage = (
 	specifier: string,
@@ -305,6 +330,16 @@ export const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
 
 export const allowUnsafeHint =
 	"Set allowUnsafe: true to build anyway, with a warning."
+
+// a dependency importing the runtime ships what another build precompiled
+export const precompiledDependencyOf = (
+	specifier: string,
+	importer: string
+): string | undefined => {
+	const [, name] =
+		(specifier === "arktype/runtime" && dependencyOf(importer)) || []
+	return name && !arkPackageName.test(name) ? name : undefined
+}
 
 export const writePrecompiledDependencyMessage = (name: string): string =>
 	`${name} imports arktype/runtime, so it ships validators precompiled for one version of arktype, which may not be this build's. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it.`

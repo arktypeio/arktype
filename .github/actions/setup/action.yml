@@ -18,6 +18,10 @@ runs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v4
 
+    # for the Bun driver's tests
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+
     - name: Install dependencies
       shell: bash
       run: pnpm install

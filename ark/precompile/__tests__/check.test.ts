@@ -34,6 +34,16 @@ contextualize(() => {
 		])
 	})
 
+	it("reads a module whose only arktype import is arktype/codecs", () => {
+		const root = writeFixture({
+			"main.ts": `import { codec } from "arktype/codecs"\nexport const EpochMs = codec("number.integer", "Date", {\n\tdecode: n => new Date(n),\n\tencode: d => d.getTime()\n})\n`
+		})
+		attest(check([], { cwd: root }).lines).snap([
+			"main.ts:2:24  accepted",
+			"1 site in 1 file: 1 accepted (100.0%)"
+		])
+	})
+
 	it("resolves past a tsconfig it cannot load", () => {
 		attest(check([], { cwd: fromHere("unloadableTsconfig") }).lines).snap([
 			"site.ts:4:21  accepted",

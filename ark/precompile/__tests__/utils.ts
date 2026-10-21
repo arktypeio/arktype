@@ -231,9 +231,12 @@ export const runCli = (cwd: string, ...args: string[]) =>
 		{ cwd, encoding: "utf8" }
 	)
 
-// Bun is optional, so its tests run where it is installed
-export const hasBun = (): boolean =>
-	spawnSync("bun", ["--version"]).status === 0
+// Bun is optional, so its tests run where it is installed, as CI requires
+export const hasBun = (): boolean => {
+	if (spawnSync("bun", ["--version"]).status === 0) return true
+	if (process.env.CI) throw new Error("CI must install Bun to run its tests")
+	return false
+}
 
 // runs fn in a process whose arktype has neither a configuration nor a Type
 export const inFreshProcess = <args extends unknown[], result>(
