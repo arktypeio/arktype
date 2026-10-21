@@ -9,14 +9,44 @@ import type * as tsgoAst from "typescript/unstable/ast"
 import type * as tsgoFs from "typescript/unstable/fs"
 import type * as tsgoApi from "typescript/unstable/sync"
 import type { LinePositionRange } from "../cache/getCachedAssertions.ts"
-import { getConfig } from "../config.ts"
+import { getConfig, type Checker } from "../config.ts"
 import { isTs7 } from "../utils.ts"
 
 // resolved relative to attest so the API matches the installed typescript
 const requireTypeScript = createRequire(import.meta.url)
 
+const isResolvable = (specifier: string) => {
+	try {
+		requireTypeScript.resolve(specifier)
+		return true
+	} catch {
+		return false
+	}
+}
+
+const getChecker = (): Checker => {
+	const { checker } = getConfig()
+	if (checker === undefined) {
+		return (
+			!isTs7 ? "tsjs"
+			: isResolvable("tsrs/package.json") ? "tsrs"
+			: "tsgo"
+		)
+	}
+	if (checker !== "tsjs" && checker !== "tsgo" && checker !== "tsrs")
+		throwError(`checker must be "tsjs", "tsgo" or "tsrs" (was "${checker}")`)
+	if ((checker === "tsjs") === isTs7) {
+		throwError(
+			`checker "${checker}" requires TypeScript ${checker === "tsjs" ? "<7" : "7+"} (found ${ts.version})`
+		)
+	}
+	return checker
+}
+
+const checker = getChecker()
+
 // tsrs serves the same API as tsgo, so it only changes where it's loaded from
-const compiler = getConfig().tsrs ? "tsrs" : "typescript"
+const compiler = checker === "tsrs" ? "tsrs" : "typescript"
 
 // only loaded for TS 7+ so this module can be imported unconditionally
 export const ast: typeof tsgoAst =
