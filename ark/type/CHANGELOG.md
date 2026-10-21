@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Precompile to ship less
+
+`arktype` is larger than 2.2.9: bundled and minified with esbuild, `import { type } from "arktype"` is 75.6 kB gzipped (240 kB minified), where it was 47.8 kB (156 kB). The growth is spread across the changes below, mostly copy-on-write transforms, tracking cyclic data, errors and their English text, and the set algebra intersections and unions are reduced with. To ship less, precompile with `@ark/precompile`, which replaces each Type with a validator on `arktype/runtime`: the size benchmark's login form bundles to 1.8 kB gzipped, and its shop to 8.8 kB.
+
 ### Return only the first error, or one saying data is invalid, with `errors`
 
 `errors: "first"` stops each validation at the first error it finds and returns it alone, with no promise of which of the data's errors that is. `errors: "none"` returns one root error, `is invalid`, found by checking the data alone, so nothing a Type holds runs again. Either can be configured globally or for a Scope:
