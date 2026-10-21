@@ -1,8 +1,8 @@
-import { append, printable, type Key } from "@ark/util"
+import { printable, type Key } from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
 import type { nodeOfKind } from "../kinds.ts"
 import {
-	flatRef,
+	flatRefsAt,
 	type BaseNode,
 	type DeepNodeTransformation,
 	type DeepNodeTransformContext
@@ -66,12 +66,7 @@ export abstract class BaseProp<
 	}
 
 	protected override initializeFlatRefs(): void {
-		this.cache.flatRefs = append(
-			this.value.flatRefs.map(ref =>
-				flatRef([this.key, ...ref.path], ref.node)
-			),
-			flatRef([this.key], this.value)
-		)
+		this.cache.flatRefs = flatRefsAt(this.key, this.value)
 		this.cache.flatMorphs = []
 	}
 

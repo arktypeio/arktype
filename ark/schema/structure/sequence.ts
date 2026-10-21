@@ -12,7 +12,7 @@ import { BaseConstraint } from "../constraint.ts"
 
 import {
 	appendUniqueFlatRefs,
-	flatRef,
+	flatRefsAt,
 	type BaseNode,
 	type DeepNodeTransformContext,
 	type DeepNodeTransformation,
@@ -216,14 +216,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 		appendUniqueFlatRefs(
 			flatRefs,
-			this.prevariadic.flatMap((element, i) =>
-				append(
-					element.node.flatRefs.map(ref =>
-						flatRef([`${i}`, ...ref.path], ref.node)
-					),
-					flatRef([`${i}`], element.node)
-				)
-			)
+			this.prevariadic.flatMap((element, i) => flatRefsAt(`${i}`, element.node))
 		)
 
 		appendUniqueFlatRefs(
@@ -231,15 +224,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			this.variadicOrPostfix.flatMap(element =>
 				// a postfix index can't be directly represented as a type
 				// key, so we just use the same matcher for variadic
-				append(
-					element.flatRefs.map(ref =>
-						flatRef(
-							[$ark.intrinsic.nonNegativeIntegerString.internal, ...ref.path],
-							ref.node
-						)
-					),
-					flatRef([$ark.intrinsic.nonNegativeIntegerString.internal], element)
-				)
+				flatRefsAt($ark.intrinsic.nonNegativeIntegerString.internal, element)
 			)
 		)
 

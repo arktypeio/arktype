@@ -1,5 +1,4 @@
 import {
-	append,
 	printable,
 	stringAndSymbolicEntriesOf,
 	throwParseError
@@ -7,7 +6,7 @@ import {
 import { BaseConstraint } from "../constraint.ts"
 import type { nodeOfKind } from "../kinds.ts"
 import {
-	flatRef,
+	flatRefsAt,
 	type BaseNode,
 	type DeepNodeTransformContext,
 	type DeepNodeTransformation
@@ -110,12 +109,7 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	}
 
 	protected override initializeFlatRefs(): void {
-		this.cache.flatRefs = append(
-			this.value.flatRefs.map(ref =>
-				flatRef([this.signature, ...ref.path], ref.node)
-			),
-			flatRef([this.signature], this.value)
-		)
+		this.cache.flatRefs = flatRefsAt(this.signature, this.value)
 		this.cache.flatMorphs = []
 	}
 

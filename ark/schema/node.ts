@@ -1,6 +1,7 @@
 import {
 	Callable,
 	DynamicFunction,
+	append,
 	appendUnique,
 	arityOf,
 	entriesOf,
@@ -1660,6 +1661,13 @@ export const flatRef = <node extends BaseRoot>(
 	node,
 	propString: typePathToPropString(path)
 })
+
+// a child's refs, each reached through key
+export const flatRefsAt = (key: KeyOrKeyNode, node: BaseRoot): FlatRef[] =>
+	append(
+		node.flatRefs.map(ref => flatRef([key, ...ref.path], ref.node)),
+		flatRef([key], node)
+	)
 
 export const flatRefsAreEqual = (l: FlatRef, r: FlatRef): boolean =>
 	l.propString === r.propString && l.node.equals(r.node)
