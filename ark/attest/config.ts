@@ -14,6 +14,8 @@ type BaseAttestConfig = {
 	failOnMissingSnapshots: boolean
 	skipTypes: boolean
 	skipInlineInstantiations: boolean
+	/** check types with tsrs, a Rust port of TypeScript 7, instead of tsgo */
+	tsrs: boolean
 	attestAliases: string[]
 	benchPercentThreshold: number
 	benchErrorOnThresholdExceeded: BenchErrorConfig
@@ -45,6 +47,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	updateSnapshots: false,
 	skipTypes: false,
 	skipInlineInstantiations: false,
+	tsrs: false,
 	benchPercentThreshold: 20,
 	benchErrorOnThresholdExceeded: true,
 	filter: undefined,
