@@ -376,11 +376,11 @@ A call to `define`, which returns its argument, is replaced by the argument.
 
 A validator differs from the Type it replaces:
 
-- It lacks the members that compose a Type, like `and` or `in`, so calling one is a TypeError, and bakes `meta` but not a keyword's.
+- It lacks the members that compose a Type, like `and` or `in`, so calling one is a TypeError, and keeps `meta` but not a keyword's.
 - It has `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` only where the build's `members` option sets them, and reads `undefined` for one it lacks.
 - It and its members are frozen, except a Date or RegExp it holds, unless the build sets `freeze: false`.
 - The build refuses what the runtime can't reproduce, like an instance of a class other than Date or RegExp, naming it.
-- Nothing checks that a build runs on the version of `arktype/runtime` it was built with, so rebuild after upgrading.
+- It links only to the `arktype/runtime` of the arktype version it was built with, so a runtime from another version fails the build or Node's module linking.
 - Its errors' `issues` are plain objects holding `code`, `path`, `data` and `expected`, the failing node's description, with a plain message like `name must be a string` or `name is invalid` that doesn't say what the value was unless text configured for it does. Errors at one path stay apart, and a union no branch allows is one issue. A validator a morph calls with its `ctx` adds its issues to that validation. `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`.
 - When it rejects an array, it may look for errors only from the first element it rejects, so a getter or `Proxy` trap reading an element before that one runs once rather than twice, and an element that reads differently the second time is judged by its first read.
 - A `message`, `problem`, `expected` or `actual` configured on a Type or for a code with `configure()`, as a string or a function, is written as arktype writes it. The build refuses a configured locale, a function writing a union's text, text a scope configures for a code, and `predicate` text configured where a narrow or morph can raise it.
