@@ -1,7 +1,9 @@
 import type { NodeKind, nodeOfKind, SequenceTuple } from "@ark/schema"
 import {
 	hasKey,
+	hasOwn,
 	stringAndSymbolicEntriesOf,
+	throwError,
 	throwInternalError
 } from "@ark/util"
 import type { type } from "arktype"
@@ -12,7 +14,10 @@ import {
 } from "./arbitraries/array.ts"
 import { buildDomainArbitrary } from "./arbitraries/domain.ts"
 import { buildCyclicArbitrary } from "./arbitraries/object.ts"
-import { buildProtoArbitrary } from "./arbitraries/proto.ts"
+import {
+	buildProtoArbitrary,
+	type ProtoInputNode
+} from "./arbitraries/proto.ts"
 import { initializeContext, type Ctx } from "./fastCheckContext.ts"
 
 export const arkToArbitrary = (schema: type.Any): fc.Arbitrary<unknown> => {
@@ -34,7 +39,7 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 			const intersectionArbitrary =
 				node.basis?.kind === "domain" ?
 					buildDomainArbitrary[node.basis?.domain](node, ctx)
-				:	buildProtoArbitrary[node.basis?.proto.name](node, ctx)
+				:	buildInstanceArbitrary(node.basis.proto.name, node, ctx)
 
 			ctx.arbitrariesByIntersectionId[node.id] = intersectionArbitrary
 
@@ -53,7 +58,7 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 		case "unit":
 			return fc.constant(node.unit)
 		case "proto":
-			return buildProtoArbitrary[node.proto.name](node as never, ctx)
+			return buildInstanceArbitrary(node.proto.name, node as never, ctx)
 		case "structure":
 			return buildStructureArbitrary(node as never, ctx)
 		case "index":
@@ -93,6 +98,15 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 	}
 	throwInternalError(`${node.kind} is not supported`)
 }
+
+const buildInstanceArbitrary = (
+	className: string,
+	node: ProtoInputNode,
+	ctx: Ctx
+): fc.Arbitrary<unknown> =>
+	hasOwn(buildProtoArbitrary, className) ?
+		buildProtoArbitrary[className](node, ctx)
+	:	throwError(`${className} instances can't be generated`)
 
 export const buildStructureArbitrary = (
 	node: nodeOfKind<"intersection">,

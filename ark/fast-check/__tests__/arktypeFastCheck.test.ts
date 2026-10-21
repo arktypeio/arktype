@@ -147,6 +147,15 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("unsupported class", () => {
+			class Foo {}
+			attest(() => arkToArbitrary(type.instanceOf(Foo))).throws(
+				"Foo instances can't be generated"
+			)
+			attest(() => arkToArbitrary(type({ m: "Map" }))).throws(
+				"Map instances can't be generated"
+			)
+		})
 	})
 
 	describe("array", () => {
