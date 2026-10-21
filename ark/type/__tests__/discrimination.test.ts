@@ -248,6 +248,27 @@ contextualize(() => {
 		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).equals(null)
 	})
 
+	it("won't discriminate at an index a variadic element shifts", () => {
+		// null is at [0] only in [null]
+		const Postfixed = type(["...", "number[]", "false"]).or([
+			"...",
+			"string[]",
+			"null"
+		])
+		attest(
+			discriminantJsonOf(Postfixed.internal.assertHasKind("union"))
+		).equals(null)
+		// null is at [1] only in [string, null]
+		const Prefixed = type(["...", "string[]", "null"]).or([
+			"number",
+			"...",
+			"false[]"
+		])
+		attest(discriminantJsonOf(Prefixed.internal.assertHasKind("union"))).equals(
+			null
+		)
+	})
+
 	it("discriminant path including symbol", () => {
 		const s = Symbol("lobmyS")
 		const sRef = registeredReference(s)

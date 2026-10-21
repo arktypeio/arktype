@@ -634,11 +634,8 @@ export const reduceBranches = ({
 
 	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
 	for (let i = 0; i < branches.length; i++) {
-		for (
-			let j = i + 1;
-			j < branches.length && uniquenessByIndex[i] && uniquenessByIndex[j];
-			j++
-		) {
+		for (let j = i + 1; j < branches.length && uniquenessByIndex[i]; j++) {
+			if (!uniquenessByIndex[j]) continue
 			if (branches[i].equals(branches[j])) {
 				// if the two branches are equal, only "j" is marked as
 				// redundant so at least one copy could still be included in

@@ -33,6 +33,38 @@ contextualize(() => {
 		)
 	})
 
+	it("string.date.iso.parse reads a form without an offset in UTC", () => {
+		const ParseIso = type("string.date.iso.parse")
+		const toIso = (s: string) => ParseIso.assert(s).toISOString()
+		// new Date reads these in local time
+		attest(toIso("2025-01-01T12:00")).equals("2025-01-01T12:00:00.000Z")
+		attest(toIso("2025-001")).equals("2025-01-01T00:00:00.000Z")
+		attest(toIso("2025-01-01T24:00")).equals("2025-01-02T00:00:00.000Z")
+		attest(toIso("2025-01-01T12:00-05:30")).equals("2025-01-01T17:30:00.000Z")
+	})
+
+	it("string.date.iso.parse reads forms new Date can't", () => {
+		const ParseIso = type("string.date.iso.parse")
+		const toIso = (s: string) => ParseIso.assert(s).toISOString()
+		attest(toIso("2025-W01-1")).equals("2024-12-30T00:00:00.000Z")
+		attest(toIso("2020-W53-7")).equals("2021-01-03T00:00:00.000Z")
+		attest(toIso("20250101T1230")).equals("2025-01-01T12:30:00.000Z")
+		attest(toIso("2025-01-01T12.5+01")).equals("2025-01-01T11:30:00.000Z")
+	})
+
+	it("string.date.iso.parse rejects a date that doesn't exist", () => {
+		const ParseIso = type("string.date.iso.parse")
+		attest(ParseIso("2025-02-29").toString()).snap(
+			'must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "2025-02-29")'
+		)
+		attest(ParseIso("2025-W53-1").toString()).snap(
+			'must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "2025-W53-1")'
+		)
+		attest(ParseIso("2025-366").toString()).snap(
+			'must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "2025-366")'
+		)
+	})
+
 	it("string.date.epoch.parse", () => {
 		const parseEpoch = type("string.date.epoch.parse")
 		const toIso = (s: string) => parseEpoch.assert(s).toISOString()

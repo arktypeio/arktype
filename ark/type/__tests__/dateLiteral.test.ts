@@ -18,6 +18,16 @@ contextualize(() => {
 		attest(ISO.allows(new Date("2000/07/05"))).equals(false)
 	})
 
+	it("rejects an invalid Date", () => {
+		const T = type({ a: "d'1970-01-01T00:00:02.000Z'" })
+		attest(T({ a: new Date(Number.NaN) }).toString()).snap(
+			"a must be 1970-01-01T00:00:02.000Z (was an object)"
+		)
+		attest(type("2000 <= Date <= 2000").allows(new Date(Number.NaN))).equals(
+			false
+		)
+	})
+
 	it("offset", () => {
 		attest(type("d'2000-05-05T00:00+05:00'").expression).snap(
 			"d'2000-05-04T19:00:00.000Z'"
