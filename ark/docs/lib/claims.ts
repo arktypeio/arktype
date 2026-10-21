@@ -41,8 +41,9 @@ export interface BenchmarkChart {
 }
 
 /**
- * Backed by claims-final.md (precompile 5628c3752, Node 24.14.1), whose
- * harnesses and raw results are in that thread's lane-claims2 directory.
+ * Measured at 5628c3752 on Node 24.14.1, against moltar's
+ * typescript-runtime-type-benchmarks at 499f3fb and schema-benchmarks at
+ * f1e6e8e, by instruction counts and paired wall-clock runs.
  * Each claim is scoped as claims-final.md scopes it: precompiled or dynamic,
  * valid or invalid data, with or without errors. "Smallest, fastest" holds for
  * precompiled ArkType benchmark by benchmark, from different builds: the
@@ -109,17 +110,10 @@ export const claims = {
 	// the sentence under the docs' charts
 	chartsSummary:
 		"Precompiled ArkType is the fastest on moltar's parseSafe and assertLoose benchmarks, and on Valibot's own login form it reports every error, with its message, in a smaller bundle than Valibot.",
-	// valid data, validation, parsing and Standard Schema, both modes:
-	// 0.74-0.84x ata-validator's wall time, p <= 0.0063
-	validData:
-		"On schemabenchmarks.dev, precompiled and dynamic ArkType both validate valid data faster than ata-validator, its current #1.",
 	// the product schema, valid data: 6003 vs 6002 instructions, wall a tie
 	// (1.11, 3 of 12, p 0.15)
 	dynamicSpeed:
 		"On schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType.",
-	// 66 vs 74 instructions; wall 0.94x ts-runtime-checks, 17 of 20, p 0.0026
-	assertLoose:
-		"Precompiled ArkType is the fastest on moltar's assertLoose benchmark.",
 	// lean errors 912 vs 1475 B gz; default+lean 1.15 kB
 	loginSize:
 		"On Valibot's own login form, precompiled ArkType reports every error, with its message, in a smaller bundle than Valibot: 0.91 kB gzipped against 1.48 kB.",
@@ -133,26 +127,3 @@ export const claims = {
 } satisfies Record<string, Claim<string>>
 
 export type ClaimId = keyof typeof claims
-
-export interface Stat {
-	value: Claim<string>
-	label: Claim<string>
-}
-
-export const heroStats: Stat[] = [
-	{
-		value: "Fastest",
-		label:
-			"on moltar's parseSafe and assertLoose benchmarks, precompiled: 9% fewer instructions per call than the next library"
-	},
-	{
-		value: "16% less time",
-		label:
-			"validating valid data than ata-validator, schemabenchmarks.dev's current #1, precompiled or not"
-	},
-	{
-		value: "0.91 kB",
-		label:
-			"for Valibot's own login form with every error message, precompiled: smaller than Valibot's 1.48 kB gzipped"
-	}
-]

@@ -117,7 +117,7 @@ Port("80000")`,
 	kind: "'square'",
 	side: "number > 0"
 })`,
-	discriminated: `// Shape, precompiled: one switch, each branch checks what's left
+	discriminated: `// Shape, precompiled, helpers inlined: one switch, each branch checks what's left
 data => {
 	switch (data?.kind) {
 		case "circle":

@@ -30,9 +30,9 @@ Below are the highlights. The full list, including what can break, is in [Upgrad
 
 <ClaimCharts />
 
-Both modes run the same checks on valid data. <Claim id="dynamicSpeed" />
+<Claim id="dynamicSpeed" />
 
-What precompiling removes is everything around those checks: the parser, the work of creating each Type, and the code a JIT writes. <Claim id="noInit" />
+What precompiling removes is everything around a Type's checks: the parser, the work of creating each Type, and the code a JIT writes. <Claim id="noInit" />
 
 [Dynamic vs Precompiled](/docs/dynamic-vs-precompiled) compares the two modes side by side.
 
@@ -42,7 +42,7 @@ What precompiling removes is everything around those checks: the parser, the wor
 
 ```ts title="vite.config.ts"
 import { precompile } from "@ark/precompile/unplugin"
-// ---cut---
+
 export default {
 	plugins: [precompile.vite()]
 }
@@ -82,7 +82,7 @@ const Six = type("number % 2 & number % 3")
 Six.expression // "number % 6"
 ```
 
-Precompiled, `Shape` ships as one `switch` on `kind`, each case checking only the key that's left:
+Precompiled, `Shape` checks data like this, its helpers inlined: one `switch` on `kind`, each case checking only the key that's left:
 
 ```js
 // @noErrors
@@ -170,7 +170,7 @@ Dynamic ArkType does less work too. A Type compiles when it's first used rather 
 
 ## Errors as data
 
-An `ArkErrors`' `issues` are plain objects, discriminated by `code`, with the keys their JSON has. `flatByPath` and `flatProblemsByPath` are functions `arktype` exports. Errors print an object by its kind, like `(was an object)`, so a message never grows with the data or leaks what it holds into a log, and undeclared keys and union misses have codes of their own, `undeclared` and `discriminant`. [Upgrading](/docs/upgrading) lists each change with what to write instead.
+An `ArkErrors`' `issues` are plain objects, discriminated by `code`, with the keys their JSON has. `flatByPath` and `flatProblemsByPath` are functions `arktype` exports. Errors print an object by its kind, like `(was an object)`, so an object never grows a message or leaks what it holds into a log, and undeclared keys and union misses have codes of their own, `undeclared` and `discriminant`. [Upgrading](/docs/upgrading) lists each change with what to write instead.
 
 ## A new home
 
