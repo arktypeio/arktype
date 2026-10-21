@@ -79,6 +79,7 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 				disjoint: new Disjoint(),
 				result: [],
 				fixedVariants: [],
+				realigned: false,
 				ctx
 			})
 
@@ -143,6 +144,8 @@ type SequenceIntersectionState = {
 	disjoint: Disjoint
 	result: SequenceTuple
 	fixedVariants: SequenceIntersectionState[]
+	// elements moved to meet others, so an index holds them only at some lengths
+	realigned: boolean
 	ctx: IntersectionContext
 }
 
@@ -181,7 +184,8 @@ const _intersectSequences = (
 			_intersectSequences({
 				...s,
 				disjoint: new Disjoint(...s.disjoint),
-				[postfixSide]: asPrefix(postfixSide === "l" ? lTail : rTail)
+				[postfixSide]: asPrefix(postfixSide === "l" ? lTail : rTail),
+				realigned: true
 			})
 		)
 	}
@@ -194,8 +198,14 @@ const _intersectSequences = (
 					// ideally we could handle disjoint paths more precisely here,
 					// but not trivial to serialize postfix elements as keys
 					kind === "prefix" ? s.result.length : `-${lTail.length + 1}`,
-					// both operands must be required for the disjoint to be considered required
-					elementIsRequired(lHead) && elementIsRequired(rHead) ?
+					// a discriminant must be at an index both elements are at,
+					// whatever the tuple's length
+					(
+						kind === "prefix" &&
+							!s.realigned &&
+							elementIsRequired(lHead) &&
+							elementIsRequired(rHead)
+					) ?
 						"required"
 					:	"optional"
 				)
@@ -213,7 +223,8 @@ const _intersectSequences = (
 			return _intersectSequences({
 				...s,
 				l: alignPostfix(lHead, lTail, rTail.length),
-				r: alignPostfix(rHead, rTail, lTail.length)
+				r: alignPostfix(rHead, rTail, lTail.length),
+				realigned: true
 			})
 		}
 	} else if (kind === "defaultables") {
