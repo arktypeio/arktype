@@ -12,6 +12,7 @@ import {
 	writeIndiscriminableMorphMessage,
 	writeMorphIntersectionMessage
 } from "arksets/internal"
+import type { exactEquals } from "@ark/util"
 import { keywords, scope, type, type Type } from "arktype"
 import type { Out, To } from "arktype/internal/attributes.ts"
 import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
@@ -453,7 +454,7 @@ contextualize(() => {
 
 	it("JSON.parse as out", () => {
 		const T = type({ parse: type("string").pipe(() => JSON.parse) })
-		attest<{ parse: typeof JSON.parse }>(T.infer)
+		attest<true, exactEquals<typeof T.infer, { parse: typeof JSON.parse }>>()
 	})
 
 	it("never as out", () => {
