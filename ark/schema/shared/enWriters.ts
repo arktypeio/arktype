@@ -16,8 +16,13 @@ import type { Locale } from "./locale.ts"
 export const writeProblem: ProblemWriter = ({ expected, actual }) =>
 	`must be ${expected}${actual ? ` (was ${actual})` : ""}`
 
-export const writeUnitProblem: ProblemWriter<"unit"> = ({ expected, actual }) =>
-	`${expected === actual ? `must be reference equal to ${expected} (serialized to the same value)` : `must be ${expected} (was ${actual})`}`
+export const writeUnitProblem: ProblemWriter<"unit"> = ({
+	expected,
+	actual
+}) =>
+	expected === actual ?
+		`must be reference equal to ${expected} (serialized to the same value)`
+	:	`must be ${expected} (was ${actual})`
 
 export const writeDomainActual: ActualWriter<"domain"> = data =>
 	typeof data === "number" && !Number.isFinite(data) ?

@@ -51,8 +51,6 @@ export const errorWriters: {
 	message: writeMessage
 }
 
-export { enInfo } from "./enWriters.ts"
-
 export const errorWritersByCode: {
 	[code in ArkErrorCode]: errorWritersOf<code>
 } = {

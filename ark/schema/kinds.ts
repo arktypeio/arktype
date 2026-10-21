@@ -29,11 +29,8 @@ import { Union } from "./roots/union.ts"
 import { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import type { BaseNodeInput } from "./shared/declare.ts"
-import {
-	enInfo,
-	errorWriters,
-	errorWritersByCode
-} from "./shared/errorWriters.ts"
+import { enInfo } from "./shared/enWriters.ts"
+import { errorWriters, errorWritersByCode } from "./shared/errorWriters.ts"
 import type { ArkErrorCode, ErrorContextsByCode } from "./shared/errors.ts"
 import type {
 	ConstraintKind,
