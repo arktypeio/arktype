@@ -10,6 +10,8 @@ import {
 import * as arkSchema from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { fingerprintOf } from "@ark/schema/runtime"
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { writeMissingInverseMessage } from "@ark/schema/codecs"
 import {
 	appendStringifiedKey,
 	entriesOf,
@@ -133,6 +135,7 @@ import {
 	derivedHint,
 	frozenHint,
 	hintsByRule,
+	opaqueSchemaHint,
 	islandHint,
 	islandValueMessage,
 	localeHint,
@@ -1317,7 +1320,13 @@ export class Precompiler {
 				reasons = reasonsOf(e)
 			}
 			if (reasons.length) {
-				diagnostics.push(this.refuseWritten(module, site, reasons))
+				// its ParseError fails the build already, unless allowUnsafe
+				if (
+					this.allowUnsafe ||
+					!site.parseError ||
+					!isEncodingError(site.parseError)
+				)
+					diagnostics.push(this.refuseWritten(module, site, reasons))
 				continue
 			}
 			// checked at each call, as a factory is
@@ -2877,6 +2886,7 @@ export class Precompiler {
 			site.parseError &&
 			!(
 				this.mode === "standalone" &&
+				!isEncodingError(site.parseError) &&
 				this.unsupportedReasonsOf(site, module).length
 			)
 		) {
@@ -2909,7 +2919,7 @@ export class Precompiler {
 					"R4",
 					`\`${origin.snippetOf(node)}\` is not static, so the site accepts it only as a Standard Schema that is not a Type`,
 					chainOf(standIn.dynamic),
-					undefined,
+					opaqueSchemaHint,
 					"warning"
 				)
 			)
@@ -3907,8 +3917,12 @@ const sharedSchemaExports = Object.keys(runtimeExports).filter(
 		(arktypeRuntime as Record<string, unknown>)[name]
 )
 
+// a missing inverse, which a Type's definition alone decides, whatever the build reads
+const isEncodingError = (e: Error) =>
+	e.message.startsWith(writeMissingInverseMessage(""))
+
 const arktypeSpecifier =
-	/\b(?:from|import)\s*["'](?:arktype(?:\/config)?|arkregex|@ark\/(?:type|regex))["']/
+	/\b(?:from|import)\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
 
 const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
 

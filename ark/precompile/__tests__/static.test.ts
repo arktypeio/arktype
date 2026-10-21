@@ -690,8 +690,8 @@ const wrap = (schema: unknown) => {
 }
 const A = type({ name: z.string() })`)
 			).snap([
-				'/main.ts:4:32  `schema` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `schema` is a parameter of wrap (/main.ts:3:15); its value is known only at runtime\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:7:24  `z.string()` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `zod` is a package the build does not read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+				"/main.ts:4:32  `schema` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `schema` is a parameter of wrap (/main.ts:3:15); its value is known only at runtime\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it's a Type, make it static so the build precompiles it with the site.",
+				"/main.ts:7:24  `z.string()` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `zod` is a package the build does not read\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it's a Type, make it static so the build precompiles it with the site."
 			])
 		})
 
@@ -1051,6 +1051,28 @@ export const B = Forms.Admin.or("null")`)
 			).snap([
 				"/main.ts:12:18  schemas.User.or reads or, which a standalone validator lacks\n  `schemas.User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
 				"/main.ts:13:18  Forms.Admin.or reads or, which a standalone validator lacks\n  `Forms.Admin` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
+			])
+		})
+
+		it("a Type read through this in a static member", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+class Holder {
+	static t = type({ a: "string" })
+	static u = this.t.or("null")
+	static and(def: object) {
+		return this.t.and(def)
+	}
+	static {
+		this.t.array()
+	}
+}
+class Sub extends Holder {}
+export const anded = Sub.and({ b: "string" })`)
+			).snap([
+				"/main.ts:4:13  this.t.or reads or, which a standalone validator lacks\n  `this.t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:6:10  this.t.and reads and, which a standalone validator lacks\n  `this.t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:9:3  this.t.array reads array, which a standalone validator lacks\n  `this.t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
 			])
 		})
 

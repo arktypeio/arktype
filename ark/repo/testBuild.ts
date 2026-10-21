@@ -128,7 +128,9 @@ for (const pkg of packages) {
 		// these also export @ark/schema's runtime, which internal can't
 		if (
 			name === "arktype" &&
-			(module === "runtime" || module === "runtimeExports")
+			(module === "runtime" ||
+				module === "runtimeDevelopment" ||
+				module === "runtimeExports")
 		)
 			continue
 		for (const exportedName of exportedNamesOf(
@@ -268,6 +270,36 @@ if (
 ) {
 	throw new Error(
 		`⚠️  A program built with errors: "none" logs ${JSON.stringify(undetailedOutput)}.`
+	)
+}
+
+// a development build loads the runtime as published, beside what it adds
+writeFileSync(
+	`${undetailed}inspected.ts`,
+	`import { type } from "arktype"\n\nconsole.log(type({ a: "string" })({ a: 1 }))\n`
+)
+const inspectedOutput = spawnSync(process.execPath, ["--input-type=module"], {
+	input: (
+		await build({
+			entryPoints: [`${undetailed}inspected.ts`],
+			bundle: true,
+			write: false,
+			format: "esm",
+			platform: "node",
+			logLevel: "silent",
+			conditions: ["development"],
+			plugins: [precompile.esbuild({ cwd: undetailed, errors: "none" })]
+		})
+	).outputFiles[0].text,
+	encoding: "utf8"
+}).stdout
+
+if (
+	inspectedOutput.replace(/\s+/g, " ") !==
+	"[ { code: 'predicate', path: [], data: { a: 1 }, message: 'is invalid' } ] "
+) {
+	throw new Error(
+		`⚠️  A development build logs its errors as ${JSON.stringify(inspectedOutput)}.`
 	)
 }
 

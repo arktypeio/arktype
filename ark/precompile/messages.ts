@@ -84,6 +84,9 @@ export const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	copies: copiesHint
 }
 
+export const opaqueSchemaHint =
+	"A Standard Schema other than a Type, like a Zod schema, needs no change. If it's a Type, make it static so the build precompiles it with the site."
+
 export const cacheHint =
 	'With runtime: "arktype", arktype defines this at runtime.'
 

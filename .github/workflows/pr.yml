@@ -147,9 +147,6 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-
       - name: Setup Deno
         uses: denoland/setup-deno@v2
 

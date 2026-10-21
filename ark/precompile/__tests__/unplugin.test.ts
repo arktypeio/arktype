@@ -12,9 +12,11 @@ import {
 import {
 	allowUnsafeHint,
 	unbundledMessage,
+	writeExternalizedMessage,
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
-	writeUntransformedImportMessage
+	writeUntransformedImportMessage,
+	writeUnwrittenModuleMessage
 } from "@ark/precompile/internal/host.ts"
 import {
 	precompile,
@@ -35,6 +37,7 @@ import { Worker } from "node:worker_threads"
 import {
 	createBuilder,
 	createServer,
+	createServerModuleRunner,
 	build as viteBuild,
 	defaultClientConditions,
 	defaultServerConditions,
@@ -87,6 +90,18 @@ const viteConfig = (
 	}
 })
 
+// Vite reads its mode from NODE_ENV, which its first run in a process sets
+const withNodeEnv = async <t>(env: string, run: () => Promise<t>) => {
+	const { NODE_ENV } = process.env
+	process.env.NODE_ENV = env
+	try {
+		return await run()
+	} finally {
+		if (NODE_ENV === undefined) delete process.env.NODE_ENV
+		else process.env.NODE_ENV = NODE_ENV
+	}
+}
+
 const runVitest = async (
 	root: string,
 	opts: PrecompileUnpluginOptions,
@@ -107,6 +122,15 @@ const runVitest = async (
 	await vitest.close()
 	return vitest.state
 }
+
+// how many of a run's tests failed and passed
+const outcomesOf = (state: Awaited<ReturnType<typeof runVitest>>) => ({
+	failed: state.getCountOfFailedTests(),
+	passed: state
+		.getFiles()
+		.flatMap(file => file.tasks)
+		.filter(task => task.result?.state === "pass").length
+})
 
 const bundlers = {
 	vite: async (opts?: PrecompileUnpluginOptions, root = app) => {
@@ -141,8 +165,20 @@ const bundlers = {
 
 interface RawHooks {
 	webpack(compiler: {
-		options: { cache: object; module: { rules: object[] } }
+		options: {
+			cache: object | false
+			mode?: string
+			module: { rules: object[] }
+		}
+		hooks: { compilation: { tap(): void } }
 	}): void
+	resolveId: {
+		handler(
+			this: object,
+			id: string,
+			importer: string
+		): Promise<string | undefined>
+	}
 	transform: {
 		handler(this: object, code: string, id: string): Promise<{ code: string }>
 	}
@@ -776,18 +812,124 @@ console.log(out.constructor === type.errors, out.count, out.issues[0].data === d
 		attest(run(output[0].code)).equals(expected)
 	})
 
+	it("vite's module runner loads the runtime its validators use", async () => {
+		const root = writeFixture({
+			"main.ts": `import { type } from "arktype"
+
+const T = type({ a: "string" })
+export const isErrors = T({ a: 1 }) instanceof type.errors
+export let thrown = ""
+try {
+	T.assert({ a: 1 })
+} catch (e) {
+	thrown = String(e)
+}
+`
+		})
+		// a dependency Vite would otherwise leave to Node, as an installed one is
+		mkdirSync(join(root, "node_modules"))
+		symlinkSync(
+			fromHere("..", "..", "type"),
+			join(root, "node_modules/arktype")
+		)
+		const results: unknown[] = []
+		for (const opts of [{}, { errors: "none" }] as const) {
+			const config = viteConfig(opts, root)
+			const server = await createServer({
+				...config,
+				resolve: { ...config.resolve, preserveSymlinks: true },
+				ssr: { resolve: { ...config.ssr!.resolve, externalConditions: [] } }
+			})
+			const runner = createServerModuleRunner(server.environments.ssr)
+			try {
+				const { isErrors, thrown } = await runner.import("/main.ts")
+				results.push([isErrors, thrown])
+			} finally {
+				await runner.close()
+				await server.close()
+			}
+		}
+		attest(results).snap([
+			[true, "TraversalError: a must be a string"],
+			[true, "Error: is invalid"]
+		])
+	})
+
+	it("vite's development server prints errors as their issues", async () => {
+		const root = writeFixture({
+			"main.ts": `import { type } from "arktype"
+import { inspect } from "node:util"
+
+export const inspected = inspect(type({ a: "string" })({ a: 1 }))
+`
+		})
+		const server = await withNodeEnv("development", () =>
+			createServer(viteConfig({}, root))
+		)
+		const runner = createServerModuleRunner(server.environments.ssr)
+		try {
+			attest((await runner.import("/main.ts")).inspected).snap(`[
+  {
+    code: 'domain',
+    path: [ 'a' ],
+    data: 1,
+    expected: 'a string',
+    message: 'a must be a string'
+  }
+]`)
+		} finally {
+			await runner.close()
+			await server.close()
+		}
+	})
+
+	it("fails a build whose external option takes arktype from the bundle", async () => {
+		const thrownBy = (build: () => Promise<unknown>) =>
+			build().then(
+				() => "built",
+				(e: Error) => e.message
+			)
+		const config = viteConfig({})
+		attest([
+			await thrownBy(() =>
+				viteBuild({
+					...config,
+					build: {
+						write: false,
+						lib: { entry: "main.ts", formats: ["es"] },
+						rolldownOptions: { external: id => id === "arktype" }
+					}
+				})
+			),
+			await thrownBy(async () =>
+				(
+					await createServer({
+						...config,
+						ssr: { ...config.ssr, external: ["@ark/schema"] }
+					})
+				).close()
+			)
+		]).equals([
+			`${writeExternalizedMessage("arktype", "external")} ${allowUnsafeHint}`,
+			`${writeExternalizedMessage("@ark/schema", "ssr.external")} ${allowUnsafeHint}`
+		])
+	})
+
 	it("vite merges units by what its last build read", async () => {
 		const cacheDir = tempDir()
+		// a development build's runtime keeps a unit that renders nothing
 		const build = async () => {
-			const [{ output }] = (await viteBuild({
-				...viteConfig({}),
-				cacheDir,
-				build: {
-					write: false,
-					minify: true,
-					lib: { entry: "main.ts", formats: ["es"] }
-				}
-			})) as Rolldown.RolldownOutput[]
+			const [{ output }] = (await withNodeEnv("production", () =>
+				viteBuild({
+					...viteConfig({}),
+					cacheDir,
+					build: {
+						write: false,
+						minify: true,
+						lib: { entry: "main.ts", formats: ["es"] }
+					}
+				})
+			)) as Rolldown.RolldownOutput[]
 			return output[0]
 		}
 		const unitModulesOf = ({ moduleIds }: Rolldown.OutputChunk) =>
@@ -1386,6 +1528,33 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 		])
 	})
 
+	it("resolves the runtime of webpack's mode", async () => {
+		const resolvedIn = async (mode: string) => {
+			const plugin = precompile.raw(
+				{ cwd: app, conditions },
+				{
+					framework: "webpack",
+					webpack: { compiler: {} as never },
+					versions: {}
+				}
+			) as unknown as RawHooks
+			plugin.webpack({
+				options: { cache: false, mode, module: { rules: [] } },
+				hooks: { compilation: { tap: () => {} } }
+			})
+			const resolved = await plugin.resolveId.handler.call(
+				{ warn: () => {} },
+				"arktype",
+				join(app, "main.ts")
+			)
+			return relative(fromHere("..", ".."), resolved!)
+		}
+		attest([
+			await resolvedIn("development"),
+			await resolvedIn("production")
+		]).snap(["type/runtimeDevelopment.ts", "type/runtime.ts"])
+	})
+
 	it("loads the modules a webpack build's cache kept", async () => {
 		const cache = {
 			type: "filesystem",
@@ -1401,7 +1570,10 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 					versions: {}
 				}
 			) as unknown as RawHooks
-			plugin.webpack({ options: { cache, module: { rules: [] } } })
+			plugin.webpack({
+				options: { cache, module: { rules: [] } },
+				hooks: { compilation: { tap: () => {} } }
+			})
 			return plugin
 		}
 		const id = join(app, "schemas.ts")
@@ -1422,6 +1594,16 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 				"~arktype/lost",
 				join(cache.cacheLocation, "arktype")
 			)
+		)
+	})
+
+	it("names a module no build wrote, where nothing caches it", () => {
+		const { load } = precompile.raw(
+			{ cwd: app, conditions },
+			{ framework: "vite", versions: {} }
+		) as unknown as RawHooks
+		attest(() => load.handler("\0~arktype/lost")).throws(
+			writeUnwrittenModuleMessage("~arktype/lost")
 		)
 	})
 
@@ -1520,6 +1702,36 @@ console.log(JSON.stringify(User.toJsonSchema()))
 		)
 		attest(run(await bundlers.esbuild({ cwd: imported }, imported))).equals(
 			runPlain(imported)
+		)
+	})
+
+	it("encodes with a codec another module defines", async () => {
+		const root = writeFixture(
+			{
+				"defs.ts": `import { scope } from "arktype"
+import { codec } from "arktype/codecs"
+
+export const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+export const shop = scope({ Order: { at: EpochMs } }).export()
+`,
+				"main.ts": `import { EpochMs, shop } from "./defs.ts"
+
+console.log(
+	JSON.stringify([
+		EpochMs.encode(new Date(7)),
+		shop.Order.encode({ at: new Date(8) }),
+		shop.Order.in({ at: 9 })
+	])
+)
+`
+			},
+			fromHere("temp", "encodedImport")
+		)
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
+			runPlain(root)
 		)
 	})
 
@@ -1930,8 +2142,33 @@ try {
 				{ runtime },
 				{ ARKTYPE_RUNTIME: runtime ?? "" }
 			)
-			attest(state.getCountOfFailedTests()).equals(0)
+			attest(outcomesOf(state)).equals({ failed: 0, passed: 2 })
 		}
+	})
+
+	it("vitest reruns with its module cache", async () => {
+		const fsModuleCachePath = tempDir()
+		const runs: object[] = []
+		for (let run = 0; run < 2; run++) {
+			const vitest = await startVitest(
+				[],
+				{
+					root: app,
+					config: false,
+					watch: false,
+					reporters: [],
+					fsModuleCache: true,
+					fsModuleCachePath
+				},
+				viteConfig({}, app)
+			)
+			await vitest.close()
+			runs.push(outcomesOf(vitest.state))
+		}
+		attest(runs).equals([
+			{ failed: 0, passed: 2 },
+			{ failed: 0, passed: 2 }
+		])
 	})
 
 	it("vitest configured", async () => {

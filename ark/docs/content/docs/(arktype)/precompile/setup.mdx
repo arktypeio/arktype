@@ -60,11 +60,15 @@ export default {
 	entry: "./src/main.ts",
 	resolve: { extensions: [".ts", ".js"] },
 	module: {
-		rules: [{ test: /\.ts$/, loader: "ts-loader" }]
+		rules: [
+			{ test: /\.ts$/, loader: "ts-loader", options: { transpileOnly: true } }
+		]
 	},
 	plugins: [precompile.webpack()]
 }
 ```
+
+ts-loader is handed modules the plugin already precompiled, which import validators TypeScript can't see, so it only transpiles them. Check types with `tsc --noEmit`, or `fork-ts-checker-webpack-plugin`, which reads your sources.
 
 </Tab>
 <Tab value="Rspack">
@@ -155,7 +159,7 @@ export default {
 
 ## Test runners and runtimes
 
-Vitest uses the Vite plugin. For the others, each driver takes the plugin's options, fails on the same errors and resolves `arktype` to `arktype/runtime` where its host allows. The precompiler runs in a worker thread, sharing no module state with your program.
+Vitest uses the Vite plugin. For the others, each driver takes the plugin's options, fails on the same errors, except that Bun doesn't check dependencies, and resolves `arktype` to `arktype/runtime` where its host allows. The precompiler runs in a worker thread, sharing no module state with your program.
 
 Node 22.15 or later, for `node --test` or any program (pass `--enable-source-maps` for original lines in stack traces):
 

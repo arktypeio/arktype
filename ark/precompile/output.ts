@@ -235,6 +235,8 @@ export const pruneArktypeImports = (
 	folded: Span[],
 	s: MagicString
 ): void => {
+	// e.g. `import "arktype"`, written once however many imports it replaces
+	const bare = new Set<unknown>()
 	for (const statement of module.program.body) {
 		if (
 			statement.type !== "ImportDeclaration" ||
@@ -245,13 +247,22 @@ export const pruneArktypeImports = (
 		const kept = statement.specifiers.filter(specifier =>
 			isReadOutside(specifier, folded, module)
 		)
-		if (kept.length < statement.specifiers.length) {
+		if (kept.length === statement.specifiers.length) continue
+		if (kept.length || !bare.has(statement.source.value)) {
+			if (!kept.length) bare.add(statement.source.value)
 			s.overwrite(
 				statement.start,
 				statement.source.end,
 				writeImport(kept, statement.source.value, module)
 			)
+			continue
 		}
+		// the line break before it goes too, keeping what's written around it
+		const start =
+			s.original[statement.start - 1] === "\n" ?
+				statement.start - 1
+			:	statement.start
+		s.overwrite(start, statement.end, "", { contentOnly: true })
 	}
 }
 
