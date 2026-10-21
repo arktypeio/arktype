@@ -1421,6 +1421,11 @@ console.log(values.map(v => (v as any).from))`,
 				message: string
 			][] = [
 				[
+					"runtime other than arktype",
+					{ runtime: "arktyp" as never },
+					writeOptionValueMessage("runtime", '"arktyp"', '"arktype"')
+				],
+				[
 					"non-object members",
 					{ members: true as never },
 					writeOptionValueMessage("members", "true", "an object")

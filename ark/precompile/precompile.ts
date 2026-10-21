@@ -376,6 +376,11 @@ export const precompileModule = (
 ): PrecompiledModule => new Precompiler(host, opts).precompile(source, id)
 
 export const assertPrecompileOptions = (opts: PrecompileOptions = {}): void => {
+	if (opts.runtime !== undefined && opts.runtime !== "arktype") {
+		throwError(
+			writeOptionValueMessage("runtime", printable(opts.runtime), '"arktype"')
+		)
+	}
 	const members = opts.members ?? {}
 	const cache = opts.runtime === "arktype"
 	if (
