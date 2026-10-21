@@ -15,7 +15,12 @@ export const bundle = (): void => {
 		include: path => path.endsWith(".js")
 	})
 	const entryPoints = publicEntryPoints(process.cwd())
-	const undetailedRuntime = fromCwd("out", "runtimeNone.js")
+	// a runtime bundled with an issues module of its own, by that module
+	const variants = [
+		[fromCwd("out", "runtimeNone.js"), "./issuesNone.js"],
+		[fromCwd("out", "runtimeLean.js"), "./issuesLean.js"],
+		[fromCwd("out", "runtimeNoneLean.js"), "./issuesNoneLean.js"]
+	].filter(([runtime]) => entryPoints.includes(runtime))
 	const opts = {
 		bundle: true,
 		format: "esm",
@@ -29,22 +34,21 @@ export const bundle = (): void => {
 	// a module several entries import evaluates once only if they share one build
 	const { outputFiles } = buildSync({
 		...opts,
-		entryPoints: entryPoints.filter(path => path !== undetailedRuntime),
+		entryPoints: entryPoints.filter(
+			path => !variants.some(([runtime]) => runtime === path)
+		),
 		outdir: fromCwd("out"),
 		splitting: true
 	})
-	// errors "none" runtime, bundled once issues.js re-exports issuesNone.js
-	if (entryPoints.includes(undetailedRuntime)) {
+	// each bundled once issues.js re-exports its issues module
+	for (const [runtime, issues] of variants) {
 		writeFile(
 			fromCwd("out", "shared", "issues.js"),
-			'export * from "./issuesNone.js"\n'
+			`export * from ${JSON.stringify(issues)}\n`
 		)
 		outputFiles.push(
-			...buildSync({
-				...opts,
-				entryPoints: [undetailedRuntime],
-				outfile: undetailedRuntime
-			}).outputFiles
+			...buildSync({ ...opts, entryPoints: [runtime], outfile: runtime })
+				.outputFiles
 		)
 	}
 	for (const path of modulePaths) rmRf(path)

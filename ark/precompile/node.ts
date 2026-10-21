@@ -12,14 +12,14 @@ import {
 	optedInPackagesOf,
 	reportDiagnostics,
 	resolvesToRuntime,
-	resolvesUndetailed,
+	resolvedVariantOf,
 	runtimeSpecifiers,
 	schemaSpecifier,
 	transformedFilterOf,
-	undetailedSpecifierOf,
+	variantSpecifierOf,
 	writeNodeVersionMessage,
 	writeTextlessMessage,
-	writeUndetailedImportMessage
+	writeVariantImportMessage
 } from "./host.ts"
 import { refuseDeclare } from "./declare.ts"
 import { createSyncPrecompiler, isPrecompilerWorker } from "./worker.ts"
@@ -32,7 +32,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	// the worker inherits the flags that registered these hooks
 	if (isPrecompilerWorker) return
 	const isStandalone = opts?.runtime !== "arktype"
-	const isUndetailed = resolvesUndetailed(opts)
+	const variant = resolvedVariantOf(opts)
 	const request = createSyncPrecompiler({
 		precompilerOptions: driverOptionsOf(
 			opts,
@@ -57,13 +57,14 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 			// a precompiled module resolves from the module it was written for
 			if (context.parentURL?.startsWith("arktype:"))
 				context = { ...context, parentURL: importersByUrl[context.parentURL] }
-			if (isUndetailed && schemaSpecifier.test(specifier)) {
+			if (variant && schemaSpecifier.test(specifier)) {
 				return nextResolve(
-					undetailedSpecifierOf(specifier) ??
+					variantSpecifierOf(specifier, variant) ??
 						throwError(
-							writeUndetailedImportMessage(
+							writeVariantImportMessage(
 								context.parentURL ?? "a module",
-								specifier
+								specifier,
+								variant
 							)
 						),
 					context

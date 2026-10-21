@@ -31,5 +31,8 @@ export const countsKeys: boolean = testedOptions.countsKeys === true
 // errors "none" fails with one root issue and runs no Apply's morphs
 export const detailsErrors: boolean = testedOptions.errors !== "none"
 
+// errors without throw(), toJSON() or an arkKind, recognized by their class
+export const leanErrors: boolean = testedOptions.members?.errorMethods === false
+
 // a first-issue build returns one of arktype's issues
 export const firstIssue: boolean = testedOptions.errors === "first"

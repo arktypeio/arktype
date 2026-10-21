@@ -14,6 +14,7 @@ import {
 	releasePath,
 	runtimeConfig,
 	supportedJsonSchemaTargets,
+	throwOnDefault,
 	validateStandardJsonSchemaTarget,
 	type ArkError,
 	type ArkErrorCode,
@@ -150,8 +151,6 @@ const holesByValue = new WeakMap<
 	[id: string, holes: readonly unknown[]]
 >()
 
-const throwOnFail: ArkErrors.Handler = errors => errors.throw()
-
 /**
  * #### a Type precompiled to validate without arktype, frozen with what it holds
  */
@@ -210,7 +209,7 @@ export const createValidator = ((
 	)
 	// an own arrow function, since it is often detached, e.g. when passing to tRPC
 	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
-		validator(data, pipedFromCtx, throwOnFail)
+		validator(data, pipedFromCtx, throwOnDefault)
 	)
 	assign(validator, attributes)
 	validator.allows = freeze(allows)
@@ -239,7 +238,7 @@ export const createValidatorWith = ((
 		freeze(Validator.prototype)
 	)
 	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
-		validator(data, pipedFromCtx, throwOnFail)
+		validator(data, pipedFromCtx, throwOnDefault)
 	)
 	assign(validator, attributes)
 	validator.allows = freeze(parts[0] as never)

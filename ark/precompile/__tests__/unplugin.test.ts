@@ -2,7 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import {
 	writeStandaloneDependencyMessage,
-	writeUndetailedImportMessage
+	writeVariantImportMessage
 } from "@ark/precompile"
 import {
 	emitDeclarations,
@@ -49,6 +49,7 @@ import {
 } from "@ark/schema/runtime"
 import { writeCreationMismatchMessage } from "arktype/runtime"
 import {
+	issuesFrom,
 	packageFiles,
 	runPlain,
 	tempDir,
@@ -590,6 +591,71 @@ console.log(out.constructor === type.errors)
 			fromHere("temp", "unreadErrors")
 		)
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).snap("true\n")
+	})
+
+	it("esbuild errors without methods", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { TraversalError, type } from "arktype"
+
+const T = type({ a: "string", b: { c: "number[]" } })
+
+const out = T({ b: { c: [1, "x"] } })
+if (!(out instanceof type.errors)) throw new Error("valid")
+console.log(out.constructor === type.errors, out.count, JSON.stringify(out.issues))
+console.log(out.summary)
+console.log("throw" in out, "toJSON" in out, String(out))
+try {
+	T.assert({})
+} catch (e) {
+	console.log(String(e), e instanceof TraversalError)
+}
+`
+			},
+			fromHere("temp", "errorMethods")
+		)
+		// with the issues module each runtime copy is published with
+		const outputs = await Promise.all(
+			(
+				[
+					[{ optimize: "size" }, "issuesLean.ts"],
+					[{ errors: "none", optimize: "size" }, "issuesNoneLean.ts"]
+				] as const
+			).map(async ([opts, issues]) => {
+				const { outputFiles } = await esbuild({
+					entryPoints: [join(root, "main.ts")],
+					bundle: true,
+					write: false,
+					format: "esm",
+					conditions,
+					logLevel: "silent",
+					plugins: [
+						issuesFrom(issues),
+						precompile.esbuild({
+							cwd: root,
+							...opts,
+							members: { errorMethods: false },
+							conditions
+						})
+					]
+				})
+				return run(outputFiles[0].text)
+			})
+		)
+		attest(outputs).snap([
+			`true 2 [{"code":"required","path":["a"],"data":{"b":{"c":[1,"x"]}},"message":"a is missing"},{"code":"domain","path":["b","c",1],"data":"x","expected":"a number","message":"b.c[1] must be a number"}]
+a is missing
+b.c[1] must be a number
+false false [object Object]
+TraversalError: a is missing
+b is missing true
+`,
+			`true 1 [{"code":"predicate","path":[],"data":{"b":{"c":[1,"x"]}},"message":"is invalid"}]
+is invalid
+false false [object Object]
+Error: is invalid false
+`
+		])
 	})
 
 	it("esbuild an undetailed failure, read later", async () => {
@@ -1219,9 +1285,10 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 
 	it("undetailed bundles", async () => {
 		const reads = join(undetailed, "reads")
-		const message = writeUndetailedImportMessage(
+		const message = writeVariantImportMessage(
 			join(undetailed, "node_modules", "reads", "index.js"),
-			"@ark/schema"
+			"@ark/schema",
+			"none"
 		)
 		for (const bundler of ["esbuild", "vite"] as const) {
 			attest(
@@ -1274,7 +1341,7 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 		)
 		attest(resolved).equals(undefined)
 		attest(reported).equals([
-			writeUndetailedImportMessage(importer, "@ark/schema")
+			writeVariantImportMessage(importer, "@ark/schema", "none")
 		])
 	})
 

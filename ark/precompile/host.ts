@@ -162,25 +162,51 @@ export const resolvesToRuntime = (
 	opts?.runtime !== "arktype" &&
 	!(opts?.shadow && specifier !== "arktype/config")
 
-// errors "none" runs on a runtime of its own, but not in shadow mode
-export const resolvesUndetailed = (
+// a copy of @ark/schema's runtime with errors of its own
+export type RuntimeVariant = "none" | "lean" | "none-lean"
+
+// errors "none", or errors lacking methods
+export const runtimeVariantOf = (
 	opts: PrecompileOptions | undefined
-): boolean =>
-	opts?.errors === "none" && opts.runtime !== "arktype" && !opts.shadow
+): RuntimeVariant | undefined =>
+	opts?.members?.errorMethods === false ?
+		opts.errors === "none" ?
+			"none-lean"
+		:	"lean"
+	: opts?.errors === "none" ? "none"
+	: undefined
+
+// loaded in place of @ark/schema's runtime, but not in shadow mode
+export const resolvedVariantOf = (
+	opts: PrecompileOptions | undefined
+): RuntimeVariant | undefined =>
+	opts?.runtime === "arktype" || opts?.shadow ?
+		undefined
+	:	runtimeVariantOf(opts)
 
 export const schemaSpecifier = /^@ark\/schema(?:\/|$)/
 
 // only the runtime has a copy, as other entries load the errors it replaces
-export const undetailedSpecifierOf = (specifier: string): string | undefined =>
-	specifier === "@ark/schema/runtime" ? "@ark/schema/runtime/none"
-	: specifier === "@ark/schema/runtime/none" ? specifier
-	: undefined
+export const variantSpecifierOf = (
+	specifier: string,
+	variant: RuntimeVariant
+): string | undefined =>
+	(
+		specifier === "@ark/schema/runtime" ||
+		specifier === `@ark/schema/runtime/${variant}`
+	) ?
+		`@ark/schema/runtime/${variant}`
+	:	undefined
 
-export const writeUndetailedImportMessage = (
+export const writeVariantOption = (variant: RuntimeVariant): string =>
+	variant === "lean" ? "members: { errorMethods: false }" : 'errors: "none"'
+
+export const writeVariantImportMessage = (
 	importer: string,
-	specifier: string
+	specifier: string,
+	variant: RuntimeVariant
 ): string =>
-	`${importer} imports ${specifier}, which a build with errors: "none" can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own`
+	`${importer} imports ${specifier}, which a build with ${writeVariantOption(variant)} can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own`
 
 // not a virtual module like Rolldown's `\0rolldown/runtime.js`
 export const transformedId = /^[^\0].*\.(?:[cm]?[jt]s|[jt]sx)$/

@@ -48,6 +48,14 @@
 			"ark-ts": "./runtimeNone.ts",
 			"default": "./out/runtimeNone.js"
 		},
+		"./runtime/none-lean": {
+			"ark-ts": "./runtimeNoneLean.ts",
+			"default": "./out/runtimeNoneLean.js"
+		},
+		"./runtime/lean": {
+			"ark-ts": "./runtimeLean.ts",
+			"default": "./out/runtimeLean.js"
+		},
 		"./internal": {
 			"ark-ts": "./internal.ts",
 			"default": "./out/internal.js"

@@ -4,7 +4,7 @@ import {
 	configuredThreadMessage,
 	writeOptionValueMessage,
 	writeTextlessMessage,
-	writeUndetailedImportMessage
+	writeVariantImportMessage
 } from "@ark/precompile"
 import { precompile as bunPlugin } from "@ark/precompile/bun"
 import { check } from "@ark/precompile/internal/check.ts"
@@ -309,10 +309,11 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 			attest(status).equals(1)
 			attest(
 				stderr.includes(
-					writeUndetailedImportMessage(
+					writeVariantImportMessage(
 						pathToFileURL(join(undetailed, "node_modules", "reads", "index.js"))
 							.href,
-						"@ark/schema"
+						"@ark/schema",
+						"none"
 					)
 				)
 			).equals(true)
@@ -868,7 +869,9 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 			})
 			attest(status).equals(1)
 			attest(
-				stderr.includes(writeUndetailedImportMessage("a module", "@ark/schema"))
+				stderr.includes(
+					writeVariantImportMessage("a module", "@ark/schema", "none")
+				)
 			).equals(true)
 		})
 

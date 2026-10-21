@@ -35,7 +35,6 @@ import {
 	keptIssuesOf,
 	pathKeyOf,
 	thrownErrorsOf,
-	thrownIssuesOf,
 	type KeptIssue
 } from "@ark/precompile/internal/issues.ts"
 import { build, type Plugin } from "esbuild"
@@ -48,6 +47,7 @@ import {
 	detailsErrors,
 	firstIssue,
 	freezes,
+	leanErrors,
 	hasMember,
 	lackedMembers,
 	lacks,
@@ -55,7 +55,7 @@ import {
 	testedOptions,
 	traverse
 } from "./contract.ts"
-import { tempDir } from "./utils.ts"
+import { issuesFrom, tempDir } from "./utils.ts"
 
 // compares a Type with its precompiled validators on each call's outcome
 
@@ -84,19 +84,6 @@ const pairCopies = (copy: unknown, original: unknown): void => {
 	}
 }
 
-const issuesPath = fromHere("..", "..", "schema", "shared", "issues.ts")
-
-// issuesNone.ts for issues.ts, as @ark/schema/runtime/none bundles them
-const undetailedIssues: Plugin = {
-	name: "issuesNone",
-	setup: pluginBuild =>
-		pluginBuild.onResolve({ filter: /\/issues\.ts$/ }, args =>
-			join(args.resolveDir, args.path) === issuesPath ?
-				{ path: join(issuesPath, "..", "issuesNone.ts") }
-			:	undefined
-		)
-}
-
 // artifacts get their own runtime, sharing no state with arktype
 export const outDir = async (): Promise<string> => {
 	if (out) return out
@@ -113,7 +100,11 @@ export const outDir = async (): Promise<string> => {
 		conditions: ["ark-ts"],
 		outfile: join(dir, "runtime.js"),
 		logLevel: "error",
-		plugins: detailsErrors ? [] : [undetailedIssues]
+		plugins:
+			!detailsErrors ?
+				[issuesFrom(leanErrors ? "issuesNoneLean.ts" : "issuesNone.ts")]
+			: leanErrors ? [issuesFrom("issuesLean.ts")]
+			: []
 	})
 	const runtime = await importFile(join(dir, "runtime.js"))
 	artifactErrors = runtime.type.errors
@@ -124,6 +115,11 @@ export const outDir = async (): Promise<string> => {
 
 // the artifacts' runtime's ArkErrors, unlike those another copy wrote
 let artifactErrors: Function | undefined
+
+// lean errors have no arkKind, so the artifacts' are known by their class
+const isErrors = (value: unknown): boolean =>
+	hasArkKind(value, "errors") ||
+	(leanErrors && !!artifactErrors && value instanceof artifactErrors)
 
 // a hole calling another runtime copy's validator returns foreign errors
 const returnsForeignErrors = (
@@ -509,15 +505,18 @@ const textsOf = (errors: ArkErrors, grouped = true) => {
 const observe = (run: () => unknown, input: unknown): unknown => {
 	try {
 		const result: any = run()
-		return hasArkKind(result, "errors") ?
+		return isErrors(result) ?
 				{
 					issues: keptIssuesOf(result, !firstIssue),
 					...(detailsErrors && { texts: textsOf(result, !firstIssue) })
 				}
 			:	{ out: result, isInput: result === input }
 	} catch (e) {
-		const issues = thrownIssuesOf(e, !firstIssue)
-		const errors = thrownErrorsOf(e)
+		const cause = (e as { cause?: unknown } | undefined)?.cause
+		// an errors "none" assertion's cause has no arkKind where errors lack methods
+		const errors =
+			thrownErrorsOf(e) ?? (isErrors(cause) ? (cause as ArkErrors) : undefined)
+		const issues = errors && keptIssuesOf(errors, !firstIssue)
 		return issues ?
 				{
 					threw: "TraversalError",

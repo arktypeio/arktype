@@ -8,10 +8,10 @@ import {
 	optedInPackagesOf,
 	reportDiagnostics,
 	resolvesToRuntime,
-	resolvesUndetailed,
+	resolvedVariantOf,
 	runtimeSpecifiers,
 	transformedFilterOf,
-	writeUndetailedImportMessage
+	writeVariantImportMessage
 } from "./host.ts"
 import { refuseDeclare } from "./declare.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
@@ -53,14 +53,15 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 						loader: "js"
 					}))
 				}
-				if (resolvesUndetailed(opts)) {
+				const variant = resolvedVariantOf(opts)
+				if (variant) {
 					build.module("@ark/schema/runtime", () => ({
-						contents: `export * from ${JSON.stringify(host.resolve("@ark/schema/runtime/none", runtime!))}`,
+						contents: `export * from ${JSON.stringify(host.resolve(`@ark/schema/runtime/${variant}`, runtime!))}`,
 						loader: "js"
 					}))
 					// throws once linked, as Bun names no importer
 					build.module("@ark/schema", () => ({
-						contents: `export * from ${JSON.stringify(host.resolve("@ark/schema", runtime!))}\nthrow new Error(${JSON.stringify(writeUndetailedImportMessage("a module", "@ark/schema"))})`,
+						contents: `export * from ${JSON.stringify(host.resolve("@ark/schema", runtime!))}\nthrow new Error(${JSON.stringify(writeVariantImportMessage("a module", "@ark/schema", variant))})`,
 						loader: "js"
 					}))
 				}

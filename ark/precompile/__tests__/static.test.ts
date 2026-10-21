@@ -1491,6 +1491,20 @@ const T = type("string")`,
 			])
 		})
 
+		it("islands where errors lack methods", () => {
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+// @ark-runtime
+const T = type("string")`,
+					{},
+					{ members: { errorMethods: false } }
+				)
+			).snap([
+				"/main.ts:3:1  a runtime island returns arktype's errors, which aren't instances of type.errors under members: { errorMethods: false }\n  a build whose errors lack methods gives its validators a runtime of their own\n  Precompile the definition, or build without members: { errorMethods: false }."
+			])
+		})
+
 		it("a locale outside a runtime island", () => {
 			attest(
 				diagnosticsOf(`import { de } from "arktype/locales/de"

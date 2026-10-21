@@ -17,8 +17,22 @@ import {
 	rmSync,
 	writeFileSync
 } from "node:fs"
+import type { Plugin } from "esbuild"
 import { tmpdir } from "node:os"
 import { dirname, join, posix } from "node:path"
+
+const issuesPath = fromHere("..", "..", "schema", "shared", "issues.ts")
+
+// an issues module for issues.ts, as each copy of @ark/schema/runtime bundles its own
+export const issuesFrom = (file: string): Plugin => ({
+	name: file,
+	setup: pluginBuild =>
+		pluginBuild.onResolve({ filter: /\/issues\.ts$/ }, args =>
+			join(args.resolveDir, args.path) === issuesPath ?
+				{ path: join(issuesPath, "..", file) }
+			:	undefined
+		)
+})
 
 // a bare specifier resolves to node_modules, which the build doesn't read
 export const memoryHost = (files: Record<string, string>): PrecompileHost => ({

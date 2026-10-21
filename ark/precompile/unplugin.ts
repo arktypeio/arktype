@@ -24,17 +24,17 @@ import {
 	optedInPackagesOf,
 	reportDiagnostics,
 	resolvesToRuntime,
-	resolvesUndetailed,
+	resolvedVariantOf,
 	rethrowAsBuildError,
 	runtimeSpecifiers,
 	schemaSpecifier,
 	throwBuildError,
 	transformedFilterOf,
 	unbundledMessage,
-	undetailedSpecifierOf,
+	variantSpecifierOf,
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
-	writeUndetailedImportMessage,
+	writeVariantImportMessage,
 	writeUntransformedImportMessage
 } from "./host.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
@@ -83,7 +83,7 @@ export const precompile: UnpluginInstance<
 		request("readDependency", importer) as Promise<RenderedDiagnostics>
 	const host = createNodeHost(opts)
 	const isStandalone = opts?.runtime !== "arktype"
-	const isUndetailed = resolvesUndetailed(opts)
+	const variant = resolvedVariantOf(opts)
 	const packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
@@ -208,7 +208,7 @@ export const precompile: UnpluginInstance<
 		resolveId: {
 			filter: {
 				id: new RegExp(
-					`${resolvedSpecifier.source}${isUndetailed ? `|${schemaSpecifier.source}` : ""}`
+					`${resolvedSpecifier.source}${variant ? `|${schemaSpecifier.source}` : ""}`
 				)
 			},
 			async handler(id, importer) {
@@ -222,11 +222,11 @@ export const precompile: UnpluginInstance<
 				// a virtual module resolves from the module it was written for
 				if (importer.startsWith("\0~arktype/"))
 					return host.resolve(id, importersById[importer])
-				if (isUndetailed && schemaSpecifier.test(id)) {
-					const undetailed = undetailedSpecifierOf(id)
-					return undetailed ?
-							host.resolve(undetailed, importer)
-						:	refuse(writeUndetailedImportMessage(importer, id))
+				if (variant && schemaSpecifier.test(id)) {
+					const specifier = variantSpecifierOf(id, variant)
+					return specifier ?
+							host.resolve(specifier, importer)
+						:	refuse(writeVariantImportMessage(importer, id, variant))
 				}
 				const isRuntime = runtimeSpecifiers.includes(id)
 				const diagnostics =
@@ -368,10 +368,10 @@ export const precompile: UnpluginInstance<
 			setup: build => {
 				if (!build.initialOptions.bundle) throwBuildError(unbundledMessage)
 				build.onDispose(restart)
-				if (isUndetailed) {
+				if (variant) {
 					build.onResolve({ filter: schemaSpecifier }, args => {
 						if (args.pluginData === esbuildResolution) return
-						const specifier = undetailedSpecifierOf(args.path)
+						const specifier = variantSpecifierOf(args.path, variant)
 						return specifier ?
 								build.resolve(specifier, {
 									kind: args.kind,
@@ -382,9 +382,10 @@ export const precompile: UnpluginInstance<
 							:	{
 									errors: [
 										{
-											text: writeUndetailedImportMessage(
+											text: writeVariantImportMessage(
 												args.importer,
-												args.path
+												args.path,
+												variant
 											)
 										}
 									]

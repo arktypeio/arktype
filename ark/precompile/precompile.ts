@@ -99,8 +99,11 @@ import {
 	allowUnsafeHint,
 	arkPackageName,
 	dependencyOf,
+	runtimeVariantOf,
 	transformedId,
-	type PrecompileHost
+	writeVariantOption,
+	type PrecompileHost,
+	type RuntimeVariant
 } from "./host.ts"
 import {
 	createSiteState,
@@ -354,12 +357,9 @@ export const assertPrecompileOptions = (opts: PrecompileOptions = {}): void => {
 		)
 	}
 	for (const member in members) {
-		if (
-			!includes(defaultMembers, member) &&
-			!includes(introspectionMembers, member)
-		)
+		if (!includes(memberOptions, member))
 			throwError(writeUnknownMemberMessage(printable(member)))
-		const kept = members[member as ValidatorMember]
+		const kept = members[member]
 		if (kept !== undefined && typeof kept !== "boolean") {
 			throwError(
 				writeOptionValueMessage(
@@ -429,6 +429,7 @@ export class Precompiler {
 	// e.g. traverse, from and toString where members.methods is false
 	private lackedMembers: ReadonlySet<string>
 	private errors: ErrorDetail | undefined
+	private variant: RuntimeVariant | undefined
 	private mutatesInput: MutatesInput | undefined
 	private standalone: StandaloneOptions
 	private configuration: Configuration | undefined
@@ -475,6 +476,7 @@ export class Precompiler {
 		this.allowUnsafe = !!opts.allowUnsafe
 		this.members = opts.members ?? {}
 		this.errors = opts.errors
+		this.variant = runtimeVariantOf(opts)
 		this.mutatesInput = opts.mutatesInput
 		this.standalone = {
 			members: this.members,
@@ -3512,18 +3514,21 @@ export class Precompiler {
 				markerHint
 			)
 		)
-		if (this.errors === "none") {
+		if (this.variant) {
+			const option = writeVariantOption(this.variant)
 			result.push(
 				...module.islands.map(island =>
 					this.diagnostic(
 						module,
 						island,
 						"R4",
-						`a runtime island returns arktype's errors, which aren't instances of type.errors under errors: "none"`,
+						`a runtime island returns arktype's errors, which aren't instances of type.errors under ${option}`,
 						[
-							"a build whose errors say only that data is invalid gives its validators a runtime of their own"
+							this.variant === "lean" ?
+								"a build whose errors lack methods gives its validators a runtime of their own"
+							:	"a build whose errors say only that data is invalid gives its validators a runtime of their own"
 						],
-						`Precompile the definition, or build without errors: "none".`
+						`Precompile the definition, or build without ${option}.`
 					)
 				)
 			)
@@ -3792,12 +3797,18 @@ export class Precompiler {
 export const writeUnknownMemberMessage = <member extends string>(
 	member: member
 ): writeUnknownMemberMessage<member> =>
-	`members has ${member}, which isn't one of ${[...defaultMembers, ...introspectionMembers].map(name => JSON.stringify(name)).join(", ")}`
+	`members has ${member}, which isn't one of ${memberOptions.map(name => JSON.stringify(name)).join(", ")}`
 
 export type writeUnknownMemberMessage<member extends string> =
 	`members has ${member}, which isn't one of ${string}`
 
 const methodMembers = ["traverse", "from", "toString"] as const
+
+const memberOptions = [
+	...defaultMembers,
+	...introspectionMembers,
+	"errorMethods"
+] as const
 
 const booleanOptions = ["freeze", "lazy", "countsKeys"] as const
 

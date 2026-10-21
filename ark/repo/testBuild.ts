@@ -167,6 +167,21 @@ if (
 if ("failsAt" in (undetailedRuntime.ArkErrors as Function).prototype)
 	throw new Error("⚠️  @ark/schema/runtime/none bundles shared/issues.ts.")
 
+// what builds whose errors lack methods load in place of it
+for (const variant of ["lean", "none-lean"]) {
+	const leanRuntime = await importBuilt(`@ark/schema/runtime/${variant}`)
+	if (
+		Object.keys(leanRuntime).join() !==
+		Object.keys(await importBuilt("@ark/schema/runtime")).join()
+	) {
+		throw new Error(
+			`⚠️  @ark/schema/runtime/${variant} exports other names than @ark/schema/runtime.`
+		)
+	}
+	if ("toJSON" in (leanRuntime.ArkErrors as Function).prototype)
+		throw new Error(`⚠️  @ark/schema/runtime/${variant}'s errors have methods.`)
+}
+
 const errors = type("string")(5) as ArkErrors
 
 if (
