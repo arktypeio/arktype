@@ -1,6 +1,6 @@
 ---
 name: arktype
-description: Write, review or debug runtime validation with ArkType (the `arktype` package). Use when code imports from "arktype", when a TypeScript project needs to validate untrusted input like request bodies, env vars, JSON, config files or form data, or when converting schemas from Zod, Yup, Valibot or io-ts to ArkType.
+description: Write, review or debug runtime validation with ArkType (the `arktype` package). Use when code imports from "arktype", when a TypeScript project needs to validate untrusted input like request bodies, env vars, JSON, config files or form data, or when converting schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema to ArkType.
 ---
 
 # ArkType
