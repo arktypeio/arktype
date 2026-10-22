@@ -1921,7 +1921,8 @@ ${writeFunction(
 		unconfigured = false
 	): string {
 		const keepsMeta = members.has("meta")
-		const configured = keepsMeta || !unconfigured
+		// a meta reads no onFail a build without config knows it lacks
+		const configured = !unconfigured
 		const hasAttributes =
 			keepsMeta || introspectionMembers.some(member => members.has(member))
 		const pipes = this.pipes(members, unconfigured)
@@ -1956,7 +1957,7 @@ ${writeFunction(
 			: applier ? `const rootApply = ${applier.apply}`
 			: makes ? "const rootApply = make(parts)"
 			: "",
-			!keepsMeta ? ""
+			!keepsMeta || !configured ? ""
 			: this.baking.readsConfig ?
 				"const configuredOnFail = attributes.meta.onFail ?? runtime.runtimeConfig.onFail"
 			:	"const configuredOnFail = attributes.meta.onFail",
