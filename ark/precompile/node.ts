@@ -25,6 +25,7 @@ import {
 	writeVariantImportMessage
 } from "./host.ts"
 import { refuseDeclare } from "./declare.ts"
+import { isProductionEnv } from "./presets.ts"
 import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
 import { createSyncPrecompiler, isPrecompilerWorker } from "./worker.ts"
 
@@ -52,6 +53,19 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	)
 	const isTransformed = (id: string) =>
 		filter.include.test(id) && !filter.exclude.test(id)
+	// as a development build resolves it, so Node prints errors as their issues
+	const runtimeConditions = isProductionEnv() ? [] : ["development"]
+	const resolveRuntime: module.ResolveHookSync = (
+		specifier,
+		context,
+		nextResolve
+	) =>
+		specifier === "arktype/runtime" ?
+			nextResolve(specifier, {
+				...context,
+				conditions: [...context.conditions, ...runtimeConditions]
+			})
+		:	nextResolve(specifier, context)
 	const modules: Record<string, string> = {}
 	const importersByUrl: Record<string, string> = {}
 	// modules whose text these hooks were given
@@ -91,7 +105,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 				)
 			}
 			if (!runtimeSpecifiers.includes(specifier))
-				return nextResolve(specifier, context)
+				return resolveRuntime(specifier, context, nextResolve)
 			const importer = context.parentURL
 			// a module these hooks never saw wasn't precompiled
 			if (
@@ -110,9 +124,10 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 					warning => process.emitWarning(warning)
 				)
 			}
-			return nextResolve(
+			return resolveRuntime(
 				resolvesToRuntime(specifier, opts) ? "arktype/runtime" : specifier,
-				context
+				context,
+				nextResolve
 			)
 		},
 		load: (url, context, nextLoad) => {

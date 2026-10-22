@@ -1686,6 +1686,36 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 		)
 	})
 
+	it("versions a persistent cache by the options, ark.json's included", () => {
+		const root = writeFixture({ "package.json": "{}" })
+		const versionOf = (cache: { type: string; version?: string }) => {
+			const plugin = precompile.raw(
+				{ cwd: root, conditions },
+				{
+					framework: "webpack",
+					webpack: { compiler: {} as never },
+					versions: {}
+				}
+			) as unknown as RawHooks
+			plugin.webpack({
+				options: { cache, module: { rules: [] } },
+				hooks: { compilation: { tap: () => {} } }
+			})
+			return cache.version
+		}
+		const unset = versionOf({ type: "filesystem" })
+		attest(versionOf({ type: "filesystem" })).equals(unset)
+		writeFileSync(
+			join(root, "ark.json"),
+			JSON.stringify({ precompile: { errors: "none" } })
+		)
+		const none = versionOf({ type: "filesystem" })
+		attest(none === unset).equals(false)
+		attest(versionOf({ type: "persistent", version: "app" })).equals(
+			`app ${none}`
+		)
+	})
+
 	it("names a module no build wrote, where nothing caches it", () => {
 		const { load } = precompile.raw(
 			{ cwd: app, conditions },

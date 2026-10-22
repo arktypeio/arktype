@@ -3,6 +3,7 @@ import { join } from "node:path"
 import type { PrecompilePluginOptions, TransformedModule } from "./driver.ts"
 import {
 	appendSourceMap,
+	createDevelopmentHost,
 	createNodeHost,
 	driverOptionsOf,
 	optedInPackagesOf,
@@ -14,6 +15,7 @@ import {
 	writeVariantImportMessage
 } from "./host.ts"
 import { refuseDeclare } from "./declare.ts"
+import { isProductionEnv } from "./presets.ts"
 import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
 
@@ -43,8 +45,10 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 		setup: build => {
 			const cwd = opts?.cwd ?? process.cwd()
 			if (opts?.runtime !== "arktype") {
-				// a runtime plugin replaces a package for every importer
-				const host = createNodeHost(opts)
+				// a runtime plugin replaces a package for every importer, with the
+				// runtime a development build resolves, so Bun prints errors as issues
+				const host =
+					isProductionEnv() ? createNodeHost(opts) : createDevelopmentHost(opts)
 				const runtime = host.resolve(
 					"arktype/runtime",
 					join(cwd, "package.json")

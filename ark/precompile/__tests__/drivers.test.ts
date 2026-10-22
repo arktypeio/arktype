@@ -52,7 +52,12 @@ const conditions = ["ark-ts"]
 // a test's timeout can't stop a synchronous child, so the child's does
 const timeout = 60_000
 
-const node = (args: string[], opts: PrecompilePluginOptions, cwd = app) =>
+const node = (
+	args: string[],
+	opts: PrecompilePluginOptions,
+	cwd = app,
+	env: Record<string, string> = {}
+) =>
 	spawnSync(
 		process.execPath,
 		[
@@ -62,7 +67,7 @@ const node = (args: string[], opts: PrecompilePluginOptions, cwd = app) =>
 			`data:text/javascript,import { register } from "${pathToFileURL(fromHere("..", "node.ts"))}"; register(${JSON.stringify({ ...opts, conditions, cwd })})`,
 			...args
 		],
-		{ cwd, encoding: "utf8", timeout }
+		{ cwd, encoding: "utf8", timeout, env: { ...process.env, ...env } }
 	)
 
 // Node 22 reports a test run that isn't to a terminal as TAP
@@ -120,6 +125,13 @@ const cycleOrder = fromHere("cycleOrder")
 const setInStep = fromHere("setInStep")
 const library = writeLibrary()
 const undetailed = writeUndetailed()
+const logged = writeFixture(
+	{
+		"main.ts":
+			'import { type } from "arktype"\n\nconsole.log(type({ a: "number" })({ a: "x" }))\n'
+	},
+	fromHere("temp", "logged")
+)
 
 contextualize(function (this: Mocha.Suite) {
 	this.timeout(timeout)
@@ -198,6 +210,23 @@ contextualize(function (this: Mocha.Suite) {
 
 		it("cache", () => {
 			attest(node(["main.ts"], { runtime: "arktype" }).stdout).equals(expected)
+		})
+
+		it("prints errors as their issues outside production", () => {
+			attest(node(["main.ts"], {}, logged).stdout).snap(`[
+  {
+    code: 'domain',
+    path: [ 'a' ],
+    data: 'x',
+    expected: 'a number',
+    message: 'a must be a number'
+  }
+]
+`)
+			// production loads the runtime without the inspect hook
+			attest(
+				node(["main.ts"], {}, logged, { NODE_ENV: "production" }).stdout
+			).satisfies(/^ArkIssues {/)
 		})
 
 		it("import cycle", () => {
@@ -910,6 +939,19 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 			attest(
 				bun([...preload, "main.ts"], { runtime: "arktype" }).stdout
 			).equals(expected)
+		})
+
+		it("prints errors as their issues outside production", () => {
+			attest(bun([...preload, "main.ts"], { cwd: logged }).stdout).snap(`[
+  {
+    code: "domain",
+    path: [ "a" ],
+    data: "x",
+    expected: "a number",
+    message: "a must be a number",
+  }
+]
+`)
 		})
 
 		it("import cycle", () => {

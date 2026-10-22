@@ -34,6 +34,8 @@ precompile.vite({ preset: "smallest", members: { meta: false } })
 
 No preset changes what a program observes: none sets `errors`, `mutatesInput` or `countsKeys`, or drops a member, since the build can't see a member read by code it doesn't build, like a library reading `~standard`. With `runtime: "arktype"`, a preset sets nothing.
 
+With Turbopack, `"smallest"` needs the `@ark/schema/runtime` alias [`optimize: "size"`](#optimize-and-optimizeerrors) does.
+
 ## Production builds
 
 In development and tests, validators check at runtime what the build verified, so a program the build couldn't fully see fails where it would otherwise misbehave:

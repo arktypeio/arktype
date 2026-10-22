@@ -159,6 +159,13 @@ export const precompile: UnpluginInstance<
 	const keepCompiler = (bundler: BundlerCompiler) => {
 		compiler = bundler
 		resolveIn(bundler.options.mode === "development")
+		// a persistent cache keeps what other options precompiled, e.g. before
+		// ark.json changed, so they version it
+		const { cache } = bundler.options
+		if (cache && typeof cache === "object") {
+			const version = `arktype ${JSON.stringify(set)}`
+			cache.version = cache.version ? `${cache.version} ${version}` : version
+		}
 		// webpack and Rspack decide externals, e.g. Next's, before resolving
 		bundler.hooks.compilation.tap("arktype", compilation =>
 			compilation.hooks.finishModules.tap("arktype", modules => {
@@ -399,7 +406,9 @@ export const precompile: UnpluginInstance<
 			configEnvironment: () =>
 				inlined.length ? { resolve: { noExternal: inlined } } : undefined,
 			// a module's precompiled code depends on files other than its own,
-			// and the modules it imports are written only as it is transformed
+			// and the modules it imports are written only as it is transformed.
+			// An inlined runtime module is cached with @ark/schema/runtime resolved
+			// to the variant the options chose, so another variant can't reuse it
 			configureVitest: (context: VitestPluginContext) =>
 				(
 					context.defineCacheKeyGenerator ??
@@ -410,7 +419,7 @@ export const precompile: UnpluginInstance<
 						!transformedFilter.exclude.test(id)
 					) ?
 						false
-					:	undefined
+					:	variant
 				),
 			options: checkInputExternal,
 			// a factory checks its helpers against what Vitest's mocks replace
@@ -579,7 +588,10 @@ const esbuildResolution = "arktype"
 
 // what the plugin reads of a webpack or Rspack compiler
 interface BundlerCompiler {
-	options: { cache?: unknown; mode?: string | undefined }
+	options: {
+		cache?: boolean | { version?: string | undefined } | undefined
+		mode?: string | undefined
+	}
 	hooks: { compilation: Tap<BundlerCompilation> }
 	webpack: {
 		ExternalModule: abstract new (...args: never[]) => { userRequest: string }
@@ -626,9 +638,10 @@ interface VitestPluginContext {
 	experimental_defineCacheKeyGenerator?: CacheKeyGenerator
 }
 
-// a generator returning false keeps a module out of Vitest's module cache
+// a generator returning false keeps a module out of Vitest's module cache,
+// and a string adds to its key
 type CacheKeyGenerator = (
-	generate: (context: { id: string }) => false | undefined
+	generate: (context: { id: string }) => string | false | undefined
 ) => void
 
 const noDiagnostics = (): RenderedDiagnostics => ({ errors: [], warnings: [] })
