@@ -67,19 +67,18 @@ export const isLuhnValid = (creditCardInput: string): boolean => {
 	return !!(sum % 10 === 0 ? sanitized : false)
 }
 
-export const isParsableDate = (s: string): boolean =>
-	!Number.isNaN(new Date(s).valueOf())
+export const isParsableDate = (s: string): boolean => readDate(s) !== undefined
 
 const dateParseError = /* @__PURE__ */ keywordError(
 	"string.date.parse",
 	"a parsable date"
 )
 
-export const parseDate = (s: string, ctx: Traversal): Date | ArkError => {
-	const date = new Date(s)
-	if (Number.isNaN(date.valueOf())) return ctx.error(dateParseError)
-	return date
-}
+export const parseDate = (s: string, ctx: Traversal): Date | ArkError =>
+	readDate(s) ?? ctx.error(dateParseError)
+
+export const iso8601Matcher =
+	/^[+-]?\d{4}(?!\d{2}\b)(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\1(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?:T(?:(?:(?:[01]\d|2[0-3])(?:(:?)[0-5]\d)?|24:?00)(?:[,.]\d+(?!:))?)?(?:\2[0-5]\d(?:[,.]\d+)?)?(?:[Zz]|[+-](?:[01]\d|2[0-3]):?(?:[0-5]\d)?)?)?)?$/
 
 // a date that doesn't exist, like 2025-02-29, isn't an ISO 8601 date either
 const isoDateParseError = /* @__PURE__ */ keywordError(
@@ -144,6 +143,18 @@ const isoDateOf = (parts: RegExpExecArray): Date | undefined => {
 		:	0
 	date.setUTCHours(+(hour ?? 0), +(minute ?? 0) + offset, +(second ?? 0), ms)
 	return date
+}
+
+// an ISO date is read as string.date.iso.parse reads it, so it's one instant
+// on every machine and a date that doesn't exist is invalid. Other forms are
+// read by the host's Date
+const readDate = (s: string): Date | undefined => {
+	if (iso8601Matcher.test(s)) {
+		const parts = isoDateParts.exec(s)
+		return parts ? isoDateOf(parts) : undefined
+	}
+	const date = new Date(s)
+	return Number.isNaN(date.valueOf()) ? undefined : date
 }
 
 export const parseIsoDate = (s: string, ctx: Traversal): Date | ArkError => {

@@ -2679,6 +2679,16 @@ parse("20250101")
 parse("2025-02-29")
 ```
 
+`string.date.parse` and `string.date` read a string `string.date.iso` accepts the same way, falling back to `new Date(s)` for other forms, like `"5/21/1993"`, which are still read by the host. So `string.date.parse` gives an ISO string the same instant on every machine, and `string.date` rejects an ISO date that doesn't exist:
+
+```ts
+// previously 2020-01-01T17:00:00.000Z in New York, now 2020-01-01T12:00:00.000Z
+type("string.date.parse")("2020-01-01T12:00")
+
+// previously 2025-03-02T00:00:00.000Z, now ArkErrors: must be a parsable date (was "2025-02-30")
+type("string.date.parse")("2025-02-30")
+```
+
 ### Intersect arrays whose elements are disjoint as empty arrays
 
 Intersecting arrays whose elements are disjoint allowed any array, and a tuple an intersection narrowed kept the length bounds it had before:
