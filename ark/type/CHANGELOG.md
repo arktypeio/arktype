@@ -2003,19 +2003,40 @@ A tuple definition's first two elements were converted to property keys to check
 type(["string", "toString"])
 ```
 
-### Name JSON Schema `$defs` independently of other types
+### Name JSON Schema `$defs` by their alias
 
-`$defs` keys and `$ref`s were node ids, whose numbers depend on every type defined before, so the same type's JSON Schema changed with unrelated code. Each def is now named by its alias or kind, numbered within the schema in reference order:
+`$defs` keys and `$ref`s were node ids, whose numbers depend on every type defined before, so the same type's JSON Schema changed with unrelated code, and a cyclic type wrote each of its objects, arrays and unions as a def of its own. Now a def is written only for a cyclic alias, named exactly by its alias, and everything else is inline:
 
 ```ts
 const { user } = scope({
 	user: { name: "string", "friends?": "user[]" }
 }).export()
 
-// previously e.g. { $ref: "#/$defs/user3", ... "#/$defs/intersection41" ... }
-// now { $ref: "#/$defs/user1", ... "#/$defs/intersection1" ... }
+// previously e.g. { $ref: "#/$defs/user3", $defs: { user3: ..., intersection41: ... } }
+// now
+// {
+// 	$schema: "https://json-schema.org/draft/2020-12/schema",
+// 	$ref: "#/$defs/user",
+// 	$defs: {
+// 		user: {
+// 			type: "object",
+// 			properties: {
+// 				name: { type: "string" },
+// 				friends: { type: "array", items: { $ref: "#/$defs/user" } }
+// 			},
+// 			required: ["name"]
+// 		}
+// 	}
+// }
 user.toJsonSchema()
 ```
+
+- An alias that isn't cyclic is inline, as its type is the same node as an equal anonymous one.
+- A generic's instantiations are named by the generic (`box` for `box<string>`), and a submodule's alias by its own name (`b` for `a.b`).
+- A name another def already has is numbered from 2 (`user2`), in the order the defs are reached.
+- A cycle with no alias, like a `this` reference, is named by what arktype calls it (`type`).
+- `.in`, `.out`, `~standard.jsonSchema` and the `definitions` and `#/components/schemas/` of `"draft-07"` and `"openapi-3.0"` use the same names.
+- `useRefs` writes every other part as a def named by its kind (`intersection`, `intersection2`), and no longer writes an empty `$defs` for a type with none.
 
 ### Write a nested arktype Standard Schema's errors without repeating their key
 

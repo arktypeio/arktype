@@ -890,14 +890,17 @@ contextualize(() => {
 	it("cyclic pipe JSON Schema reference", () => {
 		const { a } = scope({ a: { "n?": "string.json.parse |> a" } }).export()
 
-		const { $ref, $defs } = a.toJsonSchema({
-			fallback: { morph: ctx => ctx.base }
-		}) as { $ref: string; $defs: Record<string, any> }
-		const definitionOf = (ref: string) => $defs[ref.slice("#/$defs/".length)]
-
-		attest(definitionOf($ref).type).equals("object")
-		attest(definitionOf(definitionOf($ref).properties.n.$ref)).equals({
-			type: "string"
+		attest(
+			a.toJsonSchema({ fallback: { morph: ctx => ctx.out ?? ctx.base } })
+		).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			$ref: "#/$defs/a",
+			$defs: { a: { type: "object", properties: { n: { $ref: "#/$defs/a" } } } }
+		})
+		attest(a.toJsonSchema({ fallback: { morph: ctx => ctx.base } })).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			$ref: "#/$defs/a",
+			$defs: { a: { type: "object", properties: { n: { type: "string" } } } }
 		})
 	})
 

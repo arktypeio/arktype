@@ -275,17 +275,17 @@ contextualize(() => {
 		})
 
 		attest(schema).snap({
-			$ref: "#/$defs/jsonObject1",
+			type: "object",
+			additionalProperties: { $ref: "#/$defs/jsonData" },
 			$defs: {
-				jsonObject1: {
-					type: "object",
-					additionalProperties: { $ref: "#/$defs/jsonData1" }
-				},
-				jsonData1: {
+				jsonData: {
 					anyOf: [
 						{ type: "number" },
 						{ type: "string" },
-						{ $ref: "#/$defs/jsonObject1" },
+						{
+							type: "object",
+							additionalProperties: { $ref: "#/$defs/jsonData" }
+						},
 						{ type: "boolean" },
 						{ type: "null" }
 					]
@@ -306,7 +306,7 @@ contextualize(() => {
 			required: ["a"]
 		})
 		attest(node.toJsonSchemaRecurse({ ...ctx, useRefs: true })).equals({
-			$ref: "#/$defs/intersection1"
+			$ref: "#/$defs/intersection"
 		})
 		attest(
 			rootSchema("string").toJsonSchemaRecurse({ ...ctx, useRefs: true })
@@ -1066,7 +1066,7 @@ contextualize(() => {
 			).equals(expected)
 			attest(
 				toJsonSchema(T, { useRefs: true, fallback: { morph: ctx => ctx.base } })
-					.$defs!.intersection1
+					.$defs!.intersection
 			).equals(expected)
 		})
 

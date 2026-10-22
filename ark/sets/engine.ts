@@ -14,11 +14,10 @@ export const setEngine: SetEngine = {
 	toJsonSchemaRecurse: (node, ctx) =>
 		toJsonSchemaRecurse(node, {
 			...ctx,
-			refs: [],
-			refNamesById: {},
-			refCountsByPrefix: {},
 			path: "",
-			refPathsById: {}
+			open: [],
+			defNamesById: {},
+			defs: {}
 		})
 }
 

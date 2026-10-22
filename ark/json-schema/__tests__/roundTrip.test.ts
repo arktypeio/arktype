@@ -790,22 +790,22 @@ contextualize(() => {
 				user: { name: "string", "address?": { city: "string", zip: "string" } }
 			})
 			const S = inferred({
-				$ref: "#/$defs/intersection268",
+				$ref: "#/$defs/intersection",
 				$defs: {
-					intersection268: {
+					intersection: {
 						type: "object",
-						properties: { user: { $ref: "#/$defs/intersection265" } },
+						properties: { user: { $ref: "#/$defs/intersection2" } },
 						required: ["user"]
 					},
-					intersection265: {
+					intersection2: {
 						type: "object",
 						properties: {
 							name: { type: "string" },
-							address: { $ref: "#/$defs/intersection262" }
+							address: { $ref: "#/$defs/intersection3" }
 						},
 						required: ["name"]
 					},
-					intersection262: {
+					intersection3: {
 						type: "object",
 						properties: { city: { type: "string" }, zip: { type: "string" } },
 						required: ["city", "zip"]
@@ -824,19 +824,19 @@ contextualize(() => {
 		it("union of object refs", () => {
 			const T = type({ a: "string" }).or({ "b?": "number" })
 			const S = inferred({
-				$ref: "#/$defs/union48",
+				$ref: "#/$defs/union",
 				$defs: {
-					union48: {
+					union: {
 						anyOf: [
-							{ $ref: "#/$defs/intersection307" },
-							{ $ref: "#/$defs/intersection271" }
+							{ $ref: "#/$defs/intersection" },
+							{ $ref: "#/$defs/intersection2" }
 						]
 					},
-					intersection307: {
+					intersection: {
 						type: "object",
 						properties: { b: { type: "number" } }
 					},
-					intersection271: {
+					intersection2: {
 						type: "object",
 						properties: { a: { type: "string" } },
 						required: ["a"]
@@ -849,9 +849,9 @@ contextualize(() => {
 			)
 		})
 
-		it("primitive with empty $defs", () => {
+		it("primitive without $defs", () => {
 			const T = type("string").describe("a name")
-			const S = inferred({ type: "string", description: "a name", $defs: {} })
+			const S = inferred({ type: "string", description: "a name" })
 			assertEmits(T, S, { useRefs: true })
 			attest<typeof T.infer>(S).type.toString.snap("string")
 		})
@@ -861,19 +861,15 @@ contextualize(() => {
 		it("tree", () => {
 			const T = cyclic.tree
 			const S = inferred({
-				$ref: "#/$defs/tree1",
+				$ref: "#/$defs/tree",
 				$defs: {
-					tree1: {
+					tree: {
 						type: "object",
 						properties: {
 							value: { type: "number" },
-							children: { $ref: "#/$defs/intersection15" }
+							children: { type: "array", items: { $ref: "#/$defs/tree" } }
 						},
 						required: ["value"]
-					},
-					intersection15: {
-						type: "array",
-						items: { $ref: "#/$defs/tree1" }
 					}
 				}
 			})
@@ -887,19 +883,15 @@ contextualize(() => {
 		it("mutually recursive", () => {
 			const T = cyclic.a
 			const S = inferred({
-				$ref: "#/$defs/a1",
+				$ref: "#/$defs/a",
 				$defs: {
-					a1: {
+					b: {
 						type: "object",
-						properties: { b: { $ref: "#/$defs/b1" } }
+						properties: { a: { type: "array", items: { $ref: "#/$defs/a" } } }
 					},
-					b1: {
+					a: {
 						type: "object",
-						properties: { a: { $ref: "#/$defs/intersection19" } }
-					},
-					intersection19: {
-						type: "array",
-						items: { $ref: "#/$defs/a1" }
+						properties: { b: { $ref: "#/$defs/b" } }
 					}
 				}
 			})
@@ -911,18 +903,15 @@ contextualize(() => {
 		it("linked list through nullable union", () => {
 			const T = cyclic.linked
 			const S = inferred({
-				$ref: "#/$defs/linked1",
+				$ref: "#/$defs/linked",
 				$defs: {
-					linked1: {
+					linked: {
 						type: "object",
 						properties: {
-							next: { $ref: "#/$defs/union14" },
+							next: { anyOf: [{ $ref: "#/$defs/linked" }, { type: "null" }] },
 							value: { type: "string" }
 						},
 						required: ["next", "value"]
-					},
-					union14: {
-						anyOf: [{ $ref: "#/$defs/linked1" }, { type: "null" }]
 					}
 				}
 			})
@@ -936,14 +925,13 @@ contextualize(() => {
 		it("record of itself", () => {
 			const T = cyclic.dict
 			const S = inferred({
-				$ref: "#/$defs/dict1",
+				$ref: "#/$defs/dict",
 				$defs: {
-					dict1: {
+					dict: {
 						type: "object",
-						additionalProperties: { $ref: "#/$defs/union15" }
-					},
-					union15: {
-						anyOf: [{ type: "string" }, { $ref: "#/$defs/dict1" }]
+						additionalProperties: {
+							anyOf: [{ type: "string" }, { $ref: "#/$defs/dict" }]
+						}
 					}
 				}
 			})
@@ -957,14 +945,11 @@ contextualize(() => {
 		it("array of itself", () => {
 			const T = cyclic.nested
 			const S = inferred({
-				$ref: "#/$defs/nested1",
+				$ref: "#/$defs/nested",
 				$defs: {
-					nested1: {
+					nested: {
 						type: "array",
-						items: { $ref: "#/$defs/union16" }
-					},
-					union16: {
-						anyOf: [{ type: "number" }, { $ref: "#/$defs/nested1" }]
+						items: { anyOf: [{ type: "number" }, { $ref: "#/$defs/nested" }] }
 					}
 				}
 			})
@@ -981,20 +966,16 @@ contextualize(() => {
 		it("self reference in a named key", () => {
 			const T = cyclic.user
 			const S = inferred({
-				$ref: "#/$defs/user1",
+				$ref: "#/$defs/user",
 				$defs: {
-					user1: {
+					user: {
 						type: "object",
 						properties: {
 							name: { type: "string" },
-							best: { $ref: "#/$defs/user1" },
-							friends: { $ref: "#/$defs/intersection33" }
+							best: { $ref: "#/$defs/user" },
+							friends: { type: "array", items: { $ref: "#/$defs/user" } }
 						},
 						required: ["name"]
-					},
-					intersection33: {
-						type: "array",
-						items: { $ref: "#/$defs/user1" }
 					}
 				}
 			})
@@ -1013,29 +994,24 @@ contextualize(() => {
 		it("self reference in tuple elements", () => {
 			const T = cyclic.expr
 			const S = inferred({
-				$ref: "#/$defs/expr1",
+				$ref: "#/$defs/expr",
 				$defs: {
-					expr1: {
+					expr: {
 						type: "object",
 						properties: {
-							args: { $ref: "#/$defs/intersection38" },
-							op: { $ref: "#/$defs/union11" }
+							args: {
+								type: "array",
+								minItems: 2,
+								prefixItems: [
+									{ anyOf: [{ type: "number" }, { $ref: "#/$defs/expr" }] },
+									{ anyOf: [{ type: "number" }, { $ref: "#/$defs/expr" }] }
+								],
+								items: false
+							},
+							op: { enum: ["+", "-"] }
 						},
 						required: ["args", "op"]
-					},
-					intersection38: {
-						type: "array",
-						minItems: 2,
-						prefixItems: [
-							{ $ref: "#/$defs/union17" },
-							{ $ref: "#/$defs/union17" }
-						],
-						items: false
-					},
-					union17: {
-						anyOf: [{ type: "number" }, { $ref: "#/$defs/expr1" }]
-					},
-					union11: { enum: ["+", "-"] }
+					}
 				}
 			})
 			assertEmits(
@@ -1056,12 +1032,12 @@ contextualize(() => {
 			const T = pair
 			// TS can't defer a tuple, so the recursive element is unknown
 			const S = inferred({
-				$ref: "#/$defs/pair1",
+				$ref: "#/$defs/pair",
 				$defs: {
-					pair1: {
+					pair: {
 						type: "array",
 						minItems: 1,
-						prefixItems: [{ type: "string" }, { $ref: "#/$defs/pair1" }],
+						prefixItems: [{ type: "string" }, { $ref: "#/$defs/pair" }],
 						items: false
 					}
 				}
