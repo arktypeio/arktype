@@ -210,7 +210,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
 	 * len("foo") // 3
 	 * // TypeScript: boolean is not assignable to string | unknown[]
-	 * // Runtime (throws): must be a string or an array (was boolean)
+	 * // Runtime (throws): value at [0] must be a string or an array (was boolean)
 	 * len(true)
 	 */
 	fn: FnParser<$>
