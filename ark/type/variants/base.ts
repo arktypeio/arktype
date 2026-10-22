@@ -1,4 +1,5 @@
 import type {
+	ArkErrors,
 	BaseNode,
 	BaseRoot,
 	Disjoint,
@@ -7,6 +8,7 @@ import type {
 	Predicate,
 	StandardSchemaV1,
 	ToJsonSchema,
+	Traversal,
 	TypeMeta,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
@@ -197,6 +199,25 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * const numerics = [0, "one", 2n].filter(Numeric.allows)
 	 */
 	allows: (data: unknown) => data is this["inferIn"]
+
+	/**
+	 * #### validate and resolve output once `narrowAsync` checks settle, or reject
+	 *
+	 * @example
+	 * const User = type({ name: "string" }).narrowAsync(isRegistered)
+	 * // rejects with TraversalError if the user isn't registered
+	 * const user = await User.assertAsync(data)
+	 *
+	 * @throws {TraversalError}
+	 */
+	assertAsync(data: unknown): Promise<this["infer"]>
+
+	/**
+	 * #### check input once `narrowAsync` checks settle
+	 *
+	 * ⚠️ not a type guard, since a type guard can't be async
+	 */
+	allowsAsync(data: unknown): Promise<boolean>
 
 	/**
 	 * #### add metadata to shallow references
@@ -415,6 +436,27 @@ export interface Inferred<out t = unknown, $ = {}> {
 	): r extends infer _ ? _ : never
 
 	/**
+	 * #### apply an async predicate function to output
+	 *
+	 * ✅ `predicate` gets the same `ctx` as `.narrow` and resolves what a `.narrow` predicate returns
+	 * ✅ consecutive `narrowAsync` checks run in parallel, and `.narrow` after them still runs
+	 * ✅ errors are listed in the order they became known
+	 * ⚠️ until it settles, data fails with an error whose `isLoading` is `true`
+	 * ✅ `.configure` sets the messages of that error and of a `false` without an error
+	 * 🔗 await `errors.settled`, {@link assertAsync} or {@link allowsAsync} for the final result
+	 *
+	 * @example
+	 * const Username = type("string").narrowAsync(async (name, ctx) =>
+	 *     (await isAvailable(name)) || ctx.mustBe("an available username")
+	 * )
+	 * const out = Username("alan") // ArkErrors with isLoading: true
+	 * const final = await out.settled // "alan" or ArkErrors
+	 */
+	narrowAsync(
+		predicate: (data: this["infer"], ctx: Traversal) => Promise<boolean>
+	): this
+
+	/**
 	 * #### pipe output through arbitrary transformations or other Types
 	 *
 	 * @example
@@ -450,9 +492,15 @@ export interface Inferred<out t = unknown, $ = {}> {
 	select: BaseNode["select"]
 }
 
+/** the configured `onFail` result, with `ArkErrors` typed by the output `settled` resolves */
+type onFailOf<out, onFail = ArkEnv.onFail> =
+	onFail extends ArkErrors ? ArkErrors<out> : onFail
+
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
-	extends Callable<(data: unknown) => distill.Out<t> | ArkEnv.onFail>,
+	extends Callable<
+			(data: unknown) => distill.Out<t> | onFailOf<distill.Out<t>>
+		>,
 		Inferred<t, $> {
 	/**
 	 * #### cast the way this is inferred

@@ -3,8 +3,10 @@ export {
 	ArkErrors,
 	Traversal,
 	TraversalError,
+	trackAsyncChecks,
 	type ArkSchemaConfig,
 	type ArkSchemaScopeConfig,
+	type AsyncCheckTracker,
 	type JsonSchema
 } from "@ark/schema"
 export { Hkt, inferred, ParseError } from "@ark/util"

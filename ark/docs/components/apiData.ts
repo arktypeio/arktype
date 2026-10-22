@@ -199,6 +199,37 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         },
         {
             "group": "Type",
+            "name": "assertAsync",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "validate and resolve output once `narrowAsync` checks settle, or reject"
+                }
+            ],
+            "notes": [],
+            "example": "const User = type({ name: \"string\" }).narrowAsync(isRegistered)\n// rejects with TraversalError if the user isn't registered\nconst user = await User.assertAsync(data)"
+        },
+        {
+            "group": "Type",
+            "name": "allowsAsync",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "check input once `narrowAsync` checks settle"
+                }
+            ],
+            "notes": [
+                [],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "⚠️ not a type guard, since a type guard can't be async"
+                    }
+                ]
+            ]
+        },
+        {
+            "group": "Type",
             "name": "configure",
             "summary": [
                 {
@@ -506,6 +537,72 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 ]
             ],
             "example": "const Palindrome = type(\"string\").narrow(s => s === [...s].reverse().join(\"\"))\n\nconst PalindromicEmail = type(\"string.date.parse\").narrow((date, ctx) =>\n\t\tdate.getFullYear() === 2025 || ctx.mustBe(\"the current year\")\n)\n// Type<`${string}.tsx`>\nconst WithPredicate = type(\"string\").narrow((s): s is `${string}.tsx` => /\\.tsx?$/.test(s))"
+        },
+        {
+            "group": "Type",
+            "name": "narrowAsync",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "apply an async predicate function to output"
+                }
+            ],
+            "notes": [
+                [],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "✅ `predicate` gets the same `ctx` as `.narrow` and resolves what a `.narrow` predicate returns"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "✅ consecutive `narrowAsync` checks run in parallel, and `.narrow` after them still runs"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "✅ errors are listed in the order they became known"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "⚠️ until it settles, data fails with an error whose `isLoading` is `true`"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "✅ `.configure` sets the messages of that error and of a `false` without an error"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "🔗 await `errors.settled`,"
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "assertAsync"
+                    },
+                    {
+                        "kind": "text",
+                        "value": "or"
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "allowsAsync"
+                    },
+                    {
+                        "kind": "text",
+                        "value": "for the final result"
+                    }
+                ]
+            ],
+            "example": "const Username = type(\"string\").narrowAsync(async (name, ctx) =>\n    (await isAvailable(name)) || ctx.mustBe(\"an available username\")\n)\nconst out = Username(\"alan\") // ArkErrors with isLoading: true\nconst final = await out.settled // \"alan\" or ArkErrors"
         },
         {
             "group": "Type",
@@ -962,6 +1059,29 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     {
                         "kind": "noteStart",
                         "value": "✅ does not include options configured on individual types"
+                    }
+                ]
+            ]
+        },
+        {
+            "group": "Traversal",
+            "name": "isLoading",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "whether a `narrowAsync` check in this traversal hasn't settled"
+                }
+            ],
+            "notes": [
+                [],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "🔗 errors from this traversal expose it as"
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "ArkErrors.isLoading"
                     }
                 ]
             ]

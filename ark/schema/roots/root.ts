@@ -32,6 +32,11 @@ import type {
 	UnknownRangeSchema
 } from "../refinements/range.ts"
 import type { BaseScope } from "../scope.ts"
+import {
+	chainCheck,
+	isAsyncChain,
+	type AsyncPredicate
+} from "../shared/async.ts"
 import type { BaseNodeDeclaration, TypeMeta } from "../shared/declare.ts"
 import {
 	Disjoint,
@@ -104,7 +109,13 @@ export abstract class BaseRoot<
 			version: 1,
 			validate: input => {
 				const out = this(input)
-				if (out instanceof ArkErrors) return out
+				if (out instanceof ArkErrors) {
+					return out.isLoading ?
+							out.settled.then(settled =>
+								settled instanceof ArkErrors ? settled : { value: settled }
+							)
+						:	out
+				}
 				return { value: out }
 			},
 			jsonSchema: {
@@ -522,7 +533,28 @@ export abstract class BaseRoot<
 	}
 
 	narrow(predicate: Predicate): BaseRoot {
-		return this.constrainOut("predicate", predicate)
+		return isAsyncChain(this) ?
+				chainCheck(this, predicate, false, narrowOnce)
+			:	narrowOnce(this, predicate)
+	}
+
+	narrowAsync(predicate: AsyncPredicate): BaseRoot {
+		return chainCheck(this, predicate, true, narrowOnce)
+	}
+
+	async assertAsync(data: unknown): Promise<unknown> {
+		let result = this(data, undefined, null)
+		if (result instanceof ArkErrors) result = await result.settled
+		if (result instanceof ArkErrors) throw result.toTraversalError()
+		return result
+	}
+
+	async allowsAsync(data: unknown): Promise<boolean> {
+		const result = this(data, undefined, null)
+		return (
+			!(result instanceof ArkErrors) ||
+			!((await result.settled) instanceof ArkErrors)
+		)
 	}
 
 	constrain<kind extends Constraint.PrimitiveKind>(
@@ -705,6 +737,9 @@ export type UndeclaredKeyConfig = {
 	rule: UndeclaredKeyBehavior
 	deep?: boolean
 }
+
+const narrowOnce = (root: BaseRoot, predicate: Predicate): BaseRoot =>
+	root.constrainOut("predicate", predicate)
 
 export const emptyBrandNameMessage = `Expected a non-empty brand name after #`
 

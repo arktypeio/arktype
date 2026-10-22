@@ -109,7 +109,7 @@ export declare namespace type {
 		[inferred]?: to
 	}
 
-	export type errors = ArkErrors
+	export type errors<output = unknown> = ArkErrors<output>
 
 	export type validate<def, $ = {}, args = bindThis<def>> = validateDefinition<
 		def,

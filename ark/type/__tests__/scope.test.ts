@@ -487,8 +487,8 @@ b.c.c must be an object (was missing)`)
 			// casting to Value also works
 			const castOut = types.value(5)
 
-			attest<Value | ArkErrors>(out).equals(5)
-			attest<Value | ArkErrors>(castOut).equals(5)
+			attest<Value | ArkErrors<Value>>(out).equals(5)
+			attest<Value | ArkErrors<Value>>(castOut).equals(5)
 		})
 	})
 

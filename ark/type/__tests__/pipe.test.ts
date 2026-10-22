@@ -18,7 +18,7 @@ contextualize(() => {
 		attest<string>(T.infer)
 		attest<number>(T.in.infer)
 		const out = T(5)
-		attest<string | type.errors>(out).equals("5")
+		attest<string | type.errors<string>>(out).equals("5")
 		const result = T("foo")
 		attest(result.toString()).snap("must be a number (was a string)")
 	})
@@ -182,7 +182,7 @@ contextualize(() => {
 		})
 
 		const out = T(true)
-		attest<boolean | type.errors>(out).equals(false)
+		attest<boolean | type.errors<boolean>>(out).equals(false)
 		attest(T(1).toString()).snap("must be boolean (was 1)")
 	})
 
@@ -340,7 +340,7 @@ contextualize(() => {
 
 		const out = T(input)
 
-		attest<{ a: number } | type.errors>(out).equals({ a: 4 })
+		attest<{ a: number } | type.errors<{ a: number }>>(out).equals({ a: 4 })
 	})
 
 	it("doesn't pipe on error", () => {
@@ -379,13 +379,13 @@ contextualize(() => {
 		}).export()
 		attest<((In: string) => Out<number>)[]>(types.mapToLengths.t)
 		const out = types.mapToLengths(["1", "22", "333"])
-		attest<number[] | type.errors>(out).equals([1, 2, 3])
+		attest<number[] | type.errors<number[]>>(out).equals([1, 2, 3])
 	})
 
 	it("object to string", () => {
 		const T = type([{ a: "string" }, "=>", data => JSON.stringify(data)])
 		const out = T({ a: "foo" })
-		attest<string | type.errors>(out).snap('{"a":"foo"}')
+		attest<string | type.errors<string>>(out).snap('{"a":"foo"}')
 	})
 
 	it(".out inferred based on validatedOut", () => {
@@ -1002,12 +1002,7 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | fa
 		}).export()
 		const U = types.Morph.pipe(e => e, types.To)
 		const out = U({ a: 1 })
-		attest<
-			| ArkErrors
-			| {
-					a: 2
-			  }
-		>(out).snap({ a: 2 })
+		attest<ArkErrors<{ a: 2 }> | { a: 2 }>(out).snap({ a: 2 })
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1185

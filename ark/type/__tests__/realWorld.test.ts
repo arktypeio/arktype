@@ -785,8 +785,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			})
 		)
 
-		attest<
-			| ArkErrors
+		type Out =
 			| {
 					action: "order.completed"
 			  }
@@ -796,7 +795,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 					calendarID: number
 					appointmentTypeID: number
 			  }
-		>(out)
+		attest<ArkErrors<Out> | Out>(out)
 
 		attest(out).snap({
 			action: "scheduled",
@@ -1296,7 +1295,7 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 				return true
 			})
 		).type.errors(
-			"Argument of type 'ArkErrors' is not assignable to parameter of type 'ArkErrorInput'"
+			"Argument of type 'ArkErrors<number>' is not assignable to parameter of type 'ArkErrorInput'"
 		)
 	})
 

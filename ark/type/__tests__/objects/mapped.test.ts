@@ -96,6 +96,7 @@ contextualize(() => {
 			map: Base,
 			merge: Base,
 			narrow: Base,
+			narrowAsync: Base,
 			omit: Base,
 			onDeepUndeclaredKey: Base,
 			onUndeclaredKey: Base,
@@ -113,6 +114,7 @@ contextualize(() => {
 		const filterFn = (v: Base): v is Base & { filter: 1 } => true
 		const narrowFn = (v: Base): v is Base & { narrow: 1 } => true
 		const pipeFn = () => ({ pipe: 1 })
+		const NarrowedAsync = Base.narrowAsync(async () => true)
 
 		const Expected = type({
 			and: { base: "1", and: "1" },
@@ -129,6 +131,7 @@ contextualize(() => {
 			map: { base: "2" },
 			merge: { base: "1", merge: "1" },
 			narrow: [Base, ":", narrowFn],
+			narrowAsync: NarrowedAsync,
 			omit: {},
 			onDeepUndeclaredKey: { "+": "reject", base: "1" },
 			onUndeclaredKey: { "+": "reject", base: "1" },
@@ -217,6 +220,12 @@ contextualize(() => {
 					return {
 						key: prop.key,
 						value: prop.value.narrow(narrowFn)
+					}
+				case "narrowAsync":
+					return {
+						key: prop.key,
+						// each narrowAsync call adds a distinct predicate, so reuse one for json equality
+						value: NarrowedAsync
 					}
 				case "omit":
 					return {
