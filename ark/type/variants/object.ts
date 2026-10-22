@@ -114,8 +114,9 @@ interface Type<out t extends object = object, in out $ = {}>
 	>(
 		def: type.validate<def, $> &
 			// if you can figure out a way to avoid inlining this without
-			// breaking autocomplete and validation, do it!
-			(inferredDef extends object ? unknown
+			// breaking autocomplete and validation, do it! checking inferredDef
+			// instead fails to infer def from a call like .describe() within it
+			(type.infer<def, $> extends object ? unknown
 			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredDef]>)
 	): r extends infer _ ? _ : never
 

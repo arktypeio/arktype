@@ -2018,6 +2018,17 @@ A function definition was called as a thunk, so a Standard Schema that's a class
 type({ age: Schema.standardSchemaV1(Schema.Number) })
 ```
 
+### Infer `.merge()` of a definition holding a described Type
+
+A definition passed to `.merge()` that called a method like `.describe()` or `.configure()` inline failed to type check:
+
+```ts
+// previously: Argument of type '{ "b?": Type<string, {}>; }' is not assignable to parameter of type 'never'
+type({ a: "string" })
+	.partial()
+	.merge({ "b?": type("string").describe("an ID") })
+```
+
 ### Throw when an embedded Standard Schema validates asynchronously
 
 A Standard Schema whose `validate` returned a Promise, like a Zod schema with an async refinement, gave `undefined` for any input. ArkType validates synchronously, so it now throws:
