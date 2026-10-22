@@ -16,6 +16,8 @@ export interface CheckReport {
 	rate: number
 	// what fails a build whatever the rate, like a configure() it can't place
 	errorsOutsideSites: number
+	// each fails a build
+	errors: number
 	files: number
 }
 
@@ -48,6 +50,7 @@ export const check = (
 		islands: 0,
 		rate: 100,
 		errorsOutsideSites: 0,
+		errors: 0,
 		files: files.length
 	}
 	try {
@@ -77,6 +80,7 @@ export const check = (
 				site =>
 					site.status === "rejected" || errors.some(error => isAt(error, site))
 			)
+			report.errors += errors.length
 			report.errorsOutsideSites += errors.filter(
 				error => !failed.some(site => isAt(error, site))
 			).length

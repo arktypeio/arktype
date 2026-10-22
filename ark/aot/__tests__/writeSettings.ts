@@ -12,6 +12,48 @@ export const validatorsPath = fromHere("..", "settingsValidators.ts")
 
 export const jsonSchemaPath = fromHere("..", "ark.schema.json")
 
+interface OptionSchema {
+	type?: string
+	enum?: unknown[]
+	const?: unknown
+	anyOf?: OptionSchema[]
+}
+
+// what the CLI's usage says an option takes, whose strings are all paths
+const valuesOf = (schema: OptionSchema): string =>
+	schema.anyOf ? schema.anyOf.map(valuesOf).join("|")
+	: schema.enum ? schema.enum.join("|")
+	: "const" in schema ? String(schema.const)
+	: schema.type === "boolean" ? "true|false"
+	: schema.type === "array" ? "a,b"
+	: schema.type === "object" ? "json"
+	: "path"
+
+// a flag for each option, parsed as its schema's type
+const cliOptionsOf = () =>
+	Object.fromEntries(
+		Object.entries(
+			(
+				PrecompileOptions.toJsonSchema() as {
+					properties: Record<string, OptionSchema>
+				}
+			).properties
+		).map(([name, schema]) => [
+			name,
+			{
+				type:
+					(
+						schema.type === "boolean" ||
+						schema.type === "array" ||
+						schema.type === "object"
+					) ?
+						schema.type
+					:	"string",
+				values: valuesOf(schema)
+			}
+		])
+	)
+
 const formatted = async (code: string, path: string) =>
 	format(code, { ...(await resolveConfig(path)), filepath: path })
 
@@ -49,7 +91,7 @@ export const writeSettingsFiles = async (): Promise<Record<string, string>> => {
 	})
 	return {
 		[validatorsPath]: await formatted(
-			`/* eslint-disable */\n// @ts-nocheck\n// written by __tests__/writeSettings.ts from __tests__/settingsSchema.ts\n${outputFiles[0].text}`,
+			`/* eslint-disable */\n// @ts-nocheck\n// written by __tests__/writeSettings.ts from __tests__/settingsSchema.ts\n${outputFiles[0].text}\nexport const cliOptions = ${JSON.stringify(cliOptionsOf())}\n`,
 			validatorsPath
 		),
 		[jsonSchemaPath]: await formatted(
