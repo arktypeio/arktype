@@ -811,12 +811,16 @@ const withAlike = (observation: any, alike: any, reported: any) => {
 	if (!observation.texts) return withIssue
 	const from = `${pathKeyOf(alike.path)}\0`
 	const to = `${pathKeyOf(reported.path)}\0`
+	// another issue at the same path, like a pattern beside a minLength, isn't
+	// the one reported, but an intersection's are its own
+	const isAlike = (at: string) =>
+		alike.code === "intersection" ?
+			at.startsWith(from)
+		:	at === from + alike.code
 	return {
 		...withIssue,
 		texts: observation.texts.flatMap((text: { at: string }) =>
-			text.at.startsWith(from) ?
-				[{ ...text, at: to + text.at.slice(from.length) }]
-			:	[]
+			isAlike(text.at) ? [{ ...text, at: to + text.at.slice(from.length) }] : []
 		)
 	}
 }
