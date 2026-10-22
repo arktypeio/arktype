@@ -5,8 +5,8 @@ import { parseArgs } from "node:util"
 import { emitDeclarations, sharedDeclarationFile } from "./declare.ts"
 import { isBuildError, writeNodeVersionMessage } from "./host.ts"
 import type { PrecompilePluginOptions } from "./driver.ts"
-import type { PrecompileOptions } from "./precompile.ts"
 import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
+import { cliOptions } from "./settingsValidators.ts"
 
 // before importing what reads fs.globSync, which older versions lack
 const [major, minor] = process.versions.node.split(".").map(Number)
@@ -17,34 +17,46 @@ if (major < 22 || (major === 22 && minor < 12)) {
 
 const { check, countOf } = await import("./check.ts")
 
-const usage =
-	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--preset <smallest|introspectable>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --declare [--tsconfig <file>]"
+// a host's options aside, and the CLI's own --declare
+const options = Object.entries(cliOptions).filter(
+	([name]) => name !== "inline" && name !== "declare"
+)
+
+const flagOf = (name: string) =>
+	name.replace(/[A-Z]/g, char => `-${char.toLowerCase()}`)
+
+const usage = `Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] ${options
+	.map(([name, { type, values }]) =>
+		type === "boolean" ?
+			`[--[no-]${flagOf(name)}]`
+		:	`[--${flagOf(name)} <${values}>]`
+	)
+	.join(" ")}\n       arktype-precompile --declare [--tsconfig <path>]`
 
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
 	process.exit(2)
 }
 
-const { values, positionals } = (() => {
+const { values, positionals } = ((): {
+	values: Record<string, string | boolean | undefined>
+	positionals: string[]
+} => {
 	try {
 		return parseArgs({
 			allowPositionals: true,
+			allowNegative: true,
 			options: {
 				help: { type: "boolean", short: "h" },
 				check: { type: "boolean" },
 				declare: { type: "boolean" },
 				"fail-under": { type: "string" },
-				preset: { type: "string" },
-				runtime: { type: "string" },
-				config: { type: "string" },
-				"no-config": { type: "boolean" },
-				members: { type: "string" },
-				checks: { type: "string" },
-				"mutates-input": { type: "string" },
-				errors: { type: "string" },
-				conditions: { type: "string" },
-				tsconfig: { type: "string" },
-				"allow-unsafe": { type: "boolean" }
+				...Object.fromEntries(
+					options.map(([name, { type }]) => [
+						flagOf(name),
+						{ type: type === "boolean" ? "boolean" : "string" } as const
+					])
+				)
 			}
 		})
 	} catch (e) {
@@ -58,12 +70,17 @@ if (values.help) {
 }
 
 if (values.declare) {
-	if (values.check || positionals.length) {
+	const others = Object.keys(values).filter(
+		flag => flag !== "declare" && flag !== "tsconfig"
+	)
+	if (others.length || positionals.length) {
 		fail(
-			"--declare emits the tsconfig's program and takes no other mode or files"
+			`--declare emits the tsconfig's program and takes no files or option but --tsconfig (was ${[...others.map(flag => `--${flag}`), ...positionals].join(" ")})`
 		)
 	}
-	const declarations = emitDeclarations({ tsconfig: values.tsconfig })
+	const declarations = emitDeclarations({
+		tsconfig: values.tsconfig as string | undefined
+	})
 	for (const path in declarations.files) {
 		mkdirSync(dirname(path), { recursive: true })
 		writeFileSync(path, declarations.files[path])
@@ -77,45 +94,33 @@ if (values.declare) {
 
 if (!values.check) fail("--check or --declare is required")
 
-const runtime = values.runtime
-if (runtime !== undefined && runtime !== "arktype")
-	fail(`--runtime must be arktype (was ${runtime})`)
-
 const failUnder =
 	values["fail-under"] === undefined ? undefined : Number(values["fail-under"])
 if (Number.isNaN(failUnder))
 	fail(`--fail-under must be a percentage (was ${values["fail-under"]})`)
 
-if (values.config !== undefined && values["no-config"]) {
-	fail(
-		"--config names the module calling configure(), which --no-config says none does"
-	)
-}
-
-let members: PrecompileOptions["members"]
-if (values.members !== undefined) {
-	try {
-		members = JSON.parse(values.members)
-	} catch {
-		fail(`--members must be JSON (was ${values.members})`)
+const opts: Record<string, unknown> = {}
+for (const [name, { type, values: taken }] of options) {
+	const flag = flagOf(name)
+	const value = values[flag]
+	if (value === undefined) continue
+	if (typeof value === "boolean") opts[name] = value
+	else if (type === "array") opts[name] = value.split(",")
+	else if (type === "object") {
+		try {
+			opts[name] = JSON.parse(value)
+		} catch {
+			fail(`--${flag} must be JSON (was ${value})`)
+		}
+	} else {
+		opts[name] =
+			(
+				(value === "true" || value === "false") &&
+				taken.split("|").includes(value)
+			) ?
+				value === "true"
+			:	value
 	}
-}
-
-const mutatesInput = values["mutates-input"]
-
-const opts: PrecompilePluginOptions = {
-	preset: values.preset as PrecompileOptions["preset"],
-	runtime: runtime as "arktype" | undefined,
-	config: values["no-config"] ? false : values.config,
-	members,
-	checks: values.checks as PrecompileOptions["checks"],
-	mutatesInput: (mutatesInput === "true" ? true
-	: mutatesInput === "false" ? false
-	: mutatesInput) as PrecompileOptions["mutatesInput"],
-	errors: values.errors as PrecompileOptions["errors"],
-	conditions: values.conditions?.split(","),
-	tsconfig: values.tsconfig,
-	allowUnsafe: values["allow-unsafe"]
 }
 
 try {
@@ -126,7 +131,7 @@ try {
 
 const report = (() => {
 	try {
-		return check(positionals, opts)
+		return check(positionals, opts as PrecompilePluginOptions)
 	} catch (e) {
 		// e.g. a config module that can't be read, which the message names
 		if (!isBuildError(e)) throw e
@@ -137,8 +142,10 @@ const report = (() => {
 
 for (const line of report.lines) console.log(line)
 
+// any error fails a build, unless --fail-under holds the project to a rate
 if (
-	failUnder !== undefined &&
-	(report.rate < failUnder || report.errorsOutsideSites)
+	failUnder === undefined ?
+		report.errors
+	:	report.rate < failUnder || report.errorsOutsideSites
 )
 	process.exit(1)

@@ -1067,3 +1067,24 @@ var get1 = () => {
 	})())
 }
 export { get1 as ArkJson, get0 as PrecompileOptions }
+
+export const cliOptions = {
+	allowUnsafe: { type: "boolean", values: "true|false" },
+	checks: { type: "string", values: "helpers|none|types" },
+	conditions: { type: "array", values: "a,b" },
+	config: { type: "string", values: "path|false" },
+	cwd: { type: "string", values: "path" },
+	declare: { type: "boolean", values: "true|false" },
+	errors: { type: "string", values: "all|first|none" },
+	freeze: { type: "boolean", values: "true|false" },
+	inline: { type: "boolean", values: "true|false" },
+	lazy: { type: "boolean", values: "true|false" },
+	members: { type: "object", values: "json" },
+	mutatesInput: { type: "string", values: "always|true|false" },
+	optimize: { type: "string", values: "size|speed" },
+	optimizeErrors: { type: "string", values: "size|speed" },
+	preset: { type: "string", values: "introspectable|smallest" },
+	runtime: { type: "string", values: "arktype" },
+	shadow: { type: "boolean", values: "true|false" },
+	tsconfig: { type: "string", values: "path" }
+}

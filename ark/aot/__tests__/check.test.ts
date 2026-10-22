@@ -206,11 +206,14 @@ main.ts:6:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can
 		])
 	})
 
-	it("fails under a rate", () => {
+	it("fails where a build would, or under a rate", () => {
+		attest(runCli(cwd, "--check").status).equals(1)
 		attest(runCli(cwd, "--check", "--fail-under", "50").status).equals(0)
 		attest(runCli(cwd, "--check", "--fail-under", "60").status).equals(1)
-		attest(runCli(cwd, "--check", "--runtime", "arktype", "forms.ts").stdout)
-			.snap(`forms.ts:4:21  accepted
+		const cached = runCli(cwd, "--check", "--runtime", "arktype", "forms.ts")
+		// a build with runtime: "arktype" only warns
+		attest(cached.status).equals(0)
+		attest(cached.stdout).snap(`forms.ts:4:21  accepted
 forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
   \`limit\` is a parameter of makeField (forms.ts:9:27); its value is known only at runtime
   With runtime: "arktype", arktype defines this at runtime.
@@ -229,7 +232,6 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 			'main.ts:6:21  JSON.stringify(User) reads toJSON, which a standalone validator lacks\n  `User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
 			"1 site in 2 files: 1 accepted (100.0%), 2 errors outside a site"
 		])
-		attest(runCli(dir, "--check").status).equals(0)
 		attest(runCli(dir, "--check", "--fail-under", "0").status).equals(1)
 	})
 
@@ -256,8 +258,10 @@ main.ts:5:46  User.assert reads assert, which a standalone validator lacks
 `)
 	})
 
-	it("builds under --no-config", () => {
-		attest(runCli(fromHere("unconfigured"), "--check", "--no-config").stdout)
+	it("builds under --config false", () => {
+		attest(
+			runCli(fromHere("unconfigured"), "--check", "--config", "false").stdout
+		)
 			.snap(`config.ts:3:1  configure() is called, but the build's \`config\` is false
   Remove the call, or name its module as the build's \`config\`.
 main.ts:4:21  accepted
@@ -277,6 +281,20 @@ forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
 forms.ts:16:2  a runtime island returns arktype's errors, which aren't instances of type.errors under errors: "none"
   a build whose errors say only that data is invalid gives its validators a runtime of their own
   Precompile the definition, or build without errors: "none".
+forms.ts:16:16  island
+3 sites in 2 files: 1 accepted (50.0%), 1 runtime island, 1 error outside a site
+`)
+	})
+
+	it("builds under the flag of an option named in camelCase", () => {
+		attest(runCli(cwd, "--check", "--optimize-errors", "size").stdout)
+			.snap(`forms.ts:4:21  accepted
+forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
+  \`limit\` is a parameter of makeField (forms.ts:9:27); its value is known only at runtime
+  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
+forms.ts:16:2  a runtime island returns arktype's errors, which aren't instances of type.errors under optimizeErrors: "size"
+  a build writing its errors for size gives its validators a runtime of their own
+  Precompile the definition, or build with optimizeErrors: "speed".
 forms.ts:16:16  island
 3 sites in 2 files: 1 accepted (50.0%), 1 runtime island, 1 error outside a site
 `)
@@ -303,16 +321,16 @@ forms.ts:16:16  island
 				["--runtime", "strict"],
 				["--fail-under", "most"],
 				["--members", "assert"],
-				["--config", "config.ts", "--no-config"]
+				["--mutates-input", "yes"]
 			].map(args => {
 				const result = runCli(cwd, "--check", ...args)
 				return `${result.status} ${result.stderr.split("\n")[0]}`
 			})
 		).snap([
-			"2 --runtime must be arktype (was strict)",
+			'2 runtime must be "arktype" (was "strict")',
 			"2 --fail-under must be a percentage (was most)",
 			"2 --members must be JSON (was assert)",
-			"2 --config names the module calling configure(), which --no-config says none does"
+			'2 mutatesInput must be "always", false or true (was "yes")'
 		])
 	})
 
