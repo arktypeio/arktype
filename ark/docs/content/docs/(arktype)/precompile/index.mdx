@@ -6,10 +6,10 @@ description: Compile your Types when you build, and ship only the checks they ne
 ArkType runs in two modes. Both take the same definitions and infer the same types.
 
 - **Dynamic**: `type()` parses each definition at runtime and compiles it the first time your program uses it. No build step.
-- **Precompiled**: [`@ark/precompile`](https://github.com/arktypeio/arktype/tree/main/ark/precompile) constructs your Types when you build. Each becomes a standalone validator that imports only `arktype/runtime`, so arktype's parser never ships and no code is generated at runtime.
+- **Precompiled**: [`@ark/aot`](https://github.com/arktypeio/arktype/tree/main/ark/aot) constructs your Types when you build. Each becomes a standalone validator that imports only `arktype/runtime`, so arktype's parser never ships and no code is generated at runtime.
 
 ```ts title="vite.config.ts"
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 
 export default {
 	plugins: [precompile.vite()]

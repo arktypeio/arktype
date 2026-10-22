@@ -47,14 +47,14 @@ ArkType runs in Node, Deno, Bun, browsers and edge runtimes. Under a strict Cont
 
 ## Precompile
 
-If your app is bundled, add [`@ark/precompile`](https://arktype.io/docs/precompile) to your bundler. Every Type you define is then compiled when you build into a standalone validator, so arktype's parser never ships and nothing is compiled at runtime:
+If your app is bundled, add [`@ark/aot`](https://arktype.io/docs/precompile) to your bundler. Every Type you define is then compiled when you build into a standalone validator, so arktype's parser never ships and nothing is compiled at runtime:
 
 ```bash
-npm install -D @ark/precompile
+npm install -D @ark/aot
 ```
 
 ```ts
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 import { defineConfig } from "vite"
 
 export default defineConfig({
@@ -691,10 +691,10 @@ Completions and type errors come from TypeScript, so they work in every editor w
 ArkType runs in two modes. Both take the same definitions and infer the same types.
 
 - **Dynamic**: `type()` parses each definition at runtime and compiles it the first time your program uses it. No build step.
-- **Precompiled**: [`@ark/precompile`](https://github.com/arktypeio/arktype/tree/main/ark/precompile) constructs your Types when you build. Each becomes a standalone validator that imports only `arktype/runtime`, so arktype's parser never ships and no code is generated at runtime.
+- **Precompiled**: [`@ark/aot`](https://github.com/arktypeio/arktype/tree/main/ark/aot) constructs your Types when you build. Each becomes a standalone validator that imports only `arktype/runtime`, so arktype's parser never ships and no code is generated at runtime.
 
 ```ts
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 
 export default {
 	plugins: [precompile.vite()]
@@ -789,19 +789,19 @@ If you need the whole Type API at runtime, build with `runtime: "arktype"`: arkt
 ## Installation
 
 ```bash
-npm install -D @ark/precompile
+npm install -D @ark/aot
 ```
 
-`@ark/precompile` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, `precompiledForArktype_<major>_<minor>_<patch>`, so a bundle or Node fails to link it to another version's runtime, e.g. one a stale cache kept. It adds nothing to the bundle.
+`@ark/aot` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, `precompiledForArktype_<major>_<minor>_<patch>`, so a bundle or Node fails to link it to another version's runtime, e.g. one a stale cache kept. It adds nothing to the bundle.
 
 ## Bundlers
 
-`@ark/precompile/unplugin` precompiles a program as your bundler builds it.
+`@ark/aot/unplugin` precompiles a program as your bundler builds it.
 
 **Vite**
 
 ```ts
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 import { defineConfig } from "vite"
 
 export default defineConfig({
@@ -814,7 +814,7 @@ Vitest runs tests through the same plugin.
 **Rollup**
 
 ```js
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 import { nodeResolve } from "@rollup/plugin-node-resolve"
 import typescript from "@rollup/plugin-typescript"
 
@@ -834,7 +834,7 @@ Rolldown takes `precompile.rolldown()`.
 **webpack**
 
 ```js
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 
 export default {
 	entry: "./src/main.ts",
@@ -853,7 +853,7 @@ ts-loader is handed modules the plugin already precompiled, which import validat
 **Rspack**
 
 ```js
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 
 export default {
 	entry: "./src/main.ts",
@@ -875,7 +875,7 @@ export default {
 **esbuild**
 
 ```ts
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 import { build } from "esbuild"
 
 await build({
@@ -901,8 +901,8 @@ With Turbopack, add the loader as a rule for each extension your definitions and
 export default {
 	turbopack: {
 		rules: {
-			"*.ts": { loaders: ["@ark/precompile/turbopack"] },
-			"*.tsx": { loaders: ["@ark/precompile/turbopack"] }
+			"*.ts": { loaders: ["@ark/aot/turbopack"] },
+			"*.tsx": { loaders: ["@ark/aot/turbopack"] }
 		},
 		resolveAlias: {
 			arktype: "arktype/runtime",
@@ -920,7 +920,7 @@ The loader fails a module whose `arktype` imports resolve otherwise, naming the 
 With webpack (`next build --webpack`), add the plugin:
 
 ```js
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 
 export default {
 	webpack: config => {
@@ -938,7 +938,7 @@ Node 22.15 or later, for `node --test` or any program (pass `--enable-source-map
 
 ```ts
 // run with `node --import ./register.ts --test`
-import { register } from "@ark/precompile/node"
+import { register } from "@ark/aot/node"
 
 register()
 ```
@@ -946,7 +946,7 @@ register()
 Bun, for `bun test` or any program, from a file listed in `preload` in `bunfig.toml`:
 
 ```ts
-import { precompile } from "@ark/precompile/bun"
+import { precompile } from "@ark/aot/bun"
 
 Bun.plugin(precompile())
 ```
@@ -972,14 +972,14 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 
 It reads [`ark.json`](https://arktype.io/docs/precompile/options#arkjson) as a build does, and takes each option that changes what a build refuses, like `--preset smallest`, `--errors none` or `--members '{"assert":false}'`. `--fail-under <percent>` exits with 1 if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
 
-The same analysis is available as `new Precompiler(host).analyze(source, id)` from `@ark/precompile`.
+The same analysis is available as `new Precompiler(host).analyze(source, id)` from `@ark/aot`.
 
 ## ESLint
 
 The ESLint rule reports what the build would, as you edit:
 
 ```js
-import { configs } from "@ark/precompile/eslint"
+import { configs } from "@ark/aot/eslint"
 
 export default [configs.recommended]
 ```
@@ -1114,7 +1114,7 @@ The plugin, the Node and Bun drivers, Turbopack, `arktype-precompile` and the ES
 
 ```json
 {
-	"$schema": "./node_modules/@ark/precompile/ark.schema.json",
+	"$schema": "./node_modules/@ark/aot/ark.schema.json",
 	"precompile": {
 		"preset": "smallest",
 		"config": "./src/config.ts"
@@ -1274,7 +1274,7 @@ Where the fix is clear and the problem could throw at runtime, the build fails. 
 
 ## Setup
 
-**`arktype resolves to 2.3.0, but @ark/precompile runs on 2.2.9`**: validators run only on the arktype they were built with. Install one version, e.g. with your package manager's dedupe or overrides.
+**`arktype resolves to 2.3.0, but @ark/aot runs on 2.2.9`**: validators run only on the arktype they were built with. Install one version, e.g. with your package manager's dedupe or overrides.
 
 **`precompiledForArktype_<version>` is not exported by `arktype/runtime`** (each bundler words it its own way): every module of validators imports an export of `arktype/runtime` named for the version it was built for, so linking it to another version's runtime fails rather than misbehaving at runtime. It usually means a bundler cache from before an upgrade, or a second copy of arktype. Install one version and clear the bundler's cache.
 
@@ -1305,7 +1305,7 @@ Where the fix is clear and the problem could throw at runtime, the build fails. 
 `shadow: true` makes a test suite tell where a standalone build would behave otherwise than arktype. Each definition is precompiled and also created by arktype from the same values, and the program runs on arktype, only `arktype/config` resolving to the runtime:
 
 ```ts
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 import { defineConfig } from "vitest/config"
 
 export default defineConfig({ plugins: [precompile.vite({ shadow: true })] })
@@ -7129,7 +7129,7 @@ To define and validate Types, install `arktype`. It brings `arkregex`, `@ark/sch
 | Package | Install it to | Docs |
 | - | - | - |
 | `arktype` | define Types and validate data | [Setup](https://arktype.io/docs/intro/setup) |
-| `@ark/precompile` | construct your Types when you build | [Precompile](https://arktype.io/docs/precompile) |
+| `@ark/aot` | construct your Types when you build | [Precompile](https://arktype.io/docs/precompile) |
 | `arkregex` | write regular expressions with inferred types | [ArkRegex](https://arktype.io/docs/regex) |
 | `@ark/attest` | assert types and benchmark them in your tests | [Attest](https://arktype.io/docs/attest) |
 | `@ark/json-schema` | build a Type from a JSON Schema | [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema) |
@@ -7179,7 +7179,7 @@ import { type } from "arktype"
 
 ## Other packages
 
-- **`@ark/precompile`** has an entrypoint for each way to run it: `@ark/precompile/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/precompile/node` (`register()`), `@ark/precompile/bun` (`precompile()`), `@ark/precompile/turbopack` (a loader) and `@ark/precompile/eslint` (`configs.recommended`). It installs an `arktype-precompile` CLI for `--check` and `--declare`, and `@ark/precompile` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 for declarations. See [Setup](https://arktype.io/docs/precompile/setup).
+- **`@ark/aot`** has an entrypoint for each way to run it: `@ark/aot/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/aot/node` (`register()`), `@ark/aot/bun` (`precompile()`), `@ark/aot/turbopack` (a loader) and `@ark/aot/eslint` (`configs.recommended`). It installs an `arktype-precompile` CLI for `--check` and `--declare`, and `@ark/aot` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 for declarations. See [Setup](https://arktype.io/docs/precompile/setup).
 - **`arkregex`** exports `regex`, which is also exported from `arktype`, and the `Regex` type.
 - **`@ark/attest`** exports `attest`, `bench`, `setup` and `teardown`, and installs an `attest` CLI. Install it as a dev dependency.
 - **`@ark/json-schema`** exports `jsonSchemaToType` and `JsonSchemaScope`.
@@ -7187,7 +7187,7 @@ import { type } from "arktype"
 - **`@ark/schema`** exports nodes, `rootSchema`, `schemaScope` and the classes behind `ArkErrors`, with `config`, `i18n`, `codecs`, `errors`, `mutatesInput` and `runtime` entrypoints like `arktype`'s.
 - **`arksets`** exports `parse`, `isSubset`, `isEqual`, `isDisjoint`, `intersect`, `union`, `discriminate` and `toJsonSchema`, and installs set algebra into `@ark/schema` when imported. `arktype` imports only that engine, from `arksets/internal`.
 
-`@ark/json-schema`, `@ark/fast-check` and `@ark/attest` each depend on an exact version of `arktype`, and `@ark/precompile` precompiles with the `arktype` it imports. Install the versions released alongside your `arktype` so your project doesn't load two copies of it.
+`@ark/json-schema`, `@ark/fast-check` and `@ark/attest` each depend on an exact version of `arktype`, and `@ark/aot` precompiles with the `arktype` it imports. Install the versions released alongside your `arktype` so your project doesn't load two copies of it.
 
 `arkregex`, `@ark/schema`, `arksets` and `@ark/util` have an `./internal` entrypoint like `arktype`'s, and every package above has `./internal/*.ts` deep imports. None of them are semver-stable.
 
@@ -7195,7 +7195,7 @@ import { type } from "arktype"
 
 > The changes in the latest ArkType that can break code written for the previous release, and what to change.
 
-Each section is one change, with code that behaves differently before and after it. The full list of changes, including fixes and new features, is in the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/precompile](https://github.com/arktypeio/arktype/blob/main/ark/precompile/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
+Each section is one change, with code that behaves differently before and after it. The full list of changes, including fixes and new features, is in the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
 
 ## Errors
 

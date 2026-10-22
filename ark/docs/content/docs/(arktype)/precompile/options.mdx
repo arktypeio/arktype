@@ -6,7 +6,7 @@ description: Ship less, and configure a precompiled program
 A standalone build can leave out what your program doesn't need. Every option goes to the plugin, a driver or the CLI, or into [`ark.json`](#arkjson), and a [preset](#presets) sets several for one goal:
 
 ```ts
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 // ---cut---
 precompile.vite({
 	errors: "none",
@@ -22,7 +22,7 @@ precompile.vite({
 A preset sets options for one goal, and any option set elsewhere overrides it:
 
 ```ts
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 // ---cut---
 precompile.vite({ preset: "smallest", members: { meta: false } })
 ```
@@ -59,7 +59,7 @@ The plugin, the Node and Bun drivers, Turbopack, `arktype-precompile` and the ES
 
 ```json title="ark.json"
 {
-	"$schema": "./node_modules/@ark/precompile/ark.schema.json",
+	"$schema": "./node_modules/@ark/aot/ark.schema.json",
 	"precompile": {
 		"preset": "smallest",
 		"config": "./src/config.ts"
@@ -104,7 +104,7 @@ The values are [arktype's `errors`](/docs/configuration#errors) option's, and a 
 Each introspection member set true is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`. A JSON Schema the build can't bake throws where it's read.
 
 ```ts
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 // ---cut---
 precompile.vite({
 	members: { assert: false, toJsonSchema: true, "~standard.jsonSchema": true }
@@ -159,7 +159,7 @@ configure({
 ```
 
 ```ts
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 // ---cut---
 precompile.vite({ config: "./config.ts" })
 ```

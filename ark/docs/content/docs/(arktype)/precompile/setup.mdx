@@ -5,20 +5,20 @@ description: Add precompilation to your bundler, test runner or framework
 
 ## Installation
 
-<InstallationTabs pkg="@ark/precompile" dev />
+<InstallationTabs pkg="@ark/aot" dev />
 
-`@ark/precompile` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, `precompiledForArktype_<major>_<minor>_<patch>`, so a bundle or Node fails to link it to another version's runtime, e.g. one a stale cache kept. It adds nothing to the bundle.
+`@ark/aot` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, `precompiledForArktype_<major>_<minor>_<patch>`, so a bundle or Node fails to link it to another version's runtime, e.g. one a stale cache kept. It adds nothing to the bundle.
 
 ## Bundlers
 
-`@ark/precompile/unplugin` precompiles a program as your bundler builds it.
+`@ark/aot/unplugin` precompiles a program as your bundler builds it.
 
 <Tabs items={["Vite", "Rollup", "webpack", "Rspack", "esbuild", "Others"]}>
 <Tab value="Vite">
 
 ```ts title="vite.config.ts"
 // @noErrors
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 import { defineConfig } from "vite"
 
 export default defineConfig({
@@ -33,7 +33,7 @@ Vitest runs tests through the same plugin.
 
 ```js title="rollup.config.js"
 // @noErrors
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 import { nodeResolve } from "@rollup/plugin-node-resolve"
 import typescript from "@rollup/plugin-typescript"
 
@@ -54,7 +54,7 @@ Rolldown takes `precompile.rolldown()`.
 <Tab value="webpack">
 
 ```js title="webpack.config.js"
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 
 export default {
 	entry: "./src/main.ts",
@@ -74,7 +74,7 @@ ts-loader is handed modules the plugin already precompiled, which import validat
 <Tab value="Rspack">
 
 ```js title="rspack.config.js"
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 
 export default {
 	entry: "./src/main.ts",
@@ -98,7 +98,7 @@ export default {
 
 ```ts title="build.ts"
 // @noErrors
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 import { build } from "esbuild"
 
 await build({
@@ -128,8 +128,8 @@ With Turbopack, add the loader as a rule for each extension your definitions and
 export default {
 	turbopack: {
 		rules: {
-			"*.ts": { loaders: ["@ark/precompile/turbopack"] },
-			"*.tsx": { loaders: ["@ark/precompile/turbopack"] }
+			"*.ts": { loaders: ["@ark/aot/turbopack"] },
+			"*.tsx": { loaders: ["@ark/aot/turbopack"] }
 		},
 		resolveAlias: {
 			arktype: "arktype/runtime",
@@ -147,7 +147,7 @@ The loader fails a module whose `arktype` imports resolve otherwise, naming the 
 With webpack (`next build --webpack`), add the plugin:
 
 ```js title="next.config.js"
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 
 export default {
 	webpack: config => {
@@ -165,7 +165,7 @@ Node 22.15 or later, for `node --test` or any program (pass `--enable-source-map
 
 ```ts title="register.ts"
 // run with `node --import ./register.ts --test`
-import { register } from "@ark/precompile/node"
+import { register } from "@ark/aot/node"
 
 register()
 ```
@@ -174,7 +174,7 @@ Bun, for `bun test` or any program, from a file listed in `preload` in `bunfig.t
 
 ```ts title="preload.ts"
 // @noErrors
-import { precompile } from "@ark/precompile/bun"
+import { precompile } from "@ark/aot/bun"
 
 Bun.plugin(precompile())
 ```
@@ -200,14 +200,14 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 
 It reads [`ark.json`](/docs/precompile/options#arkjson) as a build does, and takes each option that changes what a build refuses, like `--preset smallest`, `--errors none` or `--members '{"assert":false}'`. `--fail-under <percent>` exits with 1 if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
 
-The same analysis is available as `new Precompiler(host).analyze(source, id)` from `@ark/precompile`.
+The same analysis is available as `new Precompiler(host).analyze(source, id)` from `@ark/aot`.
 
 ## ESLint
 
 The ESLint rule reports what the build would, as you edit:
 
 ```js title="eslint.config.js"
-import { configs } from "@ark/precompile/eslint"
+import { configs } from "@ark/aot/eslint"
 
 export default [configs.recommended]
 ```

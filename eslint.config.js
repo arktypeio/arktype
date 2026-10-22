@@ -28,7 +28,7 @@ export default tseslint.config(
 			"**/scratch/**/*",
 			"**/examples/**/*",
 			// generated programs
-			"ark/precompile/__tests__/temp/programs/**/*"
+			"ark/aot/__tests__/temp/programs/**/*"
 		]
 	},
 	eslint.configs.recommended,

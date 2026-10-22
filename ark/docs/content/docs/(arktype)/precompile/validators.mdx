@@ -60,7 +60,7 @@ The [`errors`](/docs/precompile/options#errors) option ships less: one issue, or
 `runtime: "arktype"` ships arktype, leaving definitions as written: each stays a Type with its whole API, and the build registers the code arktype would compile for it, so it skips compiling at runtime. A definition the build can't precompile is compiled at runtime as usual. Use it while you migrate, or where a program relies on composing Types at runtime.
 
 ```ts
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 // ---cut---
 precompile.vite({ runtime: "arktype" })
 ```

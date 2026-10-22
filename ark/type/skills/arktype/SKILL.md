@@ -166,7 +166,7 @@ const Stripped = type({ "+": "delete", name: "string" })
 
 ## Precompiled projects
 
-A project whose bundler config uses `@ark/precompile` (e.g. `precompile.vite()` from `@ark/precompile/unplugin`) constructs every Type at build time and replaces it with a standalone validator. Definitions are written the same way, with a few rules:
+A project whose bundler config uses `@ark/aot` (e.g. `precompile.vite()` from `@ark/aot/unplugin`) constructs every Type at build time and replaces it with a standalone validator. Definitions are written the same way, with a few rules:
 
 - Define Types from static values. A definition reading a parameter, or anything else known only at runtime, fails the build.
 - Compose inside a definition, like `const Admin = User.and({ role: "'admin'" })`. A validator has no `.and`, `.or`, `.pick` or other composing method at runtime, and the build fails where code calls one.

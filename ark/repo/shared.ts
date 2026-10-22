@@ -32,11 +32,11 @@ export const repoDirs = {
 }
 
 export const packageScopes = [
+	"aot",
 	"attest",
 	"fast-check",
 	"fs",
 	"json-schema",
-	"precompile",
 	"regex",
 	"schema",
 	"sets",

@@ -9,7 +9,7 @@ description: Shadow mode, libraries, runtime islands and declarations
 
 ```ts title="vitest.config.ts"
 // @noErrors
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 import { defineConfig } from "vitest/config"
 
 export default defineConfig({ plugins: [precompile.vite({ shadow: true })] })
@@ -76,7 +76,7 @@ A consumer's type-check then reads each Type's shape rather than inferring its d
 The bundler plugin emits the same files with a Rollup, Rolldown, Vite, webpack, Rspack or Rsbuild build that neither watches nor serves:
 
 ```ts
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 // ---cut---
 precompile.vite({ declare: true })
 ```
