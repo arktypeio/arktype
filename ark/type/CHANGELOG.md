@@ -63,7 +63,7 @@ const NonZero = type("number != 0")
 NonZero(0)
 ```
 
-It reduces like the other comparators: `number < 0 | number > 0` is `number != 0`, `number >= 0 & number != 0` is `number > 0`, and `string != 0` is `string > 0`. Its JSON Schema is `not`, like `{ type: "number", not: { const: 0 } }`.
+It reduces like the other comparators: `number < 0 | number > 0` is `number != 0`, `number >= 0 & number != 0` is `number > 0`, and `string != 0` is `string >= 1`. Its JSON Schema is `not`, like `{ type: "number", not: { const: 0 } }`.
 
 Its errors have the codes `notEqual`, whose `rule` is a number or a `Date`, and `notEqualLength`. A lone `!` still doesn't end a name, so an alias or brand like `a!b` parses as before.
 
@@ -744,7 +744,7 @@ type("'a' | 'b' | 'c'").configure({ expected: "a letter" })("d")
 const T = type({ v: Shape }).or({ v: { kind: "string >= 9" } })
 
 // previously (was {"kind":"triangle"})
-// now v.kind must be "circle" or "square" or at least length 9 (was "triangle")
+// now v.kind must be at least length 9, "circle" or "square" (was "triangle")
 T({ v: { kind: "triangle" } })
 ```
 
