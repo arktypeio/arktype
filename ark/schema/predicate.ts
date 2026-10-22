@@ -40,7 +40,7 @@ export declare namespace Predicate {
 		extends declareNode<{
 			kind: "predicate"
 			inner: Inner
-			intersectionIsOpen: true
+			openIntersection: true
 			errorContext: ErrorContext
 		}> {}
 
@@ -50,15 +50,15 @@ export declare namespace Predicate {
 const implementation: nodeImplementationOf<Predicate.Declaration> =
 	implementNode<Predicate.Declaration>({
 		kind: "predicate",
-		hasAssociatedError: true,
-		collapsibleKey: "predicate",
+		ownsError: true,
+		collapseKey: "predicate",
 		keys: {
 			predicate: {}
 		},
 		defaults: {
 			description: describePredicate
 		},
-		intersectionIsOpen: true
+		openIntersection: true
 	})
 
 export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
@@ -82,7 +82,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		const errorCount = ctx.currentErrorCount
 		const predicate = this.predicate
 		if (!predicate(data, ctx.external) && ctx.currentErrorCount === errorCount)
-			ctx.errorFromNodeContext(this.errorContext, data)
+			ctx.errorFromNode(this.errorContext, data)
 	}
 
 	compile(js: NodeCompiler): void {

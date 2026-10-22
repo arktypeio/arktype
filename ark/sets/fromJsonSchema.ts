@@ -76,7 +76,7 @@ export const readJsonSchema = (
 		return rootSchemaScope.finalize(defining(() => read(schema, "#", ctx)))
 	} finally {
 		for (const ref in ctx.cyclesByRef)
-			delete $ark.nodesByRegisteredId[ctx.cyclesByRef[ref].id]
+			delete $ark.nodesById[ctx.cyclesByRef[ref].id]
 	}
 }
 

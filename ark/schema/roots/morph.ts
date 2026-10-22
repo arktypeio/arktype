@@ -55,7 +55,7 @@ export type Morph<i = never, o = unknown> = (In: i, ctx: Traversal) => o
 const implementation: nodeImplementationOf<Morph.Declaration> =
 	implementNode<Morph.Declaration>({
 		kind: "morph",
-		hasAssociatedError: false,
+		ownsError: false,
 		keys: {
 			in: {
 				child: true
@@ -85,15 +85,15 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 export class MorphNode extends BaseRoot<Morph.Declaration> {
 	lastMorph: Morph | BaseRoot | undefined =
 		this.inner.morphs[this.inner.morphs.length - 1]
-	lastMorphIfNode: BaseRoot | undefined =
+	lastMorphNode: BaseRoot | undefined =
 		hasArkKind(this.lastMorph, "root") ? this.lastMorph : undefined
-	introspectableIn: BaseRoot | undefined = this.inner.in
-	// fixed at creation, as includesContextualMorph is
+	knownIn: BaseRoot | undefined = this.inner.in
+	// fixed at creation, as hasCtxMorph is
 	contextFree: boolean[] = this.morphs.map(
 		morph => !hasArkKind(morph, "root") && arityOf(morph) === 1
 	)
-	introspectableOut: BaseRoot | undefined =
-		this.lastMorphIfNode && this.includePiped(this.lastMorphIfNode).rawOut
+	knownOut: BaseRoot | undefined =
+		this.lastMorphNode && this.includePiped(this.lastMorphNode).rawOut
 
 	private _traversedMorphs: array<Morph | BaseRoot> | undefined
 
@@ -115,14 +115,14 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		return node
 	}
 
-	override get referencedBesidesChildren(): readonly BaseNode[] {
-		if (!this.lastMorphIfNode) return []
+	override get otherReferences(): readonly BaseNode[] {
+		if (!this.lastMorphNode) return []
 		// a configured message's copy is what traversal pipes to
 		const morphs = this.traversedMorphs
 		const traversed = morphs[morphs.length - 1] as BaseRoot
-		return traversed === this.lastMorphIfNode ?
-				[this.lastMorphIfNode]
-			:	[this.lastMorphIfNode, traversed]
+		return traversed === this.lastMorphNode ?
+				[this.lastMorphNode]
+			:	[this.lastMorphNode, traversed]
 	}
 
 	get shallowMorphs(): array<Morph> {
@@ -141,7 +141,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	override get rawOut(): BaseRoot {
 		return (
 			this.declaredOut ??
-			this.lastMorphIfNode?.rawOut ??
+			this.lastMorphNode?.rawOut ??
 			$ark.intrinsic.unknown.internal
 		)
 	}
@@ -153,31 +153,27 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		})
 	}
 
-	expression = `(In: ${this.rawIn.expression}) => ${this.lastMorphIfNode ? "To" : "Out"}<${this.rawOut.expression}>`
+	expression = `(In: ${this.rawIn.expression}) => ${this.lastMorphNode ? "To" : "Out"}<${this.rawOut.expression}>`
 
-	get defaultShortDescription(): string {
-		return this.rawIn.meta.description ?? this.rawIn.defaultShortDescription
+	get defaultBrief(): string {
+		return this.rawIn.meta.description ?? this.rawIn.defaultBrief
 	}
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
-			js.return(this.introspectableIn ? js.invoke(this.introspectableIn) : true)
+			js.return(this.knownIn ? js.invoke(this.knownIn) : true)
 			return
 		}
 		if (js.traversalKind === "Transform") return this.compileTransform(js)
-		js.return(
-			this.introspectableIn ? js.applyMember(this.introspectableIn) : true
-		)
+		js.return(this.knownIn ? js.applyMember(this.knownIn) : true)
 	}
 
 	private compileTransform(js: NodeCompiler): void {
 		let result = "data"
-		if (this.introspectableIn?.transforms) {
-			js.initializeTransform([this.introspectableIn])
-				.transformKey("transformedIn", "data", [
-					{ node: this.introspectableIn }
-				])
-				.returnIfTransformFailed()
+		if (this.knownIn?.transforms) {
+			js.initializeTransform([this.knownIn])
+				.transformKey("transformedIn", "data", [{ node: this.knownIn }])
+				.returnIfFailed()
 			result = "transformedIn"
 		}
 		const morphs = this.traversedMorphs
@@ -210,21 +206,17 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	}
 
 	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
-		return (
-			!this.introspectableIn || this.introspectableIn.traverseAllows(data, ctx)
-		)
+		return !this.knownIn || this.knownIn.traverseAllows(data, ctx)
 	}
 
 	traverseApply(data: unknown, ctx: InternalTraversal): void {
-		if (this.introspectableIn) applyMember(this.introspectableIn, data, ctx)
+		if (this.knownIn) applyMember(this.knownIn, data, ctx)
 	}
 
 	traverseTransform(data: unknown, ctx: InternalTraversal): unknown {
 		const errorCount = ctx.currentErrorCount
 		let result =
-			this.introspectableIn?.transforms ?
-				transform(ctx, this.introspectableIn, data)
-			:	data
+			this.knownIn?.transforms ? transform(ctx, this.knownIn, data) : data
 		if (ctx.currentErrorCount > errorCount) return data
 		const morphs = this.traversedMorphs
 		for (let i = 0; i < morphs.length; i++) {

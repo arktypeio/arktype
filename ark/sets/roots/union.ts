@@ -128,14 +128,14 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 		if (!node.unitBranches.every(n => isCaseUnit(n.rawIn as Unit.Node)))
 			return null
 		const cases = flatMorph(node.unitBranches, (i, n) => [
-			`${(n.rawIn as Unit.Node).serializedValue}`,
+			`${(n.rawIn as Unit.Node).serializedUnit}`,
 			n.hasKind("morph") ? n : (true as const)
 		])
 
 		return {
 			kind: "unit",
 			path: [],
-			optionallyChainedPropString: "data",
+			chainedPropString: "data",
 			cases
 		}
 	}
@@ -172,8 +172,8 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 					const lUnit = entry.l as Unit.Node
 					const rUnit = entry.r as Unit.Node
 					if (!isCaseUnit(lUnit) || !isCaseUnit(rUnit)) continue
-					lSerialized = lUnit.serializedValue
-					rSerialized = rUnit.serializedValue
+					lSerialized = lUnit.serializedUnit
+					rSerialized = rUnit.serializedUnit
 				} else continue
 
 				// an optional chain reads undefined at a missing key or below a non-object
@@ -238,10 +238,10 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 			(members ??= {})[k] = branch
 	}
 
-	if (ctx.defaultEntries.length) {
+	if (ctx.defaultPairs.length) {
 		// we don't have to worry about order here as it is always preserved
-		// within defaultEntries
-		const branches = ctx.defaultEntries.map(entry => entry.branch)
+		// within defaultPairs
+		const branches = ctx.defaultPairs.map(entry => entry.branch)
 		cases.default = node.$.node("union", unionInner(branches, node.ordered), {
 			prereduced: true
 		})
@@ -263,7 +263,7 @@ const addUnitCases = (
 	const isCase = (branch: BaseRoot): branch is Unit.Node =>
 		branch.hasKind("unit") &&
 		isCaseUnit(branch) &&
-		!(entry.path.length && isUndefinedCase(branch.serializedValue))
+		!(entry.path.length && isUndefinedCase(branch.serializedUnit))
 	if (!entry.l.every(isCase) || !entry.r.every(isCase)) return
 	let candidate = candidates.find(
 		d => arrayEquals(d.path, entry.path) && d.kind === "unit"
@@ -273,9 +273,9 @@ const addUnitCases = (
 		candidates.push(candidate)
 	}
 	for (const unit of entry.l)
-		addCase(candidate.cases, unit.serializedValue, lIndex, unit)
+		addCase(candidate.cases, unit.serializedUnit, lIndex, unit)
 	for (const unit of entry.r)
-		addCase(candidate.cases, unit.serializedValue, rIndex, unit)
+		addCase(candidate.cases, unit.serializedUnit, rIndex, unit)
 }
 
 const addCase = (
@@ -294,7 +294,7 @@ const addCase = (
 type CaseResolutionContext = {
 	best: DiscriminantCandidate
 	location: DiscriminantLocation
-	defaultEntries: BranchEntry[]
+	defaultPairs: BranchEntry[]
 	node: Union.Node
 }
 
@@ -319,10 +319,10 @@ const createCaseResolutionContext = (
 	const location: DiscriminantLocation = {
 		kind: best.kind,
 		path: best.path,
-		optionallyChainedPropString: optionallyChainPropString(best.path)
+		chainedPropString: optionallyChainPropString(best.path)
 	}
 
-	const defaultEntries = node.branches.map(
+	const defaultPairs = node.branches.map(
 		(branch, originalIndex): BranchEntry => ({
 			originalIndex,
 			branch
@@ -332,7 +332,7 @@ const createCaseResolutionContext = (
 	return {
 		best,
 		location,
-		defaultEntries,
+		defaultPairs,
 		node
 	}
 }
@@ -363,13 +363,13 @@ const resolveCase = (
 		if (pruned === null) {
 			// if any branch of the union has no constraints (i.e. is
 			// unknown), the others won't affect the resolution type, but could still
-			// remove additional cases from defaultEntries
+			// remove additional cases from defaultPairs
 			resolvedEntries = null
 		} else resolvedEntries?.push({ originalIndex, branch: pruned })
 	}
 
-	for (let i = 0; i < ctx.defaultEntries.length; i++) {
-		const entry = ctx.defaultEntries[i]
+	for (let i = 0; i < ctx.defaultPairs.length; i++) {
+		const entry = ctx.defaultPairs[i]
 		if (!caseCtx.branchIndices.includes(entry.originalIndex)) {
 			const intersection = intersectNodesRoot(
 				entry.branch.rawIn,
@@ -404,7 +404,7 @@ const resolveCase = (
 		}
 	}
 
-	ctx.defaultEntries = nextDefaults
+	ctx.defaultPairs = nextDefaults
 	return resolvedEntries
 }
 
@@ -651,8 +651,7 @@ export const reduceBranches = ({
 				continue
 			}
 			// an alias branch is reduced once the union is rebuilt from its resolution
-			if (branches[i].includesShallowAlias || branches[j].includesShallowAlias)
-				continue
+			if (branches[i].hasShallowAlias || branches[j].hasShallowAlias) continue
 			const intersection = intersectNodesRoot(
 				branches[i].rawIn,
 				branches[j].rawIn,
@@ -1000,7 +999,7 @@ const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 			return
 		}
 		if (!l.transforms && !r.transforms) return
-	} else if (!l.includesTransform && !r.includesTransform) return
+	} else if (!l.hasTransform && !r.hasTransform) return
 
 	if (
 		!arrayEquals(l.shallowMorphs as Morph[], r.shallowMorphs as Morph[]) ||
@@ -1065,7 +1064,7 @@ export const pruneDiscriminant = (
 				// safe to cast here as index nodes are never discriminants
 				const propString = optionallyChainPropString(ctx.path as PropertyKey[])
 
-				if (!discriminantCtx.optionallyChainedPropString.startsWith(propString))
+				if (!discriminantCtx.chainedPropString.startsWith(propString))
 					return false
 
 				// pruning a union's branches narrows it, e.g. string | number to number
@@ -1079,7 +1078,7 @@ export const pruneDiscriminant = (
 
 				if (
 					(node.hasKind("domain") || discriminantCtx.kind === "unit") &&
-					propString === discriminantCtx.optionallyChainedPropString
+					propString === discriminantCtx.chainedPropString
 				)
 					// if the discriminant has already checked the domain at the current path
 					// (or a unit literal, implying a domain), we don't need to recheck it

@@ -57,7 +57,7 @@ interface DeclarationInput {
 	inner: object
 	errorContext?: BaseErrorContext
 	reducibleTo?: NodeKind
-	intersectionIsOpen?: true
+	openIntersection?: true
 	prerequisite?: unknown
 	childKind?: NodeKind
 }
@@ -81,7 +81,7 @@ export type declareNode<
 	} & DeclarationInput
 > = merge<
 	{
-		intersectionIsOpen: false
+		openIntersection: false
 		prerequisite: prerequisiteOf<d>
 		childKind: never
 		reducibleTo: d["kind"]
@@ -106,7 +106,7 @@ export interface BaseNodeDeclaration {
 	inner: {}
 	reducibleTo: NodeKind
 	prerequisite: any
-	intersectionIsOpen: boolean
+	openIntersection: boolean
 	childKind: NodeKind
 	errorContext: BaseErrorContext | null
 }

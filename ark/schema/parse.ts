@@ -101,12 +101,12 @@ export type NodeId = Brand<string, "NodeId">
 
 export type NodeResolver = (id: NodeId) => BaseNode
 
-export const nodesByRegisteredId: Record<
+export const nodesById: Record<
 	NodeId,
 	BaseNode | BaseParseContext | undefined
 > = {}
 
-$ark.nodesByRegisteredId = nodesByRegisteredId
+$ark.nodesById = nodesById
 
 export const registerNodeId = (prefix: string): NodeId => {
 	if (/\d$/.test(prefix)) prefix += "_"
@@ -188,8 +188,8 @@ const deferAliases = (v: unknown, $: BaseScope): unknown => {
 		const deferred = v.map(element => deferAliases(element, $))
 		return deferred.some((element, i) => element !== v[i]) ? deferred : v
 	}
-	if (!isNode(v) || !v.includesShallowAlias || v.hasKind("alias")) return v
-	nodesByRegisteredId[v.id] = v
+	if (!isNode(v) || !v.hasShallowAlias || v.hasKind("alias")) return v
+	nodesById[v.id] = v
 	return $.node("alias", { reference: v.id }, { prereduced: true })
 }
 
@@ -284,7 +284,7 @@ const nodeKeyOf = (
 	// an alias inlines a reference that has resolved when it's written
 	if (
 		kind === "alias" &&
-		hasArkKind(nodesByRegisteredId[inner.reference as NodeId], "root")
+		hasArkKind(nodesById[inner.reference as NodeId], "root")
 	)
 		parts.push("!")
 	if (metaJson) parts.push(JSON.stringify(metaJson))
@@ -326,7 +326,7 @@ export const requiredPropOf = (
 	value: BaseRoot,
 	$: BaseScope
 ): nodeOfKind<"required"> => {
-	if (!holdsWeakly || value.includesShallowAlias || value.$ !== $)
+	if (!holdsWeakly || value.hasShallowAlias || value.$ !== $)
 		return $.node("required", { key, value })
 	const props = (value.cache.requiredProps ??= new Map())
 	let prop = props.get(key)?.deref()
@@ -353,7 +353,7 @@ export const resolveDescription = <node extends BaseNode>(node: node): node => {
 
 export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {
 	if (node.id === id) return node
-	if (isNode(nodesByRegisteredId[id]))
+	if (isNode(nodesById[id]))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
 	// have to ignore cache to force creation of new potentially cyclic id
 	return createNode({
@@ -371,7 +371,7 @@ export const withMeta = <node extends BaseNode>(
 	meta: ArkEnv.meta,
 	id?: NodeId
 ): node => {
-	if (id && isNode(nodesByRegisteredId[id]))
+	if (id && isNode(nodesById[id]))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
 	return createNode({
 		id,

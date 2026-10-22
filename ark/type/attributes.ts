@@ -40,14 +40,14 @@ export type distill<t, side extends distill.Side> =
 	[distilledSidesOf<t>] extends [undistilledOn<side>] ? t : _distill<t, side>
 
 export declare namespace distill {
-	export type Side = "in" | "out" | "introspectableOut"
+	export type Side = "in" | "out" | "knownOut"
 
 	export type In<t> = distill<t, "in">
 
 	export type Out<t> = distill<t, "out">
 
 	export namespace introspectable {
-		export type Out<t> = distill<t, "introspectableOut">
+		export type Out<t> = distill<t, "knownOut">
 	}
 }
 

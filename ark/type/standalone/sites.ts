@@ -82,7 +82,7 @@ const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 			if ("fails" in site) codes.add("union")
 		}
 		for (const node of unit.declared) {
-			if (node.hasKind("union") && node.compiledDiscriminant)
+			if (node.hasKind("union") && node.discriminantJit)
 				codes.add("discriminant")
 			else if (node.hasKind("structure") && node.undeclared === "reject")
 				codes.add("undeclared")

@@ -9,7 +9,7 @@ import {
 } from "@ark/util"
 import type { intrinsic } from "./intrinsic.ts"
 import type { BaseNode } from "./node.ts"
-import type { nodesByRegisteredId } from "./parse.ts"
+import type { nodesById } from "./parse.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { RootApplyRuntime } from "./shared/rootApply.ts"
 import type { BaseScope } from "./scope.ts"
@@ -41,7 +41,7 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	config: ArkSchemaConfig
 	defaultConfig: ResolvedConfig
 	resolvedConfig?: ResolvedConfig
-	nodesByRegisteredId: typeof nodesByRegisteredId
+	nodesById: typeof nodesById
 	sets?: SetEngine
 	encode?: (node: BaseRoot) => BaseRoot
 	inPlace?: InPlaceTransforms

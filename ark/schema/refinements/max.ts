@@ -40,8 +40,8 @@ export declare namespace Max {
 const implementation: nodeImplementationOf<Max.Declaration> =
 	implementNode<Max.Declaration>({
 		kind: "max",
-		collapsibleKey: "rule",
-		hasAssociatedError: true,
+		collapseKey: "rule",
+		ownsError: true,
 		keys: {
 			rule: {},
 			exclusive: {}
@@ -52,7 +52,7 @@ const implementation: nodeImplementationOf<Max.Declaration> =
 				return `${node.exclusive ? "less than" : "at most"} ${node.rule}`
 			}
 		},
-		obviatesBasisDescription: true
+		coversBasisNoun: true
 	})
 
 export class MaxNode extends BaseRange<Max.Declaration> {

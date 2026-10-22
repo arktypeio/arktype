@@ -94,7 +94,7 @@ type orderedNodeKinds = [...typeof rootKinds, ...typeof constraintKinds]
 export const nodeKinds: orderedNodeKinds = [...rootKinds, ...constraintKinds]
 
 export type OpenNodeKind = {
-	[k in NodeKind]: Declaration<k>["intersectionIsOpen"] extends true ? k : never
+	[k in NodeKind]: Declaration<k>["openIntersection"] extends true ? k : never
 }[NodeKind]
 
 export type ClosedNodeKind = Exclude<NodeKind, OpenNodeKind>
@@ -296,19 +296,19 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
 	keys: keyImplementationsOf<d>
 	applyConfig?: (inner: d["inner"], config: ResolvedScopeConfig) => d["inner"]
-	hasAssociatedError: d["errorContext"] extends null ? false : true
+	ownsError: d["errorContext"] extends null ? false : true
 	finalizeInnerJson?: (json: {
 		[k in keyof d["inner"]]: Json
 	}) => JsonStructure
-	collapsibleKey?: keyof d["inner"]
-	obviatesBasisDescription?: d["kind"] extends RefinementKind ? true : never
+	collapseKey?: keyof d["inner"]
+	coversBasisNoun?: d["kind"] extends RefinementKind ? true : never
 	obviatesBasisExpression?: d["kind"] extends RefinementKind ? true : never
 }
 
 export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	defaults: ResolvedUnknownNodeConfig
-	intersectionIsOpen: boolean
+	openIntersection: boolean
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
 
@@ -321,14 +321,14 @@ export const compileObjectLiteral = (ctx: object): string => {
 
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
-		intersectionIsOpen: d["intersectionIsOpen"]
+		openIntersection: d["openIntersection"]
 		defaults: Required<NodeConfig<d["kind"]>>
 	}
 
 export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
 		defaults: { description: DescriptionWriter<d["kind"]> }
-	} & (d["intersectionIsOpen"] extends true ? { intersectionIsOpen: true } : {})
+	} & (d["openIntersection"] extends true ? { openIntersection: true } : {})
 
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 	node: nodeOfKind<kind>
@@ -365,7 +365,7 @@ export const implementNode = <d extends BaseNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>
 ): nodeImplementationOf<d> => {
 	const implementation: UnknownNodeImplementation = _ as never
-	if (implementation.hasAssociatedError) {
+	if (implementation.ownsError) {
 		Object.assign(
 			implementation.defaults,
 			errorWriters,

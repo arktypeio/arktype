@@ -70,8 +70,8 @@ export class InternalTraversal implements FailureContext {
 	// what it tracks of the cyclic nodes it enters, once it enters one
 	declare resolutions: Resolutions | undefined
 	// data a root allowed within the bounds is a tree, so each path is transformed
-	declare tracksTransforms: boolean
-	declare transformedByResolutionId:
+	declare tracksMorphs: boolean
+	declare transformedById:
 		| { [id in string]?: Map<unknown, unknown> }
 		| undefined
 
@@ -92,8 +92,8 @@ export class InternalTraversal implements FailureContext {
 		this.config = config
 		this.branches = []
 		this.resolutions = undefined
-		this.tracksTransforms = true
-		this.transformedByResolutionId = undefined
+		this.tracksMorphs = true
+		this.transformedById = undefined
 		this.received = root
 		this.receivedDepth = 0
 		this.checksOnly = false
@@ -156,11 +156,11 @@ export class InternalTraversal implements FailureContext {
 	 * @internal a node's error, which arktype's traversal writes from its
 	 * context, and this one, checking Allows for arktype, adds as an issue
 	 */
-	errorFromNodeContext<input extends NodeErrorContextInput>(
+	errorFromNode<input extends NodeErrorContextInput>(
 		input: input,
 		data: unknown
 	): ArkError<input["code"]>
-	errorFromNodeContext(input: NodeErrorContextInput, data: unknown): ArkError {
+	errorFromNode(input: NodeErrorContextInput, data: unknown): ArkError {
 		return this.addError({
 			code: input.code,
 			path: this.path.slice(),
@@ -426,7 +426,7 @@ export const transformed = (
 	data: unknown
 ): unknown => {
 	if (!(result instanceof TransformErrors)) return result
-	addTransformErrors(ctx, result)
+	addMorphErrors(ctx, result)
 	return data
 }
 
@@ -434,7 +434,7 @@ export const transformed = (
 export const pipeOf = (node: BaseNode): TraversePipe =>
 	node.includesAlias ? pipe
 	: node.transforms ? pipeTransformed
-	: node.allowsRequiresContext ? pipeChecked
+	: node.allowsNeedsCtx ? pipeChecked
 	: pipeApplied
 
 export type TraversePipe = (
@@ -466,12 +466,12 @@ export const pipe: TraversePipe = (ctx, node, data) => {
 	}
 	if (!node.transforms) return data
 	// a morph's output can share objects an earlier pass cached
-	const { transformedByResolutionId, tracksTransforms } = ctx
-	ctx.transformedByResolutionId = undefined
-	ctx.tracksTransforms = true
+	const { transformedById, tracksMorphs } = ctx
+	ctx.transformedById = undefined
+	ctx.tracksMorphs = true
 	const result = transformPiped(ctx, node, data, transform)
-	ctx.transformedByResolutionId = transformedByResolutionId
-	ctx.tracksTransforms = tracksTransforms
+	ctx.transformedById = transformedById
+	ctx.tracksMorphs = tracksMorphs
 	return result
 }
 
@@ -481,7 +481,7 @@ const allowsPiped = (
 	data: unknown
 ): boolean => {
 	// Allows would detach a contextual node's predicates from this path
-	if (node.allowsRequiresContext) return applyPiped(ctx, node, data)
+	if (node.allowsNeedsCtx) return applyPiped(ctx, node, data)
 	if (node.allows(data)) return true
 	applyPiped(ctx, node, data)
 	return false
@@ -544,7 +544,7 @@ export const transformedInApply = (
 	ctx: InternalTraversal,
 	result: unknown
 ): void => {
-	if (result instanceof TransformErrors) addTransformErrors(ctx, result)
+	if (result instanceof TransformErrors) addMorphErrors(ctx, result)
 }
 
 // whether data was allowed and transformed instead of applied
@@ -559,8 +559,8 @@ export const transformIfAllowed = (
 		if (!(untracked ?? allowsInTraversal(node, data, traversalOf(ctx, data))))
 			return false
 		// as at a root, allowed data is a tree
-		ctx.tracksTransforms = untracked === undefined
-		ctx.transformedByResolutionId = undefined
+		ctx.tracksMorphs = untracked === undefined
+		ctx.transformedById = undefined
 	} else if (!allowsInBranch(ctx, node, data)) return false
 	transformedInApply(ctx, transform(ctx, node, data))
 	return true
@@ -572,7 +572,7 @@ export const allowsInBranch = (
 	node: BaseNode,
 	data: unknown
 ): boolean =>
-	node.allowsRequiresTraversal ?
+	node.allowsNeedsTraversal ?
 		allowsInBranchBy(ctx, node.traverseAllows, data, node)
 	:	node.allows(data)
 
@@ -643,7 +643,7 @@ export const addErrors = (
 	else mergeIssues(target, errors, ctx.path)
 }
 
-export const addTransformErrors = (
+export const addMorphErrors = (
 	ctx: InternalTraversal,
 	errors: TransformErrors,
 	key?: PropertyKey
@@ -669,10 +669,9 @@ export const transformResolution = (
 	transform: TraverseTransform,
 	node?: BaseNode
 ): unknown => {
-	if (!ctx.tracksTransforms || !hasDomain(data, "object"))
+	if (!ctx.tracksMorphs || !hasDomain(data, "object"))
 		return transformed(ctx, transform.call(node, data, ctx), data)
-	const transformedByData = ((ctx.transformedByResolutionId ??= {})[id] ??=
-		new Map())
+	const transformedByData = ((ctx.transformedById ??= {})[id] ??= new Map())
 	if (transformedByData.has(data)) {
 		const result = transformedByData.get(data)
 		if (result !== transforming) return result
@@ -708,7 +707,7 @@ class Resolutions {
 	untrackedVisits = 0
 	recordedFailure = false
 	enteredCount = 0
-	earliestAssumed = Number.POSITIVE_INFINITY
+	assumedFrom = Number.POSITIVE_INFINITY
 	assumed: unknown[] | undefined = undefined
 	reachedInvalid: InvalidResolution | undefined = undefined
 }
@@ -731,8 +730,7 @@ export const enterResolution = (
 	const state = states?.get(data)
 	if (state !== undefined) {
 		if (typeof state === "number") {
-			if (state < resolutions.earliestAssumed)
-				resolutions.earliestAssumed = state
+			if (state < resolutions.assumedFrom) resolutions.assumedFrom = state
 			return true
 		}
 		if (typeof state === "boolean") return state
@@ -758,7 +756,7 @@ export const enterResolution = (
 		entered: 0,
 		errorCount: 0,
 		outerReachedInvalid: undefined,
-		outerEarliestAssumed: 0,
+		assumedOuter: 0,
 		assumedLength: 0
 	})
 	frame.id = id
@@ -772,9 +770,9 @@ export const enterResolution = (
 	frame.entered = resolutions.enteredCount
 	frame.outerReachedInvalid = resolutions.reachedInvalid
 	resolutions.reachedInvalid = undefined
-	frame.outerEarliestAssumed = resolutions.earliestAssumed
+	frame.assumedOuter = resolutions.assumedFrom
 	frame.assumedLength = (resolutions.assumed ??= []).length
-	resolutions.earliestAssumed = Number.POSITIVE_INFINITY
+	resolutions.assumedFrom = Number.POSITIVE_INFINITY
 	return
 }
 
@@ -795,7 +793,7 @@ export const exitResolution = (
 	const states = resolutions.seen[frame.id]!
 	// a primitive has no identity, so each place reports its own errors
 	if (typeof data === "object" ? data === null : typeof data !== "function") {
-		resolutions.earliestAssumed = frame.outerEarliestAssumed
+		resolutions.assumedFrom = frame.assumedOuter
 		states.delete(data)
 		return valid
 	}
@@ -803,13 +801,13 @@ export const exitResolution = (
 		valid || allowed === false ?
 			valid
 		:	invalidResolution(ctx, reachedInvalid?.error)
-	const earliestAssumed = resolutions.earliestAssumed
-	resolutions.earliestAssumed = frame.outerEarliestAssumed
+	const assumedFrom = resolutions.assumedFrom
+	resolutions.assumedFrom = frame.assumedOuter
 	const assumed = resolutions.assumed!
-	if (valid && earliestAssumed < frame.entered) {
+	if (valid && assumedFrom < frame.entered) {
 		assumed.push(states, data)
-		if (earliestAssumed < resolutions.earliestAssumed)
-			resolutions.earliestAssumed = earliestAssumed
+		if (assumedFrom < resolutions.assumedFrom)
+			resolutions.assumedFrom = assumedFrom
 		return true
 	}
 	// settle each result that assumed this one
@@ -969,7 +967,7 @@ export const applyValue = (
 		:	allowsInBranch(ctx, node, data))
 	)
 		return
-	if (node.entersResolution) applyResolution(node.id, node, data, ctx)
+	if (node.entersAlias) applyResolution(node.id, node, data, ctx)
 	else node.traverseApply(data, ctx)
 }
 
@@ -982,7 +980,7 @@ export const allowsUntracked = (
 	if (
 		inProgress.definitions ||
 		inProgress.resolutions ||
-		node.allowsRequiresTraversal
+		node.allowsNeedsTraversal
 	)
 		return
 	const outerVisits = aliasVisits.count
@@ -1050,7 +1048,7 @@ interface ResolvingFrame {
 	entered: number
 	errorCount: number
 	outerReachedInvalid: InvalidResolution | undefined
-	outerEarliestAssumed: number
+	assumedOuter: number
 	assumedLength: number
 }
 
@@ -1082,10 +1080,10 @@ interface DefaultedValue {
 
 export type DefaultedNode = Pick<
 	BaseNode,
-	| "includesTransform"
+	| "hasTransform"
 	| "includesAlias"
-	| "allowsRequiresContext"
-	| "includesContextualMorph"
+	| "allowsNeedsCtx"
+	| "hasCtxMorph"
 	| "transforms"
 >
 
@@ -1099,13 +1097,13 @@ export const computeDefaultValueMorph = (
 	isThunkInput = isThunk(defaultInput)
 ): Morph<any> => {
 	const thunk = isThunkInput ? (defaultInput as () => unknown) : undefined
-	if (!thunk && !node.includesTransform && !node.includesAlias) {
+	if (!thunk && !node.hasTransform && !node.includesAlias) {
 		return data => {
 			data[key] = defaultInput
 			return data
 		}
 	}
-	if (!node.allowsRequiresContext && !node.includesContextualMorph) {
+	if (!node.allowsNeedsCtx && !node.hasCtxMorph) {
 		return data => {
 			const input = thunk ? thunk() : defaultInput
 			const output = value.traverse(input)

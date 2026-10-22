@@ -39,11 +39,9 @@ export const parseProperty = (
 	ctx: BaseParseContext
 ): ParsedProperty => {
 	if (isArray(def)) {
-		if (def[1] === "=")
-			return [ctx.$.parseOwnDefinitionFormat(def[0], ctx), "=", def[2]]
+		if (def[1] === "=") return [ctx.$.parseOwn(def[0], ctx), "=", def[2]]
 
-		if (def[1] === "?")
-			return [ctx.$.parseOwnDefinitionFormat(def[0], ctx), "?"]
+		if (def[1] === "?") return [ctx.$.parseOwn(def[0], ctx), "?"]
 	}
 
 	// string-embedded defaults/optionals are handled by the string parser

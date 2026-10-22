@@ -18,7 +18,7 @@ import { registerBuilderCompiler, type ErrorBuilder } from "./errors.ts"
 import { registeredReference } from "./registry.ts"
 import { mergeTransformed, TransformErrors } from "./transform.ts"
 import {
-	addTransformErrors,
+	addMorphErrors,
 	allowsInBranchBy,
 	enterApplied,
 	exitApplied,
@@ -278,7 +278,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	declare readonly reportsFirst?: boolean
 	// whether a build writes for size, so Allows returns where it fails
 	declare readonly shortest?: boolean
-	checksTransformErrors = false
+	checksMorphErrors = false
 
 	constructor(ctx: NodeCompiler.Context) {
 		super("data", "ctx")
@@ -316,7 +316,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		if (
 			this.traversalKind === "Transform" &&
 			kind === "Allows" &&
-			node.allowsRequiresContext
+			node.allowsNeedsCtx
 		)
 			return this.allows(node, arg)
 		const reference = this.referenceToId(node.id, opts)
@@ -329,9 +329,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 
 	// Allows adds no errors to ctx, so a predicate reading it runs in a branch
 	allows(node: BaseNode, arg: string = this.data): string {
-		if (!node.allowsRequiresContext)
-			return this.invoke(node, { arg, kind: "Allows" })
-		return node.allowsRequiresTraversal ?
+		if (!node.allowsNeedsCtx) return this.invoke(node, { arg, kind: "Allows" })
+		return node.allowsNeedsTraversal ?
 				`${this.ref(allowsInBranchBy)}(${this.ctx}, ${this.referenceToId(node.id, { kind: "Allows" })}, ${arg})`
 			:	`${this.ref(node)}.allows(${arg})`
 	}
@@ -406,9 +405,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	requiresContextFor(node: BaseNode, kind = this.traversalKind): boolean {
 		return (
 			this.traversalKind === "Apply" ||
-			(kind === "Transform" ?
-				node.transformRequiresContext
-			:	node.allowsRequiresContext)
+			(kind === "Transform" ? node.transformNeedsCtx : node.allowsNeedsCtx)
 		)
 	}
 
@@ -452,7 +449,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 			if (condition !== undefined) return `!(${condition})`
 			if (
 				(this.loopDepth > 0 && isRefinedPattern(node)) ||
-				(node.allowsRequiresContext && node.allowsRequiresTraversal)
+				(node.allowsNeedsCtx && node.allowsNeedsTraversal)
 			)
 				return
 			return `!${this.invoke(node, { arg: value })}`
@@ -462,7 +459,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		const checksAllowsFirst =
 			node.transforms ||
 			((this.loopDepth > 0 ||
-				(node.hasKind("union") && !node.compiledDiscriminant)) &&
+				(node.hasKind("union") && !node.discriminantJit)) &&
 				isDecidedByAllows(node))
 		const condition =
 			node.hasKind("union") && !checksAllowsFirst ?
@@ -485,7 +482,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	// a cyclic value is applied inline
 	private applyKey(key: string, value: string, node: BaseNode): this {
 		const apply =
-			node.entersResolution && node.includesAlias ?
+			node.entersAlias && node.includesAlias ?
 				`(${this.resolution(node, node.id, value)})`
 			:	this.invoke(node, { arg: value })
 		const fails = () => this.line("ctx.path.pop()").return(false)
@@ -515,10 +512,10 @@ export abstract class NodeCompiler extends CompiledFunction<
 		transformedChildren: readonly BaseNode[],
 		_structure?: StructureNode
 	): this {
-		this.checksTransformErrors = transformedChildren.some(
-			child => child.includesMorph || child.transformRequiresContext
+		this.checksMorphErrors = transformedChildren.some(
+			child => child.includesMorph || child.transformNeedsCtx
 		)
-		if (!this.checksTransformErrors) return this
+		if (!this.checksMorphErrors) return this
 		return this.requiresContext ?
 				this.initializeErrorCount()
 			:	this.line("let failed")
@@ -533,8 +530,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		const nodes = steps.map(step => step.node)
 		const keyExpression = opts?.keyExpression
 		const assign = (assignee: string, node: BaseNode, arg: string) => {
-			const pushesKey =
-				keyExpression !== undefined && node.transformRequiresContext
+			const pushesKey = keyExpression !== undefined && node.transformNeedsCtx
 			if (pushesKey) this.line(`${this.ctx}.path.push(${keyExpression})`)
 			// a step rejecting an earlier step's output transforms the input instead
 			const transformed =
@@ -548,7 +544,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 			`typeof ${name} === "function" && ${name} instanceof ${this.ref(TransformErrors)}`
 		const assignSteps = () => {
 			const errorCount = `${name}ErrorCount`
-			if (nodes.slice(0, -1).some(node => node.transformRequiresContext))
+			if (nodes.slice(0, -1).some(node => node.transformNeedsCtx))
 				this.const(errorCount, `${this.ctx}.currentErrorCount`)
 			for (let i = 0; i < steps.length; i++) {
 				const { node, signature } = steps[i]
@@ -559,7 +555,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 					:	[]
 				if (previous.some(returnsTransformErrors))
 					conditions.push(`!(${isTransformErrors()})`)
-				if (previous.some(node => node.transformRequiresContext))
+				if (previous.some(node => node.transformNeedsCtx))
 					conditions.push(`${this.ctx}.currentErrorCount === ${errorCount}`)
 				const assignStep = () => assign(name, node, i === 0 ? input : name)
 				if (conditions.length) this.if(conditions.join(" && "), assignStep)
@@ -583,17 +579,17 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return this.if(this.compareTransformed(steps, name, "!==", input), () => {
 			if (!checksErrors) return onChange()
 			this.if(isTransformErrors(), () =>
-				this.addTransformErrors(name, keyExpression)
+				this.addMorphErrors(name, keyExpression)
 			)
 			return opts?.onChange ? this.else(onChange) : this
 		})
 	}
 
-	addTransformErrors(errors: string, keyExpression?: string): this {
+	addMorphErrors(errors: string, keyExpression?: string): this {
 		const key = keyExpression === undefined ? "" : `, ${keyExpression}`
 		return this.line(
 			this.requiresContext ?
-				`${this.ref(addTransformErrors)}(${this.ctx}, ${errors}${key})`
+				`${this.ref(addMorphErrors)}(${this.ctx}, ${errors}${key})`
 			:	`failed = ${errors}.addTo(failed${key})`
 		)
 	}
@@ -613,8 +609,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 			:	`${transformed} ${operator} ${input}`
 	}
 
-	returnIfTransformFailed(): this {
-		if (!this.checksTransformErrors) return this
+	returnIfFailed(): this {
+		if (!this.checksMorphErrors) return this
 		return this.requiresContext ?
 				this.if("ctx.currentErrorCount > errorCount", () => this.return("data"))
 			:	this.if("failed", () => this.return("failed"))
@@ -654,12 +650,12 @@ export abstract class NodeCompiler extends CompiledFunction<
 }
 
 export const returnsTransformErrors = (node: BaseNode): boolean =>
-	node.includesMorph && !node.transformRequiresContext
+	node.includesMorph && !node.transformNeedsCtx
 
 export const isDecidedByAllows = (node: BaseNode): boolean => {
-	if (node.includesMorph || node.allowsRequiresContext) return false
-	for (const id in node.referencesById)
-		if (node.referencesById[id].hasKind("predicate")) return false
+	if (node.includesMorph || node.allowsNeedsCtx) return false
+	for (const id in node.refsById)
+		if (node.refsById[id].hasKind("predicate")) return false
 	return true
 }
 

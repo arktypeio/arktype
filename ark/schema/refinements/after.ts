@@ -40,8 +40,8 @@ export declare namespace After {
 const implementation: nodeImplementationOf<After.Declaration> =
 	implementNode<After.Declaration>({
 		kind: "after",
-		collapsibleKey: "rule",
-		hasAssociatedError: true,
+		collapseKey: "rule",
+		ownsError: true,
 		keys: {
 			rule: {
 				serialize: schema => schema.toISOString()

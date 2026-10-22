@@ -100,7 +100,7 @@ export class GenericRoot<
 	description: string
 	alias: string | undefined
 	private instantiations: Record<string, BaseRoot | NodeId> = {}
-	private openInstantiations = 0
+	private openInstances = 0
 
 	constructor(
 		paramDefs: array<GenericParamDef>,
@@ -124,7 +124,7 @@ export class GenericRoot<
 						!(isResolvable(arg) && isResolvable(this.constraints[i]))
 				)
 			) {
-				const depth = this.openInstantiations
+				const depth = this.openInstances
 				return this.arg$.lazilyResolve(
 					() => this.instantiate(key, argNodes, depth),
 					`${this.id}<${key}>`,
@@ -145,16 +145,16 @@ export class GenericRoot<
 				(new hkt().description ?? `a generic type for ${functionNameOf(hkt)}`)
 			:	"a generic type"
 		this.alias = alias
-		if ($.resolved || !alias) void this.baseInstantiation
+		if ($.resolved || !alias) void this.baseInstance
 	}
 
 	get id(): NodeId {
 		return this.cacheGetter("id", registerNodeId(this.alias ?? "generic"))
 	}
 
-	get baseInstantiation(): BaseRoot {
+	get baseInstance(): BaseRoot {
 		return this.cacheGetter(
-			"baseInstantiation",
+			"baseInstance",
 			this(...(this.constraints as any)) as never
 		)
 	}
@@ -162,7 +162,7 @@ export class GenericRoot<
 	private instantiate(
 		key: string,
 		argNodes: GenericArgResolutions<any>,
-		depth = this.openInstantiations
+		depth = this.openInstances
 	): BaseRoot {
 		const instantiation = this.instantiations[key]
 		if (typeof instantiation === "string") {
@@ -202,7 +202,7 @@ export class GenericRoot<
 				() => resolvedArg.extends(resolvedConstraint) || unsatisfied()
 			)
 		}
-		const open = this.openInstantiations
+		const open = this.openInstances
 		if (
 			Math.max(open, depth) === maxOpenInstantiations ||
 			((open || depth) &&
@@ -218,13 +218,13 @@ export class GenericRoot<
 		const id = registerNodeId(this.alias ?? "generic")
 		const mark = $ark.reached?.mark()
 		this.instantiations[key] = id
-		this.openInstantiations = Math.max(open, depth) + 1
+		this.openInstances = Math.max(open, depth) + 1
 		try {
 			const node =
 				this.defIsLazy() ?
 					this.arg$.parse(this.$.parseDefinition(this.bodyDef(argNodes)))
 				:	this.$.parse(this.bodyDef, { args: argNodes, id })
-			if (inProgress.definitions && node.includesShallowAlias)
+			if (inProgress.definitions && node.hasShallowAlias)
 				delete this.instantiations[key]
 			else {
 				this.instantiations[key] = node
@@ -235,7 +235,7 @@ export class GenericRoot<
 			delete this.instantiations[key]
 			throw e
 		} finally {
-			this.openInstantiations = open
+			this.openInstances = open
 		}
 	}
 
@@ -283,12 +283,12 @@ export class GenericRoot<
 		return this
 	}
 
-	get referencesById(): Record<string, BaseNode> {
-		return this.baseInstantiation.internal.referencesById
+	get refsById(): Record<string, BaseNode> {
+		return this.baseInstance.internal.refsById
 	}
 
 	get references(): BaseNode[] {
-		return this.baseInstantiation.internal.references
+		return this.baseInstance.internal.references
 	}
 }
 

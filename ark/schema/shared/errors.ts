@@ -334,7 +334,7 @@ export const applyUnread = (
 	onFail: FailHandler | null,
 	ctor: typeof Traversal
 ): unknown => {
-	if (node.includesUserCode || node.includesTransform)
+	if (node.hasUserCode || node.hasTransform)
 		return applyRejected(node, data, config, onFail, ctor)
 	const errors = new UnreadErrors(node, data, config, ctor)
 	return onFail ? onFail(errors as never) : errors
@@ -348,11 +348,11 @@ export class ArkTraversal extends Traversal {
 		return new ArkErrors(this.config)
 	}
 
-	override errorFromNodeContext<input extends NodeErrorContextInput>(
+	override errorFromNode<input extends NodeErrorContextInput>(
 		input: input,
 		data: unknown
 	): ArkError<input["code"]>
-	override errorFromNodeContext(
+	override errorFromNode(
 		input: NodeErrorContextInput,
 		data: unknown
 	): ArkError {

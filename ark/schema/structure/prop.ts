@@ -37,7 +37,7 @@ export declare namespace Prop {
 	export interface Declaration<kind extends Kind = Kind> {
 		kind: kind
 		prerequisite: object
-		intersectionIsOpen: true
+		openIntersection: true
 		childKind: RootKind
 	}
 }
@@ -65,7 +65,7 @@ export abstract class BaseProp<
 		return typeof this.key === "string" ? this.key : printable(this.key)
 	}
 
-	protected override initializeFlatRefs(): void {
+	protected override initFlatRefs(): void {
 		this.cache.flatRefs = flatRefsAt(this.key, this.value)
 		this.cache.flatMorphs = []
 	}
@@ -106,7 +106,7 @@ export abstract class BaseProp<
 		} else if (this.hasKind("required")) {
 			traverseKey(
 				this.key,
-				() => ctx.errorFromNodeContext(this.errorContext, data),
+				() => ctx.errorFromNode(this.errorContext, data),
 				ctx
 			)
 		}
@@ -141,7 +141,7 @@ export abstract class BaseProp<
 		if (
 			this.hasKind("required") &&
 			(js.traversalKind === "Allows" ||
-				(!this.value.transforms && !this.value.entersResolution)) &&
+				(!this.value.transforms && !this.value.entersAlias)) &&
 			this.value.branches.every(branch => {
 				// Allows checks a morph's input
 				const input = branch.hasKind("morph") ? branch.inner.in : branch
@@ -166,11 +166,7 @@ export abstract class BaseProp<
 				return allows ? `${allows} || ${fails}` : fails
 			}
 			// a value whose predicates read ctx is checked at its key's path
-			if (
-				this.value.allowsRequiresContext &&
-				this.value.allowsRequiresTraversal
-			)
-				return
+			if (this.value.allowsNeedsCtx && this.value.allowsNeedsTraversal) return
 			return (
 				this.value.compileCondition?.(js, value) ??
 				js.invoke(this.value, { arg: value })

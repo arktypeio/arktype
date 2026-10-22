@@ -41,8 +41,8 @@ export declare namespace Domain {
 const implementation: nodeImplementationOf<Domain.Declaration> =
 	implementNode<Domain.Declaration>({
 		kind: "domain",
-		hasAssociatedError: true,
-		collapsibleKey: "domain",
+		ownsError: true,
+		collapseKey: "domain",
 		keys: {
 			domain: {},
 			numberAllowsNaN: {},
@@ -78,15 +78,14 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 	private readonly requiresNaNCheck =
 		this.domain === "number" && !this.numberAllowsNaN
 
-	private readonly requiresInfinityCheck =
+	private readonly checksInfinity =
 		this.domain === "number" && !this.numberAllowsInfinity
 
 	readonly traverseAllows: TraverseAllows =
-		this.requiresNaNCheck && this.requiresInfinityCheck ?
-			data => Number.isFinite(data)
+		this.requiresNaNCheck && this.checksInfinity ? data => Number.isFinite(data)
 		: this.requiresNaNCheck ?
 			data => typeof data === "number" && !Number.isNaN(data)
-		: this.requiresInfinityCheck ?
+		: this.checksInfinity ?
 			data =>
 				typeof data === "number" &&
 				data !== Number.POSITIVE_INFINITY &&
@@ -97,11 +96,11 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 		return (
 			this.domain === "object" ?
 				`${data} !== null && (typeof ${data} === "object" || typeof ${data} === "function")`
-			: this.requiresNaNCheck && this.requiresInfinityCheck ?
+			: this.requiresNaNCheck && this.checksInfinity ?
 				`Number.isFinite(${data})`
 			:	`typeof ${data} === "${this.domain}"${
 					this.requiresNaNCheck ? ` && !Number.isNaN(${data})`
-					: this.requiresInfinityCheck ?
+					: this.checksInfinity ?
 						` && ${data} !== Infinity && ${data} !== -Infinity`
 					:	""
 				}`
@@ -113,13 +112,13 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 			`number${this.numberAllowsNaN ? " | NaN" : ""}${this.numberAllowsInfinity ? " | Infinity | -Infinity" : ""}`
 		:	this.domain
 
-	get nestableExpression(): string {
+	get nestedExpression(): string {
 		return this.expression === this.domain ?
 				this.expression
 			:	`(${this.expression})`
 	}
 
-	get defaultShortDescription(): string {
+	get defaultBrief(): string {
 		return domainDescriptions[this.domain]
 	}
 }

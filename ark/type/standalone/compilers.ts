@@ -34,7 +34,7 @@ const isLeaf = (node: BaseNode): boolean =>
 	isDecidedByAllows(node) &&
 	!node.includesCostly &&
 	!node.includesAlias &&
-	!Object.values(node.referencesById).some(ref => ref.hasKind("structure"))
+	!Object.values(node.refsById).some(ref => ref.hasKind("structure"))
 
 class StandaloneCompiler extends TraversalCompiler {
 	override readonly reportsFirst: boolean = false
@@ -114,7 +114,7 @@ class StandaloneCompiler extends TraversalCompiler {
 				this.const("out", "{ ...data }")
 				for (const prop of structure.defaultable)
 					compileDefault(this, prop, "out")
-				structure.compileCopiedDeclaredKeys(this, keys)
+				structure.compileDeclaredCopy(this, keys)
 				return this.return("out")
 			}
 		)
@@ -150,11 +150,7 @@ class StandaloneCompiler extends TraversalCompiler {
 
 	// a rejected union value reports the union's issue, not its Apply
 	override failingApplyOf(value: BaseNode): string | undefined {
-		if (
-			!value.hasKind("union") ||
-			value.compiledDiscriminant ||
-			value.includesAlias
-		)
+		if (!value.hasKind("union") || value.discriminantJit || value.includesAlias)
 			return
 		const site = issueSiteOf(value.failureSite)
 		let failing = failingBySite.get(site)
@@ -187,13 +183,13 @@ const unifies = (node: BaseNode): boolean => {
 	let unified = unifiedByNode.get(node)
 	if (unified === undefined) {
 		unified =
-			!node.includesTransform &&
+			!node.hasTransform &&
 			!node.includesAlias &&
-			!node.allowsRequiresContext &&
-			Object.values(node.referencesById).every(reference =>
+			!node.allowsNeedsCtx &&
+			Object.values(node.refsById).every(reference =>
 				reference.hasKind("predicate") ? isKeyword(reference.predicate)
 				: reference.hasKind("union") ?
-					!!reference.compiledDiscriminant || isDecidedByAllows(reference)
+					!!reference.discriminantJit || isDecidedByAllows(reference)
 				: reference.hasKind("intersection") ?
 					// Apply counts issues between its structure and predicates
 					(reference.inner.predicate?.length ?? 0) + +!!reference.structure < 2
@@ -208,7 +204,7 @@ const unifies = (node: BaseNode): boolean => {
 // Apply named as its Allows, reporting a failure only to a ctx it's passed
 class UnifiedCompiler extends StandaloneCompiler {
 	override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
-		const node = this.linkage.referencesById[id]
+		const node = this.linkage.refsById[id]
 		return super.referenceToId(
 			id,
 			node && unifies(node) ? { ...opts, kind: "Allows" } : opts

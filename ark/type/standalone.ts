@@ -1217,8 +1217,7 @@ class StandaloneArtifact {
 		}
 		for (const unit of this.units) {
 			for (const node of writtenNodesOf(unit)) {
-				if (node.hasKind("optional") && node.defaultValueMorph)
-					collect(node.value)
+				if (node.hasKind("optional") && node.defaultMorph) collect(node.value)
 				else if (node.hasKind("sequence"))
 					for (const [value] of node.defaultables ?? []) collect(value)
 			}
@@ -2281,7 +2280,7 @@ ${writeFunction(
 				root,
 				node =>
 					node.hasKind("union") &&
-					!node.compiledDiscriminant &&
+					!node.discriminantJit &&
 					!isDecidedByAllows(node)
 			) &&
 			// errors count their issues, not a branch's
@@ -2316,16 +2315,16 @@ ${writeFunction(
 				appliesErrors ? "runtime.applyNodeErrors"
 				:	"runtime.applyRejected"
 			:	this.emit(rootApplyRuntime[param])
-		const strategy = root.rootApplyStrategy
+		const strategy = root.applyStrategy
 		const isArrow =
 			!root.includesAlias &&
 			(strategy === "allows" ||
 				(strategy === "transform" &&
 					!root.includesMorph &&
-					!(root.hasKind("union") && !root.compiledDiscriminant)))
+					!(root.hasKind("union") && !root.discriminantJit)))
 		const transforms = strategy === "transform"
 		const [flat, traversals] =
-			isArrow && appliesErrors && !root.allowsRequiresContext ?
+			isArrow && appliesErrors && !root.allowsNeedsCtx ?
 				this.compactPartsOf(root, transforms ? [0, 1, 2] : [0, 1], asValidator)
 			:	[]
 		if (traversals) {
@@ -2425,20 +2424,18 @@ ${writeFunction(
 		unconfigured: boolean,
 		pipes: boolean
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
-		const strategy = root.rootApplyStrategy
+		const strategy = root.applyStrategy
 		const invalid = () =>
 			`${this.baking.shortest ? "invalid" : this.readFailure("invalid")}(data, onFail)`
 		const transforms = root.transforms
 		// an undiscriminated union transforms what a branch allows, else unset
 		const selects =
-			strategy === "transform" &&
-			root.hasKind("union") &&
-			!root.compiledDiscriminant
+			strategy === "transform" && root.hasKind("union") && !root.discriminantJit
 		const captures = strategy === "transform" && root.includesMorph
 		// a transform through a cycle, resolved from the root's shape
 		const resolves = strategy === "contextualTransform" && root.includesAlias
 		const [flat, traversals] =
-			!root.allowsRequiresContext && !resolves ?
+			!root.allowsNeedsCtx && !resolves ?
 				this.compactPartsOf(root, transforms ? [0, 2] : [0], asValidator)
 			:	[]
 		const shape = traversals ? undefined : this.shapeOf(root)
@@ -2460,7 +2457,7 @@ ${writeFunction(
 							"const untracked = runtime.allowsAcyclic(node, data)",
 							`if (!(untracked ?? runtime.allowsInContext(node, data, runtime.runtimeConfig))) return ${invalid()}`,
 							`const ctx = new runtime.${ctx}(data, runtime.runtimeConfig)`,
-							"ctx.tracksTransforms = untracked === undefined",
+							"ctx.tracksMorphs = untracked === undefined",
 							`const result = runtime.transformResolution(ctx, ${JSON.stringify(this.headUnitOf(root).names[root.id])}, data, node.traverseTransform)`
 						]
 					:	[
@@ -2798,19 +2795,17 @@ ${writeFunction(
 		)
 		// read past allows only by a cycle or a ctx-reading predicate
 		const traverses =
-			node.includesAlias ||
-			node.allowsRequiresContext ||
-			node.allowsRequiresTraversal
+			node.includesAlias || node.allowsNeedsCtx || node.allowsNeedsTraversal
 		const transform =
 			traversals[2] ? `\n\ttraverseTransform: ${traversals[2]},` : ""
 		const apply =
 			this.baking.detailsErrors ? traversals[1]
-			: node.allowsRequiresContext && !node.includesAlias ?
+			: node.allowsNeedsCtx && !node.includesAlias ?
 				`${this.readFailure("applyBy")}(${traversals[0]})`
 			:	this.readFailure("applyInvalid")
 		return `{${ids}${flags.join("")}${traverses ? `\n\ttraverseAllows: ${traversals[0]},` : ""}
 	traverseApply: ${apply},${transform}
-	allows: ${node.allowsRequiresContext ? `data => runtime.allowsUntracked(${shape}, data) ?? runtime.allowsInContext(${shape}, data, runtime.runtimeConfig)` : traversals[0]}${traverses ? ",\n\t$: runtime.runtimeScope" : ""}
+	allows: ${node.allowsNeedsCtx ? `data => runtime.allowsUntracked(${shape}, data) ?? runtime.allowsInContext(${shape}, data, runtime.runtimeConfig)` : traversals[0]}${traverses ? ",\n\t$: runtime.runtimeScope" : ""}
 }`
 	}
 
@@ -2946,7 +2941,7 @@ ${writeFunction(
 			typeof defaultValue === "function" && isThunk(defaultValue)
 		// the morph traverses the value only to transform what it writes
 		const validator =
-			isThunkInput || value.includesTransform || value.includesAlias ?
+			isThunkInput || value.hasTransform || value.includesAlias ?
 				this.readByRuntime(value)
 			:	this.readValidator(value)
 		this.defaults.push(
@@ -3124,8 +3119,8 @@ const shapeFlags = [
 	"isTransformedById",
 	"includesAlias",
 	"transforms",
-	"allowsRequiresContext",
-	"allowsRequiresTraversal"
+	"allowsNeedsCtx",
+	"allowsNeedsTraversal"
 ] as const
 
 const callsDefaultThunk = (node: BaseNode): boolean =>
@@ -3157,10 +3152,10 @@ export type CollectedDefault = [
 ]
 
 const defaultedNodeKeys = [
-	"includesTransform",
+	"hasTransform",
 	"includesAlias",
-	"allowsRequiresContext",
-	"includesContextualMorph",
+	"allowsNeedsCtx",
+	"hasCtxMorph",
 	"transforms"
 ] as const satisfies (keyof DefaultedNode)[]
 
@@ -3169,8 +3164,8 @@ export const collectDefaults = (
 	defaultsByMorph: Map<unknown, CollectedDefault>
 ): void => {
 	if (node.hasKind("optional")) {
-		if (node.defaultValueMorph) {
-			defaultsByMorph.set(node.defaultValueMorph, [
+		if (node.defaultMorph) {
+			defaultsByMorph.set(node.defaultMorph, [
 				node.key,
 				node.value,
 				node.inner.default
@@ -3178,9 +3173,9 @@ export const collectDefaults = (
 		}
 		return
 	}
-	for (let i = 0; i < node.defaultValueMorphs.length; i++) {
+	for (let i = 0; i < node.defaultMorphs.length; i++) {
 		const [value, defaultValue] = node.defaultables![i]
-		defaultsByMorph.set(node.defaultValueMorphs[i], [
+		defaultsByMorph.set(node.defaultMorphs[i], [
 			node.prefixLength + i,
 			value,
 			defaultValue

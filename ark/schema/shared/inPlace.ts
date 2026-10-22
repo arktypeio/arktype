@@ -380,7 +380,7 @@ const transformsCalledBy = (root: BaseRoot): BaseNode[] => {
 let checking: Set<BaseNode> | undefined
 
 export const inPlaceTransforms: InPlaceTransforms = {
-	checksUncompiled: root => checking?.has(root) || !root.cache.isUsedBeforeJit,
+	checksUncompiled: root => checking?.has(root) || !root.cache.usedBeforeJit,
 	checkedUncompiled: (root, apply) => {
 		if (!writesInPlaceAsConfigured(root)) return apply
 		const called = transformsCalledBy(root)

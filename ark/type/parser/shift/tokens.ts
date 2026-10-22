@@ -21,7 +21,7 @@ export type TerminatingChar = keyof typeof terminatingChars
 
 // a token ends at a terminating char, or at != so a name like a!b still parses
 export const shiftUntilTerminator = (scanner: Scanner): string => {
-	const token = scanner.shiftUntilLookahead(terminatingChars)
+	const token = scanner.shiftUntilNext(terminatingChars)
 	if (!token.endsWith("!") || scanner.lookahead !== "=") return token
 	scanner.i--
 	return token.slice(0, -1)

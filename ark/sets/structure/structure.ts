@@ -28,12 +28,11 @@ const intersectPropsAndIndex = <
 	const kind = l.required ? "required" : "optional"
 
 	// a signature reading ctx can only decide a key it's traversing
-	if (r.signature.allowsRequiresContext || !r.signature.allows(l.key))
-		return null
+	if (r.signature.allowsNeedsCtx || !r.signature.allows(l.key)) return null
 
 	// a key's transforms apply in turn once each value allows its input
 	const value =
-		l.value.includesTransform && r.value.includesTransform ?
+		l.value.hasTransform && r.value.hasTransform ?
 			intersectNodesRoot(l.value.rawIn, r.value.rawIn, $)
 		:	intersectNodesRoot(l.value, r.value, $)
 	if (value instanceof Disjoint) {

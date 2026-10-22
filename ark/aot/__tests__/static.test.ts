@@ -2209,7 +2209,7 @@ const $ = scope({ a: "string" })
 const Gen = generic("t")(["t", "[]"])
 const Self = type({ a: "string", "b?": "this" })
 const H = type(\`'\${$.name}'\`)
-const I = type(\`'\${Object.keys($.referencesById).join("|")}'\`)
+const I = type(\`'\${Object.keys($.refsById).join("|")}'\`)
 const K = type(\`'\${Self.internal.select({ kind: "alias" })[0].reference}'\`)
 const M = type($.export().a)
 const N = type(Gen.names.length === 1 ? "string" : "number")`)
@@ -2223,7 +2223,7 @@ const N = type(Gen.names.length === 1 ? "string" : "number")`)
 				"8:13 accepted",
 				"9:14 accepted { a: string, b?: this }",
 				"10:11 rejected\n  `$.name` is not a documented member its content alone decides, so it can depend on registry names or node ids",
-				"11:11 rejected\n  `$.referencesById` is not a documented member its content alone decides, so it can depend on registry names or node ids",
+				"11:11 rejected\n  `$.refsById` is not a documented member its content alone decides, so it can depend on registry names or node ids",
 				'12:11 rejected\n  `Self.internal.select({ kind: "alias" })[0].reference` is not a documented member its content alone decides, so it can depend on registry names or node ids',
 				"13:11 accepted string",
 				"14:11 accepted string"

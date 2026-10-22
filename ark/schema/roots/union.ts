@@ -121,8 +121,8 @@ interface DiscriminantErrorContextOf<kind extends DiscriminantKind>
 const implementation: nodeImplementationOf<Union.Declaration> =
 	implementNode<Union.Declaration>({
 		kind: "union",
-		hasAssociatedError: true,
-		collapsibleKey: "branches",
+		ownsError: true,
+		collapseKey: "branches",
 		keys: {
 			ordered: {},
 			branches: {
@@ -213,28 +213,28 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	discriminate(): Discriminant | null {
 		this.caseNodes.length = 0
 		// an alias branch is replaced by its resolution before the union is used
-		if (this.includesShallowAlias) return null
+		if (this.hasShallowAlias) return null
 		const discriminant = $ark.sets?.discriminate(this) ?? null
-		if (this.cache.referencesById) {
+		if (this.cache.refsById) {
 			for (const node of this.caseNodes)
-				Object.assign(this.cache.referencesById, node.referencesById)
+				Object.assign(this.cache.refsById, node.refsById)
 		}
 		return discriminant
 	}
 
-	override get referencedBesidesChildren(): readonly BaseNode[] {
+	override get otherReferences(): readonly BaseNode[] {
 		// discriminating creates the case nodes
 		void this.discriminant
 		return this.caseNodes
 	}
 
 	// an indiscriminable union picks the branch it transforms by its Allows
-	protected override get transformSelectsByContext(): boolean {
-		const discriminant = this.compiledDiscriminant
+	protected override get selectsByCtx(): boolean {
+		const discriminant = this.discriminantJit
 		if (!discriminant) return true
 		for (const k in discriminant.cases) {
 			const caseNode = discriminant.cases[k]
-			if (caseNode !== true && caseNode.transformRequiresContext) return true
+			if (caseNode !== true && caseNode.transformNeedsCtx) return true
 		}
 		return false
 	}
@@ -246,23 +246,20 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	get defaultShortDescription(): string {
-		return this.distribute(
-			branch => branch.defaultShortDescription,
-			describeBranches
-		)
+	get defaultBrief(): string {
+		return this.distribute(branch => branch.defaultBrief, describeBranches)
 	}
 
 	// uncompiled checks don't discriminate
 	private get foundDiscriminant(): Discriminant | null {
-		return this._discriminant === undefined ? null : this.compiledDiscriminant
+		return this._discriminant === undefined ? null : this.discriminantJit
 	}
 
 	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
 		const discriminant = this.foundDiscriminant
 		if (!discriminant) {
 			return this.branches.some(b =>
-				b.allowsRequiresTraversal ?
+				b.allowsNeedsTraversal ?
 					allowsInBranch(ctx as Traversal, b, data)
 				:	b.traverseAllows(data, ctx)
 			)
@@ -275,7 +272,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	traverseApply(data: unknown, ctx: InternalTraversal): void {
-		const discriminant = this.compiledDiscriminant
+		const discriminant = this.discriminantJit
 		if (discriminant) {
 			const value = valueAtPath(discriminant.path, data)
 			const k = caseKeyOf(discriminant, value)
@@ -376,10 +373,10 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			if (allowsInBranch(ctx, branch, data))
 				return branch.transforms ? transform(ctx, branch, data) : data
 		}
-		return this.transformRequiresContext ? data : unset
+		return this.transformNeedsCtx ? data : unset
 	}
 
-	get compiledDiscriminant(): Discriminant | null {
+	get discriminantJit(): Discriminant | null {
 		// if we have a union of two units like `boolean`, the
 		// undiscriminated compilation will be just as fast
 		return (
@@ -402,7 +399,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	compile(js: NodeCompiler): void {
-		const discriminant = this.compiledDiscriminant
+		const discriminant = this.discriminantJit
 		if (!discriminant) return this.compileIndiscriminable(js)
 		// two branches of different domains are checked in turn, a unit first,
 		// which is cheaper than finding data's domain
@@ -528,7 +525,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			for (const branch of branches) {
 				// an error a branch's predicate adds through ctx fails only that branch
 				js.if(
-					branch.allowsRequiresTraversal ?
+					branch.allowsNeedsTraversal ?
 						`${js.ref(allowsInBranch)}(ctx, ${js.ref(branch)}, data)`
 					:	(branch.compileCondition?.(js, "data") ?? js.invoke(branch)),
 					() => js.return(true)
@@ -545,13 +542,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				)
 			}
 			// unless it requires ctx, a root checks for unset instead of calling its Allows
-			js.return(
-				this.transformRequiresContext ? "data" : compileSerializedValue(unset)
-			)
+			js.return(this.transformNeedsCtx ? "data" : compileSerializedValue(unset))
 		}
 	}
 
-	get nestableExpression(): string {
+	get nestedExpression(): string {
 		// avoid adding unnecessary parentheses around boolean since it's
 		// already collapsed to a single keyword
 		return this.isBoolean ? "boolean" : `(${this.expression})`
@@ -571,7 +566,7 @@ export const compileDomainOf = (value: string): string =>
 
 // an intersection binds more tightly than a union, so it never needs parens
 const expressBranch = (branch: Union.ChildNode): string =>
-	branch.hasKind("intersection") ? branch.expression : branch.nestableExpression
+	branch.hasKind("intersection") ? branch.expression : branch.nestedExpression
 
 // whether each key on a path is read from an object, or an array at an index
 const readsPath = (path: array<PropertyKey>, data: unknown): boolean => {
@@ -687,7 +682,7 @@ export type DiscriminantLocation<
 	kind extends DiscriminantKind = DiscriminantKind
 > = {
 	path: PropertyKey[]
-	optionallyChainedPropString: string
+	chainedPropString: string
 	kind: kind
 }
 

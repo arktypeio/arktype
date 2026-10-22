@@ -56,13 +56,13 @@ export class Scanner<lookahead extends string = string> {
 		return shifted
 	}
 
-	shiftUntilLookahead(charOrSet: string | KeySet): string {
+	shiftUntilNext(charOrSet: string | KeySet): string {
 		return typeof charOrSet === "string" ?
 				this.shiftUntil(s => s.lookahead === charOrSet)
 			:	this.shiftUntil(s => s.lookahead in charOrSet)
 	}
 
-	shiftUntilNonWhitespace(): string {
+	shiftPastWhitespace(): string {
 		return this.shiftUntil(() => !(this.lookahead in whitespaceChars))
 	}
 

@@ -72,7 +72,7 @@ export declare namespace Intersection {
 const implementation: nodeImplementationOf<Intersection.Declaration> =
 	implementNode<Intersection.Declaration>({
 		kind: "intersection",
-		hasAssociatedError: true,
+		ownsError: true,
 		finalizeInnerJson: ({ structure, ...rest }) =>
 			hasDomain(structure, "object") ? { ...structure, ...rest } : rest,
 		keys: {
@@ -85,8 +85,8 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 			structure: {
 				child: true,
 				serialize: node => {
-					if (!node.sequence?.minLength) return node.collapsibleJson
-					const { sequence, ...structureJson } = node.collapsibleJson as any
+					if (!node.sequence?.minLength) return node.collapsedJson
+					const { sequence, ...structureJson } = node.collapsedJson as any
 					const { minVariadicLength, ...sequenceJson } = sequence as JsonObject
 					const collapsibleSequenceJson =
 						sequenceJson.variadic && Object.keys(sequenceJson).length === 1 ?
@@ -142,7 +142,7 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 
 				if (
 					basis &&
-					!node.prestructurals.some(r => r.impl.obviatesBasisDescription) &&
+					!node.prestructurals.some(r => r.impl.coversBasisNoun) &&
 					// a keyword's predicate, like string.url's, names its basis
 					!(
 						!node.structure &&
@@ -211,13 +211,13 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		))
 	}
 
-	get nestableExpression(): string {
+	get nestedExpression(): string {
 		// an expression written by a single child is already nestable
 		return (
 				this.expression === "unknown" ||
 					this.expression === "[]" ||
 					this.children.some(
-						child => child.nestableExpression === this.expression
+						child => child.nestedExpression === this.expression
 					)
 			) ?
 				this.expression
@@ -230,8 +230,8 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			:	[]
 	}
 
-	get defaultShortDescription(): string {
-		return this.basis?.defaultShortDescription ?? "present"
+	get defaultBrief(): string {
+		return this.basis?.defaultBrief ?? "present"
 	}
 
 	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
@@ -388,7 +388,7 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 
 	const basisExpression =
 		basis && !node.prestructurals.some(n => n.impl.obviatesBasisExpression) ?
-			basis.nestableExpression
+			basis.nestedExpression
 		:	""
 
 	// a range is written as it's parsed, e.g. `1 <= number <= 5`

@@ -43,18 +43,18 @@ export declare namespace Divisor {
 const implementation: nodeImplementationOf<Divisor.Declaration> =
 	implementNode<Divisor.Declaration>({
 		kind: "divisor",
-		collapsibleKey: "rule",
+		collapseKey: "rule",
 		keys: {
 			rule: {}
 		},
-		hasAssociatedError: true,
+		ownsError: true,
 		defaults: {
 			description: node =>
 				node.rule === 1 ? "an integer"
 				: node.rule === 2 ? "even"
 				: `a multiple of ${node.rule}`
 		},
-		obviatesBasisDescription: true
+		coversBasisNoun: true
 	})
 
 export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration> {

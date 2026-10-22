@@ -41,11 +41,11 @@ export declare namespace ExactLength {
 const implementation: nodeImplementationOf<ExactLength.Declaration> =
 	implementNode<ExactLength.Declaration>({
 		kind: "exactLength",
-		collapsibleKey: "rule",
+		collapseKey: "rule",
 		keys: {
 			rule: {}
 		},
-		hasAssociatedError: true,
+		ownsError: true,
 		defaults: {
 			description: node => `exactly length ${node.rule}`
 		}

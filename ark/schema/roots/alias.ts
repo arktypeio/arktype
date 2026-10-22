@@ -7,7 +7,7 @@ import {
 	type join
 } from "@ark/util"
 import { ioOf, writeInnerJson, type BaseNode } from "../node.ts"
-import { nodesByRegisteredId, type NodeId } from "../parse.ts"
+import { nodesById, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
 import {
@@ -55,12 +55,12 @@ export declare namespace Alias {
 const implementation: nodeImplementationOf<Alias.Declaration> =
 	implementNode<Alias.Declaration>({
 		kind: "alias",
-		hasAssociatedError: false,
-		collapsibleKey: "reference",
+		ownsError: false,
+		collapseKey: "reference",
 		keys: {
 			reference: {
 				serialize: s => {
-					const referenced = nodesByRegisteredId[s as NodeId]
+					const referenced = nodesById[s as NodeId]
 					if (hasArkKind(referenced, "root")) return referenced.json
 					return s.startsWith("$") ? s : `$ark.${s}`
 				}
@@ -86,9 +86,9 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseRoot>) {
 		super(...args)
 		// written now, so a later resolution stays a reference
-		this.cache.uncollapsedInnerJson = writeInnerJson(this)
+		this.cache.innerJsonFull = writeInnerJson(this)
 		this.expression = expressionOf(this)
-		const referenced = nodesByRegisteredId[this.reference as NodeId]
+		const referenced = nodesById[this.reference as NodeId]
 		if (hasArkKind(referenced, "context")) {
 			referenced.isReferencedById = true
 			if (!referenced.alias && !this.operator)
@@ -113,8 +113,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		const isFinal = isResolutionFinal()
 		const readsIo =
 			isIoFinal() &&
-			(this.isIo ||
-				hasArkKind(nodesByRegisteredId[this.reference as NodeId], "root"))
+			(this.isIo || hasArkKind(nodesById[this.reference as NodeId], "root"))
 		resolvingAliases.push(this)
 		inProgress.resolutions++
 		if (readsIo) inProgress.ioReads++
@@ -141,7 +140,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 
 		const id = this.reference as NodeId
 
-		let resolution = nodesByRegisteredId[id]
+		let resolution = nodesById[id]
 		if (hasArkKind(resolution, "context") && resolution.alias) {
 			return resolution.phase === "member" ?
 					resolution.resolution!
@@ -156,7 +155,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			}
 
 			seen.push(resolution.id)
-			resolution = nodesByRegisteredId[resolution.id]
+			resolution = nodesById[resolution.id]
 		}
 		if (!hasArkKind(resolution, "root")) {
 			return throwInternalError(`Unexpected resolution for reference ${this.reference}
@@ -182,9 +181,9 @@ Resolution: ${printable(resolution)}`)
 		return others.length < this.operands!.length ? others : undefined
 	}
 
-	get defaultShortDescription(): string {
+	get defaultBrief(): string {
 		return isResolutionFinal() ?
-				this.resolution.defaultShortDescription
+				this.resolution.defaultBrief
 			:	domainDescriptions.object
 	}
 
@@ -209,15 +208,15 @@ Resolution: ${printable(resolution)}`)
 		)
 	}
 
-	get nestableExpression(): string {
+	get nestedExpression(): string {
 		if (this.operator === "&" || this.operator === "=>")
 			return `(${this.expression})`
-		const referenced = nodesByRegisteredId[this.reference as NodeId]
+		const referenced = nodesById[this.reference as NodeId]
 		return (
 				hasArkKind(referenced, "root") &&
 					referenced.expression === this.expression
 			) ?
-				referenced.nestableExpression
+				referenced.nestedExpression
 			:	this.expression
 	}
 
@@ -290,7 +289,7 @@ const expressionOf = (node: AliasNode): string => {
 	if (node.operands) {
 		const joinsOperands = node.operator === "&" || node.operator === "=>"
 		const operands = node.operands.map(operand =>
-			joinsOperands ? operand.nestableExpression
+			joinsOperands ? operand.nestedExpression
 			: nestsOperations(operand) ? "..."
 			: operand.expression
 		)
@@ -298,7 +297,7 @@ const expressionOf = (node: AliasNode): string => {
 				operands.join(node.operator)
 			:	`${node.operator}<${operands.join(", ")}>`
 	}
-	const referenced = nodesByRegisteredId[node.reference as NodeId]
+	const referenced = nodesById[node.reference as NodeId]
 	if (hasArkKind(referenced, "root")) return referenced.expression
 	if (!hasArkKind(referenced, "context")) return node.reference
 	return referenced.alias ? `$${referenced.alias}` : (referenced.name ?? "this")
@@ -312,7 +311,7 @@ const operationsOf = (node: BaseRoot, seen: BaseRoot[] = []): AliasNode[] => {
 		if (!reference.hasKind("alias")) continue
 		if (reference.operands) operations.push(reference)
 		else {
-			const referenced = nodesByRegisteredId[reference.reference as NodeId]
+			const referenced = nodesById[reference.reference as NodeId]
 			if (hasArkKind(referenced, "root"))
 				operations.push(...operationsOf(referenced, seen))
 		}
@@ -331,7 +330,7 @@ const aliasNameOf = (node: AliasNode): string =>
 const resolvingAliases: AliasNode[] = []
 
 export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
-	if (!node.includesShallowAlias) return node
+	if (!node.hasShallowAlias) return node
 	if (node.hasKind("alias")) return node.resolution
 	if (node.hasKind("union")) {
 		return node.$.node("union", {
@@ -356,7 +355,7 @@ export const identityOf = (node: BaseNode): string =>
 	node.hasKind("alias") ? node.reference : node.id
 
 export const isResolvable = (node: BaseRoot): boolean => {
-	if (!node.includesShallowAlias) return true
+	if (!node.hasShallowAlias) return true
 	if (node.hasKind("union")) return node.branches.every(isResolvable)
 	if (node.hasKind("morph"))
 		return !node.inner.in || isResolvable(node.inner.in)
@@ -364,7 +363,7 @@ export const isResolvable = (node: BaseRoot): boolean => {
 	if (node.isIo) return isResolvable(node.operands![0])
 	// a transform's alias resolves to what it transformed once the transform returns
 	if (node.resolve && !node.operator) return isResolutionFinal()
-	const referenced = nodesByRegisteredId[node.reference as NodeId]
+	const referenced = nodesById[node.reference as NodeId]
 	return hasArkKind(referenced, "root") && isResolvable(referenced)
 }
 

@@ -134,7 +134,7 @@ export type UnparsedTupleExpressionInput = {
 export type UnparsedTupleOperator = show<keyof UnparsedTupleExpressionInput>
 
 export const parseKeyOfTuple: IndexZeroParser<"keyof"> = (def, ctx) =>
-	ctx.$.parseOwnDefinitionFormat(def[1], ctx).keyof()
+	ctx.$.parseOwn(def[1], ctx).keyof()
 
 export type inferKeyOfExpression<operandDef, $, args> = show<
 	keyof inferDefinition<operandDef, $, args>
@@ -144,8 +144,8 @@ const parseBranchTuple: IndexOneParser<BranchOperator> = (def, ctx) => {
 	if (def[2] === undefined)
 		return throwParseError(writeMissingRightOperandMessage(def[1], ""))
 
-	const l = ctx.$.parseOwnDefinitionFormat(def[0], ctx)
-	const r = ctx.$.parseOwnDefinitionFormat(def[2], ctx)
+	const l = ctx.$.parseOwn(def[0], ctx)
+	const r = ctx.$.parseOwn(def[2], ctx)
 	if (def[1] === "|") return ctx.$.node("union", { branches: [l, r] })
 	const result =
 		def[1] === "&" ?
@@ -156,7 +156,7 @@ const parseBranchTuple: IndexOneParser<BranchOperator> = (def, ctx) => {
 }
 
 const parseArrayTuple: IndexOneParser<"[]"> = (def, ctx) =>
-	ctx.$.parseOwnDefinitionFormat(def[0], ctx).rawArray()
+	ctx.$.parseOwn(def[0], ctx).rawArray()
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 
@@ -170,7 +170,7 @@ export const parseMorphTuple: IndexOneParser<"=>"> = (def, ctx) => {
 			writeMalformedFunctionalExpressionMessage("=>", def[2])
 		)
 	}
-	return ctx.$.parseOwnDefinitionFormat(def[0], ctx).pipe(def[2] as Morph)
+	return ctx.$.parseOwn(def[0], ctx).pipe(def[2] as Morph)
 }
 
 export const writeMalformedFunctionalExpressionMessage = (
@@ -208,17 +208,14 @@ export const parseNarrowTuple: IndexOneParser<":"> = (def, ctx) => {
 			writeMalformedFunctionalExpressionMessage(":", def[2])
 		)
 	}
-	return ctx.$.parseOwnDefinitionFormat(def[0], ctx).rawConstrain(
+	return ctx.$.parseOwn(def[0], ctx).rawConstrain(
 		"predicate",
 		def[2] as Predicate
 	)
 }
 
 const parseMetaTuple: IndexOneParser<"@"> = (def, ctx) =>
-	ctx.$.parseOwnDefinitionFormat(def[0], ctx).configure(
-		def[2] as never,
-		def[3] as NodeSelector
-	)
+	ctx.$.parseOwn(def[0], ctx).configure(def[2] as never, def[3] as NodeSelector)
 
 export type IndexOneExpression<token extends string = IndexOneOperator> =
 	readonly [unknown, token, ...unknown[]]
