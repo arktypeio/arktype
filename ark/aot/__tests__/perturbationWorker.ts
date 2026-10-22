@@ -70,7 +70,7 @@ export type WorldResults = Record<
 >
 
 export const isPerturbable = (path: string): boolean =>
-	/\/ark\/(?:type|schema)\/__tests__\/|\/ark\/docs\/components\/snippets\/|\/ark\/precompile\/__tests__\//.test(
+	/\/ark\/(?:type|schema|aot)\/__tests__\/|\/ark\/docs\/components\/snippets\//.test(
 		path
 	)
 
