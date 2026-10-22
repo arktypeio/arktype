@@ -603,6 +603,19 @@ contextualize(() => {
 		attest(errors.toJSON()).is(errors.issues)
 	})
 
+	it("Standard Schema issues leave their path to the consumer", async () => {
+		const { T } = await load({
+			T: type({ a: "string", b: { c: "number > 0" } })
+		})
+		const result = T["~standard"].validate({ b: { c: 0 } }) as {
+			issues: { path: PropertyKey[]; message: string }[]
+		}
+		attest(result.issues.map(issue => [issue.path, issue.message])).snap([
+			[["a"], "is missing"],
+			[["b", "c"], "must be positive"]
+		])
+	})
+
 	it("issues found once read", async () => {
 		const { T } = await load({ T: type({ a: "string", b: "number" }) })
 		const data: Record<string, unknown> = { a: 0, b: 0 }

@@ -43,6 +43,7 @@ import {
 	Disjoint,
 	writeUnsatisfiableExpressionError
 } from "../shared/disjoint.ts"
+import { standardIssuesOf } from "../shared/errors.ts"
 import { ArkErrors } from "../shared/issues.ts"
 import {
 	structuralKinds,
@@ -111,7 +112,8 @@ export abstract class BaseRoot<
 			version: 1,
 			validate: input => {
 				const out = this(input)
-				if (out instanceof ArkErrors) return out
+				if (out instanceof ArkErrors)
+					return { issues: standardIssuesOf(out as never) }
 				return { value: out }
 			},
 			jsonSchema: {
