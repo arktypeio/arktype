@@ -1,5 +1,4 @@
 import type { array } from "@ark/util"
-import type { ArkErrorCode } from "./errors.ts"
 import type {
 	ArkIssue,
 	CompactApply,
@@ -139,10 +138,24 @@ export const failsIn = (
 	return !continues
 }
 
-// errors lacking throw() are thrown by the TraversalError it would build
-export const throwOnDefault = (errors: ArkErrors): never => {
-	throw new TraversalError(errors)
+// a root reporting into ArkErrors, as a size build applies it; they hold
+// no path to release
+export const applyIssues = (
+	apply: CompactApply,
+	data: unknown,
+	onFail: ((errors: ArkErrors) => unknown) | null,
+	Ctx: new () => ArkErrors = ArkErrors
+): unknown => {
+	const errors = new Ctx()
+	apply(data, errors)
+	return (
+		!errors.count ? data
+		: onFail ? onFail(errors)
+		: errors
+	)
 }
+
+export const throwOnDefault = (errors: ArkErrors): never => errors.throw()
 
 export const mergeIssues = (
 	errors: ArkErrors,
@@ -169,19 +182,15 @@ export const messageOf = (issue: ArkIssue): string => {
 			: path ? `.${String(k)}`
 			: String(k)
 	}
-	return path ? path + " " + problemOf(issue) : problemOf(issue)
+	return (path && path + " ") + problemOf(issue)
 }
-
-export const problemOf = (issue: ArkIssue): string =>
-	issue.problem ??
-	(issue.expected === undefined ?
-		(problems[issue.code] ?? "is invalid")
-	:	"must be " + issue.expected)
 
 // an undeclared key's site says what's expected
-const problems: { [code in ArkErrorCode]?: string } = {
-	required: "is missing"
-}
+export const problemOf = (issue: ArkIssue): string =>
+	issue.problem ??
+	(issue.expected !== undefined ? "must be " + issue.expected
+	: issue.code === "required" ? "is missing"
+	: "is invalid")
 
 export class TraversalError extends Error {
 	readonly name = "TraversalError"

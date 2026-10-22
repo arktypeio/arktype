@@ -60,6 +60,7 @@ export {
 	allowsInContext,
 	allowsUntracked,
 	applyCyclic,
+	applyIssues,
 	applyRejected,
 	ArkErrors,
 	arrayIndexMatcher,
@@ -572,22 +573,6 @@ export const applyErrors = (
 	const errors = ctx instanceof ArkErrors ? releasePath(ctx) : ctx._errors
 	return (
 		!errors?.count ? data
-		: onFail ? onFail(errors)
-		: errors
-	)
-}
-
-// a root reporting into ArkErrors, as a size build applies it
-export const applyIssues = (
-	apply: CompactApply,
-	data: unknown,
-	onFail: ArkErrors.Handler | null,
-	Ctx: new () => ArkErrors = ArkErrors
-): unknown => {
-	const errors = new Ctx()
-	apply(data, errors)
-	return (
-		!releasePath(errors).count ? data
 		: onFail ? onFail(errors)
 		: errors
 	)

@@ -65,6 +65,15 @@ var ArkIssues = class {
 		return failsIn(this, this._path, apply, value, key, missing, data)
 	}
 }
+var applyIssues = (apply, data, onFail, Ctx = ArkIssues) => {
+	const errors = new Ctx()
+	apply(data, errors)
+	return (
+		!releasePath(errors).count ? data
+		: onFail ? onFail(errors)
+		: errors
+	)
+}
 var issueAt = (path, site, data, key, absent) => {
 	let context = site.value ?? site
 	if (key !== void 0) {
@@ -138,15 +147,6 @@ var failsAt = (ctx, site, data, key, absent) =>
 	!ctx?.failsAt || ctx.failsAt(site, data, key, absent)
 var failsIn2 = (ctx, apply, value, key, missing, data) =>
 	ctx?.failsAt ? ctx.failsIn(apply, value, key, missing, data) : !apply(value)
-var applyIssues = (apply, data, onFail, Ctx = ArkIssues) => {
-	const errors = new Ctx()
-	apply(data, errors)
-	return (
-		!releasePath(errors).count ? data
-		: onFail ? onFail(errors)
-		: errors
-	)
-}
 var holdHoles = (value, id, holes = []) => {
 	holesByValue.set(value, [id, freeze(holes)])
 	return value
