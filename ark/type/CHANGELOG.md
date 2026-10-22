@@ -542,6 +542,38 @@ Intersecting an object that deletes or rejects undeclared keys with one that add
 type({ "+": "delete", id: "number" }).and({ token: "string" })
 ```
 
+### Throw for overlapping objects in a union when `onUndeclaredKey` is `"delete"`
+
+With `onUndeclaredKey: "delete"` configured, a union of objects whose inputs overlap was built, though the same union with `"+": "delete"` in each object threw. Data both branches allowed came out as whichever sorted first, without the keys only the other declares. It now throws either way:
+
+```ts
+configure({ onUndeclaredKey: "delete" })
+
+// previously returned { blob: "b", uri: "u" } for { uri: "u", text: "t", blob: "b" }, now throws:
+// ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+// Left: { blob: string, uri: string, + (undeclared): delete }
+// Right: { text: string, uri: string, + (undeclared): delete }
+// Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.
+type({ uri: "string", text: "string" }).or({ uri: "string", blob: "string" })
+```
+
+Give the branches a key that tells them apart, or delete outside the union:
+
+```ts
+const Discriminated = type({
+	kind: "'text'",
+	uri: "string",
+	text: "string"
+}).or({ kind: "'blob'", uri: "string", blob: "string" })
+
+// { uri: string, text?: string, blob?: string }
+const Contents = type({ "+": "ignore", uri: "string", text: "string" })
+	.or({ "+": "ignore", uri: "string", blob: "string" })
+	.to({ uri: "string", "text?": "string", "blob?": "string" })
+```
+
+An object that deletes undeclared keys now allows them in its `.in`, which took `onUndeclaredKey`'s configured `"delete"` or `"reject"` instead.
+
 ### Name the code, path and fallback in a `ToJsonSchemaError`
 
 A `ToJsonSchemaError`'s message was only its printed context. It now starts with a sentence naming its code, where in the Type the part it couldn't convert is, and the `fallback` to configure:
