@@ -268,7 +268,15 @@ contextualize(() => {
 
 		it("double right bound", () => {
 			// @ts-expect-error
-			attest(() => type("number>0<=200")).type.errors(
+			attest(() => type("number>0<=200")).throwsAndHasTypeError(
+				writeDoubleRightBoundMessage("number")
+			)
+			// @ts-expect-error
+			attest(() => type("number < 5 < 6")).throwsAndHasTypeError(
+				writeDoubleRightBoundMessage("number")
+			)
+			// @ts-expect-error
+			attest(() => type("number != 3 == 4")).throwsAndHasTypeError(
 				writeDoubleRightBoundMessage("number")
 			)
 		})

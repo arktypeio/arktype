@@ -47,6 +47,9 @@ export class RuntimeState {
 	}
 	finalizer: FinalizingLookahead | undefined
 	groups: BranchState[] = []
+	// the root a right bound produced and the operand it bounded, until the
+	// next operand
+	rightBounded: { root: BaseRoot; operand: BaseRoot } | undefined
 
 	scanner: Scanner
 	ctx: BaseParseContext
@@ -140,6 +143,8 @@ export class RuntimeState {
 		}
 
 		this.branches = topBranchState
+		// a group's root can be bounded, as an expression prints a range
+		this.rightBounded = undefined
 	}
 
 	addPrefix(prefix: StringifiablePrefixOperator): void {
@@ -189,6 +194,7 @@ export class RuntimeState {
 	}
 
 	parseOperand(): void {
+		this.rightBounded = undefined
 		return parseOperand(this)
 	}
 

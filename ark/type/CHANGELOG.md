@@ -67,6 +67,8 @@ It reduces like the other comparators: `number < 0 | number > 0` is `number != 0
 
 Its errors have the codes `notEqual`, whose `rule` is a number or a `Date`, and `notEqualLength`. A lone `!` still doesn't end a name, so an alias or brand like `a!b` parses as before.
 
+A second right bound throws `Expression number must have at most one right bound`, as its type already failed, so `number != 3 == 4` and `number < 5 < 6` no longer parse. The latter was `number < 5` in 2.2.9. Bound a group to bound a range again, as `0 < (number != 5) < 10` does.
+
 Thanks to @jkugsiya for #1692.
 
 ### Merge unions of connected ranges
