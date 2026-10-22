@@ -237,7 +237,7 @@ await build({
 
 Rsbuild takes `precompile.rsbuild()`, Bun's bundler `precompile.bun()` (Bun 1.2.22 or later) and Farm `precompile.farm()`.
 
-By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`. A dependency that imports `arktype` gets `arktype/runtime` too, where defining a Type throws, so the build fails for each such package unless it [opts in](https://arktype.io/docs/precompile/advanced#libraries).
+By default, each definition becomes a standalone validator and `arktype`, or `@ark/type`, resolves to `arktype/runtime`. A dependency that imports `arktype` gets `arktype/runtime` too, where defining a Type throws, so the build fails for each such package unless it [opts in](https://arktype.io/docs/precompile/advanced#libraries).
 
 ## Next.js
 
@@ -261,7 +261,7 @@ export default {
 }
 ```
 
-The loader fails a module whose `arktype` imports resolve otherwise, naming the aliases to add. With `runtime: "arktype"` or `shadow: true`, leave the aliases out, since the loader fails a module they resolve to the runtime. It reruns when a module's local imports change, and applies a changed configuration once the dev server restarts.
+A program importing arktype by its other name, `@ark/type`, aliases `@ark/type` and its entries the same way. The loader fails a module whose `arktype` imports resolve otherwise, naming the aliases to add. With `runtime: "arktype"` or `shadow: true`, leave the aliases out, since the loader fails a module they resolve to the runtime. It reruns when a module's local imports change, and applies a changed configuration once the dev server restarts.
 
 With webpack (`next build --webpack`), add the plugin:
 
@@ -316,9 +316,9 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
   Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
 ```
 
-It reads [`ark.json`](https://arktype.io/docs/precompile/options#arkjson) as a build does, and takes each option that changes what a build refuses, like `--preset smallest`, `--errors none` or `--members '{"assert":false}'`. `--fail-under <percent>` exits with 1 if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
+It reads [`ark.json`](https://arktype.io/docs/precompile/options#arkjson) as a build does, and takes each [option](https://arktype.io/docs/precompile/options) as a flag, like `--preset smallest`, `--optimize-errors size`, `--no-freeze` or `--members '{"assert":false}'`. It exits with 1 where the build would fail. `--fail-under <percent>` exits with 1 only if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
 
-The same analysis is available as `new Precompiler(host).analyze(source, id)` from `@ark/aot`.
+The same analysis is available as `new Precompiler(host, options).analyze(source, id)` from `@ark/aot`, which, as a build does, applies the program's configuration to arktype in its thread.
 
 ## ESLint
 
@@ -362,7 +362,7 @@ A definition holding functions, like a narrow, a morph or a class, becomes a cal
 
 ## What a validator has
 
-Besides being called, a validator has `allows()`, and by default `assert()`, `meta`, `~standard`, `traverse()`, `from()` and `toString()`. `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` ship only where the build's [`members`](https://arktype.io/docs/precompile/options#members) option sets them, baked as arktype returns them. A read the build sees, like `User.expression`, is replaced by its value either way.
+Besides being called, a validator has `allows()`, and by default `assert()`, `meta`, `~standard`, `traverse()`, `from()` and `toString()`. `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` ship only where the build's [`members`](https://arktype.io/docs/precompile/options#members) option sets them, baked as arktype returns them. A read the build sees, like `User.expression`, is replaced by its value either way. One it doesn't bake reads `undefined`, but throws, naming the member to set, where `arktype/runtime` resolves under the `"development"` condition.
 
 It lacks the methods that compose or relate a Type, like `.and`, `.or`, `.in` or `.extends`. The build fails where it sees one read outside a definition it precompiles, including off a value it lost track of after a Type reached it, and, once for each import, off an import it can't resolve, like one only a bundler alias names:
 
@@ -405,7 +405,10 @@ To leave only some definitions to arktype in a standalone build, mark them as [r
 
 ## Limits
 
+- `require("arktype")` or `import("arktype")` fails the build, since it would load arktype/runtime where the build precompiles no definition, but one whose specifier isn't a string literal isn't seen.
+- The build fails for a definition reading an object or array the program writes before it, but doesn't see a write by a module other than the object's and the definition's, or through a call it can't follow. If one changed the object, the definition throws as it's created, naming the object and what the build read.
 - The build doesn't see a Type reach a value through `arguments`, a generator, `Reflect.get`, `import()` or a namespace read at a runtime key, nor a direct `eval` or `with` changing a binding a definition reads. A Type it never sees reach a value is missed: calling a member it lacks throws, and reading one reads `undefined`.
+- A module importing neither arktype nor a module exporting a Type isn't checked, so a member one of its functions reads off a Type passed to it is missed. Annotating the parameter with arktype's `Type` has the build check it.
 - A definition whose branches arktype orders by the names of the functions they hold, like `type.instanceOf(Cat).or(type.instanceOf(Dog))`, is reported, since a minifier can rename them.
 - A definition holding a function a parameter holds, or resolving a Scope alias a thunk defines whose Type holds one, is reported. Mark it as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands).
 - A union whose branches print alike once their functions are named prints as `X or X` where arktype prints `X`.
@@ -429,7 +432,7 @@ precompile.vite({
 })
 ```
 
-`errors`, `mutatesInput`, `members`, `optimize`, `optimizeErrors`, `freeze`, `lazy`, `checks`, `countsKeys` and `shadow` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
+`errors`, `mutatesInput`, `members`, `optimize`, `optimizeErrors`, `freeze`, `lazy`, `creationChecks` and `shadow` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
 
 ## Presets
 
@@ -444,7 +447,7 @@ precompile.vite({ preset: "smallest", members: { meta: false } })
 | `"smallest"` | `optimize: "size"`, `lazy: false` | speed, runtime islands, creating validators as first read |
 | `"introspectable"` | each introspection member in [`members`](#members) | size |
 
-No preset changes what a program observes: none sets `errors`, `mutatesInput` or `countsKeys`, or drops a member, since the build can't see a member read by code it doesn't build, like a library reading `~standard`. With `runtime: "arktype"`, a preset sets nothing.
+No preset changes what a program observes: none sets `errors` or `mutatesInput`, or drops a member, since the build can't see a member read by code it doesn't build, like a library reading `~standard`. With `runtime: "arktype"`, a preset sets nothing.
 
 With Turbopack, `"smallest"` needs the `@ark/schema/runtime` alias [`optimize: "size"`](#optimize-and-optimizeerrors) does.
 
@@ -453,10 +456,10 @@ With Turbopack, `"smallest"` needs the `@ark/schema/runtime` alias [`optimize: "
 In development and tests, validators check at runtime what the build verified, so a program the build couldn't fully see fails where it would otherwise misbehave:
 
 - `freeze`: validators and their members are frozen, so writing to one throws in strict mode code.
-- `checks: "types"`: a factory checks at creation that each Type, Module, Scope and Generic it receives is the one the build read, as a module mock or hot reload could replace it, and that what it reads through an import cycle is already set. Under Vitest, `node --test` and `bun test` it's `"helpers"`, checking each static helper too.
+- `creationChecks: "types"`: a factory checks at creation that each Type, Module, Scope and Generic it receives is the one the build read, as a module mock or hot reload could replace it, and that what it reads through an import cycle is already set. Under Vitest, `node --test` and `bun test` it's `"helpers"`, checking each static helper too.
 - `config`: the first validator created fixes the configuration, so a `configure()` the build didn't find throws.
 
-A production build leaves these out, as `freeze: false`, `checks: "none"` and `config: false`, unless an option or `ark.json` sets one. A factory still checks each function another module supplies. What counts as production:
+A production build leaves these out, as `freeze: false`, `creationChecks: "none"` and `config: false`, unless an option or `ark.json` sets one. A factory still checks each function another module supplies. What counts as production:
 
 - Vite's `build` command, outside Vitest
 - webpack and Rspack in `production` mode, their default
@@ -511,7 +514,7 @@ The values are [arktype's `errors`](https://arktype.io/docs/configuration#errors
 
 ### members
 
-`members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true; `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema` default to false. A dropped member reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`. Where it can't see one, `String(User)` without `expression` is `"Type"`.
+`members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true; `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema` default to false. A dropped member reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`. Where it can't see one, `String(User)` without `expression` is `"Type"`, and reading another introspection member throws under the `"development"` condition rather than reading `undefined`.
 
 Each introspection member set true is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`. A JSON Schema the build can't bake throws where it's read.
 
@@ -529,12 +532,6 @@ precompile.vite({
 
 The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for them, or `@ark/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](#errors). With Turbopack, alias `@ark/schema/runtime` to that entry as `errors: "none"` does.
 
-### countsKeys
-
-`countsKeys: true` checks a Type that rejects undeclared keys by counting an object's own enumerable keys, as most validators do, instead of checking each key against the declared ones. It counts only on a plain object, meaning one whose prototype is `Object.prototype`. If the count differs from the number of declared keys the object holds, or the object isn't plain, the validator checks each key as before. Errors are unaffected: a validation that fails reports each undeclared key. Index signatures and tuples are still checked key by key. An `optimize: "size"` build with `errors: "none"` counts as any build does; with other `errors`, it counts only in some Types, such as one holding a narrow or morph.
-
-What it gives up: an undeclared key can pass in place of a declared key that a plain object holds as a non-enumerable property or inherits from `Object.prototype`. For example, `{ "+": "reject", toString: "Function" }` passes `{ extra: 1 }`.
-
 ### freeze
 
 `freeze: false`, the default in a [production build](#production-builds), leaves validators and their members unfrozen. Otherwise, writing to one throws in strict mode code.
@@ -543,9 +540,9 @@ What it gives up: an undeclared key can pass in place of a declared key that a p
 
 `lazy: false` creates each validator as its module loads rather than where it's first read, so an error creating one throws on import.
 
-### checks
+### creationChecks
 
-`checks` decides what a factory checks of what it receives: `"types"` (the default) checks each Type, Module, Scope and Generic is the one the build read, `"helpers"` (the default under Vitest, `node --test` and `bun test`) each static helper too, and `"none"` (the default in a [production build](#production-builds)) only those holding functions, so a module mock replacing any other goes unnoticed.
+`creationChecks` decides what a factory checks at creation of what it receives: `"types"` (the default) checks each Type, Module, Scope and Generic is the one the build read, `"helpers"` (the default under Vitest, `node --test` and `bun test`) each static helper too, and `"none"` (the default in a [production build](#production-builds)) only those holding functions, so a module mock replacing any other goes unnoticed.
 
 ### allowUnsafe
 
@@ -554,6 +551,10 @@ What it gives up: an undeclared key can pass in place of a declared key that a p
 ### conditions and tsconfig
 
 `conditions` and `tsconfig` set the export conditions and the tsconfig whose `paths` the build resolves imports with.
+
+### cwd
+
+`cwd` is the directory the build finds [`ark.json`](#arkjson) and the packages that [opt in](https://arktype.io/docs/precompile/advanced#libraries) from, and resolves a relative `config` against. The plugin defaults it to the bundler's root: Vite's `root`, webpack's and Rspack's `context` and esbuild's `absWorkingDir`. Other hosts default it to the current directory.
 
 ## Configuration
 
@@ -585,7 +586,7 @@ The build fails where a module that creates a Type is imported before the config
 
 `config: false`, the default in a [production build](#production-builds), says the program never calls `configure()`, so the build fails wherever it does. A program that calls it names its module as `config`, which overrides the default.
 
-A program configuring `errors` or `mutatesInput`, globally or for a Scope, builds with the same value: a definition whose Types are configured otherwise fails the build, naming both.
+A program configuring `errors` or `mutatesInput` builds with the same value. Configured otherwise by `configure()`, the build fails once, at the call, and for a Scope, at each definition whose Types it configures. The build also fails where `configure()` sets either without the config module importing `arktype/errors` or `arktype/mutatesInput`, as arktype throws creating a Type without it.
 
 # Troubleshooting
 
@@ -601,11 +602,13 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 
 Positions are your source's, even where another plugin transpiled it first. Run [`arktype-precompile --check`](https://arktype.io/docs/precompile/setup#check-an-existing-project) to see every report at once.
 
-Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `Set allowUnsafe: true to build anyway, with a warning.` [`allowUnsafe`](https://arktype.io/docs/precompile/options#allowunsafe) reports those as warnings instead, and what they report may then throw at runtime. A few reports are always warnings, since the build can't be sure of a fix or nothing fails at runtime: a value the build can't follow that it takes for a Standard Schema other than a Type, like a Zod schema, and what a build with `runtime: "arktype"` leaves to arktype.
+Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `Set allowUnsafe: true to build anyway, with a warning.` [`allowUnsafe`](https://arktype.io/docs/precompile/options#allowunsafe) reports those as warnings instead, and what they report may then throw at runtime. What a build with `runtime: "arktype"` leaves to arktype is always reported as a warning, since nothing fails at runtime.
 
 ## Definitions
 
 **`... cannot be precompiled`**: the definition reads a value known only at runtime, like a parameter or the result of a call the build can't evaluate. Make the value static, mark the definition as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`.
+
+**`` `shape` is written at ..., so its value at the site is not known ``**: the definition reads an object or array the program changes before it, through a member, a method like `push`, `Object.assign` or a function writing its argument, so the build can't tell what it holds there. Write the value whole in its literal, or build with `runtime: "arktype"`.
 
 **`... can't be precompiled yet`**: the definition uses something the build doesn't support yet. Build it as a runtime island, or with `runtime: "arktype"`.
 
@@ -620,6 +623,8 @@ Where the fix is clear and the problem could throw at runtime, the build fails. 
 ## Reads
 
 **`` `type` is used outside a precompiled site ``**: a standalone build doesn't ship arktype, so a call that creates a Type must be a definition the build precompiles. Move it into one, or build with `runtime: "arktype"`.
+
+**`import("arktype") loads arktype, which a standalone build replaces with arktype/runtime`**: the build precompiles definitions it sees through an `import` declaration, and resolves every other load of arktype to its runtime, which can't create a Type. Import it with an `import` declaration, or build with `runtime: "arktype"`.
 
 **`User.description reads description, which a standalone validator lacks`**: a validator lacks the methods that compose a Type and the introspection members its build's [`members`](https://arktype.io/docs/precompile/options#members) option doesn't set. Compose inside a definition, set the member, or build with `runtime: "arktype"`.
 
@@ -697,6 +702,8 @@ export const Shaped = type(await loadShape())
 ```
 
 The marker applies to the statement or expression after it. arktype then ships beside `arktype/runtime` for the modules with islands alone. The build fails if an island reads a precompiled validator other than to validate with it, or reaches arktype outside an island, e.g. through a helper in another module. It fails too for a marker that leaves nothing to arktype: one nothing follows, one on code that doesn't use arktype, or one inside a definition the build precompiles. `--check` leaves islands out of its rate.
+
+`@ark/json-schema`, `@ark/fast-check` and `arksets` read arktype's nodes, so the build requires an island to call them, and resolves their own `arktype` imports to arktype rather than its runtime. Bun and Turbopack replace `arktype` for every importer, so with them, build a program calling one with `runtime: "arktype"`.
 
 ## Declarations
 
