@@ -22,7 +22,7 @@ type({ name: "string" })({ name: 5 })
 
 `import "arktype/errors"` installs both modes, so a program choosing neither ships neither, and creating a Type configured with either throws without it.
 
-The error `"none"` returns holds the code `"predicate"`, an empty path and the data. It's an instance of `type.errors`, so `.assert()` throws a `TraversalError` saying `is invalid`, and a default the Type rejects fails its definition with `Default for name is invalid`. Its message isn't written in a configured locale.
+The error `"none"` returns holds the code `"predicate"`, an empty path and the data, and once read, every field an error has, as an error rejecting data with `ctx.reject({ expected: "valid", problem: "is invalid" })` would. It's an instance of `type.errors`, so `.assert()` throws a `TraversalError` saying `is invalid`, and a default the Type rejects fails its definition with `Default for name is invalid`. Its message isn't written in a configured locale.
 
 A Type another Scope references validates as that Scope is configured, so `type({ x: X })` reports `X`'s errors in full even where `X`'s own Scope configures `errors: "none"`.
 
@@ -67,6 +67,8 @@ It reduces like the other comparators: `number < 0 | number > 0` is `number != 0
 
 Its errors have the codes `notEqual`, whose `rule` is a number or a `Date`, and `notEqualLength`. A lone `!` still doesn't end a name, so an alias or brand like `a!b` parses as before.
 
+A second right bound throws `Expression number must have at most one right bound`, as its type already failed, so `number != 3 == 4` and `number < 5 < 6` no longer parse. The latter was `number < 5` in 2.2.9. Bound a group to bound a range again, as `0 < (number != 5) < 10` does.
+
 Thanks to @jkugsiya for #1692.
 
 ### Merge unions of connected ranges
@@ -100,6 +102,18 @@ User(5)
 ```
 
 Its value is a description or a meta object. Escape a key named `@` as `"\\@"`, as with `+` and `...`. In 2.2.9, `"@"` was an ordinary key.
+
+`.merge()` takes `"@"` from the object it merges in, as it takes `"+"` and as a spread does, so `A.merge({ "@": "a B", b: "number" })` is described as `a B`. The merged-in object's meta replaces the base's, which is dropped either way.
+
+`type.declare` takes the same escapes for a declared key named `@`, `+` or `...`, and accepts `"@"` and `"+"` on any declared object:
+
+```ts
+const User = type.declare<{ "@": string; name: string }>().type({
+	"@": "a user",
+	"\\@": "string",
+	name: "string"
+})
+```
 
 ### Write a Type's JSON Schema with `jsonSchema` meta
 
@@ -253,7 +267,7 @@ A Type or standalone validator that calls no narrow or morph may find its errors
 
 ### Print objects in error messages by their kind
 
-An error's `actual` prints an object as `an object`, an array as `an array` and a function as `a function`, where it printed an object or array as compact JSON, a Date as its date, a function as `Function(name)` and another instance by its class's name. A message no longer grows with the data, and nothing an object holds reaches a log through it. Primitives print as before, and `before` and `after` still print the Date they rejected:
+An error's `actual` prints an object as `an object`, an array as `an array` and a function as `a function`, where it printed an object or array as compact JSON, a Date as its date, a function as `Function(name)` and another instance by its class's name. A message no longer grows with the data, and nothing an object holds reaches a log through it. Primitives print as before, and `before`, `after`, `!=` and a Date literal, like `d'2020-01-01'` or one of `type.enumerated`'s Dates, still print the Date they rejected:
 
 ```ts
 // previously must be "a" or "b" (was {"x":1}), now (was an object)
@@ -584,6 +598,17 @@ const Contents = type({ "+": "ignore", uri: "string", text: "string" })
 ```
 
 An object that deletes undeclared keys now allows them in its `.in`, which took `onUndeclaredKey`'s configured `"delete"` or `"reject"` instead.
+
+An object's `"+": "ignore"` holds where `onUndeclaredKey` is configured otherwise, in what's built from it too: its `.in` where it holds a morph, an intersection, `.merge()`, `.partial()` and `.onUndeclaredKey("ignore")` each took the configured `"delete"` or `"reject"` back. Such an object's `expression` ends with `+ (undeclared): ignore`, and a union with an overlapping branch throws, where it was built and returned data unchanged:
+
+```ts
+configure({ onUndeclaredKey: "delete" })
+
+const C = type({ provider: "string" })
+
+// previously built, now throws ParseError: ... is indeterminate
+C.or({ "+": "ignore", uses: "string", "o?": C })
+```
 
 ### Name the code, path and fallback in a `ToJsonSchemaError`
 
@@ -1565,6 +1590,8 @@ const T = type("number | number.Infinity | number.NegativeInfinity")
 
 A type whose range already excluded an infinite value, like `number.safe`, now reports `must be a number (was Infinity)` instead of its range error.
 
+So their output stays a `number`, `string.numeric.parse` rejects a string too large for a finite number, like `"1e400"`, with `must be finite (was "1e400")`, and `string.json.parse` rejects JSON holding one. Either parses it to `Infinity` where `numberAllowsInfinity` is configured. `string.json.parse`'s output is any JSON value, where it was declared an object or array though `"5"` parsed to `5`.
+
 ### Remove the `clone` option
 
 Transforming no longer clones the input first, and writes to it only to transform a builtin like a Date, Map or function, which is transformed in place. Any other transformed object is a new object sharing every untransformed value with the input, and input that nothing transforms is returned as is:
@@ -1626,7 +1653,7 @@ scope({ a: "a" }).export()
 
 ### Describe dates in UTC
 
-Dates in descriptions and error messages are written in UTC instead of local time, except that a date at UTC midnight is written as its calendar date, collapsing to its year on January 1:
+Dates in descriptions and error messages are written in UTC instead of local time, except that a date at UTC midnight is written as its calendar date, like `January 1, 2000`. One at local midnight on January 1 was written as its year, so `Date <= d'2020-01-01'` reported `must be 2020 or earlier (was June 1, 2020)`, and now that it's at UTC midnight, the day is kept:
 
 ```ts
 const T = type("Date < d'2000-01-01T12:30:00Z'")
@@ -2090,6 +2117,54 @@ T.toJsonSchema()
 
 A number literal's type is `number`, even for integers, since its `enum` or `const` already says which values it allows.
 
+### Leave a Standard Schema issue's path out of its message
+
+A Standard Schema consumer, like a form library or the MCP SDK, prints each issue's `path` before its `message`, which already began with it:
+
+```ts
+const T = type({ entities: "string[]" })
+
+const result = T["~standard"].validate({})
+
+// previously "entities must be an array (was missing)", now "must be an array (was missing)"
+result.issues[0].message
+// ["entities"], as before
+result.issues[0].path
+```
+
+An issue at a path is a copy of its error with that message. A union's lists each branch's path from the union's, like `b must be a string (was missing) or c must be a number (was missing)`. `validate` returns `{ issues }` rather than the `ArkErrors`, whose own errors and `summary` still start with their paths. A precompiled validator's issues are written the same way, unless their message was configured.
+
+### Throw for a global-only option passed to a Scope
+
+`onUndeclaredKey`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`, `keywords` and `locale` can only be configured with `configure()`, and a Scope's type already rejected them, but a JavaScript or cast config passing one to a Scope was honored for `onUndeclaredKey` and silently ignored for the rest. Each now throws:
+
+```ts
+// previously validated Infinity as a number anyway, now throws
+// ParseError: numberAllowsInfinity can only be configured globally, with configure()
+scope({}, { numberAllowsInfinity: true } as never)
+```
+
+### Write `properties: {}` for an object declaring no keys
+
+An object Type with no props or index signature, like `type({})`, `type("object")` or `type({ "+": "reject" })`, is written with an empty `properties`, as Zod writes `z.object({})`, since consumers like MCP clients read a tool's input schema's `properties`:
+
+```ts
+// previously { type: "object" }, now { type: "object", properties: {} }
+type({}).toJsonSchema()
+```
+
+### Write an optional key's `undefined` as its absence in JSON Schema
+
+JSON has no `undefined`, so an optional key whose value allows it threw from `toJsonSchema()`, and `~standard.jsonSchema` wrote its value as `{}`, allowing anything. An optional key can already be absent, so its JSON Schema leaves `undefined` out:
+
+```ts
+// previously threw Can't convert "unit" at a to JSON Schema, now
+// { type: "object", properties: { a: { type: "string" } } }
+type({ "a?": "string | undefined" }).toJsonSchema()
+```
+
+A required key whose value allows `undefined` still needs `fallback.unit`.
+
 ### Write a nested arktype Standard Schema's errors without repeating their key
 
 When a definition embeds a validator only through its `~standard` property, an error from an arktype validator inside it repeated the key its message already started with:
@@ -2238,6 +2313,21 @@ A definition passed to `.merge()` that called a method like `.describe()` or `.c
 type({ a: "string" })
 	.partial()
 	.merge({ "b?": type("string").describe("an ID") })
+```
+
+### Fail an embedded Standard Schema's empty `issues`
+
+A Standard Schema result with `issues` is a failure, but one whose `issues` was empty passed, with `undefined` as its output. It now fails with `is invalid`:
+
+```ts
+const T = type({
+	a: {
+		"~standard": { version: 1, vendor: "x", validate: () => ({ issues: [] }) }
+	}
+})
+
+// previously { a: undefined }, now ArkErrors: a is invalid
+T({ a: 1 })
 ```
 
 ### Throw when an embedded Standard Schema validates asynchronously
@@ -2598,6 +2688,16 @@ parse("20250101")
 // previously 2025-03-01T00:00:00.000Z
 // now ArkErrors: must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "2025-02-29")
 parse("2025-02-29")
+```
+
+`string.date.parse` and `string.date` read a string `string.date.iso` accepts the same way, falling back to `new Date(s)` for other forms, like `"5/21/1993"`, which are still read by the host. So `string.date.parse` gives an ISO string the same instant on every machine, and `string.date` rejects an ISO date that doesn't exist:
+
+```ts
+// previously 2020-01-01T17:00:00.000Z in New York, now 2020-01-01T12:00:00.000Z
+type("string.date.parse")("2020-01-01T12:00")
+
+// previously 2025-03-02T00:00:00.000Z, now ArkErrors: must be a parsable date (was "2025-02-30")
+type("string.date.parse")("2025-02-30")
 ```
 
 ### Intersect arrays whose elements are disjoint as empty arrays

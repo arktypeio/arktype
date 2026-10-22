@@ -1201,7 +1201,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		attest(indiscriminable).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { foo: (In: string) => Out<Date> | false | true }
-Right: { foo: (In: string) => Out<{ [string]: $jsonData }> | false | true }
+Right: { foo: (In: string) => Out<number | string | { [string]: $jsonData } | false | null | true> | false | true }
 Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
 	})
 

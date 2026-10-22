@@ -7,6 +7,7 @@ import {
 } from "@ark/schema"
 import { isKeyOf, throwParseError, type KeySet, type Scanner } from "@ark/util"
 import type { DateLiteral } from "../../../attributes.ts"
+import { writeDoubleRightBoundMessage } from "../../ast/bounds.ts"
 import type { InferredAst } from "../../ast/infer.ts"
 import type { astToString } from "../../ast/utils.ts"
 import type { RootedRuntimeState, RuntimeState } from "../../reduce/dynamic.ts"
@@ -168,6 +169,10 @@ export const parseRightBound = (
 		return s.error(writeMissingRightOperandMessage(comparator))
 	// store the node that will be bounded
 	const previousRoot = s.unsetRoot()
+	if (s.rightBounded?.root === previousRoot)
+		return s.error(
+			writeDoubleRightBoundMessage(s.rightBounded.operand.expression)
+		)
 	const previousScannerIndex = s.scanner.location
 	s.parseOperand()
 	const limitNode = s.unsetRoot()
@@ -208,7 +213,10 @@ export const parseRightBound = (
 	for (const kind of boundKinds)
 		s.constrainRoot(kind, comparator === "==" ? { rule } : { rule, exclusive })
 
-	if (!s.branches.leftBound) return
+	if (!s.branches.leftBound) {
+		s.rightBounded = { root: s.root, operand: previousRoot }
+		return
+	}
 
 	// if there's an open left bound, perform additional validation and apply it
 	if (!isKeyOf(comparator, maxComparators))
@@ -222,6 +230,7 @@ export const parseRightBound = (
 	)
 	s.constrainRoot(lowerBoundKind[0], openLeftBoundToRoot(s.branches.leftBound))
 	s.branches.leftBound = null
+	s.rightBounded = { root: s.root, operand: previousRoot }
 }
 
 export type parseRightBound<

@@ -25,6 +25,7 @@ import {
 	writeNotEqualActual,
 	writeProblem,
 	writeProtoActual,
+	writeUnitActual,
 	writeUnitProblem
 } from "./enWriters.ts"
 import type { NodeKind } from "./implement.ts"
@@ -158,7 +159,7 @@ export const errorWritersByCode: {
 			listsErrors(ctx) ? ctx.problem : writeMessage(ctx, info)
 	},
 	unit: {
-		actual: printKind,
+		actual: writeUnitActual,
 		problem: writeUnitProblem
 	},
 	undeclared: {

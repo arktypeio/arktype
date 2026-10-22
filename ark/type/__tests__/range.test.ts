@@ -179,7 +179,7 @@ contextualize(() => {
 
 		it("Date bound descriptions", () => {
 			attest(type("Date >= d'2023-01-01'").description).snap(
-				"a Date and 2023 or later"
+				"a Date and January 1, 2023 or later"
 			)
 			attest(type("Date >= d'2023-01-01T00:00-05:00'").description).snap(
 				"a Date and January 1, 2023, 5:00 AM UTC or later"
@@ -278,7 +278,15 @@ contextualize(() => {
 
 		it("double right bound", () => {
 			// @ts-expect-error
-			attest(() => type("number>0<=200")).type.errors(
+			attest(() => type("number>0<=200")).throwsAndHasTypeError(
+				writeDoubleRightBoundMessage("number")
+			)
+			// @ts-expect-error
+			attest(() => type("number < 5 < 6")).throwsAndHasTypeError(
+				writeDoubleRightBoundMessage("number")
+			)
+			// @ts-expect-error
+			attest(() => type("number != 3 == 4")).throwsAndHasTypeError(
 				writeDoubleRightBoundMessage("number")
 			)
 		})

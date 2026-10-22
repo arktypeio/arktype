@@ -5,6 +5,7 @@ import {
 	type Alias,
 	type BaseRoot,
 	type JsonSchema,
+	type Prop,
 	type RefinementKind,
 	type RootKind,
 	type Sequence,
@@ -342,7 +343,7 @@ const innerToJsonSchemaByKind: {
 				})
 		}
 	},
-	domain: (node, ctx): JsonSchema.Constrainable => {
+	domain: (node, ctx): JsonSchema.Constrainable | JsonSchema.Object => {
 		if (node.domain === "bigint" || node.domain === "symbol") {
 			return ctx.fallback.domain({
 				code: "domain",
@@ -350,9 +351,10 @@ const innerToJsonSchemaByKind: {
 				domain: node.domain
 			})
 		}
-		return {
-			type: node.domain
-		}
+		// an object declaring no keys has no properties, as Zod writes it
+		return node.domain === "object" ?
+				{ type: "object", properties: {} }
+			:	{ type: node.domain }
 	}
 }
 
@@ -362,11 +364,13 @@ const reduceObjectJsonSchema = (
 	ctx: JsonSchemaContext
 ): JsonSchema.Object => {
 	const path = ctx.path
+	// keys an index declares are written as its patterns instead
+	if (node.index && !node.props.length) delete schema.properties
 	if (node.props.length) {
 		schema.properties = {}
 		for (const prop of node.props) {
 			ctx.path = appendStringifiedKey(path, prop.key)
-			const valueSchema = toJsonSchemaRecurse(prop.value, ctx)
+			const valueSchema = toJsonSchemaRecurse(jsonValueOf(prop), ctx)
 
 			if (typeof prop.key === "symbol") {
 				schema = ctx.fallback.symbolKey({
@@ -495,6 +499,17 @@ const reduceObjectJsonSchema = (
 
 	return schema
 }
+
+// JSON has no undefined, so an optional key holds it only by being absent
+const jsonValueOf = (prop: Prop.Node): BaseRoot =>
+	(
+		prop.optional &&
+		prop.value.branches.some(branch => branch.hasUnit(undefined))
+	) ?
+		prop.value.$.schema(
+			prop.value.branches.filter(branch => !branch.hasUnit(undefined))
+		)
+	:	prop.value
 
 interface IndexKey {
 	node: BaseRoot
