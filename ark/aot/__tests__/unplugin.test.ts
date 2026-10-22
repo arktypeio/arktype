@@ -1005,6 +1005,31 @@ export const inspected = inspect(type({ a: "string" })({ a: 1 }))
 		}
 	})
 
+	it("vite's development server throws reading a member the build didn't bake", async () => {
+		const root = writeFixture({
+			"main.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+
+export const describe = (t: { description: string }) => t.description
+`
+		})
+		const server = await withNodeEnv("development", () =>
+			createServer(viteConfig({ members: { expression: true } }, root))
+		)
+		const runner = createServerModuleRunner(server.environments.ssr)
+		try {
+			const { User, describe } = await runner.import("/main.ts")
+			attest(() => describe(User)).throws(
+				'description isn\'t baked into this validator. Set members.description true, or build with runtime: "arktype".'
+			)
+			attest(`${User}`).equals("Type<{ name: string }>")
+		} finally {
+			await runner.close()
+			await server.close()
+		}
+	})
+
 	it("fails a build whose external option takes arktype from the bundle", async () => {
 		const thrownBy = (build: () => Promise<unknown>) =>
 			build().then(

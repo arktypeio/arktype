@@ -99,7 +99,7 @@ The values are [arktype's `errors`](/docs/configuration#errors) option's, and a 
 
 ### members
 
-`members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true; `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema` default to false. A dropped member reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`. Where it can't see one, `String(User)` without `expression` is `"Type"`.
+`members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true; `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema` default to false. A dropped member reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`. Where it can't see one, `String(User)` without `expression` is `"Type"`, and reading another introspection member throws under the `"development"` condition rather than reading `undefined`.
 
 Each introspection member set true is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`. A JSON Schema the build can't bake throws where it's read.
 
