@@ -44,7 +44,7 @@
 		"testTsVersions": "ts ./ark/repo/testTsVersions.ts",
 		"testTsCompat": "tsc --project ark/repo/tsCompat && tsc --project ark/repo/tsCompat/tsconfig.loose.json && tsc --project ark/repo/tsCompat/tsconfig.attest.json && tsc --project ark/repo/tsCompat/tsconfig.workers.json",
 		"testTypedLoose": "pnpm testTyped --tsconfig null --compilerOptions \"{ \\\"module\\\": \\\"NodeNext\\\", \\\"moduleResolution\\\": \\\"NodeNext\\\", \\\"strictNullChecks\\\": true, \\\"exactOptionalPropertyTypes\\\": true, \\\"customConditions\\\": [\\\"ark-ts\\\"] }\" --skipInlineInstantiations",
-		"bench": " ATTEST_benchErrorOnThresholdExceeded=\"\\\"types\\\"\" pnpm benchOperand && pnpm benchOperator && pnpm benchNary && pnpm benchObject && pnpm benchMatch && pnpm benchCyclic && pnpm benchJsonSchema",
+		"bench": "export ATTEST_checker=\"\\\"tsgo\\\"\" ATTEST_benchErrorOnThresholdExceeded=\"\\\"types\\\"\" && pnpm benchOperand &&pnpm benchOperator && pnpm benchNary && pnpm benchObject && pnpm benchMatch && pnpm benchCyclic && pnpm benchJsonSchema",
 		"benchUp": "ATTEST_updateSnapshots=1 pnpm bench",
 		"benchOperand": "ts ./ark/type/__tests__/operand.bench.ts",
 		"benchOperator": "ts ./ark/type/__tests__/operator.bench.ts",
