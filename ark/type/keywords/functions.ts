@@ -97,31 +97,32 @@ const isoDateOf = (parts: RegExpExecArray): Date | undefined => {
 		month,
 		day,
 		week,
-		weekday = "1",
+		weekday,
 		ordinal,
-		hour = "0",
+		hour,
 		minute,
 		second,
 		fraction,
 		offsetSign,
 		offsetHours,
-		offsetMinutes = "0"
+		offsetMinutes
 	] = parts
 	const year = +yearPart
 	const date = new Date(0)
-	if (week) {
-		// January 4th is in week 1, and a week is in the year of its Thursday
-		date.setUTCFullYear(year, 0, 4)
-		date.setUTCDate(7 * +week - ((date.getUTCDay() + 6) % 7))
-		if (date.getUTCFullYear() !== year) return
-		date.setUTCDate(date.getUTCDate() + +weekday - 4)
-	} else if (ordinal) {
-		date.setUTCFullYear(year, 0, +ordinal)
-		if (date.getUTCFullYear() !== year) return
-	} else {
-		date.setUTCFullYear(year, +(month ?? 1) - 1, +(day ?? 1))
-		if (date.getUTCDate() !== +(day ?? 1)) return
-	}
+	// a week is in the year of its Thursday, and January 4th is in week 1
+	date.setUTCFullYear(
+		year,
+		+(month ?? 1) - 1,
+		week ? 4 : +(ordinal ?? day ?? 1)
+	)
+	if (week) date.setUTCDate(7 * +week - ((date.getUTCDay() + 6) % 7))
+	if (
+		week || ordinal ?
+			date.getUTCFullYear() !== year
+		:	date.getUTCDate() !== +(day ?? 1)
+	)
+		return
+	if (week) date.setUTCDate(date.getUTCDate() + +(weekday ?? 1) - 4)
 	// a fraction is of the last unit given, read to the millisecond
 	const unit =
 		second ? 1000
@@ -132,12 +133,14 @@ const isoDateOf = (parts: RegExpExecArray): Date | undefined => {
 			Math.floor((+fraction.slice(0, 9).padEnd(9, "0") * unit) / 1e9)
 		:	0
 	if (hour === "24" && (+(minute ?? 0) || +(second ?? 0) || ms)) return
-	date.setUTCHours(+hour, +(minute ?? 0), +(second ?? 0), ms)
-	if (offsetSign) {
-		const offset = (+offsetHours * 60 + +offsetMinutes) * 60_000
-		date.setTime(date.getTime() + (offsetSign === "+" ? -offset : offset))
-	}
-	return Number.isNaN(date.getTime()) ? undefined : date
+	// a time with an offset ahead of UTC is that much earlier in UTC
+	const offset =
+		offsetSign ?
+			(+offsetHours * 60 + +(offsetMinutes ?? 0)) *
+			(offsetSign === "+" ? -1 : 1)
+		:	0
+	date.setUTCHours(+(hour ?? 0), +(minute ?? 0) + offset, +(second ?? 0), ms)
+	return date
 }
 
 export const parseIsoDate = (s: string, ctx: Traversal): Date | ArkError => {
