@@ -11,8 +11,8 @@ import { regex } from "arkregex"
 const ok = regex("^ok$", "i")
 //    ^? Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i" }>
 
-const semver = regex("^(\\d+)\\.(\\d+)\\.(\\d+)$")
-//    ^? Regex<`${number}.${number}.${number}`, { captures: [`${number}`, `${number}`, `${number}`] }>
+const date = regex("^(\\d{4})-(\\d{2})-(\\d{2})$")
+//    ^? Regex<`${number}-${number}-${number}`, { captures: [`${number}`, `${number}`, `${number}`] }>
 ```
 
 `.exec()` returns typed captures:
@@ -59,4 +59,4 @@ The [ArkType extension](https://marketplace.visualstudio.com/items?itemName=arkt
 import { regex, type Regex } from "arktype"
 ```
 
-ArkType also uses ArkRegex to infer its own regex literals, so `type("/^\\d+$/")` infers ``Type<`${number}`>``. See [ArkType](/docs/regex/arktype).
+ArkType also uses ArkRegex to infer its own regex literals, so `type("/^\\d{5}$/")` infers ``Type<`${number}`>``. See [ArkType](/docs/regex/arktype).

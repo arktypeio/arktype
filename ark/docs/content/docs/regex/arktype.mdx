@@ -8,8 +8,8 @@ description: How ArkType infers its regex literals and accepts regex() values as
 ```ts
 import { regex, type } from "arktype"
 
-const Semver = type("/^(\\d+)\\.(\\d+)\\.(\\d+)$/")
-//    ^? Type<`${number}.${number}.${number}`>
+const ZipCode = type("/^\\d{5}$/")
+//    ^? Type<`${number}`>
 ```
 
 Like `new RegExp()`, a regex literal matches anywhere in a string unless you anchor it with `^` and `$`, and its type is padded to match:
@@ -38,13 +38,13 @@ A `Regex` can be used directly as a definition, with or without flags:
 const Ok = type(regex("^ok$", "i"))
 //    ^? Type<"ok" | "oK" | "Ok" | "OK">
 
-const Package = type({
-	name: "string",
-	version: regex("^(\\d+)\\.(\\d+)\\.(\\d+)$")
+const Address = type({
+	street: "string",
+	zip: regex("^\\d{5}(-\\d{4})?$")
 })
 
-type Package = typeof Package.infer
-//   ^? { name: string; version: `${number}.${number}.${number}` }
+type Address = typeof Address.infer
+//   ^? { street: string; zip: `${number}` | `${number}-${number}` }
 ```
 
 A native `RegExp` like `/^ok$/i` is also a valid definition, but infers `string`: TypeScript gives `/…/` literals no type beyond `RegExp`.
