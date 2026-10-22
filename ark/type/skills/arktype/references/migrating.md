@@ -1,0 +1,332 @@
+# Migrating to ArkType
+
+How to convert schemas from Zod (v3, v4 and Zod Mini), Valibot, TypeBox, Yup, Joi, Effect Schema and JSON Schema to ArkType.
+
+## How to convert
+
+1. Write each schema as the TypeScript type it validates. Most constructs become a string or an object definition; the tables below map them library by library.
+2. Check every row of [Defaults that differ](#defaults-that-differ). A translation that looks right can still accept or return different data.
+3. Confirm the types match. While the old schema still exists, a line like this fails to compile until they do:
+
+```ts
+type Equals<a, b> =
+	[a] extends [b] ?
+		[b] extends [a] ?
+			true
+		:	false
+	:	false
+const outputMatches: Equals<typeof User.infer, z.output<typeof OldUser>> = true
+const inputMatches: Equals<typeof User.inferIn, z.input<typeof OldUser>> = true
+```
+
+4. Run both on the same inputs, valid and invalid, and compare which they accept and what they return.
+
+You can migrate one schema at a time. A Zod or Valibot schema is a [Standard Schema](https://arktype.io/docs/standard-schema), so it can appear inside an ArkType definition while the rest is converted: `type({ name: "string", address: zodAddress })`. Yup's Standard Schema validates asynchronously, so it can't.
+
+## Defaults that differ
+
+| Behavior                                      | ArkType            | Zod                | Valibot  | TypeBox `Value.Check` | Yup                  | Joi                       | Effect Schema |
+| --------------------------------------------- | ------------------ | ------------------ | -------- | --------------------- | -------------------- | ------------------------- | ------------- |
+| Undeclared object keys                        | kept               | removed            | removed  | allowed               | kept                 | rejected                  | removed       |
+| Optional key present with the value undefined | rejected           | accepted           | accepted | accepted              | accepted             | accepted                  | accepted      |
+| Default applied when the value is undefined   | no, only if absent | yes                | yes      | only `Value.Default`  | yes                  | yes                       | yes           |
+| Converts input types, e.g. `"12"` to `12`     | only when parsing  | only in `z.coerce` | no       | only `Value.Convert`  | yes, unless strict   | yes, unless convert false | no            |
+| `number` accepts `Infinity`                   | no                 | v4: no, v3: yes    | yes      | no                    | yes                  | no                        | yes           |
+| `number` accepts `NaN`                        | no                 | no                 | no       | no                    | no                   | no                        | yes           |
+| An array where an object is expected          | accepted           | rejected           | accepted | rejected              | rejected             | rejected                  | rejected      |
+| Empty string for a plain string               | accepted           | accepted           | accepted | accepted              | rejected if required | rejected                  | accepted      |
+
+What to write when the old behavior matters:
+
+```ts
+// remove undeclared keys like Zod, Valibot and Effect, for this object only
+const Stripped = type({ "+": "delete", name: "string" })
+
+// reject them like Joi or Zod's .strict()
+const Strict = type({ "+": "reject", name: "string" })
+
+// accept an explicit undefined as well as a missing key
+const Patch = type({ "nickname?": "string | undefined" })
+
+// apply a default when the key is missing or undefined
+const Settings = type({
+	theme: type("'light' | 'dark' | undefined")
+		.pipe(v => v ?? "light")
+		.default(undefined)
+})
+
+// allow non-finite numbers
+const Measurement = type(
+	"number | number.Infinity | number.NegativeInfinity | number.NaN"
+)
+```
+
+`"+"` applies to its own object, not to nested ones, and `.merge()` takes it from the object merged in, so repeat it there. An object that deletes keys transforms its input, so a union of such objects needs a key that tells them apart, like a literal `type`. To remove undeclared keys everywhere, as Zod does, set `onUndeclaredKey: "delete"` with `configure` from `arktype/config`, in a file imported before anything imports `arktype`; then unions need no discriminant.
+
+With `"delete"` or `"reject"`, from `"+"` or `configure`, an object's undeclared keys are `never`, so `.and()` with an object that has other keys throws. Add keys with `.merge()`.
+
+## Semantics to check
+
+**Transforms run in order.** `.pipe(fn)` transforms after validation, `.to(definition)` validates the result, and a `.narrow()` after a `.pipe()` sees the transformed value, like Zod's `.transform().refine()`. A narrow on an object whose properties transform sees the transformed properties.
+
+```ts
+// Zod: z.string().transform(s => s.length).refine(n => n > 2)
+const Length = type("string")
+	.pipe(s => s.length)
+	.narrow(n => n > 2)
+
+// Zod: z.preprocess(v => (typeof v === "string" ? v.split(",") : v), z.array(z.string()))
+const Tags = type("string | string[]")
+	.pipe(v => (typeof v === "string" ? v.split(",") : v))
+	.to("string[]")
+```
+
+**Coercion is a parse.** ArkType never converts a value unless the definition says so. `string.numeric.parse`, `string.integer.parse`, `string.date.parse`, `string.json.parse` and `string.url.parse` accept only strings, so keep the original type in a union when both can arrive:
+
+```ts
+// z.coerce.number() for query strings
+const Page = type("number | string.numeric.parse")
+
+// z.coerce.number() for any input, as Number(value)
+const AnyNumber = type("unknown").pipe(Number).to("number")
+
+// z.coerce.date()
+const When = type("Date | string.date.parse")
+
+// z.stringbool() accepts "true", "1", "yes", "on" and their opposites; write the set you need
+const Flag = type("'true' | 'false'").pipe(s => s === "true")
+```
+
+**Refinements with a path or several errors.** A `.narrow()` returns `true` or calls `ctx.reject()`, which takes a `path` and a full `message`. To report several errors, call `ctx.error()` for each, then return `true`:
+
+```ts
+// Zod: .superRefine((d, ctx) => ctx.addIssue({ code: "custom", message: "...", path: ["end"] }))
+const Range = type({ start: "number", end: "number" }).narrow(
+	(d, ctx) =>
+		d.start <= d.end ||
+		ctx.reject({ message: "end must not be before start", path: ["end"] })
+)
+```
+
+**Discriminated unions are plain unions.** ArkType finds the discriminant itself, so `z.discriminatedUnion("type", [A, B])`, `v.variant("type", [...])` and `Schema.Union(A, B)` are `A.or(B)`, or `"A | B"` in a scope.
+
+**Recursion needs no annotation.** Replace `z.lazy`, `v.lazy`, `Type.Recursive`, `yup.lazy`, `Joi.link` and `Schema.suspend` with a scope, or `this` for a type that refers to itself:
+
+```ts
+const Category = type({ name: "string", subcategories: "this[]" })
+
+const types = scope({
+	Json: "string | number | boolean | null | Json[] | JsonObject",
+	JsonObject: { "[string]": "Json" },
+	Filter: { "[string]": "Json | Filter" }
+}).export()
+```
+
+Delete the hand-written TypeScript type that `z.lazy` needed; `typeof types.Filter.infer` replaces it.
+
+**Composing objects.** `.merge()` replaces keys like Zod's `.extend()`, `v.object({ ...a.entries })` or `Type.Composite`. `.and()` intersects, and throws when a key's types conflict. `.pick()`, `.omit()`, `.partial()`, `.required()` and `.keyof()` keep their names.
+
+**Records with literal keys.** `Record<"a" | "b", T>` must be written as named keys, `{ a: T, b: T }` (add `?` for Zod v3, whose enum-keyed records are partial). An index signature like `"[string]": "number"` applies to every key, including declared ones, so a catch-all like Zod's `.catchall(z.number())` next to a string key becomes `"[string]": "string | number"`.
+
+**Brands.** `.brand("UserId")` or `"string#UserId"` infers `Brand<string, "UserId">`, which is not assignable to or from the old library's brand type. Change code that names the old brand type to `typeof UserId.infer`.
+
+**Errors.** Errors are values: `T(data)` returns the data or an `ArkErrors`, and `T.assert(data)` throws. To change a message, `.describe("a strong password")` gives `must be a strong password (was ...)`, and `.configure({ message: "Choose a stronger password" })` replaces the whole message. Zod's and Valibot's `description` is documentation, but ArkType's `.describe()` is what errors say the value must be, so keep documentation in a comment or `.configure({ title })`.
+
+**Dates and formats.** `z.string().datetime()` rejects offsets and date-only strings unless configured; `string.date.iso` accepts both. In JSON Schema, `format` is an annotation and validates nothing unless the validator, like ajv with `ajv-formats`, checks it; `string.email` always validates.
+
+**Synchronous only.** ArkType doesn't await. Move an async `refine`, Yup `test` or Joi `external` out of the schema and run it after validation.
+
+## Zod
+
+Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like `z.string().optional()`, and `z.string().check(z.minLength(1))` like `z.string().min(1)`.
+
+| Zod                                                   | ArkType                                                                 |
+| ----------------------------------------------------- | ----------------------------------------------------------------------- |
+| `z.string()`, `z.number()`, `z.boolean()`, `z.null()` | `"string"`, `"number"`, `"boolean"`, `"null"`                           |
+| `z.unknown()`, `z.any()`, `z.never()`                 | `"unknown"`, `"unknown.any"`, `"never"`                                 |
+| `z.literal("a")`, `z.literal(0.5)`                    | `"'a'"`, `"0.5"`                                                        |
+| `z.enum(["a", "b"])`                                  | `"'a' \| 'b'"` or `type.enumerated("a", "b")`                           |
+| `z.nativeEnum(E)`, `z.enum(E)`                        | `type.valueOf(E)`                                                       |
+| `z.object({ ... })`                                   | `type({ ... })`, nested objects as plain objects                        |
+| `.optional()` on a property                           | `"key?": ...`, plus `\| undefined` to accept undefined                  |
+| `.nullable()`, `.nullish()`                           | `"string \| null"`; `"key?": "string \| null \| undefined"`             |
+| `.default(x)` on a property                           | `"key": "number = 0"` or `key: T.default(x)`                            |
+| `z.array(T)`, `.min(1)`, `.nonempty()`                | `"T[]"` or `T.array()`, `"string[] >= 1"`                               |
+| `z.tuple([A, B])`, `.rest(C)`                         | `[A, B]`, `[A, B, "...", "C[]"]`                                        |
+| `z.union([A, B])`, `A.or(B)`, `z.discriminatedUnion`  | `A.or(B)`, `"A \| B"`                                                   |
+| `z.intersection(A, B)`, `A.and(B)`                    | `A.and(B)`                                                              |
+| `z.record(z.string(), T)`                             | `"Record<string, T>"` or `{ "[string]": T }`                            |
+| `.extend({ ... })`, `.merge(B)`                       | `.merge({ ... })`                                                       |
+| `.pick`, `.omit`, `.partial`, `.required`, `.keyof`   | same names                                                              |
+| `.strict()`, `z.strictObject`                         | `"+": "reject"`                                                         |
+| `.passthrough()`, `z.looseObject`                     | the default                                                             |
+| `.strip()`, the default `z.object`                    | `"+": "delete"`                                                         |
+| `z.lazy(() => T)`                                     | a scope or `this`                                                       |
+| `.min(n)` / `.max(n)` / `.length(n)` on strings       | `"string >= n"`, `"string <= n"`, `"string == n"`                       |
+| `.int()`, `.positive()`, `.nonnegative()`, `.gt(n)`   | `"number.integer"`, `"number > 0"`, `"number >= 0"`, `"number > n"`     |
+| `.multipleOf(n)`                                      | `"number % n"`                                                          |
+| `.email()`, `.url()`, `.uuid()`, `.ip()`, `.regex(r)` | `"string.email"`, `"string.url"`, `"string.uuid"`, `"string.ip"`, `/r/` |
+| `.datetime()`, `z.iso.datetime()`                     | `"string.date.iso"`                                                     |
+| `.trim()`, `.toLowerCase()`                           | `"string.trim"`, `"string.lower"`                                       |
+| `z.date()`, `z.instanceof(C)`                         | `"Date"`, `type.instanceOf(C)`                                          |
+| `.refine(fn, msg)`, `.superRefine(fn)`                | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message: msg }))`          |
+| `.transform(fn)`, `.pipe(T)`                          | `.pipe(fn)`, `.to(T)`                                                   |
+| `z.preprocess(fn, T)`                                 | `type("unknown").pipe(fn).to(T)`                                        |
+| `z.coerce.number()`                                   | `"number \| string.numeric.parse"`                                      |
+| `z.custom<T>(fn)`                                     | `type("unknown").narrow((v): v is T => fn(v))`                          |
+| `.brand<"Id">()`                                      | `.brand("Id")` or `"string#Id"`                                         |
+| `.describe(text)`                                     | a comment or `.configure({ title: text })`                              |
+| `{ message }`, `{ error }`, `required_error`          | `.describe(...)` or `.configure({ message })`                           |
+| `z.infer`, `z.output`, `z.input`                      | `typeof T.infer`, `typeof T.inferIn`                                    |
+| `.parse(x)`, `.safeParse(x)`                          | `T.assert(x)`, `T(x)` then `instanceof type.errors`                     |
+
+## Valibot
+
+| Valibot                                                     | ArkType                                                                            |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `v.object`, `v.looseObject`, `v.strictObject`               | `"+": "delete"`, the default, `"+": "reject"`                                      |
+| `v.objectWithRest(entries, rest)`                           | an index signature, `"[string]": ...`                                              |
+| `v.optional(T)`, `v.exactOptional(T)`                       | `"key?": "T \| undefined"`, `"key?": "T"`                                          |
+| `v.optional(T, default)`                                    | `"key": "T = default"`                                                             |
+| `v.nullable(T)`, `v.nullish(T)`                             | `"T \| null"`, `"key?": "T \| null \| undefined"`                                  |
+| `v.picklist(["a", "b"])`, `v.enum(E)`                       | `"'a' \| 'b'"`, `type.valueOf(E)`                                                  |
+| `v.union`, `v.variant("type", [...])`, `v.intersect`        | `A.or(B)`, `A.or(B)`, `A.and(B)`                                                   |
+| `v.array`, `v.tuple`, `v.tupleWithRest`, `v.record`         | `"T[]"`, `[A, B]`, `[A, "...", "B[]"]`, `"Record<string, T>"`                      |
+| `v.lazy`                                                    | a scope or `this`                                                                  |
+| `v.pipe(v.string(), v.email(), v.maxLength(255))`           | `"string.email <= 255"`                                                            |
+| `v.minLength`, `v.maxLength`, `v.length`, `v.nonEmpty`      | `"string >= n"`, `"string <= n"`, `"string == n"`, `"string > 0"`                  |
+| `v.minValue`, `v.maxValue`, `v.integer`, `v.multipleOf`     | `"number >= n"`, `"number <= n"`, `"number.integer"`, `"number % n"`               |
+| `v.url`, `v.uuid`, `v.isoDateTime`, `v.regex(r)`            | `"string.url"`, `"string.uuid"`, `"string.date.iso"`, `/r/`                        |
+| `v.trim()`, `v.toLowerCase()`, `v.toNumber()`, `v.toDate()` | `"string.trim"`, `"string.lower"`, `"string.numeric.parse"`, `"string.date.parse"` |
+| `v.check(fn, msg)`, `v.rawCheck`                            | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message: msg }))`                     |
+| `v.forward(v.partialCheck(...), ["key"])`                   | `.narrow(...)` with `ctx.reject({ path: ["key"] })`                                |
+| `v.transform(fn)`                                           | `.pipe(fn)`                                                                        |
+| `v.brand("Id")`                                             | `.brand("Id")`                                                                     |
+| `v.instance(C)`, `v.date()`, `v.custom(fn)`                 | `type.instanceOf(C)`, `"Date"`, `type("unknown").narrow(fn)`                       |
+| `v.fallback(T, x)`                                          | none; handle the `ArkErrors` result                                                |
+| `v.InferOutput`, `v.InferInput`                             | `typeof T.infer`, `typeof T.inferIn`                                               |
+| `v.parse(S, x)`, `v.safeParse(S, x)`                        | `T.assert(x)`, `T(x)`                                                              |
+
+## TypeBox
+
+TypeBox schemas are JSON Schema, so [JSON Schema](#json-schema-and-ajv) also applies.
+
+| TypeBox                                                        | ArkType                                                |
+| -------------------------------------------------------------- | ------------------------------------------------------ |
+| `Type.Object({...})`, `{ additionalProperties: false }`        | `type({...})`, `"+": "reject"`                         |
+| `Type.Optional(T)`                                             | `"key?": "T \| undefined"`                             |
+| `Type.String({ minLength, maxLength, pattern })`               | `"1 <= string <= 255"`, `/pattern/`                    |
+| `Type.String({ format: "email" })`                             | `"string.email"`                                       |
+| `Type.Number({ minimum, exclusiveMaximum })`, `Type.Integer()` | `"0 <= number < 10"`, `"number.integer"`               |
+| `Type.Literal`, `Type.Union`, `Type.Enum(E)`                   | `"'a'"`, `A.or(B)`, `type.valueOf(E)`                  |
+| `Type.Array(T, { minItems })`, `Type.Tuple`                    | `"T[] >= 1"`, `[A, B]`                                 |
+| `Type.Record(Type.String(), T)`                                | `"Record<string, T>"`                                  |
+| `Type.Intersect`, `Type.Composite`                             | `A.and(B)`, `A.merge(B)`                               |
+| `Type.Partial`, `Type.Pick`, `Type.Omit`, `Type.KeyOf`         | `.partial()`, `.pick()`, `.omit()`, `.keyof()`         |
+| `Type.Recursive(This => ...)`                                  | `this` or a scope                                      |
+| `Type.Date()`, `Type.Unknown()`, `Type.Any()`                  | `"Date"`, `"unknown"`, `"unknown.any"`                 |
+| `Type.Transform(T).Decode(fn)`                                 | `.pipe(fn)`                                            |
+| `{ default: x }` with `Value.Default`                          | `"key": "T = x"`                                       |
+| `Static<typeof T>`, `StaticDecode`, `StaticEncode`             | `typeof T.infer`, `typeof T.infer`, `typeof T.inferIn` |
+| `Value.Check(T, x)`, `Value.Parse`, `TypeCompiler.Compile`     | `T.allows(x)`, `T.assert(x)`, nothing to compile       |
+
+## Yup
+
+Yup converts values unless `.strict()`, and treats a field as optional unless `.required()`. Translate what the data actually is: a form posting strings needs `"string.numeric.parse"` where Yup's `number()` converted.
+
+| Yup                                                   | ArkType                                                        |
+| ----------------------------------------------------- | -------------------------------------------------------------- |
+| `object({...})`, `.shape({...})`                      | `type({...})`, `.merge({...})`                                 |
+| `string()` (not required)                             | `"key?": "string \| undefined"`                                |
+| `.required()`, `.defined()`, `.nullable()`            | `"key": "string > 0"` for strings, `"key": "T"`, `"T \| null"` |
+| `.default(x)`                                         | `"key": "T = x"`                                               |
+| `.email()`, `.url()`, `.uuid()`, `.matches(r)`        | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/`       |
+| `.min(n)`, `.max(n)`, `.length(n)` on strings, arrays | `"string >= n"`, `"T[] <= n"`, `"string == n"`                 |
+| `.integer()`, `.positive()`, `.moreThan(n)`           | `"number.integer"`, `"number > 0"`, `"number > n"`             |
+| `.trim()`, `.lowercase()`                             | `"string.trim"`, `"string.lower"`                              |
+| `.oneOf(["a", "b"])`                                  | `"'a' \| 'b'"`                                                 |
+| `array().of(T)`, `tuple([A, B])`                      | `T.array()`, `[A, B]`                                          |
+| `.test(name, message, fn)`                            | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message }))`      |
+| `.transform(fn)`                                      | `.pipe(fn)`                                                    |
+| `.when("other", ...)`                                 | a union of the cases, or a `.narrow()` on the object           |
+| `lazy`                                                | a scope or `this`                                              |
+| `.noUnknown()`, `stripUnknown: true`                  | `"+": "reject"`, `"+": "delete"`                               |
+| `InferType<typeof S>`                                 | `typeof T.infer`                                               |
+| `validateSync(x)`, `isValidSync(x)`, `validate(x)`    | `T.assert(x)`, `T.allows(x)`, `T(x)`                           |
+
+## Joi
+
+Joi rejects undeclared keys, rejects empty strings, and converts strings to numbers, booleans and dates unless `convert: false`. It infers no types, so `typeof T.infer` replaces the interfaces written next to Joi schemas.
+
+| Joi                                            | ArkType                                                                        |
+| ---------------------------------------------- | ------------------------------------------------------------------------------ |
+| `Joi.object({...})`, `.unknown(true)`          | `type({ "+": "reject", ... })`, `type({...})`                                  |
+| `Joi.string()` (optional), `.required()`       | `"key?": "string > 0 \| undefined"`, `"key": "string > 0"`                     |
+| `.allow("")`, `.allow(null)`                   | `"string"`, `"string \| null"`                                                 |
+| `.valid("a", "b")`                             | `"'a' \| 'b'"`                                                                 |
+| `.email()`, `.uri()`, `.guid()`, `.pattern(r)` | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/`                       |
+| `.min(n)`, `.max(n)`, `.length(n)`             | `"string >= n"`, `"string <= n"`, `"string == n"`                              |
+| `Joi.number().integer().positive()`            | `"number.integer > 0"`                                                         |
+| `Joi.number()` reading strings                 | `"number \| string.numeric.parse"`                                             |
+| `Joi.boolean()` reading strings                | `type("boolean \| 'true' \| 'false'").pipe(v => v === true \|\| v === "true")` |
+| `Joi.date()`, `.iso()`                         | `"Date \| string.date.parse"`, `"string.date.iso"`                             |
+| `Joi.array().items(T)`, `.min(1)`              | `T.array()`, `"T[] >= 1"`                                                      |
+| `Joi.alternatives().try(A, B)`                 | `A.or(B)`                                                                      |
+| `.default(x)`                                  | `"key": "T = x"`                                                               |
+| `.custom(fn)`                                  | `.narrow()` or `.pipe()`                                                       |
+| `.messages({...})`                             | `.configure({ message })`                                                      |
+| `Joi.link("#id")`                              | a scope or `this`                                                              |
+| `.when(...)`                                   | a union of the cases, or a `.narrow()` on the object                           |
+| `schema.validate(x)`, `.attempt(x, schema)`    | `T(x)`, `T.assert(x)`                                                          |
+
+## Effect Schema
+
+Names are Effect 3's. Effect 4 renames some: `Schema.filter` is `Schema.check`, `Schema.transform` is `Schema.decodeTo` and `Schema.Enums` is `Schema.Enum`.
+
+| Effect Schema                                                   | ArkType                                                              |
+| --------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `Schema.Struct({...})`                                          | `type({ "+": "delete", ... })`                                       |
+| `Schema.optional(T)`, `Schema.optionalWith(T, { exact: true })` | `"key?": "T \| undefined"`, `"key?": "T"`                            |
+| `Schema.optionalWith(T, { default: () => x })`                  | `"key": "T = x"`                                                     |
+| `Schema.NullOr`, `Schema.NullishOr`                             | `"T \| null"`, `"T \| null \| undefined"`                            |
+| `Schema.Literal("a", "b")`, `Schema.Enums(E)`                   | `"'a' \| 'b'"`, `type.valueOf(E)`                                    |
+| `Schema.Union(A, B)`, `Schema.TaggedStruct`                     | `A.or(B)`, an object with a literal `_tag`                           |
+| `Schema.Array`, `Schema.NonEmptyArray`, `Schema.Tuple`          | `"T[]"`, `"T[] >= 1"`, `[A, B]`                                      |
+| `Schema.Record({ key: Schema.String, value: T })`               | `"Record<string, T>"`                                                |
+| `Schema.suspend(() => T)`                                       | a scope or `this`                                                    |
+| `Schema.Int`, `Schema.Positive`, `Schema.between(a, b)`         | `"number.integer"`, `"number > 0"`, `"a <= number <= b"`             |
+| `Schema.minLength`, `Schema.pattern(r)`, `Schema.UUID`          | `"string >= n"`, `/r/`, `"string.uuid"`                              |
+| `Schema.NumberFromString`, `Schema.DateFromString`              | `"string.numeric.parse"`, `"string.date.parse"`                      |
+| `Schema.Trim`, `Schema.Lowercase`, `Schema.parseJson(T)`        | `"string.trim"`, `"string.lower"`, `type("string.json.parse").to(T)` |
+| `Schema.filter(fn)`                                             | `.narrow(fn)`                                                        |
+| `Schema.transform(From, To, { decode })`                        | `From.pipe(decode).to(To)`                                           |
+| `Schema.brand("Id")`                                            | `.brand("Id")`                                                       |
+| `Schema.Type<typeof S>`, `Schema.Encoded<typeof S>`             | `typeof T.infer`, `typeof T.inferIn`                                 |
+| `Schema.decodeUnknownSync`, `decodeUnknownEither`               | `T.assert(x)`, `T(x)`                                                |
+| `onExcessProperty: "error"`                                     | `"+": "reject"`                                                      |
+
+ArkType has no encode direction. A `Schema.Class` becomes a Type plus, if you need methods, your own class constructed from its output.
+
+## JSON Schema and ajv
+
+To keep a schema as JSON, convert it at runtime with `jsonSchemaToType` from `@ark/json-schema`; it accepts exactly what a JSON Schema 2020-12 validator accepts, with `format` as an annotation. To rewrite it as definitions:
+
+| JSON Schema                                              | ArkType                                                                |
+| -------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `{ type: "string", minLength: 1, maxLength: 255 }`       | `"1 <= string <= 255"`                                                 |
+| `{ type: "string", pattern: "^a" }`                      | `/^a/`                                                                 |
+| `{ type: "integer", minimum: 0, exclusiveMaximum: 10 }`  | `"0 <= number.integer < 10"`                                           |
+| `{ multipleOf: 5 }`                                      | `"number % 5"`                                                         |
+| `{ enum: ["a", "b"] }`, `{ const: "a" }`                 | `"'a' \| 'b'"`, `"'a'"`                                                |
+| `{ type: ["string", "null"] }`, `anyOf`, `oneOf`         | `"string \| null"`, `A.or(B)`                                          |
+| `allOf`                                                  | `A.and(B)`                                                             |
+| `properties` with `required`                             | keys, with `?` on those not required                                   |
+| `additionalProperties: false`, `additionalProperties: T` | `"+": "reject"`, `"[string]": T` (covers declared keys too)            |
+| `patternProperties: { "^x-": T }`                        | `"[/^x-/]": T`                                                         |
+| `{ type: "array", items: T, minItems: 1 }`               | `"T[] >= 1"`                                                           |
+| `prefixItems`                                            | `[A, B]`                                                               |
+| `$defs` with `$ref`                                      | a scope                                                                |
+| `format: "email"`, `"uuid"`, `"date-time"`, `"uri"`      | `"string.email"`, `"string.uuid"`, `"string.date.iso"`, `"string.url"` |
+| `default`                                                | `"key": "T = x"`                                                       |
+
+ajv options map too: `removeAdditional` is `"+": "delete"`, `useDefaults` is a default in the definition, and `coerceTypes` is a parse keyword like `string.numeric.parse`. `T.toJsonSchema()` converts back.
