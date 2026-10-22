@@ -715,7 +715,7 @@ Your definitions stay as you wrote them. [Setup](https://arktype.io/docs/precomp
 
 ## Speed and size
 
-A validator that compiles at runtime ships its compiler, and one that interprets ships its interpreter. A precompiled build ships neither: only the checks your Types need, and the runtime that reports their errors. Build the fastest validator or the smallest from the same definitions. The [options](https://arktype.io/docs/precompile/options) decide which: [`optimize: "size"`](https://arktype.io/docs/precompile/options#optimize) and dropping [`members`](https://arktype.io/docs/precompile/options#members) make a build smaller and its validators slower.
+A validator that compiles at runtime ships its compiler, and one that interprets ships its interpreter. A precompiled build ships neither: only the checks your Types need, and the runtime that reports their errors. Build the fastest validator or the smallest from the same definitions. The [options](https://arktype.io/docs/precompile/options) decide which: [`optimize: "size"`](https://arktype.io/docs/precompile/options#optimize-and-optimizeerrors) and dropping [`members`](https://arktype.io/docs/precompile/options#members) make a build smaller and its validators slower.
 
 - Runtime (instructions per call, lower is better): moltar's parseSafe benchmark (validate, removing undeclared keys), run by us on Node 24: instructions per call. Precompiled ArkType isn't in moltar's published results yet.. Source: moltar/typescript-runtime-type-benchmarks, https\://github.com/moltar/typescript-runtime-type-benchmarks
 - ArkType (precompiled): 189
@@ -724,8 +724,8 @@ A validator that compiles at runtime ships its compiler, and one that interprets
 - ata-validator (AOT): 220
 - ArkType (dynamic): 262
 
-* Bundle size (B gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled for size: optimize "size", with its validators' members and methods and its errors' methods off. Source: the form from valibot.dev's comparison, https\://valibot.dev/guides/comparison/
-* ArkType (precompiled): 1,028
+* Bundle size (B gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled with the "smallest" preset in a production build. Source: the form from valibot.dev's comparison, https\://valibot.dev/guides/comparison/
+* ArkType (precompiled): 1,339
 * Valibot: 1,547
 * Zod Mini: 5,127
 * Zod: 25,058
@@ -850,11 +850,15 @@ export default {
 	entry: "./src/main.ts",
 	resolve: { extensions: [".ts", ".js"] },
 	module: {
-		rules: [{ test: /\.ts$/, loader: "ts-loader" }]
+		rules: [
+			{ test: /\.ts$/, loader: "ts-loader", options: { transpileOnly: true } }
+		]
 	},
 	plugins: [precompile.webpack()]
 }
 ```
+
+ts-loader is handed modules the plugin already precompiled, which import validators TypeScript can't see, so it only transpiles them. Check types with `tsc --noEmit`, or `fork-ts-checker-webpack-plugin`, which reads your sources.
 
 **Rspack**
 
@@ -938,7 +942,7 @@ export default {
 
 ## Test runners and runtimes
 
-Vitest uses the Vite plugin. For the others, each driver takes the plugin's options, fails on the same errors and resolves `arktype` to `arktype/runtime` where its host allows. The precompiler runs in a worker thread, sharing no module state with your program.
+Vitest uses the Vite plugin. For the others, each driver takes the plugin's options, fails on the same errors, except that Bun doesn't check dependencies, and resolves `arktype` to `arktype/runtime` where its host allows. The precompiler runs in a worker thread, sharing no module state with your program.
 
 Node 22.15 or later, for `node --test` or any program (pass `--enable-source-maps` for original lines in stack traces):
 
@@ -976,7 +980,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
   Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
 ```
 
-It takes each option that changes what a build refuses, like `--errors none` or `--members '{"assert":false}'`. `--fail-under <percent>` exits with 1 if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
+It reads [`ark.json`](https://arktype.io/docs/precompile/options#arkjson) as a build does, and takes each option that changes what a build refuses, like `--preset smallest`, `--errors none` or `--members '{"assert":false}'`. `--fail-under <percent>` exits with 1 if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
 
 The same analysis is available as `new Precompiler(host).analyze(source, id)` from `@ark/precompile`.
 
@@ -1023,7 +1027,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
   Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".
 ```
 
-Composing inside a definition is fine, since the build evaluates it: `export const Admin = User.and({ role: "'admin'" })` is precompiled to a validator of its own. So is [`.encode`](https://arktype.io/docs/codecs) wherever the build sees it read, like `const encode = (event: unknown) => Event.encode(event)`: the encoder is precompiled like any other Type, and receives each codec's `encode` function from the validator holding it.
+Composing inside a definition is fine, since the build evaluates it: `export const Admin = User.and({ role: "'admin'" })` is precompiled to a validator of its own. So is [`.encode`](https://arktype.io/docs/codecs) wherever the build sees it read, like `const encode = (event: unknown) => Event.encode(event)`: the encoder is precompiled like any other Type, and receives each codec's `encode` function from the validator holding it. The build installs encoding itself, so a precompiled `.encode` works even where the program never imports `arktype/codecs`.
 
 A validator and its members are frozen, except a Date or RegExp it holds, unless the build sets [`freeze: false`](https://arktype.io/docs/precompile/options#freeze).
 
@@ -1040,6 +1044,7 @@ A validator returns errors of its own, instances of `type.errors` and of `arktyp
 - `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`.
 - A `message`, `problem`, `expected` or `actual` configured for a code or on a Type is written as arktype writes it. A build configured with what a validator can't write, like a locale, [fails with its fix](https://arktype.io/docs/precompile/options#configuration).
 - They aren't instances of `@ark/schema`'s `ArkErrors`, so the build fails where a module imports that one.
+- `console.log` prints them as their issues where `arktype/runtime` resolves under the `"development"` condition: Vite's dev server, Vitest, webpack's development mode, and Node or esbuild given `--conditions=development`. A production build ships nothing for it.
 
 The [`errors`](https://arktype.io/docs/precompile/options#errors) option ships less: one issue, or one saying the data is invalid.
 
@@ -1069,7 +1074,7 @@ To leave only some definitions to arktype in a standalone build, mark them as [r
 
 > Ship less, and configure a precompiled program
 
-A standalone build can leave out what your program doesn't need. Every option goes to the plugin, a driver or the CLI:
+A standalone build can leave out what your program doesn't need. Every option goes to the plugin, a driver or the CLI, or into [`ark.json`](#arkjson), and a [preset](#presets) sets several for one goal:
 
 ```ts
 precompile.vite({
@@ -1079,7 +1084,61 @@ precompile.vite({
 })
 ```
 
-`errors`, `mutatesInput`, `members`, `optimize`, `freeze`, `lazy`, `checks`, `countsKeys` and `shadow` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
+`errors`, `mutatesInput`, `members`, `optimize`, `optimizeErrors`, `freeze`, `lazy`, `checks`, `countsKeys` and `shadow` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
+
+## Presets
+
+A preset sets options for one goal, and any option set elsewhere overrides it:
+
+```ts
+precompile.vite({ preset: "smallest", members: { meta: false } })
+```
+
+| Preset | Sets | Gives up |
+| - | - | - |
+| `"smallest"` | `optimize: "size"`, `lazy: false` | speed, runtime islands, creating validators as first read |
+| `"introspectable"` | each introspection member in [`members`](#members) | size |
+
+No preset changes what a program observes: none sets `errors`, `mutatesInput` or `countsKeys`, or drops a member, since the build can't see a member read by code it doesn't build, like a library reading `~standard`. With `runtime: "arktype"`, a preset sets nothing.
+
+## Production builds
+
+In development and tests, validators check at runtime what the build verified, so a program the build couldn't fully see fails where it would otherwise misbehave:
+
+- `freeze`: validators and their members are frozen, so writing to one throws in strict mode code.
+- `checks: "types"`: a factory checks at creation that each Type, Module, Scope and Generic it receives is the one the build read, as a module mock or hot reload could replace it, and that what it reads through an import cycle is already set. Under Vitest, `node --test` and `bun test` it's `"helpers"`, checking each static helper too.
+- `config`: the first validator created fixes the configuration, so a `configure()` the build didn't find throws.
+
+A production build leaves these out, as `freeze: false`, `checks: "none"` and `config: false`, unless an option or `ark.json` sets one. A factory still checks each function another module supplies. What counts as production:
+
+- Vite's `build` command, outside Vitest
+- webpack and Rspack in `production` mode, their default
+- esbuild with `"production"` among its `conditions`
+- Turbopack, the Node and Bun drivers, `arktype-precompile` and the ESLint rule where `NODE_ENV` is `production`, as `next build` sets it
+
+Rollup, Rolldown and Farm builds keep the checks unless set.
+
+## ark.json
+
+The plugin, the Node and Bun drivers, Turbopack, `arktype-precompile` and the ESLint rule each read `ark.json` beside the nearest `package.json` to `cwd`, so each builds with the same options:
+
+```json
+{
+	"$schema": "./node_modules/@ark/precompile/ark.schema.json",
+	"precompile": {
+		"preset": "smallest",
+		"config": "./src/config.ts"
+	}
+}
+```
+
+It takes each option but `cwd`, `inline` and `declare`, and resolves `config` and `tsconfig` against its own directory. An option given in a call overrides it, `members` key by key, and a preset fills in only what neither sets. A dependency's `ark.json` isn't read, as the program's options build every package. The build reads the file as it starts, and fails on an option it sets wrongly, naming the file and key:
+
+```
+/app/ark.json: precompile.optimize must be "size" or "speed" (was "small")
+```
+
+## Settings
 
 ### errors
 
@@ -1105,7 +1164,7 @@ The values are [arktype's `errors`](https://arktype.io/docs/configuration#errors
 
 ### members
 
-`members` decides what a validator has besides validating. `assert`, `meta`, `~standard`, `methods` (`traverse()`, `from()` and `toString()`) and `errorMethods` default to true; `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema` default to false. A dropped member reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`.
+`members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true; `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema` default to false. A dropped member reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`.
 
 Each introspection member set true is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`. A JSON Schema the build can't bake throws where it's read.
 
@@ -1115,13 +1174,13 @@ precompile.vite({
 })
 ```
 
-`members: { errorMethods: false }` gives errors only their `count`, `issues` and `summary`. They lack `throw()`, `toJSON()` and `toString()`, so `JSON.stringify` writes their internals, though `instanceof type.errors` still recognizes them. `.assert()` still throws what it would otherwise: a `TraversalError`, or with `errors: "none"` a plain `Error`. They're the smallest errors a build can return, and reading their issues is slower.
-
-The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for it, or `@ark/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](#errors). With Turbopack, alias `@ark/schema/runtime` to that entry as `errors: "none"` does.
-
-### optimize
+### optimize and optimizeErrors
 
 `optimize: "size"` writes validators for size rather than speed. They're then slower, most where one calls several others in turn, so prefer it where bundle size matters more than validation speed.
+
+`optimizeErrors` writes errors the same way, and is `optimize` unless set. Errors written for size are the smallest a build can return, and reading their issues is slower, but they have the same `count`, `issues`, `summary`, `throw()`, `toJSON()` and `toString()` as other errors, and `instanceof type.errors` recognizes them.
+
+The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for them, or `@ark/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](#errors). With Turbopack, alias `@ark/schema/runtime` to that entry as `errors: "none"` does.
 
 ### countsKeys
 
@@ -1131,7 +1190,7 @@ What it gives up: an undeclared key can pass in place of a declared key that a p
 
 ### freeze
 
-`freeze: false` leaves validators and their members unfrozen. Otherwise, writing to one throws in strict mode code.
+`freeze: false`, the default in a [production build](#production-builds), leaves validators and their members unfrozen. Otherwise, writing to one throws in strict mode code.
 
 ### lazy
 
@@ -1139,11 +1198,11 @@ What it gives up: an undeclared key can pass in place of a declared key that a p
 
 ### checks
 
-`checks` decides what a factory checks of what it receives: `"types"` (the default) checks each Type, Module, Scope and Generic is the one the build read, `"helpers"` (the default under Vitest, `node --test` and `bun test`) each static helper too, and `"none"` only those holding functions, so a module mock replacing any other goes unnoticed.
+`checks` decides what a factory checks of what it receives: `"types"` (the default) checks each Type, Module, Scope and Generic is the one the build read, `"helpers"` (the default under Vitest, `node --test` and `bun test`) each static helper too, and `"none"` (the default in a [production build](#production-builds)) only those holding functions, so a module mock replacing any other goes unnoticed.
 
 ### allowUnsafe
 
-`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `@ark/schema/runtime` that doesn't match `errors` and `members`, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
+`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `@ark/schema/runtime` that doesn't match `errors` and `optimizeErrors`, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
 
 ### conditions and tsconfig
 
@@ -1177,7 +1236,7 @@ A `message`, `problem`, `expected` or `actual` configured for a code, or on a Ty
 
 The build fails where a module that creates a Type is imported before the config module, and the runtime throws if `configure()` runs after it creates its first validator, runs twice, or receives other values than the build read.
 
-`config: false` says the program never calls `configure()`, so the build fails wherever it does.
+`config: false`, the default in a [production build](#production-builds), says the program never calls `configure()`, so the build fails wherever it does. A program that calls it names its module as `config`, which overrides the default.
 
 A program configuring `errors` or `mutatesInput`, globally or for a Scope, builds with the same value: a definition whose Types are configured otherwise fails the build, naming both.
 
@@ -1341,8 +1400,8 @@ Every ArkType definition can run dynamically, created by `type()` at runtime, or
 - ata-validator (AOT): 220
 - ArkType (dynamic): 262
 
-* Bundle size (B gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled for size: optimize "size", with its validators' members and methods and its errors' methods off. Source: the form from valibot.dev's comparison, https\://valibot.dev/guides/comparison/
-* ArkType (precompiled): 1,028
+* Bundle size (B gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled with the "smallest" preset in a production build. Source: the form from valibot.dev's comparison, https\://valibot.dev/guides/comparison/
+* ArkType (precompiled): 1,339
 * Valibot: 1,547
 * Zod Mini: 5,127
 * Zod: 25,058
@@ -1350,7 +1409,9 @@ Every ArkType definition can run dynamically, created by `type()` at runtime, or
 
 In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled for size, it reports every error on Valibot's own login form, with its message, in a smaller bundle than Valibot. The charts come from different builds: each names its benchmark and the options it was built with.
 
-In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType. What precompiling removes is everything around a Type's checks: the parser, the time it takes to create each Type, and the code it generates.
+In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType. What precompiling removes is everything around a
+Type's checks: the parser, the time it takes to create each Type, and the code
+it generates.
 
 | | Dynamic | Precompiled | Precompiled with `runtime: "arktype"` |
 | - | - | - | - |
@@ -1397,13 +1458,13 @@ const User = type({
 | `string.base64.url` | base64url-encoded |
 | `string.capitalize` | a morph from a string to capitalized |
 | `string.capitalize.preformatted` | capitalized |
-| `string.creditCard` | a credit card number and a credit card number |
-| `string.date` | a string and a parsable date |
+| `string.creditCard` | a credit card number |
+| `string.date` | a parsable date |
 | `string.date.epoch` | an integer string representing a safe Unix timestamp |
 | `string.date.epoch.parse` | a morph from an integer string representing a safe Unix timestamp to a Date |
 | `string.date.iso` | an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date |
 | `string.date.iso.parse` | a morph from an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date to a Date |
-| `string.date.parse` | a morph from a string and a parsable date to a Date |
+| `string.date.parse` | a morph from a parsable date to a Date |
 | `string.digits` | only digits 0-9 |
 | `string.email` | an email address |
 | `string.hex` | hex characters only |
@@ -1414,8 +1475,8 @@ const User = type({
 | `string.ip.v6` | an IPv6 address |
 | `string.json` | a JSON string |
 | `string.json.parse` | safe JSON string parser |
-| `string.lower` | a morph from a string to only lowercase letters |
-| `string.lower.preformatted` | only lowercase letters |
+| `string.lower` | a morph from a string to lowercase |
+| `string.lower.preformatted` | lowercase |
 | `string.normalize` | a morph from a string to NFC-normalized unicode |
 | `string.normalize.NFC` | a morph from a string to NFC-normalized unicode |
 | `string.normalize.NFC.preformatted` | NFC-normalized unicode |
@@ -1427,14 +1488,14 @@ const User = type({
 | `string.normalize.NFKD.preformatted` | NFKD-normalized unicode |
 | `string.numeric` | a well-formed numeric string |
 | `string.numeric.parse` | a morph from a well-formed numeric string to a number |
-| `string.regex` | a string and a regex pattern |
+| `string.regex` | a regex pattern |
 | `string.semver` | a semantic version (see https\://semver.org/) |
 | `string.trim` | a morph from a string to trimmed |
 | `string.trim.preformatted` | trimmed |
-| `string.upper` | a morph from a string to only uppercase letters |
-| `string.upper.preformatted` | only uppercase letters |
-| `string.url` | a string and a URL string |
-| `string.url.parse` | a morph from a string and a URL string to a URL instance |
+| `string.upper` | a morph from a string to uppercase |
+| `string.upper.preformatted` | uppercase |
+| `string.url` | a URL string |
+| `string.url.parse` | a morph from a URL string to a URL instance |
 | `string.uuid` | a UUID |
 | `string.uuid.v1` | a UUIDv1 |
 | `string.uuid.v2` | a UUIDv2 |
@@ -2049,9 +2110,9 @@ const MyClosedObject = type({
 MyClosedObject({ onlyAllowedKey: "ok", extraKey: 1 })
 ```
 
-`"reject"` checks string keys only, so an undeclared symbol key passes, while `"delete"` removes undeclared symbol keys too. Reject types that differ only by a symbol key therefore overlap, and a union of them with a morph is indeterminate.
+Both act on string keys: `"reject"` checks only an object's string keys, and `"delete"` builds a new object holding only its declared keys. So an undeclared symbol key passes `"reject"` and is dropped by `"delete"`, and reject types that differ only by a symbol key overlap, so a union of them with a morph is indeterminate.
 
-`"delete"` builds a new object with the declared keys in the order of the type's expression: required keys, then optional keys, each sorted by name.
+`"delete"`'s output has the declared keys in the order of the type's expression: required keys, then optional keys, each sorted by name.
 
 `.onDeepUndeclaredKey()` applies the same behavior to every nested object:
 
@@ -2130,18 +2191,21 @@ const Merged = type.merge({ a: "string" }, { b: "number" }, { "a?": "1" })
 
 ### escapes
 
-Escape a key's `?`, or a key that is exactly `+` or `...`, with a backslash to use it literally:
+Escape a key's `?`, the `[` of a key in brackets, or a key that is exactly `+`, `...` or `@`, with a backslash to use it literally:
 
 ```ts
-// Type<{ "isAdmin?": boolean; "+": string }>
+// Type<{ "isAdmin?": boolean; "+": string; "[id]"?: string }>
 const Escaped = type({
 	"isAdmin\\?": "boolean",
-	"\\+": "string"
+	"\\+": "string",
+	"\\[id]?": "string"
 })
 
 // ArkErrors: value at ["isAdmin?"] must be boolean (was missing)
 Escaped({ "+": "x" })
 ```
+
+An index signature can't be optional, so a key like `"[id]?"` throws a `ParseError` unless its `[` is escaped.
 
 ### keyof
 
@@ -2835,13 +2899,13 @@ These are all the keywords `type` resolves. To define your own, see [scopes](htt
 | `string.base64.url` | base64url-encoded |
 | `string.capitalize` | a morph from a string to capitalized |
 | `string.capitalize.preformatted` | capitalized |
-| `string.creditCard` | a credit card number and a credit card number |
-| `string.date` | a string and a parsable date |
+| `string.creditCard` | a credit card number |
+| `string.date` | a parsable date |
 | `string.date.epoch` | an integer string representing a safe Unix timestamp |
 | `string.date.epoch.parse` | a morph from an integer string representing a safe Unix timestamp to a Date |
 | `string.date.iso` | an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date |
 | `string.date.iso.parse` | a morph from an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date to a Date |
-| `string.date.parse` | a morph from a string and a parsable date to a Date |
+| `string.date.parse` | a morph from a parsable date to a Date |
 | `string.digits` | only digits 0-9 |
 | `string.email` | an email address |
 | `string.hex` | hex characters only |
@@ -2852,8 +2916,8 @@ These are all the keywords `type` resolves. To define your own, see [scopes](htt
 | `string.ip.v6` | an IPv6 address |
 | `string.json` | a JSON string |
 | `string.json.parse` | safe JSON string parser |
-| `string.lower` | a morph from a string to only lowercase letters |
-| `string.lower.preformatted` | only lowercase letters |
+| `string.lower` | a morph from a string to lowercase |
+| `string.lower.preformatted` | lowercase |
 | `string.normalize` | a morph from a string to NFC-normalized unicode |
 | `string.normalize.NFC` | a morph from a string to NFC-normalized unicode |
 | `string.normalize.NFC.preformatted` | NFC-normalized unicode |
@@ -2865,14 +2929,14 @@ These are all the keywords `type` resolves. To define your own, see [scopes](htt
 | `string.normalize.NFKD.preformatted` | NFKD-normalized unicode |
 | `string.numeric` | a well-formed numeric string |
 | `string.numeric.parse` | a morph from a well-formed numeric string to a number |
-| `string.regex` | a string and a regex pattern |
+| `string.regex` | a regex pattern |
 | `string.semver` | a semantic version (see https\://semver.org/) |
 | `string.trim` | a morph from a string to trimmed |
 | `string.trim.preformatted` | trimmed |
-| `string.upper` | a morph from a string to only uppercase letters |
-| `string.upper.preformatted` | only uppercase letters |
-| `string.url` | a string and a URL string |
-| `string.url.parse` | a morph from a string and a URL string to a URL instance |
+| `string.upper` | a morph from a string to uppercase |
+| `string.upper.preformatted` | uppercase |
+| `string.url` | a URL string |
+| `string.url.parse` | a morph from a URL string to a URL instance |
 | `string.uuid` | a UUID |
 | `string.uuid.v1` | a UUIDv1 |
 | `string.uuid.v2` | a UUIDv2 |
@@ -3489,7 +3553,7 @@ const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
 len("foo") // 3
 len([1, 2]) // 2
 
-// TraversalError: value at [0] must be a string or an object (was boolean)
+// TraversalError: value at [0] must be a string or an array (was boolean)
 len(true)
 // TypeScript: Argument of type 'boolean' is not assignable to parameter of type 'string | unknown[]'.
 ```
@@ -3566,6 +3630,18 @@ const SpecialNumber = type("number", "@", "a special number")
 
 // ArkErrors: must be a special number (was a string)
 SpecialNumber("five")
+```
+
+An object definition can hold its own metadata under an `"@"` key:
+
+```ts
+const User = type({
+	"@": "a user",
+	name: "string"
+})
+
+// ArkErrors: must be a user (was a number)
+User(5)
 ```
 
 A configured description, like any message you configure, takes precedence over the [locale](https://arktype.io/docs/i18n#your-own-messages), so it isn't translated.
@@ -3821,6 +3897,27 @@ describe({ count: 3 })
 ```
 
 `match.at(key, cases)` does the same in one call.
+
+## String values with `strings`
+
+`.strings(cases)` treats each key as a string value rather than a definition, so a key needs no quotes and `number` matches the string `"number"`. It follows `.in(...)` or `.at(key)`, and a key that isn't a possible value of the input is a type error. Its types are much cheaper to check than `.match` with quoted string literals:
+
+```ts
+import { match } from "arktype"
+
+type Shape = { kind: "circle"; r: number } | { kind: "square"; side: number }
+
+const area = match
+	.in<Shape>()
+	.at("kind")
+	.strings({
+		circle: c => Math.PI * c.r ** 2,
+		square: s => s.side ** 2,
+		default: "assert"
+	})
+
+area({ kind: "square", side: 2 }) // 4
+```
 
 ## Scoped aliases
 
@@ -4185,6 +4282,22 @@ const $ = scope({
 const types = $.export()
 
 types.TrimmedId("  42 ") // "42"
+```
+
+A thunk can't pass a callback that receives the data, like `.narrow`'s, to a Type that references the alias the thunk defines. TypeScript would read the callback's parameter from that alias, which is still being inferred from the thunk, and reports the thunk as implicitly `any`. Write the narrow as a tuple expression instead:
+
+```ts
+const $ = scope({
+	File: { name: "string" },
+	Directory: {
+		name: "string",
+		children: [
+			"(File | Directory)[]",
+			":",
+			children => new Set(children.map(c => c.name)).size === children.length
+		]
+	}
+})
 ```
 
 ## Configuration
@@ -4658,7 +4771,7 @@ An error's `code` tells you its other fields:
 
 Each also has `data` and `path`, and `meta` unless `ctx` or `pipe.try` raised it. Built-in keywords with their own text, like `string.email`, set `meta.keyword` to their name.
 
-`discriminant` is a miss of a union ArkType checks by switching on a domain or a literal value: branches with different domains, like `number | null`, three or more literals, like `"a" | "b" | "c"`, or objects with a discriminant key. Its `data` is the discriminant's value, and `cases` lists the values or domains it expected. Other unions, including two literals like `"a" | "b"`, report `union`:
+`discriminant` is a miss of a union ArkType checks by switching on a domain or a literal value: branches with different domains, like `number | null`, three or more literals, like `"a" | "b" | "c"`, or objects with a discriminant key. Its `data` is the discriminant's value, and `cases` lists the values or domains it expected, with `"Array"` in place of `"object"` where every object it expected is an array. Other unions, including two literals like `"a" | "b"`, report `union`:
 
 ```ts
 const Shape = type({ kind: "'circle'", r: "number" }).or({
@@ -5097,8 +5210,10 @@ User({ name: 5, email: "449 Canal St" })
 Like TypeScript, ArkType ignores keys an object doesn't declare by default. There are three behaviors:
 
 - `"ignore"` (default): allow undeclared keys and keep them in the output
-- `"delete"`: allow undeclared keys and remove them from the output
-- `"reject"`: fail on undeclared keys
+- `"delete"`: allow undeclared keys and output only declared ones
+- `"reject"`: fail on undeclared string keys
+
+An undeclared symbol key passes `"reject"` and isn't in `"delete"`'s output.
 
 Set it for one object with [`"+"`](https://arktype.io/docs/objects#properties-undeclared), or change the default globally:
 
@@ -5153,11 +5268,11 @@ const MyObj = type({
 	withDefault: "number = 5"
 })
 
-// { key: undefined, withDefault: undefined }
+// { key: undefined, withDefault: 5 }
 MyObj({ key: undefined, withDefault: undefined })
 ```
 
-With `false`, an explicit `undefined` also passes for a key with a default, and is kept rather than replaced by the default. Configurable defaults are tracked in [#1390](https://github.com/arktypeio/arktype/issues/1390).
+With `false`, an explicit `undefined` at a key with a default is replaced by the default, as a missing key is. Treating `null` as missing is tracked in [#1283](https://github.com/arktypeio/arktype/issues/1283).
 
 ## numberAllowsNaN
 
@@ -5799,7 +5914,7 @@ const schema = User["~standard"].jsonSchema.input({ target: "draft-2020-12" })
 
 - `target` is `"draft-2020-12"` or `"draft-07"`. Any other target, like OpenAPI's, throws.
 - `libraryOptions` is passed to [`toJsonSchema`](https://arktype.io/docs/json-schema/to-json-schema) as its options, so a caller can set a `fallback` there.
-- `input` and `output` differ when the Type has morphs. For `string.integer.parse`, `input` describes a string and `output` describes an integer.
+- `input` and `output` differ when the Type has morphs or defaults. For `string.integer.parse`, `input` describes a string and `output` describes an integer, and a key with a default is optional with a `default` in `input` but required in `output`.
 
 Unlike `toJsonSchema()`, these methods don't throw when part of a Type has no JSON Schema equivalent. The library calling them can't know which fallbacks your Type needs, so each such part becomes the closest schema JSON Schema can express, or `{}` if there is none:
 
@@ -6042,10 +6157,10 @@ The model sees the JSON Schema from [`~standard.jsonSchema`](https://arktype.io/
 
 > Generate test data from a Type for property-based tests with @ark/fast-check.
 
-`@ark/fast-check` turns a Type into a [fast-check](https://fast-check.dev) arbitrary, so your property-based tests generate data from the same definition you validate with. It requires fast-check 3. fast-check 4 isn't supported yet.
+`@ark/fast-check` turns a Type into a [fast-check](https://fast-check.dev) arbitrary, so your property-based tests generate data from the same definition you validate with. It works with fast-check 3 and 4.
 
 ```bash
-npm install -D @ark/fast-check fast-check@3
+npm install -D @ark/fast-check fast-check
 ```
 
 ## Generating data
@@ -6088,7 +6203,7 @@ These generate only valid data:
 - number ranges, `number.integer` and divisors like `number % 3`
 - string length bounds, or a single regex such as `string.email`, `string.uuid` or your own
 - objects with required, optional and index signature keys
-- arrays with a minimum or maximum length, and tuples with optional or variadic elements
+- arrays with a minimum, maximum or exact length, and tuples with optional or variadic elements
 - cyclic types, like a `this` reference or a recursive scope alias
 - `Date`, with or without bounds, and `Set`, whose elements can be any value
 
@@ -6102,7 +6217,6 @@ These throw when you call `arkToArbitrary`:
 These are ignored, so the arbitrary generates data your Type rejects:
 
 - `narrow` predicates, and keywords implemented as predicates rather than regexes, like `string.url`, `string.json` and `string.date`, including their `.parse` variants
-- an exact array length, like `string[] == 2`. A minimum or maximum length works.
 
 When the Type accepts a reasonable share of what the arbitrary generates, filter out the rest:
 
@@ -6845,16 +6959,16 @@ type({ foo: "string = 'x'" }).props // [{ kind: "optional", key: "foo", value: T
 apply undeclared key behavior
 
 - `"ignore"` (default) - allow and preserve extra properties
-- `"reject"` - disallow extra properties
-- `"delete"` - remove extra properties from output
+- `"reject"` - disallow extra string keys
+- `"delete"` - output only declared keys
 
 ### `onDeepUndeclaredKey`
 
 deeply apply undeclared key behavior
 
 - `"ignore"` (default) - allow and preserve extra properties
-- `"reject"` - disallow extra properties
-- `"delete"` - remove extra properties from output
+- `"reject"` - disallow extra string keys
+- `"delete"` - output only declared keys
 
 ### readonly
 
@@ -7172,6 +7286,16 @@ An error's `actual` prints an object as `an object`, an array as `an array` and 
 type("'a' | 'b'")({ x: 1 })
 ```
 
+A value an `instanceof` check rejects is described as a domain error describes it, or by its class's name if it's a builtin's instance:
+
+```ts
+// ArkErrors: must be a Date (was a number), before: (was number)
+type("Date")(5)
+
+// ArkErrors: must be a Date (was Map), as before
+type("Date")(new Map())
+```
+
 ### Undeclared keys have the undeclared code
 
 A key that `"+": "reject"` disallows was a `predicate` error. Its code is now `undeclared`, and its `data` is the key's value rather than the object:
@@ -7200,6 +7324,8 @@ if (out instanceof type.errors) {
 	out.issues[0].code // "discriminant", before: "predicate"
 }
 ```
+
+A described union's miss is at the union's own path, with the union's value as its `data`. A miss of a union discriminated by its value whose branch is described has the `union` code instead, as an undiscriminated union's does.
 
 Configure its text under `discriminant` instead of `predicate`. An exhaustive `switch` over `ArkErrorCode` must handle `undeclared` and `discriminant`.
 
@@ -7285,6 +7411,29 @@ Allow them everywhere with `configure({ numberAllowsInfinity: true })`, or in on
 const T = type("number | number.Infinity | number.NegativeInfinity")
 ```
 
+### object.json accepts only plain objects and arrays
+
+`object.json` rejects an object whose prototype isn't `Object.prototype` or `null`, unless it's an array, so a `Map`, `Set`, `Date`, function or class instance, which `JSON.stringify` doesn't write as itself, fails anywhere in the data:
+
+```ts
+// ArkErrors: at must be a plain object or array (was an object)
+// before: { at: Date }
+type("object.json")({ at: new Date() })
+```
+
+### Optional index signatures throw
+
+A key like `"[k]?"` was the literal key `"[k]"`, made optional. It now throws a `ParseError`, since it reads as an optional index signature. Escape its `[` to keep the literal key:
+
+```ts
+// throws ParseError: Index signature [k] can't be optional. Escape its '[' with a backslash for an optional key named '[k]'
+type({ "[k]?": "string" })
+// TypeScript: Index signature [k] can't be optional. Escape its '[' with a backslash for an optional key named '[k]'
+
+// Type<{ "[k]"?: string }>
+type({ "\\[k]?": "string" })
+```
+
 ### The clone option is removed
 
 Transforming no longer clones the input first. Output shares every value nothing transformed with the input, and a morph receives the validated value itself, so a morph that mutates its argument mutates your data. Remove `clone` from your config.
@@ -7359,6 +7508,8 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - `toJsonSchema()` throws for a regex flag JSON Schema can't express, instead of leaving it out: `type(/^a/i).toJsonSchema()` throws (code `patternFlags`), before: `{ type: "string", pattern: "^a" }`, which rejects `"A"`.
 
 - `toJsonSchema()` throws for an index signature key it can't express, instead of leaving out the index signature: `type({ "[string <= 3]": "number" }).toJsonSchema()` throws (code `indexKey`), before: `{ type: "object" }`. See [JSON Schema](https://arktype.io/docs/json-schema/to-json-schema#how-types-map) for the keys it can write.
+
+- `toJsonSchema()` throws for `object.json` and the Types it's part of, like `string.json.parse`'s output, since its check that an object is plain is a `predicate`. [Handle that code](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes) to write it as before.
 
 - Expressions keep length bounds and protos beside a structure: `type("number[] > 1").expression` is `number[] >= 2`, before: `number[]`.
 
@@ -7468,7 +7619,7 @@ const User = type({
 })
 ```
 
-That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](https://arktype.io/docs/precompile), it ships no parser. On Valibot's own login form, ArkType precompiled for size reports every error, with its message, in a smaller bundle than Valibot: 1.03 kB gzipped against 1.55 kB.
+That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](https://arktype.io/docs/precompile), it ships no parser. On Valibot's own login form, ArkType precompiled for size reports every error, with its message, in a smaller bundle than Valibot: 1.34 kB gzipped against 1.55 kB.
 
 Coming from Zod, most APIs have a direct equivalent:
 

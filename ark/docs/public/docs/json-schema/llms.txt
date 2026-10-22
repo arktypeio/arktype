@@ -180,6 +180,8 @@ const schema = types.Node.toJsonSchema()
 | `["string", "number?"]` | `prefixItems`, `minItems: 1`, `items: false` |
 | `/^a/` | `pattern: "^a"` |
 | `"string.email"` | `pattern`, `format: "email"` |
+| `"string.url"`, `"string.regex"` | `format: "uri"`, `format: "regex"` |
+| `"string.json"` | `contentMediaType: "application/json"` |
 | `"'a' \| 'b'"` | `enum: ["a", "b"]` |
 | `"string \| null"` | `anyOf` |
 | `{ "name?": "string" }` | `properties`, with only required keys in `required` |
@@ -195,11 +197,27 @@ JSON Schema's `pattern` has no flags. `d` and `g` don't change what a regex matc
 
 An index signature applies to every key, including declared ones. JSON Schema skips declared keys in `additionalProperties`, so an index signature next to declared keys is written as `patternProperties` with a pattern every key matches.
 
+A JSON Schema validator doesn't check `format` or `contentMediaType` unless it's configured to. `string.url` checks `URL.canParse`, which differs from the `uri` format's RFC 3986 at the edges: it accepts a space in a path and rejects a port past 65535. `string.date` accepts whatever `Date` parses, which no format describes, so it goes to the [`predicate`](#fallback-codes) fallback.
+
 A key that isn't `string` or a single regex, like `[string <= 3]`, needs `propertyNames`, which checks every key of the object. That's only the same thing when every key must match it: undeclared keys are rejected, it's the only index signature, and every declared key matches it. Any other such key goes to the [`indexKey`](#fallback-codes) fallback.
+
+## Your own schema
+
+Configure `jsonSchema` meta to write a Type's schema yourself. It replaces the schema the Type's constraints imply, so a `narrow` it covers needs no fallback:
+
+```ts
+const Even = type("number")
+	.narrow(n => n % 2 === 0)
+	.configure({ jsonSchema: { type: "integer", multipleOf: 2 } })
+
+Even.toJsonSchema() // { $schema: "...", type: "integer", multipleOf: 2 }
+```
+
+The Type's other meta, like a description, is still written beside it. Unlike other meta, `jsonSchema` is configured on the Type alone, not on the Types it references, since it describes the whole Type.
 
 ## Fallbacks
 
-Some things a Type checks have no JSON Schema equivalent: a `Date`, a `bigint`, a morph, a `narrow`. By default, `toJsonSchema()` throws a `ToJsonSchemaError` for them:
+Some things a Type checks have no JSON Schema equivalent: a `Date`, a `bigint`, a morph, a `narrow`. By default, `toJsonSchema()` throws a `ToJsonSchemaError` for them, naming where it is and which fallback to configure:
 
 ```ts
 type({ at: "Date" }).toJsonSchema() // throws ToJsonSchemaError (code "date")
@@ -295,12 +313,19 @@ Every reason `toJsonSchema()` can throw, with the fields its handler receives be
 | `morph` | a morph | `type("string.trim")` | `out`, the output schema or `null` |
 | `patternFlags` | a regex flag other than `d`, `g` or, for draft 2020-12, `u` | `type(/^a/i)` | `pattern`, `flags` |
 | `patternIntersection` | a second regex on the same string | `type(/^a/).and(/b$/)` | `pattern` |
-| `predicate` | a `narrow` | `type("number").narrow(n => n > 0)` | `predicate` |
+| `predicate` | a `narrow`, or `object.json`'s plain-object check | `type("number").narrow(n => n > 0)` | `predicate` |
 | `proto` | an `instanceof` other than `Array` or `Date` | `type("Map")` | `proto` |
 | `symbolKey` | a symbol key or index signature | `type({ "[symbol]": "string" })` | `key` (`null` for an index), `value`, `optional` |
 | `unit` | a literal that isn't JSON | `type("undefined")` | `unit` |
 
 A `Date` is reported as `date`, never `proto`.
+
+`object.json` accepts only arrays and objects whose prototype is `Object.prototype` or `null`, which JSON Schema can't require, so its check is reported as `predicate`. Return `ctx.base` to accept any JSON object in its place:
+
+```ts
+// { $ref: "#/$defs/jsonObject1", $defs: { jsonObject1: { type: "object", ... }, ... } }
+type("object.json").toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
+```
 
 ## Configuration
 
@@ -354,6 +379,7 @@ Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express.
 - `target` must be `"draft-2020-12"` or `"draft-07"`. Anything else throws.
 - `libraryOptions` are passed to `toJsonSchema()` as options, e.g. `{ dialect: null }`.
 - Fallback handlers you configure or pass in `libraryOptions` still apply. Only the default throwing handlers are replaced.
+- `input` writes each morph's input, so it never calls a `morph` handler. It keeps defaults, and allows keys `"+": "delete"` would remove.
 
 # From JSON Schema
 
@@ -387,24 +413,56 @@ User({ name: "Ada", age: 1.5 })
 
 `true` parses to `unknown` and `false` to `never`.
 
-## Giving it a type
+## Inferring its type
 
-The schema is a value, so its shape isn't inferred. `jsonSchemaToType` returns a `Type<unknown>`. If you know the shape, cast it with `.as`:
+`jsonSchemaToType` infers the type of a schema written in the call:
 
 ```ts
 import { jsonSchemaToType } from "@ark/json-schema"
 
 const User = jsonSchemaToType({
 	type: "object",
-	properties: { name: { type: "string" } },
+	properties: {
+		name: { type: "string" },
+		tags: { type: "array", items: { type: "string" } }
+	},
 	required: ["name"]
-}).as<{ name: string }>()
+})
+
+// { name: string; tags?: string[] }
+type User = typeof User.infer
+```
+
+The inferred type never rejects a value the schema accepts, but it can be wider: constraints like `minimum` and `pattern` don't narrow it, and a `$ref` that isn't a JSON Pointer, like one to an anchor, infers `unknown`. Inference follows `$ref`s into `$defs`, `definitions` and OpenAPI `components.schemas`, including recursive ones, and composition, `if`/`then`/`else` and `not`.
+
+To check and infer a schema you declare apart from the call, wrap it in `jsonSchema`, which returns it unchanged:
+
+```ts
+import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
+
+const Address = jsonSchema({
+	type: "object",
+	properties: { city: { type: "string" }, zip: { type: "string" } },
+	required: ["city"]
+})
+
+// { city: string; zip?: string }
+type Address = typeof Address.infer
+
+// Type<{ city: string; zip?: string }>
+const T = jsonSchemaToType(Address)
+```
+
+A schema TypeScript can't see as a literal, like one parsed from a `.json` file, infers `unknown`. If you know its shape, cast it with `jsonSchema.as`:
+
+```ts
+const User = jsonSchemaToType(jsonSchema.as<{ name: string }>(userJson))
 
 // { name: string }
 const user = User.assert({ name: "Ada" })
 ```
 
-`.as` is not checked against the schema, so keep the two in sync yourself.
+`jsonSchema.as` is not checked against the schema, so keep the two in sync yourself. To write your own wrapper, `jsonSchema.validate<schema>` checks a schema and `jsonSchema.infer<schema>` infers it.
 
 ## How it reads JSON Schema
 
@@ -434,19 +492,33 @@ Tree.allows({ value: 1, children: [{ value: 2 }] }) // true
 
 ## Invalid schemas
 
-`jsonSchemaToType` throws a `ParseError` naming the keyword's JSON Pointer if a keyword's value is invalid, or if it can't read the keyword exactly, like `unevaluatedProperties` or a `$ref` to another document:
+A schema written in the call, or in `jsonSchema`, is checked as you write it:
 
 ```ts
-// ParseError: #/minLength must be a non-negative integer (was -1)
+// TypeScript: minLength must be a non-negative integer (was -1)
 jsonSchemaToType({ type: "string", minLength: -1 })
 
+// TypeScript: unevaluatedProperties isn't supported by jsonSchemaToType
+jsonSchemaToType({ type: "object", unevaluatedProperties: false })
+```
+
+`jsonSchemaToType` throws a `ParseError` naming the keyword's JSON Pointer for an invalid keyword TypeScript can't check, like a `pattern`, or one it can't read exactly, like a `$ref` to another document:
+
+```ts
 // ParseError: #/pattern must be a valid pattern (was "[")
 jsonSchemaToType({ type: "string", pattern: "[" })
+
+// ParseError: #/$ref must reference a schema in its own document (was https://example.com/user.json)
+jsonSchemaToType({ $ref: "https://example.com/user.json" })
 ```
+
+Of the keywords it can't read, `$dynamicRef`, `$recursiveRef`, `unevaluatedItems`, `unevaluatedProperties` and a draft-04 boolean `exclusiveMinimum` or `exclusiveMaximum` are type errors too.
+
+One check is deliberately stricter than JSON Schema: a `required` key a schema's own `properties` don't declare is a type error where nothing else could declare it. That's a schema with no `patternProperties`, composition keyword, `$ref` or dependent schema, whose `additionalProperties` is absent or `false`, reached from the root only through the `properties`, `additionalProperties`, `items` or `prefixItems` of schemas like it. JSON Schema reads the key as required with any value, but it's usually a typo.
 
 ## Typing a schema
 
-A schema written inline in the call is checked against the `JsonSchema` type. To check one you declare separately, use `JsonSchema` from `arktype`:
+To check a schema you declare separately without inferring it, use `JsonSchema` from `arktype`:
 
 ```ts
 import type { JsonSchema } from "arktype"
@@ -502,7 +574,7 @@ Every keyword in a schema applies, and a type's keywords constrain only that typ
 
 A keyword with an invalid value throws, like `#/minLength must be a non-negative integer (was -1)`. A keyword JSON Schema doesn't define is ignored.
 
-`jsonSchemaToType`'s parameter is typed with arktype's `JsonSchema`, which doesn't include every keyword below, like `if` or `dependentRequired`. Those are type errors in a schema written inline, but read like any other in a schema loaded at runtime or passed to ArkSets.
+`jsonSchemaToType` checks a schema written in the call as you write it: an invalid keyword value is a type error, as is each keyword below that throws, except a `$ref` to another document. See [Invalid schemas](https://arktype.io/docs/json-schema/from-json-schema#invalid-schemas).
 
 ## Core
 
@@ -511,13 +583,14 @@ A keyword with an invalid value throws, like `#/minLength must be a non-negative
 | `true`, `false` | supported | `unknown` and `never` |
 | `type` | supported | a name or an array of names. `"object"` excludes arrays |
 | `const`, `enum` | supported | objects and arrays are compared by value |
-| `$ref` | supported | a JSON Pointer into the document, like `#/$defs/Node`, including recursive refs |
-| `$ref` to another document, an anchor or in a `$id` | **throws** | only refs into the same document are resolved |
+| `$ref` | supported | `#`, a JSON Pointer like `#/$defs/Node`, an anchor or an embedded `$id`, including recursive refs |
+| `$ref` to another document | **throws** | only refs into the same document are resolved |
 | `$defs`, `definitions` | supported | read where a `$ref` points to them |
 | `$dynamicRef`, `$recursiveRef` | **throws** | |
 | `title`, `description`, `default`, `examples`, `deprecated` | annotation | `default` is not applied |
 | `$schema` | annotation | draft-07 or earlier ignores the keywords beside a `$ref`, as those drafts do |
-| `$id`, `$anchor`, `$comment`, `readOnly`, `writeOnly` | **ignored** | |
+| `$id`, `$anchor`, `$dynamicAnchor` | supported | identify a schema a `$ref` resolves to. Draft-04 reads `id` |
+| `$comment`, `readOnly`, `writeOnly` | **ignored** | |
 | `contentEncoding`, `contentMediaType` | **ignored** | annotations in 2020-12 |
 | `nullable` (OpenAPI 3.0) | **ignored** | write `type: ["string", "null"]` instead |
 
@@ -541,7 +614,7 @@ const T = jsonSchemaToType({
 })
 
 T.allows("a") // true
-// ArkErrors: must be not 0 (was 0)
+// ArkErrors: must be other than 0 (was 0)
 T(0)
 ```
 

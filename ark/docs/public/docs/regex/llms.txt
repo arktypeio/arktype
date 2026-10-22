@@ -17,8 +17,8 @@ const ok = regex("^ok$", "i")
 // }>
 
 const semver = regex("^(\\d+)\\.(\\d+)\\.(\\d+)$")
-// const semver: Regex<`${number}.${number}.${number}`, {
-//     captures: [`${number}`, `${number}`, `${number}`];
+// const semver: Regex<`${string}.${string}.${string}`, {
+//     captures: [string, string, string];
 // }>
 ```
 
@@ -153,12 +153,12 @@ Repeated digits become `` `${number}` ``, plus `""` if they can repeat zero time
 
 ```ts
 const version = regex("^(\\d+)\\.(\\d+)$")
-// const version: Regex<`${number}.${number}`, {
-//     captures: [`${number}`, `${number}`];
+// const version: Regex<`${string}.${string}`, {
+//     captures: [string, string];
 // }>
 
 const digits = regex("^\\d*$")
-// const digits: Regex<`${number}` | "", {}>
+// const digits: Regex<string, {}>
 ```
 
 ## Character sets
@@ -184,7 +184,7 @@ Write a regex escape like `\d` or `\.` with two backslashes in a JS string, and 
 
 ```ts
 const price = regex("^\\$\\d+\\.\\d{2}$")
-// const price: Regex<`$${number}.${number}`, {}>
+// const price: Regex<`$${string}.${number}`, {}>
 
 const tab = regex("^a\tb$")
 // const tab: Regex<"a\tb", {}>
@@ -233,9 +233,9 @@ const unit = regex("^(?:(?<px>\\d+)px|(?<em>\\d+)em)$")
 type Names = typeof unit.inferNamedCaptures
 // type Names = {
 //     px: undefined;
-//     em: `${number}`;
+//     em: string;
 // } | {
-//     px: `${number}`;
+//     px: string;
 //     em: undefined;
 // }
 ```
@@ -461,6 +461,7 @@ const version = regex("^(\\d+)\\.(\\d+)$")
 const tag = regex("^v(\\d+)$")
 
 majorMinor(version)
+// TypeScript: Type '`${string}.${string}`' is not assignable to type '`${number}.${number}`'.
 
 majorMinor(tag) // Regex<`v${number}`, ...> is not assignable to Regex<`${number}.${number}`>
 ```
@@ -473,7 +474,7 @@ Infers the pattern of an expression without creating one. An optional second arg
 import { regex } from "arkregex"
 
 type Version = regex.infer<"^(\\d+)\\.(\\d+)$">
-// type Version = `${number}.${number}`
+// type Version = `${string}.${string}`
 
 type Ok = regex.infer<"^ok$", "i">
 // type Ok = "OK" | "Ok" | "oK" | "ok"
@@ -530,7 +531,7 @@ With no type arguments, `regex.as` returns `Regex<string>`.
 import { regex, type } from "arktype"
 
 const Semver = type("/^(\\d+)\\.(\\d+)\\.(\\d+)$/")
-// const Semver: Type<`${number}.${number}.${number}`, {}>
+// const Semver: Type<`${string}.${string}.${string}`, {}>
 ```
 
 Like `new RegExp()`, a regex literal matches anywhere in a string unless you anchor it with `^` and `$`, and its type is padded to match:
@@ -566,7 +567,7 @@ const Package = type({
 type Package = typeof Package.infer
 // type Package = {
 //     name: string;
-//     version: `${number}.${number}.${number}`;
+//     version: `${string}.${string}.${string}`;
 // }
 ```
 
@@ -614,14 +615,10 @@ const abc = regex("^[abc]$")
 
 An inferred type is meant to include every string the expression matches. These currently don't:
 
-- `\d` next to an unanchored start or end of a pattern, or followed by `.` or `\w` at the end of a group, infers only `` `${number}` ``. `regex("\\d+")` and ArkType's `type("/\\d+/")` both infer `` `${number}` ``, but match `"abc1"`.
-- `\s` infers `" " | "\n" | "\t"`, but also matches `"\r"`, `"\f"`, `"\v"` and Unicode spaces.
+- `\d` next to an unanchored start or end of a pattern, or followed by `.` or `\w` at the end of a group, infers only `` `${number}` ``. `regex("\\d")` and ArkType's `type("/\\d/")` both infer `` `${number}` ``, but match `"abc1"`.
+- A bounded run of more than 308 digits, like `\d{309}`, infers `` `${number}` ``, which can't hold a number that large. An unbounded run like `\d+` infers `string`.
 - The `i` flag isn't applied to character sets, and a backreference repeats its group's exact case: `regex("^[ab]$", "i")` infers `"a" | "b"` but matches `"A"`, and `regex("^(a)\\1$", "i")` infers `"aa" | "AA"` but matches `"aA"`.
-- The `m` flag doesn't affect `^` and `$`: `regex("^abc$", "m")` infers `"abc"`, but matches `"x\nabc"`.
-- `"[\\b]"` infers `""`, but matches a backspace character.
-- A capture inside a lookaround isn't counted, so later captures get the wrong index.
 - The `v` flag's nested classes and set operations, like `[[a-z]--[aeiou]]`, aren't parsed.
-- A character set containing an escape that's an error elsewhere, like `"[\\/]"` or `"[\\n]"`, infers the error message as its pattern instead of reporting it.
 
 `.test()` narrows its input in both branches, so the `false` branch removes strings that didn't match whenever the inferred type was widened:
 
