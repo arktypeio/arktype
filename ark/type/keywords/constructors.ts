@@ -39,10 +39,10 @@ export const prototypeDefinitions = {
 	FormData: arkFormData
 }
 
-export const arkPrototypes: arkPrototypes.module = keywordModule(
-	prototypeDefinitions,
-	{ name: "constructors" }
-) as never
+export const arkPrototypes: arkPrototypes.module =
+	/* @__PURE__ */ keywordModule(prototypeDefinitions, {
+		name: "constructors"
+	}) as never
 
 export declare namespace arkPrototypes {
 	export type module = Module<submodule>

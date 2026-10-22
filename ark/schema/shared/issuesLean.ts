@@ -189,9 +189,9 @@ export const problemOf = (issue: ArkIssue): string =>
 		(problems[issue.code] ?? "is invalid")
 	:	"must be " + issue.expected)
 
+// an undeclared key's site says what's expected
 const problems: { [code in ArkErrorCode]?: string } = {
-	required: "is missing",
-	undeclared: "must be removed"
+	required: "is missing"
 }
 
 export class TraversalError extends Error {

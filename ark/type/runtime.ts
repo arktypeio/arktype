@@ -182,8 +182,9 @@ export class Validator {
 		return this.assert(input)
 	}
 
+	// a build without the expression member has none to print
 	toString(): string {
-		return `Type<${this.expression}>`
+		return this.expression ? `Type<${this.expression}>` : "Type"
 	}
 }
 

@@ -714,7 +714,7 @@ const constRoot = (value: unknown): BaseRoot =>
 
 // one predicate per keyword and subschemas, so equal reads relate, kept only
 // while a node holds it
-const predicatesByKey = new WeakCache<Predicate>()
+const predicatesByKey = /* @__PURE__ */ new WeakCache<Predicate>()
 
 const opaque = (
 	key: unknown[],
