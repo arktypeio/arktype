@@ -1,6 +1,7 @@
 import {
 	$ark,
 	hasArkKind,
+	writeMissingImportMessage,
 	writePrecompiledUnits,
 	type BaseRoot,
 	type ErrorDetail,
@@ -18,6 +19,7 @@ import {
 	includes,
 	InternalArktypeError,
 	ParseError,
+	printable,
 	registeredNameOf,
 	throwError,
 	throwParseError
@@ -2042,7 +2044,8 @@ export class Precompiler {
 		)
 	}
 
-	// configured errors and mutatesInput must match the build's
+	// errors and mutatesInput a Scope configures must match the build's, as
+	// configure()'s are checked at the call
 	private configuredReasonsOf(site: Site): string[] {
 		const value = createdBy(site)
 		if (this.mode !== "standalone" || !value) return []
@@ -2051,13 +2054,20 @@ export class Precompiler {
 		const builtErrors = this.errors ?? "all"
 		const errors = roots
 			.map(root => root.$.config.errors)
-			.find(errors => errors !== undefined && errors !== builtErrors)
+			.find(
+				errors =>
+					errors !== undefined &&
+					errors !== builtErrors &&
+					errors !== $ark.config.errors
+			)
 		const builtMutatesInput = this.mutatesInput ?? false
 		const mutatesInput = roots
 			.map(root => root.$.config.mutatesInput)
 			.find(
 				mutatesInput =>
-					mutatesInput !== undefined && mutatesInput !== builtMutatesInput
+					mutatesInput !== undefined &&
+					mutatesInput !== builtMutatesInput &&
+					mutatesInput !== $ark.config.mutatesInput
 			)
 		const result: string[] = []
 		if (errors) result.push(writeErrorsMismatchMessage(errors, builtErrors))
@@ -3101,6 +3111,68 @@ export class Precompiler {
 			if (o instanceof ModuleNamespace) {
 				result.push(
 					"a namespace import used as a value is not in the static subset: import what it exports by name, or declare an object it exports in the call"
+				)
+			} else if (this.mode === "standalone")
+				result.push(...this.checkConfiguredOptions(module, calls[i]))
+		}
+		return result
+	}
+
+	// errors and mutatesInput configure() sets, reported once at the call
+	// rather than at each site it configures
+	private checkConfiguredOptions(
+		module: SourceModule,
+		call: CallExpression
+	): Diagnostic[] {
+		const result: Diagnostic[] = []
+		const built = {
+			errors: this.errors ?? "all",
+			mutatesInput: this.mutatesInput ?? false
+		}
+		const imported = this.importClosureOf(module.id).flatMap(id => {
+			const reached = this.graph.moduleOf(id)
+			return reached instanceof SourceModule ?
+					reached.program.body.flatMap(statement =>
+						statement.type === "ImportDeclaration" ?
+							[arktypeEntryOf(statement.source.value)]
+						:	[]
+					)
+				:	[]
+		})
+		for (const option of ["errors", "mutatesInput"] as const) {
+			const configured = $ark.config[option]
+			if (configured === undefined) continue
+			if (configured !== built[option]) {
+				result.push(
+					this.diagnostic(
+						module,
+						call,
+						"R3",
+						option === "errors" ?
+							writeErrorsMismatchMessage(configured as never, built.errors)
+						:	writeMutatesInputMismatchMessage(
+								configured as never,
+								built.mutatesInput
+							),
+						[],
+						`Build with ${option}: ${printable(configured)} too, as a standalone validator returns what arktype does as the program configures it.`
+					)
+				)
+			}
+			if (
+				configured !== "all" &&
+				configured !== false &&
+				!imported.includes(`arktype/${option}`)
+			) {
+				result.push(
+					this.diagnostic(
+						module,
+						call,
+						"R3",
+						writeMissingImportMessage(option, printable(configured)),
+						[],
+						`Import "arktype/${option}" in the config module, as arktype throws creating a Type without it.`
+					)
 				)
 			}
 			if (!isPlainContainer(o)) return

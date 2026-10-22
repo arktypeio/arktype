@@ -109,9 +109,24 @@ contextualize(() => {
 		attest(
 			check([], { cwd: fromHere("erroring"), config: "config.ts" }).lines
 		).snap([
-			'main.ts:4:18  type({ a: "string" }) can\'t be precompiled yet\n  arktype is configured with errors: "first", where the build\'s errors are "all"\n  A standalone validator returns what arktype does as the program configures it. Build with the errors arktype is configured with.',
+			'config.ts:4:1  arktype is configured with errors: "first", where the build\'s errors are "all"\n  Build with errors: "first" too, as a standalone validator returns what arktype does as the program configures it.',
+			"main.ts:4:18  accepted",
 			'main.ts:6:18  scope({ U: { b: "number" } }, { errors: "none" }) can\'t be precompiled yet\n  arktype is configured with errors: "none", where the build\'s errors are "all"\n  A standalone validator returns what arktype does as the program configures it. Build with the errors arktype is configured with.',
-			"2 sites in 2 files: 0 accepted (0.0%)"
+			"2 sites in 2 files: 1 accepted (50.0%), 1 error outside a site"
+		])
+	})
+
+	it("requires the import arktype requires for a configured errors", () => {
+		attest(
+			check([], {
+				cwd: fromHere("unimported"),
+				config: "config.ts",
+				errors: "first"
+			}).lines
+		).snap([
+			'config.ts:3:1  errors: "first" requires import "arktype/errors"\n  Import "arktype/errors" in the config module, as arktype throws creating a Type without it.',
+			"main.ts:4:18  accepted",
+			"1 site in 2 files: 1 accepted (100.0%), 1 error outside a site"
 		])
 	})
 
@@ -133,9 +148,10 @@ contextualize(() => {
 		attest(
 			check([], { cwd: fromHere("mutating"), config: "config.ts" }).lines
 		).snap([
-			"main.ts:4:18  type({ a: \"string.trim\" }) can't be precompiled yet\n  arktype is configured with mutatesInput: true, where the build's mutatesInput is false\n  A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.",
+			"config.ts:4:1  arktype is configured with mutatesInput: true, where the build's mutatesInput is false\n  Build with mutatesInput: true too, as a standalone validator returns what arktype does as the program configures it.",
+			"main.ts:4:18  accepted",
 			'main.ts:6:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can\'t be precompiled yet\n  arktype is configured with mutatesInput: "always", where the build\'s mutatesInput is false\n  A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.',
-			"2 sites in 2 files: 0 accepted (0.0%)"
+			"2 sites in 2 files: 1 accepted (50.0%), 1 error outside a site"
 		])
 	})
 
