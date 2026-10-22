@@ -421,7 +421,7 @@ export type Elements = [string, number?];
 		attest({ status: cli.status, stderr: cli.stderr }).snap({
 			status: 2,
 			stderr:
-				"--declare emits the tsconfig's program and takes no other mode or files\nUsage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--preset <smallest|introspectable>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --declare [--tsconfig <file>]\n"
+				"--declare emits the tsconfig's program and takes no files or --check\nUsage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--preset <smallest|introspectable>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --emit [--declare] [--tsconfig <file>] [...the options --check takes]\n       arktype-precompile --declare [--tsconfig <file>]\n"
 		})
 	})
 

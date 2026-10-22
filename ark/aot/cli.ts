@@ -18,7 +18,7 @@ if (major < 22 || (major === 22 && minor < 12)) {
 const { check, countOf } = await import("./check.ts")
 
 const usage =
-	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--preset <smallest|introspectable>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --declare [--tsconfig <file>]"
+	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--preset <smallest|introspectable>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --emit [--declare] [--tsconfig <file>] [...the options --check takes]\n       arktype-precompile --declare [--tsconfig <file>]"
 
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
@@ -33,6 +33,7 @@ const { values, positionals } = (() => {
 				help: { type: "boolean", short: "h" },
 				check: { type: "boolean" },
 				declare: { type: "boolean" },
+				emit: { type: "boolean" },
 				"fail-under": { type: "string" },
 				preset: { type: "string" },
 				runtime: { type: "string" },
@@ -57,17 +58,16 @@ if (values.help) {
 	process.exit(0)
 }
 
-if (values.declare) {
-	if (values.check || positionals.length) {
-		fail(
-			"--declare emits the tsconfig's program and takes no other mode or files"
-		)
-	}
-	const declarations = emitDeclarations({ tsconfig: values.tsconfig })
-	for (const path in declarations.files) {
+const writeFiles = (files: Record<string, string>) => {
+	for (const path in files) {
 		mkdirSync(dirname(path), { recursive: true })
-		writeFileSync(path, declarations.files[path])
+		writeFileSync(path, files[path])
 	}
+}
+
+const declare = (): never => {
+	const declarations = emitDeclarations({ tsconfig: values.tsconfig })
+	writeFiles(declarations.files)
 	if (declarations.diagnostics) console.error(declarations.diagnostics)
 	console.log(
 		`${Object.keys(declarations.files).length} declaration files in ${relative(process.cwd(), declarations.root) || "."}, with ${countOf(declarations.shapes, "shape")} in ${sharedDeclarationFile}`
@@ -75,7 +75,20 @@ if (values.declare) {
 	process.exit(declarations.errors ? 1 : 0)
 }
 
-if (!values.check) fail("--check or --declare is required")
+if (values.declare && !values.emit) {
+	if (values.check || positionals.length)
+		fail("--declare emits the tsconfig's program and takes no files or --check")
+	declare()
+}
+
+if (values.emit && (values.check || positionals.length)) {
+	fail(
+		"--emit precompiles the tsconfig's program and takes no files or --check"
+	)
+}
+
+if (!values.check && !values.emit)
+	fail("--check, --emit or --declare is required")
 
 const runtime = values.runtime
 if (runtime !== undefined && runtime !== "arktype")
@@ -124,16 +137,35 @@ try {
 	fail((e as Error).message)
 }
 
-const report = (() => {
+const run = <result>(build: () => result): result => {
 	try {
-		return check(positionals, opts)
+		return build()
 	} catch (e) {
 		// e.g. a config module that can't be read, which the message names
 		if (!isBuildError(e)) throw e
 		console.error(e.message)
 		process.exit(1)
 	}
-})()
+}
+
+if (values.emit) {
+	const { emitPrecompiled } = await import("./emit.ts")
+	const emitted = run(() => emitPrecompiled(opts))
+	for (const warning of emitted.warnings) console.warn(warning)
+	if (emitted.errors.length) {
+		console.error(emitted.errors.join("\n"))
+		process.exit(1)
+	}
+	writeFiles(emitted.files)
+	const modules = Object.keys(emitted.files).filter(
+		path => !path.endsWith(".map")
+	)
+	console.log(`${countOf(modules.length, "module")} precompiled`)
+	if (values.declare) declare()
+	process.exit(0)
+}
+
+const report = run(() => check(positionals, opts))
 
 for (const line of report.lines) console.log(line)
 

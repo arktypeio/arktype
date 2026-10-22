@@ -317,7 +317,8 @@ const keyedModuleOf = (
 	for (const dependency of transformed?.dependencies ?? [])
 		if (!files.includes(dependency)) files.push(dependency)
 	return {
-		code: transformed?.code,
+		code:
+			transformed?.code && appendSourceMap(transformed.code, transformed.map),
 		errors: transformed?.errors ?? [],
 		warnings: transformed?.warnings ?? [],
 		files
@@ -359,12 +360,8 @@ const transformedModuleOf = (
 		}
 	}
 	return {
-		code:
-			result.map &&
-			(precompiler.inline ?
-				appendSourceMap(result.code, result.map)
-			:	result.code),
-		map: precompiler.inline ? undefined : result.map,
+		code: result.map && result.code,
+		map: result.map,
 		dependencies: [...result.dependencies, ...precompiler.ownManifests],
 		modules: result.modules,
 		unitReaders: result.unitReaders,

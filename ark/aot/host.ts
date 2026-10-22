@@ -9,7 +9,6 @@ import {
 	resolve,
 	sep
 } from "node:path"
-import type { SourceMap } from "magic-string"
 import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
 import type { PrecompilePluginOptions, RenderedDiagnostics } from "./driver.ts"
 import type { PrecompileOptions } from "./precompile.ts"
@@ -185,7 +184,7 @@ const packageRootOf = (name: string, from: string): string | undefined => {
 // a host without a channel for source maps reads one from the code
 export const appendSourceMap = (
 	code: string,
-	map: SourceMap | undefined
+	map: object | undefined
 ): string =>
 	map ?
 		`${code}\n//# sourceMappingURL=data:application/json;base64,${Buffer.from(JSON.stringify(map)).toString("base64")}`
