@@ -146,6 +146,9 @@ const parseStandardSchema = (
 
 		if (!result.issues) return result.value
 
+		// a result with issues fails, even if they're empty
+		if (result.issues.length === 0) return ctx.error({ problem: "is invalid" })
+
 		for (const issue of result.issues) {
 			ctx.error({
 				problem: uncapitalize(issue.message),
