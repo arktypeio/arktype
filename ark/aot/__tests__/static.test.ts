@@ -1531,6 +1531,34 @@ export const d = new Proxy(User, {}).or("null")`)
 			])
 		})
 
+		it("a Type a TypeScript namespace exports", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+namespace Schemas {
+	export const User = type({ name: "string" })
+	export namespace Inner {
+		export const Admin = type({ role: "string" })
+	}
+}
+namespace A.B {
+	export const T = type("string")
+}
+function f() {}
+namespace f {
+	export const T = type("number")
+}
+console.log(Schemas.User.or("null"), Schemas.User.expression)
+console.log(Schemas.Inner.Admin.or("null"), A.B.T.or("null"), f.T.or("null"))
+console.log(Schemas.User({}), Schemas.User.allows(1))`)
+			).snap([
+				"/main.ts:15:13  Schemas.User.or reads or, which a standalone validator lacks\n  the build can't tell where `Schemas.User` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:15:38  Schemas.User.expression reads expression, which a standalone validator lacks\n  the build can't tell where `Schemas.User` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:16:13  Schemas.Inner.Admin.or reads or, which a standalone validator lacks\n  the build can't tell where `Schemas.Inner.Admin` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:16:45  A.B.T.or reads or, which a standalone validator lacks\n  the build can't tell where `A.B.T` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:16:63  f.T.or reads or, which a standalone validator lacks\n  the build can't tell where `f.T` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
 		it("members validators lack, outside sites", () => {
 			attest(
 				unhinted(`import { type } from "arktype"

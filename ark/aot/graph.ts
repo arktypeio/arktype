@@ -48,6 +48,7 @@ import {
 } from "./host.ts"
 import { SourceModule } from "./module.ts"
 import {
+	declaredIds,
 	exportNameOf,
 	isTransparent,
 	isWriteTarget,
@@ -945,9 +946,14 @@ export class ModuleGraph {
 			case "param":
 				return this.paramKindOf(binding, module, kindOfKey)
 			case "function":
-				return functionKindOf(
-					kindOfKey(binding.declaration as FunctionNode, module)
+				return (
+					functionKindOf(
+						kindOfKey(binding.declaration as FunctionNode, module)
+					) | this.namespaceKindOf(binding, module, kindOfKey)
 				)
+			case "namespace":
+			case "enum":
+				return kinds.data | this.namespaceKindOf(binding, module, kindOfKey)
 			// e.g. `C` given `static T = User` or `static { this.T = User }`
 			case "class": {
 				let held = this.heldKindOf({
@@ -959,7 +965,11 @@ export class ModuleGraph {
 					if (write.type === "AssignmentExpression")
 						held |= this.transfer(write.right, module, kindOfKey)
 				}
-				return holderOf(held) | this.storedKindOf(binding, module, kindOfKey)
+				return (
+					holderOf(held) |
+					this.storedKindOf(binding, module, kindOfKey) |
+					this.namespaceKindOf(binding, module, kindOfKey)
+				)
 			}
 			case "const":
 			case "let":
@@ -996,6 +1006,39 @@ export class ModuleGraph {
 				:	this.destructuredWriteOf(write, module, kindOfKey)
 		}
 		return annotate(result, this.annotatedKindOf(binding.id, module, kindOfKey))
+	}
+
+	// e.g. `N` given `namespace N { export const User = type(...) }`, where
+	// each declaration merged under its name adds its exports
+	private namespaceKindOf(
+		binding: Binding,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits {
+		let held = 0
+		let isNamespace = false
+		for (let id of [binding.id, ...binding.writes]) {
+			while (id.parent?.type === "TSQualifiedName") id = id.parent
+			const declaration = id.parent
+			if (declaration?.type !== "TSModuleDeclaration") continue
+			isNamespace = true
+			// e.g. `T` in `namespace A.B { export const T = ... }`, read off A
+			walk(declaration, node => {
+				if (node.type === "ExportNamedDeclaration" && node.declaration) {
+					for (const exported of declaredIds(node.declaration)) {
+						const inner = module.scopes.bindingsById.get(exported)
+						if (inner) held |= kindOfKey(inner, module)
+					}
+				}
+				return node === declaration || node.type === "TSModuleBlock"
+			})
+		}
+		if (!isNamespace) return 0
+		for (const write of this.writesThrough(binding, module)) {
+			if (write.type === "AssignmentExpression")
+				held |= this.transfer(write.right, module, kindOfKey)
+		}
+		return holderOf(held)
 	}
 
 	// e.g. `list.push(A)`, `o.User = A` or `Object.assign(o, { A })`
