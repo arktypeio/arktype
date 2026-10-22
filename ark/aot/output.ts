@@ -227,7 +227,12 @@ export const firstStatementOf = (program: Program): Program["body"][number] =>
 	)!
 
 // entries whose exports only sites read, so a standalone build drops them
-const prunedSpecifiers: unknown[] = ["arktype", "arktype/codecs"]
+const prunedSpecifiers: unknown[] = [
+	"arktype",
+	"arktype/codecs",
+	"@ark/type",
+	"@ark/type/codecs"
+]
 
 // an import only folded sites read becomes e.g. `import "arktype"`
 export const pruneArktypeImports = (

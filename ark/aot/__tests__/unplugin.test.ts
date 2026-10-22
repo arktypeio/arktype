@@ -1558,6 +1558,39 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 		)
 	})
 
+	it("resolves @ark/type, arktype's other name, to the runtime", async () => {
+		const root = writeFixture(
+			{
+				"config.ts": `import { configure } from "@ark/type/config"
+
+configure({ onUndeclaredKey: "delete" })
+`,
+				"main.ts": `import "./config.ts"
+import { type } from "@ark/type"
+
+const T = type({ name: "string" })
+const out = T({ name: 1 })
+console.log(out instanceof type.errors, T({ name: "", age: 1 }))
+`
+			},
+			// where arktype, @ark/aot's peer, resolves as an install has it
+			fromHere("temp", "arkType")
+		)
+		rmSync(join(root, "node_modules"), { recursive: true, force: true })
+		mkdirSync(join(root, "node_modules", "@ark"), { recursive: true })
+		symlinkSync(
+			fromHere("..", "..", "type"),
+			join(root, "node_modules", "@ark", "type")
+		)
+		const plain = runPlain(root)
+		attest(plain).equals("true { name: '' }\n")
+		for (const bundle of Object.values(bundlers)) {
+			const code = await bundle({ cwd: root, config: "config.ts" }, root)
+			attest(run(code)).equals(plain)
+			attest(code.includes(parserMessage)).equals(false)
+		}
+	})
+
 	it("undetailed bundles", async () => {
 		const reads = join(undetailed, "reads")
 		const message = writeVariantImportMessage(

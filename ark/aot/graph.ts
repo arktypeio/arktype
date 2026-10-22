@@ -82,6 +82,8 @@ const arktypeNamespacesBySpecifier: Record<string, object> =
 			"arktype/codecs": arktypeCodecs,
 			"arktype/config": arktypeConfig,
 			"@ark/type": arktype,
+			"@ark/type/codecs": arktypeCodecs,
+			"@ark/type/config": arktypeConfig,
 			arkregex,
 			"@ark/regex": arkregex
 		},
@@ -3055,7 +3057,8 @@ const readsArguments = (fn: FunctionNode): boolean => {
 	return result
 }
 
-export const arkPackageSpecifier = /^(arktype|@ark\/schema|@ark\/util)(?:\/|$)/
+export const arkPackageSpecifier =
+	/^(arktype|@ark\/type|@ark\/schema|@ark\/util)(?:\/|$)/
 
 // only a type-only import or export skips running its module
 export const isTypeOnly = (statement: Node): boolean =>

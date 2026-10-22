@@ -90,6 +90,7 @@ import {
 import {
 	allowUnsafeHint,
 	arkPackageName,
+	arktypeEntryOf,
 	dependencyOf,
 	runtimeVariantOf,
 	transformedId,
@@ -748,7 +749,7 @@ export class Precompiler {
 					node.source
 				:	null
 			const name = specifier && arkPackageSpecifier.exec(specifier.value)?.[1]
-			if (!name) continue
+			if (!name || !(name in this.copiesByPackage)) continue
 			for (const report of this.readCopies(name as ArkPackage, id)) {
 				diagnostics.push(
 					this.diagnostic(
@@ -1033,7 +1034,7 @@ export class Precompiler {
 			(statement): statement is ImportDeclaration =>
 				statement.type === "ImportDeclaration" &&
 				statement.importKind !== "type" &&
-				(statement.source.value === "arktype" ||
+				(arktypeEntryOf(statement.source.value) === "arktype" ||
 					statement.specifiers.some(specifier => {
 						const binding = module.scopes.bindingsById.get(specifier.local)
 						return !!binding && this.definesArk(binding, module)
@@ -1487,7 +1488,7 @@ export class Precompiler {
 		for (const statement of module.program.body) {
 			if (
 				statement.type !== "ImportDeclaration" ||
-				statement.source.value !== "arktype" ||
+				arktypeEntryOf(statement.source.value) !== "arktype" ||
 				statement.importKind === "type"
 			)
 				continue
@@ -3853,7 +3854,10 @@ export class Precompiler {
 	): boolean {
 		if (binding?.kind !== "import") return false
 		const target = this.graph.importOf(binding, module)
-		return target.kind === "arktypeNamespace" && target.specifier === "arktype"
+		return (
+			target.kind === "arktypeNamespace" &&
+			arktypeEntryOf(target.specifier) === "arktype"
+		)
 	}
 
 	// what may throw at runtime fails unless allowUnsafe is set
