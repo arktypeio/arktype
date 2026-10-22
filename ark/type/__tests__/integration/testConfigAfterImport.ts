@@ -35,6 +35,23 @@ cases({
 		strictEqual(type.keywords.string.email.description, "a configured email")
 	},
 	configureAfterType: () => {
-		throws(() => configure({}), { message: configureAfterTypeMessage })
+		throws(() => configure({ numberAllowsInfinity: false }), {
+			message: configureAfterTypeMessage
+		})
+		throws(() => configure({ actual: () => "" }), {
+			message: configureAfterTypeMessage
+		})
+	},
+	reconfigureUnchanged: () => {
+		// as when a test runner resets its modules and the config file runs again
+		configure({
+			numberAllowsInfinity: true,
+			dateAllowsInvalid: true,
+			keywords: {
+				"string.email": "a configured email"
+			}
+		})
+		configure({})
+		strictEqual(type("number").allows(Number.POSITIVE_INFINITY), true)
 	}
 })
