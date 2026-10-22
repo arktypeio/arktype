@@ -250,8 +250,6 @@ export interface StandaloneOptions {
 	checks?: Checks | undefined
 	mutatesInput?: MutatesInput | undefined
 	optimize?: Optimization | undefined
-	// count a plain object's keys to reject undeclared ones
-	countsKeys?: boolean | undefined
 	// declare functions, so an import cycle can call them early
 	hoisted?: boolean | undefined
 	// export as values what a site would call a function only to read
@@ -270,7 +268,6 @@ interface Baking {
 	compilesValidators: boolean
 	checksTypes: boolean
 	mutatesInput: MutatesInput | undefined
-	countsKeys: boolean
 	hoisted: boolean
 	shortest: boolean
 	flattens: boolean
@@ -453,7 +450,6 @@ const writeArtifact = (
 		compilesValidators: Object.keys(exports).length === 1,
 		checksTypes: opts.checks !== "none",
 		mutatesInput: opts.mutatesInput,
-		countsKeys: opts.countsKeys === true,
 		hoisted: opts.hoisted === true,
 		shortest: opts.optimize === "size",
 		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular
@@ -1118,8 +1114,7 @@ class StandaloneArtifact {
 			: this.baking.detailsErrors && this.baking.shortest ? 2
 			: 0) +
 			3 * +this.baking.firstIssue +
-			6 * +this.baking.countsKeys +
-			12 * +this.baking.shortest
+			6 * +this.baking.shortest
 		)
 	}
 

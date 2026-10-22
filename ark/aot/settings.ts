@@ -103,7 +103,6 @@ const standaloneOptions = [
 	"members",
 	"freeze",
 	"lazy",
-	"countsKeys",
 	"shadow",
 	"checks",
 	"errors",

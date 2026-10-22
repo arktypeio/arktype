@@ -20,7 +20,6 @@
 					],
 					"description": "a module path or false"
 				},
-				"countsKeys": { "type": "boolean" },
 				"errors": { "enum": ["all", "first", "none"] },
 				"freeze": { "type": "boolean" },
 				"lazy": { "type": "boolean" },

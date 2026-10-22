@@ -1763,11 +1763,6 @@ console.log(values.map(v => (v as any).from))`,
 					writeArktypeRuntimeOptionMessage("freeze")
 				],
 				[
-					"countsKeys with runtime arktype",
-					{ runtime: "arktype", countsKeys: true },
-					writeArktypeRuntimeOptionMessage("countsKeys")
-				],
-				[
 					"non-boolean shadow",
 					{ shadow: "true" as never },
 					'shadow must be boolean (was "true")'

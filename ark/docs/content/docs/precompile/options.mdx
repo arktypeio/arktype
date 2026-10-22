@@ -15,7 +15,7 @@ precompile.vite({
 })
 ```
 
-`errors`, `mutatesInput`, `members`, `optimize`, `optimizeErrors`, `freeze`, `lazy`, `checks`, `countsKeys` and `shadow` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
+`errors`, `mutatesInput`, `members`, `optimize`, `optimizeErrors`, `freeze`, `lazy`, `checks` and `shadow` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
 
 ## Presets
 
@@ -32,7 +32,7 @@ precompile.vite({ preset: "smallest", members: { meta: false } })
 | `"smallest"`       | `optimize: "size"`, `lazy: false`                  | speed, runtime islands, creating validators as first read |
 | `"introspectable"` | each introspection member in [`members`](#members) | size                                                      |
 
-No preset changes what a program observes: none sets `errors`, `mutatesInput` or `countsKeys`, or drops a member, since the build can't see a member read by code it doesn't build, like a library reading `~standard`. With `runtime: "arktype"`, a preset sets nothing.
+No preset changes what a program observes: none sets `errors` or `mutatesInput`, or drops a member, since the build can't see a member read by code it doesn't build, like a library reading `~standard`. With `runtime: "arktype"`, a preset sets nothing.
 
 With Turbopack, `"smallest"` needs the `@ark/schema/runtime` alias [`optimize: "size"`](#optimize-and-optimizeerrors) does.
 
@@ -118,12 +118,6 @@ precompile.vite({
 `optimizeErrors` writes errors the same way, and is `optimize` unless set. Errors written for size are the smallest a build can return, and reading their issues is slower, but they have the same `count`, `issues`, `summary`, `throw()`, `toJSON()` and `toString()` as other errors, and `instanceof type.errors` recognizes them.
 
 The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for them, or `@ark/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](#errors). With Turbopack, alias `@ark/schema/runtime` to that entry as `errors: "none"` does.
-
-### countsKeys
-
-`countsKeys: true` checks a Type that rejects undeclared keys by counting an object's own enumerable keys, as most validators do, instead of checking each key against the declared ones. It counts only on a plain object, meaning one whose prototype is `Object.prototype`. If the count differs from the number of declared keys the object holds, or the object isn't plain, the validator checks each key as before. Errors are unaffected: a validation that fails reports each undeclared key. Index signatures and tuples are still checked key by key. An `optimize: "size"` build with `errors: "none"` counts as any build does; with other `errors`, it counts only in some Types, such as one holding a narrow or morph.
-
-What it gives up: an undeclared key can pass in place of a declared key that a plain object holds as a non-enumerable property or inherits from `Object.prototype`. For example, `{ "+": "reject", toString: "Function" }` passes `{ extra: 1 }`.
 
 ### freeze
 

@@ -200,8 +200,6 @@ export interface PrecompileOptions extends InterpreterOptions {
 	optimize?: Optimization | undefined
 	/** "size" writes errors smaller and slower to read, defaulting to optimize */
 	optimizeErrors?: Optimization | undefined
-	/** rejects undeclared keys by counting a plain object's own enumerable keys */
-	countsKeys?: boolean | undefined
 	/** also create each site with arktype and throw where they diverge */
 	shadow?: boolean | undefined
 	/** warn rather than fail where the output may throw at runtime */
@@ -462,8 +460,7 @@ export class Precompiler {
 			lazy: opts.lazy !== false,
 			checks,
 			mutatesInput: this.mutatesInput,
-			optimize: opts.optimize ?? "speed",
-			countsKeys: opts.countsKeys
+			optimize: opts.optimize ?? "speed"
 		}
 		this.lackedMembers = new Set(
 			defaultMembers.flatMap(member =>

@@ -25,7 +25,6 @@ const settings = {
 	"mutatesInput?": "boolean | 'always'",
 	"optimize?": optimization,
 	"optimizeErrors?": optimization,
-	"countsKeys?": flag,
 	"freeze?": flag,
 	"lazy?": flag,
 	"checks?": "'types' | 'helpers' | 'none'",
