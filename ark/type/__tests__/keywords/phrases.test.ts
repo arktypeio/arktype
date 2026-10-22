@@ -176,7 +176,7 @@ contextualize(() => {
 			type("string.email")
 				.describe("a mailbox")
 				.internal.select({ kind: "pattern", method: "assertFind" }).meta
-		).snap({ description: "a mailbox" })
+		).snap({ description: "a mailbox", format: "email" })
 		attest(type("string.email").describe("a mailbox")("x").toString()).snap(
 			'must be a mailbox (was "x")'
 		)
