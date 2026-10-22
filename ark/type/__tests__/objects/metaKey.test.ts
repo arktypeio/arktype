@@ -43,6 +43,16 @@ contextualize(() => {
 		)
 	})
 
+	it("merge takes the merged-in object's, as a spread does", () => {
+		const A = type({ "@": "an A", a: "string" })
+		const merged = A.merge({ "@": "a B", b: "number" })
+		attest(merged.description).snap("a B")
+		attest(merged.json).equals(type({ "...": A, "@": "a B", b: "number" }).json)
+		attest(A.merge({ b: "number" }).description).snap(
+			"{ a: a string, b: a number }"
+		)
+	})
+
 	it("escaped", () => {
 		const T = type({ "\\@": "string" })
 		attest<{ "@": string }>(T.infer)

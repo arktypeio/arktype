@@ -4,6 +4,7 @@ import {
 	flatMorph,
 	includes,
 	inferred,
+	isEmptyObject,
 	omit,
 	throwInternalError,
 	throwParseError,
@@ -260,14 +261,19 @@ export abstract class BaseRoot<
 				throwParseError(writeInvalidMergeOperandMessage(branch.expression))
 		}
 		return this.rootOfBranches(
-			rNode.branches.flatMap(branch =>
-				this.applyStructural("merge", [
+			rNode.branches.flatMap(branch => {
+				const merged = this.applyStructural("merge", [
 					structureOf(branch) ??
 						throwParseError(
 							writeNonStructuralOperandMessage("merge", branch.expression)
 						)
 				])
-			)
+				// the merged-in object's settings are the result's, as a spread's
+				// are, and its meta, like "@", is one
+				return isEmptyObject(branch.meta) ? merged : (
+						merged.map(result => result.configure(branch.meta))
+					)
+			})
 		)
 	}
 
