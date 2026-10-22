@@ -453,18 +453,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		const otherwise =
 			js.traversalKind === "Allows" ? "false"
 			: js.traversalKind === "Transform" ? "data"
-			: js.unionFails ? this.compileMiss(js, value)
-			: `${js.ref(this)}.applyMiss(data, ctx, ${value})`
+			: (js.missFails?.(this, value) ??
+				`${js.ref(this)}.applyMiss(data, ctx, ${value})`)
 		js.switch(condition, written, otherwise)
-	}
-
-	// a standalone build's miss, whose union issue holds no branch errors
-	private compileMiss(js: NodeCompiler, value: string): string {
-		if (this.missListsBranches) return js.unionFails!(this)
-		const reads = compileReadsPath(js, this.discriminant!.path)
-		const path = this.missPath
-		const fails = js.unionFails!(this, path.length ? value : "data", path)
-		return reads ? `${reads} ? ${fails} : ${js.unionFails!(this)}` : fails
 	}
 
 	private compileDefault(
@@ -579,23 +570,6 @@ const readsPath = (path: array<PropertyKey>, data: unknown): boolean => {
 		parent = parent[k]
 	}
 	return true
-}
-
-const compileReadsPath = (
-	js: NodeCompiler,
-	path: array<PropertyKey>
-): string | undefined => {
-	let parent = "data"
-	const conditions: string[] = []
-	for (const k of path) {
-		conditions.push(
-			typeof k === "number" ?
-				`Array.isArray(${parent})`
-			:	`Object(${parent}) === ${parent}`
-		)
-		parent += js.prop(k)
-	}
-	return conditions.length ? conditions.join(" && ") : undefined
 }
 
 const caseKeyOf = (discriminant: Discriminant, value: unknown): string => {

@@ -1,6 +1,7 @@
 import { fromHere } from "@ark/fs"
 import {
 	ArkErrors,
+	describeBranches,
 	hasArkKind,
 	schemaScope,
 	suppliedText,
@@ -33,6 +34,7 @@ import {
 import { DynamicValue } from "@ark/aot/internal/dynamic.ts"
 import {
 	keptIssuesOf,
+	keptOf,
 	pathKeyOf,
 	thrownErrorsOf,
 	type KeptIssue
@@ -56,6 +58,9 @@ import {
 	traverse
 } from "./contract.ts"
 import { issuesFrom, tempDir } from "./utils.ts"
+
+// compared with errors "all", as errors "first" reports one of arktype's issues
+const comparesExpecteds = detailsErrors && !firstIssue
 
 // compares a Type with its precompiled validators on each call's outcome
 
@@ -442,7 +447,10 @@ const isEqual = (l: unknown, r: unknown, read = false): boolean => {
 }
 
 // a copied error, e.g. a union branch's, has no source to read
-const suppliedTextOf = (error: ArkError, k: "message" | "problem") => {
+const suppliedTextOf = (
+	error: ArkError,
+	k: "expected" | "message" | "problem"
+) => {
 	try {
 		return suppliedText(error, k)
 	} catch {
@@ -502,13 +510,76 @@ const textsOf = (errors: ArkErrors, grouped = true) => {
 		.sort((l, r) => (l.at < r.at ? -1 : 1))
 }
 
+// a union whose branches each fail at its path by their basis is described
+// by those bases, as a validator's union issue is
+const basisCodes = new Set<string>(["domain", "proto"])
+
+// what each issue expects, at its path and code, where a validator's issue is
+// written alike: not a missing key, an issue a callback raised without an
+// expected, nor a union described by its branches' errors, as a validator's
+// issue holds neither the callback nor the errors
+const expectedsOf = (errors: ArkErrors) =>
+	keptOf(errors)
+		.map(issue => ({
+			at: `${pathKeyOf(issue.path)}\0${issue.code}`,
+			expected:
+				!(errors instanceof ArkErrors) ? (issue.expected ?? null)
+				: issue.code === "required" || raisesUnexpected(issue as ArkError) ?
+					null
+				: issue.code === "union" ? unionExpectedOf(issue as ArkError<"union">)
+				: issue.expected
+		}))
+		.sort((l, r) => (l.at < r.at ? -1 : 1))
+
+// a check's error holds its description, which a raised one doesn't
+const raisesUnexpected = (error: ArkError) =>
+	error.code !== "union" &&
+	error.description === undefined &&
+	suppliedTextOf(error, "expected") === undefined
+
+const unionExpectedOf = (error: ArkError<"union">): string | null => {
+	const meta: Record<string, unknown> = error.meta ?? {}
+	if (
+		(meta.description !== undefined && meta.keyword === undefined) ||
+		meta.expected !== undefined
+	)
+		return error.expected
+	if (
+		!error.errors.length ||
+		!error.errors.every(
+			e => e.propString === error.propString && basisCodes.has(e.code)
+		)
+	)
+		return null
+	return describeBranches([...new Set(error.errors.map(e => e.expected))])
+}
+
+// a validator's expected where arktype's is written from what it doesn't hold
+const maskExpecteds = (arktype: unknown, precompiled: unknown): unknown => {
+	if (!hasDomain(arktype, "object") || !hasDomain(precompiled, "object"))
+		return precompiled
+	const expecteds = (arktype as { expecteds?: { expected: unknown }[] })
+		.expecteds
+	const compared = (precompiled as { expecteds?: { expected: unknown }[] })
+		.expecteds
+	if (!expecteds || !compared || expecteds.length !== compared.length)
+		return precompiled
+	return {
+		...precompiled,
+		expecteds: compared.map((entry, i) =>
+			expecteds[i].expected === null ? { ...entry, expected: null } : entry
+		)
+	}
+}
+
 const observe = (run: () => unknown, input: unknown): unknown => {
 	try {
 		const result: any = run()
 		return isErrors(result) ?
 				{
 					issues: keptIssuesOf(result, !firstIssue),
-					...(detailsErrors && { texts: textsOf(result, !firstIssue) })
+					...(detailsErrors && { texts: textsOf(result, !firstIssue) }),
+					...(comparesExpecteds && { expecteds: expectedsOf(result) })
 				}
 			:	{ out: result, isInput: result === input }
 	} catch (e) {
@@ -521,7 +592,8 @@ const observe = (run: () => unknown, input: unknown): unknown => {
 				{
 					threw: "TraversalError",
 					issues,
-					...(detailsErrors && { texts: textsOf(errors!, !firstIssue) })
+					...(detailsErrors && { texts: textsOf(errors!, !firstIssue) }),
+					...(comparesExpecteds && { expecteds: expectedsOf(errors!) })
 				}
 			:	{
 					threw: String(e),
@@ -878,7 +950,17 @@ const expectedOf = (arktype: Observations, i: number): Call | undefined =>
 	:	(arktype.inPlaceCalls ?? arktype.calls)[i]
 
 const agrees = (input: unknown, expected: Call, call: Call): boolean =>
-	firstIssue ? reportsOneOf(input, expected, call) : isEqual(expected, call)
+	firstIssue ?
+		reportsOneOf(input, expected, call)
+	:	isEqual(
+			expected,
+			Object.fromEntries(
+				Object.entries(call).map(([k, observed]) => [
+					k,
+					maskExpecteds(expected[k as keyof Call], observed)
+				])
+			)
+		)
 
 const observeCalls = (node: BaseRoot, inputs: unknown[]) =>
 	inputs.map(input => {

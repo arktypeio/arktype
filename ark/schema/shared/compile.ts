@@ -4,7 +4,6 @@ import {
 	hasDomain,
 	isDotAccessible,
 	serializePrimitive,
-	type array,
 	type Fn
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
@@ -288,11 +287,9 @@ export abstract class NodeCompiler extends CompiledFunction<
 	}
 
 	// written by standalone builds, whose issues hold no node contexts
-	unionFails?(
-		node: UnionNode,
-		value?: string,
-		path?: array<PropertyKey>
-	): string
+	unionFails?(node: UnionNode): string
+	// a discriminated union's failure of data matching none of its cases
+	missFails?(node: UnionNode, value: string): string
 	undeclaredFails?(node: StructureNode): string
 	// what a key's value whose condition failed is applied by, if not its Apply
 	failingApplyOf?(value: BaseNode): string | undefined

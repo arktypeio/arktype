@@ -151,7 +151,7 @@ const issueSitesByContext = new WeakMap<
 
 export const requiredIssue = { code: "required" } as const
 
-interface TextContext {
+export interface TextContext {
 	code: ArkErrorCode
 	description?: string | undefined
 	meta?: ArkEnv.meta | undefined
