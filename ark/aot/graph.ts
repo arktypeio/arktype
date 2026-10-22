@@ -361,6 +361,9 @@ const anyKind: KindBits =
 
 const typeMethod: KindBits = kinds.otherArk | kinds.returnsType
 
+// a Generic, which an instantiation reads as a Type
+const genericKind: KindBits = kinds.otherArk | kinds.returnsType
+
 // what `type` holds that creates a Type, e.g. `type.or`
 const typeParserTypes: Record<string, 1> = Object.setPrototypeOf(
 	{
@@ -1691,6 +1694,11 @@ export class ModuleGraph {
 					this.scopeCallOf(callee.object, module, kindOfKey)
 				)
 					return kinds.type
+				if (
+					node.type === "CallExpression" &&
+					this.definesGeneric(node, module, kindOfKey)
+				)
+					return genericKind
 				const fn =
 					this.functionOf(callee, module) ??
 					this.methodOf(callee, module, kindOfKey)
@@ -2150,6 +2158,46 @@ export class ModuleGraph {
 	}
 
 	// e.g. `scope({ ... })` for `$` with `const $ = scope({ ... })`
+	// e.g. `generic("t")({ ... })` or `type("<t>", { ... })`, which only an
+	// instantiation reads as a Type
+	private definesGeneric(
+		call: CallExpression,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): boolean {
+		const callee = unwrapChain(call.callee)
+		const [params] = call.arguments
+		if (
+			call.arguments.length === 2 &&
+			params.type === "Literal" &&
+			/^<.*>$/.test(String(params.value))
+		)
+			return this.isParser(callee, "type", module, kindOfKey)
+		if (callee.type !== "CallExpression") return false
+		const parser = unwrapChain(callee.callee)
+		return (
+			this.arkExportNameOf(parser, module) === "generic" ||
+			this.isParser(parser, "generic", module, kindOfKey)
+		)
+	}
+
+	// e.g. `type`, `type.generic` or `$.generic`, with `$` a Scope
+	private isParser(
+		node: Node,
+		name: "type" | "generic",
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): boolean {
+		if (name === "type" && this.arkExportNameOf(node, module) === "type")
+			return true
+		return (
+			node.type === "MemberExpression" &&
+			memberNameOf(node) === name &&
+			(this.arkExportNameOf(node.object, module) === "type" ||
+				!!this.scopeCallOf(node.object, module, kindOfKey))
+		)
+	}
+
 	private scopeCallOf(
 		node: Node,
 		module: SourceModule,

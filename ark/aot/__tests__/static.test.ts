@@ -498,6 +498,29 @@ export const box = (t: string) => shop.Box(t).array()`)
 			])
 		})
 
+		it("what a Generic's instantiation validates", () => {
+			const source = `import { generic, scope, type } from "arktype"
+const Page = generic("t")({ items: "t[]", total: "number" })
+const page = Page({ name: "string" }).assert({ items: [{ name: "a" }], total: 1 })
+console.log(page.items.map(u => u.name))
+const Box = type("<t>", { value: "t" })
+const out = Box("'a' | 'b'")({ value: "c" })
+if (out instanceof type.errors) console.log(out.issues.map(e => e.code))
+const Pair = scope({ id: "string" }).generic("t")(["t", "id"])
+console.log(Pair("number").assert([1, "a"]).map(x => x))
+export const Named = type.generic("t")({ name: "t" })("string").or("null")`
+			attest(diagnosticsOf(source)).equals([])
+			attest(statusesOf(source)).snap([
+				"2:14 accepted",
+				"3:14 accepted { items: { name: string }[], total: number }",
+				"5:13 accepted",
+				'6:13 accepted { value: "a" | "b" }',
+				"8:14 accepted",
+				"9:13 accepted [number, string]",
+				"10:22 accepted { name: string } | null"
+			])
+		})
+
 		it("a Type destructured in a for-of", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"
