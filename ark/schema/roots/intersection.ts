@@ -119,6 +119,12 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 			after: {
 				child: true
 			},
+			notEqual: {
+				child: true
+			},
+			notEqualLength: {
+				child: true
+			},
 			pattern: {
 				child: true
 			},

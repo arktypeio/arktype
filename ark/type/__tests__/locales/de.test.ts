@@ -84,6 +84,12 @@ contextualize(() => {
 			"number % 5 ← 6.5": "muss ein Vielfaches von 5 sein, ist aber 6,5",
 			"number >= 1.5 ← 1.25": "muss mindestens 1,5 sein, ist aber 1,25",
 			"number < -1.5 ← -1.5": "muss kleiner als -1,5 sein, ist aber -1,5",
+			"number != 0 ← 0": "muss ungleich 0 sein, ist aber 0",
+			"number != 1.5 ← 1.5": "muss ungleich 1,5 sein, ist aber 1,5",
+			'string != 2 ← "xx"':
+				"darf nicht 2 Zeichen lang sein, ist aber 2 Zeichen lang",
+			"unknown[] != 2 ← [0,1]":
+				"darf nicht 2 Elemente enthalten, ist aber ein Array mit 2 Elementen",
 			"unknown[] == 1 ← []": "muss genau 1 Element enthalten, ist aber leer",
 			"unknown[] >= 2 ← []": "muss mindestens 2 Elemente enthalten",
 			"Date < 2000 ← 2001-01-01T00:00:00.000Z":
@@ -96,6 +102,8 @@ contextualize(() => {
 				"muss frühestens der 3. Mai 2000, 12:30:00,001 UTC sein, ist aber 1999",
 			"Date <= May 3, 12:30:05.123 ← 2000-12-31T09:05:00.000Z":
 				"muss spätestens der 3. Mai 2000, 12:30:05,123 UTC sein, ist aber der 31. Dezember 2000, 09:05 UTC",
+			"Date != May 3 ← 2000-05-03T00:00:00.000Z":
+				"muss ungleich dem 3. Mai 2000 sein, ist aber der 3. Mai 2000",
 			"enumerated Dates ← 2000-05-05T00:00:00.000Z":
 				"muss der 3. Mai 2000 oder der 4. Mai 2000 sein, ist aber ein Objekt",
 			"narrowed Date ← 2000-05-03T00:00:00.000Z":
@@ -191,9 +199,9 @@ contextualize(() => {
 				"a muss eine Zeichenkette sein (ist nicht vorhanden) oder b muss eine Zahl sein (ist nicht vorhanden)",
 			"union boolean | null ← 1": "muss false, null oder true sein, ist aber 1",
 			'union of lengths ← "a"':
-				"muss leer oder mindestens 2 Zeichen lang sein, ist aber 1 Zeichen lang",
+				"muss leer oder mindestens 3 Zeichen lang sein, ist aber 1 Zeichen lang",
 			"union of array lengths ← [0]":
-				"muss ein leeres Array oder ein Array mit mindestens 2 Elementen sein, ist aber ein Array mit 1 Element",
+				"muss ein leeres Array oder ein Array mit mindestens 3 Elementen sein, ist aber ein Array mit 1 Element",
 			"union of signs ← -1":
 				"muss kleiner als -10 oder mindestens 0 sein, ist aber -1",
 			"union of decimals ← 4": "muss 1,5; 2,5 oder 3,5 sein, ist aber 4",

@@ -111,6 +111,13 @@ export const corpus: [def: unknown, inputs: () => unknown[]][] = [
 	],
 	["/^[a-z]+$/ & string <= 5", () => ["abc", "abcdef", "ABC", 1]],
 	["number % 3", () => [9, 10]],
+	[
+		{ n: "number != 0", s: "string != 2", d: "Date != d'2000-05-03'" },
+		() => [
+			{ n: 1, s: "a", d: new Date(0) },
+			{ n: 0, s: "ab", d: new Date("2000-05-03T00:00:00.000Z") }
+		]
+	],
 	[["instanceof", Point], () => [new Point(), {}]],
 	[["===", unitObject], () => [unitObject, { precompiled: true }]],
 	[["string", "=>", (s: string) => s.length], () => ["abc", 1]],

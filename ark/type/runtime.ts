@@ -105,6 +105,7 @@ export {
 	writeDomainActual,
 	writeLengthActual,
 	writeMinLengthActual,
+	writeNotEqualActual,
 	writeProblem,
 	writeProtoActual,
 	writeUnitProblem,

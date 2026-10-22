@@ -234,38 +234,37 @@ contextualize(() => {
 			kind: "unit",
 			path: ["color"],
 			cases: {
-				'"blue"': {
-					kind: "unit",
-					path: ["temperature"],
-					cases: {
-						'"cold"': true,
-						'"hot"': true,
-						default: {
-							required: [
-								{ key: "climate", value: { unit: "wet" } },
-								{ key: "isOcean", value: { unit: true } }
-							]
-						}
+				'"blue"': [
+					{
+						required: [
+							{ key: "climate", value: { unit: "wet" } },
+							{ key: "isOcean", value: { unit: true } }
+						]
+					},
+					{
+						required: [
+							{ key: "temperature", value: [{ unit: "cold" }, { unit: "hot" }] }
+						]
 					}
-				},
-				'"green"': {
-					kind: "unit",
-					path: ["temperature"],
-					cases: {
-						'"cold"': true,
-						'"hot"': true,
-						default: {
-							required: [
-								{ key: "climate", value: { unit: "wet" } },
-								{ key: "isRainForest", value: { unit: true } }
-							]
-						}
+				],
+				'"green"': [
+					{
+						required: [
+							{ key: "climate", value: { unit: "wet" } },
+							{ key: "isRainForest", value: { unit: true } }
+						]
+					},
+					{
+						required: [
+							{ key: "temperature", value: [{ unit: "cold" }, { unit: "hot" }] }
+						]
 					}
-				},
+				],
 				default: {
-					kind: "unit",
-					path: ["temperature"],
-					cases: { '"cold"': true, '"hot"': true }
+					required: [
+						{ key: "temperature", value: [{ unit: "cold" }, { unit: "hot" }] }
+					],
+					domain: "object"
 				}
 			}
 		})
@@ -300,12 +299,12 @@ contextualize(() => {
 	it("discriminant path including symbol", () => {
 		const s = Symbol("lobmyS")
 		const sRef = registeredReference(s)
-		const T = type({ [s]: "0" }).or({ [s]: "1" })
+		const T = type({ [s]: "0", "a?": "string" }).or({ [s]: "1" })
 		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).snap({
 			kind: "unit",
 			path: [sRef],
 			cases: {
-				"0": true,
+				"0": { optional: [{ key: "a", value: "string" }] },
 				"1": true
 			}
 		})
@@ -352,31 +351,22 @@ contextualize(() => {
 
 		const Union = Discriminated.internal.assertHasKind("union")
 
-		attest(discriminantJsonOf(Union)).snap({
-			kind: "unit",
-			path: ["innerA", "id"],
-			cases: {
-				"1": true,
-				"2": true,
-				default: {
-					kind: "unit",
-					path: ["innerB", "id"],
-					cases: { "1": true, "2": true }
-				}
-			}
-		})
+		attest(discriminantJsonOf(Union)).snap(null)
 
 		attest(Union({ innerA: { id: 1 } })).equals({ innerA: { id: 1 } })
 		attest(Union({ innerB: { id: 1 } })).equals({ innerB: { id: 1 } })
 		attest(Union({ innerA: { id: 2 } })).equals({ innerA: { id: 2 } })
 		attest(Union({ innerB: { id: 2 } })).equals({ innerB: { id: 2 } })
 
-		attest(Union({})?.toString()).snap("innerB.id must be 1 or 2 (was missing)")
+		attest(Union({})?.toString()).snap(
+			"innerA must be an object (was missing) or innerB must be an object (was missing)"
+		)
 	})
 
 	it("allows strict discriminated keys", () => {
 		const AorB = type({
-			type: "'A'"
+			type: "'A'",
+			"a?": "string"
 		})
 			.or({
 				type: "'B'"
@@ -387,7 +377,11 @@ contextualize(() => {
 			kind: "unit",
 			path: ["type"],
 			cases: {
-				'"A"': { undeclared: "reject", required: [{ key: "type", value: {} }] },
+				'"A"': {
+					undeclared: "reject",
+					required: [{ key: "type", value: {} }],
+					optional: [{ key: "a", value: "string" }]
+				},
 				'"B"': { undeclared: "reject", required: [{ key: "type", value: {} }] }
 			}
 		})
@@ -431,7 +425,7 @@ contextualize(() => {
 			id: "0",
 			k1: "number"
 		})
-			.or({ id: "1", k1: "number" })
+			.or({ id: "1", k2: "number" })
 			.or({
 				name: "string"
 			})
@@ -445,7 +439,7 @@ contextualize(() => {
 					{ required: [{ key: "name", value: "string" }] }
 				],
 				"1": [
-					{ required: [{ key: "k1", value: "number" }] },
+					{ required: [{ key: "k2", value: "number" }] },
 					{ required: [{ key: "name", value: "string" }] }
 				],
 				default: {
@@ -465,7 +459,7 @@ contextualize(() => {
 			id: "0",
 			k1: "number"
 		})
-			.or({ id: "1", k1: "number" })
+			.or({ id: "1", k2: "number" })
 			.or({
 				"+": "reject",
 				name: "string"
@@ -476,7 +470,7 @@ contextualize(() => {
 			path: ["id"],
 			cases: {
 				"0": { required: [{ key: "k1", value: "number" }] },
-				"1": { required: [{ key: "k1", value: "number" }] },
+				"1": { required: [{ key: "k2", value: "number" }] },
 				default: {
 					undeclared: "reject",
 					required: [{ key: "name", value: "string" }],
@@ -487,7 +481,7 @@ contextualize(() => {
 
 		// now that we are rejecting undeclared keys, all branches fail
 		attest(T({ name: "foo", id: 1 }).toString()).snap(
-			"k1 must be a number (was missing)"
+			"k2 must be a number (was missing)"
 		)
 	})
 
@@ -965,9 +959,10 @@ contextualize(() => {
 				false,
 				'k must be "a" or "b" (was undefined)'
 			])
-			const Nested = $.type({ v: { k: "'a'", x: "string" } })
-				.or({ v: { k: "'b'", y: "number" } })
-				.or({ v: { k: "'c'" } })
+			// each has its own key so they aren't merged into one v
+			const Nested = $.type({ v: { k: "'a'", x: "string" }, "a?": "1" })
+				.or({ v: { k: "'b'", y: "number" }, "b?": "1" })
+				.or({ v: { k: "'c'" }, "c?": "1" })
 			const nestedAbsent = (data: unknown) => {
 				const error = (Nested(data) as type.errors).issues[0]
 				return error.code === "discriminant" && error.absent
@@ -977,9 +972,9 @@ contextualize(() => {
 			attest(nestedAbsent({ v: "abc" })).equals(true)
 			attest(nestedAbsent({ v: { k: "d" } })).equals(false)
 			// a key on Object.prototype is still absent below a missing parent
-			const Proto = $.type({ v: { toString: "'a'", x: "string" } })
-				.or({ v: { toString: "'b'", y: "number" } })
-				.or({ v: { toString: "'c'" } })
+			const Proto = $.type({ v: { toString: "'a'", x: "string" }, "a?": "1" })
+				.or({ v: { toString: "'b'", y: "number" }, "b?": "1" })
+				.or({ v: { toString: "'c'" }, "c?": "1" })
 			const error = (Proto({}) as type.errors).issues[0]
 			attest(error.code === "discriminant" && error.absent).equals(true)
 		})
@@ -1009,7 +1004,10 @@ contextualize(() => {
 				k: "'b'",
 				y: "number"
 			})
-			const T = $.type({ v: Disc }).or({ v: { k: "string >= 5" } })
+			const T = $.type({ v: Disc }).or({
+				v: { k: "string >= 5" },
+				"w?": "string"
+			})
 			attest(T({ v: { k: "c" } }).toString()).snap(
 				'v.k must be "a" or "b" or at least length 5 (was "c")'
 			)

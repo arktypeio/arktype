@@ -22,6 +22,7 @@ import {
 	writeDomainActual,
 	writeLengthActual,
 	writeMinLengthActual,
+	writeNotEqualActual,
 	writeProblem,
 	writeProtoActual,
 	writeUnitProblem
@@ -81,6 +82,8 @@ export const errorWritersByCode: {
 	maxLength: { actual: writeLengthActual },
 	min: {},
 	minLength: { actual: writeMinLengthActual },
+	notEqual: { actual: writeNotEqualActual },
+	notEqualLength: { actual: writeLengthActual },
 	pattern: {},
 	// a keyword's nodes describe their errors through meta, so its phrase writes
 	// only errors it raises through ctx: their actual, and the problem of one that

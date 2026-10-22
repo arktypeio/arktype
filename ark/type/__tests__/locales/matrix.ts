@@ -68,6 +68,10 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 	add("number % 5", $.type("number % 5"), 6.5)
 	add("number >= 1.5", $.type("number >= 1.5"), 1.25)
 	add("number < -1.5", $.type("number < -1.5"), -1.5)
+	add("number != 0", $.type("number != 0"), 0)
+	add("number != 1.5", $.type("number != 1.5"), 1.5)
+	add("string != 2", $.type("string != 2"), x(2))
+	add("unknown[] != 2", $.type("unknown[] != 2"), items(2))
 	add("unknown[] == 1", $.type("unknown[] == 1"), [])
 	add("unknown[] >= 2", $.type("unknown[] >= 2"), [])
 
@@ -88,6 +92,7 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		$.type("Date <= d'2000-05-03T12:30:05.123Z'"),
 		new Date("2000-12-31T09:05:00Z")
 	)
+	add("Date != May 3", $.type("Date != d'2000-05-03'"), new Date("2000-05-03"))
 	add(
 		"enumerated Dates",
 		$.type.enumerated(new Date("2000-05-03"), new Date("2000-05-04")),
@@ -248,14 +253,15 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 	)
 	add(
 		"discriminant in an outer union",
-		$.type({ a: shapes }).or({ a: "string" }),
+		// its own key keeps the string branch from merging into a
+		$.type({ a: shapes }).or({ a: "string", "b?": "1" }),
 		{ a: { kind: "triangle" } }
 	)
 
 	add("union of paths", $.type({ a: "string" }).or({ b: "number" }), {})
 	add("union boolean | null", $.type("boolean | null"), 1)
-	add("union of lengths", $.type("(string >= 2) | (string <= 0)"), "a")
-	add("union of array lengths", $.type("(unknown[] >= 2) | (unknown[] <= 0)"), [
+	add("union of lengths", $.type("(string >= 3) | (string <= 0)"), "a")
+	add("union of array lengths", $.type("(unknown[] >= 3) | (unknown[] <= 0)"), [
 		0
 	])
 	add("union of signs", $.type("(number < -10) | (number >= 0)"), -1)

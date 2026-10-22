@@ -3,6 +3,8 @@ import {
 	type BaseRoot,
 	type Intersection,
 	type IntersectionContext,
+	type NotEqual,
+	type NotEqualLength,
 	type nodeOfKind
 } from "@ark/schema"
 import {
@@ -20,6 +22,9 @@ export const intersection: setImplementationOf<Intersection.Declaration> = {
 	// predicates keep their order, since each narrows the input of the next
 	sort: inner => {
 		if (inner.pattern) inner.pattern = sortSiblings(inner.pattern)
+		if (inner.notEqual) inner.notEqual = sortExcluded(inner.notEqual)
+		if (inner.notEqualLength)
+			inner.notEqualLength = sortExcluded(inner.notEqualLength)
 	},
 	// leverage reduction logic from intersection and identity to ensure initial
 	// parse result is reduced
@@ -59,6 +64,12 @@ export const intersection: setImplementationOf<Intersection.Declaration> = {
 		})
 	}
 }
+
+// excluded values are listed in order
+const sortExcluded = <node extends NotEqual.Node | NotEqualLength.Node>(
+	nodes: readonly node[]
+): readonly node[] =>
+	[...nodes].sort((l, r) => l.rule.valueOf() - r.rule.valueOf())
 
 const intersectIntersections = (
 	l: Intersection.Inner,

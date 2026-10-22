@@ -187,7 +187,11 @@ export type NumericallyBoundable = string | number | array
 
 export type Boundable = NumericallyBoundable | Date
 
-export type LengthBoundKind = "minLength" | "maxLength" | "exactLength"
+export type LengthBoundKind =
+	| "minLength"
+	| "maxLength"
+	| "exactLength"
+	| "notEqualLength"
 
 export const writeInvalidLengthBoundMessage = (
 	kind: LengthBoundKind,

@@ -142,10 +142,10 @@ contextualize(() => {
 			d: "a|b|c"
 		}).export()
 		attest(types.d({}).toString()).snap(
-			"foo must be an object, a number or a string (was missing)"
+			"foo must be a number, a string or a function (was missing)"
 		)
 		attest(types.d({ foo: null }).toString()).snap(
-			"foo must be an object, a number or a string (was null)"
+			"foo must be a number, a string or an object (was null)"
 		)
 	})
 

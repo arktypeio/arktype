@@ -9,6 +9,8 @@ import {
 	maxLength,
 	min,
 	minLength,
+	notEqual,
+	notEqualLength,
 	pattern,
 	predicate
 } from "./refinements.ts"
@@ -35,6 +37,8 @@ export const setImplementationsByKind: Record<
 	exactLength,
 	after,
 	before,
+	notEqual,
+	notEqualLength,
 	alias,
 	domain,
 	unit,

@@ -81,11 +81,17 @@ contextualize(() => {
 		const def = [
 			{
 				domain: "object",
-				required: [{ key: "lateKind", value: { unit: "a" } }]
+				required: [
+					{ key: "a", value: "string" },
+					{ key: "lateKind", value: { unit: "a" } }
+				]
 			},
 			{
 				domain: "object",
-				required: [{ key: "lateKind", value: { unit: "b" } }]
+				required: [
+					{ key: "b", value: "number" },
+					{ key: "lateKind", value: { unit: "b" } }
+				]
 			}
 		] as const
 		withoutEngine(() =>
@@ -100,11 +106,17 @@ contextualize(() => {
 		const def = [
 			{
 				domain: "object",
-				required: [{ key: "cachedKind", value: { unit: "a" } }]
+				required: [
+					{ key: "a", value: "string" },
+					{ key: "cachedKind", value: { unit: "a" } }
+				]
 			},
 			{
 				domain: "object",
-				required: [{ key: "cachedKind", value: { unit: "b" } }]
+				required: [
+					{ key: "b", value: "number" },
+					{ key: "cachedKind", value: { unit: "b" } }
+				]
 			}
 		] as const
 		attest(rootSchema(def).assertHasKind("union").discriminant?.path).equals([

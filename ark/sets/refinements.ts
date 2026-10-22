@@ -1,16 +1,20 @@
 import {
 	$ark,
+	constraintInputOf,
 	Disjoint,
 	type After,
 	type BaseRange,
 	type Before,
 	type Divisor,
 	type ExactLength,
+	type IntersectionContext,
 	type IntersectionNode,
 	type Max,
 	type MaxLength,
 	type Min,
 	type MinLength,
+	type NotEqual,
+	type NotEqualLength,
 	type Pattern,
 	type Predicate
 } from "@ark/schema"
@@ -19,6 +23,26 @@ import type { setImplementationOf } from "./implement.ts"
 // of two bounds of a kind, the one that rules out more
 const stricter = (l: BaseRange<any>, r: BaseRange<any>): never =>
 	(l.isStricterThan(r as never) ? l : r) as never
+
+// a bound excluding the value needs no !=, and one including it only as its
+// limit becomes exclusive
+const excludeFromBound = (
+	bound: BaseRange<any>,
+	notEqual: NotEqual.Node | NotEqualLength.Node,
+	ctx: IntersectionContext
+): never => {
+	const value = notEqual.rule.valueOf()
+	return (
+		value === bound.numericLimit ?
+			bound.exclusive ?
+				bound
+			:	ctx.$.node(
+					bound.kind,
+					constraintInputOf(bound.kind, { rule: bound.rule, exclusive: true })
+				)
+		: value > bound.numericLimit === (bound.limitKind === "upper") ? bound
+		: null) as never
+}
 
 export const pattern: setImplementationOf<Pattern.Declaration> = {
 	intersections: {
@@ -35,7 +59,9 @@ export const divisor: setImplementationOf<Divisor.Declaration> = {
 				rule: Math.abs(
 					(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
 				)
-			})
+			}),
+		notEqual: (divisor, notEqual) =>
+			divisor.traverseAllows(notEqual.numericLimit) ? null : divisor
 	}
 }
 
@@ -61,6 +87,10 @@ export const exactLength: setImplementationOf<ExactLength.Declaration> = {
 				ctx.$.node("unit", { unit: r.rule }),
 				{ path: ["length"] }
 			),
+		notEqualLength: (exactLength, notEqualLength) =>
+			exactLength.rule === notEqualLength.rule ?
+				Disjoint.init("range", exactLength, notEqualLength)
+			:	exactLength,
 		minLength: (exactLength, minLength) =>
 			exactLength.rule >= minLength.rule ?
 				exactLength
@@ -80,13 +110,30 @@ export const max: setImplementationOf<Max.Declaration> = {
 				max.overlapIsUnit(min) ?
 					ctx.$.node("unit", { unit: max.rule })
 				:	null
-			:	Disjoint.init("range", max, min)
+			:	Disjoint.init("range", max, min),
+		notEqual: excludeFromBound
 	}
 }
 
 export const min: setImplementationOf<Min.Declaration> = {
 	intersections: {
-		min: stricter
+		min: stricter,
+		notEqual: excludeFromBound
+	}
+}
+
+export const notEqual: setImplementationOf<NotEqual.Declaration> = {
+	intersections: {
+		notEqual: () => null
+	}
+}
+
+export const notEqualLength: setImplementationOf<NotEqualLength.Declaration> = {
+	// no length is less than 0
+	reduce: (inner, $) =>
+		inner.rule === 0 ? $.node("minLength", { rule: 1 }) : undefined,
+	intersections: {
+		notEqualLength: () => null
 	}
 }
 
@@ -100,7 +147,8 @@ export const maxLength: setImplementationOf<MaxLength.Declaration> = {
 				max.overlapIsUnit(min) ?
 					ctx.$.node("exactLength", { rule: max.rule })
 				:	null
-			:	Disjoint.init("range", max, min)
+			:	Disjoint.init("range", max, min),
+		notEqualLength: excludeFromBound
 	}
 }
 
@@ -111,7 +159,8 @@ export const minLength: setImplementationOf<MinLength.Declaration> = {
 			($ark.intrinsic.unknown as IntersectionNode)
 		:	undefined,
 	intersections: {
-		minLength: stricter
+		minLength: stricter,
+		notEqualLength: excludeFromBound
 	}
 }
 
@@ -123,13 +172,15 @@ export const before: setImplementationOf<Before.Declaration> = {
 				before.overlapIsUnit(after) ?
 					ctx.$.node("unit", { unit: before.rule })
 				:	null
-			:	Disjoint.init("range", before, after)
+			:	Disjoint.init("range", before, after),
+		notEqual: excludeFromBound
 	}
 }
 
 export const after: setImplementationOf<After.Declaration> = {
 	intersections: {
-		after: stricter
+		after: stricter,
+		notEqual: excludeFromBound
 	}
 }
 

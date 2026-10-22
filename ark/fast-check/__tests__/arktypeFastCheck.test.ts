@@ -45,6 +45,11 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("not equal", () => {
+			const T = type("0 <= number.integer <= 5 & number != 1")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
 		it("divisible", () => {
 			const T = type("number%2")
 			const arbitrary = arkToArbitrary(T)
@@ -71,6 +76,11 @@ contextualize(() => {
 	describe("string", () => {
 		it("string", () => {
 			const T = type("string")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("not equal length", () => {
+			const T = type("string <= 2 & string != 1")
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
