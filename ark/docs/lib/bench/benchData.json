@@ -1,16 +1,16 @@
 {
 	"provenance": {
-		"commit": "5628c3752",
-		"date": "2026-10-21",
-		"measured": "2026-10-21 09:00-09:45 UTC",
+		"commit": "c42ee008c",
+		"date": "2026-10-22",
+		"measured": "2026-10-22 07:25-07:35 UTC",
 		"machine": "an Intel i7-11700 under WSL2",
 		"runtime": "Node 25.2.1",
 		"rounds": 150,
-		"method": "BENCH_ROUNDS=150 BENCH_CORE=13,15 pnpm benchValidate on the precompile branch's ark/repo/bench, quiet protocol: 1-minute load 1.2-3.1, benchmark processes pinned to cores 13 and 15, no other agent building. Each library runs in its own process, driven round by round over IPC; one arm is timed at a time and the arm order rotates each round. Each arm warms 1 s / 10k calls, then a sample is the mean ns per call over a batch of >= 0.5 ms, on fresh unfrozen copies of the input. Every arm's output is checked to agree with arktype's before timing. Medians are over rounds; p is a two-sided sign test paired by round; verdict is win/loss at p < .05, else tie. replication tallies the same comparison's verdict in 1 further quiet run at the same commit.",
-		"size": "esbuild-minified bundle of each app at 5628c3752, bytes and gzip",
+		"method": "BENCH_ROUNDS=150 BENCH_CORE=13,15 pnpm benchValidate on ark/repo/bench, on a shared machine, each run started below a 1-minute load of 4 (2.9-3.9 at the runs' starts and ends), benchmark processes pinned to cores 13 and 15. Each library runs in its own process, driven round by round over IPC; one arm is timed at a time and the arm order rotates each round. Each arm warms 1 s / 10k calls, then a sample is the mean ns per call over a batch of >= 0.5 ms, on fresh unfrozen copies of the input. Every arm's output is checked to agree with arktype's before timing. Medians are over rounds; p is a two-sided sign test paired by round; verdict is win/loss at p < .05, else tie. replication tallies the same comparison's verdict in 1 further quiet run at the same commit.",
+		"size": "esbuild-minified bundle of each app at c42ee008c, bytes and gzip",
 		"startup": {
-			"commit": "5628c3752",
-			"date": "2026-10-21",
+			"commit": "c42ee008c",
+			"date": "2026-10-22",
 			"method": "median over one quiet pass of fresh Node processes, each importing an app's esbuild-minified bundle and validating once"
 		}
 	},
@@ -28,7 +28,7 @@
 	},
 	"caveats": [
 		"zod (classic, compiled, mini) and valibot's parse rows build a new output object (their default object mode strips undeclared keys); arktype, typia, ajv and TypeBox return the input. The strip rows are the like-for-like comparison with that behavior.",
-		"Rows where another library beats the precompiled arm in both runs: compiled zod on parse items morph (it builds its output as it transforms; arktype copies each item it changes), ajv on parse items defaults, and ajv on the moltar invalid rows and errors and first product.",
+		"Rows where another library beats the precompiled arm in both runs: compiled zod on parse items morph and parse moltar morph (it builds its output as it transforms; arktype copies each object it changes), ajv on parse items defaults, and ajv on the moltar invalid rows and errors and first product.",
 		"ajv and TypeBox's Check return a boolean, not the data. typia's createValidate allocates a { success, data, errors } result per call.",
 		"arktype's errors/first rows read .summary, which writes every message; issues rows read the raw errors.",
 		"The sign test can't see a bias that holds for a whole run (such as the core a process settled on), so a verdict counts when it replicates."
@@ -40,157 +40,365 @@
 			"name": "moltar",
 			"measures": "moltar's benchmark object: 7 keys (numbers, strings incl. a ~1.4 KB one, a boolean) and a nested 3-key object; undeclared keys allowed, valid input",
 			"medianNs": {
-				"valibot": 654,
-				"zod": 165,
-				"zodCompiled": 47.7,
-				"zodMini": 1130,
-				"typia": 16,
-				"ajv": 29.5,
-				"typebox": 14.2,
-				"arktype": 9.23,
-				"standalone": 11.4,
-				"standaloneFirst": 9.65
+				"valibot": 492,
+				"zod": 102,
+				"zodCompiled": 20,
+				"zodMini": 664,
+				"typia": 9.13,
+				"ajv": 18.4,
+				"typebox": 8.94,
+				"arktype": 5.67,
+				"standalone": 8.38,
+				"standaloneFirst": 8.42
 			},
 			"iqrNs": {
-				"valibot": [595, 944],
-				"zod": [139, 224],
-				"zodCompiled": [40, 61.5],
-				"zodMini": [891, 1500],
-				"typia": [13.6, 20],
-				"ajv": [25.7, 35.3],
-				"typebox": [12.9, 17.5],
-				"arktype": [8.24, 10.7],
-				"standalone": [9.86, 17.3],
-				"standaloneFirst": [7.82, 12]
+				"valibot": [469, 524],
+				"zod": [96.4, 110],
+				"zodCompiled": [18.9, 23.1],
+				"zodMini": [639, 697],
+				"typia": [8.43, 12],
+				"ajv": [17.7, 19.8],
+				"typebox": [8.52, 9.69],
+				"arktype": [5.45, 6.22],
+				"standalone": [8.04, 8.92],
+				"standaloneFirst": [8.09, 8.93]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0174,
-					"speedup": 57.3,
+					"ratio": 0.017,
+					"speedup": 58.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0693,
-					"speedup": 14.4,
+					"ratio": 0.0822,
+					"speedup": 12.2,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.239,
-					"speedup": 4.18,
-					"roundsWon": "148/150",
+					"ratio": 0.419,
+					"speedup": 2.39,
+					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0101,
-					"speedup": 98.8,
+					"ratio": 0.0126,
+					"speedup": 79.3,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.711,
-					"speedup": 1.41,
-					"roundsWon": "116/150",
+					"ratio": 0.917,
+					"speedup": 1.09,
+					"roundsWon": "110/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.387,
-					"speedup": 2.58,
-					"roundsWon": "147/150",
+					"ratio": 0.455,
+					"speedup": 2.2,
+					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.804,
-					"speedup": 1.24,
-					"roundsWon": "109/150",
+					"ratio": 0.937,
+					"speedup": 1.07,
+					"roundsWon": "118/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 1.24,
-					"speedup": 0.809,
-					"roundsWon": "37/150",
+					"ratio": 1.48,
+					"speedup": 0.677,
+					"roundsWon": "4/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"standaloneFirst": {
-					"ratio": 1.18,
-					"speedup": 0.846,
-					"roundsWon": "51/150",
-					"p": "<.001",
-					"verdict": "loss"
+					"ratio": 0.995,
+					"speedup": 1,
+					"roundsWon": "85/150",
+					"p": "0.121",
+					"verdict": "tie"
 				}
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.0148,
-					"speedup": 67.8,
+					"ratio": 0.0171,
+					"speedup": 58.4,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0586,
-					"speedup": 17.1,
+					"ratio": 0.0826,
+					"speedup": 12.1,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.202,
-					"speedup": 4.94,
-					"roundsWon": "150/150",
+					"ratio": 0.421,
+					"speedup": 2.38,
+					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.00856,
-					"speedup": 117,
+					"ratio": 0.0127,
+					"speedup": 78.9,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.602,
-					"speedup": 1.66,
-					"roundsWon": "141/150",
+					"ratio": 0.922,
+					"speedup": 1.08,
+					"roundsWon": "115/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.328,
-					"speedup": 3.05,
+					"ratio": 0.457,
+					"speedup": 2.19,
+					"roundsWon": "148/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.942,
+					"speedup": 1.06,
+					"roundsWon": "121/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.48,
+					"speedup": 0.674,
+					"roundsWon": "3/150",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"standalone": {
+					"ratio": 1,
+					"speedup": 0.995,
+					"roundsWon": "65/150",
+					"p": "0.121",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 1,
+					"tie": 0
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 1,
+					"tie": 0
+				}
+			}
+		},
+		{
+			"id": "parse moltar strict",
+			"mode": "parse",
+			"name": "moltar strict",
+			"measures": "the same object with undeclared keys rejected at both levels; the valid input has none, so this is the cost of looking for them",
+			"medianNs": {
+				"valibot": 619,
+				"zod": 180,
+				"zodCompiled": 46.7,
+				"zodMini": 819,
+				"typia": 36,
+				"ajv": 43.9,
+				"typebox": 37.3,
+				"arktype": 25.8,
+				"standalone": 25.9,
+				"standaloneFirst": 25.9
+			},
+			"iqrNs": {
+				"valibot": [584, 697],
+				"zod": [167, 195],
+				"zodCompiled": [43.3, 53],
+				"zodMini": [768, 915],
+				"typia": [34, 39.5],
+				"ajv": [40.9, 48.8],
+				"typebox": [34.8, 39.8],
+				"arktype": [24.3, 27.9],
+				"standalone": [24.1, 28.1],
+				"standaloneFirst": [24.5, 28.1]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0419,
+					"speedup": 23.8,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.144,
+					"speedup": 6.93,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.556,
+					"speedup": 1.8,
+					"roundsWon": "147/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0317,
+					"speedup": 31.6,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.721,
+					"speedup": 1.39,
+					"roundsWon": "142/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.592,
+					"speedup": 1.69,
 					"roundsWon": "147/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.68,
-					"speedup": 1.47,
-					"roundsWon": "141/150",
+					"ratio": 0.696,
+					"speedup": 1.44,
+					"roundsWon": "145/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 1.05,
-					"speedup": 0.957,
-					"roundsWon": "74/150",
+					"ratio": 1.01,
+					"speedup": 0.993,
+					"roundsWon": "75/150",
+					"p": "1.000",
+					"verdict": "tie"
+				},
+				"standaloneFirst": {
+					"ratio": 1,
+					"speedup": 0.997,
+					"roundsWon": "76/150",
 					"p": "0.935",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0418,
+					"speedup": 23.9,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.144,
+					"speedup": 6.95,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.554,
+					"speedup": 1.81,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0316,
+					"speedup": 31.7,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.718,
+					"speedup": 1.39,
+					"roundsWon": "141/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.59,
+					"speedup": 1.7,
+					"roundsWon": "149/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.694,
+					"speedup": 1.44,
+					"roundsWon": "146/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1,
+					"speedup": 0.996,
+					"roundsWon": "68/150",
+					"p": "0.288",
 					"verdict": "tie"
 				},
 				"standalone": {
-					"ratio": 0.846,
-					"speedup": 1.18,
-					"roundsWon": "99/150",
-					"p": "<.001",
-					"verdict": "win"
+					"ratio": 0.997,
+					"speedup": 1,
+					"roundsWon": "74/150",
+					"p": "0.935",
+					"verdict": "tie"
 				}
 			},
 			"replication": {
@@ -236,167 +444,167 @@
 					"tie": 1
 				},
 				"standaloneFirst": {
-					"win": 1,
-					"loss": 0,
+					"win": 0,
+					"loss": 1,
 					"tie": 0
 				}
 			}
 		},
 		{
-			"id": "parse moltar strict",
+			"id": "parse product",
 			"mode": "parse",
-			"name": "moltar strict",
-			"measures": "the same object with undeclared keys rejected at both levels; the valid input has none, so this is the cost of looking for them",
+			"name": "product",
+			"measures": "open-circle/schema-benchmarks' Product: 11 keys with length and range bounds, a Date, a nullable number, a string array, 3 images (enum, URL format) and 2 ratings holding 3 more",
 			"medianNs": {
-				"valibot": 816,
-				"zod": 232,
-				"zodCompiled": 69.5,
-				"zodMini": 1070,
-				"typia": 53.7,
-				"ajv": 59.2,
-				"typebox": 52.2,
-				"arktype": 30.7,
-				"standalone": 33.2,
-				"standaloneFirst": 32.8
+				"valibot": 10900,
+				"zod": 9650,
+				"zodCompiled": 2560,
+				"zodMini": 19700,
+				"typia": 4920,
+				"ajv": 2080,
+				"typebox": 1950,
+				"arktype": 717,
+				"standalone": 740,
+				"standaloneFirst": 804
 			},
 			"iqrNs": {
-				"valibot": [694, 1040],
-				"zod": [203, 299],
-				"zodCompiled": [61.7, 79.3],
-				"zodMini": [930, 1510],
-				"typia": [47.3, 63.9],
-				"ajv": [52.7, 72.5],
-				"typebox": [46.1, 69.3],
-				"arktype": [27.9, 37],
-				"standalone": [30.5, 37.2],
-				"standaloneFirst": [29.6, 37.3]
+				"valibot": [8330, 14900],
+				"zod": [7840, 14000],
+				"zodCompiled": [2130, 3670],
+				"zodMini": [15000, 27300],
+				"typia": [4400, 6380],
+				"ajv": [1780, 3090],
+				"typebox": [1550, 2790],
+				"arktype": [569, 1070],
+				"standalone": [550, 1020],
+				"standaloneFirst": [560, 1060]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0407,
-					"speedup": 24.6,
+					"ratio": 0.0679,
+					"speedup": 14.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.143,
-					"speedup": 7,
+					"ratio": 0.0767,
+					"speedup": 13,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.477,
-					"speedup": 2.1,
-					"roundsWon": "147/150",
+					"ratio": 0.289,
+					"speedup": 3.46,
+					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.031,
-					"speedup": 32.3,
+					"ratio": 0.0376,
+					"speedup": 26.6,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.618,
-					"speedup": 1.62,
-					"roundsWon": "141/150",
+					"ratio": 0.15,
+					"speedup": 6.65,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.56,
-					"speedup": 1.79,
-					"roundsWon": "147/150",
+					"ratio": 0.356,
+					"speedup": 2.81,
+					"roundsWon": "148/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.636,
-					"speedup": 1.57,
-					"roundsWon": "138/150",
+					"ratio": 0.379,
+					"speedup": 2.64,
+					"roundsWon": "147/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 1.08,
-					"speedup": 0.925,
-					"roundsWon": "57/150",
-					"p": "0.004",
-					"verdict": "loss"
+					"ratio": 1.03,
+					"speedup": 0.969,
+					"roundsWon": "82/150",
+					"p": "0.288",
+					"verdict": "tie"
 				},
 				"standaloneFirst": {
-					"ratio": 1.01,
-					"speedup": 0.988,
-					"roundsWon": "74/150",
+					"ratio": 0.92,
+					"speedup": 1.09,
+					"roundsWon": "76/150",
 					"p": "0.935",
 					"verdict": "tie"
 				}
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.0402,
-					"speedup": 24.9,
+					"ratio": 0.0737,
+					"speedup": 13.6,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.141,
-					"speedup": 7.09,
+					"ratio": 0.0833,
+					"speedup": 12,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.472,
-					"speedup": 2.12,
-					"roundsWon": "149/150",
+					"ratio": 0.314,
+					"speedup": 3.19,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0306,
-					"speedup": 32.7,
+					"ratio": 0.0408,
+					"speedup": 24.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.611,
-					"speedup": 1.64,
-					"roundsWon": "146/150",
+					"ratio": 0.163,
+					"speedup": 6.12,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.553,
-					"speedup": 1.81,
-					"roundsWon": "147/150",
+					"ratio": 0.387,
+					"speedup": 2.59,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.628,
-					"speedup": 1.59,
-					"roundsWon": "145/150",
+					"ratio": 0.412,
+					"speedup": 2.43,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 1.07,
-					"speedup": 0.936,
-					"roundsWon": "63/150",
-					"p": "0.060",
+					"ratio": 1.12,
+					"speedup": 0.892,
+					"roundsWon": "84/150",
+					"p": "0.165",
 					"verdict": "tie"
 				},
 				"standalone": {
-					"ratio": 0.988,
-					"speedup": 1.01,
-					"roundsWon": "76/150",
+					"ratio": 1.09,
+					"speedup": 0.92,
+					"roundsWon": "74/150",
 					"p": "0.935",
 					"verdict": "tie"
 				}
@@ -451,370 +659,162 @@
 			}
 		},
 		{
-			"id": "parse product",
-			"mode": "parse",
-			"name": "product",
-			"measures": "open-circle/schema-benchmarks' Product: 11 keys with length and range bounds, a Date, a nullable number, a string array, 3 images (enum, URL format) and 2 ratings holding 3 more",
-			"medianNs": {
-				"valibot": 9810,
-				"zod": 9660,
-				"zodCompiled": 2550,
-				"zodMini": 19100,
-				"typia": 5000,
-				"ajv": 2200,
-				"typebox": 1840,
-				"arktype": 697,
-				"standalone": 722,
-				"standaloneFirst": 744
-			},
-			"iqrNs": {
-				"valibot": [8650, 15200],
-				"zod": [7740, 13400],
-				"zodCompiled": [2240, 3880],
-				"zodMini": [15900, 26700],
-				"typia": [4420, 6200],
-				"ajv": [1890, 2760],
-				"typebox": [1580, 2360],
-				"arktype": [580, 962],
-				"standalone": [643, 867],
-				"standaloneFirst": [637, 969]
-			},
-			"standaloneVs": {
-				"valibot": {
-					"ratio": 0.0736,
-					"speedup": 13.6,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zod": {
-					"ratio": 0.0748,
-					"speedup": 13.4,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zodCompiled": {
-					"ratio": 0.283,
-					"speedup": 3.54,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zodMini": {
-					"ratio": 0.0378,
-					"speedup": 26.5,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"typia": {
-					"ratio": 0.144,
-					"speedup": 6.93,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"ajv": {
-					"ratio": 0.329,
-					"speedup": 3.04,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"typebox": {
-					"ratio": 0.391,
-					"speedup": 2.55,
-					"roundsWon": "149/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"arktype": {
-					"ratio": 1.04,
-					"speedup": 0.966,
-					"roundsWon": "67/150",
-					"p": "0.221",
-					"verdict": "tie"
-				},
-				"standaloneFirst": {
-					"ratio": 0.97,
-					"speedup": 1.03,
-					"roundsWon": "75/150",
-					"p": "1.000",
-					"verdict": "tie"
-				}
-			},
-			"standaloneFirstVs": {
-				"valibot": {
-					"ratio": 0.0758,
-					"speedup": 13.2,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zod": {
-					"ratio": 0.077,
-					"speedup": 13,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zodCompiled": {
-					"ratio": 0.291,
-					"speedup": 3.43,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zodMini": {
-					"ratio": 0.0389,
-					"speedup": 25.7,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"typia": {
-					"ratio": 0.149,
-					"speedup": 6.72,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"ajv": {
-					"ratio": 0.339,
-					"speedup": 2.95,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"typebox": {
-					"ratio": 0.403,
-					"speedup": 2.48,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"arktype": {
-					"ratio": 1.07,
-					"speedup": 0.937,
-					"roundsWon": "60/150",
-					"p": "0.018",
-					"verdict": "loss"
-				},
-				"standalone": {
-					"ratio": 1.03,
-					"speedup": 0.97,
-					"roundsWon": "75/150",
-					"p": "1.000",
-					"verdict": "tie"
-				}
-			},
-			"replication": {
-				"of": "standalone",
-				"valibot": {
-					"win": 1,
-					"loss": 0,
-					"tie": 0
-				},
-				"zod": {
-					"win": 1,
-					"loss": 0,
-					"tie": 0
-				},
-				"zodCompiled": {
-					"win": 1,
-					"loss": 0,
-					"tie": 0
-				},
-				"zodMini": {
-					"win": 1,
-					"loss": 0,
-					"tie": 0
-				},
-				"typia": {
-					"win": 1,
-					"loss": 0,
-					"tie": 0
-				},
-				"ajv": {
-					"win": 1,
-					"loss": 0,
-					"tie": 0
-				},
-				"typebox": {
-					"win": 1,
-					"loss": 0,
-					"tie": 0
-				},
-				"arktype": {
-					"win": 0,
-					"loss": 0,
-					"tie": 1
-				},
-				"standaloneFirst": {
-					"win": 0,
-					"loss": 0,
-					"tie": 1
-				}
-			}
-		},
-		{
 			"id": "parse items",
 			"mode": "parse",
 			"name": "items",
 			"measures": "an array of 100 objects { id: number, name: string, active: boolean }",
 			"medianNs": {
-				"valibot": 25100,
-				"zod": 6390,
-				"zodCompiled": 1680,
-				"zodMini": 44700,
-				"typia": 853,
-				"ajv": 1150,
-				"typebox": 964,
-				"arktype": 767,
-				"standalone": 764,
-				"standaloneFirst": 765
+				"valibot": 19200,
+				"zod": 4480,
+				"zodCompiled": 1050,
+				"zodMini": 32700,
+				"typia": 548,
+				"ajv": 776,
+				"typebox": 678,
+				"arktype": 502,
+				"standalone": 471,
+				"standaloneFirst": 493
 			},
 			"iqrNs": {
-				"valibot": [20800, 34500],
-				"zod": [5240, 7850],
-				"zodCompiled": [1460, 1970],
-				"zodMini": [37800, 65100],
-				"typia": [741, 989],
-				"ajv": [988, 1350],
-				"typebox": [837, 1180],
-				"arktype": [695, 835],
-				"standalone": [697, 856],
-				"standaloneFirst": [685, 944]
+				"valibot": [16900, 28900],
+				"zod": [3940, 6420],
+				"zodCompiled": [962, 1750],
+				"zodMini": [30200, 46300],
+				"typia": [467, 744],
+				"ajv": [687, 1090],
+				"typebox": [554, 978],
+				"arktype": [421, 683],
+				"standalone": [367, 813],
+				"standaloneFirst": [424, 701]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0304,
-					"speedup": 32.8,
+					"ratio": 0.0246,
+					"speedup": 40.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.12,
-					"speedup": 8.37,
-					"roundsWon": "150/150",
+					"ratio": 0.105,
+					"speedup": 9.5,
+					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.453,
-					"speedup": 2.21,
-					"roundsWon": "150/150",
+					"ratio": 0.448,
+					"speedup": 2.23,
+					"roundsWon": "139/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0171,
-					"speedup": 58.5,
+					"ratio": 0.0144,
+					"speedup": 69.4,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.895,
-					"speedup": 1.12,
-					"roundsWon": "92/150",
-					"p": "0.007",
+					"ratio": 0.859,
+					"speedup": 1.16,
+					"roundsWon": "108/150",
+					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.664,
-					"speedup": 1.51,
-					"roundsWon": "143/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"typebox": {
-					"ratio": 0.792,
-					"speedup": 1.26,
-					"roundsWon": "124/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"arktype": {
-					"ratio": 0.996,
-					"speedup": 1,
-					"roundsWon": "68/150",
-					"p": "0.288",
-					"verdict": "tie"
-				},
-				"standaloneFirst": {
-					"ratio": 0.998,
-					"speedup": 1,
-					"roundsWon": "80/150",
-					"p": "0.463",
-					"verdict": "tie"
-				}
-			},
-			"standaloneFirstVs": {
-				"valibot": {
-					"ratio": 0.0305,
-					"speedup": 32.8,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zod": {
-					"ratio": 0.12,
-					"speedup": 8.35,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zodCompiled": {
-					"ratio": 0.454,
-					"speedup": 2.2,
-					"roundsWon": "146/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zodMini": {
-					"ratio": 0.0171,
-					"speedup": 58.4,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"typia": {
-					"ratio": 0.897,
-					"speedup": 1.12,
-					"roundsWon": "90/150",
-					"p": "0.018",
-					"verdict": "win"
-				},
-				"ajv": {
-					"ratio": 0.665,
-					"speedup": 1.5,
+					"ratio": 0.607,
+					"speedup": 1.65,
 					"roundsWon": "130/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.794,
-					"speedup": 1.26,
-					"roundsWon": "114/150",
+					"ratio": 0.695,
+					"speedup": 1.44,
+					"roundsWon": "120/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.998,
-					"speedup": 1,
-					"roundsWon": "73/150",
-					"p": "0.807",
+					"ratio": 0.939,
+					"speedup": 1.06,
+					"roundsWon": "95/150",
+					"p": "0.001",
+					"verdict": "win"
+				},
+				"standaloneFirst": {
+					"ratio": 0.955,
+					"speedup": 1.05,
+					"roundsWon": "98/150",
+					"p": "<.001",
+					"verdict": "win"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0257,
+					"speedup": 38.9,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.11,
+					"speedup": 9.08,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.469,
+					"speedup": 2.13,
+					"roundsWon": "139/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0151,
+					"speedup": 66.3,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.9,
+					"speedup": 1.11,
+					"roundsWon": "110/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.636,
+					"speedup": 1.57,
+					"roundsWon": "133/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.728,
+					"speedup": 1.37,
+					"roundsWon": "128/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.983,
+					"speedup": 1.02,
+					"roundsWon": "76/150",
+					"p": "0.935",
 					"verdict": "tie"
 				},
 				"standalone": {
-					"ratio": 1,
-					"speedup": 0.998,
-					"roundsWon": "70/150",
-					"p": "0.463",
-					"verdict": "tie"
+					"ratio": 1.05,
+					"speedup": 0.955,
+					"roundsWon": "52/150",
+					"p": "<.001",
+					"verdict": "loss"
 				}
 			},
 			"replication": {
@@ -872,156 +872,156 @@
 			"name": "discriminated",
 			"measures": "a 4-branch object union keyed on `kind`, inputs cycling through every branch (zod discriminatedUnion, valibot variant, ajv discriminator; arktype discriminates on its own)",
 			"medianNs": {
-				"valibot": 684,
-				"zod": 115,
-				"zodCompiled": 32.4,
-				"zodMini": 394,
-				"typia": 28,
-				"ajv": 23.6,
-				"typebox": 17.8,
-				"arktype": 8.73,
-				"standalone": 8.7,
-				"standaloneFirst": 8.73
+				"valibot": 529,
+				"zod": 147,
+				"zodCompiled": 22.4,
+				"zodMini": 295,
+				"typia": 16.8,
+				"ajv": 16.1,
+				"typebox": 14.4,
+				"arktype": 6.14,
+				"standalone": 6.26,
+				"standaloneFirst": 6.27
 			},
 			"iqrNs": {
-				"valibot": [600, 877],
-				"zod": [98.4, 151],
-				"zodCompiled": [28.9, 36.8],
-				"zodMini": [350, 496],
-				"typia": [25.6, 33.2],
-				"ajv": [21.2, 26.7],
-				"typebox": [16.5, 22.4],
-				"arktype": [7.92, 9.91],
-				"standalone": [7.99, 9.64],
-				"standaloneFirst": [7.97, 9.87]
+				"valibot": [505, 576],
+				"zod": [131, 176],
+				"zodCompiled": [21.1, 23.5],
+				"zodMini": [282, 320],
+				"typia": [16, 17.9],
+				"ajv": [15.4, 17.7],
+				"typebox": [13.8, 15.1],
+				"arktype": [5.9, 6.58],
+				"standalone": [6.02, 6.69],
+				"standaloneFirst": [6, 6.74]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0127,
-					"speedup": 78.6,
+					"ratio": 0.0118,
+					"speedup": 84.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0757,
-					"speedup": 13.2,
+					"ratio": 0.0426,
+					"speedup": 23.4,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.268,
-					"speedup": 3.73,
+					"ratio": 0.28,
+					"speedup": 3.58,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0221,
-					"speedup": 45.3,
+					"ratio": 0.0212,
+					"speedup": 47.1,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.311,
-					"speedup": 3.22,
+					"ratio": 0.373,
+					"speedup": 2.68,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.369,
-					"speedup": 2.71,
+					"ratio": 0.387,
+					"speedup": 2.58,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.489,
-					"speedup": 2.05,
+					"ratio": 0.433,
+					"speedup": 2.31,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.996,
-					"speedup": 1,
-					"roundsWon": "89/150",
-					"p": "0.027",
-					"verdict": "win"
+					"ratio": 1.02,
+					"speedup": 0.981,
+					"roundsWon": "58/150",
+					"p": "0.007",
+					"verdict": "loss"
 				},
 				"standaloneFirst": {
-					"ratio": 0.997,
+					"ratio": 0.998,
 					"speedup": 1,
-					"roundsWon": "84/150",
-					"p": "0.165",
+					"roundsWon": "76/150",
+					"p": "0.935",
 					"verdict": "tie"
 				}
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.0128,
-					"speedup": 78.3,
+					"ratio": 0.0119,
+					"speedup": 84.3,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0759,
-					"speedup": 13.2,
+					"ratio": 0.0428,
+					"speedup": 23.4,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.269,
-					"speedup": 3.72,
+					"ratio": 0.28,
+					"speedup": 3.57,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0221,
-					"speedup": 45.2,
+					"ratio": 0.0213,
+					"speedup": 47,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.311,
-					"speedup": 3.21,
+					"ratio": 0.374,
+					"speedup": 2.67,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.37,
-					"speedup": 2.7,
+					"ratio": 0.388,
+					"speedup": 2.58,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.49,
-					"speedup": 2.04,
+					"ratio": 0.435,
+					"speedup": 2.3,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.999,
-					"speedup": 1,
-					"roundsWon": "71/150",
-					"p": "0.568",
-					"verdict": "tie"
+					"ratio": 1.02,
+					"speedup": 0.979,
+					"roundsWon": "53/150",
+					"p": "<.001",
+					"verdict": "loss"
 				},
 				"standalone": {
 					"ratio": 1,
-					"speedup": 0.997,
-					"roundsWon": "66/150",
-					"p": "0.165",
+					"speedup": 0.998,
+					"roundsWon": "74/150",
+					"p": "0.935",
 					"verdict": "tie"
 				}
 			},
@@ -1063,9 +1063,9 @@
 					"tie": 0
 				},
 				"arktype": {
-					"win": 0,
+					"win": 1,
 					"loss": 0,
-					"tie": 1
+					"tie": 0
 				},
 				"standaloneFirst": {
 					"win": 0,
@@ -1080,157 +1080,157 @@
 			"name": "rotating",
 			"measures": "8 small validators (string, non-empty string, two 1-key objects, number, string[], a 2-object union, a bounded number) called in turn from one call site, as a shared helper would call them",
 			"medianNs": {
-				"valibot": 128,
-				"zod": 174,
-				"zodCompiled": 38.9,
-				"zodMini": 236,
-				"typia": 13.9,
-				"ajv": 21.9,
-				"typebox": 12.3,
-				"arktype": 14.5,
-				"standalone": 10.3,
-				"standaloneFirst": 10.3
+				"valibot": 117,
+				"zod": 110,
+				"zodCompiled": 25.4,
+				"zodMini": 163,
+				"typia": 9.03,
+				"ajv": 15,
+				"typebox": 8.87,
+				"arktype": 9.95,
+				"standalone": 7.23,
+				"standaloneFirst": 7.07
 			},
 			"iqrNs": {
-				"valibot": [112, 174],
-				"zod": [150, 234],
-				"zodCompiled": [33.5, 53],
-				"zodMini": [204, 337],
-				"typia": [12.4, 17.5],
-				"ajv": [19.6, 27.6],
-				"typebox": [10.7, 15.3],
-				"arktype": [12.8, 18.6],
-				"standalone": [9.2, 11.7],
-				"standaloneFirst": [9.02, 11.6]
+				"valibot": [111, 125],
+				"zod": [104, 125],
+				"zodCompiled": [24.3, 27.4],
+				"zodMini": [156, 174],
+				"typia": [8.63, 9.66],
+				"ajv": [14.4, 16],
+				"typebox": [8.52, 9.52],
+				"arktype": [9.59, 10.7],
+				"standalone": [6.95, 7.54],
+				"standaloneFirst": [6.8, 7.6]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0811,
-					"speedup": 12.3,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zod": {
-					"ratio": 0.0594,
-					"speedup": 16.8,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zodCompiled": {
-					"ratio": 0.266,
-					"speedup": 3.76,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zodMini": {
-					"ratio": 0.0438,
-					"speedup": 22.8,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"typia": {
-					"ratio": 0.746,
-					"speedup": 1.34,
-					"roundsWon": "128/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"ajv": {
-					"ratio": 0.472,
-					"speedup": 2.12,
+					"ratio": 0.0617,
+					"speedup": 16.2,
 					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
-				"typebox": {
-					"ratio": 0.844,
-					"speedup": 1.18,
-					"roundsWon": "115/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"arktype": {
-					"ratio": 0.714,
-					"speedup": 1.4,
-					"roundsWon": "137/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"standaloneFirst": {
-					"ratio": 1.01,
-					"speedup": 0.991,
-					"roundsWon": "64/150",
-					"p": "0.086",
-					"verdict": "tie"
-				}
-			},
-			"standaloneFirstVs": {
-				"valibot": {
-					"ratio": 0.0804,
-					"speedup": 12.4,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
 				"zod": {
-					"ratio": 0.0589,
-					"speedup": 17,
+					"ratio": 0.0657,
+					"speedup": 15.2,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.264,
-					"speedup": 3.79,
+					"ratio": 0.284,
+					"speedup": 3.52,
+					"roundsWon": "149/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0445,
+					"speedup": 22.5,
+					"roundsWon": "149/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.8,
+					"speedup": 1.25,
+					"roundsWon": "136/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.48,
+					"speedup": 2.08,
+					"roundsWon": "148/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.815,
+					"speedup": 1.23,
+					"roundsWon": "141/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.726,
+					"speedup": 1.38,
+					"roundsWon": "145/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standaloneFirst": {
+					"ratio": 1.02,
+					"speedup": 0.978,
+					"roundsWon": "57/150",
+					"p": "0.004",
+					"verdict": "loss"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0603,
+					"speedup": 16.6,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0643,
+					"speedup": 15.6,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.278,
+					"speedup": 3.6,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0434,
+					"ratio": 0.0435,
 					"speedup": 23,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.739,
-					"speedup": 1.35,
-					"roundsWon": "136/150",
+					"ratio": 0.782,
+					"speedup": 1.28,
+					"roundsWon": "146/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.468,
-					"speedup": 2.14,
-					"roundsWon": "148/150",
+					"ratio": 0.47,
+					"speedup": 2.13,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.837,
-					"speedup": 1.2,
-					"roundsWon": "125/150",
+					"ratio": 0.797,
+					"speedup": 1.26,
+					"roundsWon": "143/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.708,
+					"ratio": 0.71,
 					"speedup": 1.41,
-					"roundsWon": "139/150",
+					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"standalone": {
-					"ratio": 0.991,
-					"speedup": 1.01,
-					"roundsWon": "86/150",
-					"p": "0.086",
-					"verdict": "tie"
+					"ratio": 0.978,
+					"speedup": 1.02,
+					"roundsWon": "93/150",
+					"p": "0.004",
+					"verdict": "win"
 				}
 			},
 			"replication": {
@@ -1276,9 +1276,9 @@
 					"tie": 0
 				},
 				"standaloneFirst": {
-					"win": 0,
+					"win": 1,
 					"loss": 0,
-					"tie": 1
+					"tie": 0
 				}
 			}
 		},
@@ -1288,157 +1288,157 @@
 			"name": "constraints",
 			"measures": "one object of refinements: string length bounds, email format (each library's own regex), integer range, exclusive bound, a regex pattern",
 			"medianNs": {
-				"valibot": 740,
-				"zod": 986,
-				"zodCompiled": 131,
-				"zodMini": 1750,
-				"typia": 325,
-				"ajv": 126,
-				"typebox": 131,
-				"arktype": 94.9,
-				"standalone": 95.8,
-				"standaloneFirst": 99.2
+				"valibot": 518,
+				"zod": 649,
+				"zodCompiled": 88.9,
+				"zodMini": 1190,
+				"typia": 222,
+				"ajv": 85.8,
+				"typebox": 94.3,
+				"arktype": 65.7,
+				"standalone": 66.5,
+				"standaloneFirst": 70.8
 			},
 			"iqrNs": {
-				"valibot": [652, 1110],
-				"zod": [876, 1380],
-				"zodCompiled": [115, 168],
-				"zodMini": [1530, 2330],
-				"typia": [278, 439],
-				"ajv": [109, 171],
-				"typebox": [118, 190],
-				"arktype": [85.5, 120],
-				"standalone": [85.2, 118],
-				"standaloneFirst": [87.5, 117]
+				"valibot": [506, 542],
+				"zod": [626, 676],
+				"zodCompiled": [86.2, 92.5],
+				"zodMini": [1140, 1240],
+				"typia": [216, 229],
+				"ajv": [83.5, 89],
+				"typebox": [91.4, 98.6],
+				"arktype": [63.7, 68],
+				"standalone": [64.7, 68.8],
+				"standaloneFirst": [68.9, 72.9]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.129,
-					"speedup": 7.73,
+					"ratio": 0.128,
+					"speedup": 7.79,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0971,
-					"speedup": 10.3,
+					"ratio": 0.103,
+					"speedup": 9.75,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.734,
-					"speedup": 1.36,
-					"roundsWon": "122/150",
+					"ratio": 0.748,
+					"speedup": 1.34,
+					"roundsWon": "148/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0548,
-					"speedup": 18.2,
+					"ratio": 0.0558,
+					"speedup": 17.9,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.295,
-					"speedup": 3.39,
+					"ratio": 0.299,
+					"speedup": 3.34,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.76,
-					"speedup": 1.32,
-					"roundsWon": "126/150",
+					"ratio": 0.775,
+					"speedup": 1.29,
+					"roundsWon": "148/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.729,
-					"speedup": 1.37,
-					"roundsWon": "130/150",
+					"ratio": 0.705,
+					"speedup": 1.42,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
 					"ratio": 1.01,
-					"speedup": 0.991,
-					"roundsWon": "72/150",
-					"p": "0.683",
-					"verdict": "tie"
+					"speedup": 0.988,
+					"roundsWon": "50/150",
+					"p": "<.001",
+					"verdict": "loss"
 				},
 				"standaloneFirst": {
-					"ratio": 0.966,
-					"speedup": 1.04,
-					"roundsWon": "77/150",
-					"p": "0.807",
-					"verdict": "tie"
+					"ratio": 0.94,
+					"speedup": 1.06,
+					"roundsWon": "137/150",
+					"p": "<.001",
+					"verdict": "win"
 				}
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.134,
-					"speedup": 7.47,
+					"ratio": 0.137,
+					"speedup": 7.32,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.101,
-					"speedup": 9.95,
+					"ratio": 0.109,
+					"speedup": 9.16,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.759,
-					"speedup": 1.32,
-					"roundsWon": "133/150",
+					"ratio": 0.796,
+					"speedup": 1.26,
+					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0567,
-					"speedup": 17.6,
+					"ratio": 0.0594,
+					"speedup": 16.8,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.305,
-					"speedup": 3.28,
+					"ratio": 0.319,
+					"speedup": 3.14,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.787,
-					"speedup": 1.27,
-					"roundsWon": "122/150",
+					"ratio": 0.825,
+					"speedup": 1.21,
+					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.755,
+					"ratio": 0.751,
 					"speedup": 1.33,
-					"roundsWon": "133/150",
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 1.04,
-					"speedup": 0.957,
-					"roundsWon": "63/150",
-					"p": "0.060",
-					"verdict": "tie"
+					"ratio": 1.08,
+					"speedup": 0.928,
+					"roundsWon": "16/150",
+					"p": "<.001",
+					"verdict": "loss"
 				},
 				"standalone": {
-					"ratio": 1.04,
-					"speedup": 0.966,
-					"roundsWon": "73/150",
-					"p": "0.807",
-					"verdict": "tie"
+					"ratio": 1.06,
+					"speedup": 0.94,
+					"roundsWon": "13/150",
+					"p": "<.001",
+					"verdict": "loss"
 				}
 			},
 			"replication": {
@@ -1479,9 +1479,9 @@
 					"tie": 0
 				},
 				"arktype": {
-					"win": 0,
+					"win": 1,
 					"loss": 0,
-					"tie": 1
+					"tie": 0
 				},
 				"standaloneFirst": {
 					"win": 1,
@@ -1496,125 +1496,125 @@
 			"name": "morph",
 			"measures": "parse a numeric string to a number (\"12345\" -> 12345); typia and ajv can't transform",
 			"medianNs": {
-				"valibot": 96.6,
-				"zod": 363,
-				"zodCompiled": 37.8,
-				"zodMini": 183,
-				"typebox": 10100,
-				"arktype": 18.1,
-				"standalone": 16.9,
-				"standaloneFirst": 16.9
+				"valibot": 81.4,
+				"zod": 271,
+				"zodCompiled": 28.6,
+				"zodMini": 121,
+				"typebox": 4440,
+				"arktype": 18.8,
+				"standalone": 18.3,
+				"standaloneFirst": 18.7
 			},
 			"iqrNs": {
-				"valibot": [84.5, 130],
-				"zod": [300, 512],
-				"zodCompiled": [35.1, 56.5],
-				"zodMini": [164, 280],
-				"typebox": [8460, 13600],
-				"arktype": [16.2, 23.7],
-				"standalone": [16.3, 23.2],
-				"standaloneFirst": [16.3, 23.6]
+				"valibot": [76, 99.4],
+				"zod": [225, 342],
+				"zodCompiled": [27.8, 29.9],
+				"zodMini": [117, 125],
+				"typebox": [4160, 6270],
+				"arktype": [18.2, 19.5],
+				"standalone": [17.9, 19.2],
+				"standaloneFirst": [18.4, 19.4]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.175,
-					"speedup": 5.72,
+					"ratio": 0.224,
+					"speedup": 4.46,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0464,
-					"speedup": 21.5,
+					"ratio": 0.0674,
+					"speedup": 14.8,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.447,
-					"speedup": 2.24,
-					"roundsWon": "143/150",
+					"ratio": 0.638,
+					"speedup": 1.57,
+					"roundsWon": "147/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0922,
-					"speedup": 10.9,
+					"ratio": 0.151,
+					"speedup": 6.62,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.00168,
-					"speedup": 596,
+					"ratio": 0.00411,
+					"speedup": 243,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.93,
-					"speedup": 1.07,
-					"roundsWon": "77/150",
-					"p": "0.807",
-					"verdict": "tie"
+					"ratio": 0.972,
+					"speedup": 1.03,
+					"roundsWon": "106/150",
+					"p": "<.001",
+					"verdict": "win"
 				},
 				"standaloneFirst": {
-					"ratio": 1,
-					"speedup": 0.999,
-					"roundsWon": "68/150",
-					"p": "0.288",
-					"verdict": "tie"
+					"ratio": 0.977,
+					"speedup": 1.02,
+					"roundsWon": "118/150",
+					"p": "<.001",
+					"verdict": "win"
 				}
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.175,
-					"speedup": 5.73,
+					"ratio": 0.23,
+					"speedup": 4.36,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0464,
-					"speedup": 21.6,
+					"ratio": 0.069,
+					"speedup": 14.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.446,
-					"speedup": 2.24,
-					"roundsWon": "142/150",
+					"ratio": 0.653,
+					"speedup": 1.53,
+					"roundsWon": "146/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.092,
-					"speedup": 10.9,
-					"roundsWon": "149/150",
+					"ratio": 0.155,
+					"speedup": 6.47,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.00168,
-					"speedup": 597,
+					"ratio": 0.0042,
+					"speedup": 238,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.929,
-					"speedup": 1.08,
-					"roundsWon": "78/150",
-					"p": "0.683",
+					"ratio": 0.994,
+					"speedup": 1.01,
+					"roundsWon": "70/150",
+					"p": "0.463",
 					"verdict": "tie"
 				},
 				"standalone": {
-					"ratio": 0.999,
-					"speedup": 1,
-					"roundsWon": "82/150",
-					"p": "0.288",
-					"verdict": "tie"
+					"ratio": 1.02,
+					"speedup": 0.977,
+					"roundsWon": "32/150",
+					"p": "<.001",
+					"verdict": "loss"
 				}
 			},
 			"replication": {
@@ -1645,14 +1645,14 @@
 					"tie": 0
 				},
 				"arktype": {
-					"win": 1,
+					"win": 0,
 					"loss": 0,
-					"tie": 0
+					"tie": 1
 				},
 				"standaloneFirst": {
-					"win": 1,
+					"win": 0,
 					"loss": 0,
-					"tie": 0
+					"tie": 1
 				}
 			}
 		},
@@ -1662,45 +1662,45 @@
 			"name": "defaults",
 			"measures": "an object missing 2 defaulted and 2 optional keys; the output must hold the defaults (typia has none)",
 			"medianNs": {
-				"valibot": 358,
-				"zod": 117,
-				"zodCompiled": 87.3,
-				"zodMini": 707,
-				"ajv": 29.3,
-				"typebox": 2040,
-				"arktype": 22.6,
-				"standalone": 22.2,
-				"standaloneFirst": 22.5
+				"valibot": 304,
+				"zod": 73.3,
+				"zodCompiled": 63.2,
+				"zodMini": 509,
+				"ajv": 18.8,
+				"typebox": 1580,
+				"arktype": 16.4,
+				"standalone": 16,
+				"standaloneFirst": 16
 			},
 			"iqrNs": {
-				"valibot": [331, 475],
-				"zod": [104, 151],
-				"zodCompiled": [80.2, 113],
-				"zodMini": [631, 1030],
-				"ajv": [26.1, 35.1],
-				"typebox": [1840, 2680],
-				"arktype": [20.9, 29.6],
-				"standalone": [19.7, 29.9],
-				"standaloneFirst": [20.2, 30.4]
+				"valibot": [287, 374],
+				"zod": [71, 77.4],
+				"zodCompiled": [60.4, 66.3],
+				"zodMini": [496, 533],
+				"ajv": [17.9, 19.8],
+				"typebox": [1530, 1660],
+				"arktype": [16, 17.6],
+				"standalone": [15.3, 17.3],
+				"standaloneFirst": [15.2, 16.8]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.062,
-					"speedup": 16.1,
+					"ratio": 0.0526,
+					"speedup": 19,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.19,
-					"speedup": 5.25,
+					"ratio": 0.218,
+					"speedup": 4.59,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.254,
-					"speedup": 3.93,
+					"ratio": 0.253,
+					"speedup": 3.95,
 					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
@@ -1713,89 +1713,89 @@
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.757,
-					"speedup": 1.32,
-					"roundsWon": "115/150",
+					"ratio": 0.851,
+					"speedup": 1.17,
+					"roundsWon": "130/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.0109,
-					"speedup": 91.6,
+					"ratio": 0.0101,
+					"speedup": 98.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.982,
-					"speedup": 1.02,
-					"roundsWon": "85/150",
-					"p": "0.121",
-					"verdict": "tie"
+					"ratio": 0.972,
+					"speedup": 1.03,
+					"roundsWon": "99/150",
+					"p": "<.001",
+					"verdict": "win"
 				},
 				"standaloneFirst": {
-					"ratio": 0.988,
-					"speedup": 1.01,
-					"roundsWon": "81/150",
-					"p": "0.369",
+					"ratio": 1,
+					"speedup": 1,
+					"roundsWon": "67/150",
+					"p": "0.221",
 					"verdict": "tie"
 				}
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.0627,
-					"speedup": 15.9,
+					"ratio": 0.0526,
+					"speedup": 19,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.193,
-					"speedup": 5.19,
-					"roundsWon": "149/150",
+					"ratio": 0.218,
+					"speedup": 4.59,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.258,
-					"speedup": 3.88,
+					"ratio": 0.253,
+					"speedup": 3.95,
 					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0318,
-					"speedup": 31.5,
+					"ratio": 0.0314,
+					"speedup": 31.9,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.767,
-					"speedup": 1.3,
-					"roundsWon": "116/150",
+					"ratio": 0.851,
+					"speedup": 1.18,
+					"roundsWon": "130/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.0111,
-					"speedup": 90.5,
+					"ratio": 0.0101,
+					"speedup": 98.8,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.994,
-					"speedup": 1.01,
-					"roundsWon": "82/150",
-					"p": "0.288",
-					"verdict": "tie"
+					"ratio": 0.972,
+					"speedup": 1.03,
+					"roundsWon": "104/150",
+					"p": "<.001",
+					"verdict": "win"
 				},
 				"standalone": {
-					"ratio": 1.01,
-					"speedup": 0.988,
-					"roundsWon": "69/150",
-					"p": "0.369",
+					"ratio": 1,
+					"speedup": 1,
+					"roundsWon": "83/150",
+					"p": "0.221",
 					"verdict": "tie"
 				}
 			},
@@ -1849,125 +1849,125 @@
 			"name": "items morph",
 			"measures": "100 items { id, name, count }, each count a numeric string parsed to a number: a transform below the root, which a library copies or writes into its input",
 			"medianNs": {
-				"valibot": 37600,
-				"zod": 21500,
-				"zodCompiled": 4220,
-				"zodMini": 72700,
-				"typebox": 1510000,
-				"arktype": 4710,
-				"standalone": 4700,
-				"standaloneFirst": 4790
+				"valibot": 26800,
+				"zod": 15000,
+				"zodCompiled": 3060,
+				"zodMini": 44500,
+				"typebox": 1010000,
+				"arktype": 3660,
+				"standalone": 3770,
+				"standaloneFirst": 3750
 			},
 			"iqrNs": {
-				"valibot": [32500, 47400],
-				"zod": [19100, 29300],
-				"zodCompiled": [3800, 5700],
-				"zodMini": [67100, 104000],
-				"typebox": [1280000, 2010000],
-				"arktype": [4200, 6400],
-				"standalone": [4260, 6130],
-				"standaloneFirst": [4350, 7030]
+				"valibot": [25800, 28000],
+				"zod": [14500, 15700],
+				"zodCompiled": [2940, 3160],
+				"zodMini": [43300, 45900],
+				"typebox": [976000, 1040000],
+				"arktype": [3550, 3820],
+				"standalone": [3650, 3910],
+				"standaloneFirst": [3600, 3970]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.125,
-					"speedup": 8,
+					"ratio": 0.141,
+					"speedup": 7.1,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.218,
-					"speedup": 4.58,
+					"ratio": 0.251,
+					"speedup": 3.98,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 1.12,
-					"speedup": 0.897,
-					"roundsWon": "56/150",
-					"p": "0.002",
+					"ratio": 1.23,
+					"speedup": 0.81,
+					"roundsWon": "9/150",
+					"p": "<.001",
 					"verdict": "loss"
 				},
 				"zodMini": {
-					"ratio": 0.0647,
-					"speedup": 15.5,
+					"ratio": 0.0847,
+					"speedup": 11.8,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.00311,
-					"speedup": 322,
+					"ratio": 0.00374,
+					"speedup": 267,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.998,
-					"speedup": 1,
-					"roundsWon": "75/150",
-					"p": "1.000",
-					"verdict": "tie"
-				},
-				"standaloneFirst": {
-					"ratio": 0.981,
-					"speedup": 1.02,
-					"roundsWon": "89/150",
-					"p": "0.027",
-					"verdict": "win"
-				}
-			},
-			"standaloneFirstVs": {
-				"valibot": {
-					"ratio": 0.127,
-					"speedup": 7.84,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zod": {
-					"ratio": 0.223,
-					"speedup": 4.49,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zodCompiled": {
-					"ratio": 1.14,
-					"speedup": 0.88,
-					"roundsWon": "35/150",
-					"p": "<.001",
-					"verdict": "loss"
-				},
-				"zodMini": {
-					"ratio": 0.066,
-					"speedup": 15.2,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"typebox": {
-					"ratio": 0.00317,
-					"speedup": 316,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"arktype": {
-					"ratio": 1.02,
-					"speedup": 0.982,
+					"ratio": 1.03,
+					"speedup": 0.971,
 					"roundsWon": "54/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
-				"standalone": {
-					"ratio": 1.02,
-					"speedup": 0.981,
-					"roundsWon": "61/150",
-					"p": "0.027",
+				"standaloneFirst": {
+					"ratio": 1,
+					"speedup": 0.996,
+					"roundsWon": "79/150",
+					"p": "0.568",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.14,
+					"speedup": 7.12,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.25,
+					"speedup": 4,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 1.23,
+					"speedup": 0.814,
+					"roundsWon": "9/150",
+					"p": "<.001",
 					"verdict": "loss"
+				},
+				"zodMini": {
+					"ratio": 0.0844,
+					"speedup": 11.9,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.00373,
+					"speedup": 268,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.03,
+					"speedup": 0.975,
+					"roundsWon": "51/150",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"standalone": {
+					"ratio": 0.996,
+					"speedup": 1,
+					"roundsWon": "71/150",
+					"p": "0.568",
+					"verdict": "tie"
 				}
 			},
 			"replication": {
@@ -2004,8 +2004,8 @@
 				},
 				"standaloneFirst": {
 					"win": 0,
-					"loss": 0,
-					"tie": 1
+					"loss": 1,
+					"tie": 0
 				}
 			}
 		},
@@ -2015,140 +2015,140 @@
 			"name": "items defaults",
 			"measures": "100 items { id, name }, each missing a defaulted boolean the output must hold",
 			"medianNs": {
-				"valibot": 25600,
-				"zod": 7970,
-				"zodCompiled": 5290,
-				"zodMini": 46900,
-				"ajv": 1680,
-				"typebox": 128000,
-				"arktype": 4140,
-				"standalone": 4180,
-				"standaloneFirst": 4480
+				"valibot": 22200,
+				"zod": 5770,
+				"zodCompiled": 3790,
+				"zodMini": 34400,
+				"ajv": 1090,
+				"typebox": 98800,
+				"arktype": 2910,
+				"standalone": 2890,
+				"standaloneFirst": 2860
 			},
 			"iqrNs": {
-				"valibot": [23300, 35400],
-				"zod": [6930, 9470],
-				"zodCompiled": [4640, 6490],
-				"zodMini": [41800, 63700],
-				"ajv": [1460, 1900],
-				"typebox": [114000, 169000],
-				"arktype": [3640, 5310],
-				"standalone": [3610, 4980],
-				"standaloneFirst": [3680, 5710]
+				"valibot": [21300, 24300],
+				"zod": [5590, 5980],
+				"zodCompiled": [3630, 3960],
+				"zodMini": [33500, 35800],
+				"ajv": [1020, 1160],
+				"typebox": [95500, 103000],
+				"arktype": [2770, 3120],
+				"standalone": [2780, 3080],
+				"standaloneFirst": [2750, 3050]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.163,
-					"speedup": 6.13,
+					"ratio": 0.131,
+					"speedup": 7.65,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.524,
-					"speedup": 1.91,
-					"roundsWon": "143/150",
+					"ratio": 0.502,
+					"speedup": 1.99,
+					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.789,
-					"speedup": 1.27,
-					"roundsWon": "113/150",
+					"ratio": 0.764,
+					"speedup": 1.31,
+					"roundsWon": "141/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.089,
-					"speedup": 11.2,
+					"ratio": 0.084,
+					"speedup": 11.9,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 2.48,
-					"speedup": 0.403,
-					"roundsWon": "0/150",
+					"ratio": 2.65,
+					"speedup": 0.377,
+					"roundsWon": "1/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"typebox": {
-					"ratio": 0.0327,
-					"speedup": 30.6,
+					"ratio": 0.0293,
+					"speedup": 34.1,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 1.01,
-					"speedup": 0.992,
-					"roundsWon": "72/150",
+					"ratio": 0.993,
+					"speedup": 1.01,
+					"roundsWon": "78/150",
 					"p": "0.683",
 					"verdict": "tie"
 				},
 				"standaloneFirst": {
-					"ratio": 0.933,
-					"speedup": 1.07,
-					"roundsWon": "85/150",
-					"p": "0.121",
+					"ratio": 1.01,
+					"speedup": 0.989,
+					"roundsWon": "69/150",
+					"p": "0.369",
 					"verdict": "tie"
 				}
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.175,
-					"speedup": 5.72,
+					"ratio": 0.129,
+					"speedup": 7.74,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.562,
-					"speedup": 1.78,
-					"roundsWon": "145/150",
+					"ratio": 0.496,
+					"speedup": 2.02,
+					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.846,
-					"speedup": 1.18,
-					"roundsWon": "112/150",
+					"ratio": 0.755,
+					"speedup": 1.32,
+					"roundsWon": "143/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0954,
-					"speedup": 10.5,
+					"ratio": 0.0831,
+					"speedup": 12,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 2.66,
-					"speedup": 0.376,
+					"ratio": 2.62,
+					"speedup": 0.381,
 					"roundsWon": "0/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"typebox": {
-					"ratio": 0.0351,
-					"speedup": 28.5,
+					"ratio": 0.029,
+					"speedup": 34.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 1.08,
-					"speedup": 0.925,
-					"roundsWon": "58/150",
-					"p": "0.007",
-					"verdict": "loss"
+					"ratio": 0.982,
+					"speedup": 1.02,
+					"roundsWon": "86/150",
+					"p": "0.086",
+					"verdict": "tie"
 				},
 				"standalone": {
-					"ratio": 1.07,
-					"speedup": 0.933,
-					"roundsWon": "65/150",
-					"p": "0.121",
+					"ratio": 0.989,
+					"speedup": 1.01,
+					"roundsWon": "81/150",
+					"p": "0.369",
 					"verdict": "tie"
 				}
 			},
@@ -2202,124 +2202,124 @@
 			"name": "moltar morph",
 			"measures": "moltar's object with its nested `num` a numeric string parsed to a number",
 			"medianNs": {
-				"valibot": 985,
-				"zod": 604,
-				"zodCompiled": 67.5,
-				"zodMini": 1620,
-				"typebox": 69700,
-				"arktype": 64.1,
-				"standalone": 69.5,
-				"standaloneFirst": 71.1
+				"valibot": 762,
+				"zod": 350,
+				"zodCompiled": 43.2,
+				"zodMini": 1230,
+				"typebox": 48200,
+				"arktype": 46.3,
+				"standalone": 49.7,
+				"standaloneFirst": 49.7
 			},
 			"iqrNs": {
-				"valibot": [833, 1370],
-				"zod": [511, 782],
-				"zodCompiled": [60.4, 78.2],
-				"zodMini": [1450, 2210],
-				"typebox": [61700, 87300],
-				"arktype": [56, 78.5],
-				"standalone": [59.5, 81.5],
-				"standaloneFirst": [60.7, 85.3]
+				"valibot": [740, 785],
+				"zod": [282, 385],
+				"zodCompiled": [41, 45.6],
+				"zodMini": [1180, 1270],
+				"typebox": [45900, 51400],
+				"arktype": [44.7, 48.8],
+				"standalone": [48.2, 53.4],
+				"standaloneFirst": [47.9, 52.7]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0706,
-					"speedup": 14.2,
+					"ratio": 0.0652,
+					"speedup": 15.3,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.115,
-					"speedup": 8.68,
+					"ratio": 0.142,
+					"speedup": 7.05,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 1.03,
-					"speedup": 0.971,
-					"roundsWon": "68/150",
-					"p": "0.288",
-					"verdict": "tie"
+					"ratio": 1.15,
+					"speedup": 0.87,
+					"roundsWon": "11/150",
+					"p": "<.001",
+					"verdict": "loss"
 				},
 				"zodMini": {
-					"ratio": 0.0429,
-					"speedup": 23.3,
+					"ratio": 0.0405,
+					"speedup": 24.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.000997,
-					"speedup": 1000,
+					"ratio": 0.00103,
+					"speedup": 970,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 1.08,
-					"speedup": 0.923,
-					"roundsWon": "65/150",
-					"p": "0.121",
-					"verdict": "tie"
+					"ratio": 1.07,
+					"speedup": 0.933,
+					"roundsWon": "26/150",
+					"p": "<.001",
+					"verdict": "loss"
 				},
 				"standaloneFirst": {
-					"ratio": 0.977,
-					"speedup": 1.02,
-					"roundsWon": "78/150",
-					"p": "0.683",
+					"ratio": 0.999,
+					"speedup": 1,
+					"roundsWon": "75/150",
+					"p": "1.000",
 					"verdict": "tie"
 				}
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.0722,
-					"speedup": 13.8,
+					"ratio": 0.0653,
+					"speedup": 15.3,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.118,
-					"speedup": 8.49,
+					"ratio": 0.142,
+					"speedup": 7.05,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 1.05,
-					"speedup": 0.949,
-					"roundsWon": "66/150",
-					"p": "0.165",
-					"verdict": "tie"
+					"ratio": 1.15,
+					"speedup": 0.869,
+					"roundsWon": "15/150",
+					"p": "<.001",
+					"verdict": "loss"
 				},
 				"zodMini": {
-					"ratio": 0.0439,
-					"speedup": 22.8,
+					"ratio": 0.0405,
+					"speedup": 24.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.00102,
-					"speedup": 980,
+					"ratio": 0.00103,
+					"speedup": 970,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 1.11,
-					"speedup": 0.902,
-					"roundsWon": "52/150",
+					"ratio": 1.07,
+					"speedup": 0.932,
+					"roundsWon": "28/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"standalone": {
-					"ratio": 1.02,
-					"speedup": 0.977,
-					"roundsWon": "72/150",
-					"p": "0.683",
+					"ratio": 1,
+					"speedup": 0.999,
+					"roundsWon": "75/150",
+					"p": "1.000",
 					"verdict": "tie"
 				}
 			},
@@ -2337,8 +2337,8 @@
 				},
 				"zodCompiled": {
 					"win": 0,
-					"loss": 0,
-					"tie": 1
+					"loss": 1,
+					"tie": 0
 				},
 				"zodMini": {
 					"win": 1,
@@ -2352,13 +2352,13 @@
 				},
 				"arktype": {
 					"win": 0,
-					"loss": 0,
-					"tie": 1
+					"loss": 1,
+					"tie": 0
 				},
 				"standaloneFirst": {
 					"win": 0,
-					"loss": 0,
-					"tie": 1
+					"loss": 1,
+					"tie": 0
 				}
 			}
 		},
@@ -2371,155 +2371,155 @@
 				"zodCompiled": "runs Zod's runtime parser, since z.compile refuses recursive schemas"
 			},
 			"medianNs": {
-				"valibot": 9410,
-				"zod": 17200,
-				"zodCompiled": 15600,
-				"zodMini": 27500,
-				"typia": 4230,
-				"ajv": 1680,
-				"typebox": 882,
-				"arktype": 610,
-				"standalone": 600,
-				"standaloneFirst": 598
+				"valibot": 6810,
+				"zod": 11400,
+				"zodCompiled": 11400,
+				"zodMini": 21000,
+				"typia": 3220,
+				"ajv": 1100,
+				"typebox": 509,
+				"arktype": 346,
+				"standalone": 352,
+				"standaloneFirst": 349
 			},
 			"iqrNs": {
-				"valibot": [7840, 12300],
-				"zod": [14300, 22200],
-				"zodCompiled": [13700, 19800],
-				"zodMini": [25300, 38000],
-				"typia": [3790, 5580],
-				"ajv": [1450, 2230],
-				"typebox": [809, 988],
-				"arktype": [536, 688],
-				"standalone": [531, 673],
-				"standaloneFirst": [518, 695]
+				"valibot": [6510, 7160],
+				"zod": [11100, 11900],
+				"zodCompiled": [11000, 12000],
+				"zodMini": [20000, 22100],
+				"typia": [3110, 3390],
+				"ajv": [1060, 1170],
+				"typebox": [475, 570],
+				"arktype": [322, 382],
+				"standalone": [326, 381],
+				"standaloneFirst": [325, 384]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0637,
-					"speedup": 15.7,
+					"ratio": 0.0517,
+					"speedup": 19.4,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0348,
-					"speedup": 28.8,
+					"ratio": 0.0308,
+					"speedup": 32.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0385,
-					"speedup": 26,
+					"ratio": 0.031,
+					"speedup": 32.3,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0218,
-					"speedup": 45.9,
+					"ratio": 0.0168,
+					"speedup": 59.6,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.142,
-					"speedup": 7.05,
+					"ratio": 0.109,
+					"speedup": 9.15,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.356,
-					"speedup": 2.81,
-					"roundsWon": "149/150",
+					"ratio": 0.32,
+					"speedup": 3.13,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.68,
-					"speedup": 1.47,
-					"roundsWon": "138/150",
+					"ratio": 0.691,
+					"speedup": 1.45,
+					"roundsWon": "146/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.983,
-					"speedup": 1.02,
-					"roundsWon": "78/150",
-					"p": "0.683",
+					"ratio": 1.02,
+					"speedup": 0.985,
+					"roundsWon": "69/150",
+					"p": "0.369",
 					"verdict": "tie"
 				},
 				"standaloneFirst": {
-					"ratio": 1,
-					"speedup": 0.997,
-					"roundsWon": "77/150",
+					"ratio": 1.01,
+					"speedup": 0.992,
+					"roundsWon": "73/150",
 					"p": "0.807",
 					"verdict": "tie"
 				}
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.0635,
-					"speedup": 15.8,
+					"ratio": 0.0513,
+					"speedup": 19.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0347,
-					"speedup": 28.9,
+					"ratio": 0.0305,
+					"speedup": 32.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0384,
-					"speedup": 26.1,
+					"ratio": 0.0308,
+					"speedup": 32.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0217,
-					"speedup": 46,
+					"ratio": 0.0167,
+					"speedup": 60,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.141,
-					"speedup": 7.08,
+					"ratio": 0.108,
+					"speedup": 9.22,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.355,
-					"speedup": 2.82,
-					"roundsWon": "149/150",
+					"ratio": 0.317,
+					"speedup": 3.15,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.678,
-					"speedup": 1.48,
-					"roundsWon": "133/150",
+					"ratio": 0.686,
+					"speedup": 1.46,
+					"roundsWon": "145/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.98,
-					"speedup": 1.02,
-					"roundsWon": "83/150",
-					"p": "0.221",
+					"ratio": 1.01,
+					"speedup": 0.992,
+					"roundsWon": "78/150",
+					"p": "0.683",
 					"verdict": "tie"
 				},
 				"standalone": {
-					"ratio": 0.997,
-					"speedup": 1,
-					"roundsWon": "73/150",
+					"ratio": 0.992,
+					"speedup": 1.01,
+					"roundsWon": "77/150",
 					"p": "0.807",
 					"verdict": "tie"
 				}
@@ -2562,9 +2562,9 @@
 					"tie": 0
 				},
 				"arktype": {
-					"win": 1,
+					"win": 0,
 					"loss": 0,
-					"tie": 0
+					"tie": 1
 				},
 				"standaloneFirst": {
 					"win": 0,
@@ -2579,140 +2579,75 @@
 			"name": "moltar",
 			"measures": "moltar's object with an undeclared key at each level; the output must omit them (zod and valibot's default object mode, ajv removeAdditional, TypeBox Clean, typia validatePrune)",
 			"medianNs": {
-				"valibot": 954,
-				"zod": 192,
-				"zodCompiled": 40,
-				"zodMini": 1550,
-				"typia": 822,
-				"ajv": 1130,
-				"typebox": 15200,
-				"arktype": 34.3,
-				"standalone": 34.9,
-				"standaloneFirst": 35.5
+				"valibot": 692,
+				"zod": 168,
+				"zodCompiled": 26.1,
+				"zodMini": 1110,
+				"typia": 644,
+				"ajv": 869,
+				"typebox": 12400,
+				"arktype": 21.6,
+				"standalone": 22.4,
+				"standaloneFirst": 20.5
 			},
 			"iqrNs": {
-				"valibot": [740, 1190],
-				"zod": [165, 226],
-				"zodCompiled": [34.5, 47.4],
-				"zodMini": [1240, 2170],
-				"typia": [739, 1150],
-				"ajv": [974, 1560],
-				"typebox": [13500, 21300],
-				"arktype": [31.2, 39.3],
-				"standalone": [31.8, 41],
-				"standaloneFirst": [29.7, 45.6]
+				"valibot": [667, 777],
+				"zod": [136, 236],
+				"zodCompiled": [22.9, 31.6],
+				"zodMini": [1050, 1280],
+				"typia": [611, 738],
+				"ajv": [836, 983],
+				"typebox": [11100, 14500],
+				"arktype": [20.3, 27.9],
+				"standalone": [20.1, 27.6],
+				"standaloneFirst": [19.2, 23.1]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0366,
-					"speedup": 27.3,
+					"ratio": 0.0323,
+					"speedup": 31,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.181,
-					"speedup": 5.51,
+					"ratio": 0.133,
+					"speedup": 7.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.872,
-					"speedup": 1.15,
-					"roundsWon": "93/150",
-					"p": "0.004",
+					"ratio": 0.856,
+					"speedup": 1.17,
+					"roundsWon": "109/150",
+					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0225,
-					"speedup": 44.4,
+					"ratio": 0.0201,
+					"speedup": 49.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.0424,
-					"speedup": 23.6,
+					"ratio": 0.0347,
+					"speedup": 28.8,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.0309,
-					"speedup": 32.4,
+					"ratio": 0.0257,
+					"speedup": 38.9,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.0023,
-					"speedup": 435,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"arktype": {
-					"ratio": 1.02,
-					"speedup": 0.983,
-					"roundsWon": "71/150",
-					"p": "0.568",
-					"verdict": "tie"
-				},
-				"standaloneFirst": {
-					"ratio": 0.984,
-					"speedup": 1.02,
-					"roundsWon": "74/150",
-					"p": "0.935",
-					"verdict": "tie"
-				}
-			},
-			"standaloneFirstVs": {
-				"valibot": {
-					"ratio": 0.0372,
-					"speedup": 26.9,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zod": {
-					"ratio": 0.184,
-					"speedup": 5.43,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zodCompiled": {
-					"ratio": 0.886,
-					"speedup": 1.13,
-					"roundsWon": "90/150",
-					"p": "0.018",
-					"verdict": "win"
-				},
-				"zodMini": {
-					"ratio": 0.0229,
-					"speedup": 43.7,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"typia": {
-					"ratio": 0.0431,
-					"speedup": 23.2,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"ajv": {
-					"ratio": 0.0314,
-					"speedup": 31.8,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"typebox": {
-					"ratio": 0.00233,
-					"speedup": 429,
+					"ratio": 0.00181,
+					"speedup": 553,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
@@ -2720,16 +2655,81 @@
 				"arktype": {
 					"ratio": 1.03,
 					"speedup": 0.967,
-					"roundsWon": "71/150",
+					"roundsWon": "79/150",
 					"p": "0.568",
 					"verdict": "tie"
 				},
+				"standaloneFirst": {
+					"ratio": 1.09,
+					"speedup": 0.917,
+					"roundsWon": "46/150",
+					"p": "<.001",
+					"verdict": "loss"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0296,
+					"speedup": 33.7,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.122,
+					"speedup": 8.18,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.786,
+					"speedup": 1.27,
+					"roundsWon": "136/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0184,
+					"speedup": 54.2,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.0319,
+					"speedup": 31.4,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.0236,
+					"speedup": 42.4,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.00166,
+					"speedup": 602,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.949,
+					"speedup": 1.05,
+					"roundsWon": "100/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
 				"standalone": {
-					"ratio": 1.02,
-					"speedup": 0.984,
-					"roundsWon": "76/150",
-					"p": "0.935",
-					"verdict": "tie"
+					"ratio": 0.917,
+					"speedup": 1.09,
+					"roundsWon": "104/150",
+					"p": "<.001",
+					"verdict": "win"
 				}
 			},
 			"replication": {
@@ -2775,9 +2775,9 @@
 					"tie": 1
 				},
 				"standaloneFirst": {
-					"win": 1,
+					"win": 0,
 					"loss": 0,
-					"tie": 0
+					"tie": 1
 				}
 			}
 		},
@@ -2787,156 +2787,156 @@
 			"name": "product",
 			"measures": "Product with 3 undeclared keys at different depths, removed from the output",
 			"medianNs": {
-				"valibot": 12200,
-				"zod": 10800,
-				"zodCompiled": 3000,
-				"zodMini": 21700,
-				"typia": 7840,
-				"ajv": 5710,
-				"typebox": 103000,
-				"arktype": 1430,
-				"standalone": 1510,
-				"standaloneFirst": 1600
+				"valibot": 8700,
+				"zod": 7290,
+				"zodCompiled": 1840,
+				"zodMini": 13300,
+				"typia": 5770,
+				"ajv": 3960,
+				"typebox": 60200,
+				"arktype": 937,
+				"standalone": 948,
+				"standaloneFirst": 936
 			},
 			"iqrNs": {
-				"valibot": [10600, 17400],
-				"zod": [9030, 15700],
-				"zodCompiled": [2380, 4310],
-				"zodMini": [17800, 31700],
-				"typia": [7160, 10400],
-				"ajv": [4850, 7520],
-				"typebox": [83800, 143000],
-				"arktype": [1180, 2060],
-				"standalone": [1220, 1930],
-				"standaloneFirst": [1160, 2080]
+				"valibot": [8140, 9260],
+				"zod": [7000, 7790],
+				"zodCompiled": [1770, 1960],
+				"zodMini": [12900, 14300],
+				"typia": [5550, 6090],
+				"ajv": [3830, 4260],
+				"typebox": [56500, 64900],
+				"arktype": [896, 1010],
+				"standalone": [898, 1000],
+				"standaloneFirst": [896, 993]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.123,
-					"speedup": 8.12,
+					"ratio": 0.109,
+					"speedup": 9.17,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.14,
-					"speedup": 7.14,
+					"ratio": 0.13,
+					"speedup": 7.69,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.503,
-					"speedup": 1.99,
-					"roundsWon": "140/150",
+					"ratio": 0.516,
+					"speedup": 1.94,
+					"roundsWon": "148/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0695,
-					"speedup": 14.4,
+					"ratio": 0.071,
+					"speedup": 14.1,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.192,
-					"speedup": 5.2,
+					"ratio": 0.164,
+					"speedup": 6.09,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.264,
-					"speedup": 3.79,
+					"ratio": 0.239,
+					"speedup": 4.18,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.0146,
-					"speedup": 68.3,
+					"ratio": 0.0158,
+					"speedup": 63.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 1.05,
-					"speedup": 0.95,
-					"roundsWon": "78/150",
-					"p": "0.683",
-					"verdict": "tie"
+					"ratio": 1.01,
+					"speedup": 0.988,
+					"roundsWon": "60/150",
+					"p": "0.018",
+					"verdict": "loss"
 				},
 				"standaloneFirst": {
-					"ratio": 0.945,
-					"speedup": 1.06,
-					"roundsWon": "74/150",
-					"p": "0.935",
+					"ratio": 1.01,
+					"speedup": 0.987,
+					"roundsWon": "68/150",
+					"p": "0.288",
 					"verdict": "tie"
 				}
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.13,
-					"speedup": 7.67,
-					"roundsWon": "150/150",
+					"ratio": 0.108,
+					"speedup": 9.29,
+					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.148,
-					"speedup": 6.75,
-					"roundsWon": "150/150",
+					"ratio": 0.128,
+					"speedup": 7.79,
+					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.532,
-					"speedup": 1.88,
-					"roundsWon": "138/150",
+					"ratio": 0.509,
+					"speedup": 1.96,
+					"roundsWon": "148/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0735,
-					"speedup": 13.6,
+					"ratio": 0.0701,
+					"speedup": 14.3,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.203,
-					"speedup": 4.91,
+					"ratio": 0.162,
+					"speedup": 6.17,
 					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.279,
-					"speedup": 3.58,
-					"roundsWon": "147/150",
+					"ratio": 0.236,
+					"speedup": 4.24,
+					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
 					"ratio": 0.0155,
-					"speedup": 64.6,
+					"speedup": 64.3,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 1.11,
-					"speedup": 0.898,
-					"roundsWon": "74/150",
-					"p": "0.935",
+					"ratio": 0.999,
+					"speedup": 1,
+					"roundsWon": "73/150",
+					"p": "0.807",
 					"verdict": "tie"
 				},
 				"standalone": {
-					"ratio": 1.06,
-					"speedup": 0.945,
-					"roundsWon": "76/150",
-					"p": "0.935",
+					"ratio": 0.987,
+					"speedup": 1.01,
+					"roundsWon": "82/150",
+					"p": "0.288",
 					"verdict": "tie"
 				}
 			},
@@ -2979,13 +2979,13 @@
 				},
 				"arktype": {
 					"win": 0,
-					"loss": 0,
-					"tie": 1
+					"loss": 1,
+					"tie": 0
 				},
 				"standaloneFirst": {
 					"win": 0,
-					"loss": 0,
-					"tie": 1
+					"loss": 1,
+					"tie": 0
 				}
 			}
 		},
@@ -2995,81 +2995,81 @@
 			"name": "moltar",
 			"measures": "invalid moltar (one nested boolean is a string); every error, raw, without message text where a library can skip it",
 			"medianNs": {
-				"valibot": 1380,
-				"zod": 4030,
-				"zodCompiled": 4730,
-				"zodMini": 6150,
-				"typia": 692,
-				"ajv": 65.4,
-				"typebox": 21800,
-				"arktype": 589,
-				"standalone": 80.1
+				"valibot": 832,
+				"zod": 2250,
+				"zodCompiled": 2180,
+				"zodMini": 3450,
+				"typia": 314,
+				"ajv": 33.7,
+				"typebox": 13800,
+				"arktype": 272,
+				"standalone": 43.3
 			},
 			"iqrNs": {
-				"valibot": [1200, 1870],
-				"zod": [3470, 5290],
-				"zodCompiled": [3750, 5910],
-				"zodMini": [4820, 8460],
-				"typia": [526, 881],
-				"ajv": [56.8, 77.8],
-				"typebox": [18000, 28300],
-				"arktype": [462, 778],
-				"standalone": [69.4, 112]
+				"valibot": [804, 886],
+				"zod": [1980, 2770],
+				"zodCompiled": [1970, 2680],
+				"zodMini": [3140, 3810],
+				"typia": [303, 338],
+				"ajv": [31.8, 37.3],
+				"typebox": [13300, 14800],
+				"arktype": [260, 296],
+				"standalone": [41.3, 46.6]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0579,
-					"speedup": 17.3,
+					"ratio": 0.052,
+					"speedup": 19.2,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0199,
-					"speedup": 50.3,
+					"ratio": 0.0193,
+					"speedup": 51.9,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.017,
-					"speedup": 59,
+					"ratio": 0.0199,
+					"speedup": 50.4,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.013,
-					"speedup": 76.7,
+					"ratio": 0.0126,
+					"speedup": 79.6,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.116,
-					"speedup": 8.64,
-					"roundsWon": "149/150",
+					"ratio": 0.138,
+					"speedup": 7.26,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 1.22,
-					"speedup": 0.817,
-					"roundsWon": "34/150",
+					"ratio": 1.28,
+					"speedup": 0.779,
+					"roundsWon": "12/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"typebox": {
-					"ratio": 0.00368,
-					"speedup": 272,
+					"ratio": 0.00313,
+					"speedup": 319,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.136,
-					"speedup": 7.35,
-					"roundsWon": "149/150",
+					"ratio": 0.159,
+					"speedup": 6.28,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				}
@@ -3124,80 +3124,80 @@
 			"name": "moltar strict",
 			"measures": "valid moltar values plus undeclared keys, rejected; every error, raw",
 			"medianNs": {
-				"valibot": 2400,
-				"zod": 4720,
-				"zodCompiled": 6130,
-				"zodMini": 7710,
-				"typia": 2630,
-				"ajv": 200,
-				"typebox": 31000,
-				"arktype": 476,
-				"standalone": 202
+				"valibot": 1040,
+				"zod": 3030,
+				"zodCompiled": 3210,
+				"zodMini": 4330,
+				"typia": 1560,
+				"ajv": 82.3,
+				"typebox": 19700,
+				"arktype": 270,
+				"standalone": 114
 			},
 			"iqrNs": {
-				"valibot": [1690, 3080],
-				"zod": [4130, 6370],
-				"zodCompiled": [5250, 8110],
-				"zodMini": [5570, 10200],
-				"typia": [2160, 3590],
-				"ajv": [140, 256],
-				"typebox": [25900, 42900],
-				"arktype": [412, 615],
-				"standalone": [173, 249]
+				"valibot": [987, 1100],
+				"zod": [2810, 3290],
+				"zodCompiled": [3010, 3580],
+				"zodMini": [4060, 6460],
+				"typia": [1500, 1700],
+				"ajv": [78.9, 88.5],
+				"typebox": [18700, 20800],
+				"arktype": [259, 284],
+				"standalone": [108, 121]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.084,
-					"speedup": 11.9,
+					"ratio": 0.11,
+					"speedup": 9.12,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0427,
-					"speedup": 23.4,
+					"ratio": 0.0375,
+					"speedup": 26.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0329,
-					"speedup": 30.4,
+					"ratio": 0.0355,
+					"speedup": 28.2,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0262,
-					"speedup": 38.2,
+					"ratio": 0.0263,
+					"speedup": 38.1,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.0768,
-					"speedup": 13,
+					"ratio": 0.0727,
+					"speedup": 13.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 1.01,
-					"speedup": 0.994,
-					"roundsWon": "66/150",
-					"p": "0.165",
-					"verdict": "tie"
+					"ratio": 1.38,
+					"speedup": 0.723,
+					"roundsWon": "8/150",
+					"p": "<.001",
+					"verdict": "loss"
 				},
 				"typebox": {
-					"ratio": 0.0065,
-					"speedup": 154,
+					"ratio": 0.00576,
+					"speedup": 174,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.424,
-					"speedup": 2.36,
+					"ratio": 0.421,
+					"speedup": 2.38,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
@@ -3253,81 +3253,81 @@
 			"name": "product",
 			"measures": "Product with 16 errors across 4 levels of nesting; every error, raw",
 			"medianNs": {
-				"valibot": 25800,
-				"zod": 49800,
-				"zodCompiled": 47300,
-				"zodMini": 65600,
-				"typia": 29400,
-				"ajv": 2730,
-				"typebox": 160000,
-				"arktype": 6870,
-				"standalone": 2900
+				"valibot": 12200,
+				"zod": 27000,
+				"zodCompiled": 22100,
+				"zodMini": 27200,
+				"typia": 14000,
+				"ajv": 1650,
+				"typebox": 84600,
+				"arktype": 3200,
+				"standalone": 1300
 			},
 			"iqrNs": {
-				"valibot": [20900, 34100],
-				"zod": [37300, 61000],
-				"zodCompiled": [39100, 65500],
-				"zodMini": [47600, 83900],
-				"typia": [22500, 36500],
-				"ajv": [2280, 3740],
-				"typebox": [128000, 201000],
-				"arktype": [4960, 8750],
-				"standalone": [2370, 4100]
+				"valibot": [11700, 13200],
+				"zod": [25300, 30300],
+				"zodCompiled": [21200, 24700],
+				"zodMini": [25900, 30000],
+				"typia": [13500, 15600],
+				"ajv": [1590, 1780],
+				"typebox": [80900, 90100],
+				"arktype": [2970, 3930],
+				"standalone": [1230, 1410]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.112,
-					"speedup": 8.91,
+					"ratio": 0.106,
+					"speedup": 9.4,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0582,
-					"speedup": 17.2,
+					"ratio": 0.0481,
+					"speedup": 20.8,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0613,
-					"speedup": 16.3,
+					"ratio": 0.0587,
+					"speedup": 17,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0441,
-					"speedup": 22.7,
+					"ratio": 0.0476,
+					"speedup": 21,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.0986,
-					"speedup": 10.1,
+					"ratio": 0.0929,
+					"speedup": 10.8,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 1.06,
-					"speedup": 0.942,
-					"roundsWon": "62/150",
-					"p": "0.041",
-					"verdict": "loss"
+					"ratio": 0.784,
+					"speedup": 1.28,
+					"roundsWon": "144/150",
+					"p": "<.001",
+					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.0181,
-					"speedup": 55.2,
+					"ratio": 0.0153,
+					"speedup": 65.2,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.422,
-					"speedup": 2.37,
-					"roundsWon": "136/150",
+					"ratio": 0.405,
+					"speedup": 2.47,
+					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				}
@@ -3382,81 +3382,81 @@
 			"name": "items",
 			"measures": "100 items, the 51st invalid; every error, raw",
 			"medianNs": {
-				"valibot": 28300,
-				"zod": 12600,
-				"zodCompiled": 14100,
-				"zodMini": 67400,
-				"typia": 7920,
-				"ajv": 1160,
-				"typebox": 610000,
-				"arktype": 1730,
-				"standalone": 980
+				"valibot": 19800,
+				"zod": 7300,
+				"zodCompiled": 8090,
+				"zodMini": 31800,
+				"typia": 4560,
+				"ajv": 685,
+				"typebox": 452000,
+				"arktype": 1080,
+				"standalone": 522
 			},
 			"iqrNs": {
-				"valibot": [25800, 44100],
-				"zod": [11100, 16100],
-				"zodCompiled": [12100, 18600],
-				"zodMini": [59900, 93100],
-				"typia": [6500, 10200],
-				"ajv": [1000, 1410],
-				"typebox": [554000, 853000],
-				"arktype": [1440, 2080],
-				"standalone": [791, 1190]
+				"valibot": [19000, 21900],
+				"zod": [6920, 7920],
+				"zodCompiled": [7700, 8900],
+				"zodMini": [30500, 34900],
+				"typia": [3860, 5210],
+				"ajv": [644, 765],
+				"typebox": [407000, 503000],
+				"arktype": [989, 1240],
+				"standalone": [486, 595]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0347,
-					"speedup": 28.8,
+					"ratio": 0.0264,
+					"speedup": 37.9,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0779,
-					"speedup": 12.8,
+					"ratio": 0.0715,
+					"speedup": 14,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0697,
-					"speedup": 14.4,
+					"ratio": 0.0646,
+					"speedup": 15.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0145,
-					"speedup": 68.8,
+					"ratio": 0.0164,
+					"speedup": 61,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.124,
-					"speedup": 8.08,
+					"ratio": 0.115,
+					"speedup": 8.73,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.846,
-					"speedup": 1.18,
-					"roundsWon": "107/150",
+					"ratio": 0.763,
+					"speedup": 1.31,
+					"roundsWon": "133/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.00161,
-					"speedup": 622,
+					"ratio": 0.00116,
+					"speedup": 865,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.566,
-					"speedup": 1.77,
-					"roundsWon": "143/150",
+					"ratio": 0.482,
+					"speedup": 2.07,
+					"roundsWon": "148/150",
 					"p": "<.001",
 					"verdict": "win"
 				}
@@ -3511,82 +3511,82 @@
 			"name": "patterns",
 			"measures": "3 strings matching /^[ab]+$/, the last 10,001 chars long and failing at its end (regex-bound); every error, raw",
 			"medianNs": {
-				"valibot": 13500,
-				"zod": 20800,
-				"zodCompiled": 36600,
-				"zodMini": 20500,
-				"typia": 27300,
-				"ajv": 12900,
-				"typebox": 34200,
-				"arktype": 6030,
-				"standalone": 5690
+				"valibot": 9700,
+				"zod": 12800,
+				"zodCompiled": 22800,
+				"zodMini": 12700,
+				"typia": 19800,
+				"ajv": 9250,
+				"typebox": 22900,
+				"arktype": 4250,
+				"standalone": 4140
 			},
 			"iqrNs": {
-				"valibot": [12500, 15800],
-				"zod": [17800, 26600],
-				"zodCompiled": [31900, 48100],
-				"zodMini": [18600, 27000],
-				"typia": [25500, 32700],
-				"ajv": [11700, 15500],
-				"typebox": [30200, 41800],
-				"arktype": [5450, 7210],
-				"standalone": [5170, 7180]
+				"valibot": [9150, 10600],
+				"zod": [12100, 14300],
+				"zodCompiled": [21600, 24800],
+				"zodMini": [12100, 13800],
+				"typia": [18800, 21500],
+				"ajv": [8730, 9940],
+				"typebox": [21600, 24800],
+				"arktype": [4020, 4610],
+				"standalone": [3950, 4450]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.421,
-					"speedup": 2.38,
-					"roundsWon": "149/150",
+					"ratio": 0.426,
+					"speedup": 2.34,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.274,
-					"speedup": 3.65,
+					"ratio": 0.323,
+					"speedup": 3.1,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.155,
-					"speedup": 6.44,
+					"ratio": 0.181,
+					"speedup": 5.51,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.278,
-					"speedup": 3.6,
+					"ratio": 0.325,
+					"speedup": 3.07,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.208,
-					"speedup": 4.8,
+					"ratio": 0.209,
+					"speedup": 4.78,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.442,
-					"speedup": 2.26,
-					"roundsWon": "149/150",
+					"ratio": 0.447,
+					"speedup": 2.24,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.166,
-					"speedup": 6.01,
+					"ratio": 0.181,
+					"speedup": 5.54,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.944,
-					"speedup": 1.06,
-					"roundsWon": "88/150",
-					"p": "0.041",
+					"ratio": 0.973,
+					"speedup": 1.03,
+					"roundsWon": "101/150",
+					"p": "<.001",
 					"verdict": "win"
 				}
 			},
@@ -3640,80 +3640,80 @@
 			"name": "moltar",
 			"measures": "as issues moltar, with each error's message text",
 			"medianNs": {
-				"valibot": 1420,
-				"zod": 3380,
-				"zodCompiled": 3390,
-				"zodMini": 4890,
-				"typia": 936,
-				"ajv": 61.2,
-				"typebox": 18600,
-				"arktype": 1790,
-				"standalone": 127
+				"valibot": 881,
+				"zod": 2220,
+				"zodCompiled": 2060,
+				"zodMini": 3420,
+				"typia": 591,
+				"ajv": 33.4,
+				"typebox": 11900,
+				"arktype": 1250,
+				"standalone": 75.1
 			},
 			"iqrNs": {
-				"valibot": [1230, 1970],
-				"zod": [3110, 4840],
-				"zodCompiled": [2970, 4750],
-				"zodMini": [4440, 6490],
-				"typia": [820, 1300],
-				"ajv": [52.4, 78.4],
-				"typebox": [17000, 25100],
-				"arktype": [1630, 2470],
-				"standalone": [113, 152]
+				"valibot": [835, 944],
+				"zod": [2100, 2390],
+				"zodCompiled": [1960, 2220],
+				"zodMini": [3280, 3880],
+				"typia": [569, 647],
+				"ajv": [31.6, 39.6],
+				"typebox": [11400, 12900],
+				"arktype": [1180, 1440],
+				"standalone": [71, 82.6]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0893,
-					"speedup": 11.2,
+					"ratio": 0.0853,
+					"speedup": 11.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0375,
-					"speedup": 26.7,
+					"ratio": 0.0338,
+					"speedup": 29.6,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0373,
-					"speedup": 26.8,
+					"ratio": 0.0364,
+					"speedup": 27.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0259,
-					"speedup": 38.6,
+					"ratio": 0.0219,
+					"speedup": 45.6,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.135,
-					"speedup": 7.38,
+					"ratio": 0.127,
+					"speedup": 7.86,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 2.07,
-					"speedup": 0.483,
-					"roundsWon": "7/150",
+					"ratio": 2.25,
+					"speedup": 0.444,
+					"roundsWon": "0/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"typebox": {
-					"ratio": 0.0068,
-					"speedup": 147,
+					"ratio": 0.00632,
+					"speedup": 158,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.0709,
-					"speedup": 14.1,
+					"ratio": 0.0601,
+					"speedup": 16.6,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
@@ -3769,81 +3769,81 @@
 			"name": "moltar strict",
 			"measures": "as issues moltar strict, with message text",
 			"medianNs": {
-				"valibot": 1560,
-				"zod": 4600,
-				"zodCompiled": 4290,
-				"zodMini": 5890,
-				"typia": 2710,
-				"ajv": 132,
-				"typebox": 28200,
-				"arktype": 1220,
-				"standalone": 274
+				"valibot": 1080,
+				"zod": 2690,
+				"zodCompiled": 2770,
+				"zodMini": 3800,
+				"typia": 1800,
+				"ajv": 77.7,
+				"typebox": 20900,
+				"arktype": 855,
+				"standalone": 170
 			},
 			"iqrNs": {
-				"valibot": [1410, 1990],
-				"zod": [4270, 6400],
-				"zodCompiled": [3760, 5860],
-				"zodMini": [5330, 7470],
-				"typia": [2460, 3920],
-				"ajv": [117, 161],
-				"typebox": [25400, 37000],
-				"arktype": [1070, 1800],
-				"standalone": [253, 400]
+				"valibot": [1030, 1160],
+				"zod": [2560, 2870],
+				"zodCompiled": [2610, 2910],
+				"zodMini": [3670, 4050],
+				"typia": [1700, 1950],
+				"ajv": [74.8, 81.8],
+				"typebox": [19900, 22500],
+				"arktype": [817, 910],
+				"standalone": [163, 183]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.176,
-					"speedup": 5.67,
+					"ratio": 0.158,
+					"speedup": 6.34,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0595,
-					"speedup": 16.8,
+					"ratio": 0.0632,
+					"speedup": 15.8,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0639,
-					"speedup": 15.7,
+					"ratio": 0.0615,
+					"speedup": 16.3,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0466,
-					"speedup": 21.5,
+					"ratio": 0.0448,
+					"speedup": 22.3,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.101,
-					"speedup": 9.9,
+					"ratio": 0.0946,
+					"speedup": 10.6,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 2.07,
-					"speedup": 0.483,
-					"roundsWon": "6/150",
+					"ratio": 2.19,
+					"speedup": 0.457,
+					"roundsWon": "1/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"typebox": {
-					"ratio": 0.00973,
-					"speedup": 103,
+					"ratio": 0.00814,
+					"speedup": 123,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.226,
-					"speedup": 4.43,
-					"roundsWon": "148/150",
+					"ratio": 0.199,
+					"speedup": 5.03,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				}
@@ -3898,80 +3898,80 @@
 			"name": "product",
 			"measures": "as issues product, with message text",
 			"medianNs": {
-				"valibot": 20300,
-				"zod": 55000,
-				"zodCompiled": 77300,
-				"zodMini": 53100,
-				"typia": 30700,
-				"ajv": 2460,
-				"typebox": 130000,
-				"arktype": 26500,
-				"standalone": 3590
+				"valibot": 12700,
+				"zod": 24000,
+				"zodCompiled": 21900,
+				"zodMini": 32100,
+				"typia": 20100,
+				"ajv": 1700,
+				"typebox": 87600,
+				"arktype": 13000,
+				"standalone": 2230
 			},
 			"iqrNs": {
-				"valibot": [17800, 29800],
-				"zod": [48700, 78000],
-				"zodCompiled": [66900, 108000],
-				"zodMini": [45300, 73700],
-				"typia": [28200, 39600],
-				"ajv": [2140, 3160],
-				"typebox": [115000, 167000],
-				"arktype": [22700, 35400],
-				"standalone": [3070, 4770]
+				"valibot": [11900, 13900],
+				"zod": [22500, 25900],
+				"zodCompiled": [20500, 24300],
+				"zodMini": [29900, 35700],
+				"typia": [18400, 21900],
+				"ajv": [1580, 1840],
+				"typebox": [82000, 95200],
+				"arktype": [12000, 14300],
+				"standalone": [2080, 2480]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.177,
-					"speedup": 5.66,
+					"ratio": 0.176,
+					"speedup": 5.69,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0653,
-					"speedup": 15.3,
+					"ratio": 0.0927,
+					"speedup": 10.8,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0464,
-					"speedup": 21.5,
+					"ratio": 0.102,
+					"speedup": 9.84,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0675,
-					"speedup": 14.8,
+					"ratio": 0.0693,
+					"speedup": 14.4,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.117,
-					"speedup": 8.55,
+					"ratio": 0.111,
+					"speedup": 9.01,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 1.46,
-					"speedup": 0.684,
-					"roundsWon": "24/150",
+					"ratio": 1.31,
+					"speedup": 0.764,
+					"roundsWon": "12/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"typebox": {
-					"ratio": 0.0277,
-					"speedup": 36.1,
+					"ratio": 0.0254,
+					"speedup": 39.3,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.136,
-					"speedup": 7.37,
+					"ratio": 0.172,
+					"speedup": 5.83,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
@@ -4027,81 +4027,81 @@
 			"name": "items",
 			"measures": "as issues items, with message text",
 			"medianNs": {
-				"valibot": 29500,
-				"zod": 13100,
-				"zodCompiled": 13800,
-				"zodMini": 62800,
-				"typia": 7110,
-				"ajv": 1070,
-				"typebox": 606000,
-				"arktype": 2980,
-				"standalone": 998
+				"valibot": 19900,
+				"zod": 7380,
+				"zodCompiled": 8530,
+				"zodMini": 45500,
+				"typia": 4260,
+				"ajv": 710,
+				"typebox": 405000,
+				"arktype": 2200,
+				"standalone": 565
 			},
 			"iqrNs": {
-				"valibot": [26000, 39800],
-				"zod": [10800, 16500],
-				"zodCompiled": [11800, 17800],
-				"zodMini": [58100, 82300],
-				"typia": [6280, 9500],
-				"ajv": [977, 1250],
-				"typebox": [544000, 752000],
-				"arktype": [2570, 4000],
-				"standalone": [907, 1130]
+				"valibot": [19200, 21000],
+				"zod": [7070, 7900],
+				"zodCompiled": [7950, 9200],
+				"zodMini": [43100, 49100],
+				"typia": [4040, 4530],
+				"ajv": [661, 764],
+				"typebox": [388000, 431000],
+				"arktype": [2090, 2360],
+				"standalone": [531, 612]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0338,
-					"speedup": 29.5,
+					"ratio": 0.0284,
+					"speedup": 35.2,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0759,
-					"speedup": 13.2,
+					"ratio": 0.0766,
+					"speedup": 13.1,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0724,
-					"speedup": 13.8,
+					"ratio": 0.0662,
+					"speedup": 15.1,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0159,
-					"speedup": 62.9,
+					"ratio": 0.0124,
+					"speedup": 80.6,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.14,
-					"speedup": 7.12,
+					"ratio": 0.133,
+					"speedup": 7.55,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.934,
-					"speedup": 1.07,
-					"roundsWon": "100/150",
+					"ratio": 0.796,
+					"speedup": 1.26,
+					"roundsWon": "142/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.00165,
-					"speedup": 607,
+					"ratio": 0.00139,
+					"speedup": 717,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.335,
-					"speedup": 2.98,
-					"roundsWon": "149/150",
+					"ratio": 0.257,
+					"speedup": 3.89,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				}
@@ -4156,81 +4156,81 @@
 			"name": "patterns",
 			"measures": "as issues patterns, with message text",
 			"medianNs": {
-				"valibot": 13700,
-				"zod": 20600,
-				"zodCompiled": 34900,
-				"zodMini": 21600,
-				"typia": 27700,
-				"ajv": 12300,
-				"typebox": 33800,
-				"arktype": 6800,
-				"standalone": 5710
+				"valibot": 9910,
+				"zod": 13500,
+				"zodCompiled": 24000,
+				"zodMini": 13500,
+				"typia": 20100,
+				"ajv": 9410,
+				"typebox": 23400,
+				"arktype": 4890,
+				"standalone": 4220
 			},
 			"iqrNs": {
-				"valibot": [12300, 16400],
-				"zod": [18200, 25800],
-				"zodCompiled": [31800, 43600],
-				"zodMini": [19300, 27100],
-				"typia": [25600, 33200],
-				"ajv": [11500, 14400],
-				"typebox": [30100, 41400],
-				"arktype": [6100, 8580],
-				"standalone": [5240, 6680]
+				"valibot": [9010, 10700],
+				"zod": [12400, 14400],
+				"zodCompiled": [21300, 25400],
+				"zodMini": [12300, 14800],
+				"typia": [18400, 21800],
+				"ajv": [8600, 10200],
+				"typebox": [21400, 25200],
+				"arktype": [4440, 5300],
+				"standalone": [3880, 4650]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.415,
-					"speedup": 2.41,
+					"ratio": 0.426,
+					"speedup": 2.35,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.277,
-					"speedup": 3.61,
+					"ratio": 0.313,
+					"speedup": 3.19,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.163,
-					"speedup": 6.12,
+					"ratio": 0.175,
+					"speedup": 5.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.264,
-					"speedup": 3.79,
+					"ratio": 0.312,
+					"speedup": 3.2,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.206,
-					"speedup": 4.85,
+					"ratio": 0.21,
+					"speedup": 4.76,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.464,
-					"speedup": 2.16,
+					"ratio": 0.449,
+					"speedup": 2.23,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.169,
-					"speedup": 5.93,
+					"ratio": 0.181,
+					"speedup": 5.53,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.839,
-					"speedup": 1.19,
-					"roundsWon": "117/150",
+					"ratio": 0.863,
+					"speedup": 1.16,
+					"roundsWon": "144/150",
 					"p": "<.001",
 					"verdict": "win"
 				}
@@ -4292,157 +4292,157 @@
 				"standalone": "has no first-error mode and reports every error"
 			},
 			"medianNs": {
-				"valibot": 1280,
-				"zod": 3130,
-				"zodCompiled": 3150,
-				"zodMini": 5230,
-				"typia": 14100,
-				"ajv": 58.4,
-				"typebox": 18900,
-				"arktype": 1970,
-				"standalone": 119,
-				"standaloneFirst": 165
+				"valibot": 842,
+				"zod": 2070,
+				"zodCompiled": 2010,
+				"zodMini": 3230,
+				"typia": 9420,
+				"ajv": 33.3,
+				"typebox": 11900,
+				"arktype": 1420,
+				"standalone": 77.3,
+				"standaloneFirst": 77.3
 			},
 			"iqrNs": {
-				"valibot": [1200, 1850],
-				"zod": [2810, 4080],
-				"zodCompiled": [2760, 4470],
-				"zodMini": [4580, 7410],
-				"typia": [13200, 18000],
-				"ajv": [52.7, 66],
-				"typebox": [16700, 24700],
-				"arktype": [1640, 2400],
-				"standalone": [108, 138],
-				"standaloneFirst": [140, 224]
+				"valibot": [813, 882],
+				"zod": [1990, 2200],
+				"zodCompiled": [1950, 2180],
+				"zodMini": [3150, 3430],
+				"typia": [9120, 9910],
+				"ajv": [31.6, 38.9],
+				"typebox": [11500, 12400],
+				"arktype": [1370, 1500],
+				"standalone": [73.6, 82.3],
+				"standaloneFirst": [70.7, 159]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0923,
-					"speedup": 10.8,
+					"ratio": 0.0917,
+					"speedup": 10.9,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0379,
-					"speedup": 26.4,
+					"ratio": 0.0374,
+					"speedup": 26.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0377,
-					"speedup": 26.5,
+					"ratio": 0.0385,
+					"speedup": 26,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0227,
-					"speedup": 44.1,
+					"ratio": 0.024,
+					"speedup": 41.8,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.00838,
-					"speedup": 119,
+					"ratio": 0.0082,
+					"speedup": 122,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 2.03,
-					"speedup": 0.493,
-					"roundsWon": "2/150",
-					"p": "<.001",
-					"verdict": "loss"
-				},
-				"typebox": {
-					"ratio": 0.00626,
-					"speedup": 160,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"arktype": {
-					"ratio": 0.0602,
-					"speedup": 16.6,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"standaloneFirst": {
-					"ratio": 0.721,
-					"speedup": 1.39,
-					"roundsWon": "129/150",
-					"p": "<.001",
-					"verdict": "win"
-				}
-			},
-			"standaloneFirstVs": {
-				"valibot": {
-					"ratio": 0.128,
-					"speedup": 7.81,
-					"roundsWon": "149/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zod": {
-					"ratio": 0.0526,
-					"speedup": 19,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zodCompiled": {
-					"ratio": 0.0523,
-					"speedup": 19.1,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zodMini": {
-					"ratio": 0.0315,
-					"speedup": 31.8,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"typia": {
-					"ratio": 0.0116,
-					"speedup": 86,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"ajv": {
-					"ratio": 2.82,
-					"speedup": 0.355,
+					"ratio": 2.32,
+					"speedup": 0.431,
 					"roundsWon": "0/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"typebox": {
-					"ratio": 0.00869,
-					"speedup": 115,
+					"ratio": 0.00648,
+					"speedup": 154,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.0835,
-					"speedup": 12,
+					"ratio": 0.0544,
+					"speedup": 18.4,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standaloneFirst": {
+					"ratio": 0.999,
+					"speedup": 1,
+					"roundsWon": "74/150",
+					"p": "0.935",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0918,
+					"speedup": 10.9,
+					"roundsWon": "149/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0374,
+					"speedup": 26.7,
+					"roundsWon": "149/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0385,
+					"speedup": 26,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.024,
+					"speedup": 41.7,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.00821,
+					"speedup": 122,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 2.32,
+					"speedup": 0.431,
+					"roundsWon": "2/150",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"typebox": {
+					"ratio": 0.00649,
+					"speedup": 154,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.0544,
+					"speedup": 18.4,
 					"roundsWon": "149/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"standalone": {
-					"ratio": 1.39,
-					"speedup": 0.721,
-					"roundsWon": "21/150",
-					"p": "<.001",
-					"verdict": "loss"
+					"ratio": 1,
+					"speedup": 0.999,
+					"roundsWon": "76/150",
+					"p": "0.935",
+					"verdict": "tie"
 				}
 			},
 			"replication": {
@@ -4507,61 +4507,61 @@
 				"standalone": "has no first-error mode and reports every error"
 			},
 			"medianNs": {
-				"valibot": 1330,
-				"zod": 4160,
-				"zodCompiled": 4250,
-				"zodMini": 5950,
-				"typia": 13600,
-				"ajv": 65.7,
-				"typebox": 11800,
-				"arktype": 1320,
-				"standalone": 306,
-				"standaloneFirst": 151
+				"valibot": 833,
+				"zod": 2640,
+				"zodCompiled": 2700,
+				"zodMini": 3960,
+				"typia": 9830,
+				"ajv": 36.7,
+				"typebox": 7930,
+				"arktype": 960,
+				"standalone": 171,
+				"standaloneFirst": 97.8
 			},
 			"iqrNs": {
-				"valibot": [1150, 1790],
-				"zod": [3740, 5490],
-				"zodCompiled": [3710, 5220],
-				"zodMini": [5290, 8340],
-				"typia": [12100, 19200],
-				"ajv": [55.9, 77.1],
-				"typebox": [10400, 16300],
-				"arktype": [1150, 1790],
-				"standalone": [272, 383],
-				"standaloneFirst": [139, 196]
+				"valibot": [811, 873],
+				"zod": [2560, 2750],
+				"zodCompiled": [2580, 2900],
+				"zodMini": [3810, 4230],
+				"typia": [9470, 10400],
+				"ajv": [35.9, 38.9],
+				"typebox": [7640, 8410],
+				"arktype": [929, 1010],
+				"standalone": [166, 181],
+				"standaloneFirst": [93.9, 105]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.23,
-					"speedup": 4.35,
+					"ratio": 0.205,
+					"speedup": 4.87,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0735,
-					"speedup": 13.6,
+					"ratio": 0.0648,
+					"speedup": 15.4,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0719,
-					"speedup": 13.9,
+					"ratio": 0.0632,
+					"speedup": 15.8,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0514,
-					"speedup": 19.4,
+					"ratio": 0.0432,
+					"speedup": 23.2,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.0224,
-					"speedup": 44.6,
+					"ratio": 0.0174,
+					"speedup": 57.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
@@ -4569,93 +4569,93 @@
 				"ajv": {
 					"ratio": 4.65,
 					"speedup": 0.215,
-					"roundsWon": "0/150",
+					"roundsWon": "1/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"typebox": {
-					"ratio": 0.0258,
-					"speedup": 38.7,
+					"ratio": 0.0216,
+					"speedup": 46.4,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.232,
-					"speedup": 4.32,
+					"ratio": 0.178,
+					"speedup": 5.62,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"standaloneFirst": {
-					"ratio": 2.02,
-					"speedup": 0.494,
-					"roundsWon": "10/150",
+					"ratio": 1.75,
+					"speedup": 0.572,
+					"roundsWon": "4/150",
 					"p": "<.001",
 					"verdict": "loss"
 				}
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.114,
-					"speedup": 8.8,
+					"ratio": 0.117,
+					"speedup": 8.52,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0363,
-					"speedup": 27.5,
+					"ratio": 0.0371,
+					"speedup": 27,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0356,
-					"speedup": 28.1,
+					"ratio": 0.0362,
+					"speedup": 27.6,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0254,
-					"speedup": 39.3,
+					"ratio": 0.0247,
+					"speedup": 40.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.0111,
-					"speedup": 90.3,
+					"ratio": 0.00994,
+					"speedup": 101,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 2.3,
-					"speedup": 0.435,
+					"ratio": 2.66,
+					"speedup": 0.376,
 					"roundsWon": "1/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"typebox": {
-					"ratio": 0.0128,
-					"speedup": 78.3,
+					"ratio": 0.0123,
+					"speedup": 81.1,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.115,
-					"speedup": 8.73,
+					"ratio": 0.102,
+					"speedup": 9.82,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"standalone": {
-					"ratio": 0.494,
-					"speedup": 2.02,
-					"roundsWon": "140/150",
+					"ratio": 0.572,
+					"speedup": 1.75,
+					"roundsWon": "146/150",
 					"p": "<.001",
 					"verdict": "win"
 				}
@@ -4722,89 +4722,89 @@
 				"standalone": "has no first-error mode and reports every error"
 			},
 			"medianNs": {
-				"valibot": 808,
-				"zod": 57500,
-				"zodCompiled": 41000,
-				"zodMini": 61400,
-				"typia": 15000,
-				"ajv": 102,
-				"typebox": 13900,
-				"arktype": 20600,
-				"standalone": 3390,
-				"standaloneFirst": 156
+				"valibot": 482,
+				"zod": 27500,
+				"zodCompiled": 22000,
+				"zodMini": 28500,
+				"typia": 9840,
+				"ajv": 39.1,
+				"typebox": 8150,
+				"arktype": 14000,
+				"standalone": 2200,
+				"standaloneFirst": 63.6
 			},
 			"iqrNs": {
-				"valibot": [694, 1080],
-				"zod": [49400, 83300],
-				"zodCompiled": [35200, 57300],
-				"zodMini": [53400, 87400],
-				"typia": [13200, 19800],
-				"ajv": [87.3, 124],
-				"typebox": [12100, 18700],
-				"arktype": [17000, 27100],
-				"standalone": [3040, 4420],
-				"standaloneFirst": [135, 197]
+				"valibot": [458, 511],
+				"zod": [26500, 29700],
+				"zodCompiled": [21100, 23700],
+				"zodMini": [27000, 31000],
+				"typia": [9390, 10600],
+				"ajv": [35.5, 45.3],
+				"typebox": [7770, 8660],
+				"arktype": [13500, 15300],
+				"standalone": [2090, 2370],
+				"standaloneFirst": [59.6, 70.6]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 4.19,
-					"speedup": 0.238,
-					"roundsWon": "1/150",
+					"ratio": 4.57,
+					"speedup": 0.219,
+					"roundsWon": "0/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"zod": {
-					"ratio": 0.059,
-					"speedup": 17,
+					"ratio": 0.0801,
+					"speedup": 12.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0827,
-					"speedup": 12.1,
+					"ratio": 0.1,
+					"speedup": 9.97,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0552,
-					"speedup": 18.1,
+					"ratio": 0.0775,
+					"speedup": 12.9,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.226,
-					"speedup": 4.43,
+					"ratio": 0.224,
+					"speedup": 4.47,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 33.4,
-					"speedup": 0.03,
+					"ratio": 56.3,
+					"speedup": 0.0178,
 					"roundsWon": "0/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"typebox": {
-					"ratio": 0.244,
-					"speedup": 4.09,
+					"ratio": 0.27,
+					"speedup": 3.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.164,
-					"speedup": 6.09,
+					"ratio": 0.157,
+					"speedup": 6.36,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"standaloneFirst": {
-					"ratio": 21.7,
-					"speedup": 0.0461,
+					"ratio": 34.7,
+					"speedup": 0.0289,
 					"roundsWon": "0/150",
 					"p": "<.001",
 					"verdict": "loss"
@@ -4812,64 +4812,64 @@
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.194,
-					"speedup": 5.17,
+					"ratio": 0.132,
+					"speedup": 7.58,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.00272,
-					"speedup": 367,
+					"ratio": 0.00231,
+					"speedup": 433,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.00382,
-					"speedup": 262,
+					"ratio": 0.0029,
+					"speedup": 345,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.00255,
-					"speedup": 393,
+					"ratio": 0.00224,
+					"speedup": 447,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.0104,
-					"speedup": 96,
+					"ratio": 0.00646,
+					"speedup": 155,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 1.54,
-					"speedup": 0.649,
-					"roundsWon": "19/150",
+					"ratio": 1.62,
+					"speedup": 0.616,
+					"roundsWon": "8/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"typebox": {
-					"ratio": 0.0113,
-					"speedup": 88.7,
+					"ratio": 0.00781,
+					"speedup": 128,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.00758,
-					"speedup": 132,
+					"ratio": 0.00454,
+					"speedup": 220,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"standalone": {
-					"ratio": 0.0461,
-					"speedup": 21.7,
+					"ratio": 0.0289,
+					"speedup": 34.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
@@ -4937,155 +4937,155 @@
 				"standalone": "has no first-error mode and reports every error"
 			},
 			"medianNs": {
-				"valibot": 15500,
-				"zod": 13100,
-				"zodCompiled": 13400,
-				"zodMini": 64200,
-				"typia": 20000,
-				"ajv": 880,
-				"typebox": 371000,
-				"arktype": 2910,
-				"standalone": 945,
-				"standaloneFirst": 803
+				"valibot": 9940,
+				"zod": 7400,
+				"zodCompiled": 8630,
+				"zodMini": 31400,
+				"typia": 10900,
+				"ajv": 486,
+				"typebox": 205000,
+				"arktype": 2130,
+				"standalone": 560,
+				"standaloneFirst": 408
 			},
 			"iqrNs": {
-				"valibot": [13400, 23100],
-				"zod": [11000, 17000],
-				"zodCompiled": [11500, 17500],
-				"zodMini": [58900, 89500],
-				"typia": [16300, 25000],
-				"ajv": [812, 956],
-				"typebox": [306000, 485000],
-				"arktype": [2560, 3690],
-				"standalone": [829, 1140],
-				"standaloneFirst": [681, 938]
+				"valibot": [9560, 10600],
+				"zod": [7110, 8060],
+				"zodCompiled": [8140, 9350],
+				"zodMini": [30500, 33800],
+				"typia": [10400, 11700],
+				"ajv": [450, 534],
+				"typebox": [196000, 220000],
+				"arktype": [1990, 2300],
+				"standalone": [529, 608],
+				"standaloneFirst": [370, 470]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0611,
-					"speedup": 16.4,
+					"ratio": 0.0564,
+					"speedup": 17.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0719,
-					"speedup": 13.9,
+					"ratio": 0.0757,
+					"speedup": 13.2,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0706,
-					"speedup": 14.2,
+					"ratio": 0.0649,
+					"speedup": 15.4,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0147,
-					"speedup": 67.9,
+					"ratio": 0.0179,
+					"speedup": 56,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.0472,
-					"speedup": 21.2,
+					"ratio": 0.0513,
+					"speedup": 19.5,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 1.07,
-					"speedup": 0.931,
-					"roundsWon": "54/150",
+					"ratio": 1.15,
+					"speedup": 0.867,
+					"roundsWon": "23/150",
 					"p": "<.001",
 					"verdict": "loss"
 				},
 				"typebox": {
-					"ratio": 0.00255,
-					"speedup": 393,
+					"ratio": 0.00273,
+					"speedup": 366,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.325,
-					"speedup": 3.07,
-					"roundsWon": "149/150",
+					"ratio": 0.264,
+					"speedup": 3.79,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"standaloneFirst": {
-					"ratio": 1.18,
-					"speedup": 0.85,
-					"roundsWon": "46/150",
+					"ratio": 1.37,
+					"speedup": 0.728,
+					"roundsWon": "8/150",
 					"p": "<.001",
 					"verdict": "loss"
 				}
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.0519,
-					"speedup": 19.3,
+					"ratio": 0.0411,
+					"speedup": 24.4,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0611,
-					"speedup": 16.4,
+					"ratio": 0.0551,
+					"speedup": 18.1,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.0599,
-					"speedup": 16.7,
+					"ratio": 0.0473,
+					"speedup": 21.2,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.0125,
-					"speedup": 79.9,
+					"ratio": 0.013,
+					"speedup": 76.9,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.0401,
-					"speedup": 24.9,
+					"ratio": 0.0374,
+					"speedup": 26.8,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.913,
-					"speedup": 1.1,
-					"roundsWon": "93/150",
-					"p": "0.004",
+					"ratio": 0.839,
+					"speedup": 1.19,
+					"roundsWon": "120/150",
+					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.00216,
-					"speedup": 462,
+					"ratio": 0.00199,
+					"speedup": 502,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.276,
-					"speedup": 3.62,
+					"ratio": 0.192,
+					"speedup": 5.21,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"standalone": {
-					"ratio": 0.85,
-					"speedup": 1.18,
-					"roundsWon": "104/150",
+					"ratio": 0.728,
+					"speedup": 1.37,
+					"roundsWon": "142/150",
 					"p": "<.001",
 					"verdict": "win"
 				}
@@ -5118,9 +5118,9 @@
 					"tie": 0
 				},
 				"ajv": {
-					"win": 0,
+					"win": 1,
 					"loss": 0,
-					"tie": 1
+					"tie": 0
 				},
 				"typebox": {
 					"win": 1,
@@ -5152,157 +5152,157 @@
 				"standalone": "has no first-error mode and reports every error"
 			},
 			"medianNs": {
-				"valibot": 12400,
-				"zod": 18900,
-				"zodCompiled": 32500,
-				"zodMini": 18200,
-				"typia": 43700,
-				"ajv": 11800,
-				"typebox": 30900,
-				"arktype": 6460,
-				"standalone": 5320,
-				"standaloneFirst": 5340
+				"valibot": 9280,
+				"zod": 13100,
+				"zodCompiled": 21600,
+				"zodMini": 12300,
+				"typia": 30600,
+				"ajv": 8660,
+				"typebox": 21600,
+				"arktype": 4490,
+				"standalone": 3950,
+				"standaloneFirst": 3870
 			},
 			"iqrNs": {
-				"valibot": [11800, 13900],
-				"zod": [17200, 22100],
-				"zodCompiled": [30400, 39300],
-				"zodMini": [16900, 20800],
-				"typia": [40000, 52200],
-				"ajv": [11100, 13700],
-				"typebox": [28300, 36000],
-				"arktype": [6060, 7370],
-				"standalone": [5040, 6010],
-				"standaloneFirst": [5130, 6250]
+				"valibot": [8850, 9940],
+				"zod": [12500, 14500],
+				"zodCompiled": [20700, 24000],
+				"zodMini": [11900, 13300],
+				"typia": [28700, 33900],
+				"ajv": [8380, 9210],
+				"typebox": [20800, 23200],
+				"arktype": [4360, 4950],
+				"standalone": [3800, 4200],
+				"standaloneFirst": [3740, 4150]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.43,
-					"speedup": 2.32,
+					"ratio": 0.425,
+					"speedup": 2.35,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.282,
-					"speedup": 3.55,
+					"ratio": 0.301,
+					"speedup": 3.33,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.164,
-					"speedup": 6.1,
+					"ratio": 0.183,
+					"speedup": 5.46,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.292,
-					"speedup": 3.42,
+					"ratio": 0.32,
+					"speedup": 3.13,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.122,
-					"speedup": 8.21,
+					"ratio": 0.129,
+					"speedup": 7.75,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.45,
-					"speedup": 2.22,
+					"ratio": 0.456,
+					"speedup": 2.19,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.172,
-					"speedup": 5.8,
+					"ratio": 0.183,
+					"speedup": 5.47,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.824,
-					"speedup": 1.21,
-					"roundsWon": "131/150",
+					"ratio": 0.879,
+					"speedup": 1.14,
+					"roundsWon": "143/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"standaloneFirst": {
-					"ratio": 0.997,
-					"speedup": 1,
-					"roundsWon": "83/150",
-					"p": "0.221",
-					"verdict": "tie"
+					"ratio": 1.02,
+					"speedup": 0.979,
+					"roundsWon": "50/150",
+					"p": "<.001",
+					"verdict": "loss"
 				}
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.431,
-					"speedup": 2.32,
-					"roundsWon": "148/150",
+					"ratio": 0.417,
+					"speedup": 2.4,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.282,
-					"speedup": 3.54,
+					"ratio": 0.294,
+					"speedup": 3.4,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.164,
-					"speedup": 6.08,
+					"ratio": 0.179,
+					"speedup": 5.58,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.293,
-					"speedup": 3.41,
+					"ratio": 0.313,
+					"speedup": 3.19,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.122,
-					"speedup": 8.19,
+					"ratio": 0.126,
+					"speedup": 7.92,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.451,
-					"speedup": 2.22,
-					"roundsWon": "148/150",
+					"ratio": 0.446,
+					"speedup": 2.24,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.173,
-					"speedup": 5.78,
+					"ratio": 0.179,
+					"speedup": 5.59,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 0.826,
-					"speedup": 1.21,
-					"roundsWon": "123/150",
+					"ratio": 0.861,
+					"speedup": 1.16,
+					"roundsWon": "142/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"standalone": {
-					"ratio": 1,
-					"speedup": 0.997,
-					"roundsWon": "67/150",
-					"p": "0.221",
-					"verdict": "tie"
+					"ratio": 0.979,
+					"speedup": 1.02,
+					"roundsWon": "100/150",
+					"p": "<.001",
+					"verdict": "win"
 				}
 			},
 			"replication": {
@@ -5360,157 +5360,157 @@
 			"name": "moltar",
 			"measures": "boolean check of valid moltar (zod has no boolean API: safeParse(...).success; compiled zod: .validate)",
 			"medianNs": {
-				"valibot": 772,
-				"zod": 166,
-				"zodCompiled": 16,
-				"zodMini": 1320,
-				"typia": 9.54,
-				"ajv": 30.2,
-				"typebox": 164,
-				"arktype": 8.29,
-				"standalone": 8.9,
-				"standaloneFirst": 8.48
+				"valibot": 549,
+				"zod": 111,
+				"zodCompiled": 9.75,
+				"zodMini": 887,
+				"typia": 5.72,
+				"ajv": 16.9,
+				"typebox": 116,
+				"arktype": 4.58,
+				"standalone": 4.55,
+				"standaloneFirst": 4.48
 			},
 			"iqrNs": {
-				"valibot": [727, 1020],
-				"zod": [152, 208],
-				"zodCompiled": [14.1, 19.8],
-				"zodMini": [1170, 1710],
-				"typia": [8.57, 12],
-				"ajv": [26.3, 36.5],
-				"typebox": [151, 204],
-				"arktype": [7.53, 9.43],
-				"standalone": [7.72, 10],
-				"standaloneFirst": [7.42, 9.83]
+				"valibot": [506, 661],
+				"zod": [106, 116],
+				"zodCompiled": [9.37, 10.5],
+				"zodMini": [862, 955],
+				"typia": [5.47, 6.2],
+				"ajv": [16.2, 18.2],
+				"typebox": [112, 123],
+				"arktype": [4.37, 4.83],
+				"standalone": [4.31, 4.99],
+				"standaloneFirst": [4.26, 4.88]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.0115,
-					"speedup": 86.8,
+					"ratio": 0.00829,
+					"speedup": 121,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.0535,
-					"speedup": 18.7,
+					"ratio": 0.0411,
+					"speedup": 24.3,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.557,
-					"speedup": 1.8,
-					"roundsWon": "147/150",
+					"ratio": 0.466,
+					"speedup": 2.14,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.00674,
-					"speedup": 148,
+					"ratio": 0.00513,
+					"speedup": 195,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.933,
-					"speedup": 1.07,
-					"roundsWon": "107/150",
+					"ratio": 0.796,
+					"speedup": 1.26,
+					"roundsWon": "140/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.295,
-					"speedup": 3.39,
-					"roundsWon": "148/150",
+					"ratio": 0.27,
+					"speedup": 3.71,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.0541,
-					"speedup": 18.5,
+					"ratio": 0.0393,
+					"speedup": 25.4,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 1.07,
-					"speedup": 0.932,
-					"roundsWon": "59/150",
-					"p": "0.011",
-					"verdict": "loss"
+					"ratio": 0.993,
+					"speedup": 1.01,
+					"roundsWon": "79/150",
+					"p": "0.568",
+					"verdict": "tie"
 				},
 				"standaloneFirst": {
-					"ratio": 1.05,
-					"speedup": 0.954,
-					"roundsWon": "58/150",
-					"p": "0.007",
-					"verdict": "loss"
+					"ratio": 1.02,
+					"speedup": 0.985,
+					"roundsWon": "64/150",
+					"p": "0.086",
+					"verdict": "tie"
 				}
 			},
 			"standaloneFirstVs": {
 				"valibot": {
-					"ratio": 0.011,
-					"speedup": 91,
+					"ratio": 0.00816,
+					"speedup": 123,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.051,
-					"speedup": 19.6,
+					"ratio": 0.0405,
+					"speedup": 24.7,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.531,
-					"speedup": 1.88,
-					"roundsWon": "149/150",
+					"ratio": 0.459,
+					"speedup": 2.18,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.00642,
-					"speedup": 156,
+					"ratio": 0.00505,
+					"speedup": 198,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.889,
-					"speedup": 1.12,
-					"roundsWon": "114/150",
+					"ratio": 0.783,
+					"speedup": 1.28,
+					"roundsWon": "143/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.281,
-					"speedup": 3.56,
+					"ratio": 0.266,
+					"speedup": 3.77,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.0516,
-					"speedup": 19.4,
+					"ratio": 0.0387,
+					"speedup": 25.8,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
-					"ratio": 1.02,
-					"speedup": 0.977,
-					"roundsWon": "71/150",
-					"p": "0.568",
+					"ratio": 0.978,
+					"speedup": 1.02,
+					"roundsWon": "82/150",
+					"p": "0.288",
 					"verdict": "tie"
 				},
 				"standalone": {
-					"ratio": 0.954,
-					"speedup": 1.05,
-					"roundsWon": "92/150",
-					"p": "0.007",
-					"verdict": "win"
+					"ratio": 0.985,
+					"speedup": 1.02,
+					"roundsWon": "86/150",
+					"p": "0.086",
+					"verdict": "tie"
 				}
 			},
 			"replication": {
@@ -5568,157 +5568,157 @@
 			"name": "moltar invalid",
 			"measures": "boolean check of invalid moltar",
 			"medianNs": {
-				"valibot": 1180,
-				"zod": 423,
-				"zodCompiled": 15.8,
-				"zodMini": 1710,
-				"typia": 9.65,
-				"ajv": 77.1,
-				"typebox": 160,
-				"arktype": 7.43,
-				"standalone": 7.6,
-				"standaloneFirst": 7.27
+				"valibot": 762,
+				"zod": 276,
+				"zodCompiled": 9.63,
+				"zodMini": 1160,
+				"typia": 5.4,
+				"ajv": 38.8,
+				"typebox": 110,
+				"arktype": 3.95,
+				"standalone": 3.89,
+				"standaloneFirst": 4.03
 			},
 			"iqrNs": {
-				"valibot": [1070, 1560],
-				"zod": [359, 621],
-				"zodCompiled": [13.9, 19.1],
-				"zodMini": [1570, 2220],
-				"typia": [8.94, 11],
-				"ajv": [68.1, 90.9],
-				"typebox": [148, 188],
-				"arktype": [6.8, 8.31],
-				"standalone": [6.87, 8.72],
-				"standaloneFirst": [6.62, 8.43]
+				"valibot": [728, 809],
+				"zod": [244, 345],
+				"zodCompiled": [9.35, 10.5],
+				"zodMini": [1130, 1250],
+				"typia": [5.24, 5.93],
+				"ajv": [36.3, 41.5],
+				"typebox": [106, 115],
+				"arktype": [3.79, 4.34],
+				"standalone": [3.73, 4.32],
+				"standaloneFirst": [3.81, 4.61]
 			},
 			"standaloneVs": {
 				"valibot": {
-					"ratio": 0.00643,
-					"speedup": 155,
+					"ratio": 0.00511,
+					"speedup": 196,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zod": {
-					"ratio": 0.018,
-					"speedup": 55.7,
+					"ratio": 0.0141,
+					"speedup": 70.9,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodCompiled": {
-					"ratio": 0.481,
-					"speedup": 2.08,
-					"roundsWon": "147/150",
+					"ratio": 0.404,
+					"speedup": 2.47,
+					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"zodMini": {
-					"ratio": 0.00446,
-					"speedup": 224,
+					"ratio": 0.00336,
+					"speedup": 298,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typia": {
-					"ratio": 0.787,
-					"speedup": 1.27,
-					"roundsWon": "131/150",
+					"ratio": 0.722,
+					"speedup": 1.39,
+					"roundsWon": "147/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"ajv": {
-					"ratio": 0.0985,
-					"speedup": 10.1,
+					"ratio": 0.1,
+					"speedup": 9.95,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"typebox": {
-					"ratio": 0.0474,
-					"speedup": 21.1,
+					"ratio": 0.0354,
+					"speedup": 28.2,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.986,
+					"speedup": 1.01,
+					"roundsWon": "86/150",
+					"p": "0.086",
+					"verdict": "tie"
+				},
+				"standaloneFirst": {
+					"ratio": 0.967,
+					"speedup": 1.03,
+					"roundsWon": "95/150",
+					"p": "0.001",
+					"verdict": "win"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.00528,
+					"speedup": 189,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0146,
+					"speedup": 68.6,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.418,
+					"speedup": 2.39,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.00347,
+					"speedup": 288,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.746,
+					"speedup": 1.34,
+					"roundsWon": "146/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.104,
+					"speedup": 9.63,
+					"roundsWon": "150/150",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.0366,
+					"speedup": 27.3,
 					"roundsWon": "150/150",
 					"p": "<.001",
 					"verdict": "win"
 				},
 				"arktype": {
 					"ratio": 1.02,
-					"speedup": 0.978,
-					"roundsWon": "70/150",
-					"p": "0.463",
-					"verdict": "tie"
-				},
-				"standaloneFirst": {
-					"ratio": 1.05,
-					"speedup": 0.957,
-					"roundsWon": "62/150",
-					"p": "0.041",
-					"verdict": "loss"
-				}
-			},
-			"standaloneFirstVs": {
-				"valibot": {
-					"ratio": 0.00616,
-					"speedup": 162,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zod": {
-					"ratio": 0.0172,
-					"speedup": 58.2,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zodCompiled": {
-					"ratio": 0.461,
-					"speedup": 2.17,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"zodMini": {
-					"ratio": 0.00426,
-					"speedup": 235,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"typia": {
-					"ratio": 0.753,
-					"speedup": 1.33,
-					"roundsWon": "139/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"ajv": {
-					"ratio": 0.0943,
-					"speedup": 10.6,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"typebox": {
-					"ratio": 0.0453,
-					"speedup": 22.1,
-					"roundsWon": "150/150",
-					"p": "<.001",
-					"verdict": "win"
-				},
-				"arktype": {
-					"ratio": 0.978,
-					"speedup": 1.02,
-					"roundsWon": "75/150",
-					"p": "1.000",
+					"speedup": 0.981,
+					"roundsWon": "69/150",
+					"p": "0.369",
 					"verdict": "tie"
 				},
 				"standalone": {
-					"ratio": 0.957,
-					"speedup": 1.05,
-					"roundsWon": "88/150",
-					"p": "0.041",
-					"verdict": "win"
+					"ratio": 1.03,
+					"speedup": 0.967,
+					"roundsWon": "55/150",
+					"p": "0.001",
+					"verdict": "loss"
 				}
 			},
 			"replication": {
@@ -5765,8 +5765,8 @@
 				},
 				"standaloneFirst": {
 					"win": 0,
-					"loss": 1,
-					"tie": 0
+					"loss": 0,
+					"tie": 1
 				}
 			}
 		}
@@ -5802,16 +5802,16 @@
 				"gzip": 41859
 			},
 			"arktype": {
-				"min": 240392,
-				"gzip": 75660
+				"min": 253990,
+				"gzip": 79976
 			},
 			"standalone": {
-				"min": 3729,
-				"gzip": 1788
+				"min": 3730,
+				"gzip": 1785
 			},
 			"standaloneFirst": {
-				"min": 3773,
-				"gzip": 1802
+				"min": 3774,
+				"gzip": 1800
 			}
 		},
 		"moltar": {
@@ -5844,15 +5844,15 @@
 				"gzip": 41880
 			},
 			"arktype": {
-				"min": 240507,
-				"gzip": 75693
+				"min": 254105,
+				"gzip": 80011
 			},
 			"standalone": {
-				"min": 4325,
-				"gzip": 1859
+				"min": 4326,
+				"gzip": 1857
 			},
 			"standaloneFirst": {
-				"min": 4369,
+				"min": 4370,
 				"gzip": 1874
 			}
 		},
@@ -5886,174 +5886,174 @@
 				"gzip": 42902
 			},
 			"arktype": {
-				"min": 242290,
-				"gzip": 76512
+				"min": 255887,
+				"gzip": 80820
 			},
 			"standalone": {
-				"min": 29500,
-				"gzip": 8830
+				"min": 32512,
+				"gzip": 9364
 			},
 			"standaloneFirst": {
-				"min": 29546,
-				"gzip": 8848
+				"min": 32558,
+				"gzip": 9375
 			}
 		}
 	},
 	"startup": {
 		"login": {
 			"valibot": {
-				"coldMs": 5.94,
-				"warmMs": 5.34,
+				"coldMs": 3.63,
+				"warmMs": 3.24,
 				"heapMiB": 3.48
 			},
 			"zod": {
-				"coldMs": 19.1,
-				"warmMs": 15.8,
+				"coldMs": 13.4,
+				"warmMs": 10.5,
 				"heapMiB": 4.12
 			},
 			"zodCompiled": {
-				"coldMs": 22.5,
-				"warmMs": 17.3,
+				"coldMs": 14.6,
+				"warmMs": 10.8,
 				"heapMiB": 4.18
 			},
 			"zodMini": {
-				"coldMs": 8.07,
-				"warmMs": 8,
+				"coldMs": 6.26,
+				"warmMs": 5.77,
 				"heapMiB": 3.6
 			},
 			"typia": {
-				"coldMs": 5.69,
-				"warmMs": 5.2,
+				"coldMs": 3.8,
+				"warmMs": 3.39,
 				"heapMiB": 3.47
 			},
 			"ajv": {
-				"coldMs": 5.16,
-				"warmMs": 4.92,
+				"coldMs": 3.77,
+				"warmMs": 3.94,
 				"heapMiB": 3.47
 			},
 			"typebox": {
-				"coldMs": 27.3,
-				"warmMs": 17.6,
+				"coldMs": 19.9,
+				"warmMs": 12.1,
 				"heapMiB": 4.38
 			},
 			"arktype": {
-				"coldMs": 50.8,
-				"warmMs": 37.6,
-				"heapMiB": 5.04
+				"coldMs": 35,
+				"warmMs": 25.9,
+				"heapMiB": 5.09
 			},
 			"standalone": {
-				"coldMs": 5.38,
-				"warmMs": 5.36,
+				"coldMs": 3.37,
+				"warmMs": 3.01,
 				"heapMiB": 3.49
 			},
 			"standaloneFirst": {
-				"coldMs": 5.45,
-				"warmMs": 5.09,
+				"coldMs": 3.98,
+				"warmMs": 3.23,
 				"heapMiB": 3.49
 			}
 		},
 		"moltar": {
 			"valibot": {
-				"coldMs": 5.01,
-				"warmMs": 5.2,
+				"coldMs": 3.65,
+				"warmMs": 3.38,
 				"heapMiB": 3.49
 			},
 			"zod": {
-				"coldMs": 22.2,
-				"warmMs": 16.8,
-				"heapMiB": 4.21
+				"coldMs": 13.6,
+				"warmMs": 10.8,
+				"heapMiB": 4.2
 			},
 			"zodCompiled": {
-				"coldMs": 22.2,
-				"warmMs": 17.7,
+				"coldMs": 14.4,
+				"warmMs": 12.5,
 				"heapMiB": 4.29
 			},
 			"zodMini": {
-				"coldMs": 8.43,
-				"warmMs": 7.48,
+				"coldMs": 5.31,
+				"warmMs": 4.95,
 				"heapMiB": 3.59
 			},
 			"typia": {
-				"coldMs": 5.24,
-				"warmMs": 4.64,
+				"coldMs": 3.21,
+				"warmMs": 3.35,
 				"heapMiB": 3.47
 			},
 			"ajv": {
-				"coldMs": 4.53,
-				"warmMs": 5.37,
+				"coldMs": 3.2,
+				"warmMs": 3.43,
 				"heapMiB": 3.47
 			},
 			"typebox": {
-				"coldMs": 26.1,
-				"warmMs": 17.9,
-				"heapMiB": 4.42
+				"coldMs": 19,
+				"warmMs": 11.4,
+				"heapMiB": 4.44
 			},
 			"arktype": {
-				"coldMs": 49,
-				"warmMs": 33.9,
-				"heapMiB": 5.01
+				"coldMs": 34.7,
+				"warmMs": 22.6,
+				"heapMiB": 5.06
 			},
 			"standalone": {
-				"coldMs": 5.2,
-				"warmMs": 4.82,
+				"coldMs": 3.35,
+				"warmMs": 3.09,
 				"heapMiB": 3.49
 			},
 			"standaloneFirst": {
-				"coldMs": 5.01,
-				"warmMs": 4.57,
+				"coldMs": 3.24,
+				"warmMs": 3.19,
 				"heapMiB": 3.49
 			}
 		},
 		"shop": {
 			"valibot": {
-				"coldMs": 9.01,
-				"warmMs": 7.84,
+				"coldMs": 5.52,
+				"warmMs": 5.6,
 				"heapMiB": 3.62
 			},
 			"zod": {
-				"coldMs": 42.5,
-				"warmMs": 36.9,
+				"coldMs": 26.7,
+				"warmMs": 23.3,
 				"heapMiB": 4.77
 			},
 			"zodCompiled": {
-				"coldMs": 49.5,
-				"warmMs": 43.5,
+				"coldMs": 31.5,
+				"warmMs": 28.1,
 				"heapMiB": 4.9
 			},
 			"zodMini": {
-				"coldMs": 18.4,
-				"warmMs": 18.3,
-				"heapMiB": 4.01
+				"coldMs": 12.1,
+				"warmMs": 10.9,
+				"heapMiB": 3.99
 			},
 			"typia": {
-				"coldMs": 12.4,
-				"warmMs": 8.94,
+				"coldMs": 8.48,
+				"warmMs": 6.23,
 				"heapMiB": 3.73
 			},
 			"ajv": {
-				"coldMs": 13.6,
-				"warmMs": 12.7,
+				"coldMs": 9.9,
+				"warmMs": 8.31,
 				"heapMiB": 3.72
 			},
 			"typebox": {
-				"coldMs": 71.6,
-				"warmMs": 67.3,
+				"coldMs": 46.2,
+				"warmMs": 43.4,
 				"heapMiB": 5.45
 			},
 			"arktype": {
-				"coldMs": 90.6,
-				"warmMs": 76.6,
-				"heapMiB": 5.98
+				"coldMs": 57.6,
+				"warmMs": 48,
+				"heapMiB": 6.03
 			},
 			"standalone": {
-				"coldMs": 9.56,
-				"warmMs": 6.76,
+				"coldMs": 6.66,
+				"warmMs": 4.37,
 				"heapMiB": 3.68
 			},
 			"standaloneFirst": {
-				"coldMs": 9.72,
-				"warmMs": 7.11,
-				"heapMiB": 3.68
+				"coldMs": 7.09,
+				"warmMs": 4.6,
+				"heapMiB": 3.69
 			}
 		}
 	}

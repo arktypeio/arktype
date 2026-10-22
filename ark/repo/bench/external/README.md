@@ -76,4 +76,24 @@ node ark/repo/bench/external/stats.ts <wall.json>
 node ark/repo/bench/external/login/size.ts <sizes.json>
 ```
 
-`results/` holds the release candidate's run.
+## The release candidate's run
+
+`results/` holds the run at c42ee008c, on a shared 16-core machine: the arms
+as run (`arms.json`), the counts (`counts.json`, `counts.md`), the sizes
+(`login.json`, esbuild 0.28.2) and the wall-clock passes (`wall.json`, with
+every pass's ratios in `wall.md`). The wall run took 30 passes from 06:46 to
+07:17 UTC; the gate held two passes back at loads of 7.2 and 5.0, and pass 3
+ended at 5.2.
+
+| test | result                                                                                                                                                                               |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| H1   | **fails** (p 1): B1 beat @ts-runtypes, typia, ata-aot and ata in 26-28 of 30 passes, but rescript-schema and @sx3/gate were faster in 21 and 24 (B1 took 1.04x and 1.05x their time) |
+| H2   | holds (p 0.0052 ≤ 0.0167): its closest pair, ts-runtime-checks, 23 of 30, 0.93x                                                                                                      |
+| H3   | holds (p 0.0081 ≤ 0.025): dynamic/B1 0.998, under 1.05 in 22 of 30                                                                                                                   |
+| H4   | holds (p 9.3e-10 ≤ 0.0125): dynamic/2.2.9 0.078, under 0.2 in 30 of 30                                                                                                               |
+
+C1 holds its ranks: B1 takes the fewest instructions on parseSafe (189 vs
+@ts-runtypes 209, typia 213) and assertLoose (66 vs ts-runtime-checks 74).
+The parseSafe cells miss the 1.001 gate by up to 0.0023 (0.3 instructions),
+which reorders nothing. 2.2.9's strict counts vary by 14-16% between reps, so
+their ratios to dynamic span 11.2x to 13x. C2: B2 is 1312 B gzipped, Valibot 1547.

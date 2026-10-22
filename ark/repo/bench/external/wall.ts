@@ -28,7 +28,7 @@ const out: { passes: Pass[] } =
 	:	{ passes: [] }
 
 const median = (xs: number[]) => {
-	const s = xs.toSorted((a, b) => a - b)
+	const s = [...xs].sort((a, b) => a - b)
 	const mid = s.length >> 1
 	return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2
 }
@@ -57,7 +57,7 @@ while (out.passes.length < Number(passes)) {
 				stdio: ["ignore", "pipe", "ignore"]
 			}
 		)
-		ns[label] = median(JSON.parse(stdout.trim().split("\n").at(-1)!).blocks)
+		ns[label] = median(JSON.parse(stdout.trim().split("\n").pop()!).blocks)
 	}
 	out.passes.push({ started, load: [start, loadavg()[0]], order, ns })
 	writeFileSync(outPath, JSON.stringify(out, null, 1))

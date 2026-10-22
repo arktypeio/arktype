@@ -25,7 +25,7 @@ const twoSided = (k: number, n: number) =>
 	k * 2 <= n ? 1 : Math.min(1, 2 * upper(k, n))
 
 const median = (xs: number[]) => {
-	const s = xs.toSorted((a, b) => a - b)
+	const s = [...xs].sort((a, b) => a - b)
 	const mid = s.length >> 1
 	return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2
 }
@@ -91,7 +91,7 @@ for (const [h, pairs] of Object.entries(hypotheses)) {
 const ps = Object.entries(hypotheses).map(
 	([h, pairs]) => [h, Math.max(...pairs.map(pair => pair.p))] as const
 )
-const ordered = ps.toSorted((a, b) => a[1] - b[1])
+const ordered = [...ps].sort((a, b) => a[1] - b[1])
 console.log("\n| hypothesis | p | Holm threshold | holds |")
 console.log("| --- | ---: | ---: | --- |")
 let rejecting = true

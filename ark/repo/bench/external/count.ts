@@ -71,7 +71,7 @@ const countOf = (arm: Arm, k: number, n?: number) =>
 			rmSync(ctl, { force: true })
 			rmSync(ack, { force: true })
 			if (status !== 0) return reject(new Error(stderr.slice(-1500)))
-			const { n } = JSON.parse(stdout.trim().split("\n").at(-1)!)
+			const { n } = JSON.parse(stdout.trim().split("\n").pop()!)
 			const line = stderr
 				.split("\n")
 				.find(line => line.split(",")[2] === "instructions:u")
@@ -98,7 +98,9 @@ const worker = async () => {
 				(twice.instructions - once.instructions) / once.n
 			)
 			writeFileSync(outPath, JSON.stringify(samples, null, 1))
-			console.log(`${label}: ${samples[label].at(-1)!.toFixed(1)}`)
+			console.log(
+				`${label}: ${samples[label][samples[label].length - 1].toFixed(1)}`
+			)
 		} catch (e) {
 			console.log(`${label} failed: ${String(e).slice(0, 600)}`)
 		}
