@@ -39,7 +39,7 @@ contextualize(() => {
 		const getBad = () => sizeOf(true)
 		attest<() => never>(getBad)
 		attest(getBad).throws.snap(
-			"TraversalError: must be a number or a bigint or a string or an array (was boolean)"
+			"TraversalError: must be a number, a bigint, a string or an array (was boolean)"
 		)
 	})
 
@@ -97,7 +97,7 @@ contextualize(() => {
 		const getBad = () => matcher(null)
 		attest<() => never>(getBad)
 		attest(getBad).throws.snap(
-			"TraversalError: must be a string or a number, false or true (was null)"
+			"TraversalError: must be a string, a number, false or true (was null)"
 		)
 	})
 

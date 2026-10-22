@@ -340,6 +340,21 @@ type("Date").or({ a: "1" }).or({ a: "2" })({})
 
 Each now reads as the same union would if it weren't discriminated. Where a parent of the discriminant isn't an object, or isn't an array where the discriminant is an element, each branch's error is listed. Where data matches none of the discriminant's values, its miss is listed beside the errors of the branches that don't have its key. Both are `union` errors.
 
+A miss listed beside other branches at its path names each of its cases as they would be, as in a `match` with a default case:
+
+```ts
+const sizeOf = match({
+	"string|Array": v => v.length,
+	number: v => v,
+	bigint: v => v,
+	default: "assert"
+})
+
+// was: TraversalError: must be a string or an array (was boolean)
+// now: TraversalError: must be a number, a bigint, a string or an array (was boolean)
+sizeOf(true)
+```
+
 Data whose discriminant matches a value is still reported only against the branches that allow it, and a miss of a key the data could hold is still one `discriminant` error, like `kind must be "circle" or "square" (was "triangle")`.
 
 ### Write each path a union lists as its own error would be

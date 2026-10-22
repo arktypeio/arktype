@@ -233,7 +233,12 @@ export const groupByPath = (
 	return groups.map(group => {
 		const expected: string[] = []
 		if (isBooleanPair(group)) expected.push(locale.nouns.boolean)
-		else for (const error of group) appendUnique(expected, error.expected)
+		else {
+			for (const error of group) {
+				for (const branch of expectedOf(error, locale))
+					appendUnique(expected, branch)
+			}
+		}
 		const actual = group[0].actual
 		const propString = group[0].propString
 		return {
@@ -248,6 +253,18 @@ export const groupByPath = (
 			data: group[0].data
 		}
 	})
+}
+
+// a discriminant's cases are listed as the branches it would have reached,
+// unless its expected text is authored
+const expectedOf = (error: ArkError, locale: Locale): readonly string[] => {
+	const write = locale.discriminant.expected
+	if (error.code !== "discriminant" || typeof write !== "function")
+		return [error.expected]
+	const cases = error.cases.map(c =>
+		write({ ...error, cases: [c] } as never, locale)
+	)
+	return error.expected === locale.list(cases, "or") ? cases : [error.expected]
 }
 
 /** the actual a union's errors agree on, if each is at the union's own path */

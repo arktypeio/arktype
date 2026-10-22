@@ -265,6 +265,11 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 			.or({ name: "string" }),
 		{ id: 5 }
 	)
+	add(
+		"discriminant cases beside a default",
+		$.type("'a' | 'b' | 'c'").or("string > 5"),
+		"d"
+	)
 
 	add("union of paths", $.type({ a: "string" }).or({ b: "number" }), {})
 	add(

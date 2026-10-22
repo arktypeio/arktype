@@ -198,6 +198,8 @@ contextualize(() => {
 			"discriminant unreadable ← 5": "muss ein Objekt sein, ist aber eine Zahl",
 			'discriminant beside a default ← {"id":5}':
 				"id muss 0 oder 1 sein (ist 5) oder name fehlt (muss eine Zeichenkette sein)",
+			'discriminant cases beside a default ← "d"':
+				'muss "a", "b", "c" oder mindestens 6 Zeichen lang sein, ist aber "d"',
 			"union of paths ← {}":
 				"a fehlt (muss eine Zeichenkette sein) oder b fehlt (muss eine Zahl sein)",
 			"union described ← {}":

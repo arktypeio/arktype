@@ -34,7 +34,7 @@ import {
 	keywordWriterOf,
 	type Locale
 } from "./locale.ts"
-import { describeBranches, describeCases } from "./utils.ts"
+import { describeBranches, describeCases, describeEachCase } from "./utils.ts"
 
 export const writeMessage: MessageWriter = ctx => {
 	const propString = ctx.propString
@@ -179,8 +179,15 @@ const listsErrors = (ctx: {
 const describeAtPath = (errors: readonly ArkError[]): string => {
 	const path = errors[0].propString
 	const branchesAtPath: string[] = []
-	for (const e of errors)
-		if (!branchesAtPath.includes(e.expected)) branchesAtPath.push(e.expected)
+	for (const e of errors) {
+		// a discriminant's cases are listed as the branches it would have reached
+		const expected =
+			e.code === "discriminant" && e.expected === describeCases(e) ?
+				describeEachCase(e)
+			:	[e.expected]
+		for (const branch of expected)
+			if (!branchesAtPath.includes(branch)) branchesAtPath.push(branch)
+	}
 
 	const expected = describeBranches(branchesAtPath)
 	// if there are multiple actual descriptions that differ,

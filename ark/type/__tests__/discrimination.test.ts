@@ -931,6 +931,13 @@ contextualize(() => {
 			])
 		})
 
+		it("reaches a default case at its own value", () => {
+			const T = $.type("'a' | 'b' | 'c'").or("string > 5")
+			attest(T("d").toString()).snap(
+				'must be "a", "b", "c" or at least length 6 (was "d")'
+			)
+		})
+
 		it("reaches a default case of another basis", () => {
 			const T = $.type("Date").or({ a: "1" }).or({ a: "2" })
 			attest(T({ a: 3 }).toString()).snap(
@@ -1096,7 +1103,7 @@ contextualize(() => {
 				"w?": "string"
 			})
 			attest(T({ v: { k: "c" } }).toString()).snap(
-				'v.k must be "a" or "b" or at least length 5 (was "c")'
+				'v.k must be "a", "b" or at least length 5 (was "c")'
 			)
 		})
 
