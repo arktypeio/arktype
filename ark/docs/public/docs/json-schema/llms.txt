@@ -179,8 +179,12 @@ const schema = types.Node.toJsonSchema()
 | `"string[] > 0"` | `items`, `minItems: 1` |
 | `["string", "number?"]` | `prefixItems`, `minItems: 1`, `items: false` |
 | `/^a/` | `pattern: "^a"` |
-| `"string.email"` | `pattern`, `format: "email"` |
-| `"string.url"`, `"string.regex"` | `format: "uri"`, `format: "regex"` |
+| `"string.email"`, `"string.uuid"` | `pattern`, `format: "email"`, `"uuid"` |
+| `"string.ip.v4"`, `"string.ip.v6"` | `pattern`, `format: "ipv4"`, `"ipv6"` |
+| `"string.date.iso"` | `pattern`, `format: "date-time"` |
+| `"string.base64"` | `pattern`, `contentEncoding: "base64"` |
+| `"string.base64.url"` | `pattern`, `contentEncoding: "base64url"` |
+| `"string.date"`, `"string.url"`, `"string.regex"` | `format: "date-time"`, `"uri"`, `"regex"` |
 | `"string.json"` | `contentMediaType: "application/json"` |
 | `"'a' \| 'b'"` | `enum: ["a", "b"]` |
 | `"string \| null"` | `anyOf` |
@@ -197,7 +201,7 @@ JSON Schema's `pattern` has no flags. `d` and `g` don't change what a regex matc
 
 An index signature applies to every key, including declared ones. JSON Schema skips declared keys in `additionalProperties`, so an index signature next to declared keys is written as `patternProperties` with a pattern every key matches.
 
-A JSON Schema validator doesn't check `format` or `contentMediaType` unless it's configured to. `string.url` checks `URL.canParse`, which differs from the `uri` format's RFC 3986 at the edges: it accepts a space in a path and rejects a port past 65535. `string.date` accepts whatever `Date` parses, which no format describes, so it goes to the [`predicate`](#fallback-codes) fallback.
+A keyword's `format`, `contentEncoding` or `contentMediaType` names what its strings are. JSON Schema reads each as an annotation, which a validator doesn't check unless it's configured to, so it's written whether or not arktype's check matches the standard's definition exactly. A keyword checked by a regex is written with that `pattern` too, so a validator that ignores formats still checks what arktype does. One checked by a function is written as its format alone: `string.date` accepts whatever `Date` parses, and `string.url` whatever `URL.canParse` does, so their schemas accept strings the Type rejects. A validator that asserts formats, like Ajv with `ajv-formats`, can also reject strings arktype accepts, where a format's RFC differs from arktype's check: `date-time` requires a time that `string.date` and `string.date.iso` don't, and `uri` rejects the space in a path that `string.url` accepts. Keywords no format names, like `string.date.epoch` or `string.creditCard`, go to the [`predicate`](#fallback-codes) fallback.
 
 A key that isn't `string` or a single regex, like `[string <= 3]`, needs `propertyNames`, which checks every key of the object. That's only the same thing when every key must match it: undeclared keys are rejected, it's the only index signature, and every declared key matches it. Any other such key goes to the [`indexKey`](#fallback-codes) fallback.
 
@@ -624,7 +628,7 @@ T(0)
 | - | - | - |
 | `minLength`, `maxLength` | supported | counts UTF-16 code units, as arktype's bounds do, where JSON Schema counts code points |
 | `pattern` | supported | a string, or a `RegExp` read with its own flags |
-| `format` | annotation | as the spec defaults to. arktype writes a `pattern` beside each format it writes |
+| `format` | annotation | as the spec defaults to, and as `toJsonSchema()` writes it |
 
 ## Numbers
 
