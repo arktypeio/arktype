@@ -156,7 +156,8 @@ const narrowToKeysOf = (
 		const value = other.propsByKey[k]!.value
 		const never = $ark.intrinsic.never.internal
 		disjoint.add("presence", isLeft ? never : value, isLeft ? value : never, {
-			path: [k]
+			path: [k],
+			undeclared: node.undeclared
 		})
 	}
 	if (otherInner.optional)

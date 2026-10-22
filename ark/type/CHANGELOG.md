@@ -506,6 +506,17 @@ const Flag = type("'true' | 'false'")
 type({ flag: [Flag, "=", false] })
 ```
 
+### Name the undeclared key an intersection can't add
+
+Intersecting an object that deletes or rejects undeclared keys with one that adds a key now says why the result is unsatisfiable:
+
+```ts
+// ParseError: Intersection at token of never and string results in an unsatisfiable type
+// token is undeclared on a side that deletes undeclared keys.
+// To add it, use .merge(), which takes "+" from the merged object.
+type({ "+": "delete", id: "number" }).and({ token: "string" })
+```
+
 ### Name the code, path and fallback in a `ToJsonSchemaError`
 
 A `ToJsonSchemaError`'s message was only its printed context. It now starts with a sentence naming its code, where in the Type the part it couldn't convert is, and the `fallback` to configure:

@@ -5,6 +5,7 @@ import type { BoundKind } from "../refinements/kinds.ts"
 import type { Domain } from "../roots/domain.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { Prop } from "../structure/prop.ts"
+import type { UndeclaredKeyHandling } from "../structure/structure.ts"
 import { $ark } from "./registry.ts"
 import { isNode } from "./utils.ts"
 
@@ -14,6 +15,8 @@ export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
 	r: OperandsByDisjointKind[kind]
 	path: Key[]
 	optional: boolean
+	// how the side that left the key undeclared handles it
+	undeclared?: UndeclaredKeyHandling
 }
 
 type OperandsByDisjointKind = {
@@ -29,6 +32,7 @@ type OperandsByDisjointKind = {
 export type DisjointEntryContext = {
 	path?: Key[]
 	optional?: true
+	undeclared?: UndeclaredKeyHandling | undefined
 }
 
 export class Disjoint extends Array<DisjointEntry> {
@@ -58,7 +62,8 @@ export class Disjoint extends Array<DisjointEntry> {
 			l,
 			r,
 			path: ctx?.path ?? [],
-			optional: ctx?.optional ?? false
+			optional: ctx?.optional ?? false,
+			...(ctx?.undeclared && { undeclared: ctx.undeclared })
 		})
 		return this
 	}
@@ -71,15 +76,35 @@ export class Disjoint extends Array<DisjointEntry> {
 		if (this.length === 1) {
 			const { path, l, r } = this[0]
 			const pathString = stringifyPath(path)
-			return writeUnsatisfiableExpressionError(
-				`Intersection${
-					pathString && ` at ${pathString}`
-				} of ${describeReasons(l, r)}`
+			return (
+				writeUnsatisfiableExpressionError(
+					`Intersection${
+						pathString && ` at ${pathString}`
+					} of ${describeReasons(l, r)}`
+				) + this.undeclaredHint()
 			)
 		}
-		return `The following intersections result in unsatisfiable types:\n• ${this.map(
-			({ path, l, r }) => `${path}: ${describeReasons(l, r)}`
-		).join("\n• ")}`
+		return (
+			`The following intersections result in unsatisfiable types:\n• ${this.map(
+				({ path, l, r }) => `${path}: ${describeReasons(l, r)}`
+			).join("\n• ")}` + this.undeclaredHint()
+		)
+	}
+
+	// names the keys a side's undeclared key handling excluded
+	private undeclaredHint(): string {
+		const undeclared = this.filter(entry => entry.undeclared)
+		if (!undeclared.length) return ""
+		const lines = undeclared.map(
+			({ path, undeclared }) =>
+				`${stringifyPath(path)} is undeclared on a side that ${undeclared === "delete" ? "deletes" : "rejects"} undeclared keys.`
+		)
+		if (undeclared.every(({ path }) => path.length === 1)) {
+			lines.push(
+				`To add ${undeclared.length === 1 ? "it" : "them"}, use .merge(), which takes "+" from the merged object.`
+			)
+		}
+		return `\n${lines.join("\n")}`
 	}
 
 	throw(): never {
