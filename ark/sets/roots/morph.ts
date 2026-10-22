@@ -68,4 +68,5 @@ export const writeMorphIntersectionMessage = (
 ): string =>
 	`The intersection of distinct morphs at a single path is indeterminate:
 Left: ${lDescription}
-Right: ${rDescription}`
+Right: ${rDescription}
+To apply both, pipe one to the other instead, e.g. with .to().`

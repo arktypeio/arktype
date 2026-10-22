@@ -2203,7 +2203,20 @@ export class Interpreter {
 		const standIn = createStandIn("class", ctx.module, node)
 		if (name) this.standInsByName.set(name, standIn)
 		const proxy = this.standInProxy(target, standIn, {
-			...this.factsOf(standIn, length, name),
+			...this.factsOf(
+				standIn,
+				length,
+				name,
+				node.body.body.some(
+					element =>
+						(element.type === "PropertyDefinition" ||
+							element.type === "MethodDefinition" ||
+							element.type === "AccessorProperty") &&
+						element.static &&
+						(element.computed ||
+							(element.key as { value?: unknown }).value === "~standard")
+				)
+			),
 			apply: () => {
 				standIn.isCalled = true
 				throw new DynamicValue(
@@ -2255,7 +2268,9 @@ export class Interpreter {
 	private factsOf(
 		standIn: StandIn,
 		length: number | undefined,
-		name: string
+		name: string,
+		// a class whose statics may hold one
+		mayBeStandardSchema = false
 	): ProxyHandler<Function> {
 		return {
 			get: (target, k) =>
@@ -2263,6 +2278,11 @@ export class Interpreter {
 				: k === "name" ? name
 				: answersFact(k) ? Reflect.get(target, k)
 				: this.refuse(standIn),
+			// arktype checks whether a function is a Standard Schema
+			has: (target, k) =>
+				k === "~standard" && !mayBeStandardSchema ?
+					Reflect.has(target, k)
+				:	this.refuse(standIn),
 			getPrototypeOf: target => Reflect.getPrototypeOf(target)
 		}
 	}

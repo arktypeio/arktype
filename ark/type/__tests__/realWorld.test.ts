@@ -1157,7 +1157,8 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(() => Point2d.or(Point3d)).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { x: number, y: number, z: number, + (undeclared): delete }
-Right: { x: number, y: number, + (undeclared): delete }`)
+Right: { x: number, y: number, + (undeclared): delete }
+Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1266

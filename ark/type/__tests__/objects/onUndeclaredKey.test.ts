@@ -47,6 +47,26 @@ contextualize(() => {
 		attest(Deleted({ k: 0 })).equals({})
 	})
 
+	it("names the undeclared key an intersection can't add", () => {
+		attest(() => type({ "+": "delete", id: "number" }).and({ token: "string" }))
+			.throws
+			.snap(`ParseError: Intersection at token of never and string results in an unsatisfiable type
+token is undeclared on a side that deletes undeclared keys.
+To add it, use .merge(), which takes "+" from the merged object.`)
+		attest(() =>
+			type({ a: { "+": "reject", id: "number" } }).and({
+				a: { token: "string" }
+			})
+		).throws
+			.snap(`ParseError: Intersection at a.token of never and string results in an unsatisfiable type
+a.token is undeclared on a side that rejects undeclared keys.`)
+		const Merged = type({ "+": "delete", id: "number" }).merge({
+			"+": "delete",
+			token: "string"
+		})
+		attest(Merged({ id: 1, token: "t", z: 1 })).equals({ id: 1, token: "t" })
+	})
+
 	it("an array meeting a closed object has elements only at keys it declares", () => {
 		const T = type({ "0?": "number", "+": "reject" }).and("number[]")
 		attest(T.json).snap({
@@ -201,7 +221,8 @@ contextualize(() => {
 			).throws
 				.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { a: string, + (undeclared): delete }
-Right: { b: boolean, + (undeclared): delete }`)
+Right: { b: boolean, + (undeclared): delete }
+Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
 		})
 
 		it("reject key", () => {

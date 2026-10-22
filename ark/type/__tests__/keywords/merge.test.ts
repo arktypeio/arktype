@@ -80,6 +80,15 @@ contextualize(() => {
 		attest(T.expression).equals(Expected.expression)
 	})
 
+	it("chained with a described value", () => {
+		const T = type({ a: "string" })
+			.partial()
+			.merge({ "b?": type("string").describe("an ID") })
+
+		attest<{ a?: string; b?: string }>(T.t)
+		attest(T({ b: 1 }).toString()).snap("b must be an ID (was a number)")
+	})
+
 	it("non-object operand", () => {
 		attest(() =>
 			type({

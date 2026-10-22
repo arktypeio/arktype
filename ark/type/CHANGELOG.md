@@ -497,6 +497,51 @@ A `string.regex` error's problem was the bare `SyntaxError` the pattern threw. I
 type("string.regex")("(")
 ```
 
+### Say how to fix an indeterminate morph union or intersection
+
+The `ParseError` for a union of a morph and a type whose inputs overlap, or for an intersection of distinct morphs, now ends with how to fix it:
+
+```ts
+// ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+// Left: (In: unknown) => To<number % 1>
+// Right: null
+// Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.
+type("unknown").pipe(Number).to("number.integer").or("null")
+
+// ParseError: The intersection of distinct morphs at a single path is indeterminate:
+// Left: (In: string) => Out<unknown>
+// Right: (In: string) => Out<unknown>
+// To apply both, pipe one to the other instead, e.g. with .to().
+type("string")
+	.pipe(s => s.length)
+	.and(type("string").pipe(s => s.trim()))
+```
+
+### Say what a morph's input checks when it rejects a default
+
+A default is checked against a morph's input, but a description configured on the morph described the input too, so the error could contradict itself:
+
+```ts
+const Flag = type("'true' | 'false'")
+	.pipe(s => s === "true")
+	.describe("boolean")
+
+// was: ParseError: Default for flag must be boolean (was false)
+// now: ParseError: Default for flag must be "false" or "true" (was false)
+type({ flag: [Flag, "=", false] })
+```
+
+### Name the undeclared key an intersection can't add
+
+Intersecting an object that deletes or rejects undeclared keys with one that adds a key now says why the result is unsatisfiable:
+
+```ts
+// ParseError: Intersection at token of never and string results in an unsatisfiable type
+// token is undeclared on a side that deletes undeclared keys.
+// To add it, use .merge(), which takes "+" from the merged object.
+type({ "+": "delete", id: "number" }).and({ token: "string" })
+```
+
 ### Name the code, path and fallback in a `ToJsonSchemaError`
 
 A `ToJsonSchemaError`'s message was only its printed context. It now starts with a sentence naming its code, where in the Type the part it couldn't convert is, and the `fallback` to configure:
@@ -1215,6 +1260,17 @@ scope({ node: { n: "string", "kids?": "Partial<node>" } }).export()
 ```
 
 A generic whose instantiations keep growing, like `"g<p>": { "n?": "g<g<p>>" }`, throws `ParseError: Instantiating g recursed with new arguments more than 100 times` where it overflowed the stack.
+
+### Infer a `Record` referencing its own alias
+
+A `Record` whose value referenced the alias it was in failed to type check, where writing the object as its own alias worked:
+
+```ts
+// previously TS2589: Type instantiation is excessively deep and possibly infinite
+scope({
+	json: "string | number | boolean | null | json[] | Record<string, json>"
+}).export()
+```
 
 ### Equate cyclic types of the same shape
 
@@ -2058,6 +2114,26 @@ T({}).at
 ```
 
 A morph that fails on the default returns its errors from validation instead of throwing a TraversalError when the type is defined. The default is still checked against the morph's input when defined.
+
+### Accept a function as a Standard Schema
+
+A function definition was called as a thunk, so a Standard Schema that's a class, like the one Effect's `Schema.standardSchemaV1` returns, threw when it was parsed:
+
+```ts
+// previously TypeError: Class constructor StandardSchemaV1Class cannot be invoked without 'new'
+type({ age: Schema.standardSchemaV1(Schema.Number) })
+```
+
+### Infer `.merge()` of a definition holding a described Type
+
+A definition passed to `.merge()` that called a method like `.describe()` or `.configure()` inline failed to type check:
+
+```ts
+// previously: Argument of type '{ "b?": Type<string, {}>; }' is not assignable to parameter of type 'never'
+type({ a: "string" })
+	.partial()
+	.merge({ "b?": type("string").describe("an ID") })
+```
 
 ### Throw when an embedded Standard Schema validates asynchronously
 

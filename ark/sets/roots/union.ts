@@ -1112,7 +1112,8 @@ export const writeIndiscriminableMorphMessage = (
 ): string =>
 	`An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: ${lDescription}
-Right: ${rDescription}`
+Right: ${rDescription}
+Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`
 
 export const writeOrderedIntersectionMessage = (
 	lDescription: string,

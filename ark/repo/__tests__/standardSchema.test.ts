@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import type { StandardSchemaV1 } from "@ark/schema"
 import { type, type Out, type Type } from "arktype"
 import { writeAsyncStandardSchemaMessage } from "arktype/internal/parser/definition.ts"
 import * as v from "valibot"
@@ -173,6 +174,26 @@ nickname invalid type: Expected string but received 5`)
 		attest(T(["a", 1]).toString()).snap(
 			"value at [1] invalid input: expected string, received number"
 		)
+	})
+
+	// like Effect's Schema.standardSchemaV1
+	it("accepts a class as a standard schema", () => {
+		class NumberSchema {
+			static "~standard": StandardSchemaV1.Props<number> = {
+				version: 1,
+				vendor: "effect",
+				validate: value =>
+					typeof value === "number" ?
+						{ value }
+					:	{ issues: [{ message: "Expected number" }] }
+			}
+		}
+
+		const T = type({ age: NumberSchema })
+
+		attest<{ age: number }>(T.infer)
+		attest(T({ age: 5 })).equals({ age: 5 })
+		attest(T({ age: "5" }).toString()).snap("age expected number")
 	})
 
 	it("throws if validation is async", () => {

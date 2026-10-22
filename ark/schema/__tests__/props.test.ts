@@ -179,9 +179,10 @@ contextualize(() => {
 			undeclared: "reject"
 		})
 
-		attest(() => L.and(R)).throws.snap(
-			"ParseError: Intersection at b of number and never results in an unsatisfiable type"
-		)
+		attest(() => L.and(R)).throws
+			.snap(`ParseError: Intersection at b of number and never results in an unsatisfiable type
+b is undeclared on a side that rejects undeclared keys.
+To add it, use .merge(), which takes "+" from the merged object.`)
 	})
 
 	it("delete & reject", () => {
