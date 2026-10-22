@@ -32,6 +32,8 @@ Inference follows `$ref`s, including recursive ones, composition, conditionals a
 
 A schema TypeScript can't see as a literal, like one read from a `.json` file, can be cast with `jsonSchema.as<t>()`. `jsonSchema.infer` and `jsonSchema.validate` are the underlying types, for writing your own wrappers.
 
+Thanks to @TizzySaurus, who built this package and kicked off inference in #1592.
+
 ### Resolve `$ref`s to anchors and embedded `$id`s
 
 A `$ref` resolves like a URI against the `$id` of the resource it's in, so it can name an anchor or another resource in the same document, where it threw.
