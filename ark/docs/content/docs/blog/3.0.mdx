@@ -1,18 +1,23 @@
 ---
 title: Announcing ArkType 3.0
+# mirrors claims.headline in lib/claims.ts, which is still undecided
 description: Faster than Typia, smaller than Valibot and optimized for agentic dev
 date: 2026-10-21 # the release sets this, and blog/index.mdx's date, to the day it publishes
 ---
 
 As of today, ArkType 3.0 is generally available🎉
 
-**<Claim id="headline" />** It's also optimized for agentic dev. Whether you write the code or your agent does, every error along the way names its fix.
+**<Claim id="headline" />** It's also optimized for agentic dev.
 
 <HeadlineDetail />
 
 <HeadlineNote />
 
-Your definitions don't change- just where they run. **ArkType (dynamic)** parses them at runtime with no build step, like always. **ArkType (precompiled)** builds each one when you build, so your bundle gets a validator with only the checks your types need. No parser, and no code generated at runtime. <Claim id="buildChoice" />
+Precompiled validators have always been faster and smaller than ones that parse at runtime. What they cost was a build step: a plugin to set up, errors you'd never seen and a second model of what runs where. For most projects, it wasn't worth it.
+
+Your agent doesn't care. It writes the definition, runs the build, reads the error and fixes it, and every error ArkType's build reports names its fix. The cost of precompiling was your attention, and your agent pays it now. Your users still download and run whatever validator you ship, so shipping them a parser is a waste.
+
+So ArkType precompiles. Your definitions don't change- just where they run. **ArkType (precompiled)** builds each one when you build, so your bundle gets a validator with only the checks your types need. No parser, and no code generated at runtime. **ArkType (dynamic)** parses them at runtime with no build step, like always. <Claim id="buildChoice" />
 
 ```ts
 // ---cut-start---
@@ -30,17 +35,77 @@ const out = User(data)
 if (out instanceof type.errors) console.error(out.summary)
 ```
 
-Below are the highlights. If you're upgrading, [Upgrading](/docs/upgrading) lists what breaks, and the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md) have the rest.
+## The build step is your agent's job
 
-## Dynamic and precompiled
+We made sure every message along the way names the fix:
+
+- **Definitions** are checked by `tsc` as you write them, and a typo's error is the type the string was checked against, like `"number | strin"` against `"number | string"`.
+- **The build** reports what it can't precompile with the file, line, reason and fix. [Troubleshooting](/docs/precompile/troubleshooting) quotes each message, and [shadow mode](/docs/precompile/advanced#shadow-mode) fails a test wherever a precompiled validator would behave otherwise than arktype.
+- **Validation** returns errors that say where, what was expected and, for a dynamic Type, what arrived, ready to hand back to a model as a tool result.
+
+A definition built from a value known only at runtime is the usual reason a build fails:
+
+```
+src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
+  `limit` is a parameter of makeField (src/forms.ts:12:22); its value is known only at runtime
+  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
+```
+
+`runtime: "arktype"` is the escape hatch: it precompiles what it can and ships arktype for the rest, so nothing you write today keeps you from precompiling. `npx arktype-precompile --check "src/**/*.ts"` lists every definition the build would refuse before you switch.
+
+## Every category
+
+Precompiled, ArkType keeps its syntax, its errors and its set theory, and gives up neither speed nor size for them.
 
 <ClaimCharts />
 
-<Claim id="dynamicSpeed" />
+### Speed
 
-What precompiling removes is everything around a Type's checks: the parser, the work of creating each Type, and the code a JIT writes. <Claim id="noInit" /> <Claim id="dynamicSize" />
+<Claim id="zodSpeed" /> <Claim id="speedScope" /> <Claim id="dynamicSpeed" />
 
-[Dynamic vs Precompiled](/docs/precompile/dynamic-vs-precompiled) compares the two modes side by side.
+{/* TODO(claims): speed work is in progress. zodSpeed and speedScope recompute from lib/bench/benchData.json; the speed chart and the headline wait for the rerun. */}
+
+### Bundle size
+
+<Claim id="loginSize" /> <Claim id="noInit" />
+
+{/* TODO(claims): size work is in progress. loginSize, sizeChart and the headline change when it lands. */}
+
+### Types
+
+Definitions are TypeScript's own syntax, checked by `tsc` as you type, and the type ArkType infers is the one you'd have written by hand. Both modes take the same definitions and infer the same types.
+
+### Errors
+
+Every layer's errors name the fix: `tsc`'s, the build's and validation's. Validation errors are plain objects with a path and a code, and a [locale](/docs/i18n) writes their messages in another language with dynamic Types or `runtime: "arktype"`.
+
+### JSON Schema, OpenAPI and Standard Schema
+
+Every Type is a [Standard Schema](/docs/standard-schema) that writes its own JSON Schema, so tRPC, Hono, the MCP SDK and the rest take it as is. [`toJsonSchema`](/docs/json-schema/to-json-schema) writes draft 2020-12, draft-07 or OpenAPI 3.0, [`jsonSchemaToType`](/docs/json-schema/from-json-schema) reads JSON Schema back, and [ArkSets](/docs/sets) relates schemas across formats. A precompiled validator keeps its JSON Schema where the [`members`](/docs/precompile/options#members) option bakes it.
+
+### Agents
+
+```bash
+npx skills add arktypeio/arktype
+```
+
+The [skill](/docs/agents#skill) teaches an agent current syntax, how it maps to TypeScript, the mistakes to avoid and how to work in a precompiled project. Every docs page is also Markdown at its URL plus `.md`, and [/llms.txt](https://arktype.io/llms.txt) indexes them. See [Agents](/docs/agents).
+
+### Migrating from Zod
+
+{/* SLOT(zod-migration): lane/zod-migration writes this section, its measured result as <Claim id="zodMigration" /> in lib/claims.ts. */}
+
+<Claim id="zodMigration" /> The skill's [migration guide](/docs/migrating) maps
+each construct and every default that differs.
+
+### What it costs
+
+- **A build step**: a plugin in the bundler you already run, set up once. Your agent reads its errors.
+- **Definitions known only at runtime** fail a standalone build. Keep them dynamic, or build with `runtime: "arktype"`.
+- **A standalone validator** validates, asserts and is a Standard Schema, but doesn't compose or introspect at runtime, and its messages don't print the value. `runtime: "arktype"` keeps the whole Type API.
+- <Claim id="dynamicSize" />
+
+The rest of this post is what else is new. If you're upgrading, [Upgrading](/docs/upgrading) lists what breaks, and the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md) have the rest.
 
 ## `@ark/aot`
 
@@ -54,17 +119,7 @@ export default {
 }
 ```
 
-Your definitions don't change. Each Type your program defines becomes a validator on `arktype/runtime` that validates, asserts and implements Standard Schema as the Type did, so code that calls it doesn't change either. Scopes, Modules, Generics, cyclic Types, `match` and `type.fn` precompile too.
-
-A definition the build can't precompile, like one built from a value known only at runtime, fails the build with its file, line, reason and fix:
-
-```
-src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
-  `limit` is a parameter of makeField (src/forms.ts:12:22); its value is known only at runtime
-  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
-```
-
-`npx arktype-precompile --check "src/**/*.ts"` lists every such definition before you switch, and `runtime: "arktype"` precompiles what it can while shipping arktype for the rest, so you can migrate a program at your own pace. [Setup](/docs/precompile/setup) has a config for each bundler.
+Your definitions don't change. Each Type your program defines becomes a validator on `arktype/runtime` that validates, asserts and implements Standard Schema as the Type did, so code that calls it doesn't change either. Scopes, Modules, Generics, cyclic Types, `match` and `type.fn` precompile too. [Setup](/docs/precompile/setup) has a config for each bundler.
 
 Options go in the plugin call or in an [`ark.json`](/docs/precompile/options#arkjson) that the plugin, the drivers, the CLI and the ESLint rule all read, and a [preset](/docs/precompile/options#presets) sets several at once: `"smallest"` trades speed for size. A production build leaves out the runtime checks of what the build already verified.
 
@@ -108,22 +163,6 @@ data => {
 
 ArkType isn't the first validator to compile. typia also generates checks from your TypeScript types at build time, and it specializes some unions. The difference is that ArkType brings a type system of its own to the build, so your definitions are reduced, intersected and discriminated before any code is written.
 
-## Optimized for agentic dev
-
-Build steps used to cost you attention. If an agent runs your local dev, a build step is just one more loop it's already good at- build, read the error, fix, rebuild. So we made sure every message along the way names the fix:
-
-- **Definitions** are checked by `tsc` as you write them, and a typo's error is the type the string was checked against, like `"number | strin"` against `"number | string"`.
-- **The build** reports what it can't precompile with the file, line, reason and fix. [Troubleshooting](/docs/precompile/troubleshooting) quotes each message, and [shadow mode](/docs/precompile/advanced#shadow-mode) fails a test wherever a precompiled validator would behave otherwise than arktype.
-- **Validation** returns errors that say where, what was expected and, for a dynamic Type, what arrived, ready to hand back to a model as a tool result.
-
-Set it up once:
-
-```bash
-npx skills add arktypeio/arktype
-```
-
-The [skill](/docs/agents#skill) teaches an agent current syntax, how it maps to TypeScript, the mistakes to avoid and how to work in a precompiled project. Every docs page is also Markdown at its URL plus `.md`, and [/llms.txt](https://arktype.io/llms.txt) indexes them. See [Agents](/docs/agents).
-
 ## `codec` and `.encode`
 
 `codec` pairs a morph with its inverse, so output can be encoded back into input. Every Type has `.encode`, which inverts each of its morphs, so a codec encodes wherever it's nested:
@@ -148,7 +187,7 @@ Parse keywords like `string.date.iso.parse` encode back to strings. `arktype/cod
 
 ## Error messages in other languages
 
-Configure a locale to write error messages in another language. ArkType ships `en` and `de`, and a locale is an object you can spread, extend or write from scratch, including one that calls an i18n library:
+Configure a locale to write error messages in another language, with dynamic Types or a precompiled build with `runtime: "arktype"`. ArkType ships `en` and `de`, and a locale is an object you can spread, extend or write from scratch, including one that calls an i18n library:
 
 ```ts title="config.ts"
 import { configure } from "arktype/config"
@@ -192,9 +231,9 @@ User(5)
 
 ## ArkSets and JSON Schema
 
-[ArkSets](/docs/sets) applies the same set theory to any schema: a Type, a Standard JSON Schema like Zod's, or a plain JSON Schema. `isSubset(v1, v2)` tells you whether a new version of an API schema still accepts everything the old one did, and `intersect`, `union` and `toJsonSchema` combine and normalize schemas across formats.
+[ArkSets](/docs/sets) applies the same set theory to any schema: a Type, a Standard JSON Schema like Zod's, or a plain JSON Schema. `isSubset(v1, v2)` tells you whether a new version of an API schema still accepts everything the old one did, and `intersect`, `union` and `toJsonSchema` combine and normalize schemas across formats. A Standard JSON Schema is read as the JSON Schema it writes, so refinements and transforms that JSON Schema can't express aren't part of the comparison.
 
-`jsonSchemaToType` from [`@ark/json-schema`](/docs/json-schema/from-json-schema) reads a schema through it, so the Type accepts exactly what a JSON Schema 2020-12 validator does, and infers the type of a schema written in the call.
+`jsonSchemaToType` from [`@ark/json-schema`](/docs/json-schema/from-json-schema) reads a schema through it, so the Type accepts exactly what a JSON Schema 2020-12 validator does, except that lengths count UTF-16 code units, and infers the type of a schema written in the call.
 
 ## Errors as data
 
