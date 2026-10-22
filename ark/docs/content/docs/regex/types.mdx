@@ -42,8 +42,8 @@ import { regex, type Regex } from "arkregex"
 
 const majorMinor = (r: Regex<`${number}.${number}`>) => r
 
-const version = regex("^(\\d+)\\.(\\d+)$")
-const tag = regex("^v(\\d+)$")
+const version = regex("^(\\d{1,3})\\.(\\d{1,3})$")
+const tag = regex("^v(\\d{1,3})$")
 
 majorMinor(version)
 
@@ -57,7 +57,7 @@ Infers the pattern of an expression without creating one. An optional second arg
 ```ts
 import { regex } from "arkregex"
 
-type Version = regex.infer<"^(\\d+)\\.(\\d+)$">
+type Version = regex.infer<"^(\\d{1,3})\\.(\\d{1,3})$">
 //   ^? `${number}.${number}`
 
 type Ok = regex.infer<"^ok$", "i">

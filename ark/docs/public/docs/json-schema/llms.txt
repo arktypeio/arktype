@@ -67,7 +67,7 @@ User.expression // "{ name: string, age?: number % 1 >= 0 }"
 User({ name: "Ada", age: 1.5 })
 ```
 
-The schema is a runtime value, so the result is a `Type<unknown>`. See [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema) to give it a static type, and [Keyword support](https://arktype.io/docs/json-schema/support) for which keywords it understands.
+A schema written in the call infers its type, so `User` is a `Type<{ name: string; age?: number }>`. See [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema#inferring-its-type) to type a schema declared elsewhere, and [Keyword support](https://arktype.io/docs/json-schema/support) for which keywords it understands.
 
 # To JSON Schema
 
@@ -468,7 +468,7 @@ Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express.
 npm install @ark/json-schema
 ```
 
-`@ark/json-schema` depends on a fixed `arktype` version, not a peer range. If your `arktype` version differs, your package manager installs a second copy.
+`arktype` is a peer dependency of `@ark/json-schema`, at the version released with it, so the Types it returns come from your own `arktype`. Install the versions released together; with any other, npm refuses the install and pnpm warns.
 
 `jsonSchemaToType` parses a JSON Schema into a Type:
 
@@ -545,7 +545,7 @@ const user = User.assert({ name: "Ada" })
 
 ## How it reads JSON Schema
 
-`jsonSchemaToType` reads a schema with [`arksets`](https://arktype.io/docs/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts, with ajv as the tiebreaker. Every keyword in a schema applies, local `$ref`s resolve, including recursive ones, and draft-07 forms like `items` arrays and `definitions` are read too:
+`jsonSchemaToType` reads a schema with [`arksets`](https://arktype.io/docs/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Every keyword in a schema applies, local `$ref`s resolve, including recursive ones, and draft-07 forms like `items` arrays and `definitions` are read too:
 
 ```ts
 import { jsonSchemaToType } from "@ark/json-schema"
@@ -641,7 +641,7 @@ To normalize one JSON Schema into another, or to compare JSON Schemas with each 
 
 > How @ark/json-schema and arksets read each JSON Schema keyword, which ones throw, and which are only annotations.
 
-`jsonSchemaToType` and [ArkSets](https://arktype.io/docs/sets) read JSON Schema the same way. A Type read from a schema accepts exactly what a JSON Schema 2020-12 validator accepts, with ajv as the tiebreaker. Each keyword is read in one of five ways:
+`jsonSchemaToType` and [ArkSets](https://arktype.io/docs/sets) read JSON Schema the same way. A Type read from a schema accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Each keyword is read in one of five ways:
 
 - **supported**: the Type checks it, and [relations](https://arktype.io/docs/sets/relations) like `isSubset` reason about it.
 - **opaque**: the Type checks it exactly, with a predicate. Relations through it can't be proven, and `toJsonSchema()` needs a [`predicate` fallback](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes) to write it back.
