@@ -59,7 +59,7 @@ Use it to check that a new version of an API schema still accepts what the old o
 Every function takes a `Schema`, which can be any of:
 
 - a **Root**: an `@ark/schema` node, which every arktype Type is. It's read losslessly, never through JSON Schema.
-- a **[Standard JSON Schema](https://standardschema.dev/json-schema)**: a schema whose `~standard` has `jsonSchema`, like one from zod 4.2.0 or later. `arksets` reads its draft 2020-12 JSON Schema. Pass any other library's schema as its JSON Schema, like `z.toJSONSchema(schema)` before zod 4.2.0.
+- a **[Standard JSON Schema](https://standardschema.dev/json-schema)**: a schema whose `~standard` has `jsonSchema`, like one from zod 4.2.0 or later. `arksets` reads its draft 2020-12 JSON Schema, so what that can't express, like zod's refinements, transforms and `undefined`, is invisible to every function here. Pass any other library's schema as its JSON Schema, like `z.toJSONSchema(schema)` before zod 4.2.0.
 - a **JSON Schema**: an object or a boolean, read as [Keyword support](/docs/json-schema/support) describes.
 
 Every argument can be in a different format. Results that are sets are Roots, so you can validate with them, print them and pass them back in:

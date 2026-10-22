@@ -23,7 +23,7 @@ const Event = z.discriminatedUnion("kind", [
 discriminate(Event) // { path: ["kind"], kind: "unit", cases: [{ value: "key", branches }, { value: "click", branches }], default: null }
 ```
 
-Relations are sound: `true` is a proof, and `false` means it couldn't be proven, e.g. through `not` or `uniqueItems`.
+Relations are sound for what each schema is read as: `true` is a proof, and `false` means it couldn't be proven, e.g. through `not` or `uniqueItems`. A Type is read exactly and a JSON Schema as [below](#json-schema). A Standard JSON Schema is read as the JSON Schema it writes, so what that can't express, like zod's refinements, transforms and `undefined`, is invisible, and `true` proves the relation only for those JSON Schemas: `isSubset(z.string(), z.string().refine(s => s === "x"))` is `true`.
 
 ## API
 
