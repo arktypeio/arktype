@@ -753,6 +753,45 @@ export const Name = type("string")`,
 	})
 
 	describe("standalone", () => {
+		it("builds a module alike whichever module it builds first", () => {
+			// a fresh process for each order, so nothing one build cached reaches the other
+			const build = (paths: string[]) =>
+				inFreshProcess(
+					async (paths: string[]) => {
+						const { memoryHost } = await import("./utils.ts")
+						const { Precompiler } = await import("@ark/aot")
+						const files: Record<string, string> = {
+							"/a.ts":
+								'import { type } from "arktype"\nexport const A = type({ x: "number", y: "number" }).onUndeclaredKey("delete")',
+							"/b.ts":
+								'import { type } from "arktype"\nexport const B = type({ y: "number", x: "number" }).onUndeclaredKey("delete")'
+						}
+						const precompiler = new Precompiler(memoryHost(files))
+						const built: Record<string, string[]> = {}
+						for (const path of paths) {
+							const { code, modules } = precompiler.precompile(
+								files[path],
+								path
+							)
+							built[path] = [code, ...Object.values(modules)]
+						}
+						return built
+					},
+					[paths]
+				)
+			const aFirst = build(["/a.ts", "/b.ts"])
+			attest(build(["/b.ts", "/a.ts"])).equals(aFirst)
+			attest(
+				Object.entries(aFirst).map(([path, written]) => [
+					path,
+					...written.flatMap(code => code.match(/const result = .+/g) ?? [])
+				])
+			).snap([
+				["/a.ts", 'const result = { "x": out.x, "y": out.y }'],
+				["/b.ts", 'const result = { "x": out.x, "y": out.y }']
+			])
+		})
+
 		it("arktype used outside a site", () => {
 			attest(
 				diagnosticsOf(`import { type, ArkErrors } from "arktype"
