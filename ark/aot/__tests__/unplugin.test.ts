@@ -978,7 +978,7 @@ export const inspected = inspect(type({ a: "string" })({ a: 1 }))
 		const thrownBy = (build: () => Promise<unknown>) =>
 			build().then(
 				() => "built",
-				(e: Error) => e.message
+				(e: Error) => stripVTControlCharacters(e.message)
 			)
 		const config = viteConfig({})
 		attest([
