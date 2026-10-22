@@ -223,17 +223,13 @@ export const schemaKindsRightOf = <kind extends RootKind>(
 ): schemaKindRightOf<kind>[] =>
 	rootKinds.slice(precedenceOfKind(kind) + 1) as never
 
-export const unionChildKinds = [
-	...schemaKindsRightOf("union"),
-	"alias"
-] as const
+export const unionChildKinds = /* @__PURE__ */ (() =>
+	[...schemaKindsRightOf("union"), "alias"] as const)()
 
 export type UnionChildKind = (typeof unionChildKinds)[number]
 
-export const morphChildKinds = [
-	...schemaKindsRightOf("morph"),
-	"alias"
-] as const
+export const morphChildKinds = /* @__PURE__ */ (() =>
+	[...schemaKindsRightOf("morph"), "alias"] as const)()
 
 export type MorphChildKind = (typeof morphChildKinds)[number]
 

@@ -39,7 +39,7 @@ export const tsKeywordDefinitions: Record<
 	undefined: () => intrinsic.undefined
 }
 
-export const arkTsKeywords: arkTsKeywords = keywordModule(
+export const arkTsKeywords: arkTsKeywords = /* @__PURE__ */ keywordModule(
 	tsKeywordDefinitions,
 	{ name: "ts" }
 ) as never
@@ -244,10 +244,10 @@ export const tsGenericDefinitions = {
 	Required
 }
 
-export const arkTsGenerics: arkTsGenerics.module = keywordModule(
-	tsGenericDefinitions,
-	{ name: "ts.generics" }
-) as never
+export const arkTsGenerics: arkTsGenerics.module =
+	/* @__PURE__ */ keywordModule(tsGenericDefinitions, {
+		name: "ts.generics"
+	}) as never
 
 export declare namespace arkTsGenerics {
 	export type module = Module<arkTsGenerics.$>
