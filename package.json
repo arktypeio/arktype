@@ -68,6 +68,7 @@
 		"checkEslint": "eslint --max-warnings=0 .",
 		"format": "prettier --ignore-path .gitignore --ignore-path ./ark/repo/.prettierignore --write .",
 		"knip": "knip",
+		"bump": "ts ./ark/repo/bump.ts",
 		"ci:publish": "ts ./ark/repo/publish.ts",
 		"publishExtension": "cd ark/dark && pnpm publishExtension",
 		"upDeps": "pnpm up -r --latest"
