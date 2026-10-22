@@ -85,7 +85,7 @@ const user = User.assert({ name: "Ada" })
 
 ## How it reads JSON Schema
 
-`jsonSchemaToType` reads a schema with [`arksets`](/docs/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts, with ajv as the tiebreaker. Every keyword in a schema applies, local `$ref`s resolve, including recursive ones, and draft-07 forms like `items` arrays and `definitions` are read too:
+`jsonSchemaToType` reads a schema with [`arksets`](/docs/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Every keyword in a schema applies, local `$ref`s resolve, including recursive ones, and draft-07 forms like `items` arrays and `definitions` are read too:
 
 ```ts
 import { jsonSchemaToType } from "@ark/json-schema"

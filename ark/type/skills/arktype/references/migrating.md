@@ -320,7 +320,7 @@ Names are Effect 3's. Effect 4 renames some: `Schema.filter` is `Schema.check`, 
 
 ## JSON Schema and ajv
 
-To keep a schema as JSON, convert it at runtime with `jsonSchemaToType` from `@ark/json-schema`; it accepts exactly what a JSON Schema 2020-12 validator accepts, with `format` as an annotation. To rewrite it as definitions:
+To keep a schema as JSON, convert it at runtime with `jsonSchemaToType` from `@ark/json-schema`; it accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with `format` as an annotation. To rewrite it as definitions:
 
 | JSON Schema                                              | ArkType                                                                |
 | -------------------------------------------------------- | ---------------------------------------------------------------------- |

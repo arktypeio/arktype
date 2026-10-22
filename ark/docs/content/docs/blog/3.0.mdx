@@ -194,7 +194,7 @@ User(5)
 
 [ArkSets](/docs/sets) applies the same set theory to any schema: a Type, a Standard JSON Schema like Zod's, or a plain JSON Schema. `isSubset(v1, v2)` tells you whether a new version of an API schema still accepts everything the old one did, and `intersect`, `union` and `toJsonSchema` combine and normalize schemas across formats.
 
-`jsonSchemaToType` from [`@ark/json-schema`](/docs/json-schema/from-json-schema) reads a schema through it, so the Type accepts exactly what a JSON Schema 2020-12 validator does, and infers the type of a schema written in the call.
+`jsonSchemaToType` from [`@ark/json-schema`](/docs/json-schema/from-json-schema) reads a schema through it, so the Type accepts exactly what a JSON Schema 2020-12 validator does, except that lengths count UTF-16 code units, and infers the type of a schema written in the call.
 
 ## Errors as data
 
