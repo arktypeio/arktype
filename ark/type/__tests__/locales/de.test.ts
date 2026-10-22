@@ -104,8 +104,10 @@ contextualize(() => {
 				"muss spätestens der 3. Mai 2000, 12:30:05,123 UTC sein, ist aber der 31. Dezember 2000, 09:05 UTC",
 			"Date != May 3 ← 2000-05-03T00:00:00.000Z":
 				"muss ungleich dem 3. Mai 2000 sein, ist aber der 3. Mai 2000",
+			"May 3 ← 2000-05-04T00:00:00.000Z":
+				"muss ein Wert gemäß der Beschreibung „2000-05-03“ sein, ist aber der 4. Mai 2000",
 			"enumerated Dates ← 2000-05-05T00:00:00.000Z":
-				"muss der 3. Mai 2000 oder der 4. Mai 2000 sein, ist aber ein Objekt",
+				"muss der 3. Mai 2000 oder der 4. Mai 2000 sein, ist aber der 5. Mai 2000",
 			"narrowed Date ← 2000-05-03T00:00:00.000Z":
 				"muss gemäß einem anonymen Prädikat gültig sein, ist aber ein Objekt",
 			"string ← 5": "muss eine Zeichenkette sein, ist aber eine Zahl",

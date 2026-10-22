@@ -262,7 +262,7 @@ contextualize(() => {
 				notEqual: ["expected", "actual"],
 				notEqualLength: ["expected", "actual"],
 				domain: ["expected", "actual"],
-				unit: ["expected", "problem"],
+				unit: ["expected", "problem", "actual"],
 				proto: ["expected", "actual"],
 				union: ["expected", "problem", "actual", "message"],
 				intersection: ["expected", "problem"],

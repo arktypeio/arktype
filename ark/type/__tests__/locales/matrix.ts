@@ -94,6 +94,7 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		new Date("2000-12-31T09:05:00Z")
 	)
 	add("Date != May 3", $.type("Date != d'2000-05-03'"), new Date("2000-05-03"))
+	add("May 3", $.type("d'2000-05-03'"), new Date("2000-05-04"))
 	add(
 		"enumerated Dates",
 		$.type.enumerated(new Date("2000-05-03"), new Date("2000-05-04")),
