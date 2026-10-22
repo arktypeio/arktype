@@ -26,6 +26,8 @@ if (out instanceof type.errors) {
 }
 ```
 
+To ship less, [precompile](https://arktype.io/docs/precompile) your Types when you build: each becomes a validator with only the checks it needs, so arktype's parser never ships.
+
 ## Docs
 
 - [arktype.io](https://arktype.io/docs/intro/setup)

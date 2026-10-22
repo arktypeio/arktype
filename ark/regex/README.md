@@ -26,7 +26,7 @@ Performs best with TS 5.9+
 ### Features
 
 - **Types**: Infers string types for your existing regular expressions, including positional and named captures
-- **Parity**: Supports 100% of [features](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions) allowed by `new RegExp()`
+- **Syntax**: Parses the [syntax](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions) `new RegExp()` accepts, including named groups, lookarounds, backreferences, modifiers and Unicode properties
 - **Safety**: Syntax errors like referencing a group that doesn't exist are now type errors
 - **Zero Runtime**: Improves your type safety without impacting your bundle size
 
