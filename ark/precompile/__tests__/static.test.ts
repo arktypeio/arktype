@@ -433,7 +433,7 @@ export const skus = (data: unknown[]) =>
 const shop = scope({ "Box<t>": { of: "t" } }).export()
 export const box = (t: string) => shop.Box(t).array()`)
 			).snap([
-				'/main.ts:3:44  `t` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `t` is a parameter of box (/main.ts:3:21); its value is known only at runtime\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+				"/main.ts:3:44  `t` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `t` is a parameter of box (/main.ts:3:21); its value is known only at runtime\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it's a Type, make it static so the build precompiles it with the site."
 			])
 		})
 
@@ -1530,6 +1530,7 @@ console.log(values.map(v => (v as any).from))`,
 const M = (Math.random() > 0.5 ? scope({ Cart: { items: "string[]" } }) : scope({ Cart: { items: "number[]" } })).export()
 export const items = (data: unknown) => M.Cart.assert(data).items.map(i => i)`)
 			).snap([
+				'/main.ts:2:11  (Math.random() > 0.5 ? scope({ Cart: { items: "string[]" } … can\'t be precompiled yet\n  `Math.random() > 0.5 ? scope({ Cart: { items: "string[]" } }…` may be a Scope, which a standalone build replaces with an object that lacks `export`\n  Assign it to a const and read `export` off that, which the build precompiles, or build with runtime: "arktype".',
 				'/main.ts:3:41  M.Cart.assert(data).items.map reads map, which a standalone validator lacks\n  `M.Cart.assert(data).items` is read off what may be an arktype value, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn\'t a Type, read it off a value the build can tell from a Type, like a Module defined in a const as `scope({ ... }).export()`. If it is, build with runtime: "arktype".'
 			])
 		})
@@ -1548,6 +1549,28 @@ for (const k in T) console.log(k)`)
 				'/main.ts:4:9  description reads description, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
 				'/main.ts:4:22  ...rest reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
 				'/main.ts:5:1  for (const k in T) console.log(k) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
+		it("a Scope read off a function's return", () => {
+			attest(
+				diagnosticsOf(`import { scope } from "arktype"
+const getPlaces = () => scope({ ocean: { color: "'blue'" } })
+const $ = getPlaces()
+export const Ocean = $.type("ocean")
+export const Place = getPlaces().type("ocean")`)
+			).snap([
+				'/main.ts:5:22  getPlaces().type("ocean") can\'t be precompiled yet\n  `getPlaces()` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".'
+			])
+		})
+
+		it("a Scope passed to code the build can't see", () => {
+			attest(
+				diagnosticsOf(`import { scope } from "arktype"
+declare const each: (create: () => unknown) => void
+each(() => scope({ a: "string" }))`)
+			).snap([
+				'/main.ts:3:12  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".'
 			])
 		})
 

@@ -121,8 +121,12 @@ export const writeMutatesInputMismatchMessage = (
 ): string =>
 	`arktype is configured with mutatesInput: ${printable(configured)}, where the build's mutatesInput is ${printable(built)}`
 
-// text a standalone validator can't write as arktype does
+// reasons a standalone build refuses a site, with how to fix each
 const textHints: [pattern: RegExp, hint: string][] = [
+	[
+		/^it's passed to code the build can't see/,
+		`Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".`
+	],
 	[
 		/^a scope's configured/,
 		`A standalone validator writes text configured for a code only from configure(). Configure it there, or on each Type with .configure(), or build with runtime: "arktype".`

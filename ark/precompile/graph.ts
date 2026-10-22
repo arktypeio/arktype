@@ -2337,6 +2337,101 @@ export class ModuleGraph {
 		}
 	}
 
+	// e.g. `getPlaces().type`, which a precompiled Scope lacks
+	scopeReadOf(node: Node, module: SourceModule): string | undefined {
+		if (node.type !== "MemberExpression") return
+		const name = memberNameOf(node)
+		return (
+				typeof name === "string" &&
+					name in scopeMembers &&
+					!(name in typeMemberKinds) &&
+					mayBeOtherArk(this.kindOf(node.object, module)) &&
+					!this.isArktypeImport(node.object, module)
+			) ?
+				name
+			:	undefined
+	}
+
+	// e.g. `type` or `ark` in `import * as ark from "arktype"`
+	private isArktypeImport(node: Node, module: SourceModule): boolean {
+		if (this.arkExportNameOf(node, module)) return true
+		const binding =
+			node.type === "Identifier" ?
+				module.scopes.referencesById.get(node)?.binding
+			:	undefined
+		if (binding?.kind !== "import") return false
+		const target = this.importOf(binding, module).kind
+		return target === "arktype" || target === "arktypeNamespace"
+	}
+
+	// e.g. `() => scope(...)` passed to a function the build doesn't analyze,
+	// so it can't see what's read off the value
+	reachesUnseen(
+		node: Node,
+		module: SourceModule,
+		seen = new Set<Node>()
+	): boolean {
+		if (seen.has(node)) return false
+		seen.add(node)
+		const [operand, operator] = operatorOf(node)
+		switch (operator?.type) {
+			case "CallExpression":
+			case "NewExpression":
+				return (
+					operator.callee !== operand &&
+					this.functionOf(operator.callee, module)?.[1] !== module
+				)
+			case "ConditionalExpression":
+			case "LogicalExpression":
+				return (
+					(operator.type === "LogicalExpression" ||
+						operator.test !== operand) &&
+					this.reachesUnseen(operator, module, seen)
+				)
+			case "SequenceExpression":
+				return (
+					operator.expressions[operator.expressions.length - 1] === operand &&
+					this.reachesUnseen(operator, module, seen)
+				)
+			case "ArrowFunctionExpression":
+				return (
+					operator.body === operand &&
+					this.returnReachesUnseen(operator, module, seen)
+				)
+			case "ReturnStatement": {
+				const fn = enclosingFunctionOf(operator)
+				return !!fn && this.returnReachesUnseen(fn, module, seen)
+			}
+			case "VariableDeclarator": {
+				const binding =
+					operator.init === operand && operator.id.type === "Identifier" ?
+						module.scopes.bindingsById.get(operator.id)
+					:	undefined
+				return (
+					!!binding &&
+					!binding.exportNames.length &&
+					binding.references.some(
+						reference =>
+							!reference.isWrite &&
+							this.reachesUnseen(reference.id, module, seen)
+					)
+				)
+			}
+		}
+		return false
+	}
+
+	// an exported function's importers are built where they read its result
+	private returnReachesUnseen(
+		fn: FunctionNode,
+		module: SourceModule,
+		seen: Set<Node>
+	): boolean {
+		if (bindingOfFunction(fn, module)?.exportNames.length) return false
+		const calls = this.callsOf(fn, module)
+		return !calls || calls.some(call => this.reachesUnseen(call, module, seen))
+	}
+
 	private functionOf(
 		callee: Node,
 		module: SourceModule
