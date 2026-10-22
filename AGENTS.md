@@ -24,16 +24,16 @@ Tests and typechecking read each package's source through the `ark-ts` condition
 
 ## Monorepo Structure
 
-- `ark/type` — main validation library (`arktype` on npm)
-- `ark/schema` — schema layer (constraint nodes, refinements, scopes)
-- `ark/sets` — set algebra over schemas: relate, combine and convert Types and JSON Schemas (`arksets` on npm)
-- `ark/util` — shared utilities
-- `ark/docs` — documentation site (Next.js)
-- `ark/json-schema` — JSON Schema conversion
-- `ark/aot` — build-time precompilation of Types to standalone validators (`@ark/aot` on npm)
-- `ark/regex` — ArkRegex type-safe regex
-- `ark/attest` — assertion/test library
-- `ark/fast-check` — property testing integration
+- `ark/type`: main validation library (`arktype` on npm)
+- `ark/schema`: schema layer (constraint nodes, refinements, scopes)
+- `ark/sets`: set algebra over schemas, to relate, combine and convert Types and JSON Schemas (`arksets` on npm)
+- `ark/util`: shared utilities
+- `ark/docs`: documentation site (Next.js)
+- `ark/json-schema`: JSON Schema conversion
+- `ark/aot`: build-time precompilation of Types to standalone validators (`@ark/aot` on npm)
+- `ark/regex`: ArkRegex type-safe regex
+- `ark/attest`: assertion/test library
+- `ark/fast-check`: property testing integration
 
 ## Key Patterns
 
@@ -46,6 +46,6 @@ To add a number keyword, use `node("intersection", …)` with a `domain` node an
 ## Code Style
 
 - Tabs, no semicolons, no trailing commas (`prettier` enforced)
-- `experimentalTernaries: true` — `?` at end of line, `:` on next line
-- `arrowParens: "avoid"` — `x => x` not `(x) => x`
+- `experimentalTernaries: true`: `?` at end of line, `:` on next line
+- `arrowParens: "avoid"`: `x => x` not `(x) => x`
 - Tests use `attest` with `.snap()` for snapshots
