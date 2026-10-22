@@ -2123,6 +2123,16 @@ result.issues[0].path
 
 An issue at a path is a copy of its error with that message. A union's lists each branch's path from the union's, like `b must be a string (was missing) or c must be a number (was missing)`. `validate` returns `{ issues }` rather than the `ArkErrors`, whose own errors and `summary` still start with their paths. A precompiled validator's issues are written the same way, unless their message was configured.
 
+### Throw for a global-only option passed to a Scope
+
+`onUndeclaredKey`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`, `keywords` and `locale` can only be configured with `configure()`, and a Scope's type already rejected them, but a JavaScript or cast config passing one to a Scope was honored for `onUndeclaredKey` and silently ignored for the rest. Each now throws:
+
+```ts
+// previously validated Infinity as a number anyway, now throws
+// ParseError: numberAllowsInfinity can only be configured globally, with configure()
+scope({}, { numberAllowsInfinity: true } as never)
+```
+
 ### Write `properties: {}` for an object declaring no keys
 
 An object Type with no props or index signature, like `type({})`, `type("object")` or `type({ "+": "reject" })`, is written with an empty `properties`, as Zod writes `z.object({})`, since consumers like MCP clients read a tool's input schema's `properties`:
