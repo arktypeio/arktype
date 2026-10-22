@@ -58,9 +58,11 @@ A pointer like `#/$defs/a` within a nested `$id` resolves against that resource,
 - A type's keywords constrain only that type, so `{ minimum: 5 }` allows `"foo"`.
 - `minimum` beside `exclusiveMinimum`, `required` without `properties`, and `propertyNames` beside `patternProperties` read rather than throw.
 - Composition keywords apply together, where only the first of `allOf`, `anyOf`, `not` and `oneOf` did, and `oneOf` with disjoint branches is a union.
-- `$ref` (including recursive refs), `if`/`then`/`else`, `dependentRequired` and `dependentSchemas` are read.
+- `$ref` (including recursive refs), `if`/`then`/`else`, `dependentRequired` and `dependentSchemas` are read (#1485).
 - An invalid keyword, or one that can't be read exactly like `unevaluatedProperties` or a remote `$ref`, throws a `ParseError` naming its JSON Pointer, like `#/minLength must be a non-negative integer (was -1)`, where some threw a `TraversalError`.
 - The `writeJsonSchema*Message` functions and their types, like `writeJsonSchemaInsufficientKeysMessage`, are no longer exported, since the errors they wrote are no longer thrown.
+
+A `uniqueItems` error no longer lists the duplicate items: it reads `must be an array of unique items (was an array)`, where it read `(was an array with 2 duplicates: 1, and 3)`.
 
 ### Accept a `StringSchema` in `jsonSchemaToType`
 
