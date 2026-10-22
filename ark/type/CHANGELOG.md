@@ -1121,6 +1121,17 @@ scope({ node: { n: "string", "kids?": "Partial<node>" } }).export()
 
 A generic whose instantiations keep growing, like `"g<p>": { "n?": "g<g<p>>" }`, throws `ParseError: Instantiating g recursed with new arguments more than 100 times` where it overflowed the stack.
 
+### Infer a `Record` referencing its own alias
+
+A `Record` whose value referenced the alias it was in failed to type check, where writing the object as its own alias worked:
+
+```ts
+// previously TS2589: Type instantiation is excessively deep and possibly infinite
+scope({
+	json: "string | number | boolean | null | json[] | Record<string, json>"
+}).export()
+```
+
 ### Equate cyclic types of the same shape
 
 Cyclic types were equal only if they referenced the same definitions, so two of the same shape from different aliases weren't equal, and `.extends` and unions related them only by reference (#928). They're now compared by structure:

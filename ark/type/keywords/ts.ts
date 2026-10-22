@@ -127,8 +127,10 @@ export declare namespace object {
 	}
 }
 
-class RecordHkt extends Hkt<[Key, unknown]> {
+export class RecordHkt extends Hkt<[Key, unknown]> {
 	declare body: Record<this[0], this[1]>
+	// nominal, so no other Hkt is inferred as a Record
+	declare private record: true
 
 	description =
 		'instantiate an object from an index signature and corresponding value type like `Record("string", "number")`'

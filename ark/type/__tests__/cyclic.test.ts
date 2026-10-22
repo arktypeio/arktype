@@ -1170,6 +1170,26 @@ contextualize(() => {
 		)
 	})
 
+	it("Record referencing its own alias", () => {
+		const { json } = scope({
+			json: "string | number | boolean | null | json[] | Record<string, json>"
+		}).export()
+
+		type Json =
+			| string
+			| number
+			| boolean
+			| null
+			| Json[]
+			| { [k: string]: Json }
+
+		attest<Json>(json.infer)
+		attest(json({ a: [1, { b: null }] })).equals({ a: [1, { b: null }] })
+		attest(String(json({ a: undefined }))).snap(
+			"a must be a number, a string, an object, boolean or null (was undefined) or must be an array (was an object)"
+		)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1237
 	it("deferred cyclic generic argument", () => {
 		const types = scope({
