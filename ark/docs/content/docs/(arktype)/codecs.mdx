@@ -7,7 +7,7 @@ A Type with morphs decodes input into output. A codec is a morph with an inverse
 
 ## Defining a codec
 
-`codec` takes an input definition, an output definition and a function for each direction. It comes from `arktype/codecs`, which installs encoding when imported, so an app that doesn't encode doesn't ship it:
+`codec` takes an input definition, an output definition and a function for each direction. It comes from `arktype/codecs`, which installs encoding when imported, so an app that doesn't encode doesn't ship it. Without that import, reading `.encode` throws a `ParseError`:
 
 ```ts
 import { codec } from "arktype/codecs"
@@ -33,7 +33,7 @@ const EpochMs = codec("number.integer", "Date", {
 	encode: d => d.getTime()
 })
 // ---cut---
-// ArkErrors: must be a Date (was string)
+// ArkErrors: must be a Date (was a string)
 const out = EpochMs.encode("0")
 ```
 
@@ -92,6 +92,8 @@ A union encodes a value with a branch that accepts it, trying the branches witho
 The parse keywords encode back to the string they parse: `string.date.parse`, `string.date.iso.parse` and `string.date.epoch.parse`, `string.numeric.parse`, `string.integer.parse`, `string.json.parse` and `string.url.parse`.
 
 ```ts
+import "arktype/codecs"
+
 const Event = type({
 	at: "string.date.iso.parse",
 	count: "string.integer.parse"
@@ -128,6 +130,8 @@ A standalone build installs encoding itself, so `.encode` works there even if th
 Encoding is only possible if every morph has an inverse. Otherwise, accessing `.encode` throws a `ParseError`:
 
 ```ts
+import "arktype/codecs"
+
 const Length = type({ length: type("string").pipe(s => s.length) })
 
 // ParseError: A morph must have an inverse to be encoded: (In: string) => Out<unknown>

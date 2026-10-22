@@ -24,7 +24,10 @@ isSubset(V1, V2) // true
 // but not the other way around: V2 accepts { id: "a" }
 isSubset(V2, V1) // false
 
-const Capped = intersect(V2, { properties: { age: { maximum: 120 } } })
+const Capped = intersect(V2, {
+	type: "object",
+	properties: { age: { maximum: 120 } }
+})
 
 Capped.expression // "{ id: string, age?: number <= 120 }"
 
