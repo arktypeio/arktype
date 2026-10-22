@@ -2,6 +2,22 @@
 
 NOTE: This changelog is incomplete, but will include notable attest-specific changes (many updates consist almost entirely of bumped `arktype` versions for assertions).
 
+## 0.58.0
+
+### Support tsrs
+
+Attest now supports [tsrs](https://github.com/oxc-project/tsrs), a Rust port of TypeScript 7 that serves the same API as tsgo. Install it alongside `@ark/attest` and TypeScript 7, and attest uses it automatically on the platforms tsrs ships a binary for.
+
+### Add `checker`
+
+`checker` selects the type checker attest analyzes with: `"tsjs"` (TypeScript's JS API, for TypeScript 6 and earlier), `"tsgo"` (TypeScript 7's native compiler) or `"tsrs"`. By default, attest uses tsrs if it's installed alongside TypeScript 7, otherwise the checker matching your TypeScript version. Setting a checker that doesn't match the installed TypeScript throws.
+
+```sh
+mocha --checker tsgo
+```
+
+Instantiation counts recorded with tsgo may differ slightly under tsrs, so set `checker: "tsgo"` to keep using tsgo with existing baselines.
+
 ## 0.57.1
 
 ### Support TypeScript 7.1 beta

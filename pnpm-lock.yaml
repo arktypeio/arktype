@@ -117,6 +117,9 @@ importers:
         specifier: 3.6.2
         version: 3.6.2
     devDependencies:
+      tsrs:
+        specifier: 0.18.0-ts7.1.0-dev.20260929
+        version: 0.18.0-ts7.1.0-dev.20260929
       typescript:
         specifier: 'catalog:'
         version: 7.1.0-beta
@@ -1843,6 +1846,36 @@ packages:
 
   '@ts-morph/common@0.28.1':
     resolution: {integrity: sha512-W74iWf7ILp1ZKNYXY5qbddNaml7e9Sedv5lvU1V8lftlitkc9Pq1A+jlH23ltDgWYeZFFEqGCD1Ies9hqu3O+g==}
+
+  '@tsrs/darwin-arm64@0.18.0-ts7.1.0-dev.20260929':
+    resolution: {integrity: sha512-sAirMpaGA9uRQm2W+t4zC7PjnijNuFa4PCSIfLKKo0JyAUCRfnMeev0UGBQ9F3g+9Nz187tvikUs5Irh5+eajA==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@tsrs/linux-arm64-gnu@0.18.0-ts7.1.0-dev.20260929':
+    resolution: {integrity: sha512-zm9/z9yylig68JiZF4Aq0Cm26n09KEU8YoQRlG7tdDWTBNAIViYw8knxnWYsjMWVZ2XiU4mYq1xdrOKuOgABHg==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@tsrs/linux-arm64-musl@0.18.0-ts7.1.0-dev.20260929':
+    resolution: {integrity: sha512-Lw7VVU/YQ9JcarODICEiwzMLdFqZprqh5RGTgbS5Uc6I95P635/g5xA1pOC8RVs4efBvAR30J54iDG3l5JEYiw==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@tsrs/linux-x64-gnu@0.18.0-ts7.1.0-dev.20260929':
+    resolution: {integrity: sha512-EdBwBgNICGu1r1h23ixdcKwsMo6E9ll7ZsY3mNERNYqE1Pwdtcat99d5E7zB1J+oy/Xk6YqiizaB6nolIjpDTw==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [linux]
+
+  '@tsrs/linux-x64-musl@0.18.0-ts7.1.0-dev.20260929':
+    resolution: {integrity: sha512-LHk+AOAtXuTlhJhOJ2+elriEIX17ycXljojeNxrrzckOipTG1LksoVWuCSas2nu00EnWAzrdKpt9oqPylUKZfQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [linux]
 
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
@@ -5131,6 +5164,11 @@ packages:
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
+  tsrs@0.18.0-ts7.1.0-dev.20260929:
+    resolution: {integrity: sha512-9T0b4Uam/yMFIK16GUx0fUrJqYZnJ/gvSmV9JB8NTyDePvwCI45WFWxyEV/UMV3KfdNRJG/PBsm3fSIB9WmWsA==}
+    engines: {node: '>=16.20.0'}
+    hasBin: true
+
   tsup@8.5.0:
     resolution: {integrity: sha512-VmBp77lWNQq6PfuMqCHD3xWl22vEoWsKajkF8t+yMBawlUS8JzEI+vOVMeuNZIuMML8qXRizFKi9oD5glKQVcQ==}
     engines: {node: '>=18'}
@@ -6867,6 +6905,21 @@ snapshots:
       minimatch: 10.0.3
       path-browserify: 1.0.1
       tinyglobby: 0.2.15
+
+  '@tsrs/darwin-arm64@0.18.0-ts7.1.0-dev.20260929':
+    optional: true
+
+  '@tsrs/linux-arm64-gnu@0.18.0-ts7.1.0-dev.20260929':
+    optional: true
+
+  '@tsrs/linux-arm64-musl@0.18.0-ts7.1.0-dev.20260929':
+    optional: true
+
+  '@tsrs/linux-x64-gnu@0.18.0-ts7.1.0-dev.20260929':
+    optional: true
+
+  '@tsrs/linux-x64-musl@0.18.0-ts7.1.0-dev.20260929':
+    optional: true
 
   '@tybys/wasm-util@0.10.1':
     dependencies:
@@ -10816,6 +10869,14 @@ snapshots:
       strip-bom: 3.0.0
 
   tslib@2.8.1: {}
+
+  tsrs@0.18.0-ts7.1.0-dev.20260929:
+    optionalDependencies:
+      '@tsrs/darwin-arm64': 0.18.0-ts7.1.0-dev.20260929
+      '@tsrs/linux-arm64-gnu': 0.18.0-ts7.1.0-dev.20260929
+      '@tsrs/linux-arm64-musl': 0.18.0-ts7.1.0-dev.20260929
+      '@tsrs/linux-x64-gnu': 0.18.0-ts7.1.0-dev.20260929
+      '@tsrs/linux-x64-musl': 0.18.0-ts7.1.0-dev.20260929
 
   tsup@8.5.0(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6):
     dependencies:

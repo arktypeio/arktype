@@ -31,6 +31,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	updateSnapshots: false,
 	skipTypes: false,
 	skipInlineInstantiations: false,
+	checker: undefined,
 	benchPercentThreshold: 20,
 	benchErrorOnThresholdExceeded: true,
 	filter: undefined,
@@ -63,6 +64,16 @@ Use `testWithTypes` when:
 
 - You've made changes to your types and want to recheck your type-level assertions
 - You're running your tests in CI
+
+### checker
+
+The type checker attest analyzes type assertions with:
+
+- `"tsjs"`: TypeScript's JS API, for TypeScript 6 and earlier
+- `"tsgo"`: TypeScript 7's native compiler
+- `"tsrs"`: [tsrs](https://github.com/oxc-project/tsrs), a faster Rust port of TypeScript 7 that serves the same API
+
+By default, attest uses tsrs if it's installed alongside TypeScript 7 on a platform it ships a binary for, otherwise the checker matching your TypeScript version. Setting a checker that doesn't match your installed TypeScript throws.
 
 ### typeToStringFormat
 

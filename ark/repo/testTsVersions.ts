@@ -24,7 +24,10 @@ const tasks: Record<string, string> = {
 	"repo@6.0.3": `${ts6Tsc} && ${ts6Tsc} --project ark/repo/tsCompat/tsconfig.attest.json`,
 	// type snapshots and snap population tests' instantiation counts are
 	// recorded with the workspace's TS 7, whose type strings and counts differ
-	"attest@6.0.3": `cd ark/attest && NODE_OPTIONS="--import ${useTs6}" pnpm mocha --config ../repo/mocha.package.jsonc --fgrep "populates file" --invert`
+	"attest@6.0.3": `cd ark/attest && NODE_OPTIONS="--import ${useTs6}" pnpm mocha --config ../repo/mocha.package.jsonc --fgrep "populates file" --invert`,
+	// type assertions default to tsrs where it's installed, but tsgo is what
+	// most consumers check with
+	"attest@tsgo": `ATTEST_checker='"tsgo"' pnpm testTypedLoose && cd ark/attest && ATTEST_checker='"tsgo"' pnpm test`
 }
 
 const run = (name: string) =>
