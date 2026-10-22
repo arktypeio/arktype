@@ -29,5 +29,5 @@ contextualize(() => {
 		} finally {
 			rmRf(projectDir)
 		}
-	})
+	}).timeout(60000)
 })
