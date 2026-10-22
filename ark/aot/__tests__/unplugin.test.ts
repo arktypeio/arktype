@@ -1639,7 +1639,7 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 				"arktype",
 				join(app, "main.ts")
 			)
-			return relative(fromHere("..", ".."), resolved!)
+			return relative(fromHere("..", ".."), resolved!).replace(/\\/g, "/")
 		}
 		attest([
 			await resolvedIn("development"),
