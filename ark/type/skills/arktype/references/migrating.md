@@ -12,7 +12,7 @@ To move a whole project off Zod, or another library below, work through it in th
    - `z.object()` removes undeclared keys, and so should the migrated objects, even where the code reads only declared keys, since parsed data often reaches a database or a response whole. Call `configure({ onUndeclaredKey: "delete" })` from `arktype/config` in one file, like `src/arktype.config.ts`, and import it first in every file that creates a Type, so it applies whichever file loads first, tests included. Then `.passthrough()` and `z.looseObject()` become `"+": "ignore"`, and `.strict()` becomes `"+": "reject"`.
    - Without that setting, write `"+": "delete"` in every object instead, nested ones included. `.merge()` takes `"+"` from the object merged in, so write `.merge({ "+": "delete", ... })`; with the global setting, merged objects keep deleting. Either way, see [Defaults that differ](#defaults-that-differ) for unions of such objects.
    - `.optional()` also accepts `undefined`, so write `"key?": "T | undefined"`.
-   - Translate coercions and refinements literally, as in [Coercion is a parse](#semantics-to-check). Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them.
+   - Translate coercions and refinements literally, as in [Coercion is a parse](#semantics-to-check). Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`.
    - Keep custom messages. `.min(1, "Name is required")` becomes `type("string >= 1").configure({ message: "Name is required" })`.
 4. **Update call sites.**
    - `X.parse(data)` becomes `X.assert(data)`, which throws.
@@ -36,9 +36,8 @@ To move a whole project off Zod, or another library below, work through it in th
 Without casts:
 
 - `toJsonSchema()` returns a `JsonSchema`, the type to give the document's Schema Objects (`import type { JsonSchema } from "arktype"`). Build path and query parameters from an object type's `.props`, which lists each key, whether it's required, and its Type.
-- Write a `fallback` inline in the `toJsonSchema()` call so its handlers are typed. To share one, wrap the call in a function.
+- A `fallback` declared apart from the `toJsonSchema()` call is a `ToJsonSchema.FallbackOption` (`import type { ToJsonSchema } from "arktype"`).
 - The MCP SDK finds a prompt argument's completer through Zod's `.shape`, so give `argsSchema` one, as below.
-- Some consumers, like MCP elicitation, require `type: "string"` beside an `enum`. Declare it as metadata, also below.
 
 ```ts
 import { completable } from "@modelcontextprotocol/server"
@@ -53,14 +52,6 @@ const argsSchema = {
 		)
 	}
 }
-
-declare global {
-	interface ArkEnv {
-		meta(): { type?: "string" }
-	}
-}
-
-const Choice = type.enumerated("yes", "no").configure({ type: "string" })
 ```
 
 6. **Swap dependencies.** Remove `zod` and the packages that existed only for it, and add their replacements, with the project's package manager, like `pnpm remove zod` or `npm uninstall zod`. Editing `package.json` by hand leaves the lockfile stale, and some package managers then refuse to run scripts.
