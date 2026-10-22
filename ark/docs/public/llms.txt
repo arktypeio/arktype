@@ -50,6 +50,7 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 
 - [Type API](https://arktype.io/docs/type-api.md): Every member of a Type and of the type function.
 - [Packages](https://arktype.io/docs/packages.md): Every package ArkType publishes, its entrypoints, and what to import from each.
+- [Migrating](https://arktype.io/docs/migrating.md): Convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema and JSON Schema to ArkType, and the defaults that differ between them.
 - [Upgrading](https://arktype.io/docs/upgrading.md): The changes in the latest ArkType that can break code written for the previous release, and what to change.
 - [FAQ](https://arktype.io/docs/faq.md): Answers to common questions about ArkType's behavior, configuration and TypeScript integration.
 

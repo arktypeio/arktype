@@ -7,6 +7,8 @@ description: Write, review or debug runtime validation with ArkType (the `arktyp
 
 ArkType definitions are TypeScript type syntax, written as strings and objects, that also validate at runtime. If you know the TypeScript type, write that.
 
+Converting schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema? Read [references/migrating.md](references/migrating.md) first: those libraries differ from ArkType on undeclared keys, optional keys, defaults and coercion.
+
 Docs index: https://arktype.io/llms.txt, which links each page's Markdown. Any docs page is available as Markdown by adding `.md` to its URL, e.g. https://arktype.io/docs/objects.md. Every page in one file: https://arktype.io/llms-full.txt.
 
 ## Define, infer, validate
@@ -47,7 +49,7 @@ if (out instanceof type.errors) {
 
 ## Syntax
 
-Strings use TypeScript's operators. Write string literals in single quotes inside the definition.
+Strings use TypeScript's operators. Write string literals in single quotes inside the definition. Object types don't go in strings: `"{ a: string }"` doesn't parse, so write objects as objects and name them in a scope to reuse them in a string.
 
 | Want                   | Write                                                     |
 | ---------------------- | --------------------------------------------------------- |
@@ -87,6 +89,10 @@ const CustomerDraft = Customer.partial()
 
 Never interpolate a type into a string, as in ``type(`${Address}[]`)``. Use `Address.array()`, `Address.or(...)` and the other chained methods, or a tuple expression like `[Address, "[]"]`.
 
+- `.merge()` adds keys and replaces existing ones. `.and()` intersects, and throws when a key's types conflict.
+- To share keys between types, merge a base Type. A helper that composes Types should take a `Type<t>` and call its methods, which type-checks without casts: `const withId = <t extends object>(T: Type<t>) => T.and({ id: "string" })`. A helper that passes a generic definition to `type()` needs casts.
+- `.as<T>()` is a cast. To infer a narrower type, use `.narrow()` with a type predicate, e.g. `(s): s is \`data-${string}\` => s.startsWith("data-")`.
+
 ## Parsing and transforming
 
 Keywords ending in `.parse` transform their input. `.to()` validates the parsed result, and `.pipe()` runs your own function. A morph receives the caller's value itself, not a copy, so return a new value instead of mutating its argument.
@@ -110,6 +116,10 @@ const Env = type({
 ```
 
 Other morph keywords: `string.trim`, `string.lower`, `string.upper`, `string.numeric.parse`, `string.date.parse`, `string.date.iso.parse`, `string.url.parse`.
+
+- A `.parse` keyword accepts only strings. When the value may already be parsed, keep both in a union: `"number | string.numeric.parse"`.
+- A union can't include a morph whose input overlaps another branch, so `type("unknown").pipe(Number).or("undefined")` throws. Start the morph from the narrowest input, like `"string.numeric.parse | undefined"`, or handle the other case inside the pipe.
+- A default is an input, so a morph's default is what it parses: `flag: type("'true' | 'false'").pipe(s => s === "true").default("false")`.
 
 ## Custom rules
 
@@ -149,6 +159,15 @@ const tree = types.TreeNode({ value: 1, children: [] })
 
 Don't wrap definitions inside a scope with `type()`. They're resolved within the scope, and `type()` would resolve them globally.
 
+A type that only refers to itself can use `this`, as in `type({ name: "string", children: "this[]" })`. Types that refer to each other, like a JSON value and a JSON object, go in a scope:
+
+```ts
+const json = scope({
+	Json: "string | number | boolean | null | Json[] | JsonObject",
+	JsonObject: { "[string]": "Json" }
+}).export()
+```
+
 ## Extra keys
 
 By default, keys a definition doesn't declare are allowed and left in the output. To reject or remove them for one object, use `"+"`:
@@ -176,6 +195,10 @@ A project whose bundler config uses `@ark/aot` (e.g. `precompile.vite()` from `@
 - Build options go in the plugin call or under `precompile` in an `ark.json` beside `package.json`, which the plugin, the drivers, the CLI and the ESLint rule all read. `{ "precompile": { "preset": "smallest" } }` trades speed for size.
 
 Docs: https://arktype.io/docs/precompile.md and https://arktype.io/docs/precompile/troubleshooting.md.
+
+## Check your work
+
+ArkType reports most mistakes in a definition as a TypeScript error at the definition, and the rest as a `ParseError` thrown when the definition runs. After writing or changing types, run `npx tsc --noEmit`, then call each type on a valid and an invalid value and read the result.
 
 ## Mistakes to avoid
 
