@@ -300,7 +300,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 						js.check(child, { breaks: !js.shortest })
 					else {
 						// a key is read before data is checked to be an object
-						js.rejectNullish()
+						js.rejectNullish(this)
 							.line(`data${js.prop(read.key)}`)
 							.if("!(data instanceof Object || Object(data) === data)", () =>
 								js.shortest ? js.return(false) : js.line("break")
@@ -310,7 +310,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 				return js.return(true)
 			}
 			if (js.shortest) checks()
-			else js.block("for (;;)", checks).return(false)
+			else js.block("for (;;)", checks).return(js.rejection(this))
 			return
 		}
 		// only a structure can transform an intersection's data

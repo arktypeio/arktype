@@ -17,6 +17,7 @@ import {
 	type UnionNode
 } from "@ark/schema"
 import { hashOf, throwInternalError, type array } from "@ark/util"
+import { disallowed } from "../runtime.ts"
 import { runtimeKeyOf } from "../standalone.ts"
 import {
 	isInlineSite,
@@ -54,6 +55,17 @@ class StandaloneCompiler extends TraversalCompiler {
 
 	override site(node: BaseNode): string {
 		return this.siteRef(issueSiteOf(node.failureSite))
+	}
+
+	// a transforming object's Allows rejects through a call V8 has no feedback
+	// for until data fails, so the transform after it is compiled with its
+	// checks and repeats none of their reads
+	override rejection(node: BaseNode): string {
+		return (
+				this.traversalKind === "Allows" && !this.shortest && node.transforms
+			) ?
+				`${this.ref(disallowed)}()`
+			:	"false"
 	}
 
 	// a site of literals is built where it fails, and stays a ref the unit keys

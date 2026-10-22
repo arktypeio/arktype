@@ -410,10 +410,16 @@ export abstract class NodeCompiler extends CompiledFunction<
 	}
 
 	// rejects data Allows can't read an object's first key from
-	rejectNullish(): this {
+	rejectNullish(node: BaseNode): this {
 		return this.block("switch (data)", () =>
-			this.line("case null: case undefined: return false")
+			this.line(`case null: case undefined: return ${this.rejection(node)}`)
 		)
+	}
+
+	// what a node's Allows returns where it rejects data, which a build can
+	// write otherwise
+	rejection(_node: BaseNode): string {
+		return "false"
 	}
 
 	initializeErrorCount(): this {
