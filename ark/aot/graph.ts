@@ -50,6 +50,7 @@ import { SourceModule } from "./module.ts"
 import {
 	exportNameOf,
 	isTransparent,
+	isWriteTarget,
 	unwrapChain,
 	operatorOf,
 	runtimeParamsOf,
@@ -60,6 +61,8 @@ import {
 } from "./scope.ts"
 
 export type FunctionNode = Function | ArrowFunctionExpression
+
+type ReachedNodes = [exact: Set<Node>, held: Set<Node>]
 
 export type ArkExportName =
 	| keyof typeof arktype
@@ -2415,36 +2418,46 @@ export class ModuleGraph {
 	}
 
 	// e.g. `() => scope(...)` passed to a function the build doesn't analyze,
-	// so it can't see what's read off the value
+	// so it can't see what's read off the value. A held value, like `[$]`,
+	// holds it, so what's read off one may be it.
 	reachesUnseen(
 		node: Node,
 		module: SourceModule,
-		seen = new Set<Node>()
+		held = false,
+		seen: ReachedNodes = [new Set(), new Set()]
 	): boolean {
-		if (seen.has(node)) return false
-		seen.add(node)
+		if (seen[+held].has(node)) return false
+		seen[+held].add(node)
+		const follow = (next: Node, nextHeld = held) =>
+			this.reachesUnseen(next, module, nextHeld, seen)
 		const [operand, operator] = operatorOf(node)
 		switch (operator?.type) {
+			case "MemberExpression": {
+				if (operator.object !== operand || isWriteTarget(operator)) return false
+				// a read off what may be a Scope is checked by scopeReadOf
+				if (!held) return !mayBeOtherArk(this.kindOf(operand, module))
+				const kind = this.kindOf(operator, module)
+				return (
+					(mayBeOtherArk(kind) && follow(operator, false)) ||
+					(!!(kind & (kinds.holder | kinds.unknown)) && follow(operator))
+				)
+			}
 			case "CallExpression":
 			case "NewExpression": {
-				if (operator.callee === operand) return false
-				const callee = unwrapChain(operator.callee)
-				const fn = this.functionOf(callee, module)
+				if (operator.callee === operand) return held
+				const fn = this.functionOf(operator.callee, module)
 				if (fn?.[1] !== module) return true
 				// e.g. `hand($)` with `hand = s => each(s)`
 				const param = runtimeParamsOf(fn[0])[
 					operator.arguments.indexOf(operand as never)
 				]
-				const binding =
-					param?.type === "Identifier" ?
-						module.scopes.bindingsById.get(param)
-					:	undefined
 				return (
-					!!binding &&
-					binding.references.some(
-						reference =>
-							!reference.isWrite &&
-							this.reachesUnseen(reference.id, module, seen)
+					param?.type !== "Identifier" ||
+					this.readsReachUnseen(
+						module.scopes.bindingsById.get(param),
+						module,
+						held,
+						seen
 					)
 				)
 			}
@@ -2453,49 +2466,112 @@ export class ModuleGraph {
 				return (
 					(operator.type === "LogicalExpression" ||
 						operator.test !== operand) &&
-					this.reachesUnseen(operator, module, seen)
+					follow(operator)
 				)
 			case "SequenceExpression":
 				return (
 					operator.expressions[operator.expressions.length - 1] === operand &&
-					this.reachesUnseen(operator, module, seen)
+					follow(operator)
 				)
+			case "AwaitExpression":
+				return follow(operator)
 			case "ArrowFunctionExpression":
 				return (
 					operator.body === operand &&
-					this.returnReachesUnseen(operator, module, seen)
+					this.returnReachesUnseen(operator, module, held, seen)
 				)
 			case "ReturnStatement": {
 				const fn = enclosingFunctionOf(operator)
-				return !!fn && this.returnReachesUnseen(fn, module, seen)
+				return !!fn && this.returnReachesUnseen(fn, module, held, seen)
 			}
-			case "VariableDeclarator": {
-				const binding =
-					operator.init === operand && operator.id.type === "Identifier" ?
-						module.scopes.bindingsById.get(operator.id)
-					:	undefined
+			case "VariableDeclarator":
 				return (
-					!!binding &&
-					binding.references.some(
-						reference =>
-							!reference.isWrite &&
-							this.reachesUnseen(reference.id, module, seen)
+					operator.id.type !== "Identifier" ||
+					this.readsReachUnseen(
+						module.scopes.bindingsById.get(operator.id),
+						module,
+						held,
+						seen
 					)
 				)
-			}
+			// e.g. `s = $`, after which reading `s` reads the Scope
+			case "AssignmentExpression":
+				return (
+					operator.left !== operand &&
+					(operator.left.type !== "Identifier" ||
+						this.readsReachUnseen(
+							module.scopes.referencesById.get(operator.left)?.binding,
+							module,
+							held,
+							seen
+						) ||
+						follow(operator))
+				)
+			case "Property":
+				return operator.value === operand && follow(operator.parent!, true)
+			case "ArrayExpression":
+				return follow(operator, true)
+			// e.g. `[...list]`, holding what `list` holds, or `{ ...$ }`, which
+			// copies what a precompiled Scope lacks
+			case "SpreadElement":
+				return (
+					!held ||
+					(operator.parent!.type !== "ArrayExpression" &&
+						operator.parent!.type !== "ObjectExpression") ||
+					follow(operator.parent!)
+				)
+			// e.g. `"type" in $`
+			case "BinaryExpression":
+				return operator.operator === "in" && operator.right === operand
+			// e.g. `typeof $`, or an export, whose importers are built where they
+			// read it
+			case "ExportDefaultDeclaration":
+			case "ExportSpecifier":
+			case "ExpressionStatement":
+			case "UnaryExpression":
+			case "TemplateLiteral":
+			case "IfStatement":
+			case "SwitchStatement":
+			case "SwitchCase":
+			case "WhileStatement":
+			case "DoWhileStatement":
+			case "ForStatement":
+			case "TSTypeQuery":
+			case undefined:
+				return false
 		}
-		return false
+		// e.g. thrown, yielded, held by a class field or iterated
+		return true
+	}
+
+	private readsReachUnseen(
+		binding: Binding | undefined,
+		module: SourceModule,
+		held: boolean,
+		seen: ReachedNodes
+	): boolean {
+		return (
+			!binding ||
+			binding.references.some(
+				reference =>
+					!reference.isWrite &&
+					this.reachesUnseen(reference.id, module, held, seen)
+			)
+		)
 	}
 
 	// an exported function's importers are built where they read its result
 	private returnReachesUnseen(
 		fn: FunctionNode,
 		module: SourceModule,
-		seen: Set<Node>
+		held: boolean,
+		seen: ReachedNodes
 	): boolean {
 		if (bindingOfFunction(fn, module)?.exportNames.length) return false
 		const calls = this.callsOf(fn, module)
-		return !calls || calls.some(call => this.reachesUnseen(call, module, seen))
+		return (
+			!calls || calls.some(call => this.reachesUnseen(call, module, held, seen))
+		)
 	}
 
 	private functionOf(

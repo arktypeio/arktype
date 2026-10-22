@@ -1670,6 +1670,144 @@ export const E = keep(kept).type("e")`)
 			])
 		})
 
+		it("a Scope handed on in an object or array literal", () => {
+			attest(
+				diagnosticsOf(`import { scope } from "arktype"
+declare const each: (value: unknown) => void
+each({ s: scope({ a: "string" }) })
+const listed = scope({ b: "string" })
+each([listed])
+const nested = scope({ c: "string" })
+const options = { defs: [{ nested }] }
+each(options)
+const spread = scope({ d: "string" })
+each([...[spread]])
+each({ ...{ spread: scope({ e: "string" }) } })`)
+			).snap([
+				'/main.ts:3:11  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:4:16  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:6:16  scope({ c: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:9:16  scope({ d: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:11:21  scope({ e: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".'
+			])
+		})
+
+		it("a Scope handed on through a let or var", () => {
+			attest(
+				diagnosticsOf(`import { scope } from "arktype"
+declare const each: (value: unknown) => void
+let assigned: unknown
+assigned = scope({ a: "string" })
+each(assigned)
+const $ = scope({ b: "string" })
+let reassigned: unknown = 1
+reassigned = $
+each(reassigned)
+var declared = scope({ c: "string" })
+each(declared)
+let read = scope({ d: "string" })
+export const D = read.type("d")`)
+			).snap([
+				'/main.ts:4:12  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:6:11  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:10:16  scope({ c: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".'
+			])
+		})
+
+		it("a Scope stored on an object", () => {
+			attest(
+				diagnosticsOf(`import { scope } from "arktype"
+declare const each: (value: unknown) => void
+const target: Record<string, unknown> = {}
+target.s = scope({ a: "string" })
+class Fields {
+	s = scope({ b: "string" })
+}
+each(new Fields())
+const assigned = scope({ c: "string" })
+each(Object.assign({}, { assigned }))
+const got = scope({ d: "string" })
+each({
+	get got() {
+		return got
+	}
+})`)
+			).snap([
+				'/main.ts:4:12  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:6:6  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:9:18  scope({ c: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:11:13  scope({ d: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".'
+			])
+		})
+
+		it("a Scope read off a literal the build can't follow", () => {
+			attest(
+				diagnosticsOf(`import { scope } from "arktype"
+const list = [scope({ a: "string" })]
+export const A = (i: number) => list[i].type("a")
+const options = { s: scope({ b: "string" }) }
+const read = (o: typeof options) => o.s.type("b")
+export const B = read(options)
+for (const s of [scope({ c: "string" })]) s.type("c")
+const kept = { s: scope({ d: "string" }) }
+export const D = kept.s.type("d")
+const indexed = [scope({ e: "string" })]
+export const E = indexed[0].type("e")`)
+			).snap([
+				'/main.ts:2:15  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:4:22  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:7:18  scope({ c: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:7:43  s.type("c") can\'t be precompiled yet\n  `s` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".'
+			])
+		})
+
+		it("a Scope's members copied or tested", () => {
+			attest(
+				diagnosticsOf(`import { scope } from "arktype"
+const $ = scope({ a: "string" })
+export const copy = { ...$ }
+const keyed = scope({ b: "string" })
+export const has = "type" in keyed
+const { type: t } = scope({ c: "string" })
+export const C = t
+const compared = scope({ d: "string" })
+export const isDefined = compared !== undefined && typeof compared === "object"`)
+			).snap([
+				'/main.ts:2:11  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:4:15  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:6:21  scope({ c: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".'
+			])
+		})
+
+		it("a Scope thrown or yielded", () => {
+			attest(
+				diagnosticsOf(`import { scope } from "arktype"
+export const fail = () => {
+	throw scope({ a: "string" })
+}
+export function* scopes() {
+	yield scope({ b: "string" })
+}`)
+			).snap([
+				'/main.ts:3:8  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:6:8  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".'
+			])
+		})
+
+		it("a Scope returned in a literal", () => {
+			attest(
+				diagnosticsOf(`import { scope } from "arktype"
+declare const each: (value: unknown) => void
+const make = () => ({ s: scope({ a: "string" }) })
+each(make())
+const wrap = () => [scope({ b: "string" })]
+export const B = wrap()[0].type("b")`)
+			).snap([
+				'/main.ts:3:26  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:6:18  wrap()[0].type("b") can\'t be precompiled yet\n  `wrap()[0]` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".'
+			])
+		})
+
 		it("data a union of tuple expressions returns", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"
