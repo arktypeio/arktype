@@ -294,6 +294,21 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("declared key wider than the index signature value", () => {
+			const T = type({ "[string]": "number", a: "number|string" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("declared key overlapping the index signature value", () => {
+			const T = type({ "[string]": "0 < number < 10", a: "number.integer" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("optional key disjoint from the index signature value", () => {
+			const T = type({ "[string]": "number", "a?": "string" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
 		it("symbol index signature with string key", () => {
 			const T = type({ "[symbol]": "number", a: "string" })
 			const arbitrary = arkToArbitrary(T)
