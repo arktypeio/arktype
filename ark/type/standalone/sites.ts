@@ -99,8 +99,6 @@ export const issueSite = <site extends object>(site: site): site => {
 	return site
 }
 
-export const undeclaredSite = issueSite({ code: "undeclared" })
-
 // a site of a code and description naming nothing the validator receives
 export const isInlineSite = (site: object): site is IssueContext =>
 	"code" in site &&

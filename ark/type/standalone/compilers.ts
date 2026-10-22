@@ -19,13 +19,11 @@ import {
 import { hashOf, throwInternalError, type array } from "@ark/util"
 import { runtimeKeyOf } from "../standalone.ts"
 import {
-	isDescribed,
 	isInlineSite,
 	isKeyword,
 	issueContextOf,
 	issueSite,
 	issueSiteOf,
-	undeclaredSite,
 	withoutStrings,
 	writeSiteOf
 } from "./sites.ts"
@@ -139,8 +137,14 @@ class StandaloneCompiler extends TraversalCompiler {
 	}
 
 	override undeclaredFails(node: StructureNode): string {
-		const context = issueContextOf({ code: "undeclared", meta: node.meta })
-		const site = isDescribed(context) ? undeclaredSite : issueSite(context)
+		// expected "removed", so it says "must be removed" as arktype does
+		const site = issueSite(
+			issueContextOf({
+				code: "undeclared",
+				description: "removed",
+				meta: node.meta
+			})
+		)
 		return this.fails("failsAt", `${this.siteRef(site)}, data, k`)
 	}
 

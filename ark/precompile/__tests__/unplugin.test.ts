@@ -712,6 +712,51 @@ TypeError: out.throw is not a function false
 		])
 	})
 
+	it("esbuild an undeclared key's issue as arktype writes it", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const Strict = type({ "+": "reject", a: "string", o: { "+": "reject" } })
+const Gone = type({ "+": "reject" }).configure({ expected: "gone" }, "structure")
+
+for (const out of [Strict({ a: "", o: { b: 1 }, c: 1 }), Gone({ d: 1 })]) {
+	if (!(out instanceof type.errors)) throw new Error("valid")
+	for (const { code, path, expected, message } of out.issues)
+		console.log(JSON.stringify({ code, path, expected, message }))
+}
+`
+			},
+			fromHere("temp", "undeclaredIssues")
+		)
+		const arktype = runPlain(root)
+		attest(arktype)
+			.snap(`{"code":"undeclared","path":["o","b"],"expected":"removed","message":"o.b must be removed"}
+{"code":"undeclared","path":["c"],"expected":"removed","message":"c must be removed"}
+{"code":"undeclared","path":["d"],"expected":"gone","message":"d must be gone"}
+`)
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(arktype)
+		// with the issues module the runtime written for size is published with
+		const { outputFiles } = await esbuild({
+			entryPoints: [join(root, "main.ts")],
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [
+				issuesFrom("issuesLean.ts"),
+				precompile.esbuild({
+					cwd: root,
+					optimize: "size",
+					optimizeErrors: "size",
+					conditions
+				})
+			]
+		})
+		attest(run(outputFiles[0].text)).equals(arktype)
+	})
+
 	it("esbuild an undetailed failure, read later", async () => {
 		const root = writeFixture(
 			{
