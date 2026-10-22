@@ -89,7 +89,8 @@ import {
 	stepsOf,
 	type ArkExportName,
 	type FunctionNode,
-	type ImportTarget
+	type ImportTarget,
+	type StandInKind
 } from "./graph.ts"
 import {
 	allowUnsafeHint,
@@ -3387,7 +3388,11 @@ export class Precompiler {
 				candidate.state.value
 			])
 		)
-		const scopeReads: [node: MemberExpression, read: string][] = []
+		const scopeReads: [
+			node: MemberExpression,
+			read: string,
+			kind: StandInKind
+		][] = []
 		const unavailable: [
 			node: Node,
 			read: string | undefined,
@@ -3410,14 +3415,14 @@ export class Precompiler {
 				unavailable.push([node, ...read])
 			const scopeRead =
 				!isWithin(node, candidateRanges) && this.graph.scopeReadOf(node, module)
-			if (scopeRead) scopeReads.push([node as MemberExpression, scopeRead])
+			if (scopeRead) scopeReads.push([node as MemberExpression, ...scopeRead])
 			return true
 		})
 		// arktype's own packages are the runtime a standalone build ships
 		const isArkPackage = arkPackageName.test(
 			this.graph.packageNameOf(module.id) ?? ""
 		)
-		for (const [node, read] of scopeReads) {
+		for (const [node, read, kind] of scopeReads) {
 			// e.g. `getPlaces().type(...)`, reported as the call
 			const [callee, call] = operatorOf(node)
 			const span =
@@ -3429,7 +3434,7 @@ export class Precompiler {
 					"unsupported",
 					`${module.snippetOf(span)} can't be precompiled yet`,
 					[
-						`\`${module.snippetOf(node.object)}\` may be a Scope, which a standalone build replaces with an object that lacks \`${read}\``
+						`\`${module.snippetOf(node.object)}\` may be a ${kind}, which a standalone build replaces with an object that lacks \`${read}\``
 					],
 					`Assign it to a const and read \`${read}\` off that, which the build precompiles, or build with runtime: "arktype".`
 				)
@@ -4065,8 +4070,7 @@ const declaredBindingKinds = {
 	class: 1
 } satisfies Partial<Record<BindingKind, 1>>
 
-// what a standalone build replaces with an object holding none of its members
-const standInKindOf = (value: unknown): "Scope" | "Generic" | undefined =>
+const standInKindOf = (value: unknown): StandInKind | undefined =>
 	hasArkKind(value, "scope") ? "Scope"
 	: hasArkKind(value, "generic") ? "Generic"
 	: undefined
