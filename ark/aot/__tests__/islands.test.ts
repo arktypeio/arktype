@@ -108,6 +108,26 @@ export const Imported = type("string")`
 		])
 	})
 
+	it("tells an island's Type from one equal to it by where it's bound", () => {
+		attest(
+			precompile(
+				`import { type } from "arktype"
+import { Island } from "./b.ts"
+const Static = type({ a: "string" })
+const Alias = Island
+export const A = type({ inner: Static })
+export const B = type({ inner: Alias })`,
+				{
+					"/b.ts": `import { type } from "arktype"
+// @ark-runtime
+export const Island = type({ a: "string" })`
+				}
+			).diagnostics.map(renderDiagnostic)
+		).snap([
+			"/main.ts:6:18  type({ inner: Alias }) can't be precompiled yet\n  `Island` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+		])
+	})
+
 	it("marking a Scope leaves its thunks to arktype", () => {
 		const writeSource = (mark: string) => `import { scope } from "arktype"
 const isZero = (n: number) => n === 0

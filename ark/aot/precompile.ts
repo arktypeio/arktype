@@ -279,8 +279,8 @@ export interface Reference {
 	start: number
 	end: number
 	value: unknown
-	// reads an unwritten binding a site initialized
-	isFixed: boolean
+	// the unwritten binding a site initialized that it reads
+	fixedBy: Binding | undefined
 	// a function or symbol its own module creates
 	isOwnHole: boolean
 	// imported from a module that only declares and has run
@@ -1684,7 +1684,14 @@ export class Precompiler {
 				continue
 			}
 			// a Type without holes is written into the site
-			if (holes.length && this.isIslandValue(reference.value, site)) {
+			if (
+				holes.length &&
+				this.isIslandValue(
+					reference.value,
+					site,
+					reference.fixedBy && [reference.fixedBy, module]
+				)
+			) {
 				if (!passed.has(reference.value)) reasons.push(islandValueMessage(text))
 				passed.add(reference.value)
 				for (const value of holes) read.add(value)
@@ -1752,7 +1759,9 @@ export class Precompiler {
 			readsByRoot.set(key, [...(readsByRoot.get(key) ?? []), input])
 		}
 		for (const reads of readsByRoot.values()) {
-			const island = reads.find(input => this.isIslandValue(input.value, site))
+			const island = reads.find(input =>
+				this.isIslandValue(input.value, site, this.originOf(input, module))
+			)
 			if (island) {
 				reasons.push(islandValueMessage(textOfInput(island)))
 				continue
@@ -1852,8 +1861,15 @@ export class Precompiler {
 	}
 
 	// a factory can't receive a runtime island's Type
-	private isIslandValue(value: unknown, site: Site): boolean {
+	private isIslandValue(
+		value: unknown,
+		site: Site,
+		origin: [Binding, SourceModule] | undefined
+	): boolean {
 		if (!hasArkKind(value, "root")) return false
+		// a binding a site initialized holds that site's Type, not one equal to it
+		if (origin && this.isCreatedBy(origin[0], value))
+			return isInIsland(origin[0].declaration, origin[1])
 		for (const state of this.interpreter.sitesByNode.values()) {
 			if (state.value === value && isInIsland(state.node, state.module))
 				return true
@@ -1871,6 +1887,22 @@ export class Precompiler {
 				(target.kind === "expression" && isInIsland(target.node, target.module))
 			)
 		})
+	}
+
+	private originOf(
+		input: Input,
+		module: SourceModule
+	): [Binding, SourceModule] | undefined {
+		if (input.path.length) return
+		if (input.kind === "local")
+			return [this.bindingsByInput.get(input)!, module]
+		const target = this.graph.exportOf(
+			this.graph.moduleOf(input.file!) as SourceModule,
+			input.name
+		)
+		return target.kind === "binding" ?
+				[target.binding, target.module]
+			:	undefined
 	}
 
 	private inputExpressionOf(
@@ -1973,7 +2005,7 @@ export class Precompiler {
 	private incomparableReasonsOf(site: Site, module: SourceModule): string[] {
 		const reads: [value: unknown, text: string][] = [
 			...site.references
-				.filter(reference => !reference.isFixed)
+				.filter(reference => !reference.fixedBy)
 				.map((reference): [unknown, string] => [
 					reference.value,
 					module.snippetOf(reference)
@@ -2689,10 +2721,7 @@ export class Precompiler {
 					start: node.start,
 					end: node.end,
 					value,
-					isFixed:
-						!isImportInput &&
-						read.type === "Identifier" &&
-						this.isCreatedBy(module.scopes.refsById.get(read)?.binding, value),
+					fixedBy: this.fixedByOf(read, value, isImportInput, module),
 					isOwnHole: this.interpreter.isOwnHole(node, value, module),
 					isInert: this.isInertRead(
 						value,
@@ -2708,6 +2737,17 @@ export class Precompiler {
 	}
 
 	// e.g. `$` in `const $ = scope(…)`
+	private fixedByOf(
+		read: Node,
+		value: unknown,
+		isImportInput: boolean,
+		module: SourceModule
+	): Binding | undefined {
+		if (isImportInput || read.type !== "Identifier") return
+		const binding = module.scopes.refsById.get(read)?.binding
+		return this.isCreatedBy(binding, value) ? binding : undefined
+	}
+
 	private isCreatedBy(binding: Binding | undefined, value: unknown): boolean {
 		const declaration = binding?.declaration
 		return (
@@ -3076,42 +3116,6 @@ export class Precompiler {
 				result.push(
 					this.diagnostic(module, calls[i], "R3", problem, reasons, hint)
 				)
-			}
-		}
-		return result
-	}
-
-	private evaluateConfiguration(
-		call: CallExpression,
-		module: SourceModule,
-		modules: string[]
-	): Pick<Configuration, "problem" | "reasons" | "hint"> & { value: unknown } {
-		// the build applies it before any site, so it must run once at load
-		if (!runsOnceAtLoad(call)) {
-			return {
-				value: undefined,
-				problem:
-					"configure() must be called once, unconditionally, at the config module's top level",
-				reasons: []
-			}
-		}
-		const argument = call.arguments[0]
-		if (!argument) return { value: undefined, problem: undefined, reasons: [] }
-		const value = this.interpreter.evaluateSite(
-			createSiteState(argument, module)
-		)
-		const dynamic = rejectionOf(value)
-		const result = dynamic ? chainOf(dynamic) : []
-		const objects = new Set<unknown>()
-		const addReason = (reason: string) =>
-			result.includes(reason) || result.push(reason)
-		const visit = (o: unknown) => {
-			if (typeof o !== "object" || o === null || objects.has(o)) return
-			objects.add(o)
-			if (o instanceof ModuleNamespace) {
-				result.push(
-					"a namespace import used as a value is not in the static subset: import what it exports by name, or declare an object it exports in the call"
-				)
 			} else if (this.mode === "standalone")
 				result.push(...this.checkConfiguredOptions(module, calls[i]))
 		}
@@ -3173,6 +3177,42 @@ export class Precompiler {
 						[],
 						`Import "arktype/${option}" in the config module, as arktype throws creating a Type without it.`
 					)
+				)
+			}
+		}
+		return result
+	}
+
+	private evaluateConfiguration(
+		call: CallExpression,
+		module: SourceModule,
+		modules: string[]
+	): Pick<Configuration, "problem" | "reasons" | "hint"> & { value: unknown } {
+		// the build applies it before any site, so it must run once at load
+		if (!runsOnceAtLoad(call)) {
+			return {
+				value: undefined,
+				problem:
+					"configure() must be called once, unconditionally, at the config module's top level",
+				reasons: []
+			}
+		}
+		const argument = call.arguments[0]
+		if (!argument) return { value: undefined, problem: undefined, reasons: [] }
+		const value = this.interpreter.evaluateSite(
+			createSiteState(argument, module)
+		)
+		const dynamic = rejectionOf(value)
+		const result = dynamic ? chainOf(dynamic) : []
+		const objects = new Set<unknown>()
+		const addReason = (reason: string) =>
+			result.includes(reason) || result.push(reason)
+		const visit = (o: unknown) => {
+			if (typeof o !== "object" || o === null || objects.has(o)) return
+			objects.add(o)
+			if (o instanceof ModuleNamespace) {
+				result.push(
+					"a namespace import used as a value is not in the static subset: import what it exports by name, or declare an object it exports in the call"
 				)
 			}
 			if (!isPlainContainer(o)) return
