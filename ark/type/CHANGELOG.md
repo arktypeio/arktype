@@ -152,6 +152,8 @@ type("0 < number < 10").toJsonSchema({ target: "openapi-3.0" })
 
 A literal is a one-value `enum` with its `type`, `null` beside a `type` is `nullable: true`, `examples` is its first `example`, and `string.base64` is `format: "byte"`. What OpenAPI 3.0 can't express throws, through a fallback that can write it instead: a tuple's elements go to the new `arrayPrefix`, `patternProperties` and `propertyNames` to `indexKey`, and the definitions a cyclic Type's `$ref`s point to in `#/components/schemas` to the new `defs`, to place in your document. `~standard.jsonSchema` writes a tuple as an array of its length, and the definitions as `definitions`.
 
+Thanks to @MichaelDeBoey for #1707.
+
 ### Infer `.map()` on a union per branch
 
 `.map()` already mapped each branch of a union at runtime, but its inferred type merged the branches, and its callback's argument held only the keys every branch shares (#1524). The argument now holds each branch's props, and the result is a union of the branches it builds:
