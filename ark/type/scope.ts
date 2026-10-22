@@ -47,6 +47,7 @@ import {
 	type JsonStructure,
 	type anyOrNever,
 	type array,
+	type noInfer,
 	type noSuggest
 } from "@ark/util"
 import { setEngine } from "arksets/internal"
@@ -443,7 +444,7 @@ export declare namespace scope {
 					) ?
 						ErrorType<writeDuplicateAliasError<name>>
 					:	// inferring def through the shallow cycle check would expand it for every key
-						NoInfer<validateAlias<k, def[k], bootstrapAliases<def>>>
+						noInfer<validateAlias<k, def[k], bootstrapAliases<def>>>
 				: def[k] extends Generic ?
 					ErrorType<
 						writeParameterizedGenericKeyMessage<

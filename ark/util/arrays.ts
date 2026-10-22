@@ -1,5 +1,5 @@
 import type { GuardablePredicate } from "./functions.ts"
-import type { anyOrNever, conform } from "./generics.ts"
+import type { anyOrNever, conform, noInfer } from "./generics.ts"
 import type { isDisjoint } from "./intersections.ts"
 import type { parseNonNegativeInteger } from "./numbers.ts"
 
@@ -319,7 +319,7 @@ export interface ComparisonOptions<t = unknown> {
  */
 export const appendUnique = <to extends unknown[]>(
 	to: to | undefined,
-	value: NoInfer<Readonly<to> | to[number]>,
+	value: noInfer<Readonly<to> | to[number]>,
 	opts?: ComparisonOptions<to[number]>
 ): to => {
 	if (to === undefined)

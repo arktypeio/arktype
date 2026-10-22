@@ -60,6 +60,13 @@ export type anyOrNever = " anyOrNever"
 
 export type conform<t, base> = t extends base ? t : base
 
+/**
+ * NoInfer, which TypeScript only declares from 5.4. It blocks inference only
+ * while `generic` is unresolved, so an object or function containing type
+ * parameters, whose check TypeScript resolves immediately, passes them.
+ */
+export type noInfer<t, generic = t> = [t][generic extends unknown ? 0 : never]
+
 export type equals<l, r> = [l, r] extends [r, l] ? true : false
 
 export type exactEquals<l, r> =
