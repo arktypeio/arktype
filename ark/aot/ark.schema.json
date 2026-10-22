@@ -7,7 +7,7 @@
 			"type": "object",
 			"properties": {
 				"allowUnsafe": { "type": "boolean" },
-				"checks": { "enum": ["helpers", "none", "types"] },
+				"checks": { "type": "string", "enum": ["helpers", "none", "types"] },
 				"conditions": { "type": "array", "items": { "type": "string" } },
 				"config": {
 					"anyOf": [
@@ -16,12 +16,16 @@
 							"description": "a module path or false",
 							"minLength": 1
 						},
-						{ "const": false, "description": "a module path or false" }
+						{
+							"type": "boolean",
+							"const": false,
+							"description": "a module path or false"
+						}
 					],
 					"description": "a module path or false"
 				},
 				"countsKeys": { "type": "boolean" },
-				"errors": { "enum": ["all", "first", "none"] },
+				"errors": { "type": "string", "enum": ["all", "first", "none"] },
 				"freeze": { "type": "boolean" },
 				"lazy": { "type": "boolean" },
 				"members": {
@@ -41,12 +45,15 @@
 					"additionalProperties": false
 				},
 				"mutatesInput": {
-					"anyOf": [{ "const": "always" }, { "type": "boolean" }]
+					"anyOf": [
+						{ "type": "string", "const": "always" },
+						{ "type": "boolean" }
+					]
 				},
-				"optimize": { "enum": ["size", "speed"] },
-				"optimizeErrors": { "enum": ["size", "speed"] },
-				"preset": { "enum": ["introspectable", "smallest"] },
-				"runtime": { "const": "arktype" },
+				"optimize": { "type": "string", "enum": ["size", "speed"] },
+				"optimizeErrors": { "type": "string", "enum": ["size", "speed"] },
+				"preset": { "type": "string", "enum": ["introspectable", "smallest"] },
+				"runtime": { "type": "string", "const": "arktype" },
 				"shadow": { "type": "boolean" },
 				"tsconfig": {
 					"type": "string",

@@ -104,7 +104,7 @@ A [precompiled](https://arktype.io/docs/precompile) validator has `toJsonSchema(
 | - | - | - |
 | `target` | `"draft-2020-12"` | what to write, `"draft-2020-12"`, `"draft-07"` or [`"openapi-3.0"`](#openapi-30) |
 | `dialect` | the target's URL | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL |
-| `useRefs` | `false` | write each part once under `$defs` and point to it with `$ref`. Cyclic Types always do |
+| `useRefs` | `false` | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref` |
 | `fallback` | throws | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks) |
 
 ### target
@@ -142,7 +142,7 @@ Pair.toJsonSchema({ target: "draft-07" })
 | draft 2020-12 | `"openapi-3.0"` |
 | - | - |
 | `exclusiveMinimum: 0` | `minimum: 0`, `exclusiveMinimum: true` |
-| `const: "cat"` | `type: "string"`, `enum: ["cat"]` |
+| `type: "string"`, `const: "cat"` | `type: "string"`, `enum: ["cat"]` |
 | `not: { const: 5 }` | `not: { enum: [5] }` |
 | `anyOf: [{ type: "string" }, { type: "null" }]` | `type: "string"`, `nullable: true` |
 | `type: "null"` | `type: "string"`, `nullable: true`, `enum: [null]` |
@@ -165,12 +165,12 @@ const types = scope({ Node: { value: "number", "next?": "Node" } }).export()
 
 const components: Record<string, JsonSchema> = {}
 
-// { $ref: "#/components/schemas/Node1" }
+// { $ref: "#/components/schemas/Node" }
 const schema = types.Node.toJsonSchema({
 	target: "openapi-3.0",
 	fallback: {
 		defs: ctx => {
-			// { Node1: { type: "object", properties: { ... } } }
+			// { Node: { type: "object", properties: { ... } } }
 			Object.assign(components, ctx.defs)
 			return ctx.base
 		}
@@ -210,7 +210,7 @@ type("string").toJsonSchema({ dialect: null }) // { type: "string" }
 
 ### Cyclic types
 
-A cyclic Type is written as a `$ref` to its definition. The definition's name, like `Node1` below, is generated from the alias, so don't rely on it staying the same:
+A cyclic alias is written once under `$defs`, named by its alias, and each reference to it is a `$ref`. Everything else, including an alias that isn't cyclic, is written inline:
 
 ```ts
 const types = scope({ Node: { value: "number", "next?": "Node" } }).export()
@@ -221,19 +221,24 @@ const schema = types.Node.toJsonSchema()
 ```json
 {
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"$ref": "#/$defs/Node1",
+	"$ref": "#/$defs/Node",
 	"$defs": {
-		"Node1": {
+		"Node": {
 			"type": "object",
 			"properties": {
 				"value": { "type": "number" },
-				"next": { "$ref": "#/$defs/Node1" }
+				"next": { "$ref": "#/$defs/Node" }
 			},
 			"required": ["value"]
 		}
 	}
 }
 ```
+
+- A generic's instantiations are named by the generic, like `Box` for `Box<string>`, and a submodule's alias by its own name, like `B` for `A.B`.
+- A name another definition already has is numbered from 2, like `Node2`, in the order the definitions are reached.
+- A cycle with no alias, like a `this` reference, is named by what ArkType calls it, like `type`.
+- `.in`, `.out` and `~standard.jsonSchema` name definitions the same way.
 
 ## How Types map
 
@@ -253,7 +258,7 @@ const schema = types.Node.toJsonSchema()
 | `"string.base64.url"` | `pattern`, `contentEncoding: "base64url"` |
 | `"string.date"`, `"string.url"`, `"string.regex"` | `format: "date-time"`, `"uri"`, `"regex"` |
 | `"string.json"` | `contentMediaType: "application/json"` |
-| `"'a' \| 'b'"` | `enum: ["a", "b"]` |
+| `"'a' \| 'b'"` | `type: "string"`, `enum: ["a", "b"]` |
 | `"string \| null"` | `anyOf` |
 | `{ "name?": "string" }` | `properties`, with only required keys in `required` |
 | `{ "+": "reject", ... }` | `additionalProperties: false` |
@@ -396,7 +401,7 @@ A `Date` is reported as `date`, never `proto`.
 `object.json` accepts only arrays and objects whose prototype is `Object.prototype` or `null`, which JSON Schema can't require, so its check is reported as `predicate`. Return `ctx.base` to accept any JSON object in its place:
 
 ```ts
-// { $ref: "#/$defs/jsonObject1", $defs: { jsonObject1: { type: "object", ... }, ... } }
+// { type: "object", additionalProperties: { $ref: "#/$defs/jsonData" }, $defs: { jsonData: { anyOf: [...] } } }
 type("object.json").toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
 ```
 
