@@ -172,7 +172,7 @@ export const checkDefault = (
 
 	if (out instanceof ArkErrors) {
 		const errors =
-			node.meta.description !== undefined && node.includesTransform ?
+			node.meta.description !== undefined && node.hasTransform ?
 				inputErrors(node, value)
 			:	out
 		// a ParseError is for the developer, so it renders in English
