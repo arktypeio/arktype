@@ -309,6 +309,28 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
   Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`)
 		})
 
+		it("throws as a module loads where another wrote what its site read", () => {
+			const root = writeFixture(
+				{
+					"package.json": JSON.stringify({ type: "module" }),
+					"shapes.ts": "export const shape: Record<string, string> = {}\n",
+					"widen.ts": `import { shape } from "./shapes.ts"\n\nshape.a = "string"\n`,
+					"main.ts": `import "./widen.ts"
+import { type } from "arktype"
+import { shape } from "./shapes.ts"
+
+export const T = type(shape)
+`
+				},
+				fromHere("temp", "writtenElsewhere")
+			)
+			attest(
+				/^Error: (.*)$/m.exec(node(["main.ts"], {}, root).stderr)?.[1]
+			).snap(
+				"`shape` is an object with keys a, but was precompiled as an empty object"
+			)
+		})
+
 		it("runtime islands", () => {
 			attest(node(["main.ts"], { config: "config.ts" }, islands).stdout).equals(
 				runPlain(islands)

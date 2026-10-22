@@ -2,11 +2,11 @@ import { type } from "arktype"
 import { optional } from "./helpers.ts"
 import { max } from "./limits.ts"
 import { Pet, trim } from "./morphs.ts"
+import { range } from "./ranges.ts"
 import { pair, shape } from "./shapes.ts"
 import { tweak } from "./tweaks.ts"
 
-const range = { min: 1 }
-tweak(range)
+tweak()
 
 class Upload extends Blob {}
 

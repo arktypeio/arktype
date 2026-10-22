@@ -3594,7 +3594,7 @@ export class Precompiler {
 			if (write) {
 				for (let i = objects.length - 1; i >= 0; i--) {
 					const state = this.interpreter.evaluateSite(
-						createSiteState(objects[i], module)
+						createSiteState(objects[i], module, true)
 					)
 					if (isWritten(state.value))
 						return [write, objects[i], i === objects.length - 1]

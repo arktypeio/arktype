@@ -837,6 +837,49 @@ const A = type(\`number < \${max}\`)`)
 			])
 		})
 
+		it("objects written before the site", () => {
+			attest(
+				statusesOf(
+					`import { type } from "arktype"
+import { shared } from "./shared.ts"
+const fields = ["a", "b"]
+const shape: Record<string, string> = {}
+for (const f of fields) shape[f] = "string"
+const keys = ["a"]
+keys.push("b")
+const nested = { inner: { x: "string" } }
+const write = (o: { x: string }) => {
+	o.x = "number"
+}
+write(nested.inner)
+const later = { x: "string" }
+export const A = type(shape)
+export const B = type({ [keys[1]]: "string" })
+export const C = type(nested)
+export const D = type(shared)
+export const E = type(later)
+later.x = "number"
+const called = { x: "string" }
+const make = () => type(called)
+called.x = "number"
+export const F = make()`,
+					{
+						"/shared.ts": `export const shared: Record<string, string> = { a: "string" }
+export const addB = () => {
+	shared.b = "number"
+}`
+					}
+				)
+			).snap([
+				"14:18 rejected\n  `shape` is written at /main.ts:5:25, so its value at the site is not known",
+				"15:18 rejected\n  `keys` is written at /main.ts:7:1, so its value at the site is not known",
+				"16:18 rejected\n  `nested` is written at /main.ts:12:1, so its value at the site is not known",
+				"17:18 rejected\n  `shared` is imported from /shared.ts\n  `shared` is written at /shared.ts:3:2, so its value at the site is not known",
+				"18:18 accepted { x: string }",
+				"21:20 rejected\n  `called` is written at /main.ts:22:1, so its value at the site is not known"
+			])
+		})
+
 		it("binding assigned in a branch", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
@@ -2072,18 +2115,21 @@ const D = type("string")(1).toLocaleString(de)`)
 			attest(
 				statusesOf(`import { type } from "arktype"
 const o = { a: "string" }
+const p = { a: "string" }
 const set = (x: any) => Object.assign(x, { a: "number" })
 export const A = type(o)
 export const B = type(set(o).a)
-export const C = type(Object.freeze(o).a)
-export const D = type(Object.assign({}, o, { b: "number" }))
-export const E = type(Object.freeze({ a: "string" }))`)
+export const C = type(Object.freeze(p).a)
+export const D = type(Object.assign({}, p, { b: "number" }))
+export const E = type(Object.assign({}, o, { b: "number" }))
+export const F = type(Object.freeze({ a: "string" }))`)
 			).snap([
-				"4:18 accepted { a: string }",
-				'5:18 rejected\n  `Object.assign(x, { a: "number" })` writes to an object other than a new object or array literal',
-				"6:18 rejected\n  `Object.freeze(o)` writes to an object other than a new object or array literal",
-				"7:18 accepted { a: string, b: number }",
-				"8:18 accepted { a: string }"
+				"5:18 accepted { a: string }",
+				'6:18 rejected\n  `Object.assign(x, { a: "number" })` writes to an object other than a new object or array literal',
+				"7:18 rejected\n  `Object.freeze(p)` writes to an object other than a new object or array literal",
+				"8:18 accepted { a: string, b: number }",
+				"9:18 rejected\n  `o` is written at /main.ts:6:23, so its value at the site is not known",
+				"10:18 accepted { a: string }"
 			])
 		})
 

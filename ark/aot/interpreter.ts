@@ -185,11 +185,15 @@ export interface SiteState {
 	value: unknown
 	error: DynamicValue | ParseError | undefined
 	isEvaluated: boolean
+	// e.g. finding which object a write targets, where an object the program
+	// writes still reads as its literal
+	readsLiterals: boolean
 }
 
 export const createSiteState = (
 	node: Node,
-	module: SourceModule
+	module: SourceModule,
+	readsLiterals = false
 ): SiteState => ({
 	node,
 	module,
@@ -205,7 +209,8 @@ export const createSiteState = (
 	introspection: undefined,
 	value: undefined,
 	error: undefined,
-	isEvaluated: false
+	isEvaluated: false,
+	readsLiterals
 })
 
 export interface Context {
@@ -959,6 +964,10 @@ export class Interpreter {
 				)
 			}
 		}
+		const written =
+			isChangeable(result.value) &&
+			this.writtenBefore(binding, module, readAt ?? node, ctx)
+		if (written) return { value: new DynamicValue(module, node, written) }
 		let isReceived = isChangeable(result.value)
 		if (!isArkValue(result.value) || readsAgain(result.value))
 			mergeTrace(ctx.trace, result.trace)
@@ -1058,6 +1067,29 @@ export class Interpreter {
 				)
 			}
 		}
+		const exported =
+			isChangeable(result.value) &&
+			target.kind === "binding" &&
+			this.writtenIn(target.binding, target.module, ctx)
+		if (exported) {
+			return {
+				value: new DynamicValue(
+					ctx.module,
+					node,
+					`\`${binding.name}\` is imported from ${target.module.path}`,
+					new DynamicValue(target.module, target.binding.id, exported)
+				)
+			}
+		}
+		const written =
+			isChangeable(result.value) &&
+			this.writtenBefore(
+				binding,
+				ctx.module,
+				ctx.origin?.module === ctx.module ? ctx.origin.node : node,
+				ctx
+			)
+		if (written) return { value: new DynamicValue(ctx.module, node, written) }
 		if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)
 		const declaration = binding.declaration.parent
 		const isDirect =
@@ -1095,6 +1127,36 @@ export class Interpreter {
 					trace: emptyTrace()
 				}
 			:	this.bindingValue(target.binding, target.module)
+	}
+
+	// e.g. `shape[f] = "string"` before `type(shape)`, changing an object the
+	// build reads as its literal. A write inside the read is evaluated with it
+	private writtenBefore(
+		binding: Binding,
+		module: SourceModule,
+		readAt: Node,
+		ctx: Context
+	): string | undefined {
+		if (ctx.site?.readsLiterals) return
+		const scope = binding.scope.node
+		const isReadOnce = runsOnceIn(readAt, scope)
+		const write = this.graph
+			.writesThrough(binding, module)
+			.find(
+				write => !isReadOnce || runPointOf(write, scope, module) < readAt.start
+			)
+		return write && writtenProblemOf(binding, write, module)
+	}
+
+	// an export its module writes, which it has by the time an importer reads it
+	private writtenIn(
+		binding: Binding,
+		module: SourceModule,
+		ctx: Context
+	): string | undefined {
+		if (ctx.site?.readsLiterals) return
+		const [write] = this.graph.writesThrough(binding, module)
+		return write && writtenProblemOf(binding, write, module)
 	}
 
 	private bindingValue(binding: Binding, module: SourceModule): Evaluated {
@@ -1570,6 +1632,11 @@ export class Interpreter {
 			case "expression": {
 				const result = this.exportValue(target)
 				if (result.error !== undefined) throw result.error
+				const written =
+					isChangeable(result.value) &&
+					target.kind === "binding" &&
+					this.writtenIn(target.binding, target.module, ctx)
+				if (written) return new DynamicValue(target.module, node, written)
 				if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)
 				return this.consume(
 					{
@@ -2615,6 +2682,31 @@ const staticProblemOf = (
 	: binding.kind === "var" && !isDeclaredInBody(binding) ?
 		"is a `var` declared in a nested statement, which may not run"
 	:	undefined
+
+const writtenProblemOf = (
+	binding: Binding,
+	write: Node,
+	module: SourceModule
+): string =>
+	`\`${binding.name}\` is written at ${module.positionOf(write)}, so its value at the site is not known`
+
+// e.g. not in a function or loop, which may run it again after a later write
+const runsOnceIn = (node: Node, scope: Node): boolean => {
+	for (
+		let parent = node.parent;
+		parent && parent !== scope;
+		parent = parent.parent
+	)
+		if (isFunctionNode(parent) || isLoop(parent)) return false
+	return true
+}
+
+const isLoop = (node: Node): boolean =>
+	node.type === "ForStatement" ||
+	node.type === "ForInStatement" ||
+	node.type === "ForOfStatement" ||
+	node.type === "WhileStatement" ||
+	node.type === "DoWhileStatement"
 
 const isLoopVariable = (binding: Binding) => {
 	const declaration = binding.declaration.parent

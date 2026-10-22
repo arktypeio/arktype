@@ -794,9 +794,13 @@ export const describeShape = (value: unknown): string => {
 	if (value instanceof RegExp) return `the RegExp ${value}`
 	if (Array.isArray(value)) return `an array of length ${value.length}`
 	const prototype = prototypeOf(value)
-	return prototype === Object.prototype || prototype === null ?
-			`${prototype ? "an object" : "a null-prototype object"} with keys ${Reflect.ownKeys(value).map(String).join(", ")}`
-		:	describeValue(value)
+	if (prototype !== Object.prototype && prototype !== null)
+		return describeValue(value)
+	const kind = prototype ? "object" : "null-prototype object"
+	const keys = Reflect.ownKeys(value)
+	return keys.length ?
+			`${prototype ? "an" : "a"} ${kind} with keys ${keys.map(String).join(", ")}`
+		:	`an empty ${kind}`
 }
 
 export const checkFacts = (
