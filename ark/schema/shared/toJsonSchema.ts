@@ -52,7 +52,9 @@ const defaultConfig: ToJsonSchema.Context = {
 	fallback: {
 		arrayObject: throwFallback,
 		arrayPostfix: throwFallback,
+		arrayPrefix: throwFallback,
 		defaultValue: throwFallback,
+		defs: throwFallback,
 		domain: throwFallback,
 		indexKey: throwFallback,
 		morph: throwFallback,
@@ -89,8 +91,13 @@ const appendAnnotation = <schema extends JsonSchema>(
 export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 	arrayObject: ctx => annotate(ctx.base, "object", ctx.object),
 	arrayPostfix: ctx => annotate(ctx.base, "postfix", ctx.elements),
+	arrayPrefix: ({ base, elements, items }) => {
+		const annotated = annotate(base, "prefix", elements)
+		return items ? annotate(annotated, "items", items) : annotated
+	},
 	// written as the default itself
 	defaultValue: ctx => defaultValueSerializer(ctx.value) as never,
+	defs: ctx => annotate(ctx.base, "defs", ctx.defs),
 	domain: ctx => annotate(ctx.base, "domain", ctx.domain),
 	indexKey: ctx =>
 		appendAnnotation(ctx.base, "index", { key: ctx.key, value: ctx.value }),
@@ -149,7 +156,10 @@ const standardFallback: ToJsonSchema.HandlerByCode = {
 	// draft-07 tuples keep their prefix in items
 	arrayPostfix: ({ base: { items, additionalItems, ...base } }) =>
 		(Array.isArray(items) ? { ...base, items } : base) as never,
+	arrayPrefix: keepBase,
 	defaultValue: () => undefined,
+	// a caller can move them to where the $refs point
+	defs: ({ base, defs }) => ({ ...base, definitions: defs }) as never,
 	domain: keepBase,
 	// rejecting undeclared keys would reject those the index allows
 	indexKey: ({ base }) => {
@@ -202,9 +212,20 @@ export declare namespace ToJsonSchema {
 		elements: readonly JsonSchema[]
 	}
 
+	export interface ArrayPrefixContext
+		extends BaseContext<"arrayPrefix", JsonSchema.Array> {
+		elements: readonly JsonSchema[]
+		/** the elements after the prefix, if any */
+		items?: JsonSchema
+	}
+
 	export interface DefaultValueContext
 		extends BaseContext<"defaultValue", JsonSchema> {
 		value: Unjsonifiable
+	}
+
+	export interface DefsContext extends BaseContext<"defs", JsonSchema> {
+		defs: Record<string, JsonSchema>
 	}
 
 	export interface DomainContext extends BaseContext<"domain", JsonSchema> {
@@ -281,7 +302,9 @@ export declare namespace ToJsonSchema {
 	export interface ContextByCode {
 		arrayObject: ArrayObjectContext
 		arrayPostfix: ArrayPostfixContext
+		arrayPrefix: ArrayPrefixContext
 		defaultValue: DefaultValueContext
+		defs: DefsContext
 		domain: DomainContext
 		indexKey: IndexKeyContext
 		morph: MorphContext
@@ -303,8 +326,10 @@ export declare namespace ToJsonSchema {
 		{
 			arrayObject: (ctx: ArrayObjectContext) => JsonSchema.Structure
 			arrayPostfix: (ctx: ArrayPostfixContext) => VariadicArraySchema
+			arrayPrefix: (ctx: ArrayPrefixContext) => JsonSchema.Array
 			// undefined omits the default
 			defaultValue: (ctx: DefaultValueContext) => JsonSchema | undefined
+			defs: (ctx: DefsContext) => JsonSchema
 			domain: (ctx: DomainContext) => JsonSchema
 			indexKey: (ctx: IndexKeyContext) => JsonSchema.Object
 			morph: (ctx: MorphContext) => JsonSchema
@@ -337,7 +362,7 @@ export declare namespace ToJsonSchema {
 
 	export type Target = satisfy<
 		StandardJSONSchemaV1.Target,
-		"draft-2020-12" | "draft-07"
+		"draft-2020-12" | "draft-07" | "openapi-3.0"
 	>
 
 	export interface Options {
@@ -356,6 +381,7 @@ export declare namespace ToJsonSchema {
 		 *
 		 *  - "draft-2020-12" -> "https://json-schema.org/draft/2020-12/schema"
 		 *  - "draft-07" -> "http://json-schema.org/draft-07/schema#"
+		 *  - "openapi-3.0" -> no $schema, for an OpenAPI 3.0 Schema Object
 		 *
 		 * If `dialect` is also specified, `dialect` takes precedence.
 		 */

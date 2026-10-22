@@ -77,10 +77,21 @@ export const rootToJsonSchema = (
 		Object.assign(defs, schemasByName)
 		// draft-2020-12 uses $defs, draft-07 uses definitions
 		if (ctx.target === "draft-07") Object.assign(schema, { definitions: defs })
-		else schema.$defs = defs
+		else if (ctx.target === "draft-2020-12") schema.$defs = defs
+		else {
+			// an OpenAPI document's components hold what a Schema Object can't
+			ctx.path = ""
+			return ctx.fallback.defs({ code: "defs", base: schema, defs })
+		}
 	}
 
 	return schema
+}
+
+const refPrefixByTarget: Record<ToJsonSchema.Target, string> = {
+	"draft-2020-12": "#/$defs/",
+	"draft-07": "#/definitions/",
+	"openapi-3.0": "#/components/schemas/"
 }
 
 export const toJsonSchemaRecurse = (
@@ -90,9 +101,9 @@ export const toJsonSchemaRecurse = (
 	if (ctx.useRefs && !node.alwaysExpandJsonSchema) {
 		ctx.refs.push(node)
 		ctx.refPathsById[node.id] ??= ctx.path
-		// draft-2020-12 uses $defs, draft-07 uses definitions
-		const defsKey = ctx.target === "draft-07" ? "definitions" : "$defs"
-		return { $ref: `#/${defsKey}/${refNameOf(node, ctx)}` } as JsonSchema.Ref
+		return {
+			$ref: refPrefixByTarget[ctx.target] + refNameOf(node, ctx)
+		} as JsonSchema.Ref
 	}
 
 	return toResolvedJsonSchema(node, ctx)
@@ -135,10 +146,86 @@ const toResolvedJsonSchema = (
 					value: v as never
 				})
 			:	(node.metaJson as dict)[k]
-		if (jsonValue !== undefined) result[k] = jsonValue
+		if (jsonValue !== undefined) writeAnnotation(result, k, jsonValue, ctx)
 	}
 
 	return jsonSchema ? Object.assign(result, jsonSchema) : result
+}
+
+const branchGroupsToJsonSchema = (
+	node: Union.Node,
+	branchGroups: BaseRoot[],
+	ctx: JsonSchemaContext
+): JsonSchema => {
+	// special case to simplify { const: true } | { const: false }
+	// to the canonical JSON Schema representation { type: "boolean" }
+	if (
+		branchGroups.length === 1 &&
+		branchGroups[0].equals($ark.intrinsic.boolean)
+	)
+		return { type: "boolean" }
+
+	const jsonSchemaBranches = branchGroups.map(group =>
+		toJsonSchemaRecurse(group, ctx)
+	)
+	// what's left of a union without its null
+	if (jsonSchemaBranches.length === 1) return jsonSchemaBranches[0]
+
+	// openapi-3.0 writes a unit as a typed enum
+	const unitKey = ctx.target === "openapi-3.0" ? "enum" : "const"
+	if (
+		jsonSchemaBranches.every(
+			(branch): branch is UnitJsonSchema =>
+				// iff all branches are pure unit values with no metadata other than
+				// the union's own, we can simplify the representation to an enum
+				Object.entries(branch).every(
+					([k, v]) =>
+						k === unitKey ||
+						(k === "type" && unitKey === "enum") ||
+						v === (node.meta as dict)[k] ||
+						v === (node.metaJson as dict)[k]
+				) && hasKey(branch, unitKey)
+		)
+	) {
+		const values = jsonSchemaBranches.flatMap(branch =>
+			unitKey === "enum" ? branch.enum : [branch.const]
+		)
+		// never has no branches
+		const type = jsonSchemaBranches[0]?.type
+		return type && jsonSchemaBranches.every(branch => branch.type === type) ?
+				{ type, enum: values }
+			:	{ enum: values }
+	}
+
+	return {
+		anyOf: jsonSchemaBranches
+	}
+}
+
+type UnitJsonSchema = JsonSchema.Const &
+	JsonSchema.Enum &
+	JsonSchema.Constrainable
+
+// OpenAPI 3.0 has no null type, and nullable only adds null to a type beside it
+const openApiNull = (): JsonSchema =>
+	({ type: "string", nullable: true, enum: [null] }) as JsonSchema
+
+const writeAnnotation = (
+	schema: object,
+	k: string,
+	v: unknown,
+	ctx: JsonSchemaContext
+): void => {
+	const annotations = schema as dict
+	if (ctx.target !== "openapi-3.0") annotations[k] = v
+	// OpenAPI 3.0 has a single example
+	else if (k === "examples") {
+		if ((v as unknown[]).length) annotations.example = (v as unknown[])[0]
+	}
+	// OpenAPI 3.0 has no contentEncoding, but names base64 with a format
+	else if (k === "contentEncoding") {
+		if (v === "base64") annotations.format = "byte"
+	} else annotations[k] = v
 }
 
 // a union's true and false branches are written as one boolean
@@ -167,39 +254,29 @@ const innerToJsonSchemaByKind: {
 	alias: (node, ctx) => toJsonSchemaRecurse(node.resolution, ctx),
 	union: (node, ctx) => {
 		const branchGroups = branchGroupsOf(node)
-		// special case to simplify { const: true } | { const: false }
-		// to the canonical JSON Schema representation { type: "boolean" }
-		if (
-			branchGroups.length === 1 &&
-			branchGroups[0].equals($ark.intrinsic.boolean)
-		)
-			return { type: "boolean" }
-
-		const jsonSchemaBranches = branchGroups.map(group =>
-			toJsonSchemaRecurse(group, ctx)
-		)
-
-		if (
-			jsonSchemaBranches.every(
-				(branch): branch is JsonSchema.Const =>
-					// iff all branches are pure unit values with no metadata other than
-					// the union's own, we can simplify the representation to an enum
-					Object.entries(branch).every(
-						([k, v]) =>
-							k === "const" ||
-							v === (node.meta as dict)[k] ||
-							v === (node.metaJson as dict)[k]
-					) && hasKey(branch, "const")
-			)
-		) {
-			return {
-				enum: jsonSchemaBranches.map(branch => branch.const)
+		if (ctx.target === "openapi-3.0") {
+			const nonNull = branchGroups.filter(branch => !branch.hasUnit(null))
+			if (nonNull.length < branchGroups.length) {
+				const schema = branchGroupsToJsonSchema(node, nonNull, ctx)
+				// nullable adds null to the type beside it, so an enum must list it
+				if (typeof (schema as JsonSchema.Constrainable).type === "string") {
+					return Object.assign(
+						schema,
+						{ nullable: true },
+						"enum" in schema && { enum: [...schema.enum, null] }
+					)
+				}
+				return {
+					anyOf: [
+						...(nonNull.length > 1 && "anyOf" in schema ?
+							schema.anyOf
+						:	[schema]),
+						openApiNull()
+					]
+				}
 			}
 		}
-
-		return {
-			anyOf: jsonSchemaBranches
-		}
+		return branchGroupsToJsonSchema(node, branchGroups, ctx)
 	},
 	morph: (node, ctx) =>
 		ctx.io === "in" ?
@@ -215,9 +292,15 @@ const innerToJsonSchemaByKind: {
 			}),
 	unit: (node, ctx) =>
 		// this is the more standard JSON schema representation, especially for Open API
-		node.unit === null ? { type: "null" }
-		: $ark.intrinsic.jsonPrimitive.allows(node.unit) ? { const: node.unit }
-		: ctx.fallback.unit({ code: "unit", base: {}, unit: node.unit }),
+		node.unit === null ?
+			ctx.target === "openapi-3.0" ?
+				openApiNull()
+			:	{ type: "null" }
+		: !$ark.intrinsic.jsonPrimitive.allows(node.unit) ?
+			ctx.fallback.unit({ code: "unit", base: {}, unit: node.unit })
+		: ctx.target === "openapi-3.0" ?
+			{ type: typeof node.unit as JsonSchema.TypeName, enum: [node.unit] }
+		:	{ const: node.unit },
 	intersection: (node, ctx) =>
 		node.children.reduce<JsonSchema>(
 			// cast is required since TS doesn't know children have compatible schema prerequisites
@@ -234,9 +317,7 @@ const innerToJsonSchemaByKind: {
 	proto: (node, ctx) => {
 		switch (node.builtinName) {
 			case "Array":
-				return {
-					type: "array"
-				}
+				return arraySchemaOf(ctx)
 			case "Date":
 				return (
 					ctx.fallback.date?.({ code: "date", base: {} }) ??
@@ -338,7 +419,13 @@ const reduceObjectJsonSchema = (
 				}
 
 				const pattern = keyPatternOf(keyIn, ctx)
-				if (pattern !== undefined) {
+				if (
+					pattern !== undefined &&
+					// OpenAPI 3.0 has no patternProperties, so only a string key
+					// that will be written as additionalProperties
+					(ctx.target !== "openapi-3.0" ||
+						(pattern === "" && !node.props.length))
+				) {
 					;(schema.patternProperties ??= {})[pattern] = valueJsonSchema
 					continue
 				}
@@ -361,6 +448,7 @@ const reduceObjectJsonSchema = (
 		indexKeys.length === 1 &&
 		rejectsUndeclared &&
 		!schema.patternProperties &&
+		ctx.target !== "openapi-3.0" &&
 		node.props.every(
 			prop => typeof prop.key === "symbol" || indexKeys[0].node.allows(prop.key)
 		)
@@ -457,10 +545,12 @@ const reduceSequenceJsonSchema = (
 	ctx: JsonSchemaContext
 ): JsonSchema.Array => {
 	const isDraft07 = ctx.target === "draft-07"
+	const isOpenApi = ctx.target === "openapi-3.0"
 
 	const path = ctx.path
+	let prefixSchemas: JsonSchema[] | undefined
 	if (node.prevariadic.length) {
-		const prefixSchemas = node.prevariadic.map((el, i) => {
+		prefixSchemas = node.prevariadic.map((el, i) => {
 			ctx.path = appendStringifiedKey(path, i)
 			const valueSchema = toJsonSchemaRecurse(el.node, ctx)
 			if (el.kind === "defaultables") writeDefault(valueSchema, el.default, ctx)
@@ -470,7 +560,7 @@ const reduceSequenceJsonSchema = (
 
 		// draft-07 uses items as array, draft-2020-12 uses prefixItems
 		if (isDraft07) schema.items = prefixSchemas as JsonSchema.Branch[]
-		else schema.prefixItems = prefixSchemas
+		else if (!isOpenApi) schema.prefixItems = prefixSchemas
 	}
 
 	// by default JSON schema prefixElements are optional
@@ -502,7 +592,8 @@ const reduceSequenceJsonSchema = (
 				elements: postfixSchemas
 			})
 		}
-	} else {
+	} else if (isOpenApi) schema.maxItems = node.maxLength!
+	else {
 		// For fixed-length tuples without variadic elements
 		// draft-07 uses additionalItems: false, draft-2020-12 uses items: false
 		if (isDraft07) schema.additionalItems = false
@@ -512,6 +603,40 @@ const reduceSequenceJsonSchema = (
 		delete schema.maxItems
 	}
 
+	// OpenAPI 3.0's items is one schema for every element, so it can't
+	// express a prefix
+	if (isOpenApi && prefixSchemas) {
+		schema = ctx.fallback.arrayPrefix({
+			code: "arrayPrefix",
+			base: { ...schema, items: {} },
+			elements: prefixSchemas,
+			...(node.variadic &&
+				schema.items && { items: schema.items as JsonSchema })
+		})
+	}
+
+	return schema
+}
+
+// an OpenAPI 3.0 array schema must have items
+const arraySchemaOf = (ctx: JsonSchemaContext): JsonSchema.Array =>
+	ctx.target === "openapi-3.0" ?
+		{ type: "array", items: {} }
+	:	{ type: "array" }
+
+const writeBound = (
+	node: nodeOfKind<"min" | "max">,
+	schema: JsonSchema.Numeric,
+	ctx: JsonSchemaContext,
+	key: "minimum" | "maximum",
+	exclusiveKey: "exclusiveMinimum" | "exclusiveMaximum"
+): JsonSchema.Numeric => {
+	if (!node.exclusive) schema[key] = node.rule
+	// openapi-3.0 marks the bound itself exclusive
+	else if (ctx.target === "openapi-3.0") {
+		schema[key] = node.rule
+		schema[exclusiveKey] = true
+	} else schema[exclusiveKey] = node.rule
 	return schema
 }
 
@@ -558,7 +683,7 @@ const reduceJsonSchemaByKind: {
 		// a keyword's pattern carries the format or encoding naming its strings
 		if (node.meta.format) base.format = node.meta.format
 		if (node.meta.contentEncoding)
-			base.contentEncoding = node.meta.contentEncoding
+			writeAnnotation(base, "contentEncoding", node.meta.contentEncoding, ctx)
 		return base
 	},
 	divisor: (node, schema) => {
@@ -584,16 +709,10 @@ const reduceJsonSchemaByKind: {
 				return ToJsonSchema.throwOperandError("exactLength", schema)
 		}
 	},
-	max: (node, schema) => {
-		if (node.exclusive) schema.exclusiveMaximum = node.rule
-		else schema.maximum = node.rule
-		return schema
-	},
-	min: (node, schema) => {
-		if (node.exclusive) schema.exclusiveMinimum = node.rule
-		else schema.minimum = node.rule
-		return schema
-	},
+	max: (node, schema, ctx) =>
+		writeBound(node, schema, ctx, "maximum", "exclusiveMaximum"),
+	min: (node, schema, ctx) =>
+		writeBound(node, schema, ctx, "minimum", "exclusiveMinimum"),
 	notEqual: (node, schema, ctx) => {
 		if (node.rule instanceof Date) {
 			return ctx.fallback.date({
@@ -610,14 +729,15 @@ const reduceJsonSchemaByKind: {
 						node.rule
 					]
 				}
-			:	{ const: node.rule }
+			: ctx.target === "openapi-3.0" ? { enum: [node.rule] }
+			: { const: node.rule }
 		return schema
 	},
-	notEqualLength: (node, schema) => {
+	notEqualLength: (node, schema, ctx) => {
 		const excluded: JsonSchema =
 			schema.type === "string" ?
 				{ type: "string", minLength: node.rule, maxLength: node.rule }
-			:	{ type: "array", minItems: node.rule, maxItems: node.rule }
+			:	{ ...arraySchemaOf(ctx), minItems: node.rule, maxItems: node.rule }
 		schema.not =
 			schema.not ?
 				{
