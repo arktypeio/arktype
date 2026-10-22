@@ -2119,6 +2119,18 @@ An object Type with no props or index signature, like `type({})`, `type("object"
 type({}).toJsonSchema()
 ```
 
+### Write an optional key's `undefined` as its absence in JSON Schema
+
+JSON has no `undefined`, so an optional key whose value allows it threw from `toJsonSchema()`, and `~standard.jsonSchema` wrote its value as `{}`, allowing anything. An optional key can already be absent, so its JSON Schema leaves `undefined` out:
+
+```ts
+// previously threw Can't convert "unit" at a to JSON Schema, now
+// { type: "object", properties: { a: { type: "string" } } }
+type({ "a?": "string | undefined" }).toJsonSchema()
+```
+
+A required key whose value allows `undefined` still needs `fallback.unit`.
+
 ### Write a nested arktype Standard Schema's errors without repeating their key
 
 When a definition embeds a validator only through its `~standard` property, an error from an arktype validator inside it repeated the key its message already started with:
