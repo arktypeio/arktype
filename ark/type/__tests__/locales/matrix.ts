@@ -257,6 +257,14 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		$.type({ a: shapes }).or({ a: "string", "b?": "1" }),
 		{ a: { kind: "triangle" } }
 	)
+	add("discriminant unreadable", shapes, 5)
+	add(
+		"discriminant beside a default",
+		$.type({ id: "0", k1: "number" })
+			.or({ id: "1", k2: "number" })
+			.or({ name: "string" }),
+		{ id: 5 }
+	)
 
 	add("union of paths", $.type({ a: "string" }).or({ b: "number" }), {})
 	add(

@@ -291,6 +291,18 @@ contextualize(() => {
 			attest(T("x").toString()).snap('must be long (was "x")')
 		})
 
+		it("first lists a union's miss beside its default case", () => {
+			const Event = first
+				.type({ id: "0", k1: "number" })
+				.or({ id: "1", k2: "number" })
+				.or({ name: "string" })
+			const out = Event({ id: 5 }) as type.errors
+			attest(out.issues.map(e => e.code)).equals(["union"])
+			attest(out.toString()).snap(
+				"id must be 0 or 1 (was 5) or name must be a string (was missing)"
+			)
+		})
+
 		it("first and none require arktype/errors", () => {
 			const modes = $ark.errorModes!
 			delete $ark.errorModes

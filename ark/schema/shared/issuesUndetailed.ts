@@ -66,7 +66,7 @@ const issueOf = (path: PropertyKey[]): ArkIssue => ({
 	expected: undefined
 })
 
-export { issueOf as issueAt, issueOf as issueWith }
+export { issueOf as issueAt }
 
 export const failsIn = (
 	ctx: FailureContext,

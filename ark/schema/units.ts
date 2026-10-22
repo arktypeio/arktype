@@ -57,7 +57,7 @@ import {
 	type TraverseApply,
 	type TraverseTransform
 } from "./shared/traversal.ts"
-import { hasArkKind, isAbsent, isNode } from "./shared/utils.ts"
+import { hasArkKind, isNode } from "./shared/utils.ts"
 import { arrayIndexMatcher } from "./structure/shared.ts"
 
 // leaves read no object property
@@ -303,7 +303,6 @@ const unitConstants = {
 	copyOf,
 	errorFromUnion,
 	holdsOnlyIndices,
-	isAbsent,
 	isNumericString,
 	isValidDate,
 	isWellFormedInteger,
@@ -1082,22 +1081,6 @@ const writePrecompiledUnit = (
 			accessorsByValue.set(
 				node.propsByKey,
 				`${variablesByNode.get(node)}.propsByKey`
-			)
-		}
-		// a discriminant miss reads what the union's getters derive
-		if (node.hasKind("union") && node.compiledDiscriminant) {
-			const variable = variablesByNode.get(node)
-			accessorsByValue.set(
-				node.discriminantCases.cases,
-				`${variable}.discriminantCases.cases`
-			)
-			accessorsByValue.set(
-				node.discriminantMeta,
-				`${variable}.discriminantMeta`
-			)
-			accessorsByValue.set(
-				node.compiledDiscriminant.path,
-				`${variable}.discriminant.path`
 			)
 		}
 	}

@@ -32,7 +32,6 @@ import {
 	TraversalError as BaseTraversalError,
 	type ArkIssue,
 	type CompactApply,
-	type FailureInput,
 	type FailureSite,
 	type UnionSite
 } from "./issues.ts"
@@ -380,11 +379,6 @@ export class ArkTraversal extends Traversal {
 				this.config
 			)
 		)
-		return this.failFast
-	}
-
-	override failsWith(input: FailureInput): boolean {
-		errorFromContext(this, input as ArkErrorContextInput)
 		return this.failFast
 	}
 

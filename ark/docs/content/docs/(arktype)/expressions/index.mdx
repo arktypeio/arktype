@@ -106,7 +106,7 @@ const FooBarBaz = type.and(
 
 ## Union
 
-A union allows a value that satisfies either operand. ArkType discriminates unions automatically: where a value like its type or a literal key tells the branches apart, it checks that first instead of trying each branch, which keeps validation fast and errors specific.
+A union allows a value that satisfies either operand. ArkType discriminates unions automatically: where a value like its type or a literal key tells the branches apart, it checks that first instead of trying each branch, which keeps validation fast and errors specific. Where the discriminant can't place data, like a number where every branch is an object, each branch reports its own error, as in an undiscriminated union.
 
 <SyntaxTabs>
 	<SyntaxTab string>

@@ -28,7 +28,8 @@ import type {
 import {
 	errorFromContext,
 	errorFromUnion,
-	type ArkError
+	type ArkError,
+	type ArkErrorContextInput
 } from "../shared/errors.ts"
 import type { UnionSite } from "../shared/issues.ts"
 import {
@@ -281,18 +282,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			const caseNode = discriminant.cases[k]
 			if (caseNode === true) return
 			if (caseNode === undefined) {
-				if (this.missListsBranches) return this.applyBranches(data, ctx)
-				const path = this.missPath
-				errorFromContext(ctx, {
-					code: "discriminant",
-					...this.discriminantCases,
-					onKey: path.length !== 0,
-					absent: value === undefined && isAbsent(path, data),
-					description: this.discriminantDescription,
-					relativePath: path,
-					data: path.length ? value : data,
-					meta: this.discriminantMeta
-				})
+				this.applyMiss(data, ctx, value)
+				return
+			}
+			if (k === "default") {
+				this.applyDefault(data, ctx, value)
 				return
 			}
 			const member = discriminant.members?.[k]
@@ -301,6 +295,47 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			return
 		}
 		this.applyBranches(data, ctx)
+	}
+
+	// data matching no case fails each branch at the discriminant, unless the
+	// discriminant can't be read from it, which then tells no branch apart
+	applyMiss(data: unknown, ctx: InternalTraversal, value: unknown): boolean {
+		if (this.missListsBranches || !readsPath(this.discriminant!.path, data))
+			this.applyBranches(data, ctx)
+		else errorFromContext(ctx, this.missOf(data, value))
+		return !ctx.failFast
+	}
+
+	// data in the default case was matched by no case, so the branches without
+	// the discriminant fail beside its miss
+	applyDefault(data: unknown, ctx: InternalTraversal, value: unknown): boolean {
+		ctx.pushBranch()
+		applyMember(this.discriminant!.cases.default as BaseRoot, data, ctx)
+		const failed = ctx.popBranch()!.error as ArkError | undefined
+		if (!failed) return true
+		if (this.missListsBranches || !readsPath(this.discriminant!.path, data))
+			this.applyBranches(data, ctx)
+		else {
+			ctx.pushBranch()
+			errorFromContext(ctx, this.missOf(data, value))
+			const miss = ctx.popBranch()!.error as ArkError
+			errorFromUnion(ctx, [miss, failed], this.meta, data)
+		}
+		return !ctx.failFast
+	}
+
+	private missOf(data: unknown, value: unknown): ArkErrorContextInput {
+		const path = this.missPath
+		return {
+			code: "discriminant",
+			...this.discriminantCases,
+			onKey: path.length !== 0,
+			absent: value === undefined && isAbsent(path, data),
+			description: this.discriminantDescription,
+			relativePath: path,
+			data: path.length ? value : data,
+			meta: this.discriminantMeta
+		}
 	}
 
 	applyBranches(data: unknown, ctx: InternalTraversal): void {
@@ -412,37 +447,43 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 						invokeTransform(js, v, member)
 					:	"data"
 				: v === true ? "true"
-				: member && js.traversalKind === "Apply" ? js.applyMember(v, member)
+				: js.traversalKind !== "Apply" ? js.invoke(v)
+				: k === "default" ? this.compileDefault(js, v, value)
+				: member ? js.applyMember(v, member)
 				: js.invoke(v)
 			written.push([caseCondition, caseResult])
 		}
-		const path = this.missPath
-		let otherwise =
+		const otherwise =
 			js.traversalKind === "Allows" ? "false"
 			: js.traversalKind === "Transform" ? "data"
-			: this.missListsBranches ?
-				(js.unionFails?.(this) ??
-				`(${js.ref(this)}.applyBranches(data, ctx), !ctx.failFast)`)
-			:	js.unionFails?.(this, path.length ? value : "data", path)
-		if (otherwise === undefined) {
-			const serializedPathSegments = path.map(k => js.serialize(k))
-			const absent = () =>
-				path.length ?
-					`${value} === undefined && ${js.ref(isAbsent)}(${js.ref(path)}, data)`
-				:	"false"
-			otherwise = `!ctx.failsWith({
-	code: "discriminant",
-	discriminantKind: "${discriminant.kind}",
-	cases: ${js.ref(this.discriminantCases.cases)},
-	onKey: ${path.length !== 0},
-	absent: ${absent()},
-	description: ${js.ref(this)}.discriminantDescription,
-	relativePath: [${serializedPathSegments}],
-	data: ${path.length ? value : "data"},
-	meta: ${js.ref(this.discriminantMeta)}
-})`
-		}
+			: js.unionFails ? this.compileMiss(js, value)
+			: `${js.ref(this)}.applyMiss(data, ctx, ${value})`
 		js.switch(condition, written, otherwise)
+	}
+
+	// a standalone build's miss, whose union issue holds no branch errors
+	private compileMiss(js: NodeCompiler, value: string): string {
+		if (this.missListsBranches) return js.unionFails!(this)
+		const reads = compileReadsPath(js, this.discriminant!.path)
+		const path = this.missPath
+		const fails = js.unionFails!(this, path.length ? value : "data", path)
+		return reads ? `${reads} ? ${fails} : ${js.unionFails!(this)}` : fails
+	}
+
+	private compileDefault(
+		js: NodeCompiler,
+		caseNode: BaseRoot,
+		value: string
+	): string {
+		if (!js.unionFails)
+			return `${js.ref(this)}.applyDefault(data, ctx, ${value})`
+		// as an indiscriminable union applies its branches
+		const passes =
+			!caseNode.includesAlias && isDecidedByAllows(caseNode) ?
+				(caseNode.compileCondition?.(js, "data") ??
+				js.invoke(caseNode, { kind: "Allows" }))
+			:	`(ctx.pushBranch(), ${js.applyMember(caseNode)}, ctx.popBranch().errorCount === 0)`
+		return `${passes} || ${js.unionFails(this)}`
 	}
 
 	private compileIndiscriminable(
@@ -531,6 +572,36 @@ export const compileDomainOf = (value: string): string =>
 // an intersection binds more tightly than a union, so it never needs parens
 const expressBranch = (branch: Union.ChildNode): string =>
 	branch.hasKind("intersection") ? branch.expression : branch.nestableExpression
+
+// whether each key on a path is read from an object, or an array at an index
+const readsPath = (path: array<PropertyKey>, data: unknown): boolean => {
+	let parent: any = data
+	for (const k of path) {
+		if (
+			typeof k === "number" ? !Array.isArray(parent) : Object(parent) !== parent
+		)
+			return false
+		parent = parent[k]
+	}
+	return true
+}
+
+const compileReadsPath = (
+	js: NodeCompiler,
+	path: array<PropertyKey>
+): string | undefined => {
+	let parent = "data"
+	const conditions: string[] = []
+	for (const k of path) {
+		conditions.push(
+			typeof k === "number" ?
+				`Array.isArray(${parent})`
+			:	`Object(${parent}) === ${parent}`
+		)
+		parent += js.prop(k)
+	}
+	return conditions.length ? conditions.join(" && ") : undefined
+}
 
 const caseKeyOf = (discriminant: Discriminant, value: unknown): string => {
 	const k =

@@ -195,6 +195,9 @@ contextualize(() => {
 				"muss ein BigInt, eine Zahl, eine Zeichenkette oder ein Objekt sein, ist aber ein Wahrheitswert",
 			'discriminant in an outer union ← {"a":{"kind":"triangle"}}':
 				'a muss eine Zeichenkette sein (ist ein Objekt) oder a.kind muss "circle" oder "square" sein (ist "triangle")',
+			"discriminant unreadable ← 5": "muss ein Objekt sein, ist aber eine Zahl",
+			'discriminant beside a default ← {"id":5}':
+				"id muss 0 oder 1 sein (ist 5) oder name fehlt (muss eine Zeichenkette sein)",
 			"union of paths ← {}":
 				"a fehlt (muss eine Zeichenkette sein) oder b fehlt (muss eine Zahl sein)",
 			"union described ← {}":

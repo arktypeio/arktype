@@ -311,6 +311,37 @@ T({ type: "e" })
 
 Each of those literals is now a case of its own, so such data fails at the key with every value it allows, and data matching one of them is checked only against the branches that allow it.
 
+### Report each branch when a union's discriminant identifies none
+
+A discriminated union reported only what its discriminant reached. Data that couldn't hold the discriminant was told about a key it didn't have, and data matching none of the discriminant's values was reported as failing only the branches without the key, as if it had been meant for them (#1435):
+
+```ts
+const Shape = type({ kind: "'circle'", r: "number" }).or({
+	kind: "'square'",
+	side: "number"
+})
+
+// was: ArkErrors: kind must be "circle" or "square" (was missing)
+// now: ArkErrors: must be an object (was a number)
+Shape(5)
+
+const Event = type({ id: "0", k1: "number" })
+	.or({ id: "1", k2: "number" })
+	.or({ name: "string" })
+
+// was: ArkErrors: name must be a string (was missing)
+// now: ArkErrors: id must be 0 or 1 (was 5) or name must be a string (was missing)
+Event({ id: 5 })
+
+// was: ArkErrors: must be a Date (was an object)
+// now: ArkErrors: a must be 1 or 2 (was missing) or must be a Date (was an object)
+type("Date").or({ a: "1" }).or({ a: "2" })({})
+```
+
+Each now reads as the same union would if it weren't discriminated. Where a parent of the discriminant isn't an object, or isn't an array where the discriminant is an element, each branch's error is listed. Where data matches none of the discriminant's values, its miss is listed beside the errors of the branches that don't have its key. Both are `union` errors.
+
+Data whose discriminant matches a value is still reported only against the branches that allow it, and a miss of a key the data could hold is still one `discriminant` error, like `kind must be "circle" or "square" (was "triangle")`.
+
 ### Write each path a union lists as its own error would be
 
 A union failing at several paths prefixed only the first with `value at` when it began with a bracket. Each path now reads as its own error would:
