@@ -420,7 +420,17 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 
 	if (!lower) return expression
 	const limit = lower.expression.slice(lower.comparator.length + 1)
-	const operand = expression.includes(" & ") ? `(${expression})` : expression
+	// what it bounds is grouped if it intersects patterns or has a comparator
+	// of its own, as in `0 < (number != 5) < 10`
+	const operand =
+		(
+			expression.includes(" & ") ||
+			prestructurals.some(
+				n => n.kind === "notEqual" || n.kind === "notEqualLength"
+			)
+		) ?
+			`(${expression})`
+		:	expression
 	return `${limit} ${lower.comparator === ">" ? "<" : "<="} ${operand} ${upper.expression}`
 }
 

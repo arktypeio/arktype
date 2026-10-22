@@ -434,7 +434,8 @@ contextualize(() => {
 
 		it("union of ranges meeting at a value", () => {
 			const T = type("0 < number < 5 | 5 < number < 10")
-			attest(T.expression).snap("number < 10 & > 0 & != 5")
+			attest(T.expression).snap("0 < (number != 5) < 10")
+			attest(type.raw(T.expression).json).equals(T.json)
 		})
 
 		it("union of ranges excluding several values", () => {
@@ -544,7 +545,7 @@ contextualize(() => {
 
 		it("intersection with an including bound", () => {
 			attest(type("number != 0 & number > -1").expression).snap(
-				"number > -1 & != 0"
+				"number > -1 != 0"
 			)
 		})
 
@@ -688,7 +689,7 @@ contextualize(() => {
 
 		it("wider gap", () => {
 			const T = type("0 < number < 5 | 6 < number < 10")
-			attest(T.expression).snap("number < 10 & > 6 | number < 5 & > 0")
+			attest(T.expression).snap("6 < number < 10 | 0 < number < 5")
 		})
 
 		it("excluded value the other includes", () => {
@@ -753,7 +754,7 @@ contextualize(() => {
 
 		it("unit the rest excludes", () => {
 			const T = type("number.integer < 5 | 5.5")
-			attest(T.expression).snap("number % 1 & < 5 | 5.5")
+			attest(T.expression).snap("number % 1 < 5 | 5.5")
 		})
 
 		it("ranges allowing NaN", () => {

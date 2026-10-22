@@ -383,7 +383,7 @@ x must be a string (was a number)`)
 
 		it("reduce merged values", () => {
 			const T = type({ a: "0 < number < 5" }).or({ a: "5 <= number < 10" })
-			attest(T.expression).snap("{ a: number < 10 & > 0 }")
+			attest(T.expression).snap("{ a: 0 < number < 10 }")
 		})
 
 		it("merge alike undeclared keys", () => {
