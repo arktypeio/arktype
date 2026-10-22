@@ -164,15 +164,19 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 						:	node.structure.description
 				}
 
-				if (node.inner.predicate) {
-					childDescriptions.push(
-						...node.inner.predicate.map(p => p.description)
+				for (const p of node.inner.predicate ?? []) {
+					// a keyword can constrain its basis twice with one phrase, like
+					// string.creditCard's pattern and predicate. A narrow's phrase
+					// names its function, which a precompiled build reads at runtime,
+					// so two narrows are always both described
+					if (
+						p.meta.description === undefined ||
+						!childDescriptions.includes(p.description)
 					)
+						childDescriptions.push(p.description)
 				}
 
-				// a keyword can constrain its basis twice with one phrase, like
-				// string.creditCard's pattern and predicate
-				return [...new Set(childDescriptions)].join(" and ")
+				return childDescriptions.join(" and ")
 			}
 		}
 	})

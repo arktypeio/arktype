@@ -71,6 +71,16 @@ contextualize(() => {
 		attest(DivisibleBy30(30)).equals(30)
 	})
 
+	// a precompiled build describes a narrow at runtime, so it can't merge two
+	it("describes each anonymous narrow", () => {
+		const T = type("number")
+			.narrow(n => n > 0)
+			.narrow(n => n < 10)
+		attest(T.description).snap(
+			"a number and valid according to an anonymous predicate and valid according to an anonymous predicate"
+		)
+	})
+
 	it("problem at path", () => {
 		const AbEqual = type([
 			{
