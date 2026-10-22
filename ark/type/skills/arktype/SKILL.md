@@ -1,13 +1,21 @@
 ---
 name: arktype
-description: Write, review or debug runtime validation with ArkType (the `arktype` package). Use when code imports from "arktype", when a TypeScript project needs to validate untrusted input like request bodies, env vars, JSON, config files or form data, or when converting schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema to ArkType.
+description: Write, review or debug runtime validation with ArkType (the `arktype` package), or migrate a project to it. Use when code imports from "arktype", when a TypeScript project needs to validate untrusted input like request bodies, env vars, JSON, config files or form data, or when migrating a project or converting schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema to ArkType, e.g. "migrate this project from Zod to ArkType".
 ---
 
 # ArkType
 
 ArkType definitions are TypeScript type syntax, written as strings and objects, that also validate at runtime. If you know the TypeScript type, write that.
 
-Converting schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema? Read [references/migrating.md](references/migrating.md) first: those libraries differ from ArkType on undeclared keys, optional keys, defaults and coercion.
+## Migrating a project
+
+Migrating from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema? Read [references/migrating.md](references/migrating.md) first. It has the workflow and a table for each library. In short:
+
+1. Rewrite each schema where it is, under the same name, so imports and call sites keep working. Find every use, including files that only import a schema and call `.safeParse()` or read `.shape`.
+2. Keep behavior identical. Zod's objects remove undeclared keys, so call `configure({ onUndeclaredKey: "delete" })` from `arktype/config` in one file, import that file first in every file that creates a Type, and write `"+": "ignore"` where Zod had `.passthrough()`. `.optional()` becomes `"key?": "T | undefined"`. Coercions translate literally: `z.coerce.number()` is `type("unknown").pipe(Number).to("number")`.
+3. Update call sites, error handling and integrations. Most libraries take an ArkType type directly as a Standard Schema. Keep the code free of casts and `any`: [references/migrating.md](references/migrating.md) has typed versions of generic helpers, OpenAPI documents and MCP prompt completions.
+4. Remove the old package with the project's package manager, like `pnpm remove zod`, so the lockfile matches.
+5. Run the `typecheck` and `test` scripts in `package.json`, not just `npx tsc`, until both pass. Don't change what a test expects to make it pass; report the difference instead. The exception is a snapshot of generated JSON Schema, which ArkType writes in a canonical order: required keys, then optional ones, each sorted, and enum and union members sorted. Reorder such a snapshot only when order is its only difference, and say so in your summary.
 
 Docs index: https://arktype.io/llms.txt, which links each page's Markdown. Any docs page is available as Markdown by adding `.md` to its URL, e.g. https://arktype.io/docs/objects.md. Every page in one file: https://arktype.io/llms-full.txt.
 
@@ -91,6 +99,7 @@ Never interpolate a type into a string, as in ``type(`${Address}[]`)``. Use `Add
 
 - `.merge()` adds keys and replaces existing ones. `.and()` intersects, and throws when a key's types conflict.
 - To share keys between types, merge a base Type. A helper that composes Types should take a `Type<t>` and call its methods, which type-checks without casts: `const withId = <t extends object>(T: Type<t>) => T.and({ id: "string" })`. A helper that passes a generic definition to `type()` needs casts.
+- A function that accepts any Type takes `type.Any`, not `Type<any>`. To embed the Type it receives in a new definition, take `type.Any<t>`: `const page = <t>(item: type.Any<t>) => type({ items: item.array(), total: "number" })`. Or define a generic: `const Page = type("<t>", { items: "t[]", total: "number" })`, called as `Page(Item)`.
 - `.as<T>()` is a cast. To infer a narrower type, use `.narrow()` with a type predicate, e.g. `(s): s is \`data-${string}\` => s.startsWith("data-")`.
 
 ## Parsing and transforming
@@ -177,13 +186,15 @@ const Strict = type({ "+": "reject", name: "string" })
 const Stripped = type({ "+": "delete", name: "string" })
 ```
 
-An object that deletes keys, whether by `"+"` or by `configure({ onUndeclaredKey: "delete" })`, transforms its input, so a union of such objects throws unless a key like a literal `kind` tells them apart.
+To remove them everywhere, as Zod does, call `configure({ onUndeclaredKey: "delete" })` instead. `.merge()` takes `"+"` from the object merged in, so with per-object `"+"`, write `.merge({ "+": "delete", ... })`; with the global setting, merged objects keep deleting.
+
+An object that deletes keys, whether by `"+"` or by `configure`, transforms its input, so a union of such objects throws unless a key like a literal `kind` tells them apart.
 
 ## Integrations
 
 - ArkType types are [Standard Schema](https://standardschema.dev), so they work directly with tRPC, oRPC, Hono and other libraries that accept one. react-hook-form takes them through `standardSchemaResolver` from `@hookform/resolvers/standard-schema`.
 - `User.toJsonSchema()` returns the equivalent JSON Schema. It throws for what JSON Schema can't express, like `Date`, `bigint`, a morph or a `.narrow()`. Handle those with a `fallback` keyed by the error's `code`, e.g. `{ fallback: { date: ctx => ({ ...ctx.base, type: "string", format: "date-time" }) } }`, or pass `{ fallback: annotatingFallback }` (exported from `arktype`) to write them as `x-arktype-*` keywords instead.
-- Global configuration (error messages, `onUndeclaredKey`, `numberAllowsInfinity`, and so on) goes through `configure` from `arktype/config`, in its own file that is imported before anything imports `arktype` or `@ark/schema`, including deep imports like `arktype/internal/*`. Calling `configure` after any Type is created, even by reading a keyword like `type.number`, throws. See https://arktype.io/docs/configuration.md.
+- Global configuration (error messages, `onUndeclaredKey`, `numberAllowsInfinity`, and so on) goes through `configure` from `arktype/config`, in its own file, imported first by every file that creates a Type. Calling `configure` after any Type is created, even by reading a keyword like `type.number`, throws unless it changes nothing. See https://arktype.io/docs/configuration.md.
 
 ## Precompiled projects
 
@@ -200,7 +211,7 @@ Docs: https://arktype.io/docs/precompile.md and https://arktype.io/docs/precompi
 
 ## Check your work
 
-ArkType reports most mistakes in a definition as a TypeScript error at the definition, and the rest as a `ParseError` thrown when the definition runs. After writing or changing types, run `npx tsc --noEmit`, then call each type on a valid and an invalid value and read the result.
+ArkType reports most mistakes in a definition as a TypeScript error at the definition, and the rest as a `ParseError` thrown when the definition runs. After writing or changing types, run the project's typecheck script (or `npx tsc --noEmit`) and its tests, then call each type on a valid and an invalid value and read the result.
 
 ## Mistakes to avoid
 
