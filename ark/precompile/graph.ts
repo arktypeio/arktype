@@ -1905,6 +1905,16 @@ export class ModuleGraph {
 			)
 		}
 		if (node.type === "MemberExpression") {
+			// e.g. `defs.shop` with `import * as defs from "./defs.ts"`
+			const init = this.constInitOf(node, module, kindOfKey)
+			if (init) {
+				return this.moduleDefinitionOf(
+					init.node,
+					init.module,
+					init.kindOfKey,
+					seen
+				)
+			}
 			// e.g. `M.sub` with `sub: type.module({ ... })`
 			const parent = this.moduleDefinitionOf(
 				node.object,
@@ -1955,7 +1965,7 @@ export class ModuleGraph {
 		node = unwrapChain(node)
 		if (seen.has(node)) return
 		seen.add(node)
-		if (node.type === "Identifier") {
+		if (node.type === "Identifier" || node.type === "MemberExpression") {
 			const init = this.constInitOf(node, module, kindOfKey)
 			return (
 				init && this.scopeCallOf(init.node, init.module, init.kindOfKey, seen)
@@ -1969,24 +1979,29 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// what a const binding is declared as, as one never written holds it
+	// what a const binding is declared as, as one never written holds it,
+	// e.g. `shop` or `defs.shop`, imported from where it's declared
 	private constInitOf(
-		id: Node,
+		node: Node,
 		module: SourceModule,
 		kindOfKey: KindOfKey
 	): Located | undefined {
-		const binding = module.scopes.referencesById.get(id)?.binding
-		if (!binding || binding.writes.length) return
-		if (binding.kind === "import") {
-			const target = this.importOf(binding, module)
-			return (
-				target.kind === "binding" ?
-					this.constInitOf(target.binding.id, target.module, kindOfKey)
-				: target.kind === "expression" ?
-					{ node: target.node, module: target.module, kindOfKey }
-				:	undefined
-			)
+		if (node.type === "MemberExpression") {
+			const target = this.namespaceMemberOf(node, module)
+			return target && this.targetInitOf(target, kindOfKey)
 		}
+		const binding = module.scopes.referencesById.get(node)?.binding
+		return binding && this.bindingInitOf(binding, module, kindOfKey)
+	}
+
+	private bindingInitOf(
+		binding: Binding,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): Located | undefined {
+		if (binding.writes.length) return
+		if (binding.kind === "import")
+			return this.targetInitOf(this.importOf(binding, module), kindOfKey)
 		const declaration = binding.declaration
 		return (
 				binding.kind === "const" &&
@@ -1996,6 +2011,19 @@ export class ModuleGraph {
 			) ?
 				{ node: declaration.init, module, kindOfKey }
 			:	undefined
+	}
+
+	private targetInitOf(
+		target: ImportTarget,
+		kindOfKey: KindOfKey
+	): Located | undefined {
+		return (
+			target.kind === "binding" ?
+				this.bindingInitOf(target.binding, target.module, kindOfKey)
+			: target.kind === "expression" ?
+				{ node: target.node, module: target.module, kindOfKey }
+			:	undefined
+		)
 	}
 
 	// null where the definition has no alias by the name, undefined if unknown
