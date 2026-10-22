@@ -142,6 +142,22 @@ contextualize(() => {
 		})
 	})
 
+	it("discriminates a merged literal union by each of its values", () => {
+		const D = discriminate({
+			type: "object",
+			anyOf: [
+				{ properties: { kind: { const: "a" } }, required: ["kind", "x"] },
+				{ properties: { kind: { const: "b" } }, required: ["kind", "x"] },
+				{ properties: { kind: { const: "c" } }, required: ["kind", "y"] }
+			]
+		})
+		attest(D?.cases.map(c => [c.value, c.branches.expression])).snap([
+			["a", '{ kind: "a" | "b", x: unknown }'],
+			["b", '{ kind: "a" | "b", x: unknown }'],
+			["c", '{ kind: "c", y: unknown }']
+		])
+	})
+
 	it("discriminates a union by domain", () => {
 		const D = discriminate({ type: ["string", "array", "null"] })
 		attest({
@@ -167,6 +183,16 @@ contextualize(() => {
 			discriminate({
 				type: "number",
 				anyOf: [{ multipleOf: 2 }, { multipleOf: 3 }]
+			})
+		).equals(null)
+		// every case would match both branches
+		attest(
+			discriminate({
+				type: "object",
+				anyOf: [
+					{ properties: { kind: { enum: ["a", "b"] } }, required: ["kind"] },
+					{ properties: { other: { type: "string" } } }
+				]
 			})
 		).equals(null)
 	})

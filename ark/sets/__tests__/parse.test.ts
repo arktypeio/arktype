@@ -154,6 +154,37 @@ contextualize(() => {
 		)
 	})
 
+	it("throws a ParseError when a Standard Schema can't write its JSON Schema", () => {
+		const cause = new Error("Date cannot be represented in JSON Schema")
+		const Zod = {
+			"~standard": {
+				version: 1,
+				vendor: "zod",
+				jsonSchema: {
+					input: () => {
+						throw cause
+					},
+					output: () => {
+						throw "unsupported"
+					}
+				}
+			}
+		} as const
+		attest(() => parse(Zod)).throws.snap(
+			"ParseError: zod's ~standard.jsonSchema.input threw (Date cannot be represented in JSON Schema)"
+		)
+		attest(() => parse(Zod, { io: "out" })).throws.snap(
+			'ParseError: zod\'s ~standard.jsonSchema.output threw ("unsupported")'
+		)
+		let thrown: unknown
+		try {
+			parse(Zod)
+		} catch (e) {
+			thrown = e
+		}
+		attest((thrown as { cause?: unknown }).cause === cause).equals(true)
+	})
+
 	it("throws a ParseError on a primitive", () => {
 		attest(() => parse(5 as never)).throws.snap(
 			"ParseError: Schema must be a Root, a Standard JSON Schema or a JSON Schema (was 5)"

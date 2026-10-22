@@ -172,7 +172,7 @@ export const buildObjectArbitrary = (
 	ctx: Ctx
 ): fc.Arbitrary<Record<string, unknown>> => {
 	if (ctx.isCyclic && !ctx.tieStack.length)
-		return buildCyclicArbitrary(node, ctx)
+		return buildCyclicArbitrary(() => buildObjectArbitrary(node, ctx), ctx)
 
 	const requiredKeys = node.requiredKeys
 	const arbitrariesByKey: Record<PropertyKey, fc.Arbitrary<unknown>> = {}
@@ -204,6 +204,13 @@ const buildIndexSignatureArbitrary = (
 	indexNodes: readonly nodeOfKind<"index">[],
 	ctx: Ctx
 ): fc.Arbitrary<Record<string, unknown>> => {
+	if (ctx.isCyclic && !ctx.tieStack.length) {
+		return buildCyclicArbitrary(
+			() => buildIndexSignatureArbitrary(indexNodes, ctx),
+			ctx
+		)
+	}
+
 	if (indexNodes.length === 1) return getDictionaryArbitrary(indexNodes[0], ctx)
 
 	const dictionaryArbitraries = []

@@ -111,7 +111,9 @@ contextualize(() => {
 		attest(T({}).toString()).snap("must be an a or a b (was an object)")
 		attest(T(5).toString()).snap("must be an a or a b (was a number)")
 		const Lengths = type("string < 2 | string > 5").describe("short or long")
-		attest(Lengths("abc").toString()).snap("must be short or long (was 3)")
+		attest(Lengths("abc").toString()).snap(
+			"must be short or long (was length 3)"
+		)
 	})
 
 	it("length stress", () => {

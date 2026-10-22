@@ -1,16 +1,14 @@
-import type { nodeOfKind } from "@ark/schema"
 import { letrec, type Arbitrary, type LetrecValue } from "fast-check"
-import { buildObjectArbitrary } from "../arktypeFastCheck.ts"
 import type { Ctx } from "../fastCheckContext.ts"
 
-export const buildCyclicArbitrary = (
-	node: nodeOfKind<"structure">,
+export const buildCyclicArbitrary = <t>(
+	buildRoot: () => Arbitrary<t>,
 	ctx: Ctx
-): Arbitrary<Record<string, unknown>> => {
+): Arbitrary<t> => {
 	const objectArbitrary: LetrecValue<unknown> = letrec(tie => {
 		ctx.tieStack.push(tie)
 		const arbitraries: Record<string, Arbitrary<unknown>> = {
-			root: buildObjectArbitrary(node, ctx),
+			root: buildRoot(),
 			...ctx.arbitrariesByIntersectionId
 		}
 		ctx.tieStack.pop()

@@ -62,4 +62,4 @@ User.expression // "{ name: string, age?: number % 1 >= 0 }"
 User({ name: "Ada", age: 1.5 })
 ```
 
-The schema is a runtime value, so the result is a `Type<unknown>`. See [From JSON Schema](/docs/json-schema/from-json-schema) to give it a static type, and [Keyword support](/docs/json-schema/support) for which keywords it understands.
+A schema written in the call infers its type, so `User` is a `Type<{ name: string; age?: number }>`. See [From JSON Schema](/docs/json-schema/from-json-schema#inferring-its-type) to type a schema declared elsewhere, and [Keyword support](/docs/json-schema/support) for which keywords it understands.
