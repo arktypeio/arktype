@@ -7,6 +7,7 @@ import {
 } from "@ark/schema"
 import { configure, scope, type } from "arktype"
 import "arktype/errors"
+import { withConfig } from "./locales/withConfig.ts"
 
 contextualize(() => {
 	it("tuple expression", () => {
@@ -320,6 +321,35 @@ contextualize(() => {
 			attest(type({ x: X })({ x: { n: "x" } }).toString()).snap(
 				"x.n must be a number (was a string)"
 			)
+		})
+	})
+
+	describe("onUndeclaredKey", () => {
+		it("delete fails on an indiscriminable union", () => {
+			attest(() =>
+				withConfig({ onUndeclaredKey: "delete" }, () =>
+					scope({}).type([{ a: "string" }, "|", { b: "boolean" }])
+				)
+			).throws
+				.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: { a: string, + (undeclared): delete }
+Right: { b: boolean, + (undeclared): delete }
+Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
+		})
+
+		it("delete discriminates a union", () => {
+			const O = withConfig({ onUndeclaredKey: "delete" }, () =>
+				scope({}).type([
+					{ kind: "'a'", a: "string" },
+					"|",
+					{ kind: "'b'", b: "boolean" }
+				])
+			)
+			attest(O.in.expression).snap(
+				'{ a: string, kind: "a" } | { b: boolean, kind: "b" }'
+			)
+			attest(O({ kind: "a", a: "ok", b: true })).snap({ kind: "a", a: "ok" })
+			attest(O({ kind: "b", a: "ok", b: true })).snap({ kind: "b", b: true })
 		})
 	})
 

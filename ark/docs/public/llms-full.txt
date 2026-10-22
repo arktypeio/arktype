@@ -6559,7 +6559,16 @@ const Measurement = type(
 )
 ```
 
-`"+"` applies to its own object, not to nested ones, and `.merge()` takes it from the object merged in, so repeat it there. An object that deletes keys transforms its input, so a union of such objects needs a key that tells them apart, like a literal `type`. To remove undeclared keys everywhere, as Zod does, set `onUndeclaredKey: "delete"` with `configure` from `arktype/config`, in a file imported before anything imports `arktype`; then unions need no discriminant.
+`"+"` applies to its own object, not to nested ones, and `.merge()` takes it from the object merged in, so repeat it there. To remove undeclared keys everywhere, as Zod does, set `onUndeclaredKey: "delete"` with `configure` from `arktype/config`, in a file imported before anything imports `arktype`.
+
+Either way, an object that deletes keys transforms its input, so a union of such objects needs a key that tells them apart, like a literal `type`. Without one, data with both objects' keys could come out as either, so the union throws a `ParseError`. Where the old schema has no such key, delete outside the union. The result keeps every key either object declares, where Zod keeps only those of the first object that matches:
+
+```ts
+// z.union([z.object({ uri, text }), z.object({ uri, blob })])
+const Contents = type({ "+": "ignore", uri: "string", text: "string" })
+	.or({ "+": "ignore", uri: "string", blob: "string" })
+	.to({ "+": "delete", uri: "string", "text?": "string", "blob?": "string" })
+```
 
 With `"delete"` or `"reject"`, from `"+"` or `configure`, an object's undeclared keys are `never`, so `.and()` with an object that has other keys throws. Add keys with `.merge()`.
 

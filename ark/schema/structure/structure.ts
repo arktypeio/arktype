@@ -189,10 +189,9 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 					}
 
 					// if base is "delete", undeclared keys are "ignore" (i.e. unconstrained)
-					// on input and "reject" on output
-
-					if (ioKind === "in") delete inner.undeclared
-					else inner.undeclared = "reject"
+					// on input and "reject" on output. "ignore" is explicit so a scope's
+					// onUndeclaredKey isn't reapplied to the input.
+					inner.undeclared = ioKind === "in" ? ("ignore" as never) : "reject"
 				}
 			}
 		},
