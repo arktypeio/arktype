@@ -537,8 +537,10 @@ const errorOfNodeContext = (
 	config: ResolvedConfig
 ): ArkError => {
 	let build = buildersByContext.get(context)
-	if (!build && compileBuilder && !config.jitless)
-		buildersByContext.set(context, (build = compileBuilder(context)))
+	if (!build && compileBuilder && !config.jitless) {
+		build = compileBuilder(context)
+		if (build) buildersByContext.set(context, build)
+	}
 	return stampError(
 		build ? build(context, path, data) : ({ data, path, ...context } as never),
 		config
@@ -549,12 +551,12 @@ const errorOfNodeContext = (
 const buildersByContext = new WeakMap<object, ErrorBuilder>()
 
 let compileBuilder:
-	| ((context: ArkErrorContextInput) => ErrorBuilder)
+	| ((context: ArkErrorContextInput) => ErrorBuilder | undefined)
 	| undefined
 
 // set by arktype's compiler; the runtime never generates code
 export const registerBuilderCompiler = (
-	compile: (context: ArkErrorContextInput) => ErrorBuilder
+	compile: (context: ArkErrorContextInput) => ErrorBuilder | undefined
 ): void => {
 	compileBuilder = compile
 }
