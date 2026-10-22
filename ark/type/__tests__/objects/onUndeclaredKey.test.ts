@@ -201,7 +201,8 @@ contextualize(() => {
 			).throws
 				.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { a: string, + (undeclared): delete }
-Right: { b: boolean, + (undeclared): delete }`)
+Right: { b: boolean, + (undeclared): delete }
+Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
 		})
 
 		it("reject key", () => {

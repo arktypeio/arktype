@@ -1119,6 +1119,26 @@ contextualize(() => {
 		)
 	})
 
+	it("indeterminate union hints at a fix", () => {
+		attest(() =>
+			type("unknown")
+				.pipe(v => Number(v))
+				.to("number.integer")
+				.or("null")
+		).throws
+			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: (In: unknown) => To<number % 1>
+Right: null
+Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
+
+		const Narrowed = type("string.integer.parse | number.integer | null")
+		attest<number | null>(Narrowed.infer)
+		attest(Narrowed("5")).equals(5)
+
+		const Piped = type("unknown").pipe(v => (v === null ? v : Number(v)))
+		attest(Piped(null)).equals(null)
+	})
+
 	it("allows undiscriminated union if morphs are equal", () => {
 		const getObjectValues = (o: { foo: 1 } | { bar: 1 }) => Object.values(o)
 		const T = type({ foo: "1" }).or({ bar: "1" }).pipe(getObjectValues)
@@ -1181,7 +1201,8 @@ contextualize(() => {
 		attest(indiscriminable).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { foo: (In: string) => Out<Date> | false | true }
-Right: { foo: (In: string) => Out<{ [string]: $jsonData }> | false | true }`)
+Right: { foo: (In: string) => Out<{ [string]: $jsonData }> | false | true }
+Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
 	})
 
 	it("multiple chained pipes", () => {

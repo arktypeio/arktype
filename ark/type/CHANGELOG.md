@@ -472,6 +472,26 @@ A `string.regex` error's problem was the bare `SyntaxError` the pattern threw. I
 type("string.regex")("(")
 ```
 
+### Say how to fix an indeterminate morph union or intersection
+
+The `ParseError` for a union of a morph and a type whose inputs overlap, or for an intersection of distinct morphs, now ends with how to fix it:
+
+```ts
+// ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+// Left: (In: unknown) => To<number % 1>
+// Right: null
+// Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.
+type("unknown").pipe(Number).to("number.integer").or("null")
+
+// ParseError: The intersection of distinct morphs at a single path is indeterminate:
+// Left: (In: string) => Out<unknown>
+// Right: (In: string) => Out<unknown>
+// To apply both, pipe one to the other instead, e.g. with .to().
+type("string")
+	.pipe(s => s.length)
+	.and(type("string").pipe(s => s.trim()))
+```
+
 ### Name the code, path and fallback in a `ToJsonSchemaError`
 
 A `ToJsonSchemaError`'s message was only its printed context. It now starts with a sentence naming its code, where in the Type the part it couldn't convert is, and the `fallback` to configure:
