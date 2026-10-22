@@ -25,6 +25,12 @@ export const writeUnitProblem: ProblemWriter<"unit"> = ({
 		`must be reference equal to ${expected} (serialized to the same value)`
 	:	`must be ${expected} (was ${actual})`
 
+// a Date holds no data of the user's, so its value is written as a bound's is
+export const writeUnitActual: ActualWriter<"unit"> = data =>
+	data instanceof Date && isValidDate(data) ?
+		describeCollapsibleDate(data)
+	:	printKind(data)
+
 export const writeNotEqualActual: ActualWriter<"notEqual"> = data =>
 	data instanceof Date ? describeCollapsibleDate(data) : printKind(data)
 

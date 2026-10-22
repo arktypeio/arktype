@@ -18,6 +18,12 @@ contextualize(() => {
 		attest(ISO.allows(new Date("2000/07/05"))).equals(false)
 	})
 
+	it("a miss prints the Date", () => {
+		attest(type("d'2020-01-01'")(new Date("2020-01-02")).toString()).snap(
+			"must be 2020-01-01 (was January 2, 2020)"
+		)
+	})
+
 	it("rejects an invalid Date", () => {
 		const T = type({ a: "d'1970-01-01T00:00:02.000Z'" })
 		attest(T({ a: new Date(Number.NaN) }).toString()).snap(

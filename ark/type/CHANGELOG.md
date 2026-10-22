@@ -265,7 +265,7 @@ A Type or standalone validator that calls no narrow or morph may find its errors
 
 ### Print objects in error messages by their kind
 
-An error's `actual` prints an object as `an object`, an array as `an array` and a function as `a function`, where it printed an object or array as compact JSON, a Date as its date, a function as `Function(name)` and another instance by its class's name. A message no longer grows with the data, and nothing an object holds reaches a log through it. Primitives print as before, and `before` and `after` still print the Date they rejected:
+An error's `actual` prints an object as `an object`, an array as `an array` and a function as `a function`, where it printed an object or array as compact JSON, a Date as its date, a function as `Function(name)` and another instance by its class's name. A message no longer grows with the data, and nothing an object holds reaches a log through it. Primitives print as before, and `before`, `after`, `!=` and a Date literal, like `d'2020-01-01'` or one of `type.enumerated`'s Dates, still print the Date they rejected:
 
 ```ts
 // previously must be "a" or "b" (was {"x":1}), now (was an object)

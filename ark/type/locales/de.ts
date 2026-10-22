@@ -385,6 +385,10 @@ export const de: Locale.Complete = {
 	},
 	unit: {
 		expected: (e, locale) => print(e.unit, locale),
+		actual: (data, e, locale) =>
+			data instanceof Date && isValidDate(data) ?
+				theDate(data, locale)
+			:	printKind(data, locale),
 		problem: (e, locale) => {
 			const unit = print(e.unit, locale)
 			return unit === e.actual ?

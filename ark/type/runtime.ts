@@ -109,6 +109,7 @@ export {
 	writeNotEqualActual,
 	writeProblem,
 	writeProtoActual,
+	writeUnitActual,
 	writeUnitProblem,
 	type ArkError
 } from "@ark/schema/runtime"
