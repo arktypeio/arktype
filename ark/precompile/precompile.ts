@@ -53,7 +53,13 @@ import {
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join, relative } from "node:path"
 import { fileURLToPath } from "node:url"
-import type { CallExpression, ImportDeclaration, Node, Span } from "oxc-parser"
+import type {
+	CallExpression,
+	ImportDeclaration,
+	MemberExpression,
+	Node,
+	Span
+} from "oxc-parser"
 import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
@@ -77,7 +83,8 @@ import {
 	stepsOf,
 	type ArkExportName,
 	type FunctionNode,
-	type ImportTarget
+	type ImportTarget,
+	type StandInKind
 } from "./graph.ts"
 import {
 	allowUnsafeHint,
@@ -2168,6 +2175,18 @@ export class Precompiler {
 				)
 					this.refusedContainers.set(candidate.state.value, [node, module])
 				if (this.mode === "standalone") this.assertKeyable(site)
+				const unseen =
+					this.mode === "standalone" &&
+					site.status === "accepted" &&
+					standInKindOf(candidate.state.value)
+				if (unseen && this.graph.reachesUnseen(node, module)) {
+					const reasons = [
+						`it's passed to code the build can't see, which may read what a precompiled ${unseen} lacks`
+					]
+					diagnostics.push(this.refusal(module, site, "unsupported", reasons))
+					sites.push(refuse(site, reasons))
+					continue
+				}
 				if (
 					site.status !== "rejected" &&
 					!candidate.fn &&
@@ -3296,6 +3315,11 @@ export class Precompiler {
 				candidate.state.value
 			])
 		)
+		const scopeReads: [
+			node: MemberExpression,
+			read: string,
+			kind: StandInKind
+		][] = []
 		const unavailable: [
 			node: Node,
 			read: string | undefined,
@@ -3316,12 +3340,33 @@ export class Precompiler {
 				this.graph.unavailableReadOf(node, module, this.lackedMembers)
 			if (read && !this.isDeclaredInIsland(read[1], module))
 				unavailable.push([node, ...read])
+			const scopeRead =
+				!isWithin(node, candidateRanges) && this.graph.scopeReadOf(node, module)
+			if (scopeRead) scopeReads.push([node as MemberExpression, ...scopeRead])
 			return true
 		})
 		// arktype's own packages are the runtime a standalone build ships
 		const isArkPackage = arkPackageName.test(
 			this.graph.packageNameOf(module.id) ?? ""
 		)
+		for (const [node, read, kind] of scopeReads) {
+			// e.g. `getPlaces().type(...)`, reported as the call
+			const [callee, call] = operatorOf(node)
+			const span =
+				call?.type === "CallExpression" && call.callee === callee ? call : node
+			result.push(
+				this.diagnostic(
+					module,
+					span,
+					"unsupported",
+					`${module.snippetOf(span)} can't be precompiled yet`,
+					[
+						`\`${module.snippetOf(node.object)}\` may be a ${kind}, which a standalone build replaces with an object that lacks \`${read}\``
+					],
+					`Assign it to a const and read \`${read}\` off that, which the build precompiles, or build with runtime: "arktype".`
+				)
+			)
+		}
 		for (const [node, read, object, isUnsureRead] of unavailable) {
 			const objectRange = rangeOf(unwrapChain(object))
 			const settledValue = settledValues.get(objectRange)
@@ -3931,6 +3976,11 @@ const declaredBindingKinds = {
 	function: 1,
 	class: 1
 } satisfies Partial<Record<BindingKind, 1>>
+
+const standInKindOf = (value: unknown): StandInKind | undefined =>
+	hasArkKind(value, "scope") ? "Scope"
+	: hasArkKind(value, "generic") ? "Generic"
+	: undefined
 
 const refuse = (site: Site, reasons: string[]): Site => {
 	site.status = "rejected"

@@ -315,6 +315,9 @@ export const unstableArkMembers = {
 
 type UnstableArkMember = keyof typeof unstableArkMembers
 
+// what a standalone build replaces with an object holding none of its members
+export type StandInKind = "Scope" | "Generic"
+
 const kinds = {
 	type: 1,
 	// a Scope, Module, Generic or method, or what only the build can read
@@ -1168,7 +1171,11 @@ export class ModuleGraph {
 					module.scopes.root.bindings[type.exprName.name]
 				if (!binding) return
 				const kind = kindOfKey(binding, module)
-				return (kind & ~arkBits) | (isArk(kind) ? unsure : 0)
+				// e.g. `typeof $`, whose value may be a Scope, as `$`'s may be
+				return (
+					(kind & ~arkBits) |
+					(isArk(kind) ? unsure | (kind & kinds.otherArk) : 0)
+				)
 			}
 			case "TSTypeReference": {
 				const name = type.typeName
@@ -1197,9 +1204,14 @@ export class ModuleGraph {
 								name.right.name in arkTypeNames
 							:	importedName === "type" && name.right.name === "Any"
 						:	importedName in arkTypeNames
-					return arkTypesSpecifier.test(specifier) && isArkTypeName ?
-							unsure
-						:	kinds.data
+					if (!arkTypesSpecifier.test(specifier) || !isArkTypeName)
+						return kinds.data
+					const arkName =
+						name.type === "TSQualifiedName" ? name.right.name : importedName
+					// e.g. `Scope`, whose value is one, which only a site may read
+					return arkName === "Scope" || arkName === "Generic" ?
+							unsure | kinds.otherArk
+						:	unsure
 				}
 				const local = this.localTypeOf(module, root.name)
 				if (!local) return union(type.typeArguments?.params ?? [], depth + 1)
@@ -1489,8 +1501,7 @@ export class ModuleGraph {
 				// e.g. `type({ a: "string" })`, as only parameters make a Generic
 				if (
 					node.type === "CallExpression" &&
-					node.arguments.length === 1 &&
-					node.arguments[0].type !== "SpreadElement" &&
+					definesType(node) &&
 					this.arkExportNameOf(callee, module) === "type"
 				)
 					return kinds.type
@@ -1503,8 +1514,7 @@ export class ModuleGraph {
 				// e.g. `$.type("User")`, with `$` a Scope
 				if (
 					node.type === "CallExpression" &&
-					node.arguments.length === 1 &&
-					node.arguments[0].type !== "SpreadElement" &&
+					definesType(node) &&
 					callee.type === "MemberExpression" &&
 					memberNameOf(callee) === "type" &&
 					this.scopeCallOf(callee.object, module, kindOfKey)
@@ -2342,6 +2352,124 @@ export class ModuleGraph {
 		}
 	}
 
+	// e.g. `getPlaces().type`, which a precompiled Scope lacks, or `.params`,
+	// which a precompiled Generic lacks
+	scopeReadOf(
+		node: Node,
+		module: SourceModule
+	): [read: string, kind: StandInKind] | undefined {
+		if (node.type !== "MemberExpression") return
+		const name = memberNameOf(node)
+		if (typeof name !== "string" || name in typeMemberKinds) return
+		const kind =
+			name in scopeMembers ? "Scope"
+			: name in genericMembers ? "Generic"
+			: undefined
+		return (
+				kind &&
+					mayBeOtherArk(this.kindOf(node.object, module)) &&
+					!this.isArktypeImport(node.object, module)
+			) ?
+				[name, kind]
+			:	undefined
+	}
+
+	// e.g. `type` or `ark` in `import * as ark from "arktype"`
+	private isArktypeImport(node: Node, module: SourceModule): boolean {
+		if (this.arkExportNameOf(node, module)) return true
+		const binding =
+			node.type === "Identifier" ?
+				module.scopes.referencesById.get(node)?.binding
+			:	undefined
+		if (binding?.kind !== "import") return false
+		const target = this.importOf(binding, module).kind
+		return target === "arktype" || target === "arktypeNamespace"
+	}
+
+	// e.g. `() => scope(...)` passed to a function the build doesn't analyze,
+	// so it can't see what's read off the value
+	reachesUnseen(
+		node: Node,
+		module: SourceModule,
+		seen = new Set<Node>()
+	): boolean {
+		if (seen.has(node)) return false
+		seen.add(node)
+		const [operand, operator] = operatorOf(node)
+		switch (operator?.type) {
+			case "CallExpression":
+			case "NewExpression": {
+				if (operator.callee === operand) return false
+				const callee = unwrapChain(operator.callee)
+				const fn = this.functionOf(callee, module)
+				if (fn?.[1] !== module) return true
+				// e.g. `hand($)` with `hand = s => each(s)`
+				const param = runtimeParamsOf(fn[0])[
+					operator.arguments.indexOf(operand as never)
+				]
+				const binding =
+					param?.type === "Identifier" ?
+						module.scopes.bindingsById.get(param)
+					:	undefined
+				return (
+					!!binding &&
+					binding.references.some(
+						reference =>
+							!reference.isWrite &&
+							this.reachesUnseen(reference.id, module, seen)
+					)
+				)
+			}
+			case "ConditionalExpression":
+			case "LogicalExpression":
+				return (
+					(operator.type === "LogicalExpression" ||
+						operator.test !== operand) &&
+					this.reachesUnseen(operator, module, seen)
+				)
+			case "SequenceExpression":
+				return (
+					operator.expressions[operator.expressions.length - 1] === operand &&
+					this.reachesUnseen(operator, module, seen)
+				)
+			case "ArrowFunctionExpression":
+				return (
+					operator.body === operand &&
+					this.returnReachesUnseen(operator, module, seen)
+				)
+			case "ReturnStatement": {
+				const fn = enclosingFunctionOf(operator)
+				return !!fn && this.returnReachesUnseen(fn, module, seen)
+			}
+			case "VariableDeclarator": {
+				const binding =
+					operator.init === operand && operator.id.type === "Identifier" ?
+						module.scopes.bindingsById.get(operator.id)
+					:	undefined
+				return (
+					!!binding &&
+					binding.references.some(
+						reference =>
+							!reference.isWrite &&
+							this.reachesUnseen(reference.id, module, seen)
+					)
+				)
+			}
+		}
+		return false
+	}
+
+	// an exported function's importers are built where they read its result
+	private returnReachesUnseen(
+		fn: FunctionNode,
+		module: SourceModule,
+		seen: Set<Node>
+	): boolean {
+		if (bindingOfFunction(fn, module)?.exportNames.length) return false
+		const calls = this.callsOf(fn, module)
+		return !calls || calls.some(call => this.reachesUnseen(call, module, seen))
+	}
+
 	private functionOf(
 		callee: Node,
 		module: SourceModule
@@ -2451,6 +2579,18 @@ const keyIn = (owner: Node, node: Node): unknown =>
 	owner.type === "Property" ? keyNameOf(owner)
 	: owner.type === "ArrayPattern" ? owner.elements.indexOf(node as never)
 	: undefined
+
+// e.g. `type(A, "|", B)`, as only `type("<t>", def)` makes a Generic
+const definesType = (call: CallExpression): boolean => {
+	if (call.arguments.some(arg => arg.type === "SpreadElement")) return false
+	const [first, ...rest] = call.arguments
+	return (
+		rest.length !== 1 ||
+		first.type === "ObjectExpression" ||
+		first.type === "ArrayExpression" ||
+		(first.type === "Literal" && !/^<.*>$/.test(String(first.value)))
+	)
+}
 
 // e.g. `t.or` where `t` may be a Type, but not `list.map`
 const isUnsureRead = (
