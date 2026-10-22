@@ -30,11 +30,12 @@ import {
 import type { NodeKind } from "./implement.ts"
 import {
 	actualAtPathOf,
+	alternativesOf,
 	describeCause,
 	keywordWriterOf,
 	type Locale
 } from "./locale.ts"
-import { describeBranches, describeCases, describeEachCase } from "./utils.ts"
+import { describeBranches, describeCases } from "./utils.ts"
 
 export const writeMessage: MessageWriter = ctx => {
 	const propString = ctx.propString
@@ -130,12 +131,12 @@ export const errorWritersByCode: {
 		actual: () => "missing"
 	},
 	union: {
-		expected: ctx => {
+		expected: (ctx, locale) => {
 			if (ctx.description !== undefined) return ctx.description
 			const path = ctx.errors[0]?.propString
 			// a union's branches usually fail at one path, so they needn't be grouped
 			if (ctx.errors.length && ctx.errors.every(e => e.propString === path))
-				return describeAtPath(ctx.errors)
+				return describeAtPath(ctx.errors, locale)
 			const errorsAtPaths: ArkError[][] = []
 			for (const error of ctx.errors) {
 				const errorsAtPath = errorsAtPaths.find(
@@ -144,7 +145,9 @@ export const errorWritersByCode: {
 				if (errorsAtPath) errorsAtPath.push(error)
 				else errorsAtPaths.push([error])
 			}
-			return describeBranches(errorsAtPaths.map(describeAtPath))
+			return describeBranches(
+				errorsAtPaths.map(errors => describeAtPath(errors, locale))
+			)
 		},
 		// data that may be large is printed by its kind
 		actual: (data, ctx) => actualAtPathOf(ctx) ?? printKind(data),
@@ -176,16 +179,17 @@ const listsErrors = (ctx: {
 	description?: string
 }): boolean => ctx.errors.length !== 0 && ctx.description === undefined
 
-const describeAtPath = (errors: readonly ArkError[]): string => {
+const describeAtPath = (
+	errors: readonly ArkError[],
+	locale: Locale.Info
+): string => {
 	const path = errors[0].propString
 	const branchesAtPath: string[] = []
 	for (const e of errors) {
-		// a discriminant's cases are listed as the branches it would have reached
-		const expected =
-			e.code === "discriminant" && e.expected === describeCases(e) ?
-				describeEachCase(e)
-			:	[e.expected]
-		for (const branch of expected)
+		// a standalone build's locale is en's info alone, which names no alternatives
+		const alternatives =
+			"cite" in locale ? alternativesOf(e, locale as Locale) : [e.expected]
+		for (const branch of alternatives)
 			if (!branchesAtPath.includes(branch)) branchesAtPath.push(branch)
 	}
 

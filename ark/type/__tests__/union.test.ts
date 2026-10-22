@@ -91,6 +91,21 @@ contextualize(() => {
 		)
 	})
 
+	it("lists each value a missing key allows once", () => {
+		const T = type({ a: "string | number", b: "string" }).or({
+			a: "string",
+			c: "number"
+		})
+		attest(T({}).toString()).snap(
+			"a must be a string or a number (was missing)"
+		)
+		const Units = type({ a: "1 | 2", b: "string" }).or({
+			a: "2 | 3",
+			c: "number"
+		})
+		attest(Units({}).toString()).snap("a must be 1, 2 or 3 (was missing)")
+	})
+
 	it("described", () => {
 		const T = type({ a: "string" }).or({ b: "number" }).describe("an a or a b")
 		attest(T({}).toString()).snap("must be an a or a b (was an object)")

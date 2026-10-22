@@ -210,6 +210,11 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		{ b: "" }
 	)
 	add("required in a union", $.type({ a: "never" }).or({ b: "boolean" }), {})
+	add(
+		"required union in a union",
+		$.type({ a: "1 | 2", b: "string" }).or({ a: "2 | 3", c: "number" }),
+		{}
+	)
 
 	add("undeclared", $.type({ "+": "reject", a: "string" }), { a: "", b: 1 })
 	add(

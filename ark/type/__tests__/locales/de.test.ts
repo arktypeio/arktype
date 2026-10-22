@@ -173,6 +173,7 @@ contextualize(() => {
 				"a fehlt (muss eine Zahl oder eine Zeichenkette sein)",
 			"required in a union ← {}":
 				"a fehlt (muss never sein) oder b fehlt (muss ein Wahrheitswert sein)",
+			"required union in a union ← {}": "a fehlt (muss 1, 2 oder 3 sein)",
 			'undeclared ← {"a":"","b":1}': "b ist nicht erlaubt",
 			'undeclared in a union ← {"a":"","b":"y"}':
 				'b muss eine Zahl oder entfernt sein, ist aber "y"',

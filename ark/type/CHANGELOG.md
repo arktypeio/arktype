@@ -367,6 +367,16 @@ A union failing at several paths prefixed only the first with `value at` when it
 type("number[] | string[]")(["a", 1])
 ```
 
+Each value a path allows is listed once, though a missing key's value is itself a union:
+
+```ts
+const T = type({ a: "1 | 2", b: "string" }).or({ a: "2 | 3", c: "number" })
+
+// was: ArkErrors: a must be 1 or 2 or 2 or 3 (was missing)
+// now: ArkErrors: a must be 1, 2 or 3 (was missing)
+T({})
+```
+
 In `de`, a key a union lists as missing reads as a missing key's own error does: `a fehlt (muss eine Zeichenkette sein) oder b fehlt (muss eine Zahl sein)`, where it was `a muss eine Zeichenkette sein (ist nicht vorhanden) oder …`.
 
 ### Apply a pipe's configured `message` to its output's errors

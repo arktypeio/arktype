@@ -233,17 +233,16 @@ const describeExpressionOptions: DescribeBranchesOptions = {
 export const expressBranches = (expressions: readonly string[]): string =>
 	describeBranches(expressions, describeExpressionOptions)
 
-export const describeEachCase = ({
+export const describeCases = ({
 	discriminantKind,
 	cases
-}: DiscriminantCases): string[] =>
-	discriminantKind === "domain" ?
-		cases.map(domain =>
-			domain === "Array" ?
-				objectKindDescriptions.Array
-			:	domainDescriptions[domain]
-		)
-	:	cases.map(unit => printable(unit, { ownDataOnly: true }))
-
-export const describeCases = (discriminant: DiscriminantCases): string =>
-	describeBranches(describeEachCase(discriminant))
+}: DiscriminantCases): string =>
+	describeBranches(
+		discriminantKind === "domain" ?
+			cases.map(domain =>
+				domain === "Array" ?
+					objectKindDescriptions.Array
+				:	domainDescriptions[domain]
+			)
+		:	cases.map(unit => printable(unit, { ownDataOnly: true }))
+	)
