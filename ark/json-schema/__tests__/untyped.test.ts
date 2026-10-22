@@ -2,19 +2,12 @@ import { attest, contextualize } from "@ark/attest"
 import { jsonSchemaToType } from "@ark/json-schema"
 
 contextualize(() => {
-	it("empty schema", () => {
-		const t = jsonSchemaToType({})
-		attest(t.expression).snap("unknown")
-	})
-
-	it("true", () => {
-		const t = jsonSchemaToType(true)
-		attest(t.expression).snap("unknown")
-	})
-
-	it("annotations only", () => {
-		const t = jsonSchemaToType({ description: "anything" })
-		attest(t.expression).snap("unknown")
+	it("schemas without constraints", () => {
+		attest(jsonSchemaToType({}).expression).snap("unknown")
+		attest(jsonSchemaToType(true).expression).snap("unknown")
+		attest(jsonSchemaToType({ description: "anything" }).expression).snap(
+			"unknown"
+		)
 	})
 
 	it("keywords constrain only their own type", () => {

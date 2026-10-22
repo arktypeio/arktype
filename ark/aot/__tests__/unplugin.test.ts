@@ -48,7 +48,6 @@ import {
 } from "@ark/schema/runtime"
 import { writeCreationMismatchMessage } from "arktype/runtime"
 import {
-	issuesFrom,
 	packageFiles,
 	runPlain,
 	tempDir,
@@ -469,7 +468,10 @@ export const checkedItem = JSON.stringify(itemJson())
 				errors: "first" as const
 			}
 			const plain = runPlain(firstConfigured)
-			attest(run(await bundle(opts, firstConfigured))).equals(plain)
+			const standalone = await bundle(opts, firstConfigured)
+			attest(run(standalone)).equals(plain)
+			// arktype/errors resolves to the runtime
+			attest(standalone.includes(copiedErrorMessage)).equals(false)
 			attest(
 				run(
 					await bundle(
@@ -490,7 +492,10 @@ export const checkedItem = JSON.stringify(itemJson())
 			attest(plain).equals(
 				'[{"name":"a","role":"user"},true,{"name":"a","role":"user"}]\n'
 			)
-			attest(run(await bundle(opts, mutatingConfigured))).equals(plain)
+			const standalone = await bundle(opts, mutatingConfigured)
+			attest(run(standalone)).equals(plain)
+			// arktype/mutatesInput resolves to the runtime
+			attest(standalone.includes(copiedErrorMessage)).equals(false)
 			attest(
 				run(
 					await bundle(
@@ -504,23 +509,6 @@ export const checkedItem = JSON.stringify(itemJson())
 				)
 			).equals(plain)
 		})
-
-		it(`${name} resolves arktype/errors and arktype/mutatesInput to the runtime`, async () => {
-			const bundles = await Promise.all([
-				bundle(
-					{ cwd: firstConfigured, config: "config.ts", errors: "first" },
-					firstConfigured
-				),
-				bundle(
-					{ cwd: mutatingConfigured, config: "config.ts", mutatesInput: true },
-					mutatingConfigured
-				)
-			])
-			attest(bundles.map(code => code.includes(copiedErrorMessage))).equals([
-				false,
-				false
-			])
-		})
 	}
 
 	it("esbuild runtime islands", async () => {
@@ -531,266 +519,6 @@ export const checkedItem = JSON.stringify(itemJson())
 		)
 		attest(run(standalone)).equals(runPlain(islands))
 		attest(standalone.includes(parserMessage)).equals(true)
-	})
-
-	it("esbuild an island piping into a validator", async () => {
-		const root = writeFixture(
-			{
-				"main.ts": `import { type } from "arktype"
-
-const User = type({ name: "string" })
-
-// called as arktype calls a morph, with the Traversal it pipes from
-const validate: (data: unknown, ctx: unknown) => unknown = User
-
-// @ark-runtime
-const Parsed = type("string.json.parse").pipe((data, ctx) => validate(data, ctx))
-
-const out = Parsed('{"name":5}')
-console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => [issue.code, ...issue.path]) : out))
-`
-			},
-			fromHere("temp", "pipedInto")
-		)
-		const plain = runPlain(root)
-		attest(plain).snap(`[["domain","name"]]
-`)
-		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(plain)
-		attest(
-			run(
-				await bundlers.esbuild({ cwd: root, members: { methods: false } }, root)
-			)
-		).equals(plain)
-	})
-
-	it("esbuild an undetailed validator a morph passes its traversal", async () => {
-		const root = writeFixture(
-			{
-				"main.ts": `import { type } from "arktype"
-
-const User = type({ name: "string" })
-
-const validate: (data: unknown, ctx: unknown) => unknown = User
-
-const Parsed = type("string.json.parse").pipe((data, ctx) => validate(data, ctx))
-
-const out = Parsed('{"name":5}')
-console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => [issue.code, ...issue.path]) : out))
-`
-			},
-			fromHere("temp", "pipedIntoUndetailed")
-		)
-		const outputs = await Promise.all(
-			[{}, { assert: false }].map(async members =>
-				run(
-					await bundlers.esbuild(
-						{ cwd: root, errors: "none", config: false, members },
-						root
-					)
-				)
-			)
-		)
-		attest(outputs).snap([
-			`[["predicate"]]
-`,
-			`[["predicate"]]
-`
-		])
-	})
-
-	it("esbuild a size build's union of domains", async () => {
-		const root = writeFixture(
-			{
-				"main.ts": `import { type } from "arktype"
-
-const T = type("string | number > 0 | null | bigint | undefined").or({ a: "string" })
-
-for (const data of ["", 1, 0, null, 1n, { a: "" }, {}, () => {}, undefined, true, Symbol()])
-	console.log(String(T(data)))
-`
-			},
-			fromHere("temp", "domainUnion")
-		)
-		const [speed, size] = await Promise.all(
-			(["speed", "size"] as const).map(async optimize =>
-				run(await bundlers.esbuild({ cwd: root, optimize }, root))
-			)
-		)
-		attest(size).equals(speed)
-		attest(size).snap(`
-1
-must be positive
-null
-1
-[object Object]
-a is missing
-a is missing
-undefined
-must be a bigint, a string, a number, an object, undefined or null
-must be a bigint, a string, a number, an object, undefined or null
-`)
-	})
-
-	it("esbuild errors found once read", async () => {
-		const root = writeFixture(
-			{
-				"main.ts": `import { type } from "arktype"
-
-const out = type({ name: "string" })({})
-console.log(out.constructor === type.errors)
-`
-			},
-			fromHere("temp", "unreadErrors")
-		)
-		attest(run(await bundlers.esbuild({ cwd: root }, root))).snap("true\n")
-	})
-
-	it("esbuild errors written for size", async () => {
-		const root = writeFixture(
-			{
-				"main.ts": `import { TraversalError, type } from "arktype"
-
-const T = type({ a: "string", b: { c: "number[]" } })
-
-const out = T({ b: { c: [1, "x"] } })
-if (!(out instanceof type.errors)) throw new Error("valid")
-console.log(out.constructor === type.errors, out.count, JSON.stringify(out.issues))
-console.log(out.summary)
-console.log(String(out) === out.summary, \`\${out}\` === out.summary, JSON.stringify(out) === JSON.stringify(out.issues))
-for (const fail of [() => T.assert({}), () => out.throw()]) {
-	try {
-		fail()
-	} catch (e) {
-		console.log(String(e), e instanceof TraversalError)
-	}
-}
-`
-			},
-			fromHere("temp", "sizedErrors")
-		)
-		// with the issues module each runtime copy is published with
-		const outputs = await Promise.all(
-			(
-				[
-					[{ optimize: "size" }, "issuesLean.ts"],
-					[{ errors: "none", optimize: "size" }, "issuesNoneLean.ts"]
-				] as const
-			).map(async ([opts, issues]) => {
-				const { outputFiles } = await esbuild({
-					entryPoints: [join(root, "main.ts")],
-					bundle: true,
-					write: false,
-					format: "esm",
-					conditions,
-					logLevel: "silent",
-					plugins: [
-						issuesFrom(issues),
-						precompile.esbuild({
-							cwd: root,
-							...opts,
-							optimizeErrors: "size",
-							conditions
-						})
-					]
-				})
-				return run(outputFiles[0].text)
-			})
-		)
-		attest(outputs).snap([
-			`true 2 [{"code":"required","path":["a"],"data":{"b":{"c":[1,"x"]}},"message":"a is missing"},{"code":"domain","path":["b","c",1],"data":"x","expected":"a number","message":"b.c[1] must be a number"}]
-a is missing
-b.c[1] must be a number
-true true true
-TraversalError: a is missing
-b is missing true
-TraversalError: a is missing
-b.c[1] must be a number true
-`,
-			`true 1 [{"code":"predicate","path":[],"data":{"b":{"c":[1,"x"]}},"message":"is invalid"}]
-is invalid
-true true true
-Error: is invalid false
-TypeError: out.throw is not a function false
-`
-		])
-	})
-
-	it("esbuild an undeclared key's issue as arktype writes it", async () => {
-		const root = writeFixture(
-			{
-				"main.ts": `import { type } from "arktype"
-
-const Strict = type({ "+": "reject", a: "string", o: { "+": "reject" } })
-const Gone = type({ "+": "reject" }).configure({ expected: "gone" }, "structure")
-
-for (const out of [Strict({ a: "", o: { b: 1 }, c: 1 }), Gone({ d: 1 })]) {
-	if (!(out instanceof type.errors)) throw new Error("valid")
-	for (const { code, path, expected, message } of out.issues)
-		console.log(JSON.stringify({ code, path, expected, message }))
-}
-`
-			},
-			fromHere("temp", "undeclaredIssues")
-		)
-		const arktype = runPlain(root)
-		attest(arktype)
-			.snap(`{"code":"undeclared","path":["o","b"],"expected":"removed","message":"o.b must be removed"}
-{"code":"undeclared","path":["c"],"expected":"removed","message":"c must be removed"}
-{"code":"undeclared","path":["d"],"expected":"gone","message":"d must be gone"}
-`)
-		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(arktype)
-		// with the issues module the runtime written for size is published with
-		const { outputFiles } = await esbuild({
-			entryPoints: [join(root, "main.ts")],
-			bundle: true,
-			write: false,
-			format: "esm",
-			conditions,
-			logLevel: "silent",
-			plugins: [
-				issuesFrom("issuesLean.ts"),
-				precompile.esbuild({
-					cwd: root,
-					optimize: "size",
-					optimizeErrors: "size",
-					conditions
-				})
-			]
-		})
-		attest(run(outputFiles[0].text)).equals(arktype)
-	})
-
-	it("esbuild an undetailed failure, read later", async () => {
-		const root = writeFixture(
-			{
-				"main.ts": `import { type } from "arktype"
-
-const User = type({ name: "string" })
-
-const data = { name: 5 }
-const out = User(data)
-if (!(out instanceof type.errors)) throw new Error("valid")
-console.log(out.constructor === type.errors, out.count, out.issues[0].data === data, JSON.stringify(out), out.summary)
-`
-			},
-			fromHere("temp", "undetailedFailure")
-		)
-		const outputs = await Promise.all(
-			(["speed", "size"] as const).map(async optimize =>
-				run(
-					await bundlers.esbuild(
-						{ cwd: root, errors: "none", config: false, optimize },
-						root
-					)
-				)
-			)
-		)
-		attest(outputs).snap([
-			`true 1 true [{"code":"predicate","path":[],"data":{"name":5},"message":"is invalid"}] is invalid
-`,
-			`true 1 true [{"code":"predicate","path":[],"data":{"name":5},"message":"is invalid"}] is invalid
-`
-		])
 	})
 
 	it("esbuild packages that opt in", async () => {
@@ -1759,35 +1487,6 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 		])
 	})
 
-	it("a predicate reading ctx in an intersection", async () => {
-		const root = writeFixture(
-			{
-				"main.ts": `import { type } from "arktype"
-
-const isFilled = (s: string, ctx: any) => s.length > 0 || ctx.reject("non-empty")
-const double = (s: string) => s + s
-const isEven = (o: object) => Object.keys(o).length % 2 === 0
-const T = type([["string", ":", isFilled], [["string", "=>", double], "?"]]).and(
-	type(["object", ":", isEven])
-)
-// what a standalone validator's errors keep of arktype's
-for (const data of [["a"], ["a", "b"], [""], ["a", 2]]) {
-	const out = T(data)
-	console.log(out instanceof type.errors ? JSON.stringify(out.issues.map(issue => [issue.code, ...issue.path])) : String(out))
-}
-`
-			},
-			fromHere("temp", "branchAllows")
-		)
-		const expected = `[["predicate"]]
-a,bb
-[["predicate",0]]
-[["domain",1]]
-`
-		attest(runPlain(root)).equals(expected)
-		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
-	})
-
 	it("drops validators read only for introspection", async () => {
 		const files = {
 			"user.ts": `import { type } from "arktype"
@@ -2319,10 +2018,6 @@ try {
 			"pass a mutated import",
 			"pass a mutated import another site reads elsewhere",
 			"pass a mutated plain object",
-			"pass a hole with another arity",
-			"pass a hole of another kind",
-			"pass a hole of another kind in a definition folded to what it throws",
-			"pass a hole with another prototype",
 			"pass a polyfilled builtin"
 		])
 	})

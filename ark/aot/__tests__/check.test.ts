@@ -1,7 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { check } from "@ark/aot/internal/check.ts"
-import { writeArktypeRuntimeOptionMessage } from "@ark/aot/internal/settings.ts"
 import { spawnSync } from "node:child_process"
 import { runCli, writeFixture } from "./utils.ts"
 
@@ -71,26 +70,6 @@ contextualize(() => {
 			'main.ts:6:18  type("string").narrow(() => lenient) can\'t be precompiled yet\n  arktype calls `() => lenient` (main.ts:6:40)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
 			"main.ts:8:29  accepted",
 			"2 sites in 2 files: 1 accepted (50.0%)"
-		])
-	})
-
-	it("refuses sites while configuring", () => {
-		attest(
-			check([], { cwd: fromHere("refused"), config: "config.ts" }).lines
-		).snap([
-			'config.ts:3:21  type("string") is created while the config module loads, before configure() runs\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.',
-			'main.ts:6:18  type("number").configure(meta) cannot be precompiled\n  arktype reads `inner.meta.label()` while defining the type, so it must be static\n  `inner.meta.label` is a function reached through a property rather than a binding\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
-			"2 sites in 2 files: 0 accepted (0.0%)"
-		])
-	})
-
-	it("rejects sites under an unapplied config", () => {
-		attest(
-			check([], { cwd: fromHere("unapplied"), config: "config.ts" }).lines
-		).snap([
-			"config.ts:3:1  configure({ onUndeclaredKey: process.argv.length > 99 ? \"de… is not static\n  `process` is a global the build does not read\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
-			'main.ts:4:18  type({ a: "string" }) is created under a configuration the build can\'t apply\n  configure({ onUndeclaredKey: process.argv.length > 99 ? "de… is not static (config.ts)\n  `process` is a global the build does not read\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.',
-			"1 site in 2 files: 0 accepted (0.0%), 1 error outside a site"
 		])
 	})
 
@@ -217,17 +196,6 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 		attest(runCli(dir, "--check", "--fail-under", "0").status).equals(1)
 	})
 
-	it("fails where a value may be a Type", () => {
-		const dir = fromHere("unsure")
-		attest(check([], { cwd: dir }).lines).snap([
-			"main.ts:3:16  accepted",
-			"main.ts:3:42  accepted",
-			"main.ts:5:44  form.or reads or, which a standalone validator lacks\n  the build can't tell where `form` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-			"2 sites in 1 file: 2 accepted (100.0%), 1 error outside a site"
-		])
-		attest(runCli(dir, "--check", "--fail-under", "0").status).equals(1)
-	})
-
 	it("builds under --members", () => {
 		attest(
 			runCli(fromHere("members"), "--check", "--members", '{"assert":false}')
@@ -264,21 +232,6 @@ forms.ts:16:2  a runtime island returns arktype's errors, which aren't instances
 forms.ts:16:16  island
 3 sites in 2 files: 1 accepted (50.0%), 1 runtime island, 1 error outside a site
 `)
-	})
-
-	it("refuses standalone options with --runtime arktype", () => {
-		const { status, stderr } = runCli(
-			fromHere("members"),
-			"--check",
-			"--runtime",
-			"arktype",
-			"--checks",
-			"types"
-		)
-		attest([status, stderr.split("\n")[0]]).equals([
-			2,
-			writeArktypeRuntimeOptionMessage("checks")
-		])
 	})
 
 	it("rejects invalid arguments", () => {

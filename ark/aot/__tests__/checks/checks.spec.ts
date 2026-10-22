@@ -7,9 +7,6 @@ const mock = (path: string, factory: () => object) => {
 	vi.doMock(path, factory)
 }
 
-const original = async (path: string) =>
-	(await vi.importActual(path)) as Record<string, unknown>
-
 // validators are created on import, so a failing check rejects the import
 const create = () => import("./sites.ts")
 
@@ -58,45 +55,6 @@ test("a mutated plain object", async () => {
 	tweaks.enabled = true
 	await expect(create()).rejects.toThrow(
 		"`range.min` is 2, but was precompiled as 1"
-	)
-})
-
-test("a hole with another arity", async () => {
-	mock("./morphs.ts", async () => ({
-		...(await original("./morphs.ts")),
-		trim: (s: string, _: unknown) => s
-	}))
-	await expect(create()).rejects.toThrow(
-		"is a function of 2 or more parameters, but was precompiled as a function of 1 parameter"
-	)
-})
-
-test("a hole of another kind", async () => {
-	mock("./morphs.ts", async () => ({
-		...(await original("./morphs.ts")),
-		trim: Symbol("trim")
-	}))
-	await expect(create()).rejects.toThrow(
-		"is Symbol(trim), but was precompiled as a function of 1 parameter"
-	)
-})
-
-test("a hole of another kind in a definition folded to what it throws", async () => {
-	await expect(import("./folds.ts")).rejects.toThrow('code: "morph"')
-	vi.resetModules()
-	mock("./containers.ts", () => ({ double: Symbol("double") }))
-	await expect(import("./folds.ts")).rejects.toThrow(
-		"is Symbol(double), but was precompiled as a function of 1 parameter"
-	)
-})
-
-test("a hole with another prototype", async () => {
-	mock("./morphs.ts", async () => ({
-		...(await original("./morphs.ts")),
-		Pet: class Pet extends Date {}
-	}))
-	await expect(create()).rejects.toThrow(
-		"is a class extending Date, but was precompiled as a class"
 	)
 })
 

@@ -298,15 +298,11 @@ contextualize(() => {
 		attest(T({}).toString()).snap(
 			"x must be a string (was missing)\ny must be a number (was missing)"
 		)
-	})
-
-	it("cross-scope shared operands", () => {
+		// operands shared with the configured scope
 		const L = type({ x: "string" })
 		const R = type({ y: "number" })
-		const configured = scope({}, { required: { message: () => "configured" } })
 		configured.type([L, "&", R])
-		const T = L.and(R)
-		attest(T({}).toString()).snap(
+		attest(L.and(R)({}).toString()).snap(
 			"x must be a string (was missing)\ny must be a number (was missing)"
 		)
 	})

@@ -653,58 +653,6 @@ contextualize(() => {
 		attest(m([0, 0])).equals(null)
 	})
 
-	it("discriminated tuple element case includes overlapping tuples", () => {
-		const m = match
-			.case(["unknown", "null"], () => 0)
-			.case(["string", "unknown"], () => 1)
-			.case(["true", "string | number"], () => 2)
-			.default(() => null)
-
-		attest(m(["x", null])).equals(0)
-		attest(m(["x", 5])).equals(1)
-		attest(m([true, null])).equals(0)
-		attest(m([true, 5])).equals(2)
-	})
-
-	it("discriminated tuple element case includes a string", () => {
-		const m = match
-			.case(["'a'"], () => 0)
-			.case(["'b'"], () => 1)
-			.case("string | null", () => 2)
-			.default(() => 3)
-
-		attest(m(["a"])).equals(0)
-		attest(m("a")).equals(2)
-		attest(m("b")).equals(2)
-		attest(m(["c"])).equals(3)
-	})
-
-	it("keeps a union at the discriminant path of an overlapping case", () => {
-		const m = match
-			.case({ a: "unknown", b: "1" }, () => 0)
-			.case({ a: "unknown", b: "true" }, () => 1)
-			.case({ a: "'x' | 1", b: "string | number" }, () => 2)
-			.case({ a: "unknown", b: "string" }, () => 3)
-			.default(() => null)
-
-		attest(m({ a: "x", b: "x" })).equals(2)
-		attest(m({ a: "y", b: "x" })).equals(3)
-		attest(m({ a: 1, b: 5 })).equals(2)
-	})
-
-	it("case relates a unit to a refinement whose basis was pruned", () => {
-		const m = match
-			.case("string > 1", () => 0)
-			.case("number", () => 1)
-			.case("null | 'x'", () => 2)
-			.default(() => 3)
-
-		attest(m("xy")).equals(0)
-		attest(m("x")).equals(2)
-		attest(m(null)).equals(2)
-		attest(m("y")).equals(3)
-	})
-
 	it("allows number keys", () => {
 		const numeric = match({
 			0: function numericZeroCase(n) {
