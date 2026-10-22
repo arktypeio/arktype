@@ -86,6 +86,11 @@ const viteConfig = (
 	}
 })
 
+const restoreNodeEnv = (env: string | undefined) => {
+	if (env === undefined) delete process.env.NODE_ENV
+	else process.env.NODE_ENV = env
+}
+
 // Vite reads its mode from NODE_ENV, which its first run in a process sets
 const withNodeEnv = async <t>(env: string, run: () => Promise<t>) => {
 	const { NODE_ENV } = process.env
@@ -93,8 +98,7 @@ const withNodeEnv = async <t>(env: string, run: () => Promise<t>) => {
 	try {
 		return await run()
 	} finally {
-		if (NODE_ENV === undefined) delete process.env.NODE_ENV
-		else process.env.NODE_ENV = NODE_ENV
+		restoreNodeEnv(NODE_ENV)
 	}
 }
 
@@ -321,6 +325,10 @@ contextualize(function (this: Mocha.Suite) {
 	before(() => {
 		dependencies = writeFixture(dependencyFiles)
 	})
+
+	// so the processes later suites spawn don't inherit the mode a build set
+	const { NODE_ENV } = process.env
+	after(() => restoreNodeEnv(NODE_ENV))
 
 	const expected = runPlain(app)
 
