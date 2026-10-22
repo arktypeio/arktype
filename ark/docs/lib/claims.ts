@@ -112,6 +112,13 @@ const zodScenarios =
 	zod.wins === zod.count ?
 		`all ${zod.count} scenarios`
 	:	`${zod.wins} of ${zod.count} scenarios`
+// z.compile builds its output as it transforms, where arktype copies each
+// object it changes, so it wins the rows that transform their input
+const zodCompiledLosses =
+	!zodCompiled.lost.length ? ""
+	: zodCompiled.lost.every(s => s.name.endsWith(" morph")) ?
+		`. z.compile was faster on the ${zodCompiled.lost.length} that transform their input, ${zodCompiled.losses}`
+	:	`. z.compile was faster on ${zodCompiled.losses}`
 const bench = benchFacts()
 
 /** sentences, each rendered by `<Claim id="..." />` */
@@ -162,9 +169,7 @@ export const claims = {
 	dynamicSize:
 		"Dynamic ArkType is 80.7 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.",
 	zodSpec: `faster than Zod 4 in ${zodScenarios} we ran`,
-	// z.compile's two losses are the morph rows: it builds its output as it
-	// transforms, where arktype copies each object it changes
-	zodSpeed: `Precompiled ArkType was faster than Zod 4 in ${zodScenarios} of our benchmark, by ${zod.min} to ${zod.max}, and faster than Zod 4's z.compile in ${zodCompiled.wins} of ${zodCompiled.count}${zodCompiled.losses && `. z.compile was faster on ${zodCompiled.losses}`}.`,
+	zodSpeed: `Precompiled ArkType was faster than Zod 4 in ${zodScenarios} of our benchmark, by ${zod.min} to ${zod.max}, and faster than Zod 4's z.compile in ${zodCompiled.wins} of ${zodCompiled.count}${zodCompiledLosses}.`,
 	// the error rows from benchData.json; the wall clock from
 	// ark/repo/bench/external/results/wall.md, H1
 	speedScope: `It isn't the fastest at everything. On the rows that report errors for invalid data, ajv was faster on ${bench.ajvFasterCount} of ${bench.errorCount}, and on moltar's parseSafe, rescript-schema and @sx3/gate were faster by wall clock.`,
