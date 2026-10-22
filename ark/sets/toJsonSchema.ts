@@ -342,7 +342,7 @@ const innerToJsonSchemaByKind: {
 				})
 		}
 	},
-	domain: (node, ctx): JsonSchema.Constrainable => {
+	domain: (node, ctx): JsonSchema.Constrainable | JsonSchema.Object => {
 		if (node.domain === "bigint" || node.domain === "symbol") {
 			return ctx.fallback.domain({
 				code: "domain",
@@ -350,9 +350,10 @@ const innerToJsonSchemaByKind: {
 				domain: node.domain
 			})
 		}
-		return {
-			type: node.domain
-		}
+		// an object declaring no keys has no properties, as Zod writes it
+		return node.domain === "object" ?
+				{ type: "object", properties: {} }
+			:	{ type: node.domain }
 	}
 }
 
@@ -362,6 +363,8 @@ const reduceObjectJsonSchema = (
 	ctx: JsonSchemaContext
 ): JsonSchema.Object => {
 	const path = ctx.path
+	// keys an index declares are written as its patterns instead
+	if (node.index && !node.props.length) delete schema.properties
 	if (node.props.length) {
 		schema.properties = {}
 		for (const prop of node.props) {

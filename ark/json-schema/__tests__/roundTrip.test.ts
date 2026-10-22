@@ -98,7 +98,7 @@ contextualize(() => {
 
 		it("object", () => {
 			const T = type("object")
-			const S = inferred({ type: "object" })
+			const S = inferred({ type: "object", properties: {} })
 			assertEmits(T, S)
 			attest<typeof T.infer>(S).type.toString.snap("object")
 		})
@@ -626,7 +626,11 @@ contextualize(() => {
 
 		it("closed empty object", () => {
 			const T = type({ "+": "reject" })
-			const S = inferred({ type: "object", additionalProperties: false })
+			const S = inferred({
+				type: "object",
+				properties: {},
+				additionalProperties: false
+			})
 			assertEmits(T, S)
 			// arktype infers {}, which also allows primitives; object is the sound type here
 			attest<object>(S).type.toString.snap("object")
