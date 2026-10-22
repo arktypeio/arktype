@@ -101,7 +101,7 @@ const schema = User["~standard"].jsonSchema.input({ target: "draft-2020-12" })
 }
 ```
 
-- `target` is `"draft-2020-12"` or `"draft-07"`. Any other target, like OpenAPI's, throws.
+- `target` is `"draft-2020-12"`, `"draft-07"` or `"openapi-3.0"`. Any other target throws.
 - `libraryOptions` is passed to [`toJsonSchema`](/docs/json-schema/to-json-schema) as its options, so a caller can set a `fallback` there.
 - `input` and `output` differ when the Type has morphs or defaults. For `string.integer.parse`, `input` describes a string and `output` describes an integer, and a key with a default is optional with a `default` in `input` but required in `output`.
 
