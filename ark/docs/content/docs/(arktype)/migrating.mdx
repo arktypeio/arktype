@@ -32,17 +32,17 @@ To move a whole project off Zod, or another library below, work through it in th
    - Don't add casts or `any`. A helper typed with `z.ZodTypeAny` or `z.ZodSchema` takes `type.Any`. To keep the output type, use `<T extends type.Any>(schema: T): T["infer"]`. A function that builds a schema from another becomes a generic, like `type("<t>", { data: "t" })`.
 5. **Swap integrations.** Most accept an ArkType type directly, through [Standard Schema](/docs/standard-schema):
 
-| With Zod                                                   | With ArkType                                                                                     |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `zodResolver(schema)` (react-hook-form)                    | `standardSchemaResolver(schema)` from `@hookform/resolvers/standard-schema`                      |
-| tRPC `.input(schema)`, `@t3-oss/env-*`, TanStack Form      | the same call, given the ArkType type                                                            |
-| AI SDK `tool({ inputSchema })`, MCP SDK v2 `registerTool`  | the same call, given the ArkType type, which also supplies the JSON Schema                       |
-| `zValidator` from `@hono/zod-validator`                    | `sValidator` from `@hono/standard-validator`                                                     |
-| `@hono/zod-openapi`                                        | `hono-openapi`: `describeRoute`, `validator` and `resolver`                                      |
-| `zod-to-json-schema`, `z.toJSONSchema(schema)`             | `schema.toJsonSchema()`                                                                          |
-| `@asteasolutions/zod-to-openapi`                           | `schema.toJsonSchema({ target: "openapi-3.0" })` for each Schema Object in your OpenAPI document; see below |
-| `drizzle-zod`                                              | `drizzle-arktype`                                                                                |
-| a library that accepts only Zod                            | keep Zod for that call, and say so                                                               |
+| With Zod                                                  | With ArkType                                                                                                |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `zodResolver(schema)` (react-hook-form)                   | `standardSchemaResolver(schema)` from `@hookform/resolvers/standard-schema`                                 |
+| tRPC `.input(schema)`, `@t3-oss/env-*`, TanStack Form     | the same call, given the ArkType type                                                                       |
+| AI SDK `tool({ inputSchema })`, MCP SDK v2 `registerTool` | the same call, given the ArkType type, which also supplies the JSON Schema                                  |
+| `zValidator` from `@hono/zod-validator`                   | `sValidator` from `@hono/standard-validator`                                                                |
+| `@hono/zod-openapi`                                       | `hono-openapi`: `describeRoute`, `validator` and `resolver`                                                 |
+| `zod-to-json-schema`, `z.toJSONSchema(schema)`            | `schema.toJsonSchema()`                                                                                     |
+| `@asteasolutions/zod-to-openapi`                          | `schema.toJsonSchema({ target: "openapi-3.0" })` for each Schema Object in your OpenAPI document; see below |
+| `drizzle-zod`                                             | `drizzle-arktype`                                                                                           |
+| a library that accepts only Zod                           | keep Zod for that call, and say so                                                                          |
 
 Without casts:
 
@@ -175,7 +175,9 @@ const Server = type({
 
 // z.coerce.date(), which is new Date(value) for any input, so null is 1970-01-01
 const When = type("unknown")
-	.pipe(v => new Date(v instanceof Date || typeof v === "string" ? v : Number(v)))
+	.pipe(
+		v => new Date(v instanceof Date || typeof v === "string" ? v : Number(v))
+	)
 	.to("Date")
 
 // stricter, for strings only: rejects " 1", "0x10" and ""
