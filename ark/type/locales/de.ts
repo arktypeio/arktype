@@ -287,6 +287,7 @@ const keywordPhrases = {
 	"string.normalize.NFKC.preformatted": "NFKC-normalisiert",
 	"string.normalize.NFKD.preformatted": "NFKD-normalisiert",
 	"string.numeric": "eine wohlgeformte numerische Zeichenkette",
+	"string.numeric.parse": "endlich",
 	"string.regex": {
 		noun: "ein Regex-Muster",
 		problem: (e, locale) =>

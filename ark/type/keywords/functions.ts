@@ -35,6 +35,9 @@ export const parseInteger = (s: string, ctx: Traversal): number | ArkError => {
 
 export const parseNumeric = (s: string): number => Number(s)
 
+// a numeric string past Number.MAX_VALUE parses to Infinity
+export const parsesFinite = (s: string): boolean => Number.isFinite(Number(s))
+
 export const capitalizeString = (s: string): string =>
 	s.charAt(0).toUpperCase() + s.slice(1)
 
@@ -233,10 +236,44 @@ const jsonParseError = /* @__PURE__ */ keywordError(
 	jsonString
 )
 
+const isDigitAt = (s: string, i: number) => {
+	const code = s.charCodeAt(i)
+	return code >= 48 && code <= 57
+}
+
+// a number in JSON past Number.MAX_VALUE parses to Infinity, which number
+// rejects. It has a positive exponent or 309 digits in a row, and any 309 in
+// a row include one of every 309th index, so only those are read
+const mayOverflow = (s: string): boolean => {
+	if (positiveExponent.test(s)) return true
+	for (let i = 308; i < s.length; i += 309) {
+		if (!isDigitAt(s, i)) continue
+		let start = i
+		while (isDigitAt(s, start - 1)) start--
+		let end = i
+		while (isDigitAt(s, end + 1)) end++
+		if (end - start >= 308) return true
+	}
+	return false
+}
+
+const positiveExponent = /\d[Ee]\+?\d/
+
+const rejectInfinity = (k: string, v: unknown) => {
+	if (v === Infinity || v === -Infinity)
+		throw new SyntaxError("Number is out of range")
+	return v
+}
+
 export const parseJson = (s: string, ctx: Traversal): Json | ArkError => {
 	if (s.length === 0) return ctx.error(jsonParseError)
 	try {
-		return JSON.parse(s)
+		return JSON.parse(
+			s,
+			!ctx.config.numberAllowsInfinity && mayOverflow(s) ?
+				rejectInfinity
+			:	undefined
+		)
 	} catch (e) {
 		if (!(e instanceof SyntaxError)) throw e
 		return ctx.error({ ...jsonParseError, cause: e })

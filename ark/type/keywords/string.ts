@@ -1,4 +1,5 @@
 import {
+	$ark,
 	constraintInputOf,
 	intrinsic,
 	node,
@@ -32,6 +33,7 @@ import {
 	parseIsoDate,
 	parseJson,
 	parseNumeric,
+	parsesFinite,
 	parseUrl,
 	trimString,
 	uppercaseString
@@ -459,7 +461,7 @@ export const json: stringJson.module = keywordModule(
 				meta: "safe JSON string parser",
 				in: intrinsic.string,
 				morphs: [parseJson],
-				declaredOut: intrinsic.jsonObject
+				declaredOut: intrinsic.jsonData
 			})
 	},
 	{
@@ -656,12 +658,30 @@ const numericRoot = cached(() =>
 export const stringNumeric: stringNumeric.module = keywordModule(
 	{
 		root: numericRoot,
-		parse: () =>
-			node("morph", {
-				in: numericRoot(),
+		parse: () => {
+			const root = numericRoot()
+			return node("morph", {
+				// so its output is a number as number is configured
+				in:
+					$ark.resolvedConfig!.numberAllowsInfinity ?
+						root
+					:	node("intersection", {
+							...root.inner,
+							predicate: [
+								node("predicate", {
+									predicate: parsesFinite,
+									// JSON Schema can't say it, so the pattern stands for it
+									meta: {
+										...keywordMeta("string.numeric.parse"),
+										jsonSchema: {}
+									}
+								})
+							]
+						}),
 				morphs: [parseNumeric],
 				declaredOut: intrinsic.number
 			})
+		}
 	},
 	{
 		name: "string.numeric"

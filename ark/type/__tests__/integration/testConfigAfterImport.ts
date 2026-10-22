@@ -25,6 +25,11 @@ cases({
 			strictEqual(T.allows(Number.NEGATIVE_INFINITY), true)
 			strictEqual(T.allows(Number.NaN), false)
 		}
+		strictEqual(type("string.numeric.parse")("1e400"), Number.POSITIVE_INFINITY)
+		strictEqual(
+			(type("string.json.parse")("[1e400]") as number[])[0],
+			Number.POSITIVE_INFINITY
+		)
 	},
 	dateAllowsInvalid: () => {
 		strictEqual(type("Date").allows(new Date("!")), true)

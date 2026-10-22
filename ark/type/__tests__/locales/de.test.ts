@@ -306,6 +306,7 @@ contextualize(() => {
 				'muss kleingeschrieben sein, ist aber "X"',
 			'string.numeric ← "x"':
 				'muss eine wohlgeformte numerische Zeichenkette sein, ist aber "x"',
+			'string.numeric.parse ← "1e400"': 'muss endlich sein, ist aber "1e400"',
 			'string.regex ← "("':
 				"muss ein Regex-Muster sein (SyntaxError: Invalid regular expression: /(/: Unterminated group)",
 			'string.semver ← "x"':

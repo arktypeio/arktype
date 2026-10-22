@@ -28,6 +28,15 @@ contextualize(() => {
 		)
 	})
 
+	it("string.numeric.parse rejects a string parsing to Infinity", () => {
+		const parseNum = type("string.numeric.parse")
+		attest(parseNum("-1e400").toString()).snap('must be finite (was "-1e400")')
+		attest(parseNum("1e308")).equals(1e308)
+		attest(parseNum.in.toJsonSchema()).equals(
+			type("string.numeric").toJsonSchema()
+		)
+	})
+
 	// string.integer.parse reads digits, so an exponent isn't an integer string
 	it("string.integer rejects exponents", () => {
 		attest(type("string.integer")("1e3").toString()).snap(

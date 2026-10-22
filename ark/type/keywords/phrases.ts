@@ -45,6 +45,7 @@ export const keywordPhrases = {
 	"string.normalize.NFKC.preformatted": "NFKC-normalized unicode",
 	"string.normalize.NFKD.preformatted": "NFKD-normalized unicode",
 	"string.numeric": "a well-formed numeric string",
+	"string.numeric.parse": "finite",
 	"string.regex": raisedErrorPhrases["string.regex"],
 	"string.semver": "a semantic version (see https://semver.org/)",
 	"string.trim.preformatted": "trimmed",

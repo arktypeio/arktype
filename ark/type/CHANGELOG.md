@@ -1566,6 +1566,8 @@ const T = type("number | number.Infinity | number.NegativeInfinity")
 
 A type whose range already excluded an infinite value, like `number.safe`, now reports `must be a number (was Infinity)` instead of its range error.
 
+So their output stays a `number`, `string.numeric.parse` rejects a string too large for a finite number, like `"1e400"`, with `must be finite (was "1e400")`, and `string.json.parse` rejects JSON holding one. Either parses it to `Infinity` where `numberAllowsInfinity` is configured. `string.json.parse`'s output is any JSON value, where it was declared an object or array though `"5"` parsed to `5`.
+
 ### Remove the `clone` option
 
 Transforming no longer clones the input first, and writes to it only to transform a builtin like a Date, Map or function, which is transformed in place. Any other transformed object is a new object sharing every untransformed value with the input, and input that nothing transforms is returned as is:
