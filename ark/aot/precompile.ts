@@ -16,6 +16,7 @@ import {
 	hashOf,
 	hasDomain,
 	includes,
+	InternalArktypeError,
 	ParseError,
 	registeredNameOf,
 	throwError,
@@ -425,6 +426,9 @@ export class Precompiler {
 	private bindingsByInput = new WeakMap<Input, Binding>()
 	// e.g. a Scope configured by a parameter
 	private refusedContainers = new Map<unknown, [Node, SourceModule]>()
+	// each warning that a site accepts a value as a Standard Schema, by the
+	// site's span, which writing it may still refuse
+	private schemaWarningSpans = new WeakMap<Diagnostic, Span>()
 	private packagesByEntry: Record<string, [root: string, version: string]> =
 		Object.create(null)
 	private copiesByPackage: Record<ArkPackage, Record<string, PackageCopy>> = {
@@ -485,7 +489,16 @@ export class Precompiler {
 		return transformedId.test(id) && this.graph.isFollowed(id)
 	}
 
+	// what a build reports for a module, as some refusals surface only while
+	// it writes validators
 	analyze(source: string, id: string): ModuleAnalysis {
+		const { sites, diagnostics, dependencies } = this.precompile(source, id)
+		return { sites, diagnostics, dependencies }
+	}
+
+	// its sites and diagnostics before validators are written, under the
+	// thread's configuration
+	analyzeSites(source: string, id: string): ModuleAnalysis {
 		const module = this.add(id, source)
 		// analyzed under the thread's configuration
 		if (threadConfiguration) this.configuration ??= this.applyConfiguration()
@@ -1264,6 +1277,12 @@ export class Precompiler {
 					!isEncodingError(site.parseError)
 				)
 					diagnostics.push(this.refuseWritten(module, site, reasons))
+				// a site it refuses accepts nothing as a Standard Schema
+				for (let i = diagnostics.length - 1; i >= 0; i--) {
+					const span = this.schemaWarningSpans.get(diagnostics[i])
+					if (span?.start === site.start && span.end === site.end)
+						diagnostics.splice(i, 1)
+				}
 				continue
 			}
 			// checked at each call, as a factory is
@@ -2860,17 +2879,17 @@ export class Precompiler {
 			const source = candidate.state.readsByValue.get(standIn.dynamic)?.[0]
 			const [node, origin] =
 				source ? [source, module] : [standIn.node, standIn.module]
-			result.push(
-				this.diagnostic(
-					origin,
-					node,
-					"R4",
-					`\`${origin.snippetOf(node)}\` is not static, so the site accepts it only as a Standard Schema that is not a Type`,
-					chainOf(standIn.dynamic),
-					opaqueSchemaHint,
-					"warning"
-				)
+			const warning = this.diagnostic(
+				origin,
+				node,
+				"R4",
+				`\`${origin.snippetOf(node)}\` is not static, so the site accepts it only as a Standard Schema that is not a Type`,
+				chainOf(standIn.dynamic),
+				opaqueSchemaHint,
+				"warning"
 			)
+			this.schemaWarningSpans.set(warning, { start: site.start, end: site.end })
+			result.push(warning)
 		}
 		return result
 	}
@@ -4151,6 +4170,10 @@ const chainOf = (dynamic: DynamicValue): string[] => {
 // e.g. a configured writer calling a function in a site's meta
 export const reasonsOf = (e: unknown): string[] =>
 	e instanceof DynamicValue ? chainOf(e)
+	: e instanceof InternalArktypeError ?
+		[
+			`${e.message}, which is a bug in the build: please report it at https://github.com/arktypeio/arktype/issues`
+		]
 	: e instanceof Error ? [e.message]
 	: [String(e)]
 

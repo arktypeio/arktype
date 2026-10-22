@@ -247,7 +247,7 @@ configure({ exactOptionalPropertyTypes: false })`,
 						opts
 					)
 					return [
-						precompiler.analyze(source, "/main.ts"),
+						precompiler.analyzeSites(source, "/main.ts"),
 						precompiler.precompile(source, "/main.ts")
 					].map(({ sites }) => sites.map(site => site.status))
 				})
@@ -274,7 +274,7 @@ configure({ exactOptionalPropertyTypes: false })`,
 							opts
 						)
 						return [
-							precompiler.analyze(main, "/main.ts"),
+							precompiler.analyzeSites(main, "/main.ts"),
 							precompiler.precompile(main, "/main.ts")
 						].map(({ sites }) => sites.map(site => site.status))
 					},
@@ -530,7 +530,10 @@ export const later = () => {
 						files["/main.ts"],
 						"/main.ts"
 					)
-					const { sites } = precompiler.analyze(files["/main.ts"], "/main.ts")
+					const { sites } = precompiler.analyzeSites(
+						files["/main.ts"],
+						"/main.ts"
+					)
 					return [
 						diagnostics.map(renderDiagnostic),
 						sites.map(

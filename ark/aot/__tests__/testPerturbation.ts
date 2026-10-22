@@ -104,7 +104,7 @@ export const buildPerturbed = (
 	for (const path of corpus) {
 		const source = readFileSync(path, "utf8")
 		const precompiler = perturbingPrecompiler({ ...opts, mode: "standalone" })
-		const { sites } = precompiler.analyze(source, path)
+		const { sites } = precompiler.analyzeSites(source, path)
 		const unsupported = new Set(
 			precompiler
 				.precompile(source, path)
@@ -133,7 +133,7 @@ export const buildPerturbed = (
 					const imported = precompiler.graph.moduleOf(id)
 					return imported instanceof SourceModule ?
 							precompiler
-								.analyze(imported.source, id)
+								.analyzeSites(imported.source, id)
 								.sites.flatMap(site => site.holes.map(hole => hole.value))
 						:	[]
 				})

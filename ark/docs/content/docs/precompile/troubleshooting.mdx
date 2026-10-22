@@ -13,7 +13,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 
 Positions are your source's, even where another plugin transpiled it first. Run [`arktype-precompile --check`](/docs/precompile/setup#check-an-existing-project) to see every report at once.
 
-Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `Set allowUnsafe: true to build anyway, with a warning.` [`allowUnsafe`](/docs/precompile/options#allowunsafe) reports those as warnings instead, and what they report may then throw at runtime. A few reports are always warnings, since the build can't be sure of a fix or nothing fails at runtime: a value the build can't follow that it takes for a Standard Schema other than a Type, like a Zod schema, and what a build with `runtime: "arktype"` leaves to arktype.
+Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `Set allowUnsafe: true to build anyway, with a warning.` [`allowUnsafe`](/docs/precompile/options#allowunsafe) reports those as warnings instead, and what they report may then throw at runtime. What a build with `runtime: "arktype"` leaves to arktype is always reported as a warning, since nothing fails at runtime.
 
 ## Definitions
 
