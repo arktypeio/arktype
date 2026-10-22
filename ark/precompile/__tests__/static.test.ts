@@ -425,6 +425,41 @@ export const skus = (data: unknown[]) =>
 			).equals([])
 		})
 
+		it("data validated by an imported Module's Type", () => {
+			const files = {
+				"/shop.ts": `import { scope, type } from "arktype"
+const $ = scope({
+	Id: "string",
+	Cart: { owner: "Id", items: "string[]" },
+	sub: type.module({ Line: { sku: "string" } }),
+	"Box<t>": { of: "t[]" }
+})
+export const shop = $.export()
+export const direct = scope({ Cart: { items: "string[]" } }).export()
+export { shop as renamed }`,
+				"/reexported.ts": `export { direct as again } from "./shop.ts"`
+			}
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+import { direct, renamed, shop } from "./shop.ts"
+import * as all from "./shop.ts"
+import { again } from "./reexported.ts"
+export const called = (data: unknown) => {
+	const out = shop.Cart(data)
+	return out instanceof type.errors ? [] : out.items.map(i => i)
+}
+export const asserted = (data: unknown) => direct.Cart.assert(data).items.map(i => i)
+export const viaRename = (data: unknown) => renamed.Cart.assert(data).items.map(i => i)
+export const viaNamespace = (data: unknown) => all.shop.Cart.assert(data).items.map(i => i)
+export const viaReexport = (data: unknown) => again.Cart.assert(data).items.map(i => i)
+export const nested = (data: unknown) => shop.sub.Line.assert(data).sku.split("")
+export const boxed = (data: unknown) => shop.Box("string").assert(data).of.map(i => i)`,
+					files
+				)
+			).equals([])
+		})
+
 		it("a Module's Generic called at runtime", () => {
 			attest(
 				diagnosticsOf(`import { scope } from "arktype"
