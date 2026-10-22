@@ -2,7 +2,6 @@ import "fumadocs-twoslash/twoslash.css"
 import { RootProvider } from "fumadocs-ui/provider"
 import { Atkinson_Hyperlegible, Raleway } from "next/font/google"
 import type { ReactNode } from "react"
-import { ReleaseBanner } from "../components/ReleaseBanner.tsx"
 import "./global.css"
 import { defineMetadata } from "./metadata.ts"
 import { CSPostHogProvider } from "./providers.tsx"
@@ -42,7 +41,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 					}}
 				>
 					<CSPostHogProvider>
-						<ReleaseBanner />
 						{children}
 					</CSPostHogProvider>
 				</RootProvider>
