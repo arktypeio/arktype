@@ -734,12 +734,20 @@ const mergeRangeBranches = (
 			}
 		:	undefined
 	const range = rRange && mergeRange(rangeOf(l, family), rRange, family)
-	if (!range) return
-	const inner: dict = { ...l.inner }
+	if (!range || !sameMeta([l, r])) return
+	const bounds = [l, r].flatMap(branch =>
+		branch.hasKind("unit") ?
+			[branch]
+		:	branch.children.filter(child =>
+				family.kinds.some(kind => kind === child.kind)
+			)
+	)
+	if (!sameMeta(bounds)) return
+	const inner: dict = { ...l.inner, meta: l.meta }
 	for (const kind of family.kinds) delete inner[kind]
 	return l.$.node(
 		"intersection",
-		Object.assign(inner, rangeInner(range, family, l.$))
+		Object.assign(inner, rangeInner(range, family, bounds[0].meta, l.$))
 	) as Union.ChildNode
 }
 
@@ -869,18 +877,19 @@ const mergeRange = (
 const rangeInner = (
 	range: Range,
 	family: RangeFamily,
+	meta: ArkEnv.meta,
 	$: BaseScope
 ): object => {
 	const ruleOf = (value: number) =>
 		family.lower === "after" ? new Date(value) : value
 	const bound = (kind: RangeFamily["lower" | "upper"], limit: Limit) =>
-		$.node(
-			kind,
-			constraintInputOf(kind, {
+		$.node(kind, {
+			...constraintInputOf(kind, {
 				rule: ruleOf(limit.value),
 				exclusive: limit.exclusive
-			} as never)
-		)
+			} as never),
+			meta
+		})
 	return {
 		// no length is less than 0
 		...(range.lower &&
@@ -890,7 +899,7 @@ const rangeInner = (
 		...(range.upper && { [family.upper]: bound(family.upper, range.upper) }),
 		...(range.excluded.length && {
 			[family.excluded]: range.excluded.map(value =>
-				$.node(family.excluded, { rule: ruleOf(value) })
+				$.node(family.excluded, { rule: ruleOf(value), meta })
 			)
 		})
 	}
@@ -911,7 +920,7 @@ const mergePropBranches = (
 		l.structure.props.length !== r.structure.props.length ||
 		l.structure.undeclared !== r.structure.undeclared ||
 		!nodesEqual(l.structure.index ?? [], r.structure.index ?? []) ||
-		l.structure.sequence?.innerHash !== r.structure.sequence?.innerHash ||
+		l.structure.sequence?.hash !== r.structure.sequence?.hash ||
 		!nodesEqual(
 			childrenExcept(l, ["structure"]),
 			childrenExcept(r, ["structure"])
@@ -923,7 +932,7 @@ const mergePropBranches = (
 	for (const prop of l.structure.props) {
 		const match = r.structure.propsByKey[prop.key]
 		if (!match) return
-		if (prop.equals(match)) continue
+		if (prop.hash === match.hash) continue
 		if (lProp) return
 		lProp = prop
 		rProp = match
@@ -931,6 +940,9 @@ const mergePropBranches = (
 	// an aliased value could reach the union it would be merged into
 	if (
 		!lProp ||
+		!sameMeta([l, r]) ||
+		!sameMeta([l.structure, r.structure]) ||
+		!sameMeta([lProp, rProp!]) ||
 		lProp.value.includesAlias ||
 		rProp!.value.includesAlias ||
 		(lProp.hasKind("optional") && lProp.hasDefault()) ||
@@ -946,17 +958,29 @@ const mergePropBranches = (
 		...((structure[kind] as Prop.Node[] | undefined) ?? []),
 		l.$.node(kind, {
 			key: lProp.key,
-			value: lProp.value.rawOr(rProp!.value)
+			value: lProp.value.rawOr(rProp!.value),
+			meta: lProp.meta
 		})
 	]
 	return l.$.node("intersection", {
 		...l.inner,
-		structure: l.$.node("structure", structure as never)
+		structure: l.$.node("structure", {
+			...structure,
+			meta: l.structure.meta
+		} as never),
+		meta: l.meta
 	}) as Union.ChildNode
 }
 
+// a merge keeps a node only if its counterpart has the same meta
 const nodesEqual = (l: readonly BaseNode[], r: readonly BaseNode[]) =>
-	arrayEquals(l, r, { isEqual: (l, r) => l.equals(r) })
+	arrayEquals(l, r, { isEqual: (l, r) => l.hash === r.hash })
+
+// and replaces nodes only if they agree on the meta their replacement keeps
+const sameMeta = (nodes: readonly BaseNode[]) =>
+	nodes.every(
+		node => JSON.stringify(node.metaJson) === JSON.stringify(nodes[0].metaJson)
+	)
 
 const childrenExcept = (node: Intersection.Node, kinds: readonly NodeKind[]) =>
 	node.children.filter(child => !kinds.includes(child.kind))

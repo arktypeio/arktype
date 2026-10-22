@@ -450,5 +450,21 @@ x must be a string (was a number)`)
 			})
 			attest(T.expression).snap("{ a: string } | { a: number }")
 		})
+
+		it("keep differing descriptions", () => {
+			const T = type({ a: "string" })
+				.describe("an A")
+				.or(type({ a: "number" }).describe("a B"))
+			attest(T.expression).snap("{ a: number } | { a: string }")
+			attest(T(5).toString()).snap("must be a B or an A (was a number)")
+		})
+
+		it("merge a shared description", () => {
+			const T = type({ a: "string" })
+				.describe("an AB")
+				.or(type({ a: "number" }).describe("an AB"))
+			attest(T.expression).snap("{ a: number | string }")
+			attest(T(5).toString()).snap("must be an AB (was a number)")
+		})
 	})
 })

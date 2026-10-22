@@ -766,6 +766,42 @@ contextualize(() => {
 			attest(T.branches.length).equals(2)
 			attest(T.allows(Number.NaN)).equals(false)
 		})
+
+		it("keep differing descriptions", () => {
+			const T = type("number < -1")
+				.describe("below -1")
+				.or(type("number > -1").describe("above -1"))
+			attest(T.expression).snap("number > -1 | number < -1")
+			attest(T(-1).toString()).snap("must be above -1 or below -1 (was -1)")
+		})
+
+		it("keep a described unit", () => {
+			const T = type("number > 0").or(type("0").describe("zero"))
+			attest(T.expression).snap("number > 0 | 0")
+			attest(T(-1).toString()).snap("must be positive or zero (was -1)")
+		})
+
+		it("keep a shared constraint's differing description", () => {
+			const T = rootSchema([
+				{
+					domain: { domain: "number", meta: "real" },
+					max: { rule: -1, exclusive: true }
+				},
+				{ domain: "number", min: { rule: -1, exclusive: true } }
+			])
+			attest(T.expression).snap("number > -1 | number < -1")
+			attest(T.traverse("x")?.toString()).snap(
+				"must be a number or real (was a string)"
+			)
+		})
+
+		it("merge a shared description", () => {
+			const T = type("number < -1")
+				.describe("x")
+				.or(type("number > -1").describe("x"))
+			attest(T.expression).snap("number != -1")
+			attest(T(-1).toString()).snap("must be x (was -1)")
+		})
 	})
 
 	describe("chained", () => {
