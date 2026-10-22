@@ -250,6 +250,23 @@ export const groupByPath = (
 	})
 }
 
+/** the actual a union's errors agree on, if each is at the union's own path */
+export const actualAtPathOf = (union: {
+	readonly propString: string
+	readonly errors: readonly ArkError[]
+}): string | undefined => {
+	let actual: string | undefined
+	for (const error of union.errors) {
+		if (
+			error.propString !== union.propString ||
+			(actual !== undefined && error.actual !== actual)
+		)
+			return
+		actual = error.actual
+	}
+	return actual
+}
+
 /** a thrown value as text, though it may be a symbol or have no toString */
 export const describeCause = (cause: unknown): string => {
 	try {

@@ -437,7 +437,10 @@ export const errorFromUnion = (
 				path: ctx.path.slice(),
 				code: "union",
 				errors: flattenUnion(errors),
-				meta
+				meta,
+				// a description written for it is its text, as it is a standalone build's
+				...(meta.description !== undefined &&
+					meta.keyword === undefined && { description: meta.description })
 			} as never,
 			ctx.config
 		)

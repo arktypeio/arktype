@@ -1865,9 +1865,9 @@ type("string.uuid.v4").toJsonSchema()
 type({ "[string.uuid]": "number" })({})
 ```
 
-### Use a union's description when data misses its discriminated cases
+### Write a described union's errors from its description
 
-A described union listed its cases instead (#963). Discriminated at a key, its miss is now reported at the union's own path:
+A described union listed its cases instead when data missed every one of them (#963), and listed its branches' errors when they failed at keys:
 
 ```ts
 const Primitive = type("string | number").describe("a primitive")
@@ -1875,6 +1875,12 @@ const Primitive = type("string | number").describe("a primitive")
 // was: must be a number or a string (was an object)
 // now: must be a primitive (was an object)
 Primitive({}).toString()
+
+const AorB = type({ a: "string" }).or({ b: "number" }).describe("an a or a b")
+
+// was: a must be a string (was missing) or b must be a number (was missing)
+// now: must be an a or a b (was an object)
+AorB({}).toString()
 
 const Shape = type({ kind: "'circle'", r: "number" })
 	.or({ kind: "'square'", s: "number" })
@@ -1884,6 +1890,8 @@ const Shape = type({ kind: "'circle'", r: "number" })
 // now: must be a shape (was an object)
 Shape({ kind: "triangle" }).toString()
 ```
+
+Its error is at the union's own path, with the union's value as `data`. Its `(was …)` is what its branches' errors there agree on, like `3` for a described union of string lengths, or else the value's kind. Data whose discriminant matches a case is still reported against that case's branches, like `r must be a number (was missing)`.
 
 When a union isn't described but one of its branches is, a miss of the value itself lists the branches as an undiscriminated union's does:
 

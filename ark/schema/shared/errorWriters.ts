@@ -28,7 +28,12 @@ import {
 	writeUnitProblem
 } from "./enWriters.ts"
 import type { NodeKind } from "./implement.ts"
-import { describeCause, keywordWriterOf, type Locale } from "./locale.ts"
+import {
+	actualAtPathOf,
+	describeCause,
+	keywordWriterOf,
+	type Locale
+} from "./locale.ts"
 import { describeBranches, describeCases } from "./utils.ts"
 
 export const writeMessage: MessageWriter = ctx => {
@@ -126,6 +131,7 @@ export const errorWritersByCode: {
 	},
 	union: {
 		expected: ctx => {
+			if (ctx.description !== undefined) return ctx.description
 			const path = ctx.errors[0]?.propString
 			// a union's branches usually fail at one path, so they needn't be grouped
 			if (ctx.errors.length && ctx.errors.every(e => e.propString === path))
@@ -140,13 +146,13 @@ export const errorWritersByCode: {
 			}
 			return describeBranches(errorsAtPaths.map(describeAtPath))
 		},
-		// its message doesn't show it, so data that may be large isn't printed
-		actual: printKind,
-		// a union without branches, like never, has no errors to read paths from
+		// data that may be large is printed by its kind
+		actual: (data, ctx) => actualAtPathOf(ctx) ?? printKind(data),
+		// its text is its errors', unless it has none, like never, or a description
 		problem: (ctx, info) =>
-			ctx.errors.length ? ctx.expected : writeProblem(ctx, info),
+			listsErrors(ctx) ? ctx.expected : writeProblem(ctx, info),
 		message: (ctx, info) =>
-			ctx.errors.length ? ctx.problem : writeMessage(ctx, info)
+			listsErrors(ctx) ? ctx.problem : writeMessage(ctx, info)
 	},
 	unit: {
 		actual: printKind,
@@ -164,6 +170,11 @@ export const errorWritersByCode: {
 			: printKind(data)
 	}
 }
+
+const listsErrors = (ctx: {
+	errors: readonly unknown[]
+	description?: string
+}): boolean => ctx.errors.length !== 0 && ctx.description === undefined
 
 const describeAtPath = (errors: readonly ArkError[]): string => {
 	const path = errors[0].propString

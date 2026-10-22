@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
+	actualAtPathOf,
 	describeCause,
 	describeMissing,
 	groupByPath,
@@ -426,7 +427,7 @@ export const de: Locale.Complete = {
 				"or"
 			)
 		},
-		actual: (data, e, locale) => printKind(data, locale),
+		actual: (data, e, locale) => actualAtPathOf(e) ?? printKind(data, locale),
 		problem: e => (e.errors.length ? e.expected : mustBe(e.expected, e.actual)),
 		message: (e, locale) =>
 			e.errors.length === 0 ? locale.message(e, locale) : e.problem

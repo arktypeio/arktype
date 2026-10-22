@@ -1,4 +1,5 @@
 export {
+	actualAtPathOf,
 	describeCause,
 	describeMissing,
 	groupByPath,

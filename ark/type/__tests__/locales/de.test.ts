@@ -197,6 +197,8 @@ contextualize(() => {
 				'a muss eine Zeichenkette sein (ist ein Objekt) oder a.kind muss "circle" oder "square" sein (ist "triangle")',
 			"union of paths ← {}":
 				"a fehlt (muss eine Zeichenkette sein) oder b fehlt (muss eine Zahl sein)",
+			"union described ← {}":
+				"muss ein Wert gemäß der Beschreibung „ein a oder b“ sein, ist aber ein Objekt",
 			"union boolean | null ← 1": "muss false, null oder true sein, ist aber 1",
 			'union of lengths ← "a"':
 				"muss leer oder mindestens 3 Zeichen lang sein, ist aber 1 Zeichen lang",

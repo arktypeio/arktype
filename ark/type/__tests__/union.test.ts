@@ -91,6 +91,14 @@ contextualize(() => {
 		)
 	})
 
+	it("described", () => {
+		const T = type({ a: "string" }).or({ b: "number" }).describe("an a or a b")
+		attest(T({}).toString()).snap("must be an a or a b (was an object)")
+		attest(T(5).toString()).snap("must be an a or a b (was a number)")
+		const Lengths = type("string < 2 | string > 5").describe("short or long")
+		attest(Lengths("abc").toString()).snap("must be short or long (was 3)")
+	})
+
 	it("length stress", () => {
 		// as of TS 5.1, can handle a max of 46 branches before an inifinitely
 		// deep error not the end of the world if this changes slightly, but

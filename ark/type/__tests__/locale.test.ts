@@ -264,7 +264,7 @@ contextualize(() => {
 				domain: ["expected", "actual"],
 				unit: ["expected", "problem"],
 				proto: ["expected", "actual"],
-				union: ["expected", "problem", "message"],
+				union: ["expected", "problem", "actual", "message"],
 				intersection: ["expected", "problem"],
 				divisor: ["expected"],
 				pattern: ["expected"],

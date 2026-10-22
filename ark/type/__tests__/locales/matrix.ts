@@ -259,6 +259,11 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 	)
 
 	add("union of paths", $.type({ a: "string" }).or({ b: "number" }), {})
+	add(
+		"union described",
+		$.type({ a: "string" }).or({ b: "number" }).describe("ein a oder b"),
+		{}
+	)
 	add("union boolean | null", $.type("boolean | null"), 1)
 	add("union of lengths", $.type("(string >= 3) | (string <= 0)"), "a")
 	add("union of array lengths", $.type("(unknown[] >= 3) | (unknown[] <= 0)"), [
