@@ -158,6 +158,13 @@ class NodeCache {
 
 const throwOnFail: ArkErrors.Handler = errors => errors.throw()
 
+// outside the getter, which would otherwise allocate a context for `this` on
+// every read, even once the arrow is cached
+const assertOf =
+	(node: BaseNode) =>
+	(data: unknown, pipedFromCtx?: Traversal): unknown =>
+		node(data, pipedFromCtx, throwOnFail)
+
 export abstract class BaseNode<
 	// uses -ignore rather than -expect-error because this is not an error in .d.ts
 	/** @ts-ignore allow instantiation assignment to the base type */
@@ -715,8 +722,7 @@ export abstract class BaseNode<
 	// an arrow function, created when first read, since it is often detached,
 	// e.g. when passing to tRPC
 	get assert(): (data: d["prerequisite"], pipedFromCtx?: Traversal) => unknown {
-		return (this.cache.assert ??= (data, pipedFromCtx) =>
-			this(data, pipedFromCtx, throwOnFail))
+		return (this.cache.assert ??= assertOf(this))
 	}
 
 	traverse(
