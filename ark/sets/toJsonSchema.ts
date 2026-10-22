@@ -5,6 +5,7 @@ import {
 	type Alias,
 	type BaseRoot,
 	type JsonSchema,
+	type Prop,
 	type RefinementKind,
 	type RootKind,
 	type Sequence,
@@ -369,7 +370,7 @@ const reduceObjectJsonSchema = (
 		schema.properties = {}
 		for (const prop of node.props) {
 			ctx.path = appendStringifiedKey(path, prop.key)
-			const valueSchema = toJsonSchemaRecurse(prop.value, ctx)
+			const valueSchema = toJsonSchemaRecurse(jsonValueOf(prop), ctx)
 
 			if (typeof prop.key === "symbol") {
 				schema = ctx.fallback.symbolKey({
@@ -498,6 +499,17 @@ const reduceObjectJsonSchema = (
 
 	return schema
 }
+
+// JSON has no undefined, so an optional key holds it only by being absent
+const jsonValueOf = (prop: Prop.Node): BaseRoot =>
+	(
+		prop.optional &&
+		prop.value.branches.some(branch => branch.hasUnit(undefined))
+	) ?
+		prop.value.$.schema(
+			prop.value.branches.filter(branch => !branch.hasUnit(undefined))
+		)
+	:	prop.value
 
 interface IndexKey {
 	node: BaseRoot

@@ -476,6 +476,21 @@ contextualize(() => {
 		})
 	})
 
+	it("an optional key's undefined is its absence", () => {
+		const T = type({ "a?": "string | undefined", "b?": "undefined" })
+		attest(T.toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: { a: { type: "string" }, b: { enum: [] } }
+		})
+		attest<unknown>(
+			T["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+		).equals(T.toJsonSchema())
+		attest(() => type({ a: "string | undefined" }).toJsonSchema()).throws(
+			'Can\'t convert "unit" at a to JSON Schema'
+		)
+	})
+
 	it("an empty object has empty properties", () => {
 		attest(type({}).toJsonSchema({ target: "openapi-3.0" })).snap({
 			type: "object",
