@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Take `arktype` as a peer dependency
+
+`arktype` was a dependency at an exact version, so an app on any other version installed a second copy. It's now a peer dependency at the version released with it.
+
 ### Support fast-check 4
 
 The peer range is now `3 || 4`. fast-check 4 generates invalid Dates by default, which arktype's `Date` rejects, so the `Date` arbitrary passes `noInvalidDate: true`.

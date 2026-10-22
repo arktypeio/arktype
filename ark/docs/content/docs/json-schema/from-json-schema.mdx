@@ -5,7 +5,7 @@ description: Parse a JSON Schema into a Type with @ark/json-schema and give the 
 
 <InstallationTabs pkg="@ark/json-schema" />
 
-`@ark/json-schema` depends on a fixed `arktype` version, not a peer range. If your `arktype` version differs, your package manager installs a second copy.
+`arktype` is a peer dependency of `@ark/json-schema`, at the version released with it, so the Types it returns come from your own `arktype`. Install the versions released together; with any other, npm refuses the install and pnpm warns.
 
 `jsonSchemaToType` parses a JSON Schema into a Type:
 

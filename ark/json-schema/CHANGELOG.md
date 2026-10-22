@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Take `arktype` as a peer dependency
+
+`arktype` was a dependency at an exact version, so an app on any other version installed a second copy, and errors from a Type `jsonSchemaToType` returned weren't `instanceof` its `type.errors`. It's now a peer dependency at the version released with it, so the Type comes from the app's own `arktype`, and a mismatched version fails to install (npm) or warns (pnpm) rather than installing a second copy.
+
 ### Infer types from JSON Schema
 
 `jsonSchema` checks a schema as you write it and infers the type it describes, and `jsonSchemaToType` returns a `Type` of that type (#729).
