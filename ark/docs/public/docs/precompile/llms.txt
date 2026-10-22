@@ -627,7 +627,7 @@ Where the fix is clear and the problem could throw at runtime, the build fails. 
 
 **`` `out.items` is read off what may be an arktype value ``**: the build lost track of what a value is somewhere between it and an arktype value, like a Module it can't read, so it may be a Type, which a validator replaces. An annotation doesn't change that. Define a Scope or Module in a const, as `scope({ ... })` or `scope({ ... }).export()`, which the build reads alias by alias, or build with `runtime: "arktype"`.
 
-**`` `getPlaces()` may be a Scope ``** or **`it's passed to code the build can't see`**: a standalone build replaces a Scope or Generic it precompiles with an object that has none of its members, so it precompiles one only where it can see each read, including through a parameter annotated `Scope`, `Generic` or `typeof $`, an object or array literal holding it or a `let` it's assigned to. Assign the Scope to a const and read off that, as in `const $ = getPlaces()` and `$.type(...)`, keep it out of functions the build can't analyze, or build with `runtime: "arktype"`.
+**`` `getPlaces()` may be a Scope ``** or **`it's passed to code the build can't see`**: a standalone build replaces a Scope or Generic it precompiles with an object that has none of its members, so it precompiles one only where it can see each read, including through a parameter annotated `Scope`, `Generic` or `typeof $`, an object or array literal holding it, a `let` it's assigned to or another module importing it. Assign the Scope to a const and read off that, as in `const $ = getPlaces()` and `$.type(...)`, keep it out of exported functions and functions the build can't analyze, or build with `runtime: "arktype"`.
 
 ## Setup
 

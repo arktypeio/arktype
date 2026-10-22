@@ -75,6 +75,7 @@ import {
 	isTypeMemberRead,
 	isTypeOnly,
 	mayBeOtherArk,
+	mayHoldArk,
 	memberNameOf,
 	ModuleGraph,
 	progressOf,
@@ -2179,7 +2180,10 @@ export class Precompiler {
 					this.mode === "standalone" &&
 					site.status === "accepted" &&
 					standInKindOf(candidate.state.value)
-				if (unseen && this.graph.reachesUnseen(node, module)) {
+				if (
+					unseen &&
+					this.graph.reachesUnseen(node, module, this.isReadableExport)
+				) {
 					const reasons = [
 						`it's passed to code the build can't see, which may read what a precompiled ${unseen} lacks`
 					]
@@ -3425,6 +3429,7 @@ export class Precompiler {
 			)
 		}
 		result.push(...this.unresolvedReadsOf(module))
+		result.push(...this.importedEscapesOf(module))
 		for (const statement of module.program.body) {
 			if (statement.type !== "ImportDeclaration" || isArkPackage) continue
 			const source = statement.source.value
@@ -3477,6 +3482,84 @@ export class Precompiler {
 		}
 		return result
 	}
+
+	// e.g. `each($)` with `$` a Scope another module's build precompiles,
+	// which checks only its own reads of it
+	private importedEscapesOf(module: SourceModule): Diagnostic[] {
+		const result: Diagnostic[] = []
+		for (const reference of module.scopes.references) {
+			const binding = reference.binding
+			if (binding?.kind !== "import" || reference.isWrite) continue
+			let node: Node = reference.id
+			let target = this.graph.importOf(binding, module)
+			const [operand, operator] = operatorOf(node)
+			if (
+				target.kind === "namespace" &&
+				operator?.type === "MemberExpression" &&
+				operator.object === operand
+			) {
+				const member = this.graph.namespaceMemberOf(operator, module)
+				if (member) [node, target] = [operator, member]
+			}
+			const [kind, held] = this.importedStandInOf(target) ?? []
+			if (
+				kind &&
+				this.graph.reachesUnseen(node, module, this.isReadableExport, held)
+			) {
+				const reasons = [
+					`it's passed to code the build can't see, which may read what a precompiled ${kind} lacks`
+				]
+				result.push(
+					this.diagnostic(
+						module,
+						node,
+						"unsupported",
+						`${module.snippetOf(node)} can't be precompiled yet`,
+						reasons,
+						configuredHintOf(reasons)
+					)
+				)
+			}
+		}
+		return result
+	}
+
+	// the stand-in an export is or holds, as a namespace holds its module's
+	private importedStandInOf(
+		target: ImportTarget
+	): [kind: StandInKind, held: boolean] | undefined {
+		if (target.kind === "namespace") {
+			for (const name in target.module.scopes.exportsByName) {
+				const [kind] =
+					this.importedStandInOf(this.graph.exportOf(target.module, name)) ?? []
+				if (kind) return [kind, true]
+			}
+			return
+		}
+		if (target.kind !== "binding" && target.kind !== "expression") return
+		const declaration =
+			target.kind === "binding" ? target.binding.declaration : target.node
+		const kind =
+			target.kind === "binding" ?
+				this.graph.bindingKindOf(target.binding, target.module)
+			:	this.graph.kindOf(target.node, target.module)
+		if (
+			!this.isTransformed(target.module.id) ||
+			isInIsland(declaration, target.module) ||
+			!(mayBeOtherArk(kind) || mayHoldArk(kind))
+		)
+			return
+		const { value } = this.interpreter.exportValue(target)
+		const standIn = standInKindOf(value)
+		if (standIn) return [standIn, false]
+		const held = heldStandInOf(value)
+		if (held) return [held, true]
+	}
+
+	// where an importer can't, its exporter refuses a Scope reaching the export
+	private isReadableExport = (exported: ImportTarget): boolean =>
+		(exported.kind === "binding" || exported.kind === "expression") &&
+		!findDynamic(this.interpreter.exportValue(exported).value)
 
 	// e.g. `T` declared in a `// @ark-runtime` definition
 	private isDeclaredInIsland(node: Node, module: SourceModule): boolean {
@@ -3981,6 +4064,20 @@ const standInKindOf = (value: unknown): StandInKind | undefined =>
 	hasArkKind(value, "scope") ? "Scope"
 	: hasArkKind(value, "generic") ? "Generic"
 	: undefined
+
+// e.g. `{ s: $ }`
+const heldStandInOf = (
+	value: unknown,
+	seen = new Set<unknown>()
+): StandInKind | undefined => {
+	if (!isPlainContainer(value) || seen.has(value)) return
+	seen.add(value)
+	for (const key of Reflect.ownKeys(value)) {
+		const held = Reflect.get(value, key)
+		const kind = standInKindOf(held) ?? heldStandInOf(held, seen)
+		if (kind) return kind
+	}
+}
 
 const refuse = (site: Site, reasons: string[]): Site => {
 	site.status = "rejected"

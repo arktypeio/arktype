@@ -1808,6 +1808,80 @@ export const B = wrap()[0].type("b")`)
 			])
 		})
 
+		it("a Scope another module precompiles passed to code the build can't see", () => {
+			const files = (manifest: object) => ({
+				"/defs.ts": `import { scope, type } from "arktype"
+export const $ = scope({ a: "string" })
+export const G = type("<t>", { t: "t" })
+export const User = $.type("a")
+export const held = { s: scope({ b: "string" }) }
+export default scope({ c: "string" })`,
+				"/island.ts": `import { scope } from "arktype"
+// @ark-runtime
+export const islanded = scope({ a: "string" })`,
+				"/node_modules/lib/package.json": JSON.stringify(manifest),
+				"/node_modules/lib/index.js": `import { scope } from "arktype"
+export const libScope = scope({ a: "string" })`
+			})
+			const source = `import scoped, { $, G, User, held } from "./defs.ts"
+import * as defs from "./defs.ts"
+import { islanded } from "./island.ts"
+import { libScope } from "lib"
+declare const each: (value: unknown) => void
+each($)
+each(G)
+each(held)
+each(held.s)
+each(scoped)
+each(defs.$)
+each(defs)
+each(User)
+each(islanded)
+each(libScope)
+export const A = $.type("a")
+export { $ }`
+			const optedIn = diagnosticsOf(
+				source,
+				files({ name: "lib", arktype: { precompile: true } })
+			)
+			attest(optedIn).snap([
+				"/main.ts:6:6  $ can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\".",
+				"/main.ts:7:6  G can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Generic lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\".",
+				"/main.ts:8:6  held can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\".",
+				"/main.ts:9:6  held can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\".",
+				"/main.ts:10:6  scoped can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\".",
+				"/main.ts:11:6  defs.$ can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\".",
+				"/main.ts:12:6  defs can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\".",
+				"/main.ts:15:6  libScope can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\"."
+			])
+			// a package that doesn't opt in isn't precompiled, so its Scope is arktype's
+			attest(diagnosticsOf(source, files({ name: "lib" }))).equals(
+				optedIn.slice(0, -1)
+			)
+		})
+
+		it("a Scope exported where its importers can't read it", () => {
+			attest(
+				diagnosticsOf(`import { scope } from "arktype"
+declare const flag: boolean
+const a = scope({ a: "string" })
+export const either = flag ? a : undefined
+const b = scope({ b: "string" })
+export const nested = { s: flag ? b : undefined }
+export let written = scope({ c: "string" })
+written = scope({ d: "string" })
+export const make = () => scope({ e: "string" })
+export const read = scope({ f: "string" })
+export const holder = { s: scope({ g: "string" }) }`)
+			).snap([
+				'/main.ts:3:11  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:5:11  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:7:22  scope({ c: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:8:11  scope({ d: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
+				'/main.ts:9:27  scope({ e: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".'
+			])
+		})
+
 		it("data a union of tuple expressions returns", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"

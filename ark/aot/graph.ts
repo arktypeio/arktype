@@ -62,7 +62,12 @@ import {
 
 export type FunctionNode = Function | ArrowFunctionExpression
 
-type ReachedNodes = [exact: Set<Node>, held: Set<Node>]
+// what reachesUnseen has followed, and whether importers can read an export
+interface Reach {
+	exact: Set<Node>
+	held: Set<Node>
+	isReadable: (exported: ImportTarget) => boolean
+}
 
 export type ArkExportName =
 	| keyof typeof arktype
@@ -491,6 +496,10 @@ export const isArk = (kind: KindBits): boolean =>
 // e.g. what a call off a Module returns, as it may be any arktype value
 export const mayBeOtherArk = (kind: KindBits): boolean =>
 	(kind & kinds.otherArk) !== 0
+
+// e.g. a literal holding a Scope, or what the build lost track of
+export const mayHoldArk = (kind: KindBits): boolean =>
+	(kind & (kinds.holder | kinds.unknown)) !== 0
 
 export const isOnlyType = (kind: KindBits): boolean =>
 	(kind & (kinds.type | kinds.otherArk | kinds.data)) === kinds.type
@@ -2419,17 +2428,32 @@ export class ModuleGraph {
 
 	// e.g. `() => scope(...)` passed to a function the build doesn't analyze,
 	// so it can't see what's read off the value. A held value, like `[$]`,
-	// holds it, so what's read off one may be it.
+	// holds it, so what's read off one may be it. Importers check an export
+	// whose value they can read.
 	reachesUnseen(
 		node: Node,
 		module: SourceModule,
-		held = false,
-		seen: ReachedNodes = [new Set(), new Set()]
+		isReadable: (exported: ImportTarget) => boolean,
+		held = false
 	): boolean {
-		if (seen[+held].has(node)) return false
-		seen[+held].add(node)
+		return this.reaches(node, module, held, {
+			exact: new Set(),
+			held: new Set(),
+			isReadable
+		})
+	}
+
+	private reaches(
+		node: Node,
+		module: SourceModule,
+		held: boolean,
+		reach: Reach
+	): boolean {
+		const seen = held ? reach.held : reach.exact
+		if (seen.has(node)) return false
+		seen.add(node)
 		const follow = (next: Node, nextHeld = held) =>
-			this.reachesUnseen(next, module, nextHeld, seen)
+			this.reaches(next, module, nextHeld, reach)
 		const [operand, operator] = operatorOf(node)
 		switch (operator?.type) {
 			case "MemberExpression": {
@@ -2439,7 +2463,7 @@ export class ModuleGraph {
 				const kind = this.kindOf(operator, module)
 				return (
 					(mayBeOtherArk(kind) && follow(operator, false)) ||
-					(!!(kind & (kinds.holder | kinds.unknown)) && follow(operator))
+					(mayHoldArk(kind) && follow(operator))
 				)
 			}
 			case "CallExpression":
@@ -2457,7 +2481,7 @@ export class ModuleGraph {
 						module.scopes.bindingsById.get(param),
 						module,
 						held,
-						seen
+						reach
 					)
 				)
 			}
@@ -2478,11 +2502,11 @@ export class ModuleGraph {
 			case "ArrowFunctionExpression":
 				return (
 					operator.body === operand &&
-					this.returnReachesUnseen(operator, module, held, seen)
+					this.returnReachesUnseen(operator, module, held, reach)
 				)
 			case "ReturnStatement": {
 				const fn = enclosingFunctionOf(operator)
-				return !!fn && this.returnReachesUnseen(fn, module, held, seen)
+				return !!fn && this.returnReachesUnseen(fn, module, held, reach)
 			}
 			case "VariableDeclarator":
 				return (
@@ -2491,7 +2515,7 @@ export class ModuleGraph {
 						module.scopes.bindingsById.get(operator.id),
 						module,
 						held,
-						seen
+						reach
 					)
 				)
 			// e.g. `s = $`, after which reading `s` reads the Scope
@@ -2503,7 +2527,7 @@ export class ModuleGraph {
 							module.scopes.referencesById.get(operator.left)?.binding,
 							module,
 							held,
-							seen
+							reach
 						) ||
 						follow(operator))
 				)
@@ -2523,9 +2547,9 @@ export class ModuleGraph {
 			// e.g. `"type" in $`
 			case "BinaryExpression":
 				return operator.operator === "in" && operator.right === operand
-			// e.g. `typeof $`, or an export, whose importers are built where they
-			// read it
 			case "ExportDefaultDeclaration":
+				return !reach.isReadable({ kind: "expression", module, node: operand })
+			// e.g. `typeof $`, or `export { $ }`, checked as its binding is
 			case "ExportSpecifier":
 			case "ExpressionStatement":
 			case "UnaryExpression":
@@ -2548,30 +2572,34 @@ export class ModuleGraph {
 		binding: Binding | undefined,
 		module: SourceModule,
 		held: boolean,
-		seen: ReachedNodes
+		reach: Reach
 	): boolean {
 		return (
 			!binding ||
+			(!!binding.exportNames.length &&
+				!reach.isReadable({
+					kind: "binding",
+					module,
+					binding,
+					name: binding.exportNames[0]
+				})) ||
 			binding.references.some(
 				reference =>
-					!reference.isWrite &&
-					this.reachesUnseen(reference.id, module, held, seen)
+					!reference.isWrite && this.reaches(reference.id, module, held, reach)
 			)
 		)
 	}
 
-	// an exported function's importers are built where they read its result
+	// an importer can't read what an exported function returns
 	private returnReachesUnseen(
 		fn: FunctionNode,
 		module: SourceModule,
 		held: boolean,
-		seen: ReachedNodes
+		reach: Reach
 	): boolean {
-		if (bindingOfFunction(fn, module)?.exportNames.length) return false
+		if (bindingOfFunction(fn, module)?.exportNames.length) return true
 		const calls = this.callsOf(fn, module)
-		return (
-			!calls || calls.some(call => this.reachesUnseen(call, module, held, seen))
-		)
+		return !calls || calls.some(call => this.reaches(call, module, held, reach))
 	}
 
 	private functionOf(
