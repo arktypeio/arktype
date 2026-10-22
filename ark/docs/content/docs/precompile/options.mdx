@@ -145,6 +145,10 @@ What it gives up: an undeclared key can pass in place of a declared key that a p
 
 `conditions` and `tsconfig` set the export conditions and the tsconfig whose `paths` the build resolves imports with.
 
+### cwd
+
+`cwd` is the directory the build finds [`ark.json`](#arkjson) and the packages that [opt in](/docs/precompile/advanced#libraries) from, and resolves a relative `config` against. The plugin defaults it to the bundler's root: Vite's `root`, webpack's and Rspack's `context` and esbuild's `absWorkingDir`. Other hosts default it to the current directory.
+
 ## Configuration
 
 A program that calls `configure()` does so once, in a module imported before any that defines a Type, and names it as the build's `config`:

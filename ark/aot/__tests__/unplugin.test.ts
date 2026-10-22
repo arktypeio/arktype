@@ -903,6 +903,37 @@ console.log(out.constructor === type.errors, out.count, out.issues[0].data === d
 		attest(run(output[0].code)).equals(expected)
 	})
 
+	it("reads ark.json from the bundler's root", async () => {
+		// a Type printed outside a site builds only where ark.json bakes expression
+		const root = writeFixture(
+			{
+				"package.json": JSON.stringify({ type: "module" }),
+				"ark.json": JSON.stringify({
+					precompile: { members: { expression: true } }
+				}),
+				"main.ts": `import { type } from "arktype"
+
+const T = type({ a: "string" })
+console.log(\`\${T}\`)
+`
+			},
+			fromHere("temp", "rooted")
+		)
+		const printed = "Type<{ a: string }>\n"
+		attest(await bundlers.vite({}, root).then(run)).equals(printed)
+		const { outputFiles } = await esbuild({
+			entryPoints: ["main.ts"],
+			absWorkingDir: root,
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [precompile.esbuild({ conditions })]
+		})
+		attest(run(outputFiles[0].text)).equals(printed)
+	})
+
 	it("vite's module runner loads the runtime its validators use", async () => {
 		const root = writeFixture({
 			"main.ts": `import { type } from "arktype"

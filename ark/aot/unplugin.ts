@@ -1,6 +1,6 @@
 import { throwError, type KeySet } from "@ark/util"
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
-import { dirname, isAbsolute, join } from "node:path"
+import { dirname, isAbsolute, join, resolve } from "node:path"
 import { relative } from "node:path/posix"
 import { createUnplugin, type UnpluginInstance } from "unplugin"
 import {
@@ -64,10 +64,12 @@ export const precompile: UnpluginInstance<
 		refuseDeclare(opts, meta.framework)
 	// Rollup's mark of a virtual module, which esbuild prints as a NUL
 	const virtual = meta.framework === "esbuild" ? "" : "\0"
+	const given = opts
 	// the worker applies the preset, after the environment's defaults, which a
 	// bundler says once it has read its own configuration
-	const set = withSettingsFile(opts)
+	let set = withSettingsFile(given)
 	opts = resolvePrecompileOptions(set)
+	let environment: Environment | undefined
 	let workerOptions = set
 	// a worker of its own lets arktype take the program's configuration
 	const create = () =>
@@ -82,13 +84,16 @@ export const precompile: UnpluginInstance<
 	const restart = () => {
 		precompiler = precompiler.then(replace)
 	}
-	// known once the bundler has read its own configuration
-	const setEnvironment = (environment: Environment) => {
-		const environmentOptions = withEnvironment(set, environment)
-		if (JSON.stringify(environmentOptions) === JSON.stringify(workerOptions))
-			return
-		workerOptions = environmentOptions
+	const updateWorker = () => {
+		const updated = environment ? withEnvironment(set, environment) : set
+		if (JSON.stringify(updated) === JSON.stringify(workerOptions)) return
+		workerOptions = updated
 		restart()
+	}
+	// known once the bundler has read its own configuration
+	const setEnvironment = (bundlerEnvironment: Environment) => {
+		environment = bundlerEnvironment
+		updateWorker()
 	}
 	// a changed file or configuration may need a new worker
 	const reset = () => {
@@ -99,21 +104,41 @@ export const precompile: UnpluginInstance<
 	}
 	const readDependency = (importer: string) =>
 		request("readDependency", fileOf(importer)) as Promise<RenderedDiagnostics>
-	const productionHost = createNodeHost(opts)
+	let productionHost = createNodeHost(opts)
 	let developmentHost: PrecompileHost | undefined
 	// resolves as the bundler's mode would, e.g. arktype/runtime in development
 	let host = productionHost
-	const resolveIn = (isDevelopment: boolean) => {
+	let isDevelopment = false
+	const resolveIn = (isBundlerDevelopment: boolean) => {
+		isDevelopment = isBundlerDevelopment
 		host =
 			isDevelopment ?
 				(developmentHost ??= createDevelopmentHost(opts))
 			:	productionHost
 	}
-	const isStandalone = opts?.runtime !== "arktype"
-	const variant = resolvedVariantOf(opts)
-	const packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
+	let isStandalone = opts?.runtime !== "arktype"
+	let variant = resolvedVariantOf(opts)
+	let packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
 	// arktype left to Node loads as itself, not as the runtime validators use
-	const inlined = isStandalone ? [...runtimePackages, ...packages] : packages
+	let inlined = isStandalone ? [...runtimePackages, ...packages] : packages
+	// the transform hook's filter, read once the bundler's root is set
+	const transformedFilter = transformedFilterOf(packages)
+	// ark.json and the packages that opt in are found from the bundler's root,
+	// e.g. Vite's, unless `cwd` is set
+	const setRoot = (root: string) => {
+		if (given?.cwd !== undefined || root === (set.cwd ?? process.cwd())) return
+		set = withSettingsFile({ ...given, cwd: root })
+		opts = resolvePrecompileOptions(set)
+		productionHost = createNodeHost(opts)
+		developmentHost = undefined
+		resolveIn(isDevelopment)
+		isStandalone = opts.runtime !== "arktype"
+		variant = resolvedVariantOf(opts)
+		packages = optedInPackagesOf(root)
+		inlined = isStandalone ? [...runtimePackages, ...packages] : packages
+		Object.assign(transformedFilter, transformedFilterOf(packages))
+		updateWorker()
+	}
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
 	// a persistent cache keeps a transformed module, but not the modules it wrote
@@ -214,7 +239,6 @@ export const precompile: UnpluginInstance<
 		reportedPrecompiled.add(name)
 		return writePrecompiledDependencyMessage(name)
 	}
-	const transformedFilter = transformedFilterOf(packages)
 	const reportedUntransformed = new Set<string>()
 	// e.g. a Svelte component's script, whose Types the build never sees
 	const untransformedProblemOf = (id: string, importer: string) => {
@@ -288,11 +312,12 @@ export const precompile: UnpluginInstance<
 		enforce: "pre",
 		resolveId: {
 			filter: {
-				id: new RegExp(
-					`${resolvedSpecifier.source}${variant ? `|${schemaSpecifier.source}` : ""}`
-				)
+				id: new RegExp(`${resolvedSpecifier.source}|${schemaSpecifier.source}`)
 			},
 			async handler(id, importer) {
+				// the plugin resolves a standalone build's arktype in esbuild's own namespace
+				if (meta.framework === "esbuild" && isStandalone && id === "arktype")
+					return
 				// webpack awaits this unguarded, so it reports an error rather than crash
 				const refuse = (message: string): undefined => {
 					if (meta.framework !== "webpack") throwBuildError(message)
@@ -372,14 +397,16 @@ export const precompile: UnpluginInstance<
 				app = builder
 			},
 			// Vite and Vitest otherwise leave dependencies to Node or prebundling
-			config: () =>
-				inlined.length ?
-					{
-						optimizeDeps: { exclude: packages },
-						ssr: { noExternal: inlined },
-						test: { server: { deps: { inline: inlined } } }
-					}
-				:	undefined,
+			config: config => {
+				setRoot(resolve(config.root ?? process.cwd()))
+				return inlined.length ?
+						{
+							optimizeDeps: { exclude: packages },
+							ssr: { noExternal: inlined },
+							test: { server: { deps: { inline: inlined } } }
+						}
+					:	undefined
+			},
 			// e.g. Astro's prerender, a server environment other than ssr
 			configEnvironment: () =>
 				inlined.length ? { resolve: { noExternal: inlined } } : undefined,
@@ -452,6 +479,7 @@ export const precompile: UnpluginInstance<
 		},
 		watchChange: reset,
 		webpack: compiler => {
+			setRoot(compiler.context)
 			keepCompiler(compiler)
 			setEnvironment(environmentOf(compiler))
 			// as Rspack does, so a runtime from another version fails the build
@@ -461,14 +489,18 @@ export const precompile: UnpluginInstance<
 			})
 		},
 		rspack: compiler => {
+			setRoot(compiler.context)
 			keepCompiler(compiler)
 			setEnvironment(environmentOf(compiler))
 		},
 		rollup: { options: checkInputExternal },
 		rolldown: { options: checkInputExternal },
 		esbuild: {
-			// arktype resolves natively, outside the plugin's esbuild namespace
-			onResolveFilter: isStandalone ? /^~arktype\// : /^arktype$|^~arktype\//,
+			// read before config, so the handler leaves a standalone build's
+			// arktype to resolve natively, outside the plugin's esbuild namespace
+			onResolveFilter: /^arktype$|^~arktype\//,
+			config: initialOptions =>
+				setRoot(initialOptions.absWorkingDir ?? process.cwd()),
 			setup: build => {
 				if (!build.initialOptions.bundle) throwBuildError(unbundledMessage)
 				// esbuild has no mode, but a build may resolve for production
@@ -505,10 +537,11 @@ export const precompile: UnpluginInstance<
 						warnings: transformed.warnings.map(text => ({ text }))
 					}
 				})
-				if (variant) {
+				const buildVariant = variant
+				if (buildVariant) {
 					build.onResolve({ filter: schemaSpecifier }, args => {
 						if (args.pluginData === esbuildResolution) return
-						const specifier = variantSpecifierOf(args.path, variant)
+						const specifier = variantSpecifierOf(args.path, buildVariant)
 						return specifier ?
 								build.resolve(specifier, {
 									kind: args.kind,
@@ -522,7 +555,7 @@ export const precompile: UnpluginInstance<
 											text: writeVariantImportMessage(
 												fileOf(args.importer),
 												args.path,
-												variant
+												buildVariant
 											)
 										}
 									]
@@ -600,6 +633,7 @@ const esbuildLoaderOf = (path: string): "ts" | "tsx" | "js" | "jsx" =>
 
 // what the plugin reads of a webpack or Rspack compiler
 interface BundlerCompiler {
+	context: string
 	options: {
 		cache?: boolean | { version?: string | undefined } | undefined
 		mode?: string | undefined
