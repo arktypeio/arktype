@@ -476,6 +476,24 @@ contextualize(() => {
 		})
 	})
 
+	it("an empty object has empty properties", () => {
+		attest(type({}).toJsonSchema({ target: "openapi-3.0" })).snap({
+			type: "object",
+			properties: {}
+		})
+		attest(type({ "+": "reject" }).toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: {},
+			additionalProperties: false
+		})
+		attest(type({ "[string]": "number" }).toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			additionalProperties: { type: "number" }
+		})
+	})
+
 	it("omits function meta", () => {
 		const T = type("string").configure({ message: () => "a letter" })
 		attest(T.toJsonSchema({ dialect: null })).snap({ type: "string" })

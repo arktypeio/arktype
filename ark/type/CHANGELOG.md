@@ -2110,6 +2110,15 @@ result.issues[0].path
 
 An issue at a path is a copy of its error with that message. A union's lists each branch's path from the union's, like `b must be a string (was missing) or c must be a number (was missing)`. `validate` returns `{ issues }` rather than the `ArkErrors`, whose own errors and `summary` still start with their paths. A precompiled validator's issues are written the same way, unless their message was configured.
 
+### Write `properties: {}` for an object declaring no keys
+
+An object Type with no props or index signature, like `type({})`, `type("object")` or `type({ "+": "reject" })`, is written with an empty `properties`, as Zod writes `z.object({})`, since consumers like MCP clients read a tool's input schema's `properties`:
+
+```ts
+// previously { type: "object" }, now { type: "object", properties: {} }
+type({}).toJsonSchema()
+```
+
 ### Write a nested arktype Standard Schema's errors without repeating their key
 
 When a definition embeds a validator only through its `~standard` property, an error from an arktype validator inside it repeated the key its message already started with:

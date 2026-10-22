@@ -570,7 +570,8 @@ contextualize(() => {
 {
     code: "defaultValue",
     base: {
-        type: "object"
+        type: "object",
+        properties: {}
     },
     value: {
         a: 0n
