@@ -177,6 +177,8 @@ const Strict = type({ "+": "reject", name: "string" })
 const Stripped = type({ "+": "delete", name: "string" })
 ```
 
+An object that deletes keys, whether by `"+"` or by `configure({ onUndeclaredKey: "delete" })`, transforms its input, so a union of such objects throws unless a key like a literal `kind` tells them apart.
+
 ## Integrations
 
 - ArkType types are [Standard Schema](https://standardschema.dev), so they work directly with tRPC, oRPC, Hono and other libraries that accept one. react-hook-form takes them through `standardSchemaResolver` from `@hookform/resolvers/standard-schema`.
