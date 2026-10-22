@@ -2469,6 +2469,16 @@ const Union = type.or(type.string, "number", { key: "unknown" })
 > const Bad = type({ box: "string.numeric.parse" }).or({ box: "string" })
 > ```
 >
+> To fix it, make the inputs disjoint, e.g. by narrowing a morph's input, or pipe the union of their inputs to a single morph:
+>
+> ```ts
+> // only numeric strings are parsed, so no input reaches two branches
+> const Narrowed = type("string.numeric.parse | number | null")
+>
+> // one morph decides how to transform each input
+> const Piped = type("unknown").pipe(v => (v === null ? v : Number(v)))
+> ```
+>
 > **Why this isn't allowed**
 >
 > `Bad` says two things about the same input:
