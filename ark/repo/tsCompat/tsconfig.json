@@ -9,5 +9,5 @@
 		"skipLibCheck": true,
 		"noEmit": true
 	},
-	"files": ["index.ts"]
+	"files": ["index.ts", "packages.ts"]
 }

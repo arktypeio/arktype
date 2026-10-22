@@ -9,8 +9,9 @@ const repoDir = fileURLToPath(new URL("../..", import.meta.url))
 const ts6Tsc = "node ark/attest/node_modules/typescript-6/bin/tsc"
 const useTs6 = fileURLToPath(new URL("./useTs6.ts", import.meta.url))
 
-// minimum supported version, then the latest of each major
-const consumerVersions = ["5.1.6", "5.9.3", "6.0.3", "7.0.2"]
+// minimum supported version, the latest without NoInfer and other 5.4+
+// features, then the latest of each major
+const consumerVersions = ["5.1.6", "5.3.3", "5.9.3", "6.0.3", "7.0.2"]
 
 const tasks: Record<string, string> = {
 	...Object.fromEntries(

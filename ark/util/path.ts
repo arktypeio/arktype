@@ -1,5 +1,6 @@
 import { ReadonlyArray, type array } from "./arrays.ts"
 import { throwParseError } from "./errors.ts"
+import type { noInfer } from "./generics.ts"
 import type { requireKeys } from "./records.ts"
 import { isDotAccessible, printSymbol, type JsonArray } from "./serialize.ts"
 
@@ -15,7 +16,7 @@ export type StringifyPathFn = <stringifiable>(
 	path: array<stringifiable>,
 	...[opts]: [stringifiable] extends [PropertyKey] ?
 		[opts?: StringifyPathOptions]
-	:	NoInfer<[opts: StringifyPathOptions<stringifiable>]>
+	:	noInfer<[opts: StringifyPathOptions<stringifiable>], stringifiable>
 ) => string
 
 export type AppendStringifiedKeyFn = <stringifiable>(
@@ -23,7 +24,7 @@ export type AppendStringifiedKeyFn = <stringifiable>(
 	prop: stringifiable,
 	...[opts]: [stringifiable] extends [PropertyKey] ?
 		[opts?: StringifyPathOptions]
-	:	NoInfer<[opts: StringifyPathOptions<stringifiable>]>
+	:	noInfer<[opts: StringifyPathOptions<stringifiable>], stringifiable>
 ) => string
 
 export const appendStringifiedKey: AppendStringifiedKeyFn = ((

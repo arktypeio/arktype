@@ -1,4 +1,5 @@
 import type { ArkError, ArkErrors, Morph } from "@ark/schema"
+import type { noInfer } from "@ark/util"
 // installs encoding, which .encode requires
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { inverses } from "@ark/schema/codecs"
@@ -53,16 +54,19 @@ export const codec = <
 	{
 		decode,
 		encode
-	}: NoInfer<{
-		decode: Morph<
-			distill.Out<type.infer<i>>,
-			distill.In<type.infer<o>> | ArkError | ArkErrors
-		>
-		encode: Morph<
-			distill.In<type.infer<o>>,
-			distill.Out<type.infer<i>> | ArkError | ArkErrors
-		>
-	}>
+	}: noInfer<
+		{
+			decode: Morph<
+				distill.Out<type.infer<i>>,
+				distill.In<type.infer<o>> | ArkError | ArkErrors
+			>
+			encode: Morph<
+				distill.In<type.infer<o>>,
+				distill.Out<type.infer<i>> | ArkError | ArkErrors
+			>
+		},
+		i | o
+	>
 ): r extends infer _ ? _ : never => {
 	const In = type(i as never).internal
 	return In.$.node("morph", { in: In, morphs: [decode], inverse: encode }).pipe(
