@@ -42,7 +42,7 @@
 		"testJitless": "pnpm test --exclude \"ark/aot/**\" --grep \"jit by default|has jit|compiled code|deep invalid data through an undiscriminated union\" --invert --require ./ark/repo/testJitless.ts",
 		"testCache": "pnpm test --exclude ark/type/__tests__/gc.test.ts --exclude ark/type/__tests__/facts.test.ts --exclude ark/type/__tests__/precompile.test.ts --grep \"^config jitless$|NaN in discriminated unions jitless$|Object.prototype members are undeclared jitless$\" --invert --require ./ark/aot/__tests__/testCache.ts",
 		"testTsVersions": "ts ./ark/repo/testTsVersions.ts",
-		"testTsCompat": "tsc --project ark/repo/tsCompat && tsc --project ark/repo/tsCompat/tsconfig.loose.json && tsc --project ark/repo/tsCompat/tsconfig.attest.json && tsc --project ark/repo/tsCompat/tsconfig.workers.json",
+		"testTsCompat": "tsc --project ark/repo/tsCompat && tsc --project ark/repo/tsCompat/tsconfig.loose.json && tsc --project ark/repo/tsCompat/tsconfig.attest.json && tsc --project ark/repo/tsCompat/tsconfig.workers.json && tsc --project ark/repo/tsCompat/tsconfig.meta.json",
 		"testTypedLoose": "pnpm testTyped --tsconfig null --compilerOptions \"{ \\\"module\\\": \\\"NodeNext\\\", \\\"moduleResolution\\\": \\\"NodeNext\\\", \\\"strictNullChecks\\\": true, \\\"exactOptionalPropertyTypes\\\": true, \\\"customConditions\\\": [\\\"ark-ts\\\"] }\" --skipInlineInstantiations",
 		"bench": "export ATTEST_checker=\"\\\"tsgo\\\"\" ATTEST_benchErrorOnThresholdExceeded=\"\\\"types\\\"\" && pnpm benchOperand &&pnpm benchOperator && pnpm benchNary && pnpm benchObject && pnpm benchMatch && pnpm benchCyclic && pnpm benchJsonSchema",
 		"benchUp": "ATTEST_updateSnapshots=1 pnpm bench",

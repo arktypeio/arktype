@@ -152,6 +152,8 @@ type("0 < number < 10").toJsonSchema({ target: "openapi-3.0" })
 
 A literal is a one-value `enum` with its `type`, `null` beside a `type` is `nullable: true`, `examples` is its first `example`, and `string.base64` is `format: "byte"`. What OpenAPI 3.0 can't express throws, through a fallback that can write it instead: a tuple's elements go to the new `arrayPrefix`, `patternProperties` and `propertyNames` to `indexKey`, and the definitions a cyclic Type's `$ref`s point to in `#/components/schemas` to the new `defs`, to place in your document. `~standard.jsonSchema` writes a tuple as an array of its length, and the definitions as `definitions`.
 
+Thanks to @MichaelDeBoey for #1707.
+
 ### Infer `.map()` on a union per branch
 
 `.map()` already mapped each branch of a union at runtime, but its inferred type merged the branches, and its callback's argument held only the keys every branch shares (#1524). The argument now holds each branch's props, and the result is a union of the branches it builds:
@@ -1810,6 +1812,26 @@ Importing arktype no longer throws in runtimes that lack `Blob`, `URL`, `FormDat
 ### Infer platform keywords whose globals are declared as classes
 
 With declarations like `@cloudflare/workers-types`, which declare `Blob`, `File`, `Headers` and `URL` as classes, those keywords infer their instance types instead of `never` (#1548).
+
+### Infer `ArkEnv.meta` from a scope that imports Types
+
+Augmenting `ArkEnv.meta` with a type inferred from a scope that spreads another scope's `import()` was circular, so the type was `any` (#1644):
+
+```ts
+const base = scope({ BaseMeta: { "description?": "string" } })
+
+const Meta = scope({
+	...base.import(),
+	Binary: { "...": "BaseMeta", kind: "'binary'" }
+}).export().Binary
+
+declare global {
+	interface ArkEnv {
+		// was: Return type annotation circularly references itself
+		meta(): typeof Meta.infer
+	}
+}
+```
 
 ### Throw a scope alias's parse error on every reference
 

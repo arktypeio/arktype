@@ -47,6 +47,7 @@ import {
 	type JsonStructure,
 	type anyOrNever,
 	type array,
+	type inferred,
 	type noInfer,
 	type noSuggest
 } from "@ark/util"
@@ -427,6 +428,8 @@ export const scope: ScopeParser = Object.assign(InternalScope.scope, {
 	define: (def: unknown) => def as never
 } satisfies ScopeParserAttachments)
 
+type InferredDefinition = { [inferred]: unknown }
+
 export declare namespace scope {
 	export type validate<def> = {
 		[k in keyof def]: k extends noSuggest ?
@@ -435,10 +438,10 @@ export declare namespace scope {
 		: parseScopeKey<k, def>["params"] extends infer params ?
 			params extends array<GenericParamAst> ?
 				params["length"] extends 0 ?
-					// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
-					// if you are from the future with a better version of TS and can remove it
-					// without breaking `pnpm typecheck`, go for it.
-					def[k] extends type.Any | PreparsedResolution ? def[k]
+					// passing a Type through here keeps some cyclic tests from breaking, but
+					// checking it against Type reads ArkEnv.meta, which a meta inferred
+					// from a scope importing Types references (#1644)
+					def[k] extends InferredDefinition | PreparsedResolution ? def[k]
 					: k extends (
 						PrivateDeclaration<infer name extends keyof def & string>
 					) ?

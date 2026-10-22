@@ -1,11 +1,5 @@
 import type { NodeKind, nodeOfKind, SequenceTuple } from "@ark/schema"
-import {
-	hasKey,
-	hasOwn,
-	stringAndSymbolicEntriesOf,
-	throwError,
-	throwInternalError
-} from "@ark/util"
+import { hasKey, hasOwn, throwError, throwInternalError } from "@ark/util"
 import type { type } from "arktype"
 import * as fc from "fast-check"
 import {
@@ -130,10 +124,20 @@ export const buildStructureArbitrary = (
 		if (structure === undefined)
 			throwInternalError("Expected a structure node.")
 
-		if (hasKey(structure, "index") && structure.index)
-			return buildIndexSignatureArbitrary(structure.index, ctx)
+		if (!hasKey(structure, "index") || !structure.index)
+			return buildObjectArbitrary(structure, ctx)
 
-		return buildObjectArbitrary(structure, ctx)
+		const indexArbitrary = buildIndexSignatureArbitrary(structure.index, ctx)
+		if (!structure.props.length) return indexArbitrary
+
+		// declared props replace index keys that share their name
+		return fc
+			.tuple(indexArbitrary, buildObjectArbitrary(structure, ctx))
+			.map(([indexed, declared]) => {
+				const result: Record<PropertyKey, unknown> = indexed
+				for (const prop of structure.props) delete result[prop.key]
+				return Object.assign(result, declared)
+			})
 	}
 
 	if (node.inner.exactLength?.rule === 0) return fc.tuple()
@@ -170,14 +174,30 @@ export const buildObjectArbitrary = (
 	if (ctx.isCyclic && !ctx.tieStack.length)
 		return buildCyclicArbitrary(node, ctx)
 
-	const entries = stringAndSymbolicEntriesOf(node.propsByKey)
 	const requiredKeys = node.requiredKeys
 	const arbitrariesByKey: Record<PropertyKey, fc.Arbitrary<unknown>> = {}
 
-	for (const [key, value] of entries)
-		arbitrariesByKey[key] = buildArbitrary(value as never, ctx)
+	for (const prop of node.props) {
+		const value = indexedValueOf(node, prop)
+		// an optional key no index value allows is left out
+		if (!value.isNever())
+			arbitrariesByKey[prop.key] = buildArbitrary(value, ctx)
+	}
 
 	return fc.record(arbitrariesByKey, { requiredKeys } as never)
+}
+
+// a key an index signature also matches must satisfy both values
+const indexedValueOf = (
+	node: nodeOfKind<"structure">,
+	prop: nodeOfKind<"required" | "optional">
+): nodeOfKind<NodeKind> => {
+	const matching = node.index?.filter(index => index.signature.allows(prop.key))
+	if (!matching?.length) return prop
+	return matching.reduce(
+		(value, index) => value.intersect(index.value).toNeverIfDisjoint(),
+		prop.value
+	) as never
 }
 
 const buildIndexSignatureArbitrary = (
