@@ -4,11 +4,12 @@ import {
 	type StandardJSONSchemaV1,
 	type ToJsonSchema
 } from "@ark/schema"
-import { hasDomain, printable, throwParseError } from "@ark/util"
+import { hasDomain, ParseError, printable, throwParseError } from "@ark/util"
 import {
 	isPlainObject,
 	readJsonSchema,
-	writeUnparsableSchemaMessage
+	writeUnparsableSchemaMessage,
+	writeUnreadableStandardSchemaMessage
 } from "./fromJsonSchema.ts"
 
 /** a set of values as an @ark/schema node, which every arktype Type is */
@@ -65,16 +66,24 @@ const readStandardSchema = (
 	io: "in" | "out"
 ): BaseRoot => {
 	const standard = schema["~standard"]
-	const converter = standard.jsonSchema
-	return converter ?
-			readJsonSchema(
-				converter[io === "in" ? "input" : "output"]({
-					target: "draft-2020-12"
-				})
+	if (!standard.jsonSchema) {
+		return throwParseError(
+			writeUnparsableSchemaMessage(
+				`a ${standard.vendor} Standard Schema without ~standard.jsonSchema`
 			)
-		:	throwParseError(
-				writeUnparsableSchemaMessage(
-					`a ${standard.vendor} Standard Schema without ~standard.jsonSchema`
-				)
-			)
+		)
+	}
+	const method = io === "in" ? "input" : "output"
+	let jsonSchema: JsonSchema.Input
+	try {
+		jsonSchema = standard.jsonSchema[method]({ target: "draft-2020-12" })
+	} catch (cause) {
+		throw Object.assign(
+			new ParseError(
+				writeUnreadableStandardSchemaMessage(standard.vendor, method, cause)
+			),
+			{ cause }
+		)
+	}
+	return readJsonSchema(jsonSchema)
 }

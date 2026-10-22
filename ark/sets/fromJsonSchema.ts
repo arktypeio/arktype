@@ -968,6 +968,13 @@ const checkKeyword = (o: dict, k: string, pointer: string): void => {
 export const writeUnparsableSchemaMessage = (actual: string): string =>
 	`Schema must be a Root, a Standard JSON Schema or a JSON Schema (was ${actual})`
 
+export const writeUnreadableStandardSchemaMessage = (
+	vendor: string,
+	method: "input" | "output",
+	cause: unknown
+): string =>
+	`${vendor}'s ~standard.jsonSchema.${method} threw (${cause instanceof Error ? cause.message : printable(cause)})`
+
 export const writeInvalidJsonSchemaMessage = (
 	pointer: string,
 	actual: unknown

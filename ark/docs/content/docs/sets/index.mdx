@@ -116,7 +116,7 @@ User.allows({ name: "Ada" }) // true
 
 A schema object is read once per `io` and cached, so passing the same object to many functions doesn't read it again.
 
-`parse` throws a `ParseError` for anything that isn't one of the three formats, for a Standard Schema that doesn't implement Standard JSON Schema, and for a JSON Schema it can't read exactly, like one with a remote `$ref` or `unevaluatedProperties`.
+`parse` throws a `ParseError` for anything that isn't one of the three formats, for a Standard Schema that doesn't implement Standard JSON Schema or whose `~standard.jsonSchema` throws, like zod's for `z.date()` (the library's error is its `cause`), and for a JSON Schema it can't read exactly, like one with a remote `$ref` or `unevaluatedProperties`.
 
 ## arktype Types and JSON Schema
 

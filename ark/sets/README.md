@@ -29,7 +29,7 @@ Relations are sound for what each schema is read as: `true` is a proof, and `fal
 
 Every argument is a `Schema`: a Root (an `@ark/schema` node, which every arktype Type is), a Standard JSON Schema, or a JSON Schema object or boolean.
 
-A Standard JSON Schema is a schema whose `~standard` has `jsonSchema`, e.g. from zod 4.2.0 or later. Pass any other library's schema as its JSON Schema, e.g. `z.toJSONSchema(schema)` before zod 4.2.0. Anything else throws a `ParseError`.
+A Standard JSON Schema is a schema whose `~standard` has `jsonSchema`, e.g. from zod 4.2.0 or later. Pass any other library's schema as its JSON Schema, e.g. `z.toJSONSchema(schema)` before zod 4.2.0. Anything else throws a `ParseError`, as does a Standard JSON Schema whose `~standard.jsonSchema` throws, like zod's for `z.date()`, with the library's error as its `cause`.
 
 | function                      | returns                                                           |
 | ----------------------------- | ----------------------------------------------------------------- |
