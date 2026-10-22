@@ -27,6 +27,7 @@ import {
 	packageNameOf,
 	realPathOf,
 	reportDiagnostics,
+	readsNodes,
 	resolvesToRuntime,
 	resolvedVariantOf,
 	rethrowAsBuildError,
@@ -343,7 +344,7 @@ export const precompile: UnpluginInstance<
 				for (const warning of diagnostics.warnings) this.warn(warning)
 				if (diagnostics.errors.length)
 					return refuse(diagnostics.errors.join("\n"))
-				if (isRuntime && resolvesToRuntime(id, opts))
+				if (isRuntime && resolvesToRuntime(id, opts) && !readsNodes(importer))
 					return host.resolve("arktype/runtime", importer)
 			}
 		},
@@ -577,7 +578,11 @@ export const precompile: UnpluginInstance<
 						if (args.pluginData === esbuildResolution) return
 						const isRuntime = runtimeSpecifiers.includes(args.path)
 						const result = await build.resolve(
-							isRuntime && resolvesToRuntime(args.path, opts) ?
+							(
+								isRuntime &&
+									resolvesToRuntime(args.path, opts) &&
+									!readsNodes(args.importer)
+							) ?
 								"arktype/runtime"
 							:	args.path,
 							{

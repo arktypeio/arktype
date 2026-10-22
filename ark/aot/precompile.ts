@@ -94,6 +94,7 @@ import {
 	arkPackageName,
 	arktypeEntryOf,
 	dependencyOf,
+	readsNodes,
 	runtimeVariantOf,
 	transformedId,
 	writeVariantOption,
@@ -681,6 +682,7 @@ export class Precompiler {
 		const warnings: string[] = []
 		if (
 			this.mode === "standalone" &&
+			!readsNodes(importer) &&
 			!this.reportedDependencies.has(dependency)
 		) {
 			this.reportedDependencies.add(dependency)

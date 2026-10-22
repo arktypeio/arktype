@@ -1497,6 +1497,32 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 		})
 	})
 
+	it("runs a package reading arktype's nodes in a runtime island", async () => {
+		const root = writeFixture(
+			{
+				...packageFiles("@ark/json-schema", {
+					"index.js":
+						'import { type } from "arktype"\n\nexport const jsonSchemaToType = schema => type({ [schema.key]: schema.type })\n'
+				}),
+				"main.ts": `import { type } from "arktype"
+import { jsonSchemaToType } from "@ark/json-schema"
+
+const User = type({ name: "string" })
+// @ark-runtime
+const Dyn = jsonSchemaToType({ key: "a", type: "string" })
+
+console.log(JSON.stringify([User.allows({ name: "x" }), Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 })]))
+`
+			},
+			fromHere("temp", "readsNodes")
+		)
+		for (const bundler of [bundlers.esbuild, bundlers.vite]) {
+			attest(run(await bundler({ cwd: root }, root))).equals(
+				"[true,true,false]\n"
+			)
+		}
+	})
+
 	it("fails where a module it can't precompile imports arktype", async () => {
 		const root = writeFixture(
 			{

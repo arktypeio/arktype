@@ -377,6 +377,13 @@ export const unbundledMessage =
 // arktype's own packages, which read their nodes and import the runtime by design
 export const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
 
+// e.g. @ark/json-schema, which reads arktype's nodes where a runtime island
+// calls it, so it imports arktype itself rather than its runtime
+export const readsNodes = (importer: string | undefined): boolean => {
+	const [, name] = (importer && dependencyOf(importer.split("?")[0])) || []
+	return !!name && /^(?:arksets|@ark\/(?:json-schema|fast-check))$/.test(name)
+}
+
 export const allowUnsafeHint =
 	"Set allowUnsafe: true to build anyway, with a warning."
 
