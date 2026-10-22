@@ -2038,6 +2038,25 @@ user.toJsonSchema()
 - `.in`, `.out`, `~standard.jsonSchema` and the `definitions` and `#/components/schemas/` of `"draft-07"` and `"openapi-3.0"` use the same names.
 - `useRefs` writes every other part as a def named by its kind (`intersection`, `intersection2`), and no longer writes an empty `$defs` for a type with none.
 
+### Write `type` beside a literal's `const` or `enum`
+
+A literal's JSON Schema now names its type, as zod's does and as consumers like MCP elicitation require. A union of literals that share no type is still an `enum` alone, and one with `null` writes `null` beside the rest, as `string | null` is written:
+
+```ts
+const T = type({ k: "'b' | 'a'", l: "1 | 2", m: "'x'", n: "'a' | 'b' | null" })
+
+// previously k: { enum: ["a", "b"] }, l: { enum: [1, 2] }, m: { const: "x" },
+// n: { anyOf: [{ const: "a" }, { const: "b" }, { type: "null" }] }
+// now
+// k: { type: "string", enum: ["a", "b"] }
+// l: { type: "number", enum: [1, 2] }
+// m: { type: "string", const: "x" }
+// n: { anyOf: [{ type: "string", enum: ["a", "b"] }, { type: "null" }] }
+T.toJsonSchema()
+```
+
+A number literal's type is `number`, even for integers, since its `enum` or `const` already says which values it allows.
+
 ### Write a nested arktype Standard Schema's errors without repeating their key
 
 When a definition embeds a validator only through its `~standard` property, an error from an arktype validator inside it repeated the key its message already started with:

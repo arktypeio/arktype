@@ -183,7 +183,7 @@ const branchGroupsToJsonSchema = (
 	// what's left of a union without its null
 	if (jsonSchemaBranches.length === 1) return jsonSchemaBranches[0]
 
-	// openapi-3.0 writes a unit as a typed enum
+	// openapi-3.0 writes a unit as an enum
 	const unitKey = ctx.target === "openapi-3.0" ? "enum" : "const"
 	if (
 		jsonSchemaBranches.every(
@@ -193,7 +193,7 @@ const branchGroupsToJsonSchema = (
 				Object.entries(branch).every(
 					([k, v]) =>
 						k === unitKey ||
-						(k === "type" && unitKey === "enum") ||
+						k === "type" ||
 						v === (node.meta as dict)[k] ||
 						v === (node.metaJson as dict)[k]
 				) && hasKey(branch, unitKey)
@@ -266,29 +266,28 @@ const innerToJsonSchemaByKind: {
 	alias: (node, ctx) => toJsonSchemaRecurse(node.resolution, ctx),
 	union: (node, ctx) => {
 		const branchGroups = branchGroupsOf(node)
-		if (ctx.target === "openapi-3.0") {
-			const nonNull = branchGroups.filter(branch => !branch.hasUnit(null))
-			if (nonNull.length < branchGroups.length) {
-				const schema = branchGroupsToJsonSchema(node, nonNull, ctx)
-				// nullable adds null to the type beside it, so an enum must list it
-				if (typeof (schema as JsonSchema.Constrainable).type === "string") {
-					return Object.assign(
-						schema,
-						{ nullable: true },
-						"enum" in schema && { enum: [...schema.enum, null] }
-					)
-				}
-				return {
-					anyOf: [
-						...(nonNull.length > 1 && "anyOf" in schema ?
-							schema.anyOf
-						:	[schema]),
-						openApiNull()
-					]
-				}
-			}
+		const nonNull = branchGroups.filter(branch => !branch.hasUnit(null))
+		if (nonNull.length === branchGroups.length)
+			return branchGroupsToJsonSchema(node, branchGroups, ctx)
+		// null is written beside the rest, so their values still share a type
+		const schema = branchGroupsToJsonSchema(node, nonNull, ctx)
+		// nullable adds null to the type beside it, so an enum must list it
+		if (
+			ctx.target === "openapi-3.0" &&
+			typeof (schema as JsonSchema.Constrainable).type === "string"
+		) {
+			return Object.assign(
+				schema,
+				{ nullable: true },
+				"enum" in schema && { enum: [...schema.enum, null] }
+			)
 		}
-		return branchGroupsToJsonSchema(node, branchGroups, ctx)
+		return {
+			anyOf: [
+				...(nonNull.length > 1 && "anyOf" in schema ? schema.anyOf : [schema]),
+				ctx.target === "openapi-3.0" ? openApiNull() : { type: "null" }
+			]
+		}
 	},
 	morph: (node, ctx) =>
 		ctx.io === "in" ?
@@ -312,7 +311,7 @@ const innerToJsonSchemaByKind: {
 			ctx.fallback.unit({ code: "unit", base: {}, unit: node.unit })
 		: ctx.target === "openapi-3.0" ?
 			{ type: typeof node.unit as JsonSchema.TypeName, enum: [node.unit] }
-		:	{ const: node.unit },
+		:	{ type: typeof node.unit as JsonSchema.TypeName, const: node.unit },
 	intersection: (node, ctx) =>
 		node.children.reduce<JsonSchema>(
 			// cast is required since TS doesn't know children have compatible schema prerequisites

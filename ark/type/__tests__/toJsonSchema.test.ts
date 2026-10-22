@@ -422,6 +422,60 @@ contextualize(() => {
 		})
 	})
 
+	describe("literals", () => {
+		const toSchema = (
+			def: string,
+			target: "draft-2020-12" | "openapi-3.0" = "draft-2020-12"
+		): object => type(def as never).toJsonSchema({ dialect: null, target })
+
+		it("strings", () => {
+			attest(toSchema("'b' | 'a'")).snap({ type: "string", enum: ["a", "b"] })
+		})
+
+		it("numbers", () => {
+			attest(toSchema("1 | 2.5")).snap({ type: "number", enum: [1, 2.5] })
+		})
+
+		it("one value", () => {
+			attest(toSchema("'x'")).snap({ type: "string", const: "x" })
+		})
+
+		it("booleans", () => {
+			attest(toSchema("true")).snap({ type: "boolean", const: true })
+		})
+
+		it("mixed", () => {
+			attest(toSchema("'a' | 1")).snap({ enum: ["a", 1] })
+		})
+
+		it("with null", () => {
+			attest(toSchema("'a' | 'b' | null")).snap({
+				anyOf: [{ type: "string", enum: ["a", "b"] }, { type: "null" }]
+			})
+			attest(toSchema("'a' | 1 | null")).snap({
+				anyOf: [{ enum: ["a", 1] }, { type: "null" }]
+			})
+		})
+
+		it("openapi-3.0", () => {
+			attest(toSchema("'x'", "openapi-3.0")).snap({
+				type: "string",
+				enum: ["x"]
+			})
+			attest(toSchema("'a' | 'b' | null", "openapi-3.0")).snap({
+				type: "string",
+				enum: ["a", "b", null],
+				nullable: true
+			})
+			attest(toSchema("'a' | 1 | null", "openapi-3.0")).snap({
+				anyOf: [
+					{ enum: ["a", 1] },
+					{ type: "string", nullable: true, enum: [null] }
+				]
+			})
+		})
+	})
+
 	it("omits function meta", () => {
 		const T = type("string").configure({ message: () => "a letter" })
 		attest(T.toJsonSchema({ dialect: null })).snap({ type: "string" })
@@ -433,27 +487,32 @@ contextualize(() => {
 			title: "Provider"
 		})
 		attest(Provider.toJsonSchema({ dialect: null })).snap({
+			type: "string",
 			enum: ["postgresql", "sqlite"],
 			title: "Provider"
 		})
 
 		const Letter = type("'a' | 'b'").describe("a letter")
 		attest(Letter.toJsonSchema({ dialect: null })).snap({
+			type: "string",
 			enum: ["a", "b"],
 			description: "a letter"
 		})
 
 		const letterMessage = () => "a letter"
 		const Messaged = type("'a' | 'b'").configure({ message: letterMessage })
-		attest(Messaged.toJsonSchema({ dialect: null })).snap({ enum: ["a", "b"] })
+		attest(Messaged.toJsonSchema({ dialect: null })).snap({
+			type: "string",
+			enum: ["a", "b"]
+		})
 
 		const Described = type("'a'").describe("first").or("'b'").configure({
 			title: "Letter"
 		})
 		attest(Described.toJsonSchema({ dialect: null })).snap({
 			anyOf: [
-				{ const: "a", description: "first", title: "Letter" },
-				{ const: "b", title: "Letter" }
+				{ type: "string", const: "a", description: "first", title: "Letter" },
+				{ type: "string", const: "b", title: "Letter" }
 			],
 			title: "Letter"
 		})

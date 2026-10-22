@@ -117,7 +117,7 @@ contextualize(() => {
 	describe("literals and enums", () => {
 		it("string enum", () => {
 			const T = type("'a'|'b'|'c'")
-			const S = inferred({ enum: ["a", "b", "c"] })
+			const S = inferred({ type: "string", enum: ["a", "b", "c"] })
 			assertEmits(T, S)
 			attest<typeof T.infer>(S).type.toString.snap('"a" | "b" | "c"')
 		})
@@ -129,10 +129,10 @@ contextualize(() => {
 			attest<typeof T.infer>(S).type.toString.snap('"x" | 0 | false')
 		})
 
-		it("mixed literals as anyOf of const", () => {
+		it("mixed literals and null", () => {
 			const T = type("'a'|1|true|null")
 			const S = inferred({
-				anyOf: [{ const: "a" }, { const: 1 }, { type: "null" }, { const: true }]
+				anyOf: [{ enum: ["a", 1, true] }, { type: "null" }]
 			})
 			assertEmits(T, S)
 			attest<typeof T.infer>(S).type.toString.snap('"a" | 1 | true | null')
@@ -181,12 +181,18 @@ contextualize(() => {
 				anyOf: [
 					{
 						type: "object",
-						properties: { a: { type: "string" }, kind: { const: "a" } },
+						properties: {
+							a: { type: "string" },
+							kind: { type: "string", const: "a" }
+						},
 						required: ["a", "kind"]
 					},
 					{
 						type: "object",
-						properties: { b: { type: "number" }, kind: { const: "b" } },
+						properties: {
+							b: { type: "number" },
+							kind: { type: "string", const: "b" }
+						},
 						required: ["b", "kind"]
 					}
 				]
@@ -224,8 +230,8 @@ contextualize(() => {
 						properties: { x: { type: "string" } },
 						required: ["x"]
 					},
-					{ const: "a" },
-					{ const: 1 },
+					{ type: "string", const: "a" },
+					{ type: "number", const: 1 },
 					{ type: "null" }
 				]
 			})
@@ -641,7 +647,10 @@ contextualize(() => {
 			const T = type({ a: "true", b: "false" })
 			const S = inferred({
 				type: "object",
-				properties: { a: { const: true }, b: { const: false } },
+				properties: {
+					a: { type: "boolean", const: true },
+					b: { type: "boolean", const: false }
+				},
 				required: ["a", "b"]
 			})
 			assertEmits(T, S)
@@ -662,7 +671,7 @@ contextualize(() => {
 			const S = inferred({
 				type: "object",
 				properties: {
-					enum: { const: "x" },
+					enum: { type: "string", const: "x" },
 					items: { type: "array", items: { type: "string" } },
 					properties: { type: "number" },
 					required: { type: "boolean" },
@@ -1008,7 +1017,7 @@ contextualize(() => {
 								],
 								items: false
 							},
-							op: { enum: ["+", "-"] }
+							op: { type: "string", enum: ["+", "-"] }
 						},
 						required: ["args", "op"]
 					}

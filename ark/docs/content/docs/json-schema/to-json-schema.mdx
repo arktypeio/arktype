@@ -72,7 +72,7 @@ Pair.toJsonSchema({ target: "draft-07" })
 | draft 2020-12                                   | `"openapi-3.0"`                                    |
 | ----------------------------------------------- | -------------------------------------------------- |
 | `exclusiveMinimum: 0`                           | `minimum: 0`, `exclusiveMinimum: true`             |
-| `const: "cat"`                                  | `type: "string"`, `enum: ["cat"]`                  |
+| `type: "string"`, `const: "cat"`                | `type: "string"`, `enum: ["cat"]`                  |
 | `not: { const: 5 }`                             | `not: { enum: [5] }`                               |
 | `anyOf: [{ type: "string" }, { type: "null" }]` | `type: "string"`, `nullable: true`                 |
 | `type: "null"`                                  | `type: "string"`, `nullable: true`, `enum: [null]` |
@@ -188,7 +188,7 @@ const schema = types.Node.toJsonSchema()
 | `"string.base64.url"`                                 | `pattern`, `contentEncoding: "base64url"`           |
 | `"string.date"`, `"string.url"`, `"string.regex"`     | `format: "date-time"`, `"uri"`, `"regex"`           |
 | `"string.json"`                                       | `contentMediaType: "application/json"`              |
-| `"'a' \| 'b'"`                                        | `enum: ["a", "b"]`                                  |
+| `"'a' \| 'b'"`                                        | `type: "string"`, `enum: ["a", "b"]`                |
 | `"string \| null"`                                    | `anyOf`                                             |
 | `{ "name?": "string" }`                               | `properties`, with only required keys in `required` |
 | `{ "+": "reject", ... }`                              | `additionalProperties: false`                       |
