@@ -54,7 +54,7 @@ A validation that fails can leave writes in the objects of its input it found va
 
 ### Exclude a value with `!=`
 
-`!=` constrains what `==` does, a number, a string or array's length or a `Date`, to anything but its limit:
+`!=` constrains what `==` does, a number, a string or array's length or a `Date`, to anything but its limit (#925):
 
 ```ts
 const NonZero = type("number != 0")
@@ -67,17 +67,19 @@ It reduces like the other comparators: `number < 0 | number > 0` is `number != 0
 
 Its errors have the codes `notEqual`, whose `rule` is a number or a `Date`, and `notEqualLength`. A lone `!` still doesn't end a name, so an alias or brand like `a!b` parses as before.
 
+Thanks to @jkugsiya for #1692.
+
 ### Merge unions of connected ranges
 
-Branches alike but for their range are one range when the ranges overlap or meet, as [#751](https://github.com/arktypeio/arktype/issues/751) asked: `1 < number < 10 | 10 <= number < 100` is `1 < number < 100`, `2 <= string <= 4 | 5 <= string <= 8` is `2 <= string <= 8`, and a unit at a bound joins it, so `number < 5 | number == 5` is `number <= 5`. Bounds covering every value are the basis alone: `number > 0 | number < 5` is `number` and `string >= 3 | string <= 2` is `string`. Ranges one value apart are their union excluding it, like `0 < number < 5 | 5 < number < 10`, which is `0 < number < 10 & number != 5`, and wider gaps stay a union. A basis allowing `NaN` or invalid Dates, which every bound rejects, keeps the union.
+Branches alike but for their range are one range when the ranges overlap or meet, as #751 asked: `1 < number < 10 | 10 <= number < 100` is `1 < number < 100`, `2 <= string <= 4 | 5 <= string <= 8` is `2 <= string <= 8`, and a unit at a bound joins it, so `number < 5 | number == 5` is `number <= 5`. Bounds covering every value are the basis alone: `number > 0 | number < 5` is `number` and `string >= 3 | string <= 2` is `string`. Ranges one value apart are their union excluding it, like `0 < number < 5 | 5 < number < 10`, which is `0 < (number != 5) < 10`, and wider gaps stay a union. A basis allowing `NaN` or invalid Dates, which every bound rejects, keeps the union.
 
 ### Merge unions of objects alike but for one key
 
-Objects with the same keys, alike but for one key's value, are one object whose value is the union of theirs, as [#751](https://github.com/arktypeio/arktype/issues/751) asked: `type({ a: "string" }).or({ a: "number" })` is `{ a: string | number }`, and `{ kind: "a", x: string } | { kind: "b", x: string }` is `{ kind: "a" | "b", x: string }`. The key is optional if it's optional in either, and the merged values reduce like any union, so nested objects merge as well. Objects differing in their undeclared key handling or index signatures stay a union, as do ordered unions and a key with a default, whose default applies only to its own branch.
+Objects with the same keys, alike but for one key's value, are one object whose value is the union of theirs, as #751 asked: `type({ a: "string" }).or({ a: "number" })` is `{ a: string | number }`, and `{ kind: "a", x: string } | { kind: "b", x: string }` is `{ kind: "a" | "b", x: string }`. The key is optional if it's optional in either, and the merged values reduce like any union, so nested objects merge as well. Objects differing in their undeclared key handling or index signatures stay a union, as do ordered unions and a key with a default, whose default applies only to its own branch.
 
 A merged `kind: "a" | "b"` still discriminates, since each value of a literal union is now a case of its own.
 
-Data invalid for a merged object is reported as for any other object rather than by the union: `{ x: 5 }` is `kind must be "a" or "b" (was missing)` and `x must be a string (was a number)`, where it was `kind must be "a" or "b" (was undefined)`. A message configured on the union describes the object, so it no longer replaces the error on `kind`.
+Data invalid for a merged object is reported as for any other object rather than by the union: `{ x: 5 }` is `kind must be "a" or "b" (was missing)` and `x must be a string (was a number)`, where it was `kind must be "a" or "b" (was undefined)`. A message configured on the union now replaces only an error at the object itself, like `must be an object`, so it no longer replaces the error on `kind`.
 
 ### Export `Default` and `To` as types
 
