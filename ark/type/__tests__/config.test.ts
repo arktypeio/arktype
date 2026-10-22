@@ -5,8 +5,9 @@ import {
 	writeMissingImportMessage,
 	rootSchema
 } from "@ark/schema"
-import { configure, scope, type } from "arktype"
+import { configure, messageIn, scope, type } from "arktype"
 import "arktype/errors"
+import { en } from "arktype/locales/en"
 import { withConfig } from "./locales/withConfig.ts"
 
 contextualize(() => {
@@ -229,8 +230,17 @@ contextualize(() => {
 			attest(out instanceof type.errors).equals(true)
 			attest(out.toString()).snap("is invalid")
 			attest(JSON.stringify(out)).snap(
-				'[{"code":"predicate","path":[],"data":{"a":1,"b":"2"},"message":"is invalid"}]'
+				'[{"data":{"a":1,"b":"2"},"path":[],"code":"predicate","expected":"valid","problem":"is invalid","propString":"","actual":"an object","message":"is invalid"}]'
 			)
+		})
+
+		it("none's error has every field an error rejecting data has", () => {
+			const out = none.type({ a: "string" })({}) as type.errors
+			const rejected = type("object").narrow((data, ctx) =>
+				ctx.reject({ expected: "valid", problem: "is invalid" })
+			)({}) as type.errors
+			attest(out.issues[0]).equals(rejected.issues[0])
+			attest(messageIn(out.issues[0], en)).snap("is invalid")
 		})
 
 		it("none runs no Apply to find what failed", () => {
@@ -242,9 +252,18 @@ contextualize(() => {
 
 		it("none fails a morph's error at the root", () => {
 			const T = none.type("string").pipe((s, ctx) => ctx.error("short"))
-			attest(JSON.stringify(T("x"))).snap(
-				'[{"code":"predicate","path":[],"data":"x","message":"is invalid"}]'
-			)
+			attest((T("x") as type.errors).toJSON()).snap([
+				{
+					data: "x",
+					path: [],
+					code: "predicate",
+					expected: "valid",
+					problem: "is invalid",
+					propString: "",
+					actual: '"x"',
+					message: "is invalid"
+				}
+			])
 		})
 
 		it("none assert and ~standard", () => {
@@ -253,7 +272,16 @@ contextualize(() => {
 			const result = T["~standard"].validate(5)
 			const issues: unknown = "issues" in result && result.issues
 			attest(issues).snap([
-				{ code: "predicate", path: [], data: 5, message: "is invalid" }
+				{
+					data: 5,
+					path: [],
+					code: "predicate",
+					expected: "valid",
+					problem: "is invalid",
+					propString: "",
+					actual: "5",
+					message: "is invalid"
+				}
 			])
 		})
 

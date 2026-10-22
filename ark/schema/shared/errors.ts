@@ -455,6 +455,20 @@ export const messageAt = (error: ArkError, path: PropertyKey[]): string => {
 	return copy.message
 }
 
+/** an error failing data as a whole, written in en as errors "none"'s is */
+export const invalidError = (
+	data: unknown,
+	config: ResolvedConfig
+): ArkError => {
+	const error = errorOfContext(
+		{ code: "predicate", expected: "valid", problem: "is invalid", data },
+		[],
+		config
+	)
+	writeError(error, config, renderer?.en ?? config.locale)
+	return error
+}
+
 const errorOfContext = (
 	input: ArkErrorContextInput,
 	basePath: array<PropertyKey>,

@@ -22,7 +22,7 @@ type({ name: "string" })({ name: 5 })
 
 `import "arktype/errors"` installs both modes, so a program choosing neither ships neither, and creating a Type configured with either throws without it.
 
-The error `"none"` returns holds the code `"predicate"`, an empty path and the data. It's an instance of `type.errors`, so `.assert()` throws a `TraversalError` saying `is invalid`, and a default the Type rejects fails its definition with `Default for name is invalid`. Its message isn't written in a configured locale.
+The error `"none"` returns holds the code `"predicate"`, an empty path and the data, and once read, every field an error has, as an error rejecting data with `ctx.reject({ expected: "valid", problem: "is invalid" })` would. It's an instance of `type.errors`, so `.assert()` throws a `TraversalError` saying `is invalid`, and a default the Type rejects fails its definition with `Default for name is invalid`. Its message isn't written in a configured locale.
 
 A Type another Scope references validates as that Scope is configured, so `type({ x: X })` reports `X`'s errors in full even where `X`'s own Scope configures `errors: "none"`.
 
