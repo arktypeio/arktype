@@ -86,21 +86,6 @@ contextualize(() => {
 			})
 		})
 
-		it("draft-2020-12 uses $defs for references", () => {
-			const types = type.module({
-				user: {
-					name: "string",
-					friend: "user?"
-				}
-			})
-			const schema = types.user.toJsonSchema({
-				target: "draft-2020-12"
-			}) as Record<string, unknown>
-			attest("$defs" in schema).equals(true)
-			attest("definitions" in schema).equals(false)
-			attest(Object.keys(schema.$defs as object).length > 0).equals(true)
-		})
-
 		it("draft-07 uses definitions for references", () => {
 			const types = type.module({
 				user: {
@@ -108,12 +93,20 @@ contextualize(() => {
 					friend: "user?"
 				}
 			})
-			const schema = types.user.toJsonSchema({
-				target: "draft-07"
-			}) as Record<string, unknown>
-			attest("definitions" in schema).equals(true)
-			attest("$defs" in schema).equals(false)
-			attest(Object.keys(schema.definitions as object).length > 0).equals(true)
+			attest<object>(types.user.toJsonSchema({ target: "draft-07" })).snap({
+				$schema: "http://json-schema.org/draft-07/schema#",
+				$ref: "#/definitions/user",
+				definitions: {
+					user: {
+						type: "object",
+						properties: {
+							name: { type: "string" },
+							friend: { $ref: "#/definitions/user" }
+						},
+						required: ["name"]
+					}
+				}
+			})
 		})
 	})
 
@@ -228,18 +221,258 @@ contextualize(() => {
 
 		attest(toUserSchema()).equals(first)
 		attest(first).snap({
-			$ref: "#/$defs/user1",
+			$ref: "#/$defs/user",
 			$defs: {
-				user1: {
+				user: {
 					type: "object",
 					properties: {
 						name: { type: "string" },
-						friends: { $ref: "#/$defs/intersection1" }
+						friends: { type: "array", items: { $ref: "#/$defs/user" } }
 					},
 					required: ["name"]
-				},
-				intersection1: { type: "array", items: { $ref: "#/$defs/user1" } }
+				}
 			}
+		})
+	})
+
+	describe("$defs", () => {
+		const { user } = scope({
+			user: { name: "string", "friends?": "user[]" }
+		}).export()
+
+		it("a cyclic alias is named by its alias", () => {
+			attest(type({ owner: user }).toJsonSchema({ dialect: null })).snap({
+				type: "object",
+				properties: { owner: { $ref: "#/$defs/user" } },
+				required: ["owner"],
+				$defs: {
+					user: {
+						type: "object",
+						properties: {
+							name: { type: "string" },
+							friends: { type: "array", items: { $ref: "#/$defs/user" } }
+						},
+						required: ["name"]
+					}
+				}
+			})
+		})
+
+		it("an acyclic alias is inlined", () => {
+			const { team } = scope({
+				user: { name: "string" },
+				team: { lead: "user", members: "user[]" }
+			}).export()
+			attest(team.toJsonSchema({ dialect: null })).snap({
+				type: "object",
+				properties: {
+					lead: {
+						type: "object",
+						properties: { name: { type: "string" } },
+						required: ["name"]
+					},
+					members: {
+						type: "array",
+						items: {
+							type: "object",
+							properties: { name: { type: "string" } },
+							required: ["name"]
+						}
+					}
+				},
+				required: ["lead", "members"]
+			})
+		})
+
+		it("an intersection with an alias is inlined", () => {
+			attest(user.and({ age: "number" }).toJsonSchema({ dialect: null })).snap({
+				type: "object",
+				properties: {
+					age: { type: "number" },
+					name: { type: "string" },
+					friends: { type: "array", items: { $ref: "#/$defs/user" } }
+				},
+				required: ["age", "name"],
+				$defs: {
+					user: {
+						type: "object",
+						properties: {
+							name: { type: "string" },
+							friends: { type: "array", items: { $ref: "#/$defs/user" } }
+						},
+						required: ["name"]
+					}
+				}
+			})
+		})
+
+		it("a name another alias has is numbered", () => {
+			const other = scope({ user: { id: "number", "next?": "user" } }).export()
+			attest(
+				type({ a: user, b: other.user }).toJsonSchema({ dialect: null })
+			).snap({
+				type: "object",
+				properties: {
+					a: { $ref: "#/$defs/user" },
+					b: { $ref: "#/$defs/user2" }
+				},
+				required: ["a", "b"],
+				$defs: {
+					user: {
+						type: "object",
+						properties: {
+							name: { type: "string" },
+							friends: { type: "array", items: { $ref: "#/$defs/user" } }
+						},
+						required: ["name"]
+					},
+					user2: {
+						type: "object",
+						properties: {
+							id: { type: "number" },
+							next: { $ref: "#/$defs/user2" }
+						},
+						required: ["id"]
+					}
+				}
+			})
+		})
+
+		it("generic instantiations", () => {
+			const { root } = scope({
+				"box<t>": { value: "t", "next?": "box<t>" },
+				root: { s: "box<string>", n: "box<number>" }
+			}).export()
+			attest(root.toJsonSchema({ dialect: null })).snap({
+				type: "object",
+				properties: { n: { $ref: "#/$defs/box" }, s: { $ref: "#/$defs/box2" } },
+				required: ["n", "s"],
+				$defs: {
+					box: {
+						type: "object",
+						properties: {
+							value: { type: "number" },
+							next: { $ref: "#/$defs/box" }
+						},
+						required: ["value"]
+					},
+					box2: {
+						type: "object",
+						properties: {
+							value: { type: "string" },
+							next: { $ref: "#/$defs/box2" }
+						},
+						required: ["value"]
+					}
+				}
+			})
+		})
+
+		it("a cycle with no alias", () => {
+			attest(type({ "self?": "this" }).toJsonSchema({ dialect: null })).snap({
+				$ref: "#/$defs/type",
+				$defs: {
+					type: {
+						type: "object",
+						properties: { self: { $ref: "#/$defs/type" } }
+					}
+				}
+			})
+		})
+
+		it("input and output", () => {
+			const { node } = scope({
+				node: {
+					size: type("string").pipe(s => s.length, type("number")),
+					"next?": "node"
+				}
+			}).export()
+			const expected = node["~standard"].jsonSchema.input({
+				target: "draft-2020-12"
+			})
+			attest(expected).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				$ref: "#/$defs/node",
+				$defs: {
+					node: {
+						type: "object",
+						properties: {
+							size: { type: "string" },
+							next: { $ref: "#/$defs/node" }
+						},
+						required: ["size"]
+					}
+				}
+			})
+			attest(node.in.toJsonSchema()).equals(expected)
+			attest(node.out.toJsonSchema()).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				$ref: "#/$defs/node",
+				$defs: {
+					node: {
+						type: "object",
+						properties: {
+							size: { type: "number" },
+							next: { $ref: "#/$defs/node" }
+						},
+						required: ["size"]
+					}
+				}
+			})
+		})
+	})
+
+	describe("literals", () => {
+		const toSchema = (
+			def: string,
+			target: "draft-2020-12" | "openapi-3.0" = "draft-2020-12"
+		): object => type(def as never).toJsonSchema({ dialect: null, target })
+
+		it("strings", () => {
+			attest(toSchema("'b' | 'a'")).snap({ type: "string", enum: ["a", "b"] })
+		})
+
+		it("numbers", () => {
+			attest(toSchema("1 | 2.5")).snap({ type: "number", enum: [1, 2.5] })
+		})
+
+		it("one value", () => {
+			attest(toSchema("'x'")).snap({ type: "string", const: "x" })
+		})
+
+		it("booleans", () => {
+			attest(toSchema("true")).snap({ type: "boolean", const: true })
+		})
+
+		it("mixed", () => {
+			attest(toSchema("'a' | 1")).snap({ enum: ["a", 1] })
+		})
+
+		it("with null", () => {
+			attest(toSchema("'a' | 'b' | null")).snap({
+				anyOf: [{ type: "string", enum: ["a", "b"] }, { type: "null" }]
+			})
+			attest(toSchema("'a' | 1 | null")).snap({
+				anyOf: [{ enum: ["a", 1] }, { type: "null" }]
+			})
+		})
+
+		it("openapi-3.0", () => {
+			attest(toSchema("'x'", "openapi-3.0")).snap({
+				type: "string",
+				enum: ["x"]
+			})
+			attest(toSchema("'a' | 'b' | null", "openapi-3.0")).snap({
+				type: "string",
+				enum: ["a", "b", null],
+				nullable: true
+			})
+			attest(toSchema("'a' | 1 | null", "openapi-3.0")).snap({
+				anyOf: [
+					{ enum: ["a", 1] },
+					{ type: "string", nullable: true, enum: [null] }
+				]
+			})
 		})
 	})
 
@@ -254,27 +487,32 @@ contextualize(() => {
 			title: "Provider"
 		})
 		attest(Provider.toJsonSchema({ dialect: null })).snap({
+			type: "string",
 			enum: ["postgresql", "sqlite"],
 			title: "Provider"
 		})
 
 		const Letter = type("'a' | 'b'").describe("a letter")
 		attest(Letter.toJsonSchema({ dialect: null })).snap({
+			type: "string",
 			enum: ["a", "b"],
 			description: "a letter"
 		})
 
 		const letterMessage = () => "a letter"
 		const Messaged = type("'a' | 'b'").configure({ message: letterMessage })
-		attest(Messaged.toJsonSchema({ dialect: null })).snap({ enum: ["a", "b"] })
+		attest(Messaged.toJsonSchema({ dialect: null })).snap({
+			type: "string",
+			enum: ["a", "b"]
+		})
 
 		const Described = type("'a'").describe("first").or("'b'").configure({
 			title: "Letter"
 		})
 		attest(Described.toJsonSchema({ dialect: null })).snap({
 			anyOf: [
-				{ const: "a", description: "first", title: "Letter" },
-				{ const: "b", title: "Letter" }
+				{ type: "string", const: "a", description: "first", title: "Letter" },
+				{ type: "string", const: "b", title: "Letter" }
 			],
 			title: "Letter"
 		})

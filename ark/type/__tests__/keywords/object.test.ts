@@ -70,17 +70,17 @@ contextualize(() => {
 				Json.toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
 			).snap({
 				$schema: "https://json-schema.org/draft/2020-12/schema",
-				$ref: "#/$defs/jsonObject1",
+				type: "object",
+				additionalProperties: { $ref: "#/$defs/jsonData" },
 				$defs: {
-					jsonObject1: {
-						type: "object",
-						additionalProperties: { $ref: "#/$defs/jsonData1" }
-					},
-					jsonData1: {
+					jsonData: {
 						anyOf: [
 							{ type: "number" },
 							{ type: "string" },
-							{ $ref: "#/$defs/jsonObject1" },
+							{
+								type: "object",
+								additionalProperties: { $ref: "#/$defs/jsonData" }
+							},
 							{ type: "boolean" },
 							{ type: "null" }
 						]
