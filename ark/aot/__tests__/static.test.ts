@@ -1747,8 +1747,8 @@ console.log(values.map(v => (v as any).from))`,
 				],
 				[
 					"invalid enum option",
-					{ checks: "all" as never },
-					'checks must be "helpers", "none" or "types" (was "all")'
+					{ creationChecks: "all" as never },
+					'creationChecks must be "helpers", "none" or "types" (was "all")'
 				],
 				[
 					"non-boolean option",

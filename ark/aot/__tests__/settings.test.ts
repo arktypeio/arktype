@@ -75,8 +75,8 @@ contextualize(() => {
 					{ production: true, testing: false }
 				)
 			).snap({
-				checks: "none",
 				config: false,
+				creationChecks: "none",
 				freeze: true,
 				preset: "smallest"
 			} as never)
@@ -84,7 +84,7 @@ contextualize(() => {
 
 		it("checks helpers in tests", () => {
 			attest(withEnvironment({}, { production: false, testing: true })).snap({
-				checks: "helpers"
+				creationChecks: "helpers"
 			})
 			attest(
 				withEnvironment(

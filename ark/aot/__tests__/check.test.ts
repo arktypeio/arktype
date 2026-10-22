@@ -306,12 +306,12 @@ forms.ts:16:16  island
 			"--check",
 			"--runtime",
 			"arktype",
-			"--checks",
+			"--creation-checks",
 			"types"
 		)
 		attest([status, stderr.split("\n")[0]]).equals([
 			2,
-			writeArktypeRuntimeOptionMessage("checks")
+			writeArktypeRuntimeOptionMessage("creationChecks")
 		])
 	})
 
@@ -335,10 +335,15 @@ forms.ts:16:16  island
 	})
 
 	it("rejects an option the build can't take", () => {
-		const { status, stderr } = runCli(cwd, "--check", "--checks", "bogus")
+		const { status, stderr } = runCli(
+			cwd,
+			"--check",
+			"--creation-checks",
+			"bogus"
+		)
 		attest([status, stderr.split("\n")[0]]).equals([
 			2,
-			'checks must be "helpers", "none" or "types" (was "bogus")'
+			'creationChecks must be "helpers", "none" or "types" (was "bogus")'
 		])
 	})
 })

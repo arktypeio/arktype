@@ -7,7 +7,6 @@
 			"type": "object",
 			"properties": {
 				"allowUnsafe": { "type": "boolean" },
-				"checks": { "enum": ["helpers", "none", "types"] },
 				"conditions": { "type": "array", "items": { "type": "string" } },
 				"config": {
 					"anyOf": [
@@ -20,6 +19,7 @@
 					],
 					"description": "a module path or false"
 				},
+				"creationChecks": { "enum": ["helpers", "none", "types"] },
 				"errors": { "enum": ["all", "first", "none"] },
 				"freeze": { "type": "boolean" },
 				"lazy": { "type": "boolean" },

@@ -80,7 +80,7 @@ const User = type({ name: Name }).pipe(user => user.name)`,
 						"/name.ts": `import { type } from "arktype"
 export const Name = type("string").pipe(s => s.trim())`
 					},
-					{ shadow: true, checks: "helpers" }
+					{ shadow: true, creationChecks: "helpers" }
 				).code
 			)
 		).snap(`var $arkm = 0;

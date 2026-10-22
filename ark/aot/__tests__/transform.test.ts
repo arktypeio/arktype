@@ -90,7 +90,7 @@ export const Team = type({ lead: User })`,
 					"/user.ts": `import { type } from "arktype"
 export const User = type({ name: "string" })`
 				},
-				{ lazy: false, checks: "none" }
+				{ lazy: false, creationChecks: "none" }
 			)
 			// the factory's parameter still evaluates
 			attest(normalized(result.code)).snap(`import "arktype"
@@ -986,8 +986,8 @@ export default (def: string) => def`,
 				"/suffix.ts":
 					"export const suffix = (def: string, s: string) => def + s"
 			}
-			const build = (id: keyof typeof files, checks?: "helpers") =>
-				precompileModule(files[id], id, memoryHost(files), { checks })
+			const build = (id: keyof typeof files, creationChecks?: "helpers") =>
+				precompileModule(files[id], id, memoryHost(files), { creationChecks })
 			// a bundle runs the helpers the build read
 			attest(build("/checked.ts").diagnostics).equals([])
 			const checked = build("/checked.ts", "helpers")

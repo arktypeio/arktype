@@ -190,7 +190,7 @@ export interface PrecompileOptions extends InterpreterOptions {
 	/** inline virtual modules, for hosts without them */
 	inline?: boolean | undefined
 	/** what a factory checks at creation */
-	checks?: Checks | undefined
+	creationChecks?: Checks | undefined
 	/** members a validator has besides validating */
 	members?: ValidatorMembers | undefined
 	/** "first" stops at the first issue, "none" says only "is invalid" */
@@ -451,7 +451,7 @@ export class Precompiler {
 		this.config = opts.config || undefined
 		this.configures = opts.config !== false
 		this.inline = !!opts.inline
-		const checks = opts.checks ?? "types"
+		const checks = opts.creationChecks ?? "types"
 		this.checkHelpers = this.mode === "standalone" && checks === "helpers"
 		this.shadow = this.mode === "standalone" && !!opts.shadow
 		this.allowUnsafe = !!opts.allowUnsafe

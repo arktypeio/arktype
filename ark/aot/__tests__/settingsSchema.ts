@@ -27,7 +27,7 @@ const settings = {
 	"optimizeErrors?": optimization,
 	"freeze?": flag,
 	"lazy?": flag,
-	"checks?": "'types' | 'helpers' | 'none'",
+	"creationChecks?": "'types' | 'helpers' | 'none'",
 	"shadow?": flag,
 	"allowUnsafe?": flag,
 	"conditions?": "string[]",

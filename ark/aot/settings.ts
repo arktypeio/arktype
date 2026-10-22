@@ -104,7 +104,7 @@ const standaloneOptions = [
 	"freeze",
 	"lazy",
 	"shadow",
-	"checks",
+	"creationChecks",
 	"errors",
 	"mutatesInput",
 	"optimize",

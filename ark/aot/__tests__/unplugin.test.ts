@@ -400,7 +400,12 @@ contextualize(function (this: Mocha.Suite) {
 				attest(
 					run(
 						await bundle(
-							{ cwd: root, members, allowUnsafe: true, checks: "types" },
+							{
+								cwd: root,
+								members,
+								allowUnsafe: true,
+								creationChecks: "types"
+							},
 							root
 						)
 					)

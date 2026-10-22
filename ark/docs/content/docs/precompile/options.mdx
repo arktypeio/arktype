@@ -15,7 +15,7 @@ precompile.vite({
 })
 ```
 
-`errors`, `mutatesInput`, `members`, `optimize`, `optimizeErrors`, `freeze`, `lazy`, `checks` and `shadow` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
+`errors`, `mutatesInput`, `members`, `optimize`, `optimizeErrors`, `freeze`, `lazy`, `creationChecks` and `shadow` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
 
 ## Presets
 
@@ -41,10 +41,10 @@ With Turbopack, `"smallest"` needs the `@ark/schema/runtime` alias [`optimize: "
 In development and tests, validators check at runtime what the build verified, so a program the build couldn't fully see fails where it would otherwise misbehave:
 
 - `freeze`: validators and their members are frozen, so writing to one throws in strict mode code.
-- `checks: "types"`: a factory checks at creation that each Type, Module, Scope and Generic it receives is the one the build read, as a module mock or hot reload could replace it, and that what it reads through an import cycle is already set. Under Vitest, `node --test` and `bun test` it's `"helpers"`, checking each static helper too.
+- `creationChecks: "types"`: a factory checks at creation that each Type, Module, Scope and Generic it receives is the one the build read, as a module mock or hot reload could replace it, and that what it reads through an import cycle is already set. Under Vitest, `node --test` and `bun test` it's `"helpers"`, checking each static helper too.
 - `config`: the first validator created fixes the configuration, so a `configure()` the build didn't find throws.
 
-A production build leaves these out, as `freeze: false`, `checks: "none"` and `config: false`, unless an option or `ark.json` sets one. A factory still checks each function another module supplies. What counts as production:
+A production build leaves these out, as `freeze: false`, `creationChecks: "none"` and `config: false`, unless an option or `ark.json` sets one. A factory still checks each function another module supplies. What counts as production:
 
 - Vite's `build` command, outside Vitest
 - webpack and Rspack in `production` mode, their default
@@ -127,9 +127,9 @@ The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for
 
 `lazy: false` creates each validator as its module loads rather than where it's first read, so an error creating one throws on import.
 
-### checks
+### creationChecks
 
-`checks` decides what a factory checks of what it receives: `"types"` (the default) checks each Type, Module, Scope and Generic is the one the build read, `"helpers"` (the default under Vitest, `node --test` and `bun test`) each static helper too, and `"none"` (the default in a [production build](#production-builds)) only those holding functions, so a module mock replacing any other goes unnoticed.
+`creationChecks` decides what a factory checks at creation of what it receives: `"types"` (the default) checks each Type, Module, Scope and Generic is the one the build read, `"helpers"` (the default under Vitest, `node --test` and `bun test`) each static helper too, and `"none"` (the default in a [production build](#production-builds)) only those holding functions, so a module mock replacing any other goes unnoticed.
 
 ### allowUnsafe
 
