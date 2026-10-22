@@ -2093,6 +2093,23 @@ T.toJsonSchema()
 
 A number literal's type is `number`, even for integers, since its `enum` or `const` already says which values it allows.
 
+### Leave a Standard Schema issue's path out of its message
+
+A Standard Schema consumer, like a form library or the MCP SDK, prints each issue's `path` before its `message`, which already began with it:
+
+```ts
+const T = type({ entities: "string[]" })
+
+const result = T["~standard"].validate({})
+
+// previously "entities must be an array (was missing)", now "must be an array (was missing)"
+result.issues[0].message
+// ["entities"], as before
+result.issues[0].path
+```
+
+An issue at a path is a copy of its error with that message. A union's lists each branch's path from the union's, like `b must be a string (was missing) or c must be a number (was missing)`. `validate` returns `{ issues }` rather than the `ArkErrors`, whose own errors and `summary` still start with their paths. A precompiled validator's issues are written the same way, unless their message was configured.
+
 ### Write a nested arktype Standard Schema's errors without repeating their key
 
 When a definition embeds a validator only through its `~standard` property, an error from an arktype validator inside it repeated the key its message already started with:

@@ -447,12 +447,27 @@ export const errorFromUnion = (
 export const messageIn = (error: ArkError, locale: Locale): string =>
 	writtenIn(error, locale).message
 
-export const messageAt = (error: ArkError, path: PropertyKey[]): string => {
+/** errors as Standard Schema issues, whose consumers prefix their path */
+export const standardIssuesOf = (errors: ArkErrors): readonly ArkError[] =>
+	errors.issues.map(error =>
+		error.path.length === 0 ?
+			error
+		:	{ ...error, message: messageFromPath(error) }
+	)
+
+// an error's message, as if the data at its path were validated alone
+const messageFromPath = (error: ArkError): string => {
 	const config = ErrorSource.configOf(error)
 	const copy = unwrittenError(error)
-	copy.path = path
+	unprefix(copy, error.path.length)
 	writeError(copy, config, renderer?.select(config) ?? config.locale)
 	return copy.message
+}
+
+const unprefix = (error: ArkError, depth: number): void => {
+	error.path = error.path.slice(depth)
+	if (error.code === "union" || error.code === "intersection")
+		for (const e of error.errors) unprefix(e, depth)
 }
 
 /** an error failing data as a whole, written in en as errors "none"'s is */

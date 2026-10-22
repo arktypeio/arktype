@@ -677,12 +677,18 @@ const observeCall = (t: Validator, input: unknown) => {
 		}),
 		...(!lacks("~standard") && {
 			standard: observe(
-				() => t["~standard"].validate(cloneInput(input)),
+				() => standardOutcomeOf(t["~standard"].validate(cloneInput(input))),
 				undefined
 			)
 		})
 	}
 }
+
+// a Standard Schema failure's issues, whose text traverse already compares
+const standardOutcomeOf = (result: any): unknown =>
+	result.issues ?
+		{ issues: keptIssuesOf({ issues: result.issues } as never) }
+	:	result
 
 const hasIssues = (observation: unknown): boolean =>
 	hasDomain(observation, "object") && "issues" in observation
