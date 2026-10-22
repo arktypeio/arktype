@@ -2,7 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import {
 	configuredThreadMessage,
-	writeOptionValueMessage,
 	writeTextlessMessage,
 	writeVariantImportMessage
 } from "@ark/precompile"
@@ -187,7 +186,7 @@ contextualize(function (this: Mocha.Suite) {
 	it("refuses a non-path config", () => {
 		attest(
 			node(["main.ts"], { config: "" }).stderr.includes(
-				writeOptionValueMessage("config", '""', "a module path or false")
+				'config must be a module path or false (was "")'
 			)
 		).equals(true)
 	})
@@ -666,7 +665,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 			])
 			attest(await outcomeOf("@ark/schema/runtime")).equals([])
 			attest(await outcomeOf("@ark/schema/runtime/none")).snap([
-				'@ark/schema/runtime resolves to ../../../schema/runtimeNone.ts, a copy for a build with errors: "none" or members: { errorMethods: false }. Remove its turbopack.resolveAlias. Set allowUnsafe: true to build anyway, with a warning.'
+				'@ark/schema/runtime resolves to ../../../schema/runtimeNone.ts, a copy for a build with errors: "none" or optimizeErrors: "size". Remove its turbopack.resolveAlias. Set allowUnsafe: true to build anyway, with a warning.'
 			])
 			// shadow mode loads arktype, so leaves @ark/schema/runtime unchecked
 			attest(

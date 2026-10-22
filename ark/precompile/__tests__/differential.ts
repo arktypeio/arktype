@@ -513,7 +513,7 @@ const observe = (run: () => unknown, input: unknown): unknown => {
 			:	{ out: result, isInput: result === input }
 	} catch (e) {
 		const cause = (e as { cause?: unknown } | undefined)?.cause
-		// an errors "none" assertion's cause has no arkKind where errors lack methods
+		// an errors "none" assertion's cause has no arkKind where errors are written for size
 		const errors =
 			thrownErrorsOf(e) ?? (isErrors(cause) ? (cause as ArkErrors) : undefined)
 		const issues = errors && keptIssuesOf(errors, !firstIssue)

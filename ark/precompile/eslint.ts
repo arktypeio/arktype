@@ -1,5 +1,7 @@
 import type { ESLint, Linter, Rule } from "eslint"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
+import { isProductionEnv, withEnvironment } from "./presets.ts"
+import { withSettingsFile } from "./settings.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
 // each configuration needs a thread of its own, apart from ESLint's
@@ -20,7 +22,10 @@ const check = (
 		delete precompilersByOptions[key]
 	}
 	const request = (precompilersByOptions[key] ??= createSyncPrecompiler({
-		precompilerOptions: opts
+		precompilerOptions: withEnvironment(withSettingsFile(opts), {
+			production: isProductionEnv(),
+			testing: false
+		})
 	}))
 	return (
 		(request("lint", source, id) as CheckedModule | undefined) ??
@@ -39,6 +44,7 @@ const precompilable: Rule.RuleModule = {
 			{
 				type: "object",
 				properties: {
+					preset: { enum: ["smallest", "introspectable"] },
 					runtime: { enum: ["arktype"] },
 					config: { anyOf: [{ type: "string" }, { const: false }] },
 					members: {
@@ -53,8 +59,7 @@ const precompilable: Rule.RuleModule = {
 							json: { type: "boolean" },
 							toJSON: { type: "boolean" },
 							toJsonSchema: { type: "boolean" },
-							"~standard.jsonSchema": { type: "boolean" },
-							errorMethods: { type: "boolean" }
+							"~standard.jsonSchema": { type: "boolean" }
 						},
 						additionalProperties: false
 					},
@@ -66,6 +71,7 @@ const precompilable: Rule.RuleModule = {
 					lazy: { type: "boolean" },
 					mutatesInput: { enum: [false, true, "always"] },
 					optimize: { enum: ["speed", "size"] },
+					optimizeErrors: { enum: ["speed", "size"] },
 					countsKeys: { type: "boolean" },
 					shadow: { type: "boolean" },
 					allowUnsafe: { type: "boolean" }

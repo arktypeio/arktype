@@ -177,10 +177,7 @@ export type ValidatorMember =
 	| (typeof defaultMembers)[number]
 	| IntrospectionMember
 
-export type ValidatorMembers = { [member in ValidatorMember]?: boolean } & {
-	/** false leaves errors their count, issues and summary */
-	errorMethods?: boolean
-}
+export type ValidatorMembers = { [member in ValidatorMember]?: boolean }
 
 export interface StandaloneIntrospection {
 	member: FoldedMember

@@ -60,17 +60,17 @@ export const check = data => User.assert(data)`
 		attest(() => lint(code, { members: { asserts: false } })).throws
 			.snap(`Error: Key "rules": Key "@ark/precompile/precompilable":
 	Value {"asserts":false} should NOT have additional properties.
-		Unexpected property "asserts". Expected properties: "assert", "meta", "~standard", "methods", "expression", "description", "json", "toJSON", "toJsonSchema", "~standard.jsonSchema", "errorMethods".
+		Unexpected property "asserts". Expected properties: "assert", "meta", "~standard", "methods", "expression", "description", "json", "toJSON", "toJsonSchema", "~standard.jsonSchema".
 `)
 	})
 
-	it("refuses an island where errors have no methods", () => {
+	it("refuses an island where errors are written for size", () => {
 		const code = `import { type } from "arktype"
 // @ark-runtime
 export const User = type({ name: "string" })`
 		attest(lint(code)).equals([])
-		attest(lint(code, { members: { errorMethods: false } })).snap([
-			"3:1-3:45 a runtime island returns arktype's errors, which aren't instances of type.errors under members: { errorMethods: false }\na build whose errors lack methods gives its validators a runtime of their own\nPrecompile the definition, or build without members: { errorMethods: false }."
+		attest(lint(code, { optimizeErrors: "size" })).snap([
+			'3:1-3:45 a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under optimizeErrors: "size"\na build writing its errors for size gives its validators a runtime of their own\nPrecompile the definition, or build with optimizeErrors: "speed".'
 		])
 	})
 

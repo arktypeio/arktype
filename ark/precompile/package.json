@@ -55,7 +55,8 @@
 		}
 	},
 	"files": [
-		"out"
+		"out",
+		"ark.schema.json"
 	],
 	"engines": {
 		"node": ">=22.12.0"

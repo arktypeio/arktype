@@ -5,6 +5,7 @@ import { arktypeConfigJson } from "./arktypeConfig.ts"
 import { noSuggest } from "@ark/util"
 import {
 	precompileStandalone,
+	type Optimization,
 	type StandaloneOptions
 } from "arktype/internal/standalone.ts"
 import { fork, spawnSync } from "node:child_process"
@@ -94,15 +95,35 @@ const copiedPackageUrls = ["type", "schema"].map(
 	name => `${pathToFileURL(join(import.meta.dirname, "..", "..", name)).href}/`
 )
 
-// an errors "none" artifact loads its own copy of the runtime, as published
-const loadUndetailedRuntime = () =>
+// an artifact built with errors "none" or for lean errors loads its own copy
+// of the runtime, as published
+const issuesModulesByVariant = {
+	none: "issuesNone.ts",
+	lean: "issuesLean.ts",
+	"none-lean": "issuesNoneLean.ts"
+}
+
+type RuntimeVariant = keyof typeof issuesModulesByVariant
+
+// errors are written for size as validators are, unless optimizeErrors says
+const variantOf = (
+	opts: StandaloneOptions & { optimizeErrors?: Optimization }
+): RuntimeVariant | undefined =>
+	(opts.optimizeErrors ?? opts.optimize) === "size" ?
+		opts.errors === "none" ?
+			"none-lean"
+		:	"lean"
+	: opts.errors === "none" ? "none"
+	: undefined
+
+const loadRuntimeVariant = (variant: RuntimeVariant) =>
 	registerHooks({
 		resolve: (specifier, context, nextResolve) => {
-			if (!context.parentURL?.endsWith("?none"))
+			if (!context.parentURL?.endsWith(`?${variant}`))
 				return nextResolve(specifier, context)
 			const resolved = nextResolve(
 				specifier === "@ark/schema/runtime" ?
-					"@ark/schema/runtime/none"
+					`@ark/schema/runtime/${variant}`
 				:	specifier,
 				context
 			)
@@ -110,9 +131,9 @@ const loadUndetailedRuntime = () =>
 				return resolved
 			const url = resolved.url.replace(
 				/\/schema\/shared\/issues\.ts$/,
-				"/schema/shared/issuesNone.ts"
+				`/schema/shared/${issuesModulesByVariant[variant]}`
 			)
-			return { ...resolved, url: `${url}?none` }
+			return { ...resolved, url: `${url}?${variant}` }
 		}
 	})
 
@@ -128,11 +149,11 @@ const standaloneOf = async (errors: "all" | "first") => {
 	delete (globalThis as Record<string, unknown>)[
 		noSuggest("loadedArktypeEntry")
 	]
-	const isUndetailed = opts.errors === "none"
-	if (isUndetailed) loadUndetailedRuntime()
+	const variant = variantOf(opts)
+	if (variant) loadRuntimeVariant(variant)
 	// each export is a getter, creating the artifact's validators at its first call
 	const artifact: Record<string, () => unknown> = await import(
-		`${pathToFileURL(path).href}${isUndetailed ? "?none" : ""}`
+		`${pathToFileURL(path).href}${variant ? `?${variant}` : ""}`
 	)
 	return Object.fromEntries(
 		Object.entries(artifact).map(([name, get]) => [name, get()])

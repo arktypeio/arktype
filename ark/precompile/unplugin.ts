@@ -45,6 +45,8 @@ import {
 	writeUntransformedImportMessage,
 	type PrecompileHost
 } from "./host.ts"
+import { withEnvironment, type Environment } from "./presets.ts"
+import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
 
 export type { PrecompilePluginOptions } from "./driver.ts"
@@ -62,12 +64,16 @@ export const precompile: UnpluginInstance<
 		refuseDeclare(opts, meta.framework)
 	// Rollup's mark of a virtual module, which esbuild prints as a NUL
 	const virtual = meta.framework === "esbuild" ? "" : "\0"
-	let workerOptions = opts
+	// the worker applies the preset, after the environment's defaults, which a
+	// bundler says once it has read its own configuration
+	const set = withSettingsFile(opts)
+	opts = resolvePrecompileOptions(set)
+	let workerOptions = set
 	let unitReaders: UnitReaders | undefined
 	// a worker of its own lets arktype take the program's configuration
 	const create = () =>
 		createAsyncPrecompiler({
-			precompilerOptions: workerOptions ?? {},
+			precompilerOptions: workerOptions,
 			unitReaders
 		})
 	let precompiler = Promise.resolve(create())
@@ -79,6 +85,14 @@ export const precompile: UnpluginInstance<
 	}
 	const restart = () => {
 		precompiler = precompiler.then(replace)
+	}
+	// known once the bundler has read its own configuration
+	const setEnvironment = (environment: Environment) => {
+		const environmentOptions = withEnvironment(set, environment)
+		if (JSON.stringify(environmentOptions) === JSON.stringify(workerOptions))
+			return
+		workerOptions = environmentOptions
+		restart()
 	}
 	// a changed file or configuration may need a new worker
 	const reset = () => {
@@ -418,15 +432,11 @@ export const precompile: UnpluginInstance<
 						message => config.logger.warn(message)
 					)
 				}
-				if (
-					opts?.checks !== undefined ||
-					opts?.runtime === "arktype" ||
-					!process.env.VITEST ||
-					config.mode !== "test"
-				)
-					return
-				workerOptions = { ...opts, checks: "helpers" }
-				restart()
+				const testing = !!process.env.VITEST && config.mode === "test"
+				setEnvironment({
+					production: config.command === "build" && !testing,
+					testing
+				})
 			}
 		},
 		// loading the precompiler overlaps the bundler's own startup
@@ -461,13 +471,17 @@ export const precompile: UnpluginInstance<
 		watchChange: reset,
 		webpack: compiler => {
 			keepCompiler(compiler)
+			setEnvironment(environmentOf(compiler))
 			// as Rspack does, so a runtime from another version fails the build
 			compiler.options.module.rules.push({
 				test: /~arktype/,
 				parser: { exportsPresence: "error" }
 			})
 		},
-		rspack: keepCompiler,
+		rspack: compiler => {
+			keepCompiler(compiler)
+			setEnvironment(environmentOf(compiler))
+		},
 		rollup: { options: checkInputExternal },
 		rolldown: { options: checkInputExternal },
 		esbuild: {
@@ -475,6 +489,11 @@ export const precompile: UnpluginInstance<
 			onResolveFilter: isStandalone ? /^~arktype\// : /^arktype$|^~arktype\//,
 			setup: build => {
 				if (!build.initialOptions.bundle) throwBuildError(unbundledMessage)
+				// esbuild has no mode, but a build may resolve for production
+				setEnvironment({
+					production: !!build.initialOptions.conditions?.includes("production"),
+					testing: false
+				})
 				build.onDispose(restart)
 				if (variant) {
 					build.onResolve({ filter: schemaSpecifier }, args => {
@@ -560,13 +579,19 @@ const esbuildResolution = "arktype"
 
 // what the plugin reads of a webpack or Rspack compiler
 interface BundlerCompiler {
-	options: { cache?: unknown; mode?: string }
+	options: { cache?: unknown; mode?: string | undefined }
 	hooks: { compilation: Tap<BundlerCompilation> }
 	webpack: {
 		ExternalModule: abstract new (...args: never[]) => { userRequest: string }
 		WebpackError: new (message: string) => Error
 	}
 }
+
+// webpack and Rspack build for production where no mode is set
+const environmentOf = (compiler: BundlerCompiler): Environment => ({
+	production: (compiler.options.mode ?? "production") === "production",
+	testing: false
+})
 
 interface BundlerCompilation {
 	hooks: { finishModules: Tap<Iterable<unknown>> }

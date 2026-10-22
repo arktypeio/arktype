@@ -79,7 +79,7 @@ jobs:
     strategy:
       matrix:
         # the build's options: mutatesInput with each errors mode, size builds,
-        # and errors lacking methods
+        # and errors written for size apart from validators
         options:
           - "{}"
           - '{"mutatesInput": true, "errors": "first"}'
@@ -88,9 +88,9 @@ jobs:
           - '{"mutatesInput": "always", "errors": "none", "countsKeys": true}'
           - '{"optimize": "size"}'
           - '{"optimize": "size", "errors": "first"}'
-          - '{"members": {"errorMethods": false}}'
-          - '{"members": {"errorMethods": false}, "optimize": "size"}'
-          - '{"members": {"errorMethods": false}, "errors": "none"}'
+          - '{"optimizeErrors": "size"}'
+          - '{"optimize": "size", "optimizeErrors": "speed"}'
+          - '{"optimizeErrors": "size", "errors": "none"}'
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4

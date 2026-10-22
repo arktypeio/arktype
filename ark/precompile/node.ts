@@ -25,6 +25,7 @@ import {
 	writeVariantImportMessage
 } from "./host.ts"
 import { refuseDeclare } from "./declare.ts"
+import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
 import { createSyncPrecompiler, isPrecompilerWorker } from "./worker.ts"
 
 export const register = (opts?: PrecompilePluginOptions): void => {
@@ -34,11 +35,13 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	refuseDeclare(opts, "Node")
 	// the worker inherits the flags that registered these hooks
 	if (isPrecompilerWorker) return
-	const isStandalone = opts?.runtime !== "arktype"
+	const set = withSettingsFile(opts)
+	opts = resolvePrecompileOptions(set)
+	const isStandalone = opts.runtime !== "arktype"
 	const variant = resolvedVariantOf(opts)
 	const request = createSyncPrecompiler({
 		precompilerOptions: driverOptionsOf(
-			opts,
+			set,
 			// `node --test` marks each file's process, or runs the files in its own
 			process.env.NODE_TEST_CONTEXT !== undefined ||
 				process.execArgv.includes("--test")

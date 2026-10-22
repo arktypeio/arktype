@@ -1,0 +1,61 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"$schema": { "type": "string" },
+		"precompile": {
+			"type": "object",
+			"properties": {
+				"allowUnsafe": { "type": "boolean" },
+				"checks": { "enum": ["helpers", "none", "types"] },
+				"conditions": { "type": "array", "items": { "type": "string" } },
+				"config": {
+					"anyOf": [
+						{
+							"type": "string",
+							"description": "a module path or false",
+							"minLength": 1
+						},
+						{ "const": false, "description": "a module path or false" }
+					],
+					"description": "a module path or false"
+				},
+				"countsKeys": { "type": "boolean" },
+				"errors": { "enum": ["all", "first", "none"] },
+				"freeze": { "type": "boolean" },
+				"lazy": { "type": "boolean" },
+				"members": {
+					"type": "object",
+					"properties": {
+						"assert": { "type": "boolean" },
+						"description": { "type": "boolean" },
+						"expression": { "type": "boolean" },
+						"json": { "type": "boolean" },
+						"meta": { "type": "boolean" },
+						"methods": { "type": "boolean" },
+						"toJSON": { "type": "boolean" },
+						"toJsonSchema": { "type": "boolean" },
+						"~standard": { "type": "boolean" },
+						"~standard.jsonSchema": { "type": "boolean" }
+					},
+					"additionalProperties": false
+				},
+				"mutatesInput": {
+					"anyOf": [{ "const": "always" }, { "type": "boolean" }]
+				},
+				"optimize": { "enum": ["size", "speed"] },
+				"optimizeErrors": { "enum": ["size", "speed"] },
+				"preset": { "enum": ["introspectable", "smallest"] },
+				"runtime": { "const": "arktype" },
+				"shadow": { "type": "boolean" },
+				"tsconfig": {
+					"type": "string",
+					"description": "a path",
+					"minLength": 1
+				}
+			},
+			"additionalProperties": false
+		}
+	},
+	"additionalProperties": false
+}

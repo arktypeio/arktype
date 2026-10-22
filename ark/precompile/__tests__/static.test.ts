@@ -5,8 +5,6 @@ import {
 	renderDiagnostic,
 	standardJsonSchemaWithoutStandardMessage,
 	writeArktypeRuntimeOptionMessage,
-	writeOptionValueMessage,
-	writeUnknownMemberMessage,
 	type PrecompileOptions
 } from "@ark/precompile"
 import { analyze, diagnosticsOf, memoryHost, statusesOf } from "./utils.ts"
@@ -1445,22 +1443,22 @@ console.log(values.map(v => (v as any).from))`,
 				[
 					"runtime other than arktype",
 					{ runtime: "arktyp" as never },
-					writeOptionValueMessage("runtime", '"arktyp"', '"arktype"')
+					'runtime must be "arktype" (was "arktyp")'
 				],
 				[
 					"non-object members",
 					{ members: true as never },
-					writeOptionValueMessage("members", "true", "an object")
+					"members must be an object (was true)"
 				],
 				[
 					"unknown member",
 					{ members: { json: true, and: true } as never },
-					writeUnknownMemberMessage('"and"')
+					"members.and must be removed (was true)"
 				],
 				[
 					"non-boolean member",
 					{ members: { assert: 0 } as never },
-					writeOptionValueMessage('members["assert"]', "0", "a boolean")
+					"members.assert must be boolean (was 0)"
 				],
 				[
 					"~standard.jsonSchema without ~standard",
@@ -1470,26 +1468,32 @@ console.log(values.map(v => (v as any).from))`,
 				[
 					"non-path config",
 					{ config: true as never },
-					writeOptionValueMessage("config", "true", "a module path or false")
+					"config must be a module path or false (was true)"
 				],
 				[
 					"empty config",
 					{ config: "" },
-					writeOptionValueMessage("config", '""', "a module path or false")
+					'config must be a module path or false (was "")'
 				],
 				[
 					"invalid enum option",
 					{ checks: "all" as never },
-					writeOptionValueMessage(
-						"checks",
-						'"all"',
-						'"types", "helpers" or "none"'
-					)
+					'checks must be "helpers", "none" or "types" (was "all")'
 				],
 				[
 					"non-boolean option",
 					{ freeze: 0 as never },
-					writeOptionValueMessage("freeze", "0", "a boolean")
+					"freeze must be boolean (was 0)"
+				],
+				[
+					"unknown option",
+					{ optimise: "size" } as never,
+					'optimise must be removed (was "size")'
+				],
+				[
+					"unknown preset",
+					{ preset: "tiny" as never },
+					'preset must be "introspectable" or "smallest" (was "tiny")'
 				],
 				[
 					"standalone option with runtime arktype",
@@ -1504,7 +1508,7 @@ console.log(values.map(v => (v as any).from))`,
 				[
 					"non-boolean shadow",
 					{ shadow: "true" as never },
-					writeOptionValueMessage("shadow", '"true"', "a boolean")
+					'shadow must be boolean (was "true")'
 				],
 				[
 					"shadow with runtime arktype",
@@ -1586,17 +1590,17 @@ const T = type("string")`,
 			])
 		})
 
-		it("islands where errors lack methods", () => {
+		it("islands where errors are written for size", () => {
 			attest(
 				diagnosticsOf(
 					`import { type } from "arktype"
 // @ark-runtime
 const T = type("string")`,
 					{},
-					{ members: { errorMethods: false } }
+					{ optimize: "size" }
 				)
 			).snap([
-				"/main.ts:3:1  a runtime island returns arktype's errors, which aren't instances of type.errors under members: { errorMethods: false }\n  a build whose errors lack methods gives its validators a runtime of their own\n  Precompile the definition, or build without members: { errorMethods: false }."
+				'/main.ts:3:1  a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under optimizeErrors: "size"\n  a build writing its errors for size gives its validators a runtime of their own\n  Precompile the definition, or build with optimizeErrors: "speed".'
 			])
 		})
 

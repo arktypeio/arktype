@@ -393,8 +393,14 @@ contextualize(function (this: Mocha.Suite) {
 		it(`${name} import cycles`, async () => {
 			for (const [fixture, members] of Object.entries(cycles)) {
 				const root = fromHere(fixture)
+				// a production build doesn't check a read precedes what it reads
 				attest(
-					run(await bundle({ cwd: root, members, allowUnsafe: true }, root))
+					run(
+						await bundle(
+							{ cwd: root, members, allowUnsafe: true, checks: "types" },
+							root
+						)
+					)
 				).equals(runPlain(root))
 			}
 		})
@@ -636,7 +642,7 @@ console.log(out.constructor === type.errors)
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).snap("true\n")
 	})
 
-	it("esbuild errors without methods", async () => {
+	it("esbuild errors written for size", async () => {
 		const root = writeFixture(
 			{
 				"main.ts": `import { TraversalError, type } from "arktype"
@@ -647,15 +653,17 @@ const out = T({ b: { c: [1, "x"] } })
 if (!(out instanceof type.errors)) throw new Error("valid")
 console.log(out.constructor === type.errors, out.count, JSON.stringify(out.issues))
 console.log(out.summary)
-console.log("throw" in out, "toJSON" in out, String(out))
-try {
-	T.assert({})
-} catch (e) {
-	console.log(String(e), e instanceof TraversalError)
+console.log(String(out) === out.summary, \`\${out}\` === out.summary, JSON.stringify(out) === JSON.stringify(out.issues))
+for (const fail of [() => T.assert({}), () => out.throw()]) {
+	try {
+		fail()
+	} catch (e) {
+		console.log(String(e), e instanceof TraversalError)
+	}
 }
 `
 			},
-			fromHere("temp", "errorMethods")
+			fromHere("temp", "sizedErrors")
 		)
 		// with the issues module each runtime copy is published with
 		const outputs = await Promise.all(
@@ -677,7 +685,7 @@ try {
 						precompile.esbuild({
 							cwd: root,
 							...opts,
-							members: { errorMethods: false },
+							optimizeErrors: "size",
 							conditions
 						})
 					]
@@ -689,14 +697,17 @@ try {
 			`true 2 [{"code":"required","path":["a"],"data":{"b":{"c":[1,"x"]}},"message":"a is missing"},{"code":"domain","path":["b","c",1],"data":"x","expected":"a number","message":"b.c[1] must be a number"}]
 a is missing
 b.c[1] must be a number
-false false [object Object]
+true true true
 TraversalError: a is missing
 b is missing true
+TraversalError: a is missing
+b.c[1] must be a number true
 `,
 			`true 1 [{"code":"predicate","path":[],"data":{"b":{"c":[1,"x"]}},"message":"is invalid"}]
 is invalid
-false false [object Object]
+true true true
 Error: is invalid false
+TypeError: out.throw is not a function false
 `
 		])
 	})
@@ -943,7 +954,7 @@ export const inspected = inspect(type({ a: "string" })({ a: 1 }))
 			moduleIds.filter(id => id.startsWith("\0~arktype/")).length
 		const first = await build()
 		const second = await build()
-		attest([unitModulesOf(first), unitModulesOf(second)]).snap([30, 27])
+		attest([unitModulesOf(first), unitModulesOf(second)]).snap([27, 24])
 		attest(run(second.code)).equals(expected)
 	})
 

@@ -17,6 +17,7 @@ import {
 	type PrecompileOptions,
 	type Site
 } from "./precompile.ts"
+import { withSettingsFile } from "./settings.ts"
 import { isPrecompilerWorker } from "./worker.ts"
 
 export interface PrecompilePluginOptions
@@ -30,9 +31,8 @@ export const createPrecompiler = (
 	return new Precompiler(createNodeHost(opts), {
 		...opts,
 		cwd,
-		// "" is left for the precompiler to refuse, as resolving it reads cwd
 		config:
-			typeof opts?.config === "string" && opts.config ?
+			typeof opts?.config === "string" ?
 				resolve(cwd, opts.config)
 			:	opts?.config
 	})
@@ -207,6 +207,8 @@ interface TrackedPrecompiler {
 const createTrackedPrecompiler = (
 	opts: PrecompilePluginOptions
 ): TrackedPrecompiler => {
+	// as the plugin, a driver, the CLI or the ESLint rule read it
+	opts = withSettingsFile(opts)
 	const readTimes: Record<string, number> = {}
 	const targetsByImporter: TrackedPrecompiler["targetsByImporter"] =
 		Object.create(null)

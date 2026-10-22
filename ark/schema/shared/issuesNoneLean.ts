@@ -2,7 +2,7 @@ import type { ArkIssue } from "./issues.ts"
 
 export * from "./issuesUndetailed.ts"
 
-// in place of issuesNone.ts's errors where errors lack methods
+// in place of issuesNone.ts's errors, written for size
 export class ArkErrors {
 	_: ArkIssue[] = []
 
@@ -23,6 +23,14 @@ export class ArkErrors {
 				summary + (summary && "\n") + (issue.message ?? "is invalid"),
 			""
 		)
+	}
+
+	toJSON(): readonly ArkIssue[] {
+		return this.issues
+	}
+
+	toString(): string {
+		return this.summary
 	}
 }
 

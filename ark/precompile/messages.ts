@@ -1,45 +1,6 @@
 import type { ErrorDetail, MutatesInput } from "@ark/schema"
 import { printable } from "@ark/util"
-import { memberOptions, type Rule } from "./precompile.ts"
-
-export const writeUnknownMemberMessage = <member extends string>(
-	member: member
-): writeUnknownMemberMessage<member> =>
-	`members has ${member}, which isn't one of ${memberOptions.map(name => JSON.stringify(name)).join(", ")}`
-
-export type writeUnknownMemberMessage<member extends string> =
-	`members has ${member}, which isn't one of ${string}`
-
-export const writeOptionValueMessage = <
-	option extends string,
-	value extends string,
-	expected extends string
->(
-	option: option,
-	value: value,
-	expected: expected
-): writeOptionValueMessage<option, value, expected> =>
-	`${option} is ${value}, which isn't ${expected}`
-
-export type writeOptionValueMessage<
-	option extends string,
-	value extends string,
-	expected extends string
-> = `${option} is ${value}, which isn't ${expected}`
-
-export const standardJsonSchemaWithoutStandardMessage =
-	'members bakes "~standard.jsonSchema" into "~standard", which it sets false'
-
-export type standardJsonSchemaWithoutStandardMessage =
-	typeof standardJsonSchemaWithoutStandardMessage
-
-export const writeArktypeRuntimeOptionMessage = <option extends string>(
-	option: option
-): writeArktypeRuntimeOptionMessage<option> =>
-	`${option} chooses what a standalone build writes, which runtime: "arktype" doesn't`
-
-export type writeArktypeRuntimeOptionMessage<option extends string> =
-	`${option} chooses what a standalone build writes, which runtime: "arktype" doesn't`
+import type { Rule } from "./precompile.ts"
 
 export const writeUnreadableConfigMessage = (path: string): string =>
 	`the config module ${path} can't be read`

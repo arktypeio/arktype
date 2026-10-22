@@ -3,6 +3,8 @@ import { resolve } from "node:path"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
 import { printablePathOf } from "./host.ts"
 import { renderDiagnostic, type Diagnostic } from "./precompile.ts"
+import { isProductionEnv, withEnvironment } from "./presets.ts"
+import { withSettingsFile } from "./settings.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
 export interface CheckReport {
@@ -34,7 +36,10 @@ export const check = (
 		.sort()
 	// a worker applies the configuration to arktype as the build does
 	const request = createSyncPrecompiler({
-		precompilerOptions: { ...opts, cwd }
+		precompilerOptions: withEnvironment(withSettingsFile({ ...opts, cwd }), {
+			production: isProductionEnv(),
+			testing: false
+		})
 	})
 	const report: CheckReport = {
 		lines: [],

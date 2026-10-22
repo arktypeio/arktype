@@ -169,7 +169,7 @@ if (
 if ("failsAt" in (undetailedRuntime.ArkErrors as Function).prototype)
 	throw new Error("⚠️  @ark/schema/runtime/none bundles shared/issues.ts.")
 
-// what builds whose errors lack methods load in place of it
+// what builds writing errors for size load in place of it
 for (const variant of ["lean", "none-lean"]) {
 	const leanRuntime = await importBuilt(`@ark/schema/runtime/${variant}`)
 	if (
@@ -180,8 +180,15 @@ for (const variant of ["lean", "none-lean"]) {
 			`⚠️  @ark/schema/runtime/${variant} exports other names than @ark/schema/runtime.`
 		)
 	}
-	if ("toJSON" in (leanRuntime.ArkErrors as Function).prototype)
-		throw new Error(`⚠️  @ark/schema/runtime/${variant}'s errors have methods.`)
+	// only the errors they replace have an arkKind
+	if (
+		Object.getOwnPropertySymbols((leanRuntime.ArkErrors as Function).prototype)
+			.length
+	) {
+		throw new Error(
+			`⚠️  @ark/schema/runtime/${variant} bundles the errors it replaces.`
+		)
+	}
 }
 
 const errors = type("string")(5) as ArkErrors
