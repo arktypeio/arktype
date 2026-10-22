@@ -850,11 +850,15 @@ export default {
 	entry: "./src/main.ts",
 	resolve: { extensions: [".ts", ".js"] },
 	module: {
-		rules: [{ test: /\.ts$/, loader: "ts-loader" }]
+		rules: [
+			{ test: /\.ts$/, loader: "ts-loader", options: { transpileOnly: true } }
+		]
 	},
 	plugins: [precompile.webpack()]
 }
 ```
+
+ts-loader is handed modules the plugin already precompiled, which import validators TypeScript can't see, so it only transpiles them. Check types with `tsc --noEmit`, or `fork-ts-checker-webpack-plugin`, which reads your sources.
 
 **Rspack**
 
@@ -938,7 +942,7 @@ export default {
 
 ## Test runners and runtimes
 
-Vitest uses the Vite plugin. For the others, each driver takes the plugin's options, fails on the same errors and resolves `arktype` to `arktype/runtime` where its host allows. The precompiler runs in a worker thread, sharing no module state with your program.
+Vitest uses the Vite plugin. For the others, each driver takes the plugin's options, fails on the same errors, except that Bun doesn't check dependencies, and resolves `arktype` to `arktype/runtime` where its host allows. The precompiler runs in a worker thread, sharing no module state with your program.
 
 Node 22.15 or later, for `node --test` or any program (pass `--enable-source-maps` for original lines in stack traces):
 
@@ -1023,7 +1027,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
   Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".
 ```
 
-Composing inside a definition is fine, since the build evaluates it: `export const Admin = User.and({ role: "'admin'" })` is precompiled to a validator of its own. So is [`.encode`](https://arktype.io/docs/codecs) wherever the build sees it read, like `const encode = (event: unknown) => Event.encode(event)`: the encoder is precompiled like any other Type, and receives each codec's `encode` function from the validator holding it.
+Composing inside a definition is fine, since the build evaluates it: `export const Admin = User.and({ role: "'admin'" })` is precompiled to a validator of its own. So is [`.encode`](https://arktype.io/docs/codecs) wherever the build sees it read, like `const encode = (event: unknown) => Event.encode(event)`: the encoder is precompiled like any other Type, and receives each codec's `encode` function from the validator holding it. The build installs encoding itself, so a precompiled `.encode` works even where the program never imports `arktype/codecs`.
 
 A validator and its members are frozen, except a Date or RegExp it holds, unless the build sets [`freeze: false`](https://arktype.io/docs/precompile/options#freeze).
 
@@ -1040,6 +1044,7 @@ A validator returns errors of its own, instances of `type.errors` and of `arktyp
 - `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`.
 - A `message`, `problem`, `expected` or `actual` configured for a code or on a Type is written as arktype writes it. A build configured with what a validator can't write, like a locale, [fails with its fix](https://arktype.io/docs/precompile/options#configuration).
 - They aren't instances of `@ark/schema`'s `ArkErrors`, so the build fails where a module imports that one.
+- `console.log` prints them as their issues where `arktype/runtime` resolves under the `"development"` condition: Vite's dev server, Vitest, webpack's development mode, and Node or esbuild given `--conditions=development`. A production build ships nothing for it.
 
 The [`errors`](https://arktype.io/docs/precompile/options#errors) option ships less: one issue, or one saying the data is invalid.
 
@@ -1221,6 +1226,8 @@ Where the fix is clear and the problem could throw at runtime, the build fails. 
 
 **`` `out.items` is read off what may be an arktype value ``**: the build lost track of what a value is somewhere between it and an arktype value, like a Module it can't read, so it may be a Type, which a validator replaces. An annotation doesn't change that. Define a Scope or Module in a const, as `scope({ ... })` or `scope({ ... }).export()`, which the build reads alias by alias, or build with `runtime: "arktype"`.
 
+**`` `getPlaces()` may be a Scope ``** or **`it's passed to code the build can't see`**: a standalone build replaces a Scope it precompiles with an object that has none of its members, so it precompiles a Scope only where it can see each read. Assign the Scope to a const and read off that, as in `const $ = getPlaces()` and `$.type(...)`, keep it out of functions the build can't analyze, or build with `runtime: "arktype"`.
+
 ## Setup
 
 **`arktype resolves to 2.3.0, but @ark/precompile runs on 2.2.8`**: validators run only on the arktype they were built with. Install one version, e.g. with your package manager's dedupe or overrides.
@@ -1350,7 +1357,9 @@ Every ArkType definition can run dynamically, created by `type()` at runtime, or
 
 In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled for size, it reports every error on Valibot's own login form, with its message, in a smaller bundle than Valibot. The charts come from different builds: each names its benchmark and the options it was built with.
 
-In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType. What precompiling removes is everything around a Type's checks: the parser, the time it takes to create each Type, and the code it generates.
+In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType. What precompiling removes is everything around a
+Type's checks: the parser, the time it takes to create each Type, and the code
+it generates.
 
 | | Dynamic | Precompiled | Precompiled with `runtime: "arktype"` |
 | - | - | - | - |
