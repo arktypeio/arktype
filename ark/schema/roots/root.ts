@@ -589,11 +589,7 @@ export abstract class BaseRoot<
 		return this.$.finalize(
 			this.transform(
 				(kind, inner) =>
-					kind === "structure" ?
-						rule === "ignore" ?
-							omit(inner as Structure.Inner, { undeclared: 1 })
-						:	{ ...inner, undeclared: rule }
-					:	inner,
+					kind === "structure" ? { ...inner, undeclared: rule } : inner,
 				deep ? undefined : (
 					{ shouldTransform: node => !includes(structuralKinds, node.kind) }
 				)

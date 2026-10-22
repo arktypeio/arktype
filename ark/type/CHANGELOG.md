@@ -586,6 +586,17 @@ const Contents = type({ "+": "ignore", uri: "string", text: "string" })
 
 An object that deletes undeclared keys now allows them in its `.in`, which took `onUndeclaredKey`'s configured `"delete"` or `"reject"` instead.
 
+An object's `"+": "ignore"` holds where `onUndeclaredKey` is configured otherwise, in what's built from it too: its `.in` where it holds a morph, an intersection, `.merge()`, `.partial()` and `.onUndeclaredKey("ignore")` each took the configured `"delete"` or `"reject"` back. Such an object's `expression` ends with `+ (undeclared): ignore`, and a union with an overlapping branch throws, where it was built and returned data unchanged:
+
+```ts
+configure({ onUndeclaredKey: "delete" })
+
+const C = type({ provider: "string" })
+
+// previously built, now throws ParseError: ... is indeterminate
+C.or({ "+": "ignore", uses: "string", "o?": C })
+```
+
 ### Name the code, path and fallback in a `ToJsonSchemaError`
 
 A `ToJsonSchemaError`'s message was only its printed context. It now starts with a sentence naming its code, where in the Type the part it couldn't convert is, and the `fallback` to configure:

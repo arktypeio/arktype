@@ -156,7 +156,7 @@ const narrowToKeysOf = (
 		const never = $ark.intrinsic.never.internal
 		disjoint.add("presence", isLeft ? never : value, isLeft ? value : never, {
 			path: [k],
-			undeclared: node.undeclared
+			undeclared: node.handlesUndeclared
 		})
 	}
 	if (otherInner.optional)
@@ -194,7 +194,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			const rDerived: OptionalNode[] = []
 			// length bounds on an array a closed structure narrows
 			const roots: BaseRoot[] = []
-			if (l.undeclared) {
+			if (l.handlesUndeclared) {
 				narrowToKeysOf(
 					l,
 					r,
@@ -206,7 +206,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 					true
 				)
 			}
-			if (r.undeclared) {
+			if (r.handlesUndeclared) {
 				narrowToKeysOf(
 					r,
 					l,
@@ -223,9 +223,9 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 
 			if (l.undeclared || r.undeclared) {
 				baseInner.undeclared =
-					l.undeclared === "reject" || r.undeclared === "reject" ?
-						"reject"
-					:	"delete"
+					l.undeclared === "reject" || r.undeclared === "reject" ? "reject"
+					: l.undeclared === "delete" || r.undeclared === "delete" ? "delete"
+					: "ignore"
 			}
 
 			const childIntersectionResult = intersectConstraints({
