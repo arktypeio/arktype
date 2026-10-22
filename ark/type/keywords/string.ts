@@ -4,7 +4,6 @@ import {
 	node,
 	type Intersection,
 	type JsonSchema,
-	type NodeInput,
 	type Predicate
 } from "@ark/schema"
 import {
@@ -12,8 +11,7 @@ import {
 	flatMorph,
 	numericStringMatcher,
 	wellFormedIntegerMatcher,
-	type Json,
-	type mutable
+	type Json
 } from "@ark/util"
 import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
@@ -44,25 +42,23 @@ export { isLuhnValid } from "./functions.ts"
 
 // non-trivial expressions should have an explanation or attribution
 
+// annotations name the keyword's strings in JSON Schema. Its pattern carries
+// them too, so they're written wherever it's constrained further
 export const regexStringNode = (
 	regex: RegExp,
 	alias: KeywordPhraseAlias,
-	jsonSchemaFormat?: JsonSchema.Format
-): Intersection.Node => {
-	const input: mutable<NodeInput<"intersection">> = {
+	annotations?: Pick<JsonSchema.String, "format" | "contentEncoding">
+): Intersection.Node =>
+	node("intersection", {
 		domain: node("domain", { domain: "string" }),
 		pattern: [
 			node("pattern", {
 				...constraintInputOf("pattern", regex),
-				meta: keywordMeta(alias)
+				meta: { ...keywordMeta(alias), ...annotations }
 			})
-		]
-	}
-
-	if (jsonSchemaFormat) input.meta = { format: jsonSchemaFormat }
-
-	return node("intersection", input) as never
-}
+		],
+		...(annotations && { meta: annotations })
+	}) as never
 
 // a string its keyword's predicate checks, written in JSON Schema as jsonSchema
 const predicateStringNode = (
@@ -122,12 +118,14 @@ const base64: base64.module = keywordModule(
 		root: () =>
 			regexStringNode(
 				/^(?:[\d+/A-Za-z]{4})*(?:[\d+/A-Za-z]{2}==|[\d+/A-Za-z]{3}=)?$/,
-				"string.base64"
+				"string.base64",
+				{ contentEncoding: "base64" }
 			),
 		url: () =>
 			regexStringNode(
 				/^(?:[\w-]{4})*(?:[\w-]{2}(?:==|%3D%3D)?|[\w-]{3}(?:=|%3D)?)?$/,
-				"string.base64.url"
+				"string.base64.url",
+				{ contentEncoding: "base64url" }
 			)
 	},
 	{
@@ -296,7 +294,7 @@ export const tryParseDatePattern = (
 }
 
 const parsableDate = cached(() =>
-	predicateStringNode(isParsableDate, "string.date")
+	predicateStringNode(isParsableDate, "string.date", { format: "date-time" })
 )
 
 const epochRoot = cached(() =>
@@ -322,9 +320,9 @@ const epoch: Module<stringDate.epoch.$> = keywordModule(
 ) as never
 
 const isoRoot = cached(() =>
-	regexStringNode(iso8601Matcher, "string.date.iso").internal.assertHasKind(
-		"intersection"
-	)
+	regexStringNode(iso8601Matcher, "string.date.iso", {
+		format: "date-time"
+	}).internal.assertHasKind("intersection")
 )
 
 const iso: Module<stringDate.iso.$> = keywordModule(
@@ -400,7 +398,7 @@ const email = () =>
 		// https://www.regular-expressions.info/email.html
 		/^[\w%+.-]+@[\d.A-Za-z-]+\.[A-Za-z]{2,}$/,
 		"string.email",
-		"email"
+		{ format: "email" }
 	)
 
 // based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
@@ -425,8 +423,8 @@ const ipv6Matcher = new RegExp(
 export const ip: ip.module = keywordModule(
 	{
 		root: ["v4 | v6", "@", keywordMeta("string.ip")],
-		v4: () => regexStringNode(ipv4Matcher, "string.ip.v4", "ipv4"),
-		v6: () => regexStringNode(ipv6Matcher, "string.ip.v6", "ipv6")
+		v4: () => regexStringNode(ipv4Matcher, "string.ip.v4", { format: "ipv4" }),
+		v6: () => regexStringNode(ipv6Matcher, "string.ip.v6", { format: "ipv6" })
 	},
 	{
 		name: "string.ip"
@@ -805,7 +803,7 @@ export const uuid: uuid.module = keywordModule(
 						`^[\\dA-Fa-f]{8}-[\\dA-Fa-f]{4}-${version}[\\dA-Fa-f]{3}-[89ABab][\\dA-Fa-f]{3}-[\\dA-Fa-f]{12}$`
 					),
 					`string.uuid.v${version}`,
-					"uuid"
+					{ format: "uuid" }
 				)
 		])
 	},

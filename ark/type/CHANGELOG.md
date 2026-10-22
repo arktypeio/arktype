@@ -116,16 +116,27 @@ Even.toJsonSchema()
 
 The Type's other meta, like a description, is still written beside it. Unlike other meta, `jsonSchema` is configured on the Type alone, not on the Types it references. In 2.2.9, `toJsonSchema()` wrote `meta.jsonSchema` as an ordinary key.
 
-### Write `string.url`, `string.regex` and `string.json` in JSON Schema
+### Write string keywords' formats in JSON Schema
 
-`toJsonSchema()` threw a `predicate` error for them (#1475). They're now written as `format: "uri"`, `format: "regex"` and `contentMediaType: "application/json"`, wherever they're constrained further, as in `"string.url < 100"`:
+`toJsonSchema()` threw a `predicate` error for `string.url`, `string.regex`, `string.json` and `string.date` (#1475). Each string keyword a standard annotation names is now written with it, whether or not arktype's check matches the standard's definition exactly:
+
+| keyword                                    | JSON Schema                                                             |
+| ------------------------------------------ | ----------------------------------------------------------------------- |
+| `string.date`                              | `format: "date-time"`                                                   |
+| `string.date.iso`                          | `pattern`, `format: "date-time"`                                        |
+| `string.url`, `string.regex`               | `format: "uri"`, `format: "regex"`                                      |
+| `string.json`                              | `contentMediaType: "application/json"`                                  |
+| `string.base64`, `string.base64.url`       | `pattern`, `contentEncoding: "base64"`, `"base64url"`                   |
+| `string.email`, `string.uuid`, `string.ip` | `pattern`, `format: "email"`, `"uuid"`, `"ipv4"`, `"ipv6"`, as in 2.2.9 |
+
+They're written wherever the keyword is constrained further, as in `"string.url < 100"`. In 2.2.9, `"string.email < 255"` dropped its `format`.
 
 ```ts
 // { $schema: "...", type: "string", maxLength: 99, format: "uri" }
 type("string.url < 100").toJsonSchema()
 ```
 
-A JSON Schema validator checks neither keyword unless it's configured to. `string.url` checks `URL.canParse`, which differs from the `uri` format's RFC 3986 at the edges: it accepts a space in a path and rejects a port past 65535. `string.date` still throws, since it accepts whatever `Date` parses, which no format describes.
+JSON Schema reads `format`, `contentEncoding` and `contentMediaType` as annotations, which a validator checks only if it's configured to. A keyword checked by a regex is written with that `pattern` too, so a validator still checks what arktype does. One checked by a function is written as its format alone, so its schema accepts strings the Type rejects. A validator that asserts formats, like Ajv with `ajv-formats`, can also reject strings arktype accepts: `date-time` requires a time that `string.date` and `string.date.iso` don't, and `uri` rejects a space in a path that `string.url` accepts. `string.date.epoch` and `string.creditCard`, which no format names, still throw. `contentEncoding` is configurable meta, like `format`.
 
 ### Infer `.map()` on a union per branch
 

@@ -327,4 +327,74 @@ contextualize(() => {
 			required: ["url"]
 		})
 	})
+
+	it("string.date as its format", () => {
+		const T = type({ at: "string.date", "until?": "string.date < 30" })
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: {
+				at: { type: "string", format: "date-time" },
+				until: { type: "string", maxLength: 29, format: "date-time" }
+			},
+			required: ["at"]
+		})
+	})
+
+	it("keywords checked by a pattern", () => {
+		const T = type({
+			email: "string.email < 255",
+			iso: "string.date.iso",
+			base64: "string.base64",
+			base64url: "string.base64.url"
+		})
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: {
+				base64: {
+					type: "string",
+					pattern:
+						"^(?:[\\d+/A-Za-z]{4})*(?:[\\d+/A-Za-z]{2}==|[\\d+/A-Za-z]{3}=)?$",
+					contentEncoding: "base64"
+				},
+				base64url: {
+					type: "string",
+					pattern:
+						"^(?:[\\w-]{4})*(?:[\\w-]{2}(?:==|%3D%3D)?|[\\w-]{3}(?:=|%3D)?)?$",
+					contentEncoding: "base64url"
+				},
+				email: {
+					type: "string",
+					pattern: "^[\\w%+.-]+@[\\d.A-Za-z-]+\\.[A-Za-z]{2,}$",
+					format: "email",
+					maxLength: 254
+				},
+				iso: {
+					type: "string",
+					pattern:
+						"^[+-]?\\d{4}(?!\\d{2}\\b)(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\\1(?:[12]\\d|0[1-9]|3[01]))?|W(?:[0-4]\\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\\d|[12]\\d{2}|3(?:[0-5]\\d|6[1-6])))(?:T(?:(?:(?:[01]\\d|2[0-3])(?:(:?)[0-5]\\d)?|24:?00)(?:[,.]\\d+(?!:))?)?(?:\\2[0-5]\\d(?:[,.]\\d+)?)?(?:[Zz]|[+-](?:[01]\\d|2[0-3]):?(?:[0-5]\\d)?)?)?)?$",
+					format: "date-time"
+				}
+			},
+			required: ["base64", "base64url", "email", "iso"]
+		})
+	})
+
+	it("keyword formats for draft-07", () => {
+		attest(
+			type("string.date | string.base64.url").toJsonSchema({
+				target: "draft-07"
+			})
+		).snap({
+			$schema: "http://json-schema.org/draft-07/schema#",
+			anyOf: [
+				{
+					type: "string",
+					pattern:
+						"^(?:[\\w-]{4})*(?:[\\w-]{2}(?:==|%3D%3D)?|[\\w-]{3}(?:=|%3D)?)?$",
+					contentEncoding: "base64url"
+				},
+				{ type: "string", format: "date-time" }
+			]
+		})
+	})
 })

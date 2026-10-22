@@ -555,6 +555,10 @@ const reduceJsonSchemaByKind: {
 			})
 		}
 		base.pattern = node.rule
+		// a keyword's pattern carries the format or encoding naming its strings
+		if (node.meta.format) base.format = node.meta.format
+		if (node.meta.contentEncoding)
+			base.contentEncoding = node.meta.contentEncoding
 		return base
 	},
 	divisor: (node, schema) => {

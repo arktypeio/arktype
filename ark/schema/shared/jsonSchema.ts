@@ -52,6 +52,7 @@ export declare namespace JsonSchema {
 		title?: string
 		description?: string
 		format?: Format
+		contentEncoding?: string
 		deprecated?: true
 		default?: t
 		examples?: readonly t[]
