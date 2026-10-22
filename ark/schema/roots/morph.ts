@@ -118,7 +118,8 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	override get referencedBesidesChildren(): readonly BaseNode[] {
 		if (!this.lastMorphIfNode) return []
 		// a configured message's copy is what traversal pipes to
-		const traversed = this.traversedMorphs.at(-1) as BaseRoot
+		const morphs = this.traversedMorphs
+		const traversed = morphs[morphs.length - 1] as BaseRoot
 		return traversed === this.lastMorphIfNode ?
 				[this.lastMorphIfNode]
 			:	[this.lastMorphIfNode, traversed]
