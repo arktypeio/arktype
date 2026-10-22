@@ -101,3 +101,6 @@ their ratios to dynamic span 11.2x to 13x. C2: B2 is 1312 B gzipped, Valibot 154
 At 3eb166a9c, a fix that keeps union merges from dropping branch descriptions
 grew dynamic ArkType's login bundle to 80041 B gzipped
 (`results/login-3eb166a9c.json`). Every other size is unchanged.
+
+At be45edabb, dynamic ArkType's login bundle is 80672 B gzipped and B2 is
+1313 (`results/login-be45edabb.json`). Every other size is unchanged.

@@ -79,9 +79,9 @@ export const speedChart: BenchmarkChart = {
 // bundlejs-style esbuild of valibot.dev's login form as written, every entry
 // reporting every error with its message. Precompiled with
 // { preset: "smallest" } in a production build (esbuild's "production"
-// condition): 2671 / 1312 B min / gz; 2943 / 1461 in development, and the
-// default build 1740 in production. Sizes re-measured at 3eb166a9c
-// (results/login-3eb166a9c.json).
+// condition): 2671 / 1313 B min / gz; 2943 / 1461 in development, and the
+// default build 1740 in production. Sizes re-measured at be45edabb
+// (results/login-be45edabb.json).
 export const sizeChart: BenchmarkChart = {
 	title: "Bundle size",
 	detail:
@@ -93,11 +93,11 @@ export const sizeChart: BenchmarkChart = {
 	},
 	axisMax: 26_000,
 	bars: [
-		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1312 },
+		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1313 },
 		{ name: "Valibot", kind: "other", value: 1547 },
 		{ name: "Zod Mini", kind: "other", value: 5127 },
 		{ name: "Zod", kind: "other", value: 25058 },
-		{ name: "ArkType (dynamic)", kind: "dynamic", value: 80041 }
+		{ name: "ArkType (dynamic)", kind: "dynamic", value: 80672 }
 	]
 }
 
@@ -107,7 +107,7 @@ export const claims = {
 	// By wall clock it beat Typia in 28 of 30 passes (0.95x), but that pair
 	// isn't a test of its own: H1, faster than every close rival, failed, so
 	// "Faster" awaits the author's decision. valibot.dev's login form as
-	// written, 1312 vs Valibot 1547 B gz
+	// written, 1313 vs Valibot 1547 B gz
 	headline: "Faster than Typia. Smaller than Valibot.",
 	headlineDetail:
 		"Precompiled from the same definitions: the fewest instructions per call on moltar's parseSafe benchmark in our runs, and every error with its message on valibot.dev's login form in 1.31 kB.",
@@ -130,7 +130,7 @@ export const claims = {
 	// in 22 of 30 passes (p 0.0081)
 	dynamicSpeed:
 		"In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType.",
-	// "smallest" in production, 1312 vs 1547 B gz, the form as written
+	// "smallest" in production, 1313 vs 1547 B gz, the form as written
 	loginSize:
 		"On Valibot's own login form, ArkType precompiled for size reports every error, with its message, in a smaller bundle than Valibot: 1.31 kB gzipped against 1.55 kB.",
 	// moltar strict, dynamic, 2.2.9 to now: assertStrict 3948 -> 348,
@@ -143,11 +143,11 @@ export const claims = {
 	noInit:
 		"A precompiled Type costs nothing to create: it was built when you built.",
 	// `import { type } from "arktype"` by ark/repo/bench/bundle.ts's method
-	// (esbuild bundle + minify, esm, neutral, gzip) at 3eb166a9c: 80066 vs
-	// 2.2.9's 47803 B gz (254272 vs 156113 min); sizeChart's dynamic bar, the
-	// login form, is 80041
+	// (esbuild bundle + minify, esm, neutral, gzip) at be45edabb: 80680 vs
+	// 2.2.9's 47803 B gz (253499 vs 156113 min); sizeChart's dynamic bar, the
+	// login form, is 80672
 	dynamicSize:
-		"Dynamic ArkType is 80.1 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less."
+		"Dynamic ArkType is 80.7 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less."
 } satisfies Record<string, Claim<string>>
 
 export type ClaimId = keyof typeof claims
