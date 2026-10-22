@@ -58,7 +58,7 @@ A validation that fails can leave writes in the objects of its input it found va
 
 ### Describe an object with its `"@"` key
 
-An object definition's `"@"` key holds the object's own metadata, as `"@"` does in a tuple expression:
+An object definition's `"@"` key holds the object's own metadata, as `"@"` does in a tuple expression (#1554):
 
 ```ts
 const User = type({
@@ -74,7 +74,7 @@ Its value is a description or a meta object. Escape a key named `@` as `"\\@"`, 
 
 ### Write a Type's JSON Schema with `jsonSchema` meta
 
-`jsonSchema` meta replaces the JSON Schema a Type's constraints imply, so `toJsonSchema()` writes it rather than throwing for a narrow:
+`jsonSchema` meta replaces the JSON Schema a Type's constraints imply, so `toJsonSchema()` writes it rather than throwing for a narrow (#1571):
 
 ```ts
 const Even = type("number")
@@ -89,7 +89,7 @@ The Type's other meta, like a description, is still written beside it. Unlike ot
 
 ### Write `string.url`, `string.regex` and `string.json` in JSON Schema
 
-`toJsonSchema()` threw a `predicate` error for them. They're now written as `format: "uri"`, `format: "regex"` and `contentMediaType: "application/json"`, wherever they're constrained further, as in `"string.url < 100"`:
+`toJsonSchema()` threw a `predicate` error for them (#1475). They're now written as `format: "uri"`, `format: "regex"` and `contentMediaType: "application/json"`, wherever they're constrained further, as in `"string.url < 100"`:
 
 ```ts
 // { $schema: "...", type: "string", maxLength: 99, format: "uri" }
@@ -189,7 +189,7 @@ An error at a `__proto__` path is an own key of the plain objects `flatByPath` a
 `ArkErrors.message`, added in 2.2.6, is gone: read `summary`. `transform`, `merge`, `add` and `toTraversalError` are gone too: call `throw()`. A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`, and a morph returning another validation's `ArkErrors` adds them at its path. A morph fails by returning an `ArkErrors` or an error `ctx.error` returned during its own call. Any other error it returns, like one an earlier morph added or another validation's, is its output, where it failed the morph before. `@ark/schema`'s `ArkErrorResult` type is gone, since a morph's failure is always an `ArkErrors`.
 
 - Errors' text is written when they are first read, through `issues`, `summary`, `toString()`, `toJSON()`, `throw()` or Standard Schema's `issues`, so a configured writer is called once per error, where it was called at each read. A union or intersection whose locale has no `expected` for it is described in en, which writes its errors' `expected`, and a union's errors' `actual`, in en too. A locale function is called once per `ArkErrors`, at that read, where each read called it, so errors read after the language changed were written in the new one.
-- An error has no `toJSON()`, so `JSON.stringify(error)`, or of an `ArkErrors`' or Standard Schema's `issues`, serializes its own keys: a symbol key in its path is `null`, a bigint, like one in a discriminant's `cases`, throws, and `cases`, `cause`, `missing`, `valueMeta`, `predicate` and `morph`, which `toJSON()` leaves out, are included. `out.toJSON()` is the JSON it was, plus each error's `propString`, and its paths are plain arrays holding a symbol key as the string `Symbol(name)`, as a `ReadonlyPath` serialized it.
+- An error has no `toJSON()`, so `JSON.stringify(error)`, or of an `ArkErrors`' or Standard Schema's `issues`, serializes its own keys: a symbol key in its path is `null`, a bigint, like one in a discriminant's `cases`, throws, and `cases`, `cause`, `missing` and `valueMeta`, which `toJSON()` leaves out, are included (`predicate` and `morph` are functions, which `JSON.stringify` drops either way). `out.toJSON()` is the JSON it was, plus each error's `propString`, and its paths are plain arrays holding a symbol key as the string `Symbol(name)`, as a `ReadonlyPath` serialized it.
 
 ### Find errors' issues when they're first read
 
@@ -579,7 +579,7 @@ Built-in keywords set `meta.keyword` to their name, so a locale can find their p
 
 ### Run precompiled validators on `arktype/runtime`
 
-`@ark/precompile` can replace each Type a program defines with a validator that runs on the new `arktype/runtime` entry, without arktype's parser or nodes and without generating code, so it validates under a Content-Security-Policy that blocks `eval`:
+`@ark/precompile` can replace each Type a program defines with a validator that runs on the new `arktype/runtime` entry, without arktype's parser or nodes and without generating code, so it validates under a Content-Security-Policy that blocks `eval` (#810):
 
 ```ts
 // vite.config.ts
@@ -636,6 +636,8 @@ precompile.vite({ errors: "first" })
 A Type is compiled the second time it's called or its `allows` is called, or when its `precompilation` is read, rather than when it's defined, so Types a program defines but never calls aren't compiled and one it checks once is checked without compiling. A Type whose narrows or morphs read `ctx` is compiled the first time instead. A scope's exports are compiled the same way, so `@ark/schema`'s scope `precompilation` is undefined unless the scope is cyclic. A Type referencing an alias is still compiled where it's defined, so an error resolving the alias is thrown there. Checking a default as it's defined doesn't count as a use of the Type it's checked against.
 
 A union finds its discriminant when it's compiled, checks data, describes a miss or has its references read, rather than when it's created. Where a scope has several definition errors, which is thrown first can change, and can differ between JIT and jitless, e.g. an indeterminate union of morphs before an invalid default it includes.
+
+A host that refuses code generation once it has loaded, as Cloudflare Workers do within a request, has its Types checked as with `jitless` from then on.
 
 ### Order keys by code unit
 
@@ -960,7 +962,7 @@ Function defaults, cyclic transforms and predicates beside morphs can run as the
 
 ### Fix validating and transforming cyclic data
 
-A cyclic Type skipped every object an alias had already reached, even on another path or in a union branch that failed, so it accepted some invalid data, reported an object's errors once per path reaching it (#924) and, with `jitless`, wrote into input arrays and rejected valid data (#1367):
+A cyclic Type skipped every object an alias had already reached, even on another path or in a union branch that failed, so it accepted some invalid data (#1587), reported an object's errors once per path reaching it (#924) and, with `jitless`, wrote into input arrays and rejected valid data (#1367):
 
 ```ts
 const types = scope({
@@ -986,6 +988,8 @@ const input = [[1], [2]]
 // previously left input as [[1, 2], [2]], now leaves it as [[1], [2]]
 nested(input)
 ```
+
+A morph reached through a union branch that references the cyclic alias, like a `string.date.parse` key of `supervisor?: "User | null"` inside `User`, didn't run, so nested data stayed untransformed (#1486). It now runs at every depth.
 
 A transforming cyclic Type transforms each path separately, like an acyclic Type, so an object reached by two paths gives two outputs:
 
@@ -1019,6 +1023,146 @@ scope({ node: { n: "string", "kids?": "Partial<node>" } }).export()
 ```
 
 A generic whose instantiations keep growing, like `"g<p>": { "n?": "g<g<p>>" }`, throws `ParseError: Instantiating g recursed with new arguments more than 100 times` where it overflowed the stack.
+
+### Equate cyclic types of the same shape
+
+Cyclic types were equal only if they referenced the same definitions, so two of the same shape from different aliases weren't equal, and `.extends` and unions related them only by reference (#928). They're now compared by structure:
+
+```ts
+const types = scope({
+	user: { friends: "user[]", name: "string" },
+	peer: { friends: "peer[]", name: "string" },
+	list: { v: "number", "next?": "list" },
+	listPos: { v: "number > 0", "next?": "listPos" }
+}).export()
+
+// previously false, now true
+types.user.equals(types.peer)
+
+// previously { v: number, next?: $list } | { v: number > 0, next?: $listPos }
+// now { v: number, next?: $list }
+types.list.or(types.listPos).expression
+```
+
+### Tell apart same-named aliases from different scopes
+
+An alias was identified by its name alone, so cyclic types from two scopes reusing a name were equal and shared their intersections, and a cyclic type's `json` didn't parse back (#930):
+
+```ts
+const s1 = scope({
+	a: { v: "string", "next?": "a" },
+	box: { "inner?": "a" }
+}).export()
+const s2 = scope({
+	a: { v: "number", "next?": "a" },
+	box: { "inner?": "a" }
+}).export()
+
+// previously true, now false
+s1.box.equals(s2.box)
+
+const { node } = scope({
+	node: { v: "number", "next?": "node | null" }
+}).export()
+
+// previously ParseError: 'node' is unresolvable, now true
+type.schema(node.json).equals(node)
+```
+
+### Read `.in` and `.out` through cyclic aliases
+
+`.in`, `.out` and deep config like `onDeepUndeclaredKey` stopped at a cyclic alias, so `.out` checked what the alias reached as input, and `onDeepUndeclaredKey("reject")` didn't reject a key past it (#944):
+
+```ts
+const { node } = scope({
+	node: { n: "string.numeric.parse", "next?": "node" }
+}).export()
+
+// previously ArkErrors: next.n must be a string (was a number)
+// now { n: 1, next: { n: 2 } }
+node.out({ n: 1, next: { n: 2 } })
+```
+
+### Discriminate cyclic unions
+
+A union branch that was an alias to a cyclic type kept the union from being discriminated, so data failing one branch was reported against every branch (#1026, #1630):
+
+```ts
+const api = scope({
+	Field: { type: "'field'", value: "string >= 1" },
+	Group: { type: "'group'", parts: "Part[]" },
+	Part: "Field | Group"
+}).export()
+
+// previously parts must be an array (was missing) or value must be non-empty
+// now value must be non-empty
+api.Part({ type: "field", value: "" }).toString()
+```
+
+### Export mutually recursive aliases whose branches intersect
+
+Cyclic aliases whose union branches intersect each other's objects overflowed the stack or ran out of memory as their scope was exported (#1476):
+
+```ts
+// previously RangeError: Maximum call stack size exceeded
+scope({
+	leaf: { kind: "'leaf'" },
+	tt: { kind: "'and'", left: "t", right: "t" },
+	tf: { kind: "'and'", left: "t", right: "f" },
+	ff: { kind: "'and'", left: "f", right: "f" },
+	ft: { kind: "'and'", left: "f", right: "t" },
+	t: "leaf | tt | tf",
+	f: "leaf | ff | ft"
+}).export()
+```
+
+### Parse more cyclic scopes
+
+Some cyclic scopes threw as they were exported or first used:
+
+```ts
+// previously RangeError: Maximum call stack size exceeded, now { a?: $a }
+scope({ a: () => ({ "a?": "a" }) }).export().a.expression
+
+// previously RangeError: Maximum call stack size exceeded
+scope({
+	node: { id: "string", "parent?": "tree<node>" },
+	"tree<t extends node>": { value: "t", children: "tree<t>[]" }
+}).export()
+
+// previously ParseError: t must be assignable to { n?: $base } (was { x: string, n?: $derived })
+scope({
+	"g<t extends base>": { v: "t" },
+	base: { "n?": "base" },
+	derived: { "n?": "derived", x: "string" },
+	use: "g<derived>"
+}).export()
+
+// previously ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate
+scope({
+	D: { p0: "boolean" },
+	E: { x: "string.numeric.parse", "p0?": "E" },
+	C: "E | D"
+}).export()
+
+// previously a TypeError, now { v: 1, n: null }
+scope({ a: { v: "number", n: "a | null = null" } })
+	.export()
+	.a({ v: 1 })
+```
+
+### Infer generics through nested scopes' exports
+
+A generic exported through further scopes, or instantiated with an alias of the scope referencing it, inferred `never` for references in its body (#1437, #1457):
+
+```ts
+const $1 = scope({ "#private": "string", "generic<t>": "private" })
+const $3 = scope({ ...scope({ ...$1.export() }).export() })
+const Thing = $3.type("generic<string>")
+
+// previously never, now string
+type In = typeof Thing.inferIn
+```
 
 ### Keep a Type's descriptions wherever it's referenced
 
@@ -1115,7 +1259,7 @@ type({ [tag]: "string" }).expression
 
 ### Reject `Infinity` from `number`
 
-`number` rejects `Infinity` and `-Infinity` by default, as it already rejects `NaN`:
+`number` rejects `Infinity` and `-Infinity` by default, as it already rejects `NaN` (#1598):
 
 ```ts
 // previously Infinity, now ArkErrors: must be a number (was Infinity)
@@ -1142,7 +1286,9 @@ const input = { a: " x ", b: { c: "y" } }
 T(input).b === input.b
 ```
 
-A morph receives the validated value itself, so a morph that mutates its argument mutates the caller's data. Remove `clone` from your config.
+A morph receives the validated value itself, so a morph that mutates its argument mutates the caller's data. A `Date` subclass, like `@date-fns/utc`'s `UTCDate`, reaches a morph intact, where the copy it was given had lost its date, so a call like `toISOString()` threw (#1568). Remove `clone` from your config.
+
+Deleting undeclared keys no longer needs a traversal context, so `onDeepUndeclaredKey("delete")` transforms valid data as directly as a shallow `"+": "delete"` does (#1380).
 
 ### Drop `filename` from the global registry
 
@@ -1178,7 +1324,7 @@ type({ "[string <= 3]": "number", "+": "reject" }).toJsonSchema()
 
 ### Reject shallow cycles
 
-An alias that resolved to itself without passing through an object, array or morph accepted every value. It now throws a ParseError:
+An alias that resolved to itself without passing through an object, array or morph accepted every value. It now throws a ParseError and is a type error (#579):
 
 ```ts
 // previously accepted every value, now throws: Alias 'a' has a shallow resolution cycle: a->a
@@ -1241,11 +1387,11 @@ T.assert("x")
 
 ### Return a type's output when it is called with `ctx` in a morph
 
-Calling a type with the morph's `ctx` returned the morph's own input rather than the type's output, and threw if the type transformed its input:
+Calling a type's `internal` node with the morph's `ctx` returned the morph's own input rather than the type's output, and threw if the type transformed its input. A Type's own signature takes only data, so call its node to pass `ctx`:
 
 ```ts
 const T = type("string").pipe((s, ctx) =>
-	type({ a: "string.trim" })(JSON.parse(s), ctx)
+	type({ a: "string.trim" }).internal(JSON.parse(s), ctx)
 )
 
 // previously threw a TypeError, now { a: "x" }
@@ -1363,7 +1509,7 @@ type("toString")
 
 ### Skip the CSP probe when `jitless` is configured
 
-Configuring `jitless` through `arktype/config` before importing arktype no longer runs the `new Function` check for JIT support, so a page with a strict Content-Security-Policy no longer logs an eval violation (#1473).
+Configuring `jitless` before the first Type is created, even after importing arktype, no longer runs the `new Function` check for JIT support, so a page with a strict Content-Security-Policy no longer logs an eval violation (#1473).
 
 ### Emit `enum` for a configured union of literals
 
@@ -1616,6 +1762,30 @@ const T = scope({}, { jitless: true })
 
 // previously "(1) must be...\n  ◦ divisible by 2\n  ◦ divisible by 3", now "must be divisible by 2 (was 1)"
 T(1).toString()
+```
+
+### Discriminate unions with `jitless`
+
+With `jitless` or in a CSP environment, a discriminated union checked every branch and reported each one's errors, where a compiled type reports only the matching branch's, and a cyclic union could reject valid data (#961, #1547, #1640):
+
+```ts
+const $ = scope({}, { jitless: true })
+const T = $.type({ kind: "'a'", a: "string" }).or({ kind: "'b'", b: "number" })
+
+// previously a must be a string (was a number) or b must be a number (was missing)
+// now a must be a string (was a number)
+T({ kind: "a", a: 1 }).toString()
+```
+
+### Match a Date in a union of literals
+
+A union of literals holding a Date was discriminated by the Date's ISO string, so at a key it rejected an equal Date and accepted the string:
+
+```ts
+const T = type({ a: type.enumerated(new Date(0), 1, 2) })
+
+// previously [false, true], now [true, false]
+;[T.allows({ a: new Date(0) }), T.allows({ a: new Date(0).toISOString() })]
 ```
 
 ### Check `g` and `y` patterns from the start of the string every time
@@ -1901,6 +2071,256 @@ scope({ "Box<s extends string>": generic(["s", "string"])({ box: "s" }) })
 ### Export `TerminallyInferredObject` as a type
 
 `arktype` exports `TerminallyInferredObject`, the objects inference keeps whole rather than mapping over, like `Date`, `Promise` and any class declared in `ArkEnv.prototypes`, so a utility type built on inferred types can stop at the same objects (#1490).
+
+### Parse a union disjoint by an optional `never` key whatever was defined first
+
+A union whose branches were disjoint only by an optional `never` key, with defaults that differ, threw if a union of the same keys had been defined earlier (#1543):
+
+```ts
+type({ code: "string", status: "'EXPIRED' = 'EXPIRED'" }).or({
+	"code?": "never",
+	status: "'REJECTED' = 'REJECTED'"
+})
+
+// previously ParseError: Invalid intersection of default values "EXPIRED" & "REJECTED"
+type({
+	code: "string",
+	items: [{ reason: "'timeout'" }],
+	status: "'EXPIRED' = 'EXPIRED'"
+}).or({
+	"code?": "never",
+	items: [{ reason: "string" }],
+	status: "'REJECTED' = 'REJECTED'"
+})
+```
+
+### Infer large cyclic modules
+
+A module with an alias for the union of `string` and 25 of its other aliases, which referenced it back, failed with TS2589, `Type instantiation is excessively deep and possibly infinite` (#1370). It now type-checks.
+
+### Apply a default to an explicit `undefined` without `exactOptionalPropertyTypes`
+
+With `exactOptionalPropertyTypes: false`, a defaulted key given `undefined` kept it, though its inferred type was the default's (#1390). It now gets the default, as a missing key does:
+
+```ts
+const $ = scope({}, { exactOptionalPropertyTypes: false })
+
+// previously { key: undefined }, now { key: 5 }
+$.type({ key: "number = 5" })({ key: undefined })
+```
+
+### Keep a referenced Type's `undefined` without `exactOptionalPropertyTypes`
+
+Without TypeScript's `exactOptionalPropertyTypes`, a key whose value was a Type allowing `undefined` was inferred without it (#1310):
+
+```ts
+const age = type("number | undefined")
+const User = type({ age })
+
+// previously number, now number | undefined
+type Age = typeof User.infer.age
+```
+
+### Keep a closed object closed when an intersection leaves it no keys
+
+Intersecting objects that reject or delete undeclared keys dropped that once neither had a key left, so the result allowed any object:
+
+```ts
+// previously true, now false
+type({ "a?": "1", "+": "reject" })
+	.and({ "b?": "2", "+": "reject" })
+	.allows({ z: 1 })
+
+// previously true, now false
+type({}).extends(type({ "+": "reject" }))
+```
+
+### Check an array's indices against a closed object it's intersected with
+
+`"+": "reject"` rejects an array's indices unless the object declares them, but intersected with an array, the array's elements counted as declared:
+
+```ts
+// previously number[], now (never)[], which allows only []
+type({ "+": "reject" }).and("number[]").expression
+
+// previously allowed [0, 1], now allows at most one element
+type({ "0?": "number", "+": "reject" }).and("number[]")
+```
+
+### Compare every branch of a union past a redundant one
+
+Reducing an unordered union stopped comparing a branch at the first branch found redundant, so a morph beside a branch overlapping its input could be accepted, leaving which one transformed the data to their order. It now throws as it's defined:
+
+```ts
+// previously { kind?: "b" } | { a: number, kind: 1 } | { kind: number, + (undeclared): delete }
+// now ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate
+type.or(
+	{ "kind?": "'b'" },
+	{ a: "number", kind: "1" },
+	{ kind: "'b'" },
+	{ kind: "number", "+": "delete" }
+)
+```
+
+### Reject an invalid Date where a Date literal is expected
+
+A Date literal, or a range allowing one Date, threw a RangeError for an invalid Date rather than rejecting it:
+
+```ts
+// previously RangeError: Invalid time value, now false
+type("d'2000-01-01'").allows(new Date(NaN))
+```
+
+### Write a bounded Type's expression so it parses back
+
+A Type with both bounds, or a bound after a divisor or pattern, wrote an `expression` that threw when parsed. Each is now written as it's parsed:
+
+```ts
+// previously number <= 5 & >= 1, now 1 <= number <= 5
+type("1 <= number <= 5").expression
+
+// previously number % 2 & >= 1, now number % 2 >= 1
+type("number % 2 >= 1").expression
+
+// previously number[], now 1 <= number[] <= 5
+type("1 <= number[] <= 5").expression
+```
+
+### Say a missing discriminant key "was missing"
+
+A discriminated union's error for a key the data lacks reads `(was missing)`, as a required key's does:
+
+```ts
+const Shape = type({ kind: "'circle'", r: "number" }).or({
+	kind: "'square'",
+	side: "number"
+})
+
+// previously kind must be "circle" or "square" (was undefined)
+// now kind must be "circle" or "square" (was missing)
+Shape({}).toString()
+```
+
+### Read `string.date.iso.parse`'s dates in UTC
+
+`string.date.iso.parse` reads an ISO date or date-time without an offset as UTC, so one string is one instant on every machine, where it read them in local time. Week dates, basic formats like `"20250101"`, fractional hours and hour-only offsets, which its pattern accepts but which parsed to an Invalid Date, now parse, and a date that doesn't exist fails rather than rolling over:
+
+```ts
+const parse = type("string.date.iso.parse")
+
+// previously 2025-01-01T17:00:00.000Z in New York, now 2025-01-01T12:00:00.000Z
+parse("2025-01-01T12:00")
+
+// previously an Invalid Date, now 2025-01-01T00:00:00.000Z
+parse("20250101")
+
+// previously 2025-03-01T00:00:00.000Z
+// now ArkErrors: must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "2025-02-29")
+parse("2025-02-29")
+```
+
+### Intersect arrays whose elements are disjoint as empty arrays
+
+Intersecting arrays whose elements are disjoint allowed any array, and a tuple an intersection narrowed kept the length bounds it had before:
+
+```ts
+// previously unknown[], now []
+type("string[] & number[]").expression
+
+// previously true, now false
+type("string[]").and(["string", "number?"]).allows(["a", 5])
+```
+
+### Keep the keys an index signature narrows to optional
+
+Intersecting an object that rejects or deletes undeclared keys with an index signature narrows the signature to the object's keys, which made each of them required:
+
+```ts
+// previously { a: number, + (undeclared): reject }, which rejected {}
+// now { a?: number, + (undeclared): reject }
+type({ "+": "reject", "a?": "number" }).and({ "[string]": "number" }).expression
+
+// previously ParseError: Intersection at a of string and number results in an unsatisfiable type
+// now { a?: never, + (undeclared): reject }
+type({ "+": "reject", "a?": "string" }).and({ "[string]": "number" }).expression
+```
+
+### Intersect Types in the scope that asks
+
+An intersection was cached by its operands' hashes alone, so intersecting two Types after another scope had intersected them returned that scope's result, written with its configured messages:
+
+```ts
+const L = type({ x: "string" })
+const R = type({ y: "number" })
+scope({}, { required: { message: "configured" } }).type([L, "&", R])
+
+// previously configured
+//            configured
+// now x must be a string (was missing)
+//     y must be a number (was missing)
+L.and(R)({}).toString()
+```
+
+### Run the function a Type was given
+
+A function was named by its name and a count, so a function named like another's generated name, such as `fn1`, could get that name too, and a Type defined with it ran the other function. Each function's name is now unique.
+
+### Fail `.allows` where a narrow adds an error
+
+A narrow that adds an error through `ctx` and returns a truthy value failed validation, but `.allows` returned true. It now returns false:
+
+```ts
+const T = type("number").narrow((n, ctx) => n > 0 || !!ctx.error("positive"))
+
+// previously true, now false
+T.allows(-1)
+```
+
+### Summarize union errors at a key named like an `Object.prototype` member
+
+Reading the errors of a union failing at a key like `constructor` or `toString` threw:
+
+```ts
+// previously TypeError: to.push is not a function
+// now constructor must be an email address or a UUID (was "x")
+type({ constructor: "string.email | string.uuid" })({
+	constructor: "x"
+}).toString()
+```
+
+### Write JSON Schema for more index signatures and self-piping Types
+
+`toJsonSchema()` threw an internal error for an index signature keyed by a morph, whatever `morph` fallback was given, or by `string | symbol` with a `symbolKey` fallback, and overflowed the stack for a Type whose morph pipes into its own alias. A morph key is now written as the fallback's schema describes it:
+
+```ts
+// previously InternalArktypeError: Unexpected index branch kind morph.
+// now { type: "object", patternProperties: { "^(?:...)$": { type: "string" } } }, keyed by string.numeric's pattern
+type({ "[string.numeric.parse]": "string" }).toJsonSchema({
+	fallback: { morph: ctx => ctx.base }
+})
+```
+
+### Infer a defaulted key beside an index signature as optional on input
+
+```ts
+const T = type({ a: "number = 5", "[string]": "number" })
+
+// previously { [x: string]: number; a: number }, now a is optional
+type In = typeof T.inferIn
+```
+
+### Read a Type's input without changing another's
+
+Reading one Type's `in` could change another's that shared a defaulted key, so its input kept the default:
+
+```ts
+const A = type({ foo: "number = 0" })
+const B = type({ foo: "number = 0", bar: "string" })
+A.in.expression
+
+// previously { bar: string, foo: number = 0 }, now { bar: string, foo?: number }
+B.in.expression
+```
 
 ## 2.2.9
 
