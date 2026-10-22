@@ -9,6 +9,7 @@
  * as a win.
  */
 import data from "./benchData.json" with { type: "json" }
+import { preview } from "./preview.ts"
 
 export type Verdict = {
 	ratio: number
@@ -52,19 +53,7 @@ const bench = data as unknown as BenchData
 
 export const provenance = bench.provenance
 
-/**
- * Set while precompile is unreleased: the copy says "next release", the chart
- * carries a preview pill and the footnote a draft tag. Remove it (and every
- * tag goes with it) once precompile ships and the bench is rerun.
- */
-export const preview:
-	| {
-			/** a public commit holding an earlier ark/repo/bench, until the harness is published */
-			harnessRef: string
-	  }
-	| undefined = {
-	harnessRef: "4262bc88a138b88a1aa9b56e8150c9422f6de950"
-}
+export { preview }
 
 /** while precompile is unpublished, the harness that produced the data can't be linked */
 export const harness =
