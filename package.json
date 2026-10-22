@@ -33,7 +33,7 @@
 		"testV8": "node --allow-natives-syntax ./ark/repo/testV8.js",
 		"testTsVersions": "ts ./ark/repo/testTsVersions.ts",
 		"testTsCompat": "tsc --project ark/repo/tsCompat && tsc --project ark/repo/tsCompat/tsconfig.attest.json",
-		"testTypedLoose": "pnpm testTyped --tsconfig null --compilerOptions \"{ \\\"module\\\": \\\"NodeNext\\\", \\\"moduleResolution\\\": \\\"NodeNext\\\", \\\"strictNullChecks\\\": true, \\\"exactOptionalPropertyTypes\\\": true }\" --skipInlineInstantiations",
+		"testTypedLoose": "pnpm testTyped --tsconfig null --compilerOptions \"{ \\\"module\\\": \\\"NodeNext\\\", \\\"moduleResolution\\\": \\\"NodeNext\\\", \\\"strictNullChecks\\\": true, \\\"exactOptionalPropertyTypes\\\": true, \\\"customConditions\\\": [\\\"ark-ts\\\"] }\" --skipInlineInstantiations",
 		"bench": " ATTEST_benchErrorOnThresholdExceeded=\"\\\"types\\\"\" pnpm benchOperand && pnpm benchOperator && pnpm benchNary && pnpm benchObject && pnpm benchMatch && pnpm benchCyclic",
 		"benchUp": "ATTEST_updateSnapshots=1 pnpm bench",
 		"benchOperand": "ts ./ark/type/__tests__/operand.bench.ts",
