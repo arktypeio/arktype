@@ -72,6 +72,16 @@ contextualize(() => {
 			)
 		})
 
+		it("length named in actual when text replaces the bound's", () => {
+			const Password = type("string >= 8").describe("a strong password")
+			attest(Password("x").toString()).snap(
+				"must be a strong password (was length 1)"
+			)
+			attest(Password("").toString()).snap("must be a strong password")
+			const Pair = type("string[] == 2").configure({ expected: "a pair" })
+			attest(Pair(["a"]).toString()).snap("must be a pair (was length 1)")
+		})
+
 		it("== length from narrowing a length range", () => {
 			const T = type("1 <= string <= 2").and("string >= 2")
 			attest(T.expression).snap("string == 2")

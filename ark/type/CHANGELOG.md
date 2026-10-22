@@ -271,6 +271,15 @@ type("===", {})({})
 
 `de` prints them as `ein Objekt`, `ein Array` and `eine Funktion`.
 
+### Say a length is a length when a description replaces its bound
+
+A length bound's `actual` is the bare length, which its own text explains (`must be at least length 8 (was 1)`). Where a description or configured `expected` replaces that text, the length is now named:
+
+```ts
+// previously must be a strong password (was 1), now (was length 1)
+type("string >= 8").describe("a strong password")("x")
+```
+
 ### Accept only plain objects and arrays in `object.json`
 
 `object.json` accepted any object, so a `Map`, `Set`, `Date`, function or class instance passed though `JSON.stringify` doesn't write it as itself. It now accepts only arrays and objects whose prototype is `Object.prototype` or `null`, at every depth (#1337):
