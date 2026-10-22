@@ -7171,7 +7171,11 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 
 - Unions of ranges that overlap, meet or leave out one value, and of objects alike but for one key's value, are one range or object: `1 < number < 10 | 10 <= number < 100` is `1 < number < 100`, `number < 0 | number > 0` is `number != 0`, and `{ kind: "a", x: string } | { kind: "b", x: string }` is `{ kind: "a" | "b", x: string }`.
 
-- A union of literals with configured meta becomes `enum`: `type("'a' | 'b'").configure({ title: "Letter" }).toJsonSchema()` is `{ enum: ["a", "b"], title: "Letter" }` instead of an `anyOf` of `const`s.
+- A union of literals with configured meta becomes `enum`: `type("'a' | 'b'").configure({ title: "Letter" }).toJsonSchema()` is `{ type: "string", enum: ["a", "b"], title: "Letter" }` instead of an `anyOf` of `const`s.
+
+- A literal's JSON Schema has its `type` beside its `const` or `enum`: `'a' | 'b'` is `{ type: "string", enum: ["a", "b"] }`, and `'a' | 'b' | null` is `{ anyOf: [{ type: "string", enum: ["a", "b"] }, { type: "null" }] }`.
+
+- A cyclic Type's `$defs` hold only its cyclic aliases, named by the alias, like `user`, with everything else inline, where every object, array and union was a def named like `user1` or `intersection1`.
 
 - A string index signature beside declared keys becomes `patternProperties: { "": ... }` instead of `additionalProperties`.
 

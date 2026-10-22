@@ -114,7 +114,7 @@ contextualize(() => {
 			properties: {
 				bar: { type: "number" },
 				foo: { type: "string" },
-				baz: { const: 1 }
+				baz: { type: "number", const: 1 }
 			},
 			required: ["bar", "foo"],
 			patternProperties: {
@@ -223,7 +223,7 @@ contextualize(() => {
 			type: "array",
 			minItems: 2,
 			prefixItems: [{ type: "string" }, { type: "number" }],
-			items: { const: 1 }
+			items: { type: "number", const: 1 }
 		})
 	})
 
@@ -262,7 +262,7 @@ contextualize(() => {
 			properties: {
 				bar: { type: "number", title: "bar", examples: [1337, 7331] },
 				foo: { type: "string", description: "a foo" },
-				baz: { const: 1, deprecated: true }
+				baz: { type: "number", const: 1, deprecated: true }
 			},
 			required: ["bar", "foo"]
 		})
@@ -275,17 +275,17 @@ contextualize(() => {
 		})
 
 		attest(schema).snap({
-			$ref: "#/$defs/jsonObject1",
+			type: "object",
+			additionalProperties: { $ref: "#/$defs/jsonData" },
 			$defs: {
-				jsonObject1: {
-					type: "object",
-					additionalProperties: { $ref: "#/$defs/jsonData1" }
-				},
-				jsonData1: {
+				jsonData: {
 					anyOf: [
 						{ type: "number" },
 						{ type: "string" },
-						{ $ref: "#/$defs/jsonObject1" },
+						{
+							type: "object",
+							additionalProperties: { $ref: "#/$defs/jsonData" }
+						},
 						{ type: "boolean" },
 						{ type: "null" }
 					]
@@ -306,7 +306,7 @@ contextualize(() => {
 			required: ["a"]
 		})
 		attest(node.toJsonSchemaRecurse({ ...ctx, useRefs: true })).equals({
-			$ref: "#/$defs/intersection1"
+			$ref: "#/$defs/intersection"
 		})
 		attest(
 			rootSchema("string").toJsonSchemaRecurse({ ...ctx, useRefs: true })
@@ -353,7 +353,7 @@ contextualize(() => {
 	it("unions of literal values as enums", () => {
 		const Bit = rootSchemaScope.units([0, 1])
 
-		attest(toJsonSchema(Bit)).snap({ enum: [0, 1] })
+		attest(toJsonSchema(Bit)).snap({ type: "number", enum: [0, 1] })
 	})
 
 	it("unions of literal values with metadata not enums", () => {
@@ -363,7 +363,10 @@ contextualize(() => {
 		])
 
 		attest(toJsonSchema(Bit)).snap({
-			anyOf: [{ const: 0 }, { const: 1, description: "one" }]
+			anyOf: [
+				{ type: "number", const: 0 },
+				{ type: "number", const: 1, description: "one" }
+			]
 		})
 	})
 
@@ -1066,7 +1069,7 @@ contextualize(() => {
 			).equals(expected)
 			attest(
 				toJsonSchema(T, { useRefs: true, fallback: { morph: ctx => ctx.base } })
-					.$defs!.intersection1
+					.$defs!.intersection
 			).equals(expected)
 		})
 
