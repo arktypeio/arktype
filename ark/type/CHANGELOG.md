@@ -101,6 +101,16 @@ User(5)
 
 Its value is a description or a meta object. Escape a key named `@` as `"\\@"`, as with `+` and `...`. In 2.2.9, `"@"` was an ordinary key.
 
+`type.declare` takes the same escapes for a declared key named `@`, `+` or `...`, and accepts `"@"` and `"+"` on any declared object:
+
+```ts
+const User = type.declare<{ "@": string; name: string }>().type({
+	"@": "a user",
+	"\\@": "string",
+	name: "string"
+})
+```
+
 ### Write a Type's JSON Schema with `jsonSchema` meta
 
 `jsonSchema` meta replaces the JSON Schema a Type's constraints imply, so `toJsonSchema()` writes it rather than throwing for a narrow (#1571):
