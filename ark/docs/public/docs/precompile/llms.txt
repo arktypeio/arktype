@@ -276,6 +276,24 @@ export default {
 }
 ```
 
+## TypeScript without a bundler
+
+A program `tsc` compiles to run from its `outDir` precompiles what it emits with `--emit`, run after `tsc`:
+
+```json
+{
+	"scripts": {
+		"build": "tsc && arktype-precompile --emit"
+	}
+}
+```
+
+It reads the nearest `tsconfig.json`, or the one `--tsconfig` names, and the tsconfigs it references. Each module reading arktype, directly or through a Type it imports, is precompiled from its source as a bundler would and emitted again over what `tsc` wrote, in the module format, target and source maps the tsconfig sets, with `arktype` and its other entries imported or required as `arktype/runtime`. Other modules and declarations stay as `tsc` emitted them. It takes the options `--check` does, reads `ark.json`, and fails on what a build would, writing nothing. Since it emits from source, run anything that rewrites `tsc`'s output, like `tsc-alias`, after it.
+
+Dependencies are left to Node, so one that imports `arktype` loads it beside the runtime rather than failing the build. `errors: "none"` and `optimizeErrors: "size"`, which `preset: "smallest"` sets, need a copy of `@ark/schema`'s runtime that only a bundler or the Node driver can load in place of the one `arktype/runtime` imports, so `--emit` refuses them. A library publishes what `tsc` emits without `--emit`, and [opts in](https://arktype.io/docs/precompile/advanced#libraries) so its consumers' builds precompile it.
+
+`--emit --declare` also writes [declarations](https://arktype.io/docs/precompile/advanced#declarations) as `--declare` does.
+
 ## Test runners and runtimes
 
 Vitest uses the Vite plugin. For the others, each driver takes the plugin's options, fails on the same errors, except that Bun doesn't check dependencies, and resolves `arktype` to `arktype/runtime` where its host allows. The precompiler runs in a worker thread, sharing no module state with your program.
@@ -461,7 +479,8 @@ A production build leaves these out, as `freeze: false`, `checks: "none"` and `c
 - Vite's `build` command, outside Vitest
 - webpack and Rspack in `production` mode, their default
 - esbuild with `"production"` among its `conditions`
-- Turbopack, the Node and Bun drivers, `arktype-precompile` and the ESLint rule where `NODE_ENV` is `production`, as `next build` sets it
+- `arktype-precompile --emit`, unless `NODE_ENV` is set to something else
+- Turbopack, the Node and Bun drivers, `arktype-precompile --check` and the ESLint rule where `NODE_ENV` is `production`, as `next build` sets it
 
 Rollup, Rolldown and Farm builds keep the checks unless set.
 
