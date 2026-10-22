@@ -69,6 +69,7 @@ import {
 import type { BaseRoot } from "./roots/root.ts"
 import type { Union } from "./roots/union.ts"
 import type { Unit } from "./roots/unit.ts"
+import { canJit, tryJit } from "./shared/compile.ts"
 import { nodeKinds, type NodeKind } from "./shared/implement.ts"
 import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
@@ -775,10 +776,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 					bindPrecompiledUnits(uncompiled)
 					uncompiled = uncompiled.filter(node => !node.compiledUnit)
 				}
-				if (!this.resolvedConfig.jitless) {
+				if (canJit(this.resolvedConfig)) {
 					// resolving aliases can throw, so they compile on export
 					if (uncompiled.some(node => node.includesAlias))
-						this.compiledUnit = precompile(uncompiled, this)
+						this.compiledUnit = tryJit(() => precompile(uncompiled, this))
 					else {
 						for (const name in this._exportedResolutions) {
 							const resolution = this._exportedResolutions[name]
@@ -938,14 +939,19 @@ export abstract class BaseScope<$ extends {} = {}> {
 			node.includesAlias ? referencesThroughAliases(node.references) : undefined
 		if (node.compiledUnit || !jit) return node
 		bindPrecompiledUnits?.([node])
-		if (node.compiledUnit || this.resolvedConfig.jitless) return node
-		if (references) precompileRoot(node, references)
+		if (node.compiledUnit || !canJit(this.resolvedConfig)) return node
+		if (references) tryJit(() => precompileRoot(node, references))
 		else node.deferJit()
 		return node
 	}
 
 	jit(node: BaseNode): void {
-		precompileRoot(node, node.references)
+		tryJit(() => precompileRoot(node, node.references))
+		// compiling binds what it checked before, unless the host refused
+		if (node.cache.allowsBeforeJit) {
+			node.allows = node.cache.allowsBeforeJit
+			node.cache.allowsBeforeJit = undefined
+		}
 	}
 
 	protected abstract preparseOwnDefinitionFormat(

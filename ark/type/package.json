@@ -107,7 +107,7 @@
 	"scripts": {
 		"build": "ts ../repo/build.ts",
 		"test": "ts ../repo/testPackage.ts; pnpm testIntegration",
-		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig && pnpm testJitlessConfig && pnpm testCsp && pnpm testCspConfiguredAfterImport && pnpm testPrecompiled && pnpm testSchemaFirst && pnpm testConfigAfterImport && pnpm testMissingGlobals && pnpm testLocaleConfig && pnpm testLocaleWithoutIntl && pnpm testLocaleWithoutI18n && pnpm testLocaleImportedAfter",
+		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig && pnpm testJitlessConfig && pnpm testCsp && pnpm testCspConfiguredAfterImport && pnpm testCspAfterLoad && pnpm testPrecompiled && pnpm testSchemaFirst && pnpm testConfigAfterImport && pnpm testMissingGlobals && pnpm testLocaleConfig && pnpm testLocaleWithoutIntl && pnpm testLocaleWithoutI18n && pnpm testLocaleImportedAfter",
 		"testSimpleConfig": "ts ./__tests__/integration/testSimpleConfig.ts",
 		"testAllConfig": "ts ./__tests__/integration/testAllConfig.ts",
 		"testOnFailConfig": "ts ./__tests__/integration/testOnFailConfig.ts",
@@ -115,6 +115,7 @@
 		"testJitlessConfig": "ts ./__tests__/integration/testJitlessConfig.ts",
 		"testCsp": "ts ./__tests__/integration/testCsp.ts",
 		"testCspConfiguredAfterImport": "ts ./__tests__/integration/testCspConfiguredAfterImport.ts",
+		"testCspAfterLoad": "ts ./__tests__/integration/testCspAfterLoad.ts",
 		"testPrecompiled": "ts ./__tests__/integration/testPrecompiled.ts",
 		"testSchemaFirst": "ts ./__tests__/integration/testSchemaFirst.ts",
 		"testConfigAfterImport": "ts ./__tests__/integration/testConfigAfterImport.ts",

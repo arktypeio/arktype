@@ -49,7 +49,7 @@ import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
-import type { NodeCompiler } from "./shared/compile.ts"
+import { canJit, tryJit, type NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseNodeDeclaration,
 	BaseNodeInput,
@@ -555,9 +555,13 @@ export abstract class BaseNode<
 			this.$.jit(this)
 		}
 		return (this.cache.rootApply =
-			this.compiledUnit && this.isRoot() && !this.$.resolvedConfig.jitless ?
-				compileRootApply($ark.inPlace?.applied(this as never) ?? this)
-			:	this.createRootApply())
+			(this.compiledUnit &&
+				this.isRoot() &&
+				canJit(this.$.resolvedConfig) &&
+				tryJit(() =>
+					compileRootApply($ark.inPlace?.applied(this as never) ?? this)
+				)) ||
+			this.createRootApply())
 	}
 
 	protected createRootApply(): RootApply {

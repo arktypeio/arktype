@@ -7,6 +7,7 @@ import {
 	type array,
 	type Fn
 } from "@ark/util"
+import type { ResolvedConfig } from "../config.ts"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
 import type { Predicate } from "../predicate.ts"
@@ -43,15 +44,35 @@ const writeErrorBuilder = (context: object): string => {
 
 const writtenSlots = ["propString", "expected", "actual", "problem", "message"]
 
-registerBuilderCompiler(
-	context =>
-		new DynamicFunction<ErrorBuilder>(
-			"context",
-			"path",
-			"data",
-			writeErrorBuilder(context)
-		)
+registerBuilderCompiler(context =>
+	tryJit(
+		() =>
+			new DynamicFunction<ErrorBuilder>(
+				"context",
+				"path",
+				"data",
+				writeErrorBuilder(context)
+			)
+	)
 )
+
+// a host can allow code generation as arktype loads and refuse it later, as
+// workerd does within a request, so the first refusal leaves later nodes jitless
+let refusesJit = false
+
+export const canJit = (config: ResolvedConfig): boolean =>
+	!config.jitless && !refusesJit
+
+// what jit returns, or undefined once the host refuses to generate code
+export const tryJit = <result>(jit: () => result): result | undefined => {
+	if (refusesJit) return
+	try {
+		return jit()
+	} catch (e) {
+		if (!(e instanceof EvalError)) throw e
+		refusesJit = true
+	}
+}
 
 export type CoercibleValue = string | number | boolean | null | undefined
 

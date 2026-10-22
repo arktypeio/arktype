@@ -39,6 +39,8 @@ export const DynamicFunction = class extends Function {
 		try {
 			super(...params, body)
 		} catch (e) {
+			// a host refusing to generate code, which callers can recover from
+			if (e instanceof EvalError) throw e
 			return throwInternalError(
 				`Encountered an unexpected error while compiling your definition:
                 Message: ${e} 
