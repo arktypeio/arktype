@@ -42,7 +42,7 @@ A Standard JSON Schema is a schema whose `~standard` has `jsonSchema`, e.g. from
 | `discriminate(schema)`        | how a union's branches are told apart, or `null`                  |
 | `toJsonSchema(schema, opts?)` | the JSON Schema of `schema`                                       |
 
-Roots validate (`root(data)`, `root.allows(data)`), print (`root.expression`) and can be passed back in. Reads are cached per schema.
+Roots validate (`root(data)`, `root.allows(data)`), print (`root.expression`) and can be passed back in. A Standard Schema's read is cached; a JSON Schema is plain data, so it's read on every call.
 
 `parse` reads a schema's input by default, or its output with `{ io: "out" }`. A JSON Schema's `#/...` refs resolve against the schema itself, or against `{ root: document }`, e.g. an OpenAPI document.
 

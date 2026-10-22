@@ -24,7 +24,9 @@ export interface ParseOptions {
 	root?: JsonSchema.Input
 }
 
-const rootsByIo = {
+// a JSON Schema is plain data that can change between reads, so only a
+// Standard Schema's read is cached
+const standardRootsByIo = {
 	in: new WeakMap<object, BaseRoot>(),
 	out: new WeakMap<object, BaseRoot>()
 }
@@ -37,11 +39,18 @@ export const parse = (schema: Schema, options?: ParseOptions): Root => {
 	if (typeof schema === "boolean") return readJsonSchema(schema, options?.root)
 	if (!hasDomain(schema, "object"))
 		return throwParseError(writeUnparsableSchemaMessage(printable(schema)))
-	// root resolves a JSON Schema's refs, which a Standard Schema's converter writes whole
-	if (options?.root && !("~standard" in schema))
-		return readJsonSchema(schema, options.root)
-	let root = rootsByIo[io].get(schema)
-	if (!root) rootsByIo[io].set(schema, (root = parseObject(schema, io)))
+	if (!("~standard" in schema)) {
+		return isPlainObject(schema) ?
+				readJsonSchema(schema, options?.root)
+			:	throwParseError(writeUnparsableSchemaMessage(printable(schema)))
+	}
+	let root = standardRootsByIo[io].get(schema)
+	if (!root) {
+		standardRootsByIo[io].set(
+			schema,
+			(root = readStandardSchema(schema as StandardJSONSchemaV1, io))
+		)
+	}
 	return root
 }
 
@@ -51,23 +60,21 @@ export const toJsonSchema = (
 	options?: ToJsonSchema.Options
 ): JsonSchema => parse(schema).toJsonSchema(options)
 
-const parseObject = (schema: object, io: "in" | "out"): BaseRoot => {
-	if ("~standard" in schema) {
-		const standard = (schema as StandardJSONSchemaV1)["~standard"]
-		const converter = standard.jsonSchema
-		return converter ?
-				readJsonSchema(
-					converter[io === "in" ? "input" : "output"]({
-						target: "draft-2020-12"
-					})
+const readStandardSchema = (
+	schema: StandardJSONSchemaV1,
+	io: "in" | "out"
+): BaseRoot => {
+	const standard = schema["~standard"]
+	const converter = standard.jsonSchema
+	return converter ?
+			readJsonSchema(
+				converter[io === "in" ? "input" : "output"]({
+					target: "draft-2020-12"
+				})
+			)
+		:	throwParseError(
+				writeUnparsableSchemaMessage(
+					`a ${standard.vendor} Standard Schema without ~standard.jsonSchema`
 				)
-			:	throwParseError(
-					writeUnparsableSchemaMessage(
-						`a ${standard.vendor} Standard Schema without ~standard.jsonSchema`
-					)
-				)
-	}
-	return isPlainObject(schema) ?
-			readJsonSchema(schema)
-		:	throwParseError(writeUnparsableSchemaMessage(printable(schema)))
+			)
 }

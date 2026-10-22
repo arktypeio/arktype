@@ -30,11 +30,18 @@ contextualize(() => {
 		attest(parse(Valibot, { root: {} }).expression).snap("string")
 	})
 
-	it("caches a read per schema and io", () => {
+	it("caches a Standard Schema's read per io", () => {
 		const Zod = standardSchema({ type: "string" })
 		attest(parse(Zod) === parse(Zod)).equals(true)
 		parse(Zod, { io: "out" })
 		attest(Zod.targets).snap(["draft-2020-12", "draft-2020-12"])
+	})
+
+	it("reads a JSON Schema again after it changes", () => {
+		const schema: { type: "number"; minimum?: number } = { type: "number" }
+		attest(parse(schema).expression).snap("number")
+		schema.minimum = 5
+		attest(parse(schema).expression).snap("number >= 5")
 	})
 
 	it("resolves refs against root", () => {
