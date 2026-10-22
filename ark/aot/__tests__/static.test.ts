@@ -403,6 +403,32 @@ const F = users.User.or(list[1])`,
 			])
 		})
 
+		it("a Type destructured off a namespace import", () => {
+			attest(
+				statusesOf(
+					`import * as S from "./schemas.ts"
+const { User: U } = S
+export const A = U.or("null")`,
+					{
+						"/schemas.ts": `import { type } from "arktype"\nexport const User = type({ id: "string" })`
+					}
+				)
+			).snap(["3:18 accepted { id: string } | null"])
+		})
+
+		it("introspection members read off data the build has no source for", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+export const read = async (res: any, sym: any) => [
+	await res.json(),
+	sym.description,
+	JSON.stringify(res),
+	\`\${sym}\`
+]
+export const User = type({ name: "string" })`)
+			).equals([])
+		})
+
 		it("data validated by a Module's Type", () => {
 			attest(
 				diagnosticsOf(`import { scope, type } from "arktype"
@@ -1372,6 +1398,93 @@ export const X = forms.make().or("null")`)
 			).snap([
 				"/main.ts:7:47  t.or reads or, which a standalone validator lacks\n  `t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
 				"/main.ts:8:18  forms.make().or reads or, which a standalone validator lacks\n  `forms.make()` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
+			])
+		})
+
+		it("introspection reads off a Type the build lost track of", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+const User = type({ name: "string" })
+const routes = [{ body: User }]
+const list = [User]
+export const a = routes.map(r => r.body.expression)
+export const b = list.map(t => t.toJsonSchema())
+class C {
+	t = User
+	json() {
+		return JSON.stringify(this.t)
+	}
+	printed() {
+		return \`\${this.t}\`
+	}
+	described() {
+		return this.t.description
+	}
+}
+export const c = new C()`)
+			).snap([
+				"/main.ts:5:34  r.body.expression reads expression, which a standalone validator lacks\n  the build can't tell where `r.body` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:6:32  t.toJsonSchema reads toJsonSchema, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:10:10  JSON.stringify(this.t) reads toJSON, which a standalone validator lacks\n  the build can't tell where `this.t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:13:10  `${this.t}` reads expression, which a standalone validator lacks\n  the build can't tell where `this.t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:16:10  this.t.description reads description, which a standalone validator lacks\n  the build can't tell where `this.t` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("a Type passed where the build can't see the call", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+export const widen = (t: any) => t.or("null")
+export const forms = {
+	optional(t) {
+		return t.or("undefined")
+	}
+}
+export class Repo {
+	constructor(readonly schema: any) {}
+	widen() {
+		return this.schema.or("null")
+	}
+}
+export const User = type({ name: "string" })`)
+			).snap([
+				"/main.ts:2:34  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:5:10  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:11:10  this.schema.or reads or, which a standalone validator lacks\n  the build can't tell where `this.schema` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("a Type held where the build loses it", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+const User = type({ name: "string" })
+class Repo {
+	constructor(readonly schema: typeof User) {}
+	widen() {
+		return this.schema.or("null")
+	}
+}
+class Holder {
+	t = User
+	get() {
+		return this.t
+	}
+}
+class Static {
+	static T: any
+	static {
+		Static.T = User
+	}
+}
+export const a = new Repo(User).widen()
+export const b = new Holder().get().or("null")
+export const c = Static.T.or("null")
+export const d = new Proxy(User, {}).or("null")`)
+			).snap([
+				"/main.ts:6:10  this.schema.or reads or, which a standalone validator lacks\n  the build can't tell where `this.schema` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:22:18  new Holder().get().or reads or, which a standalone validator lacks\n  the build can't tell where `new Holder().get()` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:23:18  Static.T.or reads or, which a standalone validator lacks\n  the build can't tell where `Static.T` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:24:18  new Proxy(User, {}).or reads or, which a standalone validator lacks\n  the build can't tell where `new Proxy(User, {})` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 

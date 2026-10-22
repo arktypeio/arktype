@@ -31,6 +31,7 @@ import {
 	appendPath,
 	defaultMembers,
 	holeNamePattern,
+	introspectionMembers,
 	isTypedFn,
 	keyOf,
 	kindNameOf,
@@ -69,6 +70,8 @@ import {
 	isArk,
 	isArkObject,
 	isFunctionNode,
+	isObjectWrite,
+	writeOf,
 	isOnlyType,
 	isRuntimeExport,
 	isTypeMemberRead,
@@ -399,6 +402,9 @@ export class Precompiler {
 	private members: ValidatorMembers
 	// e.g. traverse, from and toString where members.methods is false
 	private lackedMembers: ReadonlySet<string>
+	// those and the introspection members it doesn't bake, which a read off
+	// what may be a Type can't fold
+	private unsureLackedMembers: ReadonlySet<string>
 	private errors: ErrorDetail | undefined
 	private variant: RuntimeVariant | undefined
 	private mutatesInput: MutatesInput | undefined
@@ -464,6 +470,10 @@ export class Precompiler {
 				: [member]
 			)
 		)
+		this.unsureLackedMembers = new Set([
+			...this.lackedMembers,
+			...introspectionMembers.filter(member => !this.members[member])
+		])
 		const contract: ShadowContract = {}
 		if (this.members.meta === false) contract.members = { meta: false }
 		if (this.mutatesInput) contract.mutatesInput = this.mutatesInput
@@ -3327,7 +3337,7 @@ export class Precompiler {
 			const read =
 				!(node.type === "MemberExpression" && isWriteTarget(node)) &&
 				!writes.has(node) &&
-				this.graph.unavailableReadOf(node, module, this.lackedMembers)
+				this.graph.unavailableReadOf(node, module, this.unsureLackedMembers)
 			if (read && !this.isDeclaredInIsland(read[1], module))
 				unavailable.push([node, ...read])
 			const scopeRead =
@@ -3404,8 +3414,9 @@ export class Precompiler {
 					isDerived ? derivedHint
 					: isUnsure ?
 						writeUnsureHint(
-							dropped ?
-								`leave members[${JSON.stringify(dropped)}] unset`
+							dropped ? `leave members[${JSON.stringify(dropped)}] unset`
+							: includes(introspectionMembers, read) ?
+								`set members[${JSON.stringify(read)}] true, or build with runtime: "arktype"`
 							:	'build with runtime: "arktype"'
 						)
 					: dropped ?
@@ -3949,38 +3960,6 @@ const arktypeSpecifier =
 	/\b(?:from|import)\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
 
 const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
-
-const writersByGlobal: Record<string, string[]> = {
-	Object: ["assign", "defineProperty", "defineProperties", "setPrototypeOf"],
-	Reflect: ["set", "defineProperty", "deleteProperty", "setPrototypeOf"]
-}
-
-// e.g. `Object.assign`, when `Object` is the global
-const isObjectWrite = (callee: Node, module: SourceModule): boolean => {
-	callee = unwrapExpression(callee)
-	return (
-		callee.type === "MemberExpression" &&
-		!callee.computed &&
-		callee.object.type === "Identifier" &&
-		!module.scopes.refsById.get(callee.object)?.binding &&
-		!!writersByGlobal[callee.object.name]?.includes(callee.property.name)
-	)
-}
-
-// the assignment, update or `delete` a target is part of
-const writeOf = (target: Node): Node => {
-	const parent = target.parent!
-	switch (parent.type) {
-		case "AssignmentExpression":
-		case "UpdateExpression":
-		case "UnaryExpression":
-			return parent
-		case "ForInStatement":
-		case "ForOfStatement":
-			return target
-	}
-	return writeOf(parent)
-}
 
 export const specifierOf = (importer: string, file: string): string => {
 	const path = relative(dirname(importer), file).split("\\").join("/")
