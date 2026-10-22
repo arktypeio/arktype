@@ -75,12 +75,13 @@ export const speedChart: BenchmarkChart = {
 }
 
 // bundlejs-style esbuild of valibot.dev's login form as written, every entry
-// reporting every error with its message. Precompiled with the lean errors set;
-// keeping its errors' methods (default+lean) is 1262, still under Valibot.
+// reporting every error with its message, measured at e2e9624da. Precompiled
+// with { preset: "smallest" } in a production build (esbuild's "production"
+// condition): 2698 / 1339 B min / gz; 2952 / 1474 in development.
 export const sizeChart: BenchmarkChart = {
 	title: "Bundle size",
 	detail:
-		"the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled for size: optimize \"size\", with its validators' members and methods and its errors' methods off",
+		'the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs\'s esbuild settings; each reports every error. ArkType is precompiled with the "smallest" preset in a production build',
 	unit: "B gzipped",
 	source: {
 		label: "the form from valibot.dev's comparison",
@@ -88,7 +89,7 @@ export const sizeChart: BenchmarkChart = {
 	},
 	axisMax: 26_000,
 	bars: [
-		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1028 },
+		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1339 },
 		{ name: "Valibot", kind: "other", value: 1547 },
 		{ name: "Zod Mini", kind: "other", value: 5127 },
 		{ name: "Zod", kind: "other", value: 25058 },
@@ -100,12 +101,12 @@ export const sizeChart: BenchmarkChart = {
 export const claims = {
 	// precompiled ArkType: moltar's parseSafe, 189 instructions vs Typia 213,
 	// wall clock 30 of 44 passes against Typia (p 0.023); valibot.dev's login
-	// form as written, 1028 vs Valibot 1547 B gz
+	// form as written, 1339 vs Valibot 1547 B gz
 	headline: "Faster than Typia. Smaller than Valibot.",
 	headlineDetail:
-		"Precompiled from the same definitions: fastest on moltar's parseSafe benchmark, and every error with its message on valibot.dev's login form in 1.03 kB.",
+		"Precompiled from the same definitions: fastest on moltar's parseSafe benchmark, and every error with its message on valibot.dev's login form in 1.34 kB.",
 	headlineNote:
-		"*Speed: moltar's parseSafe benchmark on valid data, run by us on Node 24: 189 instructions per call, Typia 213. ajv is faster on some invalid-data rows. Size: valibot.dev's login form as written, with its messages, bundled with bundlejs's esbuild settings and precompiled for size: 1.03 kB gzipped, Valibot 1.55 kB.",
+		"*Speed: moltar's parseSafe benchmark on valid data, run by us on Node 24: 189 instructions per call, Typia 213. ajv is faster on some invalid-data rows. Size: valibot.dev's login form as written, with its messages, bundled with bundlejs's esbuild settings and precompiled for size with the \"smallest\" preset in a production build: 1.34 kB gzipped, Valibot 1.55 kB.",
 	// the fastest and the smallest builds differ: optimize "size" makes the
 	// product schema's valid data 2.2x slower
 	buildChoice:
@@ -122,9 +123,9 @@ export const claims = {
 	// (1.11, 3 of 12, p 0.15)
 	dynamicSpeed:
 		"In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType.",
-	// lean errors 1028 vs 1547 B gz, the form as written; default+lean 1.26 kB
+	// "smallest" in production, 1339 vs 1547 B gz, the form as written
 	loginSize:
-		"On Valibot's own login form, ArkType precompiled for size reports every error, with its message, in a smaller bundle than Valibot: 1.03 kB gzipped against 1.55 kB.",
+		"On Valibot's own login form, ArkType precompiled for size reports every error, with its message, in a smaller bundle than Valibot: 1.34 kB gzipped against 1.55 kB.",
 	// moltar strict, dynamic, 2.2.3 to now: assertStrict 4067 -> 348,
 	// parseStrict 3798 -> 392 instructions
 	strictSpeedup:
