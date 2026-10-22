@@ -84,7 +84,7 @@ contextualize(() => {
 			"d'2000-01-01T00:00:00.000Z' <= Date <= d'2000-01-01T17:00:00.000Z'"
 		)
 		attest(T.description).snap(
-			"a Date and January 1, 2000, 5:00 PM UTC or earlier and 2000 or later"
+			"a Date and January 1, 2000, 5:00 PM UTC or earlier and January 1, 2000 or later"
 		)
 		attest(T(new Date("2000-01-01T18:00Z")).toString()).snap(
 			"must be January 1, 2000, 5:00 PM UTC or earlier (was January 1, 2000, 6:00 PM UTC)"

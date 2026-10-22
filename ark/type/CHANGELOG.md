@@ -1642,7 +1642,7 @@ scope({ a: "a" }).export()
 
 ### Describe dates in UTC
 
-Dates in descriptions and error messages are written in UTC instead of local time, except that a date at UTC midnight is written as its calendar date, collapsing to its year on January 1:
+Dates in descriptions and error messages are written in UTC instead of local time, except that a date at UTC midnight is written as its calendar date, like `January 1, 2000`. One at local midnight on January 1 was written as its year, so `Date <= d'2020-01-01'` reported `must be 2020 or earlier (was June 1, 2020)`, and now that it's at UTC midnight, the day is kept:
 
 ```ts
 const T = type("Date < d'2000-01-01T12:30:00Z'")

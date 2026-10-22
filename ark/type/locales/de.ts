@@ -59,7 +59,7 @@ const number = (n: number | bigint): string => `${n}`.replace(".", ",")
 
 const pad = (n: number, width: number) => `${n}`.padStart(width, "0")
 
-// in UTC, omitting the time at midnight and the day and month on January 1
+// in UTC, omitting the time at midnight
 const date = (d: Date): string => {
 	const year = d.getUTCFullYear()
 	const month = d.getUTCMonth()
@@ -68,22 +68,16 @@ const date = (d: Date): string => {
 	const minutes = d.getUTCMinutes()
 	const seconds = d.getUTCSeconds()
 	const milliseconds = d.getUTCMilliseconds()
-	if (!hours && !minutes && !seconds && !milliseconds) {
-		return month === 0 && day === 1 ?
-				`${year}`
-			:	`${day}. ${months[month]} ${year}`
-	}
+	if (!hours && !minutes && !seconds && !milliseconds)
+		return `${day}. ${months[month]} ${year}`
 	let time = `${pad(hours, 2)}:${pad(minutes, 2)}`
 	if (seconds || milliseconds) time += `:${pad(seconds, 2)}`
 	if (milliseconds) time += `,${pad(milliseconds, 3)}`
 	return `${day}. ${months[month]} ${year}, ${time} UTC`
 }
 
-// a date is a nominative with its article, except a bare year
-const theDate = (date: Date, locale: Locale.Info) => {
-	const text = locale.date(date)
-	return /^\d+$/.test(text) ? text : `der ${text}`
-}
+// a date is a nominative with its article
+const theDate = (date: Date, locale: Locale.Info) => `der ${locale.date(date)}`
 
 // Dates and numbers in the locale's form, other values as code
 const print = (value: unknown, locale: Locale.Info): string =>

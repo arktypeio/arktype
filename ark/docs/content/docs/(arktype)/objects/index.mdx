@@ -1060,10 +1060,10 @@ const Recent = type.Date.atOrAfter(tenYearsAgo).earlierThan(Date.now())
 
 </SyntaxTabs>
 
-Descriptions and error messages write dates in UTC. A date at UTC midnight is written as its calendar date, or just its year on January 1:
+Descriptions and error messages write dates in UTC. A date at UTC midnight is written as its calendar date:
 
 ```ts
-// "a Date and 2023 or later"
+// "a Date and January 1, 2023 or later"
 type("Date >= d'2023-01-01'").description
 
 // "a Date and January 1, 2023, 2:30 PM UTC or later"

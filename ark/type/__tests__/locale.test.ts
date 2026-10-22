@@ -293,7 +293,7 @@ contextualize(() => {
 			attest(en.plural(0)).equals("other")
 			attest(en.number(0.5)).equals("0.5")
 			attest(en.number(5n)).equals("5")
-			attest(en.date(new Date("2000-01-01"))).equals("2000")
+			attest(en.date(new Date("2000-01-01"))).equals("January 1, 2000")
 			attest(en.cite("a username")).equals("a username")
 		})
 

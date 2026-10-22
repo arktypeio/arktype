@@ -93,13 +93,13 @@ contextualize(() => {
 			"unknown[] == 1 ← []": "muss genau 1 Element enthalten, ist aber leer",
 			"unknown[] >= 2 ← []": "muss mindestens 2 Elemente enthalten",
 			"Date < 2000 ← 2001-01-01T00:00:00.000Z":
-				"muss spätestens der 31. Dezember 1999, 23:59:59,999 UTC sein, ist aber 2001",
+				"muss spätestens der 31. Dezember 1999, 23:59:59,999 UTC sein, ist aber der 1. Januar 2001",
 			"Date <= 2000 ← 2001-05-03T00:00:00.000Z":
-				"muss spätestens 2000 sein, ist aber der 3. Mai 2001",
+				"muss spätestens der 1. Januar 2000 sein, ist aber der 3. Mai 2001",
 			"Date >= May 3 ← 2000-05-02T23:00:00.000Z":
 				"muss frühestens der 3. Mai 2000 sein, ist aber der 2. Mai 2000, 23:00 UTC",
 			"Date > May 3, 12:30 ← 1999-01-01T00:00:00.000Z":
-				"muss frühestens der 3. Mai 2000, 12:30:00,001 UTC sein, ist aber 1999",
+				"muss frühestens der 3. Mai 2000, 12:30:00,001 UTC sein, ist aber der 1. Januar 1999",
 			"Date <= May 3, 12:30:05.123 ← 2000-12-31T09:05:00.000Z":
 				"muss spätestens der 3. Mai 2000, 12:30:05,123 UTC sein, ist aber der 31. Dezember 2000, 09:05 UTC",
 			"Date != May 3 ← 2000-05-03T00:00:00.000Z":
