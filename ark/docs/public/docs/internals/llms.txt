@@ -116,6 +116,8 @@ Refinements apply to the intersection itself:
 | `exactLength` | `string \| Array` | Exactly `rule` characters or elements | `{ rule: 10 }` |
 | `after` | `Date` | Dates at or after `rule` | `{ rule: new Date("2000-01-01") }` |
 | `before` | `Date` | Dates at or before `rule` | `{ rule: new Date("2030-01-01") }` |
+| `notEqual` | `number \| Date` | Numbers or Dates other than `rule` | `{ rule: 0 }` |
+| `notEqualLength` | `string \| Array` | Other than `rule` characters or elements | `{ rule: 3 }` |
 | `structure` | `object` | Objects whose props and elements match its [structural](#structural) children | `{ required: [...] }` |
 | `predicate` | | Data a custom `narrow` function accepts | `{ predicate: n => n % 2 === 1 }` |
 

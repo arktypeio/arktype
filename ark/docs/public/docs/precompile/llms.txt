@@ -77,7 +77,7 @@ data => {
 
 ## With agents
 
-A build step costs a loop: build, read the error, fix, rebuild. When an agent runs your local dev, that loop is what it does best, so the cost of precompiling is small and its benefit is every validator you ship.
+A build step adds a loop: build, read the error, fix, rebuild. If an agent runs your local dev, it's already good at that loop, so precompiling costs you little.
 
 Precompiling stays quiet when everything builds. Where something would fail at runtime and the fix is clear, the build fails instead, with the file, line and column, what it couldn't do, why, and how to fix it:
 
@@ -365,7 +365,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 
 Composing inside a definition is fine, since the build evaluates it: `export const Admin = User.and({ role: "'admin'" })` is precompiled to a validator of its own. So is [`.encode`](https://arktype.io/docs/codecs) wherever the build sees it read, like `const encode = (event: unknown) => Event.encode(event)`: the encoder is precompiled like any other Type, and receives each codec's `encode` function from the validator holding it. The build installs encoding itself, so a precompiled `.encode` works even where the program never imports `arktype/codecs`.
 
-A validator and its members are frozen, except a Date or RegExp it holds, unless the build sets [`freeze: false`](https://arktype.io/docs/precompile/options#freeze).
+A validator and its members are frozen, except a Date or RegExp it holds, unless the build sets [`freeze: false`](https://arktype.io/docs/precompile/options#freeze), as a [production build](https://arktype.io/docs/precompile/options#production-builds) does by default.
 
 ## Errors
 

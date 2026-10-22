@@ -86,7 +86,7 @@ Each `Regex` carries the strings it matches, its captures and its flags. Where a
 | `*` | `""`, or one repetition followed by `` `${string}` `` |
 | `\d`, `[0-9]` | `` `${number}` `` |
 | `[abc]` | `"a" \| "b" \| "c"` |
-| `.`, `\w`, `\W`, `\S`, `\D`, `\p{…}`, `[^…]`, ranges like `[a-z]` | `string` |
+| `.`, `\w`, `\W`, `\s`, `\S`, `\D`, `\p{…}`, `[^…]`, ranges like `[a-z]` | `string` |
 | `\b`, `\B`, `(?=…)`, `(?!…)`, `(?<=…)`, `(?<!…)` | nothing |
 | `(…)`, `(?<name>…)` | the group's type, plus a capture |
 | `\1`, `\k<name>` | whatever the referenced group matched |
@@ -176,7 +176,7 @@ const hex = regex("^[0-9a-f]+$")
 // const hex: Regex<string, {}>
 ```
 
-Negated sets like `[^abc]` and classes like `.`, `\w` and `\p{L}` also widen to `string`. `\s` is currently a [known gap](https://arktype.io/docs/regex/faq#known-gaps).
+Negated sets like `[^abc]` and classes like `.`, `\w`, `\s` and `\p{L}` also widen to `string`.
 
 ## Escapes
 
