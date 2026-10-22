@@ -80,6 +80,19 @@ contextualize(() => {
 		)
 	})
 
+	it("an embedded Standard Schema's empty issues fail", () => {
+		const T = type({
+			a: {
+				"~standard": {
+					version: 1,
+					vendor: "other",
+					validate: () => ({ issues: [] })
+				}
+			}
+		})
+		attest(T({ a: 1 }).toString()).snap("a is invalid")
+	})
+
 	it("can infer generic parameter from standard schema", () => {
 		const acceptsStandardSchema = <T extends StandardSchemaV1>(
 			schema: T

@@ -2292,6 +2292,21 @@ type({ a: "string" })
 	.merge({ "b?": type("string").describe("an ID") })
 ```
 
+### Fail an embedded Standard Schema's empty `issues`
+
+A Standard Schema result with `issues` is a failure, but one whose `issues` was empty passed, with `undefined` as its output. It now fails with `is invalid`:
+
+```ts
+const T = type({
+	a: {
+		"~standard": { version: 1, vendor: "x", validate: () => ({ issues: [] }) }
+	}
+})
+
+// previously { a: undefined }, now ArkErrors: a is invalid
+T({ a: 1 })
+```
+
 ### Throw when an embedded Standard Schema validates asynchronously
 
 A Standard Schema whose `validate` returned a Promise, like a Zod schema with an async refinement, gave `undefined` for any input. ArkType validates synchronously, so it now throws:
