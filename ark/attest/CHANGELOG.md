@@ -17,6 +17,7 @@ Runtime benches now run in a loop compiled for each bench, after a warmup of 500
 - `.snap.toFile` creates its snapshot file if it doesn't exist. It threw ENOENT unless the file was already there.
 - `--onlyNamedTestFiles`, or the `onlyNamedTestFiles` option, analyzes only the `*.test.*` files named on the command line, so running one test file type-checks only its assertions. Pass mocha `--no-package` with it, since mocha otherwise adds the named files to its configured `spec` and runs tests that weren't analyzed.
 - `.completions()` under TypeScript 7 includes completions of strings containing punctuation, like a JSON Schema `$ref` path. TypeScript 7 gives each a filter text of only its last word, which didn't match the prefix, so they were dropped and `.completions()` returned `{}`.
+- `getChecker()` returns the checker attest analyzes with, so a test can branch on output that differs between them.
 - `attest trace` and `attest stats` check projects with `composite: true`. They passed tsc `--incremental false`, which such a project rejects (TS6379), so since TypeScript 5.6 they skipped type checking and reported 0 instantiations ([#1306](https://github.com/arktypeio/arktype/issues/1306)).
 
 ## 0.58.0
