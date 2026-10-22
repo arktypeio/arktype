@@ -47,8 +47,7 @@ import {
 	type StandaloneFactory,
 	type StandaloneIntrospection,
 	type StandaloneOptions,
-	type ScopeAlias,
-	type UnitReaders
+	type ScopeAlias
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join, relative } from "node:path"
@@ -216,8 +215,6 @@ export interface PrecompiledModule extends ModuleAnalysis {
 	map: SourceMap | undefined
 	// virtual module sources by specifier
 	modules: Record<string, string>
-	// readers of each unit module that could join another's scope, for a later build
-	unitReaders: UnitReaders
 }
 
 // an arktype export, or "reference" for the program's own Type
@@ -431,8 +428,6 @@ export class Precompiler {
 	}
 	private reportedDependencies = new Set<string>()
 	private intrinsicUnits: Record<string, string> | undefined
-	// what earlier builds' unitReaders recorded across the program
-	unitReaders: UnitReaders | undefined
 
 	constructor(host: PrecompileHost, opts: PrecompileOptions = {}) {
 		opts = resolvePrecompileOptions(opts)
@@ -767,7 +762,6 @@ export class Precompiler {
 		let prefix = "$ark"
 		while (source.includes(prefix)) prefix += "$"
 		const modules: Record<string, string> = {}
-		const readers: UnitReaders = {}
 		// locals for virtual modules' exports, by specifier
 		const imports: Record<string, Record<string, string>> = {}
 		if (this.mode === "standalone") {
@@ -777,7 +771,6 @@ export class Precompiler {
 				s,
 				prefix,
 				modules,
-				readers,
 				imports,
 				diagnostics
 			)
@@ -870,8 +863,7 @@ export class Precompiler {
 			sites,
 			dependencies: this.dependenciesOfArtifact(module),
 			diagnostics,
-			modules: this.inline ? {} : modules,
-			unitReaders: readers
+			modules: this.inline ? {} : modules
 		}
 	}
 
@@ -1217,7 +1209,6 @@ export class Precompiler {
 		s: MagicString,
 		prefix: string,
 		modules: Record<string, string>,
-		readers: UnitReaders,
 		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[]
 	): Record<string, Record<string, string>> {
@@ -1325,8 +1316,7 @@ export class Precompiler {
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module),
 						// shadow mode calls what it compares
-						values: !this.shadow,
-						unitReaders: this.unitReaders
+						values: !this.shadow
 					},
 					refusalsByName,
 					this.inline
@@ -1363,7 +1353,6 @@ export class Precompiler {
 					if (!(specifier in modules)) {
 						modules[specifier] = validators.code
 						Object.assign(modules, validators.modules)
-						Object.assign(readers, validators.unitReaders)
 					}
 					;(imports[specifier] ??= {})[exported] = local
 				}

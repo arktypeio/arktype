@@ -1006,9 +1006,8 @@ export const inspected = inspect(type({ a: "string" })({ a: 1 }))
 		])
 	})
 
-	it("vite merges units by what its last build read", async () => {
+	it("vite builds the same bundle from a cache an earlier build left", async () => {
 		const cacheDir = tempDir()
-		// a development build's runtime keeps a unit that renders nothing
 		const build = async () => {
 			const [{ output }] = (await withNodeEnv("production", () =>
 				viteBuild({
@@ -1021,14 +1020,11 @@ export const inspected = inspect(type({ a: "string" })({ a: 1 }))
 					}
 				})
 			)) as Rolldown.RolldownOutput[]
-			return output[0]
+			return output[0].code
 		}
-		const unitModulesOf = ({ moduleIds }: Rolldown.OutputChunk) =>
-			moduleIds.filter(id => id.startsWith("\0~arktype/")).length
 		const first = await build()
-		const second = await build()
-		attest([unitModulesOf(first), unitModulesOf(second)]).snap([27, 24])
-		attest(run(second.code)).equals(expected)
+		attest(await build()).equals(first)
+		attest(run(first)).equals(expected)
 	})
 
 	it("vite emits declarations", async () => {

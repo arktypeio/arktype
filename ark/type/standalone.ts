@@ -61,15 +61,12 @@ import * as runtime from "./runtimeExports.ts"
 import type { Scope } from "./scope.ts"
 import {
 	mergeUnits,
-	namesOfChanged,
-	readersIn,
 	writeDependencies,
 	writeImports,
 	writeModule,
 	writeScope,
 	writeSections,
 	type SharedModule,
-	type UnitReaders,
 	type UnitScope
 } from "./standalone/modules.ts"
 import {
@@ -259,8 +256,6 @@ export interface StandaloneOptions {
 	hoisted?: boolean | undefined
 	// export as values what a site would call a function only to read
 	values?: boolean | undefined
-	// each unit module's readers across the program, which may be stale
-	unitReaders?: UnitReaders | undefined
 }
 
 interface Baking {
@@ -366,8 +361,6 @@ export interface StandaloneModules {
 	checking: string[]
 	// exports a site reads rather than calls
 	values: string[]
-	// the readers of each unit module that could join another's scope
-	unitReaders: UnitReaders
 }
 
 export const runtimeImport = `import * as runtime from "arktype/runtime"`
@@ -390,7 +383,7 @@ export const precompileStandalone = (
 		false
 	)
 	// nothing outside the artifact reads its units
-	mergeUnits(shared, imports, readersIn(shared, imports), opts)
+	mergeUnits(shared, imports, opts)
 	return {
 		code: writeSections([
 			`${runtimeImport}\n${versionImport}`,
@@ -400,8 +393,7 @@ export const precompileStandalone = (
 		modules: {},
 		folds,
 		checking,
-		values,
-		unitReaders: {}
+		values
 	}
 }
 
@@ -414,33 +406,20 @@ export const precompileStandaloneModules = (
 		opts,
 		true
 	)
-	const unitReaders: Record<string, string[]> = {}
-	const readers = readersIn(shared, imports)
-	for (const specifier in readers) {
-		if (shared[specifier]?.scope?.declaresOnlyRefs)
-			unitReaders[specifier] = readers[specifier]
-	}
-	const names = namesOfChanged(
-		shared,
-		opts.unitReaders ? mergeUnits(shared, imports, opts.unitReaders, opts) : []
-	)
+	// each module is shared by every artifact that reads it, so none merges
+	// another's units into its own
 	const modules: Record<string, string> = {}
-	for (const specifier in shared) {
-		modules[names[specifier] ?? specifier] = writeModule(
-			shared[specifier],
-			names
-		)
-	}
+	for (const specifier in shared)
+		modules[specifier] = writeModule(shared[specifier])
 	return {
 		code: writeSections([
-			`${runtimeImport}\n${versionImport}\n${writeImports(imports, names)}`,
+			`${runtimeImport}\n${versionImport}\n${writeImports(imports)}`,
 			...sections
 		]),
 		modules,
 		folds,
 		checking,
-		values,
-		unitReaders
+		values
 	}
 }
 

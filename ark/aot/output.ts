@@ -24,8 +24,7 @@ export const noValidators: StandaloneModules = {
 	modules: {},
 	folds: {},
 	checking: [],
-	values: [],
-	unitReaders: {}
+	values: []
 }
 
 // one bad export refuses a whole artifact, so retry each alone
