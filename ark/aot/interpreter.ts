@@ -1079,7 +1079,7 @@ export class Interpreter {
 	}
 
 	// an export is static only if its own module could not change it
-	private exportValue(
+	exportValue(
 		target: Extract<ImportTarget, { kind: "binding" | "expression" }>
 	): Evaluated {
 		if (target.kind === "expression")

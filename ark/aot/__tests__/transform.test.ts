@@ -653,14 +653,16 @@ const create = () => {
 		})
 
 		it("definitions inside functions", () => {
+			// an importer can't read what an exported function returns
 			const result = precompile(`import { scope, type } from "arktype"
-export const make = () => ({
+const make = () => ({
 	$: scope({ a: "string" }),
 	types: type.module({ a: "string" }),
 	Box: type("<t>", { box: "t" }),
 	Trimmed: type("string.trim"),
 	Text: type("string")
-})`)
+})
+export const made = make()`)
 			attest(result.diagnostics).equals([])
 			attest(normalized(result.code)).snap(`import "arktype"
 import { #0 as $ark#0 } from "~arktype/#1"
@@ -668,13 +670,14 @@ import { #2 as $ark#2 } from "~arktype/#1"
 import { #3 as $ark#3 } from "~arktype/#1"
 import { #4 as $ark#4 } from "~arktype/#1"
 import { #5 as $ark#5 } from "~arktype/#1"
-export const make = () => ({
+const make = () => ({
 	$: $ark#0(),
 	types: $ark#2(),
 	Box: $ark#3(),
 	Trimmed: $ark#4(),
 	Text: $ark#5()
-})`)
+})
+export const made = make()`)
 		})
 
 		it("leaves define calls' arguments", () => {
