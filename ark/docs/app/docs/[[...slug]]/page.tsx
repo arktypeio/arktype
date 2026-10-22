@@ -45,7 +45,7 @@ const productTitles: Record<string, string> = {
 }
 
 /** sections of ArkType's docs whose name tells their pages apart, e.g. "Overview" */
-const namedSections = new Set(["json-schema", "internals"])
+const namedSections = new Set(["precompile", "json-schema", "internals"])
 
 const titleOf = (tree: PageTree, page: Page) => {
 	const { title } = page.frontmatter

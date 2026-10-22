@@ -8,6 +8,7 @@ import type {
 /** what each section is for, in the drawer's section switcher */
 const blurbs: Record<string, string> = {
 	"(arktype)": "the validator",
+	precompile: "validators at build time",
 	regex: "regex with types",
 	attest: "type-level testing",
 	"json-schema": "both directions",

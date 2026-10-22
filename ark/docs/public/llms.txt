@@ -2,7 +2,7 @@
 
 > TypeScript's 1:1 validator, optimized from editor to runtime
 
-ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.
+ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. @ark/aot, ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.
 
 Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/llms-full.txt) has every ArkType page in one file.
 
@@ -15,16 +15,6 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 - [Cheat sheet](https://arktype.io/docs/cheat-sheet.md): ArkType's most common syntax, patterns and gotchas on one page.
 - [Agents](https://arktype.io/docs/agents.md): Help Claude Code, Codex, Cursor and other coding agents write ArkType.
 - [Editor setup](https://arktype.io/docs/editor.md): Highlighting, inline errors and autocomplete for ArkType definitions in VS Code, JetBrains IDEs and other editors.
-
-## ArkType: Precompile
-
-- [Precompile](https://arktype.io/docs/precompile.md): Compile your Types when you build, and ship only the checks they need
-- [Setup](https://arktype.io/docs/precompile/setup.md): Add precompilation to your bundler, test runner or framework
-- [Validators](https://arktype.io/docs/precompile/validators.md): What a precompiled Type is, and how it differs from one arktype creates
-- [Options](https://arktype.io/docs/precompile/options.md): Ship less, and configure a precompiled program
-- [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting.md): What the build reports, and how to fix it
-- [Advanced](https://arktype.io/docs/precompile/advanced.md): Shadow mode, libraries, runtime islands and declarations
-- [Dynamic vs Precompiled](https://arktype.io/docs/dynamic-vs-precompiled.md): The same definitions, run two ways
 
 ## ArkType: Definitions
 
@@ -62,6 +52,16 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 - [Packages](https://arktype.io/docs/packages.md): Every package ArkType publishes, its entrypoints, and what to import from each.
 - [Upgrading](https://arktype.io/docs/upgrading.md): The changes in the latest ArkType that can break code written for the previous release, and what to change.
 - [FAQ](https://arktype.io/docs/faq.md): Answers to common questions about ArkType's behavior, configuration and TypeScript integration.
+
+## Precompile
+
+- [Overview](https://arktype.io/docs/precompile.md): Compile your Types when you build, and ship only the checks they need
+- [Dynamic vs Precompiled](https://arktype.io/docs/precompile/dynamic-vs-precompiled.md): The same definitions, run two ways
+- [Setup](https://arktype.io/docs/precompile/setup.md): Add precompilation to your bundler, test runner or framework
+- [Validators](https://arktype.io/docs/precompile/validators.md): What a precompiled Type is, and how it differs from one arktype creates
+- [Options](https://arktype.io/docs/precompile/options.md): Ship less, and configure a precompiled program
+- [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting.md): What the build reports, and how to fix it
+- [Advanced](https://arktype.io/docs/precompile/advanced.md): Shadow mode, libraries, runtime islands and declarations
 
 ## ArkRegex
 
@@ -104,6 +104,7 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 ## Optional
 
 - [ArkType, every page](https://arktype.io/llms-full.txt): TypeScript's 1:1 validator
+- [Precompile, every page](https://arktype.io/docs/precompile/llms.txt): Construct your Types when you build
 - [ArkRegex, every page](https://arktype.io/docs/regex/llms.txt): Regular expressions with inferred types
 - [Attest, every page](https://arktype.io/docs/attest/llms.txt): Type assertions and benchmarks
 - [JSON Schema, every page](https://arktype.io/docs/json-schema/llms.txt): Convert Types to JSON Schema and back
