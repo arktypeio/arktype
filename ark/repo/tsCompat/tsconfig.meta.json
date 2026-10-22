@@ -1,0 +1,6 @@
+{
+	// its global meta would apply to every Type in a program it joins, so its
+	// name starts with a dot to keep it out of programs that include by glob
+	"extends": "./tsconfig.json",
+	"files": [".meta.ts"]
+}
