@@ -5,8 +5,6 @@ description: The same definitions, run two ways
 
 Every ArkType definition can run dynamically, created by `type()` at runtime, or [precompiled](/docs/precompile), constructed when you build. Your definitions and their inferred types are identical either way, so you can switch at any time.
 
-<ClaimCharts />
-
 <Claim id="dynamicSpeed" /> What precompiling removes is everything around a
 Type's checks: the parser, the time it takes to create each Type, and the code
 it generates.
@@ -23,7 +21,7 @@ it generates.
 
 ## Which to use
 
-Precompile an app you bundle. Its validators ship without a parser or a JIT, and the build reports anything it can't precompile with the fix, which is a quick loop when an agent runs your local dev. See [Setup](/docs/precompile/setup).
+Precompile an app you bundle. Its validators ship without a parser or a JIT, and the build reports anything it can't precompile with the fix. See [Setup](/docs/precompile/setup), and [Speed and size](/docs/precompile#speed-and-size) for the numbers.
 
 Stay dynamic where there's no build, like a script or a REPL, or where definitions are only known at runtime. A standalone build can also leave those to arktype as [runtime islands](/docs/precompile/advanced#runtime-islands).
 
