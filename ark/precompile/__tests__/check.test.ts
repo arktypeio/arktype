@@ -304,7 +304,7 @@ forms.ts:16:16  island
 		const { status, stderr } = runCli(cwd, "--check", "--checks", "bogus")
 		attest([status, stderr.split("\n")[0]]).equals([
 			2,
-			'checks is "bogus", which isn\'t "types", "helpers" or "none"'
+			'checks must be "helpers", "none" or "types" (was "bogus")'
 		])
 	})
 })

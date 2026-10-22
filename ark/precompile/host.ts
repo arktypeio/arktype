@@ -5,6 +5,7 @@ import type { SourceMap } from "magic-string"
 import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
 import type { PrecompilePluginOptions, RenderedDiagnostics } from "./driver.ts"
 import type { PrecompileOptions } from "./precompile.ts"
+import { isProductionEnv, withEnvironment } from "./presets.ts"
 
 export interface PrecompileHost {
 	resolve(specifier: string, importer: string): string | undefined
@@ -172,7 +173,7 @@ export type RuntimeVariant = "none" | "lean" | "none-lean"
 export const runtimeVariantOf = (
 	opts: PrecompileOptions | undefined
 ): RuntimeVariant | undefined =>
-	opts?.members?.errorMethods === false ?
+	opts?.optimizeErrors === "size" ?
 		opts.errors === "none" ?
 			"none-lean"
 		:	"lean"
@@ -202,7 +203,7 @@ export const variantSpecifierOf = (
 	:	undefined
 
 export const writeVariantOption = (variant: RuntimeVariant): string =>
-	variant === "lean" ? "members: { errorMethods: false }" : 'errors: "none"'
+	variant === "lean" ? 'optimizeErrors: "size"' : 'errors: "none"'
 
 export const writeVariantImportMessage = (
 	importer: string,
@@ -231,18 +232,16 @@ export const writeTextlessMessage = (path: string): string =>
 	`${path} imports arktype but was loaded without @ark/precompile/node's hooks, before register() ran or by a loader that compiles it itself, as tsx does in a CommonJS package, so a standalone build can't precompile it`
 
 export const driverOptionsOf = (
-	opts: PrecompilePluginOptions | undefined,
+	opts: PrecompilePluginOptions,
 	isTestRunner: boolean
-): PrecompilePluginOptions => {
-	const isStandalone = opts?.runtime !== "arktype"
-	return {
-		...opts,
-		// a standalone module imports what it shares, which the driver serves
-		inline: !isStandalone,
-		checks:
-			opts?.checks ?? (isStandalone && isTestRunner ? "helpers" : undefined)
-	}
-}
+): PrecompilePluginOptions => ({
+	...withEnvironment(opts, {
+		production: isProductionEnv(),
+		testing: isTestRunner
+	}),
+	// a standalone module imports what it shares, which the driver serves
+	inline: opts.runtime === "arktype"
+})
 
 export const reportDiagnostics = (
 	diagnostics: RenderedDiagnostics | undefined,

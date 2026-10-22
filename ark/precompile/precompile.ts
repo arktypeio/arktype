@@ -1,6 +1,5 @@
 import {
 	$ark,
-	describeBranches,
 	hasArkKind,
 	writePrecompiledUnits,
 	type BaseRoot,
@@ -14,14 +13,10 @@ import { fingerprintOf } from "@ark/schema/runtime"
 import { writeMissingInverseMessage } from "@ark/schema/codecs"
 import {
 	appendStringifiedKey,
-	entriesOf,
 	hashOf,
 	hasDomain,
 	includes,
-	keysOf,
-	objectKindOrDomainOf,
 	ParseError,
-	printable,
 	registeredNameOf,
 	throwError,
 	throwParseError
@@ -36,7 +31,6 @@ import {
 	appendPath,
 	defaultMembers,
 	holeNamePattern,
-	introspectionMembers,
 	isTypedFn,
 	keyOf,
 	kindNameOf,
@@ -106,6 +100,8 @@ import {
 	type SiteState
 } from "./interpreter.ts"
 import { SourceModule } from "./module.ts"
+import type { Preset } from "./presets.ts"
+import { resolvePrecompileOptions } from "./settings.ts"
 import {
 	exportNameOf,
 	isTransparent,
@@ -140,16 +136,12 @@ import {
 	markerHint,
 	nodePackageHint,
 	runtimeImportHint,
-	standardJsonSchemaWithoutStandardMessage,
 	unresolvedHint,
 	versionHint,
-	writeArktypeRuntimeOptionMessage,
 	writeErrorsMismatchMessage,
 	writeMutatesInputMismatchMessage,
-	writeOptionValueMessage,
 	writeSchemaExportHint,
 	writeStandaloneDependencyMessage,
-	writeUnknownMemberMessage,
 	writeUnreadableConfigMessage,
 	writeUnsureHint
 } from "./messages.ts"
@@ -166,11 +158,15 @@ import {
 	writeValidators
 } from "./output.ts"
 export * from "./messages.ts"
+export * from "./presets.ts"
+export * from "./settings.ts"
 
 export type PrecompileMode = "standalone" | "cache"
 
 export interface PrecompileOptions extends InterpreterOptions {
 	cwd?: string | undefined
+	/** settings for a goal, which any other setting overrides */
+	preset?: Preset | undefined
 	/** the module calling configure(), or false if none does */
 	config?: string | false | undefined
 	/** inline virtual modules, for hosts without them */
@@ -185,7 +181,10 @@ export interface PrecompileOptions extends InterpreterOptions {
 	/** false creates validators as their modules load */
 	lazy?: boolean | undefined
 	mutatesInput?: MutatesInput | undefined
+	/** "size" writes validators smaller and slower */
 	optimize?: Optimization | undefined
+	/** "size" writes errors smaller and slower to read, defaulting to optimize */
+	optimizeErrors?: Optimization | undefined
 	/** rejects undeclared keys by counting a plain object's own enumerable keys */
 	countsKeys?: boolean | undefined
 	/** also create each site with arktype and throw where they diverge */
@@ -376,73 +375,6 @@ export const precompileModule = (
 	opts?: PrecompileOptions
 ): PrecompiledModule => new Precompiler(host, opts).precompile(source, id)
 
-export const assertPrecompileOptions = (opts: PrecompileOptions = {}): void => {
-	const members = opts.members ?? {}
-	const cache = opts.runtime === "arktype"
-	if (
-		opts.members !== undefined &&
-		objectKindOrDomainOf(opts.members) !== "object"
-	) {
-		throwError(
-			writeOptionValueMessage("members", printable(opts.members), "an object")
-		)
-	}
-	for (const member in members) {
-		if (!includes(memberOptions, member))
-			throwError(writeUnknownMemberMessage(printable(member)))
-		const kept = members[member]
-		if (kept !== undefined && typeof kept !== "boolean") {
-			throwError(
-				writeOptionValueMessage(
-					`members[${JSON.stringify(member)}]`,
-					printable(kept),
-					"a boolean"
-				)
-			)
-		}
-	}
-	if (
-		opts.config !== undefined &&
-		opts.config !== false &&
-		(typeof opts.config !== "string" || !opts.config)
-	) {
-		throwError(
-			writeOptionValueMessage(
-				"config",
-				printable(opts.config),
-				"a module path or false"
-			)
-		)
-	}
-	for (const [option, values] of entriesOf(enumOptions)) {
-		const value = opts[option]
-		if (value !== undefined && !includes(values, value)) {
-			throwError(
-				writeOptionValueMessage(
-					option,
-					printable(value),
-					describeBranches(values.map(v => JSON.stringify(v)))
-				)
-			)
-		}
-	}
-	for (const option of [...booleanOptions, "allowUnsafe"] as const) {
-		if (opts[option] !== undefined && typeof opts[option] !== "boolean") {
-			throwError(
-				writeOptionValueMessage(option, printable(opts[option]), "a boolean")
-			)
-		}
-	}
-	if (members["~standard.jsonSchema"] && members["~standard"] === false)
-		throwError(standardJsonSchemaWithoutStandardMessage)
-	const standaloneOption =
-		cache && standaloneOptions.find(option => opts[option] !== undefined)
-	if (standaloneOption)
-		throwError(writeArktypeRuntimeOptionMessage(standaloneOption))
-	if (cache && opts.config === false)
-		throwError(writeArktypeRuntimeOptionMessage("config: false"))
-}
-
 export class Precompiler {
 	graph: ModuleGraph
 	interpreter: Interpreter
@@ -492,7 +424,7 @@ export class Precompiler {
 	unitReaders: UnitReaders | undefined
 
 	constructor(host: PrecompileHost, opts: PrecompileOptions = {}) {
-		assertPrecompileOptions(opts)
+		opts = resolvePrecompileOptions(opts)
 		this.graph = new ModuleGraph(host, opts.cwd)
 		this.interpreter = new Interpreter(this.graph, opts, module =>
 			this.readsOf(module)
@@ -3566,7 +3498,9 @@ export class Precompiler {
 								"a build writing its errors for size gives its validators a runtime of their own"
 							:	"a build whose errors say only that data is invalid gives its validators a runtime of their own"
 						],
-						`Precompile the definition, or build without ${option}.`
+						this.variant === "lean" ?
+							'Precompile the definition, or build with optimizeErrors: "speed".'
+						:	`Precompile the definition, or build without ${option}.`
 					)
 				)
 			)
@@ -3833,28 +3767,6 @@ export class Precompiler {
 }
 
 const methodMembers = ["traverse", "from", "toString"] as const
-
-export const memberOptions = [
-	...defaultMembers,
-	...introspectionMembers,
-	"errorMethods"
-] as const
-
-const booleanOptions = ["freeze", "lazy", "countsKeys"] as const
-
-const enumOptions = {
-	checks: ["types", "helpers", "none"],
-	errors: ["all", "first", "none"],
-	mutatesInput: [false, true, "always"],
-	optimize: ["speed", "size"]
-} as const
-
-// options runtime: "arktype" doesn't take
-const standaloneOptions = [
-	"members",
-	...booleanOptions,
-	...keysOf(enumOptions)
-] as const
 
 export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 	[

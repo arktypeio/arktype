@@ -2,7 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import {
 	configuredThreadMessage,
-	writeOptionValueMessage,
 	writeTextlessMessage,
 	writeVariantImportMessage
 } from "@ark/precompile"
@@ -179,7 +178,7 @@ contextualize(function (this: Mocha.Suite) {
 	it("refuses a non-path config", () => {
 		attest(
 			node(["main.ts"], { config: "" }).stderr.includes(
-				writeOptionValueMessage("config", '""', "a module path or false")
+				'config must be a module path or false (was "")'
 			)
 		).equals(true)
 	})

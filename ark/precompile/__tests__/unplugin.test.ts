@@ -363,8 +363,14 @@ contextualize(function (this: Mocha.Suite) {
 		it(`${name} import cycles`, async () => {
 			for (const [fixture, members] of Object.entries(cycles)) {
 				const root = fromHere(fixture)
+				// a production build doesn't check a read precedes what it reads
 				attest(
-					run(await bundle({ cwd: root, members, allowUnsafe: true }, root))
+					run(
+						await bundle(
+							{ cwd: root, members, allowUnsafe: true, checks: "types" },
+							root
+						)
+					)
 				).equals(runPlain(root))
 			}
 		})
@@ -627,7 +633,7 @@ for (const fail of [() => T.assert({}), () => out.throw()]) {
 }
 `
 			},
-			fromHere("temp", "errorMethods")
+			fromHere("temp", "sizedErrors")
 		)
 		// with the issues module each runtime copy is published with
 		const outputs = await Promise.all(
@@ -649,7 +655,7 @@ for (const fail of [() => T.assert({}), () => out.throw()]) {
 						precompile.esbuild({
 							cwd: root,
 							...opts,
-							members: { errorMethods: false },
+							optimizeErrors: "size",
 							conditions
 						})
 					]
@@ -846,7 +852,7 @@ try {
 			moduleIds.filter(id => id.startsWith("\0~arktype/")).length
 		const first = await build()
 		const second = await build()
-		attest([unitModulesOf(first), unitModulesOf(second)]).snap([31, 27])
+		attest([unitModulesOf(first), unitModulesOf(second)]).snap([28, 24])
 		attest(run(second.code)).equals(expected)
 	})
 

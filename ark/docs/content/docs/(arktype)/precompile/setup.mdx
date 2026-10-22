@@ -198,7 +198,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
   Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
 ```
 
-It takes each option that changes what a build refuses, like `--errors none` or `--members '{"assert":false}'`. `--fail-under <percent>` exits with 1 if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
+It reads [`ark.json`](/docs/precompile/options#arkjson) as a build does, and takes each option that changes what a build refuses, like `--preset smallest`, `--errors none` or `--members '{"assert":false}'`. `--fail-under <percent>` exits with 1 if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
 
 The same analysis is available as `new Precompiler(host).analyze(source, id)` from `@ark/precompile`.
 

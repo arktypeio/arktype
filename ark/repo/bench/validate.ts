@@ -5,6 +5,7 @@ import { arktypeConfigJson } from "./arktypeConfig.ts"
 import { noSuggest } from "@ark/util"
 import {
 	precompileStandalone,
+	type Optimization,
 	type StandaloneOptions
 } from "arktype/internal/standalone.ts"
 import { fork, spawnSync } from "node:child_process"
@@ -104,8 +105,11 @@ const issuesModulesByVariant = {
 
 type RuntimeVariant = keyof typeof issuesModulesByVariant
 
-const variantOf = (opts: StandaloneOptions): RuntimeVariant | undefined =>
-	opts.members?.errorMethods === false ?
+// errors are written for size as validators are, unless optimizeErrors says
+const variantOf = (
+	opts: StandaloneOptions & { optimizeErrors?: Optimization }
+): RuntimeVariant | undefined =>
+	(opts.optimizeErrors ?? opts.optimize) === "size" ?
 		opts.errors === "none" ?
 			"none-lean"
 		:	"lean"

@@ -5,10 +5,8 @@ import { parseArgs } from "node:util"
 import { emitDeclarations, sharedDeclarationFile } from "./declare.ts"
 import { isBuildError, writeNodeVersionMessage } from "./host.ts"
 import type { PrecompilePluginOptions } from "./driver.ts"
-import {
-	assertPrecompileOptions,
-	type PrecompileOptions
-} from "./precompile.ts"
+import type { PrecompileOptions } from "./precompile.ts"
+import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
 
 // before importing what reads fs.globSync, which older versions lack
 const [major, minor] = process.versions.node.split(".").map(Number)
@@ -20,7 +18,7 @@ if (major < 22 || (major === 22 && minor < 12)) {
 const { check, countOf } = await import("./check.ts")
 
 const usage =
-	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --declare [--tsconfig <file>]"
+	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--preset <smallest|introspectable>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --declare [--tsconfig <file>]"
 
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
@@ -36,6 +34,7 @@ const { values, positionals } = (() => {
 				check: { type: "boolean" },
 				declare: { type: "boolean" },
 				"fail-under": { type: "string" },
+				preset: { type: "string" },
 				runtime: { type: "string" },
 				config: { type: "string" },
 				"no-config": { type: "boolean" },
@@ -105,6 +104,7 @@ if (values.members !== undefined) {
 const mutatesInput = values["mutates-input"]
 
 const opts: PrecompilePluginOptions = {
+	preset: values.preset as PrecompileOptions["preset"],
 	runtime: runtime as "arktype" | undefined,
 	config: values["no-config"] ? false : values.config,
 	members,
@@ -119,7 +119,7 @@ const opts: PrecompilePluginOptions = {
 }
 
 try {
-	assertPrecompileOptions(opts)
+	resolvePrecompileOptions(withSettingsFile(opts))
 } catch (e) {
 	fail((e as Error).message)
 }

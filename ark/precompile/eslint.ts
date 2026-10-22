@@ -1,5 +1,7 @@
 import type { ESLint, Linter, Rule } from "eslint"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
+import { isProductionEnv, withEnvironment } from "./presets.ts"
+import { withSettingsFile } from "./settings.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
 // each configuration needs a thread of its own, apart from ESLint's
@@ -20,7 +22,10 @@ const check = (
 		delete precompilersByOptions[key]
 	}
 	const request = (precompilersByOptions[key] ??= createSyncPrecompiler({
-		precompilerOptions: opts
+		precompilerOptions: withEnvironment(withSettingsFile(opts), {
+			production: isProductionEnv(),
+			testing: false
+		})
 	}))
 	return (
 		(request("lint", source, id) as CheckedModule | undefined) ??

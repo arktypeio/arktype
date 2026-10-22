@@ -1,9 +1,10 @@
 import type { PrecompileOptions } from "@ark/precompile"
 import type { MutatesInput } from "@ark/schema"
+import { withPreset } from "@ark/precompile/internal/presets.ts"
 
 // what the differential, generated programs and shadow mode build with
-export const testedOptions: PrecompileOptions = JSON.parse(
-	process.env.ARK_PRECOMPILE_OPTIONS ?? "{}"
+export const testedOptions: PrecompileOptions = withPreset(
+	JSON.parse(process.env.ARK_PRECOMPILE_OPTIONS ?? "{}")
 )
 
 // read without arktype, as a precompiled program's process doesn't load it
@@ -32,7 +33,7 @@ export const countsKeys: boolean = testedOptions.countsKeys === true
 export const detailsErrors: boolean = testedOptions.errors !== "none"
 
 // errors without an arkKind, recognized by their class
-export const leanErrors: boolean = testedOptions.members?.errorMethods === false
+export const leanErrors: boolean = testedOptions.optimizeErrors === "size"
 
 // a first-issue build returns one of arktype's issues
 export const firstIssue: boolean = testedOptions.errors === "first"

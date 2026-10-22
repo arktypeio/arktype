@@ -7,6 +7,8 @@ import {
 	type PrecompilePluginOptions
 } from "./driver.ts"
 import { refuseDeclare } from "./declare.ts"
+import { isProductionEnv, withEnvironment } from "./presets.ts"
+import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
 import {
 	createNodeHost,
 	reportDiagnostics,
@@ -20,6 +22,8 @@ import {
 export interface TurbopackLoaderContext {
 	resourcePath: string
 	getOptions(): PrecompilePluginOptions
+	// webpack's, where Turbopack's loader context has it
+	mode?: string
 	addDependency(file: string): void
 	emitWarning(warning: Error): void
 	// absent where a host can't resolve as Turbopack does
@@ -32,13 +36,29 @@ const precompilersByOptions: Record<
 	(source: string, id: string) => KeyedModule
 > = {}
 
+// ark.json is read once for each option set the loader is given
+const resolvedByOptions: Record<string, PrecompilePluginOptions> = {}
+
 // a webpack loader, called with its context as `this`
 export default function (
 	this: TurbopackLoaderContext,
 	source: string
 ): string | undefined {
-	const opts = this.getOptions()
-	refuseDeclare(opts, "Turbopack")
+	const given = this.getOptions()
+	refuseDeclare(given, "Turbopack")
+	let opts: PrecompilePluginOptions
+	try {
+		const production = this.mode === "production" || isProductionEnv()
+		opts = resolvedByOptions[`${production}${JSON.stringify(given)}`] ??=
+			resolvePrecompileOptions(
+				withEnvironment(withSettingsFile(given), {
+					production,
+					testing: false
+				})
+			)
+	} catch (e) {
+		return rethrowAsBuildError(e)
+	}
 	const precompile = (precompilersByOptions[JSON.stringify(opts)] ??=
 		createKeyedPrecompiler(opts))
 	let keyed: KeyedModule

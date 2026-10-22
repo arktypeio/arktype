@@ -14,6 +14,7 @@ import {
 	writeVariantImportMessage
 } from "./host.ts"
 import { refuseDeclare } from "./declare.ts"
+import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
 
 // declared here, since bun-types declares globals beside @types/node's
@@ -35,6 +36,8 @@ export interface BunPlugin {
 
 export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 	refuseDeclare(opts, "Bun")
+	const set = withSettingsFile(opts)
+	opts = resolvePrecompileOptions(set)
 	return {
 		name: "arktype",
 		setup: build => {
@@ -70,7 +73,7 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 			const request = createAsyncPrecompiler({
 				// set by `bun test`
 				precompilerOptions: driverOptionsOf(
-					opts,
+					set,
 					process.env.NODE_ENV === "test"
 				)
 			})
