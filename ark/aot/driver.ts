@@ -365,7 +365,9 @@ const transformedModuleOf = (
 				appendSourceMap(result.code, result.map)
 			:	result.code),
 		map: precompiler.inline ? undefined : result.map,
-		dependencies: [...result.dependencies, ...precompiler.ownManifests],
+		dependencies: [
+			...new Set([...result.dependencies, ...precompiler.ownManifests])
+		],
 		modules: result.modules,
 		unitReaders: result.unitReaders,
 		...renderDiagnostics(result.diagnostics, id => precompiler.graph.pathOf(id))

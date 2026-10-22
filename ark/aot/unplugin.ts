@@ -18,6 +18,7 @@ import type {
 } from "./driver.ts"
 import {
 	allowUnsafeHint,
+	appendSourceMap,
 	createDevelopmentHost,
 	createNodeHost,
 	dependencyOf,
@@ -275,6 +276,35 @@ export const precompile: UnpluginInstance<
 			realPathOf(opts?.cwd ?? process.cwd())
 		)
 	}
+	// keeps the modules a transformed one writes, for its importers to load
+	const transform = async (
+		code: string,
+		id: string,
+		mappings: string | undefined
+	) => {
+		const transformed = (await request(
+			"transform",
+			code,
+			fileOf(id),
+			mappings
+		)) as TransformedModule | undefined
+		if (!transformed) return
+		if (unitReadersById) unitReadersById[id] = transformed.unitReaders
+		for (const specifier in transformed.modules) {
+			const virtualId = virtual + specifier
+			if (virtualId in modules) continue
+			modules[virtualId] = transformed.modules[specifier]
+			importersById[virtualId] = id
+			const dir = storeDirOf()
+			if (dir) {
+				writeFileSync(
+					join(dir, storedNameOf(virtualId)),
+					JSON.stringify([id, modules[virtualId]])
+				)
+			}
+		}
+		return transformed
+	}
 	let isServing = false
 	// a Vite app's environments share the declarations of the app's build
 	const declarationsByApp = new WeakMap<object, Declarations>()
@@ -338,57 +368,47 @@ export const precompile: UnpluginInstance<
 			filter: { id: virtual ? /^\0~arktype\// : /^~arktype\// },
 			handler: loadModule
 		},
-		transform: {
-			filter: { id: transformedFilter },
-			async handler(code, id) {
-				const file = fileOf(id)
-				// a plugin ahead of this one may have transpiled it, as Rollup's
-				// TypeScript plugin does, so its lines are read through their map
-				const map =
-					code === host.readFile(file) ?
-						undefined
-					:	((
-							this as { getCombinedSourcemap?: () => { mappings: string } }
-						).getCombinedSourcemap?.() ??
-						(
-							this.getNativeBuildContext?.() as
-								| { inputSourceMap?: { mappings: string } }
-								| undefined
-						)?.inputSourceMap)
-				const transformed = (await request(
-					"transform",
-					code,
-					file,
-					map?.mappings
-				)) as TransformedModule | undefined
-				if (!transformed) return
-				if (unitReadersById) unitReadersById[id] = transformed.unitReaders
-				for (const dependency of transformed.dependencies)
-					if (dependency !== file) this.addWatchFile(dependency)
-				for (const specifier in transformed.modules) {
-					const virtualId = virtual + specifier
-					if (virtualId in modules) continue
-					modules[virtualId] = transformed.modules[specifier]
-					importersById[virtualId] = id
-					const dir = storeDirOf()
-					if (dir) {
-						writeFileSync(
-							join(dir, storedNameOf(virtualId)),
-							JSON.stringify([id, modules[virtualId]])
+		// esbuild loads each module natively, as unplugin's adapter returns every
+		// file a build has watched from each of its hooks
+		transform:
+			meta.framework === "esbuild" ?
+				undefined
+			:	{
+					filter: { id: transformedFilter },
+					async handler(code, id) {
+						const file = fileOf(id)
+						// a plugin ahead of this one may have transpiled it, as Rollup's
+						// TypeScript plugin does, so its lines are read through their map
+						const map =
+							code === host.readFile(file) ?
+								undefined
+							:	((
+									this as {
+										getCombinedSourcemap?: () => { mappings: string }
+									}
+								).getCombinedSourcemap?.() ??
+								(
+									this.getNativeBuildContext?.() as
+										| { inputSourceMap?: { mappings: string } }
+										| undefined
+								)?.inputSourceMap)
+						const transformed = await transform(code, id, map?.mappings)
+						if (!transformed) return
+						for (const dependency of transformed.dependencies)
+							if (dependency !== file) this.addWatchFile(dependency)
+						reportDiagnostics(
+							transformed,
+							warning => this.warn(warning),
+							throwBuildError
+						)
+						return (
+							transformed.code && {
+								code: transformed.code,
+								map: transformed.map
+							}
 						)
 					}
-				}
-				// esbuild drops a reported error
-				reportDiagnostics(
-					transformed,
-					warning => this.warn(warning),
-					throwBuildError
-				)
-				return (
-					transformed.code && { code: transformed.code, map: transformed.map }
-				)
-			}
-		},
+				},
 		vite: {
 			buildApp: async builder => {
 				app = builder
@@ -504,6 +524,34 @@ export const precompile: UnpluginInstance<
 					testing: false
 				})
 				build.onDispose(restart)
+				// each module watches what it read, which esbuild takes only from onLoad
+				build.onLoad({ filter: esbuildTransformed }, async args => {
+					if (
+						args.namespace !== "file" ||
+						!transformedFilter.include.test(args.path) ||
+						transformedFilter.exclude.test(args.path)
+					)
+						return
+					const code = readFileSync(args.path, "utf8")
+					const transformed = await transform(code, args.path, undefined)
+					if (!transformed?.code && !transformed?.errors.length) return
+					return {
+						contents: appendSourceMap(
+							transformed.code ?? code,
+							transformed.map
+						),
+						loader: esbuildLoaderOf(args.path),
+						watchFiles: transformed.dependencies.filter(
+							dependency => dependency !== args.path
+						),
+						// together, as other hosts throw them
+						errors:
+							transformed.errors.length ?
+								[{ text: transformed.errors.join("\n") }]
+							:	[],
+						warnings: transformed.warnings.map(text => ({ text }))
+					}
+				})
 				if (variant) {
 					build.onResolve({ filter: schemaSpecifier }, args => {
 						if (args.pluginData === esbuildResolution) return
@@ -585,6 +633,17 @@ export const precompile: UnpluginInstance<
 })
 
 const esbuildResolution = "arktype"
+
+// transformedId, which esbuild's Go regexes can read
+const esbuildTransformed = /\.(?:[cm]?[jt]s|[jt]sx)$/
+
+const esbuildLoaderOf = (path: string): "ts" | "tsx" | "js" | "jsx" =>
+	path.endsWith("x") ?
+		path.endsWith(".tsx") ?
+			"tsx"
+		:	"jsx"
+	: /\.[cm]?ts$/.test(path) ? "ts"
+	: "js"
 
 // what the plugin reads of a webpack or Rspack compiler
 interface BundlerCompiler {

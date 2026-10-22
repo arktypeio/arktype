@@ -1255,6 +1255,70 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 		attest(nextThreadId() - first - 1).equals(1)
 	})
 
+	// a list that grew with the build made a 100-module build 15 times slower
+	it("esbuild watches each module's own imports, once", async () => {
+		const count = 30
+		const files: Record<string, string> = {
+			"main.ts": `export * from "./m${count - 1}.ts"\n`
+		}
+		for (let i = 0; i < count; i++) {
+			files[`m${i}.ts`] =
+				i === 0 ?
+					'import { type } from "arktype"\n\nexport const T0 = type({ a: "string" })\n'
+				:	`import { type } from "arktype"\nimport { T${i - 1} } from "./m${i - 1}.ts"\n\nexport const T${i} = type({ a: "string", prev: T${i - 1}.pick("a") })\n`
+		}
+		const root = writeFixture(files, fromHere("temp", "watchedChain"))
+		const plugin = precompile.esbuild({ cwd: root, conditions })
+		const watchedBy: Record<string, string[]> = {}
+		const record = (path: string, watchFiles: string[] = []) => {
+			const watched = watchFiles.filter(file => file.startsWith(root))
+			if (watched.length) {
+				;(watchedBy[relative(root, path)] ??= []).push(
+					...watched.map(file => relative(root, file))
+				)
+			}
+		}
+		await esbuild({
+			entryPoints: [join(root, "main.ts")],
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [
+				{
+					name: plugin.name,
+					setup: build =>
+						plugin.setup({
+							...build,
+							onResolve: (options, callback) =>
+								build.onResolve(options, async args => {
+									const result = await callback(args)
+									record(`resolved ${args.path}`, result?.watchFiles)
+									return result
+								}),
+							onLoad: (options, callback) =>
+								build.onLoad(options, async args => {
+									const result = await callback(args)
+									record(args.path, result?.watchFiles)
+									return result
+								})
+						})
+				}
+			]
+		})
+		attest(watchedBy["m3.ts"]).equals(["m2.ts", "m1.ts", "m0.ts"])
+		const closureOf = (file: string) =>
+			Array.from({ length: Number(file.slice(1, -3)) }, (_, i) => `m${i}.ts`)
+		attest(
+			Object.entries(watchedBy).filter(
+				([file, watched]) =>
+					[...watched].sort().join() !== closureOf(file).sort().join()
+			)
+		).equals([])
+		attest(Object.keys(watchedBy).length).equals(count - 1)
+	})
+
 	it("keeps a configured worker until its config changes", async () => {
 		const root = fromHere("temp", "watched")
 		const write = (file: string, text: string) =>
