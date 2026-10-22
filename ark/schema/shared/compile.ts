@@ -278,6 +278,13 @@ export abstract class NodeCompiler extends CompiledFunction<
 	declare readonly reportsFirst?: boolean
 	// whether a build writes for size, so Allows returns where it fails
 	declare readonly shortest?: boolean
+	// whether a copy is a literal of the values it holds rather than one of
+	// nulls it fills. V8 gives a field the kind of value first written to it,
+	// and one first written a fraction holds it in a box each object
+	// allocates, so a copy filling nulls holds data's numbers as they are
+	// where data's fields hold any value, as a definition of the same keys in
+	// the same order makes them
+	declare readonly copiesValues?: boolean
 	checksMorphErrors = false
 
 	constructor(ctx: NodeCompiler.Context) {
