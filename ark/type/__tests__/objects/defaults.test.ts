@@ -910,6 +910,26 @@ contextualize(() => {
 					.snap("foo must be a number (was boolean)")
 					.type.errors("Type 'boolean' is not assignable to type 'number'.")
 			})
+
+			it("described by its output", () => {
+				const Flag = type("'true' | 'false'")
+					.pipe(s => s === "true")
+					.describe("boolean")
+				// @ts-expect-error
+				attest(() => type({ flag: [Flag, "=", false] })).throws.snap(
+					'ParseError: Default for flag must be "false" or "true" (was false)'
+				)
+			})
+
+			it("input described", () => {
+				const Flag = type("'true' | 'false'")
+					.describe("a flag")
+					.pipe(s => s === "true")
+				// @ts-expect-error
+				attest(() => type({ flag: [Flag, "=", false] })).throws.snap(
+					"ParseError: Default for flag must be a flag (was false)"
+				)
+			})
 		})
 
 		it("morphed inputs", () => {

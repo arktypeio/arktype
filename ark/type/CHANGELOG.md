@@ -492,6 +492,20 @@ type("string")
 	.and(type("string").pipe(s => s.trim()))
 ```
 
+### Say what a morph's input checks when it rejects a default
+
+A default is checked against a morph's input, but a description configured on the morph described the input too, so the error could contradict itself:
+
+```ts
+const Flag = type("'true' | 'false'")
+	.pipe(s => s === "true")
+	.describe("boolean")
+
+// was: ParseError: Default for flag must be boolean (was false)
+// now: ParseError: Default for flag must be "false" or "true" (was false)
+type({ flag: [Flag, "=", false] })
+```
+
 ### Name the code, path and fallback in a `ToJsonSchemaError`
 
 A `ToJsonSchemaError`'s message was only its printed context. It now starts with a sentence naming its code, where in the Type the part it couldn't convert is, and the `fallback` to configure:

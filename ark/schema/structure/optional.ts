@@ -1,6 +1,7 @@
 import {
 	hasDomain,
 	isThunk,
+	omit,
 	printable,
 	throwParseError,
 	type requireKeys
@@ -170,16 +171,20 @@ export const checkDefault = (
 	const out = (node.in as BaseRoot).traverseUnused(value)
 
 	if (out instanceof ArkErrors) {
+		const errors =
+			node.meta.description !== undefined && node.includesTransform ?
+				inputErrors(node, value)
+			:	out
 		// a ParseError is for the developer, so it renders in English
 		const en = $ark.defaultConfig.locale
 
 		if (key === null) {
 			// e.g. "Default must be assignable to number (was string)"
-			throwParseError(`Default ${out.toLocaleString(en)}`)
+			throwParseError(`Default ${errors.toLocaleString(en)}`)
 		}
 
 		const atPath = new ArkErrors(node.$.resolvedConfig)
-		atPath._merge(out, [key])
+		atPath._merge(errors, [key])
 
 		// e.g. "Default for bar must be assignable to number (was string)"
 		// e.g. "Default for value at [0] must be assignable to number (was string)"
@@ -188,6 +193,17 @@ export const checkDefault = (
 
 	return value
 }
+
+// a morph's description also describes its input, but a default is easily
+// mistaken for its output, so a rejected default reports what its input checks
+const inputErrors = (node: BaseRoot, value: unknown): ArkErrors =>
+	(node.in as BaseRoot)
+		.configure(meta =>
+			meta.description === node.meta.description ?
+				omit(meta, { description: 1 })
+			:	meta
+		)
+		.traverseUnused(value) as ArkErrors
 
 export type writeUnassignableDefaultValueMessage<
 	baseDef extends string,
