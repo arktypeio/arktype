@@ -256,7 +256,7 @@ try {
 }
 `
 )
-const { precompile } = await import("@ark/precompile/unplugin")
+const { precompile } = await import("@ark/aot/unplugin")
 const undetailedOutput = spawnSync(process.execPath, ["--input-type=module"], {
 	input: (
 		await build({

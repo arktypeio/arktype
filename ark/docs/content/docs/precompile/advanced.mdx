@@ -1,0 +1,90 @@
+---
+title: Advanced
+description: Shadow mode, libraries, runtime islands and declarations
+---
+
+## Shadow mode
+
+`shadow: true` makes a test suite tell where a standalone build would behave otherwise than arktype. Each definition is precompiled and also created by arktype from the same values, and the program runs on arktype, only `arktype/config` resolving to the runtime:
+
+```ts title="vitest.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "vitest/config"
+
+export default defineConfig({ plugins: [precompile.vite({ shadow: true })] })
+```
+
+Each Type, Module and `type.fn` compares its validator with arktype's as it's created, as it validates (by result, the input it leaves and each call to a function the program passed) and as its members are read. Where they agree, it returns arktype's result. Where they don't, it throws an error naming the definition, what was observed and both results, and raises it again where a fallback or `expect(...).toThrow()` can't catch it.
+
+During a validation, each function a definition holds runs once, its calls and plain writes to its arguments replayed for the validator. A call that adds an error to `ctx` or writes otherwise, like setting a `Date`'s time, runs again for the validator, which must answer alike.
+
+## Libraries
+
+A library ships its source, and the build precompiles it with the program if its `package.json` opts in:
+
+```json title="package.json"
+{
+	"name": "my-schemas",
+	"arktype": { "precompile": true }
+}
+```
+
+Its definitions are then precompiled like the program's. The plugin and drivers find such packages among those the nearest `package.json` to `cwd` depends on, directly or through other packages, and the plugin keeps Vite and Vitest from prebundling or externalizing them.
+
+A library shouldn't ship what its own build precompiled, which runs only on the arktype it was built with, so the build fails for each dependency that imports `arktype/runtime`.
+
+## Runtime islands
+
+In a standalone build, a definition can be left to arktype by marking it:
+
+```ts
+// @noErrors
+// ---cut---
+// @ark-runtime
+export const Shaped = type(await loadShape())
+```
+
+The marker applies to the statement or expression after it. arktype then ships beside `arktype/runtime` for the modules with islands alone. The build fails if an island reads a precompiled validator other than to validate with it, or reaches arktype outside an island, e.g. through a helper in another module. It fails too for a marker that leaves nothing to arktype: one nothing follows, one on code that doesn't use arktype, or one inside a definition the build precompiles. `--check` leaves islands out of its rate.
+
+## Declarations
+
+A package whose types others read can declare its Types once, so its consumers don't infer arktype definitions:
+
+```sh
+npx arktype-precompile --declare
+```
+
+This writes what `tsc --emitDeclarationOnly` would for the nearest `tsconfig.json`, or the one `--tsconfig` names, except that each Type, Scope and Module is declared through its shape in one `~arktype.d.ts` at the declarations' root, named once and referenced wherever another shape holds it:
+
+```ts
+// @noErrors
+// ---cut---
+// users.d.ts
+export declare const User: import("arktype").Type<import("./~arktype.js").User>
+
+// ~arktype.d.ts
+export type User = {
+	id: string
+	role: import("arktype").Default<Role, "member">
+	address?: Address | undefined
+}
+```
+
+A consumer's type-check then reads each Type's shape rather than inferring its definition. A shape TypeScript can't name where a consumer resolves it, like a class its module doesn't export, is left to TypeScript's own declaration. The CLI exits with 1 where TypeScript reports an error, after writing what it emitted.
+
+The bundler plugin emits the same files with a Rollup, Rolldown, Vite, webpack, Rspack or Rsbuild build that neither watches nor serves:
+
+```ts
+import { precompile } from "@ark/aot/unplugin"
+// ---cut---
+precompile.vite({ declare: true })
+```
+
+esbuild, Bun, Farm and the Node and Turbopack drivers can't tell whether a build watches, so `declare: true` throws there; run `arktype-precompile --declare` after the build instead.
+
+Declarations read the compiler API of TypeScript 5.5 to 6 from the optional `typescript` peer. A TypeScript 7 project installs TypeScript 6 beside it:
+
+```sh
+npm i -D typescript-6@npm:typescript@6
+```

@@ -5,6 +5,7 @@ export const redirects: Readonly<Record<string, string>> = {
 	"/docs": "/docs/intro/setup",
 	"/docs/intro": "/docs/intro/setup",
 	"/docs/comparisons": "/docs/faq",
+	"/docs/dynamic-vs-precompiled": "/docs/precompile/dynamic-vs-precompiled",
 	"/docs/internal": "/docs/internals/nodes",
 	"/docs/introspection": "/docs/internals/nodes"
 }

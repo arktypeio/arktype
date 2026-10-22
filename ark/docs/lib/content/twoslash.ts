@@ -38,7 +38,7 @@ const snippetPackages = [
 	"fast-check",
 	"sets",
 	"fs",
-	"precompile"
+	"aot"
 ]
 
 const filesUnder = (dir: string): string[] =>

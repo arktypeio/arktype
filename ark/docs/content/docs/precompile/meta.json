@@ -1,0 +1,14 @@
+{
+	"title": "Precompile",
+	"description": "Construct your Types when you build",
+	"root": true,
+	"pages": [
+		"index",
+		"dynamic-vs-precompiled",
+		"setup",
+		"validators",
+		"options",
+		"troubleshooting",
+		"advanced"
+	]
+}

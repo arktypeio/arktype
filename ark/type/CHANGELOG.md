@@ -4,7 +4,7 @@
 
 ### Precompile to ship less
 
-`arktype` is larger than 2.2.9: bundled and minified with esbuild, `import { type } from "arktype"` is 75.6 kB gzipped (240 kB minified), where it was 47.8 kB (156 kB). The growth is spread across the changes below, mostly copy-on-write transforms, tracking cyclic data, errors and their English text, and the set algebra intersections and unions are reduced with. To ship less, precompile with `@ark/precompile`, which replaces each Type with a validator on `arktype/runtime`: the size benchmark's login form bundles to 1.8 kB gzipped, and its shop to 8.8 kB.
+`arktype` is larger than 2.2.9: bundled and minified with esbuild, `import { type } from "arktype"` is 75.6 kB gzipped (240 kB minified), where it was 47.8 kB (156 kB). The growth is spread across the changes below, mostly copy-on-write transforms, tracking cyclic data, errors and their English text, and the set algebra intersections and unions are reduced with. To ship less, precompile with `@ark/aot`, which replaces each Type with a validator on `arktype/runtime`: the size benchmark's login form bundles to 1.8 kB gzipped, and its shop to 8.8 kB.
 
 ### Return only the first error, or one saying data is invalid, with `errors`
 
@@ -676,11 +676,11 @@ Built-in keywords set `meta.keyword` to their name, so a locale can find their p
 
 ### Run precompiled validators on `arktype/runtime`
 
-`@ark/precompile` can replace each Type a program defines with a validator that runs on the new `arktype/runtime` entry, without arktype's parser or nodes and without generating code, so it validates under a Content-Security-Policy that blocks `eval` (#810):
+`@ark/aot` can replace each Type a program defines with a validator that runs on the new `arktype/runtime` entry, without arktype's parser or nodes and without generating code, so it validates under a Content-Security-Policy that blocks `eval` (#810):
 
 ```ts
 // vite.config.ts
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 
 export default defineConfig({
 	plugins: [precompile.vite()]
@@ -749,7 +749,7 @@ Other keys that first differ at a space, `!`, `"` or a backslash keep their orde
 
 ### Simplify `@ark/schema` nodes
 
-- A scope's `references` and `referencesById` are collected when first read rather than as it exports, unless code `@ark/precompile` built with `runtime: "arktype"` is registered or it includes an alias.
+- A scope's `references` and `referencesById` are collected when first read rather than as it exports, unless code `@ark/aot` built with `runtime: "arktype"` is registered or it includes an alias.
 - A node's `traverseAllows`, `traverseApply` and `traverseTransform` are methods of its class, so call them on the node, as in `node.traverseAllows(data, ctx)`, rather than detached, as in `[x].every(node.traverseAllows)`, until the JIT compiles it, which replaces them with compiled functions that run detached. A jitless scope's nodes keep the methods, and `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes still create a `traverseAllows` of their own. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
 - `$.node(kind, input)` takes a node's inner, with children already nodes, rather than the schema format, so `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
 - `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, prereduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context. A node's id is registered as it's created, from its `alias` or kind unless `id` is passed, so a schema that resolves to a node the scope already holds registers none.

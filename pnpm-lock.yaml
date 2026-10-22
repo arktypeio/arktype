@@ -93,6 +93,61 @@ importers:
         specifier: 8.46.1
         version: 8.46.1(eslint@9.37.0(jiti@2.6.1))
 
+  ark/aot:
+    dependencies:
+      '@ark/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@ark/util':
+        specifier: workspace:*
+        version: link:../util
+      '@jridgewell/sourcemap-codec':
+        specifier: 1.5.5
+        version: 1.5.5
+      arkregex:
+        specifier: workspace:*
+        version: link:../regex
+      eslint:
+        specifier: '>=9'
+        version: 9.37.0(jiti@2.6.1)
+      magic-string:
+        specifier: 0.30.19
+        version: 0.30.19
+      oxc-parser:
+        specifier: 0.153.0
+        version: 0.153.0
+      oxc-resolver:
+        specifier: 11.24.2
+        version: 11.24.2
+      typescript:
+        specifier: '>=5.5'
+        version: 6.0.3
+      unplugin:
+        specifier: 3.4.0
+        version: 3.4.0(esbuild@0.25.10)(rolldown@1.2.13)(rollup@4.52.4)(vite@8.3.4(@types/node@24.7.2)(esbuild@0.25.10)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.9.1))
+    devDependencies:
+      '@typescript-eslint/scope-manager':
+        specifier: 8.46.1
+        version: 8.46.1
+      arktype:
+        specifier: workspace:*
+        version: link:../type
+      esbuild:
+        specifier: 0.25.10
+        version: 0.25.10
+      fast-check:
+        specifier: 3.23.2
+        version: 3.23.2
+      typescript-6:
+        specifier: npm:typescript@6.0.3
+        version: typescript@6.0.3
+      vite:
+        specifier: 8.3.4
+        version: 8.3.4(@types/node@24.7.2)(esbuild@0.25.10)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.9.1)
+      vitest:
+        specifier: 5.0.3
+        version: 5.0.3(@types/node@24.7.2)(vite@8.3.4(@types/node@24.7.2)(esbuild@0.25.10)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.9.1))
+
   ark/attest:
     dependencies:
       '@ark/fs':
@@ -132,6 +187,9 @@ importers:
 
   ark/docs:
     dependencies:
+      '@ark/aot':
+        specifier: workspace:*
+        version: link:../aot
       '@ark/attest':
         specifier: link:../attest
         version: link:../attest
@@ -144,9 +202,6 @@ importers:
       '@ark/json-schema':
         specifier: workspace:*
         version: link:../json-schema
-      '@ark/precompile':
-        specifier: workspace:*
-        version: link:../precompile
       '@ark/repo':
         specifier: workspace:*
         version: link:../repo
@@ -403,61 +458,6 @@ importers:
         specifier: workspace:*
         version: link:../type
 
-  ark/precompile:
-    dependencies:
-      '@ark/schema':
-        specifier: workspace:*
-        version: link:../schema
-      '@ark/util':
-        specifier: workspace:*
-        version: link:../util
-      '@jridgewell/sourcemap-codec':
-        specifier: 1.5.5
-        version: 1.5.5
-      arkregex:
-        specifier: workspace:*
-        version: link:../regex
-      eslint:
-        specifier: '>=9'
-        version: 9.37.0(jiti@2.6.1)
-      magic-string:
-        specifier: 0.30.19
-        version: 0.30.19
-      oxc-parser:
-        specifier: 0.153.0
-        version: 0.153.0
-      oxc-resolver:
-        specifier: 11.24.2
-        version: 11.24.2
-      typescript:
-        specifier: '>=5.5'
-        version: 6.0.3
-      unplugin:
-        specifier: 3.4.0
-        version: 3.4.0(esbuild@0.25.10)(rolldown@1.2.13)(rollup@4.52.4)(vite@8.3.4(@types/node@24.7.2)(esbuild@0.25.10)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.9.1))
-    devDependencies:
-      '@typescript-eslint/scope-manager':
-        specifier: 8.46.1
-        version: 8.46.1
-      arktype:
-        specifier: workspace:*
-        version: link:../type
-      esbuild:
-        specifier: 0.25.10
-        version: 0.25.10
-      fast-check:
-        specifier: 3.23.2
-        version: 3.23.2
-      typescript-6:
-        specifier: npm:typescript@6.0.3
-        version: typescript@6.0.3
-      vite:
-        specifier: 8.3.4
-        version: 8.3.4(@types/node@24.7.2)(esbuild@0.25.10)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.9.1)
-      vitest:
-        specifier: 5.0.3
-        version: 5.0.3(@types/node@24.7.2)(vite@8.3.4(@types/node@24.7.2)(esbuild@0.25.10)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.9.1))
-
   ark/regex:
     dependencies:
       '@ark/util':
@@ -466,6 +466,9 @@ importers:
 
   ark/repo:
     dependencies:
+      '@ark/aot':
+        specifier: workspace:*
+        version: link:../aot
       '@ark/attest':
         specifier: link:../attest
         version: link:../attest
@@ -475,9 +478,6 @@ importers:
       '@ark/json-schema':
         specifier: workspace:*
         version: link:../json-schema
-      '@ark/precompile':
-        specifier: workspace:*
-        version: link:../precompile
       '@ark/schema':
         specifier: workspace:*
         version: link:../schema

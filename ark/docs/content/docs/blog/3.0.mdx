@@ -30,7 +30,7 @@ const out = User(data)
 if (out instanceof type.errors) console.error(out.summary)
 ```
 
-Below are the highlights. If you're upgrading, [Upgrading](/docs/upgrading) lists what breaks, and the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/precompile](https://github.com/arktypeio/arktype/blob/main/ark/precompile/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md) have the rest.
+Below are the highlights. If you're upgrading, [Upgrading](/docs/upgrading) lists what breaks, and the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md) have the rest.
 
 ## Dynamic and precompiled
 
@@ -40,14 +40,14 @@ Below are the highlights. If you're upgrading, [Upgrading](/docs/upgrading) list
 
 What precompiling removes is everything around a Type's checks: the parser, the work of creating each Type, and the code a JIT writes. <Claim id="noInit" /> <Claim id="dynamicSize" />
 
-[Dynamic vs Precompiled](/docs/dynamic-vs-precompiled) compares the two modes side by side.
+[Dynamic vs Precompiled](/docs/precompile/dynamic-vs-precompiled) compares the two modes side by side.
 
-## `@ark/precompile`
+## `@ark/aot`
 
-[`@ark/precompile`](/docs/precompile) is a plugin for the bundler you already run: Vite, Rollup, Rolldown, webpack, Rspack, esbuild, Bun or Farm, and Vitest runs tests through it. Drivers cover Node, Bun's runtime and Next's Turbopack.
+[`@ark/aot`](/docs/precompile) is a plugin for the bundler you already run: Vite, Rollup, Rolldown, webpack, Rspack, esbuild, Bun or Farm, and Vitest runs tests through it. Drivers cover Node, Bun's runtime and Next's Turbopack.
 
 ```ts title="vite.config.ts"
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 
 export default {
 	plugins: [precompile.vite()]

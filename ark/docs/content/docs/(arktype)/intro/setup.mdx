@@ -42,13 +42,13 @@ ArkType runs in Node, Deno, Bun, browsers and edge runtimes. Under a strict Cont
 
 ## Precompile
 
-If your app is bundled, add [`@ark/precompile`](/docs/precompile) to your bundler. Every Type you define is then compiled when you build into a standalone validator, so arktype's parser never ships and nothing is compiled at runtime:
+If your app is bundled, add [`@ark/aot`](/docs/precompile) to your bundler. Every Type you define is then compiled when you build into a standalone validator, so arktype's parser never ships and nothing is compiled at runtime:
 
-<InstallationTabs pkg="@ark/precompile" dev />
+<InstallationTabs pkg="@ark/aot" dev />
 
 ```ts title="vite.config.ts"
 // @noErrors
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 import { defineConfig } from "vite"
 
 export default defineConfig({

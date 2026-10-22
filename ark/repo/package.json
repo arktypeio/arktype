@@ -4,10 +4,10 @@
 	"type": "module",
 	"license": "MIT",
 	"dependencies": {
+		"@ark/aot": "workspace:*",
 		"@ark/attest": "link:../attest",
 		"@ark/fs": "workspace:*",
 		"@ark/json-schema": "workspace:*",
-		"@ark/precompile": "workspace:*",
 		"@ark/schema": "workspace:*",
 		"@ark/util": "workspace:*",
 		"arkenv": "0.7.3",

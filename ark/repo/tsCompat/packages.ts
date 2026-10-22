@@ -1,6 +1,6 @@
 // the packages beside arktype, whose declarations index.ts doesn't load
 import { jsonSchemaToType } from "@ark/json-schema"
-import { precompile } from "@ark/precompile/unplugin"
+import { precompile } from "@ark/aot/unplugin"
 import { isSubset } from "arksets"
 import { type } from "arktype"
 import * as runtime from "arktype/runtime"

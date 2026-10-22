@@ -1,6 +1,7 @@
 {
 	"pages": [
 		"(arktype)",
+		"precompile",
 		"regex",
 		"attest",
 		"json-schema",

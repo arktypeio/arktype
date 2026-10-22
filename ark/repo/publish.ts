@@ -14,11 +14,11 @@ const dryRun = process.argv.includes("--dry-run")
 
 // whether a package also ships as the @arktype/ name it had before @ark/
 const hasLegacyAlias = {
+	aot: false,
 	attest: true,
 	"fast-check": true,
 	fs: true,
 	"json-schema": true,
-	precompile: false,
 	regex: true,
 	schema: true,
 	sets: false,

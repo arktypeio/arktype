@@ -1,0 +1,180 @@
+---
+title: Options
+description: Ship less, and configure a precompiled program
+---
+
+A standalone build can leave out what your program doesn't need. Every option goes to the plugin, a driver or the CLI, or into [`ark.json`](#arkjson), and a [preset](#presets) sets several for one goal:
+
+```ts
+import { precompile } from "@ark/aot/unplugin"
+// ---cut---
+precompile.vite({
+	errors: "none",
+	mutatesInput: "always",
+	members: { assert: false }
+})
+```
+
+`errors`, `mutatesInput`, `members`, `optimize`, `optimizeErrors`, `freeze`, `lazy`, `checks`, `countsKeys` and `shadow` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
+
+## Presets
+
+A preset sets options for one goal, and any option set elsewhere overrides it:
+
+```ts
+import { precompile } from "@ark/aot/unplugin"
+// ---cut---
+precompile.vite({ preset: "smallest", members: { meta: false } })
+```
+
+| Preset             | Sets                                               | Gives up                                                  |
+| ------------------ | -------------------------------------------------- | --------------------------------------------------------- |
+| `"smallest"`       | `optimize: "size"`, `lazy: false`                  | speed, runtime islands, creating validators as first read |
+| `"introspectable"` | each introspection member in [`members`](#members) | size                                                      |
+
+No preset changes what a program observes: none sets `errors`, `mutatesInput` or `countsKeys`, or drops a member, since the build can't see a member read by code it doesn't build, like a library reading `~standard`. With `runtime: "arktype"`, a preset sets nothing.
+
+With Turbopack, `"smallest"` needs the `@ark/schema/runtime` alias [`optimize: "size"`](#optimize-and-optimizeerrors) does.
+
+## Production builds
+
+In development and tests, validators check at runtime what the build verified, so a program the build couldn't fully see fails where it would otherwise misbehave:
+
+- `freeze`: validators and their members are frozen, so writing to one throws in strict mode code.
+- `checks: "types"`: a factory checks at creation that each Type, Module, Scope and Generic it receives is the one the build read, as a module mock or hot reload could replace it, and that what it reads through an import cycle is already set. Under Vitest, `node --test` and `bun test` it's `"helpers"`, checking each static helper too.
+- `config`: the first validator created fixes the configuration, so a `configure()` the build didn't find throws.
+
+A production build leaves these out, as `freeze: false`, `checks: "none"` and `config: false`, unless an option or `ark.json` sets one. A factory still checks each function another module supplies. What counts as production:
+
+- Vite's `build` command, outside Vitest
+- webpack and Rspack in `production` mode, their default
+- esbuild with `"production"` among its `conditions`
+- Turbopack, the Node and Bun drivers, `arktype-precompile` and the ESLint rule where `NODE_ENV` is `production`, as `next build` sets it
+
+Rollup, Rolldown and Farm builds keep the checks unless set.
+
+## ark.json
+
+The plugin, the Node and Bun drivers, Turbopack, `arktype-precompile` and the ESLint rule each read `ark.json` beside the nearest `package.json` to `cwd`, so each builds with the same options:
+
+```json title="ark.json"
+{
+	"$schema": "./node_modules/@ark/aot/ark.schema.json",
+	"precompile": {
+		"preset": "smallest",
+		"config": "./src/config.ts"
+	}
+}
+```
+
+It takes each option but `cwd`, `inline` and `declare`, and resolves `config` and `tsconfig` against its own directory. An option given in a call overrides it, `members` key by key, and a preset fills in only what neither sets. A dependency's `ark.json` isn't read, as the program's options build every package. The build reads the file as it starts, and fails on an option it sets wrongly, naming the file and key:
+
+```
+/app/ark.json: precompile.optimize must be "size" or "speed" (was "small")
+```
+
+## Settings
+
+### errors
+
+`errors: "first"` stops each validation at the first issue it finds and returns it alone. Which of the data's issues that is isn't promised: the validator looks for whichever is cheapest to find, which may not be the one arktype finds first. `errors: "none"` returns errors holding one root issue with the code `"predicate"` and the message `is invalid`, so no check's description or message ships. Those errors have no `throw()`, and `assert` throws a plain `Error` whose `cause` is the errors.
+
+The plugin and the Node and Bun drivers resolve `@ark/schema/runtime` to `@ark/schema/runtime/none` under `errors: "none"`, and a module importing any other `@ark/schema` entry, or a runtime island, fails the build. Turbopack needs an alias beside [the ones a standalone build needs](/docs/precompile/setup#next), and its loader fails the build without it:
+
+```js title="next.config.js"
+export default {
+	turbopack: {
+		resolveAlias: { "@ark/schema/runtime": "@ark/schema/runtime/none" }
+	}
+}
+```
+
+Turbopack resolves the alias from the project, so with a package manager that doesn't hoist dependencies, like pnpm, install `@ark/schema` beside arktype.
+
+The values are [arktype's `errors`](/docs/configuration#errors) option's, and a program that also configures it must configure the same value.
+
+### mutatesInput
+
+`mutatesInput: true` or `"always"` writes what a validation transforms into its input and returns it, as [arktype's option](/docs/configuration#mutatesinput) does. A program that also configures it must configure the same value.
+
+### members
+
+`members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true; `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema` default to false. A dropped member reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`. Where it can't see one, `String(User)` without `expression` is `"Type"`.
+
+Each introspection member set true is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`. A JSON Schema the build can't bake throws where it's read.
+
+```ts
+import { precompile } from "@ark/aot/unplugin"
+// ---cut---
+precompile.vite({
+	members: { assert: false, toJsonSchema: true, "~standard.jsonSchema": true }
+})
+```
+
+### optimize and optimizeErrors
+
+`optimize: "size"` writes validators for size rather than speed. They're then slower, most where one calls several others in turn, so prefer it where bundle size matters more than validation speed.
+
+`optimizeErrors` writes errors the same way, and is `optimize` unless set. Errors written for size are the smallest a build can return, and reading their issues is slower, but they have the same `count`, `issues`, `summary`, `throw()`, `toJSON()` and `toString()` as other errors, and `instanceof type.errors` recognizes them.
+
+The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for them, or `@ark/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](#errors). With Turbopack, alias `@ark/schema/runtime` to that entry as `errors: "none"` does.
+
+### countsKeys
+
+`countsKeys: true` checks a Type that rejects undeclared keys by counting an object's own enumerable keys, as most validators do, instead of checking each key against the declared ones. It counts only on a plain object, meaning one whose prototype is `Object.prototype`. If the count differs from the number of declared keys the object holds, or the object isn't plain, the validator checks each key as before. Errors are unaffected: a validation that fails reports each undeclared key. Index signatures and tuples are still checked key by key. An `optimize: "size"` build with `errors: "none"` counts as any build does; with other `errors`, it counts only in some Types, such as one holding a narrow or morph.
+
+What it gives up: an undeclared key can pass in place of a declared key that a plain object holds as a non-enumerable property or inherits from `Object.prototype`. For example, `{ "+": "reject", toString: "Function" }` passes `{ extra: 1 }`.
+
+### freeze
+
+`freeze: false`, the default in a [production build](#production-builds), leaves validators and their members unfrozen. Otherwise, writing to one throws in strict mode code.
+
+### lazy
+
+`lazy: false` creates each validator as its module loads rather than where it's first read, so an error creating one throws on import.
+
+### checks
+
+`checks` decides what a factory checks of what it receives: `"types"` (the default) checks each Type, Module, Scope and Generic is the one the build read, `"helpers"` (the default under Vitest, `node --test` and `bun test`) each static helper too, and `"none"` (the default in a [production build](#production-builds)) only those holding functions, so a module mock replacing any other goes unnoticed.
+
+### allowUnsafe
+
+`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `@ark/schema/runtime` that doesn't match `errors` and `optimizeErrors`, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
+
+### conditions and tsconfig
+
+`conditions` and `tsconfig` set the export conditions and the tsconfig whose `paths` the build resolves imports with.
+
+## Configuration
+
+A program that calls `configure()` does so once, in a module imported before any that defines a Type, and names it as the build's `config`:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({
+	onUndeclaredKey: "delete",
+	onFail: errors => errors.throw()
+})
+```
+
+```ts
+import { precompile } from "@ark/aot/unplugin"
+// ---cut---
+precompile.vite({ config: "./config.ts" })
+```
+
+The build evaluates the argument, which must be static, and precompiles every definition under it. `onFail` can be any function.
+
+A `message`, `problem`, `expected` or `actual` configured for a code, or on a Type with `.configure()` or its meta, as a string or a function, is written as arktype writes it. What a standalone validator can't write fails the build, each with its fix:
+
+- a locale
+- a function writing a union's or a discriminated union's text, which arktype passes each branch's errors: configure the text as a string
+- text a Scope configures for a code: configure it with `configure()`, or on each Type with `.configure()`
+- `predicate` text from `configure()` where a narrow or morph raises the error: pass the text to `ctx.reject()`
+
+The build fails where a module that creates a Type is imported before the config module, and the runtime throws if `configure()` runs after it creates its first validator, runs twice, or receives other values than the build read.
+
+`config: false`, the default in a [production build](#production-builds), says the program never calls `configure()`, so the build fails wherever it does. A program that calls it names its module as `config`, which overrides the default.
+
+A program configuring `errors` or `mutatesInput`, globally or for a Scope, builds with the same value: a definition whose Types are configured otherwise fails the build, naming both.

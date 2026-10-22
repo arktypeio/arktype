@@ -10,6 +10,7 @@ import { redirects } from "./content/redirects.ts"
 /** sections with their own full file, and where it's served */
 const fullFiles: Record<string, string> = {
 	"(arktype)": "llms-full.txt",
+	precompile: "docs/precompile/llms.txt",
 	regex: "docs/regex/llms.txt",
 	attest: "docs/attest/llms.txt",
 	"json-schema": "docs/json-schema/llms.txt",
@@ -107,7 +108,7 @@ const llmsIndex = (sections: Section[]) => {
 		[
 			"# ArkType",
 			"> TypeScript's 1:1 validator, optimized from editor to runtime",
-			"ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.",
+			"ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. @ark/aot, ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.",
 			`Each link below is a docs page as Markdown. [llms-full.txt](${siteUrl}/llms-full.txt) has every ArkType page in one file.`,
 			...sections.flatMap(sectionLists),
 			[

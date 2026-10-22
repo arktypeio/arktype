@@ -42,7 +42,7 @@ import {
 	writeUnbakedMessage,
 	type HoleKind
 } from "arktype/runtime"
-import { keptIssuesOf } from "@ark/precompile/internal/issues.ts"
+import { keptIssuesOf } from "@ark/aot/internal/issues.ts"
 import { build, buildSync, type BuildOptions } from "esbuild"
 import { join } from "node:path"
 import { isDeepStrictEqual } from "node:util"

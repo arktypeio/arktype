@@ -1,7 +1,4 @@
-import {
-	precompile,
-	type PrecompileUnpluginOptions
-} from "@ark/precompile/unplugin"
+import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import standaloneCode from "ajv/dist/standalone/index.js"
 import { _ } from "ajv/dist/compile/codegen/index.js"
 import { build, type Metafile } from "esbuild"
