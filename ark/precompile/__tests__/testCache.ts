@@ -177,9 +177,9 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 // a union discriminated by a symbol key or object unit derives a value a
 // bind can't reach
 const expectedMisses = [
-	"{ Symbol(tag): 0 } | { Symbol(tag): 1 }",
-	"{ a: { Symbol(tag): 0 } | { Symbol(tag): 1 } }",
-	"{ Symbol(lobmyS): 0 } | { Symbol(lobmyS): 1 }",
+	"{ Symbol(tag): 0, a?: 1 } | { Symbol(tag): 1 }",
+	"{ a: { Symbol(tag): 0, a?: 1 } | { Symbol(tag): 1 } }",
+	"{ Symbol(lobmyS): 0, a?: string } | { Symbol(lobmyS): 1 }",
 	'{ k: {"toJSON":"Function(toJSON)"} } | { k: "b", v: number }',
 	"{ at: Function(later$hole_b) } | { at: Function(now$hole_a) }"
 ]
