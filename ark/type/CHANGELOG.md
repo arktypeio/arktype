@@ -1479,7 +1479,7 @@ type("string.trim").json.morphs
 
 ### Fix global config when the first Type is created
 
-Global config is read when the first Type is created rather than when arktype is imported, so `configure()` must run before any Type is created, but can follow any import of `arktype` or `@ark/schema`, including `./internal/*` deep imports. A `configure` imported from `"arktype"` now applies to `type` and keywords too. A `configure` call after a Type has been created throws instead of applying to scopes created later but not to `type` or keywords:
+Global config is read when the first Type is created rather than when arktype is imported, so `configure()` must run before any Type is created, but can follow any import of `arktype` or `@ark/schema`, including `./internal/*` deep imports. A `configure` imported from `"arktype"` now applies to `type` and keywords too. A `configure` call after a Type has been created throws instead of applying to scopes created later but not to `type` or keywords, unless it changes nothing, as when a test runner resets its modules and the config file runs again:
 
 ```ts
 import { configure, type } from "arktype"

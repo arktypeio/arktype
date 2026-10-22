@@ -532,7 +532,9 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 
 	it("configure after a type is created", () => {
 		type("string")
-		attest(() => configure({})).throws(configureAfterTypeMessage)
+		attest(() => configure({ numberAllowsNaN: true })).throws(
+			configureAfterTypeMessage
+		)
 	})
 
 	it("docs actual example", () => {
