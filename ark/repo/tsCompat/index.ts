@@ -2,6 +2,7 @@
 // version in CI to ensure inference holds outside the version we test with
 import { regex } from "arkregex"
 import { match, scope, type } from "arktype"
+import { codec } from "arktype/codecs"
 
 type equals<l, r> =
 	(<t>() => t extends l ? 1 : 0) extends <t>() => t extends r ? 1 : 0 ? true
@@ -92,6 +93,41 @@ const $ = scope({
 const types = $.export()
 
 assertEquals<typeof types.List.infer.head.value, number>()
+
+// @ts-expect-error invalid keywords in a scope are type errors
+scope({ name: "strng" })
+
+// infers each callback's parameter from the Types it pairs
+export const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+
+assertEquals<typeof EpochMs.inferIn, number>()
+assertEquals<typeof EpochMs.infer, Date>()
+
+const parseInteger = (s: string) => Number.parseInt(s)
+
+// callbacks that aren't contextually typed aren't inferred from either
+export const Integer = codec("string", "number", {
+	decode: parseInteger,
+	encode: (n: number) => `${n}`
+})
+
+assertEquals<typeof Integer.infer, number>()
+
+export const On = codec("1", "true", { decode: () => true, encode: () => 1 })
+
+assertEquals<typeof On.infer, true>()
+
+export const Mapped = type({ kind: "'a'", a: "string" })
+	.or({ kind: "'b'", b: "number" })
+	.map(prop => prop)
+
+assertEquals<
+	typeof Mapped.infer,
+	{ kind: "a"; a: string } | { kind: "b"; b: number }
+>()
 
 export const sizeOf = match({
 	string: s => s.length,

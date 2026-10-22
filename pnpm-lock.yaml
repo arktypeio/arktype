@@ -472,6 +472,9 @@ importers:
       '@ark/fs':
         specifier: workspace:*
         version: link:../fs
+      '@ark/json-schema':
+        specifier: workspace:*
+        version: link:../json-schema
       '@ark/precompile':
         specifier: workspace:*
         version: link:../precompile
