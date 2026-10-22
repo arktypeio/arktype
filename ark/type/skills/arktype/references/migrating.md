@@ -332,7 +332,7 @@ To keep a schema as JSON, convert it at runtime with `jsonSchemaToType` from `@a
 | `{ type: ["string", "null"] }`, `anyOf`, `oneOf`         | `"string \| null"`, `A.or(B)`                                          |
 | `allOf`                                                  | `A.and(B)`                                                             |
 | `properties` with `required`                             | keys, with `?` on those not required                                   |
-| `additionalProperties: false`, `additionalProperties: T` | `"+": "reject"`, `"[string]": T` (covers declared keys too)            |
+| `additionalProperties: false`, `additionalProperties: T` | `"+": "reject"`, `"[string]": "T \| A"`, `A` the declared keys' types  |
 | `patternProperties: { "^x-": T }`                        | `"[/^x-/]": T`                                                         |
 | `{ type: "array", items: T, minItems: 1 }`               | `"T[] >= 1"`                                                           |
 | `prefixItems`                                            | `[A, B]`                                                               |
