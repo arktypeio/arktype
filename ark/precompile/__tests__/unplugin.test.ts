@@ -795,6 +795,31 @@ console.log(out.constructor === type.errors, out.count, out.issues[0].data === d
 		attest(run(standalone)).equals(runPlain(introspected))
 	})
 
+	it("esbuild a validator printed where the build can't see", async () => {
+		const root = writeFixture(
+			{
+				"main.ts":
+					'import { type } from "arktype"\nimport { print } from "printer"\n\nconsole.log(print(type({ a: "string" })))\n',
+				...packageFiles("printer", {
+					"index.js": "export const print = value => `${value}`\n",
+					"index.d.ts":
+						"export declare const print: (value: unknown) => string\n"
+				})
+			},
+			fromHere("temp", "printed")
+		)
+		// without its expression, it prints only that it's a Type
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).snap("Type\n")
+		attest(
+			run(
+				await bundlers.esbuild(
+					{ cwd: root, members: { expression: true } },
+					root
+				)
+			)
+		).equals(runPlain(root))
+	})
+
 	it("esbuild unminified import cycles", async () => {
 		for (const fixture of ["cycleFirst", "cycleArrow", "setInStep"]) {
 			const root = fromHere(fixture)
