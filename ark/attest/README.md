@@ -1,10 +1,10 @@
 # Attest
 
-Attest is a testing library that makes your TypeScript types available at runtime, giving you access to precise type-level assertions and performance benchmarks.
+Attest is a testing library that makes your TypeScript types available at runtime, so a test can assert on a value's type, the type errors and completions of an expression, and the type instantiations a block costs.
 
-Assertions are framework agnostic and can be seamlessly integrated with your existing Vitest, Jest, or Mocha tests.
+Assertions work from Vitest, Mocha, Jest or any runner with global setup and teardown hooks.
 
-Benchmarks can run from anywhere and will deterministically report the number of type instantiations contributed by the contents of the `bench` call.
+Benches run as plain scripts. They report how many type instantiations a block contributes, which is deterministic for a given TypeScript version, and how long a call takes.
 
 If you've ever wondered how [ArkType](https://github.com/arktypeio/arktype) can guarantee identical behavior between its runtime and static parser implementations and highly optimized editor performance, Attest is your answer⚡
 

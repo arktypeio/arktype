@@ -160,9 +160,9 @@ const Stripped = type({ "+": "delete", name: "string" })
 
 ## Integrations
 
-- ArkType types are [Standard Schema](https://standardschema.dev), so they work directly with tRPC, oRPC, Hono and other libraries that accept one. react-hook-form takes them through `arktypeResolver` from `@hookform/resolvers/arktype`.
+- ArkType types are [Standard Schema](https://standardschema.dev), so they work directly with tRPC, oRPC, Hono and other libraries that accept one. react-hook-form takes them through `standardSchemaResolver` from `@hookform/resolvers/standard-schema`.
 - `User.toJsonSchema()` returns the equivalent JSON Schema. It throws for what JSON Schema can't express, like `Date`, `bigint`, a morph or a `.narrow()`. Handle those with a `fallback` keyed by the error's `code`, e.g. `{ fallback: { date: ctx => ({ ...ctx.base, type: "string", format: "date-time" }) } }`, or pass `{ fallback: annotatingFallback }` (exported from `arktype`) to write them as `x-arktype-*` keywords instead.
-- Global configuration (error messages, `onUndeclaredKey`, `numberAllowsInfinity`, and so on) goes through `configure` from `arktype/config`, in its own file that is imported before anything imports `arktype` or `@ark/schema`, including deep imports like `arktype/internal/*`. Configuring later doesn't throw, but `type` and built-in keywords like `number` ignore it. See https://arktype.io/docs/configuration.md.
+- Global configuration (error messages, `onUndeclaredKey`, `numberAllowsInfinity`, and so on) goes through `configure` from `arktype/config`, in its own file that is imported before anything imports `arktype` or `@ark/schema`, including deep imports like `arktype/internal/*`. Calling `configure` after any Type is created, even by reading a keyword like `type.number`, throws. See https://arktype.io/docs/configuration.md.
 
 ## Precompiled projects
 
@@ -173,6 +173,7 @@ A project whose bundler config uses `@ark/precompile` (e.g. `precompile.vite()` 
 - A validator's error messages say what failed but not what the value was, like `name must be a string`.
 - A build error names the file, line and column, then why, then how to fix it on its last line. Apply that fix rather than working around it, and don't set `allowUnsafe` to get past an error: what it reports can then throw at runtime. `npx arktype-precompile --check "src/**/*.ts"` lists every one without bundling.
 - To leave one definition to arktype at runtime, put `// @ark-runtime` on the line before it.
+- Build options go in the plugin call or under `precompile` in an `ark.json` beside `package.json`, which the plugin, the drivers, the CLI and the ESLint rule all read. `{ "precompile": { "preset": "smallest" } }` trades speed for size.
 
 Docs: https://arktype.io/docs/precompile.md and https://arktype.io/docs/precompile/troubleshooting.md.
 

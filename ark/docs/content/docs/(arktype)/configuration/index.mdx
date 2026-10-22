@@ -422,7 +422,7 @@ A [precompiled](/docs/precompile/options#errors) build takes `errors` as an opti
 By default, a transform copies each object it changes other than a builtin like a `Date`, so the data you pass is otherwise never written. `mutatesInput` writes what a Type transforms, its defaults and its morphed values, into the data, which it returns:
 
 - `false` (default): copies each object it changes
-- `true`: writes in place wherever that's safe even if the data holds one object at several places, and otherwise copies
+- `true`: writes in place where no other part of the Type can read the write, and otherwise copies
 - `"always"`: writes every transform in place
 
 ```ts title="config.ts"

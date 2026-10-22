@@ -62,7 +62,7 @@ import { type } from "arktype"
 - **`arkregex`** exports `regex`, which is also exported from `arktype`, and the `Regex` type.
 - **`@ark/attest`** exports `attest`, `bench`, `setup` and `teardown`, and installs an `attest` CLI. Install it as a dev dependency.
 - **`@ark/json-schema`** exports `jsonSchemaToType` and `JsonSchemaScope`.
-- **`@ark/fast-check`** exports `arkToArbitrary`. It needs `fast-check` 3 installed beside it.
+- **`@ark/fast-check`** exports `arkToArbitrary`. It needs `fast-check` 3 or 4 installed beside it.
 - **`@ark/schema`** exports nodes, `rootSchema`, `schemaScope` and the classes behind `ArkErrors`, with `config`, `i18n`, `codecs`, `errors`, `mutatesInput` and `runtime` entrypoints like `arktype`'s.
 - **`arksets`** exports `parse`, `isSubset`, `isEqual`, `isDisjoint`, `intersect`, `union`, `discriminate` and `toJsonSchema`, and installs set algebra into `@ark/schema` when imported. `arktype` imports only that engine, from `arksets/internal`.
 

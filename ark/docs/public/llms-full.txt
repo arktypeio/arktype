@@ -341,13 +341,13 @@ ArkType offers several ways to define the same type. Use whichever fits your con
 ```ts
 import { type } from "arktype"
 
-// string expression — most concise
+// string expression, the most concise
 const StringSyntax = type("string | number")
 
-// tuple expression — embed non-string operands
+// tuple expression, for operands that aren't strings
 const TupleSyntax = type(["string", "|", "number"])
 
-// chained — compose existing types
+// chained, to compose existing types
 const Chained = type("string").or("number")
 ```
 
@@ -388,8 +388,8 @@ type("number % 2") // divisible by 2
 ```ts
 const User = type({
 	name: "string",
-	"email?": "string.email", // optional key — use '?' suffix in the key
-	age: "number >= 0 = 0" // default value — implicitly optional
+	"email?": "string.email", // optional: '?' goes on the key
+	age: "number >= 0 = 0" // defaultable, so optional in the input
 })
 
 // index signatures (Record types)
@@ -408,10 +408,10 @@ const Stripped = type({ "+": "delete", name: "string" })
 const Strings = type("string[]") // string expression
 const Numbers = type.number.array() // chained
 
-// tuples — fixed length and positional types
+// tuples: fixed length, a type per position
 const Pair = type(["string", "number"])
 
-// GOTCHA: type([X]) is a 1-element tuple, NOT an array
+// type([X]) is a 1-element tuple, not an array
 const Item = type({ id: "string" })
 const Wrong = type([Item]) // tuple of exactly [Item]
 const Right = Item.array() // Item[]
@@ -472,10 +472,10 @@ const tree = types.TreeNode({ value: 1, children: [] })
 ## Morphs and pipes
 
 ```ts
-// .to() — parse, then validate the output
+// .to(): parse, then validate the output
 const parsePort = type("string.integer.parse").to("0 < number <= 65535")
 
-// .pipe() — validated input → transform function
+// .pipe(): validate, then transform
 const toUpper = type("string").pipe(s => s.toUpperCase())
 
 // built-in parse morphs
@@ -577,9 +577,9 @@ export default {
 
 | Mistake | Fix |
 | - | - |
-| `name: "string \| undefined"` for optional | Use `"name?": "string"` — append `?` to the **key** |
-| `type([Schema])` for arrays | Use `Schema.array()` — brackets create tuples |
-| ``type(`${Schema}[]`)`` | Use `Schema.array()` or `[Schema, "[]"]` — never interpolate a Type |
+| `name: "string \| undefined"` for optional | Use `"name?": "string"`: `?` goes on the **key** |
+| `type([Schema])` for arrays | Use `Schema.array()`: brackets create tuples |
+| ``type(`${Schema}[]`)`` | Use `Schema.array()` or `[Schema, "[]"]`, never interpolate a Type |
 | `"Record<string, T>"` with `T` a variable | Use `type.Record("string", T)` or `{ "[string]": T }` |
 | `type("number = 0")` | Defaults only work as object values or tuple elements |
 | `out[0]` or `out.map(...)` on errors | Use `out.issues[0]` or `out.issues.map(...)` |
@@ -610,17 +610,7 @@ Every page of these docs is available as Markdown by adding `.md` to its URL, e.
 
 ## Precompile
 
-When an agent runs your local dev, a build step costs it a loop it's good at: build, read the error, fix, rebuild. So [precompiling](https://arktype.io/docs/precompile) costs little, and it ships every Type as a standalone validator.
-
-Each problem the build reports names the file, line and column, what it couldn't do, why, and how to fix it:
-
-```
-src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
-  `limit` is a parameter of makeField (src/forms.ts:12:22); its value is known only at runtime
-  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
-```
-
-`npx arktype-precompile --check "src/**/*.ts"` lists every such problem at once without bundling, and [shadow mode](https://arktype.io/docs/precompile/advanced#shadow-mode) fails a test wherever a precompiled validator would behave otherwise than arktype. [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) lists the fix for each report.
+A [precompiled](https://arktype.io/docs/precompile) build reports each definition it can't precompile with its file, line and column, the reason and the fix. [With agents](https://arktype.io/docs/precompile#with-agents) shows one and the tools that shorten the loop: `arktype-precompile --check`, the ESLint rule and shadow mode. [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) lists the fix for each report.
 
 ## AGENTS.md
 
@@ -802,7 +792,7 @@ If you need the whole Type API at runtime, build with `runtime: "arktype"`: arkt
 npm install -D @ark/precompile
 ```
 
-`@ark/precompile` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, like `precompiledForArktype_2_2_9`, so a bundle or Node fails to link it to another version's runtime, e.g. one a stale cache kept. It adds nothing to the bundle.
+`@ark/precompile` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, `precompiledForArktype_<major>_<minor>_<patch>`, so a bundle or Node fails to link it to another version's runtime, e.g. one a stale cache kept. It adds nothing to the bundle.
 
 ## Bundlers
 
@@ -903,7 +893,7 @@ Rsbuild takes `precompile.rsbuild()`, Bun's bundler `precompile.bun()` (Bun 1.2.
 
 By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`. A dependency that imports `arktype` gets `arktype/runtime` too, where defining a Type throws, so the build fails for each such package unless it [opts in](https://arktype.io/docs/precompile/advanced#libraries).
 
-## Next
+## Next.js
 
 With Turbopack, add the loader as a rule for each extension your definitions and config module are in, and alias arktype's entries to the runtime:
 
@@ -1286,11 +1276,11 @@ Where the fix is clear and the problem could throw at runtime, the build fails. 
 
 **`arktype resolves to 2.3.0, but @ark/precompile runs on 2.2.9`**: validators run only on the arktype they were built with. Install one version, e.g. with your package manager's dedupe or overrides.
 
-**`precompiledForArktype_2_2_9` is not exported by `arktype/runtime`** (each bundler words it its own way): every module of validators imports an export of `arktype/runtime` named for the version it was built for, so linking it to another version's runtime fails rather than misbehaving at runtime. It usually means a bundler cache from before an upgrade, or a second copy of arktype. Install one version and clear the bundler's cache.
+**`precompiledForArktype_<version>` is not exported by `arktype/runtime`** (each bundler words it its own way): every module of validators imports an export of `arktype/runtime` named for the version it was built for, so linking it to another version's runtime fails rather than misbehaving at runtime. It usually means a bundler cache from before an upgrade, or a second copy of arktype. Install one version and clear the bundler's cache.
 
 **`arktype resolves to more than one copy`**: one copy doesn't recognize another's Types and errors. The message names each copy and the file that reached it.
 
-**`arktype resolves to ... rather than arktype/runtime`** (Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config. See [Next](https://arktype.io/docs/precompile/setup#next).
+**`arktype resolves to ... rather than arktype/runtime`** (Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config. See [Next.js](https://arktype.io/docs/precompile/setup#next).
 
 **`configure() is called, but the build has no config module`**: name the module that calls it as the build's [`config`](https://arktype.io/docs/precompile/options#configuration).
 
@@ -1395,22 +1385,6 @@ npm i -D typescript-6@npm:typescript@6
 
 Every ArkType definition can run dynamically, created by `type()` at runtime, or [precompiled](https://arktype.io/docs/precompile), constructed when you build. Your definitions and their inferred types are identical either way, so you can switch at any time.
 
-- Runtime (instructions per call, lower is better): moltar's parseSafe benchmark (validate, removing undeclared keys), run by us on Node 24: instructions per call. Precompiled ArkType isn't in moltar's published results yet.. Source: moltar/typescript-runtime-type-benchmarks, https\://github.com/moltar/typescript-runtime-type-benchmarks
-- ArkType (precompiled): 189
-- @ts-runtypes: 209
-- Typia: 213
-- ata-validator (AOT): 220
-- ArkType (dynamic): 262
-
-* Bundle size (B gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled with the "smallest" preset in a production build. Source: the form from valibot.dev's comparison, https\://valibot.dev/guides/comparison/
-* ArkType (precompiled): 1,339
-* Valibot: 1,547
-* Zod Mini: 5,127
-* Zod: 25,058
-* ArkType (dynamic): 75,602
-
-In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled for size, it reports every error on Valibot's own login form, with its message, in a smaller bundle than Valibot. The charts come from different builds: each names its benchmark and the options it was built with.
-
 In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType. What precompiling removes is everything around a
 Type's checks: the parser, the time it takes to create each Type, and the code
 it generates.
@@ -1427,7 +1401,7 @@ it generates.
 
 ## Which to use
 
-Precompile an app you bundle. Its validators ship without a parser or a JIT, and the build reports anything it can't precompile with the fix, which is a quick loop when an agent runs your local dev. See [Setup](https://arktype.io/docs/precompile/setup).
+Precompile an app you bundle. Its validators ship without a parser or a JIT, and the build reports anything it can't precompile with the fix. See [Setup](https://arktype.io/docs/precompile/setup), and [Speed and size](https://arktype.io/docs/precompile#speed-and-size) for the numbers.
 
 Stay dynamic where there's no build, like a script or a REPL, or where definitions are only known at runtime. A standalone build can also leave those to arktype as [runtime islands](https://arktype.io/docs/precompile/advanced#runtime-islands).
 
@@ -3383,7 +3357,7 @@ const TrimStart = type(["string", "=>", str => str.trimStart()])
 const TrimStart = type("string", "=>", str => str.trimStart())
 ```
 
-A morph receives the validated value itself rather than a copy, so a morph that mutates its argument mutates the caller's data. [By default](https://arktype.io/docs/configuration#mutatesinput), ArkType writes to its input only to transform a builtin like a Date, Map or function, which it transforms in place. Any other transformed object is a new object that shares every untransformed value with the input, and input that nothing transforms is returned as is.
+A morph receives the validated value itself rather than a copy, so a morph that mutates its argument mutates the caller's data. ArkType's own transforms, like defaults, copy each object they change and share every untransformed value with the input, and input nothing transforms is returned as is. The exception is an instance of a builtin class, like a `Date`, `Map` or function, which keeps its state in internal slots and is transformed in place. [`mutatesInput`](https://arktype.io/docs/configuration#mutatesinput) writes every transform in place instead.
 
 ```ts
 const T = type({ a: "string.trim", b: { c: "string" } })
@@ -3394,8 +3368,6 @@ const out = T.assert(input)
 out === input // false
 out.b === input.b // true
 ```
-
-The exception is a builtin object ArkType doesn't copy, like a function, `Promise`, `WeakMap`, `FormData`, `Blob` or boxed primitive, which is transformed in place.
 
 ### To
 
@@ -3947,7 +3919,7 @@ A Type with morphs decodes input into output. A codec is a morph with an inverse
 
 ## Defining a codec
 
-`codec` takes an input definition, an output definition and a function for each direction. It comes from `arktype/codecs`, which installs encoding when imported, so an app that doesn't encode doesn't ship it:
+`codec` takes an input definition, an output definition and a function for each direction. It comes from `arktype/codecs`, which installs encoding when imported, so an app that doesn't encode doesn't ship it. Without that import, reading `.encode` throws a `ParseError`:
 
 ```ts
 import { codec } from "arktype/codecs"
@@ -3966,7 +3938,7 @@ const ms = EpochMs.encode(date)
 A codec is a Type. `.encode` is a Type too, from output to input, so it validates what it receives like any other Type:
 
 ```ts
-// ArkErrors: must be a Date (was string)
+// ArkErrors: must be a Date (was a string)
 const out = EpochMs.encode("0")
 ```
 
@@ -4011,6 +3983,8 @@ A union encodes a value with a branch that accepts it, trying the branches witho
 The parse keywords encode back to the string they parse: `string.date.parse`, `string.date.iso.parse` and `string.date.epoch.parse`, `string.numeric.parse`, `string.integer.parse`, `string.json.parse` and `string.url.parse`.
 
 ```ts
+import "arktype/codecs"
+
 const Event = type({
 	at: "string.date.iso.parse",
 	count: "string.integer.parse"
@@ -4047,6 +4021,8 @@ A standalone build installs encoding itself, so `.encode` works there even if th
 Encoding is only possible if every morph has an inverse. Otherwise, accessing `.encode` throws a `ParseError`:
 
 ```ts
+import "arktype/codecs"
+
 const Length = type({ length: type("string").pipe(s => s.length) })
 
 // ParseError: A morph must have an inverse to be encoded: (In: string) => Out<unknown>
@@ -5381,7 +5357,7 @@ A [precompiled](https://arktype.io/docs/precompile/options#errors) build takes `
 By default, a transform copies each object it changes other than a builtin like a `Date`, so the data you pass is otherwise never written. `mutatesInput` writes what a Type transforms, its defaults and its morphed values, into the data, which it returns:
 
 - `false` (default): copies each object it changes
-- `true`: writes in place wherever that's safe even if the data holds one object at several places, and otherwise copies
+- `true`: writes in place where no other part of the Type can read the write, and otherwise copies
 - `"always"`: writes every transform in place
 
 ```ts
@@ -7207,7 +7183,7 @@ import { type } from "arktype"
 - **`arkregex`** exports `regex`, which is also exported from `arktype`, and the `Regex` type.
 - **`@ark/attest`** exports `attest`, `bench`, `setup` and `teardown`, and installs an `attest` CLI. Install it as a dev dependency.
 - **`@ark/json-schema`** exports `jsonSchemaToType` and `JsonSchemaScope`.
-- **`@ark/fast-check`** exports `arkToArbitrary`. It needs `fast-check` 3 installed beside it.
+- **`@ark/fast-check`** exports `arkToArbitrary`. It needs `fast-check` 3 or 4 installed beside it.
 - **`@ark/schema`** exports nodes, `rootSchema`, `schemaScope` and the classes behind `ArkErrors`, with `config`, `i18n`, `codecs`, `errors`, `mutatesInput` and `runtime` entrypoints like `arktype`'s.
 - **`arksets`** exports `parse`, `isSubset`, `isEqual`, `isDisjoint`, `intersect`, `union`, `discriminate` and `toJsonSchema`, and installs set algebra into `@ark/schema` when imported. `arktype` imports only that engine, from `arksets/internal`.
 
@@ -7219,7 +7195,7 @@ import { type } from "arktype"
 
 > The changes in the latest ArkType that can break code written for the previous release, and what to change.
 
-Each section is one change, with code that behaves differently before and after it. The full list of changes, including fixes and new features, is in the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
+Each section is one change, with code that behaves differently before and after it. The full list of changes, including fixes and new features, is in the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/precompile](https://github.com/arktypeio/arktype/blob/main/ark/precompile/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
 
 ## Errors
 
@@ -7331,6 +7307,16 @@ A described union's miss is at the union's own path, with the union's value as i
 
 Configure its text under `discriminant` instead of `predicate`. An exhaustive `switch` over `ArkErrorCode` must handle `undeclared` and `discriminant`.
 
+Where every object a union discriminated by type expects is an array, its `cases` holds `"Array"` in place of `"object"`, and its message says `an array`:
+
+```ts
+// ArkErrors: must be a string or an array (was a number)
+// before: must be a string or an object (was a number)
+type("string | string[]")(5)
+```
+
+A `switch` over `cases` must handle `"Array"`.
+
 ### Error writers receive the error and the locale
 
 An `expected` writer receives the error rather than its context, an `actual` writer receives `(data, error, locale)`, and every writer receives the [locale](https://arktype.io/docs/i18n) last. In an `expected` writer, `meta` may be `undefined`, since an error from `ctx.reject` has none:
@@ -7382,6 +7368,18 @@ T(new Date("2001-06-01"))
 ```
 
 ## Validation
+
+### "@" holds an object's metadata
+
+An object definition's `"@"` key is its description or meta object, as `"@"` is in a tuple expression. It was an ordinary key. Escape it as `"\\@"` to keep the key:
+
+```ts
+// ArkErrors: must be a user (was a number)
+type({ "@": "a user", name: "string" })(5)
+
+// Type<{ "@": string }>
+const At = type({ "\\@": "string" })
+```
 
 ### Date literals need a time zone
 
@@ -7503,6 +7501,8 @@ Built-in keywords set `meta.keyword` to their name. Rename your own meta named `
 
 These change what `toJsonSchema()`, `.expression` and `.json` return, which matters if you store or snapshot them.
 
+- `jsonSchema` meta is the Type's JSON Schema, replacing what its constraints imply, where it was written into the schema as an ordinary `jsonSchema` key. See [Your own schema](https://arktype.io/docs/json-schema/to-json-schema#your-own-schema).
+
 - A union of literals with configured meta becomes `enum`: `type("'a' | 'b'").configure({ title: "Letter" }).toJsonSchema()` is `{ enum: ["a", "b"], title: "Letter" }` instead of an `anyOf` of `const`s.
 
 - A string index signature beside declared keys becomes `patternProperties: { "": ... }` instead of `additionalProperties`.
@@ -7592,7 +7592,7 @@ Global config is fixed when the first Type is created, by a definition or by rea
 
 ## Does a morph change my input?
 
-Only if you mutate it. A morph receives the validated value itself, not a copy, so mutating its argument mutates the caller's data. Return a new value instead:
+Only if you mutate it, or configure [`mutatesInput`](https://arktype.io/docs/configuration#mutatesinput). A morph receives the validated value itself, not a copy, so mutating its argument mutates the caller's data. Return a new value instead:
 
 ```ts
 const addTag = type({ tags: "string[]" }).pipe(o => ({

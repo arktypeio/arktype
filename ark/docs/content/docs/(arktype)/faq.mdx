@@ -42,7 +42,7 @@ Global config is fixed when the first Type is created, by a definition or by rea
 
 ## Does a morph change my input?
 
-Only if you mutate it. A morph receives the validated value itself, not a copy, so mutating its argument mutates the caller's data. Return a new value instead:
+Only if you mutate it, or configure [`mutatesInput`](/docs/configuration#mutatesinput). A morph receives the validated value itself, not a copy, so mutating its argument mutates the caller's data. Return a new value instead:
 
 ```ts
 const addTag = type({ tags: "string[]" }).pipe(o => ({

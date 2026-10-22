@@ -1,34 +1,22 @@
 # @ark/json-schema
 
-## What is it?
+`jsonSchemaToType` parses a JSON Schema into an ArkType Type:
 
-`@ark/json-schema` is a package that allows converting from a JSON Schema schema to an ArkType Type. For example:
-
-```js
+```ts
 import { jsonSchemaToType } from "@ark/json-schema"
 
 const T = jsonSchemaToType({ type: "string", minLength: 5, maxLength: 10 })
+
+T.expression // "5 <= string <= 10"
 ```
 
-is equivalent to:
-
-```js
-import { type } from "arktype"
-
-const T = type("5<=string<=10")
-```
-
-This enables easy adoption of ArkType for people who currently have JSON Schema based runtime validation in their codebase.
-
-If you want to convert your existing ArkType `Type`s to JSON Schema, you don't need this library.
-
-Instead, use the built-in `toJsonSchema()` method that exists on every `Type`, e.g.:
+To go the other way, you don't need this package. Every Type has `toJsonSchema()`:
 
 ```ts
 import { type } from "arktype"
 
-// { type: "string", minLength: 5, maxLength: 10 }
-const schema = type("5<=string<=10").toJsonSchema()
+// { $schema: "https://json-schema.org/draft/2020-12/schema", type: "string", maxLength: 10, minLength: 5 }
+const schema = type("5 <= string <= 10").toJsonSchema()
 ```
 
 ## Type Safety

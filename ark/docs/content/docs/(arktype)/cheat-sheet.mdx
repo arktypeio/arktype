@@ -12,13 +12,13 @@ ArkType offers several ways to define the same type. Use whichever fits your con
 ```ts
 import { type } from "arktype"
 
-// string expression — most concise
+// string expression, the most concise
 const StringSyntax = type("string | number")
 
-// tuple expression — embed non-string operands
+// tuple expression, for operands that aren't strings
 const TupleSyntax = type(["string", "|", "number"])
 
-// chained — compose existing types
+// chained, to compose existing types
 const Chained = type("string").or("number")
 ```
 
@@ -59,8 +59,8 @@ type("number % 2") // divisible by 2
 ```ts
 const User = type({
 	name: "string",
-	"email?": "string.email", // optional key — use '?' suffix in the key
-	age: "number >= 0 = 0" // default value — implicitly optional
+	"email?": "string.email", // optional: '?' goes on the key
+	age: "number >= 0 = 0" // defaultable, so optional in the input
 })
 
 // index signatures (Record types)
@@ -79,10 +79,10 @@ const Stripped = type({ "+": "delete", name: "string" })
 const Strings = type("string[]") // string expression
 const Numbers = type.number.array() // chained
 
-// tuples — fixed length and positional types
+// tuples: fixed length, a type per position
 const Pair = type(["string", "number"])
 
-// GOTCHA: type([X]) is a 1-element tuple, NOT an array
+// type([X]) is a 1-element tuple, not an array
 const Item = type({ id: "string" })
 const Wrong = type([Item]) // tuple of exactly [Item]
 const Right = Item.array() // Item[]
@@ -143,10 +143,10 @@ const tree = types.TreeNode({ value: 1, children: [] })
 ## Morphs and pipes
 
 ```ts
-// .to() — parse, then validate the output
+// .to(): parse, then validate the output
 const parsePort = type("string.integer.parse").to("0 < number <= 65535")
 
-// .pipe() — validated input → transform function
+// .pipe(): validate, then transform
 const toUpper = type("string").pipe(s => s.toUpperCase())
 
 // built-in parse morphs
@@ -255,9 +255,9 @@ export default {
 
 | Mistake                                        | Fix                                                                           |
 | ---------------------------------------------- | ----------------------------------------------------------------------------- |
-| `name: "string \| undefined"` for optional     | Use `"name?": "string"` — append `?` to the **key**                           |
-| `type([Schema])` for arrays                    | Use `Schema.array()` — brackets create tuples                                 |
-| ``type(`${Schema}[]`)``                        | Use `Schema.array()` or `[Schema, "[]"]` — never interpolate a Type           |
+| `name: "string \| undefined"` for optional     | Use `"name?": "string"`: `?` goes on the **key**                              |
+| `type([Schema])` for arrays                    | Use `Schema.array()`: brackets create tuples                                  |
+| ``type(`${Schema}[]`)``                        | Use `Schema.array()` or `[Schema, "[]"]`, never interpolate a Type            |
 | `"Record<string, T>"` with `T` a variable      | Use `type.Record("string", T)` or `{ "[string]": T }`                         |
 | `type("number = 0")`                           | Defaults only work as object values or tuple elements                         |
 | `out[0]` or `out.map(...)` on errors           | Use `out.issues[0]` or `out.issues.map(...)`                                  |

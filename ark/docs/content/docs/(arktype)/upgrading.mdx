@@ -3,7 +3,7 @@ title: Upgrading
 description: The changes in the latest ArkType that can break code written for the previous release, and what to change.
 ---
 
-Each section is one change, with code that behaves differently before and after it. The full list of changes, including fixes and new features, is in the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
+Each section is one change, with code that behaves differently before and after it. The full list of changes, including fixes and new features, is in the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/precompile](https://github.com/arktypeio/arktype/blob/main/ark/precompile/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
 
 ## Errors
 
@@ -115,6 +115,16 @@ A described union's miss is at the union's own path, with the union's value as i
 
 Configure its text under `discriminant` instead of `predicate`. An exhaustive `switch` over `ArkErrorCode` must handle `undeclared` and `discriminant`.
 
+Where every object a union discriminated by type expects is an array, its `cases` holds `"Array"` in place of `"object"`, and its message says `an array`:
+
+```ts
+// ArkErrors: must be a string or an array (was a number)
+// before: must be a string or an object (was a number)
+type("string | string[]")(5)
+```
+
+A `switch` over `cases` must handle `"Array"`.
+
 ### Error writers receive the error and the locale
 
 An `expected` writer receives the error rather than its context, an `actual` writer receives `(data, error, locale)`, and every writer receives the [locale](/docs/i18n) last. In an `expected` writer, `meta` may be `undefined`, since an error from `ctx.reject` has none:
@@ -166,6 +176,18 @@ T(new Date("2001-06-01"))
 ```
 
 ## Validation
+
+### "@" holds an object's metadata
+
+An object definition's `"@"` key is its description or meta object, as `"@"` is in a tuple expression. It was an ordinary key. Escape it as `"\\@"` to keep the key:
+
+```ts
+// ArkErrors: must be a user (was a number)
+type({ "@": "a user", name: "string" })(5)
+
+// Type<{ "@": string }>
+const At = type({ "\\@": "string" })
+```
 
 ### Date literals need a time zone
 
@@ -287,6 +309,7 @@ Built-in keywords set `meta.keyword` to their name. Rename your own meta named `
 
 These change what `toJsonSchema()`, `.expression` and `.json` return, which matters if you store or snapshot them.
 
+- `jsonSchema` meta is the Type's JSON Schema, replacing what its constraints imply, where it was written into the schema as an ordinary `jsonSchema` key. See [Your own schema](/docs/json-schema/to-json-schema#your-own-schema).
 - A union of literals with configured meta becomes `enum`: `type("'a' | 'b'").configure({ title: "Letter" }).toJsonSchema()` is `{ enum: ["a", "b"], title: "Letter" }` instead of an `anyOf` of `const`s.
 - A string index signature beside declared keys becomes `patternProperties: { "": ... }` instead of `additionalProperties`.
 - `toJsonSchema()` throws for a regex flag JSON Schema can't express, instead of leaving it out: `type(/^a/i).toJsonSchema()` throws (code `patternFlags`), before: `{ type: "string", pattern: "^a" }`, which rejects `"A"`.
