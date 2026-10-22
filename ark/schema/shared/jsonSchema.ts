@@ -76,7 +76,8 @@ export declare namespace JsonSchema {
 	// any JSON Schema document, typed loosely to fit other libraries'
 	export type Input = Branch | object
 
-	export type RefString = `#/$defs/${string}`
+	export type RefString =
+		`#/${"$defs" | "definitions" | "components/schemas"}/${string}`
 
 	// extending Meta and including "type" as an optional prop are important for
 	// interacting with JsonSchema as a union, although generally $ref should be
@@ -130,10 +131,11 @@ export declare namespace JsonSchema {
 		type: "number" | "integer"
 		// NB: JSON Schema allows decimal multipleOf, but ArkType only supports integer.
 		multipleOf?: number
+		// openapi-3.0 marks minimum or maximum exclusive with true
 		minimum?: number
-		exclusiveMinimum?: number
+		exclusiveMinimum?: number | true
 		maximum?: number
-		exclusiveMaximum?: number
+		exclusiveMaximum?: number | true
 		not?: Const | Enum
 	}
 
@@ -169,11 +171,14 @@ export declare namespace JsonSchema {
 
 export const supportedJsonSchemaTargets: readonly ToJsonSchema.Target[] = [
 	"draft-2020-12",
-	"draft-07"
+	"draft-07",
+	"openapi-3.0"
 ]
 
-export const writeInvalidJsonSchemaTargetMessage = (target: string): string =>
-	`JSONSchema target '${target}' is not supported (must be ${supportedJsonSchemaTargets.map(t => `"${t}"`).join(" or ")})`
+export const writeInvalidJsonSchemaTargetMessage = (target: string): string => {
+	const quoted = supportedJsonSchemaTargets.map(t => `"${t}"`)
+	return `JSONSchema target '${target}' is not supported (must be ${quoted.slice(0, -1).join(", ")} or ${quoted[quoted.length - 1]})`
+}
 
 export const validateStandardJsonSchemaTarget = (
 	target: StandardJSONSchemaV1.Target

@@ -138,6 +138,20 @@ type("string.url < 100").toJsonSchema()
 
 JSON Schema reads `format`, `contentEncoding` and `contentMediaType` as annotations, which a validator checks only if it's configured to. A keyword checked by a regex is written with that `pattern` too, so a validator still checks what arktype does. One checked by a function is written as its format alone, so its schema accepts strings the Type rejects. A validator that asserts formats, like Ajv with `ajv-formats`, can also reject strings arktype accepts: `date-time` requires a time that `string.date` and `string.date.iso` don't, and `uri` rejects a space in a path that `string.url` accepts. `string.date.epoch` and `string.creditCard`, which no format names, still throw. `contentEncoding` is configurable meta, like `format`.
 
+### Write OpenAPI 3.0 schemas with `target: "openapi-3.0"`
+
+`toJsonSchema()` and `~standard.jsonSchema` write an OpenAPI 3.0 Schema Object for `target: "openapi-3.0"` (#1707). In 2.2.9, `~standard.jsonSchema` threw for it, and `toJsonSchema()` wrote draft 2020-12 without `$schema`, as it did for any target it didn't know. Now any other target throws for both.
+
+```ts
+// { type: "string", nullable: true }
+type("string | null").toJsonSchema({ target: "openapi-3.0" })
+
+// { type: "number", maximum: 10, exclusiveMaximum: true, minimum: 0, exclusiveMinimum: true }
+type("0 < number < 10").toJsonSchema({ target: "openapi-3.0" })
+```
+
+A literal is a one-value `enum` with its `type`, `null` beside a `type` is `nullable: true`, `examples` is its first `example`, and `string.base64` is `format: "byte"`. What OpenAPI 3.0 can't express throws, through a fallback that can write it instead: a tuple's elements go to the new `arrayPrefix`, `patternProperties` and `propertyNames` to `indexKey`, and the definitions a cyclic Type's `$ref`s point to in `#/components/schemas` to the new `defs`, to place in your document. `~standard.jsonSchema` writes a tuple as an array of its length, and the definitions as `definitions`.
+
 ### Infer `.map()` on a union per branch
 
 `.map()` already mapped each branch of a union at runtime, but its inferred type merged the branches, and its callback's argument held only the keys every branch shares (#1524). The argument now holds each branch's props, and the result is a union of the branches it builds:

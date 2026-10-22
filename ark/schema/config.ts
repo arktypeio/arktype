@@ -29,6 +29,7 @@ import {
 	type DescriptionWriter,
 	type NodeKind
 } from "./shared/implement.ts"
+import { validateStandardJsonSchemaTarget } from "./shared/jsonSchema.ts"
 import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
 import type { SetEngine } from "./shared/sets.ts"
@@ -172,9 +173,11 @@ export const mergeConfigs = <base extends ArkSchemaConfig>(
 	return result
 }
 
-const jsonSchemaTargetToDialect: Record<ToJsonSchema.Target, string> = {
+const jsonSchemaTargetToDialect: Record<ToJsonSchema.Target, string | null> = {
 	"draft-2020-12": "https://json-schema.org/draft/2020-12/schema",
-	"draft-07": "http://json-schema.org/draft-07/schema#"
+	"draft-07": "http://json-schema.org/draft-07/schema#",
+	// an OpenAPI Schema Object has no $schema
+	"openapi-3.0": null
 }
 
 type MergeToJsonSchemaConfigs = <base extends ToJsonSchema.Options | undefined>(
@@ -187,7 +190,8 @@ export const mergeToJsonSchemaConfigs: MergeToJsonSchemaConfigs = ((
 	baseConfig: ToJsonSchema.Options | undefined,
 	mergedConfig: ToJsonSchema.Options | undefined
 ) => {
-	if (!baseConfig) return resolveTargetToDialect(mergedConfig ?? {}, undefined)
+	if (!baseConfig)
+		return resolveTargetToDialect(mergedConfig ?? {}, mergedConfig)
 	if (!mergedConfig) return baseConfig
 
 	const result: ToJsonSchema.Options = { ...baseConfig }
@@ -209,18 +213,11 @@ const resolveTargetToDialect = <T extends ToJsonSchema.Options>(
 	opts: T,
 	userOpts: ToJsonSchema.Options | undefined
 ): T => {
-	// If user explicitly provided a dialect, use it
-	// Otherwise, if user provided a target, resolve it to dialect
-	// If neither, use the default dialect from opts
-	if (userOpts?.dialect !== undefined) return opts // dialect was already merged
-
-	if (userOpts?.target !== undefined) {
-		return {
-			...opts,
-			dialect: jsonSchemaTargetToDialect[userOpts.target]
-		}
-	}
-	return opts
+	if (userOpts?.target === undefined) return opts
+	const dialect =
+		jsonSchemaTargetToDialect[validateStandardJsonSchemaTarget(userOpts.target)]
+	// a dialect passed with the target was already merged and takes precedence
+	return userOpts.dialect === undefined ? { ...opts, dialect } : opts
 }
 
 const mergeFallbacks = (

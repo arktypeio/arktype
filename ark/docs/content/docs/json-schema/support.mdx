@@ -15,6 +15,8 @@ Every keyword in a schema applies, and a type's keywords constrain only that typ
 
 A keyword with an invalid value throws, like `#/minLength must be a non-negative integer (was -1)`. A keyword JSON Schema doesn't define is ignored.
 
+OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes, aren't read: `nullable` and `example` are ignored, and a boolean `exclusiveMinimum` throws.
+
 `jsonSchemaToType` checks a schema written in the call as you write it: an invalid keyword value is a type error, as is each keyword below that throws, except a `$ref` to another document. See [Invalid schemas](/docs/json-schema/from-json-schema#invalid-schemas).
 
 ## Core

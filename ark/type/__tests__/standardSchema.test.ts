@@ -146,9 +146,9 @@ contextualize(() => {
 			const standard: StandardJSONSchemaV1 = T
 			attest(() =>
 				standard["~standard"].jsonSchema.input({
-					target: "openapi-3.0"
+					target: "draft-04"
 				})
-			).throws(writeInvalidJsonSchemaTargetMessage("openapi-3.0"))
+			).throws(writeInvalidJsonSchemaTargetMessage("draft-04"))
 		})
 
 		it("converts what JSON Schema can't represent to {}", () => {

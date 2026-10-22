@@ -1281,7 +1281,11 @@ name is missing`)
 		// a new schema each call, as arktype writes one
 		attest(validator.toJsonSchema() === validator.toJsonSchema()).equals(false)
 		for (const io of ["input", "output"] as const) {
-			for (const target of ["draft-2020-12", "draft-07"] as const) {
+			for (const target of [
+				"draft-2020-12",
+				"draft-07",
+				"openapi-3.0"
+			] as const) {
 				attest(validator["~standard"].jsonSchema[io]({ target })).equals(
 					T["~standard"].jsonSchema[io]({ target })
 				)
@@ -1299,11 +1303,15 @@ name is missing`)
 			required: ["name"]
 		})
 		attest(() =>
-			validator["~standard"].jsonSchema.input({ target: "openapi-3.0" })
-		).throws(writeInvalidJsonSchemaTargetMessage("openapi-3.0"))
+			validator["~standard"].jsonSchema.input({ target: "draft-04" })
+		).throws(writeInvalidJsonSchemaTargetMessage("draft-04"))
 		// no options, or only a target whose schema is baked
 		attest(validator.toJsonSchema({})).equals(T.toJsonSchema({}))
-		for (const target of ["draft-2020-12", "draft-07"] as const) {
+		for (const target of [
+			"draft-2020-12",
+			"draft-07",
+			"openapi-3.0"
+		] as const) {
 			attest(validator.toJsonSchema({ target })).equals(
 				T.toJsonSchema({ target })
 			)
