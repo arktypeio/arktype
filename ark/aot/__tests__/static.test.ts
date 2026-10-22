@@ -1474,6 +1474,24 @@ export const c = new C()`)
 			])
 		})
 
+		it("arktype loaded other than by an import declaration", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+import { createRequire } from "node:module"
+import ark = require("arktype")
+export const User = type({ name: "string" })
+export const load = async () => (await import("arktype")).type
+const require = createRequire(import.meta.url)
+const { scope } = require("@ark/type")
+export const configure = async () => (await import("arktype/config")).configure
+await import("arktype")`)
+			).snap([
+				'/main.ts:3:1  import ark = require("arktype") loads arktype, which a standalone build replaces with arktype/runtime',
+				'/main.ts:5:40  import("arktype") loads arktype, which a standalone build replaces with arktype/runtime',
+				'/main.ts:7:19  require("@ark/type") loads arktype, which a standalone build replaces with arktype/runtime'
+			])
+		})
+
 		it("a Type passed where the build can't see the call", () => {
 			attest(
 				unhinted(`import { type } from "arktype"

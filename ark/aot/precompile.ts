@@ -149,6 +149,7 @@ import {
 	markerHint,
 	nodePackageHint,
 	runtimeImportHint,
+	dynamicImportHint,
 	unresolvedHint,
 	versionHint,
 	writeErrorsMismatchMessage,
@@ -2254,7 +2255,8 @@ export class Precompiler {
 		if (this.mode === "standalone") {
 			diagnostics.push(
 				...this.checkStandalone(module, candidates, settled),
-				...this.checkIslands(module, sites)
+				...this.checkIslands(module, sites),
+				...this.checkDynamicImports(module)
 			)
 		}
 		return {
@@ -3605,6 +3607,49 @@ export class Precompiler {
 		}
 	}
 
+	// e.g. `(await import("arktype")).type`, which loads arktype/runtime where
+	// the build sees no definition to precompile
+	private checkDynamicImports(module: SourceModule): Diagnostic[] {
+		const result: Diagnostic[] = []
+		walk(module.program, node => {
+			const source =
+				node.type === "ImportExpression" ? node.source
+					// e.g. one createRequire() returns
+				: (
+					node.type === "CallExpression" &&
+					node.callee.type === "Identifier" &&
+					node.callee.name === "require"
+				) ?
+					node.arguments[0]
+				: (
+					node.type === "TSImportEqualsDeclaration" &&
+					node.importKind !== "type" &&
+					node.moduleReference.type === "TSExternalModuleReference"
+				) ?
+					node.moduleReference.expression
+				:	undefined
+			if (
+				source?.type === "Literal" &&
+				typeof source.value === "string" &&
+				arktypeEntryOf(source.value) === "arktype" &&
+				!isDiscarded(node)
+			) {
+				result.push(
+					this.diagnostic(
+						module,
+						node,
+						"R4",
+						`${module.snippetOf(node)} loads arktype, which a standalone build replaces with arktype/runtime`,
+						[],
+						dynamicImportHint
+					)
+				)
+			}
+			return true
+		})
+		return result
+	}
+
 	// what a runtime island reaches must run on arktype too
 	private checkIslands(module: SourceModule, sites: Site[]): Diagnostic[] {
 		const result = module.strayMarkers.map(marker =>
@@ -3956,8 +4001,21 @@ const sharedSchemaExports = Object.keys(runtimeExports).filter(
 const isEncodingError = (e: Error) =>
 	e.message.startsWith(writeMissingInverseMessage(""))
 
+// e.g. `await import("arktype")` as a statement, loading a module only to run it
+const isDiscarded = (node: Node): boolean => {
+	let [, parent] = operatorOf(node)
+	while (
+		parent?.type === "AwaitExpression" ||
+		(parent?.type === "UnaryExpression" && parent.operator === "void")
+	)
+		[, parent] = operatorOf(parent)
+	return parent?.type === "ExpressionStatement"
+}
+
+// e.g. `from "arktype"`, or `import("arktype")` and `require("arktype")`,
+// which the build reports
 const arktypeSpecifier =
-	/\b(?:from|import)\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
+	/\b(?:from|import\s*\(?|require\s*\()\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
 
 const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
 
