@@ -1589,6 +1589,8 @@ A function, class or symbol is written as its `$ark` name, as in the type's `.js
 
 A `symbolKey` fallback's result for a symbol-keyed property is now used instead of discarded.
 
+`arktype` exports the `ToJsonSchema` type, so a fallback declared outside the call can be typed as `ToJsonSchema.FallbackOption`.
+
 ### Fall back for regex flags and constrained keys in JSON Schema
 
 JSON Schema's `pattern` has no flags, so `toJsonSchema()` wrote `/^a/i` as `"^a"`, which rejects `"A"`. A flag that changes what a pattern matches now goes to the new `patternFlags` fallback. `d` and `g` are ignored, as is `u` for draft-2020-12, whose patterns are built with it.
