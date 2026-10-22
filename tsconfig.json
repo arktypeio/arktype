@@ -37,6 +37,9 @@
 		// its cyclic scopes have inferred types TypeScript 7 can't declare
 		"./ark/aot/__tests__/declared",
 		// its global classes would conflict with those of @types/node
-		"./ark/repo/tsCompat/workers.d.ts"
+		"./ark/repo/tsCompat/workers.d.ts",
+		// run inside external benchmarks, against their sources and installs
+		"./ark/repo/bench/external/moltar/cjs",
+		"./ark/repo/bench/external/sb"
 	]
 }
