@@ -84,6 +84,20 @@ const B = Stateful("string")`)
 		])
 	})
 
+	it("a class as a Standard Schema", () => {
+		attest(
+			statusesOf(`import { type } from "arktype"
+class Schema {
+	static "~standard" = { version: 1, vendor: "x", validate: (value: unknown) => ({ value }) }
+}
+const A = type({ a: Schema })
+const B = type({ a: class {} })`)
+		).snap([
+			'5:11 rejected\n  arktype reads `class Schema { static "~standard" = { version: 1, vendor: "…` while defining the type, so it must be static',
+			"6:11 rejected\n  arktype calls the class (/main.ts:6:21) as a function, which throws a TypeError"
+		])
+	})
+
 	it("reading a hole's name", () => {
 		const source = `import { type, scope } from "arktype"
 const isLong = (s: string) => s.length > 3

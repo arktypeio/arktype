@@ -120,6 +120,8 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 				{ prereduced: true }
 			)
 		case "Function": {
+			// e.g. Effect's standardSchemaV1, a class that can't be called as a thunk
+			if (isStandardSchema(def)) return parseStandardSchema(def as never, ctx)
 			const resolvedDef = isThunk(def) ? def() : def
 			if (hasArkKind(resolvedDef, "root")) return resolvedDef
 			return throwParseError(writeBadDefinitionTypeMessage("Function"))

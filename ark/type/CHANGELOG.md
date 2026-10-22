@@ -2009,6 +2009,15 @@ T({}).at
 
 A morph that fails on the default returns its errors from validation instead of throwing a TraversalError when the type is defined. The default is still checked against the morph's input when defined.
 
+### Accept a function as a Standard Schema
+
+A function definition was called as a thunk, so a Standard Schema that's a class, like the one Effect's `Schema.standardSchemaV1` returns, threw when it was parsed:
+
+```ts
+// previously TypeError: Class constructor StandardSchemaV1Class cannot be invoked without 'new'
+type({ age: Schema.standardSchemaV1(Schema.Number) })
+```
+
 ### Throw when an embedded Standard Schema validates asynchronously
 
 A Standard Schema whose `validate` returned a Promise, like a Zod schema with an async refinement, gave `undefined` for any input. ArkType validates synchronously, so it now throws:
