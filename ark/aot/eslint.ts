@@ -112,6 +112,8 @@ export const plugin: ESLint.Plugin = {
 
 export const configs: Record<string, Linter.Config> = {
 	recommended: {
+		// ESLint lints only JavaScript unless a configuration names other files
+		files: ["**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}"],
 		plugins: { "@ark/aot": plugin },
 		rules: { "@ark/aot/precompilable": "warn" }
 	}

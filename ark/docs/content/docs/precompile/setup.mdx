@@ -207,7 +207,17 @@ The same analysis is available as `new Precompiler(host).analyze(source, id)` fr
 The ESLint rule reports what the build would, as you edit:
 
 ```js title="eslint.config.js"
+// @noErrors
 import { configs } from "@ark/aot/eslint"
+import tseslint from "typescript-eslint"
 
-export default [configs.recommended]
+export default [
+	{
+		files: ["**/*.{ts,mts,cts,tsx}"],
+		languageOptions: { parser: tseslint.parser }
+	},
+	configs.recommended
+]
 ```
+
+`configs.recommended` lints JavaScript and TypeScript files. ESLint parses TypeScript only through a parser like typescript-eslint's, which a project already linting TypeScript configures.
