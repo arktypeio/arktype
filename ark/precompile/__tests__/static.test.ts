@@ -433,7 +433,7 @@ export const skus = (data: unknown[]) =>
 const shop = scope({ "Box<t>": { of: "t" } }).export()
 export const box = (t: string) => shop.Box(t).array()`)
 			).snap([
-				'/main.ts:3:44  `t` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `t` is a parameter of box (/main.ts:3:21); its value is known only at runtime\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+				"/main.ts:3:44  `t` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `t` is a parameter of box (/main.ts:3:21); its value is known only at runtime\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it's a Type, make it static so the build precompiles it with the site."
 			])
 		})
 

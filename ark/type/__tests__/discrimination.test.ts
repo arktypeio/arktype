@@ -620,7 +620,7 @@ contextualize(() => {
 			tag: "'b' | 'c'",
 			bc: "string"
 		})
-		attest(T({}).toString()).snap('tag must be "a", "b" or "c" (was undefined)')
+		attest(T({}).toString()).snap('tag must be "a", "b" or "c" (was missing)')
 		attest(T({ tag: "c" }).toString()).snap("bc must be a string (was missing)")
 	})
 
@@ -667,7 +667,7 @@ contextualize(() => {
 		attest(T({ k: "b", n: 1 })).equals({ k: "b", n: 1 })
 		attest(T({ k: "b", n: "x" })).equals({ k: "b", n: "x" })
 		attest(T({ k: "b" }).toString()).snap(
-			"n must be a number or a string (was undefined)"
+			"n must be a number or a string (was missing)"
 		)
 	})
 
