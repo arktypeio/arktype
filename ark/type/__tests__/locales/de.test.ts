@@ -172,7 +172,7 @@ contextualize(() => {
 			'required, two at one path ← {"b":""}':
 				"a fehlt (muss eine Zahl oder eine Zeichenkette sein)",
 			"required in a union ← {}":
-				"a muss never sein (ist nicht vorhanden) oder b muss ein Wahrheitswert sein (ist nicht vorhanden)",
+				"a fehlt (muss never sein) oder b fehlt (muss ein Wahrheitswert sein)",
 			'undeclared ← {"a":"","b":1}': "b ist nicht erlaubt",
 			'undeclared in a union ← {"a":"","b":"y"}':
 				'b muss eine Zahl oder entfernt sein, ist aber "y"',
@@ -196,7 +196,7 @@ contextualize(() => {
 			'discriminant in an outer union ← {"a":{"kind":"triangle"}}':
 				'a muss eine Zeichenkette sein (ist ein Objekt) oder a.kind muss "circle" oder "square" sein (ist "triangle")',
 			"union of paths ← {}":
-				"a muss eine Zeichenkette sein (ist nicht vorhanden) oder b muss eine Zahl sein (ist nicht vorhanden)",
+				"a fehlt (muss eine Zeichenkette sein) oder b fehlt (muss eine Zahl sein)",
 			"union boolean | null ← 1": "muss false, null oder true sein, ist aber 1",
 			'union of lengths ← "a"':
 				"muss leer oder mindestens 3 Zeichen lang sein, ist aber 1 Zeichen lang",
@@ -248,7 +248,7 @@ contextualize(() => {
 			'titled domains ← {"v":true}':
 				"„Name“ muss eine Zahl oder eine Zeichenkette sein, ist aber ein Wahrheitswert",
 			"titled union of paths ← {}":
-				"„Name“ muss eine Zeichenkette sein (ist nicht vorhanden) oder „Alter“ muss eine Zahl sein (ist nicht vorhanden)",
+				"„Name“ fehlt (muss eine Zeichenkette sein) oder „Alter“ fehlt (muss eine Zahl sein)",
 			"described ← 5":
 				"muss ein Wert gemäß der Beschreibung „ein Benutzername“ sein, ist aber eine Zahl",
 			"configured expected ← 5":

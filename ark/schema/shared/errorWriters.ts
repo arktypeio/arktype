@@ -127,10 +127,9 @@ export const errorWritersByCode: {
 	union: {
 		expected: ctx => {
 			const path = ctx.errors[0]?.propString
-			bracketed = path?.[0] === "["
 			// a union's branches usually fail at one path, so they needn't be grouped
 			if (ctx.errors.length && ctx.errors.every(e => e.propString === path))
-				return (written = describeAtPath(ctx.errors))
+				return describeAtPath(ctx.errors)
 			const errorsAtPaths: ArkError[][] = []
 			for (const error of ctx.errors) {
 				const errorsAtPath = errorsAtPaths.find(
@@ -139,22 +138,15 @@ export const errorWritersByCode: {
 				if (errorsAtPath) errorsAtPath.push(error)
 				else errorsAtPaths.push([error])
 			}
-			return (written = describeBranches(errorsAtPaths.map(describeAtPath)))
+			return describeBranches(errorsAtPaths.map(describeAtPath))
 		},
 		// its message doesn't show it, so data that may be large isn't printed
 		actual: printKind,
 		// a union without branches, like never, has no errors to read paths from
 		problem: (ctx, info) =>
 			ctx.errors.length ? ctx.expected : writeProblem(ctx, info),
-		message: (ctx, info) => {
-			if (!ctx.errors.length) return writeMessage(ctx, info)
-			const problem = ctx.problem
-			// text it wrote starts as its first path does
-			if (problem === written ? bracketed : problem[0] === "[")
-				return `value at ${problem}`
-
-			return problem
-		}
+		message: (ctx, info) =>
+			ctx.errors.length ? ctx.problem : writeMessage(ctx, info)
 	},
 	unit: {
 		actual: printKind,
@@ -173,10 +165,6 @@ export const errorWritersByCode: {
 	}
 }
 
-// the expected a union last wrote, and whether it starts with a bracket
-let written: string | undefined
-let bracketed = false
-
 const describeAtPath = (errors: readonly ArkError[]): string => {
 	const path = errors[0].propString
 	const branchesAtPath: string[] = []
@@ -191,9 +179,12 @@ const describeAtPath = (errors: readonly ArkError[]): string => {
 		errors.every(e => e.actual === firstActual) ? firstActual : (
 			printKind(errors[0].data)
 		)
-	return `${path && `${path} `}must be ${expected}${
-		actual && ` (was ${actual})`
-	}`
+	// each path is written as its own error's message would write it
+	const subject =
+		path === "" ? ""
+		: path[0] === "[" ? `value at ${path} `
+		: `${path} `
+	return `${subject}must be ${expected}${actual && ` (was ${actual})`}`
 }
 
 export type errorWritersOf<code extends ArkErrorCode> = requireKeys<

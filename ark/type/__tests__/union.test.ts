@@ -72,13 +72,22 @@ contextualize(() => {
 		attest(
 			TypeABC([{ objB: "text b" }, "test a", { objC: "text c" }]).toString()
 		).snap(
-			"value at [2].objB must be a string (was missing) or [0].objC must be a string (was missing)"
+			"value at [2].objB must be a string (was missing) or value at [0].objC must be a string (was missing)"
 		)
 
 		attest(
 			TypeABC(["test a", { objB: "text b" }, { objC: "text c" }]).toString()
 		).snap(
-			"value at [2].objB must be a string (was missing) or [0] must be an object (was a string)"
+			"value at [2].objB must be a string (was missing) or value at [0] must be an object (was a string)"
+		)
+	})
+
+	it("writes each path as its own error would", () => {
+		attest(type("number[] | string[]")(["a", 1]).toString()).snap(
+			"value at [0] must be a number (was a string) or value at [1] must be a string (was a number)"
+		)
+		attest(type(["number", "number"]).or(["string"])([1]).toString()).snap(
+			"must be exactly length 2 (was 1) or value at [0] must be a string (was a number)"
 		)
 	})
 

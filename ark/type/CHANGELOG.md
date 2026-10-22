@@ -311,6 +311,18 @@ T({ type: "e" })
 
 Each of those literals is now a case of its own, so such data fails at the key with every value it allows, and data matching one of them is checked only against the branches that allow it.
 
+### Write each path a union lists as its own error would be
+
+A union failing at several paths prefixed only the first with `value at` when it began with a bracket. Each path now reads as its own error would:
+
+```ts
+// was: ArkErrors: value at [0] must be a number (was a string) or [1] must be a string (was a number)
+// now: ArkErrors: value at [0] must be a number (was a string) or value at [1] must be a string (was a number)
+type("number[] | string[]")(["a", 1])
+```
+
+In `de`, a key a union lists as missing reads as a missing key's own error does: `a fehlt (muss eine Zeichenkette sein) oder b fehlt (muss eine Zahl sein)`, where it was `a muss eine Zeichenkette sein (ist nicht vorhanden) oder …`.
+
 ### Apply a pipe's configured `message` to its output's errors
 
 `.configure({ message })` on a pipe set the message of errors its input raised, but not of those raised validating its output (#1479):

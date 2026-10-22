@@ -103,6 +103,9 @@ const was = (actual: string) => actual && `, ist aber ${actual}`
 const mustBe = (expected: string, actual: string) =>
 	`muss ${expected} sein${was(actual)}`
 
+// what a missing key or discriminant was
+const absent = "nicht vorhanden"
+
 // dative after "mit", accusative after "enthält"
 const elements = (n: number, locale: Locale.Info, dative?: true) =>
 	`${locale.number(n)} ${
@@ -412,6 +415,9 @@ export const de: Locale.Complete = {
 						`${subjectOf(group.propString, group.label, locale)} `
 					const expected = locale.list(group.expected, "or")
 					const actual = group.actual ?? printKind(group.data, locale)
+					// a missing key reads as its own error does
+					if (actual === absent)
+						return `${subject}fehlt (muss ${expected} sein)`
 					// beside other paths, a comma would blur where each one's text ends
 					return groups.length === 1 ?
 							`${subject}${mustBe(expected, actual)}`
@@ -486,7 +492,7 @@ export const de: Locale.Complete = {
 	},
 	required: {
 		expected: (e, locale) => describeMissing(e.missing, locale),
-		actual: "nicht vorhanden",
+		actual: absent,
 		problem: (e, locale) =>
 			e.missing.code === "intersection" ?
 				"fehlt"
@@ -500,7 +506,7 @@ export const de: Locale.Complete = {
 	discriminant: {
 		expected: casesOf,
 		actual: (data, e, locale) =>
-			e.absent ? "nicht vorhanden"
+			e.absent ? absent
 			: e.discriminantKind === "domain" ? locale.nouns[domainOf(data)]
 			: printKind(data, locale),
 		problem: (e, locale) =>
