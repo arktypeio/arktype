@@ -429,6 +429,8 @@ globals.it = (name: string, test: () => unknown) => {
 	while (id in unitsById) id += " (again)"
 	unitsById[id] = test
 	unitsByFile[loadingFile].push(id)
+	// units run without a timeout, so one a test sets is ignored
+	return { timeout: () => {} }
 }
 
 const run = async (body: () => unknown): Promise<Observation[]> => {
