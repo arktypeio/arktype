@@ -1,4 +1,3 @@
-import type { PrecompileMode } from "@ark/aot"
 import { applyCyclic, ArkTraversal, type BaseRoot } from "@ark/schema"
 import type { ArkErrors } from "@ark/schema/runtime"
 import { hasDomain } from "@ark/util"
@@ -12,6 +11,7 @@ import {
 	thrownErrorsOf,
 	type KeptIssue
 } from "@ark/aot/internal/issues.ts"
+import type { PrecompileMode } from "@ark/aot/internal/precompile.ts"
 import {
 	freezes,
 	hasMember,

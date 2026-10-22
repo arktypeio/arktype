@@ -3,10 +3,12 @@ import {
 	precompileModule,
 	Precompiler,
 	renderDiagnostic,
-	standardJsonSchemaWithoutStandardMessage,
-	writeArktypeRuntimeOptionMessage,
 	type PrecompileOptions
 } from "@ark/aot"
+import {
+	standardJsonSchemaWithoutStandardMessage,
+	writeArktypeRuntimeOptionMessage
+} from "@ark/aot/internal/settings.ts"
 import { analyze, diagnosticsOf, memoryHost, statusesOf } from "./utils.ts"
 
 // a diagnostic without its hint, where the reason is the behavior

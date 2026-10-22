@@ -1,10 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { configureAfterTypeMessage } from "@ark/schema"
-import {
-	configuredThreadMessage,
-	precompileModule,
-	renderDiagnostic
-} from "@ark/aot"
+import { precompileModule, renderDiagnostic } from "@ark/aot"
+import { configuredThreadMessage } from "@ark/aot/internal/messages.ts"
 import { type } from "arktype"
 import {
 	analyze,

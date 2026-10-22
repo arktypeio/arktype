@@ -1,13 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
+import { check } from "@ark/aot/internal/check.ts"
+import { writeVariantImportMessage } from "@ark/aot/internal/host.ts"
+import { withEnvironment } from "@ark/aot/internal/presets.ts"
 import {
 	resolvePrecompileOptions,
-	withEnvironment,
 	withSettingsFile,
-	writeArktypeRuntimeOptionMessage,
-	writeVariantImportMessage
-} from "@ark/aot"
+	writeArktypeRuntimeOptionMessage
+} from "@ark/aot/internal/settings.ts"
 import { precompile } from "@ark/aot/unplugin"
-import { check } from "@ark/aot/internal/check.ts"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { writeFixture } from "./utils.ts"

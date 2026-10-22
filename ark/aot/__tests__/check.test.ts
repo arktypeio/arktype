@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import { writeArktypeRuntimeOptionMessage } from "@ark/aot"
 import { check } from "@ark/aot/internal/check.ts"
+import { writeArktypeRuntimeOptionMessage } from "@ark/aot/internal/settings.ts"
 import { spawnSync } from "node:child_process"
 import { runCli, writeFixture } from "./utils.ts"
 

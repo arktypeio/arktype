@@ -1,10 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import {
-	configuredThreadMessage,
-	writeTextlessMessage,
-	writeVariantImportMessage
-} from "@ark/aot"
 import { precompile as bunPlugin } from "@ark/aot/bun"
 import { check } from "@ark/aot/internal/check.ts"
 import { writeDeclareFrameworkMessage } from "@ark/aot/internal/declare.ts"
@@ -12,8 +7,11 @@ import {
 	allowUnsafeHint,
 	createNodeHost,
 	writeAliasMessage,
-	writePrecompiledDependencyMessage
+	writePrecompiledDependencyMessage,
+	writeTextlessMessage,
+	writeVariantImportMessage
 } from "@ark/aot/internal/host.ts"
+import { configuredThreadMessage } from "@ark/aot/internal/messages.ts"
 import { register } from "@ark/aot/node"
 import turbopack from "@ark/aot/turbopack"
 import type { PrecompilePluginOptions } from "@ark/aot/unplugin"

@@ -1,10 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import {
-	writeStandaloneDependencyMessage,
-	writeVariantImportMessage
-} from "@ark/aot"
-import {
 	emitDeclarations,
 	writeDeclareFrameworkMessage,
 	writeDeclaredOutsideMessage
@@ -16,8 +12,10 @@ import {
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
 	writeUntransformedImportMessage,
-	writeUnwrittenModuleMessage
+	writeUnwrittenModuleMessage,
+	writeVariantImportMessage
 } from "@ark/aot/internal/host.ts"
+import { writeStandaloneDependencyMessage } from "@ark/aot/internal/messages.ts"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { context, build as esbuild, transformSync, type Plugin } from "esbuild"
 import { spawnSync } from "node:child_process"
