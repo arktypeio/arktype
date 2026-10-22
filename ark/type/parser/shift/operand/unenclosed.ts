@@ -70,7 +70,7 @@ export const parseGenericInstantiation = (
 	g: GenericRoot,
 	s: RuntimeState
 ): BaseRoot => {
-	s.scanner.shiftUntilNonWhitespace()
+	s.scanner.shiftPastWhitespace()
 	const lookahead = s.scanner.shift()
 	if (lookahead !== "<")
 		return s.error(writeInvalidGenericArgCountMessage(name, g.names, []))

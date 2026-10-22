@@ -40,8 +40,8 @@ export declare namespace Min {
 const implementation: nodeImplementationOf<Min.Declaration> =
 	implementNode<Min.Declaration>({
 		kind: "min",
-		collapsibleKey: "rule",
-		hasAssociatedError: true,
+		collapseKey: "rule",
+		ownsError: true,
 		keys: {
 			rule: {},
 			exclusive: {}
@@ -52,7 +52,7 @@ const implementation: nodeImplementationOf<Min.Declaration> =
 				return `${node.exclusive ? "more than" : "at least"} ${node.rule}`
 			}
 		},
-		obviatesBasisDescription: true
+		coversBasisNoun: true
 	})
 
 export class MinNode extends BaseRange<Min.Declaration> {

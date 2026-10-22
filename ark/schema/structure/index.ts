@@ -44,7 +44,7 @@ export declare namespace Index {
 			kind: "index"
 			inner: Inner
 			prerequisite: object
-			intersectionIsOpen: true
+			openIntersection: true
 			childKind: RootKind
 		}> {}
 
@@ -54,8 +54,8 @@ export declare namespace Index {
 const implementation: nodeImplementationOf<Index.Declaration> =
 	implementNode<Index.Declaration>({
 		kind: "index",
-		hasAssociatedError: false,
-		intersectionIsOpen: true,
+		ownsError: false,
+		openIntersection: true,
 		keys: {
 			signature: {
 				child: true
@@ -101,21 +101,18 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	}
 
 	// its structure picks the keys it transforms by the signature's Allows
-	protected override get transformSelectsByContext(): boolean {
-		return (
-			this.signature.includesContextualPredicate ||
-			super.transformSelectsByContext
-		)
+	protected override get selectsByCtx(): boolean {
+		return this.signature.hasCtxPredicate || super.selectsByCtx
 	}
 
-	protected override initializeFlatRefs(): void {
+	protected override initFlatRefs(): void {
 		this.cache.flatRefs = flatRefsAt(this.signature, this.value)
 		this.cache.flatMorphs = []
 	}
 
 	// a key the signature rejects is undeclared, so its errors are dropped
 	allowsKey: TraverseAllows<PropertyKey> = (k, ctx) =>
-		this.signature.allowsRequiresTraversal ?
+		this.signature.allowsNeedsTraversal ?
 			allowsInBranch(ctx as InternalTraversal, this.signature, k)
 		:	this.signature.traverseAllows(k, ctx)
 

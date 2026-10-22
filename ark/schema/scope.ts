@@ -50,7 +50,7 @@ import {
 	type BaseNode
 } from "./node.ts"
 import {
-	nodesByRegisteredId,
+	nodesById,
 	parseNode,
 	registerNodeId,
 	resolveDescription,
@@ -211,7 +211,7 @@ export interface ResolvedScopeConfig
 $ark.ambient ??= {} as never
 
 const registerParseContext = <ctx extends BaseParseContext>(ctx: ctx): ctx =>
-	(nodesByRegisteredId[ctx.id] = ctx)
+	(nodesById[ctx.id] = ctx)
 
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly name: string
@@ -224,13 +224,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	private _referencesById: { [id: string]: BaseNode } | undefined
 	// collected when first read
-	get referencesById(): { [id: string]: BaseNode } {
-		if (!this._referencesById && this._exportedResolutions) {
+	get refsById(): { [id: string]: BaseNode } {
+		if (!this._referencesById && this._exported) {
 			this._referencesById = {}
-			for (const name in this._exportedResolutions) {
-				const resolution = this._exportedResolutions[name]
+			for (const name in this._exported) {
+				const resolution = this._exported[name]
 				if (isNode(resolution))
-					addReferences(this._referencesById, resolution.referencesById)
+					addReferences(this._referencesById, resolution.refsById)
 			}
 		}
 		return this._referencesById ?? {}
@@ -238,8 +238,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	private _references: readonly BaseNode[] | undefined
 	get references(): readonly BaseNode[] {
-		if (!this._references && this._exportedResolutions) {
-			const references = Object.values(this.referencesById)
+		if (!this._references && this._exported) {
+			const references = Object.values(this.refsById)
 			this._references =
 				this.lazyExports ? references : referencesThroughAliases(references)
 		}
@@ -292,11 +292,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 				!hasArkKind(v, "generic") &&
 				!isThunk(v)
 			) {
-				const preparsed = this.preparseOwnDefinitionFormat(v, { alias: name })
+				const preparsed = this.preparseOwn(v, { alias: name })
 				this.resolutions[name] =
 					hasArkKind(preparsed, "root") ?
 						this.bindReference(preparsed)
-					:	this.createParseContext(preparsed)
+					:	this.createParseCtx(preparsed)
 			}
 		}
 	}
@@ -357,7 +357,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	get json(): JsonStructure {
 		if (!this._json) {
 			this.export()
-			this._json = resolutionsToJson(this._exportedResolutions!)
+			this._json = resolutionsToJson(this._exported!)
 		}
 		return this._json
 	}
@@ -523,16 +523,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 		node: BaseRoot
 	): BaseRoot {
 		if (ctx.isReferencedById) {
-			if (nodesByRegisteredId[node.id] !== node) node = withId(node, ctx.id)
-			nodesByRegisteredId[ctx.id] = node
-		} else delete nodesByRegisteredId[ctx.id]
+			if (nodesById[node.id] !== node) node = withId(node, ctx.id)
+			nodesById[ctx.id] = node
+		} else delete nodesById[ctx.id]
 		return (this.resolutions[name] = node)
 	}
 
 	private resolvePending(name: string, pending: BaseRoot): BaseRoot {
 		if (inProgress.definitions && !isResolvable(pending))
 			return this.node("alias", { reference: pending.id }, { prereduced: true })
-		const ctx = nodesByRegisteredId[pending.id] as BaseParseContext
+		const ctx = nodesById[pending.id] as BaseParseContext
 		const mark = $ark.reached?.mark()
 		const resolution = resolving(() =>
 			this.resolveContext(name, ctx, resolveShallowAliases(pending))
@@ -547,7 +547,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		const cached = this.resolutions[name]
 		if (cached && !hasArkKind(cached, "context")) {
 			$ark.reached?.cached(this.resolutions, name)
-			if (hasArkKind(cached, "root") && cached.includesShallowAlias)
+			if (hasArkKind(cached, "root") && cached.hasShallowAlias)
 				return this.resolvePending(name, cached)
 			return this.bindReference(cached)
 		}
@@ -590,7 +590,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				openDefinitions.pop()
 			}
 			reach(v)
-			if (v.lowlink < v.index && !node.includesShallowAlias) {
+			if (v.lowlink < v.index && !node.hasShallowAlias) {
 				v.phase = "member"
 				v.resolution = node
 				openMembers.push(v)
@@ -610,7 +610,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 							delete member.resolution
 						}
 					}
-					return node.includesShallowAlias ?
+					return node.hasShallowAlias ?
 							this.resolvePending(
 								name,
 								(this.resolutions[name] = withId(node, v.id))
@@ -638,14 +638,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 		// a reference to a thunk's alias while it's called is a cycle, but a
 		// generic's declaration is called again
 		if (isScopeAlias && isThunk(def) && !(def instanceof LazyGenericRoot)) {
-			const preparsed = this.preparseOwnDefinitionFormat(def, { alias: name })
+			const preparsed = this.preparseOwn(def, { alias: name })
 			const ctx = registerParseContext(
-				this.createParseContext(preparsed as BaseParseContextInput)
+				this.createParseCtx(preparsed as BaseParseContextInput)
 			)
 			this.resolutions[name] = ctx
 			ctx.phase = "resolving"
 			try {
-				def = defining(() => this.normalizeRootScopeValue(ctx.def))
+				def = defining(() => this.normalizeScopeValue(ctx.def))
 			} finally {
 				// if the call throws, its context stays registered so an alias parsed
 				// during it resolves by name
@@ -659,15 +659,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 				assertUnchecked()
 				return this.maybeResolve(name)
 			}
-			delete nodesByRegisteredId[ctx.id]
-		} else def = this.normalizeRootScopeValue(def)
+			delete nodesById[ctx.id]
+		} else def = this.normalizeScopeValue(def)
 
 		if (hasArkKind(def, "generic")) {
 			const generic = (this.resolutions[name] = this.bindReference(def))
 			generic.alias ??= name
 			// instantiated once cached, so its errors surface here and its body can reference it
 			try {
-				void generic.baseInstantiation
+				void generic.baseInstance
 			} catch (e) {
 				delete this.resolutions[name]
 				throw e
@@ -688,7 +688,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			:	this.finalize(this.bindKeyword(def as BaseRoot)))
 	}
 
-	protected createParseContext<input extends BaseParseContextInput>(
+	protected createParseCtx<input extends BaseParseContextInput>(
 		input: input
 	): input & AttachedParseContext {
 		bootstrap()
@@ -732,7 +732,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return this.compiledUnit?.toString()
 	}
 
-	private _exportedResolutions: InternalResolutions | undefined
+	private _exported: InternalResolutions | undefined
 	private _exports: RootExportCache | undefined
 	export(): SchemaModule<{ [k in exportedNameOf<$>]: $[k] }>
 	export<names extends exportedNameOf<$>[]>(
@@ -761,12 +761,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 				throw e
 			}
 
-			this._exportedResolutions = resolutionsOfModule(this, this._exports)
+			this._exported = resolutionsOfModule(this, this._exports)
 
-			Object.assign(this.resolutions, this._exportedResolutions)
+			Object.assign(this.resolutions, this._exported)
 
 			if (!this.lazyExports) {
-				const includesAlias = Object.values(this._exportedResolutions).some(
+				const includesAlias = Object.values(this._exported).some(
 					resolution => isNode(resolution) && resolution.includesAlias
 				)
 				let uncompiled =
@@ -781,8 +781,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 					if (uncompiled.some(node => node.includesAlias))
 						this.compiledUnit = tryJit(() => precompile(uncompiled, this))
 					else {
-						for (const name in this._exportedResolutions) {
-							const resolution = this._exportedResolutions[name]
+						for (const name in this._exported) {
+							const resolution = this._exported[name]
 							if (hasArkKind(resolution, "root") && !resolution.compiledUnit)
 								resolution.deferJit()
 						}
@@ -852,7 +852,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				!union.ordered &&
 				!$ark.sets &&
 				branches.length > 1 &&
-				branches.some(branch => branch.includesTransform)
+				branches.some(branch => branch.hasTransform)
 			)
 				throwParseError(missingSetEngineMessage)
 			input = { ...input, branches } as never
@@ -881,21 +881,20 @@ export abstract class BaseScope<$ extends {} = {}> {
 	parseDefinition(def: unknown, opts: BaseParseOptions = {}): BaseRoot {
 		if (hasArkKind(def, "root")) return this.bindReference(def)
 
-		const ctxInputOrNode = this.preparseOwnDefinitionFormat(def, opts)
+		const ctxInputOrNode = this.preparseOwn(def, opts)
 		if (hasArkKind(ctxInputOrNode, "root"))
 			return this.bindReference(ctxInputOrNode)
 
-		const ctx = registerParseContext(this.createParseContext(ctxInputOrNode))
+		const ctx = registerParseContext(this.createParseCtx(ctxInputOrNode))
 		let node = this.parseOpenDefinition(def, ctx)
 		node = resolving(() => {
-			if (node.includesShallowAlias && !inProgress.definitions)
+			if (node.hasShallowAlias && !inProgress.definitions)
 				node = resolveShallowAliases(node)
 
 			// if the node is recursive e.g. { box: "this" }, we need to make sure it
 			// has the original id from context so that its references compile correctly
-			if (ctx.isReferencedById)
-				nodesByRegisteredId[ctx.id] = node = withId(node, ctx.id)
-			else delete nodesByRegisteredId[ctx.id]
+			if (ctx.isReferencedById) nodesById[ctx.id] = node = withId(node, ctx.id)
+			else delete nodesById[ctx.id]
 			return node
 		})
 		if (!ctx.isReferencedAsThis || ctx.name) return node
@@ -911,7 +910,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	openSynthetic(name: string | undefined): BaseParseContext {
 		return registerParseContext(
-			this.createParseContext({
+			this.createParseCtx({
 				def: undefined,
 				prefix: "synthetic",
 				...(name && { name })
@@ -920,9 +919,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	private parseOpenDefinition(def: unknown, ctx: BaseParseContext): BaseRoot {
-		return defining(() =>
-			this.bindReference(this.parseOwnDefinitionFormat(def, ctx))
-		)
+		return defining(() => this.bindReference(this.parseOwn(def, ctx)))
 	}
 
 	finalize<node extends BaseRoot>(node: node, jit = true): node {
@@ -948,33 +945,30 @@ export abstract class BaseScope<$ extends {} = {}> {
 	jit(node: BaseNode): void {
 		tryJit(() => precompileRoot(node, node.references))
 		// compiling binds what it checked before, unless the host refused
-		if (node.cache.allowsBeforeJit) {
-			node.allows = node.cache.allowsBeforeJit
-			node.cache.allowsBeforeJit = undefined
+		if (node.cache.allowsPreJit) {
+			node.allows = node.cache.allowsPreJit
+			node.cache.allowsPreJit = undefined
 		}
 	}
 
-	protected abstract preparseOwnDefinitionFormat(
+	protected abstract preparseOwn(
 		def: unknown,
 		opts: BaseParseOptions
 	): BaseRoot | BaseParseContextInput
 
-	abstract parseOwnDefinitionFormat(
-		def: unknown,
-		ctx: BaseParseContext
-	): BaseRoot
+	abstract parseOwn(def: unknown, ctx: BaseParseContext): BaseRoot
 
 	protected abstract preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry
 
-	protected abstract normalizeRootScopeValue(resolution: unknown): unknown
+	protected abstract normalizeScopeValue(resolution: unknown): unknown
 }
 
 export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
-	parseOwnDefinitionFormat(def: unknown, ctx: BaseParseContext): BaseRoot {
+	parseOwn(def: unknown, ctx: BaseParseContext): BaseRoot {
 		return parseSchema(def, this, ctx.alias ? { alias: ctx.alias } : undefined)
 	}
 
-	protected preparseOwnDefinitionFormat(
+	protected preparseOwn(
 		def: unknown,
 		opts: BaseParseOptions
 	): BaseRoot | BaseParseContextInput {
@@ -987,7 +981,7 @@ export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 		return [k, v]
 	}
 
-	protected normalizeRootScopeValue(v: unknown): unknown {
+	protected normalizeScopeValue(v: unknown): unknown {
 		return v
 	}
 }
@@ -1038,8 +1032,8 @@ const maybeResolveExport = (
 }
 
 const addReferences = (
-	base: BaseNode["referencesById"],
-	references: BaseNode["referencesById"]
+	base: BaseNode["refsById"],
+	references: BaseNode["refsById"]
 ) => {
 	for (const id in references) base[id] ??= references[id]
 }

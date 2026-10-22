@@ -25,11 +25,11 @@ export abstract class BaseRange<
 		...args: ConstructorParameters<typeof InternalPrimitiveConstraint>
 	) {
 		super(...args)
-		if (this.boundOperandKind === "length")
+		if (this.operandKind === "length")
 			assertLengthRule(this.kind as LengthBoundKind, this.rule as number)
 	}
 
-	get boundOperandKind(): OperandKindsByBoundKind[d["kind"]] {
+	get operandKind(): OperandKindsByBoundKind[d["kind"]] {
 		return operandKindsByBoundKind[this.kind]
 	}
 
@@ -42,7 +42,7 @@ export abstract class BaseRange<
 	}
 
 	readonly expression: string = `${this.comparator} ${
-		this.boundOperandKind === "date" ? `d'${this.stringLimit}'` : this.rule
+		this.operandKind === "date" ? `d'${this.stringLimit}'` : this.rule
 	}`
 
 	get limitKind(): LimitKind {
@@ -51,14 +51,14 @@ export abstract class BaseRange<
 
 	compileCondition(js: NodeCompiler, data: string): string {
 		const actual =
-			this.boundOperandKind === "value" ? data
-			: this.boundOperandKind === "length" ? `${data}.length`
+			this.operandKind === "value" ? data
+			: this.operandKind === "length" ? `${data}.length`
 			: `${data}.valueOf()`
 		return `${actual} ${this.comparator} ${this.numericLimit}`
 	}
 
 	get stringLimit(): string {
-		return this.boundOperandKind === "date" ?
+		return this.operandKind === "date" ?
 				dateLimitToString(this.numericLimit)
 			:	`${this.numericLimit}`
 	}

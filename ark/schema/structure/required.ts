@@ -49,8 +49,8 @@ export type MissingBasis =
 const implementation: nodeImplementationOf<Required.Declaration> =
 	implementNode<Required.Declaration>({
 		kind: "required",
-		hasAssociatedError: true,
-		intersectionIsOpen: true,
+		ownsError: true,
+		openIntersection: true,
 		keys: {
 			key: {},
 			value: {
@@ -74,7 +74,7 @@ export class RequiredNode extends BaseProp<"required"> {
 	get errorContext(): NodeErrorContextInput<"required"> {
 		return (this._errorContext ??= Object.freeze({
 			code: "required",
-			missingValueDescription: this.value.defaultShortDescription,
+			missingValueDescription: this.value.defaultBrief,
 			missing: missingValueOf(this.value),
 			valueMeta: this.value.meta,
 			meta: this.meta
@@ -97,7 +97,7 @@ export const Required = {
 
 const unknownValue: MissingValue = Object.freeze({ code: "intersection" })
 
-// the walk of defaultShortDescription, keeping each basis's context
+// the walk of defaultBrief, keeping each basis's context
 const missingValueOf = (value: BaseRoot): MissingValue => {
 	if (value.hasKind("union")) {
 		return Object.freeze({

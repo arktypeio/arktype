@@ -134,10 +134,8 @@ const describeDiscriminant: Locale.ActualWriter<"discriminant"> = (
 	: printKind(data)
 
 export const en: Locale.Complete = {
-	...(flatMorph(
-		nodeImplementationsByKind,
-		(kind, { hasAssociatedError, defaults }) =>
-			hasAssociatedError ? [kind, enWritersOf(kind, defaults)] : []
+	...(flatMorph(nodeImplementationsByKind, (kind, { ownsError, defaults }) =>
+		ownsError ? [kind, enWritersOf(kind, defaults)] : []
 	) as Pick<Locale.Complete, ArkErrorCode & NodeKind>),
 	undeclared: {
 		...errorWritersByCode.undeclared,
@@ -151,7 +149,7 @@ export const en: Locale.Complete = {
 	...enInfo,
 	cite: text => text,
 	// a domain is named by its noun whatever its meta, as DomainNode's
-	// defaultShortDescription does
+	// defaultBrief does
 	basis: (basis, locale) =>
 		basis.code === "domain" ? locale.nouns[basis.domain]
 		: basis.meta.description === undefined ?

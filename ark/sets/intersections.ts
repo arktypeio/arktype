@@ -67,8 +67,7 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		}
 		const mark = $ark.reached?.mark()
 
-		const isPureIntersection =
-			!ctx.pipe || (!l.includesTransform && !r.includesTransform)
+		const isPureIntersection = !ctx.pipe || (!l.hasTransform && !r.hasTransform)
 
 		if (isPureIntersection && l.equals(r)) return l
 
@@ -122,7 +121,7 @@ const _pipeNodes = (
 	r: nodeOfKind<RootKind>,
 	ctx: IntersectionContext
 ) =>
-	l.includesTransform || r.includesTransform ?
+	l.hasTransform || r.hasTransform ?
 		ctx.invert ?
 			pipeMorphed(r, l, ctx)
 		:	pipeMorphed(l, r, ctx)
@@ -181,13 +180,9 @@ const _pipeMorphed = (
 
 	if (fromIsMorph) {
 		const morphs = [...from.morphs]
-		if (from.lastMorphIfNode) {
+		if (from.lastMorphNode) {
 			// still piped from context, so allows appending additional morphs
-			const outIntersection = intersectOrPipeNodes(
-				from.lastMorphIfNode,
-				to,
-				ctx
-			)
+			const outIntersection = intersectOrPipeNodes(from.lastMorphNode, to, ctx)
 			if (outIntersection instanceof Disjoint) return outIntersection
 			morphs[morphs.length - 1] = outIntersection
 		} else morphs.push(to)

@@ -31,7 +31,7 @@ export declare namespace NotEqual {
 		extends declareNode<{
 			kind: "notEqual"
 			inner: Inner
-			intersectionIsOpen: true
+			openIntersection: true
 			prerequisite: number | Date
 			errorContext: ErrorContext
 		}> {}
@@ -42,14 +42,14 @@ export declare namespace NotEqual {
 const implementation: nodeImplementationOf<NotEqual.Declaration> =
 	implementNode<NotEqual.Declaration>({
 		kind: "notEqual",
-		collapsibleKey: "rule",
+		collapseKey: "rule",
 		keys: {
 			rule: {
 				serialize: rule => (rule instanceof Date ? rule.toISOString() : rule)
 			}
 		},
-		hasAssociatedError: true,
-		intersectionIsOpen: true,
+		ownsError: true,
+		openIntersection: true,
 		defaults: {
 			description: node =>
 				`other than ${
@@ -58,7 +58,7 @@ const implementation: nodeImplementationOf<NotEqual.Declaration> =
 					:	node.rule
 				}`
 		},
-		obviatesBasisDescription: true
+		coversBasisNoun: true
 	})
 
 // the negation of a unit, comparing a Date by its time

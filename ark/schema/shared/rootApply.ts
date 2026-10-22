@@ -4,7 +4,7 @@ import { CompiledFunction } from "./compile.ts"
 import { applyUnread, ArkTraversal } from "./errors.ts"
 import { TransformErrors } from "./transform.ts"
 import {
-	addTransformErrors,
+	addMorphErrors,
 	allowsAcyclic,
 	allowsInContext,
 	applyCyclic,
@@ -14,7 +14,7 @@ import {
 export const rootApplyRuntime = {
 	Traversal: ArkTraversal,
 	TransformErrors,
-	addTransformErrors,
+	addMorphErrors,
 	applyCyclic,
 	applyRejected: applyUnread,
 	allowsAcyclic,
@@ -70,12 +70,12 @@ export const rootApplyParts = (
 					() =>
 						js
 							.const("ctx", newCtx)
-							.line(`${ref("addTransformErrors")}(ctx, result)`)
+							.line(`${ref("addMorphErrors")}(ctx, result)`)
 							.return(`ctx.finalize(${handler})`)
 				)
 				.return("result")
 		:	js.return("result")
-	if (node.rootApplyStrategy === "contextual") {
+	if (node.applyStrategy === "contextual") {
 		// failure path is its own function
 		fallback(applyFailed)
 		js.const("ctx", newCtx)
@@ -83,9 +83,9 @@ export const rootApplyParts = (
 				js.return("applyFailed(data, onFail)")
 			)
 			.return("data")
-	} else if (node.rootApplyStrategy === "allows")
+	} else if (node.applyStrategy === "allows")
 		js.if("!allows(data)", fallback).return("data")
-	else if (node.rootApplyStrategy === "contextualTransform") {
+	else if (node.applyStrategy === "contextualTransform") {
 		if (node.includesAlias) {
 			js.const("untracked", `${ref("allowsAcyclic")}(node, data)`)
 				.if(
@@ -93,7 +93,7 @@ export const rootApplyParts = (
 					fallback
 				)
 				.const("ctx", newCtx)
-				.set("ctx.tracksTransforms", "untracked === undefined")
+				.set("ctx.tracksMorphs", "untracked === undefined")
 				.const(
 					"result",
 					`${ref("transformResolution")}(ctx, "${name}", data, traverseTransform)`
@@ -104,7 +104,7 @@ export const rootApplyParts = (
 				.const("result", "traverseTransform(data, ctx)")
 		}
 		js.return(`ctx.hasError() ? ctx.finalize(${handler}) : result`)
-	} else if (node.hasKind("union") && !node.compiledDiscriminant) {
+	} else if (node.hasKind("union") && !node.discriminantJit) {
 		js.const("result", "traverseTransform(data)").if(
 			`result === ${JSON.stringify(unset)}`,
 			fallback

@@ -301,7 +301,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		return parseGenericParamName(
 			new Scanner(def),
 			[],
-			this.createParseContext({
+			this.createParseCtx({
 				...opts,
 				def,
 				prefix: "generic"
@@ -309,13 +309,13 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		)
 	}
 
-	protected normalizeRootScopeValue(resolution: unknown): unknown {
+	protected normalizeScopeValue(resolution: unknown): unknown {
 		if (isThunk(resolution) && !hasArkKind(resolution, "generic"))
 			return resolution()
 		return resolution
 	}
 
-	protected preparseOwnDefinitionFormat(
+	protected preparseOwn(
 		def: unknown,
 		opts: BaseParseOptions
 	): BaseRoot | BaseParseContextInput {
@@ -326,7 +326,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		}
 	}
 
-	parseOwnDefinitionFormat(def: unknown, ctx: BaseParseContext): BaseRoot {
+	parseOwn(def: unknown, ctx: BaseParseContext): BaseRoot {
 		const isScopeAlias = ctx.alias && ctx.alias in this.aliases
 
 		// if the definition being parsed is not a scope alias and is not a

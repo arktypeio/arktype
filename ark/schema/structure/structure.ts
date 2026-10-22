@@ -48,7 +48,7 @@ import {
 import { errorFromContext } from "../shared/errors.ts"
 import type { FailureSite, SiteContext } from "../shared/issues.ts"
 import {
-	addTransformErrors,
+	addMorphErrors,
 	allowsInBranch,
 	applyValue,
 	transform,
@@ -139,7 +139,7 @@ const structuralExpression = createStructuralWriter("expression")
 const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
 		kind: "structure",
-		hasAssociatedError: false,
+		ownsError: false,
 		applyConfig: (inner, config) => {
 			if ((inner.undeclared as UndeclaredKeyBehavior) === "ignore")
 				return omit(inner, { undeclared: 1 })
@@ -206,10 +206,10 @@ const noSiblings: array<BaseConstraint> = []
 // whether checking a node can call a function a program supplied,
 // which a keyword's predicate isn't
 const callsUserCode = (node: BaseNode): boolean =>
-	node.includesUserCode ||
+	node.hasUserCode ||
 	(node.includesAlias &&
 		referencesThroughAliases(node.references).some(
-			reference => reference.includesUserCode
+			reference => reference.hasUserCode
 		))
 
 // what checking a branch costs: 0 compares data itself, 1 reads a
@@ -257,17 +257,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				seen[prop.key] = true
 			}
 		}
-		this.includesTransform ||= this.structuralMorph !== undefined
+		this.hasTransform ||= this.structuralMorph !== undefined
 	}
 
 	// deleting undeclared keys picks them by each signature's Allows
-	protected override get transformSelectsByContext(): boolean {
+	protected override get selectsByCtx(): boolean {
 		return (
 			(this.undeclared === "delete" &&
-				!!this.index?.some(
-					node => node.signature.includesContextualPredicate
-				)) ||
-			super.transformSelectsByContext
+				!!this.index?.some(node => node.signature.hasCtxPredicate)) ||
+			super.selectsByCtx
 		)
 	}
 
@@ -516,7 +514,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	traverseApply(data: object, ctx: InternalTraversal): void {
-		if (this.sharesTransformedKeys && transformsValid(ctx))
+		if (this.sharesTransforms && transformsValid(ctx))
 			this.applySharedKeys(data, ctx)
 		else this._traverse("Apply", data, ctx)
 	}
@@ -545,7 +543,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				} else if (prop.hasKind("required")) {
 					traverseKey(
 						prop.key,
-						() => ctx.errorFromNodeContext(prop.errorContext, data),
+						() => ctx.errorFromNode(prop.errorContext, data),
 						ctx
 					)
 				}
@@ -698,7 +696,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	// a key several constraints transform, one of which can fail
-	get sharesTransformedKeys(): boolean {
+	get sharesTransforms(): boolean {
 		return (
 			this.index !== undefined &&
 			this.transforms &&
@@ -773,7 +771,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		for (let i = 0; i < this.defaultable.length; i++) {
 			if (!this.defaultable[i].holdsValue(data)) {
 				if (out === data && !this.writesInto(ctx)) out = this.copy(data)
-				const defaulted = this.defaultable[i].defaultValueMorph(
+				const defaulted = this.defaultable[i].defaultMorph(
 					out as never,
 					ctx as never
 				)
@@ -784,8 +782,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const sequence = this.sequence
 		if (
 			sequence?.defaultables &&
-			(data as array).length <
-				sequence.prefixLength + sequence.defaultablesLength
+			(data as array).length < sequence.prefixLength + sequence.defaultableCount
 		) {
 			if (out === data && !this.writesInto(ctx)) out = this.copy(data)
 			for (
@@ -793,10 +790,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				i < sequence.defaultables.length;
 				i++
 			) {
-				const defaulted = sequence.defaultValueMorphs[i](
-					out as never,
-					ctx as never
-				)
+				const defaulted = sequence.defaultMorphs[i](out as never, ctx as never)
 				if (defaulted instanceof TransformErrors)
 					failed = defaulted.addTo(failed)
 			}
@@ -804,7 +798,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (failed) {
 			// a transform without ctx returns its errors
 			if (!ctx) return failed
-			addTransformErrors(ctx, failed)
+			addMorphErrors(ctx, failed)
 		}
 		// an object's copy drops a declared key data holds as a non-enumerable own prop
 		if (out !== data && !sequence) {
@@ -869,8 +863,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			this.props.some(prop =>
 				this.index!.some(
 					index =>
-						index.signature.allowsRequiresContext ||
-						index.signature.allows(prop.key)
+						index.signature.allowsNeedsCtx || index.signature.allows(prop.key)
 				)
 			))
 	}
@@ -884,7 +877,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (!this.index) return transforms
 		for (const index of this.index) {
 			if (!index.value.transforms || index.value === prop.value) continue
-			if (index.signature.allowsRequiresContext)
+			if (index.signature.allowsNeedsCtx)
 				transforms.push({ node: index.value, signature: index.signature })
 			else if (index.signature.allows(prop.key))
 				transforms.push({ node: index.value })
@@ -938,7 +931,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	compile(js: NodeCompiler): unknown {
 		if (js.traversalKind === "Transform") return this.compileTransform(js)
-		if (js.traversalKind === "Apply" && this.sharesTransformedKeys) {
+		if (js.traversalKind === "Apply" && this.sharesTransforms) {
 			js.if(`${js.ref(transformsValid)}(ctx)`, () =>
 				js.return(`${js.ref(this)}.applySharedKeys(data, ctx)`)
 			)
@@ -954,15 +947,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		if (this.index) {
 			js.const("keys", "Object.keys(data)").for("i < keys.length", () =>
-				this.compileExhaustiveEntry(js.const("k", "keys[i]"), "string")
+				this.compileEntry(js.const("k", "keys[i]"), "string")
 			)
 			if (this.indexMatchesSymbols) {
 				js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
-					this.compileExhaustiveEntry(js, "symbol")
+					this.compileEntry(js, "symbol")
 				)
 			}
 		} else if (this.undeclared === "reject")
-			js.forIn("data", () => this.compileExhaustiveEntry(js, "string"))
+			js.forIn("data", () => this.compileEntry(js, "string"))
 
 		return js.return(true)
 	}
@@ -1017,7 +1010,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				this.compileCopy(js, i === 0).line(
 					`out${js.prop(key)} = transformed${i}`
 				)
-				if (once) this.compileCopiedDeclaredKeys(js, [key])
+				if (once) this.compileDeclaredCopy(js, [key])
 			}
 			js.const(`value${i}`, `data${js.prop(key)}`).transformKey(
 				`transformed${i}`,
@@ -1073,7 +1066,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				)
 			})
 		}
-		js.returnIfTransformFailed()
+		js.returnIfFailed()
 		if (deletes) {
 			return this.compileDeleteTransform(
 				js,
@@ -1085,7 +1078,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			js,
 			transformedChildren.length === this.defaultable.length
 		)
-		if (!once) this.compileCopiedDeclaredKeys(js)
+		if (!once) this.compileDeclaredCopy(js)
 		js.return("out")
 	}
 
@@ -1099,7 +1092,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			first = false
 		}
 		this.compileSequenceDefaults(js)
-		return js.returnIfTransformFailed()
+		return js.returnIfFailed()
 	}
 
 	// out is data at the first site and where a transform writes in place
@@ -1126,7 +1119,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			:	""
 	}
 
-	compileCopiedDeclaredKeys(js: NodeCompiler, written?: Key[]): NodeCompiler {
+	compileDeclaredCopy(js: NodeCompiler, written?: Key[]): NodeCompiler {
 		if (this.sequence || this.writesInto(js)) return js
 		const copyKeys = () => {
 			for (const prop of this.props) {
@@ -1169,13 +1162,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (!sequence?.defaultables) return
 		const defaultables = sequence.defaultables
 		js.if(
-			`data.length < ${sequence.prefixLength + sequence.defaultablesLength}`,
+			`data.length < ${sequence.prefixLength + sequence.defaultableCount}`,
 			() => {
 				this.compileCopy(js)
 				for (let i = 0; i < defaultables.length; i++) {
 					const [node, defaultValue] = defaultables[i]
 					const index = sequence.prefixLength + i
-					const morph = sequence.defaultValueMorphs[i]
+					const morph = sequence.defaultMorphs[i]
 					js.if(`data.length <= ${index}`, () =>
 						typeof defaultValue !== "function" && !node.transforms ?
 							js.line(`out[${index}] = ${serializeDefault(js, defaultValue)}`)
@@ -1213,7 +1206,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			this.compileDefaults(js)
 			// out can differ from data only after a transform or a default
 			if (outMayBeCopied || transformedProps.length || this.defaultable.length)
-				this.compileCopiedDeclaredKeys(js)
+				this.compileDeclaredCopy(js)
 			const deletes = () =>
 				this.compileForOwnKeys(
 					js,
@@ -1253,7 +1246,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				unchanged.push(node.compileHoldsValue(js, "data"))
 			if (this.sequence.defaultables) {
 				unchanged.push(
-					`data.length >= ${this.sequence.prefixLength + this.sequence.defaultablesLength}`
+					`data.length >= ${this.sequence.prefixLength + this.sequence.defaultableCount}`
 				)
 			}
 			js.if(unchanged.join(" && "), () => js.return("data"))
@@ -1316,7 +1309,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				"outSymbols"
 			)
 		}
-		js.returnIfTransformFailed().return("result")
+		js.returnIfFailed().return("result")
 	}
 
 	// without a set engine, any signature may match a symbol key
@@ -1348,7 +1341,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		})
 	}
 
-	protected compileExhaustiveEntry(
+	protected compileEntry(
 		js: NodeCompiler,
 		keyDomain: "string" | "symbol"
 	): NodeCompiler {
@@ -1397,10 +1390,10 @@ const constructStructuralMorphCacheKey = (
 
 	// nameOf names each morph uniquely without registering, which would keep it alive
 	for (let i = 0; i < node.defaultable.length; i++)
-		cacheKey += `${nameOf(node.defaultable[i].defaultValueMorph)} `
+		cacheKey += `${nameOf(node.defaultable[i].defaultMorph)} `
 
-	if (node.sequence?.defaultValueMorphs.length)
-		cacheKey += `${nameOf(node.sequence.defaultValueMorphs)} `
+	if (node.sequence?.defaultMorphs.length)
+		cacheKey += `${nameOf(node.sequence.defaultMorphs)} `
 
 	if (node.undeclared === "delete") {
 		cacheKey += "delete !("
@@ -1449,7 +1442,7 @@ export const compileDefault = (
 	return compileDefaultMorph(
 		js,
 		node,
-		`${js.ref(node.defaultValueMorph)}(${out}${node.defaultValueMorph.length === 2 ? ", ctx" : ""})`,
+		`${js.ref(node.defaultMorph)}(${out}${node.defaultMorph.length === 2 ? ", ctx" : ""})`,
 		out
 	)
 }
@@ -1460,7 +1453,7 @@ const serializeDefault = (js: NodeCompiler, value: unknown): string =>
 
 // a morph or a transform reading ctx can add errors
 const canFailTransforming = (node: BaseNode): boolean =>
-	node.includesMorph || node.transformRequiresContext
+	node.includesMorph || node.transformNeedsCtx
 
 // only a default on a node that includesMorph can return TransformErrors
 const compileDefaultMorph = (
@@ -1472,7 +1465,7 @@ const compileDefaultMorph = (
 	node.includesMorph ?
 		js
 			.const("defaulted", call)
-			.if(`defaulted !== ${out}`, () => js.addTransformErrors("defaulted"))
+			.if(`defaulted !== ${out}`, () => js.addMorphErrors("defaulted"))
 	:	js.line(call)
 
 const compileDeclaredKeySwitch = (

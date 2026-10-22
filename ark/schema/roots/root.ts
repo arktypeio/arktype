@@ -150,7 +150,7 @@ export abstract class BaseRoot<
 		return reduceMapped?.(mappedBranches) ?? (mappedBranches as never)
 	}
 
-	abstract get defaultShortDescription(): string
+	abstract get defaultBrief(): string
 
 	toJsonSchema(opts: ToJsonSchema.Options = {}): JsonSchema {
 		return sets().toJsonSchema(this, opts)
@@ -208,29 +208,29 @@ export abstract class BaseRoot<
 	}
 
 	map(flatMapEntry: PropFlatMapper): BaseRoot {
-		return this.$.schema(this.applyStructuralOperation("map", [flatMapEntry]))
+		return this.$.schema(this.applyStructural("map", [flatMapEntry]))
 	}
 
 	pick(...keys: KeyOrKeyNode[]): BaseRoot {
-		return this.$.schema(this.applyStructuralOperation("pick", keys))
+		return this.$.schema(this.applyStructural("pick", keys))
 	}
 
 	omit(...keys: KeyOrKeyNode[]): BaseRoot {
-		return this.$.schema(this.applyStructuralOperation("omit", keys))
+		return this.$.schema(this.applyStructural("omit", keys))
 	}
 
 	required(): BaseRoot {
-		return this.$.schema(this.applyStructuralOperation("required", []))
+		return this.$.schema(this.applyStructural("required", []))
 	}
 
 	partial(): BaseRoot {
-		return this.$.schema(this.applyStructuralOperation("partial", []))
+		return this.$.schema(this.applyStructural("partial", []))
 	}
 
 	private _keyof?: BaseRoot
 	keyof(): BaseRoot {
 		if (this._keyof) return this._keyof
-		const result = this.applyStructuralOperation("keyof", []).reduce(
+		const result = this.applyStructural("keyof", []).reduce(
 			(result, branch) => result.intersect(branch).toNeverIfDisjoint(),
 			$ark.intrinsic.unknown.internal
 		)
@@ -246,7 +246,7 @@ export abstract class BaseRoot<
 	get props(): Prop.Node[] {
 		if (this.branches.length !== 1)
 			return throwParseError(writeLiteralUnionEntriesMessage(this.expression))
-		return [...this.applyStructuralOperation("props", [])[0]]
+		return [...this.applyStructural("props", [])[0]]
 	}
 
 	merge(r: unknown): BaseRoot {
@@ -259,7 +259,7 @@ export abstract class BaseRoot<
 		}
 		return this.rootOfBranches(
 			rNode.branches.flatMap(branch =>
-				this.applyStructuralOperation("merge", [
+				this.applyStructural("merge", [
 					structureOf(branch) ??
 						throwParseError(
 							writeNonStructuralOperandMessage("merge", branch.expression)
@@ -269,7 +269,7 @@ export abstract class BaseRoot<
 		)
 	}
 
-	private applyStructuralOperation<operation extends StructuralOperationName>(
+	private applyStructural<operation extends StructuralOperationName>(
 		operation: operation,
 		args: BaseRoot[operation] extends Fn<infer args> ? args : []
 	): StructuralOperationBranchResultByName[operation][] {
@@ -327,7 +327,7 @@ export abstract class BaseRoot<
 	get(...path: GettableKeyOrNode[]): BaseRoot {
 		if (path[0] === undefined) return this
 
-		return this.$.schema(this.applyStructuralOperation("get", path)) as never
+		return this.$.schema(this.applyStructural("get", path)) as never
 	}
 
 	extract(r: unknown): BaseRoot {
@@ -564,7 +564,7 @@ export abstract class BaseRoot<
 		// important this is constraint.kind instead of kind in case
 		// the node was reduced during parsing
 		inner[constraint.kind] =
-			constraint.impl.intersectionIsOpen ? [constraint] : constraint
+			constraint.impl.openIntersection ? [constraint] : constraint
 		const partialIntersection = this.$.node("intersection", inner, {
 			prereduced: true
 		})
@@ -600,7 +600,7 @@ export abstract class BaseRoot<
 	}
 
 	hasEqualMorphs(r: BaseRoot): boolean {
-		if (!this.includesTransform && !r.includesTransform) return true
+		if (!this.hasTransform && !r.hasTransform) return true
 
 		if (!arrayEquals(this.shallowMorphs as Morph[], r.shallowMorphs as Morph[]))
 			return false

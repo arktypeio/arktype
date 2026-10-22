@@ -35,15 +35,15 @@ export declare namespace Optional {
 	export type Node = OptionalNode
 
 	export namespace Node {
-		export type withDefault = requireKeys<Node, "default" | "defaultValueMorph">
+		export type withDefault = requireKeys<Node, "default" | "defaultMorph">
 	}
 }
 
 const implementation: nodeImplementationOf<Optional.Declaration> =
 	implementNode<Optional.Declaration>({
 		kind: "optional",
-		hasAssociatedError: false,
-		intersectionIsOpen: true,
+		ownsError: false,
+		openIntersection: true,
 		keys: {
 			key: {},
 			value: {
@@ -77,7 +77,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 		}
 		// a function default can fail as it's applied, like a morph
 		this.includesMorph ||= typeof this.inner.default === "function"
-		this.includesContextualMorph ||= this.defaultValueMorph?.length === 2
+		this.hasCtxMorph ||= this.defaultMorph?.length === 2
 	}
 
 	override getIo(ioKind: "in" | "out"): BaseNode {
@@ -104,7 +104,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 			`${this.compiledKey}: ${this.value.expression} = ${printable(this.inner.default, { ownDataOnly: true })}`
 		:	`${this.compiledKey}?: ${this.value.expression}`
 
-	defaultValueMorph: Morph | undefined =
+	defaultMorph: Morph | undefined =
 		this.hasDefault() ?
 			computeDefaultValueMorph(this.key, this.value, this.default)
 		:	undefined

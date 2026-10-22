@@ -46,7 +46,7 @@ const serializeUnit = (unit: unknown): JsonPrimitive =>
 const implementation: nodeImplementationOf<Unit.Declaration> =
 	implementNode<Unit.Declaration>({
 		kind: "unit",
-		hasAssociatedError: true,
+		ownsError: true,
 		keys: {
 			unit: {
 				preserveUndefined: true,
@@ -60,7 +60,7 @@ const implementation: nodeImplementationOf<Unit.Declaration> =
 
 export class UnitNode extends InternalBasis<Unit.Declaration> {
 	compiledValue: JsonPrimitive = serializeUnit(this.unit)
-	serializedValue: string =
+	serializedUnit: string =
 		isDate(this.unit) ?
 			JSON.stringify(this.compiledValue)
 		:	compileSerializedValue(this.unit)
@@ -72,7 +72,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 			: Number.isNaN(this.unit) ? `Number.isNaN(${data})`
 			: hasDomain(this.unit, "object") || typeof this.unit === "symbol" ?
 				`${data} === ${js.ref(this.unit)}`
-			:	`${data} === ${this.serializedValue}`
+			:	`${data} === ${this.serializedUnit}`
 		)
 	}
 
@@ -82,7 +82,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 		:	printable(this.unit, { ownDataOnly: true })
 	domain: Domain = domainOf(this.unit)
 
-	get defaultShortDescription(): string {
+	get defaultBrief(): string {
 		return this.domain === "object" ?
 				domainDescriptions.object
 			:	this.description

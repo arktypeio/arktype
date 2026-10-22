@@ -749,12 +749,82 @@ Other keys that first differ at a space, `!`, `"` or a backslash keep their orde
 
 ### Simplify `@ark/schema` nodes
 
-- A scope's `references` and `referencesById` are collected when first read rather than as it exports, unless code `@ark/aot` built with `runtime: "arktype"` is registered or it includes an alias.
+- A scope's `references` and `refsById` are collected when first read rather than as it exports, unless code `@ark/aot` built with `runtime: "arktype"` is registered or it includes an alias.
 - A node's `traverseAllows`, `traverseApply` and `traverseTransform` are methods of its class, so call them on the node, as in `node.traverseAllows(data, ctx)`, rather than detached, as in `[x].every(node.traverseAllows)`, until the JIT compiles it, which replaces them with compiled functions that run detached. A jitless scope's nodes keep the methods, and `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes still create a `traverseAllows` of their own. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
 - `$.node(kind, input)` takes a node's inner, with children already nodes, rather than the schema format, so `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
 - `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, prereduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context. A node's id is registered as it's created, from its `alias` or kind unless `id` is passed, so a schema that resolves to a node the scope already holds registers none.
 - Members nothing used are gone: an alias's `resolutionId` (read `resolution.id`), a node's `assertHasKindIn`, `isConstraint` and `isRefinement`, a root's `shortDescription`, a morph's `declareIn` and `serializedMorphs`, a structure's `optionalKeys`, and `Scanner`'s `jumpToIndex` in `@ark/util`.
 - Derived and memoized keys moved from a node's own enumerable keys to `node.cache`, like the `includes*` flags, `innerEntries`, a structure's `propsByKey`, a node's `assert` and the `expression` of a union, intersection, structure, required prop or index signature; each reads as before, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
+
+### Shorten long internal names
+
+Internal members with long names, read through `.internal`, `@ark/schema` or `@ark/util`, are shorter, since a minifier keeps property names and the JIT writes some of them into the code it compiles. Each works as before under its new name:
+
+| Was                           | Now                    |
+| ----------------------------- | ---------------------- |
+| `addTransformErrors`          | `addMorphErrors`       |
+| `allowsBeforeJit`             | `allowsPreJit`         |
+| `allowsRequiresContext`       | `allowsNeedsCtx`       |
+| `allowsRequiresTraversal`     | `allowsNeedsTraversal` |
+| `applyStructuralOperation`    | `applyStructural`      |
+| `baseInstantiation`           | `baseInstance`         |
+| `boundOperandKind`            | `operandKind`          |
+| `checksTransformErrors`       | `checksMorphErrors`    |
+| `collapsibleJson`             | `collapsedJson`        |
+| `collapsibleKey`              | `collapseKey`          |
+| `compileCopiedDeclaredKeys`   | `compileDeclaredCopy`  |
+| `compiledDiscriminant`        | `discriminantJit`      |
+| `compileExhaustiveEntry`      | `compileEntry`         |
+| `createParseContext`          | `createParseCtx`       |
+| `defaultablesAndOptionals`    | `optionalsAndDefaults` |
+| `defaultablesLength`          | `defaultableCount`     |
+| `defaultEntries`              | `defaultPairs`         |
+| `defaultShortDescription`     | `defaultBrief`         |
+| `defaultValueMorph`           | `defaultMorph`         |
+| `defaultValueMorphs`          | `defaultMorphs`        |
+| `earliestAssumed`             | `assumedFrom`          |
+| `entersResolution`            | `entersAlias`          |
+| `errorFromNodeContext`        | `errorFromNode`        |
+| `_exportedResolutions`        | `_exported`            |
+| `hasAssociatedError`          | `ownsError`            |
+| `includesContextualMorph`     | `hasCtxMorph`          |
+| `includesContextualPredicate` | `hasCtxPredicate`      |
+| `includesShallowAlias`        | `hasShallowAlias`      |
+| `includesTransform`           | `hasTransform`         |
+| `includesUserCode`            | `hasUserCode`          |
+| `initializeFlatRefs`          | `initFlatRefs`         |
+| `intersectionIsOpen`          | `openIntersection`     |
+| `introspectableIn`            | `knownIn`              |
+| `introspectableOut`           | `knownOut`             |
+| `isUsedBeforeJit`             | `usedBeforeJit`        |
+| `lastMorphIfNode`             | `lastMorphNode`        |
+| `nestableExpression`          | `nestedExpression`     |
+| `nodesByRegisteredId`         | `nodesById`            |
+| `normalizeRootScopeValue`     | `normalizeScopeValue`  |
+| `obviatesBasisDescription`    | `coversBasisNoun`      |
+| `openInstantiations`          | `openInstances`        |
+| `optionallyChainedPropString` | `chainedPropString`    |
+| `outerEarliestAssumed`        | `assumedOuter`         |
+| `parseOwnDefinitionFormat`    | `parseOwn`             |
+| `preparseOwnDefinitionFormat` | `preparseOwn`          |
+| `pushRootToBranch`            | `pushRootBranch`       |
+| `referencedBesidesChildren`   | `otherReferences`      |
+| `referencesById`              | `refsById`             |
+| `requiresInfinityCheck`       | `checksInfinity`       |
+| `returnIfTransformFailed`     | `returnIfFailed`       |
+| `rootApplyStrategy`           | `applyStrategy`        |
+| `serializedValue`             | `serializedUnit`       |
+| `shallowReferences`           | `shallowRefs`          |
+| `sharesTransformedKeys`       | `sharesTransforms`     |
+| `shiftUntilLookahead`         | `shiftUntilNext`       |
+| `shiftUntilNonWhitespace`     | `shiftPastWhitespace`  |
+| `throwInternalOperandError`   | `throwOperandError`    |
+| `tracksTransforms`            | `tracksMorphs`         |
+| `transformedByResolutionId`   | `transformedById`      |
+| `transformRequiresContext`    | `transformNeedsCtx`    |
+| `transformSelectsByContext`   | `selectsByCtx`         |
+| `uncollapsedInnerJson`        | `innerJsonFull`        |
+| `undeclaredKeyHandling`       | `undeclaredHandling`   |
 
 ### Read an object definition's values as its keys are parsed
 

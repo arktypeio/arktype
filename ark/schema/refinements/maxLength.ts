@@ -40,8 +40,8 @@ export declare namespace MaxLength {
 const implementation: nodeImplementationOf<MaxLength.Declaration> =
 	implementNode<MaxLength.Declaration>({
 		kind: "maxLength",
-		collapsibleKey: "rule",
-		hasAssociatedError: true,
+		collapseKey: "rule",
+		ownsError: true,
 		keys: {
 			rule: {}
 		},

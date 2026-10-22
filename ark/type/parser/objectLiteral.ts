@@ -61,7 +61,7 @@ export const parseObjectLiteral = (
 		if (parsedKey.kind === "spread") {
 			if (!isEmptyObject(structure))
 				return throwParseError(nonLeadingSpreadError)
-			const operand = ctx.$.parseOwnDefinitionFormat(v, ctx)
+			const operand = ctx.$.parseOwn(v, ctx)
 			// treat object domain as empty for spreading (useful for generic constraints)
 			if (operand.equals(intrinsic.object)) continue
 			if (
@@ -149,10 +149,7 @@ export const parseObjectLiteral = (
 
 		// must be index at this point
 
-		const signature = ctx.$.parseOwnDefinitionFormat(
-			parsedEntryKey.normalized,
-			ctx
-		)
+		const signature = ctx.$.parseOwn(parsedEntryKey.normalized, ctx)
 
 		const normalized = normalizeIndex(signature, parsedValue, ctx.$)
 

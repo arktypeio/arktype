@@ -110,19 +110,19 @@ export class RuntimeState {
 		this.assertRangeUnset()
 
 		if (this.branches.pipe) {
-			this.pushRootToBranch("|>")
+			this.pushRootBranch("|>")
 			this.root = this.branches.pipe
 			return
 		}
 
 		if (this.branches.union) {
-			this.pushRootToBranch("|")
+			this.pushRootBranch("|")
 			this.root = this.branches.union
 			return
 		}
 
 		if (this.branches.intersection) {
-			this.pushRootToBranch("&")
+			this.pushRootBranch("&")
 			this.root = this.branches.intersection
 			return
 		}
@@ -156,7 +156,7 @@ export class RuntimeState {
 		}
 	}
 
-	pushRootToBranch(token: BranchOperator): void {
+	pushRootBranch(token: BranchOperator): void {
 		this.assertRangeUnset()
 		this.applyPrefixes()
 		const root = this.root!

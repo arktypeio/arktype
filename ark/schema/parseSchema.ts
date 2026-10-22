@@ -19,7 +19,7 @@ import type { nodeOfKind, Prerequisite, reducibleKindOf } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
 import {
 	compareInnerKeys,
-	nodesByRegisteredId,
+	nodesById,
 	writeInvalidSchemaMessage,
 	type BaseParseOptions,
 	type NodeId
@@ -269,7 +269,7 @@ const readers: Record<NodeKind, SchemaReader> = {
 		if (opts?.prereduced || !input.reference.startsWith("$")) return input
 		const registered =
 			input.reference.startsWith("$ark.") ?
-				nodesByRegisteredId[input.reference.slice(5) as NodeId]
+				nodesById[input.reference.slice(5) as NodeId]
 			:	undefined
 		return hasArkKind(registered, "root") ? registered : (
 				$.resolveRoot(input.reference.slice(1))

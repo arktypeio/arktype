@@ -79,11 +79,11 @@ const Both = M1.and(M2)
 const G = generic(["t", M1])(["t", "&", M2])
 export const FromIsland = type({ a: One })
 export const FromIntersection = type({ b: Both })
-export const FromGetter = type({ b: G.baseInstantiation as never })`)
+export const FromGetter = type({ b: G.baseInstance as never })`)
 		).snap([
 			'/main.ts:16:27  type({ a: One }) cannot be precompiled\n  `type({ a: One })` reads a definition that throws a ParseError\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
 			'/main.ts:17:33  type({ b: Both }) cannot be precompiled\n  `type({ b: Both })` reads a definition that throws a ParseError\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
-			'/main.ts:18:27  type({ b: G.baseInstantiation as never }) cannot be precompiled\n  `type({ b: G.baseInstantiation as never })` reads a definition that throws a ParseError\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+			'/main.ts:18:27  type({ b: G.baseInstance as never }) cannot be precompiled\n  `type({ b: G.baseInstance as never })` reads a definition that throws a ParseError\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
 		])
 	})
 

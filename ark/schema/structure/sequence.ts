@@ -77,8 +77,8 @@ export declare namespace Sequence {
 const implementation: nodeImplementationOf<Sequence.Declaration> =
 	implementNode<Sequence.Declaration>({
 		kind: "sequence",
-		hasAssociatedError: false,
-		collapsibleKey: "variadic",
+		ownsError: false,
+		collapseKey: "variadic",
 		keys: {
 			prefix: {
 				child: true,
@@ -107,7 +107,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 				structural: true,
 				serialize: defaults =>
 					defaults.map(element => [
-						element[0].collapsibleJson,
+						element[0].collapsedJson,
 						defaultValueSerializer(element[1])
 					]),
 				reduceIo: (ioKind, inner, defaultables) => {
@@ -132,15 +132,14 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 		},
 		defaults: {
 			description: node => {
-				if (node.isVariadicOnly) return `${node.variadic!.nestableExpression}[]`
+				if (node.isVariadicOnly) return `${node.variadic!.nestedExpression}[]`
 				const innerDescription = node.tuple
 					.map(element =>
 						element.kind === "defaultables" ?
-							`${element.node.nestableExpression} = ${printable(element.default, { ownDataOnly: true })}`
-						: element.kind === "optionals" ?
-							`${element.node.nestableExpression}?`
+							`${element.node.nestedExpression} = ${printable(element.default, { ownDataOnly: true })}`
+						: element.kind === "optionals" ? `${element.node.nestedExpression}?`
 						: element.kind === "variadic" ?
-							`...${element.node.nestableExpression}[]`
+							`...${element.node.nestedExpression}[]`
 						:	element.node.expression
 					)
 					.join(", ")
@@ -180,9 +179,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		this.includesMorph ||= !!this.defaultables?.some(
 			([, defaultValue]) => typeof defaultValue === "function"
 		)
-		this.includesContextualMorph ||= this.defaultValueMorphs.some(
-			morph => morph.length === 2
-		)
+		this.hasCtxMorph ||= this.defaultMorphs.some(morph => morph.length === 2)
 	}
 
 	impliedBasis: BaseRoot = $ark.intrinsic.Array.internal
@@ -190,14 +187,14 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	tuple: SequenceTuple = sequenceInnerToTuple(this.inner)
 
 	prefixLength: number = this.prefix?.length ?? 0
-	defaultablesLength: number = this.defaultables?.length ?? 0
+	defaultableCount: number = this.defaultables?.length ?? 0
 	postfixLength: number = this.postfix?.length ?? 0
-	defaultablesAndOptionals: BaseRoot[] = []
+	optionalsAndDefaults: BaseRoot[] = []
 	prevariadic: array<PrevariadicSequenceElement> = this.tuple.filter(
 		(el): el is PrevariadicSequenceElement => {
 			if (el.kind === "defaultables" || el.kind === "optionals") {
-				// populate defaultablesAndOptionals while filtering prevariadic
-				this.defaultablesAndOptionals.push(el.node)
+				// populate optionalsAndDefaults while filtering prevariadic
+				this.optionalsAndDefaults.push(el.node)
 				return true
 			}
 
@@ -210,7 +207,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		this.postfix
 	)
 
-	protected override initializeFlatRefs(): void {
+	protected override initFlatRefs(): void {
 		const flatRefs: FlatRef[] = []
 
 		appendUniqueFlatRefs(
@@ -254,7 +251,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		: this.maxLengthNode ? [this.maxLengthNode]
 		: []
 
-	defaultValueMorphs: Morph[] =
+	defaultMorphs: Morph[] =
 		this.defaultables?.map(([node, defaultValue], i) =>
 			computeDefaultValueMorph(this.prefixLength + i, node, defaultValue)
 		) ?? []
@@ -268,7 +265,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 		return this.$.node("sequence", {
 			...inner,
-			optionals: conflatenate(prefix, this.defaultablesAndOptionals)
+			optionals: conflatenate(prefix, this.optionalsAndDefaults)
 		})
 	}
 
@@ -276,7 +273,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		const { defaultables, optionals, ...inner } = this.inner
 		return this.$.node("sequence", {
 			...inner,
-			prefix: conflatenate(this.prefix, this.defaultablesAndOptionals)
+			prefix: conflatenate(this.prefix, this.optionalsAndDefaults)
 		})
 	}
 
@@ -374,7 +371,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	private compileTransform(js: NodeCompiler): void {
 		js.initializeTransform(this.children).let("out", "data")
 		this.compileElementTransforms(js, false)
-		js.returnIfTransformFailed().return("out")
+		js.returnIfFailed().return("out")
 	}
 
 	compileElementTransforms(js: NodeCompiler, slices: boolean): NodeCompiler {
@@ -413,7 +410,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				if (reaches(node)) compileElement(`${i}`, node)
 		}
 
-		for (const [i, node] of this.defaultablesAndOptionals.entries()) {
+		for (const [i, node] of this.optionalsAndDefaults.entries()) {
 			const dataIndex = `${i + this.prefixLength}`
 			if (js.traversalKind === "Transform") {
 				if (node.transforms) {

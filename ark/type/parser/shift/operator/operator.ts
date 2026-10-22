@@ -25,9 +25,9 @@ export const parseOperator = (s: RootedRuntimeState): void => {
 			:	s.error(incompleteArrayTokenMessage)
 		: lookahead === "|" ?
 			s.scanner.lookahead === ">" ?
-				s.shiftedBy(1).pushRootToBranch("|>")
-			:	s.pushRootToBranch(lookahead)
-		: lookahead === "&" ? s.pushRootToBranch(lookahead)
+				s.shiftedBy(1).pushRootBranch("|>")
+			:	s.pushRootBranch(lookahead)
+		: lookahead === "&" ? s.pushRootBranch(lookahead)
 		: lookahead === ")" ? s.finalizeGroup()
 		: lookaheadIsFinalizing(lookahead, s.scanner.unscanned) ?
 			s.finalize(lookahead)

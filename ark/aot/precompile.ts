@@ -2432,7 +2432,7 @@ export class Precompiler {
 		node = unwrapExpression(node)
 		while (node.type === "MemberExpression")
 			node = unwrapExpression(node.object)
-		const binding = module.scopes.referencesById.get(node)?.binding
+		const binding = module.scopes.refsById.get(node)?.binding
 		const declaration = binding?.kind === "import" && binding.declaration.parent
 		if (declaration && declaration.type === "ImportDeclaration") {
 			const target = this.graph.resolve(declaration.source.value, module)
@@ -2662,10 +2662,7 @@ export class Precompiler {
 					isFixed:
 						!isImportInput &&
 						read.type === "Identifier" &&
-						this.isCreatedBy(
-							module.scopes.referencesById.get(read)?.binding,
-							value
-						),
+						this.isCreatedBy(module.scopes.refsById.get(read)?.binding, value),
 					isOwnHole: this.interpreter.isOwnHole(node, value, module),
 					isInert: this.isInertRead(
 						value,
@@ -2703,7 +2700,7 @@ export class Precompiler {
 		const callee = unwrapExpression(call.callee)
 		const reference =
 			callee.type === "Identifier" ?
-				module.scopes.referencesById.get(callee)
+				module.scopes.refsById.get(callee)
 			:	undefined
 		const isDefine =
 			callee.type === "MemberExpression" ?
@@ -2717,7 +2714,7 @@ export class Precompiler {
 		walk(definition, child => {
 			const binding =
 				child.type === "Identifier" ?
-					module.scopes.referencesById.get(child)?.binding
+					module.scopes.refsById.get(child)?.binding
 				:	undefined
 			readsArk ||= !!binding && this.definesArk(binding, module)
 			return !readsArk
@@ -3223,8 +3220,7 @@ export class Precompiler {
 				root.type === "MemberExpression" ? root.object : root.callee
 			)
 		}
-		const declaration =
-			module.scopes.referencesById.get(root)?.binding?.declaration
+		const declaration = module.scopes.refsById.get(root)?.binding?.declaration
 		const specifier =
 			declaration?.parent?.type === "ImportDeclaration" ?
 				declaration.parent.source.value
@@ -3566,7 +3562,7 @@ export class Precompiler {
 		node = unwrapChain(node)
 		const binding =
 			node.type === "Identifier" ?
-				module.scopes.referencesById.get(node)?.binding
+				module.scopes.refsById.get(node)?.binding
 			:	undefined
 		return !!binding && isInIsland(binding.declaration, module)
 	}
@@ -3649,7 +3645,7 @@ export class Precompiler {
 			walk(node, child => {
 				const reference =
 					child.type === "Identifier" ?
-						origin.scopes.referencesById.get(child)
+						origin.scopes.refsById.get(child)
 					:	undefined
 				const binding = reference?.binding
 				if (
@@ -3973,7 +3969,7 @@ const isObjectWrite = (callee: Node, module: SourceModule): boolean => {
 		callee.type === "MemberExpression" &&
 		!callee.computed &&
 		callee.object.type === "Identifier" &&
-		!module.scopes.referencesById.get(callee.object)?.binding &&
+		!module.scopes.refsById.get(callee.object)?.binding &&
 		!!writersByGlobal[callee.object.name]?.includes(callee.property.name)
 	)
 }

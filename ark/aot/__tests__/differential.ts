@@ -211,7 +211,7 @@ const holdsUncounted = (value: unknown, seen = new Set<object>()): boolean => {
 
 // whether a node declares a key every plain object inherits
 const declaresInherited = (node: BaseRoot): boolean =>
-	Object.values(node.referencesById).some(
+	Object.values(node.refsById).some(
 		reference =>
 			reference.hasKind("structure") && reference.inheritableProps.length
 	)

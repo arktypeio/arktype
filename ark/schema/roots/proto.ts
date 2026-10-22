@@ -42,8 +42,8 @@ export declare namespace Proto {
 const implementation: nodeImplementationOf<Proto.Declaration> =
 	implementNode<Proto.Declaration>({
 		kind: "proto",
-		hasAssociatedError: true,
-		collapsibleKey: "proto",
+		ownsError: true,
+		collapseKey: "proto",
 		keys: {
 			proto: {
 				serialize: ctor =>
@@ -106,13 +106,13 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	expression: string =
 		this.dateAllowsInvalid ? "Date | InvalidDate" : functionNameOf(this.proto)
 
-	get nestableExpression(): string {
+	get nestedExpression(): string {
 		return this.dateAllowsInvalid ? `(${this.expression})` : this.expression
 	}
 
 	readonly domain = "object"
 
-	get defaultShortDescription(): string {
+	get defaultBrief(): string {
 		return this.description
 	}
 }

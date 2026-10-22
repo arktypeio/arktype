@@ -32,7 +32,7 @@ export declare namespace NotEqualLength {
 		extends declareNode<{
 			kind: "notEqualLength"
 			inner: Inner
-			intersectionIsOpen: true
+			openIntersection: true
 			reducibleTo: "intersection"
 			prerequisite: LengthBoundableData
 			errorContext: ErrorContext
@@ -44,12 +44,12 @@ export declare namespace NotEqualLength {
 const implementation: nodeImplementationOf<NotEqualLength.Declaration> =
 	implementNode<NotEqualLength.Declaration>({
 		kind: "notEqualLength",
-		collapsibleKey: "rule",
+		collapseKey: "rule",
 		keys: {
 			rule: {}
 		},
-		hasAssociatedError: true,
-		intersectionIsOpen: true,
+		ownsError: true,
+		openIntersection: true,
 		defaults: {
 			description: node => `other than length ${node.rule}`
 		}

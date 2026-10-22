@@ -171,10 +171,7 @@ export const ToJsonSchema = {
 	throw: (...args: ConstructorParameters<typeof ToJsonSchemaError>): never => {
 		throw new ToJsonSchema.Error(...args)
 	},
-	throwInternalOperandError: (
-		kind: ConstraintKind,
-		schema: JsonSchema
-	): never =>
+	throwOperandError: (kind: ConstraintKind, schema: JsonSchema): never =>
 		throwInternalError(
 			`Unexpected JSON Schema input for ${kind}: ${printable(schema)}`
 		),

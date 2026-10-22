@@ -211,10 +211,7 @@ const innerToJsonSchemaByKind: {
 		:	ctx.fallback.morph({
 				code: "morph",
 				base: toJsonSchemaRecurse(node.rawIn, ctx),
-				out:
-					node.introspectableOut ?
-						toJsonSchemaRecurse(node.introspectableOut, ctx)
-					:	null
+				out: node.knownOut ? toJsonSchemaRecurse(node.knownOut, ctx) : null
 			}),
 	unit: (node, ctx) =>
 		// this is the more standard JSON schema representation, especially for Open API
@@ -333,8 +330,8 @@ const reduceObjectJsonSchema = (
 							code: "morph",
 							base: toResolvedJsonSchema(keyBranch.rawIn, ctx),
 							out:
-								keyBranch.introspectableOut ?
-									toResolvedJsonSchema(keyBranch.introspectableOut, ctx)
+								keyBranch.knownOut ?
+									toResolvedJsonSchema(keyBranch.knownOut, ctx)
 								:	null
 						}) as never
 					}
@@ -580,7 +577,7 @@ const reduceJsonSchemaByKind: {
 				schema.maxItems = node.rule
 				return schema
 			default:
-				return ToJsonSchema.throwInternalOperandError("exactLength", schema)
+				return ToJsonSchema.throwOperandError("exactLength", schema)
 		}
 	},
 	max: (node, schema) => {
@@ -637,7 +634,7 @@ const reduceJsonSchemaByKind: {
 				schema.maxItems = node.rule
 				return schema
 			default:
-				return ToJsonSchema.throwInternalOperandError("maxLength", schema)
+				return ToJsonSchema.throwOperandError("maxLength", schema)
 		}
 	},
 	minLength: (node, schema) => {
@@ -649,7 +646,7 @@ const reduceJsonSchemaByKind: {
 				schema.minItems = node.rule
 				return schema
 			default:
-				return ToJsonSchema.throwInternalOperandError("minLength", schema)
+				return ToJsonSchema.throwOperandError("minLength", schema)
 		}
 	},
 	before: (node, base, ctx) =>
@@ -676,7 +673,7 @@ const reduceJsonSchemaByKind: {
 				return arraySchema
 
 			default:
-				return ToJsonSchema.throwInternalOperandError("structure", schema)
+				return ToJsonSchema.throwOperandError("structure", schema)
 		}
 	},
 	predicate: (node, base, ctx) =>

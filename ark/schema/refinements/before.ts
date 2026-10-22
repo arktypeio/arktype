@@ -40,8 +40,8 @@ export declare namespace Before {
 const implementation: nodeImplementationOf<Before.Declaration> =
 	implementNode<Before.Declaration>({
 		kind: "before",
-		collapsibleKey: "rule",
-		hasAssociatedError: true,
+		collapseKey: "rule",
+		ownsError: true,
 		keys: {
 			rule: {
 				serialize: schema => schema.toISOString()

@@ -38,7 +38,7 @@ export declare namespace Pattern {
 		extends declareNode<{
 			kind: "pattern"
 			inner: Inner
-			intersectionIsOpen: true
+			openIntersection: true
 			prerequisite: string
 			errorContext: ErrorContext
 		}> {}
@@ -49,15 +49,15 @@ export declare namespace Pattern {
 const implementation: nodeImplementationOf<Pattern.Declaration> =
 	implementNode<Pattern.Declaration>({
 		kind: "pattern",
-		collapsibleKey: "rule",
+		collapseKey: "rule",
 		keys: {
 			rule: {},
 			flags: {}
 		},
-		obviatesBasisDescription: true,
+		coversBasisNoun: true,
 		obviatesBasisExpression: true,
-		hasAssociatedError: true,
-		intersectionIsOpen: true,
+		ownsError: true,
+		openIntersection: true,
 		defaults: {
 			description: node => `matched by ${node.rule}`
 		}

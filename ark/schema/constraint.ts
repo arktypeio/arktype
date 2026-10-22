@@ -100,7 +100,7 @@ export abstract class InternalPrimitiveConstraint<
 
 	traverseApply(data: d["prerequisite"], ctx: InternalTraversal): void {
 		if (!this.traverseAllows(data, ctx))
-			ctx.errorFromNodeContext(this.errorContext as never, data)
+			ctx.errorFromNode(this.errorContext as never, data)
 	}
 
 	compile(js: NodeCompiler): void {
@@ -186,7 +186,7 @@ export const writeInvalidOperandMessage = <
 	const actualDescription =
 		actual.hasKind("morph") ? "a morph"
 		: actual.isUnknown() ? "unknown"
-		: actual.exclude(expected).defaultShortDescription
+		: actual.exclude(expected).defaultBrief
 
 	return `${capitalize(kind)} operand must be ${
 		expected.description

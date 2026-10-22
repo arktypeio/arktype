@@ -40,8 +40,8 @@ export declare namespace MinLength {
 const implementation: nodeImplementationOf<MinLength.Declaration> =
 	implementNode<MinLength.Declaration>({
 		kind: "minLength",
-		collapsibleKey: "rule",
-		hasAssociatedError: true,
+		collapseKey: "rule",
+		ownsError: true,
 		keys: {
 			rule: {}
 		},

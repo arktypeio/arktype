@@ -5,7 +5,7 @@ import type { StaticState, s } from "../../reduce/static.ts"
 import { shiftUntilTerminator } from "../tokens.ts"
 
 export const parseBrand = (s: RootedRuntimeState): void => {
-	s.scanner.shiftUntilNonWhitespace()
+	s.scanner.shiftPastWhitespace()
 	const brandName = shiftUntilTerminator(s.scanner)
 	s.root = s.root.brand(brandName)
 }
