@@ -43,7 +43,7 @@
 		"testCache": "pnpm test --exclude ark/type/__tests__/gc.test.ts --exclude ark/type/__tests__/facts.test.ts --exclude ark/type/__tests__/precompile.test.ts --grep \"^config jitless$|NaN in discriminated unions jitless$|Object.prototype members are undeclared jitless$\" --invert --require ./ark/aot/__tests__/testCache.ts",
 		"testTsVersions": "ts ./ark/repo/testTsVersions.ts",
 		"testTsCompat": "tsc --project ark/repo/tsCompat && tsc --project ark/repo/tsCompat/tsconfig.loose.json && tsc --project ark/repo/tsCompat/tsconfig.attest.json && tsc --project ark/repo/tsCompat/tsconfig.workers.json",
-		"testTypedLoose": "pnpm testTyped --tsconfig null --compilerOptions \"{ \\\"module\\\": \\\"NodeNext\\\", \\\"moduleResolution\\\": \\\"NodeNext\\\", \\\"strictNullChecks\\\": true, \\\"exactOptionalPropertyTypes\\\": true }\" --skipInlineInstantiations",
+		"testTypedLoose": "pnpm testTyped --tsconfig null --compilerOptions \"{ \\\"module\\\": \\\"NodeNext\\\", \\\"moduleResolution\\\": \\\"NodeNext\\\", \\\"strictNullChecks\\\": true, \\\"exactOptionalPropertyTypes\\\": true, \\\"customConditions\\\": [\\\"ark-ts\\\"] }\" --skipInlineInstantiations",
 		"bench": " ATTEST_benchErrorOnThresholdExceeded=\"\\\"types\\\"\" pnpm benchOperand && pnpm benchOperator && pnpm benchNary && pnpm benchObject && pnpm benchMatch && pnpm benchCyclic && pnpm benchJsonSchema",
 		"benchUp": "ATTEST_updateSnapshots=1 pnpm bench",
 		"benchOperand": "ts ./ark/type/__tests__/operand.bench.ts",

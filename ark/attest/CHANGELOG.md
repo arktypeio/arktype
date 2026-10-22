@@ -19,6 +19,22 @@ Runtime benches now run in a loop compiled for each bench, after a warmup of 500
 - `.completions()` under TypeScript 7 includes completions of strings containing punctuation, like a JSON Schema `$ref` path. TypeScript 7 gives each a filter text of only its last word, which didn't match the prefix, so they were dropped and `.completions()` returned `{}`.
 - `attest trace` and `attest stats` check projects with `composite: true`. They passed tsc `--incremental false`, which such a project rejects (TS6379), so since TypeScript 5.6 they skipped type checking and reported 0 instantiations ([#1306](https://github.com/arktypeio/arktype/issues/1306)).
 
+## 0.58.0
+
+### Support tsrs
+
+Attest now supports [tsrs](https://github.com/oxc-project/tsrs), a Rust port of TypeScript 7 that serves the same API as tsgo. Install it alongside `@ark/attest` and TypeScript 7, and attest uses it automatically on the platforms tsrs ships a binary for.
+
+### Add `checker`
+
+`checker` selects the type checker attest analyzes with: `"tsjs"` (TypeScript's JS API, for TypeScript 6 and earlier), `"tsgo"` (TypeScript 7's native compiler) or `"tsrs"`. By default, attest uses tsrs if it's installed alongside TypeScript 7, otherwise the checker matching your TypeScript version. Setting a checker that doesn't match the installed TypeScript throws.
+
+```sh
+mocha --checker tsgo
+```
+
+Instantiation counts recorded with tsgo may differ slightly under tsrs, so set `checker: "tsgo"` to keep using tsgo with existing baselines.
+
 ## 0.57.1
 
 ### Support TypeScript 7.1 beta

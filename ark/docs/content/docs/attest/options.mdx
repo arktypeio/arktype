@@ -17,6 +17,7 @@ Flags and options passed to `setup` both override environment variables. Avoid s
 | ------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `skipTypes`                     | `false`                             | Skip type-checking in `setup` and every type assertion. See [below](#skiptypes).                                                                                     |
 | `onlyNamedTestFiles`            | `false`                             | Type-check only the test files named on the command line. See [below](#onlynamedtestfiles).                                                                          |
+| `checker`                       | see [below](#checker)               | The type checker to analyze with: `"tsjs"`, `"tsgo"` or `"tsrs"`.                                                                                                    |
 | `updateSnapshots`               | `false`                             | Rewrite every snapshot and bench baseline with the current value. Also `-u` or `--update`.                                                                           |
 | `failOnMissingSnapshots`        | `true` if `CI` is set               | Throw on a `.snap()` with no value rather than populating it.                                                                                                        |
 | `tsconfig`                      | nearest `tsconfig.json`             | Path of the tsconfig to analyze. By default, attest looks in the working directory, then its parents. `null` ignores tsconfig files and uses only `compilerOptions`. |
@@ -65,6 +66,16 @@ Your runner must also run only the named files. Mocha runs files named on the co
 ```bash
 ATTEST_onlyNamedTestFiles=true vitest run src/user.test.ts
 ```
+
+### checker
+
+The type checker attest analyzes type assertions with:
+
+- `"tsjs"`: TypeScript's JS API, for TypeScript 6 and earlier
+- `"tsgo"`: TypeScript 7's native compiler
+- `"tsrs"`: [tsrs](https://github.com/oxc-project/tsrs), a faster Rust port of TypeScript 7 that serves the same API
+
+By default, attest uses tsrs if it's installed alongside TypeScript 7 on a platform it ships a binary for, otherwise the checker matching your TypeScript version. Setting a checker that doesn't match your installed TypeScript throws.
 
 ### typeToStringFormat
 

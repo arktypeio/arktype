@@ -17,7 +17,7 @@ import {
 	getCallLocation,
 	getDescendants,
 	getFirstFunctionDescendant,
-	noTruncation,
+	getNoTruncation,
 	type CallExpression,
 	type Node,
 	type SourceFile,
@@ -84,7 +84,11 @@ export const stringifyTypeAtLocation = (node: Node): StringifiedType => {
 	const type = checker.getTypeAtLocation(node)
 	let string = checker.typeToString(type)
 	if (string.includes("...")) {
-		const nonTruncated = checker.typeToString(type, undefined, noTruncation)
+		const nonTruncated = checker.typeToString(
+			type,
+			undefined,
+			getNoTruncation()
+		)
 		string =
 			nonTruncated.includes(" any") && !string.includes(" any") ?
 				nonTruncated.replace(/ any/g, " cyclic")

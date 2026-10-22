@@ -1,6 +1,6 @@
 {
 	"name": "@ark/attest",
-	"version": "0.57.1",
+	"version": "0.58.0",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -50,12 +50,19 @@
 		"prettier": "3.6.2"
 	},
 	"devDependencies": {
+		"tsrs": "0.18.0-ts7.1.0-dev.20260929",
 		"typescript": "catalog:",
 		"typescript-6": "npm:typescript@6.0.3",
 		"typescript-7": "npm:typescript@7.1.0-beta"
 	},
 	"peerDependencies": {
-		"typescript": "*"
+		"typescript": "*",
+		"tsrs": "*"
+	},
+	"peerDependenciesMeta": {
+		"tsrs": {
+			"optional": true
+		}
 	},
 	"publishConfig": {
 		"access": "public"
