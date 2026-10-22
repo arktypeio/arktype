@@ -56,7 +56,9 @@ export const prestructuralKinds = [
 	"maxLength",
 	"minLength",
 	"before",
-	"after"
+	"after",
+	"notEqual",
+	"notEqualLength"
 ] as const
 
 export type PrestructuralKind = (typeof prestructuralKinds)[number]

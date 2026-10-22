@@ -19,7 +19,7 @@ contextualize(() => {
 				{ type: "string", maxLength: 10 }
 			]
 		})
-		attest(tAnyOf.expression).snap("string <= 10 | string >= 1")
+		attest(tAnyOf.expression).snap("string")
 	})
 
 	it("not", () => {

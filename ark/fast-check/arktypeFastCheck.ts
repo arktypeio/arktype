@@ -36,10 +36,22 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 			//specifically in the case of unknown, it is represented as an empty intersection so we just return anything here.
 			if (node.basis === null) return fc.anything()
 
-			const intersectionArbitrary =
+			const basisArbitrary =
 				node.basis?.kind === "domain" ?
 					buildDomainArbitrary[node.basis?.domain](node, ctx)
 				:	buildInstanceArbitrary(node.basis.proto.name, node, ctx)
+
+			// generated around the values a != excludes
+			const excluded = [
+				...(node.inner.notEqual ?? []),
+				...(node.inner.notEqualLength ?? [])
+			]
+			const intersectionArbitrary =
+				excluded.length ?
+					basisArbitrary.filter(data =>
+						excluded.every(node => node.traverseAllows(data as never))
+					)
+				:	basisArbitrary
 
 			ctx.arbitrariesByIntersectionId[node.id] = intersectionArbitrary
 

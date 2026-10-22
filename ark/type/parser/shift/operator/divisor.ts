@@ -1,11 +1,11 @@
 import { tryParseInteger, type Scanner } from "@ark/util"
 import type { RootedRuntimeState } from "../../reduce/dynamic.ts"
 import type { StaticState, s } from "../../reduce/static.ts"
-import { terminatingChars, type TerminatingChar } from "../tokens.ts"
+import { shiftUntilTerminator } from "../tokens.ts"
 
 export const parseDivisor = (s: RootedRuntimeState): void => {
 	s.scanner.shiftUntilNonWhitespace()
-	const divisorToken = s.scanner.shiftUntilLookahead(terminatingChars)
+	const divisorToken = shiftUntilTerminator(s.scanner)
 	const divisor = tryParseInteger(divisorToken, {
 		errorOnFail: writeInvalidDivisorMessage(divisorToken)
 	})
@@ -15,10 +15,9 @@ export const parseDivisor = (s: RootedRuntimeState): void => {
 }
 
 export type parseDivisor<s extends StaticState, unscanned extends string> =
-	Scanner.shiftUntil<
-		Scanner.skipWhitespace<unscanned>,
-		TerminatingChar
-	> extends Scanner.shiftResult<infer scanned, infer nextUnscanned> ?
+	shiftUntilTerminator<Scanner.skipWhitespace<unscanned>> extends (
+		Scanner.shiftResult<infer scanned, infer nextUnscanned>
+	) ?
 		scanned extends `${infer divisor extends number}` ?
 			divisor extends 0 ?
 				s.error<writeInvalidDivisorMessage<0>>

@@ -38,9 +38,8 @@ contextualize(() => {
 
 		const getBad = () => sizeOf(true)
 		attest<() => never>(getBad)
-		// ideally would also include number | bigint, discriminated out
 		attest(getBad).throws.snap(
-			"TraversalError: must be a string or an array (was boolean)"
+			"TraversalError: must be a number, a bigint, a string or an array (was boolean)"
 		)
 	})
 
@@ -97,8 +96,9 @@ contextualize(() => {
 
 		const getBad = () => matcher(null)
 		attest<() => never>(getBad)
-		// this sucks and should be improved- result of discrimination
-		attest(getBad).throws.snap("TraversalError: must be boolean (was null)")
+		attest(getBad).throws.snap(
+			"TraversalError: must be a string, a number, false or true (was null)"
+		)
 	})
 
 	it("multiple case blocks", () => {

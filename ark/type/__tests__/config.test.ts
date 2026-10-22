@@ -111,9 +111,13 @@ contextualize(() => {
 
 	it("node writer config on union", () => {
 		const $ = scope({})
-		const Discriminated = $.type([{ k: "'a'" }, "|", { k: "'b'" }], "@", {
-			message: ctx => `custom message ${ctx.problem}`
-		})
+		const Discriminated = $.type(
+			[{ k: "'a'", a: "string" }, "|", { k: "'b'", b: "number" }],
+			"@",
+			{
+				message: ctx => `custom message ${ctx.problem}`
+			}
+		)
 		attest(Discriminated({ k: "c" }).toString()).snap(
 			'custom message must be "a" or "b" (was "c")'
 		)
@@ -285,6 +289,18 @@ contextualize(() => {
 				(s, ctx) => !!ctx.reject("long") && !!ctx.reject("short")
 			])
 			attest(T("x").toString()).snap('must be long (was "x")')
+		})
+
+		it("first lists a union's miss beside its default case", () => {
+			const Event = first
+				.type({ id: "0", k1: "number" })
+				.or({ id: "1", k2: "number" })
+				.or({ name: "string" })
+			const out = Event({ id: 5 }) as type.errors
+			attest(out.issues.map(e => e.code)).equals(["union"])
+			attest(out.toString()).snap(
+				"id must be 0 or 1 (was 5) or name must be a string (was missing)"
+			)
 		})
 
 		it("first and none require arktype/errors", () => {

@@ -37,13 +37,6 @@ export interface UnionSite {
 	description: string
 }
 
-export interface FailureInput {
-	code: ArkErrorCode
-	data: unknown
-	description?: string
-	relativePath?: PropertyKey[]
-}
-
 // reports what fails to ctx, returning false only once traversal stops
 export type CompactApply = (data: unknown, ctx: FailureContext) => boolean
 
@@ -216,16 +209,6 @@ export const issueAt = (
 	if (key !== undefined) path.pop()
 	return issue
 }
-
-export const issueWith = (
-	path: PropertyKey[],
-	input: FailureInput
-): ArkIssue => ({
-	code: input.code,
-	path: input.relativePath ? path.concat(input.relativePath) : path.slice(),
-	data: input.data,
-	expected: input.description
-})
 
 export const failsIn = (
 	ctx: FailureContext,

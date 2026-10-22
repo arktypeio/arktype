@@ -4,7 +4,6 @@ import type {
 	ArkIssue,
 	CompactApply,
 	FailureContext,
-	FailureInput,
 	FailureSite,
 	SiteContext
 } from "./issues.ts"
@@ -121,16 +120,6 @@ export const issueAt = (
 	if (key !== undefined) path.pop()
 	return issue
 }
-
-export const issueWith = (
-	path: PropertyKey[],
-	input: FailureInput
-): ArkIssue => ({
-	code: input.code,
-	path: input.relativePath ? path.concat(input.relativePath) : path.slice(),
-	data: input.data,
-	expected: input.description
-})
 
 export const failsIn = (
 	ctx: FailureContext,

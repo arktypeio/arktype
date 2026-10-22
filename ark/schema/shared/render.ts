@@ -153,15 +153,13 @@ const localeWriter = (
 	}
 	const writer = locale[error.code][slot]
 	if (writer === undefined) return locale[slot]
+	// union and intersection frame their children's text, unless they cite
+	// their own description
+	if (error.code === "union" || error.code === "intersection")
+		return cited === undefined || slot === "actual" ? writer : locale[slot]
 	// a code's own problem frames the text of its locale's expected writer,
-	// not a keyword's phrase or authored text, while union and intersection
-	// frame their children's
-	if (
-		slot !== "problem" ||
-		error.code === "union" ||
-		error.code === "intersection"
-	)
-		return writer
+	// not a keyword's phrase or authored text
+	if (slot !== "problem") return writer
 	return (
 			cited !== undefined || expected !== defaultConfig[error.code].expected
 		) ?

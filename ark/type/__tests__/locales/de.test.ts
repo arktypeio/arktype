@@ -84,6 +84,12 @@ contextualize(() => {
 			"number % 5 ← 6.5": "muss ein Vielfaches von 5 sein, ist aber 6,5",
 			"number >= 1.5 ← 1.25": "muss mindestens 1,5 sein, ist aber 1,25",
 			"number < -1.5 ← -1.5": "muss kleiner als -1,5 sein, ist aber -1,5",
+			"number != 0 ← 0": "muss ungleich 0 sein, ist aber 0",
+			"number != 1.5 ← 1.5": "muss ungleich 1,5 sein, ist aber 1,5",
+			'string != 2 ← "xx"':
+				"darf nicht 2 Zeichen lang sein, ist aber 2 Zeichen lang",
+			"unknown[] != 2 ← [0,1]":
+				"darf nicht 2 Elemente enthalten, ist aber ein Array mit 2 Elementen",
 			"unknown[] == 1 ← []": "muss genau 1 Element enthalten, ist aber leer",
 			"unknown[] >= 2 ← []": "muss mindestens 2 Elemente enthalten",
 			"Date < 2000 ← 2001-01-01T00:00:00.000Z":
@@ -96,6 +102,8 @@ contextualize(() => {
 				"muss frühestens der 3. Mai 2000, 12:30:00,001 UTC sein, ist aber 1999",
 			"Date <= May 3, 12:30:05.123 ← 2000-12-31T09:05:00.000Z":
 				"muss spätestens der 3. Mai 2000, 12:30:05,123 UTC sein, ist aber der 31. Dezember 2000, 09:05 UTC",
+			"Date != May 3 ← 2000-05-03T00:00:00.000Z":
+				"muss ungleich dem 3. Mai 2000 sein, ist aber der 3. Mai 2000",
 			"enumerated Dates ← 2000-05-05T00:00:00.000Z":
 				"muss der 3. Mai 2000 oder der 4. Mai 2000 sein, ist aber ein Objekt",
 			"narrowed Date ← 2000-05-03T00:00:00.000Z":
@@ -164,7 +172,8 @@ contextualize(() => {
 			'required, two at one path ← {"b":""}':
 				"a fehlt (muss eine Zahl oder eine Zeichenkette sein)",
 			"required in a union ← {}":
-				"a muss never sein (ist nicht vorhanden) oder b muss ein Wahrheitswert sein (ist nicht vorhanden)",
+				"a fehlt (muss never sein) oder b fehlt (muss ein Wahrheitswert sein)",
+			"required union in a union ← {}": "a fehlt (muss 1, 2 oder 3 sein)",
 			'undeclared ← {"a":"","b":1}': "b ist nicht erlaubt",
 			'undeclared in a union ← {"a":"","b":"y"}':
 				'b muss eine Zahl oder entfernt sein, ist aber "y"',
@@ -187,13 +196,20 @@ contextualize(() => {
 				"muss ein BigInt, eine Zahl, eine Zeichenkette oder ein Objekt sein, ist aber ein Wahrheitswert",
 			'discriminant in an outer union ← {"a":{"kind":"triangle"}}':
 				'a muss eine Zeichenkette sein (ist ein Objekt) oder a.kind muss "circle" oder "square" sein (ist "triangle")',
+			"discriminant unreadable ← 5": "muss ein Objekt sein, ist aber eine Zahl",
+			'discriminant beside a default ← {"id":5}':
+				"id muss 0 oder 1 sein (ist 5) oder name fehlt (muss eine Zeichenkette sein)",
+			'discriminant cases beside a default ← "d"':
+				'muss "a", "b", "c" oder mindestens 6 Zeichen lang sein, ist aber "d"',
 			"union of paths ← {}":
-				"a muss eine Zeichenkette sein (ist nicht vorhanden) oder b muss eine Zahl sein (ist nicht vorhanden)",
+				"a fehlt (muss eine Zeichenkette sein) oder b fehlt (muss eine Zahl sein)",
+			"union described ← {}":
+				"muss ein Wert gemäß der Beschreibung „ein a oder b“ sein, ist aber ein Objekt",
 			"union boolean | null ← 1": "muss false, null oder true sein, ist aber 1",
 			'union of lengths ← "a"':
-				"muss leer oder mindestens 2 Zeichen lang sein, ist aber 1 Zeichen lang",
+				"muss leer oder mindestens 3 Zeichen lang sein, ist aber 1 Zeichen lang",
 			"union of array lengths ← [0]":
-				"muss ein leeres Array oder ein Array mit mindestens 2 Elementen sein, ist aber ein Array mit 1 Element",
+				"muss ein leeres Array oder ein Array mit mindestens 3 Elementen sein, ist aber ein Array mit 1 Element",
 			"union of signs ← -1":
 				"muss kleiner als -10 oder mindestens 0 sein, ist aber -1",
 			"union of decimals ← 4": "muss 1,5; 2,5 oder 3,5 sein, ist aber 4",
@@ -240,7 +256,7 @@ contextualize(() => {
 			'titled domains ← {"v":true}':
 				"„Name“ muss eine Zahl oder eine Zeichenkette sein, ist aber ein Wahrheitswert",
 			"titled union of paths ← {}":
-				"„Name“ muss eine Zeichenkette sein (ist nicht vorhanden) oder „Alter“ muss eine Zahl sein (ist nicht vorhanden)",
+				"„Name“ fehlt (muss eine Zeichenkette sein) oder „Alter“ fehlt (muss eine Zahl sein)",
 			"described ← 5":
 				"muss ein Wert gemäß der Beschreibung „ein Benutzername“ sein, ist aber eine Zahl",
 			"configured expected ← 5":

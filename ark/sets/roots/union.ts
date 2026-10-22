@@ -3,10 +3,13 @@ import {
 	Disjoint,
 	compileLiteralPropAccess,
 	compileSerializedValue,
+	constraintInputOf,
 	flatMorphsAreEqual,
 	flatRefsAreEqual,
 	isResolutionFinal,
 	queueUnchecked,
+	type BaseNode,
+	type BaseRange,
 	type BaseRoot,
 	type BaseScope,
 	type CaseContext,
@@ -19,8 +22,11 @@ import {
 	type DisjointEntry,
 	type Domain,
 	type FlatRef,
+	type Intersection,
 	type IntersectionContext,
 	type Morph,
+	type NodeKind,
+	type Prop,
 	type Union,
 	type Unit
 } from "@ark/schema"
@@ -28,6 +34,7 @@ import {
 	appendUnique,
 	arrayEquals,
 	flatMorph,
+	type dict,
 	integerLikeMatcher,
 	isDate,
 	range,
@@ -662,8 +669,297 @@ export const reduceBranches = ({
 				uniquenessByIndex[j] = false
 		}
 	}
-	return branches.filter((_, i) => uniquenessByIndex[i])
+	const uniqueBranches = branches.filter((_, i) => uniquenessByIndex[i])
+	return ordered ? uniqueBranches : mergeAlike(uniqueBranches)
 }
+
+// branches differing in one way union to one branch
+const mergeAlike = (
+	branches: readonly Union.ChildNode[]
+): readonly Union.ChildNode[] => {
+	for (let i = 0; i < branches.length; i++) {
+		for (let j = i + 1; j < branches.length; j++) {
+			const merged =
+				mergeRangeBranches(branches[i], branches[j]) ??
+				mergePropBranches(branches[i], branches[j])
+			if (!merged) continue
+			return reduceBranches({
+				branches: branches.flatMap((branch, k) =>
+					k === i ? merged
+					: k === j ? []
+					: branch
+				)
+			})
+		}
+	}
+	return branches
+}
+
+// branches alike but for their range, like 0 < number < 5 and 3 <= number
+// < 10, are one if their ranges are connected, or meet at a value neither
+// includes, which the one excludes. a unit is a range of one value
+const mergeRangeBranches = (
+	a: Union.ChildNode,
+	b: Union.ChildNode
+): Union.ChildNode | undefined => {
+	const [l, r] = a.hasKind("intersection") ? [a, b] : [b, a]
+	// bounds exclude NaN and invalid Dates, which the basis allows
+	if (
+		!l.hasKind("intersection") ||
+		l.inner.domain?.numberAllowsNaN ||
+		l.inner.proto?.dateAllowsInvalid
+	)
+		return
+	const family = rangeFamilies.find(family =>
+		family.kinds.some(
+			kind => l.inner[kind] || (r.hasKind("intersection") && r.inner[kind])
+		)
+	)
+	if (!family) return
+	const rest = childrenExcept(l, family.kinds)
+	const rRange =
+		r.hasKind("intersection") ?
+			nodesEqual(rest, childrenExcept(r, family.kinds)) && rangeOf(r, family)
+		: (
+			r.hasKind("unit") &&
+			(family.lower === "after" ?
+				r.unit instanceof Date
+			:	typeof r.unit === "number") &&
+			rest.every(child => child.allows(r.unit as never))
+		) ?
+			{
+				lower: { value: (r.unit as number | Date).valueOf() },
+				upper: { value: (r.unit as number | Date).valueOf() },
+				excluded: []
+			}
+		:	undefined
+	const range = rRange && mergeRange(rangeOf(l, family), rRange, family)
+	if (!range) return
+	const inner: dict = { ...l.inner }
+	for (const kind of family.kinds) delete inner[kind]
+	return l.$.node(
+		"intersection",
+		Object.assign(inner, rangeInner(range, family, l.$))
+	) as Union.ChildNode
+}
+
+type RangeKind =
+	| "min"
+	| "max"
+	| "notEqual"
+	| "minLength"
+	| "maxLength"
+	| "exactLength"
+	| "notEqualLength"
+	| "after"
+	| "before"
+
+interface RangeFamily {
+	lower: "min" | "minLength" | "after"
+	upper: "max" | "maxLength" | "before"
+	excluded: "notEqual" | "notEqualLength"
+	kinds: RangeKind[]
+	// lengths and Dates are integers whose bounds are inclusive
+	integral: boolean
+}
+
+const rangeFamilies: RangeFamily[] = [
+	{
+		lower: "min",
+		upper: "max",
+		excluded: "notEqual",
+		kinds: ["min", "max", "notEqual"],
+		integral: false
+	},
+	{
+		lower: "minLength",
+		upper: "maxLength",
+		excluded: "notEqualLength",
+		kinds: ["minLength", "maxLength", "exactLength", "notEqualLength"],
+		integral: true
+	},
+	{
+		lower: "after",
+		upper: "before",
+		excluded: "notEqual",
+		kinds: ["after", "before", "notEqual"],
+		integral: true
+	}
+]
+
+interface Limit {
+	value: number
+	exclusive?: true | undefined
+}
+
+// an unbounded side is undefined
+interface Range {
+	lower: Limit | undefined
+	upper: Limit | undefined
+	excluded: number[]
+}
+
+const rangeOf = (node: Intersection.Node, family: RangeFamily): Range => {
+	const exact = family.integral ? node.inner.exactLength : undefined
+	const limitOf = (bound: BaseRange<any> | undefined): Limit | undefined =>
+		bound && { value: bound.numericLimit, exclusive: bound.exclusive }
+	return {
+		lower: exact ? { value: exact.rule } : limitOf(node.inner[family.lower]),
+		upper: exact ? { value: exact.rule } : limitOf(node.inner[family.upper]),
+		excluded: (node.inner[family.excluded] ?? []).map(node =>
+			node.rule.valueOf()
+		)
+	}
+}
+
+const includes = (range: Range, value: number) =>
+	(!range.lower ||
+		value > range.lower.value ||
+		(value === range.lower.value && !range.lower.exclusive)) &&
+	(!range.upper ||
+		value < range.upper.value ||
+		(value === range.upper.value && !range.upper.exclusive)) &&
+	!range.excluded.includes(value)
+
+// the range including what either does, if all it adds is one value at most
+const mergeRange = (
+	l: Range,
+	r: Range,
+	family: RangeFamily
+): Range | undefined => {
+	// first starts no later than second
+	const [first, second] =
+		(
+			!l.lower ||
+			(r.lower &&
+				(l.lower.value < r.lower.value ||
+					(l.lower.value === r.lower.value && !l.lower.exclusive)))
+		) ?
+			[l, r]
+		:	[r, l]
+	const excluded: number[] = []
+	if (first.upper && second.lower) {
+		const distance = second.lower.value - first.upper.value
+		if (
+			family.integral ?
+				distance === 2
+			:	distance === 0 && first.upper.exclusive && second.lower.exclusive
+		)
+			excluded.push(first.upper.value + (family.integral ? 1 : 0))
+		else if (distance > (family.integral ? 1 : 0)) return
+	}
+	excluded.push(
+		...first.excluded.filter(value => !includes(second, value)),
+		...second.excluded.filter(value => !includes(first, value))
+	)
+	return {
+		lower: first.lower,
+		upper:
+			!first.upper || !second.upper ? undefined
+			: first.upper.value === second.upper.value ?
+				first.upper.exclusive ?
+					second.upper
+				:	first.upper
+			: first.upper.value > second.upper.value ? first.upper
+			: second.upper,
+		excluded
+	}
+}
+
+const rangeInner = (
+	range: Range,
+	family: RangeFamily,
+	$: BaseScope
+): object => {
+	const ruleOf = (value: number) =>
+		family.lower === "after" ? new Date(value) : value
+	const bound = (kind: RangeFamily["lower" | "upper"], limit: Limit) =>
+		$.node(
+			kind,
+			constraintInputOf(kind, {
+				rule: ruleOf(limit.value),
+				exclusive: limit.exclusive
+			} as never)
+		)
+	return {
+		// no length is less than 0
+		...(range.lower &&
+			!(family.lower === "minLength" && range.lower.value <= 0) && {
+				[family.lower]: bound(family.lower, range.lower)
+			}),
+		...(range.upper && { [family.upper]: bound(family.upper, range.upper) }),
+		...(range.excluded.length && {
+			[family.excluded]: range.excluded.map(value =>
+				$.node(family.excluded, { rule: ruleOf(value) })
+			)
+		})
+	}
+}
+
+// branches alike but for one key's value, like { a: string } and
+// { a: number }, are one whose value is either. the key is optional if
+// either has it optional, and a default is kept to its own branch
+const mergePropBranches = (
+	l: Union.ChildNode,
+	r: Union.ChildNode
+): Union.ChildNode | undefined => {
+	if (
+		!l.hasKind("intersection") ||
+		!r.hasKind("intersection") ||
+		!l.structure ||
+		!r.structure ||
+		l.structure.props.length !== r.structure.props.length ||
+		l.structure.undeclared !== r.structure.undeclared ||
+		!nodesEqual(l.structure.index ?? [], r.structure.index ?? []) ||
+		l.structure.sequence?.innerHash !== r.structure.sequence?.innerHash ||
+		!nodesEqual(
+			childrenExcept(l, ["structure"]),
+			childrenExcept(r, ["structure"])
+		)
+	)
+		return
+	let lProp: Prop.Node | undefined
+	let rProp: Prop.Node | undefined
+	for (const prop of l.structure.props) {
+		const match = r.structure.propsByKey[prop.key]
+		if (!match) return
+		if (prop.equals(match)) continue
+		if (lProp) return
+		lProp = prop
+		rProp = match
+	}
+	// an aliased value could reach the union it would be merged into
+	if (
+		!lProp ||
+		lProp.value.includesAlias ||
+		rProp!.value.includesAlias ||
+		(lProp.hasKind("optional") && lProp.hasDefault()) ||
+		(rProp!.hasKind("optional") && rProp!.hasDefault())
+	)
+		return
+	const kind = lProp.required && rProp!.required ? "required" : "optional"
+	const structure: dict = { ...l.structure.inner }
+	structure[lProp.kind] = l.structure[lProp.kind]!.filter(
+		prop => prop !== lProp
+	)
+	structure[kind] = [
+		...((structure[kind] as Prop.Node[] | undefined) ?? []),
+		l.$.node(kind, {
+			key: lProp.key,
+			value: lProp.value.rawOr(rProp!.value)
+		})
+	]
+	return l.$.node("intersection", {
+		...l.inner,
+		structure: l.$.node("structure", structure as never)
+	}) as Union.ChildNode
+}
+
+const nodesEqual = (l: readonly BaseNode[], r: readonly BaseNode[]) =>
+	arrayEquals(l, r, { isEqual: (l, r) => l.equals(r) })
+
+const childrenExcept = (node: Intersection.Node, kinds: readonly NodeKind[]) =>
+	node.children.filter(child => !kinds.includes(child.kind))
 
 const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 	if (l.includesAlias || r.includesAlias) {

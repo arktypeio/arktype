@@ -390,6 +390,8 @@ const readers: Record<NodeKind, SchemaReader> = {
 	minLength: readConstraint("minLength"),
 	before: readConstraint("before"),
 	after: readConstraint("after"),
+	notEqual: readConstraint("notEqual"),
+	notEqualLength: readConstraint("notEqualLength"),
 	pattern: readConstraint("pattern")
 }
 

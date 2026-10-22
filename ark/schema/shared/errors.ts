@@ -32,7 +32,6 @@ import {
 	TraversalError as BaseTraversalError,
 	type ArkIssue,
 	type CompactApply,
-	type FailureInput,
 	type FailureSite,
 	type UnionSite
 } from "./issues.ts"
@@ -383,11 +382,6 @@ export class ArkTraversal extends Traversal {
 		return this.failFast
 	}
 
-	override failsWith(input: FailureInput): boolean {
-		errorFromContext(this, input as ArkErrorContextInput)
-		return this.failFast
-	}
-
 	// each branch stops at its first error, which the union's error lists
 	override failsUnion(
 		branches: readonly CompactApply[],
@@ -437,7 +431,10 @@ export const errorFromUnion = (
 				path: ctx.path.slice(),
 				code: "union",
 				errors: flattenUnion(errors),
-				meta
+				meta,
+				// a description written for it is its text, as it is a standalone build's
+				...(meta.description !== undefined &&
+					meta.keyword === undefined && { description: meta.description })
 			} as never,
 			ctx.config
 		)

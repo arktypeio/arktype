@@ -89,7 +89,7 @@ data.birthday.groups.year // "1993"
 
 ### lengths [#string-lengths]
 
-Constrain a string's length with `>`, `>=`, `<`, `<=` or `==`:
+Constrain a string's length with `>`, `>=`, `<`, `<=`, `==` or `!=`:
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -233,6 +233,15 @@ Percentage(101)
     </SyntaxTab>
 
 </SyntaxTabs>
+
+`!=` excludes one value:
+
+```ts
+const NonZero = type("number != 0")
+
+// ArkErrors: must be other than 0 (was 0)
+NonZero(0)
+```
 
 ### divisors [#number-divisors]
 

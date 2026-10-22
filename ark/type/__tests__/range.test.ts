@@ -19,6 +19,7 @@ import {
 } from "arktype/internal/parser/reduce/shared.ts"
 import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
 import { writeInvalidLimitMessage } from "arktype/internal/parser/shift/operator/bounds.ts"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
 	describe("string expressions", () => {
@@ -370,6 +371,400 @@ contextualize(() => {
 			attest(() => type("d'2001-01-01'<number<2")).throwsAndHasTypeError(
 				writeInvalidLimitMessage(">", "d'2001-01-01'", "left")
 			)
+		})
+	})
+
+	describe("!=", () => {
+		it("number", () => {
+			const T = type("number != 0")
+			attest<number>(T.infer)
+			attest(T).type.toString.snap("Type<number, {}>")
+			attest(T.json).snap({ domain: "number", notEqual: [0] })
+			attest(T(1)).equals(1)
+			attest(T(0).toString()).snap("must be other than 0 (was 0)")
+		})
+
+		it("expression", () => {
+			const T = type("number != 5")
+			attest(T.expression).snap("number != 5")
+			attest(T(5).toString()).snap("must be other than 5 (was 5)")
+		})
+
+		it("length", () => {
+			const T = type("string != 3")
+			attest<string>(T.infer)
+			attest(T.json).snap({ domain: "string", notEqualLength: [3] })
+			attest(T("ab")).equals("ab")
+			attest(T("abc").toString()).snap("must be other than length 3 (was 3)")
+		})
+
+		it("array length", () => {
+			const T = type("string[] != 2")
+			attest<string[]>(T.infer)
+			attest(T.expression).snap("string[] != 2")
+			attest(T(["a", "b"]).toString()).snap(
+				"must be other than length 2 (was 2)"
+			)
+		})
+
+		it("zero length is non-empty", () => {
+			attest(type("string != 0").json).equals(type("string > 0").json)
+		})
+
+		it("Date", () => {
+			const T = type("Date != d'2000-05-03'")
+			attest<Date>(T.infer)
+			attest(T.expression).snap("Date != d'2000-05-03T00:00:00.000Z'")
+			attest(T(new Date("2000-05-04"))).instanceOf(Date)
+			attest(T(new Date("2000-05-03")).toString()).snap(
+				"must be other than May 3, 2000 (was May 3, 2000)"
+			)
+		})
+
+		it("numeric Date limit", () => {
+			attest(type("Date != 0").json).equals(
+				type("Date != d'1970-01-01T00:00:00.000Z'").json
+			)
+		})
+
+		it("union of exclusive bounds at a value", () => {
+			const T = type("number < 0 | number > 0")
+			attest(T.json).equals(type("number != 0").json)
+		})
+
+		it("union of ranges meeting at a value", () => {
+			const T = type("0 < number < 5 | 5 < number < 10")
+			attest(T.expression).snap("0 < (number != 5) < 10")
+			attest(type.raw(T.expression).json).equals(T.json)
+		})
+
+		it("union of ranges excluding several values", () => {
+			const T = type("number < 0 | 0 < number < 5 | number > 5")
+			attest(T.json).equals(type("number != 0 & number != 5").json)
+		})
+
+		it("union of bounds at different values", () => {
+			const T = type("number < 0 | number > 1")
+			attest(T.expression).snap("number < 0 | number > 1")
+		})
+
+		it("union of inclusive bounds", () => {
+			const T = type("number <= 0 | number > 0")
+			attest(T.expression).snap("number")
+		})
+
+		it("union of overlapping bounds", () => {
+			attest(type("number > 0 | number < 5").json).equals(type("number").json)
+		})
+
+		it("union of bounds touching at a value", () => {
+			attest(type("number >= 0 | number < 0").json).equals(type("number").json)
+		})
+
+		it("union of overlapping length bounds", () => {
+			attest(type("string >= 3 | string < 5").json).equals(type("string").json)
+		})
+
+		it("union of adjacent length bounds", () => {
+			attest(type("string >= 3 | string <= 2").json).equals(type("string").json)
+		})
+
+		it("union of length bounds at different lengths", () => {
+			const T = type("string >= 5 | string <= 2")
+			attest(T.expression).snap("string <= 2 | string >= 5")
+		})
+
+		it("union of touching Date bounds", () => {
+			attest(type("Date >= d'2000-05-03' | Date < d'2000-05-03'").json).equals(
+				type("Date").json
+			)
+		})
+
+		it("union of overlapping constrained bounds", () => {
+			attest(type("number.integer > 0 | number.integer < 5").json).equals(
+				type("number.integer").json
+			)
+		})
+
+		it("union of overlapping bounds and a subtype", () => {
+			attest(type("number > 0 | number < 5 | number.integer").json).equals(
+				type("number").json
+			)
+		})
+
+		it("union of length bounds at a length", () => {
+			const T = type("string < 3 | string > 3")
+			attest(T.json).equals(type("string != 3").json)
+		})
+
+		it("union of Date bounds at a Date", () => {
+			const T = type("Date < d'2000-05-03' | Date > d'2000-05-03'")
+			attest(T.json).equals(type("Date != d'2000-05-03'").json)
+		})
+
+		it("union of constrained bounds", () => {
+			const T = type("number.integer < 0 | number.integer > 0")
+			attest(T.json).equals(type("number.integer != 0").json)
+		})
+
+		it("union of bounds allowing NaN", () => {
+			const nanable = { domain: "number", numberAllowsNaN: true } as const
+			const T = rootSchema([
+				{ domain: nanable, max: { rule: 0, exclusive: true } },
+				{ domain: nanable, min: { rule: 0, exclusive: true } }
+			])
+			attest(T.branches.length).equals(2)
+			attest(T.allows(Number.NaN)).equals(false)
+		})
+
+		it("union of overlapping bounds allowing NaN", () => {
+			const nanable = { domain: "number", numberAllowsNaN: true } as const
+			const T = rootSchema([
+				{ domain: nanable, min: { rule: 0, exclusive: true } },
+				{ domain: nanable, max: { rule: 5, exclusive: true } }
+			])
+			attest(T.branches.length).equals(2)
+			attest(T.allows(Number.NaN)).equals(false)
+		})
+
+		it("union of overlapping Date bounds allowing invalid Dates", () => {
+			const proto = { proto: Date, dateAllowsInvalid: true } as const
+			const T = rootSchema([
+				{ proto, after: new Date(0) },
+				{ proto, before: new Date(5) }
+			])
+			attest(T.branches.length).equals(2)
+			attest(T.allows(new Date("!"))).equals(false)
+		})
+
+		it("intersection with an excluding bound", () => {
+			attest(type("number != 0 & number > 0").json).equals(
+				type("number > 0").json
+			)
+		})
+
+		it("intersection with an including bound", () => {
+			attest(type("number != 0 & number > -1").expression).snap(
+				"number > -1 != 0"
+			)
+		})
+
+		it("intersection with a bound at the value", () => {
+			attest(type("number >= 0 & number != 0").json).equals(
+				type("number > 0").json
+			)
+			attest(type("string <= 3 & string != 3").json).equals(
+				type("string <= 2").json
+			)
+			attest(type("Date >= d'2000-05-03' & Date != d'2000-05-03'").json).equals(
+				type("Date > d'2000-05-03'").json
+			)
+		})
+
+		it("intersection with an excluding divisor", () => {
+			attest(type("number % 2 & number != 1").json).equals(
+				type("number % 2").json
+			)
+		})
+
+		it("intersection with the value", () => {
+			attest(() => type("number != 5 & number == 5")).throws.snap(
+				"ParseError: Intersection of != 5 and 5 results in an unsatisfiable type"
+			)
+			attest(() => type("string == 3 & string != 3")).throws.snap(
+				"ParseError: Intersection of == 3 and != 3 results in an unsatisfiable type"
+			)
+		})
+
+		it("intersection with the same value", () => {
+			attest(type("number != 5 & number != 5").json).equals(
+				type("number != 5").json
+			)
+		})
+
+		it("intersection with another value", () => {
+			const T = type("number != 10 & number != 2")
+			attest(T.json).snap({ domain: "number", notEqual: [2, 10] })
+			attest(T.json).equals(type("number != 2 & number != 10").json)
+		})
+
+		it("subtype", () => {
+			attest(type("number > 0").extends(type("number != 0"))).equals(true)
+			attest(type("number").extends(type("number != 0"))).equals(false)
+		})
+
+		it("JSON Schema", () => {
+			attest(type("0 <= number < 10 & number != 5").toJsonSchema()).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "number",
+				exclusiveMaximum: 10,
+				minimum: 0,
+				not: { const: 5 }
+			})
+			attest(type("number != 2 & number != 5").toJsonSchema()).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "number",
+				not: { enum: [2, 5] }
+			})
+		})
+
+		it("length JSON Schema", () => {
+			attest(type("string != 3").toJsonSchema()).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "string",
+				not: { type: "string", minLength: 3, maxLength: 3 }
+			})
+			attest(type("unknown[] != 1 & unknown[] != 3").toJsonSchema()).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "array",
+				not: {
+					anyOf: [
+						{ type: "array", minItems: 1, maxItems: 1 },
+						{ type: "array", minItems: 3, maxItems: 3 }
+					]
+				}
+			})
+		})
+
+		it("alias with !", () => {
+			const $ = scope({ "a!b": "number", T: "a!b != 0" }).export()
+			attest($.T.json).equals(type("number != 0").json)
+		})
+
+		it("left bound", () => {
+			// @ts-expect-error
+			attest(() => type("0 != number")).throwsAndHasTypeError(
+				writeUnpairableComparatorMessage("!=")
+			)
+		})
+
+		it("paired with a left bound", () => {
+			// @ts-expect-error
+			attest(() => type("3 < number != 5")).throwsAndHasTypeError(
+				writeUnpairableComparatorMessage("!=")
+			)
+		})
+
+		it("missing =", () => {
+			// @ts-expect-error
+			attest(() => type("(number)!0")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage("!")
+			)
+		})
+
+		it("unboundable", () => {
+			// @ts-expect-error
+			attest(() => type("boolean != 0")).throwsAndHasTypeError(
+				writeUnboundableMessage("boolean")
+			)
+		})
+
+		it("Date limit on number", () => {
+			// @ts-expect-error
+			attest(() => type("number!=d'2001-01-01'")).throwsAndHasTypeError(
+				writeInvalidLimitMessage("!=", "d'2001-01-01'", "right")
+			)
+		})
+
+		it("non-literal limit", () => {
+			// @ts-expect-error
+			attest(() => type("number!=string")).throwsAndHasTypeError(
+				writeInvalidLimitMessage("!=", "string", "right")
+			)
+		})
+	})
+
+	describe("range unions", () => {
+		it("adjacent", () => {
+			attest(type("1 < number < 10 | 10 <= number < 100").json).equals(
+				type("1 < number < 100").json
+			)
+		})
+
+		it("overlapping", () => {
+			attest(type("0 < number < 10 | 5 < number < 20").json).equals(
+				type("0 < number < 20").json
+			)
+		})
+
+		it("wider gap", () => {
+			const T = type("0 < number < 5 | 6 < number < 10")
+			attest(T.expression).snap("6 < number < 10 | 0 < number < 5")
+		})
+
+		it("excluded value the other includes", () => {
+			attest(
+				type("0 <= number < 10 & number != 5 | 4 < number < 6").json
+			).equals(type("0 <= number < 10").json)
+		})
+
+		it("excluded values neither includes", () => {
+			attest(
+				type("0 <= number < 10 & number != 5 | 6 < number < 20 & number != 15")
+					.json
+			).equals(type("0 <= number < 20 & number != 5 & number != 15").json)
+		})
+
+		it("half-line excluding a value", () => {
+			attest(type("number < 0 | number >= 0 & number != 3").json).equals(
+				type("number != 3").json
+			)
+		})
+
+		it("adjacent lengths", () => {
+			attest(type("2 <= string <= 4 | 5 <= string <= 8").json).equals(
+				type("2 <= string <= 8").json
+			)
+		})
+
+		it("exact lengths one apart", () => {
+			attest(type("string == 3 | string == 4").json).equals(
+				type("3 <= string <= 4").json
+			)
+		})
+
+		it("exact lengths further apart", () => {
+			const T = type("string == 3 | string == 6")
+			attest(T.expression).snap("string == 3 | string == 6")
+		})
+
+		it("overlapping Dates", () => {
+			attest(
+				type(
+					"d'2000-01-01' <= Date <= d'2000-02-01' | d'2000-01-15' <= Date <= d'2000-03-01'"
+				).json
+			).equals(type("d'2000-01-01' <= Date <= d'2000-03-01'").json)
+		})
+
+		it("unit at a bound", () => {
+			attest(type("number < 5 | number == 5").json).equals(
+				type("number <= 5").json
+			)
+		})
+
+		it("unit at an excluded value", () => {
+			attest(type("number != 5 | number == 5").json).equals(type("number").json)
+		})
+
+		it("Date unit at a bound", () => {
+			attest(type("Date < d'2000-01-01' | Date == d'2000-01-01'").json).equals(
+				type("Date <= d'2000-01-01'").json
+			)
+		})
+
+		it("unit the rest excludes", () => {
+			const T = type("number.integer < 5 | 5.5")
+			attest(T.expression).snap("number % 1 < 5 | 5.5")
+		})
+
+		it("ranges allowing NaN", () => {
+			const nanable = { domain: "number", numberAllowsNaN: true } as const
+			const T = rootSchema([
+				{ domain: nanable, min: { rule: 0, exclusive: true }, max: 5 },
+				{ domain: nanable, min: 3, max: 10 }
+			])
+			attest(T.branches.length).equals(2)
+			attest(T.allows(Number.NaN)).equals(false)
 		})
 	})
 

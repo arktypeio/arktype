@@ -21,13 +21,11 @@ import {
 	ArkErrors as BaseArkErrors,
 	failsIn,
 	issueAt,
-	issueWith,
 	mergeIssues,
 	messageOf,
 	type ArkIssue,
 	type CompactApply,
 	type FailureContext,
-	type FailureInput,
 	type FailureSite,
 	type UnionSite
 } from "./issues.ts"
@@ -191,13 +189,6 @@ export class InternalTraversal implements FailureContext {
 		data?: unknown
 	): boolean | undefined {
 		return failsIn(this, this.path, apply, value, key, missing, data)
-	}
-
-	// reached only by arktype's own checks
-	/** @internal */
-	failsWith(input: FailureInput): boolean {
-		this.addError(issueWith(this.path, input))
-		return this.failFast
 	}
 
 	/** @internal */

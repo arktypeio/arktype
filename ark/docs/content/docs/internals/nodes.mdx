@@ -70,19 +70,21 @@ Constraint nodes sit on an intersection and narrow what its [basis](#bases) allo
 
 Refinements apply to the intersection itself:
 
-| kind          | requires          | allows                                                                        | schema                             |
-| ------------- | ----------------- | ----------------------------------------------------------------------------- | ---------------------------------- |
-| `pattern`     | `string`          | Strings matching a regex                                                      | `{ rule: "^[a-z]+$", flags: "i" }` |
-| `divisor`     | `number`          | Multiples of an integer                                                       | `{ rule: 2 }`                      |
-| `min`         | `number`          | Numbers at or above `rule`, or above it if `exclusive`                        | `{ rule: 0, exclusive: true }`     |
-| `max`         | `number`          | Numbers at or below `rule`, or below it if `exclusive`                        | `{ rule: 100 }`                    |
-| `minLength`   | `string \| Array` | At least `rule` characters or elements                                        | `{ rule: 1 }`                      |
-| `maxLength`   | `string \| Array` | At most `rule` characters or elements                                         | `{ rule: 255 }`                    |
-| `exactLength` | `string \| Array` | Exactly `rule` characters or elements                                         | `{ rule: 10 }`                     |
-| `after`       | `Date`            | Dates at or after `rule`                                                      | `{ rule: new Date("2000-01-01") }` |
-| `before`      | `Date`            | Dates at or before `rule`                                                     | `{ rule: new Date("2030-01-01") }` |
-| `structure`   | `object`          | Objects whose props and elements match its [structural](#structural) children | `{ required: [...] }`              |
-| `predicate`   |                   | Data a custom `narrow` function accepts                                       | `{ predicate: n => n % 2 === 1 }`  |
+| kind             | requires          | allows                                                                        | schema                             |
+| ---------------- | ----------------- | ----------------------------------------------------------------------------- | ---------------------------------- |
+| `pattern`        | `string`          | Strings matching a regex                                                      | `{ rule: "^[a-z]+$", flags: "i" }` |
+| `divisor`        | `number`          | Multiples of an integer                                                       | `{ rule: 2 }`                      |
+| `min`            | `number`          | Numbers at or above `rule`, or above it if `exclusive`                        | `{ rule: 0, exclusive: true }`     |
+| `max`            | `number`          | Numbers at or below `rule`, or below it if `exclusive`                        | `{ rule: 100 }`                    |
+| `minLength`      | `string \| Array` | At least `rule` characters or elements                                        | `{ rule: 1 }`                      |
+| `maxLength`      | `string \| Array` | At most `rule` characters or elements                                         | `{ rule: 255 }`                    |
+| `exactLength`    | `string \| Array` | Exactly `rule` characters or elements                                         | `{ rule: 10 }`                     |
+| `after`          | `Date`            | Dates at or after `rule`                                                      | `{ rule: new Date("2000-01-01") }` |
+| `before`         | `Date`            | Dates at or before `rule`                                                     | `{ rule: new Date("2030-01-01") }` |
+| `notEqual`       | `number \| Date`  | Numbers or Dates other than `rule`                                            | `{ rule: 0 }`                      |
+| `notEqualLength` | `string \| Array` | Other than `rule` characters or elements                                      | `{ rule: 3 }`                      |
+| `structure`      | `object`          | Objects whose props and elements match its [structural](#structural) children | `{ required: [...] }`              |
+| `predicate`      |                   | Data a custom `narrow` function accepts                                       | `{ predicate: n => n % 2 === 1 }`  |
 
 In an intersection's schema, the constraint's kind is its key and a bare rule is shorthand, so `{ domain: "number", divisor: 2 }` is `{ domain: "number", divisor: { rule: 2 } }`. A `structure`'s keys sit directly on the intersection: `{ domain: "object", required: [...], undeclared: "reject" }`.
 

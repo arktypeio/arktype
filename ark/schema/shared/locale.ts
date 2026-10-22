@@ -173,10 +173,24 @@ export const describeMissing = (
 	if (missing.code !== "union") return describeBasis(missing, locale)
 	if (missing.branches.length === 0) return locale.nouns.never
 	if (isBooleanPair(missing.branches)) return locale.nouns.boolean
+	return locale.list(describeEachMissing(missing, locale), "or")
+}
+
+// each alternative a missing value names, once
+const describeEachMissing = (
+	missing: MissingValue,
+	locale: Locale
+): string[] => {
+	if (
+		missing.code !== "union" ||
+		missing.branches.length === 0 ||
+		isBooleanPair(missing.branches)
+	)
+		return [describeMissing(missing, locale)]
 	const branches: string[] = []
 	for (const branch of missing.branches)
 		appendUnique(branches, describeMissing(branch, locale))
-	return locale.list(branches, "or")
+	return branches
 }
 
 // a unit or proto's description is authored, by its meta or a scope's
@@ -233,7 +247,12 @@ export const groupByPath = (
 	return groups.map(group => {
 		const expected: string[] = []
 		if (isBooleanPair(group)) expected.push(locale.nouns.boolean)
-		else for (const error of group) appendUnique(expected, error.expected)
+		else {
+			for (const error of group) {
+				for (const branch of alternativesOf(error, locale))
+					appendUnique(expected, branch)
+			}
+		}
 		const actual = group[0].actual
 		const propString = group[0].propString
 		return {
@@ -248,6 +267,46 @@ export const groupByPath = (
 			data: group[0].data
 		}
 	})
+}
+
+/**
+ * what an error expects, as the alternatives a union lists once each: a
+ * missing value's branches or a discriminant's cases, as the branches it
+ * excluded would name them, unless its expected text is authored
+ */
+export const alternativesOf = (
+	error: ArkError,
+	locale: Locale
+): readonly string[] => {
+	if (error.code === "required") {
+		return error.expected === describeMissing(error.missing, locale) ?
+				describeEachMissing(error.missing, locale)
+			:	[error.expected]
+	}
+	const write = locale.discriminant.expected
+	if (error.code !== "discriminant" || typeof write !== "function")
+		return [error.expected]
+	const cases = error.cases.map(c =>
+		write({ ...error, cases: [c] } as never, locale)
+	)
+	return error.expected === locale.list(cases, "or") ? cases : [error.expected]
+}
+
+/** the actual a union's errors agree on, if each is at the union's own path */
+export const actualAtPathOf = (union: {
+	readonly propString: string
+	readonly errors: readonly ArkError[]
+}): string | undefined => {
+	let actual: string | undefined
+	for (const error of union.errors) {
+		if (
+			error.propString !== union.propString ||
+			(actual !== undefined && error.actual !== actual)
+		)
+			return
+		actual = error.actual
+	}
+	return actual
 }
 
 /** a thrown value as text, though it may be a symbol or have no toString */

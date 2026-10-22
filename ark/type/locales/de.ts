@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
+	actualAtPathOf,
 	describeCause,
 	describeMissing,
 	groupByPath,
@@ -102,6 +103,9 @@ const was = (actual: string) => actual && `, ist aber ${actual}`
 
 const mustBe = (expected: string, actual: string) =>
 	`muss ${expected} sein${was(actual)}`
+
+// what a missing key or discriminant was
+const absent = "nicht vorhanden"
 
 // dative after "mit", accusative after "enthält"
 const elements = (n: number, locale: Locale.Info, dative?: true) =>
@@ -412,6 +416,9 @@ export const de: Locale.Complete = {
 						`${subjectOf(group.propString, group.label, locale)} `
 					const expected = locale.list(group.expected, "or")
 					const actual = group.actual ?? printKind(group.data, locale)
+					// a missing key reads as its own error does
+					if (actual === absent)
+						return `${subject}fehlt (muss ${expected} sein)`
 					// beside other paths, a comma would blur where each one's text ends
 					return groups.length === 1 ?
 							`${subject}${mustBe(expected, actual)}`
@@ -420,7 +427,7 @@ export const de: Locale.Complete = {
 				"or"
 			)
 		},
-		actual: (data, e, locale) => printKind(data, locale),
+		actual: (data, e, locale) => actualAtPathOf(e) ?? printKind(data, locale),
 		problem: e => (e.errors.length ? e.expected : mustBe(e.expected, e.actual)),
 		message: (e, locale) =>
 			e.errors.length === 0 ? locale.message(e, locale) : e.problem
@@ -451,6 +458,27 @@ export const de: Locale.Complete = {
 	},
 	before: dateWriters("spätestens"),
 	after: dateWriters("frühestens"),
+	notEqual: {
+		// "ungleich" takes a dative
+		expected: (e, locale) =>
+			`ungleich ${print(e.rule, locale).replace(/^der /, "dem ")}`,
+		actual: (data, e, locale) => print(data, locale),
+		problem: e => mustBe(e.expected, e.actual)
+	},
+	notEqualLength: {
+		expected: (e, locale) =>
+			typeof e.data === "string" ?
+				`nicht ${length(e.rule, e.data, locale)}`
+			:	`kein Array mit ${elements(e.rule, locale, true)}`,
+		actual: (data, e, locale) => length(data.length, data, locale),
+		// "muss nicht" means "need not"
+		problem: (e, locale) =>
+			`darf nicht ${
+				typeof e.data === "string" ?
+					`${length(e.rule, e.data, locale)} sein`
+				:	`${elements(e.rule, locale)} enthalten`
+			}${was(e.actual)}`
+	},
 	predicate: {
 		expected: predicateOf,
 		actual: (data, e, locale) =>
@@ -465,7 +493,7 @@ export const de: Locale.Complete = {
 	},
 	required: {
 		expected: (e, locale) => describeMissing(e.missing, locale),
-		actual: "nicht vorhanden",
+		actual: absent,
 		problem: (e, locale) =>
 			e.missing.code === "intersection" ?
 				"fehlt"
@@ -479,7 +507,7 @@ export const de: Locale.Complete = {
 	discriminant: {
 		expected: casesOf,
 		actual: (data, e, locale) =>
-			e.absent ? "nicht vorhanden"
+			e.absent ? absent
 			: e.discriminantKind === "domain" ? locale.nouns[domainOf(data)]
 			: printKind(data, locale),
 		problem: (e, locale) =>

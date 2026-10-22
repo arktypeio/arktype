@@ -25,13 +25,16 @@ export const writeUnitProblem: ProblemWriter<"unit"> = ({
 		`must be reference equal to ${expected} (serialized to the same value)`
 	:	`must be ${expected} (was ${actual})`
 
+export const writeNotEqualActual: ActualWriter<"notEqual"> = data =>
+	data instanceof Date ? describeCollapsibleDate(data) : printKind(data)
+
 export const writeDomainActual: ActualWriter<"domain"> = data =>
 	typeof data === "number" && !Number.isFinite(data) ?
 		String(data)
 	:	domainDescriptions[domainOf(data)]
 
 export const writeLengthActual: ActualWriter<
-	"maxLength" | "exactLength"
+	"maxLength" | "exactLength" | "notEqualLength"
 > = data => `${data.length}`
 
 // avoid default message like "must be non-empty (was 0)"

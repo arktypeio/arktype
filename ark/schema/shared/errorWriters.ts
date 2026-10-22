@@ -22,12 +22,19 @@ import {
 	writeDomainActual,
 	writeLengthActual,
 	writeMinLengthActual,
+	writeNotEqualActual,
 	writeProblem,
 	writeProtoActual,
 	writeUnitProblem
 } from "./enWriters.ts"
 import type { NodeKind } from "./implement.ts"
-import { describeCause, keywordWriterOf, type Locale } from "./locale.ts"
+import {
+	actualAtPathOf,
+	alternativesOf,
+	describeCause,
+	keywordWriterOf,
+	type Locale
+} from "./locale.ts"
 import { describeBranches, describeCases } from "./utils.ts"
 
 export const writeMessage: MessageWriter = ctx => {
@@ -81,6 +88,8 @@ export const errorWritersByCode: {
 	maxLength: { actual: writeLengthActual },
 	min: {},
 	minLength: { actual: writeMinLengthActual },
+	notEqual: { actual: writeNotEqualActual },
+	notEqualLength: { actual: writeLengthActual },
 	pattern: {},
 	// a keyword's nodes describe their errors through meta, so its phrase writes
 	// only errors it raises through ctx: their actual, and the problem of one that
@@ -122,12 +131,12 @@ export const errorWritersByCode: {
 		actual: () => "missing"
 	},
 	union: {
-		expected: ctx => {
+		expected: (ctx, locale) => {
+			if (ctx.description !== undefined) return ctx.description
 			const path = ctx.errors[0]?.propString
-			bracketed = path?.[0] === "["
 			// a union's branches usually fail at one path, so they needn't be grouped
 			if (ctx.errors.length && ctx.errors.every(e => e.propString === path))
-				return (written = describeAtPath(ctx.errors))
+				return describeAtPath(ctx.errors, locale)
 			const errorsAtPaths: ArkError[][] = []
 			for (const error of ctx.errors) {
 				const errorsAtPath = errorsAtPaths.find(
@@ -136,22 +145,17 @@ export const errorWritersByCode: {
 				if (errorsAtPath) errorsAtPath.push(error)
 				else errorsAtPaths.push([error])
 			}
-			return (written = describeBranches(errorsAtPaths.map(describeAtPath)))
+			return describeBranches(
+				errorsAtPaths.map(errors => describeAtPath(errors, locale))
+			)
 		},
-		// its message doesn't show it, so data that may be large isn't printed
-		actual: printKind,
-		// a union without branches, like never, has no errors to read paths from
+		// data that may be large is printed by its kind
+		actual: (data, ctx) => actualAtPathOf(ctx) ?? printKind(data),
+		// its text is its errors', unless it has none, like never, or a description
 		problem: (ctx, info) =>
-			ctx.errors.length ? ctx.expected : writeProblem(ctx, info),
-		message: (ctx, info) => {
-			if (!ctx.errors.length) return writeMessage(ctx, info)
-			const problem = ctx.problem
-			// text it wrote starts as its first path does
-			if (problem === written ? bracketed : problem[0] === "[")
-				return `value at ${problem}`
-
-			return problem
-		}
+			listsErrors(ctx) ? ctx.expected : writeProblem(ctx, info),
+		message: (ctx, info) =>
+			listsErrors(ctx) ? ctx.problem : writeMessage(ctx, info)
 	},
 	unit: {
 		actual: printKind,
@@ -170,15 +174,24 @@ export const errorWritersByCode: {
 	}
 }
 
-// the expected a union last wrote, and whether it starts with a bracket
-let written: string | undefined
-let bracketed = false
+const listsErrors = (ctx: {
+	errors: readonly unknown[]
+	description?: string
+}): boolean => ctx.errors.length !== 0 && ctx.description === undefined
 
-const describeAtPath = (errors: readonly ArkError[]): string => {
+const describeAtPath = (
+	errors: readonly ArkError[],
+	locale: Locale.Info
+): string => {
 	const path = errors[0].propString
 	const branchesAtPath: string[] = []
-	for (const e of errors)
-		if (!branchesAtPath.includes(e.expected)) branchesAtPath.push(e.expected)
+	for (const e of errors) {
+		// a standalone build's locale is en's info alone, which names no alternatives
+		const alternatives =
+			"cite" in locale ? alternativesOf(e, locale as Locale) : [e.expected]
+		for (const branch of alternatives)
+			if (!branchesAtPath.includes(branch)) branchesAtPath.push(branch)
+	}
 
 	const expected = describeBranches(branchesAtPath)
 	// if there are multiple actual descriptions that differ,
@@ -188,9 +201,12 @@ const describeAtPath = (errors: readonly ArkError[]): string => {
 		errors.every(e => e.actual === firstActual) ? firstActual : (
 			printKind(errors[0].data)
 		)
-	return `${path && `${path} `}must be ${expected}${
-		actual && ` (was ${actual})`
-	}`
+	// each path is written as its own error's message would write it
+	const subject =
+		path === "" ? ""
+		: path[0] === "[" ? `value at ${path} `
+		: `${path} `
+	return `${subject}must be ${expected}${actual && ` (was ${actual})`}`
 }
 
 export type errorWritersOf<code extends ArkErrorCode> = requireKeys<

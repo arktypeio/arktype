@@ -111,7 +111,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-A described union's miss is at the union's own path, with the union's value as its `data`. A miss of a union discriminated by its value whose branch is described has the `union` code instead, as an undiscriminated union's does.
+A described union's miss is at the union's own path, with the union's value as its `data`. A union reports `union` rather than `discriminant` where its discriminant can't tell the branches apart: for data that can't hold it, like `5` for a union of objects, for data matching none of its values when some branches don't have its key, and for a miss of a union discriminated by its value whose branch is described.
 
 Configure its text under `discriminant` instead of `predicate`. An exhaustive `switch` over `ArkErrorCode` must handle `undeclared` and `discriminant`.
 

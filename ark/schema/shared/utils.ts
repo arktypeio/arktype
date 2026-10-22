@@ -186,15 +186,13 @@ export const valueAtPath = (
 	return value
 }
 
-export const isAbsent = (path: array<PropertyKey>, data: unknown): boolean => {
-	if (path.length === 0) return false
-	const parent = valueAtPath(path, data, path.length - 1)
-	return (
-		parent === undefined ||
-		parent === null ||
-		!(path[path.length - 1] in Object(parent))
+// whether data whose path is read from objects lacks the path's last key
+export const isAbsent = (path: array<PropertyKey>, data: unknown): boolean =>
+	path.length !== 0 &&
+	!(
+		path[path.length - 1] in
+		(valueAtPath(path, data, path.length - 1) as object)
 	)
-}
 
 export type DescribeBranchesOptions = {
 	delimiter?: string

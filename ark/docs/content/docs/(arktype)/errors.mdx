@@ -115,6 +115,8 @@ An error's `code` tells you its other fields:
 | `divisor`                               | `rule`                                                                                                                                                     |
 | `pattern`                               | `rule` (the regex source) and `flags`                                                                                                                      |
 | `before`, `after`                       | `rule`, a `Date`                                                                                                                                           |
+| `notEqual`                              | `rule`, a number or `Date`                                                                                                                                 |
+| `notEqualLength`                        | `rule`                                                                                                                                                     |
 | `predicate`                             | `predicate` when a narrow returns `false`; `morph` and what it threw as `cause` for `pipe.try`; `meta.keyword` and sometimes `cause` for a keyword's parse |
 | `required`                              | `missing`, the missing value's type; `valueMeta`, its meta; and `missingValueDescription`, its English description                                         |
 | `undeclared`                            | none; its `data` is the value of a key `"+": "reject"` disallows                                                                                           |
@@ -124,7 +126,7 @@ An error's `code` tells you its other fields:
 
 Each also has `data` and `path`, and `meta` unless `ctx` or `pipe.try` raised it. Built-in keywords with their own text, like `string.email`, set `meta.keyword` to their name.
 
-`discriminant` is a miss of a union ArkType checks by switching on a domain or a literal value: branches with different domains, like `number | null`, three or more literals, like `"a" | "b" | "c"`, or objects with a discriminant key. Its `data` is the discriminant's value, and `cases` lists the values or domains it expected, with `"Array"` in place of `"object"` where every object it expected is an array. Other unions, including two literals like `"a" | "b"`, report `union`:
+`discriminant` is a miss of a union ArkType checks by switching on a domain or a literal value: branches with different domains, like `number | null`, three or more literals, like `"a" | "b" | "c"`, or objects with a discriminant key. Its `data` is the discriminant's value, and `cases` lists the values or domains it expected, with `"Array"` in place of `"object"` where every object it expected is an array:
 
 ```ts
 const Shape = type({ kind: "'circle'", r: "number" }).or({
@@ -144,6 +146,8 @@ if (out instanceof type.errors) {
 	if (error.code === "discriminant") error.cases
 }
 ```
+
+A union reports `union` instead where its discriminant can't tell the branches apart: an undiscriminated union, including two literals like `"a" | "b"`; data that can't hold the discriminant, like `5` for a union of objects; and data matching none of the discriminant's values when some branches don't have its key, whose `errors` hold the miss beside those branches' errors.
 
 ## TraversalError
 
