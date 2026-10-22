@@ -35,6 +35,8 @@ const result = Form["~standard"].validate({ name: "Ada", age: "old" })
 // ArkErrors: age must be a well-formed integer string (was "old")
 ```
 
+Like any `ArkErrors`, it may find its issues when they're first read, so they [describe the data as it is then](/docs/errors#arkerrors). Read them before the data you validated can change.
+
 ArkType always validates synchronously. The spec allows a `Promise`, which is why the return type includes one.
 
 The spec's type helpers map to a Type's input and output:
