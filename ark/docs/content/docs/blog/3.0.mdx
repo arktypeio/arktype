@@ -1,7 +1,7 @@
 ---
 title: Announcing ArkType 3.0
 description: Faster than Typia, smaller than Valibot and optimized for agentic dev
-date: 2026-10-21
+date: 2026-10-21 # the release sets this, and blog/index.mdx's date, to the day it publishes
 ---
 
 As of today, ArkType 3.0 is generally available🎉
@@ -30,7 +30,7 @@ const out = User(data)
 if (out instanceof type.errors) console.error(out.summary)
 ```
 
-Below are the highlights. If you're upgrading, [Upgrading](/docs/upgrading) and the [changelog](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md) have the full list, including what breaks. We can't wait to hear what you think! 🚀
+Below are the highlights. If you're upgrading, [Upgrading](/docs/upgrading) lists what breaks, and the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/precompile](https://github.com/arktypeio/arktype/blob/main/ark/precompile/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md) have the rest.
 
 ## Dynamic and precompiled
 
@@ -65,6 +65,8 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 ```
 
 `npx arktype-precompile --check "src/**/*.ts"` lists every such definition before you switch, and `runtime: "arktype"` precompiles what it can while shipping arktype for the rest, so you can migrate a program at your own pace. [Setup](/docs/precompile/setup) has a config for each bundler.
+
+Options go in the plugin call or in an [`ark.json`](/docs/precompile/options#arkjson) that the plugin, the drivers, the CLI and the ESLint rule all read, and a [preset](/docs/precompile/options#presets) sets several at once: `"smallest"` trades speed for size. A production build leaves out the runtime checks of what the build already verified.
 
 ### Set theory at build time
 
@@ -172,7 +174,27 @@ A precompiled build takes both as options, alongside [`members`](/docs/precompil
 
 ## Dynamic Types do less work
 
-Dynamic ArkType does less work too. A Type compiles when it's first used rather than when it's defined, so a Type a program never calls costs nothing to compile. A Type that calls no narrow or morph finds its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. <Claim id="strictSpeedup" />
+A Type compiles when it's first used rather than when it's defined, so a Type a program never calls costs nothing to compile. A Type that calls no narrow or morph finds its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. <Claim id="strictSpeedup" />
+
+## Syntax
+
+[`!=`](/docs/primitives#number-ranges) excludes one value, like `number != 0`, and a union of ranges merges where it can: `1 < number < 10 | 10 <= number < 100` is `1 < number < 100`, and `number < 0 | number > 0` is `number != 0`. An object's [`"@"`](/docs/expressions#meta) key holds its description or meta, as `"@"` does in a tuple expression:
+
+```ts
+const User = type({
+	"@": "a user",
+	name: "string"
+})
+
+// ArkErrors: must be a user (was a number)
+User(5)
+```
+
+## ArkSets and JSON Schema
+
+[ArkSets](/docs/sets) applies the same set theory to any schema: a Type, a Standard JSON Schema like Zod's, or a plain JSON Schema. `isSubset(v1, v2)` tells you whether a new version of an API schema still accepts everything the old one did, and `intersect`, `union` and `toJsonSchema` combine and normalize schemas across formats.
+
+`jsonSchemaToType` from [`@ark/json-schema`](/docs/json-schema/from-json-schema) reads a schema through it, so the Type accepts exactly what a JSON Schema 2020-12 validator does, and infers the type of a schema written in the call.
 
 ## Errors as data
 
