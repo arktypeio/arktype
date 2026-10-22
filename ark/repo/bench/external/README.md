@@ -97,3 +97,7 @@ C1 holds its ranks: B1 takes the fewest instructions on parseSafe (189 vs
 The parseSafe cells miss the 1.001 gate by up to 0.0023 (0.3 instructions),
 which reorders nothing. 2.2.9's strict counts vary by 14-16% between reps, so
 their ratios to dynamic span 11.2x to 13x. C2: B2 is 1312 B gzipped, Valibot 1547.
+
+At 3eb166a9c, a fix that keeps union merges from dropping branch descriptions
+grew dynamic ArkType's login bundle to 80041 B gzipped
+(`results/login-3eb166a9c.json`). Every other size is unchanged.

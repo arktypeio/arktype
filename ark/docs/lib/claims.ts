@@ -80,7 +80,8 @@ export const speedChart: BenchmarkChart = {
 // reporting every error with its message. Precompiled with
 // { preset: "smallest" } in a production build (esbuild's "production"
 // condition): 2671 / 1312 B min / gz; 2943 / 1461 in development, and the
-// default build 1740 in production.
+// default build 1740 in production. Sizes re-measured at 3eb166a9c
+// (results/login-3eb166a9c.json).
 export const sizeChart: BenchmarkChart = {
 	title: "Bundle size",
 	detail:
@@ -96,7 +97,7 @@ export const sizeChart: BenchmarkChart = {
 		{ name: "Valibot", kind: "other", value: 1547 },
 		{ name: "Zod Mini", kind: "other", value: 5127 },
 		{ name: "Zod", kind: "other", value: 25058 },
-		{ name: "ArkType (dynamic)", kind: "dynamic", value: 79915 }
+		{ name: "ArkType (dynamic)", kind: "dynamic", value: 80041 }
 	]
 }
 
@@ -142,11 +143,11 @@ export const claims = {
 	noInit:
 		"A precompiled Type costs nothing to create: it was built when you built.",
 	// `import { type } from "arktype"` by ark/repo/bench/bundle.ts's method
-	// (esbuild bundle + minify, esm, neutral, gzip): 79943 vs 2.2.9's 47803 B
-	// gz (253923 vs 156113 min); sizeChart's dynamic bar, the login form, is
-	// 79915
+	// (esbuild bundle + minify, esm, neutral, gzip) at 3eb166a9c: 80066 vs
+	// 2.2.9's 47803 B gz (254272 vs 156113 min); sizeChart's dynamic bar, the
+	// login form, is 80041
 	dynamicSize:
-		"Dynamic ArkType is 79.9 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less."
+		"Dynamic ArkType is 80.1 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less."
 } satisfies Record<string, Claim<string>>
 
 export type ClaimId = keyof typeof claims

@@ -7,7 +7,7 @@
 		"runtime": "Node 25.2.1",
 		"rounds": 150,
 		"method": "BENCH_ROUNDS=150 BENCH_CORE=13,15 pnpm benchValidate on ark/repo/bench, on a shared machine, each run started below a 1-minute load of 4 (2.9-3.9 at the runs' starts and ends), benchmark processes pinned to cores 13 and 15. Each library runs in its own process, driven round by round over IPC; one arm is timed at a time and the arm order rotates each round. Each arm warms 1 s / 10k calls, then a sample is the mean ns per call over a batch of >= 0.5 ms, on fresh unfrozen copies of the input. Every arm's output is checked to agree with arktype's before timing. Medians are over rounds; p is a two-sided sign test paired by round; verdict is win/loss at p < .05, else tie. replication tallies the same comparison's verdict in 1 further quiet run at the same commit.",
-		"size": "esbuild-minified bundle of each app at c42ee008c, bytes and gzip",
+		"size": "esbuild-minified bundle of each app at c42ee008c, bytes and gzip; the arktype (dynamic) rows at 3eb166a9c",
 		"startup": {
 			"commit": "c42ee008c",
 			"date": "2026-10-22",
@@ -5802,8 +5802,8 @@
 				"gzip": 41859
 			},
 			"arktype": {
-				"min": 253990,
-				"gzip": 79976
+				"min": 254339,
+				"gzip": 80099
 			},
 			"standalone": {
 				"min": 3730,
@@ -5844,8 +5844,8 @@
 				"gzip": 41880
 			},
 			"arktype": {
-				"min": 254105,
-				"gzip": 80011
+				"min": 254454,
+				"gzip": 80132
 			},
 			"standalone": {
 				"min": 4326,
@@ -5886,8 +5886,8 @@
 				"gzip": 42902
 			},
 			"arktype": {
-				"min": 255887,
-				"gzip": 80820
+				"min": 256236,
+				"gzip": 80957
 			},
 			"standalone": {
 				"min": 32512,
