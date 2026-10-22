@@ -47,6 +47,10 @@ jsonSchema({ type: "string", minLength: -1 })
 A schema TypeScript can't see as a literal, like one read from a `.json` file, can be cast with `jsonSchema.as`:
 
 ```ts
+import { jsonSchema } from "@ark/json-schema"
+
+declare const userJson: object
+
 const User = jsonSchema.as<{ name: string; age?: number }>(userJson)
 ```
 

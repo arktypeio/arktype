@@ -51,7 +51,9 @@ Roots validate (`root(data)`, `root.allows(data)`), print (`root.expression`) an
 An arktype object can also be an array, and a JSON Schema object can't, so an arktype Type is compared by its own semantics. Compare its `.toJsonSchema()` to use JSON's:
 
 ```ts
+import { isSubset } from "arksets"
 import { type } from "arktype"
+import { z } from "zod"
 
 const User = type({ name: "string" })
 const ZodUser = z.object({ name: z.string() })

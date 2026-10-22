@@ -270,7 +270,7 @@ export const fr: Locale = {
 }
 ```
 
-- Until you replace them, the parts you spread from `en` write English. Most of its writers don't read `nouns`, `list` or `date`: only its `discriminant` and `required` writers and `basis` read `nouns`, and `required` also reads `list`.
+- Until you replace them, the parts you spread from `en` write English. Most of its writers don't read `nouns`, `list` or `date`: only its `discriminant`, `required` and `union` writers and `basis` read `nouns`, and `required` and `union` also read `list`.
 - Where a locale has no `expected` for a code, an error's `expected`, and so its `toJSON()`, is English. If your unions list their branches' fragments, annotate the locale with `Locale.Complete` to check that it has a fragment for every code and a phrase for every keyword. A locale without fragments can write its unions from `ctx.errors`, each with its own `problem`.
 - A locale's writers receive the error and the locale. An error's `description` is English, so `expected` writers can't use it.
 - `arktype/i18n` exports the helpers `de` is written with: `listPattern`, `isolate`, `groupByPath` (a union's errors by path), `labelOf` (the title of the value an error is about), `describeMissing`, `describeCause` and `writeKeywordExpected`.

@@ -8,7 +8,7 @@ ArkType is TypeScript's 1:1 validator, optimized from editor to runtime. It pars
 - [`ark/type/skills/arktype/SKILL.md`](ark/type/skills/arktype/SKILL.md) is the Agent Skill users install with `npx skills add arktypeio/arktype`. Keep its examples type-checking against the current API.
 - [Precompile](https://arktype.io/docs/precompile) (`ark/docs/content/docs/precompile`) is the reference for `@ark/aot`; `ark/aot/README.md` only points to it.
 - Every benchmark number or superlative the docs state lives in `ark/docs/lib/claims.ts`, with the benchmark that backs it, except the homepage's own benchmark, which `ark/docs/lib/bench` computes from its data. Don't state one elsewhere.
-- The [cheat sheet](https://arktype.io/docs/cheat-sheet) (`ark/docs/content/docs/(arktype)/cheat-sheet.mdx`) is an abbreviated version of it covering the most common syntax and gotchas.
+- The [cheat sheet](https://arktype.io/docs/cheat-sheet) (`ark/docs/content/docs/(arktype)/cheat-sheet.mdx`) is an abbreviated version of the skill covering the most common syntax and gotchas.
 
 ## Commands
 

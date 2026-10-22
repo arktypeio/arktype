@@ -38,7 +38,7 @@ const out = User({ name: "Alan", age: -1 })
 - [`skipLibCheck`](https://www.typescriptlang.org/tsconfig#skipLibCheck) is recommended. It avoids harmless errors from differences between your config and ours (see [FAQ](/docs/faq#why-do-i-see-type-errors-in-an-arktype-package-in-node_modules)) and speeds up your editor.
 - [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig#exactOptionalPropertyTypes) is recommended. It makes your inferred types match runtime behavior. ArkType rejects `undefined` for an optional key unless its value allows it, so without this flag, `typeof User.infer` accepts `{ age: undefined }` while `User` rejects it.
 
-ArkType runs in Node, Deno, Bun, browsers and edge runtimes. Under a strict Content-Security-Policy, enable [`jitless`](/docs/configuration#jitless) so it never tries `new Function`, or [precompile](#precompile) your Types.
+ArkType runs in Node, Deno, Bun, browsers and edge runtimes like Cloudflare Workers. Where `new Function` is blocked, it validates without compiling. Under a strict Content-Security-Policy, enable [`jitless`](/docs/configuration#jitless) so it never tries `new Function`, which the policy would report, or [precompile](#precompile) your Types.
 
 ## Precompile
 

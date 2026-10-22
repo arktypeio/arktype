@@ -390,7 +390,7 @@ const TrimStart = type("string", "=>", str => str.trimStart())
 
 </SyntaxTabs>
 
-A morph receives the validated value itself rather than a copy, so a morph that mutates its argument mutates the caller's data. ArkType's own transforms, like defaults, copy each object they change and share every untransformed value with the input, and input nothing transforms is returned as is. The exception is an instance of a builtin class, like a `Date`, `Map` or function, which keeps its state in internal slots and is transformed in place. [`mutatesInput`](/docs/configuration#mutatesinput) writes every transform in place instead.
+A morph receives the validated value itself rather than a copy, so a morph that mutates its argument mutates the caller's data. ArkType's own transforms, like defaults, copy each object they change and share every untransformed value with the input, and input nothing transforms is returned as is. The exception is an instance of a builtin class, like a `Date`, `Map` or function, which keeps its state in internal slots and is transformed in place. [`mutatesInput`](/docs/configuration#mutatesinput) writes transforms into the data instead.
 
 ```ts
 const T = type({ a: "string.trim", b: { c: "string" } })
