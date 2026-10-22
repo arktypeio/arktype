@@ -1,4 +1,4 @@
-import { attest, contextualize } from "@ark/attest"
+import { attest, contextualize, getChecker } from "@ark/attest"
 import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
 import type { JsonSchema } from "arktype"
 
@@ -2215,9 +2215,12 @@ contextualize(() => {
 				type: "array",
 				items: { $ref: "#/$defs/t" }
 			})
-			attest(S.infer).type.toString.snap(
-				"{ value?: number; children?: cyclic[] }[]"
-			)
+			// tsrs predates microsoft/TypeScript#64556, so it prints recursive arrays deeper
+			if (getChecker() !== "tsrs") {
+				attest(S.infer).type.toString.snap(
+					"{ value?: number; children?: cyclic[] }[]"
+				)
+			}
 			type children = NonNullable<(typeof S.infer)[number]["children"]>
 			attest<number | undefined, children[number][number]["value"]>()
 		})

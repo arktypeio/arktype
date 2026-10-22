@@ -1,4 +1,4 @@
-import { attest, contextualize } from "@ark/attest"
+import { attest, contextualize, getChecker } from "@ark/attest"
 import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
 import type { JsonSchemaOrBoolean } from "@ark/schema"
 import type { JsonSchema } from "arktype"
@@ -3882,9 +3882,12 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 				required: ["name"]
 			})
 			const Users = jsonSchema({ type: "array", items: User })
-			attest(Users.infer).type.toString.snap(
-				"{ name: string; friends?: cyclic }[]"
-			)
+			// tsrs predates microsoft/TypeScript#64556, so it prints recursive arrays deeper
+			if (getChecker() !== "tsrs") {
+				attest(Users.infer).type.toString.snap(
+					"{ name: string; friends?: cyclic }[]"
+				)
+			}
 			type user = (typeof Users.infer)[number]
 			attest<user, NonNullable<user["friends"]>[number]>()
 		})

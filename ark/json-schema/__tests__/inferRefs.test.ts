@@ -1,4 +1,4 @@
-import { attest, contextualize } from "@ark/attest"
+import { attest, contextualize, getChecker } from "@ark/attest"
 import { jsonSchema } from "@ark/json-schema"
 import type { JsonSchema } from "arktype"
 
@@ -72,7 +72,8 @@ contextualize(() => {
 		it("through items alone", () => {
 			type Nested = Nested[]
 			const T = inferred({ type: "array", items: { $ref: "#" } })
-			attest<Nested>(T).type.toString.snap("any[]")
+			// tsrs predates microsoft/TypeScript#64556, so it prints recursive arrays deeper
+			if (getChecker() !== "tsrs") attest<Nested>(T).type.toString.snap("any[]")
 			attest<Nested, (typeof T)[0][0][0][0][0][0]>()
 		})
 
@@ -1393,13 +1394,16 @@ contextualize(() => {
 				const t: T = [[[[[[[[[[[[[[[[[[[["s"]]]]]]]]]]]]]]]]]]]]
 				return t
 			}).type.errors.is("")
-			attest(() => {
-				// @ts-expect-error
-				const bad: T = [[[[[[[[[[[[[[[[[[[[1]]]]]]]]]]]]]]]]]]]]
-				return bad
-			}).type.errors.snap(
-				"Type 'number' is not assignable to type 'string | (string | ...)[]'."
-			)
+			// tsrs predates microsoft/TypeScript#64556, so it prints recursive arrays deeper
+			if (getChecker() !== "tsrs") {
+				attest(() => {
+					// @ts-expect-error
+					const bad: T = [[[[[[[[[[[[[[[[[[[[1]]]]]]]]]]]]]]]]]]]]
+					return bad
+				}).type.errors.snap(
+					"Type 'number' is not assignable to type 'string | (string | ...)[]'."
+				)
+			}
 		})
 
 		it("a draft-07 discriminated AST with $ref description siblings", () => {

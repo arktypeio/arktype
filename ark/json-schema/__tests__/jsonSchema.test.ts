@@ -1,4 +1,4 @@
-import { attest, contextualize } from "@ark/attest"
+import { attest, contextualize, getChecker } from "@ark/attest"
 import {
 	jsonSchema,
 	jsonSchemaToType,
@@ -90,7 +90,9 @@ contextualize(() => {
 			properties: { next: { $ref: "#" } }
 		})
 		const outer = jsonSchema({ type: "array", items: node })
-		attest(outer.infer).type.toString.snap("{ next?: cyclic }[]")
+		// tsrs predates microsoft/TypeScript#64556, so it prints recursive arrays deeper
+		if (getChecker() !== "tsrs")
+			attest(outer.infer).type.toString.snap("{ next?: cyclic }[]")
 		type next = NonNullable<(typeof outer.infer)[number]["next"]>
 		attest<typeof outer.infer, next>()
 	})

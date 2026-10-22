@@ -1,4 +1,4 @@
-import { attest, contextualize } from "@ark/attest"
+import { attest, contextualize, getChecker } from "@ark/attest"
 import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
 import { scope, type, type JsonSchema, type Type } from "arktype"
 
@@ -969,10 +969,13 @@ contextualize(() => {
 				}
 			})
 			assertEmits(T, S, {}, "(synthetic0 | number)[]")
-			attest<typeof T.infer>(S).type.toString.snap("(number | cyclic)[]")
 			attest<typeof T.infer | number>(S[0])
-			// arktype's own display of the same type, for comparison
-			attest({} as typeof T.infer).type.toString.snap("(number | cyclic)[]")
+			// tsrs predates microsoft/TypeScript#64556, so it prints recursive arrays deeper
+			if (getChecker() !== "tsrs") {
+				attest<typeof T.infer>(S).type.toString.snap("(number | cyclic)[]")
+				// arktype's own display of the same type, for comparison
+				attest({} as typeof T.infer).type.toString.snap("(number | cyclic)[]")
+			}
 		})
 
 		it("self reference in a named key", () => {
