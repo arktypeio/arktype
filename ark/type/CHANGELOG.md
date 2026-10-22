@@ -103,6 +103,8 @@ User(5)
 
 Its value is a description or a meta object. Escape a key named `@` as `"\\@"`, as with `+` and `...`. In 2.2.9, `"@"` was an ordinary key.
 
+`.merge()` takes `"@"` from the object it merges in, as it takes `"+"` and as a spread does, so `A.merge({ "@": "a B", b: "number" })` is described as `a B`. The merged-in object's meta replaces the base's, which is dropped either way.
+
 `type.declare` takes the same escapes for a declared key named `@`, `+` or `...`, and accepts `"@"` and `"+"` on any declared object:
 
 ```ts
