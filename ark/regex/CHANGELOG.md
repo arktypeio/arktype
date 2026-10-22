@@ -4,15 +4,13 @@
 
 ### infer capture indices across alternation branches
 
-A capture in one alternation branch is `undefined` in every other branch, so the inferred tuples line up with what `exec` returns:
+A capture in one alternation branch is `undefined` in every other branch, so the inferred tuples line up with what `exec` returns (#1530):
 
 ```ts
 // was: ["1"] | [undefined, "2"] | [undefined, "3"]
 // now: ["1", undefined, undefined] | [undefined, "2", undefined] | [undefined, undefined, "3"]
 regex("^(?:(?<a>1)|(?<b>2)|(?<c>3))$").inferCaptures
 ```
-
-https://github.com/arktypeio/arktype/issues/1530
 
 ### infer escapes in a character set as what they match
 
