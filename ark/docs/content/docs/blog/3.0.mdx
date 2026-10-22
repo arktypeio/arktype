@@ -148,7 +148,7 @@ Parse keywords like `string.date.iso.parse` encode back to strings. `arktype/cod
 
 ## Error messages in other languages
 
-Configure a locale to write error messages in another language. ArkType ships `en` and `de`, and a locale is an object you can spread, extend or write from scratch, including one that calls an i18n library:
+Configure a locale to write error messages in another language, with dynamic Types or a precompiled build with `runtime: "arktype"`. ArkType ships `en` and `de`, and a locale is an object you can spread, extend or write from scratch, including one that calls an i18n library:
 
 ```ts title="config.ts"
 import { configure } from "arktype/config"
