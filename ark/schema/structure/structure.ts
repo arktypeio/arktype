@@ -1005,10 +1005,43 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					this.compileEntry(js, "symbol")
 				)
 			}
-		} else if (this.undeclared === "reject")
+		} else if (this.undeclared === "reject") {
+			if (js.traversalKind === "Allows" && js.json && this.countsKeys)
+				this.compileKeyCount(js, () => js.return(true))
 			js.forIn("data", () => this.compileEntry(js, "string"))
+		}
 
 		return js.return(true)
+	}
+
+	// whether data of only own, enumerable keys holds none it doesn't declare
+	// where for...in finds as many keys as it holds declared ones: not where it
+	// declares a key Object.prototype has, which in finds even unheld
+	get countsKeys(): boolean {
+		return (
+			!this.index &&
+			!this.sequence &&
+			this.props.every(
+				prop => typeof prop.key === "string" && !(prop.key in Object.prototype)
+			)
+		)
+	}
+
+	// on a plain object, onCount where its key count is that of the declared
+	// keys it holds
+	private compileKeyCount(js: NodeCompiler, onCount: () => NodeCompiler): void {
+		const held = [
+			`${this.required?.length ?? 0}`,
+			...(this.optional ?? []).map(
+				prop => `+(${js.serialize(prop.key)} in data)`
+			)
+		]
+		js.if("Object.getPrototypeOf(data) === Object.prototype", () =>
+			js
+				.let("n", 0)
+				.loop("for (const k in data)", () => js.line("n++"))
+				.if(`n === ${held.join(" + ")}`, onCount)
+		)
 	}
 
 	// an Apply reporting one issue checks props as Allows does, stopping where

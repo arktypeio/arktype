@@ -72,6 +72,7 @@ const precompilable: Rule.RuleModule = {
 					mutatesInput: { enum: [false, true, "always"] },
 					optimize: { enum: ["speed", "size"] },
 					optimizeErrors: { enum: ["speed", "size"] },
+					json: { type: "boolean" },
 					shadow: { type: "boolean" },
 					allowUnsafe: { type: "boolean" }
 				},

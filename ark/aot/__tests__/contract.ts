@@ -26,6 +26,9 @@ export const freezes: boolean = testedOptions.freeze !== false
 
 export const mutatesInput: MutatesInput = testedOptions.mutatesInput ?? false
 
+// a count can pass an undeclared key held beside a non-enumerable one
+export const json: boolean = testedOptions.json === true
+
 // errors "none" fails with one root issue and runs no Apply's morphs
 export const detailsErrors: boolean = testedOptions.errors !== "none"
 
