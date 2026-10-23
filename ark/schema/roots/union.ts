@@ -445,7 +445,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					:	"data"
 				: v === true ? "true"
 				: js.traversalKind !== "Apply" ? js.invoke(v)
-				: k === "default" ? this.compileDefault(js, v, value)
+				: k === "default" ?
+					(js.defaultFails?.(this, v) ??
+					`${js.ref(this)}.applyDefault(data, ctx, ${value})`)
 				: member ? js.applyMember(v, member)
 				: js.invoke(v)
 			written.push([caseCondition, caseResult])
@@ -453,34 +455,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		const otherwise =
 			js.traversalKind === "Allows" ? "false"
 			: js.traversalKind === "Transform" ? "data"
-			: js.unionFails ? this.compileMiss(js, value)
-			: `${js.ref(this)}.applyMiss(data, ctx, ${value})`
+			: (js.missFails?.(this, value) ??
+				`${js.ref(this)}.applyMiss(data, ctx, ${value})`)
 		js.switch(condition, written, otherwise)
-	}
-
-	// a standalone build's miss, whose union issue holds no branch errors
-	private compileMiss(js: NodeCompiler, value: string): string {
-		if (this.missListsBranches) return js.unionFails!(this)
-		const reads = compileReadsPath(js, this.discriminant!.path)
-		const path = this.missPath
-		const fails = js.unionFails!(this, path.length ? value : "data", path)
-		return reads ? `${reads} ? ${fails} : ${js.unionFails!(this)}` : fails
-	}
-
-	private compileDefault(
-		js: NodeCompiler,
-		caseNode: BaseRoot,
-		value: string
-	): string {
-		if (!js.unionFails)
-			return `${js.ref(this)}.applyDefault(data, ctx, ${value})`
-		// as an indiscriminable union applies its branches
-		const passes =
-			!caseNode.includesAlias && isDecidedByAllows(caseNode) ?
-				(caseNode.compileCondition?.(js, "data") ??
-				js.invoke(caseNode, { kind: "Allows" }))
-			:	`(ctx.pushBranch(), ${js.applyMember(caseNode)}, ctx.popBranch().errorCount === 0)`
-		return `${passes} || ${js.unionFails(this)}`
 	}
 
 	private compileIndiscriminable(
@@ -579,23 +556,6 @@ const readsPath = (path: array<PropertyKey>, data: unknown): boolean => {
 		parent = parent[k]
 	}
 	return true
-}
-
-const compileReadsPath = (
-	js: NodeCompiler,
-	path: array<PropertyKey>
-): string | undefined => {
-	let parent = "data"
-	const conditions: string[] = []
-	for (const k of path) {
-		conditions.push(
-			typeof k === "number" ?
-				`Array.isArray(${parent})`
-			:	`Object(${parent}) === ${parent}`
-		)
-		parent += js.prop(k)
-	}
-	return conditions.length ? conditions.join(" && ") : undefined
 }
 
 const caseKeyOf = (discriminant: Discriminant, value: unknown): string => {

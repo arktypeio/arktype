@@ -13,7 +13,13 @@ export const keptIssuesOf = (
 	errors: ArkErrors,
 	// false reads every issue added, which a first-issue validator keeps one of
 	grouped = true
-): KeptIssue[] => {
+): KeptIssue[] =>
+	keptOf(errors, grouped)
+		.map(({ code, path, data }) => ({ code, path: [...path], data }))
+		.sort((l, r) => (sortKeyOf(l) < sortKeyOf(r) ? -1 : 1))
+
+// each issue a validator keeps
+export const keptOf = (errors: ArkErrors, grouped = true): ArkIssue[] => {
 	const added: readonly ArkIssue[] = grouped ? errors.issues : errors._
 	const issues = added.flatMap((issue): readonly ArkIssue[] =>
 		issue.code === "intersection" ?
@@ -26,13 +32,10 @@ export const keptIssuesOf = (
 		const key = pathKeyOf(issue.path)
 		if (isNever(issue) && !neverByPath.has(key)) neverByPath.set(key, issue)
 	}
-	return issues
-		.filter(
-			issue =>
-				!grouped || (neverByPath.get(pathKeyOf(issue.path)) ?? issue) === issue
-		)
-		.map(({ code, path, data }) => ({ code, path: [...path], data }))
-		.sort((l, r) => (sortKeyOf(l) < sortKeyOf(r) ? -1 : 1))
+	return issues.filter(
+		issue =>
+			!grouped || (neverByPath.get(pathKeyOf(issue.path)) ?? issue) === issue
+	)
 }
 
 // a union of no branches

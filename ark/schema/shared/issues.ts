@@ -165,6 +165,22 @@ export class FirstIssues extends ArkIssues {
 	}
 }
 
+// a root reporting into ArkErrors, as a size build applies it
+export const applyIssues = (
+	apply: CompactApply,
+	data: unknown,
+	onFail: ArkIssues.Handler | null,
+	Ctx: new () => ArkIssues = ArkIssues
+): unknown => {
+	const errors = new Ctx()
+	apply(data, errors)
+	return (
+		!releasePath(errors).count ? data
+		: onFail ? onFail(errors)
+		: errors
+	)
+}
+
 interface ArkIssues {
 	/** @internal set by a build asking for only the first issue */
 	failFast?: true

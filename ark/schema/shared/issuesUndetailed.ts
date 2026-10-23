@@ -1,5 +1,5 @@
 // what errors "none" writes besides its errors' class
-import type { array } from "@ark/util"
+import { throwInternalError, type array } from "@ark/util"
 import type { ArkErrors } from "./issuesNone.ts"
 import type {
 	ArkIssue,
@@ -9,6 +9,10 @@ import type {
 } from "./issues.ts"
 
 export const releasePath = (errors: ArkErrors): ArkErrors => errors
+
+// a size build's root apply, which errors "none" never writes
+export const applyIssues = (): never =>
+	throwInternalError('errors "none" applies no issues')
 
 export class TraversalError extends Error {
 	readonly name = "TraversalError"
