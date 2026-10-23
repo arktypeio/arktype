@@ -158,6 +158,21 @@ class NodeCache {
 
 const throwOnFail: ArkErrors.Handler = errors => errors.throw()
 
+// a hash repeats the JSON of every node below its own, so a long one, written
+// mostly to sort and compare nodes as they're parsed, is dropped when the job
+// that wrote it ends rather than kept for as long as its node
+let hashedInJob: NodeCache[] = []
+
+const keptForJob = (cache: NodeCache, hash: string): string => {
+	if (hash.length > 256 && hashedInJob.push(cache) === 1) {
+		void Promise.resolve().then(() => {
+			for (const cache of hashedInJob) cache.innerHash = cache.hash = undefined
+			hashedInJob = []
+		})
+	}
+	return hash
+}
+
 export abstract class BaseNode<
 	// uses -ignore rather than -expect-error because this is not an error in .d.ts
 	/** @ts-ignore allow instantiation assignment to the base type */
@@ -830,17 +845,20 @@ export abstract class BaseNode<
 	}
 
 	get innerHash(): string {
-		return (this.cache.innerHash ??= JSON.stringify({
-			kind: this.kind,
-			...this.innerJson
-		}))
+		return (this.cache.innerHash ??= keptForJob(
+			this.cache,
+			JSON.stringify({ kind: this.kind, ...this.innerJson })
+		))
 	}
 
 	get hash(): string {
 		return (this.cache.hash ??=
 			isEmptyObject(this.meta) ?
 				this.innerHash
-			:	JSON.stringify({ kind: this.kind, ...this.json }))
+			:	keptForJob(
+					this.cache,
+					JSON.stringify({ kind: this.kind, ...this.json })
+				))
 	}
 
 	protected get innerJsonFull(): JsonObject {
