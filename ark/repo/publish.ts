@@ -5,8 +5,7 @@ import {
 	packagesByScope,
 	publishedVersionsOf,
 	publishOrder,
-	type ArkPackage,
-	type PackageScope
+	type ArkPackage
 } from "./shared.ts"
 
 // publishes each version npm doesn't have yet, then tags and releases each one
@@ -14,27 +13,12 @@ import {
 // --dry-run packs each publish and prints the rest without changing anything.
 const dryRun = process.argv.includes("--dry-run")
 
-// whether a package also ships as the @arktype/ name it had before @ark/
-const hasLegacyAlias = {
-	aot: false,
-	attest: true,
-	"fast-check": true,
-	fs: true,
-	"json-schema": true,
-	regex: true,
-	schema: true,
-	sets: false,
-	type: true,
-	util: true
-} satisfies Record<PackageScope, boolean>
-
 // the primary name (arktype, arkregex, arksets or @ark/*), then its aliases
 const namesOf = (pkg: ArkPackage) => {
 	const names = [pkg.name]
 	if (pkg.scope === "type") names.push("@ark/type")
 	if (pkg.scope === "regex") names.push("@ark/regex")
 	if (pkg.scope === "sets") names.push("@ark/sets")
-	if (hasLegacyAlias[pkg.scope]) names.push(`@arktype/${pkg.scope}`)
 	return names
 }
 

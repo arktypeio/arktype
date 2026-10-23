@@ -20,7 +20,7 @@ jobs:
       prerelease: ${{ steps.version.outputs.prerelease }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Check for a prerelease
         id: version
@@ -46,7 +46,7 @@ jobs:
       # twoslash results (see ark/docs/lib/content/twoslash.ts), keyed by what
       # every result depends on, so a change there starts a fresh cache
       - name: Cache docs twoslash results
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ark/docs/node_modules/.cache/ark-docs
           key: docs-twoslash-${{ hashFiles('ark/*/out/**/*.d.ts', 'ark/docs/lib/shiki.ts', 'ark/docs/package.json') }}
