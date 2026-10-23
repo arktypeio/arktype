@@ -60,7 +60,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-`hasCode`, `flat`, `throw`, `toString`, `toJSON` and `toLocaleString` are gone from errors, so `error instanceof ArkError` is false and `` `${error}` `` is `[object Object]`. `path` is a plain array. An error's text is written when its `ArkErrors`' issues are first read, so a configured writer is called once per error.
+`hasCode`, `flat`, `throw`, `toString`, `toJSON` and `toLocaleString` are gone from errors, so `error instanceof ArkError` is false and `` `${error}` `` is `[object Object]`. `path` is a plain array. An error's text is written when its `ArkErrors`' issues are first read, so a configured writer is called once per error. A Type that calls no narrow or morph may also find the issues themselves at that read, so [read them before the data you validated changes](/docs/errors#arkerrors).
 
 ### Objects print by their kind
 
