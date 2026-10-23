@@ -4,6 +4,7 @@ import {
 	domainOf,
 	isKeyOf,
 	isValidDate,
+	timeOf,
 	listPattern,
 	objectKindOrDomainOf,
 	printKind
@@ -48,7 +49,12 @@ export const writeMinLengthActual: ActualWriter<"minLength"> = data =>
 	data.length === 0 ? "" : `${data.length}`
 
 export const writeProtoActual: ActualWriter<"proto"> = data => {
-	if (data instanceof Date && !isValidDate(data)) return "an invalid Date"
+	if (data instanceof Date && !isValidDate(data)) {
+		// an object only inheriting Date.prototype has no time
+		return timeOf(data) === undefined ?
+				domainDescriptions.object
+			:	"an invalid Date"
+	}
 	const kind = objectKindOrDomainOf(data)
 	// a class's name is printed as is, since its article would be a guess
 	return isKeyOf(kind, domainDescriptions) ? domainDescriptions[kind] : kind

@@ -1158,6 +1158,15 @@ $.export() // throws ParseError: Default for b must be valid according to an ano
 $.export()
 ```
 
+### Reject an object inheriting `Date.prototype` without being a `Date`
+
+`Date` and its bounds threw a `TypeError` validating an object like `Object.create(Date.prototype)`, since `Date.prototype`'s methods throw on it. They now reject it:
+
+```ts
+// previously threw "this is not a Date object", now "must be a Date (was an object)"
+type("Date")(Object.create(Date.prototype))
+```
+
 ### Fix `ctx.data` after a morph that reads `ctx`
 
 After a morph taking `ctx` ran, `ctx.data` kept reading from that morph's input, so a narrow picking a later union branch saw the wrong value and valid data could be left untransformed:

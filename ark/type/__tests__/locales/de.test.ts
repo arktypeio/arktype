@@ -130,6 +130,8 @@ contextualize(() => {
 			"Date ← 1": "muss ein Date-Objekt sein, ist aber eine Zahl",
 			"Date ← Invalid Date":
 				"muss ein Date-Objekt sein, ist aber ein ungültiges Date-Objekt",
+			"Date ← Object.create(Date.prototype)":
+				"muss ein Date-Objekt sein, ist aber ein Objekt",
 			"Array ← {}": "muss ein Array sein, ist aber ein Objekt",
 			"Map ← []": "muss eine Map sein, ist aber ein Array",
 			"Set ← Map": "muss ein Set sein, ist aber eine Map",

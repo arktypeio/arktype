@@ -11,6 +11,7 @@ import {
 	domainOf,
 	getBuiltinNameOfConstructor,
 	isValidDate,
+	timeOf,
 	listPattern,
 	objectKindOrDomainOf,
 	printable,
@@ -399,9 +400,10 @@ export const de: Locale.Complete = {
 	proto: {
 		expected: (e, locale) => describeProto(e.proto, locale),
 		actual: (data, e, locale) =>
-			data instanceof Date && !isValidDate(data) ?
-				"ein ungültiges Date-Objekt"
-			:	locale.nouns[objectKindOrDomainOf(data)],
+			!(data instanceof Date) || isValidDate(data) ?
+				locale.nouns[objectKindOrDomainOf(data)]
+			: timeOf(data) === undefined ? locale.nouns.object
+			: "ein ungültiges Date-Objekt",
 		problem: (e, locale) => mustBe(describeProto(e.proto, locale), e.actual)
 	},
 	union: {
