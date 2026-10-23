@@ -157,11 +157,12 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 				"c?": "number"
 			}).onUndeclaredKey("delete")
 			attest(T({ b: 0.5, a: 1, c: 2, d: 3 })).snap({ a: 1, b: 0.5, c: 2 })
-			// the lines writing the copy
+			// the lines writing the copy, matched without visiting the rest, which
+			// omits nodes an earlier Type compiled
 			attest(
-				T.precompilation!.split("\n")
-					.map(line => line.trim())
-					.filter(line => /^(const )?result\b/.test(line))
+				T.precompilation!.match(/^[\t ]*(const )?result\b.*$/gm)!.map(line =>
+					line.trim()
+				)
 			).snap([
 				'const result = { "b": null, "a": null }',
 				"result.b = out.b",
