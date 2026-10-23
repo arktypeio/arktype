@@ -99,18 +99,24 @@ export declare namespace ToJsonSchema {
 		base: base
 	}
 
-	export interface ArrayObjectContext
-		extends BaseContext<"arrayObject", JsonSchema.Array> {
+	export interface ArrayObjectContext extends BaseContext<
+		"arrayObject",
+		JsonSchema.Array
+	> {
 		object: JsonSchema.Object
 	}
 
-	export interface ArrayPostfixContext
-		extends BaseContext<"arrayPostfix", VariadicArraySchema> {
+	export interface ArrayPostfixContext extends BaseContext<
+		"arrayPostfix",
+		VariadicArraySchema
+	> {
 		elements: readonly JsonSchema[]
 	}
 
-	export interface DefaultValueContext
-		extends BaseContext<"defaultValue", JsonSchema> {
+	export interface DefaultValueContext extends BaseContext<
+		"defaultValue",
+		JsonSchema
+	> {
 		value: Unjsonifiable
 	}
 
@@ -122,13 +128,17 @@ export declare namespace ToJsonSchema {
 		out: JsonSchema | null
 	}
 
-	export interface PatternIntersectionContext
-		extends BaseContext<"patternIntersection", StringSchemaWithPattern> {
+	export interface PatternIntersectionContext extends BaseContext<
+		"patternIntersection",
+		StringSchemaWithPattern
+	> {
 		pattern: string
 	}
 
-	export interface PredicateContext
-		extends BaseContext<"predicate", JsonSchema> {
+	export interface PredicateContext extends BaseContext<
+		"predicate",
+		JsonSchema
+	> {
 		predicate: Predicate
 	}
 
@@ -141,22 +151,28 @@ export declare namespace ToJsonSchema {
 		| RequiredSymbolKeyContext
 		| OptionalSymbolKeyContext
 
-	interface IndexSymbolKeyContext
-		extends BaseContext<"symbolKey", JsonSchema.Object> {
+	interface IndexSymbolKeyContext extends BaseContext<
+		"symbolKey",
+		JsonSchema.Object
+	> {
 		key: null
 		value: JsonSchema
 		optional: false
 	}
 
-	interface RequiredSymbolKeyContext
-		extends BaseContext<"symbolKey", JsonSchema.Object> {
+	interface RequiredSymbolKeyContext extends BaseContext<
+		"symbolKey",
+		JsonSchema.Object
+	> {
 		key: symbol
 		value: JsonSchema
 		optional: false
 	}
 
-	interface OptionalSymbolKeyContext
-		extends BaseContext<"symbolKey", JsonSchema.Object> {
+	interface OptionalSymbolKeyContext extends BaseContext<
+		"symbolKey",
+		JsonSchema.Object
+	> {
 		key: symbol
 		value: JsonSchema
 		optional: true

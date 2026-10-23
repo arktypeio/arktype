@@ -34,17 +34,15 @@ export declare namespace Unit {
 	}
 
 	export interface ErrorContext<value = unknown>
-		extends BaseErrorContext<"unit">,
-			Inner<value> {}
+		extends BaseErrorContext<"unit">, Inner<value> {}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "unit"
-			schema: Schema
-			normalizedSchema: Schema
-			inner: Inner
-			errorContext: ErrorContext
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "unit"
+		schema: Schema
+		normalizedSchema: Schema
+		inner: Inner
+		errorContext: ErrorContext
+	}> {}
 
 	export type Node = UnitNode
 }

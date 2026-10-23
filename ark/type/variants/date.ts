@@ -4,9 +4,11 @@ import type {
 } from "@ark/schema"
 import type { ObjectType } from "./object.ts"
 
-/** @ts-ignore cast variance */
-interface Type<out t extends globalThis.Date = globalThis.Date, $ = {}>
-	extends ObjectType<t, $> {
+interface Type<
+	/** @ts-ignore cast variance */
+	out t extends globalThis.Date = globalThis.Date,
+	$ = {}
+> extends ObjectType<t, $> {
 	atOrAfter(schema: InclusiveDateRangeSchema): this
 
 	atOrBefore(schema: InclusiveDateRangeSchema): this

@@ -99,8 +99,8 @@ type _parseEnclosed<
 	enclosingStart extends EnclosingStartToken,
 	scanned extends string,
 	nextUnscanned extends string,
-	def extends
-		string = `${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
+	def extends string =
+		`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
 > =
 	nextUnscanned extends "" ?
 		s.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>

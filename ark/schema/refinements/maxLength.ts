@@ -36,16 +36,15 @@ export declare namespace MaxLength {
 
 	export interface ErrorContext extends BaseErrorContext<"maxLength">, Inner {}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "maxLength"
-			schema: Schema
-			reducibleTo: "exactLength"
-			normalizedSchema: NormalizedSchema
-			inner: Inner
-			prerequisite: LengthBoundableData
-			errorContext: ErrorContext
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "maxLength"
+		schema: Schema
+		reducibleTo: "exactLength"
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		prerequisite: LengthBoundableData
+		errorContext: ErrorContext
+	}> {}
 
 	export type Node = MaxLengthNode
 }

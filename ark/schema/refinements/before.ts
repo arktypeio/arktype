@@ -37,15 +37,14 @@ export declare namespace Before {
 
 	export interface ErrorContext extends BaseErrorContext<"before">, Inner {}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "before"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
-			inner: Inner
-			prerequisite: Date
-			errorContext: ErrorContext
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "before"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		prerequisite: Date
+		errorContext: ErrorContext
+	}> {}
 
 	export type Node = BeforeNode
 }

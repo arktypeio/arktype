@@ -129,8 +129,7 @@ export type InclusiveDateRangeSchema =
 	| LimitSchemaValue
 	| InclusiveExpandedDateRangeSchema
 
-export interface ExclusiveNormalizedNumericRangeSchema
-	extends BaseNormalizedSchema {
+export interface ExclusiveNormalizedNumericRangeSchema extends BaseNormalizedSchema {
 	rule: number
 	exclusive?: true
 }
@@ -139,8 +138,7 @@ export type ExclusiveNumericRangeSchema =
 	| number
 	| ExclusiveNormalizedNumericRangeSchema
 
-export interface InclusiveNormalizedNumericRangeSchema
-	extends BaseNormalizedSchema {
+export interface InclusiveNormalizedNumericRangeSchema extends BaseNormalizedSchema {
 	rule: number
 	exclusive?: false
 }

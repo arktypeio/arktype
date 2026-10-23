@@ -29,15 +29,14 @@ export declare namespace Max {
 
 	export interface ErrorContext extends BaseErrorContext<"max">, Inner {}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "max"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
-			inner: Inner
-			prerequisite: number
-			errorContext: ErrorContext
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "max"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		prerequisite: number
+		errorContext: ErrorContext
+	}> {}
 
 	export type Node = MaxNode
 }

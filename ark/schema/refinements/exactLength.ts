@@ -28,8 +28,7 @@ export declare namespace ExactLength {
 	export type Schema = NormalizedSchema | number
 
 	export interface ErrorContext
-		extends BaseErrorContext<"exactLength">,
-			Inner {}
+		extends BaseErrorContext<"exactLength">, Inner {}
 
 	export type Declaration = declareNode<{
 		kind: "exactLength"

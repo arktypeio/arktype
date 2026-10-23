@@ -307,8 +307,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	obviatesBasisExpression?: d["kind"] extends RefinementKind ? true : never
 }
 
-export interface UnknownNodeImplementation
-	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
+export interface UnknownNodeImplementation extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	defaults: ResolvedUnknownNodeConfig
 	intersectionIsOpen: boolean
 	intersections: UnknownIntersectionMap
@@ -375,8 +374,9 @@ export interface UnknownAttachments {
 	readonly children: BaseNode[]
 }
 
-export interface NarrowedAttachments<d extends BaseNodeDeclaration>
-	extends UnknownAttachments {
+export interface NarrowedAttachments<
+	d extends BaseNodeDeclaration
+> extends UnknownAttachments {
 	kind: d["kind"]
 	inner: d["inner"]
 	json: JsonStructure

@@ -30,15 +30,14 @@ export declare namespace Divisor {
 
 	export interface ErrorContext extends BaseErrorContext<"divisor">, Inner {}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "divisor"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
-			inner: Inner
-			prerequisite: number
-			errorContext: ErrorContext
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "divisor"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		prerequisite: number
+		errorContext: ErrorContext
+	}> {}
 
 	export type Node = DivisorNode
 }

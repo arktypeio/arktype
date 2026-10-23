@@ -36,16 +36,15 @@ export declare namespace MinLength {
 
 	export interface ErrorContext extends BaseErrorContext<"minLength">, Inner {}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "minLength"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
-			inner: Inner
-			prerequisite: LengthBoundableData
-			reducibleTo: "intersection"
-			errorContext: ErrorContext
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "minLength"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		prerequisite: LengthBoundableData
+		reducibleTo: "intersection"
+		errorContext: ErrorContext
+	}> {}
 
 	export type Node = MinLengthNode
 }

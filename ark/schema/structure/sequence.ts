@@ -78,16 +78,15 @@ export declare namespace Sequence {
 		readonly postfix?: array<BaseRoot>
 	}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "sequence"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
-			inner: Inner
-			prerequisite: array
-			reducibleTo: "sequence"
-			childKind: RootKind
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "sequence"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		prerequisite: array
+		reducibleTo: "sequence"
+		childKind: RootKind
+	}> {}
 
 	export type Node = SequenceNode
 }

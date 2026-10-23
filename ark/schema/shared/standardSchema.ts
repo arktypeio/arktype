@@ -44,8 +44,10 @@ export interface StandardSchemaV1<Input = unknown, Output = Input> {
 
 export declare namespace StandardSchemaV1 {
 	/** The Standard Schema properties interface. */
-	export interface Props<Input = unknown, Output = Input>
-		extends StandardTypedV1.Props<Input, Output> {
+	export interface Props<
+		Input = unknown,
+		Output = Input
+	> extends StandardTypedV1.Props<Input, Output> {
 		/** Validates unknown input values. */
 		readonly validate: (
 			value: unknown,
@@ -90,8 +92,10 @@ export declare namespace StandardSchemaV1 {
 	}
 
 	/** The Standard types interface. */
-	export interface Types<Input = unknown, Output = Input>
-		extends StandardTypedV1.Types<Input, Output> {}
+	export interface Types<
+		Input = unknown,
+		Output = Input
+	> extends StandardTypedV1.Types<Input, Output> {}
 
 	/** Infers the input type of a Standard. */
 	export type InferInput<Schema extends StandardTypedV1> =
@@ -103,8 +107,7 @@ export declare namespace StandardSchemaV1 {
 
 	/** ArkType-specific properties that extend the standard schema with JSON Schema support. */
 	export interface ArkTypeProps<Input = unknown, Output = Input>
-		extends Props<Input, Output>,
-			StandardJSONSchemaV1.Props<Input, Output> {
+		extends Props<Input, Output>, StandardJSONSchemaV1.Props<Input, Output> {
 		vendor: "arktype"
 	}
 }
@@ -117,8 +120,10 @@ export interface StandardJSONSchemaV1<Input = unknown, Output = Input> {
 
 export declare namespace StandardJSONSchemaV1 {
 	/** The Standard JSON Schema properties interface. */
-	export interface Props<Input = unknown, Output = Input>
-		extends StandardTypedV1.Props<Input, Output> {
+	export interface Props<
+		Input = unknown,
+		Output = Input
+	> extends StandardTypedV1.Props<Input, Output> {
 		/** Methods for generating the input/output JSON Schema. */
 		readonly jsonSchema: StandardJSONSchemaV1.Converter
 	}
@@ -159,8 +164,10 @@ export declare namespace StandardJSONSchemaV1 {
 	}
 
 	/** The Standard types interface. */
-	export interface Types<Input = unknown, Output = Input>
-		extends StandardTypedV1.Types<Input, Output> {}
+	export interface Types<
+		Input = unknown,
+		Output = Input
+	> extends StandardTypedV1.Types<Input, Output> {}
 
 	/** Infers the input type of a Standard. */
 	export type InferInput<Schema extends StandardTypedV1> =
