@@ -488,6 +488,14 @@ age must be non-negative`)
 			const data: any = new Map()
 			attest([T(data) === data, data.k]).equals([true, "x"])
 		})
+
+		it("write a default of undefined", async () => {
+			const { T } = await load(
+				{ T: type({ k: "unknown = undefined" }) },
+				{ optimize: "size" }
+			)
+			attest("k" in (T({}) as object)).equals(true)
+		})
 	})
 
 	describe("literals reading as the code around them", () => {

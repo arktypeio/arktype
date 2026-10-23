@@ -235,8 +235,10 @@ export const transformingProps = ((
 	checker.t = data => {
 		let out = data
 		for (const k in declared) {
-			const value = k in data ? declared[k].t?.(data[k]) : defaults[k]
-			if (value !== undefined && value !== data[k]) {
+			const holds = k in data
+			const value = holds ? declared[k].t?.(data[k]) : defaults[k]
+			// a default is written even where it's undefined
+			if (holds ? value !== undefined && value !== data[k] : k in defaults) {
 				if (out === data) out = copyForWriting(data)
 				out[k] = value
 			}
