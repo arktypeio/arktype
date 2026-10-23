@@ -19,13 +19,13 @@ The skill links a [migration guide](/docs/migrating) that agents read when they 
 
 ## Migrate from Zod
 
-With the skill installed, one prompt moves a project off Zod:
+With the skill installed, ask for a migration in one prompt:
 
 ```
 Migrate this project from Zod to ArkType.
 ```
 
-The agent rewrites each schema where it is, keeps Zod's removal of undeclared keys, swaps integrations like `zodResolver` for their Standard Schema versions, removes `zod` with your package manager and runs your typecheck and tests. Its summary lists any test it had to update, like a JSON Schema snapshot whose keys are now in canonical order. [Migrating a project](/docs/migrating#migrating-a-project) lists the steps it follows.
+The agent rewrites each schema where it is, keeps Zod's removal of undeclared keys, swaps integrations like `zodResolver` for their Standard Schema versions, removes `zod` with your package manager and runs your typecheck and tests. Where a dependency accepts only Zod, like the MCP SDK before v2, it keeps Zod for that call. Review its summary, which lists what still behaves differently and any test it updated, like a JSON Schema snapshot whose keys are now in canonical order. [Migrating a project](/docs/migrating#migrating-a-project) lists the steps it follows.
 
 ## Docs as Markdown
 
