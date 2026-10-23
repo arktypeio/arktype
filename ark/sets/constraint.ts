@@ -127,11 +127,15 @@ export const sortSiblings = <node extends BaseNode>(
 }
 
 // props are ordered by key, so equal structures list them alike without
-// writing their values
+// writing their values, and since a sibling's hash starts with its kind (a
+// union's own doesn't, but unions are never siblings), nodes of different
+// kinds order by kind without writing theirs
 const compareSiblings = (l: BaseNode, r: BaseNode): number =>
 	l.hasKind("required") || l.hasKind("optional") ?
 		compareKeys(l.key, (r as BaseProp).key) || compareHashes(l.hash, r.hash)
-	:	compareHashes(l.hash, r.hash)
+	: l.kind === r.kind ? compareHashes(l.hash, r.hash)
+	: l.kind < r.kind ? -1
+	: 1
 
 // a registered name's counter compares as a number, so names order as they
 // were registered however many came before

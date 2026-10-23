@@ -20,10 +20,11 @@ export const unit: setImplementationOf<Unit.Declaration> = {
 				r.hasKind("intersection") ?
 					(r.basis ??
 					(r.children as BaseConstraint[]).find(
-						rConstraint => rConstraint.impliedBasis?.allows(l.unit) === false
+						rConstraint =>
+							rConstraint.impliedBasis?.allowsUnused(l.unit) === false
 					)?.impliedBasis)
 				:	r
-			if (rBasis && !rBasis.allows(l.unit)) {
+			if (rBasis && !rBasis.allowsUnused(l.unit)) {
 				// we try to use a domain Disjoint if possible since it's better for discrimination
 				const rDomain =
 					rBasis.hasKind("domain") ? rBasis
@@ -43,13 +44,15 @@ export const unit: setImplementationOf<Unit.Declaration> = {
 				return Disjoint.init("assignability", l, rBasis)
 			}
 
-			if (r.allows(l.unit)) return l
+			if (r.allowsUnused(l.unit)) return l
 
 			return Disjoint.init(
 				"assignability",
 				l,
 				r.hasKind("intersection") ?
-					r.children.find(rConstraint => !rConstraint.allows(l.unit as never))!
+					r.children.find(
+						rConstraint => !rConstraint.allowsUnused(l.unit as never)
+					)!
 				:	r
 			)
 		})
