@@ -826,6 +826,11 @@ const excludedFromJson = {
 }
 
 /**
+ * The first of `errors.issues`.
+ */
+export const firstIssue = (errors: ArkErrors): ArkError => errors.issues[0]
+
+/**
  * Errors by the string of their path.
  */
 export const byPath = (errors: ArkErrors): Record<string, ArkError> => {

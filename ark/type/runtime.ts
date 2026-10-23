@@ -694,6 +694,30 @@ let unreadFirstIssues: UnreadErrors | undefined
 export const UnreadFirstIssues: UnreadErrorsOf = () =>
 	(unreadFirstIssues ??= unreadOf(FirstIssues))
 
+interface UnreadFields {
+	_apply?: CompactApply
+	_data: unknown
+	_found?: ArkIssue[]
+	_first?: WrittenIssue
+}
+
+type WrittenIssue = ArkErrors["issues"][number]
+
+/**
+ * The first of `errors.issues`. Errors finding their issues once read find
+ * only it, walking their data until it fails.
+ */
+export const firstIssue = (errors: ArkErrors): WrittenIssue => {
+	const unread = errors as ArkErrors & UnreadFields
+	if (unread._first) return unread._first
+	if (!unread._apply || unread._found) return errors.issues[0]
+	// an Unread's constructor is the class whose issues it finds
+	const ctx = new (errors.constructor as new () => ArkErrors)()
+	ctx.failFast ||= true
+	issuesOf(unread._apply, unread._data, ctx)
+	return (unread._first = ctx.issues[0])
+}
+
 // errors "none"'s failure, its one issue built once read
 export const InvalidErrors: new (data: unknown) => ArkErrors =
 	/* @__PURE__ */ (() => {
