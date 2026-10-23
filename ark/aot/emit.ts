@@ -103,7 +103,7 @@ const emitProject = (
 	if (!config.fileNames.length) return
 	const { options } = config
 	if (options.noEmit || options.emitDeclarationOnly)
-		throwError(writeUnemittedMessage(configPathOf(config)))
+		throwError(writeUnemittedMessage(resolve(configPathOf(config))))
 	const emitOptions: ts.CompilerOptions = {
 		...options,
 		// tsc checks the program and emits its declarations
