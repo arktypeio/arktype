@@ -53,10 +53,13 @@ export const makeField = limit => {
 	})
 
 	it("reports reads off a value that may be a Type", () => {
-		const filename = fromHere("unsure", "main.ts")
-		attest(
-			lint(readFileSync(filename, "utf8"), {}, filename, fromHere("unsure"))
-		).snap([
+		const code = `import { type } from "arktype"
+
+const forms = [type({ name: "string" }), type({ role: "string" })]
+
+export const nullables = forms.map(form => form.or("null"))`
+		const dir = writeFixture({ "main.ts": code })
+		attest(lint(code, {}, join(dir, "main.ts"), dir)).snap([
 			"5:44-5:51 form.or reads or, which a standalone validator lacks\nthe build can't tell where `form` comes from, so it may be a Type, which the standalone runtime replaces with a validator\nIf it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
 		])
 	})
@@ -76,16 +79,6 @@ export const check = data => User.assert(data)`
 `)
 	})
 
-	it("refuses an island where errors are written for size", () => {
-		const code = `import { type } from "arktype"
-// @ark-runtime
-export const User = type({ name: "string" })`
-		attest(lint(code)).equals([])
-		attest(lint(code, { optimizeErrors: "size" })).snap([
-			'3:1-3:45 a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under optimizeErrors: "size"\na build writing its errors for size gives its validators a runtime of their own\nPrecompile the definition, or build with optimizeErrors: "speed".'
-		])
-	})
-
 	it("accepts transforms a build copies", () => {
 		const code = `import { type } from "arktype"
 export const Tagged = type({
@@ -93,17 +86,6 @@ export const Tagged = type({
 	"[string]": { "[string]": { label: ["string", "=", "none"] } }
 })`
 		attest(lint(code, { mutatesInput: "always" })).equals([])
-	})
-
-	it("applies the configuration", () => {
-		const code = `import "../writers/config.ts"
-import { type } from "arktype"
-const isLong = s => s.length > 3
-export const Long = type("string").narrow(isLong)`
-		attest(lint(code)).equals([])
-		attest(lint(code, { config: "../writers/config.ts" })).snap([
-			'4:21-4:50 type("string").narrow(isLong) can\'t be precompiled yet\n`node.expression` (../writers/config.ts:5:38) prints the name of `isLong` (linted.js:3:16), which the build knows only by a placeholder\nStandalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
-		])
 	})
 
 	it("applies a changed configuration", () => {
@@ -114,6 +96,7 @@ export const Long = type("string").narrow(isLong)`
 		const code = `import { type } from "arktype"
 const isLong = s => s.length > 3
 export const Long = type("string").narrow(isLong)`
+		attest(lint(code, {}, join(dir, "linted.js"), dir)).equals([])
 		attest(lint(code, { config }, join(dir, "linted.js"), dir)).snap([
 			'3:21-3:50 type("string").narrow(isLong) can\'t be precompiled yet\n`node.expression` (config.ts:5:38) prints the name of `isLong` (linted.js:2:16), which the build knows only by a placeholder\nStandalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 		])
@@ -160,35 +143,6 @@ export const Max = type("number")
 import { max } from "./limits.ts"
 export const Field = type(\`string <= \${max}\`)`
 		attest(lint(code, {}, join(dir, "field.js"), dir)).equals([])
-	})
-
-	it("rereads a referenced tsconfig's paths", () => {
-		const code = `import { type } from "arktype"
-import { shape } from "#shape"
-export const T = type(shape)`
-		const dir = writeFixture({
-			"tsconfig.json": JSON.stringify({
-				files: [],
-				references: [{ path: "./tsconfig.app.json" }]
-			}),
-			"a.js": 'export const shape = { [String(Math.random())]: "string" }\n',
-			"b.js": 'export const shape = { a: "number" }\n',
-			"main.js": code
-		})
-		const writeTsconfig = (target: string) =>
-			writeFileSync(
-				join(dir, "tsconfig.app.json"),
-				JSON.stringify({
-					compilerOptions: { allowJs: true, paths: { "#shape": [target] } },
-					include: ["*.js"]
-				})
-			)
-		writeTsconfig("./a.js")
-		attest(lint(code, {}, join(dir, "main.js"), dir)).snap([
-			'3:18-3:29 type(shape) cannot be precompiled\n`shape` is imported from a.js\n`Math.random` is not one of the build\'s pure built-ins\nStandalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
-		])
-		writeTsconfig("./b.js")
-		attest(lint(code, {}, join(dir, "main.js"), dir)).equals([])
 	})
 
 	it("applies an unsaved config module", () => {

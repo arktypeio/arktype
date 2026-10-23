@@ -36,14 +36,11 @@ contextualize(() => {
 		})
 	})
 
-	it("unit", () => {
+	it("units", () => {
 		attest(toOpenApi(type("'cat'"))).snap({
 			type: "string",
 			enum: ["cat"]
 		})
-	})
-
-	it("units", () => {
 		attest(toOpenApi(type("'a' | 'b'"))).snap({
 			type: "string",
 			enum: ["a", "b"]

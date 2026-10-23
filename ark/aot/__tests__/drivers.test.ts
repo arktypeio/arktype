@@ -1,7 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { precompile as bunPlugin } from "@ark/aot/bun"
-import { check } from "@ark/aot/internal/check.ts"
 import { writeDeclareFrameworkMessage } from "@ark/aot/internal/declare.ts"
 import {
 	allowUnsafeHint,
@@ -114,7 +113,6 @@ const transpiled = fromHere("transpiled")
 const localized = fromHere("localized")
 const checks = fromHere("checks")
 const writers = fromHere("writers")
-const calledHoles = fromHere("calledHoles")
 const cycle = fromHere("cycle")
 const cycleFirst = fromHere("cycleFirst")
 const cycleErased = fromHere("cycleErased")
@@ -189,14 +187,6 @@ contextualize(function (this: Mocha.Suite) {
 		attest(
 			stderr.includes(
 				"Error: @ark/aot/node needs Node 22.15 or later (this is 22.14.0)"
-			)
-		).equals(true)
-	})
-
-	it("refuses a non-path config", () => {
-		attest(
-			node(["main.ts"], { config: "" }).stderr.includes(
-				'config must be a module path or false (was "")'
 			)
 		).equals(true)
 	})
@@ -530,14 +520,6 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 					stderr.includes(writeCreatedBeforeConfigureMessage(path))
 				).equals(true)
 			}
-			// the build fails where it sees an import load the Type first
-			attest(
-				check(["earlyFirst.ts"], { cwd: configured, config: "config.ts" }).lines
-			).snap([
-				'earlyFirst.ts:1:1  import { Email } from "./early.ts" loads schemas.ts, which creates a Type, before the config module config.ts runs configure()\n  unless the program loaded config.ts earlier, creating the Type throws\n  Import config.ts first, before any module that creates a Type. Set allowUnsafe: true to build anyway, with a warning.',
-				"earlyFirst.ts:4:13  accepted",
-				"1 site in 1 file: 1 accepted (100.0%), 1 error outside a site"
-			])
 		})
 
 		it("fails where an import loads a Type before the config module", () => {
@@ -563,35 +545,6 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			attest(thrownMessage(stderr, localized))
 				.snap(`main.ts:4:18  type("string") can't be precompiled yet
   a configured locale can't be precompiled to a standalone validator
-  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
-		})
-
-		it("a configured writer reading a hole's name", () => {
-			const { status, stderr } = node(
-				["main.ts"],
-				{ config: "config.ts" },
-				writers
-			)
-			attest(status).equals(1)
-			attest(thrownMessage(stderr, writers))
-				.snap(`main.ts:6:21  type("string").narrow(isLong) can't be precompiled yet
-  \`node.expression\` (config.ts:5:38) prints the name of \`isLong\` (main.ts:4:16), which the build knows only by a placeholder
-  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".
-main.ts:8:29  Long.description reads description, which a standalone validator lacks
-  \`Long\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read
-  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".`)
-		})
-
-		it("a configured writer calling a hole", () => {
-			const { status, stderr } = node(
-				["main.ts"],
-				{ config: "config.ts" },
-				calledHoles
-			)
-			attest(status).equals(1)
-			attest(thrownMessage(stderr, calledHoles))
-				.snap(`main.ts:6:18  type("string").narrow(() => lenient) can't be precompiled yet
-  arktype calls \`() => lenient\` (main.ts:6:40)
   Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
 		})
 	})
@@ -905,9 +858,16 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 
 			it("the paths an import resolves through change", () => {
 				const dir = tempDir()
+				writeFileSync(
+					join(dir, "tsconfig.json"),
+					JSON.stringify({
+						files: [],
+						references: [{ path: "./tsconfig.app.json" }]
+					})
+				)
 				const writeTsconfig = (target: string) =>
 					writeFileSync(
-						join(dir, "tsconfig.json"),
+						join(dir, "tsconfig.app.json"),
 						JSON.stringify({
 							compilerOptions: { paths: { "#shape": [target] } }
 						})

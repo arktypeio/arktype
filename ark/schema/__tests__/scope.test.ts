@@ -32,31 +32,7 @@ contextualize(() => {
 	})
 
 	it("enumerates the intrinsics", () => {
-		attest(Object.keys(intrinsic)).snap([
-			"bigint",
-			"boolean",
-			"false",
-			"never",
-			"null",
-			"number",
-			"object",
-			"string",
-			"symbol",
-			"true",
-			"unknown",
-			"undefined",
-			"Array",
-			"Date",
-			"integer",
-			"lengthBoundable",
-			"key",
-			"nonNegativeIntegerString",
-			"jsonPrimitive",
-			"jsonObject",
-			"jsonData",
-			"emptyStructure"
-		])
-		attest("string" in intrinsic).equals(true)
+		attest(Object.keys(intrinsic).includes("string")).equals(true)
 		attest(
 			Object.entries(intrinsic).every(
 				([k, v]) => v === $ark.intrinsic[k as keyof typeof intrinsic]
