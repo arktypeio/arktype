@@ -174,6 +174,18 @@ contextualize(() => {
 			attest(T.allows(new Date("2005-10-10"))).equals(false)
 		})
 
+		it("Date bound descriptions", () => {
+			attest(type("Date >= d'2023-01-01'").description).snap(
+				"a Date and January 1, 2023 or later"
+			)
+			attest(type("Date >= d'2023-01-01T00:00-05:00'").description).snap(
+				"a Date and January 1, 2023, 5:00 AM UTC or later"
+			)
+			attest(type("Date >= d'2023-01-01T14:30Z'").description).snap(
+				"a Date and January 1, 2023, 2:30 PM UTC or later"
+			)
+		})
+
 		it("Date unit alias left bound", () => {
 			const $ = scope({
 				start: type.unit(new Date("2000-01-01T05:00Z")),
@@ -263,7 +275,15 @@ contextualize(() => {
 
 		it("double right bound", () => {
 			// @ts-expect-error
-			attest(() => type("number>0<=200")).type.errors(
+			attest(() => type("number>0<=200")).throwsAndHasTypeError(
+				writeDoubleRightBoundMessage("number")
+			)
+			// @ts-expect-error
+			attest(() => type("number < 5 < 6")).throwsAndHasTypeError(
+				writeDoubleRightBoundMessage("number")
+			)
+			// @ts-expect-error
+			attest(() => type("number != 3 == 4")).throwsAndHasTypeError(
 				writeDoubleRightBoundMessage("number")
 			)
 		})

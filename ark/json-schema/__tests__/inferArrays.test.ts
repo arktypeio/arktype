@@ -1149,11 +1149,11 @@ contextualize(() => {
 
 		it("narrow branch types as items", () => {
 			attest<
-				string[],
+				(string | null)[],
 				jsonSchema.infer<{ type: "array"; items: JsonSchema.String }>
 			>()
 			attest<
-				unknown[][],
+				(unknown[] | null)[],
 				jsonSchema.infer<{ type: "array"; items: JsonSchema.Array }>
 			>()
 		})

@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
+import type { JSONSchema7 } from "json-schema"
 
 // a keyword's pattern is its source, so only its presence is asserted
 const elidePatterns = (schema: object): object =>
@@ -97,7 +98,7 @@ contextualize(() => {
 					friend: "user?"
 				}
 			})
-			attest<object>(types.user.toJsonSchema({ target: "draft-07" })).snap({
+			attest(types.user.toJsonSchema({ target: "draft-07" })).snap({
 				$schema: "http://json-schema.org/draft-07/schema#",
 				$ref: "#/definitions/user",
 				definitions: {
@@ -477,6 +478,54 @@ contextualize(() => {
 					{ type: "string", nullable: true, enum: [null] }
 				]
 			})
+		})
+	})
+
+	it("an optional key's undefined is its absence", () => {
+		const T = type({ "a?": "string | undefined", "b?": "undefined" })
+		attest(T.toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: { a: { type: "string" }, b: { enum: [] } }
+		})
+		attest(T["~standard"].jsonSchema.input({ target: "draft-2020-12" })).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: { a: { type: "string" }, b: { enum: [] } }
+		})
+		attest(() => type({ a: "string | undefined" }).toJsonSchema()).throws(
+			'Can\'t convert "unit" at a to JSON Schema'
+		)
+	})
+
+	it("fits JSONSchema7 and Record<string, unknown> without a cast", () => {
+		const schema = type({ a: "string[]", "b?": "1 | 2" }).toJsonSchema({
+			target: "draft-07"
+		})
+		const draft07: JSONSchema7 = schema
+		const record: Record<string, unknown> = schema
+		attest(draft07).equals(record)
+		attest(schema.properties).snap({
+			a: { type: "array", items: { type: "string" } },
+			b: { type: "number", enum: [1, 2] }
+		})
+	})
+
+	it("an empty object has empty properties", () => {
+		attest(type({}).toJsonSchema({ target: "openapi-3.0" })).snap({
+			type: "object",
+			properties: {}
+		})
+		attest(type({ "+": "reject" }).toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: {},
+			additionalProperties: false
+		})
+		attest(type({ "[string]": "number" }).toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			additionalProperties: { type: "number" }
 		})
 	})
 

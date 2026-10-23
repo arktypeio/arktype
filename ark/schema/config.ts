@@ -4,6 +4,7 @@ import {
 	printable,
 	throwParseError,
 	type ArkRegistry,
+	type dict,
 	type requireKeys,
 	type show
 } from "@ark/util"
@@ -117,8 +118,23 @@ $ark.config ??= {}
 export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 	if (config.locale !== undefined && !hasDomain(config.locale, "object"))
 		throwParseError(writeInvalidLocaleMessage(config.locale))
-	if ($ark.resolvedConfig) return throwParseError(configureAfterTypeMessage)
-	return Object.assign($ark.config, mergeConfigs($ark.config, config))
+	const merged = mergeConfigs($ark.config, config)
+	// a config file evaluated again, like after a test runner resets its
+	// modules, can reapply what's already set
+	if ($ark.resolvedConfig && !isSameConfig(merged, $ark.config))
+		return throwParseError(configureAfterTypeMessage)
+	return Object.assign($ark.config, merged)
+}
+
+const isSameConfig = (l: unknown, r: unknown): boolean => {
+	if (l === r) return true
+	// functions are only the same by reference
+	if (typeof l !== "object" || typeof r !== "object" || !l || !r) return false
+	const entries = Object.entries(l)
+	return (
+		entries.length === Object.keys(r).length &&
+		entries.every(([k, v]) => isSameConfig(v, (r as dict)[k]))
+	)
 }
 
 /** $ark.config merged over base, with its static locale */

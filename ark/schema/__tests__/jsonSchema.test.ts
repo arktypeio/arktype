@@ -451,7 +451,7 @@ contextualize(() => {
 			meta: { "x-unit": { name: "ms" } } as never
 		})
 
-		attest<object>(toJsonSchema(T)).snap({
+		attest(toJsonSchema(T)).snap({
 			type: "number",
 			"x-unit": { name: "ms" }
 		})
@@ -557,7 +557,8 @@ contextualize(() => {
 {
     code: "defaultValue",
     base: {
-        type: "object"
+        type: "object",
+        properties: {}
     },
     value: {
         a: 0n
