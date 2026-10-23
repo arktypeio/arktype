@@ -866,7 +866,7 @@ Keys are ordered by code unit, where they were ordered as `JSON.stringify` write
 - at `"`, against a character from `#` to `[`
 - at a lone surrogate, against a character from U+005D to U+D7FF: `"ab"` now precedes `"a\uD800"`
 
-Other keys that first differ at a space, `!`, `"` or a backslash keep their order. That order is the order of keys in a Type's `expression` and `json`, its JSON Schema's `properties` and `required`, the errors it reports, and the outputs it rebuilds, e.g. adding defaults or deleting undeclared keys.
+Other keys that first differ at a space, `!`, `"` or a backslash keep their order. That order is the order of keys in a Type's `expression` and `json`, its JSON Schema's `properties` and `required`, and the errors it reports.
 
 ### Simplify `@ark/schema` nodes
 
@@ -1770,16 +1770,18 @@ type({ "+": "reject", a: "string.trim" }).or({
 })
 ```
 
-### Return deleting types' keys in the order of their expression
+### Return deleting types' keys in the order they're declared
 
-`"+": "delete"` builds its output with required keys, then optional keys, each sorted, followed by keys matching an index signature in input order. It previously deleted from a copy of the input, which kept the input's order. The output is always a new object, even when nothing was deleted, while an array is returned as is unless it has an undeclared key to remove:
+`"+": "delete"` builds its output with the declared keys in the order the definition declares them, as Zod does, followed by keys matching an index signature in input order. It previously deleted from a copy of the input, which kept the input's order, and prerelease builds of this version sorted them. Data is usually serialized from the shape its Type declares, so the output usually lists keys as its input did. The output is always a new object, even when nothing was deleted, while an array is returned as is unless it has an undeclared key to remove:
 
 ```ts
 const T = type({ "+": "delete", b: "string", a: "string", "c?": "number" })
 
-// previously { a: "1", c: 1, b: "2" }, now { a: "1", b: "2", c: 1 }
+// previously { a: "1", c: 1, b: "2" }, now { b: "2", a: "1", c: 1 }
 T({ a: "1", z: 0, c: 1, b: "2" })
 ```
+
+A spread, `.merge()` or `.and()` lists the left object's keys, then the right's new ones, as `{ ...left, ...right }` would, and `.pick()`, `.omit()`, `.partial()` and `.required()` keep their source's order. Defaults missing from data are added in the order they're declared, after the input's keys where undeclared keys are kept. A Type's `expression`, `json` and JSON Schema still list keys required first, then optional, each sorted, and Types that declare the same keys in different orders are still equal, though no longer the same object.
 
 ### Treat integer keys past an array's greatest index as undeclared
 

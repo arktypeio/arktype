@@ -50,6 +50,8 @@ export const parseObjectLiteral = (
 	let spread: Structure.Node | undefined
 	let meta: TypeMeta.Collapsible | undefined
 	const structure: MutableStructureSchema = {}
+	// the order output lists keys in, as they're declared
+	const order: Key[] = []
 	// We only allow a spread operator to be used as the first key in an object
 	// because to match JS behavior any keys before the spread are overwritten
 	// by the values in the target object, so there'd be no useful purpose in having it
@@ -91,6 +93,8 @@ export const parseObjectLiteral = (
 
 		const parsedValue = parseProperty(v, ctx)
 		const parsedEntryKey = parsedKey as PreparsedEntryKey
+
+		if (parsedKey.kind !== "index") order.push(parsedEntryKey.normalized)
 
 		if (parsedKey.kind === "required") {
 			if (!isArray(parsedValue)) {
@@ -156,9 +160,13 @@ export const parseObjectLiteral = (
 		if (normalized.index)
 			structure.index = append(structure.index, normalized.index)
 
-		if (normalized.required)
+		if (normalized.required) {
 			structure.required = append(structure.required, normalized.required)
+			for (const prop of normalized.required) order.push(prop.key)
+		}
 	}
+
+	if (order.length > 1) structure.order = order
 
 	const structureNode = ctx.$.node("structure", structure)
 

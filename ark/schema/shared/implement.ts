@@ -111,7 +111,7 @@ export const constraintKeys: KeySet<ConstraintKind> = flatMorph(
 )
 
 export const structureKeys: keySetOf<Structure.Inner> = flatMorph(
-	[...structuralKinds, "undeclared"],
+	[...structuralKinds, "undeclared", "order"],
 	(i, k) => [k, 1] as const
 )
 
@@ -281,6 +281,8 @@ export type NodeKeyImplementation<
 		serialize?: (schema: instantiated) => Json
 		// a structural value defers an alias it holds elsewhere to an alias of its own
 		structural?: true
+		// written to no json, so nodes it alone tells apart are equal
+		unserialized?: true
 		reduceIo?: (
 			ioKind: "in" | "out",
 			inner: makeRootAndArrayPropertiesMutable<d["inner"]>,
