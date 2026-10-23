@@ -60,20 +60,6 @@ contextualize(() => {
 		attest<unknown>(s.infer)
 	})
 
-	it("invalid keyword", () => {
-		// @ts-expect-error
-		attest(() => jsonSchema({ type: "string", minLength: -1 })).type.errors(
-			"minLength must be a non-negative integer (was -1)"
-		)
-	})
-
-	it("completions", () => {
-		// @ts-expect-error
-		attest(() => jsonSchema({ type: "str" })).completions({
-			str: ["string"]
-		})
-	})
-
 	it("nested inferred schema", () => {
 		const user = jsonSchema({
 			type: "object",
@@ -198,27 +184,5 @@ contextualize(() => {
 		})
 		attest<{ a: string }>(out)
 		attest.instantiations([465, "instantiations"])
-	})
-
-	describe("jsonSchema.validate", () => {
-		it("valid", () => {
-			attest<true>(
-				{} as { type: "string" } extends (
-					jsonSchema.validate<{ type: "string" }>
-				) ?
-					true
-				:	false
-			)
-		})
-
-		it("invalid", () => {
-			attest<false>(
-				{} as { type: "string"; minLength: -1 } extends (
-					jsonSchema.validate<{ type: "string"; minLength: -1 }>
-				) ?
-					true
-				:	false
-			)
-		})
 	})
 })

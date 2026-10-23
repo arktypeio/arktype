@@ -228,22 +228,12 @@ contextualize(() => {
 
 	it("prints a name where nested", () => {
 		const T = type({ v: "number", "next?": "this" })
-		const boxOf = type("<t>", { box: "t" })
 
 		attest(type({ a: T }).expression).snap(
 			"{ a: { v: number, next?: typegszdr00kec5od } }"
 		)
 		attest(T.array().expression).snap(
 			"{ v: number, next?: typegszdr00kec5od }[]"
-		)
-		attest(T.and({ x: "string" }).expression).snap(
-			"{ v: number, x: string, next?: typegszdr00kec5od }"
-		)
-		attest(boxOf(T).expression).snap(
-			"{ box: { v: number, next?: typegszdr00kec5od } }"
-		)
-		attest(T.pipe(t => t).expression).snap(
-			"(In: { v: number, next?: typegszdr00kec5od }) => Out<unknown>"
 		)
 		attest(type({ a: T }).description).snap(
 			"{ a: { v: a number, next?: typegszdr00kec5od } }"

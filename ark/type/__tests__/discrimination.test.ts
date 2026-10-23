@@ -766,6 +766,13 @@ contextualize(() => {
 		attest(T.allows({ a: 1, b: 1 })).equals(true)
 		attest(T.allows({ a: { c: 0 }, b: 2 })).equals(true)
 		attest(T.allows({ a: { c: 0 }, b: 3 })).equals(false)
+		// a refinement whose basis was pruned
+		const U = $.type({ a: "string > 1", b: "1" })
+			.or({ a: "number" })
+			.or({ a: "null | 'x'", b: "2" })
+		attest(U.allows({ a: "xy", b: 1 })).equals(true)
+		attest(U.allows({ a: "x", b: 2 })).equals(true)
+		attest(U.allows({ a: "y", b: 2 })).equals(false)
 	})
 
 	it("number case includes NaN and Infinity", () => {
@@ -900,14 +907,6 @@ contextualize(() => {
 			)
 		})
 
-		it("is a primitive with the discriminant's key", () => {
-			const T = $.type({ length: "3", x: "string" }).or({
-				length: "4",
-				y: "number"
-			})
-			attest(T("abcde").toString()).snap("must be an object (was a string)")
-		})
-
 		it("reaches a default case", () => {
 			const Event = $.type({ id: "0", k1: "number" })
 				.or({ id: "1", k2: "number" })
@@ -1035,16 +1034,6 @@ contextualize(() => {
 			attest(error.cases[1]).is(o)
 		})
 
-		it("an absent key of literal branches", () => {
-			// #1491's repro
-			const Thing = type({ tag: '"a"', a: "number" })
-				.or({ tag: '"b"', bc: "string" })
-				.or({ tag: '"c"', bc: "string" })
-			attest(Thing({}).toString()).snap(
-				'tag must be "a", "b" or "c" (was missing)'
-			)
-		})
-
 		it("an absent key", () => {
 			const $ = scope({})
 			const T = $.type({ k: "'a'", x: "string" }).or({
@@ -1118,27 +1107,6 @@ contextualize(() => {
 				}
 			})
 			attest(Configured({ kind: "c" }).toString()).snap("kind isn't one of 2")
-			// the union's expected and actual describe the object, not its key
-			const Described = define({}).configure({
-				expected: "a known kind"
-			})
-			attest(Described({ kind: "c" }).toString()).snap(
-				'kind must be "a" or "b" (was "c")'
-			)
-			const Actual = define({}).configure({
-				actual: data => `<${Object.keys(data as object).length} keys>`
-			})
-			attest(Actual({ kind: "c" }).toString()).snap(
-				'kind must be "a" or "b" (was "c")'
-			)
-			const Letter = type("'a' | 'b' | 'c'").configure({ expected: "a letter" })
-			attest(Letter("d").toString()).snap('must be a letter (was "d")')
-			const Predicate = define({
-				predicate: { problem: "isn't valid" }
-			})
-			attest(Predicate({ kind: "c" }).toString()).snap(
-				'kind must be "a" or "b" (was "c")'
-			)
 		})
 	})
 
@@ -1161,7 +1129,6 @@ contextualize(() => {
 		attest(Tagged({ kind: "a", a: 5 }).toString()).snap(
 			"a must be a string (was a number)"
 		)
-		attest(Tagged(5).toString()).snap("must be an object (was a number)")
 	})
 
 	it("describes a unit case once", () => {

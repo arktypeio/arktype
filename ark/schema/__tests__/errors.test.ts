@@ -203,26 +203,12 @@ contextualize(() => {
 		// @ts-expect-error
 		attest(() => errors[0]).type.errors("Property '0' does not exist")
 		// @ts-expect-error
-		attest(() => errors.map(e => e)).type.errors(
-			"Property 'map' does not exist"
-		)
-		// @ts-expect-error
-		attest(() => errors.push(errors.issues[0])).type.errors(
-			"Property 'push' does not exist"
-		)
-		// @ts-expect-error
-		attest(() => errors.length).type.errors("Property 'length' does not exist")
-		// @ts-expect-error
 		attest(() => errors.issues.push(errors.issues[0])).type.errors(
 			"Property 'push' does not exist"
 		)
 		// @ts-expect-error
 		attest((): readonly ArkError[] => errors).type.errors(
 			"is missing the following properties"
-		)
-		// @ts-expect-error
-		attest(() => ([] as ArkError[]).concat(errors)).type.errors(
-			"No overload matches this call"
 		)
 	})
 

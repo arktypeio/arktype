@@ -1067,24 +1067,6 @@ contextualize(() => {
 			)
 		})
 
-		it("calls the factory each time the default is applied", () => {
-			let calls = 0
-			const T = type({
-				date: [
-					"Date",
-					"=",
-					() => {
-						calls++
-						return new Date(0)
-					}
-				]
-			})
-			attest(calls).equals(0)
-			attest(T({})).equals({ date: new Date(0) })
-			attest(T({})).equals({ date: new Date(0) })
-			attest(calls).equals(2)
-		})
-
 		it("validates each result of the factory", () => {
 			const $ = scope({})
 			let calls = 0

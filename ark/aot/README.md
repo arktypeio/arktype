@@ -19,6 +19,12 @@ export default {
 }
 ```
 
+A program `tsc` builds without a bundler precompiles what it emits:
+
+```sh
+tsc && npx arktype-precompile --emit
+```
+
 List what the build can't precompile before you switch:
 
 ```sh

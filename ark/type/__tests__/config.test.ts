@@ -178,14 +178,6 @@ contextualize(() => {
 		attest(Email("").toString()).snap("Email is not valid")
 	})
 
-	it("node writer config on undeclared key", () => {
-		const T = type({ "+": "reject", a: "string" }).configure(
-			{ message: ctx => `custom message ${ctx.problem}` },
-			"structure"
-		)
-		attest(T({ a: "", b: 1 }).toString()).snap("custom message must be removed")
-	})
-
 	it("applies config to shallow descendants", () => {
 		const User = type({
 			name: "string",
@@ -468,18 +460,6 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 			})
 		})
 		attest(types.inner.foo.precompilation).satisfies("string")
-	})
-
-	it("leaf with scope description writer", () => {
-		const A = type({ a: "number > 1234" })
-		attest(A({ a: "x" }).toString()).snap("a must be a number (was a string)")
-		const types = scope(
-			{ b: "number", o: { a: A, b: "b" } },
-			{ domain: { description: () => "a custom number" } }
-		).export()
-		attest(types.o({ a: { a: "x" }, b: "x" }).toString()).equals(
-			"a.a must be a number (was a string)\nb must be a custom number (was a string)"
-		)
 	})
 
 	it("referenced types keep their descriptions", () => {

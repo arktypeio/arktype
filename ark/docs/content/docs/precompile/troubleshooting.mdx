@@ -13,11 +13,13 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 
 Positions are your source's, even where another plugin transpiled it first. Run [`arktype-precompile --check`](/docs/precompile/setup#check-an-existing-project) to see every report at once.
 
-Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `Set allowUnsafe: true to build anyway, with a warning.` [`allowUnsafe`](/docs/precompile/options#allowunsafe) reports those as warnings instead, and what they report may then throw at runtime. A few reports are always warnings, since the build can't be sure of a fix or nothing fails at runtime: a value the build can't follow that it takes for a Standard Schema other than a Type, like a Zod schema, and what a build with `runtime: "arktype"` leaves to arktype.
+Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `Set allowUnsafe: true to build anyway, with a warning.` [`allowUnsafe`](/docs/precompile/options#allowunsafe) reports those as warnings instead, and what they report may then throw at runtime. What a build with `runtime: "arktype"` leaves to arktype is always reported as a warning, since nothing fails at runtime.
 
 ## Definitions
 
 **`... cannot be precompiled`**: the definition reads a value known only at runtime, like a parameter or the result of a call the build can't evaluate. Make the value static, mark the definition as a [runtime island](/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`.
+
+**`` `shape` is written at ..., so its value at the site is not known ``**: the definition reads an object or array the program changes before it, through a member, a method like `push`, `Object.assign` or a function writing its argument, so the build can't tell what it holds there. Write the value whole in its literal, or build with `runtime: "arktype"`.
 
 **`... can't be precompiled yet`**: the definition uses something the build doesn't support yet. Build it as a runtime island, or with `runtime: "arktype"`.
 
@@ -32,6 +34,8 @@ Where the fix is clear and the problem could throw at runtime, the build fails. 
 ## Reads
 
 **`` `type` is used outside a precompiled site ``**: a standalone build doesn't ship arktype, so a call that creates a Type must be a definition the build precompiles. Move it into one, or build with `runtime: "arktype"`.
+
+**`import("arktype") loads arktype, which a standalone build replaces with arktype/runtime`**: the build precompiles definitions it sees through an `import` declaration, and resolves every other load of arktype to its runtime, which can't create a Type. Import it with an `import` declaration, or build with `runtime: "arktype"`.
 
 **`User.description reads description, which a standalone validator lacks`**: a validator lacks the methods that compose a Type and the introspection members its build's [`members`](/docs/precompile/options#members) option doesn't set. Compose inside a definition, set the member, or build with `runtime: "arktype"`.
 

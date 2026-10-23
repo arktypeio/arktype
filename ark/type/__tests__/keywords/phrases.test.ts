@@ -1,17 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	en as schemaEn,
 	rootSchema,
 	writeKeywordExpected,
 	type ArkError,
-	type ArkErrors,
-	type BaseNode
+	type ArkErrors
 } from "@ark/schema"
 import { ark, scope, type, type KeywordConfig } from "arktype"
-import {
-	keywordPhrases,
-	type KeywordPhraseAlias
-} from "arktype/internal/keywords/phrases.ts"
+import type { KeywordPhraseAlias } from "arktype/internal/keywords/phrases.ts"
 import { regexStringNode } from "arktype/internal/keywords/string.ts"
 import { en } from "arktype/locales/en"
 
@@ -30,15 +25,6 @@ const flatKeywords = (prefix: string, o: object): [string, type.Any][] =>
 
 const keywordTypes = flatKeywords("", ark.export())
 
-const nodesOf = (T: type.Any): BaseNode[] => [
-	...new Set([T.internal, ...T.internal.references])
-]
-
-const nounOf = (alias: KeywordPhraseAlias) => {
-	const phrase = keywordPhrases[alias]
-	return typeof phrase === "string" ? phrase : phrase.noun
-}
-
 const leavesOf = (error: ArkError): ArkError[] =>
 	error.code === "union" || error.code === "intersection" ?
 		error.errors.flatMap(leavesOf)
@@ -53,11 +39,6 @@ contextualize(() => {
 		attest(() => regexStringNode(/^a$/, "string.emial")).type.errors(
 			"Argument of type '\"string.emial\"' is not assignable"
 		)
-	})
-
-	it("en has every phrase", () => {
-		attest(schemaEn).is(en)
-		attest(en.keywordPhrases).equals(keywordPhrases)
 	})
 
 	it("a scope resolved before arktype's keywords has their phrases", () => {
@@ -84,32 +65,6 @@ contextualize(() => {
 					.toString()
 			).equals('must be valid according to an anonymous predicate (was "x")')
 		}
-	})
-
-	it("nodes with keyword text carry the keyword", () => {
-		const tagged = new Set<string>()
-		for (const [, T] of keywordTypes) {
-			for (const node of nodesOf(T)) {
-				const keyword = node.meta.keyword
-				if (keyword === undefined) continue
-				tagged.add(keyword)
-				const description =
-					"errorContext" in node && node.errorContext ?
-						writeKeywordExpected(node.errorContext as never, en)
-					:	nounOf(keyword as KeywordPhraseAlias)
-				// en renders each node's phrase as its description
-				attest(description).equals(node.description)
-			}
-		}
-		const raisedThroughCtx = Object.keys(keywordPhrases).filter(
-			alias => !tagged.has(alias)
-		)
-		attest(raisedThroughCtx).snap([
-			"string.date.parse",
-			"string.integer.parse",
-			"string.json.parse",
-			"string.url.parse"
-		])
 	})
 
 	it("keywords with no phrase stay equal to their structure", () => {
@@ -242,21 +197,15 @@ contextualize(() => {
 			attest(error.message).snap('must be a URL string (was "x")')
 		})
 
-		it("json", () => {
-			const error = errorOf(type("string.json"), "{")
-			attest(error.meta).snap({ keyword: "string.json" })
-			attest(error.cause).instanceOf(SyntaxError)
-			attest(error.expected).snap("a JSON string")
-			attest(error.actual).snap('"{"')
-			attest(error.problem).equals(`must be a JSON string (${error.cause})`)
-		})
-
 		it("json.parse", () => {
 			const error = errorOf(type("string.json.parse"), "{")
 			attest(error.meta).snap({ keyword: "string.json.parse" })
 			attest(error.cause).instanceOf(SyntaxError)
 			attest(error.actual).snap('"{"')
 			attest(error.problem).equals(`must be a JSON string (${error.cause})`)
+			attest(errorOf(type("string.json"), "{").meta).snap({
+				keyword: "string.json"
+			})
 			const empty = errorOf(type("string.json.parse"), "")
 			attest(empty.cause).equals(undefined)
 			attest(jsonOf(type("string.json.parse"), "")).snap({

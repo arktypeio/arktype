@@ -278,6 +278,14 @@ An error at a `__proto__` path is an own key of the plain objects `flatByPath` a
 
 A Type or standalone validator that calls no narrow or morph may find its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. The issues describe the data as it is at that read: a write to it in between can change them, and data that no longer fails holds one root issue, `is invalid`. A getter or `Proxy` trap the check reads runs again at that read, and what it throws is thrown there. The errors hold the data until they're collected.
 
+Read `summary` or `issues` before the data you validated can change, as it can when it's reactive form state or an Immer draft, or when an `await` comes before you report the errors:
+
+```ts
+const out = User(form)
+// read now, while they describe the form that was validated
+const summary = out instanceof type.errors ? out.summary : ""
+```
+
 ### Print objects in error messages by their kind
 
 An error's `actual` prints an object as `an object`, an array as `an array` and a function as `a function`, where it printed an object or array as compact JSON, a Date as its date, a function as `Function(name)` and another instance by its class's name. A message no longer grows with the data, and nothing an object holds reaches a log through it. Primitives print as before, and `before`, `after`, `!=` and a Date literal, like `d'2020-01-01'` or one of `type.enumerated`'s Dates, still print the Date they rejected:

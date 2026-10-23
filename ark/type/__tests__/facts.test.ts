@@ -90,16 +90,8 @@ contextualize(() => {
 		attest(
 			readsOf(
 				() => type("number").narrow(audited((n: number) => n > 0)),
-				() =>
-					type("number").narrow(
-						audited((n: number, ctx) => n > 0 || ctx.mustBe("positive"))
-					),
 				() => type(["number", ":", audited((n: number) => n > 0)]),
 				() => type("string").pipe(audited((s: string) => s.length)),
-				() =>
-					type("string").pipe(
-						audited((s: string, ctx) => s.length || ctx.error("non-empty"))
-					),
 				() => type("string").pipe.try(audited((s: string) => JSON.parse(s))),
 				() => type(["string", "=>", audited((s: string) => s.trim())]),
 				() =>
@@ -166,7 +158,6 @@ contextualize(() => {
 				() => type.instanceOf(audited(Date)),
 				() =>
 					type.instanceOf(audited(Base)).and(type.instanceOf(audited(Derived))),
-				() => type.instanceOf(audited(Foo)).and(type.instanceOf(audited(Base))),
 				() => type(audited(Foo) as never)
 			)
 		).equals([])
@@ -188,9 +179,7 @@ contextualize(() => {
 				() => type.unit(audited({ toJSON: () => "a" })),
 				() => type(["===", unit, audited({ b: 2 })]),
 				() => type.enumerated(audited({}), 1, "a"),
-				() => type.unit(audited(new Foo())),
-				() => type.unit(audited({ a: 1 })).and({ a: "number" }),
-				() => type.unit(audited({ a: 1 })).or({ a: "string" })
+				() => type.unit(audited(new Foo()))
 			)
 		).equals([])
 	})

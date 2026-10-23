@@ -200,8 +200,9 @@ console.log(
 
 const configs = {
 	"the default scope": type("string").internal.$.resolvedConfig,
-	"a configured scope": scope({}, { numberAllowsNaN: true }).type("string")
-		.internal.$.resolvedConfig
+	"a configured scope": scope({}, { exactOptionalPropertyTypes: false }).type(
+		"string"
+	).internal.$.resolvedConfig
 }
 
 for (const [name, config] of Object.entries(configs)) {

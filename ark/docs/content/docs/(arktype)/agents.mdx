@@ -3,6 +3,8 @@ title: Agents
 description: Help Claude Code, Codex, Cursor and other coding agents write ArkType.
 ---
 
+Every error ArkType reports names its fix: `tsc`'s as a definition is written, a [precompiled](/docs/precompile) build's and validation's. An agent can close each loop on its own, which is also why precompiling is free with one: the build step is one more loop it already runs.
+
 ## Skill
 
 The ArkType [skill](https://github.com/arktypeio/arktype/blob/main/ark/type/skills/arktype/SKILL.md) tells agents when to reach for ArkType, how its syntax maps to TypeScript, and which mistakes to avoid. Add it to your project with:
@@ -33,7 +35,7 @@ Every page of these docs is available as Markdown by adding `.md` to its URL, e.
 
 ## Precompile
 
-A [precompiled](/docs/precompile) build reports each definition it can't precompile with its file, line and column, the reason and the fix. [With agents](/docs/precompile#with-agents) shows one and the tools that shorten the loop: `arktype-precompile --check`, the ESLint rule and shadow mode. [Troubleshooting](/docs/precompile/troubleshooting) lists the fix for each report.
+Precompiling used to cost a build step and its errors. An agent runs the build, reads the error and fixes it, so your users get the speed and size and you don't pay for them. A [precompiled](/docs/precompile) build reports each definition it can't precompile with its file, line and column, the reason and the fix. [With agents](/docs/precompile#with-agents) shows one and the tools that shorten the loop: `arktype-precompile --check`, the ESLint rule and shadow mode. [Troubleshooting](/docs/precompile/troubleshooting) lists the fix for each report.
 
 ## AGENTS.md
 

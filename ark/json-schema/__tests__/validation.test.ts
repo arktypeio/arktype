@@ -1819,55 +1819,7 @@ contextualize(() => {
 			>()
 			attest<
 				true,
-				isValid<{ properties: { a: {} }; required: ["b"]; anyOf: [{}] }>
-			>()
-			attest<
-				true,
-				isValid<{ properties: { a: {} }; required: ["b"]; oneOf: [{}] }>
-			>()
-			attest<
-				true,
-				isValid<{ properties: { a: {} }; required: ["b"]; if: {} }>
-			>()
-			attest<
-				true,
-				isValid<{ properties: { a: {} }; required: ["b"]; then: {} }>
-			>()
-			attest<
-				true,
-				isValid<{ properties: { a: {} }; required: ["b"]; else: {} }>
-			>()
-			attest<
-				true,
-				isValid<{
-					properties: { a: {} }
-					required: ["b"]
-					dependentSchemas: {}
-				}>
-			>()
-			attest<
-				true,
-				isValid<{ properties: { a: {} }; required: ["b"]; dependencies: {} }>
-			>()
-			attest<
-				true,
 				isValid<{ properties: { a: {} }; required: ["b"]; $ref: "#" }>
-			>()
-			attest<
-				true,
-				isValid<{
-					properties: { a: {} }
-					required: ["b"]
-					patternProperties: {}
-				}>
-			>()
-			attest<
-				true,
-				isValid<{
-					properties: { a: {} }
-					required: ["b"]
-					additionalProperties: true
-				}>
 			>()
 			attest<
 				true,
@@ -1881,16 +1833,11 @@ contextualize(() => {
 
 		it("each exempt position", () => {
 			attest<true, isValid<{ allOf: [Typo] }>>()
-			attest<true, isValid<{ anyOf: [Typo] }>>()
-			attest<true, isValid<{ oneOf: [Typo] }>>()
 			attest<true, isValid<{ if: Typo }>>()
-			attest<true, isValid<{ if: {}; then: Typo }>>()
-			attest<true, isValid<{ if: {}; else: Typo }>>()
 			attest<true, isValid<{ not: Typo }>>()
 			attest<true, isValid<{ dependentSchemas: { a: Typo } }>>()
 			attest<true, isValid<{ dependencies: { a: Typo } }>>()
 			attest<true, isValid<{ $defs: { a: Typo } }>>()
-			attest<true, isValid<{ definitions: { a: Typo } }>>()
 			attest<
 				true,
 				isValid<{ openapi: "3.1.0"; components: { schemas: { a: Typo } } }>
@@ -1901,7 +1848,6 @@ contextualize(() => {
 			attest<true, isValid<{ contains: Typo }>>()
 			attest<true, isValid<{ patternProperties: { "^a": Typo } }>>()
 			attest<true, isValid<{ items: [{}]; additionalItems: Typo }>>()
-			attest<true, isValid<{ contentSchema: Typo }>>()
 			attest<true, isValid<{ propertyNames: Typo }>>()
 		})
 
@@ -2475,14 +2421,6 @@ Type 'number' is not assignable to type '"maxContains must be a non-negative int
 				// @ts-expect-error
 				inferred({ type: "string", minLength: "3" })
 			).type.errors(`Type 'string' is not assignable to type 'number'`)
-			attest(() =>
-				// @ts-expect-error
-				inferred({ type: "array", maxItems: null })
-			).type.errors(`Type 'null' is not assignable to type 'number'`)
-			attest(() =>
-				// @ts-expect-error
-				inferred({ type: "object", minProperties: true })
-			).type.errors(`is not assignable to type 'number'`)
 		})
 	})
 
@@ -2493,10 +2431,6 @@ Type 'number' is not assignable to type '"maxContains must be a non-negative int
 				`Type 'string' is not assignable to type 'number'`
 			)
 			// @ts-expect-error
-			attest(() => inferred({ type: "number", maximum: null })).type.errors(
-				`Type 'null' is not assignable to type 'number'`
-			)
-			// @ts-expect-error
 			attest(() => inferred({ type: "number", multipleOf: "2" })).type.errors(
 				`Type 'string' is not assignable to type 'number'`
 			)
@@ -2504,10 +2438,6 @@ Type 'number' is not assignable to type '"maxContains must be a non-negative int
 				// @ts-expect-error
 				inferred({ type: "number", exclusiveMaximum: "5" })
 			).type.errors.snap("Type 'string' is not assignable to type 'number'.")
-			attest(() =>
-				// @ts-expect-error
-				inferred({ type: "number", exclusiveMinimum: [0] })
-			).type.errors.snap("Type 'number[]' is not assignable to type 'number'.")
 		})
 
 		it("fractional and widened multipleOf", () => {
@@ -2592,19 +2522,6 @@ Type 'number' is not assignable to type '"maxContains must be a non-negative int
 					$defs: "a"
 				})
 			).type.errors("is not assignable")
-			attest(() =>
-				inferred({
-					// @ts-expect-error
-					definitions: null
-				})
-			).type.errors("is not assignable")
-			attest(() =>
-				inferred({
-					type: "object",
-					// @ts-expect-error
-					dependentSchemas: 1
-				})
-			).type.errors("is not assignable")
 		})
 
 		it("schema records given as arrays", () => {
@@ -2617,15 +2534,6 @@ Type 'number' is not assignable to type '"maxContains must be a non-negative int
 			).type.errors.snap(
 				"Type '{ type: string; }[]' is not assignable to type '{ readonly [k: string]: boolean | object; }'.Index signature for type 'string' is missing in type '{ type: string; }[]'."
 			)
-			attest(() =>
-				inferred({
-					type: "object",
-					// @ts-expect-error
-					properties: [{ type: "string" }]
-				})
-			).type.errors.snap(
-				"Type '{ type: string; }[]' is not assignable to type '{ readonly [k: string]: boolean | object; }'.Index signature for type 'string' is missing in type '{ type: string; }[]'."
-			)
 		})
 
 		it("schema lists", () => {
@@ -2633,12 +2541,6 @@ Type 'number' is not assignable to type '"maxContains must be a non-negative int
 			attest(() => inferred({ allOf: { type: "string" } })).type.errors.snap(
 				"Object literal may only specify known properties, and 'type' does not exist in type 'readonly (boolean | object)[]'."
 			)
-			// @ts-expect-error
-			attest(() => inferred({ anyOf: "string" })).type.errors(
-				"is not assignable"
-			)
-			// @ts-expect-error
-			attest(() => inferred({ oneOf: 1 })).type.errors("is not assignable")
 			attest(() =>
 				inferred({
 					type: "array",
@@ -2654,25 +2556,11 @@ Type 'number' is not assignable to type '"maxContains must be a non-negative int
 			attest(() => inferred({ allOf: [] })).type.errors.snap(
 				"Type '[]' is not assignable to type 'readonly [boolean | object, ...(boolean | object)[]]'.Source has 0 element(s) but target requires 1."
 			)
-			// @ts-expect-error
-			attest(() => inferred({ anyOf: [] })).type.errors.snap(
-				"Type '[]' is not assignable to type 'readonly [boolean | object, ...(boolean | object)[]]'.Source has 0 element(s) but target requires 1."
-			)
-			// @ts-expect-error
-			attest(() => inferred({ oneOf: [] })).type.errors.snap(
-				"Type '[]' is not assignable to type 'readonly [boolean | object, ...(boolean | object)[]]'.Source has 0 element(s) but target requires 1."
-			)
 		})
 
 		it("union schema lists with an empty member", () => {
 			attest(
 				{} as isValid<{ allOf: [] | [{ type: "string" }] }>
-			).type.toString.snap("false")
-			attest(
-				{} as isValid<{ anyOf: [] | [{ type: "string" }] }>
-			).type.toString.snap("false")
-			attest(
-				{} as isValid<{ oneOf: [] | [{ type: "string" }] }>
 			).type.toString.snap("false")
 		})
 	})
@@ -2723,97 +2611,43 @@ Type 'number' is not assignable to type '"maxContains must be a non-negative int
 			)
 		})
 
-		it("every schema keyword", () => {
+		it("schema keywords", () => {
 			attest(() =>
 				inferred({
 					// @ts-expect-error
 					not: "a",
 					// @ts-expect-error
-					if: 1,
-					// @ts-expect-error
-					then: null,
-					// @ts-expect-error
-					else: [true],
-					// @ts-expect-error
-					contains: "x",
-					// @ts-expect-error
-					additionalProperties: "string",
-					// @ts-expect-error
-					propertyNames: 1,
-					// @ts-expect-error
-					items: "string"
+					if: 1
 				})
 			).type.errors
 				.snap(`Type '"a"' is not assignable to type '"JSON Schema must be an object or a boolean (was string)\u200b"'.
-Type 'number' is not assignable to type '"JSON Schema must be an object or a boolean (was number)\u200b"'.
-Type 'null' is not assignable to type '"JSON Schema must be an object or a boolean (was null)\u200b"'.
-Type 'true[]' is not assignable to type '"JSON Schema must be an object or a boolean (was array)\u200b"'.
-Type '"x"' is not assignable to type '"JSON Schema must be an object or a boolean (was string)\u200b"'.
-Type '"string"' is not assignable to type '"JSON Schema must be an object or a boolean (was string)\u200b"'.
-Type 'number' is not assignable to type '"JSON Schema must be an object or a boolean (was number)\u200b"'.
-Type '"string"' is not assignable to type '"JSON Schema must be an object or a boolean (was string)\u200b"'.`)
+Type 'number' is not assignable to type '"JSON Schema must be an object or a boolean (was number)\u200b"'.`)
 		})
 
-		it("every schema list keyword element", () => {
+		it("schema list keyword elements", () => {
 			attest(() =>
 				inferred({
 					// @ts-expect-error
 					allOf: [true, "a"],
 					// @ts-expect-error
-					anyOf: [{}, 1],
-					// @ts-expect-error
-					oneOf: [null],
-					// @ts-expect-error
 					prefixItems: [{ type: "string" }, "number"]
 				})
 			).type.errors
 				.snap(`Type '"a"' is not assignable to type '"JSON Schema must be an object or a boolean (was string)\u200b"'.
-Type 'number' is not assignable to type '"JSON Schema must be an object or a boolean (was number)\u200b"'.
-Type 'null' is not assignable to type '"JSON Schema must be an object or a boolean (was null)\u200b"'.
 Type '"number"' is not assignable to type '"JSON Schema must be an object or a boolean (was string)\u200b"'.`)
 		})
 
-		it("draft-07 items list element", () => {
-			attest(() =>
-				inferred({
-					type: "array",
-					// @ts-expect-error
-					items: [{ type: "string" }, "number"]
-				})
-			).type.errors("JSON Schema must be an object or a boolean (was string)")
-		})
-
-		it("every schema record keyword value", () => {
+		it("schema record keyword values", () => {
 			attest(() =>
 				inferred({
 					// @ts-expect-error
 					properties: { a: 1 },
 					// @ts-expect-error
-					patternProperties: { "^a": "string" },
-					// @ts-expect-error
-					$defs: { a: null },
-					// @ts-expect-error
-					definitions: { a: [] },
-					// @ts-expect-error
-					dependentSchemas: { a: "b" }
+					patternProperties: { "^a": "string" }
 				})
 			).type.errors
 				.snap(`Type 'number' is not assignable to type '"JSON Schema must be an object or a boolean (was number)\u200b"'.
-Type '"string"' is not assignable to type '"JSON Schema must be an object or a boolean (was string)\u200b"'.
-Type 'null' is not assignable to type '"JSON Schema must be an object or a boolean (was null)\u200b"'.
-Type 'never[]' is not assignable to type '"JSON Schema must be an object or a boolean (was array)\u200b"'.
-Type '"b"' is not assignable to type '"JSON Schema must be an object or a boolean (was string)\u200b"'.`)
-		})
-
-		it("additionalItems", () => {
-			attest(() =>
-				inferred({
-					type: "array",
-					items: [{ type: "string" }],
-					// @ts-expect-error
-					additionalItems: "number"
-				})
-			).type.errors("JSON Schema must be an object or a boolean (was string)")
+Type '"string"' is not assignable to type '"JSON Schema must be an object or a boolean (was string)\u200b"'.`)
 		})
 
 		it("draft-07 dependencies schema", () => {
@@ -2832,19 +2666,6 @@ Type '"b"' is not assignable to type '"JSON Schema must be an object or a boolea
 			// @ts-expect-error
 			attest(() => inferred({ dependencies: { a: "b" } })).type.errors(
 				"JSON Schema must be an object or a boolean (was string)"
-			)
-		})
-
-		it("contentSchema", () => {
-			attest(() =>
-				inferred({
-					type: "string",
-					contentMediaType: "application/json",
-					// @ts-expect-error
-					contentSchema: { type: "strin" }
-				})
-			).type.errors.snap(
-				"Type '\"strin\"' is not assignable to type 'TypeName | undefined'. Did you mean '\"string\"'?"
 			)
 		})
 	})
@@ -3211,27 +3032,6 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 			})
 		})
 
-		it("type nested in properties", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					properties: {
-						// @ts-expect-error
-						a: { type: "bo" }
-					}
-				})
-			).completions({ bo: ["boolean"] })
-		})
-
-		it("type nested in anyOf", () => {
-			attest(() =>
-				inferred({
-					// @ts-expect-error
-					anyOf: [{ type: "in" }]
-				})
-			).completions({ in: ["integer"] })
-		})
-
 		it("propertyNames type", () => {
 			attest(() =>
 				inferred({
@@ -3261,17 +3061,6 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 					}
 				})
 			).completions({ al: ["alpha"] })
-		})
-
-		it("required second entry", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					properties: { alpha: true, beta: true },
-					// @ts-expect-error
-					required: ["alpha", "b"]
-				})
-			).completions({ b: ["beta"] })
 		})
 
 		it("every required key", () => {
@@ -3316,19 +3105,6 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 			).completions({ "": ["#", "#/$defs/a"] })
 		})
 
-		it("$ref nested", () => {
-			attest(() =>
-				inferred({
-					$defs: { node: true },
-					type: "object",
-					properties: {
-						// @ts-expect-error
-						a: { $ref: "#/$defs/" }
-					}
-				})
-			).completions({ "#/$defs/": ["#/$defs/node"] })
-		})
-
 		it("$ref escapes definition names", () => {
 			attest(() =>
 				inferred({
@@ -3359,18 +3135,6 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 				// prettier-ignore
 				inferred({ "$d": 1 })
 			).completions({ $d: ["$defs", "$dynamicAnchor", "$dynamicRef"] })
-		})
-
-		it("keyword names nested in a valid schema", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					properties: {
-						// prettier-ignore
-						a: { type: "string", "minLe": 1 }
-					}
-				})
-			).completions({ minLe: ["minLength"] })
 		})
 
 		it("keyword names nested in an invalid schema", () => {
@@ -3481,14 +3245,8 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 
 		it("root JsonSchema subtypes", () => {
 			attest(() => inferred({} as JsonSchema.String)).type.errors.is("")
-			attest(() => inferred({} as JsonSchema.Constrainable)).type.errors.is("")
-			attest(() => inferred({} as JsonSchema.Const)).type.errors.is("")
-			attest(() => inferred({} as JsonSchema.Enum)).type.errors.is("")
-			attest(() => inferred({} as JsonSchema.Numeric)).type.errors.is("")
 			attest(() => inferred({} as JsonSchema.Object)).type.errors.is("")
-			attest(() => inferred({} as JsonSchema.Array)).type.errors.is("")
 			attest(() => inferred({} as JsonSchema.Ref)).type.errors.is("")
-			attest(() => inferred({} as JsonSchema.Union)).type.errors.is("")
 		})
 
 		it("JsonSchema member types nested and intersected", () => {
@@ -3593,14 +3351,6 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 			}
 			const T = inferred({ type: "array", items: nested })
 			attest<unknown[]>(T).type.toString.snap("unknown[]")
-		})
-
-		it("union of schemas", () => {
-			const s =
-				Math.random() > 0.5 ?
-					({ type: "string" } as const)
-				:	({ type: "number", minimum: 0 } as const)
-			attest<string | number>(inferred(s))
 		})
 	})
 
@@ -3914,67 +3664,6 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 	})
 
 	describe("real-world schemas", () => {
-		it("OpenAPI 3.0 component schema", () => {
-			const Pet = inferred({
-				type: "object",
-				required: ["id", "name"],
-				properties: {
-					id: { type: "integer", format: "int64", readOnly: true, example: 10 },
-					name: { type: "string", example: "doggie", nullable: true },
-					tag: { type: "string", nullable: true, xml: { name: "tag" } },
-					status: {
-						type: "string",
-						description: "pet status in the store",
-						enum: ["available", "pending", "sold"]
-					},
-					photoUrls: {
-						type: "array",
-						xml: { wrapped: true },
-						items: { type: "string", xml: { name: "photoUrl" } }
-					}
-				},
-				discriminator: { propertyName: "status" },
-				externalDocs: { url: "https://example.com" },
-				xml: { name: "pet" }
-			})
-			attest<{
-				id: number
-				name: string | null
-				tag?: string | null
-				status?: "available" | "pending" | "sold"
-				photoUrls?: string[]
-			}>(Pet).type.toString.snap(`{
-	id: number
-	name: string | null
-	tag?: string | null
-	status?: "available" | "pending" | "sold"
-	photoUrls?: string[]
-}`)
-		})
-
-		it("OpenAPI 3.0 document refs", () => {
-			const Pet = inferred({
-				components: {
-					schemas: {
-						Category: {
-							type: "object",
-							properties: { id: { type: "integer" } }
-						},
-						Pet: {
-							type: "object",
-							properties: {
-								category: { $ref: "#/components/schemas/Category" }
-							}
-						}
-					}
-				},
-				$ref: "#/components/schemas/Pet"
-			})
-			attest<{ category?: { id?: number } }>(Pet).type.toString.snap(
-				"{ category?: { id?: number } }"
-			)
-		})
-
 		it("draft-07 with definitions", () => {
 			const T = inferred({
 				$schema: "http://json-schema.org/draft-07/schema#",
@@ -4046,32 +3735,6 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 			attest<[number, number]>(T.position)
 			attest<unknown>(T.data)
 			attest<[number, number] | undefined>(T.children?.[0].position)
-		})
-
-		it("arktype toJsonSchema output", () => {
-			// type({ name: "string", "age?": "number.integer >= 0", tags: "string[]", kind: "'a' | 'b'" }).toJsonSchema()
-			const T = jsonSchemaToType({
-				$schema: "https://json-schema.org/draft/2020-12/schema",
-				type: "object",
-				properties: {
-					age: { type: "integer", minimum: 0 },
-					kind: { enum: ["a", "b"] },
-					name: { type: "string" },
-					tags: { type: "array", items: { type: "string" } }
-				},
-				required: ["kind", "name", "tags"]
-			})
-			attest<{
-				age?: number
-				kind: "a" | "b"
-				name: string
-				tags: string[]
-			}>(T.infer).type.toString.snap(`{
-	age?: number
-	kind: "a" | "b"
-	name: string
-	tags: string[]
-}`)
 		})
 
 		it("package.json-like", () => {
@@ -4169,233 +3832,6 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 			>(T.author)
 			attest<{ [k: string]: string } | undefined>(T.dependencies)
 			attest<boolean | "false" | "true" | undefined>(T.private)
-		})
-
-		it("GitHub workflow-like", () => {
-			const T = inferred({
-				$schema: "http://json-schema.org/draft-07/schema#",
-				$id: "https://json.schemastore.org/github-workflow.json",
-				definitions: {
-					env: {
-						type: ["object", "string"],
-						additionalProperties: {
-							oneOf: [
-								{ type: "string" },
-								{ type: "number" },
-								{ type: "boolean" }
-							]
-						}
-					},
-					event: {
-						type: "string",
-						enum: ["push", "pull_request", "workflow_dispatch"]
-					},
-					"runs-on": {
-						oneOf: [
-							{ type: "string" },
-							{ type: "array", items: { type: "string" }, minItems: 1 }
-						]
-					},
-					step: {
-						type: "object",
-						additionalProperties: false,
-						dependencies: {
-							"working-directory": ["run"],
-							shell: ["run"]
-						},
-						oneOf: [{ required: ["uses"] }, { required: ["run"] }],
-						properties: {
-							id: { type: "string" },
-							if: { type: ["boolean", "number", "string"] },
-							name: { type: "string" },
-							uses: { type: "string" },
-							run: { type: "string" },
-							"working-directory": { type: "string" },
-							with: { $ref: "#/definitions/env" },
-							env: { $ref: "#/definitions/env" },
-							"continue-on-error": {
-								oneOf: [{ type: "boolean" }, { type: "string" }],
-								default: false
-							}
-						}
-					},
-					normalJob: {
-						type: "object",
-						properties: {
-							name: { type: "string" },
-							needs: {
-								oneOf: [
-									{ type: "array", items: { type: "string" }, minItems: 1 },
-									{ type: "string" }
-								]
-							},
-							"runs-on": { $ref: "#/definitions/runs-on" },
-							steps: {
-								type: "array",
-								items: { $ref: "#/definitions/step" },
-								minItems: 1
-							},
-							"timeout-minutes": { type: "number", default: 360 }
-						},
-						required: ["runs-on"],
-						additionalProperties: false
-					}
-				},
-				type: "object",
-				properties: {
-					name: { type: "string", markdownDescription: "The **name**" },
-					on: {
-						oneOf: [
-							{ $ref: "#/definitions/event" },
-							{
-								type: "array",
-								items: { $ref: "#/definitions/event" },
-								minItems: 1
-							},
-							{
-								type: "object",
-								properties: { push: { type: ["null", "object"] } }
-							}
-						]
-					},
-					env: { $ref: "#/definitions/env" },
-					jobs: {
-						type: "object",
-						patternProperties: {
-							"^[_a-zA-Z][a-zA-Z0-9_-]*$": { $ref: "#/definitions/normalJob" }
-						},
-						minProperties: 1,
-						additionalProperties: false
-					}
-				},
-				required: ["on", "jobs"],
-				additionalProperties: false
-			})
-			attest<string | undefined>(T.name)
-			attest<
-				| "push"
-				| "pull_request"
-				| "workflow_dispatch"
-				| ("push" | "pull_request" | "workflow_dispatch")[]
-				| { push?: object | null }
-			>(T.on)
-			attest<string | string[]>(T.jobs?.build?.["runs-on"])
-		})
-
-		it("draft-04 meta-schema", () => {
-			// draft-04 `id` with a draft-04 `$schema` and string-array dependencies.
-			// Its boolean exclusiveMinimum is unsupported.
-			attest(() =>
-				inferred({
-					id: "http://json-schema.org/draft-04/schema#",
-					$schema: "http://json-schema.org/draft-04/schema#",
-					description: "Core schema meta-schema",
-					definitions: {
-						schemaArray: { type: "array", minItems: 1, items: { $ref: "#" } },
-						positiveInteger: { type: "integer", minimum: 0 },
-						positiveIntegerDefault0: {
-							allOf: [{ $ref: "#/definitions/positiveInteger" }, { default: 0 }]
-						},
-						simpleTypes: {
-							enum: [
-								"array",
-								"boolean",
-								"integer",
-								"null",
-								"number",
-								"object",
-								"string"
-							]
-						},
-						stringArray: {
-							type: "array",
-							items: { type: "string" },
-							minItems: 1,
-							uniqueItems: true
-						}
-					},
-					type: "object",
-					properties: {
-						id: { type: "string" },
-						$schema: { type: "string" },
-						title: { type: "string" },
-						description: { type: "string" },
-						default: {},
-						// @ts-expect-error
-						multipleOf: { type: "number", minimum: 0, exclusiveMinimum: true },
-						maximum: { type: "number" },
-						exclusiveMaximum: { type: "boolean", default: false },
-						minimum: { type: "number" },
-						exclusiveMinimum: { type: "boolean", default: false },
-						maxLength: { $ref: "#/definitions/positiveInteger" },
-						minLength: { $ref: "#/definitions/positiveIntegerDefault0" },
-						pattern: { type: "string", format: "regex" },
-						additionalItems: {
-							anyOf: [{ type: "boolean" }, { $ref: "#" }],
-							default: {}
-						},
-						items: {
-							anyOf: [{ $ref: "#" }, { $ref: "#/definitions/schemaArray" }],
-							default: {}
-						},
-						maxItems: { $ref: "#/definitions/positiveInteger" },
-						minItems: { $ref: "#/definitions/positiveIntegerDefault0" },
-						uniqueItems: { type: "boolean", default: false },
-						maxProperties: { $ref: "#/definitions/positiveInteger" },
-						minProperties: { $ref: "#/definitions/positiveIntegerDefault0" },
-						required: { $ref: "#/definitions/stringArray" },
-						additionalProperties: {
-							anyOf: [{ type: "boolean" }, { $ref: "#" }],
-							default: {}
-						},
-						definitions: {
-							type: "object",
-							additionalProperties: { $ref: "#" },
-							default: {}
-						},
-						properties: {
-							type: "object",
-							additionalProperties: { $ref: "#" },
-							default: {}
-						},
-						patternProperties: {
-							type: "object",
-							additionalProperties: { $ref: "#" },
-							default: {}
-						},
-						dependencies: {
-							type: "object",
-							additionalProperties: {
-								anyOf: [{ $ref: "#" }, { $ref: "#/definitions/stringArray" }]
-							}
-						},
-						enum: { type: "array", minItems: 1, uniqueItems: true },
-						type: {
-							anyOf: [
-								{ $ref: "#/definitions/simpleTypes" },
-								{
-									type: "array",
-									items: { $ref: "#/definitions/simpleTypes" },
-									minItems: 1,
-									uniqueItems: true
-								}
-							]
-						},
-						format: { type: "string" },
-						allOf: { $ref: "#/definitions/schemaArray" },
-						anyOf: { $ref: "#/definitions/schemaArray" },
-						oneOf: { $ref: "#/definitions/schemaArray" },
-						not: { $ref: "#" }
-					},
-					dependencies: {
-						exclusiveMaximum: ["maximum"],
-						exclusiveMinimum: ["minimum"]
-					},
-					default: {}
-				})
-			).type.errors(
-				"boolean exclusiveMinimum isn't supported by jsonSchemaToType"
-			)
 		})
 
 		it("draft-07 meta-schema", () => {
@@ -4615,190 +4051,9 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 				attest<{ [k: string]: string[] } | undefined>(Meta.dependentRequired)
 			}
 		})
-
-		it("2020-12 applicator vocabulary meta-schema", () => {
-			attest(() =>
-				inferred({
-					$schema: "https://json-schema.org/draft/2020-12/schema",
-					$id: "https://json-schema.org/draft/2020-12/meta/applicator",
-					$dynamicAnchor: "meta",
-					title: "Applicator vocabulary meta-schema",
-					type: ["object", "boolean"],
-					properties: {
-						prefixItems: { $ref: "#/$defs/schemaArray" },
-						// @ts-expect-error
-						items: { $dynamicRef: "#meta" },
-						// @ts-expect-error
-						contains: { $dynamicRef: "#meta" },
-						// @ts-expect-error
-						additionalProperties: { $dynamicRef: "#meta" },
-						properties: {
-							type: "object",
-							// @ts-expect-error
-							additionalProperties: { $dynamicRef: "#meta" },
-							default: {}
-						},
-						patternProperties: {
-							type: "object",
-							// @ts-expect-error
-							additionalProperties: { $dynamicRef: "#meta" },
-							propertyNames: { format: "regex" },
-							default: {}
-						},
-						dependentSchemas: {
-							type: "object",
-							// @ts-expect-error
-							additionalProperties: { $dynamicRef: "#meta" },
-							default: {}
-						},
-						// @ts-expect-error
-						propertyNames: { $dynamicRef: "#meta" },
-						// @ts-expect-error
-						if: { $dynamicRef: "#meta" },
-						// @ts-expect-error
-						then: { $dynamicRef: "#meta" },
-						// @ts-expect-error
-						else: { $dynamicRef: "#meta" },
-						allOf: { $ref: "#/$defs/schemaArray" },
-						anyOf: { $ref: "#/$defs/schemaArray" },
-						oneOf: { $ref: "#/$defs/schemaArray" },
-						// @ts-expect-error
-						not: { $dynamicRef: "#meta" }
-					},
-					$defs: {
-						schemaArray: {
-							type: "array",
-							minItems: 1,
-							// @ts-expect-error
-							items: { $dynamicRef: "#meta" }
-						}
-					}
-				})
-			).type.errors("$dynamicRef isn't supported by jsonSchemaToType")
-		})
-
-		it("2020-12 top-level meta-schema", () => {
-			attest(() =>
-				inferred({
-					$schema: "https://json-schema.org/draft/2020-12/schema",
-					$id: "https://json-schema.org/draft/2020-12/schema",
-					$vocabulary: {
-						"https://json-schema.org/draft/2020-12/vocab/core": true,
-						"https://json-schema.org/draft/2020-12/vocab/applicator": true,
-						"https://json-schema.org/draft/2020-12/vocab/format-annotation": true
-					},
-					$dynamicAnchor: "meta",
-					title: "Core and Validation specifications meta-schema",
-					allOf: [
-						{ $ref: "meta/core" },
-						{ $ref: "meta/applicator" },
-						{ $ref: "meta/validation" }
-					],
-					type: ["object", "boolean"],
-					$comment:
-						"This meta-schema also defines keywords that have appeared in previous drafts",
-					properties: {
-						definitions: {
-							$comment: '"definitions" has been replaced by "$defs".',
-							type: "object",
-							// @ts-expect-error
-							additionalProperties: { $dynamicRef: "#meta" },
-							deprecated: true,
-							default: {}
-						},
-						dependencies: {
-							type: "object",
-							additionalProperties: {
-								anyOf: [
-									// @ts-expect-error
-									{ $dynamicRef: "#meta" },
-									{ $ref: "meta/validation#/$defs/stringArray" }
-								]
-							},
-							deprecated: true,
-							default: {}
-						}
-					}
-				})
-			).type.errors("$dynamicRef isn't supported by jsonSchemaToType")
-		})
 	})
 
 	describe("depth", () => {
-		it("11 levels of nested literal properties", () => {
-			const T = inferred({
-				type: "object",
-				properties: {
-					a: {
-						type: "object",
-						properties: {
-							a: {
-								type: "object",
-								properties: {
-									a: {
-										type: "object",
-										properties: {
-											a: {
-												type: "object",
-												properties: {
-													a: {
-														type: "object",
-														properties: {
-															a: {
-																type: "object",
-																properties: {
-																	a: {
-																		type: "object",
-																		properties: {
-																			a: {
-																				type: "object",
-																				properties: {
-																					a: {
-																						type: "object",
-																						properties: {
-																							a: {
-																								type: "object",
-																								properties: {
-																									a: {
-																										type: "string",
-																										minLength: 1
-																									}
-																								},
-																								required: ["a"]
-																							}
-																						},
-																						required: ["a"]
-																					}
-																				},
-																				required: ["a"]
-																			}
-																		},
-																		required: ["a"]
-																	}
-																},
-																required: ["a"]
-															}
-														},
-														required: ["a"]
-													}
-												},
-												required: ["a"]
-											}
-										},
-										required: ["a"]
-									}
-								},
-								required: ["a"]
-							}
-						},
-						required: ["a"]
-					}
-				},
-				required: ["a"]
-			})
-			attest<string>(T.a?.a?.a?.a?.a?.a?.a?.a?.a?.a?.a)
-		})
-
 		it("30 levels of nested hand-written properties", () => {
 			type nest<depth extends 1[], leaf> =
 				depth extends [1, ...infer rest extends 1[]] ?

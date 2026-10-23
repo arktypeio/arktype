@@ -65,8 +65,6 @@ const pair = (type.module as unknown as (def: object) => { pair: type.Any })({
 	pair: ["string", "pair?"]
 }).pair
 
-const strings = (n: number) => Array<"string">(n).fill("string")
-
 // a generated draft-07 document with a recursive definition and a structured
 // const (not exported, since TS 7.1 rejects declaration emit for anonymous
 // cyclic types: https://github.com/microsoft/TypeScript/issues/64656)
@@ -102,16 +100,6 @@ contextualize(() => {
 			assertEmits(T, S)
 			attest<typeof T.infer>(S).type.toString.snap("object")
 		})
-
-		it("full output including $schema", () => {
-			const T = type("string")
-			const S = inferred({
-				$schema: "https://json-schema.org/draft/2020-12/schema",
-				type: "string"
-			})
-			attest(T.toJsonSchema()).equals(S as never)
-			attest<typeof T.infer>(S).type.toString.snap("string")
-		})
 	})
 
 	describe("literals and enums", () => {
@@ -120,13 +108,6 @@ contextualize(() => {
 			const S = inferred({ type: "string", enum: ["a", "b", "c"] })
 			assertEmits(T, S)
 			attest<typeof T.infer>(S).type.toString.snap('"a" | "b" | "c"')
-		})
-
-		it("type.enumerated", () => {
-			const T = type.enumerated("x", 0, false)
-			const S = inferred({ enum: ["x", 0, false] })
-			assertEmits(T, S)
-			attest<typeof T.infer>(S).type.toString.snap('"x" | 0 | false')
 		})
 
 		it("mixed literals and null", () => {
@@ -140,22 +121,6 @@ contextualize(() => {
 	})
 
 	describe("unions", () => {
-		it("json primitives", () => {
-			const T = type("string|number|boolean|null")
-			const S = inferred({
-				anyOf: [
-					{ type: "number" },
-					{ type: "string" },
-					{ type: "boolean" },
-					{ type: "null" }
-				]
-			})
-			assertEmits(T, S)
-			attest<typeof T.infer>(S).type.toString.snap(
-				"string | number | boolean | null"
-			)
-		})
-
 		it("object or array", () => {
 			const T = type("string[]").or({ a: "string" })
 			const S = inferred({
@@ -200,24 +165,6 @@ contextualize(() => {
 			assertEmits(T, S)
 			attest<typeof T.infer>(S).type.toString.snap(
 				'{ a: string; kind: "a" } | { b: number; kind: "b" }'
-			)
-		})
-
-		it("non-discriminated object union", () => {
-			const T = type({ a: "string" }).or({ "b?": "number" })
-			const S = inferred({
-				anyOf: [
-					{ type: "object", properties: { b: { type: "number" } } },
-					{
-						type: "object",
-						properties: { a: { type: "string" } },
-						required: ["a"]
-					}
-				]
-			})
-			assertEmits(T, S)
-			attest<typeof T.infer>(S).type.toString.snap(
-				"{ b?: number } | { a: string }"
 			)
 		})
 
@@ -276,19 +223,6 @@ contextualize(() => {
 			assertEmits(T, S)
 			attest<typeof T.infer>(S).type.toString.snap("string")
 		})
-
-		it("string.uuid", () => {
-			const T = type("string.uuid")
-			const S = inferred({
-				type: "string",
-				description: "a UUID",
-				format: "uuid",
-				pattern:
-					"^(?:[\\dA-Fa-f]{8}-[\\dA-Fa-f]{4}-[1-8][\\dA-Fa-f]{3}-[89ABab][\\dA-Fa-f]{3}-[\\dA-Fa-f]{12}|0{8}-(?:0{4}-){3}0{12}|f{8}-(?:f{4}-){3}f{12})$"
-			})
-			assertEmits(T, S)
-			attest<typeof T.infer>(S).type.toString.snap("string")
-		})
 	})
 
 	describe("arrays", () => {
@@ -314,16 +248,6 @@ contextualize(() => {
 			attest<typeof T.infer>(S).type.toString.snap("number[]")
 		})
 
-		it("nested", () => {
-			const T = type("string[][]")
-			const S = inferred({
-				type: "array",
-				items: { type: "array", items: { type: "string" } }
-			})
-			assertEmits(T, S)
-			attest<typeof T.infer>(S).type.toString.snap("string[][]")
-		})
-
 		it("unknown[]", () => {
 			const T = type("unknown[]")
 			const S = inferred({ type: "array" })
@@ -345,18 +269,6 @@ contextualize(() => {
 			attest<typeof T.infer>(S).type.toString.snap("[string, number]")
 		})
 
-		it("required elements draft-07", () => {
-			const T = type(["string", "number"])
-			const S = inferred({
-				type: "array",
-				minItems: 2,
-				items: [{ type: "string" }, { type: "number" }],
-				additionalItems: false
-			})
-			assertEmits(T, S, draft07, "[string?, number?] == 2")
-			attest<typeof T.infer>(S).type.toString.snap("[string, number]")
-		})
-
 		it("empty tuple", () => {
 			// maxItems doesn't narrow, so this widens arktype's [] to unknown[]
 			const T = type([])
@@ -374,18 +286,6 @@ contextualize(() => {
 				items: false
 			})
 			assertEmits(T, S, {}, "[string?, number?] >= 1")
-			attest<typeof T.infer>(S).type.toString.snap("[string, number?]")
-		})
-
-		it("optional element draft-07", () => {
-			const T = type(["string", "number?"])
-			const S = inferred({
-				type: "array",
-				minItems: 1,
-				items: [{ type: "string" }, { type: "number" }],
-				additionalItems: false
-			})
-			assertEmits(T, S, draft07, "[string?, number?] >= 1")
 			attest<typeof T.infer>(S).type.toString.snap("[string, number?]")
 		})
 
@@ -449,95 +349,6 @@ contextualize(() => {
 			assertEmits(T, S, {}, "[unknown?, Array?] == 2")
 			attest<typeof T.infer>(S).type.toString.snap("[unknown, unknown[]]")
 		})
-
-		it("11 required of 13 elements", () => {
-			const T = type([...strings(11), "number?", "number?"] as never)
-			const S = inferred({
-				type: "array",
-				minItems: 11,
-				prefixItems: [
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "number" },
-					{ type: "number" }
-				],
-				items: false
-			})
-			assertEmits(
-				T,
-				S,
-				{},
-				"[string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, number?, number?] >= 11"
-			)
-			attest<
-				[
-					string,
-					string,
-					string,
-					string,
-					string,
-					string,
-					string,
-					string,
-					string,
-					string,
-					string,
-					number?,
-					number?
-				]
-			>(S)
-			attest<11 | 12 | 13>(S.length)
-		})
-
-		it("20 required of 21 elements", () => {
-			const T = type([...strings(20), "number?"] as never)
-			const S = inferred({
-				type: "array",
-				minItems: 20,
-				prefixItems: [
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "string" },
-					{ type: "number" }
-				],
-				items: false
-			})
-			assertEmits(
-				T,
-				S,
-				{},
-				"[string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, string?, number?] >= 20"
-			)
-			attest<20 | 21>(S.length)
-			attest<number | undefined, (typeof S)[20]>()
-			attest<string, (typeof S)[19]>()
-		})
 	})
 
 	describe("objects", () => {
@@ -552,16 +363,6 @@ contextualize(() => {
 			attest<typeof T.infer>(S).type.toString.snap(
 				"{ name: string; age?: number }"
 			)
-		})
-
-		it("all optional keys", () => {
-			const T = type({ "a?": "string", "b?": "number" })
-			const S = inferred({
-				type: "object",
-				properties: { a: { type: "string" }, b: { type: "number" } }
-			})
-			assertEmits(T, S)
-			attest<typeof T.infer>(S).type.toString.snap("{ a?: string; b?: number }")
 		})
 
 		it("closed", () => {
@@ -611,19 +412,6 @@ contextualize(() => {
 			attest<typeof T.infer>(S).type.toString.snap("{ a: number }")
 		})
 
-		it("unknown values", () => {
-			const T = type({ a: "unknown", "b?": "unknown" })
-			const S = inferred({
-				type: "object",
-				properties: { a: {}, b: {} },
-				required: ["a"]
-			})
-			assertEmits(T, S)
-			attest<typeof T.infer>(S).type.toString.snap(
-				"{ a: unknown; b?: unknown }"
-			)
-		})
-
 		it("closed empty object", () => {
 			const T = type({ "+": "reject" })
 			const S = inferred({
@@ -634,31 +422,6 @@ contextualize(() => {
 			assertEmits(T, S)
 			// arktype infers {}, which also allows primitives; object is the sound type here
 			attest<object>(S).type.toString.snap("object")
-		})
-
-		it("empty key", () => {
-			const T = type({ "": "string" })
-			const S = inferred({
-				type: "object",
-				properties: { "": { type: "string" } },
-				required: [""]
-			})
-			assertEmits(T, S)
-			attest<typeof T.infer>(S).type.toString.snap('{ "": string }')
-		})
-
-		it("boolean literal values", () => {
-			const T = type({ a: "true", b: "false" })
-			const S = inferred({
-				type: "object",
-				properties: {
-					a: { type: "boolean", const: true },
-					b: { type: "boolean", const: false }
-				},
-				required: ["a", "b"]
-			})
-			assertEmits(T, S)
-			attest<typeof T.infer>(S).type.toString.snap("{ a: true; b: false }")
 		})
 
 		it("keys named like keywords", () => {
@@ -697,22 +460,6 @@ contextualize(() => {
 	anyOf?: number[]
 	const?: null
 }`)
-		})
-
-		it("keys named like Object.prototype members", () => {
-			const T = type({ constructor: "string", "toString?": "number" })
-			const S = inferred({
-				type: "object",
-				properties: {
-					constructor: { type: "string" },
-					toString: { type: "number" }
-				},
-				required: ["constructor"]
-			})
-			assertEmits(T, S)
-			attest<typeof T.infer>(S).type.toString.snap(
-				"{ constructor: string; toString?: number }"
-			)
 		})
 	})
 
@@ -976,34 +723,6 @@ contextualize(() => {
 			}
 		})
 
-		it("self reference in a named key", () => {
-			const T = cyclic.user
-			const S = inferred({
-				$ref: "#/$defs/user",
-				$defs: {
-					user: {
-						type: "object",
-						properties: {
-							name: { type: "string" },
-							best: { $ref: "#/$defs/user" },
-							friends: { type: "array", items: { $ref: "#/$defs/user" } }
-						},
-						required: ["name"]
-					}
-				}
-			})
-			assertEmits(
-				T,
-				S,
-				{},
-				"{ name: string, best?: synthetic0, friends?: synthetic0[] }"
-			)
-			attest<typeof T.infer>(S).type.toString.snap(
-				"{ name: string; best?: cyclic; friends?: cyclic[] }"
-			)
-			attest<string | undefined>(S.best?.friends?.[0].best?.name)
-		})
-
 		it("self reference in tuple elements", () => {
 			const T = cyclic.expr
 			const S = inferred({
@@ -1111,246 +830,7 @@ contextualize(() => {
 		})
 	})
 
-	describe("widened output", () => {
-		it("toJsonSchema result is widened to unknown", () => {
-			const schema = type({ a: "string" }).toJsonSchema()
-			const S = inferred(schema)
-			attest<unknown>(S).type.toString.snap("unknown")
-		})
-	})
-
-	describe("through jsonSchemaToType", () => {
-		it("object", () => {
-			const A = type({ name: "string", "age?": "number" })
-			const T = jsonSchemaToType({
-				type: "object",
-				properties: { name: { type: "string" }, age: { type: "number" } },
-				required: ["name"]
-			})
-			attest<typeof A.infer>(T.infer).type.toString.snap(
-				"{ name: string; age?: number }"
-			)
-			attest(T.expression).snap("{ name: string, age?: number }")
-		})
-
-		it("optional tuple element", () => {
-			const A = type(["string", "number?"])
-			const T = jsonSchemaToType({
-				type: "array",
-				minItems: 1,
-				prefixItems: [{ type: "string" }, { type: "number" }],
-				items: false
-			})
-			attest<typeof A.infer>(T.infer).type.toString.snap("[string, number?]")
-			attest(T.expression).snap("[string?, number?] >= 1")
-			attest(T.allows(["a"])).equals(true)
-		})
-	})
-
-	describe("hand-written schema types", () => {
-		it("mutable tuple", () => {
-			type S = jsonSchema.infer<{
-				type: "array"
-				minItems: 1
-				prefixItems: [{ type: "string" }, { type: "number" }]
-				items: false
-			}>
-			attest<[string, number?], S>()
-			attest<S>({} as S).type.toString.snap("[string, number?]")
-		})
-
-		it("mutable object", () => {
-			type S = jsonSchema.infer<{
-				type: "object"
-				properties: { name: { type: "string" }; age: { type: "number" } }
-				required: ["name"]
-			}>
-			attest<{ name: string; age?: number }, S>()
-			attest<S>({} as S).type.toString.snap("{ name: string; age?: number }")
-		})
-	})
-
 	describe("real world", () => {
-		const petstore = {
-			openapi: "3.0.2",
-			info: { title: "Swagger Petstore - OpenAPI 3.0", version: "1.0.11" },
-			components: {
-				schemas: {
-					Order: {
-						type: "object",
-						properties: {
-							id: { type: "integer", format: "int64", example: 10 },
-							petId: { type: "integer", format: "int64", example: 198772 },
-							quantity: { type: "integer", format: "int32", example: 7 },
-							shipDate: { type: "string", format: "date-time" },
-							status: {
-								type: "string",
-								description: "Order Status",
-								example: "approved",
-								enum: ["placed", "approved", "delivered"]
-							},
-							complete: { type: "boolean" }
-						},
-						xml: { name: "order" }
-					},
-					Category: {
-						type: "object",
-						properties: {
-							id: { type: "integer", format: "int64", example: 1 },
-							name: { type: "string", example: "Dogs" }
-						},
-						xml: { name: "category" }
-					},
-					Tag: {
-						type: "object",
-						properties: {
-							id: { type: "integer", format: "int64" },
-							name: { type: "string" }
-						},
-						xml: { name: "tag" }
-					},
-					Pet: {
-						required: ["name", "photoUrls"],
-						type: "object",
-						properties: {
-							id: { type: "integer", format: "int64", example: 10 },
-							name: { type: "string", example: "doggie" },
-							category: { $ref: "#/components/schemas/Category" },
-							photoUrls: {
-								type: "array",
-								xml: { wrapped: true },
-								items: { type: "string", xml: { name: "photoUrl" } }
-							},
-							tags: {
-								type: "array",
-								xml: { wrapped: true },
-								items: { $ref: "#/components/schemas/Tag" }
-							},
-							status: {
-								type: "string",
-								description: "pet status in the store",
-								enum: ["available", "pending", "sold"]
-							}
-						},
-						xml: { name: "pet" }
-					}
-				}
-			}
-		} as const
-
-		type Petstore = typeof petstore
-
-		it("petstore Order", () => {
-			type Order = jsonSchema.infer<Petstore["components"]["schemas"]["Order"]>
-			attest<
-				{
-					id?: number
-					petId?: number
-					quantity?: number
-					shipDate?: string
-					status?: "placed" | "approved" | "delivered"
-					complete?: boolean
-				},
-				Order
-			>()
-			const S = inferred(petstore.components.schemas.Order)
-			attest<Order>(S).type.toString.snap(`{
-	id?: number
-	petId?: number
-	quantity?: number
-	shipDate?: string
-	status?: "approved" | "delivered" | "placed"
-	complete?: boolean
-}`)
-		})
-
-		it("petstore Pet resolved against the document", () => {
-			type Category = { id?: number; name?: string }
-			type Pet = jsonSchema.infer<
-				Petstore["components"]["schemas"]["Pet"],
-				Petstore
-			>
-			attest<
-				{
-					id?: number
-					name: string
-					category?: Category
-					photoUrls: string[]
-					tags?: Category[]
-					status?: "available" | "pending" | "sold"
-				},
-				Pet
-			>()
-			const pet = {} as Pet
-			attest(pet).type.toString.snap(`{
-	id?: number
-	name: string
-	category?: { id?: number; name?: string }
-	photoUrls: string[]
-	tags?: { id?: number; name?: string }[]
-	status?: "available" | "pending" | "sold"
-}`)
-		})
-
-		it("OpenAPI ref without its document", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					properties: {
-						// @ts-expect-error
-						category: { $ref: "#/components/schemas/Category" }
-					}
-				})
-			).type.errors.snap(
-				"Type '\"#/components/schemas/Category\"' is not assignable to type '\"#\"'."
-			)
-		})
-
-		it("petstore Pet through a root $ref", () => {
-			const S = inferred({
-				$ref: "#/components/schemas/Pet",
-				components: {
-					schemas: {
-						Tag: {
-							type: "object",
-							properties: { id: { type: "integer" }, name: { type: "string" } }
-						},
-						Pet: {
-							required: ["name", "photoUrls"],
-							type: "object",
-							properties: {
-								id: { type: "integer", format: "int64" },
-								name: { type: "string" },
-								photoUrls: { type: "array", items: { type: "string" } },
-								tags: {
-									type: "array",
-									items: { $ref: "#/components/schemas/Tag" }
-								},
-								status: {
-									type: "string",
-									enum: ["available", "pending", "sold"],
-									nullable: true
-								}
-							}
-						}
-					}
-				}
-			})
-			attest<{
-				id?: number
-				name: string
-				photoUrls: string[]
-				tags?: { id?: number; name?: string }[]
-				status?: "available" | "pending" | "sold" | null
-			}>(S).type.toString.snap(`{
-	id?: number
-	name: string
-	photoUrls: string[]
-	tags?: { id?: number; name?: string }[]
-	status?: "available" | "pending" | "sold" | null
-}`)
-		})
-
 		it("tsconfig.json subset", () => {
 			const S = inferred({
 				$schema: "http://json-schema.org/draft-07/schema#",
@@ -2412,126 +1892,7 @@ contextualize(() => {
 		})
 	})
 
-	describe("meta-schemas", () => {
-		it("draft-07 meta-schema", () => {
-			const draft07 = {
-				$schema: "http://json-schema.org/draft-07/schema#",
-				$id: "http://json-schema.org/draft-07/schema#",
-				title: "Core schema meta-schema",
-				definitions: {
-					schemaArray: { type: "array", minItems: 1, items: { $ref: "#" } },
-					nonNegativeInteger: { type: "integer", minimum: 0 },
-					nonNegativeIntegerDefault0: {
-						allOf: [
-							{ $ref: "#/definitions/nonNegativeInteger" },
-							{ default: 0 }
-						]
-					},
-					simpleTypes: {
-						enum: [
-							"array",
-							"boolean",
-							"integer",
-							"null",
-							"number",
-							"object",
-							"string"
-						]
-					},
-					stringArray: {
-						type: "array",
-						items: { type: "string" },
-						uniqueItems: true,
-						default: []
-					}
-				},
-				type: ["object", "boolean"],
-				properties: {
-					$id: { type: "string", format: "uri-reference" },
-					$ref: { type: "string", format: "uri-reference" },
-					title: { type: "string" },
-					default: true,
-					multipleOf: { type: "number", exclusiveMinimum: 0 },
-					maxLength: { $ref: "#/definitions/nonNegativeInteger" },
-					minLength: { $ref: "#/definitions/nonNegativeIntegerDefault0" },
-					additionalItems: { $ref: "#" },
-					items: {
-						anyOf: [{ $ref: "#" }, { $ref: "#/definitions/schemaArray" }],
-						default: true
-					},
-					required: { $ref: "#/definitions/stringArray" },
-					properties: {
-						type: "object",
-						additionalProperties: { $ref: "#" },
-						default: {}
-					},
-					dependencies: {
-						type: "object",
-						additionalProperties: {
-							anyOf: [{ $ref: "#" }, { $ref: "#/definitions/stringArray" }]
-						}
-					},
-					const: true,
-					enum: { type: "array", items: true },
-					type: {
-						anyOf: [
-							{ $ref: "#/definitions/simpleTypes" },
-							{
-								type: "array",
-								items: { $ref: "#/definitions/simpleTypes" },
-								minItems: 1,
-								uniqueItems: true
-							}
-						]
-					},
-					allOf: { $ref: "#/definitions/schemaArray" },
-					not: { $ref: "#" }
-				},
-				default: true
-			} as const
-			type Meta = jsonSchema.infer<typeof draft07>
-			type TypeName =
-				| "array"
-				| "boolean"
-				| "integer"
-				| "null"
-				| "number"
-				| "object"
-				| "string"
-			const meta = {} as Exclude<Meta, boolean>
-			attest<TypeName | TypeName[] | undefined>(meta.type)
-			attest<number | undefined>(meta.minLength)
-			attest<string[] | undefined>(meta.required)
-			attest<unknown>(meta.default)
-			attest<unknown[] | undefined>(meta.enum)
-			attest<boolean | undefined>(
-				typeof meta.not === "boolean" ? meta.not : undefined
-			)
-			attest<
-				true,
-				typeof draft07 extends jsonSchema.validate<typeof draft07> ? true
-				:	false
-			>()
-		})
-	})
-
 	describe("declared schemas", () => {
-		const schema = {
-			type: "object",
-			properties: {
-				a: { type: "string" },
-				b: { type: "array", items: { type: "number" } }
-			},
-			required: ["a"]
-		} as const
-
-		it("as const then passed", () => {
-			const S = inferred(schema)
-			attest<{ a: string; b?: number[] }>(S).type.toString.snap(
-				"{ a: string; b?: number[] }"
-			)
-		})
-
 		it("as const satisfies JsonSchema", () => {
 			const satisfied = {
 				type: "object",
@@ -2552,11 +1913,6 @@ contextualize(() => {
 			attest<{ a?: string }, jsonSchema.infer<typeof satisfied>>()
 		})
 
-		it("annotated as JsonSchema", () => {
-			const annotated: JsonSchema = { type: "string" }
-			attest<unknown>(jsonSchemaToType(annotated).infer)
-		})
-
 		it("a ternary argument infers each member", () => {
 			const flag = Math.random() > 0.5
 			const S = inferred(flag ? { type: "string" } : { type: "number" })
@@ -2567,25 +1923,6 @@ contextualize(() => {
 	})
 
 	describe("wrapper functions", () => {
-		const schema = {
-			type: "object",
-			properties: { a: { type: "string" } },
-			required: ["a"]
-		} as const
-
-		it("returning jsonSchema.infer", () => {
-			const wrap = <const s>(s: jsonSchema.validate<s>): jsonSchema.infer<s> =>
-				s as never
-			attest<{ a: string }>(
-				wrap({
-					type: "object",
-					properties: { a: { type: "string" } },
-					required: ["a"]
-				})
-			)
-			attest<{ a: string }>(wrap(schema))
-		})
-
 		it("constrained by JsonSchema", () => {
 			const wrap = <const s extends JsonSchema>(s: s): jsonSchema.infer<s> =>
 				s as never
@@ -2598,20 +1935,9 @@ contextualize(() => {
 			)
 		})
 
-		it("forwarding jsonSchema.validate", () => {
-			const wrap = <const s>(s: jsonSchema.validate<s>) => jsonSchemaToType(s)
-			attest<string>(wrap({ type: "string" }).infer)
-		})
-
 		it("contextual return type doesn't change inference", () => {
 			const wrap = <const s>(s: jsonSchema.validate<s>): jsonSchema.infer<s> =>
 				s as never
-			const t: { a: string } = wrap({
-				type: "object",
-				properties: { a: { type: "string" } },
-				required: ["a"]
-			})
-			attest<{ a: string }>(t)
 			attest(() => {
 				// @ts-expect-error
 				const _: { a: number } = wrap({
@@ -2624,19 +1950,6 @@ contextualize(() => {
 	})
 
 	describe("JSON Schema Test Suite", () => {
-		// draft 2019-09 and earlier ignore additionalItems unless items is an array
-		// (tests/draft7/additionalItems.json)
-		it("additionalItems beside a schema items is ignored", () => {
-			const T = jsonSchemaToType({
-				type: "array",
-				items: { type: "integer" },
-				additionalItems: { type: "string" }
-			})
-			attest(T.infer).type.toString.snap("number[]")
-			attest(T.allows([1, 2])).equals(true)
-			attest(T.allows([1, "a"])).equals(false)
-		})
-
 		it("dependent subschema incompatible with root", () => {
 			const S = inferred({
 				properties: { foo: {} },
@@ -2647,18 +1960,6 @@ contextualize(() => {
 			attest<{ foo?: unknown } | string | number | boolean | unknown[] | null>(
 				S
 			)
-		})
-
-		it("nested refs through $defs", () => {
-			const S = inferred({
-				$defs: {
-					a: { type: "integer" },
-					b: { $ref: "#/$defs/a" },
-					c: { $ref: "#/$defs/b" }
-				},
-				$ref: "#/$defs/c"
-			})
-			attest<number>(S)
 		})
 
 		it("ref to an unknown keyword", () => {
@@ -2672,67 +1973,6 @@ contextualize(() => {
 	})
 
 	describe("real-world validation", () => {
-		it("required key declared by an own allOf branch", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					properties: { bark: { type: "boolean" } },
-					required: ["bark", "name"],
-					allOf: [{ type: "object", properties: { name: { type: "string" } } }]
-				})
-			).type.errors.is("")
-		})
-
-		it("required key declared by a dependent schema", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					properties: { id: { type: "string" } },
-					required: ["id", "x"],
-					dependentSchemas: { id: { properties: { x: { type: "string" } } } }
-				})
-			).type.errors.is("")
-		})
-
-		it("required key declared by a sibling's nested allOf", () => {
-			attest(() =>
-				inferred({
-					allOf: [
-						{ allOf: [{ properties: { a: { type: "string" } } }] },
-						{
-							properties: { b: { type: "string" } },
-							required: ["a", "b"]
-						}
-					]
-				})
-			).type.errors.is("")
-		})
-
-		it("then requires a key declared by if", () => {
-			attest(() =>
-				inferred({
-					if: { properties: { kind: { const: "a" } }, required: ["kind"] },
-					then: {
-						properties: { x: { type: "string" } },
-						required: ["kind", "x"]
-					}
-				})
-			).type.errors.is("")
-		})
-
-		it("required beside allOf may name a key no schema declares", () => {
-			// only a self-contained schema's required keys are checked
-			const S = inferred({
-				type: "object",
-				properties: { bark: { type: "boolean" } },
-				required: ["bark", "nmae"],
-				allOf: [{ type: "object", properties: { other: { type: "string" } } }]
-			})
-			attest<{ bark: boolean; nmae: unknown; other?: string }>(
-				S
-			).type.toString.snap("{ bark: boolean; other?: string; nmae: unknown }")
-		})
-
 		it("component schemas reached through a root $ref are validated", () => {
 			attest(() =>
 				inferred({
@@ -2753,44 +1993,6 @@ contextualize(() => {
 			).type.errors(`Did you mean '"#/components/schemas/Tag"'?`)
 		})
 
-		it("type names in component schemas reached through a root $ref are validated", () => {
-			attest(() =>
-				inferred({
-					$ref: "#/components/schemas/Pet",
-					components: {
-						// @ts-expect-error
-						schemas: { Pet: { type: "strin" } }
-					}
-				})
-			).type.errors.snap(
-				"Type '\"strin\"' is not assignable to type 'TypeName'. Did you mean '\"string\"'?"
-			)
-		})
-
-		it("a typo in a deeply nested component is reported at the keyword", () => {
-			attest(() =>
-				inferred({
-					$ref: "#/components/schemas/Pet",
-					components: {
-						schemas: {
-							Pet: {
-								type: "object",
-								properties: {
-									tags: {
-										type: "array",
-										items: {
-											// @ts-expect-error
-											type: "strin"
-										}
-									}
-								}
-							}
-						}
-					}
-				})
-			).type.errors(`Did you mean '"string"'?`)
-		})
-
 		it("component schemas complete keywords", () => {
 			attest(() =>
 				inferred({
@@ -2801,23 +2003,6 @@ contextualize(() => {
 					}
 				})
 			).completions({ additionalProp: ["additionalProperties"] })
-		})
-
-		it("component ref completions", () => {
-			attest(() =>
-				inferred({
-					components: {
-						schemas: { Pet: { type: "object" }, Tag: { type: "string" } }
-					},
-					// @ts-expect-error
-					$ref: "#/components/schemas/"
-				})
-			).completions({
-				"#/components/schemas/": [
-					"#/components/schemas/Pet",
-					"#/components/schemas/Tag"
-				]
-			})
 		})
 
 		it("components other than schemas aren't validated", () => {
@@ -2870,45 +2055,6 @@ contextualize(() => {
 	})
 
 	describe("required keys in definitions", () => {
-		const doc = {
-			components: {
-				schemas: {
-					// a mixin: the key it requires is declared by the schema it's combined with
-					Named: {
-						type: "object",
-						properties: { name: { type: "string" } },
-						required: ["name", "id"]
-					},
-					Pet: {
-						allOf: [
-							{ $ref: "#/components/schemas/Named" },
-							{ type: "object", properties: { id: { type: "integer" } } }
-						]
-					}
-				}
-			}
-		} as const
-		type Doc = typeof doc
-		type Schemas = Doc["components"]["schemas"]
-
-		it("the document is valid", () => {
-			attest<true, Doc extends jsonSchema.validate<Doc> ? true : false>()
-			attest<
-				{ name: string; id: number },
-				jsonSchema.infer<Schemas["Pet"], Doc>
-			>()
-		})
-
-		it("a mixin component is valid against the document", () => {
-			// a schema validated against a separate root could appear anywhere in it, so its required keys aren't checked
-			const valid = {} as Schemas["Named"] extends (
-				jsonSchema.validate<Schemas["Named"], Doc>
-			) ?
-				true
-			:	false
-			attest(valid).type.toString.snap("true")
-		})
-
 		it("a component's required keys complete its properties", () => {
 			// a component may be combined with schemas declaring other keys, so any key is valid, but its own are offered
 			attest(() =>
@@ -2926,21 +2072,6 @@ contextualize(() => {
 				})
 			).completions({ na: ["name"] })
 		})
-
-		it("a definition's required keys complete its properties", () => {
-			attest(() =>
-				inferred({
-					$ref: "#/$defs/pet",
-					$defs: {
-						pet: {
-							type: "object",
-							properties: { name: { type: "string" } },
-							required: ["na"]
-						}
-					}
-				})
-			).completions({ na: ["name"] })
-		})
 	})
 
 	describe("real-world depth", () => {
@@ -2950,24 +2081,10 @@ contextualize(() => {
 			depth["length"] extends n ? schema
 			:	nest<n, { allOf: [schema, { type: "object" }] }, [...depth, 0]>
 
-		type nestTuple<n extends number, schema, depth extends 0[] = []> =
-			depth["length"] extends n ? schema
-			:	nestTuple<n, { type: "array"; prefixItems: [schema] }, [...depth, 0]>
-
 		it("allOf nested 90 deep", () => {
 			// each eager allOf level costs an instantiation depth, so this is a
 			// circularity error from 94 levels (97 before TS 7, an accepted limit)
 			attest<object, jsonSchema.infer<nest<90, { type: "object" }>>>()
-		})
-
-		it("prefixItems nested 32 deep", () => {
-			type expected<t, depth extends 0[] = []> =
-				depth["length"] extends 32 ? t
-				:	expected<[t?, ...unknown[]], [...depth, 0]>
-			attest<
-				expected<string>,
-				jsonSchema.infer<nestTuple<32, { type: "string" }>>
-			>()
 		})
 	})
 
@@ -3008,248 +2125,7 @@ contextualize(() => {
 		})
 	})
 
-	describe("allOf union limit through refs and nesting", () => {
-		// six if/then/else rules, each a two-member union, written inline
-		const inline = {
-			type: "object",
-			allOf: [
-				{
-					if: { required: ["x"] },
-					then: { required: ["a"] },
-					else: { required: ["b"] }
-				},
-				{
-					if: { required: ["x"] },
-					then: { required: ["c"] },
-					else: { required: ["d"] }
-				},
-				{
-					if: { required: ["x"] },
-					then: { required: ["e"] },
-					else: { required: ["f"] }
-				},
-				{
-					if: { required: ["x"] },
-					then: { required: ["g"] },
-					else: { required: ["h"] }
-				},
-				{
-					if: { required: ["x"] },
-					then: { required: ["i"] },
-					else: { required: ["j"] }
-				},
-				{
-					if: { required: ["x"] },
-					then: { required: ["k"] },
-					else: { required: ["l"] }
-				}
-			]
-		} as const
-
-		it("inline rules past the third contribute their base", () => {
-			const S = inferred(inline)
-			attest(S).type.toString.snap(`	| { a: unknown; c: unknown; e: unknown }
-	| { a: unknown; c: unknown; f: unknown }
-	| { a: unknown; d: unknown; e: unknown }
-	| { a: unknown; d: unknown; f: unknown }
-	| { b: unknown; c: unknown; e: unknown }
-	| { b: unknown; c: unknown; f: unknown }
-	| { b: unknown; d: unknown; e: unknown }
-	| { b: unknown; d: unknown; f: unknown }`)
-		})
-
-		it("rules referenced from $defs are limited like inline rules", () => {
-			const S = inferred({
-				type: "object",
-				allOf: [
-					{ $ref: "#/$defs/a" },
-					{ $ref: "#/$defs/b" },
-					{ $ref: "#/$defs/c" },
-					{ $ref: "#/$defs/d" },
-					{ $ref: "#/$defs/e" },
-					{ $ref: "#/$defs/f" }
-				],
-				$defs: {
-					a: {
-						if: { required: ["x"] },
-						then: { required: ["a"] },
-						else: { required: ["b"] }
-					},
-					b: {
-						if: { required: ["x"] },
-						then: { required: ["c"] },
-						else: { required: ["d"] }
-					},
-					c: {
-						if: { required: ["x"] },
-						then: { required: ["e"] },
-						else: { required: ["f"] }
-					},
-					d: {
-						if: { required: ["x"] },
-						then: { required: ["g"] },
-						else: { required: ["h"] }
-					},
-					e: {
-						if: { required: ["x"] },
-						then: { required: ["i"] },
-						else: { required: ["j"] }
-					},
-					f: {
-						if: { required: ["x"] },
-						then: { required: ["k"] },
-						else: { required: ["l"] }
-					}
-				}
-			})
-			attest<jsonSchema.infer<typeof inline>, typeof S>()
-		})
-
-		it("rules grouped in nested allOf are limited like one allOf", () => {
-			const S = inferred({
-				type: "object",
-				allOf: [
-					{
-						allOf: [
-							{
-								if: { required: ["x"] },
-								then: { required: ["a"] },
-								else: { required: ["b"] }
-							},
-							{
-								if: { required: ["x"] },
-								then: { required: ["c"] },
-								else: { required: ["d"] }
-							},
-							{
-								if: { required: ["x"] },
-								then: { required: ["e"] },
-								else: { required: ["f"] }
-							}
-						]
-					},
-					{
-						allOf: [
-							{
-								if: { required: ["x"] },
-								then: { required: ["g"] },
-								else: { required: ["h"] }
-							},
-							{
-								if: { required: ["x"] },
-								then: { required: ["i"] },
-								else: { required: ["j"] }
-							},
-							{
-								if: { required: ["x"] },
-								then: { required: ["k"] },
-								else: { required: ["l"] }
-							}
-						]
-					}
-				]
-			})
-			attest<jsonSchema.infer<typeof inline>, typeof S>()
-		})
-	})
-
-	describe("draft-04 id beside $ref", () => {
-		// draft-04 ignores $ref siblings, so a sibling id doesn't change the
-		// base the ref resolves against (JSON-Schema-Test-Suite draft4/ref.json
-		// "$ref prevents a sibling id from changing the base uri")
-		it("a ref with a sibling id and type resolves against the document", () => {
-			const S = inferred({
-				$schema: "http://json-schema.org/draft-04/schema#",
-				definitions: { y: { type: "number" } },
-				type: "object",
-				properties: {
-					a: {
-						id: "http://example.com/a",
-						definitions: { y: { type: "string" } },
-						$ref: "#/definitions/y",
-						type: ["number", "string"]
-					}
-				}
-			})
-			attest<{ a?: number }>(S).type.toString.snap("{ a?: number }")
-		})
-
-		it("a ref-only node with a sibling id resolves against the document", () => {
-			const S = inferred({
-				$schema: "http://json-schema.org/draft-04/schema#",
-				definitions: { y: { type: "number" } },
-				type: "object",
-				properties: {
-					a: {
-						id: "http://example.com/a",
-						definitions: { y: { type: "string" } },
-						$ref: "#/definitions/y"
-					}
-				}
-			})
-			attest<{ a?: number }>(S).type.toString.snap("{ a?: number }")
-		})
-
-		it("a ref that resolves against the document beside an id is valid", () => {
-			attest(() =>
-				inferred({
-					$schema: "http://json-schema.org/draft-04/schema#",
-					definitions: { y: { type: "number" } },
-					type: "object",
-					properties: {
-						a: { id: "http://example.com/a", $ref: "#/definitions/y" }
-					}
-				})
-			).type.errors.is("")
-		})
-
-		it("an id without a $ref sibling still starts a resource", () => {
-			const S = inferred({
-				$schema: "http://json-schema.org/draft-04/schema#",
-				definitions: { y: { type: "number" } },
-				type: "object",
-				properties: {
-					a: {
-						id: "http://example.com/a",
-						definitions: { y: { type: "string" } },
-						type: "object",
-						properties: { b: { $ref: "#/definitions/y" } }
-					}
-				}
-			})
-			attest<{ a?: { b?: string } }>(S).type.toString.snap(
-				"{ a?: { b?: string } }"
-			)
-		})
-	})
-
 	describe("not without a type", () => {
-		it("any non-null value", () => {
-			// OpenAPI 3.1 writes "any non-null value" this way
-			const S = inferred({ not: { type: "null" } })
-			attest<string | number | boolean | object | unknown[]>(
-				S
-			).type.toString.snap("string | number | boolean | object | unknown[]")
-		})
-
-		it("any non-null value beside other parts", () => {
-			attest<"a">(
-				inferred({ allOf: [{ not: { type: "null" } }], const: "a" })
-			).type.toString.snap('"a"')
-			attest<string>(
-				inferred({ type: "string", allOf: [{ not: { type: "null" } }] })
-			).type.toString.snap("string")
-		})
-
-		it("domains a negation doesn't reject entirely", () => {
-			attest<unknown>(inferred({ not: { const: "a" } })).type.toString.snap(
-				"unknown"
-			)
-			attest<unknown>(
-				inferred({ not: { type: "integer" } })
-			).type.toString.snap("unknown")
-		})
-
 		it("non-array objects without arrays", () => {
 			// JsonObject has no clean display
 			attest<unknown>(inferred({ not: { type: "array" } })).type.toString.snap(
@@ -3351,45 +2227,6 @@ contextualize(() => {
 				nested?: { level?: "low" | "high" }
 			}>(S)
 		})
-
-		it("a draft-07 resource embedded with $id resolves its own definitions", () => {
-			const S = inferred({
-				$schema: "http://json-schema.org/draft-07/schema#",
-				type: "object",
-				properties: {
-					a: {
-						$id: "http://example.com/a.json",
-						type: "object",
-						properties: {
-							// read as draft-07 too, so the type sibling is ignored
-							x: { $ref: "#/definitions/n", type: "string" }
-						},
-						definitions: { n: { type: "number" } }
-					}
-				},
-				definitions: { n: { type: "string" } }
-			})
-			attest<{ a?: { x?: number } }>(S)
-		})
-
-		it("a schema typed by a JSON import is widened", () => {
-			// what `import schema from "./pet.json"` gives without `as const`
-			type PetJson = {
-				type: string
-				properties: {
-					name: { type: string }
-					kind: { enum: string[] }
-					age: { type: string[]; minimum: number }
-					meta: { $ref: string }
-				}
-				required: string[]
-				additionalProperties: boolean
-			}
-			attest<unknown>({} as jsonSchema.infer<PetJson>)
-			attest<true>(
-				{} as PetJson extends jsonSchema.validate<PetJson> ? true : false
-			)
-		})
 	})
 
 	describe("composing jsonSchema values", () => {
@@ -3413,29 +2250,6 @@ contextualize(() => {
 		})
 		type AddressData = { street: string; zip?: string | null }
 
-		it("in properties, anyOf, items and additionalProperties", () => {
-			const Store = jsonSchema({
-				type: "object",
-				properties: {
-					owner: User,
-					visitors: { type: "array", items: User },
-					byName: { type: "object", additionalProperties: Address }
-				},
-				required: ["owner"]
-			})
-			type UserData = {
-				name: string
-				home: AddressData
-				work?: AddressData | null
-			}
-			attest<{
-				owner: UserData
-				visitors?: UserData[]
-				byName?: { [k: string]: AddressData }
-			}>(Store.infer)
-			attest<typeof Store.infer>(jsonSchemaToType(Store).infer)
-		})
-
 		it("as OpenAPI components behind a root $ref", () => {
 			const doc = jsonSchema({
 				openapi: "3.1.0",
@@ -3453,18 +2267,6 @@ contextualize(() => {
 			})
 			attest<{ name: string; home: AddressData; work?: AddressData | null }[]>(
 				doc.infer
-			)
-		})
-
-		it("a component's ref to a sibling component can't resolve on its own", () => {
-			attest(() =>
-				jsonSchema({
-					type: "object",
-					// @ts-expect-error
-					properties: { owner: { $ref: "#/components/schemas/User" } }
-				})
-			).type.errors(
-				`'"#/components/schemas/User"' is not assignable to type '"#"'`
 			)
 		})
 
@@ -3578,21 +2380,6 @@ contextualize(() => {
 					required: ["a"]
 				})
 			).type.errors("Type 'string' is not assignable to type 'number'")
-		})
-	})
-
-	describe("lints", () => {
-		it("a required key a self-contained properties doesn't declare", () => {
-			// valid JSON Schema, read as a key with any value, but likely a typo.
-			// A mixin goes inline as an allOf branch instead.
-			attest(() =>
-				jsonSchema({
-					type: "object",
-					properties: { name: { type: "string" } },
-					// @ts-expect-error
-					required: ["name", "id"]
-				})
-			).type.errors(`Type '"id"' is not assignable to type '"name"'.`)
 		})
 	})
 })

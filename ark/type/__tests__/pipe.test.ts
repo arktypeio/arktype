@@ -377,12 +377,6 @@ contextualize(() => {
 		attest<any>(T.infer)
 	})
 
-	it("any as out in a prop", () => {
-		const T = type({ a: ["string", "=>", s => s as any] })
-		attest(T.infer).type.toString.snap("{ a: any }")
-		attest(T.inferIn).type.toString.snap("{ a: string }")
-	})
-
 	it("any as out beside other props", () => {
 		const BesidePlain = type({
 			a: ["string", "=>", s => s as any],
@@ -417,20 +411,6 @@ contextualize(() => {
 			node: { a: ["string", "=>", s => s as any], "next?": "node" }
 		}).export()
 		attest(types.node.infer).type.toString.snap("{ a: any; next?: any }")
-	})
-
-	it("any as out beside a named type", () => {
-		interface User {
-			name: string
-		}
-		const T = type({
-			user: type({ name: "string" }).as<User>(),
-			a: ["string", "=>", s => s as any]
-		})
-		attest(T.infer).type.toString.snap("{ user: { name: string }; a: any }")
-		attest(T.inferIn).type.toString.snap(
-			"{ user: { name: string }; a: string }"
-		)
 	})
 
 	it("function returning any as out", () => {

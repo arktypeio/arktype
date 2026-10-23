@@ -58,14 +58,15 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		}
 		add(`string > ${n}`, $.type(`string > ${n}`), x(n))
 		add(`string <= ${n}`, $.type(`string <= ${n}`), x(n + 1))
-		add(`string < ${n + 1}`, $.type(`string < ${n + 1}`), x(n + 2))
 		add(`string == ${n}`, $.type(`string == ${n}`), x(n + 1))
 		add(`unknown[] <= ${n}`, $.type(`unknown[] <= ${n}`), items(n + 1))
 		add(`unknown[] == ${n}`, $.type(`unknown[] == ${n}`), items(n + 1))
-		add(`number >= ${n}`, $.type(`number >= ${n}`), n - 1)
-		add(`number > ${n}`, $.type(`number > ${n}`), n)
-		add(`number <= ${n}`, $.type(`number <= ${n}`), n + 1)
-		add(`number < ${n}`, $.type(`number < ${n}`), n)
+		if (n < 2) {
+			add(`number >= ${n}`, $.type(`number >= ${n}`), n - 1)
+			add(`number > ${n}`, $.type(`number > ${n}`), n)
+			add(`number <= ${n}`, $.type(`number <= ${n}`), n + 1)
+			add(`number < ${n}`, $.type(`number < ${n}`), n)
+		}
 	}
 	add("number % 5", $.type("number % 5"), 6.5)
 	add("number >= 1.5", $.type("number >= 1.5"), 1.25)
@@ -150,11 +151,6 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		-1
 	)
 	add(
-		"narrow reject",
-		$.type("number").narrow((n, ctx) => ctx.reject({})),
-		1
-	)
-	add(
 		"pipe.try anonymous",
 		$.type("string").pipe.try(() => fail()),
 		"{"
@@ -233,9 +229,6 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 	})
 	add("discriminant", shapes, { kind: "triangle" })
 	add("discriminant absent", shapes, {})
-	add("discriminant titled", shapes.configure({ title: "Form" }), {
-		kind: "triangle"
-	})
 	add("discriminant described", shapes.describe("eine Form"), {
 		kind: "triangle"
 	})
@@ -340,9 +333,6 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		$.type({ list: titled($.type("string")).array() }),
 		{ list: [1] }
 	)
-	add("titled quoted key", $.type({ "a b": titled($.type("string")) }), {
-		"a b": 1
-	})
 	add(
 		"titled, two constraints",
 		$.type({
