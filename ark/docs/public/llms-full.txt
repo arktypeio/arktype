@@ -4676,7 +4676,7 @@ const out = User({ name: 5, age: "5" })
 
 With `"first"`, which of the data's errors is returned isn't promised, and can differ between a Type and its precompiled validator.
 
-With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](#locale).
+With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](#locale). A narrow or morph that reads `ctx.errors` while validating sees each issue added so far written the same way, as `is invalid` at its own path.
 
 `errors` can also be set per Scope. It applies to that Scope's Types, including where another Scope references them.
 
@@ -5147,14 +5147,14 @@ Form["~standard"].validate({ name: "Ada", age: "36" })
 // { value: { name: "Ada", age: 36 } }
 ```
 
-On failure, the result is the same [`ArkErrors`](https://arktype.io/docs/errors) you get from calling the Type. Its `issues` array holds each `ArkError`, which has the `message` and `path` the spec requires, so a library that prints Standard Schema issues prints ArkType's messages:
+On failure, the result is `{ issues }`, one for each error in the [`ArkErrors`](https://arktype.io/docs/errors) you get from calling the Type. A library printing Standard Schema issues writes each issue's `path` before its `message`, so an issue at a path is a copy of its error whose message leaves the path out:
 
 ```ts
 const result = Form["~standard"].validate({ name: "Ada", age: "old" })
-// ArkErrors: age must be a well-formed integer string (was "old")
+// { issues: [{ path: ["age"], message: 'must be a well-formed integer string (was "old")', ... }] }
 ```
 
-Like any `ArkErrors`, it may find its issues when they're first read, so they [describe the data as it is then](https://arktype.io/docs/errors#arkerrors). Read them before the data you validated can change.
+A union's message lists each branch's path from the union's, like `b must be a string (was missing) or c must be a number (was missing)`. The issues are written as `validate` returns, so unlike an `ArkErrors` read later, they describe the data as it was validated.
 
 ArkType always validates synchronously. The spec allows a `Promise`, which is why the return type includes one.
 
@@ -6456,7 +6456,7 @@ const AnyColor = type.valueOf(Color)
 
 > Every package ArkType publishes, its entrypoints, and what to import from each.
 
-To define and validate Types, install `arktype`. It brings `arkregex`, `@ark/schema`, `arksets` and `@ark/util` with it, so you never install those yourself to use ArkType.
+To define and validate Types, install `arktype`. It brings `arkregex`, `@ark/schema`, `arksets` and `@ark/util` with it, so you never install those yourself to use ArkType. Each package publishes under exactly one name, the one listed here; `@ark/type`, `@ark/regex` and the `@arktype/*` names are [no longer published](https://arktype.io/docs/upgrading#package-names).
 
 | Package | Install it to | Docs |
 | - | - | - |
@@ -6969,7 +6969,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-`Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`. A [Standard Schema](https://arktype.io/docs/standard-schema) failure is still the `ArkErrors`, but its `issues` is now a plain array rather than the `ArkErrors` itself, so read `summary` from the result.
+`Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`. A [Standard Schema](https://arktype.io/docs/standard-schema) failure is no longer the `ArkErrors`: it's `{ issues }`, a plain array with a copy of each error whose message leaves its path out, since a Standard Schema consumer prints the path before the message. Read `summary` from the errors calling the Type returns.
 
 `ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()`, `toString()` and `toLocaleString(locale)`. `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`. `byPath`, `flatByPath`, `flatProblemsByPath` and `byAncestorPath` are functions `arktype` exports:
 
