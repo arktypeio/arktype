@@ -400,7 +400,12 @@ contextualize(function (this: Mocha.Suite) {
 				attest(
 					run(
 						await bundle(
-							{ cwd: root, members, allowUnsafe: true, checks: "types" },
+							{
+								cwd: root,
+								members,
+								allowUnsafe: true,
+								creationChecks: "types"
+							},
 							root
 						)
 					)
@@ -903,6 +908,37 @@ console.log(out.constructor === type.errors, out.count, out.issues[0].data === d
 		attest(run(output[0].code)).equals(expected)
 	})
 
+	it("reads ark.json from the bundler's root", async () => {
+		// a Type printed outside a site builds only where ark.json bakes expression
+		const root = writeFixture(
+			{
+				"package.json": JSON.stringify({ type: "module" }),
+				"ark.json": JSON.stringify({
+					precompile: { members: { expression: true } }
+				}),
+				"main.ts": `import { type } from "arktype"
+
+const T = type({ a: "string" })
+console.log(\`\${T}\`)
+`
+			},
+			fromHere("temp", "rooted")
+		)
+		const printed = "Type<{ a: string }>\n"
+		attest(await bundlers.vite({}, root).then(run)).equals(printed)
+		const { outputFiles } = await esbuild({
+			entryPoints: ["main.ts"],
+			absWorkingDir: root,
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [precompile.esbuild({ conditions })]
+		})
+		attest(run(outputFiles[0].text)).equals(printed)
+	})
+
 	it("vite's module runner loads the runtime its validators use", async () => {
 		const root = writeFixture({
 			"main.ts": `import { type } from "arktype"
@@ -974,6 +1010,31 @@ export const inspected = inspect(type({ a: "string" })({ a: 1 }))
 		}
 	})
 
+	it("vite's development server throws reading a member the build didn't bake", async () => {
+		const root = writeFixture({
+			"main.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+
+export const describe = (t: { description: string }) => t.description
+`
+		})
+		const server = await withNodeEnv("development", () =>
+			createServer(viteConfig({ members: { expression: true } }, root))
+		)
+		const runner = createServerModuleRunner(server.environments.ssr)
+		try {
+			const { User, describe } = await runner.import("/main.ts")
+			attest(() => describe(User)).throws(
+				'description isn\'t baked into this validator. Set members.description true, or build with runtime: "arktype".'
+			)
+			attest(`${User}`).equals("Type<{ name: string }>")
+		} finally {
+			await runner.close()
+			await server.close()
+		}
+	})
+
 	it("fails a build whose external option takes arktype from the bundle", async () => {
 		const thrownBy = (build: () => Promise<unknown>) =>
 			build().then(
@@ -1006,9 +1067,8 @@ export const inspected = inspect(type({ a: "string" })({ a: 1 }))
 		])
 	})
 
-	it("vite merges units by what its last build read", async () => {
+	it("vite builds the same bundle from a cache an earlier build left", async () => {
 		const cacheDir = tempDir()
-		// a development build's runtime keeps a unit that renders nothing
 		const build = async () => {
 			const [{ output }] = (await withNodeEnv("production", () =>
 				viteBuild({
@@ -1021,14 +1081,11 @@ export const inspected = inspect(type({ a: "string" })({ a: 1 }))
 					}
 				})
 			)) as Rolldown.RolldownOutput[]
-			return output[0]
+			return output[0].code
 		}
-		const unitModulesOf = ({ moduleIds }: Rolldown.OutputChunk) =>
-			moduleIds.filter(id => id.startsWith("\0~arktype/")).length
 		const first = await build()
-		const second = await build()
-		attest([unitModulesOf(first), unitModulesOf(second)]).snap([27, 24])
-		attest(run(second.code)).equals(expected)
+		attest(await build()).equals(first)
+		attest(run(first)).equals(expected)
 	})
 
 	it("vite emits declarations", async () => {
@@ -1255,6 +1312,70 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 		attest(nextThreadId() - first - 1).equals(1)
 	})
 
+	// a list that grew with the build made a 100-module build 15 times slower
+	it("esbuild watches each module's own imports, once", async () => {
+		const count = 30
+		const files: Record<string, string> = {
+			"main.ts": `export * from "./m${count - 1}.ts"\n`
+		}
+		for (let i = 0; i < count; i++) {
+			files[`m${i}.ts`] =
+				i === 0 ?
+					'import { type } from "arktype"\n\nexport const T0 = type({ a: "string" })\n'
+				:	`import { type } from "arktype"\nimport { T${i - 1} } from "./m${i - 1}.ts"\n\nexport const T${i} = type({ a: "string", prev: T${i - 1}.pick("a") })\n`
+		}
+		const root = writeFixture(files, fromHere("temp", "watchedChain"))
+		const plugin = precompile.esbuild({ cwd: root, conditions })
+		const watchedBy: Record<string, string[]> = {}
+		const record = (path: string, watchFiles: string[] = []) => {
+			const watched = watchFiles.filter(file => file.startsWith(root))
+			if (watched.length) {
+				;(watchedBy[relative(root, path)] ??= []).push(
+					...watched.map(file => relative(root, file))
+				)
+			}
+		}
+		await esbuild({
+			entryPoints: [join(root, "main.ts")],
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [
+				{
+					name: plugin.name,
+					setup: build =>
+						plugin.setup({
+							...build,
+							onResolve: (options, callback) =>
+								build.onResolve(options, async args => {
+									const result = await callback(args)
+									record(`resolved ${args.path}`, result?.watchFiles)
+									return result
+								}),
+							onLoad: (options, callback) =>
+								build.onLoad(options, async args => {
+									const result = await callback(args)
+									record(args.path, result?.watchFiles)
+									return result
+								})
+						})
+				}
+			]
+		})
+		attest(watchedBy["m3.ts"]).equals(["m2.ts", "m1.ts", "m0.ts"])
+		const closureOf = (file: string) =>
+			Array.from({ length: Number(file.slice(1, -3)) }, (_, i) => `m${i}.ts`)
+		attest(
+			Object.entries(watchedBy).filter(
+				([file, watched]) =>
+					[...watched].sort().join() !== closureOf(file).sort().join()
+			)
+		).equals([])
+		attest(Object.keys(watchedBy).length).equals(count - 1)
+	})
+
 	it("keeps a configured worker until its config changes", async () => {
 		const root = fromHere("temp", "watched")
 		const write = (file: string, text: string) =>
@@ -1379,6 +1500,32 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 			errors: [],
 			warnings: [writePrecompiledDependencyMessage("prebuilt")]
 		})
+	})
+
+	it("runs a package reading arktype's nodes in a runtime island", async () => {
+		const root = writeFixture(
+			{
+				...packageFiles("@ark/json-schema", {
+					"index.js":
+						'import { type } from "arktype"\n\nexport const jsonSchemaToType = schema => type({ [schema.key]: schema.type })\n'
+				}),
+				"main.ts": `import { type } from "arktype"
+import { jsonSchemaToType } from "@ark/json-schema"
+
+const User = type({ name: "string" })
+// @ark-runtime
+const Dyn = jsonSchemaToType({ key: "a", type: "string" })
+
+console.log(JSON.stringify([User.allows({ name: "x" }), Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 })]))
+`
+			},
+			fromHere("temp", "readsNodes")
+		)
+		for (const bundler of [bundlers.esbuild, bundlers.vite]) {
+			attest(run(await bundler({ cwd: root }, root))).equals(
+				"[true,true,false]\n"
+			)
+		}
 	})
 
 	it("fails where a module it can't precompile imports arktype", async () => {
@@ -1556,6 +1703,39 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
 			"true true\n"
 		)
+	})
+
+	it("resolves @ark/type, arktype's other name, to the runtime", async () => {
+		const root = writeFixture(
+			{
+				"config.ts": `import { configure } from "@ark/type/config"
+
+configure({ onUndeclaredKey: "delete" })
+`,
+				"main.ts": `import "./config.ts"
+import { type } from "@ark/type"
+
+const T = type({ name: "string" })
+const out = T({ name: 1 })
+console.log(out instanceof type.errors, T({ name: "", age: 1 }))
+`
+			},
+			// where arktype, @ark/aot's peer, resolves as an install has it
+			fromHere("temp", "arkType")
+		)
+		rmSync(join(root, "node_modules"), { recursive: true, force: true })
+		mkdirSync(join(root, "node_modules", "@ark"), { recursive: true })
+		symlinkSync(
+			fromHere("..", "..", "type"),
+			join(root, "node_modules", "@ark", "type")
+		)
+		const plain = runPlain(root)
+		attest(plain).equals("true { name: '' }\n")
+		for (const bundle of Object.values(bundlers)) {
+			const code = await bundle({ cwd: root, config: "config.ts" }, root)
+			attest(run(code)).equals(plain)
+			attest(code.includes(parserMessage)).equals(false)
+		}
 	})
 
 	it("undetailed bundles", async () => {

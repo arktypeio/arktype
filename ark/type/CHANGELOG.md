@@ -63,7 +63,7 @@ const NonZero = type("number != 0")
 NonZero(0)
 ```
 
-It reduces like the other comparators: `number < 0 | number > 0` is `number != 0`, `number >= 0 & number != 0` is `number > 0`, and `string != 0` is `string > 0`. Its JSON Schema is `not`, like `{ type: "number", not: { const: 0 } }`.
+It reduces like the other comparators: `number < 0 | number > 0` is `number != 0`, `number >= 0 & number != 0` is `number > 0`, and `string != 0` is `string >= 1`. Its JSON Schema is `not`, like `{ type: "number", not: { const: 0 } }`.
 
 Its errors have the codes `notEqual`, whose `rule` is a number or a `Date`, and `notEqualLength`. A lone `!` still doesn't end a name, so an alias or brand like `a!b` parses as before.
 
@@ -278,6 +278,14 @@ An error at a `__proto__` path is an own key of the plain objects `flatByPath` a
 
 A Type or standalone validator that calls no narrow or morph may find its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. The issues describe the data as it is at that read: a write to it in between can change them, and data that no longer fails holds one root issue, `is invalid`. A getter or `Proxy` trap the check reads runs again at that read, and what it throws is thrown there. The errors hold the data until they're collected.
 
+Read `summary` or `issues` before the data you validated can change, as it can when it's reactive form state or an Immer draft, or when an `await` comes before you report the errors:
+
+```ts
+const out = User(form)
+// read now, while they describe the form that was validated
+const summary = out instanceof type.errors ? out.summary : ""
+```
+
 ### Print objects in error messages by their kind
 
 An error's `actual` prints an object as `an object`, an array as `an array` and a function as `a function`, where it printed an object or array as compact JSON, a Date as its date, a function as `Function(name)` and another instance by its class's name. A message no longer grows with the data, and nothing an object holds reaches a log through it. Primitives print as before, and `before`, `after`, `!=` and a Date literal, like `d'2020-01-01'` or one of `type.enumerated`'s Dates, still print the Date they rejected:
@@ -299,6 +307,15 @@ type("===", {})({})
 ```
 
 `de` prints them as `ein Objekt`, `ein Array` and `eine Funktion`.
+
+### Say a length is a length when a description replaces its bound
+
+A length bound's `actual` is the bare length, which its own text explains (`must be at least length 8 (was 1)`). Where a description or configured `expected` replaces that text, the length is now named:
+
+```ts
+// previously must be a strong password (was 1), now (was length 1)
+type("string >= 8").describe("a strong password")("x")
+```
 
 ### Accept only plain objects and arrays in `object.json`
 
@@ -784,7 +801,7 @@ type("'a' | 'b' | 'c'").configure({ expected: "a letter" })("d")
 const T = type({ v: Shape }).or({ v: { kind: "string >= 9" } })
 
 // previously (was {"kind":"triangle"})
-// now v.kind must be "circle" or "square" or at least length 9 (was "triangle")
+// now v.kind must be at least length 9, "circle" or "square" (was "triangle")
 T({ v: { kind: "triangle" } })
 ```
 
@@ -887,7 +904,7 @@ Keys are ordered by code unit, where they were ordered as `JSON.stringify` write
 - at `"`, against a character from `#` to `[`
 - at a lone surrogate, against a character from U+005D to U+D7FF: `"ab"` now precedes `"a\uD800"`
 
-Other keys that first differ at a space, `!`, `"` or a backslash keep their order. That order is the order of keys in a Type's `expression` and `json`, its JSON Schema's `properties` and `required`, the errors it reports, and the outputs it rebuilds, e.g. adding defaults or deleting undeclared keys.
+Other keys that first differ at a space, `!`, `"` or a backslash keep their order. That order is the order of keys in a Type's `expression` and `json`, its JSON Schema's `properties` and `required`, and the errors it reports.
 
 ### Simplify `@ark/schema` nodes
 
@@ -1802,16 +1819,18 @@ type({ "+": "reject", a: "string.trim" }).or({
 })
 ```
 
-### Return deleting types' keys in the order of their expression
+### Return deleting types' keys in the order they're declared
 
-`"+": "delete"` builds its output with required keys, then optional keys, each sorted, followed by keys matching an index signature in input order. It previously deleted from a copy of the input, which kept the input's order. The output is always a new object, even when nothing was deleted, while an array is returned as is unless it has an undeclared key to remove:
+`"+": "delete"` builds its output with the declared keys in the order the definition declares them, as Zod does, followed by keys matching an index signature in input order. It previously deleted from a copy of the input, which kept the input's order, and prerelease builds of this version sorted them. Data is usually serialized from the shape its Type declares, so the output usually lists keys as its input did. The output is always a new object, even when nothing was deleted, while an array is returned as is unless it has an undeclared key to remove:
 
 ```ts
 const T = type({ "+": "delete", b: "string", a: "string", "c?": "number" })
 
-// previously { a: "1", c: 1, b: "2" }, now { a: "1", b: "2", c: 1 }
+// previously { a: "1", c: 1, b: "2" }, now { b: "2", a: "1", c: 1 }
 T({ a: "1", z: 0, c: 1, b: "2" })
 ```
+
+A spread, `.merge()` or `.and()` lists the left object's keys, then the right's new ones, as `{ ...left, ...right }` would, and `.pick()`, `.omit()`, `.partial()` and `.required()` keep their source's order. Defaults missing from data are added in the order they're declared, after the input's keys where undeclared keys are kept. A Type's `expression`, `json` and JSON Schema still list keys required first, then optional, each sorted, and Types that declare the same keys in different orders are still equal, though no longer the same object.
 
 ### Treat integer keys past an array's greatest index as undeclared
 

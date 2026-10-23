@@ -362,6 +362,14 @@ contextualize(() => {
 				"Infinitely deep cycles are not supported."
 			)
 		})
+		it("cyclic index signature", () => {
+			const T = scope({ tree: { "[string]": "tree | number" } }).type("tree")
+			assertProperty(arkToArbitrary(T), T)
+		})
+		it("object.json", () => {
+			const T = type("object.json")
+			assertProperty(arkToArbitrary(T), T)
+		})
 		it("unknown array with additional props", () => {
 			const T = type({ name: "string" }).and("unknown[]")
 			const arbitrary = arkToArbitrary(T)

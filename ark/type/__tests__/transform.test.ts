@@ -871,7 +871,7 @@ o.n must be a number (was a string)`)
 	})
 
 	describe("undeclared keys", () => {
-		it("delete in expression order", () => {
+		it("delete in declaration order", () => {
 			const T = type({
 				"+": "delete",
 				z: "string",
@@ -886,8 +886,8 @@ o.n must be a number (was a string)`)
 				"{ b: number, z: string, a?: string, + (undeclared): delete }"
 			)
 			attest(Object.keys(T({ a: "a", z: "z", c: true, b: 1 }))).equals([
-				"b",
 				"z",
+				"b",
 				"a"
 			])
 		})

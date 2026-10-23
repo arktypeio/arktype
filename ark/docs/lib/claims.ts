@@ -7,6 +7,8 @@
  * pending, so nothing unverified reads as a claim.
  */
 
+import { benchFacts, versusLibrary } from "./bench/bench.ts"
+
 export type Pending<t> = { pending: t }
 
 export type Claim<t> = t | Pending<t>
@@ -101,6 +103,24 @@ export const sizeChart: BenchmarkChart = {
 	]
 }
 
+// the homepage's benchmark (lib/bench/benchData.json), so a rerun rewrites
+// these too: the default build against classic Zod 4 and z.compile on every
+// scenario, each verdict a sign test at p < .05 over 150 paired rounds
+const zod = versusLibrary("zod")
+const zodCompiled = versusLibrary("zodCompiled")
+const zodScenarios =
+	zod.wins === zod.count ?
+		`all ${zod.count} scenarios`
+	:	`${zod.wins} of ${zod.count} scenarios`
+// z.compile builds its output as it transforms, where arktype copies each
+// object it changes, so it wins the rows that transform their input
+const zodCompiledLosses =
+	!zodCompiled.lost.length ? ""
+	: zodCompiled.lost.every(s => s.name.endsWith(" morph")) ?
+		`. z.compile was faster on the ${zodCompiled.lost.length} that transform their input, ${zodCompiled.losses}`
+	:	`. z.compile was faster on ${zodCompiled.losses}`
+const bench = benchFacts()
+
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
 	// precompiled ArkType: moltar's parseSafe, 189 instructions vs Typia 213.
@@ -147,7 +167,20 @@ export const claims = {
 	// 2.2.9's 47803 B gz (253499 vs 156113 min); sizeChart's dynamic bar, the
 	// login form, is 80672
 	dynamicSize:
-		"Dynamic ArkType is 80.7 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less."
+		"Dynamic ArkType is 80.7 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.",
+	zodSpec: `faster than Zod 4 in ${zodScenarios} we ran`,
+	zodSpeed: `Precompiled ArkType was faster than Zod 4 in ${zodScenarios} of our benchmark, by ${zod.min} to ${zod.max}, and faster than Zod 4's z.compile in ${zodCompiled.wins} of ${zodCompiled.count}${zodCompiledLosses}.`,
+	// the error rows from benchData.json; the wall clock from
+	// ark/repo/bench/external/results/wall.md, H1
+	speedScope: `It isn't the fastest at everything. On the rows that report errors for invalid data, ajv was faster on ${bench.ajvFasterCount} of ${bench.errorCount}, and on moltar's parseSafe, rescript-schema and @sx3/gate were faster by wall clock.`,
+	// the Zod-migration success rate is being measured
+	zodMigrationSpec: {
+		pending: "an agent migrates a Zod codebase in one prompt"
+	},
+	zodMigration: {
+		pending:
+			"In our runs, an agent with the skill migrated a Zod codebase to ArkType from one prompt."
+	}
 } satisfies Record<string, Claim<string>>
 
 export type ClaimId = keyof typeof claims

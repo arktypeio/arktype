@@ -9,6 +9,7 @@
  * as a win.
  */
 import data from "./benchData.json" with { type: "json" }
+import { preview } from "./preview.ts"
 
 export type Verdict = {
 	ratio: number
@@ -52,19 +53,7 @@ const bench = data as unknown as BenchData
 
 export const provenance = bench.provenance
 
-/**
- * Set while precompile is unreleased: the copy says "next release", the chart
- * carries a preview pill and the footnote a draft tag. Remove it (and every
- * tag goes with it) once precompile ships and the bench is rerun.
- */
-export const preview:
-	| {
-			/** a public commit holding an earlier ark/repo/bench, until the harness is published */
-			harnessRef: string
-	  }
-	| undefined = {
-	harnessRef: "4262bc88a138b88a1aa9b56e8150c9422f6de950"
-}
+export { preview }
 
 /** while precompile is unpublished, the harness that produced the data can't be linked */
 export const harness =
@@ -695,6 +684,25 @@ export const benchFacts = () => {
 }
 
 export type BenchFacts = ReturnType<typeof benchFacts>
+
+/** the default build against one library on every scenario it ran */
+export const versusLibrary = (key: string) => {
+	const measured = bench.scenarios.filter(s => s.standaloneVs[key])
+	const lost = measured.filter(s => s.standaloneVs[key].verdict === "loss")
+	const speedups = measured
+		.map(s => s.standaloneVs[key])
+		.filter(v => v.verdict === "win")
+		.map(v => v.speedup)
+	return {
+		count: measured.length,
+		wins: speedups.length,
+		min: formatRatio(Math.min(...speedups)),
+		max: formatRatio(Math.max(...speedups)),
+		lost,
+		/** "items morph and moltar morph" */
+		losses: list(lost.map(scenarioName))
+	}
+}
 
 /** the footnote, as paragraphs of plain text: the method, what differs between arms, then startup */
 export const benchNotes = (): string[] => [

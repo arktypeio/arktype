@@ -1,4 +1,6 @@
 import { getShellOutput, readFile, shell, writeFile } from "@ark/fs"
+import { throwError } from "@ark/util"
+import { preview } from "../docs/lib/bench/preview.ts"
 import {
 	packagesByScope,
 	publishedVersionsOf,
@@ -89,6 +91,17 @@ const existingReleases = new Set(
 )
 
 const toPublish = releases.filter(release => !release.isOnNpm)
+
+// a stable arktype deploys the site, whose homepage calls precompile
+// unreleased and its numbers a draft while preview is set
+const stableType = toPublish.find(
+	({ pkg }) => pkg.scope === "type" && !isPrerelease(pkg.version)
+)
+if (preview && stableType) {
+	throwError(
+		`${stableType.tag} can't be published while preview is set in ark/docs/lib/bench/bench.ts. Rerun the homepage bench on the release commit and remove preview, or publish a prerelease.`
+	)
+}
 
 for (const release of toPublish) publish(release)
 

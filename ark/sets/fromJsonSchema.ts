@@ -497,9 +497,12 @@ const readObject = (
 			value: p.value
 		})) as unknown[],
 		predicate: [] as unknown[],
-		undeclared: undefined as "reject" | undefined
+		undeclared: undefined as "reject" | undefined,
+		// as properties lists them
+		order: [] as string[]
 	}
 	for (const key of new Set([...Object.keys(properties), ...required])) {
+		structure.order.push(key)
 		// a declared key meets every pattern it matches, else additionalProperties
 		const value = patterns
 			.filter(p => p.matcher.test(key))
@@ -967,6 +970,13 @@ const checkKeyword = (o: dict, k: string, pointer: string): void => {
 
 export const writeUnparsableSchemaMessage = (actual: string): string =>
 	`Schema must be a Root, a Standard JSON Schema or a JSON Schema (was ${actual})`
+
+export const writeUnreadableStandardSchemaMessage = (
+	vendor: string,
+	method: "input" | "output",
+	cause: unknown
+): string =>
+	`${vendor}'s ~standard.jsonSchema.${method} threw (${cause instanceof Error ? cause.message : printable(cause)})`
 
 export const writeInvalidJsonSchemaMessage = (
 	pointer: string,

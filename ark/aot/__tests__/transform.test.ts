@@ -27,26 +27,6 @@ const builtInOrder = (files: Record<string, string>, order: string[]) =>
 		[files, order]
 	)
 
-// each module precompiled, merging units by what `recorded`'s modules read
-const precompileInOrder = (
-	files: Record<string, string>,
-	ids: string[],
-	recorded?: Record<string, string>
-) => {
-	const precompiler = new Precompiler(memoryHost(files))
-	if (recorded) {
-		const earlier = new Precompiler(memoryHost(recorded))
-		const readers: Record<string, string[]> = {}
-		for (const id in recorded) {
-			const { unitReaders } = earlier.precompile(recorded[id], id)
-			for (const specifier in unitReaders)
-				(readers[specifier] ??= []).push(...unitReaders[specifier])
-		}
-		precompiler.unitReaders = readers
-	}
-	return ids.map(id => precompiler.precompile(files[id], id))
-}
-
 contextualize(() => {
 	describe("standalone", () => {
 		it("folds sites to validators", () => {
@@ -110,7 +90,7 @@ export const Team = type({ lead: User })`,
 					"/user.ts": `import { type } from "arktype"
 export const User = type({ name: "string" })`
 				},
-				{ lazy: false, checks: "none" }
+				{ lazy: false, creationChecks: "none" }
 			)
 			// the factory's parameter still evaluates
 			attest(normalized(result.code)).snap(`import "arktype"
@@ -1006,8 +986,8 @@ export default (def: string) => def`,
 				"/suffix.ts":
 					"export const suffix = (def: string, s: string) => def + s"
 			}
-			const build = (id: keyof typeof files, checks?: "helpers") =>
-				precompileModule(files[id], id, memoryHost(files), { checks })
+			const build = (id: keyof typeof files, creationChecks?: "helpers") =>
+				precompileModule(files[id], id, memoryHost(files), { creationChecks })
 			// a bundle runs the helpers the build read
 			attest(build("/checked.ts").diagnostics).equals([])
 			const checked = build("/checked.ts", "helpers")
@@ -1216,99 +1196,15 @@ export const Team = type({ lead: User })`
 			attest(normalized(shared)).snap(["~arktype/#0", "~arktype/#1"])
 		})
 
-		it("writes a unit read by one other into its reader", () => {
-			const files = {
-				"/main.ts": `import { type } from "arktype"
-export const User = type({ name: { first: "string", last: "string" } })`
-			}
-			const [unmerged] = precompileInOrder(files, ["/main.ts"])
-			const [merged] = precompileInOrder(files, ["/main.ts"], files)
-			attest(normalized(Object.keys(unmerged.modules))).snap([
-				"~arktype/#0",
-				"~arktype/#1",
-				"~arktype/#2",
-				"~arktype/#3",
-				"~arktype/#4"
-			])
-			attest(normalized(Object.keys(merged.modules))).snap([
-				"~arktype/#0",
-				"~arktype/#1",
-				"~arktype/#2",
-				"~arktype/#3"
-			])
-			const unit = Object.values(merged.modules).find(code =>
-				code.includes("Allows")
-			)!
-			attest(normalized(unit.match(/^const \w+ =/gm)!)).snap([
-				"const #0 =",
-				"const #1Allows =",
-				"const #1Apply =",
-				"const #0Allows =",
-				"const #0Apply =",
-				"const #0Node ="
-			])
-		})
-
-		it("shares code with composing modules it merges", () => {
-			const files = {
-				"/user.ts": `import { type } from "arktype"
-export const User = type({ name: { first: "string" } })`,
-				"/team.ts": `import { type } from "arktype"
-import { User } from "./user.ts"
-export const Team = type({ lead: User })`
-			}
-			const [user, team] = precompileInOrder(
-				files,
-				["/user.ts", "/team.ts"],
-				files
-			)
-			const shared = Object.keys(team.modules).filter(
-				specifier => user.modules[specifier]
-			)
-			for (const specifier of shared)
-				attest(team.modules[specifier]).equals(user.modules[specifier])
-			attest(normalized(shared)).snap(["~arktype/#0", "~arktype/#1"])
-		})
-
-		it("names a module another file merges apart under a stale map", () => {
-			const recorded = {
-				"/main.ts": `import { type } from "arktype"
-export const User = type({ name: { first: "string" } })`
-			}
-			const files = {
-				"/main.ts": recorded["/main.ts"],
-				"/name.ts": `import { type } from "arktype"
-export const Name = type({ first: "string" })
-export const User = type({ name: { first: "string" } })`
-			}
-			const [main, name] = precompileInOrder(
-				files,
-				["/main.ts", "/name.ts"],
-				recorded
-			)
-			const shared = Object.keys(name.modules).filter(
-				specifier => main.modules[specifier]
-			)
-			for (const specifier of shared)
-				attest(name.modules[specifier]).equals(main.modules[specifier])
-			attest({
-				main: Object.keys(main.modules).length,
-				name: Object.keys(name.modules).length,
-				shared: shared.length
-			}).snap({ main: 4, name: 5, shared: 2 })
-		})
-
 		it("declares a merged unit's node in its reader's scope", () => {
-			const files = {
-				"/main.ts": `import { type } from "arktype"
-export const T = type({ a: type("string.numeric.parse").to(type({ x: "number" }).or("number > 0")) })`
-			}
-			const [merged] = precompileInOrder(files, ["/main.ts"], files)
-			const unit = Object.values(merged.modules).find(code =>
-				code.includes("Allows")
-			)!
-			attest(normalized(unit.match(/^const \w+ = runtime\.freeze.*/gm)!)).snap([
-				"const #0 = runtime.freeze({"
+			const { code } = precompile(
+				`import { type } from "arktype"
+export const T = type({ a: type("string.numeric.parse").to(type({ x: "number" }).or("number > 0")) })`,
+				{},
+				{ inline: true }
+			)
+			attest(normalized(code.match(/^const \w+ = [\w$]+freeze\({$/gm)!)).snap([
+				"const #0 = $ark$0$freeze({"
 			])
 		})
 

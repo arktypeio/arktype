@@ -9,6 +9,7 @@ import {
 	type IntersectionContext,
 	type Morph,
 	type RootKind,
+	type Structure,
 	type Union,
 	type UnknownIntersectionResult,
 	type nodeOfKind
@@ -83,8 +84,8 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 			// returning the original reference
 			result =
 				$ark.sets!.disjointOf?.(result) ??
-				(l.equals(result) ? l
-				: r.equals(result) ? r
+				(l.equals(result) && listsKeysAlike(l, result) ? l
+				: r.equals(result) && listsKeysAlike(r, result) ? r
 				: result)
 		}
 
@@ -93,6 +94,15 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		$ark.reached?.store(mark, cacheByR, r)
 		return result as never
 	}) as never
+
+// equal nodes can list their outputs' keys in different orders
+const listsKeysAlike = (l: BaseNode, r: BaseNode): boolean =>
+	l === r ||
+	(l.children.length === r.children.length &&
+		!(l as Structure.Node).orderedProps?.some(
+			(prop, i) => prop.key !== (r as Structure.Node).orderedProps[i].key
+		) &&
+		l.children.every((child, i) => listsKeysAlike(child, r.children[i])))
 
 const _intersectNodes = (
 	l: BaseNode,

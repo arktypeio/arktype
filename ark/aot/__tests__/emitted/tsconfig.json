@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"skipLibCheck": true,
+		"target": "ES2022",
+		"module": "NodeNext",
+		"customConditions": ["ark-ts"],
+		"types": ["node"],
+		"rootDir": "src",
+		"outDir": "out",
+		"sourceMap": true
+	},
+	"include": ["src"]
+}

@@ -25,7 +25,16 @@ export const emitDeclarations = (opts?: DeclareOptions): Declarations => {
 	const cwd = resolve(opts?.cwd ?? ".")
 	const ts = loadTypeScript(cwd)
 	const diagnostics: ts.Diagnostic[] = []
-	const config = parseConfig(ts, cwd, opts?.tsconfig, diagnostics)
+	const parsed = parseConfig(ts, cwd, opts?.tsconfig, diagnostics)
+	const config = {
+		...parsed,
+		options: {
+			...parsed.options,
+			noEmit: false,
+			declaration: true,
+			emitDeclarationOnly: true
+		}
+	}
 	const program = ts.createProgram({
 		rootNames: config.fileNames,
 		options: config.options,
@@ -96,12 +105,12 @@ export const writeDeclaredOutsideMessage = (
 ): string =>
 	`${path} is declared outside ${root}, where the bundle can't hold it, so set rootDir to a directory holding every module the tsconfig emits`
 
-type TypeScript = typeof ts & {
+export type TypeScript = typeof ts & {
 	getCheckFlags: (symbol: ts.Symbol) => number
 }
 
 // a TypeScript 7 project installs TypeScript 6 as `typescript-6`
-const loadTypeScript = (cwd: string): TypeScript => {
+export const loadTypeScript = (cwd: string): TypeScript => {
 	for (const from of [join(cwd, "package.json"), import.meta.url]) {
 		const require = createRequire(from)
 		for (const name of ["typescript", "typescript-6"]) {
@@ -116,11 +125,11 @@ const loadTypeScript = (cwd: string): TypeScript => {
 		}
 	}
 	return throwError(
-		"Emitting declarations requires the compiler API of TypeScript 5.5 to 6. Install `typescript`, or beside TypeScript 7, `typescript-6` as an alias: `npm i -D typescript-6@npm:typescript@6`"
+		"--declare and --emit read the compiler API of TypeScript 5.5 to 6. Install `typescript`, or beside TypeScript 7, `typescript-6` as an alias: `npm i -D typescript-6@npm:typescript@6`"
 	)
 }
 
-const parseConfig = (
+export const parseConfig = (
 	ts: TypeScript,
 	cwd: string,
 	tsconfig: string | undefined,
@@ -137,29 +146,21 @@ const parseConfig = (
 	})
 	if (!config) return throwError(formatDiagnostics(ts, diagnostics, cwd))
 	diagnostics.push(...config.errors)
-	return {
-		...config,
-		options: {
-			...config.options,
-			noEmit: false,
-			declaration: true,
-			emitDeclarationOnly: true
-		}
-	}
+	return config
 }
 
-const formatDiagnostics = (
+export const formatDiagnostics = (
 	ts: TypeScript,
 	diagnostics: ts.Diagnostic[],
 	cwd: string
-) =>
+): string =>
 	ts.formatDiagnostics(diagnostics, {
 		getCanonicalFileName: path => path,
 		getCurrentDirectory: () => cwd,
 		getNewLine: () => "\n"
 	})
 
-const emittedFilesOf = (program: ts.Program) =>
+export const emittedFilesOf = (program: ts.Program): ts.SourceFile[] =>
 	program
 		.getSourceFiles()
 		.filter(

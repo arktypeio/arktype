@@ -40,13 +40,22 @@ export const writeDomainActual: ActualWriter<"domain"> = data =>
 		String(data)
 	:	domainDescriptions[domainOf(data)]
 
+// text replacing a bound's, like a description, doesn't say it's a length
+const lengthActualOf = (
+	data: { length: number },
+	e: { meta?: ArkEnv.meta }
+): string =>
+	e.meta?.description === undefined && e.meta?.expected === undefined ?
+		`${data.length}`
+	:	`length ${data.length}`
+
 export const writeLengthActual: ActualWriter<
 	"maxLength" | "exactLength" | "notEqualLength"
-> = data => `${data.length}`
+> = lengthActualOf
 
 // avoid default message like "must be non-empty (was 0)"
-export const writeMinLengthActual: ActualWriter<"minLength"> = data =>
-	data.length === 0 ? "" : `${data.length}`
+export const writeMinLengthActual: ActualWriter<"minLength"> = (data, e) =>
+	data.length === 0 ? "" : lengthActualOf(data, e)
 
 export const writeProtoActual: ActualWriter<"proto"> = data => {
 	if (data instanceof Date && !isValidDate(data)) {

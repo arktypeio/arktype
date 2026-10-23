@@ -12,8 +12,8 @@ import { regex } from "arkregex"
 const ok = regex("^ok$", "i")
 // Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i" }>
 
-const semver = regex("^(\\d+)\\.(\\d+)\\.(\\d+)$")
-// Regex<`${number}.${number}.${number}`, { captures: [`${number}`, `${number}`, `${number}`] }>
+const date = regex("^(\\d{4})-(\\d{2})-(\\d{2})$")
+// Regex<`${number}-${number}-${number}`, { captures: [`${number}`, `${number}`, `${number}`] }>
 
 const email = regex("^(?<name>\\w+)@(?<domain>\\w+\\.\\w+)$")
 // Regex<`${string}@${string}.${string}`, { names: { name: string; domain: `${string}.${string}`; }; ...>
