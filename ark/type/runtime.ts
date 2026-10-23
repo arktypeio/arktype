@@ -719,6 +719,19 @@ export const unreadErrors = (
 	return onFail ? onFail(errors) : errors
 }
 
+// where every failure's issues are read as it returns, as by assert or
+// ~standard, waiting buys nothing
+export const foundErrors = (
+	apply: CompactApply,
+	data: unknown,
+	onFail: ArkErrors.Handler | null,
+	Ctx: new () => ArkErrors
+): unknown => {
+	const errors = new Ctx()
+	issuesOf(apply, data, errors)
+	return onFail ? onFail(errors) : errors
+}
+
 export const unreadElements = (
 	allows: (data: unknown) => boolean,
 	apply: CompactApply,

@@ -268,6 +268,9 @@ export interface StandaloneOptions {
 	// false where a size build with detailed errors compiles each node rather
 	// than writing it as a checker
 	combines?: boolean | undefined
+	// false where nothing calls a validator, so every failure's errors are
+	// read as it returns, as by assert or ~standard
+	called?: boolean | undefined
 }
 
 interface Baking {
@@ -289,6 +292,8 @@ interface Baking {
 	combines: boolean
 	// the hashes of roots a build writing checkers compiles anyway
 	compiledInputs: ReadonlySet<string>
+	// errors find their issues once read, for a call that may never read them
+	defersIssues: boolean
 }
 
 interface RootApplier {
@@ -327,12 +332,12 @@ const writeValue = (hoisted: boolean, name: string, expression: string) =>
 		`var ${name}Value\nfunction ${name}() {\n\treturn (${name}Value ??= ${expression})\n}`
 	:	`const ${name} = /* @__PURE__ */ (() => ${expression})()`
 
-// errors "none"'s root issue, found once read unless written for size
-const invalidErrorsOf = (shortest: boolean) =>
-	shortest ?
-		`const errors = new runtime.ArkErrors()
+// errors "none"'s root issue, found once read where it defers issues
+const invalidErrorsOf = (defersIssues: boolean) =>
+	defersIssues ?
+		"const errors = new runtime.InvalidErrors(data)"
+	:	`const errors = new runtime.ArkErrors()
 	errors._ = [{ code: "predicate", path: [], data }]`
-	:	"const errors = new runtime.InvalidErrors(data)"
 
 const appliedSignature = "(data, onFail) => "
 
@@ -527,7 +532,8 @@ const writeArtifact = (
 		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular,
 		combines: opts.combines !== false,
 		compiledInputs:
-			opts.optimize === "size" ? compiledInputsOf(exports) : new Set()
+			opts.optimize === "size" ? compiledInputsOf(exports) : new Set(),
+		defersIssues: opts.optimize !== "size" && opts.called !== false
 	}
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<unknown>()
@@ -2267,7 +2273,7 @@ ${writeFunction(
 				name,
 				params,
 				typeof body === "string" ? body : (
-					body(invalidErrorsOf(this.baking.shortest))
+					body(invalidErrorsOf(this.baking.defersIssues))
 				),
 				name === "applyBy"
 			),
@@ -2445,7 +2451,7 @@ ${writeFunction(
 		// first-issue traversals drop the rest when finalized
 		const appliesErrors = !this.baking.firstIssue || reportsIssues
 		// for speed, issues reported into ArkErrors are found once read
-		const unreads = reportsIssues && !this.baking.shortest
+		const unreads = reportsIssues && this.baking.defersIssues
 		const [callErrors, elementErrors] =
 			unreads ?
 				["runtime.unreadCallErrors", "runtime.unreadElements"]
@@ -2527,6 +2533,8 @@ ${writeFunction(
 					params: pattern,
 					apply: `(data, onFail) => allows(data) ? ${valid} : ${
 						unreads ? `runtime.unreadErrors(${apply}, data, onFail, ${Ctx})`
+						: reportsIssues && !this.baking.shortest ?
+							`runtime.foundErrors(${apply}, data, onFail, ${Ctx})`
 						: reportsIssues ?
 							`runtime.applyIssues(${apply}, data, onFail${this.baking.firstIssue ? `, ${Ctx}` : ""})`
 						:	`runtime.applyErrors(${apply}, data, ${refOf("config")}, onFail, ${Ctx})`

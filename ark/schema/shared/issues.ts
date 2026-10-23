@@ -1,4 +1,4 @@
-import { arkKind, type array } from "@ark/util"
+import type { array } from "@ark/util"
 import type { ArkErrorCode } from "./errors.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 
@@ -86,10 +86,6 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		this._ = []
 		this._path = releasedPath ?? []
 		releasedPath = undefined
-	}
-
-	get [arkKind](): "errors" {
-		return "errors"
 	}
 
 	/**
@@ -284,16 +280,12 @@ export const messageOf = (issue: ArkIssue): string => {
 		:	path + " " + problemOf(issue)
 }
 
+// an undeclared key's site says what's expected
 export const problemOf = (issue: ArkIssue): string =>
 	issue.problem ??
-	(issue.expected === undefined ?
-		(problems[issue.code] ?? "is invalid")
-	:	"must be " + issue.expected)
-
-const problems: { [code in ArkErrorCode]?: string } = {
-	required: "is missing",
-	undeclared: "must be removed"
-}
+	(issue.expected !== undefined ? "must be " + issue.expected
+	: issue.code === "required" ? "is missing"
+	: "is invalid")
 
 export class TraversalError extends Error {
 	readonly name = "TraversalError"

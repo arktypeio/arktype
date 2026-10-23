@@ -120,10 +120,11 @@ export const outDir = async (): Promise<string> => {
 // the artifacts' runtime's ArkErrors, unlike those another copy wrote
 let artifactErrors: Function | undefined
 
-// lean errors have no arkKind, so the artifacts' are known by their class
+// a validator's errors have no arkKind, so the artifacts' are known by their
+// class
 const isErrors = (value: unknown): boolean =>
 	hasArkKind(value, "errors") ||
-	(leanErrors && !!artifactErrors && value instanceof artifactErrors)
+	(!!artifactErrors && value instanceof artifactErrors)
 
 // a hole calling another runtime copy's validator returns foreign errors
 const returnsForeignErrors = (
@@ -132,7 +133,10 @@ const returnsForeignErrors = (
 ): boolean => {
 	try {
 		const out = validator(cloneInput(input))
-		return hasArkKind(out, "errors") && !(out instanceof artifactErrors!)
+		return (
+			(hasArkKind(out, "errors") || out instanceof arktypeRuntime.ArkErrors) &&
+			!(out instanceof artifactErrors!)
+		)
 	} catch {
 		return false
 	}

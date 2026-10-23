@@ -19,15 +19,11 @@ const { build }: typeof import("esbuild") = await import(
 
 const here = import.meta.dirname
 
-const lean = {
-	members: { assert: false, meta: false, "~standard": false, methods: false }
-}
-
 const builds: [string, PrecompileUnpluginOptions | undefined, boolean][] = [
 	["arktype b1", {}, true],
 	["arktype b2", { preset: "smallest" }, true],
 	["arktype b2 (development)", { preset: "smallest" }, false],
-	["arktype default+lean", lean, true],
+	["arktype b1 (optimizeErrors size)", { optimizeErrors: "size" }, true],
 	["arktype dynamic", undefined, true]
 ]
 

@@ -2,7 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere, readPackageJson } from "@ark/fs"
 import {
 	$ark,
-	hasArkKind,
 	type ArkSchemaConfig,
 	type ExpectedContext,
 	type MessageContext,
@@ -19,7 +18,7 @@ import {
 	writeCreatedBeforeConfigureMessage,
 	writtenConfigMessage
 } from "@ark/schema/runtime"
-import { arkKindOf, flatMorph } from "@ark/util"
+import { arkKindOf, flatMorph, hasDomain } from "@ark/util"
 import { ark, generic, match, scope, type, type Scope } from "arktype"
 import { de } from "arktype/locales/de"
 import {
@@ -204,8 +203,9 @@ const loadFactory = async (
 
 // errors compare by what they keep, as their text is written from less
 const observe = (result: unknown, input: unknown) =>
-	hasArkKind(result, "errors") ?
-		{ issues: keptIssuesOf(result) }
+	// each artifact bundles its own runtime, whose errors have no arkKind
+	hasDomain(result, "object") && "count" in result && "summary" in result ?
+		{ issues: keptIssuesOf(result as never) }
 	:	{ out: result, isInput: result === input }
 
 const agrees = (
