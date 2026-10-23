@@ -7,14 +7,8 @@
  * pending, so nothing unverified reads as a claim.
  */
 
-import {
-	ajvFasterElsewhere,
-	benchFacts,
-	list,
-	versusLibrary,
-	versusSchemaLibraries,
-	type LibraryVersus
-} from "./bench/bench.ts"
+import { benchFacts, versusLibrary, type LibraryVersus } from "./bench/bench.ts"
+import { leaderboards, leads, type CategoryId } from "./bench/leaderboard.ts"
 
 export type Pending<t> = { pending: t }
 
@@ -58,9 +52,9 @@ export interface BenchmarkChart {
  * f29b8d153 (wall-f29b8d153.md: 30 paired passes, Holm over H1-H4), where all
  * four hypotheses held. At the release candidate (wall.md) H1 had failed. Each
  * claim is scoped: precompiled or dynamic, valid or invalid data, with or
- * without errors. Speed comes from the
- * default build and size from the "smallest" preset, so the headline's note
- * names the build behind each.
+ * without errors. The headline's superlatives instead follow the README's
+ * "Best average" rule over every suite (lib/bench/leaderboard.ts), with
+ * ArkType as its default production build throughout.
  */
 
 // moltar's typescript-runtime-type-benchmarks, perf instruction counts in
@@ -170,65 +164,17 @@ const valueOf = (chart: BenchmarkChart, name: string) =>
 
 const kB = (bytes: number) => `${(bytes / 1000).toFixed(2)} kB`
 
-const bytes = (n: number) => `${n.toLocaleString("en-US")} B`
-
 // the options sizeChart's ArkType bar was built with
 const sizeBuild = '"smallest" preset'
 
-// valibot.dev's login form in 12 validators, each as its docs write it, by
-// ark/repo/bench/external/forms/size.ts at 54eb5e89b (gzip -9,
-// results/forms-54eb5e89b.json): ArkType, Valibot, Zod, Zod Mini, typia,
-// TypeBox, Effect Schema, runtypes, Superstruct, Yup, Joi and ajv. Only these
-// two were smaller than the default build's 1552 (Valibot 1564, Superstruct
-// 1623, runtypes 5051): typia, whose errors carry its own messages rather
-// than the form's, and ajv's standalone code with ajv-errors, generated from
-// JSON Schema. The "smallest" preset was 1119 there. The email regex isn't
-// why: both of theirs are longer and stricter than ArkType's
-const formSize = { typia: 1252, ajv: 935 }
-
-// the headline's speed scope, each checked so a rerun can't leave a sentence
-// naming the wrong cause
-const schemas = versusSchemaLibraries()
-const schemaLosses = schemas.behind
-if (
-	schemaLosses.some(
-		x =>
-			x.library !== "zodCompiled" ||
-			x.verdict !== "loss" ||
-			!x.id.endsWith(" morph")
-	)
-) {
-	throw new Error(
-		`The headline's note says only z.compile's transform rows beat ArkType, but: ${JSON.stringify(schemaLosses)}`
-	)
-}
-const ajvElsewhere = ajvFasterElsewhere()
-if (ajvElsewhere.join() !== "parse items defaults") {
-	throw new Error(
-		`The headline's note says ajv's only valid-data win is items defaults, but it won: ${ajvElsewhere.join(", ")}`
-	)
-}
-
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
-	// scoped by the note below it, which says where it doesn't hold and why
-	headline: "TypeScript's smallest, fastest validator.",
-	// sizeChart, then formSize
-	headlineSize: `*Smallest: we wrote valibot.dev's login form in 12 validators, each as its docs do. Of the TypeScript-schema libraries that attach the form's messages, ArkType's bundle is the smallest: ${bytes(valueOf(sizeChart, "ArkType (precompiled)"))} gzipped (${sizeBuild}) to Valibot's ${bytes(valueOf(sizeChart, "Valibot"))}. typia's is ${bytes(formSize.typia)} but can't carry the messages; ajv's, generated from JSON Schema, is ${bytes(formSize.ajv)} with ajv-errors.`,
-	// speedChart's counts and H1/H2 of the registered wall run
-	// (wall-f29b8d153.md): each beat all six rivals within 25% of its
-	// instructions, in 24-30 of 30 passes (p <= 0.0014); then the homepage's
-	// benchmark against every library but ajv
-	headlineSpeed: `Fastest: precompiled with its defaults, ArkType takes the fewest instructions per call of any library on moltar's parseSafe and assertLoose benchmarks in our Node 24 runs, and beat the six closest on each by wall clock, in a test we registered before running it. On the homepage's benchmark, it's faster than every TypeScript-schema library in ${schemas.ahead} of ${schemas.count} scenarios, with errors: "first" on the ${schemas.firstErrorCount} that report one error.`,
-	// moltar strict, default build: parseStrict 339 instructions (ata-aot 297,
-	// ata 302, @ts-runtypes 302, typia 335), assertStrict 332 (also TypeBox
-	// AOT 331). Each of those counts keys (for...in, Object.keys or
-	// getOwnPropertyNames length); ata-aot and @ts-runtypes were shown to
-	// accept an extra key beside a non-enumerable declared one. jsonInput:
-	// 285 and 251, instructions only (perf-parse batch8, no wall run). ajv's
-	// error rows: its messages are constants with the path kept apart, and
-	// ArkType pays an Allows walk before Apply's (error-path.md's counts)
-	headlineLimits: `Not everywhere: on moltar's strict benchmarks, the libraries that take fewer instructions count an object's keys, which lets an undeclared key pass in place of a non-enumerable or inherited declared one. ArkType checks each key; set jsonInput for data from JSON.parse and it counts too, taking the fewest instructions on both. On the homepage's benchmark, z.compile is faster on the ${schemaLosses.length} scenarios that transform their input (${list(schemaLosses.map(x => x.ratio))}). ajv is faster on ${bench.ajvFasterCount} of the ${bench.errorCount} that report errors, since ArkType checks invalid input a second time to collect them and puts each error's path in its message, and on items defaults, where ajv writes defaults into its input rather than a copy.`,
+	// each superlative names a category ArkType must have the best average in
+	// (lib/bench/leaderboard.ts), as headlineCategories below checks. Pending:
+	// by the registered rule ArkType leads startup only (speed: third, behind
+	// @ts-runtypes and ata, which are in moltar's suite alone; size: fifth)
+	headline: { pending: "TypeScript's smallest, fastest validator." },
+	headlineNote: `*Best average across public benchmarks, each result a ratio to the best: ${leaderboards.speed.rows} results for validation speed, ${leaderboards.startup.rows} for startup and ${leaderboards.size.rows} for bundle size.`,
 	// the fastest and the smallest builds differ: optimize "size" makes the
 	// product schema's valid data 2.2x slower
 	buildChoice:
@@ -298,12 +244,22 @@ export const claims = {
 
 export type ClaimId = keyof typeof claims
 
-/** the headline's note: what it measures, then where it doesn't hold */
-export const headlineNote = [
-	"headlineSize",
-	"headlineSpeed",
-	"headlineLimits"
-] as const satisfies ClaimId[]
+/** the README section listing the headline's benchmarks and its rule */
+export const headlineMethod = {
+	label: "Method",
+	href: "https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md#best-average"
+}
+
+// the categories the headline's superlatives name, each of which ArkType
+// must lead on average once the headline isn't pending
+const headlineCategories: CategoryId[] = ["size", "speed"]
+for (const category of headlineCategories) {
+	if (!isPending(claims.headline) && !leads(category)) {
+		throw new Error(
+			`The headline claims ArkType is best on ${category}, but ${leaderboards[category].standings[0].library} has the best average: ${JSON.stringify(leaderboards[category].standings.slice(0, 5))}`
+		)
+	}
+}
 
 /** the libraries the board compares against: with ArkType, the two that wrote Standard Schema */
 const isRival = (bar: BenchmarkBar) => /^(Valibot|Zod)\b/.test(bar.name)

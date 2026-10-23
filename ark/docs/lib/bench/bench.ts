@@ -712,50 +712,6 @@ export const versusLibrary = (key: string) => {
 
 export type LibraryVersus = ReturnType<typeof versusLibrary>
 
-/** every library here but ajv, which generates its code from JSON Schema */
-const schemaLibraries = competitors.filter(key => key !== "ajv")
-
-/**
- * ArkType against every TypeScript-schema library at once, the first-error
- * build on the rows reporting one error: the scenarios where it beat each of
- * them, then every one it didn't
- */
-export const versusSchemaLibraries = () => {
-	const rows = bench.scenarios.map(s => {
-		const { vs } = ours(s)
-		return {
-			s,
-			behind: schemaLibraries.filter(
-				key => vs[key] && vs[key].verdict !== "win"
-			)
-		}
-	})
-	return {
-		count: rows.length,
-		ahead: rows.filter(row => !row.behind.length).length,
-		/** the rows reporting one error, which the first-error build runs */
-		firstErrorCount: bench.scenarios.filter(
-			s => ours(s).key === "standaloneFirst"
-		).length,
-		/** `[{ scenario: "items morph", library: "zodCompiled", verdict: "loss", ratio: "1.29×" }]` */
-		behind: rows.flatMap(({ s, behind }) =>
-			behind.map(key => ({
-				id: s.id,
-				scenario: scenarioName(s),
-				library: key,
-				verdict: ours(s).vs[key].verdict,
-				ratio: formatRatio(1 / ours(s).vs[key].speedup)
-			}))
-		)
-	}
-}
-
-/** the rows ajv was faster on that don't report errors, like "parse items defaults" */
-export const ajvFasterElsewhere = () =>
-	bench.scenarios
-		.filter(s => !reportsErrors(s) && ours(s).vs.ajv?.verdict === "loss")
-		.map(s => s.id)
-
 /** the footnote, as paragraphs of plain text: the method, what differs between arms, then startup */
 export const benchNotes = (): string[] => [
 	`Median ns per call over ${provenance.passes} passes, each running every library in a fresh process, outputs checked against ArkType's before timing. Ties are a two-sided sign test over paired passes at p ≥ .05; ratios are of the medians, truncated. ${provenance.runtime} on ${provenance.machine}, measured ${provenance.date} on ${

@@ -2,7 +2,7 @@ import type { CSSProperties } from "react"
 import {
 	claims,
 	draftOf,
-	headlineNote,
+	headlineMethod,
 	isPending,
 	sizeChart,
 	speedChart,
@@ -34,14 +34,15 @@ export const Headline = () => (
 	</>
 )
 
-/** what the headline measures, then where it doesn't hold */
+/** what the headline's superlatives average, linking the rule */
 export const HeadlineNote = ({ className }: { className?: string }) => (
 	<div id="headline-note" className={className}>
-		{headlineNote.map(id => (
-			<p key={id}>
-				<ClaimText claim={claims[id]} />
-			</p>
-		))}
+		<p>
+			<ClaimText claim={claims.headlineNote} />{" "}
+			<a href={headlineMethod.href} target="_blank" rel="noreferrer">
+				{headlineMethod.label} ↗
+			</a>
+		</p>
 	</div>
 )
 
