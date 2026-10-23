@@ -891,6 +891,10 @@ Build with `errors: "first"` to stop each validation at its first issue:
 precompile.vite({ errors: "first" })
 ```
 
+### Copy objects without boxing their numbers
+
+A Type deleting undeclared keys writes its copy as a literal of nulls it then fills, as a build does unless it's built for size, so V8 lets the copy's fields hold any value and stores the numbers it takes from data as data holds them, rather than allocating a box for each fraction. Parsing moltar's benchmark object with `onDeepUndeclaredKey("delete")` allocates 128 bytes per call where it allocated 144, in 0.88x the cycles.
+
 ### Compile and discriminate a Type when it's first used
 
 A Type is compiled the second time it's called or its `allows` is called, or when its `precompilation` is read, rather than when it's defined, so Types a program defines but never calls aren't compiled and one it checks once is checked without compiling. A Type whose narrows or morphs read `ctx` is compiled the first time instead. A scope's exports are compiled the same way, so `@ark/schema`'s scope `precompilation` is undefined unless the scope is cyclic. A Type referencing an alias is still compiled where it's defined, so an error resolving the alias is thrown there. Checking a default as it's defined doesn't count as a use of the Type it's checked against.

@@ -1,5 +1,6 @@
 // run `pnpm benchTypia` first; `pnpm benchCount` counts these arms' instructions
-// BENCH_LIBRARIES and BENCH_CASES filter the arms, BENCH_ROUNDS sets the samples,
+// BENCH_LIBRARIES and BENCH_CASES filter the arms, BENCH_PASSES sets the samples
+// (each pass's median over BENCH_ROUNDS rounds in fresh processes),
 // BENCH_ARKTYPE_CONFIG and BENCH_STANDALONE_OPTIONS configure arktype's arms
 import { arktypeConfigJson } from "./arktypeConfig.ts"
 import { noSuggest } from "@ark/util"
@@ -8,7 +9,11 @@ import {
 	type Optimization,
 	type StandaloneOptions
 } from "arktype/internal/standalone.ts"
-import { fork, spawnSync } from "node:child_process"
+import {
+	fork as forkProcess,
+	spawnSync,
+	type ChildProcess
+} from "node:child_process"
 import { createHash } from "node:crypto"
 import {
 	mkdirSync,
@@ -682,7 +687,12 @@ const calibrate = (c: Case, arm: Arm) => {
 	while (timeBatch(c, arm) * arm.batchSize < batchMs * 1e6) arm.batchSize *= 2
 }
 
-const rounds = Number(process.env.BENCH_ROUNDS ?? 30)
+// a pass forks a fresh process per library and times every arm in each of
+// its rounds, so a process's own speed, like where its code landed, varies
+// between passes instead of reading as its library's
+const passes = Number(process.env.BENCH_PASSES ?? 10)
+
+const rounds = Number(process.env.BENCH_ROUNDS ?? 3)
 
 const benchedLibrary = process.env.BENCH_LIBRARY as Library | undefined
 
@@ -752,56 +762,57 @@ if (benchedLibrary) {
 	await new Promise(() => {})
 }
 
-const children = new Map(
-	benchedLibraries.map(library => [
-		library,
-		fork(import.meta.filename, {
-			// charges each library its own collections
-			execArgv: [...process.execArgv, "--single-threaded-gc"],
-			env: { ...process.env, BENCH_LIBRARY: library }
-		})
-	])
-)
+const fork = (library: Library) =>
+	forkProcess(import.meta.filename, {
+		// charges each library its own collections
+		execArgv: [...process.execArgv, "--single-threaded-gc"],
+		env: { ...process.env, BENCH_LIBRARY: library }
+	})
 
-await Promise.all(
-	[...children.values()].map(
-		child => new Promise(resolve => child.once("message", resolve))
-	)
-)
-
-const sample = (library: Library, caseIndex: number) => {
-	const child = children.get(library)!
-	return new Promise<number>(resolve => {
+const sample = (child: ChildProcess, caseIndex: number) =>
+	new Promise<number>(resolve => {
 		child.once("message", resolve)
 		child.send(caseIndex)
 	})
-}
 
+const benched = [...cases.entries()].filter(([, c]) =>
+	isBenchedCase(`${c.mode} ${c.name}`)
+)
+for (const [, c] of benched) verify(c, armsOf(c))
+
+// each pass's median for each arm, paired by pass
 const results: Record<string, Record<string, number[]>> = {}
 
-for (const [caseIndex, c] of cases.entries()) {
-	if (!isBenchedCase(`${c.mode} ${c.name}`)) continue
-	const allArms = armsOf(c)
-	verify(c, allArms)
-	const arms = allArms.filter(arm => benchedLibraries.includes(arm.library))
-	const samples = new Map(arms.map(arm => [arm, [] as number[]]))
-	for (let round = 0; round < rounds; round++) {
-		for (let i = 0; i < arms.length; i++) {
-			const arm = arms[(round + i) % arms.length]
-			samples.get(arm)!.push(await sample(arm.library, caseIndex))
+for (let pass = 0; pass < passes; pass++) {
+	const children = new Map(
+		benchedLibraries.map(library => [library, fork(library as Library)])
+	)
+	await Promise.all(
+		[...children.values()].map(
+			child => new Promise(resolve => child.once("message", resolve))
+		)
+	)
+	for (const [caseIndex, c] of benched) {
+		const arms = armsOf(c).filter(arm => children.has(arm.library))
+		const samples = new Map(arms.map(arm => [arm, [] as number[]]))
+		for (let round = 0; round < rounds; round++) {
+			for (let i = 0; i < arms.length; i++) {
+				const arm = arms[(pass + round + i) % arms.length]
+				samples
+					.get(arm)!
+					.push(await sample(children.get(arm.library)!, caseIndex))
+			}
+		}
+		const byArm = (results[`${c.mode} ${c.name}`] ??= {})
+		for (const arm of arms) {
+			const key = `${arm.library}${arm.nearest ? "*" : ""}`
+			;(byArm[key] ??= []).push(median(samples.get(arm)!))
 		}
 	}
-	results[`${c.mode} ${c.name}`] = Object.fromEntries(
-		arms.map(arm => [
-			`${arm.library}${arm.nearest ? "*" : ""}`,
-			samples.get(arm)!
-		])
-	)
+	for (const child of children.values()) child.disconnect()
 	process.stderr.write(".")
 }
 process.stderr.write("\n")
-
-for (const child of children.values()) child.disconnect()
 
 writeFileSync(join(out, "validate.json"), JSON.stringify(results))
 
@@ -844,28 +855,33 @@ for (const mode of Object.keys(modeTitles) as Mode[]) {
 }
 
 console.log(
-	"validation standings (p: sign test against the best other, paired by round)"
+	"validation standings (p: sign test against the best other, paired by pass)"
 )
 console.table(
 	Object.fromEntries(
-		Object.entries(results).map(([name, samplesByArm]) => [
-			name,
-			{
-				...standingOf(
-					Object.fromEntries(
-						Object.entries(samplesByArm).map(([arm, samples]) => [
-							arm.replace("*", ""),
-							samples
-						])
+		Object.entries(results)
+			// a filtered run can leave a case no other library to stand against
+			.filter(([, samplesByArm]) =>
+				Object.keys(samplesByArm).some(arm => !arm.startsWith("standalone"))
+			)
+			.map(([name, samplesByArm]) => [
+				name,
+				{
+					...standingOf(
+						Object.fromEntries(
+							Object.entries(samplesByArm).map(([arm, samples]) => [
+								arm.replace("*", ""),
+								samples
+							])
+						),
+						formatNs
 					),
-					formatNs
-				),
-				"standalone IQR": summarize(
-					samplesByArm.standalone ?? samplesByArm["standalone*"],
-					formatNs
-				)
-			}
-		])
+					"standalone IQR": summarize(
+						samplesByArm.standalone ?? samplesByArm["standalone*"],
+						formatNs
+					)
+				}
+			])
 	)
 )
 

@@ -150,6 +150,26 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 			attest({ ...nullProto }).snap({ tag: "a" })
 		})
 
+		it("compiled code fills a copy from a literal of nulls", () => {
+			const T = type({
+				b: "number",
+				a: "number",
+				"c?": "number"
+			}).onUndeclaredKey("delete")
+			attest(T({ b: 0.5, a: 1, c: 2, d: 3 })).snap({ a: 1, b: 0.5, c: 2 })
+			// the lines writing the copy
+			attest(
+				T.precompilation!.split("\n")
+					.map(line => line.trim())
+					.filter(line => /^(const )?result\b/.test(line))
+			).snap([
+				'const result = { "b": null, "a": null }',
+				"result.b = out.b",
+				"result.a = out.a",
+				"result.c = out.c"
+			])
+		})
+
 		it("applies shallowly", () => {
 			const T = type({
 				a: "string",

@@ -1309,11 +1309,19 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			return i === -1 ? `out${js.prop(prop.key)}` : `transformed${i}`
 		}
 		const [literal, added] = this.resultLayout
-		const entries = literal.map(
-			prop =>
-				`${typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey}: ${outputOf(prop)}`
-		)
-		js.const("result", `{ ${entries.join(", ")} }`)
+		const literalOf = (valueOf: (prop: Prop.Node) => string) =>
+			`{ ${literal.map(prop => `${typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey}: ${valueOf(prop)}`).join(", ")} }`
+		// a literal's __proto__ is its prototype, which null would make null
+		if (js.copiesValues || this.declaresKey("__proto__"))
+			js.const("result", literalOf(outputOf))
+		else {
+			js.const(
+				"result",
+				literalOf(() => "null")
+			)
+			for (const prop of literal)
+				js.line(`result${js.prop(prop.key)} = ${outputOf(prop)}`)
+		}
 		const copies =
 			this.declaresKey("__proto__") ?
 				`Object.getPrototypeOf(data) !== Object.prototype || Object.prototype.hasOwnProperty.call(data, "__proto__")`
