@@ -98,6 +98,7 @@ interface StructureSchema extends BaseNormalizedSchema {
 	readonly index?: readonly IndexSchema[]
 	readonly sequence?: SequenceSchema
 	readonly undeclared?: UndeclaredKeyBehavior
+	readonly order?: readonly Key[]
 }
 
 interface PropSchema extends BaseNormalizedSchema {
@@ -155,6 +156,7 @@ export type RootSchema<kind extends RootKind = RootKind> = NodeSchema<kind>
 
 type ConditionalTerminalIntersectionRoot = {
 	undeclared?: UndeclaredKeyBehavior
+	order?: readonly Key[]
 }
 
 type ConditionalTerminalIntersectionKey =

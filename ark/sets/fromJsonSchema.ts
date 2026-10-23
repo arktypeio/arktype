@@ -497,9 +497,12 @@ const readObject = (
 			value: p.value
 		})) as unknown[],
 		predicate: [] as unknown[],
-		undeclared: undefined as "reject" | undefined
+		undeclared: undefined as "reject" | undefined,
+		// as properties lists them
+		order: [] as string[]
 	}
 	for (const key of new Set([...Object.keys(properties), ...required])) {
+		structure.order.push(key)
 		// a declared key meets every pattern it matches, else additionalProperties
 		const value = patterns
 			.filter(p => p.matcher.test(key))
