@@ -82,7 +82,7 @@ export default function (
 	)
 	const code = keyed.code ?? source
 	const specifiers =
-		source.includes("arktype") || source.includes("@ark/type") ?
+		source.includes("arktype") ?
 			runtimeImportsOf(source, this.resourcePath)
 		:	[]
 	if (!specifiers.length || !this.getResolve || !this.async) return code

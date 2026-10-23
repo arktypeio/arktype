@@ -1400,13 +1400,13 @@ import ark = require("arktype")
 export const User = type({ name: "string" })
 export const load = async () => (await import("arktype")).type
 const require = createRequire(import.meta.url)
-const { scope } = require("@ark/type")
+const { scope } = require("arktype")
 export const configure = async () => (await import("arktype/config")).configure
 await import("arktype")`)
 			).snap([
 				'/main.ts:3:1  import ark = require("arktype") loads arktype, which a standalone build replaces with arktype/runtime',
 				'/main.ts:5:40  import("arktype") loads arktype, which a standalone build replaces with arktype/runtime',
-				'/main.ts:7:19  require("@ark/type") loads arktype, which a standalone build replaces with arktype/runtime'
+				'/main.ts:7:19  require("arktype") loads arktype, which a standalone build replaces with arktype/runtime'
 			])
 		})
 

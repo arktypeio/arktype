@@ -95,7 +95,6 @@ import {
 import {
 	allowUnsafeHint,
 	arkPackageName,
-	arktypeEntryOf,
 	dependencyOf,
 	readsNodes,
 	runtimeVariantOf,
@@ -1057,7 +1056,7 @@ export class Precompiler {
 			(statement): statement is ImportDeclaration =>
 				statement.type === "ImportDeclaration" &&
 				statement.importKind !== "type" &&
-				(arktypeEntryOf(statement.source.value) === "arktype" ||
+				(statement.source.value === "arktype" ||
 					statement.specifiers.some(specifier => {
 						const binding = module.scopes.bindingsById.get(specifier.local)
 						return !!binding && this.definesArk(binding, module)
@@ -1530,7 +1529,7 @@ export class Precompiler {
 		for (const statement of module.program.body) {
 			if (
 				statement.type !== "ImportDeclaration" ||
-				arktypeEntryOf(statement.source.value) !== "arktype" ||
+				statement.source.value !== "arktype" ||
 				statement.importKind === "type"
 			)
 				continue
@@ -3180,7 +3179,7 @@ export class Precompiler {
 			return reached instanceof SourceModule ?
 					reached.program.body.flatMap(statement =>
 						statement.type === "ImportDeclaration" ?
-							[arktypeEntryOf(statement.source.value)]
+							[statement.source.value]
 						:	[]
 					)
 				:	[]
@@ -3803,7 +3802,7 @@ export class Precompiler {
 			if (
 				source?.type === "Literal" &&
 				typeof source.value === "string" &&
-				arktypeEntryOf(source.value) === "arktype" &&
+				source.value === "arktype" &&
 				!isDiscarded(node)
 			) {
 				result.push(
@@ -4071,10 +4070,7 @@ export class Precompiler {
 	): boolean {
 		if (binding?.kind !== "import") return false
 		const target = this.graph.importOf(binding, module)
-		return (
-			target.kind === "arktypeNamespace" &&
-			arktypeEntryOf(target.specifier) === "arktype"
-		)
+		return target.kind === "arktypeNamespace" && target.specifier === "arktype"
 	}
 
 	// what may throw at runtime fails unless allowUnsafe is set

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Install `@ark/fast-check`, not `@arktype/fast-check`
+
+`@arktype/fast-check`, which published the same package, is no longer published.
+
 ### Take `arktype` as a peer dependency
 
 `arktype` was a dependency at an exact version, so an app on any other version installed a second copy. It's now a peer dependency at the version released with it.

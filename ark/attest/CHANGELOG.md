@@ -18,6 +18,7 @@ Runtime benches now run in a loop compiled for each bench, after a warmup of 500
 - `.completions()` under TypeScript 7 includes completions of strings containing punctuation, like a JSON Schema `$ref` path. TypeScript 7 gives each a filter text of only its last word, which didn't match the prefix, so they were dropped and `.completions()` returned `{}`.
 - `getChecker()` returns the checker attest analyzes with, so a test can branch on output that differs between them.
 - `attest trace` and `attest stats` check projects with `composite: true`. They passed tsc `--incremental false`, which such a project rejects (TS6379), so since TypeScript 5.6 they skipped type checking and reported 0 instantiations ([#1306](https://github.com/arktypeio/arktype/issues/1306)).
+- `@arktype/attest`, which published the same package, is no longer published. Install `@ark/attest`.
 
 ## 0.58.0
 

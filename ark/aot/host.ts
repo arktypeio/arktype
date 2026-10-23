@@ -190,24 +190,17 @@ export const appendSourceMap = (
 		`${code}\n//# sourceMappingURL=data:application/json;base64,${Buffer.from(JSON.stringify(map)).toString("base64")}`
 	:	code
 
-// arktype's entries, which it also publishes as @ark/type
-export const runtimeSpecifiers = ["arktype", "@ark/type"].flatMap(name =>
-	["", "/codecs", "/config", "/errors", "/mutatesInput"].map(
-		entry => name + entry
-	)
-)
-
-// e.g. "arktype/config" for "@ark/type/config", the same package's entry
-export const arktypeEntryOf = (specifier: string): string =>
-	specifier.replace(/^@ark\/type(?=\/|$)/, "arktype")
-
-// what arktype/runtime loads, and arktype's other name
-export const runtimePackages = [
+// arktype's entries
+export const runtimeSpecifiers = [
 	"arktype",
-	"@ark/type",
-	"@ark/schema",
-	"@ark/util"
+	"arktype/codecs",
+	"arktype/config",
+	"arktype/errors",
+	"arktype/mutatesInput"
 ]
+
+// what arktype/runtime loads
+export const runtimePackages = ["arktype", "@ark/schema", "@ark/util"]
 
 // shadow mode keeps arktype, resolving only its config to the runtime
 export const resolvesToRuntime = (
@@ -215,7 +208,7 @@ export const resolvesToRuntime = (
 	opts: PrecompileOptions | undefined
 ): boolean =>
 	opts?.runtime !== "arktype" &&
-	!(opts?.shadow && arktypeEntryOf(specifier) !== "arktype/config")
+	!(opts?.shadow && specifier !== "arktype/config")
 
 // a copy of @ark/schema's runtime with errors of its own
 export type RuntimeVariant = "none" | "lean" | "none-lean"

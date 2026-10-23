@@ -2843,6 +2843,10 @@ A.in.expression
 B.in.expression
 ```
 
+### Install `arktype`, not `@ark/type`
+
+arktype publishes under one name. `@ark/type`, the same package under another name, is deprecated at its last version, and `@arktype/type` is no longer published. Replace each `@ark/type` import with `arktype`, and `@ark/type/config` with `arktype/config`.
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`

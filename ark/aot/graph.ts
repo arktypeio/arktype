@@ -82,11 +82,7 @@ const arktypeNamespacesBySpecifier: Record<string, object> =
 			arktype,
 			"arktype/codecs": arktypeCodecs,
 			"arktype/config": arktypeConfig,
-			"@ark/type": arktype,
-			"@ark/type/codecs": arktypeCodecs,
-			"@ark/type/config": arktypeConfig,
-			arkregex,
-			"@ark/regex": arkregex
+			arkregex
 		},
 		null
 	)

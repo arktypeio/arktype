@@ -484,3 +484,13 @@ Runtime benches run in a loop compiled for each bench, after a warmup, so their 
 - A bench should return the result it computes, so V8 can't drop the work. attest warns when a bench returns `undefined`.
 - `until.count` and `until.ms` bound the samples taken after the warmup. Before, they counted sets of 1000 calls and time from the bench's start.
 - Instantiation counts include evaluating the type a bench returns as fully as displaying it would. Re-record type benches whose results weren't already fully evaluated.
+
+## Package names
+
+Each package publishes under one name. The others, which published the same code, are no longer published, and `@ark/type` and `@ark/regex` are deprecated on npm, so installing one warns with the name to use:
+
+| Install       | Instead of                                |
+| ------------- | ----------------------------------------- |
+| `arktype`     | `@ark/type`, `@arktype/type`              |
+| `arkregex`    | `@ark/regex`, `@arktype/regex`            |
+| `@ark/<name>` | `@arktype/<name>`, e.g. `@arktype/schema` |

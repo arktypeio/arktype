@@ -239,7 +239,7 @@ await build({
 
 Rsbuild takes `precompile.rsbuild()`, Bun's bundler `precompile.bun()` (Bun 1.2.22 or later) and Farm `precompile.farm()`.
 
-By default, each definition becomes a standalone validator and `arktype`, or `@ark/type`, resolves to `arktype/runtime`. A dependency that imports `arktype` gets `arktype/runtime` too, where defining a Type throws, so the build fails for each such package unless it [opts in](https://arktype.io/docs/precompile/advanced#libraries).
+By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`. A dependency that imports `arktype` gets `arktype/runtime` too, where defining a Type throws, so the build fails for each such package unless it [opts in](https://arktype.io/docs/precompile/advanced#libraries).
 
 ## Next.js
 
@@ -263,7 +263,7 @@ export default {
 }
 ```
 
-A program importing arktype by its other name, `@ark/type`, aliases `@ark/type` and its entries the same way. The loader fails a module whose `arktype` imports resolve otherwise, naming the aliases to add. With `runtime: "arktype"` or `shadow: true`, leave the aliases out, since the loader fails a module they resolve to the runtime. It reruns when a module's local imports change, and applies a changed configuration once the dev server restarts.
+The loader fails a module whose `arktype` imports resolve otherwise, naming the aliases to add. With `runtime: "arktype"` or `shadow: true`, leave the aliases out, since the loader fails a module they resolve to the runtime. It reruns when a module's local imports change, and applies a changed configuration once the dev server restarts.
 
 With webpack (`next build --webpack`), add the plugin:
 
