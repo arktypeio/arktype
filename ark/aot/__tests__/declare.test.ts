@@ -241,8 +241,10 @@ export type Owned = {
 };`)
 	})
 
-	it("keeps TypeScript's declaration for a local", () => {
-		attest(declarationsOf("shapes.d.ts", "Held", "Sessions"))
+	it("keeps TypeScript's declaration for a local, an expanding shape or an annotation", () => {
+		attest(
+			declarationsOf("shapes.d.ts", "Held", "Sessions", "Expanded", "Annotated")
+		)
 			.snap(`export declare const Held: import("arktype/internal/variants/object.ts").ObjectType<{
     session: Session;
 }, {}>;
@@ -256,18 +258,9 @@ export declare const Sessions: import("arktype/internal/variants/object.ts").Obj
         session: Session;
         next?: /*elided*/ any | undefined;
     };
-}>;`)
-	})
-
-	it("keeps TypeScript's declaration for an expanding shape", () => {
-		attest(declarationsOf("shapes.d.ts", "Expanded")).snap(
-			'export declare const Expanded: import("arktype/internal/variants/object.ts").ObjectType<Expanding<string>, {}>;'
-		)
-	})
-
-	it("declares an annotated const as annotated", () => {
-		attest(declarationsOf("shapes.d.ts", "Annotated"))
-			.snap(`export declare const Annotated: BaseType<{
+}>;
+export declare const Expanded: import("arktype/internal/variants/object.ts").ObjectType<Expanding<string>, {}>;
+export declare const Annotated: BaseType<{
     a: string;
 }>;`)
 	})
@@ -333,58 +326,65 @@ export type Elements = [string, number?];
 `)
 	})
 
-	it("lays declarations out beside their sources", () => {
-		attest(specifiersByLayout("tsconfig.json")).snap({
-			errors: 0,
-			specifiersByFile: {
-				"src/index.d.ts": ["arktype", "../~arktype.js"],
-				"src/nested/accounts.d.ts": ["arktype", "../../~arktype.js"],
-				"~arktype.d.ts": [
-					"./src/nested/accounts.js",
-					"./src/nested/accounts.js"
-				]
+	it("lays declarations out as each tsconfig does", () => {
+		attest(
+			[
+				"tsconfig.json",
+				"tsconfig.outDir.json",
+				"tsconfig.declarationDir.json",
+				"tsconfig.composite.json"
+			].map(specifiersByLayout)
+		).snap([
+			// beside their sources
+			{
+				errors: 0,
+				specifiersByFile: {
+					"src/index.d.ts": ["arktype", "../~arktype.js"],
+					"src/nested/accounts.d.ts": ["arktype", "../../~arktype.js"],
+					"~arktype.d.ts": [
+						"./src/nested/accounts.js",
+						"./src/nested/accounts.js"
+					]
+				}
+			},
+			// in outDir, without rootDir
+			{
+				errors: 1,
+				specifiersByFile: {
+					"out/src/index.d.ts": ["arktype", "../~arktype.js"],
+					"out/src/nested/accounts.d.ts": ["arktype", "../../~arktype.js"],
+					"out/~arktype.d.ts": [
+						"./src/nested/accounts.js",
+						"./src/nested/accounts.js"
+					]
+				}
+			},
+			// in declarationDir
+			{
+				errors: 0,
+				specifiersByFile: {
+					"types/index.d.ts": ["arktype", "./~arktype.js"],
+					"types/nested/accounts.d.ts": ["arktype", "../~arktype.js"],
+					"types/~arktype.d.ts": [
+						"./nested/accounts.js",
+						"./nested/accounts.js"
+					]
+				}
+			},
+			// a composite project's
+			{
+				errors: 0,
+				specifiersByFile: {
+					"out/src/index.d.ts": ["arktype", "../~arktype.js"],
+					"out/src/nested/accounts.d.ts": ["arktype", "../../~arktype.js"],
+					"out/~arktype.d.ts": [
+						"./src/nested/accounts.js",
+						"./src/nested/accounts.js"
+					]
+				}
 			}
-		})
-	})
-
-	it("lays declarations out in outDir without rootDir", () => {
-		attest(specifiersByLayout("tsconfig.outDir.json")).snap({
-			errors: 1,
-			specifiersByFile: {
-				"out/src/index.d.ts": ["arktype", "../~arktype.js"],
-				"out/src/nested/accounts.d.ts": ["arktype", "../../~arktype.js"],
-				"out/~arktype.d.ts": [
-					"./src/nested/accounts.js",
-					"./src/nested/accounts.js"
-				]
-			}
-		})
-	})
-
-	it("lays declarations out in declarationDir", () => {
-		attest(specifiersByLayout("tsconfig.declarationDir.json")).snap({
-			errors: 0,
-			specifiersByFile: {
-				"types/index.d.ts": ["arktype", "./~arktype.js"],
-				"types/nested/accounts.d.ts": ["arktype", "../~arktype.js"],
-				"types/~arktype.d.ts": ["./nested/accounts.js", "./nested/accounts.js"]
-			}
-		})
-	})
-
-	it("lays a composite project's declarations out from its tsconfig", () => {
-		attest(specifiersByLayout("tsconfig.composite.json")).snap({
-			errors: 0,
-			specifiersByFile: {
-				"out/src/index.d.ts": ["arktype", "../~arktype.js"],
-				"out/src/nested/accounts.d.ts": ["arktype", "../../~arktype.js"],
-				"out/~arktype.d.ts": [
-					"./src/nested/accounts.js",
-					"./src/nested/accounts.js"
-				]
-			}
-		})
-	})
+		])
+	}).timeout(60000)
 
 	it("refuses a module declared where the shapes are", () => {
 		const collision = fromHere("declaredCollision")
@@ -424,23 +424,18 @@ export type Elements = [string, number?];
 		])
 	})
 
-	it("prints the CLI's usage for an option it doesn't take", () => {
-		const cli = runCli(layouts, "--watch")
+	it("prints the CLI's usage for --help or an option it doesn't take", () => {
+		const help = runCli(layouts, "--help")
+		const watch = runCli(layouts, "--watch")
 		// the first line is node:util's parseArgs message
 		attest([
-			cli.status,
-			cli.stderr.startsWith("Unknown option '--watch'"),
-			cli.stderr.includes("\nUsage: arktype-precompile --check")
-		]).equals([2, true, true])
-	})
-
-	it("prints the CLI's usage with --help", () => {
-		const cli = runCli(layouts, "--help")
-		attest([
-			cli.status,
-			cli.stdout.startsWith("Usage: arktype-precompile --check"),
-			cli.stderr
-		]).equals([0, true, ""])
+			help.status,
+			help.stdout.startsWith("Usage: arktype-precompile --check"),
+			help.stderr,
+			watch.status,
+			watch.stderr.startsWith("Unknown option '--watch'"),
+			watch.stderr.includes("\nUsage: arktype-precompile --check")
+		]).equals([0, true, "", 2, true, true])
 	})
 
 	it("CLI declarations read as their sources", () => {

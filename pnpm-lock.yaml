@@ -462,9 +462,15 @@ importers:
         specifier: workspace:*
         version: link:../sets
     devDependencies:
+      '@ark/fast-check':
+        specifier: workspace:*
+        version: link:../fast-check
       arktype:
         specifier: workspace:*
         version: link:../type
+      fast-check:
+        specifier: 3.23.2
+        version: 3.23.2
 
   ark/regex:
     dependencies:
@@ -563,6 +569,9 @@ importers:
       ajv:
         specifier: 8.20.0
         version: 8.20.0
+      fast-check:
+        specifier: 3.23.2
+        version: 3.23.2
 
   ark/themes:
     devDependencies:

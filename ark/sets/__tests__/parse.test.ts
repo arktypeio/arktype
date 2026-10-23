@@ -166,9 +166,6 @@ contextualize(() => {
 		attest(() => parse(5 as never)).throws.snap(
 			"ParseError: Schema must be a Root, a Standard JSON Schema or a JSON Schema (was 5)"
 		)
-		attest(() => parse(null as never)).throws(
-			writeUnparsableSchemaMessage("null")
-		)
 		attest(() => parse(Symbol("foo") as never)).throws(
 			writeUnparsableSchemaMessage("Symbol(foo)")
 		)

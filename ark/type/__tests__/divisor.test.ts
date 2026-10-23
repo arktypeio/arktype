@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { intrinsic, writeIndivisibleMessage } from "@ark/schema"
+import {
+	intrinsic,
+	writeIndivisibleMessage,
+	writeNonIntegerDivisorMessage
+} from "@ark/schema"
 import { type } from "arktype"
 import { writeInvalidDivisorMessage } from "arktype/internal/parser/shift/operator/divisor.ts"
 
@@ -46,6 +50,12 @@ contextualize(() => {
 
 		it("fails at runtime on non-integer divisor", () => {
 			attest(() => type("number%2.3")).throws(writeInvalidDivisorMessage("2.3"))
+		})
+
+		it("non-integer chained divisor", () => {
+			attest(() => type("number").divisibleBy(1.5)).throws(
+				writeNonIntegerDivisorMessage(1.5)
+			)
 		})
 
 		it("non-numeric divisor", () => {

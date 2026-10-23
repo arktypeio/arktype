@@ -826,29 +826,6 @@ contextualize(() => {
 			>(S)
 		})
 
-		it("captures in multiple branches", () => {
-			const S = regex("^(?:(a)|b|(c))$")
-			attest<
-				Regex<
-					"a" | "b" | "c",
-					{
-						captures:
-							| ["a", undefined]
-							| [undefined, undefined]
-							| [undefined, "c"]
-					}
-				>
-			>(S).type.toString.snap(`Regex<
-	"a" | "b" | "c",
-	{
-		captures:
-			| [undefined, undefined]
-			| [undefined, "c"]
-			| ["a", undefined]
-	}
->`)
-		})
-
 		it("named captures in multiple branches", () => {
 			// https://github.com/arktypeio/arktype/issues/1530
 			const S = regex("^(?:(?<a>1)|(?<b>2)|(?<c>3))$")

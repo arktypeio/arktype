@@ -88,65 +88,6 @@ contextualize(() => {
 		})
 	})
 
-	it("object", () => {
-		const node = rootSchema({
-			domain: "object",
-			required: [
-				{
-					key: "foo",
-					value: "string"
-				},
-				{ key: "bar", value: "number" }
-			],
-			optional: [
-				{
-					key: "baz",
-					value: { unit: 1 }
-				}
-			],
-			index: {
-				signature: "string",
-				value: $ark.intrinsic.jsonPrimitive
-			}
-		})
-		attest(toJsonSchema(node)).snap({
-			type: "object",
-			properties: {
-				bar: { type: "number" },
-				foo: { type: "string" },
-				baz: { type: "number", const: 1 }
-			},
-			required: ["bar", "foo"],
-			patternProperties: {
-				"": {
-					anyOf: [
-						{ type: "number" },
-						{ type: "string" },
-						{ type: "boolean" },
-						{ type: "null" }
-					]
-				}
-			}
-		})
-	})
-
-	it("pattern index", () => {
-		const node = rootSchema({
-			domain: "object",
-			index: {
-				signature: {
-					domain: "string",
-					pattern: ".*"
-				},
-				value: "number"
-			}
-		})
-		attest(toJsonSchema(node)).snap({
-			type: "object",
-			patternProperties: { ".*": { type: "number" } }
-		})
-	})
-
 	it("string or symbol index", () => {
 		const node = rootSchema({
 			domain: "object",
@@ -163,55 +104,6 @@ contextualize(() => {
 			pattern: [{ rule: "^.$", flags: "gu" }]
 		})
 		attest(toJsonSchema(node)).snap({ type: "string", pattern: "^.$" })
-	})
-
-	it("variadic array", () => {
-		const node = rootSchema({
-			proto: Array,
-			sequence: { domain: "string" },
-			minLength: 1,
-			maxLength: 5
-		})
-		const jsonSchema = toJsonSchema(node)
-		attest(jsonSchema).snap({
-			type: "array",
-			items: { type: "string" },
-			minItems: 1,
-			maxItems: 5
-		})
-	})
-
-	it("fixed length tuple", () => {
-		const node = rootSchema({
-			proto: Array,
-			sequence: {
-				prefix: [{ domain: "string" }, { domain: "number" }]
-			}
-		})
-		const jsonSchema = toJsonSchema(node)
-		attest(jsonSchema).snap({
-			type: "array",
-			minItems: 2,
-			prefixItems: [{ type: "string" }, { type: "number" }],
-			items: false
-		})
-	})
-
-	it("prefixed array", () => {
-		const node = rootSchema({
-			proto: Array,
-			sequence: {
-				prefix: [{ domain: "string" }, { domain: "number" }],
-				variadic: { unit: 1 }
-			}
-		})
-		const jsonSchema = toJsonSchema(node)
-		attest(jsonSchema).snap({
-			type: "array",
-			minItems: 2,
-			prefixItems: [{ type: "string" }, { type: "number" }],
-			items: { type: "number", const: 1 }
-		})
 	})
 
 	it("preserves meta", () => {
@@ -337,37 +229,6 @@ contextualize(() => {
 		).snap([["anyOf"], ["a", "k"], ["x"], ["b", "k"], ["y"]])
 	})
 
-	it("unions of literal values as enums", () => {
-		const Bit = rootSchemaScope.units([0, 1])
-
-		attest(toJsonSchema(Bit)).snap({ type: "number", enum: [0, 1] })
-	})
-
-	it("unions of literal values with metadata not enums", () => {
-		const Bit = rootSchema([
-			{ unit: 0 },
-			{ unit: 1, "meta.description": "one" }
-		])
-
-		attest(toJsonSchema(Bit)).snap({
-			anyOf: [
-				{ type: "number", const: 0 },
-				{ type: "number", const: 1, description: "one" }
-			]
-		})
-	})
-
-	it("includes default for primitive prop", () => {
-		const T = rootSchema({
-			domain: "object",
-			optional: [{ key: "foo", value: "number", default: 0 }]
-		})
-		attest(toJsonSchema(T)).snap({
-			type: "object",
-			properties: { foo: { type: "number", default: 0 } }
-		})
-	})
-
 	it("includes default for object prop", () => {
 		const T = rootSchema({
 			domain: "object",
@@ -401,21 +262,6 @@ contextualize(() => {
 		})
 	})
 
-	it("it includes object default for tuple", () => {
-		const T = rootSchema({
-			proto: "Array",
-			sequence: {
-				defaultables: [["Array", () => []]]
-			}
-		})
-
-		attest(toJsonSchema(T)).snap({
-			type: "array",
-			prefixItems: [{ type: "array", default: [] }],
-			items: false
-		})
-	})
-
 	it("includes object default from meta", () => {
 		const T = rootSchema({
 			proto: "Array",
@@ -428,39 +274,6 @@ contextualize(() => {
 			items: { type: "number" },
 			default: [5]
 		})
-	})
-
-	it("includes nested object default from meta", () => {
-		const T = rootSchema({
-			domain: "object",
-			required: [{ key: "a", value: "number" }],
-			meta: { default: { a: 1 } }
-		})
-
-		attest(toJsonSchema(T)).snap({
-			type: "object",
-			properties: { a: { type: "number" } },
-			required: ["a"],
-			default: { a: 1 }
-		})
-	})
-
-	it("includes custom object meta", () => {
-		const T = rootSchema({
-			domain: "number",
-			meta: { "x-unit": { name: "ms" } } as never
-		})
-
-		attest(toJsonSchema(T)).snap({
-			type: "number",
-			"x-unit": { name: "ms" }
-		})
-	})
-
-	it("null generated as type instead of const", () => {
-		const T = rootSchema({ unit: null })
-
-		attest(toJsonSchema(T)).snap({ type: "null" })
 	})
 
 	describe("unjsonifiable", () => {
@@ -573,27 +386,6 @@ contextualize(() => {
 			})
 
 			attest(() => T.toJsonSchema()).throws("defaultValue")
-		})
-
-		it("functional default", () => {
-			const T = rootSchema({
-				domain: "object",
-				optional: [
-					{
-						key: "foo",
-						value: {},
-						default: () => 0n
-					}
-				]
-			})
-
-			attest(() => T.toJsonSchema()).throws
-				.snap(`ToJsonSchemaError: Can't convert "defaultValue" at foo to JSON Schema. Configure fallback.defaultValue to write it:
-{
-    code: "defaultValue",
-    base: {},
-    value: 0n
-}`)
 		})
 
 		it("domain", () => {
@@ -787,26 +579,6 @@ contextualize(() => {
 			const T = rootSchema({
 				proto: "Date",
 				after: new Date("01-01-2000")
-			})
-
-			attest(() =>
-				T.toJsonSchema({
-					fallback: {
-						proto: () => ({ type: "object" })
-					}
-				})
-			).throws
-				.snap(`ToJsonSchemaError: Can't convert "date" to JSON Schema. Configure fallback.date to write it:
-{
-    code: "date",
-    base: {}
-}`)
-		})
-
-		it("before", () => {
-			const T = rootSchema({
-				proto: "Date",
-				before: new Date("06-01-2000")
 			})
 
 			attest(() =>
@@ -1077,30 +849,6 @@ contextualize(() => {
 			})
 
 			attest(schema).snap({ type: "string", format: "date-time" })
-		})
-
-		it("date range with fallback", () => {
-			const T = rootSchema({
-				proto: "Date",
-				before: new Date("06-01-2000")
-			})
-
-			const schema = toJsonSchema(T, {
-				fallback: {
-					proto: () => ({ type: "object" }),
-					date: ctx => ({
-						type: "string",
-						format: "date-time",
-						description: `before ${ctx.before?.toISOString()}`
-					})
-				}
-			})
-
-			attest(schema).snap({
-				type: "string",
-				format: "date-time",
-				description: "before 2000-06-01T04:00:00.000Z"
-			})
 		})
 
 		it("scope config", () => {

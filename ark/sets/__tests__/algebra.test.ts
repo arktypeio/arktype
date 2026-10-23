@@ -9,6 +9,14 @@ import {
 	parse,
 	union
 } from "arksets"
+import {
+	array,
+	constantFrom,
+	dictionary,
+	letrec,
+	oneof,
+	sample
+} from "fast-check"
 import { standardSchema } from "./utils.ts"
 
 // what arktype parses { name: "string", "age?": "number.integer >= 0" } to
@@ -17,6 +25,20 @@ const User = rootSchema({
 	required: [{ key: "name", value: "string" }],
 	optional: [{ key: "age", value: { domain: "number", divisor: 1, min: 0 } }]
 })
+
+// JSON values built from the few keys, strings and numbers the schemas below
+// distinguish, so most land near a boundary
+const { value } = letrec(tie => ({
+	value: oneof(
+		{ depthSize: "small" },
+		constantFrom(null, true, -1, 0, 1, 1.5, 2, 3),
+		constantFrom("", "a", "ab", "b"),
+		array(tie("value"), { maxLength: 3 }),
+		dictionary(constantFrom("a", "b", "kind"), tie("value"), { maxKeys: 3 })
+	)
+}))
+
+const sampled = sample(value, { numRuns: 200, seed: 1 })
 
 contextualize(() => {
 	it("relates schemas across formats", () => {
@@ -212,5 +234,61 @@ contextualize(() => {
 		attest(
 			isSubset({ type: "array", maxItems: 1 }, { uniqueItems: true })
 		).equals(false)
+	})
+
+	it("agrees with the values it relates", () => {
+		const schemas = [
+			{ type: "string" },
+			{ type: "string", minLength: 2 },
+			{ pattern: "^a" },
+			{ enum: ["a", 1, null] },
+			{ type: "integer", minimum: 1 },
+			{ exclusiveMaximum: 2 },
+			{ multipleOf: 1.5 },
+			{ type: "array", items: { type: "number" } },
+			{ prefixItems: [{ type: "string" }], items: false },
+			{ minItems: 2 },
+			{ uniqueItems: true },
+			{ type: "object" },
+			{ required: ["a"] },
+			{ properties: { a: { type: "number" } }, additionalProperties: false },
+			{ properties: { kind: { const: "a" } }, required: ["kind"] },
+			{ anyOf: [{ type: "string" }, { type: "null" }] },
+			{ not: { type: "string" } },
+			User,
+			rootSchema("number"),
+			rootSchema({ unit: "a" })
+		]
+		const proven = { subsets: 0, disjoint: 0 }
+		const contradictions: string[] = []
+		for (const l of schemas) {
+			for (const r of schemas) {
+				const L = parse(l)
+				const R = parse(r)
+				const both = intersect(l, r)
+				const either = union(l, r)
+				const subset = isSubset(l, r)
+				const disjoint = isDisjoint(l, r)
+				if (subset) proven.subsets++
+				if (disjoint) proven.disjoint++
+				for (const v of sampled) {
+					const inL = L.allows(v)
+					const inR = R.allows(v)
+					if (
+						both.allows(v) !== (inL && inR) ||
+						either.allows(v) !== (inL || inR) ||
+						(subset && inL && !inR) ||
+						(disjoint && inL && inR)
+					) {
+						contradictions.push(
+							`${L.expression} ~ ${R.expression}: ${JSON.stringify(v)}`
+						)
+					}
+				}
+			}
+		}
+		attest(contradictions).equals([])
+		// what it can prove, so a relation it stops proving is caught
+		attest(proven).snap({ subsets: 94, disjoint: 66 })
 	})
 })
