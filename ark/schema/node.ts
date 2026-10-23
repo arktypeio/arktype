@@ -857,7 +857,12 @@ export abstract class BaseNode<
 
 	equals(r: unknown): boolean {
 		const rNode: BaseNode = isNode(r) ? r : this.$.parseDefinition(r)
-		if (this === rNode || this.innerHash === rNode.innerHash) return true
+		// a hash includes its node's kind, so nodes of different kinds aren't hashed
+		if (
+			this === rNode ||
+			(this.kind === rNode.kind && this.innerHash === rNode.innerHash)
+		)
+			return true
 		return (
 			(this.includesAlias || rNode.includesAlias) &&
 			isResolutionFinal() &&
