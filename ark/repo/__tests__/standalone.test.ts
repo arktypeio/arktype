@@ -346,6 +346,73 @@ contextualize(() => {
 		attest(T.allows({ [key]: "x", c: 1 })).equals(true)
 	})
 
+	describe("checkers", () => {
+		it("are what a size build writes", () => {
+			const { code } = precompileStandalone(
+				{ T: type({ name: "1 <= string <= 100", "tags?": "string[]" }) },
+				{ optimize: "size" }
+			)
+			attest(
+				code.match(/runtime\.(props|intersection|maxLength|minLength)\(/g)
+			).equals([
+				"runtime.intersection(",
+				"runtime.props(",
+				"runtime.intersection(",
+				"runtime.maxLength(",
+				"runtime.minLength("
+			])
+		})
+
+		it("describe what each checks from its rule", async () => {
+			const { T } = await load(
+				{
+					T: type({
+						name: "1 <= string <= 100",
+						role: "'admin' | 'guest' | 'member'",
+						"age?": "number.integer >= 0",
+						id: "string.uuid | null"
+					})
+				},
+				{ optimize: "size" }
+			)
+			attest(T({ name: "", role: "owner", age: -1.5, id: 5 }).summary)
+				.snap(`id must be a string or null
+name must be non-empty
+role must be "admin", "guest" or "member"
+age must be an integer
+age must be non-negative`)
+		})
+
+		it("copy an instance whose class writes its own tag", async () => {
+			class Tagged {
+				get [Symbol.toStringTag]() {
+					return "Tagged"
+				}
+			}
+			const { T } = await load(
+				{ T: type({ k: "string = 'x'" }) },
+				{ optimize: "size" }
+			)
+			const data: any = new Tagged()
+			const out = T(data)
+			attest([out === data, "k" in data, out instanceof Tagged, out.k]).equals([
+				false,
+				false,
+				true,
+				"x"
+			])
+		})
+
+		it("write a builtin's default in place", async () => {
+			const { T } = await load(
+				{ T: type.instanceOf(Map).and({ k: "string = 'x'" }) },
+				{ optimize: "size" }
+			)
+			const data: any = new Map()
+			attest([T(data) === data, data.k]).equals([true, "x"])
+		})
+	})
+
 	describe("literals reading as the code around them", () => {
 		const builds: StandaloneOptions[] = [
 			{},
@@ -3569,6 +3636,7 @@ export default shared`).js
 			"schema/shared/traversal.ts",
 			"schema/shared/utils.ts",
 			"schema/structure/shared.ts",
+			"type/checkers.ts",
 			"type/entry.ts",
 			"type/fn.ts",
 			"type/keywords/functions.ts",

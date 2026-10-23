@@ -86,7 +86,12 @@ import {
 	type IssueContext,
 	type Writer
 } from "./standalone/sites.ts"
-import { refNameOf, rootUnitsOf, unitOf } from "./standalone/compilers.ts"
+import {
+	isChecker,
+	refNameOf,
+	rootUnitsOf,
+	unitOf
+} from "./standalone/compilers.ts"
 import {
 	encodeKey,
 	holeNameMarker,
@@ -1869,7 +1874,21 @@ ${writeFunction(
 			) ?
 				applied
 			:	undefined
-		const written = attributes.length ? [`{ ${attributes.join(", ")} }`] : []
+		const written =
+			// a size build's creator defaults the attributes of a validator
+			// with only an empty meta
+			(
+				this.baking.shortest &&
+				!isTemplate &&
+				!this.baking.checksTypes &&
+				!onFail &&
+				!isCreatedByRuntime(members, this.baking) &&
+				attributes.length === 1 &&
+				attributes[0] === "meta: runtime.emptyMeta"
+			) ?
+				[]
+			: attributes.length ? [`{ ${attributes.join(", ")} }`]
+			: []
 		const createsWith =
 			!isTemplate && ownsValidator && isCreatedByRuntime(members, this.baking)
 		const args = [
@@ -1987,7 +2006,10 @@ ${writeFunction(
 			...(ownsValidator || makes ? ["make", "parts"]
 			: applier ? [applier.params]
 			: ["rootApply", "allows"]),
-			...(hasAttributes ? ["attributes"] : []),
+			...(!hasAttributes ? []
+			: this.baking.shortest && keepsMeta ?
+				["attributes = { meta: runtime.emptyMeta }"]
+			:	["attributes"]),
 			...(this.baking.checksTypes ? ["id", "holes = []"] : []),
 			...(!configured || keepsMeta ? []
 			: this.baking.readsConfig ?
@@ -2322,7 +2344,9 @@ ${writeFunction(
 				(strategy === "transform" &&
 					!root.includesMorph &&
 					!(root.hasKind("union") && !root.discriminantJit)))
-		const transforms = strategy === "transform"
+		// a checker transforms by its t, so each is created alike
+		const checks = isChecker(root, this.variantOf(root))
+		const transforms = strategy === "transform" && !checks
 		const [flat, traversals] =
 			isArrow && appliesErrors && !root.allowsNeedsCtx ?
 				this.compactPartsOf(root, transforms ? [0, 1, 2] : [0, 1], asValidator)
@@ -2346,7 +2370,10 @@ ${writeFunction(
 						: ""
 					}${transforms ? ", transform" : ""}]`
 				:	`{ 0: allows${apply === "apply" ? ", 1: apply" : ""}${transforms ? ", 2: transform" : ""} }`
-			const valid = transforms ? "transform(data)" : "data"
+			const valid =
+				checks ? "allows.t?.(data) ?? data"
+				: transforms ? "transform(data)"
+				: "data"
 			const parts = flat ? [...new Set(flat)].join(", ") : traversals
 			const elements =
 				asValidator && !transforms && this.elementTraversalsOf(root)

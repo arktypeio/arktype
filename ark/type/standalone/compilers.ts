@@ -20,6 +20,7 @@ import {
 } from "@ark/schema"
 import { hashOf, throwInternalError } from "@ark/util"
 import { runtimeKeyOf } from "../standalone.ts"
+import { combines, writeCombinator } from "./combinators.ts"
 import {
 	isInlineSite,
 	isKeyword,
@@ -45,6 +46,11 @@ class StandaloneCompiler extends TraversalCompiler {
 	// a unit is named for its content as compiled without the gates and size
 	// forms that follow from it
 	readonly naming: boolean = this.linkage.unit === undefined
+
+	// whether a node's Apply is its Allows, as a unified build writes it
+	unifies(node: BaseNode): boolean {
+		return unifies(node)
+	}
 
 	// named for its unit, so units can share a scope
 	override ref(value: object | symbol): string {
@@ -211,7 +217,7 @@ const compileRead = (parent: string, k: PropertyKey): string =>
 		`Array.isArray(${parent})`
 	:	`Object(${parent}) === ${parent}`
 
-interface Bases {
+export interface Bases {
 	nodes: nodeOfKind<"domain" | "proto">[]
 	// what arktype's union of their errors expects
 	site: object
@@ -221,7 +227,7 @@ const basesByUnion = new WeakMap<UnionNode, Bases | null>()
 
 // the basis each branch checks first, where data failing them all fails
 // each branch there, so arktype describes the union by them
-const basesOf = (node: UnionNode): Bases | undefined => {
+export const basesOf = (node: UnionNode): Bases | undefined => {
 	let bases = basesByUnion.get(node)
 	if (bases === undefined) basesByUnion.set(node, (bases = findBases(node)))
 	return bases ?? undefined
@@ -274,7 +280,7 @@ class InPlaceFirstIssueCompiler extends InPlaceCompiler {
 const unifiedByNode = new WeakMap<BaseNode, boolean>()
 
 // whether a node's Apply reads ctx only to report, so called without one it's its Allows
-const unifies = (node: BaseNode): boolean => {
+export const unifies = (node: BaseNode): boolean => {
 	let unified = unifiedByNode.get(node)
 	if (unified === undefined) {
 		unified =
@@ -302,7 +308,13 @@ class UnifiedCompiler extends StandaloneCompiler {
 		const node = this.linkage.refsById[id]
 		return super.referenceToId(
 			id,
-			node && unifies(node) ? { ...opts, kind: "Allows" } : opts
+			(
+				node &&
+					(opts?.kind ?? this.traversalKind) === "Apply" &&
+					this.unifies(node)
+			) ?
+				{ ...opts, kind: "Allows" }
+			:	opts
 		)
 	}
 
@@ -311,7 +323,7 @@ class UnifiedCompiler extends StandaloneCompiler {
 		kind: TraversalKind = this.traversalKind
 	): boolean {
 		return (
-			(kind !== "Allows" || !unifies(node)) &&
+			(kind !== "Allows" || !this.unifies(node)) &&
 			super.requiresContextFor(node, kind)
 		)
 	}
@@ -442,6 +454,28 @@ const countingKeys = (compiler: typeof StandaloneCompiler) =>
 		}
 	}
 
+// a detailed size build writes each node it can as a checker, whose Apply
+// is its Allows, transforming by its t
+class CombinatorCompiler extends forSize(UnifiedCompiler) {
+	override unifies(node: BaseNode): boolean {
+		return combines(node) || unifies(node)
+	}
+
+	override declareTraversals(node: BaseNode): string[] | undefined {
+		const source = writeCombinator(this, node)
+		if (source === undefined) return
+		const allows = this.referenceToId(node.id, { kind: "Allows" })
+		this.linkage.members.push([allows, source])
+		if (!node.transforms) return [allows, allows]
+		const transform = this.referenceToId(node.id, { kind: "Transform" })
+		this.linkage.members.push([
+			transform,
+			`/* @__PURE__ */ runtime.transformOf(${allows})`
+		])
+		return [allows, allows, transform]
+	}
+}
+
 // by variant: standalone, in place or unified, plus 3 for errors "first", 6
 // for countsKeys and 12 for size
 const compilers = [false, true].flatMap(shortest =>
@@ -454,6 +488,8 @@ const compilers = [false, true].flatMap(shortest =>
 			InPlaceFirstIssueCompiler,
 			UnifiedFirstIssueCompiler
 		].map(compiler => {
+			if (shortest && !countsKeys && compiler === UnifiedCompiler)
+				return CombinatorCompiler
 			const counting = countsKeys ? countingKeys(compiler) : compiler
 			return shortest ? forSize(counting) : counting
 		})
@@ -478,6 +514,10 @@ export const rootUnitsOf = (root: BaseRoot, variant = 0): RootUnit[] => {
 	}
 	return units
 }
+
+// whether a root's validator is created from its checker
+export const isChecker = (root: BaseRoot, variant: number): boolean =>
+	compilers[variant] === CombinatorCompiler && combines(root)
 
 // a pass can reach content-equal roots, which share a name but not a unit
 export const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>

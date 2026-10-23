@@ -4,7 +4,7 @@ import { flatMorph } from "@ark/util"
 import { existsSync } from "node:fs"
 import { join } from "node:path"
 import { gzipSync } from "node:zlib"
-import { bundle, scenarios, type Bundle } from "./bundle.ts"
+import { bundle, hasApp, sizedScenarios, type Bundle } from "./bundle.ts"
 import { libraries as allLibraries } from "./libraries.ts"
 import { standingOf } from "./stats.ts"
 
@@ -34,8 +34,10 @@ const bytesByOrigin = ({ metafile }: Bundle) => {
 const sizes: Record<string, Record<string, number>> = {}
 const standaloneSplit: Record<string, Record<string, number>> = {}
 
-for (const scenario of scenarios) {
-	for (const library of libraries) {
+for (const scenario of sizedScenarios) {
+	for (const library of libraries.filter(library =>
+		hasApp(scenario, library)
+	)) {
 		const result = await bundle(scenario, library)
 		sizes[`${scenario} (${library})`] = {
 			"min (B)": result.js.length,
@@ -56,15 +58,17 @@ console.table(standaloneSplit)
 console.log("size standings, bytes")
 console.table(
 	Object.fromEntries(
-		scenarios.flatMap(scenario =>
+		sizedScenarios.flatMap(scenario =>
 			(["gzip", "min"] as const).map(metric => [
 				`${scenario} ${metric}`,
 				standingOf(
 					Object.fromEntries(
-						libraries.map(library => [
-							library,
-							[sizes[`${scenario} (${library})`][`${metric} (B)`]]
-						])
+						libraries
+							.filter(library => hasApp(scenario, library))
+							.map(library => [
+								library,
+								[sizes[`${scenario} (${library})`][`${metric} (B)`]]
+							])
 					),
 					String
 				)

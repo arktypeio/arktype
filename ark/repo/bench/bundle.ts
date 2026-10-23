@@ -2,12 +2,18 @@ import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import standaloneCode from "ajv/dist/standalone/index.js"
 import { _ } from "ajv/dist/compile/codegen/index.js"
 import { build, type Metafile } from "esbuild"
+import { existsSync } from "node:fs"
 import { join } from "node:path"
 import { ajvOf, type Library } from "./libraries.ts"
 
 export const scenarios = ["login", "moltar", "shop"] as const
 
 export type Scenario = (typeof scenarios)[number]
+
+// sized only, for the libraries an app is written for
+export const sizedScenarios = [...scenarios, "saas"] as const
+
+export type SizedScenario = (typeof sizedScenarios)[number]
 
 const apps = join(import.meta.dirname, "apps")
 
@@ -17,7 +23,7 @@ const standaloneOptions: PrecompileUnpluginOptions = JSON.parse(
 )
 
 // ajv's standalone code, which needs no compiler at runtime
-const ajvModule = async (scenario: Scenario) => {
+const ajvModule = async (scenario: SizedScenario) => {
 	const schemas: Record<string, object> = await import(
 		join(apps, scenario, "ajv.ts")
 	)
@@ -35,7 +41,7 @@ const ajvModule = async (scenario: Scenario) => {
 	)
 }
 
-const entry = async (scenario: Scenario, library: Library) =>
+const entry = async (scenario: SizedScenario, library: Library) =>
 	library === "standalone" || library === "standaloneFirst" ?
 		`export * from "./${scenario}/arktype.ts"`
 	: library === "valibot" ?
@@ -50,6 +56,22 @@ const entry = async (scenario: Scenario, library: Library) =>
 		`import "zod/compile"\nexport * from "./${scenario}/zod.ts"`
 	:	`export * from "./${scenario}/${library}.ts"`
 
+// whether a library has the app a scenario's entry reads
+export const hasApp = (scenario: SizedScenario, library: Library): boolean =>
+	existsSync(
+		library === "typia" ?
+			join(import.meta.dirname, "out", "typia", "apps", scenario, "typia.js")
+		:	join(
+				apps,
+				scenario,
+				`${
+					library === "standalone" || library === "standaloneFirst" ? "arktype"
+					: library === "zodCompiled" ? "zod"
+					: library
+				}.ts`
+			)
+	)
+
 export interface Bundle {
 	js: string
 	metafile: Metafile
@@ -57,7 +79,7 @@ export interface Bundle {
 
 // a scenario's exports, plus safeParse for libraries whose schemas have no methods
 export const bundle = async (
-	scenario: Scenario,
+	scenario: SizedScenario,
 	library: Library
 ): Promise<Bundle> => {
 	const { outputFiles, metafile } = await build({
