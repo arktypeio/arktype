@@ -616,6 +616,18 @@ contextualize(() => {
 		])
 	})
 
+	it("rejects an object only inheriting Date.prototype", async () => {
+		const { D, Bounded, Unit } = await load({
+			D: type("Date"),
+			Bounded: type("Date > d'2020-01-01'"),
+			Unit: type("d'2020-01-01'")
+		})
+		const impostor = Object.create(Date.prototype)
+		attest(String(D(impostor))).snap("must be a Date")
+		attest(Bounded.allows(impostor)).equals(false)
+		attest(String(Unit(impostor))).snap("must be 2020-01-01")
+	})
+
 	it("issues found once read", async () => {
 		const { T } = await load({ T: type({ a: "string", b: "number" }) })
 		const data: Record<string, unknown> = { a: 0, b: 0 }

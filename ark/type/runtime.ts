@@ -124,7 +124,8 @@ export {
 	liftArray,
 	ParseError,
 	printable,
-	throwParseError
+	throwParseError,
+	timeOf
 } from "@ark/util"
 export * from "./keywords/functions.ts"
 

@@ -34,6 +34,20 @@ contextualize(() => {
 		)
 	})
 
+	it("rejects an object only inheriting Date.prototype", () => {
+		const impostor = Object.create(Date.prototype)
+		attest(type("Date")(impostor).toString()).snap(
+			"must be a Date (was an object)"
+		)
+		attest(type("Date > d'2020-01-01'").allows(impostor)).equals(false)
+		attest(type("d'2020-01-01'")(impostor).toString()).snap(
+			"must be 2020-01-01 (was an object)"
+		)
+		attest(
+			type.schema({ proto: Date, dateAllowsInvalid: true }).allows(impostor)
+		).equals(false)
+	})
+
 	it("offset", () => {
 		attest(type("d'2000-05-05T00:00+05:00'").expression).snap(
 			"d'2000-05-04T19:00:00.000Z'"

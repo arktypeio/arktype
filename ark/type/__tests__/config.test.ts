@@ -383,16 +383,20 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		// the ignoring branch's input took the config's delete back once it
 		// held a morph, so the branches looked disjoint
 		it("an explicit ignore fails an indeterminate union", () => {
-			const ignoring = (o: "o" | "o?") =>
-				withConfig({ onUndeclaredKey: "delete" }, () => {
-					const $ = scope({})
-					const C = $.type({ provider: "string" })
-					return () => C.or({ "+": "ignore", uses: "string", [o]: C })
-				})
-			attest(ignoring("o?")).throws(
+			const [optional, required] = withConfig(
+				{ onUndeclaredKey: "delete" },
+				() => {
+					const C = scope({}).type({ provider: "string" })
+					return [
+						() => C.or({ "+": "ignore", uses: "string", "o?": C }),
+						() => C.or({ "+": "ignore", uses: "string", o: C })
+					]
+				}
+			)
+			attest(optional).throws(
 				"An unordered union of a type including a morph and a type with overlapping input is indeterminate"
 			)
-			attest(ignoring("o")).throws("is indeterminate")
+			attest(required).throws("is indeterminate")
 			const C = type({ "+": "delete", provider: "string" })
 			attest(() => C.or({ "+": "ignore", uses: "string", "o?": C })).throws(
 				"is indeterminate"
@@ -413,7 +417,8 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 			attest(I.and({ "+": "ignore", b: "string" }).in.expression).snap(
 				"{ a: string, b: string, + (undeclared): ignore }"
 			)
-			attest(I.partial()({ a: "x", z: 1 })).snap({ a: "x", z: 1 })
+			const out: unknown = I.partial()({ a: "x", z: 1 } as never)
+			attest(out).snap({ a: "x", z: 1 })
 		})
 	})
 

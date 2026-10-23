@@ -169,10 +169,11 @@ export const parseRightBound = (
 		return s.error(writeMissingRightOperandMessage(comparator))
 	// store the node that will be bounded
 	const previousRoot = s.unsetRoot()
-	if (s.rightBounded?.root === previousRoot)
+	if (s.rightBounded?.root === previousRoot) {
 		return s.error(
 			writeDoubleRightBoundMessage(s.rightBounded.operand.expression)
 		)
+	}
 	const previousScannerIndex = s.scanner.location
 	s.parseOperand()
 	const limitNode = s.unsetRoot()

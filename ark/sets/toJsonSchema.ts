@@ -280,12 +280,16 @@ const innerToJsonSchemaByKind: {
 			return Object.assign(
 				schema,
 				{ nullable: true },
-				"enum" in schema && { enum: [...schema.enum, null] }
+				"enum" in schema && {
+					enum: [...(schema as JsonSchema.Enum).enum, null]
+				}
 			)
 		}
 		return {
 			anyOf: [
-				...(nonNull.length > 1 && "anyOf" in schema ? schema.anyOf : [schema]),
+				...(nonNull.length > 1 && "anyOf" in schema ?
+					(schema as JsonSchema.Union).anyOf
+				:	[schema]),
 				ctx.target === "openapi-3.0" ? openApiNull() : { type: "null" }
 			]
 		}
@@ -751,7 +755,9 @@ const reduceJsonSchemaByKind: {
 			schema.not ?
 				{
 					enum: [
-						...("enum" in schema.not ? schema.not.enum : [schema.not.const]),
+						...("enum" in schema.not ?
+							(schema.not as JsonSchema.Enum).enum
+						:	[schema.not.const]),
 						node.rule
 					]
 				}
@@ -768,7 +774,9 @@ const reduceJsonSchemaByKind: {
 			schema.not ?
 				{
 					anyOf: [
-						...("anyOf" in schema.not ? schema.not.anyOf : [schema.not]),
+						...("anyOf" in schema.not ?
+							(schema.not as JsonSchema.Union).anyOf
+						:	[schema.not]),
 						excluded
 					]
 				}
