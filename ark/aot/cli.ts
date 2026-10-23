@@ -31,7 +31,9 @@ const usage = `Usage: arktype-precompile --check [...files or globs] [--fail-und
 			`[--[no-]${flagOf(name)}]`
 		:	`[--${flagOf(name)} <${values}>]`
 	)
-	.join(" ")}\n       arktype-precompile --declare [--tsconfig <path>]`
+	.join(
+		" "
+	)}\n       arktype-precompile --emit [--declare] [--tsconfig <path>] [...the options --check takes]\n       arktype-precompile --declare [--tsconfig <path>]`
 
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
@@ -50,6 +52,7 @@ const { values, positionals } = ((): {
 				help: { type: "boolean", short: "h" },
 				check: { type: "boolean" },
 				declare: { type: "boolean" },
+				emit: { type: "boolean" },
 				"fail-under": { type: "string" },
 				...Object.fromEntries(
 					options.map(([name, { type }]) => [
@@ -69,7 +72,26 @@ if (values.help) {
 	process.exit(0)
 }
 
-if (values.declare) {
+const writeFiles = (files: Record<string, string>) => {
+	for (const path in files) {
+		mkdirSync(dirname(path), { recursive: true })
+		writeFileSync(path, files[path])
+	}
+}
+
+const declare = (): never => {
+	const declarations = emitDeclarations({
+		tsconfig: values.tsconfig as string | undefined
+	})
+	writeFiles(declarations.files)
+	if (declarations.diagnostics) console.error(declarations.diagnostics)
+	console.log(
+		`${Object.keys(declarations.files).length} declaration files in ${relative(process.cwd(), declarations.root) || "."}, with ${countOf(declarations.shapes, "shape")} in ${sharedDeclarationFile}`
+	)
+	process.exit(declarations.errors ? 1 : 0)
+}
+
+if (values.declare && !values.emit) {
 	const others = Object.keys(values).filter(
 		flag => flag !== "declare" && flag !== "tsconfig"
 	)
@@ -78,21 +100,17 @@ if (values.declare) {
 			`--declare emits the tsconfig's program and takes no files or option but --tsconfig (was ${[...others.map(flag => `--${flag}`), ...positionals].join(" ")})`
 		)
 	}
-	const declarations = emitDeclarations({
-		tsconfig: values.tsconfig as string | undefined
-	})
-	for (const path in declarations.files) {
-		mkdirSync(dirname(path), { recursive: true })
-		writeFileSync(path, declarations.files[path])
-	}
-	if (declarations.diagnostics) console.error(declarations.diagnostics)
-	console.log(
-		`${Object.keys(declarations.files).length} declaration files in ${relative(process.cwd(), declarations.root) || "."}, with ${countOf(declarations.shapes, "shape")} in ${sharedDeclarationFile}`
-	)
-	process.exit(declarations.errors ? 1 : 0)
+	declare()
 }
 
-if (!values.check) fail("--check or --declare is required")
+if (values.emit && (values.check || positionals.length)) {
+	fail(
+		"--emit precompiles the tsconfig's program and takes no files or --check"
+	)
+}
+
+if (!values.check && !values.emit)
+	fail("--check, --emit or --declare is required")
 
 const failUnder =
 	values["fail-under"] === undefined ? undefined : Number(values["fail-under"])
@@ -129,16 +147,35 @@ try {
 	fail((e as Error).message)
 }
 
-const report = (() => {
+const run = <result>(build: () => result): result => {
 	try {
-		return check(positionals, opts as PrecompilePluginOptions)
+		return build()
 	} catch (e) {
 		// e.g. a config module that can't be read, which the message names
 		if (!isBuildError(e)) throw e
 		console.error(e.message)
 		process.exit(1)
 	}
-})()
+}
+
+if (values.emit) {
+	const { emitPrecompiled } = await import("./emit.ts")
+	const emitted = run(() => emitPrecompiled(opts as PrecompilePluginOptions))
+	for (const warning of emitted.warnings) console.warn(warning)
+	if (emitted.errors.length) {
+		console.error(emitted.errors.join("\n"))
+		process.exit(1)
+	}
+	writeFiles(emitted.files)
+	const modules = Object.keys(emitted.files).filter(
+		path => !path.endsWith(".map")
+	)
+	console.log(`${countOf(modules.length, "module")} precompiled`)
+	if (values.declare) declare()
+	process.exit(0)
+}
+
+const report = run(() => check(positionals, opts as PrecompilePluginOptions))
 
 for (const line of report.lines) console.log(line)
 
