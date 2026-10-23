@@ -749,8 +749,8 @@ export abstract class BaseNode<
 		return out
 	}
 
-	// allows data without marking the Type used, e.g. a value an optional
-	// prop's parse checks
+	// allows data without marking the Type used, e.g. a unit or key an
+	// intersection checks
 	allowsUnused(data: d["prerequisite"]): boolean {
 		const usedBeforeJit = this.cache.usedBeforeJit
 		const out = this.allows(data)

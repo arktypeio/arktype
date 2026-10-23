@@ -726,7 +726,7 @@ const mergeRangeBranches = (
 			(family.lower === "after" ?
 				r.unit instanceof Date
 			:	typeof r.unit === "number") &&
-			rest.every(child => child.allows(r.unit as never))
+			rest.every(child => child.allowsUnused(r.unit as never))
 		) ?
 			{
 				lower: { value: (r.unit as number | Date).valueOf() },

@@ -29,7 +29,8 @@ const intersectPropsAndIndex = <
 	const kind = l.required ? "required" : "optional"
 
 	// a signature reading ctx can only decide a key it's traversing
-	if (r.signature.allowsNeedsCtx || !r.signature.allows(l.key)) return null
+	if (r.signature.allowsNeedsCtx || !r.signature.allowsUnused(l.key))
+		return null
 
 	// a key's transforms apply in turn once each value allows its input
 	const value =
@@ -83,7 +84,7 @@ const allowedIndexCountOf = (
 		maxCountedIndices
 	)
 	let count = 0
-	while (count < max && keys.allows(`${count}`)) count++
+	while (count < max && keys.allowsUnused(`${count}`)) count++
 	return count === sequence.maxLength ? null : count
 }
 
@@ -152,7 +153,7 @@ const narrowToKeysOf = (
 		}
 	}
 	for (const k of other.requiredKeys) {
-		if (keys.allows(k)) continue
+		if (keys.allowsUnused(k)) continue
 		const value = other.propsByKey[k]!.value
 		const never = $ark.intrinsic.never.internal
 		disjoint.add("presence", isLeft ? never : value, isLeft ? value : never, {
@@ -160,8 +161,11 @@ const narrowToKeysOf = (
 			undeclared: node.undeclared
 		})
 	}
-	if (otherInner.optional)
-		otherInner.optional = otherInner.optional.filter(n => keys.allows(n.key))
+	if (otherInner.optional) {
+		otherInner.optional = otherInner.optional.filter(n =>
+			keys.allowsUnused(n.key)
+		)
+	}
 	if (otherInner.index) {
 		otherInner.index = otherInner.index.flatMap(n => {
 			if (n.signature.extends(keys)) return n
