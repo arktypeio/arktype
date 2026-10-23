@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	rootSchema,
 	writeUnboundableMessage,
+	writeGlobalOnlyConfigMessage,
 	writeUnresolvableMessage,
 	type ArkErrors
 } from "@ark/schema"
@@ -291,6 +292,16 @@ contextualize(() => {
 		attest(out).snap({ pear: { tasty: true } })
 	})
 
+	it("throws for a global-only option", () => {
+		// @ts-expect-error
+		attest(() => scope({}, { numberAllowsInfinity: true })).type.errors(
+			"'numberAllowsInfinity' does not exist in type"
+		)
+		attest(() => scope({}, { onUndeclaredKey: "delete" } as never)).throws(
+			writeGlobalOnlyConfigMessage("onUndeclaredKey")
+		)
+	})
+
 	it("cross-scope intersection", () => {
 		const configured = scope({}, { required: { message: () => "configured" } })
 		configured.type({ x: "string" }).and({ y: "number" })
@@ -298,15 +309,11 @@ contextualize(() => {
 		attest(T({}).toString()).snap(
 			"x must be a string (was missing)\ny must be a number (was missing)"
 		)
-	})
-
-	it("cross-scope shared operands", () => {
+		// operands shared with the configured scope
 		const L = type({ x: "string" })
 		const R = type({ y: "number" })
-		const configured = scope({}, { required: { message: () => "configured" } })
 		configured.type([L, "&", R])
-		const T = L.and(R)
-		attest(T({}).toString()).snap(
+		attest(L.and(R)({}).toString()).snap(
 			"x must be a string (was missing)\ny must be a number (was missing)"
 		)
 	})

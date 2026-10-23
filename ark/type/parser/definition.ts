@@ -1,10 +1,8 @@
 import {
 	$ark,
-	ArkErrors,
 	constraintInputOf,
 	hasArkKind,
 	inProgress,
-	messageAt,
 	type BaseParseContext,
 	type BaseRoot,
 	type BaseScope,
@@ -148,14 +146,12 @@ const parseStandardSchema = (
 
 		if (!result.issues) return result.value
 
+		// a result with issues fails, even if they're empty
+		if (result.issues.length === 0) return ctx.error({ problem: "is invalid" })
+
 		for (const issue of result.issues) {
-			// an ArkError's message starts with its path, which relativePath adds
-			const message =
-				result instanceof ArkErrors ?
-					messageAt(issue as never, [])
-				:	issue.message
 			ctx.error({
-				problem: uncapitalize(message),
+				problem: uncapitalize(issue.message),
 				relativePath: (issue.path ?? []).map(k =>
 					typeof k === "object" ? k.key : k
 				)

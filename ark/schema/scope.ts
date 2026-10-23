@@ -195,6 +195,26 @@ export type GlobalOnlyConfigOptionName = satisfy<
 	| "locale"
 >
 
+const globalOnlyConfigOptionNames: readonly GlobalOnlyConfigOptionName[] = [
+	"dateAllowsInvalid",
+	"numberAllowsInfinity",
+	"numberAllowsNaN",
+	"onUndeclaredKey",
+	"keywords",
+	"locale"
+]
+
+export const writeGlobalOnlyConfigMessage = <
+	name extends GlobalOnlyConfigOptionName
+>(
+	name: name
+): writeGlobalOnlyConfigMessage<name> =>
+	`${name} can only be configured globally, with configure()`
+
+export type writeGlobalOnlyConfigMessage<
+	name extends GlobalOnlyConfigOptionName
+> = `${name} can only be configured globally, with configure()`
+
 export interface ScopeOnlyConfigOptions {
 	name?: string
 	prereducedAliases?: boolean
@@ -269,6 +289,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 		this.name = config?.name ?? `anonymousScope${anonymousScopeCount++}`
 		this.isBuiltin = isBuiltin
 		this.scopeConfig = config
+		// a scope's would be honored for some and silently ignored for others
+		for (const k of globalOnlyConfigOptionNames) {
+			if ((config as ArkSchemaConfig | undefined)?.[k] !== undefined)
+				throwParseError(writeGlobalOnlyConfigMessage(k))
+		}
 
 		const aliasEntries = Object.entries(def).map(entry =>
 			this.preparseOwnAliasEntry(...entry)

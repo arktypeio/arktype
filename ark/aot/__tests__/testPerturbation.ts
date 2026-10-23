@@ -64,7 +64,7 @@ const perturbingPrecompiler = (opts: BuildOptions) =>
 			allowUnsafe: true,
 			...(opts.mode === "cache" ?
 				{ runtime: "arktype" }
-			:	{ checks: "helpers", ...opts.standalone })
+			:	{ creationChecks: "helpers", ...opts.standalone })
 		}
 	)
 
@@ -92,7 +92,7 @@ export const buildPerturbed = (
 	const importedErrorsByPath: Record<string, Diagnostic[]> = {}
 	const reachedByPath: Record<string, string[]> = {}
 	// nothing swaps what a factory doesn't check, as it's what the build read
-	const checks = opts.standalone?.checks ?? "helpers"
+	const checks = opts.standalone?.creationChecks ?? "helpers"
 	const helpers = new Set<string>()
 	const collectHelpers = (precompiled: PrecompiledModule) => {
 		for (const site of precompiled.sites) {
@@ -104,7 +104,7 @@ export const buildPerturbed = (
 	for (const path of corpus) {
 		const source = readFileSync(path, "utf8")
 		const precompiler = perturbingPrecompiler({ ...opts, mode: "standalone" })
-		const { sites } = precompiler.analyze(source, path)
+		const { sites } = precompiler.analyzeSites(source, path)
 		const unsupported = new Set(
 			precompiler
 				.precompile(source, path)
@@ -133,7 +133,7 @@ export const buildPerturbed = (
 					const imported = precompiler.graph.moduleOf(id)
 					return imported instanceof SourceModule ?
 							precompiler
-								.analyze(imported.source, id)
+								.analyzeSites(imported.source, id)
 								.sites.flatMap(site => site.holes.map(hole => hole.value))
 						:	[]
 				})

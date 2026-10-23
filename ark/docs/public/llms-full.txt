@@ -593,6 +593,8 @@ export default {
 
 > Help Claude Code, Codex, Cursor and other coding agents write ArkType.
 
+Every error ArkType reports names its fix: `tsc`'s as a definition is written, a [precompiled](https://arktype.io/docs/precompile) build's and validation's. An agent can close each loop on its own, which is also why precompiling is free with one: the build step is one more loop it already runs.
+
 ## Skill
 
 The ArkType [skill](https://github.com/arktypeio/arktype/blob/main/ark/type/skills/arktype/SKILL.md) tells agents when to reach for ArkType, how its syntax maps to TypeScript, and which mistakes to avoid. Add it to your project with:
@@ -613,7 +615,7 @@ Every page of these docs is available as Markdown by adding `.md` to its URL, e.
 
 ## Precompile
 
-A [precompiled](https://arktype.io/docs/precompile) build reports each definition it can't precompile with its file, line and column, the reason and the fix. [With agents](https://arktype.io/docs/precompile#with-agents) shows one and the tools that shorten the loop: `arktype-precompile --check`, the ESLint rule and shadow mode. [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) lists the fix for each report.
+Precompiling used to cost a build step and its errors. An agent runs the build, reads the error and fixes it, so your users get the speed and size and you don't pay for them. A [precompiled](https://arktype.io/docs/precompile) build reports each definition it can't precompile with its file, line and column, the reason and the fix. [With agents](https://arktype.io/docs/precompile#with-agents) shows one and the tools that shorten the loop: `arktype-precompile --check`, the ESLint rule and shadow mode. [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) lists the fix for each report.
 
 ## AGENTS.md
 
@@ -3977,7 +3979,21 @@ if (out instanceof type.errors) {
 | `byAncestorPath(out)` | each failed path and its ancestors, with `""` for the root, mapped to every error at or below it |
 | `messageIn(error, locale)` | one error's message in a [locale](https://arktype.io/docs/i18n#rendering-in-a-locale) |
 
-A Type that calls no narrow or morph may find its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. The issues describe the data as it is at that read: a write to it in between can change them, and data that no longer fails holds one root issue, `is invalid`. A getter or `Proxy` trap the check reads runs again at that read, and what it throws is thrown there. Each error's text is written at that first read too.
+A Type that calls no narrow or morph may find its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. The issues describe the data as it is at that read, not as it was validated: a write to it in between can change them, and data that no longer fails holds one root issue, `is invalid`. Read `summary` or `issues` before the data you validated can change, as it can when it's reactive form state or an Immer draft, or when an `await` comes before you report the errors:
+
+```ts
+const User = type({ name: "string" })
+const form: Record<string, unknown> = { name: 5 }
+
+const out = User(form)
+// read now: name must be a string (was a number)
+const summary = out instanceof type.errors ? out.summary : ""
+
+form.name = "Ada"
+// read only now, out.summary would be "is invalid"
+```
+
+A getter or `Proxy` trap the check reads runs again at that read, and what it throws is thrown there. Each error's text is written at that first read too.
 
 ## ArkError
 
@@ -5127,6 +5143,8 @@ const result = Form["~standard"].validate({ name: "Ada", age: "old" })
 // ArkErrors: age must be a well-formed integer string (was "old")
 ```
 
+Like any `ArkErrors`, it may find its issues when they're first read, so they [describe the data as it is then](https://arktype.io/docs/errors#arkerrors). Read them before the data you validated can change.
+
 ArkType always validates synchronously. The spec allows a `Promise`, which is why the return type includes one.
 
 The spec's type helpers map to a Type's input and output:
@@ -5193,7 +5211,7 @@ const schema = User["~standard"].jsonSchema.input({ target: "draft-2020-12" })
 }
 ```
 
-- `target` is `"draft-2020-12"` or `"draft-07"`. Any other target, like OpenAPI's, throws.
+- `target` is `"draft-2020-12"`, `"draft-07"` or `"openapi-3.0"`. Any other target throws.
 - `libraryOptions` is passed to [`toJsonSchema`](https://arktype.io/docs/json-schema/to-json-schema) as its options, so a caller can set a `fallback` there.
 - `input` and `output` differ when the Type has morphs or defaults. For `string.integer.parse`, `input` describes a string and `output` describes an integer, and a key with a default is optional with a `default` in `input` but required in `output`.
 
@@ -5485,7 +5503,7 @@ These generate only valid data:
 - string length bounds, or a single regex such as `string.email`, `string.uuid` or your own
 - objects with required, optional and index signature keys
 - arrays with a minimum, maximum or exact length, and tuples with optional or variadic elements
-- cyclic types, like a `this` reference or a recursive scope alias
+- cyclic types, like a `this` reference, a recursive scope alias or `object.json`
 - `Date`, with or without bounds, and `Set`, whose elements can be any value
 
 These throw when you call `arkToArbitrary`:
@@ -6732,7 +6750,8 @@ TypeBox schemas are JSON Schema, so [JSON Schema](#json-schema-and-ajv) also app
 | `Type.Partial`, `Type.Pick`, `Type.Omit`, `Type.KeyOf` | `.partial()`, `.pick()`, `.omit()`, `.keyof()` |
 | `Type.Recursive(This => ...)` | `this` or a scope |
 | `Type.Date()`, `Type.Unknown()`, `Type.Any()` | `"Date"`, `"unknown"`, `"unknown.any"` |
-| `Type.Transform(T).Decode(fn)` | `.pipe(fn)` |
+| `Type.Transform(T).Decode(f).Encode(g)` | `codec(T, Out, { decode: f, encode: g })` |
+| `Value.Decode(T, x)`, `Value.Encode(T, x)` | `T.assert(x)`, `T.encode.assert(x)` |
 | `{ default: x }` with `Value.Default` | `"key": "T = x"` |
 | `Static<typeof T>`, `StaticDecode`, `StaticEncode` | `typeof T.infer`, `typeof T.infer`, `typeof T.inferIn` |
 | `Value.Check(T, x)`, `Value.Parse`, `TypeCompiler.Compile` | `T.allows(x)`, `T.assert(x)`, nothing to compile |
@@ -6806,17 +6825,18 @@ Names are Effect 3's. Effect 4 renames some: `Schema.filter` is `Schema.check`, 
 | `Schema.NumberFromString`, `Schema.DateFromString` | `"string.numeric.parse"`, `"string.date.parse"` |
 | `Schema.Trim`, `Schema.Lowercase`, `Schema.parseJson(T)` | `"string.trim"`, `"string.lower"`, `type("string.json.parse").to(T)` |
 | `Schema.filter(fn)` | `.narrow(fn)` |
-| `Schema.transform(From, To, { decode })` | `From.pipe(decode).to(To)` |
+| `Schema.transform(From, To, { decode, encode })` | `codec(From, To, { decode, encode })` |
 | `Schema.brand("Id")` | `.brand("Id")` |
 | `Schema.Type<typeof S>`, `Schema.Encoded<typeof S>` | `typeof T.infer`, `typeof T.inferIn` |
 | `Schema.decodeUnknownSync`, `decodeUnknownEither` | `T.assert(x)`, `T(x)` |
+| `Schema.encodeSync`, `encodeEither` | `T.encode.assert(x)`, `T.encode(x)` |
 | `onExcessProperty: "error"` | `"+": "reject"` |
 
-ArkType has no encode direction. A `Schema.Class` becomes a Type plus, if you need methods, your own class constructed from its output.
+`codec` comes from `arktype/codecs`, and importing it is what makes `.encode` available. A `Schema.Class` becomes a Type plus, if you need methods, your own class constructed from its output.
 
 ## JSON Schema and ajv
 
-To keep a schema as JSON, convert it at runtime with `jsonSchemaToType` from `@ark/json-schema`; it accepts exactly what a JSON Schema 2020-12 validator accepts, with `format` as an annotation. To rewrite it as definitions:
+To keep a schema as JSON, convert it at runtime with `jsonSchemaToType` from `@ark/json-schema`; it accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with `format` as an annotation. To rewrite it as definitions:
 
 | JSON Schema | ArkType |
 | - | - |
@@ -6828,7 +6848,7 @@ To keep a schema as JSON, convert it at runtime with `jsonSchemaToType` from `@a
 | `{ type: ["string", "null"] }`, `anyOf`, `oneOf` | `"string \| null"`, `A.or(B)` |
 | `allOf` | `A.and(B)` |
 | `properties` with `required` | keys, with `?` on those not required |
-| `additionalProperties: false`, `additionalProperties: T` | `"+": "reject"`, `"[string]": T` (covers declared keys too) |
+| `additionalProperties: false`, `additionalProperties: T` | `"+": "reject"`, `"[string]": "T \| A"`, `A` the declared keys' types |
 | `patternProperties: { "^x-": T }` | `"[/^x-/]": T` |
 | `{ type: "array", items: T, minItems: 1 }` | `"T[] >= 1"` |
 | `prefixItems` | `[A, B]` |
@@ -6842,7 +6862,7 @@ ajv options map too: `removeAdditional` is `"+": "delete"`, `useDefaults` is a d
 
 > The changes in the latest ArkType that can break code written for the previous release, and what to change.
 
-Each section is one change, with code that behaves differently before and after it. The full list of changes, including fixes and new features, is in the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
+Each section is one change, with code that behaves differently before and after it. The full list of changes, including fixes and new features, is in the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [@ark/fast-check](https://github.com/arktypeio/arktype/blob/main/ark/fast-check/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
 
 ## Errors
 
@@ -6899,7 +6919,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-`hasCode`, `flat`, `throw`, `toString`, `toJSON` and `toLocaleString` are gone from errors, so `error instanceof ArkError` is false and `` `${error}` `` is `[object Object]`. `path` is a plain array. An error's text is written when its `ArkErrors`' issues are first read, so a configured writer is called once per error.
+`hasCode`, `flat`, `throw`, `toString`, `toJSON` and `toLocaleString` are gone from errors, so `error instanceof ArkError` is false and `` `${error}` `` is `[object Object]`. `path` is a plain array. An error's text is written when its `ArkErrors`' issues are first read, so a configured writer is called once per error. A Type that calls no narrow or morph may also find the issues themselves at that read, so [read them before the data you validated changes](https://arktype.io/docs/errors#arkerrors).
 
 ### Objects print by their kind
 
@@ -7087,6 +7107,72 @@ const T = type("number | number.Infinity | number.NegativeInfinity")
 type("object.json")({ at: new Date() })
 ```
 
+### string.numeric accepts exponents
+
+`string.numeric` and `string.numeric.parse` accept an exponent, as `Number()` does:
+
+```ts
+// 100000, before: ArkErrors: must be a well-formed numeric string (was "1e5")
+type("string.numeric.parse")("1e5")
+```
+
+To keep rejecting them, intersect a pattern: `"string.numeric & /^[^eE]*$/"`.
+
+### .and checks props against index signatures
+
+`.and` checks each prop against the other side's index signatures as an object literal does, so a required prop they exclude throws a `ParseError`, and an optional one becomes `never`:
+
+```ts
+// throws ParseError: Intersection at a of string and number results in an unsatisfiable type
+// before: { [string]: number, a: string }
+type({ a: "string" }).and({ "[string]": "number" })
+```
+
+Widen the index signature's value to include the prop's, like `"[string]": "string | number"`.
+
+### Integer keys past an array's last index are undeclared
+
+An integer key from 4294967295 up can't be an array index, so `"+": "reject"` rejects it and `"+": "delete"` deletes it:
+
+```ts
+const T = type("string[]").onUndeclaredKey("reject")
+
+// ArkErrors: value at ["4294967295"] must be removed, before: valid
+T(Object.assign(["a"], { 4294967295: "b" }))
+```
+
+### Standard Schemas must validate synchronously
+
+A Standard Schema in a definition whose `validate` returns a Promise, like a Zod schema with an async refinement, throws when it's validated, where it gave `undefined`:
+
+```ts
+import { z } from "zod"
+
+const T = type({ name: z.string().refine(async s => s.length > 1) })
+
+// throws: Standard Schema definitions must validate synchronously (zod returned a Promise)
+// before: { name: undefined }
+T({ name: "x" })
+```
+
+### .allows is false when a narrow adds an error
+
+A narrow that adds an error through `ctx` and returns a truthy value failed validation, but `.allows` returned `true`:
+
+```ts
+const T = type("number").narrow((n, ctx) => n > 0 || !!ctx.error("positive"))
+
+T.allows(-1) // false, before: true
+```
+
+### .extends ignores meta
+
+`.extends` and `.subsumes` compare Types without their meta, so a described Type extends its undescribed self. `.equals` still compares meta:
+
+```ts
+type("string | number").describe("a key").extends("string | number") // true, before: false
+```
+
 ### Optional index signatures throw
 
 A key like `"[k]?"` was the literal key `"[k]"`, made optional. It now throws a `ParseError`, since it reads as an optional index signature. Escape its `[` to keep the literal key:
@@ -7159,6 +7245,24 @@ import "./config.ts"
 import { type } from "arktype"
 ```
 
+### onUndeclaredKey: "delete" rejects overlapping object unions
+
+With `onUndeclaredKey: "delete"` configured, a union of objects whose inputs overlap throws a `ParseError`, as it already did with `"+": "delete"` in each object. Before, data both allowed came out as whichever branch sorted first:
+
+```ts
+import { configure } from "arktype/config"
+
+configure({ onUndeclaredKey: "delete" })
+```
+
+```ts
+// throws ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate
+// before: { uri: "u", blob: "b" } for { uri: "u", text: "t", blob: "b" }
+type({ uri: "string", text: "string" }).or({ uri: "string", blob: "string" })
+```
+
+Give the branches a key that tells them apart, like a literal `kind`, or delete outside the union.
+
 ### meta.keyword is reserved
 
 Built-in keywords set `meta.keyword` to their name. Rename your own meta named `keyword`.
@@ -7171,7 +7275,11 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 
 - Unions of ranges that overlap, meet or leave out one value, and of objects alike but for one key's value, are one range or object: `1 < number < 10 | 10 <= number < 100` is `1 < number < 100`, `number < 0 | number > 0` is `number != 0`, and `{ kind: "a", x: string } | { kind: "b", x: string }` is `{ kind: "a" | "b", x: string }`.
 
-- A union of literals with configured meta becomes `enum`: `type("'a' | 'b'").configure({ title: "Letter" }).toJsonSchema()` is `{ enum: ["a", "b"], title: "Letter" }` instead of an `anyOf` of `const`s.
+- A union of literals with configured meta becomes `enum`: `type("'a' | 'b'").configure({ title: "Letter" }).toJsonSchema()` is `{ type: "string", enum: ["a", "b"], title: "Letter" }` instead of an `anyOf` of `const`s.
+
+- A literal's JSON Schema has its `type` beside its `const` or `enum`: `'a' | 'b'` is `{ type: "string", enum: ["a", "b"] }`, and `'a' | 'b' | null` is `{ anyOf: [{ type: "string", enum: ["a", "b"] }, { type: "null" }] }`.
+
+- A cyclic Type's `$defs` hold only its cyclic aliases, named by the alias, like `user`, with everything else inline, where every object, array and union was a def named like `user1` or `intersection1`.
 
 - A string index signature beside declared keys becomes `patternProperties: { "": ... }` instead of `additionalProperties`.
 
@@ -7180,6 +7288,8 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - `toJsonSchema()` throws for an index signature key it can't express, instead of leaving out the index signature: `type({ "[string <= 3]": "number" }).toJsonSchema()` throws (code `indexKey`), before: `{ type: "object" }`. See [JSON Schema](https://arktype.io/docs/json-schema/to-json-schema#how-types-map) for the keys it can write.
 
 - `toJsonSchema()` throws for `object.json` and the Types it's part of, like `string.json.parse`'s output, since its check that an object is plain is a `predicate`. [Handle that code](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes) to write it as before.
+
+- `toJsonSchema()` throws a `ParseError` for a `target` other than `"draft-2020-12"`, `"draft-07"` or `"openapi-3.0"`, where it wrote draft 2020-12: `type("string").toJsonSchema({ target: "draft-04" })`, before: `{ type: "string" }`.
 
 - Expressions keep length bounds and protos beside a structure: `type("number[] > 1").expression` is `number[] >= 2`, before: `number[]`.
 
@@ -7192,11 +7302,27 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 ## Inference
 
 - `.required()` makes a defaulted key required in `inferIn`, as it already did at runtime: `type({ foo: "string = 'bar'" }).required()` infers `{ foo: string }` as input, before: `{ foo?: string }`.
+- `.map()` on a union infers each branch: `type({ kind: "'a'", a: "string" }).or({ kind: "'b'", b: "number" }).map(p => p)` is `Type<{ kind: "a"; a: string } | { kind: "b"; b: number }>`, before: `Type<{ kind: "a" | "b" }>`, and the callback's argument holds each branch's props, not only those every branch shares.
 - A morph that returns `any` infers `any` as its output: `type({ a: ["string", "=>", s => JSON.parse(s)] }).infer` is `{ a: any }`, before: `{ a: (In: string) => Out<any> }`.
 
 ## @ark/schema
 
 - `BaseNode.compiledMeta` is removed, and `BaseScope.resolutions` holds an unresolved alias's parse context instead of its id.
+- `$.node(kind, input)` takes a node's inner, with children already nodes: `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
+- Call a node's `traverseAllows`, `traverseApply` and `traverseTransform` on the node, as in `node.traverseAllows(data, ctx)`, not detached, as in `[x].every(node.traverseAllows)`, until the JIT compiles it.
+- `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, prereduced }`.
+- An alias's `resolutionId` (read `resolution.id`), a node's `assertHasKindIn`, `isConstraint` and `isRefinement`, a root's `shortDescription`, a morph's `declareIn` and `serializedMorphs` and a structure's `optionalKeys` are removed.
+- Derived keys like the `includes*` flags, `innerEntries` and `propsByKey` moved from a node's own enumerable keys to `node.cache`, so spreading or iterating a node no longer includes them.
+
+## @ark/util
+
+- `Scanner`'s `jumpToIndex` is removed.
+- `isNumericString` and `isWellFormedInteger` read only strings: `isNumericString(5)` throws, before: `true`.
+- `$ark.filename` is removed. `$ark.version` still names the `@ark/util` version that created the registry.
+
+## Deep imports
+
+A deep import like `arktype/internal/parser/string.ts` keeps its module's types but loads `arktype/internal` at runtime, which exports the names of every arktype module. Import from `arktype/internal` itself. `@ark/schema`, `@ark/util`, `arkregex` and `arksets` each have an `./internal` entry like it.
 
 ## ArkRegex
 
@@ -7208,6 +7334,19 @@ const R = regex("^(?:(1)|(2))$")
 // before: ["1"] | [undefined, "2"]
 type Captures = typeof R.inferCaptures // ["1", undefined] | [undefined, "2"]
 ```
+
+## @ark/json-schema
+
+`arktype` is a peer dependency at the version released with `@ark/json-schema`, where it was a dependency, so install the two together. `jsonSchemaToType` reads a schema as a 2020-12 validator does, which changes what some schemas accept:
+
+- `prefixItems` makes its elements optional: `{ type: "array", prefixItems: [{ type: "string" }, { type: "number" }] }` is `[string?, number?, ...unknown[]]` and accepts `[]`, before: `[string, number, ...unknown[]]`.
+- `{ type: "object" }` rejects arrays.
+- A `uniqueItems` error reads `must be an array of unique items (was an array)`, before: `(was an array with 2 duplicates: 1, and 3)`.
+- The `writeJsonSchema*Message` functions, like `writeJsonSchemaInsufficientKeysMessage`, are no longer exported.
+
+## @ark/fast-check
+
+`arktype` is a peer dependency at the version released with `@ark/fast-check`, where it was a dependency, so install the two together.
 
 ## Attest
 

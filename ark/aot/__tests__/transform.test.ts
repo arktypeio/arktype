@@ -27,26 +27,6 @@ const builtInOrder = (files: Record<string, string>, order: string[]) =>
 		[files, order]
 	)
 
-// each module precompiled, merging units by what `recorded`'s modules read
-const precompileInOrder = (
-	files: Record<string, string>,
-	ids: string[],
-	recorded?: Record<string, string>
-) => {
-	const precompiler = new Precompiler(memoryHost(files))
-	if (recorded) {
-		const earlier = new Precompiler(memoryHost(recorded))
-		const readers: Record<string, string[]> = {}
-		for (const id in recorded) {
-			const { unitReaders } = earlier.precompile(recorded[id], id)
-			for (const specifier in unitReaders)
-				(readers[specifier] ??= []).push(...unitReaders[specifier])
-		}
-		precompiler.unitReaders = readers
-	}
-	return ids.map(id => precompiler.precompile(files[id], id))
-}
-
 contextualize(() => {
 	describe("standalone", () => {
 		it("folds sites to validators", () => {
@@ -110,7 +90,7 @@ export const Team = type({ lead: User })`,
 					"/user.ts": `import { type } from "arktype"
 export const User = type({ name: "string" })`
 				},
-				{ lazy: false, checks: "none" }
+				{ lazy: false, creationChecks: "none" }
 			)
 			// the factory's parameter still evaluates
 			attest(normalized(result.code)).snap(`import "arktype"
@@ -185,12 +165,7 @@ export const schema = T.toJsonSchema()`)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				"/main.ts:3:23  T.toJsonSchema() can't be precompiled yet\n  a JSON Schema calling a default's thunk can't be precompiled to a standalone validator\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
-		})
-
-		it("a site refused as it's written holds no value", () => {
-			const refused = precompile(`import { type } from "arktype"
-const T = type({ a: ["number[]", "=", () => []] })
-export const schema = T.toJsonSchema()`).sites[1]
+			const refused = result.sites[1]
 			attest([refused.status, refused.value]).equals(["rejected", undefined])
 		})
 
@@ -423,27 +398,14 @@ export const encode = (v: unknown) => T.encode(v)`)
 			).snap(["const T = /* @__PURE__ */ $ark#0(s => s.length)"])
 		})
 
-		it("folds Modules", () => {
-			const result = precompile(`import { scope, type } from "arktype"
-export const types = scope({ tree: { value: "number", "children?": "tree[]" } }).export()
-export const M = type.module({ a: "string", b: { c: "a" } })`)
-			attest(result.diagnostics).equals([])
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import $arkfixConfig from "~arktype/#3"
-$arkfixConfig()
-export const types = /* @__PURE__ */ $ark#0()
-export const M = /* @__PURE__ */ $ark#2()`)
-		})
-
 		it("folds Scopes and Generics", () => {
 			const result = precompile(`import { scope, type } from "arktype"
 const $ = scope({ tree: { value: "number", "children?": "tree[]" }, "box<t>": { box: "t" } })
 export const types = $.export()
 export const Tree = $.type("tree")
 export const Box = type("<t>", { box: "t" })
-export const BoxedTree = Box(types.tree)`)
+export const BoxedTree = Box(types.tree)
+export const M = type.module({ a: "string", b: { c: "a" } })`)
 			attest(result.diagnostics).equals([])
 			attest(normalized(result.code)).snap(`import "arktype"
 import { #0 as $ark#0 } from "~arktype/#1"
@@ -451,13 +413,15 @@ import { #2 as $ark#2 } from "~arktype/#1"
 import { #3 as $ark#3 } from "~arktype/#1"
 import { #4 as $ark#4 } from "~arktype/#1"
 import { #5 as $ark#5 } from "~arktype/#1"
-import $arkfixConfig from "~arktype/#6"
+import { #6 as $ark#6 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#7"
 $arkfixConfig()
 const $ = /* @__PURE__ */ $ark#0()
 export const types = /* @__PURE__ */ $ark#2()
 export const Tree = /* @__PURE__ */ $ark#3()
 export const Box = /* @__PURE__ */ $ark#4()
-export const BoxedTree = /* @__PURE__ */ $ark#5()`)
+export const BoxedTree = /* @__PURE__ */ $ark#5()
+export const M = /* @__PURE__ */ $ark#6()`)
 		})
 
 		it("Module aliases named like Type members", () => {
@@ -1006,8 +970,8 @@ export default (def: string) => def`,
 				"/suffix.ts":
 					"export const suffix = (def: string, s: string) => def + s"
 			}
-			const build = (id: keyof typeof files, checks?: "helpers") =>
-				precompileModule(files[id], id, memoryHost(files), { checks })
+			const build = (id: keyof typeof files, creationChecks?: "helpers") =>
+				precompileModule(files[id], id, memoryHost(files), { creationChecks })
 			// a bundle runs the helpers the build read
 			attest(build("/checked.ts").diagnostics).equals([])
 			const checked = build("/checked.ts", "helpers")
@@ -1216,99 +1180,15 @@ export const Team = type({ lead: User })`
 			attest(normalized(shared)).snap(["~arktype/#0", "~arktype/#1"])
 		})
 
-		it("writes a unit read by one other into its reader", () => {
-			const files = {
-				"/main.ts": `import { type } from "arktype"
-export const User = type({ name: { first: "string", last: "string" } })`
-			}
-			const [unmerged] = precompileInOrder(files, ["/main.ts"])
-			const [merged] = precompileInOrder(files, ["/main.ts"], files)
-			attest(normalized(Object.keys(unmerged.modules))).snap([
-				"~arktype/#0",
-				"~arktype/#1",
-				"~arktype/#2",
-				"~arktype/#3",
-				"~arktype/#4"
-			])
-			attest(normalized(Object.keys(merged.modules))).snap([
-				"~arktype/#0",
-				"~arktype/#1",
-				"~arktype/#2",
-				"~arktype/#3"
-			])
-			const unit = Object.values(merged.modules).find(code =>
-				code.includes("Allows")
-			)!
-			attest(normalized(unit.match(/^const \w+ =/gm)!)).snap([
-				"const #0 =",
-				"const #1Allows =",
-				"const #1Apply =",
-				"const #0Allows =",
-				"const #0Apply =",
-				"const #0Node ="
-			])
-		})
-
-		it("shares code with composing modules it merges", () => {
-			const files = {
-				"/user.ts": `import { type } from "arktype"
-export const User = type({ name: { first: "string" } })`,
-				"/team.ts": `import { type } from "arktype"
-import { User } from "./user.ts"
-export const Team = type({ lead: User })`
-			}
-			const [user, team] = precompileInOrder(
-				files,
-				["/user.ts", "/team.ts"],
-				files
-			)
-			const shared = Object.keys(team.modules).filter(
-				specifier => user.modules[specifier]
-			)
-			for (const specifier of shared)
-				attest(team.modules[specifier]).equals(user.modules[specifier])
-			attest(normalized(shared)).snap(["~arktype/#0", "~arktype/#1"])
-		})
-
-		it("names a module another file merges apart under a stale map", () => {
-			const recorded = {
-				"/main.ts": `import { type } from "arktype"
-export const User = type({ name: { first: "string" } })`
-			}
-			const files = {
-				"/main.ts": recorded["/main.ts"],
-				"/name.ts": `import { type } from "arktype"
-export const Name = type({ first: "string" })
-export const User = type({ name: { first: "string" } })`
-			}
-			const [main, name] = precompileInOrder(
-				files,
-				["/main.ts", "/name.ts"],
-				recorded
-			)
-			const shared = Object.keys(name.modules).filter(
-				specifier => main.modules[specifier]
-			)
-			for (const specifier of shared)
-				attest(name.modules[specifier]).equals(main.modules[specifier])
-			attest({
-				main: Object.keys(main.modules).length,
-				name: Object.keys(name.modules).length,
-				shared: shared.length
-			}).snap({ main: 4, name: 5, shared: 2 })
-		})
-
 		it("declares a merged unit's node in its reader's scope", () => {
-			const files = {
-				"/main.ts": `import { type } from "arktype"
-export const T = type({ a: type("string.numeric.parse").to(type({ x: "number" }).or("number > 0")) })`
-			}
-			const [merged] = precompileInOrder(files, ["/main.ts"], files)
-			const unit = Object.values(merged.modules).find(code =>
-				code.includes("Allows")
-			)!
-			attest(normalized(unit.match(/^const \w+ = runtime\.freeze.*/gm)!)).snap([
-				"const #0 = runtime.freeze({"
+			const { code } = precompile(
+				`import { type } from "arktype"
+export const T = type({ a: type("string.numeric.parse").to(type({ x: "number" }).or("number > 0")) })`,
+				{},
+				{ inline: true }
+			)
+			attest(normalized(code.match(/^const \w+ = [\w$]+freeze\({$/gm)!)).snap([
+				"const #0 = $ark$0$freeze({"
 			])
 		})
 

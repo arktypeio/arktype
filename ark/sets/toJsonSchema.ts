@@ -2,8 +2,10 @@ import {
 	$ark,
 	mergeToJsonSchemaConfigs,
 	ToJsonSchema,
+	type Alias,
 	type BaseRoot,
 	type JsonSchema,
+	type Prop,
 	type RefinementKind,
 	type RootKind,
 	type Sequence,
@@ -11,18 +13,24 @@ import {
 	type Union,
 	type nodeOfKind
 } from "@ark/schema"
-import { appendStringifiedKey, flatMorph, hasKey, type dict } from "@ark/util"
+import {
+	appendStringifiedKey,
+	flatMorph,
+	hasKey,
+	isEmptyObject,
+	type dict
+} from "@ark/util"
 
 // JSON Schema's object type, which excludes what an Array basis allows
 export const isNonArray = (data: object): boolean => !Array.isArray(data)
 
 interface JsonSchemaContext extends ToJsonSchema.Context {
-	refs: BaseRoot[]
-	refNamesById: Record<string, string>
-	refCountsByPrefix: Record<string, number>
 	/** where in the Type the node being converted is, for its errors */
 	path: string
-	refPathsById: Record<string, string>
+	/** the ids of the nodes being converted, so one reached again is a cycle */
+	open: string[]
+	defNamesById: Record<string, string>
+	defs: Record<string, JsonSchema | undefined>
 }
 
 export const rootToJsonSchema = (
@@ -31,13 +39,7 @@ export const rootToJsonSchema = (
 ): JsonSchema => {
 	const ctx: JsonSchemaContext = Object.assign(
 		mergeToJsonSchemaConfigs(node.$.resolvedConfig.toJsonSchema, opts),
-		{
-			refs: [],
-			refNamesById: {},
-			refCountsByPrefix: {},
-			path: "",
-			refPathsById: {}
-		}
+		{ path: "", open: [], defNamesById: {}, defs: {} }
 	)
 	// a default handler throws naming where the part it can't convert is
 	ctx.fallback = flatMorph(ctx.fallback, (code, handler) => [
@@ -47,44 +49,22 @@ export const rootToJsonSchema = (
 		:	handler
 	]) as ToJsonSchema.HandlerByCode
 
-	ctx.useRefs ||= node.includesAlias
-
 	// ensure $schema is the first key if present
-	const schema: JsonSchema =
-		typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {}
+	const schema: JsonSchema = Object.assign(
+		typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {},
+		toJsonSchemaRecurse(node, ctx)
+	)
 
-	if (ctx.useRefs) {
-		// name defs in reference order so each prefix is numbered in key order
-		for (const ref of node.references)
-			if (ref.isRoot() && !ref.alwaysExpandJsonSchema) refNameOf(ref, ctx)
+	if (isEmptyObject(ctx.defs)) return schema
+	const defs = ctx.defs as Record<string, JsonSchema>
+	// draft-2020-12 uses $defs, draft-07 uses definitions
+	if (ctx.target === "draft-07") Object.assign(schema, { definitions: defs })
+	else if (ctx.target === "draft-2020-12") schema.$defs = defs
+	else {
+		// an OpenAPI document's components hold what a Schema Object can't
+		ctx.path = ""
+		return ctx.fallback.defs({ code: "defs", base: schema, defs })
 	}
-
-	Object.assign(schema, toJsonSchemaRecurse(node, ctx))
-
-	if (ctx.useRefs) {
-		const schemasByName: Record<string, JsonSchema> = {}
-		for (let i = 0; i < ctx.refs.length; i++) {
-			const ref = ctx.refs[i]
-			ctx.path = ctx.refPathsById[ref.id]
-			schemasByName[ctx.refNamesById[ref.id]] ??= toResolvedJsonSchema(ref, ctx)
-		}
-		// only nodes a $ref reaches are defined, not e.g. a discriminant's cases
-		const defs = flatMorph(node.references, (i, ref) => {
-			const name = ctx.refNamesById[ref.id]
-			return name in schemasByName ? [name, schemasByName[name]] : []
-		})
-		// an alias's resolution or a morph's out can be reached outside node.references
-		Object.assign(defs, schemasByName)
-		// draft-2020-12 uses $defs, draft-07 uses definitions
-		if (ctx.target === "draft-07") Object.assign(schema, { definitions: defs })
-		else if (ctx.target === "draft-2020-12") schema.$defs = defs
-		else {
-			// an OpenAPI document's components hold what a Schema Object can't
-			ctx.path = ""
-			return ctx.fallback.defs({ code: "defs", base: schema, defs })
-		}
-	}
-
 	return schema
 }
 
@@ -98,24 +78,57 @@ export const toJsonSchemaRecurse = (
 	node: BaseRoot,
 	ctx: JsonSchemaContext
 ): JsonSchema => {
-	if (ctx.useRefs && !node.alwaysExpandJsonSchema) {
-		ctx.refs.push(node)
-		ctx.refPathsById[node.id] ??= ctx.path
-		return {
-			$ref: refPrefixByTarget[ctx.target] + refNameOf(node, ctx)
-		} as JsonSchema.Ref
+	// a cyclic alias's resolution is written once, named by the alias
+	if (node.hasKind("alias")) {
+		const name = aliasNameOf(node)
+		if (name !== undefined) nameDef(node.resolution, name, ctx)
+		return toJsonSchemaRecurse(node.resolution, ctx)
 	}
-
-	return toResolvedJsonSchema(node, ctx)
+	const i = ctx.open.lastIndexOf(node.id)
+	// a cycle through no def would be converted forever, so it's named by its
+	// id, like useRefs' parts
+	if (
+		(i !== -1 && ctx.open.slice(i).every(id => !(id in ctx.defNamesById))) ||
+		(ctx.useRefs && !node.alwaysExpandJsonSchema)
+	)
+		nameDef(node, nameOfId(node.id), ctx)
+	const name = ctx.defNamesById[node.id]
+	if (name !== undefined && (i !== -1 || ctx.defs[name]))
+		return refTo(name, ctx)
+	ctx.open.push(node.id)
+	const schema = toResolvedJsonSchema(node, ctx)
+	ctx.open.pop()
+	// reaching it again while it was converted can have named it
+	const defName = ctx.defNamesById[node.id]
+	if (defName === undefined) return schema
+	ctx.defs[defName] = schema
+	return refTo(defName, ctx)
 }
 
-const refNameOf = (node: BaseRoot, ctx: JsonSchemaContext): string => {
-	if (node.id in ctx.refNamesById) return ctx.refNamesById[node.id]
-	// an id's prefix is its alias or kind, but its count depends on unrelated nodes
-	const prefix = node.id.replace(/\d+$/, "")
-	ctx.refCountsByPrefix[prefix] ??= 0
-	return (ctx.refNamesById[node.id] =
-		`${prefix}${++ctx.refCountsByPrefix[prefix]}`)
+const refTo = (name: string, ctx: JsonSchemaContext): JsonSchema.Ref =>
+	({ $ref: refPrefixByTarget[ctx.target] + name }) as JsonSchema.Ref
+
+// the alias a cyclic definition's id starts with, without the count after it
+const nameOfId = (id: string): string => id.replace(/(?<=\d)_\d+$|\d+$/, "")
+
+// an input or output is named by the alias it was read from, and an alias of
+// an anonymous value, like a union holding an alias, names nothing
+const aliasNameOf = (node: Alias.Node): string | undefined =>
+	node.isIo ? aliasNameOf(node.operands![0] as Alias.Node)
+	: node.reference === node.resolution.id ? nameOfId(node.reference)
+	: undefined
+
+const nameDef = (
+	node: BaseRoot,
+	name: string,
+	ctx: JsonSchemaContext
+): void => {
+	if (node.id in ctx.defNamesById) return
+	let unique = name
+	for (let i = 2; unique in ctx.defs; i++) unique = `${name}${i}`
+	// reserved, so $defs are in the order they're named
+	ctx.defs[unique] = undefined
+	ctx.defNamesById[node.id] = unique
 }
 
 const toResolvedJsonSchema = (
@@ -171,7 +184,7 @@ const branchGroupsToJsonSchema = (
 	// what's left of a union without its null
 	if (jsonSchemaBranches.length === 1) return jsonSchemaBranches[0]
 
-	// openapi-3.0 writes a unit as a typed enum
+	// openapi-3.0 writes a unit as an enum
 	const unitKey = ctx.target === "openapi-3.0" ? "enum" : "const"
 	if (
 		jsonSchemaBranches.every(
@@ -181,7 +194,7 @@ const branchGroupsToJsonSchema = (
 				Object.entries(branch).every(
 					([k, v]) =>
 						k === unitKey ||
-						(k === "type" && unitKey === "enum") ||
+						k === "type" ||
 						v === (node.meta as dict)[k] ||
 						v === (node.metaJson as dict)[k]
 				) && hasKey(branch, unitKey)
@@ -254,29 +267,32 @@ const innerToJsonSchemaByKind: {
 	alias: (node, ctx) => toJsonSchemaRecurse(node.resolution, ctx),
 	union: (node, ctx) => {
 		const branchGroups = branchGroupsOf(node)
-		if (ctx.target === "openapi-3.0") {
-			const nonNull = branchGroups.filter(branch => !branch.hasUnit(null))
-			if (nonNull.length < branchGroups.length) {
-				const schema = branchGroupsToJsonSchema(node, nonNull, ctx)
-				// nullable adds null to the type beside it, so an enum must list it
-				if (typeof (schema as JsonSchema.Constrainable).type === "string") {
-					return Object.assign(
-						schema,
-						{ nullable: true },
-						"enum" in schema && { enum: [...schema.enum, null] }
-					)
+		const nonNull = branchGroups.filter(branch => !branch.hasUnit(null))
+		if (nonNull.length === branchGroups.length)
+			return branchGroupsToJsonSchema(node, branchGroups, ctx)
+		// null is written beside the rest, so their values still share a type
+		const schema = branchGroupsToJsonSchema(node, nonNull, ctx)
+		// nullable adds null to the type beside it, so an enum must list it
+		if (
+			ctx.target === "openapi-3.0" &&
+			typeof (schema as JsonSchema.Constrainable).type === "string"
+		) {
+			return Object.assign(
+				schema,
+				{ nullable: true },
+				"enum" in schema && {
+					enum: [...(schema as JsonSchema.Enum).enum, null]
 				}
-				return {
-					anyOf: [
-						...(nonNull.length > 1 && "anyOf" in schema ?
-							schema.anyOf
-						:	[schema]),
-						openApiNull()
-					]
-				}
-			}
+			)
 		}
-		return branchGroupsToJsonSchema(node, branchGroups, ctx)
+		return {
+			anyOf: [
+				...(nonNull.length > 1 && "anyOf" in schema ?
+					(schema as JsonSchema.Union).anyOf
+				:	[schema]),
+				ctx.target === "openapi-3.0" ? openApiNull() : { type: "null" }
+			]
+		}
 	},
 	morph: (node, ctx) =>
 		ctx.io === "in" ?
@@ -300,7 +316,7 @@ const innerToJsonSchemaByKind: {
 			ctx.fallback.unit({ code: "unit", base: {}, unit: node.unit })
 		: ctx.target === "openapi-3.0" ?
 			{ type: typeof node.unit as JsonSchema.TypeName, enum: [node.unit] }
-		:	{ const: node.unit },
+		:	{ type: typeof node.unit as JsonSchema.TypeName, const: node.unit },
 	intersection: (node, ctx) =>
 		node.children.reduce<JsonSchema>(
 			// cast is required since TS doesn't know children have compatible schema prerequisites
@@ -331,7 +347,7 @@ const innerToJsonSchemaByKind: {
 				})
 		}
 	},
-	domain: (node, ctx): JsonSchema.Constrainable => {
+	domain: (node, ctx): JsonSchema.Constrainable | JsonSchema.Object => {
 		if (node.domain === "bigint" || node.domain === "symbol") {
 			return ctx.fallback.domain({
 				code: "domain",
@@ -339,9 +355,10 @@ const innerToJsonSchemaByKind: {
 				domain: node.domain
 			})
 		}
-		return {
-			type: node.domain
-		}
+		// an object declaring no keys has no properties, as Zod writes it
+		return node.domain === "object" ?
+				{ type: "object", properties: {} }
+			:	{ type: node.domain }
 	}
 }
 
@@ -351,11 +368,13 @@ const reduceObjectJsonSchema = (
 	ctx: JsonSchemaContext
 ): JsonSchema.Object => {
 	const path = ctx.path
+	// keys an index declares are written as its patterns instead
+	if (node.index && !node.props.length) delete schema.properties
 	if (node.props.length) {
 		schema.properties = {}
 		for (const prop of node.props) {
 			ctx.path = appendStringifiedKey(path, prop.key)
-			const valueSchema = toJsonSchemaRecurse(prop.value, ctx)
+			const valueSchema = toJsonSchemaRecurse(jsonValueOf(prop), ctx)
 
 			if (typeof prop.key === "symbol") {
 				schema = ctx.fallback.symbolKey({
@@ -484,6 +503,17 @@ const reduceObjectJsonSchema = (
 
 	return schema
 }
+
+// JSON has no undefined, so an optional key holds it only by being absent
+const jsonValueOf = (prop: Prop.Node): BaseRoot =>
+	(
+		prop.optional &&
+		prop.value.branches.some(branch => branch.hasUnit(undefined))
+	) ?
+		prop.value.$.schema(
+			prop.value.branches.filter(branch => !branch.hasUnit(undefined))
+		)
+	:	prop.value
 
 interface IndexKey {
 	node: BaseRoot
@@ -725,7 +755,9 @@ const reduceJsonSchemaByKind: {
 			schema.not ?
 				{
 					enum: [
-						...("enum" in schema.not ? schema.not.enum : [schema.not.const]),
+						...("enum" in schema.not ?
+							(schema.not as JsonSchema.Enum).enum
+						:	[schema.not.const]),
 						node.rule
 					]
 				}
@@ -742,7 +774,9 @@ const reduceJsonSchemaByKind: {
 			schema.not ?
 				{
 					anyOf: [
-						...("anyOf" in schema.not ? schema.not.anyOf : [schema.not]),
+						...("anyOf" in schema.not ?
+							(schema.not as JsonSchema.Union).anyOf
+						:	[schema.not]),
 						excluded
 					]
 				}

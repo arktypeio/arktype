@@ -1,6 +1,7 @@
 import {
 	$ark,
 	hasArkKind,
+	writeMissingImportMessage,
 	writePrecompiledUnits,
 	type BaseRoot,
 	type ErrorDetail,
@@ -16,7 +17,9 @@ import {
 	hashOf,
 	hasDomain,
 	includes,
+	InternalArktypeError,
 	ParseError,
+	printable,
 	registeredNameOf,
 	throwError,
 	throwParseError
@@ -31,6 +34,7 @@ import {
 	appendPath,
 	defaultMembers,
 	holeNamePattern,
+	introspectionMembers,
 	isTypedFn,
 	keyOf,
 	kindNameOf,
@@ -47,8 +51,7 @@ import {
 	type StandaloneFactory,
 	type StandaloneIntrospection,
 	type StandaloneOptions,
-	type ScopeAlias,
-	type UnitReaders
+	type ScopeAlias
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join, relative } from "node:path"
@@ -70,6 +73,8 @@ import {
 	isArk,
 	isArkObject,
 	isFunctionNode,
+	isObjectWrite,
+	writeOf,
 	isOnlyType,
 	isRuntimeExport,
 	isTypeMemberRead,
@@ -90,7 +95,9 @@ import {
 import {
 	allowUnsafeHint,
 	arkPackageName,
+	arktypeEntryOf,
 	dependencyOf,
+	readsNodes,
 	runtimeVariantOf,
 	transformedId,
 	writeVariantOption,
@@ -146,6 +153,7 @@ import {
 	markerHint,
 	nodePackageHint,
 	runtimeImportHint,
+	dynamicImportHint,
 	unresolvedHint,
 	versionHint,
 	writeErrorsMismatchMessage,
@@ -182,7 +190,7 @@ export interface PrecompileOptions extends InterpreterOptions {
 	/** inline virtual modules, for hosts without them */
 	inline?: boolean | undefined
 	/** what a factory checks at creation */
-	checks?: Checks | undefined
+	creationChecks?: Checks | undefined
 	/** members a validator has besides validating */
 	members?: ValidatorMembers | undefined
 	/** "first" stops at the first issue, "none" says only "is invalid" */
@@ -195,8 +203,6 @@ export interface PrecompileOptions extends InterpreterOptions {
 	optimize?: Optimization | undefined
 	/** "size" writes errors smaller and slower to read, defaulting to optimize */
 	optimizeErrors?: Optimization | undefined
-	/** rejects undeclared keys by counting a plain object's own enumerable keys */
-	countsKeys?: boolean | undefined
 	/** also create each site with arktype and throw where they diverge */
 	shadow?: boolean | undefined
 	/** warn rather than fail where the output may throw at runtime */
@@ -215,8 +221,6 @@ export interface PrecompiledModule extends ModuleAnalysis {
 	map: SourceMap | undefined
 	// virtual module sources by specifier
 	modules: Record<string, string>
-	// readers of each unit module that could join another's scope, for a later build
-	unitReaders: UnitReaders
 }
 
 // an arktype export, or "reference" for the program's own Type
@@ -275,8 +279,8 @@ export interface Reference {
 	start: number
 	end: number
 	value: unknown
-	// reads an unwritten binding a site initialized
-	isFixed: boolean
+	// the unwritten binding a site initialized that it reads
+	fixedBy: Binding | undefined
 	// a function or symbol its own module creates
 	isOwnHole: boolean
 	// imported from a module that only declares and has run
@@ -401,6 +405,9 @@ export class Precompiler {
 	private members: ValidatorMembers
 	// e.g. traverse, from and toString where members.methods is false
 	private lackedMembers: ReadonlySet<string>
+	// those and the introspection members it doesn't bake, which a read off
+	// what may be a Type can't fold
+	private unsureLackedMembers: ReadonlySet<string>
 	private errors: ErrorDetail | undefined
 	private variant: RuntimeVariant | undefined
 	private mutatesInput: MutatesInput | undefined
@@ -421,6 +428,9 @@ export class Precompiler {
 	private bindingsByInput = new WeakMap<Input, Binding>()
 	// e.g. a Scope configured by a parameter
 	private refusedContainers = new Map<unknown, [Node, SourceModule]>()
+	// each warning that a site accepts a value as a Standard Schema, by the
+	// site's span, which writing it may still refuse
+	private schemaWarningSpans = new WeakMap<Diagnostic, Span>()
 	private packagesByEntry: Record<string, [root: string, version: string]> =
 		Object.create(null)
 	private copiesByPackage: Record<ArkPackage, Record<string, PackageCopy>> = {
@@ -430,8 +440,6 @@ export class Precompiler {
 	}
 	private reportedDependencies = new Set<string>()
 	private intrinsicUnits: Record<string, string> | undefined
-	// what earlier builds' unitReaders recorded across the program
-	unitReaders: UnitReaders | undefined
 
 	constructor(host: PrecompileHost, opts: PrecompileOptions = {}) {
 		opts = resolvePrecompileOptions(opts)
@@ -443,7 +451,7 @@ export class Precompiler {
 		this.config = opts.config || undefined
 		this.configures = opts.config !== false
 		this.inline = !!opts.inline
-		const checks = opts.checks ?? "types"
+		const checks = opts.creationChecks ?? "types"
 		this.checkHelpers = this.mode === "standalone" && checks === "helpers"
 		this.shadow = this.mode === "standalone" && !!opts.shadow
 		this.allowUnsafe = !!opts.allowUnsafe
@@ -458,8 +466,7 @@ export class Precompiler {
 			lazy: opts.lazy !== false,
 			checks,
 			mutatesInput: this.mutatesInput,
-			optimize: opts.optimize ?? "speed",
-			countsKeys: opts.countsKeys
+			optimize: opts.optimize ?? "speed"
 		}
 		this.lackedMembers = new Set(
 			defaultMembers.flatMap(member =>
@@ -468,6 +475,10 @@ export class Precompiler {
 				: [member]
 			)
 		)
+		this.unsureLackedMembers = new Set([
+			...this.lackedMembers,
+			...introspectionMembers.filter(member => !this.members[member])
+		])
 		const contract: ShadowContract = {}
 		if (this.members.meta === false) contract.members = { meta: false }
 		if (this.mutatesInput) contract.mutatesInput = this.mutatesInput
@@ -480,7 +491,16 @@ export class Precompiler {
 		return transformedId.test(id) && this.graph.isFollowed(id)
 	}
 
+	// what a build reports for a module, as some refusals surface only while
+	// it writes validators
 	analyze(source: string, id: string): ModuleAnalysis {
+		const { sites, diagnostics, dependencies } = this.precompile(source, id)
+		return { sites, diagnostics, dependencies }
+	}
+
+	// its sites and diagnostics before validators are written, under the
+	// thread's configuration
+	analyzeSites(source: string, id: string): ModuleAnalysis {
 		const module = this.add(id, source)
 		// analyzed under the thread's configuration
 		if (threadConfiguration) this.configuration ??= this.applyConfiguration()
@@ -674,6 +694,7 @@ export class Precompiler {
 		const warnings: string[] = []
 		if (
 			this.mode === "standalone" &&
+			!readsNodes(importer) &&
 			!this.reportedDependencies.has(dependency)
 		) {
 			this.reportedDependencies.add(dependency)
@@ -748,7 +769,7 @@ export class Precompiler {
 					node.source
 				:	null
 			const name = specifier && arkPackageSpecifier.exec(specifier.value)?.[1]
-			if (!name) continue
+			if (!name || !(name in this.copiesByPackage)) continue
 			for (const report of this.readCopies(name as ArkPackage, id)) {
 				diagnostics.push(
 					this.diagnostic(
@@ -766,7 +787,6 @@ export class Precompiler {
 		let prefix = "$ark"
 		while (source.includes(prefix)) prefix += "$"
 		const modules: Record<string, string> = {}
-		const readers: UnitReaders = {}
 		// locals for virtual modules' exports, by specifier
 		const imports: Record<string, Record<string, string>> = {}
 		if (this.mode === "standalone") {
@@ -776,7 +796,6 @@ export class Precompiler {
 				s,
 				prefix,
 				modules,
-				readers,
 				imports,
 				diagnostics
 			)
@@ -869,8 +888,7 @@ export class Precompiler {
 			sites,
 			dependencies: this.dependenciesOfArtifact(module),
 			diagnostics,
-			modules: this.inline ? {} : modules,
-			unitReaders: readers
+			modules: this.inline ? {} : modules
 		}
 	}
 
@@ -1033,7 +1051,7 @@ export class Precompiler {
 			(statement): statement is ImportDeclaration =>
 				statement.type === "ImportDeclaration" &&
 				statement.importKind !== "type" &&
-				(statement.source.value === "arktype" ||
+				(arktypeEntryOf(statement.source.value) === "arktype" ||
 					statement.specifiers.some(specifier => {
 						const binding = module.scopes.bindingsById.get(specifier.local)
 						return !!binding && this.definesArk(binding, module)
@@ -1216,7 +1234,6 @@ export class Precompiler {
 		s: MagicString,
 		prefix: string,
 		modules: Record<string, string>,
-		readers: UnitReaders,
 		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[]
 	): Record<string, Record<string, string>> {
@@ -1262,6 +1279,12 @@ export class Precompiler {
 					!isEncodingError(site.parseError)
 				)
 					diagnostics.push(this.refuseWritten(module, site, reasons))
+				// a site it refuses accepts nothing as a Standard Schema
+				for (let i = diagnostics.length - 1; i >= 0; i--) {
+					const span = this.schemaWarningSpans.get(diagnostics[i])
+					if (span?.start === site.start && span.end === site.end)
+						diagnostics.splice(i, 1)
+				}
 				continue
 			}
 			// checked at each call, as a factory is
@@ -1324,8 +1347,7 @@ export class Precompiler {
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module),
 						// shadow mode calls what it compares
-						values: !this.shadow,
-						unitReaders: this.unitReaders
+						values: !this.shadow
 					},
 					refusalsByName,
 					this.inline
@@ -1362,7 +1384,6 @@ export class Precompiler {
 					if (!(specifier in modules)) {
 						modules[specifier] = validators.code
 						Object.assign(modules, validators.modules)
-						Object.assign(readers, validators.unitReaders)
 					}
 					;(imports[specifier] ??= {})[exported] = local
 				}
@@ -1487,7 +1508,7 @@ export class Precompiler {
 		for (const statement of module.program.body) {
 			if (
 				statement.type !== "ImportDeclaration" ||
-				statement.source.value !== "arktype" ||
+				arktypeEntryOf(statement.source.value) !== "arktype" ||
 				statement.importKind === "type"
 			)
 				continue
@@ -1663,7 +1684,14 @@ export class Precompiler {
 				continue
 			}
 			// a Type without holes is written into the site
-			if (holes.length && this.isIslandValue(reference.value, site)) {
+			if (
+				holes.length &&
+				this.isIslandValue(
+					reference.value,
+					site,
+					reference.fixedBy && [reference.fixedBy, module]
+				)
+			) {
 				if (!passed.has(reference.value)) reasons.push(islandValueMessage(text))
 				passed.add(reference.value)
 				for (const value of holes) read.add(value)
@@ -1731,7 +1759,9 @@ export class Precompiler {
 			readsByRoot.set(key, [...(readsByRoot.get(key) ?? []), input])
 		}
 		for (const reads of readsByRoot.values()) {
-			const island = reads.find(input => this.isIslandValue(input.value, site))
+			const island = reads.find(input =>
+				this.isIslandValue(input.value, site, this.originOf(input, module))
+			)
 			if (island) {
 				reasons.push(islandValueMessage(textOfInput(island)))
 				continue
@@ -1831,8 +1861,15 @@ export class Precompiler {
 	}
 
 	// a factory can't receive a runtime island's Type
-	private isIslandValue(value: unknown, site: Site): boolean {
+	private isIslandValue(
+		value: unknown,
+		site: Site,
+		origin: [Binding, SourceModule] | undefined
+	): boolean {
 		if (!hasArkKind(value, "root")) return false
+		// a binding a site initialized holds that site's Type, not one equal to it
+		if (origin && this.isCreatedBy(origin[0], value))
+			return isInIsland(origin[0].declaration, origin[1])
 		for (const state of this.interpreter.sitesByNode.values()) {
 			if (state.value === value && isInIsland(state.node, state.module))
 				return true
@@ -1850,6 +1887,22 @@ export class Precompiler {
 				(target.kind === "expression" && isInIsland(target.node, target.module))
 			)
 		})
+	}
+
+	private originOf(
+		input: Input,
+		module: SourceModule
+	): [Binding, SourceModule] | undefined {
+		if (input.path.length) return
+		if (input.kind === "local")
+			return [this.bindingsByInput.get(input)!, module]
+		const target = this.graph.exportOf(
+			this.graph.moduleOf(input.file!) as SourceModule,
+			input.name
+		)
+		return target.kind === "binding" ?
+				[target.binding, target.module]
+			:	undefined
 	}
 
 	private inputExpressionOf(
@@ -1952,7 +2005,7 @@ export class Precompiler {
 	private incomparableReasonsOf(site: Site, module: SourceModule): string[] {
 		const reads: [value: unknown, text: string][] = [
 			...site.references
-				.filter(reference => !reference.isFixed)
+				.filter(reference => !reference.fixedBy)
 				.map((reference): [unknown, string] => [
 					reference.value,
 					module.snippetOf(reference)
@@ -2023,7 +2076,8 @@ export class Precompiler {
 		)
 	}
 
-	// configured errors and mutatesInput must match the build's
+	// errors and mutatesInput a Scope configures must match the build's, as
+	// configure()'s are checked at the call
 	private configuredReasonsOf(site: Site): string[] {
 		const value = createdBy(site)
 		if (this.mode !== "standalone" || !value) return []
@@ -2032,13 +2086,20 @@ export class Precompiler {
 		const builtErrors = this.errors ?? "all"
 		const errors = roots
 			.map(root => root.$.config.errors)
-			.find(errors => errors !== undefined && errors !== builtErrors)
+			.find(
+				errors =>
+					errors !== undefined &&
+					errors !== builtErrors &&
+					errors !== $ark.config.errors
+			)
 		const builtMutatesInput = this.mutatesInput ?? false
 		const mutatesInput = roots
 			.map(root => root.$.config.mutatesInput)
 			.find(
 				mutatesInput =>
-					mutatesInput !== undefined && mutatesInput !== builtMutatesInput
+					mutatesInput !== undefined &&
+					mutatesInput !== builtMutatesInput &&
+					mutatesInput !== $ark.config.mutatesInput
 			)
 		const result: string[] = []
 		if (errors) result.push(writeErrorsMismatchMessage(errors, builtErrors))
@@ -2254,7 +2315,8 @@ export class Precompiler {
 		if (this.mode === "standalone") {
 			diagnostics.push(
 				...this.checkStandalone(module, candidates, settled),
-				...this.checkIslands(module, sites)
+				...this.checkIslands(module, sites),
+				...this.checkDynamicImports(module)
 			)
 		}
 		return {
@@ -2659,10 +2721,7 @@ export class Precompiler {
 					start: node.start,
 					end: node.end,
 					value,
-					isFixed:
-						!isImportInput &&
-						read.type === "Identifier" &&
-						this.isCreatedBy(module.scopes.refsById.get(read)?.binding, value),
+					fixedBy: this.fixedByOf(read, value, isImportInput, module),
 					isOwnHole: this.interpreter.isOwnHole(node, value, module),
 					isInert: this.isInertRead(
 						value,
@@ -2678,6 +2737,17 @@ export class Precompiler {
 	}
 
 	// e.g. `$` in `const $ = scope(…)`
+	private fixedByOf(
+		read: Node,
+		value: unknown,
+		isImportInput: boolean,
+		module: SourceModule
+	): Binding | undefined {
+		if (isImportInput || read.type !== "Identifier") return
+		const binding = module.scopes.refsById.get(read)?.binding
+		return this.isCreatedBy(binding, value) ? binding : undefined
+	}
+
 	private isCreatedBy(binding: Binding | undefined, value: unknown): boolean {
 		const declaration = binding?.declaration
 		return (
@@ -2859,17 +2929,17 @@ export class Precompiler {
 			const source = candidate.state.readsByValue.get(standIn.dynamic)?.[0]
 			const [node, origin] =
 				source ? [source, module] : [standIn.node, standIn.module]
-			result.push(
-				this.diagnostic(
-					origin,
-					node,
-					"R4",
-					`\`${origin.snippetOf(node)}\` is not static, so the site accepts it only as a Standard Schema that is not a Type`,
-					chainOf(standIn.dynamic),
-					opaqueSchemaHint,
-					"warning"
-				)
+			const warning = this.diagnostic(
+				origin,
+				node,
+				"R4",
+				`\`${origin.snippetOf(node)}\` is not static, so the site accepts it only as a Standard Schema that is not a Type`,
+				chainOf(standIn.dynamic),
+				opaqueSchemaHint,
+				"warning"
 			)
+			this.schemaWarningSpans.set(warning, { start: site.start, end: site.end })
+			result.push(warning)
 		}
 		return result
 	}
@@ -3045,6 +3115,68 @@ export class Precompiler {
 			if (problem) {
 				result.push(
 					this.diagnostic(module, calls[i], "R3", problem, reasons, hint)
+				)
+			} else if (this.mode === "standalone")
+				result.push(...this.checkConfiguredOptions(module, calls[i]))
+		}
+		return result
+	}
+
+	// errors and mutatesInput configure() sets, reported once at the call
+	// rather than at each site it configures
+	private checkConfiguredOptions(
+		module: SourceModule,
+		call: CallExpression
+	): Diagnostic[] {
+		const result: Diagnostic[] = []
+		const built = {
+			errors: this.errors ?? "all",
+			mutatesInput: this.mutatesInput ?? false
+		}
+		const imported = this.importClosureOf(module.id).flatMap(id => {
+			const reached = this.graph.moduleOf(id)
+			return reached instanceof SourceModule ?
+					reached.program.body.flatMap(statement =>
+						statement.type === "ImportDeclaration" ?
+							[arktypeEntryOf(statement.source.value)]
+						:	[]
+					)
+				:	[]
+		})
+		for (const option of ["errors", "mutatesInput"] as const) {
+			const configured = $ark.config[option]
+			if (configured === undefined) continue
+			if (configured !== built[option]) {
+				result.push(
+					this.diagnostic(
+						module,
+						call,
+						"R3",
+						option === "errors" ?
+							writeErrorsMismatchMessage(configured as never, built.errors)
+						:	writeMutatesInputMismatchMessage(
+								configured as never,
+								built.mutatesInput
+							),
+						[],
+						`Build with ${option}: ${printable(configured)} too, as a standalone validator returns what arktype does as the program configures it.`
+					)
+				)
+			}
+			if (
+				configured !== "all" &&
+				configured !== false &&
+				!imported.includes(`arktype/${option}`)
+			) {
+				result.push(
+					this.diagnostic(
+						module,
+						call,
+						"R3",
+						writeMissingImportMessage(option, printable(configured)),
+						[],
+						`Import "arktype/${option}" in the config module, as arktype throws creating a Type without it.`
+					)
 				)
 			}
 		}
@@ -3337,7 +3469,7 @@ export class Precompiler {
 			const read =
 				!(node.type === "MemberExpression" && isWriteTarget(node)) &&
 				!writes.has(node) &&
-				this.graph.unavailableReadOf(node, module, this.lackedMembers)
+				this.graph.unavailableReadOf(node, module, this.unsureLackedMembers)
 			if (read && !this.isDeclaredInIsland(read[1], module))
 				unavailable.push([node, ...read])
 			const scopeRead =
@@ -3414,8 +3546,9 @@ export class Precompiler {
 					isDerived ? derivedHint
 					: isUnsure ?
 						writeUnsureHint(
-							dropped ?
-								`leave members[${JSON.stringify(dropped)}] unset`
+							dropped ? `leave members[${JSON.stringify(dropped)}] unset`
+							: includes(introspectionMembers, read) ?
+								`set members[${JSON.stringify(read)}] true, or build with runtime: "arktype"`
 							:	'build with runtime: "arktype"'
 						)
 					: dropped ?
@@ -3593,7 +3726,7 @@ export class Precompiler {
 			if (write) {
 				for (let i = objects.length - 1; i >= 0; i--) {
 					const state = this.interpreter.evaluateSite(
-						createSiteState(objects[i], module)
+						createSiteState(objects[i], module, true)
 					)
 					if (isWritten(state.value))
 						return [write, objects[i], i === objects.length - 1]
@@ -3602,6 +3735,49 @@ export class Precompiler {
 			}
 			objects.push(parent)
 		}
+	}
+
+	// e.g. `(await import("arktype")).type`, which loads arktype/runtime where
+	// the build sees no definition to precompile
+	private checkDynamicImports(module: SourceModule): Diagnostic[] {
+		const result: Diagnostic[] = []
+		walk(module.program, node => {
+			const source =
+				node.type === "ImportExpression" ? node.source
+					// e.g. one createRequire() returns
+				: (
+					node.type === "CallExpression" &&
+					node.callee.type === "Identifier" &&
+					node.callee.name === "require"
+				) ?
+					node.arguments[0]
+				: (
+					node.type === "TSImportEqualsDeclaration" &&
+					node.importKind !== "type" &&
+					node.moduleReference.type === "TSExternalModuleReference"
+				) ?
+					node.moduleReference.expression
+				:	undefined
+			if (
+				source?.type === "Literal" &&
+				typeof source.value === "string" &&
+				arktypeEntryOf(source.value) === "arktype" &&
+				!isDiscarded(node)
+			) {
+				result.push(
+					this.diagnostic(
+						module,
+						node,
+						"R4",
+						`${module.snippetOf(node)} loads arktype, which a standalone build replaces with arktype/runtime`,
+						[],
+						dynamicImportHint
+					)
+				)
+			}
+			return true
+		})
+		return result
 	}
 
 	// what a runtime island reaches must run on arktype too
@@ -3853,7 +4029,10 @@ export class Precompiler {
 	): boolean {
 		if (binding?.kind !== "import") return false
 		const target = this.graph.importOf(binding, module)
-		return target.kind === "arktypeNamespace" && target.specifier === "arktype"
+		return (
+			target.kind === "arktypeNamespace" &&
+			arktypeEntryOf(target.specifier) === "arktype"
+		)
 	}
 
 	// what may throw at runtime fails unless allowUnsafe is set
@@ -3952,42 +4131,23 @@ const sharedSchemaExports = Object.keys(runtimeExports).filter(
 const isEncodingError = (e: Error) =>
 	e.message.startsWith(writeMissingInverseMessage(""))
 
+// e.g. `await import("arktype")` as a statement, loading a module only to run it
+const isDiscarded = (node: Node): boolean => {
+	let [, parent] = operatorOf(node)
+	while (
+		parent?.type === "AwaitExpression" ||
+		(parent?.type === "UnaryExpression" && parent.operator === "void")
+	)
+		[, parent] = operatorOf(parent)
+	return parent?.type === "ExpressionStatement"
+}
+
+// e.g. `from "arktype"`, or `import("arktype")` and `require("arktype")`,
+// which the build reports
 const arktypeSpecifier =
-	/\b(?:from|import)\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
+	/\b(?:from|import\s*\(?|require\s*\()\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
 
 const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
-
-const writersByGlobal: Record<string, string[]> = {
-	Object: ["assign", "defineProperty", "defineProperties", "setPrototypeOf"],
-	Reflect: ["set", "defineProperty", "deleteProperty", "setPrototypeOf"]
-}
-
-// e.g. `Object.assign`, when `Object` is the global
-const isObjectWrite = (callee: Node, module: SourceModule): boolean => {
-	callee = unwrapExpression(callee)
-	return (
-		callee.type === "MemberExpression" &&
-		!callee.computed &&
-		callee.object.type === "Identifier" &&
-		!module.scopes.refsById.get(callee.object)?.binding &&
-		!!writersByGlobal[callee.object.name]?.includes(callee.property.name)
-	)
-}
-
-// the assignment, update or `delete` a target is part of
-const writeOf = (target: Node): Node => {
-	const parent = target.parent!
-	switch (parent.type) {
-		case "AssignmentExpression":
-		case "UpdateExpression":
-		case "UnaryExpression":
-			return parent
-		case "ForInStatement":
-		case "ForOfStatement":
-			return target
-	}
-	return writeOf(parent)
-}
 
 export const specifierOf = (importer: string, file: string): string => {
 	const path = relative(dirname(importer), file).split("\\").join("/")
@@ -4122,6 +4282,10 @@ const chainOf = (dynamic: DynamicValue): string[] => {
 // e.g. a configured writer calling a function in a site's meta
 export const reasonsOf = (e: unknown): string[] =>
 	e instanceof DynamicValue ? chainOf(e)
+	: e instanceof InternalArktypeError ?
+		[
+			`${e.message}, which is a bug in the build: please report it at https://github.com/arktypeio/arktype/issues`
+		]
 	: e instanceof Error ? [e.message]
 	: [String(e)]
 

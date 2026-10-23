@@ -1043,11 +1043,11 @@ export abstract class BaseNode<
 
 		if (
 			this.hasKind("structure") &&
-			this.undeclared !== ctx.undeclaredHandling
+			this.handlesUndeclared !== ctx.undeclaredHandling
 		) {
 			ctx = {
 				...ctx,
-				undeclaredHandling: this.undeclared
+				undeclaredHandling: this.handlesUndeclared
 			}
 		}
 
@@ -1373,6 +1373,8 @@ const elementAt = (node: Sequence.Node, length: number, i: number): BaseNode =>
 const simulatedEntriesOf = (node: BaseNode): BaseNode["innerEntries"] =>
 	node.hasKind("sequence") && node.inner.minVariadicLength ?
 		node.innerEntries.filter(([k]) => k !== "minVariadicLength")
+	: node.hasKind("structure") && node.inner.order ?
+		node.innerEntries.filter(([k]) => k !== "order")
 	:	node.innerEntries
 
 let isSubsuming = false
@@ -1745,6 +1747,7 @@ export const writeInnerJson = (node: BaseNode): JsonObject => {
 	const json: JsonObject = {}
 	for (const [k, v] of node.innerEntries) {
 		const keyImpl = node.impl.keys[k]
+		if (keyImpl.unserialized) continue
 		const serialize =
 			keyImpl.serialize ??
 			(keyImpl.child ? serializeListableChild : defaultValueSerializer)

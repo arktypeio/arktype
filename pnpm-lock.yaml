@@ -44,6 +44,9 @@ importers:
       '@standard-schema/spec':
         specifier: 1.0.0
         version: 1.0.0
+      '@types/json-schema':
+        specifier: 7.0.15
+        version: 7.0.15
       '@types/mocha':
         specifier: 10.0.10
         version: 10.0.10
@@ -437,12 +440,13 @@ importers:
       '@ark/util':
         specifier: workspace:*
         version: link:../util
-      arktype:
-        specifier: workspace:*
-        version: link:../type
       fast-check:
         specifier: 3 || 4
         version: 3.23.2
+    devDependencies:
+      arktype:
+        specifier: workspace:*
+        version: link:../type
 
   ark/fs: {}
 
@@ -457,6 +461,7 @@ importers:
       arksets:
         specifier: workspace:*
         version: link:../sets
+    devDependencies:
       arktype:
         specifier: workspace:*
         version: link:../type

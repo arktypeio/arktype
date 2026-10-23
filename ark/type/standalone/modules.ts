@@ -1,4 +1,3 @@
-import { hashOf } from "@ark/util"
 import { runtimeImport, type StandaloneOptions } from "../standalone.ts"
 
 export interface SharedModule {
@@ -25,9 +24,7 @@ export interface UnitScope {
 }
 
 // "" reads for the artifact's own code
-export type UnitReaders = Record<string, readonly string[]>
-
-export const readersIn = (
+const readersIn = (
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>
 ): Record<string, string[]> => {
@@ -44,23 +41,17 @@ export const readersIn = (
 export const mergeUnits = (
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>,
-	readers: UnitReaders,
 	opts: StandaloneOptions
-): string[] => {
-	const ownReaders = readersIn(shared, imports)
+): void => {
+	const readers = readersIn(shared, imports)
 	const roots: Record<string, string> = {}
 	const rootOf = (specifier: string): string => {
 		if (specifier in roots) return roots[specifier]
 		roots[specifier] = specifier
-		if (
-			!shared[specifier].scope?.declaresOnlyRefs ||
-			!ownReaders[specifier] ||
-			!readers[specifier]
-		)
+		if (!shared[specifier].scope?.declaresOnlyRefs || !readers[specifier])
 			return specifier
 		let root: string | undefined
-		// a reader this artifact lacks keeps the unit a module of its own
-		for (const reader of [...ownReaders[specifier], ...readers[specifier]]) {
+		for (const reader of readers[specifier]) {
 			const readerRoot = shared[reader]?.scope && rootOf(reader)
 			if (!readerRoot || (root && root !== readerRoot)) return specifier
 			root = readerRoot
@@ -68,12 +59,11 @@ export const mergeUnits = (
 		return (roots[specifier] = root!)
 	}
 	const groups: Record<string, Set<string>> = {}
-	for (const specifier in ownReaders) {
+	for (const specifier in readers) {
 		if (!shared[specifier]) continue
 		const root = rootOf(specifier)
 		if (root !== specifier) (groups[root] ??= new Set([root])).add(specifier)
 	}
-	const merged: string[] = []
 	for (const root in groups) {
 		const written = writeMerged(shared, root, groups[root], opts)
 		if (!written) continue
@@ -85,41 +75,17 @@ export const mergeUnits = (
 		}
 		for (const specifier of groups[root])
 			if (specifier !== root) delete shared[specifier]
-		merged.push(root)
 	}
-	return merged
 }
 
-// a module merged or reading one is named for its text, so a name has one text
-export const namesOfChanged = (
-	shared: Record<string, SharedModule>,
-	merged: string[]
-): Record<string, string> => {
-	const names: Record<string, string> = {}
-	const moduleNameOf = (specifier: string): string => {
-		if (!shared[specifier] || specifier in names)
-			return names[specifier] ?? specifier
-		names[specifier] = specifier
-		const reads = Object.keys(shared[specifier].imports)
-		const isChanged =
-			merged.includes(specifier) ||
-			reads.some(read => moduleNameOf(read) !== read)
-		if (isChanged) {
-			names[specifier] =
-				`~arktype/${hashOf(writeModule(shared[specifier], names))}`
-		}
-		return names[specifier]
-	}
-	for (const specifier in shared) moduleNameOf(specifier)
-	return names
-}
-
-export const writeModule = (
-	{ readsRuntime, imports, declarations, exports }: SharedModule,
-	names: Record<string, string>
-): string =>
+export const writeModule = ({
+	readsRuntime,
+	imports,
+	declarations,
+	exports
+}: SharedModule): string =>
 	writeSections([
-		[readsRuntime ? runtimeImport : "", writeImports(imports, names)]
+		[readsRuntime ? runtimeImport : "", writeImports(imports)]
 			.filter(statement => statement)
 			.join("\n"),
 		...declarations,
@@ -244,13 +210,10 @@ return [${returned.join(", ")}]
 export const writeSections = (sections: string[]): string =>
 	`${sections.filter(section => section).join("\n\n")}\n`
 
-export const writeImports = (
-	imports: Record<string, string[]>,
-	specifiers: Record<string, string> = {}
-): string =>
+export const writeImports = (imports: Record<string, string[]>): string =>
 	Object.entries(imports)
 		.map(
 			([specifier, names]) =>
-				`import { ${names.join(", ")} } from ${JSON.stringify(specifiers[specifier] ?? specifier)}`
+				`import { ${names.join(", ")} } from ${JSON.stringify(specifier)}`
 		)
 		.join("\n")

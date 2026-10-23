@@ -24,7 +24,7 @@ A definition holding functions, like a narrow, a morph or a class, becomes a cal
 
 ## What a validator has
 
-Besides being called, a validator has `allows()`, and by default `assert()`, `meta`, `~standard`, `traverse()`, `from()` and `toString()`. `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` ship only where the build's [`members`](/docs/precompile/options#members) option sets them, baked as arktype returns them. A read the build sees, like `User.expression`, is replaced by its value either way.
+Besides being called, a validator has `allows()`, and by default `assert()`, `meta`, `~standard`, `traverse()`, `from()` and `toString()`. `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` ship only where the build's [`members`](/docs/precompile/options#members) option sets them, baked as arktype returns them. A read the build sees, like `User.expression`, is replaced by its value either way. One it doesn't bake reads `undefined`, but throws, naming the member to set, where `arktype/runtime` resolves under the `"development"` condition.
 
 It lacks the methods that compose or relate a Type, like `.and`, `.or`, `.in` or `.extends`. The build fails where it sees one read outside a definition it precompiles, including off a value it lost track of after a Type reached it, and, once for each import, off an import it can't resolve, like one only a bundler alias names:
 
@@ -69,7 +69,10 @@ To leave only some definitions to arktype in a standalone build, mark them as [r
 
 ## Limits
 
+- `require("arktype")` or `import("arktype")` fails the build, since it would load arktype/runtime where the build precompiles no definition, but one whose specifier isn't a string literal isn't seen.
+- The build fails for a definition reading an object or array the program writes before it, but doesn't see a write by a module other than the object's and the definition's, or through a call it can't follow. If one changed the object, the definition throws as it's created, naming the object and what the build read.
 - The build doesn't see a Type reach a value through `arguments`, a generator, `Reflect.get`, `import()` or a namespace read at a runtime key, nor a direct `eval` or `with` changing a binding a definition reads. A Type it never sees reach a value is missed: calling a member it lacks throws, and reading one reads `undefined`.
+- A module importing neither arktype nor a module exporting a Type isn't checked, so a member one of its functions reads off a Type passed to it is missed. Annotating the parameter with arktype's `Type` has the build check it.
 - A definition whose branches arktype orders by the names of the functions they hold, like `type.instanceOf(Cat).or(type.instanceOf(Dog))`, is reported, since a minifier can rename them.
 - A definition holding a function a parameter holds, or resolving a Scope alias a thunk defines whose Type holds one, is reported. Mark it as a [runtime island](/docs/precompile/advanced#runtime-islands).
 - A union whose branches print alike once their functions are named prints as `X or X` where arktype prints `X`.

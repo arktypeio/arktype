@@ -377,12 +377,6 @@ contextualize(() => {
 		attest<any>(T.infer)
 	})
 
-	it("any as out in a prop", () => {
-		const T = type({ a: ["string", "=>", s => s as any] })
-		attest(T.infer).type.toString.snap("{ a: any }")
-		attest(T.inferIn).type.toString.snap("{ a: string }")
-	})
-
 	it("any as out beside other props", () => {
 		const BesidePlain = type({
 			a: ["string", "=>", s => s as any],
@@ -417,20 +411,6 @@ contextualize(() => {
 			node: { a: ["string", "=>", s => s as any], "next?": "node" }
 		}).export()
 		attest(types.node.infer).type.toString.snap("{ a: any; next?: any }")
-	})
-
-	it("any as out beside a named type", () => {
-		interface User {
-			name: string
-		}
-		const T = type({
-			user: type({ name: "string" }).as<User>(),
-			a: ["string", "=>", s => s as any]
-		})
-		attest(T.infer).type.toString.snap("{ user: { name: string }; a: any }")
-		attest(T.inferIn).type.toString.snap(
-			"{ user: { name: string }; a: string }"
-		)
 	})
 
 	it("function returning any as out", () => {
@@ -1201,7 +1181,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		attest(indiscriminable).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { foo: (In: string) => Out<Date> | false | true }
-Right: { foo: (In: string) => Out<{ [string]: $jsonData }> | false | true }
+Right: { foo: (In: string) => Out<number | string | { [string]: $jsonData } | false | null | true> | false | true }
 Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
 	})
 

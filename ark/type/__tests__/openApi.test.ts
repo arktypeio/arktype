@@ -36,14 +36,11 @@ contextualize(() => {
 		})
 	})
 
-	it("unit", () => {
+	it("units", () => {
 		attest(toOpenApi(type("'cat'"))).snap({
 			type: "string",
 			enum: ["cat"]
 		})
-	})
-
-	it("units", () => {
 		attest(toOpenApi(type("'a' | 'b'"))).snap({
 			type: "string",
 			enum: ["a", "b"]
@@ -230,35 +227,32 @@ contextualize(() => {
 {
     code: "defs",
     base: {
-        $ref: "#/components/schemas/Node1"
+        $ref: "#/components/schemas/Node"
     },
     defs: {
-        Node1: {
+        Node: {
             type: "object",
             properties: {
                 value: {
                     type: "number"
                 },
                 next: {
-                    $ref: "#/components/schemas/union1"
+                    anyOf: [
+                        {
+                            $ref: "#/components/schemas/Node"
+                        },
+                        {
+                            type: "string",
+                            nullable: true,
+                            enum: [
+                                null
+                            ]
+                        }
+                    ]
                 }
             },
             required: [
                 "value"
-            ]
-        },
-        union1: {
-            anyOf: [
-                {
-                    $ref: "#/components/schemas/Node1"
-                },
-                {
-                    type: "string",
-                    nullable: true,
-                    enum: [
-                        null
-                    ]
-                }
             ]
         }
     }
@@ -273,21 +267,20 @@ contextualize(() => {
 				}
 			}
 		})
-		attest(schema).snap({ $ref: "#/components/schemas/Node1" })
+		attest(schema).snap({ $ref: "#/components/schemas/Node" })
 		attest(components).snap({
-			Node1: {
+			Node: {
 				type: "object",
 				properties: {
 					value: { type: "number" },
-					next: { $ref: "#/components/schemas/union1" }
+					next: {
+						anyOf: [
+							{ $ref: "#/components/schemas/Node" },
+							{ type: "string", nullable: true, enum: [null] }
+						]
+					}
 				},
 				required: ["value"]
-			},
-			union1: {
-				anyOf: [
-					{ $ref: "#/components/schemas/Node1" },
-					{ type: "string", nullable: true, enum: [null] }
-				]
 			}
 		})
 	})
@@ -306,11 +299,11 @@ contextualize(() => {
 		})
 		const { Node } = scope({ Node: { "next?": "Node" } }).export()
 		attest(toOpenApi(Node, { fallback: annotatingFallback })).snap({
-			$ref: "#/components/schemas/Node1",
+			$ref: "#/components/schemas/Node",
 			"x-arktype-defs": {
-				Node1: {
+				Node: {
 					type: "object",
-					properties: { next: { $ref: "#/components/schemas/Node1" } }
+					properties: { next: { $ref: "#/components/schemas/Node" } }
 				}
 			}
 		})
@@ -337,11 +330,11 @@ contextualize(() => {
 	it("standard cyclic", () => {
 		const { Node } = scope({ Node: { "next?": "Node" } }).export()
 		attest(Node["~standard"].jsonSchema.input({ target })).snap({
-			$ref: "#/components/schemas/Node1",
+			$ref: "#/components/schemas/Node",
 			definitions: {
-				Node1: {
+				Node: {
 					type: "object",
-					properties: { next: { $ref: "#/components/schemas/Node1" } }
+					properties: { next: { $ref: "#/components/schemas/Node" } }
 				}
 			}
 		})

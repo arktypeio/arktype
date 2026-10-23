@@ -1128,6 +1128,36 @@
 		}
 	}
 
+	/* 00: each category's win, and where it stops */
+	.wins {
+		display: grid;
+		margin: 40px 0 0;
+		border-top: 1px solid var(--rule-soft);
+		div {
+			display: grid;
+			grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1fr);
+			gap: 6px 24px;
+			align-items: baseline;
+			padding: 16px 0;
+			border-bottom: 1px solid var(--rule-soft);
+		}
+		dt {
+			font: 400 12.5px / 1.6 var(--mono);
+			color: var(--copper);
+		}
+		dd {
+			display: contents;
+		}
+		dd b {
+			font: 650 17px / 1.4 var(--sans);
+			color: var(--ink);
+		}
+		dd span {
+			font-size: 14.5px;
+			color: var(--ink-3);
+		}
+	}
+
 	/* 04: the agent transcript and its setup rows */
 	.agents {
 		display: grid;
@@ -1601,6 +1631,12 @@
 		.b-pre,
 		.agents {
 			grid-template-columns: minmax(0, 1fr);
+		}
+		.wins div {
+			grid-template-columns: 90px minmax(0, 1fr);
+			dd span {
+				grid-column: 2;
+			}
 		}
 	}
 }

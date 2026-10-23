@@ -114,9 +114,9 @@ contextualize(() => {
 		attest(printable(d)).snap("October 3, 2023, 2:30:15.123 PM UTC")
 	})
 
-	it("date only year", () => {
+	it("date on January 1", () => {
 		const d = new Date("2023-01-01T00:00:00.000Z")
-		attest(printable(d)).snap("2023")
+		attest(printable(d)).snap("January 1, 2023")
 	})
 
 	it("date only date", () => {

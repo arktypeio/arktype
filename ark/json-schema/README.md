@@ -58,7 +58,7 @@ The underlying types are exported as `jsonSchema.infer` and `jsonSchema.validate
 
 ## How it reads JSON Schema
 
-`jsonSchemaToType` reads a schema with [`arksets`](https://github.com/arktypeio/arktype/tree/main/ark/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts (draft-07 forms are read too). `format` is an annotation, as the spec defaults to. Keywords that can't be read exactly, like a remote `$ref` or `unevaluatedProperties`, throw with their JSON Pointer.
+`jsonSchemaToType` reads a schema with [`arksets`](https://github.com/arktypeio/arktype/tree/main/ark/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units where JSON Schema counts code points (draft-07 forms are read too). `format` is an annotation, as the spec defaults to. Keywords that can't be read exactly, like a remote `$ref` or `unevaluatedProperties`, throw with their JSON Pointer.
 
 ## Docs
 

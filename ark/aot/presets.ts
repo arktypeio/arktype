@@ -19,7 +19,7 @@ export const presets: Record<Preset, PrecompileOptions> = {
 // runtime checks of what the build verified, which arktype's own Types lack
 export const productionDefaults = {
 	freeze: false,
-	checks: "none",
+	creationChecks: "none",
 	config: false
 } as const satisfies PrecompileOptions
 
@@ -39,7 +39,7 @@ export const withEnvironment = <opts extends PrecompileOptions>(
 		opts
 	:	{
 			...(production && productionDefaults),
-			...(testing && { checks: "helpers" }),
+			...(testing && { creationChecks: "helpers" }),
 			...opts
 		}
 

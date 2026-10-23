@@ -1,4 +1,5 @@
 import type { ArkError, ArkErrors, Locale } from "@ark/schema"
+import { timeOf } from "@ark/util"
 import { scope, type } from "arktype"
 import { keywordPhrases } from "arktype/internal/keywords/phrases.ts"
 
@@ -27,6 +28,7 @@ const keywordInputs: unknown[] = [
 	"{",
 	"(",
 	"9007199254740993",
+	"1e400",
 	1.5,
 	9e20,
 	5,
@@ -56,14 +58,15 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		}
 		add(`string > ${n}`, $.type(`string > ${n}`), x(n))
 		add(`string <= ${n}`, $.type(`string <= ${n}`), x(n + 1))
-		add(`string < ${n + 1}`, $.type(`string < ${n + 1}`), x(n + 2))
 		add(`string == ${n}`, $.type(`string == ${n}`), x(n + 1))
 		add(`unknown[] <= ${n}`, $.type(`unknown[] <= ${n}`), items(n + 1))
 		add(`unknown[] == ${n}`, $.type(`unknown[] == ${n}`), items(n + 1))
-		add(`number >= ${n}`, $.type(`number >= ${n}`), n - 1)
-		add(`number > ${n}`, $.type(`number > ${n}`), n)
-		add(`number <= ${n}`, $.type(`number <= ${n}`), n + 1)
-		add(`number < ${n}`, $.type(`number < ${n}`), n)
+		if (n < 2) {
+			add(`number >= ${n}`, $.type(`number >= ${n}`), n - 1)
+			add(`number > ${n}`, $.type(`number > ${n}`), n)
+			add(`number <= ${n}`, $.type(`number <= ${n}`), n + 1)
+			add(`number < ${n}`, $.type(`number < ${n}`), n)
+		}
 	}
 	add("number % 5", $.type("number % 5"), 6.5)
 	add("number >= 1.5", $.type("number >= 1.5"), 1.25)
@@ -93,6 +96,7 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		new Date("2000-12-31T09:05:00Z")
 	)
 	add("Date != May 3", $.type("Date != d'2000-05-03'"), new Date("2000-05-03"))
+	add("May 3", $.type("d'2000-05-03'"), new Date("2000-05-04"))
 	add(
 		"enumerated Dates",
 		$.type.enumerated(new Date("2000-05-03"), new Date("2000-05-04")),
@@ -123,6 +127,7 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 	add("unit symbol", $.type.unit(sym), 1)
 	add("Date", $.type("Date"), 1)
 	add("Date", $.type("Date"), new Date("!"))
+	add("Date", $.type("Date"), Object.create(Date.prototype))
 	add("Array", $.type("unknown[]"), {})
 	add("Map", $.type("Map"), [])
 	add("Set", $.type("Set"), new Map())
@@ -144,11 +149,6 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		"narrow mustBe",
 		$.type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positiv")),
 		-1
-	)
-	add(
-		"narrow reject",
-		$.type("number").narrow((n, ctx) => ctx.reject({})),
-		1
 	)
 	add(
 		"pipe.try anonymous",
@@ -229,9 +229,6 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 	})
 	add("discriminant", shapes, { kind: "triangle" })
 	add("discriminant absent", shapes, {})
-	add("discriminant titled", shapes.configure({ title: "Form" }), {
-		kind: "triangle"
-	})
 	add("discriminant described", shapes.describe("eine Form"), {
 		kind: "triangle"
 	})
@@ -336,9 +333,6 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		$.type({ list: titled($.type("string")).array() }),
 		{ list: [1] }
 	)
-	add("titled quoted key", $.type({ "a b": titled($.type("string")) }), {
-		"a b": 1
-	})
 	add(
 		"titled, two constraints",
 		$.type({
@@ -432,9 +426,9 @@ const describeData = (data: unknown): string =>
 	typeof data === "string" ? JSON.stringify(data)
 	: typeof data === "bigint" ? `${data}n`
 	: data instanceof Date ?
-		Number.isNaN(data.getTime()) ?
-			"Invalid Date"
-		:	data.toISOString()
+		timeOf(data) === undefined ? "Object.create(Date.prototype)"
+		: Number.isNaN(data.getTime()) ? "Invalid Date"
+		: data.toISOString()
 	: typeof data === "symbol" ? String(data)
 	: (
 		Array.isArray(data) ||

@@ -35,6 +35,8 @@ const result = Form["~standard"].validate({ name: "Ada", age: "old" })
 // ArkErrors: age must be a well-formed integer string (was "old")
 ```
 
+Like any `ArkErrors`, it may find its issues when they're first read, so they [describe the data as it is then](/docs/errors#arkerrors). Read them before the data you validated can change.
+
 ArkType always validates synchronously. The spec allows a `Promise`, which is why the return type includes one.
 
 The spec's type helpers map to a Type's input and output:
@@ -101,7 +103,7 @@ const schema = User["~standard"].jsonSchema.input({ target: "draft-2020-12" })
 }
 ```
 
-- `target` is `"draft-2020-12"` or `"draft-07"`. Any other target, like OpenAPI's, throws.
+- `target` is `"draft-2020-12"`, `"draft-07"` or `"openapi-3.0"`. Any other target throws.
 - `libraryOptions` is passed to [`toJsonSchema`](/docs/json-schema/to-json-schema) as its options, so a caller can set a `fallback` there.
 - `input` and `output` differ when the Type has morphs or defaults. For `string.integer.parse`, `input` describes a string and `output` describes an integer, and a key with a default is optional with a `default` in `input` but required in `output`.
 

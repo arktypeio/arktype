@@ -7,7 +7,6 @@ import {
 	TraversalCompiler,
 	type BaseNode,
 	type BaseRoot,
-	type CheckOptions,
 	type NodeId,
 	type nodeOfKind,
 	type Predicate,
@@ -18,7 +17,7 @@ import {
 	type TraversalKind,
 	type UnionNode
 } from "@ark/schema"
-import { hashOf, throwInternalError } from "@ark/util"
+import { throwInternalError } from "@ark/util"
 import { runtimeKeyOf } from "../standalone.ts"
 import {
 	isInlineSite,
@@ -400,74 +399,17 @@ const forSize = (compiler: typeof StandaloneCompiler) =>
 		}
 	}
 
-// a structure's Allows passes a plain object with as many own enumerable keys
-// as the declared ones it holds, though one may stand in for a declared key it
-// holds otherwise, and scans the keys of any other in a function of its own
-const countingKeys = (compiler: typeof StandaloneCompiler) =>
-	class extends compiler {
-		// what the structure checks before scanning its keys
-		private required = 0
-		private optional: string[] = []
-		private checksSequence = false
-		// the scan's lines, written into its function instead
-		private scan: string[] | undefined
-
-		override check(node: BaseNode, opts?: CheckOptions): this {
-			if (node.hasKind("sequence")) this.checksSequence = true
-			else if (node.hasKind("required") && typeof node.key === "string")
-				this.required++
-			else if (node.hasKind("optional") && typeof node.key === "string")
-				this.optional.push(`+(${this.serialize(node.key)} in data)`)
-			return super.check(node, opts)
-		}
-
-		override line(statement: string): this {
-			if (!this.scan) return super.line(statement)
-			this.scan.push(`${" ".repeat(this.indentation)}${statement}\n`)
-			return this
-		}
-
-		override forIn(object: string, body: (self: this) => this): this {
-			if (this.traversalKind !== "Allows" || this.checksSequence)
-				return super.forIn(object, body)
-			this.if("Object.getPrototypeOf(data) === Object.prototype", () =>
-				this.let("n", 0)
-					.loop(`for (const k in ${object})`, () =>
-						this.if("Object.prototype.hasOwnProperty.call(data, k)", () =>
-							this.line("n++")
-						)
-					)
-					.if(`n === ${[this.required, ...this.optional].join(" + ")}`, () =>
-						this.return(true)
-					)
-			)
-			const scan: string[] = (this.scan = [])
-			super.forIn(object, body)
-			this.scan = undefined
-			const source = `function(data, ctx) { ${scan.join("")}    return true\n }`
-			const name = `undeclared${hashOf(source)}`
-			if (!this.linkage.members.some(([written]) => written === name))
-				this.linkage.members.push([name, source])
-			return this.if(`!${name}(data, ctx)`, () => this.return(false))
-		}
-	}
-
-// by variant: standalone, in place or unified, plus 3 for errors "first", 6
-// for countsKeys and 12 for size
+// by variant: standalone, in place or unified, plus 3 for errors "first" and
+// 6 for size
 const compilers = [false, true].flatMap(shortest =>
-	[false, true].flatMap(countsKeys =>
-		[
-			StandaloneCompiler,
-			InPlaceCompiler,
-			UnifiedCompiler,
-			FirstIssueCompiler,
-			InPlaceFirstIssueCompiler,
-			UnifiedFirstIssueCompiler
-		].map(compiler => {
-			const counting = countsKeys ? countingKeys(compiler) : compiler
-			return shortest ? forSize(counting) : counting
-		})
-	)
+	[
+		StandaloneCompiler,
+		InPlaceCompiler,
+		UnifiedCompiler,
+		FirstIssueCompiler,
+		InPlaceFirstIssueCompiler,
+		UnifiedFirstIssueCompiler
+	].map(compiler => (shortest ? forSize(compiler) : compiler))
 )
 
 // each variant's roots have their own units

@@ -74,14 +74,17 @@ const zeroOrMore = regex("^a*$")
 //    ^? Regex<"" | `a${string}`>
 ```
 
-Repeated digits become `` `${number}` ``, plus `""` if they can repeat zero times:
+A bounded run of digits becomes `` `${number}` ``, plus `""` if it can repeat zero times. An unbounded run like `\d+` becomes `string`, since a long enough run of digits isn't a finite number:
 
 ```ts
-const version = regex("^(\\d+)\\.(\\d+)$")
+const version = regex("^(\\d{1,3})\\.(\\d{1,3})$")
 //    ^? Regex<`${number}.${number}`, { captures: [`${number}`, `${number}`] }>
 
-const digits = regex("^\\d*$")
-//    ^? Regex<"" | `${number}`>
+const short = regex("^\\d{0,3}$")
+//    ^? Regex<`${number}` | "">
+
+const digits = regex("^\\d+$")
+//    ^? Regex<string>
 ```
 
 ## Character sets
@@ -107,7 +110,7 @@ Write a regex escape like `\d` or `\.` with two backslashes in a JS string, and 
 
 ```ts
 const price = regex("^\\$\\d+\\.\\d{2}$")
-//    ^? Regex<`$${number}.${number}`>
+//    ^? Regex<`$${string}.${number}`>
 
 const tab = regex("^a\tb$")
 //    ^? Regex<"a\tb">
@@ -148,7 +151,7 @@ Named captures are correlated across branches the same way:
 const unit = regex("^(?:(?<px>\\d+)px|(?<em>\\d+)em)$")
 
 type Names = typeof unit.inferNamedCaptures
-//   ^? { px: `${number}`; em: undefined } | { px: undefined; em: `${number}` }
+//   ^? { px: string; em: undefined } | { px: undefined; em: string }
 ```
 
 ## Backreferences

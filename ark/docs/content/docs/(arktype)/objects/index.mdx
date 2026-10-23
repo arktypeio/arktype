@@ -280,7 +280,7 @@ MyClosedObject({ onlyAllowedKey: "ok", extraKey: 1 })
 
 Both act on string keys: `"reject"` checks only an object's string keys, and `"delete"` builds a new object holding only its declared keys. So an undeclared symbol key passes `"reject"` and is dropped by `"delete"`, and reject types that differ only by a symbol key overlap, so a union of them with a morph is indeterminate.
 
-`"delete"`'s output has the declared keys in the order of the type's expression: required keys, then optional keys, each sorted by name.
+`"delete"`'s output lists the declared keys in the order the definition declares them, as Zod does, then any keys matching an index signature in the input's order.
 
 `.onDeepUndeclaredKey()` applies the same behavior to every nested object:
 
@@ -1060,10 +1060,10 @@ const Recent = type.Date.atOrAfter(tenYearsAgo).earlierThan(Date.now())
 
 </SyntaxTabs>
 
-Descriptions and error messages write dates in UTC. A date at UTC midnight is written as its calendar date, or just its year on January 1:
+Descriptions and error messages write dates in UTC. A date at UTC midnight is written as its calendar date:
 
 ```ts
-// "a Date and 2023 or later"
+// "a Date and January 1, 2023 or later"
 type("Date >= d'2023-01-01'").description
 
 // "a Date and January 1, 2023, 2:30 PM UTC or later"

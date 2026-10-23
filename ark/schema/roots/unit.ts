@@ -4,6 +4,7 @@ import {
 	hasDomain,
 	isDate,
 	printable,
+	timeOf,
 	type Domain,
 	type JsonPrimitive
 } from "@ark/util"
@@ -68,7 +69,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	compileCondition(js: NodeCompiler, data: string): string {
 		return (
 			isDate(this.unit) ?
-				`${data} instanceof Date && ${data}.getTime() === ${(this.unit as Date).getTime()}`
+				`${data} instanceof Date && ${js.ref(timeOf)}(${data}) === ${(this.unit as Date).getTime()}`
 			: Number.isNaN(this.unit) ? `Number.isNaN(${data})`
 			: hasDomain(this.unit, "object") || typeof this.unit === "symbol" ?
 				`${data} === ${js.ref(this.unit)}`
@@ -91,7 +92,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	traverseAllows: TraverseAllows =
 		isDate(this.unit) ?
 			data =>
-				data instanceof Date && data.getTime() === (this.unit as Date).getTime()
+				data instanceof Date && timeOf(data) === (this.unit as Date).getTime()
 		: Number.isNaN(this.unit) ? data => Number.isNaN(data)
 		: data => data === this.unit
 }

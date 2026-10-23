@@ -175,14 +175,23 @@ const b = { c: 1 }
 b.c = 2
 export { a, b as d }
 export const e = a
+export namespace N {
+	export const f = e
+}
 export default b`
 			)
 		)
-		attest(Object.keys(scopes.exportsByName)).snap(["e", "default", "a", "d"])
+		attest(Object.keys(scopes.exportsByName)).snap([
+			"e",
+			"N",
+			"default",
+			"a",
+			"d"
+		])
 		attest(
 			Object.values(scopes.root.bindings).map(
 				binding => `${binding.name} ${binding.writes.length}`
 			)
-		).snap(["a 1", "b 0", "e 0"])
+		).snap(["a 1", "b 0", "e 0", "N 0"])
 	})
 })

@@ -2,10 +2,11 @@ import { attest, contextualize } from "@ark/attest"
 import { describeCollapsibleDate } from "@ark/util"
 
 contextualize(() => {
-	it("returns year for date with only year precision", () => {
+	// a bare year would read as the whole year
+	it("keeps the day of January 1", () => {
 		const date = new Date("2023-01-01")
 		const result = describeCollapsibleDate(date)
-		attest(result).snap("2023")
+		attest(result).snap("January 1, 2023")
 	})
 
 	it("returns full date for date with day precision", () => {

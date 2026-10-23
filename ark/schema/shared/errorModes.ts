@@ -2,7 +2,7 @@ import type { ResolvedConfig } from "../config.ts"
 import {
 	ArkErrors,
 	ArkTraversal,
-	errorOfIssue,
+	invalidError,
 	type ArkError
 } from "./errors.ts"
 import { $ark } from "./registry.ts"
@@ -27,11 +27,14 @@ export class ArkFirstIssueTraversal extends ArkTraversal {
  * the root, whose message is `is invalid`.
  */
 export class UndetailedErrors extends ArkErrors {
+	// written once read, with every field an error has
 	override get issues(): readonly ArkError[] {
-		return this._.reduce(
-			(issues, issue) => ((issue.message ??= "is invalid"), issues),
-			this._
-		)
+		const issues = this._
+		for (let i = 0; i < issues.length; i++) {
+			if (issues[i].expected === undefined)
+				issues[i] = invalidError(issues[i].data, $ark.resolvedConfig!)
+		}
+		return issues
 	}
 
 	override get summary(): string {
@@ -48,9 +51,7 @@ export class UndetailedErrors extends ArkErrors {
 
 	// arktype's grouped issues, which merging reads
 	override get _issues(): ArkError[] {
-		return this.issues.map(issue =>
-			errorOfIssue(issue, [], $ark.resolvedConfig!)
-		)
+		return this.issues as ArkError[]
 	}
 }
 

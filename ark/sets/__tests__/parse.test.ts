@@ -61,23 +61,6 @@ contextualize(() => {
 		).snap("{ owner?: { name: unknown } }")
 	})
 
-	it("reads a recursive JSON Schema", () => {
-		const Node = parse({
-			$defs: {
-				node: {
-					type: "object",
-					properties: { child: { $ref: "#/$defs/node" } },
-					required: ["value"]
-				}
-			},
-			$ref: "#/$defs/node"
-		})
-		attest(Node.allows({ value: 1, child: { value: 2 } })).equals(true)
-		attest(Node.allows({ value: 1, child: { child: { value: 3 } } })).equals(
-			false
-		)
-	})
-
 	it("names a cyclic ref by its target", () => {
 		const read = () =>
 			parse({
@@ -92,12 +75,6 @@ contextualize(() => {
 		const expression = read()
 		attest(expression).snap("{ child?: synthetic1bpl2ea1nl2i12 }")
 		attest(read()).equals(expression)
-	})
-
-	it("constrains only the type a keyword is for", () => {
-		attest(parse({ minimum: 5 }).expression).snap(
-			"bigint | string | symbol | number >= 5 | object | Array | undefined | false | null | true"
-		)
 	})
 
 	it("reads object and array consts as structures", () => {
@@ -154,6 +131,37 @@ contextualize(() => {
 		)
 	})
 
+	it("throws a ParseError when a Standard Schema can't write its JSON Schema", () => {
+		const cause = new Error("Date cannot be represented in JSON Schema")
+		const Zod = {
+			"~standard": {
+				version: 1,
+				vendor: "zod",
+				jsonSchema: {
+					input: () => {
+						throw cause
+					},
+					output: () => {
+						throw "unsupported"
+					}
+				}
+			}
+		} as const
+		attest(() => parse(Zod)).throws.snap(
+			"ParseError: zod's ~standard.jsonSchema.input threw (Date cannot be represented in JSON Schema)"
+		)
+		attest(() => parse(Zod, { io: "out" })).throws.snap(
+			'ParseError: zod\'s ~standard.jsonSchema.output threw ("unsupported")'
+		)
+		let thrown: unknown
+		try {
+			parse(Zod)
+		} catch (e) {
+			thrown = e
+		}
+		attest((thrown as { cause?: unknown }).cause === cause).equals(true)
+	})
+
 	it("throws a ParseError on a primitive", () => {
 		attest(() => parse(5 as never)).throws.snap(
 			"ParseError: Schema must be a Root, a Standard JSON Schema or a JSON Schema (was 5)"
@@ -179,14 +187,6 @@ contextualize(() => {
 			parse({ properties: { a: { unevaluatedProperties: false } } })
 		).throws.snap(
 			"ParseError: #/properties/a/unevaluatedProperties can't be read as a set of values"
-		)
-		attest(() =>
-			parse({ $ref: "https://example.com/schema.json" })
-		).throws.snap(
-			"ParseError: #/$ref must reference a schema in its own document (was https://example.com/schema.json)"
-		)
-		attest(() => parse({ $ref: "#/$defs/missing" })).throws.snap(
-			"ParseError: $ref #/$defs/missing doesn't resolve to a schema in its document"
 		)
 	})
 

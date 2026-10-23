@@ -12,7 +12,8 @@ import {
 	type array,
 	type describe,
 	type Key,
-	type listable
+	type listable,
+	type mutable
 } from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
 import { intrinsic } from "../intrinsic.ts"
@@ -93,18 +94,21 @@ export declare namespace Structure {
 		readonly required?: readonly Required.Node[]
 		readonly index?: readonly Index.Node[]
 		readonly sequence?: Sequence.Node
-		readonly undeclared?: UndeclaredKeyHandling
+		// "ignore" only where a scope's onUndeclaredKey is another, so a node
+		// built from this one's inner doesn't take the scope's
+		readonly undeclared?: UndeclaredKeyBehavior
+		/**
+		 * the order an object built as output lists its declared keys in.
+		 * keys it doesn't list follow in canonical order, required first
+		 */
+		readonly order?: readonly Key[]
 	}
 
 	export namespace Inner {
 		export type mutable = makeRootAndArrayPropertiesMutable<Inner>
 	}
 
-	// "ignore" overrides a scope's onUndeclaredKey, so it's dropped only after
-	// config is applied
-	export interface Input extends Omit<Inner, "undeclared">, BaseNodeInput {
-		readonly undeclared?: UndeclaredKeyBehavior
-	}
+	export interface Input extends Inner, BaseNodeInput {}
 
 	export interface Declaration
 		extends declareNode<{
@@ -140,13 +144,14 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
 		kind: "structure",
 		ownsError: false,
-		applyConfig: (inner, config) => {
-			if ((inner.undeclared as UndeclaredKeyBehavior) === "ignore")
-				return omit(inner, { undeclared: 1 })
-			if (!inner.undeclared && config.onUndeclaredKey !== "ignore")
-				return { ...inner, undeclared: config.onUndeclaredKey }
-			return inner
-		},
+		applyConfig: (inner, config) =>
+			inner.undeclared === undefined ?
+				config.onUndeclaredKey === "ignore" ?
+					inner
+				:	{ ...inner, undeclared: config.onUndeclaredKey }
+			: inner.undeclared === "ignore" && config.onUndeclaredKey === "ignore" ?
+				omit(inner, { undeclared: 1 })
+			:	inner,
 		keys: {
 			required: {
 				child: true,
@@ -167,6 +172,13 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 						return
 					}
 
+					// a default's prop is required on output, where it keeps its order
+					if (!inner.order && nodes!.some(node => node.hasDefault())) {
+						inner.order = conflatenate<Prop.Node>(inner.required, nodes).map(
+							node => node.key
+						)
+					}
+
 					for (const node of nodes!) {
 						inner[node.outProp.kind] = append(
 							inner[node.outProp.kind],
@@ -181,17 +193,20 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 			sequence: {
 				child: true
 			},
+			order: {
+				unserialized: true
+			},
 			undeclared: {
 				reduceIo: (ioKind, inner, value) => {
-					if (value === "reject") {
-						inner.undeclared = "reject"
-						return
-					}
-
 					// if base is "delete", undeclared keys are "ignore" (i.e. unconstrained)
 					// on input and "reject" on output. "ignore" is explicit so a scope's
 					// onUndeclaredKey isn't reapplied to the input.
-					inner.undeclared = ioKind === "in" ? ("ignore" as never) : "reject"
+					inner.undeclared =
+						value === "delete" ?
+							ioKind === "in" ?
+								"ignore"
+							:	"reject"
+						:	(value as UndeclaredKeyBehavior)
 				}
 			}
 		},
@@ -259,6 +274,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.hasTransform ||= this.structuralMorph !== undefined
 	}
 
+	/** how undeclared keys are constrained, if they are */
+	get handlesUndeclared(): UndeclaredKeyHandling | undefined {
+		return this.undeclared === "ignore" ? undefined : this.undeclared
+	}
+
 	// deleting undeclared keys picks them by each signature's Allows
 	protected override get selectsByCtx(): boolean {
 		return (
@@ -276,6 +296,26 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.required,
 		this.optional
 	)
+
+	private _orderedProps: array<Prop.Node> | undefined
+	// props in the order an output object lists them
+	get orderedProps(): array<Prop.Node> {
+		return (this._orderedProps ??=
+			this.order ? orderProps(this.props, this.order) : this.props)
+	}
+
+	get orderedKeys(): Key[] {
+		return this.orderedProps.map(prop => prop.key)
+	}
+
+	// a result deleting undeclared keys is a literal of the required props its
+	// order starts with, and the others are stored after it in order
+	get resultLayout(): [literal: array<Prop.Node>, added: array<Prop.Node>] {
+		const props = this.orderedProps
+		let i = 0
+		while (i < props.length && props[i].required) i++
+		return [props.slice(0, i), props.slice(i)]
+	}
 
 	// a key it doesn't declare is reported from its site
 	override get failureSite(): FailureSite {
@@ -326,10 +366,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	map(flatMapProp: PropFlatMapper): StructureNode {
 		return this.$.node(
 			"structure",
-			this.props
+			this.orderedProps
 				.flatMap(flatMapProp)
 				.reduce((structureInner: Structure.Inner.mutable, mapped) => {
 					const originalProp = this.propsByKey[mapped.key]
+					structureInner.order = append(structureInner.order, mapped.key)
 
 					if (isNode(mapped)) {
 						if (mapped.kind !== "required" && mapped.kind !== "optional") {
@@ -449,6 +490,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return this.$.node("structure", this.filterKeys("omit", keys))
 	}
 
+	// a prop changing kind would move to its kind's canonical place, so these
+	// keep the order explicit
 	optionalize(): StructureNode {
 		const { required, ...inner } = this.inner
 		return this.$.node("structure", {
@@ -456,7 +499,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			...(inner.sequence ? { sequence: inner.sequence.optionalize() } : {}),
 			optional: this.props.map(prop =>
 				prop.hasKind("required") ? this.$.node("optional", prop.inner) : prop
-			)
+			),
+			order: this.orderedKeys
 		})
 	}
 
@@ -469,10 +513,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				prop.hasKind("optional") ?
 					this.$.node("required", { key: prop.key, value: prop.value })
 				:	prop
-			)
+			),
+			order: this.orderedKeys
 		})
 	}
 
+	// as a spread would, keys keep this structure's order and r's new keys follow
 	merge(r: StructureNode): StructureNode {
 		const inner = this.filterKeys("omit", [r.keyof()])
 
@@ -482,6 +528,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (r.sequence) inner.sequence = r.sequence
 		if (r.undeclared) inner.undeclared = r.undeclared
 		else delete inner.undeclared
+		inner.order = [...this.orderedKeys, ...r.orderedKeys]
 		return this.$.node("structure", inner)
 	}
 
@@ -801,7 +848,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 		// an object's copy drops a declared key data holds as a non-enumerable own prop
 		if (out !== data && !sequence) {
-			for (const prop of this.props) {
+			for (const prop of this.orderedProps) {
 				if (!(prop.key in out) && prop.key in data)
 					out[prop.key as never] = data[prop.key as never]
 			}
@@ -823,7 +870,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			return out
 		}
 		const result: Record<Key, unknown> = {}
-		for (const prop of this.props)
+		for (const prop of this.orderedProps)
 			if (prop.key in out) result[prop.key] = out[prop.key as never]
 		for (const prop of this.inheritableProps) {
 			if (!this.transformsOf(prop).length && !hasOwn(data, prop.key))
@@ -845,7 +892,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	private copy(data: object, copy = copyOf(data)): object {
 		if (this.sequence) {
-			for (const prop of this.props)
+			for (const prop of this.orderedProps)
 				if (prop.key in data) copy[prop.key as never] = data[prop.key as never]
 		}
 		return copy
@@ -886,8 +933,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			transforms)
 	}
 
+	// in order, so data missing several gets them as declared
 	readonly defaultable: Optional.Node.withDefault[] =
-		this.optional?.filter(o => o.hasDefault()) ?? []
+		this.optional?.some(prop => prop.hasDefault()) ?
+			(this.orderedProps.filter(prop =>
+				prop.hasDefault()
+			) as Optional.Node.withDefault[])
+		:	[]
 
 	declaresKey = (k: Key): boolean =>
 		k in this.propsByKey ||
@@ -1121,7 +1173,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	compileDeclaredCopy(js: NodeCompiler, written?: Key[]): NodeCompiler {
 		if (this.sequence || this.writesInto(js)) return js
 		const copyKeys = () => {
-			for (const prop of this.props) {
+			for (const prop of this.orderedProps) {
 				if (written?.includes(prop.key)) continue
 				const missing = `!(${js.serialize(prop.key)} in out)`
 				js.if(
@@ -1148,7 +1200,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		from: string,
 		to: string
 	): NodeCompiler {
-		for (const prop of this.props) {
+		for (const prop of this.orderedProps) {
 			const store = `${to}${js.prop(prop.key)} = ${from}${js.prop(prop.key)}`
 			if (prop.required) js.line(store)
 			else js.if(`${js.serialize(prop.key)} in data`, () => js.line(store))
@@ -1256,12 +1308,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			const i = transformedProps.indexOf(prop)
 			return i === -1 ? `out${js.prop(prop.key)}` : `transformed${i}`
 		}
-		const requiredEntries =
-			this.required?.map(
-				prop =>
-					`${typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey}: ${outputOf(prop)}`
-			) ?? []
-		js.const("result", `{ ${requiredEntries.join(", ")} }`)
+		const [literal, added] = this.resultLayout
+		const entries = literal.map(
+			prop =>
+				`${typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey}: ${outputOf(prop)}`
+		)
+		js.const("result", `{ ${entries.join(", ")} }`)
 		const copies =
 			this.declaresKey("__proto__") ?
 				`Object.getPrototypeOf(data) !== Object.prototype || Object.prototype.hasOwnProperty.call(data, "__proto__")`
@@ -1280,11 +1332,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				deleteFromCopy
 			)
 		)
-		if (this.optional) {
-			for (const prop of this.optional) {
-				js.if(prop.compileHoldsValue(js, "data"), () =>
-					js.line(`result${js.prop(prop.key)} = ${outputOf(prop)}`)
-				)
+		for (const prop of added) {
+			const store = () =>
+				js.line(`result${js.prop(prop.key)} = ${outputOf(prop)}`)
+			if (prop.hasKind("required")) store()
+			else {
+				js.if(prop.compileHoldsValue(js, "data"), store)
 				if (prop.hasDefault()) js.else(() => compileDefault(js, prop, "result"))
 			}
 		}
@@ -1380,7 +1433,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 const defaultableMorphsCache = new WeakCache<Morph>()
 
 type PartiallyInitializedStructure = attachmentsOf<Structure.Declaration> &
-	Pick<Structure.Node, "defaultable" | "declaresKey" | "props">
+	Pick<Structure.Node, "defaultable" | "declaresKey" | "orderedProps">
 
 const constructStructuralMorphCacheKey = (
 	node: PartiallyInitializedStructure
@@ -1396,7 +1449,8 @@ const constructStructuralMorphCacheKey = (
 
 	if (node.undeclared === "delete") {
 		cacheKey += "delete !("
-		for (const n of node.props) cacheKey += n.serializedKey + " | "
+		// in the order its result lists them
+		for (const n of node.orderedProps) cacheKey += n.serializedKey + " | "
 		if (node.index)
 			for (const index of node.index) cacheKey += index.signature.id + " | "
 		if (node.sequence) {
@@ -1476,6 +1530,37 @@ const compileDeclaredKeySwitch = (
 			`${props.map(prop => `case ${js.serialize(prop.key)}:`).join(" ")} continue`
 		)
 	)
+
+// the props order lists, as it lists them, then the rest as they were
+const orderProps = (
+	props: array<Prop.Node>,
+	order: readonly Key[]
+): Prop.Node[] => {
+	const ordered: Prop.Node[] = []
+	for (const k of order) {
+		const prop = props.find(prop => prop.key === k)
+		if (prop && !ordered.includes(prop)) ordered.push(prop)
+	}
+	if (ordered.length < props.length)
+		for (const prop of props) if (!ordered.includes(prop)) ordered.push(prop)
+	return ordered
+}
+
+// an order listing the props as they're sorted is dropped, so a structure
+// declared that way is the one built without an order
+export const normalizeOrder = (inner: mutable<Structure.Inner>): void => {
+	const required = inner.required ?? []
+	const optional = inner.optional ?? []
+	if (
+		inner.order?.length === required.length + optional.length &&
+		inner.order.every(
+			(k, i) =>
+				k ===
+				(i < required.length ? required[i] : optional[i - required.length]).key
+		)
+	)
+		delete inner.order
+}
 
 export const ownKeysOf = (data: object): Key[] => {
 	const keys: Key[] = Object.keys(data)

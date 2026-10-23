@@ -170,6 +170,48 @@ contextualize(() => {
 		).type.errors(`'b' does not exist`)
 	})
 
+	it("escaped meta keys", () => {
+		type Expected = { "@": string; "+": number; "...": boolean }
+		const T = declare<Expected>().type({
+			"\\@": "string",
+			"\\+": "number",
+			"\\...": "boolean"
+		})
+		attest<Expected>(T.infer)
+		attest(T.expression).snap("{ +: number, ...: boolean, @: string }")
+	})
+
+	it("unescaped meta key", () => {
+		attest(() =>
+			// @ts-expect-error
+			declare<{ "@": string }>().type({ "@": "string" })
+		).type.errors(`Property '"\\\\@"' is missing`)
+	})
+
+	it("optional escaped meta key", () => {
+		type Expected = { "@"?: string }
+		const T = declare<Expected>().type({ "\\@": "string?" })
+		attest<Expected>(T.infer)
+		attest(() =>
+			declare<Expected>().type({
+				// @ts-expect-error
+				"\\@": "string"
+			})
+		).type.errors("not assignable to type 'OptionalPropertyDefinition'")
+	})
+
+	it("meta and undeclared key behavior", () => {
+		type Expected = { name: string }
+		const T = declare<Expected>().type({
+			"@": "a user",
+			"+": "reject",
+			name: "string"
+		})
+		attest<Expected>(T.infer)
+		attest(T.description).snap("a user")
+		attest(T({ name: "x", extra: 1 }).toString()).snap("extra must be removed")
+	})
+
 	it("completions", () => {
 		attest(() =>
 			declare<{ a: string; b?: number }>().type({
@@ -177,7 +219,7 @@ contextualize(() => {
 				"": type.unknown
 			})
 		).completions({
-			"": ["a", "b?"]
+			"": ["+", "@", "a", "b?"]
 		})
 	})
 
@@ -194,7 +236,7 @@ contextualize(() => {
 					a: { "": "boolean[]" }
 				})
 		).completions({
-			"": ["nested"]
+			"": ["+", "@", "nested"]
 		})
 	})
 

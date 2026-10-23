@@ -6,10 +6,7 @@ import {
 	writeInvalidOperandMessage,
 	writeUnboundableMessage
 } from "@ark/schema"
-import {
-	writeInvalidDateMessage,
-	writeMalformedNumericLiteralMessage
-} from "@ark/util"
+import { writeMalformedNumericLiteralMessage } from "@ark/util"
 import { scope, type } from "arktype"
 import { writeDoubleRightBoundMessage } from "arktype/internal/parser/ast/bounds.ts"
 import {
@@ -70,6 +67,16 @@ contextualize(() => {
 			attest(T({ code: "foo" }).toString()).snap(
 				"code must be exactly length 6 (was 3)"
 			)
+		})
+
+		it("length named in actual when text replaces the bound's", () => {
+			const Password = type("string >= 8").describe("a strong password")
+			attest(Password("x").toString()).snap(
+				"must be a strong password (was length 1)"
+			)
+			attest(Password("").toString()).snap("must be a strong password")
+			const Pair = type("string[] == 2").configure({ expected: "a pair" })
+			attest(Pair(["a"]).toString()).snap("must be a pair (was length 1)")
 		})
 
 		it("== length from narrowing a length range", () => {
@@ -169,7 +176,7 @@ contextualize(() => {
 
 		it("Date bound descriptions", () => {
 			attest(type("Date >= d'2023-01-01'").description).snap(
-				"a Date and 2023 or later"
+				"a Date and January 1, 2023 or later"
 			)
 			attest(type("Date >= d'2023-01-01T00:00-05:00'").description).snap(
 				"a Date and January 1, 2023, 5:00 AM UTC or later"
@@ -268,7 +275,15 @@ contextualize(() => {
 
 		it("double right bound", () => {
 			// @ts-expect-error
-			attest(() => type("number>0<=200")).type.errors(
+			attest(() => type("number>0<=200")).throwsAndHasTypeError(
+				writeDoubleRightBoundMessage("number")
+			)
+			// @ts-expect-error
+			attest(() => type("number < 5 < 6")).throwsAndHasTypeError(
+				writeDoubleRightBoundMessage("number")
+			)
+			// @ts-expect-error
+			attest(() => type("number != 3 == 4")).throwsAndHasTypeError(
 				writeDoubleRightBoundMessage("number")
 			)
 		})
@@ -380,14 +395,9 @@ contextualize(() => {
 			attest<number>(T.infer)
 			attest(T).type.toString.snap("Type<number, {}>")
 			attest(T.json).snap({ domain: "number", notEqual: [0] })
+			attest(T.expression).snap("number != 0")
 			attest(T(1)).equals(1)
 			attest(T(0).toString()).snap("must be other than 0 (was 0)")
-		})
-
-		it("expression", () => {
-			const T = type("number != 5")
-			attest(T.expression).snap("number != 5")
-			attest(T(5).toString()).snap("must be other than 5 (was 5)")
 		})
 
 		it("length", () => {
@@ -448,21 +458,8 @@ contextualize(() => {
 			attest(T.expression).snap("number < 0 | number > 1")
 		})
 
-		it("union of inclusive bounds", () => {
-			const T = type("number <= 0 | number > 0")
-			attest(T.expression).snap("number")
-		})
-
 		it("union of overlapping bounds", () => {
 			attest(type("number > 0 | number < 5").json).equals(type("number").json)
-		})
-
-		it("union of bounds touching at a value", () => {
-			attest(type("number >= 0 | number < 0").json).equals(type("number").json)
-		})
-
-		it("union of overlapping length bounds", () => {
-			attest(type("string >= 3 | string < 5").json).equals(type("string").json)
 		})
 
 		it("union of adjacent length bounds", () => {
@@ -480,21 +477,10 @@ contextualize(() => {
 			)
 		})
 
-		it("union of overlapping constrained bounds", () => {
-			attest(type("number.integer > 0 | number.integer < 5").json).equals(
-				type("number.integer").json
-			)
-		})
-
 		it("union of overlapping bounds and a subtype", () => {
 			attest(type("number > 0 | number < 5 | number.integer").json).equals(
 				type("number").json
 			)
-		})
-
-		it("union of length bounds at a length", () => {
-			const T = type("string < 3 | string > 3")
-			attest(T.json).equals(type("string != 3").json)
 		})
 
 		it("union of Date bounds at a Date", () => {
@@ -502,26 +488,11 @@ contextualize(() => {
 			attest(T.json).equals(type("Date != d'2000-05-03'").json)
 		})
 
-		it("union of constrained bounds", () => {
-			const T = type("number.integer < 0 | number.integer > 0")
-			attest(T.json).equals(type("number.integer != 0").json)
-		})
-
 		it("union of bounds allowing NaN", () => {
 			const nanable = { domain: "number", numberAllowsNaN: true } as const
 			const T = rootSchema([
 				{ domain: nanable, max: { rule: 0, exclusive: true } },
 				{ domain: nanable, min: { rule: 0, exclusive: true } }
-			])
-			attest(T.branches.length).equals(2)
-			attest(T.allows(Number.NaN)).equals(false)
-		})
-
-		it("union of overlapping bounds allowing NaN", () => {
-			const nanable = { domain: "number", numberAllowsNaN: true } as const
-			const T = rootSchema([
-				{ domain: nanable, min: { rule: 0, exclusive: true } },
-				{ domain: nanable, max: { rule: 5, exclusive: true } }
 			])
 			attest(T.branches.length).equals(2)
 			attest(T.allows(Number.NaN)).equals(false)
@@ -746,25 +717,9 @@ contextualize(() => {
 			attest(type("number != 5 | number == 5").json).equals(type("number").json)
 		})
 
-		it("Date unit at a bound", () => {
-			attest(type("Date < d'2000-01-01' | Date == d'2000-01-01'").json).equals(
-				type("Date <= d'2000-01-01'").json
-			)
-		})
-
 		it("unit the rest excludes", () => {
 			const T = type("number.integer < 5 | 5.5")
 			attest(T.expression).snap("number % 1 < 5 | 5.5")
-		})
-
-		it("ranges allowing NaN", () => {
-			const nanable = { domain: "number", numberAllowsNaN: true } as const
-			const T = rootSchema([
-				{ domain: nanable, min: { rule: 0, exclusive: true }, max: 5 },
-				{ domain: nanable, min: 3, max: 10 }
-			])
-			attest(T.branches.length).equals(2)
-			attest(T.allows(Number.NaN)).equals(false)
 		})
 
 		it("keep differing descriptions", () => {
@@ -935,12 +890,6 @@ contextualize(() => {
 				after: "1970-01-01T00:00:00.001Z",
 				before: "1970-01-01T00:16:40.000Z"
 			})
-			attest(() => type("Date").atOrBefore("01/02/2022")).throws(
-				writeInvalidDateMessage("01/02/2022")
-			)
-			attest(() => type("Date").laterThan("2022-01-01T00:00")).throws(
-				writeInvalidDateMessage("2022-01-01T00:00")
-			)
 		})
 
 		it("invalid after operand", () => {

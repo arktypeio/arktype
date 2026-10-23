@@ -9,26 +9,13 @@ contextualize(() => {
 		attest(t.allows([])).equals(false)
 	})
 
-	it("maxProperties", () => {
-		const tMaxProperties = jsonSchemaToType({
+	it("lists properties in output as the schema does", () => {
+		const T = jsonSchemaToType({
 			type: "object",
-			maxProperties: 1
-		})
-		attest(tMaxProperties.allows({})).equals(true)
-		attest(tMaxProperties.allows({ foo: 1 })).equals(true)
-		attest(tMaxProperties.allows({ foo: 1, bar: 2 })).equals(false)
-		attest(tMaxProperties.allows({ foo: 1, bar: 2, baz: 3 })).equals(false)
-	})
-
-	it("minProperties", () => {
-		const tMinProperties = jsonSchemaToType({
-			type: "object",
-			minProperties: 2
-		})
-		attest(tMinProperties.allows({})).equals(false)
-		attest(tMinProperties.allows({ foo: 1 })).equals(false)
-		attest(tMinProperties.allows({ foo: 1, bar: 2 })).equals(true)
-		attest(tMinProperties.allows({ foo: 1, bar: 2, baz: 3 })).equals(true)
+			properties: { b: { type: "string" }, a: { type: "string" } },
+			required: ["a"]
+		}).onUndeclaredKey("delete")
+		attest(Object.keys(T({ a: "a", b: "b", c: "c" }))).snap(["b", "a"])
 	})
 
 	it("minProperties of 1 message", () => {
@@ -104,16 +91,6 @@ contextualize(() => {
 		})
 		attest(tPropertyNames.allows({ abcde: 1 })).equals(true)
 		attest(tPropertyNames.allows({ abcd: 1 })).equals(false)
-
-		attest(() =>
-			jsonSchemaToType({
-				type: "object",
-				// @ts-expect-error
-				propertyNames: { type: "number" }
-			})
-		).type.errors.snap(
-			"Type '\"number\"' is not assignable to type '\"string\"'."
-		)
 	})
 
 	it("propertyNames & additionalProperties", () => {

@@ -13,7 +13,8 @@ export {
 	type ArkSchemaConfig,
 	type ArkSchemaScopeConfig,
 	type GenericAst,
-	type JsonSchema
+	type JsonSchema,
+	type ToJsonSchema
 } from "@ark/schema"
 export { Hkt, inferred, ParseError, type Brand, type Json } from "@ark/util"
 export { regex, type Regex } from "arkregex"

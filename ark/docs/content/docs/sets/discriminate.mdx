@@ -46,13 +46,13 @@ const Message = {
 	anyOf: [
 		{
 			type: "object",
-			properties: { kind: { const: "a" } },
-			required: ["kind"]
+			properties: { kind: { const: "a" }, x: { type: "number" } },
+			required: ["kind", "x"]
 		},
 		{
 			type: "object",
-			properties: { kind: { const: "b" } },
-			required: ["kind"]
+			properties: { kind: { const: "b" }, y: { type: "string" } },
+			required: ["kind", "y"]
 		},
 		{ type: "object", properties: { other: { type: "string" } } }
 	]
@@ -60,5 +60,7 @@ const Message = {
 
 discriminate(Message)?.default?.expression // "{ other?: string }"
 ```
+
+Branches alike but for the discriminating value merge first, so `{ kind: "a" }` and `{ kind: "b" }` beside `{ other?: string }` are `{ kind: "a" | "b" } | { other?: string }`. Every case of that union would match both branches, so it has no discriminant.
 
 `discriminate` returns `null` if the schema isn't a union or its branches share no discriminant, like `type({ a: "string" }).or({ b: "number" })`.

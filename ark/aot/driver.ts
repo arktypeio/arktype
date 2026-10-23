@@ -1,6 +1,5 @@
 import { readFileSync, statSync } from "node:fs"
 import { resolve } from "node:path"
-import type { UnitReaders } from "arktype/internal/standalone.ts"
 import type { SourceMap } from "magic-string"
 import { parentPort, workerData, type MessagePort } from "node:worker_threads"
 import {
@@ -60,7 +59,6 @@ const renderDiagnostics = (
 
 export interface PrecompilerWorkerData {
 	precompilerOptions: PrecompilePluginOptions
-	unitReaders?: UnitReaders | undefined
 	// for a host that waits synchronously
 	port?: MessagePort | undefined
 	answered?: Int32Array | undefined
@@ -76,7 +74,7 @@ export type PrecompileRequest =
 	| [kind: "check", source: string, id: string]
 	| [kind: "lint", source: string, id: string]
 	| [kind: "readDependency", importer: string]
-	| [kind: "reset", unitReaders?: UnitReaders | undefined]
+	| [kind: "reset"]
 	| [kind: "refresh"]
 	| [kind: "close"]
 
@@ -89,7 +87,6 @@ export interface TransformedModule extends InlineModule {
 	map: SourceMap | undefined
 	dependencies: string[]
 	modules: Record<string, string>
-	unitReaders: UnitReaders
 }
 
 export type PrecompileAnswer = { result: unknown } | { error: unknown }
@@ -105,16 +102,10 @@ const answerRequests = (
 ): void => {
 	let tracked: TrackedPrecompiler | undefined
 	let conflictsWithThread = false
-	let { unitReaders } = data
-	const track = () => {
-		const created = createTrackedPrecompiler(data.precompilerOptions)
-		created.precompiler.unitReaders = unitReaders
-		return created
-	}
+	const track = () => createTrackedPrecompiler(data.precompilerOptions)
 	const answer = (request: PrecompileRequest): unknown => {
 		if (request[0] === "close") return
 		if (request[0] === "refresh" && tracked && !isStale(tracked)) return false
-		if (request[0] === "reset") unitReaders = request[1]
 		if (request[0] === "reset" || request[0] === "refresh") {
 			tracked = track()
 			return conflictsWithThread || tracked.precompiler.needsNewThread
@@ -317,7 +308,8 @@ const keyedModuleOf = (
 	for (const dependency of transformed?.dependencies ?? [])
 		if (!files.includes(dependency)) files.push(dependency)
 	return {
-		code: transformed?.code,
+		code:
+			transformed?.code && appendSourceMap(transformed.code, transformed.map),
 		errors: transformed?.errors ?? [],
 		warnings: transformed?.warnings ?? [],
 		files
@@ -353,21 +345,17 @@ const transformedModuleOf = (
 			dependencies:
 				precompiler.inline ? [] : precompiler.textImportsOf(source, id),
 			modules: {},
-			unitReaders: {},
 			errors: [],
 			warnings: []
 		}
 	}
 	return {
-		code:
-			result.map &&
-			(precompiler.inline ?
-				appendSourceMap(result.code, result.map)
-			:	result.code),
-		map: precompiler.inline ? undefined : result.map,
-		dependencies: [...result.dependencies, ...precompiler.ownManifests],
+		code: result.map && result.code,
+		map: result.map,
+		dependencies: [
+			...new Set([...result.dependencies, ...precompiler.ownManifests])
+		],
 		modules: result.modules,
-		unitReaders: result.unitReaders,
 		...renderDiagnostics(result.diagnostics, id => precompiler.graph.pathOf(id))
 	}
 }

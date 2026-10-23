@@ -175,12 +175,8 @@ contextualize(() => {
 		const T = type("string.trim")
 		attest(T.encode("a")).equals("a")
 		attest(T.encode(" a ").toString()).snap('must be trimmed (was " a ")')
-	})
-
-	it("trimmed multi-line strings round-trip", () => {
-		const T = type({ bio: "string.trim" })
-		const decoded = T.assert({ bio: " a\nb " })
-		attest(T.encode(decoded)).snap({ bio: "a\nb" })
+		// a multi-line string round-trips
+		attest(T.encode(T.assert(" a\nb "))).snap("a\nb")
 	})
 
 	it("case keywords encode what they decode to", () => {

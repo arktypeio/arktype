@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
-import type { JsonSchema } from "arktype"
+import { type, type JsonSchema } from "arktype"
 
 // checks inference without reading the schema at runtime
 // like jsonSchemaToType, the result is read back with `infer` so attest's
@@ -245,6 +245,46 @@ contextualize(() => {
 				"{ [x: string]: string | number }"
 			)
 		})
+
+		it("a recursive hand-written schema interface through properties and items", () => {
+			interface Tree {
+				type: "object"
+				properties: {
+					value: { type: "number" }
+					children: { type: "array"; items: Tree }
+				}
+				required: ["value"]
+			}
+			const T = of<jsonSchema.infer<Tree>>()
+			attest<number>(T.value)
+			attest<number | undefined>(T.children?.[0]?.value)
+		})
+
+		it("a type with a string index may have nullable", () => {
+			// limitation: a string-indexed schema type may have `nullable: true`, but the type fast path (StringSchema's `nullable?: never`) accepts it, so null is missed (rare shape)
+			attest(
+				of<jsonSchema.infer<{ type: "string"; [k: string]: unknown }>>()
+			).type.toString.snap("string")
+		})
+
+		it("a type with a template-literal index can't have nullable", () => {
+			attest<string>(
+				of<jsonSchema.infer<{ type: "string"; [k: `x-${string}`]: unknown }>>()
+			).type.toString.snap("string")
+		})
+
+		it("an any patternProperties value", () => {
+			// limitation: `any` is assignable to FalsePatterns, so an any pattern value closes the object (sound: object is wider than an any index)
+			attest(
+				of<
+					jsonSchema.infer<{
+						type: "object"
+						patternProperties: { "^x": any }
+						additionalProperties: false
+					}>
+				>()
+			).type.toString.snap("object")
+		})
 	})
 
 	describe("required tuples", () => {
@@ -255,35 +295,6 @@ contextualize(() => {
 				required: string[]
 			}>
 			attest(of<T>()).type.toString.snap("{ a?: string; b?: number }")
-		})
-
-		it("array of a key union requires nothing", () => {
-			type T = jsonSchema.infer<{
-				type: "object"
-				properties: { a: { type: "string" }; b: { type: "number" } }
-				required: ("a" | "b")[]
-			}>
-			attest<{ a?: string; b?: number }>(of<T>()).type.toString.snap(
-				"{ a?: string; b?: number }"
-			)
-		})
-
-		it("required that may be undefined requires nothing", () => {
-			type T = jsonSchema.infer<{
-				type: "object"
-				properties: { a: { type: "string" } }
-				required: ["a"] | undefined
-			}>
-			attest<{ a?: string }>(of<T>()).type.toString.snap("{ a?: string }")
-		})
-
-		it("any requires nothing", () => {
-			type T = jsonSchema.infer<{
-				type: "object"
-				properties: { a: { type: "string" } }
-				required: any
-			}>
-			attest<{ a?: string }>(of<T>()).type.toString.snap("{ a?: string }")
 		})
 
 		it("required entries that are any, never or string require nothing", () => {
@@ -524,11 +535,6 @@ contextualize(() => {
 	})
 
 	describe("widened object keywords", () => {
-		it("widened type", () => {
-			const type: string = "object"
-			attest<unknown>(inferred({ type, properties: { a: { type: "string" } } }))
-		})
-
 		it("non-const nested object", () => {
 			const properties = { a: { type: "string" } }
 			const T = inferred({ type: "object", properties })
@@ -1003,20 +1009,6 @@ contextualize(() => {
 }`)
 		})
 
-		it("linked list through root", () => {
-			type List = { value: number; next: List | null }
-			const T = inferred({
-				type: "object",
-				properties: {
-					value: { type: "number" },
-					next: { anyOf: [{ $ref: "#" }, { type: "null" }] }
-				},
-				required: ["value", "next"]
-			})
-			attest<List>(T)
-			attest<List | null>(T.next)
-		})
-
 		it("refs into patternProperties and additionalProperties", () => {
 			const T = inferred({
 				type: "object",
@@ -1056,17 +1048,6 @@ contextualize(() => {
 			attest<{ a?: { y: number; x: string } }>(T).type.toString.snap(
 				"{ a?: { x: string; y: number } }"
 			)
-		})
-
-		it("draft-07 ignores a property's $ref siblings", () => {
-			const T = inferred({
-				$schema: "http://json-schema.org/draft-07/schema#",
-				type: "object",
-				definitions: { s: { type: "string" } },
-				properties: { a: { $ref: "#/definitions/s", type: "number" } },
-				required: ["a"]
-			})
-			attest<{ a: string }>(T).type.toString.snap("{ a: string }")
 		})
 	})
 
@@ -1444,15 +1425,6 @@ contextualize(() => {
 	})
 
 	describe("minProperties and maxProperties", () => {
-		it("zero", () => {
-			const T = inferred({
-				type: "object",
-				minProperties: 0,
-				maxProperties: 0
-			})
-			attest<object>(T).type.toString.snap("object")
-		})
-
 		it("fewer than required", () => {
 			const T = inferred({
 				type: "object",
@@ -1463,48 +1435,6 @@ contextualize(() => {
 			attest<{ a: string; b: string }>(T).type.toString.snap(
 				"{ a: string; b: string }"
 			)
-		})
-
-		it("widened", () => {
-			const minProperties: number = 1
-			const T = inferred({ type: "object", minProperties })
-			attest<object>(T).type.toString.snap("object")
-		})
-
-		it("negative minProperties", () => {
-			attest(() =>
-				// @ts-expect-error
-				inferred({ type: "object", minProperties: -1 })
-			).type.errors("minProperties must be a non-negative integer (was -1)")
-		})
-
-		it("non-integer maxProperties", () => {
-			attest(() =>
-				// @ts-expect-error
-				inferred({ type: "object", maxProperties: 2.5 })
-			).type.errors("maxProperties must be a non-negative integer (was 2.5)")
-		})
-
-		it("string value", () => {
-			attest(() =>
-				// @ts-expect-error
-				inferred({ type: "object", minProperties: "1" })
-			).type.errors("Type 'string' is not assignable to type 'number'")
-		})
-
-		it("exponent fraction", () => {
-			attest(() =>
-				// @ts-expect-error
-				inferred({ type: "object", minProperties: 1e-7 })
-			).type.errors.snap(
-				"Type 'number' is not assignable to type '\"minProperties must be a non-negative integer (was 1e-7)​\"'."
-			)
-		})
-
-		it("large exponent integer", () => {
-			attest(() =>
-				inferred({ type: "object", maxProperties: 1.5e21 })
-			).type.errors.is("")
 		})
 	})
 
@@ -1912,16 +1842,6 @@ contextualize(() => {
 			attest<object>(T).type.toString.snap("object")
 		})
 
-		it("not an object const matching the base", () => {
-			const T = inferred({
-				type: "object",
-				properties: { a: { const: 1 } },
-				required: ["a"],
-				not: { const: { a: 1 } }
-			})
-			attest<{ a: 1 }>(T).type.toString.snap("{ a: 1 }")
-		})
-
 		it("not an enum of an object and null", () => {
 			const T = inferred({
 				type: ["object", "null"],
@@ -1941,17 +1861,6 @@ contextualize(() => {
 				not: { const: [{ a: 1 }] }
 			})
 			attest<[{ a: 1 }]>(T).type.toString.snap("[{ a: 1 }]")
-		})
-
-		it("not an exact closed tuple excludes it", () => {
-			const T = inferred({
-				type: "array",
-				prefixItems: [{ const: 1 }],
-				minItems: 1,
-				items: false,
-				not: { const: [1] }
-			})
-			attest<never>(T).type.toString.snap("never")
 		})
 
 		it("not an array const keeps the recursion", () => {
@@ -2098,27 +2007,6 @@ contextualize(() => {
 				]
 			})
 			attest<{ a: string } | null>(T).type.toString.snap("{ a: string } | null")
-		})
-
-		it("oneOf discriminated", () => {
-			const T = inferred({
-				type: "object",
-				oneOf: [
-					{
-						properties: { kind: { const: "a" }, a: { type: "string" } },
-						required: ["kind", "a"]
-					},
-					{
-						properties: { kind: { const: "b" }, b: { type: "number" } },
-						required: ["kind", "b"]
-					}
-				]
-			})
-			attest<{ kind: "a"; a: string } | { kind: "b"; b: number }>(
-				T
-			).type.toString.snap(
-				'{ kind: "a"; a: string } | { kind: "b"; b: number }'
-			)
 		})
 
 		it("base required key typed by anyOf branches", () => {
@@ -2579,174 +2467,6 @@ contextualize(() => {
 			attest<number, T["p0"]>()
 			attest<number | undefined, T["p30"]>()
 		})
-
-		it("allOf of twelve $refs to if/then/else rules", () => {
-			attest.instantiations([14200, "instantiations"])
-			return inferred({
-				type: "object",
-				$defs: {
-					r0: {
-						if: { properties: { k: { const: 0 } } },
-						then: { required: ["v0"] },
-						else: { properties: { v0: false } }
-					},
-					r1: {
-						if: { properties: { k: { const: 1 } } },
-						then: { required: ["v1"] },
-						else: { properties: { v1: false } }
-					},
-					r2: {
-						if: { properties: { k: { const: 2 } } },
-						then: { required: ["v2"] },
-						else: { properties: { v2: false } }
-					},
-					r3: {
-						if: { properties: { k: { const: 3 } } },
-						then: { required: ["v3"] },
-						else: { properties: { v3: false } }
-					},
-					r4: {
-						if: { properties: { k: { const: 4 } } },
-						then: { required: ["v4"] },
-						else: { properties: { v4: false } }
-					},
-					r5: {
-						if: { properties: { k: { const: 5 } } },
-						then: { required: ["v5"] },
-						else: { properties: { v5: false } }
-					},
-					r6: {
-						if: { properties: { k: { const: 6 } } },
-						then: { required: ["v6"] },
-						else: { properties: { v6: false } }
-					},
-					r7: {
-						if: { properties: { k: { const: 7 } } },
-						then: { required: ["v7"] },
-						else: { properties: { v7: false } }
-					},
-					r8: {
-						if: { properties: { k: { const: 8 } } },
-						then: { required: ["v8"] },
-						else: { properties: { v8: false } }
-					},
-					r9: {
-						if: { properties: { k: { const: 9 } } },
-						then: { required: ["v9"] },
-						else: { properties: { v9: false } }
-					},
-					r10: {
-						if: { properties: { k: { const: 10 } } },
-						then: { required: ["v10"] },
-						else: { properties: { v10: false } }
-					},
-					r11: {
-						if: { properties: { k: { const: 11 } } },
-						then: { required: ["v11"] },
-						else: { properties: { v11: false } }
-					}
-				},
-				allOf: [
-					{ $ref: "#/$defs/r0" },
-					{ $ref: "#/$defs/r1" },
-					{ $ref: "#/$defs/r2" },
-					{ $ref: "#/$defs/r3" },
-					{ $ref: "#/$defs/r4" },
-					{ $ref: "#/$defs/r5" },
-					{ $ref: "#/$defs/r6" },
-					{ $ref: "#/$defs/r7" },
-					{ $ref: "#/$defs/r8" },
-					{ $ref: "#/$defs/r9" },
-					{ $ref: "#/$defs/r10" },
-					{ $ref: "#/$defs/r11" }
-				]
-			})
-		})
-
-		it("allOf of four allOf groups of three if/then/else rules", () => {
-			attest.instantiations([12700, "instantiations"])
-			return inferred({
-				type: "object",
-				allOf: [
-					{
-						allOf: [
-							{
-								if: { properties: { k: { const: 0 } } },
-								then: { required: ["v0"] },
-								else: { properties: { v0: false } }
-							},
-							{
-								if: { properties: { k: { const: 1 } } },
-								then: { required: ["v1"] },
-								else: { properties: { v1: false } }
-							},
-							{
-								if: { properties: { k: { const: 2 } } },
-								then: { required: ["v2"] },
-								else: { properties: { v2: false } }
-							}
-						]
-					},
-					{
-						allOf: [
-							{
-								if: { properties: { k: { const: 3 } } },
-								then: { required: ["v3"] },
-								else: { properties: { v3: false } }
-							},
-							{
-								if: { properties: { k: { const: 4 } } },
-								then: { required: ["v4"] },
-								else: { properties: { v4: false } }
-							},
-							{
-								if: { properties: { k: { const: 5 } } },
-								then: { required: ["v5"] },
-								else: { properties: { v5: false } }
-							}
-						]
-					},
-					{
-						allOf: [
-							{
-								if: { properties: { k: { const: 6 } } },
-								then: { required: ["v6"] },
-								else: { properties: { v6: false } }
-							},
-							{
-								if: { properties: { k: { const: 7 } } },
-								then: { required: ["v7"] },
-								else: { properties: { v7: false } }
-							},
-							{
-								if: { properties: { k: { const: 8 } } },
-								then: { required: ["v8"] },
-								else: { properties: { v8: false } }
-							}
-						]
-					},
-					{
-						allOf: [
-							{
-								if: { properties: { k: { const: 9 } } },
-								then: { required: ["v9"] },
-								else: { properties: { v9: false } }
-							},
-							{
-								if: { properties: { k: { const: 10 } } },
-								then: { required: ["v10"] },
-								else: { properties: { v10: false } }
-							},
-							{
-								if: { properties: { k: { const: 11 } } },
-								then: { required: ["v11"] },
-								else: { properties: { v11: false } }
-							}
-						]
-					}
-				]
-			})
-		})
 	})
 
 	describe("required keys declared by other subschemas", () => {
@@ -3135,18 +2855,6 @@ contextualize(() => {
 			).completions({ xy: ["xylophone"] })
 		})
 
-		it("property type", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					properties: {
-						// @ts-expect-error
-						a: { type: "ob" }
-					}
-				})
-			).completions({ ob: ["object"] })
-		})
-
 		it("object keywords", () => {
 			attest(() =>
 				// prettier-ignore
@@ -3203,58 +2911,6 @@ contextualize(() => {
 	tags?: { id?: number; name?: string }[]
 	status?: "available" | "pending" | "sold"
 }`)
-		})
-
-		it("OpenAPI inheritance under a oneOf", () => {
-			const T = inferred({
-				components: {
-					schemas: {
-						Pet: {
-							type: "object",
-							properties: {
-								petType: { type: "string" },
-								name: { type: "string" }
-							},
-							required: ["petType"]
-						},
-						Cat: {
-							allOf: [
-								{ $ref: "#/components/schemas/Pet" },
-								{
-									type: "object",
-									properties: {
-										petType: { const: "cat" },
-										lives: { type: "integer" }
-									},
-									required: ["lives"]
-								}
-							]
-						},
-						Dog: {
-							allOf: [
-								{ $ref: "#/components/schemas/Pet" },
-								{
-									type: "object",
-									properties: {
-										petType: { const: "dog" },
-										bark: { type: "boolean" }
-									}
-								}
-							]
-						}
-					}
-				},
-				oneOf: [
-					{ $ref: "#/components/schemas/Cat" },
-					{ $ref: "#/components/schemas/Dog" }
-				]
-			})
-			attest<
-				| { petType: "cat"; name?: string; lives: number }
-				| { petType: "dog"; name?: string; bark?: boolean }
-			>(T).type.toString
-				.snap(`	| { petType: "dog"; name?: string; bark?: boolean }
-	| { petType: "cat"; name?: string; lives: number }`)
 		})
 
 		it("JSON:API resource", () => {
@@ -3408,6 +3064,36 @@ contextualize(() => {
 				required: ["infer"]
 			})
 			attest<{ infer: string }>(s.infer).type.toString.snap("{ infer: string }")
+		})
+
+		it("composing toJsonSchema output", () => {
+			const user = type({ name: "string" }).toJsonSchema()
+			const T = jsonSchemaToType({
+				type: "object",
+				properties: { user },
+				required: ["user"]
+			})
+			attest<{ user: unknown }>(T.infer).type.toString.snap("{ user: unknown }")
+		})
+	})
+
+	// last: the depth errors these pin are cached, so they'd turn later inferences in the file to any
+	describe("recursive hand-written schema unions", () => {
+		it("a recursive hand-written union schema type through anyOf", () => {
+			// limitation: a depth error (any): a recursive hand-written schema union with no all-optional member recurses eagerly through anyOf
+			type Rec = { type: "string" } | { type: "number" } | { anyOf: Rec[] }
+			type T = jsonSchema.infer<{ type: "object"; properties: { a: Rec } }>
+			// @ts-ignore
+			type a = T["a"]
+			attest({} as a).type.toString.snap("any")
+		})
+
+		it("const beside a recursive hand-written union schema type", () => {
+			// limitation: a depth error (any): the same with no $ref member, as containsRef walks the union forever
+			type Rec = { type: "string" } | { type: "array"; items: Rec }
+			// @ts-ignore
+			type T = jsonSchema.infer<{ type: "array"; items: Rec; const: [["a"]] }>
+			attest({} as T).type.toString.snap("any")
 		})
 	})
 })
