@@ -2509,21 +2509,29 @@ ${writeFunction(
 				asValidator && !transforms && this.elementTraversalsOf(root)
 			if (elements) {
 				return [
-					// a minifier inlines a const read once, but not a default
-					`(({ 1: apply, 2: allowsElement, 3: applyElement }, onFail, rejectedIn = data => {
+					this.makeValidator(
+						// a minifier inlines a const read once, but not a default
+						`{ 1: apply, 2: allowsElement, 3: applyElement }, onFail, rejectedIn = data => {
 	for (let i = 0; i < data.length; i++) if (!allowsElement(data[i])) return i
-}) => ${this.validatorOnLoad(`(data, ...args) => {
+}`,
+						`(data, ...args) => {
 	if (!Array.isArray(data)) return ${callErrors}(apply, data, args, onFail, ${Ctx})
 	const i = rejectedIn(data)
 	return i === undefined ? data : ${elementErrors}(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
-}`)})`,
+}`,
+						Ctx
+					),
 					`[${traversals}[0], ${traversals}[${this.appliedIndexOf(root)}], ${elements}]`,
 					true
 				]
 			}
 			if (asValidator) {
 				return [
-					`((${pattern}${unconfigured ? "" : ", onFail"}) => ${this.validatorOnLoad(`(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`)})`,
+					this.makeValidator(
+						`${pattern}${unconfigured ? "" : ", onFail"}`,
+						`(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`,
+						Ctx
+					),
 					parts,
 					true
 				]
@@ -2679,6 +2687,22 @@ ${writeFunction(
 			: `${shape}.allows`,
 			false
 		]
+	}
+
+	// what makes a validator from its traversals, written once for every
+	// validator alike, as each function a module writes costs its load
+	makeValidator(params: string, validator: string, Ctx: string): string {
+		const body = this.validatorOnLoad(validator)
+		// a Ctx the module declares isn't read where the make is shared
+		if (!Ctx.startsWith("runtime.")) return `((${params}) => ${body})`
+		const name = `make${hashOf(`${params}\n${body}`)}`
+		return this.read(
+			this.share(
+				name,
+				writeFunction(this.baking, name, params, `\treturn ${body}`)
+			),
+			name
+		)
 	}
 
 	emitApplier(

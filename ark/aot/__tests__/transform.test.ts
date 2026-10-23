@@ -62,7 +62,9 @@ export const isError = (data: unknown) => data instanceof ArkErrors`)
 				"~arktype/#1",
 				"~arktype/#2",
 				"~arktype/#3",
-				"~arktype/#4"
+				"~arktype/#4",
+				"~arktype/#5",
+				"~arktype/#6"
 			])
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
@@ -648,7 +650,7 @@ export const E = type("strng")`,
 				"}",
 				"$ark$load2();",
 				'import "arktype"',
-				'import { siteOf as $ark$0$siteOf, freeze as $ark$0$freeze, fixConfig as $ark$0$fixConfig, createValidatorWith as $ark$0$createValidatorWith, unreadCallErrors as $ark$0$unreadCallErrors, UnreadArkErrors as $ark$0$UnreadArkErrors, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
+				'import { siteOf as $ark$0$siteOf, freeze as $ark$0$freeze, unreadCallErrors as $ark$0$unreadCallErrors, UnreadArkErrors as $ark$0$UnreadArkErrors, fixConfig as $ark$0$fixConfig, createValidatorWith as $ark$0$createValidatorWith, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
 				'const Array = "shadowed"',
 				"$arkfixConfig()",
 				"export const T = /* @__PURE__ */ $ark#0()",
