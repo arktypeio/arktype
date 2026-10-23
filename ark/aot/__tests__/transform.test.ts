@@ -138,7 +138,7 @@ export const Team = /* @__PURE__ */ $ark_#0($ark_#3Allows)`)
 export const Name = type("string > 0")
 export const nameOf = () => type("string > 1")`,
 				{},
-				{ creationChecks: "none", config: false, members: { meta: false } }
+				{ creationChecks: "none", config: false }
 			)
 			attest(normalized(result.code)).snap(`import "arktype"
 import { #0 as $ark_#0 } from "~arktype/#1"

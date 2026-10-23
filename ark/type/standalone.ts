@@ -2021,10 +2021,9 @@ ${writeFunction(
 				applied
 			:	undefined
 		const written =
-			// a size build's creator defaults the attributes of a validator
-			// with only an empty meta
+			// a creator defaults the attributes of a validator with only an
+			// empty meta, so a site can create it from imports alone
 			(
-				this.baking.shortest &&
 				!isTemplate &&
 				!this.baking.checksTypes &&
 				!onFail &&
@@ -2158,11 +2157,9 @@ ${writeFunction(
 			: applier ? [applier.params]
 			: ["rootApply", "allows"]),
 			...(!hasAttributes ? []
-			: holdsOnlyMeta(members) ?
-				[this.baking.shortest ? "meta = runtime.emptyMeta" : "meta"]
-			: this.baking.shortest && keepsMeta ?
-				["attributes = { meta: runtime.emptyMeta }"]
-			:	["attributes"]),
+			: holdsOnlyMeta(members) ? ["meta = runtime.emptyMeta"]
+			: keepsMeta ? ["attributes = { meta: runtime.emptyMeta }"]
+			: ["attributes"]),
 			...(this.baking.checksTypes ? ["id", "holes = []"] : []),
 			...(!configured || keepsMeta ? []
 			: this.baking.readsConfig ?
