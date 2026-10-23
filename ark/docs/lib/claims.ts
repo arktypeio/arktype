@@ -47,20 +47,20 @@ export interface BenchmarkChart {
  * ark/repo/bench/external, against moltar's typescript-runtime-type-benchmarks
  * at 499f3fb and schema-benchmarks at f1e6e8e. Its results/ holds the
  * instruction counts (counts-a306152ce.md, whose builds match the release's),
- * the sizes (login-f29b8d153.json) and the one pre-registered wall-clock run,
- * at c42ee008c (wall.md: 30 paired passes, Holm over H1-H4). H2, H3 and H4
- * held; H1 failed, so parseSafe copy states instructions, not speed. Each claim is scoped: precompiled or
- * dynamic, valid or invalid data, with or without errors. Speed comes from the
+ * the sizes (login-89510709d.json) and the pre-registered wall-clock run at
+ * f29b8d153 (wall-f29b8d153.md: 30 paired passes, Holm over H1-H4), where all
+ * four hypotheses held. At the release candidate (wall.md) H1 had failed. Each
+ * claim is scoped: precompiled or dynamic, valid or invalid data, with or
+ * without errors. Speed comes from the
  * default build and size from the "smallest" preset, so no claim says one
  * build is both.
  */
 
 // moltar's typescript-runtime-type-benchmarks, perf instruction counts in
-// benny's call shape, the default build. By wall clock (H1, at c42ee008c), it
-// beat @ts-runtypes, Typia, ata-validator (AOT) and ata in 26-28 of 30 passes,
-// but rescript-schema and @sx3/gate, at 234 and 233 instructions, were faster
-// in 21 and 24 (0.96x and 0.95x its time), so the chart claims instructions
-// only.
+// benny's call shape, the default build. By wall clock (H1, p 8.7e-7), it
+// beat every rival within 25% of its instructions in 28-29 of 30 passes:
+// @ts-runtypes, Typia, ata-validator (AOT) and ata in about 0.83x their time,
+// rescript-schema in 0.90x and @sx3/gate in 0.92x.
 export const speedChart: BenchmarkChart = {
 	title: "Runtime",
 	detail:
@@ -82,9 +82,9 @@ export const speedChart: BenchmarkChart = {
 // bundlejs-style esbuild of valibot.dev's login form as written, every entry
 // reporting every error with its message. Precompiled with
 // { preset: "smallest" } in a production build (esbuild's "production"
-// condition): 2745 / 1315 B min / gz; 3025 / 1468 in development, and the
-// default build 1779 in production. Sizes measured at f29b8d153
-// (results/login-f29b8d153.json).
+// condition): 2647 / 1313 B min / gz; 2927 / 1465 in development, and the
+// default build 1779 in production. Sizes measured at 89510709d
+// (results/login-89510709d.json).
 export const sizeChart: BenchmarkChart = {
 	title: "Bundle size",
 	detail:
@@ -96,7 +96,7 @@ export const sizeChart: BenchmarkChart = {
 	},
 	axisMax: 26_000,
 	bars: [
-		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1315 },
+		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1313 },
 		{ name: "Valibot", kind: "other", value: 1547 },
 		{ name: "Zod Mini", kind: "other", value: 5127 },
 		{ name: "Zod", kind: "other", value: 25058 },
@@ -124,16 +124,15 @@ const bench = benchFacts()
 
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
-	// precompiled ArkType: moltar's parseSafe, 184 instructions vs Typia 213.
-	// By wall clock it beat Typia in 28 of 30 passes (0.95x), but that pair
-	// isn't a test of its own: H1, faster than every close rival, failed, so
-	// "Faster" awaits the author's decision. valibot.dev's login form as
-	// written, 1315 vs Valibot 1547 B gz
+	// precompiled ArkType: moltar's parseSafe, 184 instructions vs Typia 213;
+	// by wall clock (H1) faster than Typia in 29 of 30 passes (0.84x) and than
+	// every other close rival in at least 28. valibot.dev's login form as
+	// written, 1313 vs Valibot 1547 B gz
 	headline: "Faster than Typia. Smaller than Valibot.",
 	headlineDetail:
-		"Precompiled from the same definitions: the fewest instructions per call on moltar's parseSafe benchmark in our runs, and every error with its message on valibot.dev's login form in 1.32 kB.",
+		"Precompiled from the same definitions: fastest on moltar's parseSafe benchmark in our runs, and every error with its message on valibot.dev's login form in 1.31 kB.",
 	headlineNote:
-		"*Speed: moltar's parseSafe benchmark on valid data, run by us on Node 24 with the default build: 184 instructions per call, Typia 213. By wall clock it beat Typia in 28 of 30 paired runs, but rescript-schema and @sx3/gate, which take more instructions, were faster. ajv is faster on some invalid-data rows. Size: valibot.dev's login form as written, with its messages, bundled with bundlejs's esbuild settings and precompiled for size with the \"smallest\" preset in a production build: 1.32 kB gzipped, Valibot 1.55 kB.",
+		"*Speed: moltar's parseSafe benchmark on valid data, run by us on Node 24 with the default build: 184 instructions per call, Typia 213. By wall clock it was faster than each of the six libraries closest to it in instructions, Typia among them, in at least 28 of 30 paired runs. ajv is faster on some invalid-data rows. Size: valibot.dev's login form as written, with its messages, bundled with bundlejs's esbuild settings and precompiled for size with the \"smallest\" preset in a production build: 1.31 kB gzipped, Valibot 1.55 kB.",
 	// the fastest and the smallest builds differ: optimize "size" makes the
 	// product schema's valid data 2.2x slower
 	buildChoice:
@@ -145,20 +144,19 @@ export const claims = {
 		"precompiled for size, smaller than Valibot on its own login form, with every error message",
 	// the sentence under the docs' charts
 	chartsSummary:
-		"In our runs of moltar's benchmark, precompiled ArkType is the fastest on assertLoose and takes the fewest instructions per call on parseSafe. Precompiled for size, it reports every error on Valibot's own login form, with its message, in a smaller bundle than Valibot.",
+		"In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled for size, it reports every error on Valibot's own login form, with its message, in a smaller bundle than Valibot.",
 	// the product schema, valid data: 6005 vs 6003 instructions; by wall clock
-	// (H3, at c42ee008c), dynamic took 0.998x the default build's time and stayed under 1.05x
-	// in 22 of 30 passes (p 0.0081)
+	// (H3), dynamic took 0.999x the default build's time and stayed under 1.05x
+	// in 24 of 30 passes (p 0.00072)
 	dynamicSpeed:
 		"In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType.",
-	// "smallest" in production, 1315 vs 1547 B gz, the form as written
+	// "smallest" in production, 1313 vs 1547 B gz, the form as written
 	loginSize:
-		"On Valibot's own login form, ArkType precompiled for size reports every error, with its message, in a smaller bundle than Valibot: 1.32 kB gzipped against 1.55 kB.",
+		"On Valibot's own login form, ArkType precompiled for size reports every error, with its message, in a smaller bundle than Valibot: 1.31 kB gzipped against 1.55 kB.",
 	// moltar strict, dynamic, 2.2.9 to now: assertStrict 5326 -> 348,
 	// parseStrict 4277 -> 365 instructions (2.2.9's counts vary by 20-26%
-	// between reps, its ratios 10.2x to 17.1x); by wall clock (H4, at
-	// c42ee008c), 0.078x 2.2.9's time on assertStrict, under 0.2x in 30 of 30
-	// passes
+	// between reps, its ratios 10.2x to 17.1x); by wall clock (H4), 0.074x
+	// 2.2.9's time on assertStrict, under 0.2x in 30 of 30 passes
 	strictSpeedup:
 		"Dynamic ArkType validates moltar's strict cases about 10 times faster than 2.2.",
 	// 18 instructions, the harness floor; typia createIs 221
@@ -172,9 +170,8 @@ export const claims = {
 		"Dynamic ArkType is 82.3 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.",
 	zodSpec: `faster than Zod 4 in ${zodScenarios} we ran`,
 	zodSpeed: `Precompiled ArkType was faster than Zod 4 in ${zodScenarios} of our benchmark, by ${zod.min} to ${zod.max}, and faster than Zod 4's z.compile in ${zodCompiled.wins} of ${zodCompiled.count}${zodCompiledLosses}.`,
-	// the error rows from benchData.json; the wall clock from
-	// ark/repo/bench/external/results/wall.md, H1
-	speedScope: `It isn't the fastest at everything. On the rows that report errors for invalid data, ajv was faster on ${bench.ajvFasterCount} of ${bench.errorCount}, and on moltar's parseSafe, rescript-schema and @sx3/gate were faster by wall clock.`,
+	// the error rows from benchData.json
+	speedScope: `It isn't the fastest at everything. On the rows that report errors for invalid data, ajv was faster on ${bench.ajvFasterCount} of ${bench.errorCount}.`,
 	// no rate: 4 of 10 can't headline a row
 	zodMigrationSpec: "a guide your agent follows from one prompt",
 	// h2 in the Zod-migration eval: 10 repos chosen by a rule fixed before any

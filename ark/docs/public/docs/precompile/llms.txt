@@ -35,13 +35,13 @@ A validator that compiles at runtime ships its compiler, and one that interprets
 - ata-validator (AOT): 220
 
 * Bundle size (B gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled with the "smallest" preset in a production build. Source: the form from valibot.dev's comparison, https\://valibot.dev/guides/comparison/
-* ArkType (precompiled): 1,315
+* ArkType (precompiled): 1,313
 * Valibot: 1,547
 * Zod Mini: 5,127
 * Zod: 25,058
 * ArkType (dynamic): 82,263
 
-In our runs of moltar's benchmark, precompiled ArkType is the fastest on assertLoose and takes the fewest instructions per call on parseSafe. Precompiled for size, it reports every error on Valibot's own login form, with its message, in a smaller bundle than Valibot. The charts come from different builds: each names its benchmark and the options it was built with.
+In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled for size, it reports every error on Valibot's own login form, with its message, in a smaller bundle than Valibot. The charts come from different builds: each names its benchmark and the options it was built with.
 
 Because every Type is built when you build, a precompiled validator has no initialization cost, and because nothing is generated at runtime, it runs under a Content-Security-Policy that blocks `eval`.
 

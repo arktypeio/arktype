@@ -118,3 +118,21 @@ B2's assertLoose rose from 71 to 3220, since the size build now checks with
 small shared checkers. 2.2.9's strict counts vary by 20-26% between reps, so
 dynamic's ratios to them span 10.2x to 17.1x. The wall-clock run above is
 still the release candidate's.
+
+## The release's wall-clock run
+
+`results/wall-f29b8d153.{json,md}` is the same plan's run at the release,
+f29b8d153, with the same arms and builds (B1, B2 and schema-benchmarks' B1
+bundle are byte-identical to a306152ce's): 30 passes from 09:26 to 10:11 UTC,
+starting at 1-minute loads of 1.0-4.0, with pass 8 ending at 6.3. Every
+hypothesis holds.
+
+| test | result                                                                                                                                      |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| H1   | holds (p 8.7e-7 ≤ 0.0167): every pair 28-29 of 30; rescript-schema 0.90x, @sx3/gate 0.92x, @ts-runtypes, typia, ata-aot and ata about 0.83x |
+| H2   | holds (p 0.0014 ≤ 0.05): its closest pair, ts-runtime-checks, 24 of 30, 0.94x                                                               |
+| H3   | holds (p 0.00072 ≤ 0.025): dynamic/B1 0.999, under 1.05 in 24 of 30                                                                         |
+| H4   | holds (p 9.3e-10 ≤ 0.0125): dynamic/2.2.9 0.074, under 0.2 in 30 of 30                                                                      |
+
+At 89510709d, a leaner error writer shrank B2's login form to 1313 B gzipped
+(`results/login-89510709d.json`); every other size is unchanged.
