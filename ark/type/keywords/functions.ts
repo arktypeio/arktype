@@ -363,7 +363,7 @@ export const raisedErrorPhrases = {
 
 // http(s) with simple host labels always parses; cased without the i flag
 const plainUrl =
-	/^(?:https?|[Hh][Tt]{2}[Pp][Ss]?):\/\/(?:[\dA-Za-z]+(?:-[\dA-Za-z]+)*\.)*[A-Za-z]+(?::\d{1,4})?(?:[#/?]|$)/
+	/^[Hh][Tt]{2}[Pp][Ss]?:\/\/(?:[\dA-Za-z]+(?:-[\dA-Za-z]+)*\.)*[A-Za-z]+(?::\d{1,4})?(?:[#/?]|$)/
 
 // a string without a colon has no scheme, so fails
 export const isParsableUrl = ((s: string): boolean =>
