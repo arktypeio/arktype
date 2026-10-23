@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
-import type { array } from "@ark/util"
+import type { array, Json } from "@ark/util"
 import { type, type JsonSchema } from "arktype"
 
 // Bug tests assert the correct behavior and fail until fixed. Where attest<expected>
@@ -442,25 +442,21 @@ contextualize(() => {
 		})
 
 		it("arktype JsonSchema subtypes infer their family", () => {
-			attest<string>(inferType<JsonSchema.String>()).type.toString.snap(
-				"string"
+			attest<string | null>(inferType<JsonSchema.String>()).type.toString.snap(
+				"string | null"
 			)
-			attest<number>(inferType<JsonSchema.Numeric>()).type.toString.snap(
-				"number"
+			attest<number | null>(inferType<JsonSchema.Numeric>()).type.toString.snap(
+				"number | null"
 			)
 			attest<object>(inferType<JsonSchema.Object>()).type.toString.snap(
 				"object"
 			)
-			attest<unknown[]>(inferType<JsonSchema.Array>()).type.toString.snap(
-				"unknown[]"
-			)
+			attest<unknown[] | null>(
+				inferType<JsonSchema.Array>()
+			).type.toString.snap("unknown[] | null")
 			attest<unknown>(inferType<JsonSchema.Ref>()).type.toString.snap("unknown")
-			attest<unknown>(inferType<JsonSchema.Const>()).type.toString.snap(
-				"unknown"
-			)
-			attest<unknown>(inferType<JsonSchema.Enum>()).type.toString.snap(
-				"unknown"
-			)
+			attest<Json>(inferType<JsonSchema.Const>()).type.toString.snap("Json")
+			attest<Json>(inferType<JsonSchema.Enum>()).type.toString.snap("Json")
 			attest<unknown>(inferType<JsonSchema.Union>()).type.toString.snap(
 				"unknown"
 			)
@@ -3708,13 +3704,15 @@ contextualize(() => {
 					minItems: 1
 				}>()
 			).type.toString.snap("[object]")
-			attest<{ [x: string]: string | number; b?: number }>(
+			attest<{ [x: string]: string | number | null; b?: number }>(
 				inferType<{
 					type: "object"
 					properties: { b: { type: "number" } }
 					additionalProperties: JsonSchema.String
 				}>()
-			).type.toString.snap("{ [x: string]: string | number; b?: number }")
+			).type.toString.snap(
+				"{ [x: string]: string | number | null; b?: number }"
+			)
 			attest<{ [x: string]: object }>(
 				inferType<{
 					type: "object"
@@ -3722,9 +3720,9 @@ contextualize(() => {
 					additionalProperties: false
 				}>()
 			).type.toString.snap("{ [x: string]: object }")
-			attest<string | boolean>(
+			attest<string | boolean | null>(
 				inferType<{ anyOf: [JsonSchema.String, { type: "boolean" }] }>()
-			).type.toString.snap("string | boolean")
+			).type.toString.snap("string | boolean | null")
 			attest<number>(
 				inferType<{
 					type: ["string", "number", "boolean"]
@@ -3740,7 +3738,7 @@ contextualize(() => {
 					type: ["string", "boolean"]
 				}>()
 			).type.toString.snap("never")
-			attest<string>(
+			attest<string | null>(
 				inferType<{
 					$defs: {
 						a: { $ref: "#/$defs/b" }
@@ -3749,7 +3747,7 @@ contextualize(() => {
 					}
 					$ref: "#/$defs/a"
 				}>()
-			).type.toString.snap("string")
+			).type.toString.snap("string | null")
 		})
 
 		it("const and enum beside arktype JsonSchema members", () => {
@@ -3767,13 +3765,13 @@ contextualize(() => {
 					enum: [[1], ["x"]]
 				}>()
 			).type.toString.snap('["x"]')
-			attest<string[]>(
+			attest<(string | null)[]>(
 				inferType<{
 					type: "array"
 					items: JsonSchema.String
 					not: { const: [1] }
 				}>()
-			).type.toString.snap("string[]")
+			).type.toString.snap("(string | null)[]")
 		})
 
 		it("a JSONSchema4-like any index at every subschema position", () => {

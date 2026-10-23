@@ -168,6 +168,19 @@ A literal is a one-value `enum` with its `type`, `null` beside a `type` is `null
 
 Thanks to @MichaelDeBoey for #1707.
 
+### Pass `toJsonSchema()`'s result where JSON Schema is expected
+
+`JsonSchema`, which `toJsonSchema()` returns, can now be passed without a cast where a library expects `JSONSchema7` from `@types/json-schema` (e.g. the AI SDK's `jsonSchema()`) or `Record<string, unknown>` (e.g. OpenAI's function `parameters`), and any keyword can be read from it:
+
+```ts
+const schema = type({ name: "string" }).toJsonSchema()
+
+// previously a type error, now unknown
+schema.properties
+```
+
+Each branch allows any other keyword, as JSON Schema does, so an extension like `x-internal` or OpenAPI's `nullable` type-checks. Its arrays are mutable, and a `const`, `enum`, `default` or example is `Json`. `exclusiveMinimum` and `exclusiveMaximum` are no longer declared, since `target: "openapi-3.0"` writes `true` for them, so they read as `unknown`. Inferring from a `JsonSchema` branch with `@ark/json-schema` now includes `null`, since it may be `nullable`.
+
 ### Infer `.map()` on a union per branch
 
 `.map()` already mapped each branch of a union at runtime, but its inferred type merged the branches, and its callback's argument held only the keys every branch shares (#1524). The argument now holds each branch's props, and the result is a union of the branches it builds:

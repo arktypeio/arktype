@@ -44,6 +44,9 @@ importers:
       '@standard-schema/spec':
         specifier: 1.0.0
         version: 1.0.0
+      '@types/json-schema':
+        specifier: 7.0.15
+        version: 7.0.15
       '@types/mocha':
         specifier: 10.0.10
         version: 10.0.10

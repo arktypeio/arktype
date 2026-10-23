@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
+import type { JSONSchema7 } from "json-schema"
 
 contextualize(() => {
 	describe("target option", () => {
@@ -93,7 +94,7 @@ contextualize(() => {
 					friend: "user?"
 				}
 			})
-			attest<object>(types.user.toJsonSchema({ target: "draft-07" })).snap({
+			attest(types.user.toJsonSchema({ target: "draft-07" })).snap({
 				$schema: "http://json-schema.org/draft-07/schema#",
 				$ref: "#/definitions/user",
 				definitions: {
@@ -491,6 +492,19 @@ contextualize(() => {
 		attest(() => type({ a: "string | undefined" }).toJsonSchema()).throws(
 			'Can\'t convert "unit" at a to JSON Schema'
 		)
+	})
+
+	it("fits JSONSchema7 and Record<string, unknown> without a cast", () => {
+		const schema = type({ a: "string[]", "b?": "1 | 2" }).toJsonSchema({
+			target: "draft-07"
+		})
+		const draft07: JSONSchema7 = schema
+		const record: Record<string, unknown> = schema
+		attest(draft07).equals(record)
+		attest(schema.properties).snap({
+			a: { type: "array", items: { type: "string" } },
+			b: { type: "number", enum: [1, 2] }
+		})
 	})
 
 	it("an empty object has empty properties", () => {
