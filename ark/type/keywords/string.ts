@@ -179,7 +179,7 @@ export declare namespace capitalize {
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isCreditCard.js
 const creditCardMatcher: RegExp =
-	/^(?:4\d{12}(?:\d{3,6})?|5[1-5]\d{14}|(222[1-9]|22[3-9]\d|2[3-6]\d{2}|27[01]\d|2720)\d{12}|6(?:011|5\d\d)\d{12,15}|3[47]\d{13}|3(?:0[0-5]|[68]\d)\d{11}|(?:2131|1800|35\d{3})\d{11}|6[27]\d{14}|^(81\d{14,17}))$/
+	/^(?:4\d{12}(?:\d{3,6})?|(?:5[1-5]|6[27])\d{14}|(?:222[1-9]|22[3-9]\d|2[3-6]\d\d|27[01]\d|2720)\d{12}|6(?:011|5\d\d)\d{12,15}|3[47]\d{13}|3(?:0[0-5]|[68]\d)\d{11}|(?:2131|1800|35\d{3})\d{11}|81\d{14,17})$/
 
 export const creditCard = cached(() =>
 	node("intersection", {
@@ -404,22 +404,28 @@ const email = () =>
 	)
 
 // based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
-const ipv4Segment = "(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])"
-const ipv4Address = `(${ipv4Segment}[.]){3}${ipv4Segment}`
+const ipv4Segment = "(?:(?:[1-9]|1\\d|2[0-4])?\\d|25[0-5])"
+const ipv4Address = `(${ipv4Segment}\\.){3}${ipv4Segment}`
 const ipv4Matcher = new RegExp(`^${ipv4Address}$`)
 
-const ipv6Segment = "(?:[0-9a-fA-F]{1,4})"
+// an address ends in two segments or an IPv4 address unless "::" ends it or
+// precedes its last segment. Before those, a full address has 6 segments and
+// a compressed one at most 5 around its "::". V8 compiles a copy of a
+// non-capturing group per repetition when there are few, so those capture
+const ipv6Segment = "[\\dA-Fa-f]{1,4}"
 const ipv6Matcher = new RegExp(
-	"^(" +
-		`(?:${ipv6Segment}:){7}(?:${ipv6Segment}|:)|` +
-		`(?:${ipv6Segment}:){6}(?:${ipv4Address}|:${ipv6Segment}|:)|` +
-		`(?:${ipv6Segment}:){5}(?::${ipv4Address}|(:${ipv6Segment}){1,2}|:)|` +
-		`(?:${ipv6Segment}:){4}(?:(:${ipv6Segment}){0,1}:${ipv4Address}|(:${ipv6Segment}){1,3}|:)|` +
-		`(?:${ipv6Segment}:){3}(?:(:${ipv6Segment}){0,2}:${ipv4Address}|(:${ipv6Segment}){1,4}|:)|` +
-		`(?:${ipv6Segment}:){2}(?:(:${ipv6Segment}){0,3}:${ipv4Address}|(:${ipv6Segment}){1,5}|:)|` +
-		`(?:${ipv6Segment}:){1}(?:(:${ipv6Segment}){0,4}:${ipv4Address}|(:${ipv6Segment}){1,6}|:)|` +
-		`(?::((?::${ipv6Segment}){0,5}:${ipv4Address}|(?::${ipv6Segment}){1,7}|:))` +
-		")(%[0-9a-zA-Z.]{1,})?$"
+	"^(?:(?:" +
+		`(?:${ipv6Segment}:){6}|` +
+		`::(?:${ipv6Segment}:){0,5}|` +
+		`${ipv6Segment}::(?:${ipv6Segment}:){0,4}|` +
+		`(${ipv6Segment}:){2}:(${ipv6Segment}:){0,3}|` +
+		`(${ipv6Segment}:){3}:(${ipv6Segment}:){0,2}|` +
+		`(?:${ipv6Segment}:){4}:(${ipv6Segment}:)?|` +
+		`(?:${ipv6Segment}:){5}:` +
+		`)(?:${ipv6Segment}:${ipv6Segment}|${ipv4Address})|` +
+		`(?:(${ipv6Segment}:){1,6}|:):[\\dA-Fa-f]{0,4}|` +
+		`(?:${ipv6Segment}:){7}:` +
+		")(%[\\d.A-Za-z]+)?$"
 )
 
 export const ip: ip.module = keywordModule(
