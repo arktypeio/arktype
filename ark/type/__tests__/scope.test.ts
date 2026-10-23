@@ -4,7 +4,8 @@ import {
 	writeUnboundableMessage,
 	writeGlobalOnlyConfigMessage,
 	writeUnresolvableMessage,
-	type ArkErrors
+	type ArkErrors,
+	type UnionNode
 } from "@ark/schema"
 import { generic, scope, type, type Module, type Scope } from "arktype"
 import type { distill } from "arktype/internal/attributes.ts"
@@ -25,6 +26,14 @@ contextualize(() => {
 			// @ts-expect-error
 			scope({ a: "strong" }).export()
 		).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
+	})
+
+	it("a keyword is the node its scope parses for the same schema", () => {
+		const keyword = type("number").internal
+		attest(type.schema({ domain: "number" }).internal).is(keyword)
+		// so a union discriminates to the keyword, as a cached unit binds it
+		const lifted = type("Array.liftFrom<number>").internal.in as UnionNode
+		attest(lifted.otherReferences[0]).is(keyword)
 	})
 
 	it("define", () => {
