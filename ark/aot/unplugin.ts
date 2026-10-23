@@ -55,7 +55,12 @@ import {
 	type Imports,
 	type ScanEntry
 } from "./scan.ts"
-import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
+import {
+	pruneBeforePluginMessage,
+	refusePrune,
+	resolvePrecompileOptions,
+	withSettingsFile
+} from "./settings.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
 
 export type { PrecompilePluginOptions } from "./driver.ts"
@@ -71,12 +76,17 @@ export const precompile: UnpluginInstance<
 > = createUnplugin((opts, meta) => {
 	if (!(meta.framework in declaringFrameworks))
 		refuseDeclare(opts, meta.framework)
+	// set here or in ark.json, as a host that can't prune would ignore it
+	const refusePruneIn = (set: PrecompileUnpluginOptions) => {
+		if (!(meta.framework in pruningFrameworks)) refusePrune(set, meta.framework)
+	}
 	// Rollup's mark of a virtual module, which esbuild prints as a NUL
 	const virtual = meta.framework === "esbuild" ? "" : "\0"
 	const given = opts
 	// the worker applies the preset, after the environment's defaults, which a
 	// bundler says once it has read its own configuration
 	let set = withSettingsFile(given)
+	refusePruneIn(set)
 	opts = resolvePrecompileOptions(set)
 	let environment: Environment | undefined
 	let workerOptions = set
@@ -143,6 +153,7 @@ export const precompile: UnpluginInstance<
 	const setRoot = (root: string) => {
 		if (given?.cwd !== undefined || root === (set.cwd ?? process.cwd())) return
 		set = withSettingsFile({ ...given, cwd: root })
+		refusePruneIn(set)
 		opts = resolvePrecompileOptions(set)
 		productionHost = createNodeHost(opts)
 		developmentHost = undefined
@@ -580,13 +591,11 @@ export const precompile: UnpluginInstance<
 				build.onDispose(restart)
 				const plugins = build.initialOptions.plugins ?? []
 				// a plugin after this one may load a module it leaves, unlike it was read
+				const isLast = plugins[plugins.length - 1]?.name === "arktype"
+				if (opts?.prune === true && !isLast)
+					throwBuildError(pruneBeforePluginMessage)
 				const program =
-					(
-						prunesIn(production) &&
-						plugins[plugins.length - 1]?.name === "arktype"
-					) ?
-						`${++scans}`
-					:	undefined
+					prunesIn(production) && isLast ? `${++scans}` : undefined
 				// the scan's facts hold only while the bundle is what it read
 				let scanned: ScannedProgram | undefined
 				let verifies = false
@@ -1002,7 +1011,11 @@ const esbuildLoaderOf = (path: string): "ts" | "tsx" | "js" | "jsx" =>
 interface BundlerCompiler {
 	context: string
 	options: {
-		cache?: boolean | { version?: string | undefined } | undefined
+		// e.g. webpack's { type: "filesystem" } or Rspack's { type: "persistent" }
+		cache?:
+			| boolean
+			| { type?: string; version?: string | undefined }
+			| undefined
 		mode?: string | undefined
 	}
 	hooks: { compilation: Tap<BundlerCompilation> }
@@ -1088,6 +1101,14 @@ const specifiersOf = (...specifiers: string[]) =>
 const resolvedSpecifier = new RegExp(
 	`${specifiersOf(...runtimeSpecifiers, "arktype/runtime", ...internalSpecifiers).source}|^~arktype\\/`
 )
+
+// each reads the whole bundle before it transforms a module
+const pruningFrameworks = {
+	vite: 1,
+	rollup: 1,
+	rolldown: 1,
+	esbuild: 1
+} as const satisfies KeySet
 
 // each says whether a build watches, which esbuild, Bun and Farm don't
 const declaringFrameworks = {

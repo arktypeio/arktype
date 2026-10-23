@@ -1,4 +1,4 @@
-import { printable } from "@ark/util"
+import { printable, throwError } from "@ark/util"
 import { existsSync, readFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import type { PrecompilePluginOptions } from "./driver.ts"
@@ -126,3 +126,17 @@ export const writeArktypeRuntimeOptionMessage = <option extends string>(
 
 export type writeArktypeRuntimeOptionMessage<option extends string> =
 	`${option} chooses what a standalone build writes, which runtime: "arktype" doesn't`
+
+// a host that transforms a module before it can read the whole bundle
+export const refusePrune = (
+	opts: Pick<PrecompileOptions, "prune"> | undefined,
+	host: string
+): void => {
+	if (opts?.prune === true) throwError(writePruneHostMessage(host))
+}
+
+export const pruneBeforePluginMessage =
+	"prune: true needs arktype's plugin last among esbuild's plugins, so no plugin loads a module after it reads the bundle, so move it last or remove prune: true"
+
+export const writePruneHostMessage = (host: string): string =>
+	`prune: true needs a bundler that reads the whole bundle before it transforms a module, as Vite, Rollup, Rolldown and esbuild do, which ${host} doesn't, so remove it`

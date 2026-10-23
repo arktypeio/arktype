@@ -5,7 +5,11 @@ import { parseArgs } from "node:util"
 import { emitDeclarations, sharedDeclarationFile } from "./declare.ts"
 import { isBuildError, writeNodeVersionMessage } from "./host.ts"
 import type { PrecompilePluginOptions } from "./driver.ts"
-import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
+import {
+	refusePrune,
+	resolvePrecompileOptions,
+	withSettingsFile
+} from "./settings.ts"
 import { cliOptions } from "./settingsValidators.ts"
 
 // before importing what reads fs.globSync, which older versions lack
@@ -142,7 +146,9 @@ for (const [name, { type, values: taken }] of options) {
 }
 
 try {
-	resolvePrecompileOptions(withSettingsFile(opts))
+	const set = withSettingsFile(opts)
+	refusePrune(set, "arktype-precompile")
+	resolvePrecompileOptions(set)
 } catch (e) {
 	fail((e as Error).message)
 }

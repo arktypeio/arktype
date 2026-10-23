@@ -20,7 +20,11 @@ import {
 	type RuntimeVariant
 } from "./host.ts"
 import { withEnvironment } from "./presets.ts"
-import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
+import {
+	refusePrune,
+	resolvePrecompileOptions,
+	withSettingsFile
+} from "./settings.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
 export interface EmittedModules {
@@ -36,6 +40,7 @@ export const emitPrecompiled = (
 ): EmittedModules => {
 	const cwd = resolve(opts?.cwd ?? ".")
 	const set = withSettingsFile({ ...opts, cwd })
+	refusePrune(set, "arktype-precompile")
 	const resolved = resolvePrecompileOptions(set)
 	const variant = resolvedVariantOf(resolved)
 	if (variant) throwError(writeEmittedVariantMessage(variant))

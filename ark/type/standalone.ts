@@ -287,8 +287,8 @@ interface Baking {
 	shortest: boolean
 	flattens: boolean
 	combines: boolean
-	// roots a build writing checkers compiles anyway
-	compiledInputs: ReadonlySet<BaseRoot>
+	// the hashes of roots a build writing checkers compiles anyway
+	compiledInputs: ReadonlySet<string>
 }
 
 interface RootApplier {
@@ -473,11 +473,12 @@ export const precompileStandaloneModules = (
 }
 
 // the input of each Type that can't be checkers, compiled too rather than
-// checked by checkers of its own beside the Type's compiled Allows
+// checked by checkers of its own beside the Type's compiled Allows, by hash,
+// as the input may be a node alike to the exported Type but not that node
 const compiledInputsOf = (
 	exports: Record<string, StandaloneExport>
-): Set<BaseRoot> => {
-	const inputs = new Set<BaseRoot>()
+): Set<string> => {
+	const inputs = new Set<string>()
 	for (const value of Object.values(exports)) {
 		// as unknown: narrowing to BaseRoot is too deep for TypeScript
 		const type: unknown =
@@ -485,7 +486,7 @@ const compiledInputsOf = (
 			: "member" in value ? undefined
 			: (value as StandaloneFactory).type
 		if (hasArkKind(type, "root") && type.rawIn !== type && !combines(type))
-			inputs.add(type.rawIn)
+			inputs.add(type.rawIn.hash)
 	}
 	return inputs
 }
@@ -1232,7 +1233,7 @@ class StandaloneArtifact {
 		const compiled =
 			(
 				variant === 8 &&
-				(!this.baking.combines || this.baking.compiledInputs.has(root))
+				(!this.baking.combines || this.baking.compiledInputs.has(root.hash))
 			) ?
 				compiledForSize
 			:	variant
