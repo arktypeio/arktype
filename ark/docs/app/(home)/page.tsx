@@ -9,13 +9,11 @@ import { evaluate } from "../../components/home/evaluate.ts"
 import { HomeCode, PlainCode } from "../../components/home/HomeCode.tsx"
 import { HomeEffects } from "../../components/home/HomeEffects.tsx"
 import { LiveType } from "../../components/home/LiveType.tsx"
+import { Board } from "../../components/home/Board.tsx"
+import { Migrate } from "../../components/home/Migrate.tsx"
+import { WhyNow } from "../../components/home/WhyNow.tsx"
 import { BenchmarkChart } from "../../components/mdx/BenchmarkChart.tsx"
-import {
-	ClaimCharts,
-	ClaimText,
-	HeadlineDetail,
-	HeadlineNote
-} from "../../components/mdx/Claim.tsx"
+import { ClaimText } from "../../components/mdx/Claim.tsx"
 import { BoatLane } from "../../components/shell/BoatLane.tsx"
 import { SiteFooter } from "../../components/shell/SiteFooter.tsx"
 import {
@@ -28,7 +26,7 @@ import { claims } from "../../lib/claims.ts"
 import { defineMetadata } from "../metadata.ts"
 
 const lede =
-	"Write the type you'd write anyway. Precompile it into a validator with no parser: the build step is your agent's job now, and every error names its fix."
+	"Write the type you'd write anyway. ArkType precompiles it to just the checks it needs, with no parser shipped. The build step is your agent's job now."
 
 const title = "ArkType · TypeScript's 1:1 validator"
 
@@ -239,50 +237,8 @@ const Caption = ({ name, kind, aside }: Record<string, string>) => (
 	</figcaption>
 )
 
-/** each category's win and where it stops, every number from lib/claims.ts or lib/bench */
-const wins = (
-	facts: BenchFacts
-): [category: string, win: React.ReactNode, scope: React.ReactNode][] => [
-	[
-		"speed",
-		<ClaimText key="win" claim={claims.zodSpec} />,
-		`ajv is faster on ${facts.ajvFasterCount} of ${facts.errorCount} rows that report errors`
-	],
-	[
-		"size",
-		"no parser, only the checks your types need",
-		<ClaimText key="scope" claim={claims.sizeSpec} />
-	],
-	[
-		"types",
-		"TypeScript's syntax, inferred as you'd write it",
-		"the same definitions and types, precompiled or dynamic"
-	],
-	["errors", "each names its fix", "from tsc, the build and validation"],
-	[
-		"schemas",
-		"Standard Schema, JSON Schema and OpenAPI 3.0",
-		"a precompiled validator keeps what its members option bakes"
-	],
-	[
-		"agents",
-		"a skill, and every page as Markdown",
-		"npx skills add arktypeio/arktype"
-	],
-	[
-		"migration",
-		// pending until the Zod-migration success rate is measured
-		<ClaimText key="win" claim={claims.zodMigrationSpec} />,
-		"from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema"
-	]
-]
-
 export default function HomePage() {
 	const facts = benchFacts()
-	const validRuntime =
-		facts.mostFaster ?
-			"no other library faster in more than"
-		:	"fastest or tied on valid data in"
 	const ajvRows =
 		facts.ajvFasterCount === facts.errorCount ?
 			`all ${facts.errorCount}`
@@ -294,276 +250,73 @@ export default function HomePage() {
 					<div>
 						<div className="eyebrow rise" style={rise(0)}>
 							<b>arktype</b> {"//"} TypeScript's 1:1 validator
+							<Link className="eyebrow-new" href="/docs/precompile">
+								precompiled <NextTag />
+							</Link>
 						</div>
 						<h1 id="hero-title" className="rise-fade is-long">
-							<ClaimText claim={claims.headline} />{" "}
+							<ClaimText claim={claims.headline} />
+							<a
+								className="star"
+								href="#headline-note"
+								aria-label="How we measured"
+							>
+								*
+							</a>{" "}
 							<span className="one">Optimized for agentic dev.</span>
 						</h1>
 						<p className="lede rise" style={rise(1)}>
 							Write the <span className="decl c-sky">type</span> you'd write
-							anyway. <HeadlineDetail /> The build step is your{" "}
+							anyway. ArkType precompiles it to just the checks it needs, with
+							no parser shipped. The build step is your{" "}
 							<span className="decl c-teal">agent</span>'s job now.
 						</p>
-						<dl className="spec rise" style={rise(2)}>
-							<dt>speed</dt>
-							<dd>
-								<b>no parser shipped</b> <NextTag /> · {validRuntime}{" "}
-								<BenchSource facts={facts} />
-							</dd>
-							<dt>size</dt>
-							<dd>
-								<ClaimText claim={claims.sizeSpec} />
-							</dd>
-							<dt>types</dt>
-							<dd>
-								<b>TypeScript's own syntax</b>, checked by <code>tsc</code> as
-								you type
-							</dd>
-							<dt>errors</dt>
-							<dd>
-								<b>each names its fix</b>, from <code>tsc</code>, the build and
-								at runtime
-							</dd>
-							<dt>dynamic</dt>
-							<dd>
-								<b>no build step</b> · <ClaimText claim={claims.dynamicSpec} />
-							</dd>
-						</dl>
-						<div className="ctas rise" style={rise(3)}>
+						<div className="ctas rise" style={rise(2)}>
 							<InstallButton />
-							<Link className="btn" href="/docs/intro/setup">
+							<a className="btn" href="#migrate">
+								Migrate with one prompt{" "}
+								<span className="arrow down" aria-hidden>
+									↓
+								</span>
+							</a>
+							<Link className="text-link" href="/docs/intro/setup">
 								Read the docs{" "}
 								<span className="arrow" aria-hidden>
 									→
 								</span>
 							</Link>
-							<a className="btn" href="#agents">
-								With your agent
-							</a>
 						</div>
-						<HeadlineNote className="note" />
 					</div>
 					<LiveType ghost={ghostStates} arg={liveArg} />
 				</section>
 
-				<nav className="strip rise" style={rise(5)} aria-label="On this page">
-					<a href="#write">
-						<span className="n">01 // write</span>
-						<b>The syntax you know</b>
-						<span>a TypeScript type, in strings</span>
-					</a>
-					<a href="#check">
-						<span className="n">02 // check</span>
-						<b>Errors that name the fix</b>
-						<span>in your editor and your agent's terminal</span>
-					</a>
-					<a href="#run">
-						<span className="n">
-							03 // run <NextTag />
-						</span>
-						<b>Pick speed or size</b>
-						<span>
-							{facts.mostFaster ?
-								`no library faster in more than ${facts.mostFaster} of ${facts.validCount}`
-							:	"fastest or tied on valid data"}
-						</span>
-					</a>
-					<a href="#agents">
-						<span className="n">04 // agents</span>
-						<b>The loop, set up once</b>
-						<span>skill, Markdown, AGENTS.md</span>
-					</a>
-				</nav>
-
-				<section className="block" id="why" data-reveal>
-					<div className="sec-label">
-						<b>00</b>
-						{"// why"}
-					</div>
-					<h2>The build step was the only catch.</h2>
-					<p className="deck">
-						Precompiled validators have always been faster and smaller. What
-						they cost was a build step: a plugin to set up, errors you'd never
-						seen and a second model of what runs where. Your agent doesn't care.
-						It writes the definition, runs the build, reads the error and fixes
-						it, so your users get the speed and size, and you keep ArkType's
-						syntax, errors and set theory.
-					</p>
-					<dl className="wins">
-						{wins(facts).map(([category, win, scope]) => (
-							<div key={category}>
-								<dt>{category}</dt>
-								<dd>
-									<b>{win}</b>
-									<span>{scope}</span>
-								</dd>
-							</div>
-						))}
-					</dl>
-					<p className="note">
-						{
-							'// where a program needs arktype at runtime, runtime: "arktype" ships it for whatever can\'t be precompiled'
-						}
-					</p>
-				</section>
-
-				<section className="block" id="write" data-reveal>
-					<div className="sec-label">
-						<b>01</b>
-						{"// write"}
-					</div>
-					<h2>Same type. Now it runs.</h2>
-					<p className="deck">
-						Definitions use TypeScript's names, operators and optional keys,
-						written as strings and objects. The type ArkType infers is the one
-						you would have written by hand.
-					</p>
-					<div className="twin-code">
-						<figure className="code-card">
-							<Caption name="user.ts" kind="TypeScript" aside="types only" />
-							<HomeCode code={snippets.ts} />
-						</figure>
-						<div className="eq" aria-hidden>
-							<span>≡</span>
-							<span>≡</span>
-							<span>+</span>
-							<span>+</span>
-							<span>≡</span>
-							<span>≡</span>
-						</div>
-						<figure className="code-card glow">
-							<Caption
-								name="user.ts"
-								kind="ArkType"
-								aside="types and runtime"
-							/>
-							<HomeCode code={snippets.ark} />
-						</figure>
-					</div>
-					<p className="note">
-						{"// the two lines TypeScript can't check, ArkType can: "}
-						<code>string.email</code> and <code>number.integer &gt;= 0</code>
-					</p>
-				</section>
-
-				<section className="block" id="check" data-reveal>
-					<div className="sec-label">
-						<b>02</b>
-						{"// check"}
-					</div>
-					<h2>Your editor's feedback is your agent's feedback.</h2>
-					<p className="deck">
-						TypeScript's own type system parses every definition, so a typo
-						fails <code>tsc</code> where it was written and the message is the
-						fix. At runtime, bad input comes back as errors that say where, what
-						was expected and what arrived.
-					</p>
-					<div className="pair2">
-						<figure className="code-card">
-							<Caption name="your editor" kind="item.ts" aside="ErrorLens" />
-							<HomeCode code={snippets.editor} />
-						</figure>
-						<Terminal
-							title="your agent's terminal"
-							label="The same errors as tsc prints them"
-						>
-							<span className="p">$</span> tsc --noEmit
-							{"\n"}
-							<span className="loc">item.ts:5:2</span>{" "}
-							<span className="dim">- error TS2322:</span>{" "}
-							<span className="err">
-								Type '"number | strin"' is not assignable to type '"number |
-								string"'.
-							</span>
-							{"\n"}
-							<span className="loc">item.ts:6:2</span>{" "}
-							<span className="dim">- error TS2322:</span>{" "}
-							<span className="err">
-								Type '"(string | number)["' is not assignable to type '"Missing
-								expected ']'"'.
-							</span>
-							{"\n"}
-							<span className="loc">item.ts:7:2</span>{" "}
-							<span className="dim">- error TS2322:</span>{" "}
-							<span className="err">
-								Type '"'draft' | 'live"' is not assignable to type '"'live
-								requires a closing single-quote"'.
-							</span>
-							{"\n\n"}
-							<span className="dim">Found 3 errors in the same file.</span>
-						</Terminal>
-					</div>
-					<p className="pair-note">
-						{
-							"// same three errors, two readers: each message is the type the string was checked against, so the fix is in the error, not in a docs lookup"
-						}
-					</p>
-					<div className="pair2">
-						<div>
-							<figure className="code-card">
-								<Caption
-									name="out.summary"
-									kind="at runtime"
-									aside="real ArkErrors"
-								/>
-								<HomeCode code={snippets.runtime} />
-							</figure>
-							<h3>Runtime errors say what arrived</h3>
-							<p>
-								Each issue names its path, what was expected and what was there.
-								Hand <code>out.summary</code> back to a person or a model as is.
-							</p>
-						</div>
-						<div>
-							<figure className="code-card">
-								<Caption
-									name="an MCP tool"
-									kind="greet.ts"
-									aside="the type is the inputSchema"
-								/>
-								<HomeCode code={snippets.mcp} />
-								<div className="tool-result" role="note">
-									<div className="h">
-										<span>
-											tool_result · greet({'{ name: "Ada", times: 99 }'})
-										</span>
-										<b>isError</b>
-									</div>
-									<div className="m">times must be at most 5 (was 99)</div>
-								</div>
-							</figure>
-							<h3>Tool inputs, without a wrapper</h3>
-							<p>
-								A <code>Type</code> is a Standard Schema that can describe
-								itself as JSON Schema, so the MCP TypeScript SDK takes it as a
-								tool's <code>inputSchema</code>. A bad call comes back as a
-								message the model can act on.
-							</p>
-						</div>
-					</div>
-				</section>
+				<Board />
+				<WhyNow />
+				<Migrate />
 
 				<section className="block" id="run" data-reveal>
 					<div className="sec-label">
 						<b>03</b>
 						{"// run"} <NextTag />
 					</div>
-					<h2>No parser. Just your validator.</h2>
+					<h2>
+						Precompiled, it was <ClaimText claim={claims.zodSpec} />.
+					</h2>
 					<p className="deck">
-						Run ArkType two ways. <b>Dynamic</b>, <code>type()</code> parses
-						each definition at runtime, with no build step. <b>Precompiled</b>
-						{preview ? ", in the next release," : ""} your bundler constructs
-						each Type when you build, so no parser ships and nothing compiles at
-						runtime. Your definitions are the same either way.
+						We raced it against the ahead-of-time compilers (typia, TypeBox,
+						ajv) and the libraries you'd otherwise write schemas with (Zod 4,
+						compiled or not, and Valibot), each in its own process, on the same
+						inputs.{" "}
+						{facts.mostFaster ?
+							"On valid data, no other library was faster in more than "
+						:	"On valid data, it was fastest or tied in "}
+						<BenchSource facts={facts} />.
 					</p>
-					<div className="claims-home">
-						<ClaimCharts />
-					</div>
-					<p className="deck">
-						We also raced the precompiled build against the ahead-of-time
-						compilers (typia, TypeBox, ajv) and the libraries you'd otherwise
-						write schemas with (Zod 4, compiled or not, and Valibot), each in
-						its own process, on the same inputs.
+					<p className="note">
+						{
+							"// prefer no build step? dynamic ArkType runs the same definitions, "
+						}
+						<ClaimText claim={claims.dynamicSpec} />
 					</p>
 					<div className="figs">
 						<div className="fig">
@@ -666,9 +419,145 @@ export default function HomePage() {
 					</BenchmarkChart>
 				</section>
 
-				<section className="block" id="agents" data-reveal>
+				<section className="block" id="write" data-reveal>
 					<div className="sec-label">
 						<b>04</b>
+						{"// write"}
+					</div>
+					<h2>Same type. Now it runs.</h2>
+					<p className="deck">
+						Definitions use TypeScript's names, operators and optional keys,
+						written as strings and objects. The type ArkType infers is the one
+						you would have written by hand.
+					</p>
+					<div className="twin-code">
+						<figure className="code-card">
+							<Caption name="user.ts" kind="TypeScript" aside="types only" />
+							<HomeCode code={snippets.ts} />
+						</figure>
+						<div className="eq" aria-hidden>
+							<span>≡</span>
+							<span>≡</span>
+							<span>+</span>
+							<span>+</span>
+							<span>≡</span>
+							<span>≡</span>
+						</div>
+						<figure className="code-card glow">
+							<Caption
+								name="user.ts"
+								kind="ArkType"
+								aside="types and runtime"
+							/>
+							<HomeCode code={snippets.ark} />
+						</figure>
+					</div>
+					<p className="note">
+						{"// the two lines TypeScript can't check, ArkType can: "}
+						<code>string.email</code> and <code>number.integer &gt;= 0</code>
+					</p>
+				</section>
+
+				<section className="block" id="check" data-reveal>
+					<div className="sec-label">
+						<b>05</b>
+						{"// check"}
+					</div>
+					<h2>Your editor's feedback is your agent's feedback.</h2>
+					<p className="deck">
+						TypeScript's own type system parses every definition, so a typo
+						fails <code>tsc</code> where it was written and the message is the
+						fix. At runtime, bad input comes back as errors that say where, what
+						was expected and what arrived.
+					</p>
+					<div className="pair2">
+						<figure className="code-card">
+							<Caption name="your editor" kind="item.ts" aside="ErrorLens" />
+							<HomeCode code={snippets.editor} />
+						</figure>
+						<Terminal
+							title="your agent's terminal"
+							label="The same errors as tsc prints them"
+						>
+							<span className="p">$</span> tsc --noEmit
+							{"\n"}
+							<span className="loc">item.ts:5:2</span>{" "}
+							<span className="dim">- error TS2322:</span>{" "}
+							<span className="err">
+								Type '"number | strin"' is not assignable to type '"number |
+								string"'.
+							</span>
+							{"\n"}
+							<span className="loc">item.ts:6:2</span>{" "}
+							<span className="dim">- error TS2322:</span>{" "}
+							<span className="err">
+								Type '"(string | number)["' is not assignable to type '"Missing
+								expected ']'"'.
+							</span>
+							{"\n"}
+							<span className="loc">item.ts:7:2</span>{" "}
+							<span className="dim">- error TS2322:</span>{" "}
+							<span className="err">
+								Type '"'draft' | 'live"' is not assignable to type '"'live
+								requires a closing single-quote"'.
+							</span>
+							{"\n\n"}
+							<span className="dim">Found 3 errors in the same file.</span>
+						</Terminal>
+					</div>
+					<p className="pair-note">
+						{
+							"// same three errors, two readers: each message is the type the string was checked against, so the fix is in the error, not in a docs lookup"
+						}
+					</p>
+					<div className="pair2">
+						<div>
+							<figure className="code-card">
+								<Caption
+									name="out.summary"
+									kind="at runtime"
+									aside="real ArkErrors"
+								/>
+								<HomeCode code={snippets.runtime} />
+							</figure>
+							<h3>Runtime errors say what arrived</h3>
+							<p>
+								Each issue names its path, what was expected and what was there.
+								Hand <code>out.summary</code> back to a person or a model as is.
+							</p>
+						</div>
+						<div>
+							<figure className="code-card">
+								<Caption
+									name="an MCP tool"
+									kind="greet.ts"
+									aside="the type is the inputSchema"
+								/>
+								<HomeCode code={snippets.mcp} />
+								<div className="tool-result" role="note">
+									<div className="h">
+										<span>
+											tool_result · greet({'{ name: "Ada", times: 99 }'})
+										</span>
+										<b>isError</b>
+									</div>
+									<div className="m">times must be at most 5 (was 99)</div>
+								</div>
+							</figure>
+							<h3>Tool inputs, without a wrapper</h3>
+							<p>
+								A <code>Type</code> is a Standard Schema that can describe
+								itself as JSON Schema, so the MCP TypeScript SDK takes it as a
+								tool's <code>inputSchema</code>. A bad call comes back as a
+								message the model can act on.
+							</p>
+						</div>
+					</div>
+				</section>
+
+				<section className="block" id="agents" data-reveal>
+					<div className="sec-label">
+						<b>06</b>
 						{"// agents"}
 					</div>
 					<h2>Your agent's loop, set up once.</h2>
@@ -819,7 +708,7 @@ export default function HomePage() {
 
 				<section className="block" data-reveal aria-labelledby="more-title">
 					<div className="sec-label">
-						<b>05</b>
+						<b>07</b>
 						{"// sets"}
 					</div>
 					<h2 id="more-title">Types as sets, reduced before they ship.</h2>

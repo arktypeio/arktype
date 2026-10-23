@@ -104,6 +104,39 @@ export const sizeChart: BenchmarkChart = {
 	]
 }
 
+// the homepage's login app as request handlers read it, bundled with
+// bench/bundle.ts's esbuild settings in a production build: perf's user-space
+// instructions from just before a fresh process imports the bundle to just
+// after its first validation of valid data, less a bundle that validates
+// nothing (ark/repo/bench/external/startup.ts). Planned before any count: 20
+// rounds, a two-sided sign test per library paired by round, on Node 24 and
+// 25. The default build had the fewest against all seven in 19-20 of 20 on
+// both (p <= 4e-5); Node 24 medians at 4fd880692, which prunes a production
+// bundle (results/startup-4fd880692-node24.json). On valibot.dev's login form
+// it was 1.46M to Valibot's 2.36M, 20 of 20. Typia has fewer on the moltar
+// app, Valibot on shop. No wall-clock run yet, so nothing says it starts
+// faster.
+export const startupChart: BenchmarkChart = {
+	title: "Cold start",
+	detail:
+		"the homepage's login app, each library bundled with esbuild as a production build: instructions from importing the bundle to its first validation, beyond what loading an empty module costs, on Node 24. ArkType is precompiled with the default options",
+	unit: "million instructions",
+	source: {
+		label: "the homepage's login app",
+		href: "https://github.com/arktypeio/arktype/tree/main/ark/repo/bench/apps/login"
+	},
+	bars: [
+		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1.42 },
+		{ name: "ajv", kind: "other", value: 1.86 },
+		{ name: "Valibot", kind: "other", value: 2.35 },
+		{ name: "Typia", kind: "other", value: 2.43 },
+		{ name: "Zod Mini", kind: "other", value: 11.39 },
+		{ name: "Zod", kind: "other", value: 43.73 },
+		{ name: "Zod (compiled)", kind: "other", value: 51.55 },
+		{ name: "TypeBox", kind: "other", value: 87.8 }
+	]
+}
+
 // the homepage's benchmark (lib/bench/benchData.json), so a rerun rewrites
 // these too: the default build against classic Zod 4 and z.compile on every
 // scenario, each verdict a sign test at p < .05 over 20 paired passes, each running
@@ -181,7 +214,72 @@ export const claims = {
 	// and no new casts. 4/10, 95% CI 0.12-0.74; 2 of the failures keep Zod for
 	// MCP SDK v1
 	zodMigration:
-		"With the skill, one prompt fully migrated 4 of 10 open-source Zod projects we picked by stars before running it: typecheck and tests pass, Zod is gone, generated inputs get the same results and no casts were added."
+		"With the skill, one prompt fully migrated 4 of 10 open-source Zod projects we picked by stars before running it: typecheck and tests pass, Zod is gone, generated inputs get the same results and no casts were added.",
+	// the homepage board's title, a phrase per category: ships less (sizeChart),
+	// starts lighter (startupChart, instructions rather than time) and runs
+	// faster (H1's wall clock). The categories' builds differ, so it doesn't
+	// say one build is all three; once they match, the board stamps "one
+	// build" and this can say so too
+	boardTitle: "Ships less. Starts lighter. Runs faster.",
+	// startupChart; the form is 1.46M vs Valibot's 2.36M, 20 of 20
+	startupLogin:
+		"On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than ajv, Valibot, Typia, Zod Mini, Zod, compiled Zod or TypeBox, in at least 19 of 20 paired runs on Node 24 and 25.",
+	// speedChart and H1
+	parseSafe:
+		"On moltar's parseSafe benchmark, precompiled ArkType takes the fewest instructions per call, and by wall clock it was faster than each of the six libraries closest to it, Typia among them, in at least 28 of 30 paired runs."
 } satisfies Record<string, Claim<string>>
 
 export type ClaimId = keyof typeof claims
+
+export type Category = {
+	id: "size" | "startup" | "speed"
+	/** what it measures */
+	label: string
+	chart: BenchmarkChart
+	/** the options ArkType's bar was built with */
+	build: string
+	/** a bar's value, split from its unit so the number can be set large */
+	format: (value: number) => { value: string; unit: string }
+	/** "smaller than", before the next bar's name */
+	margin: string
+	claim: Claim<string>
+}
+
+const kB = (bytes: number) => ({
+	value: (bytes / 1000).toFixed(2),
+	unit: "kB gzipped"
+})
+
+/** the homepage's board: a measured win in each category, each from its own benchmark */
+export const categories: Category[] = [
+	{
+		id: "size",
+		label: "bundle size",
+		chart: sizeChart,
+		build: '"smallest" preset',
+		format: kB,
+		margin: "smaller than",
+		claim: claims.loginSize
+	},
+	{
+		id: "startup",
+		label: "cold start",
+		chart: startupChart,
+		build: "default build",
+		format: n => ({ value: `${n}M`, unit: "instructions" }),
+		margin: "fewer instructions than",
+		claim: claims.startupLogin
+	},
+	{
+		id: "speed",
+		label: "validation",
+		chart: speedChart,
+		build: "default build",
+		format: n => ({ value: String(n), unit: "instructions per call" }),
+		margin: "fewer instructions than",
+		claim: claims.parseSafe
+	}
+]
+
+/** whether one build holds every category, the only time the board may say so */
+export const oneBuild = new Set(categories.map(c => c.build)).size === 1
