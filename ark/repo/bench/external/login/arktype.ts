@@ -18,4 +18,4 @@ const LoginSchema = type({
 		)
 })
 
-LoginSchema({})
+LoginSchema.assert({})

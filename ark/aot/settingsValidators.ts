@@ -1,9 +1,6 @@
 /* eslint-disable */
 // @ts-nocheck
 // written by __tests__/writeSettings.ts from __tests__/settingsSchema.ts
-// ark/util/facts.ts
-var arkKind = " arkKind"
-
 // ark/schema/shared/issues.ts
 var releasedPath
 var releasePath = errors => {
@@ -15,9 +12,6 @@ var ArkIssues = class {
 		this._ = []
 		this._path = releasedPath ?? []
 		releasedPath = void 0
-	}
-	get [arkKind]() {
-		return "errors"
 	}
 	/**
 	 * The number of issues.
@@ -124,13 +118,9 @@ var messageOf = issue => {
 }
 var problemOf = issue =>
 	issue.problem ??
-	(issue.expected === void 0 ?
-		(problems[issue.code] ?? "is invalid")
-	:	"must be " + issue.expected)
-var problems = {
-	required: "is missing",
-	undeclared: "must be removed"
-}
+	(issue.expected !== void 0 ? "must be " + issue.expected
+	: issue.code === "required" ? "is missing"
+	: "is invalid")
 var TraversalError = class extends Error {
 	name = "TraversalError"
 	constructor(errors) {

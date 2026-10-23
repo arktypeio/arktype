@@ -7,7 +7,7 @@ import {
 	type Traversal
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { shareConfig } from "@ark/schema/runtime"
+import { ArkErrors, shareConfig } from "@ark/schema/runtime"
 import { arkKind, hasDomain, includes, printable } from "@ark/util"
 import { configure } from "arktype/internal/config.js"
 import {
@@ -206,6 +206,11 @@ const bakedMetaOf = (t: unknown) => {
 	const meta = (t as { meta?: object } | undefined)?.meta
 	return meta && keywordMetas().has(meta) ? {} : meta
 }
+
+// arktype's errors and a validator's, which extend the runtime's, or those
+// of a runtime written for errors "none", known by their arkKind
+const isErrors = (value: unknown): value is ArkErrors =>
+	value instanceof ArkErrors || hasArkKind(value, "errors")
 
 // a Standard Schema failure, compared as errors holding its issues
 const failureByErrors = new WeakMap<object, unknown>()
@@ -842,7 +847,7 @@ const validateBoth = (
 const fails = (outcome: Outcome) =>
 	"thrown" in outcome ?
 		thrownIssuesOf(outcome.thrown) !== undefined
-	:	hasArkKind(outcome.value, "errors")
+	:	isErrors(outcome.value)
 
 // the issues errors "all" finds, any of which errors "first" can return
 const allIssuesOf = (original: BaseRoot, data: unknown): KeptIssue[] =>
@@ -894,8 +899,8 @@ const observe = (
 			:	{ threw: thrownOf(outcome.thrown) }
 	}
 	const { value } = outcome
-	return hasArkKind(value, "errors") ?
-			{ issues: comparedOf(keptIssuesOf(value, grouped), writesInput) }
+	return isErrors(value) ?
+			{ issues: comparedOf(keptIssuesOf(value as never, grouped), writesInput) }
 		:	{ out: value }
 }
 

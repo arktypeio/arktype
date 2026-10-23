@@ -569,13 +569,13 @@ const samples = (): unknown[] => [
 	new Date(0)
 ]
 
+// arktype's errors or a validator's, which lack arktype's arkKind
+const isErrors = (out: unknown): out is ArkErrors =>
+	hasDomain(out, "object") && "count" in out && "summary" in out
+
 // a Type a morph returns is compared by expression, as a validator has one
 export const serialize = (out: unknown): unknown =>
-	(
-		hasDomain(out, "object") &&
-		(out as { " arkKind"?: string })[" arkKind"] === "errors"
-	) ?
-		{ errors: serializeIssues(keptOf(out as never)) }
+	isErrors(out) ? { errors: serializeIssues(keptOf(out)) }
 	: typeof out === "function" && isArk(out) ?
 		{ type: (out as Function & { expression: string }).expression }
 	:	inspect(out, {
@@ -647,7 +647,7 @@ const outcomeOf = (
 	try {
 		const out: any = call()
 		const kept =
-			hasDomain(out, "object") && out[" arkKind"] === "errors" ? keptOf(out)
+			isErrors(out) ? keptOf(out)
 			: isStandardFailure(out) ? keptOf({ issues: out.issues } as never, true)
 			: undefined
 		return kept ?
