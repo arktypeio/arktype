@@ -32,17 +32,18 @@ To move a whole project off Zod, or another library below, work through it in th
    - Don't add casts or `any`, not even `as unknown`. A helper typed with `z.ZodTypeAny` or `z.ZodSchema` takes `type.Any`. To keep the output type, use `<T extends type.Any>(schema: T): T["infer"]`, not `type.Any<t>`. A function that builds a schema from another becomes a generic, like `type("<t>", { data: "t" })`.
 5. **Swap integrations.** Most accept an ArkType type directly, through [Standard Schema](/docs/standard-schema):
 
-| With Zod                                                    | With ArkType                                                                                                |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `zodResolver(schema)` (react-hook-form)                     | `standardSchemaResolver(schema)` from `@hookform/resolvers/standard-schema`                                 |
-| tRPC `.input(schema)`, `@t3-oss/env-*`, TanStack Form       | the same call, given the ArkType type                                                                       |
-| AI SDK 6 `tool({ inputSchema })`, MCP SDK v2 `registerTool` | the same call, given the ArkType type, which also supplies the JSON Schema                                  |
-| `zValidator` from `@hono/zod-validator`                     | `sValidator` from `@hono/standard-validator`                                                                |
-| `@hono/zod-openapi`                                         | `hono-openapi`: `describeRoute`, `validator` and `resolver`                                                 |
-| `zod-to-json-schema`, `z.toJSONSchema(schema)`              | `schema.toJsonSchema()`                                                                                     |
-| `@asteasolutions/zod-to-openapi`                            | `schema.toJsonSchema({ target: "openapi-3.0" })` for each Schema Object in your OpenAPI document; see below |
-| `drizzle-zod`                                               | `drizzle-arktype`                                                                                           |
-| a library that accepts only Zod                             | keep Zod for that call, and say so                                                                          |
+| With Zod                                                    | With ArkType                                                                                                                                     |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `zodResolver(schema)` (react-hook-form)                     | `standardSchemaResolver(schema)` from `@hookform/resolvers/standard-schema`                                                                      |
+| tRPC `.input(schema)`, `@t3-oss/env-*`, TanStack Form       | the same call, given the ArkType type                                                                                                            |
+| AI SDK 6 `tool({ inputSchema })`, MCP SDK v2 `registerTool` | the same call, given the ArkType type, which also supplies the JSON Schema                                                                       |
+| AI SDK 5 `tool({ inputSchema })`                            | `jsonSchema<typeof T.infer>(T.toJsonSchema(), { validate })`, where `validate` returns `{ success: true, value }` or `{ success: false, error }` |
+| `zValidator` from `@hono/zod-validator`                     | `sValidator` from `@hono/standard-validator`                                                                                                     |
+| `@hono/zod-openapi`                                         | `hono-openapi`: `describeRoute`, `validator` and `resolver`                                                                                      |
+| `zod-to-json-schema`, `z.toJSONSchema(schema)`              | `schema.toJsonSchema()`                                                                                                                          |
+| `@asteasolutions/zod-to-openapi`                            | `schema.toJsonSchema({ target: "openapi-3.0" })` for each Schema Object in your OpenAPI document; see below                                      |
+| `drizzle-zod`                                               | `drizzle-arktype`                                                                                                                                |
+| a library that accepts only Zod                             | keep Zod for that call, and say so                                                                                                               |
 
 Without casts:
 
