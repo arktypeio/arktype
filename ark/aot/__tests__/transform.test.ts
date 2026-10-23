@@ -159,6 +159,31 @@ export const Team = /* @__PURE__ */ $ark_#0($ark_#3Allows)`)
 			]).equals([false, true])
 		})
 
+		it("compiles a size build's Type that another compiles as its input", () => {
+			const modules = Object.values(
+				precompile(
+					`import { type } from "arktype"
+export const Moltar = type({
+	number: "number",
+	string: "string",
+	boolean: "boolean",
+	deeplyNested: { foo: "string", num: "number", bool: "boolean" }
+})
+export const MoltarSafe = Moltar.onDeepUndeclaredKey("delete")
+export const User = type({ name: "string", age: "number", tags: "string[]" })
+export const Team = type({ id: "string", lead: User, members: User.array() })
+export const Item = type({ sku: "string", price: { amount: "number", currency: "string" } })`,
+					{},
+					{ preset: "smallest", creationChecks: "none", config: false }
+				).modules
+			).join("\n")
+			// MoltarSafe can't be checkers, so its input Moltar is compiled with it
+			attest([
+				/runtime\.props\(/.test(modules),
+				/runtime\.props\({[^\n]*deeplyNested/.test(modules)
+			]).equals([true, false])
+		})
+
 		it("folds introspection", () => {
 			const result = precompile(
 				`import { type } from "arktype"

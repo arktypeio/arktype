@@ -84,11 +84,13 @@ export const speedChart: BenchmarkChart = {
 // { preset: "smallest" } in a production build (esbuild's "production"
 // condition): 2647 / 1313 B min / gz; 2927 / 1465 in development, and the
 // default build 1779 in production. Sizes measured at 89510709d
-// (results/login-89510709d.json).
+// (results/login-89510709d.json). Zod Mini's form is valibot.dev's code as
+// written, which throws at its first parse on zod 4.6.7 (z.check takes no
+// schema); written to run (z.email(...).check(...)), it is 5107.
 export const sizeChart: BenchmarkChart = {
 	title: "Bundle size",
 	detail:
-		'the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs\'s esbuild settings; each reports every error. ArkType is precompiled with the "smallest" preset in a production build',
+		"the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled with the \"smallest\" preset in a production build. Zod Mini's form, as valibot.dev writes it, throws at its first parse; written so it runs, it is the same size within 20 B",
 	unit: "B gzipped",
 	source: {
 		label: "the form from valibot.dev's comparison",
