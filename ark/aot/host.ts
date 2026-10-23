@@ -1,4 +1,10 @@
 import { throwError } from "@ark/util"
+import {
+	decode,
+	encode,
+	type SourceMapMappings,
+	type SourceMapSegment
+} from "@jridgewell/sourcemap-codec"
 import { existsSync, readFileSync, realpathSync } from "node:fs"
 import {
 	basename,
@@ -398,3 +404,52 @@ export const writeUntransformedImportMessage = (
 	cwd: string
 ): string =>
 	`${printablePathOf(cwd, file)} imports ${specifier}, which a standalone build resolves to arktype/runtime, where defining a Type throws, as it can't precompile what isn't a JavaScript or TypeScript module. Define the Types it uses in a module that is.`
+
+export interface EmittedMap {
+	mappings: string
+	sourcesContent?: (string | null)[]
+}
+
+// a map to the precompiled module, as tsc's or the linker's, traced to the source
+export const mapToSource = (
+	emitted: EmittedMap,
+	precompiled: EmittedMap | undefined,
+	source: string
+): EmittedMap => {
+	if (!precompiled) return emitted
+	const lines = decode(precompiled.mappings)
+	const mappings: SourceMapMappings = decode(emitted.mappings).map(line =>
+		line.flatMap((segment): SourceMapSegment[] => {
+			if (segment.length === 1) return [segment]
+			const [column, sourceIndex, sourceLine, sourceColumn] = segment
+			const original = segmentAt(lines[sourceLine], sourceColumn)
+			// what the precompiler wrote maps to no line of the source
+			if (!original) return []
+			const traced: SourceMapSegment = [
+				column,
+				sourceIndex,
+				original[2],
+				original[3] + sourceColumn - original[0]
+			]
+			return [segment.length === 5 ? [...traced, segment[4]] : traced]
+		})
+	)
+	return {
+		...emitted,
+		mappings: encode(mappings),
+		...(emitted.sourcesContent && { sourcesContent: [source] })
+	}
+}
+
+// the last segment starting at or before the column, sorted by column
+const segmentAt = (
+	line: SourceMapSegment[] | undefined,
+	column: number
+): [number, number, number, number] | undefined => {
+	let mapped: SourceMapSegment | undefined
+	for (const segment of line ?? []) {
+		if (segment[0] > column) break
+		mapped = segment
+	}
+	return mapped?.length === 1 ? undefined : (mapped as never)
+}

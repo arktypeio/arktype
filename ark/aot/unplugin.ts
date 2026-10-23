@@ -1,6 +1,6 @@
 import { throwError, type KeySet } from "@ark/util"
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
-import { dirname, isAbsolute, join, resolve } from "node:path"
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { basename, dirname, isAbsolute, join, resolve } from "node:path"
 import { relative } from "node:path/posix"
 import { createUnplugin, type UnpluginInstance } from "unplugin"
 import {
@@ -46,7 +46,15 @@ import {
 	writeUntransformedImportMessage,
 	type PrecompileHost
 } from "./host.ts"
+import type { ScannedProgram, ScannedUsage } from "./precompile.ts"
 import { withEnvironment, type Environment } from "./presets.ts"
+import {
+	scanProgram,
+	unseenProblemOf,
+	type ImportKind,
+	type Imports,
+	type ScanEntry
+} from "./scan.ts"
 import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
 
@@ -118,6 +126,12 @@ export const precompile: UnpluginInstance<
 			:	productionHost
 	}
 	let isStandalone = opts?.runtime !== "arktype"
+	// a production build for size leaves out what no read of the bundle needs
+	const prunes = () =>
+		isStandalone &&
+		!opts?.shadow &&
+		opts?.optimize === "size" &&
+		opts.prune !== false
 	let variant = resolvedVariantOf(opts)
 	let packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
 	// arktype left to Node loads as itself, not as the runtime validators use
@@ -264,13 +278,15 @@ export const precompile: UnpluginInstance<
 	const transform = async (
 		code: string,
 		id: string,
-		mappings: string | undefined
+		mappings: string | undefined,
+		program?: string
 	) => {
 		const transformed = (await request(
 			"transform",
 			code,
 			fileOf(id),
-			mappings
+			mappings,
+			program
 		)) as TransformedModule | undefined
 		if (!transformed) return
 		for (const specifier in transformed.modules) {
@@ -505,21 +521,83 @@ export const precompile: UnpluginInstance<
 			setup: build => {
 				if (!build.initialOptions.bundle) throwBuildError(unbundledMessage)
 				// esbuild has no mode, but a build may resolve for production
-				setEnvironment({
-					production: !!build.initialOptions.conditions?.includes("production"),
-					testing: false
-				})
+				const production =
+					!!build.initialOptions.conditions?.includes("production")
+				setEnvironment({ production, testing: false })
 				build.onDispose(restart)
+				const plugins = build.initialOptions.plugins ?? []
+				// a plugin after this one may load a module it leaves, unlike it was read
+				const program =
+					(
+						production &&
+						prunes() &&
+						plugins[plugins.length - 1]?.name === "arktype"
+					) ?
+						`${++scans}`
+					:	undefined
+				// the scan's facts hold only while the bundle is what it read
+				let scanned: ScannedProgram | undefined
+				let verifies = false
+				// each module as this plugin loaded it
+				const loaded = new Map<string, string>()
+				if (program) {
+					build.initialOptions.metafile = true
+					const cwd = build.initialOptions.absWorkingDir ?? process.cwd()
+					build.onStart(async () => {
+						scanned = undefined
+						verifies = false
+						loaded.clear()
+						const usage = await esbuildScanOf(
+							build,
+							program,
+							path =>
+								transformedFilter.include.test(path) &&
+								!transformedFilter.exclude.test(path),
+							async scanned => (await request("scan", scanned)) as ScannedUsage
+						).catch(() => undefined)
+						if (!usage) return
+						scanned = usage[0]
+						// only what it dropped can fail a read the scan didn't see
+						verifies = !!usage[1].dropped.length
+					})
+					build.onEnd(result => {
+						if (
+							!scanned ||
+							!verifies ||
+							!result.metafile ||
+							result.errors.length
+						)
+							return
+						const problem = unseenProblemOf(
+							scanned,
+							esbuildImportsOf(result.metafile, cwd, scanned),
+							loaded
+						)
+						if (!problem) return
+						// what it wrote may lack what a module it couldn't see reads
+						if (build.initialOptions.write !== false) {
+							for (const path in result.metafile.outputs)
+								rmSync(resolve(cwd, path), { force: true })
+						}
+						return { errors: [{ text: problem }] }
+					})
+				}
 				// each module watches what it read, which esbuild takes only from onLoad
 				build.onLoad({ filter: esbuildTransformed }, async args => {
-					if (
-						args.namespace !== "file" ||
-						!transformedFilter.include.test(args.path) ||
-						transformedFilter.exclude.test(args.path)
-					)
-						return
+					if (args.namespace !== "file") return
+					const isTransformed =
+						transformedFilter.include.test(args.path) &&
+						!transformedFilter.exclude.test(args.path)
+					if (!isTransformed && !scanned) return
 					const code = readFileSync(args.path, "utf8")
-					const transformed = await transform(code, args.path, undefined)
+					if (scanned) loaded.set(args.path, code)
+					if (!isTransformed) return
+					const transformed = await transform(
+						code,
+						args.path,
+						undefined,
+						scanned?.key
+					)
 					if (!transformed?.code && !transformed?.errors.length) return
 					return {
 						contents: appendSourceMap(
@@ -590,9 +668,9 @@ export const precompile: UnpluginInstance<
 								importer: args.importer,
 								// a virtual module has no directory of its own
 								resolveDir:
-									args.namespace === "file" ?
-										args.resolveDir
-									:	dirname(importersById[args.importer]),
+									args.importer in importersById ?
+										dirname(importersById[args.importer])
+									:	args.resolveDir,
 								pluginData: esbuildResolution
 							}
 						)
@@ -624,6 +702,146 @@ export const precompile: UnpluginInstance<
 })
 
 const esbuildResolution = "arktype"
+
+let scans = 0
+
+// what the plugin reads of an esbuild build
+interface EsbuildBuild {
+	initialOptions: {
+		entryPoints?: unknown
+		stdin?: {
+			contents: string | Uint8Array
+			resolveDir?: string
+			loader?: string
+		}
+		absWorkingDir?: string
+	}
+	resolve: (
+		path: string,
+		options: {
+			kind: ImportKind | "entry-point"
+			importer?: string
+			resolveDir: string
+			pluginData: unknown
+		}
+	) => Promise<{
+		path: string
+		namespace: string
+		external?: boolean
+		errors: unknown[]
+	}>
+}
+
+// the modules esbuild starts from, stdin as a file beside what it imports
+const esbuildEntriesOf = async (
+	build: EsbuildBuild
+): Promise<ScanEntry[] | undefined> => {
+	const {
+		entryPoints,
+		stdin,
+		absWorkingDir = process.cwd()
+	} = build.initialOptions
+	const paths =
+		Array.isArray(entryPoints) ?
+			entryPoints.map(entry => (typeof entry === "string" ? entry : entry.in))
+		: entryPoints && typeof entryPoints === "object" ?
+			Object.values(entryPoints as Record<string, string>)
+		:	[]
+	const entries: ScanEntry[] = []
+	for (const path of paths) {
+		const result = await build.resolve(path, {
+			kind: "entry-point",
+			resolveDir: absWorkingDir,
+			pluginData: esbuildResolution
+		})
+		if (result.errors.length || result.namespace !== "file") return
+		entries.push({ id: result.path })
+	}
+	if (stdin) {
+		const ext =
+			(
+				stdin.loader === "ts" ||
+				stdin.loader === "tsx" ||
+				stdin.loader === "jsx"
+			) ?
+				stdin.loader
+			:	"js"
+		entries.push({
+			id: join(stdin.resolveDir ?? absWorkingDir, `<stdin>.${ext}`),
+			source: String(stdin.contents)
+		})
+	}
+	return entries
+}
+
+// what a production bundle's validators are read for, if the scan changes
+// what the plugin writes
+const esbuildScanOf = async (
+	build: EsbuildBuild,
+	program: string,
+	isTransformed: (path: string) => boolean,
+	scan: (program: ScannedProgram) => Promise<ScannedUsage>
+): Promise<[ScannedProgram, ScannedUsage] | undefined> => {
+	const entries = await esbuildEntriesOf(build)
+	const scanned =
+		entries &&
+		(await scanProgram(program, entries, {
+			resolve: async (specifier, importer, kind) => {
+				const result = await build.resolve(specifier, {
+					kind,
+					importer,
+					resolveDir: dirname(importer),
+					pluginData: esbuildResolution
+				})
+				return (
+					result.errors.length ? undefined
+					: result.external ? null
+					: result.namespace === "file" ? result.path
+					: undefined
+				)
+			},
+			readFile: path => readFileSync(path, "utf8"),
+			isTransformed
+		}))
+	if (!scanned) return
+	const usage = await scan(scanned)
+	return usage.dropped.length || usage.linked ? [scanned, usage] : undefined
+}
+
+// the importers esbuild bundled, by module, from its metafile
+const esbuildImportsOf = (
+	metafile: Metafile,
+	cwd: string,
+	scanned: ScannedProgram
+): Imports => {
+	const stdin = scanned.entries.find(id => basename(id).startsWith("<stdin>."))
+	const idOf = (path: string) =>
+		path === "<stdin>" ? stdin
+		: /^[\w-]+:/.test(path) && !isAbsolute(path) ? undefined
+		: resolve(cwd, path)
+	const imports: Imports = { entries: [], modules: [], edges: [] }
+	for (const input in metafile.inputs) {
+		// esbuild reads stdin from its options, as the scan did
+		if (input !== "<stdin>") imports.modules.push(idOf(input))
+		for (const { path, external } of metafile.inputs[input].imports) {
+			const target = !external && idOf(path)
+			if (target) imports.edges.push([idOf(input), target])
+		}
+	}
+	for (const output of Object.values(metafile.outputs)) {
+		if (output.entryPoint !== undefined)
+			imports.entries.push(idOf(output.entryPoint))
+	}
+	return imports
+}
+
+interface Metafile {
+	inputs: Record<
+		string,
+		{ imports: { path: string; external?: boolean | undefined }[] }
+	>
+	outputs: Record<string, { entryPoint?: string | undefined }>
+}
 
 // transformedId, which esbuild's Go regexes can read
 const esbuildTransformed = /\.(?:[cm]?[jt]s|[jt]sx)$/
