@@ -8,10 +8,12 @@ import { sizedScenarios } from "./bundle.ts"
 
 // Each app as a request handler uses it: its consumer module calls each
 // validator on a body and returns the data or the issues. A production build
-// with the "smallest" preset leaves out of each validator what no handler
-// reads, which `prune: false` keeps, so both arktype rows carry the usage
-// Valibot's safeParse handlers do.
+// leaves out of each validator what no handler reads, which `prune: false`
+// keeps, so every arktype row carries the usage Valibot's safeParse
+// handlers do.
 const libraries = {
+	standalone: {},
+	"standalone, prune: false": { prune: false },
 	standaloneSmallest: { preset: "smallest" },
 	"standaloneSmallest, prune: false": { preset: "smallest", prune: false },
 	valibot: undefined
