@@ -168,6 +168,10 @@ A literal is a one-value `enum` with its `type`, `null` beside a `type` is `null
 
 Thanks to @MichaelDeBoey for #1707.
 
+### Import subpaths like `arktype/config` with `moduleResolution: "node"`
+
+TypeScript's `node10` resolution, which ignores `exports`, now finds the types of `arktype`'s subpaths like `arktype/config`, as well as those of `@ark/schema` and `@ark/aot`.
+
 ### Pass `toJsonSchema()`'s result where JSON Schema is expected
 
 `JsonSchema`, which `toJsonSchema()` returns, can now be passed without a cast where a library expects `JSONSchema7` from `@types/json-schema` (e.g. the AI SDK's `jsonSchema()`) or `Record<string, unknown>` (e.g. OpenAI's function `parameters`), and any keyword can be read from it:

@@ -16,6 +16,37 @@
 	"type": "module",
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"codecs": [
+				"./out/codecs.d.ts"
+			],
+			"config": [
+				"./out/config.d.ts"
+			],
+			"errors": [
+				"./out/errors.d.ts"
+			],
+			"i18n": [
+				"./out/i18n.d.ts"
+			],
+			"locales/*": [
+				"./out/locales/*.d.ts"
+			],
+			"mutatesInput": [
+				"./out/mutatesInput.d.ts"
+			],
+			"runtime": [
+				"./out/runtime.d.ts"
+			],
+			"internal": [
+				"./out/internal.d.ts"
+			],
+			"internal/*": [
+				"./out/*"
+			]
+		}
+	},
 	"exports": {
 		".": {
 			"ark-ts": "./index.ts",
