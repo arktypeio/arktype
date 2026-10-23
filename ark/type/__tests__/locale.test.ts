@@ -609,6 +609,8 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 
 		it("interleaved requests each render in their own locale", async () => {
 			const store = new AsyncLocalStorage<Locale>()
+			// fixes the global config, as withConfig does, so there's one to restore
+			void type.$.internal.resolvedConfig
 			const originalConfig = { ...$ark.config }
 			const originalResolvedConfig = $ark.resolvedConfig!
 			reconfigure({ locale: () => store.getStore() })
