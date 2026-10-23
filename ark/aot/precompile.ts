@@ -239,6 +239,8 @@ export interface ScannedModule {
 
 interface ProgramUsage {
 	members: ValidatorMembers
+	// false where no read may leave a failure's errors unread
+	called: boolean
 	sources: Record<string, string>
 	// each module as the bundle is written, linked across it
 	written: Record<string, PrecompiledModule>
@@ -583,14 +585,16 @@ export class Precompiler {
 					member => this.members[member] === undefined && !used.has(member)
 				)
 			:	[]
+		const called = !used || used.has("call")
 		// a lazy validator reads its checkers where it's created, unlinkable
-		if (!dropped.length && (this.inline || this.standalone.lazy))
+		if (!dropped.length && called && (this.inline || this.standalone.lazy))
 			return unwritten
 		const usage: ProgramUsage = {
 			members: {
 				...this.members,
 				...Object.fromEntries(dropped.map(member => [member, false]))
 			},
+			called,
 			sources,
 			written: {}
 		}
@@ -718,15 +722,17 @@ export class Precompiler {
 		return changed
 	}
 
-	private membersIn(
+	private usageIn(
 		program: string | undefined,
 		id: string,
 		source: string
-	): ValidatorMembers {
+	): Pick<ProgramUsage, "members" | "called"> {
 		const usage =
 			program === undefined ? undefined : this.usagesByProgram.get(program)
 		// the host fails a bundle holding a module unlike its scan read it
-		return usage?.sources[id] === source ? usage.members : this.members
+		return usage?.sources[id] === source ?
+				usage
+			:	{ members: this.members, called: true }
 	}
 
 	// a module as its bundle's scan wrote it, if it's unchanged since
@@ -1066,7 +1072,7 @@ export class Precompiler {
 				modules,
 				imports,
 				diagnostics,
-				this.membersIn(program, id, source)
+				this.usageIn(program, id, source)
 			)
 			this.linkIslands(module, sites, s, prefix)
 			this.markProgress(module, sites, s, prefix)
@@ -1609,7 +1615,7 @@ export class Precompiler {
 		modules: Record<string, string>,
 		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[],
-		members: ValidatorMembers
+		{ members, called }: Pick<ProgramUsage, "members" | "called">
 	): Record<string, Record<string, string>> {
 		const inputImports: Record<string, Record<string, string>> = {}
 		const { namesBySite, factoriesBySite, exportsByName, folded } =
@@ -1627,6 +1633,7 @@ export class Precompiler {
 					{
 						...this.standalone,
 						members,
+						called,
 						configured,
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module),

@@ -9,8 +9,9 @@ import {
 	type Binding
 } from "./scope.ts"
 
-// what a read of a validator needs besides calling it and .allows
-export type UsedMember = "assert" | "~standard" | "meta" | "methods"
+// what a read of a validator needs besides .allows, or "call" where it may
+// return errors no one reads
+export type UsedMember = "assert" | "~standard" | "meta" | "methods" | "call"
 
 const usedMembersByName: Record<string, UsedMember | null> =
 	Object.setPrototypeOf(
@@ -296,7 +297,10 @@ class UsageAnalysis {
 
 	// a validator read at `node`, as its parent reads it
 	private read(node: Node, parent: Node | null | undefined): void {
-		if (parent?.type === "CallExpression" && parent.callee === node) return
+		if (parent?.type === "CallExpression" && parent.callee === node) {
+			this.used.add("call")
+			return
+		}
 		if (
 			parent?.type === "MemberExpression" &&
 			parent.object === node &&
@@ -306,6 +310,8 @@ class UsageAnalysis {
 			if (typeof name === "string" && name in usedMembersByName) {
 				const used = usedMembersByName[name]
 				if (used) this.used.add(used)
+				// a call by another name
+				if (name === "traverse") this.used.add("call")
 				return
 			}
 		}

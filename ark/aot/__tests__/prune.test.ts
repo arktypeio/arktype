@@ -463,6 +463,49 @@ console.log(out instanceof type.errors ? out.summary : out)
 			).equals(true)
 		})
 
+		it("finds issues as a call returns where no read calls a validator", async () => {
+			const asserting = await bundle(
+				{ preset: undefined },
+				{
+					stdin: {
+						contents: `import { User } from "./types.ts"
+
+let reads = 0
+const counting = {
+	get name() {
+		reads++
+		return 5
+	}
+}
+User.allows(counting)
+const allowsReads = reads
+// rejected, then read as valid by the Apply finding its issues
+const flipping = {
+	get name() {
+		return reads++ < 2 * allowsReads ? 5 : "Ada"
+	}
+}
+for (const data of [{ name: 5 }, flipping]) {
+	try {
+		User.assert(data)
+	} catch (e) {
+		console.log((e as Error).message)
+	}
+}
+`,
+						resolveDir: root,
+						loader: "ts"
+					}
+				}
+			)
+			attest(run(asserting)).snap("name must be a string\nis invalid\n")
+			// errors finding their issues once read hold the data until then
+			attest(asserting.includes("_data")).equals(false)
+			attest((await bundle({ preset: undefined })).includes("_data")).equals(
+				true
+			)
+		})
+
 		it("keeps a build other than for production whole", async () => {
 			const development = { conditions: ["ark-ts"] }
 			attest(await bundle({}, development)).equals(
