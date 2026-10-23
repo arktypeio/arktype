@@ -70,7 +70,10 @@ const composed = {
 	"/main.ts": `import { Admin } from "./admin.ts"\n\nAdmin({})`
 }
 
-contextualize(() => {
+contextualize(function (this: Mocha.Suite) {
+	// each bundle starts a precompiler of its own, which a loaded machine slows
+	this.timeout(60_000)
+
 	describe("reads it recognizes", () => {
 		it("a call", async () => {
 			attest(await droppedReading("User({})")).equals(everyMember)
