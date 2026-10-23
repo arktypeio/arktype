@@ -371,6 +371,8 @@ export interface StandaloneModules {
 	checking: string[]
 	// exports a site reads rather than calls
 	values: string[]
+	// exports a site creates in place, as a call of names the code exports
+	calls: Record<string, string[]>
 	// the readers of each unit module that could join another's scope
 	unitReaders: UnitReaders
 }
@@ -389,11 +391,8 @@ export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
 ): StandaloneModules => {
-	const { sections, shared, imports, folds, checking, values } = writeArtifact(
-		exports,
-		opts,
-		false
-	)
+	const { sections, shared, imports, folds, checking, values, calls } =
+		writeArtifact(exports, opts, false)
 	// nothing outside the artifact reads its units
 	mergeUnits(shared, imports, readersIn(shared, imports), opts)
 	return {
@@ -406,6 +405,7 @@ export const precompileStandalone = (
 		folds,
 		checking,
 		values,
+		calls,
 		unitReaders: {}
 	}
 }
@@ -414,11 +414,8 @@ export const precompileStandaloneModules = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
 ): StandaloneModules => {
-	const { sections, shared, imports, folds, checking, values } = writeArtifact(
-		exports,
-		opts,
-		true
-	)
+	const { sections, shared, imports, folds, checking, values, calls } =
+		writeArtifact(exports, opts, true)
 	const unitReaders: Record<string, string[]> = {}
 	const readers = readersIn(shared, imports)
 	for (const specifier in readers) {
@@ -445,6 +442,7 @@ export const precompileStandaloneModules = (
 		folds,
 		checking,
 		values,
+		calls,
 		unitReaders
 	}
 }
@@ -491,6 +489,7 @@ const writeArtifact = (
 		[index: number, artifact: StandaloneArtifact]
 	>()
 	const factories: (string | (() => string))[] = []
+	const calls: StandaloneModules["calls"] = {}
 	const tables = new Set<number>()
 	const artifactsByName = new Map<string, StandaloneArtifact>()
 	// a trial write: foldable if its code holds nothing received
@@ -565,6 +564,14 @@ const writeArtifact = (
 		}
 		index++
 	}
+	// a folded factory's site reads what it creates where it checks nothing
+	const isUnchecked = (name: string) => {
+		const artifact = folded.get(name)?.[1]
+		const rekeying = artifact?.writeRekeying("created")
+		return (
+			!rekeying || (rekeying.length === 1 && rekeying[0] === "return created")
+		)
+	}
 	const [creations, reads] = writeCreations(
 		types,
 		templates,
@@ -573,7 +580,9 @@ const writeArtifact = (
 		baking,
 		shared,
 		imports,
-		values
+		values,
+		isUnchecked,
+		calls
 	)
 	// a factory checking nothing it's passed is read as what it returns
 	const valueOf = (name: string): string | undefined => {
@@ -585,6 +594,7 @@ const writeArtifact = (
 	// folds differing only by index share one function
 	const sharersByCode = new Map<string, string[]>()
 	for (const [name, [, artifact]] of folded) {
+		if (name in calls) continue
 		const [creation, position] = reads[name]
 		if (position === undefined || valueOf(name) !== undefined) continue
 		const code = artifact.writeRekeying(`${creation}[index]`).join("\n")
@@ -595,6 +605,7 @@ const writeArtifact = (
 		for (const name of sharers) folds[name] = [sharers[0], reads[name][1]!]
 	}
 	const writeFolded = (name: string) => {
+		if (name in calls) return ""
 		const [index, artifact] = folded.get(name)!
 		const [creation, position] = reads[name]
 		const fold = folds[name]
@@ -612,8 +623,10 @@ const writeArtifact = (
 
 ${writeExport(name, index)}`
 	}
+	const called = [...new Set(Object.values(calls).flat())]
 	const sections = [
 		...creations,
+		called.length ? `export { ${called.join(", ")} }` : "",
 		// an import cycle can reach a factory before this runs
 		[...tables].map(table => `var interned${table}`).join("\n"),
 		...factories.map(factory =>
@@ -622,7 +635,15 @@ ${writeExport(name, index)}`
 	]
 	for (const [name, artifact] of artifactsByName)
 		if (artifact.checksAtCreation) checking.push(name)
-	return { sections, shared, imports, folds, checking, values: values ?? [] }
+	return {
+		sections,
+		shared,
+		imports,
+		folds,
+		checking,
+		values: values ?? [],
+		calls
+	}
 }
 
 interface Creation {
@@ -656,7 +677,9 @@ const writeCreations = (
 	baking: Baking,
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>,
-	values: string[] | undefined
+	values: string[] | undefined,
+	isUnchecked: (name: string) => boolean,
+	calls: StandaloneModules["calls"]
 ): [code: string[], reads: Record<string, CreationRead>] => {
 	const names = Object.keys(types)
 	const artifactOf = (indices: number[]) => {
@@ -695,6 +718,20 @@ const writeCreations = (
 		(l, r) => l.indices[0] - r.indices[0]
 	)) {
 		const [index] = creation.indices
+		// a size build's sites create their validators where they can
+		const created =
+			(
+				values &&
+				baking.shortest &&
+				creation.indices.every(i => isUnchecked(names[i]))
+			) ?
+				artifactOf(creation.indices).writeCalls(configured)
+			:	undefined
+		if (created) {
+			for (const [position, i] of creation.indices.entries())
+				calls[names[i]] = created[position]
+			continue
+		}
 		const isShared = creation.indices.length > 1
 		const body =
 			isShared ?
@@ -714,7 +751,7 @@ const writeCreations = (
 		}
 	}
 	const getters = names.flatMap((name, i) => {
-		if (folded.has(name)) return []
+		if (folded.has(name) || name in calls) return []
 		const read = readOf(...reads[name])
 		values?.push(name)
 		return values && /^[\w$]+$/.test(read) ?
@@ -798,6 +835,7 @@ class StandaloneArtifact {
 		description: new Map()
 	}
 	links: string[] = []
+	writtenValidators = new Map<string, string>()
 	modules: string[] = []
 	fills: string[] = []
 	defaults: string[] = []
@@ -1244,6 +1282,39 @@ class StandaloneArtifact {
 			`return ${values.length === 1 ? values[0] : `[${values.join(", ")}]`}`
 		]
 		return statements.filter(statement => statement).join("\n\n")
+	}
+
+	// each export's validator as [callee, ...args], where it's created by a
+	// call reading only what the artifact imports, so a site can create it
+	writeCalls(configured: Configured): string[][] | undefined {
+		if (writeFixConfig(configured) || !this.roots.length) return
+		this.writeSharedUnits()
+		const names = Object.values(this.exports).map(value =>
+			hasArkKind(value, "root") ? this.readValidator(value) : undefined
+		)
+		this.writeBody(unitFunction => `(${unitFunction})`)
+		if (
+			this.writtenValidators.size !== names.length ||
+			this.declarations.statements.length ||
+			this.sharedWriters.size ||
+			this.localUnits.length ||
+			this.links.length ||
+			this.defaults.length ||
+			this.modules.length ||
+			this.fills.length
+		)
+			return
+		const imported = new Set(Object.values(this.imports).flat())
+		const calls: string[][] = []
+		for (const name of names) {
+			const call = /^([\w$]+)\(\s*((?:[\w$]+,\s*)*[\w$]+)?\s*\)$/.exec(
+				(name && this.writtenValidators.get(name)) ?? ""
+			)
+			const reads = call && [call[1], ...(call[2]?.split(/,\s*/) ?? [])]
+			if (!reads?.every(read => imported.has(read))) return
+			calls.push(reads)
+		}
+		return calls
 	}
 
 	writeFactory(name: string, index: number, configured: Configured): string {
@@ -1788,8 +1859,14 @@ ${writeFunction(
 		})
 		// written before filtering, as a meta can read a later one
 		const validators = [...this.validatorNames].map(
-			([root, name]) =>
-				[root, `const ${name} = ${this.writeValidator(root)}`] as const
+			([root, name]) => [root, name, this.writeValidator(root)] as const
+		)
+		this.writtenValidators = new Map(
+			validators
+				.filter(
+					([root]) => !this.defaultValues.has(root) || this.readRoots.has(root)
+				)
+				.map(([, name, validator]) => [name, validator])
 		)
 		return [
 			this.declarations.statements.join("\n"),
@@ -1798,11 +1875,8 @@ ${writeFunction(
 				.join("\n"),
 			traversals.join("\n"),
 			this.links.join("\n"),
-			validators
-				.filter(
-					([root]) => !this.defaultValues.has(root) || this.readRoots.has(root)
-				)
-				.map(([, validator]) => validator)
+			[...this.writtenValidators]
+				.map(([name, validator]) => `const ${name} = ${validator}`)
 				.join("\n\n"),
 			this.defaults.join("\n"),
 			this.modules.join("\n"),

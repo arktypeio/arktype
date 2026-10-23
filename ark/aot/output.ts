@@ -25,6 +25,7 @@ export const noValidators: StandaloneModules = {
 	folds: {},
 	checking: [],
 	values: [],
+	calls: {},
 	unitReaders: {}
 }
 

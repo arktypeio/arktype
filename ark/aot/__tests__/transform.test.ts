@@ -112,7 +112,7 @@ export const User = type({ name: "string" })`
 				},
 				{ lazy: false, checks: "none" }
 			)
-			// the factory's parameter still evaluates
+			// user.ts runs first, so reading User here can't throw
 			attest(normalized(result.code)).snap(`import "arktype"
 import { #0 as $ark#0 } from "~arktype/#1"
 import { #2 as $ark#2 } from "~arktype/#1"
@@ -120,7 +120,49 @@ import $arkfixConfig from "~arktype/#3"
 import { User } from "./user.ts"
 $arkfixConfig()
 export const Name = $ark#0
-export const Team = (User, $ark#2)`)
+export const Team = $ark#2`)
+		})
+
+		it("reads an input where reading it can throw, as arktype does", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+import { User } from "./user.ts"
+export const Team = type({ lead: User })`,
+				{
+					"/user.ts": `import { type } from "arktype"
+import "./main.ts"
+export const User = type({ name: "string" })`
+				},
+				{ lazy: false, checks: "none" }
+			)
+			// on a cycle with user.ts, which can run this before setting User
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#2"
+import { User } from "./user.ts"
+$arkfixConfig()
+export const Team = (User, $ark#0)`)
+		})
+
+		it("creates a size build's validators where they're read", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+import { User } from "./user.ts"
+export const Name = type("string > 0")
+export const Team = type({ lead: User, members: User.array() })`,
+				{
+					"/user.ts": `import { type } from "arktype"
+export const User = type({ name: "string" })`
+				},
+				{ preset: "smallest", checks: "none", config: false }
+			)
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark_#0 } from "~arktype/#1"
+import { #2Allows as $ark_#2Allows } from "~arktype/#1"
+import { #3Allows as $ark_#3Allows } from "~arktype/#1"
+import { User } from "./user.ts"
+export const Name = /* @__PURE__ */ $ark_#0($ark_#2Allows)
+export const Team = /* @__PURE__ */ $ark_#0($ark_#3Allows)`)
 		})
 
 		it("folds introspection", () => {

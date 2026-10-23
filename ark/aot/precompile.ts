@@ -291,6 +291,8 @@ interface SiteFactory {
 	// e.g. the second `f` in `{ a: narrow(f), b: narrow(f) }`
 	repeats: [span: Span, spanIndex: number][]
 	inputs: string[]
+	// inputs set before the site runs, so reading them can't throw
+	inert: string[]
 	// whose imports the call keeps
 	bindings: Binding[]
 	imports: FactoryImport[]
@@ -301,6 +303,7 @@ const emptyFactory = (): SiteFactory => ({
 	spans: [],
 	repeats: [],
 	inputs: [],
+	inert: [],
 	bindings: [],
 	imports: []
 })
@@ -1346,7 +1349,15 @@ export class Precompiler {
 			}
 			// a folded factory may call a function it shares, passing its index
 			const [exported, index] = validators.folds[name] ?? [name]
-			const local = prefix + exported
+			// e.g. a size build's validator, created where it's read
+			const created = validators.calls[name]
+			const local =
+				created ?
+					`/* @__PURE__ */ ${prefix}_${created[0]}(${created
+						.slice(1)
+						.map(read => `${prefix}_${read}`)
+						.join(", ")})`
+				:	prefix + exported
 			if (!imported.has(exported)) {
 				imported.add(exported)
 				if (site.parseError) {
@@ -1364,12 +1375,23 @@ export class Precompiler {
 						Object.assign(modules, validators.modules)
 						Object.assign(readers, validators.unitReaders)
 					}
-					;(imports[specifier] ??= {})[exported] = local
+					const locals = (imports[specifier] ??= {})
+					if (created)
+						for (const read of created) locals[read] = `${prefix}_${read}`
+					else locals[exported] = local
 				}
 			}
 			const factory = factoriesBySite.get(site)
-			for (const [specifier, name, local] of factory?.imports ?? [])
-				(inputImports[specifier] ??= {})[name] = local
+			const isValue = !!created || validators.values.includes(name)
+			// a value's site reads only the inputs arktype's could throw reading
+			const inputs =
+				factory?.inputs.filter(
+					input => !isValue || !factory.inert.includes(input)
+				) ?? []
+			for (const [specifier, name, local] of factory?.imports ?? []) {
+				if (inputs.includes(local))
+					(inputImports[specifier] ??= {})[name] = local
+			}
 			kept.push(...(factory?.spans ?? []))
 			passed.push(...(factory?.bindings ?? []))
 			// droppable with its variable unless it throws or checks
@@ -1379,13 +1401,12 @@ export class Precompiler {
 				!site.introspection?.thrown &&
 				!checking.has(name)
 			if (isPure) fixedAt = Math.min(fixedAt, site.declarationStart!)
-			const isValue = validators.values.includes(name)
 			const call = `${isPure ? "/* @__PURE__ */ " : ""}${
 				this.shadow ?
 					this.shadowCallOf(site, module, factory, local, index, prefix)
 				:	`${local}(${index ?? ""}`
 			}`
-			if (!factory?.spans.length && !factory?.inputs.length)
+			if (!factory?.spans.length && !inputs.length)
 				s.overwrite(site.start, site.end, isValue ? local : `${call})`)
 			else {
 				// parameters stay in place, so they evaluate in order, even for a value
@@ -1398,18 +1419,16 @@ export class Precompiler {
 					isValue ? "("
 					: index === undefined && !this.shadow ? call
 					: `${call}, `
-				for (const span of factory.spans) {
+				for (const span of factory?.spans ?? []) {
 					replace(start, span.start, separator)
 					start = span.end
 					separator = ", "
 				}
-				const inputs = factory.inputs.map(
-					(input, i) => (i ? ", " : separator) + input
-				)
+				const read = inputs.map((input, i) => (i ? ", " : separator) + input)
 				replace(
 					start,
 					site.end,
-					`${inputs.join("")}${isValue ? `, ${local}` : ""})`
+					`${read.join("")}${isValue ? `, ${local}` : ""})`
 				)
 			}
 			folded.push(site)
@@ -1746,7 +1765,27 @@ export class Precompiler {
 				label: passedAs.label,
 				reads: reads.map(input => [input.path, input.value])
 			})
+			if (this.isSetBefore(reads[0], site, module))
+				factory.inert.push(passedAs.expression)
 		}
+	}
+
+	// whether an input is set before its site runs: imported where no cycle
+	// runs the module first, or declared above a site its top level runs
+	private isSetBefore(input: Input, site: Site, module: SourceModule): boolean {
+		const binding =
+			input.kind === "local" ? this.bindingsByInput.get(input) : undefined
+		if (!binding || binding.kind === "import") return !this.isOnCycle(module)
+		return (
+			site.declarationStart !== undefined &&
+			binding.scope === module.scopes.root &&
+			(binding.kind === "var" ||
+				binding.kind === "function" ||
+				((binding.kind === "const" ||
+					binding.kind === "let" ||
+					binding.kind === "class") &&
+					binding.declaration.end <= site.start))
+		)
 	}
 
 	private receiveHelper(
