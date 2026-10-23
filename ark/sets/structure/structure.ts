@@ -2,6 +2,7 @@ import {
 	$ark,
 	Disjoint,
 	normalizeIndex,
+	normalizeOrder,
 	writeDuplicateKeyMessage,
 	type BaseRoot,
 	type BaseScope,
@@ -181,6 +182,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 		if (inner.required) inner.required = sortSiblings(inner.required)
 		if (inner.optional) inner.optional = sortSiblings(inner.optional)
 		if (inner.index) inner.index = sortSiblings(inner.index)
+		normalizeOrder(inner)
 	},
 	intersections: {
 		structure: (l, r, ctx) => {
@@ -219,7 +221,11 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 				)
 			}
 
-			const baseInner: Structure.Inner.mutable = {}
+			// as a spread would, keys keep l's order and r's new keys follow
+			const baseInner: Structure.Inner.mutable =
+				l.props.length || r.props.length ?
+					{ order: [...l.orderedKeys, ...r.orderedKeys] }
+				:	{}
 
 			if (l.undeclared || r.undeclared) {
 				baseInner.undeclared =

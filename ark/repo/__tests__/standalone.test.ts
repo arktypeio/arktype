@@ -3459,7 +3459,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			)
 		})
 
-		it("props in key order", async () => {
+		it("props in declared order", async () => {
 			const now = standIn(() => 1, "a", "now")
 			const later = standIn(() => 2, "b", "later")
 			const { T: create } = await load({
@@ -3477,7 +3477,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			// names a minifier gave them, which sort the other way
 			const Ot = () => 1
 			const jt = () => 2
-			attest(JSON.stringify(create(Ot, jt)({}))).equals('{"end":2,"start":1}')
+			attest(JSON.stringify(create(Ot, jt)({}))).equals('{"start":1,"end":2}')
 		})
 
 		it("rejects order against a keyword", () => {

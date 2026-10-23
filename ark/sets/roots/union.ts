@@ -949,7 +949,11 @@ const mergePropBranches = (
 	)
 		return
 	const kind = lProp.required && rProp!.required ? "required" : "optional"
-	const structure: dict = { ...l.structure.inner }
+	// a prop that becomes optional keeps its place
+	const structure: dict = {
+		...l.structure.inner,
+		order: l.structure.orderedKeys
+	}
 	structure[lProp.kind] = l.structure[lProp.kind]!.filter(
 		prop => prop !== lProp
 	)

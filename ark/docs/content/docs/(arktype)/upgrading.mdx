@@ -338,14 +338,14 @@ const input = { a: " x ", b: { c: "y" } }
 T.assert(input).b === input.b // true, before: false
 ```
 
-### "+": "delete" removes symbol keys and sorts its output
+### "+": "delete" removes symbol keys and lists keys as declared
 
-`"+": "delete"` also removes undeclared symbol keys, and its output has required keys, then optional keys, each sorted, rather than the input's order:
+`"+": "delete"` also removes undeclared symbol keys, and its output lists keys in the order the definition declares them, as Zod does, rather than the input's order:
 
 ```ts
 const T = type({ "+": "delete", b: "string", a: "string" })
 
-T({ b: "2", z: 0, a: "1" }) // { a: "1", b: "2" }, before: { b: "2", a: "1" }
+T({ a: "1", z: 0, b: "2" }) // { b: "2", a: "1" }, before: { a: "1", b: "2" }
 ```
 
 ### "+": "reject" checks string keys only
