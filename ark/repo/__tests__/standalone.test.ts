@@ -454,9 +454,9 @@ age must be non-negative`)
 			// pruned of what told them apart, the cases would be checkers of their own
 			attest([
 				code
-					.match(/runtime\.props\(\{[^}]*\}/g)
+					.match(/runtime\.props\({[^}]*}/g)
 					?.every(call => call.includes("type: ")),
-				code.match(/\/\^\(\?:\[\\dA-Fa-f\]/g)?.length
+				code.match(/\/\^\(\?:\[\\dA-Fa-f]/g)?.length
 			]).equals([true, 1])
 		})
 
