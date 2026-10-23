@@ -128,6 +128,7 @@ export {
 	throwParseError,
 	timeOf
 } from "@ark/util"
+export * from "./checkers.ts"
 export * from "./keywords/functions.ts"
 
 export interface ValidatorAttributes {

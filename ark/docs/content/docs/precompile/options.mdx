@@ -114,7 +114,7 @@ precompile.vite({
 
 ### optimize and optimizeErrors
 
-`optimize: "size"` writes validators for size rather than speed. They're then slower, most where one calls several others in turn, so prefer it where bundle size matters more than validation speed.
+`optimize: "size"` writes validators for size rather than speed. With detailed errors, each node becomes a call to one of a few small runtime checkers, like `props({ name: ... })`, each describing what it checks from its rule, so the build writes a description only where yours differs, and each site creates its validator in place. A module whose Types are too few to pay for the checkers' runtime has its nodes compiled instead. Validators are then slower, most where one calls several others in turn, so prefer it where bundle size matters more than validation speed. Writing a default copies data as other builds do, except that an instance of any native class, not only those arktype lists, is written in place.
 
 `optimizeErrors` writes errors the same way, and is `optimize` unless set. Errors written for size are the smallest a build can return, and reading their issues is slower, but they have the same `count`, `issues`, `summary`, `throw()`, `toJSON()` and `toString()` as other errors, and `instanceof type.errors` recognizes them.
 

@@ -83,7 +83,13 @@ import {
 	type IssueContext,
 	type Writer
 } from "./standalone/sites.ts"
-import { refNameOf, rootUnitsOf, unitOf } from "./standalone/compilers.ts"
+import {
+	compiledForSize,
+	isChecker,
+	refNameOf,
+	rootUnitsOf,
+	unitOf
+} from "./standalone/compilers.ts"
 import {
 	encodeKey,
 	holeNameMarker,
@@ -254,6 +260,9 @@ export interface StandaloneOptions {
 	hoisted?: boolean | undefined
 	// export as values what a site would call a function only to read
 	values?: boolean | undefined
+	// false where a size build with detailed errors compiles each node rather
+	// than writing it as a checker
+	combines?: boolean | undefined
 }
 
 interface Baking {
@@ -271,6 +280,7 @@ interface Baking {
 	hoisted: boolean
 	shortest: boolean
 	flattens: boolean
+	combines: boolean
 }
 
 interface RootApplier {
@@ -358,6 +368,8 @@ export interface StandaloneModules {
 	checking: string[]
 	// exports a site reads rather than calls
 	values: string[]
+	// exports a site creates in place, as a call of names the code exports
+	calls: Record<string, string[]>
 }
 
 export const runtimeImport = `import * as runtime from "arktype/runtime"`
@@ -374,11 +386,8 @@ export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
 ): StandaloneModules => {
-	const { sections, shared, imports, folds, checking, values } = writeArtifact(
-		exports,
-		opts,
-		false
-	)
+	const { sections, shared, imports, folds, checking, values, calls } =
+		writeArtifact(exports, opts, false)
 	// nothing outside the artifact reads its units
 	mergeUnits(shared, imports, opts)
 	return {
@@ -390,19 +399,53 @@ export const precompileStandalone = (
 		modules: {},
 		folds,
 		checking,
-		values
+		values,
+		calls
 	}
+}
+
+// about the length a minifier leaves of code: no comments, spaces or names
+// longer than two characters
+const minifiedLengthOf = (code: string): number =>
+	code
+		.replace(/\/\*[\S\s]*?\*\/|\/\/[^\n]*/g, "")
+		.replace(/\s+/g, "")
+		.replace(/[$A-Z_a-z][\w$]{2,}/g, "ab").length
+
+// the text of a runtime export, or of the functions an object of them holds
+const runtimeTextOf = (name: string): string => {
+	const value: unknown = runtime[name as keyof typeof runtime]
+	return typeof value === "object" && value !== null ?
+			Object.values(value)
+				.map(entry => (typeof entry === "string" ? entry : String(entry)))
+				.join(",")
+		:	String(value)
+}
+
+/** about the length a minifier leaves of modules and the runtime they read */
+export const minifiedSizeOf = ({
+	code,
+	modules
+}: StandaloneModules): number => {
+	const written = [code, ...Object.values(modules)]
+	const read = new Set(written.join("\n").match(/(?<=\bruntime\.)[\w$]+/g))
+	// with each export the runtime's own code reads
+	for (const name of read) {
+		for (const word of runtimeTextOf(name).match(/[$A-Z_a-z][\w$]*/g) ?? [])
+			if (word in runtime) read.add(word)
+	}
+	return [...written, ...[...read].map(runtimeTextOf)].reduce(
+		(length, text) => length + minifiedLengthOf(text),
+		0
+	)
 }
 
 export const precompileStandaloneModules = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
 ): StandaloneModules => {
-	const { sections, shared, imports, folds, checking, values } = writeArtifact(
-		exports,
-		opts,
-		true
-	)
+	const { sections, shared, imports, folds, checking, values, calls } =
+		writeArtifact(exports, opts, true)
 	// each module is shared by every artifact that reads it, so none merges
 	// another's units into its own
 	const modules: Record<string, string> = {}
@@ -416,7 +459,8 @@ export const precompileStandaloneModules = (
 		modules,
 		folds,
 		checking,
-		values
+		values,
+		calls
 	}
 }
 
@@ -452,7 +496,8 @@ const writeArtifact = (
 		mutatesInput: opts.mutatesInput,
 		hoisted: opts.hoisted === true,
 		shortest: opts.optimize === "size",
-		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular
+		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular,
+		combines: opts.combines !== false
 	}
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<unknown>()
@@ -461,6 +506,7 @@ const writeArtifact = (
 		[index: number, artifact: StandaloneArtifact]
 	>()
 	const factories: (string | (() => string))[] = []
+	const calls: StandaloneModules["calls"] = {}
 	const tables = new Set<number>()
 	const artifactsByName = new Map<string, StandaloneArtifact>()
 	// a trial write: foldable if its code holds nothing received
@@ -535,6 +581,14 @@ const writeArtifact = (
 		}
 		index++
 	}
+	// a folded factory's site reads what it creates where it checks nothing
+	const isUnchecked = (name: string) => {
+		const artifact = folded.get(name)?.[1]
+		const rekeying = artifact?.writeRekeying("created")
+		return (
+			!rekeying || (rekeying.length === 1 && rekeying[0] === "return created")
+		)
+	}
 	const [creations, reads] = writeCreations(
 		types,
 		templates,
@@ -543,7 +597,9 @@ const writeArtifact = (
 		baking,
 		shared,
 		imports,
-		values
+		values,
+		isUnchecked,
+		calls
 	)
 	// a factory checking nothing it's passed is read as what it returns
 	const valueOf = (name: string): string | undefined => {
@@ -555,6 +611,7 @@ const writeArtifact = (
 	// folds differing only by index share one function
 	const sharersByCode = new Map<string, string[]>()
 	for (const [name, [, artifact]] of folded) {
+		if (name in calls) continue
 		const [creation, position] = reads[name]
 		if (position === undefined || valueOf(name) !== undefined) continue
 		const code = artifact.writeRekeying(`${creation}[index]`).join("\n")
@@ -565,6 +622,7 @@ const writeArtifact = (
 		for (const name of sharers) folds[name] = [sharers[0], reads[name][1]!]
 	}
 	const writeFolded = (name: string) => {
+		if (name in calls) return ""
 		const [index, artifact] = folded.get(name)!
 		const [creation, position] = reads[name]
 		const fold = folds[name]
@@ -582,8 +640,10 @@ const writeArtifact = (
 
 ${writeExport(name, index)}`
 	}
+	const called = [...new Set(Object.values(calls).flat())]
 	const sections = [
 		...creations,
+		called.length ? `export { ${called.join(", ")} }` : "",
 		// an import cycle can reach a factory before this runs
 		[...tables].map(table => `var interned${table}`).join("\n"),
 		...factories.map(factory =>
@@ -592,7 +652,15 @@ ${writeExport(name, index)}`
 	]
 	for (const [name, artifact] of artifactsByName)
 		if (artifact.checksAtCreation) checking.push(name)
-	return { sections, shared, imports, folds, checking, values: values ?? [] }
+	return {
+		sections,
+		shared,
+		imports,
+		folds,
+		checking,
+		values: values ?? [],
+		calls
+	}
 }
 
 interface Creation {
@@ -626,7 +694,9 @@ const writeCreations = (
 	baking: Baking,
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>,
-	values: string[] | undefined
+	values: string[] | undefined,
+	isUnchecked: (name: string) => boolean,
+	calls: StandaloneModules["calls"]
 ): [code: string[], reads: Record<string, CreationRead>] => {
 	const names = Object.keys(types)
 	const artifactOf = (indices: number[]) => {
@@ -665,6 +735,20 @@ const writeCreations = (
 		(l, r) => l.indices[0] - r.indices[0]
 	)) {
 		const [index] = creation.indices
+		// a size build's sites create their validators where they can
+		const created =
+			(
+				values &&
+				baking.shortest &&
+				creation.indices.every(i => isUnchecked(names[i]))
+			) ?
+				artifactOf(creation.indices).writeCalls(configured)
+			:	undefined
+		if (created) {
+			for (const [position, i] of creation.indices.entries())
+				calls[names[i]] = created[position]
+			continue
+		}
 		const isShared = creation.indices.length > 1
 		const body =
 			isShared ?
@@ -684,7 +768,7 @@ const writeCreations = (
 		}
 	}
 	const getters = names.flatMap((name, i) => {
-		if (folded.has(name)) return []
+		if (folded.has(name) || name in calls) return []
 		const read = readOf(...reads[name])
 		values?.push(name)
 		return values && /^[\w$]+$/.test(read) ?
@@ -768,6 +852,7 @@ class StandaloneArtifact {
 		description: new Map()
 	}
 	links: string[] = []
+	writtenValidators = new Map<string, string>()
 	modules: string[] = []
 	fills: string[] = []
 	defaults: string[] = []
@@ -1109,13 +1194,13 @@ class StandaloneArtifact {
 
 	// indexes the compilers writing a root's units
 	variantOf(root: BaseRoot): number {
-		return (
+		const variant =
 			(writesInPlace(root, this.baking.mutatesInput) ? 1
 			: this.baking.detailsErrors && this.baking.shortest ? 2
 			: 0) +
 			3 * +this.baking.firstIssue +
 			6 * +this.baking.shortest
-		)
+		return variant === 8 && !this.baking.combines ? compiledForSize : variant
 	}
 
 	unitsOf(root: BaseRoot): RootUnit[] {
@@ -1213,6 +1298,39 @@ class StandaloneArtifact {
 			`return ${values.length === 1 ? values[0] : `[${values.join(", ")}]`}`
 		]
 		return statements.filter(statement => statement).join("\n\n")
+	}
+
+	// each export's validator as [callee, ...args], where it's created by a
+	// call reading only what the artifact imports, so a site can create it
+	writeCalls(configured: Configured): string[][] | undefined {
+		if (writeFixConfig(configured) || !this.roots.length) return
+		this.writeSharedUnits()
+		const names = Object.values(this.exports).map(value =>
+			hasArkKind(value, "root") ? this.readValidator(value) : undefined
+		)
+		this.writeBody(unitFunction => `(${unitFunction})`)
+		if (
+			this.writtenValidators.size !== names.length ||
+			this.declarations.statements.length ||
+			this.sharedWriters.size ||
+			this.localUnits.length ||
+			this.links.length ||
+			this.defaults.length ||
+			this.modules.length ||
+			this.fills.length
+		)
+			return
+		const imported = new Set(Object.values(this.imports).flat())
+		const calls: string[][] = []
+		for (const name of names) {
+			const call = /^([\w$]+)\(\s*((?:[\w$]+,\s*)*[\w$]+)?\s*\)$/.exec(
+				(name && this.writtenValidators.get(name)) ?? ""
+			)
+			const reads = call && [call[1], ...(call[2]?.split(/,\s*/) ?? [])]
+			if (!reads?.every(read => imported.has(read))) return
+			calls.push(reads)
+		}
+		return calls
 	}
 
 	writeFactory(name: string, index: number, configured: Configured): string {
@@ -1757,8 +1875,14 @@ ${writeFunction(
 		})
 		// written before filtering, as a meta can read a later one
 		const validators = [...this.validatorNames].map(
-			([root, name]) =>
-				[root, `const ${name} = ${this.writeValidator(root)}`] as const
+			([root, name]) => [root, name, this.writeValidator(root)] as const
+		)
+		this.writtenValidators = new Map(
+			validators
+				.filter(
+					([root]) => !this.defaultValues.has(root) || this.readRoots.has(root)
+				)
+				.map(([, name, validator]) => [name, validator])
 		)
 		return [
 			this.declarations.statements.join("\n"),
@@ -1767,11 +1891,8 @@ ${writeFunction(
 				.join("\n"),
 			traversals.join("\n"),
 			this.links.join("\n"),
-			validators
-				.filter(
-					([root]) => !this.defaultValues.has(root) || this.readRoots.has(root)
-				)
-				.map(([, validator]) => validator)
+			[...this.writtenValidators]
+				.map(([name, validator]) => `const ${name} = ${validator}`)
 				.join("\n\n"),
 			this.defaults.join("\n"),
 			this.modules.join("\n"),
@@ -1843,7 +1964,21 @@ ${writeFunction(
 			) ?
 				applied
 			:	undefined
-		const written = attributes.length ? [`{ ${attributes.join(", ")} }`] : []
+		const written =
+			// a size build's creator defaults the attributes of a validator
+			// with only an empty meta
+			(
+				this.baking.shortest &&
+				!isTemplate &&
+				!this.baking.checksTypes &&
+				!onFail &&
+				!isCreatedByRuntime(members, this.baking) &&
+				attributes.length === 1 &&
+				attributes[0] === "meta: runtime.emptyMeta"
+			) ?
+				[]
+			: attributes.length ? [`{ ${attributes.join(", ")} }`]
+			: []
 		const createsWith =
 			!isTemplate && ownsValidator && isCreatedByRuntime(members, this.baking)
 		const args = [
@@ -1961,7 +2096,10 @@ ${writeFunction(
 			...(ownsValidator || makes ? ["make", "parts"]
 			: applier ? [applier.params]
 			: ["rootApply", "allows"]),
-			...(hasAttributes ? ["attributes"] : []),
+			...(!hasAttributes ? []
+			: this.baking.shortest && keepsMeta ?
+				["attributes = { meta: runtime.emptyMeta }"]
+			:	["attributes"]),
 			...(this.baking.checksTypes ? ["id", "holes = []"] : []),
 			...(!configured || keepsMeta ? []
 			: this.baking.readsConfig ?
@@ -2296,7 +2434,9 @@ ${writeFunction(
 				(strategy === "transform" &&
 					!root.includesMorph &&
 					!(root.hasKind("union") && !root.discriminantJit)))
-		const transforms = strategy === "transform"
+		// a checker transforms by its t, so each is created alike
+		const checks = isChecker(root, this.variantOf(root))
+		const transforms = strategy === "transform" && !checks
 		const [flat, traversals] =
 			isArrow && appliesErrors && !root.allowsNeedsCtx ?
 				this.compactPartsOf(root, transforms ? [0, 1, 2] : [0, 1], asValidator)
@@ -2320,7 +2460,10 @@ ${writeFunction(
 						: ""
 					}${transforms ? ", transform" : ""}]`
 				:	`{ 0: allows${apply === "apply" ? ", 1: apply" : ""}${transforms ? ", 2: transform" : ""} }`
-			const valid = transforms ? "transform(data)" : "data"
+			const valid =
+				checks ? "allows.t?.(data) ?? data"
+				: transforms ? "transform(data)"
+				: "data"
 			const parts = flat ? [...new Set(flat)].join(", ") : traversals
 			const elements =
 				asValidator && !transforms && this.elementTraversalsOf(root)

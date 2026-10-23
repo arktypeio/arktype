@@ -62,7 +62,24 @@ export class ArkErrors implements FailureContext {
 		key?: PropertyKey,
 		absent?: true
 	): true | undefined {
-		this._.push(issueAt(this._path, site, data, key, absent))
+		const path = this._path
+		let context = site.value ?? (site as SiteContext)
+		if (key !== undefined) {
+			path.push(key)
+			if (absent || (site.missing && !(key in (data as object))))
+				context = site.missing!
+			else data = (data as Keyed)[key]
+		}
+		const issue: ArkIssue = {
+			code: context.code,
+			path: site.path ? path.concat(site.path) : path.slice(),
+			data,
+			expected: context.description,
+			message: undefined
+		}
+		context.text?.(issue)
+		if (key !== undefined) path.pop()
+		this._.push(issue)
 		return this.failFast
 	}
 
@@ -74,7 +91,13 @@ export class ArkErrors implements FailureContext {
 		missing?: FailureSite,
 		data?: unknown
 	): boolean | undefined {
-		return failsIn(this, this._path, apply, value, key, missing, data)
+		if (key === undefined) return !apply(value, this)
+		if (missing && value === undefined && !(key in (data as object)))
+			return this.failsAt(missing, data, key, true)
+		this._path.push(key)
+		const continues = apply(value, this)
+		this._path.pop()
+		return !continues
 	}
 }
 
@@ -182,7 +205,14 @@ export const messageOf = (issue: ArkIssue): string => {
 			: path ? `.${String(k)}`
 			: String(k)
 	}
-	return (path && path + " ") + problemOf(issue)
+	// problemOf written out, so a bundle reading only messages lacks it
+	return (
+		(path && path + " ") +
+		(issue.problem ??
+			(issue.expected !== undefined ? "must be " + issue.expected
+			: issue.code === "required" ? "is missing"
+			: "is invalid"))
+	)
 }
 
 // an undeclared key's site says what's expected

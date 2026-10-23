@@ -507,6 +507,11 @@ const writeUnit = (
 export type UnitMember = [name: string, source: string]
 
 const declareTraversals = (linkage: UnitLinkage, node: BaseNode): string[] => {
+	const Compiler = linkage.opts.compiler
+	const declared =
+		Compiler?.prototype.declareTraversals &&
+		new Compiler("Allows", linkage, true).declareTraversals!(node)
+	if (declared) return declared
 	const traversals = [
 		declareTraversal(linkage, node, "Allows"),
 		declareTraversal(linkage, node, "Apply")
@@ -566,6 +571,9 @@ export class TraversalCompiler extends NodeCompiler {
 		})
 		this.linkage = linkage
 	}
+
+	// declares a node's traversals some other way, returning their names
+	declareTraversals?(node: BaseNode): string[] | undefined
 
 	// a one-expression node is written inline
 	override invoke(node: BaseNode, opts?: InvokeOptions): string {
