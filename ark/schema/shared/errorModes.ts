@@ -17,8 +17,12 @@ export class ArkFirstIssueTraversal extends ArkTraversal {
 	}
 
 	override finalize(onFail?: FailHandler | null): unknown {
-		const errors = this._errors?._
-		if (errors && errors.length > 1) errors.length = 1
+		const errors = this._errors as ArkErrors | undefined
+		if (errors && errors._.length > 1) {
+			errors._.length = 1
+			// a callback reading ctx.errors grouped those dropped
+			errors._init(this.config)
+		}
 		return super.finalize(onFail)
 	}
 }

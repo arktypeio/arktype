@@ -50,7 +50,6 @@ import {
 	type BaseNode
 } from "./node.ts"
 import {
-	bindByKey,
 	nodesById,
 	parseNode,
 	registerNodeId,
@@ -455,21 +454,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 			bound =
 				isNode(reference) ?
 					composing(() => {
-						const copyReference = () =>
-							new (reference.constructor as any)(reference, this) as BaseNode
-						if (
-							!reference.includesKeptDescription &&
-							this.describesLike(reference.$)
-						) {
-							return bindByKey(this, reference, () =>
-								resolveDescription(copyReference())
-							)
-						}
+						const copy = new (reference.constructor as any)(reference, this)
 						// a bound node keeps the descriptions of the scope that created it
-						const copy = copyReference()
-						copy.includesKeptDescription = true
-						copy.cache.description = reference.description
-						return resolveDescription(copy)
+						if (
+							reference.includesKeptDescription ||
+							!this.describesLike(reference.$)
+						) {
+							copy.includesKeptDescription = true
+							copy.cache.description = reference.description
+						}
+						return resolveDescription(copy as BaseNode)
 					})
 				:	new GenericRoot(
 						reference.params as never,

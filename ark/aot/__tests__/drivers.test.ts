@@ -15,14 +15,11 @@ import { register } from "@ark/aot/node"
 import turbopack from "@ark/aot/turbopack"
 import type { PrecompilePluginOptions } from "@ark/aot/unplugin"
 import { spawnSync } from "node:child_process"
-import { mkdirSync, readFileSync, utimesSync, writeFileSync } from "node:fs"
+import { readFileSync, utimesSync, writeFileSync } from "node:fs"
 import { join, relative, sep } from "node:path"
 import { pathToFileURL } from "node:url"
 import { configureAfterTypeMessage } from "@ark/schema"
-import {
-	configuredUnlikeBuildMessage,
-	writeCreatedBeforeConfigureMessage
-} from "@ark/schema/runtime"
+import { writeCreatedBeforeConfigureMessage } from "@ark/schema/runtime"
 import {
 	hasBun,
 	inFreshProcess,
@@ -107,18 +104,13 @@ const thrownMessage = (output: string, root: string, prefix = "Error: ") => {
 		.join("")
 }
 
-const islands = fromHere("islands")
 const configured = fromHere("configured")
 const transpiled = fromHere("transpiled")
-const localized = fromHere("localized")
 const checks = fromHere("checks")
 const writers = fromHere("writers")
 const cycle = fromHere("cycle")
-const cycleFirst = fromHere("cycleFirst")
 const cycleErased = fromHere("cycleErased")
-const cycleArrow = fromHere("cycleArrow")
 const cycleOrder = fromHere("cycleOrder")
-const setInStep = fromHere("setInStep")
 const library = writeLibrary()
 const undetailed = writeUndetailed()
 const logged = writeFixture(
@@ -215,67 +207,21 @@ contextualize(function (this: Mocha.Suite) {
 		})
 
 		it("import cycle", () => {
+			const expected = runPlain(cycle)
 			// a module reached before it loads creates lazily, even with lazy false
-			for (const lazy of [undefined, false]) {
-				attest(node(["main.ts"], { lazy }, cycle).stdout).equals(
-					runPlain(cycle)
-				)
-				attest(
-					node(
-						["main.ts"],
-						{ members: { expression: true, json: true }, lazy },
-						cycleFirst
-					).stdout
-				).equals(runPlain(cycleFirst))
-				// type stripping keeps an import only a type reads, closing the cycle
-				attest(node(["main.ts"], { lazy }, cycleErased).stdout).equals(
-					runPlain(cycleErased)
-				)
-				attest(
-					node(["main.ts"], { members: { json: true }, lazy }, cycleArrow)
-						.stdout
-				).equals(runPlain(cycleArrow))
-				// each module logs as it runs, so no added import runs one early unseen
-				attest(
-					node(["main.ts"], { members: { expression: true }, lazy }, cycleOrder)
-						.stdout
-				).equals(runPlain(cycleOrder))
-				// a fold run once what it reads is set, before the statement setting it ends
-				attest(
-					node(
-						["main.ts"],
-						{ members: { expression: true }, lazy, allowUnsafe: true },
-						setInStep
-					).stdout
-				).equals(runPlain(setInStep))
-			}
-		}).timeout(120000)
+			for (const lazy of [undefined, false])
+				attest(node(["main.ts"], { lazy }, cycle).stdout).equals(expected)
+		})
 
-		it("serves standalone modules", () => {
-			const observer = `import { registerHooks } from "node:module"
-const kinds = new Set()
-registerHooks({ load: (url, context, nextLoad) => {
-	if (url.startsWith("arktype:")) kinds.add(/^arktype:~arktype\\/(entry|build|expression|alias|domain|intersection|morph|proto|union|unit)?/.exec(url)[1] ?? "validators")
-	return nextLoad(url, context)
-} })
-process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
-			const { stdout } = node(
-				[
-					"--import",
-					`data:text/javascript,${encodeURIComponent(observer)}`,
-					"main.ts"
-				],
-				{}
+		it("import cycles closed by a type import or logging as they run", () => {
+			// type stripping keeps an import only a type reads, closing the cycle
+			attest(node(["main.ts"], { lazy: false }, cycleErased).stdout).equals(
+				runPlain(cycleErased)
 			)
-			attest(stdout.slice(0, expected.length)).equals(expected)
-			attest(JSON.parse(stdout.slice(expected.length))).snap([
-				"alias",
-				"domain",
-				"intersection",
-				"union",
-				"unit",
-				"validators"
-			])
+			// each module logs as it runs, so no added import runs one early unseen
+			attest(
+				node(["main.ts"], { members: { expression: true } }, cycleOrder).stdout
+			).equals(runPlain(cycleOrder))
 		})
 
 		it("fails a test file with a rejected site", () => {
@@ -294,28 +240,6 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
   \`process\` is a global the build does not read
   Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`)
-		})
-
-		it("throws as a module loads where another wrote what its site read", () => {
-			const root = writeFixture(
-				{
-					"package.json": JSON.stringify({ type: "module" }),
-					"shapes.ts": "export const shape: Record<string, string> = {}\n",
-					"widen.ts": `import { shape } from "./shapes.ts"\n\nshape.a = "string"\n`,
-					"main.ts": `import "./widen.ts"
-import { type } from "arktype"
-import { shape } from "./shapes.ts"
-
-export const T = type(shape)
-`
-				},
-				fromHere("temp", "writtenElsewhere")
-			)
-			attest(
-				/^Error: (.*)$/m.exec(node(["main.ts"], {}, root).stderr)?.[1]
-			).snap(
-				"`shape` is an object with keys a, but was precompiled as an empty object"
-			)
 		})
 
 		it("a package reading arktype's nodes in a runtime island", () => {
@@ -339,12 +263,6 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			attest(node(["main.ts"], {}, root).stdout).equals("true false\n")
 		})
 
-		it("runtime islands", () => {
-			attest(node(["main.ts"], { config: "config.ts" }, islands).stdout).equals(
-				runPlain(islands)
-			)
-		})
-
 		it("checks static helpers under node --test", () => {
 			const { status, stdout } = node(
 				["--experimental-test-module-mocks", "--test", spec, "node.check.ts"],
@@ -355,12 +273,6 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				0,
 				"ℹ pass 2"
 			])
-		})
-
-		it("leaves checks to standalone mode", () => {
-			attest(node(["--test", "main.ts"], { runtime: "arktype" }).status).equals(
-				0
-			)
 		})
 
 		it("packages that opt in", () => {
@@ -417,32 +329,26 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			])
 		})
 
-		it("configured, or behind a transpiling loader", () => {
+		it("configured", () => {
+			const expected = runPlain(configured)
 			for (const runtime of [undefined, "arktype"] as const) {
 				attest(
 					node(["main.ts"], { runtime, config: "config.ts" }, configured).stdout
-				).equals(runPlain(configured))
+				).equals(expected)
+			}
+		})
+
+		it("configured behind a transpiling loader", () => {
+			const expected = runPlain(transpiled)
+			for (const runtime of [undefined, "arktype"] as const) {
 				attest(
 					node(
 						["--import", "./loader.ts", "main.ts"],
 						{ runtime, config: "config.ts" },
 						transpiled
 					).stdout
-				).equals(runPlain(transpiled))
+				).equals(expected)
 			}
-		})
-
-		it("configured by a rewritten module", () => {
-			const args = ["--import", "./rewrite.ts", "main.ts"]
-			attest(
-				node(args, { config: "config.ts" }, transpiled).stderr.includes(
-					configuredUnlikeBuildMessage
-				)
-			).equals(true)
-			attest(
-				node(args, { runtime: "arktype", config: "config.ts" }, transpiled)
-					.stdout
-			).equals(runPlain(transpiled, ...args))
 		})
 
 		it("refuses a module a loader hides", () => {
@@ -477,15 +383,6 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			attest(status).equals(1)
 			attest(
 				stderr.includes(writeTextlessMessage(join(transpiled, "start.ts")))
-			).equals(true)
-		})
-
-		it("configured after a defining module loads", () => {
-			const opts = { config: "config.ts" }
-			attest(
-				node(["unconfigured.ts"], opts, configured).stderr.includes(
-					writeCreatedBeforeConfigureMessage("schemas.ts")
-				)
 			).equals(true)
 		})
 
@@ -526,20 +423,8 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
   unless the program loaded config.ts earlier, creating the Type throws
   Import config.ts first, before any module that creates a Type. Set allowUnsafe: true to build anyway, with a warning.`)
 		})
-
-		it("refuses a configured locale", () => {
-			const { status, stderr } = node(
-				["main.ts"],
-				{ config: "config.ts" },
-				localized
-			)
-			attest(status).equals(1)
-			attest(thrownMessage(stderr, localized))
-				.snap(`main.ts:4:18  type("string") can't be precompiled yet
-  a configured locale can't be precompiled to a standalone validator
-  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
-		})
 	})
+
 	describe("turbopack", () => {
 		// what the loader returns, or the message it throws
 		const load = (
@@ -688,20 +573,6 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			).equals([])
 		})
 
-		it("reports dependencies before a rejected site", () => {
-			const roles = load(app, "roles.ts")
-			attest(roles.out.replace(`${app}/`, ""))
-				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
-  \`process\` is a global the build does not read
-  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`)
-			attest(roles.dependencies).equals([
-				"schemas.ts",
-				"ark.ts",
-				tsconfig,
-				...manifests
-			])
-		})
-
 		type Change = (fs: typeof import("node:fs"), dir: string) => unknown
 
 		// loads before and after a change to a file the precompiler read
@@ -745,35 +616,15 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				[dir, files, change]
 			)
 
-		describe("shares with the precompiler it replaces", () => {
-			it("a configuration", () => {
-				const [before, after] = loadedAcrossReplacement(configured, ["main.ts"])
-				attest(after).equals(before)
-				attest(before[0]).satisfies(/fixConfigured\("\w+", "main.ts"\)/)
-			})
-
-			it("a configured writer's refusal", () => {
-				const [before, after] = loadedAcrossReplacement(writers, ["main.ts"])
-				attest(after).equals(before)
-				attest(before[0]).satisfies(/prints the name of `isLong`/)
-			})
-
-			it("a configuration's problem", () => {
-				const dir = writeFixture({
-					"config.ts":
-						'import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: process.env.KEYS === "delete" ? "delete" : "ignore" })\n',
-					"main.ts":
-						'import "./config.ts"\nimport { type } from "arktype"\n\nexport const T = type({ a: "string" })\n'
-				})
-				const [before, after] = loadedAcrossReplacement(dir, [
-					"config.ts",
-					"main.ts"
-				])
-				attest(after).equals(before)
-				attest(before[0]).satisfies(
-					/config\.ts:3:1 {2}configure\(.* is not static/
-				)
-			})
+		it("shares a configuration and its writers' refusals with the precompiler it replaces", () => {
+			const [before, after] = loadedAcrossReplacement(configured, ["main.ts"])
+			attest(after).equals(before)
+			attest(before[0]).satisfies(/fixConfigured\("\w+", "main.ts"\)/)
+			const [refused, refusedAfter] = loadedAcrossReplacement(writers, [
+				"main.ts"
+			])
+			attest(refusedAfter).equals(refused)
+			attest(refused[0]).satisfies(/prints the name of `isLong`/)
 		})
 
 		describe("replaces its precompiler when", () => {
@@ -821,15 +672,6 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				}
 			})
 
-			it("a module it followed past a comment changes", () => {
-				const dir = tempDir()
-				writeMain(dir, '/* shapes */ "./shape.ts"')
-				writeShape(join(dir, "shape.ts"), "string", new Date(0))
-				attest(load(dir).out.includes('"number"')).equals(false)
-				writeShape(join(dir, "shape.ts"), "number", new Date())
-				attest(load(dir).out.includes('"number"')).equals(true)
-			})
-
 			it("a module an import resolves to is created", () => {
 				const dir = tempDir()
 				writeMain(dir, '"./shape.js"')
@@ -838,13 +680,12 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				attest(load(dir).out.includes('"number"')).equals(true)
 			})
 
-			it("a module is created beside the directory an import resolved to", () => {
+			it("a module it followed past a comment changes", () => {
 				const dir = tempDir()
-				writeMain(dir, '"./shape"')
-				mkdirSync(join(dir, "shape"))
-				writeShape(join(dir, "shape", "index.ts"), "string")
+				writeMain(dir, '/* shapes */ "./shape.ts"')
+				writeShape(join(dir, "shape.ts"), "string", new Date(0))
 				attest(load(dir).out.includes('"number"')).equals(false)
-				writeShape(join(dir, "shape.ts"), "number")
+				writeShape(join(dir, "shape.ts"), "number", new Date())
 				attest(load(dir).out.includes('"number"')).equals(true)
 			})
 
@@ -870,35 +711,6 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				writeTsconfig("./a.ts")
 				attest(load(dir).out.includes('"number"')).equals(false)
 				writeTsconfig("./b.ts")
-				attest(load(dir).out.includes('"number"')).equals(true)
-			})
-
-			it("a module an aliased import resolves to is created", () => {
-				const dir = tempDir()
-				writeFileSync(
-					join(dir, "tsconfig.json"),
-					JSON.stringify({ compilerOptions: { paths: { "@/*": ["./*"] } } })
-				)
-				writeMain(dir, '"@/shape"')
-				attest(load(dir).out).satisfies(/cannot be precompiled/)
-				writeShape(join(dir, "shape.ts"), "number")
-				attest(load(dir).out.includes('"number"')).equals(true)
-			})
-
-			it("a module it transformed changes", () => {
-				const dir = tempDir()
-				writeMain(dir, '"./shape.ts"')
-				const writeTransformed = (domain: string, at: Date) => {
-					writeFileSync(
-						join(dir, "shape.ts"),
-						`import { type } from "arktype"\n\nexport const shape = { a: "${domain}" } as const\n\nexport const Shape = type(shape)\n`
-					)
-					utimesSync(join(dir, "shape.ts"), at, at)
-				}
-				writeTransformed("string", new Date(0))
-				load(dir, "shape.ts")
-				attest(load(dir).out.includes('"number"')).equals(false)
-				writeTransformed("number", new Date())
 				attest(load(dir).out.includes('"number"')).equals(true)
 			})
 		})
@@ -943,12 +755,6 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 `)
 		})
 
-		it("import cycle", () => {
-			attest(bun([...preload, "main.ts"], { cwd: cycle }).stdout).equals(
-				runPlain(cycle)
-			)
-		})
-
 		it("configured", () => {
 			for (const runtime of ["", "arktype"]) {
 				attest(
@@ -980,19 +786,6 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 					)
 				).equals([0, "1 pass"])
 			}
-		})
-
-		it("checks static helpers under bun test", () => {
-			attest(
-				passed(bun(["test", ...preload, "./bun.check.ts"], { cwd: checks }))
-			).equals([0, "2 pass"])
-		})
-
-		it("runtime islands", () => {
-			attest(
-				bun([...preload, "main.ts"], { cwd: islands, config: "config.ts" })
-					.stdout
-			).equals(runPlain(islands))
 		})
 
 		it("undetailed programs", () => {

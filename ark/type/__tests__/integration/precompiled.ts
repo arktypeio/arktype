@@ -22,10 +22,15 @@ export const precompileUnits = async (
 	return units
 }
 
+// a loop, since how many units are searched before the match varies with
+// what ran before, so a callback's count would too
 export const isPrecompiled = (
 	units: Record<string, PrecompiledUnit>,
 	root: BaseRoot
-): boolean => Object.values(units).some(unit => unit[1] === root.compiledUnit)
+): boolean => {
+	for (const key in units) if (units[key][1] === root.compiledUnit) return true
+	return false
+}
 
 export const observe = (t: type.Any, data: unknown): unknown => {
 	const out = t(data)
