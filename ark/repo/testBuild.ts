@@ -130,7 +130,8 @@ for (const pkg of packages) {
 			name === "arktype" &&
 			(module === "runtime" ||
 				module === "runtimeDevelopment" ||
-				module === "runtimeExports")
+				module === "runtimeExports" ||
+				module === "checkers")
 		)
 			continue
 		for (const exportedName of exportedNamesOf(

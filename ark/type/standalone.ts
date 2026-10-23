@@ -105,6 +105,7 @@ import {
 	writeId,
 	type ComposedString
 } from "./standalone/keys.ts"
+export * from "./standalone/combinators.ts"
 export * from "./standalone/keys.ts"
 export * from "./standalone/compilers.ts"
 export * from "./standalone/modules.ts"
