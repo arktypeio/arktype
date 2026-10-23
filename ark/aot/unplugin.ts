@@ -49,10 +49,12 @@ import {
 import type { ScannedProgram, ScannedUsage } from "./precompile.ts"
 import { withEnvironment, type Environment } from "./presets.ts"
 import {
+	addLoaded,
 	scanProgram,
 	unseenProblemOf,
 	type ImportKind,
 	type Imports,
+	type LoadedSources,
 	type ScanEntry
 } from "./scan.ts"
 import {
@@ -434,7 +436,7 @@ export const precompile: UnpluginInstance<
 										| undefined
 								)?.inputSourceMap)
 						const scan = scansByBuild.get(buildOf(this))
-						scan?.loaded.set(id, code)
+						if (scan) addLoaded(scan.loaded, file, code)
 						const transformed = await transform(
 							code,
 							id,
@@ -528,7 +530,8 @@ export const precompile: UnpluginInstance<
 				const problem = unseenProblemOf(
 					scan.scanned,
 					rollupImportsOf(this as never),
-					scan.loaded
+					scan.loaded,
+					realPathOf(opts?.cwd ?? process.cwd())
 				)
 				// fails before the bundle is written
 				if (problem) throwBuildError(problem)
@@ -599,8 +602,7 @@ export const precompile: UnpluginInstance<
 				// the scan's facts hold only while the bundle is what it read
 				let scanned: ScannedProgram | undefined
 				let verifies = false
-				// each module as this plugin loaded it
-				const loaded = new Map<string, string>()
+				const loaded: LoadedSources = new Map()
 				if (program) {
 					build.initialOptions.metafile = true
 					const cwd = build.initialOptions.absWorkingDir ?? process.cwd()
@@ -632,7 +634,8 @@ export const precompile: UnpluginInstance<
 						const problem = unseenProblemOf(
 							scanned,
 							esbuildImportsOf(result.metafile, cwd, scanned),
-							loaded
+							loaded,
+							realPathOf(opts?.cwd ?? process.cwd())
 						)
 						if (!problem) return
 						// what it wrote may lack what a module it couldn't see reads
@@ -651,7 +654,7 @@ export const precompile: UnpluginInstance<
 						!transformedFilter.exclude.test(args.path)
 					if (!isTransformed && !scanned) return
 					const code = readFileSync(args.path, "utf8")
-					if (scanned) loaded.set(args.path, code)
+					if (scanned) addLoaded(loaded, fileOf(args.path), code)
 					if (!isTransformed) return
 					const transformed = await transform(
 						code,
@@ -771,7 +774,7 @@ interface RollupScan {
 	// whether it left out what a read it didn't see could need
 	verifies: boolean
 	// each module as this plugin transformed it
-	loaded: Map<string, string>
+	loaded: LoadedSources
 }
 
 // what the plugin reads of a Rollup, Rolldown or Vite build
@@ -820,7 +823,8 @@ const rollupScanOf = async (
 			)
 		},
 		readFile: id => readFileSync(id, "utf8"),
-		isTransformed
+		isTransformed,
+		idOf: fileOf
 	})
 	if (!scanned) return
 	const usage = await scan(scanned)
@@ -847,15 +851,26 @@ const scriptsOf = (html: string): string | undefined => {
 // the importers a Rollup, Rolldown or Vite build bundled, by module
 const rollupImportsOf = (context: RollupContext): Imports => {
 	const imports: Imports = { entries: [], modules: [], edges: [] }
+	const idOf = cachedFileOf()
 	for (const id of context.getModuleIds()) {
 		const info = context.getModuleInfo(id)
 		if (!info) continue
-		imports.modules.push(id)
-		if (info.isEntry) imports.entries.push(id)
+		imports.modules.push(idOf(id))
+		if (info.isEntry) imports.entries.push(idOf(id))
 		for (const target of [...info.importedIds, ...info.dynamicallyImportedIds])
-			imports.edges.push([id, target])
+			imports.edges.push([idOf(id), idOf(target)])
 	}
 	return imports
+}
+
+// fileOf, once for each id a bundle holds
+const cachedFileOf = (): ((id: string) => string) => {
+	const files = new Map<string, string>()
+	return id => {
+		let file = files.get(id)
+		if (file === undefined) files.set(id, (file = fileOf(id)))
+		return file
+	}
 }
 
 // what the plugin reads of an esbuild build
@@ -954,7 +969,8 @@ const esbuildScanOf = async (
 				)
 			},
 			readFile: path => readFileSync(path, "utf8"),
-			isTransformed
+			isTransformed,
+			idOf: fileOf
 		}))
 	if (!scanned) return
 	const usage = await scan(scanned)
@@ -968,10 +984,11 @@ const esbuildImportsOf = (
 	scanned: ScannedProgram
 ): Imports => {
 	const stdin = scanned.entries.find(id => basename(id).startsWith("<stdin>."))
+	const fileIdOf = cachedFileOf()
 	const idOf = (path: string) =>
 		path === "<stdin>" ? stdin
 		: /^[\w-]+:/.test(path) && !isAbsolute(path) ? undefined
-		: resolve(cwd, path)
+		: fileIdOf(resolve(cwd, path))
 	const imports: Imports = { entries: [], modules: [], edges: [] }
 	for (const input in metafile.inputs) {
 		// esbuild reads stdin from its options, as the scan did

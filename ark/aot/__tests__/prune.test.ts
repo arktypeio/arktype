@@ -3,7 +3,13 @@ import { fromHere } from "@ark/fs"
 import { Precompiler, type PrecompileOptions } from "@ark/aot"
 import { linkBundle } from "@ark/aot/internal/link.ts"
 import { emitPrecompiled } from "@ark/aot/internal/emit.ts"
-import { scanProgram, writeUnseenMessage } from "@ark/aot/internal/scan.ts"
+import {
+	addLoaded,
+	scanProgram,
+	unseenProblemOf,
+	writeUnseenMessage,
+	type LoadedSources
+} from "@ark/aot/internal/scan.ts"
 import {
 	pruneBeforePluginMessage,
 	writePruneHostMessage
@@ -24,7 +30,7 @@ import {
 import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
-import { join, posix } from "node:path"
+import { join, posix, win32 } from "node:path"
 import { stripVTControlCharacters } from "node:util"
 import { memoryHost, normalized, runCli, writeFixture } from "./utils.ts"
 
@@ -51,7 +57,8 @@ const droppedFrom = async (
 			return id in files ? id : undefined
 		},
 		readFile: id => files[id],
-		isTransformed: () => true
+		isTransformed: () => true,
+		idOf: id => id
 	})
 	if (!scanned) return "open"
 	// a module that fails its build would hide what the scan read
@@ -400,6 +407,52 @@ contextualize(function (this: Mocha.Suite) {
 		})
 	})
 
+	describe("ids", () => {
+		it("names each module as the precompiler does", async () => {
+			const files: Record<string, string> = {
+				"C:\\app\\main.ts": `import { User } from "./types.ts"\n\nUser({})`,
+				"C:\\app\\types.ts": types
+			}
+			// as Vite writes them on Windows
+			const scanned = await scanProgram("test", [{ id: "C:/app/main.ts" }], {
+				resolve: async (specifier, importer) =>
+					win32.join(win32.dirname(importer), specifier).replace(/\\/g, "/"),
+				readFile: id => files[win32.normalize(id)],
+				isTransformed: () => true,
+				idOf: win32.normalize
+			})
+			attest(scanned?.entries).equals(["C:\\app\\main.ts"])
+			attest(scanned?.targets).equals({
+				"C:\\app\\main.ts": { "./types.ts": "C:\\app\\types.ts" },
+				"C:\\app\\types.ts": {}
+			})
+		})
+
+		it("fails a bundle loading a file under two ids unalike", () => {
+			const loaded: LoadedSources = new Map()
+			addLoaded(loaded, "/app/main.ts", "User({})")
+			addLoaded(loaded, "/app/main.ts", "User.assert({})")
+			addLoaded(loaded, "/app/main.ts", "User({})")
+			attest(
+				unseenProblemOf(
+					{
+						key: "test",
+						entries: ["/app/main.ts"],
+						modules: {
+							"/app/main.ts": { source: "User({})", transformed: true }
+						},
+						targets: { "/app/main.ts": {} }
+					},
+					{ entries: ["/app/main.ts"], modules: ["/app/main.ts"], edges: [] },
+					loaded,
+					"/app"
+				)
+			).equals(
+				writeUnseenMessage("it built main.ts from other code than it read")
+			)
+		})
+	})
+
 	describe("esbuild", () => {
 		// arktype's packages resolve to their source in this repo
 		const conditions = ["ark-ts", "production"]
@@ -496,18 +549,18 @@ console.log(out instanceof type.errors ? out.summary : out)
 
 		it("fails a bundle holding a module another plugin loaded, writing nothing", async () => {
 			const outdir = join(root, "out")
-			const main = join(root, "main.ts")
 			const loader: Plugin = {
 				name: "loader",
 				setup: build =>
-					build.onLoad({ filter: /\/main\.ts$/ }, () => ({
+					build.onLoad({ filter: /[/\\]main\.ts$/ }, () => ({
 						contents: `import { User } from "./types.ts"\n\nconsole.log(User.assert({ name: "Ada" }))\n`,
 						loader: "ts",
 						resolveDir: root
 					}))
 			}
 			const result = await build({
-				entryPoints: [main],
+				entryPoints: [join(root, "main.ts")],
+				absWorkingDir: root,
 				bundle: true,
 				outdir,
 				format: "esm",
@@ -520,7 +573,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 			}).catch((e: { errors: { text: string }[] }) => e)
 			attest(
 				"errors" in result && result.errors.map(error => error.text)
-			).equals([writeUnseenMessage(`another plugin loaded ${main}`)])
+			).equals([writeUnseenMessage("another plugin loaded main.ts")])
 			attest(existsSync(join(outdir, "main.js"))).equals(false)
 		})
 
@@ -545,6 +598,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 			}
 			const result = await build({
 				entryPoints: [join(files, "main.ts")],
+				absWorkingDir: files,
 				bundle: true,
 				write: false,
 				format: "esm",
@@ -554,11 +608,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 			}).catch((e: { errors: { text: string }[] }) => e)
 			attest(
 				"errors" in result && result.errors.map(error => error.text)
-			).equals([
-				writeUnseenMessage(
-					`${join(files, "asserter.ts")} imports ${join(files, "types.ts")}`
-				)
-			])
+			).equals([writeUnseenMessage("asserter.ts imports types.ts")])
 		})
 
 		it("reads an entry from stdin", async () => {
@@ -819,7 +869,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 				(e: Error) => stripVTControlCharacters(e.message)
 			)
 			const expected = writeUnseenMessage(
-				`it built ${join(root, "main.ts")} from other code than it read`
+				"it built main.ts from other code than it read"
 			)
 			attest(message.slice(-expected.length)).equals(expected)
 		})
