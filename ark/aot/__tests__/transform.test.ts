@@ -145,6 +145,35 @@ export const Name = /* @__PURE__ */ $ark_#0($ark_#2Allows)
 export const Team = /* @__PURE__ */ $ark_#0($ark_#3Allows)`)
 		})
 
+		it("compiles a size build's artifact too small for checkers to pay off", () => {
+			const checks = (source: string) =>
+				Object.values(
+					precompile(
+						`import { type } from "arktype"\n${source}`,
+						{},
+						{
+							preset: "smallest",
+							creationChecks: "none",
+							config: false
+						}
+					).modules
+				).some(module => module.includes("runtime.props("))
+			attest([
+				checks(
+					`export const Login = type({ email: "string.email", password: "8 <= string <= 64" })`
+				),
+				checks(`export const Moltar = type({
+	number: "number",
+	negNumber: "number",
+	maxNumber: "number",
+	string: "string",
+	longString: "string",
+	boolean: "boolean",
+	deeplyNested: { foo: "string", num: "number", bool: "boolean" }
+})`)
+			]).equals([false, true])
+		})
+
 		it("folds introspection", () => {
 			const result = precompile(
 				`import { type } from "arktype"

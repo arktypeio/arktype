@@ -17,7 +17,7 @@ import {
 	type TraversalKind,
 	type UnionNode
 } from "@ark/schema"
-import { throwInternalError, type array } from "@ark/util"
+import { throwInternalError } from "@ark/util"
 import { runtimeKeyOf } from "../standalone.ts"
 import { combines, writeCombinator } from "./combinators.ts"
 import {
@@ -440,6 +440,11 @@ const compilers = [false, true].flatMap(shortest =>
 	)
 )
 
+// a size build with detailed errors that compiles each node, as a program
+// too small to amortize the checkers' runtime is
+export const compiledForSize: number =
+	compilers.push(forSize(UnifiedCompiler)) - 1
+
 // each variant's roots have their own units
 const unitsByRoot = compilers.map(() => new WeakMap<BaseRoot, RootUnit[]>())
 
@@ -454,7 +459,8 @@ export const rootUnitsOf = (root: BaseRoot, variant = 0): RootUnit[] => {
 				keyOf: runtimeKeyOf
 			}))
 		)
-		if (variant % 3 === 2) for (const unit of units) unifyMembers(unit)
+		if (variant % 3 === 2 || variant === compiledForSize)
+			for (const unit of units) unifyMembers(unit)
 	}
 	return units
 }

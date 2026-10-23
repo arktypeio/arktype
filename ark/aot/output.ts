@@ -1,4 +1,5 @@
 import {
+	minifiedSizeOf,
 	precompileStandalone,
 	precompileStandaloneModules,
 	writeFixConfig,
@@ -35,19 +36,21 @@ export const writeValidators = (
 	refusalsByName: Record<string, string[]>,
 	inline: boolean
 ): StandaloneModules => {
-	const write = (names: string[]): StandaloneModules => {
+	const write = (names: string[], combines = true): StandaloneModules => {
 		const exports = Object.fromEntries(
 			names.map(name => [name, exportsByName[name]])
 		)
 		return (inline ? precompileStandalone : precompileStandaloneModules)(
 			exports,
-			opts
+			combines ? opts : { ...opts, combines: false }
 		)
 	}
+	let names = Object.keys(exportsByName)
+	let written: StandaloneModules
 	try {
-		return write(Object.keys(exportsByName))
+		written = write(names)
 	} catch {
-		const writable = Object.keys(exportsByName).filter(name => {
+		names = names.filter(name => {
 			try {
 				write([name])
 				return true
@@ -57,8 +60,36 @@ export const writeValidators = (
 			}
 		})
 		// e.g. every export under a configured locale
-		return writable.length ? write(writable) : noValidators
+		if (!names.length) return noValidators
+		written = write(names)
 	}
+	return combinesChecks(opts) ?
+			smallerOf(written, () => write(names, false))
+		:	written
+}
+
+// a size build with detailed errors writes checkers
+const combinesChecks = (opts: StandaloneOptions) =>
+	opts.optimize === "size" &&
+	opts.errors !== "none" &&
+	opts.errors !== "first" &&
+	opts.combines !== false
+
+// checkers, unless an artifact too small to amortize their runtime is
+// smaller compiled, counting that runtime as if no other artifact read it
+const smallerOf = (
+	checkers: StandaloneModules,
+	writeCompiled: () => StandaloneModules
+): StandaloneModules => {
+	let compiled: StandaloneModules
+	try {
+		compiled = writeCompiled()
+	} catch {
+		return checkers
+	}
+	return minifiedSizeOf(compiled) < minifiedSizeOf(checkers) ?
+			compiled
+		:	checkers
 }
 
 // fixes the configuration as a failed definition does

@@ -84,6 +84,7 @@ import {
 	type Writer
 } from "./standalone/sites.ts"
 import {
+	compiledForSize,
 	isChecker,
 	refNameOf,
 	rootUnitsOf,
@@ -259,6 +260,9 @@ export interface StandaloneOptions {
 	hoisted?: boolean | undefined
 	// export as values what a site would call a function only to read
 	values?: boolean | undefined
+	// false where a size build with detailed errors compiles each node rather
+	// than writing it as a checker
+	combines?: boolean | undefined
 }
 
 interface Baking {
@@ -276,6 +280,7 @@ interface Baking {
 	hoisted: boolean
 	shortest: boolean
 	flattens: boolean
+	combines: boolean
 }
 
 interface RootApplier {
@@ -399,6 +404,42 @@ export const precompileStandalone = (
 	}
 }
 
+// about the length a minifier leaves of code: no comments, spaces or names
+// longer than two characters
+const minifiedLengthOf = (code: string): number =>
+	code
+		.replace(/\/\*[\S\s]*?\*\/|\/\/[^\n]*/g, "")
+		.replace(/\s+/g, "")
+		.replace(/[$A-Z_a-z][\w$]{2,}/g, "ab").length
+
+// the text of a runtime export, or of the functions an object of them holds
+const runtimeTextOf = (name: string): string => {
+	const value: unknown = runtime[name as keyof typeof runtime]
+	return typeof value === "object" && value !== null ?
+			Object.values(value)
+				.map(entry => (typeof entry === "string" ? entry : String(entry)))
+				.join(",")
+		:	String(value)
+}
+
+/** about the length a minifier leaves of modules and the runtime they read */
+export const minifiedSizeOf = ({
+	code,
+	modules
+}: StandaloneModules): number => {
+	const written = [code, ...Object.values(modules)]
+	const read = new Set(written.join("\n").match(/(?<=\bruntime\.)[\w$]+/g))
+	// with each export the runtime's own code reads
+	for (const name of read) {
+		for (const word of runtimeTextOf(name).match(/[$A-Z_a-z][\w$]*/g) ?? [])
+			if (word in runtime) read.add(word)
+	}
+	return [...written, ...[...read].map(runtimeTextOf)].reduce(
+		(length, text) => length + minifiedLengthOf(text),
+		0
+	)
+}
+
 export const precompileStandaloneModules = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
@@ -455,7 +496,8 @@ const writeArtifact = (
 		mutatesInput: opts.mutatesInput,
 		hoisted: opts.hoisted === true,
 		shortest: opts.optimize === "size",
-		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular
+		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular,
+		combines: opts.combines !== false
 	}
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<unknown>()
@@ -1152,13 +1194,13 @@ class StandaloneArtifact {
 
 	// indexes the compilers writing a root's units
 	variantOf(root: BaseRoot): number {
-		return (
+		const variant =
 			(writesInPlace(root, this.baking.mutatesInput) ? 1
 			: this.baking.detailsErrors && this.baking.shortest ? 2
 			: 0) +
 			3 * +this.baking.firstIssue +
 			6 * +this.baking.shortest
-		)
+		return variant === 8 && !this.baking.combines ? compiledForSize : variant
 	}
 
 	unitsOf(root: BaseRoot): RootUnit[] {
