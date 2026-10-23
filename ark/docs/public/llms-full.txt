@@ -745,7 +745,7 @@ const User = type({
 | `string.normalize.NFKD` | a morph from a string to NFKD-normalized unicode |
 | `string.normalize.NFKD.preformatted` | NFKD-normalized unicode |
 | `string.numeric` | a well-formed numeric string |
-| `string.numeric.parse` | a morph from a well-formed numeric string to a number |
+| `string.numeric.parse` | a morph from a well-formed numeric string and finite to a number |
 | `string.regex` | a regex pattern |
 | `string.semver` | a semantic version (see https\://semver.org/) |
 | `string.trim` | a morph from a string to trimmed |
@@ -1379,7 +1379,7 @@ MyClosedObject({ onlyAllowedKey: "ok", extraKey: 1 })
 
 Both act on string keys: `"reject"` checks only an object's string keys, and `"delete"` builds a new object holding only its declared keys. So an undeclared symbol key passes `"reject"` and is dropped by `"delete"`, and reject types that differ only by a symbol key overlap, so a union of them with a morph is indeterminate.
 
-`"delete"`'s output has the declared keys in the order of the type's expression: required keys, then optional keys, each sorted by name.
+`"delete"`'s output lists the declared keys in the order the definition declares them, as Zod does, then any keys matching an index signature in the input's order.
 
 `.onDeepUndeclaredKey()` applies the same behavior to every nested object:
 
@@ -2046,10 +2046,10 @@ const tenYearsAgo = new Date().setFullYear(new Date().getFullYear() - 10)
 const Recent = type.Date.atOrAfter(tenYearsAgo).earlierThan(Date.now())
 ```
 
-Descriptions and error messages write dates in UTC. A date at UTC midnight is written as its calendar date, or just its year on January 1:
+Descriptions and error messages write dates in UTC. A date at UTC midnight is written as its calendar date:
 
 ```ts
-// "a Date and 2023 or later"
+// "a Date and January 1, 2023 or later"
 type("Date >= d'2023-01-01'").description
 
 // "a Date and January 1, 2023, 2:30 PM UTC or later"
@@ -2195,7 +2195,7 @@ These are all the keywords `type` resolves. To define your own, see [scopes](htt
 | `string.normalize.NFKD` | a morph from a string to NFKD-normalized unicode |
 | `string.normalize.NFKD.preformatted` | NFKD-normalized unicode |
 | `string.numeric` | a well-formed numeric string |
-| `string.numeric.parse` | a morph from a well-formed numeric string to a number |
+| `string.numeric.parse` | a morph from a well-formed numeric string and finite to a number |
 | `string.regex` | a regex pattern |
 | `string.semver` | a semantic version (see https\://semver.org/) |
 | `string.trim` | a morph from a string to trimmed |
@@ -4283,8 +4283,9 @@ type.number.allows(Number.NaN)
 >
 > Global config is fixed when the first Type is created, whether by a definition
 > or by referencing a keyword like `type.number`, and calling `configure` after
-> that throws. Importing `"arktype"` first is fine, and `configure` can be
-> imported from either `"arktype"` or `"arktype/config"`.
+> that throws unless it changes nothing, as when a test runner resets its
+> modules and the config file runs again. Importing `"arktype"` first is fine,
+> and `configure` can be imported from either `"arktype"` or `"arktype/config"`.
 
 ### Scope
 
@@ -7197,14 +7198,14 @@ const input = { a: " x ", b: { c: "y" } }
 T.assert(input).b === input.b // true, before: false
 ```
 
-### "+": "delete" removes symbol keys and sorts its output
+### "+": "delete" removes symbol keys and lists keys as declared
 
-`"+": "delete"` also removes undeclared symbol keys, and its output has required keys, then optional keys, each sorted, rather than the input's order:
+`"+": "delete"` also removes undeclared symbol keys, and its output lists keys in the order the definition declares them, as Zod does, rather than the input's order:
 
 ```ts
 const T = type({ "+": "delete", b: "string", a: "string" })
 
-T({ b: "2", z: 0, a: "1" }) // { a: "1", b: "2" }, before: { b: "2", a: "1" }
+T({ a: "1", z: 0, b: "2" }) // { b: "2", a: "1" }, before: { a: "1", b: "2" }
 ```
 
 ### "+": "reject" checks string keys only
