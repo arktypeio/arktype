@@ -412,7 +412,7 @@ const out = User({ name: 5, age: "5" })
 
 With `"first"`, which of the data's errors is returned isn't promised, and can differ between a Type and its precompiled validator.
 
-With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](#locale).
+With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](#locale). A narrow or morph that reads `ctx.errors` while validating sees each issue added so far written the same way, as `is invalid` at its own path.
 
 `errors` can also be set per Scope. It applies to that Scope's Types, including where another Scope references them.
 

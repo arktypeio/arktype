@@ -23,7 +23,7 @@ Form["~standard"].validate({ name: "Ada", age: "36" })
 // { value: { name: "Ada", age: 36 } }
 ```
 
-On failure, the result is the same [`ArkErrors`](/docs/errors) you get from calling the Type. Its `issues` array holds each `ArkError`, which has the `message` and `path` the spec requires, so a library that prints Standard Schema issues prints ArkType's messages:
+On failure, the result is `{ issues }`, one for each error in the [`ArkErrors`](/docs/errors) you get from calling the Type. A library printing Standard Schema issues writes each issue's `path` before its `message`, so an issue at a path is a copy of its error whose message leaves the path out:
 
 ```ts
 const Form = type({
@@ -32,10 +32,10 @@ const Form = type({
 })
 // ---cut---
 const result = Form["~standard"].validate({ name: "Ada", age: "old" })
-// ArkErrors: age must be a well-formed integer string (was "old")
+// { issues: [{ path: ["age"], message: 'must be a well-formed integer string (was "old")', ... }] }
 ```
 
-Like any `ArkErrors`, it may find its issues when they're first read, so they [describe the data as it is then](/docs/errors#arkerrors). Read them before the data you validated can change.
+A union's message lists each branch's path from the union's, like `b must be a string (was missing) or c must be a number (was missing)`. The issues are written as `validate` returns, so unlike an `ArkErrors` read later, they describe the data as it was validated.
 
 ArkType always validates synchronously. The spec allows a `Promise`, which is why the return type includes one.
 

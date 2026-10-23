@@ -56,6 +56,7 @@
 				"optimize": { "type": "string", "enum": ["size", "speed"] },
 				"optimizeErrors": { "type": "string", "enum": ["size", "speed"] },
 				"preset": { "type": "string", "enum": ["introspectable", "smallest"] },
+				"prune": { "type": "boolean" },
 				"runtime": { "type": "string", "const": "arktype" },
 				"shadow": { "type": "boolean" },
 				"tsconfig": {

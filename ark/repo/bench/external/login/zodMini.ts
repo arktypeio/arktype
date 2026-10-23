@@ -1,5 +1,6 @@
 // valibot.dev's login form, as written there: zod/mini's types reject its
-// z.check(schema, ...checks), but this is the form valibot.dev sizes
+// z.check(schema, ...checks), and it throws at its first parse, but this is
+// the form valibot.dev sizes. ../startup/form/zodMini.ts runs, within 20 B.
 import * as z from "zod/mini"
 
 const LoginSchema = z.object({

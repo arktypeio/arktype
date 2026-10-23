@@ -30,6 +30,7 @@ const settings = {
 	"lazy?": flag,
 	"creationChecks?": "'types' | 'helpers' | 'none'",
 	"shadow?": flag,
+	"prune?": flag,
 	"allowUnsafe?": flag,
 	"conditions?": "string[]",
 	"tsconfig?": type("string > 0").describe("a path")

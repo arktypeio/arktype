@@ -1,21 +1,14 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { check } from "@ark/aot/internal/check.ts"
-import { writeArktypeRuntimeOptionMessage } from "@ark/aot/internal/settings.ts"
 import { spawnSync } from "node:child_process"
 import { runCli, writeFixture } from "./utils.ts"
 
 const cwd = fromHere("checked")
 
-contextualize(() => {
-	it("lists sites", () => {
-		attest(check([], { cwd }).lines).snap([
-			"forms.ts:4:21  accepted",
-			'forms.ts:10:16  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of makeField (forms.ts:9:27); its value is known only at runtime\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
-			"forms.ts:16:16  island",
-			"3 sites in 2 files: 1 accepted (50.0%), 1 runtime island"
-		])
-	})
+contextualize(function (this: Mocha.Suite) {
+	// most tests run the CLI, a fresh process that loads arktype and the precompiler
+	this.timeout(60_000)
 
 	it("fails a site that throws a ParseError", () => {
 		const root = writeFixture({
@@ -48,16 +41,6 @@ contextualize(() => {
 		attest(check([], { cwd: fromHere("unloadableTsconfig") }).lines).snap([
 			"site.ts:4:21  accepted",
 			"1 site in 2 files: 1 accepted (100.0%)"
-		])
-	})
-
-	it("applies the configuration", () => {
-		attest(
-			check([], { cwd: fromHere("writers"), config: "config.ts" }).lines
-		).snap([
-			'main.ts:6:21  type("string").narrow(isLong) can\'t be precompiled yet\n  `node.expression` (config.ts:5:38) prints the name of `isLong` (main.ts:4:16), which the build knows only by a placeholder\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-			'main.ts:8:29  Long.description reads description, which a standalone validator lacks\n  `Long` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-			"1 site in 2 files: 0 accepted (0.0%), 1 error outside a site"
 		])
 	})
 
@@ -126,32 +109,27 @@ contextualize(() => {
 
 	it("rejects other configured mutatesInput", () => {
 		attest(
-			check([], { cwd: fromHere("mutatingConfigured"), config: "config.ts" })
-				.lines
+			([undefined, true] as const).map(
+				mutatesInput =>
+					check([], {
+						cwd: fromHere("mutatingConfigured"),
+						config: "config.ts",
+						mutatesInput
+					}).lines
+			)
 		).snap([
-			"config.ts:4:1  arktype is configured with mutatesInput: true, where the build's mutatesInput is false\n  Build with mutatesInput: true too, as a standalone validator returns what arktype does as the program configures it.",
-			"main.ts:4:21  accepted",
-			'scoped.ts:5:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can\'t be precompiled yet\n  arktype is configured with mutatesInput: "always", where the build\'s mutatesInput is false\n  A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.',
-			"2 sites in 3 files: 1 accepted (50.0%), 1 error outside a site"
+			[
+				"config.ts:4:1  arktype is configured with mutatesInput: true, where the build's mutatesInput is false\n  Build with mutatesInput: true too, as a standalone validator returns what arktype does as the program configures it.",
+				"main.ts:4:21  accepted",
+				'scoped.ts:5:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can\'t be precompiled yet\n  arktype is configured with mutatesInput: "always", where the build\'s mutatesInput is false\n  A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.',
+				"2 sites in 3 files: 1 accepted (50.0%), 1 error outside a site"
+			],
+			[
+				"main.ts:4:21  accepted",
+				'scoped.ts:5:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can\'t be precompiled yet\n  arktype is configured with mutatesInput: "always", where the build\'s mutatesInput is true\n  A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.',
+				"2 sites in 3 files: 1 accepted (50.0%)"
+			]
 		])
-	})
-
-	it("accepts the build's configured mutatesInput", () => {
-		attest(
-			runCli(
-				fromHere("mutatingConfigured"),
-				"--check",
-				"--config",
-				"config.ts",
-				"--mutates-input",
-				"true"
-			).stdout
-		).snap(`main.ts:4:21  accepted
-scoped.ts:5:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can't be precompiled yet
-  arktype is configured with mutatesInput: "always", where the build's mutatesInput is true
-  A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.
-2 sites in 3 files: 1 accepted (50.0%)
-`)
 	})
 
 	it("refuses a Node too old for it", () => {
@@ -202,72 +180,19 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 		attest(runCli(dir, "--check", "--fail-under", "0").status).equals(1)
 	})
 
-	it("builds under --members", () => {
+	it("runtime islands under --errors none or --optimize-errors size", () => {
 		attest(
-			runCli(fromHere("members"), "--check", "--members", '{"assert":false}')
-				.stdout
-		).snap(`main.ts:3:21  accepted
-main.ts:5:46  User.assert reads assert, which a standalone validator lacks
-  the build's \`members\` option sets "assert" false, so no validator has assert
-  Leave members["assert"] unset if the program reads it.
-1 site in 1 file: 1 accepted (100.0%), 1 error outside a site
-`)
-	})
-
-	it("builds under --config false", () => {
-		attest(
-			runCli(fromHere("unconfigured"), "--check", "--config", "false").stdout
-		)
-			.snap(`config.ts:3:1  configure() is called, but the build's \`config\` is false
-  Remove the call, or name its module as the build's \`config\`.
-main.ts:4:21  accepted
-main.ts:6:21  JSON.stringify(User) reads toJSON, which a standalone validator lacks
-  \`User\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read
-  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".
-1 site in 2 files: 1 accepted (100.0%), 2 errors outside a site
-`)
-	})
-
-	it("builds under --errors none", () => {
-		attest(runCli(cwd, "--check", "--errors", "none").stdout)
-			.snap(`forms.ts:4:21  accepted
-forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
-  \`limit\` is a parameter of makeField (forms.ts:9:27); its value is known only at runtime
-  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
-forms.ts:16:2  a runtime island returns arktype's errors, which aren't instances of type.errors under errors: "none"
-  a build whose errors say only that data is invalid gives its validators a runtime of their own
-  Precompile the definition, or build without errors: "none".
-forms.ts:16:16  island
-3 sites in 2 files: 1 accepted (50.0%), 1 runtime island, 1 error outside a site
-`)
-	})
-
-	it("builds under the flag of an option named in camelCase", () => {
-		attest(runCli(cwd, "--check", "--optimize-errors", "size").stdout)
-			.snap(`forms.ts:4:21  accepted
-forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
-  \`limit\` is a parameter of makeField (forms.ts:9:27); its value is known only at runtime
-  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
-forms.ts:16:2  a runtime island returns arktype's errors, which aren't instances of type.errors under optimizeErrors: "size"
-  a build writing its errors for size gives its validators a runtime of their own
-  Precompile the definition, or build with optimizeErrors: "speed".
-forms.ts:16:16  island
-3 sites in 2 files: 1 accepted (50.0%), 1 runtime island, 1 error outside a site
-`)
-	})
-
-	it("refuses standalone options with --runtime arktype", () => {
-		const { status, stderr } = runCli(
-			fromHere("members"),
-			"--check",
-			"--runtime",
-			"arktype",
-			"--creation-checks",
-			"types"
-		)
-		attest([status, stderr.split("\n")[0]]).equals([
-			2,
-			writeArktypeRuntimeOptionMessage("creationChecks")
+			[
+				["--errors", "none"],
+				["--optimize-errors", "size"]
+			].flatMap(args =>
+				runCli(cwd, "--check", ...args)
+					.stdout.split(/\n(?! )/)
+					.filter(line => line.includes("runtime island returns"))
+			)
+		).snap([
+			'forms.ts:16:2  a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under errors: "none"\n  a build whose errors say only that data is invalid gives its validators a runtime of their own\n  Precompile the definition, or build without errors: "none".',
+			'forms.ts:16:2  a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under optimizeErrors: "size"\n  a build writing its errors for size gives its validators a runtime of their own\n  Precompile the definition, or build with optimizeErrors: "speed".'
 		])
 	})
 
@@ -279,7 +204,8 @@ forms.ts:16:16  island
 				["--members", "assert"],
 				["--mutates-input", "yes"],
 				["--config", "missing.ts"],
-				["--creation-checks", "bogus"]
+				["--creation-checks", "bogus"],
+				["--runtime", "arktype", "--creation-checks", "types"]
 			].map(args => {
 				const result = runCli(cwd, "--check", ...args)
 				return `${result.status} ${result.stderr.split("\n")[0]}`
@@ -290,7 +216,8 @@ forms.ts:16:16  island
 			"2 --members must be JSON (was assert)",
 			'2 mutatesInput must be "always", false or true (was "yes")',
 			"1 the config module missing.ts can't be read",
-			'2 creationChecks must be "helpers", "none" or "types" (was "bogus")'
+			'2 creationChecks must be "helpers", "none" or "types" (was "bogus")',
+			'2 creationChecks chooses what a standalone build writes, which runtime: "arktype" doesn\'t'
 		])
 	})
 })

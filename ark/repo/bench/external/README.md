@@ -136,3 +136,46 @@ hypothesis holds.
 
 At 89510709d, a leaner error writer shrank B2's login form to 1313 B gzipped
 (`results/login-89510709d.json`); every other size is unchanged.
+
+## Cold start
+
+`startup.ts` counts what a fresh process spends from just before it imports
+an app's bundle to just after its first validation of valid data returns:
+perf's user-space instructions over every thread, with no compile cache.
+Each app is bundled as request handlers read it, one handler per validator
+returning the data or the issues, with bench/bundle.ts's esbuild settings as
+a production build. ArkType is precompiled with each of `STARTUP_BUILDS`'
+options, so a production build prunes what the handlers don't read. The
+apps are the homepage's login, moltar and shop, and valibot.dev's login form
+(`startup/form`, against the libraries that write it). A baseline bundle
+that validates nothing gives the cost of loading any module; counts less it
+are what a library adds.
+
+The plan, fixed before any count: 20 rounds, each running every arm once in a
+rotated order. An ArkType build has the fewest instructions on an app if it
+has fewer than every other library in a two-sided sign test paired by round
+at p < .05. A claim needs Node 24 and 25 to agree, and a wall-clock sentence
+needs the same test on 30 rounds of `STARTUP_WALL=1`, timed one process at a
+time while the 1-minute load is under 4.
+
+Every bundle's path has the same length and every process runs in `/`: the
+first run, from `ark/repo` with bundles named by library, found Node's loader
+costing about 0.37M more instructions past some length of directory plus file
+name. Only ajv's shorter names stayed under it, so that run favored ajv; it
+is superseded.
+
+From the repo root, after `pnpm build` and bench/generateTypia.ts:
+
+```sh
+STARTUP_BUILDS='{"default":{},"optimizeErrors":{"optimizeErrors":"size"}}' \
+	STARTUP_NODE=<node> node ark/repo/bench/external/startup.ts <out.json> 20
+```
+
+At 4fd880692 (`results/startup-4fd880692-node{24,25}.json`, builds `default`,
+`optimizeErrors: "size"` as `oe`, `oe` with `lazy: false` and `"smallest"`),
+every build has the fewest instructions on the form, 20 of 20 against each
+library on both Nodes, and on the login app, 19 or 20 of 20 against all
+seven: `oe` adds 1.28M on Node 24 where ajv adds 1.86M, Valibot 2.35M and
+Typia 2.43M (gross 4.95M against ajv's 5.52M). On moltar Typia adds fewer
+(1.16M against `oe`'s 1.39M), and on shop Valibot does (12.26M against
+14.29M), except against `"smallest"` (9.09M). No wall-clock run yet.

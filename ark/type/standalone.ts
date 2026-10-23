@@ -83,6 +83,7 @@ import {
 	type IssueContext,
 	type Writer
 } from "./standalone/sites.ts"
+import { combines } from "./standalone/combinators.ts"
 import {
 	compiledForSize,
 	isChecker,
@@ -286,6 +287,8 @@ interface Baking {
 	shortest: boolean
 	flattens: boolean
 	combines: boolean
+	// roots a build writing checkers compiles anyway
+	compiledInputs: ReadonlySet<BaseRoot>
 }
 
 interface RootApplier {
@@ -469,6 +472,24 @@ export const precompileStandaloneModules = (
 	}
 }
 
+// the input of each Type that can't be checkers, compiled too rather than
+// checked by checkers of its own beside the Type's compiled Allows
+const compiledInputsOf = (
+	exports: Record<string, StandaloneExport>
+): Set<BaseRoot> => {
+	const inputs = new Set<BaseRoot>()
+	for (const value of Object.values(exports)) {
+		// as unknown: narrowing to BaseRoot is too deep for TypeScript
+		const type: unknown =
+			arkKindOf(value) !== undefined ? value
+			: "member" in value ? undefined
+			: (value as StandaloneFactory).type
+		if (hasArkKind(type, "root") && type.rawIn !== type && !combines(type))
+			inputs.add(type.rawIn)
+	}
+	return inputs
+}
+
 const writeArtifact = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions,
@@ -503,7 +524,9 @@ const writeArtifact = (
 		hoisted: opts.hoisted === true,
 		shortest: opts.optimize === "size",
 		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular,
-		combines: opts.combines !== false
+		combines: opts.combines !== false,
+		compiledInputs:
+			opts.optimize === "size" ? compiledInputsOf(exports) : new Set()
 	}
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<unknown>()
@@ -1207,7 +1230,12 @@ class StandaloneArtifact {
 			3 * +this.baking.firstIssue +
 			6 * +this.baking.shortest
 		const compiled =
-			variant === 8 && !this.baking.combines ? compiledForSize : variant
+			(
+				variant === 8 &&
+				(!this.baking.combines || this.baking.compiledInputs.has(root))
+			) ?
+				compiledForSize
+			:	variant
 		return this.baking.jsonInput ? jsonVariantOf(compiled) : compiled
 	}
 

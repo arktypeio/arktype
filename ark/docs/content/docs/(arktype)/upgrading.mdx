@@ -23,7 +23,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-`Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`. A [Standard Schema](/docs/standard-schema) failure is still the `ArkErrors`, but its `issues` is now a plain array rather than the `ArkErrors` itself, so read `summary` from the result.
+`Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`. A [Standard Schema](/docs/standard-schema) failure is no longer the `ArkErrors`: it's `{ issues }`, a plain array with a copy of each error whose message leaves its path out, since a Standard Schema consumer prints the path before the message. Read `summary` from the errors calling the Type returns.
 
 `ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()`, `toString()` and `toLocaleString(locale)`. `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`. `byPath`, `flatByPath`, `flatProblemsByPath` and `byAncestorPath` are functions `arktype` exports:
 

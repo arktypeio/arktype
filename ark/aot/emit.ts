@@ -1,12 +1,5 @@
 import { throwError } from "@ark/util"
-import {
-	decode,
-	encode,
-	type SourceMapMappings,
-	type SourceMapSegment
-} from "@jridgewell/sourcemap-codec"
 import { isAbsolute, relative, resolve } from "node:path"
-import type { SourceMap } from "magic-string"
 import type * as ts from "typescript"
 import {
 	emittedFilesOf,
@@ -18,6 +11,7 @@ import {
 import type { PrecompilePluginOptions, TransformedModule } from "./driver.ts"
 import {
 	appendSourceMap,
+	mapToSource,
 	realPathOf,
 	resolvedVariantOf,
 	resolvesToRuntime,
@@ -271,55 +265,6 @@ const rewriterOf =
 		}
 		return file => ts.visitEachChild(file, visit, context)
 	}
-
-interface EmittedMap {
-	mappings: string
-	sourcesContent?: (string | null)[]
-}
-
-// tsc maps its output to the precompiled module, which maps to the source
-const mapToSource = (
-	emitted: EmittedMap,
-	precompiled: SourceMap | undefined,
-	source: string
-): EmittedMap => {
-	if (!precompiled) return emitted
-	const lines = decode(precompiled.mappings)
-	const mappings: SourceMapMappings = decode(emitted.mappings).map(line =>
-		line.flatMap((segment): SourceMapSegment[] => {
-			if (segment.length === 1) return [segment]
-			const [column, sourceIndex, sourceLine, sourceColumn] = segment
-			const original = segmentAt(lines[sourceLine], sourceColumn)
-			// what the precompiler wrote maps to no line of the source
-			if (!original) return []
-			const traced: SourceMapSegment = [
-				column,
-				sourceIndex,
-				original[2],
-				original[3] + sourceColumn - original[0]
-			]
-			return [segment.length === 5 ? [...traced, segment[4]] : traced]
-		})
-	)
-	return {
-		...emitted,
-		mappings: encode(mappings),
-		...(emitted.sourcesContent && { sourcesContent: [source] })
-	}
-}
-
-// the last segment starting at or before the column, sorted by column
-const segmentAt = (
-	line: SourceMapSegment[] | undefined,
-	column: number
-): [number, number, number, number] | undefined => {
-	let mapped: SourceMapSegment | undefined
-	for (const segment of line ?? []) {
-		if (segment[0] > column) break
-		mapped = segment
-	}
-	return mapped?.length === 1 ? undefined : (mapped as never)
-}
 
 export const writeEmittedVariantMessage = (variant: RuntimeVariant): string =>
 	`A build with ${writeVariantOption(variant)} loads a copy of @ark/schema's runtime in place of the one arktype/runtime imports, which only a bundler or @ark/aot/node can do, so arktype-precompile --emit can't build with it${variant === "lean" ? '. Set optimizeErrors: "speed" to emit what optimize: "size" writes otherwise' : ""}`

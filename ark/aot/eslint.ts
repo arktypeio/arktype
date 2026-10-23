@@ -74,6 +74,7 @@ const precompilable: Rule.RuleModule = {
 					optimizeErrors: { enum: ["speed", "size"] },
 					jsonInput: { type: "boolean" },
 					shadow: { type: "boolean" },
+					prune: { type: "boolean" },
 					allowUnsafe: { type: "boolean" }
 				},
 				additionalProperties: false

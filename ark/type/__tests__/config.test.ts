@@ -321,13 +321,19 @@ contextualize(() => {
 			attest(out.toString()).snap("b must be a number (was a string)")
 		})
 
-		it("first keeps one issue a callback adds after another", () => {
+		it("first keeps one issue of those a callback adds, though it reads its errors", () => {
 			const T = first.type([
 				"string",
 				":",
-				(s, ctx) => !!ctx.reject("long") && !!ctx.reject("short")
+				(s, ctx) => {
+					ctx.reject({ expected: "long", path: ["a"] })
+					ctx.reject({ expected: "short", path: ["b"] })
+					return ctx.errors.summary === ""
+				}
 			])
-			attest(T("x").toString()).snap('must be long (was "x")')
+			const out = T("x") as type.errors
+			attest(out.issues.length).equals(1)
+			attest(out.toString()).snap('a must be long (was "x")')
 		})
 
 		it("first lists a union's miss beside its default case", () => {

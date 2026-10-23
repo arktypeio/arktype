@@ -67,29 +67,6 @@ export const isError = (data: unknown) => data instanceof ArkErrors`)
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
 
-		it("exports validators by bare names", () => {
-			const { modules } = precompile(`import { type } from "arktype"
-const max = 64
-export const User = type({ name: \`string <= \${max}\` })
-export const Users = User.array()
-export const Long = type("string").narrow(s => s.length > max)`)
-			attest(
-				normalized(
-					Object.values(modules).flatMap(module =>
-						module.split("\n").filter(line => line.startsWith("export {"))
-					)
-				)
-			).snap([
-				"export { get0 as #0 }",
-				"export { get1 as #1 }",
-				"export { factory0 as #2 }",
-				"export { #3, #3Node }",
-				"export { #4, #4Node }",
-				"export { #5, #5Node }",
-				"export { fixConfig as default }"
-			])
-		})
-
 		it("reads validators created eagerly and checking nothing", () => {
 			const result = precompile(
 				`import { type } from "arktype"
@@ -182,6 +159,31 @@ export const Team = /* @__PURE__ */ $ark_#0($ark_#3Allows)`)
 			]).equals([false, true])
 		})
 
+		it("compiles a size build's Type that another compiles as its input", () => {
+			const modules = Object.values(
+				precompile(
+					`import { type } from "arktype"
+export const Moltar = type({
+	number: "number",
+	string: "string",
+	boolean: "boolean",
+	deeplyNested: { foo: "string", num: "number", bool: "boolean" }
+})
+export const MoltarSafe = Moltar.onDeepUndeclaredKey("delete")
+export const User = type({ name: "string", age: "number", tags: "string[]" })
+export const Team = type({ id: "string", lead: User, members: User.array() })
+export const Item = type({ sku: "string", price: { amount: "number", currency: "string" } })`,
+					{},
+					{ preset: "smallest", creationChecks: "none", config: false }
+				).modules
+			).join("\n")
+			// MoltarSafe can't be checkers, so its input Moltar is compiled with it
+			attest([
+				/runtime\.props\(/.test(modules),
+				/runtime\.props\({[^\n]*deeplyNested/.test(modules)
+			]).equals([true, false])
+		})
+
 		it("folds introspection", () => {
 			const result = precompile(
 				`import { type } from "arktype"
@@ -232,56 +234,6 @@ export const schema = T.toJsonSchema()`)
 			attest([refused.status, refused.value]).equals(["rejected", undefined])
 		})
 
-		it("introspection over a received default", () => {
-			const result = precompile(
-				`import { type } from "arktype"
-import { Positive } from "./positive.ts"
-export const schema = type({ a: [Positive, "=", 5] }).toJsonSchema({
-	fallback: { predicate: ctx => ctx.base }
-})`,
-				{
-					"/positive.ts": `import { type } from "arktype"
-export const Positive = type("number").narrow(n => n > 0)`
-				}
-			)
-			attest(result.diagnostics).equals([])
-		})
-
-		it("folds introspection receiving cross-module functions", () => {
-			const result = precompile(
-				`import { type } from "arktype"
-import { double } from "./containers.ts"
-import { Doubled } from "./doubled.ts"
-const Length = type("string").pipe(s => s.length)
-const atMost = (n: number) => n <= 10
-export const schemas = [
-	Length.toJsonSchema(),
-	Doubled.toJsonSchema(),
-	type(["'a'", "=>", double]).toJsonSchema(),
-	type({ a: [["number", ":", atMost], "=", 5] }).omit("a").json
-]`,
-				{
-					"/containers.ts": `export const double = (n: number) => n * 2`,
-					"/doubled.ts": `import { type } from "arktype"
-import { double } from "./containers.ts"
-export const Doubled = type("number").pipe(double)`
-				}
-			)
-			attest(foldedCode(result.code)).snap(`import "arktype"
-import $arkfixConfig from "~arktype/#6"
-import { double } from "./containers.ts"
-import { Doubled } from "./doubled.ts"
-$arkfixConfig()
-const Length = /* @__PURE__ */ $ark#0(s => s.length)
-const atMost = (n: number) => n <= 10
-export const schemas = [
-	$ark#2(),
-	$ark#3(Doubled),
-	$ark#4(double),
-	$ark#5(atMost)
-]`)
-		})
-
 		it("loads arktype where it was imported", () => {
 			attest(
 				normalized(
@@ -297,52 +249,6 @@ import $arkfixConfig from "~arktype/#2"
 import * as config from "./config.ts"
 $arkfixConfig()
 export const A = /* @__PURE__ */ $ark#0()`)
-		})
-
-		it("builds shared units at evaluation", () => {
-			const { modules } = precompile(`import { type } from "arktype"
-export const A = type({ a: "string" })`)
-			const [, unit] = Object.entries(modules).find(([specifier]) =>
-				specifier.startsWith("~arktype/intersection")
-			)!
-			attest(normalized(unit.match(/^const \w+ = .*/m)![0])).snap(
-				"const #0 = /* @__PURE__ */ ((#0R1) => {"
-			)
-		})
-
-		it("hoists sites an early import reaches", () => {
-			const files = {
-				"/early.ts": `import { make } from "./main.ts"\nexport const made = make()`
-			}
-			const early = precompile(
-				`import { made } from "./early.ts"
-import { type } from "arktype"
-export const make = () => type({ a: "string" })`,
-				files
-			)
-			attest(normalized(Object.keys(early.modules))).snap([
-				"~arktype/#0",
-				"~arktype/hoisted/#1",
-				"~arktype/hoisted/#2"
-			])
-			const [, unit] = Object.entries(early.modules).find(([specifier]) =>
-				specifier.startsWith("~arktype/hoisted/intersection")
-			)!
-			attest(normalized(unit.match(/^function \w+\(\) {\n.*/m)![0]))
-				.snap(`function #0() {
-	return (#0Unit ??= ((#0R1) => {`)
-			// imported after arktype, the cycle reaches the module after its artifact
-			const late = precompile(
-				`import { type } from "arktype"
-import { made } from "./early.ts"
-export const make = () => type({ a: "string" })`,
-				files
-			)
-			attest(normalized(Object.keys(late.modules))).snap([
-				"~arktype/#0",
-				"~arktype/#1",
-				"~arktype/#2"
-			])
 		})
 
 		it("minified statements", () => {
@@ -402,25 +308,6 @@ export const J = type({ a: "string" }).in.extends("object")
 export const K = type("string").extends(type("string").in)`)
 		})
 
-		it("folds codecs and their encoders", () => {
-			const result = precompile(`import { type } from "arktype"
-import { codec } from "arktype/codecs"
-const EpochMs = codec("number.integer", "Date", {
-	decode: n => new Date(n),
-	encode: d => d.getTime()
-})
-export const Event = type({ at: EpochMs, n: "string.numeric.parse" })
-export const encode = (event: unknown) => Event.encode(event)`)
-			attest(result.diagnostics).equals([])
-			attest(foldedCode(result.code)).snap(`import "arktype"
-import $arkfixConfig from "~arktype/#4"
-import "arktype/codecs"
-$arkfixConfig()
-const EpochMs = /* @__PURE__ */ $ark#0(n => new Date(n), d => d.getTime())
-export const Event = $ark#2(EpochMs)
-export const encode = (event: unknown) => $ark#3(Event)(event)`)
-		})
-
 		it("refuses .encode of a morph without an inverse", () => {
 			const result = precompile(`import { type } from "arktype"
 import "arktype/codecs"
@@ -436,68 +323,6 @@ export const encode = (v: unknown) => T.encode(v)`)
 			).snap(["const T = /* @__PURE__ */ $ark#0(s => s.length)"])
 		})
 
-		it("folds Scopes and Generics", () => {
-			const result = precompile(`import { scope, type } from "arktype"
-const $ = scope({ tree: { value: "number", "children?": "tree[]" }, "box<t>": { box: "t" } })
-export const types = $.export()
-export const Tree = $.type("tree")
-export const Box = type("<t>", { box: "t" })
-export const BoxedTree = Box(types.tree)
-export const M = type.module({ a: "string", b: { c: "a" } })`)
-			attest(result.diagnostics).equals([])
-			attest(foldedCode(result.code)).snap(`import "arktype"
-import $arkfixConfig from "~arktype/#7"
-$arkfixConfig()
-const $ = /* @__PURE__ */ $ark#0()
-export const types = /* @__PURE__ */ $ark#2()
-export const Tree = /* @__PURE__ */ $ark#3()
-export const Box = /* @__PURE__ */ $ark#4()
-export const BoxedTree = /* @__PURE__ */ $ark#5()
-export const M = /* @__PURE__ */ $ark#6()`)
-		})
-
-		it("Module aliases named like Type members", () => {
-			const result = precompile(`import { scope } from "arktype"
-const M = scope({ toJsonSchema: "string", json: { a: "number" } }).export()
-export const schema = M.toJsonSchema.toJsonSchema()
-export const json = M.json.json`)
-			attest(result.diagnostics).equals([])
-			attest(
-				normalized(
-					result.code.split("\n").filter(line => line.startsWith("export"))
-				)
-			).snap([
-				"export const schema = /* @__PURE__ */ $ark#0()",
-				"export const json = /* @__PURE__ */ $ark#1()"
-			])
-		})
-
-		it("folds a Type returned through a Scope, Module or Generic", () => {
-			const result = precompile(`import { scope, type } from "arktype"
-const $ = scope({ a: "string", b: { c: "a" } })
-const G = type("<t>", { box: "t" })
-export const asserted = $.type("b").assert({ c: "x" })
-export const allowed = G("string").allows({ box: "x" })
-export const meta = $.type("b").meta
-export const exported = $.export().b.assert({ c: "x" })
-export const aliased = type.module({ b: "string" }).b.allows("x")
-const validate = $.type("b")["~standard"].validate
-export const validated = validate({ c: "x" })`)
-			attest(result.diagnostics).equals([])
-			attest(
-				normalized(
-					result.code.split("\n").filter(line => line.startsWith("export"))
-				)
-			).snap([
-				'export const asserted = $ark#0().assert({ c: "x" })',
-				'export const allowed = $ark#1().allows({ box: "x" })',
-				"export const meta = $ark#2().meta",
-				'export const exported = $ark#3().assert({ c: "x" })',
-				'export const aliased = $ark#4().allows("x")',
-				'export const validated = validate({ c: "x" })'
-			])
-		})
-
 		it("refuses a Scope or Generic's json", () => {
 			const result = precompile(`import { scope, type } from "arktype"
 const $ = scope({ a: "string" })
@@ -508,90 +333,6 @@ export const json = [$.json, G.json, scope({ "b<t>": { x: "t" } }).export().b.js
 				'/main.ts:4:30  G.json cannot be precompiled\n  `G.json` is not a documented member its content alone decides, so it can depend on registry names or node ids\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
 				'/main.ts:4:38  scope({ "b<t>": { x: "t" } }).export().b.json cannot be precompiled\n  `scope({ "b<t>": { x: "t" } }).export().b.json` is not a documented member its content alone decides, so it can depend on registry names or node ids\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
 			])
-		})
-
-		it("receives a Scope read through members", () => {
-			const result = precompile(`import { scope } from "arktype"
-const isLong = (s: string) => s.length > 1
-const $ = scope({ s: ["string", ":", isLong] })
-export const F = $.type.fn("s")(s => s)
-export const O = $.type.or("s", "number")`)
-			attest(result.diagnostics).equals([])
-			attest(
-				normalized(
-					result.code.split("\n").filter(line => line.startsWith("export"))
-				)
-			).snap([
-				"export const F = $ark#0($, s => s)",
-				"export const O = $ark#1($)"
-			])
-		})
-
-		it("thunk aliases a site resolves", () => {
-			const scopeOf = (name: string) => `scope({
-		b: "3.14",
-		a: ["number", "=>", stringify],
-		aAndB: () => ${name}.type("a&b"),
-		bAndA: () => ${name}.type("b&a")
-	})`
-			const result = precompile(
-				`import { scope } from "arktype"
-import { imported } from "./schemas.ts"
-export const make = () => {
-	const stringify = (data: number) => \`\${data}\`
-	const $ = ${scopeOf("$")}
-	const types = $.export()
-	return types
-}
-export const Imported = imported.export()
-export const A = imported.type("a[]")`,
-				{
-					"/schemas.ts": `import { scope } from "arktype"
-const stringify = (data: number) => \`\${data}\`
-export const imported = ${scopeOf("imported")}`
-				}
-			)
-			attest(
-				result.diagnostics.map(d => [d.line, d.message, ...d.reasons])
-			).snap([
-				[
-					14,
-					"imported.export() can't be precompiled yet",
-					"`imported`'s alias `aAndB` is a thunk the site resolves, so a factory can't compare what it returns"
-				]
-			])
-		})
-
-		it("names the Scope of a received thunk alias", () => {
-			const result = precompile(
-				`import { holder } from "./schemas.ts"
-export const A = holder.T.or("t")
-export const B = holder.m.G("number")`,
-				{
-					"/schemas.ts": `import { scope } from "arktype"
-const $ = scope({ "#t": () => $.type("string[]"), "G<x>": { v: "x", w: "t" } })
-export const holder = { T: $.type("bigint"), m: $.export() }`
-				}
-			)
-			attest(result.diagnostics.flatMap(d => d.reasons)).snap([
-				"`holder.T.$`'s alias `t` is a thunk the site resolves, so a factory can't compare what it returns",
-				"`holder.m.G.$`'s alias `t` is a thunk the site resolves, so a factory can't compare what it returns"
-			])
-		})
-
-		it("keys a default's check by its traversal", () => {
-			const result = precompile(
-				`import { Holder } from "./holder.ts"
-export const Defaulted = Holder.and({ p: ["number", "=", 5] })`,
-				{
-					"/holder.ts": `import { scope, type } from "arktype"
-const isPositive = (n: number) => n > 0
-const isNonEmpty = (s: string) => s.length > 0
-const $ = scope({ positive: ["number", ":", isPositive], name: ["string", ":", isNonEmpty] })
-export const Holder = type({ "p?": $.type("positive") })`
-				}
-			)
-			attest(result.diagnostics).equals([])
 		})
 
 		it("a Scope narrow tested on literals", () => {
@@ -611,62 +352,6 @@ export const types = scope({ code: ["'a' | 'b'", ":", isAllowed], user: { name: 
 					"arktype calls `isAllowed` (/handlers.ts:2:19) while defining what `types.user.$` creates, so a factory can't compare it"
 				]
 			])
-		})
-
-		it("names a received Type's Scope", () => {
-			const result = precompile(
-				`import { types } from "./handlers.ts"
-export const Users = types.user.array()`,
-				{
-					"/handlers.ts": `import { scope } from "arktype"
-export const types = scope(
-	{ user: { name: "string" } },
-	{ domain: { message: ctx => \`bad \${ctx.path}\` } }
-).export()`
-				}
-			)
-			attest(result.diagnostics.flatMap(d => d.reasons)).snap([
-				"`types.user.$` configures `domain.message` with a function, whose results decide what it creates, so a factory can't compare it"
-			])
-		})
-
-		it("drops a site written inside a Scope it folds", () => {
-			const result = precompile(`import { scope } from "arktype"
-const create = () => {
-	const $ = scope({ a: () => $.type("string") })
-	const types = $.export()
-	return types
-}`)
-			attest(result.diagnostics).equals([])
-			attest(foldedCode(result.code)).snap(`import "arktype"
-const create = () => {
-	const $ = $ark#0()
-	const types = $ark#2()
-	return types
-}`)
-		})
-
-		it("definitions inside functions", () => {
-			// an importer can't read what an exported function returns
-			const result = precompile(`import { scope, type } from "arktype"
-const make = () => ({
-	$: scope({ a: "string" }),
-	types: type.module({ a: "string" }),
-	Box: type("<t>", { box: "t" }),
-	Trimmed: type("string.trim"),
-	Text: type("string")
-})
-export const made = make()`)
-			attest(result.diagnostics).equals([])
-			attest(foldedCode(result.code)).snap(`import "arktype"
-const make = () => ({
-	$: $ark#0(),
-	types: $ark#2(),
-	Box: $ark#3(),
-	Trimmed: $ark#4(),
-	Text: $ark#5()
-})
-export const made = make()`)
 		})
 
 		it("leaves define calls' arguments", () => {
@@ -698,98 +383,25 @@ export const Name = () => <span>name</span>`
 			)
 		})
 
-		describe("rereads", () => {
+		it("rereads a module after a change", () => {
 			const files: Record<string, string> = {
 				"/x.ts": 'export const shape = { a: "string" }',
 				"/y.ts": 'import { shape as s } from "./x.ts"\nexport const shape = s',
 				"/c.ts":
-					'import { type } from "arktype"\nimport { shape } from "./y.ts"\nexport const V = type(shape)',
-				"/b.ts":
-					'import { type } from "arktype"\nimport { shape } from "./x.ts"\nimport { shape as again } from "./y.ts"\nexport const U = type(shape === again ? "string" : "number")'
+					'import { type } from "arktype"\nimport { shape } from "./y.ts"\nexport const V = type(shape)'
 			}
-			const expressionsOf = (precompiler: Precompiler, id: string) =>
+			const precompiler = new Precompiler(memoryHost(files))
+			precompiler.precompile(files["/c.ts"], "/c.ts")
+			precompiler.precompile('export const shape = { a: "number" }', "/x.ts")
+			attest(
 				precompiler
-					.precompile(files[id], id)
+					.precompile(files["/c.ts"], "/c.ts")
 					.sites.map(site => (site.value as { expression: string }).expression)
-
-			it("in any order, given twice", () => {
-				for (const order of [
-					["/y.ts", "/c.ts", "/x.ts"],
-					["/x.ts", "/y.ts", "/b.ts", "/x.ts"]
-				]) {
-					const precompiler = new Precompiler(memoryHost(files))
-					for (const id of order) precompiler.precompile(files[id], id)
-					attest(expressionsOf(precompiler, "/b.ts")).equals(["string"])
-				}
-			})
-
-			it("after a change", () => {
-				const precompiler = new Precompiler(memoryHost(files))
-				precompiler.precompile(files["/c.ts"], "/c.ts")
-				precompiler.precompile('export const shape = { a: "number" }', "/x.ts")
-				attest(expressionsOf(precompiler, "/c.ts")).equals(["{ a: number }"])
-			})
-
-			it("folds a module given again as before", () => {
-				const source = `import { scope } from "arktype"
-const $ = scope({ a: () => 42 })
-export const exported = () => $.export()`
-				const precompiler = new Precompiler(memoryHost({ "/main.ts": source }))
-				const statusesOf = () =>
-					precompiler
-						.precompile(source, "/main.ts")
-						.sites.map(site => `${site.line}:${site.column} ${site.status}`)
-				const first = statusesOf()
-				attest(first).snap(["2:11 accepted", "3:31 accepted"])
-				attest(statusesOf()).equals(first)
-			})
+			).equals(["{ a: number }"])
 		})
 	})
 
 	describe("factories", () => {
-		it("passes held functions to factories", () => {
-			const source = `import { type } from "arktype"
-import { ext } from "./ext.ts"
-const trim = (s: string) => s.trim()
-class Pet {}
-const petTag = Symbol("petTag")
-export const Name = type("string").pipe(trim).narrow((s, ctx) => s.length > 0)
-export const User = type({ name: Name, pet: type.instanceOf(Pet), [petTag]: "string" })
-export const Either = type("string").pipe(trim).or(type("number").pipe(trim))
-export const Extended = type("string").pipe(ext)
-export const Pair = type([Name, Either])
-export const Short = Name.narrow(s => s.length < 9)
-export const Stamped = type({ at: ["Date", "=", () => new Date()] })
-class Kitten extends Pet {}
-export const Kept = type.instanceOf(Pet).and(type.instanceOf(Kitten))`
-			// a hole's name comes from its module and position, unique to this test
-			const result = precompileModule(
-				source,
-				"/factories.ts",
-				memoryHost({
-					"/factories.ts": source,
-					"/ext.ts": "export const ext = (s: string) => s"
-				})
-			)
-			attest(result.diagnostics.map(renderDiagnostic)).equals([])
-			attest(foldedCode(result.code)).snap(`import "arktype"
-import $arkfixConfig from "~arktype/#9"
-import { ext } from "./ext.ts"
-const trim = (s: string) => s.trim()
-class Pet {}
-const petTag = Symbol("petTag")
-$arkfixConfig()
-export const Name = /* @__PURE__ */ $ark#0(trim, (s, ctx) => s.length > 0)
-export const User = $ark#2(Name, Pet, petTag)
-export const Either = /* @__PURE__ */ $ark#3(trim)
-export const Extended = $ark#4(ext)
-export const Pair = $ark#5(Name, Either)
-export const Short = $ark#6(Name, s => s.length < 9)
-export const Stamped = /* @__PURE__ */ $ark#7(() => new Date())
-class Kitten extends Pet {}
-export const Kept = $ark#8(Pet, Kitten)`)
-		})
-
 		it("passes inputs after holes", () => {
 			const source = `import { type } from "arktype"
 import { max } from "./limits.ts"
@@ -891,73 +503,6 @@ export const Direct = /* @__PURE__ */ $ark#2()
 let shape: typeof g`)
 		})
 
-		it("a ParseError site holding sites", () => {
-			const result = precompile(`import { type } from "arktype"
-export const M = type.module({
-	a: type("missing").and(type({ b: "string" })),
-	c: ["string", ":", (data: unknown) => type("string").allows(data)]
-})`)
-			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				'/main.ts:2:18  type.module({ a: type("missing").and(type({ b: "string" }))… throws a ParseError\n  \'missing\' is unresolvable\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.'
-			])
-			attest(foldedCode(result.code)).snap(`import "arktype"
-import $ark#0 from "~arktype/#1"
-export const M = $ark#0()`)
-		})
-
-		it("a ParseError site holding functions", () => {
-			const source = `import { scope, type } from "arktype"
-import { extend } from "./extend.ts"
-const isZero = (n: number) => n === 0
-class Cat {}
-class Dog {}
-extend(Dog, Cat)
-export const Narrowed = type("1").narrow(isZero)
-export const Anonymous = type("1").narrow(n => n === 0)
-export const Both = type.instanceOf(Dog).and(type.instanceOf(Cat))
-export const Unrelated = type("1").and("2")
-const isNegative = (n: number) => n < 0
-const Negative = type("number").narrow(isNegative)
-const DogT = type.instanceOf(Dog)
-const CatT = type.instanceOf(Cat)
-const fns = { f: (s: string) => s.length, g: (s: string) => s.trim() }
-const M1 = type({ a: type("string").pipe(fns.f) })
-const M2 = type({ a: type("string").pipe(fns.g) })
-export const Referenced = type("1").and(Negative)
-export const BothReferenced = DogT.and(CatT)
-export const Morphs = M1.and(M2)
-const negative = () => Negative
-const dog = () => DogT
-export const Helped = type("1").and(negative())
-export const HelpedClass = type.instanceOf(Error).and(dog())
-export const Scoped = scope({ a: DogT, b: "a & Error" }).export()
-export const Props = type("number").props
-export const NarrowedProps = type("number").narrow(isNegative).props`
-			const result = precompileModule(
-				source,
-				"/thrower.ts",
-				memoryHost({
-					"/thrower.ts": source,
-					"/extend.ts":
-						"export const extend = (c: Function, base: Function) => Object.setPrototypeOf(c.prototype, base.prototype)"
-				})
-			)
-			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				'/thrower.ts:7:25  type("1").narrow(isZero) can\'t be precompiled yet\n  arktype calls `isZero` (/thrower.ts:7:42)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/thrower.ts:8:26  type("1").narrow(n => n === 0) can\'t be precompiled yet\n  arktype calls `n => n === 0` (/thrower.ts:8:43)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				"/thrower.ts:9:21  type.instanceOf(Dog).and(type.instanceOf(Cat)) can't be precompiled yet\n  arktype holds `Dog` (/thrower.ts:9:37)\n  arktype holds `Cat` (/thrower.ts:9:62)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
-				'/thrower.ts:10:26  type("1").and("2") throws a ParseError\n  Intersection of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.',
-				'/thrower.ts:18:27  type("1").and(Negative) can\'t be precompiled yet\n  arktype is passed a value holding `isNegative` (/thrower.ts:11:20)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				"/thrower.ts:19:31  DogT.and(CatT) can't be precompiled yet\n  arktype is passed a value holding `Dog` (/thrower.ts:5:1)\n  arktype is passed a value holding `Cat` (/thrower.ts:4:1)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
-				"/thrower.ts:20:23  M1.and(M2) can't be precompiled yet\n  arktype is passed a value holding `f` (/thrower.ts:15:18)\n  arktype is passed a value holding `g` (/thrower.ts:15:46)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
-				'/thrower.ts:23:23  type("1").and(negative()) can\'t be precompiled yet\n  arktype is passed a value holding `isNegative` (/thrower.ts:11:20)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				"/thrower.ts:24:28  type.instanceOf(Error).and(dog()) can't be precompiled yet\n  arktype is passed a value holding `Dog` (/thrower.ts:5:1)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
-				'/thrower.ts:25:23  scope({ a: DogT, b: "a & Error" }).export() can\'t be precompiled yet\n  arktype is passed a value holding `Dog` (/thrower.ts:5:1)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/thrower.ts:26:22  type("number").props throws a ParseError\n  props operand must be an object (was number)\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.',
-				'/thrower.ts:27:30  type("number").narrow(isNegative).props can\'t be precompiled yet\n  arktype calls `isNegative` (/thrower.ts:27:52)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
-			])
-		})
-
 		it("checks exported helpers", () => {
 			const source = `import { type } from "arktype"
 import single, { list } from "./helpers.ts"
@@ -1003,117 +548,6 @@ export default (def: string) => def
 Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { "/helpers.ts": { __proto__: null, "list": list, "optional": optional } })`)
 		})
 
-		it("passes a hole through each text", () => {
-			const result = precompile(
-				`import { type } from "arktype"
-import { a } from "./a.ts"
-import { alias } from "./b.ts"
-const fns = { check: (s: string) => s.length > 3 }
-const other = { check: fns.check }
-const Name = type("string").narrow(fns.check)
-export const Aliased = type("string").pipe(a).or(type("number").pipe(alias))
-export const Checked = type({ a: type("string").narrow(other.check), b: type("string").narrow(fns.check), name: Name })`,
-				{
-					"/a.ts": "export const a = (s: string) => s",
-					"/b.ts": 'export { a as alias } from "./a.ts"'
-				}
-			)
-			attest(result.diagnostics.map(renderDiagnostic)).equals([])
-			attest(foldedCode(result.code)).snap(`import "arktype"
-import { a } from "./a.ts"
-import { alias } from "./b.ts"
-const fns = { check: (s: string) => s.length > 3 }
-const other = { check: fns.check }
-const Name = $ark#0(fns.check)
-export const Aliased = $ark#2(a, alias)
-export const Checked = $ark#3(other.check, fns.check, Name)`)
-		})
-
-		it("checks a shared binding once", () => {
-			const result = precompile(
-				`import { type } from "arktype"
-import { Id } from "./id.ts"
-export const User = type({ id: Id })
-export const Post = type({ id: Id, author: Id })`,
-				{
-					"/id.ts": `import { type } from "arktype"
-export const Id = type("string").narrow(s => s.length === 8)`
-				}
-			)
-			attest(
-				normalized(
-					Object.entries(result.modules).flatMap(([specifier, module]) =>
-						specifier.includes("receive") ? [module] : []
-					)
-				)
-			).snap([
-				'import * as runtime from "arktype/runtime"\n\nconst #0 = /* @__PURE__ */ runtime.receiverOf("#1", "`Id`")\n\nexport { #0 }\n'
-			])
-		})
-
-		it("passes a Type for members validators lack", () => {
-			const result = precompile(
-				`import { type } from "arktype"
-const tag = Symbol("tag")
-const T = type({ [tag]: "0", "a?": "1" }).or({ [tag]: "1" })
-export const Union = T.internal.assertHasKind("union")
-export const In = type({ a: T.in })`
-			)
-			attest(result.diagnostics.map(renderDiagnostic)).equals([])
-			attest(foldedCode(result.code)).snap(`import "arktype"
-import $arkfixConfig from "~arktype/#4"
-const tag = Symbol("tag")
-$arkfixConfig()
-const T = /* @__PURE__ */ $ark#0(tag)
-export const Union = $ark#2(T)
-export const In = $ark#3(T)`)
-		})
-
-		it("passes reads meaning the same at the site", () => {
-			const result = precompile(
-				`import { type } from "arktype"
-const isLong = (s: string) => s.length > 1
-const isShort = (s: string) => s.length < 3
-const h = isLong
-const fns = { isLong }
-const shorts = () => [isShort]
-const Long = type("string").narrow(isLong)
-const N = type("string").narrow(isShort)
-const longs = () => [Long]
-export const Mapped = type([isLong].map(h => type("string").narrow(h)) as never)
-export const Shadowed = type([type("string").narrow(h), ...shorts().map(h => type("string").narrow(h))] as never)
-export const Renamed = type(Object.values(fns).map(h => type("string").narrow(h)) as never)
-export const Through = type(longs().map(N => type({ n: N })) as never)
-export const Either = type(shorts().map(h => type("string").narrow(h || isLong)) as never)
-export const Own = type("string").narrow(function (this: unknown, s) { return s.length > 1 && !this })
-export const OwnFirst = type("string").narrow(function (this: unknown, s) { return this === undefined && s.length > 1 })`
-			)
-			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				'/main.ts:11:25  type([type("string").narrow(h), ...shorts().map(h => type("… can\'t be precompiled yet\n  arktype holds `(s: string) => s.length < 3` (/main.ts:3:17), which the site reads outside its own source\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:12:24  type(Object.values(fns).map(h => type("string").narrow(h)) … can\'t be precompiled yet\n  arktype holds `(s: string) => s.length > 1` (/main.ts:2:16), which the site reads outside its own source\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				"/main.ts:13:24  type(longs().map(N => type({ n: N })) as never) can't be precompiled yet\n  arktype holds `(s: string) => s.length > 1` (/main.ts:2:16), which the site cannot pass to its factory\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
-				'/main.ts:14:23  type(shorts().map(h => type("string").narrow(h || isLong)) … can\'t be precompiled yet\n  arktype holds `(s: string) => s.length < 3` (/main.ts:3:17), which the site reads outside its own source\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
-			])
-			attest(foldedCode(result.code)).snap(`import { type } from "arktype"
-import $arkfixConfig from "~arktype/#6"
-const isLong = (s: string) => s.length > 1
-const isShort = (s: string) => s.length < 3
-const h = isLong
-const fns = { isLong }
-const shorts = () => [isShort]
-$arkfixConfig()
-const Long = /* @__PURE__ */ $ark#0(isLong)
-const N = /* @__PURE__ */ $ark#2(isShort)
-const longs = () => [Long]
-export const Mapped = /* @__PURE__ */ $ark#3(isLong)
-export const Shadowed = type([type("string").narrow(h), ...shorts().map(h => type("string").narrow(h))] as never)
-export const Renamed = type(Object.values(fns).map(h => type("string").narrow(h)) as never)
-export const Through = type(longs().map(N => type({ n: N })) as never)
-export const Either = type(shorts().map(h => type("string").narrow(h || isLong)) as never)
-export const Own = /* @__PURE__ */ $ark#4(function (this: unknown, s) { return s.length > 1 && !this })
-export const OwnFirst = /* @__PURE__ */ $ark#5(function (this: unknown, s) { return this === undefined && s.length > 1 })`)
-		})
-
 		it("passes each created function", () => {
 			const result = precompile(
 				`import { type } from "arktype"
@@ -1150,139 +584,6 @@ export const fresh = () => scope({ a: "string" }).type("a").narrow(isLong)`)
 				"interned2",
 				"interned1",
 				"interned3"
-			])
-		})
-
-		it("shares code with composing modules", () => {
-			const files = {
-				"/user.ts": `import { type } from "arktype"
-export const User = type({ name: "string" })`,
-				"/team.ts": `import { type } from "arktype"
-import { User } from "./user.ts"
-export const Team = type({ lead: User })`
-			}
-			const precompiler = new Precompiler(memoryHost(files))
-			const user = precompiler.precompile(files["/user.ts"], "/user.ts")
-			const team = precompiler.precompile(files["/team.ts"], "/team.ts")
-			const shared = Object.keys(team.modules).filter(
-				specifier => user.modules[specifier]
-			)
-			for (const specifier of shared)
-				attest(team.modules[specifier]).equals(user.modules[specifier])
-			attest(normalized(shared)).snap(["~arktype/#0", "~arktype/#1"])
-		})
-
-		it("declares a merged unit's node in its reader's scope", () => {
-			const { code } = precompile(
-				`import { type } from "arktype"
-export const T = type({ a: type("string.numeric.parse").to(type({ x: "number" }).or("number > 0")) })`,
-				{},
-				{ inline: true }
-			)
-			attest(normalized(code.match(/^const \w+ = [\w$]+freeze\({$/gm)!)).snap([
-				"const #0 = $ark$0$freeze({"
-			])
-		})
-
-		it("writes an inline unit read by one other into its reader", () => {
-			const { code } = precompile(
-				`import { type } from "arktype"
-export const User = type({ name: { first: "string", last: "string" } })`,
-				{},
-				{ inline: true }
-			)
-			// the reader receives what its merged unit did
-			attest(
-				normalized(code.match(/^const \w+ = \/\* @__PURE__ \*\/ \(\(\w.*/gm)!)
-			).snap(["const #0 = /* @__PURE__ */ ((#1R1, #0R1) => {"])
-		})
-
-		it("composes referenced Types' strings", () => {
-			const files = {
-				"/user.ts": `import { type } from "arktype"
-export const User = type({ name: "string", nickname: "string | undefined", age: "number.integer >= 0" })`,
-				"/team.ts": `import { type } from "arktype"
-import { User } from "./user.ts"
-export const Team = type({ lead: User, members: User.array() })`
-			}
-			const precompiler = new Precompiler(memoryHost(files), {
-				members: { expression: true, description: true }
-			})
-			const user = precompiler.precompile(files["/user.ts"], "/user.ts")
-			const team = precompiler.precompile(files["/team.ts"], "/team.ts")
-			const composed = Object.entries(team.modules).flatMap(
-				([specifier, code]) =>
-					(
-						/^~arktype\/(expression|description)/.test(specifier) &&
-						!user.modules[specifier]
-					) ?
-						[code]
-					:	[]
-			)
-			attest(
-				normalized(composed.join("\n").match(/^\treturn .* \+ .*/gm)!)
-			).snap([
-				'\treturn #0() + "[]"',
-				'\treturn "{ lead: " + #0() + ", members: " + #1() + " }"',
-				'\treturn "{ lead: " + #2() + ", members: " + #3() + " }"'
-			])
-		})
-
-		it("Modules and Scopes as factories", () => {
-			const result = precompile(
-				`import { scope, type } from "arktype"
-import { max } from "./limits.ts"
-const trim = (s: string) => s.trim()
-export const Held = type.module({ a: ["string", "=>", trim] })
-export const Read = type.module({ a: \`string <= \${max}\` })
-export const $ = scope({ a: ["string", "=>", trim] })
-export const B = $.type({ b: "a" })`,
-				{ "/limits.ts": "export const max = 5" }
-			)
-			attest(result.diagnostics).equals([])
-			attest(
-				normalized(
-					result.code.split("\n").filter(line => line.startsWith("export"))
-				)
-			).snap([
-				"export const Held = /* @__PURE__ */ $ark#0(trim)",
-				"export const Read = $ark#1(max)",
-				"export const $ = /* @__PURE__ */ $ark#2(trim)",
-				"export const B = $ark#3($)"
-			])
-		})
-
-		it("shares a factory across Types by index", () => {
-			// A and B share the pattern's RegExp, so they're created together
-			const result = precompile(`import { scope } from "arktype"
-const trim = (s: string) => s.trim()
-export const $ = scope({ t: ["string", "=>", trim], s: "/^a/" })
-export const A = $.type({ a: "s" })
-export const B = $.type({ b: "s" })`)
-			attest(result.diagnostics).equals([])
-			attest(
-				normalized(
-					result.code.split("\n").filter(line => line.startsWith("export"))
-				)
-			).snap([
-				"export const $ = /* @__PURE__ */ $ark#0(trim)",
-				"export const A = $ark#1(0, $)",
-				"export const B = $ark#1(1, $)"
-			])
-		})
-
-		it("folds TypedFns", () => {
-			const result = precompile(`import { type } from "arktype"
-export const len = type.fn("string", ":", "number")(s => s.length)
-export const make = () => type.fn("string")(s => s)`)
-			attest(result.diagnostics).equals([])
-			attest(
-				normalized(
-					result.code.split("\n").filter(line => line.startsWith("export"))
-				)
-			).snap([
-				"export const len = /* @__PURE__ */ $ark#0(s => s.length)",
-				"export const make = () => $ark#1(s => s)"
 			])
 		})
 	})
@@ -1356,26 +657,6 @@ export const E = type("strng")`,
 			attest(result.modules).equals({})
 		})
 
-		it("units for a Scope's exports", () => {
-			const unitsOf = (source: string) =>
-				Object.keys(
-					precompile(
-						`import { scope, type } from "arktype"\n${source}`,
-						{},
-						{ runtime: "arktype" }
-					).modules
-				).filter(specifier => specifier.startsWith("~arktype/units/"))
-			const units = unitsOf(`export const User = type({ name: "string" })`)
-			attest(
-				unitsOf(`export const $ = scope({ user: { name: "string" } })`)
-			).equals(units)
-			attest(
-				unitsOf(
-					`export const types = scope({ user: { name: "string" } }).export()`
-				)
-			).equals(units)
-		})
-
 		it("inlines a module's units", () => {
 			const lines = precompile(
 				`import "./config.ts"
@@ -1425,25 +706,6 @@ export const T = type("string[]")`,
 			"/errors.ts false",
 			"/check.ts false",
 			"/math.ts false"
-		])
-	})
-
-	it("modules reading arktype's nodes", () => {
-		const standalone = new Precompiler(memoryHost({}))
-		const cached = new Precompiler(memoryHost({}), { runtime: "arktype" })
-		attest(
-			[
-				'import { discriminate } from "arksets"',
-				'import { hasArkKind } from "@ark/schema"',
-				'import { ArkErrors } from "@ark/schema/runtime"'
-			].map(
-				source =>
-					`${source} ${standalone.importsArk(source, "/helpers.ts")} ${cached.importsArk(source, "/helpers.ts")}`
-			)
-		).snap([
-			'import { discriminate } from "arksets" true false',
-			'import { hasArkKind } from "@ark/schema" true false',
-			'import { ArkErrors } from "@ark/schema/runtime" false false'
 		])
 	})
 

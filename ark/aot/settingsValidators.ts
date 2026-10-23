@@ -446,7 +446,7 @@ var unionwltuhb0wt5e34 = [/* @__PURE__ */ units(["size", "speed"], "union")]
 var union1yvbmuz0dlc3qf = [
 	/* @__PURE__ */ units(["introspectable", "smallest"], "union")
 ]
-var intersectionqycrzk1gl4n19 = /* @__PURE__ */ ((
+var intersection1mhdhln0ehkfkv = /* @__PURE__ */ ((
 	[uniontxb0ck1na4t1cAllows],
 	[intersection1saekmc1myv528Allows],
 	[intersection1jmpl21nkry5aAllows],
@@ -458,7 +458,7 @@ var intersectionqycrzk1gl4n19 = /* @__PURE__ */ ((
 	[unionwltuhb0wt5e34Allows],
 	[union1yvbmuz0dlc3qfAllows]
 ) => {
-	const intersectionqycrzk1gl4n19Allows = (data, ctx) => {
+	const intersection1mhdhln0ehkfkvAllows = (data, ctx) => {
 		if (
 			!(
 				data !== null &&
@@ -467,9 +467,9 @@ var intersectionqycrzk1gl4n19 = /* @__PURE__ */ ((
 		) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structure3oara1018adh6Allows(data, ctx)
+		return structurek4olbd03nv54sAllows(data, ctx)
 	}
-	const structure3oara1018adh6Allows = (data, ctx) => {
+	const structurek4olbd03nv54sAllows = (data, ctx) => {
 		if (
 			!(
 				!("allowUnsafe" in data) ||
@@ -654,6 +654,17 @@ var intersectionqycrzk1gl4n19 = /* @__PURE__ */ ((
 		}
 		if (
 			!(
+				!("prune" in data) ||
+				!(
+					!(data.prune === false || data.prune === true) &&
+					failsIn2(ctx, union14x0uzw08oe5zuAllows, data.prune, "prune")
+				)
+			)
+		) {
+			return false
+		}
+		if (
+			!(
 				!("runtime" in data) ||
 				!(
 					!(data.runtime === "arktype") &&
@@ -705,6 +716,7 @@ var intersectionqycrzk1gl4n19 = /* @__PURE__ */ ((
 				case "optimize":
 				case "optimizeErrors":
 				case "preset":
+				case "prune":
 				case "runtime":
 				case "shadow":
 				case "tsconfig":
@@ -718,7 +730,7 @@ var intersectionqycrzk1gl4n19 = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	return [intersectionqycrzk1gl4n19Allows]
+	return [intersection1mhdhln0ehkfkvAllows]
 })(
 	uniontxb0ck1na4t1c,
 	intersection1saekmc1myv528,
@@ -743,7 +755,7 @@ var create10n7yuw0bfhpvo = ([allows], id, holes = []) => {
 	validator.allows = freeze(allows)
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersectionh0bvo41o2mtpn = /* @__PURE__ */ ((
+var intersectionqms98d1vfykgm = /* @__PURE__ */ ((
 	[uniontxb0ck1na4t1cAllows],
 	[intersection1saekmc1myv528Allows],
 	[intersection1jmpl21nkry5aAllows],
@@ -755,7 +767,7 @@ var intersectionh0bvo41o2mtpn = /* @__PURE__ */ ((
 	[unionwltuhb0wt5e34Allows],
 	[union1yvbmuz0dlc3qfAllows]
 ) => {
-	const intersection11fxh7y1nnbziqAllows = (data, ctx) => {
+	const intersection17fx3y30h4v3bzAllows = (data, ctx) => {
 		if (
 			!(
 				data !== null &&
@@ -764,9 +776,9 @@ var intersectionh0bvo41o2mtpn = /* @__PURE__ */ ((
 		) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structure1is8kx90pkvr5qAllows(data, ctx)
+		return structure140rzch1t1wndgAllows(data, ctx)
 	}
-	const structure1is8kx90pkvr5qAllows = (data, ctx) => {
+	const structure140rzch1t1wndgAllows = (data, ctx) => {
 		if (
 			!(
 				!("allowUnsafe" in data) ||
@@ -921,6 +933,17 @@ var intersectionh0bvo41o2mtpn = /* @__PURE__ */ ((
 		}
 		if (
 			!(
+				!("prune" in data) ||
+				!(
+					!(data.prune === false || data.prune === true) &&
+					failsIn2(ctx, union14x0uzw08oe5zuAllows, data.prune, "prune")
+				)
+			)
+		) {
+			return false
+		}
+		if (
+			!(
 				!("runtime" in data) ||
 				!(
 					!(data.runtime === "arktype") &&
@@ -969,6 +992,7 @@ var intersectionh0bvo41o2mtpn = /* @__PURE__ */ ((
 				case "optimize":
 				case "optimizeErrors":
 				case "preset":
+				case "prune":
 				case "runtime":
 				case "shadow":
 				case "tsconfig":
@@ -982,7 +1006,7 @@ var intersectionh0bvo41o2mtpn = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	const intersectionh0bvo41o2mtpnAllows = (data, ctx) => {
+	const intersectionqms98d1vfykgmAllows = (data, ctx) => {
 		if (
 			!(
 				data !== null &&
@@ -991,9 +1015,9 @@ var intersectionh0bvo41o2mtpn = /* @__PURE__ */ ((
 		) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structure6p7ozj1ofuz7bAllows(data, ctx)
+		return structureq3edgy0f3ppobAllows(data, ctx)
 	}
-	const structure6p7ozj1ofuz7bAllows = (data, ctx) => {
+	const structureq3edgy0f3ppobAllows = (data, ctx) => {
 		if (
 			!(
 				!("$schema" in data) ||
@@ -1010,7 +1034,7 @@ var intersectionh0bvo41o2mtpn = /* @__PURE__ */ ((
 				!("precompile" in data) ||
 				!failsIn2(
 					ctx,
-					intersection11fxh7y1nnbziqAllows,
+					intersection17fx3y30h4v3bzAllows,
 					data.precompile,
 					"precompile"
 				)
@@ -1032,7 +1056,7 @@ var intersectionh0bvo41o2mtpn = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	return [intersectionh0bvo41o2mtpnAllows]
+	return [intersectionqms98d1vfykgmAllows]
 })(
 	uniontxb0ck1na4t1c,
 	intersection1saekmc1myv528,
@@ -1050,8 +1074,8 @@ var created1
 var get0 = () => {
 	return (created0 ??= (() => {
 		const validator0 = create10n7yuw0bfhpvo(
-			intersectionqycrzk1gl4n19,
-			"28uioz05"
+			intersection1mhdhln0ehkfkv,
+			"1b860ff1"
 		)
 		return validator0
 	})())
@@ -1059,8 +1083,8 @@ var get0 = () => {
 var get1 = () => {
 	return (created1 ??= (() => {
 		const validator0 = create10n7yuw0bfhpvo(
-			intersectionh0bvo41o2mtpn,
-			"a9cvg00u"
+			intersectionqms98d1vfykgm,
+			"xmqif716"
 		)
 		return validator0
 	})())
@@ -1084,6 +1108,7 @@ export const cliOptions = {
 	optimize: { type: "string", values: "size|speed" },
 	optimizeErrors: { type: "string", values: "size|speed" },
 	preset: { type: "string", values: "introspectable|smallest" },
+	prune: { type: "boolean", values: "true|false" },
 	runtime: { type: "string", values: "arktype" },
 	shadow: { type: "boolean", values: "true|false" },
 	tsconfig: { type: "string", values: "path" }

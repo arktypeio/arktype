@@ -39,7 +39,7 @@ import {
 	thrownErrorsOf,
 	type KeptIssue
 } from "@ark/aot/internal/issues.ts"
-import { build, type Plugin } from "esbuild"
+import { build } from "esbuild"
 import { writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
@@ -145,17 +145,18 @@ const writtenLike = (call: ReturnType<typeof observeCall>) =>
 			.filter(([k]) => k !== "mutated")
 			.map(([k, observed]) => {
 				const { isInput, ...rest } = observed as Record<string, unknown>
+				const issues = reportedOf(rest) as KeptIssue[] | undefined
 				// an issue's object, which writing in place can change before it fails
 				return [
 					k,
-					rest.issues ?
-						{
-							...rest,
-							issues: (rest.issues as KeptIssue[]).map(issue => ({
+					issues ?
+						withReported(
+							rest,
+							issues.map(issue => ({
 								...issue,
 								data: hasDomain(issue.data, "object") ? "object" : issue.data
 							}))
-						}
+						)
 					:	rest
 				]
 			})
@@ -930,9 +931,11 @@ const reportsOneOf = (input: unknown, all: Call, first: Call): boolean =>
 	Object.entries(all).every(([k, observed]) => {
 		const reported = first[k as keyof Call]
 		const issues = reportedOf(reported)
+		// a Standard result groups its issues, any one added of which is reported
+		const added = reportedOf(k === "standard" ? all.traverse : observed)
 		const alike =
 			issues?.length === 1 &&
-			reportedOf(observed)?.find(issue => isAlikeIssue(input, issue, issues[0]))
+			added?.find(issue => isAlikeIssue(input, issue, issues[0]))
 		return alike ?
 				isEqual(withAlike(observed, alike, issues[0]), reported)
 			:	isEqual(observed, reported)

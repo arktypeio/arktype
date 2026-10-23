@@ -260,25 +260,6 @@ export const createNode = ({
 	return key ? $.nodesByKey.set(key, node) : node
 }
 
-// a node bound to a scope is the one the scope creates for its key, so one
-// the scope already created is bound in its place
-export const bindByKey = (
-	$: BaseScope,
-	reference: BaseNode,
-	bind: () => BaseNode
-): BaseNode => {
-	if (!$ark.sets) return bind()
-	const key = nodeKeyOf(
-		reference.kind,
-		reference.impl,
-		reference.inner,
-		isEmptyObject(reference.meta) ? undefined : (
-			(reference.metaJson as JsonObject)
-		)
-	)
-	return $.nodesByKey.get(key) ?? $.nodesByKey.set(key, bind())
-}
-
 // a node's children are cached before it, so their ids can stand in for
 // their content
 const nodeKeyOf = (
