@@ -39,7 +39,7 @@ import {
 	thrownErrorsOf,
 	type KeptIssue
 } from "@ark/aot/internal/issues.ts"
-import { build, type Plugin } from "esbuild"
+import { build } from "esbuild"
 import { writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"

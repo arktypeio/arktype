@@ -87,15 +87,18 @@ export const FromGetter = type({ b: G.baseInstance as never })`)
 		])
 	})
 
-	it("reports a factory site reading an island's Type", () => {
+	it("reports a site reading an island's Type, as bound rather than as equal", () => {
 		attest(
 			precompile(
 				`import { type } from "arktype"
 import { Imported } from "./b.ts"
 // @ark-runtime
 export const Trimmed = type("string").pipe(s => s.trim())
+// equal to Imported, but bound outside an island
+const Static = type("string")
+const Alias = Imported
 export const A = type({ a: Trimmed })
-export const B = type({ b: Imported })`,
+export const B = type({ b: Alias, c: Static })`,
 				{
 					"/b.ts": `import { type } from "arktype"
 // @ark-runtime
@@ -103,28 +106,8 @@ export const Imported = type("string")`
 				}
 			).diagnostics.map(renderDiagnostic)
 		).snap([
-			"/main.ts:5:18  type({ a: Trimmed }) can't be precompiled yet\n  `Trimmed` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
-			"/main.ts:6:18  type({ b: Imported }) can't be precompiled yet\n  `Imported` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
-		])
-	})
-
-	it("tells an island's Type from one equal to it by where it's bound", () => {
-		attest(
-			precompile(
-				`import { type } from "arktype"
-import { Island } from "./b.ts"
-const Static = type({ a: "string" })
-const Alias = Island
-export const A = type({ inner: Static })
-export const B = type({ inner: Alias })`,
-				{
-					"/b.ts": `import { type } from "arktype"
-// @ark-runtime
-export const Island = type({ a: "string" })`
-				}
-			).diagnostics.map(renderDiagnostic)
-		).snap([
-			"/main.ts:6:18  type({ inner: Alias }) can't be precompiled yet\n  `Island` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+			"/main.ts:8:18  type({ a: Trimmed }) can't be precompiled yet\n  `Trimmed` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
+			"/main.ts:9:18  type({ b: Alias, c: Static }) can't be precompiled yet\n  `Imported` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 		])
 	})
 

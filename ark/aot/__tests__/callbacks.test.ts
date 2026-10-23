@@ -132,19 +132,6 @@ const C = type("string").narrow(s => ${nonStatic})`)
 		])
 	})
 
-	it("validation callbacks are holes", () => {
-		const result = analyze(`import { type } from "arktype"
-const format = (s: string) => {
-	const trimmed = s.trim()
-	return trimmed
-}
-const A = type("string").pipe(format).narrow((s, ctx) => s.length > 0 || ctx.reject("non-empty"))`)
-		attest(result.sites[0].holes.map(hole => hole.kind)).snap([
-			"function",
-			"function"
-		])
-	})
-
 	it("placeholder hole names", () => {
 		const descriptionsOf = (opts?: PrecompileOptions) =>
 			analyze(

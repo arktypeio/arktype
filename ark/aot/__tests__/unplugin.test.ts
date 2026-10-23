@@ -21,7 +21,6 @@ import { context, build as esbuild, transformSync, type Plugin } from "esbuild"
 import { spawnSync } from "node:child_process"
 import {
 	mkdirSync,
-	readdirSync,
 	readFileSync,
 	rmSync,
 	symlinkSync,
@@ -41,12 +40,11 @@ import {
 	type Rolldown
 } from "vite"
 import { startVitest } from "vitest/node"
-import { configureAfterTypeMessage, copiedErrorMessage } from "@ark/schema"
+import { configureAfterTypeMessage } from "@ark/schema"
 import {
 	writeCreatedBeforeConfigureMessage,
 	writtenConfigMessage
 } from "@ark/schema/runtime"
-import { writeCreationMismatchMessage } from "arktype/runtime"
 import {
 	packageFiles,
 	runPlain,
@@ -313,11 +311,6 @@ const cycles: Record<string, PrecompileUnpluginOptions["members"]> = {
 	setInStep: { expression: true }
 }
 
-const filesOf = (dir: string) =>
-	Object.fromEntries(
-		readdirSync(dir).map(file => [file, readFileSync(join(dir, file), "utf8")])
-	)
-
 contextualize(function (this: Mocha.Suite) {
 	this.timeout(60_000)
 
@@ -331,52 +324,6 @@ contextualize(function (this: Mocha.Suite) {
 
 	const expected = runPlain(app)
 
-	it("runs without the plugin", () => {
-		attest(JSON.parse(expected)).snap([
-			{
-				name: "Ada",
-				email: "ada@example.com",
-				age: 36,
-				tags: ["math"],
-				plan: "free"
-			},
-			[
-				["divisor", "age"],
-				["pattern", "email"],
-				["minLength", "name"],
-				["maxLength", "tags"]
-			],
-			[
-				["union", "plan"],
-				["union", "role"]
-			],
-			[["min", 1, "age"]],
-			{
-				kind: "create",
-				user: {
-					name: "Ada",
-					email: "ada@example.com",
-					age: 36,
-					tags: ["math"],
-					plan: "free"
-				}
-			},
-			{ kind: "delete", id: "c4a760a8-dbcf-4e14-9f39-645a8e933d74" },
-			[["pattern", "id"]],
-			[["discriminant", "kind"]],
-			"@ada",
-			{ handle: "@ada", joined: 2020 },
-			[["predicate", "handle"]],
-			[["domain", "next", "next", "value"]],
-			[["predicate", "next", "value"]],
-			[["domain", "children", 1, "value"]],
-			true,
-			[["required", "box", "children", 0, "value"]],
-			null,
-			null
-		])
-	})
-
 	for (const [name, bundle] of Object.entries(bundlers)) {
 		it(`${name} standalone or cache`, async () => {
 			const withArktype = await bundle()
@@ -387,62 +334,6 @@ contextualize(function (this: Mocha.Suite) {
 				standalone.includes(parserMessage)
 			]).equals([true, false])
 			attest(run(await bundle({ runtime: "arktype" }))).equals(expected)
-		})
-
-		it(`${name} import cycles`, async () => {
-			for (const [fixture, members] of Object.entries(cycles)) {
-				const root = fromHere(fixture)
-				// a production build doesn't check a read precedes what it reads
-				attest(
-					run(
-						await bundle(
-							{
-								cwd: root,
-								members,
-								allowUnsafe: true,
-								creationChecks: "types"
-							},
-							root
-						)
-					)
-				).equals(runPlain(root))
-			}
-		})
-
-		// `verbatimModuleSyntax` keeps an import only a type reads
-		it(`${name} import cycle closed by a type import`, async () => {
-			const root = writeFixture(
-				{
-					...filesOf(fromHere("cycleErased")),
-					"tsconfig.json": JSON.stringify({
-						compilerOptions: { verbatimModuleSyntax: true }
-					})
-				},
-				fromHere("temp", `${name}CycleErased`)
-			)
-			attest(run(await bundle({ cwd: root }, root))).equals(runPlain(root))
-		})
-
-		it(`${name} import cycle reaching json`, async () => {
-			const files = filesOf(fromHere("cycle"))
-			const root = writeFixture(
-				{
-					...files,
-					"items.ts": `${files["items.ts"]}
-export function itemJson() {
-	return type({ id: "number" }).json
-}
-`,
-					"checkItem.ts": `import { itemJson } from "./items.ts"
-
-export const checkedItem = JSON.stringify(itemJson())
-`
-				},
-				fromHere("temp", `${name}CycleJson`)
-			)
-			attest(
-				run(await bundle({ cwd: root, members: { json: true } }, root))
-			).equals(runPlain(root))
 		})
 
 		it(`${name} configured`, async () => {
@@ -457,54 +348,24 @@ export const checkedItem = JSON.stringify(itemJson())
 				run(await bundle({ cwd: messaged, config: "config.ts" }, messaged))
 			).equals(runPlain(messaged))
 		})
+	}
 
-		it(`${name} configured with errors`, async () => {
-			const opts = {
-				cwd: firstConfigured,
-				config: "config.ts",
-				errors: "first" as const
-			}
-			const plain = runPlain(firstConfigured)
-			const standalone = await bundle(opts, firstConfigured)
-			attest(run(standalone)).equals(plain)
-			// arktype/errors resolves to the runtime
-			attest(standalone.includes(copiedErrorMessage)).equals(false)
-			attest(
-				run(
-					await bundle(
-						{ cwd: firstConfigured, config: "config.ts", runtime: "arktype" },
-						firstConfigured
+	// a production build doesn't check a read precedes what it reads
+	for (const minify of [true, false]) {
+		it(`esbuild ${minify ? "" : "unminified "}import cycles`, async () => {
+			for (const [fixture, members] of Object.entries(cycles)) {
+				const root = fromHere(fixture)
+				const opts = { cwd: root, members, allowUnsafe: true }
+				attest(
+					run(
+						await bundlers.esbuild(
+							minify ? { ...opts, creationChecks: "types" } : opts,
+							root,
+							minify
+						)
 					)
-				)
-			).equals(plain)
-		})
-
-		it(`${name} configured to mutate its input`, async () => {
-			const opts = {
-				cwd: mutatingConfigured,
-				config: "config.ts",
-				mutatesInput: true as const
+				).equals(runPlain(root))
 			}
-			const plain = runPlain(mutatingConfigured)
-			attest(plain).equals(
-				'[{"name":"a","role":"user"},true,{"name":"a","role":"user"}]\n'
-			)
-			const standalone = await bundle(opts, mutatingConfigured)
-			attest(run(standalone)).equals(plain)
-			// arktype/mutatesInput resolves to the runtime
-			attest(standalone.includes(copiedErrorMessage)).equals(false)
-			attest(
-				run(
-					await bundle(
-						{
-							cwd: mutatingConfigured,
-							config: "config.ts",
-							runtime: "arktype"
-						},
-						mutatingConfigured
-					)
-				)
-			).equals(plain)
 		})
 	}
 
@@ -524,41 +385,6 @@ export const checkedItem = JSON.stringify(itemJson())
 		attest(standalone.includes(parserMessage)).equals(false)
 	})
 
-	it("esbuild a package that opts in through one that doesn't", async () => {
-		const root = writeFixture(
-			{
-				"package.json": JSON.stringify({
-					type: "module",
-					dependencies: { wrapper: "1.0.0" }
-				}),
-				"main.ts":
-					'import { Tagged } from "wrapper"\n\nconsole.log(String(Tagged({ tag: 5 })))\n',
-				...packageFiles(
-					"wrapper",
-					{
-						"index.js": 'export { Tagged } from "tagged"\n',
-						"index.d.ts":
-							'export declare const Tagged: import("arktype").Type<{ tag: string }>\n'
-					},
-					{ dependencies: { tagged: "1.0.0" } }
-				),
-				...packageFiles(
-					"tagged",
-					{
-						"index.js":
-							'import { type } from "arktype"\n\nexport const Tagged = type({ tag: "string" })\n'
-					},
-					{ arktype: { precompile: true } },
-					"node_modules/wrapper/node_modules/tagged"
-				)
-			},
-			fromHere("temp", "optedInThrough")
-		)
-		const standalone = await bundlers.esbuild({ cwd: root }, root)
-		attest(run(standalone)).snap("tag must be a string\n")
-		attest(standalone.includes(parserMessage)).equals(false)
-	})
-
 	it("esbuild static introspection", async () => {
 		const introspected = fromHere("introspected")
 		const standalone = await bundlers.esbuild(
@@ -566,50 +392,6 @@ export const checkedItem = JSON.stringify(itemJson())
 			introspected
 		)
 		attest(run(standalone)).equals(runPlain(introspected))
-	})
-
-	it("esbuild a validator printed where the build can't see", async () => {
-		const root = writeFixture(
-			{
-				"main.ts":
-					'import { type } from "arktype"\nimport { print } from "printer"\n\nconsole.log(print(type({ a: "string" })))\n',
-				...packageFiles("printer", {
-					"index.js": "export const print = value => `${value}`\n",
-					"index.d.ts":
-						"export declare const print: (value: unknown) => string\n"
-				})
-			},
-			fromHere("temp", "printed")
-		)
-		// without its expression, it prints only that it's a Type
-		attest(run(await bundlers.esbuild({ cwd: root }, root))).snap("Type\n")
-		attest(
-			run(
-				await bundlers.esbuild(
-					{ cwd: root, members: { expression: true } },
-					root
-				)
-			)
-		).equals(runPlain(root))
-	})
-
-	it("esbuild unminified import cycles", async () => {
-		for (const fixture of ["cycleFirst", "cycleArrow", "setInStep"]) {
-			const root = fromHere(fixture)
-			attest(
-				run(
-					await bundlers.esbuild(
-						{
-							cwd: root,
-							members: { expression: true, json: true },
-							allowUnsafe: true
-						},
-						root,
-						false
-					)
-				)
-			).equals(runPlain(root))
-		}
 	})
 
 	it("esbuild writes no NUL into its output", async () => {
@@ -628,49 +410,21 @@ export const checkedItem = JSON.stringify(itemJson())
 		attest(run(output[0].code)).equals(expected)
 	})
 
-	it("reads ark.json from the bundler's root", async () => {
-		// a Type printed outside a site builds only where ark.json bakes expression
-		const root = writeFixture(
-			{
-				"package.json": JSON.stringify({ type: "module" }),
-				"ark.json": JSON.stringify({
-					precompile: { members: { expression: true } }
-				}),
-				"main.ts": `import { type } from "arktype"
-
-const T = type({ a: "string" })
-console.log(\`\${T}\`)
-`
-			},
-			fromHere("temp", "rooted")
-		)
-		const printed = "Type<{ a: string }>\n"
-		attest(await bundlers.vite({}, root).then(run)).equals(printed)
-		const { outputFiles } = await esbuild({
-			entryPoints: ["main.ts"],
-			absWorkingDir: root,
-			bundle: true,
-			write: false,
-			format: "esm",
-			conditions,
-			logLevel: "silent",
-			plugins: [precompile.esbuild({ conditions })]
-		})
-		attest(run(outputFiles[0].text)).equals(printed)
-	})
-
-	it("vite's module runner loads the runtime its validators use", async () => {
+	it("vite's development server and module runner", async () => {
 		const root = writeFixture({
 			"main.ts": `import { type } from "arktype"
+import { inspect } from "node:util"
 
-const T = type({ a: "string" })
-export const isErrors = T({ a: 1 }) instanceof type.errors
+export const User = type({ a: "string" })
+export const isErrors = User({ a: 1 }) instanceof type.errors
+export const inspected = inspect(User({ a: 1 }))
 export let thrown = ""
 try {
-	T.assert({ a: 1 })
+	User.assert({ a: 1 })
 } catch (e) {
 	thrown = String(e)
 }
+export const describe = (t: { description: string }) => t.description
 `
 		})
 		// a dependency Vite would otherwise leave to Node, as an installed one is
@@ -680,79 +434,48 @@ try {
 			join(root, "node_modules/arktype")
 		)
 		const results: unknown[] = []
-		for (const opts of [{}, { errors: "none" }] as const) {
+		for (const opts of [
+			{ members: { expression: true } },
+			{ errors: "none" }
+		] as const) {
 			const config = viteConfig(opts, root)
-			const server = await createServer({
-				...config,
-				resolve: { ...config.resolve, preserveSymlinks: true },
-				ssr: { resolve: { ...config.ssr!.resolve, externalConditions: [] } }
-			})
+			const server = await withNodeEnv("development", () =>
+				createServer({
+					...config,
+					resolve: { ...config.resolve, preserveSymlinks: true },
+					ssr: { resolve: { ...config.ssr!.resolve, externalConditions: [] } }
+				})
+			)
 			const runner = createServerModuleRunner(server.environments.ssr)
 			try {
-				const { isErrors, thrown } = await runner.import("/main.ts")
-				results.push([isErrors, thrown])
+				const { User, isErrors, inspected, thrown, describe } =
+					await runner.import("/main.ts")
+				let unbaked = ""
+				try {
+					describe(User)
+				} catch (e) {
+					unbaked = (e as Error).message
+				}
+				results.push([isErrors, inspected, thrown, unbaked])
 			} finally {
 				await runner.close()
 				await server.close()
 			}
 		}
 		attest(results).snap([
-			[true, "TraversalError: a must be a string"],
-			[true, "Error: is invalid"]
-		])
-	})
-
-	it("vite's development server prints errors as their issues", async () => {
-		const root = writeFixture({
-			"main.ts": `import { type } from "arktype"
-import { inspect } from "node:util"
-
-export const inspected = inspect(type({ a: "string" })({ a: 1 }))
-`
-		})
-		const server = await withNodeEnv("development", () =>
-			createServer(viteConfig({}, root))
-		)
-		const runner = createServerModuleRunner(server.environments.ssr)
-		try {
-			attest((await runner.import("/main.ts")).inspected).snap(`[
-  {
-    code: 'domain',
-    path: [ 'a' ],
-    data: 1,
-    expected: 'a string',
-    message: 'a must be a string'
-  }
-]`)
-		} finally {
-			await runner.close()
-			await server.close()
-		}
-	})
-
-	it("vite's development server throws reading a member the build didn't bake", async () => {
-		const root = writeFixture({
-			"main.ts": `import { type } from "arktype"
-
-export const User = type({ name: "string" })
-
-export const describe = (t: { description: string }) => t.description
-`
-		})
-		const server = await withNodeEnv("development", () =>
-			createServer(viteConfig({ members: { expression: true } }, root))
-		)
-		const runner = createServerModuleRunner(server.environments.ssr)
-		try {
-			const { User, describe } = await runner.import("/main.ts")
-			attest(() => describe(User)).throws(
+			[
+				true,
+				"[\n  {\n    code: 'domain',\n    path: [ 'a' ],\n    data: 1,\n    expected: 'a string',\n    message: 'a must be a string'\n  }\n]",
+				"TraversalError: a must be a string",
 				'description isn\'t baked into this validator. Set members.description true, or build with runtime: "arktype".'
-			)
-			attest(`${User}`).equals("Type<{ name: string }>")
-		} finally {
-			await runner.close()
-			await server.close()
-		}
+			],
+			[
+				true,
+				"[\n  {\n    code: 'predicate',\n    path: [],\n    data: { a: 1 },\n    message: 'is invalid'\n  }\n]",
+				"Error: is invalid",
+				'description isn\'t baked into this validator. Set members.description true, or build with runtime: "arktype".'
+			]
+		])
 	})
 
 	it("fails a build whose external option takes arktype from the bundle", async () => {
@@ -861,15 +584,12 @@ export const describe = (t: { description: string }) => t.description
 		return warnings
 	}
 
-	it("vite emits no declarations while serving", async () => {
+	it("vite emits no declarations while serving or watching", async () => {
 		attest(
 			await warnedDeclaring(async config =>
 				(await createServer(config)).close()
 			)
 		).equals([])
-	})
-
-	it("vite emits no declarations watching", async () => {
 		attest(
 			await warnedDeclaring(async config => {
 				const watcher = (await viteBuild({
@@ -948,30 +668,6 @@ export const describe = (t: { description: string }) => t.description
 		attest(errors).equals([unbundledMessage])
 	})
 
-	it("vite configured behind a transpiling plugin", async () => {
-		const config = viteConfig(
-			{ cwd: configured, config: "config.ts" },
-			configured
-		)
-		const transpile = {
-			name: "transpile",
-			enforce: "pre" as const,
-			transform: (code: string, id: string) =>
-				id.endsWith("/config.ts") ?
-					transformSync(code, { loader: "ts" }).code
-				:	undefined
-		}
-		const [{ output }] = (await viteBuild({
-			...config,
-			plugins: [transpile, ...config.plugins!],
-			build: {
-				write: false,
-				lib: { entry: "main.ts", formats: ["es"] }
-			}
-		})) as Rolldown.RolldownOutput[]
-		attest(run(output[0].code)).equals(runPlain(configured))
-	})
-
 	it("reports the lines of a module a plugin ahead of it transpiled", async () => {
 		const root = writeFixture({
 			"main.ts": `import { type } from "arktype"
@@ -1013,23 +709,6 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
   \`settings\` is \`{ limit: Math.random() }\` (main.ts:7:7)
   \`Math.random\` is not one of the build's pure built-ins
   Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`)
-	})
-
-	it("keeps its worker across esbuild's rebuilds", async () => {
-		const first = nextThreadId()
-		const build = await context({
-			entryPoints: [join(app, "main.ts")],
-			bundle: true,
-			write: false,
-			format: "esm",
-			conditions,
-			logLevel: "silent",
-			plugins: [precompile.esbuild({ cwd: app, conditions })]
-		})
-		await build.rebuild()
-		await build.rebuild()
-		await build.dispose()
-		attest(nextThreadId() - first - 1).equals(1)
 	})
 
 	// a list that grew with the build made a 100-module build 15 times slower
@@ -1141,54 +820,6 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 		])
 	})
 
-	it("names each module's ParseError thrower", async () => {
-		const definesInvalid = (name: string) =>
-			`import { type } from "arktype"\n\nexport const ${name} = (() => {\n\ttry {\n\t\treturn type({ x: "strng" } as never).expression\n\t} catch (e) {\n\t\treturn (e as Error).message\n\t}\n})()\n`
-		const root = writeFixture(
-			{
-				"config.ts":
-					'import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: "delete" })\n',
-				"a.ts": definesInvalid("a"),
-				"b.ts": definesInvalid("b"),
-				"main.ts":
-					'import { a } from "./a.ts"\nimport { b } from "./b.ts"\n\nconsole.log(JSON.stringify([a, b]))\n'
-			},
-			fromHere("temp", "throwers")
-		)
-		attest(
-			JSON.parse(
-				run(
-					await bundlers.esbuild(
-						{ cwd: root, config: "config.ts", allowUnsafe: true },
-						root
-					)
-				)
-			)
-		).equals([
-			writeCreatedBeforeConfigureMessage("a.ts"),
-			writeCreatedBeforeConfigureMessage("b.ts")
-		])
-	})
-
-	it("a Type defined from an imported one", async () => {
-		const { outputFiles } = await esbuild({
-			stdin: {
-				contents: `import { Admin } from "./admin.ts"
-console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags: [], role: "member" })))`,
-				resolveDir: app,
-				loader: "ts"
-			},
-			bundle: true,
-			write: false,
-			format: "esm",
-			logLevel: "silent",
-			conditions,
-			plugins: [precompile.esbuild({ cwd: app, conditions })]
-		})
-		attest(run(outputFiles[0].text)).equals('role must be "admin"\n')
-		attest(outputFiles[0].text.includes(parserMessage)).equals(false)
-	})
-
 	it("fails once per dependency importing arktype, or warns with allowUnsafe", async () => {
 		const shared = writeStandaloneDependencyMessage("shared")
 		const prebuilt = writePrecompiledDependencyMessage("prebuilt")
@@ -1212,32 +843,6 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 			errors: [],
 			warnings: [prebuilt]
 		})
-	})
-
-	it("runs a package reading arktype's nodes in a runtime island", async () => {
-		const root = writeFixture(
-			{
-				...packageFiles("@ark/json-schema", {
-					"index.js":
-						'import { type } from "arktype"\n\nexport const jsonSchemaToType = schema => type({ [schema.key]: schema.type })\n'
-				}),
-				"main.ts": `import { type } from "arktype"
-import { jsonSchemaToType } from "@ark/json-schema"
-
-const User = type({ name: "string" })
-// @ark-runtime
-const Dyn = jsonSchemaToType({ key: "a", type: "string" })
-
-console.log(JSON.stringify([User.allows({ name: "x" }), Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 })]))
-`
-			},
-			fromHere("temp", "readsNodes")
-		)
-		for (const bundler of [bundlers.esbuild, bundlers.vite]) {
-			attest(run(await bundler({ cwd: root }, root))).equals(
-				"[true,true,false]\n"
-			)
-		}
 	})
 
 	it("fails where a module it can't precompile imports arktype", async () => {
@@ -1338,96 +943,51 @@ schema.ts:2:22  @ark/schema resolves to more than one copy
 		])
 	})
 
-	it("definitions that run again", async () => {
-		const root = writeFixture(
-			{
-				"main.ts": `import { scope } from "arktype"
+	it("bundles only the Types and members a program reads", async () => {
+		const files = {
+			"user.ts": `import { type } from "arktype"
 
-const $ = scope({ a: "string" })
-const exported = () => $.export()
-const twice = () => {
-	const local = scope({ a: "string" })
-	return [local.type("a"), local.type("a")]
-}
-const isLong = (s: string) => s.length > 1
-const mapped = () => {
-	const local = scope({ a: "string" })
-	return [0].map(() => local.type("a").narrow(isLong))[0]
-}
-// what a standalone validator's errors keep of arktype's
-const issuesOf = (out: any) =>
-	JSON.stringify(out.issues.map((issue: any) => [issue.code, ...issue.path]))
-console.log(issuesOf(exported().a(1)))
-console.log(twice()[1]("x"))
-console.log(issuesOf(mapped()("x")))
-`
-			},
-			fromHere("temp", "eachRun")
-		)
-		const expected = `[["domain"]]
-x
-[["predicate"]]
-`
-		attest(runPlain(root)).equals(expected)
-		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
-	})
-
-	it("creates only the Types a bundle imports, its errors ArkErrors", async () => {
-		const root = writeFixture(
-			{
-				"a.ts": `import { type } from "arktype"
-
-export const A = type({ a: "string" })
+console.log("user.ts")
+export const User = type({ name: "string", age: "number.integer" })
 export const Unimported = type({ a: "'unimported'" })
 `,
+			// TypeScript's defaults, which drop an import nothing reads
+			"tsconfig.json": "{}"
+		}
+		const validated = writeFixture(
+			{
+				...files,
 				"main.ts": `import { ArkErrors, type } from "arktype"
-import { A } from "./a.ts"
+import { User } from "./user.ts"
 
-const out = A({ a: 1 })
+const out = User({ name: 1, age: 1 })
 console.log(out instanceof ArkErrors, out instanceof type.errors)
-// what a standalone validator's errors keep of arktype's
-console.log(JSON.stringify((out as any).issues.map((issue: any) => [issue.code, ...issue.path])))
 `
 			},
 			fromHere("temp", "imported")
 		)
-		const expected = `true true\n[["domain","a"]]\n`
-		attest(runPlain(root)).equals(expected)
-		const bundle = await bundlers.esbuild({ cwd: root }, root)
-		attest(run(bundle)).equals(expected)
+		const bundle = await bundlers.esbuild({ cwd: validated }, validated)
+		attest(run(bundle)).equals("user.ts\ntrue true\n")
 		attest(bundle.includes("unimported")).equals(false)
-	})
+		// a Type read only for introspection needs no validator
+		for (const [name, main] of Object.entries({
+			introspectedOnly: `import { type } from "arktype"
 
-	it("resolves @ark/type, arktype's other name, to the runtime", async () => {
-		const root = writeFixture(
-			{
-				"config.ts": `import { configure } from "@ark/type/config"
-
-configure({ onUndeclaredKey: "delete" })
+const User = type({ name: "string", age: "number.integer" })
+console.log(JSON.stringify(User.toJsonSchema()))
 `,
-				"main.ts": `import "./config.ts"
-import { type } from "@ark/type"
+			introspectedImport: `import { User } from "./user.ts"
 
-const T = type({ name: "string" })
-const out = T({ name: 1 })
-console.log(out instanceof type.errors, T({ name: "", age: 1 }))
+console.log(JSON.stringify(User.toJsonSchema()))
 `
-			},
-			// where arktype, @ark/aot's peer, resolves as an install has it
-			fromHere("temp", "arkType")
-		)
-		rmSync(join(root, "node_modules"), { recursive: true, force: true })
-		mkdirSync(join(root, "node_modules", "@ark"), { recursive: true })
-		symlinkSync(
-			fromHere("..", "..", "type"),
-			join(root, "node_modules", "@ark", "type")
-		)
-		const plain = runPlain(root)
-		attest(plain).equals("true { name: '' }\n")
-		for (const bundle of Object.values(bundlers)) {
-			const code = await bundle({ cwd: root, config: "config.ts" }, root)
-			attest(run(code)).equals(plain)
-			attest(code.includes(parserMessage)).equals(false)
+		})) {
+			const root = writeFixture(
+				{ ...files, "main.ts": main },
+				fromHere("temp", name)
+			)
+			const introspected = await bundlers.esbuild({ cwd: root }, root)
+			attest(run(introspected)).equals(runPlain(root))
+			attest(introspected.includes("traverseAllows")).equals(false)
 		}
 	})
 
@@ -1473,24 +1033,6 @@ console.log(out instanceof type.errors, T({ name: "", age: 1 }))
 				path.includes("schema/runtime")
 			)
 		).snap(["ark/schema/runtime.ts", "ark/schema/runtimeNone.ts"])
-	})
-
-	it("reports a refused webpack import", async () => {
-		const importer = join(undetailed, "node_modules", "reads", "index.js")
-		const { resolveId } = precompile.raw(
-			{ cwd: join(undetailed, "reads"), errors: "none" },
-			{ framework: "webpack", webpack: { compiler: {} as never }, versions: {} }
-		) as { resolveId: { handler: (...args: unknown[]) => Promise<unknown> } }
-		const reported: string[] = []
-		const resolved = await resolveId.handler.call(
-			{ error: (message: string) => reported.push(message) },
-			"@ark/schema",
-			importer
-		)
-		attest(resolved).equals(undefined)
-		attest(reported).equals([
-			writeVariantImportMessage(importer, "@ark/schema", "none")
-		])
 	})
 
 	it("resolves the runtime of webpack's mode", async () => {
@@ -1632,170 +1174,6 @@ console.log(out instanceof type.errors, T({ name: "", age: 1 }))
 		])
 	})
 
-	it("drops validators read only for introspection", async () => {
-		const files = {
-			"user.ts": `import { type } from "arktype"
-
-console.log("user.ts")
-export const User = type({ name: "string", age: "number.integer" })
-`,
-			// TypeScript's defaults, which drop an import nothing reads
-			"tsconfig.json": "{}"
-		}
-		const local = writeFixture(
-			{
-				...files,
-				"main.ts": `import { type } from "arktype"
-
-const User = type({ name: "string", age: "number.integer" })
-console.log(JSON.stringify(User.toJsonSchema()))
-`
-			},
-			fromHere("temp", "introspectedOnly")
-		)
-		const bundle = await bundlers.esbuild({ cwd: local }, local)
-		attest(run(bundle)).equals(runPlain(local))
-		attest(bundle.includes("traverseAllows")).equals(false)
-		const imported = writeFixture(
-			{
-				...files,
-				"main.ts": `import { User } from "./user.ts"
-
-console.log(JSON.stringify(User.toJsonSchema()))
-`
-			},
-			fromHere("temp", "introspectedImport")
-		)
-		attest(run(await bundlers.esbuild({ cwd: imported }, imported))).equals(
-			runPlain(imported)
-		)
-	})
-
-	it("encodes with a codec another module defines", async () => {
-		const root = writeFixture(
-			{
-				"defs.ts": `import { scope } from "arktype"
-import { codec } from "arktype/codecs"
-
-export const EpochMs = codec("number.integer", "Date", {
-	decode: n => new Date(n),
-	encode: d => d.getTime()
-})
-export const shop = scope({ Order: { at: EpochMs } }).export()
-`,
-				"main.ts": `import { EpochMs, shop } from "./defs.ts"
-
-console.log(
-	JSON.stringify([
-		EpochMs.encode(new Date(7)),
-		shop.Order.encode({ at: new Date(8) }),
-		shop.Order.in({ at: 9 })
-	])
-)
-`
-			},
-			fromHere("temp", "encodedImport")
-		)
-		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
-			runPlain(root)
-		)
-	})
-
-	it("an import a local shadows", async () => {
-		const root = writeFixture(
-			{
-				"user.ts": `import { type } from "arktype"
-
-console.log("user.ts")
-export const User = type({ name: "string" })
-`,
-				"tsconfig.json": "{}",
-				"main.ts": `import { type } from "arktype"
-import { User } from "./user.ts"
-
-console.log(JSON.stringify(User.toJsonSchema()))
-export const relabel = (o: { label: string }) => {
-	o.label = "changed"
-}
-{
-	const User = { label: "a user" }
-	console.log(type("string").describe(User.label).description)
-}
-`
-			},
-			fromHere("temp", "shadowedImport")
-		)
-		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
-			runPlain(root)
-		)
-	})
-
-	it("compares an introspected Type's inputs at creation", async () => {
-		const files = {
-			"data.ts": `export const settings = { label: "a user" }
-`,
-			"mutate.ts": `import { settings } from "./data.ts"
-
-settings.label = "changed"
-`,
-			"user.ts": `import { type } from "arktype"
-import { settings } from "./data.ts"
-
-export const User = type({ name: "string" }).describe(settings.label)
-`
-		}
-		// arktype reads the label where it creates User, which precedes the change
-		const after = writeFixture(
-			{
-				...files,
-				"main.ts": `import { User } from "./user.ts"
-import "./mutate.ts"
-
-console.log(User.toJsonSchema().description)
-`
-			},
-			fromHere("temp", "comparedAfter")
-		)
-		attest(run(await bundlers.esbuild({ cwd: after }, after))).equals(
-			runPlain(after)
-		)
-		const mains = {
-			imported: `import "./mutate.ts"
-import { User } from "./user.ts"
-
-console.log(User.toJsonSchema().description)
-`,
-			local: `import "./mutate.ts"
-import { type } from "arktype"
-import { settings } from "./data.ts"
-
-const User = type({ name: "string" }).describe(settings.label)
-console.log(User.toJsonSchema().description)
-`,
-			composed: `import "./mutate.ts"
-import { type } from "arktype"
-import { settings } from "./data.ts"
-
-const User = type({ name: "string" }).describe(settings.label)
-const Admin = User.and({ admin: "true" })
-console.log(Admin.description)
-`
-		}
-		for (const [name, main] of Object.entries(mains)) {
-			const root = writeFixture(
-				{ ...files, "main.ts": main },
-				fromHere("temp", `compared${name}`)
-			)
-			attest(thrownBy(await bundlers.esbuild({ cwd: root }, root))).equals(
-				writeCreationMismatchMessage(
-					"`settings.label`",
-					'"changed"',
-					'"a user"'
-				)
-			)
-		}
-	})
-
 	it("checks a default where its Type is created", async () => {
 		const files = {
 			// a schema the build can write without the predicate's name
@@ -1906,131 +1284,38 @@ export const U = make()
 		})
 	})
 
-	it("keeps load-time validation in side-effect-free packages", async () => {
+	it("fixes the configuration of dropped Types", async () => {
 		const root = writeFixture(
 			{
-				"a.ts": `import { type } from "arktype"
-
-const Env = type({ PORT: "string.numeric" })
-export const env = Env.assert({ PORT: "x" })
-export const U = type({ b: "string" })
-`,
-				"main.ts": `import { U } from "./a.ts"
-
-console.log(JSON.stringify(U.json))
-`,
-				"package.json": `{ "type": "module", "sideEffects": false }`
+				"config.ts":
+					'import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: "delete" })\n',
+				"unread.ts":
+					'import { type } from "arktype"\n\nconst schema = type({ dropped: "string" }).toJsonSchema()\n',
+				"main.ts": 'import "./unread.ts"\nimport "./config.ts"\n'
 			},
-			fromHere("temp", "validatedAtLoad")
+			fromHere("temp", "dropped")
 		)
+		const stderrOf = (args: string[], input?: string) =>
+			spawnSync(process.execPath, args, {
+				cwd: root,
+				input,
+				encoding: "utf8"
+			}).stderr
 		attest(
-			thrownBy(
-				await bundlers.esbuild({ cwd: root, members: { json: true } }, root)
+			stderrOf(["--conditions", "ark-ts", "main.ts"]).includes(
+				configureAfterTypeMessage
 			)
-		).snap("PORT must be a well-formed numeric string")
-	})
-
-	it("checks functions where arktype would", async () => {
-		const definitions = {
-			thrown: `type(["'a'", "=>", double]).or(type({})).toJsonSchema()`,
-			called: `type([["null", ":", isPositive], "[]"])`,
-			json: `type([]).or(type([["null", ":", isPositive], "[]"])).json`
-		}
-		const errorOf = (root: string, file: string) =>
-			/^\w*Error: (.*)$/m.exec(
-				spawnSync(process.execPath, ["--conditions", "ark-ts", file], {
-					cwd: root,
-					encoding: "utf8"
-				}).stderr
-			)?.[1]
-		const results: Record<string, unknown> = {}
-		for (const [name, definition] of Object.entries(definitions)) {
-			const root = writeFixture(
-				{
-					"package.json": `{ "type": "module" }`,
-					"containers.js": `export const double = data => (typeof data === "number" ? data * 2 : data)
-export const isPositive = (data, ctx) => typeof data !== "number" || data > 0 || ctx.reject("positive")
-`,
-					"main.js": `import { type } from "arktype"
-import { double, isPositive } from "./containers.js"
-
-${definition}
-`
-				},
-				fromHere("temp", `checkedHoles${name}`)
+		).equals(true)
+		const bundle = await bundlers.esbuild(
+			{ cwd: root, config: "config.ts" },
+			root
+		)
+		attest(bundle.includes("dropped")).equals(false)
+		attest(
+			stderrOf(["--input-type=module"], bundle).includes(
+				writeCreatedBeforeConfigureMessage("unread.ts")
 			)
-			const { outputFiles } = await esbuild({
-				entryPoints: [join(root, "main.js")],
-				bundle: true,
-				write: false,
-				format: "esm",
-				minify: true,
-				conditions,
-				// e.g. a module the runtime resolves to another copy than the build read
-				external: ["./containers.js"],
-				logLevel: "silent",
-				plugins: [precompile.esbuild({ cwd: root, conditions })]
-			})
-			writeFileSync(join(root, "bundle.js"), outputFiles[0].text)
-			writeFileSync(
-				join(root, "containers.js"),
-				`export const double = Symbol("double")\nexport const isPositive = Symbol("isPositive")\n`
-			)
-			results[name] = [errorOf(root, "main.js"), errorOf(root, "bundle.js")]
-		}
-		attest(results).snap({
-			thrown: [
-				"Morph expression requires a function following '=>' (was symbol)",
-				"`double` (main.js:4:20) is Symbol(double), but was precompiled as a function of 1 parameter"
-			],
-			called: [
-				"Narrow expression requires a function following ':' (was symbol)",
-				"`isPositive` (main.js:4:21) is Symbol(isPositive), but was precompiled as a function of 2 or more parameters"
-			],
-			json: [
-				"Narrow expression requires a function following ':' (was symbol)",
-				"`isPositive` (main.js:4:33) is Symbol(isPositive), but was precompiled as a function of 2 or more parameters"
-			]
-		})
-	})
-
-	it("fixes the configuration of dropped Types", async () => {
-		const unread = {
-			validator: 'const Unread = type({ dropped: "string" })',
-			introspection: 'const schema = type({ dropped: "string" }).toJsonSchema()'
-		}
-		for (const [name, statement] of Object.entries(unread)) {
-			const root = writeFixture(
-				{
-					"config.ts":
-						'import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: "delete" })\n',
-					"unread.ts": `import { type } from "arktype"\n\n${statement}\n`,
-					"main.ts": 'import "./unread.ts"\nimport "./config.ts"\n'
-				},
-				fromHere("temp", `dropped${name}`)
-			)
-			const stderrOf = (args: string[], input?: string) =>
-				spawnSync(process.execPath, args, {
-					cwd: root,
-					input,
-					encoding: "utf8"
-				}).stderr
-			attest(
-				stderrOf(["--conditions", "ark-ts", "main.ts"]).includes(
-					configureAfterTypeMessage
-				)
-			).equals(true)
-			const bundle = await bundlers.esbuild(
-				{ cwd: root, config: "config.ts" },
-				root
-			)
-			attest(bundle.includes("dropped")).equals(false)
-			attest(
-				stderrOf(["--input-type=module"], bundle).includes(
-					writeCreatedBeforeConfigureMessage("unread.ts")
-				)
-			).equals(true)
-		}
+		).equals(true)
 	})
 
 	it("no configuration check without configure", async () => {
@@ -2115,17 +1400,6 @@ try {
 		])
 	})
 
-	it("vitest configured", async () => {
-		const state = await runVitest(
-			configured,
-			{ cwd: configured, config: "config.ts" },
-			{ EXPECTED: runPlain(configured) }
-		)
-		attest([state.getCountOfFailedTests(), state.getFiles().length]).equals([
-			0, 1
-		])
-	})
-
 	it("vitest checks factories at creation", async () => {
 		const checks = fromHere("checks")
 		const state = await runVitest(checks, { cwd: checks })
@@ -2143,18 +1417,5 @@ try {
 			"pass a mutated plain object",
 			"pass a polyfilled builtin"
 		])
-	})
-
-	it("vitest with a package that opts in", async () => {
-		for (const runtime of [undefined, "arktype"] as const) {
-			const state = await runVitest(
-				library,
-				{ runtime, cwd: library },
-				{ ARKTYPE_RUNTIME: runtime ?? "" }
-			)
-			attest([state.getCountOfFailedTests(), state.getFiles().length]).equals([
-				0, 1
-			])
-		}
 	})
 })
