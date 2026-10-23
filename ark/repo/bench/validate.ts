@@ -653,9 +653,14 @@ const verifyZodCompiled = (c: Case, arms: Arm[]) => {
 
 const batchMs = 0.5
 
-const warmMs = 1000
+// every benched case is warmed before any is timed, so no row is an arm's
+// cold start: rows sharing a failure path (issues, errors and first on the
+// same schema) otherwise warm it for the rows after them. arktype's
+// first-error path on items, ~10 functions tiering up apart, settled after
+// ~20k calls; an arm too slow to make them stops at warmMs
+const warmCalls = 20_000
 
-const warmCalls = 10_000
+const warmMs = 1000
 
 // copies few enough to stay in cache, as freshly parsed JSON is
 const maxPoolSize = 256
@@ -673,17 +678,20 @@ const timeBatch = (c: Case, arm: Arm) => {
 	return (elapsedMs * 1e6) / arm.batchSize
 }
 
-// warms the arm up first, since one cold call can outlast a whole batch
-const calibrate = (c: Case, arm: Arm) => {
-	arm.batchSize = c.inputs.length
+const warm = (c: Case, arm: Arm) => {
+	arm.batchSize = maxPoolSize
 	const warmUntil = performance.now() + warmMs
-	// error paths span many functions, which optimize only after many calls
 	for (
 		let calls = 0;
-		performance.now() < warmUntil && calls < warmCalls;
-		calls += arm.batchSize
+		calls < warmCalls && performance.now() < warmUntil;
+		calls += maxPoolSize
 	)
 		timeBatch(c, arm)
+}
+
+// the smallest batch lasting batchMs
+const calibrate = (c: Case, arm: Arm) => {
+	arm.batchSize = c.inputs.length
 	while (timeBatch(c, arm) * arm.batchSize < batchMs * 1e6) arm.batchSize *= 2
 }
 
@@ -746,13 +754,22 @@ if (process.env.BENCH_COUNT) {
 // a process per library, so none shares another's JIT feedback or garbage
 if (benchedLibrary) {
 	const armsByCase = new Map<Case, Arm>()
+	for (const c of cases) {
+		const arm =
+			isBenchedCase(`${c.mode} ${c.name}`) &&
+			armsOf(c).find(arm => arm.library === benchedLibrary)
+		if (arm) armsByCase.set(c, arm)
+	}
+	for (const [c, arm] of armsByCase) warm(c, arm)
+	const calibrated = new Set<Case>()
 	process.on("message", (caseIndex: number) => {
 		const c = cases[caseIndex]
-		let arm = armsByCase.get(c)
-		if (!arm) {
-			arm = armsOf(c).find(arm => arm.library === benchedLibrary)!
-			armsByCase.set(c, arm)
+		const arm = armsByCase.get(c)!
+		// warmed again, since the cases after it may have deoptimized it
+		if (!calibrated.has(c)) {
+			warm(c, arm)
 			calibrate(c, arm)
+			calibrated.add(c)
 		}
 		process.send!(timeBatch(c, arm))
 	})
