@@ -827,6 +827,7 @@
 	}
 	.note,
 	.pair-note {
+		max-width: 104ch;
 		margin: 18px 0 0;
 		font: 400 13.5px / 1.6 var(--mono);
 		color: var(--ink-3);
@@ -834,6 +835,14 @@
 		text-indent: -3ch;
 		code {
 			color: var(--gold);
+		}
+		> p {
+			margin: 0;
+		}
+		/* only the first paragraph hangs its asterisk */
+		> p + p {
+			margin-top: 0.7em;
+			text-indent: 0;
 		}
 	}
 	.pair-note {

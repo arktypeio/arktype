@@ -1,17 +1,13 @@
 ---
 title: Announcing ArkType 3.0
-# mirrors claims.headline in lib/claims.ts, which is still undecided
-description: Faster than Typia, smaller than Valibot and designed for agentic DX
+# mirrors claims.headline in lib/claims.ts
+description: TypeScript's smallest, fastest validator, designed for agentic DX
 date: 2026-10-21 # the release sets this, and blog/index.mdx's date, to the day it publishes
 ---
 
 As of today, ArkType 3.0 is generally available🎉
 
-**<Claim id="headline" />** It's also designed for agentic DX.
-
-<HeadlineDetail />
-
-<HeadlineNote />
+**<Headline />** It's also designed for agentic DX.
 
 Precompiled validators have always been faster and smaller than ones that parse at runtime. What they cost was a build step: a plugin to set up, errors you'd never seen and a second model of what runs where. For most projects, it wasn't worth it.
 
@@ -58,6 +54,8 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 Precompiled, ArkType keeps its syntax, its errors and its set theory, and gives up neither speed nor size for them.
 
 <ClaimCharts />
+
+<HeadlineNote />
 
 ### Speed
 
