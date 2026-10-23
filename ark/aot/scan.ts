@@ -1,5 +1,6 @@
+import { isAbsolute } from "node:path"
 import { parseSync, type Node } from "oxc-parser"
-import { dependencyOf, transformedId } from "./host.ts"
+import { dependencyOf, printablePathOf, transformedId } from "./host.ts"
 import type { ScannedModule, ScannedProgram } from "./precompile.ts"
 import { walk } from "./scope.ts"
 
@@ -18,6 +19,9 @@ export interface ScanHost {
 	readFile: (id: string) => string | undefined
 	// whether the plugin precompiles a module the bundler loads
 	isTransformed: (id: string) => boolean
+	// the precompiler's name for a module, which a bundler may write otherwise,
+	// as Vite writes / on Windows
+	idOf: (id: string) => string
 }
 
 export interface ScanEntry {
@@ -35,36 +39,35 @@ export const scanProgram = async (
 ): Promise<ScannedProgram | undefined> => {
 	const modules: Record<string, ScannedModule> = {}
 	const targets: Record<string, Record<string, string>> = {}
-	const pending = entries.map(entry => entry.id)
-	const given = new Map(entries.map(entry => [entry.id, entry.source]))
-	for (let i = 0; i < pending.length; i++) {
-		const id = pending[i]
-		const source = given.get(id) ?? host.readFile(id)
+	// the bundler's id for each module, which it resolves from
+	const pending = new Map<string, string>()
+	const add = (hostId: string) => {
+		const id = host.idOf(hostId)
+		if (!pending.has(id)) pending.set(id, hostId)
+		return id
+	}
+	const given = new Map(entries.map(entry => [add(entry.id), entry.source]))
+	for (const [id, hostId] of pending) {
+		const source = given.get(id) ?? host.readFile(hostId)
 		if (source === undefined) return
 		modules[id] = {
 			source,
-			transformed: given.get(id) === undefined && host.isTransformed(id)
+			transformed: given.get(id) === undefined && host.isTransformed(hostId)
 		}
 		const imports = importsOf(id, source)
 		if (!imports) return
 		const resolved: Record<string, string> = (targets[id] = {})
 		for (const [specifier, kind] of imports) {
 			if (runtimeSpecifier.test(specifier)) continue
-			const target = await host.resolve(specifier, id, kind)
+			const target = await host.resolve(specifier, hostId, kind)
 			if (target === undefined) return
 			if (target === null || isInert(target, host)) continue
 			// e.g. a Vue component, which may read a validator the build can't see
 			if (!transformedId.test(target)) return
-			resolved[specifier] = target
-			if (!pending.includes(target)) pending.push(target)
+			resolved[specifier] = add(target)
 		}
 	}
-	return {
-		key,
-		entries: entries.map(entry => entry.id),
-		modules,
-		targets
-	}
+	return { key, entries: [...given.keys()], modules, targets }
 }
 
 // arktype's own, which never import the program
@@ -145,7 +148,8 @@ const langOf = (id: string) =>
 	: /\.jsx$/.test(id) ? "jsx"
 	: "js"
 
-// the modules a bundle holds, and each import of one, from what it bundled
+// the modules a bundle holds, and each import of one, from what it bundled,
+// each as the precompiler names it
 export interface Imports {
 	// undefined where the build can't read it
 	entries: (string | undefined)[]
@@ -154,16 +158,34 @@ export interface Imports {
 	edges: [importer: string | undefined, target: string][]
 }
 
+// each module's source as the plugin loaded it, by the precompiler's name for
+// it, null where the bundle loads its file under two ids unalike
+export type LoadedSources = Map<string, string | null>
+
+export const addLoaded = (
+	loaded: LoadedSources,
+	id: string,
+	source: string
+): void => {
+	loaded.set(id, !loaded.has(id) || loaded.get(id) === source ? source : null)
+}
+
 // why the bundle may hold a read its scan didn't see, if it may
 export const unseenProblemOf = (
 	scanned: ScannedProgram,
 	imports: Imports,
-	// each module's source as the plugin loaded it
-	loaded: ReadonlyMap<string, string>
+	loaded: LoadedSources,
+	// what messages name paths from
+	cwd: string
 ): string | undefined => {
+	const pathOf = (id: string) =>
+		isAbsolute(id) ? printablePathOf(cwd, id) : id
 	for (const entry of imports.entries) {
-		if (entry === undefined || !scanned.entries.includes(entry))
-			return writeUnseenMessage(`it built ${entry ?? "an entry"} as an entry`)
+		if (entry === undefined || !scanned.entries.includes(entry)) {
+			return writeUnseenMessage(
+				`it built ${entry === undefined ? "an entry" : pathOf(entry)} as an entry`
+			)
+		}
 	}
 	for (const id of imports.modules) {
 		// e.g. esbuild's stdin, which the bundler reads as the scan did
@@ -171,8 +193,8 @@ export const unseenProblemOf = (
 		if (loaded.get(id) !== scanned.modules[id].source) {
 			return writeUnseenMessage(
 				loaded.has(id) ?
-					`it built ${id} from other code than it read`
-				:	`another plugin loaded ${id}`
+					`it built ${pathOf(id)} from other code than it read`
+				:	`another plugin loaded ${pathOf(id)}`
 			)
 		}
 	}
@@ -183,7 +205,7 @@ export const unseenProblemOf = (
 			!Object.values(scanned.targets[importer] ?? {}).includes(target)
 		) {
 			return writeUnseenMessage(
-				`${importer ?? "a module it can't read"} imports ${target}`
+				`${importer === undefined ? "a module it can't read" : pathOf(importer)} imports ${pathOf(target)}`
 			)
 		}
 	}
