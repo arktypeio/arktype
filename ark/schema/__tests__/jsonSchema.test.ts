@@ -436,6 +436,80 @@ contextualize(() => {
 }`)
 		})
 
+		it("tuple", () => {
+			const T = rootSchema({
+				proto: "Array",
+				sequence: {
+					prefix: ["string"],
+					variadic: "number",
+					postfix: [{ unit: true }]
+				}
+			})
+
+			attest(() => T.toJsonSchema({ target: "openapi-3.0" })).throws
+				.snap(`ToJsonSchemaError: {
+    code: "tuple",
+    base: {
+        type: "array",
+        items: {
+            anyOf: [
+                {
+                    type: "string"
+                },
+                {
+                    type: "number"
+                },
+                {
+                    enum: [
+                        true
+                    ]
+                }
+            ]
+        },
+        minItems: 2
+    },
+    prefix: [
+        {
+            type: "string"
+        }
+    ],
+    variadic: {
+        type: "number"
+    },
+    postfix: [
+        {
+            enum: [
+                true
+            ]
+        }
+    ]
+}`)
+		})
+
+		it("patternKey", () => {
+			const T = rootSchema({
+				domain: "object",
+				index: [
+					{
+						signature: { domain: "string", pattern: ["^a"] },
+						value: "string"
+					}
+				]
+			})
+
+			attest(() => T.toJsonSchema({ target: "openapi-3.0" })).throws
+				.snap(`ToJsonSchemaError: {
+    code: "patternKey",
+    base: {
+        type: "object"
+    },
+    pattern: "^a",
+    value: {
+        type: "string"
+    }
+}`)
+		})
+
 		it("default", () => {
 			const T = rootSchema({
 				domain: "object",

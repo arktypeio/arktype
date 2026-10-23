@@ -861,6 +861,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 
+		// keys matching an omitted pattern must not be rejected as undeclared
+		let omitsPatternKey = false
+
 		if (this.index) {
 			for (const index of this.index) {
 				const valueJsonSchema = index.value.toJsonSchemaRecurse(ctx)
@@ -912,6 +915,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 							})
 						}
 
+						// OpenAPI 3.0 has no patternProperties
+						if (ctx.target === "openapi-3.0") {
+							schema = ctx.fallback.patternKey({
+								code: "patternKey",
+								base: schema,
+								pattern: keySchemaWithPattern.pattern,
+								value: valueJsonSchema
+							})
+							omitsPatternKey = true
+							continue
+						}
+
 						schema.patternProperties ??= {}
 						schema.patternProperties[keySchemaWithPattern.pattern] =
 							valueJsonSchema
@@ -920,7 +935,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 
-		if (this.undeclared && !schema.additionalProperties)
+		if (this.undeclared && !schema.additionalProperties && !omitsPatternKey)
 			schema.additionalProperties = false
 
 		return schema
