@@ -205,26 +205,26 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			outcomes = diverged()
 		})
 
-		it("validating", () => {
-			attest(outcomes.validated).snap(
-				'Error: validated diverges from arktype at call(2): arktype gives {"out":2}, its validator {"issues":[{"code":"predicate","path":[],"data":2}]}'
-			)
-		})
-
-		it("calling a function otherwise", () => {
-			attest(outcomes.called).snap(
-				'Error: called diverges from arktype at call("abc"): arktype gives calls isA("abc"), its validator calls isA("abc!")'
-			)
-		})
-
-		it("calling a function with another ctx", () => {
-			attest(outcomes.checked).snap(
-				'Error: checked diverges from arktype at call("abc"): arktype gives calls isFirst("abc", ctx {"path":[],"errorCount":0,"errors":[],"data":"abc"}), its validator calls isFirst("abc", ctx {"path":[],"errorCount":1,"errors":[["predicate"]],"data":"abc"})'
-			)
-		})
-
-		it("caught and raised again", () => {
+		it("throws naming where, or raises again what's caught", () => {
 			const { reported, swallowed, reordered, ...thrown } = outcomes
+			attest(thrown).snap({
+				validated:
+					'Error: validated diverges from arktype at call(2): arktype gives {"out":2}, its validator {"issues":[{"code":"predicate","path":[],"data":2}]}',
+				called:
+					'Error: called diverges from arktype at call("abc"): arktype gives calls isA("abc"), its validator calls isA("abc!")',
+				checked:
+					'Error: checked diverges from arktype at call("abc"): arktype gives calls isFirst("abc", ctx {"path":[],"errorCount":0,"errors":[],"data":"abc"}), its validator calls isFirst("abc", ctx {"path":[],"errorCount":1,"errors":[["predicate"]],"data":"abc"})',
+				shared:
+					'Error: shared diverges from arktype at call({}), the input as arktype\'s morphs left it, though each prints alike: arktype gives {"out":{"a":{},"b":{}},"input":{}}, its validator {"out":{"a":{},"b":{}},"input":{}}',
+				length:
+					'Error: length diverges from arktype at call(["abc"]), the input as arktype\'s morphs left it: arktype gives {"out":3,"input":["abc"]}, its validator {"out":4,"input":["abc"]}',
+				bumped:
+					'Error: bumped diverges from arktype at call(Counter), the input as arktype\'s morphs left it, which its validator received too, since it can\'t be copied: arktype gives {"out":2}, its validator {"out":4}',
+				aliased:
+					'Error: aliased diverges from arktype at call({}), the input as arktype\'s morphs left it, though each prints alike: arktype gives calls isSame({"a":{},"b":{}}), its validator calls isSame({"a":{},"b":{}})',
+				rooted:
+					'Error: rooted diverges from arktype at call({"a":"x"}): arktype gives calls isFlagged("x", ctx {"path":["a"],"errorCount":0,"errors":[],"data":"x"}), its validator calls isFlagged("x", ctx {"path":["a"],"errorCount":0,"errors":[],"data":"x"}) with another ctx.root'
+			})
 			attest(swallowed).equals("fallback")
 			attest(reported.slice(0, -1)).equals(Object.values(thrown))
 			attest(reported[reported.length - 1]).snap(
@@ -234,36 +234,6 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 
 		it("not where a first-issue validator finds another issue", () => {
 			attest(outcomes.reordered).snap("a[0] must be a string (was a number)")
-		})
-
-		it("sharing an object arktype's output doesn't", () => {
-			attest(outcomes.shared).snap(
-				'Error: shared diverges from arktype at call({}), the input as arktype\'s morphs left it, though each prints alike: arktype gives {"out":{"a":{},"b":{}},"input":{}}, its validator {"out":{"a":{},"b":{}},"input":{}}'
-			)
-		})
-
-		it("in a type.fn", () => {
-			attest(outcomes.length).snap(
-				'Error: length diverges from arktype at call(["abc"]), the input as arktype\'s morphs left it: arktype gives {"out":3,"input":["abc"]}, its validator {"out":4,"input":["abc"]}'
-			)
-		})
-
-		it("passing one object where arktype passes two", () => {
-			attest(outcomes.aliased).snap(
-				'Error: aliased diverges from arktype at call({}), the input as arktype\'s morphs left it, though each prints alike: arktype gives calls isSame({"a":{},"b":{}}), its validator calls isSame({"a":{},"b":{}})'
-			)
-		})
-
-		it("calling a function with another ctx.root", () => {
-			attest(outcomes.rooted).snap(
-				'Error: rooted diverges from arktype at call({"a":"x"}): arktype gives calls isFlagged("x", ctx {"path":["a"],"errorCount":0,"errors":[],"data":"x"}), its validator calls isFlagged("x", ctx {"path":["a"],"errorCount":0,"errors":[],"data":"x"}) with another ctx.root'
-			)
-		})
-
-		it("after a morph wrote an uncopyable input", () => {
-			attest(outcomes.bumped).snap(
-				'Error: bumped diverges from arktype at call(Counter), the input as arktype\'s morphs left it, which its validator received too, since it can\'t be copied: arktype gives {"out":2}, its validator {"out":4}'
-			)
 		})
 	})
 })

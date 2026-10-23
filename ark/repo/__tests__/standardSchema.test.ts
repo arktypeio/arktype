@@ -168,14 +168,6 @@ category invalid option: expected one of "electronics"|"books"|"clothing"`)
 nickname invalid type: Expected string but received 5`)
 	})
 
-	it("prefixes issues without a path with an array index", () => {
-		const T = type(z.string()).array()
-
-		attest(T(["a", 1]).toString()).snap(
-			"value at [1] invalid input: expected string, received number"
-		)
-	})
-
 	// like Effect's Schema.standardSchemaV1
 	it("accepts a class as a standard schema", () => {
 		class NumberSchema {

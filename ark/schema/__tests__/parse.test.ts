@@ -1,5 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
-import { registerNodeId, rootSchema, schemaScope } from "@ark/schema"
+import {
+	parseAsSchema,
+	registerNodeId,
+	rootSchema,
+	schemaScope,
+	writeInvalidSchemaMessage
+} from "@ark/schema"
+import { ParseError } from "@ark/util"
 
 contextualize(() => {
 	it("unique ids for digit-ending prefixes", () => {
@@ -8,6 +15,26 @@ contextualize(() => {
 		for (let i = 0; i < 2; i++) ids.add(registerNodeId("unique11"))
 
 		attest(ids.size).equals(14)
+	})
+
+	it("invalid schema", () => {
+		attest(() => rootSchema(5 as never)).throws(writeInvalidSchemaMessage(5))
+		attest(() => rootSchema({ foo: 1 } as never)).throws(
+			writeInvalidSchemaMessage({ foo: 1 })
+		)
+		attest(parseAsSchema(5)).instanceOf(ParseError)
+	})
+
+	it("structure keys both flattened and nested", () => {
+		attest(() =>
+			rootSchema({
+				domain: "object",
+				structure: {},
+				required: [{ key: "a", value: "string" }]
+			} as never)
+		).throws.snap(
+			"ParseError: Flattened structure key required cannot be specified alongside a root 'structure' key."
+		)
 	})
 
 	it("single constraint", () => {
@@ -48,6 +75,14 @@ contextualize(() => {
 		})
 		attest(T.allows([1])).equals(true)
 		attest(T.allows([])).equals(false)
+		attest(() =>
+			rootSchema({
+				proto: Array,
+				sequence: { prefix: ["number"], minVariadicLength: 1 }
+			} as never)
+		).throws.snap(
+			"ParseError: minVariadicLength may not be specified without a variadic element"
+		)
 	})
 
 	it("throws on reduced minLength disjoint", () => {

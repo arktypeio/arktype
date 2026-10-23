@@ -192,23 +192,17 @@ export const B = type("number")
 		])
 	})
 
-	it("lets code outside it read what its Type has", () => {
-		attest(
-			diagnosticsOf(`import { type } from "arktype"
-// @ark-runtime
-const T = type({ a: "string" })
-const { in: I } = T
-console.log(I.expression)`)
-		).snap([])
-	})
-
-	it("lets an island read what configure() returns", () => {
+	it("lets an island read what configure() returns, and code outside it read what its Type has", () => {
 		attest(
 			diagnosticsOf(
 				`import { type } from "arktype"
 import { config } from "./config.ts"
 // @ark-runtime
-export const T = type("number").describe(config.keywords.string.description)`,
+export const T = type("number").describe(config.keywords.string.description)
+// @ark-runtime
+const U = type({ a: "string" })
+const { in: I } = U
+console.log(I.expression)`,
 				{
 					"/config.ts": `import { configure } from "arktype/config"
 export const config: any = configure({ keywords: { string: { description: "text" } } })`
@@ -218,11 +212,11 @@ export const config: any = configure({ keywords: { string: { description: "text"
 		).equals([])
 	})
 
-	it("fails for what an island reads that the build precompiles", () => {
+	it("fails for what an island reads that the build precompiles, through casts or literals too", () => {
 		attest(
 			diagnosticsOf(
 				`import { type } from "arktype"
-import { Base, makeId, makeName } from "./b.ts"
+import { Base, makeId, makeName, schemas } from "./b.ts"
 import * as b from "./b.ts"
 export const User = type({ name: "string" })
 // @ark-runtime
@@ -236,7 +230,11 @@ export const Identified = makeId(process.argv[2])
 // @ark-runtime
 export const Extended = Base.and({ role: process.argv[2] })
 // @ark-runtime
-export const Wrapped = type({ shared: b.Shared, name: process.argv[2] })`,
+export const Wrapped = type({ shared: b.Shared, name: process.argv[2] })
+// @ark-runtime
+export const Cast = (b as typeof b).Shared.or("null")
+// @ark-runtime
+export const Literal = schemas.User.or("null")`,
 				{
 					"/b.ts": `import { type } from "arktype"
 export const makeName = (def: string) => type({ name: def })
@@ -245,35 +243,17 @@ export const makeId = (def: string) =>
 	type({ id: def })
 // @ark-runtime
 export const Base = type({ name: process.argv[2] })
-export const Shared = type("string")`
-				}
-			)
-		).snap([
-			'/b.ts:2:42  `type` is arktype/runtime\'s outside a runtime island\n  the runtime island at /main.ts:10:1 reaches it through `makeName` (/b.ts:2:14)\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".',
-			'/main.ts:6:22  `User` is a precompiled validator, which a runtime island can only validate with\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".',
-			'/main.ts:16:39  `b.Shared` is a precompiled validator, which a runtime island can only validate with\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".'
-		])
-	})
-
-	it("fails for Types read through casts or literals", () => {
-		attest(
-			diagnosticsOf(
-				`import * as b from "./b.ts"
-import { schemas } from "./b.ts"
-// @ark-runtime
-export const A = (b as typeof b).Shared.or("null")
-// @ark-runtime
-export const B = schemas.User.or("null")`,
-				{
-					"/b.ts": `import { type } from "arktype"
 export const Shared = type("string")
 const User = type({ name: "string" })
 export const schemas = { User }`
 				}
 			)
 		).snap([
-			'/main.ts:4:18  `(b as typeof b).Shared` is a precompiled validator, which a runtime island can only validate with\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".',
-			'/b.ts:4:26  `User` is a precompiled validator, which a runtime island can only validate with\n  the runtime island at /main.ts:6:1 reaches it through `schemas` (/b.ts:4:14)\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".'
+			'/b.ts:2:42  `type` is arktype/runtime\'s outside a runtime island\n  the runtime island at /main.ts:10:1 reaches it through `makeName` (/b.ts:2:14)\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".',
+			'/main.ts:6:22  `User` is a precompiled validator, which a runtime island can only validate with\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".',
+			'/b.ts:10:26  `User` is a precompiled validator, which a runtime island can only validate with\n  the runtime island at /main.ts:20:1 reaches it through `schemas` (/b.ts:10:14)\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".',
+			'/main.ts:16:39  `b.Shared` is a precompiled validator, which a runtime island can only validate with\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".',
+			'/main.ts:18:21  `(b as typeof b).Shared` is a precompiled validator, which a runtime island can only validate with\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".'
 		])
 	})
 })

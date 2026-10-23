@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import type { jsonSchema } from "@ark/json-schema"
+import { jsonSchemaToType, type jsonSchema } from "@ark/json-schema"
 import type { array } from "@ark/util"
 
 const inferred = <const schema, r = jsonSchema.infer<schema>>(
@@ -368,6 +368,27 @@ contextualize(() => {
 				// prettier-ignore
 				inferred({ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ allOf: [{ prefixItems: [{ type: "string" }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] })
 			).type.errors.is("")
+		})
+	})
+
+	describe("validation depth", () => {
+		it("validates properties nested thirty-five deep", () => {
+			attest(() =>
+				// prettier-ignore
+				inferred({ type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "string" } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } })
+			).type.errors.is("")
+		})
+
+		it("properties nested forty deep with a leaf only tier 3 accepts", () => {
+			// the leaf's branches require keys they don't declare, which fails tier 2 along the whole path
+			// prettier-ignore
+			attest(() => jsonSchemaToType({ type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { type: "object", properties: { a: { oneOf: [{ required: ["x"] }, { required: ["y"] }] } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } })).type.errors.is("")
+		})
+
+		it("allOf with a boolean branch nested forty deep", () => {
+			// tier-1 lists are object-only, so a boolean branch falls back to tier 2 at every level
+			// prettier-ignore
+			attest(() => jsonSchemaToType({ allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { allOf: [true, { type: "string" }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] }] })).type.errors.is("")
 		})
 	})
 })

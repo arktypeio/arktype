@@ -64,7 +64,7 @@ export const nullables = forms.map(form => form.or("null"))`
 		])
 	})
 
-	it("applies the members a build drops", () => {
+	it("applies the build's members and mutatesInput", () => {
 		const code = `import { type } from "arktype"
 export const User = type({ name: "string" })
 export const check = data => User.assert(data)`
@@ -77,15 +77,13 @@ export const check = data => User.assert(data)`
 	Value {"asserts":false} should NOT have additional properties.
 		Unexpected property "asserts". Expected properties: "assert", "meta", "~standard", "methods", "expression", "description", "json", "toJSON", "toJsonSchema", "~standard.jsonSchema".
 `)
-	})
-
-	it("accepts transforms a build copies", () => {
-		const code = `import { type } from "arktype"
+		// a build that copies its input accepts transforms
+		const tagged = `import { type } from "arktype"
 export const Tagged = type({
 	"tags?": ["object", ["string", "=", "none"]],
 	"[string]": { "[string]": { label: ["string", "=", "none"] } }
 })`
-		attest(lint(code, { mutatesInput: "always" })).equals([])
+		attest(lint(tagged, { mutatesInput: "always" })).equals([])
 	})
 
 	it("applies a changed configuration", () => {

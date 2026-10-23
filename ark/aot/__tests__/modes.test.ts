@@ -44,48 +44,24 @@ export const T = type("string")`)
 			).equals([])
 		})
 
-		it("configure outside the config module", () => {
-			attest(
-				diagnosticsOf(
-					`import { configure } from "arktype/config"
-configure({ exactOptionalPropertyTypes: false })`,
+		it("configure where the build can't apply it", () => {
+			const once = `import { configure } from "arktype/config"
+configure({ exactOptionalPropertyTypes: false })`
+			attest([
+				...diagnosticsOf(once, {}, { config: "/config.ts" }),
+				...diagnosticsOf(once),
+				...diagnosticsOf(once, {}, { config: false }),
+				...diagnosticsOf(
+					`${once}\nconfigure({ numberAllowsNaN: true })`,
 					{},
-					{ config: "/config.ts" }
+					{
+						config: "/main.ts"
+					}
 				)
-			).snap([
-				"/main.ts:2:1  configure() is called outside the config module /config.ts\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
-			])
-			attest(
-				diagnosticsOf(`import { configure } from "arktype/config"
-configure({ exactOptionalPropertyTypes: false })`)
-			).snap([
-				'/main.ts:2:1  configure() is called, but the build has no `config` module\n  Name this module as the build\'s config: { config: "/main.ts" }'
-			])
-		})
-
-		it("configure where the build's config is false", () => {
-			attest(
-				diagnosticsOf(
-					`import { configure } from "arktype/config"
-configure({ exactOptionalPropertyTypes: false })`,
-					{},
-					{ config: false }
-				)
-			).snap([
-				"/main.ts:2:1  configure() is called, but the build's `config` is false\n  Remove the call, or name its module as the build's `config`."
-			])
-		})
-
-		it("configure more than once", () => {
-			attest(
-				diagnosticsOf(
-					`import { configure } from "arktype/config"
-configure({ exactOptionalPropertyTypes: false })
-configure({ numberAllowsNaN: true })`,
-					{},
-					{ config: "/main.ts" }
-				)
-			).snap([
+			]).snap([
+				"/main.ts:2:1  configure() is called outside the config module /config.ts\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
+				'/main.ts:2:1  configure() is called, but the build has no `config` module\n  Name this module as the build\'s config: { config: "/main.ts" }',
+				"/main.ts:2:1  configure() is called, but the build's `config` is false\n  Remove the call, or name its module as the build's `config`.",
 				"/main.ts:3:1  configure() is called more than once\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 			])
 		})
@@ -808,9 +784,7 @@ export const check = (data: unknown) => {
 			).snap([
 				'/main.ts:2:14  `type` is used outside a precompiled site\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
 			])
-		})
-
-		it("re-exports of arktype", () => {
+			// re-exporting it isn't using it
 			attest(
 				diagnosticsOf(`import { type, scope } from "arktype"
 export { type }
@@ -871,21 +845,6 @@ export const parse = (data: unknown) => {
 			attest(diagnosticsOf(source, {}, { runtime: "arktype" })).snap([])
 		})
 
-		it("cache mode holds no value the build cannot read", () => {
-			attest(
-				diagnosticsOf(
-					`import { type } from "arktype"
-let def = "string"
-def = "number"
-export const T = type(def)`,
-					{},
-					{ runtime: "arktype" }
-				)
-			).snap([
-				'/main.ts:4:18  type(def) cannot be precompiled\n  `def` is assigned at /main.ts:3:1, so its value at the site is not known\n  With runtime: "arktype", arktype defines this at runtime.'
-			])
-		})
-
 		it("cache mode reports without rejecting", () => {
 			const source = `import { type } from "arktype"
 const make = type
@@ -898,6 +857,19 @@ export const field = (limit: number) => {
 			).snap(["R4 error", "R1 error"])
 			attest(diagnosticsOf(source, {}, { runtime: "arktype" })).snap([
 				'/main.ts:4:16  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of field (/main.ts:3:23); its value is known only at runtime\n  With runtime: "arktype", arktype defines this at runtime.'
+			])
+			// it holds no value the build cannot read
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+let def = "string"
+def = "number"
+export const T = type(def)`,
+					{},
+					{ runtime: "arktype" }
+				)
+			).snap([
+				'/main.ts:4:18  type(def) cannot be precompiled\n  `def` is assigned at /main.ts:3:1, so its value at the site is not known\n  With runtime: "arktype", arktype defines this at runtime.'
 			])
 			// arktype tests `null` against `Cat` as it defines the type
 			const tested = `import { type } from "arktype"

@@ -192,12 +192,9 @@ contextualize(function (this: Mocha.Suite) {
 	})
 
 	describe("node", () => {
-		it("standalone", () => {
-			attest(node(["main.ts"], {}).stdout).equals(expected)
-		})
-
-		it("cache", () => {
-			attest(node(["main.ts"], { runtime: "arktype" }).stdout).equals(expected)
+		it("standalone or cache", () => {
+			for (const runtime of [undefined, "arktype"] as const)
+				attest(node(["main.ts"], { runtime }).stdout).equals(expected)
 		})
 
 		it("prints errors as their issues outside production", () => {
@@ -420,16 +417,11 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			])
 		})
 
-		it("configured", () => {
+		it("configured, or behind a transpiling loader", () => {
 			for (const runtime of [undefined, "arktype"] as const) {
 				attest(
 					node(["main.ts"], { runtime, config: "config.ts" }, configured).stdout
 				).equals(runPlain(configured))
-			}
-		})
-
-		it("configured behind a transpiling loader", () => {
-			for (const runtime of [undefined, "arktype"] as const) {
 				attest(
 					node(
 						["--import", "./loader.ts", "main.ts"],
@@ -930,14 +922,12 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			result.stderr.match(/\d+ pass/)?.[0]
 		]
 
-		it("standalone", () => {
-			attest(bun([...preload, "main.ts"]).stdout).equals(expected)
-		})
-
-		it("cache", () => {
-			attest(
-				bun([...preload, "main.ts"], { runtime: "arktype" }).stdout
-			).equals(expected)
+		it("standalone or cache", () => {
+			for (const runtime of ["", "arktype"]) {
+				attest(bun([...preload, "main.ts"], { runtime }).stdout).equals(
+					expected
+				)
+			}
 		})
 
 		it("prints errors as their issues outside production", () => {

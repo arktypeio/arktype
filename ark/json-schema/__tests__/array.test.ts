@@ -2,88 +2,47 @@ import { attest, contextualize } from "@ark/attest"
 import { jsonSchemaToType } from "@ark/json-schema"
 
 contextualize(() => {
-	it("type array", () => {
-		const t = jsonSchemaToType({ type: "array" })
-		attest(t.expression).snap("Array")
-	})
-
-	it("items", () => {
-		const tItems = jsonSchemaToType({
-			type: "array",
-			items: { type: "string" }
-		})
-		attest(tItems.expression).snap("string[]")
-
-		const tItemsArr = jsonSchemaToType({
-			type: "array",
-			items: [{ type: "string" }, { type: "number" }]
-		})
-		attest(tItemsArr.expression).snap("[string?, number?, ...unknown[]]")
+	it("items array", () => {
+		attest(
+			jsonSchemaToType({
+				type: "array",
+				items: [{ type: "string" }, { type: "number" }]
+			}).expression
+		).snap("[string?, number?, ...unknown[]]")
+		attest(
+			jsonSchemaToType({
+				type: "array",
+				items: [{ type: "string" }],
+				additionalItems: false
+			}).expression
+		).snap("[string?]")
 	})
 
 	it("prefixItems", () => {
-		const tPrefixItems = jsonSchemaToType({
-			type: "array",
-			prefixItems: [{ type: "string" }, { type: "number" }]
-		})
-		attest(tPrefixItems.expression).snap("[string?, number?, ...unknown[]]")
+		attest(
+			jsonSchemaToType({
+				type: "array",
+				prefixItems: [{ type: "string" }, { type: "number" }],
+				items: { type: "boolean" }
+			}).expression
+		).snap("[string?, number?, ...boolean[]]")
 	})
 
-	it("items & prefixItems", () => {
-		const tItemsAndPrefixItems = jsonSchemaToType({
-			type: "array",
-			prefixItems: [{ type: "string" }, { type: "number" }],
-			items: { type: "boolean" }
-		})
-		attest(tItemsAndPrefixItems.expression).snap(
-			"[string?, number?, ...boolean[]]"
-		)
-	})
-
-	it("additionalItems & items", () => {
-		const tItemsVariadic = jsonSchemaToType({
-			type: "array",
-			additionalItems: { type: "boolean" },
-			items: [{ type: "string" }, { type: "number" }]
-		})
-		attest(tItemsVariadic.expression).snap("[string?, number?, ...boolean[]]")
-
-		const tItemsFalseAdditional = jsonSchemaToType({
-			type: "array",
-			additionalItems: false,
-			items: [{ type: "string" }]
-		})
-		attest(tItemsFalseAdditional.expression).snap("[string?]")
-
+	it("additionalItems applies only beside an items array", () => {
 		attest(
 			jsonSchemaToType({
 				type: "array",
 				additionalItems: { type: "string" },
-				items: { type: "string" }
+				items: { type: "number" }
 			}).expression
-		).snap("string[]")
-	})
-
-	it("additionalItems & prefixItems", () => {
-		const tPrefixItemsAndAdditional = jsonSchemaToType({
-			type: "array",
-			additionalItems: { type: "boolean" },
-			prefixItems: [{ type: "string" }, { type: "number" }]
-		})
-		attest(tPrefixItemsAndAdditional.expression).snap(
-			"[string?, number?, ...unknown[]]"
-		)
-	})
-
-	it("additionalItems & items & prefixItems", () => {
+		).snap("number[]")
 		attest(
 			jsonSchemaToType({
 				type: "array",
 				additionalItems: { type: "boolean" },
-				items: { type: "null" },
-				prefixItems: [{ type: "string" }, { type: "number" }]
+				prefixItems: [{ type: "string" }]
 			}).expression
-		).snap("[string?, number?, ...null[]]")
+		).snap("[string?, ...unknown[]]")
 	})
 
 	it("maxContains message", () => {
@@ -98,41 +57,16 @@ contextualize(() => {
 		)
 	})
 
-	it("minItems and maxItems", () => {
-		attest(jsonSchemaToType({ type: "array", maxItems: 5 }).expression).snap(
-			"Array <= 5"
-		)
-		attest(jsonSchemaToType({ type: "array", minItems: 5 }).expression).snap(
-			"Array >= 5"
-		)
-	})
-
-	it("minItems (0)", () => {
-		const tMinItems = jsonSchemaToType({
-			type: "array",
-			minItems: 0,
-			items: { type: "string" }
-		})
-
-		attest(tMinItems.expression).snap("string[]")
-	})
-
 	it("uniqueItems", () => {
-		const tUniqueItems = jsonSchemaToType({
-			type: "array",
-			uniqueItems: true
-		})
+		const T = jsonSchemaToType({ type: "array", uniqueItems: true })
+		// arrays are only equal in the same order
 		attest(
-			// JSON Schema specifies that arrays must be same order to be classified as equal
-			tUniqueItems.allows([
+			T.allows([
 				{ foo: { bar: ["baz", { qux: "quux" }] } },
 				{ foo: { bar: [{ qux: "quux" }, "baz"] } }
 			])
 		).equals(true)
-
-		attest(() =>
-			tUniqueItems.assert([1, 1, 2, 3, 3, { foo: "string" }, { foo: "string" }])
-		).throws.snap(
+		attest(() => T.assert([{ foo: "string" }, { foo: "string" }])).throws.snap(
 			"TraversalError: must be an array of unique items (was an array)"
 		)
 	})

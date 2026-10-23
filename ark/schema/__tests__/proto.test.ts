@@ -24,4 +24,12 @@ contextualize(() => {
 
 		attest(T.get("foo")).snap({ proto: "Array" })
 	})
+
+	it("dateAllowsInvalid on non-Date", () => {
+		attest(() =>
+			rootSchema({ proto: Map, dateAllowsInvalid: true } as never)
+		).throws.snap(
+			"ParseError: dateAllowsInvalid may only be specified with constructor Date (was Map)"
+		)
+	})
 })

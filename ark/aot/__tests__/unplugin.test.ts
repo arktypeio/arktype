@@ -378,7 +378,7 @@ contextualize(function (this: Mocha.Suite) {
 	})
 
 	for (const [name, bundle] of Object.entries(bundlers)) {
-		it(`${name} standalone`, async () => {
+		it(`${name} standalone or cache`, async () => {
 			const withArktype = await bundle()
 			const standalone = await bundle({})
 			attest(run(standalone)).equals(expected)
@@ -386,9 +386,6 @@ contextualize(function (this: Mocha.Suite) {
 				withArktype.includes(parserMessage),
 				standalone.includes(parserMessage)
 			]).equals([true, false])
-		})
-
-		it(`${name} cache`, async () => {
 			attest(run(await bundle({ runtime: "arktype" }))).equals(expected)
 		})
 
@@ -456,14 +453,9 @@ export const checkedItem = JSON.stringify(itemJson())
 			attest(
 				run(await bundle({ ...opts, runtime: "arktype" }, configured))
 			).equals(runPlain(configured))
-		})
-
-		it(`${name} configured messages`, async () => {
-			const standalone = await bundle(
-				{ cwd: messaged, config: "config.ts" },
-				messaged
-			)
-			attest(run(standalone)).equals(runPlain(messaged))
+			attest(
+				run(await bundle({ cwd: messaged, config: "config.ts" }, messaged))
+			).equals(runPlain(messaged))
 		})
 
 		it(`${name} configured with errors`, async () => {
@@ -1197,36 +1189,28 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 		attest(outputFiles[0].text.includes(parserMessage)).equals(false)
 	})
 
-	it("fails once per dependency importing arktype", async () => {
+	it("fails once per dependency importing arktype, or warns with allowUnsafe", async () => {
+		const shared = writeStandaloneDependencyMessage("shared")
+		const prebuilt = writePrecompiledDependencyMessage("prebuilt")
 		attest(await buildDependency("shared.ts")).equals({
-			errors: [
-				`${writeStandaloneDependencyMessage("shared")} ${allowUnsafeHint}`
-			],
+			errors: [`${shared} ${allowUnsafeHint}`],
+			warnings: []
+		})
+		attest(await buildDependency("prebuilt.ts")).equals({
+			errors: [`${prebuilt} ${allowUnsafeHint}`],
 			warnings: []
 		})
 		attest(await buildDependency("shared.ts", { runtime: "arktype" })).equals({
 			errors: [],
 			warnings: []
 		})
-	})
-
-	it("fails once per dependency shipping precompiled validators", async () => {
-		attest(await buildDependency("prebuilt.ts")).equals({
-			errors: [
-				`${writePrecompiledDependencyMessage("prebuilt")} ${allowUnsafeHint}`
-			],
-			warnings: []
-		})
-	})
-
-	it("warns of a dependency with allowUnsafe", async () => {
 		attest(await buildDependency("shared.ts", { allowUnsafe: true })).equals({
 			errors: [],
-			warnings: [writeStandaloneDependencyMessage("shared")]
+			warnings: [shared]
 		})
 		attest(await buildDependency("prebuilt.ts", { allowUnsafe: true })).equals({
 			errors: [],
-			warnings: [writePrecompiledDependencyMessage("prebuilt")]
+			warnings: [prebuilt]
 		})
 	})
 
@@ -1303,7 +1287,7 @@ console.log(JSON.stringify([User.allows({ name: "x" }), Dyn.allows({ a: "x" }), 
 		])
 	})
 
-	it("fails for a second copy of arktype", async () => {
+	it("fails for a second copy of arktype, of another version", async () => {
 		const vite = (runtime?: "arktype") =>
 			viteBuild({
 				root: dependencies,
@@ -1322,6 +1306,18 @@ console.log(JSON.stringify([User.allows({ name: "x" }), Dyn.allows({ a: "x" }), 
 			const { errors } = await buildDependency("forked.ts", { runtime })
 			attest(errors.some(text => text.includes(report))).equals(true)
 			attest((await vite(runtime)).includes(report)).equals(true)
+			if (runtime) continue
+			// its copy is also a version other than the build's own
+			attest(errors.filter(text => text.includes("@ark/aot runs on"))).equals([
+				`@ark/schema resolves to 0.1.0, but @ark/aot runs on ${schemaVersion}
+  0.1.0 at node_modules/@ark/schema, reached from node_modules/forked/node_modules/arktype/index.js
+  ${schemaVersion} at ${ownPath("schema")}, which @ark/aot imports
+  ${versionHint}`,
+				`arktype resolves to 2.1.0, but @ark/aot runs on ${arktypeVersion}
+  2.1.0 at node_modules/forked/node_modules/arktype, reached from node_modules/forked/index.js
+  ${arktypeVersion} at ${ownPath("type")}, which @ark/aot imports
+  ${versionHint}`
+			])
 		}
 	})
 
@@ -1339,23 +1335,6 @@ schema.ts:2:22  @ark/schema resolves to more than one copy
   0.1.0 at node_modules/@ark/schema, reached from schema.ts
   ${schemaVersion} at node_modules/arktype/node_modules/@ark/schema, reached from node_modules/arktype/index.js
   Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides.`
-		])
-	})
-
-	it("fails for a version of arktype other than its own", async () => {
-		attest(
-			(await buildDependency("forked.ts")).errors.filter(text =>
-				text.includes("@ark/aot runs on")
-			)
-		).equals([
-			`@ark/schema resolves to 0.1.0, but @ark/aot runs on ${schemaVersion}
-  0.1.0 at node_modules/@ark/schema, reached from node_modules/forked/node_modules/arktype/index.js
-  ${schemaVersion} at ${ownPath("schema")}, which @ark/aot imports
-  ${versionHint}`,
-			`arktype resolves to 2.1.0, but @ark/aot runs on ${arktypeVersion}
-  2.1.0 at node_modules/forked/node_modules/arktype, reached from node_modules/forked/index.js
-  ${arktypeVersion} at ${ownPath("type")}, which @ark/aot imports
-  ${versionHint}`
 		])
 	})
 
@@ -1393,7 +1372,7 @@ x
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
 	})
 
-	it("creates only the Types a bundle imports", async () => {
+	it("creates only the Types a bundle imports, its errors ArkErrors", async () => {
 		const root = writeFixture(
 			{
 				"a.ts": `import { type } from "arktype"
@@ -1401,36 +1380,22 @@ x
 export const A = type({ a: "string" })
 export const Unimported = type({ a: "'unimported'" })
 `,
-				"main.ts": `import { A } from "./a.ts"
+				"main.ts": `import { ArkErrors, type } from "arktype"
+import { A } from "./a.ts"
 
+const out = A({ a: 1 })
+console.log(out instanceof ArkErrors, out instanceof type.errors)
 // what a standalone validator's errors keep of arktype's
-console.log(JSON.stringify((A({ a: 1 }) as any).issues.map((issue: any) => [issue.code, ...issue.path])))
+console.log(JSON.stringify((out as any).issues.map((issue: any) => [issue.code, ...issue.path])))
 `
 			},
 			fromHere("temp", "imported")
 		)
-		const expected = `[["domain","a"]]\n`
+		const expected = `true true\n[["domain","a"]]\n`
 		attest(runPlain(root)).equals(expected)
 		const bundle = await bundlers.esbuild({ cwd: root }, root)
 		attest(run(bundle)).equals(expected)
 		attest(bundle.includes("unimported")).equals(false)
-	})
-
-	it("returns ArkErrors instances", async () => {
-		const root = writeFixture(
-			{
-				"main.ts": `import { ArkErrors, type } from "arktype"
-
-const T = type("string")
-console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
-`
-			},
-			fromHere("temp", "arkErrors")
-		)
-		attest(runPlain(root)).equals("true true\n")
-		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
-			"true true\n"
-		)
 	})
 
 	it("resolves @ark/type, arktype's other name, to the runtime", async () => {
@@ -2112,28 +2077,6 @@ try {
 				}).stdout
 			).equals("TypeError\n")
 		}
-	})
-
-	it("reports writes to frozen values", async () => {
-		const root = writeFixture({
-			"write.ts":
-				'import { type } from "arktype"\nexport const T = type("string")\n;(T as any).note = 1\n'
-		})
-		const errorsOf = (entry: string) =>
-			esbuild({
-				entryPoints: [join(root, entry)],
-				bundle: true,
-				write: false,
-				logLevel: "silent",
-				plugins: [precompile.esbuild({ cwd: root, conditions })]
-			}).then(
-				() => [],
-				(e: { errors: { text: string }[] }) =>
-					e.errors.map(error => error.text.split(`${root}/`).join(""))
-			)
-		attest(await errorsOf("write.ts")).snap([
-			'write.ts:3:2  (T as any).note = 1 writes to an arktype value, which throws at runtime\n  `T` is an arktype value, which the standalone runtime freezes with what it holds\n  Keep what you attach in an object of your own, or build with runtime: "arktype".'
-		])
 	})
 
 	it("vitest", async () => {

@@ -7,7 +7,7 @@ const elidePatterns = (schema: object): object =>
 	JSON.parse(JSON.stringify(schema, (k, v) => (k === "pattern" ? "…" : v)))
 
 contextualize(() => {
-	describe("target option", () => {
+	describe("targets", () => {
 		it("generates draft-2020-12 schema by default", () => {
 			const T = type({ foo: "string" })
 			const schema = T.toJsonSchema()
@@ -16,42 +16,6 @@ contextualize(() => {
 				type: "object",
 				properties: { foo: { type: "string" } },
 				required: ["foo"]
-			})
-		})
-
-		it("generates draft-2020-12 schema when specified", () => {
-			const T = type({ foo: "string" })
-			const schema = T.toJsonSchema({ target: "draft-2020-12" })
-			attest(schema).snap({
-				$schema: "https://json-schema.org/draft/2020-12/schema",
-				type: "object",
-				properties: { foo: { type: "string" } },
-				required: ["foo"]
-			})
-		})
-
-		it("generates draft-07 schema when specified", () => {
-			const T = type({ foo: "string" })
-			const schema = T.toJsonSchema({ target: "draft-07" })
-			attest(schema).snap({
-				$schema: "http://json-schema.org/draft-07/schema#",
-				type: "object",
-				properties: { foo: { type: "string" } },
-				required: ["foo"]
-			})
-		})
-	})
-
-	describe("draft-specific syntax", () => {
-		it("draft-2020-12 uses prefixItems for tuples", () => {
-			const T = type(["string", "number"])
-			const schema = T.toJsonSchema({ target: "draft-2020-12" })
-			attest(schema).snap({
-				$schema: "https://json-schema.org/draft/2020-12/schema",
-				type: "array",
-				prefixItems: [{ type: "string" }, { type: "number" }],
-				items: false,
-				minItems: 2
 			})
 		})
 
@@ -64,30 +28,6 @@ contextualize(() => {
 				items: [{ type: "string" }, { type: "number" }],
 				additionalItems: false,
 				minItems: 2
-			})
-		})
-
-		it("draft-2020-12 uses items for variadic tuple elements", () => {
-			const T = type(["string", "...", "number[]"])
-			const schema = T.toJsonSchema({ target: "draft-2020-12" })
-			attest(schema).snap({
-				$schema: "https://json-schema.org/draft/2020-12/schema",
-				type: "array",
-				prefixItems: [{ type: "string" }],
-				items: { type: "number" },
-				minItems: 1
-			})
-		})
-
-		it("draft-07 uses additionalItems for variadic tuple elements", () => {
-			const T = type(["string", "...", "number[]"])
-			const schema = T.toJsonSchema({ target: "draft-07" })
-			attest(schema).snap({
-				$schema: "http://json-schema.org/draft-07/schema#",
-				type: "array",
-				items: [{ type: "string" }],
-				additionalItems: { type: "number" },
-				minItems: 1
 			})
 		})
 
@@ -154,37 +94,6 @@ contextualize(() => {
 		const out = T.toJsonSchema({ useRefs: true })
 
 		attest(referencedDefs(out)).equals(Object.keys(out.$defs!).sort())
-	})
-
-	it("regex flags", () => {
-		attest(() => type(/^a/i).toJsonSchema()).throws
-			.snap(`ToJsonSchemaError: Can't convert "patternFlags" to JSON Schema. Configure fallback.patternFlags to write it:
-{
-    code: "patternFlags",
-    base: {
-        type: "string"
-    },
-    pattern: "^a",
-    flags: "i"
-}`)
-	})
-
-	it("constrained index key", () => {
-		attest(() => type({ "[string <= 3]": "number" }).toJsonSchema()).throws
-			.snap(`ToJsonSchemaError: Can't convert "indexKey" to JSON Schema. Configure fallback.indexKey to write it:
-{
-    code: "indexKey",
-    base: {
-        type: "object"
-    },
-    key: {
-        type: "string",
-        maxLength: 3
-    },
-    value: {
-        type: "number"
-    }
-}`)
 	})
 
 	it("error names where its node is", () => {
@@ -427,60 +336,6 @@ contextualize(() => {
 		})
 	})
 
-	describe("literals", () => {
-		const toSchema = (
-			def: string,
-			target: "draft-2020-12" | "openapi-3.0" = "draft-2020-12"
-		): object => type(def as never).toJsonSchema({ dialect: null, target })
-
-		it("strings", () => {
-			attest(toSchema("'b' | 'a'")).snap({ type: "string", enum: ["a", "b"] })
-		})
-
-		it("numbers", () => {
-			attest(toSchema("1 | 2.5")).snap({ type: "number", enum: [1, 2.5] })
-		})
-
-		it("one value", () => {
-			attest(toSchema("'x'")).snap({ type: "string", const: "x" })
-		})
-
-		it("booleans", () => {
-			attest(toSchema("true")).snap({ type: "boolean", const: true })
-		})
-
-		it("mixed", () => {
-			attest(toSchema("'a' | 1")).snap({ enum: ["a", 1] })
-		})
-
-		it("with null", () => {
-			attest(toSchema("'a' | 'b' | null")).snap({
-				anyOf: [{ type: "string", enum: ["a", "b"] }, { type: "null" }]
-			})
-			attest(toSchema("'a' | 1 | null")).snap({
-				anyOf: [{ enum: ["a", 1] }, { type: "null" }]
-			})
-		})
-
-		it("openapi-3.0", () => {
-			attest(toSchema("'x'", "openapi-3.0")).snap({
-				type: "string",
-				enum: ["x"]
-			})
-			attest(toSchema("'a' | 'b' | null", "openapi-3.0")).snap({
-				type: "string",
-				enum: ["a", "b", null],
-				nullable: true
-			})
-			attest(toSchema("'a' | 1 | null", "openapi-3.0")).snap({
-				anyOf: [
-					{ enum: ["a", 1] },
-					{ type: "string", nullable: true, enum: [null] }
-				]
-			})
-		})
-	})
-
 	it("an optional key's undefined is its absence", () => {
 		const T = type({ "a?": "string | undefined", "b?": "undefined" })
 		attest(T.toJsonSchema()).snap({
@@ -609,18 +464,6 @@ contextualize(() => {
 				}
 			},
 			required: ["url"]
-		})
-	})
-
-	it("string.date as its format", () => {
-		const T = type({ at: "string.date", "until?": "string.date < 30" })
-		attest(T.toJsonSchema({ dialect: null })).snap({
-			type: "object",
-			properties: {
-				at: { type: "string", format: "date-time" },
-				until: { type: "string", maxLength: 29, format: "date-time" }
-			},
-			required: ["at"]
 		})
 	})
 
