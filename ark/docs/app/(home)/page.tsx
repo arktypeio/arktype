@@ -158,22 +158,22 @@ const BenchSource = ({ facts }: { facts: BenchFacts }) => (
 		{validShare(facts)}
 		<span className="twoslash-popup-container" popover="manual">
 			<code className="twoslash-popup-code">
-				<span style={{ color: "#BA7E41" }}>const</span>
-				<span style={{ color: "#EEEEEE" }}> fasterThanArkType</span>
-				<span style={{ color: "#BA7E41" }}>:</span>
-				<span style={{ color: "#EEEEEE" }}> {"{"}</span>
+				<span style={{ color: "var(--copper)" }}>const</span>
+				<span style={{ color: "var(--ink)" }}> fasterThanArkType</span>
+				<span style={{ color: "var(--copper)" }}>:</span>
+				<span style={{ color: "var(--ink)" }}> {"{"}</span>
 				{facts.fasterCounts.map(([library, rows], i) => (
 					<span key={library}>
-						{i > 0 && <span style={{ color: "#BA7E41" }}>;</span>}
-						<span style={{ color: "#EEEEEE" }}>
+						{i > 0 && <span style={{ color: "var(--copper)" }}>;</span>}
+						<span style={{ color: "var(--ink)" }}>
 							{" "}
 							{/^\w+$/.test(library) ? library : `"${library}"`}
 						</span>
-						<span style={{ color: "#BA7E41" }}>:</span>
-						<span style={{ color: "#408FDE" }}> {rows}</span>
+						<span style={{ color: "var(--copper)" }}>:</span>
+						<span style={{ color: "var(--blue)" }}> {rows}</span>
 					</span>
 				))}
-				<span style={{ color: "#EEEEEE" }}> {"}"}</span>
+				<span style={{ color: "var(--ink)" }}> {"}"}</span>
 			</code>
 			<span className="qi-doc">
 				{facts.mostFaster ?

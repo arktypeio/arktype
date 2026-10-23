@@ -232,7 +232,7 @@ export const claims = {
 	sizeVersus: `On valibot.dev's login form as written, with its messages, ArkType precompiled for size is ${kB(valueOf(sizeChart, "ArkType (precompiled)"))} gzipped, against Valibot's ${kB(valueOf(sizeChart, "Valibot"))}, Zod Mini's ${kB(valueOf(sizeChart, "Zod Mini"))} and Zod's ${kB(valueOf(sizeChart, "Zod"))}.`,
 	// startupChart against Zod and Valibot alone: fewer than each of them in
 	// 20 of 20 rounds on both Nodes, on the login app and on the form
-	startupVersus: `On the homepage's login app, precompiled ArkType takes ${valueOf(startupChart, "ArkType (precompiled)")}M instructions from import to its first validation, beyond loading an empty module, against Valibot's ${valueOf(startupChart, "Valibot")}M, Zod Mini's ${valueOf(startupChart, "Zod Mini")}M and Zod's ${valueOf(startupChart, "Zod")}M: fewer than each in all 20 paired runs on Node 24 and 25.`,
+	startupVersus: `On the homepage's login app, precompiled ArkType takes ${valueOf(startupChart, "ArkType (precompiled)")}M instructions from import to its first validation, beyond loading an empty module, against Valibot's ${valueOf(startupChart, "Valibot")}M, Zod Mini's ${valueOf(startupChart, "Zod Mini")}M, Zod's ${valueOf(startupChart, "Zod")}M and compiled Zod's ${valueOf(startupChart, "Zod (compiled)")}M: fewer than each in all 20 paired runs on Node 24 and 25.`,
 	// startupChart; the form is 1.46M vs Valibot's 2.36M, 20 of 20
 	startupLogin:
 		"On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than ajv, Valibot, Typia, Zod Mini, Zod, compiled Zod or TypeBox, in at least 19 of 20 paired runs on Node 24 and 25.",

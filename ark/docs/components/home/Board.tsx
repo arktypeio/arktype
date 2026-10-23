@@ -162,7 +162,8 @@ const SpreadCard = ({ category }: { category: SpreadCategory }) => {
 									style={
 										{
 											"--x": spreadX(scenario.speedup) / 100,
-											"--k": row * 3 + (i % 6)
+											"--k": row * 3 + (i % 6),
+											"--j": i % 3
 										} as CSSProperties
 									}
 								/>

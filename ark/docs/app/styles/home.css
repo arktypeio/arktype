@@ -1585,6 +1585,10 @@
 		.ctas .btn-gold {
 			flex-basis: 100%;
 		}
+		.ctas .text-link {
+			flex-basis: 100%;
+			justify-content: center;
+		}
 		.block {
 			padding-top: 96px;
 		}
@@ -1913,10 +1917,14 @@
 	}
 	/* the speed card: each scenario a dot, at its ratio on a log axis */
 	.spread {
-		gap: 12px;
+		gap: 10px;
+		.lane {
+			grid-template-columns: 7rem minmax(0, 1fr) 2.75rem;
+			gap: 10px;
+		}
 		.lane-track {
 			container-type: inline-size;
-			height: 12px;
+			height: 16px;
 			background: linear-gradient(var(--line), var(--line)) center / 100% 1px
 				no-repeat;
 			&::before {
@@ -1933,9 +1941,10 @@
 			color: var(--ink-2);
 		}
 	}
+	/* a little jitter, so dots on the same ratio don't hide each other */
 	.spot {
 		position: absolute;
-		top: 50%;
+		top: calc(50% + (var(--j) - 1) * 3.5px);
 		left: calc(var(--x) * 100%);
 		width: 7px;
 		height: 7px;
@@ -2536,7 +2545,7 @@
 			padding: 18px 16px 16px;
 		}
 		.lane {
-			grid-template-columns: 5.5rem minmax(0, 1fr) 4rem;
+			grid-template-columns: 6.75rem minmax(0, 1fr) 4.25rem;
 			gap: 10px;
 		}
 		.side {
