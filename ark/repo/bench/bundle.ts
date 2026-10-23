@@ -4,7 +4,7 @@ import { _ } from "ajv/dist/compile/codegen/index.js"
 import { build, type Metafile } from "esbuild"
 import { existsSync } from "node:fs"
 import { join } from "node:path"
-import { ajvOf, type Library } from "./libraries.ts"
+import { ajvOf, libraries } from "./libraries.ts"
 
 export const scenarios = ["login", "moltar", "shop"] as const
 
@@ -41,13 +41,32 @@ const ajvModule = async (scenario: SizedScenario) => {
 	)
 }
 
-const entry = async (scenario: SizedScenario, library: Library) =>
-	library === "standalone" || library === "standaloneFirst" ?
-		`export * from "./${scenario}/arktype.ts"`
-	: library === "valibot" ?
-		`export * from "./${scenario}/valibot.ts"\nexport { safeParse } from "valibot"`
-	: library === "zodMini" ?
-		`export * from "./${scenario}/zodMini.ts"\nexport { safeParse } from "zod/mini"`
+// sized only: arktype precompiled with the "smallest" preset in a production
+// build (esbuild's "production" condition)
+export const sizedLibraries = [...libraries, "standaloneSmallest"] as const
+
+export type SizedLibrary = (typeof sizedLibraries)[number]
+
+const isStandalone = (library: SizedLibrary) =>
+	library === "standalone" ||
+	library === "standaloneFirst" ||
+	library === "standaloneSmallest"
+
+// Libraries whose schemas have no methods are sized with the functions that
+// match what each precompiled validator exposes, so both bundles carry the
+// same usage: calling it (safeParse), .allows (is), .assert (parse) and its
+// errors' .summary (summarize). Their schemas have ~standard, as validators
+// do. An entry the library has no function for (zod/mini has no `is` or
+// summary) adds nothing.
+const usageEntries: Partial<Record<SizedLibrary, string>> = {
+	valibot: `export { is, safeParse, parse, summarize } from "valibot"`,
+	zodMini: `export { safeParse, parse } from "zod/mini"`
+}
+
+const entry = async (scenario: SizedScenario, library: SizedLibrary) =>
+	isStandalone(library) ? `export * from "./${scenario}/arktype.ts"`
+	: library in usageEntries ?
+		`export * from "./${scenario}/${library}.ts"\n${usageEntries[library]}`
 	: library === "typia" ?
 		`export * from "../out/typia/apps/${scenario}/typia.js"`
 	: library === "ajv" ? await ajvModule(scenario)
@@ -57,7 +76,10 @@ const entry = async (scenario: SizedScenario, library: Library) =>
 	:	`export * from "./${scenario}/${library}.ts"`
 
 // whether a library has the app a scenario's entry reads
-export const hasApp = (scenario: SizedScenario, library: Library): boolean =>
+export const hasApp = (
+	scenario: SizedScenario,
+	library: SizedLibrary
+): boolean =>
 	existsSync(
 		library === "typia" ?
 			join(import.meta.dirname, "out", "typia", "apps", scenario, "typia.js")
@@ -65,7 +87,7 @@ export const hasApp = (scenario: SizedScenario, library: Library): boolean =>
 				apps,
 				scenario,
 				`${
-					library === "standalone" || library === "standaloneFirst" ? "arktype"
+					isStandalone(library) ? "arktype"
 					: library === "zodCompiled" ? "zod"
 					: library
 				}.ts`
@@ -77,10 +99,10 @@ export interface Bundle {
 	metafile: Metafile
 }
 
-// a scenario's exports, plus safeParse for libraries whose schemas have no methods
+// a scenario's exports, plus usageEntries for libraries whose schemas have no methods
 export const bundle = async (
 	scenario: SizedScenario,
-	library: Library
+	library: SizedLibrary
 ): Promise<Bundle> => {
 	const { outputFiles, metafile } = await build({
 		stdin: {
@@ -95,11 +117,14 @@ export const bundle = async (
 		write: false,
 		metafile: true,
 		logLevel: "error",
+		conditions: library === "standaloneSmallest" ? ["production"] : [],
 		plugins:
 			library === "standalone" ?
 				[precompile.esbuild({ cwd: apps, ...standaloneOptions })]
 			: library === "standaloneFirst" ?
 				[precompile.esbuild({ cwd: apps, errors: "first" })]
+			: library === "standaloneSmallest" ?
+				[precompile.esbuild({ cwd: apps, preset: "smallest" })]
 			:	[]
 	})
 	return { js: outputFiles[0].text, metafile }

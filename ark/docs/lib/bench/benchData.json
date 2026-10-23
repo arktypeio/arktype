@@ -7,7 +7,7 @@
 		"runtime": "Node 25.2.1",
 		"passes": 20,
 		"method": "BENCH_PASSES=20 BENCH_ROUNDS=3 BENCH_CORE=13,15 pnpm benchValidate on ark/repo/bench, on a shared machine, each run started below a 1-minute load of 4 (1.4-2.5 at the runs' starts and ends), benchmark processes pinned to cores 13 and 15. Each pass forks a fresh process per library, driven over IPC; one arm is timed at a time, in an order that rotates by pass and round, and its sample is the median of 3 rounds. Each arm warms 1 s / 10k calls, then a round is the mean ns per call over a batch of >= 0.5 ms, on fresh unfrozen copies of the input. Every arm's output is checked to agree with arktype's before timing. Medians are over passes; p is a two-sided sign test paired by pass; verdict is win/loss at p < .05, else tie. replication tallies the same comparison's verdict in 1 further quiet run (10 passes) at the same commit.",
-		"size": "esbuild-minified bundle of each app at 89510709d, bytes and gzip",
+		"size": "esbuild-minified bundle of each app at a028b3749, bytes and gzip; Valibot and Zod Mini with the functions matching a precompiled validator's entry points (bench/bundle.ts); standaloneSmallest is the \"smallest\" preset in a production build",
 		"startup": {
 			"commit": "89510709d",
 			"date": "2026-10-23",
@@ -5774,8 +5774,8 @@
 	"size": {
 		"login": {
 			"valibot": {
-				"min": 3714,
-				"gzip": 1436
+				"min": 4311,
+				"gzip": 1678
 			},
 			"zod": {
 				"min": 84932,
@@ -5786,8 +5786,8 @@
 				"gzip": 32929
 			},
 			"zodMini": {
-				"min": 14520,
-				"gzip": 5105
+				"min": 14531,
+				"gzip": 5110
 			},
 			"typia": {
 				"min": 2777,
@@ -5812,12 +5812,16 @@
 			"standaloneFirst": {
 				"min": 3855,
 				"gzip": 1847
+			},
+			"standaloneSmallest": {
+				"min": 2423,
+				"gzip": 1228
 			}
 		},
 		"moltar": {
 			"valibot": {
-				"min": 3170,
-				"gzip": 1221
+				"min": 3767,
+				"gzip": 1462
 			},
 			"zod": {
 				"min": 90481,
@@ -5828,8 +5832,8 @@
 				"gzip": 34219
 			},
 			"zodMini": {
-				"min": 13498,
-				"gzip": 4707
+				"min": 13509,
+				"gzip": 4714
 			},
 			"typia": {
 				"min": 3276,
@@ -5854,12 +5858,16 @@
 			"standaloneFirst": {
 				"min": 4451,
 				"gzip": 1916
+			},
+			"standaloneSmallest": {
+				"min": 2503,
+				"gzip": 1258
 			}
 		},
 		"shop": {
 			"valibot": {
-				"min": 9852,
-				"gzip": 3396
+				"min": 10438,
+				"gzip": 3626
 			},
 			"zod": {
 				"min": 95461,
@@ -5870,8 +5878,8 @@
 				"gzip": 35896
 			},
 			"zodMini": {
-				"min": 31692,
-				"gzip": 10194
+				"min": 31704,
+				"gzip": 10202
 			},
 			"typia": {
 				"min": 112199,
@@ -5896,12 +5904,16 @@
 			"standaloneFirst": {
 				"min": 29396,
 				"gzip": 8999
+			},
+			"standaloneSmallest": {
+				"min": 8041,
+				"gzip": 3581
 			}
 		},
 		"saas": {
 			"valibot": {
-				"min": 15172,
-				"gzip": 4936
+				"min": 15758,
+				"gzip": 5173
 			},
 			"arktype": {
 				"min": 263761,
@@ -5914,6 +5926,10 @@
 			"standaloneFirst": {
 				"min": 66578,
 				"gzip": 15410
+			},
+			"standaloneSmallest": {
+				"min": 14295,
+				"gzip": 5280
 			}
 		}
 	},

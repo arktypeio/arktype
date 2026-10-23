@@ -4,17 +4,22 @@ import { flatMorph } from "@ark/util"
 import { existsSync } from "node:fs"
 import { join } from "node:path"
 import { gzipSync } from "node:zlib"
-import { bundle, hasApp, sizedScenarios, type Bundle } from "./bundle.ts"
-import { libraries as allLibraries } from "./libraries.ts"
+import {
+	bundle,
+	hasApp,
+	sizedLibraries,
+	sizedScenarios,
+	type Bundle
+} from "./bundle.ts"
 import { standingOf } from "./stats.ts"
 
 // typia's validators come from `pnpm benchTypia`, whose first run takes minutes
-const libraries = allLibraries.filter(
+const libraries = sizedLibraries.filter(
 	library =>
 		library !== "typia" || existsSync(join(import.meta.dirname, "out", "typia"))
 )
 
-if (libraries.length < allLibraries.length)
+if (libraries.length < sizedLibraries.length)
 	console.log("typia skipped: run `pnpm benchTypia` to size it")
 
 const bytesByOrigin = ({ metafile }: Bundle) => {
@@ -43,8 +48,8 @@ for (const scenario of sizedScenarios) {
 			"min (B)": result.js.length,
 			"gzip (B)": gzipSync(result.js).length
 		}
-		if (library === "standalone") {
-			standaloneSplit[scenario] = flatMorph(
+		if (library === "standalone" || library === "standaloneSmallest") {
+			standaloneSplit[`${scenario} (${library})`] = flatMorph(
 				bytesByOrigin(result),
 				(origin, bytes) => [`${origin} (B min)`, bytes]
 			)
