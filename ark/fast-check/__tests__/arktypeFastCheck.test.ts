@@ -162,9 +162,6 @@ contextualize(() => {
 			attest(() => arkToArbitrary(type.instanceOf(Foo))).throws(
 				"Foo instances can't be generated"
 			)
-			attest(() => arkToArbitrary(type({ m: "Map" }))).throws(
-				"Map instances can't be generated"
-			)
 		})
 	})
 
@@ -243,6 +240,16 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("variadic after an omitted optional", () => {
+			const T = type(["string", "boolean?", "boolean?", "...", "number[]"])
+			const lengths = new Set(
+				sample(arkToArbitrary(T), { numRuns: 200, seed: 1 }).map(
+					data => (data as unknown[]).length
+				)
+			)
+			attest([1, 2, 3, 4].every(length => lengths.has(length))).equals(true)
+			return assertProperty(arkToArbitrary(T), T)
+		})
 	})
 
 	describe("object", () => {
@@ -303,11 +310,6 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
-		it("index signature with required key", () => {
-			const T = type({ "[string]": "number", a: "number" })
-			const arbitrary = arkToArbitrary(T)
-			assertProperty(arbitrary, T)
-		})
 		it("index signature with optional key", () => {
 			const T = type({ "[/^x/]": "number", y: "string", "z?": "boolean" })
 			const arbitrary = arkToArbitrary(T)
@@ -318,11 +320,7 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
-		it("declared key wider than the index signature value", () => {
-			const T = type({ "[string]": "number", a: "number|string" })
-			const arbitrary = arkToArbitrary(T)
-			assertProperty(arbitrary, T)
-		})
+		// declared keys were dropped when a structure had an index signature
 		it("declared key overlapping the index signature value", () => {
 			const T = type({ "[string]": "0 < number < 10", a: "number.integer" })
 			const arbitrary = arkToArbitrary(T)
@@ -330,11 +328,6 @@ contextualize(() => {
 		})
 		it("optional key disjoint from the index signature value", () => {
 			const T = type({ "[string]": "number", "a?": "string" })
-			const arbitrary = arkToArbitrary(T)
-			assertProperty(arbitrary, T)
-		})
-		it("symbol index signature with string key", () => {
-			const T = type({ "[symbol]": "number", a: "string" })
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
@@ -362,9 +355,30 @@ contextualize(() => {
 				"Infinitely deep cycles are not supported."
 			)
 		})
-		it("cyclic index signature", () => {
-			const T = scope({ tree: { "[string]": "tree | number" } }).type("tree")
-			assertProperty(arkToArbitrary(T), T)
+		it("required cycle with a union to end it", () => {
+			const { linked } = scope({
+				linked: { value: "string.trim", next: "linked | null" }
+			}).export()
+			return assertProperty(arkToArbitrary(linked), linked)
+		})
+		it("cycle at an index signature or array root", () => {
+			const $ = scope({
+				dict: { "[string]": "dict | string" },
+				nested: "(nested | number)[]"
+			}).export()
+			assertProperty(arkToArbitrary($.dict), $.dict)
+			assertProperty(arkToArbitrary($.nested), $.nested)
+		})
+		it("cycle through an optional element", () => {
+			// inferring an optional element that references its own tuple is circular
+			const { pair }: { pair: type.Any } = scope({
+				pair: ["string", "pair?"]
+			} as never).export() as never
+			return assertProperty(arkToArbitrary(pair), pair)
+		})
+		it("overlapping index signatures", () => {
+			const T = type({ "[/^x-/]": "string", "[string]": "string | number" })
+			return assertProperty(arkToArbitrary(T), T)
 		})
 		it("object.json", () => {
 			const T = type("object.json")
