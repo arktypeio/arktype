@@ -5,7 +5,7 @@ description: Parse a JSON Schema into a Type with @ark/json-schema and give the 
 
 <InstallationTabs pkg="@ark/json-schema" />
 
-`@ark/json-schema` depends on a fixed `arktype` version, not a peer range. If your `arktype` version differs, your package manager installs a second copy.
+`arktype` is a peer dependency of `@ark/json-schema`, at the version released with it, so the Types it returns come from your own `arktype`. Install the versions released together; with any other, npm refuses the install and pnpm warns.
 
 `jsonSchemaToType` parses a JSON Schema into a Type:
 
@@ -85,7 +85,7 @@ const user = User.assert({ name: "Ada" })
 
 ## How it reads JSON Schema
 
-`jsonSchemaToType` reads a schema with [`arksets`](/docs/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts, with ajv as the tiebreaker. Every keyword in a schema applies, local `$ref`s resolve, including recursive ones, and draft-07 forms like `items` arrays and `definitions` are read too:
+`jsonSchemaToType` reads a schema with [`arksets`](/docs/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Every keyword in a schema applies, local `$ref`s resolve, including recursive ones, and draft-07 forms like `items` arrays and `definitions` are read too:
 
 ```ts
 import { jsonSchemaToType } from "@ark/json-schema"

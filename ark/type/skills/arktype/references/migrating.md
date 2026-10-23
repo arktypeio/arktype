@@ -234,7 +234,8 @@ TypeBox schemas are JSON Schema, so [JSON Schema](#json-schema-and-ajv) also app
 | `Type.Partial`, `Type.Pick`, `Type.Omit`, `Type.KeyOf`         | `.partial()`, `.pick()`, `.omit()`, `.keyof()`         |
 | `Type.Recursive(This => ...)`                                  | `this` or a scope                                      |
 | `Type.Date()`, `Type.Unknown()`, `Type.Any()`                  | `"Date"`, `"unknown"`, `"unknown.any"`                 |
-| `Type.Transform(T).Decode(fn)`                                 | `.pipe(fn)`                                            |
+| `Type.Transform(T).Decode(f).Encode(g)`                        | `codec(T, Out, { decode: f, encode: g })`              |
+| `Value.Decode(T, x)`, `Value.Encode(T, x)`                     | `T.assert(x)`, `T.encode.assert(x)`                    |
 | `{ default: x }` with `Value.Default`                          | `"key": "T = x"`                                       |
 | `Static<typeof T>`, `StaticDecode`, `StaticEncode`             | `typeof T.infer`, `typeof T.infer`, `typeof T.inferIn` |
 | `Value.Check(T, x)`, `Value.Parse`, `TypeCompiler.Compile`     | `T.allows(x)`, `T.assert(x)`, nothing to compile       |
@@ -308,17 +309,18 @@ Names are Effect 3's. Effect 4 renames some: `Schema.filter` is `Schema.check`, 
 | `Schema.NumberFromString`, `Schema.DateFromString`              | `"string.numeric.parse"`, `"string.date.parse"`                      |
 | `Schema.Trim`, `Schema.Lowercase`, `Schema.parseJson(T)`        | `"string.trim"`, `"string.lower"`, `type("string.json.parse").to(T)` |
 | `Schema.filter(fn)`                                             | `.narrow(fn)`                                                        |
-| `Schema.transform(From, To, { decode })`                        | `From.pipe(decode).to(To)`                                           |
+| `Schema.transform(From, To, { decode, encode })`                | `codec(From, To, { decode, encode })`                                |
 | `Schema.brand("Id")`                                            | `.brand("Id")`                                                       |
 | `Schema.Type<typeof S>`, `Schema.Encoded<typeof S>`             | `typeof T.infer`, `typeof T.inferIn`                                 |
 | `Schema.decodeUnknownSync`, `decodeUnknownEither`               | `T.assert(x)`, `T(x)`                                                |
+| `Schema.encodeSync`, `encodeEither`                             | `T.encode.assert(x)`, `T.encode(x)`                                  |
 | `onExcessProperty: "error"`                                     | `"+": "reject"`                                                      |
 
-ArkType has no encode direction. A `Schema.Class` becomes a Type plus, if you need methods, your own class constructed from its output.
+`codec` comes from `arktype/codecs`, and importing it is what makes `.encode` available. A `Schema.Class` becomes a Type plus, if you need methods, your own class constructed from its output.
 
 ## JSON Schema and ajv
 
-To keep a schema as JSON, convert it at runtime with `jsonSchemaToType` from `@ark/json-schema`; it accepts exactly what a JSON Schema 2020-12 validator accepts, with `format` as an annotation. To rewrite it as definitions:
+To keep a schema as JSON, convert it at runtime with `jsonSchemaToType` from `@ark/json-schema`; it accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with `format` as an annotation. To rewrite it as definitions:
 
 | JSON Schema                                              | ArkType                                                                |
 | -------------------------------------------------------- | ---------------------------------------------------------------------- |
@@ -330,7 +332,7 @@ To keep a schema as JSON, convert it at runtime with `jsonSchemaToType` from `@a
 | `{ type: ["string", "null"] }`, `anyOf`, `oneOf`         | `"string \| null"`, `A.or(B)`                                          |
 | `allOf`                                                  | `A.and(B)`                                                             |
 | `properties` with `required`                             | keys, with `?` on those not required                                   |
-| `additionalProperties: false`, `additionalProperties: T` | `"+": "reject"`, `"[string]": T` (covers declared keys too)            |
+| `additionalProperties: false`, `additionalProperties: T` | `"+": "reject"`, `"[string]": "T \| A"`, `A` the declared keys' types  |
 | `patternProperties: { "^x-": T }`                        | `"[/^x-/]": T`                                                         |
 | `{ type: "array", items: T, minItems: 1 }`               | `"T[] >= 1"`                                                           |
 | `prefixItems`                                            | `[A, B]`                                                               |

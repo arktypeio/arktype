@@ -9,6 +9,15 @@ contextualize(() => {
 		attest(t.allows([])).equals(false)
 	})
 
+	it("lists properties in output as the schema does", () => {
+		const T = jsonSchemaToType({
+			type: "object",
+			properties: { b: { type: "string" }, a: { type: "string" } },
+			required: ["a"]
+		}).onUndeclaredKey("delete")
+		attest(Object.keys(T({ a: "a", b: "b", c: "c" }))).snap(["b", "a"])
+	})
+
 	it("maxProperties", () => {
 		const tMaxProperties = jsonSchemaToType({
 			type: "object",

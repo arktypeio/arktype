@@ -787,8 +787,8 @@ export const Name = type("string")`,
 					...written.flatMap(code => code.match(/const result = .+/g) ?? [])
 				])
 			).snap([
-				["/a.ts", 'const result = { "x": out.x, "y": out.y }'],
-				["/b.ts", 'const result = { "x": out.x, "y": out.y }']
+				["/a.ts", 'const result = { "x": null, "y": null }'],
+				["/b.ts", 'const result = { "y": null, "x": null }']
 			])
 		})
 

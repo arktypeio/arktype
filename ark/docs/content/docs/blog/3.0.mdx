@@ -148,7 +148,7 @@ Parse keywords like `string.date.iso.parse` encode back to strings. `arktype/cod
 
 ## Error messages in other languages
 
-Configure a locale to write error messages in another language. ArkType ships `en` and `de`, and a locale is an object you can spread, extend or write from scratch, including one that calls an i18n library:
+Configure a locale to write error messages in another language, with dynamic Types or a precompiled build with `runtime: "arktype"`. ArkType ships `en` and `de`, and a locale is an object you can spread, extend or write from scratch, including one that calls an i18n library:
 
 ```ts title="config.ts"
 import { configure } from "arktype/config"
@@ -192,9 +192,9 @@ User(5)
 
 ## ArkSets and JSON Schema
 
-[ArkSets](/docs/sets) applies the same set theory to any schema: a Type, a Standard JSON Schema like Zod's, or a plain JSON Schema. `isSubset(v1, v2)` tells you whether a new version of an API schema still accepts everything the old one did, and `intersect`, `union` and `toJsonSchema` combine and normalize schemas across formats.
+[ArkSets](/docs/sets) applies the same set theory to any schema: a Type, a Standard JSON Schema like Zod's, or a plain JSON Schema. `isSubset(v1, v2)` tells you whether a new version of an API schema still accepts everything the old one did, and `intersect`, `union` and `toJsonSchema` combine and normalize schemas across formats. A Standard JSON Schema is read as the JSON Schema it writes, so refinements and transforms that JSON Schema can't express aren't part of the comparison.
 
-`jsonSchemaToType` from [`@ark/json-schema`](/docs/json-schema/from-json-schema) reads a schema through it, so the Type accepts exactly what a JSON Schema 2020-12 validator does, and infers the type of a schema written in the call.
+`jsonSchemaToType` from [`@ark/json-schema`](/docs/json-schema/from-json-schema) reads a schema through it, so the Type accepts exactly what a JSON Schema 2020-12 validator does, except that lengths count UTF-16 code units, and infers the type of a schema written in the call.
 
 ## Errors as data
 

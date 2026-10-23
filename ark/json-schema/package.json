@@ -47,9 +47,14 @@
 	},
 	"dependencies": {
 		"arksets": "workspace:*",
-		"arktype": "workspace:*",
 		"@ark/schema": "workspace:*",
 		"@ark/util": "workspace:*"
+	},
+	"peerDependencies": {
+		"arktype": "workspace:*"
+	},
+	"devDependencies": {
+		"arktype": "workspace:*"
 	},
 	"publishConfig": {
 		"access": "public"

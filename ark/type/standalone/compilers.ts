@@ -39,10 +39,6 @@ const isLeaf = (node: BaseNode): boolean =>
 
 class StandaloneCompiler extends TraversalCompiler {
 	override readonly reportsFirst: boolean = false
-	// a build keeps no definition priming data's fields to hold any value, so
-	// a copy filling nulls would still box the fractions it reads, and cost
-	// more to write
-	override readonly copiesValues: boolean = true
 	// a unit is named for its content as compiled without the gates and size
 	// forms that follow from it
 	readonly naming: boolean = this.linkage.unit === undefined
@@ -286,6 +282,8 @@ const dataDomain = compileDomainOf("data")
 const forSize = (compiler: typeof StandaloneCompiler) =>
 	class extends compiler {
 		override readonly shortest: boolean = !this.naming
+		// a literal of the values a copy holds is shorter than one of nulls
+		override readonly copiesValues: boolean = this.shortest
 
 		override switch(
 			on: string,

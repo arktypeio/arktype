@@ -163,9 +163,9 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 					.map(line => line.trim())
 					.filter(line => /^(const )?result\b/.test(line))
 			).snap([
-				'const result = { "a": null, "b": null }',
-				"result.a = out.a",
+				'const result = { "b": null, "a": null }',
 				"result.b = out.b",
+				"result.a = out.a",
 				"result.c = out.c"
 			])
 		})

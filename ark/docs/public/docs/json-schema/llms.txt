@@ -67,7 +67,7 @@ User.expression // "{ name: string, age?: number % 1 >= 0 }"
 User({ name: "Ada", age: 1.5 })
 ```
 
-The schema is a runtime value, so the result is a `Type<unknown>`. See [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema) to give it a static type, and [Keyword support](https://arktype.io/docs/json-schema/support) for which keywords it understands.
+A schema written in the call infers its type, so `User` is a `Type<{ name: string; age?: number }>`. See [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema#inferring-its-type) to type a schema declared elsewhere, and [Keyword support](https://arktype.io/docs/json-schema/support) for which keywords it understands.
 
 # To JSON Schema
 
@@ -104,7 +104,7 @@ A [precompiled](https://arktype.io/docs/precompile) validator has `toJsonSchema(
 | - | - | - |
 | `target` | `"draft-2020-12"` | what to write, `"draft-2020-12"`, `"draft-07"` or [`"openapi-3.0"`](#openapi-30) |
 | `dialect` | the target's URL | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL |
-| `useRefs` | `false` | write each part once under `$defs` and point to it with `$ref`. Cyclic Types always do |
+| `useRefs` | `false` | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref` |
 | `fallback` | throws | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks) |
 
 ### target
@@ -142,7 +142,7 @@ Pair.toJsonSchema({ target: "draft-07" })
 | draft 2020-12 | `"openapi-3.0"` |
 | - | - |
 | `exclusiveMinimum: 0` | `minimum: 0`, `exclusiveMinimum: true` |
-| `const: "cat"` | `type: "string"`, `enum: ["cat"]` |
+| `type: "string"`, `const: "cat"` | `type: "string"`, `enum: ["cat"]` |
 | `not: { const: 5 }` | `not: { enum: [5] }` |
 | `anyOf: [{ type: "string" }, { type: "null" }]` | `type: "string"`, `nullable: true` |
 | `type: "null"` | `type: "string"`, `nullable: true`, `enum: [null]` |
@@ -165,12 +165,12 @@ const types = scope({ Node: { value: "number", "next?": "Node" } }).export()
 
 const components: Record<string, JsonSchema> = {}
 
-// { $ref: "#/components/schemas/Node1" }
+// { $ref: "#/components/schemas/Node" }
 const schema = types.Node.toJsonSchema({
 	target: "openapi-3.0",
 	fallback: {
 		defs: ctx => {
-			// { Node1: { type: "object", properties: { ... } } }
+			// { Node: { type: "object", properties: { ... } } }
 			Object.assign(components, ctx.defs)
 			return ctx.base
 		}
@@ -210,7 +210,7 @@ type("string").toJsonSchema({ dialect: null }) // { type: "string" }
 
 ### Cyclic types
 
-A cyclic Type is written as a `$ref` to its definition. The definition's name, like `Node1` below, is generated from the alias, so don't rely on it staying the same:
+A cyclic alias is written once under `$defs`, named by its alias, and each reference to it is a `$ref`. Everything else, including an alias that isn't cyclic, is written inline:
 
 ```ts
 const types = scope({ Node: { value: "number", "next?": "Node" } }).export()
@@ -221,19 +221,24 @@ const schema = types.Node.toJsonSchema()
 ```json
 {
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"$ref": "#/$defs/Node1",
+	"$ref": "#/$defs/Node",
 	"$defs": {
-		"Node1": {
+		"Node": {
 			"type": "object",
 			"properties": {
 				"value": { "type": "number" },
-				"next": { "$ref": "#/$defs/Node1" }
+				"next": { "$ref": "#/$defs/Node" }
 			},
 			"required": ["value"]
 		}
 	}
 }
 ```
+
+- A generic's instantiations are named by the generic, like `Box` for `Box<string>`, and a submodule's alias by its own name, like `B` for `A.B`.
+- A name another definition already has is numbered from 2, like `Node2`, in the order the definitions are reached.
+- A cycle with no alias, like a `this` reference, is named by what ArkType calls it, like `type`.
+- `.in`, `.out` and `~standard.jsonSchema` name definitions the same way.
 
 ## How Types map
 
@@ -253,7 +258,7 @@ const schema = types.Node.toJsonSchema()
 | `"string.base64.url"` | `pattern`, `contentEncoding: "base64url"` |
 | `"string.date"`, `"string.url"`, `"string.regex"` | `format: "date-time"`, `"uri"`, `"regex"` |
 | `"string.json"` | `contentMediaType: "application/json"` |
-| `"'a' \| 'b'"` | `enum: ["a", "b"]` |
+| `"'a' \| 'b'"` | `type: "string"`, `enum: ["a", "b"]` |
 | `"string \| null"` | `anyOf` |
 | `{ "name?": "string" }` | `properties`, with only required keys in `required` |
 | `{ "+": "reject", ... }` | `additionalProperties: false` |
@@ -396,7 +401,7 @@ A `Date` is reported as `date`, never `proto`.
 `object.json` accepts only arrays and objects whose prototype is `Object.prototype` or `null`, which JSON Schema can't require, so its check is reported as `predicate`. Return `ctx.base` to accept any JSON object in its place:
 
 ```ts
-// { $ref: "#/$defs/jsonObject1", $defs: { jsonObject1: { type: "object", ... }, ... } }
+// { type: "object", additionalProperties: { $ref: "#/$defs/jsonData" }, $defs: { jsonData: { anyOf: [...] } } }
 type("object.json").toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
 ```
 
@@ -463,7 +468,7 @@ Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express.
 npm install @ark/json-schema
 ```
 
-`@ark/json-schema` depends on a fixed `arktype` version, not a peer range. If your `arktype` version differs, your package manager installs a second copy.
+`arktype` is a peer dependency of `@ark/json-schema`, at the version released with it, so the Types it returns come from your own `arktype`. Install the versions released together; with any other, npm refuses the install and pnpm warns.
 
 `jsonSchemaToType` parses a JSON Schema into a Type:
 
@@ -540,7 +545,7 @@ const user = User.assert({ name: "Ada" })
 
 ## How it reads JSON Schema
 
-`jsonSchemaToType` reads a schema with [`arksets`](https://arktype.io/docs/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts, with ajv as the tiebreaker. Every keyword in a schema applies, local `$ref`s resolve, including recursive ones, and draft-07 forms like `items` arrays and `definitions` are read too:
+`jsonSchemaToType` reads a schema with [`arksets`](https://arktype.io/docs/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Every keyword in a schema applies, local `$ref`s resolve, including recursive ones, and draft-07 forms like `items` arrays and `definitions` are read too:
 
 ```ts
 import { jsonSchemaToType } from "@ark/json-schema"
@@ -636,7 +641,7 @@ To normalize one JSON Schema into another, or to compare JSON Schemas with each 
 
 > How @ark/json-schema and arksets read each JSON Schema keyword, which ones throw, and which are only annotations.
 
-`jsonSchemaToType` and [ArkSets](https://arktype.io/docs/sets) read JSON Schema the same way. A Type read from a schema accepts exactly what a JSON Schema 2020-12 validator accepts, with ajv as the tiebreaker. Each keyword is read in one of five ways:
+`jsonSchemaToType` and [ArkSets](https://arktype.io/docs/sets) read JSON Schema the same way. A Type read from a schema accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Each keyword is read in one of five ways:
 
 - **supported**: the Type checks it, and [relations](https://arktype.io/docs/sets/relations) like `isSubset` reason about it.
 - **opaque**: the Type checks it exactly, with a predicate. Relations through it can't be proven, and `toJsonSchema()` needs a [`predicate` fallback](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes) to write it back.
