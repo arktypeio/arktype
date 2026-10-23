@@ -35,8 +35,10 @@ export const parseInteger = (s: string, ctx: Traversal): number | ArkError => {
 
 export const parseNumeric = (s: string): number => Number(s)
 
-// a numeric string past Number.MAX_VALUE parses to Infinity
-export const parsesFinite = (s: string): boolean => Number.isFinite(Number(s))
+// a numeric string past Number.MAX_VALUE parses to Infinity, which takes at
+// least five characters ("1e309"), so a shorter one is finite unparsed
+export const parsesFinite = (s: string): boolean =>
+	s.length < 5 || Number.isFinite(Number(s))
 
 export const capitalizeString = (s: string): string =>
 	s.charAt(0).toUpperCase() + s.slice(1)
