@@ -1,9 +1,74 @@
 ---
 title: Migrating
-description: Convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema and JSON Schema to ArkType, and the defaults that differ between them.
+description: Migrate a project from Zod with one prompt, or convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema and JSON Schema to ArkType, and the defaults that differ between them.
 ---
 
-This page is also part of the [ArkType skill](/docs/agents#skill), as `references/migrating.md`, so agents read it when they convert schemas.
+To migrate a project from Zod, add the [ArkType skill](/docs/agents#skill) and ask your agent:
+
+```
+Migrate this project from Zod to ArkType.
+```
+
+It follows [Migrating a project](#migrating-a-project). This page is also part of the skill, as `references/migrating.md`, so agents read it when they convert schemas.
+
+## Migrating a project
+
+To move a whole project off Zod, or another library below, work through it in this order.
+
+1. **Take stock.** Find every import of the old library (`zod`, `zod/v4`, `zod/mini`) and of packages built on it, like `@hookform/resolvers/zod` or `zod-to-json-schema`, and every use of the schemas, including files that call `.safeParse()` or read `.shape` without importing the library. Run the project's typecheck and test scripts once, so you know what passes before you start.
+2. **Convert each schema in place.** Keep its name, its file and what it takes and returns, so imports and call sites keep working: a `.transform()` stays in the schema as a `.pipe()`, not in its callers. `z.infer<typeof X>` and `z.output` become `typeof X.infer`, and `z.input` becomes `typeof X.inferIn`.
+3. **Keep behavior identical.** The migrated schemas should accept, reject and return what the old ones did. These rules are for Zod, and [Defaults that differ](#defaults-that-differ) has them for the other libraries:
+   - `z.object()` removes undeclared keys, and so should the migrated objects, even where the code reads only declared keys, since parsed data often reaches a database or a response whole. Call `configure({ onUndeclaredKey: "delete" })` from `arktype/config` in one file, like `src/arktype.config.ts`, and import it first in every file that creates a Type, so it applies whichever file loads first, tests included. Then `.passthrough()` and `z.looseObject()` become `"+": "ignore"`, and `.strict()` becomes `"+": "reject"`.
+   - Without that setting, write `"+": "delete"` in every object instead, nested ones included. `.merge()` takes `"+"` from the object merged in, so write `.merge({ "+": "delete", ... })`; with the global setting, merged objects keep deleting.
+   - A union of such objects throws a `ParseError` saying it's indeterminate unless a key tells them apart. Follow [Defaults that differ](#defaults-that-differ) for it, and keep the global setting: `"+": "ignore"` belongs only on the union's branches.
+   - `.optional()` also accepts `undefined`, so write `"key?": "T | undefined"`. Zod lets any key be missing whose schema accepts `undefined`, so a `z.unknown()` key is `"key?": "unknown"`. In Zod 4, `.default(x).optional()` still fills in `x`, so it's `key: T.default(x)`.
+   - `z.any()` is `"unknown.any"`, or `"key?": "unknown.any"` as a key. It infers `any` as Zod's did, so refinements that read its properties type-check without casts.
+   - Translate coercions and refinements literally, as in [Coercion is a parse](#semantics-to-check). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema.
+   - Keep custom messages. `.min(1, "Name is required")` becomes `type("string >= 1").configure({ message: "Name is required" })`.
+4. **Update call sites.**
+   - `X.parse(data)` becomes `X.assert(data)`, which throws.
+   - `X.safeParse(data)` becomes `const out = X(data)`, then check `out instanceof type.errors`. `parseAsync` and `safeParseAsync` become the same, since ArkType is synchronous.
+   - `ZodError` becomes `type.errors`. Its `issues` keep their `path` and `message`, and `error.format()` becomes `out.summary`. `error.flatten().fieldErrors` becomes `flatByPath(out)`, which maps each path to its errors; read each error's `message`, which is the custom one where you configured it. `X.assert` throws a `TraversalError`, whose `arkErrors` holds them.
+   - Don't add casts or `any`, not even `as unknown`. A helper typed with `z.ZodTypeAny` or `z.ZodSchema` takes `type.Any`. To keep the output type, use `<T extends type.Any>(schema: T): T["infer"]`, not `type.Any<t>`. A function that builds a schema from another becomes a generic, like `type("<t>", { data: "t" })`.
+5. **Swap integrations.** Most accept an ArkType type directly, through [Standard Schema](/docs/standard-schema):
+
+| With Zod                                                    | With ArkType                                                                                                                                     |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `zodResolver(schema)` (react-hook-form)                     | `standardSchemaResolver(schema)` from `@hookform/resolvers/standard-schema`                                                                      |
+| tRPC `.input(schema)`, `@t3-oss/env-*`, TanStack Form       | the same call, given the ArkType type                                                                                                            |
+| AI SDK 6 `tool({ inputSchema })`, MCP SDK v2 `registerTool` | the same call, given the ArkType type, which also supplies the JSON Schema                                                                       |
+| AI SDK 5 `tool({ inputSchema })`                            | `jsonSchema<typeof T.infer>(T.toJsonSchema(), { validate })`, where `validate` returns `{ success: true, value }` or `{ success: false, error }` |
+| `zValidator` from `@hono/zod-validator`                     | `sValidator` from `@hono/standard-validator`                                                                                                     |
+| `@hono/zod-openapi`                                         | `hono-openapi`: `describeRoute`, `validator` and `resolver`                                                                                      |
+| `zod-to-json-schema`, `z.toJSONSchema(schema)`              | `schema.toJsonSchema()`                                                                                                                          |
+| `@asteasolutions/zod-to-openapi`                            | `schema.toJsonSchema({ target: "openapi-3.0" })` for each Schema Object in your OpenAPI document; see below                                      |
+| `drizzle-zod`                                               | `drizzle-arktype`                                                                                                                                |
+| a library that accepts only Zod                             | keep Zod for that call, and say so                                                                                                               |
+
+Without casts:
+
+- `toJsonSchema()` returns a `JsonSchema`, the type to give the document's Schema Objects (`import type { JsonSchema } from "arktype"`). Build path and query parameters from an object type's `.props`, which lists each key, whether it's required, and its Type.
+- A `fallback` declared apart from the `toJsonSchema()` call is a `ToJsonSchema.FallbackOption` (`import type { ToJsonSchema } from "arktype"`).
+- The MCP SDK finds a prompt argument's completer through Zod's `.shape`, so give `argsSchema` one, as below.
+
+```ts
+import { completable } from "@modelcontextprotocol/server"
+import { type } from "arktype"
+
+const Args = type({ language: "string" })
+const argsSchema = {
+	"~standard": Args["~standard"],
+	shape: {
+		language: completable({ "~standard": type("string")["~standard"] }, value =>
+			["typescript", "python"].filter(l => l.startsWith(value))
+		)
+	}
+}
+```
+
+6. **Swap dependencies.** Remove `zod` and the packages that existed only for it, and add their replacements, with the project's package manager, like `pnpm remove zod` or `npm uninstall zod`. Editing `package.json` by hand leaves the lockfile stale, and some package managers then refuse to run scripts. If `arktype` is already a dependency, keep that version. Don't upgrade another dependency to a new major version, like the MCP SDK to v2, so it takes ArkType; keep Zod for it as the table says.
+7. **Verify.** Run the `typecheck` and `test` scripts in `package.json` until both pass; `npx tsc` alone can miss a second tsconfig. Search again for imports of the old library, and check that every file importing `arktype`, `.js` files included, imports the config first if it creates a Type. Change a test only where it asserts the old library itself, like a Zod error message or `instanceof ZodError`. Never delete a test, weaken an assertion or change an expected value to match new output. The exception is a snapshot of generated JSON Schema, which ArkType writes in a canonical order: required keys, then optional ones, each sorted, and enum and union members sorted. Reorder such a snapshot only when order is its only difference.
+8. **Report** what still behaves differently, if anything, such as error message text, and any snapshot you reordered.
 
 ## How to convert
 
@@ -98,17 +163,26 @@ const Tags = type("string | string[]")
 	.to("string[]")
 ```
 
-**Coercion is a parse.** ArkType never converts a value unless the definition says so. `string.numeric.parse`, `string.integer.parse`, `string.date.parse`, `string.json.parse` and `string.url.parse` accept only strings, so keep the original type in a union when both can arrive:
+**Coercion is a parse.** ArkType never converts a value unless the definition says so, so write the conversion the old library did. `string.numeric.parse`, `string.integer.parse`, `string.date.parse`, `string.json.parse` and `string.url.parse` accept only strings, and accept fewer of them than `Number()` or `new Date()`:
 
 ```ts
-// z.coerce.number() for query strings
-const Page = type("number | string.numeric.parse")
+// z.coerce.number(), which is Number(value) for any input
+const Count = type("unknown").pipe(Number).to("number")
 
-// z.coerce.number() for any input, as Number(value)
-const AnyNumber = type("unknown").pipe(Number).to("number")
+// z.coerce.number().int().positive().default(8080) in an object
+const Server = type({
+	port: type("unknown").pipe(Number).to("number.integer > 0").default(8080)
+})
 
-// z.coerce.date()
-const When = type("Date | string.date.parse")
+// z.coerce.date(), which is new Date(value) for any input, so null is 1970-01-01
+const When = type("unknown")
+	.pipe(
+		v => new Date(v instanceof Date || typeof v === "string" ? v : Number(v))
+	)
+	.to("Date")
+
+// stricter, for strings only: rejects " 1", "0x10" and ""
+const Page = type("string.numeric.parse")
 
 // z.stringbool() accepts "true", "1", "yes", "on" and their opposites; write the set you need
 const Flag = type("'true' | 'false'").pipe(s => s === "true")
@@ -165,7 +239,7 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `z.enum(["a", "b"])`                                  | `"'a' \| 'b'"` or `type.enumerated("a", "b")`                           |
 | `z.nativeEnum(E)`, `z.enum(E)`                        | `type.valueOf(E)`                                                       |
 | `z.object({ ... })`                                   | `type({ ... })`, nested objects as plain objects                        |
-| `.optional()` on a property                           | `"key?": ...`, plus `\| undefined` to accept undefined                  |
+| `.optional()` on a property                           | `"key?": "T \| undefined"`                                              |
 | `.nullable()`, `.nullish()`                           | `"string \| null"`; `"key?": "string \| null \| undefined"`             |
 | `.default(x)` on a property                           | `"key": "number = 0"` or `key: T.default(x)`                            |
 | `z.array(T)`, `.min(1)`, `.nonempty()`                | `"T[]"` or `T.array()`, `"string[] >= 1"`                               |
@@ -189,13 +263,15 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `.refine(fn, msg)`, `.superRefine(fn)`                | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message: msg }))`          |
 | `.transform(fn)`, `.pipe(T)`                          | `.pipe(fn)`, `.to(T)`                                                   |
 | `z.preprocess(fn, T)`                                 | `type("unknown").pipe(fn).to(T)`                                        |
-| `z.coerce.number()`                                   | `"number \| string.numeric.parse"`                                      |
+| `z.coerce.number()`, `z.coerce.date()`                | `type("unknown").pipe(Number).to("number")`, see above                  |
 | `z.custom<T>(fn)`                                     | `type("unknown").narrow((v): v is T => fn(v))`                          |
 | `.brand<"Id">()`                                      | `.brand("Id")` or `"string#Id"`                                         |
 | `.describe(text)`                                     | a comment or `.configure({ title: text })`                              |
-| `{ message }`, `{ error }`, `required_error`          | `.describe(...)` or `.configure({ message })`                           |
+| `{ message }`, `{ error }`, `required_error`          | `.configure({ message })`, or `.describe(...)` for "must be ..."        |
 | `z.infer`, `z.output`, `z.input`                      | `typeof T.infer`, `typeof T.inferIn`                                    |
 | `.parse(x)`, `.safeParse(x)`                          | `T.assert(x)`, `T(x)` then `instanceof type.errors`                     |
+| `ZodError`, `.flatten().fieldErrors`                  | `type.errors`, `flatByPath(out)`                                        |
+| `z.ZodTypeAny` in a helper's signature                | `type.Any`                                                              |
 
 ## Valibot
 
