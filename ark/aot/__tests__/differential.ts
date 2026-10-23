@@ -43,8 +43,9 @@ import { build, type Plugin } from "esbuild"
 import { writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { inspect } from "node:util"
+import { inspect, types } from "node:util"
 import {
+	jsonInput,
 	detailsErrors,
 	firstIssue,
 	freezes,
@@ -193,6 +194,25 @@ const holdsTwice = (value: unknown, seen = new Set<object>()): boolean => {
 	})
 }
 
+// a plain object a count can see fewer of its keys in than a scan, or a Proxy
+const holdsUncounted = (value: unknown, seen = new Set<object>()): boolean => {
+	if (typeof value !== "object" || value === null || seen.has(value))
+		return false
+	seen.add(value)
+	if (types.isProxy(value)) return true
+	if (
+		Object.getPrototypeOf(value) === Object.prototype &&
+		Object.getOwnPropertyNames(value).some(
+			k => !Object.prototype.propertyIsEnumerable.call(value, k)
+		)
+	)
+		return true
+	return Reflect.ownKeys(value).some(k => {
+		const descriptor = Object.getOwnPropertyDescriptor(value, k)!
+		return "value" in descriptor && holdsUncounted(descriptor.value, seen)
+	})
+}
+
 const link = (code: string) =>
 	code
 		.replace(/from "arktype\/runtime"/g, `from "./runtime.js"`)
@@ -217,6 +237,7 @@ const loadArtifact = async (
 		checks: testedOptions.creationChecks,
 		mutatesInput: testedOptions.mutatesInput,
 		optimize: testedOptions.optimize,
+		jsonInput: testedOptions.jsonInput,
 		configured: testedOptions.config === false ? (false as const) : undefined
 	}
 	let code: string
@@ -1104,7 +1125,8 @@ export const compare = async (
 			if (
 				!expected ||
 				holdsArkValue(actual) ||
-				returnsForeignErrors(validator, input)
+				returnsForeignErrors(validator, input) ||
+				(jsonInput && holdsUncounted(input))
 			) {
 				if (layout === layouts[0]) result.harnessLimited++
 			} else disagree("call", { input, arktype: expected, precompiled: actual })

@@ -203,6 +203,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	optimize?: Optimization | undefined
 	/** "size" writes errors smaller and slower to read, defaulting to optimize */
 	optimizeErrors?: Optimization | undefined
+	/** trusts data to hold only own, enumerable keys, as JSON.parse's output does */
+	jsonInput?: boolean | undefined
 	/** also create each site with arktype and throw where they diverge */
 	shadow?: boolean | undefined
 	/** warn rather than fail where the output may throw at runtime */
@@ -469,7 +471,8 @@ export class Precompiler {
 			lazy: opts.lazy !== false,
 			checks,
 			mutatesInput: this.mutatesInput,
-			optimize: opts.optimize ?? "speed"
+			optimize: opts.optimize ?? "speed",
+			jsonInput: opts.jsonInput
 		}
 		this.lackedMembers = new Set(
 			defaultMembers.flatMap(member =>

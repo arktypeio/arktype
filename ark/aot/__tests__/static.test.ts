@@ -1621,6 +1621,10 @@ console.log(values.map(v => (v as any).from))`,
 				],
 				[{ shadow: "true" as never }, 'shadow must be boolean (was "true")'],
 				[
+					{ runtime: "arktype", jsonInput: true },
+					writeArktypeRuntimeOptionMessage("jsonInput")
+				],
+				[
 					{ runtime: "arktype", shadow: true },
 					writeArktypeRuntimeOptionMessage("shadow")
 				],

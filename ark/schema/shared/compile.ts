@@ -285,6 +285,10 @@ export abstract class NodeCompiler extends CompiledFunction<
 	// where data's fields hold any value, as a definition of the same keys in
 	// the same order makes them
 	declare readonly copiesValues?: boolean
+	// whether data is trusted to hold only own, enumerable keys, as
+	// JSON.parse's output does, so a count of its keys can stand for a check
+	// of each
+	declare readonly jsonInput?: boolean
 	checksMorphErrors = false
 
 	constructor(ctx: NodeCompiler.Context) {

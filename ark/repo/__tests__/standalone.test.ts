@@ -2347,6 +2347,51 @@ name is missing`)
 		attest(U({ c: 1 }).summary).snap("c must be removed")
 	})
 
+	describe("jsonInput", () => {
+		const Strict = type({ "+": "reject", a: "string", "b?": "number" })
+
+		it("counts a plain object's keys", async () => {
+			const { T } = await load({ T: Strict }, { jsonInput: true })
+			const absent = { a: "" }
+			const present = { a: "", b: 0 }
+			attest(T(absent)).is(absent)
+			attest(T(present)).is(present)
+			attest(T({ a: "", c: 1 }).summary).snap("c must be removed")
+			attest(T({ a: "", b: 0, c: 1 }).summary).snap("c must be removed")
+		})
+
+		it("passes an undeclared key beside a declared non-enumerable one", async () => {
+			const { T } = await load({ T: Strict }, { jsonInput: true })
+			const nonEnumerable = Object.defineProperty({ c: 1 }, "a", { value: "" })
+			attest(T(nonEnumerable)).is(nonEnumerable)
+		})
+
+		it("checks each key where in finds one Object.prototype has", async () => {
+			const { U } = await load(
+				{ U: type({ "+": "reject", toString: "Function" }) },
+				{ jsonInput: true }
+			)
+			attest(U({ c: 1 }).summary).snap("c must be removed")
+		})
+
+		it("checks each key of an object whose prototype isn't Object.prototype", async () => {
+			const { T } = await load({ T: Strict }, { jsonInput: true })
+			const nullPrototype = Object.defineProperty(
+				Object.assign(Object.create(null), { c: 1 }),
+				"a",
+				{ value: "" }
+			)
+			class Instance {
+				c = 1
+				get a() {
+					return ""
+				}
+			}
+			attest(T(nullPrototype).summary).snap("c must be removed")
+			attest(T(new Instance()).summary).snap("c must be removed")
+		})
+	})
+
 	it("configured: false", async () => {
 		const { T } = await load(
 			{ T: type("string") },

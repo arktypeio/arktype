@@ -469,6 +469,24 @@ const compilers = [false, true].flatMap(shortest =>
 export const compiledForSize: number =
 	compilers.push(forSize(UnifiedCompiler)) - 1
 
+// a jsonInput build's compilers follow the others in the same order, each
+// trusting data to be plain, as JSON.parse returns
+const jsonOffset = compilers.length
+
+compilers.push(
+	...compilers.map(
+		compiler =>
+			class extends compiler {
+				override readonly jsonInput: boolean = true
+			}
+	)
+)
+
+export const jsonVariantOf = (variant: number): number => variant + jsonOffset
+
+// the variant a jsonInput build's variant otherwise matches
+const baseVariantOf = (variant: number) => variant % jsonOffset
+
 // each variant's roots have their own units
 const unitsByRoot = compilers.map(() => new WeakMap<BaseRoot, RootUnit[]>())
 
@@ -483,7 +501,8 @@ export const rootUnitsOf = (root: BaseRoot, variant = 0): RootUnit[] => {
 				keyOf: runtimeKeyOf
 			}))
 		)
-		if (variant % 3 === 2 || variant === compiledForSize)
+		const base = baseVariantOf(variant)
+		if (base % 3 === 2 || base === compiledForSize)
 			for (const unit of units) unifyMembers(unit)
 	}
 	return units
@@ -491,7 +510,7 @@ export const rootUnitsOf = (root: BaseRoot, variant = 0): RootUnit[] => {
 
 // whether a root's validator is created from its checker
 export const isChecker = (root: BaseRoot, variant: number): boolean =>
-	compilers[variant] === CombinatorCompiler && combines(root)
+	compilers[baseVariantOf(variant)] === CombinatorCompiler && combines(root)
 
 // a pass can reach content-equal roots, which share a name but not a unit
 export const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>
