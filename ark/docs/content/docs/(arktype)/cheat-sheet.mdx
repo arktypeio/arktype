@@ -48,6 +48,7 @@ type("string & /@foo/") // intersection
 type("number > 0") // exclusive min
 type("number >= 0") // inclusive min
 type("string <= 255") // max length
+type("number != 0") // any number except 0
 
 // defaults — valid inside objects (key becomes implicitly optional)
 type({ email: "string.email = 'n/a'" })

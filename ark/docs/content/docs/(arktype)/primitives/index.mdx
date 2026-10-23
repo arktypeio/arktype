@@ -218,6 +218,15 @@ const Range = type({
 
 </SyntaxTabs>
 
+Exclude a single value with `!=`. Like other comparators, it also works on string and array lengths and on Dates.
+
+```ts
+const NonZero = type({
+	nonZero: "number != 0",
+	notLength3: "string != 3"
+})
+```
+
 ### divisors [#number-divisors]
 
 Constrain a `number` to a multiple of the specified integer.

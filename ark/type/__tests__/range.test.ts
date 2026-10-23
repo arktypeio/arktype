@@ -4,10 +4,11 @@ import {
 	rootSchema,
 	writeInvalidLengthBoundMessage,
 	writeInvalidOperandMessage,
-	writeUnboundableMessage
+	writeUnboundableMessage,
+	writeUnsatisfiableExpressionError
 } from "@ark/schema"
 import { writeMalformedNumericLiteralMessage } from "@ark/util"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { writeDoubleRightBoundMessage } from "arktype/internal/parser/ast/bounds.ts"
 import {
 	writeMultipleLeftBoundsMessage,
@@ -15,6 +16,7 @@ import {
 	writeUnpairableComparatorMessage
 } from "arktype/internal/parser/reduce/shared.ts"
 import { writeInvalidLimitMessage } from "arktype/internal/parser/shift/operator/bounds.ts"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
 	describe("string expressions", () => {
@@ -309,6 +311,153 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => type("d'2001/01/01'<number<2")).throwsAndHasTypeError(
 				writeInvalidLimitMessage(">", "d'2001/01/01'", "left")
+			)
+		})
+	})
+
+	describe("!=", () => {
+		it("number", () => {
+			const T = type("number!=0")
+			attest<number>(T.infer)
+			attest(T).type.toString.snap("Type<number, {}>")
+			attest(T.json).equals(type("number<0|number>0").json)
+			attest(T.allows(-1)).equals(true)
+			attest(T.allows(1)).equals(true)
+			attest(T(0).toString()).snap("must be negative or positive (was 0)")
+		})
+
+		it("whitespace", () => {
+			const T = type("number != 5")
+			attest<number>(T.infer)
+			attest(T.json).equals(type("number<5|number>5").json)
+		})
+
+		it("integer", () => {
+			const T = type("number.integer!=0")
+			attest<number>(T.infer)
+			attest(T.json).equals(type("number.integer<0|number.integer>0").json)
+		})
+
+		it("zero length", () => {
+			const T = type("string!=0")
+			attest<string>(T.infer)
+			attest(T.json).equals(type("string>0").json)
+		})
+
+		it("string length", () => {
+			const T = type("string!=3")
+			attest(T.json).equals(type("string<3|string>3").json)
+			attest(T.expression).snap("string <= 2 | string >= 4")
+			attest(T("abc").toString()).snap(
+				"must be at most length 2 or at least length 4 (was 3)"
+			)
+		})
+
+		it("array length", () => {
+			const T = type("string[]!=2")
+			attest<string[]>(T.infer)
+			attest(T.json).equals(type("string[]<2|string[]>2").json)
+		})
+
+		it("Date", () => {
+			const T = type("Date!=d'2020-01-01'")
+			attest<Date>(T.infer)
+			attest(T.json).equals(type("Date<d'2020-01-01'|Date>d'2020-01-01'").json)
+			attest(T.allows(new Date("2020-01-01"))).equals(false)
+			attest(T.allows(new Date("2020-01-02"))).equals(true)
+		})
+
+		it("intersection with min", () => {
+			const T = type("number!=0").and("number>=0")
+			attest(T.json).equals(type("number>0").json)
+		})
+
+		it("subtype", () => {
+			attest(type("number>0").extends(type("number!=0"))).equals(true)
+			attest(type("number").extends(type("number!=0"))).equals(false)
+		})
+
+		it("drops a side ruled out by an existing bound", () => {
+			const $ = scope({
+				nonNegative: "number>=0",
+				nonPositive: "number<=0",
+				atLeast3: "string>=3",
+				A: "nonNegative!=0",
+				B: "nonPositive!=0",
+				C: "atLeast3!=3"
+			}).export()
+			attest<number>($.A.infer)
+			attest($.A.json).equals(type("number>0").json)
+			attest($.B.json).equals(type("number<0").json)
+			attest($.C.json).equals(type("string>3").json)
+		})
+
+		it("both sides ruled out", () => {
+			attest(() =>
+				scope({ three: "string==3", T: "three!=3" }).export()
+			).throws("Intersection of == 3 and >= 4 results in an unsatisfiable type")
+		})
+
+		it("alias with !", () => {
+			const $ = scope({ "a!b": "number", T: "a!b!=0" })
+			attest($.export().T.json).equals(type("number<0|number>0").json)
+		})
+
+		it("excluded unit", () => {
+			attest(() => type("number!=0").and("0")).throws(
+				writeUnsatisfiableExpressionError("")
+			)
+		})
+
+		it("JSON Schema", () => {
+			attest(type("number!=0").toJsonSchema()).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				anyOf: [
+					{ type: "number", exclusiveMaximum: 0 },
+					{ type: "number", exclusiveMinimum: 0 }
+				]
+			})
+		})
+
+		it("left bound", () => {
+			// @ts-expect-error
+			attest(() => type("0!=number")).throwsAndHasTypeError(
+				writeUnpairableComparatorMessage("!=")
+			)
+		})
+
+		it("paired with left bound", () => {
+			// @ts-expect-error
+			attest(() => type("3<number!=5")).throwsAndHasTypeError(
+				writeUnpairableComparatorMessage("!=")
+			)
+		})
+
+		it("missing =", () => {
+			// @ts-expect-error
+			attest(() => type("(number)!0")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage("!")
+			)
+		})
+
+		it("unboundable", () => {
+			// @ts-expect-error
+			attest(() => type("boolean!=0")).throwsAndHasTypeError(
+				writeUnboundableMessage("boolean")
+			)
+		})
+
+		it("Date limit on number", () => {
+			// @ts-expect-error
+			attest(() => type("number!=d'2001/01/01'")).throwsAndHasTypeError(
+				writeInvalidLimitMessage("!=", "d'2001/01/01'", "right")
+			)
+		})
+
+		it("non-literal limit", () => {
+			// @ts-expect-error
+			attest(() => type("number!=string")).throwsAndHasTypeError(
+				writeInvalidLimitMessage("!=", "string", "right")
 			)
 		})
 	})
