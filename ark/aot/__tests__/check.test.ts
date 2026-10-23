@@ -6,7 +6,10 @@ import { runCli, writeFixture } from "./utils.ts"
 
 const cwd = fromHere("checked")
 
-contextualize(() => {
+contextualize(function (this: Mocha.Suite) {
+	// most tests run the CLI, a fresh process that loads arktype and the precompiler
+	this.timeout(60_000)
+
 	it("fails a site that throws a ParseError", () => {
 		const root = writeFixture({
 			"main.ts": `import { type } from "arktype"\nexport const A = type("string & number")\nexport const B = type("string")\n`
