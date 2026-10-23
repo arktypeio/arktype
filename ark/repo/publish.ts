@@ -29,9 +29,6 @@ for (const pkg of packages) {
 	// scoped alias for primary entry point
 	if (pkg.scope === "type") publishPackage(pkg, "@ark/type")
 	if (pkg.scope === "regex") publishPackage(pkg, "@ark/regex")
-
-	// alias for original @arktype/ scope
-	publishPackage(pkg, `@arktype/${pkg.scope}`)
 }
 
 shell("git push --tags")
