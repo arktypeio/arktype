@@ -355,11 +355,11 @@ contextualize(() => {
 			attest(
 				code.match(/runtime\.(props|intersection|maxLength|minLength)\(/g)
 			).equals([
-				"runtime.intersection(",
 				"runtime.props(",
 				"runtime.intersection(",
 				"runtime.maxLength(",
-				"runtime.minLength("
+				"runtime.minLength(",
+				"runtime.intersection("
 			])
 		})
 
@@ -394,11 +394,12 @@ age must be non-negative`)
 				{ optimize: "size" }
 			)
 			// pruned of what told them apart, the cases would be checkers of their own
-			attest(code.match(/runtime\.props\(|\/\^\(\?:\[\\dA-Fa-f\]/g)).equals([
-				"runtime.props(",
-				"runtime.props(",
-				"/^(?:[\\dA-Fa-f]"
-			])
+			attest([
+				code
+					.match(/runtime\.props\(\{[^}]*\}/g)
+					?.every(call => call.includes("type: ")),
+				code.match(/\/\^\(\?:\[\\dA-Fa-f\]/g)?.length
+			]).equals([true, 1])
 		})
 
 		it("copy an instance whose class writes its own tag", async () => {

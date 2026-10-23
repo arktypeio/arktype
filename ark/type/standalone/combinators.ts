@@ -484,19 +484,49 @@ const writeStructure = (
 	)
 }
 
-// a checker of no structure or reference, e.g. to a pattern, is written
-// where it's read, as gzip shrinks its repeats to less than a shared name
-const isInlined = (node: BaseNode): boolean =>
-	combines(node) &&
-	!node.isCyclic &&
-	Object.values(node.refsById).every(
-		reference =>
-			!reference.hasKind("structure") &&
-			!reference.hasKind("pattern") &&
-			!reference.hasKind("predicate") &&
-			!reference.hasKind("proto") &&
-			!(reference.hasKind("union") && discriminatedOf(reference))
+// the nodes a checker writes itself, rather than reading another's
+const ownNodesOf = (node: BaseNode): BaseNode[] =>
+	node.children.flatMap(child =>
+		child.isRoot() && !isInlined(child) ? [] : [child, ...ownNodesOf(child)]
 	)
+
+// a node whose checker would declare a value, as a pattern does its RegExp
+const declaresRef = (node: BaseNode): boolean =>
+	node.hasKind("pattern") ||
+	node.hasKind("predicate") ||
+	(node.hasKind("proto") && node.proto !== Array) ||
+	(node.hasKind("union") && !!discriminatedOf(node))
+
+const maxInlinedNodes = 8
+
+const maxInlinedObjectNodes = 24
+
+const inlinedByNode = new WeakMap<BaseNode, boolean>()
+
+// a small checker declaring nothing is written where it's read, as gzip
+// shrinks its repeats to less than a shared name
+const isInlined = (node: BaseNode): boolean => {
+	let inlined = inlinedByNode.get(node)
+	if (inlined === undefined) {
+		inlinedByNode.set(node, false)
+		const own = combines(node) && !node.isCyclic ? ownNodesOf(node) : []
+		inlined =
+			combines(node) &&
+			!node.isCyclic &&
+			!declaresRef(node) &&
+			!own.some(declaresRef) &&
+			(own.length <= maxInlinedNodes ||
+				// an object reading no other's checker is likely anonymous
+				(own.length <= maxInlinedObjectNodes &&
+					own.every(
+						child =>
+							!child.hasKind("structure") ||
+							child.props.every(prop => isInlined(prop.value))
+					)))
+		inlinedByNode.set(node, inlined)
+	}
+	return inlined
+}
 
 const readChecker = (js: CombinatorCompiler, node: BaseNode): string =>
 	isInlined(node) ?
@@ -511,7 +541,7 @@ export const writeCombinator = (
 	if (!combines(node)) return
 	const ref = (node: BaseNode) => readChecker(js, node)
 	if (node.hasKind("domain") || node.hasKind("proto"))
-		return writeCall("leaf", writeCheck(js, node))
+		return writeCheck(js, node)
 	if (node.hasKind("unit")) {
 		return writeCall(
 			"unit",
@@ -527,13 +557,10 @@ export const writeCombinator = (
 			structure ??
 			(predicate &&
 				writeCall(
-					"leaf",
-					writeCall(
-						"check",
-						'"predicate"',
-						JSON.stringify(predicateSiteOf(predicate)!.description),
-						js.ref(predicate.predicate)
-					)
+					"check",
+					'"predicate"',
+					JSON.stringify(predicateSiteOf(predicate)!.description),
+					js.ref(predicate.predicate)
 				))
 		// props check data is an object, as their basis would
 		if (

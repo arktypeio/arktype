@@ -7,7 +7,7 @@ import type {
 	SiteContext
 } from "@ark/schema/runtime"
 import type { Fn } from "@ark/util"
-import { failsAt, failsIn, requiredSite } from "./runtime.ts"
+import { failsAt, failsIn } from "./runtime.ts"
 
 // a size build's validators are composed of these, each a node: it allows
 // data passed none, and passed one, reports to its ctx as an Apply does
@@ -19,8 +19,8 @@ export interface Checker {
 	t?: ((data: any) => unknown) | undefined
 }
 
-/** a site and the test data passes to avoid it */
-export interface Check extends SiteContext {
+/** a site, and the checker of the test data passes to avoid it */
+export interface Check extends SiteContext, Checker {
 	test: (data: any) => boolean
 }
 
@@ -28,7 +28,14 @@ export const check = ((
 	code: ArkErrorCode,
 	description: string | undefined,
 	test: (data: any) => boolean
-): Check => ({ code, description, test })) satisfies Fn
+): Check => {
+	const checker = ((data, ctx) =>
+		test(data) || !failsAt(ctx as never, checker, data)) as Check
+	checker.code = code
+	checker.description = description
+	checker.test = test
+	return checker
+}) satisfies Fn
 
 export const stringCheck: Check = /* @__PURE__ */ check(
 	"domain",
@@ -117,11 +124,6 @@ export const pattern = ((
 ): Check =>
 	check("pattern", description, data => instance.test(data))) satisfies Fn
 
-/** a node checked by its site's test alone */
-export const leaf = ((site: Check): Checker =>
-	(data, ctx) =>
-		site.test(data) || !failsAt(ctx as never, site, data)) satisfies Fn
-
 const printValue = (value: unknown): string =>
 	typeof value === "string" ? JSON.stringify(value) : `${value}`
 
@@ -135,11 +137,12 @@ export const describeValues = (values: readonly unknown[]): string => {
 export const unit = ((
 	value: unknown,
 	description = printValue(value)
-): Checker =>
-	leaf(check("unit", description, data => data === value))) satisfies Fn
+): Checker => check("unit", description, data => data === value)) satisfies Fn
 
-export const booleanChecker: Checker = /* @__PURE__ */ leaf(
-	/* @__PURE__ */ check("union", "boolean", data => typeof data === "boolean")
+export const booleanChecker: Checker = /* @__PURE__ */ check(
+	"union",
+	"boolean",
+	data => typeof data === "boolean"
 )
 
 // a basis failing stops the node, as do refinements failing together, before
@@ -165,6 +168,9 @@ export const intersection = ((
 }) satisfies Fn
 
 type Props = Record<string, Checker>
+
+// a missing key, as runtime's requiredSite without siteOf
+const requiredSite: FailureSite = { missing: { code: "required" } }
 
 // an object's keys, each checked in the order declared, required keys first
 export const props = ((required: Props, optional?: Props | 0): Checker => {
@@ -226,24 +232,17 @@ export const transformingProps = ((
 ): Checker => {
 	const checker = props(required, optional)
 	const declared: Props = { ...required, ...optional }
-	const keys = Object.keys(declared)
-	const transformed = keys.filter(k => declared[k].t)
-	const defaulted = Object.keys(defaults)
 	checker.t = data => {
 		let out = data
-		const write = (k: string, value: unknown) => {
-			if (out === data) out = copyForWriting(data)
-			out[k] = value
-		}
-		for (const k of transformed) {
-			if (k in data) {
-				const value = declared[k].t!(data[k])
-				if (value !== data[k]) write(k, value)
+		for (const k in declared) {
+			const value = k in data ? declared[k].t?.(data[k]) : defaults[k]
+			if (value !== undefined && value !== data[k]) {
+				if (out === data) out = copyForWriting(data)
+				out[k] = value
 			}
 		}
-		for (const k of defaulted) if (!(k in data)) write(k, defaults[k])
 		if (out !== data)
-			for (const k of keys) if (!(k in out) && k in data) out[k] = data[k]
+			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
 		return out
 	}
 	return checker
@@ -284,7 +283,7 @@ export const units = ((
 	code: ArkErrorCode = "discriminant",
 	description = describeValues(values)
 ): Checker =>
-	leaf(check(code, description, data => values.includes(data)))) satisfies Fn
+	check(code, description, data => values.includes(data))) satisfies Fn
 
 // a union told apart by data's domain, which a branch of 1 alone decides
 export const domains = ((
