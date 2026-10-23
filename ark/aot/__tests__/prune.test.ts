@@ -25,6 +25,7 @@ import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join, posix } from "node:path"
+import { stripVTControlCharacters } from "node:util"
 import { memoryHost, normalized, runCli, writeFixture } from "./utils.ts"
 
 const types = `import { type } from "arktype"
@@ -812,17 +813,15 @@ console.log(out instanceof type.errors ? out.summary : out)
 						code.replace("User({ name: 5 })", "User.assert({ name: 5 })")
 					:	undefined
 			}
-			const error = await bundle({}, { plugins: [asserting] }).then(
-				() => undefined,
-				(e: Error) => e
+			const message = await bundle({}, { plugins: [asserting] }).then(
+				() => "",
+				// Vite colors the message where picocolors sees CI
+				(e: Error) => stripVTControlCharacters(e.message)
 			)
-			attest(
-				error?.message.endsWith(
-					writeUnseenMessage(
-						`it built ${join(root, "main.ts")} from other code than it read`
-					)
-				)
-			).equals(true)
+			const expected = writeUnseenMessage(
+				`it built ${join(root, "main.ts")} from other code than it read`
+			)
+			attest(message.slice(-expected.length)).equals(expected)
 		})
 	})
 
