@@ -35,6 +35,9 @@ export const parseInteger = (s: string, ctx: Traversal): number | ArkError => {
 
 export const parseNumeric = (s: string): number => Number(s)
 
+// a numeric string past Number.MAX_VALUE parses to Infinity
+export const parsesFinite = (s: string): boolean => Number.isFinite(Number(s))
+
 export const capitalizeString = (s: string): string =>
 	s.charAt(0).toUpperCase() + s.slice(1)
 
@@ -64,19 +67,18 @@ export const isLuhnValid = (creditCardInput: string): boolean => {
 	return !!(sum % 10 === 0 ? sanitized : false)
 }
 
-export const isParsableDate = (s: string): boolean =>
-	!Number.isNaN(new Date(s).valueOf())
+export const isParsableDate = (s: string): boolean => readDate(s) !== undefined
 
 const dateParseError = /* @__PURE__ */ keywordError(
 	"string.date.parse",
 	"a parsable date"
 )
 
-export const parseDate = (s: string, ctx: Traversal): Date | ArkError => {
-	const date = new Date(s)
-	if (Number.isNaN(date.valueOf())) return ctx.error(dateParseError)
-	return date
-}
+export const parseDate = (s: string, ctx: Traversal): Date | ArkError =>
+	readDate(s) ?? ctx.error(dateParseError)
+
+export const iso8601Matcher =
+	/^[+-]?\d{4}(?!\d{2}\b)(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\1(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?:T(?:(?:(?:[01]\d|2[0-3])(?:(:?)[0-5]\d)?|24:?00)(?:[,.]\d+(?!:))?)?(?:\2[0-5]\d(?:[,.]\d+)?)?(?:[Zz]|[+-](?:[01]\d|2[0-3]):?(?:[0-5]\d)?)?)?)?$/
 
 // a date that doesn't exist, like 2025-02-29, isn't an ISO 8601 date either
 const isoDateParseError = /* @__PURE__ */ keywordError(
@@ -141,6 +143,18 @@ const isoDateOf = (parts: RegExpExecArray): Date | undefined => {
 		:	0
 	date.setUTCHours(+(hour ?? 0), +(minute ?? 0) + offset, +(second ?? 0), ms)
 	return date
+}
+
+// an ISO date is read as string.date.iso.parse reads it, so it's one instant
+// on every machine and a date that doesn't exist is invalid. Other forms are
+// read by the host's Date
+const readDate = (s: string): Date | undefined => {
+	if (iso8601Matcher.test(s)) {
+		const parts = isoDateParts.exec(s)
+		return parts ? isoDateOf(parts) : undefined
+	}
+	const date = new Date(s)
+	return Number.isNaN(date.valueOf()) ? undefined : date
 }
 
 export const parseIsoDate = (s: string, ctx: Traversal): Date | ArkError => {
@@ -233,10 +247,44 @@ const jsonParseError = /* @__PURE__ */ keywordError(
 	jsonString
 )
 
+const isDigitAt = (s: string, i: number) => {
+	const code = s.charCodeAt(i)
+	return code >= 48 && code <= 57
+}
+
+// a number in JSON past Number.MAX_VALUE parses to Infinity, which number
+// rejects. It has a positive exponent or 309 digits in a row, and any 309 in
+// a row include one of every 309th index, so only those are read
+const mayOverflow = (s: string): boolean => {
+	if (positiveExponent.test(s)) return true
+	for (let i = 308; i < s.length; i += 309) {
+		if (!isDigitAt(s, i)) continue
+		let start = i
+		while (isDigitAt(s, start - 1)) start--
+		let end = i
+		while (isDigitAt(s, end + 1)) end++
+		if (end - start >= 308) return true
+	}
+	return false
+}
+
+const positiveExponent = /\d[Ee]\+?\d/
+
+const rejectInfinity = (k: string, v: unknown) => {
+	if (v === Infinity || v === -Infinity)
+		throw new SyntaxError("Number is out of range")
+	return v
+}
+
 export const parseJson = (s: string, ctx: Traversal): Json | ArkError => {
 	if (s.length === 0) return ctx.error(jsonParseError)
 	try {
-		return JSON.parse(s)
+		return JSON.parse(
+			s,
+			!ctx.config.numberAllowsInfinity && mayOverflow(s) ?
+				rejectInfinity
+			:	undefined
+		)
 	} catch (e) {
 		if (!(e instanceof SyntaxError)) throw e
 		return ctx.error({ ...jsonParseError, cause: e })

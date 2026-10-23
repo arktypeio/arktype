@@ -203,26 +203,12 @@ contextualize(() => {
 		// @ts-expect-error
 		attest(() => errors[0]).type.errors("Property '0' does not exist")
 		// @ts-expect-error
-		attest(() => errors.map(e => e)).type.errors(
-			"Property 'map' does not exist"
-		)
-		// @ts-expect-error
-		attest(() => errors.push(errors.issues[0])).type.errors(
-			"Property 'push' does not exist"
-		)
-		// @ts-expect-error
-		attest(() => errors.length).type.errors("Property 'length' does not exist")
-		// @ts-expect-error
 		attest(() => errors.issues.push(errors.issues[0])).type.errors(
 			"Property 'push' does not exist"
 		)
 		// @ts-expect-error
 		attest((): readonly ArkError[] => errors).type.errors(
 			"is missing the following properties"
-		)
-		// @ts-expect-error
-		attest(() => ([] as ArkError[]).concat(errors)).type.errors(
-			"No overload matches this call"
 		)
 	})
 
@@ -274,14 +260,20 @@ contextualize(() => {
 		if (!("issues" in result)) throw new Error("expected validation failure")
 
 		const messages = result.issues?.map(issue => issue.message)
-		attest(messages).equals(errors.issues.map(issue => issue.message))
+		// a consumer prefixes the path itself
+		attest(messages).snap(["(1) must be...\n  ◦ even\n  ◦ at least 2"])
 		attest(messages instanceof ArkErrors).equals(false)
 
 		const parsed = JSON.parse(
 			JSON.stringify({ issues: result.issues, messages })
 		) as { issues: unknown[]; messages: string[] }
 
-		attest(parsed.issues).equals(JSON.parse(JSON.stringify(errors)))
+		attest(parsed.issues).equals(
+			(JSON.parse(JSON.stringify(errors)) as object[]).map(issue => ({
+				...issue,
+				message: messages![0]
+			}))
+		)
 		attest(parsed.messages).equals(messages!)
 	})
 

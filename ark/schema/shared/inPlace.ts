@@ -129,7 +129,7 @@ const readsOf = (node: BaseRoot): Reads | undefined => {
 	for (const prop of structure.props) reads.values.named.add(prop.key)
 	if (structure.index) reads.values.every = true
 	if (structure.sequence) reads.values.indices = true
-	if (structure.undeclared) reads.everyPresence = true
+	if (structure.handlesUndeclared) reads.everyPresence = true
 	return reads
 }
 

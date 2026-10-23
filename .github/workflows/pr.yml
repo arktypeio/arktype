@@ -85,7 +85,7 @@ jobs:
           - '{"mutatesInput": true, "errors": "first"}'
           - '{"mutatesInput": true, "errors": "none"}'
           - '{"mutatesInput": "always", "errors": "first"}'
-          - '{"mutatesInput": "always", "errors": "none", "countsKeys": true}'
+          - '{"mutatesInput": "always", "errors": "none"}'
           - '{"optimize": "size"}'
           - '{"optimize": "size", "errors": "first"}'
           - '{"optimizeErrors": "size"}'

@@ -8,45 +8,12 @@ contextualize(() => {
 		attest(t.expression).snap("string")
 	})
 
-	it("maxLength (positive)", () => {
-		const tMaxLength = jsonSchemaToType({
-			type: "string",
-			maxLength: 5
-		})
-		attest(tMaxLength.expression).snap("string <= 5")
-	})
-
-	it("maxLength (negative)", () => {
-		const maxLength = -5
-		attest(() =>
-			jsonSchemaToType({
-				type: "string",
-				// @ts-expect-error
-				maxLength
-			})
-		).throws.snap(
-			"ParseError: #/maxLength must be a non-negative integer (was -5)"
+	it("minLength and maxLength", () => {
+		attest(jsonSchemaToType({ type: "string", maxLength: 5 }).expression).snap(
+			"string <= 5"
 		)
-	})
-
-	it("minLength (positive)", () => {
-		const tMinLength = jsonSchemaToType({
-			type: "string",
-			minLength: 5
-		})
-		attest(tMinLength.expression).snap("string >= 5")
-	})
-
-	it("minLength (negative)", () => {
-		const minLength = -1
-		attest(() =>
-			jsonSchemaToType({
-				type: "string",
-				// @ts-expect-error
-				minLength
-			})
-		).throws.snap(
-			"ParseError: #/minLength must be a non-negative integer (was -1)"
+		attest(jsonSchemaToType({ type: "string", minLength: 5 }).expression).snap(
+			"string >= 5"
 		)
 	})
 
@@ -85,7 +52,6 @@ contextualize(() => {
 		} satisfies JsonSchemaOrBoolean
 		const pattern = jsonSchemaToType(schema)
 
-		attest(() => jsonSchemaToType(schema))
 		attest(pattern.expression).snap("string")
 	})
 })

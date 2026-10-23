@@ -24,8 +24,7 @@ export const noValidators: StandaloneModules = {
 	modules: {},
 	folds: {},
 	checking: [],
-	values: [],
-	unitReaders: {}
+	values: []
 }
 
 // one bad export refuses a whole artifact, so retry each alone
@@ -227,7 +226,12 @@ export const firstStatementOf = (program: Program): Program["body"][number] =>
 	)!
 
 // entries whose exports only sites read, so a standalone build drops them
-const prunedSpecifiers: unknown[] = ["arktype", "arktype/codecs"]
+const prunedSpecifiers: unknown[] = [
+	"arktype",
+	"arktype/codecs",
+	"@ark/type",
+	"@ark/type/codecs"
+]
 
 // an import only folded sites read becomes e.g. `import "arktype"`
 export const pruneArktypeImports = (

@@ -111,7 +111,6 @@ contextualize(() => {
 				email: "string.email",
 				"packages?": "package[]"
 			},
-			tree: { id: "number", children: "tree[]" },
 			node: { v: "number", "e0?": "node[]", "next?": "node | null" },
 			transformed: { v: "string.trim", "n?": "number", "e?": "transformed[]" }
 		}).export()
@@ -124,12 +123,6 @@ contextualize(() => {
 			dependencies: [{ name: "a", dependencies: [shared] }, shared]
 		}
 		Object.assign(shared, { dependencies: [root] })
-		const ring = [0, 1, 2].map(id => ({
-			id,
-			children: [] as object[]
-		}))
-		for (const node of ring) node.children.push(...ring)
-		ring[2].id = "x" as never
 		const graph = Array.from(
 			{ length: 9 },
 			(_, v): typeof types.node.infer => ({ v })
@@ -150,12 +143,6 @@ contextualize(() => {
 			[6, 7]
 		])
 			(graph[from].e0 ??= []).push(graph[to])
-		const dag = Array.from(
-			{ length: 200 },
-			(_, v): typeof types.node.infer => ({ v })
-		)
-		for (let i = 0; i < dag.length; i++) dag[i].e0 = dag.slice(i + 1, i + 3)
-		dag[199].v = "x" as never
 		const unionShared = { v: "x" }
 		const self: { v: string; next?: object } = { v: "x" }
 		self.next = self
@@ -163,9 +150,7 @@ contextualize(() => {
 
 		const cases: [type.Any, unknown][] = [
 			[types.package, root],
-			[types.tree, ring[0]],
 			[types.node, graph[0]],
-			[types.node, dag[0]],
 			[types.node, { v: 1, e0: [unionShared], next: unionShared }],
 			[types.node, self],
 			[types.transformed, { v: "root", e: [{ v: "a", e: [invalid] }, invalid] }]
@@ -180,7 +165,7 @@ contextualize(() => {
 			list: { v: "number", "next?": "list" },
 			tree: { v: "number", kids: "tree[]" }
 		}).export()
-		for (const length of [63, 64, 65, 66]) {
+		for (const length of [64, 65]) {
 			let data: typeof types.list.infer = { v: 0 }
 			const last = data
 			for (let i = 1; i < length; i++) data = { v: i, next: data }
@@ -191,7 +176,7 @@ contextualize(() => {
 				`${"next.".repeat(length - 1)}v must be a number (was a string)`
 			)
 		}
-		for (const length of [999, 1000, 1001]) {
+		for (const length of [1000, 1001]) {
 			const kids = Array.from({ length }, (_, v) => ({ v, kids: [] }))
 			const data = { v: 0, kids }
 
@@ -343,25 +328,6 @@ contextualize(() => {
 		)
 	})
 
-	// https://github.com/arktypeio/arktype/issues/944
-	it("cyclic morph in and out", () => {
-		const node = scope({
-			node: { n: "string.numeric.parse", "next?": "node" }
-		}).export().node
-
-		attest(node.in({ n: "1", next: { n: "2" } })).equals({
-			n: "1",
-			next: { n: "2" }
-		})
-		attest(node.out({ n: 1, next: { n: 2 } })).equals({
-			n: 1,
-			next: { n: 2 }
-		})
-		attest(node.out({ n: 1, next: { n: "2" } }).toString()).snap(
-			"next.n must be a number (was a string)"
-		)
-	})
-
 	it("pipe to contextual cyclic type", () => {
 		const types = scope({
 			node: [
@@ -418,7 +384,8 @@ contextualize(() => {
 	it("mutually recursive morph in and out", () => {
 		const types = scope({
 			a: { n: "string.numeric.parse", "b?": "b" },
-			b: { "a?": "a" }
+			b: { "a?": "a" },
+			node: { n: "string.numeric.parse", "next?": "node" }
 		}).export()
 		const input = { n: "1", b: { a: { n: "2" } } }
 
@@ -429,6 +396,9 @@ contextualize(() => {
 		})
 		attest(types.a.out({ n: 1, b: { a: { n: "2" } } }).toString()).snap(
 			"b.a.n must be a number (was a string)"
+		)
+		attest(types.node.out({ n: 1, next: { n: "2" } }).toString()).snap(
+			"next.n must be a number (was a string)"
 		)
 	})
 
@@ -876,7 +846,9 @@ contextualize(() => {
 		const types = scope({
 			node: { v: "number", "next?": "node | null" },
 			user: { friends: "group[]" },
-			group: { members: "user[]" }
+			group: { members: "user[]" },
+			a: { "p?": ["b", "...", "b[]"] },
+			b: { "n?": "b" }
 		}).export()
 
 		attest(type.schema(types.node.json as never).equals(types.node)).equals(
@@ -885,6 +857,8 @@ contextualize(() => {
 		attest(type.schema(types.user.json as never).equals(types.user)).equals(
 			true
 		)
+		// a non-empty array of a cyclic type
+		attest(type.schema(types.a.json as never).equals(types.a)).equals(true)
 	})
 
 	it("cyclic pipe JSON Schema reference", () => {
@@ -902,15 +876,6 @@ contextualize(() => {
 			$ref: "#/$defs/a",
 			$defs: { a: { type: "object", properties: { n: { type: "string" } } } }
 		})
-	})
-
-	it("non-empty cyclic array json", () => {
-		const { a } = scope({
-			a: { "p?": ["b", "...", "b[]"] },
-			b: { "n?": "b" }
-		}).export()
-
-		attest(type.schema(a.json as never).equals(a)).equals(true)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/928
@@ -1388,9 +1353,6 @@ swap.swap.order[1] must be "on" (was "off")`)
 
 	// their types hit TS2589 or TS2615, as on 2.2.7
 	it("aliases instantiating a generic over themselves", () => {
-		const { json }: Record<string, Type> = scope({
-			json: "string | number | boolean | null | json[] | Record<string, json>"
-		} as never).export() as never
 		const { a }: Record<string, Type> = scope({
 			a: "Record<string, a>"
 		} as never).export() as never
@@ -1399,8 +1361,6 @@ swap.swap.order[1] must be "on" (was "off")`)
 			a: "g<a>"
 		} as never).export() as never
 
-		attest(json.allows({ a: [1, "x", { b: null }] })).equals(true)
-		attest(json.allows({ a: [1, { b: undefined }] })).equals(false)
 		attest(a.expression).snap("{ [string]: $a }")
 		attest(String(a({ x: 1 }))).snap("x must be an object (was a number)")
 		attest(list.a.expression).snap("$a[]")

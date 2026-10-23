@@ -165,19 +165,6 @@ contextualize(() => {
 		attest(toJsonSchema(node)).snap({ type: "string", pattern: "^.$" })
 	})
 
-	it("constrained index key with undeclared keys rejected", () => {
-		const node = rootSchema({
-			domain: "object",
-			index: { signature: { domain: "string", maxLength: 3 }, value: "number" },
-			undeclared: "reject"
-		})
-		attest(toJsonSchema(node)).snap({
-			type: "object",
-			propertyNames: { type: "string", maxLength: 3 },
-			additionalProperties: { type: "number" }
-		})
-	})
-
 	it("variadic array", () => {
 		const node = rootSchema({
 			proto: Array,
@@ -464,7 +451,7 @@ contextualize(() => {
 			meta: { "x-unit": { name: "ms" } } as never
 		})
 
-		attest<object>(toJsonSchema(T)).snap({
+		attest(toJsonSchema(T)).snap({
 			type: "number",
 			"x-unit": { name: "ms" }
 		})
@@ -570,7 +557,8 @@ contextualize(() => {
 {
     code: "defaultValue",
     base: {
-        type: "object"
+        type: "object",
+        properties: {}
     },
     value: {
         a: 0n

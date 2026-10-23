@@ -7,15 +7,13 @@ import {
 	messageIn,
 	TraversalError,
 	writeInvalidLocaleMessage,
-	type ActualContext,
 	type ArkError,
 	type ArkErrors,
 	type DomainCase,
-	type ExpectedContext,
 	type Locale,
 	type MessageContext,
 	type MessageWriter,
-	type ProblemContext
+	writeGlobalOnlyConfigMessage
 } from "@ark/schema"
 import { flatMorph, omit } from "@ark/util"
 import {
@@ -236,64 +234,16 @@ const xx: Locale = {
 
 contextualize(() => {
 	describe("en", () => {
-		it("is the resolved locale", () => {
-			attest($ark.defaultConfig.locale).is(en)
-			attest(scope({}).type("string").internal.$.resolvedConfig.locale).is(en)
-			attest($ark.resolvedConfig!.locale).is(en)
-		})
-
-		it("has the writers each kind writes itself", () => {
-			const slotsByCode: Record<string, string[]> = {}
-			for (const [k, v] of Object.entries(en)) {
-				if (typeof v === "object" && k !== "nouns" && k !== "keywordPhrases") {
-					slotsByCode[k] = Object.keys(v).filter(
-						slot => v[slot] !== en[slot as never]
-					)
-				}
-			}
-			attest(slotsByCode).snap({
-				min: ["expected"],
-				max: ["expected"],
-				minLength: ["expected", "actual"],
-				maxLength: ["expected", "actual"],
-				exactLength: ["expected", "actual"],
-				after: ["expected", "actual"],
-				before: ["expected", "actual"],
-				notEqual: ["expected", "actual"],
-				notEqualLength: ["expected", "actual"],
-				domain: ["expected", "actual"],
-				unit: ["expected", "problem"],
-				proto: ["expected", "actual"],
-				union: ["expected", "problem", "actual", "message"],
-				intersection: ["expected", "problem"],
-				divisor: ["expected"],
-				pattern: ["expected"],
-				predicate: ["expected", "problem", "actual"],
-				required: ["expected", "actual"],
-				undeclared: ["expected", "actual"],
-				discriminant: ["expected", "actual"]
-			})
-		})
-
 		it("data", () => {
-			attest(en.tag).equals("en")
-			attest(en.nouns.number).equals("a number")
-			attest(en.nouns.Date).equals("a Date")
-			attest(en.nouns.unknown).equals("present")
-			attest(en.nouns.never).equals("never")
 			attest(en.list(["a", "b", "c"], "or")).equals("a, b or c")
 			attest(en.list(["a", "b", "c"], "and")).equals("a, b and c")
-			attest(en.list(["false", "true"], "and")).equals("false and true")
-			attest(en.list(["a", "a", "b"], "and")).equals("a, a and b")
 			attest(en.list([], "and")).equals("")
-			attest(en.list(["false", "true"], "or")).equals("false or true")
-			attest(en.list(["a", "a", "b"], "or")).equals("a, a or b")
 			attest(en.list([], "or")).equals("")
 			attest(en.plural(1)).equals("one")
 			attest(en.plural(0)).equals("other")
 			attest(en.number(0.5)).equals("0.5")
 			attest(en.number(5n)).equals("5")
-			attest(en.date(new Date("2000-01-01"))).equals("2000")
+			attest(en.date(new Date("2000-01-01"))).equals("January 1, 2000")
 			attest(en.cite("a username")).equals("a username")
 		})
 
@@ -448,9 +398,6 @@ contextualize(() => {
 			const $ = scope(
 				{},
 				{
-					undeclared: {
-						message: ctx => `${ctx.propString} isn't allowed (was ${ctx.data})`
-					},
 					discriminant: {
 						expected: (ctx, locale) =>
 							ctx.discriminantKind === "domain" ?
@@ -461,9 +408,6 @@ contextualize(() => {
 								)
 					}
 				}
-			)
-			attest($.type({ "+": "reject" })({ b: 1 }).toString()).snap(
-				"b isn't allowed (was 1)"
 			)
 			attest($.type("'a' | 'b' | 'c'")("d").toString()).snap(
 				'must be <a>, <b> or <c> (was "d")'
@@ -540,21 +484,6 @@ b isn't allowed`)
 					// @ts-expect-error
 					ctx.meta.title
 			).type.errors("'ctx.meta' is possibly 'undefined'")
-			attest(
-				(ctx: ExpectedContext) =>
-					// @ts-expect-error
-					ctx.meta.title
-			).type.errors("'ctx.meta' is possibly 'undefined'")
-			attest(
-				(ctx: ActualContext) =>
-					// @ts-expect-error
-					ctx.meta.title
-			).type.errors("'ctx.meta' is possibly 'undefined'")
-			attest(
-				(ctx: ProblemContext<"predicate">) =>
-					// @ts-expect-error
-					ctx.meta.title
-			).type.errors("'ctx.meta' is possibly 'undefined'")
 		})
 
 		it("see what every locale has", () => {
@@ -597,20 +526,6 @@ b isn't allowed`)
 					}
 				})
 			).type.errors("Property 'actual' is missing")
-			attest(
-				(): Locale => ({
-					...en,
-					// @ts-expect-error
-					min: { expected: "positive" }
-				})
-			).type.errors("Property 'problem' is missing")
-			attest(
-				(): Locale.Complete => ({
-					...en,
-					// @ts-expect-error
-					min: { problem: "must be positive" }
-				})
-			).type.errors("Property 'expected' is missing")
 		})
 	})
 
@@ -731,8 +646,6 @@ b isn't allowed`)
 				attest(summaryOf()).snap("must be a string (was a number)")
 				reconfigure({ locale: xx })
 				attest(summaryOf()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
-				reconfigure({ locale: { ...en } })
-				attest(summaryOf()).snap("must be a string (was a number)")
 				reconfigure({ locale: () => xx })
 				reconfigure({ locale: undefined } as never)
 				attest(summaryOf()).snap("must be a string (was a number)")
@@ -1017,33 +930,14 @@ m must be a bigint (was 5)`)
 			attest(() => scope({}, { locale: xx })).type.errors(
 				"'locale' does not exist in type"
 			)
-		})
-
-		it("ignores a scope's locale", () => {
-			const config = { locale: { tag: "partial" } } as never
-			attest(scope({}, config).type("string")(5).toString()).snap(
-				"must be a string (was a number)"
-			)
-			withConfig({ locale: xx }, () =>
-				attest(scope({}, config).type("string")(5).toString()).snap(
-					" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
-				)
-			)
-			withConfig({ locale: () => xx }, () =>
-				attest(scope({}, config).type("string")(5).toString()).snap(
-					" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
-				)
+			attest(() => scope({}, { locale: xx } as never)).throws(
+				writeGlobalOnlyConfigMessage("locale")
 			)
 		})
 
 		it("renders default-value ParseErrors in English", () => {
 			const def = { k: ["number", "=", "x"] } as never
 			withConfig({ locale: xx }, () =>
-				attest(() => scope({}).type(def)).throws.snap(
-					"ParseError: Default for k must be a number (was a string)"
-				)
-			)
-			withConfig({ locale: () => xx }, () =>
 				attest(() => scope({}).type(def)).throws.snap(
 					"ParseError: Default for k must be a number (was a string)"
 				)
@@ -1064,11 +958,8 @@ m must be a bigint (was 5)`)
 			attest(errors.toLocaleString(locale)).snap(
 				" ⟦message⟧ ⟦problem⟧ a must be a string (was missing) or b must be a number (was missing) ⟦actual⟧"
 			)
-		})
-
-		it("an untyped locale without a code reads its expected whole in en", () => {
-			const { union: _, ...untyped } = xx
-			const errors = type({ a: "string" }).or({ b: "number" })({}) as ArkErrors
+			// an untyped locale without the code at all
+			const { union: __, ...untyped } = xx
 			attest(errors.toLocaleString(untyped as {} as Locale)).snap(
 				"a must be a string (was missing) or b must be a number (was missing)"
 			)

@@ -211,3 +211,4 @@ ArkType reports most mistakes in a definition as a TypeScript error at the defin
 - A string literal needs its own quotes inside the definition: `"'a' | 'b'"`. A bare `"a"` is read as the name of a type, and fails to resolve.
 - Don't hand-write a TypeScript interface next to the type. Derive it with `typeof T.infer`, so the two can't drift.
 - An invalid definition is a TypeScript error at the definition itself, with a message saying what's wrong. Fix it there rather than casting it away.
+- An `ArkErrors` may find its issues when first read, so they describe the data as it is then. Read `out.summary` or `out.issues` before the validated data can change, as reactive form state, an Immer draft or an `await` before reporting allow.

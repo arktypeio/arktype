@@ -4,7 +4,7 @@ import {
 	flatMorph,
 	includes,
 	inferred,
-	omit,
+	isEmptyObject,
 	throwInternalError,
 	throwParseError,
 	type Fn,
@@ -43,6 +43,7 @@ import {
 	Disjoint,
 	writeUnsatisfiableExpressionError
 } from "../shared/disjoint.ts"
+import { standardIssuesOf } from "../shared/errors.ts"
 import { ArkErrors } from "../shared/issues.ts"
 import {
 	structuralKinds,
@@ -111,7 +112,8 @@ export abstract class BaseRoot<
 			version: 1,
 			validate: input => {
 				const out = this(input)
-				if (out instanceof ArkErrors) return out
+				if (out instanceof ArkErrors)
+					return { issues: standardIssuesOf(out as never) }
 				return { value: out }
 			},
 			jsonSchema: {
@@ -258,14 +260,19 @@ export abstract class BaseRoot<
 				throwParseError(writeInvalidMergeOperandMessage(branch.expression))
 		}
 		return this.rootOfBranches(
-			rNode.branches.flatMap(branch =>
-				this.applyStructural("merge", [
+			rNode.branches.flatMap(branch => {
+				const merged = this.applyStructural("merge", [
 					structureOf(branch) ??
 						throwParseError(
 							writeNonStructuralOperandMessage("merge", branch.expression)
 						)
 				])
-			)
+				// the merged-in object's settings are the result's, as a spread's
+				// are, and its meta, like "@", is one
+				return isEmptyObject(branch.meta) ? merged : (
+						merged.map(result => result.configure(branch.meta))
+					)
+			})
 		)
 	}
 
@@ -587,11 +594,7 @@ export abstract class BaseRoot<
 		return this.$.finalize(
 			this.transform(
 				(kind, inner) =>
-					kind === "structure" ?
-						rule === "ignore" ?
-							omit(inner as Structure.Inner, { undeclared: 1 })
-						:	{ ...inner, undeclared: rule }
-					:	inner,
+					kind === "structure" ? { ...inner, undeclared: rule } : inner,
 				deep ? undefined : (
 					{ shouldTransform: node => !includes(structuralKinds, node.kind) }
 				)

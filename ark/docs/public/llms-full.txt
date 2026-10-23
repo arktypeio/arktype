@@ -593,6 +593,8 @@ export default {
 
 > Help Claude Code, Codex, Cursor and other coding agents write ArkType.
 
+Every error ArkType reports names its fix: `tsc`'s as a definition is written, a [precompiled](https://arktype.io/docs/precompile) build's and validation's. An agent can close each loop on its own, which is also why precompiling is free with one: the build step is one more loop it already runs.
+
 ## Skill
 
 The ArkType [skill](https://github.com/arktypeio/arktype/blob/main/ark/type/skills/arktype/SKILL.md) tells agents when to reach for ArkType, how its syntax maps to TypeScript, and which mistakes to avoid. Add it to your project with:
@@ -613,7 +615,7 @@ Every page of these docs is available as Markdown by adding `.md` to its URL, e.
 
 ## Precompile
 
-A [precompiled](https://arktype.io/docs/precompile) build reports each definition it can't precompile with its file, line and column, the reason and the fix. [With agents](https://arktype.io/docs/precompile#with-agents) shows one and the tools that shorten the loop: `arktype-precompile --check`, the ESLint rule and shadow mode. [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) lists the fix for each report.
+Precompiling used to cost a build step and its errors. An agent runs the build, reads the error and fixes it, so your users get the speed and size and you don't pay for them. A [precompiled](https://arktype.io/docs/precompile) build reports each definition it can't precompile with its file, line and column, the reason and the fix. [With agents](https://arktype.io/docs/precompile#with-agents) shows one and the tools that shorten the loop: `arktype-precompile --check`, the ESLint rule and shadow mode. [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) lists the fix for each report.
 
 ## AGENTS.md
 
@@ -3977,7 +3979,21 @@ if (out instanceof type.errors) {
 | `byAncestorPath(out)` | each failed path and its ancestors, with `""` for the root, mapped to every error at or below it |
 | `messageIn(error, locale)` | one error's message in a [locale](https://arktype.io/docs/i18n#rendering-in-a-locale) |
 
-A Type that calls no narrow or morph may find its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. The issues describe the data as it is at that read: a write to it in between can change them, and data that no longer fails holds one root issue, `is invalid`. A getter or `Proxy` trap the check reads runs again at that read, and what it throws is thrown there. Each error's text is written at that first read too.
+A Type that calls no narrow or morph may find its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. The issues describe the data as it is at that read, not as it was validated: a write to it in between can change them, and data that no longer fails holds one root issue, `is invalid`. Read `summary` or `issues` before the data you validated can change, as it can when it's reactive form state or an Immer draft, or when an `await` comes before you report the errors:
+
+```ts
+const User = type({ name: "string" })
+const form: Record<string, unknown> = { name: 5 }
+
+const out = User(form)
+// read now: name must be a string (was a number)
+const summary = out instanceof type.errors ? out.summary : ""
+
+form.name = "Ada"
+// read only now, out.summary would be "is invalid"
+```
+
+A getter or `Proxy` trap the check reads runs again at that read, and what it throws is thrown there. Each error's text is written at that first read too.
 
 ## ArkError
 
@@ -5126,6 +5142,8 @@ On failure, the result is the same [`ArkErrors`](https://arktype.io/docs/errors)
 const result = Form["~standard"].validate({ name: "Ada", age: "old" })
 // ArkErrors: age must be a well-formed integer string (was "old")
 ```
+
+Like any `ArkErrors`, it may find its issues when they're first read, so they [describe the data as it is then](https://arktype.io/docs/errors#arkerrors). Read them before the data you validated can change.
 
 ArkType always validates synchronously. The spec allows a `Promise`, which is why the return type includes one.
 
@@ -6901,7 +6919,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-`hasCode`, `flat`, `throw`, `toString`, `toJSON` and `toLocaleString` are gone from errors, so `error instanceof ArkError` is false and `` `${error}` `` is `[object Object]`. `path` is a plain array. An error's text is written when its `ArkErrors`' issues are first read, so a configured writer is called once per error.
+`hasCode`, `flat`, `throw`, `toString`, `toJSON` and `toLocaleString` are gone from errors, so `error instanceof ArkError` is false and `` `${error}` `` is `[object Object]`. `path` is a plain array. An error's text is written when its `ArkErrors`' issues are first read, so a configured writer is called once per error. A Type that calls no narrow or morph may also find the issues themselves at that read, so [read them before the data you validated changes](https://arktype.io/docs/errors#arkerrors).
 
 ### Objects print by their kind
 

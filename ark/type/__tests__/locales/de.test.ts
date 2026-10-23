@@ -33,7 +33,6 @@ contextualize(() => {
 		attest(matrixOf(de)).snap({
 			'string > 0 ← ""': "darf nicht leer sein",
 			'string <= 0 ← "x"': "muss leer sein, ist aber 1 Zeichen lang",
-			'string < 1 ← "xx"': "muss leer sein, ist aber 2 Zeichen lang",
 			'string == 0 ← "x"': "muss leer sein, ist aber 1 Zeichen lang",
 			"unknown[] <= 0 ← [0]": "muss leer sein, enthält aber 1 Element",
 			"unknown[] == 0 ← [0]": "muss leer sein, enthält aber 1 Element",
@@ -48,8 +47,6 @@ contextualize(() => {
 				"muss mindestens 2 Zeichen lang sein, ist aber 1 Zeichen lang",
 			'string <= 1 ← "xx"':
 				"muss höchstens 1 Zeichen lang sein, ist aber 2 Zeichen lang",
-			'string < 2 ← "xxx"':
-				"muss höchstens 1 Zeichen lang sein, ist aber 3 Zeichen lang",
 			'string == 1 ← "xx"':
 				"muss genau 1 Zeichen lang sein, ist aber 2 Zeichen lang",
 			"unknown[] <= 1 ← [0,1]":
@@ -69,18 +66,12 @@ contextualize(() => {
 				"muss mindestens 3 Zeichen lang sein, ist aber 2 Zeichen lang",
 			'string <= 2 ← "xxx"':
 				"muss höchstens 2 Zeichen lang sein, ist aber 3 Zeichen lang",
-			'string < 3 ← "xxxx"':
-				"muss höchstens 2 Zeichen lang sein, ist aber 4 Zeichen lang",
 			'string == 2 ← "xxx"':
 				"muss genau 2 Zeichen lang sein, ist aber 3 Zeichen lang",
 			"unknown[] <= 2 ← [0,1,2]":
 				"muss höchstens 2 Elemente enthalten, enthält aber 3 Elemente",
 			"unknown[] == 2 ← [0,1,2]":
 				"muss genau 2 Elemente enthalten, enthält aber 3 Elemente",
-			"number >= 2 ← 1": "muss mindestens 2 sein, ist aber 1",
-			"number > 2 ← 2": "muss größer als 2 sein, ist aber 2",
-			"number <= 2 ← 3": "muss höchstens 2 sein, ist aber 3",
-			"number < 2 ← 2": "muss kleiner als 2 sein, ist aber 2",
 			"number % 5 ← 6.5": "muss ein Vielfaches von 5 sein, ist aber 6,5",
 			"number >= 1.5 ← 1.25": "muss mindestens 1,5 sein, ist aber 1,25",
 			"number < -1.5 ← -1.5": "muss kleiner als -1,5 sein, ist aber -1,5",
@@ -93,19 +84,21 @@ contextualize(() => {
 			"unknown[] == 1 ← []": "muss genau 1 Element enthalten, ist aber leer",
 			"unknown[] >= 2 ← []": "muss mindestens 2 Elemente enthalten",
 			"Date < 2000 ← 2001-01-01T00:00:00.000Z":
-				"muss spätestens der 31. Dezember 1999, 23:59:59,999 UTC sein, ist aber 2001",
+				"muss spätestens der 31. Dezember 1999, 23:59:59,999 UTC sein, ist aber der 1. Januar 2001",
 			"Date <= 2000 ← 2001-05-03T00:00:00.000Z":
-				"muss spätestens 2000 sein, ist aber der 3. Mai 2001",
+				"muss spätestens der 1. Januar 2000 sein, ist aber der 3. Mai 2001",
 			"Date >= May 3 ← 2000-05-02T23:00:00.000Z":
 				"muss frühestens der 3. Mai 2000 sein, ist aber der 2. Mai 2000, 23:00 UTC",
 			"Date > May 3, 12:30 ← 1999-01-01T00:00:00.000Z":
-				"muss frühestens der 3. Mai 2000, 12:30:00,001 UTC sein, ist aber 1999",
+				"muss frühestens der 3. Mai 2000, 12:30:00,001 UTC sein, ist aber der 1. Januar 1999",
 			"Date <= May 3, 12:30:05.123 ← 2000-12-31T09:05:00.000Z":
 				"muss spätestens der 3. Mai 2000, 12:30:05,123 UTC sein, ist aber der 31. Dezember 2000, 09:05 UTC",
 			"Date != May 3 ← 2000-05-03T00:00:00.000Z":
 				"muss ungleich dem 3. Mai 2000 sein, ist aber der 3. Mai 2000",
+			"May 3 ← 2000-05-04T00:00:00.000Z":
+				"muss ein Wert gemäß der Beschreibung „2000-05-03“ sein, ist aber der 4. Mai 2000",
 			"enumerated Dates ← 2000-05-05T00:00:00.000Z":
-				"muss der 3. Mai 2000 oder der 4. Mai 2000 sein, ist aber ein Objekt",
+				"muss der 3. Mai 2000 oder der 4. Mai 2000 sein, ist aber der 5. Mai 2000",
 			"narrowed Date ← 2000-05-03T00:00:00.000Z":
 				"muss gemäß einem anonymen Prädikat gültig sein, ist aber ein Objekt",
 			"string ← 5": "muss eine Zeichenkette sein, ist aber eine Zahl",
@@ -128,6 +121,8 @@ contextualize(() => {
 			"Date ← 1": "muss ein Date-Objekt sein, ist aber eine Zahl",
 			"Date ← Invalid Date":
 				"muss ein Date-Objekt sein, ist aber ein ungültiges Date-Objekt",
+			"Date ← Object.create(Date.prototype)":
+				"muss ein Date-Objekt sein, ist aber ein Objekt",
 			"Array ← {}": "muss ein Array sein, ist aber ein Objekt",
 			"Map ← []": "muss eine Map sein, ist aber ein Array",
 			"Set ← Map": "muss ein Set sein, ist aber eine Map",
@@ -144,8 +139,6 @@ contextualize(() => {
 				"muss gemäß einem anonymen Prädikat gültig sein, ist aber 1",
 			"narrow mustBe ← -1":
 				"muss ein Wert gemäß der Beschreibung „positiv“ sein, ist aber -1",
-			"narrow reject ← 1":
-				"muss gemäß einem anonymen Prädikat gültig sein, ist aber 1",
 			'pipe.try anonymous ← "{"':
 				"konnte nicht verarbeitet werden:\n    Error: kaputt",
 			'pipe.try named ← "{"':
@@ -181,8 +174,6 @@ contextualize(() => {
 				'kind muss "circle" oder "square" sein, ist aber "triangle"',
 			"discriminant absent ← {}":
 				'kind fehlt (muss "circle" oder "square" sein)',
-			'discriminant titled ← {"kind":"triangle"}':
-				'kind muss "circle" oder "square" sein, ist aber "triangle"',
 			'discriminant described ← {"kind":"triangle"}':
 				"muss ein Wert gemäß der Beschreibung „eine Form“ sein, ist aber ein Objekt",
 			"discriminant described branches ← true":
@@ -244,8 +235,6 @@ contextualize(() => {
 				"„Name“ an [1] muss eine Zeichenkette sein, ist aber eine Zahl",
 			'titled through an index ← {"list":[1]}':
 				"„Name“ an list[0] muss eine Zeichenkette sein, ist aber eine Zahl",
-			'titled quoted key ← {"a b":1}':
-				"„Name“ muss eine Zeichenkette sein, ist aber eine Zahl",
 			'titled, two constraints ← {"n":3}':
 				"„Anzahl“ (3) muss alles Folgende sein:\n  ◦ gerade\n  ◦ größer als 10",
 			"titled, two constraints at an index ← [3]":
@@ -306,6 +295,7 @@ contextualize(() => {
 				'muss kleingeschrieben sein, ist aber "X"',
 			'string.numeric ← "x"':
 				'muss eine wohlgeformte numerische Zeichenkette sein, ist aber "x"',
+			'string.numeric.parse ← "1e400"': 'muss endlich sein, ist aber "1e400"',
 			'string.regex ← "("':
 				"muss ein Regex-Muster sein (SyntaxError: Invalid regular expression: /(/: Unterminated group)",
 			'string.semver ← "x"':

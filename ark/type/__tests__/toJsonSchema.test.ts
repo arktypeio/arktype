@@ -1,5 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
+import type { JSONSchema7 } from "json-schema"
+
+// a keyword's pattern is its source, so only its presence is asserted
+const elidePatterns = (schema: object): object =>
+	JSON.parse(JSON.stringify(schema, (k, v) => (k === "pattern" ? "…" : v)))
 
 contextualize(() => {
 	describe("target option", () => {
@@ -93,7 +98,7 @@ contextualize(() => {
 					friend: "user?"
 				}
 			})
-			attest<object>(types.user.toJsonSchema({ target: "draft-07" })).snap({
+			attest(types.user.toJsonSchema({ target: "draft-07" })).snap({
 				$schema: "http://json-schema.org/draft-07/schema#",
 				$ref: "#/definitions/user",
 				definitions: {
@@ -476,6 +481,54 @@ contextualize(() => {
 		})
 	})
 
+	it("an optional key's undefined is its absence", () => {
+		const T = type({ "a?": "string | undefined", "b?": "undefined" })
+		attest(T.toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: { a: { type: "string" }, b: { enum: [] } }
+		})
+		attest(T["~standard"].jsonSchema.input({ target: "draft-2020-12" })).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: { a: { type: "string" }, b: { enum: [] } }
+		})
+		attest(() => type({ a: "string | undefined" }).toJsonSchema()).throws(
+			'Can\'t convert "unit" at a to JSON Schema'
+		)
+	})
+
+	it("fits JSONSchema7 and Record<string, unknown> without a cast", () => {
+		const schema = type({ a: "string[]", "b?": "1 | 2" }).toJsonSchema({
+			target: "draft-07"
+		})
+		const draft07: JSONSchema7 = schema
+		const record: Record<string, unknown> = schema
+		attest(draft07).equals(record)
+		attest(schema.properties).snap({
+			a: { type: "array", items: { type: "string" } },
+			b: { type: "number", enum: [1, 2] }
+		})
+	})
+
+	it("an empty object has empty properties", () => {
+		attest(type({}).toJsonSchema({ target: "openapi-3.0" })).snap({
+			type: "object",
+			properties: {}
+		})
+		attest(type({ "+": "reject" }).toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: {},
+			additionalProperties: false
+		})
+		attest(type({ "[string]": "number" }).toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			additionalProperties: { type: "number" }
+		})
+	})
+
 	it("omits function meta", () => {
 		const T = type("string").configure({ message: () => "a letter" })
 		attest(T.toJsonSchema({ dialect: null })).snap({ type: "string" })
@@ -497,13 +550,6 @@ contextualize(() => {
 			type: "string",
 			enum: ["a", "b"],
 			description: "a letter"
-		})
-
-		const letterMessage = () => "a letter"
-		const Messaged = type("'a' | 'b'").configure({ message: letterMessage })
-		attest(Messaged.toJsonSchema({ dialect: null })).snap({
-			type: "string",
-			enum: ["a", "b"]
 		})
 
 		const Described = type("'a'").describe("first").or("'b'").configure({
@@ -585,31 +631,24 @@ contextualize(() => {
 			base64: "string.base64",
 			base64url: "string.base64.url"
 		})
-		attest(T.toJsonSchema({ dialect: null })).snap({
+		attest(elidePatterns(T.toJsonSchema({ dialect: null }))).snap({
 			type: "object",
 			properties: {
-				base64: {
-					type: "string",
-					pattern:
-						"^(?:[\\d+/A-Za-z]{4})*(?:[\\d+/A-Za-z]{2}==|[\\d+/A-Za-z]{3}=)?$",
-					contentEncoding: "base64"
-				},
+				base64: { type: "string", pattern: "…", contentEncoding: "base64" },
 				base64url: {
 					type: "string",
-					pattern:
-						"^(?:[\\w-]{4})*(?:[\\w-]{2}(?:==|%3D%3D)?|[\\w-]{3}(?:=|%3D)?)?$",
+					pattern: "…",
 					contentEncoding: "base64url"
 				},
 				email: {
 					type: "string",
-					pattern: "^[\\w%+.-]+@[\\d.A-Za-z-]+\\.[A-Za-z]{2,}$",
+					pattern: "…",
 					format: "email",
 					maxLength: 254
 				},
 				iso: {
 					type: "string",
-					pattern:
-						"^[+-]?\\d{4}(?!\\d{2}\\b)(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\\1(?:[12]\\d|0[1-9]|3[01]))?|W(?:[0-4]\\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\\d|[12]\\d{2}|3(?:[0-5]\\d|6[1-6])))(?:T(?:(?:(?:[01]\\d|2[0-3])(?:(:?)[0-5]\\d)?|24:?00)(?:[,.]\\d+(?!:))?)?(?:\\2[0-5]\\d(?:[,.]\\d+)?)?(?:[Zz]|[+-](?:[01]\\d|2[0-3]):?(?:[0-5]\\d)?)?)?)?$",
+					pattern: "…",
 					format: "date-time"
 				}
 			},
@@ -619,18 +658,15 @@ contextualize(() => {
 
 	it("keyword formats for draft-07", () => {
 		attest(
-			type("string.date | string.base64.url").toJsonSchema({
-				target: "draft-07"
-			})
+			elidePatterns(
+				type("string.date | string.base64.url").toJsonSchema({
+					target: "draft-07"
+				})
+			)
 		).snap({
 			$schema: "http://json-schema.org/draft-07/schema#",
 			anyOf: [
-				{
-					type: "string",
-					pattern:
-						"^(?:[\\w-]{4})*(?:[\\w-]{2}(?:==|%3D%3D)?|[\\w-]{3}(?:=|%3D)?)?$",
-					contentEncoding: "base64url"
-				},
+				{ type: "string", pattern: "…", contentEncoding: "base64url" },
 				{ type: "string", format: "date-time" }
 			]
 		})

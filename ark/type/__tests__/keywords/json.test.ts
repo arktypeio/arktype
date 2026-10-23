@@ -30,4 +30,20 @@ contextualize(() => {
 
 		attest(parseJson("{")?.toString()).equals(expectedSyntaxErrorProblem)
 	})
+
+	it("string.json.parse outputs only what its out allows", () => {
+		const parseJson = type("string.json.parse")
+		attest(parseJson.out.allows(parseJson("null"))).equals(true)
+		attest(parseJson("[1e400]")?.toString()).snap(
+			"must be a JSON string (SyntaxError: Number is out of range)"
+		)
+		attest(parseJson(`-1${"0".repeat(310)}`)?.toString()).snap(
+			"must be a JSON string (SyntaxError: Number is out of range)"
+		)
+		// a long string or exponent is parsed rejecting Infinity, and passes
+		attest(parseJson(`["${"0".repeat(400)}", 1e+21]`)).equals([
+			"0".repeat(400),
+			1e21
+		])
+	})
 })

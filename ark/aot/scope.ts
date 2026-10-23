@@ -199,10 +199,19 @@ export class ModuleScopes {
 						this.visit(member.initializer, member)
 					}
 				})
-			case "TSModuleDeclaration":
-				if (node.declare || node.id.type !== "Identifier" || !node.body) return
-				this.bind(node.id, "namespace", node, node)
+			case "TSModuleDeclaration": {
+				if (node.declare || !node.body) return
+				// e.g. `A` in `namespace A.B {}`
+				let id: Node = node.id
+				id.parent = node
+				while (id.type === "TSQualifiedName") {
+					id.left.parent = id
+					id = id.left
+				}
+				if (id.type !== "Identifier") return
+				this.bind(id, "namespace", node, id.parent!)
 				return this.inScope(node, () => this.visit(node.body, node))
+			}
 			case "TSModuleBlock":
 				return this.visitAll(node.body, node)
 			case "TSImportEqualsDeclaration":
@@ -317,6 +326,8 @@ export class ModuleScopes {
 		node: Extract<Node, { type: "ExportNamedDeclaration" }>
 	): void {
 		if (node.exportKind === "type") return
+		// a namespace's export is a member of it, not of the module
+		if (this.scope !== this.root) return this.visit(node.declaration, node)
 		if (node.declaration) {
 			this.visit(node.declaration, node)
 			for (const id of declaredIds(node.declaration)) {
@@ -656,7 +667,7 @@ export const exportNameOf = (node: Node): string =>
 		String(node.value)
 	:	(node as IdentifierReference).name
 
-const declaredIds = (declaration: Node): Node[] =>
+export const declaredIds = (declaration: Node): Node[] =>
 	declaration.type === "VariableDeclaration" ?
 		declaration.declarations.flatMap(declarator => idsOf(declarator.id))
 	: "id" in declaration && declaration.id?.type === "Identifier" ?

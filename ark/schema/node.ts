@@ -1049,11 +1049,11 @@ export abstract class BaseNode<
 
 		if (
 			this.hasKind("structure") &&
-			this.undeclared !== ctx.undeclaredHandling
+			this.handlesUndeclared !== ctx.undeclaredHandling
 		) {
 			ctx = {
 				...ctx,
-				undeclaredHandling: this.undeclared
+				undeclaredHandling: this.handlesUndeclared
 			}
 		}
 

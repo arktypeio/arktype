@@ -94,7 +94,9 @@ export declare namespace Structure {
 		readonly required?: readonly Required.Node[]
 		readonly index?: readonly Index.Node[]
 		readonly sequence?: Sequence.Node
-		readonly undeclared?: UndeclaredKeyHandling
+		// "ignore" only where a scope's onUndeclaredKey is another, so a node
+		// built from this one's inner doesn't take the scope's
+		readonly undeclared?: UndeclaredKeyBehavior
 		/**
 		 * the order an object built as output lists its declared keys in.
 		 * keys it doesn't list follow in canonical order, required first
@@ -106,11 +108,7 @@ export declare namespace Structure {
 		export type mutable = makeRootAndArrayPropertiesMutable<Inner>
 	}
 
-	// "ignore" overrides a scope's onUndeclaredKey, so it's dropped only after
-	// config is applied
-	export interface Input extends Omit<Inner, "undeclared">, BaseNodeInput {
-		readonly undeclared?: UndeclaredKeyBehavior
-	}
+	export interface Input extends Inner, BaseNodeInput {}
 
 	export interface Declaration
 		extends declareNode<{
@@ -146,13 +144,14 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
 		kind: "structure",
 		ownsError: false,
-		applyConfig: (inner, config) => {
-			if ((inner.undeclared as UndeclaredKeyBehavior) === "ignore")
-				return omit(inner, { undeclared: 1 })
-			if (!inner.undeclared && config.onUndeclaredKey !== "ignore")
-				return { ...inner, undeclared: config.onUndeclaredKey }
-			return inner
-		},
+		applyConfig: (inner, config) =>
+			inner.undeclared === undefined ?
+				config.onUndeclaredKey === "ignore" ?
+					inner
+				:	{ ...inner, undeclared: config.onUndeclaredKey }
+			: inner.undeclared === "ignore" && config.onUndeclaredKey === "ignore" ?
+				omit(inner, { undeclared: 1 })
+			:	inner,
 		keys: {
 			required: {
 				child: true,
@@ -199,15 +198,15 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 			},
 			undeclared: {
 				reduceIo: (ioKind, inner, value) => {
-					if (value === "reject") {
-						inner.undeclared = "reject"
-						return
-					}
-
 					// if base is "delete", undeclared keys are "ignore" (i.e. unconstrained)
 					// on input and "reject" on output. "ignore" is explicit so a scope's
 					// onUndeclaredKey isn't reapplied to the input.
-					inner.undeclared = ioKind === "in" ? ("ignore" as never) : "reject"
+					inner.undeclared =
+						value === "delete" ?
+							ioKind === "in" ?
+								"ignore"
+							:	"reject"
+						:	(value as UndeclaredKeyBehavior)
 				}
 			}
 		},
@@ -273,6 +272,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 		this.hasTransform ||= this.structuralMorph !== undefined
+	}
+
+	/** how undeclared keys are constrained, if they are */
+	get handlesUndeclared(): UndeclaredKeyHandling | undefined {
+		return this.undeclared === "ignore" ? undefined : this.undeclared
 	}
 
 	// deleting undeclared keys picks them by each signature's Allows

@@ -63,7 +63,7 @@ const precompilable: Rule.RuleModule = {
 						},
 						additionalProperties: false
 					},
-					checks: { enum: ["types", "helpers", "none"] },
+					creationChecks: { enum: ["types", "helpers", "none"] },
 					errors: { enum: ["all", "first", "none"] },
 					conditions: { type: "array", items: { type: "string" } },
 					tsconfig: { type: "string" },
@@ -72,7 +72,6 @@ const precompilable: Rule.RuleModule = {
 					mutatesInput: { enum: [false, true, "always"] },
 					optimize: { enum: ["speed", "size"] },
 					optimizeErrors: { enum: ["speed", "size"] },
-					countsKeys: { type: "boolean" },
 					shadow: { type: "boolean" },
 					allowUnsafe: { type: "boolean" }
 				},

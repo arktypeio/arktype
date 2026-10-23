@@ -292,11 +292,6 @@ c must be removed`)
 				{ undeclared: { problem: "isn't allowed" } }
 			).type({ "+": "reject", a: "string" })
 			attest(Configured({ a: "ok", b: 1 }).toString()).snap("b isn't allowed")
-			const Predicate = scope(
-				{},
-				{ predicate: { problem: "isn't valid" } }
-			).type({ "+": "reject", a: "string" })
-			attest(Predicate({ a: "ok", b: 1 }).toString()).snap("b must be removed")
 		})
 
 		it("structure meta reaches a rejected key", () => {

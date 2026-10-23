@@ -685,6 +685,25 @@ export const benchFacts = () => {
 
 export type BenchFacts = ReturnType<typeof benchFacts>
 
+/** the default build against one library on every scenario it ran */
+export const versusLibrary = (key: string) => {
+	const measured = bench.scenarios.filter(s => s.standaloneVs[key])
+	const lost = measured.filter(s => s.standaloneVs[key].verdict === "loss")
+	const speedups = measured
+		.map(s => s.standaloneVs[key])
+		.filter(v => v.verdict === "win")
+		.map(v => v.speedup)
+	return {
+		count: measured.length,
+		wins: speedups.length,
+		min: formatRatio(Math.min(...speedups)),
+		max: formatRatio(Math.max(...speedups)),
+		lost,
+		/** "items morph and moltar morph" */
+		losses: list(lost.map(scenarioName))
+	}
+}
+
 /** the footnote, as paragraphs of plain text: the method, what differs between arms, then startup */
 export const benchNotes = (): string[] => [
 	`Median ns per call over ${provenance.rounds} interleaved rounds, each library in its own process, outputs checked against ArkType's before timing. Ties are a two-sided sign test over paired rounds at p ≥ .05; ratios are of the medians, truncated. ${provenance.runtime} on ${provenance.machine}, measured ${provenance.date} on ${

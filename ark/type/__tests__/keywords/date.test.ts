@@ -24,6 +24,22 @@ contextualize(() => {
 		attest(parseDate(5).toString()).snap("must be a string (was a number)")
 	})
 
+	it("string.date.parse reads an ISO date as string.date.iso.parse does", () => {
+		const ParseDate = type("string.date.parse")
+		// new Date reads this in local time
+		attest(ParseDate.assert("2020-01-01T12:00").toISOString()).equals(
+			"2020-01-01T12:00:00.000Z"
+		)
+		// new Date rolls it over to March 2
+		attest(ParseDate("2025-02-30").toString()).snap(
+			'must be a parsable date (was "2025-02-30")'
+		)
+		attest(type("string.date").allows("2025-02-30")).equals(false)
+		attest(ParseDate.assert("2025-W01-1").toISOString()).equals(
+			"2024-12-30T00:00:00.000Z"
+		)
+	})
+
 	it("string.date.iso", () => {
 		const IsoDate = type("string.date.iso")
 		const d = new Date().toISOString()

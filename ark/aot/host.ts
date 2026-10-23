@@ -9,7 +9,6 @@ import {
 	resolve,
 	sep
 } from "node:path"
-import type { SourceMap } from "magic-string"
 import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
 import type { PrecompilePluginOptions, RenderedDiagnostics } from "./driver.ts"
 import type { PrecompileOptions } from "./precompile.ts"
@@ -185,22 +184,30 @@ const packageRootOf = (name: string, from: string): string | undefined => {
 // a host without a channel for source maps reads one from the code
 export const appendSourceMap = (
 	code: string,
-	map: SourceMap | undefined
+	map: object | undefined
 ): string =>
 	map ?
 		`${code}\n//# sourceMappingURL=data:application/json;base64,${Buffer.from(JSON.stringify(map)).toString("base64")}`
 	:	code
 
-export const runtimeSpecifiers = [
-	"arktype",
-	"arktype/codecs",
-	"arktype/config",
-	"arktype/errors",
-	"arktype/mutatesInput"
-]
+// arktype's entries, which it also publishes as @ark/type
+export const runtimeSpecifiers = ["arktype", "@ark/type"].flatMap(name =>
+	["", "/codecs", "/config", "/errors", "/mutatesInput"].map(
+		entry => name + entry
+	)
+)
 
-// what arktype/runtime loads
-export const runtimePackages = ["arktype", "@ark/schema", "@ark/util"]
+// e.g. "arktype/config" for "@ark/type/config", the same package's entry
+export const arktypeEntryOf = (specifier: string): string =>
+	specifier.replace(/^@ark\/type(?=\/|$)/, "arktype")
+
+// what arktype/runtime loads, and arktype's other name
+export const runtimePackages = [
+	"arktype",
+	"@ark/type",
+	"@ark/schema",
+	"@ark/util"
+]
 
 // shadow mode keeps arktype, resolving only its config to the runtime
 export const resolvesToRuntime = (
@@ -208,7 +215,7 @@ export const resolvesToRuntime = (
 	opts: PrecompileOptions | undefined
 ): boolean =>
 	opts?.runtime !== "arktype" &&
-	!(opts?.shadow && specifier !== "arktype/config")
+	!(opts?.shadow && arktypeEntryOf(specifier) !== "arktype/config")
 
 // a copy of @ark/schema's runtime with errors of its own
 export type RuntimeVariant = "none" | "lean" | "none-lean"
@@ -339,7 +346,11 @@ export const writeAliasMessage = (
 	:	`${specifier} resolves to ${resolved} rather than arktype/runtime, where a standalone build's validators run. Add to turbopack.resolveAlias: ${JSON.stringify(
 			Object.fromEntries(
 				runtimeSpecifiers
-					.filter(s => resolvesToRuntime(s, opts))
+					.filter(
+						s =>
+							packageNameOf(s) === packageNameOf(specifier) &&
+							resolvesToRuntime(s, opts)
+					)
 					.map(s => [s, "arktype/runtime"])
 			)
 		)}`
@@ -364,6 +375,13 @@ export const unbundledMessage =
 
 // arktype's own packages, which read their nodes and import the runtime by design
 export const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
+
+// e.g. @ark/json-schema, which reads arktype's nodes where a runtime island
+// calls it, so it imports arktype itself rather than its runtime
+export const readsNodes = (importer: string | undefined): boolean => {
+	const [, name] = (importer && dependencyOf(importer.split("?")[0])) || []
+	return !!name && /^(?:arksets|@ark\/(?:json-schema|fast-check))$/.test(name)
+}
 
 export const allowUnsafeHint =
 	"Set allowUnsafe: true to build anyway, with a warning."

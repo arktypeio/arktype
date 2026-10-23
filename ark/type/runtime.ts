@@ -11,6 +11,8 @@ import {
 	errorsOf,
 	FirstIssues,
 	mergeIssues,
+	messageOf,
+	problemOf,
 	releasePath,
 	runtimeConfig,
 	supportedJsonSchemaTargets,
@@ -107,6 +109,7 @@ export {
 	writeNotEqualActual,
 	writeProblem,
 	writeProtoActual,
+	writeUnitActual,
 	writeUnitProblem,
 	type ArkError
 } from "@ark/schema/runtime"
@@ -121,7 +124,8 @@ export {
 	liftArray,
 	ParseError,
 	printable,
-	throwParseError
+	throwParseError,
+	timeOf
 } from "@ark/util"
 export * from "./keywords/functions.ts"
 
@@ -193,6 +197,16 @@ export class Validator {
 	}
 }
 
+// a Standard Schema consumer prefixes each issue's message with its path
+const standardIssuesOf = (
+	errors: ArkErrors
+): readonly StandardSchemaV1.Issue[] =>
+	errors.issues.map(issue =>
+		issue.path.length === 0 || issue.message !== messageOf(issue) ?
+			issue
+		:	{ ...issue, message: problemOf(issue) }
+	)
+
 // parenthesized (kept by `satisfies`) to compile as the module loads
 export const createValidator = ((
 	rootApply: RootApply,
@@ -223,9 +237,11 @@ export const createValidator = ((
 	validator["~standard"] = freeze({
 		vendor: "arktype",
 		version: 1,
-		validate: freeze((input: unknown) => {
+		validate: freeze((input: unknown): StandardSchemaV1.Result<unknown> => {
 			const out = validator(input)
-			return out instanceof ArkErrors ? out : { value: out }
+			return out instanceof ArkErrors ?
+					{ issues: standardIssuesOf(out) }
+				:	{ value: out }
 		}),
 		...attributes["~standard"]
 	})
@@ -252,9 +268,11 @@ export const createValidatorWith = ((
 	validator["~standard"] = freeze({
 		vendor: "arktype",
 		version: 1,
-		validate: freeze((input: unknown) => {
+		validate: freeze((input: unknown): StandardSchemaV1.Result<unknown> => {
 			const out = validator(input)
-			return out instanceof ArkErrors ? out : { value: out }
+			return out instanceof ArkErrors ?
+					{ issues: standardIssuesOf(out) }
+				:	{ value: out }
 		}),
 		...attributes["~standard"]
 	})
@@ -799,9 +817,13 @@ export const describeShape = (value: unknown): string => {
 	if (value instanceof RegExp) return `the RegExp ${value}`
 	if (Array.isArray(value)) return `an array of length ${value.length}`
 	const prototype = prototypeOf(value)
-	return prototype === Object.prototype || prototype === null ?
-			`${prototype ? "an object" : "a null-prototype object"} with keys ${Reflect.ownKeys(value).map(String).join(", ")}`
-		:	describeValue(value)
+	if (prototype !== Object.prototype && prototype !== null)
+		return describeValue(value)
+	const kind = prototype ? "object" : "null-prototype object"
+	const keys = Reflect.ownKeys(value)
+	return keys.length ?
+			`${prototype ? "an" : "a"} ${kind} with keys ${keys.map(String).join(", ")}`
+		:	`an empty ${kind}`
 }
 
 export const checkFacts = (

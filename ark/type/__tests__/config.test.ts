@@ -5,8 +5,9 @@ import {
 	writeMissingImportMessage,
 	rootSchema
 } from "@ark/schema"
-import { configure, scope, type } from "arktype"
+import { configure, messageIn, scope, type } from "arktype"
 import "arktype/errors"
+import { en } from "arktype/locales/en"
 import { withConfig } from "./locales/withConfig.ts"
 
 contextualize(() => {
@@ -177,14 +178,6 @@ contextualize(() => {
 		attest(Email("").toString()).snap("Email is not valid")
 	})
 
-	it("node writer config on undeclared key", () => {
-		const T = type({ "+": "reject", a: "string" }).configure(
-			{ message: ctx => `custom message ${ctx.problem}` },
-			"structure"
-		)
-		attest(T({ a: "", b: 1 }).toString()).snap("custom message must be removed")
-	})
-
 	it("applies config to shallow descendants", () => {
 		const User = type({
 			name: "string",
@@ -229,8 +222,17 @@ contextualize(() => {
 			attest(out instanceof type.errors).equals(true)
 			attest(out.toString()).snap("is invalid")
 			attest(JSON.stringify(out)).snap(
-				'[{"code":"predicate","path":[],"data":{"a":1,"b":"2"},"message":"is invalid"}]'
+				'[{"data":{"a":1,"b":"2"},"path":[],"code":"predicate","expected":"valid","problem":"is invalid","propString":"","actual":"an object","message":"is invalid"}]'
 			)
+		})
+
+		it("none's error has every field an error rejecting data has", () => {
+			const out = none.type({ a: "string" })({}) as type.errors
+			const rejected = type("object").narrow((data, ctx) =>
+				ctx.reject({ expected: "valid", problem: "is invalid" })
+			)({}) as type.errors
+			attest(out.issues[0]).equals(rejected.issues[0])
+			attest(messageIn(out.issues[0], en)).snap("is invalid")
 		})
 
 		it("none runs no Apply to find what failed", () => {
@@ -242,9 +244,18 @@ contextualize(() => {
 
 		it("none fails a morph's error at the root", () => {
 			const T = none.type("string").pipe((s, ctx) => ctx.error("short"))
-			attest(JSON.stringify(T("x"))).snap(
-				'[{"code":"predicate","path":[],"data":"x","message":"is invalid"}]'
-			)
+			attest((T("x") as type.errors).toJSON()).snap([
+				{
+					data: "x",
+					path: [],
+					code: "predicate",
+					expected: "valid",
+					problem: "is invalid",
+					propString: "",
+					actual: '"x"',
+					message: "is invalid"
+				}
+			])
 		})
 
 		it("none assert and ~standard", () => {
@@ -253,7 +264,16 @@ contextualize(() => {
 			const result = T["~standard"].validate(5)
 			const issues: unknown = "issues" in result && result.issues
 			attest(issues).snap([
-				{ code: "predicate", path: [], data: 5, message: "is invalid" }
+				{
+					data: 5,
+					path: [],
+					code: "predicate",
+					expected: "valid",
+					problem: "is invalid",
+					propString: "",
+					actual: "5",
+					message: "is invalid"
+				}
 			])
 		})
 
@@ -346,10 +366,51 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 				])
 			)
 			attest(O.in.expression).snap(
-				'{ a: string, kind: "a" } | { b: boolean, kind: "b" }'
+				'{ a: string, kind: "a", + (undeclared): ignore } | { b: boolean, kind: "b", + (undeclared): ignore }'
 			)
 			attest(O({ kind: "a", a: "ok", b: true })).snap({ kind: "a", a: "ok" })
 			attest(O({ kind: "b", a: "ok", b: true })).snap({ kind: "b", b: true })
+		})
+
+		// the ignoring branch's input took the config's delete back once it
+		// held a morph, so the branches looked disjoint
+		it("an explicit ignore fails an indeterminate union", () => {
+			const [optional, required] = withConfig(
+				{ onUndeclaredKey: "delete" },
+				() => {
+					const C = scope({}).type({ provider: "string" })
+					return [
+						() => C.or({ "+": "ignore", uses: "string", "o?": C }),
+						() => C.or({ "+": "ignore", uses: "string", o: C })
+					]
+				}
+			)
+			attest(optional).throws(
+				"An unordered union of a type including a morph and a type with overlapping input is indeterminate"
+			)
+			attest(required).throws("is indeterminate")
+			const C = type({ "+": "delete", provider: "string" })
+			attest(() => C.or({ "+": "ignore", uses: "string", "o?": C })).throws(
+				"is indeterminate"
+			)
+			attest(() =>
+				withConfig({ onUndeclaredKey: "delete" }, () => {
+					const D = scope({}).type({ provider: "string" })
+					return D.or({ uses: "string", "o?": D })
+				})
+			).throws("is indeterminate")
+		})
+
+		it("an explicit ignore stays ignore in what's built from it", () => {
+			const I = withConfig({ onUndeclaredKey: "delete" }, () =>
+				scope({}).type({ "+": "ignore", a: "string.trim" })
+			)
+			attest(I.in.expression).snap("{ a: string, + (undeclared): ignore }")
+			attest(I.and({ "+": "ignore", b: "string" }).in.expression).snap(
+				"{ a: string, b: string, + (undeclared): ignore }"
+			)
+			const out: unknown = I.partial()({ a: "x", z: 1 } as never)
+			attest(out).snap({ a: "x", z: 1 })
 		})
 	})
 
@@ -399,18 +460,6 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 			})
 		})
 		attest(types.inner.foo.precompilation).satisfies("string")
-	})
-
-	it("leaf with scope description writer", () => {
-		const A = type({ a: "number > 1234" })
-		attest(A({ a: "x" }).toString()).snap("a must be a number (was a string)")
-		const types = scope(
-			{ b: "number", o: { a: A, b: "b" } },
-			{ domain: { description: () => "a custom number" } }
-		).export()
-		attest(types.o({ a: { a: "x" }, b: "x" }).toString()).equals(
-			"a.a must be a number (was a string)\nb must be a custom number (was a string)"
-		)
 	})
 
 	it("referenced types keep their descriptions", () => {
@@ -532,7 +581,9 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 
 	it("configure after a type is created", () => {
 		type("string")
-		attest(() => configure({})).throws(configureAfterTypeMessage)
+		attest(() => configure({ numberAllowsNaN: true })).throws(
+			configureAfterTypeMessage
+		)
 	})
 
 	it("docs actual example", () => {

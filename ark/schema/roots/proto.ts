@@ -4,6 +4,7 @@ import {
 	getBuiltinNameOfConstructor,
 	isArray,
 	isValidDate,
+	timeOf,
 	objectKindDescriptions,
 	throwParseError,
 	type BuiltinObjectKind,
@@ -88,9 +89,12 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	// windows/vm contexts (https://github.com/arktypeio/arktype/issues/1597).
 	private readonly isArrayProto = this.proto === Array
 
+	// Date.prototype's methods throw on an object only inheriting it
 	traverseAllows: TraverseAllows =
 		this.requiresInvalidDateCheck ?
 			data => data instanceof Date && isValidDate(data)
+		: this.proto === Date ?
+			data => data instanceof Date && timeOf(data) !== undefined
 		: this.isArrayProto ? data => isArray(data)
 		: data => data instanceof this.proto
 
@@ -98,6 +102,8 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 		return (
 			this.requiresInvalidDateCheck ?
 				`${data} instanceof Date && ${js.ref(isValidDate)}(${data})`
+			: this.proto === Date ?
+				`${data} instanceof Date && ${js.ref(timeOf)}(${data}) !== undefined`
 			: this.isArrayProto ? `Array.isArray(${data})`
 			: `${data} instanceof ${this.builtinName ?? js.ref(this.proto)}`
 		)

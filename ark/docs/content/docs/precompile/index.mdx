@@ -18,6 +18,8 @@ export default {
 
 Your definitions stay as you wrote them. [Setup](/docs/precompile/setup) covers every bundler, test runner and Next.
 
+Precompiled validators have always been faster and smaller. What they cost was a build step: setup, new errors and a second model of what runs where. If an agent runs your local dev, that's one more loop it's already good at, and every error names its fix, so you get the speed and size [without the cost](#with-agents). Where a program needs arktype at runtime, `runtime: "arktype"` ships it for what can't be precompiled.
+
 ## Speed and size
 
 A validator that compiles at runtime ships its compiler, and one that interprets ships its interpreter. A precompiled build ships neither: only the checks your Types need, and the runtime that reports their errors. <Claim id="buildChoice" /> The [options](/docs/precompile/options) decide which: [`optimize: "size"`](/docs/precompile/options#optimize-and-optimizeerrors) and dropping [`members`](/docs/precompile/options#members) make a build smaller and its validators slower.
@@ -62,7 +64,7 @@ data => {
 
 ## With agents
 
-A build step adds a loop: build, read the error, fix, rebuild. If an agent runs your local dev, it's already good at that loop, so precompiling costs you little.
+A build step adds a loop: build, read the error, fix, rebuild. That loop was the cost of precompiling, and it's one an agent is already good at, so with an agent running your local dev, the cost is close to nothing.
 
 Precompiling stays quiet when everything builds. Where something would fail at runtime and the fix is clear, the build fails instead, with the file, line and column, what it couldn't do, why, and how to fix it:
 
