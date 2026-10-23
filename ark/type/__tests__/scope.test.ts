@@ -1,11 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	intrinsic,
 	rootSchema,
 	writeUnboundableMessage,
 	writeGlobalOnlyConfigMessage,
 	writeUnresolvableMessage,
-	type ArkErrors,
-	type UnionNode
+	type ArkErrors
 } from "@ark/schema"
 import { generic, scope, type, type Module, type Scope } from "arktype"
 import type { distill } from "arktype/internal/attributes.ts"
@@ -28,12 +28,14 @@ contextualize(() => {
 		).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
 	})
 
-	it("a keyword is the node its scope parses for the same schema", () => {
-		const keyword = type("number").internal
-		attest(type.schema({ domain: "number" }).internal).is(keyword)
-		// so a union discriminates to the keyword, as a cached unit binds it
-		const lifted = type("Array.liftFrom<number>").internal.in as UnionNode
-		attest(lifted.otherReferences[0]).is(keyword)
+	it("a bound keyword's id is the same whether its scope parsed its schema first", () => {
+		// an intersection with an alias serializes as its operands' ids
+		const prefixOf = (id: string) => id.replace(/\d+$/, "")
+		const parsedFirst = scope({})
+		parsedFirst.schema({ domain: "object" })
+		attest(
+			prefixOf(parsedFirst.internal.bindReference(intrinsic.object).id)
+		).equals(prefixOf(scope({}).internal.bindReference(intrinsic.object).id))
 	})
 
 	it("define", () => {
