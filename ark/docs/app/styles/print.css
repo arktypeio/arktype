@@ -106,6 +106,12 @@
 		margin-inline: 0;
 	}
 
+	/* ArkLight on paper, whichever theme was on screen */
+	pre.shiki,
+	pre.shiki span[style] {
+		color: var(--shiki-light) !important;
+	}
+
 	pre.shiki {
 		white-space: pre-wrap;
 		overflow: visible;

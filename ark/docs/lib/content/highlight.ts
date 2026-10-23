@@ -8,14 +8,20 @@ import {
 	type ShikiTransformer
 } from "shiki"
 import { EXIT, SKIP, visit } from "unist-util-visit"
-import { arkDarkTheme, arkTypeScript, highlightLangs } from "../shiki.ts"
+import {
+	arkDarkTheme,
+	arkLightTheme,
+	arkThemes,
+	arkTypeScript,
+	highlightLangs
+} from "../shiki.ts"
 import { twoslashTransformer } from "./twoslash.ts"
 
 let highlighter: Promise<Highlighter> | undefined
 
 const getHighlighter = () =>
 	(highlighter ??= createHighlighter({
-		themes: [arkDarkTheme],
+		themes: [arkDarkTheme, arkLightTheme],
 		langs: [arkTypeScript, ...highlightLangs.filter(lang => lang !== "ts")],
 		engine: createJavaScriptRegexEngine({ forgiving: true })
 	}))
@@ -108,7 +114,7 @@ export type HighlightOptions = {
 const titlePattern = /\btitle=(?:"([^"]*)"|'([^']*)')/
 
 /**
- * Highlights code with ArkDark, running twoslash on ts and js.
+ * Highlights code with ArkDark and ArkLight, running twoslash on ts and js.
  *
  * Returns the `pre` element, with a `data-title` property when the meta
  * string has a `title="..."`.
@@ -125,7 +131,7 @@ export const highlight = async (
 	try {
 		root = shiki.codeToHast(code, {
 			lang: resolvedLang,
-			theme: "ArkDark",
+			...arkThemes,
 			meta: { __raw: meta },
 			transformers
 		})

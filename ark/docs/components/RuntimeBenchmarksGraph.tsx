@@ -47,7 +47,7 @@ export const RuntimeBenchmarksGraph: React.FC<{ className?: string }> = ({
 				className="underline ml-2"
 				target="_blank"
 				href="https://moltar.github.io/typescript-runtime-type-benchmarks/"
-				style={{ textDecoration: "underline", color: "#1e90ff" }}
+				style={{ textDecoration: "underline", color: "var(--sky)" }}
 			>
 				(source)
 			</a>

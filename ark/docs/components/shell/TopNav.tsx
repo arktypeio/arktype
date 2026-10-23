@@ -5,6 +5,7 @@ import { BoatLane } from "./BoatLane.tsx"
 import { Brand } from "./Brand.tsx"
 import { MenuButton } from "./MobileNav.tsx"
 import { SearchButton, SearchIconButton } from "./SearchTrigger.tsx"
+import { ThemeToggle } from "./ThemeToggle.tsx"
 import { docsSectionsOf } from "./sections.ts"
 
 export const githubUrl = "https://github.com/arktypeio/arktype"
@@ -65,6 +66,7 @@ export const TopNav = ({ section, url, active, drawer }: TopNavProps) => (
 				</a>
 			</nav>
 			<SearchIconButton />
+			<ThemeToggle className="tb-theme" />
 		</div>
 	</header>
 )

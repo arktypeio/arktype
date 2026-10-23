@@ -1,5 +1,7 @@
-/* ArkDark design tokens. Components read these by name; a restyle should
-   only need to change values here. Dark only. */
+/* design tokens: ArkDark on :root, ArkLight where the theme is light.
+   Components read these by name; a restyle should only need to change values
+   here. layout.tsx sets data-theme before first paint, from the visitor's
+   choice or their system's. */
 
 /* the monospace fallback next/font can't measure, sized to Cascadia Code so
    the swap doesn't reflow */
@@ -31,6 +33,11 @@
 	--gold: #f5cf8f;
 	--gold-hi: #f7e1b1;
 	--on-gold: #1a1205;
+	/* gold as a fill: buttons and ArkType's bars */
+	--gold-fill: var(--gold);
+	--gold-fill-hi: var(--gold-hi);
+	/* what gold glows with: nothing, on parchment */
+	--gold-glow: rgb(245 207 143);
 
 	/* structure */
 	--copper: #ba7e41;
@@ -43,6 +50,7 @@
 	--blue: #408fde;
 	--brand: #085b92;
 	--teal: #40decc;
+	--teal-ink: #9ff2e6;
 	--violet: #9558f8;
 	--violet-text: #b18cff;
 	--violet-ink: #d4bcff;
@@ -66,6 +74,18 @@
 		0 0 80px -30px rgb(64 143 222 / 0.3);
 	--shadow-drawer: 30px 0 60px -20px rgb(0 0 0 / 0.7);
 	--shadow-cta: 0 8px 28px -10px rgb(245 207 143 / 0.55);
+	--shadow-deep: 0 30px 60px -30px rgb(0 0 0 / 0.8);
+	--shadow-panel:
+		0 10px 15px 0 rgb(0 0 0 / 0.3), 0 15px 30px 0 rgb(0 0 0 / 0.22);
+
+	/* what a card's top catches: blue light here, paper white in ArkLight */
+	--tint: var(--blue);
+
+	/* the homepage's backdrop: two soft glows under a film grain */
+	--glow-a: rgb(64 143 222 / 0.17);
+	--glow-b: rgb(245 207 143 / 0.075);
+	--grain: 0.05;
+	--scrim: rgb(3 6 12 / 0.62);
 
 	/* type */
 	--sans: var(--font-atkinson), system-ui, sans-serif;
@@ -130,6 +150,72 @@
 	--z-grain: 100;
 	--z-dialog: 120;
 	--z-skip: 200;
+}
+
+/* ArkLight: ssalbdivad.com's parchment. Every ink and accent clears 4.5:1 on
+   --bg, --surface and --code-bg; the accents are ArkDark's hues, darkened
+   along themselves until they do. */
+:root[data-theme="light"] {
+	color-scheme: light;
+
+	--sunk: #f1ecc8;
+	--bg: #f9f5d7;
+	--code-bg: #fdfbec;
+	--surface: #fdfbec;
+	--raised: #ffffff;
+
+	--ink: #14213d;
+	--ink-2: #2e4775;
+	--ink-3: #5e5e70;
+
+	--gold: #844c13;
+	--gold-hi: #6e3f10;
+	--on-gold: #1a1205;
+	--gold-fill: #ecbd6f;
+	--gold-fill-hi: #f2cb86;
+	--gold-glow: transparent;
+
+	--copper: #9a5a17;
+	--rule: color-mix(in oklab, var(--copper) 26%, transparent);
+	--rule-soft: color-mix(in oklab, var(--copper) 15%, transparent);
+	--line: color-mix(in oklab, var(--ink) 13%, transparent);
+
+	--sky: #0063b1;
+	--blue: #07538e;
+	--teal: #03776b;
+	--teal-ink: #025c53;
+	--violet: #7d45e0;
+	--violet-text: #6d35d6;
+	--violet-ink: #5a2bb8;
+	--red: #c42b2b;
+	--red-text: #b42323;
+	--red-ink: #9e1f1f;
+
+	--bar: color-mix(in oklab, var(--ink-3) 55%, var(--bg));
+	--bar-faster: var(--ink-2);
+
+	--popover-bg: var(--raised);
+	--popover-border: color-mix(in oklab, var(--sky) 25%, transparent);
+
+	--shadow-pop:
+		0 1px 0 rgb(255 255 255 / 0.6) inset,
+		0 18px 40px -16px rgb(20 33 61 / 0.35), 0 0 0 1px rgb(20 33 61 / 0.06);
+	--shadow-card:
+		0 1px 0 rgb(255 255 255 / 0.7) inset,
+		0 30px 60px -30px rgb(20 33 61 / 0.28), 0 0 0 1px rgb(20 33 61 / 0.03);
+	--shadow-drawer: 30px 0 60px -20px rgb(20 33 61 / 0.3);
+	--shadow-cta: 0 8px 24px -10px rgb(202 132 46 / 0.6);
+	--shadow-deep: 0 30px 60px -30px rgb(20 33 61 / 0.3);
+	--shadow-panel:
+		0 10px 15px 0 rgb(20 33 61 / 0.08), 0 15px 30px 0 rgb(20 33 61 / 0.1);
+
+	--tint: #ffffff;
+
+	/* warm, not blue: a blue glow over parchment reads as a grey-green cast */
+	--glow-a: rgb(202 132 46 / 0.06);
+	--glow-b: rgb(202 132 46 / 0.1);
+	--grain: 0;
+	--scrim: rgb(52 38 14 / 0.24);
 }
 
 @media (max-width: 900px) {

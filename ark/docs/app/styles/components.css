@@ -681,7 +681,7 @@
 }
 
 .is-precompiled .cc-bar {
-	background: var(--gold);
+	background: var(--gold-fill);
 }
 
 .is-dynamic .cc-bar {

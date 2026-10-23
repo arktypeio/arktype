@@ -7,7 +7,12 @@ import {
 	type Highlighter
 } from "shiki"
 import { highlight } from "../../lib/content/highlight.ts"
-import { arkDarkTheme, arkTypeScript } from "../../lib/shiki.ts"
+import {
+	arkDarkTheme,
+	arkLightTheme,
+	arkThemes,
+	arkTypeScript
+} from "../../lib/shiki.ts"
 
 const render = (pre: Element) => toJsxRuntime(pre, { Fragment, jsx, jsxs })
 
@@ -23,10 +28,10 @@ let plain: Promise<Highlighter> | undefined
  */
 export const PlainCode = async ({ code }: { code: string }) => {
 	const shiki = await (plain ??= createHighlighter({
-		themes: [arkDarkTheme],
+		themes: [arkDarkTheme, arkLightTheme],
 		langs: [arkTypeScript],
 		engine: createJavaScriptRegexEngine({ forgiving: true })
 	}))
-	const root = shiki.codeToHast(code, { lang: "ts", theme: "ArkDark" })
+	const root = shiki.codeToHast(code, { lang: "ts", ...arkThemes })
 	return render(root.children[0] as Element)
 }

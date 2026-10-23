@@ -109,6 +109,41 @@ pre.shiki span[style*="color:#80CFF8"],
 	white-space: nowrap;
 }
 
+/* ===== theme switch (components/shell/ThemeToggle.tsx) ===== */
+
+/* what reads differently per theme, like the toggle's icon */
+:root[data-theme="light"] .only-dark,
+:root:not([data-theme="light"]) .only-light {
+	display: none;
+}
+
+/* the snapshot must be the final colors, not a frame of a color fade */
+html[data-switching] *,
+html[data-switching] *::before,
+html[data-switching] *::after {
+	transition: none !important;
+}
+
+/* a circular reveal from the toggle; --vt-r reaches the farthest corner */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+	animation: theme-reveal 0.52s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@keyframes theme-reveal {
+	from {
+		clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 0));
+	}
+	to {
+		clip-path: circle(var(--vt-r, 150vmax) at var(--vt-x, 50%) var(--vt-y, 0));
+	}
+}
+
 @keyframes pop-in {
 	from {
 		opacity: 0;
