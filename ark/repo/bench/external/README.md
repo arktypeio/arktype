@@ -179,3 +179,58 @@ seven: `oe` adds 1.28M on Node 24 where ajv adds 1.86M, Valibot 2.35M and
 Typia 2.43M (gross 4.95M against ajv's 5.52M). On moltar Typia adds fewer
 (1.16M against `oe`'s 1.39M), and on shop Valibot does (12.26M against
 14.29M), except against `"smallest"` (9.09M). No wall-clock run yet.
+
+## Best average
+
+The headline's superlatives come from this rule, written before any average
+was computed. A library is the fastest, the quickest to start or the
+smallest if it has the best average in that category across the public
+benchmarks below.
+
+**Categories and benchmarks.** Each category is a set of suites, each suite a
+set of rows. A row is one measured result per library; lower is better on
+every row.
+
+| category | suite                                       | rows                                              | measure                                                               |
+| -------- | ------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------- |
+| speed    | moltar's typescript-runtime-type-benchmarks | parseSafe, parseStrict, assertLoose, assertStrict | instructions per call (`results/counts-*.json`)                       |
+| speed    | the homepage's benchmark                    | its 32 scenarios                                  | median ns per call (`ark/docs/lib/bench/benchData.json`)              |
+| startup  | `startup.ts`                                | its scenarios on Node 24                          | median instructions, less the baseline bundle's (`results/startup-*`) |
+| startup  | the homepage's cold start                   | its apps                                          | median ms from import to first validation (`benchData.json`)          |
+| size     | valibot.dev's login form                    | the form, written in each library (`forms/`)      | gzipped bytes (`results/forms-*.json`)                                |
+| size     | the homepage's apps                         | its apps                                          | gzipped bytes (`benchData.json`)                                      |
+
+schemabenchmarks.dev isn't a suite: our reproduction (`sb/`) runs only
+ArkType. The wall-clock runs aren't either: they time a subset of moltar's
+rows and libraries that the counts already cover.
+
+**ArkType's build.** One config everywhere: the default options in a
+production esbuild build, which prunes by usage. Where a suite bundles,
+every library is bundled the same way. ArkType's other builds (the
+"smallest" preset, errors: "first", dynamic, 2.2.9) are left out of every
+row, including when finding a row's best. The homepage's size and cold-start
+rows were bundled for development, so before averaging they are rebuilt and
+remeasured with every library in production (`bench/bundle.ts`); its speed
+rows run ArkType's validators as precompiled, which pruning doesn't change.
+The login form is remeasured at the same commit.
+
+**Libraries.** Every library in any suite. A library's variants in one suite
+(a mode in parentheses after its name, as in moltar's TypeBox and ata
+cases, or the form's TypeBox TypeCompiler and Value) count as that library,
+by its best variant on each row; Zod, Zod Mini and z.compile stay three, as the homepage names
+them.
+
+**Average.** On each row, a library's ratio is its result over the best
+result any library has on that row. Its score in a suite is the geometric
+mean of its ratios over the suite's rows it's measured on, and its score in
+the category is the geometric mean of its suite scores, so each suite weighs
+the same however many rows it has. The best score wins the category.
+
+**Coverage.** A library's suite score counts only if it's measured on at
+least half that suite's rows. It's ranked in a category only if it has a
+counted score in at least half of the category's suites.
+
+**Use.** `ark/repo/bench/external/leaderboard.ts` gathers every row into
+`ark/docs/lib/bench/leaderboard.json`; `ark/docs/lib/claims.ts` computes the
+scores from it and throws if the headline claims a category ArkType doesn't
+win. Nothing is rerun to change a result.
