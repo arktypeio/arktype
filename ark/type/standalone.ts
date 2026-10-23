@@ -316,6 +316,11 @@ const writeFunction = (
 		`const ${name} = (${params}) => {\n${body}\n}`
 	:	`const ${name} = ((${params}) => {\n${body}\n})`
 
+// a validator's only attribute is its meta, which its creator is passed bare
+const holdsOnlyMeta = (members: ReadonlySet<ValidatorMember>) =>
+	members.has("meta") &&
+	!introspectionMembers.some(member => members.has(member))
+
 const isCreatedByRuntime = (
 	members: ReadonlySet<ValidatorMember>,
 	baking: Baking
@@ -2020,6 +2025,12 @@ ${writeFunction(
 				attributes[0] === "meta: runtime.emptyMeta"
 			) ?
 				[]
+			: (
+				!isTemplate &&
+				!isCreatedByRuntime(members, this.baking) &&
+				holdsOnlyMeta(members)
+			) ?
+				[meta!]
 			: attributes.length ? [`{ ${attributes.join(", ")} }`]
 			: []
 		const createsWith =
@@ -2076,6 +2087,7 @@ ${writeFunction(
 		const configured = !unconfigured
 		const hasAttributes =
 			keepsMeta || introspectionMembers.some(member => members.has(member))
+		const metaOf = holdsOnlyMeta(members) ? "meta" : "attributes.meta"
 		const pipes = this.pipes(members, unconfigured)
 		const signature =
 			pipes ?
@@ -2110,13 +2122,15 @@ ${writeFunction(
 			: "",
 			!keepsMeta || !configured ? ""
 			: this.baking.readsConfig ?
-				"const configuredOnFail = attributes.meta.onFail ?? runtime.runtimeConfig.onFail"
-			:	"const configuredOnFail = attributes.meta.onFail",
+				`const configuredOnFail = ${metaOf}.onFail ?? runtime.runtimeConfig.onFail`
+			:	`const configuredOnFail = ${metaOf}.onFail`,
 			`const validator = ${members.has("methods") ? `runtime.setPrototypeOf(${call}, runtime.freeze(runtime.Validator.prototype))` : call}`,
 			members.has("assert") ?
 				`validator.assert = ${this.frozen("(data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault)")}`
 			:	"",
-			hasAttributes ? "runtime.assign(validator, attributes)" : "",
+			!hasAttributes ? ""
+			: holdsOnlyMeta(members) ? "validator.meta = meta"
+			: "runtime.assign(validator, attributes)",
 			`validator.allows = ${this.frozen(ownsValidator || makes ? "parts[0]" : "allows")}`,
 			members.has("~standard") ?
 				`validator["~standard"] = ${this.frozen(`{
@@ -2137,6 +2151,8 @@ ${writeFunction(
 			: applier ? [applier.params]
 			: ["rootApply", "allows"]),
 			...(!hasAttributes ? []
+			: holdsOnlyMeta(members) ?
+				[this.baking.shortest ? "meta = runtime.emptyMeta" : "meta"]
 			: this.baking.shortest && keepsMeta ?
 				["attributes = { meta: runtime.emptyMeta }"]
 			:	["attributes"]),
