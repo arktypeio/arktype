@@ -104,3 +104,17 @@ grew dynamic ArkType's login bundle to 80041 B gzipped
 
 At be45edabb, dynamic ArkType's login bundle is 80672 B gzipped and B2 is
 1313 (`results/login-be45edabb.json`). Every other size is unchanged.
+
+## The release's deterministic re-run
+
+At the release, f29b8d153, `results/login-f29b8d153.json` holds the login
+form's sizes: B2 is 1315 B gzipped (Valibot 1547), B1 1779 and dynamic
+ArkType 82263. `results/counts-a306152ce.{json,md}` holds C1 at a306152ce,
+whose builds f29b8d153 doesn't change (it differs only in how a scope caches
+a keyword bound to it). B1 still takes the fewest instructions on parseSafe
+(184, from 189; @ts-runtypes 209, typia 213) and assertLoose (66;
+ts-runtime-checks 74). Dynamic ArkType's parseSafe fell from 262 to 216, and
+B2's assertLoose rose from 71 to 3220, since the size build now checks with
+small shared checkers. 2.2.9's strict counts vary by 20-26% between reps, so
+dynamic's ratios to them span 10.2x to 17.1x. The wall-clock run above is
+still the release candidate's.

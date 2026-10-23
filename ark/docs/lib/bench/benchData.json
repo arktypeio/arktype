@@ -7,7 +7,7 @@
 		"runtime": "Node 25.2.1",
 		"rounds": 150,
 		"method": "BENCH_ROUNDS=150 BENCH_CORE=13,15 pnpm benchValidate on ark/repo/bench, on a shared machine, each run started below a 1-minute load of 4 (2.9-3.9 at the runs' starts and ends), benchmark processes pinned to cores 13 and 15. Each library runs in its own process, driven round by round over IPC; one arm is timed at a time and the arm order rotates each round. Each arm warms 1 s / 10k calls, then a sample is the mean ns per call over a batch of >= 0.5 ms, on fresh unfrozen copies of the input. Every arm's output is checked to agree with arktype's before timing. Medians are over rounds; p is a two-sided sign test paired by round; verdict is win/loss at p < .05, else tie. replication tallies the same comparison's verdict in 1 further quiet run at the same commit.",
-		"size": "esbuild-minified bundle of each app at be45edabb, bytes and gzip",
+		"size": "esbuild-minified bundle of each app at f29b8d153, bytes and gzip",
 		"startup": {
 			"commit": "c42ee008c",
 			"date": "2026-10-22",
@@ -5802,16 +5802,16 @@
 				"gzip": 41859
 			},
 			"arktype": {
-				"min": 253563,
-				"gzip": 80729
+				"min": 258400,
+				"gzip": 82321
 			},
 			"standalone": {
-				"min": 3730,
-				"gzip": 1785
+				"min": 3807,
+				"gzip": 1829
 			},
 			"standaloneFirst": {
-				"min": 3774,
-				"gzip": 1800
+				"min": 3855,
+				"gzip": 1847
 			}
 		},
 		"moltar": {
@@ -5844,16 +5844,16 @@
 				"gzip": 41880
 			},
 			"arktype": {
-				"min": 253678,
-				"gzip": 80762
+				"min": 258515,
+				"gzip": 82352
 			},
 			"standalone": {
-				"min": 4326,
-				"gzip": 1857
+				"min": 4403,
+				"gzip": 1901
 			},
 			"standaloneFirst": {
-				"min": 4370,
-				"gzip": 1874
+				"min": 4451,
+				"gzip": 1916
 			}
 		},
 		"shop": {
@@ -5886,16 +5886,16 @@
 				"gzip": 42902
 			},
 			"arktype": {
-				"min": 255460,
-				"gzip": 81543
+				"min": 260298,
+				"gzip": 83222
 			},
 			"standalone": {
-				"min": 32512,
-				"gzip": 9361
+				"min": 29346,
+				"gzip": 8983
 			},
 			"standaloneFirst": {
-				"min": 32558,
-				"gzip": 9375
+				"min": 29396,
+				"gzip": 8999
 			}
 		}
 	},

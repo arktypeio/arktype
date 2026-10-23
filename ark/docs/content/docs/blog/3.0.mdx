@@ -63,13 +63,9 @@ Precompiled, ArkType keeps its syntax, its errors and its set theory, and gives 
 
 <Claim id="zodSpeed" /> <Claim id="speedScope" /> <Claim id="dynamicSpeed" />
 
-{/* TODO(claims): speed work is in progress. zodSpeed and speedScope recompute from lib/bench/benchData.json; the speed chart and the headline wait for the rerun. */}
-
 ### Bundle size
 
 <Claim id="loginSize" /> <Claim id="noInit" />
-
-{/* TODO(claims): size work is in progress. loginSize, sizeChart and the headline change when it lands. */}
 
 ### Types
 
@@ -93,10 +89,14 @@ The [skill](/docs/agents#skill) teaches an agent current syntax, how it maps to 
 
 ### Migrating from Zod
 
-{/* SLOT(zod-migration): lane/zod-migration writes this section, its measured result as <Claim id="zodMigration" /> in lib/claims.ts. */}
+```
+Migrate this project from Zod to ArkType.
+```
 
-<Claim id="zodMigration" /> The skill's [migration guide](/docs/migrating) maps
-each construct and every default that differs.
+<Claim id="zodMigration" /> All 10 typechecked. Two of the others use MCP SDK
+v1, which accepts only Zod, so Zod stays until they upgrade. The skill's
+[migration guide](/docs/migrating) maps each construct and every default that
+differs.
 
 ### What it costs
 
