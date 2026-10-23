@@ -45,10 +45,22 @@ export type inferSchema<schema, root, seen> =
 			keyof schema & PartKeyword,
 			seen
 		>
+	: "2020-12" extends draftsOf<root> ?
+		// a dialect that may be 2020-12 may apply `nullable` beside the `$ref`
+		applyNullable<
+			schema,
+			inferRef<schema["$ref" & keyof schema], resourceOf<schema, root>, seen>
+		>
 	:	inferRef<schema["$ref" & keyof schema], resourceOf<schema, root>, seen>
 
+/** excludes `nullable`, including from an index signature that may hold it,
+ * which an optional `nullable?: never` wouldn't */
+export interface NonNullableNode {
+	[k: `nullable${string}`]: never
+}
+
 /** keywords whose absence allows a `type` to be inferred directly */
-export interface Unmodified {
+export interface Unmodified extends NonNullableNode {
 	$ref?: never
 	$id?: Anchor
 	id?: Anchor
@@ -59,7 +71,6 @@ export interface Unmodified {
 	oneOf?: never
 	not?: never
 	if?: never
-	nullable?: never
 }
 
 /** an `$id` that doesn't start a new resource */
@@ -175,7 +186,7 @@ export interface ArraySchema extends Unmodified {
 }
 
 /** a `$ref` without siblings that would need to be intersected with its target */
-export interface RefOnlySchema {
+export interface RefOnlySchema extends NonNullableNode {
 	$ref: unknown
 	$id?: Anchor
 	type?: never
@@ -192,7 +203,6 @@ export interface RefOnlySchema {
 	oneOf?: never
 	then?: never
 	not?: never
-	nullable?: never
 }
 
 export type inferNode<
@@ -430,9 +440,8 @@ export type applyModifiers<schema, t> =
 		:	applyNot<schema["not"], applyNullable<schema, t>>
 	:	applyNullable<schema, t>
 
-export interface UnmodifiedNode {
+export interface UnmodifiedNode extends NonNullableNode {
 	not?: never
-	nullable?: never
 	[k: string]: unknown
 }
 
@@ -817,26 +826,39 @@ export type intersectDomains<l, r> =
 		r extends unknown ?
 			l extends object ?
 				r extends object ?
-					l extends array ?
-						r extends array ?
-							intersectArrays<l, r>
-						:	never
-					: r extends array ? never
-					: intersectObjects<l, r>
+					intersectObjects<l, r>
 				:	never
 			: r extends object ? never
 			: l & r
 		:	never
 	:	never
 
+/** an object without numeric keys can't be an array, so it isn't related to
+ * one, which would resolve the members of a recursive object while its index
+ * signature is still being inferred (TS would then see it without them) */
 export type intersectObjects<l, r> =
-	[keyof l] extends [never] ? r
-	: [keyof r] extends [never] ? l
+	[keyof l] extends [never] ?
+		number extends keyof r ?
+			r extends array ?
+				never
+			:	r
+		:	r
+	: [keyof r] extends [never] ?
+		number extends keyof l ?
+			l extends array ?
+				never
+			:	l
+		:	l
 	: (keyof l | keyof r) & number extends never ?
 		[keyof l & keyof r] extends [never] ?
 			{ [k in keyof (l & r)]: (l & r)[k] } & unknown
 		:	mergeObjects<l, r, keyof l & keyof r>
-	:	mergeObjects<
+	: l extends array ?
+		r extends array ?
+			intersectArrays<l, r>
+		:	never
+	: r extends array ? never
+	: mergeObjects<
 			stringKeyed<l>,
 			stringKeyed<r>,
 			keyof stringKeyed<l> & keyof stringKeyed<r>
