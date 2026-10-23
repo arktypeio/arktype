@@ -650,6 +650,8 @@ export const reduceBranches = ({
 				uniquenessByIndex[j] = false
 				continue
 			}
+			// units that aren't equal are disjoint
+			if (branches[i].hasKind("unit") && branches[j].hasKind("unit")) continue
 			// an alias branch is reduced once the union is rebuilt from its resolution
 			if (branches[i].hasShallowAlias || branches[j].hasShallowAlias) continue
 			const intersection = intersectNodesRoot(
