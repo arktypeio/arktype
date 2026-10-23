@@ -265,6 +265,9 @@ export interface StandaloneOptions {
 	hoisted?: boolean | undefined
 	// export as values what a site would call a function only to read
 	values?: boolean | undefined
+	// exports whose site its module runs once as it loads, where a lazy build
+	// creates the validator in place, as a getter called there would
+	readOnLoad?: readonly string[] | undefined
 	// false where a size build with detailed errors compiles each node rather
 	// than writing it as a checker
 	combines?: boolean | undefined
@@ -632,6 +635,14 @@ const writeArtifact = (
 			!rekeying || (rekeying.length === 1 && rekeying[0] === "return created")
 		)
 	}
+	// a size build's sites create their validators where they can, as does a
+	// lazy build's site its module runs once as it loads
+	const createsInPlace = (name: string) =>
+		isModular &&
+		!!opts.values &&
+		!baking.hoisted &&
+		isUnchecked(name) &&
+		(opts.lazy === false ? baking.shortest : !!opts.readOnLoad?.includes(name))
 	const [creations, reads] = writeCreations(
 		types,
 		templates,
@@ -641,7 +652,7 @@ const writeArtifact = (
 		shared,
 		imports,
 		values,
-		isUnchecked,
+		createsInPlace,
 		calls
 	)
 	// a factory checking nothing it's passed is read as what it returns
@@ -738,7 +749,7 @@ const writeCreations = (
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>,
 	values: string[] | undefined,
-	isUnchecked: (name: string) => boolean,
+	createsInPlace: (name: string) => boolean,
 	calls: StandaloneModules["calls"]
 ): [code: string[], reads: Record<string, CreationRead>] => {
 	const names = Object.keys(types)
@@ -778,13 +789,8 @@ const writeCreations = (
 		(l, r) => l.indices[0] - r.indices[0]
 	)) {
 		const [index] = creation.indices
-		// a size build's sites create their validators where they can
 		const created =
-			(
-				values &&
-				baking.shortest &&
-				creation.indices.every(i => isUnchecked(names[i]))
-			) ?
+			creation.indices.every(i => createsInPlace(names[i])) ?
 				artifactOf(creation.indices).writeCalls(configured)
 			:	undefined
 		if (created) {

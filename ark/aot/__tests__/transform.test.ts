@@ -132,6 +132,23 @@ export const Name = /* @__PURE__ */ $ark_#0($ark_#2Allows)
 export const Team = /* @__PURE__ */ $ark_#0($ark_#3Allows)`)
 		})
 
+		it("creates a lazy build's validators where a module reads them as it loads", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+export const Name = type("string > 0")
+export const nameOf = () => type("string > 1")`,
+				{},
+				{ creationChecks: "none", config: false, members: { meta: false } }
+			)
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark_#0 } from "~arktype/#1"
+import { #2 as $ark_#2 } from "~arktype/#1"
+import { #3 as $ark_#3 } from "~arktype/#1"
+import { #4 as $ark#4 } from "~arktype/#1"
+export const Name = /* @__PURE__ */ $ark_#0($ark_#2, $ark_#3)
+export const nameOf = () => $ark#4()`)
+		})
+
 		it("compiles a size build's artifact too small for checkers to pay off", () => {
 			const checks = (source: string) =>
 				Object.values(
