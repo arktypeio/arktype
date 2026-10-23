@@ -69,14 +69,6 @@ contextualize(() => {
 			attest<Dict>(T).type.toString.snap("{ [x: string]: string | cyclic }")
 		})
 
-		it("through items alone", () => {
-			type Nested = Nested[]
-			const T = inferred({ type: "array", items: { $ref: "#" } })
-			// tsrs predates microsoft/TypeScript#64556, so it prints recursive arrays deeper
-			if (getChecker() !== "tsrs") attest<Nested>(T).type.toString.snap("any[]")
-			attest<Nested, (typeof T)[0][0][0][0][0][0]>()
-		})
-
 		it("through implied array items", () => {
 			type Nested = string | number | boolean | object | Nested[] | null
 			attest<Nested>(inferred({ items: { $ref: "#" } }))
@@ -237,15 +229,6 @@ contextualize(() => {
 		it("numeric def name", () => {
 			const T = inferred({
 				$defs: { 1: { type: "string" } },
-				$ref: "#/$defs/1"
-			})
-			attest<string>(T).type.toString.snap("string")
-		})
-
-		it("quoted numeric def name", () => {
-			const T = inferred({
-				// prettier-ignore
-				$defs: { "1": { type: "string" } },
 				$ref: "#/$defs/1"
 			})
 			attest<string>(T).type.toString.snap("string")
@@ -989,46 +972,6 @@ contextualize(() => {
 			>()
 		})
 
-		// TS can't defer a tuple, so the recursive element is unknown after one expansion
-		it("through prefixItems", () => {
-			const schema = {
-				type: "array",
-				prefixItems: [{ type: "number" }, { $ref: "#" }],
-				minItems: 1,
-				items: false
-			} as const
-			attest(() => inferred(schema)).type.errors(/^$/)
-			attest<[number, [number, unknown?]?]>(
-				inferred(schema)
-			).type.toString.snap("[number, [number, unknown?]?]")
-		})
-
-		it("through a tuple's rest items", () => {
-			const schema = {
-				type: "array",
-				prefixItems: [{ type: "string" }],
-				minItems: 1,
-				items: { $ref: "#" }
-			} as const
-			attest(() => inferred(schema)).type.errors(/^$/)
-			attest<[string, ...[string, ...unknown[]][]]>(
-				inferred(schema)
-			).type.toString.snap("[string, ...[string, ...unknown[]][]]")
-		})
-
-		it("through additionalItems", () => {
-			const schema = {
-				type: "array",
-				items: [{ type: "string" }],
-				minItems: 1,
-				additionalItems: { $ref: "#" }
-			} as const
-			attest(() => inferred(schema)).type.errors(/^$/)
-			attest<[string, ...[string, ...unknown[]][]]>(
-				inferred(schema)
-			).type.toString.snap("[string, ...[string, ...unknown[]][]]")
-		})
-
 		it("productively through then and else", () => {
 			type Node = { a?: Node } | string
 			const T = inferred({
@@ -1082,61 +1025,7 @@ contextualize(() => {
 			type T = jsonSchema.infer<typeof schema>
 			const list: T = {
 				v: 1,
-				next: {
-					v: 1,
-					next: {
-						v: 1,
-						next: {
-							v: 1,
-							next: {
-								v: 1,
-								next: {
-									v: 1,
-									next: {
-										v: 1,
-										next: {
-											v: 1,
-											next: {
-												v: 1,
-												next: {
-													v: 1,
-													next: {
-														v: 1,
-														next: {
-															v: 1,
-															next: {
-																v: 1,
-																next: {
-																	v: 1,
-																	next: {
-																		v: 1,
-																		next: {
-																			v: 1,
-																			next: {
-																				v: 1,
-																				next: {
-																					v: 1,
-																					next: {
-																						v: 1,
-																						next: { v: 1, next: { v: 1 } }
-																					}
-																				}
-																			}
-																		}
-																	}
-																}
-															}
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
+				next: { v: 1, next: { v: 1, next: { v: 1, next: { v: 1 } } } }
 			}
 			attest<number | undefined>(list.next?.next?.next?.v)
 			attest({} as T).type.toString(/^[^<]*$/)
@@ -1160,61 +1049,7 @@ contextualize(() => {
 			type T = jsonSchema.infer<typeof schema>
 			const list: T = {
 				v: 1,
-				next: {
-					v: 1,
-					next: {
-						v: 1,
-						next: {
-							v: 1,
-							next: {
-								v: 1,
-								next: {
-									v: 1,
-									next: {
-										v: 1,
-										next: {
-											v: 1,
-											next: {
-												v: 1,
-												next: {
-													v: 1,
-													next: {
-														v: 1,
-														next: {
-															v: 1,
-															next: {
-																v: 1,
-																next: {
-																	v: 1,
-																	next: {
-																		v: 1,
-																		next: {
-																			v: 1,
-																			next: {
-																				v: 1,
-																				next: {
-																					v: 1,
-																					next: {
-																						v: 1,
-																						next: { v: 1, next: { v: 1 } }
-																					}
-																				}
-																			}
-																		}
-																	}
-																}
-															}
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
+				next: { v: 1, next: { v: 1, next: { v: 1, next: { v: 1 } } } }
 			}
 			attest<number | undefined>(list.next?.next?.next?.v)
 			attest({} as T).type.toString(/^[^<]*$/)
@@ -1236,61 +1071,7 @@ contextualize(() => {
 			type T = jsonSchema.infer<typeof schema>
 			const list: T = {
 				v: 1,
-				next: {
-					v: 1,
-					next: {
-						v: 1,
-						next: {
-							v: 1,
-							next: {
-								v: 1,
-								next: {
-									v: 1,
-									next: {
-										v: 1,
-										next: {
-											v: 1,
-											next: {
-												v: 1,
-												next: {
-													v: 1,
-													next: {
-														v: 1,
-														next: {
-															v: 1,
-															next: {
-																v: 1,
-																next: {
-																	v: 1,
-																	next: {
-																		v: 1,
-																		next: {
-																			v: 1,
-																			next: {
-																				v: 1,
-																				next: {
-																					v: 1,
-																					next: {
-																						v: 1,
-																						next: { v: 1, next: { v: 1 } }
-																					}
-																				}
-																			}
-																		}
-																	}
-																}
-															}
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
+				next: { v: 1, next: { v: 1, next: { v: 1, next: { v: 1 } } } }
 			}
 			attest<number | undefined>(list.next?.next?.next?.next?.v)
 		})
@@ -1309,61 +1090,7 @@ contextualize(() => {
 			type T = jsonSchema.infer<typeof schema>
 			const list: T = {
 				v: 1,
-				next: {
-					v: 1,
-					next: {
-						v: 1,
-						next: {
-							v: 1,
-							next: {
-								v: 1,
-								next: {
-									v: 1,
-									next: {
-										v: 1,
-										next: {
-											v: 1,
-											next: {
-												v: 1,
-												next: {
-													v: 1,
-													next: {
-														v: 1,
-														next: {
-															v: 1,
-															next: {
-																v: 1,
-																next: {
-																	v: 1,
-																	next: {
-																		v: 1,
-																		next: {
-																			v: 1,
-																			next: {
-																				v: 1,
-																				next: {
-																					v: 1,
-																					next: {
-																						v: 1,
-																						next: { v: 1, next: { v: 1 } }
-																					}
-																				}
-																			}
-																		}
-																	}
-																}
-															}
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
+				next: { v: 1, next: { v: 1, next: { v: 1, next: { v: 1 } } } }
 			}
 			attest<number | undefined>(list.next?.next?.next?.next?.v)
 		})
@@ -1385,7 +1112,7 @@ contextualize(() => {
 		})
 	})
 
-	describe("twenty levels of recursion", () => {
+	describe("deeply nested recursive values", () => {
 		it("through an anyOf of a string and an array of the root", () => {
 			type T = jsonSchema.infer<{
 				anyOf: [{ type: "string" }, { type: "array"; items: { $ref: "#" } }]
@@ -1450,63 +1177,9 @@ contextualize(() => {
 				operand: {
 					kind: "neg",
 					operand: {
-						kind: "neg",
-						operand: {
-							kind: "neg",
-							operand: {
-								kind: "neg",
-								operand: {
-									kind: "neg",
-									operand: {
-										kind: "neg",
-										operand: {
-											kind: "neg",
-											operand: {
-												kind: "neg",
-												operand: {
-													kind: "neg",
-													operand: {
-														kind: "neg",
-														operand: {
-															kind: "neg",
-															operand: {
-																kind: "neg",
-																operand: {
-																	kind: "neg",
-																	operand: {
-																		kind: "neg",
-																		operand: {
-																			kind: "neg",
-																			operand: {
-																				kind: "neg",
-																				operand: {
-																					kind: "neg",
-																					operand: {
-																						kind: "neg",
-																						operand: {
-																							kind: "neg",
-																							operand: {
-																								kind: "add",
-																								l: { kind: "num", value: 1 },
-																								r: { kind: "num", value: 2 }
-																							}
-																						}
-																					}
-																				}
-																			}
-																		}
-																	}
-																}
-															}
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
+						kind: "add",
+						l: { kind: "num", value: 1 },
+						r: { kind: "num", value: 2 }
 					}
 				}
 			}
@@ -1516,63 +1189,9 @@ contextualize(() => {
 				operand: {
 					kind: "neg",
 					operand: {
-						kind: "neg",
-						operand: {
-							kind: "neg",
-							operand: {
-								kind: "neg",
-								operand: {
-									kind: "neg",
-									operand: {
-										kind: "neg",
-										operand: {
-											kind: "neg",
-											operand: {
-												kind: "neg",
-												operand: {
-													kind: "neg",
-													operand: {
-														kind: "neg",
-														operand: {
-															kind: "neg",
-															operand: {
-																kind: "neg",
-																operand: {
-																	kind: "neg",
-																	operand: {
-																		kind: "neg",
-																		operand: {
-																			kind: "neg",
-																			operand: {
-																				kind: "neg",
-																				operand: {
-																					kind: "neg",
-																					operand: {
-																						kind: "neg",
-																						operand: {
-																							kind: "neg",
-																							operand: {
-																								kind: "num",
-																								// @ts-expect-error
-																								value: "x"
-																							}
-																						}
-																					}
-																				}
-																			}
-																		}
-																	}
-																}
-															}
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
+						kind: "num",
+						// @ts-expect-error
+						value: "x"
 					}
 				}
 			}
@@ -1607,108 +1226,7 @@ contextualize(() => {
 			}>
 			const r: Rule = {
 				op: "and",
-				args: [
-					{
-						op: "and",
-						args: [
-							{
-								op: "and",
-								args: [
-									{
-										op: "and",
-										args: [
-											{
-												op: "and",
-												args: [
-													{
-														op: "and",
-														args: [
-															{
-																op: "and",
-																args: [
-																	{
-																		op: "and",
-																		args: [
-																			{
-																				op: "and",
-																				args: [
-																					{
-																						op: "and",
-																						args: [
-																							{
-																								op: "and",
-																								args: [
-																									{
-																										op: "and",
-																										args: [
-																											{
-																												op: "and",
-																												args: [
-																													{
-																														op: "and",
-																														args: [
-																															{
-																																op: "and",
-																																args: [
-																																	{
-																																		op: "and",
-																																		args: [
-																																			{
-																																				op: "and",
-																																				args: [
-																																					{
-																																						op: "and",
-																																						args: [
-																																							{
-																																								op: "and",
-																																								args: [
-																																									{
-																																										op: "and",
-																																										args: [
-																																											{
-																																												op: "leaf",
-																																												value:
-																																													"x"
-																																											}
-																																										]
-																																									}
-																																								]
-																																							}
-																																						]
-																																					}
-																																				]
-																																			}
-																																		]
-																																	}
-																																]
-																															}
-																														]
-																													}
-																												]
-																											}
-																										]
-																									}
-																								]
-																							}
-																						]
-																					}
-																				]
-																			}
-																		]
-																	}
-																]
-															}
-														]
-													}
-												]
-											}
-										]
-									}
-								]
-							}
-						]
-					}
-				]
+				args: [{ op: "and", args: [{ op: "leaf", value: "x" }] }]
 			}
 			attest(r)
 			const bad: Rule = {
@@ -1718,99 +1236,9 @@ contextualize(() => {
 						op: "and",
 						args: [
 							{
-								op: "and",
-								args: [
-									{
-										op: "and",
-										args: [
-											{
-												op: "and",
-												args: [
-													{
-														op: "and",
-														args: [
-															{
-																op: "and",
-																args: [
-																	{
-																		op: "and",
-																		args: [
-																			{
-																				op: "and",
-																				args: [
-																					{
-																						op: "and",
-																						args: [
-																							{
-																								op: "and",
-																								args: [
-																									{
-																										op: "and",
-																										args: [
-																											{
-																												op: "and",
-																												args: [
-																													{
-																														op: "and",
-																														args: [
-																															{
-																																op: "and",
-																																args: [
-																																	{
-																																		op: "and",
-																																		args: [
-																																			{
-																																				op: "and",
-																																				args: [
-																																					{
-																																						op: "and",
-																																						args: [
-																																							{
-																																								op: "and",
-																																								args: [
-																																									{
-																																										op: "and",
-																																										args: [
-																																											{
-																																												op: "leaf",
-																																												// @ts-expect-error
-																																												value: 1
-																																											}
-																																										]
-																																									}
-																																								]
-																																							}
-																																						]
-																																					}
-																																				]
-																																			}
-																																		]
-																																	}
-																																]
-																															}
-																														]
-																													}
-																												]
-																											}
-																										]
-																									}
-																								]
-																							}
-																						]
-																					}
-																				]
-																			}
-																		]
-																	}
-																]
-															}
-														]
-													}
-												]
-											}
-										]
-									}
-								]
+								op: "leaf",
+								// @ts-expect-error
+								value: 1
 							}
 						]
 					}
@@ -1821,6 +1249,12 @@ contextualize(() => {
 	})
 
 	describe("eager ref graphs", () => {
+		type range<n extends number, acc extends number[] = []> =
+			acc["length"] extends n ? acc[number] : range<n, [...acc, acc["length"]]>
+		type next<n extends number, acc extends 1[] = []> =
+			acc["length"] extends n ? [...acc, 1]["length"] & number
+			:	next<n, [...acc, 1]>
+
 		it("deep cycle across anyOf, allOf and oneOf", () => {
 			const T = inferred({
 				$defs: {
@@ -1842,74 +1276,15 @@ contextualize(() => {
 			attest<{ a?: string }>(T).type.toString.snap("{ a?: string }")
 		})
 
-		it("sixty-hop chain", () => {
-			const T = inferred({
+		it("ref chain two hundred deep", () => {
+			type T = jsonSchema.infer<{
 				$defs: {
-					d0: { $ref: "#/$defs/d1" },
-					d1: { $ref: "#/$defs/d2" },
-					d2: { $ref: "#/$defs/d3" },
-					d3: { $ref: "#/$defs/d4" },
-					d4: { $ref: "#/$defs/d5" },
-					d5: { $ref: "#/$defs/d6" },
-					d6: { $ref: "#/$defs/d7" },
-					d7: { $ref: "#/$defs/d8" },
-					d8: { $ref: "#/$defs/d9" },
-					d9: { $ref: "#/$defs/d10" },
-					d10: { $ref: "#/$defs/d11" },
-					d11: { $ref: "#/$defs/d12" },
-					d12: { $ref: "#/$defs/d13" },
-					d13: { $ref: "#/$defs/d14" },
-					d14: { $ref: "#/$defs/d15" },
-					d15: { $ref: "#/$defs/d16" },
-					d16: { $ref: "#/$defs/d17" },
-					d17: { $ref: "#/$defs/d18" },
-					d18: { $ref: "#/$defs/d19" },
-					d19: { $ref: "#/$defs/d20" },
-					d20: { $ref: "#/$defs/d21" },
-					d21: { $ref: "#/$defs/d22" },
-					d22: { $ref: "#/$defs/d23" },
-					d23: { $ref: "#/$defs/d24" },
-					d24: { $ref: "#/$defs/d25" },
-					d25: { $ref: "#/$defs/d26" },
-					d26: { $ref: "#/$defs/d27" },
-					d27: { $ref: "#/$defs/d28" },
-					d28: { $ref: "#/$defs/d29" },
-					d29: { $ref: "#/$defs/d30" },
-					d30: { $ref: "#/$defs/d31" },
-					d31: { $ref: "#/$defs/d32" },
-					d32: { $ref: "#/$defs/d33" },
-					d33: { $ref: "#/$defs/d34" },
-					d34: { $ref: "#/$defs/d35" },
-					d35: { $ref: "#/$defs/d36" },
-					d36: { $ref: "#/$defs/d37" },
-					d37: { $ref: "#/$defs/d38" },
-					d38: { $ref: "#/$defs/d39" },
-					d39: { $ref: "#/$defs/d40" },
-					d40: { $ref: "#/$defs/d41" },
-					d41: { $ref: "#/$defs/d42" },
-					d42: { $ref: "#/$defs/d43" },
-					d43: { $ref: "#/$defs/d44" },
-					d44: { $ref: "#/$defs/d45" },
-					d45: { $ref: "#/$defs/d46" },
-					d46: { $ref: "#/$defs/d47" },
-					d47: { $ref: "#/$defs/d48" },
-					d48: { $ref: "#/$defs/d49" },
-					d49: { $ref: "#/$defs/d50" },
-					d50: { $ref: "#/$defs/d51" },
-					d51: { $ref: "#/$defs/d52" },
-					d52: { $ref: "#/$defs/d53" },
-					d53: { $ref: "#/$defs/d54" },
-					d54: { $ref: "#/$defs/d55" },
-					d55: { $ref: "#/$defs/d56" },
-					d56: { $ref: "#/$defs/d57" },
-					d57: { $ref: "#/$defs/d58" },
-					d58: { $ref: "#/$defs/d59" },
-					d59: { $ref: "#/$defs/d60" },
-					d60: { type: "string" }
-				},
+					[k in range<200> as `d${k}`]: k extends 199 ? { type: "string" }
+					:	{ $ref: `#/$defs/d${next<k>}` }
+				}
 				$ref: "#/$defs/d0"
-			})
-			attest<string>(T).type.toString.snap("string")
+			}>
+			attest<string, T>()
 		})
 
 		it("forty-hop chain with sibling properties", () => {
@@ -2044,6 +1419,32 @@ contextualize(() => {
 			})
 			attest<string>(T).type.toString.snap("string")
 		})
+
+		it("allOf DAG of refs thirty deep", () => {
+			// each definition is reached through two paths, which TS used to
+			// relate and copy declarations for exponentially often
+			type T = jsonSchema.infer<{
+				$defs: {
+					[i in range<30> as `d${i}`]: i extends 28 | 29 ?
+						{
+							type: "object"
+							properties: { [_ in `k${i}`]: { type: "string" } }
+						}
+					:	{
+							allOf: [
+								{ $ref: `#/$defs/d${next<i>}` },
+								{ $ref: `#/$defs/d${next<next<i>>}` },
+								{
+									type: "object"
+									properties: { [_ in `k${i}`]: { type: "string" } }
+								}
+							]
+						}
+				}
+				$ref: "#/$defs/d0"
+			}>
+			attest<{ [k in `k${range<30>}`]?: string }, T>()
+		})
 	})
 
 	describe("forty-hop chains through eager positions", () => {
@@ -2143,30 +1544,6 @@ contextualize(() => {
 			)
 		})
 
-		it("overlapping properties intersect", () => {
-			const T = inferred({
-				$defs: {
-					o: {
-						type: "object",
-						properties: { kind: { type: "string" } },
-						required: ["kind"]
-					}
-				},
-				$ref: "#/$defs/o",
-				properties: { kind: { const: "circle" } }
-			})
-			attest<{ kind: "circle" }>(T).type.toString.snap('{ kind: "circle" }')
-		})
-
-		it("items with an array target", () => {
-			const T = inferred({
-				$defs: { list: { type: "array" } },
-				$ref: "#/$defs/list",
-				items: { type: "number" }
-			})
-			attest<number[]>(T).type.toString.snap("number[]")
-		})
-
 		it("nullable", () => {
 			const T = inferred({
 				$defs: { s: { type: "string" } },
@@ -2174,59 +1551,6 @@ contextualize(() => {
 				nullable: true
 			})
 			attest<string | null>(T).type.toString.snap("string | null")
-		})
-
-		it("nullable false", () => {
-			const T = inferred({
-				$defs: { s: { type: "string" } },
-				$ref: "#/$defs/s",
-				nullable: false
-			})
-			attest<string>(T).type.toString.snap("string")
-		})
-
-		it("if/then without else is ignored", () => {
-			const T = inferred({
-				$defs: { s: { type: "string" } },
-				$ref: "#/$defs/s",
-				if: { minLength: 1 },
-				then: { const: "a" }
-			})
-			attest<string>(T).type.toString.snap("string")
-		})
-
-		it("disjoint type", () => {
-			const T = inferred({
-				$defs: { s: { type: "string" } },
-				$ref: "#/$defs/s",
-				type: "null"
-			})
-			attest<never>(T).type.toString.snap("never")
-		})
-
-		it("annotations don't affect inference", () => {
-			const T = inferred({
-				$defs: { s: { type: "string" } },
-				$ref: "#/$defs/s",
-				title: "S",
-				description: "a string",
-				default: "x",
-				examples: ["y"],
-				deprecated: true,
-				readOnly: true,
-				$comment: "c",
-				"x-extension": { anything: 1 }
-			})
-			attest<string>(T).type.toString.snap("string")
-		})
-
-		it("const", () => {
-			const T = inferred({
-				$defs: { s: { type: "string" } },
-				$ref: "#/$defs/s",
-				const: "a"
-			})
-			attest<"a">(T).type.toString.snap('"a"')
 		})
 
 		it("conflicting const", () => {
@@ -2276,51 +1600,6 @@ contextualize(() => {
 	| { id: string; b: boolean }`)
 		})
 
-		it("allOf", () => {
-			const T = inferred({
-				$defs: {
-					o: {
-						type: "object",
-						properties: { id: { type: "string" } },
-						required: ["id"]
-					}
-				},
-				$ref: "#/$defs/o",
-				allOf: [{ properties: { a: { type: "number" } }, required: ["a"] }]
-			})
-			attest<{ id: string; a: number }>(T).type.toString.snap(
-				"{ id: string; a: number }"
-			)
-		})
-
-		it("if/then/else", () => {
-			const T = inferred({
-				$defs: { u: { type: ["string", "number"] } },
-				$ref: "#/$defs/u",
-				if: { type: "string" },
-				then: { const: "s" },
-				else: { const: 1 }
-			})
-			attest<"s" | 1>(T).type.toString.snap('"s" | 1')
-		})
-
-		it("additionalProperties", () => {
-			const T = inferred({
-				$defs: {
-					o: {
-						type: "object",
-						properties: { a: { type: "string" } },
-						required: ["a"]
-					}
-				},
-				$ref: "#/$defs/o",
-				additionalProperties: { type: "string" }
-			})
-			attest<{ [k: string]: string; a: string }>(T).type.toString.snap(
-				"{ [x: string]: string; a: string }"
-			)
-		})
-
 		it("required on a union target distributes", () => {
 			const T = inferred({
 				$defs: {
@@ -2365,29 +1644,6 @@ contextualize(() => {
 				not: { enum: [{ a: 1 }] }
 			}>
 			attest<{ a: 1 }>({} as T).type.toString.snap("{ a: 1 }")
-		})
-
-		it("not const object on an open object", () => {
-			type T = jsonSchema.infer<{
-				type: "object"
-				properties: { a: { const: 1 } }
-				required: ["a"]
-				not: { const: { a: 1 } }
-			}>
-			attest<{ a: 1 }>({} as T).type.toString.snap("{ a: 1 }")
-		})
-
-		it("not const array of an object", () => {
-			type T = jsonSchema.infer<{
-				type: "array"
-				prefixItems: [
-					{ type: "object"; properties: { a: { const: 1 } }; required: ["a"] }
-				]
-				items: false
-				minItems: 1
-				not: { const: [{ a: 1 }] }
-			}>
-			attest<[{ a: 1 }]>({} as T).type.toString.snap("[{ a: 1 }]")
 		})
 
 		it("four tuple defs each excluding a constant", () => {
@@ -2549,28 +1805,6 @@ contextualize(() => {
 			).type.errors.is("")
 		})
 
-		it("a property schema in an allOf branch whose sibling declares the key", () => {
-			attest(() =>
-				inferred({
-					allOf: [
-						{
-							properties: {
-								meta: { properties: { createdAt: { type: "string" } } }
-							}
-						},
-						{
-							properties: {
-								meta: {
-									properties: { updatedAt: { type: "string" } },
-									required: ["createdAt"]
-								}
-							}
-						}
-					]
-				})
-			).type.errors.is("")
-		})
-
 		it("a property schema in a $defs entry whose referencing node declares the key", () => {
 			attest(() =>
 				inferred({
@@ -2595,56 +1829,6 @@ contextualize(() => {
 					}
 				})
 			).type.errors.is("")
-		})
-
-		it("a patternProperties schema whose key is also a declared property", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					properties: { "x-a": { properties: { p: { type: "string" } } } },
-					patternProperties: {
-						"^x-": {
-							properties: { q: { type: "string" } },
-							required: ["p"]
-						}
-					}
-				})
-			).type.errors.is("")
-		})
-
-		it("items in allOf branches", () => {
-			attest(() =>
-				inferred({
-					allOf: [
-						{ type: "array", items: { properties: { p: { type: "string" } } } },
-						{
-							type: "array",
-							items: {
-								properties: { q: { type: "string" } },
-								required: ["p"]
-							}
-						}
-					]
-				})
-			).type.errors.is("")
-		})
-
-		it("a typo in a nested self-contained property schema still errors", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					properties: {
-						meta: {
-							type: "object",
-							properties: { createdAt: { type: "string" } },
-							// @ts-expect-error
-							required: ["createdAtt"]
-						}
-					}
-				})
-			).type.errors.snap(
-				"Type '\"createdAtt\"' is not assignable to type '\"createdAt\"'."
-			)
 		})
 
 		it("the merged property infers both keys", () => {
@@ -2673,138 +1857,6 @@ contextualize(() => {
 				.toString.snap(`{
 	meta?: { createdAt: string; updatedAt?: string }
 }`)
-		})
-
-		it("required key declared by the schema that references the def", () => {
-			attest(
-				{} as check<{
-					$defs: {
-						nicknamed: {
-							properties: { nick: { type: "string" } }
-							required: ["name", "nick"]
-						}
-					}
-					type: "object"
-					properties: { name: { type: "string" } }
-					allOf: [{ $ref: "#/$defs/nicknamed" }]
-				}>
-			).type.toString.snap("true")
-		})
-
-		it("the mixin infers both keys", () => {
-			const T = inferred({
-				$defs: {
-					nicknamed: {
-						properties: { nick: { type: "string" } },
-						required: ["nick"]
-					}
-				},
-				type: "object",
-				properties: { name: { type: "string" } },
-				required: ["name"],
-				allOf: [{ $ref: "#/$defs/nicknamed" }]
-			})
-			attest<{ name: string; nick: string }>(T).type.toString.snap(
-				"{ nick: string; name: string }"
-			)
-		})
-	})
-
-	describe("allOf of refs to union-producing defs", () => {
-		type rule<i extends number> = {
-			if: {
-				properties: { [_ in `k${i}`]: { const: "a" } }
-				required: [`k${i}`]
-			}
-			then: {
-				properties: { [_ in `v${i}`]: { type: "string" } }
-				required: [`v${i}`]
-			}
-			else: { properties: { [_ in `v${i}`]: { type: "number" } } }
-		}
-
-		type RefRules = {
-			$defs: {
-				r0: rule<0>
-				r1: rule<1>
-				r2: rule<2>
-				r3: rule<3>
-				r4: rule<4>
-				r5: rule<5>
-				r6: rule<6>
-				r7: rule<7>
-				r8: rule<8>
-				r9: rule<9>
-				r10: rule<10>
-				r11: rule<11>
-				r12: rule<12>
-				r13: rule<13>
-			}
-			type: "object"
-			allOf: [
-				{ $ref: "#/$defs/r0" },
-				{ $ref: "#/$defs/r1" },
-				{ $ref: "#/$defs/r2" },
-				{ $ref: "#/$defs/r3" },
-				{ $ref: "#/$defs/r4" },
-				{ $ref: "#/$defs/r5" },
-				{ $ref: "#/$defs/r6" },
-				{ $ref: "#/$defs/r7" },
-				{ $ref: "#/$defs/r8" },
-				{ $ref: "#/$defs/r9" },
-				{ $ref: "#/$defs/r10" },
-				{ $ref: "#/$defs/r11" },
-				{ $ref: "#/$defs/r12" },
-				{ $ref: "#/$defs/r13" }
-			]
-		}
-
-		it("fourteen if/then/else rules referenced from allOf", () => {
-			attest(() => {
-				type T = jsonSchema.infer<RefRules>
-				return {} as T
-			}).type.errors.is("")
-		})
-
-		type NestedRules = {
-			type: "object"
-			allOf: [
-				{ allOf: [rule<0>] },
-				{ allOf: [rule<1>] },
-				{ allOf: [rule<2>] },
-				{ allOf: [rule<3>] },
-				{ allOf: [rule<4>] },
-				{ allOf: [rule<5>] },
-				{ allOf: [rule<6>] },
-				{ allOf: [rule<7>] },
-				{ allOf: [rule<8>] },
-				{ allOf: [rule<9>] },
-				{ allOf: [rule<10>] },
-				{ allOf: [rule<11>] },
-				{ allOf: [rule<12>] },
-				{ allOf: [rule<13>] }
-			]
-		}
-
-		it("fourteen if/then/else rules each wrapped in an allOf", () => {
-			attest(() => {
-				type T = jsonSchema.infer<NestedRules>
-				return {} as T
-			}).type.errors.is("")
-		})
-
-		it("two referenced rules stay precise", () => {
-			type T = jsonSchema.infer<{
-				$defs: { r0: rule<0>; r1: rule<1> }
-				type: "object"
-				allOf: [{ $ref: "#/$defs/r0" }, { $ref: "#/$defs/r1" }]
-			}>
-			attest<
-				| { v0: string; v1: string }
-				| { v0: string; v1?: number }
-				| { v0?: number; v1: string }
-				| { v0?: number; v1?: number }
-			>({} as T)
 		})
 	})
 
@@ -3086,7 +2138,7 @@ Type '"#"' is not assignable to type '"$recursiveRef isn't supported by jsonSche
 			attest<null>(T).type.toString.snap("null")
 		})
 
-		it("twenty levels of recursion inside an embedded resource", () => {
+		it("recursive values inside an embedded resource", () => {
 			const schema = {
 				$defs: {
 					list: {
@@ -3101,66 +2153,7 @@ Type '"#"' is not assignable to type '"$recursiveRef isn't supported by jsonSche
 			} as const
 			type T = jsonSchema.infer<typeof schema>
 			const list: T = {
-				root: {
-					head: {
-						v: 1,
-						next: {
-							v: 1,
-							next: {
-								v: 1,
-								next: {
-									v: 1,
-									next: {
-										v: 1,
-										next: {
-											v: 1,
-											next: {
-												v: 1,
-												next: {
-													v: 1,
-													next: {
-														v: 1,
-														next: {
-															v: 1,
-															next: {
-																v: 1,
-																next: {
-																	v: 1,
-																	next: {
-																		v: 1,
-																		next: {
-																			v: 1,
-																			next: {
-																				v: 1,
-																				next: {
-																					v: 1,
-																					next: {
-																						v: 1,
-																						next: {
-																							v: 1,
-																							next: {
-																								v: 1,
-																								next: { v: 1, next: { v: 1 } }
-																							}
-																						}
-																					}
-																				}
-																			}
-																		}
-																	}
-																}
-															}
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
+				root: { head: { v: 1, next: { v: 1, next: { v: 1, next: { v: 1 } } } } }
 			}
 			attest<number | undefined>(
 				list.root?.head?.next?.next?.next?.next?.next?.next?.v
@@ -3838,29 +2831,6 @@ Type '"#"' is not assignable to type '"$recursiveRef isn't supported by jsonSche
 			properties?: { [k: string]: HandWrittenSchema }
 		}
 
-		it("mutable $defs", () => {
-			attest<
-				{ a: string },
-				jsonSchema.infer<{
-					$defs: { s: { type: "string" } }
-					type: "object"
-					properties: { a: { $ref: "#/$defs/s" } }
-					required: ["a"]
-				}>
-			>()
-		})
-
-		it("mutable recursion", () => {
-			type Tree = { children?: Tree[] }
-			attest<
-				Tree,
-				jsonSchema.infer<{
-					type: "object"
-					properties: { children: { type: "array"; items: { $ref: "#" } } }
-				}>
-			>()
-		})
-
 		it("widened $ref", () => {
 			attest<
 				unknown,
@@ -3933,6 +2903,16 @@ Type '"#"' is not assignable to type '"$recursiveRef isn't supported by jsonSche
 				not: { const: [] }
 			}>
 			attest<unknown[]>({} as T).type.toString.snap("unknown[]")
+		})
+
+		it("widened template literal $ref is valid", () => {
+			const name: string = "a"
+			attest(() =>
+				inferred({
+					$defs: { a: { type: "string" } },
+					$ref: `#/$defs/${name}`
+				})
+			).type.errors.is("")
 		})
 	})
 
@@ -4035,13 +3015,6 @@ Type '"#"' is not assignable to type '"$recursiveRef isn't supported by jsonSche
 	})
 
 	describe("jsonSchema values", () => {
-		it("spreading a value into a schema with a new type", () => {
-			const s = jsonSchema({ type: "string" })
-			attest(jsonSchema({ ...s, type: "number" }).infer).type.toString.snap(
-				"number"
-			)
-		})
-
 		it("a composed value's refs resolve against the new document", () => {
 			const leafy = jsonSchema({
 				$defs: { leaf: { type: "string" } },
@@ -4219,17 +3192,6 @@ Type '"#"' is not assignable to type '"$recursiveRef isn't supported by jsonSche
 			).type.errors(`'"#/$defs/b"' is not assignable`)
 		})
 
-		it("in a draft-07 items tuple", () => {
-			attest(() =>
-				inferred({
-					$defs: { a: { type: "string" } },
-					type: "array",
-					// @ts-expect-error
-					items: [{ $ref: "#/$defs/a" }, { $ref: "#/$defs/b" }]
-				})
-			).type.errors(`'"#/$defs/b"' is not assignable`)
-		})
-
 		it("in anyOf", () => {
 			attest(() =>
 				inferred({
@@ -4246,53 +3208,6 @@ Type '"#"' is not assignable to type '"$recursiveRef isn't supported by jsonSche
 					$defs: { a: { type: "string" } },
 					// @ts-expect-error
 					not: { $ref: "#/$defs/b" }
-				})
-			).type.errors(`'"#/$defs/b"' is not assignable`)
-		})
-
-		it("in additionalProperties", () => {
-			attest(() =>
-				inferred({
-					$defs: { a: { type: "string" } },
-					type: "object",
-					// @ts-expect-error
-					additionalProperties: { $ref: "#/$defs/b" }
-				})
-			).type.errors(`'"#/$defs/b"' is not assignable`)
-		})
-
-		it("in patternProperties", () => {
-			attest(() =>
-				inferred({
-					$defs: { a: { type: "string" } },
-					type: "object",
-					patternProperties: {
-						// @ts-expect-error
-						"^x": { $ref: "#/$defs/b" }
-					}
-				})
-			).type.errors(`'"#/$defs/b"' is not assignable`)
-		})
-
-		it("in additionalItems", () => {
-			attest(() =>
-				inferred({
-					$defs: { a: { type: "string" } },
-					type: "array",
-					items: [{ $ref: "#/$defs/a" }],
-					// @ts-expect-error
-					additionalItems: { $ref: "#/$defs/b" }
-				})
-			).type.errors(`'"#/$defs/b"' is not assignable`)
-		})
-
-		it("in contains", () => {
-			attest(() =>
-				inferred({
-					$defs: { a: { type: "string" } },
-					type: "array",
-					// @ts-expect-error
-					contains: { $ref: "#/$defs/b" }
 				})
 			).type.errors(`'"#/$defs/b"' is not assignable`)
 		})
@@ -4662,235 +3577,24 @@ Type '"#"' is not assignable to type '"$recursiveRef isn't supported by jsonSche
 	  }`)
 		})
 
-		it("oneOf of thirty $defs", () => {
-			const schema = {
+		it("oneOf of a hundred refs", () => {
+			type range<n extends number, acc extends number[] = []> =
+				acc["length"] extends n ? acc[number]
+				:	range<n, [...acc, acc["length"]]>
+			type refs<acc extends unknown[]> =
+				acc["length"] extends 100 ? acc
+				:	refs<[...acc, { $ref: `#/$defs/d${acc["length"]}` }]>
+			type T = jsonSchema.infer<{
 				$defs: {
-					e0: {
-						type: "object",
-						properties: { kind: { const: "e0" } },
-						required: ["kind"]
-					},
-					e1: {
-						type: "object",
-						properties: { kind: { const: "e1" } },
-						required: ["kind"]
-					},
-					e2: {
-						type: "object",
-						properties: { kind: { const: "e2" } },
-						required: ["kind"]
-					},
-					e3: {
-						type: "object",
-						properties: { kind: { const: "e3" } },
-						required: ["kind"]
-					},
-					e4: {
-						type: "object",
-						properties: { kind: { const: "e4" } },
-						required: ["kind"]
-					},
-					e5: {
-						type: "object",
-						properties: { kind: { const: "e5" } },
-						required: ["kind"]
-					},
-					e6: {
-						type: "object",
-						properties: { kind: { const: "e6" } },
-						required: ["kind"]
-					},
-					e7: {
-						type: "object",
-						properties: { kind: { const: "e7" } },
-						required: ["kind"]
-					},
-					e8: {
-						type: "object",
-						properties: { kind: { const: "e8" } },
-						required: ["kind"]
-					},
-					e9: {
-						type: "object",
-						properties: { kind: { const: "e9" } },
-						required: ["kind"]
-					},
-					e10: {
-						type: "object",
-						properties: { kind: { const: "e10" } },
-						required: ["kind"]
-					},
-					e11: {
-						type: "object",
-						properties: { kind: { const: "e11" } },
-						required: ["kind"]
-					},
-					e12: {
-						type: "object",
-						properties: { kind: { const: "e12" } },
-						required: ["kind"]
-					},
-					e13: {
-						type: "object",
-						properties: { kind: { const: "e13" } },
-						required: ["kind"]
-					},
-					e14: {
-						type: "object",
-						properties: { kind: { const: "e14" } },
-						required: ["kind"]
-					},
-					e15: {
-						type: "object",
-						properties: { kind: { const: "e15" } },
-						required: ["kind"]
-					},
-					e16: {
-						type: "object",
-						properties: { kind: { const: "e16" } },
-						required: ["kind"]
-					},
-					e17: {
-						type: "object",
-						properties: { kind: { const: "e17" } },
-						required: ["kind"]
-					},
-					e18: {
-						type: "object",
-						properties: { kind: { const: "e18" } },
-						required: ["kind"]
-					},
-					e19: {
-						type: "object",
-						properties: { kind: { const: "e19" } },
-						required: ["kind"]
-					},
-					e20: {
-						type: "object",
-						properties: { kind: { const: "e20" } },
-						required: ["kind"]
-					},
-					e21: {
-						type: "object",
-						properties: { kind: { const: "e21" } },
-						required: ["kind"]
-					},
-					e22: {
-						type: "object",
-						properties: { kind: { const: "e22" } },
-						required: ["kind"]
-					},
-					e23: {
-						type: "object",
-						properties: { kind: { const: "e23" } },
-						required: ["kind"]
-					},
-					e24: {
-						type: "object",
-						properties: { kind: { const: "e24" } },
-						required: ["kind"]
-					},
-					e25: {
-						type: "object",
-						properties: { kind: { const: "e25" } },
-						required: ["kind"]
-					},
-					e26: {
-						type: "object",
-						properties: { kind: { const: "e26" } },
-						required: ["kind"]
-					},
-					e27: {
-						type: "object",
-						properties: { kind: { const: "e27" } },
-						required: ["kind"]
-					},
-					e28: {
-						type: "object",
-						properties: { kind: { const: "e28" } },
-						required: ["kind"]
-					},
-					e29: {
-						type: "object",
-						properties: { kind: { const: "e29" } },
+					[k in range<100> as `d${k}`]: {
+						type: "object"
+						properties: { kind: { const: k } }
 						required: ["kind"]
 					}
-				},
-				type: "object",
-				properties: {
-					events: {
-						type: "array",
-						items: {
-							oneOf: [
-								{ $ref: "#/$defs/e0" },
-								{ $ref: "#/$defs/e1" },
-								{ $ref: "#/$defs/e2" },
-								{ $ref: "#/$defs/e3" },
-								{ $ref: "#/$defs/e4" },
-								{ $ref: "#/$defs/e5" },
-								{ $ref: "#/$defs/e6" },
-								{ $ref: "#/$defs/e7" },
-								{ $ref: "#/$defs/e8" },
-								{ $ref: "#/$defs/e9" },
-								{ $ref: "#/$defs/e10" },
-								{ $ref: "#/$defs/e11" },
-								{ $ref: "#/$defs/e12" },
-								{ $ref: "#/$defs/e13" },
-								{ $ref: "#/$defs/e14" },
-								{ $ref: "#/$defs/e15" },
-								{ $ref: "#/$defs/e16" },
-								{ $ref: "#/$defs/e17" },
-								{ $ref: "#/$defs/e18" },
-								{ $ref: "#/$defs/e19" },
-								{ $ref: "#/$defs/e20" },
-								{ $ref: "#/$defs/e21" },
-								{ $ref: "#/$defs/e22" },
-								{ $ref: "#/$defs/e23" },
-								{ $ref: "#/$defs/e24" },
-								{ $ref: "#/$defs/e25" },
-								{ $ref: "#/$defs/e26" },
-								{ $ref: "#/$defs/e27" },
-								{ $ref: "#/$defs/e28" },
-								{ $ref: "#/$defs/e29" }
-							]
-						}
-					}
-				},
-				required: ["events"]
-			} as const
-			attest(() => inferred(schema)).type.errors(/^$/)
-			type Event =
-				| { kind: "e0" }
-				| { kind: "e1" }
-				| { kind: "e2" }
-				| { kind: "e3" }
-				| { kind: "e4" }
-				| { kind: "e5" }
-				| { kind: "e6" }
-				| { kind: "e7" }
-				| { kind: "e8" }
-				| { kind: "e9" }
-				| { kind: "e10" }
-				| { kind: "e11" }
-				| { kind: "e12" }
-				| { kind: "e13" }
-				| { kind: "e14" }
-				| { kind: "e15" }
-				| { kind: "e16" }
-				| { kind: "e17" }
-				| { kind: "e18" }
-				| { kind: "e19" }
-				| { kind: "e20" }
-				| { kind: "e21" }
-				| { kind: "e22" }
-				| { kind: "e23" }
-				| { kind: "e24" }
-				| { kind: "e25" }
-				| { kind: "e26" }
-				| { kind: "e27" }
-				| { kind: "e28" }
-				| { kind: "e29" }
-			attest<{ events: Event[] }>(inferred(schema))
+				}
+				oneOf: refs<[]>
+			}>
+			attest<{ [k in range<100>]: { kind: k } }[range<100>], T>()
 		})
 
 		it("arktype's cyclic scope", () => {

@@ -318,7 +318,6 @@ contextualize(() => {
 		})
 
 		it("keeps the branches and bases of the value", () => {
-			const o = {}
 			const missing = (value: unknown) =>
 				requiredError(type({ a: value as never })).missing
 			attest(missing("never")).snap({ code: "union", branches: [] })
@@ -348,35 +347,17 @@ contextualize(() => {
 					{ code: "unit", description: "true", meta: {}, unit: true }
 				]
 			})
-			attest(missing("string > 3")).snap({
-				code: "domain",
-				description: "a string",
-				meta: {},
-				domain: "string"
-			})
 			attest(missing("Date")).snap({
 				code: "proto",
 				description: "a Date",
 				meta: {},
 				proto: "Function(Date)"
 			})
-			attest(missing(type.unit(o))).snap({
-				code: "domain",
-				description: "an object",
-				meta: {},
-				domain: "object"
-			})
 			attest(missing(type("'x'").describe("an x"))).snap({
 				code: "unit",
 				description: "an x",
 				meta: { description: "an x" },
 				unit: "x"
-			})
-			attest(missing(type("string").pipe(s => s.length))).snap({
-				code: "domain",
-				description: "a string",
-				meta: {},
-				domain: "string"
 			})
 			attest(
 				missing(

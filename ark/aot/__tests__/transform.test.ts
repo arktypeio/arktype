@@ -165,12 +165,7 @@ export const schema = T.toJsonSchema()`)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				"/main.ts:3:23  T.toJsonSchema() can't be precompiled yet\n  a JSON Schema calling a default's thunk can't be precompiled to a standalone validator\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
-		})
-
-		it("a site refused as it's written holds no value", () => {
-			const refused = precompile(`import { type } from "arktype"
-const T = type({ a: ["number[]", "=", () => []] })
-export const schema = T.toJsonSchema()`).sites[1]
+			const refused = result.sites[1]
 			attest([refused.status, refused.value]).equals(["rejected", undefined])
 		})
 
@@ -403,27 +398,14 @@ export const encode = (v: unknown) => T.encode(v)`)
 			).snap(["const T = /* @__PURE__ */ $ark#0(s => s.length)"])
 		})
 
-		it("folds Modules", () => {
-			const result = precompile(`import { scope, type } from "arktype"
-export const types = scope({ tree: { value: "number", "children?": "tree[]" } }).export()
-export const M = type.module({ a: "string", b: { c: "a" } })`)
-			attest(result.diagnostics).equals([])
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import $arkfixConfig from "~arktype/#3"
-$arkfixConfig()
-export const types = /* @__PURE__ */ $ark#0()
-export const M = /* @__PURE__ */ $ark#2()`)
-		})
-
 		it("folds Scopes and Generics", () => {
 			const result = precompile(`import { scope, type } from "arktype"
 const $ = scope({ tree: { value: "number", "children?": "tree[]" }, "box<t>": { box: "t" } })
 export const types = $.export()
 export const Tree = $.type("tree")
 export const Box = type("<t>", { box: "t" })
-export const BoxedTree = Box(types.tree)`)
+export const BoxedTree = Box(types.tree)
+export const M = type.module({ a: "string", b: { c: "a" } })`)
 			attest(result.diagnostics).equals([])
 			attest(normalized(result.code)).snap(`import "arktype"
 import { #0 as $ark#0 } from "~arktype/#1"
@@ -431,13 +413,15 @@ import { #2 as $ark#2 } from "~arktype/#1"
 import { #3 as $ark#3 } from "~arktype/#1"
 import { #4 as $ark#4 } from "~arktype/#1"
 import { #5 as $ark#5 } from "~arktype/#1"
-import $arkfixConfig from "~arktype/#6"
+import { #6 as $ark#6 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#7"
 $arkfixConfig()
 const $ = /* @__PURE__ */ $ark#0()
 export const types = /* @__PURE__ */ $ark#2()
 export const Tree = /* @__PURE__ */ $ark#3()
 export const Box = /* @__PURE__ */ $ark#4()
-export const BoxedTree = /* @__PURE__ */ $ark#5()`)
+export const BoxedTree = /* @__PURE__ */ $ark#5()
+export const M = /* @__PURE__ */ $ark#6()`)
 		})
 
 		it("Module aliases named like Type members", () => {

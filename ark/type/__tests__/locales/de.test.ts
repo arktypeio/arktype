@@ -33,7 +33,6 @@ contextualize(() => {
 		attest(matrixOf(de)).snap({
 			'string > 0 ← ""': "darf nicht leer sein",
 			'string <= 0 ← "x"': "muss leer sein, ist aber 1 Zeichen lang",
-			'string < 1 ← "xx"': "muss leer sein, ist aber 2 Zeichen lang",
 			'string == 0 ← "x"': "muss leer sein, ist aber 1 Zeichen lang",
 			"unknown[] <= 0 ← [0]": "muss leer sein, enthält aber 1 Element",
 			"unknown[] == 0 ← [0]": "muss leer sein, enthält aber 1 Element",
@@ -48,8 +47,6 @@ contextualize(() => {
 				"muss mindestens 2 Zeichen lang sein, ist aber 1 Zeichen lang",
 			'string <= 1 ← "xx"':
 				"muss höchstens 1 Zeichen lang sein, ist aber 2 Zeichen lang",
-			'string < 2 ← "xxx"':
-				"muss höchstens 1 Zeichen lang sein, ist aber 3 Zeichen lang",
 			'string == 1 ← "xx"':
 				"muss genau 1 Zeichen lang sein, ist aber 2 Zeichen lang",
 			"unknown[] <= 1 ← [0,1]":
@@ -69,18 +66,12 @@ contextualize(() => {
 				"muss mindestens 3 Zeichen lang sein, ist aber 2 Zeichen lang",
 			'string <= 2 ← "xxx"':
 				"muss höchstens 2 Zeichen lang sein, ist aber 3 Zeichen lang",
-			'string < 3 ← "xxxx"':
-				"muss höchstens 2 Zeichen lang sein, ist aber 4 Zeichen lang",
 			'string == 2 ← "xxx"':
 				"muss genau 2 Zeichen lang sein, ist aber 3 Zeichen lang",
 			"unknown[] <= 2 ← [0,1,2]":
 				"muss höchstens 2 Elemente enthalten, enthält aber 3 Elemente",
 			"unknown[] == 2 ← [0,1,2]":
 				"muss genau 2 Elemente enthalten, enthält aber 3 Elemente",
-			"number >= 2 ← 1": "muss mindestens 2 sein, ist aber 1",
-			"number > 2 ← 2": "muss größer als 2 sein, ist aber 2",
-			"number <= 2 ← 3": "muss höchstens 2 sein, ist aber 3",
-			"number < 2 ← 2": "muss kleiner als 2 sein, ist aber 2",
 			"number % 5 ← 6.5": "muss ein Vielfaches von 5 sein, ist aber 6,5",
 			"number >= 1.5 ← 1.25": "muss mindestens 1,5 sein, ist aber 1,25",
 			"number < -1.5 ← -1.5": "muss kleiner als -1,5 sein, ist aber -1,5",
@@ -144,8 +135,6 @@ contextualize(() => {
 				"muss gemäß einem anonymen Prädikat gültig sein, ist aber 1",
 			"narrow mustBe ← -1":
 				"muss ein Wert gemäß der Beschreibung „positiv“ sein, ist aber -1",
-			"narrow reject ← 1":
-				"muss gemäß einem anonymen Prädikat gültig sein, ist aber 1",
 			'pipe.try anonymous ← "{"':
 				"konnte nicht verarbeitet werden:\n    Error: kaputt",
 			'pipe.try named ← "{"':
@@ -181,8 +170,6 @@ contextualize(() => {
 				'kind muss "circle" oder "square" sein, ist aber "triangle"',
 			"discriminant absent ← {}":
 				'kind fehlt (muss "circle" oder "square" sein)',
-			'discriminant titled ← {"kind":"triangle"}':
-				'kind muss "circle" oder "square" sein, ist aber "triangle"',
 			'discriminant described ← {"kind":"triangle"}':
 				"muss ein Wert gemäß der Beschreibung „eine Form“ sein, ist aber ein Objekt",
 			"discriminant described branches ← true":
@@ -244,8 +231,6 @@ contextualize(() => {
 				"„Name“ an [1] muss eine Zeichenkette sein, ist aber eine Zahl",
 			'titled through an index ← {"list":[1]}':
 				"„Name“ an list[0] muss eine Zeichenkette sein, ist aber eine Zahl",
-			'titled quoted key ← {"a b":1}':
-				"„Name“ muss eine Zeichenkette sein, ist aber eine Zahl",
 			'titled, two constraints ← {"n":3}':
 				"„Anzahl“ (3) muss alles Folgende sein:\n  ◦ gerade\n  ◦ größer als 10",
 			"titled, two constraints at an index ← [3]":

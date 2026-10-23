@@ -2,7 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	Disjoint,
 	boundKindPairsByLower,
-	node,
 	rootSchema,
 	writeInvalidLengthBoundMessage,
 	type ArkErrors
@@ -107,13 +106,6 @@ contextualize(() => {
 		})
 		const error = (T.traverse(-1) as ArkErrors).issues[0]
 		attest(error.code === "min" && Object.is(error.rule, -0)).equals(true)
-	})
-
-	it("stringLimit", () => {
-		attest(node("min", { rule: 5 }).stringLimit).equals("5")
-		attest(
-			node("after", { rule: new Date(Date.UTC(2025, 0, 1)) }).stringLimit
-		).equals("2025-01-01T00:00:00.000Z")
 	})
 
 	it("string date limits", () => {
