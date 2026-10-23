@@ -482,8 +482,8 @@ const settle = (result: unknown) =>
 	:	result
 
 // errors "none" has one root issue for arktype's, compared without data
-const keptOf = (errors: ArkErrors): KeptIssue[] =>
-	!detailsErrors && errors._merge ?
+const keptOf = (errors: ArkErrors, isArktype = !!errors._merge): KeptIssue[] =>
+	!detailsErrors && isArktype ?
 		[{ code: "predicate", path: [], data: undefined }]
 	: firstIssue ? firstKeptOf(errors)
 	: keptIssuesOf(errors as never)
@@ -630,6 +630,13 @@ const sample = (
 const found = (issues: KeptIssue[]) =>
 	issues.length ? { anyOf: serializeIssues(issues) } : {}
 
+// compared by its issues as arktype's errors are, since a standalone message
+// doesn't say what the value was
+const isStandardFailure = (out: unknown): out is { issues: unknown[] } =>
+	hasDomain(out, "object") &&
+	Array.isArray((out as { issues?: unknown }).issues) &&
+	Object.keys(out).length === 1
+
 // a call's output, the issues a validator keeps, or what it throws; anyOf
 // lists those errors "all" finds, of which a first-issue validator keeps one
 const outcomeOf = (
@@ -639,12 +646,13 @@ const outcomeOf = (
 ): Observation => {
 	try {
 		const out: any = call()
-		return (
-				hasDomain(out, "object") &&
-					(out as { " arkKind"?: string })[" arkKind"] === "errors"
-			) ?
+		const kept =
+			hasDomain(out, "object") && out[" arkKind"] === "errors" ? keptOf(out)
+			: isStandardFailure(out) ? keptOf({ issues: out.issues } as never, true)
+			: undefined
+		return kept ?
 				{
-					errors: serializeIssues(keptOf(out)),
+					errors: serializeIssues(kept),
 					...(anyOf && { anyOf: serializeIssues(anyOf()) })
 				}
 			:	{ out: serialize(out), isInput: out === input }

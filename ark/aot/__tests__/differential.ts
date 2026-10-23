@@ -713,19 +713,23 @@ const observeCall = (t: Validator, input: unknown) => {
 			assert: observe(() => t.assert(cloneInput(input)), undefined)
 		}),
 		...(!lacks("~standard") && {
-			standard: observe(
-				() => standardOutcomeOf(t["~standard"].validate(cloneInput(input))),
-				undefined
-			)
+			standard: observe(() => standardOutcomeOf(t, input), undefined)
 		})
 	}
 }
 
-// a Standard Schema failure's issues, whose text traverse already compares
-const standardOutcomeOf = (result: any): unknown =>
-	result.issues ?
-		{ issues: keptIssuesOf({ issues: result.issues } as never) }
-	:	result
+// whether a Standard Schema failure's issues are those of the validator's
+// errors, which traverse compares with their text, as errors "first" compares
+// the issues added rather than those grouped by path
+const standardOutcomeOf = (t: Validator, input: unknown): unknown => {
+	const result = t["~standard"].validate(cloneInput(input))
+	if (!result.issues) return result
+	const issues = keptIssuesOf({ issues: result.issues } as never)
+	const errors: any = traverse(t, cloneInput(input))
+	return isErrors(errors) && isEqual(issues, keptIssuesOf(errors)) ?
+			{ failedWithItsErrors: true }
+		:	{ issues }
+}
 
 const hasIssues = (observation: unknown): boolean =>
 	hasDomain(observation, "object") && "issues" in observation

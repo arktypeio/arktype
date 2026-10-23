@@ -2080,10 +2080,7 @@ ${writeFunction(
 				`validator["~standard"] = ${this.frozen(`{
 		vendor: "arktype",
 		version: 1,
-		validate: ${this.frozen(`input => {
-			const out = validator(input)
-			return out instanceof runtime.ArkErrors ? out : { value: out }
-		}`)}${members.has("~standard.jsonSchema") ? `,\n\t\t...attributes["~standard"]` : ""}
+		validate: ${this.frozen("input => runtime.standardResultOf(validator(input))")}${members.has("~standard.jsonSchema") ? `,\n\t\t...attributes["~standard"]` : ""}
 	}`)}`
 			:	"",
 			this.baking.checksTypes ?

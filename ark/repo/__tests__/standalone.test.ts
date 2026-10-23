@@ -756,16 +756,27 @@ age must be non-negative`)
 	})
 
 	it("Standard Schema issues leave their path to the consumer", async () => {
-		const { T } = await load({
-			T: type({ a: "string", b: { c: "number > 0" } })
-		})
-		const result = T["~standard"].validate({ b: { c: 0 } }) as {
-			issues: { path: PropertyKey[]; message: string }[]
+		const issuesOf = async (options: LoadOptions) => {
+			const { T } = await load(
+				{ T: type({ a: "string", b: { c: "number > 0" } }) },
+				options
+			)
+			const result = T["~standard"].validate({ b: { c: 0 } }) as {
+				issues: { path: PropertyKey[]; message: string }[]
+			}
+			return result.issues.map(issue => [issue.path, issue.message])
 		}
-		attest(result.issues.map(issue => [issue.path, issue.message])).snap([
+		const expected = await issuesOf({})
+		attest(expected).snap([
 			[["a"], "is missing"],
 			[["b", "c"], "must be positive"]
 		])
+		// a build writing a create of its own
+		attest(await issuesOf({ freeze: false })).equals(expected)
+		// errors written for size
+		attest(
+			await issuesOf({ optimize: "size", issues: "issuesLean.ts" })
+		).equals(expected)
 	})
 
 	it("rejects an object only inheriting Date.prototype", async () => {

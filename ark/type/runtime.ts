@@ -200,14 +200,18 @@ export class Validator {
 }
 
 // a Standard Schema consumer prefixes each issue's message with its path
-const standardIssuesOf = (
-	errors: ArkErrors
-): readonly StandardSchemaV1.Issue[] =>
-	errors.issues.map(issue =>
-		issue.path.length === 0 || issue.message !== messageOf(issue) ?
-			issue
-		:	{ ...issue, message: problemOf(issue) }
-	)
+export const standardResultOf = (
+	out: unknown
+): StandardSchemaV1.Result<unknown> =>
+	out instanceof ArkErrors ?
+		{
+			issues: out.issues.map(issue =>
+				issue.path.length === 0 || issue.message !== messageOf(issue) ?
+					issue
+				:	{ ...issue, message: problemOf(issue) }
+			)
+		}
+	:	{ value: out }
 
 // parenthesized (kept by `satisfies`) to compile as the module loads
 export const createValidator = ((
@@ -239,12 +243,7 @@ export const createValidator = ((
 	validator["~standard"] = freeze({
 		vendor: "arktype",
 		version: 1,
-		validate: freeze((input: unknown): StandardSchemaV1.Result<unknown> => {
-			const out = validator(input)
-			return out instanceof ArkErrors ?
-					{ issues: standardIssuesOf(out) }
-				:	{ value: out }
-		}),
+		validate: freeze((input: unknown) => standardResultOf(validator(input))),
 		...attributes["~standard"]
 	})
 	return holdHoles(freeze(validator), id, holes)
@@ -270,12 +269,7 @@ export const createValidatorWith = ((
 	validator["~standard"] = freeze({
 		vendor: "arktype",
 		version: 1,
-		validate: freeze((input: unknown): StandardSchemaV1.Result<unknown> => {
-			const out = validator(input)
-			return out instanceof ArkErrors ?
-					{ issues: standardIssuesOf(out) }
-				:	{ value: out }
-		}),
+		validate: freeze((input: unknown) => standardResultOf(validator(input))),
 		...attributes["~standard"]
 	})
 	return holdHoles(freeze(validator), id, holes)
