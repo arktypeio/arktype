@@ -377,7 +377,10 @@ export abstract class BaseRoot<
 
 	extends(r: unknown): boolean {
 		// a node equal to r extends it, without intersecting them
-		if (this.isNever() || (isNode(r) && this.innerHash === r.innerHash))
+		if (
+			this.isNever() ||
+			(isNode(r) && this.kind === r.kind && this.innerHash === r.innerHash)
+		)
 			return true
 
 		const intersection = this.intersect(r, false)

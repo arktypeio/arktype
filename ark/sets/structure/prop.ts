@@ -1,6 +1,7 @@
 import {
 	$ark,
 	Disjoint,
+	type BaseRoot,
 	type IntersectionContext,
 	type Optional,
 	type Prop,
@@ -69,18 +70,29 @@ export const required: setImplementationOf<Required.Declaration> = {
 export const optional: setImplementationOf<Optional.Declaration> = {
 	reduce: (inner, $) => {
 		if ($.resolvedConfig.exactOptionalPropertyTypes === false) {
-			if (!inner.value.allows(undefined)) {
-				return $.node(
-					"optional",
-					{ ...inner, value: inner.value.or($ark.intrinsic.undefined) },
-					{ prereduced: true }
-				)
-			}
+			const value = withUndefined(inner.value)
+			if (value !== inner.value)
+				return $.node("optional", { ...inner, value }, { prereduced: true })
 		}
 	},
 	intersections: {
 		optional: intersectProps
 	}
+}
+
+// a value allowing undefined, shared by every optional prop of the value
+// rather than reduced again for each
+const valuesWithUndefined = new WeakMap<BaseRoot, BaseRoot>()
+
+const withUndefined = (value: BaseRoot): BaseRoot => {
+	let result = valuesWithUndefined.get(value)
+	if (!result) {
+		result =
+			value.allowsUnused(undefined) ? value : value.or($ark.intrinsic.undefined)
+		// an alias's union is reduced again once it resolves
+		if (!value.includesAlias) valuesWithUndefined.set(value, result)
+	}
+	return result
 }
 
 export const writeDefaultIntersectionMessage = (
