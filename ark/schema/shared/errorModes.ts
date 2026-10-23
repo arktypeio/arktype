@@ -3,6 +3,7 @@ import {
 	ArkErrors,
 	ArkTraversal,
 	invalidError,
+	isArkError,
 	type ArkError
 } from "./errors.ts"
 import { $ark } from "./registry.ts"
@@ -31,8 +32,8 @@ export class UndetailedErrors extends ArkErrors {
 	override get issues(): readonly ArkError[] {
 		const issues = this._
 		for (let i = 0; i < issues.length; i++) {
-			if (issues[i].expected === undefined)
-				issues[i] = invalidError(issues[i].data, $ark.resolvedConfig!)
+			if (!isArkError(issues[i]))
+				issues[i] = invalidError(issues[i], $ark.resolvedConfig!)
 		}
 		return issues
 	}

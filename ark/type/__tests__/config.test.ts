@@ -258,6 +258,24 @@ contextualize(() => {
 			])
 		})
 
+		it("none fails data piped into its own Type at the root", () => {
+			const T = none.type({
+				name: "string",
+				"next?": "string.json.parse |> this"
+			})
+			attest(String(T({ name: "a", next: '{"name":1}' }))).snap("is invalid")
+		})
+
+		it("none writes an error a morph reads", () => {
+			let problem: string | undefined
+			const T = none.type("string").pipe((s, ctx) => {
+				ctx.error("short")
+				problem = ctx.errors.issues[0].problem
+			})
+			attest(String(T("x"))).snap("is invalid")
+			attest(problem).snap("is invalid")
+		})
+
 		it("none assert and ~standard", () => {
 			const T = none.type("string")
 			attest(() => T.assert(5)).throws.snap("TraversalError: is invalid")

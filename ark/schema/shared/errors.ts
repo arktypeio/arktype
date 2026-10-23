@@ -470,14 +470,14 @@ const unprefix = (error: ArkError, depth: number): void => {
 		for (const e of error.errors) unprefix(e, depth)
 }
 
-/** an error failing data as a whole, written in en as errors "none"'s is */
+/** an issue errors "none" added, written in en as saying its data is invalid */
 export const invalidError = (
-	data: unknown,
+	{ data, path }: ArkIssue,
 	config: ResolvedConfig
 ): ArkError => {
 	const error = errorOfContext(
 		{ code: "predicate", expected: "valid", problem: "is invalid", data },
-		[],
+		path,
 		config
 	)
 	writeError(error, config, renderer?.en ?? config.locale)
@@ -606,7 +606,15 @@ class ErrorSource extends Identity {
 	static configOf(error: ArkError): ResolvedConfig {
 		return #config in error ? error.#config : throwError(copiedErrorMessage)
 	}
+
+	static stamps(issue: ArkIssue): boolean {
+		return #config in issue
+	}
 }
+
+/** an ArkError, not an issue errors "none" writes once read */
+export const isArkError = (issue: ArkIssue): issue is ArkError =>
+	ErrorSource.stamps(issue)
 
 // an error given a context, whose text a copy keeps
 class SuppliedSource extends ErrorSource {
