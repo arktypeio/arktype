@@ -6,7 +6,7 @@ import {
 	type NodeSchema
 } from "@ark/schema"
 import { isKeyOf, throwParseError, type KeySet, type Scanner } from "@ark/util"
-import type { DateLiteral } from "../../../attributes.ts"
+import type { DateLiteral, LimitLiteral } from "../../../attributes.ts"
 import type { InferredAst } from "../../ast/infer.ts"
 import type { astToString } from "../../ast/utils.ts"
 import type { RootedRuntimeState, RuntimeState } from "../../reduce/dynamic.ts"
@@ -60,10 +60,7 @@ export type parseBound<
 			>
 		) ?
 			s["root"] extends (
-				InferredAst<
-					Date | number,
-					`${infer limit extends number | DateLiteral}`
-				>
+				InferredAst<Date | number, `${infer limit extends LimitLiteral}`>
 			) ?
 				s.reduceLeftBound<s, limit, comparator, nextUnscanned>
 			:	parseRightBound<s.scanTo<s, nextUnscanned>, comparator, $, args>
@@ -103,7 +100,7 @@ export const writeIncompatibleRangeMessage = (
 
 export const getBoundKinds = (
 	comparator: Comparator,
-	limit: number | DateLiteral,
+	limit: LimitLiteral,
 	root: BaseRoot,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
@@ -138,6 +135,18 @@ export const getBoundKinds = (
 			comparator === "==" ? ["after", "before"]
 			: comparator[0] === ">" ? ["after"]
 			: ["before"]
+		)
+	}
+	if (root.extends($ark.intrinsic.File)) {
+		if (typeof limit !== "number") {
+			return throwParseError(
+				writeInvalidLimitMessage(comparator, limit, boundKind)
+			)
+		}
+		return (
+			comparator === "==" ? ["minSize", "maxSize"]
+			: comparator[0] === ">" ? ["minSize"]
+			: ["maxSize"]
 		)
 	}
 	return throwParseError(writeUnboundableMessage(root.expression))
@@ -181,7 +190,7 @@ export const parseRightBound = (
 
 	const boundKinds = getBoundKinds(
 		comparator,
-		typeof limit === "number" ? limit : (limitToken as DateLiteral),
+		limit instanceof Date ? (limitToken as DateLiteral) : limit,
 		previousRoot,
 		"right"
 	)
@@ -217,7 +226,7 @@ export type parseRightBound<
 > =
 	parseOperand<s, $, args> extends infer nextState extends StaticState ?
 		nextState["root"] extends (
-			InferredAst<unknown, `${infer limit extends number | DateLiteral}`>
+			InferredAst<unknown, `${infer limit extends LimitLiteral}`>
 		) ?
 			s["branches"]["leftBound"] extends {} ?
 				comparator extends MaxComparator ?

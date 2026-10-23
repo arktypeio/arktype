@@ -215,6 +215,14 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 			predicate: {
 				child: true,
 				parse: constraintKeyParser("predicate")
+			},
+			minSize: {
+				child: true,
+				parse: constraintKeyParser("minSize")
+			},
+			maxSize: {
+				child: true,
+				parse: constraintKeyParser("maxSize")
 			}
 		},
 		// leverage reduction logic from intersection and identity to ensure initial
