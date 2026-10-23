@@ -40,9 +40,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 						enableSystem: false
 					}}
 				>
-					<CSPostHogProvider>
-						{children}
-					</CSPostHogProvider>
+					<CSPostHogProvider>{children}</CSPostHogProvider>
 				</RootProvider>
 			</body>
 		</html>
