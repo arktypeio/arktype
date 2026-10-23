@@ -150,7 +150,7 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 			attest({ ...nullProto }).snap({ tag: "a" })
 		})
 
-		it("fills a copy from a literal of nulls", () => {
+		it("compiled code fills a copy from a literal of nulls", () => {
 			const T = type({
 				b: "number",
 				a: "number",
