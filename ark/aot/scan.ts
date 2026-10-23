@@ -69,7 +69,7 @@ export const scanProgram = async (
 
 // arktype's own, which never import the program
 const runtimeSpecifier =
-	/^(?:arktype|@ark\/(?:type|schema|util))(?:\/|$)|^~arktype\//
+	/^(?:arktype|@ark\/(?:schema|util))(?:\/|$)|^~arktype\//
 
 // a dependency the plugin leaves, or an asset, which import nothing of the program
 const isInert = (id: string, host: ScanHost) =>
