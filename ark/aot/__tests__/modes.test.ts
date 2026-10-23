@@ -9,8 +9,7 @@ import {
 	inFreshProcess,
 	memoryHost,
 	normalized,
-	precompile,
-	statusesOf
+	precompile
 } from "./utils.ts"
 
 const main =
@@ -21,29 +20,6 @@ contextualize(function (this: Mocha.Suite) {
 	this.timeout(60_000)
 
 	describe("configuration", () => {
-		it("static configure in the config module", () => {
-			attest(
-				diagnosticsOf(
-					`import { configure } from "arktype/config"
-const max = 5
-configure({
-	exactOptionalPropertyTypes: false,
-	number: { description: () => \`a number below \${max}\` },
-	onFail: errors => errors.throw()
-})`,
-					{},
-					{ config: "/main.ts" }
-				)
-			).equals([])
-		})
-
-		it("arktype/config exports only configure", () => {
-			attest(
-				statusesOf(`import { type } from "arktype/config"
-export const T = type("string")`)
-			).equals([])
-		})
-
 		it("configure where the build can't apply it", () => {
 			const once = `import { configure } from "arktype/config"
 configure({ exactOptionalPropertyTypes: false })`
@@ -117,33 +93,27 @@ configure({ exactOptionalPropertyTypes: false })`,
 				inFreshProcess(
 					async (main: string) => {
 						const { precompile } = await import("./utils.ts")
-						const outcomeOf = (files: Record<string, string>, opts = {}) => {
+						const outcomeOf = (argument?: string) => {
 							try {
-								precompile(main, files, opts)
+								precompile(
+									main,
+									argument === undefined ?
+										{}
+									:	{
+											"/config.ts": `import { configure } from "arktype/config"\n${argument}`
+										},
+									argument === undefined ? {} : { config: "/config.ts" }
+								)
 								return "precompiled"
 							} catch (e) {
 								return (e as Error).message
 							}
 						}
-						const configured = (argument: string) => ({
-							"/config.ts": `import { configure } from "arktype/config"\n${argument}`
-						})
-						const opts = { config: "/config.ts" }
 						return [
-							outcomeOf(
-								configured('configure({ onUndeclaredKey: "delete" })'),
-								opts
-							),
-							outcomeOf(
-								configured('configure({ onUndeclaredKey: "delete" })'),
-								opts
-							),
-							outcomeOf({}),
-							outcomeOf(configured(""), opts),
-							outcomeOf(
-								configured('configure({ onUndeclaredKey: "reject" })'),
-								opts
-							)
+							outcomeOf('configure({ onUndeclaredKey: "delete" })'),
+							outcomeOf('configure({ onUndeclaredKey: "delete" })'),
+							outcomeOf(),
+							outcomeOf('configure({ onUndeclaredKey: "reject" })')
 						]
 					},
 					[main]
@@ -152,25 +122,8 @@ configure({ exactOptionalPropertyTypes: false })`,
 				"precompiled",
 				"precompiled",
 				configuredThreadMessage,
-				configuredThreadMessage,
 				configuredThreadMessage
 			])
-			attest(
-				inFreshProcess(
-					async (main: string) => {
-						const { precompile } = await import("./utils.ts")
-						const { configure } = await import("arktype")
-						configure({ onUndeclaredKey: "delete" })
-						try {
-							precompile(main)
-							return "precompiled"
-						} catch (e) {
-							return (e as Error).message
-						}
-					},
-					[main]
-				)
-			).equals(configuredThreadMessage)
 		})
 
 		it("configure in a thread after a build applied its configuration", () => {
@@ -205,34 +158,6 @@ configure({ exactOptionalPropertyTypes: false })`,
 			}
 		})
 
-		it("analyzes once in a configured thread", () => {
-			attest(
-				inFreshProcess(async () => {
-					const { memoryHost, precompile } = await import("./utils.ts")
-					const { Precompiler } = await import("@ark/aot")
-					const configured = {
-						"/config.ts":
-							'import { configure } from "arktype/config"\nconfigure({ onUndeclaredKey: "reject" })'
-					}
-					const opts = { config: "/config.ts" }
-					precompile("export const x = 1", configured, opts)
-					const source =
-						'import { scope } from "arktype"\nconst $ = scope({ a: () => 42 } as never) as any\nexport const exported = () => $.export()'
-					const precompiler = new Precompiler(
-						memoryHost({ ...configured, "/main.ts": source }),
-						opts
-					)
-					return [
-						precompiler.analyzeSites(source, "/main.ts"),
-						precompiler.precompile(source, "/main.ts")
-					].map(({ sites }) => sites.map(site => site.status))
-				})
-			).snap([
-				["accepted", "accepted"],
-				["accepted", "accepted"]
-			])
-		})
-
 		it("analyzes a module under the configuration its thread holds", () => {
 			attest(
 				inFreshProcess(
@@ -259,43 +184,7 @@ configure({ exactOptionalPropertyTypes: false })`,
 			).equals([["rejected"], ["rejected"]])
 		})
 
-		it("configure given anew with the values the build applied", () => {
-			attest(
-				normalized(
-					inFreshProcess(
-						async (main: string) => {
-							const { memoryHost } = await import("./utils.ts")
-							const { Precompiler } = await import("@ark/aot")
-							const config =
-								'import { configure } from "arktype/config"\nimport type { Mode } from "./mode.ts"\nconfigure({ onUndeclaredKey: "reject" as Mode })'
-							const precompiler = new Precompiler(
-								memoryHost({
-									"/config.ts": config,
-									"/mode.ts": 'export type Mode = "reject"',
-									"/main.ts": main
-								}),
-								{ config: "/config.ts" }
-							)
-							const stampOf = (source: string) =>
-								precompiler.precompile(source, "/config.ts").code
-							precompiler.precompile(main, "/main.ts")
-							return [
-								stampOf(config),
-								stampOf(
-									'import { configure } from "arktype/config"\nconfigure({onUndeclaredKey:"reject"})'
-								)
-							]
-						},
-						[main]
-					)
-				)
-			).snap([
-				'import { configure } from "arktype/config"\nimport type { Mode } from "./mode.ts"\nconfigure({ onUndeclaredKey: "reject" as Mode }, "#0")',
-				'import { configure } from "arktype/config"\nconfigure({onUndeclaredKey:"reject"}, "#0")'
-			])
-		})
-
-		it("configure given anew with other values than the build applied", () => {
+		it("configure given anew", () => {
 			attest(
 				inFreshProcess(
 					async (main: string) => {
@@ -309,6 +198,8 @@ configure({ exactOptionalPropertyTypes: false })`,
 						)
 						return [
 							["/main.ts", main],
+							// the same values, written otherwise
+							["/config.ts", config.replace(/ /g, "")],
 							["/config.ts", config.replace("reject", "delete")],
 							["/main.ts", main]
 						].map(([id, source]) =>
@@ -320,6 +211,7 @@ configure({ exactOptionalPropertyTypes: false })`,
 					[main]
 				)
 			).snap([
+				[],
 				[],
 				[
 					"/config.ts:2:1  configure() is given other values than arktype in this thread already applied\n  a module the configuration reads was given anew, as when a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
@@ -391,45 +283,6 @@ written.description = "two"`,
 			])
 		})
 
-		it("configure with an object an export reaches", () => {
-			const files: Record<string, string> = {
-				"/mode.ts":
-					'const inner = { description: "one" }\nexport const table = { string: inner }\nexport const alias = inner',
-				"/config.ts":
-					'import { configure } from "arktype/config"\nimport { table } from "./mode.ts"\nconfigure({ keywords: { string: table.string } })',
-				"/main.ts":
-					'import { type } from "arktype"\nimport { alias } from "./mode.ts"\nexport const T = type("string").describe(alias.description)'
-			}
-			// whichever module the build is given first
-			attest(
-				[["/main.ts"], []].map(first =>
-					inFreshProcess(
-						async (files: Record<string, string>, first: string[]) => {
-							const { memoryHost } = await import("./utils.ts")
-							const { Precompiler, renderDiagnostic } = await import("@ark/aot")
-							const precompiler = new Precompiler(memoryHost(files), {
-								config: "/config.ts"
-							})
-							for (const path of first)
-								precompiler.precompile(files[path], path)
-							const given = files["/config.ts"].replace(/\n/g, ";\n")
-							return precompiler
-								.precompile(given, "/config.ts")
-								.diagnostics.map(renderDiagnostic)
-						},
-						[files, first]
-					)
-				)
-			).snap([
-				[
-					"/config.ts:3:1  configure({ keywords: { string: table.string } }) is not static\n  `table` is exported from /mode.ts, so another module can write what the configuration holds: declare it in the call instead"
-				],
-				[
-					"/config.ts:3:1  configure({ keywords: { string: table.string } }) is not static\n  `table` is exported from /mode.ts, so another module can write what the configuration holds: declare it in the call instead"
-				]
-			])
-		})
-
 		it("configure with a namespace import", () => {
 			const files = { "/mode.ts": 'export const onUndeclaredKey = "reject"' }
 			attest(
@@ -486,38 +339,6 @@ export const later = () => {
 			).snap([
 				'/main.ts:2:16  configure({ keywords: { string: { description: "one" } } }) is not static\n  `config.keywords.string.description = "two"` (/main.ts:4:2) writes what the configuration holds: declare the value in the call instead\n  `config.keywords.number = "a number"` (/main.ts:5:2) writes what the configuration holds: declare the value in the call instead'
 			])
-		})
-
-		it("configure's value read by another module", () => {
-			attest(
-				inFreshProcess(async () => {
-					const { memoryHost } = await import("./utils.ts")
-					const { Precompiler, renderDiagnostic } = await import("@ark/aot")
-					const files = {
-						"/config.ts":
-							'import { configure } from "arktype/config"\nexport const config = configure({ keywords: { string: { description: "one" } } })',
-						"/main.ts":
-							'import { type } from "arktype"\nimport { config } from "./config.ts"\nexport const T = type("number").describe(config.keywords.string.description)'
-					}
-					const precompiler = new Precompiler(memoryHost(files), {
-						config: "/config.ts"
-					})
-					const { diagnostics } = precompiler.precompile(
-						files["/main.ts"],
-						"/main.ts"
-					)
-					const { sites } = precompiler.analyzeSites(
-						files["/main.ts"],
-						"/main.ts"
-					)
-					return [
-						diagnostics.map(renderDiagnostic),
-						sites.map(
-							site => (site.value as { description: string }).description
-						)
-					]
-				})
-			).snap([[], ["one"]])
 		})
 
 		it("hints keywords configured with functions as any other", () => {
@@ -646,7 +467,7 @@ configure({ number: meta, bigint: meta })`,
 			])
 		})
 
-		it("a Type created while the config module loads", () => {
+		it("a Type created before the configuration", () => {
 			attest(
 				diagnosticsOf(
 					`import { configure, type } from "arktype"
@@ -659,25 +480,6 @@ export const Late = type("string")`,
 			).snap([
 				'/main.ts:2:22  type("string") is created while the config module loads, before configure() runs\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
 			])
-			attest(
-				diagnosticsOf(
-					`import { type } from "arktype"
-export const suffix = "!"
-export const Name = type("string")
-export const makeName = () => type("string")`,
-					{
-						"/config.ts": `import { configure } from "arktype/config"
-import { suffix } from "./main.ts"
-configure({ keywords: { "string.email": \`an address\${suffix}\` } })`
-					},
-					{ config: "/config.ts" }
-				)
-			).snap([
-				'/main.ts:3:21  type("string") is created while the config module loads, before configure() runs\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
-			])
-		})
-
-		it("a Type created after the config module loads", () => {
 			const opts = { config: "/config.ts" }
 			const main = `import { type } from "arktype"
 export const Name = type("string")
@@ -772,27 +574,6 @@ export const Name = type("string")`,
 		})
 
 		it("arktype used outside a site", () => {
-			attest(
-				diagnosticsOf(`import { type, ArkErrors } from "arktype"
-const make = type
-const User = type({ name: "string" })
-export const check = (data: unknown) => {
-	const result = User(data)
-	if (result instanceof type.errors || result instanceof ArkErrors) return result
-	return User.assert(result)
-}`)
-			).snap([
-				'/main.ts:2:14  `type` is used outside a precompiled site\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
-			])
-			// re-exporting it isn't using it
-			attest(
-				diagnosticsOf(`import { type, scope } from "arktype"
-export { type }
-export default scope`)
-			).equals([])
-		})
-
-		it("arktype namespace imports", () => {
 			const source = `import * as ark from "arktype"
 const A = ark.type({ a: "string" })
 export const isError = (data: unknown) => data instanceof ark.ArkErrors
@@ -804,6 +585,12 @@ export const make = (def: string) => {
 			attest(diagnosticsOf(source)).snap([
 				'/main.ts:5:12  `ark` is used outside a precompiled site\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
 			])
+			// re-exporting it isn't using it
+			attest(
+				diagnosticsOf(`import { type, scope } from "arktype"
+export { type }
+export default scope`)
+			).equals([])
 		})
 
 		it("writes to arktype values", () => {

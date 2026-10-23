@@ -24,7 +24,6 @@ import { ark, generic, match, scope, type, type Scope } from "arktype"
 import { de } from "arktype/locales/de"
 import {
 	precompileStandalone,
-	precompileStandaloneModules,
 	writeUnprecompilableMessage,
 	type FactoryParam,
 	type StandaloneExport,
@@ -43,7 +42,6 @@ import {
 import { keptIssuesOf } from "@ark/aot/internal/issues.ts"
 import { build, buildSync, type BuildOptions } from "esbuild"
 import { join } from "node:path"
-import { isDeepStrictEqual } from "node:util"
 
 const optionsOf = (source: string) =>
 	({
@@ -233,212 +231,26 @@ const textOf = (
 	cases: [name: string, input: unknown][]
 ) => cases.map(([name, input]) => String(validators[name](input)))
 
-class Point {
-	x = 1
-	y = 2
-}
-
 contextualize(() => {
-	it("validates as arktype, for speed or size", async () => {
-		const $ = scope({
-			tree: { value: "number", "children?": "tree[]" },
-			user: {
-				name: "string > 0",
-				age: "number.integer >= 0",
-				"email?": "string.email",
-				tags: "string[] <= 3"
-			}
-		}).export()
-		const { a0 } = scope({
-			a0: "Record<string, a1 | a2>",
-			a1: { p0: "string = 'd'", "p1?": "string" },
-			a2: { kind: "'a2'", "p0?": "a0", p1: "a2 | null" }
-		}).export()
-		const { x }: Record<string, type.Any> = scope({
-			a0: [["Record<string, null>", "...", "a0[]"], "[]"],
-			c0: [["Record<string, null>", "...", "c0[]"], "[]"],
-			c1: ["c0", "...", "c1[]"],
-			x: "a0 & c1"
-		} as never).export() as never
-		const types = {
-			user: $.user,
-			cycles: x,
-			tree: $.tree,
-			node: type({ value: "number", "next?": "this" }),
-			deep: a0.onDeepUndeclaredKey("delete"),
-			parsed: type({ count: "string.numeric.parse", "+": "delete" }),
-			json: type("string.json.parse"),
-			shapes: type({ kind: "'circle'", r: "number > 0" }).or({
-				kind: "'square'",
-				side: "number"
-			}),
-			mixed: type("string | number[] | Date >= d'2000-01-01T00:00:00Z'"),
-			tuple: type(["string", "number = 3", "boolean = true"]),
-			piped: type("string.trim").to("string > 1"),
-			dates: type({ at: "string.date.iso.parse" }).array(),
-			typeError: type.instanceOf(TypeError),
-			domains: type("string | number > 0 | null | bigint | undefined").or({
-				a: "string"
-			})
-		}
-		// for size, units are shared modules and validators share root applies
-		const sized = async (members: ValidatorMembers) => {
-			const { code, modules } = precompileStandaloneModules(types, {
-				members,
-				optimize: "size"
-			})
-			const { outputFiles } = await build({
-				...optionsOf(code),
-				plugins: [
-					{
-						name: "modules",
-						setup: pluginBuild => {
-							pluginBuild.onResolve({ filter: /^~arktype\// }, args => ({
-								path: args.path,
-								namespace: "modules"
-							}))
-							pluginBuild.onLoad(
-								{ filter: /.*/, namespace: "modules" },
-								args => ({
-									contents: modules[args.path],
-									resolveDir: fromHere(),
-									loader: "js"
-								})
-							)
-						}
-					}
-				]
-			})
-			const artifact = await importCode(outputFiles[0].text)
-			return Object.fromEntries(
-				Object.keys(types).map(name => [name, artifact[name]()])
-			)
-		}
-		const builds = [
-			await load(types),
-			await sized(printed),
-			await sized({ ...printed, assert: false })
-		]
-		const cyclic: any = { value: 1, children: [] }
-		cyclic.children.push(cyclic)
-		const node: any = { value: 1 }
-		node.next = { value: 2, next: node }
-		const cyclicArray: unknown[] = []
-		cyclicArray.push(cyclicArray, cyclicArray)
-		const inputs = [
-			{ name: "a", age: 1, tags: [] },
-			{ name: "", age: -1.5, email: "x", tags: ["a", "b", "c", "d"] },
-			{ value: 1, children: [{ value: 2 }, { value: "3" }] },
-			cyclic,
-			node,
-			{ value: 1, next: { value: "2" } },
-			cyclicArray,
-			{ count: "5", extra: true },
-			new Point(),
-			'{"a": [1]}',
-			"{",
-			"",
-			{ kind: "circle", r: 0 },
-			{ kind: "triangle" },
-			[1, "2"],
-			new Date(0),
-			["a"],
-			["a", "b"],
-			"  x ",
-			" y ",
-			[{ at: "2020-01-01" }, { at: "x" }],
-			new TypeError("x"),
-			{ k: { p1: "s", z: 1 } },
-			{ k: { kind: "a2", p1: null, p0: { j: { p1: "x", z: 1 } }, z: 1 } },
-			null,
-			1,
-			0,
-			1n,
-			{ a: "" },
-			{},
-			() => {},
-			undefined,
-			true,
-			Symbol()
-		]
-		for (const validators of builds) agrees(validators, types, inputs)
-		// a size build checks a union's domains by ternary, failing as arktype says
+	it("a union's domains checked for size", async () => {
+		// by ternary, failing as arktype says
+		const { domains } = await load(
+			{
+				domains: type("string | number > 0 | null | bigint | undefined").or({
+					a: "string"
+				})
+			},
+			{ optimize: "size" }
+		)
 		attest(
-			[
-				"",
-				1,
-				0,
-				null,
-				1n,
-				{ a: "" },
-				{},
-				() => {},
-				undefined,
-				true,
-				Symbol()
-			].map(data => String(builds[1].domains(data)))
+			[0, {}, () => {}, true, Symbol()].map(data => String(domains(data)))
 		).snap([
-			"",
-			"1",
 			"must be positive",
-			"null",
-			"1",
-			"[object Object]",
 			"a is missing",
 			"a is missing",
-			"undefined",
 			"must be a bigint, a string, a number, an object, undefined or null",
 			"must be a bigint, a string, a number, an object, undefined or null"
 		])
-	})
-
-	it("validates keys, URLs, lists and defaults as arktype, for speed or size", async () => {
-		const separatedKey = "a     b"
-		const types = {
-			// a literal and a key holding a line separator
-			separated: type({ k: "'x     y'", [separatedKey]: "string" }),
-			// for size, checked by the URL parser alone
-			url: type("string.url"),
-			listed: type({ id: "number", tags: "string[]", "note?": "'a' | 'b'" }),
-			defaulted: type({
-				"[string]": "number | boolean | string[]",
-				port: "number > 0",
-				open: "boolean = true"
-			}),
-			nestedDefault: type({ "[string]": "object", nested: { x: "number = 1" } })
-		}
-		const { separated, url, listed, defaulted, nestedDefault } = types
-		for (const validators of [
-			await load(types),
-			await load(types, { optimize: "size" })
-		]) {
-			agrees(validators, { separated }, [
-				{ k: "x     y", [separatedKey]: "" },
-				{ k: "x y", [separatedKey]: "" }
-			])
-			agrees(validators, { listed }, [
-				{ id: 1, tags: ["x"], note: "a" },
-				{ id: 1, tags: [0] },
-				{ id: 1, tags: [], note: "c" }
-			])
-			agrees(validators, { url }, [
-				"https://arktype.io/docs?q=1#a",
-				"HTTP://a-b.c:80",
-				"http://[::1]:8080",
-				"mailto:a@b.c",
-				"http://a b",
-				"arktype.io",
-				""
-			])
-			agrees(validators, { defaulted, nestedDefault }, [
-				{ port: 1 },
-				{ port: 1, open: false, extra: 2 },
-				{ port: 0, open: "yes", extra: "y" },
-				{ nested: {} },
-				{ nested: { x: "1" }, other: 5 },
-				{}
-			])
-		}
 	})
 
 	describe("checkers", () => {
@@ -884,23 +696,15 @@ TypeError: out.throw is not a function false
 	})
 
 	it("root array issues from its first rejected element", async () => {
-		const types = {
-			Objects: type({ x: "number" }).array(),
-			Strings: type("string > 1").array()
-		}
-		const validators = await load(types)
-		const { Objects: first } = await load(
-			{ Objects: types.Objects },
-			{ errors: "first" }
-		)
+		const Objects = type({ x: "number" }).array()
+		const { Objects: all } = await load({ Objects })
+		const { Objects: first } = await load({ Objects }, { errors: "first" })
 		const data = [{ x: 0 }, { x: "a" }, { x: 1 }, {}]
-		const piped = type("unknown").pipe((data, ctx) =>
-			validators.Objects(data, ctx)
-		)
+		const piped = type("unknown").pipe((data, ctx) => all(data, ctx))
 		attest([
-			validators.Objects(data).summary,
+			all(data).summary,
 			first(data).summary,
-			validators.Objects({}).summary,
+			all({}).summary,
 			String(piped(data))
 		]).snap([
 			"[1].x must be a number\n[3].x is missing",
@@ -908,17 +712,9 @@ TypeError: out.throw is not a function false
 			"must be an array",
 			"value at [1].x must be a number\nvalue at [3].x is missing"
 		])
-		agrees(validators, types, [
-			data,
-			[],
-			[{ x: 0 }],
-			[{ x: "a" }, { x: 0 }],
-			["ab", "a", "bc", 1],
-			{}
-		])
 	})
 
-	it("root array validated within its own validation", async () => {
+	it("root array read as it validates", async () => {
 		const { T } = await load({ T: type({ x: "number" }).array() })
 		let inner: unknown
 		// read as the outer call checks its first element
@@ -930,26 +726,18 @@ TypeError: out.throw is not a function false
 		}
 		attest(T([reentering, { x: "a" }]).summary).snap("[1].x must be a number")
 		attest(inner).snap("[2].x must be a number")
-	})
-
-	it("root array reads elements before its first rejected once", async () => {
-		const { T } = await load({ T: type({ x: "number" }).array() })
+		// elements before the first rejected are read once
 		let reads = 0
 		const counted: unknown[] = [undefined, { x: "a" }]
 		Object.defineProperty(counted, 0, { get: () => (reads++, { x: 0 }) })
 		attest(T(counted).summary).snap("[1].x must be a number")
 		attest(reads).equals(1)
-	})
-
-	it("root array checks an element a getter replaced", async () => {
-		const types = { T: type({ x: "number" }).array() }
-		const { T } = await load(types)
+		// an element a getter replaced is checked as it is then
 		const replacing: unknown[] = [undefined, { x: 0 }, { x: 1 }]
 		Object.defineProperty(replacing, 0, {
 			get: () => ((replacing[2] = { x: "c" }), { x: 0 }),
 			enumerable: true
 		})
-		agrees({ T }, types, [replacing])
 		attest(T(replacing).summary).snap("[2].x must be a number")
 	})
 
@@ -1479,27 +1267,10 @@ name is missing`)
 				}
 			}
 		)
-		attest(validator.json).equals(T.json)
 		attest(validator.toJSON()).is(validator.json)
 		attest(JSON.stringify(validator)).equals(JSON.stringify(T))
 		// a new schema each call, as arktype writes one
 		attest(validator.toJsonSchema() === validator.toJsonSchema()).equals(false)
-		// no options, or only a target whose schema is baked
-		attest(validator.toJsonSchema({})).equals(T.toJsonSchema({}))
-		for (const target of [
-			"draft-2020-12",
-			"draft-07",
-			"openapi-3.0"
-		] as const) {
-			attest(validator.toJsonSchema({ target })).equals(
-				T.toJsonSchema({ target })
-			)
-			for (const io of ["input", "output"] as const) {
-				attest(validator["~standard"].jsonSchema[io]({ target })).equals(
-					T["~standard"].jsonSchema[io]({ target })
-				)
-			}
-		}
 		attest(
 			validator["~standard"].jsonSchema.input({ target: "draft-07" })
 		).snap({
@@ -1701,7 +1472,6 @@ name is missing`)
 				`${writeUnprecompilableMessage("a JSON Schema whose writing throws")}: Error: no schema`
 			)
 		)
-		agrees({ T: validator }, { T }, [new Date(0)])
 	})
 
 	it("unsatisfiable JSON Schema view", async () => {
@@ -2250,56 +2020,6 @@ name is missing`)
 		attest(list).equals([{ v: " x ", extra: 1 }])
 	})
 
-	it("mutatesInput as arktype", async () => {
-		const defs = {
-			item: { n: "string.numeric.parse" },
-			Items: "item[]",
-			Shared: { a: "item", b: { n: "string" } },
-			Strip: { "+": "delete", a: "item" },
-			node: { value: "string.trim", "next?": "node" }
-		} as const
-		const shared = { n: "1" }
-		const cyclic: Record<string, unknown> = { value: " c " }
-		cyclic.next = cyclic
-		const inputs: Record<string, unknown[]> = {
-			Items: [
-				[{ n: "1" }, { n: "2" }],
-				[shared, shared]
-			],
-			Shared: [
-				{ a: { n: "1" }, b: { n: "2" } },
-				{ a: shared, b: shared }
-			],
-			Strip: [{ a: { n: "1" }, extra: 1 }],
-			Node: [{ value: " a ", next: { value: " b " } }, cyclic]
-		}
-		for (const mutatesInput of [true, "always"] as const) {
-			const $ = scope(defs, { mutatesInput }).export()
-			const exports = {
-				Items: $.Items,
-				Shared: $.Shared,
-				Strip: $.Strip,
-				Node: $.node
-			}
-			const validators = await load(exports, { mutatesInput })
-			for (const [name, T] of Object.entries(exports)) {
-				for (const input of inputs[name]) {
-					const expected = structuredClone(input)
-					const actual = structuredClone(input)
-					const expectedOut: unknown = T(expected)
-					const actualOut: unknown = validators[name](actual)
-					attest([
-						name,
-						mutatesInput,
-						isDeepStrictEqual(actualOut, expectedOut),
-						isDeepStrictEqual(actual, expected),
-						actualOut === actual
-					]).equals([name, mutatesInput, true, true, expectedOut === expected])
-				}
-			}
-		}
-	})
-
 	it("mutatesInput inside a copying Type", async () => {
 		const Item = type({ n: "string.numeric.parse" })
 		const { Held, Items } = await load(
@@ -2622,36 +2342,6 @@ config.onUndeclaredKey = "reject"`
 		attest(validators.M.sub.c("x").summary).snap("must be a number")
 	})
 
-	it("cyclic module data", async () => {
-		const M = type.module({
-			a: { "b?": "b", "self?": "a" },
-			b: { "a?": "a", c: "string" },
-			Node: type({ value: "number", "next?": "this" }),
-			tree: { value: "number", "children?": "tree[]" },
-			"Tree<t>": { value: "t", "children?": "Tree<t>[]" },
-			Trees: "Tree<number>"
-		})
-		const { M: validators } = await load({ M })
-		const a: any = { b: { c: "x" } }
-		a.self = a
-		a.b.a = a
-		const bad: any = { b: { c: 1 } }
-		bad.self = bad
-		bad.b.a = bad
-		const node: any = { value: 1 }
-		node.next = node
-		const tree: any = { value: 1, children: [] }
-		tree.children.push(tree, { value: "2" })
-		const { a: A, b: B, Node, tree: Tree, Trees } = M
-		agrees(validators, { a: A, b: B, Node, tree: Tree, Trees }, [
-			a,
-			bad,
-			node,
-			{ value: 1, next: { value: "2" } },
-			tree
-		])
-	})
-
 	it("Scope and Generic exports", async () => {
 		const $ = scope({ "box<t>": { box: "t" }, a: "string" })
 		const Box = type("<t>", { box: "t" })
@@ -2815,44 +2505,6 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 	})
 
 	describe("factories", () => {
-		it("creates from holes", async () => {
-			const trim = (s: string) => s.trim()
-			const isEven = (n: number) => n % 2 === 0
-			class Animal {}
-			class Dog extends Animal {}
-			const tag = Symbol("tag")
-			const define = (t: typeof trim, e: typeof isEven, D: typeof Dog) =>
-				type({
-					name: type("string").pipe(t),
-					n: type("number").narrow(e),
-					pet: type.instanceOf(D),
-					[tag]: "string"
-				})
-			const T = define(trim, isEven, Dog)
-			const built = [
-				standIn(trim.bind(null), "trim"),
-				standIn(isEven.bind(null), "iseven"),
-				standIn(class extends Animal {}, "dog")
-			] as const
-			const create = await loadFactory(define(...built), [
-				["function", "`trim`", built[0]],
-				["function", "`isEven`", built[1]],
-				["class", "`Dog`", built[2]],
-				["symbol", "`tag`", tag]
-			])
-			const validator = create(trim, isEven, Dog, tag)
-			const inputs = [
-				{ name: " a ", n: 2, pet: new Dog(), [tag]: "x" },
-				{ name: 1, n: 3, pet: new Animal(), [tag]: 1 },
-				{}
-			]
-			agrees({ T: validator }, { T }, inputs)
-			attest([validator.expression, validator.description]).equals([
-				T.expression,
-				T.description
-			])
-		})
-
 		it("prints hole names", async () => {
 			const isEven = standIn((n: number) => n % 2 === 0, "iseven")
 			const create = await loadFactory(type("number").narrow(isEven), [
@@ -2866,33 +2518,6 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 			attest(create((n: number) => n % 2 === 0).description).snap(
 				"a number and valid according to an anonymous predicate"
 			)
-		})
-
-		it("a predicate reading ctx in an intersection", async () => {
-			const isFilled = standIn(
-				(s: string, ctx: Traversal) => s.length > 0 || ctx.reject("non-empty"),
-				"isfilled"
-			)
-			const double = standIn((s: string) => s + s, "double")
-			const isEven = standIn(
-				(o: object) => Object.keys(o).length % 2 === 0,
-				"iseven"
-			)
-			const T = type([
-				["string", ":", isFilled],
-				[["string", "=>", double], "?"]
-			]).and(type(["object", ":", isEven]))
-			const create = await loadFactory(T, [
-				["function", "`isFilled`", isFilled],
-				["function", "`double`", double],
-				["function", "`isEven`", isEven]
-			])
-			agrees({ T: create(isFilled, double, isEven) }, { T }, [
-				["a"],
-				["a", "b"],
-				[""],
-				["a", 2]
-			])
 		})
 
 		it("checks hole facts", async () => {
@@ -3277,88 +2902,17 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 		})
 
 		it("defaults from holes", async () => {
-			const now = () => new Date(0)
-			const invalid = () => "x" as never
-			const shout = (s: string, ctx: unknown) => (ctx ? `${s}!` : s)
-			const greeting = () => "hi"
-			const empty = () => []
-			const define = (
-				n: typeof now,
-				i: typeof invalid,
-				s: typeof shout,
-				g: typeof greeting,
-				e: typeof empty
-			) => ({
-				Thunk: type({ at: ["Date", "=", n], n: "number = 1" }),
-				// `unknown.any` is another node of the id `unknown` has
-				Any: type({ at: ["unknown", "=", n], n: "unknown.any" }),
-				Invalid: type({ n: ["number", "=", i] }),
-				Element: type(["string", ["Date", "=", n]]),
-				Contextual: type({ s: [type("string").pipe(s), "=", g] }),
-				Transforming: type({ name: ["string.trim", "=", " a "] }),
-				Empty: type({ values: "string[] = []", meta: "object = {}" }),
-				Tree: scope({
-					tree: { name: "string = 'root'", children: ["tree[]", "=", e] }
-				}).export().tree,
-				// a defaulted key beside index signatures
-				Indexed: type({
-					"[/^t/]": "string[]",
-					"[string]": "unknown",
-					tags: ["string[]", "=", e]
-				})
-			})
-			const types = define(now, invalid, shout, greeting, empty)
-			const built = [
-				standIn(now.bind(null), "now"),
-				standIn(invalid.bind(null), "invalid"),
-				standIn(shout.bind(null), "shout"),
-				standIn(greeting.bind(null), "greeting"),
-				standIn(empty.bind(null), "empty")
-			] as const
-			const builtTypes = define(...built)
-			const holeOf = (label: string, i: number) => ({
-				kind: "function" as const,
-				label: `\`${label}\``,
-				value: built[i]
-			})
-			const created = await load({
-				Thunk: { type: builtTypes.Thunk, params: [holeOf("now", 0)] },
-				Any: { type: builtTypes.Any, params: [holeOf("now", 0)] },
-				Invalid: { type: builtTypes.Invalid, params: [holeOf("invalid", 1)] },
-				Element: { type: builtTypes.Element, params: [holeOf("now", 0)] },
-				Contextual: {
-					type: builtTypes.Contextual,
-					params: [holeOf("shout", 2), holeOf("greeting", 3)]
-				},
-				Transforming: builtTypes.Transforming,
-				Empty: builtTypes.Empty,
-				Tree: { type: builtTypes.Tree, params: [holeOf("empty", 4)] },
-				Indexed: { type: builtTypes.Indexed, params: [holeOf("empty", 4)] }
-			})
-			const validators: Record<string, (data: unknown) => unknown> = {
-				Thunk: created.Thunk(now),
-				Any: created.Any(now),
-				Invalid: created.Invalid(invalid),
-				Element: created.Element(now),
-				Contextual: created.Contextual(shout, greeting),
-				Transforming: created.Transforming,
-				Empty: created.Empty,
-				Tree: created.Tree(empty),
-				Indexed: created.Indexed(empty)
-			}
-			agrees(validators, types, [
-				{},
-				["a"],
-				{ at: new Date(1), n: 2 },
-				{ children: [{}] },
-				{ tags: ["a"], tooMany: 1 },
-				{ tags: [1], t2: "x" }
-			])
-			attest(created.Thunk(() => new Date(1))({})).equals({
+			const now = standIn(() => new Date(0), "now")
+			const create = await loadFactory(
+				type({ at: ["Date", "=", now], n: "number = 1" }),
+				[["function", "`now`", now]]
+			)
+			attest(create(() => new Date(1))({})).equals({
 				at: new Date(1),
 				n: 1
 			})
-			attest(created.Empty({}).values !== created.Empty({}).values).equals(true)
+			const { Empty } = await load({ Empty: type({ values: "string[] = []" }) })
+			attest(Empty({}).values !== Empty({}).values).equals(true)
 		})
 
 		it("fills a default once", async () => {

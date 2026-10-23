@@ -1,6 +1,7 @@
 import {
 	BaseScope,
 	hasArkKind,
+	isNode,
 	nodeKinds,
 	registerPrecompiledUnits,
 	writePrecompiledUnits,
@@ -40,6 +41,11 @@ let inlined = 0
 // each finalized root's units, which its binds are compared with
 const finalizedUnits = new WeakMap<object, Record<string, string>>()
 
+// a node a hash and scope identify validates and writes its errors alike,
+// e.g. a keyword's node and a node created apart from it with its hash
+const isAlike = (l: unknown, r: unknown) =>
+	l === r || (isNode(l) && isNode(r) && l.hash === r.hash && l.$ === r.$)
+
 // a root binding a unit written for another binds what its own unit would
 const checkBind =
 	(key: string, bind: PrecompiledUnit[0]): PrecompiledUnit[0] =>
@@ -55,7 +61,7 @@ const checkBind =
 			bound.some(
 				(values, i) =>
 					values.length !== ownBound[i].length ||
-					values.some((value, j) => value !== ownBound[i][j])
+					values.some((value, j) => !isAlike(value, ownBound[i][j]))
 			)
 		)
 			collisions.push(`${root.expression}: binds another root's values`)
