@@ -236,10 +236,27 @@ export const isArray: (data: unknown) => data is readonly unknown[] =
 	/* @__PURE__ */ (() => Array.isArray)()
 export const dateGetTime = /* @__PURE__ */ (() => Date.prototype.getTime)()
 
-export const isValidDate = (date: Date): boolean =>
-	!Number.isNaN(
-		date.getTime === dateGetTime ? date.getTime() : dateGetTime.call(date)
-	)
+// undefined for an object only inheriting Date.prototype, whose methods throw
+export const timeOf = (date: Date): number | undefined => {
+	try {
+		return date.getTime === dateGetTime ?
+				date.getTime()
+			:	dateGetTime.call(date)
+	} catch {
+		return undefined
+	}
+}
+
+// repeats timeOf, whose call measurably slows validating a Date
+export const isValidDate = (date: Date): boolean => {
+	try {
+		return !Number.isNaN(
+			date.getTime === dateGetTime ? date.getTime() : dateGetTime.call(date)
+		)
+	} catch {
+		return false
+	}
+}
 
 export const isDateObject = (value: object): value is Date =>
 	prototypeOf(value) === Date.prototype

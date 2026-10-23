@@ -228,11 +228,10 @@ export const describeCollapsibleDate = (date: Date): string => {
 	const seconds = date.getUTCSeconds()
 	const milliseconds = date.getUTCMilliseconds()
 
-	if (hours === 0 && minutes === 0 && seconds === 0 && milliseconds === 0) {
-		return month === 0 && dayOfMonth === 1 ?
-				`${year}`
-			:	`${months[month]} ${dayOfMonth}, ${year}`
-	}
+	// a bare year would read as the whole year, so it's never collapsed past
+	// its day
+	if (hours === 0 && minutes === 0 && seconds === 0 && milliseconds === 0)
+		return `${months[month]} ${dayOfMonth}, ${year}`
 
 	const h = hours % 12 || 12
 	const suffix = hours < 12 ? " AM" : " PM"

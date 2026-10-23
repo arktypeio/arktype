@@ -4,6 +4,7 @@ import {
 	domainOf,
 	isKeyOf,
 	isValidDate,
+	timeOf,
 	listPattern,
 	objectKindOrDomainOf,
 	printKind
@@ -24,6 +25,12 @@ export const writeUnitProblem: ProblemWriter<"unit"> = ({
 	expected === actual ?
 		`must be reference equal to ${expected} (serialized to the same value)`
 	:	`must be ${expected} (was ${actual})`
+
+// a Date holds no data of the user's, so its value is written as a bound's is
+export const writeUnitActual: ActualWriter<"unit"> = data =>
+	data instanceof Date && isValidDate(data) ?
+		describeCollapsibleDate(data)
+	:	printKind(data)
 
 export const writeNotEqualActual: ActualWriter<"notEqual"> = data =>
 	data instanceof Date ? describeCollapsibleDate(data) : printKind(data)
@@ -51,7 +58,12 @@ export const writeMinLengthActual: ActualWriter<"minLength"> = (data, e) =>
 	data.length === 0 ? "" : lengthActualOf(data, e)
 
 export const writeProtoActual: ActualWriter<"proto"> = data => {
-	if (data instanceof Date && !isValidDate(data)) return "an invalid Date"
+	if (data instanceof Date && !isValidDate(data)) {
+		// an object only inheriting Date.prototype has no time
+		return timeOf(data) === undefined ?
+				domainDescriptions.object
+			:	"an invalid Date"
+	}
 	const kind = objectKindOrDomainOf(data)
 	// a class's name is printed as is, since its article would be a guess
 	return isKeyOf(kind, domainDescriptions) ? domainDescriptions[kind] : kind

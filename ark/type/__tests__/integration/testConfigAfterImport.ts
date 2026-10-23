@@ -25,6 +25,11 @@ cases({
 			strictEqual(T.allows(Number.NEGATIVE_INFINITY), true)
 			strictEqual(T.allows(Number.NaN), false)
 		}
+		strictEqual(type("string.numeric.parse")("1e400"), Number.POSITIVE_INFINITY)
+		strictEqual(
+			(type("string.json.parse")("[1e400]") as number[])[0],
+			Number.POSITIVE_INFINITY
+		)
 	},
 	dateAllowsInvalid: () => {
 		strictEqual(type("Date").allows(new Date("!")), true)
@@ -35,6 +40,23 @@ cases({
 		strictEqual(type.keywords.string.email.description, "a configured email")
 	},
 	configureAfterType: () => {
-		throws(() => configure({}), { message: configureAfterTypeMessage })
+		throws(() => configure({ numberAllowsInfinity: false }), {
+			message: configureAfterTypeMessage
+		})
+		throws(() => configure({ onFail: () => {} }), {
+			message: configureAfterTypeMessage
+		})
+	},
+	reconfigureUnchanged: () => {
+		// as when a test runner resets its modules and the config file runs again
+		configure({
+			numberAllowsInfinity: true,
+			dateAllowsInvalid: true,
+			keywords: {
+				"string.email": "a configured email"
+			}
+		})
+		configure({})
+		strictEqual(type("number").allows(Number.POSITIVE_INFINITY), true)
 	}
 })

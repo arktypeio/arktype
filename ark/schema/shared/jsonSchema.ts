@@ -1,8 +1,8 @@
 import {
 	includes,
 	throwParseError,
-	type array,
 	type autocomplete,
+	type Json,
 	type JsonArray,
 	type JsonObject,
 	type listable
@@ -28,9 +28,12 @@ export declare namespace JsonSchema {
 	 *  a subset of JSON Schema's annotations, see:
 	 *  https://json-schema.org/understanding-json-schema/reference/annotations
 	 **/
-	export interface Meta<t = unknown> extends UniversalMeta<t> {
+	export interface Meta<t = Json> extends UniversalMeta<t> {
+		// any other keyword, e.g. an extension like x-internal
+		[k: string]: unknown
 		$schema?: string
 		$defs?: Record<string, JsonSchema>
+		examples?: t[]
 	}
 
 	export type Format = autocomplete<
@@ -88,11 +91,11 @@ export declare namespace JsonSchema {
 	}
 
 	export interface Constrainable extends Meta {
-		type?: listable<TypeName>
+		type?: TypeName | TypeName[]
 	}
 
 	export interface Intersection extends Meta {
-		allOf: readonly JsonSchema[]
+		allOf: JsonSchema[]
 	}
 
 	export interface Not extends Meta {
@@ -100,19 +103,19 @@ export declare namespace JsonSchema {
 	}
 
 	export interface OneOf extends Meta {
-		oneOf: readonly JsonSchema[]
+		oneOf: JsonSchema[]
 	}
 
 	export interface Union extends Meta {
-		anyOf: readonly JsonSchema[]
+		anyOf: JsonSchema[]
 	}
 
 	export interface Const extends Meta {
-		const: unknown
+		const: Json
 	}
 
 	export interface Enum extends Meta {
-		enum: array
+		enum: Json[]
 	}
 
 	export interface String extends Meta<string> {
@@ -125,17 +128,14 @@ export declare namespace JsonSchema {
 		contentMediaType?: string
 	}
 
-	// NB: Technically 'exclusiveMaximum' and 'exclusiveMinimum' are mutually exclusive with 'maximum' and 'minimum', respectively,
-	// which is reflected at runtime but it's not worth the performance cost to validate this statically.
+	// exclusiveMinimum and exclusiveMaximum are left to the index signature, as
+	// openapi-3.0 writes true for them to mark minimum or maximum exclusive
 	export interface Numeric extends Meta<number> {
 		type: "number" | "integer"
 		// NB: JSON Schema allows decimal multipleOf, but ArkType only supports integer.
 		multipleOf?: number
-		// openapi-3.0 marks minimum or maximum exclusive with true
 		minimum?: number
-		exclusiveMinimum?: number | true
 		maximum?: number
-		exclusiveMaximum?: number | true
 		not?: Const | Enum
 	}
 
@@ -146,7 +146,7 @@ export declare namespace JsonSchema {
 		properties?: Record<string, JsonSchema>
 		required?: string[]
 		patternProperties?: Record<string, JsonSchema>
-		additionalProperties?: JsonSchemaOrBoolean
+		additionalProperties?: Branch
 		maxProperties?: number
 		minProperties?: number
 		propertyNames?: String
@@ -154,13 +154,14 @@ export declare namespace JsonSchema {
 
 	export interface Array extends Meta<JsonArray> {
 		type: "array"
-		additionalItems?: JsonSchemaOrBoolean
-		contains?: JsonSchemaOrBoolean
+		additionalItems?: Branch
+		contains?: Branch
 		uniqueItems?: boolean
 		minItems?: number
 		maxItems?: number
-		items?: JsonSchemaOrBoolean
-		prefixItems?: readonly Branch[]
+		// draft-07 writes a tuple's elements as an array
+		items?: Branch | Branch[]
+		prefixItems?: Branch[]
 		not?: JsonSchema
 	}
 

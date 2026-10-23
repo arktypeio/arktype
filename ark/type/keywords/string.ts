@@ -1,4 +1,5 @@
 import {
+	$ark,
 	constraintInputOf,
 	intrinsic,
 	node,
@@ -23,6 +24,7 @@ import {
 	isLuhnValid,
 	isParsableDate,
 	isParsableUrl,
+	iso8601Matcher,
 	isRegexPattern,
 	lowercaseString,
 	normalizationsByForm,
@@ -32,6 +34,7 @@ import {
 	parseIsoDate,
 	parseJson,
 	parseNumeric,
+	parsesFinite,
 	parseUrl,
 	trimString,
 	uppercaseString
@@ -239,8 +242,7 @@ export type DateOptions = {
 // Based on https://tc39.es/ecma262/#sec-date-time-string-format, the T
 // delimiter for date/time is mandatory. Regex from validator.js strict matcher:
 // only the two groups its backreferences read capture
-export const iso8601Matcher =
-	/^[+-]?\d{4}(?!\d{2}\b)(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\1(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?:T(?:(?:(?:[01]\d|2[0-3])(?:(:?)[0-5]\d)?|24:?00)(?:[,.]\d+(?!:))?)?(?:\2[0-5]\d(?:[,.]\d+)?)?(?:[Zz]|[+-](?:[01]\d|2[0-3]):?(?:[0-5]\d)?)?)?)?$/
+export { iso8601Matcher }
 
 type ParsedDayParts = {
 	y?: string
@@ -459,7 +461,7 @@ export const json: stringJson.module = keywordModule(
 				meta: "safe JSON string parser",
 				in: intrinsic.string,
 				morphs: [parseJson],
-				declaredOut: intrinsic.jsonObject
+				declaredOut: intrinsic.jsonData
 			})
 	},
 	{
@@ -656,12 +658,30 @@ const numericRoot = cached(() =>
 export const stringNumeric: stringNumeric.module = keywordModule(
 	{
 		root: numericRoot,
-		parse: () =>
-			node("morph", {
-				in: numericRoot(),
+		parse: () => {
+			const root = numericRoot()
+			return node("morph", {
+				// so its output is a number as number is configured
+				in:
+					$ark.resolvedConfig!.numberAllowsInfinity ?
+						root
+					:	node("intersection", {
+							...root.inner,
+							predicate: [
+								node("predicate", {
+									predicate: parsesFinite,
+									// JSON Schema can't say it, so the pattern stands for it
+									meta: {
+										...keywordMeta("string.numeric.parse"),
+										jsonSchema: {}
+									}
+								})
+							]
+						}),
 				morphs: [parseNumeric],
 				declaredOut: intrinsic.number
 			})
+		}
 	},
 	{
 		name: "string.numeric"

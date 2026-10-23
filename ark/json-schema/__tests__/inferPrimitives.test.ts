@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
+import type { Json } from "@ark/util"
 import type { JsonSchema } from "arktype"
 
 // checks inference without reading the schema at runtime
@@ -704,12 +705,12 @@ contextualize(() => {
 		})
 
 		it("JsonSchema branches", () => {
-			attest<string, jsonSchema.infer<JsonSchema.String>>()
-			attest<number, jsonSchema.infer<JsonSchema.Numeric>>()
+			attest<string | null, jsonSchema.infer<JsonSchema.String>>()
+			attest<number | null, jsonSchema.infer<JsonSchema.Numeric>>()
 			attest<object, jsonSchema.infer<JsonSchema.Object>>()
-			attest<unknown[], jsonSchema.infer<JsonSchema.Array>>()
-			attest<unknown, jsonSchema.infer<JsonSchema.Const>>()
-			attest<unknown, jsonSchema.infer<JsonSchema.Enum>>()
+			attest<unknown[] | null, jsonSchema.infer<JsonSchema.Array>>()
+			attest<Json, jsonSchema.infer<JsonSchema.Const>>()
+			attest<Json, jsonSchema.infer<JsonSchema.Enum>>()
 			attest<unknown, jsonSchema.infer<JsonSchema.Constrainable>>()
 			attest<unknown, jsonSchema.infer<JsonSchema.Branch>>()
 		})
@@ -2114,7 +2115,7 @@ contextualize(() => {
 			interface B extends JsonSchema.String {
 				nullable?: boolean
 			}
-			attest<"a", jsonSchema.infer<A>>()
+			attest<"a" | null, jsonSchema.infer<A>>()
 			attest<string | null, jsonSchema.infer<B>>()
 			attest<
 				string,

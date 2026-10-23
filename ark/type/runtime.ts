@@ -11,6 +11,8 @@ import {
 	errorsOf,
 	FirstIssues,
 	mergeIssues,
+	messageOf,
+	problemOf,
 	releasePath,
 	runtimeConfig,
 	supportedJsonSchemaTargets,
@@ -108,6 +110,7 @@ export {
 	writeNotEqualActual,
 	writeProblem,
 	writeProtoActual,
+	writeUnitActual,
 	writeUnitProblem,
 	type ArkError
 } from "@ark/schema/runtime"
@@ -122,7 +125,8 @@ export {
 	liftArray,
 	ParseError,
 	printable,
-	throwParseError
+	throwParseError,
+	timeOf
 } from "@ark/util"
 export * from "./checkers.ts"
 export * from "./keywords/functions.ts"
@@ -190,6 +194,16 @@ export class Validator {
 	}
 }
 
+// a Standard Schema consumer prefixes each issue's message with its path
+const standardIssuesOf = (
+	errors: ArkErrors
+): readonly StandardSchemaV1.Issue[] =>
+	errors.issues.map(issue =>
+		issue.path.length === 0 || issue.message !== messageOf(issue) ?
+			issue
+		:	{ ...issue, message: problemOf(issue) }
+	)
+
 // parenthesized (kept by `satisfies`) to compile as the module loads
 export const createValidator = ((
 	rootApply: RootApply,
@@ -220,9 +234,11 @@ export const createValidator = ((
 	validator["~standard"] = freeze({
 		vendor: "arktype",
 		version: 1,
-		validate: freeze((input: unknown) => {
+		validate: freeze((input: unknown): StandardSchemaV1.Result<unknown> => {
 			const out = validator(input)
-			return out instanceof ArkErrors ? out : { value: out }
+			return out instanceof ArkErrors ?
+					{ issues: standardIssuesOf(out) }
+				:	{ value: out }
 		}),
 		...attributes["~standard"]
 	})
@@ -249,9 +265,11 @@ export const createValidatorWith = ((
 	validator["~standard"] = freeze({
 		vendor: "arktype",
 		version: 1,
-		validate: freeze((input: unknown) => {
+		validate: freeze((input: unknown): StandardSchemaV1.Result<unknown> => {
 			const out = validator(input)
-			return out instanceof ArkErrors ? out : { value: out }
+			return out instanceof ArkErrors ?
+					{ issues: standardIssuesOf(out) }
+				:	{ value: out }
 		}),
 		...attributes["~standard"]
 	})

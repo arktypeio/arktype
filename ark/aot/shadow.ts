@@ -8,7 +8,7 @@ import {
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { shareConfig } from "@ark/schema/runtime"
-import { hasDomain, includes, printable } from "@ark/util"
+import { arkKind, hasDomain, includes, printable } from "@ark/util"
 import { configure } from "arktype/internal/config.js"
 import {
 	introspectionMembers,
@@ -35,7 +35,7 @@ const outcomeOf = (run: () => unknown): Outcome => {
 
 const settle = (outcome: Outcome): unknown => {
 	if ("thrown" in outcome) throw outcome.thrown
-	return outcome.value
+	return failureByErrors.get(outcome.value as object) ?? outcome.value
 }
 
 const precompiledByShadowed = new WeakMap<object, unknown>()
@@ -207,6 +207,20 @@ const bakedMetaOf = (t: unknown) => {
 	return meta && keywordMetas().has(meta) ? {} : meta
 }
 
+// a Standard Schema failure, compared as errors holding its issues
+const failureByErrors = new WeakMap<object, unknown>()
+
+const asErrors = (result: any): unknown => {
+	if (!result.issues) return result
+	const errors = {
+		[arkKind]: "errors",
+		issues: result.issues,
+		_: result.issues
+	}
+	failureByErrors.set(errors, result)
+	return errors
+}
+
 const validatedMembers = ["allows", "assert", "traverse", "from"] as const
 
 const introspectedMembers = ["toJSON", "toJsonSchema", "toString"] as const
@@ -240,7 +254,10 @@ const typeHandlerOf = (
 				path.join(".") || "call",
 				data,
 				path[0] !== "allows" && isWritten,
-				(t, data) => (path.length ? readAt(t, path, [data]) : t(data))
+				(t, data) =>
+					path[0] === "~standard" ? asErrors(readAt(t, path, [data]))
+					: path.length ? readAt(t, path, [data])
+					: t(data)
 			)
 	const introspector =
 		(...path: string[]) =>

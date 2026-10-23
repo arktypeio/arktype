@@ -13,6 +13,7 @@ import {
 	printable,
 	serializePrimitive,
 	throwInternalError,
+	timeOf,
 	type Dict,
 	type Fn
 } from "@ark/util"
@@ -315,6 +316,7 @@ const unitConstants = {
 	printable,
 	rejected,
 	rejects,
+	timeOf,
 	transformed,
 	transformedInApply,
 	transformsValid,

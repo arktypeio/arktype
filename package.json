@@ -81,6 +81,7 @@
 		"@ark/util": "workspace:*",
 		"@eslint/js": "9.37.0",
 		"@standard-schema/spec": "1.0.0",
+		"@types/json-schema": "7.0.15",
 		"@types/mocha": "10.0.10",
 		"@types/node": "24.7.2",
 		"arksets": "workspace:*",

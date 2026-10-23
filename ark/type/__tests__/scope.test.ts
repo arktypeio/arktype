@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	rootSchema,
 	writeUnboundableMessage,
+	writeGlobalOnlyConfigMessage,
 	writeUnresolvableMessage,
 	type ArkErrors
 } from "@ark/schema"
@@ -289,6 +290,16 @@ contextualize(() => {
 
 		const out = X({ pear: { tasty: true } })
 		attest(out).snap({ pear: { tasty: true } })
+	})
+
+	it("throws for a global-only option", () => {
+		// @ts-expect-error
+		attest(() => scope({}, { numberAllowsInfinity: true })).type.errors(
+			"'numberAllowsInfinity' does not exist in type"
+		)
+		attest(() => scope({}, { onUndeclaredKey: "delete" } as never)).throws(
+			writeGlobalOnlyConfigMessage("onUndeclaredKey")
+		)
 	})
 
 	it("cross-scope intersection", () => {

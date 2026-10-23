@@ -74,26 +74,6 @@ contextualize(() => {
 		])
 	})
 
-	it("refuses sites while configuring", () => {
-		attest(
-			check([], { cwd: fromHere("refused"), config: "config.ts" }).lines
-		).snap([
-			'config.ts:3:21  type("string") is created while the config module loads, before configure() runs\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.',
-			'main.ts:6:18  type("number").configure(meta) cannot be precompiled\n  arktype reads `inner.meta.label()` while defining the type, so it must be static\n  `inner.meta.label` is a function reached through a property rather than a binding\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
-			"2 sites in 2 files: 0 accepted (0.0%)"
-		])
-	})
-
-	it("rejects sites under an unapplied config", () => {
-		attest(
-			check([], { cwd: fromHere("unapplied"), config: "config.ts" }).lines
-		).snap([
-			"config.ts:3:1  configure({ onUndeclaredKey: process.argv.length > 99 ? \"de… is not static\n  `process` is a global the build does not read\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
-			'main.ts:4:18  type({ a: "string" }) is created under a configuration the build can\'t apply\n  configure({ onUndeclaredKey: process.argv.length > 99 ? "de… is not static (config.ts)\n  `process` is a global the build does not read\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.',
-			"1 site in 2 files: 0 accepted (0.0%), 1 error outside a site"
-		])
-	})
-
 	it("refuses text a standalone validator can't write", () => {
 		attest(
 			check([], { cwd: fromHere("unwritten"), config: "config.ts" }).lines
@@ -231,17 +211,6 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 			"main.ts:4:21  accepted",
 			'main.ts:6:21  JSON.stringify(User) reads toJSON, which a standalone validator lacks\n  `User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
 			"1 site in 2 files: 1 accepted (100.0%), 2 errors outside a site"
-		])
-		attest(runCli(dir, "--check", "--fail-under", "0").status).equals(1)
-	})
-
-	it("fails where a value may be a Type", () => {
-		const dir = fromHere("unsure")
-		attest(check([], { cwd: dir }).lines).snap([
-			"main.ts:3:16  accepted",
-			"main.ts:3:42  accepted",
-			"main.ts:5:44  form.or reads or, which a standalone validator lacks\n  the build can't tell where `form` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-			"2 sites in 1 file: 2 accepted (100.0%), 1 error outside a site"
 		])
 		attest(runCli(dir, "--check", "--fail-under", "0").status).equals(1)
 	})

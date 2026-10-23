@@ -1,4 +1,5 @@
 import type { ArkError, ArkErrors, Locale } from "@ark/schema"
+import { timeOf } from "@ark/util"
 import { scope, type } from "arktype"
 import { keywordPhrases } from "arktype/internal/keywords/phrases.ts"
 
@@ -27,6 +28,7 @@ const keywordInputs: unknown[] = [
 	"{",
 	"(",
 	"9007199254740993",
+	"1e400",
 	1.5,
 	9e20,
 	5,
@@ -94,6 +96,7 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		new Date("2000-12-31T09:05:00Z")
 	)
 	add("Date != May 3", $.type("Date != d'2000-05-03'"), new Date("2000-05-03"))
+	add("May 3", $.type("d'2000-05-03'"), new Date("2000-05-04"))
 	add(
 		"enumerated Dates",
 		$.type.enumerated(new Date("2000-05-03"), new Date("2000-05-04")),
@@ -124,6 +127,7 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 	add("unit symbol", $.type.unit(sym), 1)
 	add("Date", $.type("Date"), 1)
 	add("Date", $.type("Date"), new Date("!"))
+	add("Date", $.type("Date"), Object.create(Date.prototype))
 	add("Array", $.type("unknown[]"), {})
 	add("Map", $.type("Map"), [])
 	add("Set", $.type("Set"), new Map())
@@ -422,9 +426,9 @@ const describeData = (data: unknown): string =>
 	typeof data === "string" ? JSON.stringify(data)
 	: typeof data === "bigint" ? `${data}n`
 	: data instanceof Date ?
-		Number.isNaN(data.getTime()) ?
-			"Invalid Date"
-		:	data.toISOString()
+		timeOf(data) === undefined ? "Object.create(Date.prototype)"
+		: Number.isNaN(data.getTime()) ? "Invalid Date"
+		: data.toISOString()
 	: typeof data === "symbol" ? String(data)
 	: (
 		Array.isArray(data) ||

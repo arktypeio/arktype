@@ -24,11 +24,28 @@ contextualize(() => {
 			foo: 5
 		}) as StandardSchemaV1.FailureResult
 
-		attest(badStandardOut).instanceOf(type.errors)
 		attest(Array.isArray(badStandardOut.issues)).equals(true)
 		attest(badStandardOut.issues.map(issue => issue.message)).snap([
-			"foo must be a string (was a number)"
+			"must be a string (was a number)"
 		])
+		attest(badStandardOut.issues[0].path).equals(["foo"])
+	})
+
+	it("an issue's message leaves its path to the consumer", () => {
+		const T = type({ a: type({ b: "string" }).or({ c: "number" }) })
+		const out = T["~standard"].validate({
+			a: {}
+		}) as StandardSchemaV1.FailureResult
+		attest(out.issues.map(issue => [issue.path, issue.message])).snap([
+			[
+				["a"],
+				"b must be a string (was missing) or c must be a number (was missing)"
+			]
+		])
+		// its errors still start with their path
+		attest(T({ a: {} }).toString()).snap(
+			"a.b must be a string (was missing) or a.c must be a number (was missing)"
+		)
 	})
 
 	it("nested standard schema issues", () => {
@@ -52,6 +69,28 @@ contextualize(() => {
 		})
 
 		attest(Other({ user: {} }).toString()).snap("user.age expected an integer")
+
+		const Union = type({ a: type({ b: "string" }).or({ c: "number" }) })
+		attest(
+			type({ x: { "~standard": Union["~standard"] } })({
+				x: { a: {} }
+			}).toString()
+		).snap(
+			"x.a b must be a string (was missing) or c must be a number (was missing)"
+		)
+	})
+
+	it("an embedded Standard Schema's empty issues fail", () => {
+		const T = type({
+			a: {
+				"~standard": {
+					version: 1,
+					vendor: "other",
+					validate: () => ({ issues: [] })
+				}
+			}
+		})
+		attest(T({ a: 1 }).toString()).snap("a is invalid")
 	})
 
 	it("can infer generic parameter from standard schema", () => {

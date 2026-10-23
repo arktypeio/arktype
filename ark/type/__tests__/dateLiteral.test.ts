@@ -18,6 +18,12 @@ contextualize(() => {
 		attest(ISO.allows(new Date("2000/07/05"))).equals(false)
 	})
 
+	it("a miss prints the Date", () => {
+		attest(type("d'2020-01-01'")(new Date("2020-01-02")).toString()).snap(
+			"must be 2020-01-01 (was January 2, 2020)"
+		)
+	})
+
 	it("rejects an invalid Date", () => {
 		const T = type({ a: "d'1970-01-01T00:00:02.000Z'" })
 		attest(T({ a: new Date(Number.NaN) }).toString()).snap(
@@ -26,6 +32,20 @@ contextualize(() => {
 		attest(type("2000 <= Date <= 2000").allows(new Date(Number.NaN))).equals(
 			false
 		)
+	})
+
+	it("rejects an object only inheriting Date.prototype", () => {
+		const impostor = Object.create(Date.prototype)
+		attest(type("Date")(impostor).toString()).snap(
+			"must be a Date (was an object)"
+		)
+		attest(type("Date > d'2020-01-01'").allows(impostor)).equals(false)
+		attest(type("d'2020-01-01'")(impostor).toString()).snap(
+			"must be 2020-01-01 (was an object)"
+		)
+		attest(
+			type.schema({ proto: Date, dateAllowsInvalid: true }).allows(impostor)
+		).equals(false)
 	})
 
 	it("offset", () => {
@@ -84,7 +104,7 @@ contextualize(() => {
 			"d'2000-01-01T00:00:00.000Z' <= Date <= d'2000-01-01T17:00:00.000Z'"
 		)
 		attest(T.description).snap(
-			"a Date and January 1, 2000, 5:00 PM UTC or earlier and 2000 or later"
+			"a Date and January 1, 2000, 5:00 PM UTC or earlier and January 1, 2000 or later"
 		)
 		attest(T(new Date("2000-01-01T18:00Z")).toString()).snap(
 			"must be January 1, 2000, 5:00 PM UTC or earlier (was January 1, 2000, 6:00 PM UTC)"

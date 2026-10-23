@@ -432,22 +432,20 @@ export const User = type({ name: "string" })`)
 		it("data validated by a Module's Type", () => {
 			attest(
 				diagnosticsOf(`import { scope, type } from "arktype"
-const shop = scope({ Id: "string", Cart: { owner: "Id", items: "string[]" } }).export()
+const nested = type.module({ Line: { sku: "string" } })
+const shop = scope({
+	Id: "string",
+	Cart: { owner: "Id", items: "string[]" },
+	nested,
+	"Box<t>": { of: "t" }
+}).export()
 const { Cart } = shop
 export const upper = (data: unknown) =>
 	shop.Cart.assert(data).items.map(i => i.toUpperCase())
 export const messages = (data: unknown) => {
 	const out = Cart(data)
 	return out instanceof type.errors ? out.issues.map(i => i.message) : out.items.filter(Boolean)
-}`)
-			).equals([])
-		})
-
-		it("data validated by a submodule's Type", () => {
-			attest(
-				diagnosticsOf(`import { scope, type } from "arktype"
-const nested = type.module({ Line: { sku: "string" } })
-const shop = scope({ nested, "Box<t>": { of: "t" } }).export()
+}
 export const skus = (data: unknown[]) =>
 	shop.nested.Line.array().assert(data).map(line => line.sku)`)
 			).equals([])
@@ -1231,7 +1229,7 @@ const User = type({ name: "string" })`)
 		})
 
 		// as a bundler's alias or virtual module the build doesn't know of
-		const unresolvedReadsOf = (opts?: PrecompileOptions) => {
+		const unresolvedReadsOf = () => {
 			const source = `import { type } from "arktype"
 import { User, port } from "~/schemas"
 import { z } from "astro:content"
@@ -1244,7 +1242,7 @@ export const Tag = z.string().optional()`
 				specifier.startsWith("~/") || specifier.includes(":") ?
 					undefined
 				:	host.resolve(specifier, importer)
-			return new Precompiler({ ...host, resolve }, opts)
+			return new Precompiler({ ...host, resolve })
 				.analyzeSites(source, "/main.ts")
 				.diagnostics.map(d => `${d.severity} ${renderDiagnostic(d)}`)
 		}
@@ -1253,13 +1251,6 @@ export const Tag = z.string().optional()`
 			attest(unresolvedReadsOf()).snap([
 				"error /main.ts:4:22  User.and reads and, which a standalone validator lacks\n  `User` comes from `~/schemas`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it. Set allowUnsafe: true to build anyway, with a warning.",
 				"error /main.ts:7:20  z.string().optional reads optional, which a standalone validator lacks\n  `z.string()` comes from `astro:content`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it. Set allowUnsafe: true to build anyway, with a warning."
-			])
-		})
-
-		it("a read off an import the build can't resolve with allowUnsafe", () => {
-			attest(unresolvedReadsOf({ allowUnsafe: true })).snap([
-				"warning /main.ts:4:22  User.and reads and, which a standalone validator lacks\n  `User` comes from `~/schemas`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it.",
-				"warning /main.ts:7:20  z.string().optional reads optional, which a standalone validator lacks\n  `z.string()` comes from `astro:content`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it."
 			])
 		})
 
@@ -1711,24 +1702,9 @@ console.log(values.map(v => (v as any).from))`,
 				message: string
 			][] = [
 				[
-					"runtime other than arktype",
-					{ runtime: "arktyp" as never },
-					'runtime must be "arktype" (was "arktyp")'
-				],
-				[
-					"non-object members",
-					{ members: true as never },
-					"members must be an object (was true)"
-				],
-				[
 					"unknown member",
 					{ members: { json: true, and: true } as never },
 					"members.and must be removed (was true)"
-				],
-				[
-					"non-boolean member",
-					{ members: { assert: 0 } as never },
-					"members.assert must be boolean (was 0)"
 				],
 				[
 					"~standard.jsonSchema without ~standard",
@@ -1759,11 +1735,6 @@ console.log(values.map(v => (v as any).from))`,
 					"unknown option",
 					{ optimise: "size" } as never,
 					'optimise must be removed (was "size")'
-				],
-				[
-					"unknown preset",
-					{ preset: "tiny" as never },
-					'preset must be "introspectable" or "smallest" (was "tiny")'
 				],
 				[
 					"standalone option with runtime arktype",

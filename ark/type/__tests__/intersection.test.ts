@@ -75,7 +75,9 @@ contextualize(() => {
 
 	it("bounded proto with props", () => {
 		const T = type("Date >= d'2023-01-01'").and({ foo: "string" })
-		attest(T.description).snap("{ foo: a string } & a Date and 2023 or later")
+		attest(T.description).snap(
+			"{ foo: a string } & a Date and January 1, 2023 or later"
+		)
 		attest(type("Array > 2").and({ foo: "string" }).expression).snap(
 			"{ foo: string } & Array >= 3"
 		)

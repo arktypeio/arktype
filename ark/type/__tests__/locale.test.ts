@@ -12,7 +12,8 @@ import {
 	type DomainCase,
 	type Locale,
 	type MessageContext,
-	type MessageWriter
+	type MessageWriter,
+	writeGlobalOnlyConfigMessage
 } from "@ark/schema"
 import { flatMorph, omit } from "@ark/util"
 import {
@@ -242,7 +243,7 @@ contextualize(() => {
 			attest(en.plural(0)).equals("other")
 			attest(en.number(0.5)).equals("0.5")
 			attest(en.number(5n)).equals("5")
-			attest(en.date(new Date("2000-01-01"))).equals("2000")
+			attest(en.date(new Date("2000-01-01"))).equals("January 1, 2000")
 			attest(en.cite("a username")).equals("a username")
 		})
 
@@ -929,17 +930,8 @@ m must be a bigint (was 5)`)
 			attest(() => scope({}, { locale: xx })).type.errors(
 				"'locale' does not exist in type"
 			)
-		})
-
-		it("ignores a scope's locale", () => {
-			const config = { locale: { tag: "partial" } } as never
-			attest(scope({}, config).type("string")(5).toString()).snap(
-				"must be a string (was a number)"
-			)
-			withConfig({ locale: xx }, () =>
-				attest(scope({}, config).type("string")(5).toString()).snap(
-					" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
-				)
+			attest(() => scope({}, { locale: xx } as never)).throws(
+				writeGlobalOnlyConfigMessage("locale")
 			)
 		})
 
