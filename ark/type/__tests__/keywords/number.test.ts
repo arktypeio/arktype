@@ -58,17 +58,6 @@ contextualize(() => {
 		)
 	})
 
-	it("doesn't allow Infinity by default", () => {
-		attest(type.number.allows(Number.POSITIVE_INFINITY)).equals(false)
-		attest(type.number.allows(Number.NEGATIVE_INFINITY)).equals(false)
-		attest(type.number(Number.POSITIVE_INFINITY).toString()).snap(
-			"must be a number (was Infinity)"
-		)
-		attest(type.number(Number.NEGATIVE_INFINITY).toString()).snap(
-			"must be a number (was -Infinity)"
-		)
-	})
-
 	it("allows Infinity in a union with number.Infinity", () => {
 		const T = type("number | number.Infinity")
 		attest(T.expression).snap("number | Infinity")

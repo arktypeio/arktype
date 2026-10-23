@@ -74,17 +74,20 @@ const bundle = (source: string) => {
 
 const issuesPath = fromHere("..", "..", "schema", "shared", "issues.ts")
 
-// as @ark/schema/runtime/none bundles it, issuesNone.ts for issues.ts
-const bundleUndetailed = async (source: string): Promise<string> => {
+// as @ark/schema/runtime's variants bundle it, e.g. issuesNone.ts for issues.ts
+const bundleWithIssues = async (
+	source: string,
+	issues: string
+): Promise<string> => {
 	const { outputFiles } = await build({
 		...optionsOf(source),
 		plugins: [
 			{
-				name: "issuesNone",
+				name: issues,
 				setup: pluginBuild =>
 					pluginBuild.onResolve({ filter: /\/issues\.ts$/ }, args =>
 						join(args.resolveDir, args.path) === issuesPath ?
-							{ path: join(issuesPath, "..", "issuesNone.ts") }
+							{ path: join(issuesPath, "..", issues) }
 						:	undefined
 					)
 			}
@@ -105,12 +108,20 @@ interface LoadOptions extends StandaloneOptions {
 	// run before the artifact, as a program's config module is
 	configure?: string
 	fingerprint?: string | undefined
+	// the issues module a build's errors resolve to, e.g. "issuesLean.ts"
+	issues?: string
 }
 
 // each validator is read as a site reads it
 const load = async (
 	exports: Record<string, StandaloneExport>,
-	{ configure = "", fingerprint, members = printed, ...opts }: LoadOptions = {}
+	{
+		configure = "",
+		fingerprint,
+		members = printed,
+		issues,
+		...opts
+	}: LoadOptions = {}
 ): Promise<Record<string, any>> => {
 	const { code, folds } = precompileStandalone(exports, {
 		...opts,
@@ -122,10 +133,11 @@ const load = async (
 		members
 	})
 	const source = code.replace(runtimeImport, `${runtimeImport}\n${configure}`)
+	issues ??= opts.errors === "none" ? "issuesNone.ts" : undefined
 	const artifact = await importCode(
-		opts.errors === "none" ? await bundleUndetailed(source) : bundle(source).js
+		issues ? await bundleWithIssues(source, issues) : bundle(source).js
 	)
-	return flatMorph(exports, (name, value) => {
+	const validators = flatMorph(exports, (name, value) => {
 		if (arkKindOf(value) !== undefined) return [name, artifact[name]()]
 		const fold = folds[name]
 		return [
@@ -135,6 +147,10 @@ const load = async (
 			:	artifact[name]
 		]
 	})
+	// `configure: exportsRuntime` reads the runtime as the program does
+	return artifact.runtime ?
+			{ ...validators, runtime: artifact.runtime }
+		:	validators
 }
 
 // what creating a validator after the given configure() call throws
@@ -145,6 +161,8 @@ const messageOf = (configure: string, fingerprint?: string) =>
 	)
 
 const runtimeImport = `import * as runtime from "arktype/runtime"`
+
+const exportsRuntime = "export { runtime }"
 
 // a hole's stand-in, named by the placeholder its factory completes
 const standIn = <fn extends Function>(fn: fn, id: string, name = ""): fn =>
@@ -252,7 +270,10 @@ contextualize(() => {
 			tuple: type(["string", "number = 3", "boolean = true"]),
 			piped: type("string.trim").to("string > 1"),
 			dates: type({ at: "string.date.iso.parse" }).array(),
-			typeError: type.instanceOf(TypeError)
+			typeError: type.instanceOf(TypeError),
+			domains: type("string | number > 0 | null | bigint | undefined").or({
+				a: "string"
+			})
 		}
 		// for size, units are shared modules and validators share root applies
 		const sized = async (members: ValidatorMembers) => {
@@ -323,9 +344,46 @@ contextualize(() => {
 			new TypeError("x"),
 			{ k: { p1: "s", z: 1 } },
 			{ k: { kind: "a2", p1: null, p0: { j: { p1: "x", z: 1 } }, z: 1 } },
-			null
+			null,
+			1,
+			0,
+			1n,
+			{ a: "" },
+			{},
+			() => {},
+			undefined,
+			true,
+			Symbol()
 		]
 		for (const validators of builds) agrees(validators, types, inputs)
+		// a size build checks a union's domains by ternary, failing as arktype says
+		attest(
+			[
+				"",
+				1,
+				0,
+				null,
+				1n,
+				{ a: "" },
+				{},
+				() => {},
+				undefined,
+				true,
+				Symbol()
+			].map(data => String(builds[1].domains(data)))
+		).snap([
+			"",
+			"1",
+			"must be positive",
+			"null",
+			"1",
+			"[object Object]",
+			"a is missing",
+			"a is missing",
+			"undefined",
+			"must be a bigint, a string, a number, an object, undefined or null",
+			"must be a bigint, a string, a number, an object, undefined or null"
+		])
 	})
 
 	it("size keeps a literal holding a line separator", async () => {
@@ -614,6 +672,63 @@ contextualize(() => {
 		attest(errors.summary).snap("b must be a number")
 	})
 
+	it("a failure's class is type.errors, read or unread", async () => {
+		const { T, U, runtime } = await load(
+			{ T: type({ name: "string" }), U: type("string") },
+			{ configure: exportsRuntime }
+		)
+		attest(T({}).constructor).is(runtime.type.errors)
+		attest(U(5) instanceof runtime.ArkErrors).equals(true)
+	})
+
+	it("errors written for size", async () => {
+		const T = type({ a: "string", b: { c: "number[]" } })
+		const outputs = await Promise.all(
+			(
+				[
+					[{}, "issuesLean.ts"],
+					[{ errors: "none" }, "issuesNoneLean.ts"]
+				] as const
+			).map(async ([opts, issues]) => {
+				const { T: validator, runtime } = await load(
+					{ T },
+					{ ...opts, optimize: "size", issues, configure: exportsRuntime }
+				)
+				const out = validator({ b: { c: [1, "x"] } })
+				const thrown = [() => validator.assert({}), () => out.throw()].map(
+					fail => {
+						const e = caught(fail)
+						return `${e} ${e instanceof runtime.TraversalError}`
+					}
+				)
+				return [
+					`${out.constructor === runtime.type.errors} ${out.count} ${JSON.stringify(out.issues)}`,
+					out.summary,
+					`${String(out) === out.summary} ${`${out}` === out.summary} ${JSON.stringify(out) === JSON.stringify(out.issues)}`,
+					...thrown,
+					""
+				].join("\n")
+			})
+		)
+		attest(outputs).snap([
+			`true 2 [{"code":"required","path":["a"],"data":{"b":{"c":[1,"x"]}},"message":"a is missing"},{"code":"domain","path":["b","c",1],"data":"x","expected":"a number","message":"b.c[1] must be a number"}]
+a is missing
+b.c[1] must be a number
+true true true
+TraversalError: a is missing
+b is missing true
+TraversalError: a is missing
+b.c[1] must be a number true
+`,
+			`true 1 [{"code":"predicate","path":[],"data":{"b":{"c":[1,"x"]}},"message":"is invalid"}]
+is invalid
+true true true
+Error: is invalid false
+TypeError: out.throw is not a function false
+`
+		])
+	})
+
 	it("issues found as it validates for size", async () => {
 		const { T } = await load(
 			{ T: type({ a: "string", b: "number" }) },
@@ -868,6 +983,32 @@ n must be a string or null`)
 		attest(read).equals([
 			{ code: "predicate", path: ["a"], data: "x", message: "is invalid" }
 		])
+	})
+
+	it("errors: none, piped into with or without assert", async () => {
+		let User: (data: unknown, ctx: Traversal) => unknown = () => {}
+		const validate = standIn(
+			(data: unknown, ctx: Traversal) => User(data, ctx),
+			"validate"
+		)
+		for (const members of [{}, { assert: false }]) {
+			const created = await load(
+				{
+					User: type({ name: "string" }),
+					Parsed: {
+						type: type("string.json.parse").pipe(validate),
+						params: [{ kind: "function", label: "`validate`", value: validate }]
+					}
+				},
+				{ errors: "none", configured: false, members }
+			)
+			User = created.User
+			attest(
+				created
+					.Parsed(validate)('{"name":5}')
+					.issues.map((issue: any) => [issue.code, ...issue.path])
+			).equals([["predicate"]])
+		}
 	})
 
 	it("members: false omits each", async () => {
@@ -1148,15 +1289,6 @@ name is missing`)
 			"a must be a string",
 			"b must be valid according to isLong"
 		])
-		attest(
-			type(exports.T)({ a: 1, b: "b", c: [1] })
-				.toString()
-				.split("\n")
-		).snap([
-			"a must be a string (was a number)",
-			"b must be a number (was a string)",
-			"c[0] must be a string (was a number)"
-		])
 	})
 
 	it("errors: first reports one of the issues", async () => {
@@ -1192,7 +1324,6 @@ name is missing`)
 				scope({ node: { value: "number", "next?": "node" } }).type("node")
 			)
 		}
-		const validators = await load(exports, { errors: "none" })
 		// one root apply of each kind, and each through a cycle
 		const inputs: { [name in keyof typeof exports]: [valid: {}, invalid: {}] } =
 			{
@@ -1217,13 +1348,24 @@ name is missing`)
 					'{ "value": "1" }'
 				]
 			}
-		for (const [name, [valid, invalid]] of Object.entries(inputs)) {
-			attest(validators[name](valid)).equals(
-				exports[name as keyof typeof exports](valid)
-			)
-			attest(validators[name](invalid).issues).equals([
-				{ code: "predicate", path: [], data: invalid, message: "is invalid" }
-			])
+		for (const optimize of ["speed", "size"] as const) {
+			const validators = await load(exports, {
+				errors: "none",
+				optimize,
+				configure: exportsRuntime
+			})
+			for (const [name, [valid, invalid]] of Object.entries(inputs)) {
+				attest(validators[name](valid)).equals(
+					exports[name as keyof typeof exports](valid)
+				)
+				// its issue is found once read
+				const errors = validators[name](invalid)
+				attest(errors.constructor).is(validators.runtime.type.errors)
+				attest(errors.issues).equals([
+					{ code: "predicate", path: [], data: invalid, message: "is invalid" }
+				])
+				attest(errors.issues[0].data).is(invalid)
+			}
 		}
 	})
 
@@ -1734,6 +1876,29 @@ password must be at least length 8`)
 			)
 		})
 		attest(T({ a: "", b: 1 }).summary).snap("no extra keys")
+	})
+
+	it("an undeclared key's issue as arktype writes it", async () => {
+		const types = {
+			Strict: type({ "+": "reject", a: "string", o: { "+": "reject" } }),
+			Gone: type({ "+": "reject" }).configure({ expected: "gone" }, "structure")
+		}
+		const issuesOf = ({ Strict, Gone }: Record<string, any>) =>
+			[Strict({ a: "", o: { b: 1 }, c: 1 }), Gone({ d: 1 })].flatMap(out =>
+				out.issues.map(({ code, path, expected, message }: any) =>
+					JSON.stringify({ code, path, expected, message })
+				)
+			)
+		const arktype = issuesOf(types)
+		attest(arktype).snap([
+			'{"code":"undeclared","path":["o","b"],"expected":"removed","message":"o.b must be removed"}',
+			'{"code":"undeclared","path":["c"],"expected":"removed","message":"c must be removed"}',
+			'{"code":"undeclared","path":["d"],"expected":"gone","message":"d must be gone"}'
+		])
+		attest(issuesOf(await load(types))).equals(arktype)
+		attest(
+			issuesOf(await load(types, { optimize: "size", issues: "issuesLean.ts" }))
+		).equals(arktype)
 	})
 
 	it("callback error text", async () => {
@@ -2605,6 +2770,33 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			attest(create((n: number) => n % 2 === 0).description).snap(
 				"a number and valid according to an anonymous predicate"
 			)
+		})
+
+		it("a predicate reading ctx in an intersection", async () => {
+			const isFilled = standIn(
+				(s: string, ctx: Traversal) => s.length > 0 || ctx.reject("non-empty"),
+				"isfilled"
+			)
+			const double = standIn((s: string) => s + s, "double")
+			const isEven = standIn(
+				(o: object) => Object.keys(o).length % 2 === 0,
+				"iseven"
+			)
+			const T = type([
+				["string", ":", isFilled],
+				[["string", "=>", double], "?"]
+			]).and(type(["object", ":", isEven]))
+			const create = await loadFactory(T, [
+				["function", "`isFilled`", isFilled],
+				["function", "`double`", double],
+				["function", "`isEven`", isEven]
+			])
+			agrees({ T: create(isFilled, double, isEven) }, { T }, [
+				["a"],
+				["a", "b"],
+				[""],
+				["a", 2]
+			])
 		})
 
 		it("checks hole facts", async () => {

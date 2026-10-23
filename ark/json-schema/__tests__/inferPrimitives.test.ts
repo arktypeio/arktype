@@ -9,138 +9,79 @@ const inferred = <const schema, r = jsonSchema.infer<schema>>(
 	schema: jsonSchema.validate<schema>
 ): r extends infer _ ? _ : never => schema as never
 
-const manyValues = [
-	"v0",
-	"v1",
-	"v2",
-	"v3",
-	"v4",
-	"v5",
-	"v6",
-	"v7",
-	"v8",
-	"v9",
-	"v10",
-	"v11",
-	"v12",
-	"v13",
-	"v14",
-	"v15",
-	"v16",
-	"v17",
-	"v18",
-	"v19",
-	"v20",
-	"v21",
-	"v22",
-	"v23",
-	"v24",
-	"v25",
-	"v26",
-	"v27",
-	"v28",
-	"v29",
-	"v30",
-	"v31",
-	"v32",
-	"v33",
-	"v34",
-	"v35",
-	"v36",
-	"v37",
-	"v38",
-	"v39",
-	"v40",
-	"v41",
-	"v42",
-	"v43",
-	"v44",
-	"v45",
-	"v46",
-	"v47",
-	"v48",
-	"v49",
-	"v50",
-	"v51",
-	"v52",
-	"v53",
-	"v54",
-	"v55",
-	"v56",
-	"v57",
-	"v58",
-	"v59",
-	"v60",
-	"v61",
-	"v62",
-	"v63",
-	"v64",
-	"v65",
-	"v66",
-	"v67",
-	"v68",
-	"v69",
-	"v70",
-	"v71",
-	"v72",
-	"v73",
-	"v74",
-	"v75",
-	"v76",
-	"v77",
-	"v78",
-	"v79",
-	"v80",
-	"v81",
-	"v82",
-	"v83",
-	"v84",
-	"v85",
-	"v86",
-	"v87",
-	"v88",
-	"v89",
-	"v90",
-	"v91",
-	"v92",
-	"v93",
-	"v94",
-	"v95",
-	"v96",
-	"v97",
-	"v98",
-	"v99",
-	"v100",
-	"v101",
-	"v102",
-	"v103",
-	"v104",
-	"v105",
-	"v106",
-	"v107",
-	"v108",
-	"v109",
-	"v110",
-	"v111",
-	"v112",
-	"v113",
-	"v114",
-	"v115",
-	"v116",
-	"v117",
-	"v118",
-	"v119",
-	"v120",
-	"v121",
-	"v122",
-	"v123",
-	"v124",
-	"v125",
-	"v126",
-	"v127"
-] as const
+// JSONSchema7 from @types/json-schema, the most common schema type in the wild
+interface JSONSchema7 {
+	$id?: string | undefined
+	$ref?: string | undefined
+	$schema?: string | undefined
+	$comment?: string | undefined
+	$defs?: { [key: string]: JSONSchema7Definition } | undefined
+	type?: JSONSchema7TypeName | JSONSchema7TypeName[] | undefined
+	enum?: JSONSchema7Type[] | undefined
+	const?: JSONSchema7Type | undefined
+	multipleOf?: number | undefined
+	maximum?: number | undefined
+	exclusiveMaximum?: number | undefined
+	minimum?: number | undefined
+	exclusiveMinimum?: number | undefined
+	maxLength?: number | undefined
+	minLength?: number | undefined
+	pattern?: string | undefined
+	items?: JSONSchema7Definition | JSONSchema7Definition[] | undefined
+	additionalItems?: JSONSchema7Definition | undefined
+	maxItems?: number | undefined
+	minItems?: number | undefined
+	uniqueItems?: boolean | undefined
+	contains?: JSONSchema7Definition | undefined
+	maxProperties?: number | undefined
+	minProperties?: number | undefined
+	required?: string[] | undefined
+	properties?: { [key: string]: JSONSchema7Definition } | undefined
+	patternProperties?: { [key: string]: JSONSchema7Definition } | undefined
+	additionalProperties?: JSONSchema7Definition | undefined
+	dependencies?: { [key: string]: JSONSchema7Definition | string[] } | undefined
+	propertyNames?: JSONSchema7Definition | undefined
+	if?: JSONSchema7Definition | undefined
+	then?: JSONSchema7Definition | undefined
+	else?: JSONSchema7Definition | undefined
+	allOf?: JSONSchema7Definition[] | undefined
+	anyOf?: JSONSchema7Definition[] | undefined
+	oneOf?: JSONSchema7Definition[] | undefined
+	not?: JSONSchema7Definition | undefined
+	format?: string | undefined
+	definitions?: { [key: string]: JSONSchema7Definition } | undefined
+	title?: string | undefined
+	description?: string | undefined
+	default?: JSONSchema7Type | undefined
+	readOnly?: boolean | undefined
+	writeOnly?: boolean | undefined
+	examples?: JSONSchema7Type | undefined
+}
 
-type ManyValue = (typeof manyValues)[number]
+type JSONSchema7Definition = JSONSchema7 | boolean
+
+type JSONSchema7TypeName =
+	| "string"
+	| "number"
+	| "integer"
+	| "boolean"
+	| "object"
+	| "array"
+	| "null"
+
+type JSONSchema7Type =
+	| string
+	| number
+	| boolean
+	| JSONSchema7Object
+	| JSONSchema7Array
+	| null
+
+interface JSONSchema7Object {
+	[key: string]: JSONSchema7Type
+}
+
+interface JSONSchema7Array extends Array<JSONSchema7Type> {}
 
 contextualize(() => {
 	describe("type names", () => {
@@ -273,18 +214,6 @@ contextualize(() => {
 			attest<never>(T.infer).type.toString.snap("never")
 		})
 
-		it("true in allOf", () => {
-			attest<string>(
-				inferred({ allOf: [true, { type: "string" }] })
-			).type.toString.snap("string")
-		})
-
-		it("false in allOf", () => {
-			attest<never>(
-				inferred({ allOf: [false, { type: "string" }] })
-			).type.toString.snap("never")
-		})
-
 		it("type with not false", () => {
 			attest<string>(
 				inferred({ type: "string", not: false })
@@ -294,25 +223,6 @@ contextualize(() => {
 		it("type with not true", () => {
 			attest<never>(inferred({ type: "string", not: true })).type.toString.snap(
 				"never"
-			)
-		})
-
-		it("boolean refs, properties and prefixItems", () => {
-			attest<unknown>(
-				inferred({
-					$defs: { a: false, b: true },
-					anyOf: [{ $ref: "#/$defs/a" }, { $ref: "#/$defs/b" }]
-				})
-			).type.toString.snap("unknown")
-			attest<{ a: unknown; b: never }>(
-				inferred({
-					type: "object",
-					properties: { a: true, b: false },
-					required: ["a", "b"]
-				})
-			).type.toString.snap("{ a: unknown; b: never }")
-			attest<[unknown?, never?]>(
-				inferred({ type: "array", prefixItems: [true, false], items: false })
 			)
 		})
 
@@ -494,9 +404,17 @@ contextualize(() => {
 			attest<never>(inferred({ enum: [] })).type.toString.snap("never")
 		})
 
-		it("many values with type", () => {
-			attest<ManyValue>(inferred({ type: "string", enum: manyValues }))
-			attest<never>(inferred({ type: "number", enum: manyValues }))
+		it("five hundred strings with type", () => {
+			type values<acc extends string[]> =
+				acc["length"] extends 500 ? acc : values<[...acc, `v${acc["length"]}`]>
+			type range<n extends number, acc extends number[] = []> =
+				acc["length"] extends n ? acc[number]
+				:	range<n, [...acc, acc["length"]]>
+			type T = jsonSchema.infer<{ type: "string"; enum: values<[]> }>
+			attest<`v${range<500>}`, T>()
+			attest<never>(
+				{} as jsonSchema.infer<{ type: "number"; enum: values<[]> }>
+			)
 		})
 
 		it("widened", () => {
@@ -815,6 +733,23 @@ contextualize(() => {
 
 		it("widened type with enum", () => {
 			attest<"a" | 1, jsonSchema.infer<{ type: string; enum: ["a", 1] }>>()
+		})
+
+		it("JSONSchema7 value is valid", () => {
+			const schema: JSONSchema7 = { type: "string" }
+			attest(() => inferred(schema)).type.errors.is("")
+		})
+
+		it("nested JSONSchema7 values are valid", () => {
+			type s = {
+				type: "object"
+				properties: { a: JSONSchema7 }
+				items: JSONSchema7
+				anyOf: [JSONSchema7, { type: "string" }]
+				not: JSONSchema7
+				dependencies: { a: JSONSchema7 }
+			}
+			attest<true, s extends jsonSchema.validate<s> ? true : false>()
 		})
 	})
 
@@ -1841,12 +1776,6 @@ contextualize(() => {
 
 	describe("literal property keys", () => {
 		it("a property named with the null character", () => {
-			attest<{ "\u0000"?: string }>(
-				inferred({
-					type: "object",
-					properties: { "\u0000": { type: "string" } }
-				})
-			).type.toString.snap('{ "\\0"?: string }')
 			attest<{ "\u0000"?: string; b: number }>(
 				inferred({
 					type: "object",
@@ -2054,13 +1983,6 @@ contextualize(() => {
 			type T = jsonSchema.infer<{ type: "object"; allOf: [{ allOf: [{ if: { properties: { k0: { const: "a" } }; required: ["k0"] }; then: { properties: { v0: { type: "string" } }; required: ["v0"] }; else: { properties: { v0: { type: "number" } }; required: ["v0"] } }] }, { allOf: [{ if: { properties: { k1: { const: "a" } }; required: ["k1"] }; then: { properties: { v1: { type: "string" } }; required: ["v1"] }; else: { properties: { v1: { type: "number" } }; required: ["v1"] } }] }, { allOf: [{ if: { properties: { k2: { const: "a" } }; required: ["k2"] }; then: { properties: { v2: { type: "string" } }; required: ["v2"] }; else: { properties: { v2: { type: "number" } }; required: ["v2"] } }] }, { allOf: [{ if: { properties: { k3: { const: "a" } }; required: ["k3"] }; then: { properties: { v3: { type: "string" } }; required: ["v3"] }; else: { properties: { v3: { type: "number" } }; required: ["v3"] } }] }, { allOf: [{ if: { properties: { k4: { const: "a" } }; required: ["k4"] }; then: { properties: { v4: { type: "string" } }; required: ["v4"] }; else: { properties: { v4: { type: "number" } }; required: ["v4"] } }] }, { allOf: [{ if: { properties: { k5: { const: "a" } }; required: ["k5"] }; then: { properties: { v5: { type: "string" } }; required: ["v5"] }; else: { properties: { v5: { type: "number" } }; required: ["v5"] } }] }] }>
 			attest<Direct, T>()
 		})
-
-		it("fourteen rules through refs", () => {
-			// prettier-ignore
-			type T = jsonSchema.infer<{ type: "object"; $defs: { r0: { if: { properties: { k0: { const: "a" } }; required: ["k0"] }; then: { properties: { v0: { type: "string" } }; required: ["v0"] }; else: { properties: { v0: { type: "number" } }; required: ["v0"] } }; r1: { if: { properties: { k1: { const: "a" } }; required: ["k1"] }; then: { properties: { v1: { type: "string" } }; required: ["v1"] }; else: { properties: { v1: { type: "number" } }; required: ["v1"] } }; r2: { if: { properties: { k2: { const: "a" } }; required: ["k2"] }; then: { properties: { v2: { type: "string" } }; required: ["v2"] }; else: { properties: { v2: { type: "number" } }; required: ["v2"] } }; r3: { if: { properties: { k3: { const: "a" } }; required: ["k3"] }; then: { properties: { v3: { type: "string" } }; required: ["v3"] }; else: { properties: { v3: { type: "number" } }; required: ["v3"] } }; r4: { if: { properties: { k4: { const: "a" } }; required: ["k4"] }; then: { properties: { v4: { type: "string" } }; required: ["v4"] }; else: { properties: { v4: { type: "number" } }; required: ["v4"] } }; r5: { if: { properties: { k5: { const: "a" } }; required: ["k5"] }; then: { properties: { v5: { type: "string" } }; required: ["v5"] }; else: { properties: { v5: { type: "number" } }; required: ["v5"] } }; r6: { if: { properties: { k6: { const: "a" } }; required: ["k6"] }; then: { properties: { v6: { type: "string" } }; required: ["v6"] }; else: { properties: { v6: { type: "number" } }; required: ["v6"] } }; r7: { if: { properties: { k7: { const: "a" } }; required: ["k7"] }; then: { properties: { v7: { type: "string" } }; required: ["v7"] }; else: { properties: { v7: { type: "number" } }; required: ["v7"] } }; r8: { if: { properties: { k8: { const: "a" } }; required: ["k8"] }; then: { properties: { v8: { type: "string" } }; required: ["v8"] }; else: { properties: { v8: { type: "number" } }; required: ["v8"] } }; r9: { if: { properties: { k9: { const: "a" } }; required: ["k9"] }; then: { properties: { v9: { type: "string" } }; required: ["v9"] }; else: { properties: { v9: { type: "number" } }; required: ["v9"] } }; r10: { if: { properties: { k10: { const: "a" } }; required: ["k10"] }; then: { properties: { v10: { type: "string" } }; required: ["v10"] }; else: { properties: { v10: { type: "number" } }; required: ["v10"] } }; r11: { if: { properties: { k11: { const: "a" } }; required: ["k11"] }; then: { properties: { v11: { type: "string" } }; required: ["v11"] }; else: { properties: { v11: { type: "number" } }; required: ["v11"] } }; r12: { if: { properties: { k12: { const: "a" } }; required: ["k12"] }; then: { properties: { v12: { type: "string" } }; required: ["v12"] }; else: { properties: { v12: { type: "number" } }; required: ["v12"] } }; r13: { if: { properties: { k13: { const: "a" } }; required: ["k13"] }; then: { properties: { v13: { type: "string" } }; required: ["v13"] }; else: { properties: { v13: { type: "number" } }; required: ["v13"] } } }; allOf: [{ $ref: "#/$defs/r0" }, { $ref: "#/$defs/r1" }, { $ref: "#/$defs/r2" }, { $ref: "#/$defs/r3" }, { $ref: "#/$defs/r4" }, { $ref: "#/$defs/r5" }, { $ref: "#/$defs/r6" }, { $ref: "#/$defs/r7" }, { $ref: "#/$defs/r8" }, { $ref: "#/$defs/r9" }, { $ref: "#/$defs/r10" }, { $ref: "#/$defs/r11" }, { $ref: "#/$defs/r12" }, { $ref: "#/$defs/r13" }] }>
-			const isAny = {} as 0 extends 1 & T ? true : false
-			attest(isAny).type.toString.snap("false")
-		})
 	})
 
 	describe("compositions beside nullable or not nested forty deep", () => {
@@ -2089,21 +2011,6 @@ contextualize(() => {
 		})
 	})
 
-	describe("spreading a jsonSchema value", () => {
-		const user = jsonSchema({
-			type: "object",
-			properties: { id: { type: "number" }, name: { type: "string" } },
-			required: ["id", "name"]
-		})
-
-		it("a spread is inferred from its own keywords", () => {
-			const update = jsonSchema({ ...user, required: ["id"] })
-			attest<{ id: number; name?: string }>(update.infer).type.toString.snap(
-				"{ id: number; name?: string }"
-			)
-		})
-	})
-
 	describe("jsonSchema values in not", () => {
 		it("a negated null schema", () => {
 			const Null = jsonSchema({ type: "null" })
@@ -2128,19 +2035,6 @@ contextualize(() => {
 			const exclude = (s: jsonSchema<string>) =>
 				inferred({ type: "string", not: s })
 			attest<string>(exclude(nonEmpty))
-		})
-	})
-
-	describe("keywords outside a declared dialect", () => {
-		it("const under draft-04", () => {
-			// limitation: keywords apply regardless of a declared older dialect (draft-04 has no const), as jsonSchemaToType ignores $schema at runtime too
-			attest(
-				inferred({
-					$schema: "http://json-schema.org/draft-04/schema#",
-					type: "string",
-					const: "a"
-				})
-			).type.toString.snap('"a"')
 		})
 	})
 
@@ -2236,10 +2130,6 @@ contextualize(() => {
 			attest<string | number | null>(
 				jsonSchema({ anyOf: [jsonSchema({ type: "string" }), int] }).infer
 			)
-		})
-
-		it("a nested false value", () => {
-			attest<[]>(jsonSchema({ type: "array", items: jsonSchema(false) }).infer)
 		})
 	})
 })

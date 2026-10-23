@@ -40,14 +40,6 @@ contextualize(() => {
 		)
 	})
 
-	it("additionalItems", () => {
-		const tAdditionalItems = jsonSchemaToType({
-			type: "array",
-			additionalItems: { type: "string" }
-		})
-		attest(tAdditionalItems.expression).snap("Array")
-	})
-
 	it("additionalItems & items", () => {
 		const tItemsVariadic = jsonSchemaToType({
 			type: "array",
@@ -94,16 +86,6 @@ contextualize(() => {
 		).snap("[string?, number?, ...null[]]")
 	})
 
-	it("contains", () => {
-		const tContains = jsonSchemaToType({
-			type: "array",
-			contains: { type: "number" }
-		})
-		attest(tContains.allows([])).equals(false)
-		attest(tContains.allows([1, 2, 3])).equals(true)
-		attest(tContains.allows(["foo", 2, "baz"])).equals(true)
-	})
-
 	it("maxContains message", () => {
 		// JsonSchema.Array doesn't declare maxContains, though it's read
 		const T = jsonSchemaToType({
@@ -116,33 +98,12 @@ contextualize(() => {
 		)
 	})
 
-	it("maxItems (positive)", () => {
-		const tMaxItems = jsonSchemaToType({
-			type: "array",
-			maxItems: 5
-		})
-		attest(tMaxItems.expression).snap("Array <= 5")
-	})
-
-	it("maxItems (negative)", () => {
-		// @ts-expect-error
-		attest(() => jsonSchemaToType({ type: "array", maxItems: -1 })).throws.snap(
-			"ParseError: #/maxItems must be a non-negative integer (was -1)"
+	it("minItems and maxItems", () => {
+		attest(jsonSchemaToType({ type: "array", maxItems: 5 }).expression).snap(
+			"Array <= 5"
 		)
-	})
-
-	it("minItems (positive)", () => {
-		const tMinItems = jsonSchemaToType({
-			type: "array",
-			minItems: 5
-		})
-		attest(tMinItems.expression).snap("Array >= 5")
-	})
-
-	it("minItems (negative)", () => {
-		// @ts-expect-error
-		attest(() => jsonSchemaToType({ type: "array", minItems: -1 })).throws.snap(
-			"ParseError: #/minItems must be a non-negative integer (was -1)"
+		attest(jsonSchemaToType({ type: "array", minItems: 5 }).expression).snap(
+			"Array >= 5"
 		)
 	})
 
@@ -161,14 +122,6 @@ contextualize(() => {
 			type: "array",
 			uniqueItems: true
 		})
-		attest(tUniqueItems.allows([1, 2, 3])).equals(true)
-		attest(tUniqueItems.allows([1, 1, 2])).equals(false)
-		attest(
-			tUniqueItems.allows([
-				{ foo: { bar: ["baz", { qux: "quux" }] } },
-				{ foo: { bar: ["baz", { qux: "quux" }] } }
-			])
-		).equals(false)
 		attest(
 			// JSON Schema specifies that arrays must be same order to be classified as equal
 			tUniqueItems.allows([

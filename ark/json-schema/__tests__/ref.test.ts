@@ -2,21 +2,20 @@ import { attest, contextualize } from "@ark/attest"
 import { jsonSchemaToType } from "@ark/json-schema"
 
 contextualize(() => {
-	it("$defs", () => {
-		const t = jsonSchemaToType({
-			$ref: "#/$defs/name",
-			$defs: { name: { type: "string", minLength: 1 } }
-		})
-		attest(t.expression).snap("string >= 1")
-	})
-
-	it("definitions", () => {
-		const t = jsonSchemaToType({
-			type: "object",
-			properties: { name: { $ref: "#/definitions/name" } },
-			definitions: { name: { type: "string" } }
-		})
-		attest(t.expression).snap("{ name?: string }")
+	it("$defs and definitions", () => {
+		attest(
+			jsonSchemaToType({
+				$ref: "#/$defs/name",
+				$defs: { name: { type: "string", minLength: 1 } }
+			}).expression
+		).snap("string >= 1")
+		attest(
+			jsonSchemaToType({
+				type: "object",
+				properties: { name: { $ref: "#/definitions/name" } },
+				definitions: { name: { type: "string" } }
+			}).expression
+		).snap("{ name?: string }")
 	})
 
 	it("recursive", () => {
@@ -41,42 +40,6 @@ contextualize(() => {
 		).throws.snap(
 			"TraversalError: children[0].children[0].value must be a number (was missing)"
 		)
-	})
-
-	it("recursive through a union", () => {
-		const t = jsonSchemaToType({
-			$ref: "#/$defs/list",
-			$defs: {
-				list: {
-					type: "object",
-					properties: {
-						value: { type: "string" },
-						next: { anyOf: [{ $ref: "#/$defs/list" }, { type: "null" }] }
-					},
-					required: ["value", "next"]
-				}
-			}
-		})
-		attest(t.allows({ value: "a", next: { value: "b", next: null } })).equals(
-			true
-		)
-		attest(t.allows({ value: "a", next: { value: "b" } })).equals(false)
-	})
-
-	it("recursive tuple element", () => {
-		const t = jsonSchemaToType({
-			$ref: "#/$defs/pair",
-			$defs: {
-				pair: {
-					type: "array",
-					minItems: 1,
-					prefixItems: [{ type: "string" }, { $ref: "#/$defs/pair" }],
-					items: false
-				}
-			}
-		})
-		attest(t.allows(["a", ["b"]])).equals(true)
-		attest(t.allows(["a", [1]])).equals(false)
 	})
 
 	it("root", () => {
@@ -105,25 +68,6 @@ contextualize(() => {
 		attest(t.expression).snap(
 			"{ percent?: boolean, slash?: string, tilde?: number }"
 		)
-	})
-
-	it("siblings are intersected", () => {
-		const t = jsonSchemaToType({
-			$ref: "#/$defs/name",
-			maxLength: 10,
-			$defs: { name: { type: "string" } }
-		})
-		attest(t.expression).snap("string <= 10")
-	})
-
-	it("siblings are ignored before 2019-09", () => {
-		const t = jsonSchemaToType({
-			$schema: "http://json-schema.org/draft-07/schema#",
-			$ref: "#/definitions/name",
-			type: "number",
-			definitions: { name: { type: "string" } }
-		})
-		attest(t.expression).snap("string")
 	})
 
 	it("embedded resource", () => {

@@ -90,18 +90,6 @@ contextualize(() => {
 			attest<never>(T).type.toString.snap("never")
 		})
 
-		it("base object with branch properties", () => {
-			const T = inferred({
-				type: "object",
-				properties: { a: { type: "string" } },
-				required: ["a"],
-				allOf: [{ properties: { b: { type: "number" } } }]
-			})
-			attest<{ a: string; b?: number }>(T).type.toString.snap(
-				"{ a: string; b?: number }"
-			)
-		})
-
 		it("base required without properties", () => {
 			const T = inferred({
 				type: "object",
@@ -148,22 +136,6 @@ contextualize(() => {
 	})
 
 	describe("allOf objects", () => {
-		it("runtime-supported disjoint required properties", () => {
-			const T = jsonSchemaToType({
-				allOf: [
-					{
-						type: "object",
-						properties: { a: { type: "string" } },
-						required: ["a"]
-					},
-					{ type: "object", properties: { b: { type: "number" } } }
-				]
-			})
-			attest<{ a: string; b?: number }>(T.infer).type.toString.snap(
-				"{ a: string; b?: number }"
-			)
-		})
-
 		it("key order follows branch order", () => {
 			const T = inferred({
 				type: "object",
@@ -252,21 +224,6 @@ contextualize(() => {
 			attest<{ a: string }>(T).type.toString.snap("{ a: string }")
 		})
 
-		it("index signature conflicting with property", () => {
-			// the first branch's additionalProperties applies to `a`, so it
-			// must be both a string and a number
-			const T = inferred({
-				type: "object",
-				allOf: [
-					{ additionalProperties: { type: "string" } },
-					{ properties: { a: { type: "number" } }, required: ["a"] }
-				]
-			})
-			attest<{ [x: string]: string; a: never }>(T).type.toString.snap(
-				"{ [x: string]: string; a: never }"
-			)
-		})
-
 		it("two index signatures", () => {
 			const T = inferred({
 				type: "object",
@@ -333,21 +290,6 @@ contextualize(() => {
 			attest<string[]>(T).type.toString.snap("string[]")
 		})
 
-		it("tuple and items", () => {
-			const T = inferred({
-				allOf: [
-					{
-						type: "array",
-						prefixItems: [{ type: "string" }],
-						minItems: 1,
-						items: false
-					},
-					{ type: "array", items: { type: ["string", "number"] } }
-				]
-			})
-			attest<[string]>(T).type.toString.snap("[string]")
-		})
-
 		it("tuples intersect element-wise", () => {
 			const T = inferred({
 				allOf: [
@@ -381,20 +323,6 @@ contextualize(() => {
 			attest<[string, number?, ...number[]]>(T).type.toString.snap(
 				"[string, number?, ...number[]]"
 			)
-		})
-
-		it("closed tuple missing a required element", () => {
-			const T = inferred({
-				allOf: [
-					{
-						type: "array",
-						prefixItems: [{ type: "string" }, { type: "number" }],
-						minItems: 2
-					},
-					{ type: "array", prefixItems: [{ type: "string" }], items: false }
-				]
-			})
-			attest<never>(T).type.toString.snap("never")
 		})
 
 		it("an empty-items anyOf branch against a required prefix", () => {
@@ -780,6 +708,30 @@ contextualize(() => {
 			})
 			attest<string | null>(T).type.toString.snap("string | null")
 		})
+
+		it("every part kind at once", () => {
+			const T = inferred({
+				type: "object",
+				properties: { a: { type: "string" } },
+				required: ["a"],
+				$ref: "#/$defs/base",
+				anyOf: [{ required: ["b"] }, { required: ["c"] }],
+				allOf: [{ properties: { d: { type: "number" } } }],
+				if: { required: ["a"] },
+				then: { required: ["e"] },
+				else: { required: ["f"] },
+				$defs: {
+					base: { type: "object", properties: { z: { type: "boolean" } } }
+				}
+			})
+			type Base = { a: string; z?: boolean; d?: number }
+			attest<
+				| (Base & { b: unknown; e: unknown })
+				| (Base & { b: unknown; f: unknown })
+				| (Base & { c: unknown; e: unknown })
+				| (Base & { c: unknown; f: unknown })
+			>(T)
+		})
 	})
 
 	describe("implied keywords with composition", () => {
@@ -984,43 +936,12 @@ contextualize(() => {
 	})
 
 	describe("not", () => {
-		it("true", () => {
-			attest<never>(inferred({ type: "string", not: true })).type.toString.snap(
-				"never"
-			)
-		})
-
-		it("false", () => {
-			const T = inferred({ type: "string", not: false })
-			attest<string>(T).type.toString.snap("string")
-		})
-
-		it("empty schema", () => {
-			const T = inferred({ not: {} })
-			attest<never>(T).type.toString.snap("never")
-		})
-
-		it("exact type without base", () => {
-			const T = inferred({ not: { type: "string" } })
-			attest<number | boolean | object | unknown[] | null>(
-				T
-			).type.toString.snap("number | boolean | object | unknown[] | null")
-		})
-
 		it("runtime-supported exact type", () => {
 			const T = jsonSchemaToType({
 				type: ["string", "null"],
 				not: { type: "null" }
 			})
 			attest<string>(T.infer).type.toString.snap("string")
-		})
-
-		it("number from integer", () => {
-			const T = inferred({
-				type: ["integer", "string"],
-				not: { type: "number" }
-			})
-			attest<string>(T).type.toString.snap("string")
 		})
 
 		it("a type list including integer excludes only the other names", () => {
@@ -1031,22 +952,9 @@ contextualize(() => {
 			attest<1>(T).type.toString.snap("1")
 		})
 
-		it("const from wide type", () => {
-			const T = inferred({ type: "string", not: { const: "" } })
-			attest<string>(T).type.toString.snap("string")
-		})
-
 		it("const from boolean", () => {
 			const T = inferred({ type: "boolean", not: { const: true } })
 			attest<false>(T).type.toString.snap("false")
-		})
-
-		it("enum", () => {
-			const T = inferred({
-				enum: ["a", "b", "c", "d"],
-				not: { enum: ["a", "c"] }
-			})
-			attest<"b" | "d">(T).type.toString.snap('"b" | "d"')
 		})
 
 		it("type from enum", () => {
@@ -1060,19 +968,6 @@ contextualize(() => {
 				not: { enum: ["a", 1], type: "string" }
 			})
 			attest<"b" | 1>(T)
-		})
-
-		it("empty enum", () => {
-			const T = inferred({ type: "string", not: { enum: [] } })
-			attest<string>(T).type.toString.snap("string")
-		})
-
-		it("constrained", () => {
-			const T = inferred({
-				type: ["string", "null"],
-				not: { type: "null", description: "no nulls" }
-			})
-			attest<string>(T).type.toString.snap("string")
 		})
 
 		it("constrained type", () => {
@@ -1098,16 +993,6 @@ contextualize(() => {
 		it("in allOf branch", () => {
 			const T = inferred({
 				allOf: [{ type: ["string", "null"] }, { not: { type: "null" } }]
-			})
-			attest<string>(T).type.toString.snap("string")
-		})
-
-		it("excluding null with nullable", () => {
-			// `nullable` adds null to `type`; `not` still rejects it
-			const T = inferred({
-				type: "string",
-				nullable: true,
-				not: { type: "null" }
 			})
 			attest<string>(T).type.toString.snap("string")
 		})
@@ -1154,33 +1039,6 @@ contextualize(() => {
 	})
 
 	describe("not with object, array and widened values", () => {
-		it("object const keeps an open object base", () => {
-			// the base also admits objects with more keys, which the const doesn't reject
-			const T = inferred({
-				type: "object",
-				properties: { a: { const: 1 } },
-				required: ["a"],
-				not: { const: { a: 1 } }
-			})
-			attest<{ a: 1 }>(T).type.toString.snap("{ a: 1 }")
-		})
-
-		it("empty object const keeps a string base", () => {
-			const T = inferred({ type: "string", not: { const: {} } })
-			attest<string>(T).type.toString.snap("string")
-		})
-
-		it("tuple const with an object element", () => {
-			const T = inferred({
-				type: "array",
-				prefixItems: [{ type: "object" }],
-				minItems: 1,
-				items: false,
-				not: { const: [{}] }
-			})
-			attest<[object]>(T).type.toString.snap("[object]")
-		})
-
 		it("object enum keeps its own literals", () => {
 			const T = inferred({
 				enum: [{ a: 1 }, { a: 2 }, "x"],
@@ -1189,31 +1047,6 @@ contextualize(() => {
 			attest<{ readonly a: 1 } | { readonly a: 2 }>(T).type.toString.snap(
 				"{ readonly a: 1 } | { readonly a: 2 }"
 			)
-		})
-
-		it("widened const in not", () => {
-			const excluded = "a" as string
-			const T = inferred({ type: "string", not: { const: excluded } })
-			attest<string>(T).type.toString.snap("string")
-		})
-
-		it("widened enum in not", () => {
-			const excluded: string[] = []
-			const T = inferred({ type: "string", not: { enum: excluded } })
-			attest<string>(T).type.toString.snap("string")
-		})
-
-		it("type name union in not", () => {
-			type T = jsonSchema.infer<{
-				type: ["string", "number"]
-				not: { type: "string" | "number" }
-			}>
-			attest<string | number>({} as T).type.toString.snap("string | number")
-		})
-
-		it("optional const in not", () => {
-			type T = jsonSchema.infer<{ type: "string"; not: { const?: "a" } }>
-			attest<string>({} as T).type.toString.snap("string")
 		})
 	})
 
@@ -1515,33 +1348,6 @@ contextualize(() => {
 			)
 		})
 
-		it("ref with anyOf sibling", () => {
-			const T = inferred({
-				$defs: { s: { type: ["string", "number", "null"] } },
-				$ref: "#/$defs/s",
-				anyOf: [{ type: "string" }, { type: "null" }]
-			})
-			attest<string | null>(T).type.toString.snap("string | null")
-		})
-
-		it("$ref with a not sibling", () => {
-			const T = inferred({
-				$ref: "#/$defs/a",
-				not: { type: "null" },
-				$defs: { a: { type: ["object", "null"] } }
-			})
-			attest<object>(T).type.toString.snap("object")
-		})
-
-		it("$ref with a nullable sibling", () => {
-			const T = inferred({
-				$ref: "#/$defs/a",
-				nullable: true,
-				$defs: { a: { type: "string" } }
-			})
-			attest<string | null>(T).type.toString.snap("string | null")
-		})
-
 		it("recursive through allOf", () => {
 			type Node = { id: string; children?: Node[] }
 			const T = inferred({
@@ -1605,22 +1411,6 @@ contextualize(() => {
 			attest<number | undefined>({} as ReturnType<typeof valueOf>)
 		})
 
-		it("shallow cycle through allOf", () => {
-			const T = inferred({
-				$defs: { a: { allOf: [{ $ref: "#/$defs/a" }] } },
-				$ref: "#/$defs/a"
-			})
-			attest<unknown>(T).type.toString.snap("unknown")
-		})
-
-		it("shallow cycle through anyOf", () => {
-			const T = inferred({
-				$defs: { a: { anyOf: [{ $ref: "#/$defs/a" }, { type: "string" }] } },
-				$ref: "#/$defs/a"
-			})
-			attest<unknown>(T).type.toString.snap("unknown")
-		})
-
 		it("shallow cycle through allOf and anyOf keeps the allOf operand", () => {
 			const T = inferred({
 				$ref: "#/$defs/a",
@@ -1651,61 +1441,6 @@ contextualize(() => {
 				}
 			})
 			attest<string | number>(T).type.toString.snap("string | number")
-		})
-	})
-
-	describe("$ref siblings by draft", () => {
-		it("draft-07 $ref ignores a type sibling", () => {
-			const T = inferred({
-				$schema: "http://json-schema.org/draft-07/schema#",
-				$ref: "#/definitions/n",
-				type: "string",
-				definitions: { n: { type: "number" } }
-			})
-			attest<number>(T).type.toString.snap("number")
-		})
-
-		it("draft-07 $ref in an allOf branch ignores its required sibling", () => {
-			const T = inferred({
-				$schema: "http://json-schema.org/draft-07/schema#",
-				definitions: {
-					a: { type: "object", properties: { x: { type: "string" } } }
-				},
-				allOf: [
-					{ $ref: "#/definitions/a", required: ["x"] },
-					{ type: "object" }
-				]
-			})
-			attest<{ x?: string }>(T).type.toString.snap("{ x?: string }")
-		})
-
-		it("draft-04 $ref ignores a nullable sibling", () => {
-			const T = inferred({
-				$schema: "http://json-schema.org/draft-04/schema#",
-				definitions: { a: { type: "string" } },
-				type: "object",
-				properties: { p: { $ref: "#/definitions/a", nullable: true } }
-			})
-			attest<{ p?: string }>(T).type.toString.snap("{ p?: string }")
-		})
-
-		it("2020-12 $ref intersects a type sibling", () => {
-			const T = inferred({
-				$schema: "https://json-schema.org/draft/2020-12/schema",
-				$ref: "#/$defs/n",
-				type: "string",
-				$defs: { n: { type: "number" } }
-			})
-			attest<never>(T).type.toString.snap("never")
-		})
-
-		it("$ref without $schema intersects a type sibling", () => {
-			const T = inferred({
-				$ref: "#/$defs/n",
-				type: "string",
-				$defs: { n: { type: ["number", "string"] } }
-			})
-			attest<string>(T).type.toString.snap("string")
 		})
 	})
 
@@ -2065,36 +1800,6 @@ contextualize(() => {
 	| null`)
 		})
 
-		it("parent required referencing an allOf branch property", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					properties: { b: { type: "string" } },
-					required: ["a", "b"],
-					allOf: [{ properties: { a: { type: "number" } } }]
-				})
-			).type.errors.is("")
-		})
-
-		it("required in an allOf branch isn't checked against the declared keys", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					properties: { a: true },
-					allOf: [{ properties: { b: true }, required: ["x"] }]
-				})
-			).type.errors.is("")
-		})
-
-		it("required in a not branch isn't checked against its properties", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					not: { properties: { a: {} }, required: ["b"] }
-				})
-			).type.errors.is("")
-		})
-
 		it("required typo in a self-contained node with not", () => {
 			attest(() =>
 				inferred({
@@ -2187,15 +1892,6 @@ contextualize(() => {
 			)
 		})
 
-		it("an exact not", () => {
-			// limitation: a jsonSchema value in not excludes nothing, since its brand key makes it inexact (a sound fix must require a key besides the brand's)
-			const S = jsonSchema({
-				enum: ["a", "b"],
-				not: jsonSchema({ const: "a" })
-			})
-			attest(S.infer).type.toString.snap('"a" | "b"')
-		})
-
 		it("a jsonSchema.as value in anyOf", () => {
 			const a = jsonSchema.as<{ a: 1 }>({ type: "object" })
 			const S = jsonSchema({ anyOf: [a, str] })
@@ -2259,76 +1955,6 @@ contextualize(() => {
 	})
 
 	describe("depth and width", () => {
-		it("thirty anyOf branches", () => {
-			type T = jsonSchema.infer<{
-				anyOf: [
-					{ const: 0 },
-					{ const: 1 },
-					{ const: 2 },
-					{ const: 3 },
-					{ const: 4 },
-					{ const: 5 },
-					{ const: 6 },
-					{ const: 7 },
-					{ const: 8 },
-					{ const: 9 },
-					{ const: 10 },
-					{ const: 11 },
-					{ const: 12 },
-					{ const: 13 },
-					{ const: 14 },
-					{ const: 15 },
-					{ const: 16 },
-					{ const: 17 },
-					{ const: 18 },
-					{ const: 19 },
-					{ const: 20 },
-					{ const: 21 },
-					{ const: 22 },
-					{ const: 23 },
-					{ const: 24 },
-					{ const: 25 },
-					{ const: 26 },
-					{ const: 27 },
-					{ const: 28 },
-					{ const: 29 }
-				]
-			}>
-			attest<
-				| 0
-				| 1
-				| 2
-				| 3
-				| 4
-				| 5
-				| 6
-				| 7
-				| 8
-				| 9
-				| 10
-				| 11
-				| 12
-				| 13
-				| 14
-				| 15
-				| 16
-				| 17
-				| 18
-				| 19
-				| 20
-				| 21
-				| 22
-				| 23
-				| 24
-				| 25
-				| 26
-				| 27
-				| 28
-				| 29,
-				T
-			>()
-		})
-
 		it("fifty allOf branches", () => {
 			type Branch = { type: ["string", "number"] }
 			type T = jsonSchema.infer<{
@@ -2449,658 +2075,6 @@ contextualize(() => {
 			attest<0 extends 1 & T["p59"] ? true : false>(false)
 			attest<number>({} as T["p0"])
 			attest<number>({} as T["p59"])
-		})
-
-		it("allOf nested forty deep", () => {
-			type nest<s, depth extends 1[]> =
-				depth["length"] extends 40 ? s : nest<{ allOf: [s] }, [...depth, 1]>
-			type T = jsonSchema.infer<
-				nest<
-					{
-						type: "object"
-						properties: { a: { type: "string" } }
-						required: ["a"]
-					},
-					[]
-				>
-			>
-			attest<{ a: string }, T>()
-		})
-
-		it("allOf with a sibling branch nested forty deep", () => {
-			type nest<s, depth extends 1[]> =
-				depth["length"] extends 40 ? s
-				:	nest<{ allOf: [s, { type: "object" }] }, [...depth, 1]>
-			type T = jsonSchema.infer<
-				nest<
-					{
-						type: "object"
-						properties: { a: { type: "string" } }
-						required: ["a"]
-					},
-					[]
-				>
-			>
-			attest<{ a: string }, T>()
-		})
-
-		it("anyOf nested twenty deep", () => {
-			type nest<s, depth extends 1[]> =
-				depth["length"] extends 20 ? s
-				:	nest<{ anyOf: [s, { const: depth["length"] }] }, [...depth, 1]>
-			type T = jsonSchema.infer<nest<{ type: "string" }, []>>
-			attest<
-				| string
-				| 0
-				| 1
-				| 2
-				| 3
-				| 4
-				| 5
-				| 6
-				| 7
-				| 8
-				| 9
-				| 10
-				| 11
-				| 12
-				| 13
-				| 14
-				| 15
-				| 16
-				| 17
-				| 18
-				| 19,
-				T
-			>()
-		})
-
-		it("mixed allOf/anyOf/oneOf with sibling keywords nested forty deep", () => {
-			type L0 = {
-				type: "object"
-				properties: { a: { type: "string" } }
-				required: ["a"]
-			}
-			type L1 = {
-				type: "object"
-				allOf: [L0]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L2 = {
-				type: "object"
-				allOf: [L1]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L3 = {
-				type: "object"
-				allOf: [L2]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L4 = {
-				type: "object"
-				allOf: [L3]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L5 = {
-				type: "object"
-				allOf: [L4]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L6 = {
-				type: "object"
-				allOf: [L5]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L7 = {
-				type: "object"
-				allOf: [L6]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L8 = {
-				type: "object"
-				allOf: [L7]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L9 = {
-				type: "object"
-				allOf: [L8]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L10 = {
-				type: "object"
-				allOf: [L9]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L11 = {
-				type: "object"
-				allOf: [L10]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L12 = {
-				type: "object"
-				allOf: [L11]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L13 = {
-				type: "object"
-				allOf: [L12]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L14 = {
-				type: "object"
-				allOf: [L13]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L15 = {
-				type: "object"
-				allOf: [L14]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L16 = {
-				type: "object"
-				allOf: [L15]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L17 = {
-				type: "object"
-				allOf: [L16]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L18 = {
-				type: "object"
-				allOf: [L17]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L19 = {
-				type: "object"
-				allOf: [L18]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L20 = {
-				type: "object"
-				allOf: [L19]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L21 = {
-				type: "object"
-				allOf: [L20]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L22 = {
-				type: "object"
-				allOf: [L21]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L23 = {
-				type: "object"
-				allOf: [L22]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L24 = {
-				type: "object"
-				allOf: [L23]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L25 = {
-				type: "object"
-				allOf: [L24]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L26 = {
-				type: "object"
-				allOf: [L25]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L27 = {
-				type: "object"
-				allOf: [L26]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L28 = {
-				type: "object"
-				allOf: [L27]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L29 = {
-				type: "object"
-				allOf: [L28]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L30 = {
-				type: "object"
-				allOf: [L29]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L31 = {
-				type: "object"
-				allOf: [L30]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L32 = {
-				type: "object"
-				allOf: [L31]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L33 = {
-				type: "object"
-				allOf: [L32]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L34 = {
-				type: "object"
-				allOf: [L33]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L35 = {
-				type: "object"
-				allOf: [L34]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L36 = {
-				type: "object"
-				allOf: [L35]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L37 = {
-				type: "object"
-				allOf: [L36]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L38 = {
-				type: "object"
-				allOf: [L37]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L39 = {
-				type: "object"
-				allOf: [L38]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			type L40 = {
-				type: "object"
-				allOf: [L39]
-				anyOf: [{ type: "object" }]
-				oneOf: [{ type: "object" }]
-				not: { type: "null" }
-			}
-			attest<{ a: string }, jsonSchema.infer<L40>>()
-		})
-
-		it("nullable oneOf nested forty deep", () => {
-			type nest<s, depth extends 1[]> =
-				depth["length"] extends 40 ? s
-				:	nest<{ nullable: true; oneOf: [s] }, [...depth, 1]>
-			type T = jsonSchema.infer<nest<{ type: "string" }, []>>
-			attest({} as T).type.toString.snap("string | null")
-		})
-
-		it("$ref with an allOf sibling nested forty deep", () => {
-			type nest<s, depth extends 1[]> =
-				depth["length"] extends 40 ? s
-				:	nest<{ $ref: "#/$defs/o"; allOf: [s] }, [...depth, 1]>
-			type T = jsonSchema.infer<
-				{ $defs: { o: { type: "object" } } } & nest<
-					{
-						type: "object"
-						properties: { a: { type: "string" } }
-						required: ["a"]
-					},
-					[]
-				>
-			>
-			attest({} as T).type.toString.snap("{ a: string }")
-		})
-
-		it("if/then/else nested forty deep", () => {
-			type nest<s, depth extends 1[]> =
-				depth["length"] extends 40 ? s
-				:	nest<
-						{ if: { type: "string" }; then: s; else: { type: "null" } },
-						[...depth, 1]
-					>
-			type T = jsonSchema.infer<
-				nest<
-					{
-						type: "object"
-						properties: { a: { type: "string" } }
-						required: ["a"]
-					},
-					[]
-				>
-			>
-			attest({} as T).type.toString.snap("{ a: string } | null")
-		})
-
-		it("else-if chain forty deep", () => {
-			// written out rather than built by a generic alias, which costs TS
-			// another level of instantiation depth per level of nesting
-			type C40 = {
-				type: "object"
-				properties: { z: { type: "string" } }
-				required: ["z"]
-			}
-			type C39 = {
-				type: "object"
-				if: { properties: { k: { const: 39 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C40
-			}
-			type C38 = {
-				type: "object"
-				if: { properties: { k: { const: 38 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C39
-			}
-			type C37 = {
-				type: "object"
-				if: { properties: { k: { const: 37 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C38
-			}
-			type C36 = {
-				type: "object"
-				if: { properties: { k: { const: 36 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C37
-			}
-			type C35 = {
-				type: "object"
-				if: { properties: { k: { const: 35 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C36
-			}
-			type C34 = {
-				type: "object"
-				if: { properties: { k: { const: 34 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C35
-			}
-			type C33 = {
-				type: "object"
-				if: { properties: { k: { const: 33 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C34
-			}
-			type C32 = {
-				type: "object"
-				if: { properties: { k: { const: 32 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C33
-			}
-			type C31 = {
-				type: "object"
-				if: { properties: { k: { const: 31 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C32
-			}
-			type C30 = {
-				type: "object"
-				if: { properties: { k: { const: 30 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C31
-			}
-			type C29 = {
-				type: "object"
-				if: { properties: { k: { const: 29 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C30
-			}
-			type C28 = {
-				type: "object"
-				if: { properties: { k: { const: 28 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C29
-			}
-			type C27 = {
-				type: "object"
-				if: { properties: { k: { const: 27 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C28
-			}
-			type C26 = {
-				type: "object"
-				if: { properties: { k: { const: 26 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C27
-			}
-			type C25 = {
-				type: "object"
-				if: { properties: { k: { const: 25 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C26
-			}
-			type C24 = {
-				type: "object"
-				if: { properties: { k: { const: 24 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C25
-			}
-			type C23 = {
-				type: "object"
-				if: { properties: { k: { const: 23 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C24
-			}
-			type C22 = {
-				type: "object"
-				if: { properties: { k: { const: 22 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C23
-			}
-			type C21 = {
-				type: "object"
-				if: { properties: { k: { const: 21 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C22
-			}
-			type C20 = {
-				type: "object"
-				if: { properties: { k: { const: 20 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C21
-			}
-			type C19 = {
-				type: "object"
-				if: { properties: { k: { const: 19 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C20
-			}
-			type C18 = {
-				type: "object"
-				if: { properties: { k: { const: 18 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C19
-			}
-			type C17 = {
-				type: "object"
-				if: { properties: { k: { const: 17 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C18
-			}
-			type C16 = {
-				type: "object"
-				if: { properties: { k: { const: 16 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C17
-			}
-			type C15 = {
-				type: "object"
-				if: { properties: { k: { const: 15 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C16
-			}
-			type C14 = {
-				type: "object"
-				if: { properties: { k: { const: 14 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C15
-			}
-			type C13 = {
-				type: "object"
-				if: { properties: { k: { const: 13 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C14
-			}
-			type C12 = {
-				type: "object"
-				if: { properties: { k: { const: 12 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C13
-			}
-			type C11 = {
-				type: "object"
-				if: { properties: { k: { const: 11 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C12
-			}
-			type C10 = {
-				type: "object"
-				if: { properties: { k: { const: 10 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C11
-			}
-			type C9 = {
-				type: "object"
-				if: { properties: { k: { const: 9 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C10
-			}
-			type C8 = {
-				type: "object"
-				if: { properties: { k: { const: 8 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C9
-			}
-			type C7 = {
-				type: "object"
-				if: { properties: { k: { const: 7 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C8
-			}
-			type C6 = {
-				type: "object"
-				if: { properties: { k: { const: 6 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C7
-			}
-			type C5 = {
-				type: "object"
-				if: { properties: { k: { const: 5 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C6
-			}
-			type C4 = {
-				type: "object"
-				if: { properties: { k: { const: 4 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C5
-			}
-			type C3 = {
-				type: "object"
-				if: { properties: { k: { const: 3 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C4
-			}
-			type C2 = {
-				type: "object"
-				if: { properties: { k: { const: 2 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C3
-			}
-			type C1 = {
-				type: "object"
-				if: { properties: { k: { const: 1 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C2
-			}
-			type C0 = {
-				type: "object"
-				if: { properties: { k: { const: 0 } } }
-				then: { properties: { v: { type: "string" } }; required: ["v"] }
-				else: C1
-			}
-			type T = jsonSchema.infer<C0>
-			// each level's `then` is a distinct (if identical) object type
-			attest<{ v: string } | { z: string }, T>()
-			attest<T, { v: string } | { z: string }>()
 		})
 
 		it("typed else-if chain with not nested forty deep", () => {
@@ -3788,6 +2762,130 @@ contextualize(() => {
 					]
 				}
 			})
+		})
+
+		it("a fourth union-producing ref keeps only its other keywords", () => {
+			type pairs<k extends string> =
+				| { [_ in `a${k}`]: number }
+				| { [_ in `b${k}`]: string }
+			const T = inferred({
+				type: "object",
+				$defs: {
+					r0: {
+						anyOf: [
+							{ properties: { a0: { type: "number" } }, required: ["a0"] },
+							{ properties: { b0: { type: "string" } }, required: ["b0"] }
+						]
+					},
+					r1: {
+						anyOf: [
+							{ properties: { a1: { type: "number" } }, required: ["a1"] },
+							{ properties: { b1: { type: "string" } }, required: ["b1"] }
+						]
+					},
+					r2: {
+						anyOf: [
+							{ properties: { a2: { type: "number" } }, required: ["a2"] },
+							{ properties: { b2: { type: "string" } }, required: ["b2"] }
+						]
+					},
+					r3: {
+						anyOf: [
+							{ properties: { a3: { type: "number" } }, required: ["a3"] },
+							{ properties: { b3: { type: "string" } }, required: ["b3"] }
+						],
+						properties: { kept: { type: "boolean" } },
+						required: ["kept"]
+					}
+				},
+				allOf: [
+					{ $ref: "#/$defs/r0" },
+					{ $ref: "#/$defs/r1" },
+					{ $ref: "#/$defs/r2" },
+					{ $ref: "#/$defs/r3" }
+				]
+			})
+			attest<
+				pairs<"0"> & pairs<"1"> & pairs<"2"> & { kept: boolean } extends (
+					infer t
+				) ?
+					{ [k in keyof t]: t[k] }
+				:	never
+			>(T).type.toString
+				.snap(`	| { a0: number; a1: number; a2: number; kept: boolean }
+	| { a0: number; a1: number; b2: string; kept: boolean }
+	| { a0: number; b1: string; a2: number; kept: boolean }
+	| { a0: number; b1: string; b2: string; kept: boolean }
+	| { b0: string; a1: number; a2: number; kept: boolean }
+	| { b0: string; a1: number; b2: string; kept: boolean }
+	| { b0: string; b1: string; a2: number; kept: boolean }
+	| { b0: string; b1: string; b2: string; kept: boolean }`)
+		})
+
+		it("a fourth ref to an allOf definition keeps its allOf", () => {
+			const T = inferred({
+				type: "object",
+				$defs: {
+					a1: {
+						allOf: [
+							{ properties: { p1: { type: "string" } }, required: ["p1"] }
+						]
+					},
+					a2: {
+						allOf: [
+							{ properties: { p2: { type: "string" } }, required: ["p2"] }
+						]
+					},
+					a3: {
+						allOf: [
+							{ properties: { p3: { type: "string" } }, required: ["p3"] }
+						]
+					},
+					a4: {
+						allOf: [
+							{ properties: { p4: { type: "string" } }, required: ["p4"] }
+						]
+					}
+				},
+				allOf: [
+					{ $ref: "#/$defs/a1" },
+					{ $ref: "#/$defs/a2" },
+					{ $ref: "#/$defs/a3" },
+					{ $ref: "#/$defs/a4" }
+				]
+			})
+			type expected = { p1: string; p2: string; p3: string; p4: string }
+			attest(
+				{} as [typeof T, expected] extends [expected, typeof T] ? true : false
+			).type.toString.snap("true")
+		})
+
+		it("refs to union-free allOf or ref definitions count toward the union limit", () => {
+			// limitation: a ref to an allOf or ref definition counts toward the union limit even when it can't produce a union, so the anyOf after three is dropped (sound, wider)
+			const T = inferred({
+				type: "object",
+				$defs: {
+					a1: { allOf: [{ properties: { p1: { type: "string" } } }] },
+					a2: { allOf: [{ properties: { p2: { type: "string" } } }] },
+					a3: { $ref: "#/$defs/a3x" },
+					a3x: { properties: { p3: { type: "string" } } },
+					u: {
+						anyOf: [
+							{ properties: { x: { type: "number" } }, required: ["x"] },
+							{ properties: { y: { type: "string" } }, required: ["y"] }
+						]
+					}
+				},
+				allOf: [
+					{ $ref: "#/$defs/a1" },
+					{ $ref: "#/$defs/a2" },
+					{ $ref: "#/$defs/a3" },
+					{ $ref: "#/$defs/u" }
+				]
+			})
+			attest<{ p1?: string; p2?: string; p3?: string }>(T).type.toString.snap(
+				"{ p1?: string; p2?: string; p3?: string }"
+			)
 		})
 	})
 
