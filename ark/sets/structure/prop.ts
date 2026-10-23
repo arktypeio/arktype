@@ -69,7 +69,7 @@ export const required: setImplementationOf<Required.Declaration> = {
 export const optional: setImplementationOf<Optional.Declaration> = {
 	reduce: (inner, $) => {
 		if ($.resolvedConfig.exactOptionalPropertyTypes === false) {
-			if (!inner.value.allows(undefined)) {
+			if (!inner.value.allowsUnused(undefined)) {
 				return $.node(
 					"optional",
 					{ ...inner, value: inner.value.or($ark.intrinsic.undefined) },

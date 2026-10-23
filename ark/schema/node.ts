@@ -749,6 +749,15 @@ export abstract class BaseNode<
 		return out
 	}
 
+	// allows data without marking the Type used, e.g. a value an optional
+	// prop's parse checks
+	allowsUnused(data: d["prerequisite"]): boolean {
+		const usedBeforeJit = this.cache.usedBeforeJit
+		const out = this.allows(data)
+		this.cache.usedBeforeJit = usedBeforeJit
+		return out
+	}
+
 	/** rawIn should be used internally instead */
 	get in(): unknown {
 		// ensure the node has been finalized if in is being used externally
