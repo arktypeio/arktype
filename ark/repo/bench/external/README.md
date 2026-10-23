@@ -234,3 +234,22 @@ counted score in at least half of the category's suites.
 `ark/docs/lib/bench/leaderboard.json`; `ark/docs/lib/claims.ts` computes the
 scores from it and throws if the headline claims a category ArkType doesn't
 win. Nothing is rerun to change a result.
+
+## The login form across validators
+
+`forms/` writes valibot.dev's login form in each TypeScript-schema validator
+with real usage, as its docs write it, each exporting a validate that reports
+every error with the form's messages where the library can attach them
+(typia can't, so it keeps its own). `forms/size.ts` bundles each with
+login/size.ts's esbuild settings, gzips at level 9, then runs every bundle on
+the same four inputs and records what it reports. ajv's row is its standalone
+code with ajv-errors: generated from JSON Schema, not a TypeScript schema.
+
+At 54eb5e89b (`results/forms-54eb5e89b.json`, behavior in
+`results/forms-behavior-54eb5e89b.json`), gzipped: ArkType precompiled with
+the "smallest" preset 1119, ajv standalone 935, typia 1252, ArkType default
+1552, Valibot 1564, Superstruct 1623, runtypes 5051, Zod Mini 5124, Yup 13519,
+TypeBox 22788 (TypeCompiler) and 25697 (Value), Zod 25076, Joi 54732, dynamic
+ArkType 82262, Effect Schema 83215. On a blank password ArkType reports only
+the 8-character message: `string > 0` is implied by `string >= 8`, so its
+message never fires.
