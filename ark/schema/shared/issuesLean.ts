@@ -205,14 +205,7 @@ export const messageOf = (issue: ArkIssue): string => {
 			: path ? `.${String(k)}`
 			: String(k)
 	}
-	// problemOf written out, so a bundle reading only messages lacks it
-	return (
-		(path && path + " ") +
-		(issue.problem ??
-			(issue.expected !== undefined ? "must be " + issue.expected
-			: issue.code === "required" ? "is missing"
-			: "is invalid"))
-	)
+	return (path && path + " ") + problemOf(issue)
 }
 
 // an undeclared key's site says what's expected
