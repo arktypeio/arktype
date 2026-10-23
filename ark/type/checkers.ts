@@ -194,10 +194,7 @@ const isBuiltin = (data: object): boolean => {
 		prototype && Object.getPrototypeOf(prototype);
 		prototype = Object.getPrototypeOf(prototype)
 	) {
-		const constructor = Object.getOwnPropertyDescriptor(
-			prototype,
-			"constructor"
-		)?.value
+		const { constructor } = prototype
 		if (
 			typeof constructor === "function" &&
 			constructor.prototype === prototype &&
@@ -280,10 +277,11 @@ export const transformingElementsOf = ((element: Checker): Checker => {
 // read as a node's Transform, unless it's unread
 export const transformOf = ((checker: Checker) => checker.t!) satisfies Fn
 
-// a union of values, each compared by identity
+// a union of values, each compared by identity, which a discriminant tells
+// apart unless it's two
 export const units = ((
 	values: readonly unknown[],
-	code: ArkErrorCode,
+	code: ArkErrorCode = "discriminant",
 	description = describeValues(values)
 ): Checker =>
 	leaf(check(code, description, data => values.includes(data)))) satisfies Fn

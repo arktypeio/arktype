@@ -383,6 +383,24 @@ age must be an integer
 age must be non-negative`)
 		})
 
+		it("check each case by the branch it was told apart from", () => {
+			const Card = type({ type: "'card'", last4: "string" })
+			const { code } = precompileStandalone(
+				{
+					Card,
+					Payment: Card.or({ type: "'bank'", iban: "string" }),
+					Id: type("string.uuid | null")
+				},
+				{ optimize: "size" }
+			)
+			// pruned of what told them apart, the cases would be checkers of their own
+			attest(code.match(/runtime\.props\(|\/\^\(\?:\[\\dA-Fa-f\]/g)).equals([
+				"runtime.props(",
+				"runtime.props(",
+				"/^(?:[\\dA-Fa-f]"
+			])
+		})
+
 		it("copy an instance whose class writes its own tag", async () => {
 			class Tagged {
 				get [Symbol.toStringTag]() {

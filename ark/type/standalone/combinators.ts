@@ -10,7 +10,7 @@ import {
 	type UnionNode,
 	type UnitNode
 } from "@ark/schema"
-import { isWellFormedInteger } from "@ark/util"
+import { domainOf, isWellFormedInteger } from "@ark/util"
 import * as runtime from "../runtimeExports.ts"
 import { basesOf, unifies } from "./compilers.ts"
 import {
@@ -199,12 +199,27 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 		node.missListsBranches
 	)
 		return
+	const key = discriminant.path[0]
 	const cases: Record<string, BaseRoot | true> = {}
 	for (const k in discriminant.cases) {
 		if (!k.startsWith('"')) return
 		const value = JSON.parse(k) as string
 		if (isWellFormedInteger(value) || value === "__proto__") return
-		cases[value] = discriminant.cases[k]
+		cases[value] = unprunedOf(
+			node,
+			branch => {
+				const prop =
+					branch.hasKind("intersection") ?
+						branch.structure?.propsByKey[key]
+					:	undefined
+				return (
+					prop?.hasKind("required") === true &&
+					prop.value.hasKind("unit") &&
+					prop.value.unit === value
+				)
+			},
+			discriminant.cases[k]
+		)
 	}
 	const site = discriminantSiteOf(node)
 	// data whose key can't be read fails each branch's basis, as an object
@@ -217,7 +232,7 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 	return (
 		site &&
 		missed && {
-			key: discriminant.path[0],
+			key,
 			isOwn: node.missPath.length === 0,
 			cases,
 			site,
@@ -242,9 +257,37 @@ const domainCasesOf = (
 	)
 		return
 	const cases: Record<string, BaseRoot | true> = {}
-	for (const k in discriminant.cases)
-		cases[JSON.parse(k) as string] = discriminant.cases[k]
+	for (const k in discriminant.cases) {
+		const domain = JSON.parse(k) as string
+		cases[domain] = unprunedOf(
+			node,
+			branch => domainOfBranch(branch) === domain,
+			discriminant.cases[k]
+		)
+	}
 	return cases
+}
+
+const domainOfBranch = (branch: BaseRoot): string | undefined =>
+	branch.hasKind("unit") ? domainOf(branch.unit)
+	: branch.hasKind("domain") ? branch.domain
+	: branch.hasKind("proto") ? "object"
+	: branch.hasKind("intersection") && branch.basis ?
+		branch.basis.hasKind("domain") ?
+			branch.basis.domain
+		:	"object"
+	:	undefined
+
+// a case is checked by the one branch it was pruned from, which checks again
+// what told it apart, so it shares that branch's checker
+const unprunedOf = (
+	node: UnionNode,
+	isCase: (branch: BaseRoot) => boolean,
+	pruned: BaseRoot | true
+): BaseRoot | true => {
+	if (pruned === true) return pruned
+	const matched = node.branches.filter(isCase)
+	return matched.length === 1 ? matched[0] : pruned
 }
 
 // a key a literal declares, in the order it's written
@@ -313,6 +356,12 @@ const writeArgs = (...args: (string | undefined)[]): string => {
 	return args.map(arg => arg ?? "void 0").join(", ")
 }
 
+// pure, so a bundler drops a checker nothing reads
+const writeCall = (
+	factory: keyof typeof runtime,
+	...args: (string | undefined)[]
+): string => `/* @__PURE__ */ runtime.${factory}(${writeArgs(...args)})`
+
 // a description its factory writes itself is omitted
 const unlessDerived = (
 	derived: string | undefined,
@@ -357,7 +406,12 @@ const writeCheck = (js: CombinatorCompiler, node: BaseNode): string => {
 		const check = runtime[constant] as runtime.Check
 		return site.code === check.code && site.description === check.description ?
 				`runtime.${constant}`
-			:	`runtime.check(${writeArgs(JSON.stringify(site.code), JSON.stringify(site.description), `runtime.${constant}.test`)})`
+			:	writeCall(
+					"check",
+					JSON.stringify(site.code),
+					JSON.stringify(site.description),
+					`runtime.${constant}.test`
+				)
 	}
 	const factory = ruleFactories.find(kind => node.hasKind(kind))
 	const { rule, exclusive } = node.inner as { rule?: unknown; exclusive?: true }
@@ -367,22 +421,29 @@ const writeCheck = (js: CombinatorCompiler, node: BaseNode): string => {
 		const derived = (
 			runtime[factory] as (rule: number, exclusive?: 1) => runtime.Check
 		)(rule, flag && 1)
-		return `runtime.${factory}(${writeArgs(
+		return writeCall(
+			factory,
 			`${rule}`,
 			...(bounds ? [flag] : []),
 			unlessDerived(derived.description, site)
-		)})`
+		)
 	}
 	if (node.hasKind("pattern")) {
 		const instance = js.ref(node.instance)
 		if (condition === `${instance}.test(data)`) {
-			return `runtime.pattern(${writeArgs(
+			return writeCall(
+				"pattern",
 				instance,
 				unlessDerived(runtime.pattern(node.instance).description, site)
-			)})`
+			)
 		}
 	}
-	return `runtime.check(${JSON.stringify(site.code)}, ${JSON.stringify(site.description)}, data => ${condition})`
+	return writeCall(
+		"check",
+		JSON.stringify(site.code),
+		JSON.stringify(site.description),
+		`data => ${condition}`
+	)
 }
 
 const writeLiteral = (js: CombinatorCompiler, value: unknown): string =>
@@ -400,7 +461,10 @@ const writeStructure = (
 	const ref = (node: BaseNode) => readChecker(js, node)
 	if (structure.sequence) {
 		const element = structure.sequence.variadic!
-		return `runtime.${element.transforms ? "transformingElementsOf" : "elementsOf"}(${ref(element)})`
+		return writeCall(
+			element.transforms ? "transformingElementsOf" : "elementsOf",
+			ref(element)
+		)
 	}
 	const entryOf = (prop: Prop.Node) =>
 		`${writeKey(prop.key as string)}: ${ref(prop.value)}`
@@ -412,11 +476,12 @@ const writeStructure = (
 	const defaults = structure.defaultable.map(
 		prop => `${writeKey(prop.key as string)}: ${writeLiteral(js, prop.default)}`
 	)
-	return `runtime.${structure.transforms ? "transformingProps" : "props"}(${writeArgs(
+	return writeCall(
+		structure.transforms ? "transformingProps" : "props",
 		writeObject((structure.required ?? []).map(entryOf)),
 		optional.length ? writeObject(optional) : undefined,
 		defaults.length ? writeObject(defaults) : undefined
-	)})`
+	)
 }
 
 // a checker of no structure or reference, e.g. to a pattern, is written
@@ -446,12 +511,13 @@ export const writeCombinator = (
 	if (!combines(node)) return
 	const ref = (node: BaseNode) => readChecker(js, node)
 	if (node.hasKind("domain") || node.hasKind("proto"))
-		return `runtime.leaf(${writeCheck(js, node)})`
+		return writeCall("leaf", writeCheck(js, node))
 	if (node.hasKind("unit")) {
-		return `runtime.unit(${writeArgs(
+		return writeCall(
+			"unit",
 			writeLiteral(js, node.unit),
 			unlessDerived(runtime.describeValues([node.unit]), unitSiteOf(node)!)
-		)})`
+		)
 	}
 	if (node.hasKind("intersection")) {
 		const refinements = node.prestructurals.map(child => writeCheck(js, child))
@@ -460,7 +526,15 @@ export const writeCombinator = (
 		const within =
 			structure ??
 			(predicate &&
-				`runtime.leaf(runtime.check("predicate", ${JSON.stringify(predicateSiteOf(predicate)!.description)}, ${js.ref(predicate.predicate)}))`)
+				writeCall(
+					"leaf",
+					writeCall(
+						"check",
+						'"predicate"',
+						JSON.stringify(predicateSiteOf(predicate)!.description),
+						js.ref(predicate.predicate)
+					)
+				))
 		// props check data is an object, as their basis would
 		if (
 			within &&
@@ -469,11 +543,12 @@ export const writeCombinator = (
 				(node.structure?.props.length && isObjectCheck(node.basis)))
 		)
 			return within
-		return `runtime.intersection(${writeArgs(
+		return writeCall(
+			"intersection",
 			node.basis ? writeCheck(js, node.basis) : "0",
 			`[${refinements.join(", ")}]`,
 			within
-		)})`
+		)
 	}
 	if (node.hasKind("union")) {
 		const units = unitListOf(node)
@@ -485,21 +560,26 @@ export const writeCombinator = (
 				units.values.every(value => typeof value === "boolean")
 			)
 				return "runtime.booleanChecker"
-			return `runtime.units(${writeArgs(
+			return writeCall(
+				"units",
 				`[${units.values.map(value => writeLiteral(js, value)).join(", ")}]`,
-				JSON.stringify(units.site.code),
+				units.site.code === "discriminant" ? undefined : '"union"',
 				unlessDerived(runtime.describeValues(units.values), units.site)
-			)})`
+			)
 		}
 		const domains = domainCasesOf(node)
 		if (domains) {
-			return `runtime.domains(${writeObject(
-				Object.entries(domains).map(
-					([domain, branch]) =>
-						// null and undefined are their domain's only value
-						`${domain}: ${branch === true || domain === "null" || domain === "undefined" ? "1" : ref(branch)}`
-				)
-			)}, ${JSON.stringify(discriminantSiteOf(node)!.description)})`
+			return writeCall(
+				"domains",
+				writeObject(
+					Object.entries(domains).map(
+						([domain, branch]) =>
+							// null and undefined are their domain's only value
+							`${domain}: ${branch === true || domain === "null" || domain === "undefined" ? "1" : ref(branch)}`
+					)
+				),
+				JSON.stringify(discriminantSiteOf(node)!.description)
+			)
 		}
 		const discriminated = discriminatedOf(node)
 		if (discriminated) {
@@ -507,7 +587,8 @@ export const writeCombinator = (
 			const { missed } = discriminated
 			const missedDerived =
 				missed.code === "union" && missed.description === "an object"
-			return `runtime.discriminate(${writeArgs(
+			return writeCall(
+				"discriminate",
 				JSON.stringify(discriminated.key),
 				writeObject(
 					keys.map(k => {
@@ -520,10 +601,11 @@ export const writeCombinator = (
 					`{ code: "union", description: ${JSON.stringify(missed.description)} }`
 				),
 				discriminated.isOwn ? "1" : undefined
-			)})`
+			)
 		}
 		const bases = basesSiteOf(node)
-		return `runtime.union(${writeArgs(
+		return writeCall(
+			"union",
 			`[${node.branches.map(ref).join(", ")}]`,
 			JSON.stringify(unionSiteOf(node)!.description),
 			bases ?
@@ -532,6 +614,6 @@ export const writeCombinator = (
 					.join(", ")}]`
 			:	undefined,
 			bases ? JSON.stringify(bases.description) : undefined
-		)})`
+		)
 	}
 }
