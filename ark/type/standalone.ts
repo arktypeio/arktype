@@ -301,6 +301,8 @@ interface RootApplier {
 	apply: string
 	args: string
 	failure?: keyof typeof failureSources
+	// reads a name its module declares, so it can't be shared
+	local?: boolean
 }
 
 const writeFunction = (
@@ -1989,7 +1991,7 @@ ${writeFunction(
 			!keepsMeta && root.meta.onFail ? this.emit(root.meta.onFail) : undefined
 		const rootApply = () =>
 			typeof applied === "string" ? applied : (
-				`${this.emitApplier(applied.params, applied.apply, applied.failure)}(${applied.args})`
+				`${this.emitApplier(applied)}(${applied.args})`
 			)
 		const fused =
 			(
@@ -2037,8 +2039,7 @@ ${writeFunction(
 			!isTemplate && ownsValidator && isCreatedByRuntime(members, this.baking)
 		const args = [
 			...(fused ? [fused.args]
-			: made ?
-				[this.emitApplier(made.params, made.apply, made.failure), made.args]
+			: made ? [this.emitApplier(made), made.args]
 			: ownsValidator && !isCompact ?
 				[
 					pipes ?
@@ -2502,6 +2503,7 @@ ${writeFunction(
 				!unreads ? refOf("Traversal")
 				: this.baking.firstIssue ? "runtime.UnreadFirstIssues"
 				: "runtime.UnreadArkErrors"
+			const local = !Ctx.startsWith("runtime.")
 			// a unified root applies by its Allows
 			const apply = this.appliedIndexOf(root) ? "apply" : "allows"
 			const pattern =
@@ -2525,29 +2527,29 @@ ${writeFunction(
 				asValidator && !transforms && this.elementTraversalsOf(root)
 			if (elements) {
 				return [
-					this.makeValidator(
+					this.emitApplier({
 						// a minifier inlines a const read once, but not a default
-						`{ 1: apply, 2: allowsElement, 3: applyElement }, onFail, rejectedIn = data => {
+						params: `{ 1: apply, 2: allowsElement, 3: applyElement }, onFail, rejectedIn = data => {
 	for (let i = 0; i < data.length; i++) if (!allowsElement(data[i])) return i
 }`,
-						`(data, ...args) => {
+						apply: `(data, ...args) => {
 	if (!Array.isArray(data)) return ${callErrors}(apply, data, args, onFail, ${Ctx})
 	const i = rejectedIn(data)
 	return i === undefined ? data : ${elementErrors}(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
 }`,
-						Ctx
-					),
+						local
+					}),
 					`[${traversals}[0], ${traversals}[${this.appliedIndexOf(root)}], ${elements}]`,
 					true
 				]
 			}
 			if (asValidator) {
 				return [
-					this.makeValidator(
-						`${pattern}${unconfigured ? "" : ", onFail"}`,
-						`(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`,
-						Ctx
-					),
+					this.emitApplier({
+						params: `${pattern}${unconfigured ? "" : ", onFail"}`,
+						apply: `(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`,
+						local
+					}),
 					parts,
 					true
 				]
@@ -2563,7 +2565,8 @@ ${writeFunction(
 							`runtime.applyIssues(${apply}, data, onFail${this.baking.firstIssue ? `, ${Ctx}` : ""})`
 						:	`runtime.applyErrors(${apply}, data, ${refOf("config")}, onFail, ${Ctx})`
 					}`,
-					args: parts
+					args: parts,
+					local
 				},
 				flat ? flat[0] : `${traversals}[0]`,
 				false
@@ -2571,11 +2574,13 @@ ${writeFunction(
 		}
 		const shape = this.shapeOf(root)
 		if (isArrow) {
+			const Traversal = refOf("Traversal")
 			return [
 				{
 					params: "node",
-					apply: `(data, onFail) => node.allows(data) ? ${transforms ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`,
-					args: shape
+					apply: `(data, onFail) => node.allows(data) ? ${transforms ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${Traversal})`,
+					args: shape,
+					local: !Traversal.startsWith("runtime.")
 				},
 				`${shape}.allows`,
 				false
@@ -2608,8 +2613,7 @@ ${writeFunction(
 		pipes: boolean
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const strategy = root.applyStrategy
-		const invalid = () =>
-			`${this.baking.shortest ? "invalid" : this.readFailure("invalid")}(data, onFail)`
+		const invalid = "invalid(data, onFail)"
 		const transforms = root.transforms
 		// an undiscriminated union transforms what a branch allows, else unset
 		const selects =
@@ -2638,23 +2642,23 @@ ${writeFunction(
 					...(resolves ?
 						[
 							"const untracked = runtime.allowsAcyclic(node, data)",
-							`if (!(untracked ?? runtime.allowsInContext(node, data, runtime.runtimeConfig))) return ${invalid()}`,
+							`if (!(untracked ?? runtime.allowsInContext(node, data, runtime.runtimeConfig))) return ${invalid}`,
 							`const ctx = new runtime.${ctx}(data, runtime.runtimeConfig)`,
 							"ctx.tracksMorphs = untracked === undefined",
 							`const result = runtime.transformResolution(ctx, ${JSON.stringify(this.headUnitOf(root).names[root.id])}, data, node.traverseTransform)`
 						]
 					:	[
-							`if (!${allows}(data)) return ${invalid()}`,
+							`if (!${allows}(data)) return ${invalid}`,
 							`const ctx = new runtime.${ctx}(data, runtime.runtimeConfig)`,
 							`const result = ${transform}(data, ctx)`
 						]),
-					`return ctx.hasError() ? ${invalid()} : result`
+					`return ctx.hasError() ? ${invalid} : result`
 				]
 			: fails.length ?
 				[
-					...(selects ? [] : [`if (!${allows}(data)) return ${invalid()}`]),
+					...(selects ? [] : [`if (!${allows}(data)) return ${invalid}`]),
 					`const result = ${transform}(data)`,
-					`return ${fails.join(" || ")} ? ${invalid()} : result`
+					`return ${fails.join(" || ")} ? ${invalid} : result`
 				]
 			:	undefined
 		const params =
@@ -2677,11 +2681,14 @@ ${writeFunction(
 			:	traversals
 		if (asValidator && parts && !body) {
 			return [
-				`((${params}${unconfigured ? "" : ", onFail"}) => ${this.validatorOnLoad(
-					pipes ?
-						`(data, ...args) => ${allows}(data) ? ${valid} : ${this.readFailure("invalidCall")}(data, args${unconfigured ? "" : ", onFail"})`
-					:	`(data, _, onFail) => ${allows}(data) ? ${valid} : ${this.readFailure("invalid")}(data, onFail)`
-				)})`,
+				this.emitApplier({
+					params: `${params}${unconfigured ? "" : ", onFail"}`,
+					apply:
+						pipes ?
+							`(data, ...args) => ${allows}(data) ? ${valid} : invalidCall(data, args${unconfigured ? "" : ", onFail"})`
+						:	`(data, _, onFail) => ${allows}(data) ? ${valid} : ${invalid}`,
+					failure: pipes ? "invalidCall" : "invalid"
+				}),
 				parts,
 				true
 			]
@@ -2689,7 +2696,7 @@ ${writeFunction(
 		const apply =
 			body ?
 				`(data, onFail) => {\n\t\t${body.join("\n\t\t")}\n\t}`
-			:	`(data, onFail) => ${allows}(data) ? ${valid} : ${invalid()}`
+			:	`(data, onFail) => ${allows}(data) ? ${valid} : ${invalid}`
 		const node = parts ?? shape
 		return [
 			{
@@ -2705,30 +2712,16 @@ ${writeFunction(
 		]
 	}
 
-	// what makes a validator from its traversals, written once for every
-	// validator alike, as each function a module writes costs its load
-	makeValidator(params: string, validator: string, Ctx: string): string {
-		const body = this.validatorOnLoad(validator)
-		// a Ctx the module declares isn't read where the make is shared
-		if (!Ctx.startsWith("runtime.")) return `((${params}) => ${body})`
-		const name = `make${hashOf(`${params}\n${body}`)}`
-		return this.read(
-			this.share(
-				name,
-				writeFunction(this.baking, name, params, `\treturn ${body}`)
-			),
-			name
-		)
-	}
-
-	emitApplier(
-		params: string,
-		apply: string,
-		failure?: keyof typeof failureSources
-	): string {
-		if (!this.baking.shortest)
-			return `((${params}) => ${this.validatorOnLoad(apply)})`
-		const body = `\treturn ${apply}`
+	// what applies a root or makes its validator from its traversals, written
+	// once for every root alike, as each function a module writes costs its load
+	emitApplier({
+		params,
+		apply,
+		failure,
+		local
+	}: Omit<RootApplier, "args">): string {
+		if (local) return `((${params}) => ${this.validatorOnLoad(apply)})`
+		const body = `\treturn ${this.validatorOnLoad(apply)}`
 		const name = `apply${hashOf(`${params}\n${body}`)}`
 		return this.read(
 			this.share(
