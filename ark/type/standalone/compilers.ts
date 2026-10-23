@@ -162,6 +162,16 @@ class StandaloneCompiler extends TraversalCompiler {
 		return `${compileRead("data", k)} ? ${readable} : ${this.unreadableFails(node, k)}`
 	}
 
+	// as an indiscriminable union applies its branches
+	override defaultFails(node: UnionNode, caseNode: BaseRoot): string {
+		const passes =
+			!caseNode.includesAlias && isDecidedByAllows(caseNode) ?
+				(caseNode.compileCondition?.(this, "data") ??
+				this.invoke(caseNode, { kind: "Allows" }))
+			:	`(ctx.pushBranch(), ${this.applyMember(caseNode)}, ctx.popBranch().errorCount === 0)`
+		return `${passes} || ${this.unionFails(node)}`
+	}
+
 	// data its first key can't be read from fails each branch at its basis,
 	// if each requires what the read does
 	private unreadableFails(node: UnionNode, k: PropertyKey): string {

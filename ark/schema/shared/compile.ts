@@ -11,6 +11,7 @@ import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
 import type { Predicate } from "../predicate.ts"
 import type { IntersectionNode } from "../roots/intersection.ts"
+import type { BaseRoot } from "../roots/root.ts"
 import type { UnionNode } from "../roots/union.ts"
 import type { StructureNode } from "../structure/structure.ts"
 import { registerBuilderCompiler, type ErrorBuilder } from "./errors.ts"
@@ -290,6 +291,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 	unionFails?(node: UnionNode): string
 	// a discriminated union's failure of data matching none of its cases
 	missFails?(node: UnionNode, value: string): string
+	// a discriminated union's Apply of data in its default case
+	defaultFails?(node: UnionNode, caseNode: BaseRoot): string
 	undeclaredFails?(node: StructureNode): string
 	// what a key's value whose condition failed is applied by, if not its Apply
 	failingApplyOf?(value: BaseNode): string | undefined

@@ -445,7 +445,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					:	"data"
 				: v === true ? "true"
 				: js.traversalKind !== "Apply" ? js.invoke(v)
-				: k === "default" ? this.compileDefault(js, v, value)
+				: k === "default" ?
+					(js.defaultFails?.(this, v) ??
+					`${js.ref(this)}.applyDefault(data, ctx, ${value})`)
 				: member ? js.applyMember(v, member)
 				: js.invoke(v)
 			written.push([caseCondition, caseResult])
@@ -456,22 +458,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			: (js.missFails?.(this, value) ??
 				`${js.ref(this)}.applyMiss(data, ctx, ${value})`)
 		js.switch(condition, written, otherwise)
-	}
-
-	private compileDefault(
-		js: NodeCompiler,
-		caseNode: BaseRoot,
-		value: string
-	): string {
-		if (!js.unionFails)
-			return `${js.ref(this)}.applyDefault(data, ctx, ${value})`
-		// as an indiscriminable union applies its branches
-		const passes =
-			!caseNode.includesAlias && isDecidedByAllows(caseNode) ?
-				(caseNode.compileCondition?.(js, "data") ??
-				js.invoke(caseNode, { kind: "Allows" }))
-			:	`(ctx.pushBranch(), ${js.applyMember(caseNode)}, ctx.popBranch().errorCount === 0)`
-		return `${passes} || ${js.unionFails(this)}`
 	}
 
 	private compileIndiscriminable(
