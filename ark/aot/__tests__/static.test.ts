@@ -1742,9 +1742,9 @@ console.log(values.map(v => (v as any).from))`,
 					writeArktypeRuntimeOptionMessage("freeze")
 				],
 				[
-					"json with runtime arktype",
-					{ runtime: "arktype", json: true },
-					writeArktypeRuntimeOptionMessage("json")
+					"jsonInput with runtime arktype",
+					{ runtime: "arktype", jsonInput: true },
+					writeArktypeRuntimeOptionMessage("jsonInput")
 				],
 				[
 					"non-boolean shadow",

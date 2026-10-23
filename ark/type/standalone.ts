@@ -259,7 +259,7 @@ export interface StandaloneOptions {
 	mutatesInput?: MutatesInput | undefined
 	optimize?: Optimization | undefined
 	// trust data to hold only own, enumerable keys, as JSON.parse's output does
-	json?: boolean | undefined
+	jsonInput?: boolean | undefined
 	// declare functions, so an import cycle can call them early
 	hoisted?: boolean | undefined
 	// export as values what a site would call a function only to read
@@ -281,7 +281,7 @@ interface Baking {
 	compilesValidators: boolean
 	checksTypes: boolean
 	mutatesInput: MutatesInput | undefined
-	json: boolean
+	jsonInput: boolean
 	hoisted: boolean
 	shortest: boolean
 	flattens: boolean
@@ -499,7 +499,7 @@ const writeArtifact = (
 		compilesValidators: Object.keys(exports).length === 1,
 		checksTypes: opts.checks !== "none",
 		mutatesInput: opts.mutatesInput,
-		json: opts.json === true,
+		jsonInput: opts.jsonInput === true,
 		hoisted: opts.hoisted === true,
 		shortest: opts.optimize === "size",
 		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular,
@@ -1208,7 +1208,7 @@ class StandaloneArtifact {
 			6 * +this.baking.shortest
 		const compiled =
 			variant === 8 && !this.baking.combines ? compiledForSize : variant
-		return this.baking.json ? jsonVariantOf(compiled) : compiled
+		return this.baking.jsonInput ? jsonVariantOf(compiled) : compiled
 	}
 
 	unitsOf(root: BaseRoot): RootUnit[] {

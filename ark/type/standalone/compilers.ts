@@ -469,7 +469,7 @@ const compilers = [false, true].flatMap(shortest =>
 export const compiledForSize: number =
 	compilers.push(forSize(UnifiedCompiler)) - 1
 
-// a json build's compilers follow the others in the same order, each
+// a jsonInput build's compilers follow the others in the same order, each
 // trusting data to be plain, as JSON.parse returns
 const jsonOffset = compilers.length
 
@@ -477,14 +477,14 @@ compilers.push(
 	...compilers.map(
 		compiler =>
 			class extends compiler {
-				override readonly json: boolean = true
+				override readonly jsonInput: boolean = true
 			}
 	)
 )
 
 export const jsonVariantOf = (variant: number): number => variant + jsonOffset
 
-// the variant a json build's variant otherwise matches
+// the variant a jsonInput build's variant otherwise matches
 const baseVariantOf = (variant: number) => variant % jsonOffset
 
 // each variant's roots have their own units

@@ -45,7 +45,7 @@ import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { inspect, types } from "node:util"
 import {
-	json,
+	jsonInput,
 	detailsErrors,
 	firstIssue,
 	freezes,
@@ -237,7 +237,7 @@ const loadArtifact = async (
 		checks: testedOptions.creationChecks,
 		mutatesInput: testedOptions.mutatesInput,
 		optimize: testedOptions.optimize,
-		json: testedOptions.json,
+		jsonInput: testedOptions.jsonInput,
 		configured: testedOptions.config === false ? (false as const) : undefined
 	}
 	let code: string
@@ -1122,7 +1122,7 @@ export const compare = async (
 				!expected ||
 				holdsArkValue(actual) ||
 				returnsForeignErrors(validator, input) ||
-				(json && holdsUncounted(input))
+				(jsonInput && holdsUncounted(input))
 			) {
 				if (layout === layouts[0]) result.harnessLimited++
 			} else disagree("call", { input, arktype: expected, precompiled: actual })

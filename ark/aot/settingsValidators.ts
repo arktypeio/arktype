@@ -446,7 +446,7 @@ var unionwltuhb0wt5e34 = [/* @__PURE__ */ units(["size", "speed"], "union")]
 var union1yvbmuz0dlc3qf = [
 	/* @__PURE__ */ units(["introspectable", "smallest"], "union")
 ]
-var intersection1sp8viv1kx2k2q = /* @__PURE__ */ ((
+var intersectionqycrzk1gl4n19 = /* @__PURE__ */ ((
 	[uniontxb0ck1na4t1cAllows],
 	[intersection1saekmc1myv528Allows],
 	[intersection1jmpl21nkry5aAllows],
@@ -458,7 +458,7 @@ var intersection1sp8viv1kx2k2q = /* @__PURE__ */ ((
 	[unionwltuhb0wt5e34Allows],
 	[union1yvbmuz0dlc3qfAllows]
 ) => {
-	const intersection1sp8viv1kx2k2qAllows = (data, ctx) => {
+	const intersectionqycrzk1gl4n19Allows = (data, ctx) => {
 		if (
 			!(
 				data !== null &&
@@ -467,9 +467,9 @@ var intersection1sp8viv1kx2k2q = /* @__PURE__ */ ((
 		) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structuregbpk1h0lu0dprAllows(data, ctx)
+		return structure3oara1018adh6Allows(data, ctx)
 	}
-	const structuregbpk1h0lu0dprAllows = (data, ctx) => {
+	const structure3oara1018adh6Allows = (data, ctx) => {
 		if (
 			!(
 				!("allowUnsafe" in data) ||
@@ -571,10 +571,10 @@ var intersection1sp8viv1kx2k2q = /* @__PURE__ */ ((
 		}
 		if (
 			!(
-				!("json" in data) ||
+				!("jsonInput" in data) ||
 				!(
-					!(data.json === false || data.json === true) &&
-					failsIn2(ctx, union14x0uzw08oe5zuAllows, data.json, "json")
+					!(data.jsonInput === false || data.jsonInput === true) &&
+					failsIn2(ctx, union14x0uzw08oe5zuAllows, data.jsonInput, "jsonInput")
 				)
 			)
 		) {
@@ -698,7 +698,7 @@ var intersection1sp8viv1kx2k2q = /* @__PURE__ */ ((
 				case "errors":
 				case "freeze":
 				case "inline":
-				case "json":
+				case "jsonInput":
 				case "lazy":
 				case "members":
 				case "mutatesInput":
@@ -718,7 +718,7 @@ var intersection1sp8viv1kx2k2q = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	return [intersection1sp8viv1kx2k2qAllows]
+	return [intersectionqycrzk1gl4n19Allows]
 })(
 	uniontxb0ck1na4t1c,
 	intersection1saekmc1myv528,
@@ -743,7 +743,7 @@ var create10n7yuw0bfhpvo = ([allows], id, holes = []) => {
 	validator.allows = freeze(allows)
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersectionm2pbuu0ditgxd = /* @__PURE__ */ ((
+var intersectionh0bvo41o2mtpn = /* @__PURE__ */ ((
 	[uniontxb0ck1na4t1cAllows],
 	[intersection1saekmc1myv528Allows],
 	[intersection1jmpl21nkry5aAllows],
@@ -755,7 +755,7 @@ var intersectionm2pbuu0ditgxd = /* @__PURE__ */ ((
 	[unionwltuhb0wt5e34Allows],
 	[union1yvbmuz0dlc3qfAllows]
 ) => {
-	const intersection1tkfcy60klqfkmAllows = (data, ctx) => {
+	const intersection11fxh7y1nnbziqAllows = (data, ctx) => {
 		if (
 			!(
 				data !== null &&
@@ -764,9 +764,9 @@ var intersectionm2pbuu0ditgxd = /* @__PURE__ */ ((
 		) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structure180wnm20jwhfzyAllows(data, ctx)
+		return structure1is8kx90pkvr5qAllows(data, ctx)
 	}
-	const structure180wnm20jwhfzyAllows = (data, ctx) => {
+	const structure1is8kx90pkvr5qAllows = (data, ctx) => {
 		if (
 			!(
 				!("allowUnsafe" in data) ||
@@ -838,10 +838,10 @@ var intersectionm2pbuu0ditgxd = /* @__PURE__ */ ((
 		}
 		if (
 			!(
-				!("json" in data) ||
+				!("jsonInput" in data) ||
 				!(
-					!(data.json === false || data.json === true) &&
-					failsIn2(ctx, union14x0uzw08oe5zuAllows, data.json, "json")
+					!(data.jsonInput === false || data.jsonInput === true) &&
+					failsIn2(ctx, union14x0uzw08oe5zuAllows, data.jsonInput, "jsonInput")
 				)
 			)
 		) {
@@ -962,7 +962,7 @@ var intersectionm2pbuu0ditgxd = /* @__PURE__ */ ((
 				case "creationChecks":
 				case "errors":
 				case "freeze":
-				case "json":
+				case "jsonInput":
 				case "lazy":
 				case "members":
 				case "mutatesInput":
@@ -982,7 +982,7 @@ var intersectionm2pbuu0ditgxd = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	const intersectionm2pbuu0ditgxdAllows = (data, ctx) => {
+	const intersectionh0bvo41o2mtpnAllows = (data, ctx) => {
 		if (
 			!(
 				data !== null &&
@@ -991,9 +991,9 @@ var intersectionm2pbuu0ditgxd = /* @__PURE__ */ ((
 		) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structure16i33i1y45m1rAllows(data, ctx)
+		return structure6p7ozj1ofuz7bAllows(data, ctx)
 	}
-	const structure16i33i1y45m1rAllows = (data, ctx) => {
+	const structure6p7ozj1ofuz7bAllows = (data, ctx) => {
 		if (
 			!(
 				!("$schema" in data) ||
@@ -1010,7 +1010,7 @@ var intersectionm2pbuu0ditgxd = /* @__PURE__ */ ((
 				!("precompile" in data) ||
 				!failsIn2(
 					ctx,
-					intersection1tkfcy60klqfkmAllows,
+					intersection11fxh7y1nnbziqAllows,
 					data.precompile,
 					"precompile"
 				)
@@ -1032,7 +1032,7 @@ var intersectionm2pbuu0ditgxd = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	return [intersectionm2pbuu0ditgxdAllows]
+	return [intersectionh0bvo41o2mtpnAllows]
 })(
 	uniontxb0ck1na4t1c,
 	intersection1saekmc1myv528,
@@ -1050,8 +1050,8 @@ var created1
 var get0 = () => {
 	return (created0 ??= (() => {
 		const validator0 = create10n7yuw0bfhpvo(
-			intersection1sp8viv1kx2k2q,
-			"4kz0vb11"
+			intersectionqycrzk1gl4n19,
+			"28uioz05"
 		)
 		return validator0
 	})())
@@ -1059,8 +1059,8 @@ var get0 = () => {
 var get1 = () => {
 	return (created1 ??= (() => {
 		const validator0 = create10n7yuw0bfhpvo(
-			intersectionm2pbuu0ditgxd,
-			"7v22j19k"
+			intersectionh0bvo41o2mtpn,
+			"a9cvg00u"
 		)
 		return validator0
 	})())
@@ -1077,7 +1077,7 @@ export const cliOptions = {
 	errors: { type: "string", values: "all|first|none" },
 	freeze: { type: "boolean", values: "true|false" },
 	inline: { type: "boolean", values: "true|false" },
-	json: { type: "boolean", values: "true|false" },
+	jsonInput: { type: "boolean", values: "true|false" },
 	lazy: { type: "boolean", values: "true|false" },
 	members: { type: "object", values: "json" },
 	mutatesInput: { type: "string", values: "always|true|false" },

@@ -2273,11 +2273,11 @@ password must be at least length 8`)
 		attest(U({ c: 1 }).summary).snap("c must be removed")
 	})
 
-	describe("json", () => {
+	describe("jsonInput", () => {
 		const Strict = type({ "+": "reject", a: "string", "b?": "number" })
 
 		it("counts a plain object's keys", async () => {
-			const { T } = await load({ T: Strict }, { json: true })
+			const { T } = await load({ T: Strict }, { jsonInput: true })
 			const absent = { a: "" }
 			const present = { a: "", b: 0 }
 			attest(T(absent)).is(absent)
@@ -2287,7 +2287,7 @@ password must be at least length 8`)
 		})
 
 		it("passes an undeclared key beside a declared non-enumerable one", async () => {
-			const { T } = await load({ T: Strict }, { json: true })
+			const { T } = await load({ T: Strict }, { jsonInput: true })
 			const nonEnumerable = Object.defineProperty({ c: 1 }, "a", { value: "" })
 			attest(T(nonEnumerable)).is(nonEnumerable)
 		})
@@ -2295,13 +2295,13 @@ password must be at least length 8`)
 		it("checks each key where in finds one Object.prototype has", async () => {
 			const { U } = await load(
 				{ U: type({ "+": "reject", toString: "Function" }) },
-				{ json: true }
+				{ jsonInput: true }
 			)
 			attest(U({ c: 1 }).summary).snap("c must be removed")
 		})
 
 		it("checks each key of an object whose prototype isn't Object.prototype", async () => {
-			const { T } = await load({ T: Strict }, { json: true })
+			const { T } = await load({ T: Strict }, { jsonInput: true })
 			const nullPrototype = Object.defineProperty(
 				Object.assign(Object.create(null), { c: 1 }),
 				"a",

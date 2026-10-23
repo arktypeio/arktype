@@ -1006,7 +1006,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				)
 			}
 		} else if (this.undeclared === "reject") {
-			if (js.traversalKind === "Allows" && js.json && this.countsKeys)
+			if (js.traversalKind === "Allows" && js.jsonInput && this.countsKeys)
 				this.compileKeyCount(js, () => js.return(true))
 			js.forIn("data", () => this.compileEntry(js, "string"))
 		}

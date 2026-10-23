@@ -103,7 +103,7 @@ const standaloneOptions = [
 	"members",
 	"freeze",
 	"lazy",
-	"json",
+	"jsonInput",
 	"shadow",
 	"creationChecks",
 	"errors",

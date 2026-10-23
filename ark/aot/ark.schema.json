@@ -29,7 +29,7 @@
 				},
 				"errors": { "type": "string", "enum": ["all", "first", "none"] },
 				"freeze": { "type": "boolean" },
-				"json": { "type": "boolean" },
+				"jsonInput": { "type": "boolean" },
 				"lazy": { "type": "boolean" },
 				"members": {
 					"type": "object",
