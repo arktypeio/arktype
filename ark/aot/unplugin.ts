@@ -126,12 +126,8 @@ export const precompile: UnpluginInstance<
 			:	productionHost
 	}
 	let isStandalone = opts?.runtime !== "arktype"
-	// a production build for size leaves out what no read of the bundle needs
-	const prunes = () =>
-		isStandalone &&
-		!opts?.shadow &&
-		opts?.optimize === "size" &&
-		opts.prune !== false
+	// a production bundle leaves out what no read of it needs
+	const prunes = () => isStandalone && !opts?.shadow && opts?.prune !== false
 	let variant = resolvedVariantOf(opts)
 	let packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
 	// arktype left to Node loads as itself, not as the runtime validators use

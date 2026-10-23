@@ -1,4 +1,4 @@
-import type { Node, Span } from "oxc-parser"
+import { parseSync, type Node, type Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
 import {
@@ -370,3 +370,64 @@ export const unprecompiled = (module: SourceModule): RuntimeModule => ({
 	validators: [],
 	holdsOther: false
 })
+
+// whether each factory a module of validators exports reads what a call
+// passes it, other than the index a shared factory takes first, e.g. not a
+// production build's, which checks no Type it's passed
+export const passedReaderOf = (
+	code: string
+): ((exported: string) => boolean) => {
+	let functionsByExport: Map<string, Node | undefined> | undefined
+	return exported => {
+		functionsByExport ??= exportedFunctionsOf(code)
+		const fn = functionsByExport.get(exported)
+		if (
+			fn?.type !== "ArrowFunctionExpression" &&
+			fn?.type !== "FunctionExpression" &&
+			fn?.type !== "FunctionDeclaration"
+		)
+			return true
+		const names = new Set<string>(["arguments"])
+		for (const [i, param] of fn.params.entries()) {
+			if (param.type !== "Identifier") return true
+			if (i || param.name !== "index") names.add(param.name)
+		}
+		let reads = false
+		walk(fn.body!, node => {
+			reads ||= node.type === "Identifier" && names.has(node.name)
+			return !reads
+		})
+		return reads
+	}
+}
+
+const exportedFunctionsOf = (code: string): Map<string, Node | undefined> => {
+	const { program } = parseSync("validators.js", code)
+	const declared = new Map<string, Node>()
+	const result = new Map<string, Node | undefined>()
+	for (const statement of program.body) {
+		if (statement.type === "FunctionDeclaration" && statement.id)
+			declared.set(statement.id.name, statement)
+		else if (statement.type === "VariableDeclaration") {
+			for (const { id, init } of statement.declarations) {
+				if (id.type === "Identifier" && init)
+					declared.set(id.name, unwrapParentheses(init))
+			}
+		} else if (statement.type === "ExportNamedDeclaration") {
+			for (const specifier of statement.specifiers) {
+				result.set(
+					exportNameOf(specifier.exported),
+					specifier.local.type === "Identifier" ?
+						declared.get(specifier.local.name)
+					:	undefined
+				)
+			}
+		}
+	}
+	return result
+}
+
+const unwrapParentheses = (node: Node): Node =>
+	node.type === "ParenthesizedExpression" ?
+		unwrapParentheses(node.expression)
+	:	node

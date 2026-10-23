@@ -131,7 +131,12 @@ import {
 } from "./scope.ts"
 import type { ShadowContract } from "./shadow.ts"
 import { linkBundle, type LinkedSite } from "./link.ts"
-import { unprecompiled, usedMembersOf, type RuntimeModule } from "./usage.ts"
+import {
+	passedReaderOf,
+	unprecompiled,
+	usedMembersOf,
+	type RuntimeModule
+} from "./usage.ts"
 import {
 	filterSites,
 	findSites,
@@ -209,7 +214,7 @@ export interface PrecompileOptions extends InterpreterOptions {
 	jsonInput?: boolean | undefined
 	/** also create each site with arktype and throw where they diverge */
 	shadow?: boolean | undefined
-	/** false keeps what no read in a production bundle for size needs */
+	/** false keeps what no read in a production bundle needs */
 	prune?: boolean | undefined
 	/** warn rather than fail where the output may throw at runtime */
 	allowUnsafe?: boolean | undefined
@@ -1551,6 +1556,7 @@ export class Precompiler {
 		const passed: Binding[] = []
 		// those a call reads at runtime
 		const read: Binding[] = []
+		let readsPassedBy: ((exported: string) => boolean) | undefined
 		let fixedAt = Infinity
 		for (const [site, name] of namesBySite) {
 			if (refusalsByName[name]) {
@@ -1602,9 +1608,14 @@ export class Precompiler {
 					(inputImports[specifier] ??= {})[name] = local
 			}
 			kept.push(...(factory?.spans ?? []))
+			// a value's inputs evaluate in place, and a factory may ignore its own
+			const readsPassed =
+				!isValue &&
+				!!factory?.bindings.length &&
+				(readsPassedBy ??= passedReaderOf(validators.code))(exported)
 			for (const [input, binding] of factory?.bindings ?? []) {
 				passed.push(binding)
-				if (inputs.includes(input)) read.push(binding)
+				if (readsPassed && inputs.includes(input)) read.push(binding)
 			}
 			// droppable with its variable unless it throws or checks
 			const isPure =

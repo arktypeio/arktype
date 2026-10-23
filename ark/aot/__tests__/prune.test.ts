@@ -56,6 +56,13 @@ const droppedReading = (read: string, files: Record<string, string> = {}) =>
 
 const everyMember = ["assert", "meta", "~standard", "methods"]
 
+// a lazy build passes the factory creating Admin the User it read
+const composed = {
+	"/types.ts": types,
+	"/admin.ts": `import { type } from "arktype"\nimport { User } from "./types.ts"\n\nexport const Admin = type({ user: User })`,
+	"/main.ts": `import { Admin } from "./admin.ts"\n\nAdmin({})`
+}
+
 contextualize(() => {
 	describe("reads it recognizes", () => {
 		it("a call", async () => {
@@ -176,6 +183,15 @@ contextualize(() => {
 			).equals(everyMember)
 		})
 
+		it("nothing in an import a factory is passed but doesn't check", async () => {
+			attest(
+				await droppedFrom(composed, {
+					preset: undefined,
+					creationChecks: "none"
+				})
+			).equals(everyMember)
+		})
+
 		it("nothing in a type-only import", async () => {
 			attest(
 				await droppedReading(
@@ -274,6 +290,15 @@ contextualize(() => {
 			attest(
 				await droppedFrom({
 					"/main.ts": `import { type } from "arktype"\n\nconsole.log(type({ name: "string" }))`
+				})
+			).equals([])
+		})
+
+		it("an import a factory checks", async () => {
+			attest(
+				await droppedFrom(composed, {
+					preset: undefined,
+					creationChecks: "types"
 				})
 			).equals([])
 		})
@@ -392,6 +417,17 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(run(whole)).equals(run(pruned))
 			attest(whole.includes("~standard")).equals(true)
 			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("leaves out of a default production build what no read needs", async () => {
+			const pruned = await bundle({ preset: undefined })
+			attest(run(pruned)).snap("name must be a string\n")
+			attest(pruned.includes("~standard")).equals(false)
+			attest(
+				(await bundle({ preset: undefined, prune: false })).includes(
+					"~standard"
+				)
+			).equals(true)
 		})
 
 		it("keeps a build other than for production whole", async () => {

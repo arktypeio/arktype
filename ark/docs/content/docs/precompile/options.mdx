@@ -32,7 +32,7 @@ precompile.vite({ preset: "smallest", members: { meta: false } })
 | `"smallest"`       | `optimize: "size"`, `lazy: false`                  | speed, runtime islands, creating validators as first read |
 | `"introspectable"` | each introspection member in [`members`](#members) | size                                                      |
 
-No preset changes what a program observes: none sets `errors`, `mutatesInput` or `jsonInput`, or drops a member some code may read, since the build can't see a member read by code it doesn't build, like a library reading `~standard`. A [production bundle](#prune) for `"smallest"` leaves out the members it proves nothing reads. With `runtime: "arktype"`, a preset sets nothing.
+No preset changes what a program observes: none sets `errors`, `mutatesInput` or `jsonInput`, or drops a member some code may read, since the build can't see a member read by code it doesn't build, like a library reading `~standard`. A [production bundle](#prune) leaves out the members it proves nothing reads. With `runtime: "arktype"`, a preset sets nothing.
 
 With Turbopack, `"smallest"` needs the `@ark/schema/runtime` alias [`optimize: "size"`](#optimize-and-optimizeerrors) does.
 
@@ -153,7 +153,7 @@ An instance of a class, or any object whose prototype isn't `Object.prototype`, 
 
 ### prune
 
-A [production](#production-builds) bundle built with `optimize: "size"`, as `"smallest"` sets, reads every module its entries reach before it precompiles one, and leaves out of its validators each member of [`members`](#members) no read needs. A validator only called, or read for `.allows`, keeps neither `assert`, `meta`, `~standard` nor `methods`, and one read as `User.assert(data)` keeps `assert`. It also writes a checker that only one validator reads where that validator is created, rather than as a declaration of its own.
+A [production](#production-builds) bundle reads every module its entries reach before it precompiles one, and leaves out of its validators each member of [`members`](#members) no read needs. A validator only called, or read for `.allows`, keeps neither `assert`, `meta`, `~standard` nor `methods`, and one read as `User.assert(data)` keeps `assert`. With `lazy: false`, as `"smallest"` sets, it also writes a checker that only one validator reads where that validator is created, rather than as a declaration of its own.
 
 The build leaves a member wherever it can't prove no code reads it: when an entry exports a validator or a module holding one, a validator is passed to a function, stored, or read by a member it doesn't know, a module is imported dynamically, through `require` or `import.meta`, or holds a Scope, and when the bundle holds a module it can't read, like a Vue component. A member set true is always kept.
 
