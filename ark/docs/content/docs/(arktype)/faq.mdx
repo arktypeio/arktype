@@ -38,7 +38,7 @@ See [Errors](/docs/errors) for everything an error carries.
 
 ## Why isn't my configuration applied?
 
-Global config is fixed when the first Type is created, by a definition or by reading a keyword like `type.number`. Calling `configure` after that throws a `ParseError`: `configure() must be called before any Type is created`. Put it in its own file and import that file before anything creates a Type. See [Configuration](/docs/configuration).
+Global config is fixed when the first Type is created, by a definition or by reading a keyword like `type.number`. Calling `configure` after that throws a `ParseError`: `configure() must be called before any Type is created, so import the module calling it before any module that creates one`. Put it in its own file. See [Configuration](/docs/configuration).
 
 ## Does a morph change my input?
 

@@ -1005,7 +1005,7 @@ export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
 ) => string
 
 export const configureAfterTypeMessage =
-	"configure() must be called before any Type is created"
+	"configure() must be called before any Type is created, so import the module calling it before any module that creates one"
 
 export const unrenderedLocaleMessage =
 	'import "arktype/i18n" to write errors in locales other than en'

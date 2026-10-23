@@ -1560,7 +1560,7 @@ configure({ numberAllowsNaN: true })
 // previously false, now true
 type.number.allows(Number.NaN)
 
-// previously ignored by type, now throws: configure() must be called before any Type is created
+// previously ignored by type, now throws: configure() must be called before any Type is created, so import the module calling it before any module that creates one
 configure({ onUndeclaredKey: "delete" })
 ```
 
