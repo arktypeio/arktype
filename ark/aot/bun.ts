@@ -16,7 +16,11 @@ import {
 } from "./host.ts"
 import { refuseDeclare } from "./declare.ts"
 import { isProductionEnv } from "./presets.ts"
-import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
+import {
+	refusePrune,
+	resolvePrecompileOptions,
+	withSettingsFile
+} from "./settings.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
 
 // declared here, since bun-types declares globals beside @types/node's
@@ -39,6 +43,7 @@ export interface BunPlugin {
 export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 	refuseDeclare(opts, "Bun")
 	const set = withSettingsFile(opts)
+	refusePrune(set, "Bun")
 	opts = resolvePrecompileOptions(set)
 	return {
 		name: "arktype",

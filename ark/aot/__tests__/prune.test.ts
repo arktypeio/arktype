@@ -2,7 +2,15 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { Precompiler, type PrecompileOptions } from "@ark/aot"
 import { linkBundle } from "@ark/aot/internal/link.ts"
+import { emitPrecompiled } from "@ark/aot/internal/emit.ts"
 import { scanProgram, writeUnseenMessage } from "@ark/aot/internal/scan.ts"
+import {
+	pruneBeforePluginMessage,
+	writePruneHostMessage
+} from "@ark/aot/internal/settings.ts"
+import { precompile as bunPlugin } from "@ark/aot/bun"
+import { register } from "@ark/aot/node"
+import turbopack from "@ark/aot/turbopack"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { rspack } from "@rspack/core"
 import { build, context, type BuildOptions, type Plugin } from "esbuild"
@@ -17,7 +25,7 @@ import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join, posix } from "node:path"
-import { memoryHost, normalized, writeFixture } from "./utils.ts"
+import { memoryHost, normalized, runCli, writeFixture } from "./utils.ts"
 
 const types = `import { type } from "arktype"
 
@@ -476,6 +484,15 @@ console.log(out instanceof type.errors ? out.summary : out)
 			)
 		})
 
+		it("fails prune: true where a plugin after it may load a module", async () => {
+			const plugins = [{ name: "after", setup: () => {} }]
+			const error = await bundle({ prune: true }, { plugins }).then(
+				() => undefined,
+				(e: Error) => e
+			)
+			attest(error?.message.includes(pruneBeforePluginMessage)).equals(true)
+		})
+
 		it("fails a bundle holding a module another plugin loaded, writing nothing", async () => {
 			const outdir = join(root, "out")
 			const main = join(root, "main.ts")
@@ -862,5 +879,93 @@ console.log(out instanceof type.errors ? out.summary : out)
 				attest(built).equals(await bundle(name, { prune: false }))
 			})
 		}
+	})
+
+	describe("hosts that can't prune", () => {
+		// prune: true as ark.json sets it, read from beside package.json
+		const settled = writeFixture(
+			{
+				"package.json": "{}",
+				"ark.json": JSON.stringify({ precompile: { prune: true } })
+			},
+			fromHere("temp", "prunedSettings")
+		)
+
+		const refusals = (refuse: (opts: PrecompileUnpluginOptions) => unknown) =>
+			[{ prune: true }, { cwd: settled }].map(opts => {
+				try {
+					refuse(opts)
+				} catch (e) {
+					return (e as Error).message
+				}
+			})
+
+		it("refuses it with Node's driver", () => {
+			attest(refusals(register)).equals([
+				writePruneHostMessage("Node"),
+				writePruneHostMessage("Node")
+			])
+		})
+
+		it("refuses it with Bun's plugin", () => {
+			attest(refusals(bunPlugin)).equals([
+				writePruneHostMessage("Bun"),
+				writePruneHostMessage("Bun")
+			])
+		})
+
+		it("refuses it with Turbopack's loader", () => {
+			attest(
+				refusals(opts =>
+					turbopack.call(
+						{ getOptions: () => opts, resourcePath: "a.ts" } as never,
+						""
+					)
+				)
+			).equals([
+				writePruneHostMessage("Turbopack"),
+				writePruneHostMessage("Turbopack")
+			])
+		})
+
+		it("refuses it with webpack and Rspack", () => {
+			const compile = (opts: PrecompileUnpluginOptions) => ({
+				mode: "production" as const,
+				context: settled,
+				entry: "./main.js",
+				plugins: [precompile.webpack(opts) as never]
+			})
+			attest(refusals(opts => webpack(compile(opts)))).equals([
+				writePruneHostMessage("webpack"),
+				writePruneHostMessage("webpack")
+			])
+			attest(
+				refusals(opts =>
+					rspack({
+						...compile(opts),
+						plugins: [precompile.rspack(opts) as never]
+					})
+				)
+			).equals([
+				writePruneHostMessage("rspack"),
+				writePruneHostMessage("rspack")
+			])
+		})
+
+		it("refuses it with arktype-precompile", () => {
+			attest(refusals(emitPrecompiled)).equals([
+				writePruneHostMessage("arktype-precompile"),
+				writePruneHostMessage("arktype-precompile")
+			])
+			for (const { stderr, status } of [
+				runCli(fromHere(), "--check", "--prune"),
+				runCli(settled, "--emit")
+			]) {
+				attest(status).equals(2)
+				attest(
+					stderr.startsWith(writePruneHostMessage("arktype-precompile"))
+				).equals(true)
+			}
+		})
 	})
 })

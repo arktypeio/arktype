@@ -27,7 +27,11 @@ import {
 } from "./host.ts"
 import { refuseDeclare } from "./declare.ts"
 import { isProductionEnv } from "./presets.ts"
-import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
+import {
+	refusePrune,
+	resolvePrecompileOptions,
+	withSettingsFile
+} from "./settings.ts"
 import { createSyncPrecompiler, isPrecompilerWorker } from "./worker.ts"
 
 export const register = (opts?: PrecompilePluginOptions): void => {
@@ -38,6 +42,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	// the worker inherits the flags that registered these hooks
 	if (isPrecompilerWorker) return
 	const set = withSettingsFile(opts)
+	refusePrune(set, "Node")
 	opts = resolvePrecompileOptions(set)
 	const isStandalone = opts.runtime !== "arktype"
 	const variant = resolvedVariantOf(opts)

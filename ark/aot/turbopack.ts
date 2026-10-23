@@ -8,7 +8,11 @@ import {
 } from "./driver.ts"
 import { refuseDeclare } from "./declare.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
-import { resolvePrecompileOptions, withSettingsFile } from "./settings.ts"
+import {
+	refusePrune,
+	resolvePrecompileOptions,
+	withSettingsFile
+} from "./settings.ts"
 import {
 	allowUnsafeHint,
 	createNodeHost,
@@ -44,6 +48,18 @@ const precompilersByOptions: Record<
 // ark.json is read once for each option set the loader is given
 const resolvedByOptions: Record<string, PrecompilePluginOptions> = {}
 
+// with ark.json's, where prune: true would be ignored
+const resolvedOptionsOf = (
+	given: PrecompilePluginOptions,
+	production: boolean
+): PrecompilePluginOptions => {
+	const set = withSettingsFile(given)
+	refusePrune(set, "Turbopack")
+	return resolvePrecompileOptions(
+		withEnvironment(set, { production, testing: false })
+	)
+}
+
 // a webpack loader, called with its context as `this`
 export default function (
 	this: TurbopackLoaderContext,
@@ -55,12 +71,7 @@ export default function (
 	try {
 		const production = this.mode === "production" || isProductionEnv()
 		opts = resolvedByOptions[`${production}${JSON.stringify(given)}`] ??=
-			resolvePrecompileOptions(
-				withEnvironment(withSettingsFile(given), {
-					production,
-					testing: false
-				})
-			)
+			resolvedOptionsOf(given, production)
 	} catch (e) {
 		return rethrowAsBuildError(e)
 	}
