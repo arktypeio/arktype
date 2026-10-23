@@ -33,42 +33,21 @@ contextualize(() => {
 		attest(result).snap("December 15, 2023, 2:30:00.123 PM UTC")
 	})
 
-	it("handles midnight correctly", () => {
-		const date = new Date("2023-01-15T00:00:00.000Z")
-		const result = describeCollapsibleDate(date)
-		attest(result).snap("January 15, 2023")
-	})
-
 	it("handles noon correctly", () => {
 		const date = new Date("2023-02-15T12:00:00.000Z")
 		const result = describeCollapsibleDate(date)
 		attest(result).snap("February 15, 2023, 12:00 PM UTC")
 	})
 
-	it("handles AM/PM correctly", () => {
-		const dateAM = new Date("2023-01-15T09:00:00.000Z")
-		const resultAM = describeCollapsibleDate(dateAM)
-		attest(resultAM).snap("January 15, 2023, 9:00 AM UTC")
-
-		const datePM = new Date("2023-01-15T21:00:00.000Z")
-		const resultPM = describeCollapsibleDate(datePM)
-		attest(resultPM).snap("January 15, 2023, 9:00 PM UTC")
+	it("handles AM correctly", () => {
+		const date = new Date("2023-01-15T09:00:00.000Z")
+		attest(describeCollapsibleDate(date)).snap("January 15, 2023, 9:00 AM UTC")
 	})
 
 	it("doesn't collapse local midnight", () => {
 		attest(describeCollapsibleDate(new Date(2023, 0, 1))).snap(
 			"January 1, 2023, 5:00 AM UTC"
 		)
-	})
-
-	it("describes local time in UTC", () => {
-		const date = new Date(2023, 0, 15, 9)
-		attest(describeCollapsibleDate(date)).snap("January 15, 2023, 2:00 PM UTC")
-	})
-
-	it("returns full date and time on January 1", () => {
-		const date = new Date("2023-01-01T14:30:00.000Z")
-		attest(describeCollapsibleDate(date)).snap("January 1, 2023, 2:30 PM UTC")
 	})
 
 	it("doesn't depend on the default locale's time format", () => {

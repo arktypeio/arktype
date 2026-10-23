@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema } from "@ark/schema"
+import { rootSchema, writeEnumerableIndexBranches } from "@ark/schema"
 
 contextualize(() => {
 	it("normalizes prop order", () => {
@@ -61,6 +61,16 @@ contextualize(() => {
 			index: [{ signature: "string", value: { unit: "foo" } }],
 			domain: "object"
 		})
+	})
+
+	it("enumerable index keys", () => {
+		const s = Symbol("s")
+		attest(() =>
+			rootSchema({
+				domain: "object",
+				index: { signature: ["string", { unit: s }], value: "string" }
+			})
+		).throws(writeEnumerableIndexBranches(["Symbol(s)"]))
 	})
 
 	const startingWithA = rootSchema({ domain: "string", pattern: /^a.*/ })

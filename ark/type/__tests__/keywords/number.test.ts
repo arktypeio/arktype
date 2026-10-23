@@ -75,7 +75,12 @@ contextualize(() => {
 		attest(T.allows(Number.NaN)).equals(false)
 	})
 
-	it("numberAllowsInfinity on non-number", () => {
+	it("non-finite allowances on non-number", () => {
+		attest(() =>
+			rootSchema({ domain: "string", numberAllowsNaN: true } as never)
+		).throws.snap(
+			'ParseError: numberAllowsNaN may only be specified with domain "number" (was string)'
+		)
 		attest(() =>
 			rootSchema({ domain: "string", numberAllowsInfinity: true } as never)
 		).throws.snap(

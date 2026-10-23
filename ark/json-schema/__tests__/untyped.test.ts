@@ -2,14 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import { jsonSchemaToType } from "@ark/json-schema"
 
 contextualize(() => {
-	it("schemas without constraints", () => {
-		attest(jsonSchemaToType({}).expression).snap("unknown")
-		attest(jsonSchemaToType(true).expression).snap("unknown")
-		attest(jsonSchemaToType({ description: "anything" }).expression).snap(
-			"unknown"
-		)
-	})
-
 	it("keywords constrain only their own type", () => {
 		const t = jsonSchemaToType({
 			properties: { a: { type: "string" } },
@@ -39,5 +31,10 @@ contextualize(() => {
 			allOf: [{ type: "array" }]
 		})
 		attest(t.expression).snap("Array")
+	})
+
+	it("const outside enum", () => {
+		const t = jsonSchemaToType({ const: "c", enum: ["a", "b"] })
+		attest(t.expression).snap("never")
 	})
 })

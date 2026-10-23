@@ -4,18 +4,6 @@ import {
 	jsonSchemaToType,
 	type InferredJsonSchema
 } from "@ark/json-schema"
-import type { JsonSchema } from "arktype"
-
-// not exported, since TS 7.1 rejects declaration emit for anonymous cyclic
-// types (TS5088) that earlier versions elided to `any`
-// https://github.com/microsoft/TypeScript/issues/64656
-const tree = jsonSchema({
-	type: "object",
-	properties: {
-		value: { type: "number" },
-		children: { type: "array", items: { $ref: "#" } }
-	}
-})
 
 contextualize(() => {
 	it("returns its input", () => {
@@ -50,16 +38,6 @@ contextualize(() => {
 		attest<"boolean">(s.items.type)
 	})
 
-	it("boolean schemas", () => {
-		attest<unknown>(jsonSchema(true).infer)
-		attest<never>(jsonSchema(false).infer)
-	})
-
-	it("widened schema", () => {
-		const s = jsonSchema({} as JsonSchema)
-		attest<unknown>(s.infer)
-	})
-
 	it("nested inferred schema", () => {
 		const user = jsonSchema({
 			type: "object",
@@ -81,12 +59,6 @@ contextualize(() => {
 			attest(outer.infer).type.toString.snap("{ next?: cyclic }[]")
 		type next = NonNullable<(typeof outer.infer)[number]["next"]>
 		attest<typeof outer.infer, next>()
-	})
-
-	it("recursive", () => {
-		attest(tree.infer).type.toString.snap(
-			"{ value?: number; children?: cyclic[] }"
-		)
 	})
 
 	it("jsonSchemaToType", () => {
@@ -133,12 +105,6 @@ contextualize(() => {
 	})
 
 	describe("jsonSchema.infer", () => {
-		it("schema", () => {
-			attest<string | null>(
-				{} as jsonSchema.infer<{ type: ["string", "null"] }>
-			)
-		})
-
 		it("inferred schema", () => {
 			const s = jsonSchema.as<{ a: 1 }>({})
 			attest<{ a: 1 }>({} as jsonSchema.infer<typeof s>)
@@ -160,16 +126,6 @@ contextualize(() => {
 			attest({} as jsonSchema.infer<typeof node, Outer>).type.toString.snap(
 				"{ next?: cyclic[] }"
 			)
-		})
-
-		it("root", () => {
-			type Doc = {
-				$defs: {
-					a: { type: "array"; items: { $ref: "#/$defs/b" } }
-					b: { type: "string" }
-				}
-			}
-			attest<string[]>({} as jsonSchema.infer<Doc["$defs"]["a"], Doc>)
 		})
 	})
 

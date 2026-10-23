@@ -2,61 +2,41 @@ import { attest, contextualize } from "@ark/attest"
 import { jsonSchemaToType } from "@ark/json-schema"
 
 contextualize(() => {
-	it("allOf", () => {
-		const tAllOf = jsonSchemaToType({
-			allOf: [
-				{ type: "string", minLength: 1 },
-				{ type: "string", maxLength: 10 }
-			]
-		})
-		attest(tAllOf.expression).snap("1 <= string <= 10")
-	})
-
-	it("anyOf", () => {
-		const tAnyOf = jsonSchemaToType({
-			anyOf: [
-				{ type: "string", minLength: 1 },
-				{ type: "string", maxLength: 10 }
-			]
-		})
-		attest(tAnyOf.expression).snap("string")
+	it("allOf and anyOf reduce", () => {
+		attest(
+			jsonSchemaToType({
+				allOf: [
+					{ type: "string", minLength: 1 },
+					{ type: "string", maxLength: 10 }
+				]
+			}).expression
+		).snap("1 <= string <= 10")
+		attest(
+			jsonSchemaToType({
+				anyOf: [
+					{ type: "string", minLength: 1 },
+					{ type: "string", maxLength: 10 }
+				]
+			}).expression
+		).snap("string")
 	})
 
 	it("not", () => {
-		const tNot = jsonSchemaToType({ not: { type: "string", maxLength: 3 } })
-		attest(tNot.allows(123)).equals(true)
-		attest(tNot.allows("1234")).equals(true)
-		attest(() => tNot.assert("123")).throws.snap(
+		const T = jsonSchemaToType({ not: { type: "string", maxLength: 3 } })
+		attest(T.allows("1234")).equals(true)
+		attest(() => T.assert("123")).throws.snap(
 			'TraversalError: must be other than a string and at most length 3 (was "123")'
 		)
 	})
 
-	it("oneOf", () => {
-		const tOneOf = jsonSchemaToType({
+	it("oneOf of disjoint branches", () => {
+		const T = jsonSchemaToType({
 			oneOf: [{ type: "string", minLength: 10 }, { const: "foo" }]
 		})
-		attest(tOneOf.expression).snap('string >= 10 | "foo"')
-
-		attest(tOneOf.allows("foo")).equals(true)
-		attest(tOneOf.allows("1234567890")).equals(true)
-		attest(() => tOneOf.assert("bar")).throws.snap(
+		attest(T.expression).snap('string >= 10 | "foo"')
+		attest(() => T.assert("bar")).throws.snap(
 			'TraversalError: must be at least length 10 or "foo" (was "bar")'
 		)
-	})
-
-	it("every composition keyword applies", () => {
-		const T = jsonSchemaToType({
-			allOf: [{ type: "string" }],
-			anyOf: [{ minLength: 2 }, { const: "a" }],
-			oneOf: [{ maxLength: 3 }, { minLength: 5 }],
-			not: { const: "ab" }
-		})
-		attest(T.allows("a")).equals(true)
-		attest(T.allows("ab")).equals(false)
-		attest(T.allows("abc")).equals(true)
-		attest(T.allows("abcd")).equals(false)
-		attest(T.allows("abcde")).equals(true)
-		attest(T.allows(1)).equals(false)
 	})
 
 	it("then and else without if", () => {

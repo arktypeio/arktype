@@ -20,12 +20,15 @@ export const arkToArbitrary = (schema: type.Any): fc.Arbitrary<unknown> => {
 	return buildArbitrary(schema as never, ctx)
 }
 
-const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
+export const buildArbitrary = (
+	node: nodeOfKind<NodeKind>,
+	ctx: Ctx
+): fc.Arbitrary<unknown> => {
+	if (node.includesAlias && !ctx.tieStack.length)
+		return buildCyclicArbitrary(node, () => buildArbitrary(node, ctx), ctx)
 	switch (node.kind) {
 		case "intersection":
 			ctx.seenIntersectionIds[node.id] = true
-
-			ctx.isCyclic = node.isCyclic
 
 			//specifically in the case of unknown, it is represented as an empty intersection so we just return anything here.
 			if (node.basis === null) return fc.anything()
@@ -56,11 +59,19 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 
 			return throwInternalError(`${node.domain} is not supported`)
 		case "union":
-			const arbitraries: fc.Arbitrary<unknown>[] = node.children.map(node =>
-				buildArbitrary(node, ctx)
+			if (!ctx.tieStack.length) {
+				return fc.oneof(
+					...node.children.map(child => buildArbitrary(child, ctx))
+				)
+			}
+			// past maxDepth, oneof only takes its first branch, so branches that
+			// can't recurse come first
+			return fc.oneof(
+				{ maxDepth: 4, depthIdentifier: ctx.depthIdentifier },
+				...[...node.children]
+					.sort((l, r) => Number(l.includesAlias) - Number(r.includesAlias))
+					.map(child => buildArbitrary(child, ctx))
 			)
-
-			return fc.oneof(...arbitraries)
 		case "unit":
 			return fc.constant(node.unit)
 		case "proto":
@@ -71,9 +82,6 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 			return buildIndexSignatureArbitrary([node], ctx)
 		case "required":
 		case "optional":
-			if (node.value.hasKind("alias") && node.required)
-				throwInternalError("Infinitely deep cycles are not supported.")
-
 			return buildArbitrary(node.value as never, ctx)
 		case "morph":
 			if (node.inner.in === undefined)
@@ -171,9 +179,6 @@ export const buildObjectArbitrary = (
 	node: nodeOfKind<"structure">,
 	ctx: Ctx
 ): fc.Arbitrary<Record<string, unknown>> => {
-	if (ctx.isCyclic && !ctx.tieStack.length)
-		return buildCyclicArbitrary(() => buildObjectArbitrary(node, ctx), ctx)
-
 	const requiredKeys = node.requiredKeys
 	const arbitrariesByKey: Record<PropertyKey, fc.Arbitrary<unknown>> = {}
 
@@ -204,13 +209,6 @@ const buildIndexSignatureArbitrary = (
 	indexNodes: readonly nodeOfKind<"index">[],
 	ctx: Ctx
 ): fc.Arbitrary<Record<string, unknown>> => {
-	if (ctx.isCyclic && !ctx.tieStack.length) {
-		return buildCyclicArbitrary(
-			() => buildIndexSignatureArbitrary(indexNodes, ctx),
-			ctx
-		)
-	}
-
 	if (indexNodes.length === 1) return getDictionaryArbitrary(indexNodes[0], ctx)
 
 	const dictionaryArbitraries = []
@@ -218,8 +216,18 @@ const buildIndexSignatureArbitrary = (
 		dictionaryArbitraries.push(getDictionaryArbitrary(indexNode, ctx))
 
 	return fc.tuple(...dictionaryArbitraries).map(arbs => {
-		const recordArb = {}
+		const recordArb: Record<string, unknown> = {}
 		for (const arb of arbs) Object.assign(recordArb, arb)
+		// a key several signatures match must satisfy each of their values
+		for (const key in recordArb) {
+			if (
+				!indexNodes.every(
+					index =>
+						!index.signature.allows(key) || index.value.allows(recordArb[key])
+				)
+			)
+				delete recordArb[key]
+		}
 		return recordArb
 	})
 }

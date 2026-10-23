@@ -1,15 +1,20 @@
-import type { Arbitrary, LetrecLooselyTypedTie } from "fast-check"
+import {
+	createDepthIdentifier,
+	type Arbitrary,
+	type DepthIdentifier,
+	type LetrecLooselyTypedTie
+} from "fast-check"
 
 export type Ctx = {
 	seenIntersectionIds: Record<string, true>
 	arbitrariesByIntersectionId: Record<string, Arbitrary<unknown>>
-	isCyclic: boolean
 	tieStack: LetrecLooselyTypedTie[]
+	depthIdentifier: DepthIdentifier
 }
 
 export const initializeContext = (): Ctx => ({
 	seenIntersectionIds: {},
 	arbitrariesByIntersectionId: {},
-	isCyclic: false,
-	tieStack: []
+	tieStack: [],
+	depthIdentifier: createDepthIdentifier()
 })

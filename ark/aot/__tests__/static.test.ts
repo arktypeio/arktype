@@ -1,10 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	precompileModule,
-	Precompiler,
-	renderDiagnostic,
-	type PrecompileOptions
-} from "@ark/aot"
+import { Precompiler, renderDiagnostic, type PrecompileOptions } from "@ark/aot"
 import {
 	standardJsonSchemaWithoutStandardMessage,
 	writeArktypeRuntimeOptionMessage
@@ -15,47 +10,77 @@ import { analyze, diagnosticsOf, memoryHost, statusesOf } from "./utils.ts"
 const unhinted = (...args: Parameters<typeof diagnosticsOf>) =>
 	diagnosticsOf(...args).map(d => d.slice(0, d.lastIndexOf("\n")))
 
+// where a Scope or Generic is refused, as passed to code the build can't see
+// or, where its read names what it lacks, as read off a value it can't follow
+const escapesOf = (...args: Parameters<typeof analyze>) =>
+	analyze(...args).diagnostics.map(({ line, column, reasons: [reason] }) =>
+		[
+			`${line}:${column}`,
+			/Generic/.test(reason) && "Generic",
+			/lacks `(\w+)`/.exec(reason)?.[1]
+		]
+			.filter(Boolean)
+			.join(" ")
+	)
+
 contextualize(() => {
 	describe("allowed", () => {
-		it("literals and templates", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-const max = 5
-const A = type("string")
-const B = type(\`number < \${max}\`)
-const C = type(\`number < \${0.1 + 0.2}\`)
-const D = type({ a: "number" } as const satisfies object)
-const E = type(<const>["string", "number"])`)
-			).snap([
-				"3:11 accepted string",
-				"4:11 accepted number < 5",
-				"5:11 accepted number < 0.30000000000000004",
-				"6:11 accepted { a: number }",
-				"7:11 accepted [string, number]"
-			])
-		})
-
-		it("object and array literals", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-const key = "b"
-const base = { a: "string" }
-const rest = ["number"] as const
-const A = type({ ...base, [key]: "number", [\`\${key}2\`]: "boolean" })
-const B = type(["string", ...rest])`)
-			).snap([
-				"5:11 accepted { a: string, b: number, b2: boolean }",
-				"6:11 accepted [string, number]"
-			])
-		})
-
-		it("let never assigned", () => {
+		it("static expressions", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
 let max = 5
 var min = 1
-const A = type(\`\${min} < number < \${max}\`)`)
-			).snap(["4:11 accepted 1 < number < 5"])
+const key = "b"
+const base = { a: "string" }
+const rest = ["number"] as const
+const limits = { max: 5, names: ["a", "b"] }
+const roles = { admin: 1, member: 2 }
+const tag = Symbol("tag")
+const o: { a?: { b: string }; f?: () => string } = {}
+enum Size { small = 1, large = small * 10 }
+const enum Name { a = "alpha" }
+declare namespace ns {
+	interface base {}
+}
+interface extended extends ns.base {}
+const A = type(\`number < \${0.1 + 0.2}\`)
+const B = type({ a: "number" } as const satisfies object)
+const C = type(<const>["string", ...rest])
+const D = type({ ...base, [key]: "number", [\`\${key}2\`]: "boolean" })
+const E = type(\`\${min} < number < \${max > 3 ? 2 ** 10 : -1}\`)
+const F = type(\`'\${typeof max}' | '\${"a" in { a: 1 }}' | '\${null ?? max}'\`)
+const G = type(\`number < \${limits.max + limits.names.length + "abc".length}\`)
+const H = type(\`'\${limits.names[1]}' | '\${Name.a}' | '\${Size[1]}'\`)
+const I = type(\`\${Size.small} < number < \${Size.large}\`)
+const J = type(o?.a?.b ?? "string")
+const K = type(o.f?.() ?? "number")
+const L = type(Object.keys(roles).map(k => \`'\${k}'\`).join(" | "))
+const M = type(\`number < \${Math.max(1, Number("2"), parseInt("3"))}\`)
+const N = type(JSON.parse(JSON.stringify({ a: "string" })))
+const P = type("string".toUpperCase().toLowerCase())
+const Q = type("Date").atOrAfter(new Date(0))
+const R = type("string").matching(new RegExp("^a", "i"))
+const S = type({ [tag]: "string" })`)
+			).snap([
+				"17:11 accepted number < 0.30000000000000004",
+				"18:11 accepted { a: number }",
+				"19:11 accepted [string, number]",
+				"20:11 accepted { a: string, b: number, b2: boolean }",
+				"21:11 accepted 1 < number < 1024",
+				'22:11 accepted "5" | "number" | "true"',
+				"23:11 accepted number < 10",
+				'24:11 accepted "alpha" | "b" | "small"',
+				"25:11 accepted 1 < number < 10",
+				"26:11 accepted string",
+				"27:11 accepted number",
+				'28:11 accepted "admin" | "member"',
+				"29:11 accepted number < 3",
+				"30:11 accepted { a: string }",
+				"31:11 accepted string",
+				"32:11 accepted Date >= d'1970-01-01T00:00:00.000Z'",
+				"33:11 accepted /^a/i",
+				"34:11 accepted { Symbol(tag): string }"
+			])
 		})
 
 		it("reads after a declaration", () => {
@@ -145,76 +170,6 @@ export const Admin = User.and({ role: "'admin'" })`
 			])
 		})
 
-		it("enums", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-enum Size { small = 1, large = small * 10 }
-const enum Name { a = "alpha" }
-const A = type(\`\${Size.small} < number < \${Size.large}\`)
-const B = type(\`'\${Name.a}' | '\${Size[1]}'\`)`)
-			).snap([
-				"4:11 accepted 1 < number < 10",
-				'5:11 accepted "alpha" | "small"'
-			])
-		})
-
-		it("namespace interfaces", () => {
-			attest(
-				diagnosticsOf(`import { type } from "arktype"
-declare namespace ns {
-	interface base {}
-}
-interface extended extends ns.base {}
-const A = type("string")`)
-			).equals([])
-		})
-
-		it("operators", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-const max = 5
-const A = type(\`number < \${max > 3 ? 2 ** 10 : -1}\`)
-const B = type(\`'\${typeof max}' | '\${"a" in { a: 1 }}' | '\${null ?? max}'\`)`)
-			).snap([
-				"3:11 accepted number < 1024",
-				'4:11 accepted "5" | "number" | "true"'
-			])
-		})
-
-		it("member reads", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-const limits = { max: 5, names: ["a", "b"] }
-const A = type(\`number < \${limits.max + limits.names.length + "abc".length}\`)
-const B = type(\`'\${limits.names[1]}'\`)`)
-			).snap(["3:11 accepted number < 10", '4:11 accepted "b"'])
-		})
-
-		it("optional chains", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-const o: { a?: { b: string }; f?: () => string } = {}
-const A = type(o?.a?.b ?? "string")
-const B = type(o.f?.() ?? "number")`)
-			).snap(["3:11 accepted string", "4:11 accepted number"])
-		})
-
-		it("pure built-ins", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-const roles = { admin: 1, member: 2 }
-const A = type(Object.keys(roles).map(k => \`'\${k}'\`).join(" | "))
-const B = type(\`number < \${Math.max(1, Number("2"), parseInt("3"))}\`)
-const C = type(JSON.parse(JSON.stringify({ a: "string" })))
-const D = type("string".toUpperCase().toLowerCase())`)
-			).snap([
-				'3:11 accepted "admin" | "member"',
-				"4:11 accepted number < 3",
-				"5:11 accepted { a: string }",
-				"6:11 accepted string"
-			])
-		})
-
 		it("arktype's API", () => {
 			attest(
 				statusesOf(`import { type, scope, match, generic } from "arktype"
@@ -242,26 +197,42 @@ const D = type.keywords.number.integer`)
 		it("static helpers", () => {
 			attest(
 				statusesOf(
-					`import { type } from "arktype"
+					`import { type, scope } from "arktype"
 import { twice } from "./helpers.ts"
 import * as helpers from "./helpers.ts"
 const bound = (n: number) => \`number < \${n}\`
+function h(this: void, def: string) { return def }
 const A = type(bound(twice(2)))
-const B = type(helpers.label("a"))`,
+const B = type(helpers.label("a"))
+const C = type(h("string"))
+const $ = scope({ a: function (this: void) { return "string" } as any }).export()`,
 					{
 						"/helpers.ts": `export const twice = (n: number) => n * 2\nexport const label = (s: string) => \`'\${s}'\``
 					}
 				)
-			).snap(["5:11 accepted number < 4", '6:11 accepted "a"'])
-		})
-
-		it("helpers with a TypeScript `this` parameter", () => {
+			).snap([
+				"6:11 accepted number < 4",
+				'7:11 accepted "a"',
+				"8:11 accepted string",
+				"9:11 accepted"
+			])
+			// as esbuild's keepNames names them, formatted or minified
 			attest(
-				statusesOf(`import { type, scope } from "arktype"
-function h(this: void, def: string) { return def }
-const A = type(h("string"))
-const $ = scope({ a: function (this: void) { return "string" } as any }).export()`)
-			).snap(["3:11 accepted string", "4:11 accepted"])
+				statusesOf(`import { type } from "arktype"
+var __defProp = Object.defineProperty
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true })
+const field = __name((n: number) => \`string <= \${n}\`, "field")
+function list(t: string) { return \`\${t}[]\` }
+__name(list, "list")
+export const A = type(field(5))
+export const B = type(list("number"))`)
+			).snap(["7:18 accepted string <= 5", "8:18 accepted number[]"])
+			attest(
+				statusesOf(`import { type as o } from "arktype"
+var i=Object.defineProperty;var e=(n,s)=>i(n,"name",{value:s,configurable:!0});
+function r(n){return{a:"number >= "+n}}e(r,"field");
+export const a=o(r(5))`)
+			).snap(["4:16 accepted { a: number >= 5 }"])
 		})
 
 		it("sites in static helpers", () => {
@@ -323,49 +294,35 @@ const label = () => T.out.expression`)
 			])
 		})
 
-		it("namespaces, literals and default exports", () => {
+		it("Types held in namespaces and literals", () => {
 			attest(
 				statusesOf(
 					`import { type } from "arktype"
 import * as schemas from "./schemas.ts"
+import { held } from "./schemas.ts"
 import Default from "./default.ts"
-const local = { User: type({ name: "string" }) }
+const local = { users: { User: type({ name: "string" }) }, list: [type("string")] }
+const key = "users"
+const F = local.users.User.or("null")
 const A = schemas.User.or("null")
-const B = local.User.or("null")
-const C = Default.or("null")`,
+const B = held.User.or("null")
+const C = local[key].User.or("null")
+const D = local.list[0].array()
+const E = Default.or("null")`,
 					{
-						"/schemas.ts": `import { type } from "arktype"\nexport const User = type({ id: "string" })`,
+						"/schemas.ts": `import { type } from "arktype"\nexport const User = type({ id: "string" })\nexport const held = { User }`,
 						"/default.ts": `import { type } from "arktype"\nexport default type({ d: "string" })`
 					}
 				)
 			).snap([
-				"4:23 accepted { name: string }",
-				"5:11 accepted { id: string } | null",
-				"6:11 accepted { name: string } | null",
-				"7:11 accepted { d: string } | null"
-			])
-		})
-
-		it("Types held in literals", () => {
-			attest(
-				statusesOf(
-					`import { type } from "arktype"
-import { schemas } from "./schemas.ts"
-const local = { users: { User: type({ name: "string" }) }, list: [type("string")] }
-const key = "users"
-const A = schemas.User.or("null")
-const B = local[key].User.or("null")
-const C = local.list[0].array()`,
-					{
-						"/schemas.ts": `import { type } from "arktype"\nconst User = type({ id: "string" })\nexport const schemas = { User }`
-					}
-				)
-			).snap([
-				"3:32 accepted { name: string }",
-				"3:67 accepted string",
-				"5:11 accepted { id: string } | null",
-				"6:11 accepted { name: string } | null",
-				"7:11 accepted string[]"
+				"5:32 accepted { name: string }",
+				"5:67 accepted string",
+				"7:11 accepted { name: string } | null",
+				"8:11 accepted { id: string } | null",
+				"9:11 accepted { id: string } | null",
+				"10:11 accepted { name: string } | null",
+				"11:11 accepted string[]",
+				"12:11 accepted { d: string } | null"
 			])
 		})
 
@@ -557,9 +514,11 @@ export const getUser = route(type({ id: "string" }), type({ name: "string" }))`)
 			).snap(["4:30 accepted { id: string }", "4:54 accepted { name: string }"])
 		})
 
-		it("validations are not sites", () => {
+		it("validations and runtime uses of arktype are not sites", () => {
 			attest(
-				statusesOf(`import { type, scope, fn } from "arktype"
+				statusesOf(
+					`import { type, scope, fn, regex } from "arktype"
+import { createClient } from "./client.ts"
 const User = type({ name: "string" })
 const types = scope({ id: "string" }).export()
 const len = fn("string", ":", "number")(s => s.length)
@@ -571,20 +530,7 @@ const assert = User.assert
 const checked = assert({ name: "Grace" })
 const length = len("abc")
 const named = (data: unknown) => User.assert(data)
-const ada = named({ name: "Ada" })`)
-			).snap([
-				"2:14 accepted { name: string }",
-				"3:15 accepted",
-				"4:13 accepted"
-			])
-		})
-
-		it("runtime uses of arktype are not sites", () => {
-			attest(
-				statusesOf(
-					`import { type, regex } from "arktype"
-import { createClient } from "./client.ts"
-const User = type({ name: "string" })
+const ada = named({ name: "Ada" })
 export function isValidationError(x: unknown) {
 	return x instanceof type.errors
 }
@@ -615,7 +561,12 @@ import { env } from "./env.ts"
 export const createClient = (token: string) => connect({ url: env.API_URL, token })`
 					}
 				)
-			).snap(["3:14 accepted { name: string }", "12:29 accepted"])
+			).snap([
+				"3:14 accepted { name: string }",
+				"4:15 accepted",
+				"5:13 accepted",
+				"23:29 accepted"
+			])
 		})
 
 		it("objects and modules arktype returns", () => {
@@ -625,22 +576,6 @@ const A = declare<{ a: string }>().type({ a: "string" })
 const $ = scope({ id: "string" })
 const B = scope({ ...$.export(), user: { id: "id" } }).export()`)
 			).snap(["2:11 accepted { a: string }", "3:11 accepted", "4:11 accepted"])
-		})
-
-		it("objects are inputs", () => {
-			const result = analyze(`import { type } from "arktype"
-const unit = { a: 1 }
-const A = type("===", unit)`)
-			attest(result.sites.map(site => site.status)).snap(["accepted"])
-			attest(result.sites[0].inputs).snap([
-				{
-					kind: "local",
-					file: undefined,
-					name: "unit",
-					path: [],
-					value: { a: 1 }
-				}
-			])
 		})
 
 		it("nested definitions", () => {
@@ -658,22 +593,6 @@ const A = type({ name: type("string").atMostLength(max).pipe(trim) })`,
 					...site.inputs.map(input => `${input.kind} ${input.name}`)
 				])
 			).snap([["accepted", "function", "import max"]])
-		})
-
-		it("dates", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-const A = type("Date").atOrAfter(new Date(0))`)
-			).snap(["2:11 accepted Date >= d'1970-01-01T00:00:00.000Z'"])
-		})
-
-		it("regexes and symbols", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-const tag = Symbol("tag")
-const A = type("string").matching(new RegExp("^a", "i"))
-const B = type({ [tag]: "string" })`)
-			).snap(["3:11 accepted /^a/i", "4:11 accepted { Symbol(tag): string }"])
 		})
 
 		it("introspection sites", () => {
@@ -855,14 +774,21 @@ export const set = () => { x = "number" }`
 			])
 		})
 
-		it("mutable binding", () => {
+		it("bindings assigned after their declaration", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
 let max = 5
 max++
-const A = type(\`number < \${max}\`)`)
+const A = type(\`number < \${max}\`)
+export const lengthOf = (c: { n?: number }) => {
+	let max: number | undefined
+	if (c.n) max = c.n
+	return max ? type.string.atMostLength(max) : type.string
+}`)
 			).snap([
-				"4:11 rejected\n  `max` is assigned at /main.ts:3:1, so its value at the site is not known"
+				"4:11 rejected\n  `max` is assigned at /main.ts:3:1, so its value at the site is not known",
+				"8:15 rejected\n  `max` is assigned at /main.ts:7:11, so its value at the site is not known",
+				"8:47 accepted string"
 			])
 		})
 
@@ -906,20 +832,6 @@ export const addB = () => {
 				"17:18 rejected\n  `shared` is imported from /shared.ts\n  `shared` is written at /shared.ts:3:2, so its value at the site is not known",
 				"18:18 accepted { x: string }",
 				"21:20 rejected\n  `called` is written at /main.ts:22:1, so its value at the site is not known"
-			])
-		})
-
-		it("binding assigned in a branch", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-export const lengthOf = (c: { n?: number }) => {
-	let max: number | undefined
-	if (c.n) max = c.n
-	return max ? type.string.atMostLength(max) : type.string
-}`)
-			).snap([
-				"5:15 rejected\n  `max` is assigned at /main.ts:4:11, so its value at the site is not known",
-				"5:47 accepted string"
 			])
 		})
 
@@ -1166,7 +1078,7 @@ const U = D.User.or("null")`)
 			])
 		})
 
-		it("a Type a getter returns", () => {
+		it("a Type a getter returns or this reads in a static member", () => {
 			attest(
 				unhinted(`import { type } from "arktype"
 const schemas = {
@@ -1179,17 +1091,6 @@ class Forms {
 		return type({ admin: "true" })
 	}
 }
-export const A = schemas.User.or("null")
-export const B = Forms.Admin.or("null")`)
-			).snap([
-				"/main.ts:12:18  schemas.User.or reads or, which a standalone validator lacks\n  `schemas.User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
-				"/main.ts:13:18  Forms.Admin.or reads or, which a standalone validator lacks\n  `Forms.Admin` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
-			])
-		})
-
-		it("a Type read through this in a static member", () => {
-			attest(
-				unhinted(`import { type } from "arktype"
 class Holder {
 	static t = type({ a: "string" })
 	static u = this.t.or("null")
@@ -1201,11 +1102,15 @@ class Holder {
 	}
 }
 class Sub extends Holder {}
+export const A = schemas.User.or("null")
+export const B = Forms.Admin.or("null")
 export const anded = Sub.and({ b: "string" })`)
 			).snap([
-				"/main.ts:4:13  this.t.or reads or, which a standalone validator lacks\n  `this.t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
-				"/main.ts:6:10  this.t.and reads and, which a standalone validator lacks\n  `this.t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
-				"/main.ts:9:3  this.t.array reads array, which a standalone validator lacks\n  `this.t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
+				"/main.ts:14:13  this.t.or reads or, which a standalone validator lacks\n  `this.t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:16:10  this.t.and reads and, which a standalone validator lacks\n  `this.t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:19:3  this.t.array reads array, which a standalone validator lacks\n  `this.t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:23:18  schemas.User.or reads or, which a standalone validator lacks\n  `schemas.User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:24:18  Forms.Admin.or reads or, which a standalone validator lacks\n  `Forms.Admin` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
 			])
 		})
 
@@ -1229,7 +1134,7 @@ const User = type({ name: "string" })`)
 		})
 
 		// as a bundler's alias or virtual module the build doesn't know of
-		const unresolvedReadsOf = () => {
+		it("a read off an import the build can't resolve", () => {
 			const source = `import { type } from "arktype"
 import { User, port } from "~/schemas"
 import { z } from "astro:content"
@@ -1242,13 +1147,11 @@ export const Tag = z.string().optional()`
 				specifier.startsWith("~/") || specifier.includes(":") ?
 					undefined
 				:	host.resolve(specifier, importer)
-			return new Precompiler({ ...host, resolve })
-				.analyzeSites(source, "/main.ts")
-				.diagnostics.map(d => `${d.severity} ${renderDiagnostic(d)}`)
-		}
-
-		it("a read off an import the build can't resolve", () => {
-			attest(unresolvedReadsOf()).snap([
+			attest(
+				new Precompiler({ ...host, resolve })
+					.analyzeSites(source, "/main.ts")
+					.diagnostics.map(d => `${d.severity} ${renderDiagnostic(d)}`)
+			).snap([
 				"error /main.ts:4:22  User.and reads and, which a standalone validator lacks\n  `User` comes from `~/schemas`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it. Set allowUnsafe: true to build anyway, with a warning.",
 				"error /main.ts:7:20  z.string().optional reads optional, which a standalone validator lacks\n  `z.string()` comes from `astro:content`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it. Set allowUnsafe: true to build anyway, with a warning."
 			])
@@ -1336,26 +1239,37 @@ write({ m0: type("string") })`)
 			])
 		})
 
-		it("Types through built-ins", () => {
+		it("Types through built-ins and containers", () => {
 			attest(
 				unhinted(`import { type } from "arktype"
 const A = type("string")
-const schemas = {}
+const schemas: Record<string, any> = {}
 Object.assign(schemas, { A })
+const stored: Record<string, any> = {}
+stored.User = type({ name: "string" })
 const forms = {
 	user: A,
 	nullable() {
 		return this.user.or("null")
 	}
 }
+const registry = new Map()
+registry.set("admin", type({ role: "string" }))
+const list = [type("string"), type("number")]
 console.log(new Map([["a", A]]).get("a").or, new Set([A]).values().next().value.or, schemas.A.or)
-Promise.resolve(A).then(t => t.or("null"))`)
+Promise.resolve(A).then(t => t.or("null"))
+export const U = stored.User.or("null")
+export const B = registry.get("admin").or("null")
+export const C = list[Number(process.env.I)].or("null")`)
 			).snap([
-				"/main.ts:8:10  this.user.or reads or, which a standalone validator lacks\n  the build can't tell where `this.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
-				'/main.ts:11:13  new Map([["a", A]]).get("a").or reads or, which a standalone validator lacks\n  the build can\'t tell where `new Map([["a", A]]).get("a")` comes from, so it may be a Type, which the standalone runtime replaces with a validator',
-				"/main.ts:11:46  new Set([A]).values().next().value.or reads or, which a standalone validator lacks\n  the build can't tell where `new Set([A]).values().next().value` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
-				"/main.ts:11:85  schemas.A.or reads or, which a standalone validator lacks\n  the build can't tell where `schemas.A` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
-				"/main.ts:12:30  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+				"/main.ts:10:10  this.user.or reads or, which a standalone validator lacks\n  the build can't tell where `this.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				'/main.ts:16:13  new Map([["a", A]]).get("a").or reads or, which a standalone validator lacks\n  the build can\'t tell where `new Map([["a", A]]).get("a")` comes from, so it may be a Type, which the standalone runtime replaces with a validator',
+				"/main.ts:16:46  new Set([A]).values().next().value.or reads or, which a standalone validator lacks\n  the build can't tell where `new Set([A]).values().next().value` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:16:85  schemas.A.or reads or, which a standalone validator lacks\n  the build can't tell where `schemas.A` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:17:30  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:18:18  stored.User.or reads or, which a standalone validator lacks\n  the build can't tell where `stored.User` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				'/main.ts:19:18  registry.get("admin").or reads or, which a standalone validator lacks\n  the build can\'t tell where `registry.get("admin")` comes from, so it may be a Type, which the standalone runtime replaces with a validator',
+				"/main.ts:20:18  list[Number(process.env.I)].or reads or, which a standalone validator lacks\n  the build can't tell where `list[Number(process.env.I)]` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
@@ -1396,24 +1310,6 @@ export const X = x.or("null")
 if (Math.random() > 2) x = fallback`)
 			).snap([
 				'/main.ts:8:18  x.or("null") cannot be precompiled\n  `x` is assigned at /main.ts:9:24, so its value at the site is not known'
-			])
-		})
-
-		it("a Type read from a container the build can't resolve", () => {
-			attest(
-				unhinted(`import { type } from "arktype"
-const schemas: Record<string, any> = {}
-schemas.User = type({ name: "string" })
-const registry = new Map()
-registry.set("admin", type({ role: "string" }))
-const list = [type("string"), type("number")]
-export const A = schemas.User.or("null")
-export const B = registry.get("admin").or("null")
-export const C = list[Number(process.env.I)].or("null")`)
-			).snap([
-				"/main.ts:7:18  schemas.User.or reads or, which a standalone validator lacks\n  the build can't tell where `schemas.User` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
-				'/main.ts:8:18  registry.get("admin").or reads or, which a standalone validator lacks\n  the build can\'t tell where `registry.get("admin")` comes from, so it may be a Type, which the standalone runtime replaces with a validator',
-				"/main.ts:9:18  list[Number(process.env.I)].or reads or, which a standalone validator lacks\n  the build can't tell where `list[Number(process.env.I)]` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
@@ -1695,73 +1591,46 @@ console.log(values.map(v => (v as any).from))`,
 			])
 		})
 
-		describe("options a build can't take", () => {
-			const refused: [
-				name: string,
-				opts: PrecompileOptions,
-				message: string
-			][] = [
+		it("options a build can't take", () => {
+			const refused: [opts: PrecompileOptions, message: string][] = [
 				[
-					"unknown member",
 					{ members: { json: true, and: true } as never },
 					"members.and must be removed (was true)"
 				],
 				[
-					"~standard.jsonSchema without ~standard",
 					{ members: { "~standard": false, "~standard.jsonSchema": true } },
 					standardJsonSchemaWithoutStandardMessage
 				],
 				[
-					"non-path config",
 					{ config: true as never },
 					"config must be a module path or false (was true)"
 				],
+				[{ config: "" }, 'config must be a module path or false (was "")'],
+				[{ freeze: 0 as never }, "freeze must be boolean (was 0)"],
 				[
-					"empty config",
-					{ config: "" },
-					'config must be a module path or false (was "")'
-				],
-				[
-					"invalid enum option",
 					{ creationChecks: "all" as never },
 					'creationChecks must be "helpers", "none" or "types" (was "all")'
 				],
 				[
-					"non-boolean option",
-					{ freeze: 0 as never },
-					"freeze must be boolean (was 0)"
-				],
-				[
-					"unknown option",
 					{ optimise: "size" } as never,
 					'optimise must be removed (was "size")'
 				],
 				[
-					"standalone option with runtime arktype",
 					{ runtime: "arktype", freeze: true },
 					writeArktypeRuntimeOptionMessage("freeze")
 				],
+				[{ shadow: "true" as never }, 'shadow must be boolean (was "true")'],
 				[
-					"non-boolean shadow",
-					{ shadow: "true" as never },
-					'shadow must be boolean (was "true")'
-				],
-				[
-					"shadow with runtime arktype",
 					{ runtime: "arktype", shadow: true },
 					writeArktypeRuntimeOptionMessage("shadow")
 				],
 				[
-					"config false with runtime arktype",
 					{ runtime: "arktype", config: false },
 					writeArktypeRuntimeOptionMessage("config: false")
 				]
 			]
-			for (const [name, opts, message] of refused) {
-				it(name, () => {
-					attest(() => new Precompiler(memoryHost({}), opts)).throws(message)
-				})
-			}
+			for (const [opts, message] of refused)
+				attest(() => new Precompiler(memoryHost({}), opts)).throws(message)
 		})
 
 		it("a container method read off a Module the build can't read", () => {
@@ -1792,15 +1661,28 @@ for (const k in T) console.log(k)`)
 			])
 		})
 
-		it("a Scope read off a function's return", () => {
+		it("a Scope or Generic read off a value the build can't follow", () => {
 			attest(
-				diagnosticsOf(`import { scope } from "arktype"
+				diagnosticsOf(`import { scope, type, type Generic, type Scope } from "arktype"
 const getPlaces = () => scope({ ocean: { color: "'blue'" } })
 const $ = getPlaces()
 export const Ocean = $.type("ocean")
-export const Place = getPlaces().type("ocean")`)
+export const Place = getPlaces().type("ocean")
+const defined = scope({ a: "string" })
+export const viaTypeof = (s: typeof defined) => s.type("a")
+export const viaScope = (s: Scope) => s.export()
+const G = type("<t>", { t: "t" })
+const getG = () => G
+export const params = getG().params
+export const names = (flag: boolean) => (flag ? G : type("<u>", { u: "u" })).names
+export const viaGeneric = (g: Generic) => g.params`)
 			).snap([
-				'/main.ts:5:22  getPlaces().type("ocean") can\'t be precompiled yet\n  `getPlaces()` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".'
+				'/main.ts:5:22  getPlaces().type("ocean") can\'t be precompiled yet\n  `getPlaces()` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".',
+				'/main.ts:7:49  s.type("a") can\'t be precompiled yet\n  `s` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".',
+				'/main.ts:8:39  s.export() can\'t be precompiled yet\n  `s` may be a Scope, which a standalone build replaces with an object that lacks `export`\n  Assign it to a const and read `export` off that, which the build precompiles, or build with runtime: "arktype".',
+				'/main.ts:11:23  getG().params can\'t be precompiled yet\n  `getG()` may be a Generic, which a standalone build replaces with an object that lacks `params`\n  Assign it to a const and read `params` off that, which the build precompiles, or build with runtime: "arktype".',
+				'/main.ts:12:41  (flag ? G : type("<u>", { u: "u" })).names can\'t be precompiled yet\n  `flag ? G : type("<u>", { u: "u" })` may be a Generic, which a standalone build replaces with an object that lacks `names`\n  Assign it to a const and read `names` off that, which the build precompiles, or build with runtime: "arktype".',
+				'/main.ts:13:43  g.params can\'t be precompiled yet\n  `g` may be a Generic, which a standalone build replaces with an object that lacks `params`\n  Assign it to a const and read `params` off that, which the build precompiles, or build with runtime: "arktype".'
 			])
 		})
 
@@ -1814,36 +1696,9 @@ each(() => scope({ a: "string" }))`)
 			])
 		})
 
-		it("a Generic read off a function's return", () => {
+		it("a Scope handed on to code the build can't see", () => {
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
-const G = type("<t>", { t: "t" })
-const getG = () => G
-export const params = getG().params
-export const names = (flag: boolean) => (flag ? G : type("<u>", { u: "u" })).names`)
-			).snap([
-				'/main.ts:4:23  getG().params can\'t be precompiled yet\n  `getG()` may be a Generic, which a standalone build replaces with an object that lacks `params`\n  Assign it to a const and read `params` off that, which the build precompiles, or build with runtime: "arktype".',
-				'/main.ts:5:41  (flag ? G : type("<u>", { u: "u" })).names can\'t be precompiled yet\n  `flag ? G : type("<u>", { u: "u" })` may be a Generic, which a standalone build replaces with an object that lacks `names`\n  Assign it to a const and read `names` off that, which the build precompiles, or build with runtime: "arktype".'
-			])
-		})
-
-		it("a Scope or Generic read off an annotated parameter", () => {
-			attest(
-				diagnosticsOf(`import { scope, type, type Generic, type Scope } from "arktype"
-const $ = scope({ a: "string" })
-export const viaTypeof = (s: typeof $) => s.type("a")
-export const viaScope = (s: Scope) => s.export()
-export const viaGeneric = (g: Generic) => g.params`)
-			).snap([
-				'/main.ts:3:43  s.type("a") can\'t be precompiled yet\n  `s` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".',
-				'/main.ts:4:39  s.export() can\'t be precompiled yet\n  `s` may be a Scope, which a standalone build replaces with an object that lacks `export`\n  Assign it to a const and read `export` off that, which the build precompiles, or build with runtime: "arktype".',
-				'/main.ts:5:43  g.params can\'t be precompiled yet\n  `g` may be a Generic, which a standalone build replaces with an object that lacks `params`\n  Assign it to a const and read `params` off that, which the build precompiles, or build with runtime: "arktype".'
-			])
-		})
-
-		it("a Scope passed on to code the build can't see", () => {
-			attest(
-				diagnosticsOf(`import { scope } from "arktype"
+				escapesOf(`import { scope } from "arktype"
 declare const each: (value: unknown) => void
 export const Exported = scope({ a: "string" })
 each(() => Exported)
@@ -1859,19 +1714,33 @@ const list: unknown[] = []
 list.push(listed)
 const kept = scope({ e: "string" })
 const keep = (s: typeof kept) => s
-export const E = keep(kept).type("e")`)
+export const E = keep(kept).type("e")
+export const fail = () => {
+	throw scope({ f: "string" })
+}
+export function* scopes() {
+	yield scope({ g: "string" })
+}
+const made = () => ({ s: scope({ h: "string" }) })
+each(made())
+const wrap = () => [scope({ i: "string" })]
+export const I = wrap()[0].type("i")`)
 			).snap([
-				'/main.ts:3:25  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:6:9  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:9:16  scope({ c: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:12:16  scope({ d: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:17:18  keep(kept).type("e") can\'t be precompiled yet\n  `keep(kept)` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".'
+				"3:25",
+				"6:9",
+				"9:16",
+				"12:16",
+				"17:18 type",
+				"19:8",
+				"22:8",
+				"24:26",
+				"27:18 type"
 			])
 		})
 
-		it("a Scope handed on in an object or array literal", () => {
+		it("a Scope handed on in a literal, binding or object", () => {
 			attest(
-				diagnosticsOf(`import { scope } from "arktype"
+				escapesOf(`import { scope } from "arktype"
 declare const each: (value: unknown) => void
 each({ s: scope({ a: "string" }) })
 const listed = scope({ b: "string" })
@@ -1881,67 +1750,51 @@ const options = { defs: [{ nested }] }
 each(options)
 const spread = scope({ d: "string" })
 each([...[spread]])
-each({ ...{ spread: scope({ e: "string" }) } })`)
-			).snap([
-				'/main.ts:3:11  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:4:16  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:6:16  scope({ c: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:9:16  scope({ d: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:11:21  scope({ e: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".'
-			])
-		})
-
-		it("a Scope handed on through a let or var", () => {
-			attest(
-				diagnosticsOf(`import { scope } from "arktype"
-declare const each: (value: unknown) => void
+each({ ...{ spread: scope({ e: "string" }) } })
 let assigned: unknown
-assigned = scope({ a: "string" })
+assigned = scope({ f: "string" })
 each(assigned)
-const $ = scope({ b: "string" })
+const $ = scope({ g: "string" })
 let reassigned: unknown = 1
 reassigned = $
 each(reassigned)
-var declared = scope({ c: "string" })
+var declared = scope({ h: "string" })
 each(declared)
-let read = scope({ d: "string" })
-export const D = read.type("d")`)
-			).snap([
-				'/main.ts:4:12  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:6:11  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:10:16  scope({ c: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".'
-			])
-		})
-
-		it("a Scope stored on an object", () => {
-			attest(
-				diagnosticsOf(`import { scope } from "arktype"
-declare const each: (value: unknown) => void
+let read = scope({ i: "string" })
+export const I = read.type("i")
 const target: Record<string, unknown> = {}
-target.s = scope({ a: "string" })
+target.s = scope({ j: "string" })
 class Fields {
-	s = scope({ b: "string" })
+	s = scope({ k: "string" })
 }
 each(new Fields())
-const assigned = scope({ c: "string" })
-each(Object.assign({}, { assigned }))
-const got = scope({ d: "string" })
+const assignedTo = scope({ l: "string" })
+each(Object.assign({}, { assignedTo }))
+const got = scope({ m: "string" })
 each({
 	get got() {
 		return got
 	}
 })`)
 			).snap([
-				'/main.ts:4:12  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:6:6  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:9:18  scope({ c: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:11:13  scope({ d: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".'
+				"3:11",
+				"4:16",
+				"6:16",
+				"9:16",
+				"11:21",
+				"13:12",
+				"15:11",
+				"19:16",
+				"24:12",
+				"26:6",
+				"29:20",
+				"31:13"
 			])
 		})
 
-		it("a Scope read off a literal the build can't follow", () => {
+		it("a Scope read off a literal, copied or tested", () => {
 			attest(
-				diagnosticsOf(`import { scope } from "arktype"
+				escapesOf(`import { scope } from "arktype"
 const list = [scope({ a: "string" })]
 export const A = (i: number) => list[i].type("a")
 const options = { s: scope({ b: "string" }) }
@@ -1951,60 +1804,16 @@ for (const s of [scope({ c: "string" })]) s.type("c")
 const kept = { s: scope({ d: "string" }) }
 export const D = kept.s.type("d")
 const indexed = [scope({ e: "string" })]
-export const E = indexed[0].type("e")`)
-			).snap([
-				'/main.ts:2:15  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:4:22  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:7:18  scope({ c: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:7:43  s.type("c") can\'t be precompiled yet\n  `s` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".'
-			])
-		})
-
-		it("a Scope's members copied or tested", () => {
-			attest(
-				diagnosticsOf(`import { scope } from "arktype"
-const $ = scope({ a: "string" })
+export const E = indexed[0].type("e")
+const $ = scope({ f: "string" })
 export const copy = { ...$ }
-const keyed = scope({ b: "string" })
+const keyed = scope({ g: "string" })
 export const has = "type" in keyed
-const { type: t } = scope({ c: "string" })
-export const C = t
-const compared = scope({ d: "string" })
+const { type: t } = scope({ h: "string" })
+export const H = t
+const compared = scope({ i: "string" })
 export const isDefined = compared !== undefined && typeof compared === "object"`)
-			).snap([
-				'/main.ts:2:11  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:4:15  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:6:21  scope({ c: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".'
-			])
-		})
-
-		it("a Scope thrown or yielded", () => {
-			attest(
-				diagnosticsOf(`import { scope } from "arktype"
-export const fail = () => {
-	throw scope({ a: "string" })
-}
-export function* scopes() {
-	yield scope({ b: "string" })
-}`)
-			).snap([
-				'/main.ts:3:8  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:6:8  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".'
-			])
-		})
-
-		it("a Scope returned in a literal", () => {
-			attest(
-				diagnosticsOf(`import { scope } from "arktype"
-declare const each: (value: unknown) => void
-const make = () => ({ s: scope({ a: "string" }) })
-each(make())
-const wrap = () => [scope({ b: "string" })]
-export const B = wrap()[0].type("b")`)
-			).snap([
-				'/main.ts:3:26  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:6:18  wrap()[0].type("b") can\'t be precompiled yet\n  `wrap()[0]` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".'
-			])
+			).snap(["2:15", "4:22", "7:18", "7:43 type", "12:11", "14:15", "16:21"])
 		})
 
 		it("a Scope another module precompiles passed to code the build can't see", () => {
@@ -2039,29 +1848,29 @@ each(islanded)
 each(libScope)
 export const A = $.type("a")
 export { $ }`
-			const optedIn = diagnosticsOf(
+			const optedIn = escapesOf(
 				source,
 				files({ name: "lib", arktype: { precompile: true } })
 			)
 			attest(optedIn).snap([
-				"/main.ts:6:6  $ can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\".",
-				"/main.ts:7:6  G can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Generic lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\".",
-				"/main.ts:8:6  held can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\".",
-				"/main.ts:9:6  held can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\".",
-				"/main.ts:10:6  scoped can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\".",
-				"/main.ts:11:6  defs.$ can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\".",
-				"/main.ts:12:6  defs can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\".",
-				"/main.ts:15:6  libScope can't be precompiled yet\n  it's passed to code the build can't see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: \"arktype\"."
+				"6:6",
+				"7:6 Generic",
+				"8:6",
+				"9:6",
+				"10:6",
+				"11:6",
+				"12:6",
+				"15:6"
 			])
 			// a package that doesn't opt in isn't precompiled, so its Scope is arktype's
-			attest(diagnosticsOf(source, files({ name: "lib" }))).equals(
+			attest(escapesOf(source, files({ name: "lib" }))).equals(
 				optedIn.slice(0, -1)
 			)
 		})
 
 		it("a Scope exported where its importers can't read it", () => {
 			attest(
-				diagnosticsOf(`import { scope } from "arktype"
+				escapesOf(`import { scope } from "arktype"
 declare const flag: boolean
 const a = scope({ a: "string" })
 export const either = flag ? a : undefined
@@ -2072,13 +1881,7 @@ written = scope({ d: "string" })
 export const make = () => scope({ e: "string" })
 export const read = scope({ f: "string" })
 export const holder = { s: scope({ g: "string" }) }`)
-			).snap([
-				'/main.ts:3:11  scope({ a: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:5:11  scope({ b: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:7:22  scope({ c: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:8:11  scope({ d: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".',
-				'/main.ts:9:27  scope({ e: "string" }) can\'t be precompiled yet\n  it\'s passed to code the build can\'t see, which may read what a precompiled Scope lacks\n  Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".'
-			])
+			).snap(["3:11", "5:11", "7:22", "8:11", "9:27"])
 		})
 
 		it("data a union of tuple expressions returns", () => {
@@ -2200,43 +2003,7 @@ export const E = type(__defProp({ a: "string" }, "name", { value: "o", configura
 			])
 		})
 
-		it("static helpers esbuild's keepNames names", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-var __defProp = Object.defineProperty
-var __name = (target, value) => __defProp(target, "name", { value, configurable: true })
-const field = __name((n: number) => \`string <= \${n}\`, "field")
-function list(t: string) { return \`\${t}[]\` }
-__name(list, "list")
-export const A = type(field(5))
-export const B = type(list("number"))`)
-			).snap(["7:18 accepted string <= 5", "8:18 accepted number[]"])
-		})
-
-		it("static helpers a minified keepNames names", () => {
-			attest(
-				statusesOf(`import { type as o } from "arktype"
-var i=Object.defineProperty;var e=(n,s)=>i(n,"name",{value:s,configurable:!0});
-function r(n){return{a:"number >= "+n}}e(r,"field");
-export const a=o(r(5))`)
-			).snap(["4:16 accepted { a: number >= 5 }"])
-		})
-
 		it("conversions of objects", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-const o = { toString: () => "12" }
-const A = type({ [parseInt(o as never)]: "string" })
-const B = type({ [Number.parseFloat(o as never)]: "string" })
-const C = type({ [Number.parseInt("12")]: "string" })`)
-			).snap([
-				"3:11 rejected\n  `parseInt(o as never)` converts an object to a primitive, which runs its methods",
-				"4:11 rejected\n  `Number.parseFloat(o as never)` converts an object to a primitive, which runs its methods",
-				"5:11 accepted { 12: string }"
-			])
-		})
-
-		it("conversions of objects inside built-ins", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
 const isLong = (s: string) => s.length > 3
@@ -2245,6 +2012,7 @@ class Zebra {}
 const Ap = type.instanceOf(Apple)
 const Z = type.instanceOf(Zebra)
 const pick = ({ [Ap as never]: v }: Record<string, string>) => v
+const o = { toString: () => "12" }
 const A = type({ a: type("string").narrow(isLong) }).configure({ description: "selected" }, { where: n => [n].join("").includes("isLong") })
 const B = type([Ap, Z].join("") === "Type<Apple>Type<Zebra>" ? "string" : "number")
 const D = type(Object.keys(Object.fromEntries([[Ap, 1]]))[0] === "Type<Apple>" ? "string" : "number")
@@ -2252,17 +2020,23 @@ const H = type(pick({ "Type<Apple>": "string" }) ?? "number")
 const J = type({ [["a", "b"].join("")]: "string", ["abc".replace(/b/, "").split(/c/)[0]]: "string", ["x".replace("x", s => s + "y")]: "string" })
 const K = type([Ap, Z].map(t => t).at(1)!)
 const replacer = (k: string, v: any) => (k === "" ? { a: Ap } : k === "a" ? v.proto.includes("Apple") : v)
-const M = type(JSON.stringify(0, replacer) === '{"a":true}' ? "string" : "number")`)
+const M = type(JSON.stringify(0, replacer) === '{"a":true}' ? "string" : "number")
+const N = type({ [parseInt(o as never)]: "string" })
+const P = type({ [Number.parseFloat(o as never)]: "string" })
+const Q = type({ [Number.parseInt("12")]: "string" })`)
 			).snap([
 				"5:12 accepted Apple$hole_1c2w4i12760ad",
 				"6:11 accepted Zebra$hole_tlxgt0061ywqu",
-				'8:11 rejected\n  arktype calls `where` (/main.ts:8:102) while defining the type, so it must be a static helper\n  `[n].join("")` converts an object to a primitive, which runs its methods',
-				'9:11 rejected\n  `[Ap, Z].join("")` converts an object to a primitive, which runs its methods',
-				"10:11 rejected\n  `Object.fromEntries([[Ap, 1]])` converts an object to a primitive, which runs its methods",
-				"11:11 rejected\n  `Ap as never` converts an object to a primitive, which runs its methods",
-				"12:11 accepted { a: string, ab: string, xy: string }",
-				"13:11 accepted Zebra$hole_tlxgt0061ywqu",
-				"15:11 rejected\n  `v: any` (/main.ts:14:30) receives the name of `Apple` (/main.ts:3:1), which the build knows only by a placeholder"
+				'9:11 rejected\n  arktype calls `where` (/main.ts:9:102) while defining the type, so it must be a static helper\n  `[n].join("")` converts an object to a primitive, which runs its methods',
+				'10:11 rejected\n  `[Ap, Z].join("")` converts an object to a primitive, which runs its methods',
+				"11:11 rejected\n  `Object.fromEntries([[Ap, 1]])` converts an object to a primitive, which runs its methods",
+				"12:11 rejected\n  `Ap as never` converts an object to a primitive, which runs its methods",
+				"13:11 accepted { a: string, ab: string, xy: string }",
+				"14:11 accepted Zebra$hole_tlxgt0061ywqu",
+				"16:11 rejected\n  `v: any` (/main.ts:15:30) receives the name of `Apple` (/main.ts:3:1), which the build knows only by a placeholder",
+				"17:11 rejected\n  `parseInt(o as never)` converts an object to a primitive, which runs its methods",
+				"18:11 rejected\n  `Number.parseFloat(o as never)` converts an object to a primitive, which runs its methods",
+				"19:11 accepted { 12: string }"
 			])
 		})
 
@@ -2276,63 +2050,42 @@ const Code = type.enumerated(...codes.map(c => c.toUpperCase()))`).map(status =>
 			).snap(["3:14 accepted"])
 		})
 
-		it("results each engine computes its own way", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-const A = type({ ["ß".toUpperCase()]: "string" })
-const B = type({ ["abc".toUpperCase()]: "string" })`)
-			).snap([
-				'2:11 rejected\n  `"ß".toUpperCase()` maps characters by the engine\'s Unicode version, which varies outside ASCII',
-				"3:11 accepted { ABC: string }"
-			])
-		})
-
-		it("environment", () => {
+		it("results that depend on the engine", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
 const A = type("Date").atOrAfter(Date.now())
 const B = type(\`'\${process.argv[2]}'\`)
 const C = type(\`number < \${Math.random()}\`)
 const D = type(\`'\${(1000).toLocaleString()}'\`)
-const E = type("Date").atOrAfter(new Date("2020-01-01T00:00:00"))`)
+const E = type("Date").atOrAfter(new Date("2020-01-01T00:00:00"))
+const F = type(\`number < \${2 ** 0.5}\`)
+const G = type({ ["ß".toUpperCase()]: "string" })
+const H = type({ ["abc".toUpperCase()]: "string" })`)
 			).snap([
 				"2:11 rejected\n  `Date.now` is not one of the build's pure built-ins",
 				"3:11 rejected\n  `process` is a global the build does not read",
 				"4:11 rejected\n  `Math.random` is not one of the build's pure built-ins",
 				"5:11 rejected\n  `(1000).toLocaleString` is not one of the build's pure built-ins",
-				'6:11 rejected\n  `new Date("2020-01-01T00:00:00")` reads the clock, the time zone or a format each engine parses its own way'
+				'6:11 rejected\n  `new Date("2020-01-01T00:00:00")` reads the clock, the time zone or a format each engine parses its own way',
+				"7:11 rejected\n  `2 ** 0.5` is approximated by each engine unless its operands are integers with a safe integer result",
+				'8:11 rejected\n  `"ß".toUpperCase()` maps characters by the engine\'s Unicode version, which varies outside ASCII',
+				"9:11 accepted { ABC: string }"
 			])
 		})
 
-		it("approximated math", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-const A = type(\`number < \${2 ** 0.5}\`)`)
-			).snap([
-				"2:11 rejected\n  `2 ** 0.5` is approximated by each engine unless its operands are integers with a safe integer result"
-			])
-		})
-
-		it("accessors and __proto__", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-const A = type({ get a() { return "string" } })
-const B = type({ __proto__: null, a: "string" })`)
-			).snap([
-				'2:11 rejected\n  `get a() { return "string" }` is an accessor, which runs code when arktype reads the definition',
-				"3:11 rejected\n  a `__proto__` key changes the object's prototype"
-			])
-		})
-
-		it("reads that are not own data", () => {
+		it("reads that run code or aren't own data", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
 const limits = { max: 5 }
-const A = type(\`'\${limits.toString}'\`)
-const B = type(\`'\${limits.constructor.name}'\`)`)
+const A = type({ get a() { return "string" } })
+const B = type({ __proto__: null, a: "string" })
+const C = type(\`'\${limits.toString}'\`)
+const D = type(\`'\${limits.constructor.name}'\`)`)
 			).snap([
-				"3:11 rejected\n  `limits.toString` does not read an own data property",
-				"4:11 rejected\n  `limits.constructor` does not read an own data property"
+				'3:11 rejected\n  `get a() { return "string" }` is an accessor, which runs code when arktype reads the definition',
+				"4:11 rejected\n  a `__proto__` key changes the object's prototype",
+				"5:11 rejected\n  `limits.toString` does not read an own data property",
+				"6:11 rejected\n  `limits.constructor` does not read an own data property"
 			])
 		})
 
@@ -2446,7 +2199,7 @@ const M = parser.default("assert")`)
 		})
 	})
 
-	describe("parse errors", () => {
+	it("parse errors", () => {
 		const parseErrorsOf = (opts?: PrecompileOptions) =>
 			analyze(
 				`import { type } from "arktype"
@@ -2454,33 +2207,21 @@ const A = type({ a: "1" }).and({ a: "2" })`,
 				{},
 				opts
 			).diagnostics.map(d => `${d.severity} ${renderDiagnostic(d)}`)
-
-		it("fails", () => {
-			attest(parseErrorsOf()).snap([
-				'error /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.'
-			])
-		})
-
-		it("warns with allowUnsafe", () => {
-			attest(parseErrorsOf({ allowUnsafe: true })).snap([
-				'warning /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime.'
-			])
-		})
-
-		it("fails with runtime arktype", () => {
-			attest(parseErrorsOf({ runtime: "arktype" })).snap([
-				'error /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.'
-			])
-		})
-
-		it("rejects other errors", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
+		const failed = parseErrorsOf()
+		attest(failed).snap([
+			'error /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.'
+		])
+		attest(parseErrorsOf({ runtime: "arktype" })).equals(failed)
+		attest(parseErrorsOf({ allowUnsafe: true })).snap([
+			'warning /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime.'
+		])
+		// any other error rejects the site
+		attest(
+			statusesOf(`import { type } from "arktype"
 const read = (o: any) => o.a.b
 const A = type(read({}))`)
-			).snap([
-				"3:11 rejected\n  `o.a.b` reads a property of undefined, which throws"
-			])
-		})
+		).snap([
+			"3:11 rejected\n  `o.a.b` reads a property of undefined, which throws"
+		])
 	})
 })

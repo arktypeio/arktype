@@ -561,10 +561,6 @@ d must be a number (was a string)`)
 		attest(out.summary).snap("b must be a number (was a string)")
 		data.b = 0
 		attest(out.summary).snap("b must be a number (was a string)")
-	})
-
-	it("issues found once read are ArkErrors", () => {
-		const out = type("string")(0)
 		attest(out.constructor).equals(type.errors)
 	})
 

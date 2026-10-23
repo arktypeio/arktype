@@ -27,7 +27,7 @@ import {
 import { listPattern } from "arktype/i18n"
 import { en } from "arktype/locales/en"
 import { AsyncLocalStorage } from "node:async_hooks"
-import { matrixOf } from "./locales/matrix.ts"
+import { fixturesOf, matrixOf } from "./locales/matrix.ts"
 import { reconfigure, withConfig } from "./locales/withConfig.ts"
 
 // errors described by their own nodes, which union and intersection errors list
@@ -53,138 +53,14 @@ class Foo {}
 const isEven = (n: number) => n % 2 === 0
 
 const o = {}
-const sym = Symbol("parity")
 
-// every leaf code and context variant, each with data that fails it
-const corpusOf = (): [type.Any, unknown][] => {
-	const $ = scope({})
-	const node = scope({ node: { next: "node | null", v: "string" } }).export()
-		.node
-	return [
-		[$.type("string"), 5],
-		[$.type("number"), "x"],
-		[$.type("bigint"), 1],
-		[$.type("symbol"), 1],
-		[$.type("object"), 1],
-		[$.type("'a'"), "b"],
-		[$.type("5"), 4],
-		[$.type("number != 5"), 5],
-		[$.type("string != 2"), "ab"],
-		[$.type("Date != d'2000-05-03'"), new Date("2000-05-03")],
-		[$.type("5n"), 4n],
-		[$.type("true"), false],
-		[$.type("null"), 1],
-		[$.type("undefined"), 1],
-		[$.type.unit(Foo), {}],
-		[$.type("Date"), 1],
-		[$.type("Date"), new Date("!")],
-		[$.type("unknown[]"), {}],
-		[$.type("Map"), {}],
-		[$.type.instanceOf(Foo), {}],
-		[$.type("number > 0"), 0],
-		[$.type("number >= 0"), -1],
-		[$.type("number < 0"), 0],
-		[$.type("number <= 0"), 1],
-		[$.type("number > 5"), 5],
-		[$.type("number >= 5.5"), 5],
-		[$.type("number < 5"), 5],
-		[$.type("number <= -5"), 5],
-		[$.type("string > 0"), ""],
-		[$.type("string >= 3"), ""],
-		[$.type("unknown[] >= 2"), []],
-		[$.type("string <= 3"), "abcd"],
-		[$.type("unknown[] <= 1"), [1, 2]],
-		[$.type("string == 3"), "ab"],
-		[$.type("unknown[] == 0"), [1]],
-		[$.type("number % 1"), 1.5],
-		[$.type("number % 2"), 1],
-		[$.type("number % 3"), 1],
-		[$.type("/^a.*$/"), "b"],
-		[$.type(/a/i), "b"],
-		[$.type("Date < d'2000-01-01'"), new Date("2001-01-01")],
-		[$.type("Date > d'2000-01-01T12:30:00Z'"), new Date("1999-01-01")],
-		[$.type("number").narrow(() => false), 1],
-		[$.type("number").narrow(isEven), 1],
-		[$.type("string").pipe.try(s => JSON.parse(s)), "{"],
-		[
-			$.type("string").pipe.try(function parse(s: string) {
-				return JSON.parse(s)
-			}),
-			"{"
-		],
-		[$.type("string | number[]"), [true]],
-		[$.type({ a: "string", b: "number > 0" }), { a: 1, b: 0 }],
-		[$.type("(number % 2) & (number > 3)"), 1],
-		[$.type("(string >= 3) | (string <= 0)"), "a"],
-		[$.type({ a: "string" }), {}],
-		[$.type({ a: "string | number" }), {}],
-		[$.type({ a: "never" }), {}],
-		[$.type({ a: "unknown" }), {}],
-		[
-			$.type({
-				a: $.type("unknown")
-					.narrow(() => true)
-					.or("string")
-			}),
-			{}
-		],
-		[$.type({ a: "boolean" }), {}],
-		[$.type({ a: "boolean | null" }), {}],
-		[$.type({ a: "'x' | 'y' | 1n | 1.5" }), {}],
-		[$.type({ a: $.type.unit(o) }), {}],
-		[$.type({ a: $.type.unit(sym) }), {}],
-		[$.type({ a: $.type("'x'").describe("an x") }), {}],
-		[$.type({ a: $.type("false").describe("no").or("true") }), {}],
-		[$.type({ a: $.type("number").describe("a count") }), {}],
-		[$.type({ a: $.type("Date").describe("a day") }), {}],
-		[$.type({ a: $.type("string").pipe(s => s.length) }), {}],
-		[
-			$.type({
-				a: $.type("string")
-					.describe("text")
-					.pipe(s => s.length)
-			}),
-			{}
-		],
-		[$.type({ a: "string > 3" }), {}],
-		[$.type({ a: "string[]" }), {}],
-		[$.type({ a: "Date < d'2000-01-01'" }), {}],
-		[$.type({ a: $.type.instanceOf(Foo) }), {}],
-		[$.type({ a: "string.uuid | number" }), {}],
-		[$.type({ a: "string.date.epoch.parse" }), {}],
-		[node, { v: "x" }],
-		[$.type({ "+": "reject", a: "string" }), { a: "", b: 1 }],
-		[
-			$.type({ kind: "'a'", x: "string" }).or({
-				kind: "'b'",
-				y: "number"
-			}),
-			{ kind: "c" }
-		],
-		[
-			$.type({ kind: "'a'", x: "string" }).or({
-				kind: "'b'",
-				y: "number"
-			}),
-			{}
-		],
-		[$.type({ k: "1n", a: "string" }).or({ k: "2n", b: "number" }), { k: 3n }],
-		[
-			$.type({ k: "1.5", a: "string" }).or({ k: "2.5", b: "number" }),
-			{ k: 3.5 }
-		],
-		[$.type("'a' | 'b' | 'c'"), "d"],
-		[
-			$.type({ k: "true", a: "string" })
-				.or({ k: "false", b: "string" })
-				.or({ k: "'x'", c: "string" }),
-			{ k: 5 }
-		],
-		[$.type.enumerated(o, sym, 1, Infinity, -Infinity), 2],
-		[$.type("string | number | bigint").or({ a: "1" }), true],
-		[$.type("string | number | bigint").or({ a: "1" }), sym]
-	]
-}
+// text a fixture authors itself rather than reading from the locale
+const isAuthored = (label: string, error: ArkError) =>
+	label === "narrow mustBe" ||
+	label === "configured writer reading the description" ||
+	["keyword", "description", "expected", "actual"].some(
+		k => error.meta && k in error.meta
+	)
 
 const mark = (label: string) => `⟦${label}⟧`
 
@@ -249,8 +125,9 @@ contextualize(() => {
 
 		it("a leaf error's expected and actual text come from its fields", () => {
 			const codes = new Set<string>()
-			for (const [T, data] of corpusOf()) {
+			for (const [label, T, data] of fixturesOf(false)) {
 				for (const error of (T(data) as ArkErrors).issues.flatMap(leavesOf)) {
+					if (isAuthored(label, error)) continue
 					codes.add(error.code)
 					attest(enExpected(error)).equals(error.expected)
 					attest(enActual(error)).equals(error.actual)

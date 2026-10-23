@@ -85,14 +85,28 @@ contextualize(() => {
 		])
 	})
 
-	it("rejects other configured errors", () => {
+	it("rejects configured errors other than the build's", () => {
 		attest(
-			check([], { cwd: fromHere("erroring"), config: "config.ts" }).lines
+			([undefined, "first"] as const).map(
+				errors =>
+					check([], {
+						cwd: fromHere("firstConfigured"),
+						config: "config.ts",
+						errors
+					}).lines
+			)
 		).snap([
-			'config.ts:4:1  arktype is configured with errors: "first", where the build\'s errors are "all"\n  Build with errors: "first" too, as a standalone validator returns what arktype does as the program configures it.',
-			"main.ts:4:18  accepted",
-			'main.ts:6:18  scope({ U: { b: "number" } }, { errors: "none" }) can\'t be precompiled yet\n  arktype is configured with errors: "none", where the build\'s errors are "all"\n  A standalone validator returns what arktype does as the program configures it. Build with the errors arktype is configured with.',
-			"2 sites in 2 files: 1 accepted (50.0%), 1 error outside a site"
+			[
+				'config.ts:4:1  arktype is configured with errors: "first", where the build\'s errors are "all"\n  Build with errors: "first" too, as a standalone validator returns what arktype does as the program configures it.',
+				"main.ts:4:21  accepted",
+				'scoped.ts:5:18  scope({ U: { b: "number" } }, { errors: "none" }) can\'t be precompiled yet\n  arktype is configured with errors: "none", where the build\'s errors are "all"\n  A standalone validator returns what arktype does as the program configures it. Build with the errors arktype is configured with.',
+				"2 sites in 3 files: 1 accepted (50.0%), 1 error outside a site"
+			],
+			[
+				"main.ts:4:21  accepted",
+				'scoped.ts:5:18  scope({ U: { b: "number" } }, { errors: "none" }) can\'t be precompiled yet\n  arktype is configured with errors: "none", where the build\'s errors are "first"\n  A standalone validator returns what arktype does as the program configures it. Build with the errors arktype is configured with.',
+				"2 sites in 3 files: 1 accepted (50.0%)"
+			]
 		])
 	})
 
@@ -110,46 +124,33 @@ contextualize(() => {
 		])
 	})
 
-	it("accepts the build's configured errors", () => {
-		attest(
-			check([], {
-				cwd: fromHere("erroring"),
-				config: "config.ts",
-				errors: "first"
-			}).lines
-		).snap([
-			"main.ts:4:18  accepted",
-			'main.ts:6:18  scope({ U: { b: "number" } }, { errors: "none" }) can\'t be precompiled yet\n  arktype is configured with errors: "none", where the build\'s errors are "first"\n  A standalone validator returns what arktype does as the program configures it. Build with the errors arktype is configured with.',
-			"2 sites in 2 files: 1 accepted (50.0%)"
-		])
-	})
-
 	it("rejects other configured mutatesInput", () => {
 		attest(
-			check([], { cwd: fromHere("mutating"), config: "config.ts" }).lines
+			check([], { cwd: fromHere("mutatingConfigured"), config: "config.ts" })
+				.lines
 		).snap([
 			"config.ts:4:1  arktype is configured with mutatesInput: true, where the build's mutatesInput is false\n  Build with mutatesInput: true too, as a standalone validator returns what arktype does as the program configures it.",
-			"main.ts:4:18  accepted",
-			'main.ts:6:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can\'t be precompiled yet\n  arktype is configured with mutatesInput: "always", where the build\'s mutatesInput is false\n  A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.',
-			"2 sites in 2 files: 1 accepted (50.0%), 1 error outside a site"
+			"main.ts:4:21  accepted",
+			'scoped.ts:5:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can\'t be precompiled yet\n  arktype is configured with mutatesInput: "always", where the build\'s mutatesInput is false\n  A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.',
+			"2 sites in 3 files: 1 accepted (50.0%), 1 error outside a site"
 		])
 	})
 
 	it("accepts the build's configured mutatesInput", () => {
 		attest(
 			runCli(
-				fromHere("mutating"),
+				fromHere("mutatingConfigured"),
 				"--check",
 				"--config",
 				"config.ts",
 				"--mutates-input",
 				"true"
 			).stdout
-		).snap(`main.ts:4:18  accepted
-main.ts:6:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can't be precompiled yet
+		).snap(`main.ts:4:21  accepted
+scoped.ts:5:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can't be precompiled yet
   arktype is configured with mutatesInput: "always", where the build's mutatesInput is true
   A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.
-2 sites in 2 files: 1 accepted (50.0%)
+2 sites in 3 files: 1 accepted (50.0%)
 `)
 	})
 
@@ -169,20 +170,6 @@ main.ts:6:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can
 		attest([status, stderr]).equals([
 			1,
 			"arktype-precompile needs Node 22.12 or later (this is 22.11.0)\n"
-		])
-	})
-
-	it("reports a config module it can't read", () => {
-		const { status, stdout, stderr } = runCli(
-			cwd,
-			"--check",
-			"--config",
-			"missing.ts"
-		)
-		attest([status, stdout, stderr]).equals([
-			1,
-			"",
-			"the config module missing.ts can't be read\n"
 		])
 	})
 
@@ -290,7 +277,9 @@ forms.ts:16:16  island
 				["--runtime", "strict"],
 				["--fail-under", "most"],
 				["--members", "assert"],
-				["--mutates-input", "yes"]
+				["--mutates-input", "yes"],
+				["--config", "missing.ts"],
+				["--creation-checks", "bogus"]
 			].map(args => {
 				const result = runCli(cwd, "--check", ...args)
 				return `${result.status} ${result.stderr.split("\n")[0]}`
@@ -299,20 +288,9 @@ forms.ts:16:16  island
 			'2 runtime must be "arktype" (was "strict")',
 			"2 --fail-under must be a percentage (was most)",
 			"2 --members must be JSON (was assert)",
-			'2 mutatesInput must be "always", false or true (was "yes")'
-		])
-	})
-
-	it("rejects an option the build can't take", () => {
-		const { status, stderr } = runCli(
-			cwd,
-			"--check",
-			"--creation-checks",
-			"bogus"
-		)
-		attest([status, stderr.split("\n")[0]]).equals([
-			2,
-			'creationChecks must be "helpers", "none" or "types" (was "bogus")'
+			'2 mutatesInput must be "always", false or true (was "yes")',
+			"1 the config module missing.ts can't be read",
+			'2 creationChecks must be "helpers", "none" or "types" (was "bogus")'
 		])
 	})
 })

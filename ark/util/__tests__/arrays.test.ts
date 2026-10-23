@@ -32,12 +32,15 @@ const fruits: Fruit[] = [pinkLady, visionPro, bengal]
 
 contextualize(() => {
 	it("getDuplicatesOf", () => {
-		const duplicates = getDuplicatesOf(["foo", 55, 31, "bar", {}, [], true], {
-			isEqual: (l, r) => typeof l === typeof r
-		})
+		const duplicates = getDuplicatesOf(
+			["foo", 55, 31, "bar", {}, [], true, "baz"],
+			{
+				isEqual: (l, r) => typeof l === typeof r
+			}
+		)
 		attest(duplicates).equals([
 			{ element: 55, indices: [1, 2] },
-			{ element: "foo", indices: [0, 3] },
+			{ element: "foo", indices: [0, 3, 7] },
 			{ element: {}, indices: [4, 5] }
 		])
 	})
@@ -82,9 +85,7 @@ contextualize(() => {
 	it("array.repeat", () => {
 		attest<[], array.repeat<"a", 0>>()
 		attest<["a", "a", "a"], array.repeat<"a", 3>>()
-	})
-
-	it("array.repeat at and past a power of two", () => {
+		// at and past a power of two
 		attest<512, array.repeat<1, 512>["length"]>()
 		attest<513, array.repeat<1, 513>["length"]>()
 	})

@@ -27,6 +27,16 @@ const builtInOrder = (files: Record<string, string>, order: string[]) =>
 		[files, order]
 	)
 
+// a module's code but for the imports of its validators, which "folds sites to
+// validators" pins
+const foldedCode = (code: string) =>
+	normalized(code)
+		.split("\n")
+		.filter(
+			line => !/^import { #\d+ as \$ark#\d+ } from "~arktype\//.test(line)
+		)
+		.join("\n")
+
 contextualize(() => {
 	describe("standalone", () => {
 		it("folds sites to validators", () => {
@@ -93,9 +103,7 @@ export const User = type({ name: "string" })`
 				{ lazy: false, creationChecks: "none" }
 			)
 			// user.ts runs first, so reading User here can't throw
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
+			attest(foldedCode(result.code)).snap(`import "arktype"
 import $arkfixConfig from "~arktype/#3"
 import { User } from "./user.ts"
 $arkfixConfig()
@@ -181,25 +189,26 @@ import { User } from "./user.ts"
 const Point = type({ x: "number" })
 export const json = Point.json
 export const schema = Point.toJsonSchema()
-export const userJson = User.toJSON()`,
+export const userJson = User.toJSON()
+export const properties = Point.toJsonSchema().properties
+export const required = Point.toJsonSchema()["required"]`,
 				{
 					"/user.ts": `import { type } from "arktype"
 export const User = type({ name: "string" })`
 				}
 			)
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import { #3 as $ark#3 } from "~arktype/#1"
-import { #4 as $ark#4 } from "~arktype/#1"
-import $arkfixConfig from "~arktype/#5"
+			attest(result.diagnostics).equals([])
+			attest(foldedCode(result.code)).snap(`import "arktype"
+import $arkfixConfig from "~arktype/#7"
 import { User } from "./user.ts"
 import "./user.ts"
 $arkfixConfig()
 const Point = /* @__PURE__ */ $ark#0()
 export const json = /* @__PURE__ */ $ark#2()
 export const schema = /* @__PURE__ */ $ark#3()
-export const userJson = /* @__PURE__ */ $ark#4()`)
+export const userJson = /* @__PURE__ */ $ark#4()
+export const properties = $ark#5().properties
+export const required = $ark#6()["required"]`)
 			attest(
 				normalized(
 					Object.entries(result.modules).flatMap(([specifier, module]) =>
@@ -210,23 +219,6 @@ export const userJson = /* @__PURE__ */ $ark#4()`)
 				'import * as runtime from "arktype/runtime"\n\nconst #0 = /* @__PURE__ */ (() => runtime.deepFreeze({ "required": [{ "key": "x", "value": "number" }], "domain": "object" }))()\n\nexport { #0 }\n',
 				'import * as runtime from "arktype/runtime"\n\nconst #1 = /* @__PURE__ */ (() => runtime.deepFreeze({ "required": [{ "key": "name", "value": "string" }], "domain": "object" }))()\n\nexport { #1 }\n'
 			])
-		})
-
-		it("members of a folded JSON Schema", () => {
-			const result = precompile(`import { type } from "arktype"
-const A = type({ a: "string" })
-export const properties = A.toJsonSchema().properties
-export const required = A.toJsonSchema()["required"]`)
-			attest(result.diagnostics).equals([])
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import { #3 as $ark#3 } from "~arktype/#1"
-import $arkfixConfig from "~arktype/#4"
-$arkfixConfig()
-const A = /* @__PURE__ */ $ark#0()
-export const properties = $ark#2().properties
-export const required = $ark#3()["required"]`)
 		})
 
 		it("refuses a JSON Schema calling a thunk", () => {
@@ -255,19 +247,6 @@ export const Positive = type("number").narrow(n => n > 0)`
 			attest(result.diagnostics).equals([])
 		})
 
-		it("folds an unwritable JSON Schema to its throw", () => {
-			const result = precompile(`import { type } from "arktype"
-const Length = type("string").pipe(s => s.length)
-export const schema = Length.toJsonSchema()`)
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import $arkfixConfig from "~arktype/#3"
-$arkfixConfig()
-const Length = /* @__PURE__ */ $ark#0(s => s.length)
-export const schema = $ark#2()`)
-		})
-
 		it("folds introspection receiving cross-module functions", () => {
 			const result = precompile(
 				`import { type } from "arktype"
@@ -288,12 +267,7 @@ import { double } from "./containers.ts"
 export const Doubled = type("number").pipe(double)`
 				}
 			)
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import { #3 as $ark#3 } from "~arktype/#1"
-import { #4 as $ark#4 } from "~arktype/#1"
-import { #5 as $ark#5 } from "~arktype/#1"
+			attest(foldedCode(result.code)).snap(`import "arktype"
 import $arkfixConfig from "~arktype/#6"
 import { double } from "./containers.ts"
 import { Doubled } from "./doubled.ts"
@@ -410,11 +384,7 @@ export const K = type("string").extends(type("string").in)`,
 				'/main.ts:12:18  type({ a: "string" }).in.extends("object") can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type({ a: "string" }).in.extends`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
 				'/main.ts:13:18  type("string").extends(type("string").in) can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type("string").extends`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
-			attest(normalized(result.code)).snap(`import { type } from "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import { #3 as $ark#3 } from "~arktype/#1"
-import { #4 as $ark#4 } from "~arktype/#1"
+			attest(foldedCode(result.code)).snap(`import { type } from "arktype"
 import $ark#5 from "~arktype/#6"
 import $arkfixConfig from "~arktype/#7"
 import { max } from "./limits.ts"
@@ -442,10 +412,7 @@ const EpochMs = codec("number.integer", "Date", {
 export const Event = type({ at: EpochMs, n: "string.numeric.parse" })
 export const encode = (event: unknown) => Event.encode(event)`)
 			attest(result.diagnostics).equals([])
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import { #3 as $ark#3 } from "~arktype/#1"
+			attest(foldedCode(result.code)).snap(`import "arktype"
 import $arkfixConfig from "~arktype/#4"
 import "arktype/codecs"
 $arkfixConfig()
@@ -478,13 +445,7 @@ export const Box = type("<t>", { box: "t" })
 export const BoxedTree = Box(types.tree)
 export const M = type.module({ a: "string", b: { c: "a" } })`)
 			attest(result.diagnostics).equals([])
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import { #3 as $ark#3 } from "~arktype/#1"
-import { #4 as $ark#4 } from "~arktype/#1"
-import { #5 as $ark#5 } from "~arktype/#1"
-import { #6 as $ark#6 } from "~arktype/#1"
+			attest(foldedCode(result.code)).snap(`import "arktype"
 import $arkfixConfig from "~arktype/#7"
 $arkfixConfig()
 const $ = /* @__PURE__ */ $ark#0()
@@ -677,9 +638,7 @@ const create = () => {
 	return types
 }`)
 			attest(result.diagnostics).equals([])
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
+			attest(foldedCode(result.code)).snap(`import "arktype"
 const create = () => {
 	const $ = $ark#0()
 	const types = $ark#2()
@@ -699,12 +658,7 @@ const make = () => ({
 })
 export const made = make()`)
 			attest(result.diagnostics).equals([])
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import { #3 as $ark#3 } from "~arktype/#1"
-import { #4 as $ark#4 } from "~arktype/#1"
-import { #5 as $ark#5 } from "~arktype/#1"
+			attest(foldedCode(result.code)).snap(`import "arktype"
 const make = () => ({
 	$: $ark#0(),
 	types: $ark#2(),
@@ -758,18 +712,15 @@ export const Name = () => <span>name</span>`
 					.precompile(files[id], id)
 					.sites.map(site => (site.value as { expression: string }).expression)
 
-			it("in any order", () => {
-				const precompiler = new Precompiler(memoryHost(files))
-				for (const id of ["/y.ts", "/c.ts", "/x.ts"])
-					precompiler.precompile(files[id], id)
-				attest(expressionsOf(precompiler, "/b.ts")).equals(["string"])
-			})
-
-			it("given twice", () => {
-				const precompiler = new Precompiler(memoryHost(files))
-				for (const id of ["/x.ts", "/y.ts", "/b.ts", "/x.ts"])
-					precompiler.precompile(files[id], id)
-				attest(expressionsOf(precompiler, "/b.ts")).equals(["string"])
+			it("in any order, given twice", () => {
+				for (const order of [
+					["/y.ts", "/c.ts", "/x.ts"],
+					["/x.ts", "/y.ts", "/b.ts", "/x.ts"]
+				]) {
+					const precompiler = new Precompiler(memoryHost(files))
+					for (const id of order) precompiler.precompile(files[id], id)
+					attest(expressionsOf(precompiler, "/b.ts")).equals(["string"])
+				}
 			})
 
 			it("after a change", () => {
@@ -821,15 +772,7 @@ export const Kept = type.instanceOf(Pet).and(type.instanceOf(Kitten))`
 				})
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import { #3 as $ark#3 } from "~arktype/#1"
-import { #4 as $ark#4 } from "~arktype/#1"
-import { #5 as $ark#5 } from "~arktype/#1"
-import { #6 as $ark#6 } from "~arktype/#1"
-import { #7 as $ark#7 } from "~arktype/#1"
-import { #8 as $ark#8 } from "~arktype/#1"
+			attest(foldedCode(result.code)).snap(`import "arktype"
 import $arkfixConfig from "~arktype/#9"
 import { ext } from "./ext.ts"
 const trim = (s: string) => s.trim()
@@ -881,12 +824,7 @@ export const Shadowed = (() => {
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				"/inputs.ts:17:9  type(alias.name) can't be precompiled yet\n  `o` (/inputs.ts:7:7) is shadowed where the site is written, so its factory can't receive it\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
-			attest(normalized(result.code)).snap(`import { type } from "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import { #3 as $ark#3 } from "~arktype/#1"
-import { #4 as $ark#4 } from "~arktype/#1"
-import { #5 as $ark#5 } from "~arktype/#1"
+			attest(foldedCode(result.code)).snap(`import { type } from "arktype"
 import { max } from "./limits.ts"
 import { reboxed } from "./reboxed.ts"
 import { shape } from "./shapes.ts"
@@ -940,9 +878,7 @@ export function viaK() { return k({ b: "number" }) }`,
 				"/main.ts:5:18  type(viaG()) can't be precompiled yet\n  importing `g` from /g.ts here could run it earlier than the program does, as /main.ts is on an import cycle\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
 				"/main.ts:7:18  type(viaK()) can't be precompiled yet\n  importing `k` from /k.ts here could run it earlier than the program does, as /main.ts is on an import cycle\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
-			attest(normalized(result.code)).snap(`import { type } from "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
+			attest(foldedCode(result.code)).snap(`import { type } from "arktype"
 import $arkfixConfig from "~arktype/#3"
 import { viaG, viaH, viaK } from "./app.ts"
 import { g } from "./g.ts"
@@ -964,7 +900,7 @@ export const M = type.module({
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				'/main.ts:2:18  type.module({ a: type("missing").and(type({ b: "string" }))… throws a ParseError\n  \'missing\' is unresolvable\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.'
 			])
-			attest(normalized(result.code)).snap(`import "arktype"
+			attest(foldedCode(result.code)).snap(`import "arktype"
 import $ark#0 from "~arktype/#1"
 export const M = $ark#0()`)
 		})
@@ -1049,10 +985,7 @@ export default (def: string) => def`,
 			attest(checked.diagnostics.map(renderDiagnostic)).snap([
 				"/checked.ts:8:23  type(single(\"string\")) can't be precompiled yet\n  `default` (/helpers.ts:5:16) is a static helper its module doesn't export through a binding, so a test driver can't register it\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
-			attest(normalized(checked.code)).snap(`import { type } from "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import { #3 as $ark#3 } from "~arktype/#1"
+			attest(foldedCode(checked.code)).snap(`import { type } from "arktype"
 import single, { list } from "./helpers.ts"
 import * as helpers from "./helpers.ts"
 const own = (def: string) => list(def)
@@ -1086,10 +1019,7 @@ export const Checked = type({ a: type("string").narrow(other.check), b: type("st
 				}
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import { #3 as $ark#3 } from "~arktype/#1"
+			attest(foldedCode(result.code)).snap(`import "arktype"
 import { a } from "./a.ts"
 import { alias } from "./b.ts"
 const fns = { check: (s: string) => s.length > 3 }
@@ -1130,10 +1060,7 @@ export const Union = T.internal.assertHasKind("union")
 export const In = type({ a: T.in })`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import { #3 as $ark#3 } from "~arktype/#1"
+			attest(foldedCode(result.code)).snap(`import "arktype"
 import $arkfixConfig from "~arktype/#4"
 const tag = Symbol("tag")
 $arkfixConfig()
@@ -1167,12 +1094,7 @@ export const OwnFirst = type("string").narrow(function (this: unknown, s) { retu
 				"/main.ts:13:24  type(longs().map(N => type({ n: N })) as never) can't be precompiled yet\n  arktype holds `(s: string) => s.length > 1` (/main.ts:2:16), which the site cannot pass to its factory\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
 				'/main.ts:14:23  type(shorts().map(h => type("string").narrow(h || isLong)) … can\'t be precompiled yet\n  arktype holds `(s: string) => s.length < 3` (/main.ts:3:17), which the site reads outside its own source\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
-			attest(normalized(result.code)).snap(`import { type } from "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
-import { #2 as $ark#2 } from "~arktype/#1"
-import { #3 as $ark#3 } from "~arktype/#1"
-import { #4 as $ark#4 } from "~arktype/#1"
-import { #5 as $ark#5 } from "~arktype/#1"
+			attest(foldedCode(result.code)).snap(`import { type } from "arktype"
 import $arkfixConfig from "~arktype/#6"
 const isLong = (s: string) => s.length > 1
 const isShort = (s: string) => s.length < 3
@@ -1199,8 +1121,7 @@ const longer = (n: number) => (s: string) => s.length > n
 export const T = type("string").narrow(longer(3)).narrow(longer(1))`
 			)
 			attest(result.diagnostics).equals([])
-			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark#0 } from "~arktype/#1"
+			attest(foldedCode(result.code)).snap(`import "arktype"
 const longer = (n: number) => (s: string) => s.length > n
 export const T = $ark#0(longer(3), longer(1))`)
 		})
@@ -1379,7 +1300,7 @@ import { other } from "./other.ts"`
 				{ "/other.ts": "export const other = 1" },
 				{ runtime: "arktype" }
 			)
-			attest(normalized(result.code)).snap(`import { type } from "arktype"
+			attest(foldedCode(result.code)).snap(`import { type } from "arktype"
 import "~arktype/units/#0"
 import "~arktype/units/#1"
 let def = "string"
@@ -1576,25 +1497,20 @@ export const Default = scope({}).type({ x: "string" })`)
 		}
 	})
 
-	it("writes a Type the same in any order", () => {
+	it("writes Types and meta the same in any order", () => {
 		const files = {
 			"/string.ts": `import { type } from "arktype"
 export const A = type({ a: "string" })`,
 			"/keyof.ts": `import { type } from "arktype"
-export const B = type({ a: type({ "[string]": "number" }).keyof() })`
-		}
-		const first = builtInOrder(files, ["/string.ts", "/keyof.ts"])
-		attest(builtInOrder(files, ["/keyof.ts", "/string.ts"])).equals(first)
-	})
-
-	it("meta objects in any order", () => {
-		const files = {
+export const B = type({ a: type({ "[string]": "number" }).keyof() })`,
 			"/a.ts": `import { type } from "arktype"
 export const A = type({ a: "number" }).configure({ examples: [{ a: 1 }] })`,
 			"/b.ts": `import { type } from "arktype"
 export const B = type({ a: "number" }).configure({ examples: [{ a: 2 }] })`
 		}
-		const together = builtInOrder(files, ["/a.ts", "/b.ts"])
-		attest(builtInOrder(files, ["/b.ts", "/a.ts"])).equals(together)
+		const ids = Object.keys(files)
+		attest(builtInOrder(files, [...ids].reverse())).equals(
+			builtInOrder(files, ids)
+		)
 	})
 })
