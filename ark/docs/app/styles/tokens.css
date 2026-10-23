@@ -175,14 +175,14 @@
 	--gold-fill-hi: #f2cb86;
 	--gold-glow: transparent;
 
-	--copper: #9a5a17;
+	--copper: #925514;
 	--rule: color-mix(in oklab, var(--copper) 26%, transparent);
 	--rule-soft: color-mix(in oklab, var(--copper) 15%, transparent);
 	--line: color-mix(in oklab, var(--ink) 13%, transparent);
 
 	--sky: #0063b1;
 	--blue: #07538e;
-	--teal: #03776b;
+	--teal: #036c61;
 	--teal-ink: #025c53;
 	--violet: #7d45e0;
 	--violet-text: #6d35d6;

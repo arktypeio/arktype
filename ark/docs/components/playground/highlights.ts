@@ -45,9 +45,9 @@ export const editorThemes = {
 			// nested brackets: the deeper two were under 3:1 on parchment
 			colors: {
 				...arklightColors.colors,
-				"editorBracketHighlight.foreground2": "#9a5a17",
+				"editorBracketHighlight.foreground2": "#925514",
 				"editorBracketHighlight.foreground3": "#a6560c",
-				"editorBracketHighlight.unexpectedBracket.foreground": "#9a5a17"
+				"editorBracketHighlight.unexpectedBracket.foreground": "#925514"
 			},
 			tokenColors: structuredClone(arklightColors.tokenColors)
 		}),

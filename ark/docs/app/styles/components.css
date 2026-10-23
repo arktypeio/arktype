@@ -720,3 +720,29 @@
 	font-variant-numeric: tabular-nums;
 	white-space: nowrap;
 }
+
+/* components/Button.tsx's outline glows white over the demo video; on
+   parchment, where the playground replaces it, it's a solid pill instead */
+:root[data-theme="light"] .glow-btn {
+	border-color: var(--line);
+	background: color-mix(in oklab, var(--raised) 88%, transparent);
+	box-shadow: var(--shadow-pop);
+	color: var(--ink);
+	text-shadow: none;
+}
+
+:root[data-theme="light"] .glow-btn:hover {
+	border-color: color-mix(in oklab, var(--ink) 30%, transparent);
+	color: var(--ink);
+}
+
+/* the playground's buttons over its editor: translucent navy reads on
+   ArkDark's editor but greys out on ArkLight's */
+:root[data-theme="light"] .editor-icon-btn {
+	background: var(--brand);
+	color: #fff;
+}
+
+:root[data-theme="light"] .editor-icon-btn:hover {
+	background: var(--blue);
+}
