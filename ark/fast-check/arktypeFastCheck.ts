@@ -104,10 +104,20 @@ export const buildStructureArbitrary = (
 		if (structure === undefined)
 			throwInternalError("Expected a structure node.")
 
-		if (hasKey(structure, "index") && structure.index)
-			return buildIndexSignatureArbitrary(structure.index, ctx)
+		if (!hasKey(structure, "index") || !structure.index)
+			return buildObjectArbitrary(structure, ctx)
 
-		return buildObjectArbitrary(structure, ctx)
+		const indexArbitrary = buildIndexSignatureArbitrary(structure.index, ctx)
+		if (!structure.props.length) return indexArbitrary
+
+		// declared props win over index keys that happen to share their name
+		return fc
+			.tuple(indexArbitrary, buildObjectArbitrary(structure, ctx))
+			.map(([indexed, declared]) => {
+				const result: Record<PropertyKey, unknown> = indexed
+				for (const prop of structure.props) delete result[prop.key]
+				return Object.assign(result, declared)
+			})
 	}
 
 	if (node.inner.exactLength?.rule === 0) return fc.tuple()
@@ -144,10 +154,32 @@ export const buildObjectArbitrary = (
 	const requiredKeys = node.requiredKeys
 	const arbitrariesByKey: Record<PropertyKey, fc.Arbitrary<unknown>> = {}
 
-	for (const [key, value] of entries)
-		arbitrariesByKey[key] = buildArbitrary(value as never, ctx)
+	for (const [key, value] of entries) {
+		if (!node.index) {
+			arbitrariesByKey[key] = buildArbitrary(value as never, ctx)
+			continue
+		}
+		// a key an index signature also matches has to satisfy both values
+		const intersected = getIndexedPropValue(node, value as never)
+		if (intersected) arbitrariesByKey[key] = buildArbitrary(intersected, ctx)
+	}
 
 	return fc.record(arbitrariesByKey, { requiredKeys } as never)
+}
+
+// undefined if no value satisfies both, so an optional key is left out
+const getIndexedPropValue = (
+	node: nodeOfKind<"structure">,
+	prop: nodeOfKind<"required" | "optional">
+) => {
+	let value = prop.value
+	try {
+		for (const index of node.index!)
+			if (index.signature.allows(prop.key)) value = value.and(index.value)
+	} catch {
+		return undefined
+	}
+	return value as never
 }
 
 const buildIndexSignatureArbitrary = (
