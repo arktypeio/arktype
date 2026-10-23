@@ -649,7 +649,11 @@ export const applyCallErrors = (
 
 type UnreadErrors = new (apply: CompactApply, data: unknown) => ArkErrors
 
-// errors whose issues their Apply finds in data once they're read
+// errors whose issues their Apply finds in data once they're read, a class
+// defined at a build's first failure, as one defined as it loads costs its
+// startup more than the rest of its errors runtime
+type UnreadErrorsOf = () => UnreadErrors
+
 const unreadOf = (Ctx: new () => ArkErrors): UnreadErrors => {
 	class Unread {
 		declare _apply: CompactApply
@@ -680,10 +684,15 @@ const issuesOf = (apply: CompactApply, data: unknown, ctx: ArkErrors) => {
 	return ctx._
 }
 
-export const UnreadArkErrors: UnreadErrors = /* @__PURE__ */ unreadOf(ArkErrors)
+let unreadArkErrors: UnreadErrors | undefined
 
-export const UnreadFirstIssues: UnreadErrors =
-	/* @__PURE__ */ unreadOf(FirstIssues)
+export const UnreadArkErrors: UnreadErrorsOf = () =>
+	(unreadArkErrors ??= unreadOf(ArkErrors))
+
+let unreadFirstIssues: UnreadErrors | undefined
+
+export const UnreadFirstIssues: UnreadErrorsOf = () =>
+	(unreadFirstIssues ??= unreadOf(FirstIssues))
 
 // errors "none"'s failure, its one issue built once read
 export const InvalidErrors: new (data: unknown) => ArkErrors =
@@ -713,9 +722,9 @@ export const unreadErrors = (
 	apply: CompactApply,
 	data: unknown,
 	onFail: ArkErrors.Handler | null,
-	Ctx: UnreadErrors
+	Ctx: UnreadErrorsOf
 ): unknown => {
-	const errors = new Ctx(apply, data)
+	const errors = new (Ctx())(apply, data)
 	return onFail ? onFail(errors) : errors
 }
 
@@ -739,7 +748,7 @@ export const unreadElements = (
 	data: readonly unknown[],
 	args: ValidatorArgs,
 	onFail: ArkErrors.Handler | null,
-	Ctx: UnreadErrors
+	Ctx: UnreadErrorsOf
 ): unknown =>
 	unreadCallErrors(
 		elementsFrom(allows, apply, i, data),
@@ -754,9 +763,9 @@ export const unreadCallErrors = (
 	data: unknown,
 	args: ValidatorArgs,
 	onFail: ArkErrors.Handler | null,
-	Ctx: UnreadErrors
+	Ctx: UnreadErrorsOf
 ): unknown => {
-	const errors = new Ctx(apply, data)
+	const errors = new (Ctx())(apply, data)
 	if (args.length) {
 		if (args[0]) return args[0].piped(errors as never)
 		if (args[1] !== undefined) onFail = args[1] as never
