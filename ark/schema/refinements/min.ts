@@ -28,15 +28,14 @@ export declare namespace Min {
 
 	export interface ErrorContext extends BaseErrorContext<"min">, Inner {}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "min"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
-			inner: Inner
-			prerequisite: number
-			errorContext: ErrorContext
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "min"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		prerequisite: number
+		errorContext: ErrorContext
+	}> {}
 
 	export type Node = MinNode
 }

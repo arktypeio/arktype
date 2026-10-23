@@ -82,8 +82,9 @@ type distillMappable<o, side extends distill.Side> =
 		show<
 			{
 				// this is homomorphic so includes parsed optional keys like "key?": "string"
-				[k in keyof o as k extends inferredDefaultKeyOf<o> ? never
-				:	k]: _distill<o[k], side>
+				[
+					k in keyof o as k extends inferredDefaultKeyOf<o> ? never : k
+				]: _distill<o[k], side>
 			} & {
 				[k in inferredDefaultKeyOf<o>]?: _distill<o[k], side>
 			}
@@ -138,8 +139,10 @@ type distillNonArraykeys<
 	:	distilledArray &
 			_distill<
 				{
-					[k in keyof originalArray as k extends keyof distilledArray ? never
-					:	k]: originalArray[k]
+					[
+						k in keyof originalArray as k extends keyof distilledArray ? never
+						:	k
+					]: originalArray[k]
 				},
 				side
 			>
@@ -298,14 +301,15 @@ type normalizeMorphDistribution<
 	// was otherwise getting duplicated branches, e.g.:
 	// (In: boolean) => To<boolean> | (In: boolean) => To<boolean>
 	// revert to `t extends InferredMorph...` if it doesn't break the tests in the future
-	| (Extract<t, InferredMorph> extends anyOrNever ? never
-	  : Extract<t, InferredMorph> extends InferredMorph<infer i, infer o> ?
-			[undistributedOut] extends [o] ? (In: undistributedIn) => undistributedOut
-			: [undistributedIn] extends [i] ?
-				(In: undistributedIn) => undistributedOut
-			:	t
-	  :	never)
-	| Exclude<t, InferredMorph> extends infer _ ?
+		| (Extract<t, InferredMorph> extends anyOrNever ? never
+		  : Extract<t, InferredMorph> extends InferredMorph<infer i, infer o> ?
+				[undistributedOut] extends [o] ?
+					(In: undistributedIn) => undistributedOut
+				: [undistributedIn] extends [i] ?
+					(In: undistributedIn) => undistributedOut
+				:	t
+		  :	never)
+		| Exclude<t, InferredMorph> extends infer _ ?
 		// needed to avoid normalizeMorphDistribution or similar showing up in finalized type
 		_
 	:	never
@@ -350,8 +354,9 @@ type _inferIntersection<l, r, piped extends boolean> =
 		:	never
 	:	l & r
 
-interface MorphableIntersection<piped extends boolean>
-	extends Hkt<[unknown, unknown]> {
+interface MorphableIntersection<piped extends boolean> extends Hkt<
+	[unknown, unknown]
+> {
 	body: _inferIntersection<this[0], this[1], piped>
 }
 

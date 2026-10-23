@@ -92,15 +92,14 @@ export declare namespace Structure {
 		export type mutable = makeRootAndArrayPropertiesMutable<Inner>
 	}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "structure"
-			schema: Schema
-			normalizedSchema: Schema
-			inner: Inner
-			prerequisite: object
-			childKind: StructuralKind
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "structure"
+		schema: Schema
+		normalizedSchema: Schema
+		inner: Inner
+		prerequisite: object
+		childKind: StructuralKind
+	}> {}
 
 	export type Node = StructureNode
 }

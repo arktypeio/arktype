@@ -41,7 +41,7 @@ To add a number keyword, use `rootSchema()` with `domain`, `min`/`max`, `divisor
 
 ## Code Style
 
-- Tabs, no semicolons, no trailing commas (`prettier` enforced)
+- Tabs, no semicolons, no trailing commas (`oxfmt` enforced)
 - `experimentalTernaries: true` — `?` at end of line, `:` on next line
 - `arrowParens: "avoid"` — `x => x` not `(x) => x`
 - Tests use `attest` with `.snap()` for snapshots

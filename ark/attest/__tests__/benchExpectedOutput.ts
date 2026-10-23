@@ -34,10 +34,11 @@ bench("bench type", () => ({}) as makeComplexType<"defenestration">).types([
 	"instantiations"
 ])
 
-bench(
-	"bench type from external module",
-	() => ({}) as externalmakeComplexType<"defenestration">
-).types([163, "instantiations"])
+bench("bench type from external module", () =>
+	({}) as externalmakeComplexType<"defenestration">).types([
+	163,
+	"instantiations"
+])
 
 bench(
 	"bench call and type",

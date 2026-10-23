@@ -1,0 +1,11 @@
+{
+	"$schema": "./node_modules/@ark/oxfmt/configuration_schema.json",
+	"printWidth": 80,
+	"useTabs": true,
+	"semi": false,
+	"trailingComma": "none",
+	"experimentalTernaries": true,
+	"arrowParens": "avoid",
+	"experimentalSortPackageJson": false,
+	"ignorePatterns": ["pnpm-lock.yaml"]
+}

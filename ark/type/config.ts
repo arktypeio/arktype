@@ -5,10 +5,9 @@ import { configureSchema, type ArkSchemaConfig } from "@ark/schema/config"
 import type { anyOrNever } from "@ark/util"
 
 export type KeywordConfig = {
-	[k in keyof Ark.flat as parseConfigurableFlatAlias<
-		k,
-		Ark.flat[k]
-	>]?: TypeMeta.Collapsible
+	[
+		k in keyof Ark.flat as parseConfigurableFlatAlias<k, Ark.flat[k]>
+	]?: TypeMeta.Collapsible
 }
 
 type parseConfigurableFlatAlias<k extends string, v> =

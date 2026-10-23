@@ -43,16 +43,15 @@ export declare namespace Index {
 		readonly value: BaseRoot
 	}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "index"
-			schema: Schema
-			normalizedSchema: Schema
-			inner: Inner
-			prerequisite: object
-			intersectionIsOpen: true
-			childKind: RootKind
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "index"
+		schema: Schema
+		normalizedSchema: Schema
+		inner: Inner
+		prerequisite: object
+		intersectionIsOpen: true
+		childKind: RootKind
+	}> {}
 
 	export type Node = IndexNode
 }

@@ -1,6 +1,7 @@
 {
-	"editor.defaultFormatter": "esbenp.prettier-vscode",
-	"prettier.prettierPath": "./node_modules/prettier",
+	"editor.defaultFormatter": "oxc.oxc-vscode",
+	"oxc.fmt.experimental": true,
+	"oxc.path.oxfmt": "./node_modules/.bin/oxfmt",
 	"biome.enabled": false,
 	"editor.codeActionsOnSave": [
 		"editor.formatOnSave",

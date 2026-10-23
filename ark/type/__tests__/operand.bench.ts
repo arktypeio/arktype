@@ -38,5 +38,4 @@ bench("union", () =>
 		})
 		.or({
 			kind: "'pleb'"
-		})
-).types([3618, "instantiations"])
+		})).types([3618, "instantiations"])
