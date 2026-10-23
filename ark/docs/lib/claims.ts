@@ -106,7 +106,8 @@ export const sizeChart: BenchmarkChart = {
 
 // the homepage's benchmark (lib/bench/benchData.json), so a rerun rewrites
 // these too: the default build against classic Zod 4 and z.compile on every
-// scenario, each verdict a sign test at p < .05 over 150 paired rounds
+// scenario, each verdict a sign test at p < .05 over 20 paired passes, each running
+// every library in a fresh process
 const zod = versusLibrary("zod")
 const zodCompiled = versusLibrary("zodCompiled")
 const zodScenarios =

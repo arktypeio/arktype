@@ -183,9 +183,9 @@ const BenchSource = ({ facts }: { facts: BenchFacts }) => (
 				:	""}
 				ArkType was fastest in {facts.validWins}
 				{facts.ties && ` and tied ${facts.ties}`}. Median ns per call over{" "}
-				{provenance.rounds} interleaved rounds against typia, TypeBox, ajv, Zod
-				4 (compiled or not), zod/mini and Valibot; faster means a sign test at p{" "}
-				{"<"} .05. Reporting errors on invalid data, ajv is faster in{" "}
+				{provenance.passes} fresh-process passes against typia, TypeBox, ajv,
+				Zod 4 (compiled or not), zod/mini and Valibot; faster means a sign test
+				at p {"<"} .05. Reporting errors on invalid data, ajv is faster in{" "}
 				{facts.ajvFasterCount === facts.errorCount ?
 					"every row"
 				:	`${facts.ajvFasterCount} of ${facts.errorCount} rows`}

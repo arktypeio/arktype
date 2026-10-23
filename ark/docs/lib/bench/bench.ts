@@ -14,7 +14,7 @@ import { preview } from "./preview.ts"
 export type Verdict = {
 	ratio: number
 	speedup: number
-	roundsWon: string
+	passesWon: string
 	p: string
 	verdict: "win" | "loss" | "tie"
 }
@@ -41,7 +41,7 @@ type BenchData = {
 		date: string
 		machine: string
 		runtime: string
-		rounds: number
+		passes: number
 		startup: { commit: string; date: string }
 	}
 	scenarios: Scenario[]
@@ -372,7 +372,7 @@ const panel = (
 			width: Math.max(Math.abs(end - one), 0.6),
 			clipped: v.speedup > domain.max,
 			tip: [
-				`${name}: median ${formatNs(ns)}, IQR ${formatNs(lo)} to ${formatNs(hi)}. ArkType was faster in ${v.roundsWon} paired rounds; sign test p ${v.p}: ${verdict}.`,
+				`${name}: median ${formatNs(ns)}, IQR ${formatNs(lo)} to ${formatNs(hi)}. ArkType was faster in ${v.passesWon} paired passes; sign test p ${v.p}: ${verdict}.`,
 				replicated(s, key),
 				standIn && `${labels[key]} ${standIn} here.`,
 				copies && likeForLike(s, key, labels[key])
@@ -706,7 +706,7 @@ export const versusLibrary = (key: string) => {
 
 /** the footnote, as paragraphs of plain text: the method, what differs between arms, then startup */
 export const benchNotes = (): string[] => [
-	`Median ns per call over ${provenance.rounds} interleaved rounds, each library in its own process, outputs checked against ArkType's before timing. Ties are a two-sided sign test over paired rounds at p ≥ .05; ratios are of the medians, truncated. ${provenance.runtime} on ${provenance.machine}, measured ${provenance.date} on ${
+	`Median ns per call over ${provenance.passes} passes, each running every library in a fresh process, outputs checked against ArkType's before timing. Ties are a two-sided sign test over paired passes at p ≥ .05; ratios are of the medians, truncated. ${provenance.runtime} on ${provenance.machine}, measured ${provenance.date} on ${
 		preview ?
 			`the precompile branch (${provenance.commit}), which hasn't shipped; the numbers will be rerun on the release commit.`
 		:	`${provenance.commit}.`
