@@ -116,8 +116,9 @@ const zodScenarios =
 	zod.wins === zod.count ?
 		`all ${zod.count} scenarios`
 	:	`${zod.wins} of ${zod.count} scenarios`
-// z.compile builds its output as it transforms, where arktype copies each
-// object it changes, so it wins the rows that transform their input
+// z.compile builds its output as it transforms; arktype's Types on the rows
+// that transform their input kept undeclared keys, copying each object a
+// transform changed, until they removed them as Zod does
 const zodCompiledLosses =
 	!zodCompiled.lost.length ? ""
 	: zodCompiled.lost.every(s => s.name.endsWith(" morph")) ?

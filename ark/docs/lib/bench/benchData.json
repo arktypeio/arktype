@@ -1660,7 +1660,7 @@
 			"id": "parse defaults",
 			"mode": "parse",
 			"name": "defaults",
-			"measures": "an object missing 2 defaulted and 2 optional keys; the output must hold the defaults (typia has none)",
+			"measures": "an object missing 2 defaulted and 2 optional keys; the output must hold the defaults (typia has none); undeclared keys removed, as Zod and Valibot do",
 			"medianNs": {
 				"valibot": 258,
 				"zod": 91.1,
@@ -1847,7 +1847,7 @@
 			"id": "parse items morph",
 			"mode": "parse",
 			"name": "items morph",
-			"measures": "100 items { id, name, count }, each count a numeric string parsed to a number: a transform below the root, which a library copies or writes into its input",
+			"measures": "100 items { id, name, count }, each count a numeric string parsed to a number: a transform below the root, which a library copies or writes into its input; undeclared keys removed, as Zod and Valibot do",
 			"medianNs": {
 				"valibot": 24300,
 				"zod": 14200,
@@ -2013,7 +2013,7 @@
 			"id": "parse items defaults",
 			"mode": "parse",
 			"name": "items defaults",
-			"measures": "100 items { id, name }, each missing a defaulted boolean the output must hold",
+			"measures": "100 items { id, name }, each missing a defaulted boolean the output must hold; undeclared keys removed, as Zod and Valibot do",
 			"medianNs": {
 				"valibot": 18200,
 				"zod": 5330,
@@ -2200,7 +2200,7 @@
 			"id": "parse moltar morph",
 			"mode": "parse",
 			"name": "moltar morph",
-			"measures": "moltar's object with its nested `num` a numeric string parsed to a number",
+			"measures": "moltar's object with its nested `num` a numeric string parsed to a number; undeclared keys removed, as Zod and Valibot do",
 			"medianNs": {
 				"valibot": 630,
 				"zod": 412,
