@@ -1,135 +1,202 @@
 import { Fragment, type CSSProperties } from "react"
+import { formatRatio } from "../../lib/bench/bench.ts"
 import {
 	categories,
 	claims,
 	draftOf,
 	isPending,
 	oneBuild,
-	type BenchmarkBar,
-	type Category
+	type BarCategory,
+	type Category,
+	type SpreadCategory
 } from "../../lib/claims.ts"
-import { ClaimText, HeadlineNote } from "../mdx/Claim.tsx"
+import { ClaimText } from "../mdx/Claim.tsx"
 import { CheckIcon } from "./icons.tsx"
-
-/** bars drawn per card: ArkType and the nearest rivals; the rest are listed */
-const drawn = 4
-
-/** a bar this many times the next one's length runs off the end */
-const reach = 2.2
 
 /** seconds the longest bar takes to grow, so the shortest finishes first */
 const race = 1.8
 
-type Bar = BenchmarkBar & { value: number }
+/** the spread's log axis, as ratios to ArkType's time */
+const spread = { min: 0.2, max: 300, ticks: [1, 10, 100] }
 
-const Card = ({ category, index }: { category: Category; index: number }) => {
-	const bars = category.chart.bars.filter(
-		(bar): bar is Bar => bar.kind !== "dynamic" && bar.value !== null
-	)
-	const ours = bars.find(bar => bar.kind === "precompiled")!
-	const rivals = bars
-		.filter(bar => bar !== ours)
-		.sort((a, b) => a.value - b.value)
-	const next = rivals[0]
-	const shown = [ours, ...rivals.slice(0, drawn - 1)]
-	const listed = rivals.slice(drawn - 1)
-	const axis = Math.min(
-		Math.max(...shown.map(bar => bar.value)),
-		next.value * reach
-	)
-	const big = category.format(ours.value)
-	// what HomeEffects counts up to, in the shown value's precision
-	const [, digits, suffix] = /^([\d.]+)(.*)$/.exec(big.value)!
-	// truncated, so the margin is never rounded up
-	const margin = Math.floor((1 - ours.value / next.value) * 100)
-	const lane = (value: number) => (Math.min(value, axis) / axis) * 100
+const spreadX = (ratio: number) =>
+	((Math.log10(ratio) - Math.log10(spread.min)) /
+		(Math.log10(spread.max) - Math.log10(spread.min))) *
+	100
+
+/** the big number, counted up to by HomeEffects in its own precision */
+const Big = ({ value, unit }: { value: string; unit: string }) => {
+	const [, digits, suffix] = /^([\d.]+)(.*)$/.exec(value)!
 	return (
-		<article
-			className={`card is-${category.id}`}
-			style={
-				{
-					"--i": index,
-					"--won": `${(race * lane(ours.value)) / 100}s`
-				} as CSSProperties
-			}
-			aria-labelledby={`card-${category.id}`}
-		>
-			<header className="card-head">
-				<span className="card-check" aria-hidden>
-					<CheckIcon />
-				</span>
-				<h3 id={`card-${category.id}`} className="card-label">
-					{category.label}
-				</h3>
-				<span className="card-build">{category.build}</span>
-			</header>
-			<p className="card-big">
-				<span
-					className="card-num"
-					data-to={digits}
-					data-decimals={digits.split(".")[1]?.length ?? 0}
-					data-suffix={suffix}
-				>
-					{big.value}
-				</span>
-				<span className="card-unit">{big.unit}</span>
-			</p>
-			<p className="card-margin">
-				<b>{margin}%</b> {category.margin} {next.name}
-			</p>
-			<ol
-				className="race"
-				aria-label={`${category.chart.unit}, lower is better`}
+		<p className="card-big">
+			<span
+				className="card-num"
+				data-to={digits}
+				data-decimals={digits.split(".")[1]?.length ?? 0}
+				data-suffix={suffix}
 			>
-				{shown.map(bar => {
-					const width = lane(bar.value)
-					return (
-						<li
-							key={bar.name}
-							className={bar === ours ? "lane is-ours" : "lane"}
-							style={{ "--w": width / 100 } as CSSProperties}
-						>
-							<span className="lane-name">
-								{bar === ours ? "ArkType" : bar.name}
-							</span>
-							<span className="lane-track">
-								<span
-									className={
-										bar.value > axis ? "lane-bar is-clipped" : "lane-bar"
-									}
-									style={{ "--d": `${(race * width) / 100}s` } as CSSProperties}
-								/>
-							</span>
-							<span className="lane-val">
-								{category.format(bar.value).value}
-							</span>
-						</li>
-					)
-				})}
-			</ol>
-			<p className="card-rest">
-				{listed
-					.map(bar => `${bar.name} ${category.format(bar.value).value}`)
-					.join(" · ")}
-			</p>
-			<p className="card-claim">
-				<ClaimText claim={category.claim} />
-			</p>
-			<footer className="card-foot">
-				<a
-					className="card-src"
-					href={category.chart.source.href}
-					target="_blank"
-					rel="noreferrer"
-				>
-					{category.chart.source.label}
-				</a>
-			</footer>
-		</article>
+				{value}
+			</span>
+			<span className="card-unit">{unit}</span>
+		</p>
 	)
 }
 
-/** a measured win in each category, every number from lib/claims.ts */
+const Head = ({ category }: { category: Category }) => (
+	<header className="card-head">
+		<span className="card-check" aria-hidden>
+			<CheckIcon />
+		</span>
+		<h3 id={`card-${category.id}`} className="card-label">
+			{category.label}
+		</h3>
+		<span className="card-build">{category.build}</span>
+	</header>
+)
+
+const Foot = ({ category }: { category: Category }) => (
+	<>
+		<p className="card-claim">
+			<ClaimText claim={category.claim} />
+		</p>
+		<footer className="card-foot">
+			<a
+				className="card-src"
+				href={category.source.href}
+				{...(category.source.href.startsWith("#") ?
+					{}
+				:	{ target: "_blank", rel: "noreferrer" })}
+			>
+				{category.source.label}
+			</a>
+		</footer>
+	</>
+)
+
+const BarCard = ({ category }: { category: BarCategory }) => {
+	const [ours, ...rivals] = category.bars.map(bar => ({
+		name: bar.name,
+		value: bar.value!
+	}))
+	const zod = rivals.find(bar => bar.name === "Zod")!
+	const valibot = rivals.find(bar => bar.name === "Valibot")!
+	const axis = Math.max(ours.value, ...rivals.map(bar => bar.value))
+	const width = (value: number) => (value / axis) * 100
+	// truncated, so no margin is ever rounded up
+	const percent = Math.floor((1 - ours.value / valibot.value) * 100)
+	return (
+		<>
+			<Big
+				value={formatRatio(zod.value / ours.value)}
+				unit={`${category.margin} Zod`}
+			/>
+			<p className="card-margin">
+				{category.format(ours.value)} against Zod's {category.format(zod.value)}
+				, and <b>{percent}%</b> {category.margin} Valibot
+			</p>
+			<ol
+				className="race"
+				aria-label={`${category.unit}, lower is better`}
+				style={
+					{ "--won": `${(race * width(ours.value)) / 100}s` } as CSSProperties
+				}
+			>
+				{[ours, ...rivals].map(bar => (
+					<li
+						key={bar.name}
+						className={bar === ours ? "lane is-ours" : "lane"}
+						style={{ "--w": width(bar.value) / 100 } as CSSProperties}
+					>
+						<span className="lane-name">
+							{bar === ours ? "ArkType" : bar.name}
+						</span>
+						<span className="lane-track">
+							<span
+								className="lane-bar"
+								style={
+									{
+										"--d": `${(race * width(bar.value)) / 100}s`
+									} as CSSProperties
+								}
+							/>
+						</span>
+						<span className="lane-val">{category.format(bar.value)}</span>
+					</li>
+				))}
+			</ol>
+			<p className="card-rest">{category.unit}, lower is better</p>
+		</>
+	)
+}
+
+const SpreadCard = ({ category }: { category: SpreadCategory }) => {
+	const [zod] = category.versus
+	return (
+		<>
+			<Big
+				value={`${zod.versus.wins}/${zod.versus.count}`}
+				unit="scenarios faster than Zod"
+			/>
+			<p className="card-margin">
+				by <b>{zod.versus.min}</b> to <b>{zod.versus.max}</b>, scenario by
+				scenario
+			</p>
+			<ol
+				className="race spread"
+				aria-label="Each library's time per call over ArkType's, one dot per scenario, on a log scale"
+				style={{ "--one": spreadX(1) / 100 } as CSSProperties}
+			>
+				{category.versus.map(({ name, versus }, row) => (
+					<li key={name} className="lane">
+						<span className="lane-name">{name}</span>
+						<span className="lane-track">
+							{versus.rows.map((scenario, i) => (
+								<span
+									key={scenario.name}
+									className={`spot is-${scenario.verdict}`}
+									title={`${scenario.name}: ${
+										scenario.speedup >= 1 ?
+											`ArkType ${formatRatio(scenario.speedup)} faster`
+										:	`${name} ${formatRatio(1 / scenario.speedup)} faster`
+									}`}
+									style={
+										{
+											"--x": spreadX(scenario.speedup) / 100,
+											"--k": row * 3 + (i % 6)
+										} as CSSProperties
+									}
+								/>
+							))}
+						</span>
+						<span className="lane-val">
+							{versus.wins}/{versus.count}
+						</span>
+					</li>
+				))}
+				<li className="lane ticks" aria-hidden>
+					<span />
+					<span className="lane-track">
+						{spread.ticks.map(tick => (
+							<span
+								key={tick}
+								className={tick === 1 ? "tick is-one" : "tick"}
+								style={{ "--x": spreadX(tick) / 100 } as CSSProperties}
+							>
+								{tick}×
+							</span>
+						))}
+					</span>
+					<span />
+				</li>
+			</ol>
+			<p className="card-rest">
+				time per call over ArkType's · one dot per scenario · log scale
+			</p>
+		</>
+	)
+}
+
+/** each category against Zod and Valibot, every number from lib/claims.ts */
 export const Board = () => (
 	<section
 		className="board"
@@ -140,7 +207,7 @@ export const Board = () => (
 		<div className="board-head">
 			<div className="sec-label">
 				<b>{"//"}</b>
-				precompiled, measured
+				against Zod and Valibot
 			</div>
 			<h2
 				id="board-title"
@@ -161,9 +228,19 @@ export const Board = () => (
 		</div>
 		<div className="cards">
 			{categories.map((category, i) => (
-				<Card key={category.id} category={category} index={i} />
+				<article
+					key={category.id}
+					className={`card is-${category.id}`}
+					style={{ "--i": i } as CSSProperties}
+					aria-labelledby={`card-${category.id}`}
+				>
+					<Head category={category} />
+					{category.id === "speed" ?
+						<SpreadCard category={category} />
+					:	<BarCard category={category} />}
+					<Foot category={category} />
+				</article>
 			))}
 		</div>
-		<HeadlineNote className="note board-note" />
 	</section>
 )

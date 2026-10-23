@@ -993,15 +993,9 @@
 		max-width: 40ch;
 	}
 	.b-pre {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: 20px 48px;
 		margin-top: 56px;
 		padding-top: 28px;
 		border-top: 1px solid var(--rule-soft);
-		> * {
-			min-width: 0;
-		}
 		h3 {
 			font: 740 1.5rem / 1.15 var(--sans);
 			letter-spacing: -0.02em;
@@ -1009,13 +1003,10 @@
 		p {
 			margin: 10px 0 0;
 			color: var(--ink-2);
-			max-width: 52ch;
+			max-width: 60ch;
 		}
-		.b-pre-lead {
-			margin: 0 0 16px;
-		}
-		.term pre.out {
-			font-size: 12.5px;
+		.facts {
+			max-width: 900px;
 		}
 	}
 	.facts {
@@ -1377,9 +1368,18 @@
 			font: 800 clamp(2.25rem, 1.6rem + 2.4vw, 3.75rem) / 1 var(--sans);
 			letter-spacing: -0.035em;
 		}
-		.ctas {
-			margin-top: 28px;
+		> .wrap > h2 .hl {
+			display: block;
 		}
+		.ctas {
+			margin-top: 20px;
+		}
+	}
+	.closer-agent {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		margin-top: 32px;
 	}
 	.site-foot {
 		margin-top: 96px;
@@ -1510,7 +1510,6 @@
 		.figs {
 			grid-template-columns: auto minmax(0, 1fr);
 		}
-		.b-pre,
 		.agents {
 			grid-template-columns: minmax(0, 1fr);
 		}
@@ -1833,7 +1832,7 @@
 		letter-spacing: -0.045em;
 		font-variant-numeric: tabular-nums;
 		color: var(--gold);
-		text-shadow: 0 0 42px rgb(245 207 143 / 0.28);
+		text-shadow: 0 0 42px color-mix(in oklab, var(--gold) 28%, transparent);
 		white-space: nowrap;
 	}
 	.card-unit {
@@ -1860,7 +1859,7 @@
 	}
 	.lane {
 		display: grid;
-		grid-template-columns: 9rem minmax(0, 1fr) 3.5rem;
+		grid-template-columns: 8.5rem minmax(0, 1fr) 4.5rem;
 		align-items: center;
 		gap: 12px;
 		font: 400 12px / 1.2 var(--mono);
@@ -1908,7 +1907,65 @@
 				color-mix(in oklab, var(--gold) 70%, var(--copper)),
 				var(--gold)
 			);
-			box-shadow: 0 0 14px -2px rgb(245 207 143 / 0.55);
+			box-shadow: 0 0 14px -2px
+				color-mix(in oklab, var(--gold) 55%, transparent);
+		}
+	}
+	/* the speed card: each scenario a dot, at its ratio on a log axis */
+	.spread {
+		gap: 12px;
+		.lane-track {
+			container-type: inline-size;
+			height: 12px;
+			background: linear-gradient(var(--line), var(--line)) center / 100% 1px
+				no-repeat;
+			&::before {
+				content: "";
+				position: absolute;
+				left: calc(var(--one) * 100%);
+				top: -3px;
+				bottom: -3px;
+				width: 1px;
+				background: var(--copper);
+			}
+		}
+		.lane-val {
+			color: var(--ink-2);
+		}
+	}
+	.spot {
+		position: absolute;
+		top: 50%;
+		left: calc(var(--x) * 100%);
+		width: 7px;
+		height: 7px;
+		margin: -3.5px 0 0 -3.5px;
+		border-radius: 50%;
+		background: var(--gold);
+		box-shadow: 0 0 0 1.5px var(--surface);
+		&.is-loss {
+			background: var(--surface);
+			box-shadow: inset 0 0 0 1.5px var(--ink-2);
+		}
+		&.is-tie {
+			background: var(--ink-3);
+		}
+	}
+	.spread .ticks .lane-track {
+		height: 14px;
+		background: none;
+		&::before {
+			display: none;
+		}
+	}
+	.tick {
+		position: absolute;
+		left: calc(var(--x) * 100%);
+		translate: -50% 0;
+		font-size: 10.5px;
+		color: var(--ink-3);
+		&.is-one {
+			color: var(--copper);
 		}
 	}
 	.card-rest {
@@ -1958,10 +2015,78 @@
 		line-height: 1.65;
 	}
 
+	.hero a.one {
+		width: fit-content;
+		text-decoration: underline;
+		text-decoration-color: transparent;
+		text-decoration-thickness: 0.05em;
+		text-underline-offset: 0.12em;
+		transition: text-decoration-color var(--t-ui);
+		&:hover {
+			text-decoration-color: color-mix(in oklab, var(--gold) 45%, transparent);
+		}
+	}
+
+	/* 05: what "optimized for agentic dev" means, each a link to its proof */
+	.proofs {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 16px;
+		margin: 40px 0 0;
+		padding: 0;
+		list-style: none;
+		a {
+			display: grid;
+			align-content: start;
+			gap: 6px;
+			height: 100%;
+			padding: 20px 22px;
+			border-radius: var(--r-lg);
+			border: 1px solid var(--rule-soft);
+			background: color-mix(in oklab, var(--surface) 70%, transparent);
+			text-decoration: none;
+			transition:
+				border-color var(--t-ui),
+				translate var(--t-ui) var(--ease-out);
+			&:hover {
+				border-color: color-mix(in oklab, var(--gold) 38%, transparent);
+				translate: 0 -2px;
+			}
+		}
+		.n {
+			font: 400 12px / 1.4 var(--mono);
+			color: var(--copper);
+			&::after {
+				content: " ↓" / "";
+				color: var(--ink-3);
+			}
+		}
+		b {
+			font: 700 18px / 1.3 var(--sans);
+			letter-spacing: -0.01em;
+		}
+		a > span:last-child {
+			font-size: 14.5px;
+			line-height: 1.5;
+			color: var(--ink-3);
+		}
+		code {
+			font-size: 0.92em;
+			color: var(--gold);
+		}
+	}
+	.sub {
+		margin: 88px 0 0;
+		font: 750 clamp(1.6rem, 1.25rem + 1.1vw, 2.2rem) / 1.12 var(--sans);
+		letter-spacing: -0.025em;
+		max-width: 26ch;
+	}
+
 	/* 01: why now */
 	.sides {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
+		align-items: start;
 		gap: 16px;
 		margin-top: 44px;
 	}
@@ -1979,7 +2104,42 @@
 		p {
 			margin: 12px 0 0;
 			color: var(--ink-2);
-			max-width: 52ch;
+		}
+	}
+	.loop {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 0;
+		margin: 16px 0 0;
+		padding: 0;
+		list-style: none;
+		li {
+			padding: 5px 11px;
+			border-radius: var(--r-pill);
+			border: 1px solid var(--line);
+			font: 400 12.5px / 1.2 var(--mono);
+			color: var(--ink-2);
+		}
+		li + li {
+			position: relative;
+			margin-left: 24px;
+			&::before {
+				content: "→" / "";
+				position: absolute;
+				right: calc(100% + 7px);
+				color: var(--ink-3);
+			}
+		}
+		/* the step the loop waits on, hatched */
+		.is-slow {
+			color: var(--red-text);
+			border-color: color-mix(in oklab, var(--red) 45%, transparent);
+			background: repeating-linear-gradient(
+				-45deg,
+				color-mix(in oklab, var(--red) 12%, transparent) 0 5px,
+				transparent 5px 10px
+			);
 		}
 	}
 	.side-who {
@@ -2010,13 +2170,16 @@
 		.dim {
 			color: var(--ink-3);
 		}
+		.p {
+			color: var(--gold);
+		}
 	}
 	.proof {
 		margin: 16px 0 0;
 		border-radius: var(--r-lg);
 		border: 1px solid var(--line);
 		background: var(--sunk);
-		box-shadow: 0 30px 60px -30px rgb(0 0 0 / 0.8);
+		box-shadow: var(--shadow-card);
 		overflow: hidden;
 	}
 	.proof-body {
@@ -2241,6 +2404,13 @@
 		opacity: 1;
 	}
 }
+/* out from the 1× line to its ratio, inside its track's container */
+@keyframes spot-in {
+	from {
+		opacity: 0;
+		translate: calc((var(--one) - var(--x)) * 100cqw) 0;
+	}
+}
 @keyframes spin {
 	to {
 		rotate: 1turn;
@@ -2272,7 +2442,8 @@
 				scale: 0 1;
 			}
 			.card-check,
-			.lane.is-ours .lane-val {
+			.lane.is-ours .lane-val,
+			.spot {
 				opacity: 0;
 			}
 		}
@@ -2283,7 +2454,11 @@
 			}
 			.card-check {
 				animation: stamp-in 0.42s var(--ease-pop) both;
-				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--won));
+				animation-delay: calc(var(--i) * 0.12s + 0.35s);
+			}
+			.spot {
+				animation: spot-in 0.9s var(--ease-out) both;
+				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--k) * 30ms);
 			}
 			.lane.is-ours .lane-val {
 				animation: rise-fade 0.3s ease-out both;
@@ -2339,7 +2514,8 @@
 		}
 		.sides,
 		.moves,
-		.guide {
+		.guide,
+		.proofs {
 			grid-template-columns: minmax(0, 1fr);
 		}
 		.proof-body li {

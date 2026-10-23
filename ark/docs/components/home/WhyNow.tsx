@@ -31,7 +31,18 @@ const checks: [script: string, what: string][] = [
 const plan =
 	"https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md"
 
-/** why precompiling is possible now: the build step and the proof, both agents' work */
+/** a dev loop, one step a chip; `slow` is the step it waits on */
+const Loop = ({ steps, slow }: { steps: string[]; slow?: string }) => (
+	<ol className="loop" aria-label={steps.join(", then ")}>
+		{steps.map(step => (
+			<li key={step} className={step === slow ? "is-slow" : undefined}>
+				{step}
+			</li>
+		))}
+	</ol>
+)
+
+/** why ahead-of-time compilation is the better trade now: the loop a build step taxed is the agent's */
 export const WhyNow = () => (
 	<section className="block" id="why" aria-labelledby="why-title">
 		<div className="sec-label">
@@ -39,47 +50,64 @@ export const WhyNow = () => (
 			{"// why now"}
 		</div>
 		<h2 id="why-title">
-			Faster and smaller was never the hard part.{" "}
-			<span className="hl">Trusting it was.</span>
+			DX priorities have shifted.{" "}
+			<span className="hl">Agents don't mind a build step.</span>
 		</h2>
 		<p className="deck">
-			Compiling validators ahead of time has always beaten parsing them at
-			runtime. Two costs kept it rare, and agentic development took both.
+			Precompiled validators have always been faster and smaller. Runtime
+			validators won on DX anyway, because a build step taxed the loop you work
+			in. With agents writing most of the code, that trade has flipped, and
+			ArkType is designed for the loop as it runs now.
 		</p>
 		<div className="sides" data-reveal>
 			<div className="side">
-				<span className="side-who">for you</span>
-				<h3>The build step</h3>
+				<span className="side-who">before</span>
+				<h3>Edit, build, wait, reload</h3>
+				<Loop steps={["edit", "build", "wait", "reload"]} slow="wait" />
 				<p>
-					A plugin to set up, errors you'd never seen and a second model of what
-					runs where. Your agent doesn't care: it runs the build, reads the
-					error and applies the fix the error names.
+					Every change to a schema waited on a rebuild, and a compiler error was
+					one more thing to look up. So the validator that parsed at runtime
+					felt better to use, even though it shipped a parser to every user.
 				</p>
-				<pre className="side-term" aria-label="A precompile error">
-					<span className="loc">src/forms.ts:14:19</span>{" "}
+			</div>
+			<div className="side">
+				<span className="side-who">now</span>
+				<h3>Your agent's loop</h3>
+				<Loop steps={["edit", "build", "read the error", "fix"]} />
+				<p>
+					Your agent rebuilds as it goes, so getting updated validators is a
+					step nobody waits on. And a precompile error says exactly what to
+					change, so the agent fixes it from the error alone:
+				</p>
+				<pre
+					className="side-term"
+					aria-label="Output of arktype-precompile --check"
+				>
+					<span className="p">$</span> npx arktype-precompile --check
+					"src/**/*.ts"
+					{"\n"}
+					<span className="loc">src/forms.ts:14:19</span>
+					{"  "}
 					<span className="err">
 						{"type(`string <= ${limit}`) cannot be precompiled"}
 					</span>
-					{"\n"}
+					{"\n  "}
 					<span className="dim">
-						`limit` is known only at runtime. Make it static, or build with
-						runtime: "arktype".
+						`limit` is a parameter of makeField (src/forms.ts:12:22); its value
+						is known only at runtime
 					</span>
+					{"\n  "}Standalone builds construct every Type at build time. Make it
+					static, or build with runtime: "arktype".
 				</pre>
 			</div>
-			<div className="side">
-				<span className="side-who">for us</span>
-				<h3>The proof</h3>
-				<p>
-					Precompiling ArkType means specialized code for every construct it
-					has: unions that discriminate themselves, morphs, scopes, generics,
-					cycles. Then pruning whatever your program never reads. Each of those
-					is a new way to validate differently than ArkType does, which is a lot
-					to check by hand. So agents wrote the checks, and every optimization
-					had to pass them.
-				</p>
-			</div>
 		</div>
+		<h3 className="sub" id="proof">
+			Every optimization has to agree with ArkType.
+		</h3>
+		<p className="deck">
+			Trading a runtime parser for generated code is only worth it if the code
+			does exactly what ArkType would. These are the checks it has to pass.
+		</p>
 		<figure className="proof" data-proof aria-labelledby="proof-title">
 			<figcaption className="term-bar">
 				<span className="dots" aria-hidden>

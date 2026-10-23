@@ -700,9 +700,17 @@ export const versusLibrary = (key: string) => {
 		max: formatRatio(Math.max(...speedups)),
 		lost,
 		/** "items morph and moltar morph" */
-		losses: list(lost.map(scenarioName))
+		losses: list(lost.map(scenarioName)),
+		/** each scenario's ratio of the library's median to ArkType's, so above 1 is ArkType faster */
+		rows: measured.map(s => ({
+			name: scenarioName(s),
+			speedup: s.standaloneVs[key].speedup,
+			verdict: s.standaloneVs[key].verdict
+		}))
 	}
 }
+
+export type LibraryVersus = ReturnType<typeof versusLibrary>
 
 /** the footnote, as paragraphs of plain text: the method, what differs between arms, then startup */
 export const benchNotes = (): string[] => [

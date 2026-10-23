@@ -113,9 +113,8 @@ const playWhenSeen = (
 }
 
 /**
- * A number counting up to its prerendered value after `delay` ms, for as long
- * as its bar grows. It reads zero from the start, so it never shows its final
- * value and then drops.
+ * A number counting up to its prerendered value after `delay` ms. It reads
+ * zero from the start, so it never shows its final value and then drops.
  */
 const countUp = (el: HTMLElement, delay: number, seconds: number) => {
 	const to = Number(el.dataset.to)
@@ -143,10 +142,10 @@ const wireBoard = () => {
 	return playWhenSeen(board, 0.3, () => {
 		for (const card of board!.querySelectorAll<HTMLElement>(".card")) {
 			const num = card.querySelector<HTMLElement>(".card-num[data-to]")
-			const style = getComputedStyle(card)
 			// as the card's bars start: home.css's race delay
-			const delay = Number(style.getPropertyValue("--i")) * 120 + 200
-			if (num) countUp(num, delay, parseFloat(style.getPropertyValue("--won")))
+			const delay =
+				Number(getComputedStyle(card).getPropertyValue("--i")) * 120 + 200
+			if (num) countUp(num, delay, 0.9)
 		}
 	})
 }

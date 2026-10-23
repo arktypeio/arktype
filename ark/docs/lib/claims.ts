@@ -7,7 +7,7 @@
  * pending, so nothing unverified reads as a claim.
  */
 
-import { benchFacts, versusLibrary } from "./bench/bench.ts"
+import { benchFacts, versusLibrary, type LibraryVersus } from "./bench/bench.ts"
 
 export type Pending<t> = { pending: t }
 
@@ -156,13 +156,20 @@ const zodCompiledLosses =
 	:	`. z.compile was faster on ${zodCompiled.losses}`
 const bench = benchFacts()
 
+const valueOf = (chart: BenchmarkChart, name: string) =>
+	chart.bars.find(bar => bar.name === name)!.value!
+
+const kB = (bytes: number) => `${(bytes / 1000).toFixed(2)} kB`
+
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
-	// precompiled ArkType: moltar's parseSafe, 184 instructions vs Typia 213;
-	// by wall clock (H1) faster than Typia in 29 of 30 passes (0.84x) and than
-	// every other close rival in at least 28. valibot.dev's login form as
-	// written, 1313 vs Valibot 1547 B gz
-	headline: "Faster than Typia. Smaller than Valibot.",
+	// a draft from David that names no competitor, pending the wording a
+	// verification of each word settles; until then it renders marked as
+	// pending. It was "Faster than Typia. Smaller than Valibot.": moltar's
+	// parseSafe, 184 instructions vs Typia 213, by wall clock (H1) faster than
+	// Typia in 29 of 30 passes (0.84x) and than every other close rival in at
+	// least 28; valibot.dev's login form as written, 1313 vs Valibot 1547 B gz
+	headline: { pending: "TypeScript's smallest, fastest validator. Period." },
 	headlineDetail:
 		"Precompiled from the same definitions: fastest on moltar's parseSafe benchmark in our runs, and every error with its message on valibot.dev's login form in 1.31 kB.",
 	headlineNote:
@@ -221,6 +228,11 @@ export const claims = {
 	// say one build is all three; once they match, the board stamps "one
 	// build" and this can say so too
 	boardTitle: "Ships less. Starts lighter. Runs faster.",
+	// the board's: sizeChart against Zod and Valibot alone
+	sizeVersus: `On valibot.dev's login form as written, with its messages, ArkType precompiled for size is ${kB(valueOf(sizeChart, "ArkType (precompiled)"))} gzipped, against Valibot's ${kB(valueOf(sizeChart, "Valibot"))}, Zod Mini's ${kB(valueOf(sizeChart, "Zod Mini"))} and Zod's ${kB(valueOf(sizeChart, "Zod"))}.`,
+	// startupChart against Zod and Valibot alone: fewer than each of them in
+	// 20 of 20 rounds on both Nodes, on the login app and on the form
+	startupVersus: `On the homepage's login app, precompiled ArkType takes ${valueOf(startupChart, "ArkType (precompiled)")}M instructions from import to its first validation, beyond loading an empty module, against Valibot's ${valueOf(startupChart, "Valibot")}M, Zod Mini's ${valueOf(startupChart, "Zod Mini")}M and Zod's ${valueOf(startupChart, "Zod")}M: fewer than each in all 20 paired runs on Node 24 and 25.`,
 	// startupChart; the form is 1.46M vs Valibot's 2.36M, 20 of 20
 	startupLogin:
 		"On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than ajv, Valibot, Typia, Zod Mini, Zod, compiled Zod or TypeBox, in at least 19 of 20 paired runs on Node 24 and 25.",
@@ -231,53 +243,78 @@ export const claims = {
 
 export type ClaimId = keyof typeof claims
 
-export type Category = {
-	id: "size" | "startup" | "speed"
+/** the libraries the board compares against: with ArkType, the two that wrote Standard Schema */
+const isRival = (bar: BenchmarkBar) => /^(Valibot|Zod)\b/.test(bar.name)
+
+type CategoryBase = {
 	/** what it measures */
 	label: string
-	chart: BenchmarkChart
-	/** the options ArkType's bar was built with */
+	/** the options ArkType's numbers were built with */
 	build: string
-	/** a bar's value, split from its unit so the number can be set large */
-	format: (value: number) => { value: string; unit: string }
-	/** "smaller than", before the next bar's name */
-	margin: string
 	claim: Claim<string>
+	source: BenchmarkChart["source"]
 }
 
-const kB = (bytes: number) => ({
-	value: (bytes / 1000).toFixed(2),
-	unit: "kB gzipped"
-})
+/** a category measured once per library, drawn as bars */
+export type BarCategory = CategoryBase & {
+	id: "size" | "startup"
+	/** ArkType's bar, then each rival's */
+	bars: BenchmarkBar[]
+	unit: string
+	/** a bar's value, without its unit */
+	format: (value: number) => string
+	/** what ArkType's multiple of Zod is: "smaller than" */
+	margin: string
+}
 
-/** the homepage's board: a measured win in each category, each from its own benchmark */
+/** a category measured per scenario, drawn as each scenario's ratio */
+export type SpreadCategory = CategoryBase & {
+	id: "speed"
+	/** each rival on every scenario of the homepage's benchmark */
+	versus: { name: string; versus: LibraryVersus }[]
+}
+
+export type Category = BarCategory | SpreadCategory
+
+const onBoard = (chart: BenchmarkChart) =>
+	chart.bars.filter(bar => bar.kind === "precompiled" || isRival(bar))
+
+/** the homepage's board: each category against Zod and Valibot, every number from a chart above */
 export const categories: Category[] = [
 	{
 		id: "size",
 		label: "bundle size",
-		chart: sizeChart,
 		build: '"smallest" preset',
+		bars: onBoard(sizeChart),
+		unit: "kB gzipped",
 		format: kB,
 		margin: "smaller than",
-		claim: claims.loginSize
+		claim: claims.sizeVersus,
+		source: sizeChart.source
 	},
 	{
 		id: "startup",
 		label: "cold start",
-		chart: startupChart,
 		build: "default build",
-		format: n => ({ value: `${n}M`, unit: "instructions" }),
-		margin: "fewer instructions than",
-		claim: claims.startupLogin
+		bars: onBoard(startupChart),
+		unit: "million instructions",
+		format: n => `${n}M`,
+		margin: "less startup work than",
+		claim: claims.startupVersus,
+		source: startupChart.source
 	},
 	{
 		id: "speed",
 		label: "validation",
-		chart: speedChart,
 		build: "default build",
-		format: n => ({ value: String(n), unit: "instructions per call" }),
-		margin: "fewer instructions than",
-		claim: claims.parseSafe
+		versus: [
+			{ name: "Zod", versus: zod },
+			{ name: "Zod (compiled)", versus: zodCompiled },
+			{ name: "Zod Mini", versus: versusLibrary("zodMini") },
+			{ name: "Valibot", versus: versusLibrary("valibot") }
+		],
+		claim: claims.zodSpeed,
+		source: { label: "the benchmark below", href: "#run" }
 	}
 ]
 
