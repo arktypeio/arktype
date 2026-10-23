@@ -342,10 +342,16 @@ export const requiredPropOf = (
 }
 
 // a basis or primitive constraint's error context includes its description,
-// so its writer runs on construction whether or not the node is compiled
+// so a configured writer runs on construction whether or not the node is
+// compiled, while a built-in one, which reads only the node, runs when read
 export const resolveDescription = <node extends BaseNode>(node: node): node => {
-	if (node.isBasis() || includes(prestructuralKinds, node.kind))
-		void node.description
+	if (node.isBasis() || includes(prestructuralKinds, node.kind)) {
+		if (
+			node.$.resolvedConfig[node.kind].description !==
+			$ark.defaultConfig[node.kind].description
+		)
+			void node.description
+	}
 	// an alias's expression changes as it resolves, so write it now
 	else if (node.includesAlias) void node.expression
 	return node
