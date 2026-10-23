@@ -166,11 +166,12 @@ export const unseenProblemOf = (
 			return writeUnseenMessage(`it built ${entry ?? "an entry"} as an entry`)
 	}
 	for (const id of imports.modules) {
-		if (id === undefined || !(id in scanned.modules)) continue
+		// e.g. esbuild's stdin, which the bundler reads as the scan did
+		if (id === undefined || !scanned.modules[id]?.transformed) continue
 		if (loaded.get(id) !== scanned.modules[id].source) {
 			return writeUnseenMessage(
 				loaded.has(id) ?
-					`${id} changed while it built`
+					`it built ${id} from other code than it read`
 				:	`another plugin loaded ${id}`
 			)
 		}

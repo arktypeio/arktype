@@ -5,6 +5,13 @@ import { linkBundle } from "@ark/aot/internal/link.ts"
 import { scanProgram, writeUnseenMessage } from "@ark/aot/internal/scan.ts"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { build, context, type BuildOptions, type Plugin } from "esbuild"
+import {
+	build as viteBuild,
+	defaultClientConditions,
+	type InlineConfig,
+	type Plugin as VitePlugin,
+	type Rolldown
+} from "vite"
 import { spawnSync } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join, posix } from "node:path"
@@ -437,6 +444,13 @@ console.log(out instanceof type.errors ? out.summary : out)
 			)
 		})
 
+		it("prunes a build other than for production with prune: true", async () => {
+			const development = { conditions: ["ark-ts"] }
+			attest(
+				(await bundle({ prune: true }, development)).includes("~standard")
+			).equals(false)
+		})
+
 		it("keeps a bundle whole where a plugin after it may load a module", async () => {
 			const plugins = [{ name: "after", setup: () => {} }]
 			attest(await bundle({}, { plugins })).equals(
@@ -659,6 +673,121 @@ import { create as $ark_create } from "~arktype/create"
 export const B = /* @__PURE__ */ $ark_create($ark_bAllows)
 export const C = /* @__PURE__ */ $ark_create($ark_bAllows)
 `)
+		})
+	})
+
+	describe("vite", () => {
+		const conditions = ["ark-ts"]
+
+		const root = writeFixture(
+			{
+				"types.ts": types,
+				"main.ts": `import { type } from "arktype"
+import { User } from "./types.ts"
+
+const out = User({ name: 5 })
+console.log(out instanceof type.errors ? out.summary : out)
+`,
+				"index.html": `<!doctype html>
+<script type="module" src="/main.ts"></script>
+`
+			},
+			fromHere("temp", "prunedVite")
+		)
+
+		// Vite reads its mode from NODE_ENV
+		const bundle = async (
+			opts: PrecompileUnpluginOptions = {},
+			{
+				plugins = [],
+				lib = true
+			}: { plugins?: VitePlugin[]; lib?: boolean } = {}
+		) => {
+			const { NODE_ENV } = process.env
+			process.env.NODE_ENV = "production"
+			try {
+				const config: InlineConfig = {
+					root,
+					configFile: false,
+					logLevel: "silent",
+					plugins: [...plugins, precompile.vite({ conditions, ...opts })],
+					resolve: { conditions: [...conditions, ...defaultClientConditions] },
+					build: {
+						write: false,
+						minify: true,
+						...(lib && { lib: { entry: "main.ts", formats: ["es"] } })
+					}
+				}
+				const result = (await viteBuild(config)) as
+					| Rolldown.RolldownOutput
+					| Rolldown.RolldownOutput[]
+				const [{ output }] = Array.isArray(result) ? result : [result]
+				return output.find(chunk => chunk.type === "chunk")!.code
+			} finally {
+				if (NODE_ENV === undefined) delete process.env.NODE_ENV
+				else process.env.NODE_ENV = NODE_ENV
+			}
+		}
+
+		const run = (js: string) =>
+			spawnSync(process.execPath, ["--input-type=module"], {
+				input: js,
+				encoding: "utf8"
+			}).stdout
+
+		it("leaves out of a production build what no read needs", async () => {
+			const pruned = await bundle()
+			const whole = await bundle({ prune: false })
+			attest(run(pruned)).snap("name must be a string\n")
+			attest(run(whole)).equals(run(pruned))
+			attest(whole.includes("~standard")).equals(true)
+			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("reads a page's module scripts", async () => {
+			const pruned = await bundle({}, { lib: false })
+			attest(pruned.includes("~standard")).equals(false)
+			attest(
+				(await bundle({ prune: false }, { lib: false })).includes("~standard")
+			).equals(true)
+		})
+
+		it("keeps a page with an inline module script whole", async () => {
+			const page = join(root, "index.html")
+			const html = readFileSync(page, "utf8")
+			writeFileSync(
+				page,
+				`${html}<script type="module">console.log(1)</script>\n`
+			)
+			try {
+				attest(await bundle({}, { lib: false })).equals(
+					await bundle({ prune: false }, { lib: false })
+				)
+			} finally {
+				writeFileSync(page, html)
+			}
+		})
+
+		it("fails a build holding a module another plugin transformed", async () => {
+			const asserting: VitePlugin = {
+				name: "asserting",
+				enforce: "pre",
+				transform: (code, id) =>
+					id.endsWith("/main.ts") ?
+						code.replace("User({ name: 5 })", "User.assert({ name: 5 })")
+					:	undefined
+			}
+			const error = await bundle({}, { plugins: [asserting] }).then(
+				() => undefined,
+				(e: Error) => e
+			)
+			attest(
+				error?.message.endsWith(
+					writeUnseenMessage(
+						`it built ${join(root, "main.ts")} from other code than it read`
+					)
+				)
+			).equals(true)
 		})
 	})
 })

@@ -126,8 +126,12 @@ export const precompile: UnpluginInstance<
 			:	productionHost
 	}
 	let isStandalone = opts?.runtime !== "arktype"
-	// a production bundle leaves out what no read of it needs
-	const prunes = () => isStandalone && !opts?.shadow && opts?.prune !== false
+	// a production bundle leaves out what no read of it needs, as does any
+	// with prune: true
+	const prunesIn = (production: boolean) =>
+		isStandalone &&
+		!opts?.shadow &&
+		(opts?.prune === true || (production && opts?.prune !== false))
 	let variant = resolvedVariantOf(opts)
 	let packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
 	// arktype left to Node loads as itself, not as the runtime validators use
@@ -300,6 +304,11 @@ export const precompile: UnpluginInstance<
 		}
 		return transformed
 	}
+	// each Rollup, Rolldown or Vite build's scan, by its Vite environment
+	const scansByBuild = new WeakMap<object, RollupScan>()
+	const rollupBuild = {}
+	const buildOf = (context: unknown) =>
+		(context as { environment?: object }).environment ?? rollupBuild
 	let isServing = false
 	// a Vite app's environments share the declarations of the app's build
 	const declarationsByApp = new WeakMap<object, Declarations>()
@@ -320,6 +329,31 @@ export const precompile: UnpluginInstance<
 		if (key) declarationsByApp.set(key, declarations)
 		return declarations
 	}
+	// reads the bundle a production build's entries reach, before it loads one
+	async function rollupBuildStart(
+		this: RollupContext,
+		options: { input: string[] | Record<string, string> }
+	) {
+		reset()
+		const build = buildOf(this)
+		scansByBuild.delete(build)
+		if (isServing || !prunesIn(!!environment?.production)) return
+		const scan = await rollupScanOf(
+			this,
+			`${++scans}`,
+			Object.values(options.input),
+			id =>
+				transformedFilter.include.test(id) &&
+				!transformedFilter.exclude.test(id),
+			async scanned => (await request("scan", scanned)) as ScannedUsage
+		).catch(() => undefined)
+		if (scan) scansByBuild.set(build, scan)
+	}
+	// a module Rollup's watch mode kept was written for an earlier bundle
+	const shouldTransformCachedModule = ({ id }: { id: string }) =>
+		prunesIn(!!environment?.production) &&
+		transformedFilter.include.test(id) &&
+		!transformedFilter.exclude.test(id)
 	return {
 		name: "arktype",
 		enforce: "pre",
@@ -388,7 +422,14 @@ export const precompile: UnpluginInstance<
 										| { inputSourceMap?: { mappings: string } }
 										| undefined
 								)?.inputSourceMap)
-						const transformed = await transform(code, id, map?.mappings)
+						const scan = scansByBuild.get(buildOf(this))
+						scan?.loaded.set(id, code)
+						const transformed = await transform(
+							code,
+							id,
+							map?.mappings,
+							scan?.scanned.key
+						)
 						if (!transformed) return
 						for (const dependency of transformed.dependencies)
 							if (dependency !== file) this.addWatchFile(dependency)
@@ -406,6 +447,8 @@ export const precompile: UnpluginInstance<
 					}
 				},
 		vite: {
+			buildStart: rollupBuildStart,
+			shouldTransformCachedModule,
 			buildApp: async builder => {
 				app = builder
 			},
@@ -468,7 +511,17 @@ export const precompile: UnpluginInstance<
 		// loading the precompiler overlaps the bundler's own startup
 		buildStart: reset,
 		// a build that won't rerun releases its worker
-		buildEnd() {
+		buildEnd(error?: Error) {
+			const scan = scansByBuild.get(buildOf(this))
+			if (scan?.verifies && !error) {
+				const problem = unseenProblemOf(
+					scan.scanned,
+					rollupImportsOf(this as never),
+					scan.loaded
+				)
+				// fails before the bundle is written
+				if (problem) throwBuildError(problem)
+			}
 			const native = this.getNativeBuildContext?.()
 			const isWatching =
 				native && "compiler" in native ?
@@ -506,8 +559,12 @@ export const precompile: UnpluginInstance<
 			keepCompiler(compiler)
 			setEnvironment(environmentOf(compiler))
 		},
-		rollup: { options: checkInputExternal },
-		rolldown: { options: checkInputExternal },
+		rollup: {
+			options: checkInputExternal,
+			buildStart: rollupBuildStart,
+			shouldTransformCachedModule
+		},
+		rolldown: { options: checkInputExternal, buildStart: rollupBuildStart },
 		esbuild: {
 			// read before config, so the handler leaves a standalone build's
 			// arktype to resolve natively, outside the plugin's esbuild namespace
@@ -525,8 +582,7 @@ export const precompile: UnpluginInstance<
 				// a plugin after this one may load a module it leaves, unlike it was read
 				const program =
 					(
-						production &&
-						prunes() &&
+						prunesIn(production) &&
 						plugins[plugins.length - 1]?.name === "arktype"
 					) ?
 						`${++scans}`
@@ -700,6 +756,98 @@ export const precompile: UnpluginInstance<
 const esbuildResolution = "arktype"
 
 let scans = 0
+
+interface RollupScan {
+	scanned: ScannedProgram
+	// whether it left out what a read it didn't see could need
+	verifies: boolean
+	// each module as this plugin transformed it
+	loaded: Map<string, string>
+}
+
+// what the plugin reads of a Rollup, Rolldown or Vite build
+interface RollupContext {
+	resolve: (
+		source: string,
+		importer?: string,
+		options?: { isEntry?: boolean }
+	) => Promise<{ id: string; external?: boolean | string } | null>
+	getModuleIds: () => IterableIterator<string>
+	getModuleInfo: (id: string) => {
+		isEntry: boolean
+		importedIds: readonly string[]
+		dynamicallyImportedIds: readonly string[]
+	} | null
+}
+
+const rollupScanOf = async (
+	context: RollupContext,
+	program: string,
+	inputs: string[],
+	isTransformed: (id: string) => boolean,
+	scan: (program: ScannedProgram) => Promise<ScannedUsage>
+): Promise<RollupScan | undefined> => {
+	const entries: ScanEntry[] = []
+	for (const input of inputs) {
+		const resolved = await context.resolve(input, undefined, { isEntry: true })
+		if (!resolved || resolved.external || !isAbsolute(resolved.id)) return
+		if (!htmlId.test(resolved.id)) {
+			entries.push({ id: resolved.id })
+			continue
+		}
+		// a page's module scripts, as Vite builds them
+		const source = scriptsOf(readFileSync(resolved.id, "utf8"))
+		if (source === undefined) return
+		entries.push({ id: resolved.id, source })
+	}
+	const scanned = await scanProgram(program, entries, {
+		resolve: async (specifier, importer) => {
+			const resolved = await context.resolve(specifier, importer)
+			return (
+				!resolved ? undefined
+				: resolved.external ? null
+				: isAbsolute(resolved.id) ? resolved.id
+				: undefined
+			)
+		},
+		readFile: id => readFileSync(id, "utf8"),
+		isTransformed
+	})
+	if (!scanned) return
+	const usage = await scan(scanned)
+	return usage.dropped.length || usage.linked ?
+			{ scanned, verifies: !!usage.dropped.length, loaded: new Map() }
+		:	undefined
+}
+
+const htmlId = /\.html$/
+
+// imports of a page's module scripts, or undefined where one is inline,
+// whose module the build writes from the page
+const scriptsOf = (html: string): string | undefined => {
+	const imports: string[] = []
+	for (const [tag] of html.matchAll(/<script\b[^>]*>/gi)) {
+		if (!/\btype\s*=\s*["']?module\b/i.test(tag)) continue
+		const src = /\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(tag)
+		if (!src) return
+		imports.push(`import ${JSON.stringify(src[1] ?? src[2] ?? src[3])}`)
+	}
+	return imports.join("\n")
+}
+
+// the importers a Rollup, Rolldown or Vite build bundled, by module
+const rollupImportsOf = (context: RollupContext): Imports => {
+	const imports: Imports = { entries: [], modules: [], edges: [] }
+	for (const id of context.getModuleIds()) {
+		const info = context.getModuleInfo(id)
+		if (!info) continue
+		imports.modules.push(id)
+		if (info.isEntry) imports.entries.push(id)
+		for (const target of [...info.importedIds, ...info.dynamicallyImportedIds])
+			imports.edges.push([id, target])
+	}
+	return imports
+}
 
 // what the plugin reads of an esbuild build
 interface EsbuildBuild {

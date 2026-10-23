@@ -157,7 +157,9 @@ A [production](#production-builds) bundle reads every module its entries reach b
 
 The build leaves a member wherever it can't prove no code reads it: when an entry exports a validator or a module holding one, a validator is passed to a function, stored, or read by a member it doesn't know, a module is imported dynamically, through `require` or `import.meta`, or holds a Scope, and when the bundle holds a module it can't read, like a Vue component. A member set true is always kept.
 
-It runs with esbuild, as the last plugin, so none loads a module after it reads it. Once esbuild has bundled, the build checks that it read each module and import the bundle holds, and fails without its output where another plugin loaded or resolved one otherwise, as a read it didn't see may need what it left out. `prune: false` builds every validator whole.
+Vite, Rollup, Rolldown and esbuild bundles prune, esbuild only where this plugin is the last, so no plugin loads a module after it reads it. `prune: true` also prunes a Rollup, Rolldown or esbuild bundle that isn't for production, which the build can't tell. webpack, Rspack, Turbopack, the Node and Bun drivers and `arktype-precompile` build every validator whole.
+
+Once the bundle is built, the build checks that it read each entry, module and import the bundle holds as the bundle holds it, and fails without its output where another plugin loaded, rewrote or resolved one otherwise, as a read it didn't see may need what it left out. It relies on a plugin that transforms a module after this one keeping what the module reads, as a TypeScript or JSX transform does. `prune: false` builds every validator whole.
 
 ### allowUnsafe
 
