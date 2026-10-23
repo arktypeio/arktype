@@ -235,6 +235,29 @@ counted score in at least half of the category's suites.
 scores from it and throws if the headline claims a category ArkType doesn't
 win. Nothing is rerun to change a result.
 
+### The first average, at 642b4517e
+
+`ark/docs/lib/bench/leaderboard.json`; the score is the geometric mean of
+ratios to each row's best, so 1 is best everywhere.
+
+| category | 1                    | 2             | 3                   | 4              | 5                         |
+| -------- | -------------------- | ------------- | ------------------- | -------------- | ------------------------- |
+| speed    | @ts-runtypes 1.101\* | ata 1.141\*   | ArkType 1.211       | paseri 1.302\* | ts-runtime-checks 1.330\* |
+| startup  | ArkType 1.083        | Valibot 1.256 | ajv 1.385           | Typia 1.402    | Zod Mini 3.395            |
+| size     | ajv 1.160            | Valibot 1.588 | Superstruct 1.736\* | Typia 1.812    | ArkType 2.069             |
+
+\* ranked on one of the category's two suites. ArkType has the best score in
+each speed suite on its own (moltar's 1.067, the homepage's 1.375), but
+@ts-runtypes and ata are only in moltar's, so the rule averages ArkType's
+homepage score in and not theirs. So only startup backs a superlative.
+
+One deviation: the homepage's cold-start rows weren't remeasured in
+production. The 1-minute load stayed above 15 for 40 minutes; a run at 16-22
+put every arm at 4x its quiet time and tied all of them. The quiet,
+development-built rows stand, which only handicap ArkType (its build there
+isn't pruned). With the loaded production rows instead, startup's order is the
+same: ArkType 1.098, Valibot 1.289.
+
 ## The login form across validators
 
 `forms/` writes valibot.dev's login form in each TypeScript-schema validator

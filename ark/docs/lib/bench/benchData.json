@@ -7,7 +7,7 @@
 		"runtime": "Node 25.2.1",
 		"passes": 20,
 		"method": "BENCH_PASSES=20 BENCH_ROUNDS=3 BENCH_CORE=13,15 pnpm benchValidate on ark/repo/bench, on a shared machine, each run started below a 1-minute load of 4 (1.4-2.5 at the runs' starts and ends), benchmark processes pinned to cores 13 and 15. Each pass forks a fresh process per library, driven over IPC; one arm is timed at a time, in an order that rotates by pass and round, and its sample is the median of 3 rounds. Each arm warms 1 s / 10k calls, then a round is the mean ns per call over a batch of >= 0.5 ms, on fresh unfrozen copies of the input. Every arm's output is checked to agree with arktype's before timing. Medians are over passes; p is a two-sided sign test paired by pass; verdict is win/loss at p < .05, else tie. replication tallies the same comparison's verdict in 1 further quiet run (10 passes) at the same commit.",
-		"size": "esbuild-minified bundle of each app at a028b3749, bytes and gzip; Valibot and Zod Mini with the functions matching a precompiled validator's entry points (bench/bundle.ts); standaloneSmallest is the \"smallest\" preset in a production build",
+		"size": "esbuild-minified production bundle (the \"production\" condition, which prunes a precompiled validator by usage) of each app at 642b4517e, bytes and gzip; Valibot and Zod Mini with the functions matching a precompiled validator's entry points (bench/bundle.ts); standaloneSmallest is the \"smallest\" preset",
 		"startup": {
 			"commit": "89510709d",
 			"date": "2026-10-23",
@@ -5802,16 +5802,16 @@
 				"gzip": 41859
 			},
 			"arktype": {
-				"min": 258400,
-				"gzip": 82321
+				"min": 258052,
+				"gzip": 82198
 			},
 			"standalone": {
-				"min": 3807,
-				"gzip": 1829
+				"min": 3581,
+				"gzip": 1704
 			},
 			"standaloneFirst": {
-				"min": 3855,
-				"gzip": 1847
+				"min": 3629,
+				"gzip": 1719
 			},
 			"standaloneSmallest": {
 				"min": 2423,
@@ -5848,20 +5848,20 @@
 				"gzip": 41880
 			},
 			"arktype": {
-				"min": 258515,
-				"gzip": 82352
+				"min": 258167,
+				"gzip": 82241
 			},
 			"standalone": {
-				"min": 4403,
-				"gzip": 1901
+				"min": 4177,
+				"gzip": 1772
 			},
 			"standaloneFirst": {
-				"min": 4451,
-				"gzip": 1916
+				"min": 4225,
+				"gzip": 1787
 			},
 			"standaloneSmallest": {
-				"min": 2503,
-				"gzip": 1258
+				"min": 2495,
+				"gzip": 1254
 			}
 		},
 		"shop": {
@@ -5894,20 +5894,20 @@
 				"gzip": 42902
 			},
 			"arktype": {
-				"min": 260298,
-				"gzip": 83222
+				"min": 259949,
+				"gzip": 83111
 			},
 			"standalone": {
-				"min": 29346,
-				"gzip": 8983
+				"min": 27773,
+				"gzip": 8148
 			},
 			"standaloneFirst": {
-				"min": 29396,
-				"gzip": 8999
+				"min": 27823,
+				"gzip": 8161
 			},
 			"standaloneSmallest": {
-				"min": 8041,
-				"gzip": 3581
+				"min": 7916,
+				"gzip": 3522
 			}
 		},
 		"saas": {
@@ -5916,20 +5916,20 @@
 				"gzip": 5173
 			},
 			"arktype": {
-				"min": 263761,
-				"gzip": 84350
+				"min": 263406,
+				"gzip": 84256
 			},
 			"standalone": {
-				"min": 66528,
-				"gzip": 15420
+				"min": 63290,
+				"gzip": 14355
 			},
 			"standaloneFirst": {
-				"min": 66578,
-				"gzip": 15410
+				"min": 63340,
+				"gzip": 14344
 			},
 			"standaloneSmallest": {
-				"min": 14295,
-				"gzip": 5280
+				"min": 13411,
+				"gzip": 5090
 			}
 		}
 	},
