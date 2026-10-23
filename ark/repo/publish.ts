@@ -1,26 +1,12 @@
-import { getShellOutput, readFile, shell, writeFile } from "@ark/fs"
+import { getShellOutput, shell } from "@ark/fs"
 import { throwError } from "@ark/util"
 import { preview } from "../docs/lib/bench/preview.ts"
-import {
-	packagesByScope,
-	publishedVersionsOf,
-	publishOrder,
-	type ArkPackage
-} from "./shared.ts"
+import { packagesByScope, publishedVersionsOf, publishOrder } from "./shared.ts"
 
 // publishes each version npm doesn't have yet, then tags and releases each one
 // npm has, so a rerun after a failure finishes what the failed run started.
 // --dry-run packs each publish and prints the rest without changing anything.
 const dryRun = process.argv.includes("--dry-run")
-
-// the primary name (arktype, arkregex, arksets or @ark/*), then its aliases
-const namesOf = (pkg: ArkPackage) => {
-	const names = [pkg.name]
-	if (pkg.scope === "type") names.push("@ark/type")
-	if (pkg.scope === "regex") names.push("@ark/regex")
-	if (pkg.scope === "sets") names.push("@ark/sets")
-	return names
-}
 
 const isPrerelease = (version: string) => version.includes("-")
 
@@ -28,36 +14,23 @@ const isPrerelease = (version: string) => version.includes("-")
 const distTagOf = (version: string) =>
 	isPrerelease(version) ? "next" : "latest"
 
+// each package publishes under exactly one name, since every alias is another
+// identity CI can publish and a way to install two copies of one runtime
 const releases = await Promise.all(
-	publishOrder.flatMap(pkg =>
-		namesOf(pkg).map(async name => ({
-			pkg,
-			name,
-			tag: `${name}@${pkg.version}`,
-			isOnNpm: (await publishedVersionsOf(name)).includes(pkg.version)
-		}))
-	)
+	publishOrder.map(async pkg => ({
+		pkg,
+		tag: `${pkg.name}@${pkg.version}`,
+		isOnNpm: (await publishedVersionsOf(pkg.name)).includes(pkg.version)
+	}))
 )
 
 type Release = (typeof releases)[number]
 
 const publish = (release: Release) => {
-	const { pkg, name } = release
-	const packageJson = readFile(pkg.packageJsonPath)
-	if (name !== pkg.name) {
-		writeFile(
-			pkg.packageJsonPath,
-			packageJson.replace(`"name": "${pkg.name}"`, `"name": "${name}"`)
-		)
-	}
-	try {
-		shell(
-			`pnpm publish --no-git-checks --tag ${distTagOf(pkg.version)}${dryRun ? " --dry-run" : ""}`,
-			{ cwd: pkg.path }
-		)
-	} finally {
-		writeFile(pkg.packageJsonPath, packageJson)
-	}
+	shell(
+		`pnpm publish --no-git-checks --tag ${distTagOf(release.pkg.version)}${dryRun ? " --dry-run" : ""}`,
+		{ cwd: release.pkg.path }
+	)
 	if (!dryRun) release.isOnNpm = true
 }
 
@@ -98,9 +71,9 @@ const toTag = onNpm.filter(({ tag }) => !existingTags.has(tag))
 const toRelease = onNpm.filter(({ tag }) => !existingReleases.has(tag))
 
 // GitHub's latest release is arktype's
-const releaseFlagsOf = ({ pkg, name }: Release) =>
+const releaseFlagsOf = ({ pkg }: Release) =>
 	isPrerelease(pkg.version) ? "--prerelease"
-	: name === packagesByScope.type.name ? "--latest"
+	: pkg.scope === "type" ? "--latest"
 	: "--latest=false"
 
 const deploysSite = !isPrerelease(packagesByScope.type.version)
