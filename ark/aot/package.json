@@ -16,6 +16,31 @@
 	"type": "module",
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"eslint": [
+				"./out/eslint.d.ts"
+			],
+			"unplugin": [
+				"./out/unplugin.d.ts"
+			],
+			"bun": [
+				"./out/bun.d.ts"
+			],
+			"node": [
+				"./out/node.d.ts"
+			],
+			"shadow": [
+				"./out/shadow.d.ts"
+			],
+			"turbopack": [
+				"./out/turbopack.d.ts"
+			],
+			"internal/*": [
+				"./out/*"
+			]
+		}
+	},
 	"exports": {
 		".": {
 			"ark-ts": "./index.ts",

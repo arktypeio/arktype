@@ -22,6 +22,8 @@ const tasks: Record<string, string> = {
 			`pnpm --package=typescript@${version} dlx -c "tsc --version && tsc --project ark/repo/tsCompat"`
 		])
 	),
+	// node10 resolution, removed in TS 7, reads typesVersions instead of exports
+	"consumer-node10@5.9.3": `pnpm --package=typescript@5.9.3 dlx -c "tsc --project ark/repo/tsCompat/tsconfig.node10.json"`,
 	"repo@6.0.3": `${ts6Tsc} && ${ts6Tsc} --project ark/repo/tsCompat/tsconfig.attest.json`,
 	// type snapshots and snap population tests' instantiation counts are
 	// recorded with the workspace's TS 7, whose type strings and counts differ
