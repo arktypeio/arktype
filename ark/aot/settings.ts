@@ -109,7 +109,8 @@ const standaloneOptions = [
 	"errors",
 	"mutatesInput",
 	"optimize",
-	"optimizeErrors"
+	"optimizeErrors",
+	"prune"
 ] as const satisfies (keyof PrecompileOptions)[]
 
 export const standardJsonSchemaWithoutStandardMessage =

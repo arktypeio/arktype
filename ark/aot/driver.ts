@@ -14,6 +14,7 @@ import {
 	type Diagnostic,
 	type PrecompiledModule,
 	type PrecompileOptions,
+	type ScannedProgram,
 	type Site
 } from "./precompile.ts"
 import { withSettingsFile } from "./settings.ts"
@@ -69,8 +70,10 @@ export type PrecompileRequest =
 			kind: "transform",
 			source: string,
 			id: string,
-			mappings?: string | undefined
+			mappings?: string | undefined,
+			program?: string | undefined
 	  ]
+	| [kind: "scan", program: ScannedProgram]
 	| [kind: "check", source: string, id: string]
 	| [kind: "lint", source: string, id: string]
 	| [kind: "readDependency", importer: string]
@@ -120,9 +123,11 @@ const answerRequests = (
 				request[1],
 				request[2],
 				undefined,
-				request[3]
+				request[3],
+				request[4]
 			)
 		}
+		if (request[0] === "scan") return precompiler.scan(request[1])
 		if (request[0] === "check")
 			return checkedModuleOf(precompiler, request[1], request[2])
 		precompiler.forgetCopies()
@@ -321,11 +326,12 @@ const precompiledOf = (
 	source: string,
 	id: string,
 	tracked: TrackedPrecompiler | undefined,
-	mappings?: string
+	mappings?: string,
+	program?: string
 ): PrecompiledModule | undefined => {
 	if (!precompiler.checkHelpers && !precompiler.importsArk(source, id)) return
 	if (tracked) recordGiven(tracked, source, id)
-	return precompiler.precompile(source, id, mappings)
+	return precompiler.precompile(source, id, mappings, program)
 }
 
 const transformedModuleOf = (
@@ -333,10 +339,18 @@ const transformedModuleOf = (
 	source: string,
 	id: string,
 	tracked?: TrackedPrecompiler,
-	mappings?: string
+	mappings?: string,
+	program?: string
 ): TransformedModule | undefined => {
 	if (!precompiler.isTransformed(id)) return
-	const result = precompiledOf(precompiler, source, id, tracked, mappings)
+	const result = precompiledOf(
+		precompiler,
+		source,
+		id,
+		tracked,
+		mappings,
+		program
+	)
 	if (!result) {
 		return {
 			code: undefined,
