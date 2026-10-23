@@ -122,9 +122,9 @@ var problemOf = issue =>
 	: issue.code === "required" ? "is missing"
 	: "is invalid")
 var TraversalError = class extends Error {
-	name = "TraversalError"
 	constructor(errors) {
 		super(errors._thrown ?? errors.summary)
+		this.name = "TraversalError"
 		Object.defineProperty(this, "arkErrors", { value: errors })
 	}
 }
