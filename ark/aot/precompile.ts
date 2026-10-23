@@ -135,7 +135,8 @@ import {
 	passedReaderOf,
 	unprecompiled,
 	usedMembersOf,
-	type RuntimeModule
+	type RuntimeModule,
+	type UsedMember
 } from "./usage.ts"
 import {
 	filterSites,
@@ -248,6 +249,8 @@ export interface ScannedUsage {
 	dropped: ValidatorMember[]
 	// whether a checker the bundle reads once is written where it's read
 	linked: boolean
+	// whether it wrote each module, for a transform naming the bundle to read
+	written: boolean
 }
 
 export interface ModuleAnalysis {
@@ -329,6 +332,14 @@ export interface Reference {
 }
 
 type FactoryImport = [specifier: string, name: string, local: string]
+
+interface PlannedSites {
+	namesBySite: Map<Site, string>
+	factoriesBySite: Map<Site, SiteFactory>
+	exportsByName: Record<string, StandaloneExport>
+	// so far, the sites whose definitions it keeps in place
+	folded: Site[]
+}
 
 interface SiteFactory {
 	params: FactoryParam[]
@@ -540,10 +551,16 @@ export class Precompiler {
 	// where they're read
 	scan(program: ScannedProgram): ScannedUsage {
 		this.usagesByProgram.delete(program.key)
-		const unwritten: ScannedUsage = { dropped: [], linked: false }
-		const runtimes = new Map<string, RuntimeModule>()
-		const written: Record<string, PrecompiledModule> = {}
+		const unwritten: ScannedUsage = {
+			dropped: [],
+			linked: false,
+			written: false
+		}
+		if (this.mode !== "standalone") return unwritten
 		const sources: Record<string, string> = {}
+		// what each module would read, before any writes a validator
+		const planned = new Map<string, RuntimeModule>()
+		const precompiled: string[] = []
 		for (const id in program.modules) {
 			const { source, transformed } = program.modules[id]
 			sources[id] = source
@@ -552,24 +569,23 @@ export class Precompiler {
 				this.isTransformed(id) &&
 				this.importsArk(source, id)
 			) {
-				written[id] = this.precompile(source, id)
+				const runtime = this.plannedRuntimeOf(source, id)
 				// a bundle that fails is left to report it
-				if (written[id].diagnostics.some(d => d.severity === "error"))
-					return unwritten
-				runtimes.set(id, this.runtimesById[id])
-			} else runtimes.set(id, unprecompiled(this.graph.add(id, source)))
+				if (!runtime) return unwritten
+				planned.set(id, runtime)
+				precompiled.push(id)
+			} else planned.set(id, unprecompiled(this.graph.add(id, source)))
 		}
-		const used = usedMembersOf({
-			entries: new Set(program.entries),
-			modules: runtimes,
-			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
-		})
+		const used = this.usedIn(program, planned)
 		const dropped =
 			used ?
 				defaultMembers.filter(
 					member => this.members[member] === undefined && !used.has(member)
 				)
 			:	[]
+		// a lazy validator reads its checkers where it's created, unlinkable
+		if (!dropped.length && (this.inline || this.standalone.lazy))
+			return unwritten
 		const usage: ProgramUsage = {
 			members: {
 				...this.members,
@@ -579,17 +595,78 @@ export class Precompiler {
 			written: {}
 		}
 		this.usagesByProgram.set(program.key, usage)
-		if (dropped.length) {
-			for (const id in written)
-				written[id] = this.precompile(sources[id], id, undefined, program.key)
+		const written: Record<string, PrecompiledModule> = {}
+		const runtimes = new Map(planned)
+		for (const id of precompiled) {
+			written[id] = this.precompile(sources[id], id, undefined, program.key)
+			runtimes.set(id, this.runtimesById[id])
+			if (written[id].diagnostics.some(d => d.severity === "error")) {
+				this.usagesByProgram.delete(program.key)
+				return unwritten
+			}
 		}
-		const linked = !this.inline && this.linkWritten(written, sources)
-		if (!dropped.length && !linked) {
+		// as written, a validator may be read in a way the plan didn't see, as
+		// where a factory checks a Type it's passed
+		const usedAsWritten = dropped.length ? this.usedIn(program, runtimes) : used
+		if (dropped.some(member => !usedAsWritten || usedAsWritten.has(member))) {
 			this.usagesByProgram.delete(program.key)
 			return unwritten
 		}
+		const linked =
+			!this.inline &&
+			!this.standalone.lazy &&
+			this.linkWritten(written, sources)
 		usage.written = written
-		return { dropped, linked }
+		return { dropped, linked, written: true }
+	}
+
+	private usedIn(
+		program: ScannedProgram,
+		modules: ReadonlyMap<string, RuntimeModule>
+	): Set<UsedMember> | undefined {
+		return usedMembersOf({
+			entries: new Set(program.entries),
+			modules,
+			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
+		})
+	}
+
+	// what a module's precompiled code would read at runtime, from the sites
+	// it would fold, before it writes them, or undefined where it fails
+	private plannedRuntimeOf(
+		source: string,
+		id: string
+	): RuntimeModule | undefined {
+		const module = this.add(id, source)
+		this.configuration ??= this.applyConfiguration()
+		const { sites, diagnostics } = this.analysisOf(module)
+		let prefix = "$ark"
+		while (source.includes(prefix)) prefix += "$"
+		const { namesBySite, factoriesBySite, folded } = this.planSites(
+			module,
+			sites,
+			new MagicString(source),
+			prefix,
+			diagnostics
+		)
+		if (diagnostics.some(d => d.severity === "error")) return
+		const kept: Span[] = []
+		const read: Binding[] = []
+		const inputs: Record<string, string[]> = {}
+		// a factory checks a Type it's passed only with creationChecks set, as
+		// the scan confirms once it's written
+		const readsPassed = this.standalone.checks !== "none"
+		for (const site of namesBySite.keys()) {
+			folded.push(site)
+			const factory = factoriesBySite.get(site)
+			if (!factory) continue
+			kept.push(...factory.spans)
+			if (readsPassed)
+				for (const [, binding] of factory.bindings) read.push(binding)
+			for (const [specifier, name] of factory.imports)
+				(inputs[specifier] ??= []).push(name)
+		}
+		return runtimeModuleOf(module, folded, kept, read, inputs)
 	}
 
 	// links what a bundle's modules write, if anything changes
@@ -1420,17 +1497,14 @@ export class Precompiler {
 		else s.appendLeft(call.end - 1, `{}, ${JSON.stringify(fingerprint)}`)
 	}
 
-	private foldSites(
+	// the sites a module folds, each with the factory or value it writes
+	private planSites(
 		module: SourceModule,
 		sites: Site[],
 		s: MagicString,
 		prefix: string,
-		modules: Record<string, string>,
-		imports: Record<string, Record<string, string>>,
-		diagnostics: Diagnostic[],
-		members: ValidatorMembers
-	): Record<string, Record<string, string>> {
-		const inputImports: Record<string, Record<string, string>> = {}
+		diagnostics: Diagnostic[]
+	): PlannedSites {
 		const namesBySite = new Map<Site, string>()
 		const factoriesBySite = new Map<Site, SiteFactory>()
 		const exportsByName: Record<string, StandaloneExport> = {}
@@ -1524,6 +1598,22 @@ export class Precompiler {
 				replaced.push([site, []])
 			}
 		}
+		return { namesBySite, factoriesBySite, exportsByName, folded }
+	}
+
+	private foldSites(
+		module: SourceModule,
+		sites: Site[],
+		s: MagicString,
+		prefix: string,
+		modules: Record<string, string>,
+		imports: Record<string, Record<string, string>>,
+		diagnostics: Diagnostic[],
+		members: ValidatorMembers
+	): Record<string, Record<string, string>> {
+		const inputImports: Record<string, Record<string, string>> = {}
+		const { namesBySite, factoriesBySite, exportsByName, folded } =
+			this.planSites(module, sites, s, prefix, diagnostics)
 		const refusalsByName: Record<string, string[]> = {}
 		const { fingerprint, problem } = this.configuration!
 		const configured =
@@ -1683,29 +1773,18 @@ export class Precompiler {
 			pruneArktypeImports(module, [...folded, ...linked], s)
 		}
 		keepImportedModules(module, folded, kept, passed, s)
-		this.runtimesById[module.id] = {
+		this.runtimesById[module.id] = runtimeModuleOf(
 			module,
 			folded,
-			kept: [
-				...kept,
-				...folded.flatMap(site => (site.definition ? [site.definition] : []))
-			],
-			passed: read,
-			inputs: Object.fromEntries(
+			kept,
+			read,
+			Object.fromEntries(
 				Object.entries(inputImports).map(([specifier, locals]) => [
 					specifier,
 					Object.keys(locals)
 				])
-			),
-			validators: folded.filter(site => createsValidator(site)),
-			holdsOther: folded.some(
-				site =>
-					!createsValidator(site) &&
-					!site.introspection &&
-					!site.parseError &&
-					isFoldable(site.value)
 			)
-		}
+		)
 		diagnostics.push(...this.checkRuntimeImports(module, sites))
 		diagnostics.sort((l, r) => l.start - r.start)
 		return inputImports
@@ -4419,6 +4498,31 @@ const virtualSpecifier = /"(~arktype\/[^"]+)"/g
 
 const createsValidator = (site: Site) =>
 	!site.introspection && !site.parseError && hasArkKind(site.value, "root")
+
+const runtimeModuleOf = (
+	module: SourceModule,
+	folded: Site[],
+	kept: Span[],
+	read: Binding[],
+	inputs: Record<string, string[]>
+): RuntimeModule => ({
+	module,
+	folded,
+	kept: [
+		...kept,
+		...folded.flatMap(site => (site.definition ? [site.definition] : []))
+	],
+	passed: read,
+	inputs,
+	validators: folded.filter(site => createsValidator(site)),
+	holdsOther: folded.some(
+		site =>
+			!createsValidator(site) &&
+			!site.introspection &&
+			!site.parseError &&
+			isFoldable(site.value)
+	)
+})
 
 const isFoldable = (value: unknown): value is Foldable =>
 	hasArkKind(value, "root") ||

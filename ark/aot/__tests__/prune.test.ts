@@ -310,6 +310,19 @@ contextualize(() => {
 			).equals([])
 		})
 
+		it("an import whose function a factory reads", async () => {
+			attest(
+				await droppedFrom(
+					{
+						"/types.ts": `import { type } from "arktype"\n\nexport const Trimmed = type("string").pipe(s => s.trim())`,
+						"/admin.ts": `import { type } from "arktype"\nimport { Trimmed } from "./types.ts"\n\nexport const Admin = type({ name: Trimmed })`,
+						"/main.ts": `import { Admin } from "./admin.ts"\n\nAdmin({})`
+					},
+					{ preset: undefined, creationChecks: "none" }
+				)
+			).equals([])
+		})
+
 		it("a Scope", async () => {
 			attest(
 				await droppedFrom({

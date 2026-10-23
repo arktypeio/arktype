@@ -815,7 +815,7 @@ const rollupScanOf = async (
 	})
 	if (!scanned) return
 	const usage = await scan(scanned)
-	return usage.dropped.length || usage.linked ?
+	return usage.written ?
 			{ scanned, verifies: !!usage.dropped.length, loaded: new Map() }
 		:	undefined
 }
@@ -949,7 +949,7 @@ const esbuildScanOf = async (
 		}))
 	if (!scanned) return
 	const usage = await scan(scanned)
-	return usage.dropped.length || usage.linked ? [scanned, usage] : undefined
+	return usage.written ? [scanned, usage] : undefined
 }
 
 // the importers esbuild bundled, by module, from its metafile
