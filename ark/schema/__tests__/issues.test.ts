@@ -173,7 +173,12 @@ supplied`)
 		const merged = new ArkErrors()
 		user({ name: 1 }, merged)
 		user({}, merged)
-		merged.failsAt({ value: { code: "undeclared" } }, { extra: 1 }, "extra")
+		// as a build writes an undeclared key's site
+		merged.failsAt(
+			{ value: { code: "undeclared", description: "removed" } },
+			{ extra: 1 },
+			"extra"
+		)
 		errors._merge!(merged, ["owner"])
 		attest(errors.summary).snap(`owner.name (1) must be...
   ◦ a string

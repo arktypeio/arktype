@@ -109,6 +109,12 @@ export class ArkErrors extends BaseArkErrors {
 		this.config = config
 	}
 
+	// arkKind's value, since a computed key keeps the class in a bundle
+	// that never reads it
+	get " arkKind"(): "errors" {
+		return "errors"
+	}
+
 	/**
 	 * One error per path, in the order each path first failed, each with its
 	 * text written in the locale selected when they were first read.
