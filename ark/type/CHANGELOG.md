@@ -63,7 +63,7 @@ const NonZero = type("number != 0")
 NonZero(0)
 ```
 
-It reduces like the other comparators: `number < 0 | number > 0` is `number != 0`, `number >= 0 & number != 0` is `number > 0`, and `string != 0` is `string > 0`. Its JSON Schema is `not`, like `{ type: "number", not: { const: 0 } }`.
+It reduces like the other comparators: `number < 0 | number > 0` is `number != 0`, `number >= 0 & number != 0` is `number > 0`, and `string != 0` is `string >= 1`. Its JSON Schema is `not`, like `{ type: "number", not: { const: 0 } }`.
 
 Its errors have the codes `notEqual`, whose `rule` is a number or a `Date`, and `notEqualLength`. A lone `!` still doesn't end a name, so an alias or brand like `a!b` parses as before.
 
@@ -151,6 +151,8 @@ type("0 < number < 10").toJsonSchema({ target: "openapi-3.0" })
 ```
 
 A literal is a one-value `enum` with its `type`, `null` beside a `type` is `nullable: true`, `examples` is its first `example`, and `string.base64` is `format: "byte"`. What OpenAPI 3.0 can't express throws, through a fallback that can write it instead: a tuple's elements go to the new `arrayPrefix`, `patternProperties` and `propertyNames` to `indexKey`, and the definitions a cyclic Type's `$ref`s point to in `#/components/schemas` to the new `defs`, to place in your document. `~standard.jsonSchema` writes a tuple as an array of its length, and the definitions as `definitions`.
+
+Thanks to @MichaelDeBoey for #1707.
 
 ### Infer `.map()` on a union per branch
 
@@ -249,6 +251,14 @@ An error at a `__proto__` path is an own key of the plain objects `flatByPath` a
 
 A Type or standalone validator that calls no narrow or morph may find its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. The issues describe the data as it is at that read: a write to it in between can change them, and data that no longer fails holds one root issue, `is invalid`. A getter or `Proxy` trap the check reads runs again at that read, and what it throws is thrown there. The errors hold the data until they're collected.
 
+Read `summary` or `issues` before the data you validated can change, as it can when it's reactive form state or an Immer draft, or when an `await` comes before you report the errors:
+
+```ts
+const out = User(form)
+// read now, while they describe the form that was validated
+const summary = out instanceof type.errors ? out.summary : ""
+```
+
 ### Print objects in error messages by their kind
 
 An error's `actual` prints an object as `an object`, an array as `an array` and a function as `a function`, where it printed an object or array as compact JSON, a Date as its date, a function as `Function(name)` and another instance by its class's name. A message no longer grows with the data, and nothing an object holds reaches a log through it. Primitives print as before, and `before` and `after` still print the Date they rejected:
@@ -270,6 +280,15 @@ type("===", {})({})
 ```
 
 `de` prints them as `ein Objekt`, `ein Array` and `eine Funktion`.
+
+### Say a length is a length when a description replaces its bound
+
+A length bound's `actual` is the bare length, which its own text explains (`must be at least length 8 (was 1)`). Where a description or configured `expected` replaces that text, the length is now named:
+
+```ts
+// previously must be a strong password (was 1), now (was length 1)
+type("string >= 8").describe("a strong password")("x")
+```
 
 ### Accept only plain objects and arrays in `object.json`
 
@@ -744,7 +763,7 @@ type("'a' | 'b' | 'c'").configure({ expected: "a letter" })("d")
 const T = type({ v: Shape }).or({ v: { kind: "string >= 9" } })
 
 // previously (was {"kind":"triangle"})
-// now v.kind must be "circle" or "square" or at least length 9 (was "triangle")
+// now v.kind must be at least length 9, "circle" or "square" (was "triangle")
 T({ v: { kind: "triangle" } })
 ```
 
@@ -847,7 +866,7 @@ Keys are ordered by code unit, where they were ordered as `JSON.stringify` write
 - at `"`, against a character from `#` to `[`
 - at a lone surrogate, against a character from U+005D to U+D7FF: `"ab"` now precedes `"a\uD800"`
 
-Other keys that first differ at a space, `!`, `"` or a backslash keep their order. That order is the order of keys in a Type's `expression` and `json`, its JSON Schema's `properties` and `required`, the errors it reports, and the outputs it rebuilds, e.g. adding defaults or deleting undeclared keys.
+Other keys that first differ at a space, `!`, `"` or a backslash keep their order. That order is the order of keys in a Type's `expression` and `json`, its JSON Schema's `properties` and `required`, and the errors it reports.
 
 ### Simplify `@ark/schema` nodes
 
@@ -1589,6 +1608,8 @@ A function, class or symbol is written as its `$ark` name, as in the type's `.js
 
 A `symbolKey` fallback's result for a symbol-keyed property is now used instead of discarded.
 
+`arktype` exports the `ToJsonSchema` type, so a fallback declared outside the call can be typed as `ToJsonSchema.FallbackOption`.
+
 ### Fall back for regex flags and constrained keys in JSON Schema
 
 JSON Schema's `pattern` has no flags, so `toJsonSchema()` wrote `/^a/i` as `"^a"`, which rejects `"A"`. A flag that changes what a pattern matches now goes to the new `patternFlags` fallback. `d` and `g` are ignored, as is `u` for draft-2020-12, whose patterns are built with it.
@@ -1749,16 +1770,18 @@ type({ "+": "reject", a: "string.trim" }).or({
 })
 ```
 
-### Return deleting types' keys in the order of their expression
+### Return deleting types' keys in the order they're declared
 
-`"+": "delete"` builds its output with required keys, then optional keys, each sorted, followed by keys matching an index signature in input order. It previously deleted from a copy of the input, which kept the input's order. The output is always a new object, even when nothing was deleted, while an array is returned as is unless it has an undeclared key to remove:
+`"+": "delete"` builds its output with the declared keys in the order the definition declares them, as Zod does, followed by keys matching an index signature in input order. It previously deleted from a copy of the input, which kept the input's order, and prerelease builds of this version sorted them. Data is usually serialized from the shape its Type declares, so the output usually lists keys as its input did. The output is always a new object, even when nothing was deleted, while an array is returned as is unless it has an undeclared key to remove:
 
 ```ts
 const T = type({ "+": "delete", b: "string", a: "string", "c?": "number" })
 
-// previously { a: "1", c: 1, b: "2" }, now { a: "1", b: "2", c: 1 }
+// previously { a: "1", c: 1, b: "2" }, now { b: "2", a: "1", c: 1 }
 T({ a: "1", z: 0, c: 1, b: "2" })
 ```
+
+A spread, `.merge()` or `.and()` lists the left object's keys, then the right's new ones, as `{ ...left, ...right }` would, and `.pick()`, `.omit()`, `.partial()` and `.required()` keep their source's order. Defaults missing from data are added in the order they're declared, after the input's keys where undeclared keys are kept. A Type's `expression`, `json` and JSON Schema still list keys required first, then optional, each sorted, and Types that declare the same keys in different orders are still equal, though no longer the same object.
 
 ### Treat integer keys past an array's greatest index as undeclared
 
@@ -1808,6 +1831,26 @@ Importing arktype no longer throws in runtimes that lack `Blob`, `URL`, `FormDat
 ### Infer platform keywords whose globals are declared as classes
 
 With declarations like `@cloudflare/workers-types`, which declare `Blob`, `File`, `Headers` and `URL` as classes, those keywords infer their instance types instead of `never` (#1548).
+
+### Infer `ArkEnv.meta` from a scope that imports Types
+
+Augmenting `ArkEnv.meta` with a type inferred from a scope that spreads another scope's `import()` was circular, so the type was `any` (#1644):
+
+```ts
+const base = scope({ BaseMeta: { "description?": "string" } })
+
+const Meta = scope({
+	...base.import(),
+	Binary: { "...": "BaseMeta", kind: "'binary'" }
+}).export().Binary
+
+declare global {
+	interface ArkEnv {
+		// was: Return type annotation circularly references itself
+		meta(): typeof Meta.infer
+	}
+}
+```
 
 ### Throw a scope alias's parse error on every reference
 
@@ -2003,19 +2046,59 @@ A tuple definition's first two elements were converted to property keys to check
 type(["string", "toString"])
 ```
 
-### Name JSON Schema `$defs` independently of other types
+### Name JSON Schema `$defs` by their alias
 
-`$defs` keys and `$ref`s were node ids, whose numbers depend on every type defined before, so the same type's JSON Schema changed with unrelated code. Each def is now named by its alias or kind, numbered within the schema in reference order:
+`$defs` keys and `$ref`s were node ids, whose numbers depend on every type defined before, so the same type's JSON Schema changed with unrelated code, and a cyclic type wrote each of its objects, arrays and unions as a def of its own. Now a def is written only for a cyclic alias, named exactly by its alias, and everything else is inline:
 
 ```ts
 const { user } = scope({
 	user: { name: "string", "friends?": "user[]" }
 }).export()
 
-// previously e.g. { $ref: "#/$defs/user3", ... "#/$defs/intersection41" ... }
-// now { $ref: "#/$defs/user1", ... "#/$defs/intersection1" ... }
+// previously e.g. { $ref: "#/$defs/user3", $defs: { user3: ..., intersection41: ... } }
+// now
+// {
+// 	$schema: "https://json-schema.org/draft/2020-12/schema",
+// 	$ref: "#/$defs/user",
+// 	$defs: {
+// 		user: {
+// 			type: "object",
+// 			properties: {
+// 				name: { type: "string" },
+// 				friends: { type: "array", items: { $ref: "#/$defs/user" } }
+// 			},
+// 			required: ["name"]
+// 		}
+// 	}
+// }
 user.toJsonSchema()
 ```
+
+- An alias that isn't cyclic is inline, as its type is the same node as an equal anonymous one.
+- A generic's instantiations are named by the generic (`box` for `box<string>`), and a submodule's alias by its own name (`b` for `a.b`).
+- A name another def already has is numbered from 2 (`user2`), in the order the defs are reached.
+- A cycle with no alias, like a `this` reference, is named by what arktype calls it (`type`).
+- `.in`, `.out`, `~standard.jsonSchema` and the `definitions` and `#/components/schemas/` of `"draft-07"` and `"openapi-3.0"` use the same names.
+- `useRefs` writes every other part as a def named by its kind (`intersection`, `intersection2`), and no longer writes an empty `$defs` for a type with none.
+
+### Write `type` beside a literal's `const` or `enum`
+
+A literal's JSON Schema now names its type, as zod's does and as consumers like MCP elicitation require. A union of literals that share no type is still an `enum` alone, and one with `null` writes `null` beside the rest, as `string | null` is written:
+
+```ts
+const T = type({ k: "'b' | 'a'", l: "1 | 2", m: "'x'", n: "'a' | 'b' | null" })
+
+// previously k: { enum: ["a", "b"] }, l: { enum: [1, 2] }, m: { const: "x" },
+// n: { anyOf: [{ const: "a" }, { const: "b" }, { type: "null" }] }
+// now
+// k: { type: "string", enum: ["a", "b"] }
+// l: { type: "number", enum: [1, 2] }
+// m: { type: "string", const: "x" }
+// n: { anyOf: [{ type: "string", enum: ["a", "b"] }, { type: "null" }] }
+T.toJsonSchema()
+```
+
+A number literal's type is `number`, even for integers, since its `enum` or `const` already says which values it allows.
 
 ### Write a nested arktype Standard Schema's errors without repeating their key
 

@@ -21,7 +21,9 @@ isSubset({ enum: ["a", "b"] }, { type: "string", maxLength: 1 }) // true
 isDisjoint({ type: "string", maxLength: 2 }, { type: "string", minLength: 3 }) // true
 ```
 
-They're sound: `true` is a proof. `false` means the relation couldn't be proven, either because it doesn't hold or because a schema checks something the algebra can't reason about. Those are the JSON Schema keywords [Keyword support](/docs/json-schema/support) lists as opaque, like `not`, `uniqueItems` and `if`, and a Type's [`narrow`](/docs/expressions#narrow) predicates:
+They're sound for what each schema is read as: `true` is a proof. A Type is read exactly and a JSON Schema as [Keyword support](/docs/json-schema/support) describes. A Standard JSON Schema is read as the JSON Schema it writes, so what that can't express, like zod's refinements, transforms and `undefined`, is invisible, and `true` proves the relation only for those JSON Schemas: `isSubset(z.string(), z.string().refine(s => s === "x"))` is `true`.
+
+`false` means the relation couldn't be proven, either because it doesn't hold or because a schema checks something the algebra can't reason about. Those are the JSON Schema keywords [Keyword support](/docs/json-schema/support) lists as opaque, like `not`, `uniqueItems` and `if`, and a Type's [`narrow`](/docs/expressions#narrow) predicates:
 
 ```ts
 import { isSubset } from "arksets"

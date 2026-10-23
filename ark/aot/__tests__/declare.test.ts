@@ -416,13 +416,12 @@ export type Elements = [string, number?];
 		}
 	}).timeout(60000)
 
-	it("refuses the CLI's other modes with --declare", () => {
-		const cli = runCli(layouts, "--declare", "--check")
-		attest({ status: cli.status, stderr: cli.stderr }).snap({
-			status: 2,
-			stderr:
-				"--declare emits the tsconfig's program and takes no other mode or files\nUsage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--preset <smallest|introspectable>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --declare [--tsconfig <file>]\n"
-		})
+	it("refuses the CLI's other modes and options with --declare", () => {
+		const cli = runCli(layouts, "--declare", "--check", "--preset", "smallest")
+		attest([cli.status, cli.stderr.split("\n")[0]]).snap([
+			2,
+			"--declare emits the tsconfig's program and takes no files or option but --tsconfig (was --check --preset)"
+		])
 	})
 
 	it("prints the CLI's usage for an option it doesn't take", () => {

@@ -439,7 +439,7 @@ var unionwltuhb0wt5e34 = [/* @__PURE__ */ units(["size", "speed"], "union")]
 var union1yvbmuz0dlc3qf = [
 	/* @__PURE__ */ units(["introspectable", "smallest"], "union")
 ]
-var intersection1fu2sds10fie3u = /* @__PURE__ */ ((
+var intersectionb6m15p1frcjpq = /* @__PURE__ */ ((
 	[uniontxb0ck1na4t1cAllows],
 	[intersection1saekmc1myv528Allows],
 	[intersection1jmpl21nkry5aAllows],
@@ -451,7 +451,7 @@ var intersection1fu2sds10fie3u = /* @__PURE__ */ ((
 	[unionwltuhb0wt5e34Allows],
 	[union1yvbmuz0dlc3qfAllows]
 ) => {
-	const intersection1fu2sds10fie3uAllows = (data, ctx) => {
+	const intersectionb6m15p1frcjpqAllows = (data, ctx) => {
 		if (
 			!(
 				data !== null &&
@@ -460,9 +460,9 @@ var intersection1fu2sds10fie3u = /* @__PURE__ */ ((
 		) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structure1n5zlat12l04n9Allows(data, ctx)
+		return structure1buso011c7xjhAllows(data, ctx)
 	}
-	const structure1n5zlat12l04n9Allows = (data, ctx) => {
+	const structure1buso011c7xjhAllows = (data, ctx) => {
 		if (
 			!(
 				!("allowUnsafe" in data) ||
@@ -475,14 +475,6 @@ var intersection1fu2sds10fie3u = /* @__PURE__ */ ((
 						"allowUnsafe"
 					)
 				)
-			)
-		) {
-			return false
-		}
-		if (
-			!(
-				!("checks" in data) ||
-				!failsIn2(ctx, union13fa4p20868rbdAllows, data.checks, "checks")
 			)
 		) {
 			return false
@@ -510,15 +502,12 @@ var intersection1fu2sds10fie3u = /* @__PURE__ */ ((
 		}
 		if (
 			!(
-				!("countsKeys" in data) ||
-				!(
-					!(data.countsKeys === false || data.countsKeys === true) &&
-					failsIn2(
-						ctx,
-						union14x0uzw08oe5zuAllows,
-						data.countsKeys,
-						"countsKeys"
-					)
+				!("creationChecks" in data) ||
+				!failsIn2(
+					ctx,
+					union13fa4p20868rbdAllows,
+					data.creationChecks,
+					"creationChecks"
 				)
 			)
 		) {
@@ -683,10 +672,9 @@ var intersection1fu2sds10fie3u = /* @__PURE__ */ ((
 		for (const k in data) {
 			switch (k) {
 				case "allowUnsafe":
-				case "checks":
 				case "conditions":
 				case "config":
-				case "countsKeys":
+				case "creationChecks":
 				case "cwd":
 				case "declare":
 				case "errors":
@@ -711,7 +699,7 @@ var intersection1fu2sds10fie3u = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	return [intersection1fu2sds10fie3uAllows]
+	return [intersectionb6m15p1frcjpqAllows]
 })(
 	uniontxb0ck1na4t1c,
 	intersection1saekmc1myv528,
@@ -736,7 +724,7 @@ var create10n7yuw0bfhpvo = ([allows], id, holes = []) => {
 	validator.allows = freeze(allows)
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersection11zwa3l1l3p9oy = /* @__PURE__ */ ((
+var intersection6azmes1iur9c9 = /* @__PURE__ */ ((
 	[uniontxb0ck1na4t1cAllows],
 	[intersection1saekmc1myv528Allows],
 	[intersection1jmpl21nkry5aAllows],
@@ -748,7 +736,7 @@ var intersection11zwa3l1l3p9oy = /* @__PURE__ */ ((
 	[unionwltuhb0wt5e34Allows],
 	[union1yvbmuz0dlc3qfAllows]
 ) => {
-	const intersectionjvt8gf144nd5kAllows = (data, ctx) => {
+	const intersectionzdq7951h2fg0tAllows = (data, ctx) => {
 		if (
 			!(
 				data !== null &&
@@ -757,9 +745,9 @@ var intersection11zwa3l1l3p9oy = /* @__PURE__ */ ((
 		) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structure7totlv125kb4lAllows(data, ctx)
+		return structure1bpz3fj07rkhq9Allows(data, ctx)
 	}
-	const structure7totlv125kb4lAllows = (data, ctx) => {
+	const structure1bpz3fj07rkhq9Allows = (data, ctx) => {
 		if (
 			!(
 				!("allowUnsafe" in data) ||
@@ -772,14 +760,6 @@ var intersection11zwa3l1l3p9oy = /* @__PURE__ */ ((
 						"allowUnsafe"
 					)
 				)
-			)
-		) {
-			return false
-		}
-		if (
-			!(
-				!("checks" in data) ||
-				!failsIn2(ctx, union13fa4p20868rbdAllows, data.checks, "checks")
 			)
 		) {
 			return false
@@ -807,15 +787,12 @@ var intersection11zwa3l1l3p9oy = /* @__PURE__ */ ((
 		}
 		if (
 			!(
-				!("countsKeys" in data) ||
-				!(
-					!(data.countsKeys === false || data.countsKeys === true) &&
-					failsIn2(
-						ctx,
-						union14x0uzw08oe5zuAllows,
-						data.countsKeys,
-						"countsKeys"
-					)
+				!("creationChecks" in data) ||
+				!failsIn2(
+					ctx,
+					union13fa4p20868rbdAllows,
+					data.creationChecks,
+					"creationChecks"
 				)
 			)
 		) {
@@ -950,10 +927,9 @@ var intersection11zwa3l1l3p9oy = /* @__PURE__ */ ((
 		for (const k in data) {
 			switch (k) {
 				case "allowUnsafe":
-				case "checks":
 				case "conditions":
 				case "config":
-				case "countsKeys":
+				case "creationChecks":
 				case "errors":
 				case "freeze":
 				case "lazy":
@@ -975,7 +951,7 @@ var intersection11zwa3l1l3p9oy = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	const intersection11zwa3l1l3p9oyAllows = (data, ctx) => {
+	const intersection6azmes1iur9c9Allows = (data, ctx) => {
 		if (
 			!(
 				data !== null &&
@@ -984,9 +960,9 @@ var intersection11zwa3l1l3p9oy = /* @__PURE__ */ ((
 		) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structuretdwwgo1o1fk12Allows(data, ctx)
+		return structure1tczgvm0icuobxAllows(data, ctx)
 	}
-	const structuretdwwgo1o1fk12Allows = (data, ctx) => {
+	const structure1tczgvm0icuobxAllows = (data, ctx) => {
 		if (
 			!(
 				!("$schema" in data) ||
@@ -1003,7 +979,7 @@ var intersection11zwa3l1l3p9oy = /* @__PURE__ */ ((
 				!("precompile" in data) ||
 				!failsIn2(
 					ctx,
-					intersectionjvt8gf144nd5kAllows,
+					intersectionzdq7951h2fg0tAllows,
 					data.precompile,
 					"precompile"
 				)
@@ -1025,7 +1001,7 @@ var intersection11zwa3l1l3p9oy = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	return [intersection11zwa3l1l3p9oyAllows]
+	return [intersection6azmes1iur9c9Allows]
 })(
 	uniontxb0ck1na4t1c,
 	intersection1saekmc1myv528,
@@ -1043,8 +1019,8 @@ var created1
 var get0 = () => {
 	return (created0 ??= (() => {
 		const validator0 = create10n7yuw0bfhpvo(
-			intersection1fu2sds10fie3u,
-			"1niblwp0"
+			intersectionb6m15p1frcjpq,
+			"1gnanim0"
 		)
 		return validator0
 	})())
@@ -1052,10 +1028,31 @@ var get0 = () => {
 var get1 = () => {
 	return (created1 ??= (() => {
 		const validator0 = create10n7yuw0bfhpvo(
-			intersection11zwa3l1l3p9oy,
-			"esa75p0g"
+			intersection6azmes1iur9c9,
+			"1mgh0jr1"
 		)
 		return validator0
 	})())
 }
 export { get1 as ArkJson, get0 as PrecompileOptions }
+
+export const cliOptions = {
+	allowUnsafe: { type: "boolean", values: "true|false" },
+	conditions: { type: "array", values: "a,b" },
+	config: { type: "string", values: "path|false" },
+	creationChecks: { type: "string", values: "helpers|none|types" },
+	cwd: { type: "string", values: "path" },
+	declare: { type: "boolean", values: "true|false" },
+	errors: { type: "string", values: "all|first|none" },
+	freeze: { type: "boolean", values: "true|false" },
+	inline: { type: "boolean", values: "true|false" },
+	lazy: { type: "boolean", values: "true|false" },
+	members: { type: "object", values: "json" },
+	mutatesInput: { type: "string", values: "always|true|false" },
+	optimize: { type: "string", values: "size|speed" },
+	optimizeErrors: { type: "string", values: "size|speed" },
+	preset: { type: "string", values: "introspectable|smallest" },
+	runtime: { type: "string", values: "arktype" },
+	shadow: { type: "boolean", values: "true|false" },
+	tsconfig: { type: "string", values: "path" }
+}

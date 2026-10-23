@@ -303,6 +303,41 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("index signature with required key", () => {
+			const T = type({ "[string]": "number", a: "number" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("index signature with optional key", () => {
+			const T = type({ "[/^x/]": "number", y: "string", "z?": "boolean" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("index signature matching an optional key", () => {
+			const T = type({ "[/^b$/]": "number", "b?": "number < 0" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("declared key wider than the index signature value", () => {
+			const T = type({ "[string]": "number", a: "number|string" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("declared key overlapping the index signature value", () => {
+			const T = type({ "[string]": "0 < number < 10", a: "number.integer" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("optional key disjoint from the index signature value", () => {
+			const T = type({ "[string]": "number", "a?": "string" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("symbol index signature with string key", () => {
+			const T = type({ "[symbol]": "number", a: "string" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
 		it("contains alias", () => {
 			const example = {
 				user: {
@@ -326,6 +361,14 @@ contextualize(() => {
 			attest(() => arkToArbitrary($.arf2)).throws(
 				"Infinitely deep cycles are not supported."
 			)
+		})
+		it("cyclic index signature", () => {
+			const T = scope({ tree: { "[string]": "tree | number" } }).type("tree")
+			assertProperty(arkToArbitrary(T), T)
+		})
+		it("object.json", () => {
+			const T = type("object.json")
+			assertProperty(arkToArbitrary(T), T)
 		})
 		it("unknown array with additional props", () => {
 			const T = type({ name: "string" }).and("unknown[]")

@@ -53,7 +53,21 @@ if (out instanceof type.errors) {
 | `byAncestorPath(out)`      | each failed path and its ancestors, with `""` for the root, mapped to every error at or below it |
 | `messageIn(error, locale)` | one error's message in a [locale](/docs/i18n#rendering-in-a-locale)                              |
 
-A Type that calls no narrow or morph may find its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. The issues describe the data as it is at that read: a write to it in between can change them, and data that no longer fails holds one root issue, `is invalid`. A getter or `Proxy` trap the check reads runs again at that read, and what it throws is thrown there. Each error's text is written at that first read too.
+A Type that calls no narrow or morph may find its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. The issues describe the data as it is at that read, not as it was validated: a write to it in between can change them, and data that no longer fails holds one root issue, `is invalid`. Read `summary` or `issues` before the data you validated can change, as it can when it's reactive form state or an Immer draft, or when an `await` comes before you report the errors:
+
+```ts
+const User = type({ name: "string" })
+const form: Record<string, unknown> = { name: 5 }
+
+const out = User(form)
+// read now: name must be a string (was a number)
+const summary = out instanceof type.errors ? out.summary : ""
+
+form.name = "Ada"
+// read only now, out.summary would be "is invalid"
+```
+
+A getter or `Proxy` trap the check reads runs again at that read, and what it throws is thrown there. Each error's text is written at that first read too.
 
 ## ArkError
 

@@ -49,10 +49,10 @@ export const analyze = (
 	files: Record<string, string> = {},
 	opts?: PrecompileOptions
 ): ModuleAnalysis =>
-	new Precompiler(memoryHost({ ...files, "/main.ts": source }), opts).analyze(
-		source,
-		"/main.ts"
-	)
+	new Precompiler(
+		memoryHost({ ...files, "/main.ts": source }),
+		opts
+	).analyzeSites(source, "/main.ts")
 
 export const precompile = (
 	source: string,

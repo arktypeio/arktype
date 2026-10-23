@@ -13,6 +13,7 @@ import {
 	optedInPackagesOf,
 	precompiledDependencyOf,
 	reportDiagnostics,
+	readsNodes,
 	resolvesToRuntime,
 	resolvedVariantOf,
 	runtimeSpecifiers,
@@ -125,7 +126,9 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 				)
 			}
 			return resolveRuntime(
-				resolvesToRuntime(specifier, opts) ? "arktype/runtime" : specifier,
+				resolvesToRuntime(specifier, opts) && !readsNodes(importer) ?
+					"arktype/runtime"
+				:	specifier,
 				context,
 				nextResolve
 			)

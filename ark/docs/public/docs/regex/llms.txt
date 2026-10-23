@@ -16,9 +16,9 @@ const ok = regex("^ok$", "i")
 //     flags: "i";
 // }>
 
-const semver = regex("^(\\d+)\\.(\\d+)\\.(\\d+)$")
-// const semver: Regex<`${string}.${string}.${string}`, {
-//     captures: [string, string, string];
+const date = regex("^(\\d{4})-(\\d{2})-(\\d{2})$")
+// const date: Regex<`${number}-${number}-${number}`, {
+//     captures: [`${number}`, `${number}`, `${number}`];
 // }>
 ```
 
@@ -68,7 +68,7 @@ The [ArkType extension](https://marketplace.visualstudio.com/items?itemName=arkt
 import { regex, type Regex } from "arktype"
 ```
 
-ArkType also uses ArkRegex to infer its own regex literals, so `type("/^\\d+$/")` infers ``Type<`${number}`>``. See [ArkType](https://arktype.io/docs/regex/arktype).
+ArkType also uses ArkRegex to infer its own regex literals, so `type("/^\\d{5}$/")` infers ``Type<`${number}`>``. See [ArkType](https://arktype.io/docs/regex/arktype).
 
 # Inference
 
@@ -149,15 +149,18 @@ const zeroOrMore = regex("^a*$")
 // const zeroOrMore: Regex<"" | `a${string}`, {}>
 ```
 
-Repeated digits become `` `${number}` ``, plus `""` if they can repeat zero times:
+A bounded run of digits becomes `` `${number}` ``, plus `""` if it can repeat zero times. An unbounded run like `\d+` becomes `string`, since a long enough run of digits isn't a finite number:
 
 ```ts
-const version = regex("^(\\d+)\\.(\\d+)$")
-// const version: Regex<`${string}.${string}`, {
-//     captures: [string, string];
+const version = regex("^(\\d{1,3})\\.(\\d{1,3})$")
+// const version: Regex<`${number}.${number}`, {
+//     captures: [`${number}`, `${number}`];
 // }>
 
-const digits = regex("^\\d*$")
+const short = regex("^\\d{0,3}$")
+// const short: Regex<`${number}` | "", {}>
+
+const digits = regex("^\\d+$")
 // const digits: Regex<string, {}>
 ```
 
@@ -457,11 +460,10 @@ import { regex, type Regex } from "arkregex"
 
 const majorMinor = (r: Regex<`${number}.${number}`>) => r
 
-const version = regex("^(\\d+)\\.(\\d+)$")
-const tag = regex("^v(\\d+)$")
+const version = regex("^(\\d{1,3})\\.(\\d{1,3})$")
+const tag = regex("^v(\\d{1,3})$")
 
 majorMinor(version)
-// TypeScript: Type '`${string}.${string}`' is not assignable to type '`${number}.${number}`'.
 
 majorMinor(tag) // Regex<`v${number}`, ...> is not assignable to Regex<`${number}.${number}`>
 ```
@@ -473,8 +475,8 @@ Infers the pattern of an expression without creating one. An optional second arg
 ```ts
 import { regex } from "arkregex"
 
-type Version = regex.infer<"^(\\d+)\\.(\\d+)$">
-// type Version = `${string}.${string}`
+type Version = regex.infer<"^(\\d{1,3})\\.(\\d{1,3})$">
+// type Version = `${number}.${number}`
 
 type Ok = regex.infer<"^ok$", "i">
 // type Ok = "OK" | "Ok" | "oK" | "ok"
@@ -530,8 +532,8 @@ With no type arguments, `regex.as` returns `Regex<string>`.
 ```ts
 import { regex, type } from "arktype"
 
-const Semver = type("/^(\\d+)\\.(\\d+)\\.(\\d+)$/")
-// const Semver: Type<`${string}.${string}.${string}`, {}>
+const ZipCode = type("/^\\d{5}$/")
+// const ZipCode: Type<`${number}`, {}>
 ```
 
 Like `new RegExp()`, a regex literal matches anywhere in a string unless you anchor it with `^` and `$`, and its type is padded to match:
@@ -559,15 +561,15 @@ A `Regex` can be used directly as a definition, with or without flags:
 const Ok = type(regex("^ok$", "i"))
 // const Ok: Type<"ok" | "oK" | "Ok" | "OK", {}>
 
-const Package = type({
-	name: "string",
-	version: regex("^(\\d+)\\.(\\d+)\\.(\\d+)$")
+const Address = type({
+	street: "string",
+	zip: regex("^\\d{5}(-\\d{4})?$")
 })
 
-type Package = typeof Package.infer
-// type Package = {
-//     name: string;
-//     version: `${string}.${string}.${string}`;
+type Address = typeof Address.infer
+// type Address = {
+//     street: string;
+//     zip: `${number}` | `${number}-${number}`;
 // }
 ```
 

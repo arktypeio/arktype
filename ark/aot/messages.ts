@@ -63,6 +63,8 @@ export const islandHint = `A runtime island runs on arktype, as must what it rea
 
 export const runtimeImportHint = `Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: "arktype".`
 
+export const dynamicImportHint = `Import it with an import declaration, so the build precompiles what it defines, or build with runtime: "arktype".`
+
 export const nodePackageHint = `Read arktype's nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".`
 
 export const writeSchemaExportHint = (name: string): string =>

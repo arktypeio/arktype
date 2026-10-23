@@ -43,9 +43,8 @@ import { build, type Plugin } from "esbuild"
 import { writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { inspect, types } from "node:util"
+import { inspect } from "node:util"
 import {
-	countsKeys,
 	detailsErrors,
 	firstIssue,
 	freezes,
@@ -64,10 +63,9 @@ const comparesExpecteds = detailsErrors && !firstIssue
 
 // compares a Type with its precompiled validators on each call's outcome
 
-// "merged" is a later build's modules, merging units by what the first read
-type Layout = "inline" | "modules" | "merged"
+type Layout = "inline" | "modules"
 
-export const layouts: Layout[] = ["inline", "modules", "merged"]
+export const layouts: Layout[] = ["inline", "modules"]
 
 let out: string | undefined
 
@@ -195,32 +193,6 @@ const holdsTwice = (value: unknown, seen = new Set<object>()): boolean => {
 	})
 }
 
-// a plain object a count can see fewer of its keys in than a scan, or a Proxy
-const holdsUncounted = (value: unknown, seen = new Set<object>()): boolean => {
-	if (typeof value !== "object" || value === null || seen.has(value))
-		return false
-	seen.add(value)
-	if (types.isProxy(value)) return true
-	if (
-		Object.getPrototypeOf(value) === Object.prototype &&
-		Object.getOwnPropertyNames(value).some(
-			k => !Object.prototype.propertyIsEnumerable.call(value, k)
-		)
-	)
-		return true
-	return Reflect.ownKeys(value).some(k => {
-		const descriptor = Object.getOwnPropertyDescriptor(value, k)!
-		return "value" in descriptor && holdsUncounted(descriptor.value, seen)
-	})
-}
-
-// whether a node declares a key every plain object inherits
-const declaresInherited = (node: BaseRoot): boolean =>
-	Object.values(node.refsById).some(
-		reference =>
-			reference.hasKind("structure") && reference.inheritableProps.length
-	)
-
 const link = (code: string) =>
 	code
 		.replace(/from "arktype\/runtime"/g, `from "./runtime.js"`)
@@ -242,22 +214,15 @@ const loadArtifact = async (
 		errors: testedOptions.errors,
 		freeze: testedOptions.freeze,
 		lazy: testedOptions.lazy,
-		checks: testedOptions.checks,
+		checks: testedOptions.creationChecks,
 		mutatesInput: testedOptions.mutatesInput,
 		optimize: testedOptions.optimize,
-		countsKeys: testedOptions.countsKeys,
 		configured: testedOptions.config === false ? (false as const) : undefined
 	}
 	let code: string
 	if (layout === "inline") code = precompileStandalone(exports, opts).code
 	else {
-		let artifact = precompileStandaloneModules(exports, opts)
-		if (layout === "merged") {
-			artifact = precompileStandaloneModules(exports, {
-				...opts,
-				unitReaders: artifact.unitReaders
-			})
-		}
+		const artifact = precompileStandaloneModules(exports, opts)
 		for (const [specifier, module] of Object.entries(artifact.modules)) {
 			const written = modulesBySpecifier[specifier]
 			if (written === undefined) {
@@ -1006,8 +971,6 @@ export const compare = async (
 	)
 		return { ...result, refusal: "configured mutatesInput" }
 	const holes = keyOf(node)[1]
-	const isUncounted = (input: unknown) =>
-		countsKeys && (declaresInherited(node) || holdsUncounted(input))
 	// writing in place returns what copying does, unless the input breaks it
 	for (const [i, input] of inputs.entries()) {
 		const copied = arktype.calls[i]
@@ -1131,8 +1094,7 @@ export const compare = async (
 			if (
 				!expected ||
 				holdsArkValue(actual) ||
-				returnsForeignErrors(validator, input) ||
-				isUncounted(input)
+				returnsForeignErrors(validator, input)
 			) {
 				if (layout === layouts[0]) result.harnessLimited++
 			} else disagree("call", { input, arktype: expected, precompiled: actual })

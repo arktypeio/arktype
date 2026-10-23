@@ -224,6 +224,26 @@ contextualize(() => {
 		attest(Undefinable.allows({ precompiledOptional: undefined })).equals(true)
 	})
 
+	it("misses a definition declaring its keys in another order", async () => {
+		const def = {
+			precompiledB: "string",
+			precompiledA: "string",
+			"+": "delete"
+		} as const
+		const units = await precompileUnits([scope({}).type(def)])
+		const Same = scope({}).type(def)
+		const Reordered = scope({}).type({
+			precompiledA: "string",
+			precompiledB: "string",
+			"+": "delete"
+		})
+		const data = { precompiledA: "a", precompiledB: "b" }
+		attest(isPrecompiled(units, Same.internal)).equals(true)
+		attest(Object.keys(Same(data))).snap(["precompiledB", "precompiledA"])
+		attest(isPrecompiled(units, Reordered.internal)).equals(false)
+		attest(Object.keys(Reordered(data))).snap(["precompiledA", "precompiledB"])
+	})
+
 	it("binds a unit for a function registered under a counted name", async () => {
 		const units = await precompileUnits([
 			type("number").narrow(named("isSignedPrecompiled", n => n > 0))

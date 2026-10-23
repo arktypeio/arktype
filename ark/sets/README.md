@@ -23,13 +23,13 @@ const Event = z.discriminatedUnion("kind", [
 discriminate(Event) // { path: ["kind"], kind: "unit", cases: [{ value: "key", branches }, { value: "click", branches }], default: null }
 ```
 
-Relations are sound: `true` is a proof, and `false` means it couldn't be proven, e.g. through `not` or `uniqueItems`.
+Relations are sound for what each schema is read as: `true` is a proof, and `false` means it couldn't be proven, e.g. through `not` or `uniqueItems`. A Type is read exactly and a JSON Schema as [below](#json-schema). A Standard JSON Schema is read as the JSON Schema it writes, so what that can't express, like zod's refinements, transforms and `undefined`, is invisible, and `true` proves the relation only for those JSON Schemas: `isSubset(z.string(), z.string().refine(s => s === "x"))` is `true`.
 
 ## API
 
 Every argument is a `Schema`: a Root (an `@ark/schema` node, which every arktype Type is), a Standard JSON Schema, or a JSON Schema object or boolean.
 
-A Standard JSON Schema is a schema whose `~standard` has `jsonSchema`, e.g. from zod 4.2.0 or later. Pass any other library's schema as its JSON Schema, e.g. `z.toJSONSchema(schema)` before zod 4.2.0. Anything else throws a `ParseError`.
+A Standard JSON Schema is a schema whose `~standard` has `jsonSchema`, e.g. from zod 4.2.0 or later. Pass any other library's schema as its JSON Schema, e.g. `z.toJSONSchema(schema)` before zod 4.2.0. Anything else throws a `ParseError`, as does a Standard JSON Schema whose `~standard.jsonSchema` throws, like zod's for `z.date()`, with the library's error as its `cause`.
 
 | function                      | returns                                                           |
 | ----------------------------- | ----------------------------------------------------------------- |
@@ -65,7 +65,7 @@ isSubset(User.toJsonSchema(), ZodUser) // true
 
 ## JSON Schema
 
-A Root read from a JSON Schema accepts exactly what a 2020-12 validator accepts, with ajv as the tiebreaker. Every keyword applies, and a type's keywords constrain only that type, so `{ minimum: 5 }` accepts `"foo"`. draft-07 forms (`items` arrays, `additionalItems`, `definitions`, `dependencies`) are read too, and a `$schema` of draft-07 or earlier ignores a `$ref`'s siblings.
+A Root read from a JSON Schema accepts exactly what a 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Every keyword applies, and a type's keywords constrain only that type, so `{ minimum: 5 }` accepts `"foo"`. draft-07 forms (`items` arrays, `additionalItems`, `definitions`, `dependencies`) are read too, and a `$schema` of draft-07 or earlier ignores a `$ref`'s siblings.
 
 - `format` is an annotation, as the spec defaults to. arktype writes a `pattern` beside each format, so its JSON Schema reads back equal.
 - A `pattern` may also be a `RegExp`, read with its own flags.

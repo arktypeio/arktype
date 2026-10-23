@@ -10,7 +10,10 @@ import {
 import { shareConfig } from "@ark/schema/runtime"
 import { hasDomain, includes, printable } from "@ark/util"
 import { configure } from "arktype/internal/config.js"
-import { keywordMetas } from "arktype/internal/standalone.ts"
+import {
+	introspectionMembers,
+	keywordMetas
+} from "arktype/internal/standalone.ts"
 import {
 	keptIssuesOf,
 	pathKeyOf,
@@ -208,6 +211,13 @@ const validatedMembers = ["allows", "assert", "traverse", "from"] as const
 
 const introspectedMembers = ["toJSON", "toJsonSchema", "toString"] as const
 
+// e.g. json off a validator whose build doesn't bake it, which reads
+// undefined, though the development runtime throws for it
+const isUnbaked = (counterpart: unknown, k: PropertyKey): boolean =>
+	typeof counterpart === "function" &&
+	includes(introspectionMembers, k) &&
+	!Object.getOwnPropertyDescriptor(counterpart, k)
+
 const droppableMembers = [
 	"assert",
 	"traverse",
@@ -243,6 +253,7 @@ const typeHandlerOf = (
 		if (includes(validatedMembers, k)) return validator(k)
 		if (
 			includes(introspectedMembers, k) &&
+			!isUnbaked(counterpart, k) &&
 			"value" in outcomeOf(() => counterpart[k])
 		)
 			return introspector(k)
@@ -303,8 +314,10 @@ const checkedMember = (
 	observation = `reading ${String(k)}`
 ): unknown => {
 	const value = inArktype(() => Reflect.get(target, k, target))
-	const read = outcomeOf(
-		() => (pair.counterpart as Record<PropertyKey, unknown>)[k]
+	const read = outcomeOf(() =>
+		isUnbaked(pair.counterpart, k) ? undefined : (
+			(pair.counterpart as Record<PropertyKey, unknown>)[k]
+		)
 	)
 	if (value !== undefined && ("thrown" in read || read.value === undefined)) {
 		fail(
@@ -327,7 +340,8 @@ const hasOf =
 			!(
 				Reflect.has(target, k) &&
 				hasDomain(pair.counterpart, "object") &&
-				k in pair.counterpart
+				k in pair.counterpart &&
+				!isUnbaked(pair.counterpart, k)
 			)
 		)
 			checkedMember(pair, target, k, `checking for ${String(k)} with in`)
@@ -398,7 +412,11 @@ const introspect = (pair: Pair, path: string[], args?: unknown[]): unknown => {
 			observe(outcome)
 		:	observe({ value: withoutSuffixes(outcome.value) })
 	const arktype = inArktype(() => outcomeOf(() => read(pair.original)))
-	const member = outcomeOf(() => readAt(pair.counterpart, path))
+	const member = outcomeOf(() =>
+		isUnbaked(pair.counterpart, path[0]) ? undefined : (
+			readAt(pair.counterpart, path)
+		)
+	)
 	const isBaked = "value" in member && member.value !== undefined
 	compare(
 		pair,

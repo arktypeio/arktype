@@ -403,6 +403,32 @@ const F = users.User.or(list[1])`,
 			])
 		})
 
+		it("a Type destructured off a namespace import", () => {
+			attest(
+				statusesOf(
+					`import * as S from "./schemas.ts"
+const { User: U } = S
+export const A = U.or("null")`,
+					{
+						"/schemas.ts": `import { type } from "arktype"\nexport const User = type({ id: "string" })`
+					}
+				)
+			).snap(["3:18 accepted { id: string } | null"])
+		})
+
+		it("introspection members read off data the build has no source for", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+export const read = async (res: any, sym: any) => [
+	await res.json(),
+	sym.description,
+	JSON.stringify(res),
+	\`\${sym}\`
+]
+export const User = type({ name: "string" })`)
+			).equals([])
+		})
+
 		it("data validated by a Module's Type", () => {
 			attest(
 				diagnosticsOf(`import { scope, type } from "arktype"
@@ -469,6 +495,29 @@ const shop = scope({ "Box<t>": { of: "t" } }).export()
 export const box = (t: string) => shop.Box(t).array()`)
 			).snap([
 				"/main.ts:3:44  `t` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `t` is a parameter of box (/main.ts:3:21); its value is known only at runtime\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it's a Type, make it static so the build precompiles it with the site."
+			])
+		})
+
+		it("what a Generic's instantiation validates", () => {
+			const source = `import { generic, scope, type } from "arktype"
+const Page = generic("t")({ items: "t[]", total: "number" })
+const page = Page({ name: "string" }).assert({ items: [{ name: "a" }], total: 1 })
+console.log(page.items.map(u => u.name))
+const Box = type("<t>", { value: "t" })
+const out = Box("'a' | 'b'")({ value: "c" })
+if (out instanceof type.errors) console.log(out.issues.map(e => e.code))
+const Pair = scope({ id: "string" }).generic("t")(["t", "id"])
+console.log(Pair("number").assert([1, "a"]).map(x => x))
+export const Named = type.generic("t")({ name: "t" })("string").or("null")`
+			attest(diagnosticsOf(source)).equals([])
+			attest(statusesOf(source)).snap([
+				"2:14 accepted",
+				"3:14 accepted { items: { name: string }[], total: number }",
+				"5:13 accepted",
+				'6:13 accepted { value: "a" | "b" }',
+				"8:14 accepted",
+				"9:13 accepted [number, string]",
+				"10:22 accepted { name: string } | null"
 			])
 		})
 
@@ -716,15 +765,23 @@ const B = type(\`number < \${max([1, 2])}\`)`)
 		})
 
 		it("opaque definitions are Standard Schemas", () => {
-			attest(
-				diagnosticsOf(`import { type } from "arktype"
+			const source = `import { type } from "arktype"
 import { z } from "zod"
 const wrap = (schema: unknown) => {
 	const Wrapped = type({ value: schema })
 	return Wrapped
 }
-const A = type({ name: z.string() })`)
+const A = type({ name: z.string() })`
+			// as writing them refuses them, which only analyze() reports
+			attest(
+				new Precompiler(memoryHost({ "/main.ts": source }))
+					.analyze(source, "/main.ts")
+					.diagnostics.map(d => renderDiagnostic(d).split("\n")[0])
 			).snap([
+				"/main.ts:4:18  type({ value: schema }) can't be precompiled yet",
+				"/main.ts:7:11  type({ name: z.string() }) can't be precompiled yet"
+			])
+			attest(diagnosticsOf(source)).snap([
 				"/main.ts:4:32  `schema` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `schema` is a parameter of wrap (/main.ts:3:15); its value is known only at runtime\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it's a Type, make it static so the build precompiles it with the site.",
 				"/main.ts:7:24  `z.string()` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `zod` is a package the build does not read\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it's a Type, make it static so the build precompiles it with the site."
 			])
@@ -808,6 +865,49 @@ max++
 const A = type(\`number < \${max}\`)`)
 			).snap([
 				"4:11 rejected\n  `max` is assigned at /main.ts:3:1, so its value at the site is not known"
+			])
+		})
+
+		it("objects written before the site", () => {
+			attest(
+				statusesOf(
+					`import { type } from "arktype"
+import { shared } from "./shared.ts"
+const fields = ["a", "b"]
+const shape: Record<string, string> = {}
+for (const f of fields) shape[f] = "string"
+const keys = ["a"]
+keys.push("b")
+const nested = { inner: { x: "string" } }
+const write = (o: { x: string }) => {
+	o.x = "number"
+}
+write(nested.inner)
+const later = { x: "string" }
+export const A = type(shape)
+export const B = type({ [keys[1]]: "string" })
+export const C = type(nested)
+export const D = type(shared)
+export const E = type(later)
+later.x = "number"
+const called = { x: "string" }
+const make = () => type(called)
+called.x = "number"
+export const F = make()`,
+					{
+						"/shared.ts": `export const shared: Record<string, string> = { a: "string" }
+export const addB = () => {
+	shared.b = "number"
+}`
+					}
+				)
+			).snap([
+				"14:18 rejected\n  `shape` is written at /main.ts:5:25, so its value at the site is not known",
+				"15:18 rejected\n  `keys` is written at /main.ts:7:1, so its value at the site is not known",
+				"16:18 rejected\n  `nested` is written at /main.ts:12:1, so its value at the site is not known",
+				"17:18 rejected\n  `shared` is imported from /shared.ts\n  `shared` is written at /shared.ts:3:2, so its value at the site is not known",
+				"18:18 accepted { x: string }",
+				"21:20 rejected\n  `called` is written at /main.ts:22:1, so its value at the site is not known"
 			])
 		})
 
@@ -1145,7 +1245,7 @@ export const Tag = z.string().optional()`
 					undefined
 				:	host.resolve(specifier, importer)
 			return new Precompiler({ ...host, resolve }, opts)
-				.analyze(source, "/main.ts")
+				.analyzeSites(source, "/main.ts")
 				.diagnostics.map(d => `${d.severity} ${renderDiagnostic(d)}`)
 		}
 
@@ -1375,6 +1475,139 @@ export const X = forms.make().or("null")`)
 			])
 		})
 
+		it("introspection reads off a Type the build lost track of", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+const User = type({ name: "string" })
+const routes = [{ body: User }]
+const list = [User]
+export const a = routes.map(r => r.body.expression)
+export const b = list.map(t => t.toJsonSchema())
+class C {
+	t = User
+	json() {
+		return JSON.stringify(this.t)
+	}
+	printed() {
+		return \`\${this.t}\`
+	}
+	described() {
+		return this.t.description
+	}
+}
+export const c = new C()`)
+			).snap([
+				"/main.ts:5:34  r.body.expression reads expression, which a standalone validator lacks\n  the build can't tell where `r.body` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:6:32  t.toJsonSchema reads toJsonSchema, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:10:10  JSON.stringify(this.t) reads toJSON, which a standalone validator lacks\n  the build can't tell where `this.t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:13:10  `${this.t}` reads expression, which a standalone validator lacks\n  the build can't tell where `this.t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:16:10  this.t.description reads description, which a standalone validator lacks\n  the build can't tell where `this.t` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("arktype loaded other than by an import declaration", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+import { createRequire } from "node:module"
+import ark = require("arktype")
+export const User = type({ name: "string" })
+export const load = async () => (await import("arktype")).type
+const require = createRequire(import.meta.url)
+const { scope } = require("@ark/type")
+export const configure = async () => (await import("arktype/config")).configure
+await import("arktype")`)
+			).snap([
+				'/main.ts:3:1  import ark = require("arktype") loads arktype, which a standalone build replaces with arktype/runtime',
+				'/main.ts:5:40  import("arktype") loads arktype, which a standalone build replaces with arktype/runtime',
+				'/main.ts:7:19  require("@ark/type") loads arktype, which a standalone build replaces with arktype/runtime'
+			])
+		})
+
+		it("a Type passed where the build can't see the call", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+export const widen = (t: any) => t.or("null")
+export const forms = {
+	optional(t) {
+		return t.or("undefined")
+	}
+}
+export class Repo {
+	constructor(readonly schema: any) {}
+	widen() {
+		return this.schema.or("null")
+	}
+}
+export const User = type({ name: "string" })`)
+			).snap([
+				"/main.ts:2:34  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:5:10  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:11:10  this.schema.or reads or, which a standalone validator lacks\n  the build can't tell where `this.schema` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("a Type held where the build loses it", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+const User = type({ name: "string" })
+class Repo {
+	constructor(readonly schema: typeof User) {}
+	widen() {
+		return this.schema.or("null")
+	}
+}
+class Holder {
+	t = User
+	get() {
+		return this.t
+	}
+}
+class Static {
+	static T: any
+	static {
+		Static.T = User
+	}
+}
+export const a = new Repo(User).widen()
+export const b = new Holder().get().or("null")
+export const c = Static.T.or("null")
+export const d = new Proxy(User, {}).or("null")`)
+			).snap([
+				"/main.ts:6:10  this.schema.or reads or, which a standalone validator lacks\n  the build can't tell where `this.schema` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:22:18  new Holder().get().or reads or, which a standalone validator lacks\n  the build can't tell where `new Holder().get()` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:23:18  Static.T.or reads or, which a standalone validator lacks\n  the build can't tell where `Static.T` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:24:18  new Proxy(User, {}).or reads or, which a standalone validator lacks\n  the build can't tell where `new Proxy(User, {})` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("a Type a TypeScript namespace exports", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+namespace Schemas {
+	export const User = type({ name: "string" })
+	export namespace Inner {
+		export const Admin = type({ role: "string" })
+	}
+}
+namespace A.B {
+	export const T = type("string")
+}
+function f() {}
+namespace f {
+	export const T = type("number")
+}
+console.log(Schemas.User.or("null"), Schemas.User.expression)
+console.log(Schemas.Inner.Admin.or("null"), A.B.T.or("null"), f.T.or("null"))
+console.log(Schemas.User({}), Schemas.User.allows(1))`)
+			).snap([
+				"/main.ts:15:13  Schemas.User.or reads or, which a standalone validator lacks\n  the build can't tell where `Schemas.User` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:15:38  Schemas.User.expression reads expression, which a standalone validator lacks\n  the build can't tell where `Schemas.User` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:16:13  Schemas.Inner.Admin.or reads or, which a standalone validator lacks\n  the build can't tell where `Schemas.Inner.Admin` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:16:45  A.B.T.or reads or, which a standalone validator lacks\n  the build can't tell where `A.B.T` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:16:63  f.T.or reads or, which a standalone validator lacks\n  the build can't tell where `f.T` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
 		it("members validators lack, outside sites", () => {
 			attest(
 				unhinted(`import { type } from "arktype"
@@ -1514,8 +1747,8 @@ console.log(values.map(v => (v as any).from))`,
 				],
 				[
 					"invalid enum option",
-					{ checks: "all" as never },
-					'checks must be "helpers", "none" or "types" (was "all")'
+					{ creationChecks: "all" as never },
+					'creationChecks must be "helpers", "none" or "types" (was "all")'
 				],
 				[
 					"non-boolean option",
@@ -1536,11 +1769,6 @@ console.log(values.map(v => (v as any).from))`,
 					"standalone option with runtime arktype",
 					{ runtime: "arktype", freeze: true },
 					writeArktypeRuntimeOptionMessage("freeze")
-				],
-				[
-					"countsKeys with runtime arktype",
-					{ runtime: "arktype", countsKeys: true },
-					writeArktypeRuntimeOptionMessage("countsKeys")
 				],
 				[
 					"non-boolean shadow",
@@ -1959,18 +2187,21 @@ const D = type("string")(1).toLocaleString(de)`)
 			attest(
 				statusesOf(`import { type } from "arktype"
 const o = { a: "string" }
+const p = { a: "string" }
 const set = (x: any) => Object.assign(x, { a: "number" })
 export const A = type(o)
 export const B = type(set(o).a)
-export const C = type(Object.freeze(o).a)
-export const D = type(Object.assign({}, o, { b: "number" }))
-export const E = type(Object.freeze({ a: "string" }))`)
+export const C = type(Object.freeze(p).a)
+export const D = type(Object.assign({}, p, { b: "number" }))
+export const E = type(Object.assign({}, o, { b: "number" }))
+export const F = type(Object.freeze({ a: "string" }))`)
 			).snap([
-				"4:18 accepted { a: string }",
-				'5:18 rejected\n  `Object.assign(x, { a: "number" })` writes to an object other than a new object or array literal',
-				"6:18 rejected\n  `Object.freeze(o)` writes to an object other than a new object or array literal",
-				"7:18 accepted { a: string, b: number }",
-				"8:18 accepted { a: string }"
+				"5:18 accepted { a: string }",
+				'6:18 rejected\n  `Object.assign(x, { a: "number" })` writes to an object other than a new object or array literal',
+				"7:18 rejected\n  `Object.freeze(p)` writes to an object other than a new object or array literal",
+				"8:18 accepted { a: string, b: number }",
+				"9:18 rejected\n  `o` is written at /main.ts:6:23, so its value at the site is not known",
+				"10:18 accepted { a: string }"
 			])
 		})
 

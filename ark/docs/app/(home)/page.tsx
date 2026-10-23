@@ -28,7 +28,7 @@ import { claims } from "../../lib/claims.ts"
 import { defineMetadata } from "../metadata.ts"
 
 const lede =
-	"Write the type you'd write anyway. Precompile it into a validator with no parser, or run it with no build at all. Your agent already knows the syntax."
+	"Write the type you'd write anyway. Precompile it into a validator with no parser: the build step is your agent's job now, and every error names its fix."
 
 const title = "ArkType · TypeScript's 1:1 validator"
 
@@ -239,6 +239,44 @@ const Caption = ({ name, kind, aside }: Record<string, string>) => (
 	</figcaption>
 )
 
+/** each category's win and where it stops, every number from lib/claims.ts or lib/bench */
+const wins = (
+	facts: BenchFacts
+): [category: string, win: React.ReactNode, scope: React.ReactNode][] => [
+	[
+		"speed",
+		<ClaimText key="win" claim={claims.zodSpec} />,
+		`ajv is faster on ${facts.ajvFasterCount} of ${facts.errorCount} rows that report errors`
+	],
+	[
+		"size",
+		"no parser, only the checks your types need",
+		<ClaimText key="scope" claim={claims.sizeSpec} />
+	],
+	[
+		"types",
+		"TypeScript's syntax, inferred as you'd write it",
+		"the same definitions and types, precompiled or dynamic"
+	],
+	["errors", "each names its fix", "from tsc, the build and validation"],
+	[
+		"schemas",
+		"Standard Schema, JSON Schema and OpenAPI 3.0",
+		"a precompiled validator keeps what its members option bakes"
+	],
+	[
+		"agents",
+		"a skill, and every page as Markdown",
+		"npx skills add arktypeio/arktype"
+	],
+	[
+		"migration",
+		// pending until the Zod-migration success rate is measured
+		<ClaimText key="win" claim={claims.zodMigrationSpec} />,
+		"from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema"
+	]
+]
+
 export default function HomePage() {
 	const facts = benchFacts()
 	const validRuntime =
@@ -263,32 +301,32 @@ export default function HomePage() {
 						</h1>
 						<p className="lede rise" style={rise(1)}>
 							Write the <span className="decl c-sky">type</span> you'd write
-							anyway. <HeadlineDetail /> Or skip the build entirely. Your{" "}
-							<span className="decl c-teal">agent</span> already knows the
-							syntax.
+							anyway. <HeadlineDetail /> The build step is your{" "}
+							<span className="decl c-teal">agent</span>'s job now.
 						</p>
 						<dl className="spec rise" style={rise(2)}>
-							<dt>syntax</dt>
-							<dd>
-								<b>TypeScript's own</b>, checked by <code>tsc</code> as you type
-							</dd>
-							<dt>precompiled</dt>
+							<dt>speed</dt>
 							<dd>
 								<b>no parser shipped</b> <NextTag /> · {validRuntime}{" "}
 								<BenchSource facts={facts} />
-							</dd>
-							<dt>dynamic</dt>
-							<dd>
-								<b>no build step</b> · <ClaimText claim={claims.dynamicSpec} />
 							</dd>
 							<dt>size</dt>
 							<dd>
 								<ClaimText claim={claims.sizeSpec} />
 							</dd>
-							<dt>agents</dt>
+							<dt>types</dt>
 							<dd>
-								<b>errors that name the fix</b>, from <code>tsc</code>, the
-								build and at runtime
+								<b>TypeScript's own syntax</b>, checked by <code>tsc</code> as
+								you type
+							</dd>
+							<dt>errors</dt>
+							<dd>
+								<b>each names its fix</b>, from <code>tsc</code>, the build and
+								at runtime
+							</dd>
+							<dt>dynamic</dt>
+							<dd>
+								<b>no build step</b> · <ClaimText claim={claims.dynamicSpec} />
 							</dd>
 						</dl>
 						<div className="ctas rise" style={rise(3)}>
@@ -336,6 +374,38 @@ export default function HomePage() {
 						<span>skill, Markdown, AGENTS.md</span>
 					</a>
 				</nav>
+
+				<section className="block" id="why" data-reveal>
+					<div className="sec-label">
+						<b>00</b>
+						{"// why"}
+					</div>
+					<h2>The build step was the only catch.</h2>
+					<p className="deck">
+						Precompiled validators have always been faster and smaller. What
+						they cost was a build step: a plugin to set up, errors you'd never
+						seen and a second model of what runs where. Your agent doesn't care.
+						It writes the definition, runs the build, reads the error and fixes
+						it, so your users get the speed and size, and you keep ArkType's
+						syntax, errors and set theory.
+					</p>
+					<dl className="wins">
+						{wins(facts).map(([category, win, scope]) => (
+							<div key={category}>
+								<dt>{category}</dt>
+								<dd>
+									<b>{win}</b>
+									<span>{scope}</span>
+								</dd>
+							</div>
+						))}
+					</dl>
+					<p className="note">
+						{
+							'// where a program needs arktype at runtime, runtime: "arktype" ships it for whatever can\'t be precompiled'
+						}
+					</p>
+				</section>
 
 				<section className="block" id="write" data-reveal>
 					<div className="sec-label">
@@ -606,8 +676,9 @@ export default function HomePage() {
 						It writes a definition, runs <code>tsc</code>, reads the error,
 						fixes it, then validates real input. A precompiled build adds one
 						more step of the same kind, its errors naming the file, line, reason
-						and fix, so precompiling costs your agent little. Every message in
-						this transcript is real ArkType and TypeScript output.
+						and fix. That step was the whole cost of precompiling, and your
+						agent pays it. Every message in this transcript is real ArkType and
+						TypeScript output.
 					</p>
 					<div className="agents">
 						<figure

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Take `arktype` as a peer dependency
+
+`arktype` was a dependency at an exact version, so an app on any other version installed a second copy, and errors from a Type `jsonSchemaToType` returned weren't `instanceof` its `type.errors`. It's now a peer dependency at the version released with it, so the Type comes from the app's own `arktype`, and a mismatched version fails to install (npm) or warns (pnpm) rather than installing a second copy.
+
 ### Infer types from JSON Schema
 
 `jsonSchema` checks a schema as you write it and infers the type it describes, and `jsonSchemaToType` returns a `Type` of that type (#729).
@@ -53,7 +57,7 @@ A pointer like `#/$defs/a` within a nested `$id` resolves against that resource,
 
 ### Read JSON Schema as exactly the values a validator accepts
 
-`jsonSchemaToType` reads a schema as exactly the values a 2020-12 validator like ajv accepts, or throws where it can't, and reads draft-07 forms. Schemas that threw now read, and some that read were wrong:
+`jsonSchemaToType` reads a schema as exactly the values a 2020-12 validator like ajv accepts, except that lengths count UTF-16 code units where JSON Schema counts code points, or throws where it can't, and reads draft-07 forms. Schemas that threw now read, and some that read were wrong:
 
 - `prefixItems` and draft-07 `items` arrays make their elements optional, as JSON Schema does: `[string?, number?, ...unknown[]]`.
 - `{ type: "object" }` no longer allows arrays.

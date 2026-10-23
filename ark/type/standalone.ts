@@ -61,15 +61,12 @@ import * as runtime from "./runtimeExports.ts"
 import type { Scope } from "./scope.ts"
 import {
 	mergeUnits,
-	namesOfChanged,
-	readersIn,
 	writeDependencies,
 	writeImports,
 	writeModule,
 	writeScope,
 	writeSections,
 	type SharedModule,
-	type UnitReaders,
 	type UnitScope
 } from "./standalone/modules.ts"
 import {
@@ -258,14 +255,10 @@ export interface StandaloneOptions {
 	checks?: Checks | undefined
 	mutatesInput?: MutatesInput | undefined
 	optimize?: Optimization | undefined
-	// count a plain object's keys to reject undeclared ones
-	countsKeys?: boolean | undefined
 	// declare functions, so an import cycle can call them early
 	hoisted?: boolean | undefined
 	// export as values what a site would call a function only to read
 	values?: boolean | undefined
-	// each unit module's readers across the program, which may be stale
-	unitReaders?: UnitReaders | undefined
 }
 
 interface Baking {
@@ -280,7 +273,6 @@ interface Baking {
 	compilesValidators: boolean
 	checksTypes: boolean
 	mutatesInput: MutatesInput | undefined
-	countsKeys: boolean
 	hoisted: boolean
 	shortest: boolean
 	flattens: boolean
@@ -373,8 +365,6 @@ export interface StandaloneModules {
 	values: string[]
 	// exports a site creates in place, as a call of names the code exports
 	calls: Record<string, string[]>
-	// the readers of each unit module that could join another's scope
-	unitReaders: UnitReaders
 }
 
 export const runtimeImport = `import * as runtime from "arktype/runtime"`
@@ -394,7 +384,7 @@ export const precompileStandalone = (
 	const { sections, shared, imports, folds, checking, values, calls } =
 		writeArtifact(exports, opts, false)
 	// nothing outside the artifact reads its units
-	mergeUnits(shared, imports, readersIn(shared, imports), opts)
+	mergeUnits(shared, imports, opts)
 	return {
 		code: writeSections([
 			`${runtimeImport}\n${versionImport}`,
@@ -405,8 +395,7 @@ export const precompileStandalone = (
 		folds,
 		checking,
 		values,
-		calls,
-		unitReaders: {}
+		calls
 	}
 }
 
@@ -416,34 +405,21 @@ export const precompileStandaloneModules = (
 ): StandaloneModules => {
 	const { sections, shared, imports, folds, checking, values, calls } =
 		writeArtifact(exports, opts, true)
-	const unitReaders: Record<string, string[]> = {}
-	const readers = readersIn(shared, imports)
-	for (const specifier in readers) {
-		if (shared[specifier]?.scope?.declaresOnlyRefs)
-			unitReaders[specifier] = readers[specifier]
-	}
-	const names = namesOfChanged(
-		shared,
-		opts.unitReaders ? mergeUnits(shared, imports, opts.unitReaders, opts) : []
-	)
+	// each module is shared by every artifact that reads it, so none merges
+	// another's units into its own
 	const modules: Record<string, string> = {}
-	for (const specifier in shared) {
-		modules[names[specifier] ?? specifier] = writeModule(
-			shared[specifier],
-			names
-		)
-	}
+	for (const specifier in shared)
+		modules[specifier] = writeModule(shared[specifier])
 	return {
 		code: writeSections([
-			`${runtimeImport}\n${versionImport}\n${writeImports(imports, names)}`,
+			`${runtimeImport}\n${versionImport}\n${writeImports(imports)}`,
 			...sections
 		]),
 		modules,
 		folds,
 		checking,
 		values,
-		calls,
-		unitReaders
+		calls
 	}
 }
 
@@ -477,7 +453,6 @@ const writeArtifact = (
 		compilesValidators: Object.keys(exports).length === 1,
 		checksTypes: opts.checks !== "none",
 		mutatesInput: opts.mutatesInput,
-		countsKeys: opts.countsKeys === true,
 		hoisted: opts.hoisted === true,
 		shortest: opts.optimize === "size",
 		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular
@@ -1182,8 +1157,7 @@ class StandaloneArtifact {
 			: this.baking.detailsErrors && this.baking.shortest ? 2
 			: 0) +
 			3 * +this.baking.firstIssue +
-			6 * +this.baking.countsKeys +
-			12 * +this.baking.shortest
+			6 * +this.baking.shortest
 		)
 	}
 

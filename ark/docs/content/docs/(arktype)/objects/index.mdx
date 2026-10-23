@@ -280,7 +280,7 @@ MyClosedObject({ onlyAllowedKey: "ok", extraKey: 1 })
 
 Both act on string keys: `"reject"` checks only an object's string keys, and `"delete"` builds a new object holding only its declared keys. So an undeclared symbol key passes `"reject"` and is dropped by `"delete"`, and reject types that differ only by a symbol key overlap, so a union of them with a morph is indeterminate.
 
-`"delete"`'s output has the declared keys in the order of the type's expression: required keys, then optional keys, each sorted by name.
+`"delete"`'s output lists the declared keys in the order the definition declares them, as Zod does, then any keys matching an index signature in the input's order.
 
 `.onDeepUndeclaredKey()` applies the same behavior to every nested object:
 
