@@ -4,6 +4,7 @@ import { Precompiler, type PrecompileOptions } from "@ark/aot"
 import { linkBundle } from "@ark/aot/internal/link.ts"
 import { scanProgram, writeUnseenMessage } from "@ark/aot/internal/scan.ts"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
+import { rspack } from "@rspack/core"
 import { build, context, type BuildOptions, type Plugin } from "esbuild"
 import {
 	build as viteBuild,
@@ -12,6 +13,7 @@ import {
 	type Plugin as VitePlugin,
 	type Rolldown
 } from "vite"
+import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join, posix } from "node:path"
@@ -805,5 +807,60 @@ console.log(out instanceof type.errors ? out.summary : out)
 				)
 			).equals(true)
 		})
+	})
+
+	describe("webpack and Rspack", () => {
+		const root = writeFixture(
+			{
+				"types.js": types,
+				"main.js": `import { type } from "arktype"
+import { User } from "./types.js"
+
+const out = User({ name: 5 })
+console.log(out instanceof type.errors ? out.summary : out)
+`
+			},
+			fromHere("temp", "prunedWebpack")
+		)
+
+		const compilers = {
+			webpack: [webpack, precompile.webpack],
+			Rspack: [rspack, precompile.rspack]
+		} as const
+
+		// a production build's bundle, as the compiler writes it
+		const bundle = async (
+			name: keyof typeof compilers,
+			opts: PrecompileUnpluginOptions
+		) => {
+			const [compile, plugin] = compilers[name]
+			const outDir = join(root, "out", name)
+			const compiler = (compile as typeof webpack)({
+				mode: "production",
+				context: root,
+				entry: "./main.js",
+				target: "node",
+				output: { path: outDir, filename: "main.js" },
+				plugins: [plugin(opts) as never]
+			})
+			const stats = await new Promise<Stats | undefined>((resolve, reject) =>
+				compiler.run((error, stats) =>
+					compiler.close(() => (error ? reject(error) : resolve(stats)))
+				)
+			)
+			if (stats?.hasErrors()) throw new Error(stats.toString("errors-only"))
+			return readFileSync(join(outDir, "main.js"), "utf8")
+		}
+
+		for (const name of Object.keys(compilers) as (keyof typeof compilers)[]) {
+			it(`builds each validator of a ${name} production build whole`, async () => {
+				const built = await bundle(name, {})
+				attest(
+					spawnSync(process.execPath, { input: built, encoding: "utf8" }).stdout
+				).snap("name must be a string\n")
+				attest(built.includes("~standard")).equals(true)
+				attest(built).equals(await bundle(name, { prune: false }))
+			})
+		}
 	})
 })

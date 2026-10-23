@@ -121,12 +121,14 @@
 		"access": "public"
 	},
 	"devDependencies": {
+		"@rspack/core": "2.2.9",
 		"@typescript-eslint/scope-manager": "8.46.1",
 		"arktype": "workspace:*",
 		"esbuild": "0.25.10",
 		"fast-check": "3.23.2",
 		"typescript-6": "npm:typescript@6.0.3",
 		"vite": "8.3.4",
-		"vitest": "5.0.3"
+		"vitest": "5.0.3",
+		"webpack": "5.112.0"
 	}
 }

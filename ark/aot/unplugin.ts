@@ -1002,7 +1002,11 @@ const esbuildLoaderOf = (path: string): "ts" | "tsx" | "js" | "jsx" =>
 interface BundlerCompiler {
 	context: string
 	options: {
-		cache?: boolean | { version?: string | undefined } | undefined
+		// e.g. webpack's { type: "filesystem" } or Rspack's { type: "persistent" }
+		cache?:
+			| boolean
+			| { type?: string; version?: string | undefined }
+			| undefined
 		mode?: string | undefined
 	}
 	hooks: { compilation: Tap<BundlerCompilation> }
