@@ -96,6 +96,22 @@ contextualize(() => {
 		attest(js.includes("zebra")).equals(false)
 	})
 
+	it("returns what kept code reads, annotating nothing a bundler keeps", async () => {
+		const [js] = await bundle(
+			{},
+			{
+				stdin: {
+					contents: `import { Team } from "./types.ts"\n\nconsole.log(Team({}))\n`,
+					resolveDir: root,
+					loader: "ts"
+				}
+			}
+		)
+		// Team's units read User's, Name's and Email's, whose validators it drops
+		attest(/^var \[\w+] = \(\(\) => {$/m.test(js)).equals(true)
+		attest(js.includes("__PURE__")).equals(false)
+	})
+
 	it("keeps each unit a module of its own with prune: false", async () => {
 		const [whole] = await bundle({ prune: false })
 		attest(factoryParam.test(whole)).equals(true)

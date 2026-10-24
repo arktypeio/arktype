@@ -571,9 +571,8 @@ export const failsIn = ((
 		ctx.failsIn(apply, value, key, missing, data)
 	:	!(apply as Fn)(value)) satisfies Fn
 
-export const requiredSite: FailureSite = {
-	missing: /* @__PURE__ */ siteOf("required")
-}
+// a literal, as an annotated call's annotation is kept by oxc's minifier
+export const requiredSite: FailureSite = { missing: { code: "required" } }
 
 // a key's site, reporting "required" where the key is missing
 export const keySiteOf = ((

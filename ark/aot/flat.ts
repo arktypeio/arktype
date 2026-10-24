@@ -63,7 +63,14 @@ export const flattenBundle = (
 	const repointed = new Map<string, Repointed[]>()
 	for (const [key, module] of parsed) {
 		if (flattened.has(key)) continue
-		const edits = repointedIn(module, flattened, flat.exported, specifier, read)
+		const edits = repointedIn(
+			module,
+			flattened,
+			flat.exported,
+			specifier,
+			read,
+			kept
+		)
 		if (!edits) return
 		if (edits.length) repointed.set(key, edits)
 	}
@@ -130,7 +137,11 @@ export const flattenBundle = (
 		)
 	}
 	for (const id in sites) {
-		const s = edit(id, rename)
+		let s = edit(id, rename)
+		for (const [start, end] of keptAnnotationsIn(parsed.get(id)!, kept)) {
+			s ??= new MagicString(sites[id])
+			s.remove(start, end)
+		}
 		bundle.sites[id] =
 			s ?
 				{ code: s.toString(), map: s.generateMap({ hires: "boundary" }) }
@@ -140,6 +151,49 @@ export const flattenBundle = (
 }
 
 const unrenamed = (specifier: string) => specifier
+
+// the annotations of the creations a site declares that kept code reads, which
+// a bundler keeps anyway, as oxc's minifier keeps their annotations
+const keptAnnotationsIn = (
+	module: SourceModule,
+	kept: KeptCode
+): [start: number, end: number][] => {
+	const result: [number, number][] = []
+	for (const statement of module.program.body) {
+		const declaration =
+			statement.type === "ExportNamedDeclaration" ?
+				statement.declaration
+			:	statement
+		if (
+			declaration?.type !== "VariableDeclaration" ||
+			!kept.statements.has(statement)
+		)
+			continue
+		for (const { init } of declaration.declarations) {
+			const call = init && unwrapExpression(init)
+			if (call?.type !== "CallExpression") continue
+			const before = module.source.slice(
+				Math.max(0, call.start - 32),
+				call.start
+			)
+			const annotation = before.match(pureAnnotated)
+			if (annotation)
+				result.push([call.start - annotation[0].length, call.start])
+		}
+	}
+	return result
+}
+
+// e.g. `type({ ... }) satisfies Type<Data>`, which runs as its expression
+const unwrapExpression = (node: Node): Node =>
+	(
+		node.type === "ParenthesizedExpression" ||
+		node.type === "TSSatisfiesExpression" ||
+		node.type === "TSAsExpression" ||
+		node.type === "TSNonNullExpression"
+	) ?
+		unwrapExpression(node.expression)
+	:	node
 
 // an import of units rewritten, each name read from the function's module
 // if it's there, else from the unit's own
@@ -154,7 +208,8 @@ const repointedIn = (
 	flattened: ReadonlySet<string>,
 	exported: ReadonlySet<string>,
 	specifier: string,
-	read: Set<string>
+	read: Set<string>,
+	keptCode: KeptCode
 ): Repointed[] | undefined => {
 	const result: Repointed[] = []
 	for (const statement of module.program.body) {
@@ -171,7 +226,13 @@ const repointedIn = (
 			const name = exportNameOf(imported.imported)
 			const local = imported.local.name
 			const named = name === local ? name : `${name} as ${local}`
-			if (exported.has(`${source}\0${name}`)) {
+			// an import nothing kept reads, e.g. of a validator the bundle
+			// drops, links to the unit's own module, so the function needn't
+			// return it
+			if (
+				exported.has(`${source}\0${name}`) &&
+				keptCode.reads(module.scopes.root.bindings[local])
+			) {
 				read.add(name)
 				flat.push(named)
 			} else kept.push(named)
@@ -212,6 +273,7 @@ interface UnitModule {
 // the code a bundler keeps, as it drops a pure declaration no kept code reads
 class KeptCode {
 	statements = new Set<Node>()
+	private imports = new Set<Binding>()
 	private modules: Map<string, SourceModule>
 	private referencesIn = new Map<SourceModule, Map<Node, Reference[]>>()
 
@@ -250,12 +312,18 @@ class KeptCode {
 			this.keepBinding(module, reference.binding)
 	}
 
+	reads(binding: Binding | undefined): boolean {
+		return !!binding && this.imports.has(binding)
+	}
+
 	private keepBinding(module: SourceModule, binding: Binding | undefined) {
 		if (!binding || binding.scope !== module.scopes.root) return
 		if (binding.kind !== "import") {
 			this.keep(module, statementOf(binding.declaration))
 			return
 		}
+		if (this.imports.has(binding)) return
+		this.imports.add(binding)
 		const specifier = binding.declaration
 		const source =
 			specifier.parent?.type === "ImportDeclaration" ?
@@ -723,8 +791,10 @@ const writeFlat = (units: UnitModule[]): Flat | undefined => {
 			const returned = `[${read
 				.map(name => (membersOf.has(name) ? wholeOf(name) : name))
 				.join(", ")}]`
-			const declaration = `const [${read.join(", ")}] = /* @__PURE__ */ (() => {
-${inGzipOrder(withoutUnread(body, returned))}
+			// kept code reads what it returns, so a bundler keeps its call, and
+			// annotations saying it could drop it are bytes oxc's minifier keeps
+			const declaration = `const [${read.join(", ")}] = (() => {
+${withoutAnnotations(inGzipOrder(withoutUnread(body, returned)))}
 return ${returned}
 })()`
 			return asModule ?
@@ -778,6 +848,16 @@ const withoutUnread = (body: string, returned: string): string => {
 		body = s.toString().slice(0, -returned.length - 2)
 	}
 }
+
+const withoutAnnotations = (body: string): string => {
+	const { comments } = parseSync("units.js", body, { sourceType: "module" })
+	const s = new MagicString(body)
+	for (const comment of comments)
+		if (pureAnnotation.test(comment.value)) s.remove(comment.start, comment.end)
+	return s.toString()
+}
+
+const pureAnnotation = /^\s*[#@]__PURE__\s*$/
 
 // each function the units declare, which reads nothing as it's declared, first
 // and beside those like it, so gzip finds their repeats, then the rest in
