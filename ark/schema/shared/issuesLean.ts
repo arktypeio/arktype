@@ -56,11 +56,7 @@ export class ArkErrors implements FailureContext {
 	}
 
 	/** @internal */
-	failsAt(
-		site: FailureSite,
-		data: unknown,
-		key?: PropertyKey
-	): true | undefined {
+	_at(site: FailureSite, data: unknown, key?: PropertyKey): true | undefined {
 		const path = this._p
 		let context = site.value ?? (site as SiteContext)
 		if (key !== undefined) {
@@ -82,7 +78,7 @@ export class ArkErrors implements FailureContext {
 	}
 
 	/** @internal */
-	failsIn(
+	_in(
 		apply: CompactApply,
 		value: unknown,
 		key: PropertyKey,
@@ -90,7 +86,7 @@ export class ArkErrors implements FailureContext {
 		data?: unknown
 	): boolean | undefined {
 		if (missing && value === undefined && !(key in (data as object)))
-			return this.failsAt(missing, data, key)
+			return this._at(missing, data, key)
 		this._p.push(key)
 		const continues = apply(value, this)
 		this._p.pop()
@@ -146,7 +142,7 @@ export const issuesOf = (
 ): ArkIssue[] => {
 	apply(data, errors)
 	// data a write or a getter has made valid since fails as a whole
-	if (!errors._.length) errors.failsAt({ code: "predicate" }, data)
+	if (!errors._.length) errors._at({ code: "predicate" }, data)
 	return errors._
 }
 

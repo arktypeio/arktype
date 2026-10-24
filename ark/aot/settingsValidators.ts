@@ -48,7 +48,7 @@ var ArkIssues = class {
 		return this.summary
 	}
 	/** @internal */
-	failsAt(site, data, key) {
+	_at(site, data, key) {
 		const path = this._p
 		let context = site.value ?? site
 		if (key !== void 0) {
@@ -70,9 +70,9 @@ var ArkIssues = class {
 		return this.failFast
 	}
 	/** @internal */
-	failsIn(apply, value, key, missing, data) {
+	_in(apply, value, key, missing, data) {
 		if (missing && value === void 0 && !(key in data))
-			return this.failsAt(missing, data, key)
+			return this._at(missing, data, key)
 		this._p.push(key)
 		const continues = apply(value, this)
 		this._p.pop()
@@ -200,10 +200,9 @@ var domains = (cases, description) => {
 var freeze = Object.freeze
 var holesByValue = /* @__PURE__ */ new WeakMap()
 var siteOf = (code, description) => ({ code, description })
-var failsAt = (ctx, site, data, key) =>
-	!ctx?.failsAt || ctx.failsAt(site, data, key)
+var failsAt = (ctx, site, data, key) => !ctx?._at || ctx._at(site, data, key)
 var failsIn = (ctx, apply, value, key, missing, data) =>
-	ctx?.failsAt ? ctx.failsIn(apply, value, key, missing, data) : !apply(value)
+	ctx?._at ? ctx._in(apply, value, key, missing, data) : !apply(value)
 var holdHoles = (value, id, holes = []) => {
 	holesByValue.set(value, [id, freeze(holes)])
 	return value
@@ -1028,7 +1027,7 @@ var get0 = () => {
 	return (created0 ??= (() => {
 		const validator0 = create10n7yuw0bfhpvo(
 			intersectionb45fta02ocvqf,
-			"1usds8d0"
+			"cbbfph1y"
 		)
 		return validator0
 	})())
@@ -1037,7 +1036,7 @@ var get1 = () => {
 	return (created1 ??= (() => {
 		const validator0 = create10n7yuw0bfhpvo(
 			intersection183ti520189nnw,
-			"vu3u730c"
+			"1g5t18s1"
 		)
 		return validator0
 	})())

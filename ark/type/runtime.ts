@@ -555,8 +555,7 @@ export const failsAt = ((
 	site: FailureSite,
 	data: unknown,
 	key?: PropertyKey
-): boolean | undefined =>
-	!ctx?.failsAt || ctx.failsAt(site, data, key)) satisfies Fn
+): boolean | undefined => !ctx?._at || ctx._at(site, data, key)) satisfies Fn
 
 export const failsIn = ((
 	ctx: FailureContext | undefined,
@@ -566,8 +565,8 @@ export const failsIn = ((
 	missing?: FailureSite,
 	data?: unknown
 ): boolean | undefined =>
-	ctx?.failsAt ?
-		ctx.failsIn(apply, value, key, missing, data)
+	ctx?._at ?
+		ctx._in(apply, value, key, missing, data)
 	:	!(apply as Fn)(value)) satisfies Fn
 
 // a literal, as an annotated call's annotation is kept by oxc's minifier
@@ -618,7 +617,7 @@ const elementsFrom =
 	): CompactApply =>
 	(_, ctx) => {
 		for (let j = i; j < data.length; j++)
-			if (!allows(data[j]) && ctx.failsIn(apply, data[j], j)) return false
+			if (!allows(data[j]) && ctx._in(apply, data[j], j)) return false
 		return true
 	}
 

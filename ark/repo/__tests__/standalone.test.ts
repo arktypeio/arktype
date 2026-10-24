@@ -350,16 +350,16 @@ age must be non-negative`)
 	it("literals reading as the code around them", async () => {
 		const Gated = type({ b: "string > 3" })
 		// a leaf's Apply is named for its content, so a key can name it
-		const apply = /failsIn\((\w+Apply), data\.b/.exec(
+		const apply = /\._in\((\w+Apply), data\.b/.exec(
 			precompileStandalone({ Gated }).code
 		)![1]
-		const gate = `, xR1, data)!ctx.failsIn(${apply}, data.b, `
+		const gate = `, xR1, data)!ctx._in(${apply}, data.b, `
 		const types = {
 			Keyed: type({
-				"ctx.failsAt(": "string",
-				"ctx.failsIn(": "string > 1"
+				"ctx._at(": "string",
+				"ctx._in(": "string > 1"
 			}),
-			Units: type("'ctx.failsIn(' | 'ctx.failsAt(' | number"),
+			Units: type("'ctx._in(' | 'ctx._at(' | number"),
 			Unit: type("'ctx.x'"),
 			Read: type({ "ctx.": "'ctx.'" }),
 			Gated: Gated.and({ [`${gate}?`]: "number" }),
@@ -393,10 +393,10 @@ age must be non-negative`)
 				[
 					["Keyed", "Units"],
 					[
-						{ "ctx.failsAt(": "a", "ctx.failsIn(": "ab" },
-						{ "runtime.failsAt(ctx, ": "a", "ctx.failsIn(": "ab" },
-						{ "ctx.failsAt(": "a", "runtime.failsIn(ctx, ": "ab" },
-						"ctx.failsIn(",
+						{ "ctx._at(": "a", "ctx._in(": "ab" },
+						{ "runtime.failsAt(ctx, ": "a", "ctx._in(": "ab" },
+						{ "ctx._at(": "a", "runtime.failsIn(ctx, ": "ab" },
+						"ctx._in(",
 						"runtime.failsIn(ctx, ",
 						0
 					]

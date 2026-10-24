@@ -402,9 +402,9 @@ export abstract class NodeCompiler extends CompiledFunction<
 		)
 	}
 
-	// a call reporting a failure into ctx
+	// a call reporting a failure into ctx, by FailureContext's short names
 	fails(method: "failsAt" | "failsIn", args: string): string {
-		return `ctx.${method}(${args})`
+		return `ctx.${method === "failsAt" ? "_at" : "_in"}(${args})`
 	}
 
 	// returns what the case on matches returns, or otherwise
