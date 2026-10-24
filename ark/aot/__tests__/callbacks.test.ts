@@ -116,7 +116,7 @@ const E = type({ a: type("string").narrow(isLong) }).configure({ description: "s
 		attest(diagnosticsOf(source)[0])
 			.snap(`/main.ts:3:11  type({ a: type("string").narrow(isLong) }).configure({ desc… can't be precompiled yet
   \`n.expression\` (/main.ts:3:133) prints the name of \`isLong\` (/main.ts:2:16), which the build knows only by a placeholder
-  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
+  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.`)
 	})
 
 	it("narrows on literal values", () => {
@@ -159,7 +159,7 @@ const B = type.instanceOf(User)`,
 const isEven = (n: number) => n % 2 === 0
 export const schema = type("number").narrow(isEven).toJsonSchema()`)
 		).snap([
-			'/main.ts:3:23  type("number").narrow(isEven).toJsonSchema() cannot be precompiled\n  `type("number").narrow(isEven).toJsonSchema()` throws ToJsonSchemaError: Can\'t convert "predicate" to JSON Schema. Configure fallback.predicate to write it:\n{\n    code: "predicate",\n    base: {\n        type: "number"\n    },\n    predicate: Function(isEven)\n} at build\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+			'/main.ts:3:23  type("number").narrow(isEven).toJsonSchema() cannot be precompiled\n  `type("number").narrow(isEven).toJsonSchema()` throws ToJsonSchemaError: Can\'t convert "predicate" to JSON Schema. Configure fallback.predicate to write it:\n{\n    code: "predicate",\n    base: {\n        type: "number"\n    },\n    predicate: Function(isEven)\n} at build\n  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.'
 		])
 	})
 

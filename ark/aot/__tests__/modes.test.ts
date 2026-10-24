@@ -358,9 +358,9 @@ export const later = () => {
 					return diagnostics.map(diagnostic => diagnostic.hint)
 				})
 			).snap([
-				'Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
-				'Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
-				'Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+				"Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.",
+				"Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.",
+				"Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
 			])
 		})
 

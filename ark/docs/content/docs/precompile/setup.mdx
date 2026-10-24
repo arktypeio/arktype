@@ -290,7 +290,7 @@ npx arktype-precompile --check "src/**/*.ts"
 src/forms.ts:5:21  accepted
 src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
   `limit` is a parameter of makeField (src/forms.ts:12:22); its value is known only at runtime
-  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
+  Write the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call.
 ```
 
 Without a pattern, it checks every JavaScript and TypeScript file under the current directory outside `node_modules`, `dist`, `out` and `build`.

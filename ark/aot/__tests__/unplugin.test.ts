@@ -717,7 +717,7 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 			.snap(`main.ts:9:21  type({ name: \`string <= \${settings.limit}\` }) cannot be precompiled
   \`settings\` is \`{ limit: Math.random() }\` (main.ts:7:7)
   \`Math.random\` is not one of the build's pure built-ins
-  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`)
+  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.`)
 	})
 
 	// a list that grew with the build made a 100-module build 15 times slower
@@ -1309,7 +1309,7 @@ console.log(JSON.stringify(User.toJsonSchema()))
 			return [thrown.message, thrown.stack]
 		}
 		attest(await thrownBy({})).snap([
-			'main.ts:3:18  type(`number < ${Math.random()}`) cannot be precompiled\n  `Math.random` is not one of the build\'s pure built-ins\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
+			"main.ts:3:18  type(`number < ${Math.random()}`) cannot be precompiled\n  `Math.random` is not one of the build's pure built-ins\n  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.",
 			""
 		])
 		// thrown by the precompiler's worker rather than reported for a module

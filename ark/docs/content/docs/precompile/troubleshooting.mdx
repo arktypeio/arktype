@@ -8,7 +8,7 @@ A build that precompiles everything is quiet. Otherwise, each problem is reporte
 ```
 src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
   `limit` is a parameter of makeField (src/forms.ts:12:22); its value is known only at runtime
-  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
+  Write the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call.
 ```
 
 Positions are your source's, even where another plugin transpiled it first. Run [`arktype-precompile --check`](/docs/precompile/setup#check-an-existing-project) to see every report at once.
@@ -37,9 +37,9 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 ## Definitions
 
-**`... cannot be precompiled`**: the definition reads a value known only at runtime, like a parameter or the result of a call the build can't evaluate. Make the value static, mark the definition as a [runtime island](/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`.
+**`... cannot be precompiled`**: the definition reads a value known only at runtime, like a parameter or the result of a call the build can't evaluate. Make the value static, mark the definition as a [runtime island](/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`. For a parameter, write the definition where the function is called, with the value it passes.
 
-**`` `shape` is written at ..., so its value at the site is not known ``**: the definition reads an object or array the program changes before it, through a member, a method like `push`, `Object.assign` or a function writing its argument, so the build can't tell what it holds there. Write the value whole in its literal, or build with `runtime: "arktype"`.
+**`` `shape` is written at ..., so its value at the site is not known ``**: the definition reads an object or array the program changes before it, through a member, a method like `push`, `Object.assign` or a function writing its argument, so the build can't tell what it holds there. Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime.
 
 **`... can't be precompiled yet`**: the definition uses something the build doesn't support yet. Build it as a runtime island, or with `runtime: "arktype"`.
 
@@ -57,7 +57,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`import("arktype") loads arktype, which a standalone build replaces with arktype/runtime`**: the build precompiles definitions it sees through an `import` declaration, and resolves every other load of arktype to its runtime, which can't create a Type. Import it with an `import` declaration, or build with `runtime: "arktype"`.
 
-**`User.description reads description, which a standalone validator lacks`**: a validator lacks the methods that compose a Type and the introspection members its build's [`members`](/docs/precompile/options#members) option doesn't set. Compose inside a definition, set the member, or build with `runtime: "arktype"`.
+**`User.description reads description, which a standalone validator lacks`**: a validator lacks the methods that compose a Type and the introspection members its build's [`members`](/docs/precompile/options#members) option doesn't set. Compose inside a definition, set the member, or build with `runtime: "arktype"`. Where a helper composes a Type it's passed, as `<t>(T: Type<t>) => T.or("null")` does, make it a Generic, `type("<t>", "t | null")`, which the build precompiles where it's called.
 
 **`` `User` comes from `~/schemas`, which the build can't resolve ``**: the build resolves imports as TypeScript does, so it can't check reads off an import only a bundler alias resolves. Add the alias to `tsconfig.json`'s `paths`, or name that tsconfig as the build's `tsconfig`. If the value isn't a Type, annotate it with its type.
 

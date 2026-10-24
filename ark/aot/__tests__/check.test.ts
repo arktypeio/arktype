@@ -51,7 +51,7 @@ contextualize(function (this: Mocha.Suite) {
 				config: "config.ts"
 			}).lines
 		).snap([
-			'main.ts:6:18  type("string").narrow(() => lenient) can\'t be precompiled yet\n  arktype calls `() => lenient` (main.ts:6:40)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+			"main.ts:6:18  type(\"string\").narrow(() => lenient) can't be precompiled yet\n  arktype calls `() => lenient` (main.ts:6:40)\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.",
 			"main.ts:8:29  accepted",
 			"2 sites in 2 files: 1 accepted (50.0%)"
 		])

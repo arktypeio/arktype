@@ -72,6 +72,7 @@ import {
 	importsValues,
 	isArk,
 	isArkObject,
+	isComposingMember,
 	isFunctionNode,
 	isObjectWrite,
 	writeOf,
@@ -107,6 +108,7 @@ import {
 import {
 	createSiteState,
 	findDynamic,
+	inferredNameOf,
 	Interpreter,
 	isDynamic,
 	type InterpreterOptions,
@@ -157,6 +159,8 @@ import {
 	frozenHint,
 	hintsByRule,
 	opaqueSchemaHint,
+	writeGenericHint,
+	writeOpaqueParameterHint,
 	islandHint,
 	islandValueMessage,
 	localeHint,
@@ -3403,13 +3407,32 @@ export class Precompiler {
 				"R4",
 				`\`${origin.snippetOf(node)}\` is not static, so the site accepts it only as a Standard Schema that is not a Type`,
 				chainOf(standIn.dynamic),
-				opaqueSchemaHint,
+				this.opaqueHintOf(standIn.dynamic, candidate.state.node, module),
 				"warning"
 			)
 			this.schemaWarningSpans.set(warning, { start: site.start, end: site.end })
 			result.push(warning)
 		}
 		return result
+	}
+
+	// a parameter that may be a Type is better a Generic's
+	private opaqueHintOf(
+		dynamic: DynamicValue,
+		site: Node,
+		module: SourceModule
+	): string {
+		let link: DynamicValue | undefined = dynamic
+		while (link && link.code !== "parameter") link = link.cause
+		const param = link && parameterOf(link.node, link.module)
+		if (!param?.fn) return opaqueSchemaHint
+		return writeOpaqueParameterHint(
+			param.fn,
+			param.binding.name,
+			link!.module === module ?
+				genericSiteDefinitionOf(site, param.binding, module)
+			:	undefined
+		)
 	}
 
 	private configureCallsOf(module: SourceModule): CallExpression[] {
@@ -3994,6 +4017,18 @@ export class Precompiler {
 			// derived from a Scope, Module or Generic, which an annotation doesn't narrow
 			const isDerived =
 				isUnsure && !dropped && mayBeOtherArk(this.graph.kindOf(object, module))
+			// e.g. `T.or("null")` in `<t>(T: Type<t>) => ...`, which a Generic writes
+			const param =
+				(
+					!isDerived &&
+					!dropped &&
+					typeof read === "string" &&
+					isComposingMember(read)
+				) ?
+					parameterOf(object, module)
+				:	undefined
+			// a callback, like `map`'s, isn't one a Generic can replace
+			const generic = param?.fn ? param : undefined
 			result.push(
 				this.diagnostic(
 					module,
@@ -4005,6 +4040,8 @@ export class Precompiler {
 					[
 						isDerived ?
 							`\`${module.snippetOf(object)}\` is read off what may be an arktype value, so it may be a Type, which the standalone runtime replaces with a validator`
+						: generic && isUnsure ?
+							`\`${generic.binding.name}\` is a parameter of ${generic.fn}, so it may be a Type, which the standalone runtime replaces with a validator`
 						: isUnsure ?
 							`the build can't tell where \`${module.snippetOf(object)}\` comes from, so it may be a Type, which the standalone runtime replaces with a validator`
 						: dropped ?
@@ -4012,6 +4049,13 @@ export class Precompiler {
 						:	`\`${module.snippetOf(object)}\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read`
 					],
 					isDerived ? derivedHint
+					: generic ?
+						writeGenericHint(
+							generic.fn,
+							generic.binding.name,
+							genericDefinitionOf(node, module),
+							!isUnsure || generic.isAnnotated
+						)
 					: isUnsure ?
 						writeUnsureHint(
 							dropped ? `leave members[${JSON.stringify(dropped)}] unset`
@@ -4783,6 +4827,81 @@ const rejectionOf = (state: SiteState): DynamicValue | undefined =>
 	state.error instanceof DynamicValue ? state.error
 	: state.error === undefined ? findDynamic(state.value)
 	: undefined
+
+// e.g. `T` in `<t>(T: Type<t>) => T.or("null")`, with the function's name
+const parameterOf = (
+	node: Node,
+	module: SourceModule
+): { binding: Binding; fn: string; isAnnotated: boolean } | undefined => {
+	const id = unwrapChain(node)
+	const binding =
+		id.type === "Identifier" ?
+			module.scopes.refsById.get(id)?.binding
+		:	undefined
+	if (binding?.kind !== "param") return
+	return {
+		binding,
+		fn: inferredNameOf(binding.declaration as FunctionNode),
+		isAnnotated: !!(binding.id as { typeAnnotation?: unknown }).typeAnnotation
+	}
+}
+
+// what a Generic defines for a call composing its parameter, e.g. "t | null"
+// for `T.or("null")`, if the call is that simple
+const genericDefinitionOf = (
+	read: Node,
+	module: SourceModule
+): string | undefined => {
+	if (read.type !== "MemberExpression") return
+	const [callee, call] = operatorOf(read)
+	if (call?.type !== "CallExpression" || call.callee !== callee) return
+	const name = memberNameOf(read)
+	const [arg, ...rest] = call.arguments
+	if (name === "array") return arg ? undefined : '"t[]"'
+	const operator =
+		name === "or" ? "|"
+		: name === "and" ? "&"
+		: undefined
+	if (!operator || !arg || rest.length || arg.type === "SpreadElement") return
+	if (arg.type === "Literal" && typeof arg.value === "string") {
+		const operand =
+			operator === "&" && arg.value.includes("|") ? `(${arg.value})` : arg.value
+		return JSON.stringify(`t ${operator} ${operand}`)
+	}
+	const text = module.snippetOf(arg)
+	return text.endsWith("…") ? undefined : `["t", "${operator}", ${text}]`
+}
+
+// what a Generic defines for a site reading its parameter, e.g. `{ value: "t" }`
+// for `type({ value: T })`, if each read is a whole definition
+const genericSiteDefinitionOf = (
+	site: Node,
+	param: Binding,
+	module: SourceModule
+): string | undefined => {
+	if (
+		site.type !== "CallExpression" ||
+		site.arguments.length !== 1 ||
+		!/(?:^|\.)type$/.test(module.textOf(site.callee))
+	)
+		return
+	const [arg] = site.arguments
+	let text = module.textOf(arg)
+	const reads = param.references
+		.map(reference => reference.id)
+		.filter(id => contains(arg, id))
+		.sort((l, r) => r.start - l.start)
+	for (const id of reads) {
+		const parent = id.parent
+		const isDefinition =
+			id === arg ||
+			parent?.type === "ArrayExpression" ||
+			(parent?.type === "Property" && parent.value === id && !parent.shorthand)
+		if (!isDefinition) return
+		text = `${text.slice(0, id.start - arg.start)}"t"${text.slice(id.end - arg.start)}`
+	}
+	return text.includes("\n") || text.length > 60 ? undefined : text
+}
 
 const chainOf = (dynamic: DynamicValue): string[] => {
 	const result: string[] = []

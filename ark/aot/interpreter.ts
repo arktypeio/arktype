@@ -2764,7 +2764,7 @@ const declaredNameOf = (node: FunctionNode | Class): string | undefined => {
 	}
 }
 
-const inferredNameOf = (fn: FunctionNode): string => {
+export const inferredNameOf = (fn: FunctionNode): string => {
 	const parent = fn.parent
 	return (
 		fn.id ? fn.id.name

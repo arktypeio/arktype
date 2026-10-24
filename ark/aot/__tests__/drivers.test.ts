@@ -241,7 +241,7 @@ contextualize(function (this: Mocha.Suite) {
 			attest(thrownMessage(stdout, app))
 				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
   \`process\` is a global the build does not read
-  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`)
+  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.`)
 		})
 
 		it("a package reading arktype's nodes in a runtime island", () => {
@@ -869,7 +869,7 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			attest(thrownMessage(stderr, app, "error: "))
 				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
   \`process\` is a global the build does not read
-  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`)
+  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.`)
 		})
 	})
 })

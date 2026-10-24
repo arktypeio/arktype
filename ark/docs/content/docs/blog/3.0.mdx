@@ -44,7 +44,7 @@ A definition built from a value known only at runtime is the usual reason a buil
 ```
 src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
   `limit` is a parameter of makeField (src/forms.ts:12:22); its value is known only at runtime
-  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
+  Write the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call.
 ```
 
 `runtime: "arktype"` is the escape hatch: it precompiles what it can and ships arktype for the rest, so nothing you write today keeps you from precompiling. `npx arktype-precompile --check "src/**/*.ts"` lists every definition the build would refuse before you switch.
