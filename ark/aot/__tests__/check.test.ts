@@ -37,6 +37,21 @@ contextualize(function (this: Mocha.Suite) {
 		])
 	})
 
+	it("skips what a build wrote, at any depth", () => {
+		const site = `import { type } from "arktype"\nexport const A = type("string")\n`
+		const root = writeFixture({
+			"main.ts": site,
+			"dist/main.js": site,
+			"out/main.js": site,
+			"build/nested/main.js": site,
+			"src/build/main.ts": site
+		})
+		attest(check([], { cwd: root }).lines).snap([
+			"main.ts:2:18  accepted",
+			"1 site in 1 file: 1 accepted (100.0%)"
+		])
+	})
+
 	it("resolves past a tsconfig it cannot load", () => {
 		attest(check([], { cwd: fromHere("unloadableTsconfig") }).lines).snap([
 			"site.ts:4:21  accepted",
