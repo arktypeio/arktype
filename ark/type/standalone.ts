@@ -1999,11 +1999,15 @@ ${writeFunction(
 			typeof applied === "string" ? applied : (
 				`${this.emitApplier(applied)}(${applied.args})`
 			)
+		// a creator per applier calls each validator's Allows itself, where one
+		// creator calling a shared root apply would call it through a closure
+		// every validator of the shape shares, whose call V8 can't inline once
+		// it has seen several
 		const fused =
 			(
-				this.baking.shortest &&
 				typeof applied === "object" &&
-				/^\[?allows\b/.test(applied.params) &&
+				/^(?:\[|{ 0: )?allows\b/.test(applied.params) &&
+				(this.baking.shortest || (!ownsValidator && !applied.local)) &&
 				!isTemplate &&
 				!isCreatedByRuntime(members, this.baking)
 			) ?
