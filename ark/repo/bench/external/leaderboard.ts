@@ -8,10 +8,13 @@ import { join } from "node:path"
 const here = import.meta.dirname
 const docs = join(here, "..", "..", "..", "docs")
 
-// the stored results each suite reads
+// the stored results each suite reads: its rivals', which don't depend on
+// ArkType's build, and ArkType's rows, each measured again on one commit
 const sources = {
+	arkType: "results/arktype-7daf33b7e.json",
 	counts: "results/counts-a306152ce.json",
-	startup: "results/startup-4fd880692-node24.json",
+	homepageCounts: "results/homepage-counts-54777c69a.json",
+	startup: "results/startup-7daf33b7e-node24.json",
 	forms: "results/forms-642b4517e.json",
 	sbCounts: "results/sb-counts-6c5fd9862.json",
 	sbDownload: "results/sb-download-6c5fd9862.json",
@@ -100,7 +103,12 @@ const byCase = (entries: [string, number][]) => {
 	return Object.entries(cases).map(([id, byArm]) => rowOf(id, byArm))
 }
 
-const counts: Record<string, number[]> = read(join(here, sources.counts))
+const arkType = read(join(here, sources.arkType))
+
+const counts: Record<string, number[]> = {
+	...read(join(here, sources.counts)),
+	...arkType.moltar
+}
 const moltar = byCase(
 	Object.entries(counts)
 		.filter(([key]) => !key.startsWith("sb "))
@@ -108,9 +116,26 @@ const moltar = byCase(
 )
 
 const bench = read(join(docs, "lib", "bench", "benchData.json"))
-const homepage: Row[] = bench.scenarios.map(
-	(s: { id: string; medianNs: Record<string, number> }) =>
-		rowOf(s.id, s.medianNs)
+// counted in instructions, as the README's "Which suites" counts wall-clock
+// rows measured under load
+const homepageCounts: Record<string, Record<string, number[]>> = read(
+	join(here, sources.homepageCounts)
+)
+const homepage: Row[] = Object.entries(homepageCounts).map(([id, byArm]) =>
+	rowOf(
+		id,
+		Object.fromEntries(
+			Object.entries({ ...byArm, ...arkType.homepage[id] }).map(
+				([arm, reps]) => [arm, median(reps as number[])]
+			)
+		)
+	)
+)
+const homepageSize = Object.fromEntries(
+	Object.entries(bench.size).map(([app, byArm]) => [
+		app,
+		{ ...(byArm as object), ...arkType.homepageSize[app] }
+	])
 )
 
 const startup = read(join(here, sources.startup))
@@ -144,7 +169,10 @@ const appsOf = (
 		)
 	)
 
-const forms: Record<string, { gzip: number }> = read(join(here, sources.forms))
+const forms: Record<string, { gzip: number }> = {
+	...read(join(here, sources.forms)),
+	...arkType.form
+}
 
 // schemabenchmarks.dev: a label is a library and, in parentheses, its
 // variant, except that zod's z.compile variants are Zod (compiled), as the
@@ -169,18 +197,29 @@ const sbRows = (cases: [string, number][]) => {
 	}
 	return Object.entries(rows).map(([id, byArm]) => rowOf(id, byArm))
 }
-const sbCounts = Object.entries(
-	read(join(here, sources.sbCounts)) as Record<string, number[]>
-).map(([key, reps]): [string, number] => [key, median(reps)])
+const sbCounts = Object.entries({
+	...read(join(here, sources.sbCounts)),
+	...arkType.sbCounts
+} as Record<string, number[]>).map(([key, reps]): [string, number] => [
+	key,
+	median(reps)
+])
 const sbDownload: {
 	minified: { libraryName: string; note?: string; gzipBytes: number }[]
 } = read(join(here, sources.sbDownload))
+for (const r of sbDownload.minified)
+	if (r.libraryName === "arktype/precompiled")
+		r.gzipBytes = arkType.sbDownload.gzipBytes
 
 // Sury's schema benchmark: "parse X" and "build X" rows, sizes as built in
 // production
-const suryCounts = Object.entries(
-	read(join(here, sources.suryCounts)) as Record<string, number[]>
-).map(([key, reps]): [string, number] => [key, median(reps)])
+const suryCounts = Object.entries({
+	...read(join(here, sources.suryCounts)),
+	...arkType.suryCounts
+} as Record<string, number[]>).map(([key, reps]): [string, number] => [
+	key,
+	median(reps)
+])
 const suryRow = (id: string, prefix: string) =>
 	rowOf(
 		id,
@@ -193,13 +232,15 @@ const suryRow = (id: string, prefix: string) =>
 const surySize: {
 	production: Record<string, { gzip: number }>
 } = read(join(here, sources.surySize))
+Object.assign(surySize.production, arkType.surySize)
 
 // ata's validator-benchmarks: a scene and a body per row; its arktype adapter
 // is the default precompiled build
 const ataRows = byCase(
-	Object.entries(
-		read(join(here, sources.ataCounts)) as Record<string, number[]>
-	).map(([key, reps]): [string, number] => {
+	Object.entries({
+		...read(join(here, sources.ataCounts)),
+		...arkType.ataCounts
+	} as Record<string, number[]>).map(([key, reps]): [string, number] => {
 		const [scene, body, lib] = key.slice(4).split("|")
 		const arm =
 			lib === "arktype" ? "ArkType"
@@ -223,8 +264,8 @@ const suites = [
 		category: "speed",
 		id: "homepage",
 		label: "the homepage's benchmark",
-		unit: "ns per call",
-		source: "benchData.json scenarios",
+		unit: "instructions per call",
+		source: sources.homepageCounts,
 		rows: homepage
 	},
 	{
@@ -263,8 +304,8 @@ const suites = [
 		id: "homepageSize",
 		label: "the homepage's apps",
 		unit: "B gzipped",
-		source: "benchData.json size",
-		rows: appsOf(bench.size, "gzip")
+		source: `benchData.json size, ArkType's from ${sources.arkType}`,
+		rows: appsOf(homepageSize, "gzip")
 	},
 	{
 		category: "speed",

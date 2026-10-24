@@ -1794,6 +1794,7 @@
 	}
 	.card-head {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		gap: 10px;
 		font: 400 12.5px / 1.3 var(--mono);
@@ -1825,6 +1826,24 @@
 	}
 	.card-label {
 		font: inherit;
+	}
+	.card-standing {
+		flex-basis: 100%;
+		margin: 2px 0 0;
+		font: 600 13px / 1.4 var(--sans);
+		color: var(--ink);
+		a {
+			color: var(--gold);
+			text-decoration: none;
+		}
+	}
+	.board-note {
+		margin: 18px 0 0;
+		font: 400 12px / 1.5 var(--mono);
+		color: var(--ink-3);
+		a {
+			color: var(--sky);
+		}
 	}
 	.card-big {
 		display: grid;

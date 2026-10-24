@@ -8,7 +8,12 @@
  */
 
 import { benchFacts, versusLibrary, type LibraryVersus } from "./bench/bench.ts"
-import { leaderboards, leads, type CategoryId } from "./bench/leaderboard.ts"
+import {
+	leaderboards,
+	leads,
+	type CategoryId,
+	type Standing
+} from "./bench/leaderboard.ts"
 
 export type Pending<t> = { pending: t }
 
@@ -52,9 +57,10 @@ export interface BenchmarkChart {
  * f29b8d153 (wall-f29b8d153.md: 30 paired passes, Holm over H1-H4), where all
  * four hypotheses held. At the release candidate (wall.md) H1 had failed. Each
  * claim is scoped: precompiled or dynamic, valid or invalid data, with or
- * without errors. The headline's superlatives instead follow the README's
- * "Best average" rule over every suite (lib/bench/leaderboard.ts), with
- * ArkType as its default production build throughout.
+ * without errors. The headline's superlatives and the board's standings
+ * instead follow the README's "Best average" rule over every suite
+ * (lib/bench/leaderboard.ts), with ArkType as its default production build
+ * throughout, each of its rows measured at 7daf33b7e.
  */
 
 // moltar's typescript-runtime-type-benchmarks, perf instruction counts in
@@ -112,13 +118,13 @@ export const sizeChart: BenchmarkChart = {
 // instructions from just before a fresh process imports the bundle to just
 // after its first validation of valid data, less a bundle that validates
 // nothing (ark/repo/bench/external/startup.ts). Planned before any count: 20
-// rounds, a two-sided sign test per library paired by round, on Node 24 and
-// 25. The default build had the fewest against all seven in 19-20 of 20 on
-// both (p <= 4e-5); Node 24 medians at 4fd880692, which prunes a production
-// bundle (results/startup-4fd880692-node24.json). On valibot.dev's login form
-// it was 1.46M to Valibot's 2.36M, 20 of 20. Typia has fewer on the moltar
-// app, Valibot on shop. No wall-clock run yet, so nothing says it starts
-// faster.
+// rounds, a two-sided sign test per library paired by round. Node 24 medians
+// at 7daf33b7e (results/startup-7daf33b7e-node24.json): the default build had
+// the fewest against all seven in 20 of 20 (p 1.9e-6), as it had in 19-20 of
+// 20 on Node 24 and 25 at 4fd880692. On valibot.dev's login form it was 1.18M
+// to Valibot's 2.36M and on shop 10.77M to Valibot's 12.26M, 20 of 20; Typia
+// has fewer on the moltar app, 1.16M to 1.17M. No wall-clock run yet, so
+// nothing says it starts faster.
 export const startupChart: BenchmarkChart = {
 	title: "Cold start",
 	detail:
@@ -129,14 +135,14 @@ export const startupChart: BenchmarkChart = {
 		href: "https://github.com/arktypeio/arktype/tree/main/ark/repo/bench/apps/login"
 	},
 	bars: [
-		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1.42 },
+		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1.13 },
 		{ name: "ajv", kind: "other", value: 1.86 },
 		{ name: "Valibot", kind: "other", value: 2.35 },
 		{ name: "Typia", kind: "other", value: 2.43 },
 		{ name: "Zod Mini", kind: "other", value: 11.39 },
-		{ name: "Zod", kind: "other", value: 43.73 },
-		{ name: "Zod (compiled)", kind: "other", value: 51.55 },
-		{ name: "TypeBox", kind: "other", value: 87.8 }
+		{ name: "Zod", kind: "other", value: 43.75 },
+		{ name: "Zod (compiled)", kind: "other", value: 51.54 },
+		{ name: "TypeBox", kind: "other", value: 87.79 }
 	]
 }
 
@@ -163,17 +169,47 @@ const bench = benchFacts()
 const valueOf = (chart: BenchmarkChart, name: string) =>
 	chart.bars.find(bar => bar.name === name)!.value!
 
-const kB = (bytes: number) => `${(bytes / 1000).toFixed(2)} kB`
+const ordinal = (n: number) =>
+	n % 10 === 1 && n % 100 !== 11 ? `${n}st`
+	: n % 10 === 2 && n % 100 !== 12 ? `${n}nd`
+	: n % 10 === 3 && n % 100 !== 13 ? `${n}rd`
+	: `${n}th`
 
-// the options sizeChart's ArkType bar was built with
-const sizeBuild = '"smallest" preset'
+const placeOf = (category: CategoryId) => {
+	const { standings } = leaderboards[category]
+	const i = standings.findIndex(s => s.library === "ArkType")
+	return { place: i + 1, ranked: standings.length, ...standings[i] }
+}
+
+// a category's superlative, which the board states only where ArkType leads.
+// Bundle size has none until its framing is decided
+const superlatives: Partial<Record<CategoryId, string>> = {
+	speed: "Fastest",
+	startup: "Quickest to start"
+}
+
+/** where ArkType's best average places it in a category, a superlative only where it leads */
+const standingOf = (category: CategoryId) => {
+	const across = `across ${leaderboards[category].suites.length} public benchmarks`
+	const superlative = leads(category) ? superlatives[category] : undefined
+	if (superlative)
+		return { leads: true, standing: `${superlative} on average ${across}` }
+	const { place, ranked } = placeOf(category)
+	return {
+		leads: false,
+		standing: `${ordinal(place)} of ${ranked} on average ${across}`
+	}
+}
+
+const size = placeOf("size")
+const sizeLeader = leaderboards.size.standings[0]
 
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
 	// each superlative names a category ArkType must have the best average in
 	// (lib/bench/leaderboard.ts), as headlineCategories below checks. Pending:
-	// by the registered rule ArkType leads startup only (speed: third, behind
-	// @ts-runtypes and ata, which are in moltar's suite alone; size: fifth)
+	// ArkType leads speed and startup, and is second on size (Valibot 1.360,
+	// ArkType 1.462), whose framing is open
 	headline: { pending: "TypeScript's smallest, fastest validator." },
 	headlineNote: `*Best average across public benchmarks, each result a ratio to the best: ${leaderboards.speed.rows} results for validation speed, ${leaderboards.startup.rows} for startup and ${leaderboards.size.rows} for bundle size.`,
 	// the fastest and the smallest builds differ: optimize "size" makes the
@@ -224,20 +260,21 @@ export const claims = {
 	// MCP SDK v1
 	zodMigration:
 		"With the skill, one prompt fully migrated 4 of 10 open-source Zod projects we picked by stars before running it: typecheck and tests pass, Zod is gone, generated inputs get the same results and no casts were added.",
-	// the homepage board's title, a phrase per category: ships less (sizeChart),
-	// starts lighter (startupChart, instructions rather than time) and runs
-	// faster (H1's wall clock). The categories' builds differ, so it doesn't
-	// say one build is all three; once they match, the board stamps "one
-	// build" and this can say so too
-	boardTitle: "Ships less. Starts lighter. Runs faster.",
-	// the board's: sizeChart against Zod and Valibot alone
-	sizeVersus: `On valibot.dev's login form as written, with its messages, ArkType precompiled for size is ${kB(valueOf(sizeChart, "ArkType (precompiled)"))} gzipped, against Valibot's ${kB(valueOf(sizeChart, "Valibot"))}, Zod Mini's ${kB(valueOf(sizeChart, "Zod Mini"))} and Zod's ${kB(valueOf(sizeChart, "Zod"))}.`,
+	// the homepage board's title, a phrase per category ArkType leads: runs
+	// faster (H1's wall clock) and starts lighter (startupChart, instructions
+	// rather than time). Valibot's average bundle is smaller, so nothing says
+	// it ships less
+	boardTitle: "Runs faster. Starts lighter.",
+	// what the board's superlatives average
+	boardNote: `*Best average across public benchmarks, each result a ratio to the best: ${leaderboards.speed.rows} results for validation speed and ${leaderboards.startup.rows} for startup.`,
+	// the board's size standing, which claims no lead
+	sizeStanding: `${sizeLeader.library} has the best average bundle size, ${sizeLeader.score.toFixed(2)}, against the default build's ${size.score.toFixed(2)}.`,
 	// startupChart against Zod and Valibot alone: fewer than each of them in
 	// 20 of 20 rounds on both Nodes, on the login app and on the form
-	startupVersus: `On the homepage's login app, precompiled ArkType takes ${valueOf(startupChart, "ArkType (precompiled)")}M instructions from import to its first validation, beyond loading an empty module, against Valibot's ${valueOf(startupChart, "Valibot")}M, Zod Mini's ${valueOf(startupChart, "Zod Mini")}M, Zod's ${valueOf(startupChart, "Zod")}M and compiled Zod's ${valueOf(startupChart, "Zod (compiled)")}M: fewer than each in all 20 paired runs on Node 24 and 25.`,
-	// startupChart; the form is 1.46M vs Valibot's 2.36M, 20 of 20
+	startupVersus: `On the homepage's login app, precompiled ArkType takes ${valueOf(startupChart, "ArkType (precompiled)")}M instructions from import to its first validation, beyond loading an empty module, against Valibot's ${valueOf(startupChart, "Valibot")}M, Zod Mini's ${valueOf(startupChart, "Zod Mini")}M, Zod's ${valueOf(startupChart, "Zod")}M and compiled Zod's ${valueOf(startupChart, "Zod (compiled)")}M: fewer than each in all 20 paired runs on Node 24.`,
+	// startupChart; the form is 1.18M vs Valibot's 2.36M, 20 of 20
 	startupLogin:
-		"On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than ajv, Valibot, Typia, Zod Mini, Zod, compiled Zod or TypeBox, in at least 19 of 20 paired runs on Node 24 and 25.",
+		"On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than ajv, Valibot, Typia, Zod Mini, Zod, compiled Zod or TypeBox, in all 20 paired runs on Node 24.",
 	// speedChart and H1
 	parseSafe:
 		"On moltar's parseSafe benchmark, precompiled ArkType takes the fewest instructions per call, and by wall clock it was faster than each of the six libraries closest to it, Typia among them, in at least 28 of 30 paired runs."
@@ -251,16 +288,24 @@ export const headlineMethod = {
 	href: "https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md#best-average"
 }
 
-// the categories the headline's superlatives name, each of which ArkType
-// must lead on average once the headline isn't pending
-const headlineCategories: CategoryId[] = ["size", "speed"]
-for (const category of headlineCategories) {
-	if (!isPending(claims.headline) && !leads(category)) {
+const assertLeads = (category: CategoryId, by: string) => {
+	if (!leads(category)) {
 		throw new Error(
-			`The headline claims ArkType is best on ${category}, but ${leaderboards[category].standings[0].library} has the best average: ${JSON.stringify(leaderboards[category].standings.slice(0, 5))}`
+			`${by} claims ArkType is best on ${category}, but ${leaderboards[category].standings[0].library} has the best average: ${JSON.stringify(leaderboards[category].standings.slice(0, 5))}`
 		)
 	}
 }
+
+// the categories the headline's superlatives name, each of which ArkType
+// must lead on average once the headline isn't pending
+const headlineCategories: CategoryId[] = ["size", "speed"]
+if (!isPending(claims.headline))
+	for (const category of headlineCategories)
+		assertLeads(category, "The headline")
+
+// the board's title and note
+for (const category of ["speed", "startup"] as const)
+	assertLeads(category, "The board")
 
 /** the libraries the board compares against: with ArkType, the two that wrote Standard Schema */
 const isRival = (bar: BenchmarkBar) => /^(Valibot|Zod)\b/.test(bar.name)
@@ -270,13 +315,17 @@ type CategoryBase = {
 	label: string
 	/** the options ArkType's numbers were built with */
 	build: string
+	/** where ArkType's best average places it */
+	standing: string
+	/** whether the standing is a superlative, footnoted by the board's note */
+	leads: boolean
 	claim: Claim<string>
 	source: BenchmarkChart["source"]
 }
 
 /** a category measured once per library, drawn as bars */
 export type BarCategory = CategoryBase & {
-	id: "size" | "startup"
+	id: "startup"
 	/** ArkType's bar, then each rival's */
 	bars: BenchmarkBar[]
 	unit: string
@@ -293,7 +342,18 @@ export type SpreadCategory = CategoryBase & {
 	versus: { name: string; versus: LibraryVersus }[]
 }
 
-export type Category = BarCategory | SpreadCategory
+/** a category drawn as its best averages, ArkType's among them */
+export type StandingCategory = CategoryBase & {
+	id: "size"
+	/** ArkType's place: "2nd" */
+	place: string
+	/** how many libraries the category ranks */
+	ranked: number
+	/** the leaders, through ArkType and one past it */
+	standings: Standing[]
+}
+
+export type Category = BarCategory | SpreadCategory | StandingCategory
 
 const onBoard = (chart: BenchmarkChart) =>
 	chart.bars.filter(bar => bar.kind === "precompiled" || isRival(bar))
@@ -301,31 +361,10 @@ const onBoard = (chart: BenchmarkChart) =>
 /** the homepage's board: each category against Zod and Valibot, every number from a chart above */
 export const categories: Category[] = [
 	{
-		id: "size",
-		label: "bundle size",
-		build: sizeBuild,
-		bars: onBoard(sizeChart),
-		unit: "kB gzipped",
-		format: kB,
-		margin: "smaller than",
-		claim: claims.sizeVersus,
-		source: sizeChart.source
-	},
-	{
-		id: "startup",
-		label: "cold start",
-		build: "default build",
-		bars: onBoard(startupChart),
-		unit: "million instructions",
-		format: n => `${n}M`,
-		margin: "less startup work than",
-		claim: claims.startupVersus,
-		source: startupChart.source
-	},
-	{
 		id: "speed",
 		label: "validation",
 		build: "default build",
+		...standingOf("speed"),
 		versus: [
 			{ name: "Zod", versus: zod },
 			{ name: "Zod (compiled)", versus: zodCompiled },
@@ -334,6 +373,29 @@ export const categories: Category[] = [
 		],
 		claim: claims.zodSpeed,
 		source: { label: "the benchmark below", href: "#run" }
+	},
+	{
+		id: "startup",
+		label: "cold start",
+		build: "default build",
+		...standingOf("startup"),
+		bars: onBoard(startupChart),
+		unit: "million instructions",
+		format: n => `${n}M`,
+		margin: "less startup work than",
+		claim: claims.startupVersus,
+		source: startupChart.source
+	},
+	{
+		id: "size",
+		label: "bundle size",
+		build: "default build",
+		...standingOf("size"),
+		place: ordinal(size.place),
+		ranked: size.ranked,
+		standings: leaderboards.size.standings.slice(0, size.place + 1),
+		claim: claims.sizeStanding,
+		source: headlineMethod
 	}
 ]
 

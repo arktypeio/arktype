@@ -4,11 +4,13 @@ import {
 	categories,
 	claims,
 	draftOf,
+	headlineMethod,
 	isPending,
 	oneBuild,
 	type BarCategory,
 	type Category,
-	type SpreadCategory
+	type SpreadCategory,
+	type StandingCategory
 } from "../../lib/claims.ts"
 import { ClaimText } from "../mdx/Claim.tsx"
 import { CheckIcon } from "./icons.tsx"
@@ -44,13 +46,19 @@ const Big = ({ value, unit }: { value: string; unit: string }) => {
 
 const Head = ({ category }: { category: Category }) => (
 	<header className="card-head">
-		<span className="card-check" aria-hidden>
-			<CheckIcon />
-		</span>
+		{category.leads && (
+			<span className="card-check" aria-hidden>
+				<CheckIcon />
+			</span>
+		)}
 		<h3 id={`card-${category.id}`} className="card-label">
 			{category.label}
 		</h3>
 		<span className="card-build">{category.build}</span>
+		<p className="card-standing">
+			{category.standing}
+			{category.leads && <a href="#board-note">*</a>}
+		</p>
 	</header>
 )
 
@@ -197,6 +205,48 @@ const SpreadCard = ({ category }: { category: SpreadCategory }) => {
 	)
 }
 
+const StandingCard = ({ category }: { category: StandingCategory }) => {
+	const ours = category.standings.findIndex(s => s.library === "ArkType")
+	const axis = Math.max(...category.standings.map(s => s.score))
+	return (
+		<>
+			<Big value={category.place} unit="by best average" />
+			<p className="card-margin">
+				of {category.ranked} libraries, each result a ratio to the smallest
+			</p>
+			<ol
+				className="race"
+				aria-label="best average, each result a ratio to the smallest, lower is better"
+				style={
+					{
+						"--won": `${(race * category.standings[ours].score) / axis}s`
+					} as CSSProperties
+				}
+			>
+				{category.standings.map((s, i) => (
+					<li
+						key={s.library}
+						className={i === ours ? "lane is-ours" : "lane"}
+						style={{ "--w": s.score / axis } as CSSProperties}
+					>
+						<span className="lane-name">{s.library}</span>
+						<span className="lane-track">
+							<span
+								className="lane-bar"
+								style={
+									{ "--d": `${(race * s.score) / axis}s` } as CSSProperties
+								}
+							/>
+						</span>
+						<span className="lane-val">{s.score.toFixed(2)}</span>
+					</li>
+				))}
+			</ol>
+			<p className="card-rest">best average, lower is better</p>
+		</>
+	)
+}
+
 /** each category against Zod and Valibot, every number from lib/claims.ts */
 export const Board = () => (
 	<section
@@ -238,10 +288,18 @@ export const Board = () => (
 					<Head category={category} />
 					{category.id === "speed" ?
 						<SpreadCard category={category} />
+					: category.id === "size" ?
+						<StandingCard category={category} />
 					:	<BarCard category={category} />}
 					<Foot category={category} />
 				</article>
 			))}
 		</div>
+		<p id="board-note" className="board-note">
+			<ClaimText claim={claims.boardNote} />{" "}
+			<a href={headlineMethod.href} target="_blank" rel="noreferrer">
+				{headlineMethod.label} ↗
+			</a>
+		</p>
 	</section>
 )

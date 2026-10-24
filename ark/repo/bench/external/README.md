@@ -205,7 +205,7 @@ every row.
 | category | suite                                       | rows                                              | measure                                                               |
 | -------- | ------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------- |
 | speed    | moltar's typescript-runtime-type-benchmarks | parseSafe, parseStrict, assertLoose, assertStrict | instructions per call (`results/counts-*.json`)                       |
-| speed    | the homepage's benchmark                    | its 32 scenarios                                  | median ns per call (`ark/docs/lib/bench/benchData.json`)              |
+| speed    | the homepage's benchmark                    | its 32 scenarios                                  | median instructions per call (`results/homepage-counts-*.json`)       |
 | startup  | `startup.ts`                                | its scenarios on Node 24                          | median instructions, less the baseline bundle's (`results/startup-*`) |
 | startup  | the homepage's cold start                   | its apps                                          | median ms from import to first validation (`benchData.json`)          |
 | size     | valibot.dev's login form                    | the form, written in each library (`forms/`)      | gzipped bytes (`results/forms-*.json`)                                |
@@ -371,6 +371,42 @@ invalid row 57308 against Sury's 31528 (1.8x). ata isn't in the homepage's
 suite, where ArkType's score is 1.375. Leaving out one suite at a time,
 ArkType leads speed without the homepage's (1.143, ata 1.151) or without
 schemabenchmarks.dev (1.125), and ata leads otherwise.
+
+### ArkType's rows at 7daf33b7e
+
+Every ArkType row was measured again on one commit, lane/mangle 7daf33b7e,
+the default build in every suite: `results/arktype-7daf33b7e.json` holds
+them in each suite's own format, and `leaderboard.ts` puts them over each
+suite's rivals, which don't depend on ArkType's build. `startup.ts` was run
+whole there (`results/startup-7daf33b7e-node24.json`), rivals included. The
+homepage's apps are sized as production builds (`bench/bundle.ts`, above).
+
+The homepage's speed rows are now instructions per call (`count.ts`), as
+"Which suites" counts wall-clock rows measured at a 1-minute load of 4 or
+more, which it was. Its rivals are the counts at 54777c69a
+(`results/homepage-counts-54777c69a.json`): ajv, Valibot and z.compile.
+Zod, Zod Mini, Typia and TypeBox aren't counted there, so their speed scores
+average one suite fewer. None of them is fastest on any of the suite's rows
+by wall clock, so ArkType's score doesn't depend on them. With the suite in
+`benchData.json`'s median ns, every library in, ArkType still leads speed,
+1.116 against ata's 1.253. The homepage's cold start is still its quiet,
+development-built ms.
+
+| category | 1             | 2             | 3                   | 4             |
+| -------- | ------------- | ------------- | ------------------- | ------------- |
+| speed    | ArkType 1.092 | ata 1.253\*   | Typia 2.771\*       | ajv 2.881\*   |
+| startup  | ArkType 1.014 | Typia 2.706\* | Valibot 28.5        | Zod Mini 62.6 |
+| size     | Valibot 1.360 | ArkType 1.462 | Superstruct 1.464\* | Typia 1.570\* |
+
+\* ranked on 2 to 4 of the category's suites. ArkType has the best score in
+every speed suite: moltar's 1.067, the homepage's 1.236, schemabenchmarks.dev's
+1.078 (ata 1.488), Sury's 1.000 and ata's 1.091 (ata 1.158). It has the best
+in every startup suite but the homepage's cold start (1.054, Valibot 1.050).
+In size it's best only in Sury's (1264 B, Valibot 1304); the login form 1.406
+(1315 B; ajv 935, Typia 1252), the homepage's apps 2.218 (ajv 1.346, Valibot
+1.508) and schemabenchmarks.dev's download 1.466 (2298 B against
+@railway-ts/pipelines' 1568). So the board says ArkType leads speed and
+startup, and gives its size standing without a claim.
 
 ## The login form across validators
 
