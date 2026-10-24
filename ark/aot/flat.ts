@@ -1670,7 +1670,7 @@ const spansContaining = (
 ): ((token: Span) => boolean) => {
 	const union: Span[] = []
 	for (const span of [...spans].sort((l, r) => l.start - r.start)) {
-		const last = union.at(-1)
+		const last = union[union.length - 1]
 		if (last && span.start <= last.end) last.end = Math.max(last.end, span.end)
 		else union.push({ start: span.start, end: span.end })
 	}

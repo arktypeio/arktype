@@ -116,11 +116,12 @@ export const dependencyOf = (
 	for (let i = starts.length - 1; i >= 0; i--) {
 		packageInNodeModules.lastIndex = starts[i].index
 		const match = packageInNodeModules.exec(file)
-		if (match)
+		if (match) {
 			return [
 				file.slice(0, packageInNodeModules.lastIndex),
 				match[1].replace("\\", "/")
 			]
+		}
 	}
 }
 

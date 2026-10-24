@@ -540,8 +540,9 @@ export const precompile: UnpluginInstance<
 			// don't import it, but a module's validators are written from what
 			// its imports define
 			hotUpdate({ file, modules }) {
+				const { moduleGraph } = this.environment
 				const dependents = [...(dependentsByFile[fileOf(file)] ?? [])].flatMap(
-					id => this.environment.moduleGraph.getModuleById(id) ?? []
+					id => moduleGraph.getModuleById(id) ?? []
 				)
 				return dependents.length ?
 						[...new Set([...modules, ...dependents])]
