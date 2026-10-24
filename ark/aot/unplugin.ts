@@ -173,6 +173,8 @@ export const precompile: UnpluginInstance<
 	}
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
+	// the modules whose precompiled code read each file other than their own
+	const dependentsByFile: Record<string, Set<string>> = {}
 	// a persistent cache keeps a transformed module, but not the modules it wrote
 	let compiler: BundlerCompiler | undefined
 	let storeDir: string | undefined
@@ -479,8 +481,11 @@ export const precompile: UnpluginInstance<
 							scan?.scanned.key
 						)
 						if (!transformed) return
-						for (const dependency of transformed.dependencies)
-							if (dependency !== file) this.addWatchFile(dependency)
+						for (const dependency of transformed.dependencies) {
+							if (dependency === file) continue
+							this.addWatchFile(dependency)
+							;(dependentsByFile[dependency] ??= new Set()).add(id)
+						}
 						reportDiagnostics(
 							transformed,
 							warning => this.warn(warning),
@@ -531,6 +536,17 @@ export const precompile: UnpluginInstance<
 					:	variant
 				),
 			options: checkInputExternal,
+			// Vite transforms a changed module's importers again only where they
+			// don't import it, but a module's validators are written from what
+			// its imports define
+			hotUpdate({ file, modules }) {
+				const dependents = [...(dependentsByFile[fileOf(file)] ?? [])].flatMap(
+					id => this.environment.moduleGraph.getModuleById(id) ?? []
+				)
+				return dependents.length ?
+						[...new Set([...modules, ...dependents])]
+					:	undefined
+			},
 			// a factory checks its helpers against what Vitest's mocks replace
 			configResolved: config => {
 				isServing = config.command === "serve"

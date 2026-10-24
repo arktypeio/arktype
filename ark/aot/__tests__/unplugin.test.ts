@@ -487,6 +487,60 @@ export const describe = (t: { description: string }) => t.description
 		])
 	})
 
+	it("vite's development server rewrites the importers of a changed Type", async () => {
+		const page = (max: number) =>
+			`import { type } from "arktype"\n\nexport const Page = type({ n: "number <= ${max}" })\n`
+		const root = writeFixture({
+			"page.ts": page(1),
+			"search.ts": `import { type } from "arktype"
+import { Page } from "./page.ts"
+
+export const Search = type({ q: "string" }).and(Page)
+`,
+			"main.ts": `import { type } from "arktype"
+import { Search } from "./search.ts"
+
+export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.errors)
+`
+		})
+		mkdirSync(join(root, "node_modules"))
+		symlinkSync(
+			fromHere("..", "..", "type"),
+			join(root, "node_modules/arktype")
+		)
+		const config = viteConfig({}, root)
+		const server = await withNodeEnv("development", () =>
+			createServer({
+				...config,
+				resolve: { ...config.resolve, preserveSymlinks: true },
+				ssr: { resolve: { ...config.ssr!.resolve, externalConditions: [] } }
+			})
+		)
+		const runner = createServerModuleRunner(server.environments.ssr, {
+			hmr: false
+		})
+		try {
+			const before = (await runner.import("/main.ts")).allows(2)
+			const file = join(root, "page.ts")
+			writeFileSync(file, page(2))
+			const pageModule =
+				server.environments.ssr.moduleGraph.getModuleById(file)!
+			server.watcher.emit("change", file)
+			for (let waited = 0; pageModule.transformResult; waited += 10) {
+				if (waited > 10_000) throw new Error("page.ts was never invalidated")
+				await new Promise(resolve => setTimeout(resolve, 10))
+			}
+			runner.clearCache()
+			attest([before, (await runner.import("/main.ts")).allows(2)]).equals([
+				false,
+				true
+			])
+		} finally {
+			await runner.close()
+			await server.close()
+		}
+	})
+
 	it("fails a build whose external option takes arktype from the bundle", async () => {
 		const thrownBy = (build: () => Promise<unknown>) =>
 			build().then(
