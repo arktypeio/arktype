@@ -8,13 +8,15 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 
 ## ArkType: Get started
 
-- [Setup](https://arktype.io/docs/intro/setup.md): Install ArkType and configure TypeScript to infer your types correctly.
+- [Setup](https://arktype.io/docs/intro/setup.md): Install ArkType, define a Type and precompile it in your bundler.
 - [Your first type](https://arktype.io/docs/intro/your-first-type.md): Define a type with TypeScript syntax, compose it, and validate data with it.
 - [Adding constraints](https://arktype.io/docs/intro/adding-constraints.md): Narrow types beyond what TypeScript can express, with keywords, ranges, divisors and custom predicates.
 - [Morphs](https://arktype.io/docs/intro/morphs-and-more.md): Transform data as part of validation by piping it through functions and other Types.
 - [Cheat sheet](https://arktype.io/docs/cheat-sheet.md): ArkType's most common syntax, patterns and gotchas on one page.
 - [Agents](https://arktype.io/docs/agents.md): Help Claude Code, Codex, Cursor and other coding agents write ArkType.
 - [Editor setup](https://arktype.io/docs/editor.md): Highlighting, inline errors and autocomplete for ArkType definitions in VS Code, JetBrains IDEs and other editors.
+- [Migrating](https://arktype.io/docs/migrating.md): Migrate a project from Zod with one prompt, or convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema and JSON Schema to ArkType, and the defaults that differ between them.
+- [Upgrading](https://arktype.io/docs/upgrading.md): What to change when upgrading from ArkType 2.2, with each breaking change before and after.
 
 ## ArkType: Definitions
 
@@ -50,15 +52,13 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 
 - [Type API](https://arktype.io/docs/type-api.md): Every member of a Type and of the type function.
 - [Packages](https://arktype.io/docs/packages.md): Every package ArkType publishes, its entrypoints, and what to import from each.
-- [Migrating](https://arktype.io/docs/migrating.md): Migrate a project from Zod with one prompt, or convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema and JSON Schema to ArkType, and the defaults that differ between them.
-- [Upgrading](https://arktype.io/docs/upgrading.md): The changes in the latest ArkType that can break code written for the previous release, and what to change.
 - [FAQ](https://arktype.io/docs/faq.md): Answers to common questions about ArkType's behavior, configuration and TypeScript integration.
 
 ## Precompile
 
 - [Overview](https://arktype.io/docs/precompile.md): Compile your Types when you build, and ship only the checks they need
 - [Dynamic vs Precompiled](https://arktype.io/docs/precompile/dynamic-vs-precompiled.md): The same definitions, run two ways
-- [Setup](https://arktype.io/docs/precompile/setup.md): Add precompilation to your bundler, test runner or framework
+- [Setup](https://arktype.io/docs/precompile/setup.md): Add precompilation to your bundler, framework, test runner or Node program
 - [Validators](https://arktype.io/docs/precompile/validators.md): What a precompiled Type is, and how it differs from one arktype creates
 - [Options](https://arktype.io/docs/precompile/options.md): Ship less, and configure a precompiled program
 - [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting.md): What the build reports, and how to fix it

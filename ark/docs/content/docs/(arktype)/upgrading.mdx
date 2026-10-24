@@ -1,9 +1,42 @@
 ---
 title: Upgrading
-description: The changes in the latest ArkType that can break code written for the previous release, and what to change.
+description: What to change when upgrading from ArkType 2.2, with each breaking change before and after.
 ---
 
-Each section is one change, with code that behaves differently before and after it. The full list of changes, including fixes and new features, is in the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [@ark/fast-check](https://github.com/arktypeio/arktype/blob/main/ark/fast-check/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
+Each section is one change since 2.2.9, with code that behaves differently before and after it. The full list of changes, including fixes and new features, is in the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [@ark/fast-check](https://github.com/arktypeio/arktype/blob/main/ark/fast-check/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
+
+## Checklist
+
+Go down the list. Each question your code answers yes to links to what to change.
+
+- Do you ship arktype to a browser without a build step that precompiles? [It's larger](#unprecompiled-arktype-is-larger).
+- Do you install `@ark/type`, `@ark/regex` or an `@arktype/*` package? [Rename it](#package-names).
+- Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](#arkerrors-is-no-longer-an-array).
+- Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](#errors-are-plain-objects).
+- Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](#undeclared-keys-have-the-undeclared-code) and [discriminant](#union-misses-have-the-discriminant-code).
+- Do you snapshot or assert error messages, or their order? See [Errors](#errors): objects, dates and union misses print differently, errors follow the order keys are declared, and configured messages apply to more errors.
+- Do you configure an `expected`, `actual` or `message` writer? [Writers take the error](#error-writers-receive-the-error-and-the-locale).
+- Do you call `configure()` after a Type is created, or pass a global-only option to a Scope? See [Configuration](#configuration).
+- Do you use `number` for data that can be `Infinity`? [Allow it](#number-rejects-infinity).
+- Do you write date literals or limits without a time zone, or parse ISO dates without an offset? See [date literals](#date-literals-need-a-time-zone) and [`string.date.iso.parse`](#stringdateisoparse-reads-dates-in-utc).
+- Do you use `"@"` or `"[k]?"` as a literal key? [Escape it](#-holds-an-objects-metadata).
+- Do you set `clone`, or rely on output being a copy of its input? [Output shares unchanged values](#the-clone-option-is-removed).
+- Do you write `"+": "delete"` or `"+": "reject"` and care about key order or symbol keys? See [delete](#-delete-removes-symbol-keys-and-lists-keys-as-declared) and [reject](#-reject-checks-string-keys-only).
+- Do you use function defaults, or morphs on defaults? [They run on each call](#defaults-run-each-time-theyre-applied).
+- Do you chain two right bounds, like `number < 5 < 6`? [Group them](#a-second-right-bound-throws).
+- Do you embed an async Standard Schema, like a Zod schema with an async refinement? [It throws](#standard-schemas-must-validate-synchronously).
+- Do you store or snapshot `toJsonSchema()`, `.expression` or `.json`? See [Output](#output).
+- Do you rely on what `.required()`, `.map()` or arkregex infer? See [Inference](#inference) and [ArkRegex](#arkregex).
+- Do you import from `@ark/schema`, `@ark/util` or a deep path like `arktype/internal/...`? See [@ark/schema](#arkschema), [@ark/util](#arkutil) and [Deep imports](#deep-imports).
+- Do you use `@ark/json-schema`, `@ark/fast-check` or attest? See their sections below.
+
+## Bundle size
+
+### Unprecompiled arktype is larger
+
+`import { type } from "arktype"` bundles more than it did, mostly for copy-on-write transforms, cyclic data, errors and their English text, and the set algebra that reduces unions and intersections. The [CHANGELOG](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md#precompile-to-ship-less) has the sizes.
+
+To ship less than before, [precompile](/docs/intro/setup#add-the-plugin). Each Type becomes a standalone validator on `arktype/runtime`, so arktype's parser never ships. Your definitions don't change.
 
 ## Errors
 
@@ -144,6 +177,52 @@ type("number[] | string[]")(["a", 1])
 
 Objects alike but for one key's value are now one object (see [Output](#output)), so data they reject is reported as any object's is, each failing key on its own, and a message configured on the union no longer replaces the error at that key.
 
+### Errors follow the order keys are declared
+
+An object's errors are reported in the order its definition declares its keys, where they were required keys first, then optional ones, each sorted. On a failed call, each morph whose input is valid runs as it's reached, so its errors are in that order too:
+
+```ts
+import { firstIssue, type } from "arktype"
+
+const User = type({ name: "string", age: "number", "nick?": "string" })
+
+const out = User({ nick: 0 })
+
+if (out instanceof type.errors) {
+	// "name must be a string (was missing)"
+	// before: "age must be a number (was missing)"
+	firstIssue(out).message
+}
+```
+
+Declared keys are still checked before an index signature's and undeclared keys, which follow the data's order.
+
+### Configured messages apply to more errors
+
+A `message` configured on a pipe applies to errors validating its output, and a union or intersection whose failing branches or constraints were all configured with one `message` reports it:
+
+```ts
+const Port = type("string.numeric.parse | number")
+	.to("0 < number <= 65535")
+	.configure({ message: "Enter a port number." })
+
+// ArkErrors: Enter a port number.
+// before: must be at most 65535 (was 99999)
+Port("99999")
+
+const Email = type("string.email > 0").configure({
+	message: "Email is not valid"
+})
+
+// ArkErrors: Email is not valid
+// before: ("") must be...
+//   ◦ an email address
+//   ◦ non-empty
+Email("")
+```
+
+`Port.out` keeps its own errors. Constraints described alike are described once, so `type("string.email > 0", "@", "Email is not valid")("")` says `must be Email is not valid (was "")`.
+
 ### Error writers receive the error and the locale
 
 An `expected` writer receives the error rather than its context, an `actual` writer receives `(data, error, locale)`, and every writer receives the [locale](/docs/i18n) last. In an `expected` writer, `meta` may be `undefined`, since an error from `ctx.reject` has none:
@@ -163,11 +242,33 @@ A writer's argument no longer has `toJSON`, `toString` or the text getters that 
 
 ### pipe.try errors reference the morph
 
-An error from a `pipe.try` morph that threw has the function as `morph` and what it threw as `cause`. Before, it had them as `predicate` and its own `actual`. Its `code` is still `predicate`, and its message is unchanged.
+An error from a `pipe.try` morph that threw has the function as `morph` and what it threw as `cause`. Before, it had them as `predicate` and its own `actual`. Its `code` is still `predicate`, and its message is unchanged:
+
+```ts
+const Parse = type("string").pipe.try((s): object => JSON.parse(s))
+
+const out = Parse("{")
+
+if (out instanceof type.errors) {
+	const error = out.issues[0]
+	// error.morph is the function, before: error.predicate
+	// error.cause is the SyntaxError it threw, before: error.actual
+}
+```
 
 ### Keyword parse errors are data
 
-The errors `string.integer.parse`, `string.date.parse`, `string.url.parse`, `string.json`, `string.json.parse` and `string.regex` raise while parsing carry `meta.keyword`, a `description` and what was thrown as `cause`, instead of their own English `expected` text. Their messages are unchanged, and `predicate` config now applies to them.
+The errors `string.integer.parse`, `string.date.parse`, `string.url.parse`, `string.json`, `string.json.parse` and `string.regex` raise while parsing carry `meta.keyword`, a `description` and what was thrown as `cause`, instead of their own English `expected` text. Their messages are unchanged, and `predicate` config now applies to them:
+
+```ts
+const out = type("string.json.parse")("{")
+
+if (out instanceof type.errors) {
+	const error = out.issues[0]
+	// error.meta is { keyword: "string.json.parse" }
+	// error.cause is the SyntaxError JSON.parse threw
+}
+```
 
 ### assert throws when a root morph fails
 
@@ -213,14 +314,57 @@ const At = type({ "\\@": "string" })
 A date literal, or a string passed as a date limit, must be the same instant on every machine: an ISO date (UTC) like `2025-01-01`, an ISO date-time with `Z` or an offset, or epoch milliseconds. A date-time without an offset or a non-ISO string was read in the local time zone, and now throws a `ParseError`:
 
 ```ts
+// @noErrors
+// throws ParseError: Date literal '2025-01-01T12:00' must be an ISO date like 2025-01-01, an ISO date-time with Z or an offset like 2025-01-01T12:00Z, or epoch milliseconds
+// before: noon in the machine's time zone
+type("Date > d'2025-01-01T12:00'")
+
 // unchanged
 type("Date > d'2025-01-01'")
 type("Date > d'2025-01-01T12:00Z'")
 ```
 
+### string.date.iso.parse reads dates in UTC
+
+`string.date.iso.parse` reads an ISO date or date-time without an offset as UTC, so one string is one instant on every machine, and a date that doesn't exist fails rather than rolling over. `string.date.parse` and `string.date` read the strings `string.date.iso` accepts the same way:
+
+```ts
+const parse = type("string.date.iso.parse")
+
+// 2025-01-01T12:00:00.000Z
+// before, in New York: 2025-01-01T17:00:00.000Z
+parse("2025-01-01T12:00")
+
+// ArkErrors: must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "2025-02-29")
+// before: 2025-03-01T00:00:00.000Z
+parse("2025-02-29")
+```
+
 ### Merging an array throws
 
-`.merge`, `type.merge` and `Merge` extend an object, so an array, a tuple or another class's instance on either side throws a `ParseError`, where merging an array gave an object.
+`.merge`, `type.merge` and `Merge` extend an object, so an array, a tuple or another class's instance on either side throws a `ParseError`, where merging an array gave an object:
+
+```ts
+// @noErrors
+// throws ParseError: merge operand must resolve to an object literal type (was string[])
+type({ a: "string" }).merge("string[]")
+```
+
+Spread the array's Type into a tuple, or merge objects only.
+
+### A second right bound throws
+
+A range takes at most one right bound, so a second throws a `ParseError`, as its type already failed:
+
+```ts
+// @noErrors
+// throws ParseError: Expression number must have at most one right bound
+// before: number < 5
+type("number < 5 < 6")
+
+// bound a group to bound a range
+type("0 < (number != 5) < 10")
+```
 
 ### number rejects Infinity
 
@@ -359,6 +503,32 @@ const T = type({ "+": "reject", a: "string" })
 T({ a: "x", [Symbol("s")]: 1 })
 ```
 
+### Defaults run each time they're applied
+
+A function default is called each time the default is applied, and its result is validated like input at that key, where it was called once when the Type was defined. A morph on a primitive default runs on each call too:
+
+```ts
+let calls = 0
+
+const T = type({ count: ["number", "=", () => ++calls] })
+
+// calls is 0, before: 1, from checking the default when T was defined
+T({}) // { count: 1 }
+```
+
+### Smaller fixes that change results
+
+Each was a bug, but code may depend on it:
+
+- `string[] & number[]` is `[]`, where it allowed any array: `type("string[] & number[]").expression` is `[]`, before: `unknown[]`.
+- Intersecting an object that rejects or deletes undeclared keys with an index signature keeps its optional keys optional: `type({ "+": "reject", "a?": "number" }).and({ "[string]": "number" })` accepts `{}`, before: rejected it.
+- With `jitless`, a `g` or `y` pattern checks from the start of the string every time, where the same input alternated between valid and invalid.
+- An optional key in an intersection allows `undefined` only where both sides do, so a Scope configured with `exactOptionalPropertyTypes: false` no longer loosens a Type from one that isn't.
+- With `exactOptionalPropertyTypes: false`, a defaulted key given `undefined` gets the default, before: kept `undefined`.
+- A tuple expression's `:` after a morph throws `ParseError: Predicate operand must be unknown (was a morph)`, where it threw a TypeError.
+- `Exclude` and `Extract` over a definition still being defined throw `ParseError: Extract can't filter a type still being defined`.
+- `type(["string", "toString"])` throws that `'toString'` is unresolvable, where it threw an internal TypeError.
+
 ### Shallow cycles throw
 
 An alias that resolves to itself without passing through an object, array or morph accepted every value. It now throws a `ParseError`:
@@ -386,6 +556,16 @@ import "./config.ts"
 import { type } from "arktype"
 ```
 
+### Global-only options throw in a Scope
+
+`onUndeclaredKey`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`, `keywords` and `locale` can only be set with `configure()`. A Scope's type already rejected them, but a cast config passing one was honored for `onUndeclaredKey` and ignored for the rest. Each now throws:
+
+```ts
+// throws ParseError: numberAllowsInfinity can only be configured globally, with configure()
+// before: ignored
+scope({}, { numberAllowsInfinity: true } as never)
+```
+
 ### onUndeclaredKey: "delete" rejects overlapping object unions
 
 With `onUndeclaredKey: "delete"` configured, a union of objects whose inputs overlap throws a `ParseError`, as it already did with `"+": "delete"` in each object. Before, data both allowed came out as whichever branch sorted first:
@@ -406,7 +586,13 @@ Give the branches a key that tells them apart, like a literal `kind`, or delete 
 
 ### meta.keyword is reserved
 
-Built-in keywords set `meta.keyword` to their name. Rename your own meta named `keyword`.
+Built-in keywords set `meta.keyword` on the constraints they add, so a [locale](/docs/i18n) can find their phrase. Rename your own meta named `keyword`. A keyword's meta in `.json` holds it beside its description:
+
+```ts
+// { domain: "string", pattern: [{ rule: "...", meta: { description: "an email address", keyword: "string.email", format: "email" } }], ... }
+// before: the pattern's meta was its description, "an email address"
+type("string.email").json
+```
 
 ## Output
 
@@ -463,6 +649,14 @@ const R = regex("^(?:(1)|(2))$")
 // before: ["1"] | [undefined, "2"]
 type Captures = typeof R.inferCaptures // ["1", undefined] | [undefined, "2"]
 ```
+
+Other patterns infer what they match more exactly, which can widen or narrow an inferred type:
+
+- `\s` is `string`, before: `" " | "\n" | "\t"`.
+- An unbounded run of digits, like `\d+`, is `string`, before: `` `${number}` ``.
+- With the `m` flag, `^` and `$` don't anchor: `regex("^abc$", "m")` is `` `${string}abc${string}` ``, before: `"abc"`.
+- In a character set, `[\b]` is a backspace and `[\/]` is `/`, before: `""` and an error message.
+- A capture inside a lookaround is counted: `regex("^(?=(a))a(b)$")` captures `["a", "b"]`, before: `["b"]`.
 
 ## @ark/json-schema
 
