@@ -560,6 +560,26 @@ for (const data of [{ name: 5 }, flipping]) {
 			)
 		})
 
+		it("writes a validator called with its data alone as its Apply", async () => {
+			const applied = await bundle({ preset: undefined })
+			attest(run(applied)).snap("name must be a string\n")
+			attest(applied.includes("allows")).equals(false)
+			// a call passing more keeps where the validator reads it
+			const handling = {
+				contents: `import { User } from "./types.ts"
+
+console.log(User({ name: 5 }, undefined, () => "handled"))
+`,
+				resolveDir: root,
+				loader: "ts"
+			} as const
+			for (const errors of [undefined, "none"] as const) {
+				attest(
+					run(await bundle({ preset: undefined, errors }, { stdin: handling }))
+				).equals("handled\n")
+			}
+		})
+
 		it("keeps a build other than for production whole", async () => {
 			const development = { conditions: ["ark-ts"] }
 			attest(await bundle({}, development)).equals(

@@ -770,7 +770,10 @@ export const foundErrors = (
 	Ctx: new () => ArkErrors
 ): unknown => {
 	const errors = new Ctx()
-	issuesOf(apply, data, errors)
+	// as issuesOf, which a program of these never ships
+	apply(data, errors)
+	if (!errors._.length) errors.failsAt({ code: "predicate" }, data)
+	releasePath(errors)
 	return onFail ? onFail(errors) : errors
 }
 
