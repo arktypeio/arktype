@@ -380,12 +380,14 @@ export type UnavailableMember = Exclude<
 // a target's is 0 where the validator doesn't bake its schema
 export const bakedJsonSchema = (
 	write: () => JsonSchema,
-	byTarget: readonly ((() => JsonSchema) | 0)[]
+	byTarget: readonly ((() => JsonSchema) | 0)[],
+	// no fallback wrote it, so a call's changes nothing
+	ignoresFallback?: 1
 ): ((opts?: { target?: unknown }) => JsonSchema) =>
 	freeze((opts?: { target?: unknown }) => {
 		// arktype merges the keys a for...in loop reads
 		const keys: string[] = []
-		for (const k in opts) keys.push(k)
+		for (const k in opts) if (!ignoresFallback || k !== "fallback") keys.push(k)
 		if (!keys.length) return write()
 		const written =
 			keys.length === 1 &&
@@ -1096,7 +1098,7 @@ export type writeIdentityMismatchMessage<
 > = `${label} is not ${expectedLabel}, which it was at build`
 
 export const bakedJsonSchemaOptionsMessage =
-	'a standalone validator\'s JSON Schema takes only a target it was built with; configure({ toJsonSchema }) or build with runtime: "arktype"'
+	'a standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where its schema needs none; configure({ toJsonSchema }) or build with runtime: "arktype"'
 
 export type bakedJsonSchemaOptionsMessage = typeof bakedJsonSchemaOptionsMessage
 

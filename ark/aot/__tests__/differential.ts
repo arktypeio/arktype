@@ -644,14 +644,19 @@ const observeAttributes = (t: Validator) => ({
 
 type Introspection = ReturnType<typeof observeIntrospection>
 
+const keepBase = (ctx: { base: unknown }) => ctx.base as never
+
 const observeIntrospection = (t: Validator) => ({
 	json: observe(() => t.json, undefined),
 	jsonSchema: observe(() => t.toJsonSchema(), undefined),
-	// no options, and each target, which a validator writes only if baked
+	// no options, and each target, which a validator writes only if baked,
+	// and a fallback, which it ignores only where no fallback writes it
 	jsonSchemaByOptions: [
 		{},
 		{ target: "draft-2020-12" },
-		{ target: "draft-07" }
+		{ target: "draft-07" },
+		{ fallback: keepBase },
+		{ target: "draft-2020-12", fallback: { date: keepBase } }
 	].map(opts => observe(() => t.toJsonSchema(opts), undefined)),
 	standardJsonSchema:
 		lacks("~standard") ?

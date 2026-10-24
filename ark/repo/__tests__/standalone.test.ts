@@ -1370,7 +1370,7 @@ age is missing`)
 			T.toJsonSchema({ target: "draft-2020-12" })
 		)
 		attest(() => validator.toJsonSchema({ target: "draft-07" })).throws(
-			'a standalone validator\'s JSON Schema takes only a target it was built with; configure({ toJsonSchema }) or build with runtime: "arktype"'
+			'a standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where its schema needs none; configure({ toJsonSchema }) or build with runtime: "arktype"'
 		)
 		attest([
 			validator.json,
@@ -1380,6 +1380,32 @@ age is missing`)
 		]).equals([undefined, undefined, undefined, undefined])
 		attest(JSON.stringify({ validator })).equals("{}")
 		attest("jsonSchema" in validator["~standard"]).equals(false)
+	})
+
+	it("ignores a fallback a call passes where no fallback writes the schema", async () => {
+		const T = type({ name: "string", "tags?": "string[]" })
+		const D = type({ at: "Date" })
+		const { T: t, D: d } = await load(
+			{ T, D },
+			{ members: { toJsonSchema: true } }
+		)
+		// as hono-openapi and @orpc/arktype pass their own
+		const fallback = {
+			date: (ctx: { base: object }) => ({ ...ctx.base, format: "date-time" })
+		}
+		const keepBase: ToJsonSchema.UniversalFallback = ctx => ctx.base
+		attest(t.toJsonSchema({ fallback: keepBase })).equals(
+			T.toJsonSchema({ fallback: keepBase })
+		)
+		attest(t.toJsonSchema({ target: "draft-2020-12", fallback })).equals(
+			T.toJsonSchema({ target: "draft-2020-12", fallback })
+		)
+		attest(() => d.toJsonSchema({ fallback })).throws(
+			bakedJsonSchemaOptionsMessage
+		)
+		attest(() => t.toJsonSchema({ fallback, useRefs: true })).throws(
+			bakedJsonSchemaOptionsMessage
+		)
 	})
 
 	it("introspection prints received functions", async () => {

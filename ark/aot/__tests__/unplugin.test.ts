@@ -54,6 +54,7 @@ import {
 	writeCreatedBeforeConfigureMessage,
 	writtenConfigMessage
 } from "@ark/schema/runtime"
+import { bakedJsonSchemaOptionsMessage } from "arktype/runtime"
 import {
 	packageFiles,
 	runPlain,
@@ -215,7 +216,7 @@ const fakePackage = (path: string, name: string, version: string) =>
 		name,
 		{
 			"index.js":
-				"export const type = () => {}\nexport const registerPrecompiledUnits = () => {}\n"
+				"export const type = () => {}\nexport class ArkErrors {}\nexport const registerPrecompiledUnits = () => {}\n"
 		},
 		{
 			version,
@@ -263,6 +264,12 @@ const dependencyFiles = {
 		'import { type } from "arktype"\nexport const shared = typeof type\n',
 	"node_modules/shared/other.js":
 		'import { type } from "arktype"\nexport const other = typeof type\n',
+	// as @hono/arktype-validator, which reads only `type.errors`
+	...fakePackage("node_modules/adapter", "adapter", "1.0.0"),
+	"node_modules/adapter/index.js":
+		'import { type, ArkErrors } from "arktype"\nexport const failed = out => out instanceof type.errors || out instanceof ArkErrors\nexport const shadowed = type => type.string\n',
+	"adapter.ts":
+		'import { failed, shadowed } from "adapter"\nconsole.log(failed, shadowed)\n',
 	...fakePackage("node_modules/forked", "forked", "1.0.0"),
 	...fakePackage(
 		"node_modules/forked/node_modules/arktype",
@@ -401,6 +408,47 @@ contextualize(function (this: Mocha.Suite) {
 			introspected
 		)
 		attest(run(standalone)).equals(runPlain(introspected))
+	})
+
+	it("esbuild ignores a library's fallback where no fallback writes the schema", async () => {
+		const root = writeFixture(
+			{
+				// as hono-openapi and @orpc/arktype convert a Type they're passed
+				"main.ts": `import { type } from "arktype"
+
+const User = type({ name: "string", "tags?": "string[]" })
+const Event = type({ at: "Date" })
+
+const convert = (t: typeof User | typeof Event, opts: object) => {
+	try {
+		return t.toJsonSchema(opts)
+	} catch (e) {
+		return String(e)
+	}
+}
+
+const date = { date: (ctx: { base: object }) => ({ ...ctx.base, format: "date-time" }) }
+
+console.log(
+	JSON.stringify([
+		convert(User, { fallback: (ctx: { base: object }) => ctx.base }),
+		convert(User, { fallback: date }),
+		convert(Event, { fallback: date })
+	])
+)
+`
+			},
+			fromHere("temp", "fallback")
+		)
+		const standalone = await bundlers.esbuild(
+			{ cwd: root, members: { toJsonSchema: true } },
+			root
+		)
+		const [ignored, ignoredWithDate, needed] = JSON.parse(run(standalone))
+		const [user, userWithDate, event] = JSON.parse(runPlain(root))
+		attest([ignored, ignoredWithDate]).equals([user, userWithDate])
+		attest(event.properties.at).equals({ format: "date-time" })
+		attest(needed).equals(`Error: ${bakedJsonSchemaOptionsMessage}`)
 	})
 
 	it("esbuild writes no NUL into its output", async () => {
@@ -851,6 +899,13 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 		attest(await buildDependency("prebuilt.ts", { allowUnsafe: true })).equals({
 			errors: [],
 			warnings: [prebuilt]
+		})
+	})
+
+	it("builds a dependency reading only what arktype's runtime exports", async () => {
+		attest(await buildDependency("adapter.ts")).equals({
+			errors: [],
+			warnings: []
 		})
 	})
 

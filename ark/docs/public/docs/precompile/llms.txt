@@ -283,7 +283,7 @@ Set [options](https://arktype.io/docs/precompile/options) in `ark.json` beside y
 }
 ```
 
-A validator leaves out its JSON Schema unless the build sets it, so a library that reads it through Standard Schema, like the MCP SDK's `inputSchema` or an AI SDK 6 tool, finds `undefined` there in production. Outside production, reading it throws, naming the fix. Add `"members": { "~standard.jsonSchema": true }` to `precompile` for it. See [members](https://arktype.io/docs/precompile/options#members).
+A validator leaves out its JSON Schema unless the build sets it, so a library that reads it through Standard Schema, like the MCP SDK's `inputSchema`, an AI SDK tool or Elysia's OpenAPI plugin, finds `undefined` there in production. Outside production, reading it throws, naming the fix. Add `"members": { "~standard.jsonSchema": true }` to `precompile` for it, or `"toJsonSchema": true` for one that calls `toJsonSchema()`, like hono-openapi or oRPC's ArkType converter. See [integrations](https://arktype.io/docs/integrations#precompiled-validators) and [members](https://arktype.io/docs/precompile/options#members).
 
 ## Next.js
 
@@ -614,7 +614,9 @@ The values are [arktype's `errors`](https://arktype.io/docs/configuration#errors
 
 `members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true; `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema` default to false. A dropped member reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`. Where it can't see one, `String(User)` without `expression` is `"Type"`, and reading another introspection member throws under the `"development"` condition rather than reading `undefined`. So does reading `~standard.jsonSchema` off a validator outside a [production build](https://arktype.io/docs/precompile/options#production-builds), as a library converting it to JSON Schema does.
 
-Each introspection member set true is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`. A JSON Schema the build can't bake throws where it's read.
+Keep `assert` or `~standard` on validators you pass to a library. tRPC, for one, calls a validator that has neither as a plain parse function, so it passes on the errors the validator returns as if they were the parsed input.
+
+Each introspection member set true is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`, and a `fallback` only where no fallback writes the schema, so a library passing its own, as hono-openapi and oRPC do, gets what arktype returns. A JSON Schema the build can't bake throws where it's read.
 
 ```ts
 precompile.vite({
@@ -745,7 +747,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 | A definition reading a value known only at runtime | Make it static, or mark it as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands) |
 | Composing or introspecting a Type at runtime, like `.and()` or `.json` | Compose inside a definition, or set [`members`](https://arktype.io/docs/precompile/options#members) |
 | Errors in a [locale](https://arktype.io/docs/i18n) other than English | A runtime island |
-| A dependency that defines Types at runtime | Have it [opt in](https://arktype.io/docs/precompile/advanced#libraries) |
+| A dependency that defines Types at runtime, like `drizzle-arktype` | Have it [opt in](https://arktype.io/docs/precompile/advanced#libraries), or build with `runtime: "arktype"` |
 | A dependency that ships its own precompiled validators | Have it publish its source and opt in |
 | `prune: true` outside Vite, Rollup, Rolldown and esbuild | Leave `prune` unset |
 | `declare: true` with esbuild, Bun, Farm or Node | Run `arktype-precompile --declare` after building |
@@ -801,7 +803,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`precompile.esbuild() needs bundle: true`**: precompiled modules import validators the bundle includes.
 
-**`my-schemas imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws`**: a dependency defines Types at runtime. Have it publish its source and [opt in](https://arktype.io/docs/precompile/advanced#libraries) with `"arktype": { "precompile": true }` in its `package.json`, so your build precompiles it.
+**`my-schemas imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws`**: a dependency defines Types at runtime. Have it publish its source and [opt in](https://arktype.io/docs/precompile/advanced#libraries) with `"arktype": { "precompile": true }` in its `package.json`, so your build precompiles it. A dependency reading only `type.errors` or `ArkErrors` off arktype, like `@hono/arktype-validator`, builds as it is. `drizzle-arktype` creates Types from your tables as it runs, so a program using it builds with `runtime: "arktype"`. Rather than t3-env's `presets-arktype`, list the variables you read in your own `createEnv`.
 
 **`my-schemas imports arktype/runtime, so it ships validators precompiled for one version of arktype`**: a dependency shipped its own precompiled build, which runs only on the arktype it was built with. Have it publish its source and opt in instead.
 
@@ -813,7 +815,11 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`type is not a function`** at runtime: a module that defines a Type loaded `arktype/runtime` without being precompiled. Bun's driver and Turbopack replace `arktype` for every importer, so they can't fail for a module they don't load, like one another plugin supplies or, with Turbopack, one no loader rule matches. Define the Types it uses in a file they precompile.
 
-**`~standard.jsonSchema isn't baked into this validator`** at runtime, outside production: a library converting a validator to JSON Schema through Standard Schema, like the MCP SDK or the AI SDK, read a member the build left out, which a production build would read as `undefined`. Add `"members": { "~standard.jsonSchema": true }` to `ark.json`.
+**`~standard.jsonSchema isn't baked into this validator`** at runtime, outside production: a library converting a validator to JSON Schema through Standard Schema, like the MCP SDK, the AI SDK or Elysia's OpenAPI plugin, read a member the build left out, which a production build would read as `undefined`. Add `"members": { "~standard.jsonSchema": true }` to `ark.json`. In production, the AI SDK throws `Standard schema vendor 'arktype' does not support JSON Schema conversion`, the MCP SDK throws `Schema library "arktype" does not implement StandardJSONSchemaV1`, and Elysia leaves the schema out of its OpenAPI document.
+
+**`toJsonSchema is not a function`** at runtime, from hono-openapi or oRPC's `@orpc/arktype` converter: they call `toJsonSchema()`, which a validator has only where the build sets it. Add `"members": { "toJsonSchema": true }` to `ark.json`.
+
+**`a standalone validator's JSON Schema takes only a target it was built with, and a fallback only where its schema needs none`**: a library passed options to `toJsonSchema()` that a baked schema can't apply. hono-openapi and oRPC pass a fallback, which changes a Type holding a morph or a Date, as arktype falls back on those. Build with `runtime: "arktype"`, or keep the morph or Date out of the Types you document.
 
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
 
