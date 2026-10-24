@@ -1458,7 +1458,7 @@ export const U = make()
 		attest(bundle.includes("dropped")).equals(false)
 		attest(
 			stderrOf(["--input-type=module"], bundle).includes(
-				writeCreatedBeforeConfigureMessage("unread.ts")
+				writeCreatedBeforeConfigureMessage("unread.ts", "./config.ts")
 			)
 		).equals(true)
 	})

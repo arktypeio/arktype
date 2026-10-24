@@ -245,6 +245,8 @@ export type Optimization = "speed" | "size"
 interface ConfiguredModule {
 	fingerprint: string
 	path: string
+	// the config module's specifier from path
+	config: string
 }
 
 export interface StandaloneOptions {
@@ -815,7 +817,7 @@ const writeCreations = (
 export const writeFixConfig = (configured: Configured): string =>
 	configured === false ? ""
 	: configured ?
-		`runtime.fixConfigured(${JSON.stringify(configured.fingerprint)}, ${JSON.stringify(configured.path)})`
+		`runtime.fixConfigured(${JSON.stringify(configured.fingerprint)}, ${JSON.stringify(configured.path)}, ${JSON.stringify(configured.config)})`
 	:	"runtime.fixConfig()"
 
 interface WriteDataOptions {

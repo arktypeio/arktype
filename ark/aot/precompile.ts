@@ -1742,7 +1742,11 @@ export class Precompiler {
 		const configured =
 			!this.configures ? false
 			: fingerprint === undefined || problem ? undefined
-			: { fingerprint, path: module.path }
+			: {
+					fingerprint,
+					path: module.path,
+					config: specifierOf(module.id, this.config!)
+				}
 		const validators =
 			Object.keys(exportsByName).length ?
 				writeValidators(
