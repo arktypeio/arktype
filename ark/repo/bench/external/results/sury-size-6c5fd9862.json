@@ -1,0 +1,95 @@
+{
+	"esbuild": "0.28.1",
+	"suite": {
+		"Sury schema": {
+			"minified": 26807,
+			"gzip": 11599
+		},
+		"Zod schema": {
+			"minified": 327385,
+			"gzip": 64686
+		},
+		"TypeBox schema": {
+			"minified": 92844,
+			"gzip": 22568
+		},
+		"Valibot schema": {
+			"minified": 3399,
+			"gzip": 1304
+		},
+		"ArkType (dynamic) schema": {
+			"minified": 158098,
+			"gzip": 47770
+		},
+		"Sury all": {
+			"minified": 165920,
+			"gzip": 62944
+		},
+		"Zod all": {
+			"minified": 330719,
+			"gzip": 65989
+		},
+		"TypeBox all": {
+			"minified": 125764,
+			"gzip": 31148
+		},
+		"Valibot all": {
+			"minified": 85354,
+			"gzip": 15101
+		},
+		"ArkType (dynamic) all": {
+			"minified": 158330,
+			"gzip": 47876
+		},
+		"ArkType schema": {
+			"minified": 4562,
+			"gzip": 1953
+		}
+	},
+	"production": {
+		"Sury schema": {
+			"minified": 26807,
+			"gzip": 11599
+		},
+		"Zod schema": {
+			"minified": 327385,
+			"gzip": 64686
+		},
+		"TypeBox schema": {
+			"minified": 92844,
+			"gzip": 22568
+		},
+		"Valibot schema": {
+			"minified": 3399,
+			"gzip": 1304
+		},
+		"ArkType (dynamic) schema": {
+			"minified": 158098,
+			"gzip": 47770
+		},
+		"Sury all": {
+			"minified": 165920,
+			"gzip": 62944
+		},
+		"Zod all": {
+			"minified": 330719,
+			"gzip": 65989
+		},
+		"TypeBox all": {
+			"minified": 125764,
+			"gzip": 31148
+		},
+		"Valibot all": {
+			"minified": 85354,
+			"gzip": 15101
+		},
+		"ArkType (dynamic) all": {
+			"minified": 158330,
+			"gzip": 47876
+		},
+		"ArkType schema": {
+			"minified": 3655,
+			"gzip": 1531
+		}
+	}
+}
