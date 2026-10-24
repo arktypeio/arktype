@@ -222,7 +222,10 @@ const sb = () => {
 	pnpm(dir, "install", "--frozen-lockfile")
 	if (latest) pnpm(schemas, "add", ...releases.sb)
 	// the arktype entries resolve this checkout's arktype
-	rmSync(join(schemas, "node_modules/arktype"), { force: true })
+	rmSync(join(schemas, "node_modules/arktype"), {
+		recursive: true,
+		force: true
+	})
 	symlinkSync(join(repo, "ark/type"), join(schemas, "node_modules/arktype"))
 	cpSync(
 		join(here, "sb/precompiled"),
