@@ -63,6 +63,8 @@ export interface PrecompilerWorkerData {
 	// for a host that waits synchronously
 	port?: MessagePort | undefined
 	answered?: Int32Array | undefined
+	// closes as the thread stops, so a host waiting synchronously hears it
+	lifeline?: MessagePort | undefined
 }
 
 export type PrecompileRequest =

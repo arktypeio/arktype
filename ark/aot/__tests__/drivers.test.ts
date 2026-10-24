@@ -411,6 +411,40 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			])
 		})
 
+		it("answers --eval code, or fails where its precompiler can't start", () => {
+			const root = writeFixture(
+				{
+					"package.json": '{ "type": "module" }',
+					"main.ts":
+						'import { type } from "arktype"\n\nexport const T = type({ a: "number" })\n',
+					"noWorkers.ts":
+						'import { isMainThread } from "node:worker_threads"\n\nif (!isMainThread) throw new Error("no workers")\n'
+				},
+				fromHere("temp", "unstarted")
+			)
+			// --input-type fails a worker that inherits it
+			attest(
+				node(
+					[
+						"--input-type=module",
+						"--eval",
+						'const { T } = await import("./main.ts")\nconsole.log(T({ a: 1 }))'
+					],
+					{},
+					root
+				).stdout
+			).equals("{ a: 1 }\n")
+			const { status, stderr } = node(
+				["--import", "./noWorkers.ts", "main.ts"],
+				{},
+				root
+			)
+			attest([status, thrownMessage(stderr, root)]).equals([
+				1,
+				"@ark/aot's precompiler stopped before it answered, as it does where a module the process preloads throws in a worker"
+			])
+		})
+
 		it("configured after a keyword Type is created", () => {
 			for (const [entry, path] of [
 				["exportedFirst.ts", "exported.ts"],
