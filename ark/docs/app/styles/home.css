@@ -2091,6 +2091,8 @@
 		box-shadow: 0 6px 16px -10px rgb(0 0 0 / 0.6);
 		font: 400 11.5px / 1.45 var(--mono);
 		color: var(--ink-2);
+		/* the library's median, then ArkType's, a line each */
+		white-space: pre-line;
 		pointer-events: none;
 		b {
 			display: block;
@@ -2554,9 +2556,25 @@
 	}
 }
 
-@keyframes race-grow {
+@keyframes snap {
 	from {
 		scale: 0 1;
+	}
+	70% {
+		scale: 1.04 1;
+	}
+}
+@keyframes pack {
+	from {
+		scale: calc(1 / var(--w)) 1;
+		opacity: 0;
+	}
+	20% {
+		scale: calc(1 / var(--w)) 1;
+		opacity: 1;
+	}
+	80% {
+		scale: 0.97 1;
 	}
 }
 @keyframes stamp-in {
@@ -2640,7 +2658,9 @@
 				scale: 0 1;
 			}
 			.card-check,
+			.card-num,
 			.lane.is-ours .lane-val,
+			.is-startup .lane-val,
 			.spot {
 				opacity: 0;
 			}
@@ -2655,9 +2675,20 @@
 				0 0.07em;
 		}
 		.board[data-play] {
-			.lane-bar {
-				animation: race-grow var(--d) linear both;
-				animation-delay: calc(var(--i) * 0.12s + 0.2s);
+			/* startup snaps, size packs (Board.tsx times each lane's --at) */
+			.is-startup {
+				.lane-bar,
+				.lane-val {
+					animation: snap 0.24s var(--ease-pop) both;
+					animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--at));
+				}
+				.lane-val {
+					animation-name: rise-fade;
+				}
+			}
+			.is-size .lane-bar {
+				animation: pack 0.75s cubic-bezier(0.6, 0, 0.2, 1) both;
+				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--at));
 			}
 			.card-check {
 				animation: stamp-in 0.42s var(--ease-pop) both;

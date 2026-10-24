@@ -16,8 +16,13 @@ import {
 import { ClaimText } from "../mdx/Claim.tsx"
 import { CheckIcon } from "./icons.tsx"
 
-/** seconds the longest bar takes to grow, so the shortest finishes first */
-const race = 1.8
+/**
+ * Seconds: a startup bar snaps on after a wait in proportion to its cost, so
+ * the cheapest is first; size bars start full width and pack down one by one.
+ * `length` is home.css's snap or pack duration.
+ */
+const snap = { wait: 1.2, length: 0.24 }
+const pack = { stagger: 0.05, length: 0.75 }
 
 /** a scenario's dot, and the closest two dots' centers may come, in px */
 const dot = { size: 5.5, clear: 6.5 }
@@ -166,27 +171,27 @@ const BarCard = ({ category }: { category: BarCategory }) => {
 				className="race"
 				aria-label={`${category.unit}, lower is better`}
 				style={
-					{ "--won": `${(race * width(ours.value)) / 100}s` } as CSSProperties
+					{
+						"--won": `${(snap.wait * width(ours.value)) / 100 + snap.length}s`
+					} as CSSProperties
 				}
 			>
 				{[ours, ...rivals].map(bar => (
 					<li
 						key={bar.name}
 						className={bar === ours ? "lane is-ours" : "lane"}
-						style={{ "--w": width(bar.value) / 100 } as CSSProperties}
+						style={
+							{
+								"--w": width(bar.value) / 100,
+								"--at": `${(snap.wait * width(bar.value)) / 100}s`
+							} as CSSProperties
+						}
 					>
 						<span className="lane-name">
 							{bar === ours ? "ArkType" : bar.name}
 						</span>
 						<span className="lane-track">
-							<span
-								className="lane-bar"
-								style={
-									{
-										"--d": `${(race * width(bar.value)) / 100}s`
-									} as CSSProperties
-								}
-							/>
+							<span className="lane-bar" />
 						</span>
 						<span className="lane-val">{category.format(bar.value)}</span>
 					</li>
@@ -252,7 +257,7 @@ const SpreadCard = ({ category }: { category: SpreadCategory }) => {
 											key={scenario.name}
 											className={`spot is-${scenario.verdict}`}
 											data-name={scenario.name}
-											data-ns={`${name} ${scenario.ns} · ArkType ${scenario.oursNs}`}
+											data-ns={`${name} ${scenario.ns}\nArkType ${scenario.oursNs}`}
 											data-verdict={verdictOf(
 												name,
 												scenario.speedup,
@@ -309,7 +314,7 @@ const StandingCard = ({ category }: { category: StandingCategory }) => {
 				aria-label="best average, each result a ratio to the smallest, lower is better"
 				style={
 					{
-						"--won": `${(race * category.standings[ours].score) / axis}s`
+						"--won": `${pack.stagger * ours + pack.length}s`
 					} as CSSProperties
 				}
 			>
@@ -317,16 +322,16 @@ const StandingCard = ({ category }: { category: StandingCategory }) => {
 					<li
 						key={s.library}
 						className={i === ours ? "lane is-ours" : "lane"}
-						style={{ "--w": s.score / axis } as CSSProperties}
+						style={
+							{
+								"--w": s.score / axis,
+								"--at": `${pack.stagger * i}s`
+							} as CSSProperties
+						}
 					>
 						<span className="lane-name">{s.library}</span>
 						<span className="lane-track">
-							<span
-								className="lane-bar"
-								style={
-									{ "--d": `${(race * s.score) / axis}s` } as CSSProperties
-								}
-							/>
+							<span className="lane-bar" />
 						</span>
 						<span className="lane-val">{s.score.toFixed(2)}</span>
 					</li>
