@@ -1,11 +1,13 @@
 import { hashOf } from "@ark/util"
 import MagicString, { type SourceMap } from "magic-string"
 import { parseSync, type Node } from "oxc-parser"
+import { memberNameOf } from "./graph.ts"
 import { renamedOf } from "./link.ts"
 import { SourceModule } from "./module.ts"
 import { minifiedLengthOf } from "./runtimeSize.ts"
 import {
 	exportNameOf,
+	isWriteTarget,
 	ModuleScopes,
 	walk,
 	type Binding,
@@ -179,6 +181,9 @@ export const flattenBundle = (
 					declared.end,
 					`import { ${name} as ${declared.name} } from ${source}\n${declared.exported ? `export { ${declared.name} }\n` : ""}`
 				)
+				// a read of its assert reads the validator it is
+				if (flat.asserting.has(name))
+					for (const [start, end] of declared.assertReads!) s.remove(start, end)
 			} else {
 				s.overwrite(start, end, `$ark_${name}`)
 				s.prepend(`import { ${name} as $ark_${name} } from ${source}\n`)
@@ -208,7 +213,14 @@ interface Creation {
 	args: string[]
 	// the declaration it's all of, which an import of it can replace
 	declared:
-		| { start: number; end: number; name: string; exported: boolean }
+		| {
+				start: number
+				end: number
+				name: string
+				exported: boolean
+				// the `.assert` of each read, where that's all any reads
+				assertReads: [start: number, end: number][] | undefined
+		  }
 		| undefined
 }
 
@@ -315,7 +327,13 @@ const creationsIn = (
 								start: statement.start,
 								end: statement.end,
 								name: declarator.id.name,
-								exported: statement !== declaration
+								exported: statement !== declaration,
+								assertReads:
+									statement === declaration ?
+										assertReadsOf(
+											module.scopes.root.bindings[declarator.id.name]
+										)
+									:	undefined
 							}
 						:	undefined
 				})
@@ -349,6 +367,25 @@ const creatorFnOf = (module: SourceModule): string | undefined => {
 	return /\bruntime\.(?:runtimeConfig|holdHoles)\b/.test(text) ? undefined : (
 			text
 		)
+}
+
+// the `.assert` of each read of a binding, if every read is one
+const assertReadsOf = (
+	binding: Binding
+): [start: number, end: number][] | undefined => {
+	const spans: [number, number][] = []
+	for (const { id } of binding.references) {
+		const member = id.parent
+		if (
+			member?.type !== "MemberExpression" ||
+			member.object !== id ||
+			memberNameOf(member) !== "assert" ||
+			isWriteTarget(member)
+		)
+			return
+		spans.push([id.end, member.end])
+	}
+	return spans.length ? spans : undefined
 }
 
 // the annotations of the creations a site declares that kept code reads, which
@@ -800,6 +837,8 @@ const roles = ["Allows", "Apply", "Transform"]
 interface Flat {
 	// each unit's declaration a module outside the function may read
 	exported: Set<string>
+	// each creation that is its validator's assert, as a site reads only that
+	asserting: Set<string>
 	code: string
 	write: (read: string[], asModule: boolean) => string
 }
@@ -1065,12 +1104,16 @@ const writeFlat = (
 		)
 			replace(id, wholeOf(binding.name))
 	}
-	const body = s.toString()
+	const { body, asserting } = withAssertsUnwrapped(
+		s.toString(),
+		creations.filter(c => c.declared?.assertReads).map(c => c.name)
+	)
 	const exported = new Set<string>()
 	for (const [name, specifier] of specifiersByName)
 		exported.add(`${specifier}\0${name}`)
 	return {
 		exported,
+		asserting,
 		code: body,
 		write: (read, asModule) => {
 			const values = read.map(name =>
@@ -1095,6 +1138,48 @@ export { ${read.join(", ")} }
 				:	declaration
 		}
 	}
+}
+
+// a validator created as an object of its assert alone is that function
+const withAssertsUnwrapped = (
+	code: string,
+	names: string[]
+): { body: string; asserting: Set<string> } => {
+	const asserting = new Set<string>()
+	if (!names.length) return { body: code, asserting }
+	const { program } = parseSync("units.js", code, {
+		sourceType: "module",
+		preserveParens: false
+	})
+	const s = new MagicString(code)
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") continue
+		for (const { id, init } of statement.declarations) {
+			const object = init && unwrapParentheses(init)
+			const [property] =
+				object?.type === "ObjectExpression" && object.properties.length === 1 ?
+					object.properties
+				:	[]
+			if (
+				id.type !== "Identifier" ||
+				!names.includes(id.name) ||
+				property?.type !== "Property" ||
+				property.kind !== "init" ||
+				property.method ||
+				property.computed ||
+				property.key.type !== "Identifier" ||
+				property.key.name !== "assert"
+			)
+				continue
+			s.overwrite(
+				object!.start,
+				object!.end,
+				code.slice(property.value.start, property.value.end)
+			)
+			asserting.add(id.name)
+		}
+	}
+	return { body: s.toString(), asserting }
 }
 
 // a function the units declare that only calls another of them with its own

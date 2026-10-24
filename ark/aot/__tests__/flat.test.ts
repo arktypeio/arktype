@@ -161,6 +161,36 @@ valid
 		attest(js.match(/case "(?:number|null)": {/g)?.length).equals(2)
 	})
 
+	it("creates as its assert a validator read only for it", async () => {
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const User = type({ name: "string" })
+
+const check = (data: unknown) => User.assert(data)
+
+for (const data of [{ name: "Ada" }, {}]) {
+	try {
+		console.log(check(data))
+	} catch (e) {
+		console.log((e as Error).message)
+	}
+}
+`
+			},
+			fromHere("temp", "flatAssert")
+		)
+		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
+		const [js] = await bundle({}, options)
+		const [whole] = await bundle({ prune: false }, options)
+		attest(run(js)).snap(`{ name: 'Ada' }
+name is missing
+`)
+		attest(run(js)).equals(run(whole))
+		attest(/\.assert\b|\bassert:/.test(js)).equals(false)
+	})
+
 	it("keeps each unit a module of its own with prune: false", async () => {
 		const [whole] = await bundle({ prune: false })
 		attest(factoryParam.test(whole)).equals(true)
