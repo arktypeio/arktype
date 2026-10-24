@@ -367,7 +367,7 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `v.object`, `v.looseObject`, `v.strictObject`               | `"+": "delete"`, the default, `"+": "reject"`                                      |
 | `v.objectWithRest(entries, rest)`                           | an index signature, `"[string]": ...`                                              |
 | `v.optional(T)`, `v.exactOptional(T)`                       | `"key?": "T \| undefined"`, `"key?": "T"`                                          |
-| `v.optional(T, default)`                                    | `"key": "T = default"`                                                             |
+| `v.optional(T, default)`                                    | `"key": "T = default"`, which applies it only where the key is missing             |
 | `v.nullable(T)`, `v.nullish(T)`                             | `"T \| null"`, `"key?": "T \| null \| undefined"`                                  |
 | `v.picklist(["a", "b"])`, `v.enum(E)`                       | `"'a' \| 'b'"`, `type.valueOf(E)`                                                  |
 | `v.union`, `v.variant("type", [...])`, `v.intersect`        | `A.or(B)`, `A.or(B)`, `A.and(B)`                                                   |

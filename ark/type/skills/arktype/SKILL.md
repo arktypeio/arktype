@@ -81,7 +81,7 @@ Strings use TypeScript's operators. Write string literals in single quotes insid
 | array of a Type        | `Item.array()`, `Item.array().atLeastLength(1)`           |
 | custom error message   | `type("string >= 8").configure({ message: "Too short" })` |
 
-Bounds bind tighter than `|`, so `"string <= 500 | null"` is a string of at most 500 characters, or null.
+A regex with flags, like `/^a$/i`, must be a RegExp. Bounds bind tighter than `|`, so `"string <= 500 | null"` is a string of at most 500 characters, or null.
 
 Common keywords: `string.email`, `string.uuid`, `string.url`, `string.ip`, `string.semver`, `string.date.iso`, `string.alphanumeric`, `number.integer`, `number.safe`, `number.epoch`. The full list is at https://arktype.io/docs/keywords.md.
 
@@ -173,7 +173,7 @@ Other morph keywords: `string.trim`, `string.lower`, `string.upper`, `string.num
 
 ## Custom rules
 
-Use `.narrow()` when a rule involves more than one value. Return `true` to accept, or `ctx.reject()` to give a message and a path.
+Use `.narrow()` when a rule involves more than one value. Return `true` to accept, or `ctx.reject()` to give a message and a path. A narrow on an object runs only once every key is valid, so its error is never reported alongside a key's.
 
 ```ts
 const Signup = type({
