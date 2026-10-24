@@ -838,6 +838,50 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 		attest(Object.keys(watchedBy).length).equals(count - 1)
 	})
 
+	it("esbuild rebuilds what reads a changed Type", async () => {
+		const max = (n: number) =>
+			`import { type } from "arktype"\n\nexport const Max = type("number <= ${n}")\n`
+		const root = writeFixture(
+			{
+				"max.ts": max(1),
+				"limited.ts": `import { type } from "arktype"
+import { Max } from "./max.ts"
+
+export const Limited = type({ n: Max })
+`,
+				"other.ts": `import { type } from "arktype"
+
+export const Other = type({ s: "string" })
+`,
+				"main.ts": `import { type } from "arktype"
+import { Limited } from "./limited.ts"
+import { Other } from "./other.ts"
+
+console.log(Limited({ n: 2 }) instanceof type.errors, Other({ s: "" }) instanceof type.errors)
+`
+			},
+			fromHere("temp", "rebuilt")
+		)
+		const ctx = await context({
+			entryPoints: [join(root, "main.ts")],
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [precompile.esbuild({ cwd: root, conditions })]
+		})
+		try {
+			const outputs = [run((await ctx.rebuild()).outputFiles![0].text)]
+			// kept from the first build, until a file it was precompiled from changes
+			writeFileSync(join(root, "max.ts"), max(2))
+			outputs.push(run((await ctx.rebuild()).outputFiles![0].text))
+			attest(outputs).equals(["true false\n", "false false\n"])
+		} finally {
+			await ctx.dispose()
+		}
+	})
+
 	it("keeps a configured worker until its config changes", async () => {
 		const root = fromHere("temp", "watched")
 		const write = (file: string, text: string) =>
