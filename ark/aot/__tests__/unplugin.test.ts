@@ -216,7 +216,7 @@ const fakePackage = (path: string, name: string, version: string) =>
 		name,
 		{
 			"index.js":
-				"export const type = () => {}\nexport const registerPrecompiledUnits = () => {}\n"
+				"export const type = () => {}\nexport class ArkErrors {}\nexport const registerPrecompiledUnits = () => {}\n"
 		},
 		{
 			version,
@@ -264,6 +264,12 @@ const dependencyFiles = {
 		'import { type } from "arktype"\nexport const shared = typeof type\n',
 	"node_modules/shared/other.js":
 		'import { type } from "arktype"\nexport const other = typeof type\n',
+	// as @hono/arktype-validator, which reads only `type.errors`
+	...fakePackage("node_modules/adapter", "adapter", "1.0.0"),
+	"node_modules/adapter/index.js":
+		'import { type, ArkErrors } from "arktype"\nexport const failed = out => out instanceof type.errors || out instanceof ArkErrors\nexport const shadowed = type => type.string\n',
+	"adapter.ts":
+		'import { failed, shadowed } from "adapter"\nconsole.log(failed, shadowed)\n',
 	...fakePackage("node_modules/forked", "forked", "1.0.0"),
 	...fakePackage(
 		"node_modules/forked/node_modules/arktype",
@@ -893,6 +899,13 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 		attest(await buildDependency("prebuilt.ts", { allowUnsafe: true })).equals({
 			errors: [],
 			warnings: [prebuilt]
+		})
+	})
+
+	it("builds a dependency reading only what arktype's runtime exports", async () => {
+		attest(await buildDependency("adapter.ts")).equals({
+			errors: [],
+			warnings: []
 		})
 	})
 
