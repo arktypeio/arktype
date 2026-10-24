@@ -19,13 +19,70 @@ import { CheckIcon } from "./icons.tsx"
 /** seconds the longest bar takes to grow, so the shortest finishes first */
 const race = 1.8
 
-/** the spread's log axis, as ratios to ArkType's time */
-const spread = { min: 0.2, max: 300, ticks: [1, 10, 100] }
+/** a scenario's dot, and the closest two dots' centers may come, in px */
+const dot = { size: 5.5, clear: 6.5 }
 
-const spreadX = (ratio: number) =>
-	((Math.log10(ratio) - Math.log10(spread.min)) /
-		(Math.log10(spread.max) - Math.log10(spread.min))) *
-	100
+/** px between a swarm's rows: dots in adjacent rows may sit closer side by side */
+const pitch = dot.clear * 0.86
+
+/** the narrowest the spread's track is drawn, so dots dodged at it never overlap wider */
+const narrowest = 285
+
+const ratioTicks = [0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000]
+
+/** a log axis from just left of 1× (or the fastest rival) to the first tick past the slowest */
+const spreadAxis = (ratios: number[]) => {
+	const min = Math.log10(Math.min(1, ...ratios) / 1.25)
+	const max = Math.log10(ratioTicks.find(t => t >= Math.max(...ratios))!)
+	const x = (ratio: number) => (Math.log10(ratio) - min) / (max - min)
+	return {
+		x,
+		ticks: ratioTicks.filter(t => x(t) >= 0 && x(t) <= 1)
+	}
+}
+
+/**
+ * Each dot's row in a beeswarm: on the axis if it clears every dot placed
+ * so far, else the nearest row above or below that does.
+ */
+const dodge = (xs: number[]) => {
+	const rows: number[] = []
+	const placed: { px: number; row: number }[] = []
+	const byX = xs.map((_, i) => i).sort((a, b) => xs[a] - xs[b])
+	for (const i of byX) {
+		const px = xs[i] * narrowest
+		for (let n = 0; rows[i] === undefined; n++) {
+			const row = n % 2 ? (n + 1) / 2 : -n / 2
+			const clears = placed.every(
+				p => (p.px - px) ** 2 + ((p.row - row) * pitch) ** 2 >= dot.clear ** 2
+			)
+			if (!clears) continue
+			rows[i] = row
+			placed.push({ px, row })
+		}
+	}
+	return rows
+}
+
+/**
+ * Seconds: ArkType's 1× line draws, then each library's dots race in from
+ * the right, a dot taking longer the farther it comes, so the ones nearest
+ * ArkType land last.
+ */
+const spreadTiming = {
+	start: 0.5,
+	perLane: 0.12,
+	jitter: 0.03,
+	travel: 0.35,
+	perTrack: 0.55
+}
+
+const verdictOf = (name: string, speedup: number, verdict: string) =>
+	verdict === "tie" ? "a tie"
+	: verdict === "win" ? `ArkType ${formatRatio(speedup)} faster`
+	: `${name} ${formatRatio(1 / speedup)} faster`
+
+const round = (n: number) => Math.round(n * 1000) / 1000
 
 /** the big number, counted up to by HomeEffects in its own precision */
 const Big = ({ value, unit }: { value: string; unit: string }) => {
@@ -142,6 +199,13 @@ const BarCard = ({ category }: { category: BarCategory }) => {
 
 const SpreadCard = ({ category }: { category: SpreadCategory }) => {
 	const [zod] = category.versus
+	const axis = spreadAxis(
+		category.versus.flatMap(({ versus }) => versus.rows.map(r => r.speedup))
+	)
+	const lanes = category.versus.map(({ name, versus }) => {
+		const xs = versus.rows.map(r => axis.x(r.speedup))
+		return { name, versus, xs, rows: dodge(xs) }
+	})
 	return (
 		<>
 			<Place category={category} />
@@ -152,57 +216,82 @@ const SpreadCard = ({ category }: { category: SpreadCategory }) => {
 				scenarios faster than Zod, by <b>{zod.versus.min}</b> to{" "}
 				<b>{zod.versus.max}</b>
 			</p>
-			<ol
-				className="race spread"
-				aria-label="Each library's time per call over ArkType's, one dot per scenario, on a log scale"
-				style={{ "--one": spreadX(1) / 100 } as CSSProperties}
-			>
-				{category.versus.map(({ name, versus }, row) => (
-					<li key={name} className="lane">
-						<span className="lane-name">{name}</span>
-						<span className="lane-track">
-							{versus.rows.map((scenario, i) => (
-								<span
-									key={scenario.name}
-									className={`spot is-${scenario.verdict}`}
-									title={`${scenario.name}: ${
-										scenario.speedup >= 1 ?
-											`ArkType ${formatRatio(scenario.speedup)} faster`
-										:	`${name} ${formatRatio(1 / scenario.speedup)} faster`
-									}`}
-									style={
-										{
-											"--x": spreadX(scenario.speedup) / 100,
-											"--k": row * 3 + (i % 6),
-											"--j": i % 3
-										} as CSSProperties
-									}
-								/>
-							))}
-						</span>
-						<span className="lane-val">
-							{versus.wins}/{versus.count}
-						</span>
-					</li>
-				))}
-				<li className="lane ticks" aria-hidden>
-					<span />
-					<span className="lane-track">
-						{spread.ticks.map(tick => (
-							<span
-								key={tick}
-								className={tick === 1 ? "tick is-one" : "tick"}
-								style={{ "--x": spreadX(tick) / 100 } as CSSProperties}
+			<div className="spread-plot">
+				<ol
+					className="race spread"
+					aria-label="How many times slower than ArkType each library was, one dot per scenario, on a log scale"
+					style={
+						{
+							"--one": round(axis.x(1)),
+							"--pitch": `${round(pitch)}px`,
+							"--dot": `${dot.size}px`
+						} as CSSProperties
+					}
+				>
+					{lanes.map(({ name, versus, xs, rows }, lane) => {
+						const start = spreadTiming.start + lane * spreadTiming.perLane
+						return (
+							<li
+								key={name}
+								className="lane"
+								style={
+									{
+										"--lane": lane,
+										"--above": -Math.min(...rows),
+										"--below": Math.max(...rows)
+									} as CSSProperties
+								}
 							>
-								{tick}×
-							</span>
-						))}
-					</span>
-					<span />
-				</li>
-			</ol>
+								<span className="lane-name">{name}</span>
+								<span className="lane-val" data-wins={versus.wins}>
+									{versus.wins}/{versus.count}
+								</span>
+								<span className="lane-track">
+									{versus.rows.map((scenario, i) => (
+										<span
+											key={scenario.name}
+											className={`spot is-${scenario.verdict}`}
+											data-name={scenario.name}
+											data-ns={`${name} ${scenario.ns} · ArkType ${scenario.oursNs}`}
+											data-verdict={verdictOf(
+												name,
+												scenario.speedup,
+												scenario.verdict
+											)}
+											style={
+												{
+													"--x": round(xs[i]),
+													"--y": rows[i],
+													"--delay": `${round(start + (i % 5) * spreadTiming.jitter)}s`,
+													"--travel": `${round(spreadTiming.travel + spreadTiming.perTrack * (1 - xs[i]))}s`
+												} as CSSProperties
+											}
+										/>
+									))}
+								</span>
+							</li>
+						)
+					})}
+				</ol>
+				<div className="spread-axis" aria-hidden>
+					{axis.ticks.map(tick => (
+						<span
+							key={tick}
+							className={tick === 1 ? "tick is-one" : "tick"}
+							style={{ "--x": round(axis.x(tick)) } as CSSProperties}
+						>
+							{tick}×
+						</span>
+					))}
+				</div>
+				<p className="spot-tip" role="tooltip" hidden />
+			</div>
 			<p className="card-rest">
-				time per call over ArkType's · one dot per scenario · log scale
+				<span className="spread-key">
+					<span className="key-one">ArkType, 1×</span>
+					<span className="key-dot">a scenario</span>
+				</span>
+				how many times slower than ArkType · log scale
 			</p>
 		</>
 	)
@@ -290,9 +379,9 @@ export const Board = () => (
 					</Fragment>
 				))}
 			</h2>
-			{oneBuild && <span className="stamp">one build</span>}
-			{draftOf(claims.boardNextBest) && (
+			{(oneBuild || draftOf(claims.boardNextBest)) && (
 				<p className="deck">
+					{oneBuild && <ClaimText claim={claims.boardOneBuild} />}{" "}
 					<ClaimText claim={claims.boardNextBest} />
 				</p>
 			)}

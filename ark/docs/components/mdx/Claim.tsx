@@ -10,6 +10,7 @@ import {
 	type ClaimId,
 	type Claim as ClaimValue
 } from "../../lib/claims.ts"
+import { GrowOnView } from "./GrowOnView.tsx"
 
 export const ClaimText = ({ claim }: { claim: ClaimValue<string> }) =>
 	isPending(claim) ?
@@ -50,7 +51,7 @@ const ClaimChart = ({ chart }: { chart: BenchmarkChart }) => {
 	const max =
 		chart.axisMax ?? Math.max(...chart.bars.map(bar => bar.value ?? 0))
 	return (
-		<figure className="claim-chart">
+		<figure className="claim-chart" data-grow="">
 			<figcaption>
 				<span className="cc-title">{chart.title}</span>
 				<span className="cc-unit">{chart.unit}, lower is better</span>
@@ -63,8 +64,18 @@ const ClaimChart = ({ chart }: { chart: BenchmarkChart }) => {
 				</span>
 			</figcaption>
 			<ol>
-				{chart.bars.map(bar => (
-					<li key={bar.name} className={`cc-row is-${bar.kind}`}>
+				{chart.bars.map((bar, i) => (
+					<li
+						key={bar.name}
+						className={`cc-row is-${bar.kind}`}
+						style={
+							{
+								"--r": i,
+								// at one speed, as the homepage's bars race: the shortest lands first
+								"--d": `${((Math.min(bar.value ?? 0, max) / max) * 0.9).toFixed(3)}s`
+							} as CSSProperties
+						}
+					>
 						<span className="cc-name">{bar.name}</span>
 						{bar.value === null ?
 							<span className="cc-bar is-pending">pending</span>
@@ -100,5 +111,6 @@ export const ClaimCharts = () => (
 			<ClaimText claim={claims.chartsSummary} /> The charts come from different
 			builds: each names its benchmark and the options it was built with.
 		</p>
+		<GrowOnView />
 	</>
 )

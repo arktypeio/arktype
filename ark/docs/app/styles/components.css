@@ -746,3 +746,34 @@
 :root[data-theme="light"] .editor-icon-btn:hover {
 	background: var(--blue);
 }
+
+/* a claim chart that starts below the fold grows as it's seen (GrowOnView) */
+@keyframes cc-grow {
+	from {
+		scale: 0 1;
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.cc-bar {
+		transform-origin: left;
+	}
+	[data-grow="wait"] {
+		.cc-bar {
+			scale: 0 1;
+		}
+		.cc-val {
+			opacity: 0;
+		}
+	}
+	[data-grow="play"] {
+		.cc-bar {
+			animation: cc-grow var(--d) linear both;
+			animation-delay: calc(0.15s + var(--r) * 0.05s);
+		}
+		.cc-val {
+			animation: fade-in 0.3s ease-out both;
+			animation-delay: calc(0.15s + var(--r) * 0.05s + var(--d));
+		}
+	}
+}

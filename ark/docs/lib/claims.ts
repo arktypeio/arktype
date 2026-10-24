@@ -79,7 +79,7 @@ export interface BenchmarkChart {
 export const speedChart: BenchmarkChart = {
 	title: "Runtime",
 	detail:
-		"moltar's parseSafe benchmark (validate, removing undeclared keys), run by us on Node 24: instructions per call, ArkType precompiled with the default options. Precompiled ArkType isn't in moltar's published results yet.",
+		"moltar's parseSafe benchmark (validate, removing undeclared keys), run by us on Node 24, ArkType precompiled with the default options. Precompiled ArkType isn't in moltar's published results yet.",
 	unit: "instructions per call",
 	source: {
 		label: "moltar/typescript-runtime-type-benchmarks",
@@ -106,7 +106,7 @@ export const sizeChart: BenchmarkChart = {
 	title: "Bundle size",
 	detail:
 		"the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled with the \"smallest\" preset in a production build. Zod Mini's form, as valibot.dev writes it, throws at its first parse; written so it runs, it is the same size within 20 B",
-	unit: "B gzipped",
+	unit: "bytes gzipped",
 	source: {
 		label: "the form from valibot.dev's comparison",
 		href: "https://valibot.dev/guides/comparison/"
@@ -382,6 +382,10 @@ export const claims = {
 		leadsEvery && new Set(nextBest).size === nextBest.length ?
 			`Behind ArkType, the best average is a different library's in each: ${listOf(led.map((category, i) => `${nextBest[i]} for ${wording[category].measures}`))}.`
 		:	"",
+	// the board's subtitle, shown only while one build holds every category
+	// (Board checks oneBuild, below)
+	boardOneBuild:
+		"Every result from the default build — no tuning per benchmark.",
 	// what the board's superlatives average
 	boardNote: `*Best average across public benchmarks, each result a ratio to the best: ${listOf(led.map((category, i) => `${leaderboards[category].rows}${i ? "" : " results"} for ${wording[category].measures}`))}.`,
 	// the board's size standing, a lead only where the average says so
@@ -483,14 +487,17 @@ export type SpreadCategory = CategoryBase & {
 /** a category drawn as its best averages, ArkType's among them */
 export type StandingCategory = CategoryBase & {
 	id: "size"
-	/** the leaders, at least three and through one past ArkType */
+	/** the leaders, at least five and through one past ArkType */
 	standings: Standing[]
 }
 
 export type Category = BarCategory | SpreadCategory | StandingCategory
 
-const onBoard = (chart: BenchmarkChart) =>
-	chart.bars.filter(bar => bar.kind === "precompiled" || isRival(bar))
+/** ArkType, Zod and Valibot, and the library the board's deck names as the category's runner-up */
+const onBoard = (chart: BenchmarkChart, runnerUp: string) =>
+	chart.bars.filter(
+		bar => bar.kind === "precompiled" || isRival(bar) || bar.name === runnerUp
+	)
 
 /** the homepage's board: each category against Zod and Valibot, every number from a chart above */
 export const categories: Category[] = [
@@ -513,7 +520,7 @@ export const categories: Category[] = [
 		label: "cold start",
 		build: "default build",
 		...standingOf("startup"),
-		bars: onBoard(startupChart),
+		bars: onBoard(startupChart, leaderboards.startup.standings[1].library),
 		unit: "million instructions",
 		format: n => `${n}M`,
 		margin: "less startup work than",
@@ -527,7 +534,7 @@ export const categories: Category[] = [
 		...standingOf("size"),
 		standings: leaderboards.size.standings.slice(
 			0,
-			Math.max(3, size.place + 1)
+			Math.max(5, size.place + 1)
 		),
 		claim: claims.sizeStanding,
 		source: headlineMethod

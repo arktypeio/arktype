@@ -140,10 +140,102 @@ const countUp = (el: HTMLElement, delay: number, seconds: number) => {
 const isPlace = (num: HTMLElement) =>
 	/^(st|nd|rd|th)$/.test(num.dataset.suffix ?? "")
 
+/** seconds, from a dot's inline timing (Board.tsx): when it lands */
+const landsAt = (spot: HTMLElement) =>
+	parseFloat(spot.style.getPropertyValue("--delay")) +
+	parseFloat(spot.style.getPropertyValue("--travel"))
+
+/**
+ * Each library's tally on the speed card counts its wins as their dots
+ * land. Figure spaces pad it to its final length, so its text never moves.
+ */
+const tallyLanes = (board: HTMLElement) => {
+	for (const lane of board.querySelectorAll<HTMLElement>(".spread .lane")) {
+		const tally = lane.querySelector<HTMLElement>(".lane-val")
+		if (!tally) continue
+		const final = tally.textContent!
+		const of = final.slice(final.indexOf("/"))
+		const landings = [...lane.querySelectorAll<HTMLElement>(".spot.is-win")]
+			.map(landsAt)
+			.sort((a, b) => a - b)
+		const start = performance.now()
+		const frame = (now: number) => {
+			const elapsed = (now - start) / 1000
+			const landed = landings.filter(t => t <= elapsed).length
+			tally.textContent =
+				landed === landings.length ?
+					final
+				:	`${landed}${of}`.padStart(final.length, "\u2007")
+			if (landed < landings.length) requestAnimationFrame(frame)
+		}
+		frame(start)
+	}
+}
+
+/** the speed card's dots: the one nearest the pointer grows and names its scenario */
+const wireSpots = () => {
+	const board = document.querySelector<HTMLElement>("[data-board]")
+	if (!board) return
+	let hot: HTMLElement | undefined
+	const tipOf = (el: Element) =>
+		el.closest(".spread-plot")?.querySelector<HTMLElement>(".spot-tip")
+	const clear = () => {
+		if (!hot) return
+		hot.classList.remove("is-hot")
+		tipOf(hot)!.hidden = true
+		hot = undefined
+	}
+	const onPointer = (e: PointerEvent) => {
+		const plot =
+			e.target instanceof Element ? e.target.closest(".spread-plot") : null
+		if (!plot) return clear()
+		let nearest: HTMLElement | undefined
+		let distance = 16
+		for (const spot of plot.querySelectorAll<HTMLElement>(".spot")) {
+			const r = spot.getBoundingClientRect()
+			const d = Math.hypot(
+				r.x + r.width / 2 - e.clientX,
+				r.y + r.height / 2 - e.clientY
+			)
+			if (d < distance) [nearest, distance] = [spot, d]
+		}
+		if (nearest === hot) return
+		clear()
+		if (!nearest) return
+		hot = nearest
+		hot.classList.add("is-hot")
+		const tip = tipOf(hot)!
+		const name = document.createElement("b")
+		name.textContent = hot.dataset.name!
+		const verdict = document.createElement("span")
+		verdict.className = "v"
+		verdict.textContent = hot.dataset.verdict!
+		tip.replaceChildren(name, hot.dataset.ns!, verdict)
+		tip.hidden = false
+		// above the dot, kept inside the plot
+		const area = plot.getBoundingClientRect()
+		const dot = hot.getBoundingClientRect()
+		const left = Math.min(
+			Math.max(dot.x + dot.width / 2 - area.x - tip.offsetWidth / 2, 0),
+			area.width - tip.offsetWidth
+		)
+		tip.style.translate = `${left}px ${dot.y - area.y - tip.offsetHeight - 12}px`
+	}
+	board.addEventListener("pointermove", onPointer)
+	board.addEventListener("pointerdown", onPointer)
+	board.addEventListener("pointerleave", clear)
+	return () => {
+		board.removeEventListener("pointermove", onPointer)
+		board.removeEventListener("pointerdown", onPointer)
+		board.removeEventListener("pointerleave", clear)
+	}
+}
+
 /** the board's bars race (the shortest, ArkType's, finishes first) as its numbers count */
 const wireBoard = () => {
 	const board = document.querySelector<HTMLElement>("[data-board]")
 	return playWhenSeen(board, 0.3, () => {
+		tallyLanes(board!)
 		for (const card of board!.querySelectorAll<HTMLElement>(".card")) {
 			const num = card.querySelector<HTMLElement>(".card-num[data-to]")
 			if (!num) continue
@@ -244,6 +336,7 @@ export const HomeEffects = () => {
 			wireReveal(),
 			wireTranscript(),
 			wireBoard(),
+			wireSpots(),
 			wireProof()
 		]
 		return () => {

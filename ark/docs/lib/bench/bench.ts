@@ -211,8 +211,8 @@ export type BenchSet = "valid" | "invalid"
 type Domain = { min: number; max: number; ticks: number[] }
 
 const domains: Record<BenchSet, Domain> = {
-	valid: { min: 0.5, max: 100, ticks: [1, 10, 100] },
-	invalid: { min: 0.2, max: 100, ticks: [1, 10, 100] }
+	valid: { min: 0.5, max: 100, ticks: [1, 3, 10, 30, 100] },
+	invalid: { min: 0.2, max: 100, ticks: [1, 3, 10, 30, 100] }
 }
 
 const panelsBySet: Record<
@@ -296,7 +296,14 @@ export type BenchPanel = {
 	/** where the 1× rule sits, as a percentage of the track */
 	one: number
 	rows: BenchRow[]
-	ticks: { label: string; left: number; one: boolean; end: boolean }[]
+	ticks: {
+		label: string
+		left: number
+		one: boolean
+		end: boolean
+		/** between powers of ten */
+		minor: boolean
+	}[]
 	description: string
 }
 
@@ -404,7 +411,8 @@ const panel = (
 			label: `${t}×`,
 			left: x(t),
 			one: t === 1,
-			end: x(t) > 95
+			end: x(t) > 95,
+			minor: !Number.isInteger(Math.log10(t))
 		})),
 		description: `${title}: ${rows
 			.map(row =>
@@ -717,7 +725,10 @@ export const versusLibrary = (key: string) => {
 		rows: measured.map(s => ({
 			name: scenarioName(s),
 			speedup: s.standaloneVs[key].speedup,
-			verdict: s.standaloneVs[key].verdict
+			verdict: s.standaloneVs[key].verdict,
+			/** the library's median per call, then ArkType's */
+			ns: formatNs(s.medianNs[key]),
+			oursNs: formatNs(s.medianNs.standalone)
 		}))
 	}
 }

@@ -95,6 +95,8 @@ const Panel = ({ panel, index }: { panel: BenchPanel; index: number }) => (
 							tick.one ? "b-tick is-one"
 							: tick.end ?
 								"b-tick is-end"
+							: tick.minor ?
+								"b-tick is-minor"
 							:	"b-tick"
 						}
 						style={{ left: pct(tick.left) }}
