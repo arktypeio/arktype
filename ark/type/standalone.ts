@@ -274,9 +274,27 @@ export interface StandaloneOptions {
 	// false where nothing calls a validator, so every failure's errors are
 	// read as it returns, as by assert or ~standard
 	called?: boolean | undefined
+	// false where nothing reads a validator's .allows
+	readsAllows?: boolean | undefined
+	// false where no call passes a second argument, a traversal to pipe into
+	piped?: boolean | undefined
 }
 
-interface Baking {
+// how a program reads its validators besides their members
+interface ValidatorReads {
+	called: boolean
+	readsAllows: boolean
+	piped: boolean
+}
+
+// how a validator the runtime reads may be read
+const wholeReads: ValidatorReads = {
+	called: true,
+	readsAllows: true,
+	piped: true
+}
+
+interface Baking extends ValidatorReads {
 	members: ReadonlySet<ValidatorMember>
 	write: <t>(write: () => t) => t
 	firstIssue: boolean
@@ -543,7 +561,10 @@ const writeArtifact = (
 		combines: opts.combines !== false,
 		compiledInputs:
 			opts.optimize === "size" ? compiledInputsOf(exports) : new Set(),
-		defersIssues: opts.optimize !== "size" && opts.called !== false
+		defersIssues: opts.optimize !== "size" && opts.called !== false,
+		called: opts.called !== false,
+		readsAllows: opts.readsAllows !== false,
+		piped: opts.piped !== false
 	}
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<unknown>()
@@ -1958,10 +1979,12 @@ ${writeFunction(
 
 	writeValidator(root: BaseRoot): string {
 		const isTemplate = this.templates.has(root)
+		const isRuntimeRead = this.runtimeReadRoots.has(root)
 		const members =
-			this.runtimeReadRoots.has(root) ?
+			isRuntimeRead ?
 				new Set([...this.baking.members, ...defaultMembers])
 			:	this.baking.members
+		const reads = isRuntimeRead ? wholeReads : this.baking
 		const keepsMeta = members.has("meta")
 		// unless shortest, the build writes the validator itself
 		const ownsValidator =
@@ -2006,10 +2029,14 @@ ${writeFunction(
 		const fused =
 			(
 				typeof applied === "object" &&
-				/^(?:\[|{ 0: )?allows\b/.test(applied.params) &&
-				(this.baking.shortest || (!ownsValidator && !applied.local)) &&
 				!isTemplate &&
-				!isCreatedByRuntime(members, this.baking)
+				!isCreatedByRuntime(members, this.baking) &&
+				(/^(?:\[|{ 0: )?allows\b/.test(applied.params) ?
+					this.baking.shortest || (!ownsValidator && !applied.local)
+					// a validator written as what's read of it reads no other Allows
+				:	!applied.local &&
+					!reads.readsAllows &&
+					this.preciseFormOf(members, unconfigured, reads) !== undefined)
 			) ?
 				applied
 			:	undefined
@@ -2076,7 +2103,7 @@ ${writeFunction(
 		const created = `${
 			isTemplate ? "["
 			: !isCreatedByRuntime(members, this.baking) ?
-				`${this.creatorOf(members, ownsValidator, fused, !!made, unconfigured)}(`
+				`${this.creatorOf(members, ownsValidator, fused, !!made, unconfigured, reads)}(`
 			: createsWith ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
 		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
@@ -2090,7 +2117,8 @@ ${writeFunction(
 		ownsValidator: boolean,
 		applier?: RootApplier,
 		makes = false,
-		unconfigured = false
+		unconfigured = false,
+		reads: ValidatorReads = this.baking
 	): string {
 		const keepsMeta = members.has("meta")
 		// a meta reads no onFail a build without config knows it lacks
@@ -2098,11 +2126,9 @@ ${writeFunction(
 		const hasAttributes =
 			keepsMeta || introspectionMembers.some(member => members.has(member))
 		const metaOf = holdsOnlyMeta(members) ? "meta" : "attributes.meta"
-		const pipes = this.pipes(members, unconfigured)
-		const signature =
-			pipes ?
-				`(data, pipedFromCtx, onFail${configured ? " = configuredOnFail" : ""})`
-			:	"(data, _, onFail)"
+		// where no call passes a traversal, a validator fails only by its onFail
+		const pipes = reads.piped && this.pipes(members, unconfigured)
+		const signature = `(data, ${pipes ? "pipedFromCtx" : "_"}, onFail${configured ? " = configuredOnFail" : ""})`
 		// what the root apply is passed to fail with
 		const failing =
 			!pipes ? "onFail"
@@ -2120,28 +2146,51 @@ ${writeFunction(
 					.slice(appliedSignature.length)
 					.replace(/\bonFail\b/, failing)
 			:	undefined
+		const precise =
+			ownsValidator ? undefined : (
+				this.preciseFormOf(members, unconfigured, reads)
+			)
+		const isCalled = precise !== "object"
+		const isApply = precise === "apply"
+		const assertion =
+			!isCalled ?
+				`data => ${
+					inlined ?
+						inlined.replace(/\bonFail\b/, "runtime.throwOnDefault")
+					:	"rootApply(data, runtime.throwOnDefault)"
+				}`
+			: pipes ?
+				"(data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault)"
+			:	"data => validator(data, undefined, runtime.throwOnDefault)"
 		const call =
 			ownsValidator ? `make(parts${configured ? ", configuredOnFail" : ""})`
+			: isApply ?
+				applier ? applier.apply
+				: makes ? "make(parts)"
+				: "rootApply"
+			: !isCalled ? "{}"
 			: inlined ? `${signature} => ${inlined}`
 			: failing ? `${signature} => rootApply(data, ${failing})`
 			: `${signature} => pipedFromCtx ? runtime.pipedIntoUndetailed(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)`
 		const body = [
-			inlined ? ""
+			inlined || isApply ? ""
 			: applier ? `const rootApply = ${applier.apply}`
 			: makes ? "const rootApply = make(parts)"
 			: "",
-			!keepsMeta || !configured ? ""
+			!keepsMeta || !configured || !isCalled ? ""
 			: this.baking.readsConfig ?
 				`const configuredOnFail = ${metaOf}.onFail ?? runtime.runtimeConfig.onFail`
 			:	`const configuredOnFail = ${metaOf}.onFail`,
 			`const validator = ${members.has("methods") ? `runtime.setPrototypeOf(${call}, runtime.freeze(runtime.Validator.prototype))` : call}`,
 			members.has("assert") ?
-				`validator.assert = ${this.frozen("(data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault)")}`
+				`validator.assert = ${this.frozen(assertion)}`
 			:	"",
 			!hasAttributes ? ""
 			: holdsOnlyMeta(members) ? "validator.meta = meta"
 			: "runtime.assign(validator, attributes)",
-			`validator.allows = ${this.frozen(ownsValidator || makes ? "parts[0]" : "allows")}`,
+			reads.readsAllows ?
+				`validator.allows = ${this.frozen(ownsValidator || makes ? "parts[0]" : "allows")}`
+			:	"",
 			members.has("~standard") ?
 				`validator["~standard"] = ${this.frozen(`{
 		vendor: "arktype",
@@ -2180,6 +2229,32 @@ ${writeFunction(
 			name
 		)
 		return name
+	}
+
+	// a validator nothing passes on as a value is written as what's read of
+	// it: an object of its members where nothing calls it, or its root apply
+	// where calls passing data alone are all that read it
+	preciseFormOf(
+		members: ReadonlySet<ValidatorMember>,
+		unconfigured: boolean,
+		reads: ValidatorReads
+	): "object" | "apply" | undefined {
+		if (
+			members.has("methods") ||
+			members.has("~standard") ||
+			(reads.piped && this.pipes(members, unconfigured))
+		)
+			return
+		if (!reads.called) return "object"
+		if (
+			unconfigured &&
+			!reads.piped &&
+			!reads.readsAllows &&
+			!members.has("assert") &&
+			!members.has("meta") &&
+			!introspectionMembers.some(member => members.has(member))
+		)
+			return "apply"
 	}
 
 	// an undetailed validator adds its issue to a traversal it's passed only

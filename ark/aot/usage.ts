@@ -9,14 +9,21 @@ import {
 	type Binding
 } from "./scope.ts"
 
-// what a read of a validator needs besides .allows, or "call" where it may
-// return errors no one reads
-export type UsedMember = "assert" | "~standard" | "meta" | "methods" | "call"
+// what a read of a validator needs: a member, "call" where it may return
+// errors no one reads, or "piped" where a call may pass a second argument
+export type UsedMember =
+	| "assert"
+	| "~standard"
+	| "meta"
+	| "methods"
+	| "allows"
+	| "call"
+	| "piped"
 
 const usedMembersByName: Record<string, UsedMember | null> =
 	Object.setPrototypeOf(
 		{
-			allows: null,
+			allows: "allows",
 			assert: "assert",
 			"~standard": "~standard",
 			meta: "meta",
@@ -299,6 +306,7 @@ class UsageAnalysis {
 	private read(node: Node, parent: Node | null | undefined): void {
 		if (parent?.type === "CallExpression" && parent.callee === node) {
 			this.used.add("call")
+			this.readArguments(parent)
 			return
 		}
 		if (
@@ -312,10 +320,26 @@ class UsageAnalysis {
 				if (used) this.used.add(used)
 				// a call by another name
 				if (name === "traverse") this.used.add("call")
+				if (name === "assert" || name === "traverse") {
+					const [method, call] = operatorOf(parent)
+					if (call?.type === "CallExpression" && call.callee === method)
+						this.readArguments(call)
+					// read to be called elsewhere, with any arguments
+					else this.used.add("piped")
+				}
 				return
 			}
 		}
 		escape()
+	}
+
+	// a call's second argument is where its failure may pipe
+	private readArguments(call: Extract<Node, { type: "CallExpression" }>): void {
+		if (
+			call.arguments.length > 1 ||
+			call.arguments.some(arg => arg.type === "SpreadElement")
+		)
+			this.used.add("piped")
 	}
 }
 
