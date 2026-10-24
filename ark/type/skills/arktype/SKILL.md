@@ -1,6 +1,6 @@
 ---
 name: arktype
-description: Write, review or debug runtime validation with ArkType (the `arktype` package), or migrate a project to it. Use when code imports from "arktype", when a TypeScript project needs to validate untrusted input like request bodies, env vars, JSON, config files or form data, or when migrating a project or converting schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema to ArkType, e.g. "migrate this project from Zod to ArkType".
+description: Write, review or debug runtime validation in TypeScript with ArkType (the `arktype` package), precompile it with `@ark/aot`, or migrate to it. Use when code imports from "arktype" or "@ark/aot"; when a TypeScript project needs to validate or parse untrusted data, like API request bodies, route handlers, form data, query params, env vars, JSON, config files, webhooks or LLM tool inputs; when adding a schema or validator; when setting up precompiled validation or fixing an error from `[plugin arktype]` or `arktype-precompile`; or when converting schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema, e.g. "migrate this project from Zod to ArkType".
 ---
 
 # ArkType
@@ -10,6 +10,15 @@ ArkType definitions are TypeScript type syntax, written as strings and objects, 
 ## Migrating a project
 
 Migrating from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema? Read [references/migrating.md](references/migrating.md) first and follow its steps. It has the workflow, a table for each library and the defaults that differ. In short: rewrite each schema where it is, under the same name; keep what it accepts, rejects and returns identical; keep the code free of casts and `any`; swap packages with the project's package manager; and run the `typecheck` and `test` scripts until both pass, without changing what a test expects.
+
+## Precompiling
+
+A project whose bundler config uses `@ark/aot` (e.g. `precompile.vite()` from `@ark/aot/unplugin`) constructs every Type at build time and replaces it with a standalone validator, so arktype's parser doesn't ship. To set it up, to add validation to such a project or to fix a build error from it, read [references/precompile.md](references/precompile.md): it has the setup for each bundler, Next.js and test runner, how to write definitions the build accepts, and each build error with its fix. In short:
+
+- Define Types from static values, and compose them inside definitions, like `const Admin = User.and({ role: "'admin'" })`. A definition reading a parameter, or a function calling `.or`, `.pick` or another composing method at runtime, fails the build. To reuse a pattern, define a Generic.
+- If the project calls `configure()`, name its module as `config` under `precompile` in an `ark.json` beside `package.json`, which the plugin, the test drivers, the CLI and the ESLint rule all read.
+- A build error names the file, line and column, then why, then the fix on its last line. Apply that fix. Don't set `allowUnsafe` or switch to `runtime: "arktype"` to get past one. `npx arktype-precompile --check "src/**/*.ts"` lists every one without bundling.
+- A validator's error messages say what failed but not what the value was, like `name must be a string`.
 
 Docs index: https://arktype.io/llms.txt, which links each page's Markdown. Any docs page is available as Markdown by adding `.md` to its URL, e.g. https://arktype.io/docs/objects.md. Every page in one file: https://arktype.io/llms-full.txt.
 
@@ -35,7 +44,7 @@ declare const body: string
 const out = User(JSON.parse(body))
 
 if (out instanceof type.errors) {
-	// every problem, one per line, e.g. `email must be an email address (was "x")`
+	// every problem, one per line, e.g. `email must be an email address`
 	console.error(out.summary)
 } else {
 	// out is narrowed to User
@@ -63,12 +72,38 @@ Strings use TypeScript's operators. Write string literals in single quotes insid
 | number range           | `"number > 0"`, `"0 <= number < 1"`, `"number != 0"`      |
 | string or array length | `"string > 0"`, `"1 <= string <= 255"`, `"string[] >= 1"` |
 | divisibility           | `"number % 2"`                                            |
-| regex                  | `"/^[a-z]+$/"`                                            |
+| regex                  | `/^\d+$/` as a RegExp, or `"/^\\d+$/"` in a string        |
 | record                 | `"Record<string, number>"` or `{ "[string]": "number" }`  |
 | class instance         | `"Date"`, `"Map"`, or `type.instanceOf(MyClass)`          |
 | enum from values       | `type.enumerated("a", "b")` or `type.valueOf(MyEnum)`     |
+| array of a Type        | `Item.array()`, `Item.array().atLeastLength(1)`           |
+| custom error message   | `type("string >= 8").configure({ message: "Too short" })` |
+
+Bounds bind tighter than `|`, so `"string <= 500 | null"` is a string of at most 500 characters, or null.
 
 Common keywords: `string.email`, `string.uuid`, `string.url`, `string.ip`, `string.semver`, `string.date.iso`, `string.alphanumeric`, `number.integer`, `number.safe`, `number.epoch`. The full list is at https://arktype.io/docs/keywords.md.
+
+## From Zod
+
+What a Zod schema becomes. To migrate a project, follow [references/migrating.md](references/migrating.md), which has every library and the defaults that differ, like Zod removing undeclared keys where ArkType keeps them.
+
+| Zod                                       | ArkType                                                        |
+| ----------------------------------------- | -------------------------------------------------------------- |
+| `z.object({ ... })`                       | `type({ ... })`                                                |
+| `z.string().min(1).max(100)`              | `"1 <= string <= 100"`                                         |
+| `z.string().email()`, `.url()`, `.uuid()` | `"string.email"`, `"string.url"`, `"string.uuid"`              |
+| `z.number().int().positive()`             | `"number.integer > 0"`                                         |
+| `z.enum(["a", "b"])`                      | `"'a' \| 'b'"`                                                 |
+| `.optional()`, `.nullable()`              | `"key?": "T \| undefined"`, `"T \| null"`                      |
+| `.default(x)`                             | `key: "T = x"` or `key: T.default(x)`                          |
+| `z.array(T).min(1)`                       | `T.array().atLeastLength(1)`, or `"string[] >= 1"` in a string |
+| `z.union([A, B])`, `z.discriminatedUnion` | `A.or(B)`                                                      |
+| `.extend({ ... })`                        | `.merge({ ... })`                                              |
+| `.refine(fn, message)`                    | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message }))`      |
+| `.transform(fn)`                          | `.pipe(fn)`                                                    |
+| `z.coerce.number()`                       | `type("unknown").pipe(Number).to("number")`                    |
+| `z.infer<typeof T>`, `z.input`            | `typeof T.infer`, `typeof T.inferIn`                           |
+| `T.parse(x)`, `T.safeParse(x)`            | `T.assert(x)`, `T(x)` checked with `instanceof type.errors`    |
 
 ## Composing types
 
@@ -92,8 +127,9 @@ const CustomerDraft = Customer.partial()
 Never interpolate a type into a string, as in ``type(`${Address}[]`)``. Use `Address.array()`, `Address.or(...)` and the other chained methods, or a tuple expression like `[Address, "[]"]`.
 
 - `.merge()` adds keys and replaces existing ones. `.and()` intersects, and throws when a key's types conflict.
-- To share keys between types, merge a base Type. A helper that composes Types should take a `Type<t>` and call its methods, which type-checks without casts: `const withId = <t extends object>(T: Type<t>) => T.and({ id: "string" })`. A helper that passes a generic definition to `type()` needs casts.
-- A function that accepts any Type takes `type.Any`, not `Type<any>`. To embed the Type it receives in a new definition, take `type.Any<t>`: `const page = <t>(item: type.Any<t>) => type({ items: item.array(), total: "number" })`. Or define a generic: `const Page = type("<t>", { items: "t[]", total: "number" })`, called as `Page(Item)`.
+- To share keys between types, merge a base Type. To reuse a pattern across Types, define a Generic: `const Page = type("<t>", { items: "t[]", total: "number" })`, called as `Page(Item)`. A Generic also works in a precompiled project, where a function calling a Type's methods doesn't.
+- In a project that isn't precompiled, a helper can compose Types by taking a `Type<t>` and calling its methods, which type-checks without casts: `const withId = <t extends object>(T: Type<t>) => T.and({ id: "string" })`. A helper that passes a generic definition to `type()` needs casts.
+- A function that accepts any Type takes `type.Any`, not `Type<any>`. To embed the Type it receives in a new definition, take `type.Any<t>`: `const page = <t>(item: type.Any<t>) => type({ items: item.array(), total: "number" })`.
 - `.as<T>()` is a cast. To infer a narrower type, use `.narrow()` with a type predicate, e.g. `(s): s is \`data-${string}\` => s.startsWith("data-")`.
 
 ## Parsing and transforming
@@ -104,11 +140,20 @@ Keywords ending in `.parse` transform their input. `.to()` validates the parsed 
 // "8080" -> 8080, then checked as a port
 const parsePort = type("string.integer.parse").to("0 < number <= 65535")
 
-// a JSON string -> a validated object
+// a JSON string -> a validated object, e.g. a request body from
+// `await request.text()`, so malformed JSON is an error like any other
 const parsePayload = type("string.json.parse").to({ id: "number.integer" })
 
 // any function, after validation
 const parseTrimmed = type("string").pipe(s => s.trim())
+
+// form data, as Object.fromEntries(new FormData(form)) gives it: every value
+// is a string, and an unchecked checkbox is absent
+const Signup = type({
+	email: "string.email",
+	age: type("string.integer.parse").to("13 <= number <= 130"),
+	terms: type("'on'").pipe(() => true as const)
+})
 
 // env vars arrive as strings, so parse them and give defaults
 const Env = type({
@@ -190,30 +235,30 @@ An object that deletes keys, whether by `"+"` or by `configure`, transforms its 
 - `User.toJsonSchema()` returns the equivalent JSON Schema. It throws for what JSON Schema can't express, like `Date`, `bigint`, a morph or a `.narrow()`. Handle those with a `fallback` keyed by the error's `code`, e.g. `{ fallback: { date: ctx => ({ ...ctx.base, type: "string", format: "date-time" }) } }`, or pass `{ fallback: annotatingFallback }` (exported from `arktype`) to write them as `x-arktype-*` keywords instead.
 - Global configuration (error messages, `onUndeclaredKey`, `numberAllowsInfinity`, and so on) goes through `configure` from `arktype/config`, in its own file, imported first by every file that creates a Type. Calling `configure` after any Type is created, even by reading a keyword like `type.number`, throws unless it changes nothing. See https://arktype.io/docs/configuration.md.
 
-## Precompiled projects
-
-A project whose bundler config uses `@ark/aot` (e.g. `precompile.vite()` from `@ark/aot/unplugin`) constructs every Type at build time and replaces it with a standalone validator. Definitions are written the same way, with a few rules:
-
-- Define Types from static values. A definition reading a parameter, or anything else known only at runtime, fails the build.
-- Compose inside a definition, like `const Admin = User.and({ role: "'admin'" })`. A validator has no `.and`, `.or`, `.pick` or other composing method at runtime, and the build fails where code calls one.
-- A validator's error messages say what failed but not what the value was, like `name must be a string`.
-- A build error names the file, line and column, then why, then how to fix it on its last line. Apply that fix rather than working around it, and don't set `allowUnsafe` to get past an error: what it reports can then throw at runtime. `npx arktype-precompile --check "src/**/*.ts"` lists every one without bundling.
-- To leave one definition to arktype at runtime, put `// @ark-runtime` on the line before it.
-- Build options go in the plugin call or under `precompile` in an `ark.json` beside `package.json`, which the plugin, the drivers, the CLI and the ESLint rule all read. `{ "precompile": { "preset": "smallest" } }` trades speed for size.
-
-Docs: https://arktype.io/docs/precompile.md and https://arktype.io/docs/precompile/troubleshooting.md.
-
 ## Check your work
 
 ArkType reports most mistakes in a definition as a TypeScript error at the definition, and the rest as a `ParseError` thrown when the definition runs. After writing or changing types, run the project's typecheck script (or `npx tsc --noEmit`) and its tests, then call each type on a valid and an invalid value and read the result.
 
+## Errors and their fixes
+
+| Error                                                                                               | Fix                                                                                                                                         |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'a' is unresolvable`                                                                               | quote a string literal, `"'a'"`, or use the keyword's full name: `number.integer`, `string.email`, `Date`                                   |
+| `'{' is unresolvable`                                                                               | write an object as an object, not in a string                                                                                               |
+| `'Type' is unresolvable`                                                                            | don't interpolate a Type into a string; use `Item.array()`, `Item.or(...)` or `[Item, "[]"]`                                                |
+| `'^' is unresolvable`                                                                               | put a regex in slashes, `"/^a$/"`                                                                                                           |
+| `Defaultable definitions like 'number = 0' are only valid as properties in an object or tuple`      | give the default in an object, `{ count: "number = 0" }`                                                                                    |
+| `Only required keys may specify default values`                                                     | drop the `?`: a key with a default may be missing                                                                                           |
+| `An unordered union of a type including a morph and a type with overlapping input is indeterminate` | narrow the morph's input so no other branch accepts it, as in `"string.numeric.parse \| undefined"`, or tell objects apart by a literal key |
+| `Intersection at a of string and number results in an unsatisfiable type`                           | `.and()` found conflicting keys; use `.merge()` to replace them                                                                             |
+| `Index keys "a", "b" should be specified as named props`                                            | write `Record<"a" \| "b", T>` as `{ a: T, b: T }`                                                                                           |
+| `configure() must be called before any Type is created`                                             | import the module calling `configure()` before any module that creates a Type                                                               |
+
 ## Mistakes to avoid
 
-- Defaults like `"number = 0"` only work as object values or tuple elements, not as a standalone `type("number = 0")`.
 - `number` rejects `NaN`, `Infinity` and `-Infinity`. Allow them in one type with `"number | number.Infinity | number.NegativeInfinity"` (or `number.NaN`), or everywhere with `configure({ numberAllowsInfinity: true })`.
 - Don't mutate the argument of a `.pipe()` callback. It's the caller's data; the `clone` option that used to copy it no longer exists.
 - An optional key can be missing, but not present with the value `undefined`, mirroring TypeScript's `exactOptionalPropertyTypes`. Write `"key?": "string | undefined"` to allow both.
-- A string literal needs its own quotes inside the definition: `"'a' | 'b'"`. A bare `"a"` is read as the name of a type, and fails to resolve.
 - Don't hand-write a TypeScript interface next to the type. Derive it with `typeof T.infer`, so the two can't drift.
 - An invalid definition is a TypeScript error at the definition itself, with a message saying what's wrong. Fix it there rather than casting it away.
 - An `ArkErrors` may find its issues when first read, so they describe the data as it is then. Read `out.summary` or `out.issues` before the validated data can change, as reactive form state, an Immer draft or an `await` before reporting allow.

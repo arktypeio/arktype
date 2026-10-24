@@ -605,7 +605,7 @@ npx skills add arktypeio/arktype
 
 This installs the skill from the repository's default branch, which tracks the latest release. The `arktype` package also includes the skill at `skills/arktype/SKILL.md`, so tools like [skills-npm](https://github.com/antfu/skills-npm) can link the copy that matches your installed version.
 
-The skill links a [migration guide](https://arktype.io/docs/migrating) that agents read when they convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema.
+Agents read two references the skill links when a task needs them: the [migration guide](https://arktype.io/docs/migrating), when they convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema, and a precompile guide with the setup for each bundler, Next.js and test runner and the fix for each build error.
 
 ## Migrate from Zod
 
@@ -629,16 +629,19 @@ Precompiling used to cost a build step and its errors. An agent runs the build, 
 
 ## AGENTS.md
 
-If your project has an `AGENTS.md` or `CLAUDE.md`, a line like this keeps agents on ArkType when they add validation:
+Agents that don't load skills still read your `AGENTS.md` or `CLAUDE.md`. Paste this in to keep them on ArkType when they add validation:
 
-```
-Validate untrusted input with ArkType. Docs: https://arktype.io/llms.txt
+```md
+## Validation
+
+- Validate untrusted input, like request bodies, form data, env vars and JSON, with ArkType. Docs: https://arktype.io/llms.txt
+- Derive each TypeScript type from its validator with `typeof T.infer` rather than writing it by hand.
 ```
 
 If you precompile, add:
 
-```
-ArkType definitions are precompiled when the app builds. Fix each precompile error as its hint says; don't set allowUnsafe to get past one.
+```md
+- ArkType definitions are precompiled by @ark/aot when the app builds. Fix each precompile error as its last line says, and don't set allowUnsafe or runtime: "arktype" to get past one. `npx arktype-precompile --check "src/**/*.ts"` lists them without building. Setup and fixes: https://arktype.io/docs/precompile/llms.txt
 ```
 
 ## Building agents
@@ -660,6 +663,12 @@ server.registerTool(
 ```
 
 Calling `greet` with `times: 99` returns an error result to the model with ArkType's message, `times must be at most 5 (was 99)`, so it knows what to fix.
+
+A [precompiled](https://arktype.io/docs/precompile) validator ships `~standard.jsonSchema`, which the SDK reads to describe the tool, only when you ask for it, so set it in `ark.json`:
+
+```json
+{ "precompile": { "members": { "~standard.jsonSchema": true } } }
+```
 
 # Editor setup
 
