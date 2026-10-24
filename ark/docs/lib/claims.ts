@@ -234,10 +234,9 @@ const sizeRival = leaderboards.size.standings[size.place === 1 ? 1 : 0]
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
 	// each superlative names a category ArkType must have the best average in
-	// (lib/bench/leaderboard.ts), as headlineCategories below checks. Pending
-	// David's call: ArkType leads all three, size narrowly (1.372, Valibot
-	// 1.400)
-	headline: { pending: "TypeScript's smallest, fastest validator." },
+	// (lib/bench/leaderboard.ts), as headlineCategories below checks. Size is
+	// the narrow one: 1.363 against Valibot's 1.404 at fea8e68e0
+	headline: "TypeScript's smallest, fastest validator.",
 	headlineNote: `*Best average across public benchmarks, each result a ratio to the best: ${leaderboards.speed.rows} results for validation speed, ${leaderboards.startup.rows} for startup and ${leaderboards.size.rows} for bundle size.`,
 	// the fastest and the smallest builds differ: optimize "size" makes the
 	// product schema's valid data 2.2x slower

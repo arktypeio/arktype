@@ -411,6 +411,34 @@ best in Sury's (1124 B, Valibot 1304) and second to ajv on the login form
 At 7daf33b7e, the commit before, size was Valibot 1.360 against ArkType
 1.462, with speed 1.092 and startup 1.014 leading.
 
+### ArkType's rows at fea8e68e0, the homepage's speed in ns
+
+The homepage's speed suite is scored by the table's measure again, median
+ns per call from `benchData.json`, every library from one run. Counting it
+in instructions under load (above) changed the registered row, so that
+section's homepage scores stand only as its record;
+`results/homepage-counts-*.json` are kept with it. `benchData.json`'s
+scenarios were rerun at fea8e68e0 on a quiet machine: 20 passes, then a
+10-pass replica, by its provenance's procedure, at 1-minute loads of 2.1 to
+3.4 at the runs' starts and ends. Its sizes and cold start aren't rerun.
+Every other ArkType row was measured again at the same commit
+(`results/arktype-fea8e68e0.json`, `results/startup-fea8e68e0-node24.json`).
+
+| category | 1             | 2             | 3                   | 4             |
+| -------- | ------------- | ------------- | ------------------- | ------------- |
+| speed    | ArkType 1.105 | ata 1.249\*   | ajv 2.866\*         | Typia 3.675\* |
+| startup  | ArkType 1.013 | Typia 2.815\* | Valibot 29.4        | Zod Mini 65.2 |
+| size     | ArkType 1.363 | Valibot 1.404 | Superstruct 1.464\* | Typia 1.570\* |
+
+\* ranked on 2 to 4 of the category's suites. ArkType has the best score in
+every speed suite: moltar's 1.067, the homepage's 1.298 (ajv 1.972),
+schemabenchmarks.dev's 1.078 (ata 1.480), Sury's 1.000 and ata's 1.104 (ata
+1.155). Startup is as at 90d510484, Valibot best only on the homepage's cold
+start. In size it's best in Sury's (1112 B, Valibot 1304) and second to ajv
+on the login form (1168 B); the homepage's apps 2.100 (ajv 1.346, Valibot
+1.508) and schemabenchmarks.dev's download 1.315 (2062 B). Leads: speed
+13.0%, startup 178%, size 3.0%.
+
 ## The login form across validators
 
 `forms/` writes valibot.dev's login form in each TypeScript-schema validator
