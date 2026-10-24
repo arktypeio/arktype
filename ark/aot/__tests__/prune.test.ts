@@ -421,6 +421,19 @@ contextualize(function (this: Mocha.Suite) {
 				)
 			).equals(everyMember)
 		})
+
+		it("but a module Vite loads as a string or a worker", async () => {
+			attest(
+				await droppedReading(
+					`import source from "./types.ts?raw"\nimport logo from "./logo.svg?url"\nimport Reader from "./reader.ts?worker&inline"\nUser({})`,
+					{
+						"/types.ts?raw": "",
+						"/logo.svg?url": "",
+						"/reader.ts?worker&inline": ""
+					}
+				)
+			).equals(everyMember)
+		})
 	})
 
 	describe("ids", () => {
@@ -957,6 +970,23 @@ console.log(out instanceof type.errors ? out.summary : out)
 			try {
 				const pruned = await bundle()
 				attest(run(pruned)).snap("name must be a string\n")
+				attest(pruned.includes("~standard")).equals(false)
+			} finally {
+				writeFileSync(main, source)
+			}
+		})
+
+		it("leaves out what no read needs where a module imports a file as a string", async () => {
+			const main = join(root, "main.ts")
+			const source = readFileSync(main, "utf8")
+			writeFileSync(join(root, "notes.md"), "# notes\n")
+			writeFileSync(
+				main,
+				`${source}\nimport notes from "./notes.md?raw"\nconsole.log(notes)\n`
+			)
+			try {
+				const pruned = await bundle()
+				attest(run(pruned)).snap("name must be a string\n# notes\n\n")
 				attest(pruned.includes("~standard")).equals(false)
 			} finally {
 				writeFileSync(main, source)

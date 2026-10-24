@@ -96,13 +96,19 @@ export const isInertMetaProperty = (name: unknown): boolean =>
 const runtimeSpecifier =
 	/^(?:arktype|@ark\/(?:schema|util))(?:\/|$)|^~arktype\//
 
-// a dependency the plugin leaves, or an asset, which import nothing of the program
+// a dependency the plugin leaves, an asset, or a module Vite writes as a
+// string or as a worker, a bundle of its own, which import nothing of the
+// program
 const isInert = (id: string, host: ScanHost) =>
 	(dependencyOf(id) !== undefined && !host.isTransformed(id)) ||
-	inertExtension.test(id)
+	inertExtension.test(id) ||
+	inertQuery.test(id)
 
+// with a query too, as Vite's ?inline or SVGR's ?react
 const inertExtension =
-	/\.(?:json|css|scss|sass|less|svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|txt|wasm)$/
+	/\.(?:json|css|scss|sass|less|svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|txt|wasm)(?:\?.*)?$/
+
+const inertQuery = /\?(?:.*&)?(?:raw|url|worker|sharedworker)(?:&|$)/
 
 // each specifier a module loads, or undefined where one is computed
 const importsOf = (
