@@ -137,12 +137,17 @@ hypothesis holds.
 At 89510709d, a leaner error writer shrank B2's login form to 1313 B gzipped
 (`results/login-89510709d.json`); every other size is unchanged.
 
-At 1e74181e4, B1 is 1140 B gzipped, B2 1037 and dynamic ArkType 82965
-(`results/login-1e74181e4.json`); every other library's size is unchanged.
-Since 89510709d, B1 has shrunk from 1779 and B2 from 1313. B1 here
-and the default build's 1158 in "Best average" (forms/, measured at 808927feb,
-and the same at 1e74181e4) are the same form with the same esbuild settings:
-`forms/arktype.ts` exports its assert where `login/arktype.ts` calls it once.
+At 5acd85130, dynamic ArkType's login bundle is 82946 B gzipped
+(`results/login-5acd85130.json`), from 82263 at f29b8d153: checking UUIDs, IP
+addresses and ISO dates by their char codes added 779, and declaring arkregex
+free of side effects took 17 back (`results/login-1e74181e4.json`, before that,
+has 82965). Its precompiled rows are pruned by usage and assert the form
+(1edc2a765): the default build (B1) is 1140 B and the `"smallest"` preset
+(B2) is 1037 B. The docs' size chart and `loginSize` cite this file, with B1 as
+ArkType's bar. Its earlier 1313 was B2 at 89510709d, before builds pruned by
+usage, as B1's 1779 was. The 1158 in "Best average" is the default build of
+`forms/arktype.ts`, the same form with the same esbuild settings, which
+exports a function that asserts where `login/arktype.ts` asserts once.
 
 ## The homepage's apps
 
