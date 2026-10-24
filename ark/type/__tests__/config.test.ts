@@ -718,7 +718,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 						// @ts-expect-error
 						"": {} as any
 					})
-				).completions({ "": ["boundary", "kind", "method"] })
+				).completions({ "": ["boundary", "kind", "method", "where"] })
 			})
 
 			it("composite kind completions", () => {
