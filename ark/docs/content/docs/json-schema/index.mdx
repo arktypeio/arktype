@@ -1,0 +1,65 @@
+---
+title: Overview
+description: Generate JSON Schema from a Type with arktype, or build a Type from JSON Schema with @ark/json-schema.
+---
+
+ArkType converts in both directions, with one package for each.
+
+| direction          | package            | API                                             |
+| ------------------ | ------------------ | ----------------------------------------------- |
+| Type → JSON Schema | `arktype`          | `T.toJsonSchema()`, `T["~standard"].jsonSchema` |
+| JSON Schema → Type | `@ark/json-schema` | `jsonSchemaToType(schema)`                      |
+
+## Type to JSON Schema
+
+Every Type has a `toJsonSchema()` method. Nothing else to install:
+
+```ts
+const User = type({
+	name: "string",
+	"age?": "number.integer >= 0"
+})
+
+const schema = User.toJsonSchema()
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"name": { "type": "string" },
+		"age": { "type": "integer", "minimum": 0 }
+	},
+	"required": ["name"]
+}
+```
+
+Some things a Type can check, like a `Date`, a `bigint` or a custom `narrow`, have no JSON Schema equivalent. `toJsonSchema()` throws on those unless you tell it what to write instead. See [To JSON Schema](/docs/json-schema/to-json-schema).
+
+Libraries that accept any [Standard JSON Schema](https://standardschema.dev/json-schema) read it from `T["~standard"].jsonSchema`, which never throws for those parts. See [Standard JSON Schema](/docs/json-schema/to-json-schema#standard-json-schema).
+
+## JSON Schema to Type
+
+`@ark/json-schema` parses a JSON Schema into a Type:
+
+<InstallationTabs pkg="@ark/json-schema" />
+
+```ts
+import { jsonSchemaToType } from "@ark/json-schema"
+
+const User = jsonSchemaToType({
+	type: "object",
+	properties: {
+		name: { type: "string" },
+		age: { type: "integer", minimum: 0 }
+	},
+	required: ["name"]
+})
+
+User.expression // "{ name: string, age?: number % 1 >= 0 }"
+// ArkErrors: age must be an integer (was 1.5)
+User({ name: "Ada", age: 1.5 })
+```
+
+A schema written in the call infers its type, so `User` is a `Type<{ name: string; age?: number }>`. See [From JSON Schema](/docs/json-schema/from-json-schema#inferring-its-type) to type a schema declared elsewhere, and [Keyword support](/docs/json-schema/support) for which keywords it understands.

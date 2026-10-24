@@ -1,0 +1,256 @@
+---
+title: Announcing ArkType 3.0
+# mirrors claims.headline in lib/claims.ts
+description: TypeScript's smallest, fastest validator, designed for agentic DX
+date: 2026-10-21 # the release sets this, and blog/index.mdx's date, to the day it publishes
+---
+
+As of today, ArkType 3.0 is generally available🎉
+
+**<Headline />** It's also designed for agentic DX.
+
+Precompiled validators have always been faster and smaller than ones that parse at runtime. What they cost was a build step: a plugin to set up, errors you'd never seen and a second model of what runs where. For most projects, it wasn't worth it.
+
+That trade was about DX, and DX priorities have shifted. A build step taxed the edit-and-reload loop, so validators that parsed at runtime won. With agents writing most of the code, rebuilding to get updated validators is a step nobody waits on, and every error ArkType's build reports says what to change, so your agent fixes it from the error alone. Your users still download and run whatever validator you ship, so shipping them a parser is a waste.
+
+So ArkType precompiles. Your definitions don't change- just where they run. **ArkType (precompiled)** builds each one when you build, so your bundle gets a validator with only the checks your types need. No parser, and no code generated at runtime. **ArkType (dynamic)** parses them at runtime with no build step, like always. <Claim id="buildChoice" />
+
+```ts
+// ---cut-start---
+declare const data: unknown
+// ---cut-end---
+// the same definition, run either way
+export const User = type({
+	name: "string > 0",
+	email: "string.email",
+	"age?": "number.integer >= 0"
+})
+
+const out = User(data)
+
+if (out instanceof type.errors) console.error(out.summary)
+```
+
+## The build step is your agent's job
+
+We made sure every message along the way names the fix:
+
+- **Definitions** are checked by `tsc` as you write them, and a typo's error is the type the string was checked against, like `"number | strin"` against `"number | string"`.
+- **The build** reports what it can't precompile with the file, line, reason and fix. [Troubleshooting](/docs/precompile/troubleshooting) quotes each message, and [shadow mode](/docs/precompile/advanced#shadow-mode) fails a test wherever a precompiled validator would behave otherwise than arktype.
+- **Validation** returns errors that say where, what was expected and, for a dynamic Type, what arrived, ready to hand back to a model as a tool result.
+
+A definition built from a value known only at runtime is the usual reason a build fails:
+
+```
+src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
+  `limit` is a parameter of makeField (src/forms.ts:12:22); its value is known only at runtime
+  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
+```
+
+`runtime: "arktype"` is the escape hatch: it precompiles what it can and ships arktype for the rest, so nothing you write today keeps you from precompiling. `npx arktype-precompile --check "src/**/*.ts"` lists every definition the build would refuse before you switch.
+
+## Every category
+
+Precompiled, ArkType keeps its syntax, its errors and its set theory, and gives up neither speed nor size for them.
+
+<ClaimCharts />
+
+<HeadlineNote />
+
+### Speed
+
+<Claim id="zodSpeed" /> <Claim id="speedScope" /> <Claim id="dynamicSpeed" />
+
+### Bundle size
+
+<Claim id="loginSize" /> <Claim id="noInit" />
+
+### Types
+
+Definitions are TypeScript's own syntax, checked by `tsc` as you type, and the type ArkType infers is the one you'd have written by hand. Both modes take the same definitions and infer the same types.
+
+### Errors
+
+Every layer's errors name the fix: `tsc`'s, the build's and validation's. Validation errors are plain objects with a path and a code, and a [locale](/docs/i18n) writes their messages in another language with dynamic Types or `runtime: "arktype"`.
+
+### JSON Schema, OpenAPI and Standard Schema
+
+Every Type is a [Standard Schema](/docs/standard-schema) that writes its own JSON Schema, so tRPC, Hono, the MCP SDK and the rest take it as is. [`toJsonSchema`](/docs/json-schema/to-json-schema) writes draft 2020-12, draft-07 or OpenAPI 3.0, [`jsonSchemaToType`](/docs/json-schema/from-json-schema) reads JSON Schema back, and [ArkSets](/docs/sets) relates schemas across formats. A precompiled validator keeps its JSON Schema where the [`members`](/docs/precompile/options#members) option bakes it.
+
+### Agents
+
+```bash
+npx skills add arktypeio/arktype
+```
+
+The [skill](/docs/agents#skill) teaches an agent current syntax, how it maps to TypeScript, the mistakes to avoid and how to work in a precompiled project. Every docs page is also Markdown at its URL plus `.md`, and [/llms.txt](https://arktype.io/llms.txt) indexes them. See [Agents](/docs/agents).
+
+### Migrating from Zod
+
+```
+Migrate this project from Zod to ArkType.
+```
+
+<Claim id="zodMigration" /> All 10 typechecked. Two of the others use MCP SDK
+v1, which accepts only Zod, so Zod stays until they upgrade. The skill's
+[migration guide](/docs/migrating) maps each construct and every default that
+differs.
+
+### What it costs
+
+- **A build step**: a plugin in the bundler you already run, set up once. Your agent reads its errors.
+- **Definitions known only at runtime** fail a standalone build. Keep them dynamic, or build with `runtime: "arktype"`.
+- **A standalone validator** validates, asserts and is a Standard Schema, but doesn't compose or introspect at runtime, and its messages don't print the value. `runtime: "arktype"` keeps the whole Type API.
+- <Claim id="dynamicSize" />
+
+The rest of this post is what else is new. If you're upgrading, [Upgrading](/docs/upgrading) lists what breaks, and the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md) have the rest.
+
+## `@ark/aot`
+
+[`@ark/aot`](/docs/precompile) is a plugin for the bundler you already run: Vite, Rollup, Rolldown, webpack, Rspack, esbuild, Bun or Farm, and Vitest runs tests through it. Drivers cover Node, Bun's runtime and Next's Turbopack.
+
+```ts title="vite.config.ts"
+import { precompile } from "@ark/aot/unplugin"
+
+export default {
+	plugins: [precompile.vite()]
+}
+```
+
+Your definitions don't change. Each Type your program defines becomes a validator on `arktype/runtime` that validates, asserts and implements Standard Schema as the Type did, so code that calls it doesn't change either. Scopes, Modules, Generics, cyclic Types, `match` and `type.fn` precompile too. [Setup](/docs/precompile/setup) has a config for each bundler.
+
+Options go in the plugin call or in an [`ark.json`](/docs/precompile/options#arkjson) that the plugin, the drivers, the CLI and the ESLint rule all read, and a [preset](/docs/precompile/options#presets) sets several at once: `"smallest"` trades speed for size. A production build leaves out the runtime checks of what the build already verified.
+
+### Set theory at build time
+
+ArkType reduces every definition to a normalized set of constraints, so it knows which Types overlap, which are subtypes of others and which can never both be satisfied. Precompiled, all of that happens in your build:
+
+- **Unions discriminate themselves.** ArkType finds the key that tells a union's branches apart and switches on it, so data is checked against one branch rather than each in turn, and a branch never rechecks the key it was chosen by. You never declare a discriminator.
+- **Redundant checks disappear.** `number > 0` intersected with `number >= 10` is one check, `number >= 10`. Divisible by 2 and by 3 is divisible by 6.
+- **Contradictions never ship.** `{ id: string }` intersected with `{ id: number }` throws a ParseError, which fails the build rather than shipping a validator that rejects everything.
+
+```ts
+const Shape = type({
+	kind: "'circle'",
+	radius: "number > 0"
+}).or({
+	kind: "'square'",
+	side: "number > 0"
+})
+
+const Six = type("number % 2 & number % 3")
+
+Six.expression // "number % 6"
+```
+
+Precompiled, `Shape` checks data like this, its helpers inlined: one `switch` on `kind`, each case checking only the key that's left:
+
+```js
+// @noErrors
+// ---cut---
+data => {
+	switch (data?.kind) {
+		case "circle":
+			return Number.isFinite(data.radius) && data.radius > 0
+		case "square":
+			return Number.isFinite(data.side) && data.side > 0
+	}
+	return false
+}
+```
+
+ArkType isn't the first validator to compile. typia also generates checks from your TypeScript types at build time, and it specializes some unions. The difference is that ArkType brings a type system of its own to the build, so your definitions are reduced, intersected and discriminated before any code is written.
+
+## `codec` and `.encode`
+
+`codec` pairs a morph with its inverse, so output can be encoded back into input. Every Type has `.encode`, which inverts each of its morphs, so a codec encodes wherever it's nested:
+
+```ts
+import { codec } from "arktype/codecs"
+
+const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+
+const Event = type({ name: "string", at: EpochMs })
+
+// { name: "launch", at: new Date(0) }
+const event = Event({ name: "launch", at: 0 })
+// { name: "launch", at: 0 }
+const encoded = Event.encode(event)
+```
+
+Parse keywords like `string.date.iso.parse` encode back to strings. `arktype/codecs` installs encoding when imported, so an app that doesn't encode doesn't ship it. Codecs and `.encode` [precompile](/docs/codecs#precompiling) like any other definition. See [Codecs](/docs/codecs).
+
+## Error messages in other languages
+
+Configure a locale to write error messages in another language, with dynamic Types or a precompiled build with `runtime: "arktype"`. ArkType ships `en` and `de`, and a locale is an object you can spread, extend or write from scratch, including one that calls an i18n library:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import { de } from "arktype/locales/de"
+
+configure({ locale: de })
+```
+
+`locale` can also be a function, called when an `ArkErrors`' messages are first read, so errors follow the language of the request that reads them. See [i18n](/docs/i18n).
+
+## Fewer errors, and transforms in place
+
+`errors` returns less when you need less: `"first"` stops at the first error validation finds, and `"none"` returns one error saying the data is invalid. `mutatesInput` writes what a Type transforms into its input instead of copying it. Each is installed by its own import, so a program that doesn't choose one doesn't ship it:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import "arktype/errors"
+
+configure({ errors: "first" })
+```
+
+A precompiled build takes both as options, alongside [`members`](/docs/precompile/options#members), which drops what a validator has besides validating, and [`optimize: "size"`](/docs/precompile/options#optimize-and-optimizeerrors). See [Configuration](/docs/configuration#errors).
+
+## Dynamic Types do less work
+
+A Type compiles when it's first used rather than when it's defined, so a Type a program never calls costs nothing to compile. A Type that calls no narrow or morph finds its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. <Claim id="strictSpeedup" />
+
+## Syntax
+
+[`!=`](/docs/primitives#number-ranges) excludes one value, like `number != 0`, and a union of ranges merges where it can: `1 < number < 10 | 10 <= number < 100` is `1 < number < 100`, and `number < 0 | number > 0` is `number != 0`. An object's [`"@"`](/docs/expressions#meta) key holds its description or meta, as `"@"` does in a tuple expression:
+
+```ts
+const User = type({
+	"@": "a user",
+	name: "string"
+})
+
+// ArkErrors: must be a user (was a number)
+User(5)
+```
+
+## ArkSets and JSON Schema
+
+[ArkSets](/docs/sets) applies the same set theory to any schema: a Type, a Standard JSON Schema like Zod's, or a plain JSON Schema. `isSubset(v1, v2)` tells you whether a new version of an API schema still accepts everything the old one did, and `intersect`, `union` and `toJsonSchema` combine and normalize schemas across formats. A Standard JSON Schema is read as the JSON Schema it writes, so refinements and transforms that JSON Schema can't express aren't part of the comparison.
+
+`jsonSchemaToType` from [`@ark/json-schema`](/docs/json-schema/from-json-schema) reads a schema through it, so the Type accepts exactly what a JSON Schema 2020-12 validator does, except that lengths count UTF-16 code units, and infers the type of a schema written in the call.
+
+## Errors as data
+
+An `ArkErrors`' `issues` are plain objects, discriminated by `code`, with the keys their JSON has. `flatByPath` and `flatProblemsByPath` are functions `arktype` exports. Errors print an object by its kind, like `(was an object)`, so an object never grows a message or leaks what it holds into a log, and undeclared keys and union misses have codes of their own, `undeclared` and `discriminant`. [Upgrading](/docs/upgrading) lists each change with what to write instead.
+
+## A new home
+
+The docs are new too. Every page reads as Markdown for your agent, every code sample shows the types TypeScript infers, and the [playground](/playground) runs the real parser right in your browser.
+
+We can't wait to see what you build with it!
+
+⚡ [Start coding](/docs/intro/setup)
+
+⭐ [Check out the project on GitHub](https://github.com/arktypeio/arktype)
+
+👋 [Join our Discord to lurk or ask questions](https://arktype.io/discord)
+
+- Follow any of these accounts for updates:
+  - [@arktype.io](https://bsky.app/profile/arktype.io), [@ssalbdivad.dev](https://bsky.app/profile/ssalbdivad.dev) on BlueSky
+  - [@arktypeio](https://x.com/arktypeio), [@ssalbdivad](https://x.com/ssalbdivad) on X/Twitter
+
+- Consider supporting my full-time work on ArkType via [GitHub Sponsors](https://github.com/sponsors/arktypeio)

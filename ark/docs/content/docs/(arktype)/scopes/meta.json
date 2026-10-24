@@ -3,8 +3,10 @@
 	"icon": "Advanced",
 	"pages": [
 		"[modules](/docs/scopes#modules)",
+		"[cyclic types](/docs/scopes#cyclic-types)",
 		"[visibility](/docs/scopes#visibility)",
 		"[submodules](/docs/scopes#submodules)",
-		"[thunks](/docs/scopes#thunks)"
+		"[thunks](/docs/scopes#thunks)",
+		"[configuration](/docs/scopes#configuration)"
 	]
 }

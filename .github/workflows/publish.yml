@@ -12,7 +12,23 @@ on:
 permissions: {}
 
 jobs:
+  # a prerelease (an arktype version like X.Y.Z-rc.1) publishes under next and
+  # leaves the site as it is, so its docs don't go live before it's stable
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Check for a prerelease
+        id: version
+        run: echo "prerelease=$(node -p 'require("./ark/type/package.json").version.includes("-")')" >> "$GITHUB_OUTPUT"
+
   update-gh-pages:
+    needs: version
+    if: needs.version.outputs.prerelease == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -27,12 +43,19 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
+      # twoslash results (see ark/docs/lib/content/twoslash.ts), keyed by what
+      # every result depends on, so a change there starts a fresh cache
+      - name: Cache docs twoslash results
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ark/docs/node_modules/.cache/ark-docs
+          key: docs-twoslash-${{ hashFiles('ark/*/out/**/*.d.ts', 'ark/docs/lib/shiki.ts', 'ark/docs/package.json') }}
+
       - name: Build docs
         run: pnpm buildDocs
         env:
           NEXT_PUBLIC_POSTHOG_KEY: phc_vKr7tmA1TyRlKm9zm5TWVmrTWAybJ2fCk66FtZG49Om
           NEXT_PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
-          ORAMA_PRIVATE_API_KEY: ${{ secrets.ORAMA_PRIVATE_API_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5

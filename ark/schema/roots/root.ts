@@ -1,9 +1,10 @@
 import {
+	arkKind,
 	arrayEquals,
 	flatMorph,
 	includes,
 	inferred,
-	omit,
+	isEmptyObject,
 	throwInternalError,
 	throwParseError,
 	type Fn,
@@ -11,10 +12,16 @@ import {
 	type dict
 } from "@ark/util"
 import { mergeToJsonSchemaConfigs } from "../config.ts"
-import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
-import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
+import {
+	constraintInputOf,
+	throwInvalidOperandError,
+	type Constraint
+} from "../constraint.ts"
+import type { nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import {
 	BaseNode,
+	flatMorphsAreEqual,
+	isMutuallySimulated,
 	type GettableKeyOrNode,
 	type KeyOrKeyNode,
 	type NodeSelector
@@ -31,29 +38,31 @@ import type {
 	LimitSchemaValue,
 	UnknownRangeSchema
 } from "../refinements/range.ts"
-import type { BaseScope } from "../scope.ts"
 import type { BaseNodeDeclaration, TypeMeta } from "../shared/declare.ts"
 import {
 	Disjoint,
 	writeUnsatisfiableExpressionError
 } from "../shared/disjoint.ts"
-import { ArkErrors } from "../shared/errors.ts"
+import { standardIssuesOf } from "../shared/errors.ts"
+import { ArkErrors } from "../shared/issues.ts"
 import {
 	structuralKinds,
 	type NodeKind,
 	type RootKind,
-	type UnknownAttachments,
 	type kindRightOf
 } from "../shared/implement.ts"
-import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
+import {
+	validateStandardJsonSchemaTarget,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
+import { sets } from "../shared/sets.ts"
 import type {
 	StandardJSONSchemaV1,
 	StandardSchemaV1
 } from "../shared/standardSchema.ts"
 import { ToJsonSchema } from "../shared/toJsonSchema.ts"
-import { arkKind, hasArkKind } from "../shared/utils.ts"
+import { hasArkKind, isNode } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
 import type {
@@ -75,13 +84,11 @@ export abstract class BaseRoot<
 	extends BaseNode<d>
 	implements StandardSchemaV1, StandardJSONSchemaV1
 {
-	declare readonly [arkKind]: "root"
 	declare readonly [inferred]: unknown
 
-	constructor(attachments: UnknownAttachments, $: BaseScope) {
-		super(attachments, $)
-		// define as a getter to avoid it being enumerable/spreadable
-		Object.defineProperty(this, arkKind, { value: "root", enumerable: false })
+	// define as a getter to avoid it being enumerable/spreadable
+	get [arkKind](): "root" {
+		return "root"
 	}
 
 	// doesn't seem possible to override this at a type-level (e.g. via declare)
@@ -98,20 +105,23 @@ export abstract class BaseRoot<
 		return this
 	}
 
+	private _standard?: StandardSchemaV1.ArkTypeProps
 	get "~standard"(): StandardSchemaV1.ArkTypeProps {
-		return {
+		return (this._standard ??= {
 			vendor: "arktype",
 			version: 1,
 			validate: input => {
 				const out = this(input)
-				if (out instanceof ArkErrors) return out
+				if (out instanceof ArkErrors)
+					return { issues: standardIssuesOf(out as never) }
 				return { value: out }
 			},
 			jsonSchema: {
-				input: opts => toStandardJsonSchema(this.rawIn, opts),
+				// rawIn has no defaults, so the input is this Type as it's accepted
+				input: opts => toStandardJsonSchema(this, opts, "in"),
 				output: opts => toStandardJsonSchema(this.rawOut, opts)
 			}
-		}
+		})
 	}
 
 	as(): this {
@@ -142,51 +152,14 @@ export abstract class BaseRoot<
 		return reduceMapped?.(mappedBranches) ?? (mappedBranches as never)
 	}
 
-	abstract get defaultShortDescription(): string
-
-	get shortDescription(): string {
-		return this.meta.description ?? this.defaultShortDescription
-	}
+	abstract get defaultBrief(): string
 
 	toJsonSchema(opts: ToJsonSchema.Options = {}): JsonSchema {
-		const ctx: ToJsonSchema.Context = mergeToJsonSchemaConfigs(
-			this.$.resolvedConfig.toJsonSchema,
-			opts
-		)
-
-		ctx.useRefs ||= this.isCyclic
-		if (ctx.useRefs) ctx.refs = new Map()
-
-		// ensure $schema is the first key if present
-		const schema: JsonSchema =
-			typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {}
-
-		Object.assign(schema, this.toJsonSchemaRecurse(ctx))
-
-		if (ctx.refs) {
-			// only resolve referenced roots, since this.references also includes
-			// discriminated union cases that may not be valid on their own
-			const defs: Record<string, JsonSchema> = {}
-			// refs added while resolving a definition are visited by this loop
-			for (const [id, ref] of ctx.refs) defs[id] = ref.toResolvedJsonSchema(ctx)
-			// draft-2020-12 uses $defs, draft-07 uses definitions
-			if (ctx.target === "draft-07")
-				Object.assign(schema, { definitions: defs })
-			else schema.$defs = defs
-		}
-
-		return schema
+		return sets().toJsonSchema(this, opts)
 	}
 
 	toJsonSchemaRecurse(ctx: ToJsonSchema.Context): JsonSchema {
-		if (ctx.useRefs && !this.alwaysExpandJsonSchema) {
-			// draft-2020-12 uses $defs, draft-07 uses definitions
-			const defsKey = ctx.target === "draft-07" ? "definitions" : "$defs"
-			ctx.refs?.set(this.id, this)
-			return { $ref: `#/${defsKey}/${this.id}` } as JsonSchema.Ref
-		}
-
-		return this.toResolvedJsonSchema(ctx)
+		return sets().toJsonSchemaRecurse(this, ctx)
 	}
 
 	get alwaysExpandJsonSchema(): boolean {
@@ -197,40 +170,15 @@ export abstract class BaseRoot<
 		)
 	}
 
-	protected toResolvedJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		const result = this.innerToJsonSchema(ctx) as JsonSchema & dict
-
-		for (const k in this.meta) {
-			const v = (this.meta as dict)[k]
-			// metaJson serializes non-primitives like [5] to references like
-			// "$ark.array1", so prefer the original value when it is valid JSON
-			// (jsonData's object domain also allows functions, so exclude them)
-			const jsonValue =
-				typeof v !== "function" && $ark.intrinsic.jsonData.allows(v) ? v
-				: k === "default" ?
-					ctx.fallback.defaultValue({
-						code: "defaultValue",
-						base: result,
-						value: v as never
-					})
-				:	(this.metaJson as dict)[k]
-			if (jsonValue !== undefined) result[k] = jsonValue
-		}
-
-		return result
-	}
-
-	protected abstract innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema
-
-	intersect(r: unknown): BaseRoot | Disjoint {
+	intersect(r: unknown, jit = true): BaseRoot | Disjoint {
 		const rNode = this.$.parseDefinition(r)
 		const result = this.rawIntersect(rNode)
 		if (result instanceof Disjoint) return result
-		return this.$.finalize(result as BaseRoot)
+		return this.$.finalize(result as BaseRoot, jit)
 	}
 
 	rawIntersect(r: BaseRoot): BaseRoot {
-		return intersectNodesRoot(this, r, this.$) as never
+		return sets().intersect(this, r, this.$) as never
 	}
 
 	toNeverIfDisjoint(): BaseRoot {
@@ -254,33 +202,37 @@ export abstract class BaseRoot<
 
 	rawOr(r: BaseRoot): BaseRoot {
 		const branches = [...this.branches, ...(r.branches as any)]
-		return this.$.node("union", branches) as never
+		return this.$.node("union", { branches }) as never
+	}
+
+	private rootOfBranches(branches: readonly BaseRoot[]): BaseRoot {
+		return this.$.finalize(this.$.node("union", { branches }))
 	}
 
 	map(flatMapEntry: PropFlatMapper): BaseRoot {
-		return this.$.schema(this.applyStructuralOperation("map", [flatMapEntry]))
+		return this.$.schema(this.applyStructural("map", [flatMapEntry]))
 	}
 
 	pick(...keys: KeyOrKeyNode[]): BaseRoot {
-		return this.$.schema(this.applyStructuralOperation("pick", keys))
+		return this.$.schema(this.applyStructural("pick", keys))
 	}
 
 	omit(...keys: KeyOrKeyNode[]): BaseRoot {
-		return this.$.schema(this.applyStructuralOperation("omit", keys))
+		return this.$.schema(this.applyStructural("omit", keys))
 	}
 
 	required(): BaseRoot {
-		return this.$.schema(this.applyStructuralOperation("required", []))
+		return this.$.schema(this.applyStructural("required", []))
 	}
 
 	partial(): BaseRoot {
-		return this.$.schema(this.applyStructuralOperation("partial", []))
+		return this.$.schema(this.applyStructural("partial", []))
 	}
 
 	private _keyof?: BaseRoot
 	keyof(): BaseRoot {
 		if (this._keyof) return this._keyof
-		const result = this.applyStructuralOperation("keyof", []).reduce(
+		const result = this.applyStructural("keyof", []).reduce(
 			(result, branch) => result.intersect(branch).toNeverIfDisjoint(),
 			$ark.intrinsic.unknown.internal
 		)
@@ -296,24 +248,35 @@ export abstract class BaseRoot<
 	get props(): Prop.Node[] {
 		if (this.branches.length !== 1)
 			return throwParseError(writeLiteralUnionEntriesMessage(this.expression))
-		return [...this.applyStructuralOperation("props", [])[0]]
+		return [...this.applyStructural("props", [])[0]]
 	}
 
 	merge(r: unknown): BaseRoot {
 		const rNode = this.$.parseDefinition(r)
-		return this.$.schema(
-			rNode.distribute(branch =>
-				this.applyStructuralOperation("merge", [
+		// like a spread, merge only extends object literals
+		for (const branch of [...this.branches, ...rNode.branches]) {
+			const basis = branch.hasKind("intersection") ? branch.basis : branch
+			if (basis?.hasKind("proto"))
+				throwParseError(writeInvalidMergeOperandMessage(branch.expression))
+		}
+		return this.rootOfBranches(
+			rNode.branches.flatMap(branch => {
+				const merged = this.applyStructural("merge", [
 					structureOf(branch) ??
 						throwParseError(
 							writeNonStructuralOperandMessage("merge", branch.expression)
 						)
 				])
-			)
+				// the merged-in object's settings are the result's, as a spread's
+				// are, and its meta, like "@", is one
+				return isEmptyObject(branch.meta) ? merged : (
+						merged.map(result => result.configure(branch.meta))
+					)
+			})
 		)
 	}
 
-	private applyStructuralOperation<operation extends StructuralOperationName>(
+	private applyStructural<operation extends StructuralOperationName>(
 		operation: operation,
 		args: BaseRoot[operation] extends Fn<infer args> ? args : []
 	): StructuralOperationBranchResultByName[operation][] {
@@ -361,8 +324,8 @@ export abstract class BaseRoot<
 
 			return this.$.node("intersection", {
 				...(isHomomorphic && transformed.sequence ?
-					{ proto: Array }
-				:	{ domain: "object" }),
+					{ proto: this.$.node("proto", { proto: Array }) }
+				:	{ domain: this.$.node("domain", { domain: "object" }) }),
 				structure: transformed
 			})
 		})
@@ -371,7 +334,7 @@ export abstract class BaseRoot<
 	get(...path: GettableKeyOrNode[]): BaseRoot {
 		if (path[0] === undefined) return this
 
-		return this.$.schema(this.applyStructuralOperation("get", path)) as never
+		return this.$.schema(this.applyStructural("get", path)) as never
 	}
 
 	extract(r: unknown): BaseRoot {
@@ -393,28 +356,41 @@ export abstract class BaseRoot<
 	}
 
 	rawArray(): BaseRoot {
-		return this.$.parseSchema(
-			this.isUnknown() ?
-				{ proto: Array }
-			:	{
-					proto: Array,
-					sequence: this
-				},
+		const proto = this.$.node("proto", { proto: Array })
+		if (this.isUnknown()) return proto
+		return this.$.node(
+			"intersection",
+			{
+				proto,
+				structure: this.$.node("structure", {
+					sequence: this.$.node("sequence", { variadic: this })
+				})
+			},
 			{ prereduced: true }
 		) as never
 	}
 
 	overlaps(r: unknown): boolean {
-		const intersection = this.intersect(r)
+		const intersection = this.intersect(r, false)
 		return !(intersection instanceof Disjoint)
 	}
 
 	extends(r: unknown): boolean {
-		if (this.isNever()) return true
+		// a node equal to r extends it, without intersecting them
+		if (
+			this.isNever() ||
+			(isNode(r) && this.kind === r.kind && this.innerHash === r.innerHash)
+		)
+			return true
 
-		const intersection = this.intersect(r)
+		const intersection = this.intersect(r, false)
+		if (intersection instanceof Disjoint) return false
+		// meta like a description doesn't change the values a node allows
 		return (
-			!(intersection instanceof Disjoint) && this.equals(intersection as never)
+			this.equals(intersection) ||
+			(!this.includesAlias &&
+				!intersection.includesAlias &&
+				isMutuallySimulated(this, intersection))
 		)
 	}
 
@@ -467,40 +443,45 @@ export abstract class BaseRoot<
 	}
 
 	protected tryPipe(...morphs: Morph[]): BaseRoot {
-		const result = morphs.reduce<BaseRoot>(
-			(acc, morph) =>
-				acc.rawPipeOnce(
+		return this._pipe(
+			...morphs.map(
+				(morph): Morph =>
 					hasArkKind(morph, "root") ? morph : (
 						(In, ctx) => {
 							try {
 								return morph(In, ctx)
 							} catch (e) {
-								return ctx.error({
-									code: "predicate",
-									predicate: morph as never,
-									actual: `aborted due to error:\n    ${e}\n`
-								})
+								return ctx.error({ code: "predicate", morph, cause: e })
 							}
 						}
 					)
-				),
-			this
+			)
 		)
-		return this.$.finalize(result)
 	}
 
-	pipe = Object.assign(this._pipe.bind(this), {
-		try: this.tryPipe.bind(this)
-	})
+	// bound when first read, since it can be detached
+	get pipe(): ((...morphs: Morph[]) => BaseRoot) & {
+		try: (...morphs: Morph[]) => BaseRoot
+	} {
+		return (this.cache.pipe ??= Object.assign(this._pipe.bind(this), {
+			try: this.tryPipe.bind(this)
+		}))
+	}
 
 	to(def: unknown): BaseRoot {
 		return this.$.finalize(this.toNode(this.$.parseDefinition(def)))
 	}
 
 	private toNode(root: BaseRoot): BaseRoot {
-		const result = pipeNodesRoot(this, root, this.$)
+		const result = sets().pipe(this, root, this.$)
 		if (result instanceof Disjoint) return result.throw()
 		return result as BaseRoot
+	}
+
+	get encode(): BaseRoot {
+		return (
+			$ark.encode ?? throwParseError('.encode requires import "arktype/codecs"')
+		)(this)
 	}
 
 	rawPipeOnce(morph: Morph): BaseRoot {
@@ -517,7 +498,7 @@ export abstract class BaseRoot<
 						in: branch,
 						morphs: [morph]
 					}),
-			this.$.parseSchema
+			branches => this.$.node("union", { branches })
 		)
 	}
 
@@ -527,23 +508,30 @@ export abstract class BaseRoot<
 
 	constrain<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
-		schema: NodeSchema<kind>
+		schema: Constraint.Schema<kind>
 	): BaseRoot {
-		return this._constrain("root", kind, schema)
+		return this.$.finalize(this._constrain("root", kind, schema))
 	}
 
 	constrainIn<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
-		schema: NodeSchema<kind>
+		schema: Constraint.Schema<kind>
 	): BaseRoot {
-		return this._constrain("in", kind, schema)
+		return this.$.finalize(this._constrain("in", kind, schema))
 	}
 
 	constrainOut<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
-		schema: NodeSchema<kind>
+		schema: Constraint.Schema<kind>
 	): BaseRoot {
-		return this._constrain("out", kind, schema)
+		return this.$.finalize(this._constrain("out", kind, schema))
+	}
+
+	rawConstrain<kind extends Constraint.PrimitiveKind>(
+		kind: kind,
+		schema: Constraint.Schema<kind>
+	): BaseRoot {
+		return this._constrain("root", kind, schema)
 	}
 
 	private _constrain(
@@ -551,7 +539,7 @@ export abstract class BaseRoot<
 		kind: Constraint.PrimitiveKind,
 		schema: any
 	): BaseRoot {
-		const constraint = this.$.node(kind, schema as never)
+		const constraint = this.$.node(kind, constraintInputOf(kind, schema))
 
 		if (constraint.isRoot()) {
 			// if the node reduces to `unknown`, nothing to do (e.g. minLength: 0)
@@ -570,25 +558,37 @@ export abstract class BaseRoot<
 		) {
 			return throwInvalidOperandError(
 				kind,
-				constraint.impliedBasis as never,
+				// a predicate implies no basis, but can't constrain a morph either
+				(constraint.impliedBasis ?? $ark.intrinsic.unknown.internal) as never,
 				this as never
 			)
 		}
 
-		const partialIntersection = this.$.node("intersection", {
-			// important this is constraint.kind instead of kind in case
-			// the node was reduced during parsing
-			[constraint.kind]: constraint
+		// a basis has no constraint for this one to meet, so their intersection
+		// is the result, and a constraint alone has nothing to reduce
+		const meetsBasis =
+			io === "root" && this.hasKindIn("domain", "proto") && kind !== "predicate"
+
+		const inner: dict = {}
+		if (meetsBasis) inner[this.kind] = this
+		// important this is constraint.kind instead of kind in case
+		// the node was reduced during parsing
+		inner[constraint.kind] =
+			constraint.impl.openIntersection ? [constraint] : constraint
+		const partialIntersection = this.$.node("intersection", inner, {
+			prereduced: true
 		})
+
+		if (meetsBasis) return partialIntersection
 
 		const result =
 			io === "out" ?
-				pipeNodesRoot(this, partialIntersection, this.$)
-			:	intersectNodesRoot(this, partialIntersection, this.$)
+				sets().pipe(this, partialIntersection, this.$)
+			:	sets().intersect(this, partialIntersection, this.$)
 
 		if (result instanceof Disjoint) result.throw()
 
-		return this.$.finalize(result as never)
+		return result as never
 	}
 
 	onUndeclaredKey(cfg: UndeclaredKeyBehavior | UndeclaredKeyConfig): BaseRoot {
@@ -597,11 +597,7 @@ export abstract class BaseRoot<
 		return this.$.finalize(
 			this.transform(
 				(kind, inner) =>
-					kind === "structure" ?
-						rule === "ignore" ?
-							omit(inner as Structure.Inner, { undeclared: 1 })
-						:	{ ...inner, undeclared: rule }
-					:	inner,
+					kind === "structure" ? { ...inner, undeclared: rule } : inner,
 				deep ? undefined : (
 					{ shouldTransform: node => !includes(structuralKinds, node.kind) }
 				)
@@ -610,21 +606,14 @@ export abstract class BaseRoot<
 	}
 
 	hasEqualMorphs(r: BaseRoot): boolean {
-		if (!this.includesTransform && !r.includesTransform) return true
+		if (!this.hasTransform && !r.hasTransform) return true
 
 		if (!arrayEquals(this.shallowMorphs as Morph[], r.shallowMorphs as Morph[]))
 			return false
 
 		if (
 			!arrayEquals(this.flatMorphs, r.flatMorphs, {
-				isEqual: (l, r) =>
-					l.propString === r.propString &&
-					(l.node.hasKind("morph") && r.node.hasKind("morph") ?
-						l.node.hasEqualMorphs(r.node)
-					: l.node.hasKind("intersection") && r.node.hasKind("intersection") ?
-						l.node.structure?.structuralMorphRef ===
-						r.node.structure?.structuralMorphRef
-					:	false)
+				isEqual: flatMorphsAreEqual
 			})
 		)
 			return false
@@ -710,26 +699,10 @@ export const emptyBrandNameMessage = `Expected a non-empty brand name after #`
 
 export type emptyBrandNameMessage = typeof emptyBrandNameMessage
 
-const supportedJsonSchemaTargets: ToJsonSchema.Target[] = [
-	"draft-2020-12",
-	"draft-07"
-]
-
-export const writeInvalidJsonSchemaTargetMessage = (target: string): string =>
-	`JSONSchema target '${target}' is not supported (must be ${supportedJsonSchemaTargets.map(t => `"${t}"`).join(" or ")})`
-
-const validateStandardJsonSchemaTarget = (
-	target: StandardJSONSchemaV1.Target
-): ToJsonSchema.Target => {
-	if (!includes(supportedJsonSchemaTargets, target))
-		throwParseError(writeInvalidJsonSchemaTargetMessage(target))
-
-	return target
-}
-
 const toStandardJsonSchema = (
 	node: BaseRoot,
-	opts: StandardJSONSchemaV1.Options
+	opts: StandardJSONSchemaV1.Options,
+	io?: "in"
 ): Record<string, unknown> => {
 	const ctx = mergeToJsonSchemaConfigs(node.$.resolvedConfig.toJsonSchema, {
 		target: validateStandardJsonSchemaTarget(opts.target),
@@ -741,7 +714,9 @@ const toStandardJsonSchema = (
 			ToJsonSchema.standardFallback[code]
 		:	handler
 	]) as ToJsonSchema.HandlerByCode
-	return node.toJsonSchema({ ...ctx, fallback }) as never
+	const standardCtx: ToJsonSchema.Context = { ...ctx, fallback }
+	if (io) standardCtx.io = io
+	return node.toJsonSchema(standardCtx) as never
 }
 
 export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
@@ -829,6 +804,14 @@ export const writeNonStructuralOperandMessage = <
 	operand: operand
 ): writeNonStructuralOperandMessage<operation, operand> =>
 	`${operation} operand must be an object (was ${operand})`
+
+export const writeInvalidMergeOperandMessage = <operand extends string>(
+	operand: operand
+): writeInvalidMergeOperandMessage<operand> =>
+	`merge operand must resolve to an object literal type (was ${operand})`
+
+export type writeInvalidMergeOperandMessage<operand extends string> =
+	`merge operand must resolve to an object literal type (was ${operand})`
 
 export type writeNonStructuralOperandMessage<
 	operation extends StructuralOperationName,

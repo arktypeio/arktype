@@ -21,13 +21,19 @@
 			"ark-ts": "./index.ts",
 			"default": "./out/index.js"
 		},
+		"./internal": {
+			"ark-ts": "./internal.ts",
+			"default": "./out/internal.js"
+		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
-			"default": "./out/*.js"
+			"types": "./out/*.d.ts",
+			"default": "./out/internal.js"
 		},
 		"./internal/*.js": {
 			"ark-ts": "./*.ts",
-			"default": "./out/*.js"
+			"types": "./out/*.d.ts",
+			"default": "./out/internal.js"
 		}
 	},
 	"files": [

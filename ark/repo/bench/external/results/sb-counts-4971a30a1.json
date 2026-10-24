@@ -1,0 +1,1096 @@
+{
+	"sb parsing|invalid|allErrors|@paseri/compiler (parse)": [
+		38392.97224561404, 36932.06342307692, 36678.574869565215
+	],
+	"sb parsing|valid|allErrors|@paseri/compiler (safeParse)": [
+		11079.494959706959, 11044.476979919678, 11040.572172727272
+	],
+	"sb parsing|valid|allErrors|@paseri/compiler (parse)": [
+		11058.522764525995, 11099.468441281138, 11094.696083916084
+	],
+	"sb standard|valid|allErrors|@paseri/compiler": [
+		11030.163728222997, 11111.596, 11036.866014440433
+	],
+	"sb standard|invalid|allErrors|@paseri/compiler": [
+		37893.29698412698, 37737.30293023256, 37573.41367346939
+	],
+	"sb parsing|invalid|allErrors|@paseri/compiler (safeParse)": [
+		13966.385032258064, 13924.867886178861, 13899.43361061947
+	],
+	"sb parsing|valid|allErrors|@paseri/paseri (parse)": [
+		33811.510210526314, 33854.270776470585, 33866.011680851065
+	],
+	"sb initialization|||@paseri/paseri": [
+		27330.15365957447, 28526.583948717947, 28726.584
+	],
+	"sb parsing|valid|allErrors|@paseri/paseri (safeParse)": [
+		33941.971898305084, 33808.09576, 33797.52406818182
+	],
+	"sb standard|valid|allErrors|@paseri/paseri": [
+		34509.819734693876, 34499.645209876544, 34523.20991397849
+	],
+	"sb parsing|invalid|allErrors|@paseri/paseri (safeParse)": [
+		43250.9651948052, 43012.33535849056, 43228.520597014925
+	],
+	"sb parsing|invalid|allErrors|@paseri/paseri (parse)": [
+		67551.77978947369, 67325.28317647059, 67306.55825
+	],
+	"sb string|valid|date-time|@paseri/paseri": [
+		637.420755, 637.465145, 637.38543
+	],
+	"sb string|valid|date|@paseri/paseri": [535.51366, 535.47002, 535.48092],
+	"sb string|valid|time|@paseri/paseri": [389.486945, 389.385645, 389.470045],
+	"sb standard|invalid|allErrors|@paseri/paseri": [
+		67880.54072340425, 68348.71755, 68439.00529411764
+	],
+	"sb string|valid|email|@paseri/paseri": [
+		1132.470045, 1132.469915, 1132.51929
+	],
+	"sb string|valid|url|@paseri/paseri": [1240.474865, 1244.97007, 1244.885695],
+	"sb string|valid|uuid|@paseri/paseri": [1181.52126, 1181.38606, 1181.43484],
+	"sb string|valid|ipv4|@paseri/paseri": [474.48384, 474.467285, 474.51936],
+	"sb string|valid|ipv6|@paseri/paseri": [890.48365, 890.603625, 890.46962],
+	"sb string|invalid|date|@paseri/paseri": [288.425105, 288.507755, 288.520495],
+	"sb string|invalid|date-time|@paseri/paseri": [
+		279.470095, 279.47386, 279.470005
+	],
+	"sb string|invalid|time|@paseri/paseri": [279.50111, 279.470025, 279.470205],
+	"sb string|invalid|email|@paseri/paseri": [600.45882, 600.524035, 600.523945],
+	"sb string|invalid|uuid|@paseri/paseri": [279.51924, 279.467265, 279.47002],
+	"sb string|invalid|url|@paseri/paseri": [
+		1423.963915, 1424.009915, 1423.94795
+	],
+	"sb string|invalid|ipv4|@paseri/paseri": [300.4667, 300.417495, 300.46672],
+	"sb string|invalid|ipv6|@paseri/paseri": [542.54581, 542.436215, 542.59885],
+	"sb validation|valid||@railway-ts/pipelines": [
+		163232.85723076924, 167563.45127272728, 165391.3985
+	],
+	"sb initialization|||@railway-ts/pipelines": [
+		7917.665885167464, 7933.4228794326245, 7945.301833333333
+	],
+	"sb parsing|valid|allErrors|@railway-ts/pipelines": [
+		162816.24783333333, 159960.6446, 165005.6316
+	],
+	"sb parsing|valid|abortEarly|@railway-ts/pipelines": [
+		163192.29854545454, 168477.368, 166612.4436
+	],
+	"sb standard|valid|allErrors|@railway-ts/pipelines": [
+		161157.00533333333, 166333.28163636362, 163495.9596
+	],
+	"sb validation|invalid||@railway-ts/pipelines": [
+		7020.401105, 7024.3311, 7014.029735
+	],
+	"sb parsing|invalid|allErrors|@railway-ts/pipelines": [
+		201158.0971111111, 202828.80285714284, 203104.775
+	],
+	"sb parsing|invalid|abortEarly|@railway-ts/pipelines": [
+		7053.92551, 7056.541923076923, 7062.631009463722
+	],
+	"sb string|valid|date-time|@railway-ts/pipelines": [
+		15969.699879194632, 15982.844322580646, 15973.44722368421
+	],
+	"sb standard|invalid|allErrors|@railway-ts/pipelines": [
+		201673.2872, 202244.394, 202166.634
+	],
+	"sb string|valid|date|@railway-ts/pipelines": [
+		13678.161201970443, 13680.862089385475, 13686.853309278351
+	],
+	"sb string|valid|time|@railway-ts/pipelines": [
+		3139.517615, 3139.976855, 3139.96068
+	],
+	"sb string|valid|duration|@railway-ts/pipelines": [
+		1356.53073, 1359.65125, 1356.568445
+	],
+	"sb string|valid|email|@railway-ts/pipelines": [
+		1430.275375, 1430.64867, 1430.56257
+	],
+	"sb string|valid|url|@railway-ts/pipelines": [
+		2844.55961, 2844.211745, 2847.35603
+	],
+	"sb string|valid|uuid|@railway-ts/pipelines": [
+		2131.52493, 2131.377375, 2131.41344
+	],
+	"sb string|invalid|date-time|@railway-ts/pipelines": [
+		1134.727955, 1138.185585, 1142.29147
+	],
+	"sb string|invalid|date|@railway-ts/pipelines": [
+		1048.00611, 1047.76014, 1047.940195
+	],
+	"sb string|invalid|time|@railway-ts/pipelines": [
+		1110.65253, 1114.17887, 1110.893555
+	],
+	"sb string|invalid|duration|@railway-ts/pipelines": [
+		1019.07156, 1022.19951, 1024.97552
+	],
+	"sb string|invalid|email|@railway-ts/pipelines": [
+		1198.28056, 1202.3331, 1197.83605
+	],
+	"sb string|invalid|url|@railway-ts/pipelines": [
+		31194.553966666666, 30109.553573770492, 31302.945466666668
+	],
+	"sb string|invalid|uuid|@railway-ts/pipelines": [
+		1039.03817, 1041.639375, 1040.327895
+	],
+	"sb initialization|||@remix-run/data-schema": [
+		81730.33905882353, 56939.783125, 80825.01705882353
+	],
+	"sb parsing|valid|allErrors|@remix-run/data-schema": [
+		79182.38984615385, 78979.47541935484, 79000.03232258065
+	],
+	"sb parsing|valid|abortEarly|@remix-run/data-schema": [
+		79615.06711111112, 79238.776, 79251.46841176471
+	],
+	"sb standard|valid|allErrors|@remix-run/data-schema": [
+		79064.67666666667, 79177.572, 78933.05217142857
+	],
+	"sb parsing|invalid|allErrors|@remix-run/data-schema": [
+		129909.41266666667, 128826.73966666666, 129309.28057142858
+	],
+	"sb parsing|invalid|abortEarly|@remix-run/data-schema": [
+		3653.64054, 3560.35818, 3489.53683
+	],
+	"sb standard|invalid|allErrors|@remix-run/data-schema": [
+		129465.02171428571, 128907.49615384615, 129432.48228571429
+	],
+	"sb initialization|||@sapphire/shapeshift": [
+		595451.329, 604470.495, 565044.8706666667
+	],
+	"sb validation|valid||@sapphire/shapeshift": [
+		172939.79075, 172634.55675, 173416.6808888889
+	],
+	"sb parsing|valid|allErrors|@sapphire/shapeshift": [
+		172013.18483333333, 175540.45854545454, 177562.839
+	],
+	"sb parsing|valid|allErrors|@sapphire/shapeshift (run)": [
+		169109.28488888888, 170355.9058181818, 168299.71333333335
+	],
+	"sb validation|invalid||@sapphire/shapeshift": [
+		1439847.3, 1429915.533, 1463373.528
+	],
+	"sb parsing|invalid|allErrors|@sapphire/shapeshift (run)": [
+		1436285.686, 1435646.265, 1439590.581
+	],
+	"sb string|valid|date|@sapphire/shapeshift": [
+		1340.027475, 1340.05075, 1343.13669
+	],
+	"sb parsing|invalid|allErrors|@sapphire/shapeshift": [
+		1416786.579, 1422795.853, 1425482.558
+	],
+	"sb string|valid|email|@sapphire/shapeshift": [
+		4658.920685, 4656.337888888889, 4657.95218
+	],
+	"sb string|valid|uuid|@sapphire/shapeshift": [
+		1302.140875, 1290.32697, 1287.20686
+	],
+	"sb string|valid|url|@sapphire/shapeshift": [
+		2284.105185, 2284.01103, 2283.883335
+	],
+	"sb string|valid|ipv4|@sapphire/shapeshift": [723.09865, 723.1402, 719.89564],
+	"sb string|valid|ipv6|@sapphire/shapeshift": [
+		1472.784595, 1483.540035, 1486.605545
+	],
+	"sb string|invalid|date|@sapphire/shapeshift": [
+		26985.640764705884, 27750.188, 27594.51307692308
+	],
+	"sb string|invalid|email|@sapphire/shapeshift": [
+		28472.43307317073, 28471.969926829268, 28481.250974358973
+	],
+	"sb string|invalid|url|@sapphire/shapeshift": [
+		61906.25027027027, 61714.06606060606, 61687.7861875
+	],
+	"sb string|invalid|uuid|@sapphire/shapeshift": [
+		26908.885303370786, 26928.61289189189, 26919.60126190476
+	],
+	"sb string|invalid|ipv4|@sapphire/shapeshift": [
+		26949.016988235293, 26924.633258426966, 27852.77347368421
+	],
+	"sb string|invalid|ipv6|@sapphire/shapeshift": [
+		27958.762125, 26639.817402985074, 24719.68005970149
+	],
+	"sb validation|valid||ajv (validate)": [
+		43970.93426666666, 43971.38851948052, 43722.2477037037
+	],
+	"sb validation|invalid||ajv (validate)": [571.392305, 571.42697, 571.430815],
+	"sb validation|valid||ajv (compile)": [
+		43880.98083636363, 43858.70313580247, 43877.57057971015
+	],
+	"sb validation|invalid||ajv (compile)": [410.56526, 410.377945, 410.445845],
+	"sb string|valid|date|ajv": [2215.659425, 2212.414115, 2212.517885],
+	"sb string|valid|date-time|ajv": [6121.700145, 6124.737675, 6124.839165],
+	"sb string|valid|time|ajv": [2506.532125, 2509.93511, 2506.52686],
+	"sb string|valid|duration|ajv": [794.51926, 794.51914, 794.42141],
+	"sb string|valid|email|ajv": [775.50126, 775.50065, 775.519535],
+	"sb string|valid|url|ajv": [1447.9789, 1447.920645, 1447.970385],
+	"sb string|valid|uuid|ajv": [1366.47014, 1362.889625, 1366.46967],
+	"sb string|valid|ipv4|ajv": [414.47003, 414.42087, 414.46996],
+	"sb string|valid|ipv6|ajv": [3242.889745, 3242.921105, 3242.97024],
+	"sb string|invalid|date-time|ajv": [844.21296, 844.931695, 847.34343],
+	"sb string|invalid|date|ajv": [414.420085, 414.51923, 414.56165],
+	"sb string|invalid|time|ajv": [471.49544, 471.4144, 468.286765],
+	"sb string|invalid|duration|ajv": [442.33693, 448.62992, 445.458175],
+	"sb string|invalid|email|ajv": [543.420705, 549.788755, 546.46849],
+	"sb string|invalid|url|ajv": [366.691195, 363.449205, 366.69091],
+	"sb string|invalid|ipv4|ajv": [380.49265, 383.7367, 383.757665],
+	"sb string|invalid|uuid|ajv": [363.490185, 360.41186, 363.51351],
+	"sb string|invalid|ipv6|ajv": [1847.352525, 1847.27936, 1847.3549],
+	"sb validation|valid||arktype": [
+		110302.7257037037, 110238.53192, 107347.17221052632
+	],
+	"sb parsing|valid|allErrors|arktype": [
+		107676.05296, 107708.4418, 108337.75338461538
+	],
+	"sb initialization|||arktype": [3017378.74, 3006080.212, 3021844.014],
+	"sb standard|valid|allErrors|arktype": [
+		108720.0055862069, 109764.08692307692, 108410.87373913043
+	],
+	"sb validation|invalid||arktype": [
+		13464.657317829457, 13562.827631336406, 13477.911043859649
+	],
+	"sb parsing|invalid|allErrors|arktype": [876651.762, 947667.526, 942772.116],
+	"sb standard|invalid|allErrors|arktype": [942597.009, 939597.303, 936736.801],
+	"sb string|valid|date-time|arktype": [1425.304515, 1427.831965, 1434.46512],
+	"sb string|valid|email|arktype": [820.97596, 869.688815, 830.69903],
+	"sb string|valid|url|arktype": [1385.46834, 1411.470115, 1385.39322],
+	"sb string|valid|uuid|arktype": [1142.02779, 1142.039395, 1142.02335],
+	"sb string|valid|ipv4|arktype": [734.10868, 720.96632, 730.66286],
+	"sb string|valid|ipv6|arktype": [1550.678635, 1478.526955, 1471.898055],
+	"sb string|invalid|date-time|arktype": [481.99568, 481.99282, 482.074465],
+	"sb string|invalid|email|arktype": [554.30558, 557.679785, 583.624475],
+	"sb string|invalid|url|arktype": [958.5198, 958.393245, 958.470035],
+	"sb string|invalid|uuid|arktype": [263.01756, 259.676485, 259.6757],
+	"sb initialization|||arktype (precompiled)": [
+		42.472405, 42.469995, 42.469935
+	],
+	"sb string|invalid|ipv4|arktype": [448.761855, 425.932205, 435.728485],
+	"sb string|invalid|ipv6|arktype": [868.591165, 839.39938, 832.957695],
+	"sb parsing|valid|allErrors|arktype (precompiled)": [
+		6017.608825, 6020.60536, 6020.683015
+	],
+	"sb validation|valid||arktype (precompiled)": [
+		5927.842855, 5928.031425, 5928.015745
+	],
+	"sb standard|valid|allErrors|arktype (precompiled)": [
+		6142.473295, 6142.422375, 6139.30479
+	],
+	"sb validation|invalid||arktype (precompiled)": [
+		33.438235, 33.46645, 33.42578
+	],
+	"sb parsing|invalid|allErrors|arktype (precompiled)": [
+		135.233555, 141.46522, 135.26871
+	],
+	"sb string|valid|date-time|arktype (precompiled)": [
+		737.42466, 737.459975, 737.427555
+	],
+	"sb string|valid|email|arktype (precompiled)": [
+		653.45993, 653.45979, 653.46003
+	],
+	"sb standard|invalid|allErrors|arktype (precompiled)": [
+		58962.67324444444, 58977.08123529412, 58527.48394117647
+	],
+	"sb initialization|||ajv": [40713589.438, 40753569.682, 40930103.502],
+	"sb string|valid|url|arktype (precompiled)": [
+		755.418885, 755.47235, 755.523735
+	],
+	"sb string|valid|ipv4|arktype (precompiled)": [
+		545.428315, 545.46022, 545.54744
+	],
+	"sb string|valid|uuid|arktype (precompiled)": [
+		1137.372755, 1137.459905, 1137.37334
+	],
+	"sb string|valid|ipv6|arktype (precompiled)": [
+		1062.45992, 1062.46009, 1062.393365
+	],
+	"sb string|invalid|date-time|arktype (precompiled)": [
+		268.495485, 268.46002, 268.37347
+	],
+	"sb string|invalid|email|arktype (precompiled)": [
+		380.497685, 380.41153, 380.454635
+	],
+	"sb string|invalid|url|arktype (precompiled)": [
+		374.383485, 374.505485, 374.38869
+	],
+	"sb string|invalid|uuid|arktype (precompiled)": [
+		227.504395, 227.409215, 227.54656
+	],
+	"sb string|invalid|ipv4|arktype (precompiled)": [
+		258.408835, 258.460145, 258.462665
+	],
+	"sb string|invalid|ipv6|arktype (precompiled)": [
+		709.57983, 709.49691, 709.42233
+	],
+	"sb initialization|||ata-validator": [
+		16278.164721153846, 16319.447305555555, 16109.943436363636
+	],
+	"sb validation|valid||ata-validator": [6379.117345, 6379.04048, 6379.04064],
+	"sb parsing|valid|allErrors|ata-validator (parse)": [
+		7901.734650793651, 7896.853642424242, 7900.384846975089
+	],
+	"sb parsing|valid|allErrors|ata-validator": [
+		6853.190675, 6853.149805, 6849.928055
+	],
+	"sb validation|invalid||ata-validator": [168.44253, 168.48918, 168.555675],
+	"sb standard|valid|allErrors|ata-validator": [
+		6842.73002, 6842.662575, 6842.610705
+	],
+	"sb parsing|invalid|allErrors|ata-validator": [
+		301.283305, 301.32713, 301.286985
+	],
+	"sb parsing|invalid|allErrors|ata-validator (parse)": [
+		41466.6660754717, 43288.95121951219, 45327.65608163265
+	],
+	"sb string|valid|date-time|ata-validator": [
+		566.503335, 566.470465, 566.387225
+	],
+	"sb standard|invalid|allErrors|ata-validator": [
+		34777.0589117647, 34644.06003448276, 34277.3962
+	],
+	"sb string|valid|date|ata-validator": [249.472335, 249.49009, 249.57225],
+	"sb string|valid|time|ata-validator": [329.499245, 329.46996, 329.552445],
+	"sb string|valid|duration|ata-validator": [605.582375, 608.58785, 605.449605],
+	"sb string|valid|email|ata-validator": [825.457745, 825.46022, 825.404995],
+	"sb string|valid|uuid|ata-validator": [494.52981, 494.561175, 494.560045],
+	"sb string|valid|ipv4|ata-validator": [417.39194, 417.542435, 417.542435],
+	"sb string|valid|ipv6|ata-validator": [855.541155, 855.416565, 855.466735],
+	"sb string|invalid|date-time|ata-validator": [95.440985, 95.47001, 95.52112],
+	"sb string|invalid|date|ata-validator": [27.480225, 27.465875, 27.40905],
+	"sb string|invalid|time|ata-validator": [94.444065, 94.470005, 94.521055],
+	"sb string|invalid|duration|ata-validator": [
+		262.54879, 265.77708, 262.528005
+	],
+	"sb string|invalid|email|ata-validator": [399.41767, 399.459785, 399.511175],
+	"sb string|invalid|uuid|ata-validator": [27.4692, 27.40863, 27.45738],
+	"sb string|invalid|ipv4|ata-validator": [248.45544, 248.46018, 248.420445],
+	"sb string|invalid|ipv6|ata-validator": [266.459725, 266.501515, 266.469915],
+	"sb initialization|||decoders": [
+		32101.791777777777, 33584.9523030303, 33814.16085714286
+	],
+	"sb parsing|valid|allErrors|decoders": [
+		88962.950125, 89390.03485714286, 89262.74528
+	],
+	"sb standard|valid|allErrors|decoders": [
+		88667.31245714286, 88168.0716, 86771.00930434783
+	],
+	"sb parsing|invalid|allErrors|decoders": [
+		362723.2565, 363745.723, 334548.5893333333
+	],
+	"sb standard|invalid|allErrors|decoders": [
+		624806.198, 623512.248, 625924.399
+	],
+	"sb initialization|||effect": [178670.12328571427, 181076.00025, 199620.544],
+	"sb initialization|||effect (decodeUnknownOption)": [
+		179217.838, 200543.264, 180648.5785
+	],
+	"sb validation|valid||effect": [
+		78569.17927272727, 78037.87584615385, 78175.6514
+	],
+	"sb parsing|valid|allErrors|effect": [
+		88083.91233333333, 88278.91164285714, 86342.71675
+	],
+	"sb parsing|valid|abortEarly|effect": [
+		78756.85312820513, 78192.91717647058, 78483.50724137931
+	],
+	"sb standard|valid|allErrors|effect": [
+		93151.88939130434, 91156.40222222223, 93150.46882352942
+	],
+	"sb standard|valid|abortEarly|effect": [
+		93155.1264, 92667.53466666667, 94232.982
+	],
+	"sb validation|invalid||effect": [6129.59056, 6126.37378, 6133.142423913044],
+	"sb parsing|invalid|allErrors|effect": [
+		136507.3807142857, 140783.5851111111, 147844.2656
+	],
+	"sb parsing|invalid|abortEarly|effect": [
+		6144.91834, 6158.270825484765, 6149.88443
+	],
+	"sb standard|invalid|allErrors|effect": [
+		204843.73685714285, 215480.6496, 208780.4032
+	],
+	"sb standard|invalid|abortEarly|effect": [
+		241087.3617142857, 210318.1988, 209287.154
+	],
+	"sb codec|encode||effect": [2507.151265, 2527.99627, 2479.8719],
+	"sb codec|decode||effect": [3513.26234, 3516.38984, 3516.40842],
+	"sb codec|encode||effect (unknown)": [2515.92091, 2503.806975, 2527.978675],
+	"sb initialization|||io-ts": [
+		30285.960631578946, 30436.59690909091, 30179.066217391304
+	],
+	"sb codec|decode||effect (unknown)": [3516.55115, 3516.40077, 3513.10752],
+	"sb validation|valid||io-ts": [
+		31315.717333333334, 31307.70393814433, 31320.227306122448
+	],
+	"sb parsing|valid|allErrors|io-ts": [
+		57524.85582758621, 57549.49195652174, 58534.561555555556
+	],
+	"sb validation|invalid||io-ts": [846.38914, 846.47047, 846.47003],
+	"sb parsing|invalid|allErrors|io-ts": [
+		61914.61283333333, 63855.97811428572, 63543.68458536585
+	],
+	"sb codec|encode||io-ts": [629.99623, 629.927945, 626.72312],
+	"sb codec|decode||io-ts": [1547.0859, 1549.69395, 1549.846055],
+	"sb initialization|||joi": [1177496.889, 1352856.06, 1300299.21],
+	"sb parsing|valid|allErrors|joi": [
+		352998.0105714286, 352475.162, 354431.19333333336
+	],
+	"sb parsing|valid|allErrors|joi (no convert)": [
+		325370.1488888889, 319955.389, 320617.19766666665
+	],
+	"sb parsing|valid|abortEarly|joi": [
+		353679.1622857143, 353243.4796, 356322.26166666666
+	],
+	"sb parsing|valid|abortEarly|joi (no convert)": [
+		318854.357, 320058.7256, 318521.733
+	],
+	"sb standard|valid|allErrors|joi": [
+		355530.93514285714, 357070.5536, 355975.3912
+	],
+	"sb parsing|invalid|allErrors|joi": [492417.628, 540817.988, 530137.57],
+	"sb parsing|invalid|allErrors|joi (no convert)": [
+		476113.241, 509702.064, 508610.958
+	],
+	"sb parsing|invalid|abortEarly|joi": [
+		28697.865105263158, 29012.491782608697, 29186.096311111112
+	],
+	"sb parsing|invalid|abortEarly|joi (no convert)": [
+		27752.022779661016, 28068.821285714286, 28034.575642857144
+	],
+	"sb standard|invalid|allErrors|joi": [
+		32281.989960784314, 32360.614133333333, 32319.649870967743
+	],
+	"sb string|valid|date-time|joi": [
+		28365.643791666665, 28440.377727272727, 28337.30559139785
+	],
+	"sb string|valid|duration|joi": [2511.45211, 2533.545695, 2569.59769],
+	"sb string|valid|url|joi": [3301.94663, 3497.24485, 3336.35007],
+	"sb string|valid|email|joi": [
+		14583.340949367088, 13912.28168224299, 13939.077266666667
+	],
+	"sb string|valid|uuid|joi": [3508.052125, 3464.332135, 3518.554265],
+	"sb string|valid|ipv4|joi": [2143.07149, 2246.362105, 2143.454885],
+	"sb string|valid|ipv6|joi": [2481.29298, 2604.77201, 2422.767225],
+	"sb string|invalid|date-time|joi": [
+		12306.241838509317, 12293.944086956522, 12053.855051724138
+	],
+	"sb string|invalid|duration|joi": [
+		11920.0854, 12105.48956, 12181.114456692914
+	],
+	"sb string|invalid|email|joi": [
+		12767.663229813665, 12536.053309352517, 12900.269116666666
+	],
+	"sb string|invalid|url|joi": [
+		12469.952183908046, 12157.930855172413, 12504.411398601398
+	],
+	"sb string|invalid|uuid|joi": [
+		12101.605374358975, 11829.25762857143, 11951.1271
+	],
+	"sb string|invalid|ipv4|joi": [
+		16765.539955555556, 17380.46443298969, 16676.562170212765
+	],
+	"sb string|invalid|ipv6|joi": [
+		17111.06403305785, 17151.58004761905, 16949.5176
+	],
+	"sb validation|valid||runtypes": [748849.942, 796228.369, 741808.0233333333],
+	"sb parsing|valid|abortEarly|runtypes": [
+		708120.422, 797276.426, 750995.9573333333
+	],
+	"sb parsing|valid|abortEarly|runtypes (inspect)": [
+		702795.32, 792150.795, 745531.6626666667
+	],
+	"sb validation|invalid||runtypes": [1656026.912, 1660985.15, 1658779.968],
+	"sb parsing|invalid|abortEarly|runtypes": [
+		1700725.272, 1700006.704, 1709390.132
+	],
+	"sb parsing|invalid|abortEarly|runtypes (inspect)": [
+		1658901.998, 1662181.154, 1679496.752
+	],
+	"sb initialization|||superstruct": [
+		42192.19559322034, 42061.9942, 42604.75619047619
+	],
+	"sb validation|valid||superstruct": [
+		480665.6735, 485554.2806666667, 476939.662
+	],
+	"sb validation|valid||superstruct (schema.is)": [
+		480044.2035, 476902.83666666667, 488576.413
+	],
+	"sb initialization|||runtypes": [11997110.012, 11898959.896, 11949077.12],
+	"sb parsing|valid|abortEarly|superstruct": [
+		481499.0525, 478863.91866666666, 483813.736
+	],
+	"sb parsing|valid|abortEarly|superstruct (schema.validate)": [
+		484336.6975, 491131.307, 489204.6565
+	],
+	"sb parsing|valid|allErrors|superstruct (schema.validate)": [
+		482179.9405, 489331.9065, 483142.65133333334
+	],
+	"sb parsing|valid|allErrors|superstruct": [
+		485466.0476, 482633.08266666665, 492694.768
+	],
+	"sb validation|invalid||superstruct": [
+		65174.79368421053, 77955.73388888889, 79074.42472727272
+	],
+	"sb validation|invalid||superstruct (schema.is)": [
+		64688.7172, 63839.325875, 71176.206
+	],
+	"sb parsing|invalid|abortEarly|superstruct": [
+		64570.53645454546, 47122.184714285715, 59322.749818181815
+	],
+	"sb parsing|invalid|abortEarly|superstruct (schema.validate)": [
+		66103.19127272727, 66752.0948235294, 66575.78282352941
+	],
+	"sb parsing|invalid|allErrors|superstruct": [
+		601081.9833333333, 670839.847, 669663.817
+	],
+	"sb initialization|||sury": [70489.4946060606, 74138.4135, 70500.91913043478],
+	"sb parsing|invalid|allErrors|superstruct (schema.validate)": [
+		601903.9726666666, 672800.385, 672230.534
+	],
+	"sb initialization|||sury (isInput)": [2098917.03, 2096582.96, 2097787.272],
+	"sb initialization|||sury (parseOrThrow)": [
+		1524304.298, 1523748.372, 1524811.368
+	],
+	"sb validation|valid||sury": [
+		14700.75085840708, 14694.18197080292, 14696.428055865921
+	],
+	"sb validation|valid||sury (compiled)": [
+		13974.546372093024, 13975.040842105263, 13970.220118421053
+	],
+	"sb parsing|valid|allErrors|sury (parseOrThrow + compiled)": [
+		14210.350229508196, 14216.508793814433, 14212.703808080809
+	],
+	"sb parsing|valid|allErrors|sury (asResult)": [
+		14194.653422594141, 14191.406778378378, 14189.191320987655
+	],
+	"sb standard|valid|allErrors|sury": [
+		14224.790440677965, 14224.6792125, 14217.50252
+	],
+	"sb validation|invalid||sury": [
+		38180.14107936508, 38666.40096666667, 36483.733384615385
+	],
+	"sb validation|invalid||sury (compiled)": [
+		30722.358545454546, 30730.915304347825, 30696.493230769232
+	],
+	"sb parsing|invalid|allErrors|sury (parseOrThrow + compiled)": [
+		35102.968453333335, 34585.623929824564, 35362.920333333335
+	],
+	"sb parsing|invalid|allErrors|sury (asResult)": [
+		30778.152636363637, 30794.505791044776, 30772.21956521739
+	],
+	"sb standard|invalid|allErrors|sury": [
+		33263.16710344828, 30919.548807017545, 31528.251189189188
+	],
+	"sb string|valid|date-time|sury": [618.452525, 618.548875, 618.41853],
+	"sb string|valid|time|sury": [383.46501, 383.54895, 383.463725],
+	"sb string|valid|date|sury": [493.469825, 493.50016, 493.472425],
+	"sb string|valid|duration|sury": [588.429275, 588.521805, 588.50088],
+	"sb string|valid|email|sury": [1165.478845, 1170.459055, 1165.49809],
+	"sb string|valid|uuid|sury": [1371.488835, 1374.04785, 1368.9799],
+	"sb string|valid|url|sury": [1592.469415, 1594.881065, 1594.960245],
+	"sb string|valid|ipv4|sury": [428.502175, 428.414895, 428.520675],
+	"sb string|valid|ipv6|sury": [859.4701, 859.470315, 859.470025],
+	"sb string|invalid|date-time|sury": [
+		28132.001782608695, 28141.414105263157, 28590.93612345679
+	],
+	"sb string|invalid|date|sury": [
+		27265.248537037038, 27268.14158139535, 27264.925139240506
+	],
+	"sb string|invalid|time|sury": [
+		27251.07064864865, 27256.844025974027, 27483.726045454547
+	],
+	"sb string|invalid|duration|sury": [
+		27252.325736842104, 27263.246052631577, 27259.933384615386
+	],
+	"sb string|invalid|email|sury": [
+		29868.98453763441, 27627.90875609756, 28002.630870588237
+	],
+	"sb string|invalid|url|sury": [
+		27633.504863636364, 27645.081435897435, 29546.356419753087
+	],
+	"sb string|invalid|uuid|sury": [
+		26238.716939759037, 27273.455777777777, 27390.029875
+	],
+	"sb string|invalid|ipv4|sury": [
+		27267.856282608696, 27127.04694117647, 29332.406075949366
+	],
+	"sb codec|encode||sury": [651.037335, 647.740615, 650.992665],
+	"sb codec|decode||sury": [1559.29998, 1559.393115, 1559.750245],
+	"sb string|invalid|ipv6|sury": [
+		26642.990361445783, 27594.37347368421, 26972.240743589744
+	],
+	"sb initialization|||typebox": [119322.4561, 119970.81956521739, 105186.2628],
+	"sb initialization|||typebox (compile)": [
+		1229510.506, 1224489.371, 1230703.956
+	],
+	"sb initialization|||typebox (schema compile)": [
+		1139521.308, 1139826.654, 1138189.428
+	],
+	"sb validation|valid||typebox (compile)": [
+		9686.07121, 9685.74616, 9680.299697127937
+	],
+	"sb validation|valid||typebox": [761590.486, 761540.238, 811822.076],
+	"sb validation|valid||typebox (schema)": [
+		760900.308, 785747.494, 797283.8893333334
+	],
+	"sb validation|valid||typebox (schema compile)": [
+		9685.583145, 9679.698215, 9686.531266055046
+	],
+	"sb initialization|||typebox (script)": [
+		8481687.528, 8483678.56, 8476416.394
+	],
+	"sb validation|valid||typebox (script compile)": [
+		9697.595809045226, 9697.479785, 9700.896599277978
+	],
+	"sb parsing|valid|allErrors|typebox": [
+		728912.9846666667, 762736.7386666667, 762666.1953333333
+	],
+	"sb parsing|valid|allErrors|typebox (compile)": [
+		9790.06259, 9789.22822, 9786.294724550899
+	],
+	"sb parsing|valid|allErrors|typebox (schema)": [
+		798363.702, 728269.5066666667, 812004.723
+	],
+	"sb parsing|valid|allErrors|typebox (schema compile)": [
+		9786.6566, 9789.980735, 9785.526212643677
+	],
+	"sb initialization|||typebox (script compile)": [
+		9512170.462, 9507918.142, 9519332.254
+	],
+	"sb parsing|valid|allErrors|typebox (script compile)": [
+		9797.733425, 9797.00015, 9797.56765349544
+	],
+	"sb validation|invalid||typebox (compile)": [
+		162.470045, 162.807795, 162.129355
+	],
+	"sb validation|invalid||typebox": [
+		36526.333058823526, 36927.18328, 37670.73435897436
+	],
+	"sb validation|invalid||typebox (schema)": [
+		36592.86863492063, 36593.74329113924, 36851.61814285714
+	],
+	"sb validation|invalid||typebox (schema compile)": [
+		162.39496, 162.826385, 162.47319
+	],
+	"sb validation|invalid||typebox (script compile)": [
+		159.528625, 159.47008, 159.51655
+	],
+	"sb parsing|invalid|allErrors|typebox": [
+		170974.281, 205864.77844444444, 184831.8832
+	],
+	"sb parsing|invalid|allErrors|typebox (compile)": [
+		123272.37861538462, 123738.285875, 146369.6202
+	],
+	"sb parsing|invalid|allErrors|typebox (schema)": [
+		165070.46145454547, 137813.19338461538, 152784.26044444446
+	],
+	"sb parsing|invalid|allErrors|typebox (schema compile)": [
+		98921.8866, 98880.63539130434, 112619.66552941177
+	],
+	"sb parsing|invalid|allErrors|typebox (script compile)": [
+		99617.19252631579, 98810.91778947368, 99553.50386666667
+	],
+	"sb string|valid|date-time|typebox": [
+		14230.88225136612, 14248.004465608466, 14221.771310344828
+	],
+	"sb string|valid|date|typebox": [
+		10166.681042253522, 10178.996513011152, 10197.437316017316
+	],
+	"sb string|valid|time|typebox": [
+		10441.177444839857, 10426.447865671642, 10444.551327272728
+	],
+	"sb string|valid|duration|typebox": [
+		8871.870308196721, 8883.405450847458, 8867.171100775195
+	],
+	"sb string|valid|email|typebox": [
+		8796.730435294117, 8812.181137829912, 8803.668211604096
+	],
+	"sb string|valid|uuid|typebox": [
+		9295.898605809129, 9299.587346938775, 9298.816383763839
+	],
+	"sb string|valid|url|typebox": [
+		9310.760536082475, 9313.05646853147, 9307.959530364373
+	],
+	"sb string|valid|ipv4|typebox": [
+		8346.449507418398, 8359.755423423423, 8355.28431617647
+	],
+	"sb string|valid|ipv6|typebox": [
+		8788.097724409448, 8782.33179041916, 8789.853196911197
+	],
+	"sb string|invalid|date|typebox": [4267.214855, 4301.58522, 4294.481015],
+	"sb string|invalid|date-time|typebox": [4863.376985, 4887.09071, 4854.97971],
+	"sb string|invalid|time|typebox": [4380.422355, 4382.938515, 4380.41104],
+	"sb string|invalid|duration|typebox": [4428.44062, 4353.219905, 4404.50218],
+	"sb string|invalid|email|typebox": [4481.50519, 4502.678845, 4489.303615],
+	"sb string|invalid|url|typebox": [4898.074005, 4887.21545, 4898.342885],
+	"sb string|invalid|uuid|typebox": [4262.759115, 4262.54758, 4259.12532],
+	"sb string|invalid|ipv4|typebox": [4283.837305, 4256.092485, 4262.782265],
+	"sb string|invalid|ipv6|typebox": [4663.290015, 4663.145765, 4671.3348],
+	"sb codec|encode||typebox": [
+		62612.52333333333, 58089.65666666667, 60382.21242105263
+	],
+	"sb codec|decode||typebox": [
+		58943.351217391304, 59058.94147826087, 54951.11541176471
+	],
+	"sb initialization|||typia (createValidate)": [
+		1116.47725, 1207.924005, 1414.103305
+	],
+	"sb initialization|||typia (createIs)": [378.220375, 380.62601, 381.00222],
+	"sb validation|valid||typia (is)": [
+		42131.69973770492, 44415.99831884058, 44450.86925
+	],
+	"sb validation|valid||typia (createIs)": [
+		42955.40141176471, 42983.9991627907, 42983.18132258065
+	],
+	"sb parsing|valid|allErrors|typia (validate)": [
+		44565.19127536232, 44566.92769444444, 44680.59724590164
+	],
+	"sb parsing|valid|allErrors|typia (createValidate)": [
+		43054.3518372093, 43053.03713636364, 42953.611333333334
+	],
+	"sb validation|invalid||typia (is)": [413.6726, 413.65128, 414.354885],
+	"sb standard|valid|allErrors|typia": [
+		43063.71181578947, 43063.667368421055, 42904.613612903224
+	],
+	"sb validation|invalid||typia (createIs)": [67.87461, 67.91548, 67.88027],
+	"sb parsing|invalid|allErrors|typia (createValidate)": [
+		242060.6482, 252497.55822222223, 238802.90444444446
+	],
+	"sb parsing|invalid|allErrors|typia (validate)": [
+		179252.45033333334, 219254.5532, 211501.25844444445
+	],
+	"sb string|valid|date-time|typia": [4547.98395, 4547.99099, 4548.05837],
+	"sb standard|invalid|allErrors|typia": [
+		257769.70125, 144516.832, 192687.0342857143
+	],
+	"sb string|valid|time|typia": [1217.560815, 1215.684025, 1224.79213],
+	"sb string|valid|date|typia": [2364.453545, 2361.13427, 2361.13425],
+	"sb string|valid|duration|typia": [791.46863, 791.418595, 791.43448],
+	"sb string|valid|email|typia": [772.468295, 772.38348, 772.521035],
+	"sb string|valid|uuid|typia": [1363.4345, 1363.554435, 1370.48063],
+	"sb string|valid|url|typia": [1698.029705, 1698.058175, 1698.039515],
+	"sb string|valid|ipv4|typia": [411.43441, 411.39422, 411.55658],
+	"sb string|valid|ipv6|typia": [3239.919445, 3240.06203, 3240.05691],
+	"sb string|invalid|date-time|typia": [380.47001, 380.42918, 380.47005],
+	"sb string|invalid|date|typia": [307.419015, 307.418945, 307.521205],
+	"sb string|invalid|time|typia": [322.51113, 322.38346, 322.521025],
+	"sb string|invalid|duration|typia": [305.39916, 305.39738, 305.518325],
+	"sb string|invalid|email|typia": [406.474295, 406.332405, 406.47002],
+	"sb string|invalid|url|typia": [223.407335, 223.41881, 223.33168],
+	"sb string|invalid|uuid|typia": [223.436975, 223.409815, 223.47001],
+	"sb string|invalid|ipv4|typia": [240.43222, 240.61058, 240.47002],
+	"sb string|invalid|ipv6|typia": [1704.010355, 1703.98444, 1703.88277],
+	"sb initialization|||valibot": [
+		24063.57912195122, 24071.560583333332, 24303.252981132075
+	],
+	"sb validation|valid||valibot": [
+		73872.8942051282, 73920.25429268293, 73734.6939375
+	],
+	"sb parsing|valid|allErrors|valibot": [
+		73726.24488372092, 73924.36272727273, 74031.71091891892
+	],
+	"sb parsing|valid|abortEarly|valibot": [
+		74099.42306122449, 74444.18483720931, 74107.68961290322
+	],
+	"sb parsing|valid|abortEarly|valibot (abortPipeEarly only)": [
+		74123.35621739131, 74480.35727272727, 74413.94862857142
+	],
+	"sb standard|valid|allErrors|valibot": [
+		73864.59893617021, 73713.76004651163, 73975.17703703704
+	],
+	"sb validation|invalid||valibot": [4499.71822, 4490.391915, 4487.04983],
+	"sb parsing|invalid|allErrors|valibot": [
+		112748.30225, 113309.20284210527, 113520.642125
+	],
+	"sb parsing|invalid|abortEarly|valibot": [
+		4704.18137, 4692.611795, 4708.620465
+	],
+	"sb parsing|invalid|abortEarly|valibot (abortPipeEarly only)": [
+		110971.28975, 113135.5952, 113124.944375
+	],
+	"sb standard|invalid|allErrors|valibot": [
+		113299.71957894736, 114006.259, 113677.5212
+	],
+	"sb string|valid|date|valibot": [837.823155, 837.849165, 837.946235],
+	"sb string|valid|email|valibot": [1008.93228, 1008.853235, 1008.84452],
+	"sb string|valid|url|valibot": [1692.96552, 1669.82047, 1684.650235],
+	"sb string|valid|uuid|valibot": [1730.55544, 1712.83992, 1727.42136],
+	"sb string|valid|ipv4|valibot": [820.809445, 820.832595, 820.88274],
+	"sb string|valid|ipv6|valibot": [1178.911755, 1178.846155, 1190.43503],
+	"sb string|invalid|date|valibot": [1219.423225, 1200.193745, 1216.03851],
+	"sb string|invalid|email|valibot": [1361.956945, 1330.695485, 1361.989475],
+	"sb string|invalid|url|valibot": [1843.12699, 1846.159095, 1843.084895],
+	"sb string|invalid|uuid|valibot": [1222.400575, 1191.202425, 1210.079025],
+	"sb string|invalid|ipv4|valibot": [1198.927105, 1186.82328, 1199.20641],
+	"sb string|invalid|ipv6|valibot": [1377.302125, 1389.553405, 1377.40724],
+	"sb initialization|||yup": [1031996.86, 1109848.828, 1033753.322],
+	"sb parsing|valid|allErrors|yup (strict)": [
+		1027735.088, 979138.52, 1026992.325
+	],
+	"sb validation|valid||yup": [1322317.256, 1326744.621, 1331000.38],
+	"sb parsing|valid|allErrors|yup": [1301399.075, 1297167.21, 1352971.877],
+	"sb parsing|valid|abortEarly|yup": [1298007.375, 1301441.124, 1296001.308],
+	"sb parsing|valid|abortEarly|yup (strict)": [
+		1027713.504, 981388.2, 1024445.43
+	],
+	"sb validation|invalid||yup": [780715.521, 763581.94, 774446.294],
+	"sb standard|valid|allErrors|yup": [1300560.705, 1302169.821, 1234550.802],
+	"sb parsing|invalid|abortEarly|yup": [
+		762527.133, 745805.3713333333, 774924.731
+	],
+	"sb parsing|invalid|abortEarly|yup (strict)": [
+		520802.9035, 491858.354, 523079.6215
+	],
+	"sb parsing|invalid|allErrors|yup (strict)": [
+		3353079.166, 3365934.792, 3384427.854
+	],
+	"sb parsing|invalid|allErrors|yup": [3678422.748, 3698379.812, 3676026.422],
+	"sb string|valid|date-time|yup": [
+		12956.589747252747, 12961.682772727272, 12983.169741935484
+	],
+	"sb string|valid|email|yup": [
+		6965.224247191011, 6962.183623655914, 6966.550287822878
+	],
+	"sb string|valid|url|yup": [
+		10146.624619607843, 10097.43310971787, 10127.818260465116
+	],
+	"sb standard|invalid|allErrors|yup": [3799306.722, 3768639.206, 3770273.166],
+	"sb string|valid|uuid|yup": [
+		7286.69806006006, 7304.157925, 7295.164868217054
+	],
+	"sb string|invalid|date-time|yup": [
+		123977.07944444445, 123444.36652173912, 123731.93875
+	],
+	"sb string|invalid|email|yup": [123588.7054, 123548.5085, 123021.06261538461],
+	"sb string|invalid|url|yup": [
+		128236.31109090909, 123773.224, 132584.00270588236
+	],
+	"sb string|invalid|uuid|yup": [
+		123632.69366666667, 109000.01685714285, 122569.22825
+	],
+	"sb initialization|||zod": [1765046.252, 1760045.562, 1761044.546],
+	"sb validation|valid||zod": [61260.76389189189, 61169.908, 60519.6825],
+	"sb initialization|||zod (factory)": [960952.008, 877938.816, 873072.232],
+	"sb validation|valid||zod (compile)": [
+		10318.01891, 10317.872087463556, 10317.970698060943
+	],
+	"sb parsing|valid|allErrors|zod": [
+		60397.35960869565, 61169.02061904762, 61522.1865
+	],
+	"sb initialization|||zod (compile)": [3484685.652, 3502592.046, 3490497.96],
+	"sb parsing|valid|allErrors|zod (jitless)": [
+		130367.58911111111, 129320.59936842106, 129521.01244444444
+	],
+	"sb parsing|valid|allErrors|zod (compile)": [
+		13979.22772815534, 13975.347262295081, 14025.079380645162
+	],
+	"sb standard|valid|allErrors|zod": [
+		60422.907723076925, 61180.883804878045, 61447.142451612905
+	],
+	"sb standard|valid|allErrors|zod (compile)": [
+		13950.09420289855, 13990.163465517242, 14028.151768292682
+	],
+	"sb validation|invalid||zod": [
+		11883.001316129032, 11898.538102127659, 11873.898376344087
+	],
+	"sb validation|invalid||zod (compile)": [175.45263, 175.385885, 175.46456],
+	"sb parsing|invalid|allErrors|zod": [
+		125328.1856923077, 125689.98828571428, 109548.113
+	],
+	"sb standard|invalid|allErrors|zod": [
+		143529.667875, 150961.9694, 178459.33688888888
+	],
+	"sb parsing|invalid|allErrors|zod (compile)": [
+		124725.5123076923, 126158.88114285715, 97172.0216
+	],
+	"sb parsing|invalid|allErrors|zod (jitless)": [
+		211662.87416666668, 213601.96475, 206386.26285714286
+	],
+	"sb string|valid|date-time|zod": [870.980915, 867.7621, 867.796595],
+	"sb string|valid|date|zod": [800.72105, 803.942395, 803.99125],
+	"sb standard|invalid|allErrors|zod (compile)": [
+		143901.1288, 151573.10022222222, 151647.1048888889
+	],
+	"sb string|valid|duration|zod": [1465.926085, 1466.109675, 1466.01364],
+	"sb string|valid|email|zod": [1149.825215, 1149.804905, 1153.01206],
+	"sb string|valid|ipv4|zod": [727.0215, 729.986785, 726.92217],
+	"sb string|valid|url|zod": [2267.9809, 2264.837485, 2268.076815],
+	"sb string|valid|uuid|zod": [1482.90931, 1483.03755, 1483.02131],
+	"sb string|valid|ipv6|zod": [4284.81891, 4270.62325, 4237.189505],
+	"sb string|invalid|date|zod": [4438.136025, 4427.98674, 4421.06445],
+	"sb string|invalid|date-time|zod": [4723.17337, 4407.017345, 4429.066635],
+	"sb string|invalid|duration|zod": [4486.8767, 4496.987225, 4506.193045],
+	"sb string|invalid|url|zod": [1725.084145, 1727.20596, 1722.159365],
+	"sb string|invalid|email|zod": [4725.928935, 4739.89808, 4733.00189],
+	"sb string|invalid|uuid|zod": [4421.071975, 4255.38409, 4410.79441],
+	"sb string|invalid|ipv4|zod": [4450.2551, 4445.210935, 4446.869825],
+	"sb string|invalid|ipv6|zod": [953.13145, 959.12622, 958.46886],
+	"sb codec|encode||zod": [1010.83154, 1010.681755, 1003.419155],
+	"sb codec|decode||zod": [1689.702405, 1688.512155, 1688.40093],
+	"sb codec|encode||zod (compile)": [1029.93736, 1030.005095, 1033.127745],
+	"sb codec|decode||zod (compile)": [1619.83994, 1619.704165, 1619.76585],
+	"sb initialization|||zod/mini": [1111938.136, 1116007.839, 1120717.665],
+	"sb initialization|||zod/mini (factory)": [
+		782980.6593333334, 782393.3173333333, 660355.246
+	],
+	"sb validation|valid||zod/mini": [
+		128907.06243478261, 128395.78016666666, 129014.27484210527
+	],
+	"sb initialization|||zod/mini (compile)": [
+		2637522.184, 2628710.266, 2625389.058
+	],
+	"sb validation|valid||zod/mini (compile)": [
+		10401.931337016575, 10317.97044, 10317.897244444444
+	],
+	"sb parsing|valid|allErrors|zod/mini": [
+		127088.6633, 127440.19463636364, 127857.38905882352
+	],
+	"sb parsing|valid|allErrors|zod/mini (jitless)": [
+		127461.67676923076, 127662.4147, 128308.57088888889
+	],
+	"sb parsing|valid|allErrors|zod/mini (compile)": [
+		13981.553424418604, 13981.811128205129, 13985.061215686275
+	],
+	"sb standard|valid|allErrors|zod/mini": [
+		127763.09714285714, 127602.99968421053, 127469.88566666667
+	],
+	"sb standard|valid|allErrors|zod/mini (compile)": [
+		13989.444105849581, 13992.701490636704, 13958.32435897436
+	],
+	"sb validation|invalid||zod/mini (compile)": [
+		175.50005, 175.505235, 175.41742
+	],
+	"sb validation|invalid||zod/mini": [
+		27435.983517730496, 27477.057325842696, 27738.819974358976
+	],
+	"sb parsing|invalid|allErrors|zod/mini (jitless)": [
+		210134.988, 224567.8328888889, 202034.619
+	],
+	"sb parsing|invalid|allErrors|zod/mini": [
+		209955.93533333333, 205462.02133333334, 193824.7972
+	],
+	"sb parsing|invalid|allErrors|zod/mini (compile)": [
+		216626.4391111111, 204121.6288888889, 195403.2936
+	],
+	"sb standard|invalid|allErrors|zod/mini": [
+		218562.03844444445, 217432.129, 219210.84254545454
+	],
+	"sb string|valid|date-time|zod/mini": [874.066935, 870.921605, 870.831635],
+	"sb string|valid|date|zod/mini": [803.9325, 800.75275, 803.837565],
+	"sb standard|invalid|allErrors|zod/mini (compile)": [
+		218712.12377777777, 220272.2001818182, 216604.96466666667
+	],
+	"sb string|valid|duration|zod/mini": [1462.85451, 1466.00349, 1466.035045],
+	"sb string|valid|email|zod/mini": [1149.855095, 1149.685555, 1149.658675],
+	"sb string|valid|url|zod/mini": [2271.1221, 2264.811305, 2271.095445],
+	"sb string|valid|uuid|zod/mini": [1483.041745, 1479.774865, 1482.93893],
+	"sb string|valid|ipv4|zod/mini": [726.93211, 726.83488, 726.82697],
+	"sb string|valid|ipv6|zod/mini": [4288.387915, 4267.44982, 4253.572275],
+	"sb string|invalid|date-time|zod/mini": [4408.646495, 4423.96664, 4432.92156],
+	"sb string|invalid|duration|zod/mini": [4503.88494, 4514.79997, 4806.762695],
+	"sb string|invalid|date|zod/mini": [4413.84722, 4430.033755, 4417.85135],
+	"sb string|invalid|email|zod/mini": [
+		4734.56672, 4739.852175, 4731.319411764706
+	],
+	"sb string|invalid|url|zod/mini": [1725.108095, 1729.18638, 1732.26114],
+	"sb string|invalid|ipv6|zod/mini": [958.758635, 954.582345, 951.927985],
+	"sb string|invalid|uuid|zod/mini": [4413.153955, 4413.80499, 4409.2337],
+	"sb string|invalid|ipv4|zod/mini": [4422.925835, 4439.78007, 4439.810705],
+	"sb codec|encode||zod/mini": [1013.87516, 1007.65544, 999.05536],
+	"sb codec|decode||zod/mini": [1686.40032, 1686.566935, 1686.468265],
+	"sb codec|encode||zod/mini (compile)": [1026.75196, 1027.143695, 1030.397105],
+	"sb codec|decode||zod/mini (compile)": [1615.56852, 1618.948435, 1621.94769],
+	"sb initialization|||zod/v3": [506556.0324, 507351.628, 501417.885],
+	"sb parsing|valid|allErrors|zod/v3": [
+		122274.52425, 124245.855875, 124307.97553846154
+	],
+	"sb standard|valid|allErrors|zod/v3": [
+		125530.73842105264, 127894.9169, 128111.21171428572
+	],
+	"sb parsing|invalid|allErrors|zod/v3": [283012.9028, 323956.757, 307160.423],
+	"sb standard|invalid|allErrors|zod/v3": [
+		248766.5088, 246356.51166666666, 261748.8495
+	],
+	"sb string|valid|date|zod/v3": [1436.704185, 1436.487115, 1436.525885],
+	"sb string|valid|duration|zod/v3": [1365.61499, 1365.39983, 1361.34788],
+	"sb string|valid|date-time|zod/v3": [
+		7569.0743297297295, 7876.361696, 8335.099739130435
+	],
+	"sb string|valid|email|zod/v3": [1813.83144, 1814.314795, 1814.28143],
+	"sb string|valid|url|zod/v3": [2956.773265, 2960.20228, 2956.796865],
+	"sb string|valid|ipv4|zod/v3": [1136.245605, 1139.46845, 1141.55408],
+	"sb string|valid|ipv6|zod/v3": [2384.389185, 2383.30572, 2383.53822],
+	"sb string|valid|uuid|zod/v3": [2053.46635, 2054.399345, 2053.51499],
+	"sb string|invalid|date-time|zod/v3": [
+		15783.55561849711, 16511.67152, 16538.761890909092
+	],
+	"sb string|invalid|date|zod/v3": [
+		10770.647263157894, 10518.89434074074, 10151.41910067114
+	],
+	"sb string|invalid|duration|zod/v3": [
+		10135.047889908257, 10923.616388489208, 11824.672939393939
+	],
+	"sb string|invalid|email|zod/v3": [
+		10572.514103773585, 10799.5498, 10341.847369127518
+	],
+	"sb string|invalid|url|zod/v3": [
+		46188.51966666667, 45354.46656716418, 44921.430714285714
+	],
+	"sb string|invalid|ipv4|zod/v3": [
+		10125.389304347826, 10129.937102739726, 10287.204625
+	],
+	"sb string|invalid|uuid|zod/v3": [
+		10087.24143083004, 10372.331363934427, 9938.538362416108
+	],
+	"sb string|invalid|ipv6|zod/v3": [
+		10472.805773109243, 11194.369918518518, 10656.779242105264
+	],
+	"sb validation|valid||zod-compiler": [
+		13486.196945, 13480.6653553719, 13480.990333333333
+	],
+	"sb validation|valid||zod-compiler (compact)": [
+		13477.946887052341, 13482.175696774193, 13480.331899082568
+	],
+	"sb validation|valid||zod-compiler (bag)": [
+		13481.544322751322, 13482.985415, 13472.392480874318
+	],
+	"sb parsing|valid|allErrors|zod-compiler": [
+		13541.72168141593, 13541.95043918919, 13536.56288209607
+	],
+	"sb parsing|valid|allErrors|zod-compiler (compact)": [
+		13545.11559, 13540.374683274022, 13544.97723943662
+	],
+	"sb parsing|valid|allErrors|zod-compiler (bag)": [
+		13537.952865, 13534.6279347181, 13544.481608695653
+	],
+	"sb standard|valid|allErrors|zod-compiler (bag)": [
+		13570.39804, 13572.976666666667, 13563.767689655173
+	],
+	"sb standard|valid|allErrors|zod-compiler": [
+		13570.377295, 13569.946637873754, 13572.013094170403
+	],
+	"sb validation|invalid||zod-compiler": [150.6048, 150.494695, 150.470015],
+	"sb standard|valid|allErrors|zod-compiler (compact)": [
+		13573.673634146342, 13571.427120481927, 13574.808502673797
+	],
+	"sb validation|invalid||zod-compiler (compact)": [
+		150.435145, 150.51968, 150.47001
+	],
+	"sb validation|invalid||zod-compiler (bag)": [
+		150.505165, 150.33582, 150.42017
+	],
+	"sb parsing|invalid|allErrors|zod-compiler": [
+		250.40324, 250.314575, 250.278995
+	],
+	"sb parsing|invalid|allErrors|zod-compiler (bag)": [
+		250.43857, 250.165145, 250.316815
+	],
+	"sb parsing|invalid|allErrors|zod-compiler (compact)": [
+		253.354605, 253.22828, 253.423335
+	],
+	"sb standard|invalid|allErrors|zod-compiler": [
+		59780.488603773585, 60315.87289473684, 61431.592444444446
+	],
+	"sb standard|invalid|allErrors|zod-compiler (bag)": [
+		59528.81389830508, 60691.43031111111, 61218.9560625
+	],
+	"sb standard|invalid|allErrors|zod-compiler (compact)": [
+		228460.15425, 269575.82775, 229930.8884
+	]
+}

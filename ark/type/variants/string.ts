@@ -8,7 +8,8 @@ import type { regex } from "arkregex"
 import type { BaseType } from "./base.ts"
 
 /** @ts-ignore cast variance */
-interface Type<out t extends string = string, $ = {}> extends BaseType<t, $> {
+interface Type<out t extends string = string, in out $ = {}>
+	extends BaseType<t, $> {
 	matching<const schema extends Pattern.Schema>(
 		schema: schema
 	): schema extends string ? Type<regex.infer<schema>, $>

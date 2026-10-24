@@ -1,5 +1,8 @@
 import {
+	$ark,
+	constraintInputOf,
 	hasArkKind,
+	inProgress,
 	type BaseParseContext,
 	type BaseRoot,
 	type BaseScope,
@@ -8,9 +11,12 @@ import {
 import {
 	domainOf,
 	hasDomain,
+	isArray,
+	isStandardSchema,
 	isThunk,
 	objectKindOf,
 	printable,
+	throwError,
 	throwParseError,
 	uncapitalize,
 	type anyOrNever,
@@ -19,12 +25,15 @@ import {
 	type ErrorMessage,
 	type Fn,
 	type ifEmptyObjectLiteral,
+	type inferred,
 	type objectKindOrDomainOf,
 	type Primitive
 } from "@ark/util"
 import type { Out } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { InnerParseResult } from "../scope.ts"
+import type { instantiateType } from "../variants/instantiate.ts"
+import type { ObjectType } from "../variants/object.ts"
 import type {
 	shallowDefaultableMessage,
 	shallowOptionalMessage,
@@ -67,10 +76,21 @@ export const parseInnerDefinition = (
 		}
 		let scopeCache = parseCache.get(ctx.$)
 		if (!scopeCache) {
-			scopeCache = {}
+			scopeCache = Object.create(null) as Record<string, InnerParseResult>
 			parseCache.set(ctx.$, scopeCache)
 		}
-		return (scopeCache[def] ??= parseString(def, ctx))
+		if (scopeCache[def]) {
+			$ark.reached?.cached(scopeCache, def)
+			return scopeCache[def]
+		}
+		const mark = $ark.reached?.mark()
+		const result = parseString(def, ctx)
+		const node = isArray(result) ? result[0] : result
+		if (!inProgress.definitions || !node.includesAlias) {
+			scopeCache[def] = result
+			$ark.reached?.store(mark, scopeCache, def)
+		}
+		return result
 	}
 	return hasDomain(def, "object") ?
 			parseObject(def, ctx)
@@ -82,7 +102,7 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 	switch (objectKind) {
 		case undefined:
 			if (hasArkKind(def, "root")) return def
-			if ("~standard" in def) return parseStandardSchema(def as never, ctx)
+			if (isStandardSchema(def)) return parseStandardSchema(def as never, ctx)
 			return parseObjectLiteral(def as Dict, ctx)
 		case "Array":
 			return parseTuple(def as array, ctx)
@@ -90,12 +110,16 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 			return ctx.$.node(
 				"intersection",
 				{
-					domain: "string",
-					pattern: def as RegExp
+					domain: ctx.$.node("domain", { domain: "string" }),
+					pattern: [
+						ctx.$.node("pattern", constraintInputOf("pattern", def as RegExp))
+					]
 				},
 				{ prereduced: true }
 			)
 		case "Function": {
+			// e.g. Effect's standardSchemaV1, a class that can't be called as a thunk
+			if (isStandardSchema(def)) return parseStandardSchema(def as never, ctx)
 			const resolvedDef = isThunk(def) ? def() : def
 			if (hasArkKind(resolvedDef, "root")) return resolvedDef
 			return throwParseError(writeBadDefinitionTypeMessage("Function"))
@@ -112,39 +136,43 @@ const parseStandardSchema = (
 	ctx: BaseParseContext
 ): BaseRoot =>
 	ctx.$.intrinsic.unknown.pipe((v, ctx) => {
-		const result = def["~standard"].validate(
-			v
-		) as StandardSchemaV1.Result<unknown>
+		const result = def["~standard"].validate(v)
+
+		if (result instanceof Promise) {
+			return throwError(
+				writeAsyncStandardSchemaMessage(def["~standard"].vendor)
+			)
+		}
 
 		if (!result.issues) return result.value
 
-		for (const { message, path } of result.issues) {
-			if (path) {
-				if (path.length) {
-					ctx.error({
-						problem: uncapitalize(message),
-						relativePath: path.map(k => (typeof k === "object" ? k.key : k))
-					})
-				} else {
-					ctx.error({
-						message
-					})
-				}
-			} else {
-				ctx.error({
-					message
-				})
-			}
+		// a result with issues fails, even if they're empty
+		if (result.issues.length === 0) return ctx.error({ problem: "is invalid" })
+
+		for (const issue of result.issues) {
+			ctx.error({
+				problem: uncapitalize(issue.message),
+				relativePath: (issue.path ?? []).map(k =>
+					typeof k === "object" ? k.key : k
+				)
+			})
 		}
 	})
+
+export const writeAsyncStandardSchemaMessage = (vendor: string): string =>
+	`Standard Schema definitions must validate synchronously (${vendor} returned a Promise)`
 
 export type inferDefinition<def, $, args> =
 	[def] extends [anyOrNever] ? def
 	: def extends type.cast<infer t> ?
-		// {} as a def is handled here since according to TS it extends { " arkInferred"?: t  }.
+		// a Type's [inferred] is required, but type.cast's is optional, and
+		// inferring through it drops undefined without exactOptionalPropertyTypes
+		def extends { [inferred]: infer t } ? t
+		: // {} as a def is handled here since according to TS it extends { " arkInferred"?: t  }.
 		// Unlike in TS however, ArkType object literals are constrained to object
 		// so we use that as the base type inferred when parsing {}.
-		ifEmptyObjectLiteral<def, object, t>
+		unknown extends t ? ifEmptyObjectLiteral<def, object, t>
+		: t
 	: def extends ThunkCast<infer t> ? t
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>
@@ -152,6 +180,31 @@ export type inferDefinition<def, $, args> =
 	: def extends StandardSchemaV1 ? inferStandardSchema<def>
 	: def extends object ? inferObjectLiteral<def, $, args>
 	: never
+
+// a literal without a spread is an object, so inference can be deferred
+export type instantiateDefinition<def, $, args> =
+	[def] extends [anyOrNever | string | NonLiteralObjectDefinition] ?
+		instantiateType<inferDefinition<def, $, args>, $>
+	: [def] extends [object] ?
+		"..." extends keyof def ? instantiateType<inferDefinition<def, $, args>, $>
+		: isSingleDefinition<def> extends true ?
+			ObjectType<inferObjectLiteral<def, $, args>, $>
+		:	instantiateType<inferDefinition<def, $, args>, $>
+	:	instantiateType<inferDefinition<def, $, args>, $>
+
+type NonLiteralObjectDefinition =
+	| type.cast<unknown>
+	| ThunkCast
+	| array
+	| RegExp
+	| StandardSchemaV1
+
+type isSingleDefinition<def, original = def> =
+	def extends unknown ?
+		[original] extends [def] ?
+			true
+		:	false
+	:	never
 
 type inferStandardSchema<
 	schema extends StandardSchemaV1,
@@ -181,7 +234,7 @@ export type validateDefinition<def, $, args> =
 //    represent an optional or defaultable
 // 2. we are validating the root of a property definition
 export type validateInnerDefinition<def, $, args> =
-	[def] extends [TerminalObjectDefinition] ? def
+	def extends TerminalObjectDefinition ? def
 	: def extends string ? validateString<def, $, args>
 	: unknown extends def ?
 		// this allows the initial list of autocompletions to be populated when a user writes "type()",

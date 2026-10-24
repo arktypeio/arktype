@@ -1,6 +1,6 @@
 import { noSuggest } from "./errors.ts"
 
-const args = noSuggest("args")
+const args = /* @__PURE__ */ noSuggest("args")
 type args = typeof args
 
 export abstract class Hkt<constraints extends unknown[] = any> {

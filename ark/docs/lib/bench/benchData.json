@@ -1,0 +1,6089 @@
+{
+	"provenance": {
+		"commit": "fea8e68e0",
+		"date": "2026-10-24",
+		"measured": "2026-10-24 11:41-12:21 UTC",
+		"machine": "an Intel i7-11700 under WSL2",
+		"runtime": "Node 25.2.1",
+		"passes": 20,
+		"method": "BENCH_PASSES=20 BENCH_ROUNDS=3 BENCH_CORE=13,15 pnpm benchValidate on ark/repo/bench, on a shared machine, each run started below a 1-minute load of 4 (2.1-3.4 at the runs' starts and ends), benchmark processes pinned to cores 13 and 15. Each pass forks a fresh process per library, driven over IPC; one arm is timed at a time, in an order that rotates by pass and round, and its sample is the median of 3 rounds. Each arm warms 1 s / 10k calls, then a round is the mean ns per call over a batch of >= 0.5 ms, on fresh unfrozen copies of the input. Every arm's output is checked to agree with arktype's before timing. Medians are over passes; p is a two-sided sign test paired by pass; verdict is win/loss at p < .05, else tie. replication tallies the same comparison's verdict in 1 further quiet run (10 passes) at the same commit.",
+		"size": "esbuild-minified production bundle (the \"production\" condition, which prunes a precompiled validator by usage) of each app at 642b4517e, bytes and gzip; Valibot and Zod Mini with the functions matching a precompiled validator's entry points (bench/bundle.ts); standaloneSmallest is the \"smallest\" preset",
+		"startup": {
+			"commit": "89510709d",
+			"date": "2026-10-23",
+			"method": "median over one quiet pass of fresh Node processes, each importing an app's esbuild-minified bundle and validating once"
+		}
+	},
+	"arms": {
+		"standalone": "arktype precompiled to a standalone validator (default build: errors \"all\"), on arktype/runtime",
+		"standaloneFirst": "the same, built with errors: \"first\"",
+		"arktype": "arktype's runtime JIT (type() at startup, compiled with new Function)",
+		"zodCompiled": "zod 4.6.7 z.compile(schema) (.safeParse; .validate for allows); on invalid rows its compiled check, then zod's runtime parser for the issues; on parse tree zod's runtime parser, since z.compile refuses recursive schemas",
+		"zod": "zod 4.6.7 classic (safeParse)",
+		"zodMini": "zod/mini 4.6.7 (safeParse)",
+		"typia": "typia 15.1.0, AOT via ttsc (createValidate; createIs for allows; createAssert for first; validatePrune for strip; validateEquals for strict)",
+		"valibot": "valibot 1.5.0 (safeParse; is for allows; abortEarly for first)",
+		"ajv": "ajv 8.20.0 (compile; allErrors for issues/errors; removeAdditional for strip; useDefaults)",
+		"typebox": "TypeBox 1.3.37 (Compile: Check; Clean+Check for strip; Default+Check for defaults; Decode for morph; Errors for invalid rows)"
+	},
+	"caveats": [
+		"zod (classic, compiled, mini) and valibot's parse rows build a new output object (their default object mode strips undeclared keys); arktype, typia, ajv and TypeBox return the input. The strip rows are the like-for-like comparison with that behavior.",
+		"Rows where another library beats the precompiled arm in every run: arktype on parse moltar; ajv on parse items defaults, issues moltar, issues moltar strict, errors moltar, errors moltar strict, errors product, first moltar, first moltar strict, first product.",
+		"ajv and TypeBox's Check return a boolean, not the data. typia's createValidate allocates a { success, data, errors } result per call.",
+		"arktype's errors/first rows read .summary, which writes every message; issues rows read the raw errors.",
+		"The sign test can't see a bias that holds for a whole run (such as the core a process settled on), so a verdict counts when it replicates."
+	],
+	"scenarios": [
+		{
+			"id": "parse moltar",
+			"mode": "parse",
+			"name": "moltar",
+			"measures": "moltar's benchmark object: 7 keys (numbers, strings incl. a ~1.4 KB one, a boolean) and a nested 3-key object; undeclared keys allowed, valid input",
+			"medianNs": {
+				"valibot": 470,
+				"zod": 141,
+				"zodCompiled": 16.7,
+				"zodMini": 773,
+				"typia": 8.07,
+				"ajv": 14.3,
+				"typebox": 98,
+				"arktype": 4.19,
+				"standalone": 4.85,
+				"standaloneFirst": 4.86
+			},
+			"iqrNs": {
+				"valibot": [460, 478],
+				"zod": [132, 145],
+				"zodCompiled": [16.3, 16.9],
+				"zodMini": [756, 799],
+				"typia": [7.92, 8.37],
+				"ajv": [14, 14.5],
+				"typebox": [96.6, 99.3],
+				"arktype": [4.15, 4.27],
+				"standalone": [4.81, 4.94],
+				"standaloneFirst": [4.79, 4.93]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0103,
+					"speedup": 96.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0345,
+					"speedup": 29,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.291,
+					"speedup": 3.43,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.00628,
+					"speedup": 159,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.602,
+					"speedup": 1.66,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.339,
+					"speedup": 2.95,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.0495,
+					"speedup": 20.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.16,
+					"speedup": 0.864,
+					"passesWon": "1/20",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"standaloneFirst": {
+					"ratio": 0.999,
+					"speedup": 1,
+					"passesWon": "10/20",
+					"p": "1.000",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0103,
+					"speedup": 96.8,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0345,
+					"speedup": 29,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.291,
+					"speedup": 3.43,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.00629,
+					"speedup": 159,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.602,
+					"speedup": 1.66,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.34,
+					"speedup": 2.94,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.0496,
+					"speedup": 20.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.16,
+					"speedup": 0.863,
+					"passesWon": "1/20",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"standalone": {
+					"ratio": 1,
+					"speedup": 0.999,
+					"passesWon": "10/20",
+					"p": "1.000",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 1,
+					"tie": 0
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "parse moltar strict",
+			"mode": "parse",
+			"name": "moltar strict",
+			"measures": "the same object with undeclared keys rejected at both levels; the valid input has none, so this is the cost of looking for them",
+			"medianNs": {
+				"valibot": 523,
+				"zod": 198,
+				"zodCompiled": 32.9,
+				"zodMini": 848,
+				"typia": 30.3,
+				"ajv": 28.7,
+				"typebox": 26.3,
+				"arktype": 18.3,
+				"standalone": 17.8,
+				"standaloneFirst": 17.9
+			},
+			"iqrNs": {
+				"valibot": [506, 536],
+				"zod": [190, 205],
+				"zodCompiled": [32.6, 33.3],
+				"zodMini": [837, 865],
+				"typia": [29.9, 31.8],
+				"ajv": [28.4, 28.9],
+				"typebox": [25.3, 27],
+				"arktype": [18, 18.5],
+				"standalone": [17.7, 18.3],
+				"standaloneFirst": [17.5, 18.3]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0341,
+					"speedup": 29.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0903,
+					"speedup": 11.1,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.542,
+					"speedup": 1.85,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.021,
+					"speedup": 47.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.589,
+					"speedup": 1.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.621,
+					"speedup": 1.61,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.679,
+					"speedup": 1.47,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.977,
+					"speedup": 1.02,
+					"passesWon": "16/20",
+					"p": "0.012",
+					"verdict": "win"
+				},
+				"standaloneFirst": {
+					"ratio": 0.999,
+					"speedup": 1,
+					"passesWon": "12/20",
+					"p": "0.503",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0341,
+					"speedup": 29.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0904,
+					"speedup": 11.1,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.542,
+					"speedup": 1.84,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0211,
+					"speedup": 47.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.59,
+					"speedup": 1.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.622,
+					"speedup": 1.61,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.679,
+					"speedup": 1.47,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.978,
+					"speedup": 1.02,
+					"passesWon": "13/20",
+					"p": "0.263",
+					"verdict": "tie"
+				},
+				"standalone": {
+					"ratio": 1,
+					"speedup": 0.999,
+					"passesWon": "8/20",
+					"p": "0.503",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "parse product",
+			"mode": "parse",
+			"name": "product",
+			"measures": "open-circle/schema-benchmarks' Product: 11 keys with length and range bounds, a Date, a nullable number, a string array, 3 images (enum, URL format) and 2 ratings holding 3 more",
+			"medianNs": {
+				"valibot": 6200,
+				"zod": 5720,
+				"zodCompiled": 1330,
+				"zodMini": 9780,
+				"typia": 2640,
+				"ajv": 1070,
+				"typebox": 1400,
+				"arktype": 328,
+				"standalone": 322,
+				"standaloneFirst": 322
+			},
+			"iqrNs": {
+				"valibot": [5750, 6390],
+				"zod": [5600, 6060],
+				"zodCompiled": [1320, 1340],
+				"zodMini": [9570, 9930],
+				"typia": [2610, 2720],
+				"ajv": [1060, 1080],
+				"typebox": [1390, 1410],
+				"arktype": [319, 335],
+				"standalone": [317, 325],
+				"standaloneFirst": [319, 326]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0519,
+					"speedup": 19.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0562,
+					"speedup": 17.8,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.242,
+					"speedup": 4.13,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0329,
+					"speedup": 30.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.122,
+					"speedup": 8.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.3,
+					"speedup": 3.33,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.229,
+					"speedup": 4.36,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.98,
+					"speedup": 1.02,
+					"passesWon": "12/20",
+					"p": "0.503",
+					"verdict": "tie"
+				},
+				"standaloneFirst": {
+					"ratio": 1,
+					"speedup": 1,
+					"passesWon": "10/20",
+					"p": "1.000",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0519,
+					"speedup": 19.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0562,
+					"speedup": 17.8,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.242,
+					"speedup": 4.13,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0329,
+					"speedup": 30.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.122,
+					"speedup": 8.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.3,
+					"speedup": 3.34,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.229,
+					"speedup": 4.36,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.979,
+					"speedup": 1.02,
+					"passesWon": "13/20",
+					"p": "0.263",
+					"verdict": "tie"
+				},
+				"standalone": {
+					"ratio": 1,
+					"speedup": 1,
+					"passesWon": "10/20",
+					"p": "1.000",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "parse items",
+			"mode": "parse",
+			"name": "items",
+			"measures": "an array of 100 objects { id: number, name: string, active: boolean }",
+			"medianNs": {
+				"valibot": 15600,
+				"zod": 3970,
+				"zodCompiled": 722,
+				"zodMini": 23800,
+				"typia": 317,
+				"ajv": 492,
+				"typebox": 367,
+				"arktype": 284,
+				"standalone": 288,
+				"standaloneFirst": 283
+			},
+			"iqrNs": {
+				"valibot": [15400, 15800],
+				"zod": [3850, 4120],
+				"zodCompiled": [715, 738],
+				"zodMini": [23100, 24200],
+				"typia": [308, 322],
+				"ajv": [485, 498],
+				"typebox": [363, 374],
+				"arktype": [278, 295],
+				"standalone": [285, 294],
+				"standaloneFirst": [280, 288]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0185,
+					"speedup": 54,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0727,
+					"speedup": 13.8,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.399,
+					"speedup": 2.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0121,
+					"speedup": 82.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.908,
+					"speedup": 1.1,
+					"passesWon": "18/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.586,
+					"speedup": 1.71,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.784,
+					"speedup": 1.28,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.02,
+					"speedup": 0.984,
+					"passesWon": "6/20",
+					"p": "0.115",
+					"verdict": "tie"
+				},
+				"standaloneFirst": {
+					"ratio": 1.02,
+					"speedup": 0.983,
+					"passesWon": "6/20",
+					"p": "0.115",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0182,
+					"speedup": 55,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0714,
+					"speedup": 14,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.393,
+					"speedup": 2.55,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0119,
+					"speedup": 84.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.892,
+					"speedup": 1.12,
+					"passesWon": "18/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.576,
+					"speedup": 1.74,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.771,
+					"speedup": 1.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.999,
+					"speedup": 1,
+					"passesWon": "11/20",
+					"p": "0.824",
+					"verdict": "tie"
+				},
+				"standalone": {
+					"ratio": 0.983,
+					"speedup": 1.02,
+					"passesWon": "14/20",
+					"p": "0.115",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "parse discriminated",
+			"mode": "parse",
+			"name": "discriminated",
+			"measures": "a 4-branch object union keyed on `kind`, inputs cycling through every branch (zod discriminatedUnion, valibot variant, ajv discriminator; arktype discriminates on its own)",
+			"medianNs": {
+				"valibot": 438,
+				"zod": 94.8,
+				"zodCompiled": 16.7,
+				"zodMini": 233,
+				"typia": 13.6,
+				"ajv": 11.9,
+				"typebox": 10.2,
+				"arktype": 4.52,
+				"standalone": 4.5,
+				"standaloneFirst": 4.64
+			},
+			"iqrNs": {
+				"valibot": [432, 442],
+				"zod": [93.6, 96.3],
+				"zodCompiled": [16.1, 16.9],
+				"zodMini": [226, 237],
+				"typia": [13.1, 14.1],
+				"ajv": [11.8, 12],
+				"typebox": [10.1, 10.3],
+				"arktype": [4.47, 4.56],
+				"standalone": [4.48, 4.6],
+				"standaloneFirst": [4.54, 4.73]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0103,
+					"speedup": 97.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0475,
+					"speedup": 21.1,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.269,
+					"speedup": 3.71,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0194,
+					"speedup": 51.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.331,
+					"speedup": 3.02,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.38,
+					"speedup": 2.63,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.442,
+					"speedup": 2.26,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.997,
+					"speedup": 1,
+					"passesWon": "10/20",
+					"p": "1.000",
+					"verdict": "tie"
+				},
+				"standaloneFirst": {
+					"ratio": 0.971,
+					"speedup": 1.03,
+					"passesWon": "14/20",
+					"p": "0.115",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0106,
+					"speedup": 94.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0489,
+					"speedup": 20.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.277,
+					"speedup": 3.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0199,
+					"speedup": 50.1,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.341,
+					"speedup": 2.93,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.391,
+					"speedup": 2.56,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.455,
+					"speedup": 2.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.03,
+					"speedup": 0.974,
+					"passesWon": "7/20",
+					"p": "0.263",
+					"verdict": "tie"
+				},
+				"standalone": {
+					"ratio": 1.03,
+					"speedup": 0.971,
+					"passesWon": "6/20",
+					"p": "0.115",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "parse rotating",
+			"mode": "parse",
+			"name": "rotating",
+			"measures": "8 small validators (string, non-empty string, two 1-key objects, number, string[], a 2-object union, a bounded number) called in turn from one call site, as a shared helper would call them",
+			"medianNs": {
+				"valibot": 84.2,
+				"zod": 93.2,
+				"zodCompiled": 23.7,
+				"zodMini": 132,
+				"typia": 7.17,
+				"ajv": 16.9,
+				"typebox": 6.61,
+				"arktype": 7.57,
+				"standalone": 5.36,
+				"standaloneFirst": 5.26
+			},
+			"iqrNs": {
+				"valibot": [81.5, 85.7],
+				"zod": [92.5, 95.7],
+				"zodCompiled": [22.9, 24.4],
+				"zodMini": [129, 134],
+				"typia": [7.01, 7.56],
+				"ajv": [12.4, 17.9],
+				"typebox": [6.46, 6.84],
+				"arktype": [7.36, 8.03],
+				"standalone": [5.23, 5.5],
+				"standaloneFirst": [5.18, 5.42]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0636,
+					"speedup": 15.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0575,
+					"speedup": 17.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.227,
+					"speedup": 4.41,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0407,
+					"speedup": 24.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.747,
+					"speedup": 1.34,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.316,
+					"speedup": 3.16,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.81,
+					"speedup": 1.23,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.708,
+					"speedup": 1.41,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standaloneFirst": {
+					"ratio": 1.02,
+					"speedup": 0.982,
+					"passesWon": "8/20",
+					"p": "0.503",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0625,
+					"speedup": 16,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0565,
+					"speedup": 17.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.222,
+					"speedup": 4.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.04,
+					"speedup": 25,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.734,
+					"speedup": 1.36,
+					"passesWon": "19/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.311,
+					"speedup": 3.22,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.796,
+					"speedup": 1.26,
+					"passesWon": "17/20",
+					"p": "0.003",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.695,
+					"speedup": 1.44,
+					"passesWon": "19/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standalone": {
+					"ratio": 0.982,
+					"speedup": 1.02,
+					"passesWon": "12/20",
+					"p": "0.503",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "parse constraints",
+			"mode": "parse",
+			"name": "constraints",
+			"measures": "one object of refinements: string length bounds, email format (each library's own regex), integer range, exclusive bound, a regex pattern",
+			"medianNs": {
+				"valibot": 466,
+				"zod": 557,
+				"zodCompiled": 71.1,
+				"zodMini": 960,
+				"typia": 173,
+				"ajv": 69.4,
+				"typebox": 70.9,
+				"arktype": 52.5,
+				"standalone": 52.6,
+				"standaloneFirst": 53.1
+			},
+			"iqrNs": {
+				"valibot": [462, 475],
+				"zod": [547, 565],
+				"zodCompiled": [69.4, 72.1],
+				"zodMini": [937, 985],
+				"typia": [168, 175],
+				"ajv": [68.1, 70.2],
+				"typebox": [69.7, 73.8],
+				"arktype": [51.9, 53],
+				"standalone": [52, 53.3],
+				"standaloneFirst": [52.1, 53.9]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.113,
+					"speedup": 8.86,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0944,
+					"speedup": 10.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.74,
+					"speedup": 1.35,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0548,
+					"speedup": 18.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.304,
+					"speedup": 3.28,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.758,
+					"speedup": 1.32,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.742,
+					"speedup": 1.35,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1,
+					"speedup": 0.998,
+					"passesWon": "10/20",
+					"p": "1.000",
+					"verdict": "tie"
+				},
+				"standaloneFirst": {
+					"ratio": 0.991,
+					"speedup": 1.01,
+					"passesWon": "13/20",
+					"p": "0.263",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.114,
+					"speedup": 8.78,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0953,
+					"speedup": 10.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.747,
+					"speedup": 1.34,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0553,
+					"speedup": 18.1,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.307,
+					"speedup": 3.25,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.765,
+					"speedup": 1.31,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.749,
+					"speedup": 1.33,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.01,
+					"speedup": 0.989,
+					"passesWon": "8/20",
+					"p": "0.503",
+					"verdict": "tie"
+				},
+				"standalone": {
+					"ratio": 1.01,
+					"speedup": 0.991,
+					"passesWon": "7/20",
+					"p": "0.263",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "parse morph",
+			"mode": "parse",
+			"name": "morph",
+			"measures": "parse a numeric string to a number (\"12345\" -> 12345); typia and ajv can't transform",
+			"medianNs": {
+				"valibot": 60.4,
+				"zod": 124,
+				"zodCompiled": 22.3,
+				"zodMini": 112,
+				"typebox": 2860,
+				"arktype": 17.5,
+				"standalone": 17.9,
+				"standaloneFirst": 17.6
+			},
+			"iqrNs": {
+				"valibot": [59.4, 61.8],
+				"zod": [119, 129],
+				"zodCompiled": [22.1, 22.5],
+				"zodMini": [111, 117],
+				"typebox": [2820, 2910],
+				"arktype": [17.2, 17.9],
+				"standalone": [17.5, 18.8],
+				"standaloneFirst": [17.2, 17.8]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.297,
+					"speedup": 3.36,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.145,
+					"speedup": 6.92,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.805,
+					"speedup": 1.24,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.16,
+					"speedup": 6.26,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.00628,
+					"speedup": 159,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.03,
+					"speedup": 0.974,
+					"passesWon": "7/20",
+					"p": "0.263",
+					"verdict": "tie"
+				},
+				"standaloneFirst": {
+					"ratio": 1.02,
+					"speedup": 0.979,
+					"passesWon": "6/20",
+					"p": "0.115",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.291,
+					"speedup": 3.43,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.142,
+					"speedup": 7.06,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.788,
+					"speedup": 1.27,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.157,
+					"speedup": 6.39,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.00615,
+					"speedup": 163,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.01,
+					"speedup": 0.994,
+					"passesWon": "8/20",
+					"p": "0.503",
+					"verdict": "tie"
+				},
+				"standalone": {
+					"ratio": 0.979,
+					"speedup": 1.02,
+					"passesWon": "14/20",
+					"p": "0.115",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "parse defaults",
+			"mode": "parse",
+			"name": "defaults",
+			"measures": "an object missing 2 defaulted and 2 optional keys; the output must hold the defaults (typia has none)",
+			"medianNs": {
+				"valibot": 224,
+				"zod": 67.2,
+				"zodCompiled": 50,
+				"zodMini": 397,
+				"ajv": 15.3,
+				"typebox": 1150,
+				"arktype": 7.5,
+				"standalone": 7.58,
+				"standaloneFirst": 7.56
+			},
+			"iqrNs": {
+				"valibot": [220, 227],
+				"zod": [64.3, 68.8],
+				"zodCompiled": [49.1, 50.8],
+				"zodMini": [392, 406],
+				"ajv": [15, 15.5],
+				"typebox": [1140, 1160],
+				"arktype": [7.35, 7.7],
+				"standalone": [7.47, 7.73],
+				"standaloneFirst": [7.48, 7.68]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0339,
+					"speedup": 29.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.113,
+					"speedup": 8.86,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.151,
+					"speedup": 6.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0191,
+					"speedup": 52.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.497,
+					"speedup": 2.01,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.00661,
+					"speedup": 151,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.01,
+					"speedup": 0.989,
+					"passesWon": "8/20",
+					"p": "0.503",
+					"verdict": "tie"
+				},
+				"standaloneFirst": {
+					"ratio": 1,
+					"speedup": 0.998,
+					"passesWon": "9/20",
+					"p": "0.824",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0338,
+					"speedup": 29.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.113,
+					"speedup": 8.88,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.151,
+					"speedup": 6.62,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.019,
+					"speedup": 52.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.496,
+					"speedup": 2.02,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.00659,
+					"speedup": 152,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.01,
+					"speedup": 0.991,
+					"passesWon": "7/20",
+					"p": "0.263",
+					"verdict": "tie"
+				},
+				"standalone": {
+					"ratio": 0.998,
+					"speedup": 1,
+					"passesWon": "11/20",
+					"p": "0.824",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "parse items morph",
+			"mode": "parse",
+			"name": "items morph",
+			"measures": "100 items { id, name, count }, each count a numeric string parsed to a number: a transform below the root, which a library copies or writes into its input",
+			"medianNs": {
+				"valibot": 21400,
+				"zod": 16300,
+				"zodCompiled": 2380,
+				"zodMini": 34900,
+				"typebox": 780000,
+				"arktype": 1540,
+				"standalone": 1640,
+				"standaloneFirst": 1540
+			},
+			"iqrNs": {
+				"valibot": [21100, 21900],
+				"zod": [15700, 17100],
+				"zodCompiled": [2340, 2470],
+				"zodMini": [34200, 35500],
+				"typebox": [773000, 789000],
+				"arktype": [1520, 1570],
+				"standalone": [1550, 2850],
+				"standaloneFirst": [1510, 1580]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0768,
+					"speedup": 13,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.101,
+					"speedup": 9.89,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.69,
+					"speedup": 1.45,
+					"passesWon": "13/20",
+					"p": "0.263",
+					"verdict": "tie"
+				},
+				"zodMini": {
+					"ratio": 0.0471,
+					"speedup": 21.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.00211,
+					"speedup": 475,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.07,
+					"speedup": 0.936,
+					"passesWon": "6/20",
+					"p": "0.115",
+					"verdict": "tie"
+				},
+				"standaloneFirst": {
+					"ratio": 1.07,
+					"speedup": 0.937,
+					"passesWon": "6/20",
+					"p": "0.115",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0719,
+					"speedup": 13.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0948,
+					"speedup": 10.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.646,
+					"speedup": 1.55,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0441,
+					"speedup": 22.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.00197,
+					"speedup": 507,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1,
+					"speedup": 0.999,
+					"passesWon": "10/20",
+					"p": "1.000",
+					"verdict": "tie"
+				},
+				"standalone": {
+					"ratio": 0.937,
+					"speedup": 1.07,
+					"passesWon": "14/20",
+					"p": "0.115",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "parse items defaults",
+			"mode": "parse",
+			"name": "items defaults",
+			"measures": "100 items { id, name }, each missing a defaulted boolean the output must hold",
+			"medianNs": {
+				"valibot": 16100,
+				"zod": 4760,
+				"zodCompiled": 2680,
+				"zodMini": 26600,
+				"ajv": 781,
+				"typebox": 70900,
+				"arktype": 1110,
+				"standalone": 1120,
+				"standaloneFirst": 1230
+			},
+			"iqrNs": {
+				"valibot": [16000, 16400],
+				"zod": [4720, 4890],
+				"zodCompiled": [2620, 2850],
+				"zodMini": [26400, 27000],
+				"ajv": [767, 823],
+				"typebox": [70000, 71800],
+				"arktype": [1080, 1180],
+				"standalone": [1090, 1160],
+				"standaloneFirst": [1150, 1260]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0695,
+					"speedup": 14.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.235,
+					"speedup": 4.25,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.418,
+					"speedup": 2.39,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0422,
+					"speedup": 23.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 1.43,
+					"speedup": 0.697,
+					"passesWon": "1/20",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"typebox": {
+					"ratio": 0.0158,
+					"speedup": 63.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.01,
+					"speedup": 0.995,
+					"passesWon": "11/20",
+					"p": "0.824",
+					"verdict": "tie"
+				},
+				"standaloneFirst": {
+					"ratio": 0.914,
+					"speedup": 1.09,
+					"passesWon": "15/20",
+					"p": "0.041",
+					"verdict": "win"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.076,
+					"speedup": 13.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.257,
+					"speedup": 3.89,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.457,
+					"speedup": 2.19,
+					"passesWon": "19/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0461,
+					"speedup": 21.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 1.57,
+					"speedup": 0.637,
+					"passesWon": "1/20",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"typebox": {
+					"ratio": 0.0173,
+					"speedup": 57.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.1,
+					"speedup": 0.91,
+					"passesWon": "8/20",
+					"p": "0.503",
+					"verdict": "tie"
+				},
+				"standalone": {
+					"ratio": 1.09,
+					"speedup": 0.914,
+					"passesWon": "5/20",
+					"p": "0.041",
+					"verdict": "loss"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 0,
+					"loss": 1,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "parse moltar morph",
+			"mode": "parse",
+			"name": "moltar morph",
+			"measures": "moltar's object with its nested `num` a numeric string parsed to a number",
+			"medianNs": {
+				"valibot": 530,
+				"zod": 256,
+				"zodCompiled": 33.7,
+				"zodMini": 886,
+				"typebox": 32800,
+				"arktype": 21.2,
+				"standalone": 22.1,
+				"standaloneFirst": 21
+			},
+			"iqrNs": {
+				"valibot": [525, 540],
+				"zod": [244, 311],
+				"zodCompiled": [31.5, 34.5],
+				"zodMini": [876, 899],
+				"typebox": [32100, 34000],
+				"arktype": [20.9, 21.8],
+				"standalone": [21.9, 22.8],
+				"standaloneFirst": [20.7, 21.9]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0418,
+					"speedup": 23.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0863,
+					"speedup": 11.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.658,
+					"speedup": 1.52,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.025,
+					"speedup": 40,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.000674,
+					"speedup": 1480,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.05,
+					"speedup": 0.956,
+					"passesWon": "4/20",
+					"p": "0.012",
+					"verdict": "loss"
+				},
+				"standaloneFirst": {
+					"ratio": 1.05,
+					"speedup": 0.948,
+					"passesWon": "3/20",
+					"p": "0.003",
+					"verdict": "loss"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0396,
+					"speedup": 25.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0818,
+					"speedup": 12.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.624,
+					"speedup": 1.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0237,
+					"speedup": 42.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.000639,
+					"speedup": 1560,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.992,
+					"speedup": 1.01,
+					"passesWon": "12/20",
+					"p": "0.503",
+					"verdict": "tie"
+				},
+				"standalone": {
+					"ratio": 0.948,
+					"speedup": 1.05,
+					"passesWon": "17/20",
+					"p": "0.003",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "parse tree",
+			"mode": "parse",
+			"name": "tree",
+			"measures": "a recursive { id, children: node[] } tree, depth 3, 3 children per node (40 nodes)",
+			"armNotes": {
+				"zodCompiled": "runs Zod's runtime parser, since z.compile refuses recursive schemas"
+			},
+			"medianNs": {
+				"valibot": 5030,
+				"zod": 8740,
+				"zodCompiled": 8790,
+				"zodMini": 15200,
+				"typia": 2330,
+				"ajv": 884,
+				"typebox": 340,
+				"arktype": 221,
+				"standalone": 210,
+				"standaloneFirst": 215
+			},
+			"iqrNs": {
+				"valibot": [4940, 5200],
+				"zod": [8650, 8930],
+				"zodCompiled": [8710, 9030],
+				"zodMini": [15100, 15500],
+				"typia": [2280, 2350],
+				"ajv": [871, 903],
+				"typebox": [336, 355],
+				"arktype": [216, 227],
+				"standalone": [205, 217],
+				"standaloneFirst": [207, 222]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0417,
+					"speedup": 24,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.024,
+					"speedup": 41.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0239,
+					"speedup": 41.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0138,
+					"speedup": 72.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.0899,
+					"speedup": 11.1,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.237,
+					"speedup": 4.21,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.616,
+					"speedup": 1.62,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.951,
+					"speedup": 1.05,
+					"passesWon": "16/20",
+					"p": "0.012",
+					"verdict": "win"
+				},
+				"standaloneFirst": {
+					"ratio": 0.974,
+					"speedup": 1.03,
+					"passesWon": "13/20",
+					"p": "0.263",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0428,
+					"speedup": 23.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0246,
+					"speedup": 40.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0245,
+					"speedup": 40.8,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0142,
+					"speedup": 70.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.0923,
+					"speedup": 10.8,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.244,
+					"speedup": 4.1,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.633,
+					"speedup": 1.58,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.976,
+					"speedup": 1.02,
+					"passesWon": "15/20",
+					"p": "0.041",
+					"verdict": "win"
+				},
+				"standalone": {
+					"ratio": 1.03,
+					"speedup": 0.974,
+					"passesWon": "7/20",
+					"p": "0.263",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "strip moltar",
+			"mode": "strip",
+			"name": "moltar",
+			"measures": "moltar's object with an undeclared key at each level; the output must omit them (zod and valibot's default object mode, ajv removeAdditional, TypeBox Clean, typia validatePrune)",
+			"medianNs": {
+				"valibot": 460,
+				"zod": 134,
+				"zodCompiled": 17.6,
+				"zodMini": 781,
+				"typia": 454,
+				"ajv": 614,
+				"typebox": 7760,
+				"arktype": 13.5,
+				"standalone": 12.4,
+				"standaloneFirst": 13.3
+			},
+			"iqrNs": {
+				"valibot": [450, 471],
+				"zod": [130, 138],
+				"zodCompiled": [17.2, 18.1],
+				"zodMini": [747, 795],
+				"typia": [451, 464],
+				"ajv": [607, 650],
+				"typebox": [7570, 8170],
+				"arktype": [13.3, 13.9],
+				"standalone": [12.2, 12.7],
+				"standaloneFirst": [12.4, 17.6]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.027,
+					"speedup": 37,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0927,
+					"speedup": 10.8,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.707,
+					"speedup": 1.41,
+					"passesWon": "19/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0159,
+					"speedup": 62.8,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.0274,
+					"speedup": 36.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.0202,
+					"speedup": 49.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.0016,
+					"speedup": 624,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.92,
+					"speedup": 1.09,
+					"passesWon": "19/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standaloneFirst": {
+					"ratio": 0.936,
+					"speedup": 1.07,
+					"passesWon": "15/20",
+					"p": "0.041",
+					"verdict": "win"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.0289,
+					"speedup": 34.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.099,
+					"speedup": 10.1,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.756,
+					"speedup": 1.32,
+					"passesWon": "16/20",
+					"p": "0.012",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.017,
+					"speedup": 58.8,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.0293,
+					"speedup": 34.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.0216,
+					"speedup": 46.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.00171,
+					"speedup": 584,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.983,
+					"speedup": 1.02,
+					"passesWon": "13/20",
+					"p": "0.263",
+					"verdict": "tie"
+				},
+				"standalone": {
+					"ratio": 1.07,
+					"speedup": 0.936,
+					"passesWon": "5/20",
+					"p": "0.041",
+					"verdict": "loss"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "strip product",
+			"mode": "strip",
+			"name": "product",
+			"measures": "Product with 3 undeclared keys at different depths, removed from the output",
+			"medianNs": {
+				"valibot": 6270,
+				"zod": 5610,
+				"zodCompiled": 1320,
+				"zodMini": 9930,
+				"typia": 4110,
+				"ajv": 2810,
+				"typebox": 40600,
+				"arktype": 648,
+				"standalone": 652,
+				"standaloneFirst": 639
+			},
+			"iqrNs": {
+				"valibot": [5820, 6430],
+				"zod": [5540, 5740],
+				"zodCompiled": [1310, 1340],
+				"zodMini": [9840, 10200],
+				"typia": [4050, 4200],
+				"ajv": [2770, 2980],
+				"typebox": [40300, 41000],
+				"arktype": [640, 689],
+				"standalone": [634, 661],
+				"standaloneFirst": [635, 680]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.104,
+					"speedup": 9.61,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.116,
+					"speedup": 8.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.494,
+					"speedup": 2.02,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0656,
+					"speedup": 15.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.159,
+					"speedup": 6.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.232,
+					"speedup": 4.32,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.016,
+					"speedup": 62.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.01,
+					"speedup": 0.995,
+					"passesWon": "11/20",
+					"p": "0.824",
+					"verdict": "tie"
+				},
+				"standaloneFirst": {
+					"ratio": 1.02,
+					"speedup": 0.981,
+					"passesWon": "8/20",
+					"p": "0.503",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.102,
+					"speedup": 9.8,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.114,
+					"speedup": 8.77,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.484,
+					"speedup": 2.06,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0644,
+					"speedup": 15.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.156,
+					"speedup": 6.42,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.227,
+					"speedup": 4.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.0157,
+					"speedup": 63.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.986,
+					"speedup": 1.01,
+					"passesWon": "13/20",
+					"p": "0.263",
+					"verdict": "tie"
+				},
+				"standalone": {
+					"ratio": 0.981,
+					"speedup": 1.02,
+					"passesWon": "12/20",
+					"p": "0.503",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "issues moltar",
+			"mode": "issues",
+			"name": "moltar",
+			"measures": "invalid moltar (one nested boolean is a string); every error, raw, without message text where a library can skip it",
+			"medianNs": {
+				"valibot": 742,
+				"zod": 1940,
+				"zodCompiled": 1880,
+				"zodMini": 2730,
+				"typia": 277,
+				"ajv": 28.7,
+				"typebox": 9920,
+				"arktype": 275,
+				"standalone": 64
+			},
+			"iqrNs": {
+				"valibot": [731, 748],
+				"zod": [1860, 2020],
+				"zodCompiled": [1830, 1920],
+				"zodMini": [2650, 2830],
+				"typia": [273, 289],
+				"ajv": [27.4, 30.4],
+				"typebox": [9800, 10100],
+				"arktype": [256, 287],
+				"standalone": [62, 65.7]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0863,
+					"speedup": 11.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0329,
+					"speedup": 30.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0341,
+					"speedup": 29.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0234,
+					"speedup": 42.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.231,
+					"speedup": 4.32,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 2.23,
+					"speedup": 0.449,
+					"passesWon": "1/20",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"typebox": {
+					"ratio": 0.00645,
+					"speedup": 155,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.233,
+					"speedup": 4.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 0,
+					"loss": 1,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				}
+			}
+		},
+		{
+			"id": "issues moltar strict",
+			"mode": "issues",
+			"name": "moltar strict",
+			"measures": "valid moltar values plus undeclared keys, rejected; every error, raw",
+			"medianNs": {
+				"valibot": 901,
+				"zod": 2280,
+				"zodCompiled": 2260,
+				"zodMini": 3110,
+				"typia": 1270,
+				"ajv": 69.8,
+				"typebox": 14700,
+				"arktype": 265,
+				"standalone": 134
+			},
+			"iqrNs": {
+				"valibot": [896, 925],
+				"zod": [2260, 2370],
+				"zodCompiled": [2230, 2350],
+				"zodMini": [3060, 3130],
+				"typia": [1210, 1350],
+				"ajv": [66.1, 72.2],
+				"typebox": [14400, 15100],
+				"arktype": [254, 269],
+				"standalone": [131, 137]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.149,
+					"speedup": 6.73,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0588,
+					"speedup": 17,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0592,
+					"speedup": 16.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.043,
+					"speedup": 23.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.105,
+					"speedup": 9.51,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 1.92,
+					"speedup": 0.521,
+					"passesWon": "0/20",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"typebox": {
+					"ratio": 0.0091,
+					"speedup": 110,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.505,
+					"speedup": 1.98,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 0,
+					"loss": 1,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				}
+			}
+		},
+		{
+			"id": "issues product",
+			"mode": "issues",
+			"name": "product",
+			"measures": "Product with 16 errors across 4 levels of nesting; every error, raw",
+			"medianNs": {
+				"valibot": 10100,
+				"zod": 18300,
+				"zodCompiled": 24200,
+				"zodMini": 22900,
+				"typia": 12300,
+				"ajv": 1350,
+				"typebox": 67000,
+				"arktype": 2420,
+				"standalone": 1230
+			},
+			"iqrNs": {
+				"valibot": [9880, 10300],
+				"zod": [17200, 19200],
+				"zodCompiled": [17400, 26400],
+				"zodMini": [22400, 24100],
+				"typia": [11800, 12900],
+				"ajv": [1320, 1370],
+				"typebox": [65400, 68800],
+				"arktype": [2360, 2530],
+				"standalone": [1220, 1260]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.122,
+					"speedup": 8.21,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0673,
+					"speedup": 14.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.051,
+					"speedup": 19.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0538,
+					"speedup": 18.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.101,
+					"speedup": 9.95,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.916,
+					"speedup": 1.09,
+					"passesWon": "18/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.0184,
+					"speedup": 54.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.51,
+					"speedup": 1.96,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				}
+			}
+		},
+		{
+			"id": "issues items",
+			"mode": "issues",
+			"name": "items",
+			"measures": "100 items, the 51st invalid; every error, raw",
+			"medianNs": {
+				"valibot": 16100,
+				"zod": 6610,
+				"zodCompiled": 6700,
+				"zodMini": 27000,
+				"typia": 3200,
+				"ajv": 539,
+				"typebox": 450000,
+				"arktype": 740,
+				"standalone": 398
+			},
+			"iqrNs": {
+				"valibot": [15700, 16300],
+				"zod": [6420, 6840],
+				"zodCompiled": [6550, 7050],
+				"zodMini": [26300, 27700],
+				"typia": [3140, 3290],
+				"ajv": [528, 555],
+				"typebox": [430000, 462000],
+				"arktype": [716, 759],
+				"standalone": [395, 407]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0247,
+					"speedup": 40.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0602,
+					"speedup": 16.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0593,
+					"speedup": 16.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0148,
+					"speedup": 67.8,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.124,
+					"speedup": 8.03,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.738,
+					"speedup": 1.35,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.000884,
+					"speedup": 1130,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.538,
+					"speedup": 1.86,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				}
+			}
+		},
+		{
+			"id": "issues patterns",
+			"mode": "issues",
+			"name": "patterns",
+			"measures": "3 strings matching /^[ab]+$/, the last 10,001 chars long and failing at its end (regex-bound); every error, raw",
+			"medianNs": {
+				"valibot": 7820,
+				"zod": 10400,
+				"zodCompiled": 18300,
+				"zodMini": 10100,
+				"typia": 15700,
+				"ajv": 7450,
+				"typebox": 18500,
+				"arktype": 3430,
+				"standalone": 3310
+			},
+			"iqrNs": {
+				"valibot": [7750, 7910],
+				"zod": [10100, 10600],
+				"zodCompiled": [18000, 18900],
+				"zodMini": [9930, 10300],
+				"typia": [15500, 15800],
+				"ajv": [7430, 7530],
+				"typebox": [18200, 19000],
+				"arktype": [3400, 3500],
+				"standalone": [3300, 3350]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.424,
+					"speedup": 2.36,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.32,
+					"speedup": 3.13,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.181,
+					"speedup": 5.52,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.327,
+					"speedup": 3.06,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.211,
+					"speedup": 4.73,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.445,
+					"speedup": 2.25,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.179,
+					"speedup": 5.58,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.968,
+					"speedup": 1.03,
+					"passesWon": "18/20",
+					"p": "<.001",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				}
+			}
+		},
+		{
+			"id": "errors moltar",
+			"mode": "errors",
+			"name": "moltar",
+			"measures": "as issues moltar, with each error's message text",
+			"medianNs": {
+				"valibot": 747,
+				"zod": 1760,
+				"zodCompiled": 1700,
+				"zodMini": 2670,
+				"typia": 524,
+				"ajv": 29.4,
+				"typebox": 9850,
+				"arktype": 1150,
+				"standalone": 93.2
+			},
+			"iqrNs": {
+				"valibot": [734, 752],
+				"zod": [1720, 1880],
+				"zodCompiled": [1690, 1740],
+				"zodMini": [2620, 2710],
+				"typia": [509, 533],
+				"ajv": [29, 30.1],
+				"typebox": [9710, 9910],
+				"arktype": [1120, 1200],
+				"standalone": [89.6, 96.2]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.125,
+					"speedup": 8.01,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0529,
+					"speedup": 18.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0548,
+					"speedup": 18.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.035,
+					"speedup": 28.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.178,
+					"speedup": 5.62,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 3.17,
+					"speedup": 0.316,
+					"passesWon": "0/20",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"typebox": {
+					"ratio": 0.00946,
+					"speedup": 106,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.0807,
+					"speedup": 12.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 0,
+					"loss": 1,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				}
+			}
+		},
+		{
+			"id": "errors moltar strict",
+			"mode": "errors",
+			"name": "moltar strict",
+			"measures": "as issues moltar strict, with message text",
+			"medianNs": {
+				"valibot": 907,
+				"zod": 2320,
+				"zodCompiled": 2270,
+				"zodMini": 3110,
+				"typia": 1520,
+				"ajv": 75.4,
+				"typebox": 14800,
+				"arktype": 768,
+				"standalone": 186
+			},
+			"iqrNs": {
+				"valibot": [897, 922],
+				"zod": [2260, 2340],
+				"zodCompiled": [2200, 2380],
+				"zodMini": [3050, 3170],
+				"typia": [1450, 1590],
+				"ajv": [71.9, 78],
+				"typebox": [14600, 15100],
+				"arktype": [740, 825],
+				"standalone": [178, 189]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.205,
+					"speedup": 4.88,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0802,
+					"speedup": 12.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.082,
+					"speedup": 12.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0599,
+					"speedup": 16.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.123,
+					"speedup": 8.15,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 2.47,
+					"speedup": 0.405,
+					"passesWon": "3/20",
+					"p": "0.003",
+					"verdict": "loss"
+				},
+				"typebox": {
+					"ratio": 0.0126,
+					"speedup": 79.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.242,
+					"speedup": 4.13,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 0,
+					"loss": 1,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				}
+			}
+		},
+		{
+			"id": "errors product",
+			"mode": "errors",
+			"name": "product",
+			"measures": "as issues product, with message text",
+			"medianNs": {
+				"valibot": 10000,
+				"zod": 19000,
+				"zodCompiled": 17400,
+				"zodMini": 23700,
+				"typia": 14900,
+				"ajv": 1350,
+				"typebox": 67200,
+				"arktype": 10500,
+				"standalone": 2250
+			},
+			"iqrNs": {
+				"valibot": [9910, 10100],
+				"zod": [18000, 19700],
+				"zodCompiled": [16600, 19300],
+				"zodMini": [22900, 25400],
+				"typia": [14800, 15500],
+				"ajv": [1330, 1380],
+				"typebox": [65700, 69000],
+				"arktype": [10200, 10800],
+				"standalone": [2190, 2300]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.224,
+					"speedup": 4.46,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.118,
+					"speedup": 8.46,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.129,
+					"speedup": 7.76,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0946,
+					"speedup": 10.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.151,
+					"speedup": 6.64,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 1.67,
+					"speedup": 0.599,
+					"passesWon": "0/20",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"typebox": {
+					"ratio": 0.0334,
+					"speedup": 29.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.214,
+					"speedup": 4.67,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 0,
+					"loss": 1,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				}
+			}
+		},
+		{
+			"id": "errors items",
+			"mode": "errors",
+			"name": "items",
+			"measures": "as issues items, with message text",
+			"medianNs": {
+				"valibot": 16000,
+				"zod": 6310,
+				"zodCompiled": 6840,
+				"zodMini": 26900,
+				"typia": 3550,
+				"ajv": 538,
+				"typebox": 332000,
+				"arktype": 1710,
+				"standalone": 449
+			},
+			"iqrNs": {
+				"valibot": [15700, 16300],
+				"zod": [6170, 6460],
+				"zodCompiled": [6560, 7290],
+				"zodMini": [26500, 27500],
+				"typia": [3430, 3610],
+				"ajv": [536, 541],
+				"typebox": [328000, 338000],
+				"arktype": [1660, 1770],
+				"standalone": [442, 459]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0281,
+					"speedup": 35.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0712,
+					"speedup": 14.1,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0656,
+					"speedup": 15.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0167,
+					"speedup": 60,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.127,
+					"speedup": 7.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.835,
+					"speedup": 1.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.00135,
+					"speedup": 739,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.262,
+					"speedup": 3.82,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				}
+			}
+		},
+		{
+			"id": "errors patterns",
+			"mode": "errors",
+			"name": "patterns",
+			"measures": "as issues patterns, with message text",
+			"medianNs": {
+				"valibot": 7860,
+				"zod": 10300,
+				"zodCompiled": 18300,
+				"zodMini": 10200,
+				"typia": 16000,
+				"ajv": 7490,
+				"typebox": 18300,
+				"arktype": 3710,
+				"standalone": 3380
+			},
+			"iqrNs": {
+				"valibot": [7750, 7960],
+				"zod": [10100, 10400],
+				"zodCompiled": [17900, 18800],
+				"zodMini": [9900, 10300],
+				"typia": [15800, 16400],
+				"ajv": [7440, 7510],
+				"typebox": [18100, 18600],
+				"arktype": [3680, 3760],
+				"standalone": [3350, 3420]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.43,
+					"speedup": 2.33,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.328,
+					"speedup": 3.05,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.185,
+					"speedup": 5.42,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.332,
+					"speedup": 3.01,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.211,
+					"speedup": 4.73,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.451,
+					"speedup": 2.22,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.184,
+					"speedup": 5.43,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.91,
+					"speedup": 1.1,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				}
+			}
+		},
+		{
+			"id": "first moltar",
+			"mode": "first",
+			"name": "moltar",
+			"measures": "invalid moltar, first error only with its message (standaloneFirst = errors: \"first\" build)",
+			"armNotes": {
+				"zod": "has no first-error mode and reports every error",
+				"zodCompiled": "has no first-error mode and reports every error",
+				"zodMini": "has no first-error mode and reports every error",
+				"arktype": "has no first-error mode and reports every error"
+			},
+			"medianNs": {
+				"valibot": 720,
+				"zod": 1780,
+				"zodCompiled": 1730,
+				"zodMini": 2720,
+				"typia": 5890,
+				"ajv": 29.8,
+				"typebox": 9820,
+				"arktype": 1160,
+				"standalone": 94.2,
+				"standaloneFirst": 83.7
+			},
+			"iqrNs": {
+				"valibot": [710, 723],
+				"zod": [1760, 1900],
+				"zodCompiled": [1690, 1770],
+				"zodMini": [2650, 2840],
+				"typia": [5830, 5990],
+				"ajv": [29.2, 30.6],
+				"typebox": [9780, 9980],
+				"arktype": [1100, 1190],
+				"standalone": [88.9, 99.2],
+				"standaloneFirst": [79.9, 86.9]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.131,
+					"speedup": 7.64,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0529,
+					"speedup": 18.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0545,
+					"speedup": 18.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0346,
+					"speedup": 28.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.016,
+					"speedup": 62.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 3.16,
+					"speedup": 0.316,
+					"passesWon": "0/20",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"typebox": {
+					"ratio": 0.00959,
+					"speedup": 104,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.0813,
+					"speedup": 12.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standaloneFirst": {
+					"ratio": 1.13,
+					"speedup": 0.888,
+					"passesWon": "2/20",
+					"p": "<.001",
+					"verdict": "loss"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.116,
+					"speedup": 8.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.047,
+					"speedup": 21.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0484,
+					"speedup": 20.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0308,
+					"speedup": 32.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.0142,
+					"speedup": 70.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 2.81,
+					"speedup": 0.356,
+					"passesWon": "0/20",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"typebox": {
+					"ratio": 0.00852,
+					"speedup": 117,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.0722,
+					"speedup": 13.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standalone": {
+					"ratio": 0.888,
+					"speedup": 1.13,
+					"passesWon": "18/20",
+					"p": "<.001",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standaloneFirst",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 0,
+					"loss": 1,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"standalone": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				}
+			}
+		},
+		{
+			"id": "first moltar strict",
+			"mode": "first",
+			"name": "moltar strict",
+			"measures": "as first moltar, on the strict object with undeclared keys",
+			"armNotes": {
+				"zod": "has no first-error mode and reports every error",
+				"zodCompiled": "has no first-error mode and reports every error",
+				"zodMini": "has no first-error mode and reports every error",
+				"arktype": "has no first-error mode and reports every error"
+			},
+			"medianNs": {
+				"valibot": 706,
+				"zod": 2320,
+				"zodCompiled": 2250,
+				"zodMini": 3130,
+				"typia": 6250,
+				"ajv": 32.6,
+				"typebox": 6280,
+				"arktype": 735,
+				"standalone": 98.3,
+				"standaloneFirst": 80.1
+			},
+			"iqrNs": {
+				"valibot": [698, 720],
+				"zod": [2300, 2380],
+				"zodCompiled": [2210, 2320],
+				"zodMini": [3100, 3170],
+				"typia": [6170, 6360],
+				"ajv": [31.7, 33.4],
+				"typebox": [6190, 6350],
+				"arktype": [719, 765],
+				"standalone": [94.3, 100],
+				"standaloneFirst": [78.2, 81.9]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.139,
+					"speedup": 7.18,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0424,
+					"speedup": 23.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0437,
+					"speedup": 22.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0314,
+					"speedup": 31.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.0157,
+					"speedup": 63.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 3.02,
+					"speedup": 0.332,
+					"passesWon": "0/20",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"typebox": {
+					"ratio": 0.0157,
+					"speedup": 63.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.134,
+					"speedup": 7.47,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standaloneFirst": {
+					"ratio": 1.23,
+					"speedup": 0.815,
+					"passesWon": "0/20",
+					"p": "<.001",
+					"verdict": "loss"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.113,
+					"speedup": 8.82,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0345,
+					"speedup": 29,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0356,
+					"speedup": 28.1,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0256,
+					"speedup": 39.1,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.0128,
+					"speedup": 78,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 2.46,
+					"speedup": 0.407,
+					"passesWon": "0/20",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"typebox": {
+					"ratio": 0.0127,
+					"speedup": 78.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.109,
+					"speedup": 9.17,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standalone": {
+					"ratio": 0.815,
+					"speedup": 1.23,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standaloneFirst",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 0,
+					"loss": 1,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"standalone": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				}
+			}
+		},
+		{
+			"id": "first product",
+			"mode": "first",
+			"name": "product",
+			"measures": "invalid Product, first error only",
+			"armNotes": {
+				"zod": "has no first-error mode and reports every error",
+				"zodCompiled": "has no first-error mode and reports every error",
+				"zodMini": "has no first-error mode and reports every error",
+				"arktype": "has no first-error mode and reports every error"
+			},
+			"medianNs": {
+				"valibot": 393,
+				"zod": 19300,
+				"zodCompiled": 17200,
+				"zodMini": 22900,
+				"typia": 6190,
+				"ajv": 28.6,
+				"typebox": 6630,
+				"arktype": 10100,
+				"standalone": 158,
+				"standaloneFirst": 59.7
+			},
+			"iqrNs": {
+				"valibot": [391, 395],
+				"zod": [18200, 19700],
+				"zodCompiled": [16300, 18300],
+				"zodMini": [22700, 23700],
+				"typia": [6040, 6310],
+				"ajv": [27.8, 29.1],
+				"typebox": [6580, 6790],
+				"arktype": [9930, 10400],
+				"standalone": [152, 160],
+				"standaloneFirst": [57.8, 61.8]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.402,
+					"speedup": 2.49,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.00821,
+					"speedup": 122,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0092,
+					"speedup": 109,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.00691,
+					"speedup": 145,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.0255,
+					"speedup": 39.1,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 5.53,
+					"speedup": 0.181,
+					"passesWon": "0/20",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"typebox": {
+					"ratio": 0.0238,
+					"speedup": 41.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.0156,
+					"speedup": 64,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standaloneFirst": {
+					"ratio": 2.65,
+					"speedup": 0.378,
+					"passesWon": "0/20",
+					"p": "<.001",
+					"verdict": "loss"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.152,
+					"speedup": 6.59,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0031,
+					"speedup": 323,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.00347,
+					"speedup": 288,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.00261,
+					"speedup": 383,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.00965,
+					"speedup": 104,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 2.09,
+					"speedup": 0.479,
+					"passesWon": "0/20",
+					"p": "<.001",
+					"verdict": "loss"
+				},
+				"typebox": {
+					"ratio": 0.009,
+					"speedup": 111,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.0059,
+					"speedup": 170,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standalone": {
+					"ratio": 0.378,
+					"speedup": 2.65,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standaloneFirst",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 0,
+					"loss": 1,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"standalone": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				}
+			}
+		},
+		{
+			"id": "first items",
+			"mode": "first",
+			"name": "items",
+			"measures": "invalid items, first error only",
+			"armNotes": {
+				"zod": "has no first-error mode and reports every error",
+				"zodCompiled": "has no first-error mode and reports every error",
+				"zodMini": "has no first-error mode and reports every error",
+				"arktype": "has no first-error mode and reports every error"
+			},
+			"medianNs": {
+				"valibot": 8400,
+				"zod": 6450,
+				"zodCompiled": 6680,
+				"zodMini": 27400,
+				"typia": 7500,
+				"ajv": 351,
+				"typebox": 174000,
+				"arktype": 1700,
+				"standalone": 323,
+				"standaloneFirst": 320
+			},
+			"iqrNs": {
+				"valibot": [8290, 8650],
+				"zod": [6140, 6670],
+				"zodCompiled": [6440, 6830],
+				"zodMini": [26400, 31000],
+				"typia": [7340, 7610],
+				"ajv": [345, 362],
+				"typebox": [172000, 177000],
+				"arktype": [1660, 1750],
+				"standalone": [316, 336],
+				"standaloneFirst": [306, 328]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.0384,
+					"speedup": 26,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0501,
+					"speedup": 20,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0484,
+					"speedup": 20.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0118,
+					"speedup": 84.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.0431,
+					"speedup": 23.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.919,
+					"speedup": 1.09,
+					"passesWon": "19/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.00185,
+					"speedup": 540,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.19,
+					"speedup": 5.26,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standaloneFirst": {
+					"ratio": 1.01,
+					"speedup": 0.99,
+					"passesWon": "4/20",
+					"p": "0.012",
+					"verdict": "loss"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.038,
+					"speedup": 26.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0496,
+					"speedup": 20.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.0479,
+					"speedup": 20.9,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0117,
+					"speedup": 85.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.0426,
+					"speedup": 23.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.909,
+					"speedup": 1.1,
+					"passesWon": "19/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.00183,
+					"speedup": 546,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.188,
+					"speedup": 5.32,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standalone": {
+					"ratio": 0.99,
+					"speedup": 1.01,
+					"passesWon": "16/20",
+					"p": "0.012",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standaloneFirst",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"standalone": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "first patterns",
+			"mode": "first",
+			"name": "patterns",
+			"measures": "invalid patterns, first error only",
+			"armNotes": {
+				"zod": "has no first-error mode and reports every error",
+				"zodCompiled": "has no first-error mode and reports every error",
+				"zodMini": "has no first-error mode and reports every error",
+				"arktype": "has no first-error mode and reports every error"
+			},
+			"medianNs": {
+				"valibot": 7780,
+				"zod": 10300,
+				"zodCompiled": 18400,
+				"zodMini": 10200,
+				"typia": 22100,
+				"ajv": 7510,
+				"typebox": 18400,
+				"arktype": 3730,
+				"standalone": 3400,
+				"standaloneFirst": 3350
+			},
+			"iqrNs": {
+				"valibot": [7740, 7830],
+				"zod": [10200, 10400],
+				"zodCompiled": [17800, 18700],
+				"zodMini": [10000, 10300],
+				"typia": [21800, 22400],
+				"ajv": [7430, 7600],
+				"typebox": [18200, 18700],
+				"arktype": [3690, 3760],
+				"standalone": [3370, 3430],
+				"standaloneFirst": [3340, 3380]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.436,
+					"speedup": 2.29,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.33,
+					"speedup": 3.03,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.185,
+					"speedup": 5.41,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.334,
+					"speedup": 3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.154,
+					"speedup": 6.51,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.452,
+					"speedup": 2.21,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.184,
+					"speedup": 5.43,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.91,
+					"speedup": 1.1,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standaloneFirst": {
+					"ratio": 1.01,
+					"speedup": 0.986,
+					"passesWon": "5/20",
+					"p": "0.041",
+					"verdict": "loss"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.43,
+					"speedup": 2.32,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.326,
+					"speedup": 3.07,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.182,
+					"speedup": 5.48,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.329,
+					"speedup": 3.04,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.152,
+					"speedup": 6.6,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.446,
+					"speedup": 2.24,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.182,
+					"speedup": 5.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.897,
+					"speedup": 1.11,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"standalone": {
+					"ratio": 0.986,
+					"speedup": 1.01,
+					"passesWon": "15/20",
+					"p": "0.041",
+					"verdict": "win"
+				}
+			},
+			"replication": {
+				"of": "standaloneFirst",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"standalone": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "allows moltar",
+			"mode": "allows",
+			"name": "moltar",
+			"measures": "boolean check of valid moltar (zod has no boolean API: safeParse(...).success; compiled zod: .validate)",
+			"medianNs": {
+				"valibot": 454,
+				"zod": 133,
+				"zodCompiled": 8,
+				"zodMini": 792,
+				"typia": 4.89,
+				"ajv": 14.2,
+				"typebox": 98.1,
+				"arktype": 3.71,
+				"standalone": 3.72,
+				"standaloneFirst": 3.71
+			},
+			"iqrNs": {
+				"valibot": [444, 462],
+				"zod": [129, 142],
+				"zodCompiled": [7.91, 8.08],
+				"zodMini": [761, 813],
+				"typia": [4.82, 5.1],
+				"ajv": [14, 14.6],
+				"typebox": [96.8, 99.7],
+				"arktype": [3.69, 3.8],
+				"standalone": [3.69, 3.79],
+				"standaloneFirst": [3.69, 3.75]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.00819,
+					"speedup": 122,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.028,
+					"speedup": 35.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.465,
+					"speedup": 2.15,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.0047,
+					"speedup": 213,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.761,
+					"speedup": 1.31,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.262,
+					"speedup": 3.81,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.0379,
+					"speedup": 26.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1,
+					"speedup": 0.999,
+					"passesWon": "12/20",
+					"p": "0.503",
+					"verdict": "tie"
+				},
+				"standaloneFirst": {
+					"ratio": 1,
+					"speedup": 0.999,
+					"passesWon": "9/20",
+					"p": "0.824",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.00818,
+					"speedup": 122,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.028,
+					"speedup": 35.7,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.464,
+					"speedup": 2.16,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.00469,
+					"speedup": 213,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.76,
+					"speedup": 1.32,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.262,
+					"speedup": 3.82,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.0378,
+					"speedup": 26.4,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1,
+					"speedup": 1,
+					"passesWon": "10/20",
+					"p": "1.000",
+					"verdict": "tie"
+				},
+				"standalone": {
+					"ratio": 0.999,
+					"speedup": 1,
+					"passesWon": "11/20",
+					"p": "0.824",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		},
+		{
+			"id": "allows moltar invalid",
+			"mode": "allows",
+			"name": "moltar invalid",
+			"measures": "boolean check of invalid moltar",
+			"medianNs": {
+				"valibot": 711,
+				"zod": 230,
+				"zodCompiled": 8.52,
+				"zodMini": 1010,
+				"typia": 4.79,
+				"ajv": 27.9,
+				"typebox": 96.4,
+				"arktype": 3.42,
+				"standalone": 3.41,
+				"standaloneFirst": 3.47
+			},
+			"iqrNs": {
+				"valibot": [701, 715],
+				"zod": [221, 246],
+				"zodCompiled": [8.45, 8.61],
+				"zodMini": [994, 1030],
+				"typia": [4.75, 4.84],
+				"ajv": [27.2, 28.8],
+				"typebox": [95.6, 97.5],
+				"arktype": [3.4, 3.46],
+				"standalone": [3.39, 3.47],
+				"standaloneFirst": [3.44, 3.51]
+			},
+			"standaloneVs": {
+				"valibot": {
+					"ratio": 0.00479,
+					"speedup": 209,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0148,
+					"speedup": 67.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.4,
+					"speedup": 2.5,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.00337,
+					"speedup": 296,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.712,
+					"speedup": 1.41,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.122,
+					"speedup": 8.19,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.0353,
+					"speedup": 28.3,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 0.995,
+					"speedup": 1,
+					"passesWon": "11/20",
+					"p": "0.824",
+					"verdict": "tie"
+				},
+				"standaloneFirst": {
+					"ratio": 0.982,
+					"speedup": 1.02,
+					"passesWon": "14/20",
+					"p": "0.115",
+					"verdict": "tie"
+				}
+			},
+			"standaloneFirstVs": {
+				"valibot": {
+					"ratio": 0.00488,
+					"speedup": 205,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zod": {
+					"ratio": 0.0151,
+					"speedup": 66.2,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodCompiled": {
+					"ratio": 0.407,
+					"speedup": 2.46,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"zodMini": {
+					"ratio": 0.00344,
+					"speedup": 291,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typia": {
+					"ratio": 0.725,
+					"speedup": 1.38,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"ajv": {
+					"ratio": 0.124,
+					"speedup": 8.04,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"typebox": {
+					"ratio": 0.036,
+					"speedup": 27.8,
+					"passesWon": "20/20",
+					"p": "<.001",
+					"verdict": "win"
+				},
+				"arktype": {
+					"ratio": 1.01,
+					"speedup": 0.987,
+					"passesWon": "5/20",
+					"p": "0.041",
+					"verdict": "loss"
+				},
+				"standalone": {
+					"ratio": 1.02,
+					"speedup": 0.982,
+					"passesWon": "6/20",
+					"p": "0.115",
+					"verdict": "tie"
+				}
+			},
+			"replication": {
+				"of": "standalone",
+				"valibot": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zod": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodCompiled": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"zodMini": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typia": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"ajv": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"typebox": {
+					"win": 1,
+					"loss": 0,
+					"tie": 0
+				},
+				"arktype": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				},
+				"standaloneFirst": {
+					"win": 0,
+					"loss": 0,
+					"tie": 1
+				}
+			}
+		}
+	],
+	"size": {
+		"login": {
+			"valibot": {
+				"min": 4311,
+				"gzip": 1678
+			},
+			"zod": {
+				"min": 84932,
+				"gzip": 25055
+			},
+			"zodCompiled": {
+				"min": 115382,
+				"gzip": 32929
+			},
+			"zodMini": {
+				"min": 14531,
+				"gzip": 5110
+			},
+			"typia": {
+				"min": 2777,
+				"gzip": 1235
+			},
+			"ajv": {
+				"min": 1795,
+				"gzip": 626
+			},
+			"typebox": {
+				"min": 164938,
+				"gzip": 41859
+			},
+			"arktype": {
+				"min": 258052,
+				"gzip": 82198
+			},
+			"standalone": {
+				"min": 3581,
+				"gzip": 1704
+			},
+			"standaloneFirst": {
+				"min": 3629,
+				"gzip": 1719
+			},
+			"standaloneSmallest": {
+				"min": 2423,
+				"gzip": 1228
+			}
+		},
+		"moltar": {
+			"valibot": {
+				"min": 3767,
+				"gzip": 1462
+			},
+			"zod": {
+				"min": 90481,
+				"gzip": 26400
+			},
+			"zodCompiled": {
+				"min": 120910,
+				"gzip": 34219
+			},
+			"zodMini": {
+				"min": 13509,
+				"gzip": 4714
+			},
+			"typia": {
+				"min": 3276,
+				"gzip": 1229
+			},
+			"ajv": {
+				"min": 3710,
+				"gzip": 757
+			},
+			"typebox": {
+				"min": 165060,
+				"gzip": 41880
+			},
+			"arktype": {
+				"min": 258167,
+				"gzip": 82241
+			},
+			"standalone": {
+				"min": 4177,
+				"gzip": 1772
+			},
+			"standaloneFirst": {
+				"min": 4225,
+				"gzip": 1787
+			},
+			"standaloneSmallest": {
+				"min": 2495,
+				"gzip": 1254
+			}
+		},
+		"shop": {
+			"valibot": {
+				"min": 10438,
+				"gzip": 3626
+			},
+			"zod": {
+				"min": 95461,
+				"gzip": 28082
+			},
+			"zodCompiled": {
+				"min": 125899,
+				"gzip": 35896
+			},
+			"zodMini": {
+				"min": 31704,
+				"gzip": 10202
+			},
+			"typia": {
+				"min": 112199,
+				"gzip": 16714
+			},
+			"ajv": {
+				"min": 65903,
+				"gzip": 8838
+			},
+			"typebox": {
+				"min": 167724,
+				"gzip": 42902
+			},
+			"arktype": {
+				"min": 259949,
+				"gzip": 83111
+			},
+			"standalone": {
+				"min": 27773,
+				"gzip": 8148
+			},
+			"standaloneFirst": {
+				"min": 27823,
+				"gzip": 8161
+			},
+			"standaloneSmallest": {
+				"min": 7916,
+				"gzip": 3522
+			}
+		},
+		"saas": {
+			"valibot": {
+				"min": 15758,
+				"gzip": 5173
+			},
+			"arktype": {
+				"min": 263406,
+				"gzip": 84256
+			},
+			"standalone": {
+				"min": 63290,
+				"gzip": 14355
+			},
+			"standaloneFirst": {
+				"min": 63340,
+				"gzip": 14344
+			},
+			"standaloneSmallest": {
+				"min": 13411,
+				"gzip": 5090
+			}
+		}
+	},
+	"startup": {
+		"login": {
+			"valibot": {
+				"coldMs": 3.32,
+				"warmMs": 3.25,
+				"heapMiB": 3.48
+			},
+			"zod": {
+				"coldMs": 12.2,
+				"warmMs": 9.44,
+				"heapMiB": 4.12
+			},
+			"zodCompiled": {
+				"coldMs": 13.1,
+				"warmMs": 10.3,
+				"heapMiB": 4.18
+			},
+			"zodMini": {
+				"coldMs": 5.35,
+				"warmMs": 4.76,
+				"heapMiB": 3.6
+			},
+			"typia": {
+				"coldMs": 3.26,
+				"warmMs": 3.3,
+				"heapMiB": 3.47
+			},
+			"ajv": {
+				"coldMs": 3.2,
+				"warmMs": 3.19,
+				"heapMiB": 3.47
+			},
+			"typebox": {
+				"coldMs": 16.8,
+				"warmMs": 10.7,
+				"heapMiB": 4.38
+			},
+			"arktype": {
+				"coldMs": 31.7,
+				"warmMs": 22.4,
+				"heapMiB": 5.1
+			},
+			"standalone": {
+				"coldMs": 3.34,
+				"warmMs": 3.04,
+				"heapMiB": 3.49
+			},
+			"standaloneFirst": {
+				"coldMs": 3.36,
+				"warmMs": 2.93,
+				"heapMiB": 3.49
+			}
+		},
+		"moltar": {
+			"valibot": {
+				"coldMs": 3.36,
+				"warmMs": 3.35,
+				"heapMiB": 3.49
+			},
+			"zod": {
+				"coldMs": 13.7,
+				"warmMs": 9.95,
+				"heapMiB": 4.21
+			},
+			"zodCompiled": {
+				"coldMs": 13.5,
+				"warmMs": 10.6,
+				"heapMiB": 4.29
+			},
+			"zodMini": {
+				"coldMs": 5.15,
+				"warmMs": 4.96,
+				"heapMiB": 3.6
+			},
+			"typia": {
+				"coldMs": 3.15,
+				"warmMs": 2.9,
+				"heapMiB": 3.47
+			},
+			"ajv": {
+				"coldMs": 3.01,
+				"warmMs": 2.84,
+				"heapMiB": 3.47
+			},
+			"typebox": {
+				"coldMs": 16.5,
+				"warmMs": 10.6,
+				"heapMiB": 4.38
+			},
+			"arktype": {
+				"coldMs": 29.9,
+				"warmMs": 20.8,
+				"heapMiB": 5.07
+			},
+			"standalone": {
+				"coldMs": 3.07,
+				"warmMs": 2.94,
+				"heapMiB": 3.49
+			},
+			"standaloneFirst": {
+				"coldMs": 3.15,
+				"warmMs": 2.92,
+				"heapMiB": 3.49
+			}
+		},
+		"shop": {
+			"valibot": {
+				"coldMs": 5.27,
+				"warmMs": 5.25,
+				"heapMiB": 3.62
+			},
+			"zod": {
+				"coldMs": 25.3,
+				"warmMs": 21.4,
+				"heapMiB": 4.77
+			},
+			"zodCompiled": {
+				"coldMs": 30.3,
+				"warmMs": 26,
+				"heapMiB": 4.9
+			},
+			"zodMini": {
+				"coldMs": 10.8,
+				"warmMs": 9.56,
+				"heapMiB": 3.99
+			},
+			"typia": {
+				"coldMs": 8.04,
+				"warmMs": 5.42,
+				"heapMiB": 3.73
+			},
+			"ajv": {
+				"coldMs": 8.62,
+				"warmMs": 7.99,
+				"heapMiB": 3.72
+			},
+			"typebox": {
+				"coldMs": 43.3,
+				"warmMs": 35.2,
+				"heapMiB": 5.45
+			},
+			"arktype": {
+				"coldMs": 50.6,
+				"warmMs": 41.2,
+				"heapMiB": 6.03
+			},
+			"standalone": {
+				"coldMs": 5.79,
+				"warmMs": 4.04,
+				"heapMiB": 3.68
+			},
+			"standaloneFirst": {
+				"coldMs": 5.86,
+				"warmMs": 4.15,
+				"heapMiB": 3.68
+			}
+		}
+	}
+}

@@ -1,18 +1,27 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	registeredReference,
+	throwOnDefault,
 	writeUnboundableMessage,
-	type ArkErrors
+	type ArkErrors,
+	type BaseRoot
 } from "@ark/schema"
 import { match, scope, type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
-import {
-	doubleAtMessage,
-	throwOnDefault,
-	type Match
-} from "arktype/internal/match.ts"
+import { doubleAtMessage, type Match } from "arktype/internal/match.ts"
+import { discriminantJsonOf } from "arksets/internal"
 
 const throwDefaultRef = registeredReference(throwOnDefault)
+
+// a case's morph is inline, so its reference is read from the matcher by name
+const caseReference = (m: { internal: BaseRoot }, name: string) =>
+	registeredReference(
+		m.internal.select({
+			kind: "morph",
+			where: morph => morph.morphs[0].name === name,
+			method: "assertFind"
+		}).morphs[0]
+	)
 
 contextualize(() => {
 	it("single object", () => {
@@ -29,9 +38,8 @@ contextualize(() => {
 
 		const getBad = () => sizeOf(true)
 		attest<() => never>(getBad)
-		// ideally would also include number | bigint, discriminated out
 		attest(getBad).throws.snap(
-			"TraversalError: must be a string or an object (was boolean)"
+			"TraversalError: must be a number, a bigint, a string or an array (was boolean)"
 		)
 	})
 
@@ -88,8 +96,9 @@ contextualize(() => {
 
 		const getBad = () => matcher(null)
 		attest<() => never>(getBad)
-		// this sucks and should be improved- result of discrimination
-		attest(getBad).throws.snap("TraversalError: must be boolean (was null)")
+		attest(getBad).throws.snap(
+			"TraversalError: must be a string, a number, false or true (was null)"
+		)
 	})
 
 	it("multiple case blocks", () => {
@@ -255,14 +264,14 @@ contextualize(() => {
 						max: { exclusive: true, rule: 10 },
 						min: { exclusive: true, rule: 0 }
 					},
-					morphs: ["$ark._matchOverlapping1"]
+					morphs: [caseReference(m, "_matchOverlapping1")]
 				},
 				{
 					in: { domain: "number", min: { exclusive: true, rule: 0 } },
-					morphs: ["$ark._matchOverlapping2"]
+					morphs: [caseReference(m, "_matchOverlapping2")]
 				},
-				{ in: "number", morphs: ["$ark._matchOverlapping3"] },
-				{ in: {}, morphs: ["$ark._matchOverlapping4"] }
+				{ in: "number", morphs: [caseReference(m, "_matchOverlapping3")] },
+				{ in: {}, morphs: [caseReference(m, "_matchOverlapping4")] }
 			],
 			ordered: true
 		})
@@ -298,10 +307,10 @@ contextualize(() => {
 						max: { exclusive: true, rule: 10 },
 						min: { exclusive: true, rule: 0 }
 					},
-					morphs: ["$ark._matchPreservedOne"]
+					morphs: [caseReference(m, "_matchPreservedOne")]
 				},
-				{ in: "number", morphs: ["$ark._matchPreservedTwo"] },
-				{ in: {}, morphs: ["$ark._matchPreservedDefault"] }
+				{ in: "number", morphs: [caseReference(m, "_matchPreservedTwo")] },
+				{ in: {}, morphs: [caseReference(m, "_matchPreservedDefault")] }
 			],
 			ordered: true
 		})
@@ -320,8 +329,7 @@ contextualize(() => {
 
 			// @ts-expect-error
 			attest(() => m({}))
-				// (was missing) would be better here, undefined is a result of discrimination
-				.throws.snap("TraversalError: n must be 0 or 1 (was undefined)")
+				.throws.snap("TraversalError: n must be 0 or 1 (was missing)")
 				.type.errors.snap(
 					"Argument of type '{}' is not assignable to parameter of type '{ n: 0; } | { n: 1; }'."
 				)
@@ -385,14 +393,14 @@ contextualize(() => {
 							required: [{ key: "foo", value: "string" }],
 							domain: "object"
 						},
-						morphs: ["$ark._atCasesParam1"]
+						morphs: [caseReference(m, "_atCasesParam1")]
 					},
 					{
 						in: {
 							required: [{ key: "foo", value: "number" }],
 							domain: "object"
 						},
-						morphs: ["$ark._atCasesParam2"]
+						morphs: [caseReference(m, "_atCasesParam2")]
 					}
 				],
 				ordered: true,
@@ -429,14 +437,14 @@ contextualize(() => {
 							required: [{ key: "id", value: { unit: 0 } }],
 							domain: "object"
 						},
-						morphs: ["$ark._atAfterIn1"]
+						morphs: [caseReference(m, "_atAfterIn1")]
 					},
 					{
 						in: {
 							required: [{ key: "id", value: "number" }],
 							domain: "object"
 						},
-						morphs: ["$ark._atAfterIn2"]
+						morphs: [caseReference(m, "_atAfterIn2")]
 					}
 				],
 				ordered: true,
@@ -574,26 +582,29 @@ contextualize(() => {
 			)
 			.default("assert")
 
-		attest(m.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(m.internal.assertHasKind("union"))).snap({
 			kind: "domain",
 			path: ["id"],
 			cases: {
-				'"string"': { in: {}, morphs: ["$ark._matchOrderedDiscrimination1"] },
+				'"string"': {
+					in: {},
+					morphs: [caseReference(m, "_matchOrderedDiscrimination1")]
+				},
 				'"number"': {
 					kind: "unit",
 					path: ["kind"],
 					cases: {
 						'"string"': {
 							in: {},
-							morphs: ["$ark._matchOrderedDiscrimination2"]
+							morphs: [caseReference(m, "_matchOrderedDiscrimination2")]
 						},
 						'"number"': {
 							in: {},
-							morphs: ["$ark._matchOrderedDiscrimination3"]
+							morphs: [caseReference(m, "_matchOrderedDiscrimination3")]
 						},
 						default: {
 							in: { required: [{ key: "id", value: "number" }] },
-							morphs: ["$ark._matchOrderedDiscrimination4"]
+							morphs: [caseReference(m, "_matchOrderedDiscrimination4")]
 						}
 					}
 				},
@@ -603,11 +614,11 @@ contextualize(() => {
 					cases: {
 						'"string"': {
 							in: {},
-							morphs: ["$ark._matchOrderedDiscrimination2"]
+							morphs: [caseReference(m, "_matchOrderedDiscrimination2")]
 						},
 						'"number"': {
 							in: {},
-							morphs: ["$ark._matchOrderedDiscrimination3"]
+							morphs: [caseReference(m, "_matchOrderedDiscrimination3")]
 						}
 					}
 				}
@@ -622,6 +633,24 @@ contextualize(() => {
 		(In: { id: number }) => number
 	]
 >`)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1445
+	it("discriminates reordered cases with disjoint inputs", () => {
+		const Dir = type({ "[string]": "unknown" })
+
+		const m = match
+			.case(["string", Dir], () => -1)
+			.case([Dir, "string"], () => 1)
+			.case(["string", "string"], () => 2)
+			.case([Dir, Dir], () => 0)
+			.default(() => null)
+
+		attest(m(["a", {}])).equals(-1)
+		attest(m([{}, "a"])).equals(1)
+		attest(m(["b", "a"])).equals(2)
+		attest(m([{}, {}])).equals(0)
+		attest(m([0, 0])).equals(null)
 	})
 
 	it("allows number keys", () => {
@@ -641,11 +670,14 @@ contextualize(() => {
 >`)
 		attest(numeric.json).snap({
 			branches: [
-				{ in: { unit: 0 }, morphs: ["$ark.numericZeroCase"] },
-				{ in: { unit: 1 }, morphs: ["$ark.numericOneCase"] }
+				{
+					in: { unit: 0 },
+					morphs: [caseReference(numeric, "numericZeroCase")]
+				},
+				{ in: { unit: 1 }, morphs: [caseReference(numeric, "numericOneCase")] }
 			],
 			ordered: true,
-			meta: { onFail: "$ark.throwOnDefault" }
+			meta: { onFail: throwDefaultRef }
 		})
 	})
 
@@ -698,7 +730,7 @@ contextualize(() => {
 		attest(b).equals(3)
 		// @ts-expect-error
 		attest(() => discriminateValue({ oneValue: 3 }))
-			.throws.snap("TraversalError: id must be 1 or 2 (was undefined)")
+			.throws.snap("TraversalError: id must be 1 or 2 (was missing)")
 			.type.errors("Property 'id' is missing in type '{ oneValue: number; }'")
 	})
 
@@ -787,14 +819,11 @@ contextualize(() => {
 			c: o => o.kind,
 			default: "assert"
 		})
-		attest(discriminate).type.toString.snap(`Match<
-	unknown,
-	[
-		(In: { kind: "a" }) => "a",
-		(In: { kind: "b" }) => "b",
-		(In: { kind: "c" }) => "c"
-	]
->`)
+		attest<
+			(
+				In: { kind: "a" } | { kind: "b" } | { kind: "c" }
+			) => Out<"a" | "b" | "c">
+		>(discriminate.t)
 
 		const a = discriminate({ kind: "a", value: "a" })
 		const b = discriminate({ kind: "b", value: "b" })
@@ -863,6 +892,19 @@ contextualize(() => {
 					d: o => o.value
 				})
 		).type.errors("d must be a possible string value")
+	})
+
+	it("string keys are values, not definitions", () => {
+		const kindOf = match.in("string").strings({
+			number: s => s,
+			"string[]": s => s,
+			default: "reject"
+		})
+		attest<"number" | ArkErrors>(kindOf("number")).equals("number")
+		attest(kindOf("string[]")).equals("string[]")
+		attest(kindOf("5").toString()).snap(
+			'must be "number" or "string[]" (was "5")'
+		)
 	})
 
 	it("string cases no default", () => {

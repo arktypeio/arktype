@@ -1,0 +1,6 @@
+{
+	"title": "Blog",
+	"description": "Release announcements and deep dives",
+	"root": true,
+	"pages": ["index", "3.0", "2.2", "arkregex", "2.1", "2.0"]
+}

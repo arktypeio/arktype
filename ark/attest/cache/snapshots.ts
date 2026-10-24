@@ -37,13 +37,16 @@ export const resolveSnapshotPath = (
 	return join(dirname(testFile), customPath ?? "assert.snapshots.json")
 }
 
+const readSnapshotFile = (path: string): Record<string, unknown> =>
+	existsSync(path) ? readJson(path) : {}
+
 export const getSnapshotByName = (
 	file: string,
 	name: string,
 	customPath: string | undefined
 ): object => {
 	const snapshotPath = resolveSnapshotPath(file, customPath)
-	return (readJson(snapshotPath)?.[basename(file)] as any)?.[name]
+	return (readSnapshotFile(snapshotPath)[basename(file)] as any)?.[name]
 }
 
 /**
@@ -114,7 +117,7 @@ export const updateExternalSnapshot = ({
 	customPath
 }: ExternalSnapshotArgs): void => {
 	const snapshotPath = resolveSnapshotPath(position.file, customPath)
-	const snapshotData = readJson(snapshotPath) ?? {}
+	const snapshotData = readSnapshotFile(snapshotPath)
 	const fileKey = basename(position.file)
 	snapshotData[fileKey] = {
 		...(snapshotData[fileKey] as object),

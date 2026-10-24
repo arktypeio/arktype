@@ -32,12 +32,14 @@ export const repoDirs = {
 }
 
 export const packageScopes = [
+	"aot",
 	"attest",
 	"fast-check",
 	"fs",
 	"json-schema",
 	"regex",
 	"schema",
+	"sets",
 	"type",
 	"util"
 ] as const
@@ -74,3 +76,42 @@ export const packagesByScope = flatMorph(
 )
 
 export const packages = Object.values(packagesByScope)
+
+const workspaceDependenciesOf = (pkg: ArkPackage) =>
+	Object.keys({
+		...pkg.json.dependencies,
+		...pkg.json.optionalDependencies,
+		...pkg.json.peerDependencies
+	}).flatMap(name => packages.filter(dependency => dependency.name === name))
+
+/** each package after those it depends on, so none is installable before them */
+export const publishOrder: ArkPackage[] = []
+
+const addToPublishOrder = (pkg: ArkPackage, dependents: ArkPackage[]) => {
+	if (publishOrder.includes(pkg)) return
+	if (dependents.includes(pkg)) {
+		throwInternalError(
+			`${[...dependents, pkg].map(({ name }) => name).join(" -> ")} is a cycle`
+		)
+	}
+	for (const dependency of workspaceDependenciesOf(pkg))
+		addToPublishOrder(dependency, [...dependents, pkg])
+	publishOrder.push(pkg)
+}
+
+for (const pkg of packages) addToPublishOrder(pkg, [])
+
+/** the versions of a package on npm, none if it isn't there yet */
+export const publishedVersionsOf = async (name: string): Promise<string[]> => {
+	const response = await fetch(
+		`https://registry.npmjs.org/${name.replace("/", "%2f")}`,
+		{ headers: { accept: "application/vnd.npm.install-v1+json" } }
+	)
+	if (response.status === 404) return []
+	if (!response.ok)
+		throw new Error(`npm responded ${response.status} for ${name}`)
+	const { versions } = (await response.json()) as {
+		versions: Record<string, unknown>
+	}
+	return Object.keys(versions)
+}

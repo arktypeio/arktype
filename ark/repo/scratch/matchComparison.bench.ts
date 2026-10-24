@@ -18,14 +18,14 @@ const tsPatternMatch3 = (n: 31 | 32 | 33) =>
 bench("case(3, invoke)", () => {
 	arkMatch3(31)
 	arkMatch3(32)
-	arkMatch3(33)
-}).mean([832.71, "ns"])
+	return arkMatch3(33)
+}).median()
 
 bench("ts-pattern case(3, invoke)", () => {
 	tsPatternMatch3(31)
 	tsPatternMatch3(32)
-	tsPatternMatch3(33)
-}).mean([384.92, "ns"])
+	return tsPatternMatch3(33)
+}).median()
 
 const arkMatch10 = match
 	.case("0n", n => `${n}` as const)
@@ -57,23 +57,23 @@ const tsPatternMatch10 = (n: typeof arkMatch10.inferIn) =>
 bench("case(10, invoke first)", () => {
 	arkMatch10(0n)
 	arkMatch10(1n)
-	arkMatch10(2n)
-}).mean([892.59, "ns"])
+	return arkMatch10(2n)
+}).median()
 
 bench("ts-pattern case(10, invoke first)", () => {
 	tsPatternMatch10(0n)
 	tsPatternMatch10(1n)
-	tsPatternMatch10(2n)
-}).mean([796.69, "ns"])
+	return tsPatternMatch10(2n)
+}).median()
 
 bench("case(10, invoke last)", () => {
 	arkMatch10(7n)
 	arkMatch10(8n)
-	arkMatch10(9n)
-}).mean([977.74, "ns"])
+	return arkMatch10(9n)
+}).median()
 
 bench("ts-pattern case(10, invoke last)", () => {
 	tsPatternMatch10(7n)
 	tsPatternMatch10(8n)
-	tsPatternMatch10(9n)
-}).mean([1.63, "us"])
+	return tsPatternMatch10(9n)
+}).median()

@@ -26,7 +26,7 @@ import type { validateAst } from "./parser/ast/validate.ts"
 import type { inferDefinition } from "./parser/definition.ts"
 import { RuntimeState } from "./parser/reduce/dynamic.ts"
 import type { s, StaticState } from "./parser/reduce/static.ts"
-import { terminatingChars } from "./parser/shift/tokens.ts"
+import { shiftUntilTerminator } from "./parser/shift/tokens.ts"
 import { parseUntilFinalizer } from "./parser/string.ts"
 import type { Scope } from "./scope.ts"
 import type { Type } from "./type.ts"
@@ -233,8 +233,8 @@ export const parseGenericParamName = (
 	result: GenericParamDef[],
 	ctx: BaseParseContext
 ): GenericParamDef[] => {
-	scanner.shiftUntilNonWhitespace()
-	const name = scanner.shiftUntilLookahead(terminatingChars)
+	scanner.shiftPastWhitespace()
+	const name = shiftUntilTerminator(scanner)
 	if (name === "") {
 		// if we've reached the end of the string and have parsed at least one
 		// param, return the valid result
@@ -242,7 +242,7 @@ export const parseGenericParamName = (
 		return throwParseError(emptyGenericParameterMessage)
 	}
 
-	scanner.shiftUntilNonWhitespace()
+	scanner.shiftPastWhitespace()
 
 	return _parseOptionalConstraint(scanner, name, result, ctx)
 }
@@ -281,7 +281,7 @@ const _parseOptionalConstraint = (
 	result: GenericParamDef[],
 	ctx: BaseParseContext
 ): GenericParamDef[] => {
-	scanner.shiftUntilNonWhitespace()
+	scanner.shiftPastWhitespace()
 	if (scanner.unscanned.startsWith(extendsToken))
 		scanner.jumpForward(extendsToken.length)
 	else {

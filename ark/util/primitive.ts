@@ -17,10 +17,17 @@ export type SerializedPrimitive =
 
 export type SerializablePrimitive = inferDomain<keyof SerializedPrimitives>
 
+// a union's errors print the same data, so cache the last string
+let lastString: string | undefined
+let lastSerialized: string
+
 export const serializePrimitive = <value extends SerializablePrimitive>(
 	value: value
 ): serializePrimitive<value> =>
-	(typeof value === "string" ? JSON.stringify(value)
+	(typeof value === "string" ?
+		value === lastString ?
+			lastSerialized
+		:	(lastSerialized = JSON.stringify((lastString = value)))
 	: typeof value === "bigint" ? `${value}n`
 	: `${value}`) as never
 

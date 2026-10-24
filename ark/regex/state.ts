@@ -43,6 +43,7 @@ export declare namespace State {
 	enum UnnamedCaptureKind {
 		indexed,
 		lookaround,
+		negativeLookaround,
 		noncapturing
 	}
 
@@ -221,10 +222,17 @@ export declare namespace s {
 				groups: init
 				capture: last["capture"]
 				branches: last["branches"]
-				sequence: pushQuantifiable<last["sequence"], last["root"]>
+				sequence: s["capture"] extends LookaroundKind ?
+					// pushed directly so a quantifier can't follow it, but its
+					// captures are still counted
+					pushQuantifiable<
+						pushQuantifiable<last["sequence"], last["root"]>,
+						GroupTree<State.Group.finalize<s>, s["capture"]>
+					>
+				:	pushQuantifiable<last["sequence"], last["root"]>
 				root: s["capture"] extends CapturedGroupKind ?
 					GroupTree<State.Group.finalize<s>, s["capture"]>
-				: s["capture"] extends State.UnnamedCaptureKind.lookaround ? ""
+				: s["capture"] extends LookaroundKind ? ""
 				: // non-capturing
 					State.Group.finalize<s>
 				caseInsensitive: last["caseInsensitive"]
@@ -389,7 +397,7 @@ export declare namespace UnionTree {
 	export type finalize<
 		self extends UnionTree,
 		ctx extends FinalizationContext
-	> = _finalize<self["ast"], [], ctx>
+	> = _finalize<self["ast"], [], ctx, ctx["captures"]>
 
 	type FinalizedBranch = {
 		pattern: string
@@ -404,15 +412,44 @@ export declare namespace UnionTree {
 	type _finalize<
 		astBranches extends unknown[],
 		acc extends FinalizedBranch[],
-		ctx extends FinalizationContext
+		ctx extends FinalizationContext,
+		priorCaptures extends IndexedCaptures
 	> =
 		astBranches extends [infer head, ...infer tail] ?
-			finalizeTree<head, ctx> extends infer r ?
+			finalizeTree<head, branchContextOf<ctx, priorCaptures>> extends infer r ?
 				r extends FinalizationResult ?
-					_finalize<tail, finalizeBranch<acc, ctx, r>, ctx>
+					_finalize<
+						tail,
+						finalizeBranch<acc, ctx, r>,
+						ctx,
+						r["ctx"]["captures"]
+					>
 				:	never
 			:	never
-		:	finalizeBranches<keyof acc, acc, ctx>
+		:	finalizeBranches<
+				keyof acc,
+				acc,
+				ctx,
+				extractNewCaptures<ctx["captures"], priorCaptures>
+			>
+
+	// groups in previous branches can't participate in a match, so they are
+	// captured as undefined
+	type branchContextOf<
+		ctx extends FinalizationContext,
+		priorCaptures extends IndexedCaptures
+	> =
+		priorCaptures["length"] extends ctx["captures"]["length"] ? ctx
+		:	FinalizationContext.from<{
+				captures: {
+					[i in keyof priorCaptures]: i extends keyof ctx["captures"] ?
+						priorCaptures[i]
+					:	undefined
+				}
+				names: ctx["names"]
+				flags: ctx["flags"]
+				errors: ctx["errors"]
+			}>
 
 	type finalizeBranch<
 		acc extends FinalizedBranch[],
@@ -422,42 +459,32 @@ export declare namespace UnionTree {
 		...acc,
 		FinalizedBranch.from<{
 			pattern: r["pattern"]
-			captures: finalizeBranchCaptures<acc, ctx, r>
+			captures: extractNewCaptures<ctx["captures"], r["ctx"]["captures"]>
 			// undefined will be added to named captures as needed
 			// by finalizeBranches since it can be done in one step
 			names: r["ctx"]["names"]
 		}>
 	]
 
-	type finalizeBranchCaptures<
-		acc extends FinalizedBranch[],
-		ctx extends FinalizationContext,
-		r extends FinalizationResult,
-		branchCaptures extends IndexedCaptures = extractNewCaptures<
-			ctx["captures"],
-			r["ctx"]["captures"]
-		>
-	> =
-		acc extends [] ? branchCaptures
-		: acc[0]["captures"] extends (
-			infer firstCaptureBranch extends IndexedCaptures
-		) ?
-			branchCaptures extends [] ?
-				{ [i in keyof firstCaptureBranch]: undefined }
-			:	[...{ [i in keyof firstCaptureBranch]: undefined }, ...branchCaptures]
-		:	never
-
 	type finalizeBranches<
 		i,
 		acc extends FinalizedBranch[],
-		ctx extends FinalizationContext
+		ctx extends FinalizationContext,
+		unionCaptures extends IndexedCaptures
 	> =
 		i extends keyof acc & NumberLiteral ?
 			FinalizationResult.from<{
 				pattern: acc[i]["pattern"]
 				ctx: {
 					flags: ctx["flags"]
-					captures: [...ctx["captures"], ...acc[i]["captures"]]
+					captures: [
+						...ctx["captures"],
+						...{
+							[j in keyof unionCaptures]: j extends keyof acc[i]["captures"] ?
+								acc[i]["captures"][j]
+							:	undefined
+						}
+					]
 					names: {
 						[k in unionKeyOf<acc[number]["names"]>]: k extends (
 							keyof acc[i]["names"]
@@ -473,6 +500,10 @@ export declare namespace UnionTree {
 
 export type CapturedGroupKind = string | State.UnnamedCaptureKind.indexed
 
+export type LookaroundKind =
+	| State.UnnamedCaptureKind.lookaround
+	| State.UnnamedCaptureKind.negativeLookaround
+
 export type IncompleteCaptureGroup = noSuggest<"incompleteCaptureGroup">
 
 export type IndexedCaptureOffset = noSuggest<"indexedCaptureOffset">
@@ -485,7 +516,9 @@ export type EmptyCaptures = [IndexedCaptureOffset]
 
 export interface GroupTree<
 	ast extends RegexAst = RegexAst,
-	capture extends CapturedGroupKind = CapturedGroupKind
+	capture extends CapturedGroupKind | LookaroundKind =
+		| CapturedGroupKind
+		| LookaroundKind
 > {
 	kind: "group"
 	capture: capture
@@ -536,7 +569,8 @@ export declare namespace GroupTree {
 		ctx extends FinalizationContext,
 		r extends FinalizationResult
 	> = FinalizationResult.from<{
-		pattern: r["pattern"]
+		// a lookaround consumes nothing
+		pattern: self["capture"] extends LookaroundKind ? "" : r["pattern"]
 		ctx: self["capture"] extends string ?
 			finalizeNamedCapture<
 				self["capture"],
@@ -546,7 +580,32 @@ export declare namespace GroupTree {
 			>
 		: self["capture"] extends State.UnnamedCaptureKind.indexed ?
 			finalizeUnnamedCapture<ctx["captures"]["length"], r["pattern"], r["ctx"]>
+		: self["capture"] extends State.UnnamedCaptureKind.negativeLookaround ?
+			finalizeNegativeLookaround<ctx, r["ctx"]>
 		:	r["ctx"]
+	}>
+
+	// a negative lookaround matches only when its groups don't, so they
+	// capture undefined
+	type finalizeNegativeLookaround<
+		base extends FinalizationContext,
+		result extends FinalizationContext,
+		lookaroundCaptures extends IndexedCaptures = extractNewCaptures<
+			base["captures"],
+			result["captures"]
+		>
+	> = FinalizationContext.from<{
+		captures: [
+			...base["captures"],
+			...{ [i in keyof lookaroundCaptures]: undefined }
+		]
+		names: {
+			[k in keyof result["names"]]: k extends keyof base["names"] ?
+				result["names"][k]
+			:	undefined
+		}
+		flags: result["flags"]
+		errors: result["errors"]
 	}>
 
 	type finalizeNamedCapture<

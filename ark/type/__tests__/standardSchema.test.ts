@@ -24,10 +24,73 @@ contextualize(() => {
 			foo: 5
 		}) as StandardSchemaV1.FailureResult
 
-		attest(badStandardOut.issues).instanceOf(type.errors)
-		attest(badStandardOut.issues.toString()).snap(
-			"foo must be a string (was a number)"
+		attest(Array.isArray(badStandardOut.issues)).equals(true)
+		attest(badStandardOut.issues.map(issue => issue.message)).snap([
+			"must be a string (was a number)"
+		])
+		attest(badStandardOut.issues[0].path).equals(["foo"])
+	})
+
+	it("an issue's message leaves its path to the consumer", () => {
+		const T = type({ a: type({ b: "string" }).or({ c: "number" }) })
+		const out = T["~standard"].validate({
+			a: {}
+		}) as StandardSchemaV1.FailureResult
+		attest(out.issues.map(issue => [issue.path, issue.message])).snap([
+			[
+				["a"],
+				"b must be a string (was missing) or c must be a number (was missing)"
+			]
+		])
+		// its errors still start with their path
+		attest(T({ a: {} }).toString()).snap(
+			"a.b must be a string (was missing) or a.c must be a number (was missing)"
 		)
+	})
+
+	it("nested standard schema issues", () => {
+		const User = type({ age: "number.integer" })
+		const Wrapped = type({ user: { "~standard": User["~standard"] } })
+
+		attest(Wrapped({ user: { age: 1.5 } }).toString()).snap(
+			"user.age must be an integer (was 1.5)"
+		)
+
+		const Other = type({
+			user: {
+				"~standard": {
+					version: 1,
+					vendor: "other",
+					validate: () => ({
+						issues: [{ message: "Expected an integer", path: ["age"] }]
+					})
+				}
+			}
+		})
+
+		attest(Other({ user: {} }).toString()).snap("user.age expected an integer")
+
+		const Union = type({ a: type({ b: "string" }).or({ c: "number" }) })
+		attest(
+			type({ x: { "~standard": Union["~standard"] } })({
+				x: { a: {} }
+			}).toString()
+		).snap(
+			"x.a b must be a string (was missing) or c must be a number (was missing)"
+		)
+	})
+
+	it("an embedded Standard Schema's empty issues fail", () => {
+		const T = type({
+			a: {
+				"~standard": {
+					version: 1,
+					vendor: "other",
+					validate: () => ({ issues: [] })
+				}
+			}
+		})
+		attest(T({ a: 1 }).toString()).snap("a is invalid")
 	})
 
 	it("can infer generic parameter from standard schema", () => {
@@ -122,9 +185,9 @@ contextualize(() => {
 			const standard: StandardJSONSchemaV1 = T
 			attest(() =>
 				standard["~standard"].jsonSchema.input({
-					target: "openapi-3.0"
+					target: "draft-04"
 				})
-			).throws(writeInvalidJsonSchemaTargetMessage("openapi-3.0"))
+			).throws(writeInvalidJsonSchemaTargetMessage("draft-04"))
 		})
 
 		it("converts what JSON Schema can't represent to {}", () => {
@@ -175,6 +238,23 @@ contextualize(() => {
 			})
 		})
 
+		it("drops a flagged pattern and a key JSON Schema can't express", () => {
+			const T = type({
+				name: /^a/i,
+				"[string <= 3]": "number",
+				"+": "reject"
+			})
+			const standard: StandardJSONSchemaV1 = T
+			attest(
+				standard["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: { name: { type: "string" } },
+				required: ["name"]
+			})
+		})
+
 		it("uses configured fallbacks", () => {
 			const T = type("bigint")
 			const standard: StandardJSONSchemaV1 = T
@@ -188,6 +268,95 @@ contextualize(() => {
 			).snap({
 				$schema: "https://json-schema.org/draft/2020-12/schema",
 				type: "integer"
+			})
+		})
+
+		// https://github.com/arktypeio/arktype/issues/1575
+		it("keeps defaults in the input schema", () => {
+			const T = type({
+				name: 'string = "Anon"',
+				tags: ["string[]", "=", () => ["a"]],
+				n: "string.numeric.parse = '1'"
+			})
+			attest(T["~standard"].jsonSchema.input({ target: "draft-2020-12" })).snap(
+				{
+					$schema: "https://json-schema.org/draft/2020-12/schema",
+					type: "object",
+					properties: {
+						n: {
+							type: "string",
+							pattern:
+								"^(?:(?!^-0\\.?0*(?:[Ee][+-]?\\d+)?$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?)(?:[Ee][+-]?\\d+)?)$",
+							default: "1"
+						},
+						name: { type: "string", default: "Anon" },
+						tags: { type: "array", items: { type: "string" }, default: ["a"] }
+					}
+				}
+			)
+			attest(
+				T["~standard"].jsonSchema.output({ target: "draft-2020-12" })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: {
+					n: { type: "number" },
+					name: { type: "string" },
+					tags: { type: "array", items: { type: "string" } }
+				},
+				required: ["n", "name", "tags"]
+			})
+			attest(
+				type(["number", "string = 'x'"])["~standard"].jsonSchema.input({
+					target: "draft-2020-12"
+				})
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "array",
+				minItems: 1,
+				prefixItems: [{ type: "number" }, { type: "string", default: "x" }],
+				items: false
+			})
+		})
+
+		it('allows keys "delete" removes in the input schema', () => {
+			const T = type({ name: "string" }).onUndeclaredKey("delete")
+			attest(T["~standard"].jsonSchema.input({ target: "draft-2020-12" })).snap(
+				{
+					$schema: "https://json-schema.org/draft/2020-12/schema",
+					type: "object",
+					properties: { name: { type: "string" } },
+					required: ["name"]
+				}
+			)
+			attest(
+				T["~standard"].jsonSchema.output({ target: "draft-2020-12" })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: { name: { type: "string" } },
+				required: ["name"],
+				additionalProperties: false
+			})
+		})
+
+		it("writes a morph's input without its configured fallback", () => {
+			const T = type({ n: "string.integer.parse" })
+			attest(
+				T["~standard"].jsonSchema.input({
+					target: "draft-2020-12",
+					libraryOptions: { fallback: { morph: () => ({ type: "null" }) } }
+				})
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: {
+					n: {
+						type: "string",
+						pattern: "^(?:(?!^-0$)-?(?:(?:0|[1-9]\\d*)))$"
+					}
+				},
+				required: ["n"]
 			})
 		})
 
@@ -205,7 +374,7 @@ contextualize(() => {
 					foo: {
 						type: "string",
 						pattern:
-							"^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$"
+							"^(?:(?!^-0\\.?0*(?:[Ee][+-]?\\d+)?$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?)(?:[Ee][+-]?\\d+)?)$"
 					}
 				},
 				required: ["foo"]

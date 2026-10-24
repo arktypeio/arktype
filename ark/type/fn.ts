@@ -1,6 +1,7 @@
 import type { BaseRoot, IntersectionNode } from "@ark/schema"
 import {
 	Callable,
+	functionNameOf,
 	throwParseError,
 	type applyElementLabels,
 	type conform,
@@ -130,10 +131,9 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 	raw: Fn
 	params: IntersectionNode
 	returns: BaseRoot
-	expression: string
 
 	constructor(raw: Fn, params: IntersectionNode, returns: BaseRoot) {
-		const typedName = `typed ${raw.name}`
+		const typedName = `typed ${functionNameOf(raw)}`
 		const typed = {
 			// assign to a key with the expected name to force it to be created that way
 			[typedName]: (...args: unknown[]) => {
@@ -147,8 +147,12 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 		this.raw = raw
 		this.params = params
 		this.returns = returns
+	}
 
-		let argsExpression = params.expression
+	// a standalone validator may lack an expression
+	get expression(): string {
+		let argsExpression = this.params.expression
+		if (argsExpression === undefined) return argsExpression
 		if (
 			argsExpression[0] === "[" &&
 			argsExpression[argsExpression.length - 1] === "]"
@@ -157,7 +161,7 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 		else if (argsExpression.endsWith("[]"))
 			argsExpression = `...${argsExpression}`
 
-		this.expression = `(${argsExpression}) => ${returns?.expression ?? "unknown"}`
+		return `(${argsExpression}) => ${this.returns?.expression ?? "unknown"}`
 	}
 }
 

@@ -1,22 +1,15 @@
 import {
 	domainDescriptions,
 	domainOf,
-	hasKey,
 	throwParseError,
 	type Domain as _Domain
 } from "@ark/util"
-import type {
-	BaseErrorContext,
-	BaseNormalizedSchema,
-	declareNode
-} from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { InternalBasis } from "./basis.ts"
 
@@ -30,25 +23,14 @@ export declare namespace Domain {
 	export interface Inner<domain extends NonEnumerable = NonEnumerable> {
 		readonly domain: domain
 		readonly numberAllowsNaN?: boolean
+		readonly numberAllowsInfinity?: boolean
 	}
-
-	export interface NormalizedSchema<
-		domain extends NonEnumerable = NonEnumerable
-	> extends BaseNormalizedSchema,
-			Inner<domain> {}
-
-	export type Schema<
-		// only domains with an infinite number of values are allowed as bases
-		domain extends NonEnumerable = NonEnumerable
-	> = domain | NormalizedSchema<domain>
 
 	export interface ErrorContext extends BaseErrorContext<"domain">, Inner {}
 
 	export interface Declaration
 		extends declareNode<{
 			kind: "domain"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 			errorContext: ErrorContext
 		}> {}
@@ -59,85 +41,89 @@ export declare namespace Domain {
 const implementation: nodeImplementationOf<Domain.Declaration> =
 	implementNode<Domain.Declaration>({
 		kind: "domain",
-		hasAssociatedError: true,
-		collapsibleKey: "domain",
+		ownsError: true,
+		collapseKey: "domain",
 		keys: {
 			domain: {},
-			numberAllowsNaN: {}
+			numberAllowsNaN: {},
+			numberAllowsInfinity: {}
 		},
-		normalize: schema =>
-			typeof schema === "string" ? { domain: schema }
-			: hasKey(schema, "numberAllowsNaN") && schema.domain !== "number" ?
-				throwParseError(Domain.writeBadAllowNanMessage(schema.domain))
-			:	schema,
-		applyConfig: (schema, config) =>
-			(
-				schema.numberAllowsNaN === undefined &&
-				schema.domain === "number" &&
-				config.numberAllowsNaN
-			) ?
-				{ ...schema, numberAllowsNaN: true }
-			:	schema,
+		applyConfig: (inner, config) => {
+			if (inner.domain !== "number") return inner
+			if (inner.numberAllowsNaN === undefined && config.numberAllowsNaN)
+				inner = { ...inner, numberAllowsNaN: true }
+			if (
+				inner.numberAllowsInfinity === undefined &&
+				config.numberAllowsInfinity
+			)
+				inner = { ...inner, numberAllowsInfinity: true }
+			return inner
+		},
 		defaults: {
-			description: node => domainDescriptions[node.domain],
-			actual: data =>
-				Number.isNaN(data) ? "NaN" : domainDescriptions[domainOf(data)]
-		},
-		intersections: {
-			domain: (l, r) =>
-				// since l === r is handled by default, remaining cases are disjoint
-				// outside those including options like numberAllowsNaN
-				l.domain === "number" && r.domain === "number" ?
-					l.numberAllowsNaN ?
-						r
-					:	l
-				:	Disjoint.init("domain", l, r)
+			description: node => domainDescriptions[node.domain]
 		}
 	})
 
 export class DomainNode extends InternalBasis<Domain.Declaration> {
-	readonly requiresNaNCheck: boolean =
+	constructor(...args: ConstructorParameters<typeof InternalBasis>) {
+		super(...args)
+		if (this.domain !== "number") {
+			if (this.numberAllowsNaN !== undefined)
+				throwParseError(Domain.writeBadAllowNanMessage(this.domain))
+			if (this.numberAllowsInfinity !== undefined)
+				throwParseError(Domain.writeBadAllowInfinityMessage(this.domain))
+		}
+	}
+
+	private readonly requiresNaNCheck =
 		this.domain === "number" && !this.numberAllowsNaN
 
+	private readonly checksInfinity =
+		this.domain === "number" && !this.numberAllowsInfinity
+
 	readonly traverseAllows: TraverseAllows =
-		this.requiresNaNCheck ?
+		this.requiresNaNCheck && this.checksInfinity ? data => Number.isFinite(data)
+		: this.requiresNaNCheck ?
 			data => typeof data === "number" && !Number.isNaN(data)
+		: this.checksInfinity ?
+			data =>
+				typeof data === "number" &&
+				data !== Number.POSITIVE_INFINITY &&
+				data !== Number.NEGATIVE_INFINITY
 		:	data => domainOf(data) === this.domain
 
-	readonly compiledCondition: string =
-		this.domain === "object" ?
-			`((typeof data === "object" && data !== null) || typeof data === "function")`
-		:	`typeof data === "${this.domain}"${this.requiresNaNCheck ? " && !Number.isNaN(data)" : ""}`
-
-	readonly compiledNegation: string =
-		this.domain === "object" ?
-			`((typeof data !== "object" || data === null) && typeof data !== "function")`
-		:	`typeof data !== "${this.domain}"${this.requiresNaNCheck ? " || Number.isNaN(data)" : ""}`
+	compileCondition(js: NodeCompiler, data: string): string {
+		return (
+			this.domain === "object" ?
+				// Apply's check is the one an object's Allows writes, so a bundle
+				// holding both compresses it away
+				js.traversalKind === "Apply" ?
+					`(${data} instanceof Object || Object(${data}) === ${data})`
+				:	`${data} !== null && (typeof ${data} === "object" || typeof ${data} === "function")`
+			: this.requiresNaNCheck && this.checksInfinity ?
+				`Number.isFinite(${data})`
+			:	`typeof ${data} === "${this.domain}"${
+					this.requiresNaNCheck ? ` && !Number.isNaN(${data})`
+					: this.checksInfinity ?
+						` && ${data} !== Infinity && ${data} !== -Infinity`
+					:	""
+				}`
+		)
+	}
 
 	readonly expression: string =
-		this.numberAllowsNaN ? "number | NaN" : this.domain
+		this.numberAllowsNaN || this.numberAllowsInfinity ?
+			`number${this.numberAllowsNaN ? " | NaN" : ""}${this.numberAllowsInfinity ? " | Infinity | -Infinity" : ""}`
+		:	this.domain
 
-	get nestableExpression(): string {
-		return this.numberAllowsNaN ? `(${this.expression})` : this.expression
+	get nestedExpression(): string {
+		return this.expression === this.domain ?
+				this.expression
+			:	`(${this.expression})`
 	}
 
-	get defaultShortDescription(): string {
+	get defaultBrief(): string {
 		return domainDescriptions[this.domain]
-	}
-
-	protected innerToJsonSchema(
-		ctx: ToJsonSchema.Context
-	): JsonSchema.Constrainable {
-		if (this.domain === "bigint" || this.domain === "symbol") {
-			return ctx.fallback.domain({
-				code: "domain",
-				base: {},
-				domain: this.domain
-			})
-		}
-		return {
-			type: this.domain
-		}
 	}
 }
 
@@ -147,5 +133,9 @@ export const Domain = {
 	writeBadAllowNanMessage: (
 		actual: Exclude<Domain.NonEnumerable, "number">
 	): string =>
-		`numberAllowsNaN may only be specified with domain "number" (was ${actual})`
+		`numberAllowsNaN may only be specified with domain "number" (was ${actual})`,
+	writeBadAllowInfinityMessage: (
+		actual: Exclude<Domain.NonEnumerable, "number">
+	): string =>
+		`numberAllowsInfinity may only be specified with domain "number" (was ${actual})`
 }

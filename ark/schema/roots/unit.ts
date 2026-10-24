@@ -1,34 +1,25 @@
 import {
 	domainDescriptions,
 	domainOf,
+	hasDomain,
+	isDate,
 	printable,
+	timeOf,
 	type Domain,
 	type JsonPrimitive
 } from "@ark/util"
-import type {
-	BaseErrorContext,
-	BaseNormalizedSchema,
-	declareNode
-} from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
+import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
 	defaultValueSerializer,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
-import { $ark } from "../shared/registry.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
+import { registeredReference } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { InternalBasis } from "./basis.ts"
-import type { DomainNode } from "./domain.ts"
-import { defineRightwardIntersections } from "./utils.ts"
 
 export declare namespace Unit {
-	export interface Schema<value = unknown> extends BaseNormalizedSchema {
-		readonly unit: value
-	}
-
 	export interface Inner<value = unknown> {
 		readonly unit: value
 	}
@@ -40,8 +31,6 @@ export declare namespace Unit {
 	export interface Declaration
 		extends declareNode<{
 			kind: "unit"
-			schema: Schema
-			normalizedSchema: Schema
 			inner: Inner
 			errorContext: ErrorContext
 		}> {}
@@ -49,102 +38,61 @@ export declare namespace Unit {
 	export type Node = UnitNode
 }
 
+const serializeUnit = (unit: unknown): JsonPrimitive =>
+	isDate(unit) ? unit.toISOString()
+	: hasDomain(unit, "object") || typeof unit === "symbol" ?
+		registeredReference(unit)
+	:	(defaultValueSerializer(unit) as JsonPrimitive)
+
 const implementation: nodeImplementationOf<Unit.Declaration> =
 	implementNode<Unit.Declaration>({
 		kind: "unit",
-		hasAssociatedError: true,
+		ownsError: true,
 		keys: {
 			unit: {
 				preserveUndefined: true,
-				serialize: schema =>
-					schema instanceof Date ?
-						schema.toISOString()
-					:	defaultValueSerializer(schema)
+				serialize: serializeUnit
 			}
 		},
-		normalize: schema => schema,
 		defaults: {
-			description: node => printable(node.unit),
-			problem: ({ expected, actual }) =>
-				`${expected === actual ? `must be reference equal to ${expected} (serialized to the same value)` : `must be ${expected} (was ${actual})`}`
-		},
-		intersections: {
-			unit: (l, r) => Disjoint.init("unit", l, r),
-			...defineRightwardIntersections("unit", (l, r) => {
-				if (r.allows(l.unit)) return l
-
-				// will always be a disjoint at this point, but we try to use
-				// a domain Disjoint if possible since it's better for discrimination
-
-				const rBasis = r.hasKind("intersection") ? r.basis : r
-				if (rBasis) {
-					const rDomain =
-						rBasis.hasKind("domain") ? rBasis : (
-							($ark.intrinsic.object as DomainNode)
-						)
-					if (l.domain !== rDomain.domain) {
-						const lDomainDisjointValue =
-							(
-								l.domain === "undefined" ||
-								l.domain === "null" ||
-								l.domain === "boolean"
-							) ?
-								l.domain
-							:	($ark.intrinsic[l.domain] as DomainNode)
-						return Disjoint.init("domain", lDomainDisjointValue, rDomain)
-					}
-				}
-
-				return Disjoint.init(
-					"assignability",
-					l,
-					r.hasKind("intersection") ?
-						r.children.find(
-							rConstraint => !rConstraint.allows(l.unit as never)
-						)!
-					:	r
-				)
-			})
+			description: node => printable(node.unit, { ownDataOnly: true })
 		}
 	})
 
 export class UnitNode extends InternalBasis<Unit.Declaration> {
-	compiledValue: JsonPrimitive = (this.json as any).unit
-	serializedValue: string =
-		typeof this.unit === "string" || this.unit instanceof Date ?
+	compiledValue: JsonPrimitive = serializeUnit(this.unit)
+	serializedUnit: string =
+		isDate(this.unit) ?
 			JSON.stringify(this.compiledValue)
-		:	`${this.compiledValue}`
+		:	compileSerializedValue(this.unit)
 
-	compiledCondition: string = compileEqualityCheck(
-		this.unit,
-		this.serializedValue
-	)
-	compiledNegation: string = compileEqualityCheck(
-		this.unit,
-		this.serializedValue,
-		"negated"
-	)
-	expression: string = printable(this.unit)
+	compileCondition(js: NodeCompiler, data: string): string {
+		return (
+			isDate(this.unit) ?
+				`${data} instanceof Date && ${js.ref(timeOf)}(${data}) === ${(this.unit as Date).getTime()}`
+			: Number.isNaN(this.unit) ? `Number.isNaN(${data})`
+			: hasDomain(this.unit, "object") || typeof this.unit === "symbol" ?
+				`${data} === ${js.ref(this.unit)}`
+			:	`${data} === ${this.serializedUnit}`
+		)
+	}
+
+	expression: string =
+		isDate(this.unit) ?
+			`d'${this.compiledValue}'`
+		:	printable(this.unit, { ownDataOnly: true })
 	domain: Domain = domainOf(this.unit)
 
-	get defaultShortDescription(): string {
+	get defaultBrief(): string {
 		return this.domain === "object" ?
 				domainDescriptions.object
 			:	this.description
 	}
 
-	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		return (
-			// this is the more standard JSON schema representation, especially for Open API
-			this.unit === null ? { type: "null" }
-			: $ark.intrinsic.jsonPrimitive.allows(this.unit) ? { const: this.unit }
-			: ctx.fallback.unit({ code: "unit", base: {}, unit: this.unit })
-		)
-	}
-
 	traverseAllows: TraverseAllows =
-		this.unit instanceof Date ?
-			data => data instanceof Date && data.toISOString() === this.compiledValue
+		isDate(this.unit) ?
+			data =>
+				data instanceof Date && timeOf(data) === (this.unit as Date).getTime()
 		: Number.isNaN(this.unit) ? data => Number.isNaN(data)
 		: data => data === this.unit
 }
@@ -152,19 +100,4 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 export const Unit = {
 	implementation,
 	Node: UnitNode
-}
-
-const compileEqualityCheck = (
-	unit: unknown,
-	serializedValue: JsonPrimitive,
-	negated?: "negated"
-) => {
-	if (unit instanceof Date) {
-		const condition = `data instanceof Date && data.toISOString() === ${serializedValue}`
-		return negated ? `!(${condition})` : condition
-	}
-
-	if (Number.isNaN(unit)) return `${negated ? "!" : ""}Number.isNaN(data)`
-
-	return `data ${negated ? "!" : "="}== ${serializedValue}`
 }

@@ -1,0 +1,119 @@
+import { globSync, readFileSync } from "node:fs"
+import { resolve } from "node:path"
+import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
+import { printablePathOf } from "./host.ts"
+import { renderDiagnostic, type Diagnostic } from "./precompile.ts"
+import { isProductionEnv, withEnvironment } from "./presets.ts"
+import { withSettingsFile } from "./settings.ts"
+import { createSyncPrecompiler } from "./worker.ts"
+
+export interface CheckReport {
+	lines: string[]
+	sites: number
+	accepted: number
+	islands: number
+	// the percentage of sites accepted, runtime islands aside
+	rate: number
+	// what fails a build whatever the rate, like a configure() it can't place
+	errorsOutsideSites: number
+	// each fails a build
+	errors: number
+	files: number
+}
+
+const defaultSources = ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"]
+
+const ignoredDirs = /(^|[/\\])(node_modules|out|dist|build)[/\\]/
+
+export const check = (
+	patterns: string[],
+	opts?: PrecompilePluginOptions
+): CheckReport => {
+	const cwd = opts?.cwd ?? process.cwd()
+	const files = globSync(patterns.length ? patterns : defaultSources, {
+		cwd,
+		exclude: path => ignoredDirs.test(path) || path.endsWith(".d.ts")
+	})
+		.map(file => resolve(cwd, file))
+		.sort()
+	// a worker applies the configuration to arktype as the build does
+	const request = createSyncPrecompiler({
+		precompilerOptions: withEnvironment(withSettingsFile({ ...opts, cwd }), {
+			production: isProductionEnv(),
+			testing: false
+		})
+	})
+	const report: CheckReport = {
+		lines: [],
+		sites: 0,
+		accepted: 0,
+		islands: 0,
+		rate: 100,
+		errorsOutsideSites: 0,
+		errors: 0,
+		files: files.length
+	}
+	try {
+		for (const file of files) {
+			const result = request(
+				"check",
+				readFileSync(file, "utf8"),
+				file
+			) as CheckedModule
+			const path = printablePathOf(cwd, file)
+			const entries: [number, string][] = result.diagnostics.map(diagnostic => [
+				diagnostic.start,
+				renderDiagnostic({
+					...diagnostic,
+					file: printablePathOf(cwd, diagnostic.file)
+				})
+			])
+			const errors = result.diagnostics.filter(
+				diagnostic => diagnostic.severity === "error"
+			)
+			const isAt = (error: Diagnostic, site: CheckedModule["sites"][number]) =>
+				error.file === file &&
+				error.start === site.start &&
+				error.end === site.end
+			// an accepted site can fail too, like one that throws a ParseError
+			const failed = result.sites.filter(
+				site =>
+					site.status === "rejected" || errors.some(error => isAt(error, site))
+			)
+			report.errors += errors.length
+			report.errorsOutsideSites += errors.filter(
+				error => !failed.some(site => isAt(error, site))
+			).length
+			for (const site of result.sites) {
+				report.sites++
+				if (failed.includes(site)) continue
+				if (site.status === "island") report.islands++
+				else report.accepted++
+				entries.push([
+					site.start,
+					`${path}:${site.line}:${site.column}  ${site.status}`
+				])
+			}
+			entries.sort((l, r) => l[0] - r[0])
+			for (const [, line] of entries) report.lines.push(line)
+		}
+	} finally {
+		request("close")
+	}
+	const precompiled = report.sites - report.islands
+	if (precompiled) report.rate = (100 * report.accepted) / precompiled
+	const summary = [
+		`${countOf(report.sites, "site")} in ${countOf(report.files, "file")}: ${report.accepted} accepted (${report.rate.toFixed(1)}%)`
+	]
+	if (report.islands) summary.push(countOf(report.islands, "runtime island"))
+	if (report.errorsOutsideSites) {
+		summary.push(
+			`${countOf(report.errorsOutsideSites, "error")} outside a site`
+		)
+	}
+	report.lines.push(summary.join(", "))
+	return report
+}
+
+export const countOf = (n: number, noun: string): string =>
+	`${n} ${noun}${n === 1 ? "" : "s"}`

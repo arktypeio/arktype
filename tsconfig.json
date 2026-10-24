@@ -27,5 +27,22 @@
 		// disabling until compatible with tsgo
 		// "erasableSyntaxOnly": true
 	},
-	"exclude": ["**/out", "**/node_modules", "./ark/docs", "**/*.scratch.ts"]
+	"exclude": [
+		"**/out",
+		"**/node_modules",
+		"./ark/docs",
+		"**/*.scratch.ts",
+		// generated programs, untyped by design
+		"./ark/aot/__tests__/temp/programs",
+		// its cyclic scopes have inferred types TypeScript 7 can't declare
+		"./ark/aot/__tests__/declared",
+		// its global classes would conflict with those of @types/node
+		"./ark/repo/tsCompat/workers.d.ts",
+		// run inside external benchmarks, against their sources and installs
+		"./ark/repo/bench/external/moltar/cjs",
+		"./ark/repo/bench/external/sb",
+		"./ark/repo/bench/external/sury/cases.ts",
+		// its forms import libraries from its own install
+		"./ark/repo/bench/external/forms"
+	]
 }

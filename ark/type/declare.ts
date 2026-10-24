@@ -1,6 +1,8 @@
+import type { TypeMeta, UndeclaredKeyBehavior } from "@ark/schema"
 import type {
 	anyOrNever,
 	array,
+	Backslash,
 	equals,
 	ErrorMessage,
 	ErrorType,
@@ -16,6 +18,7 @@ import type {
 	TerminalObjectDefinition,
 	ThunkCast
 } from "./parser/definition.ts"
+import type { MetaKey } from "./parser/objectLiteral.ts"
 import type { OptionalPropertyDefinition } from "./parser/property.ts"
 import type { TupleExpression } from "./parser/tupleExpressions.ts"
 import type { bindThis } from "./scope.ts"
@@ -84,19 +87,32 @@ type validateObjectInference<
 	ctx extends DeclareContext
 > = show<
 	{
-		[k in requiredKeyOf<declared>]: k extends keyof def ?
-			validateInference<def[k], declared[k], $, args, ctx>
+		[k in requiredKeyOf<declared> as declaredKey<k>]: declaredKey<k> extends (
+			keyof def
+		) ?
+			validateInference<def[declaredKey<k>], declared[k], $, args, ctx>
 		:	declared[k]
 	} & {
 		[k in optionalKeyOf<declared> & string as declaredOptionalKeySuggestion<
 			k,
 			def
 		>]: declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
-	}
+	} & DeclaredObjectSettings
 >
 
+// settings that don't affect inference, so any declared object can have them
+type DeclaredObjectSettings = {
+	"@"?: TypeMeta.Collapsible
+	"+"?: UndeclaredKeyBehavior
+}
+
+// a declared key that is also a special key has to be escaped to be a prop
+type declaredKey<k> = k extends MetaKey ? `${Backslash}${k}` : k
+
 type declaredOptionalKeySuggestion<k extends string, def> =
-	k extends keyof def ?
+	// an escaped key can only be optional through its value
+	k extends MetaKey ? declaredKey<k>
+	: k extends keyof def ?
 		def[k] extends OptionalPropertyDefinition ?
 			k
 		:	`${k}?`
@@ -110,7 +126,17 @@ type declaredOptionalValueSuggestion<
 	args,
 	ctx extends DeclareContext
 > =
-	k extends keyof def ?
+	k extends MetaKey ?
+		def[declaredKey<k> & keyof def] extends OptionalPropertyDefinition ?
+			validateInference<
+				def[declaredKey<k> & keyof def],
+				Required<declared>[k],
+				$,
+				args,
+				ctx
+			>
+		:	OptionalPropertyDefinition
+	: k extends keyof def ?
 		def[k] extends OptionalPropertyDefinition ?
 			// Required<declared>[k] ensures that we can distinguish { foo?: true } from { foo?: true | undefined }
 			validateInference<def[k], Required<declared>[k], $, args, ctx>

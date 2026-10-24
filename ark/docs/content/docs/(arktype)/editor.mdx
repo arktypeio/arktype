@@ -1,0 +1,38 @@
+---
+title: Editor setup
+description: Highlighting, inline errors and autocomplete for ArkType definitions in VS Code, JetBrains IDEs and other editors.
+---
+
+ArkType works in any editor with TypeScript support. These extensions make definitions read like the rest of your code.
+
+## VS Code
+
+Install [ArkType](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) (`arktypeio.arkdark`). It's also on [Open VSX](https://open-vsx.org/extension/arktypeio/arkdark) for Cursor, VSCodium and Windsurf. It adds:
+
+- syntax highlighting for strings in ArkType definitions, in `.ts`, `.tsx`, `.js`, `.jsx`, `.mdx`, `.svelte`, `.vue`, `.astro` and Markdown files
+- one-line summaries of ArkType's type errors at the end of the line, through [ErrorLens](https://marketplace.visualstudio.com/items?itemName=usernamehw.errorlens), which it installs as a dependency
+- the setting `"editor.quickSuggestions": { "strings": "on" }`, so you get completions while typing an expression like `"string | num"`
+
+It also sets ErrorLens to show the message of the problem closest to your cursor, with no delay and without the hover buttons, and to show only the part of an ArkType error that names the fix, like `"number | string"` for `"number | strin"`. Each is an ordinary default, so a value in your own settings for `errorLens.followCursor`, `errorLens.delay`, `errorLens.editorHoverPartsEnabled` or `errorLens.replace` overrides it.
+
+To have auto-import pick ArkType's `type` instead of the `type` function from Node's `os` module, add this to `.vscode/settings.json`:
+
+```json title=".vscode/settings.json"
+{
+	"typescript.preferences.autoImportSpecifierExcludeRegexes": ["^(node:)?os$"]
+}
+```
+
+### Themes
+
+[ArkThemes](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkthemes) (`arktypeio.arkthemes`, also on [Open VSX](https://open-vsx.org/extension/arktypeio/arkthemes)) is a separate extension with **ArkDark**, which these docs use for code, and **ArkLight**, each with an italic variant. They highlight TypeScript generics distinctly. You don't need them for the ArkType extension to work.
+
+## JetBrains IDEs
+
+The [ArkType plugin](https://plugins.jetbrains.com/plugin/27099-arktype), maintained by Jan-Niklas Wortmann, adds syntax highlighting for ArkType definitions to WebStorm, IntelliJ IDEA and other JetBrains IDEs.
+
+## Other editors
+
+There's no official extension for other editors yet. For Neovim, a community [tree-sitter grammar](https://github.com/jeffrom/tree-sitter-arktype) covers the most common syntax. If you'd like to help add support for another editor, see [this issue](https://github.com/arktypeio/arktype/issues/989).
+
+Completions and type errors come from TypeScript, so they work in every editor without an extension.

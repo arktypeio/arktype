@@ -17,7 +17,7 @@ import {
 	type BranchOperator,
 	type Comparator,
 	invertedComparators,
-	type MinComparator,
+	type MaxComparator,
 	minComparators,
 	type OpenLeftBound,
 	type StringifiablePrefixOperator,
@@ -47,6 +47,9 @@ export class RuntimeState {
 	}
 	finalizer: FinalizingLookahead | undefined
 	groups: BranchState[] = []
+	// the root a right bound produced and the operand it bounded, until the
+	// next operand
+	rightBounded: { root: BaseRoot; operand: BaseRoot } | undefined
 
 	scanner: Scanner
 	ctx: BaseParseContext
@@ -74,8 +77,8 @@ export class RuntimeState {
 		return value
 	}
 
-	constrainRoot(...args: Parameters<BaseRoot<any>["constrain"]>): void {
-		this.root = this.root!.constrain(args[0], args[1])
+	constrainRoot(...args: Parameters<BaseRoot<any>["rawConstrain"]>): void {
+		this.root = this.root!.rawConstrain(args[0], args[1])
 	}
 
 	finalize(finalizer: FinalizingLookahead): void {
@@ -110,19 +113,19 @@ export class RuntimeState {
 		this.assertRangeUnset()
 
 		if (this.branches.pipe) {
-			this.pushRootToBranch("|>")
+			this.pushRootBranch("|>")
 			this.root = this.branches.pipe
 			return
 		}
 
 		if (this.branches.union) {
-			this.pushRootToBranch("|")
+			this.pushRootBranch("|")
 			this.root = this.branches.union
 			return
 		}
 
 		if (this.branches.intersection) {
-			this.pushRootToBranch("&")
+			this.pushRootBranch("&")
 			this.root = this.branches.intersection
 			return
 		}
@@ -140,6 +143,8 @@ export class RuntimeState {
 		}
 
 		this.branches = topBranchState
+		// a group's root can be bounded, as an expression prints a range
+		this.rightBounded = undefined
 	}
 
 	addPrefix(prefix: StringifiablePrefixOperator): void {
@@ -156,7 +161,7 @@ export class RuntimeState {
 		}
 	}
 
-	pushRootToBranch(token: BranchOperator): void {
+	pushRootBranch(token: BranchOperator): void {
 		this.assertRangeUnset()
 		this.applyPrefixes()
 		const root = this.root!
@@ -189,6 +194,7 @@ export class RuntimeState {
 	}
 
 	parseOperand(): void {
+		this.rightBounded = undefined
 		return parseOperand(this)
 	}
 
@@ -215,12 +221,14 @@ export class RuntimeState {
 	}
 
 	previousOperator():
-		| MinComparator
+		| MaxComparator
 		| StringifiablePrefixOperator
 		| InfixToken
 		| undefined {
 		return (
-			this.branches.leftBound?.comparator ??
+			// left bounds are stored inverted, as they'd be written on the right
+			(this.branches.leftBound &&
+				invertedComparators[this.branches.leftBound.comparator]) ??
 			this.branches.prefixes[this.branches.prefixes.length - 1] ??
 			(this.branches.intersection ? "&"
 			: this.branches.union ? "|"

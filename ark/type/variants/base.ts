@@ -36,7 +36,7 @@ import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
 
 /** @ts-ignore cast variance */
-export interface Inferred<out t = unknown, $ = {}> {
+export interface Inferred<out t = unknown, in out $ = {}> {
 	internal: BaseRoot
 	[inferred]: t
 
@@ -83,7 +83,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 *
 	 * @example
 	 * const parseNumber = type("string").pipe(s => Number.parseInt(s))
-	 * type ParsedNumber = typeof parseNumber.infer // number
+	 * type ParsedNumber = typeof parseNumber.inferOut // number
 	 */
 	inferOut: distill.Out<t>
 
@@ -207,7 +207,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * const NotOdd = type("number % 2").configure({ description: "not odd" })
 	 * // all constraints at the root are affected
 	 * const odd = NotOdd(3) // must be not odd (was 3)
-	 * const nonNumber = NotOdd("two") // must be not odd (was "two")
+	 * const nonNumber = NotOdd("two") // must be not odd (was a string)
 	 *
 	 * const NotOddBox = type({
 	 *    // we should have referenced notOdd or added meta here
@@ -254,7 +254,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 *
 	 * @example
 	 * const T = type({ foo: "string" });
-	 * // TypeScript: foo must be a string (was 5)
+	 * // TypeScript: Type 'number' is not assignable to type 'string'
 	 * const data = T.from({ foo: 5 });
 	 */
 	from(literal: this["inferIn"]): this["infer"]
@@ -296,9 +296,25 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * })
 	 *
 	 * // Type<{ keyword: number; unvalidated: unknown; validated: string }>
-	 * const baseOut = base.out
+	 * const Out = T.out
 	 */
 	get out(): instantiateType<this["inferIntrospectableOut"], $>
+
+	/**
+	 * #### deeply invert morphs to encode output as input
+	 *
+	 * ⚠️ requires `import "arktype/codecs"`, and throws if a morph has no inverse
+	 *
+	 * @example
+	 * const EpochMs = codec("number.integer", "Date", {
+	 *     decode: n => new Date(n),
+	 *     encode: d => d.getTime()
+	 * })
+	 * const Event = type({ name: "string", at: EpochMs })
+	 * // { name: "launch", at: 0 }
+	 * const encoded = Event.encode({ name: "launch", at: new Date(0) })
+	 */
+	get encode(): instantiateType<inferEncoder<t>, $>
 
 	/**
 	 * #### add a compile-time brand to output
@@ -393,11 +409,11 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * @example
 	 * const Palindrome = type("string").narrow(s => s === [...s].reverse().join(""))
 	 *
-	 * const PalindromicEmail = type("string.date.parse").narrow((date, ctx) =>
-	 *		date.getFullYear() === 2025 || ctx.mustBe("the current year")
+	 * const ThisYear = type("string.date.parse").narrow((date, ctx) =>
+	 *		date.getFullYear() === new Date().getFullYear() || ctx.mustBe("the current year")
 	 * )
 	 * // Type<`${string}.tsx`>
-	 * const WithPredicate = type("string").narrow((s): s is `${string}.tsx` => /\.tsx?$/.test(s))
+	 * const WithPredicate = type("string").narrow((s): s is `${string}.tsx` => s.endsWith(".tsx"))
 	 */
 	narrow<
 		narrowed extends this["infer"] = never,
@@ -420,8 +436,8 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * @example
 	 * const User = type({ name: "string" })
 	 *
-	 * // parse a string and validate that the result as a user
-	 * const parseUser = type("string").pipe(s => JSON.parse(s), user)
+	 * // parse a string and validate the result as a User
+	 * const parseUser = type("string").pipe(s => JSON.parse(s), User)
 	 */
 	pipe: ChainedPipeParser<$, t>
 
@@ -431,7 +447,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * 🔗 `to({ name: "string" })` is equivalent to `.pipe(type({ name: "string" }))`
 	 *
 	 * @example
-	 * // parse a string and validate that the result as a user
+	 * // parse a string and validate the result as a user
 	 * const parseUser = type("string").pipe(s => JSON.parse(s)).to({ name: "string" })
 	 */
 	to<const def, r = instantiateType<inferPipe<t, type.infer<def, $>>, $>>(
@@ -451,7 +467,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 }
 
 /** @ts-ignore cast variance */
-interface Type<out t = unknown, $ = {}>
+interface Type<out t = unknown, in out $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkEnv.onFail>,
 		Inferred<t, $> {
 	/**
@@ -503,11 +519,13 @@ interface Type<out t = unknown, $ = {}>
 	 * #### intersect the parsed Type, returning an introspectable {@link Disjoint} if the result is unsatisfiable
 	 *
 	 * @example
-	 * // Type<{ foo: number; bar: string }>
+	 * import { Type } from "arktype"
+	 *
+	 * // Type<{ foo: number; bar: string }> | Disjoint
 	 * const T = type({ foo: "number" }).intersect({ bar: "string" })
 	 * const Bad = type("number > 10").intersect("number < 5")
 	 * // logs "Intersection of > 10 and < 5 results in an unsatisfiable type"
-	 * if (Bad instanceof Disjoint) console.log(`${bad.summary}`)
+	 * if (!(Bad instanceof Type)) console.log(Bad.summary)
 	 */
 	intersect<
 		const def,
@@ -568,7 +586,7 @@ interface Type<out t = unknown, $ = {}>
 	 *
 	 * @example
 	 * const N = type(Math.random() > 0.5 ? "true" : "0") // Type<0 | true>
-	 * const Ez = N.ifExtends("boolean") // Type<true> | undefined
+	 * const Ez = N.ifExtends("boolean") // Type<boolean> | undefined
 	 */
 	ifExtends<const def, r = type.instantiate<def, $>>(
 		other: type.validate<def, $>
@@ -672,6 +690,11 @@ interface Type<out t = unknown, $ = {}>
 	/** @deprecated */
 	Symbol: never
 }
+
+// a method's parameter is bivariant, so a Type stays assignable to a wider one
+type inferEncoder<t> = {
+	encode(In: distill.Out<t>): To<distill.In<t>>
+}["encode"]
 
 export interface ChainedPipeParser<$, t> extends NaryPipeParser<$, t> {
 	try: NaryPipeParser<$, t>

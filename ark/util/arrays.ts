@@ -1,5 +1,5 @@
 import type { GuardablePredicate } from "./functions.ts"
-import type { anyOrNever, conform } from "./generics.ts"
+import type { anyOrNever, conform, noInfer } from "./generics.ts"
 import type { isDisjoint } from "./intersections.ts"
 import type { parseNonNegativeInteger } from "./numbers.ts"
 
@@ -129,12 +129,11 @@ export declare namespace array {
 		i["length"] extends count ? result
 		:	_multiply<base, [...result, ...base], count, [...i, 1]>
 
-	export type repeat<element, count extends number> = buildFromSegments<
-		element,
-		[],
-		exponentials.max<count>,
-		count
-	>
+	// inferred so checking this declaration doesn't build every power of two
+	export type repeat<element, count extends number> =
+		powersOfTwo<seedOf<count>> extends infer segments extends 1[][] ?
+			buildFromSegments<element, [], dropLongerThan<count, segments>, count>
+		:	never
 
 	type buildFromSegments<
 		element,
@@ -320,7 +319,7 @@ export interface ComparisonOptions<t = unknown> {
  */
 export const appendUnique = <to extends unknown[]>(
 	to: to | undefined,
-	value: NoInfer<Readonly<to> | to[number]>,
+	value: noInfer<Readonly<to> | to[number]>,
 	opts?: ComparisonOptions<to[number]>
 ): to => {
 	if (to === undefined)
@@ -450,60 +449,17 @@ type _setIndex<
 		_setIndex<tail, i, to, [...result, result["length"] extends i ? to : head]>
 	:	result
 
-type zero = []
+// powers of two to 2^13, largest first; 2^14 is too large to represent
+type powersOfTwo<segments extends 1[][]> =
+	segments["length"] extends 15 ? segments
+	:	powersOfTwo<[[...segments[0], ...segments[0]], ...segments]>
 
-type one = [1]
+// defers powersOfTwo until count is known, sharing one list across counts
+type seedOf<count> = count extends unknown ? [[1], []] : never
 
-type two = [1, 1]
-
-type three = [...two, ...two]
-
-type four = [...three, ...three]
-
-type five = [...four, ...four]
-
-type six = [...five, ...five]
-
-type seven = [...six, ...six]
-
-type eight = [...seven, ...seven]
-
-type nine = [...eight, ...eight]
-
-type ten = [...nine, ...nine]
-
-type eleven = [...ten, ...ten]
-
-type twelve = [...eleven, ...eleven]
-
-type thirteen = [...twelve, ...twelve]
-
-type fourteen = [...thirteen, ...thirteen]
-
-// extending this pattern further results in:
-// "Expression produces a tuple type that is too large to represnet"
-
-type exponentials = [
-	fourteen,
-	thirteen,
-	twelve,
-	eleven,
-	ten,
-	nine,
-	eight,
-	seven,
-	six,
-	five,
-	four,
-	three,
-	two,
-	one,
-	zero
-]
-
-declare namespace exponentials {
-	export type max<n extends number> = _max<n, exponentials>
-
-	type _max<n extends number, filtered extends unknown[]> =
-		`${n}` extends keyof filtered[0] ? _max<n, tailOf<filtered>> : filtered
-}
+type dropLongerThan<n extends number, segments extends 1[][]> =
+	segments extends [infer head extends 1[], ...infer tail extends 1[][]] ?
+		`${n}` extends keyof head ?
+			dropLongerThan<n, tail>
+		:	segments
+	:	segments

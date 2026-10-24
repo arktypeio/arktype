@@ -1,5 +1,6 @@
 import {
 	intrinsic,
+	throwOnDefault,
 	type ArkErrors,
 	type BaseRoot,
 	type Morph,
@@ -238,7 +239,6 @@ interface ChainableMatchParser<ctx extends MatchParserContext> {
 	match: CaseMatchParser<ctx>
 	default: DefaultMethod<ctx>
 	at: AtParser<ctx>
-	/** @experimental */
 	strings: StringsParser<ctx>
 }
 
@@ -425,7 +425,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		if (typeof defaultCase === "function")
 			this.case(intrinsic.unknown, defaultCase)
 
-		const schema: mutable<Union.Schema> = {
+		const schema: mutable<Union.Input> = {
 			branches: this.branches,
 			ordered: true
 		}
@@ -451,8 +451,6 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		return this.$.finalize(inputValidatedCases) as never
 	}
 }
-
-export const throwOnDefault: ArkErrors.Handler = errors => errors.throw()
 
 export const chainedAtMessage = `A key matcher must be specified before the first case i.e. match.at('foo') or match.in<object>().at('bar')`
 export type chainedAtMessage = typeof chainedAtMessage

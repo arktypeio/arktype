@@ -1,23 +1,41 @@
 ---
 title: Agents
-description: Help Claude Code, Codex, Cursor and other coding agents write ArkType
+description: Help Claude Code, Codex, Cursor and other coding agents write ArkType.
 ---
+
+Every error ArkType reports names its fix: `tsc`'s as a definition is written, a [precompiled](/docs/precompile) build's and validation's. An agent can close each loop on its own, which is also why precompiling is free with one: the build step is one more loop it already runs.
 
 ## Skill
 
-The ArkType skill tells agents when to reach for ArkType, how its syntax maps to TypeScript, and which mistakes to avoid. Add it to your project with:
+The ArkType [skill](https://github.com/arktypeio/arktype/blob/main/ark/type/skills/arktype/SKILL.md) tells agents when to reach for ArkType, how its syntax maps to TypeScript, and which mistakes to avoid. Add it to your project with:
 
 ```bash
 npx skills add arktypeio/arktype
 ```
 
-Releases after 2.2.8 also include the skill in the `arktype` package at `skills/arktype/SKILL.md`, so tools like [skills-npm](https://github.com/antfu/skills-npm) can link the copy that matches your installed version.
+This installs the skill from the repository's default branch, which tracks the latest release. The `arktype` package also includes the skill at `skills/arktype/SKILL.md`, so tools like [skills-npm](https://github.com/antfu/skills-npm) can link the copy that matches your installed version.
+
+The skill links a [migration guide](/docs/migrating) that agents read when they convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema.
+
+## Migrate from Zod
+
+With the skill installed, ask for a migration in one prompt:
+
+```
+Migrate this project from Zod to ArkType.
+```
+
+The agent rewrites each schema where it is, keeps Zod's removal of undeclared keys, swaps integrations like `zodResolver` for their Standard Schema versions, removes `zod` with your package manager and runs your typecheck and tests. Where a dependency accepts only Zod, like the MCP SDK before v2, it keeps Zod for that call. Review its summary, which lists what still behaves differently and any test it updated, like a JSON Schema snapshot whose keys are now in canonical order. [Migrating a project](/docs/migrating#migrating-a-project) lists the steps it follows.
 
 ## Docs as Markdown
 
 Every page of these docs is available as Markdown by adding `.md` to its URL, e.g. [/docs/intro/setup.md](https://arktype.io/docs/intro/setup.md). The buttons under each page's title copy it or open it in Claude, ChatGPT or Cursor.
 
-[/llms.txt](https://arktype.io/llms.txt) has every ArkType page in one file, in the order of the sidebar. Attest's docs are at [/docs/attest/llms.txt](https://arktype.io/docs/attest/llms.txt).
+[/llms.txt](https://arktype.io/llms.txt) is an index of every page, with a link to its Markdown and a one-line description, following the [llms.txt](https://llmstxt.org) convention. [/llms-full.txt](https://arktype.io/llms-full.txt) has the full text of every ArkType page in one file. Precompile's docs are at [/docs/precompile/llms.txt](https://arktype.io/docs/precompile/llms.txt), Attest's at [/docs/attest/llms.txt](https://arktype.io/docs/attest/llms.txt) and ArkRegex's at [/docs/regex/llms.txt](https://arktype.io/docs/regex/llms.txt).
+
+## Precompile
+
+Precompiling used to cost a build step and its errors. An agent runs the build, reads the error and fixes it, so your users get the speed and size and you don't pay for them. A [precompiled](/docs/precompile) build reports each definition it can't precompile with its file, line and column, the reason and the fix. [With agents](/docs/precompile#with-agents) shows one and the tools that shorten the loop: `arktype-precompile --check`, the ESLint rule and shadow mode. [Troubleshooting](/docs/precompile/troubleshooting) lists the fix for each report.
 
 ## AGENTS.md
 
@@ -26,3 +44,38 @@ If your project has an `AGENTS.md` or `CLAUDE.md`, a line like this keeps agents
 ```
 Validate untrusted input with ArkType. Docs: https://arktype.io/llms.txt
 ```
+
+If you precompile, add:
+
+```
+ArkType definitions are precompiled when the app builds. Fix each precompile error as its hint says; don't set allowUnsafe to get past one.
+```
+
+## Building agents
+
+ArkType types are [Standard Schemas](/docs/standard-schema) that can also produce JSON Schema, so libraries that need both accept them directly. For example, the [MCP TypeScript SDK](https://ts.sdk.modelcontextprotocol.io/v2/advanced/schema-libraries) (`@modelcontextprotocol/server`) takes an ArkType type as a tool's `inputSchema` as-is. It derives the JSON Schema the model sees from it, and validates the model's arguments before your handler runs:
+
+```ts
+// ---cut-start---
+declare const server: {
+	registerTool(
+		name: string,
+		config: { description: string; inputSchema: type.Any },
+		handler: (args: { name: string; times?: number }) => unknown
+	): void
+}
+// ---cut-end---
+// server is an McpServer from @modelcontextprotocol/server
+server.registerTool(
+	"greet",
+	{
+		description: "Greet someone by name",
+		inputSchema: type({ name: "string", "times?": "1 <= number.integer <= 5" })
+	},
+	async ({ name, times }) => ({
+		content: [{ type: "text", text: `Hello, ${name}! `.repeat(times ?? 1) }]
+	})
+)
+```
+
+Calling `greet` with `times: 99` returns an error result to the model with ArkType's message, `times must be at most 5 (was 99)`, so it knows what to fix.

@@ -1,0 +1,516 @@
+import {
+	compileDefault,
+	compileDomainOf,
+	describeBranches,
+	isDecidedByAllows,
+	precompileRootUnits,
+	TraversalCompiler,
+	type BaseNode,
+	type BaseRoot,
+	type NodeId,
+	type nodeOfKind,
+	type Predicate,
+	type ReferenceOptions,
+	type RootUnit,
+	type StructureNode,
+	type SwitchCase,
+	type TraversalKind,
+	type UnionNode
+} from "@ark/schema"
+import { throwInternalError } from "@ark/util"
+import { disallowed } from "../runtime.ts"
+import { runtimeKeyOf } from "../standalone.ts"
+import { combines, writeCombinator } from "./combinators.ts"
+import {
+	isDescribed,
+	isInlineSite,
+	isKeyword,
+	issueContextOf,
+	issueSite,
+	issueSiteOf,
+	requiredIssue,
+	unionKeySiteOf,
+	withoutStrings,
+	writeSiteOf,
+	type IssueContext,
+	type TextContext
+} from "./sites.ts"
+
+class StandaloneCompiler extends TraversalCompiler {
+	override readonly reportsFirst: boolean = false
+	// a unit is named for its content as compiled without the size forms that
+	// follow from it
+	readonly naming: boolean = this.linkage.unit === undefined
+
+	// whether a node's Apply is its Allows, as a unified build writes it
+	unifies(node: BaseNode): boolean {
+		return unifies(node)
+	}
+
+	// named for its unit, so units can share a scope
+	override ref(value: object | symbol): string {
+		const { unit } = this.linkage
+		if (unit === undefined) return super.ref(value)
+		let name = this.refs!.get(value)
+		if (name === undefined)
+			this.refs!.set(value, (name = refNameOf(unit, this.refs!.size)))
+		return name
+	}
+
+	override site(node: BaseNode): string {
+		return this.siteRef(issueSiteOf(node.failureSite))
+	}
+
+	// a transforming object's Allows rejects through a call V8 has no feedback
+	// for until data fails, so the transform after it is compiled with its
+	// checks and repeats none of their reads
+	override rejection(node: BaseNode): string {
+		return (
+				this.traversalKind === "Allows" && !this.shortest && node.transforms
+			) ?
+				`${this.ref(disallowed)}()`
+			:	"false"
+	}
+
+	// a site of literals, or a key's site of them, is built where it fails, and
+	// stays a ref the unit keys
+	siteRef(site: object): string {
+		const ref = this.ref(site)
+		if (isInlineSite(site)) return writeSiteOf(site, JSON.stringify)
+		const { value, missing } = site as { value?: object; missing?: object }
+		return (
+				missing === requiredIssue &&
+					value &&
+					isInlineSite(value) &&
+					isDescribed(value)
+			) ?
+				writeSiteOf(value, JSON.stringify, "keySiteOf")
+			:	ref
+	}
+
+	// a keyword check adds no issues itself, so its Apply needn't count them
+	override addsNoIssues(predicate: Predicate): boolean {
+		return isKeyword(predicate)
+	}
+
+	// a case returning what the next one does falls through to it
+	override switch(
+		on: string,
+		cases: readonly SwitchCase[],
+		otherwise: string
+	): this {
+		return this.block(`switch(${on})`, () => {
+			for (const [i, [label, returned]] of cases.entries()) {
+				const next = cases[i + 1]
+				const fallsThrough =
+					label !== "default" &&
+					next?.[0] !== "default" &&
+					next?.[1] === returned
+				this.line(fallsThrough ? `${label}:` : `${label}: return ${returned}`)
+			}
+			return this
+		}).return(otherwise)
+	}
+
+	// a plain object missing every default, its only changes, is copied once
+	override initializeTransform(
+		transformedChildren: readonly BaseNode[],
+		structure?: StructureNode
+	): this {
+		super.initializeTransform(transformedChildren)
+		if (
+			!structure ||
+			transformedChildren.length < 2 ||
+			transformedChildren.length !== structure.defaultable.length ||
+			structure.includesMorph ||
+			structure.undeclared === "delete" ||
+			this.inPlace
+		)
+			return this
+		const keys = structure.defaultable.map(prop => prop.key)
+		return this.if(
+			`${keys.map(k => `!(${this.serialize(k)} in data) && `).join("")}${structure.compileShapeCheck(this)}Object.getPrototypeOf(data) === Object.prototype`,
+			() => {
+				this.const("out", "{ ...data }")
+				for (const prop of structure.defaultable)
+					compileDefault(this, prop, "out")
+				structure.compileDeclaredCopy(this, keys)
+				return this.return("out")
+			}
+		)
+	}
+
+	// a union no branch allows reports its description, unless data fails
+	// each branch's basis, which arktype then describes it by
+	override unionFails(node: UnionNode): string {
+		const bases = basesOf(node)
+		if (!bases) return `!${this.error(node)}`
+		const allowed = bases.nodes
+			.map(basis => basis.compileCondition(this, "data"))
+			.join(" || ")
+		return `!${this.fails("failsAt", `${allowed} ? ${this.site(node)} : ${this.siteRef(bases.site)}, data`)}`
+	}
+
+	// reported at the discriminant so branches don't rerun, unless data can't
+	// be read there, when it fails each branch
+	override missFails(node: UnionNode, value: string): string {
+		if (node.missListsBranches) return this.unionFails(node)
+		const path = node.missPath
+		const context = issueContextOf({
+			code: "discriminant",
+			description: node.discriminantDescription,
+			meta: node.discriminantMeta
+		})
+		const site = issueSite(path.length ? { value: context, path } : context)
+		const fails = `!${this.fails("failsAt", `${this.siteRef(site)}, ${path.length ? value : "data"}`)}`
+		const [k, ...deeper] = node.discriminant!.path
+		if (k === undefined) return fails
+		const reads: string[] = []
+		let parent = `data${this.prop(k)}`
+		for (const key of deeper) {
+			reads.push(compileRead(parent, key))
+			parent += this.prop(key)
+		}
+		const readable =
+			reads.length ?
+				`${reads.join(" && ")} ? ${fails} : ${this.unionFails(node)}`
+			:	fails
+		return `${compileRead("data", k)} ? ${readable} : ${this.unreadableFails(node, k)}`
+	}
+
+	// as an indiscriminable union applies its branches
+	override defaultFails(node: UnionNode, caseNode: BaseRoot): string {
+		const passes =
+			!caseNode.includesAlias && isDecidedByAllows(caseNode) ?
+				(caseNode.compileCondition?.(this, "data") ??
+				this.invoke(caseNode, { kind: "Allows" }))
+			:	`(ctx.pushBranch(), ${this.applyMember(caseNode)}, ctx.popBranch().errorCount === 0)`
+		return `${passes} || ${this.unionFails(node)}`
+	}
+
+	// data its first key can't be read from fails each branch at its basis,
+	// if each requires what the read does
+	private unreadableFails(node: UnionNode, k: PropertyKey): string {
+		const bases = basesOf(node)
+		return (
+				bases?.nodes.every(basis =>
+					typeof k === "number" ?
+						basis.hasKind("proto") && basis.proto === Array
+					:	basis.domain === "object"
+				)
+			) ?
+				`!${this.fails("failsAt", `${this.siteRef(bases.site)}, data`)}`
+			:	this.unionFails(node)
+	}
+
+	override undeclaredFails(node: StructureNode): string {
+		// expected "removed", so it says "must be removed" as arktype does
+		const site = issueSite(
+			issueContextOf({
+				code: "undeclared",
+				description: "removed",
+				meta: node.meta
+			})
+		)
+		return this.fails("failsAt", `${this.siteRef(site)}, data, k`)
+	}
+
+	// a rejected union value reports the union's issue at its key, not its Apply
+	override failingSiteOf(prop: BaseNode): string | undefined {
+		const { value, errorContext } = prop as nodeOfKind<"required">
+		if (reportsItself(value) && !basesOf(value))
+			return this.siteRef(unionKeySiteOf(value.failureSite, errorContext))
+	}
+
+	// unless data failing its branches' bases is described by them
+	override failingApplyOf(value: BaseNode): string | undefined {
+		if (reportsItself(value) && basesOf(value))
+			return `(data, ctx) => ${this.unionFails(value)}`
+	}
+}
+
+const reportsItself = (value: BaseNode): value is UnionNode =>
+	value.hasKind("union") && !value.discriminantJit && !value.includesAlias
+
+// whether a key is read from an object, or an index from an array, as
+// arktype reads a discriminant
+const compileRead = (parent: string, k: PropertyKey): string =>
+	typeof k === "number" ?
+		`Array.isArray(${parent})`
+	:	`Object(${parent}) === ${parent}`
+
+export interface Bases {
+	nodes: nodeOfKind<"domain" | "proto">[]
+	// what arktype's union of their errors expects
+	site: object
+}
+
+const basesByUnion = new WeakMap<UnionNode, Bases | null>()
+
+// the basis each branch checks first, where data failing them all fails
+// each branch there, so arktype describes the union by them
+export const basesOf = (node: UnionNode): Bases | undefined => {
+	let bases = basesByUnion.get(node)
+	if (bases === undefined) basesByUnion.set(node, (bases = findBases(node)))
+	return bases ?? undefined
+}
+
+const findBases = (node: UnionNode): Bases | null => {
+	// a description written for it is its text
+	if (node.meta.description !== undefined && node.meta.keyword === undefined)
+		return null
+	const nodes: nodeOfKind<"domain" | "proto">[] = []
+	const expected: string[] = []
+	for (const branch of node.branches) {
+		const checked = branch.hasKind("morph") ? branch.knownIn : branch
+		const basis =
+			checked?.hasKind("intersection") ? checked.basis
+			: checked?.hasKind("domain") || checked?.hasKind("proto") ? checked
+			: null
+		if (!basis) return null
+		const context = issueContextOf(
+			(basis.failureSite as { value: TextContext }).value
+		)
+		// an expected written from data can't be known here
+		if (context.written && context.written.keeps & 1) return null
+		if (!nodes.includes(basis)) nodes.push(basis)
+		if (!expected.includes(context.description!))
+			expected.push(context.description!)
+	}
+	const site = issueSiteOf({
+		meta: node.meta,
+		description: describeBranches(expected)
+	}) as IssueContext
+	const unionSite = issueSiteOf(node.failureSite) as IssueContext
+	return site.description === unionSite.description ? null : { nodes, site }
+}
+
+export const refNameOf = (unit: string, i: number): string => `${unit}R${i}`
+
+class InPlaceCompiler extends StandaloneCompiler {
+	override readonly inPlace = true
+}
+
+class FirstIssueCompiler extends StandaloneCompiler {
+	override readonly reportsFirst = true
+}
+
+class InPlaceFirstIssueCompiler extends InPlaceCompiler {
+	override readonly reportsFirst = true
+}
+
+const unifiedByNode = new WeakMap<BaseNode, boolean>()
+
+// whether a node's Apply reads ctx only to report, so called without one it's its Allows
+export const unifies = (node: BaseNode): boolean => {
+	let unified = unifiedByNode.get(node)
+	if (unified === undefined) {
+		unified =
+			!node.hasTransform &&
+			!node.includesAlias &&
+			!node.allowsNeedsCtx &&
+			Object.values(node.refsById).every(reference =>
+				reference.hasKind("predicate") ? isKeyword(reference.predicate)
+				: reference.hasKind("union") ?
+					!!reference.discriminantJit || isDecidedByAllows(reference)
+				: reference.hasKind("intersection") ?
+					// Apply counts issues between its structure and predicates
+					(reference.inner.predicate?.length ?? 0) + +!!reference.structure < 2
+				:	!reference.hasKind("morph")
+			)
+		unifiedByNode.set(node, unified)
+	}
+	return unified
+}
+
+// a detailed size build's traversals: a node that unifies has one, its
+// Apply named as its Allows, reporting a failure only to a ctx it's passed
+class UnifiedCompiler extends StandaloneCompiler {
+	override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
+		const node = this.linkage.refsById[id]
+		return super.referenceToId(
+			id,
+			(
+				node &&
+					(opts?.kind ?? this.traversalKind) === "Apply" &&
+					this.unifies(node)
+			) ?
+				{ ...opts, kind: "Allows" }
+			:	opts
+		)
+	}
+
+	override requiresContextFor(
+		node: BaseNode,
+		kind: TraversalKind = this.traversalKind
+	): boolean {
+		return (
+			(kind !== "Allows" || !this.unifies(node)) &&
+			super.requiresContextFor(node, kind)
+		)
+	}
+
+	// a key's union value is applied by its own traversal, which allows unpassed
+	override failingSiteOf(): undefined {}
+	override failingApplyOf(): undefined {}
+
+	// read where it fails, as a site is, so a unit needn't receive it
+	override fails(method: "failsAt" | "failsIn", args: string): string {
+		return `runtime.${method}(ctx, ${args})`
+	}
+}
+
+// a unified node's Apply, declared after its Allows, replaces it
+const unifyMembers = (unit: RootUnit): void => {
+	const sourcesByName = new Map(unit.members)
+	unit.members = [...sourcesByName]
+	for (const [i, node] of unit.declared.entries()) {
+		const source = sourcesByName.get(unit.declaredTraversals[i][0])!
+		if (unifies(node) && /(?<![\w$.])ctx\./.test(withoutStrings(source)))
+			throwInternalError(`Unified traversal reads ctx: ${source}`)
+	}
+}
+
+class UnifiedFirstIssueCompiler extends UnifiedCompiler {
+	override readonly reportsFirst = true
+}
+
+// what each case of a switch over data's domain stands for
+const domainChecks = new Map<string, string>([
+	...["bigint", "boolean", "number", "string", "symbol", "undefined"].map(
+		(domain): [string, string] => [
+			`case "${domain}"`,
+			`typeof data === "${domain}"`
+		]
+	),
+	['case "null"', "data === null"],
+	[
+		'case "object"',
+		'(typeof data === "object" ? data !== null : typeof data === "function")'
+	]
+])
+
+const dataDomain = compileDomainOf("data")
+
+// a build for size writes Allows' checks as the returns they stand for, and a
+// switch over data's domain as the checks its cases do
+const forSize = (compiler: typeof StandaloneCompiler) =>
+	class extends compiler {
+		override readonly shortest: boolean = !this.naming
+		// a literal of the values a copy holds is shorter than one of nulls
+		override readonly copiesValues: boolean = this.shortest
+
+		override switch(
+			on: string,
+			cases: readonly SwitchCase[],
+			otherwise: string
+		): this {
+			if (
+				!this.shortest ||
+				on !== dataDomain ||
+				cases.some(([label]) => !domainChecks.has(label))
+			)
+				return super.switch(on, cases, otherwise)
+			let checks = ""
+			let matched: string[] = []
+			for (const [i, [label, returned]] of cases.entries()) {
+				matched.push(domainChecks.get(label)!)
+				// a case returning what the next one does is checked with it
+				if (cases[i + 1]?.[1] === returned) continue
+				checks += `${matched.join(" || ")} ? ${returned} : `
+				matched = []
+			}
+			return this.return(`${checks}${otherwise}`)
+		}
+	}
+
+// a detailed size build writes each node it can as a checker, whose Apply
+// is its Allows, transforming by its t
+class CombinatorCompiler extends forSize(UnifiedCompiler) {
+	override unifies(node: BaseNode): boolean {
+		return combines(node) || unifies(node)
+	}
+
+	override declareTraversals(node: BaseNode): string[] | undefined {
+		const source = writeCombinator(this, node)
+		if (source === undefined) return
+		const allows = this.referenceToId(node.id, { kind: "Allows" })
+		this.linkage.members.push([allows, source])
+		if (!node.transforms) return [allows, allows]
+		const transform = this.referenceToId(node.id, { kind: "Transform" })
+		this.linkage.members.push([
+			transform,
+			`/* @__PURE__ */ runtime.transformOf(${allows})`
+		])
+		return [allows, allows, transform]
+	}
+}
+
+// by variant: standalone, in place or unified, plus 3 for errors "first" and
+// 6 for size
+const compilers = [false, true].flatMap(shortest =>
+	[
+		StandaloneCompiler,
+		InPlaceCompiler,
+		UnifiedCompiler,
+		FirstIssueCompiler,
+		InPlaceFirstIssueCompiler,
+		UnifiedFirstIssueCompiler
+	].map(compiler =>
+		shortest && compiler === UnifiedCompiler ? CombinatorCompiler
+		: shortest ? forSize(compiler)
+		: compiler
+	)
+)
+
+// a size build with detailed errors that compiles each node, as a program
+// too small to amortize the checkers' runtime is
+export const compiledForSize: number =
+	compilers.push(forSize(UnifiedCompiler)) - 1
+
+// a jsonInput build's compilers follow the others in the same order, each
+// trusting data to be plain, as JSON.parse returns
+const jsonOffset = compilers.length
+
+compilers.push(
+	...compilers.map(
+		compiler =>
+			class extends compiler {
+				override readonly jsonInput: boolean = true
+			}
+	)
+)
+
+export const jsonVariantOf = (variant: number): number => variant + jsonOffset
+
+// the variant a jsonInput build's variant otherwise matches
+const baseVariantOf = (variant: number) => variant % jsonOffset
+
+// each variant's roots have their own units
+const unitsByRoot = compilers.map(() => new WeakMap<BaseRoot, RootUnit[]>())
+
+export const rootUnitsOf = (root: BaseRoot, variant = 0): RootUnit[] => {
+	const cached = unitsByRoot[variant]
+	let units = cached.get(root)
+	if (!units) {
+		cached.set(
+			root,
+			(units = precompileRootUnits(root, {
+				compiler: compilers[variant],
+				keyOf: runtimeKeyOf
+			}))
+		)
+		const base = baseVariantOf(variant)
+		if (base % 3 === 2 || base === compiledForSize)
+			for (const unit of units) unifyMembers(unit)
+	}
+	return units
+}
+
+// whether a root's validator is created from its checker
+export const isChecker = (root: BaseRoot, variant: number): boolean =>
+	compilers[baseVariantOf(variant)] === CombinatorCompiler && combines(root)
+
+// a pass can reach content-equal roots, which share a name but not a unit
+export const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>
+	reader.unitsById[node.id]

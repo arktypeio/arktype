@@ -1,5 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
-import { isNumericString, isWellFormedNumber, nearestFloat } from "@ark/util"
+import {
+	isNumericString,
+	isWellFormedNumber,
+	nearestFloat,
+	numericStringMatcher
+} from "@ark/util"
 
 contextualize(() => {
 	describe("nearestFloat", () => {
@@ -69,6 +74,42 @@ contextualize(() => {
 		it("wellFormedNumberMatcher requires an integer portion", () => {
 			attest(isWellFormedNumber("")).equals(false)
 			attest(isWellFormedNumber("-")).equals(false)
+		})
+
+		// https://github.com/arktypeio/arktype/issues/1448
+		it("numericStringMatcher accepts exponents", () => {
+			const results = Object.fromEntries(
+				[
+					"5.7e-10",
+					"1E5",
+					"1e+5",
+					".5e3",
+					"0e0",
+					"1e",
+					"1e+",
+					"e5",
+					"1.e5",
+					"-0e5",
+					"-0.0E-3"
+				].map(s => {
+					const isNumeric = isNumericString(s)
+					attest(numericStringMatcher.test(s)).equals(isNumeric)
+					return [s, isNumeric]
+				})
+			)
+			attest(results).snap({
+				"5.7e-10": true,
+				"1E5": true,
+				"1e+5": true,
+				".5e3": true,
+				"0e0": true,
+				"1e": false,
+				"1e+": false,
+				e5: false,
+				"1.e5": false,
+				"-0e5": false,
+				"-0.0E-3": false
+			})
 		})
 
 		it("numericStringMatcher requires an integer or decimal portion", () => {

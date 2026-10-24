@@ -1,32 +1,21 @@
 import { describeCollapsibleDate } from "@ark/util"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
-import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
-	createDateSchemaNormalizer,
-	parseDateLimit,
 	type BaseRangeInner,
 	type LimitSchemaValue,
-	type UnknownExpandedRangeSchema,
-	type UnknownNormalizedRangeSchema
+	type UnknownExpandedRangeSchema
 } from "./range.ts"
 
 export declare namespace Before {
 	export interface Inner extends BaseRangeInner {
 		rule: Date
-	}
-
-	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
-		rule: LimitSchemaValue
 	}
 
 	export interface ExpandedSchema extends UnknownExpandedRangeSchema {
@@ -40,8 +29,6 @@ export declare namespace Before {
 	export interface Declaration
 		extends declareNode<{
 			kind: "before"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: Date
 			errorContext: ErrorContext
@@ -53,40 +40,26 @@ export declare namespace Before {
 const implementation: nodeImplementationOf<Before.Declaration> =
 	implementNode<Before.Declaration>({
 		kind: "before",
-		collapsibleKey: "rule",
-		hasAssociatedError: true,
+		collapseKey: "rule",
+		ownsError: true,
 		keys: {
 			rule: {
-				parse: parseDateLimit,
 				serialize: schema => schema.toISOString()
 			}
 		},
-		normalize: createDateSchemaNormalizer("before"),
 		defaults: {
-			description: node => `${node.collapsibleLimitString} or earlier`,
-			actual: describeCollapsibleDate
-		},
-		intersections: {
-			before: (l, r) => (l.isStricterThan(r) ? l : r),
-			after: (before, after, ctx) =>
-				before.overlapsRange(after) ?
-					before.overlapIsUnit(after) ?
-						ctx.$.node("unit", { unit: before.rule })
-					:	null
-				:	Disjoint.init("range", before, after)
+			description: node => `${describeCollapsibleDate(node.rule)} or earlier`
 		}
 	})
 
 export class BeforeNode extends BaseRange<Before.Declaration> {
 	collapsibleLimitString = describeCollapsibleDate(this.rule)
 
-	traverseAllows: TraverseAllows<Date> = data => data <= this.rule
+	traverseAllows(data: Date): boolean {
+		return data <= this.rule
+	}
 
 	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
-
-	reduceJsonSchema(base: JsonSchema, ctx: ToJsonSchema.Context): JsonSchema {
-		return ctx.fallback.date({ code: "date", base, before: this.rule })
-	}
 }
 
 export const Before = {

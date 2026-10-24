@@ -1,23 +1,37 @@
 <h1 align="center">ArkType</h1>
 <h3 align="center"><i>TypeScript's 1:1 validator, optimized from editor to runtime</i></h3>
 
-ArkType is a runtime validation library that parses optimized validators from familiar, type-safe syntax.
+ArkType validates data at runtime with definitions written in TypeScript's own syntax.
 
-It can be used to check external data like JSON payloads or forms at the boundaries of your code (similar to Zod).
+```sh
+npm install arktype
+```
 
-<video
-autoPlay
-loop
-controls
-playsInline
-muted
-disablePictureInPicture
-src="https://github.com/user-attachments/assets/69fdded6-50a9-402d-a28c-afa58db63c90"
-/>
+```ts
+import { type } from "arktype"
+
+const User = type({
+	name: "string",
+	"age?": "number.integer >= 0"
+})
+
+const out = User({ name: "Alan", age: -1 })
+
+if (out instanceof type.errors) {
+	// age must be non-negative (was -1)
+	console.error(out.summary)
+} else {
+	// { name: string; age?: number }
+	console.log(out.name)
+}
+```
+
+To ship less, [precompile](https://arktype.io/docs/precompile) your Types when you build: each becomes a validator with only the checks it needs, so arktype's parser never ships.
 
 ## Docs
 
-See our [docs site](https://arktype.io)
+- [arktype.io](https://arktype.io/docs/intro/setup)
+- [Using ArkType with coding agents](https://arktype.io/docs/agents): the skill (`npx skills add arktypeio/arktype`) and Markdown docs at [arktype.io/llms.txt](https://arktype.io/llms.txt)
 
 ## Contributions
 
@@ -27,16 +41,16 @@ Depending on your level of familiarity with type systems and TS generics, some p
 
 If you're planning on submitting a non-trivial fix or a new feature, please [create an issue first](https://github.com/arktypeio/arktype/issues/new) so everyone's on the same page. The last thing we want is for you to spend time on a submission we're unable to merge.
 
-When you're ready, check out our [guide](./.github/CONTRIBUTING.md) to get started!
+When you're ready, check out our [guide](https://github.com/arktypeio/arktype/blob/main/.github/CONTRIBUTING.md) to get started!
 
 ## License
 
 This project is licensed under the terms of the
-[MIT license](./LICENSE).
+[MIT license](https://github.com/arktypeio/arktype/blob/main/LICENSE).
 
 ## Code of Conduct
 
-We will not tolerate any form of disrespect toward members of our community. Please refer to our [Code of Conduct](./.github/CODE_OF_CONDUCT.md) and reach out to david@arktype.io immediately if you've seen or experienced an interaction that may violate these standards.
+We will not tolerate any form of disrespect toward members of our community. Please refer to our [Code of Conduct](https://github.com/arktypeio/arktype/blob/main/.github/CODE_OF_CONDUCT.md) and reach out to david@arktype.io immediately if you've seen or experienced an interaction that may violate these standards.
 
 ## Sponsorship
 

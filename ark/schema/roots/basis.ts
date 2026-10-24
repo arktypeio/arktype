@@ -1,27 +1,28 @@
 import type { NodeCompiler } from "../shared/compile.ts"
 import { compileObjectLiteral } from "../shared/implement.ts"
-import type { TraverseApply } from "../shared/traversal.ts"
+import type { InternalTraversal } from "../shared/traversal.ts"
 import { BaseRoot, type InternalRootDeclaration } from "./root.ts"
 
 export abstract class InternalBasis<
 	d extends InternalRootDeclaration = InternalRootDeclaration
 > extends BaseRoot<d> {
-	abstract compiledCondition: string
-	abstract compiledNegation: string
+	abstract override compileCondition(js: NodeCompiler, data: string): string
 	declare structure: undefined
 
-	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
+	traverseApply(data: d["prerequisite"], ctx: InternalTraversal): void {
 		if (!this.traverseAllows(data, ctx))
-			ctx.errorFromNodeContext(this.errorContext as never)
+			ctx.errorFromNode(this.errorContext as never, data)
 	}
 
+	private _errorContext: d["errorContext"] | undefined
+	// frozen when created, as a missing value shares it
 	get errorContext(): d["errorContext"] {
-		return {
+		return (this._errorContext ??= Object.freeze({
 			code: this.kind,
 			description: this.description,
 			meta: this.meta,
 			...this.inner
-		}
+		}))
 	}
 
 	get compiledErrorContext(): string {
@@ -29,11 +30,6 @@ export abstract class InternalBasis<
 	}
 
 	compile(js: NodeCompiler): void {
-		if (js.traversalKind === "Allows") js.return(this.compiledCondition)
-		else {
-			js.if(this.compiledNegation, () =>
-				js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
-			)
-		}
+		js.checkLeaf(this)
 	}
 }

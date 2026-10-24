@@ -10,6 +10,7 @@ import {
 	type writeNonSubmoduleDotMessage
 } from "@ark/schema"
 import {
+	hasOwn,
 	printable,
 	throwParseError,
 	tryParseWellFormedBigint,
@@ -28,7 +29,7 @@ import { writePrefixedPrivateReferenceMessage } from "../../ast/validate.ts"
 import type { RuntimeState } from "../../reduce/dynamic.ts"
 import type { StaticState, s } from "../../reduce/static.ts"
 import type { BaseCompletions } from "../../string.ts"
-import { terminatingChars, type TerminatingChar } from "../tokens.ts"
+import { shiftUntilTerminator } from "../tokens.ts"
 import {
 	parseGenericArgs,
 	writeInvalidGenericArgCountMessage,
@@ -36,13 +37,13 @@ import {
 } from "./genericArgs.ts"
 
 export const parseUnenclosed = (s: RuntimeState): void => {
-	const token = s.scanner.shiftUntilLookahead(terminatingChars)
+	const token = shiftUntilTerminator(s.scanner)
 	if (token === "keyof") s.addPrefix("keyof")
 	else s.root = unenclosedToNode(s, token)
 }
 
 export type parseUnenclosed<s extends StaticState, $, args> =
-	Scanner.shiftUntil<s["unscanned"], TerminatingChar> extends (
+	shiftUntilTerminator<s["unscanned"]> extends (
 		Scanner.shiftResult<infer token, infer unscanned>
 	) ?
 		tryResolve<s, unscanned, token, $, args> extends s.from<infer s> ?
@@ -69,7 +70,7 @@ export const parseGenericInstantiation = (
 	g: GenericRoot,
 	s: RuntimeState
 ): BaseRoot => {
-	s.scanner.shiftUntilNonWhitespace()
+	s.scanner.shiftPastWhitespace()
 	const lookahead = s.scanner.shift()
 	if (lookahead !== "<")
 		return s.error(writeInvalidGenericArgCountMessage(name, g.names, []))
@@ -108,7 +109,7 @@ const unenclosedToNode = (s: RuntimeState, token: string): BaseRoot =>
 		token === "" ?
 			s.scanner.lookahead === "#" ?
 				writePrefixedPrivateReferenceMessage(
-					s.shiftedBy(1).scanner.shiftUntilLookahead(terminatingChars)
+					shiftUntilTerminator(s.shiftedBy(1).scanner)
 				)
 			:	writeMissingOperandMessage(s)
 		:	writeUnresolvableMessage(token)
@@ -118,7 +119,7 @@ const maybeParseReference = (
 	s: RuntimeState,
 	token: string
 ): BaseRoot | undefined => {
-	if (s.ctx.args?.[token]) {
+	if (s.ctx.args && hasOwn(s.ctx.args, token)) {
 		const arg = s.ctx.args[token]
 		if (typeof arg !== "string") return arg
 
@@ -234,7 +235,7 @@ export type unresolvableState<
 	submodulePath extends string[]
 > =
 	[token, s["unscanned"]] extends ["", Scanner.shift<"#", infer unscanned>] ?
-		Scanner.shiftUntil<unscanned, TerminatingChar> extends (
+		shiftUntilTerminator<unscanned> extends (
 			Scanner.shiftResult<infer name, string>
 		) ?
 			s.error<writePrefixedPrivateReferenceMessage<name>>

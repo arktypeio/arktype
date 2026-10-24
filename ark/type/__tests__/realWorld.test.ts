@@ -60,32 +60,23 @@ contextualize(() => {
 	provider: "GitHub" | "Google"
 	providerUserId: string
 }`)
-		attest(types.account.json).snap({
+		attest(types.account.json).equals({
 			required: [
 				{ key: "provider", value: [{ unit: "GitHub" }, { unit: "Google" }] },
 				{ key: "providerUserId", value: "string" },
 				{
 					key: "user",
 					value: [
-						{
-							required: [{ key: "name", value: "string" }],
-							optional: [
-								{
-									key: "accounts",
-									value: { sequence: "$account", proto: "Array" }
-								}
-							],
-							domain: "object"
-						},
-						"$ark.TimeStub"
+						`$ark.${types.user.internal.id}`,
+						registeredReference(MockTimeStub)
 					]
 				}
 			],
 			optional: [
 				{ key: "coll", value: "string" },
 				{ key: "id", value: "string" },
-				{ key: "ts", value: "$ark.TimeStub" },
-				{ key: "ttl", value: "$ark.TimeStub" }
+				{ key: "ts", value: registeredReference(MockTimeStub) },
+				{ key: "ttl", value: registeredReference(MockTimeStub) }
 			],
 			domain: "object"
 		})
@@ -482,9 +473,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		const standalone = types.JsonSchemaArray.describe("standalone")
 
-		attest(standalone.json).snap({
+		attest(standalone.json).equals({
 			required: [
-				{ key: "items", value: "$JsonSchema" },
+				{ key: "items", value: `$ark.${types.JsonSchema.internal.id}` },
 				{ key: "type", value: { unit: "array" } }
 			],
 			meta: "standalone",
@@ -506,7 +497,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 
 		attest(failOut.toString()).snap(
-			'items.items must be an object (was missing) or items.type must be "integer" or "number" (was "array")'
+			"items.items must be an object (was missing)"
 		)
 	})
 
@@ -573,10 +564,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	})
 
 	it("narrowed quoted description", () => {
+		const _narrowedQuoteDescription = () => true
 		const T = type("string")
-			.narrow(function _narrowedQuoteDescription() {
-				return true
-			})
+			.narrow(_narrowedQuoteDescription)
 			.describe('This will "fail"')
 
 		attest<string>(T.t)
@@ -585,7 +575,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			domain: { domain: "string", meta: 'This will "fail"' },
 			predicate: [
 				{
-					predicate: "$ark._narrowedQuoteDescription",
+					predicate: registeredReference(_narrowedQuoteDescription),
 					meta: 'This will "fail"'
 				}
 			],
@@ -636,22 +626,20 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			}
 		})
 
-		$.export()
+		const arraySchema = {
+			optional: [
+				{
+					key: "additionalItems",
+					value: `$ark.${$.export().Schema.internal.id}`
+				}
+			],
+			domain: "object"
+		}
 
-		attest($.json).snap({
-			TypeWithKeywords: {
-				optional: [
-					{ key: "additionalItems", value: ["$ArraySchema", "number"] }
-				],
-				domain: "object"
-			},
-			Schema: ["$ArraySchema", "number"],
-			ArraySchema: {
-				optional: [
-					{ key: "additionalItems", value: ["$ArraySchema", "number"] }
-				],
-				domain: "object"
-			}
+		attest($.json).equals({
+			TypeWithKeywords: arraySchema,
+			Schema: ["number", arraySchema],
+			ArraySchema: arraySchema
 		})
 	})
 
@@ -720,7 +708,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 
 		attest(T.expression).snap(
-			"{ first_name?: (In: string) => To<string <= 3 & >= 1> }"
+			"{ first_name?: (In: string) => To<1 <= string <= 3> }"
 		)
 		attest(T.t).type.toString.snap(
 			"{ first_name?: (In: string) => To<string> }"
@@ -1089,7 +1077,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				a: "true"
 			}
 		})
-		attest(Unmorphed.internal.includesTransform).equals(false)
+		attest(Unmorphed.internal.hasTransform).equals(false)
 	})
 
 	it("morph includesMorph", () => {
@@ -1097,7 +1085,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			prop: ["string", "=>", s => s.length]
 		})
 
-		attest(T.internal.includesTransform).equals(true)
+		attest(T.internal.hasTransform).equals(true)
 	})
 
 	it("default prop includesMorph", () => {
@@ -1105,7 +1093,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			prop: "number = 5"
 		})
 
-		attest(T.internal.includesTransform).equals(true)
+		attest(T.internal.hasTransform).equals(true)
 	})
 
 	it("default tuple includesMorph", () => {
@@ -1113,7 +1101,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			tuple: ["number = 5"]
 		})
 
-		attest(T.internal.includesTransform).equals(true)
+		attest(T.internal.hasTransform).equals(true)
 	})
 
 	it("onUndeclaredKey delete includesMorph", () => {
@@ -1123,7 +1111,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				foo: "string"
 			}
 		})
-		attest(T.internal.includesTransform).equals(true)
+		attest(T.internal.hasTransform).equals(true)
 	})
 
 	it("distill doesn't treat functions returning any/never as morphs", () => {
@@ -1169,7 +1157,8 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(() => Point2d.or(Point3d)).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { x: number, y: number, z: number, + (undeclared): delete }
-Right: { x: number, y: number, + (undeclared): delete }`)
+Right: { x: number, y: number, + (undeclared): delete }
+Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1266
@@ -1367,7 +1356,7 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 
 		const Skinish = MasterSkinItem.or(SkinItem)
 		attest(Skinish.expression).snap(
-			'{ masterItem: true, minPrice: number % 1 & >= 0, qualities: (1 | 2 | 3 | 4 | 5)[] | [null], short: string, skin: string, type: "skin", souvenirAvailable: boolean = false, stattrakAvailable: boolean = false, + (undeclared): reject } | { short: string, skin: string, type: "skin", souvenir: boolean = false, stattrak: boolean = false, quality?: 1 | 2 | 3 | 4 | 5, weight?: number, + (undeclared): reject }'
+			'{ masterItem: true, minPrice: number % 1 >= 0, qualities: (1 | 2 | 3 | 4 | 5)[] | [null], short: string, skin: string, type: "skin", souvenirAvailable: boolean = false, stattrakAvailable: boolean = false, + (undeclared): reject } | { short: string, skin: string, type: "skin", quality?: 1 | 2 | 3 | 4 | 5, souvenir: boolean = false, stattrak: boolean = false, weight?: number, + (undeclared): reject }'
 		)
 	})
 
@@ -1418,7 +1407,7 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 
 		if (!(out instanceof type.errors)) throw new AssertionError({})
 
-		attest(out.length).equals(3)
+		attest(out.issues.length).equals(3)
 		attest(out.summary).snap(`date1 must be a parsable date (was "")
 date2 must be a parsable date (was "")
 date3 must be a parsable date (was "")`)
@@ -1544,6 +1533,9 @@ date3 must be a parsable date (was "")`)
 		const data = { type: "array", item: { type: "number" } } as const
 
 		attest(Node(data)).equals(data)
+		attest(Node({ type: "array", item: { type: "nope" } }).toString()).snap(
+			'item.type must be "array", "number" or "unit" (was "nope")'
+		)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1284

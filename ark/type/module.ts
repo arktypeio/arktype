@@ -34,7 +34,7 @@ export type Submodule<exports extends {}> = RootModule<
 export type instantiateExport<t, $> =
 	[t] extends [PreparsedNodeResolution] ?
 		[t] extends [anyOrNever] ? Type<t, $>
-		: t extends GenericAst<infer params, infer body, infer body$> ?
+		: t extends GenericAst<infer params, infer body, infer body$, any> ?
 			Generic<params, body, body$, $>
 		: t extends Submodule<infer exports> ? BoundModule<exports, $>
 		: never

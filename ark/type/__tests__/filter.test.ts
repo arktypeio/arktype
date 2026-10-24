@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { registeredReference } from "@ark/schema"
 import { type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
 
@@ -14,8 +15,8 @@ contextualize(() => {
 		attest<(In: string) => Out<number>>(ParseLongNumber.t)
 
 		attest(ParseLongNumber.json).snap({
-			in: { domain: "string", predicate: ["$ark.stringIsLong"] },
-			morphs: ["$ark.parseNumber"]
+			in: { domain: "string", predicate: [registeredReference(stringIsLong)] },
+			morphs: [registeredReference(parseNumber)]
 		})
 
 		attest(ParseLongNumber("123456")).snap(123456)
@@ -37,8 +38,11 @@ contextualize(() => {
 		attest<(In: `${bigint}`) => Out<number>>(ParseIntegerLike.t)
 
 		attest(ParseIntegerLike.json).snap({
-			in: { domain: "string", predicate: ["$ark.stringIsIntegerLike"] },
-			morphs: ["$ark.parseNumber"]
+			in: {
+				domain: "string",
+				predicate: [registeredReference(stringIsIntegerLike)]
+			},
+			morphs: [registeredReference(parseNumber)]
 		})
 
 		attest(ParseIntegerLike("123456")).snap(123456)

@@ -1,4 +1,4 @@
-import { getBuiltinNameOfConstructor } from "./objectKinds.ts"
+import { getBuiltinNameOfConstructor, isArray } from "./objectKinds.ts"
 
 /** Shallowly copy the properties of the object. */
 export const shallowClone: <input extends object>(
@@ -23,9 +23,7 @@ const _clone = (input: unknown, seen: Map<unknown, unknown> | null): any => {
 	if (builtinConstructorName && builtinConstructorName !== "Array") return input
 
 	const cloned =
-		Array.isArray(input) ?
-			input.slice()
-		:	Object.create(Object.getPrototypeOf(input))
+		isArray(input) ? input.slice() : Object.create(Object.getPrototypeOf(input))
 
 	const propertyDescriptors = Object.getOwnPropertyDescriptors(input)
 

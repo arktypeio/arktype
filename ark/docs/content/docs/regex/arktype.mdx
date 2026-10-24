@@ -1,0 +1,70 @@
+---
+title: ArkType
+description: How ArkType infers its regex literals and accepts regex() values as definitions.
+---
+
+`arktype` uses ArkRegex to infer its regex literals, and re-exports `regex` and the `Regex` type, so there's nothing extra to install:
+
+```ts
+import { regex, type } from "arktype"
+
+const ZipCode = type("/^\\d{5}$/")
+//    ^? Type<`${number}`>
+```
+
+Like `new RegExp()`, a regex literal matches anywhere in a string unless you anchor it with `^` and `$`, and its type is padded to match:
+
+```ts
+const HasAbc = type("/abc/")
+//    ^? Type<`${string}abc${string}`>
+```
+
+## Flags
+
+A regex literal in a string definition can't have flags:
+
+```ts
+// @errors: 2345
+type("/^ok$/i") // 'i' is not allowed here
+```
+
+To use flags, pass a `regex()` value instead.
+
+## `regex()` definitions
+
+A `Regex` can be used directly as a definition, with or without flags:
+
+```ts
+const Ok = type(regex("^ok$", "i"))
+//    ^? Type<"ok" | "oK" | "Ok" | "OK">
+
+const Address = type({
+	street: "string",
+	zip: regex("^\\d{5}(-\\d{4})?$")
+})
+
+type Address = typeof Address.infer
+//   ^? { street: string; zip: `${number}` | `${number}-${number}` }
+```
+
+A native `RegExp` like `/^ok$/i` is also a valid definition, but infers `string`: TypeScript gives `/…/` literals no type beyond `RegExp`.
+
+## e(x)ec mode
+
+Prefix a regex literal with `x` to validate the string and then parse it into the result of `.exec()`. The definition is a [morph](/docs/intro/morphs-and-more) from the string to its match:
+
+```ts
+const Birthday = type("x/^(?<month>\\d{2})-(?<day>\\d{2})-(?<year>\\d{4})$/")
+
+type Input = typeof Birthday.inferIn
+//   ^? `${number}-${number}-${number}`
+
+const match = Birthday.assert("05-21-1993")
+
+const month = match.groups.month
+//    ^? `${number}`
+```
+
+At runtime, `month` is `"05"`.
+
+See [string patterns](/docs/primitives#string-patterns) for how regex literals fit with ArkType's other string constraints.

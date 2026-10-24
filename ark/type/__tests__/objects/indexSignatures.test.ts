@@ -6,6 +6,7 @@ import {
 } from "@ark/schema"
 import { printable } from "@ark/util"
 import { scope, type } from "arktype"
+import { writeOptionalIndexKeyMessage } from "arktype/internal/parser/objectLiteral.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
@@ -170,10 +171,126 @@ other must be a string (was a bigint)`)
 			a?: never
 		}>(T.infer)
 		attest(T.json).snap({
-			optional: [{ key: "a", value: { unit: 1 } }],
+			optional: [{ key: "a", value: [] }],
 			index: [{ value: { unit: 4 }, signature: "string" }],
 			domain: "object"
 		})
+	})
+
+	it("prop and opposing index", () => {
+		attest(() => type({ kind: "'b'" }).and({ "[string]": "object" })).throws(
+			"Intersection at kind of string and object results in an unsatisfiable type"
+		)
+		attest(() =>
+			type({ a: "string.numeric.parse" }).and({ "[string]": "number" })
+		).throws(
+			"Intersection at a of string and number results in an unsatisfiable type"
+		)
+		attest(
+			type({ kind: "'b'" })
+				.or({ "[string]": "object" })
+				.and({ "[string]": "object" }).expression
+		).snap("{ [string]: object }")
+	})
+
+	it("parses a declared key its index signature also checks", () => {
+		const T = type({ a: "string.numeric.parse", "[string]": "string | number" })
+		attest<{ [x: string]: string | number; a: string }>(T.inferIn)
+		attest<{ [x: string]: string | number; a: number }>(T.infer)
+		attest(T({ a: "1", b: "b" })).equals({ a: 1, b: "b" })
+		attest(T({ a: "one" }).toString()).snap(
+			'a must be a well-formed numeric string (was "one")'
+		)
+		attest(T({ b: "b" }).toString()).snap("a must be a string (was missing)")
+	})
+
+	it("defaults a declared key its index signature also checks", () => {
+		const T = type({ a: "number = 5", "[string]": "number" })
+		attest<{ [x: string]: number; a?: number }>(T.inferIn)
+		attest<{ [x: string]: number; a: number }>(T.infer)
+		attest(T({ b: 1 })).snap({ b: 1, a: 5 })
+	})
+
+	it("parses a symbol key its index signature also checks", () => {
+		const s = Symbol()
+		const T = type({
+			[s]: "string.numeric.parse",
+			"[symbol]": "string | number"
+		})
+		attest<{ [x: symbol]: string | number; [s]: number }>(T.infer)
+	})
+
+	it("fail-fast index branch", () => {
+		const $ = scope({})
+		const T = $.type({ kind: "'c'", p0: "boolean" }).or({
+			"[string]": { p2: "object" }
+		})
+
+		attest(T({ kind: { bogus: true }, p0: true }).toString()).snap(
+			'kind.p2 must be an object (was missing) or kind must be "c" (was an object)'
+		)
+	})
+
+	it("keeps no error from a signature rejecting a key", () => {
+		const $ = scope({})
+		const K = $.type("string").narrow(
+			(s, ctx) => s.startsWith("a") || ctx.mustBe("prefixed with a")
+		)
+		const T = $.type.Record(K, "number")
+		const data = { ab: 1, x: 2 }
+		attest(T(data)).equals(data)
+		attest(T.allows(data)).equals(true)
+		attest(T({ ab: "1", x: 2 }).toString()).snap(
+			"ab must be a number (was a string)"
+		)
+		attest(T.onUndeclaredKey("reject")(data).toString()).snap(
+			"x must be removed"
+		)
+		attest(T.onUndeclaredKey("delete")(data)).equals({ ab: 1 })
+		attest($.type.Record(K, "string.numeric.parse")({ ab: "1", x: 2 })).equals({
+			ab: 1,
+			x: 2
+		})
+	})
+
+	it("checks keys against a signature reading ctx that another Type compiled first", () => {
+		const $ = scope({})
+		const K = $.type("string").narrow(
+			(s, ctx) => s.length > 5 || ctx.mustBe("long")
+		)
+		const T = $.type({ a: "number" }).and($.type.Record(K, "string"))
+		attest(T.allows({ a: 1, ab: 2, abcdefg: "x" })).equals(true)
+		attest(T({ a: 1, abcdefg: 2 }).toString()).snap(
+			"abcdefg must be a string (was a number)"
+		)
+	})
+
+	it("checks a declared key against a signature reading ctx's root", () => {
+		const types = scope({
+			listed: [
+				"string",
+				":",
+				(k, ctx) => (ctx.root as { listed: string[] }).listed.includes(k)
+			],
+			t: { listed: "string[]", a: "string | number", "[listed]": "string" }
+		}).export()
+		const T = type({ listed: "string[]", a: "string | number" }).and(
+			type.Record(types.listed, "string")
+		)
+		const data = { listed: [], a: 1 }
+		attest(types.t(data)).unknown.equals(data)
+		attest(T(data)).unknown.equals(data)
+		attest(types.t({ listed: ["a"], a: 1 }).toString()).snap(
+			"a must be a string (was a number)"
+		)
+		attest(T({ listed: ["a"], a: 1 }).toString()).snap(
+			"a must be a string (was a number)"
+		)
+		attest(
+			type("string")
+				.or(T)({ listed: ["a"], a: 1 })
+				.toString()
+		).snap("a must be a string (was a number)")
 	})
 
 	it("intersction with right required", () => {
@@ -242,6 +359,26 @@ other must be a string (was a bigint)`)
 			domain: "object",
 			required: [{ key: "[string]", value: "string" }]
 		})
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1525
+	it("optional index", () => {
+		attest(() =>
+			type({
+				// @ts-expect-error
+				"[string]?": "number"
+			})
+		).throwsAndHasTypeError(writeOptionalIndexKeyMessage("[string]"))
+	})
+
+	it("escaped optional index", () => {
+		const O = type({ "\\[string]?": "string" })
+		attest<{ "[string]"?: string }>(O.infer)
+		attest(O.json).snap({
+			optional: [{ key: "[string]", value: "string" }],
+			domain: "object"
+		})
+		attest(O({})).equals({})
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1040

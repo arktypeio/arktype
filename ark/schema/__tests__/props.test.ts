@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema } from "@ark/schema"
+import { rootSchema, writeEnumerableIndexBranches } from "@ark/schema"
 
 contextualize(() => {
 	it("normalizes prop order", () => {
@@ -61,6 +61,16 @@ contextualize(() => {
 			index: [{ signature: "string", value: { unit: "foo" } }],
 			domain: "object"
 		})
+	})
+
+	it("enumerable index keys", () => {
+		const s = Symbol("s")
+		attest(() =>
+			rootSchema({
+				domain: "object",
+				index: { signature: ["string", { unit: s }], value: "string" }
+			})
+		).throws(writeEnumerableIndexBranches(["Symbol(s)"]))
 	})
 
 	const startingWithA = rootSchema({ domain: "string", pattern: /^a.*/ })
@@ -179,9 +189,10 @@ contextualize(() => {
 			undeclared: "reject"
 		})
 
-		attest(() => L.and(R)).throws.snap(
-			"ParseError: Intersection at b of number and never results in an unsatisfiable type"
-		)
+		attest(() => L.and(R)).throws
+			.snap(`ParseError: Intersection at b of number and never results in an unsatisfiable type
+b is undeclared on a side that rejects undeclared keys.
+To add it, use .merge(), which takes "+" from the merged object.`)
 	})
 
 	it("delete & reject", () => {

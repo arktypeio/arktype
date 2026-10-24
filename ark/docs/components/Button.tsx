@@ -39,7 +39,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
 		const variantClasses = {
 			outline: cx(
-				"bg-transparent text-white border-2 border-white/60 backdrop-blur-[5px]",
+				"glow-btn bg-transparent text-white border-2 border-white/60 backdrop-blur-[5px]",
 				"shadow-[0_0_7px_rgba(255,255,255,0.5),_0_0_14px_rgba(149,88,248,0.3),_inset_0_0_6px_rgba(255,255,255,0.15)]",
 				"[text-shadow:0_0_6px_rgba(255,255,255,0.6)]",
 				"hover:border-white hover:shadow-[0_0_12px_rgba(255,255,255,0.7),_0_0_22px_rgba(149,88,248,0.45)] hover:text-white/95 hover:-translate-y-[1px]",

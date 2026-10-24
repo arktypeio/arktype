@@ -3,7 +3,8 @@ import type {
 	GenericParamAst,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import type { array, ErrorMessage, Hkt, typeToString } from "@ark/util"
+import type { array, ErrorMessage, Hkt, Key, typeToString } from "@ark/util"
+import type { RecordHkt } from "../../keywords/ts.ts"
 import type { UnparsedScope } from "../../scope.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { inferAstRoot, inferExpression } from "./infer.ts"
@@ -21,7 +22,16 @@ export type inferGenericInstantiation<
 	$,
 	args
 > =
-	g["bodyDef"] extends Hkt ?
+	// unlike Hkt.apply, a mapped type defers inferring V, so it can be cyclic
+	g["bodyDef"] extends RecordHkt ?
+		{
+			[k in inferExpression<argAsts[0], $, args> & Key]: inferExpression<
+				argAsts[1],
+				$,
+				args
+			>
+		}
+	: g["bodyDef"] extends Hkt ?
 		Hkt.apply<
 			g["bodyDef"],
 			{ [i in keyof argAsts]: inferExpression<argAsts[i], $, args> }
@@ -33,7 +43,7 @@ export type inferGenericInstantiation<
 				// intersect `${number}` to ensure that only array indices are mapped
 				[i in keyof g["names"] & `${number}` as g["names"][i]]: inferExpression<
 					argAsts[i & keyof argAsts],
-					resolveScope<g["arg$"], $>,
+					$,
 					args
 				>
 			}

@@ -56,18 +56,14 @@ export class Scanner<lookahead extends string = string> {
 		return shifted
 	}
 
-	shiftUntilLookahead(charOrSet: string | KeySet): string {
+	shiftUntilNext(charOrSet: string | KeySet): string {
 		return typeof charOrSet === "string" ?
 				this.shiftUntil(s => s.lookahead === charOrSet)
 			:	this.shiftUntil(s => s.lookahead in charOrSet)
 	}
 
-	shiftUntilNonWhitespace(): string {
+	shiftPastWhitespace(): string {
 		return this.shiftUntil(() => !(this.lookahead in whitespaceChars))
-	}
-
-	jumpToIndex(i: number): void {
-		this.i = i < 0 ? this.length + i : i
 	}
 
 	jumpForward(count: number): void {
@@ -114,11 +110,12 @@ export declare namespace Scanner {
 		terminator extends string,
 		appendTo extends string = ""
 	> =
-		unscanned extends shift<infer lookahead, infer nextUnscanned> ?
-			lookahead extends terminator ?
-				[appendTo, unscanned]
-			:	shiftUntil<nextUnscanned, terminator, `${appendTo}${lookahead}`>
-		:	[appendTo, ""]
+		unscanned extends `${infer first}${infer second}${infer rest}` ?
+			first extends terminator ? [appendTo, unscanned]
+			: second extends terminator ? [`${appendTo}${first}`, `${second}${rest}`]
+			: shiftUntil<rest, terminator, `${appendTo}${first}${second}`>
+		: unscanned extends terminator ? [appendTo, unscanned]
+		: [`${appendTo}${unscanned}`, ""]
 
 	export type shiftUntilEscapable<
 		unscanned extends string,
@@ -126,28 +123,23 @@ export declare namespace Scanner {
 		escapeEscape extends Backslash | "",
 		appendTo extends string = ""
 	> =
-		unscanned extends shift<infer lookahead, infer nextUnscanned> ?
-			lookahead extends terminator ? [appendTo, unscanned]
-			: lookahead extends Backslash ?
-				nextUnscanned extends (
-					shift<infer nextLookahead, infer postEscapedUnscanned>
-				) ?
-					shiftUntilEscapable<
-						postEscapedUnscanned,
-						terminator,
-						escapeEscape,
-						`${appendTo}${nextLookahead extends terminator ? ""
-						: nextLookahead extends Backslash ? escapeEscape
-						: Backslash}${nextLookahead}`
-					>
-				:	[`${appendTo}${Backslash}`, ""]
-			:	shiftUntilEscapable<
+		// skip ahead to the first backslash, then the first terminator before it
+		unscanned extends `${infer head}${Backslash}${infer escaped}` ?
+			head extends `${infer scanned}${terminator}${infer rest}` ?
+				[`${appendTo}${scanned}`, `${terminator}${rest}${Backslash}${escaped}`]
+			: escaped extends shift<infer lookahead, infer nextUnscanned> ?
+				shiftUntilEscapable<
 					nextUnscanned,
 					terminator,
 					escapeEscape,
-					`${appendTo}${lookahead}`
+					`${appendTo}${head}${lookahead extends terminator ? ""
+					: lookahead extends Backslash ? escapeEscape
+					: Backslash}${lookahead}`
 				>
-		:	[appendTo, ""]
+			:	[`${appendTo}${head}${Backslash}`, ""]
+		: unscanned extends `${infer scanned}${terminator}${infer rest}` ?
+			[`${appendTo}${scanned}`, `${terminator}${rest}`]
+		:	[`${appendTo}${unscanned}`, ""]
 
 	export type shiftUntilNot<
 		unscanned extends string,

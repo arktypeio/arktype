@@ -1,20 +1,23 @@
 ---
 title: Keywords
+description: Every built-in keyword, from TypeScript's own types to subtypes like string.email and generics like Pick.
 ---
 
-### TypeScript
+## TypeScript [#typescript]
 
-<div>All\* built-in TypeScript keywords are directly available.</div>
+TypeScript's built-in types are keywords, except `any` and `void`, which don't mean anything useful at runtime. If you need `any`, use `unknown.any`.
 
 <SyntaxTabs>
 	<SyntaxTab string>
+
 ```ts
 const Keywords = type({
 	string: "string",
 	date: "Date"
 })
 ```
-	</SyntaxTab>
+
+    </SyntaxTab>
 
     <SyntaxTab fluent>
 
@@ -25,57 +28,49 @@ const Keywords = type({
 })
 ```
 
-Common keywords are exposed directly on `type`.
-
     </SyntaxTab>
 
 </SyntaxTabs>
 
-<sup>
-	\* `any` and `void` are misleading and unnecessary for runtime validation and
-	so are not included as keywords by default.
-</sup>
+These keywords are attached directly to `type`: `string`, `number`, `bigint`, `boolean`, `symbol`, `undefined`, `null`, `object`, `unknown`, `true`, `false`, `never`, `Key`, `Array`, `Date`, `Record` and `arrayIndex`. Every keyword is available in `type.keywords`.
 
-### Subtype
+## Subtypes [#subtype]
 
-Subtype keywords refine or transform their root type.
+A subtype keyword refines or transforms its parent, like `string.email` or `string.date.parse`. To find them in your editor, start a definition like `"string."` and let autocomplete list them.
 
 <SyntaxTabs>
 	<SyntaxTab string>
+
 ```ts
 const Keywords = type({
-	dateFormattedString: "string.date",
-	transformStringToDate: "string.date.parse",
-	isoFormattedString: "string.date.iso",
-	transformIsoFormattedStringToDate: "string.date.iso.parse"
+	dateString: "string.date",
+	isoDateString: "string.date.iso",
+	parsedDate: "string.date.parse",
+	parsedIsoDate: "string.date.iso.parse"
 })
 ```
 
-You can easily explore available subtypes via autocomplete by with a partial definition like `"string."`.
-
-</SyntaxTab>
+    </SyntaxTab>
 
     <SyntaxTab fluent>
 
 ```ts
 const Keywords = type({
-	dateFormattedString: type.keywords.string.date.root,
-	isoFormattedString: type.keywords.string.date.iso.root,
-	transformStringToDate: type.keywords.string.date.parse,
-	transformIsoFormattedStringToDate: type.keywords.string.date.iso.parse
+	dateString: type.keywords.string.date.root,
+	isoDateString: type.keywords.string.date.iso.root,
+	parsedDate: type.keywords.string.date.parse,
+	parsedIsoDate: type.keywords.string.date.iso.parse
 })
 ```
 
-All built-in keywords and modules are available in `type.keywords`.
-
-`.root` gets the base type of a subtyped module so that it can be used as a `Type` directly.
+A keyword with subtypes, like `string.date`, is a module. Its `.root` is the keyword's own `Type`.
 
     </SyntaxTab>
 
 </SyntaxTabs>
 
-### All Keywords
+## All keywords [#all-keywords]
 
-This table includes all keywords available in default `type` API. To define your own string-embeddable keywords, see [scopes](/docs/scopes).
+These are all the keywords `type` resolves. To define your own, see [scopes](/docs/scopes).
 
 <AllKeywordTables />

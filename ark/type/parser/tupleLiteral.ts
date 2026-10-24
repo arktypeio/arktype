@@ -1,5 +1,6 @@
 import {
 	$ark,
+	checkDefault,
 	makeRootAndArrayPropertiesMutable,
 	postfixAfterOptionalOrDefaultableMessage,
 	type BaseParseContext,
@@ -43,6 +44,13 @@ export const parseTupleLiteral = (
 		const [valueNode, operator, possibleDefaultValue] =
 			!isArray(parsedProperty) ? [parsedProperty] : parsedProperty
 
+		// string defaults run no user code
+		if (
+			typeof def[i] === "string" &&
+			typeof possibleDefaultValue === "function"
+		)
+			checkDefault(valueNode, possibleDefaultValue(), null)
+
 		i++
 		if (spread) {
 			if (!valueNode.extends($ark.intrinsic.Array))
@@ -69,19 +77,21 @@ export const parseTupleLiteral = (
 		}
 	}
 
-	return ctx.$.parseSchema(
-		sequences.map(sequence =>
+	return ctx.$.node("union", {
+		branches: sequences.map(sequence =>
 			isEmptyObject(sequence) ?
-				{
-					proto: Array,
-					exactLength: 0
-				}
-			:	({
-					proto: Array,
-					sequence
-				} as const)
+				ctx.$.node("intersection", {
+					proto: ctx.$.node("proto", { proto: Array }),
+					exactLength: ctx.$.node("exactLength", { rule: 0 })
+				})
+			:	ctx.$.node("intersection", {
+					proto: ctx.$.node("proto", { proto: Array }),
+					structure: ctx.$.node("structure", {
+						sequence: ctx.$.node("sequence", sequence)
+					})
+				})
 		)
-	)
+	})
 }
 
 export type validateTupleLiteral<def extends array, $, args> =

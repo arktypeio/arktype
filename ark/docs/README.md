@@ -1,26 +1,13 @@
-# my-app
+# arktype.io
 
-This is a Next.js application generated with
-[Create Fumadocs](https://github.com/fuma-nama/fumadocs).
-
-Run development server:
+The docs site: Next.js, statically exported to GitHub Pages.
 
 ```bash
-npm run dev
-# or
-pnpm dev
-# or
-yarn dev
+pnpm dev # http://localhost:3000
+pnpm build # static export to out/
 ```
 
-Open http://localhost:3000 with your browser to see the result.
-
-## Learn More
-
-To learn more about Next.js and Fumadocs, take a look at the following
-resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
-  features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [Fumadocs](https://fumadocs.vercel.app) - learn about Fumadocs
+- `content/docs` holds the pages as MDX. Each folder's `meta.json` orders its pages: `"---Label---"` starts a sidebar group, `"intro/setup"` lists a page in a subfolder, `"[text](/docs/x#y)"` adds a link, and pages that aren't listed are built but left out of the navigation, search and llms.txt. Folders with `"root": true` are sections.
+- `lib/content` turns that into the site without Next: the page tree, frontmatter, heading ids, MDX compilation, highlighting with twoslash, search and redirects. Twoslash results are cached in `node_modules/.cache/ark-docs`.
+- `lib/writeMarkdown.ts` writes each page as Markdown at its URL plus `.md`, and the llms.txt files, whenever `next.config.ts` loads.
+- `components/mdx/components.tsx` lists every component a page can use.

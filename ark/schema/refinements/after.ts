@@ -5,27 +5,17 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
-import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
-	createDateSchemaNormalizer,
-	parseDateLimit,
 	type BaseRangeInner,
 	type LimitSchemaValue,
-	type UnknownExpandedRangeSchema,
-	type UnknownNormalizedRangeSchema
+	type UnknownExpandedRangeSchema
 } from "./range.ts"
 
 export declare namespace After {
 	export interface Inner extends BaseRangeInner {
 		rule: Date
-	}
-
-	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
-		rule: LimitSchemaValue
 	}
 
 	export interface ExpandedSchema extends UnknownExpandedRangeSchema {
@@ -39,8 +29,6 @@ export declare namespace After {
 	export interface Declaration
 		extends declareNode<{
 			kind: "after"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: Date
 			errorContext: ErrorContext
@@ -52,21 +40,15 @@ export declare namespace After {
 const implementation: nodeImplementationOf<After.Declaration> =
 	implementNode<After.Declaration>({
 		kind: "after",
-		collapsibleKey: "rule",
-		hasAssociatedError: true,
+		collapseKey: "rule",
+		ownsError: true,
 		keys: {
 			rule: {
-				parse: parseDateLimit,
 				serialize: schema => schema.toISOString()
 			}
 		},
-		normalize: createDateSchemaNormalizer("after"),
 		defaults: {
-			description: node => `${node.collapsibleLimitString} or later`,
-			actual: describeCollapsibleDate
-		},
-		intersections: {
-			after: (l, r) => (l.isStricterThan(r) ? l : r)
+			description: node => `${describeCollapsibleDate(node.rule)} or later`
 		}
 	})
 
@@ -75,10 +57,8 @@ export class AfterNode extends BaseRange<After.Declaration> {
 
 	collapsibleLimitString = describeCollapsibleDate(this.rule)
 
-	traverseAllows: TraverseAllows<Date> = data => data >= this.rule
-
-	reduceJsonSchema(base: JsonSchema, ctx: ToJsonSchema.Context): JsonSchema {
-		return ctx.fallback.date({ code: "date", base, after: this.rule })
+	traverseAllows(data: Date): boolean {
+		return data >= this.rule
 	}
 }
 

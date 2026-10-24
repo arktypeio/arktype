@@ -1,0 +1,66 @@
+---
+title: Discriminate
+description: Find the path and values that tell a union's branches apart, in a schema from any format.
+---
+
+`discriminate` finds how a union's branches can be told apart: a path, and for each value at that path, the branches it can match. ArkType uses the same discriminant to check one key in a union of objects instead of trying each branch.
+
+```ts
+import { discriminate } from "arksets"
+
+const Shape = type({ shape: { kind: "'circle'" }, r: "number" }).or({
+	shape: { kind: "'square'" },
+	side: "number"
+})
+
+const discriminant = discriminate(Shape)!
+
+discriminant.path // ["shape", "kind"]
+discriminant.kind // "unit"
+discriminant.cases.map(c => c.value) // ["circle", "square"]
+discriminant.cases[0].branches.expression // "{ r: number, shape: { kind: \"circle\" } }"
+discriminant.default // null
+```
+
+| property  | meaning                                                                                                       |
+| --------- | ------------------------------------------------------------------------------------------------------------- |
+| `path`    | the keys from the root to the discriminating value. `[]` discriminates the value itself                       |
+| `kind`    | `"unit"` if each case is a value compared with `===`, or `"domain"` if it's a `typeof` result like `"string"` |
+| `cases`   | each case's `value`, and a Root of the `branches` a value matching it can satisfy                             |
+| `default` | a Root of the branches with nothing at `path`, or `null` if a value matching no case is rejected              |
+
+A union of different types is discriminated by `typeof`:
+
+```ts
+import { discriminate } from "arksets"
+
+discriminate(type("string | number | null"))?.kind // "domain"
+```
+
+A branch without the discriminating key is part of `default` and of every case, since any value at the path could still match it:
+
+```ts
+import { discriminate } from "arksets"
+
+const Message = {
+	anyOf: [
+		{
+			type: "object",
+			properties: { kind: { const: "a" }, x: { type: "number" } },
+			required: ["kind", "x"]
+		},
+		{
+			type: "object",
+			properties: { kind: { const: "b" }, y: { type: "string" } },
+			required: ["kind", "y"]
+		},
+		{ type: "object", properties: { other: { type: "string" } } }
+	]
+} as const
+
+discriminate(Message)?.default?.expression // "{ other?: string }"
+```
+
+Branches alike but for the discriminating value merge first, so `{ kind: "a" }` and `{ kind: "b" }` beside `{ other?: string }` are `{ kind: "a" | "b" } | { other?: string }`. Every case of that union would match both branches, so it has no discriminant.
+
+`discriminate` returns `null` if the schema isn't a union or its branches share no discriminant, like `type({ a: "string" }).or({ b: "number" })`.

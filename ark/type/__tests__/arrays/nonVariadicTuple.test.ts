@@ -44,7 +44,7 @@ value at [1] must be a number (was boolean)`)
 				0: "",
 				1: 0
 			}).toString()
-		).snap("must be an array (was object)")
+		).snap("must be an array (was an object)")
 	})
 
 	it("nested", () => {

@@ -1,24 +1,25 @@
-import { append, printable, throwParseError, unset, type Key } from "@ark/util"
+import { printable, type Key } from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
-import type { nodeOfKind, RootSchema } from "../kinds.ts"
+import type { nodeOfKind } from "../kinds.ts"
 import {
-	flatRef,
+	flatRefsAt,
 	type BaseNode,
 	type DeepNodeTransformation,
-	type DeepNodeTransformContext,
-	type FlatRef
+	type DeepNodeTransformContext
 } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
-import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
-import type { BaseNormalizedSchema } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
-import type { IntersectionContext, RootKind } from "../shared/implement.ts"
-import { intersectOrPipeNodes } from "../shared/intersections.ts"
+import {
+	compileSerializedValue,
+	isDecidedByAllows,
+	type NodeCompiler
+} from "../shared/compile.ts"
+import type { RootKind } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
+	applyValue,
 	traverseKey,
-	type TraverseAllows,
-	type TraverseApply
+	type AliasDepth,
+	type InternalTraversal
 } from "../shared/traversal.ts"
 import type { Optional } from "./optional.ts"
 import type { Required } from "./required.ts"
@@ -28,11 +29,6 @@ export declare namespace Prop {
 
 	export type Node = nodeOfKind<Kind>
 
-	export interface Schema extends BaseNormalizedSchema {
-		readonly key: Key
-		readonly value: RootSchema
-	}
-
 	export interface Inner {
 		readonly key: Key
 		readonly value: BaseRoot
@@ -41,55 +37,9 @@ export declare namespace Prop {
 	export interface Declaration<kind extends Kind = Kind> {
 		kind: kind
 		prerequisite: object
-		intersectionIsOpen: true
+		openIntersection: true
 		childKind: RootKind
 	}
-}
-
-export const intersectProps = (
-	l: nodeOfKind<Prop.Kind>,
-	r: nodeOfKind<Prop.Kind>,
-	ctx: IntersectionContext
-): nodeOfKind<Prop.Kind> | Disjoint | null => {
-	if (l.key !== r.key) return null
-
-	const key = l.key
-	let value = intersectOrPipeNodes(l.value, r.value, ctx)
-	const kind: Prop.Kind = l.required || r.required ? "required" : "optional"
-	if (value instanceof Disjoint) {
-		if (kind === "optional") value = $ark.intrinsic.never.internal
-		else {
-			// if either operand was optional, the Disjoint has to be treated as optional
-			return value.withPrefixKey(
-				l.key,
-				l.required && r.required ? "required" : "optional"
-			)
-		}
-	}
-
-	if (kind === "required") {
-		return ctx.$.node("required", {
-			key,
-			value
-		})
-	}
-
-	const defaultIntersection =
-		l.hasDefault() ?
-			r.hasDefault() ?
-				l.default === r.default ?
-					l.default
-				:	throwParseError(writeDefaultIntersectionMessage(l.default, r.default))
-			:	l.default
-		: r.hasDefault() ? r.default
-		: unset
-
-	return ctx.$.node("optional", {
-		key,
-		value,
-		// unset is stripped during parsing
-		default: defaultIntersection
-	})
 }
 
 export abstract class BaseProp<
@@ -97,17 +47,28 @@ export abstract class BaseProp<
 > extends BaseConstraint<
 	kind extends "required" ? Required.Declaration : Optional.Declaration
 > {
-	required: boolean = this.kind === "required"
-	optional: boolean = this.kind === "optional"
-	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
-	serializedKey: string = compileSerializedValue(this.key)
-	compiledKey: string =
-		typeof this.key === "string" ? this.key : this.serializedKey
+	get required(): boolean {
+		return this.kind === "required"
+	}
 
-	flatRefs: FlatRef[] = append(
-		this.value.flatRefs.map(ref => flatRef([this.key, ...ref.path], ref.node)),
-		flatRef([this.key], this.value)
-	)
+	get optional(): boolean {
+		return this.kind === "optional"
+	}
+
+	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
+
+	get serializedKey(): string {
+		return compileSerializedValue(this.key)
+	}
+
+	get compiledKey(): string {
+		return typeof this.key === "string" ? this.key : printable(this.key)
+	}
+
+	protected override initFlatRefs(): void {
+		this.cache.flatRefs = flatRefsAt(this.key, this.value)
+		this.cache.flatMorphs = []
+	}
 
 	protected override _transform(
 		mapper: DeepNodeTransformation,
@@ -123,7 +84,7 @@ export abstract class BaseProp<
 		return "default" in this.inner
 	}
 
-	traverseAllows: TraverseAllows<object> = (data, ctx) => {
+	traverseAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
 		if (this.key in data) {
 			// ctx will be undefined if this node isn't context-dependent
 			return traverseKey(
@@ -135,36 +96,89 @@ export abstract class BaseProp<
 		return this.optional
 	}
 
-	traverseApply: TraverseApply<object> = (data, ctx) => {
+	traverseApply(data: object, ctx: InternalTraversal): void {
 		if (this.key in data) {
 			traverseKey(
 				this.key,
-				() => this.value.traverseApply((data as any)[this.key], ctx),
+				() => applyValue(this.value, (data as any)[this.key], ctx),
 				ctx
 			)
-		} else if (this.hasKind("required"))
-			ctx.errorFromNodeContext(this.errorContext)
+		} else if (this.hasKind("required")) {
+			traverseKey(
+				this.key,
+				() => ctx.errorFromNode(this.errorContext, data),
+				ctx
+			)
+		}
 	}
 
 	compile(js: NodeCompiler): void {
-		js.if(`${this.serializedKey} in data`, () =>
-			js.traverseKey(this.serializedKey, `data${js.prop(this.key)}`, this.value)
+		const expression = this.compileExpression(js)
+		if (expression !== undefined) {
+			js.return(expression)
+			return
+		}
+		const key = js.serialize(this.key)
+		js.if(`${key} in data`, () =>
+			js.traverseKey(key, `data${js.prop(this.key)}`, this.value)
 		)
 
 		if (this.hasKind("required")) {
 			js.else(() =>
 				js.traversalKind === "Apply" ?
-					js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
+					js.if(js.error(this, key), () => js.return(false))
 				:	js.return(false)
 			)
 		}
 
-		if (js.traversalKind === "Allows") js.return(true)
+		js.return(true)
+	}
+
+	compileExpression(js: NodeCompiler): string | undefined {
+		const key = js.serialize(this.key)
+		const value = `data${js.prop(this.key)}`
+		// a value no branch of which allows undefined fails a missing key too
+		if (
+			this.hasKind("required") &&
+			(js.traversalKind === "Allows" ||
+				(!this.value.transforms && !this.value.entersAlias)) &&
+			this.value.branches.every(branch => {
+				// Allows checks a morph's input
+				const input = branch.hasKind("morph") ? branch.inner.in : branch
+				const basis = input?.hasKind("intersection") ? input.basis : input
+				return (
+					!!basis?.isBasis() &&
+					!(basis.hasKind("unit") && basis.unit === undefined)
+				)
+			})
+		) {
+			if (js.traversalKind === "Apply") {
+				// a value a condition decides is checked by it before it's applied,
+				// a union by its branches
+				const condition =
+					isDecidedByAllows(this.value) &&
+					this.value.compileCondition?.(js, value)
+				const site = condition && js.failingSiteOf?.(this)
+				const fails =
+					this.value.isBasis() ? `!${js.error(this, key)}`
+					: site ? `!${js.fails("failsAt", `${site}, data, ${key}`)}`
+					: `!${js.fails("failsIn", `${(condition && js.failingApplyOf?.(this.value)) || js.traversal(this.value, "Apply")}, ${value}, ${key}, ${js.site(this)}, data`)}`
+				return condition ? `${condition} || ${fails}` : fails
+			}
+			// a value whose predicates read ctx is checked at its key's path
+			if (this.value.allowsNeedsCtx && this.value.allowsNeedsTraversal) return
+			return (
+				this.value.compileCondition?.(js, value) ??
+				js.invoke(this.value, { arg: value })
+			)
+		}
+		const fails = js.keyFails(key, value, this.value)
+		if (fails === undefined) return
+		return (
+			this.hasKind("optional") ? `!(${key} in data) || !(${fails})`
+			: js.traversalKind === "Apply" ?
+				`${key} in data ? !(${fails}) : !${js.error(this, key)}`
+			:	`${key} in data && !(${fails})`
+		)
 	}
 }
-
-export const writeDefaultIntersectionMessage = (
-	lValue: unknown,
-	rValue: unknown
-): string =>
-	`Invalid intersection of default values ${printable(lValue)} & ${printable(rValue)}`

@@ -19,6 +19,25 @@ export const terminatingChars = {
 
 export type TerminatingChar = keyof typeof terminatingChars
 
+// a token ends at a terminating char, or at != so a name like a!b still parses
+export const shiftUntilTerminator = (scanner: Scanner): string => {
+	const token = scanner.shiftUntilNext(terminatingChars)
+	if (!token.endsWith("!") || scanner.lookahead !== "=") return token
+	scanner.i--
+	return token.slice(0, -1)
+}
+
+export type shiftUntilTerminator<unscanned extends string> =
+	shiftComparatorBang<Scanner.shiftUntil<unscanned, TerminatingChar>>
+
+// a ! ending a token before = starts a != comparator
+type shiftComparatorBang<result extends [string, string]> =
+	result[1] extends `=${string}` ?
+		result[0] extends `${infer name}!` ?
+			[name, `!${result[1]}`]
+		:	result
+	:	result
+
 export const finalizingLookaheads = {
 	">": 1,
 	",": 1,
@@ -41,7 +60,8 @@ export const lookaheadIsFinalizing = (
 			// if > is the end of a generic instantiation, the next token will be
 			// an operator or the end of the string
 		:	unscanned.trimStart() === "" ||
-			isKeyOf(unscanned.trimStart()[0], terminatingChars)
+			isKeyOf(unscanned.trimStart()[0], terminatingChars) ||
+			unscanned.trimStart().startsWith("!=")
 		// "=" is a finalizer on its own (representing a default value),
 		// but not with a second "=" (an equality comparator)
 	: lookahead === "=" ? unscanned[0] !== "="
@@ -58,7 +78,7 @@ export type lookaheadIsFinalizing<
 				true
 			:	false
 		: Scanner.skipWhitespace<unscanned> extends (
-			"" | `${TerminatingChar}${string}`
+			"" | `${TerminatingChar}${string}` | `!=${string}`
 		) ?
 			true
 		:	false

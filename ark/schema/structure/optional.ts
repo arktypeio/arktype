@@ -6,34 +6,29 @@ import {
 	throwParseError,
 	type requireKeys
 } from "@ark/util"
-import { intrinsic } from "../intrinsic.ts"
+import type { BaseNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
-import { compileSerializedValue } from "../shared/compile.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
 import {
-	defaultValueSerializer,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { registeredReference } from "../shared/registry.ts"
-import { traverseKey } from "../shared/traversal.ts"
-import { BaseProp, intersectProps, type Prop } from "./prop.ts"
+import { $ark } from "../shared/registry.ts"
+import { missingSetEngineMessage } from "../shared/sets.ts"
+import { computeDefaultValueMorph } from "../shared/traversal.ts"
+import { isResolutionFinal, queueUnchecked } from "../shared/utils.ts"
+import { BaseProp, type Prop } from "./prop.ts"
 
 export declare namespace Optional {
-	export interface Schema extends Prop.Schema {
-		default?: unknown
-	}
-
 	export interface Inner extends Prop.Inner {
 		default?: unknown
 	}
 
 	export type Declaration = declareNode<
 		Prop.Declaration<"optional"> & {
-			schema: Schema
-			normalizedSchema: Schema
 			inner: Inner
 		}
 	>
@@ -41,87 +36,98 @@ export declare namespace Optional {
 	export type Node = OptionalNode
 
 	export namespace Node {
-		export type withDefault = requireKeys<
-			Node,
-			"default" | "defaultValueMorph" | "defaultValueMorphRef"
-		>
+		export type withDefault = requireKeys<Node, "default" | "defaultMorph">
 	}
 }
 
 const implementation: nodeImplementationOf<Optional.Declaration> =
 	implementNode<Optional.Declaration>({
 		kind: "optional",
-		hasAssociatedError: false,
-		intersectionIsOpen: true,
+		ownsError: false,
+		openIntersection: true,
 		keys: {
 			key: {},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.parseSchema(schema)
+				structural: true
 			},
 			default: {
 				preserveUndefined: true
 			}
 		},
-		normalize: schema => schema,
-		reduce: (inner, $) => {
-			if ($.resolvedConfig.exactOptionalPropertyTypes === false) {
-				if (!inner.value.allows(undefined)) {
-					return $.node(
-						"optional",
-						{ ...inner, value: inner.value.or(intrinsic.undefined) },
-						{ prereduced: true }
-					)
-				}
-			}
-		},
 		defaults: {
 			description: node => `${node.compiledKey}?: ${node.value.description}`
-		},
-		intersections: {
-			optional: intersectProps
 		}
 	})
 
 export class OptionalNode extends BaseProp<"optional"> {
 	constructor(...args: ConstructorParameters<typeof BaseProp>) {
 		super(...args)
-		if ("default" in this.inner)
-			assertDefaultValueAssignability(this.value, this.inner.default, this.key)
+		if (
+			!$ark.sets &&
+			this.$.resolvedConfig.exactOptionalPropertyTypes === false
+		)
+			throwParseError(missingSetEngineMessage)
+		if ("default" in this.inner) {
+			assertDefaultValueAssignability(
+				this.value,
+				this.inner.default,
+				this.key,
+				this
+			)
+		}
+		// a function default can fail as it's applied, like a morph
+		this.includesMorph ||= typeof this.inner.default === "function"
+		this.hasCtxMorph ||= this.defaultMorph?.length === 2
 	}
 
-	override get rawIn(): OptionalNode {
-		const baseIn = super.rawIn
-		if (!this.hasDefault()) return baseIn as never
-
+	override getIo(ioKind: "in" | "out"): BaseNode {
+		if (ioKind === "out" || !this.hasDefault()) return super.getIo(ioKind)
 		return this.$.node(
 			"optional",
-			omit(baseIn.inner, { default: true }) as never,
-			{
-				prereduced: true
-			}
+			{ key: this.key, value: this.value.rawIn },
+			{ prereduced: true }
 		)
 	}
 
+	private _outProp: Prop.Node | undefined
 	get outProp(): Prop.Node {
 		if (!this.hasDefault()) return this
 		const { default: defaultValue, ...requiredInner } = this.inner
 
-		return this.cacheGetter(
-			"outProp",
-			this.$.node("required", requiredInner, { prereduced: true }) as never
-		)
+		return (this._outProp ??= this.$.node("required", requiredInner, {
+			prereduced: true
+		}) as never)
 	}
 
 	expression: string =
 		this.hasDefault() ?
-			`${this.compiledKey}: ${this.value.expression} = ${printable(this.inner.default)}`
+			`${this.compiledKey}: ${this.value.expression} = ${printable(this.inner.default, { ownDataOnly: true })}`
 		:	`${this.compiledKey}?: ${this.value.expression}`
 
-	defaultValueMorph: Morph | undefined = getDefaultableMorph(this)
+	defaultMorph: Morph | undefined =
+		this.hasDefault() ?
+			computeDefaultValueMorph(this.key, this.value, this.default)
+		:	undefined
 
-	defaultValueMorphRef: string | undefined =
-		this.defaultValueMorph && registeredReference(this.defaultValueMorph)
+	// without exactOptionalPropertyTypes, undefined is as absent as a missing
+	// key, so a default replaces it too
+	readonly defaultsUndefined: boolean =
+		this.hasDefault() &&
+		this.$.resolvedConfig.exactOptionalPropertyTypes === false
+
+	// whether data has a value at this key, which a default leaves alone
+	holdsValue(data: object): boolean {
+		return this.defaultsUndefined ?
+				(data as Record<PropertyKey, unknown>)[this.key] !== undefined
+			:	this.key in data
+	}
+
+	compileHoldsValue(js: NodeCompiler, data: string): string {
+		return this.defaultsUndefined ?
+				`${data}${js.prop(this.key)} !== undefined`
+			:	`${js.serialize(this.key)} in ${data}`
+	}
 }
 
 export const Optional = {
@@ -129,87 +135,75 @@ export const Optional = {
 	Node: OptionalNode
 }
 
-const defaultableMorphCache: Record<string, Morph | undefined> = {}
-
-const getDefaultableMorph = (node: Optional.Node): Morph | undefined => {
-	if (!node.hasDefault()) return
-
-	const cacheKey = `{${node.compiledKey}: ${node.value.id} = ${defaultValueSerializer(node.default)}}`
-
-	return (defaultableMorphCache[cacheKey] ??= computeDefaultValueMorph(
-		node.key,
-		node.value,
-		node.default
-	))
-}
-
-export const computeDefaultValueMorph = (
-	key: PropertyKey,
-	value: BaseRoot,
-	defaultInput: unknown
-): Morph<any> => {
-	if (typeof defaultInput === "function") {
-		// if the value has a morph, pipe context through it
-		return value.includesTransform ?
-				(data, ctx) => {
-					traverseKey(key, () => value((data[key] = defaultInput()), ctx), ctx)
-					return data
-				}
-			:	data => {
-					data[key] = defaultInput()
-					return data
-				}
-	}
-
-	// non-functional defaults can be safely cached as long as the morph is
-	// guaranteed to be pure and the output is primitive
-	const precomputedMorphedDefault =
-		value.includesTransform ? value.assert(defaultInput) : defaultInput
-
-	return hasDomain(precomputedMorphedDefault, "object") ?
-			// the type signature only allows this if the value was morphed
-			(data, ctx) => {
-				traverseKey(key, () => value((data[key] = defaultInput), ctx), ctx)
-				return data
-			}
-		:	data => {
-				data[key] = precomputedMorphedDefault
-				return data
-			}
-}
-
 export const assertDefaultValueAssignability = (
 	node: BaseRoot,
 	value: unknown,
-	key: PropertyKey | null
+	key: PropertyKey | null,
+	owner?: BaseNode
 ): unknown => {
-	const wrapped = isThunk(value)
+	// a function default is checked each time it's applied
+	if (isThunk(value)) return value
 
-	if (hasDomain(value, "object") && !wrapped)
+	if (hasDomain(value, "object"))
 		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key))
+
+	return checkDefault(node, value, key, owner)
+}
+
+// unlike its input, a thunk's result may be an object
+export const checkDefault = (
+	node: BaseRoot,
+	value: unknown,
+	key: PropertyKey | null,
+	// the node whose creation checks it, if any
+	owner?: BaseNode
+): unknown => {
+	if (!isResolutionFinal() && node.includesAlias) {
+		queueUnchecked(() => checkDefault(node, value, key, owner))
+		return value
+	}
+
+	if ($ark.deferDefaultCheck?.(node, value, key, owner)) return value
 
 	// if the node has a default value, finalize it and apply JIT optimizations
 	// if applicable to ensure behavior + error logging is externally consistent
 	// (using .in here insead of .rawIn triggers finalization)
-	const out = (node.in as BaseRoot)(wrapped ? value() : value)
+	const out = (node.in as BaseRoot).traverseUnused(value)
 
 	if (out instanceof ArkErrors) {
+		const errors =
+			node.meta.description !== undefined && node.hasTransform ?
+				inputErrors(node, value)
+			:	out
+		// a ParseError is for the developer, so it renders in English
+		const en = $ark.defaultConfig.locale
+
 		if (key === null) {
 			// e.g. "Default must be assignable to number (was string)"
-			throwParseError(`Default ${out.summary}`)
+			throwParseError(`Default ${errors.toLocaleString(en)}`)
 		}
 
-		const atPath = out.transform(e =>
-			e.transform(input => ({ ...input, prefixPath: [key] }) as never)
-		)
+		const atPath = new ArkErrors(node.$.resolvedConfig)
+		atPath._merge(errors, [key])
 
 		// e.g. "Default for bar must be assignable to number (was string)"
 		// e.g. "Default for value at [0] must be assignable to number (was string)"
-		throwParseError(`Default for ${atPath.summary}`)
+		throwParseError(`Default for ${atPath.toLocaleString(en)}`)
 	}
 
 	return value
 }
+
+// a morph's description also describes its input, but a default is easily
+// mistaken for its output, so a rejected default reports what its input checks
+const inputErrors = (node: BaseRoot, value: unknown): ArkErrors =>
+	(node.in as BaseRoot)
+		.configure(meta =>
+			meta.description === node.meta.description ?
+				omit(meta, { description: 1 })
+			:	meta
+		)
+		.traverseUnused(value) as ArkErrors
 
 export type writeUnassignableDefaultValueMessage<
 	baseDef extends string,
@@ -222,6 +216,6 @@ export const writeNonPrimitiveNonFunctionDefaultValueMessage = (
 	const keyDescription =
 		key === null ? ""
 		: typeof key === "number" ? `for value at [${key}] `
-		: `for ${compileSerializedValue(key)} `
+		: `for ${printable(key)} `
 	return `Non-primitive default ${keyDescription}must be specified as a function like () => ({my: 'object'})`
 }

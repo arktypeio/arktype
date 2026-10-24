@@ -59,7 +59,7 @@ contextualize(() => {
 		const status = Symbol("status")
 		const T = rootSchema({ unit: status })
 		// serializes to string for JSON
-		attest(T.json).snap({ unit: "$ark.status" })
+		attest(T.json).snap({ unit: registeredReference(status) })
 		// preserves the symbol for context
 		attest(T.internal.assertHasKind("unit").errorContext).equals({
 			code: "unit",

@@ -1,8 +1,8 @@
-import { createMDX } from "fumadocs-mdx/next"
 import type { NextConfig } from "next"
 import { mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { writeLiveWorker } from "./lib/writeLiveWorker.ts"
 import { writeMarkdown } from "./lib/writeMarkdown.ts"
 import { updateSnippetsEntrypoint } from "./lib/writeSnippetsEntrypoint.ts"
 
@@ -21,21 +21,31 @@ process.env.NODE_OPTIONS ??= ""
 const tmpDir = mkdtempSync(join(tmpdir(), "ark-localstorage-"))
 process.env.NODE_OPTIONS = `${process.env.NODE_OPTIONS} --localstorage-file=${join(tmpDir, "localstorage")}`
 
-updateSnippetsEntrypoint()
-writeMarkdown()
-
-const config = {
+const config: NextConfig = {
 	reactStrictMode: true,
 	cleanDistDir: true,
-	serverExternalPackages: ["twoslash", "typescript", "ts-morph"],
-	// the following properties are required by nextjs-github-pages:
-	// https://github.com/gregrickaby/nextjs-github-pages
+	// the repo's AGENTS.md is shared by every agent; don't add Next's own
+	agentRules: false,
+	// twoslash runs the TypeScript compiler, which shouldn't be bundled
+	serverExternalPackages: [
+		"typescript",
+		"twoslash",
+		"@shikijs/twoslash",
+		"@typescript/vfs"
+	],
+	// pages with many twoslash blocks take minutes on a cold cache when the
+	// machine is busy; the default 60s fails them
+	staticPageGenerationTimeout: 1800,
+	// the site is a static export served from GitHub Pages
 	output: "export",
 	images: {
 		unoptimized: true
 	}
-} as const satisfies NextConfig
+}
 
-const mdxConfig = createMDX()(config)
-
-export default mdxConfig
+export default async (): Promise<NextConfig> => {
+	updateSnippetsEntrypoint()
+	writeMarkdown()
+	writeLiveWorker()
+	return config
+}

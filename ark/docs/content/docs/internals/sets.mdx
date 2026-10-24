@@ -1,0 +1,55 @@
+---
+title: Set algebra
+description: What importing arksets installs into @ark/schema, and what @ark/schema does without it.
+---
+
+`arktype` imports the engine from `arksets/internal`, so if you use `arktype`, set algebra is always installed. This page is for using `@ark/schema` on its own.
+
+```ts
+import "arksets"
+```
+
+Importing `arksets` installs the engine `@ark/schema` uses to:
+
+- intersect and pipe nodes, which `.and()`, `.narrow()`, `.filter()`, `.constrain()`, `.to()`, `.extends()`, `.overlaps()`, `.extract()`, `.exclude()` and `.keyof()` rely on
+- reduce nodes as they're created, so an unsatisfiable intersection throws and redundant union branches merge
+- discriminate unions, so a union of objects checks a shared key instead of trying each branch
+- generate JSON Schema for `.toJsonSchema()` and `~standard.jsonSchema`
+
+Import it before you parse anything: nodes are reduced when they're created, so a node parsed earlier stays unreduced. `arksets` installs into the copy of `@ark/schema` it resolves, so keep one copy of each package.
+
+`arksets/internal` exports the functions the engine is built from. They change with `@ark/schema`, so they aren't documented. The functions `arksets` itself exports, like `isSubset` and `intersect`, are in [ArkSets](/docs/sets).
+
+## Without arksets
+
+Without it, a node still parses and validates, but intersecting it throws:
+
+```ts
+import { rootSchema } from "@ark/schema"
+
+const Positive = rootSchema({ domain: "number", min: 0 })
+
+Positive(5) // 5
+// ArkErrors: must be non-negative (was -1)
+Positive(-1)
+
+Positive.and(rootSchema({ domain: "number", max: 10 }))
+// ParseError: Set algebra is not installed (import "arksets" to install it)
+```
+
+These work without it:
+
+- parsing with `rootSchema`, `node` and `schemaScope`, except for the schemas listed below
+- validating: calling a node, `.allows()`, `.assert()` and `~standard.validate`
+- `.expression`, `.description`, `.json`, `.select()` and `.configure()`
+- `.or()`, `.array()`, `.pipe()` with functions and `.equals()`
+
+These throw the `ParseError` above:
+
+- `.and()`, `.narrow()`, `.filter()`, `.constrain()`, `.to()`, `.extends()`, `.overlaps()`, `.extract()`, `.exclude()`, `.keyof()`, `.toJsonSchema()` and `~standard.jsonSchema`
+- parsing a tuple whose length is bounded: a `sequence` with `prefix` or `postfix` elements or a `minVariadicLength`, or without a `variadic` element. Arrays like `{ proto: Array, sequence: "string" }` parse.
+- parsing a union that isn't `ordered` and has a branch that transforms
+- parsing an optional prop in a scope configured with `exactOptionalPropertyTypes: false`
+- parsing an index signature keyed by anything but `string`, `symbol` or `string | symbol`
+
+Nodes that parse aren't reduced. `rootSchema({ domain: "number", min: 5, max: 3 })` throws with `arksets` installed, since no number satisfies it. Without it, it parses and rejects every number. Union branches aren't merged or discriminated either, so a union checks each branch in turn.

@@ -1,5 +1,79 @@
 # arkregex
 
+## Unreleased
+
+### infer capture indices across alternation branches
+
+A capture in one alternation branch is `undefined` in every other branch, so the inferred tuples line up with what `exec` returns (#1530):
+
+```ts
+// was: ["1"] | [undefined, "2"] | [undefined, "3"]
+// now: ["1", undefined, undefined] | [undefined, "2", undefined] | [undefined, undefined, "3"]
+regex("^(?:(?<a>1)|(?<b>2)|(?<c>3))$").inferCaptures
+```
+
+### infer escapes in a character set as what they match
+
+In a character set, `\b` is a backspace and an escape that's unnecessary elsewhere matches its character, so they're inferred as those characters rather than as a boundary or an error message. An escape the `u` or `v` flag makes a `SyntaxError`, like `[\a]`, is a type error with those flags:
+
+```ts
+// was: Regex<"", {}>
+// now: Regex<"\b", {}>
+regex("^[\\b]$")
+
+// was: Regex<"Escape preceding / is unnecessary and should be removed.", {}>
+// now: Regex<"/", {}>
+regex("^[\\/]$")
+```
+
+### infer `\s` as `string`
+
+`\s` matches `\r`, `\f`, `\v` and Unicode spaces as well as `" "`, `"\n"` and `"\t"`, so it's inferred as `string`:
+
+```ts
+// was: Regex<`a${" " | "\n" | "\t"}c`, {}>
+// now: Regex<`a${string}c`, {}>
+regex("^a\\sc$")
+```
+
+### don't anchor a pattern at `^` or `$` with the `m` flag
+
+With `m`, `^` and `$` also match at line breaks, so they no longer anchor the inferred pattern, and they're allowed mid-pattern:
+
+```ts
+// was: Regex<"abc", { flags: "m" }>
+// now: Regex<`${string}abc${string}`, { flags: "m" }>
+regex("^abc$", "m")
+```
+
+### infer an unbounded run of digits as `string`
+
+`` `${number}` `` doesn't include a run of digits too long to be a finite number, so `\d+`, `\d*` and any unbounded repetition of a digit pattern infer `string` (#1663). A bounded repetition of a union including digits, like `(a|\d){2}`, also no longer drops its other branches:
+
+```ts
+// was: Regex<`${number}`, {}>
+// now: Regex<string, {}>
+regex("^\\d+$")
+
+// was: Regex<`${number}`, {}>
+// now: Regex<"aa" | `${number}${number}` | `${number}a` | `a${number}`, {}>
+regex("^(?:a|\\d){2}$")
+```
+
+### count captures inside lookarounds
+
+A capture inside a lookaround wasn't counted, so later captures were inferred at the wrong index (#1532). A capture inside a negative lookaround is `undefined`:
+
+```ts
+// was: Regex<"ab", { captures: ["b"] }>
+// now: Regex<"ab", { captures: ["a", "b"] }>
+regex("^(?=(a))a(b)$")
+```
+
+### Install `arkregex`, not `@ark/regex`
+
+arkregex publishes under one name. `@ark/regex`, the same package under another name, is deprecated at its last version, and `@arktype/regex` is no longer published. Replace each `@ark/regex` import with `arkregex`.
+
 ## 0.0.14
 
 ### allow `}` to be escaped

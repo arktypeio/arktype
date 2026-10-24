@@ -1,0 +1,71 @@
+---
+title: Packages
+description: Every package ArkType publishes, its entrypoints, and what to import from each.
+---
+
+To define and validate Types, install `arktype`. It brings `arkregex`, `@ark/schema`, `arksets` and `@ark/util` with it, so you never install those yourself to use ArkType. Each package publishes under exactly one name, the one listed here; `@ark/type`, `@ark/regex` and the `@arktype/*` names are [no longer published](/docs/upgrading#package-names).
+
+| Package            | Install it to                                                | Docs                                                   |
+| ------------------ | ------------------------------------------------------------ | ------------------------------------------------------ |
+| `arktype`          | define Types and validate data                               | [Setup](/docs/intro/setup)                             |
+| `@ark/aot`         | construct your Types when you build                          | [Precompile](/docs/precompile)                         |
+| `arkregex`         | write regular expressions with inferred types                | [ArkRegex](/docs/regex)                                |
+| `@ark/attest`      | assert types and benchmark them in your tests                | [Attest](/docs/attest)                                 |
+| `@ark/json-schema` | build a Type from a JSON Schema                              | [From JSON Schema](/docs/json-schema/from-json-schema) |
+| `@ark/fast-check`  | generate test data from a Type with fast-check               | [fast-check](/docs/fast-check)                         |
+| `@ark/schema`      | build Types from nodes instead of syntax (not semver-stable) | [Internals](/docs/internals)                           |
+| `arksets`          | relate, combine and convert schemas from any format          | [ArkSets](/docs/sets)                                  |
+| `@ark/util`        | nothing: it's shared by the other packages                   |                                                        |
+| `@ark/fs`          | nothing: it's the filesystem layer `@ark/attest` uses        |                                                        |
+
+The VS Code extensions, "ArkType" and "ArkThemes", are on the [Editor](/docs/editor) page.
+
+## arktype
+
+| Entrypoint                                  | Import it for                                                                                                                                                               |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `arktype`                                   | everything you use day to day (below)                                                                                                                                       |
+| `arktype/codecs`                            | `codec`, and the `.encode` every Type has once it's imported ([Codecs](/docs/codecs))                                                                                       |
+| `arktype/errors`                            | installs `errors: "first"` and `"none"` ([errors](/docs/configuration#errors))                                                                                              |
+| `arktype/mutatesInput`                      | installs `mutatesInput: true` and `"always"` ([mutatesInput](/docs/configuration#mutatesinput))                                                                             |
+| `arktype/runtime`                           | what [precompiled](/docs/precompile) validators run on. A build resolves `arktype` to it; you don't import it yourself                                                      |
+| `arktype/config`                            | `configure`, before anything else from `arktype` is imported                                                                                                                |
+| `arktype/locales/en`, `arktype/locales/de`  | the `en` and `de` [locales](/docs/i18n)                                                                                                                                     |
+| `arktype/i18n`                              | helpers for [writing a locale](/docs/i18n#writing-a-locale): `listPattern`, `isolate`, `labelOf`, `groupByPath`, `describeCause`, `describeMissing`, `writeKeywordExpected` |
+| `arktype/internal`, `arktype/internal/*.ts` | every module's exports, for tools built on ArkType. Not semver-stable.                                                                                                      |
+
+`arktype` exports:
+
+- `type`, `scope`, `match`, `generic`, `declare`, `define` and `fn` to define Types, and `keywords` and `ark`, the keywords as a module and as a scope.
+- `regex`, the same function `arkregex` exports.
+- `Type`, `Module` and `Generic` to check a value with `instanceof`, and `Hkt` to write a [higher-kinded generic](/docs/generics#hkt).
+- `ArkErrors`, `ArkError`, `TraversalError` and `ParseError`, the [errors](/docs/errors) ArkType returns and throws, and `Traversal`, the type of the `ctx` a [narrow or morph](/docs/traversal-api) receives.
+- `annotatingFallback`, a [JSON Schema fallback](/docs/json-schema/to-json-schema#annotatingfallback), and `inferred`, the symbol key a Type's inferred type is declared under.
+- types such as `Out`, `Brand`, `Json`, `JsonSchema`, `ArkErrorCode`, `Locale`, `Scope`, `BaseType` and `inferDefinition`/`validateDefinition` for [wrapping `type`](/docs/generics#external).
+
+`arktype` exports `configure` too, but importing it from there loads all of `arktype` first. Configure in a file of its own, and import that file before anything else:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({ onUndeclaredKey: "delete" })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+import { type } from "arktype"
+```
+
+## Other packages
+
+- **`@ark/aot`** has an entrypoint for each way to run it: `@ark/aot/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/aot/node` (`register()`), `@ark/aot/bun` (`precompile()`), `@ark/aot/turbopack` (a loader) and `@ark/aot/eslint` (`configs.recommended`). It installs an `arktype-precompile` CLI for `--check` and `--declare`, and `@ark/aot` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 for declarations. See [Setup](/docs/precompile/setup).
+- **`arkregex`** exports `regex`, which is also exported from `arktype`, and the `Regex` type.
+- **`@ark/attest`** exports `attest`, `bench`, `setup` and `teardown`, and installs an `attest` CLI. Install it as a dev dependency.
+- **`@ark/json-schema`** exports `jsonSchemaToType` and `JsonSchemaScope`.
+- **`@ark/fast-check`** exports `arkToArbitrary`. It needs `fast-check` 3 or 4 installed beside it.
+- **`@ark/schema`** exports nodes, `rootSchema`, `schemaScope` and the classes behind `ArkErrors`, with `config`, `i18n`, `codecs`, `errors`, `mutatesInput` and `runtime` entrypoints like `arktype`'s.
+- **`arksets`** exports `parse`, `isSubset`, `isEqual`, `isDisjoint`, `intersect`, `union`, `discriminate` and `toJsonSchema`, and installs set algebra into `@ark/schema` when imported. `arktype` imports only that engine, from `arksets/internal`.
+
+`@ark/json-schema`, `@ark/fast-check` and `@ark/attest` each depend on an exact version of `arktype`, and `@ark/aot` precompiles with the `arktype` it imports. Install the versions released alongside your `arktype` so your project doesn't load two copies of it.
+
+`arkregex`, `@ark/schema`, `arksets` and `@ark/util` have an `./internal` entrypoint like `arktype`'s, and every package above has `./internal/*.ts` deep imports. None of them are semver-stable.

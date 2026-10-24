@@ -1,0 +1,236 @@
+---
+title: Inference
+description: The type ArkRegex infers for each part of a regular expression.
+---
+
+Each `Regex` carries the strings it matches, its captures and its flags. Where an exact type would be impractical, ArkRegex widens to `string` or `` `${number}` ``, so the inferred type is meant to include every string the expression matches. A few patterns currently infer a narrower type than that; they're listed under [known gaps](/docs/regex/faq#known-gaps).
+
+| Syntax                                                                  | Infers                                                 |
+| ----------------------------------------------------------------------- | ------------------------------------------------------ |
+| `abc`                                                                   | `"abc"`                                                |
+| no `^` or `$`                                                           | the type padded with `` `${string}` `` on that side    |
+| `a\|b`                                                                  | `"a" \| "b"`                                           |
+| `?`, `{2}`, `{2,3}`                                                     | every allowed repetition                               |
+| `+`, `{2,}`                                                             | the required repetitions followed by `` `${string}` `` |
+| `*`                                                                     | `""`, or one repetition followed by `` `${string}` ``  |
+| `\d`, `[0-9]`                                                           | `` `${number}` ``                                      |
+| `[abc]`                                                                 | `"a" \| "b" \| "c"`                                    |
+| `.`, `\w`, `\W`, `\s`, `\S`, `\D`, `\p{…}`, `[^…]`, ranges like `[a-z]` | `string`                                               |
+| `\b`, `\B`, `(?=…)`, `(?!…)`, `(?<=…)`, `(?<!…)`                        | nothing                                                |
+| `(…)`, `(?<name>…)`                                                     | the group's type, plus a capture                       |
+| `\1`, `\k<name>`                                                        | whatever the referenced group matched                  |
+| `(?i:…)`, `(?-i:…)`                                                     | the letters inside with or without their case variants |
+| an escaped character like `\.`                                          | the character itself                                   |
+
+Lazy quantifiers like `+?` infer the same type as their greedy versions.
+
+## Anchors
+
+An expression without `^` or `$` can match anywhere in a string, so its type is padded with `` `${string}` ``:
+
+```ts
+import { regex } from "arkregex"
+
+const unanchored = regex("abc")
+//    ^? Regex<`${string}abc${string}`>
+
+const anchored = regex("^abc$")
+//    ^? Regex<"abc">
+```
+
+## Unions
+
+```ts
+const color = regex("^(red|green|blue)$")
+//    ^? Regex<"red" | "green" | "blue", { captures: ["red"] | ["green"] | ["blue"] }>
+```
+
+A branch can be empty:
+
+```ts
+const signed = regex("^(-|)1$")
+//    ^? Regex<"-1" | "1", { captures: ["-"] | [""] }>
+```
+
+## Quantifiers
+
+Bounded quantifiers expand into every allowed repetition, so a large bound like `{0,60}` produces a union of 61 strings:
+
+```ts
+const range = regex("^a{2,3}$")
+//    ^? Regex<"aa" | "aaa">
+
+const optional = regex("^colou?r$")
+//    ^? Regex<"color" | "colour">
+```
+
+Unbounded quantifiers keep the required repetitions and end in `` `${string}` ``. A `*` can also match nothing, so it adds `""`:
+
+```ts
+const atLeastTwo = regex("^a{2,}$")
+//    ^? Regex<`aa${string}`>
+
+const zeroOrMore = regex("^a*$")
+//    ^? Regex<"" | `a${string}`>
+```
+
+A bounded run of digits becomes `` `${number}` ``, plus `""` if it can repeat zero times. An unbounded run like `\d+` becomes `string`, since a long enough run of digits isn't a finite number:
+
+```ts
+const version = regex("^(\\d{1,3})\\.(\\d{1,3})$")
+//    ^? Regex<`${number}.${number}`, { captures: [`${number}`, `${number}`] }>
+
+const short = regex("^\\d{0,3}$")
+//    ^? Regex<`${number}` | "">
+
+const digits = regex("^\\d+$")
+//    ^? Regex<string>
+```
+
+## Character sets
+
+A set of literal characters becomes a union of them, and a digit range becomes `` `${number}` ``. Any other range widens to `string`, since listing its characters would produce large unions:
+
+```ts
+const abc = regex("^[abc]$")
+//    ^? Regex<"a" | "b" | "c">
+
+const digit = regex("^[0-9]$")
+//    ^? Regex<`${number}`>
+
+const hex = regex("^[0-9a-f]+$")
+//    ^? Regex<string>
+```
+
+Negated sets like `[^abc]` and classes like `.`, `\w`, `\s` and `\p{L}` also widen to `string`.
+
+## Escapes
+
+Write a regex escape like `\d` or `\.` with two backslashes in a JS string, and a character a JS string can represent itself, like a newline or `é`, with one. An escaped character infers as itself:
+
+```ts
+const price = regex("^\\$\\d+\\.\\d{2}$")
+//    ^? Regex<`$${string}.${number}`>
+
+const tab = regex("^a\tb$")
+//    ^? Regex<"a\tb">
+```
+
+Writing `"\\n"` where `"\n"` would do is an [error](/docs/regex/errors#escapes).
+
+## Captures
+
+Positional captures are inferred as a tuple. A group that may not participate in a match captures `undefined`:
+
+```ts
+const maybeB = regex("^a(b)?$")
+//    ^? Regex<"a" | "ab", { captures: ["b"] | [undefined] }>
+```
+
+Captures are correlated with the branch that matched. A group in a branch that didn't match is `undefined`, so each tuple lines up with what `.exec()` returns:
+
+```ts
+const ab = regex("^(?:(a)|(b))$")
+
+type Captures = typeof ab.inferCaptures
+//   ^? ["a", undefined] | [undefined, "b"]
+```
+
+## Named captures
+
+```ts
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})$")
+
+type Names = typeof date.inferNamedCaptures
+//   ^? { year: `${number}`; month: `${number}`; day: `${number}` }
+```
+
+Named captures are correlated across branches the same way:
+
+```ts
+const unit = regex("^(?:(?<px>\\d+)px|(?<em>\\d+)em)$")
+
+type Names = typeof unit.inferNamedCaptures
+//   ^? { px: string; em: undefined } | { px: undefined; em: string }
+```
+
+## Backreferences
+
+A backreference matches the same string its group did, so it repeats that branch of the group's type:
+
+```ts
+const double = regex("^(a|b)\\1$")
+//    ^? Regex<"aa" | "bb", { captures: ["a"] | ["b"] }>
+
+const quoted = regex("^(?<q>'|\")x\\k<q>$")
+//    ^? Regex<"'x'" | "\"x\"", { captures: ["'"] | ["\""]; names: { q: "'" } | { q: "\"" } }>
+```
+
+## Lookarounds
+
+Lookarounds and word boundaries check a position without consuming characters, so they don't change the type:
+
+```ts
+const getter = regex("^get(?=[A-Z])\\w+$")
+//    ^? Regex<`get${string}`>
+```
+
+## Flags
+
+Flags are inferred, and `i` expands every letter to both cases:
+
+```ts
+const ok = regex("^ok$", "i")
+//    ^? Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i" }>
+```
+
+Flags must be written in alphabetical order (`"gi"`, not `"ig"`), the same order `RegExp#flags` returns them in. See [why](/docs/regex/faq#why-is-my-flags-string-an-error).
+
+Modifiers apply `i` to part of an expression, or remove it:
+
+```ts
+const title = regex("^(?i:a)b$")
+//    ^? Regex<"ab" | "Ab">
+
+const strict = regex("^(?-i:a)b$", "i")
+//    ^? Regex<"ab" | "aB", { flags: "i" }>
+```
+
+The `s` flag doesn't change inference, since `.` already infers `string`. The `m` flag is a [known gap](/docs/regex/faq#known-gaps).
+
+## `.test()`
+
+`.test()` narrows its input to the expression's type:
+
+```ts
+const color = regex("^(red|green|blue)$")
+
+declare const input: string
+
+if (color.test(input)) {
+	const narrowed = input
+	//    ^? "red" | "green" | "blue"
+}
+```
+
+Only rely on the `true` branch. In the `false` branch, TypeScript removes the whole inferred type from the input, which also removes strings that didn't match whenever the type was widened. See [known gaps](/docs/regex/faq#known-gaps).
+
+## `.exec()`
+
+`.exec()` returns a typed match, including `groups` and, with the `d` flag, `indices`:
+
+```ts
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})$", "d")
+
+const match = date.exec("2026-10-07")
+
+if (match) {
+	const year = match.groups.year
+	//    ^? `${number}`
+
+	const [start, end] = match.indices.groups.year
+	//     ^? number
+}
+```
+
+Its type is [`inferExecArray`](/docs/regex/types#regex).

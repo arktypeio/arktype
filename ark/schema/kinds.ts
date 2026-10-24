@@ -1,12 +1,14 @@
 import {
-	deepClone,
-	envHasCsp,
+	domainDescriptions,
+	domainOf,
 	flatMorph,
+	objectKindDescriptions,
+	printable,
+	printKind,
 	withAlphabetizedKeys,
-	type array,
-	type listable
+	type array
 } from "@ark/util"
-import { mergeConfigs, type ResolvedConfig } from "./config.ts"
+import type { ResolvedConfig, ResolvedUnknownNodeConfig } from "./config.ts"
 import type { BaseNode } from "./node.ts"
 import { Predicate } from "./predicate.ts"
 import { Divisor } from "./refinements/divisor.ts"
@@ -25,17 +27,28 @@ import { Proto } from "./roots/proto.ts"
 import { Union } from "./roots/union.ts"
 import { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
+import type { BaseNodeInput } from "./shared/declare.ts"
+import { enInfo } from "./shared/enWriters.ts"
+import { errorWriters, errorWritersByCode } from "./shared/errorWriters.ts"
+import {
+	ArkErrors,
+	type ArkErrorCode,
+	type ErrorContextsByCode
+} from "./shared/errors.ts"
 import type {
 	ConstraintKind,
 	NodeKind,
 	OpenNodeKind,
-	RootKind,
-	UnknownAttachments,
+	UnknownAttachmentsInput,
 	UnknownNodeImplementation
 } from "./shared/implement.ts"
+import { describeMissing, type Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
-import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.ts"
+import {
+	describeBranches,
+	type makeRootAndArrayPropertiesMutable
+} from "./shared/utils.ts"
 import { Index } from "./structure/index.ts"
 import { Optional } from "./structure/optional.ts"
 import { Required } from "./structure/required.ts"
@@ -82,6 +95,78 @@ export const nodeImplementationsByKind: Record<
 	structure: Structure.implementation
 } satisfies Record<NodeKind, unknown> as never
 
+const describeRequired: Locale.ExpectedWriter<"required"> = (e, locale) =>
+	describeMissing(e.missing, locale)
+
+// a leaf error carries its node's inner fields, so the node's description
+// writer describes it, while union and intersection have their own and
+// required describes what is missing
+const enWritersOf = (
+	kind: NodeKind,
+	defaults: ResolvedUnknownNodeConfig
+): Locale.CodeWriters => {
+	const writers: Record<string, unknown> = {
+		expected:
+			kind === "union" || kind === "intersection" ? defaults.expected
+			: kind === "required" ? describeRequired
+			: defaults.description,
+		problem: defaults.problem
+	}
+	for (const slot of ["actual", "message"] as const)
+		if (defaults[slot] !== errorWriters[slot]) writers[slot] = defaults[slot]
+	return writers as never
+}
+
+const listCases: Locale.ExpectedWriter<"discriminant"> = (e, locale) =>
+	describeBranches(
+		e.discriminantKind === "domain" ?
+			e.cases.map(domain => locale.nouns[domain])
+		:	e.cases.map(unit => printable(unit, { ownDataOnly: true }))
+	)
+
+const describeDiscriminant: Locale.ActualWriter<"discriminant"> = (
+	data,
+	e,
+	locale
+) =>
+	e.absent ? "missing"
+	: e.discriminantKind === "domain" ? locale.nouns[domainOf(data)]
+	: printKind(data)
+
+export const en: Locale.Complete = {
+	...(flatMorph(nodeImplementationsByKind, (kind, { ownsError, defaults }) =>
+		ownsError ? [kind, enWritersOf(kind, defaults)] : []
+	) as Pick<Locale.Complete, ArkErrorCode & NodeKind>),
+	undeclared: {
+		...errorWritersByCode.undeclared,
+		problem: errorWriters.problem
+	},
+	discriminant: {
+		expected: listCases,
+		problem: errorWriters.problem,
+		actual: describeDiscriminant
+	},
+	...enInfo,
+	cite: text => text,
+	// a domain is named by its noun whatever its meta, as DomainNode's
+	// defaultBrief does
+	basis: (basis, locale) =>
+		basis.code === "domain" ? locale.nouns[basis.domain]
+		: basis.meta.description === undefined ?
+			nodeImplementationsByKind[basis.code].defaults.description(basis as never)
+		:	locale.cite(basis.meta.description),
+	nouns: {
+		...domainDescriptions,
+		...objectKindDescriptions,
+		unknown: "present",
+		never: "never"
+	},
+	keywordPhrases: {},
+	actual: errorWriters.actual,
+	problem: errorWriters.problem,
+	message: errorWriters.message
+}
+
 $ark.defaultConfig = withAlphabetizedKeys(
 	Object.assign(
 		flatMorph(nodeImplementationsByKind, (kind, implementation) => [
@@ -89,24 +174,38 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			implementation.defaults
 		]),
 		{
-			jitless: envHasCsp(),
-			clone: deepClone,
+			undeclared: { ...errorWriters, ...errorWritersByCode.undeclared },
+			discriminant: { ...errorWriters, ...errorWritersByCode.discriminant },
+			jitless: false,
 			onUndeclaredKey: "ignore",
 			exactOptionalPropertyTypes: true,
 			numberAllowsNaN: false,
+			numberAllowsInfinity: false,
 			dateAllowsInvalid: false,
+			mutatesInput: false,
 			onFail: null,
+			errors: "all",
 			keywords: {},
-			toJsonSchema: ToJsonSchema.defaultConfig
+			toJsonSchema: ToJsonSchema.defaultConfig,
+			locale: en
 		} satisfies Omit<ResolvedConfig, NodeKind>
 	) as never
 )
 
-$ark.resolvedConfig = mergeConfigs($ark.defaultConfig, $ark.config)
+// Node prints errors as their issues, set where runtime bundles never load
+Object.defineProperty(
+	ArkErrors.prototype,
+	Symbol.for("nodejs.util.inspect.custom"),
+	{
+		value(this: ArkErrors) {
+			return this.issues
+		}
+	}
+)
 
 export const nodeClassesByKind: Record<
 	NodeKind,
-	new (attachments: UnknownAttachments, $: BaseScope) => BaseNode
+	new (attachments: UnknownAttachmentsInput, $: BaseScope) => BaseNode
 > = {
 	...boundClassesByKind,
 	alias: Alias.Node,
@@ -148,13 +247,6 @@ export type nodeOfKind<kind extends NodeKind> = NodesByKind[kind]
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 
-export type NodeSchema<kind extends NodeKind> = Declaration<kind>["schema"]
-
-export type RootSchema<kind extends RootKind = RootKind> = NodeSchema<kind>
-
-export type NormalizedSchema<kind extends NodeKind> =
-	Declaration<kind>["normalizedSchema"]
-
 export type childKindOf<kind extends NodeKind> = Declaration<kind>["childKind"]
 
 export type Prerequisite<kind extends NodeKind> =
@@ -167,8 +259,11 @@ export type reducibleKindOf<kind extends NodeKind> =
 
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
 
-export type defAttachedAs<kind extends ConstraintKind> =
-	kind extends OpenNodeKind ? listable<NodeSchema<kind>> : NodeSchema<kind>
+// a node is created from its inner and its meta
+export type NodeInput<kind extends NodeKind = NodeKind> =
+	kind extends "union" ? Union.Input
+	: kind extends "structure" ? Structure.Input
+	: Inner<kind> & BaseNodeInput
 
 export type innerAttachedAs<kind extends ConstraintKind> =
 	kind extends OpenNodeKind ? array<nodeOfKind<kind>> : nodeOfKind<kind>
@@ -177,8 +272,9 @@ export type innerAttachedAs<kind extends ConstraintKind> =
 export type mutableInnerOfKind<kind extends NodeKind> =
 	makeRootAndArrayPropertiesMutable<Inner<kind>>
 
-export type mutableNormalizedRootOfKind<kind extends NodeKind> =
-	makeRootAndArrayPropertiesMutable<NormalizedSchema<kind>>
+export type errorContext<code extends ArkErrorCode> = ErrorContextsByCode[code]
 
-export type errorContext<kind extends NodeKind> =
-	Declaration<kind>["errorContext"]
+export type NodeErrorContextsByKind = {
+	[kind in NodeKind as Declaration<kind>["errorContext"] extends null ? never
+	:	kind]: Declaration<kind>["errorContext"]
+}

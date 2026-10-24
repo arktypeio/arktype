@@ -1,7 +1,7 @@
 import { tryCatch } from "@ark/util"
 import type { Type, type } from "arktype"
-import { DynamicCodeBlock } from "fumadocs-ui/components/dynamic-codeblock"
 import React from "react"
+import { ColorizedCode } from "./ColorizedCode.tsx"
 import { Tab, Tabs } from "./PlaygroundTabs.tsx"
 import { RestoreDefault } from "./RestoreDefault.tsx"
 import {
@@ -37,9 +37,7 @@ export const ParseResult = ({ parsed, restoreDefault }: ParseResult.Props) => {
 			}}
 			className="glass-container editor-bg h-full p-4 rounded-2xl"
 		>
-			<h3 className="text-3xl text-fd-foreground font-semibold mb-2">
-				{title}
-			</h3>
+			<h3 className="text-3xl text-ink font-semibold mb-2">{title}</h3>
 			{contents}
 		</div>
 	)
@@ -84,17 +82,17 @@ const createTypeResult = (t: Type) => (
 			<TabDescription>
 				Syntactic string similar to native TypeScript
 			</TabDescription>
-			<DynamicCodeBlock lang="ts" code={t.expression} />
+			<ColorizedCode lang="ts" code={t.expression} />
 		</Tab>
 		<Tab value=".description">
 			<TabDescription>
 				Human-readable descriptions used for error messages
 			</TabDescription>
-			<DynamicCodeBlock lang="ts" code={t.description} />
+			<ColorizedCode lang="ts" code={t.description} />
 		</Tab>
 		<Tab value=".toJsonSchema()">
 			<TabDescription>JSON Schema this generates</TabDescription>
-			<DynamicCodeBlock
+			<ColorizedCode
 				lang="json"
 				code={tryCatch(
 					() => JSON.stringify(t.toJsonSchema(), null, 4),
@@ -106,11 +104,11 @@ const createTypeResult = (t: Type) => (
 			<TabDescription>
 				Serialized representation of the Type's internal structure
 			</TabDescription>
-			<DynamicCodeBlock lang="json" code={JSON.stringify(t.json, null, 4)} />
+			<ColorizedCode lang="json" code={JSON.stringify(t.json, null, 4)} />
 		</Tab>
 		<Tab value=".precompilation">
 			<TabDescription>JIT-optimized validation code</TabDescription>
-			<DynamicCodeBlock lang="js" code={t.precompilation!} />
+			<ColorizedCode lang="js" code={t.precompilation!} />
 		</Tab>
 	</Tabs>
 )

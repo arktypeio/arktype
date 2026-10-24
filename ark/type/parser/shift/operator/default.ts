@@ -9,6 +9,7 @@ import {
 } from "@ark/util"
 import type { type } from "../../../keywords/keywords.ts"
 import type { DateLiteral } from "../../../attributes.ts"
+import { emptyCollectionDefaults } from "../../../keywords/functions.ts"
 import type { RootedRuntimeState } from "../../reduce/dynamic.ts"
 import type {
 	EnclosingLiteralStartToken,
@@ -36,13 +37,6 @@ export type EmptyCollectionLiteral = "[]" | "{}"
 
 export type DefaultLiteral = UnitLiteral | EmptyCollectionLiteral
 
-const emptyCollectionDefaults = {
-	"[]": () => [],
-	"{}": () => ({})
-} as const satisfies {
-	[literal in EmptyCollectionLiteral]: () => inferDefaultLiteral<literal>
-}
-
 const emptyCollectionLiterals = keysOf(emptyCollectionDefaults)
 
 // neither empty collection literal can resolve via type.infer- "[]" would be
@@ -63,7 +57,7 @@ export const parseDefault = (
 	const baseNode = s.unsetRoot()
 	// an empty collection is not a unit literal, so it must be short-circuited
 	// here and represented as a thunk to keep each traversal's default distinct
-	s.scanner.shiftUntilNonWhitespace()
+	s.scanner.shiftPastWhitespace()
 	const emptyCollection = emptyCollectionLiterals.find(literal =>
 		s.scanner.unscanned.startsWith(literal)
 	)
