@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
+import { flattenBundle } from "@ark/aot/internal/flat.ts"
 import { writeUnscannedFlatMessage } from "@ark/aot/internal/scan.ts"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { build, type BuildOptions, type Plugin } from "esbuild"
@@ -8,6 +9,7 @@ import {
 	defaultClientConditions,
 	type Rolldown
 } from "vite"
+import { parseSync } from "oxc-parser"
 import { spawnSync } from "node:child_process"
 import { join } from "node:path"
 import { writeFixture } from "./utils.ts"
@@ -202,6 +204,64 @@ contextualize(() => {
 		attest(run(flat)).equals(run(whole))
 		attest(factoryParam.test(whole)).equals(true)
 		attest(factoryParam.test(flat)).equals(false)
+	})
+
+	it("declares a unit however its array is written", () => {
+		// errors "none" writes a unit without its Apply, e.g. [allows, ]
+		const arrays = [
+			"[(data => data > 0), ]",
+			"[(data => data < 9) /* , */ ]",
+			"[(data => data !== 5), // apply\n]",
+			"[(data => data % 2 === 0) , (data => data) ,]"
+		]
+		const modules: Record<string, string> = {
+			"~arktype/date": `import * as runtime from "arktype/runtime"
+
+const date = /* @__PURE__ */ ((dateR0) => {
+const dateAllows = (data => data instanceof Date && dateR0(data))
+return [dateAllows, ]
+})(runtime.isValidDate)
+
+export { date }`
+		}
+		for (const [i, array] of arrays.entries()) {
+			modules[`~arktype/unit${i}`] =
+				`const unit${i} = ${array}\n\nexport { unit${i} }`
+		}
+		const names = ["date", ...arrays.map((_, i) => `unit${i}`)]
+		const site = `${names.map(name => `import { ${name} } from "~arktype/${name}"`).join("\n")}
+
+export const read = [${names.join(", ")}]`
+		const flat = flattenBundle(
+			{ "site.js": site },
+			modules,
+			new Map([["site.js", true]]),
+			false
+		)!
+		const written = Object.keys(flat.modules).filter(
+			specifier => !(specifier in modules)
+		)
+		attest(written.length).equals(1)
+		const code = flat.modules[written[0]]
+		attest(parseSync("flat.js", code, { sourceType: "module" }).errors).equals(
+			[]
+		)
+		attest(code).snap(`import * as runtime from "arktype/runtime"
+
+const [date, unit0, unit1, unit2, unit3] = (() => {
+const dateR0 = runtime.isValidDate
+
+const dateAllows = (data => data instanceof Date && dateR0(data))
+
+const unit0Allows = (data => data > 0)
+const unit1Allows = (data => data < 9) /* , */ 
+const unit2Allows = (data => data !== 5)
+const unit3Allows = (data => data % 2 === 0) , unit3Apply = (data => data) 
+return [[dateAllows], [unit0Allows], [unit1Allows], [unit2Allows], [unit3Allows, unit3Apply]]
+})()
+
+export { date, unit0, unit1, unit2, unit3 }
+`)
 	})
 
 	describe("a module built from code its scan didn't read", () => {

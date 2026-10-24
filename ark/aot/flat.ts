@@ -1039,10 +1039,21 @@ const writeFlat = (
 			const members = nameMembers(d.name, elements.length)
 			s.overwrite(d.node.start, d.array.start + 1, `const ${members[0]} = `)
 			for (let i = 1; i < elements.length; i++) {
-				const comma = commaBetween(code, elements[i - 1].end, elements[i].start)
+				const comma = commaBetween(
+					code,
+					elements[i - 1].end,
+					elements[i].start
+				)!
 				s.overwrite(comma, comma + 1, `, ${members[i]} =`)
 			}
-			s.overwrite(d.array.end - 1, d.array.end, "")
+			// a trailing comma, e.g. where errors "none" leaves no Apply, would
+			// continue the declaration into the next statement
+			const trailing = commaBetween(
+				code,
+				elements[elements.length - 1].end,
+				d.array.end - 1
+			)
+			s.overwrite(trailing ?? d.array.end - 1, d.array.end, "")
 		} else flattenFactory(d)
 	}
 	// a unit read whole in the function is its members
@@ -1450,13 +1461,16 @@ const pushTo = <k, v>(map: Map<k, v[]>, key: k, value: v) => {
 }
 
 // the comma separating two elements, past their parentheses and comments
-const commaBetween = (code: string, start: number, end: number): number => {
+const commaBetween = (
+	code: string,
+	start: number,
+	end: number
+): number | undefined => {
 	for (let i = start; i < end; i++) {
 		if (code[i] === ",") return i
 		if (code.startsWith("/*", i)) i = code.indexOf("*/", i + 2) + 1
 		else if (code.startsWith("//", i)) i = code.indexOf("\n", i)
 	}
-	throw new Error(`Expected a comma between ${start} and ${end}`)
 }
 
 // the names each module of a bundle may have read of it by another, from its
