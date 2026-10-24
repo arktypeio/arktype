@@ -439,6 +439,26 @@ on the login form (1168 B); the homepage's apps 2.100 (ajv 1.346, Valibot
 1.508) and schemabenchmarks.dev's download 1.315 (2062 B). Leads: speed
 13.0%, startup 178%, size 3.0%.
 
+### ArkType's rows at 808927feb
+
+The same measurements at 808927feb, after the first issue began to be pushed
+directly (a size trade) and object issues began to be reported in
+declaration order: `benchData.json`'s scenarios rerun, 20 passes then a
+10-pass replica, every library in, at 1-minute loads of 2.3 to 4.9 at the
+runs' starts and ends (each started under 4); every other ArkType row in
+`results/arktype-808927feb.json` and `results/startup-808927feb-node24.json`.
+
+| category | 1             | 2             | 3                   |
+| -------- | ------------- | ------------- | ------------------- |
+| speed    | ArkType 1.103 | ata 1.255\*   | ajv 2.873\*         |
+| startup  | ArkType 1.013 | Typia 2.815\* | Valibot 29.4        |
+| size     | ArkType 1.355 | Valibot 1.405 | Superstruct 1.464\* |
+
+\* ranked on 2 to 4 of the category's suites. The homepage's speed suite is
+ArkType 1.282, ajv 1.963. Size: the login form 1158 B, the homepage's apps
+2.095, schemabenchmarks.dev's download 2037 B (1.299), Sury's 1107 B. Leads:
+speed 13.8%, startup 178%, size 3.7%.
+
 ## The login form across validators
 
 `forms/` writes valibot.dev's login form in each TypeScript-schema validator

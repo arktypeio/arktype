@@ -1,8 +1,8 @@
 {
 	"sources": {
-		"arkType": "results/arktype-fea8e68e0.json",
+		"arkType": "results/arktype-808927feb.json",
 		"counts": "results/counts-a306152ce.json",
-		"startup": "results/startup-fea8e68e0-node24.json",
+		"startup": "results/startup-808927feb-node24.json",
 		"forms": "results/forms-642b4517e.json",
 		"sbCounts": "results/sb-counts-6c5fd9862.json",
 		"sbDownload": "results/sb-download-6c5fd9862.json",
@@ -106,64 +106,64 @@
 				{
 					"id": "parse moltar",
 					"results": {
-						"Valibot": 470,
-						"Zod": 141,
-						"Zod (compiled)": 16.7,
-						"Zod Mini": 773,
-						"Typia": 8.07,
-						"ajv": 14.3,
-						"TypeBox": 98,
-						"ArkType": 4.85
+						"Valibot": 477,
+						"Zod": 143,
+						"Zod (compiled)": 16.8,
+						"Zod Mini": 771,
+						"Typia": 8.25,
+						"ajv": 14.4,
+						"TypeBox": 99.5,
+						"ArkType": 4.84
 					}
 				},
 				{
 					"id": "parse moltar strict",
 					"results": {
-						"Valibot": 523,
-						"Zod": 198,
+						"Valibot": 531,
+						"Zod": 200,
 						"Zod (compiled)": 32.9,
-						"Zod Mini": 848,
+						"Zod Mini": 855,
 						"Typia": 30.3,
-						"ajv": 28.7,
-						"TypeBox": 26.3,
-						"ArkType": 17.8
+						"ajv": 28.9,
+						"TypeBox": 26.7,
+						"ArkType": 18
 					}
 				},
 				{
 					"id": "parse product",
 					"results": {
-						"Valibot": 6200,
-						"Zod": 5720,
-						"Zod (compiled)": 1330,
-						"Zod Mini": 9780,
-						"Typia": 2640,
-						"ajv": 1070,
+						"Valibot": 6320,
+						"Zod": 5730,
+						"Zod (compiled)": 1340,
+						"Zod Mini": 10000,
+						"Typia": 2620,
+						"ajv": 1090,
 						"TypeBox": 1400,
-						"ArkType": 322
+						"ArkType": 323
 					}
 				},
 				{
 					"id": "parse items",
 					"results": {
-						"Valibot": 15600,
-						"Zod": 3970,
-						"Zod (compiled)": 722,
-						"Zod Mini": 23800,
-						"Typia": 317,
-						"ajv": 492,
-						"TypeBox": 367,
-						"ArkType": 288
+						"Valibot": 16000,
+						"Zod": 4200,
+						"Zod (compiled)": 731,
+						"Zod Mini": 23600,
+						"Typia": 320,
+						"ajv": 491,
+						"TypeBox": 371,
+						"ArkType": 293
 					}
 				},
 				{
 					"id": "parse discriminated",
 					"results": {
-						"Valibot": 438,
-						"Zod": 94.8,
-						"Zod (compiled)": 16.7,
-						"Zod Mini": 233,
-						"Typia": 13.6,
-						"ajv": 11.9,
+						"Valibot": 437,
+						"Zod": 96.6,
+						"Zod (compiled)": 16.5,
+						"Zod Mini": 231,
+						"Typia": 13.3,
+						"ajv": 12.1,
 						"TypeBox": 10.2,
 						"ArkType": 4.5
 					}
@@ -171,344 +171,344 @@
 				{
 					"id": "parse rotating",
 					"results": {
-						"Valibot": 84.2,
-						"Zod": 93.2,
-						"Zod (compiled)": 23.7,
-						"Zod Mini": 132,
-						"Typia": 7.17,
-						"ajv": 16.9,
-						"TypeBox": 6.61,
-						"ArkType": 5.36
+						"Valibot": 82.7,
+						"Zod": 92.8,
+						"Zod (compiled)": 23.9,
+						"Zod Mini": 133,
+						"Typia": 7.22,
+						"ajv": 17.1,
+						"TypeBox": 6.6,
+						"ArkType": 5.31
 					}
 				},
 				{
 					"id": "parse constraints",
 					"results": {
-						"Valibot": 466,
-						"Zod": 557,
-						"Zod (compiled)": 71.1,
-						"Zod Mini": 960,
-						"Typia": 173,
-						"ajv": 69.4,
-						"TypeBox": 70.9,
-						"ArkType": 52.6
+						"Valibot": 465,
+						"Zod": 551,
+						"Zod (compiled)": 70.8,
+						"Zod Mini": 973,
+						"Typia": 177,
+						"ajv": 70.1,
+						"TypeBox": 71.8,
+						"ArkType": 53
 					}
 				},
 				{
 					"id": "parse morph",
 					"results": {
-						"Valibot": 60.4,
-						"Zod": 124,
-						"Zod (compiled)": 22.3,
+						"Valibot": 59.5,
+						"Zod": 123,
+						"Zod (compiled)": 22.9,
 						"Zod Mini": 112,
-						"TypeBox": 2860,
-						"ArkType": 17.9
+						"TypeBox": 2830,
+						"ArkType": 17.4
 					}
 				},
 				{
 					"id": "parse defaults",
 					"results": {
-						"Valibot": 224,
-						"Zod": 67.2,
-						"Zod (compiled)": 50,
-						"Zod Mini": 397,
-						"ajv": 15.3,
-						"TypeBox": 1150,
-						"ArkType": 7.58
+						"Valibot": 227,
+						"Zod": 68.2,
+						"Zod (compiled)": 51.4,
+						"Zod Mini": 400,
+						"ajv": 15.6,
+						"TypeBox": 1140,
+						"ArkType": 7.74
 					}
 				},
 				{
 					"id": "parse items morph",
 					"results": {
 						"Valibot": 21400,
-						"Zod": 16300,
-						"Zod (compiled)": 2380,
-						"Zod Mini": 34900,
-						"TypeBox": 780000,
-						"ArkType": 1640
+						"Zod": 17100,
+						"Zod (compiled)": 2390,
+						"Zod Mini": 35500,
+						"TypeBox": 793000,
+						"ArkType": 1580
 					}
 				},
 				{
 					"id": "parse items defaults",
 					"results": {
-						"Valibot": 16100,
-						"Zod": 4760,
+						"Valibot": 16400,
+						"Zod": 4880,
 						"Zod (compiled)": 2680,
-						"Zod Mini": 26600,
-						"ajv": 781,
-						"TypeBox": 70900,
-						"ArkType": 1120
+						"Zod Mini": 26500,
+						"ajv": 799,
+						"TypeBox": 72200,
+						"ArkType": 1170
 					}
 				},
 				{
 					"id": "parse moltar morph",
 					"results": {
-						"Valibot": 530,
-						"Zod": 256,
-						"Zod (compiled)": 33.7,
-						"Zod Mini": 886,
-						"TypeBox": 32800,
-						"ArkType": 22.1
+						"Valibot": 540,
+						"Zod": 253,
+						"Zod (compiled)": 33.4,
+						"Zod Mini": 905,
+						"TypeBox": 32700,
+						"ArkType": 21.9
 					}
 				},
 				{
 					"id": "parse tree",
 					"results": {
-						"Valibot": 5030,
-						"Zod": 8740,
-						"Zod (compiled)": 8790,
+						"Valibot": 5340,
+						"Zod": 8810,
+						"Zod (compiled)": 8820,
 						"Zod Mini": 15200,
-						"Typia": 2330,
-						"ajv": 884,
-						"TypeBox": 340,
-						"ArkType": 210
+						"Typia": 2300,
+						"ajv": 914,
+						"TypeBox": 363,
+						"ArkType": 214
 					}
 				},
 				{
 					"id": "strip moltar",
 					"results": {
-						"Valibot": 460,
-						"Zod": 134,
-						"Zod (compiled)": 17.6,
-						"Zod Mini": 781,
-						"Typia": 454,
-						"ajv": 614,
-						"TypeBox": 7760,
-						"ArkType": 12.4
+						"Valibot": 468,
+						"Zod": 140,
+						"Zod (compiled)": 17.9,
+						"Zod Mini": 796,
+						"Typia": 460,
+						"ajv": 611,
+						"TypeBox": 7660,
+						"ArkType": 13
 					}
 				},
 				{
 					"id": "strip product",
 					"results": {
-						"Valibot": 6270,
-						"Zod": 5610,
+						"Valibot": 6300,
+						"Zod": 5700,
 						"Zod (compiled)": 1320,
-						"Zod Mini": 9930,
-						"Typia": 4110,
-						"ajv": 2810,
-						"TypeBox": 40600,
-						"ArkType": 652
+						"Zod Mini": 10100,
+						"Typia": 4150,
+						"ajv": 2820,
+						"TypeBox": 41100,
+						"ArkType": 650
 					}
 				},
 				{
 					"id": "issues moltar",
 					"results": {
-						"Valibot": 742,
-						"Zod": 1940,
-						"Zod (compiled)": 1880,
+						"Valibot": 739,
+						"Zod": 1890,
+						"Zod (compiled)": 1780,
 						"Zod Mini": 2730,
-						"Typia": 277,
-						"ajv": 28.7,
+						"Typia": 275,
+						"ajv": 29.6,
 						"TypeBox": 9920,
-						"ArkType": 64
+						"ArkType": 75.8
 					}
 				},
 				{
 					"id": "issues moltar strict",
 					"results": {
-						"Valibot": 901,
-						"Zod": 2280,
-						"Zod (compiled)": 2260,
+						"Valibot": 898,
+						"Zod": 2300,
+						"Zod (compiled)": 2270,
 						"Zod Mini": 3110,
-						"Typia": 1270,
-						"ajv": 69.8,
-						"TypeBox": 14700,
-						"ArkType": 134
+						"Typia": 1290,
+						"ajv": 70.1,
+						"TypeBox": 14600,
+						"ArkType": 121
 					}
 				},
 				{
 					"id": "issues product",
 					"results": {
-						"Valibot": 10100,
-						"Zod": 18300,
-						"Zod (compiled)": 24200,
-						"Zod Mini": 22900,
+						"Valibot": 10300,
+						"Zod": 20500,
+						"Zod (compiled)": 23600,
+						"Zod Mini": 24300,
 						"Typia": 12300,
-						"ajv": 1350,
-						"TypeBox": 67000,
-						"ArkType": 1230
+						"ajv": 1330,
+						"TypeBox": 66700,
+						"ArkType": 1210
 					}
 				},
 				{
 					"id": "issues items",
 					"results": {
-						"Valibot": 16100,
-						"Zod": 6610,
-						"Zod (compiled)": 6700,
-						"Zod Mini": 27000,
-						"Typia": 3200,
-						"ajv": 539,
-						"TypeBox": 450000,
-						"ArkType": 398
+						"Valibot": 16300,
+						"Zod": 6870,
+						"Zod (compiled)": 6770,
+						"Zod Mini": 26600,
+						"Typia": 3180,
+						"ajv": 537,
+						"TypeBox": 438000,
+						"ArkType": 418
 					}
 				},
 				{
 					"id": "issues patterns",
 					"results": {
-						"Valibot": 7820,
+						"Valibot": 7850,
 						"Zod": 10400,
-						"Zod (compiled)": 18300,
+						"Zod (compiled)": 18400,
 						"Zod Mini": 10100,
-						"Typia": 15700,
-						"ajv": 7450,
-						"TypeBox": 18500,
-						"ArkType": 3310
+						"Typia": 15800,
+						"ajv": 7510,
+						"TypeBox": 18300,
+						"ArkType": 3330
 					}
 				},
 				{
 					"id": "errors moltar",
 					"results": {
-						"Valibot": 747,
-						"Zod": 1760,
-						"Zod (compiled)": 1700,
-						"Zod Mini": 2670,
-						"Typia": 524,
-						"ajv": 29.4,
-						"TypeBox": 9850,
-						"ArkType": 93.2
+						"Valibot": 750,
+						"Zod": 1910,
+						"Zod (compiled)": 1680,
+						"Zod Mini": 2700,
+						"Typia": 518,
+						"ajv": 30.8,
+						"TypeBox": 9840,
+						"ArkType": 101
 					}
 				},
 				{
 					"id": "errors moltar strict",
 					"results": {
-						"Valibot": 907,
-						"Zod": 2320,
-						"Zod (compiled)": 2270,
-						"Zod Mini": 3110,
-						"Typia": 1520,
-						"ajv": 75.4,
+						"Valibot": 903,
+						"Zod": 2260,
+						"Zod (compiled)": 2250,
+						"Zod Mini": 3140,
+						"Typia": 1470,
+						"ajv": 71.9,
 						"TypeBox": 14800,
-						"ArkType": 186
+						"ArkType": 172
 					}
 				},
 				{
 					"id": "errors product",
 					"results": {
 						"Valibot": 10000,
-						"Zod": 19000,
-						"Zod (compiled)": 17400,
+						"Zod": 19300,
+						"Zod (compiled)": 17900,
 						"Zod Mini": 23700,
-						"Typia": 14900,
+						"Typia": 14800,
 						"ajv": 1350,
-						"TypeBox": 67200,
-						"ArkType": 2250
+						"TypeBox": 67800,
+						"ArkType": 2260
 					}
 				},
 				{
 					"id": "errors items",
 					"results": {
-						"Valibot": 16000,
-						"Zod": 6310,
-						"Zod (compiled)": 6840,
-						"Zod Mini": 26900,
-						"Typia": 3550,
-						"ajv": 538,
-						"TypeBox": 332000,
-						"ArkType": 449
+						"Valibot": 16300,
+						"Zod": 6340,
+						"Zod (compiled)": 6910,
+						"Zod Mini": 27100,
+						"Typia": 3580,
+						"ajv": 540,
+						"TypeBox": 330000,
+						"ArkType": 465
 					}
 				},
 				{
 					"id": "errors patterns",
 					"results": {
-						"Valibot": 7860,
-						"Zod": 10300,
-						"Zod (compiled)": 18300,
-						"Zod Mini": 10200,
-						"Typia": 16000,
-						"ajv": 7490,
-						"TypeBox": 18300,
+						"Valibot": 7920,
+						"Zod": 10400,
+						"Zod (compiled)": 18200,
+						"Zod Mini": 10100,
+						"Typia": 15900,
+						"ajv": 7500,
+						"TypeBox": 18700,
 						"ArkType": 3380
 					}
 				},
 				{
 					"id": "first moltar",
 					"results": {
-						"Valibot": 720,
-						"Zod": 1780,
-						"Zod (compiled)": 1730,
-						"Zod Mini": 2720,
-						"Typia": 5890,
-						"ajv": 29.8,
-						"TypeBox": 9820,
-						"ArkType": 94.2
+						"Valibot": 728,
+						"Zod": 1800,
+						"Zod (compiled)": 1720,
+						"Zod Mini": 2770,
+						"Typia": 6030,
+						"ajv": 30.4,
+						"TypeBox": 9920,
+						"ArkType": 106
 					}
 				},
 				{
 					"id": "first moltar strict",
 					"results": {
-						"Valibot": 706,
-						"Zod": 2320,
-						"Zod (compiled)": 2250,
-						"Zod Mini": 3130,
-						"Typia": 6250,
-						"ajv": 32.6,
-						"TypeBox": 6280,
-						"ArkType": 98.3
+						"Valibot": 716,
+						"Zod": 2290,
+						"Zod (compiled)": 2210,
+						"Zod Mini": 3140,
+						"Typia": 6260,
+						"ajv": 32.4,
+						"TypeBox": 6290,
+						"ArkType": 112
 					}
 				},
 				{
 					"id": "first product",
 					"results": {
-						"Valibot": 393,
-						"Zod": 19300,
-						"Zod (compiled)": 17200,
+						"Valibot": 390,
+						"Zod": 20600,
+						"Zod (compiled)": 16600,
 						"Zod Mini": 22900,
-						"Typia": 6190,
-						"ajv": 28.6,
-						"TypeBox": 6630,
-						"ArkType": 158
+						"Typia": 6210,
+						"ajv": 29,
+						"TypeBox": 6690,
+						"ArkType": 79.6
 					}
 				},
 				{
 					"id": "first items",
 					"results": {
-						"Valibot": 8400,
-						"Zod": 6450,
-						"Zod (compiled)": 6680,
-						"Zod Mini": 27400,
-						"Typia": 7500,
+						"Valibot": 8580,
+						"Zod": 6530,
+						"Zod (compiled)": 6700,
+						"Zod Mini": 27200,
+						"Typia": 7590,
 						"ajv": 351,
-						"TypeBox": 174000,
-						"ArkType": 323
+						"TypeBox": 173000,
+						"ArkType": 342
 					}
 				},
 				{
 					"id": "first patterns",
 					"results": {
-						"Valibot": 7780,
-						"Zod": 10300,
-						"Zod (compiled)": 18400,
+						"Valibot": 7840,
+						"Zod": 10500,
+						"Zod (compiled)": 17900,
 						"Zod Mini": 10200,
 						"Typia": 22100,
-						"ajv": 7510,
+						"ajv": 7500,
 						"TypeBox": 18400,
-						"ArkType": 3400
+						"ArkType": 3390
 					}
 				},
 				{
 					"id": "allows moltar",
 					"results": {
-						"Valibot": 454,
-						"Zod": 133,
-						"Zod (compiled)": 8,
-						"Zod Mini": 792,
-						"Typia": 4.89,
+						"Valibot": 461,
+						"Zod": 136,
+						"Zod (compiled)": 8.01,
+						"Zod Mini": 784,
+						"Typia": 4.84,
 						"ajv": 14.2,
-						"TypeBox": 98.1,
-						"ArkType": 3.72
+						"TypeBox": 98.3,
+						"ArkType": 3.75
 					}
 				},
 				{
 					"id": "allows moltar invalid",
 					"results": {
-						"Valibot": 711,
-						"Zod": 230,
+						"Valibot": 720,
+						"Zod": 239,
 						"Zod (compiled)": 8.52,
 						"Zod Mini": 1010,
 						"Typia": 4.79,
-						"ajv": 27.9,
-						"TypeBox": 96.4,
-						"ArkType": 3.41
+						"ajv": 29.8,
+						"TypeBox": 98.5,
+						"ArkType": 3.65
 					}
 				}
 			]
@@ -518,55 +518,55 @@
 			"id": "startup",
 			"label": "startup.ts",
 			"unit": "instructions beyond the baseline",
-			"source": "results/startup-fea8e68e0-node24.json",
+			"source": "results/startup-808927feb-node24.json",
 			"rows": [
 				{
 					"id": "form",
 					"results": {
-						"ArkType": 1021354.5,
-						"Valibot": 2364888.5,
-						"Zod": 43975860,
-						"Zod (compiled)": 52284593,
-						"Zod Mini": 11362765.5
+						"ArkType": 1024981,
+						"Valibot": 2372343.5,
+						"Zod": 44002250,
+						"Zod (compiled)": 53899256.5,
+						"Zod Mini": 11351658.5
 					}
 				},
 				{
 					"id": "login",
 					"results": {
-						"ArkType": 981377,
-						"Valibot": 2363549.5,
-						"Zod": 43721523,
-						"Zod (compiled)": 53572327.5,
-						"Zod Mini": 11397782,
-						"Typia": 2443688,
-						"ajv": 1870463,
-						"TypeBox": 87823279.5
+						"ArkType": 966859,
+						"Valibot": 2352238,
+						"Zod": 43739878.5,
+						"Zod (compiled)": 51516562,
+						"Zod Mini": 11402386.5,
+						"Typia": 2440301.5,
+						"ajv": 1857087.5,
+						"TypeBox": 87824704
 					}
 				},
 				{
 					"id": "moltar",
 					"results": {
-						"ArkType": 987563.5,
-						"Valibot": 2227670.5,
-						"Zod": 53772674.5,
-						"Zod (compiled)": 58435250.5,
-						"Zod Mini": 10312704.5,
-						"Typia": 1162702,
-						"ajv": 1433468.5,
-						"TypeBox": 89125339
+						"ArkType": 999157.5,
+						"Valibot": 2251690,
+						"Zod": 53791940,
+						"Zod (compiled)": 58499099,
+						"Zod Mini": 10338024.5,
+						"Typia": 1165425.5,
+						"ajv": 1440754,
+						"TypeBox": 89152924
 					}
 				},
 				{
 					"id": "shop",
 					"results": {
-						"ArkType": 10357608,
-						"Valibot": 12266839.5,
-						"Zod": 102357457,
-						"Zod (compiled)": 126024899.5,
-						"Zod Mini": 36923224.5,
-						"Typia": 33330021,
-						"ajv": 32813293,
-						"TypeBox": 208528955
+						"ArkType": 10363715,
+						"Valibot": 12260109,
+						"Zod": 102329017.5,
+						"Zod (compiled)": 126156438,
+						"Zod Mini": 36978109.5,
+						"Typia": 33341216,
+						"ajv": 32819773,
+						"TypeBox": 208842579.5
 					}
 				}
 			]
@@ -629,7 +629,7 @@
 				{
 					"id": "login form",
 					"results": {
-						"ArkType": 1168,
+						"ArkType": 1158,
 						"Valibot": 1564,
 						"Zod": 25076,
 						"Zod Mini": 5124,
@@ -650,7 +650,7 @@
 			"id": "homepageSize",
 			"label": "the homepage's apps",
 			"unit": "B gzipped",
-			"source": "benchData.json size, ArkType's from results/arktype-fea8e68e0.json",
+			"source": "benchData.json size, ArkType's from results/arktype-808927feb.json",
 			"rows": [
 				{
 					"id": "login",
@@ -662,7 +662,7 @@
 						"Typia": 1235,
 						"ajv": 626,
 						"TypeBox": 41859,
-						"ArkType": 1484
+						"ArkType": 1478
 					}
 				},
 				{
@@ -675,7 +675,7 @@
 						"Typia": 1229,
 						"ajv": 757,
 						"TypeBox": 41880,
-						"ArkType": 1501
+						"ArkType": 1500
 					}
 				},
 				{
@@ -688,14 +688,14 @@
 						"Typia": 16714,
 						"ajv": 8838,
 						"TypeBox": 42902,
-						"ArkType": 6665
+						"ArkType": 6662
 					}
 				},
 				{
 					"id": "saas",
 					"results": {
 						"Valibot": 5173,
-						"ArkType": 11633
+						"ArkType": 11603
 					}
 				}
 			]
@@ -731,7 +731,7 @@
 						"Zod Mini": 205462.02133333334,
 						"Zod 3": 307160.423,
 						"zod-compiler": 250.314575,
-						"ArkType": 151.39321
+						"ArkType": 147.393085
 					}
 				},
 				{
@@ -758,7 +758,7 @@
 						"Zod Mini": 127440.19463636364,
 						"Zod 3": 124245.855875,
 						"zod-compiler": 13537.952865,
-						"ArkType": 6090.619155
+						"ArkType": 6093.700675
 					}
 				},
 				{
@@ -780,7 +780,7 @@
 						"Zod Mini": 127602.99968421053,
 						"Zod 3": 127894.9169,
 						"zod-compiler": 13570.377295,
-						"ArkType": 6227.57924
+						"ArkType": 6230.60075
 					}
 				},
 				{
@@ -802,7 +802,7 @@
 						"Zod Mini": 218562.03844444445,
 						"Zod 3": 248766.5088,
 						"zod-compiler": 60315.87289473684,
-						"ArkType": 21608.562427244582
+						"ArkType": 21478.020215
 					}
 				},
 				{
@@ -820,7 +820,7 @@
 						"Zod": 867.796595,
 						"Zod Mini": 870.921605,
 						"Zod 3": 7876.361696,
-						"ArkType": 484.873475
+						"ArkType": 484.880005
 					}
 				},
 				{
@@ -869,7 +869,7 @@
 						"Zod": 1149.825215,
 						"Zod Mini": 1149.685555,
 						"Zod 3": 1814.28143,
-						"ArkType": 653.465345
+						"ArkType": 653.460025
 					}
 				},
 				{
@@ -888,7 +888,7 @@
 						"Zod": 2267.9809,
 						"Zod Mini": 2271.095445,
 						"Zod 3": 2956.796865,
-						"ArkType": 755.4598
+						"ArkType": 755.47001
 					}
 				},
 				{
@@ -908,7 +908,7 @@
 						"Zod": 1483.02131,
 						"Zod Mini": 1482.93893,
 						"Zod 3": 2053.51499,
-						"ArkType": 1144.472795
+						"ArkType": 1144.469955
 					}
 				},
 				{
@@ -926,7 +926,7 @@
 						"Zod": 727.0215,
 						"Zod Mini": 726.83488,
 						"Zod 3": 1139.46845,
-						"ArkType": 227.47541
+						"ArkType": 227.489935
 					}
 				},
 				{
@@ -944,7 +944,7 @@
 						"Zod": 4270.62325,
 						"Zod Mini": 4267.44982,
 						"Zod 3": 2383.53822,
-						"ArkType": 814.48002
+						"ArkType": 814.47996
 					}
 				},
 				{
@@ -979,7 +979,7 @@
 						"Zod": 4429.066635,
 						"Zod Mini": 4423.96664,
 						"Zod 3": 16511.67152,
-						"ArkType": 41.48012
+						"ArkType": 41.48119
 					}
 				},
 				{
@@ -1011,7 +1011,7 @@
 						"Zod": 4733.00189,
 						"Zod Mini": 4734.56672,
 						"Zod 3": 10572.514103773585,
-						"ArkType": 380.458555
+						"ArkType": 380.451135
 					}
 				},
 				{
@@ -1031,7 +1031,7 @@
 						"Zod": 4410.79441,
 						"Zod Mini": 4413.153955,
 						"Zod 3": 10087.24143083004,
-						"ArkType": 23.506225
+						"ArkType": 23.459635
 					}
 				},
 				{
@@ -1050,7 +1050,7 @@
 						"Zod": 1725.084145,
 						"Zod Mini": 1729.18638,
 						"Zod 3": 45354.46656716418,
-						"ArkType": 374.4637
+						"ArkType": 374.469935
 					}
 				},
 				{
@@ -1068,7 +1068,7 @@
 						"Zod": 4446.869825,
 						"Zod Mini": 4439.78007,
 						"Zod 3": 10129.937102739726,
-						"ArkType": 43.47125
+						"ArkType": 43.471775
 					}
 				},
 				{
@@ -1086,7 +1086,7 @@
 						"Zod": 958.46886,
 						"Zod Mini": 954.582345,
 						"Zod 3": 10656.779242105264,
-						"ArkType": 47.47161
+						"ArkType": 47.470095
 					}
 				},
 				{
@@ -1109,7 +1109,7 @@
 						"Zod (compiled)": 10317.97044,
 						"Zod Mini": 128907.06243478261,
 						"zod-compiler": 13480.331899082568,
-						"ArkType": 6057.059235
+						"ArkType": 6060.061025
 					}
 				},
 				{
@@ -1132,7 +1132,7 @@
 						"Zod (compiled)": 175.45263,
 						"Zod Mini": 27477.057325842696,
 						"zod-compiler": 150.42017,
-						"ArkType": 33.46342
+						"ArkType": 29.470345
 					}
 				},
 				{
@@ -1205,7 +1205,7 @@
 						"Zod": 2319.785225,
 						"TypeBox": 158.99896,
 						"Valibot": 9888.880843835617,
-						"ArkType": 85.00007
+						"ArkType": 85.000005
 					}
 				}
 			]
@@ -1228,7 +1228,7 @@
 						"@cfworker/json-schema": 45464.89450980392,
 						"Valibot": 5755.682450835791,
 						"Zod": 6651.89524702561,
-						"ArkType": 930.2962372655431
+						"ArkType": 930.295602589315
 					}
 				},
 				{
@@ -1241,7 +1241,7 @@
 						"TypeBox": 14978.078607918264,
 						"@cfworker/json-schema": 452608.686,
 						"Zod": 56840.62960960961,
-						"ArkType": 6872.778467583497,
+						"ArkType": 6862.607413937867,
 						"Valibot": 55556.29307070707
 					}
 				},
@@ -1265,7 +1265,7 @@
 						"TypeBox": 1470.3392480298382,
 						"Zod": 18193.640909090907,
 						"Valibot": 29238.07216931217,
-						"ArkType": 758.2744620783297
+						"ArkType": 741.3944566696653
 					}
 				},
 				{
@@ -1279,7 +1279,7 @@
 						"TypeBox": 5075.23606060606,
 						"Zod": 72692.5115079365,
 						"Valibot": 62144.81529292929,
-						"ArkType": 2362.8445065948486
+						"ArkType": 2248.122299352109
 					}
 				},
 				{
@@ -1302,7 +1302,7 @@
 						"TypeBox": 19838.300657407406,
 						"Zod": 30414.378421052632,
 						"Valibot": 29222.92867208672,
-						"ArkType": 3771.8542488343
+						"ArkType": 3898.444467216333
 					}
 				},
 				{
@@ -1316,7 +1316,7 @@
 						"TypeBox": 208964.49212962962,
 						"Zod": 90629.92177777778,
 						"Valibot": 62203.69906810036,
-						"ArkType": 12084.866900826446
+						"ArkType": 12144.695345275182
 					}
 				},
 				{
@@ -1337,7 +1337,7 @@
 						"Zod": 9864.444837662337,
 						"TypeBox": 4927.637653581725,
 						"Valibot": 5749.900852999017,
-						"ArkType": 930.2961204316899
+						"ArkType": 930.2955757981233
 					}
 				},
 				{
@@ -1348,7 +1348,7 @@
 						"Typia": 23100.08077294686,
 						"TypeBox": 94234.15503703704,
 						"Zod": 104824.58259259259,
-						"ArkType": 6871.907063959834,
+						"ArkType": 6862.5674260694805,
 						"Valibot": 55527.29231884058
 					}
 				},
@@ -1392,7 +1392,7 @@
 						"Zod (compiled)": 2628710.266,
 						"Zod Mini": 782393.3173333333,
 						"Zod 3": 506556.0324,
-						"ArkType": 42.42325
+						"ArkType": 42.47
 					}
 				}
 			]
@@ -1411,7 +1411,7 @@
 						"TypeBox": 6378.50351,
 						"Zod": 1656991.932,
 						"Valibot": 66026.45073913044,
-						"ArkType": 103.998185
+						"ArkType": 103.99993
 					}
 				}
 			]
@@ -1431,7 +1431,7 @@
 						"@remix-run/data-schema": 1923,
 						"Typia": 1846,
 						"Valibot": 2058,
-						"ArkType": 2062,
+						"ArkType": 2037,
 						"decoders": 3506,
 						"io-ts": 3617,
 						"paseri": 3633,
@@ -1467,7 +1467,7 @@
 						"Zod": 64686,
 						"TypeBox": 22568,
 						"Valibot": 1304,
-						"ArkType": 1112
+						"ArkType": 1107
 					}
 				}
 			]
