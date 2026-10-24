@@ -40,6 +40,8 @@ import {
 	variantSpecifierOf,
 	writePrecompiledDependencyMessage,
 	writeExternalizedMessage,
+	writeFilelessImportMessage,
+	writeLoadedFirstMessage,
 	writeUncachedModuleMessage,
 	writeUnwrittenModuleMessage,
 	writeVariantImportMessage,
@@ -268,24 +270,32 @@ export const precompile: UnpluginInstance<
 		return writePrecompiledDependencyMessage(name)
 	}
 	const reportedUntransformed = new Set<string>()
+	// files esbuild loaded through this plugin, rather than another ahead of it
+	const loadedFiles = new Set<string>()
 	// e.g. a Svelte component's script, whose Types the build never sees
-	const untransformedProblemOf = (id: string, importer: string) => {
+	const untransformedProblemOf = (
+		id: string,
+		importer: string,
+		// esbuild's, whose other namespaces hold modules with no file
+		namespace = "file"
+	) => {
 		const file = importer.split("?")[0]
-		if (
-			!resolvesToRuntime(id, opts) ||
-			!isAbsolute(file) ||
-			dependencyOf(file) ||
-			transformedFilter.include.test(importer) ||
-			transformedFilter.include.test(file) ||
-			reportedUntransformed.has(file)
-		)
-			return
-		reportedUntransformed.add(file)
-		return writeUntransformedImportMessage(
-			file,
-			id,
-			realPathOf(opts?.cwd ?? process.cwd())
-		)
+		if (!resolvesToRuntime(id, opts) || reportedUntransformed.has(file)) return
+		const cwd = realPathOf(opts?.cwd ?? process.cwd())
+		const problem =
+			namespace !== "file" || !isAbsolute(file) ?
+				writeFilelessImportMessage(importer, id)
+			: dependencyOf(file) ? undefined
+			: (
+				!transformedFilter.include.test(importer) &&
+				!transformedFilter.include.test(file)
+			) ?
+				writeUntransformedImportMessage(file, id, cwd)
+			: meta.framework === "esbuild" && !loadedFiles.has(file) ?
+				writeLoadedFirstMessage(file, id, cwd)
+			:	undefined
+		if (problem) reportedUntransformed.add(file)
+		return problem
 	}
 	// keeps the modules a transformed one writes, for its importers to load
 	const transform = async (
@@ -646,6 +656,19 @@ export const precompile: UnpluginInstance<
 						return { errors: [{ text: problem }] }
 					})
 				}
+				// esbuild loads stdin as written, which the runtime runs only where it
+				// defines no Type
+				const stdinProblemOf = async (specifier: string) => {
+					if (!resolvesToRuntime(specifier, opts)) return
+					const stdin = stdinEntryOf(build.initialOptions)!
+					const transformed = (await request(
+						"transform",
+						stdin.source,
+						stdin.id
+					)) as TransformedModule | undefined
+					if (transformed?.code || transformed?.errors.length)
+						return untransformedProblemOf(specifier, "<stdin>", "")
+				}
 				// each module watches what it read, which esbuild takes only from onLoad
 				build.onLoad({ filter: esbuildTransformed }, async args => {
 					if (args.namespace !== "file") return
@@ -653,6 +676,7 @@ export const precompile: UnpluginInstance<
 						transformedFilter.include.test(args.path) &&
 						!transformedFilter.exclude.test(args.path)
 					if (!isTransformed && !scanned) return
+					if (isTransformed) loadedFiles.add(args.path)
 					const code = readFileSync(args.path, "utf8")
 					if (scanned) addLoaded(loaded, fileOf(args.path), code)
 					if (!isTransformed) return
@@ -745,10 +769,16 @@ export const precompile: UnpluginInstance<
 							warnings
 						})
 						if (isRuntime) {
-							reportUnsafe(untransformedProblemOf(args.path, args.importer), {
-								errors,
-								warnings
-							})
+							reportUnsafe(
+								isStdinOf(build.initialOptions, args) ?
+									await stdinProblemOf(args.path)
+								:	untransformedProblemOf(
+										args.path,
+										args.importer,
+										args.namespace
+									),
+								{ errors, warnings }
+							)
 						}
 						return {
 							...result,
@@ -880,6 +910,7 @@ interface EsbuildBuild {
 		stdin?: {
 			contents: string | Uint8Array
 			resolveDir?: string
+			sourcefile?: string
 			loader?: string
 		}
 		absWorkingDir?: string
@@ -904,11 +935,7 @@ interface EsbuildBuild {
 const esbuildEntriesOf = async (
 	build: EsbuildBuild
 ): Promise<ScanEntry[] | undefined> => {
-	const {
-		entryPoints,
-		stdin,
-		absWorkingDir = process.cwd()
-	} = build.initialOptions
+	const { entryPoints, absWorkingDir = process.cwd() } = build.initialOptions
 	const paths =
 		Array.isArray(entryPoints) ?
 			entryPoints.map(entry => (typeof entry === "string" ? entry : entry.in))
@@ -925,22 +952,37 @@ const esbuildEntriesOf = async (
 		if (result.errors.length || result.namespace !== "file") return
 		entries.push({ id: result.path })
 	}
-	if (stdin) {
-		const ext =
-			(
-				stdin.loader === "ts" ||
-				stdin.loader === "tsx" ||
-				stdin.loader === "jsx"
-			) ?
-				stdin.loader
-			:	"js"
-		entries.push({
-			id: join(stdin.resolveDir ?? absWorkingDir, `<stdin>.${ext}`),
-			source: String(stdin.contents)
-		})
-	}
+	const entry = stdinEntryOf(build.initialOptions)
+	if (entry) entries.push(entry)
 	return entries
 }
+
+// esbuild's stdin, as a file beside what it imports
+const stdinEntryOf = ({
+	stdin,
+	absWorkingDir = process.cwd()
+}: EsbuildBuild["initialOptions"]): Required<ScanEntry> | undefined => {
+	if (!stdin) return
+	const ext =
+		stdin.loader === "ts" || stdin.loader === "tsx" || stdin.loader === "jsx" ?
+			stdin.loader
+		:	"js"
+	return {
+		id: join(stdin.resolveDir ?? absWorkingDir, `<stdin>.${ext}`),
+		source: String(stdin.contents)
+	}
+}
+
+// whether esbuild names stdin as an import's importer, as a file only where
+// both resolveDir and sourcefile are set
+const isStdinOf = (
+	{ stdin }: EsbuildBuild["initialOptions"],
+	args: { importer: string; namespace: string }
+): boolean =>
+	args.namespace === "" ||
+	(stdin?.resolveDir !== undefined &&
+		stdin.sourcefile !== undefined &&
+		args.importer === resolve(stdin.resolveDir, stdin.sourcefile))
 
 // what a production bundle's validators are read for, if the scan changes
 // what the plugin writes

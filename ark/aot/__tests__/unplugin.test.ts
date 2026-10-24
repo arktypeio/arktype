@@ -9,6 +9,8 @@ import {
 	allowUnsafeHint,
 	unbundledMessage,
 	writeExternalizedMessage,
+	writeFilelessImportMessage,
+	writeLoadedFirstMessage,
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
 	writeUntransformedImportMessage,
@@ -17,7 +19,13 @@ import {
 } from "@ark/aot/internal/host.ts"
 import { writeStandaloneDependencyMessage } from "@ark/aot/internal/messages.ts"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
-import { context, build as esbuild, transformSync, type Plugin } from "esbuild"
+import {
+	context,
+	build as esbuild,
+	transformSync,
+	type BuildOptions,
+	type Plugin
+} from "esbuild"
 import { spawnSync } from "node:child_process"
 import {
 	mkdirSync,
@@ -40,6 +48,7 @@ import {
 	type Rolldown
 } from "vite"
 import { startVitest } from "vitest/node"
+import webpack, { type Stats } from "webpack"
 import { configureAfterTypeMessage } from "@ark/schema"
 import {
 	writeCreatedBeforeConfigureMessage,
@@ -889,6 +898,142 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 		const unsafe = await build(true)
 		attest("warnings" in unsafe && unsafe.warnings.map(w => w.text)).equals([
 			message
+		])
+	})
+
+	describe("fails where a module with no file of its own imports arktype", () => {
+		const source =
+			'import { type } from "arktype"\nexport const User = type({ name: "string" })\n'
+		const url = `data:text/javascript,${encodeURIComponent(source)}`
+		const root = writeFixture(
+			{ "main.js": `export { User } from ${JSON.stringify(url)}\n` },
+			fromHere("temp", "fileless")
+		)
+		const failure = (id: string) =>
+			`${writeFilelessImportMessage(id, "arktype")} ${allowUnsafeHint}`
+
+		it("esbuild", async () => {
+			const build = (options: BuildOptions) =>
+				esbuild({
+					bundle: true,
+					write: false,
+					format: "esm",
+					absWorkingDir: root,
+					conditions: [...conditions, "production"],
+					logLevel: "silent",
+					...options
+				}).then(
+					() => [],
+					(e: { errors: { text: string }[] }) => e.errors.map(e => e.text)
+				)
+			// a plugin's own namespace, as Sury's benchmark loads its entries
+			const virtual: Plugin = {
+				name: "virtual",
+				setup: build => {
+					build.onResolve({ filter: /^virtual:/ }, args => ({
+						path: args.path,
+						namespace: "virtual"
+					}))
+					build.onLoad({ filter: /.*/, namespace: "virtual" }, () => ({
+						contents: source,
+						loader: "js",
+						resolveDir: root
+					}))
+				}
+			}
+			attest(
+				await build({
+					entryPoints: ["virtual:schemas"],
+					plugins: [virtual, precompile.esbuild({ cwd: root, conditions })]
+				})
+			).equals([failure("virtual:schemas")])
+			attest(
+				await build({
+					stdin: { contents: source, resolveDir: root },
+					plugins: [precompile.esbuild({ cwd: root, conditions })]
+				})
+			).equals([failure("<stdin>")])
+			// esbuild names it as a file where both of these are set
+			attest(
+				await build({
+					stdin: { contents: source, resolveDir: root, sourcefile: "main.ts" },
+					plugins: [precompile.esbuild({ cwd: root, conditions })]
+				})
+			).equals([failure("<stdin>")])
+		})
+
+		it("vite", async () => {
+			const message = await viteBuild({
+				...viteConfig(undefined, root),
+				plugins: [
+					{
+						name: "virtual",
+						resolveId: id =>
+							id === "virtual:schemas" ? "\0virtual:schemas" : undefined,
+						load: id => (id === "\0virtual:schemas" ? source : undefined)
+					},
+					precompile.vite({ cwd: root, conditions })
+				],
+				build: { write: false, rollupOptions: { input: "virtual:schemas" } }
+			}).then(
+				() => [],
+				(e: { errors: Error[] }) => e.errors.map(e => e.message)
+			)
+			attest(message).equals([failure("virtual:schemas")])
+		})
+
+		it("webpack", async () => {
+			const compiler = webpack({
+				mode: "production",
+				context: root,
+				entry: "./main.js",
+				target: "node",
+				output: { path: join(root, "out") },
+				plugins: [precompile.webpack({ cwd: root })]
+			})
+			const stats = await new Promise<Stats | undefined>((resolve, reject) =>
+				compiler.run((error, stats) =>
+					compiler.close(() => (error ? reject(error) : resolve(stats)))
+				)
+			)
+			// webpack follows it with hints for a failed resolution
+			attest(
+				stats
+					?.toJson()
+					.errors?.map(error => error.message.includes(failure(url)))
+			).equals([true])
+		})
+	})
+
+	it("fails where another esbuild plugin loads a module ahead of it", async () => {
+		const root = writeFixture(
+			{
+				"main.ts":
+					'import { type } from "arktype"\nexport const User = type({ name: "string" })\n'
+			},
+			fromHere("temp", "loadedFirst")
+		)
+		const loader: Plugin = {
+			name: "loader",
+			setup: build =>
+				build.onLoad({ filter: /\.ts$/ }, args => ({
+					contents: readFileSync(args.path, "utf8"),
+					loader: "ts"
+				}))
+		}
+		const errors = await esbuild({
+			entryPoints: [join(root, "main.ts")],
+			bundle: true,
+			write: false,
+			conditions,
+			logLevel: "silent",
+			plugins: [loader, precompile.esbuild({ cwd: root, conditions })]
+		}).then(
+			() => [],
+			(e: { errors: { text: string }[] }) => e.errors.map(e => e.text)
+		)
+		attest(errors).equals([
+			`${writeLoadedFirstMessage(join(root, "main.ts"), "arktype", root)} ${allowUnsafeHint}`
 		])
 	})
 

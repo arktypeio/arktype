@@ -1,4 +1,5 @@
 import { throwError } from "@ark/util"
+import { existsSync } from "node:fs"
 import module, { type LoadFnOutput } from "node:module"
 import { fileURLToPath } from "node:url"
 import type {
@@ -9,20 +10,25 @@ import type {
 import {
 	allowUnsafeHint,
 	appendSourceMap,
+	dependencyOf,
 	driverOptionsOf,
 	optedInPackagesOf,
 	precompiledDependencyOf,
+	printablePathOf,
 	reportDiagnostics,
 	readsNodes,
+	realPathOf,
 	resolvesToRuntime,
 	resolvedVariantOf,
 	runtimeSpecifiers,
 	schemaSpecifier,
 	transformedFilterOf,
 	variantSpecifierOf,
+	writeFilelessImportMessage,
 	writeNodeVersionMessage,
 	writePrecompiledDependencyMessage,
 	writeTextlessMessage,
+	writeUntransformedImportMessage,
 	writeVariantImportMessage
 } from "./host.ts"
 import { refuseDeclare } from "./declare.ts"
@@ -76,14 +82,29 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	const importersByUrl: Record<string, string> = {}
 	// modules whose text these hooks were given
 	const givenUrls = new Set<string>()
+	// what may throw at runtime fails unless allowUnsafe is set
+	const reportUnsafe = (problem: string) => {
+		if (opts?.allowUnsafe) process.emitWarning(problem)
+		else throwError(`${problem} ${allowUnsafeHint}`)
+	}
 	const reportedPrecompiled = new Set<string>()
 	const checkPrecompiled = (specifier: string, importer: string) => {
 		const name = precompiledDependencyOf(specifier, importer)
 		if (!name || reportedPrecompiled.has(name)) return
 		reportedPrecompiled.add(name)
-		const problem = writePrecompiledDependencyMessage(name)
-		if (opts?.allowUnsafe) process.emitWarning(problem)
-		else throwError(`${problem} ${allowUnsafeHint}`)
+		reportUnsafe(writePrecompiledDependencyMessage(name))
+	}
+	// e.g. a module another hook loads from a URL of its own, code given to
+	// node --eval, or a file without an extension, as a package's bin may be
+	const untransformedProblemOf = (specifier: string, importer: string) => {
+		if (!importer.startsWith("file:"))
+			return writeFilelessImportMessage(importer, specifier)
+		const file = fileURLToPath(importer)
+		if (isTransformed(file) || dependencyOf(file)) return
+		const cwd = realPathOf(opts?.cwd ?? process.cwd())
+		return existsSync(file) ?
+				writeUntransformedImportMessage(file, specifier, cwd)
+			:	writeFilelessImportMessage(printablePathOf(cwd, file), specifier)
 	}
 	module.registerHooks({
 		resolve: (specifier, context, nextResolve) => {
@@ -121,6 +142,12 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 				isTransformed(fileURLToPath(importer))
 			)
 				throwError(writeTextlessMessage(fileURLToPath(importer)))
+			const isRedirected =
+				resolvesToRuntime(specifier, opts) && !readsNodes(importer)
+			if (isRedirected && importer) {
+				const problem = untransformedProblemOf(specifier, importer)
+				if (problem) reportUnsafe(problem)
+			}
 			if (importer?.includes("/node_modules/")) {
 				reportDiagnostics(
 					request(
@@ -131,9 +158,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 				)
 			}
 			return resolveRuntime(
-				resolvesToRuntime(specifier, opts) && !readsNodes(importer) ?
-					"arktype/runtime"
-				:	specifier,
+				isRedirected ? "arktype/runtime" : specifier,
 				context,
 				nextResolve
 			)
