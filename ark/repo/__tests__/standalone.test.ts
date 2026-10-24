@@ -283,11 +283,22 @@ contextualize(() => {
 				{ optimize: "size" }
 			)
 			attest(T({ name: "", role: "owner", age: -1.5, id: 5 }).summary)
-				.snap(`id must be a string or null
-name must be non-empty
+				.snap(`name must be non-empty
 role must be "admin", "guest" or "member"
 age must be an integer
-age must be non-negative`)
+age must be non-negative
+id must be a string or null`)
+		})
+
+		it("check keys in the order they're declared", async () => {
+			const { T } = await load(
+				{ T: type({ "b?": "string", a: "string", c: "number = 1" }) },
+				{ optimize: "size" }
+			)
+			attest(T({ b: 0, c: "" }).summary).snap(`b must be a string
+a is missing
+c must be a number`)
+			attest(T({ a: "" })).equals({ a: "", c: 1 })
 		})
 
 		it("check each case by the branch it was told apart from", () => {
@@ -1138,8 +1149,8 @@ export const piping = validator => type("unknown").pipe(validator)`)
 		attest(String(validator)).equals("Type<{ age: number, name: string }>")
 		attest(validator.from({ name: "n", age: 1 })).equals({ name: "n", age: 1 })
 		attest(() => validator.assert({})).throws
-			.snap(`TraversalError: age is missing
-name is missing`)
+			.snap(`TraversalError: name is missing
+age is missing`)
 		attest(validator["~standard"].validate({ name: "n", age: 1 })).equals({
 			value: { name: "n", age: 1 }
 		})

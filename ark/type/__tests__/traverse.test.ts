@@ -191,10 +191,10 @@ contextualize(() => {
 		const traversalError = new TraversalError(result as ArkErrors)
 		attest(traversalError).instanceOf(TraversalError)
 		attest(traversalError.message).snap(`
-  • name must be a string (was an object)
   • natural (-3.141592653589793) must be...
     ◦ an integer
-    ◦ positive`)
+    ◦ positive
+  • name must be a string (was an object)`)
 	})
 
 	it("homepage example", () => {
@@ -209,9 +209,8 @@ contextualize(() => {
 			isAdmin: 1
 		})
 
-		attest(out.toString())
-			.snap(`luckyNumbers[1] must be a bigint or a number (was a string)
-name must be a string (was missing)
+		attest(out.toString()).snap(`name must be a string (was missing)
+luckyNumbers[1] must be a bigint or a number (was a string)
 isAdmin must be false, null or true (was 1)`)
 	})
 

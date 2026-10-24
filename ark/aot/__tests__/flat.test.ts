@@ -75,9 +75,13 @@ contextualize(() => {
 	it("declares the units of a one-chunk production bundle in one function", async () => {
 		const [flat] = await bundle()
 		const [whole] = await bundle({ prune: false })
-		attest(run(flat)).snap(
-			"valid\nlead.email must be an email address\nlead.name must be non-empty\nmembers[0].email is missing\nmembers[0].name must be a string\ntrue\n"
-		)
+		attest(run(flat)).snap(`valid
+lead.name must be non-empty
+lead.email must be an email address
+members[0].name must be a string
+members[0].email is missing
+true
+`)
 		attest(run(flat)).equals(run(whole))
 		attest(factoryParam.test(whole)).equals(true)
 		attest(factoryParam.test(flat)).equals(false)
@@ -128,7 +132,9 @@ contextualize(() => {
 			{ prune: false },
 			{ stdin: { contents, resolveDir: root, loader: "ts" } }
 		)
-		attest(run(js)).snap("lead.email is missing\nlead.name is missing\n")
+		attest(run(js)).snap(`lead.name is missing
+lead.email is missing
+`)
 		attest(run(js)).equals(run(whole))
 		attest(js.includes("{ 0: allows")).equals(false)
 		attest(js.includes("var Team =")).equals(false)

@@ -127,11 +127,11 @@ tags must be at least length 3 (was 2)`)
 		const out = Schema(data)
 
 		attest(out.toString()).snap(`email must be an email address (was "")
-extra must be a string or null (was missing)
-score must be non-negative (was -1)
 tags must be at least length 3 (was 2)
+score must be non-negative (was -1)
 date must be a Date (was undefined)
-nospace must be matched by ^\\S*$ (was "One space")`)
+nospace must be matched by ^\\S*$ (was "One space")
+extra must be a string or null (was missing)`)
 	})
 
 	it("discrimination false negative", () => {

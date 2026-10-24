@@ -324,7 +324,7 @@ contextualize(() => {
 
 		attest(node.allows(data)).equals(true)
 		attest(node({ ...data, nodes: [{ type: "b" }] }).toString()).snap(
-			"nodes[0].nodes must be an array (was missing) or nodes[0].editableA must be a number (was missing)"
+			"nodes[0].nodes must be an array (was missing) or edits must be undefined (was an object)"
 		)
 	})
 

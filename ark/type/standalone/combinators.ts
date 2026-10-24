@@ -466,20 +466,18 @@ const writeStructure = (
 			ref(element)
 		)
 	}
-	const entryOf = (prop: Prop.Node) =>
-		`${writeKey(prop.key as string)}: ${ref(prop.value)}`
 	// checked and written in the order arktype checks and writes them
-	const optional = [
-		...(structure.optional ?? []).filter(prop => !prop.hasDefault()),
-		...structure.defaultable
-	].map(entryOf)
+	const declared = structure.orderedProps.map(
+		prop => `${writeKey(prop.key as string)}: ${ref(prop.value)}`
+	)
 	const defaults = structure.defaultable.map(
 		prop => `${writeKey(prop.key as string)}: ${writeLiteral(js, prop.default)}`
 	)
 	return writeCall(
 		structure.transforms ? "transformingProps" : "props",
-		writeObject((structure.required ?? []).map(entryOf)),
-		optional.length ? writeObject(optional) : undefined,
+		writeObject(declared),
+		structure.optional &&
+			`[${structure.optional.map(prop => JSON.stringify(prop.key))}]`,
 		defaults.length ? writeObject(defaults) : undefined
 	)
 }

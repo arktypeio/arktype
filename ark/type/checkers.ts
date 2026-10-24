@@ -172,24 +172,22 @@ type Props = Record<string, Checker>
 // a missing key, as runtime's requiredSite without siteOf
 const requiredSite: FailureSite = { missing: { code: "required" } }
 
-// an object's keys, each checked in the order declared, required keys first
-export const props = ((required: Props, optional?: Props | 0): Checker => {
-	const declared: Props = { ...required, ...optional }
-	return (data: any, ctx) => {
+// an object's keys, each checked in the order declared
+export const props = ((declared: Props, optional?: string[]): Checker =>
+	(data: any, ctx) => {
 		if (!objectCheck.test(data))
 			return !failsAt(ctx as never, objectCheck, data)
 		for (const k in declared) {
 			const value = data[k]
 			if (
 				value === undefined && !(k in data) ?
-					k in required && failsAt(ctx as never, requiredSite, data, k)
+					!optional?.includes(k) && failsAt(ctx as never, requiredSite, data, k)
 				:	failsIn(ctx as never, declared[k] as CompactApply, value, k)
 			)
 				return false
 		}
 		return true
-	}
-}) satisfies Fn
+	}) satisfies Fn
 
 // whether data's prototypes include a builtin's, so it keeps state in
 // internal slots: one its native constructor creates, other than a realm's
@@ -226,12 +224,11 @@ const copyForWriting = (data: any): any => {
 // props whose values transform or default, copied where one is written and
 // keeping each declared key data holds
 export const transformingProps = ((
-	required: Props,
-	optional?: Props | 0,
+	declared: Props,
+	optional?: string[],
 	defaults: Record<string, unknown> = {}
 ): Checker => {
-	const checker = props(required, optional)
-	const declared: Props = { ...required, ...optional }
+	const checker = props(declared, optional)
 	checker.t = data => {
 		let out = data
 		for (const k in declared) {

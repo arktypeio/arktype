@@ -55,6 +55,12 @@ contextualize(() => {
 		attest(T.encode({}).toString()).snap("at must be a Date (was missing)")
 	})
 
+	it("defaulted key keeps its declared place", () => {
+		const T = type({ b: "string", a: "number = 1" })
+		attest(T.encode({}).toString()).snap(`b must be a string (was missing)
+a must be a number (was missing)`)
+	})
+
 	it("defaulted element is required", () => {
 		const T = type([EpochMs, EpochMs.default(0)])
 		attest(T.encode.expression).snap(
