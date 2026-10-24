@@ -137,6 +137,13 @@ hypothesis holds.
 At 89510709d, a leaner error writer shrank B2's login form to 1313 B gzipped
 (`results/login-89510709d.json`); every other size is unchanged.
 
+At 5acd85130, dynamic ArkType's login bundle is 82946 B gzipped
+(`results/login-5acd85130.json`), from 82263 at f29b8d153: checking UUIDs, IP
+addresses and ISO dates by their char codes added 779, and declaring arkregex
+free of side effects took 17 back. Only that row is cited from this file. Its
+precompiled rows are pruned by usage and assert the form (1edc2a765), so they
+aren't the chart's.
+
 ## The homepage's apps
 
 `bench/size.ts` sizes each of the homepage's apps as `bench/bundle.ts`

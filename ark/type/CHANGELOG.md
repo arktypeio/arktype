@@ -4,7 +4,7 @@
 
 ### Precompile to ship less
 
-`arktype` is larger than 2.2.9: bundled and minified with esbuild, `import { type } from "arktype"` is 82.3 kB gzipped (258 kB minified), where it was 47.8 kB (156 kB). The growth is spread across the changes below, mostly copy-on-write transforms, tracking cyclic data, errors and their English text, and the set algebra intersections and unions are reduced with. To ship less, precompile with `@ark/aot`, which replaces each Type with a validator on `arktype/runtime`: the size benchmark's login form bundles to 1.8 kB gzipped, and its shop to 9.0 kB.
+`arktype` is larger than 2.2.9: bundled and minified with esbuild, `import { type } from "arktype"` is 83.0 kB gzipped (261 kB minified), where it was 47.8 kB (156 kB). The growth is spread across the changes below, mostly copy-on-write transforms, tracking cyclic data, errors and their English text, and the set algebra intersections and unions are reduced with. To ship less, precompile with `@ark/aot`, which replaces each Type with a validator on `arktype/runtime`: the size benchmark's login form bundles to 1.8 kB gzipped, and its shop to 9.0 kB.
 
 ### Return only the first error, or one saying data is invalid, with `errors`
 
