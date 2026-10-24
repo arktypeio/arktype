@@ -234,7 +234,7 @@ export const withoutJsonSchema = <standard extends object>(
 		get: (target, k) =>
 			k === "jsonSchema" ?
 				throwError(
-					'~standard.jsonSchema isn\'t baked into this validator, which a library converting it to JSON Schema reads. Set "members": { "~standard.jsonSchema": true } in ark.json.'
+					'~standard.jsonSchema isn\'t baked into this validator, which a library converting it to JSON Schema reads. Set "members": { "~standard.jsonSchema": true } under "precompile" in ark.json (or package.json\'s "ark" key).'
 				)
 			:	Reflect.get(target, k)
 	})

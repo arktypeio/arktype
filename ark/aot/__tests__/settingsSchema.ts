@@ -33,7 +33,9 @@ const settings = {
 	"prune?": flag,
 	"allowUnsafe?": flag,
 	"conditions?": "string[]",
-	"tsconfig?": type("string > 0").describe("a path")
+	"tsconfig?": type("string > 0").describe("a path"),
+	// a package that doesn't opt in, precompiled or run on arktype
+	"dependencies?": { "[string]": "'aot' | 'arktype'" }
 } as const
 
 // what an API, plugin, driver or CLI call takes
@@ -45,9 +47,19 @@ export const PrecompileOptions = type({
 	"+": "reject"
 })
 
+const precompile = type({ ...settings, "+": "reject" })
+
 // ark.json, whose settings resolve against its directory
 export const ArkJson = type({
 	"$schema?": "string",
-	"precompile?": type({ ...settings, "+": "reject" }),
+	"precompile?": precompile,
+	"+": "reject"
+})
+
+// package.json's "ark" key: the same settings, and whether a library's
+// consumers precompile its source
+export const PackageArk = type({
+	"precompile?": precompile,
+	"aot?": "true",
 	"+": "reject"
 })

@@ -12,6 +12,7 @@ import {
 	appendSourceMap,
 	dependencyOf,
 	driverOptionsOf,
+	islandDependencySpecifier,
 	optedInPackagesOf,
 	precompiledDependencyOf,
 	printablePathOf,
@@ -20,6 +21,7 @@ import {
 	realPathOf,
 	resolvesToRuntime,
 	resolvedVariantOf,
+	runsOnArktype,
 	runtimeSpecifiers,
 	schemaSpecifier,
 	transformedFilterOf,
@@ -61,7 +63,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 		)
 	})
 	const filter = transformedFilterOf(
-		optedInPackagesOf(opts?.cwd ?? process.cwd())
+		optedInPackagesOf(opts?.cwd ?? process.cwd(), opts.dependencies)
 	)
 	const isTransformed = (id: string) =>
 		filter.include.test(id) && !filter.exclude.test(id)
@@ -158,7 +160,10 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 				)
 			}
 			return resolveRuntime(
-				isRedirected ? "arktype/runtime" : specifier,
+				!isRedirected ? specifier
+				: runsOnArktype(importer, opts?.dependencies) ?
+					islandDependencySpecifier
+				:	"arktype/runtime",
 				context,
 				nextResolve
 			)

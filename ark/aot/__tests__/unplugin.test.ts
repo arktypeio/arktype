@@ -881,7 +881,7 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 		const shared = writeStandaloneDependencyMessage("shared")
 		const prebuilt = writePrecompiledDependencyMessage("prebuilt")
 		attest(await buildDependency("shared.ts")).equals({
-			errors: [`${shared} ${allowUnsafeHint}`],
+			errors: [shared],
 			warnings: []
 		})
 		attest(await buildDependency("prebuilt.ts")).equals({
@@ -900,6 +900,90 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 			errors: [],
 			warnings: [prebuilt]
 		})
+	})
+
+	it("precompiles a dependency the program's settings name", async () => {
+		const root = writeFixture(
+			{
+				"package.json": '{ "type": "module" }',
+				...packageFiles("untagged", {
+					"index.js":
+						'import { type } from "arktype"\n\nexport const Tagged = type({ tag: "string" })\n',
+					"index.d.ts":
+						'export declare const Tagged: import("arktype").Type<{ tag: string }>\n'
+				}),
+				"main.ts": readFileSync(join(library, "main.ts"), "utf8").replace(
+					'from "tagged"',
+					'from "untagged"'
+				)
+			},
+			fromHere("temp", "untagged")
+		)
+		const refused = await bundlers
+			.esbuild({ cwd: root }, root)
+			.catch((e: { errors: { text: string }[] }) => e.errors[0].text)
+		attest(refused).equals(writeStandaloneDependencyMessage("untagged"))
+		const standalone = await bundlers.esbuild(
+			{ cwd: root, dependencies: { untagged: "aot" } },
+			root
+		)
+		attest(run(standalone)).equals(runPlain(library))
+		attest(standalone.includes(parserMessage)).equals(false)
+	})
+
+	it("runs a dependency the program's settings name on arktype", async () => {
+		const root = writeFixture(
+			{
+				"package.json": '{ "type": "module" }',
+				// as drizzle-arktype creates Types from tables
+				...packageFiles("tables", {
+					"index.js":
+						'import { type } from "arktype"\n\nexport const typeOf = columns => type(Object.fromEntries(columns.map(c => [c, "string"])))\n',
+					"index.d.ts":
+						'export declare const typeOf: (columns: string[]) => import("arktype").Type<Record<string, string>>\n'
+				}),
+				"config.ts":
+					'import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: "delete" })\n',
+				"main.ts": `import "./config.ts"
+import { type } from "arktype"
+import { typeOf } from "tables"
+
+const Row = typeOf(["name"])
+const Email = type({ email: "string.email" })
+
+const failed = [Row({ name: 1 }), Email({ email: "x" })]
+console.log(
+	JSON.stringify([
+		Row({ name: "Ada", extra: 1 }),
+		failed.map(out => out instanceof type.errors && out.summary),
+		(await Row["~standard"].validate({})).issues?.map(issue => issue.message)
+	])
+)
+`
+			},
+			fromHere("temp", "tables")
+		)
+		const opts = {
+			cwd: root,
+			config: "config.ts",
+			dependencies: { tables: "arktype" }
+		} as const
+		const expected = runPlain(root)
+		attest(JSON.parse(expected)).snap([
+			{ name: "Ada" },
+			[
+				"name must be a string (was a number)",
+				'email must be an email address (was "x")'
+			],
+			["must be a string (was missing)"]
+		])
+		// the dependency's Types are arktype's, and only Email is precompiled
+		const precompiled = (out: string) => out.replace(' (was \\"x\\")', "")
+		for (const bundle of [
+			await bundlers.esbuild(opts, root),
+			await withNodeEnv("production", () => bundlers.vite(opts, root))
+		])
+			attest(run(bundle)).equals(precompiled(expected))
 	})
 
 	it("builds a dependency reading only what arktype's runtime exports", async () => {

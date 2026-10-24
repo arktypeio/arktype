@@ -1,7 +1,15 @@
 import { printable, throwError } from "@ark/util"
 import { existsSync, readFileSync } from "node:fs"
-import { dirname, join, resolve } from "node:path"
+import { basename, dirname, join, resolve } from "node:path"
 import type { PrecompilePluginOptions } from "./driver.ts"
+import {
+	packageRootOf,
+	projectOf,
+	resolvedVariantOf,
+	writeVariantOption,
+	type DependencyModes,
+	type RuntimeVariant
+} from "./host.ts"
 import type { PrecompileOptions } from "./precompile.ts"
 import { definedOf, withPreset } from "./presets.ts"
 import * as validators from "./settingsValidators.ts"
@@ -34,27 +42,42 @@ const validate = (
 
 export const settingsFile = "ark.json"
 
+const readJson = (path: string): unknown => {
+	try {
+		return JSON.parse(readFileSync(path, "utf8"))
+	} catch (e) {
+		throw new Error(`${path} isn't JSON: ${(e as Error).message}`)
+	}
+}
+
+// ark.json, or the package.json whose "ark" key holds the same settings,
 // beside the nearest package.json, as the build finds its dependencies
 export const settingsFileOf = (cwd: string): string | undefined => {
 	for (let dir = resolve(cwd); ; dir = dirname(dir)) {
-		if (existsSync(join(dir, "package.json"))) {
+		const manifest = join(dir, "package.json")
+		if (existsSync(manifest)) {
 			const path = join(dir, settingsFile)
-			return existsSync(path) ? path : undefined
+			const setsArk =
+				(readJson(manifest) as { ark?: unknown }).ark !== undefined
+			if (!existsSync(path)) return setsArk ? manifest : undefined
+			if (setsArk) throw new Error(writeSettingsConflictMessage(manifest, path))
+			return path
 		}
 		if (dirname(dir) === dir) return
 	}
 }
 
 const readSettingsFile = (path: string): PrecompilePluginOptions => {
-	let json: unknown
-	try {
-		json = JSON.parse(readFileSync(path, "utf8"))
-	} catch (e) {
-		throw new Error(`${path} isn't JSON: ${(e as Error).message}`)
-	}
-	validate(validators.ArkJson as never, json, `${path}: `)
+	const json = readJson(path)
+	const isManifest = basename(path) === "package.json"
 	const settings: PrecompilePluginOptions =
-		(json as { precompile?: PrecompilePluginOptions }).precompile ?? {}
+		isManifest ?
+			validated(
+				validators.PackageArk,
+				(json as { ark: unknown }).ark,
+				`${path}: ark.`
+			)
+		:	validated(validators.ArkJson, json, `${path}: `)
 	const dir = dirname(path)
 	return {
 		...settings,
@@ -65,17 +88,50 @@ const readSettingsFile = (path: string): PrecompilePluginOptions => {
 	}
 }
 
+const validated = (
+	getValidator: unknown,
+	data: unknown,
+	where: string
+): PrecompilePluginOptions => {
+	validate(getValidator as never, data, where)
+	return (data as { precompile?: PrecompilePluginOptions }).precompile ?? {}
+}
+
 // what the call sets over what ark.json does, before any preset
 export const withSettingsFile = <opts extends PrecompilePluginOptions>(
 	opts: opts | undefined
 ): opts => {
 	const set = definedOf(opts ?? ({} as opts))
 	validate(validators.PrecompileOptions as never, set)
-	const path = settingsFileOf(set.cwd ?? process.cwd())
-	if (!path) return set
-	const file = readSettingsFile(path)
+	const cwd = set.cwd ?? process.cwd()
+	const path = settingsFileOf(cwd)
+	const file = path ? readSettingsFile(path) : {}
 	const members = file.members && { ...file.members, ...set.members }
-	return { ...file, ...set, ...(members && { members }) }
+	const dependencies = file.dependencies && {
+		...file.dependencies,
+		...set.dependencies
+	}
+	const result = {
+		...file,
+		...set,
+		...(members && { members }),
+		...(dependencies && { dependencies })
+	}
+	checkDependencies(result.dependencies, cwd)
+	return result
+}
+
+// a package the program can't import would never be read
+const checkDependencies = (
+	dependencies: DependencyModes | undefined,
+	cwd: string
+): void => {
+	if (!dependencies) return
+	const project = projectOf(resolve(cwd))
+	for (const name in dependencies) {
+		if (!packageRootOf(name, project))
+			throw new Error(writeUnresolvedDependencyMessage(name, project))
+	}
 }
 
 // the options a build runs with: valid, with its preset applied
@@ -87,6 +143,14 @@ export const resolvePrecompileOptions = <opts extends PrecompileOptions>(
 	const { members = {} } = resolved
 	if (members["~standard.jsonSchema"] && members["~standard"] === false)
 		throw new Error(standardJsonSchemaWithoutStandardMessage)
+	const variant = resolvedVariantOf(resolved)
+	const onArktype =
+		variant &&
+		Object.keys(resolved.dependencies ?? {}).find(
+			name => resolved.dependencies![name] === "arktype"
+		)
+	if (onArktype)
+		throw new Error(writeVariantDependencyMessage(onArktype, variant))
 	if (resolved.runtime === "arktype") {
 		const standaloneOption =
 			resolved.config === false ?
@@ -110,7 +174,8 @@ const standaloneOptions = [
 	"mutatesInput",
 	"optimize",
 	"optimizeErrors",
-	"prune"
+	"prune",
+	"dependencies"
 ] as const satisfies (keyof PrecompileOptions)[]
 
 export const standardJsonSchemaWithoutStandardMessage =
@@ -127,6 +192,23 @@ export const writeArktypeRuntimeOptionMessage = <option extends string>(
 export type writeArktypeRuntimeOptionMessage<option extends string> =
 	`${option} chooses what a standalone build writes, which runtime: "arktype" doesn't`
 
+// a host replacing arktype for every importer, which can't leave one on it
+export const refuseArktypeDependencies = (
+	opts: Pick<PrecompileOptions, "dependencies"> | undefined,
+	host: string
+): void => {
+	const name = Object.keys(opts?.dependencies ?? {}).find(
+		name => opts!.dependencies![name] === "arktype"
+	)
+	if (name) throwError(writeArktypeDependencyHostMessage(name, host))
+}
+
+export const writeArktypeDependencyHostMessage = (
+	name: string,
+	host: string
+): string =>
+	`precompile.dependencies runs ${name} on arktype, which ${host} can't, as it replaces arktype for every importer. Build with runtime: "arktype"${host === "Turbopack" ? ", or with webpack" : ", or with Bun.build and precompile.bun()"}.`
+
 // a host that transforms a module before it can read the whole bundle
 export const refusePrune = (
 	opts: Pick<PrecompileOptions, "prune"> | undefined,
@@ -140,3 +222,23 @@ export const pruneBeforePluginMessage =
 
 export const writePruneHostMessage = (host: string): string =>
 	`prune: true needs a bundler that reads the whole bundle before it transforms a module, as Vite, Rollup, Rolldown and esbuild do, which ${host} doesn't, so remove it`
+
+export const writeSettingsConflictMessage = (
+	manifest: string,
+	arkJson: string
+): string =>
+	`${manifest} sets "ark" and ${arkJson} is beside it, so the build can't tell which sets its options. Move ark.json's contents under package.json's "ark" key, or delete that key.`
+
+export const writeUnresolvedDependencyMessage = (
+	name: string,
+	project: string
+): string =>
+	`precompile.dependencies names ${name}, which can't be resolved from ${project}. Name a package the program depends on.`
+
+export const writeVariantDependencyMessage = (
+	name: string,
+	variant: RuntimeVariant
+): string => {
+	const option = writeVariantOption(variant)
+	return `${name} runs on arktype, whose errors aren't instances of type.errors under ${option}. Precompile it with "aot" if its Types are static, or build ${variant === "lean" ? 'with optimizeErrors: "speed"' : `without ${option}`}.`
+}
