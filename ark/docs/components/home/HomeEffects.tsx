@@ -136,16 +136,29 @@ const countUp = (el: HTMLElement, delay: number, seconds: number) => {
 	requestAnimationFrame(frame)
 }
 
+/** a place like "1st" isn't counted to; it lands as ArkType's bar finishes */
+const isPlace = (num: HTMLElement) =>
+	/^(st|nd|rd|th)$/.test(num.dataset.suffix ?? "")
+
 /** the board's bars race (the shortest, ArkType's, finishes first) as its numbers count */
 const wireBoard = () => {
 	const board = document.querySelector<HTMLElement>("[data-board]")
 	return playWhenSeen(board, 0.3, () => {
 		for (const card of board!.querySelectorAll<HTMLElement>(".card")) {
 			const num = card.querySelector<HTMLElement>(".card-num[data-to]")
+			if (!num) continue
+			if (isPlace(num)) {
+				// home.css lands it after this, the race's own finish
+				const won = card
+					.querySelector<HTMLElement>(".race")
+					?.style.getPropertyValue("--won")
+				if (won) num.style.setProperty("--won", won)
+				continue
+			}
 			// as the card's bars start: home.css's race delay
 			const delay =
 				Number(getComputedStyle(card).getPropertyValue("--i")) * 120 + 200
-			if (num) countUp(num, delay, 0.9)
+			countUp(num, delay, 0.9)
 		}
 	})
 }

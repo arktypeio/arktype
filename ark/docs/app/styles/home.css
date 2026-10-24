@@ -489,8 +489,9 @@
 			}
 		}
 		.twoslash-error {
-			background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 3' height='3' width='6'%3E%3Cg fill='%239558f8'%3E%3Cpolygon points='5.5,0 2.5,3 1.1,3 4.1,0'/%3E%3Cpolygon points='4,0 6,2 6,0.6 5.4,0'/%3E%3Cpolygon points='0,2 1,3 2.4,3 0,0.6'/%3E%3C/g%3E%3C/svg%3E")
-				repeat-x left bottom / 6px 3px;
+			--squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 3' height='3' width='6'%3E%3Cg fill='%239558f8'%3E%3Cpolygon points='5.5,0 2.5,3 1.1,3 4.1,0'/%3E%3Cpolygon points='4,0 6,2 6,0.6 5.4,0'/%3E%3Cpolygon points='0,2 1,3 2.4,3 0,0.6'/%3E%3C/g%3E%3C/svg%3E");
+			position: relative;
+			background: var(--squiggle) repeat-x left bottom / 6px 3px;
 			padding-bottom: 2px;
 			box-decoration-break: clone;
 		}
@@ -1434,6 +1435,14 @@
 		background-size: 0 3px;
 	}
 }
+@keyframes squiggle-type {
+	from {
+		clip-path: inset(0 100% 0 0);
+	}
+	to {
+		clip-path: inset(0);
+	}
+}
 @keyframes md-type {
 	from {
 		width: 0;
@@ -1471,6 +1480,26 @@
 		}
 		.field[data-state="err"] .mirror {
 			animation: squiggle-in 0.18s ease-out;
+		}
+		/* the editor's squiggles type themselves in as its card scrolls up into
+		   view; the timeline is the card's, since the code scrolls sideways */
+		@supports (animation-timeline: view()) {
+			.code-card:has(.twoslash-error) {
+				view-timeline: --squiggles;
+			}
+			.code-card pre.shiki .twoslash-error {
+				background: none;
+				&::after {
+					content: "";
+					position: absolute;
+					inset: auto 0 0;
+					height: 3px;
+					background: var(--squiggle) repeat-x left bottom / 6px 3px;
+					animation: squiggle-type steps(12, end) both;
+					animation-timeline: --squiggles;
+					animation-range: entry 55% entry 100%;
+				}
+			}
 		}
 		/* set before first paint while the live card's ghost is still to play */
 		:root[data-ghost] & .live :is(.live-body > .tl .mirror, .verdict, .out) {
@@ -2447,6 +2476,34 @@
 		opacity: 1;
 	}
 }
+/* the "one build" stamp, pressed onto the board */
+@keyframes stamp-press {
+	from {
+		opacity: 0;
+		scale: 1.7;
+		rotate: -12deg;
+	}
+	55% {
+		opacity: 1;
+		scale: 0.95;
+		rotate: -3deg;
+	}
+}
+@keyframes place-in {
+	from {
+		opacity: 0;
+		scale: 0.6;
+	}
+	60% {
+		opacity: 1;
+		scale: 1.06;
+	}
+}
+@keyframes strike {
+	to {
+		background-size: 100% 0.07em;
+	}
+}
 /* out from the 1× line to its ratio, inside its track's container */
 @keyframes spot-in {
 	from {
@@ -2486,9 +2543,16 @@
 			}
 			.card-check,
 			.lane.is-ours .lane-val,
-			.spot {
+			.spot,
+			.stamp {
 				opacity: 0;
 			}
+		}
+		/* the struck phrase's line is drawn in, so it starts as a background */
+		.board-head s {
+			text-decoration-color: transparent;
+			background: linear-gradient(currentColor, currentColor) no-repeat 0 60% /
+				0 0.07em;
 		}
 		.board[data-play] {
 			.lane-bar {
@@ -2506,6 +2570,26 @@
 			.lane.is-ours .lane-val {
 				animation: rise-fade 0.3s ease-out both;
 				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--won));
+			}
+			/* a place lands as ArkType finishes (HomeEffects copies the race's --won) */
+			.card-num:is(
+				[data-suffix="st"],
+				[data-suffix="nd"],
+				[data-suffix="rd"],
+				[data-suffix="th"]
+			) {
+				transform-origin: 0 80%;
+				animation: place-in 0.5s var(--ease-pop) both;
+				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--won, 0.9s));
+			}
+			.stamp {
+				animation: stamp-press 0.46s var(--ease-pop) 0.5s both;
+			}
+			.board-head:has(s) .stamp {
+				animation-delay: 1.3s;
+			}
+			.board-head s {
+				animation: strike 0.3s var(--ease-out) 0.72s both;
 			}
 		}
 		.proof:not([data-play]) .proof-body li {
@@ -2536,6 +2620,27 @@
 	}
 	:root[data-motion] .home .board[data-play] .phrase {
 		animation-play-state: running;
+	}
+	/* one pass of light across the stamp; leaving snaps it back out of sight */
+	.home .stamp {
+		background: linear-gradient(
+				100deg,
+				transparent 40%,
+				color-mix(in oklab, var(--teal) 24%, transparent) 50%,
+				transparent 60%
+			)
+			100% 0 / 250% 100% no-repeat;
+		&:hover {
+			background-position-x: 0;
+			transition: background-position-x 0.7s var(--ease-out);
+		}
+	}
+	/* a beat for the struck phrase, then its line, then the phrase after it */
+	:root[data-motion] .home .board-head:has(s) .phrase:has(> s) {
+		animation-delay: 0.42s;
+	}
+	:root[data-motion] .home .board-head .phrase:has(> s) ~ .phrase {
+		animation-delay: 1.05s;
 	}
 }
 
