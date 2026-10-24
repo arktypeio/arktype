@@ -1943,6 +1943,20 @@ declare global {
 }
 ```
 
+### Default an alias described or configured inline in a scope
+
+A scope alias defined with `.describe()` or `.configure()` in the scope itself inferred as `unknown`, so a string default referencing it was a type error (#1510):
+
+```ts
+const $ = scope({
+	version: type.string.describe("a version"),
+	// was: Default value 'v0' must be assignable to version
+	release: { version: "version = 'v0'" }
+})
+```
+
+Their signatures are no longer generic, which is what TypeScript deferred. They accept the same selectors, and a `where` predicate's parameter is still the kind its selector names. `where` is now among the keys a selector object completes.
+
 ### Throw a scope alias's parse error on every reference
 
 After an alias failed to parse, later references to it returned a type that crashed when validating, or reported a false cycle. Each reference now throws the original error.

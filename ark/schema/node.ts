@@ -1596,22 +1596,42 @@ const writeSelectAssertionMessage = (from: BaseNode, selector: NodeSelector) =>
 	`${from} had no references matching ${printable(selector)}.`
 
 export declare namespace NodeSelector {
-	export type SelectableFn<input, returns, kind extends NodeKind = NodeKind> = {
-		// this overload must come first for object key completions to work
-		<
-			const selector extends NodeSelector.CompositeInput,
-			predicate extends GuardablePredicate<
-				NodeSelector.inferSelectKind<kind, selector>
-			>
-		>(
-			input: input,
-			selector?: NodeSelector.validateComposite<selector, predicate>
-		): returns
-		<const selector extends NodeSelector.Single>(
-			input: input,
-			selector?: selector
-		): returns
+	// not generic, since TS defers a generic call returning a function, like a
+	// Type, while inferring the call it's an argument of, e.g. a scope (#1510)
+	export interface SelectableFn<
+		input,
+		returns,
+		kind extends NodeKind = NodeKind
+	> {
+		// first for object key completions. a required selector lets a
+		// missing kind or boundary narrow which where it's checked against
+		(input: input, selector: NodeSelector.CompositeOf<kind>): returns
+		(input: input, selector?: NodeSelector.Single): returns
 	}
+
+	export type CompositeOf<selfKind extends NodeKind = NodeKind> =
+		| {
+				[k in NodeKind]: {
+					kind: k
+					boundary?: Boundary
+					method?: Method
+					where?: GuardablePredicate<nodeOfKind<k>>
+				}
+		  }[NodeKind]
+		| {
+				[b in Boundary]: {
+					kind?: undefined
+					boundary: b
+					method?: Method
+					where?: GuardablePredicate<inferSelectKind<selfKind, b>>
+				}
+		  }[Boundary]
+		| {
+				kind?: undefined
+				boundary?: undefined
+				method?: Method
+				where?: GuardablePredicate<inferSelectKind<selfKind, "references">>
+		  }
 
 	export type Single =
 		| NodeSelector.Boundary
