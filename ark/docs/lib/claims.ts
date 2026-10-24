@@ -61,7 +61,7 @@ export interface BenchmarkChart {
  * ark/repo/bench/external, against moltar's typescript-runtime-type-benchmarks
  * at 499f3fb and schema-benchmarks at f1e6e8e. Its results/ holds the
  * instruction counts (counts-a306152ce.md, whose builds match the release's),
- * the sizes (login-89510709d.json) and the pre-registered wall-clock run at
+ * the sizes (login-1e74181e4.json) and the pre-registered wall-clock run at
  * f29b8d153 (wall-f29b8d153.md: 30 paired passes, Holm over H1-H4), where all
  * four hypotheses held. At the release candidate (wall.md) H1 had failed. Each
  * claim is scoped: precompiled or dynamic, valid or invalid data, with or
@@ -97,9 +97,11 @@ export const speedChart: BenchmarkChart = {
 // bundlejs-style esbuild of valibot.dev's login form as written, every entry
 // reporting every error with its message. Precompiled with
 // { preset: "smallest" } in a production build (esbuild's "production"
-// condition): 2647 / 1313 B min / gz; 2927 / 1465 in development, and the
-// default build 1779 in production. Sizes measured at 89510709d
-// (results/login-89510709d.json). Zod Mini's form is valibot.dev's code as
+// condition): 2058 / 1037 B min / gz; 2890 / 1453 in development, and the
+// default build 1140 in production. Sizes measured at 1e74181e4
+// (results/login-1e74181e4.json). forms/ in the README's "Best average" bundles
+// the same form, exporting its assert rather than calling it, so its default
+// build is 1158. Zod Mini's form is valibot.dev's code as
 // written, which throws at its first parse on zod 4.6.7 (z.check takes no
 // schema); written to run (z.email(...).check(...)), it is 5107.
 export const sizeChart: BenchmarkChart = {
@@ -113,11 +115,11 @@ export const sizeChart: BenchmarkChart = {
 	},
 	axisMax: 26_000,
 	bars: [
-		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1313 },
+		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1037 },
 		{ name: "Valibot", kind: "other", value: 1547 },
 		{ name: "Zod Mini", kind: "other", value: 5127 },
 		{ name: "Zod", kind: "other", value: 25058 },
-		{ name: "ArkType (dynamic)", kind: "dynamic", value: 82263 }
+		{ name: "ArkType (dynamic)", kind: "dynamic", value: 82965 }
 	]
 }
 
@@ -334,9 +336,9 @@ export const claims = {
 	// in 24 of 30 passes (p 0.00072)
 	dynamicSpeed:
 		"In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType.",
-	// "smallest" in production, 1313 vs 1547 B gz, the form as written
+	// "smallest" in production, 1037 vs 1547 B gz, the form as written
 	loginSize:
-		"On Valibot's own login form, ArkType precompiled for size reports every error, with its message, in a smaller bundle than Valibot: 1.31 kB gzipped against 1.55 kB.",
+		"On Valibot's own login form, ArkType precompiled for size reports every error, with its message, in a smaller bundle than Valibot: 1.04 kB gzipped against 1.55 kB.",
 	// moltar strict, dynamic, 2.2.9 to now: assertStrict 5326 -> 348,
 	// parseStrict 4277 -> 365 instructions (2.2.9's counts vary by 20-26%
 	// between reps, its ratios 10.2x to 17.1x); by wall clock (H4), 0.074x
@@ -347,11 +349,11 @@ export const claims = {
 	noInit:
 		"A precompiled Type costs nothing to create: it was built when you built.",
 	// `import { type } from "arktype"` by ark/repo/bench/bundle.ts's method
-	// (esbuild bundle + minify, esm, neutral, gzip) at f29b8d153: 82292 vs
-	// 2.2.9's 47803 B gz (258336 vs 156113 min); sizeChart's dynamic bar, the
-	// login form, is 82263
+	// (esbuild bundle + minify, esm, neutral, gzip) at 1e74181e4: 83000 vs
+	// 2.2.9's 47803 B gz (260577 vs 156113 min); sizeChart's dynamic bar, the
+	// login form, is 82965
 	dynamicSize:
-		"Dynamic ArkType is 82.3 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.",
+		"Dynamic ArkType is 83.0 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.",
 	zodSpec: `faster than Zod 4 in ${zodScenarios} we ran`,
 	zodSpeed: `Precompiled ArkType was faster than Zod 4 in ${zodScenarios} of our benchmark, by ${zod.min} to ${zod.max}, and faster than Zod 4's z.compile in ${zodCompiled.wins} of ${zodCompiled.count}${zodCompiledLosses}.`,
 	// the error rows from benchData.json
