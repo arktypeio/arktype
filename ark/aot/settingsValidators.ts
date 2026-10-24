@@ -88,12 +88,10 @@ var applyIssues = (apply, data, onFail, Ctx = ArkIssues) => {
 		: errors
 	)
 }
-var indexSegments = []
 var messageOf = issue => {
 	let path = ""
 	for (const k of issue.path) {
-		if (typeof k === "number")
-			path += k < 256 ? (indexSegments[k] ??= `[${k}]`) : `[${k}]`
+		if (typeof k === "number") path += `[${k}]`
 		else {
 			if (path) path += "."
 			path += typeof k === "string" ? k : String(k)
