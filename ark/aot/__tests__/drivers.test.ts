@@ -6,8 +6,10 @@ import {
 	allowUnsafeHint,
 	createNodeHost,
 	writeAliasMessage,
+	writeFilelessImportMessage,
 	writePrecompiledDependencyMessage,
 	writeTextlessMessage,
+	writeUntransformedImportMessage,
 	writeVariantImportMessage
 } from "@ark/aot/internal/host.ts"
 import { configuredThreadMessage } from "@ark/aot/internal/messages.ts"
@@ -384,6 +386,29 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			attest(
 				stderr.includes(writeTextlessMessage(join(transpiled, "start.ts")))
 			).equals(true)
+		})
+
+		it("refuses a module it can't precompile importing arktype", () => {
+			const root = writeFixture(
+				{
+					"package.json": '{ "type": "module" }',
+					// a bin's file, which has no extension
+					cli: 'import { type } from "arktype"\n\nconsole.log(type({ a: "number" })({ a: 1 }))\n'
+				},
+				fromHere("temp", "unprecompiled")
+			)
+			const failure = (args: string[]) => {
+				const { status, stderr } = node(args, {}, root)
+				return [status, thrownMessage(stderr, root)]
+			}
+			attest(failure(["cli"])).equals([
+				1,
+				`${writeUntransformedImportMessage(join(root, "cli"), "arktype", root)} ${allowUnsafeHint}`
+			])
+			attest(failure(["--eval", 'import("arktype")'])).equals([
+				1,
+				`${writeFilelessImportMessage("[eval]", "arktype")} ${allowUnsafeHint}`
+			])
 		})
 
 		it("configured after a keyword Type is created", () => {

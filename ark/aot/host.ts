@@ -403,7 +403,41 @@ export const writeUntransformedImportMessage = (
 	specifier: string,
 	cwd: string
 ): string =>
-	`${printablePathOf(cwd, file)} imports ${specifier}, which a standalone build resolves to arktype/runtime, where defining a Type throws, as it can't precompile what isn't a JavaScript or TypeScript module. Define the Types it uses in a module that is.`
+	writeUnprecompiledMessage(
+		printablePathOf(cwd, file),
+		specifier,
+		"it can't precompile what isn't a JavaScript or TypeScript module. Define the Types it uses in a module that is."
+	)
+
+// e.g. esbuild's stdin, or a module a plugin loads from a virtual id
+export const writeFilelessImportMessage = (
+	id: string,
+	specifier: string
+): string =>
+	writeUnprecompiledMessage(
+		id.replace(/^\0/, ""),
+		specifier,
+		"it can't precompile a module with no file of its own. Define the Types it uses in a file it imports."
+	)
+
+// esbuild loads a module with the first plugin that returns its contents
+export const writeLoadedFirstMessage = (
+	file: string,
+	specifier: string,
+	cwd: string
+): string =>
+	writeUnprecompiledMessage(
+		printablePathOf(cwd, file),
+		specifier,
+		"another plugin loaded it before precompile.esbuild() could. Put precompile.esbuild() ahead of that plugin."
+	)
+
+const writeUnprecompiledMessage = (
+	name: string,
+	specifier: string,
+	reason: string
+) =>
+	`${name} imports ${specifier}, which a standalone build resolves to arktype/runtime, where defining a Type throws, as ${reason}`
 
 export interface EmittedMap {
 	mappings: string

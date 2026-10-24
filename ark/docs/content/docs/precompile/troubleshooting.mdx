@@ -67,4 +67,10 @@ Where the fix is clear and the problem could throw at runtime, the build fails. 
 
 **`src/Form.svelte imports arktype, which a standalone build resolves to arktype/runtime`**: the build can't precompile a module that isn't JavaScript or TypeScript, like a Svelte component's script. Define the Types it uses in a module that is.
 
+**`virtual:schemas imports arktype ... as it can't precompile a module with no file of its own`**: the build precompiles modules from their files, so not one a plugin loads from a virtual id or namespace, esbuild's `stdin`, a `data:` URL or code given to `node --eval`. Define the Types it uses in a file it imports.
+
+**`src/schemas.ts imports arktype ... as another plugin loaded it before precompile.esbuild() could`**: esbuild loads a module with the first plugin that returns its contents, so a plugin ahead of this one kept it from being precompiled. Put `precompile.esbuild()` ahead of that plugin.
+
+**`type is not a function`** at runtime: a module that defines a Type loaded `arktype/runtime` without being precompiled. Bun's driver and Turbopack replace `arktype` for every importer, so they can't fail for a module they don't load, like one another plugin supplies or, with Turbopack, one no loader rule matches. Define the Types it uses in a file they precompile.
+
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
