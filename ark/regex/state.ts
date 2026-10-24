@@ -416,15 +416,17 @@ export declare namespace UnionTree {
 		priorCaptures extends IndexedCaptures
 	> =
 		astBranches extends [infer head, ...infer tail] ?
-			finalizeTree<head, branchContextOf<ctx, priorCaptures>> extends infer r ?
-				r extends FinalizationResult ?
-					_finalize<
-						tail,
-						finalizeBranch<acc, ctx, r>,
-						ctx,
-						r["ctx"]["captures"]
-					>
-				:	never
+			finalizeTree<head, branchContextOf<ctx, priorCaptures>> extends (
+				infer r extends FinalizationResult
+			) ?
+				// a branch's results don't affect the next branch, so they're kept
+				// together rather than finalizing the rest once for each
+				_finalize<
+					tail,
+					[...acc, finalizeBranch<ctx, r>],
+					ctx,
+					r["ctx"]["captures"]
+				>
 			:	never
 		:	finalizeBranches<
 				keyof acc,
@@ -452,19 +454,18 @@ export declare namespace UnionTree {
 			}>
 
 	type finalizeBranch<
-		acc extends FinalizedBranch[],
 		ctx extends FinalizationContext,
 		r extends FinalizationResult
-	> = [
-		...acc,
-		FinalizedBranch.from<{
-			pattern: r["pattern"]
-			captures: extractNewCaptures<ctx["captures"], r["ctx"]["captures"]>
-			// undefined will be added to named captures as needed
-			// by finalizeBranches since it can be done in one step
-			names: r["ctx"]["names"]
-		}>
-	]
+	> =
+		r extends unknown ?
+			FinalizedBranch.from<{
+				pattern: r["pattern"]
+				captures: extractNewCaptures<ctx["captures"], r["ctx"]["captures"]>
+				// undefined will be added to named captures as needed
+				// by finalizeBranches since it can be done in one step
+				names: r["ctx"]["names"]
+			}>
+		:	never
 
 	type finalizeBranches<
 		i,
@@ -473,23 +474,33 @@ export declare namespace UnionTree {
 		unionCaptures extends IndexedCaptures
 	> =
 		i extends keyof acc & NumberLiteral ?
+			finalizeBranchResult<acc[i], acc, ctx, unionCaptures>
+		:	never
+
+	type finalizeBranchResult<
+		branch extends FinalizedBranch,
+		acc extends FinalizedBranch[],
+		ctx extends FinalizationContext,
+		unionCaptures extends IndexedCaptures
+	> =
+		branch extends unknown ?
 			FinalizationResult.from<{
-				pattern: acc[i]["pattern"]
+				pattern: branch["pattern"]
 				ctx: {
 					flags: ctx["flags"]
 					captures: [
 						...ctx["captures"],
 						...{
-							[j in keyof unionCaptures]: j extends keyof acc[i]["captures"] ?
-								acc[i]["captures"][j]
+							[j in keyof unionCaptures]: j extends keyof branch["captures"] ?
+								branch["captures"][j]
 							:	undefined
 						}
 					]
 					names: {
 						[k in unionKeyOf<acc[number]["names"]>]: k extends (
-							keyof acc[i]["names"]
+							keyof branch["names"]
 						) ?
-							acc[i]["names"][k]
+							branch["names"][k]
 						:	undefined
 					}
 					errors: ctx["errors"]

@@ -1337,6 +1337,16 @@ contextualize(() => {
 			attest<Regex<"aB" | "ab" | "Ab" | "AB", { flags: "i" }>>(S)
 		})
 
+		// https://github.com/arktypeio/arktype/issues/1533
+		it("i with several branches", () => {
+			const S = regex("^(?:relay|relai|point)$", "i")
+			type anyCase<s extends string> =
+				s extends `${infer head}${infer tail}` ?
+					`${Lowercase<head> | Uppercase<head>}${anyCase<tail>}`
+				:	""
+			attest<Regex<anyCase<"relay" | "relai" | "point">, { flags: "i" }>>(S)
+		})
+
 		it("m", () => {
 			const S = regex("^abc$", "m")
 			attest<Regex<`${string}abc${string}`, { flags: "m" }>>(S)

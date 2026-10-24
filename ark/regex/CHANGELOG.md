@@ -12,6 +12,18 @@ A capture in one alternation branch is `undefined` in every other branch, so the
 regex("^(?:(?<a>1)|(?<b>2)|(?<c>3))$").inferCaptures
 ```
 
+### infer alternations whose branches each match several strings
+
+Each branch of an alternation was inferred once for every combination of the strings the branches before it could match, so a few short case-insensitive branches were excessively deep (#1533). Each branch is now inferred once:
+
+```ts
+// was: Type instantiation is excessively deep and possibly infinite.
+// now: each casing of "relay", "relai" and "point", in a string
+regex("relay|relai|point", "i")
+```
+
+A long case-insensitive literal like `instagram\.com` still matches too many strings to infer.
+
 ### infer escapes in a character set as what they match
 
 In a character set, `\b` is a backspace and an escape that's unnecessary elsewhere matches its character, so they're inferred as those characters rather than as a boundary or an error message. An escape the `u` or `v` flag makes a `SyntaxError`, like `[\a]`, is a type error with those flags:
