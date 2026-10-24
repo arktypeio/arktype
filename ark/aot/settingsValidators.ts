@@ -65,8 +65,7 @@ var ArkIssues = class {
 		}
 		context.text?.(issue)
 		if (key !== void 0) path.pop()
-		if (this._.length) this._.push(issue)
-		else this._ = [issue]
+		this._.push(issue)
 		return this.failFast
 	}
 	/** @internal */
