@@ -16,7 +16,7 @@ export class ArkErrors implements FailureContext {
 	/** @internal each issue in the order it was added */
 	_: ArkIssue[] = []
 	/** @internal the path a fused traversal is at */
-	_path: PropertyKey[] = []
+	_p: PropertyKey[] = []
 
 	/**
 	 * The number of issues.
@@ -62,7 +62,7 @@ export class ArkErrors implements FailureContext {
 		key?: PropertyKey,
 		absent?: true
 	): true | undefined {
-		const path = this._path
+		const path = this._p
 		let context = site.value ?? (site as SiteContext)
 		if (key !== undefined) {
 			path.push(key)
@@ -94,9 +94,9 @@ export class ArkErrors implements FailureContext {
 		if (key === undefined) return !apply(value, this)
 		if (missing && value === undefined && !(key in (data as object)))
 			return this.failsAt(missing, data, key, true)
-		this._path.push(key)
+		this._p.push(key)
 		const continues = apply(value, this)
-		this._path.pop()
+		this._p.pop()
 		return !continues
 	}
 }

@@ -89,7 +89,7 @@ contextualize(() => {
 		const errors = new ArkErrors()
 		owner({ members: [{ name: "a" }, {}, { name: 2 }] }, errors)
 		owner({}, errors)
-		attest([errors.summary, errors._path]).snap([
+		attest([errors.summary, errors._p]).snap([
 			"members[1].name is missing\nmembers[2].name must be a string\nmembers is missing",
 			[]
 		])
@@ -106,7 +106,7 @@ contextualize(() => {
 
 	it("adds a discriminant's issue at the path its site holds", () => {
 		const errors = new ArkErrors()
-		errors._path.push("item")
+		errors._p.push("item")
 		errors.failsAt(
 			{
 				value: { code: "discriminant", description: '"a" or "b"' },

@@ -554,8 +554,8 @@ for (const data of [{ name: 5 }, flipping]) {
 			)
 			attest(run(asserting)).snap("name must be a string\nis invalid\n")
 			// errors finding their issues once read hold the data until then
-			attest(asserting.includes("_data")).equals(false)
-			attest((await bundle({ preset: undefined })).includes("_data")).equals(
+			attest(asserting.includes("._d=")).equals(false)
+			attest((await bundle({ preset: undefined })).includes("._d=")).equals(
 				true
 			)
 		})

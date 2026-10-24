@@ -846,8 +846,7 @@ const exitUntracked = (
 
 const invalidResolution = (
 	ctx: InternalTraversal,
-	error = ctx.currentBranch?.error ??
-		lastOf(ctx._errors!._issues ?? ctx._errors!._)
+	error = ctx.currentBranch?.error ?? lastOf(ctx._errors!._i ?? ctx._errors!._)
 ): InvalidResolution => ({
 	error,
 	reported: !ctx.currentBranch

@@ -65,7 +65,7 @@ let releasedPath: PropertyKey[] | undefined
 
 /** @internal once their Apply returns, errors pass their path on */
 export const releasePath = (errors: ArkIssues): ArkIssues => {
-	releasedPath = errors._path
+	releasedPath = errors._p
 	return errors
 }
 
@@ -80,11 +80,11 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	/** @internal each issue in the order it was added */
 	declare _: ArkIssue[]
 	/** @internal the path a fused traversal is at */
-	declare _path: PropertyKey[]
+	declare _p: PropertyKey[]
 
 	constructor() {
 		this._ = []
-		this._path = releasedPath ?? []
+		this._p = releasedPath ?? []
 		releasedPath = undefined
 	}
 
@@ -136,7 +136,7 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		absent?: true
 	): true | undefined {
 		// a key's site reports the missing key or its value
-		const path = this._path
+		const path = this._p
 		let context = site.value ?? (site as SiteContext)
 		if (key !== undefined) {
 			path.push(key)
@@ -169,9 +169,9 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		if (key === undefined) return !apply(value, this)
 		if (missing && value === undefined && !(key in (data as object)))
 			return this.failsAt(missing, data, key, true)
-		this._path.push(key)
+		this._p.push(key)
 		const continues = apply(value, this)
-		this._path.pop()
+		this._p.pop()
 		return !continues
 	}
 }
@@ -209,7 +209,7 @@ export const issuesOf = (
 	apply(data, errors)
 	// data a write or a getter has made valid since fails as a whole
 	if (!errors._.length) errors.failsAt({ code: "predicate" }, data)
-	releasedPath = errors._path
+	releasedPath = errors._p
 	return errors._
 }
 
@@ -219,9 +219,9 @@ interface ArkIssues {
 	/** @internal arktype's errors, which copy their contexts when merged */
 	_merge?(merged: ArkIssues, prefix: array<PropertyKey>): void
 	/** @internal arktype's errors, grouped by path */
-	readonly _issues?: ArkIssue[]
+	readonly _i?: ArkIssue[]
 	/** @internal arktype's TraversalError message, one line per error */
-	readonly _thrown?: string
+	readonly _t?: string
 }
 
 type Keyed = Record<PropertyKey, unknown>
@@ -312,7 +312,7 @@ export class TraversalError extends Error {
 	declare arkErrors: ArkIssues
 
 	constructor(errors: ArkIssues) {
-		super(errors._thrown ?? errors.summary)
+		super(errors._t ?? errors.summary)
 
 		// assigned, as a field's initializer compiles where the class is defined
 		this.name = "TraversalError"

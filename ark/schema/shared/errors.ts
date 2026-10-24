@@ -120,7 +120,7 @@ export class ArkErrors extends BaseArkErrors {
 	 * text written in the locale selected when they were first read.
 	 */
 	override get issues(): readonly ArkError[] {
-		const issues = this._issues
+		const issues = this._i
 		if (this.written) return issues
 		this.written = true
 		const locale = (this.locale ??=
@@ -137,7 +137,7 @@ export class ArkErrors extends BaseArkErrors {
 	}
 
 	/** @internal a thrown error's message, listing each error apart */
-	get _thrown(): string {
+	get _t(): string {
 		return writeTraversalMessage(this.issues)
 	}
 
@@ -151,7 +151,7 @@ export class ArkErrors extends BaseArkErrors {
 	toLocaleString(locale?: Locale): string {
 		// Array.prototype.toLocaleString passes each element a tag
 		if (!isLocale(locale)) return this.summary
-		return summarize(this._issues.map(error => writtenIn(error, locale)))
+		return summarize(this._i.map(error => writtenIn(error, locale)))
 	}
 
 	/** @internal */
@@ -167,7 +167,7 @@ export class ArkErrors extends BaseArkErrors {
 	}
 
 	/** @internal the errors grouped by path, without their text */
-	get _issues(): ArkError[] {
+	get _i(): ArkError[] {
 		const added = this._
 		if (this.groupedCount === added.length) return this.grouped
 		this.written = false
@@ -277,7 +277,7 @@ const mergeErrors = (
 	prefix: array<PropertyKey>
 ): void => {
 	// copies are written with the receiving errors' config
-	for (const error of merged._issues)
+	for (const error of merged._i)
 		errors._.push(unwrittenError(error, prefix, errors._config))
 }
 
@@ -293,9 +293,11 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 	class Unread {
 		declare config: ResolvedConfig
 		declare _node: BaseNode
-		declare _data: unknown
+		// the data, and once read, the issues found, named as a standalone
+		// Unread's are
+		declare _d: unknown
 		declare _ctor: typeof Traversal
-		declare _found?: ArkError[]
+		declare _f?: ArkError[]
 
 		constructor(
 			node: BaseNode,
@@ -305,23 +307,23 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 		) {
 			this.config = config
 			this._node = node
-			this._data = data
+			this._d = data
 			this._ctor = ctor
 		}
 
 		get _(): ArkError[] {
-			if (!this._found) {
-				const ctx = new this._ctor(this._data, this.config)
-				this._node.traverseApply(this._data, ctx)
+			if (!this._f) {
+				const ctx = new this._ctor(this._d, this.config)
+				this._node.traverseApply(this._d, ctx)
 				// data a write or a getter has made valid since fails as a whole
 				if (!ctx.hasError())
 					ctx.reject({ expected: "valid", problem: "is invalid" })
 				const errors = this as {} as ArkErrors
 				// an ArkErrors holding what its traversal found
 				errors._init(this.config)
-				this._found = (ctx.finalize(null) as ArkErrors)._
+				this._f = (ctx.finalize(null) as ArkErrors)._
 			}
-			return this._found
+			return this._f
 		}
 	}
 	// an ArkErrors, built without the fields its constructor sets
