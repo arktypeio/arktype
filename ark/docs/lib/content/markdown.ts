@@ -181,7 +181,7 @@ const claimChartMarkdown = (chart: BenchmarkChart): RootContent => ({
 	ordered: false,
 	spread: false,
 	children: [
-		`${chart.title} (${chart.unit}, lower is better): ${claimMarkdown(chart.detail)}. Source: ${chart.source.label}, ${chart.source.href}`,
+		`${chart.title} (${chart.unit}, lower is better): ${claimMarkdown(chart.detail).replace(/\.$/, "")}. Source: ${chart.source.label}, ${chart.source.href}`,
 		...chart.bars.map(
 			bar =>
 				`${bar.name}: ${bar.value === null ? "pending" : bar.value.toLocaleString("en-US")}`
