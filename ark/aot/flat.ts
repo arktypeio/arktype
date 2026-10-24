@@ -787,7 +787,9 @@ const withoutUnread = (body: string, returned: string): string => {
 }
 
 // each function the units declare, which reads nothing as it's declared, first
-// and beside those like it, so gzip finds their repeats, then the rest in order
+// and beside those like it, so gzip finds their repeats, then the rest in
+// order, where there are enough for the order to pay rather than move gzip
+// either way
 const inGzipOrder = (body: string): string => {
 	const { program } = parseSync("units.js", body, {
 		sourceType: "module",
@@ -814,6 +816,7 @@ const inGzipOrder = (body: string): string => {
 			} else rest.push(text)
 		}
 	}
+	if (functions.length < minSortedFunctions) return body
 	functions.sort(([l], [r]) =>
 		l < r ? -1
 		: l > r ? 1
@@ -821,6 +824,8 @@ const inGzipOrder = (body: string): string => {
 	)
 	return [...functions.map(([, text]) => text), ...rest].join("\n")
 }
+
+const minSortedFunctions = 64
 
 // a name the build derives from a unit's, e.g. its Allows
 const unitName = /\b\w+?(?:R\d+|Allows|Apply|Transform)\b/g
