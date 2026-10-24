@@ -82,7 +82,7 @@ A project that `tsc` compiles to run from its `outDir` precompiles what it emits
 ### Tests
 
 - Vitest: nothing to add beyond the Vite plugin.
-- `node --test`, or any Node program (Node 22.15 or later): `node --import ./register.ts --test`, with
+- `node --test`, or any Node program (Node 22.15 or later): `node --import ./register.ts --test`, with this file beside `package.json` (as `register.js` where Node can't run TypeScript):
 
 ```ts
 // register.ts
