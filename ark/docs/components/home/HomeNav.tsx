@@ -12,6 +12,7 @@ export const HomeNav = () => (
 			</Link>
 			<nav className="nav-links" aria-label="Primary">
 				<Link href="/docs/intro/setup">Docs</Link>
+				<Link href="/docs/precompile">Precompile</Link>
 				<Link href="/playground">Playground</Link>
 				<Link href="/docs/blog">Blog</Link>
 				<Link className="nav-sub" href="/docs/regex">
