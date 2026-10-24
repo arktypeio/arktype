@@ -11,6 +11,7 @@ import { benchFacts, versusLibrary, type LibraryVersus } from "./bench/bench.ts"
 import {
 	leaderboards,
 	leads,
+	resultsOf,
 	type CategoryId,
 	type Standing
 } from "./bench/leaderboard.ts"
@@ -134,16 +135,16 @@ export const startupChart: BenchmarkChart = {
 		label: "the homepage's login app",
 		href: "https://github.com/arktypeio/arktype/tree/main/ark/repo/bench/apps/login"
 	},
-	bars: [
-		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1.13 },
-		{ name: "ajv", kind: "other", value: 1.86 },
-		{ name: "Valibot", kind: "other", value: 2.35 },
-		{ name: "Typia", kind: "other", value: 2.43 },
-		{ name: "Zod Mini", kind: "other", value: 11.39 },
-		{ name: "Zod", kind: "other", value: 43.75 },
-		{ name: "Zod (compiled)", kind: "other", value: 51.54 },
-		{ name: "TypeBox", kind: "other", value: 87.79 }
-	]
+	// the leaderboard's login row, net of the baseline, in millions
+	bars: Object.entries(resultsOf("startup", "login"))
+		.sort(([, l], [, r]) => l - r)
+		.map(
+			([library, instructions]): BenchmarkBar => ({
+				name: library === "ArkType" ? "ArkType (precompiled)" : library,
+				kind: library === "ArkType" ? "precompiled" : "other",
+				value: Math.round(instructions / 10_000) / 100
+			})
+		)
 }
 
 // the homepage's benchmark (lib/bench/benchData.json), so a rerun rewrites

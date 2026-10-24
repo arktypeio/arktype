@@ -75,6 +75,12 @@ export const leaderboards = {
 	size: leaderboardOf("size")
 } satisfies Record<CategoryId, Leaderboard>
 
+/** a suite's row: each library's result, in the suite's unit */
+export const resultsOf = (suiteId: string, rowId: string) =>
+	(data.suites as Suite[])
+		.find(s => s.id === suiteId)!
+		.rows.find(row => row.id === rowId)!.results
+
 /** whether ArkType has the best average in a category */
 export const leads = (category: CategoryId) =>
 	leaderboards[category].standings[0]?.library === "ArkType"
