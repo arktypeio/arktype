@@ -1071,7 +1071,7 @@ const writeFlat = (
 			// kept code reads what it returns, so a bundler keeps its call, and
 			// annotations saying it could drop it are bytes oxc's minifier keeps
 			const declaration = `const ${read.length === 1 ? read[0] : `[${read.join(", ")}]`} = (() => {
-${withoutAnnotations(inGzipOrder(withoutUnread(body, returned)))}
+${withoutAnnotations(inGzipOrder(withoutUnread(withoutForwarders(body, returned), returned)))}
 return ${returned}
 })()`
 			return asModule ?
@@ -1084,6 +1084,72 @@ export { ${read.join(", ")} }
 				:	declaration
 		}
 	}
+}
+
+// a function the units declare that only calls another of them with its own
+// parameters, e.g. a predicate's Allows, is read as that one where it's
+// called, so a call reaches it directly
+const withoutForwarders = (body: string, returned: string): string => {
+	for (;;) {
+		const code = `${body}\n;${returned}`
+		const { program } = parseSync("units.js", code, {
+			sourceType: "module",
+			preserveParens: false
+		})
+		const scopes = new ModuleScopes(program)
+		const s = new MagicString(code)
+		for (const statement of program.body as Node[]) {
+			if (statement.type !== "VariableDeclaration") continue
+			for (const { id, init } of statement.declarations) {
+				const binding = scopes.bindingsById.get(id)
+				const target = init && forwardedOf(init, scopes)
+				if (
+					!binding ||
+					!target ||
+					target === binding ||
+					!binding.references.every(
+						({ id }) =>
+							id.parent?.type === "CallExpression" && id.parent.callee === id
+					)
+				)
+					continue
+				for (const reference of binding.references)
+					s.overwrite(reference.id.start, reference.id.end, target.name)
+			}
+			if (s.hasChanged()) break
+		}
+		if (!s.hasChanged()) return body
+		body = s.toString().slice(0, -returned.length - 2)
+	}
+}
+
+// what a function calls with its own parameters, in order, if that's all it
+// does and it's a constant of the units' function
+const forwardedOf = (node: Node, scopes: ModuleScopes): Binding | undefined => {
+	const fn = unwrapParentheses(node)
+	if (fn.type !== "ArrowFunctionExpression" || fn.async) return
+	const [only] = fn.body.type === "BlockStatement" ? fn.body.body : []
+	const call =
+		fn.body.type !== "BlockStatement" ? fn.body
+		: fn.body.body.length === 1 && only.type === "ReturnStatement" ?
+			only.argument
+		:	undefined
+	if (
+		call?.type !== "CallExpression" ||
+		call.callee.type !== "Identifier" ||
+		call.arguments.length !== fn.params.length ||
+		!fn.params.every(
+			(param, i) =>
+				param.type === "Identifier" &&
+				call.arguments[i].type === "Identifier" &&
+				(call.arguments[i] as { name: string }).name === param.name
+		)
+	)
+		return
+	const target = scopes.refsById.get(call.callee)?.binding
+	return target?.scope === scopes.root && target.kind === "const" ?
+			target
+		:	undefined
 }
 
 // what a function declares that nothing reads, which a bundler keeps as it
