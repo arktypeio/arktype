@@ -124,13 +124,30 @@ export const runsOnArktype = (
 	return !!name && dependencies?.[name] === "arktype"
 }
 
-// the package in node_modules a file belongs to, if any
+// the package in node_modules a file belongs to, if any, from the innermost
+// node_modules it names one in
 export const dependencyOf = (
 	file: string
 ): [root: string, name: string] | undefined => {
-	const match = /.*[/\\]node_modules[/\\]((?:@[^/\\]+[/\\])?[^/\\]+)/.exec(file)
-	return match ? [match[0], match[1].replace("\\", "/")] : undefined
+	const starts = [...file.matchAll(nodeModulesSegment)]
+	for (let i = starts.length - 1; i >= 0; i--) {
+		packageInNodeModules.lastIndex = starts[i].index
+		const match = packageInNodeModules.exec(file)
+		if (match) {
+			return [
+				file.slice(0, packageInNodeModules.lastIndex),
+				match[1].replace("\\", "/")
+			]
+		}
+	}
 }
+
+// read from each start rather than through a leading .*, which backtracks
+// across a long path once for every character
+const nodeModulesSegment = /[/\\]node_modules(?=[/\\])/g
+
+const packageInNodeModules =
+	/[/\\]node_modules[/\\]((?:@[^/\\]+[/\\])?[^/\\]+)/y
 
 // a module's file as the resolver writes it. Vite writes / on Windows, and
 // an entry under a root given through a symlink or an 8.3 name like RUNNER~1

@@ -535,6 +535,60 @@ export const describe = (t: { description: string }) => t.description
 		])
 	})
 
+	it("vite's development server rewrites the importers of a changed Type", async () => {
+		const page = (max: number) =>
+			`import { type } from "arktype"\n\nexport const Page = type({ n: "number <= ${max}" })\n`
+		const root = writeFixture({
+			"page.ts": page(1),
+			"search.ts": `import { type } from "arktype"
+import { Page } from "./page.ts"
+
+export const Search = type({ q: "string" }).and(Page)
+`,
+			"main.ts": `import { type } from "arktype"
+import { Search } from "./search.ts"
+
+export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.errors)
+`
+		})
+		mkdirSync(join(root, "node_modules"))
+		symlinkSync(
+			fromHere("..", "..", "type"),
+			join(root, "node_modules/arktype")
+		)
+		const config = viteConfig({}, root)
+		const server = await withNodeEnv("development", () =>
+			createServer({
+				...config,
+				resolve: { ...config.resolve, preserveSymlinks: true },
+				ssr: { resolve: { ...config.ssr!.resolve, externalConditions: [] } }
+			})
+		)
+		const runner = createServerModuleRunner(server.environments.ssr, {
+			hmr: false
+		})
+		try {
+			const before = (await runner.import("/main.ts")).allows(2)
+			const file = join(root, "page.ts")
+			writeFileSync(file, page(2))
+			const pageModule =
+				server.environments.ssr.moduleGraph.getModuleById(file)!
+			server.watcher.emit("change", file)
+			for (let waited = 0; pageModule.transformResult; waited += 10) {
+				if (waited > 10_000) throw new Error("page.ts was never invalidated")
+				await new Promise(resolve => setTimeout(resolve, 10))
+			}
+			runner.clearCache()
+			attest([before, (await runner.import("/main.ts")).allows(2)]).equals([
+				false,
+				true
+			])
+		} finally {
+			await runner.close()
+			await server.close()
+		}
+	})
+
 	it("fails a build whose external option takes arktype from the bundle", async () => {
 		const thrownBy = (build: () => Promise<unknown>) =>
 			build().then(
@@ -830,6 +884,50 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 			)
 		).equals([])
 		attest(Object.keys(watchedBy).length).equals(count - 1)
+	})
+
+	it("esbuild rebuilds what reads a changed Type", async () => {
+		const max = (n: number) =>
+			`import { type } from "arktype"\n\nexport const Max = type("number <= ${n}")\n`
+		const root = writeFixture(
+			{
+				"max.ts": max(1),
+				"limited.ts": `import { type } from "arktype"
+import { Max } from "./max.ts"
+
+export const Limited = type({ n: Max })
+`,
+				"other.ts": `import { type } from "arktype"
+
+export const Other = type({ s: "string" })
+`,
+				"main.ts": `import { type } from "arktype"
+import { Limited } from "./limited.ts"
+import { Other } from "./other.ts"
+
+console.log(Limited({ n: 2 }) instanceof type.errors, Other({ s: "" }) instanceof type.errors)
+`
+			},
+			fromHere("temp", "rebuilt")
+		)
+		const ctx = await context({
+			entryPoints: [join(root, "main.ts")],
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [precompile.esbuild({ cwd: root, conditions })]
+		})
+		try {
+			const outputs = [run((await ctx.rebuild()).outputFiles![0].text)]
+			// kept from the first build, until a file it was precompiled from changes
+			writeFileSync(join(root, "max.ts"), max(2))
+			outputs.push(run((await ctx.rebuild()).outputFiles![0].text))
+			attest(outputs).equals(["true false\n", "false false\n"])
+		} finally {
+			await ctx.dispose()
+		}
 	})
 
 	it("keeps a configured worker until its config changes", async () => {
