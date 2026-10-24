@@ -143,22 +143,16 @@ export const issueAt = (
 	return issue
 }
 
-export const failsIn = (
-	ctx: FailureContext,
-	path: PropertyKey[],
+// the issues an Apply finds in data it rejected
+export const issuesOf = (
 	apply: CompactApply,
-	value: unknown,
-	key: PropertyKey | undefined,
-	missing: FailureSite | undefined,
-	data: unknown
-): boolean | undefined => {
-	if (key === undefined) return !apply(value, ctx)
-	if (missing && value === undefined && !(key in (data as object)))
-		return ctx.failsAt(missing, data, key, true)
-	path.push(key)
-	const continues = apply(value, ctx)
-	path.pop()
-	return !continues
+	data: unknown,
+	errors: ArkErrors
+): ArkIssue[] => {
+	apply(data, errors)
+	// data a write or a getter has made valid since fails as a whole
+	if (!errors._.length) errors.failsAt({ code: "predicate" }, data)
+	return errors._
 }
 
 // a root reporting into ArkErrors, as a size build applies it; they hold

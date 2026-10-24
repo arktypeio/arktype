@@ -1,18 +1,17 @@
 // what errors "none" writes besides its errors' class
 import { throwInternalError, type array } from "@ark/util"
 import type { ArkErrors } from "./issuesNone.ts"
-import type {
-	ArkIssue,
-	CompactApply,
-	FailureContext,
-	FailureSite
-} from "./issues.ts"
+import type { ArkIssue } from "./issues.ts"
 
 export const releasePath = (errors: ArkErrors): ArkErrors => errors
 
 // a size build's root apply, which errors "none" never writes
 export const applyIssues = (): never =>
 	throwInternalError('errors "none" applies no issues')
+
+// errors "none" reports each failure as InvalidErrors, finding no issues
+export const issuesOf = (): never =>
+	throwInternalError('errors "none" finds no issues')
 
 export class TraversalError extends Error {
 	declare readonly name: "TraversalError"
@@ -73,21 +72,3 @@ const issueOf = (path: PropertyKey[]): ArkIssue => ({
 })
 
 export { issueOf as issueAt }
-
-export const failsIn = (
-	ctx: FailureContext,
-	path: PropertyKey[],
-	apply: CompactApply,
-	value: unknown,
-	key: PropertyKey | undefined,
-	missing: FailureSite | undefined,
-	data: unknown
-): boolean | undefined => {
-	if (key === undefined) return !apply(value, ctx)
-	if (missing && value === undefined && !(key in (data as object)))
-		return ctx.failsAt(missing, data, key)
-	path.push(key)
-	const continues = apply(value, ctx)
-	path.pop()
-	return !continues
-}

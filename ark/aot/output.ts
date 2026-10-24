@@ -1,5 +1,4 @@
 import {
-	minifiedSizeOf,
 	precompileStandalone,
 	precompileStandaloneModules,
 	writeFixConfig,
@@ -18,6 +17,7 @@ import type {
 import { contains } from "./graph.ts"
 import { SourceModule } from "./module.ts"
 import { reasonsOf, type Site } from "./precompile.ts"
+import { minifiedSizeOf } from "./runtimeSize.ts"
 import { exportNameOf, type Binding } from "./scope.ts"
 
 export const noValidators: StandaloneModules = {

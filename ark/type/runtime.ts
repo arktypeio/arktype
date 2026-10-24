@@ -10,6 +10,7 @@ import {
 	enInfo,
 	errorsOf,
 	FirstIssues,
+	issuesOf,
 	mergeIssues,
 	messageOf,
 	problemOf,
@@ -683,14 +684,6 @@ const unreadOf = (Ctx: new () => ArkErrors): UnreadErrors => {
 	// keeps the prototype's own constructor, still not enumerable
 	Unread.prototype.constructor = Ctx
 	return Unread as never
-}
-
-const issuesOf = (apply: CompactApply, data: unknown, ctx: ArkErrors) => {
-	apply(data, ctx)
-	// data a write or a getter has made valid since fails as a whole
-	if (!ctx._.length) ctx.failsAt({ code: "predicate" }, data)
-	releasePath(ctx)
-	return ctx._
 }
 
 let unreadArkErrors: UnreadErrors | undefined

@@ -3,6 +3,7 @@ import MagicString, { type SourceMap } from "magic-string"
 import { parseSync, type Node } from "oxc-parser"
 import { renamedOf } from "./link.ts"
 import { SourceModule } from "./module.ts"
+import { minifiedLengthOf } from "./runtimeSize.ts"
 import {
 	exportNameOf,
 	ModuleScopes,
@@ -445,14 +446,6 @@ const unwrapParentheses = (node: Node): Node =>
 	:	node
 
 const runtimeSource = "arktype/runtime"
-
-// about the length a minifier leaves of code: no comments, spaces or names
-// longer than two characters
-const minifiedLengthOf = (code: string): number =>
-	code
-		.replace(/\/\*[\S\s]*?\*\/|\/\/[^\n]*/g, "")
-		.replace(/\s+/g, "")
-		.replace(/[$A-Z_a-z][\w$]{2,}/g, "ab").length
 
 const importsOf = (module: SourceModule): string[] =>
 	module.program.body.flatMap(statement =>
