@@ -22,6 +22,7 @@ import {
 	createNodeHost,
 	dependencyOf,
 	fileOf,
+	islandDependencySpecifier,
 	optedInPackagesOf,
 	precompiledDependencyOf,
 	packageNameOf,
@@ -30,6 +31,7 @@ import {
 	reportDiagnostics,
 	readsNodes,
 	resolvesToRuntime,
+	runsOnArktype,
 	resolvedVariantOf,
 	rethrowAsBuildError,
 	runtimePackages,
@@ -149,9 +151,23 @@ export const precompile: UnpluginInstance<
 		!opts?.shadow &&
 		(opts?.prune === true || (production && opts?.prune !== false))
 	let variant = resolvedVariantOf(opts)
-	let packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
-	// arktype left to Node loads as itself, not as the runtime validators use
-	let inlined = isStandalone ? [...runtimePackages, ...packages] : packages
+	let packages = optedInPackagesOf(
+		opts?.cwd ?? process.cwd(),
+		opts?.dependencies
+	)
+	// arktype left to Node loads as itself, not as the runtime validators use,
+	// and a package run on arktype must resolve it as the build does
+	const inlinedOf = () =>
+		isStandalone ?
+			[
+				...runtimePackages,
+				...packages,
+				...Object.keys(opts?.dependencies ?? {}).filter(
+					name => opts!.dependencies![name] === "arktype"
+				)
+			]
+		:	packages
+	let inlined = inlinedOf()
 	// the transform hook's filter, read once the bundler's root is set
 	const transformedFilter = transformedFilterOf(packages)
 	// ark.json and the packages that opt in are found from the bundler's root,
@@ -166,8 +182,8 @@ export const precompile: UnpluginInstance<
 		resolveIn(isDevelopment)
 		isStandalone = opts.runtime !== "arktype"
 		variant = resolvedVariantOf(opts)
-		packages = optedInPackagesOf(root)
-		inlined = isStandalone ? [...runtimePackages, ...packages] : packages
+		packages = optedInPackagesOf(root, opts.dependencies)
+		inlined = inlinedOf()
 		Object.assign(transformedFilter, transformedFilterOf(packages))
 		updateWorker()
 	}
@@ -438,8 +454,14 @@ export const precompile: UnpluginInstance<
 				for (const warning of diagnostics.warnings) this.warn(warning)
 				if (diagnostics.errors.length)
 					return refuse(diagnostics.errors.join("\n"))
-				if (isRuntime && resolvesToRuntime(id, opts) && !readsNodes(importer))
-					return host.resolve("arktype/runtime", importer)
+				if (isRuntime && resolvesToRuntime(id, opts) && !readsNodes(importer)) {
+					return host.resolve(
+						runsOnArktype(importer, opts?.dependencies) ?
+							islandDependencySpecifier
+						:	"arktype/runtime",
+						importer
+					)
+				}
 			}
 		},
 		load: {
@@ -778,12 +800,14 @@ export const precompile: UnpluginInstance<
 						const isRuntime = runtimeSpecifiers.includes(args.path)
 						const result = await build.resolve(
 							(
-								isRuntime &&
-									resolvesToRuntime(args.path, opts) &&
-									!readsNodes(args.importer)
+								!isRuntime ||
+									!resolvesToRuntime(args.path, opts) ||
+									readsNodes(args.importer)
 							) ?
-								"arktype/runtime"
-							:	args.path,
+								args.path
+							: runsOnArktype(args.importer, opts?.dependencies) ?
+								islandDependencySpecifier
+							:	"arktype/runtime",
 							{
 								kind: args.kind,
 								importer: args.importer,

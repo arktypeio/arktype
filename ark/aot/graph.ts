@@ -44,6 +44,7 @@ import {
 	dependencyOf,
 	optsIn,
 	printablePathOf,
+	type DependencyModes,
 	type PrecompileHost
 } from "./host.ts"
 import { SourceModule } from "./module.ts"
@@ -596,12 +597,19 @@ export class ModuleGraph {
 	private writesByBinding = new WeakMap<Binding, Node[]>()
 	private importsById: Record<string, string[]> = Object.create(null)
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
+	// how the program's settings build packages that don't opt in
+	dependencies: DependencyModes
 	private packageNamesByDir: Record<string, string | undefined> =
 		Object.create(null)
 
-	constructor(host: PrecompileHost, cwd?: string) {
+	constructor(
+		host: PrecompileHost,
+		cwd?: string,
+		dependencies: DependencyModes = {}
+	) {
 		this.host = host
 		this.cwd = cwd
+		this.dependencies = dependencies
 	}
 
 	pathOf(id: string): string {
@@ -678,14 +686,15 @@ export class ModuleGraph {
 		return this.modulesById[id]
 	}
 
-	// a module outside node_modules, or in a package whose package.json opts in
+	// a module outside node_modules, or in a package that opts in or the
+	// program's settings precompile
 	isFollowed(id: string): boolean {
-		const [root] = dependencyOf(id) ?? []
+		const [root, name] = dependencyOf(id) ?? []
 		return (
 			root === undefined ||
-			(this.optsInByPackage[root] ??= optsIn(
-				this.host.readFile(join(root, "package.json"))
-			))
+			(this.optsInByPackage[root] ??=
+				this.dependencies[name!] === "aot" ||
+				optsIn(this.host.readFile(join(root, "package.json"))))
 		)
 	}
 

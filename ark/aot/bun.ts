@@ -17,6 +17,7 @@ import {
 import { refuseDeclare } from "./declare.ts"
 import { isProductionEnv } from "./presets.ts"
 import {
+	refuseArktypeDependencies,
 	refusePrune,
 	resolvePrecompileOptions,
 	withSettingsFile
@@ -44,6 +45,7 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 	refuseDeclare(opts, "Bun")
 	const set = withSettingsFile(opts)
 	refusePrune(set, "Bun")
+	refuseArktypeDependencies(set, "Bun's runtime plugin")
 	opts = resolvePrecompileOptions(set)
 	return {
 		name: "arktype",
@@ -86,7 +88,9 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 					process.env.NODE_ENV === "test"
 				)
 			})
-			const { include, exclude } = transformedFilterOf(optedInPackagesOf(cwd))
+			const { include, exclude } = transformedFilterOf(
+				optedInPackagesOf(cwd, opts?.dependencies)
+			)
 			// a runtime plugin's onLoad must return a module
 			const filter = new RegExp(`^(?!.*${exclude.source}).*${include.source}`)
 			build.onLoad({ filter }, async ({ path }) => {

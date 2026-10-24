@@ -211,7 +211,7 @@ export const withPluginCalls = (
 			const other = setBy[key]
 			if (other && JSON.stringify(merged[key]) !== JSON.stringify(value)) {
 				throwBuildError(
-					`${call.position}  ${call.label} sets ${key} other than ${other.label} at ${other.position}, so --check can't tell which build to check\n  Pass the one to check as ${flagOf(key)}, or set it once in ark.json.`
+					`${call.position}  ${call.label} sets ${key} other than ${other.label} at ${other.position}, so --check can't tell which build to check\n  Pass the one to check as ${flagOf(key)}, or set it once in ark.json (or package.json's "ark" key).`
 				)
 			}
 			setBy[key] = call
@@ -222,7 +222,16 @@ export const withPluginCalls = (
 		...(merged.members as object),
 		...given.members
 	}
-	return { ...merged, ...given, ...(members && { members }) }
+	const dependencies = (merged.dependencies || given.dependencies) && {
+		...(merged.dependencies as object),
+		...given.dependencies
+	}
+	return {
+		...merged,
+		...given,
+		...(members && { members }),
+		...(dependencies && { dependencies })
+	}
 }
 
 const isGiven = (given: PrecompilePluginOptions, key: string) =>
@@ -235,10 +244,10 @@ const writeUnreadMessage = (call: PluginCall, keys: string[]): string => {
 		: `the ${keys.map(key => `\`${key}\``).join(", ")}`
 	const fix =
 		keys[0] === "*" ?
-			'Set the options in ark.json, as { "precompile": { ... } }'
+			'Set the options in ark.json (or package.json\'s "ark" key), as { "precompile": { ... } }'
 		: keys.length === 1 ?
-			`Set ${keys[0]} in ark.json, as { "precompile": { "${keys[0]}": ... } }`
-		:	'Set them in ark.json, as { "precompile": { ... } }'
+			`Set ${keys[0]} in ark.json (or package.json's "ark" key), as { "precompile": { "${keys[0]}": ... } }`
+		:	'Set them in ark.json (or package.json\'s "ark" key), as { "precompile": { ... } }'
 	const flag =
 		keys[0] === "*" ? "each to --check as a flag"
 		: keys.length === 1 ? `it to --check as ${flagOf(keys[0])}`

@@ -9,6 +9,7 @@ import {
 import { refuseDeclare } from "./declare.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
 import {
+	refuseArktypeDependencies,
 	refusePrune,
 	resolvePrecompileOptions,
 	withSettingsFile
@@ -55,6 +56,7 @@ const resolvedOptionsOf = (
 ): PrecompilePluginOptions => {
 	const set = withSettingsFile(given)
 	refusePrune(set, "Turbopack")
+	refuseArktypeDependencies(set, "Turbopack")
 	return resolvePrecompileOptions(
 		withEnvironment(set, { production, testing: false })
 	)

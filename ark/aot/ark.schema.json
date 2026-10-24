@@ -27,6 +27,13 @@
 					"type": "string",
 					"enum": ["helpers", "none", "types"]
 				},
+				"dependencies": {
+					"type": "object",
+					"additionalProperties": {
+						"type": "string",
+						"enum": ["aot", "arktype"]
+					}
+				},
 				"errors": { "type": "string", "enum": ["all", "first", "none"] },
 				"freeze": { "type": "boolean" },
 				"jsonInput": { "type": "boolean" },

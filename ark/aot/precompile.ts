@@ -100,9 +100,11 @@ import {
 	dependencyOf,
 	mapToSource,
 	readsNodes,
+	runsOnArktype,
 	runtimeVariantOf,
 	transformedId,
 	writeVariantOption,
+	type DependencyModes,
 	type PrecompileHost,
 	type RuntimeVariant
 } from "./host.ts"
@@ -226,6 +228,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	prune?: boolean | undefined
 	/** warn rather than fail where the output may throw at runtime */
 	allowUnsafe?: boolean | undefined
+	/** packages that don't opt in, precompiled ("aot") or run on arktype */
+	dependencies?: DependencyModes | undefined
 }
 
 // a bundle's modules, as the bundler resolves and transforms them
@@ -526,7 +530,7 @@ export class Precompiler {
 
 	constructor(host: PrecompileHost, opts: PrecompileOptions = {}) {
 		opts = resolvePrecompileOptions(opts)
-		this.graph = new ModuleGraph(host, opts.cwd)
+		this.graph = new ModuleGraph(host, opts.cwd, opts.dependencies)
 		this.interpreter = new Interpreter(this.graph, opts, module =>
 			this.readsOf(module)
 		)
@@ -1046,6 +1050,7 @@ export class Precompiler {
 		if (
 			this.mode === "standalone" &&
 			!readsNodes(importer) &&
+			!runsOnArktype(importer, this.graph.dependencies) &&
 			!this.reportedDependencies.has(dependency) &&
 			!this.readsOnlyRuntime(importer)
 		) {

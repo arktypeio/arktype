@@ -3,6 +3,7 @@ import { check } from "@ark/aot/internal/check.ts"
 import { writeVariantImportMessage } from "@ark/aot/internal/host.ts"
 import { withEnvironment } from "@ark/aot/internal/presets.ts"
 import {
+	refuseArktypeDependencies,
 	resolvePrecompileOptions,
 	withSettingsFile,
 	writeArktypeRuntimeOptionMessage
@@ -173,6 +174,105 @@ contextualize(() => {
 			)
 			attest(check([], { cwd: root }).lines[1]).snap(
 				'main.ts:3:1  T.assert reads assert, which a standalone validator lacks\n  the build\'s `members` option sets "assert" false, so no validator has assert\n  Leave members["assert"] unset if the program reads it.'
+			)
+		})
+	})
+
+	describe(`package.json's "ark" key`, () => {
+		const withArk = (ark: object, files: Record<string, string> = {}) =>
+			writeFixture({
+				"package.json": JSON.stringify({ name: "app", ark }),
+				...files
+			})
+
+		it("sets what ark.json would", () => {
+			const root = withArk({
+				aot: true,
+				precompile: { config: "src/config.ts", members: { assert: false } }
+			})
+			attest(withSettingsFile({ cwd: join(root, "src") })).snap({
+				config: join(root, "src", "config.ts"),
+				members: { assert: false },
+				cwd: join(root, "src")
+			} as never)
+		})
+
+		it("names the file and key it rejects", () => {
+			const root = withArk({ aot: false, precompile: { optimize: "small" } })
+			const path = join(root, "package.json")
+			attest(() => withSettingsFile({ cwd: root })).throws(
+				`${path}: ark.precompile.optimize must be "size" or "speed" (was "small")\n${path}: ark.aot must be true (was false)`
+			)
+		})
+
+		it("fails beside ark.json", () => {
+			const root = withArk(
+				{ precompile: {} },
+				{ "ark.json": JSON.stringify({ precompile: {} }) }
+			)
+			attest(() => withSettingsFile({ cwd: root })).throws(
+				`${join(root, "package.json")} sets "ark" and ${join(root, "ark.json")} is beside it, so the build can't tell which sets its options. Move ark.json's contents under package.json's "ark" key, or delete that key.`
+			)
+		})
+	})
+
+	describe("dependencies", () => {
+		it("merges the call's over the file's, by name", () => {
+			const root = withArkJson(
+				{ precompile: { dependencies: { a: "aot", b: "aot" } } },
+				{
+					"node_modules/a/package.json": "{}",
+					"node_modules/b/package.json": "{}"
+				}
+			)
+			attest(
+				withSettingsFile({ cwd: root, dependencies: { b: "arktype" } })
+					.dependencies
+			).equals({ a: "aot", b: "arktype" } as never)
+		})
+
+		it("names one the program can't resolve", () => {
+			const root = withArkJson({
+				precompile: { dependencies: { "drizzle-arktyp": "arktype" } }
+			})
+			attest(() => withSettingsFile({ cwd: root })).throws(
+				`precompile.dependencies names drizzle-arktyp, which can't be resolved from ${root}. Name a package the program depends on.`
+			)
+		})
+
+		it("runs none on arktype where errors have a runtime of their own", () => {
+			const dependencies = { tables: "arktype" } as const
+			attest(() =>
+				resolvePrecompileOptions({ dependencies, errors: "none" })
+			).throws(
+				'tables runs on arktype, whose errors aren\'t instances of type.errors under errors: "none". Precompile it with "aot" if its Types are static, or build without errors: "none".'
+			)
+			attest(() =>
+				resolvePrecompileOptions({ dependencies, preset: "smallest" })
+			).throws(
+				'tables runs on arktype, whose errors aren\'t instances of type.errors under optimizeErrors: "size". Precompile it with "aot" if its Types are static, or build with optimizeErrors: "speed".'
+			)
+			attest(() =>
+				resolvePrecompileOptions({ dependencies, runtime: "arktype" })
+			).throws(writeArktypeRuntimeOptionMessage("dependencies"))
+		})
+
+		it("runs none on arktype where every importer's arktype is replaced", () => {
+			attest(() =>
+				refuseArktypeDependencies(
+					{ dependencies: { tables: "arktype", lib: "aot" } },
+					"Turbopack"
+				)
+			).throws(
+				'precompile.dependencies runs tables on arktype, which Turbopack can\'t, as it replaces arktype for every importer. Build with runtime: "arktype", or with webpack.'
+			)
+			attest(() =>
+				refuseArktypeDependencies(
+					{ dependencies: { tables: "arktype" } },
+					"Bun's runtime plugin"
+				)
+			).throws(
+				"precompile.dependencies runs tables on arktype, which Bun's runtime plugin can't, as it replaces arktype for every importer. Build with runtime: \"arktype\", or with Bun.build and precompile.bun()."
 			)
 		})
 	})

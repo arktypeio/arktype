@@ -227,7 +227,7 @@ console.log(jsonSchemaOf(type({ a: "string" })))
 				fromHere("temp", "lackedJsonSchema")
 			)
 			attest(node(["main.ts"], {}, dir).stdout)
-				.snap(`~standard.jsonSchema isn't baked into this validator, which a library converting it to JSON Schema reads. Set "members": { "~standard.jsonSchema": true } in ark.json.
+				.snap(`~standard.jsonSchema isn't baked into this validator, which a library converting it to JSON Schema reads. Set "members": { "~standard.jsonSchema": true } under "precompile" in ark.json (or package.json's "ark" key).
 `)
 			attest(node(["main.ts"], {}, dir, { NODE_ENV: "production" }).stdout)
 				.snap(`undefined
