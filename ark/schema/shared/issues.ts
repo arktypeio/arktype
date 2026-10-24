@@ -213,6 +213,22 @@ export const issuesOf = (
 	return errors._
 }
 
+// where every failure's issues are read as it returns, as by assert or
+// ~standard, waiting buys nothing
+export const foundErrors = (
+	apply: CompactApply,
+	data: unknown,
+	onFail: ArkIssues.Handler | null,
+	Ctx: new () => ArkIssues
+): unknown => {
+	const errors = new Ctx()
+	// as issuesOf, which a program of these never ships
+	apply(data, errors)
+	if (!errors._.length) errors.failsAt({ code: "predicate" }, data)
+	releasedPath = errors._p
+	return onFail ? onFail(errors) : errors
+}
+
 interface ArkIssues {
 	/** @internal set by a build asking for only the first issue */
 	failFast?: true

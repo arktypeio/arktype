@@ -13,6 +13,8 @@ export const applyIssues = (): never =>
 export const issuesOf = (): never =>
 	throwInternalError('errors "none" finds no issues')
 
+export const foundErrors = issuesOf
+
 export class TraversalError extends Error {
 	declare readonly name: "TraversalError"
 	declare arkErrors: ArkErrors

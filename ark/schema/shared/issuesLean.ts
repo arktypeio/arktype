@@ -155,6 +155,17 @@ export const issuesOf = (
 	return errors._
 }
 
+export const foundErrors = (
+	apply: CompactApply,
+	data: unknown,
+	onFail: ((errors: ArkErrors) => unknown) | null,
+	Ctx: new () => ArkErrors
+): unknown => {
+	const errors = new Ctx()
+	issuesOf(apply, data, errors)
+	return onFail ? onFail(errors) : errors
+}
+
 // a root reporting into ArkErrors, as a size build applies it; they hold
 // no path to release
 export const applyIssues = (

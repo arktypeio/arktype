@@ -82,6 +82,7 @@ export {
 	FirstIssues,
 	FirstIssueTraversal,
 	fixConfig,
+	foundErrors,
 	fixConfigured,
 	holdsOnlyIndices,
 	InternalTraversal,
@@ -749,22 +750,6 @@ export const unreadErrors = (
 	Ctx: UnreadErrorsOf
 ): unknown => {
 	const errors = new (Ctx())(apply, data)
-	return onFail ? onFail(errors) : errors
-}
-
-// where every failure's issues are read as it returns, as by assert or
-// ~standard, waiting buys nothing
-export const foundErrors = (
-	apply: CompactApply,
-	data: unknown,
-	onFail: ArkErrors.Handler | null,
-	Ctx: new () => ArkErrors
-): unknown => {
-	const errors = new Ctx()
-	// as issuesOf, which a program of these never ships
-	apply(data, errors)
-	if (!errors._.length) errors.failsAt({ code: "predicate" }, data)
-	releasePath(errors)
 	return onFail ? onFail(errors) : errors
 }
 
