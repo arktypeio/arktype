@@ -537,11 +537,9 @@ export const categories: Category[] = [
 /** whether one build holds every category, the only time the board may say so */
 export const oneBuild = new Set(categories.map(c => c.build)).size === 1
 
-if (!isPending(claims.pickThree)) {
-	for (const category of boardOrder) assertLeads(category, "The hero")
-	if (!oneBuild) {
-		throw new Error(
-			`The hero claims one build leads every category, but the board's categories come from ${listOf([...new Set(categories.map(c => c.build))])}`
-		)
-	}
+// the blog post's assert above already holds every category's lead
+if (!isPending(claims.pickThree) && !oneBuild) {
+	throw new Error(
+		`The hero claims one build leads every category, but the board's categories come from ${listOf([...new Set(categories.map(c => c.build))])}`
+	)
 }
