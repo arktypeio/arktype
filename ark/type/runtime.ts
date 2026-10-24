@@ -563,7 +563,7 @@ export const failsIn = ((
 	ctx: FailureContext | undefined,
 	apply: CompactApply,
 	value: unknown,
-	key?: PropertyKey,
+	key: PropertyKey,
 	missing?: FailureSite,
 	data?: unknown
 ): boolean | undefined =>

@@ -51,7 +51,7 @@ export interface FailureContext {
 	failsIn(
 		apply: CompactApply,
 		value: unknown,
-		key?: PropertyKey,
+		key: PropertyKey,
 		missing?: FailureSite,
 		data?: unknown
 	): boolean | undefined
@@ -162,11 +162,10 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	failsIn(
 		apply: CompactApply,
 		value: unknown,
-		key?: PropertyKey,
+		key: PropertyKey,
 		missing?: FailureSite,
 		data?: unknown
 	): boolean | undefined {
-		if (key === undefined) return !apply(value, this)
 		if (missing && value === undefined && !(key in (data as object)))
 			return this.failsAt(missing, data, key, true)
 		this._p.push(key)

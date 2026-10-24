@@ -71,7 +71,6 @@ var ArkIssues = class {
 	}
 	/** @internal */
 	failsIn(apply, value, key, missing, data) {
-		if (key === void 0) return !apply(value, this)
 		if (missing && value === void 0 && !(key in data))
 			return this.failsAt(missing, data, key, true)
 		this._p.push(key)
@@ -1049,7 +1048,7 @@ var get0 = () => {
 	return (created0 ??= (() => {
 		const validator0 = create10n7yuw0bfhpvo(
 			intersection1mhdhln0ehkfkv,
-			"1b860ff1"
+			"10arifr1"
 		)
 		return validator0
 	})())
@@ -1058,7 +1057,7 @@ var get1 = () => {
 	return (created1 ??= (() => {
 		const validator0 = create10n7yuw0bfhpvo(
 			intersectionqms98d1vfykgm,
-			"xmqif716"
+			"11tsj320"
 		)
 		return validator0
 	})())
