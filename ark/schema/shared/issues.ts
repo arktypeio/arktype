@@ -149,7 +149,13 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		missing?: FailureSite,
 		data?: unknown
 	): boolean | undefined {
-		return failsIn(this, this._path, apply, value, key, missing, data)
+		if (key === undefined) return !apply(value, this)
+		if (missing && value === undefined && !(key in (data as object)))
+			return this.failsAt(missing, data, key, true)
+		this._path.push(key)
+		const continues = apply(value, this)
+		this._path.pop()
+		return !continues
 	}
 }
 
@@ -220,24 +226,6 @@ export const issueAt = (
 	context.text?.(issue)
 	if (key !== undefined) path.pop()
 	return issue
-}
-
-export const failsIn = (
-	ctx: FailureContext,
-	path: PropertyKey[],
-	apply: CompactApply,
-	value: unknown,
-	key: PropertyKey | undefined,
-	missing: FailureSite | undefined,
-	data: unknown
-): boolean | undefined => {
-	if (key === undefined) return !apply(value, ctx)
-	if (missing && value === undefined && !(key in (data as object)))
-		return ctx.failsAt(missing, data, key, true)
-	path.push(key)
-	const continues = apply(value, ctx)
-	path.pop()
-	return !continues
 }
 
 // a default's onFail, read from a standalone runtime
