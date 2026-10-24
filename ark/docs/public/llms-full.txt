@@ -1254,7 +1254,7 @@ TypeBox schemas are JSON Schema, so [JSON Schema](https://arktype.io/docs/migrat
 
 ## Yup
 
-Yup converts values unless `.strict()`, and treats a field as optional unless `.required()`. Translate what the data actually is: a form posting strings needs `"string.numeric.parse"` where Yup's `number()` converted.
+Yup converts values unless `.strict()`, and treats a field as optional unless `.required()`. Translate what the data actually is: a form posting strings needs `"string.numeric.parse"` where Yup's `number()` converted. Like Joi, Yup applies a default to a key present as `undefined`, where `"key": "T = x"` rejects it; [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ) has the pattern that keeps it.
 
 | Yup | ArkType |
 | - | - |
@@ -1279,7 +1279,7 @@ Yup converts values unless `.strict()`, and treats a field as optional unless `.
 
 ## Joi
 
-Joi rejects undeclared keys, rejects empty strings, and converts strings to numbers, booleans and dates unless `convert: false`. ArkType reads an ISO date-time without an offset as UTC, where Joi reads it in local time. It infers no types, so `typeof T.infer` replaces the interfaces written next to Joi schemas.
+Joi rejects undeclared keys, rejects empty strings, and converts strings to numbers, booleans and dates unless `convert: false`. ArkType reads an ISO date-time without an offset as UTC, where Joi reads it in local time. Joi also applies a default to a key present as `undefined`; see [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ). It infers no types, so `typeof T.infer` replaces the interfaces written next to Joi schemas.
 
 | Joi | ArkType |
 | - | - |
