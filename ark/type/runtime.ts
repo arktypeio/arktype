@@ -199,17 +199,22 @@ export class Validator {
 	}
 }
 
-// a Standard Schema consumer prefixes each issue's message with its path
+// a Standard Schema consumer prefixes each issue's message with its path.
+// arktype's errors write their messages as they're read. Others write an
+// issue's message only where it's the Standard one, so a pathed one needs none
 export const standardResultOf = (
 	out: unknown
 ): StandardSchemaV1.Result<unknown> =>
 	out instanceof ArkErrors ?
 		{
-			issues: out.issues.map(issue =>
-				issue.path.length === 0 || issue.message !== messageOf(issue) ?
-					issue
-				:	{ ...issue, message: problemOf(issue) }
-			)
+			issues: (out._issues ? (out.issues as ArkIssue[]) : out._).map(issue =>
+				(
+					issue.path.length &&
+					(issue.message === undefined || issue.message === messageOf(issue))
+				) ?
+					{ ...issue, message: problemOf(issue) }
+				:	((issue.message ??= messageOf(issue)), issue)
+			) as StandardSchemaV1.Issue[]
 		}
 	:	{ value: out }
 
