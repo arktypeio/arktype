@@ -22,11 +22,13 @@ import { disallowed } from "../runtime.ts"
 import { runtimeKeyOf } from "../standalone.ts"
 import { combines, writeCombinator } from "./combinators.ts"
 import {
+	isDescribed,
 	isInlineSite,
 	isKeyword,
 	issueContextOf,
 	issueSite,
 	issueSiteOf,
+	requiredIssue,
 	unionKeySiteOf,
 	withoutStrings,
 	writeSiteOf,
@@ -34,18 +36,10 @@ import {
 	type TextContext
 } from "./sites.ts"
 
-// a value holding no object, pattern, alias, predicate or morph, whose
-// Allows is a few checks
-const isLeaf = (node: BaseNode): boolean =>
-	isDecidedByAllows(node) &&
-	!node.includesCostly &&
-	!node.includesAlias &&
-	!Object.values(node.refsById).some(ref => ref.hasKind("structure"))
-
 class StandaloneCompiler extends TraversalCompiler {
 	override readonly reportsFirst: boolean = false
-	// a unit is named for its content as compiled without the gates and size
-	// forms that follow from it
+	// a unit is named for its content as compiled without the size forms that
+	// follow from it
 	readonly naming: boolean = this.linkage.unit === undefined
 
 	// whether a node's Apply is its Allows, as a unified build writes it
@@ -78,16 +72,20 @@ class StandaloneCompiler extends TraversalCompiler {
 			:	"false"
 	}
 
-	// a site of literals is built where it fails, and stays a ref the unit keys
+	// a site of literals, or a key's site of them, is built where it fails, and
+	// stays a ref the unit keys
 	siteRef(site: object): string {
 		const ref = this.ref(site)
-		return isInlineSite(site) ? writeSiteOf(site, JSON.stringify) : ref
-	}
-
-	// a leaf its Allows passes skips the path bookkeeping of applying it
-	override gate(value: BaseNode, arg: string): string | undefined {
-		if (!this.naming && isLeaf(value))
-			return `${this.traversal(value, "Allows")}(${arg})`
+		if (isInlineSite(site)) return writeSiteOf(site, JSON.stringify)
+		const { value, missing } = site as { value?: object; missing?: object }
+		return (
+				missing === requiredIssue &&
+					value &&
+					isInlineSite(value) &&
+					isDescribed(value)
+			) ?
+				writeSiteOf(value, JSON.stringify, "keySiteOf")
+			:	ref
 	}
 
 	// a keyword check adds no issues itself, so its Apply needn't count them
@@ -355,9 +353,6 @@ class UnifiedCompiler extends StandaloneCompiler {
 	// a key's union value is applied by its own traversal, which allows unpassed
 	override failingSiteOf(): undefined {}
 	override failingApplyOf(): undefined {}
-
-	// unpassed a ctx, failsIn allows a value itself
-	override gate(): undefined {}
 
 	// read where it fails, as a site is, so a unit needn't receive it
 	override fails(method: "failsAt" | "failsIn", args: string): string {
