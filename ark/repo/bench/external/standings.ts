@@ -64,11 +64,12 @@ for (const category of ["speed", "startup", "size"] as const) {
 		console.log(`  ${i + 1}. ${s.library} ${s.score.toFixed(3)}${partial}`)
 	}
 	// each suite's own scores, for where a library gains or loses
-	for (const [i, suite] of suites.entries())
+	for (const [i, suite] of suites.entries()) {
 		console.log(
 			`    ${suite.id} (${suite.rows.length}): ${Object.entries(scored[i])
 				.sort(([, l], [, r]) => l - r)
 				.map(([library, score]) => `${library} ${score.toFixed(3)}`)
 				.join(", ")}`
 		)
+	}
 }

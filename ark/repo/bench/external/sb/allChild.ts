@@ -33,35 +33,41 @@ for (const [dataType, data] of [
 	["invalid", errorData]
 ] as const) {
 	const valid = dataType === "valid"
-	for (const c of ensureArray(config.validation ?? []) as any[])
+	for (const c of ensureArray(config.validation ?? []) as any[]) {
 		cases[`validation|${dataType}||${label(c)}`] = {
 			run: () => c.run(data),
 			expect: result => result === valid
 		}
-	for (const [errorType, cs] of Object.entries(config.parsing ?? {}))
-		for (const c of ensureArray(cs as object) as any[])
+	}
+	for (const [errorType, cs] of Object.entries(config.parsing ?? {})) {
+		for (const c of ensureArray(cs as object) as any[]) {
 			cases[`parsing|${dataType}|${errorType}|${label(c)}`] = {
 				run: () => c.run(data),
 				expect: result => !!c.validateResult(result) === valid
 			}
-	for (const [errorType, cs] of Object.entries(config.standard ?? {}))
-		for (const c of ensureArray(cs as object) as any[])
+		}
+	}
+	for (const [errorType, cs] of Object.entries(config.standard ?? {})) {
+		for (const c of ensureArray(cs as object) as any[]) {
 			cases[`standard|${dataType}|${errorType}|${label(c)}`] = {
 				run: () => c.schema["~standard"].validate(data),
 				expect: result => !(result as any).issues === valid
 			}
+		}
+	}
 }
 for (const [dataType, data] of [
 	["valid", validStrings],
 	["invalid", invalidStrings]
 ] as const) {
-	for (const [format, cs] of Object.entries(config.string ?? {}))
+	for (const [format, cs] of Object.entries(config.string ?? {})) {
 		for (const c of ensureArray(cs as object) as any[]) {
 			let run: ((s: string) => unknown) | undefined
 			cases[`string|${dataType}|${format}|${label(c)}`] = {
 				run: () => (run ??= c.create())(data[format])
 			}
 		}
+	}
 }
 for (const c of ensureArray(config.codec ?? []) as any[]) {
 	cases[`codec|encode||${label(c)}`] = {
@@ -116,22 +122,24 @@ const isAsync = "result" in first && isThenable(c.run())
 const throws = "error" in first
 let sink: unknown
 const syncCycle = (count: number) => {
-	if (throws)
-		while (count--)
+	if (throws) {
+		while (count--) {
 			try {
 				sink = c.run()
 			} catch (e) {
 				sink = e
 			}
-	else while (count--) sink = c.run()
+		}
+	} else while (count--) sink = c.run()
 }
 const asyncCycle = async (count: number) => {
 	while (count--) sink = await c.run()
 }
 const blocks = async (count: number) => {
-	for (let i = 0; i < count; i++)
+	for (let i = 0; i < count; i++) {
 		if (isAsync) await asyncCycle(100)
 		else syncCycle(100)
+	}
 }
 const warmFrom = process.cpuUsage().user
 let warmCalls = 0

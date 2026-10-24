@@ -328,9 +328,10 @@ const assertLeads = (category: CategoryId, by: string) => {
 // the categories the headline's superlatives name, each of which ArkType
 // must lead on average once the headline isn't pending
 const headlineCategories: CategoryId[] = ["size", "speed"]
-if (!isPending(claims.headline))
+if (!isPending(claims.headline)) {
 	for (const category of headlineCategories)
 		assertLeads(category, "The headline")
+}
 
 /** the libraries the board compares against: with ArkType, the two that wrote Standard Schema */
 const isRival = (bar: BenchmarkBar) => /^(Valibot|Zod)\b/.test(bar.name)

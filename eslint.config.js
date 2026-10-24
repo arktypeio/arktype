@@ -28,7 +28,9 @@ export default tseslint.config(
 			"**/scratch/**/*",
 			"**/examples/**/*",
 			// generated programs
-			"ark/aot/__tests__/temp/programs/**/*"
+			"ark/aot/__tests__/temp/programs/**/*",
+			// schemabenchmarks.dev's files, linted by its clone
+			"ark/repo/bench/external/sb/precompiled/**/*"
 		]
 	},
 	eslint.configs.recommended,

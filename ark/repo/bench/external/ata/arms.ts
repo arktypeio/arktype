@@ -19,8 +19,8 @@ const { bodies } = await load("bodies/index.mjs")
 const { libs, make } = await load("impls/index.mjs")
 
 const count: Record<string, Arm> = {}
-for (const [sceneName, sc] of Object.entries(scenes))
-	for (const bodyName of Object.keys(bodies))
+for (const [sceneName, sc] of Object.entries(scenes)) {
+	for (const bodyName of Object.keys(bodies)) {
 		for (const lib of Object.keys(libs)) {
 			if (!(await make(lib, bodies[bodyName], sc.scene))) continue
 			const args = [
@@ -33,6 +33,8 @@ for (const [sceneName, sc] of Object.entries(scenes))
 			]
 			count[`ata ${sceneName}|${bodyName}|${lib}`] = { cwd: here, node, args }
 		}
+	}
+}
 mkdirSync(join(here, "..", "out"), { recursive: true })
 writeFileSync(
 	join(here, "..", "out", "ata-arms.json"),

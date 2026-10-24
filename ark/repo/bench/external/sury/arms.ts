@@ -11,12 +11,13 @@ const count: Record<string, Arm> = {}
 for (const bundle of ["cases", "arktype"]) {
 	const path = join(here, "out", `${bundle}.mjs`)
 	const { cases } = await import(path)
-	for (const key of Object.keys(cases))
+	for (const key of Object.keys(cases)) {
 		count[`sury ${key}`] = {
 			cwd: here,
 			node,
 			args: [join(here, "child.ts"), path, key]
 		}
+	}
 }
 mkdirSync(join(here, "..", "out"), { recursive: true })
 writeFileSync(

@@ -207,9 +207,10 @@ const sbCounts = Object.entries({
 const sbDownload: {
 	minified: { libraryName: string; note?: string; gzipBytes: number }[]
 } = read(join(here, sources.sbDownload))
-for (const r of sbDownload.minified)
+for (const r of sbDownload.minified) {
 	if (r.libraryName === "arktype/precompiled")
 		r.gzipBytes = arkType.sbDownload.gzipBytes
+}
 
 // Sury's schema benchmark: "parse X" and "build X" rows, sizes as built in
 // production
