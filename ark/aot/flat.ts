@@ -1,6 +1,6 @@
 import { hashOf } from "@ark/util"
 import MagicString, { type SourceMap } from "magic-string"
-import { parseSync, type Node, type Program } from "oxc-parser"
+import { parseSync, type Node, type Program, type Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
 import { renamedOf } from "./link.ts"
 import { SourceModule } from "./module.ts"
@@ -1096,11 +1096,12 @@ const writeFlat = (
 		} else flattenFactory(d)
 	}
 	// a unit read whole in the function is its members
+	const isFactoryArg = spansContaining(factories.flatMap(d => d.call.arguments))
 	for (const { id, binding } of scopes.references) {
 		if (
 			binding?.scope === scopes.root &&
 			membersOf.has(binding.name) &&
-			!isFactoryArg(id, factories)
+			!isFactoryArg(id)
 		)
 			replace(id, wholeOf(binding.name))
 	}
@@ -1662,10 +1663,29 @@ const isFunction = (node: Node) =>
 	node.type === "ClassExpression" ||
 	node.type === "ClassDeclaration"
 
-const isFactoryArg = (node: Node, factories: Factory[]): boolean =>
-	factories.some(d =>
-		d.call.arguments.some(arg => arg.start <= node.start && node.end <= arg.end)
-	)
+// whether a token is within any of the spans, from their union, as a token
+// can't run across the text between two spans
+const spansContaining = (
+	spans: readonly Span[]
+): ((token: Span) => boolean) => {
+	const union: Span[] = []
+	for (const span of [...spans].sort((l, r) => l.start - r.start)) {
+		const last = union.at(-1)
+		if (last && span.start <= last.end) last.end = Math.max(last.end, span.end)
+		else union.push({ start: span.start, end: span.end })
+	}
+	return token => {
+		let low = 0
+		let high = union.length - 1
+		while (low <= high) {
+			const mid = (low + high) >> 1
+			if (union[mid].end < token.end) low = mid + 1
+			else if (union[mid].start > token.start) high = mid - 1
+			else return true
+		}
+		return false
+	}
+}
 
 const pushTo = <k, v>(map: Map<k, v[]>, key: k, value: v) => {
 	const values = map.get(key)
