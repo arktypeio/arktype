@@ -161,6 +161,23 @@ export default defineConfig({
 
 Vitest runs tests through the same plugin.
 
+**esbuild**
+
+```ts
+import { precompile } from "@ark/aot/unplugin"
+import { build } from "esbuild"
+
+await build({
+	entryPoints: ["src/main.ts"],
+	// required, as precompiled modules import validators the bundle includes
+	bundle: true,
+	outfile: "dist/main.js",
+	plugins: [precompile.esbuild()]
+})
+```
+
+Put `precompile.esbuild()` ahead of any plugin that loads your TypeScript modules, since esbuild loads a module with the first plugin that returns it.
+
 **Rolldown**
 
 ```ts
@@ -232,23 +249,6 @@ export default {
 	plugins: [precompile.rspack()]
 }
 ```
-
-**esbuild**
-
-```ts
-import { precompile } from "@ark/aot/unplugin"
-import { build } from "esbuild"
-
-await build({
-	entryPoints: ["src/main.ts"],
-	// required, as precompiled modules import validators the bundle includes
-	bundle: true,
-	outfile: "dist/main.js",
-	plugins: [precompile.esbuild()]
-})
-```
-
-Put `precompile.esbuild()` ahead of any plugin that loads your TypeScript modules, since esbuild loads a module with the first plugin that returns it.
 
 **Bun**
 
