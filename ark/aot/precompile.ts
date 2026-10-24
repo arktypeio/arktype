@@ -235,6 +235,8 @@ export interface ScannedProgram {
 	modules: Record<string, ScannedModule>
 	// what each module's specifiers resolve to, where the bundle holds it
 	targets: Record<string, Record<string, string>>
+	// each module import() loads, which a bundler that splits builds as an entry
+	dynamicImports: string[]
 	// whether the bundle writes every module it holds into one file
 	isOneChunk?: boolean
 }

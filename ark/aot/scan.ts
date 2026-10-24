@@ -48,7 +48,7 @@ export const scanProgram = async (
 	}
 	const given = new Map(entries.map(entry => [add(entry.id), entry.source]))
 	// a module imported dynamically is a chunk of its own where a bundler splits
-	let importsDynamically = false
+	const dynamicImports = new Set<string>()
 	for (const [id, hostId] of pending) {
 		const source = given.get(id) ?? host.readFile(hostId)
 		if (source === undefined) return
@@ -66,8 +66,8 @@ export const scanProgram = async (
 			if (target === null || isInert(target, host)) continue
 			// e.g. a Vue component, which may read a validator the build can't see
 			if (!transformedId.test(target)) return
-			if (kind === "dynamic-import") importsDynamically = true
 			resolved[specifier] = add(target)
+			if (kind === "dynamic-import") dynamicImports.add(resolved[specifier])
 		}
 	}
 	return {
@@ -75,7 +75,8 @@ export const scanProgram = async (
 		entries: [...given.keys()],
 		modules,
 		targets,
-		isOneChunk: given.size === 1 && !importsDynamically
+		dynamicImports: [...dynamicImports],
+		isOneChunk: given.size === 1 && !dynamicImports.size
 	}
 }
 
@@ -190,7 +191,14 @@ export const unseenProblemOf = (
 	const pathOf = (id: string) =>
 		isAbsolute(id) ? printablePathOf(cwd, id) : id
 	for (const entry of imports.entries) {
-		if (entry === undefined || !scanned.entries.includes(entry)) {
+		// import() reads its module whole, as a read of an entry's exports does
+		if (
+			entry === undefined ||
+			!(
+				scanned.entries.includes(entry) ||
+				scanned.dynamicImports.includes(entry)
+			)
+		) {
 			return writeUnseenMessage(
 				`it built ${entry === undefined ? "an entry" : pathOf(entry)} as an entry`
 			)

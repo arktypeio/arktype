@@ -30,7 +30,7 @@ import {
 import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
-import { join, posix, win32 } from "node:path"
+import { join, posix, relative, win32 } from "node:path"
 import { stripVTControlCharacters } from "node:util"
 import { memoryHost, normalized, runCli, writeFixture } from "./utils.ts"
 
@@ -441,7 +441,8 @@ contextualize(function (this: Mocha.Suite) {
 						modules: {
 							"/app/main.ts": { source: "User({})", transformed: true }
 						},
-						targets: { "/app/main.ts": {} }
+						targets: { "/app/main.ts": {} },
+						dynamicImports: []
 					},
 					{ entries: ["/app/main.ts"], modules: ["/app/main.ts"], edges: [] },
 					loaded,
@@ -672,6 +673,43 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			attest(
 				"errors" in result && result.errors.map(error => error.text)
 			).equals([writeUnseenMessage("asserter.ts imports types.ts")])
+		})
+
+		it("prunes a module import() loads, which splitting builds as an entry", async () => {
+			const files = writeFixture(
+				{
+					"types.ts": types,
+					"reader.ts": `import { User } from "./types.ts"\n\nexport const read = () => User.allows({})\n`,
+					"main.ts": `const { read } = await import("./reader.ts")\n\nconsole.log(read())\n`
+				},
+				fromHere("temp", "prunedSplit")
+			)
+			const { outputFiles } = await build({
+				entryPoints: [join(files, "main.ts")],
+				absWorkingDir: files,
+				bundle: true,
+				splitting: true,
+				write: false,
+				outdir: join(files, "out"),
+				format: "esm",
+				conditions,
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ preset: "smallest", conditions })]
+			})
+			writeFixture(
+				Object.fromEntries(
+					outputFiles!.map(({ path, text }) => [relative(files, path), text])
+				),
+				files
+			)
+			attest(
+				spawnSync(process.execPath, [join(files, "out", "main.js")], {
+					encoding: "utf8"
+				}).stdout
+			).snap("false\n")
+			attest(
+				outputFiles!.some(({ text }) => text.includes("~standard"))
+			).equals(false)
 		})
 
 		it("reads an entry from stdin", async () => {
