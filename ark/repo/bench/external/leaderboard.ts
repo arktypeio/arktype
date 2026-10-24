@@ -9,17 +9,35 @@ const here = import.meta.dirname
 const docs = join(here, "..", "..", "..", "docs")
 
 // the stored results each suite reads: its rivals', which don't depend on
-// ArkType's build, and ArkType's rows, each measured again on one commit
+// ArkType's build, and ArkType's rows, each measured again on one commit. A
+// suite's rivals were measured twice, at the suite's pinned versions and at
+// each library's latest release on 2026-10-24, and each arm keeps the faster
+// run (README, "Versions")
 const sources = {
 	arkType: "results/arktype-808927feb.json",
-	counts: "results/counts-a306152ce.json",
+	counts: [
+		"results/counts-a306152ce.json",
+		"results/counts-latest-2026-10-24.json"
+	],
 	startup: "results/startup-808927feb-node24.json",
 	forms: "results/forms-642b4517e.json",
-	sbCounts: "results/sb-counts-6c5fd9862.json",
+	sbCounts: [
+		"results/sb-counts-6c5fd9862.json",
+		"results/sb-counts-latest-2026-10-24.json"
+	],
 	sbDownload: "results/sb-download-6c5fd9862.json",
-	suryCounts: "results/sury-counts-6c5fd9862.json",
-	surySize: "results/sury-size-6c5fd9862.json",
-	ataCounts: "results/ata-counts-6c5fd9862.json"
+	suryCounts: [
+		"results/sury-counts-6c5fd9862.json",
+		"results/sury-counts-latest-2026-10-24.json"
+	],
+	surySize: [
+		"results/sury-size-6c5fd9862.json",
+		"results/sury-size-latest-2026-10-24.json"
+	],
+	ataCounts: [
+		"results/ata-counts-pinned-2026-10-24.json",
+		"results/ata-counts-latest-2026-10-24.json"
+	]
 }
 
 const read = (path: string) => JSON.parse(readFileSync(path, "utf8"))
@@ -30,6 +48,18 @@ const median = (values: readonly number[]) => {
 	return sorted.length % 2 ?
 			sorted[middle]
 		:	(sorted[middle - 1] + sorted[middle]) / 2
+}
+
+// each arm's reps from the run with the lowest median
+const fastestOf = (paths: readonly string[]) => {
+	const reps: Record<string, number[]> = {}
+	for (const path of paths) {
+		for (const [arm, values] of Object.entries(
+			read(join(here, path)) as Record<string, number[]>
+		))
+			if (!reps[arm] || median(values) < median(reps[arm])) reps[arm] = values
+	}
+	return reps
 }
 
 // ArkType's other builds, left out of every row
@@ -105,7 +135,7 @@ const byCase = (entries: [string, number][]) => {
 const arkType = read(join(here, sources.arkType))
 
 const counts: Record<string, number[]> = {
-	...read(join(here, sources.counts)),
+	...fastestOf(sources.counts),
 	...arkType.moltar
 }
 const moltar = byCase(
@@ -186,7 +216,7 @@ const sbRows = (cases: [string, number][]) => {
 	return Object.entries(rows).map(([id, byArm]) => rowOf(id, byArm))
 }
 const sbCounts = Object.entries({
-	...read(join(here, sources.sbCounts)),
+	...fastestOf(sources.sbCounts),
 	...arkType.sbCounts
 } as Record<string, number[]>).map(([key, reps]): [string, number] => [
 	key,
@@ -203,7 +233,7 @@ for (const r of sbDownload.minified) {
 // Sury's schema benchmark: "parse X" and "build X" rows, sizes as built in
 // production
 const suryCounts = Object.entries({
-	...read(join(here, sources.suryCounts)),
+	...fastestOf(sources.suryCounts),
 	...arkType.suryCounts
 } as Record<string, number[]>).map(([key, reps]): [string, number] => [
 	key,
@@ -218,16 +248,24 @@ const suryRow = (id: string, prefix: string) =>
 				.map(([key, value]) => [key.slice(`sury ${prefix} `.length), value])
 		)
 	)
-const surySize: {
-	production: Record<string, { gzip: number }>
-} = read(join(here, sources.surySize))
-Object.assign(surySize.production, arkType.surySize)
+// each bundle's smallest production build of the two installs
+const surySize: Record<string, { gzip: number }> = {}
+for (const path of sources.surySize) {
+	const { production } = read(join(here, path)) as {
+		production: Record<string, { gzip: number }>
+	}
+	for (const [label, size] of Object.entries(production)) {
+		if (!surySize[label] || size.gzip < surySize[label].gzip)
+			surySize[label] = size
+	}
+}
+Object.assign(surySize, arkType.surySize)
 
 // ata's validator-benchmarks: a scene and a body per row; its arktype adapter
 // is the default precompiled build
 const ataRows = byCase(
 	Object.entries({
-		...read(join(here, sources.ataCounts)),
+		...fastestOf(sources.ataCounts),
 		...arkType.ataCounts
 	} as Record<string, number[]>).map(([key, reps]): [string, number] => {
 		const [scene, body, lib] = key.slice(4).split("|")
@@ -235,6 +273,7 @@ const ataRows = byCase(
 			lib === "arktype" ? "ArkType"
 			: lib === "typebox (Value.Check)" ? "TypeBox"
 			: lib.startsWith("ata") ? "ata"
+			: lib === "valibot (is)" ? "valibot"
 			: lib
 		return [`${scene}|${body} ${arm}`, median(reps)]
 	})
@@ -369,7 +408,7 @@ const suites = [
 			rowOf(
 				"schema",
 				Object.fromEntries(
-					Object.entries(surySize.production)
+					Object.entries(surySize)
 						.filter(([label]) => label.endsWith(" schema"))
 						.map(([label, { gzip }]) => [
 							label.slice(0, -" schema".length),

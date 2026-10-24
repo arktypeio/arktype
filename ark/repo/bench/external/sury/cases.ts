@@ -1,8 +1,9 @@
 // Sury's schema benchmark (packages/benchmarks/topics/schema.ts at 1f035c5),
-// its performance rows verbatim: "parse" is "Parse with a schema you already
-// have", "build" is "Build the schema and parse once". bundle.ts bundles it
-// against the suite's own installs (SURY_BENCH's node_modules, sury from its
-// working tree); arktype.ts is the same ArkType arm, precompiled
+// its performance rows verbatim plus z.compile's: "parse" is "Parse with a
+// schema you already have", "build" is "Build the schema and parse once".
+// bundle.ts bundles it against the suite's own installs (SURY_BENCH's
+// node_modules, sury from its working tree); arktype.ts is the same ArkType
+// arm, precompiled
 import { Type } from "@sinclair/typebox"
 import { TypeCompiler } from "@sinclair/typebox/compiler"
 import { Value } from "@sinclair/typebox/value"
@@ -82,10 +83,14 @@ const ARKTYPE = type({
 
 const suryParse = S.parseOrThrow(SURY)
 const typeboxCheck = TypeCompiler.Compile(TYPEBOX)
+// z.compile, Zod's compiled mode, which the suite predates: added as ArkType's
+// arm is, so Zod is measured in its fastest mode too
+const zodCompiled = z.compile(ZOD)
 
 export const cases: Record<string, () => unknown> = {
 	"parse Sury": () => suryParse(VALUE),
 	"parse Zod": () => ZOD.parse(VALUE),
+	"parse Zod (compiled)": () => zodCompiled.parse(VALUE),
 	"parse TypeBox": () => typeboxCheck.Check(VALUE),
 	"parse Valibot": () => v.parse(VALIBOT, VALUE),
 	"parse ArkType (dynamic)": () => ARKTYPE.assert(VALUE),
@@ -116,6 +121,24 @@ export const cases: Record<string, () => unknown> = {
 					bool: z.boolean()
 				})
 			})
+			.parse(VALUE),
+	"build Zod (compiled)": () =>
+		z
+			.compile(
+				z.object({
+					number: z.number(),
+					negNumber: z.number(),
+					maxNumber: z.number(),
+					string: z.string(),
+					longString: z.string(),
+					boolean: z.boolean(),
+					deeplyNested: z.object({
+						foo: z.string(),
+						num: z.number(),
+						bool: z.boolean()
+					})
+				})
+			)
 			.parse(VALUE),
 	"build TypeBox": () => Value.Check(TYPEBOX, VALUE),
 	"build Valibot": () =>
