@@ -99,7 +99,7 @@ Composite kinds are built from other nodes:
 
 ### Constraints
 
-Constraint nodes sit on an intersection and narrow what its [basis](#bases) allows. Each needs the basis listed under **requires**. Methods like `.divisibleBy()` throw when a Type's basis doesn't match. In a schema, pair each constraint with its basis yourself.
+Constraint nodes sit on an intersection and narrow what its [basis](https://arktype.io/docs/internals/nodes#bases) allows. Each needs the basis listed under **requires**. Methods like `.divisibleBy()` throw when a Type's basis doesn't match. In a schema, pair each constraint with its basis yourself.
 
 #### Refinements
 
@@ -118,7 +118,7 @@ Refinements apply to the intersection itself:
 | `before` | `Date` | Dates at or before `rule` | `{ rule: new Date("2030-01-01") }` |
 | `notEqual` | `number \| Date` | Numbers or Dates other than `rule` | `{ rule: 0 }` |
 | `notEqualLength` | `string \| Array` | Other than `rule` characters or elements | `{ rule: 3 }` |
-| `structure` | `object` | Objects whose props and elements match its [structural](#structural) children | `{ required: [...] }` |
+| `structure` | `object` | Objects whose props and elements match its [structural](https://arktype.io/docs/internals/nodes#structural) children | `{ required: [...] }` |
 | `predicate` | | Data a custom `narrow` function accepts | `{ predicate: n => n % 2 === 1 }` |
 
 In an intersection's schema, the constraint's kind is its key and a bare rule is shorthand, so `{ domain: "number", divisor: 2 }` is `{ domain: "number", divisor: { rule: 2 } }`. A `structure`'s keys sit directly on the intersection: `{ domain: "object", required: [...], undeclared: "reject" }`.

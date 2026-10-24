@@ -5,6 +5,7 @@ import type {
 	Nodes,
 	Paragraph,
 	Parent,
+	PhrasingContent,
 	Root,
 	RootContent,
 	Table
@@ -120,13 +121,21 @@ const jsonAttr = <t>(node: Jsx, name: string): t | undefined => {
 	return value === undefined ? undefined : JSON.parse(value)
 }
 
+/** text with each URL in it as a link, which Markdown writes unescaped */
+const phrasing = (text: string): PhrasingContent[] =>
+	text
+		.split(/(https?:\/\/[^\s)]*[^\s).,;:])/)
+		.filter(Boolean)
+		.map(part =>
+			/^https?:\/\//.test(part) ?
+				{ type: "link", url: part, children: [{ type: "text", value: part }] }
+			:	{ type: "text", value: part }
+		)
+
 const paragraph = (text: string, strong = false): Paragraph => ({
 	type: "paragraph",
-	children: [
-		strong ?
-			{ type: "strong", children: [{ type: "text", value: text }] }
-		:	{ type: "text", value: text }
-	]
+	children:
+		strong ? [{ type: "strong", children: phrasing(text) }] : phrasing(text)
 })
 
 const linkItem = (title: string, href: string, description?: string): List => ({
@@ -165,9 +174,7 @@ const table = (header: string[], rows: (string | RootContent)[][]): Table => ({
 		children: cells.map(cell => ({
 			type: "tableCell",
 			children: [
-				typeof cell === "string" ?
-					{ type: "text", value: cell }
-				:	(cell as never)
+				...(typeof cell === "string" ? phrasing(cell) : [cell as never])
 			]
 		}))
 	}))
@@ -176,22 +183,38 @@ const table = (header: string[], rows: (string | RootContent)[][]): Table => ({
 const claimMarkdown = (claim: Claim<string>) =>
 	`${draftOf(claim)}${isPending(claim) ? " (pending)" : ""}`
 
-const claimChartMarkdown = (chart: BenchmarkChart): RootContent => ({
-	type: "list",
-	ordered: false,
-	spread: false,
-	children: [
-		`${chart.title} (${chart.unit}, lower is better): ${claimMarkdown(chart.detail).replace(/\.$/, "")}. Source: ${chart.source.label}, ${chart.source.href}`,
-		...chart.bars.map(
-			bar =>
-				`${bar.name}: ${bar.value === null ? "pending" : bar.value.toLocaleString("en-US")}`
-		)
-	].map(text => ({
-		type: "listItem",
+/** a chart's caption, then its bars as a list */
+const claimChartMarkdown = (chart: BenchmarkChart): RootContent[] => [
+	{
+		type: "paragraph",
+		children: [
+			{ type: "strong", children: [{ type: "text", value: chart.title }] },
+			{
+				type: "text",
+				value: ` (${chart.unit}, lower is better): ${claimMarkdown(chart.detail).replace(/\.$/, "")}. Source: `
+			},
+			{
+				type: "link",
+				url: chart.source.href,
+				children: [{ type: "text", value: chart.source.label }]
+			}
+		]
+	},
+	{
+		type: "list",
+		ordered: false,
 		spread: false,
-		children: [paragraph(text)]
-	}))
-})
+		children: chart.bars.map(bar => ({
+			type: "listItem",
+			spread: false,
+			children: [
+				paragraph(
+					`${bar.name}: ${bar.value === null ? "pending" : bar.value.toLocaleString("en-US")}`
+				)
+			]
+		}))
+	}
+]
 
 const calloutLabels: Record<string, string> = {
 	info: "Note",
@@ -333,7 +356,7 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 			]
 		case "ClaimCharts":
 			return [
-				...[speedChart, sizeChart].map(claimChartMarkdown),
+				...[speedChart, sizeChart].flatMap(claimChartMarkdown),
 				paragraph(
 					`${claimMarkdown(claims.chartsSummary)} The charts come from different builds: each names its benchmark and the options it was built with.`
 				)

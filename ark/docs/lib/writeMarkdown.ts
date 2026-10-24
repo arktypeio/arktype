@@ -80,7 +80,13 @@ export const writeMarkdown = (): void => {
 			[
 				`# ${section.title}`,
 				`> ${section.description}`,
-				...section.pages.map(page => markdownByUrl.get(page.url)!.trim())
+				...section.pages.map(page =>
+					// a link to a heading on its own page is ambiguous among every page
+					markdownByUrl
+						.get(page.url)!
+						.trim()
+						.replaceAll("](#", `](${siteUrl}${page.url}#`)
+				)
 			].join("\n\n") + "\n"
 		)
 	}

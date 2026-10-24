@@ -518,9 +518,9 @@ Flags and options passed to `setup` both override environment variables. Avoid s
 
 | Option | Default | Effect |
 | - | - | - |
-| `skipTypes` | `false` | Skip type-checking in `setup` and every type assertion. See [below](#skiptypes). |
-| `onlyNamedTestFiles` | `false` | Type-check only the test files named on the command line. See [below](#onlynamedtestfiles). |
-| `checker` | see [below](#checker) | The type checker to analyze with: `"tsjs"`, `"tsgo"` or `"tsrs"`. |
+| `skipTypes` | `false` | Skip type-checking in `setup` and every type assertion. See [below](https://arktype.io/docs/attest/options#skiptypes). |
+| `onlyNamedTestFiles` | `false` | Type-check only the test files named on the command line. See [below](https://arktype.io/docs/attest/options#onlynamedtestfiles). |
+| `checker` | see [below](https://arktype.io/docs/attest/options#checker) | The type checker to analyze with: `"tsjs"`, `"tsgo"` or `"tsrs"`. |
 | `updateSnapshots` | `false` | Rewrite every snapshot and bench baseline with the current value. Also `-u` or `--update`. |
 | `failOnMissingSnapshots` | `true` if `CI` is set | Throw on a `.snap()` with no value rather than populating it. |
 | `tsconfig` | nearest `tsconfig.json` | Path of the tsconfig to analyze. By default, attest looks in the working directory, then its parents. `null` ignores tsconfig files and uses only `compilerOptions`. |
@@ -533,7 +533,7 @@ Flags and options passed to `setup` both override environment variables. Avoid s
 | `filter` | none | Run only the bench with this name. |
 | `formatCmd` | `npm exec --no -- prettier --write` | Command run on each file attest writes snapshots into. |
 | `shouldFormat` | `true` | Whether to run `formatCmd`. |
-| `typeToStringFormat` | `{}` | Prettier options for type strings. See [below](#typetostringformat). |
+| `typeToStringFormat` | `{}` | Prettier options for type strings. See [below](https://arktype.io/docs/attest/options#typetostringformat). |
 
 `getDefaultAttestConfig()` returns the defaults, and the `AttestConfig` type describes what `setup` accepts. `setup` analyzes only files under the working directory.
 

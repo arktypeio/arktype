@@ -102,10 +102,10 @@ A [precompiled](https://arktype.io/docs/precompile) validator has `toJsonSchema(
 
 | option | default | effect |
 | - | - | - |
-| `target` | `"draft-2020-12"` | what to write, `"draft-2020-12"`, `"draft-07"` or [`"openapi-3.0"`](#openapi-30) |
+| `target` | `"draft-2020-12"` | what to write, `"draft-2020-12"`, `"draft-07"` or [`"openapi-3.0"`](https://arktype.io/docs/json-schema/to-json-schema#openapi-30) |
 | `dialect` | the target's URL | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL |
-| `useRefs` | `false` | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref` |
-| `fallback` | throws | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks) |
+| `useRefs` | `false` | write every part once under `$defs`, not only [cyclic aliases](https://arktype.io/docs/json-schema/to-json-schema#cyclic-types), and point to it with `$ref` |
+| `fallback` | throws | what to write for a part JSON Schema can't express. See [Fallbacks](https://arktype.io/docs/json-schema/to-json-schema#fallbacks) |
 
 ### target
 
@@ -152,7 +152,7 @@ Pair.toJsonSchema({ target: "draft-07" })
 
 `nullable` adds `null` only to the `type` beside it, and an `enum` there must list `null` too. A union whose other branches share no `type`, like `string | number | null`, keeps `null` as a branch of its `anyOf`. OpenAPI 3.0 has no `null` type, so `null` alone is written as zod writes it: a `nullable` string whose `enum` allows only `null`.
 
-What OpenAPI 3.0 can't express goes to a [fallback](#fallbacks), so `toJsonSchema()` throws for it by default:
+What OpenAPI 3.0 can't express goes to a [fallback](https://arktype.io/docs/json-schema/to-json-schema#fallbacks), so `toJsonSchema()` throws for it by default:
 
 - A tuple's elements, since `items` is one schema for every element, go to `arrayPrefix`.
 - `patternProperties` and `propertyNames` go to `indexKey`. A `string` index signature with no declared keys is still `additionalProperties`.
@@ -200,7 +200,7 @@ Pair.toJsonSchema({
 })
 ```
 
-[`jsonSchema` meta](#your-own-schema) is written as configured, so `string.json`'s `contentMediaType`, which OpenAPI 3.0 lacks, is too.
+[`jsonSchema` meta](https://arktype.io/docs/json-schema/to-json-schema#your-own-schema) is written as configured, so `string.json`'s `contentMediaType`, which OpenAPI 3.0 lacks, is too.
 
 ### dialect
 
@@ -269,13 +269,13 @@ const schema = types.Node.toJsonSchema()
 | `{ role: "string = 'user'" }` | `default: "user"` on `role` |
 | `.describe("...")`, `.configure({ title, examples })` | `description`, `title`, `examples` |
 
-JSON Schema's `pattern` has no flags. `d` and `g` don't change what a regex matches, so they're left out, as is `u` for draft 2020-12, whose patterns are read with it. Any other flag, like `i` in `/^a/i`, goes to the [`patternFlags`](#fallback-codes) fallback.
+JSON Schema's `pattern` has no flags. `d` and `g` don't change what a regex matches, so they're left out, as is `u` for draft 2020-12, whose patterns are read with it. Any other flag, like `i` in `/^a/i`, goes to the [`patternFlags`](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes) fallback.
 
 An index signature applies to every key, including declared ones. JSON Schema skips declared keys in `additionalProperties`, so an index signature next to declared keys is written as `patternProperties` with a pattern every key matches.
 
-A keyword's `format`, `contentEncoding` or `contentMediaType` names what its strings are. JSON Schema reads each as an annotation, which a validator doesn't check unless it's configured to, so it's written whether or not arktype's check matches the standard's definition exactly. A keyword checked by a regex is written with that `pattern` too, so a validator that ignores formats still checks what arktype does. One checked by a function is written as its format alone: `string.date` accepts whatever `Date` parses, and `string.url` whatever `URL.canParse` does, so their schemas accept strings the Type rejects. A validator that asserts formats, like Ajv with `ajv-formats`, can also reject strings arktype accepts, where a format's RFC differs from arktype's check: `date-time` requires a time that `string.date` and `string.date.iso` don't, and `uri` rejects the space in a path that `string.url` accepts. Keywords no format names, like `string.date.epoch` or `string.creditCard`, go to the [`predicate`](#fallback-codes) fallback.
+A keyword's `format`, `contentEncoding` or `contentMediaType` names what its strings are. JSON Schema reads each as an annotation, which a validator doesn't check unless it's configured to, so it's written whether or not arktype's check matches the standard's definition exactly. A keyword checked by a regex is written with that `pattern` too, so a validator that ignores formats still checks what arktype does. One checked by a function is written as its format alone: `string.date` accepts whatever `Date` parses, and `string.url` whatever `URL.canParse` does, so their schemas accept strings the Type rejects. A validator that asserts formats, like Ajv with `ajv-formats`, can also reject strings arktype accepts, where a format's RFC differs from arktype's check: `date-time` requires a time that `string.date` and `string.date.iso` don't, and `uri` rejects the space in a path that `string.url` accepts. Keywords no format names, like `string.date.epoch` or `string.creditCard`, go to the [`predicate`](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes) fallback.
 
-A key that isn't `string` or a single regex, like `[string <= 3]`, needs `propertyNames`, which checks every key of the object. That's only the same thing when every key must match it: undeclared keys are rejected, it's the only index signature, and every declared key matches it. Any other such key goes to the [`indexKey`](#fallback-codes) fallback.
+A key that isn't `string` or a single regex, like `[string <= 3]`, needs `propertyNames`, which checks every key of the object. That's only the same thing when every key must match it: undeclared keys are rejected, it's the only index signature, and every declared key matches it. Any other such key goes to the [`indexKey`](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes) fallback.
 
 ## Your own schema
 
@@ -299,7 +299,7 @@ Some things a Type checks have no JSON Schema equivalent: a `Date`, a `bigint`, 
 type({ at: "Date" }).toJsonSchema() // throws ToJsonSchemaError (code "date")
 ```
 
-Pass a handler for its [code](#fallback-codes) to write something instead. The handler receives the schema written so far as `ctx.base`, plus fields for its code, and returns the schema to use:
+Pass a handler for its [code](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes) to write something instead. The handler receives the schema written so far as `ctx.base`, plus fields for its code, and returns the schema to use:
 
 ```ts
 const Event = type({ name: "string", at: "Date" })
