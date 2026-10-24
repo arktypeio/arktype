@@ -298,7 +298,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	)
 
 	private _orderedProps: array<Prop.Node> | undefined
-	// props in the order an output object lists them
+	// props in the order they're checked and an output object lists them
 	get orderedProps(): array<Prop.Node> {
 		return (this._orderedProps ??=
 			this.order ? orderProps(this.props, this.order) : this.props)
@@ -326,7 +326,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	private _allowsProps: array<Prop.Node> | undefined
 	get allowsProps(): array<Prop.Node> {
-		return (this._allowsProps ??= orderedForAllows(this.props))
+		return (this._allowsProps ??= orderedForAllows(this.orderedProps))
 	}
 
 	private _propsByKey: Record<Key, Prop.Node | undefined> | undefined
@@ -572,7 +572,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		transformsKeys = true
 	): boolean {
 		const errorCount = ctx?.currentErrorCount ?? 0
-		const props = traversalKind === "Allows" ? this.allowsProps : this.props
+		const props =
+			traversalKind === "Allows" ? this.allowsProps : this.orderedProps
 		for (let i = 0; i < props.length; i++) {
 			const prop = props[i]
 			if (traversalKind === "Allows") {
@@ -681,8 +682,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			return (out[k] = transformed)
 		}
 		const hasIndexedProp = this.hasIndexedProp
-		for (let i = 0; i < this.props.length; i++) {
-			const prop = this.props[i]
+		const props = this.orderedProps
+		for (let i = 0; i < props.length; i++) {
+			const prop = props[i]
 			if (!hasIndexedProp) {
 				if (prop.value.transforms && prop.key in data)
 					transformKey(prop.key, data[prop.key as never], prop.value)
@@ -756,7 +758,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	applySharedKeys(data: object, ctx: InternalTraversal): boolean {
 		const errorCount = ctx.currentErrorCount
 		this._traverse("Apply", data, ctx, false)
-		for (const prop of this.props)
+		for (const prop of this.orderedProps)
 			if (prop.key in data) this.transformSharedKey(data, prop.key, ctx)
 		for (const k of ownKeysOf(data))
 			if (!(k in this.propsByKey)) this.transformSharedKey(data, k, ctx)
@@ -1049,7 +1051,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	private propsOf(js: NodeCompiler): array<Prop.Node> {
 		return js.traversalKind === "Allows" || js.reportsFirst ?
 				this.allowsProps
-			:	this.props
+			:	this.orderedProps
 	}
 
 	// a structure with nothing to loop over holds only while each child does
@@ -1068,7 +1070,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	private compileTransform(js: NodeCompiler): void {
-		const transformedProps = this.props.filter(
+		const transformedProps = this.orderedProps.filter(
 			prop => this.transformsOf(prop).length
 		)
 		const transformedIndex =

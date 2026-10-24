@@ -79,13 +79,16 @@ const pipeEncoder = (encoder: BaseRoot, next: BaseRoot): BaseRoot =>
 	: next.isUnknown() ? encoder
 	: encoder.rawPipeOnce(next)
 
-// a defaulted key or element is always present in what was decoded
+// a defaulted key or element is always present in what was decoded, where
+// it keeps its place
 const requireDefaulted = (inner: Structure.Inner): Structure.Inner => {
-	const props = [...(inner.required ?? []), ...(inner.optional ?? [])]
+	if (!inner.optional) return inner
+	const props = [...(inner.required ?? []), ...inner.optional]
 	return {
 		...inner,
 		required: props.filter(prop => prop.hasKind("required")),
-		optional: props.filter(prop => prop.hasKind("optional"))
+		optional: props.filter(prop => prop.hasKind("optional")),
+		order: inner.order ?? props.map(prop => prop.key)
 	} as never
 }
 

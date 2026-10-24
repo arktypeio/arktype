@@ -79,9 +79,9 @@ contextualize(() => {
 		const T = type({ "a b": "string", a: "number" })
 
 		attest(T.expression).snap("{ a: number, a b: string }")
-		attest(T({}).toString()).snap(
-			'a must be a number (was missing)\nvalue at ["a b"] must be a string (was missing)'
-		)
+		attest(T({}).toString())
+			.snap(`value at ["a b"] must be a string (was missing)
+a must be a number (was missing)`)
 		// where JSON escapes a character, its order and the code units' differ
 		const keys = type({
 			"a\uD800": "1",
@@ -147,7 +147,7 @@ contextualize(() => {
 			attest(T.allows(data)).equals(true)
 			return [...new Set(reads)]
 		}
-		attest(readsOf($.narrowed)).equals(["c", "a", "inner"])
+		attest(readsOf($.narrowed)).equals(["a", "inner", "c"])
 		attest(readsOf($.unnarrowed)).equals(["c", "inner", "a"])
 	})
 

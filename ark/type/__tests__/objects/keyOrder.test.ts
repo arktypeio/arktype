@@ -173,4 +173,95 @@ contextualize(() => {
 		attest(keysOf(schema.properties)).snap(["a", "c", "b"])
 		attest(schema.required).snap(["a", "c"])
 	})
+
+	it("issues are reported as keys are declared", () => {
+		const T = type({ name: "string", age: "number", id: "string" })
+		attest(T({}).toString()).snap(`name must be a string (was missing)
+age must be a number (was missing)
+id must be a string (was missing)`)
+	})
+
+	it("an optional key's issue keeps its place among required ones", () => {
+		const T = type({ "a?": "string", b: "string", "c?": "string" })
+		attest(T({ a: 1, c: 1 }).toString()).snap(`a must be a string (was a number)
+b must be a string (was missing)
+c must be a string (was a number)`)
+	})
+
+	it("types declaring keys in other orders report their own, whichever came first", () => {
+		const summariesOf = (first: object, second: object) => {
+			const $ = scope({})
+			const types = [$.type(first), $.type(second)]
+			return types.map(T => String(T({})))
+		}
+		const ba = { b: "string", a: "string" }
+		const ab = { a: "string", b: "string" }
+		attest(summariesOf(ba, ab)).snap([
+			"b must be a string (was missing)\na must be a string (was missing)",
+			"a must be a string (was missing)\nb must be a string (was missing)"
+		])
+		attest(summariesOf(ab, ba)).snap([
+			"a must be a string (was missing)\nb must be a string (was missing)",
+			"b must be a string (was missing)\na must be a string (was missing)"
+		])
+	})
+
+	it("a nested object reports as it declares", () => {
+		const T = type({ z: { y: "string", x: "string" }, a: "string" })
+		attest(T({ z: {} }).toString()).snap(`z.y must be a string (was missing)
+z.x must be a string (was missing)
+a must be a string (was missing)`)
+	})
+
+	it("an intersection reports its left operand's keys, then the right's new ones", () => {
+		const T = type({ b: "string", a: "string" }).and({
+			c: "string",
+			a: "string"
+		})
+		attest(T({}).toString()).snap(`b must be a string (was missing)
+a must be a string (was missing)
+c must be a string (was missing)`)
+	})
+
+	it("a merge reports as a spread lists keys", () => {
+		const T = type({ c: "string", b: "string" }).merge({
+			a: "string",
+			c: "number"
+		})
+		attest(T({}).toString()).snap(`c must be a number (was missing)
+b must be a string (was missing)
+a must be a string (was missing)`)
+	})
+
+	it("pick and omit report in their source's order", () => {
+		const T = type({ z: "string", y: "string", x: "string" })
+		attest(T.pick("x", "z")({}).toString()).snap(
+			"z must be a string (was missing)\nx must be a string (was missing)"
+		)
+		attest(T.omit("y")({}).toString()).snap(
+			"z must be a string (was missing)\nx must be a string (was missing)"
+		)
+	})
+
+	it("declared keys are reported before an index signature's", () => {
+		const T = type({ "[/^x/]": "number", b: "string", a: "string" })
+		attest(T({ x: "x", a: 1, b: 1 }).toString())
+			.snap(`b must be a string (was a number)
+a must be a string (was a number)
+x must be a number (was a string)`)
+	})
+
+	it("morphs run and report as keys are declared", () => {
+		const calls: string[] = []
+		const failing = (k: string) =>
+			type("string").pipe((s, ctx) => {
+				calls.push(k)
+				return ctx.error(`valid for ${k}`)
+			})
+		const T = type({ b: failing("b"), a: failing("a") })
+		attest(T({ a: "", b: "" }).toString()).snap(
+			'b must be valid for b (was "")\na must be valid for a (was "")'
+		)
+		attest(calls).snap(["b", "a"])
+	})
 })

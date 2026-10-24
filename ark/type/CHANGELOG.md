@@ -1857,6 +1857,19 @@ T({ a: "1", z: 0, c: 1, b: "2" })
 
 A spread, `.merge()` or `.and()` lists the left object's keys, then the right's new ones, as `{ ...left, ...right }` would, and `.pick()`, `.omit()`, `.partial()` and `.required()` keep their source's order. Defaults missing from data are added in the order they're declared, after the input's keys where undeclared keys are kept. A Type's `expression`, `json` and JSON Schema still list keys required first, then optional, each sorted, and Types that declare the same keys in different orders are still equal, though no longer the same object.
 
+### Report an object's errors in the order its keys are declared
+
+An object's keys are checked in the order its definition declares them, so its errors are too, where they were found required keys first, then optional ones, each sorted. The first of them is the one a reader looking down the definition would expect, and `firstIssue` stops there. Morphs on its values run in that order as well:
+
+```ts
+const User = type({ name: "string", age: "number", "nick?": "string" })
+
+// previously "age must be a number (was missing)" first
+firstIssue(User({ nick: 0 })).message // "name must be a string (was missing)"
+```
+
+Declared keys are still checked before an index signature's and undeclared keys, which follow the data's order. The order composes as the order of an output's keys does, so an intersection is checked left operand's keys first.
+
 ### Treat integer keys past an array's greatest index as undeclared
 
 An array's length is at most 4294967295, so an integer key from 4294967295 up is one of its named properties rather than an index. `"+": "reject"` now rejects such a key and `"+": "delete"` deletes it, as they do any other undeclared key, where every integer string was declared before:

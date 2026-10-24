@@ -654,8 +654,8 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 						j: type("number > 0").configure({ actual: "configured" })
 					})({ k: 5, j: 0 }) as ArkErrors
 				const rendered = errorsOf().toLocaleString(xx)
-				attest(rendered).snap(`j ⟦message⟧ ⟦problem⟧ ⟦cite⟧ positive! configured
-k ⟦message⟧ xx: ⟦domain⟧`)
+				attest(rendered).snap(`k ⟦message⟧ xx: ⟦domain⟧
+j ⟦message⟧ ⟦problem⟧ ⟦cite⟧ positive! configured`)
 				attest(withConfig({ locale: xx }, () => errorsOf().toString())).equals(
 					rendered
 				)
@@ -767,8 +767,8 @@ c ⟦message⟧ ⟦problem⟧ ⟦cite⟧ unit 1⟦or⟧⟦cite⟧ unit 2 ⟦actu
 			} as const
 			const data = { k: 5, j: 0, m: 5 }
 			const rendered = (type(def)(data) as ArkErrors).toLocaleString(partial)
-			attest(rendered).snap(`j <min>
-k must be <string> (was 5)
+			attest(rendered).snap(`k must be <string> (was 5)
+j <min>
 l must be boolean (was missing)
 m must be a bigint (was 5)`)
 			attest(
