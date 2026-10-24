@@ -293,6 +293,9 @@ export interface PrecompiledModule extends ModuleAnalysis {
 	map: SourceMap | undefined
 	// virtual module sources by specifier
 	modules: Record<string, string>
+	// the helpers it exports whose calls the build folds, which only a module
+	// the build precompiles can call
+	foldedHelpers: string[]
 }
 
 // an arktype export, or "reference" for the program's own Type
@@ -1289,7 +1292,11 @@ export class Precompiler {
 			sites,
 			dependencies: this.dependenciesOfArtifact(module),
 			diagnostics,
-			modules: this.inline ? {} : modules
+			modules: this.inline ? {} : modules,
+			foldedHelpers:
+				this.mode === "standalone" ?
+					this.foldedHelpersOf(module).map(([name]) => name)
+				:	[]
 		}
 	}
 

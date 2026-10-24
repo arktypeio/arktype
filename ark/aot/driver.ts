@@ -92,6 +92,7 @@ export interface TransformedModule extends InlineModule {
 	map: SourceMap | undefined
 	dependencies: string[]
 	modules: Record<string, string>
+	foldedHelpers: string[]
 }
 
 export type PrecompileAnswer = { result: unknown } | { error: unknown }
@@ -361,6 +362,7 @@ const transformedModuleOf = (
 			dependencies:
 				precompiler.inline ? [] : precompiler.textImportsOf(source, id),
 			modules: {},
+			foldedHelpers: [],
 			errors: [],
 			warnings: []
 		}
@@ -372,6 +374,7 @@ const transformedModuleOf = (
 			...new Set([...result.dependencies, ...precompiler.ownManifests])
 		],
 		modules: result.modules,
+		foldedHelpers: result.foldedHelpers,
 		...renderDiagnostics(result.diagnostics, id => precompiler.graph.pathOf(id))
 	}
 }

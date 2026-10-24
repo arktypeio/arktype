@@ -18,6 +18,10 @@ import {
 	writeVariantImportMessage
 } from "@ark/aot/internal/host.ts"
 import { writeStandaloneDependencyMessage } from "@ark/aot/internal/messages.ts"
+import {
+	writeEntryHelperMessage,
+	writeUntransformedHelperMessage
+} from "@ark/aot/internal/scan.ts"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import {
 	context,
@@ -47,6 +51,7 @@ import {
 	type InlineConfig,
 	type Rolldown
 } from "vite"
+import { rspack } from "@rspack/core"
 import { startVitest } from "vitest/node"
 import webpack, { type Stats } from "webpack"
 import { configureAfterTypeMessage } from "@ark/schema"
@@ -899,6 +904,129 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 		attest("warnings" in unsafe && unsafe.warnings.map(w => w.text)).equals([
 			message
 		])
+	})
+
+	describe("fails where a module it leaves can call a helper it folds", () => {
+		const root = writeFixture(
+			{
+				"fields.ts":
+					'import { type } from "arktype"\nexport const text = (max: number) => type(`0 < string <= ${max}`)\n',
+				"Form.svelte":
+					'<script>\nimport { text } from "./fields.ts"\nexport const Name = text(50)\n</script>\n',
+				"main.ts":
+					'import { text } from "./fields.ts"\nexport const Bio = text(500)\nconsole.log(Bio)\n',
+				"form.js": 'import { Name } from "./Form.svelte"\nconsole.log(Name)\n'
+			},
+			fromHere("temp", "unfolded")
+		)
+		const scriptOf = (path: string) =>
+			/<script>([\S\s]*)<\/script>/.exec(readFileSync(path, "utf8"))![1]
+		const untransformed = writeUntransformedHelperMessage(
+			"Form.svelte",
+			"fields.ts",
+			"text"
+		)
+
+		it("esbuild", async () => {
+			// loads a component's script, as Svelte's plugin compiles it
+			const svelte: Plugin = {
+				name: "svelte",
+				setup: build =>
+					build.onLoad({ filter: /\.svelte$/ }, args => ({
+						contents: scriptOf(args.path),
+						loader: "js",
+						resolveDir: root
+					}))
+			}
+			const build = (entry: string) =>
+				esbuild({
+					entryPoints: [join(root, entry)],
+					bundle: true,
+					write: false,
+					format: "esm",
+					conditions,
+					logLevel: "silent",
+					plugins: [precompile.esbuild({ cwd: root, conditions }), svelte]
+				}).then(
+					() => [],
+					(e: { errors: { text: string }[] }) => e.errors.map(e => e.text)
+				)
+			attest(await build("main.ts")).equals([])
+			attest(await build("form.js")).equals([untransformed])
+			attest(await build("fields.ts")).equals([
+				writeEntryHelperMessage("fields.ts", "text")
+			])
+		})
+
+		it("vite", async () => {
+			const build = (input: string) =>
+				viteBuild({
+					...viteConfig(undefined, root),
+					plugins: [
+						precompile.vite({ cwd: root, conditions }),
+						{
+							name: "svelte",
+							load: id => (id.endsWith(".svelte") ? scriptOf(id) : undefined)
+						}
+					],
+					build: {
+						write: false,
+						rollupOptions: { input: join(root, input) }
+					}
+				}).then(
+					() => [],
+					(e: { errors?: Error[]; message: string }) =>
+						e.errors?.map(e => e.message) ?? [e.message]
+				)
+			attest(await build("main.ts")).equals([])
+			attest(await build("form.js")).equals([untransformed])
+		})
+
+		const compilers = {
+			webpack: [webpack, precompile.webpack],
+			Rspack: [rspack, precompile.rspack]
+		} as const
+		const loaded = writeFixture(
+			{
+				"fields.js":
+					'import { type } from "arktype"\nexport const text = max => type(`0 < string <= ${max}`)\n',
+				"Form.svelte":
+					'<script>\nimport { text } from "./fields.js"\nexport const Name = text(50)\n</script>\n',
+				"form.js": 'import { Name } from "./Form.svelte"\nconsole.log(Name)\n',
+				"svelte.cjs":
+					"module.exports = source => /<script>([\\S\\s]*)<\\/script>/.exec(source)[1]\n"
+			},
+			fromHere("temp", "unfoldedWebpack")
+		)
+		for (const name of Object.keys(compilers) as (keyof typeof compilers)[]) {
+			it(name, async () => {
+				const [compile, plugin] = compilers[name]
+				const compiler = (compile as typeof webpack)({
+					mode: "production",
+					context: loaded,
+					entry: "./form.js",
+					target: "node",
+					output: { path: join(loaded, "out", name) },
+					module: {
+						rules: [{ test: /\.svelte$/, loader: join(loaded, "svelte.cjs") }]
+					},
+					plugins: [plugin({ cwd: loaded }) as never]
+				})
+				const stats = await new Promise<Stats | undefined>((resolve, reject) =>
+					compiler.run((error, stats) =>
+						compiler.close(() => (error ? reject(error) : resolve(stats)))
+					)
+				)
+				// Rspack marks each error with a ×
+				attest(
+					stats
+						?.toJson()
+						.errors?.map(error => error.message.trim().replace(/^× /, ""))
+				).equals([
+					writeUntransformedHelperMessage("Form.svelte", "fields.js", "text")
+				])
+			})
+		}
 	})
 
 	describe("fails where a module with no file of its own imports arktype", () => {
