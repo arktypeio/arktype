@@ -181,19 +181,39 @@ const placeOf = (category: CategoryId) => {
 	return { place: i + 1, ranked: standings.length, ...standings[i] }
 }
 
-// a category's superlative, which the board states only where ArkType leads.
-// Bundle size has none until its framing is decided
-const superlatives: Partial<Record<CategoryId, string>> = {
-	speed: "Fastest",
-	startup: "Quickest to start"
-}
+/** how the board words each category: its superlative, its title phrase and what its rows measure */
+const wording = {
+	speed: {
+		superlative: "Fastest",
+		phrase: "Runs faster.",
+		measures: "validation speed"
+	},
+	startup: {
+		superlative: "Quickest to start",
+		phrase: "Starts lighter.",
+		measures: "startup"
+	},
+	size: {
+		superlative: "Smallest",
+		phrase: "Ships less.",
+		measures: "bundle size"
+	}
+} satisfies Record<CategoryId, Record<string, string>>
+
+const boardOrder = ["speed", "startup", "size"] as const satisfies CategoryId[]
+
+/** the categories ArkType has the best average in, the only ones the board states a win in */
+const led = boardOrder.filter(leads)
 
 /** where ArkType's best average places it in a category, a superlative only where it leads */
 const standingOf = (category: CategoryId) => {
 	const across = `across ${leaderboards[category].suites.length} public benchmarks`
-	const superlative = leads(category) ? superlatives[category] : undefined
-	if (superlative)
-		return { leads: true, standing: `${superlative} on average ${across}` }
+	if (leads(category)) {
+		return {
+			leads: true,
+			standing: `${wording[category].superlative} on average ${across}`
+		}
+	}
 	const { place, ranked } = placeOf(category)
 	return {
 		leads: false,
@@ -201,8 +221,14 @@ const standingOf = (category: CategoryId) => {
 	}
 }
 
+const listOf = (items: string[]) =>
+	items.length < 2 ?
+		items.join("")
+	:	`${items.slice(0, -1).join(", ")} and ${items.at(-1)}`
+
 const size = placeOf("size")
-const sizeLeader = leaderboards.size.standings[0]
+// the library after ArkType where it leads, otherwise the leader
+const sizeRival = leaderboards.size.standings[size.place === 1 ? 1 : 0]
 
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
@@ -260,15 +286,17 @@ export const claims = {
 	// MCP SDK v1
 	zodMigration:
 		"With the skill, one prompt fully migrated 4 of 10 open-source Zod projects we picked by stars before running it: typecheck and tests pass, Zod is gone, generated inputs get the same results and no casts were added.",
-	// the homepage board's title, a phrase per category ArkType leads: runs
-	// faster (H1's wall clock) and starts lighter (startupChart, instructions
-	// rather than time). Valibot's average bundle is smaller, so nothing says
-	// it ships less
-	boardTitle: "Runs faster. Starts lighter.",
+	// the homepage board's title, a phrase per category ArkType leads on
+	// average: runs faster, starts lighter (instructions rather than time),
+	// ships less
+	boardTitle: led.map(category => wording[category].phrase).join(" "),
 	// what the board's superlatives average
-	boardNote: `*Best average across public benchmarks, each result a ratio to the best: ${leaderboards.speed.rows} results for validation speed and ${leaderboards.startup.rows} for startup.`,
-	// the board's size standing, which claims no lead
-	sizeStanding: `${sizeLeader.library} has the best average bundle size, ${sizeLeader.score.toFixed(2)}, against the default build's ${size.score.toFixed(2)}.`,
+	boardNote: `*Best average across public benchmarks, each result a ratio to the best: ${listOf(led.map((category, i) => `${leaderboards[category].rows}${i ? "" : " results"} for ${wording[category].measures}`))}.`,
+	// the board's size standing, a lead only where the average says so
+	sizeStanding:
+		size.place === 1 ?
+			`The default build has the best average bundle size, ${size.score.toFixed(2)}, against ${sizeRival.library}'s ${sizeRival.score.toFixed(2)}.`
+		:	`${sizeRival.library} has the best average bundle size, ${sizeRival.score.toFixed(2)}, against the default build's ${size.score.toFixed(2)}.`,
 	// startupChart against Zod and Valibot alone: fewer than each of them in
 	// 20 of 20 rounds on Node 24, on the login app and on the form
 	startupVersus: `On the homepage's login app, precompiled ArkType takes ${valueOf(startupChart, "ArkType (precompiled)")}M instructions from import to its first validation, beyond loading an empty module, against Valibot's ${valueOf(startupChart, "Valibot")}M, Zod Mini's ${valueOf(startupChart, "Zod Mini")}M, Zod's ${valueOf(startupChart, "Zod")}M and compiled Zod's ${valueOf(startupChart, "Zod (compiled)")}M: fewer than each in all 20 paired runs on Node 24.`,
@@ -302,10 +330,6 @@ const headlineCategories: CategoryId[] = ["size", "speed"]
 if (!isPending(claims.headline))
 	for (const category of headlineCategories)
 		assertLeads(category, "The headline")
-
-// the board's title and note
-for (const category of ["speed", "startup"] as const)
-	assertLeads(category, "The board")
 
 /** the libraries the board compares against: with ArkType, the two that wrote Standard Schema */
 const isRival = (bar: BenchmarkBar) => /^(Valibot|Zod)\b/.test(bar.name)
@@ -349,7 +373,7 @@ export type StandingCategory = CategoryBase & {
 	place: string
 	/** how many libraries the category ranks */
 	ranked: number
-	/** the leaders, through ArkType and one past it */
+	/** the leaders, at least three and through one past ArkType */
 	standings: Standing[]
 }
 
@@ -393,7 +417,10 @@ export const categories: Category[] = [
 		...standingOf("size"),
 		place: ordinal(size.place),
 		ranked: size.ranked,
-		standings: leaderboards.size.standings.slice(0, size.place + 1),
+		standings: leaderboards.size.standings.slice(
+			0,
+			Math.max(3, size.place + 1)
+		),
 		claim: claims.sizeStanding,
 		source: headlineMethod
 	}
