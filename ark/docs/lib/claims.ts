@@ -270,7 +270,7 @@ export const claims = {
 	// the board's size standing, which claims no lead
 	sizeStanding: `${sizeLeader.library} has the best average bundle size, ${sizeLeader.score.toFixed(2)}, against the default build's ${size.score.toFixed(2)}.`,
 	// startupChart against Zod and Valibot alone: fewer than each of them in
-	// 20 of 20 rounds on both Nodes, on the login app and on the form
+	// 20 of 20 rounds on Node 24, on the login app and on the form
 	startupVersus: `On the homepage's login app, precompiled ArkType takes ${valueOf(startupChart, "ArkType (precompiled)")}M instructions from import to its first validation, beyond loading an empty module, against Valibot's ${valueOf(startupChart, "Valibot")}M, Zod Mini's ${valueOf(startupChart, "Zod Mini")}M, Zod's ${valueOf(startupChart, "Zod")}M and compiled Zod's ${valueOf(startupChart, "Zod (compiled)")}M: fewer than each in all 20 paired runs on Node 24.`,
 	// startupChart; the form is 1.18M vs Valibot's 2.36M, 20 of 20
 	startupLogin:
