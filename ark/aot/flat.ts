@@ -1062,12 +1062,15 @@ const writeFlat = (
 		exported,
 		code: body,
 		write: (read, asModule) => {
-			const returned = `[${read
-				.map(name => (membersOf.has(name) ? wholeOf(name) : name))
-				.join(", ")}]`
+			const values = read.map(name =>
+				membersOf.has(name) ? wholeOf(name) : name
+			)
+			// one value is returned as itself
+			const returned =
+				values.length === 1 ? values[0] : `[${values.join(", ")}]`
 			// kept code reads what it returns, so a bundler keeps its call, and
 			// annotations saying it could drop it are bytes oxc's minifier keeps
-			const declaration = `const [${read.join(", ")}] = (() => {
+			const declaration = `const ${read.length === 1 ? read[0] : `[${read.join(", ")}]`} = (() => {
 ${withoutAnnotations(inGzipOrder(withoutUnread(body, returned)))}
 return ${returned}
 })()`

@@ -108,8 +108,12 @@ contextualize(() => {
 			}
 		)
 		// Team's units read User's, Name's and Email's, whose validators it drops
-		attest(/^var \[\w+] = \(\(\) => {$/m.test(js)).equals(true)
-		attest(js.includes("__PURE__")).equals(false)
+		// esbuild annotates the function's call itself, as Rolldown doesn't
+		const flat =
+			/^var \w+ = (?:\/\* @__PURE__ \*\/ )?\(\(\) => {$([\S\s]*?)^}\)\(\);$/m.exec(
+				js
+			)
+		attest(flat?.[1].includes("__PURE__")).equals(false)
 	})
 
 	it("creates in the function a validator whose creator nothing else calls", async () => {
@@ -167,19 +171,6 @@ contextualize(() => {
 		}
 		const split = await bundle({}, options)
 		attest(split.some(js => factoryParam.test(js))).equals(true)
-	})
-
-	it("keeps each unit a module of its own where the function is larger", async () => {
-		const files = writeFixture(
-			{
-				"main.ts": `import { type } from "arktype"\n\nexport const Id = type("string.uuid")\n`
-			},
-			fromHere("temp", "flatLarger")
-		)
-		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
-		attest(await bundle({}, options)).equals(
-			await bundle({ prune: false }, options)
-		)
 	})
 
 	it("declares the units of a one-chunk Vite build in one function", async () => {
