@@ -25,7 +25,7 @@ const tempDir = new URL("./node_modules/.cache/skill/", import.meta.url)
 rmSync(tempDir, { recursive: true, force: true })
 mkdirSync(tempDir, { recursive: true })
 
-const blockPattern = /^```ts\n([\s\S]*?)^```$/gm
+const blockPattern = /^```ts\n([\S\s]*?)^```$/gm
 
 let count = 0
 for (const file of skillFiles) {
