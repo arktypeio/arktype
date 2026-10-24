@@ -407,7 +407,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 
 Without a pattern, it checks every JavaScript and TypeScript file under the current directory outside `node_modules`, `dist`, `out` and `build`.
 
-It reads [`ark.json`](https://arktype.io/docs/precompile/options#arkjson) as a build does, and the options a plugin call passes, like `precompile.vite({ config: "src/config.ts" })`, in a file at the project's root such as `vite.config.ts`, saying where it found them. Where an option isn't written as a literal there, it can't tell what the build gets, so it fails, asking for it in `ark.json` or as a flag. It takes each [option](https://arktype.io/docs/precompile/options) as a flag, which overrides both, like `--preset smallest`, `--optimize-errors size`, `--no-freeze` or `--members '{"assert":false}'`. It exits with 1 where the build would fail. `--fail-under <percent>` exits with 1 only if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
+It reads [`ark.json`](https://arktype.io/docs/precompile/options#arkjson) as a build does, and the options a plugin call passes, like `precompile.vite({ config: "src/config.ts" })`, in a file at the project's root such as `vite.config.ts`, saying where it found them. Where an option isn't written as a literal there, or the file loads the plugin in a way it can't follow, it can't tell what the build gets, so it fails, asking for it in `ark.json` or as a flag. It takes each [option](https://arktype.io/docs/precompile/options) as a flag, which overrides both, like `--preset smallest`, `--optimize-errors size`, `--no-freeze` or `--members '{"assert":false}'`. It exits with 1 where the build would fail. `--fail-under <percent>` exits with 1 only if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
 
 The same analysis is available as `new Precompiler(host, options).analyze(source, id)` from `@ark/aot`, which, as a build does, applies the program's configuration to arktype in its thread.
 
@@ -790,7 +790,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`configure() is called, but the build has no config module`**: name the module that calls it as the build's [`config`](https://arktype.io/docs/precompile/options#configuration).
 
-**``--check can't read the `config` precompile.vite() is passed``** or **`... sets errors other than precompile.vite() at vite.config.ts:5:12`**: `arktype-precompile --check` reads the options a plugin call at the project's root passes, but only those written as literals, and only where every call agrees. Set the option in `ark.json`, which the plugin reads too, or pass it to `--check` as a flag.
+**``--check can't read the `config` precompile.vite() is passed``** or **`... sets errors other than precompile.vite() at vite.config.ts:5:12`**: `arktype-precompile --check` reads the options a plugin call at the project's root passes, imported, required or loaded by `import()`, but only those written as literals, and only where every call agrees. Set the option in `ark.json`, which the plugin reads too, or pass it to `--check` as a flag.
 
 **`... loads src/schemas.ts, which creates a Type, before the config module src/config.ts runs configure()`**: creating that Type would throw unless the program loaded the config module earlier. Import the config module first, before any module that creates a Type.
 
