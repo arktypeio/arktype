@@ -71,6 +71,8 @@ if (out instanceof type.errors) {
 }
 ```
 
+A [precompiled](/docs/precompile/validators#errors) build's `arktype/runtime` doesn't export them, and its errors have no `propString` or `problem`, so there group `out.issues` by `issue.path` instead.
+
 A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`.
 
 ### Errors are plain objects
