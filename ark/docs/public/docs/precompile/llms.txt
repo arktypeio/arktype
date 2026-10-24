@@ -418,7 +418,7 @@ The same analysis is available as `new Precompiler(host, options).analyze(source
 
 ## ESLint
 
-The ESLint rule reports what the build would, as you edit:
+The ESLint rules report what the build would, as you edit:
 
 ```js
 import { configs } from "@ark/aot/eslint"
@@ -433,7 +433,7 @@ export default [
 ]
 ```
 
-`configs.recommended` lints JavaScript and TypeScript files. ESLint parses TypeScript only through a parser like typescript-eslint's, which a project already linting TypeScript configures.
+`configs.recommended` lints JavaScript and TypeScript files. It reports what fails the build as an error, through `@ark/aot/precompilable`, and what the build warns about, like a problem [`allowUnsafe`](https://arktype.io/docs/precompile/options#allowunsafe) builds past, as a warning, through `@ark/aot/warnings`. Each takes the build's options, which `ark.json` gives both. ESLint parses TypeScript only through a parser like typescript-eslint's, which a project already linting TypeScript configures.
 
 # Validators
 
