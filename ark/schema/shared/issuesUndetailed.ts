@@ -9,6 +9,10 @@ export const releasePath = (errors: ArkErrors): ArkErrors => errors
 export const applyIssues = (): never =>
 	throwInternalError('errors "none" applies no issues')
 
+// errors "none" reports each failure as InvalidErrors, finding no issues
+export const issuesOf = (): never =>
+	throwInternalError('errors "none" finds no issues')
+
 export class TraversalError extends Error {
 	declare readonly name: "TraversalError"
 	declare arkErrors: ArkErrors

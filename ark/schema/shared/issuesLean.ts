@@ -143,6 +143,18 @@ export const issueAt = (
 	return issue
 }
 
+// the issues an Apply finds in data it rejected
+export const issuesOf = (
+	apply: CompactApply,
+	data: unknown,
+	errors: ArkErrors
+): ArkIssue[] => {
+	apply(data, errors)
+	// data a write or a getter has made valid since fails as a whole
+	if (!errors._.length) errors.failsAt({ code: "predicate" }, data)
+	return errors._
+}
+
 // a root reporting into ArkErrors, as a size build applies it; they hold
 // no path to release
 export const applyIssues = (

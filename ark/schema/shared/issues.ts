@@ -183,6 +183,19 @@ export const applyIssues = (
 	)
 }
 
+// the issues an Apply finds in data it rejected
+export const issuesOf = (
+	apply: CompactApply,
+	data: unknown,
+	errors: ArkIssues
+): ArkIssue[] => {
+	apply(data, errors)
+	// data a write or a getter has made valid since fails as a whole
+	if (!errors._.length) errors.failsAt({ code: "predicate" }, data)
+	releasedPath = errors._path
+	return errors._
+}
+
 interface ArkIssues {
 	/** @internal set by a build asking for only the first issue */
 	failFast?: true
