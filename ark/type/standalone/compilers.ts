@@ -27,6 +27,7 @@ import {
 	issueContextOf,
 	issueSite,
 	issueSiteOf,
+	unionKeySiteOf,
 	withoutStrings,
 	writeSiteOf,
 	type IssueContext,
@@ -216,20 +217,22 @@ class StandaloneCompiler extends TraversalCompiler {
 		return this.fails("failsAt", `${this.siteRef(site)}, data, k`)
 	}
 
-	// a rejected union value reports the union's issue, not its Apply
+	// a rejected union value reports the union's issue at its key, not its Apply
+	override failingSiteOf(prop: BaseNode): string | undefined {
+		const { value, errorContext } = prop as nodeOfKind<"required">
+		if (reportsItself(value) && !basesOf(value))
+			return this.siteRef(unionKeySiteOf(value.failureSite, errorContext))
+	}
+
+	// unless data failing its branches' bases is described by them
 	override failingApplyOf(value: BaseNode): string | undefined {
-		if (!value.hasKind("union") || value.discriminantJit || value.includesAlias)
-			return
-		if (basesOf(value)) return `(data, ctx) => ${this.unionFails(value)}`
-		const site = issueSiteOf(value.failureSite)
-		let failing = failingBySite.get(site)
-		if (!failing)
-			failingBySite.set(site, (failing = issueSite({ fails: site })))
-		return this.ref(failing)
+		if (reportsItself(value) && basesOf(value))
+			return `(data, ctx) => ${this.unionFails(value)}`
 	}
 }
 
-const failingBySite = new WeakMap<object, object>()
+const reportsItself = (value: BaseNode): value is UnionNode =>
+	value.hasKind("union") && !value.discriminantJit && !value.includesAlias
 
 // whether a key is read from an object, or an index from an array, as
 // arktype reads a discriminant
@@ -350,6 +353,7 @@ class UnifiedCompiler extends StandaloneCompiler {
 	}
 
 	// a key's union value is applied by its own traversal, which allows unpassed
+	override failingSiteOf(): undefined {}
 	override failingApplyOf(): undefined {}
 
 	// unpassed a ctx, failsIn allows a value itself

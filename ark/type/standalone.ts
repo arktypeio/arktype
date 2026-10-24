@@ -3239,8 +3239,6 @@ ${writeFunction(
 				return writeSiteOf(site as IssueContext, s => this.emitString(s))
 			return `runtime.writtenSiteOf(${this.emit(code)}, ${description === undefined ? "void 0" : this.emitString(description)}, ${this.emit(written.context)}, ${this.emitWriters(written.writers)}${written.keeps ? `, ${written.keeps}` : ""})`
 		}
-		if ("fails" in site)
-			return `runtime.failing(${this.emitSite(site.fails as object)})`
 		if (
 			(site as FailureSite).missing === requiredIssue &&
 			isDescribed((site as FailureSite).value as IssueContext)

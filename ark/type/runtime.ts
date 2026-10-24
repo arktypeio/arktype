@@ -547,11 +547,6 @@ export const raisingTraversalOf = (
 		}
 	}
 
-// the Apply of a union whose key's condition rejected its value
-export const failing = ((site: FailureSite): CompactApply =>
-	(data, ctx) =>
-		!ctx.failsAt(site, data)) satisfies Fn
-
 // a unified traversal reports to a ctx it's passed, and passed none (or
 // filter's index), stops at its first failure
 export const failsAt = ((

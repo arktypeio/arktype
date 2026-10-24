@@ -158,10 +158,11 @@ export abstract class BaseProp<
 				const condition =
 					isDecidedByAllows(this.value) &&
 					this.value.compileCondition?.(js, value)
+				const site = condition && js.failingSiteOf?.(this)
 				const fails =
-					this.value.isBasis() ?
-						`!${js.error(this, key)}`
-					:	`!${js.fails("failsIn", `${(condition && js.failingApplyOf?.(this.value)) || js.traversal(this.value, "Apply")}, ${value}, ${key}, ${js.site(this)}, data`)}`
+					this.value.isBasis() ? `!${js.error(this, key)}`
+					: site ? `!${js.fails("failsAt", `${site}, data, ${key}`)}`
+					: `!${js.fails("failsIn", `${(condition && js.failingApplyOf?.(this.value)) || js.traversal(this.value, "Apply")}, ${value}, ${key}, ${js.site(this)}, data`)}`
 				const allows = condition || js.gate?.(this.value, value)
 				return allows ? `${allows} || ${fails}` : fails
 			}
