@@ -2533,6 +2533,7 @@ ${writeFunction(
 			const elements =
 				asValidator && !transforms && this.elementTraversalsOf(root)
 			if (elements) {
+				const args = `[${traversals}[0], ${traversals}[${this.appliedIndexOf(root)}], ${elements}]`
 				return [
 					this.emitApplier({
 						// a minifier inlines a const read once, but not a default
@@ -2544,9 +2545,10 @@ ${writeFunction(
 	const i = rejectedIn(data)
 	return i === undefined ? data : ${elementErrors}(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
 }`,
+						args,
 						local
 					}),
-					`[${traversals}[0], ${traversals}[${this.appliedIndexOf(root)}], ${elements}]`,
+					args,
 					true
 				]
 			}
@@ -2555,6 +2557,7 @@ ${writeFunction(
 					this.emitApplier({
 						params: `${pattern}${unconfigured ? "" : ", onFail"}`,
 						apply: `(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`,
+						args: parts,
 						local
 					}),
 					parts,
@@ -2694,7 +2697,8 @@ ${writeFunction(
 						pipes ?
 							`(data, ...args) => ${allows}(data) ? ${valid} : invalidCall(data, args${unconfigured ? "" : ", onFail"})`
 						:	`(data, _, onFail) => ${allows}(data) ? ${valid} : ${invalid}`,
-					failure: pipes ? "invalidCall" : "invalid"
+					failure: pipes ? "invalidCall" : "invalid",
+					args: parts
 				}),
 				parts,
 				true
@@ -2720,16 +2724,22 @@ ${writeFunction(
 	}
 
 	// what applies a root or makes its validator from its traversals, written
-	// once for every root alike, as each function a module writes costs its load
+	// once for every root alike in a size build, as each function a module
+	// writes costs its load. A speed build writes one for each root's args, as
+	// V8 keeps one call feedback for every closure of a function, so one shared
+	// by several roots calls their Allows through a call it can't inline
 	emitApplier({
 		params,
 		apply,
 		failure,
-		local
-	}: Omit<RootApplier, "args">): string {
+		local,
+		args
+	}: Omit<RootApplier, "args"> & { args?: string }): string {
 		if (local) return `((${params}) => ${this.validatorOnLoad(apply)})`
 		const body = `\treturn ${this.validatorOnLoad(apply)}`
-		const name = `apply${hashOf(`${params}\n${body}`)}`
+		const name = `apply${hashOf(
+			`${params}\n${body}${this.baking.shortest || args === undefined ? "" : `\n${args}`}`
+		)}`
 		return this.read(
 			this.share(
 				name,
