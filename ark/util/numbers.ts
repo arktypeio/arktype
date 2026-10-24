@@ -47,7 +47,7 @@ export const numericStringMatcher: RegExp =
 	// eslint-disable-next-line unicorn/better-regex
 	/^(?:(?!^-0\.?0*(?:[Ee][+-]?\d+)?$)(?:-?(?:(?:0|[1-9]\d*)(?:\.\d+)?)|\.\d+?)(?:[Ee][+-]?\d+)?)$/
 
-const isDigitCode = (code: number) => code >= 48 && code <= 57
+export const isDigitCode = (code: number): boolean => code >= 48 && code <= 57
 
 // numericStringMatcher's language, read without the RegExp
 export const isNumericString = (s: string): boolean => {

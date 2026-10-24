@@ -117,8 +117,12 @@ export {
 export {
 	baseNameOf,
 	functionNameOf,
+	isIpv4,
+	isIpv6,
+	isIso8601,
 	isNumericString,
 	isPlainObjectOrArray,
+	isUuid,
 	isValidDate,
 	isWellFormedInteger,
 	jsTypeOfDescriptions,

@@ -1037,6 +1037,10 @@ A getter or `Proxy` trap on validated data can run a different number of times, 
 
 `@ark/util`'s `platformConstructors.File` and `builtinConstructors.File` are getters, as `FormData`, `Headers`, `Request` and `Response` are, returning `globalThis.File`, or `Blob` where it's missing, each time they're read. A `File` installed after import is the one they return. In a bundle that never reads `builtinConstructors`, `objectKindOf` builds its own table at its first call, capturing `Blob`, `URL` and the other constructors then rather than at import.
 
+### Check UUIDs, IP addresses and ISO dates by their characters
+
+`string.uuid`, `string.ip.v4`, `string.ip.v6` and `string.date.iso` (and its `parse` morph's input) check a string by reading its characters rather than testing it against their patterns, and accept the same strings. A valid UUID or IPv4 address takes about half the instructions or fewer, an IPv6 address up to 6x fewer, and a string that can't start one is rejected in a fifth of the instructions or less. `string.date.iso` reads `YYYY-MM-DD` and `YYYY-MM-DDTHH:mm:ss` with a fraction and `Z` or an offset itself, and other forms with its pattern. Their patterns are unchanged, as are their `expression`, `json` and JSON Schema, and as with `string.numeric`, any pattern with the same source is checked the same way. `uuidMatcher`, `ipv4Matcher`, `ipv6Matcher` and `iso8601Matcher` and their tests (`isUuid`, `isIpv4`, `isIpv6`, `isIso8601`) are exported by `@ark/util`. A build with `optimize: "size"` still checks them by their patterns, which are smaller, as it now does `string.numeric` and `string.integer`.
+
 ### Call narrows and morphs without a receiver when jitless
 
 A narrow's predicate was called with its node as `this` when jitless, and a Type whose morphs need no `ctx` called them with its morphs array as `this`. Both are now called as compiled code calls them, with `this` undefined.

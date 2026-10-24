@@ -1,7 +1,15 @@
 import {
+	ipv4Matcher,
+	ipv6Matcher,
+	isIpv4,
+	isIpv6,
+	isIso8601,
 	isNumericString,
+	iso8601Matcher,
+	isUuid,
 	isWellFormedInteger,
 	numericStringMatcher,
+	uuidMatcher,
 	wellFormedIntegerMatcher
 } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.ts"
@@ -66,7 +74,11 @@ const implementation: nodeImplementationOf<Pattern.Declaration> =
 // a function testing the strings a RegExp matches, by its expression
 const testsByExpression: { [expression: string]: (s: string) => boolean } = {
 	[`${numericStringMatcher}`]: isNumericString,
-	[`${wellFormedIntegerMatcher}`]: isWellFormedInteger
+	[`${wellFormedIntegerMatcher}`]: isWellFormedInteger,
+	[`${uuidMatcher}`]: isUuid,
+	[`${ipv4Matcher}`]: isIpv4,
+	[`${ipv6Matcher}`]: isIpv6,
+	[`${iso8601Matcher}`]: isIso8601
 }
 
 // a whole string of one atom repeated without bound, e.g. /^[ab]+$/
