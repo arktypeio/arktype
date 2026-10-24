@@ -57,7 +57,7 @@ Use it to check that a new version of an API schema still accepts what the old o
 npm install arksets
 ```
 
-`arktype` depends on `arksets` already, but only imports [the engine](#the-engine). Install it yourself to import the functions on these pages.
+`arktype` depends on `arksets` already, but only imports [the engine](https://arktype.io/docs/sets#the-engine). Install it yourself to import the functions on these pages.
 
 ## Schemas
 

@@ -798,8 +798,11 @@
 			padding: 0 calc(4px * 16 / var(--fs));
 		}
 	}
-	.live-state[data-live] {
-		color: var(--teal);
+	.live-state {
+		white-space: nowrap;
+		&[data-live] {
+			color: var(--teal);
+		}
 	}
 
 	/* ---------- sections ---------- */

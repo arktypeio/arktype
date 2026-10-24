@@ -353,7 +353,7 @@ regex("+a") // Quantifier + requires a preceding token
 regex("(?<a>x)\\k<b>") // Group b does not exist
 ```
 
-Most of these would also throw from `new RegExp()`. The rest are valid at runtime but rejected, usually because they're likely a mistake, like an anchor in the middle of a pattern. The others are listed under [what isn't checked](#what-isnt-checked).
+Most of these would also throw from `new RegExp()`. The rest are valid at runtime but rejected, usually because they're likely a mistake, like an anchor in the middle of a pattern. The others are listed under [what isn't checked](https://arktype.io/docs/regex/errors#what-isnt-checked).
 
 | Message | Example | `new RegExp()` |
 | - | - | - |

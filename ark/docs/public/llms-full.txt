@@ -763,9 +763,9 @@ The agent rewrites each schema where it is, keeps Zod's removal of undeclared ke
 
 ## Docs as Markdown
 
-Every page of these docs is available as Markdown by adding `.md` to its URL, e.g. [/docs/intro/setup.md](https://arktype.io/docs/intro/setup.md). The buttons under each page's title copy it or open it in Claude, ChatGPT or Cursor.
+Every page of these docs is available as Markdown by adding `.md` to its URL, e.g. [/docs/intro/setup.md](https://arktype.io/docs/intro/setup.md). The Copy page button beside each page's title copies it, and its menu opens it in Claude, ChatGPT or Cursor.
 
-[/llms.txt](https://arktype.io/llms.txt) is an index of every page, with a link to its Markdown and a one-line description, following the [llms.txt](https://llmstxt.org) convention. [/llms-full.txt](https://arktype.io/llms-full.txt) has the full text of every ArkType page in one file. Precompile's docs are at [/docs/precompile/llms.txt](https://arktype.io/docs/precompile/llms.txt), Attest's at [/docs/attest/llms.txt](https://arktype.io/docs/attest/llms.txt) and ArkRegex's at [/docs/regex/llms.txt](https://arktype.io/docs/regex/llms.txt).
+[/llms.txt](https://arktype.io/llms.txt) is an index of every page, with a link to its Markdown and a one-line description, following the [llms.txt](https://llmstxt.org) convention. [/llms-full.txt](https://arktype.io/llms-full.txt) has the full text of every ArkType page in one file. Precompile, ArkRegex, Attest, JSON Schema, ArkSets and Internals each have a file like it at their section's URL plus `/llms.txt`, like [/docs/precompile/llms.txt](https://arktype.io/docs/precompile/llms.txt).
 
 ## Precompile
 
@@ -862,7 +862,7 @@ To migrate a project from Zod, add the [ArkType skill](https://arktype.io/docs/a
 Migrate this project from Zod to ArkType.
 ```
 
-It follows [Migrating a project](#migrating-a-project). This page is also part of the skill, as `references/migrating.md`, so agents read it when they convert schemas.
+It follows [Migrating a project](https://arktype.io/docs/migrating#migrating-a-project). This page is also part of the skill, as `references/migrating.md`, so agents read it when they convert schemas.
 
 ## Zod side by side
 
@@ -905,7 +905,7 @@ const out = User(data)
 if (out instanceof type.errors) console.error(out.issues)
 ```
 
-`.parse(data)` is `User.assert(data)`. The [Zod table](#zod) maps the rest of the API, and [Defaults that differ](#defaults-that-differ) lists what to write where the two libraries' defaults disagree, like `"+": "delete"` above. One the example leaves as is: Zod also applies `role`'s default when the key is present as `undefined`, which ArkType rejects.
+`.parse(data)` is `User.assert(data)`. The [Zod table](https://arktype.io/docs/migrating#zod) maps the rest of the API, and [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ) lists what to write where the two libraries' defaults disagree, like `"+": "delete"` above. One the example leaves as is: Zod also applies `role`'s default when the key is present as `undefined`, which ArkType rejects.
 
 ## Adopt incrementally
 
@@ -922,7 +922,7 @@ const Address = z.object({ street: z.string(), city: z.string() })
 const User = type({ name: "string", address: Address })
 ```
 
-- **An ArkType Type works wherever a library accepts Standard Schema**, like tRPC, TanStack Form, Hono's `sValidator` or react-hook-form's `standardSchemaResolver`, so call sites can switch one at a time. [Swap integrations](#migrating-a-project) has each.
+- **An ArkType Type works wherever a library accepts Standard Schema**, like tRPC, TanStack Form, Hono's `sValidator` or react-hook-form's `standardSchemaResolver`, so call sites can switch one at a time. [Swap integrations](https://arktype.io/docs/migrating#migrating-a-project) has each.
 
 A Valibot schema embeds the same way. Yup's validates asynchronously, so it can't.
 
@@ -949,13 +949,13 @@ To move a whole project off Zod, or another library below, work through it in th
 
 1. **Take stock.** Find every import of the old library (`zod`, `zod/v4`, `zod/mini`) and of packages built on it, like `@hookform/resolvers/zod` or `zod-to-json-schema`, and every use of the schemas, including files that call `.safeParse()` or read `.shape` without importing the library. Run the project's typecheck and test scripts once, so you know what passes before you start.
 2. **Convert each schema in place.** Keep its name, its file and what it takes and returns, so imports and call sites keep working: a `.transform()` stays in the schema as a `.pipe()`, not in its callers. `z.infer<typeof X>` and `z.output` become `typeof X.infer`, and `z.input` becomes `typeof X.inferIn`.
-3. **Keep behavior identical.** The migrated schemas should accept, reject and return what the old ones did. These rules are for Zod, and [Defaults that differ](#defaults-that-differ) has them for the other libraries:
+3. **Keep behavior identical.** The migrated schemas should accept, reject and return what the old ones did. These rules are for Zod, and [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ) has them for the other libraries:
    - `z.object()` removes undeclared keys, and so should the migrated objects, even where the code reads only declared keys, since parsed data often reaches a database or a response whole. Call `configure({ onUndeclaredKey: "delete" })` from `arktype/config` in one file, like `src/arktype.config.ts`, and import it first in every file that creates a Type, so it applies whichever file loads first, tests included. If the project [precompiles](https://arktype.io/docs/precompile), also name that file as the build's `config` in [`ark.json`](https://arktype.io/docs/precompile/setup#ark-json), which the CLI and test drivers read as the bundler does. Then `.passthrough()` and `z.looseObject()` become `"+": "ignore"`, and `.strict()` becomes `"+": "reject"`.
    - Without that setting, write `"+": "delete"` in every object instead, nested ones included. `.merge()` takes `"+"` from the object merged in, so write `.merge({ "+": "delete", ... })`; with the global setting, merged objects keep deleting.
-   - A union of such objects throws a `ParseError` saying it's indeterminate unless a key tells them apart. Follow [Defaults that differ](#defaults-that-differ) for it, and keep the global setting: `"+": "ignore"` belongs only on the union's branches.
+   - A union of such objects throws a `ParseError` saying it's indeterminate unless a key tells them apart. Follow [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ) for it, and keep the global setting: `"+": "ignore"` belongs only on the union's branches.
    - `.optional()` also accepts `undefined`, so write `"key?": "T | undefined"`. Zod lets any key be missing whose schema accepts `undefined`, so a `z.unknown()` key is `"key?": "unknown"`. In Zod 4, `.default(x).optional()` still fills in `x`, so it's `key: T.default(x)`.
    - `z.any()` is `"unknown.any"`, or `"key?": "unknown.any"` as a key. It infers `any` as Zod's did, so refinements that read its properties type-check without casts.
-   - Translate coercions and refinements literally, as in [Coercion is a parse](#semantics-to-check). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema.
+   - Translate coercions and refinements literally, as in [Coercion is a parse](https://arktype.io/docs/migrating#semantics-to-check). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema.
    - Keep custom messages. `.min(1, "Name is required")` becomes `type("string >= 1").configure({ message: "Name is required" })`.
 4. **Update call sites.**
    - `X.parse(data)` becomes `X.assert(data)`, which throws.
@@ -1005,7 +1005,7 @@ const argsSchema = {
 ## How to convert
 
 1. Write each schema as the TypeScript type it validates. Most constructs become a string or an object definition; the tables below map them library by library.
-2. Check every row of [Defaults that differ](#defaults-that-differ). A translation that looks right can still accept or return different data.
+2. Check every row of [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ). A translation that looks right can still accept or return different data.
 3. Confirm the types match. While the old schema still exists, a line like this fails to compile until they do:
 
 ```ts
@@ -1230,7 +1230,7 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 
 ## TypeBox
 
-TypeBox schemas are JSON Schema, so [JSON Schema](#json-schema-and-ajv) also applies.
+TypeBox schemas are JSON Schema, so [JSON Schema](https://arktype.io/docs/migrating#json-schema-and-ajv) also applies.
 
 | TypeBox | ArkType |
 | - | - |
@@ -1364,25 +1364,25 @@ Each section is one change since 2.2.9, with code that behaves differently befor
 
 Go down the list. Each question your code answers yes to links to what to change.
 
-- Do you ship arktype to a browser without a build step that precompiles? [It's larger](#unprecompiled-arktype-is-larger).
-- Do you install `@ark/type`, `@ark/regex` or an `@arktype/*` package? [Rename it](#package-names).
-- Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](#arkerrors-is-no-longer-an-array).
-- Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](#errors-are-plain-objects).
-- Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](#undeclared-keys-have-the-undeclared-code) and [discriminant](#union-misses-have-the-discriminant-code).
-- Do you snapshot or assert error messages, or their order? See [Errors](#errors): objects, dates and union misses print differently, errors follow the order keys are declared, and configured messages apply to more errors.
-- Do you configure an `expected`, `actual` or `message` writer? [Writers take the error](#error-writers-receive-the-error-and-the-locale).
-- Do you call `configure()` after a Type is created, or pass a global-only option to a Scope? See [Configuration](#configuration).
-- Do you use `number` for data that can be `Infinity`? [Allow it](#number-rejects-infinity).
-- Do you write date literals or limits without a time zone, or parse ISO dates without an offset? See [date literals](#date-literals-need-a-time-zone) and [`string.date.iso.parse`](#stringdateisoparse-reads-dates-in-utc).
-- Do you use `"@"` or `"[k]?"` as a literal key? [Escape it](#-holds-an-objects-metadata).
-- Do you set `clone`, or rely on output being a copy of its input? [Output shares unchanged values](#the-clone-option-is-removed).
-- Do you write `"+": "delete"` or `"+": "reject"` and care about key order or symbol keys? See [delete](#-delete-removes-symbol-keys-and-lists-keys-as-declared) and [reject](#-reject-checks-string-keys-only).
-- Do you use function defaults, or morphs on defaults? [They run on each call](#defaults-run-each-time-theyre-applied).
-- Do you chain two right bounds, like `number < 5 < 6`? [Group them](#a-second-right-bound-throws).
-- Do you embed an async Standard Schema, like a Zod schema with an async refinement? [It throws](#standard-schemas-must-validate-synchronously).
-- Do you store or snapshot `toJsonSchema()`, `.expression` or `.json`? See [Output](#output).
-- Do you rely on what `.required()`, `.map()` or arkregex infer? See [Inference](#inference) and [ArkRegex](#arkregex).
-- Do you import from `@ark/schema`, `@ark/util` or a deep path like `arktype/internal/...`? See [@ark/schema](#arkschema), [@ark/util](#arkutil) and [Deep imports](#deep-imports).
+- Do you ship arktype to a browser without a build step that precompiles? [It's larger](https://arktype.io/docs/upgrading#unprecompiled-arktype-is-larger).
+- Do you install `@ark/type`, `@ark/regex` or an `@arktype/*` package? [Rename it](https://arktype.io/docs/upgrading#package-names).
+- Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](https://arktype.io/docs/upgrading#arkerrors-is-no-longer-an-array).
+- Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](https://arktype.io/docs/upgrading#errors-are-plain-objects).
+- Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](https://arktype.io/docs/upgrading#undeclared-keys-have-the-undeclared-code) and [discriminant](https://arktype.io/docs/upgrading#union-misses-have-the-discriminant-code).
+- Do you snapshot or assert error messages, or their order? See [Errors](https://arktype.io/docs/upgrading#errors): objects, dates and union misses print differently, errors follow the order keys are declared, and configured messages apply to more errors.
+- Do you configure an `expected`, `actual` or `message` writer? [Writers take the error](https://arktype.io/docs/upgrading#error-writers-receive-the-error-and-the-locale).
+- Do you call `configure()` after a Type is created, or pass a global-only option to a Scope? See [Configuration](https://arktype.io/docs/upgrading#configuration).
+- Do you use `number` for data that can be `Infinity`? [Allow it](https://arktype.io/docs/upgrading#number-rejects-infinity).
+- Do you write date literals or limits without a time zone, or parse ISO dates without an offset? See [date literals](https://arktype.io/docs/upgrading#date-literals-need-a-time-zone) and [`string.date.iso.parse`](https://arktype.io/docs/upgrading#stringdateisoparse-reads-dates-in-utc).
+- Do you use `"@"` or `"[k]?"` as a literal key? [Escape it](https://arktype.io/docs/upgrading#-holds-an-objects-metadata).
+- Do you set `clone`, or rely on output being a copy of its input? [Output shares unchanged values](https://arktype.io/docs/upgrading#the-clone-option-is-removed).
+- Do you write `"+": "delete"` or `"+": "reject"` and care about key order or symbol keys? See [delete](https://arktype.io/docs/upgrading#-delete-removes-symbol-keys-and-lists-keys-as-declared) and [reject](https://arktype.io/docs/upgrading#-reject-checks-string-keys-only).
+- Do you use function defaults, or morphs on defaults? [They run on each call](https://arktype.io/docs/upgrading#defaults-run-each-time-theyre-applied).
+- Do you chain two right bounds, like `number < 5 < 6`? [Group them](https://arktype.io/docs/upgrading#a-second-right-bound-throws).
+- Do you embed an async Standard Schema, like a Zod schema with an async refinement? [It throws](https://arktype.io/docs/upgrading#standard-schemas-must-validate-synchronously).
+- Do you store or snapshot `toJsonSchema()`, `.expression` or `.json`? See [Output](https://arktype.io/docs/upgrading#output).
+- Do you rely on what `.required()`, `.map()` or arkregex infer? See [Inference](https://arktype.io/docs/upgrading#inference) and [ArkRegex](https://arktype.io/docs/upgrading#arkregex).
+- Do you import from `@ark/schema`, `@ark/util` or a deep path like `arktype/internal/...`? See [@ark/schema](https://arktype.io/docs/upgrading#arkschema), [@ark/util](https://arktype.io/docs/upgrading#arkutil) and [Deep imports](https://arktype.io/docs/upgrading#deep-imports).
 - Do you use `@ark/json-schema`, `@ark/fast-check` or attest? See their sections below.
 
 ## Bundle size
@@ -1530,7 +1530,7 @@ type({ kind: "'circle'", r: "number" }).or({
 type("number[] | string[]")(["a", 1])
 ```
 
-Objects alike but for one key's value are now one object (see [Output](#output)), so data they reject is reported as any object's is, each failing key on its own, and a message configured on the union no longer replaces the error at that key.
+Objects alike but for one key's value are now one object (see [Output](https://arktype.io/docs/upgrading#output)), so data they reject is reported as any object's is, each failing key on its own, and a message configured on the union no longer replaces the error at that key.
 
 ### Errors follow the order keys are declared
 
@@ -2111,7 +2111,7 @@ const User = type({
 | `string.numeric` | a well-formed numeric string |
 | `string.numeric.parse` | a morph from a well-formed numeric string and finite to a number |
 | `string.regex` | a regex pattern |
-| `string.semver` | a semantic version (see https\://semver.org/) |
+| `string.semver` | a semantic version (see <https://semver.org/>) |
 | `string.trim` | a morph from a string to trimmed |
 | `string.trim.preformatted` | trimmed |
 | `string.upper` | a morph from a string to uppercase |
@@ -3561,7 +3561,7 @@ These are all the keywords `type` resolves. To define your own, see [scopes](htt
 | `string.numeric` | a well-formed numeric string |
 | `string.numeric.parse` | a morph from a well-formed numeric string and finite to a number |
 | `string.regex` | a regex pattern |
-| `string.semver` | a semantic version (see https\://semver.org/) |
+| `string.semver` | a semantic version (see <https://semver.org/>) |
 | `string.trim` | a morph from a string to trimmed |
 | `string.trim.preformatted` | trimmed |
 | `string.upper` | a morph from a string to uppercase |
@@ -4714,7 +4714,7 @@ const $ = scope({
 })
 ```
 
-Aliases are autocompleted and validated like built-in keywords. Write definitions inside a scope directly: wrapping one in `type(...)` fails, because `type` only knows built-in keywords (see [thunks](#thunks)).
+Aliases are autocompleted and validated like built-in keywords. Write definitions inside a scope directly: wrapping one in `type(...)` fails, because `type` only knows built-in keywords (see [thunks](https://arktype.io/docs/scopes#thunks)).
 
 `$.type` parses a definition that can reference the scope's aliases. Types created this way keep their scope, so chained methods can reference the aliases too:
 
@@ -5331,13 +5331,13 @@ if (out instanceof type.errors) {
 | `count` | how many errors were added, more than `issues.length` when several failed at one path |
 | `toJSON()` | an array of each error's JSON, with its `propString` |
 | `toLocaleString(locale?)` | the summary in a [locale](https://arktype.io/docs/i18n#rendering-in-a-locale) |
-| `throw()` | throws a [`TraversalError`](#traversalerror) |
+| `throw()` | throws a [`TraversalError`](https://arktype.io/docs/errors#traversalerror) |
 
 `arktype` exports functions that read an `ArkErrors`, most grouping it by path:
 
 | function | what it returns |
 | - | - |
-| `firstIssue(out)` | the first error in `issues`, found [without the rest](#finding-only-the-first) where it can be |
+| `firstIssue(out)` | the first error in `issues`, found [without the rest](https://arktype.io/docs/errors#finding-only-the-first) where it can be |
 | `byPath(out)` | an object mapping each path's `propString` to its error |
 | `flatByPath(out)` | like `byPath`, but each value is an array, with an `intersection` split into its errors |
 | `flatProblemsByPath(out)` | like `flatByPath`, but with each error's `problem` |
@@ -5575,7 +5575,7 @@ the path being validated or morphed
 
 - array indices represented as numbers
 - warning: mutated during traversal - use `path.slice(0)` to snapshot
-- use [`propString`](#propstring) for a stringified version
+- use [`propString`](https://arktype.io/docs/traversal-api#propstring) for a stringified version
 
 ### `root`
 
@@ -5603,11 +5603,11 @@ whether `currentBranch` (or the traversal root, outside a union) has one or more
 
 the data being validated or morphed
 
-- the value at [`path`](#path), as transformed by any morphs that have already run
+- the value at [`path`](https://arktype.io/docs/traversal-api#path), as transformed by any morphs that have already run
 
 ### `propString`
 
-a string representing [`path`](#path)
+a string representing [`path`](https://arktype.io/docs/traversal-api#path)
 
 - uses `.access` [where allowed by JS](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Property_accessors#dot_notation), falling back to `[indexAccess]`
 
@@ -5627,7 +5627,7 @@ add an [ArkError](https://arktype.io/docs/errors) and return `false`
 add an [ArkError](https://arktype.io/docs/errors) from a description and return `false`
 
 - useful for predicates like `.narrow`
-- equivalent to [`reject`](#reject)({ expected })
+- equivalent to [`reject`](https://arktype.io/docs/traversal-api#reject)({ expected })
 
 ### `error`
 
@@ -5688,7 +5688,7 @@ $.type({ age: "number <= 100" })({ age: 101 })
 
 ### Type
 
-`.configure` adds [metadata](https://arktype.io/docs/expressions#meta), like a `description` or [error parts](#error-messages), to a Type. It applies wherever that Type is referenced, but not to the Types inside it:
+`.configure` adds [metadata](https://arktype.io/docs/expressions#meta), like a `description` or [error parts](https://arktype.io/docs/configuration#error-messages), to a Type. It applies wherever that Type is referenced, but not to the Types inside it:
 
 ```ts
 // don't print the password
@@ -5707,21 +5707,21 @@ User({ email: "david@arktype.io", password: "ez123" })
 
 | option | default | levels |
 | - | - | - |
-| [`onUndeclaredKey`](#onundeclaredkey) | `"ignore"` | global, type (`"+"`) |
-| [`exactOptionalPropertyTypes`](#exactoptionalpropertytypes) | `true` | global, scope |
-| [`numberAllowsNaN`](#numberallowsnan) | `false` | global |
-| [`numberAllowsInfinity`](#numberallowsinfinity) | `false` | global |
-| [`dateAllowsInvalid`](#dateallowsinvalid) | `false` | global |
-| [`jitless`](#jitless) | `false`, or `true` where `new Function` is blocked | global, scope |
-| [`onFail`](#onfail) | `null`, which returns `ArkErrors` | global, scope |
-| [`errors`](#errors) | `"all"` | global, scope |
-| [`mutatesInput`](#mutatesinput) | `false` | global, scope |
-| [`keywords`](#keywords) | `{}` | global |
-| [`locale`](#locale) | `en` | global |
-| [an error code](#by-code), like `divisor` | ArkType's messages | global, scope |
-| [`toJsonSchema`](#tojsonschema) | draft 2020-12, throwing for what it can't express | global, scope |
+| [`onUndeclaredKey`](https://arktype.io/docs/configuration#onundeclaredkey) | `"ignore"` | global, type (`"+"`) |
+| [`exactOptionalPropertyTypes`](https://arktype.io/docs/configuration#exactoptionalpropertytypes) | `true` | global, scope |
+| [`numberAllowsNaN`](https://arktype.io/docs/configuration#numberallowsnan) | `false` | global |
+| [`numberAllowsInfinity`](https://arktype.io/docs/configuration#numberallowsinfinity) | `false` | global |
+| [`dateAllowsInvalid`](https://arktype.io/docs/configuration#dateallowsinvalid) | `false` | global |
+| [`jitless`](https://arktype.io/docs/configuration#jitless) | `false`, or `true` where `new Function` is blocked | global, scope |
+| [`onFail`](https://arktype.io/docs/configuration#onfail) | `null`, which returns `ArkErrors` | global, scope |
+| [`errors`](https://arktype.io/docs/configuration#errors) | `"all"` | global, scope |
+| [`mutatesInput`](https://arktype.io/docs/configuration#mutatesinput) | `false` | global, scope |
+| [`keywords`](https://arktype.io/docs/configuration#keywords) | `{}` | global |
+| [`locale`](https://arktype.io/docs/configuration#locale) | `en` | global |
+| [an error code](https://arktype.io/docs/configuration#by-code), like `divisor` | ArkType's messages | global, scope |
+| [`toJsonSchema`](https://arktype.io/docs/configuration#tojsonschema) | draft 2020-12, throwing for what it can't express | global, scope |
 
-A Type's own options are its [metadata](https://arktype.io/docs/expressions#meta), including the [parts of its errors](#error-messages).
+A Type's own options are its [metadata](https://arktype.io/docs/expressions#meta), including the [parts of its errors](https://arktype.io/docs/configuration#error-messages).
 
 ## Error messages
 
@@ -5856,7 +5856,7 @@ type.string(5)
 
 ## keywords
 
-Configure built-in keywords like `string.email` by name. Each takes a description or the same options as [`.configure`](#type):
+Configure built-in keywords like `string.email` by name. Each takes a description or the same options as [`.configure`](https://arktype.io/docs/configuration#type):
 
 ```ts
 import { configure } from "arktype/config"
@@ -6048,7 +6048,7 @@ const out = User({ name: 5, age: "5" })
 
 With `"first"`, which of the data's errors is returned isn't promised, and can differ between a Type and its precompiled validator.
 
-With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](#locale). A narrow or morph that reads `ctx.errors` while validating sees each issue added so far written the same way, as `is invalid` at its own path.
+With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](https://arktype.io/docs/configuration#locale). A narrow or morph that reads `ctx.errors` while validating sees each issue added so far written the same way, as `is invalid` at its own path.
 
 `errors` can also be set per Scope. It applies to that Scope's Types, including where another Scope references them.
 
@@ -6199,7 +6199,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-Like other [global config](https://arktype.io/docs/configuration#global), a locale is configured before any Type is created. It can't be set for a scope or a Type. To choose one per request, configure a [function](#switching-locales).
+Like other [global config](https://arktype.io/docs/configuration#global), a locale is configured before any Type is created. It can't be set for a scope or a Type. To choose one per request, configure a [function](https://arktype.io/docs/i18n#switching-locales).
 
 Shipped locales like `arktype/locales/de` work when imported. A locale you write, or a locale function, also needs `import "arktype/i18n"` unless a shipped locale is imported. Without it, creating a Type, `toLocaleString` or `messageIn` with that locale throws. This keeps other locales out of bundles that only use `en`.
 
@@ -6270,7 +6270,7 @@ const handle = (body: unknown) =>
 
 The function is called once for an `ArkErrors`, whose messages keep the locale it returned, so they never mix languages. If it returns `undefined` or throws, they're written in English.
 
-Since messages are written when they're first read, read `summary` or `issues` inside the request. Errors returned from `requestLocale.run` and read later, like by a framework's error handler, are written in English. There, call [`toLocaleString`](#rendering-in-a-locale) instead.
+Since messages are written when they're first read, read `summary` or `issues` inside the request. Errors returned from `requestLocale.run` and read later, like by a framework's error handler, are written in English. There, call [`toLocaleString`](https://arktype.io/docs/i18n#rendering-in-a-locale) instead.
 
 ## Rendering in a locale
 
@@ -6338,7 +6338,7 @@ const Password = type("string >= 8").configure({
 const out = Password("ez")
 ```
 
-A writer's text isn't cited, so it should read as what follows the locale's "must be", like `de`'s `muss … sein`. The writer can also call an [i18n library](#using-an-i18n-library).
+A writer's text isn't cited, so it should read as what follows the locale's "must be", like `de`'s `muss … sein`. The writer can also call an [i18n library](https://arktype.io/docs/i18n#using-an-i18n-library).
 
 ## Changing part of a locale
 
@@ -6486,7 +6486,7 @@ export const fr: Locale = {
 
 With `"min": "doit être au moins {{rule}}"`, `"moreThan": "doit être supérieur à {{rule}}"` and `"was": "{{problem}} (reçu {{actual}})"` in the `validation` namespace, `type({ n: "number >= 2.5" })` reads `n doit être au moins 2.5 (reçu 1.5)` for `{ n: 1.5 }` and `n est requis` for `{}`.
 
-- Build one locale per language and [choose one per read](#switching-locales) with `configure({ locale: () => ... })`.
+- Build one locale per language and [choose one per read](https://arktype.io/docs/i18n#switching-locales) with `configure({ locale: () => ... })`.
 - If your library types its keys, cast ArkType's (`as never`).
 - Pass numbers through `locale.number`, so a rule is printed like the actual it is compared with.
 - A key your catalog lacks renders whatever the library returns for it, which for i18next is the key itself, so keep the catalog complete.
@@ -7011,7 +7011,7 @@ decode(Person, bytes) // typed and validated
 
 > Every member of a Type and of the type function.
 
-Every `Type` has the members below. Types of objects, strings, numbers, arrays and Dates add the ones under [Objects](#objects) and [Constraints](#constraints).
+Every `Type` has the members below. Types of objects, strings, numbers, arrays and Dates add the ones under [Objects](https://arktype.io/docs/type-api#objects) and [Constraints](https://arktype.io/docs/type-api#constraints).
 
 ## Validation
 
@@ -7062,7 +7062,7 @@ const numerics = [0, "one", 2n].filter(Numeric.allows)
 
 ### `from`
 
-alias for [`assert`](#assert) with typed input
+alias for [`assert`](https://arktype.io/docs/type-api#assert) with typed input
 
 ```ts
 const T = type({ foo: "string" });
@@ -7098,7 +7098,7 @@ type UnparsedNumber = typeof parseNumber.inferIn // string
 
 type of output this returns
 
-- alias of [`infer`](#infer)
+- alias of [`infer`](https://arktype.io/docs/type-api#infer)
 - inference-only property that will be `undefined` at runtime
 
 ```ts
@@ -7108,7 +7108,7 @@ type ParsedNumber = typeof parseNumber.inferOut // number
 
 ### `inferIntrospectableOut`
 
-type of output that can be introspected at runtime (e.g. via [`out`](#out))
+type of output that can be introspected at runtime (e.g. via [`out`](https://arktype.io/docs/type-api#out))
 
 - warning: If your Type contains morphs, they will be inferred as `unknown` unless
   they are an ArkType keyword or have an explicitly defined output validator.
@@ -7137,7 +7137,7 @@ generic parameter representing this Type
 - inference-only property that will be `undefined` at runtime
 - warning: May contain types representing morphs or default values that would
   be inaccurate if used directly for runtime values. In those cases,
-  you should use [`infer`](#infer) or [`inferIn`](#inferin) on this object instead.
+  you should use [`infer`](https://arktype.io/docs/type-api#infer) or [`inferIn`](https://arktype.io/docs/type-api#inferin) on this object instead.
 
 ### `as`
 
@@ -7221,7 +7221,7 @@ const nonObject = NotOddBox(null) // must be not odd (was null)
 
 add description to shallow references
 
-- equivalent to `.configure({ description })` (see [`configure`](#configure))
+- equivalent to `.configure({ description })` (see [`configure`](https://arktype.io/docs/type-api#configure))
 - warning: does not affect error messages within properties of an object
 
 ```ts
@@ -7331,7 +7331,7 @@ const WithPredicate = type("string").narrow((s): s is `${string}.tsx` => s.endsW
 
 apply a predicate function to input
 
-- warning: the behavior of [`narrow`](#narrow), this method's output counterpart, is usually more desirable
+- warning: the behavior of [`narrow`](https://arktype.io/docs/type-api#narrow), this method's output counterpart, is usually more desirable
 - most useful for morphs with input types that are re-used externally
 - [Type predicates](https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates) can be used as casts
 
@@ -7442,7 +7442,7 @@ ParseJson("{")
 check if the parsed Type's constraints are identical
 
 - equal types have identical input and output constraints and transforms
-- ignores associated [`meta`](#meta), which does not affect the set of allowed values
+- ignores associated [`meta`](https://arktype.io/docs/type-api#meta), which does not affect the set of allowed values
 
 ```ts
 const DivisibleBy6 = type.number.divisibleBy(6).moreThan(0)
@@ -7457,9 +7457,9 @@ console.log(DivisibleBy6.equals(ThirdTry))
 
 ### `ifEquals`
 
-narrow this based on an [`equals`](#equals) check
+narrow this based on an [`equals`](https://arktype.io/docs/type-api#equals) check
 
-- ignores associated [`meta`](#meta), which does not affect the set of allowed values
+- ignores associated [`meta`](https://arktype.io/docs/type-api#meta), which does not affect the set of allowed values
 
 ```ts
 const N = type.raw(`${Math.random()}`)
@@ -7472,8 +7472,8 @@ const Ez = N.ifEquals("0.5")
 check if this is a subtype of the parsed Type
 
 - a subtype must include all constraints from the base type
-- unlike [`equals`](#equals), additional constraints may be present
-- ignores associated [`meta`](#meta), which does not affect the set of allowed values
+- unlike [`equals`](https://arktype.io/docs/type-api#equals), additional constraints may be present
+- ignores associated [`meta`](https://arktype.io/docs/type-api#meta), which does not affect the set of allowed values
 
 ```ts
 type.string.extends("unknown") // true
@@ -7482,9 +7482,9 @@ type.string.extends(/^a.*z$/) // false
 
 ### `ifExtends`
 
-narrow this based on an [`extends`](#extends) check
+narrow this based on an [`extends`](https://arktype.io/docs/type-api#extends) check
 
-- ignores associated [`meta`](#meta), which does not affect the set of allowed values
+- ignores associated [`meta`](https://arktype.io/docs/type-api#meta), which does not affect the set of allowed values
 
 ```ts
 const N = type(Math.random() > 0.5 ? "true" : "0") // Type<0 | true>
@@ -7717,7 +7717,7 @@ internal JSON representation
 
 ### `toJSON`
 
-alias of [`json`](#json) for `JSON.stringify` compatibility
+alias of [`json`](https://arktype.io/docs/type-api#json) for `JSON.stringify` compatibility
 
 ### `toJsonSchema`
 

@@ -1,6 +1,6 @@
 ---
 title: Setup
-description: Add precompilation to your bundler, framework, test runner or Node program
+description: Add precompilation to your bundler, framework, test runner or Node program.
 ---
 
 ## Installation
@@ -14,7 +14,7 @@ description: Add precompilation to your bundler, framework, test runner or Node 
 `@ark/aot/unplugin` precompiles a program as your bundler builds it.
 
 <Tabs
-	items={["Vite", "Rolldown", "Rollup", "webpack", "Rspack", "esbuild", "Bun", "Others"]}
+	items={["Vite", "esbuild", "Rolldown", "Rollup", "webpack", "Rspack", "Bun", "Others"]}
 	groupId="bundler"
 	persist
 >
@@ -31,6 +31,24 @@ export default defineConfig({
 ```
 
 Vitest runs tests through the same plugin.
+
+</Tab>
+<Tab value="esbuild">
+
+```ts title="build.ts"
+import { precompile } from "@ark/aot/unplugin"
+import { build } from "esbuild"
+
+await build({
+	entryPoints: ["src/main.ts"],
+	// required, as precompiled modules import validators the bundle includes
+	bundle: true,
+	outfile: "dist/main.js",
+	plugins: [precompile.esbuild()]
+})
+```
+
+Put `precompile.esbuild()` ahead of any plugin that loads your TypeScript modules, since esbuild loads a module with the first plugin that returns it.
 
 </Tab>
 <Tab value="Rolldown">
@@ -111,24 +129,6 @@ export default {
 	plugins: [precompile.rspack()]
 }
 ```
-
-</Tab>
-<Tab value="esbuild">
-
-```ts title="build.ts"
-import { precompile } from "@ark/aot/unplugin"
-import { build } from "esbuild"
-
-await build({
-	entryPoints: ["src/main.ts"],
-	// required, as precompiled modules import validators the bundle includes
-	bundle: true,
-	outfile: "dist/main.js",
-	plugins: [precompile.esbuild()]
-})
-```
-
-Put `precompile.esbuild()` ahead of any plugin that loads your TypeScript modules, since esbuild loads a module with the first plugin that returns it.
 
 </Tab>
 <Tab value="Bun">
