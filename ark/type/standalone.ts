@@ -445,42 +445,6 @@ export const precompileStandalone = (
 	}
 }
 
-// about the length a minifier leaves of code: no comments, spaces or names
-// longer than two characters
-const minifiedLengthOf = (code: string): number =>
-	code
-		.replace(/\/\*[\S\s]*?\*\/|\/\/[^\n]*/g, "")
-		.replace(/\s+/g, "")
-		.replace(/[$A-Z_a-z][\w$]{2,}/g, "ab").length
-
-// the text of a runtime export, or of the functions an object of them holds
-const runtimeTextOf = (name: string): string => {
-	const value: unknown = runtime[name as keyof typeof runtime]
-	return typeof value === "object" && value !== null ?
-			Object.values(value)
-				.map(entry => (typeof entry === "string" ? entry : String(entry)))
-				.join(",")
-		:	String(value)
-}
-
-/** about the length a minifier leaves of modules and the runtime they read */
-export const minifiedSizeOf = ({
-	code,
-	modules
-}: StandaloneModules): number => {
-	const written = [code, ...Object.values(modules)]
-	const read = new Set(written.join("\n").match(/(?<=\bruntime\.)[\w$]+/g))
-	// with each export the runtime's own code reads
-	for (const name of read) {
-		for (const word of runtimeTextOf(name).match(/[$A-Z_a-z][\w$]*/g) ?? [])
-			if (word in runtime) read.add(word)
-	}
-	return [...written, ...[...read].map(runtimeTextOf)].reduce(
-		(length, text) => length + minifiedLengthOf(text),
-		0
-	)
-}
-
 export const precompileStandaloneModules = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
