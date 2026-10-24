@@ -169,7 +169,17 @@ export const LiveType = ({ ghost, arg: initialArg }: LiveTypeProps) => {
 				</span>
 			</figcaption>
 			<div className="live-body" data-pending={pending ? "" : undefined}>
-				<div ref={lineRef} className="tl">
+				<div
+					ref={lineRef}
+					className="tl"
+					data-ghosting={ghosting ? "" : undefined}
+					style={
+						{
+							"--final": final.def.length,
+							"--typed": ghosting ? Math.max(def.length, 1) : undefined
+						} as CSSProperties
+					}
+				>
 					<span className="k">const</span> <span className="decl">T</span>{" "}
 					<span className="k">=</span> <span className="fn">type</span>
 					<span className="y">(&quot;</span>

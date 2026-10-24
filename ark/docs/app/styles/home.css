@@ -649,6 +649,19 @@
 				repeat-x left bottom / 6px 3px;
 		}
 	}
+	/* while the ghost types (and before, while it waits to), the field holds
+	   the final line's width and its closing quote is drawn back to the
+	   cursor, so nothing after it shifts */
+	:root[data-ghost] & .live-body > .tl,
+	.tl[data-ghosting] {
+		.field {
+			min-width: calc(var(--final) * 1ch);
+		}
+		.field + .y {
+			display: inline-block;
+			translate: calc((var(--typed, 1) - var(--final)) * 1ch) 0;
+		}
+	}
 	.m-kw,
 	.m-num {
 		color: var(--blue);
