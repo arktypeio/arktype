@@ -124,7 +124,7 @@ const jsonAttr = <t>(node: Jsx, name: string): t | undefined => {
 /** text with each URL in it as a link, which Markdown writes unescaped */
 const phrasing = (text: string): PhrasingContent[] =>
 	text
-		.split(/(https?:\/\/[^\s)]*[^\s).,;:])/)
+		.split(/(https?:\/\/[^\s)]*[^\s),.:;])/)
 		.filter(Boolean)
 		.map(part =>
 			/^https?:\/\//.test(part) ?
