@@ -30,7 +30,11 @@ const lede = `${draftOf(claims.headline)} ${draftOf(claims.pickThree)} The build
 const title = `ArkType · ${tagline}`
 
 export const metadata: Metadata = {
-	...defineMetadata({ title, description: lede }),
+	...defineMetadata({
+		title,
+		description: lede,
+		ogImageAlt: `${draftOf(claims.headline)} ${draftOf(claims.boardTitle)}`
+	}),
 	title: { absolute: title }
 }
 

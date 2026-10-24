@@ -66,14 +66,15 @@ export const generateMetadata = async ({
 	const tree = getPageTree()
 	const page = tree.pageByUrl.get(url)
 	if (!page) notFound()
-	const { title, description } = page.frontmatter
+	const { title, description, ogImage } = page.frontmatter
 	const absolute = titleOf(tree, page)
 	// a shared link's card reads the whole title, and follows og:url
 	const shared = { title: absolute ?? `${title} · ArkType` }
 	const metadata = defineMetadata({
 		title,
 		description,
-		ogImage: "ogDocs.png",
+		ogImage: ogImage ?? "ogDocs.png",
+		ogImageAlt: ogImage && title,
 		url
 	})
 	return {

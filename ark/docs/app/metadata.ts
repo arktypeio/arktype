@@ -11,6 +11,8 @@ export type MetadataOptions = {
 	title?: string
 	description?: string
 	ogImage?: string
+	/** what the card shows, for readers who can't see it */
+	ogImageAlt?: string
 	/** the page's path, for og:url, e.g. "/playground" */
 	url?: string
 }
@@ -19,6 +21,7 @@ export const defineMetadata = ({
 	title,
 	description = tagline,
 	ogImage = "og.png",
+	ogImageAlt,
 	url = ""
 }: MetadataOptions): Metadata => ({
 	...(title && { title }),
@@ -31,6 +34,7 @@ export const defineMetadata = ({
 		images: [
 			{
 				url: `${siteUrl}/image/${ogImage}`,
+				...(ogImageAlt && { alt: ogImageAlt }),
 				width: 1200,
 				height: 600
 			}
