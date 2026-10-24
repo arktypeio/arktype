@@ -4098,9 +4098,12 @@ export class Precompiler {
 								reference.id,
 								"R4",
 								`\`${binding!.name}\` is @ark/schema's, not the standalone runtime's`,
-								[
-									`what a standalone validator creates isn't an instance of @ark/schema's ${name}`
-								],
+								// a class, unlike a function like firstIssue
+								/^[A-Z]/.test(name) ?
+									[
+										`what a standalone validator creates isn't an instance of @ark/schema's ${name}`
+									]
+								:	[],
 								writeSchemaExportHint(name)
 							)
 						:	this.diagnostic(
