@@ -167,7 +167,7 @@ if (
 	)
 }
 
-if ("failsAt" in (undetailedRuntime.ArkErrors as Function).prototype)
+if ("_at" in (undetailedRuntime.ArkErrors as Function).prototype)
 	throw new Error("⚠️  @ark/schema/runtime/none bundles shared/issues.ts.")
 
 // what builds writing errors for size load in place of it

@@ -56,18 +56,12 @@ export class ArkErrors implements FailureContext {
 	}
 
 	/** @internal */
-	failsAt(
-		site: FailureSite,
-		data: unknown,
-		key?: PropertyKey,
-		absent?: true
-	): true | undefined {
+	_at(site: FailureSite, data: unknown, key?: PropertyKey): true | undefined {
 		const path = this._p
 		let context = site.value ?? (site as SiteContext)
 		if (key !== undefined) {
 			path.push(key)
-			if (absent || (site.missing && !(key in (data as object))))
-				context = site.missing!
+			if (site.missing && !(key in (data as object))) context = site.missing
 			else data = (data as Keyed)[key]
 		}
 		const issue: ArkIssue = {
@@ -84,16 +78,15 @@ export class ArkErrors implements FailureContext {
 	}
 
 	/** @internal */
-	failsIn(
+	_in(
 		apply: CompactApply,
 		value: unknown,
-		key?: PropertyKey,
+		key: PropertyKey,
 		missing?: FailureSite,
 		data?: unknown
 	): boolean | undefined {
-		if (key === undefined) return !apply(value, this)
 		if (missing && value === undefined && !(key in (data as object)))
-			return this.failsAt(missing, data, key, true)
+			return this._at(missing, data, key)
 		this._p.push(key)
 		const continues = apply(value, this)
 		this._p.pop()
@@ -121,14 +114,12 @@ export const issueAt = (
 	path: PropertyKey[],
 	site: FailureSite,
 	data: unknown,
-	key: PropertyKey | undefined,
-	absent?: true
+	key: PropertyKey | undefined
 ): ArkIssue => {
 	let context = site.value ?? (site as SiteContext)
 	if (key !== undefined) {
 		path.push(key)
-		if (absent || (site.missing && !(key in (data as object))))
-			context = site.missing!
+		if (site.missing && !(key in (data as object))) context = site.missing
 		else data = (data as Keyed)[key]
 	}
 	const issue: ArkIssue = {
@@ -151,8 +142,19 @@ export const issuesOf = (
 ): ArkIssue[] => {
 	apply(data, errors)
 	// data a write or a getter has made valid since fails as a whole
-	if (!errors._.length) errors.failsAt({ code: "predicate" }, data)
+	if (!errors._.length) errors._at({ code: "predicate" }, data)
 	return errors._
+}
+
+export const foundErrors = (
+	apply: CompactApply,
+	data: unknown,
+	onFail: ((errors: ArkErrors) => unknown) | null,
+	Ctx: new () => ArkErrors
+): unknown => {
+	const errors = new Ctx()
+	issuesOf(apply, data, errors)
+	return onFail ? onFail(errors) : errors
 }
 
 // a root reporting into ArkErrors, as a size build applies it; they hold

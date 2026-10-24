@@ -79,7 +79,6 @@ const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 			if (site.code) codes.add(site.code)
 			if (site.value) codes.add(site.value.code)
 			if (site.missing) codes.add(site.missing.code)
-			if ("fails" in site) codes.add("union")
 		}
 		for (const node of unit.declared) {
 			if (node.hasKind("union") && node.discriminantJit)
@@ -115,7 +114,6 @@ const siteWords = new Set([
 	"siteOf",
 	"textSiteOf",
 	"keySiteOf",
-	"failing",
 	"value",
 	"path",
 	"missing"
@@ -344,6 +342,19 @@ export const issueSiteOf = (site: FailureSite | UnionSite): object => {
 		: isDescribed(missingContext) ? runtime.requiredSite
 		: { missing: missingContext }
 	))
+}
+
+const unionContexts = new WeakMap<UnionSite, TextContext>()
+
+// a required key whose union value fails is reported at the key's site, as
+// one whose value is a basis is, alike for each key the union is the value of
+export const unionKeySiteOf = (
+	union: UnionSite,
+	missing: TextContext
+): object => {
+	let value = unionContexts.get(union)
+	if (!value) unionContexts.set(union, (value = { ...union, code: "union" }))
+	return issueSiteOf({ value, missing })
 }
 
 // runtime keywords with one param never read Traversal

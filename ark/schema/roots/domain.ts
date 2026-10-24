@@ -95,7 +95,11 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 	compileCondition(js: NodeCompiler, data: string): string {
 		return (
 			this.domain === "object" ?
-				`${data} !== null && (typeof ${data} === "object" || typeof ${data} === "function")`
+				// Apply's check is the one an object's Allows writes, so a bundle
+				// holding both compresses it away
+				js.traversalKind === "Apply" ?
+					`(${data} instanceof Object || Object(${data}) === ${data})`
+				:	`${data} !== null && (typeof ${data} === "object" || typeof ${data} === "function")`
 			: this.requiresNaNCheck && this.checksInfinity ?
 				`Number.isFinite(${data})`
 			:	`typeof ${data} === "${this.domain}"${

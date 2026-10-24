@@ -48,12 +48,12 @@ var ArkIssues = class {
 		return this.summary
 	}
 	/** @internal */
-	failsAt(site, data, key, absent) {
+	_at(site, data, key) {
 		const path = this._p
 		let context = site.value ?? site
 		if (key !== void 0) {
 			path.push(key)
-			if (absent || (site.missing && !(key in data))) context = site.missing
+			if (site.missing && !(key in data)) context = site.missing
 			else data = data[key]
 		}
 		const issue = {
@@ -70,10 +70,9 @@ var ArkIssues = class {
 		return this.failFast
 	}
 	/** @internal */
-	failsIn(apply, value, key, missing, data) {
-		if (key === void 0) return !apply(value, this)
+	_in(apply, value, key, missing, data) {
 		if (missing && value === void 0 && !(key in data))
-			return this.failsAt(missing, data, key, true)
+			return this._at(missing, data, key)
 		this._p.push(key)
 		const continues = apply(value, this)
 		this._p.pop()
@@ -89,12 +88,10 @@ var applyIssues = (apply, data, onFail, Ctx = ArkIssues) => {
 		: errors
 	)
 }
-var indexSegments = []
 var messageOf = issue => {
 	let path = ""
 	for (const k of issue.path) {
-		if (typeof k === "number")
-			path += k < 256 ? (indexSegments[k] ??= `[${k}]`) : `[${k}]`
+		if (typeof k === "number") path += `[${k}]`
 		else {
 			if (path) path += "."
 			path += typeof k === "string" ? k : String(k)
@@ -201,10 +198,9 @@ var domains = (cases, description) => {
 var freeze = Object.freeze
 var holesByValue = /* @__PURE__ */ new WeakMap()
 var siteOf = (code, description) => ({ code, description })
-var failsAt = (ctx, site, data, key, absent) =>
-	!ctx?.failsAt || ctx.failsAt(site, data, key, absent)
+var failsAt = (ctx, site, data, key) => !ctx?._at || ctx._at(site, data, key)
 var failsIn = (ctx, apply, value, key, missing, data) =>
-	ctx?.failsAt ? ctx.failsIn(apply, value, key, missing, data) : !apply(value)
+	ctx?._at ? ctx._in(apply, value, key, missing, data) : !apply(value)
 var holdHoles = (value, id, holes = []) => {
 	holesByValue.set(value, [id, freeze(holes)])
 	return value
@@ -234,16 +230,11 @@ var intersection1saekmc1myv528 = [
 	)
 ]
 var union14x0uzw08oe5zu = [booleanChecker]
-var intersection1jmpl21nkry5a = /* @__PURE__ */ (([
+var intersection5cwqc80vqgdmc = /* @__PURE__ */ (([
 	union14x0uzw08oe5zuAllows
 ]) => {
-	const intersection1jmpl21nkry5aAllows = (data, ctx) => {
-		if (
-			!(
-				data !== null &&
-				(typeof data === "object" || typeof data === "function")
-			)
-		) {
+	const intersection5cwqc80vqgdmcAllows = (data, ctx) => {
+		if (!(data instanceof Object || Object(data) === data)) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
 		return structureohurqr1hn4luwAllows(data, ctx)
@@ -404,7 +395,7 @@ var intersection1jmpl21nkry5a = /* @__PURE__ */ (([
 		}
 		return true
 	}
-	return [intersection1jmpl21nkry5aAllows]
+	return [intersection5cwqc80vqgdmcAllows]
 })(union14x0uzw08oe5zu)
 var intersection1q3cvf20wik4xk = [
 	/* @__PURE__ */ intersection(
@@ -420,10 +411,10 @@ var unionwltuhb0wt5e34 = [/* @__PURE__ */ units(["size", "speed"], "union")]
 var union1yvbmuz0dlc3qf = [
 	/* @__PURE__ */ units(["introspectable", "smallest"], "union")
 ]
-var intersection1mhdhln0ehkfkv = /* @__PURE__ */ ((
+var intersectionb45fta02ocvqf = /* @__PURE__ */ ((
 	[uniontxb0ck1na4t1cAllows],
 	[intersection1saekmc1myv528Allows],
-	[intersection1jmpl21nkry5aAllows],
+	[intersection5cwqc80vqgdmcAllows],
 	[intersection1q3cvf20wik4xkAllows],
 	[union14x0uzw08oe5zuAllows],
 	[union13fa4p20868rbdAllows],
@@ -432,18 +423,13 @@ var intersection1mhdhln0ehkfkv = /* @__PURE__ */ ((
 	[unionwltuhb0wt5e34Allows],
 	[union1yvbmuz0dlc3qfAllows]
 ) => {
-	const intersection1mhdhln0ehkfkvAllows = (data, ctx) => {
-		if (
-			!(
-				data !== null &&
-				(typeof data === "object" || typeof data === "function")
-			)
-		) {
+	const intersectionb45fta02ocvqfAllows = (data, ctx) => {
+		if (!(data instanceof Object || Object(data) === data)) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structurek4olbd03nv54sAllows(data, ctx)
+		return structureudmrrv0yay1muAllows(data, ctx)
 	}
-	const structurek4olbd03nv54sAllows = (data, ctx) => {
+	const structureudmrrv0yay1muAllows = (data, ctx) => {
 		if (
 			!(
 				!("allowUnsafe" in data) ||
@@ -568,7 +554,7 @@ var intersection1mhdhln0ehkfkv = /* @__PURE__ */ ((
 		if (
 			!(
 				!("members" in data) ||
-				!failsIn(ctx, intersection1jmpl21nkry5aAllows, data.members, "members")
+				!failsIn(ctx, intersection5cwqc80vqgdmcAllows, data.members, "members")
 			)
 		) {
 			return false
@@ -704,11 +690,11 @@ var intersection1mhdhln0ehkfkv = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	return [intersection1mhdhln0ehkfkvAllows]
+	return [intersectionb45fta02ocvqfAllows]
 })(
 	uniontxb0ck1na4t1c,
 	intersection1saekmc1myv528,
-	intersection1jmpl21nkry5a,
+	intersection5cwqc80vqgdmc,
 	intersection1q3cvf20wik4xk,
 	union14x0uzw08oe5zu,
 	union13fa4p20868rbd,
@@ -729,10 +715,10 @@ var create10n7yuw0bfhpvo = ([allows], id, holes = []) => {
 	validator.allows = freeze(allows)
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersectionqms98d1vfykgm = /* @__PURE__ */ ((
+var intersection183ti520189nnw = /* @__PURE__ */ ((
 	[uniontxb0ck1na4t1cAllows],
 	[intersection1saekmc1myv528Allows],
-	[intersection1jmpl21nkry5aAllows],
+	[intersection5cwqc80vqgdmcAllows],
 	[intersection1q3cvf20wik4xkAllows],
 	[union14x0uzw08oe5zuAllows],
 	[union13fa4p20868rbdAllows],
@@ -741,18 +727,13 @@ var intersectionqms98d1vfykgm = /* @__PURE__ */ ((
 	[unionwltuhb0wt5e34Allows],
 	[union1yvbmuz0dlc3qfAllows]
 ) => {
-	const intersection17fx3y30h4v3bzAllows = (data, ctx) => {
-		if (
-			!(
-				data !== null &&
-				(typeof data === "object" || typeof data === "function")
-			)
-		) {
+	const intersectionoq1x8n0zz58yiAllows = (data, ctx) => {
+		if (!(data instanceof Object || Object(data) === data)) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structure140rzch1t1wndgAllows(data, ctx)
+		return structurez2pnp0lrlqa5Allows(data, ctx)
 	}
-	const structure140rzch1t1wndgAllows = (data, ctx) => {
+	const structurez2pnp0lrlqa5Allows = (data, ctx) => {
 		if (
 			!(
 				!("allowUnsafe" in data) ||
@@ -847,7 +828,7 @@ var intersectionqms98d1vfykgm = /* @__PURE__ */ ((
 		if (
 			!(
 				!("members" in data) ||
-				!failsIn(ctx, intersection1jmpl21nkry5aAllows, data.members, "members")
+				!failsIn(ctx, intersection5cwqc80vqgdmcAllows, data.members, "members")
 			)
 		) {
 			return false
@@ -980,18 +961,13 @@ var intersectionqms98d1vfykgm = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	const intersectionqms98d1vfykgmAllows = (data, ctx) => {
-		if (
-			!(
-				data !== null &&
-				(typeof data === "object" || typeof data === "function")
-			)
-		) {
+	const intersection183ti520189nnwAllows = (data, ctx) => {
+		if (!(data instanceof Object || Object(data) === data)) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structureq3edgy0f3ppobAllows(data, ctx)
+		return structurein1hhl1619y0yAllows(data, ctx)
 	}
-	const structureq3edgy0f3ppobAllows = (data, ctx) => {
+	const structurein1hhl1619y0yAllows = (data, ctx) => {
 		if (
 			!(
 				!("$schema" in data) ||
@@ -1008,7 +984,7 @@ var intersectionqms98d1vfykgm = /* @__PURE__ */ ((
 				!("precompile" in data) ||
 				!failsIn(
 					ctx,
-					intersection17fx3y30h4v3bzAllows,
+					intersectionoq1x8n0zz58yiAllows,
 					data.precompile,
 					"precompile"
 				)
@@ -1030,11 +1006,11 @@ var intersectionqms98d1vfykgm = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	return [intersectionqms98d1vfykgmAllows]
+	return [intersection183ti520189nnwAllows]
 })(
 	uniontxb0ck1na4t1c,
 	intersection1saekmc1myv528,
-	intersection1jmpl21nkry5a,
+	intersection5cwqc80vqgdmc,
 	intersection1q3cvf20wik4xk,
 	union14x0uzw08oe5zu,
 	union13fa4p20868rbd,
@@ -1048,8 +1024,8 @@ var created1
 var get0 = () => {
 	return (created0 ??= (() => {
 		const validator0 = create10n7yuw0bfhpvo(
-			intersection1mhdhln0ehkfkv,
-			"1b860ff1"
+			intersectionb45fta02ocvqf,
+			"cbbfph1y"
 		)
 		return validator0
 	})())
@@ -1057,8 +1033,8 @@ var get0 = () => {
 var get1 = () => {
 	return (created1 ??= (() => {
 		const validator0 = create10n7yuw0bfhpvo(
-			intersectionqms98d1vfykgm,
-			"xmqif716"
+			intersection183ti520189nnw,
+			"1g5t18s1"
 		)
 		return validator0
 	})())

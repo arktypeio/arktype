@@ -305,10 +305,11 @@ export abstract class NodeCompiler extends CompiledFunction<
 	// a discriminated union's Apply of data in its default case
 	defaultFails?(node: UnionNode, caseNode: BaseRoot): string
 	undeclaredFails?(node: StructureNode): string
+	// the site a required key whose value's condition failed is reported at,
+	// as a basis's key is, rather than by applying its value
+	failingSiteOf?(prop: BaseNode): string | undefined
 	// what a key's value whose condition failed is applied by, if not its Apply
 	failingApplyOf?(value: BaseNode): string | undefined
-	// what a required key's value is allowed by before it's applied, if anything
-	gate?(value: BaseNode, arg: string): string | undefined
 	// whether a predicate can't add issues itself, so Apply needn't count them
 	addsNoIssues?(predicate: Predicate): boolean
 
@@ -399,9 +400,9 @@ export abstract class NodeCompiler extends CompiledFunction<
 		)
 	}
 
-	// a call reporting a failure into ctx
+	// a call reporting a failure into ctx, by FailureContext's short names
 	fails(method: "failsAt" | "failsIn", args: string): string {
-		return `ctx.${method}(${args})`
+		return `ctx.${method === "failsAt" ? "_at" : "_in"}(${args})`
 	}
 
 	// returns what the case on matches returns, or otherwise

@@ -40,18 +40,18 @@ export interface UnionSite {
 // reports what fails to ctx, returning false only once traversal stops
 export type CompactApply = (data: unknown, ctx: FailureContext) => boolean
 
-/** where a compact Apply reports failures; each returns whether to stop */
+/**
+ * where a compact Apply reports failures; each returns whether to stop. A
+ * minifier keeps property names, and compiled code calls these at each
+ * failure, so they're named short: _at fails a site (failsAt), _in applies a
+ * value at its key (failsIn)
+ */
 export interface FailureContext {
-	failsAt(
-		site: FailureSite,
-		data: unknown,
-		key?: PropertyKey,
-		absent?: true
-	): boolean | undefined
-	failsIn(
+	_at(site: FailureSite, data: unknown, key?: PropertyKey): boolean | undefined
+	_in(
 		apply: CompactApply,
 		value: unknown,
-		key?: PropertyKey,
+		key: PropertyKey,
 		missing?: FailureSite,
 		data?: unknown
 	): boolean | undefined
@@ -129,19 +129,13 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	}
 
 	/** @internal */
-	failsAt(
-		site: FailureSite,
-		data: unknown,
-		key?: PropertyKey,
-		absent?: true
-	): true | undefined {
+	_at(site: FailureSite, data: unknown, key?: PropertyKey): true | undefined {
 		// a key's site reports the missing key or its value
 		const path = this._p
 		let context = site.value ?? (site as SiteContext)
 		if (key !== undefined) {
 			path.push(key)
-			if (absent || (site.missing && !(key in (data as object))))
-				context = site.missing!
+			if (site.missing && !(key in (data as object))) context = site.missing
 			else data = (data as Keyed)[key]
 		}
 		const issue: ArkIssue = {
@@ -159,16 +153,15 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	}
 
 	/** @internal */
-	failsIn(
+	_in(
 		apply: CompactApply,
 		value: unknown,
-		key?: PropertyKey,
+		key: PropertyKey,
 		missing?: FailureSite,
 		data?: unknown
 	): boolean | undefined {
-		if (key === undefined) return !apply(value, this)
 		if (missing && value === undefined && !(key in (data as object)))
-			return this.failsAt(missing, data, key, true)
+			return this._at(missing, data, key)
 		this._p.push(key)
 		const continues = apply(value, this)
 		this._p.pop()
@@ -208,9 +201,25 @@ export const issuesOf = (
 ): ArkIssue[] => {
 	apply(data, errors)
 	// data a write or a getter has made valid since fails as a whole
-	if (!errors._.length) errors.failsAt({ code: "predicate" }, data)
+	if (!errors._.length) errors._at({ code: "predicate" }, data)
 	releasedPath = errors._p
 	return errors._
+}
+
+// where every failure's issues are read as it returns, as by assert or
+// ~standard, waiting buys nothing
+export const foundErrors = (
+	apply: CompactApply,
+	data: unknown,
+	onFail: ArkIssues.Handler | null,
+	Ctx: new () => ArkIssues
+): unknown => {
+	const errors = new Ctx()
+	// as issuesOf, which a program of these never ships
+	apply(data, errors)
+	if (!errors._.length) errors._at({ code: "predicate" }, data)
+	releasedPath = errors._p
+	return onFail ? onFail(errors) : errors
 }
 
 interface ArkIssues {
@@ -226,21 +235,19 @@ interface ArkIssues {
 
 type Keyed = Record<PropertyKey, unknown>
 
-// a traversal's issue, as ArkErrors' failsAt writes it, but copying a path of
+// a traversal's issue, as ArkErrors' _at writes it, but copying a path of
 // one or two keys as a literal, which TurboFan allocates inline where slice()
 // calls a builtin
 export const issueAt = (
 	path: PropertyKey[],
 	site: FailureSite,
 	data: unknown,
-	key: PropertyKey | undefined,
-	absent?: true
+	key: PropertyKey | undefined
 ): ArkIssue => {
 	let context = site.value ?? (site as SiteContext)
 	if (key !== undefined) {
 		path.push(key)
-		if (absent || (site.missing && !(key in (data as object))))
-			context = site.missing!
+		if (site.missing && !(key in (data as object))) context = site.missing
 		else data = (data as Keyed)[key]
 	}
 	const issuePath =
@@ -281,14 +288,10 @@ export const mergeIssues = (
 	}
 }
 
-// "[i]" for each index below 256 a message has written
-const indexSegments: string[] = []
-
 export const messageOf = (issue: ArkIssue): string => {
 	let path = ""
 	for (const k of issue.path) {
-		if (typeof k === "number")
-			path += k < 256 ? (indexSegments[k] ??= `[${k}]`) : `[${k}]`
+		if (typeof k === "number") path += `[${k}]`
 		else {
 			if (path) path += "."
 			path += typeof k === "string" ? k : String(k)

@@ -285,6 +285,21 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		return transform(ctx, this.structure!, data)
 	}
 
+	// a structure checking only elements, as an array's does, is written into
+	// this node's traversals as its sequence's loop rather than called, unless
+	// the elements recurse through an alias, which V8 runs faster as a call
+	private get inlinedSequence(): nodeOfKind<"sequence"> | undefined {
+		const structure = this.structure
+		if (
+			structure?.sequence &&
+			!this.inner.predicate &&
+			!this.transforms &&
+			!structure.sequence.includesAlias &&
+			Object.keys(structure.inner).length === 1
+		)
+			return structure.sequence
+	}
+
 	// a failed basis or prestructural stops this node's Apply
 	compile(js: NodeCompiler): void {
 		// a loop keeps a minifier from joining its checks into one expression,
@@ -294,8 +309,14 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 				this.inner.domain?.domain === "object" && !this.prestructurals.length ?
 					this.structure?.allowsProps[0]
 				:	undefined
+			const sequence = this.inlinedSequence
 			const checks = () => {
 				for (const child of this.children) {
+					// the last child, returning true once each element is allowed
+					if (child === this.structure && sequence) {
+						sequence.compile(js)
+						return js
+					}
 					if (child !== this.basis || !read)
 						js.check(child, { breaks: !js.shortest })
 					else {
@@ -349,7 +370,9 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			)
 		}
 		if (!predicates) {
-			js.return(js.invoke(structure!))
+			const sequence = this.inlinedSequence
+			if (sequence) sequence.compile(js)
+			else js.return(js.invoke(structure!))
 			return
 		}
 		// read only where a later check follows one that can add issues

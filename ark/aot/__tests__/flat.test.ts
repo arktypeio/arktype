@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
+import { flattenBundle } from "@ark/aot/internal/flat.ts"
 import { writeUnscannedFlatMessage } from "@ark/aot/internal/scan.ts"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { build, type BuildOptions, type Plugin } from "esbuild"
@@ -8,6 +9,7 @@ import {
 	defaultClientConditions,
 	type Rolldown
 } from "vite"
+import { parseSync } from "oxc-parser"
 import { spawnSync } from "node:child_process"
 import { join } from "node:path"
 import { writeFixture } from "./utils.ts"
@@ -96,6 +98,99 @@ contextualize(() => {
 		attest(js.includes("zebra")).equals(false)
 	})
 
+	it("returns what kept code reads, annotating nothing a bundler keeps", async () => {
+		const [js] = await bundle(
+			{},
+			{
+				stdin: {
+					contents: `import { Team } from "./types.ts"\n\nconsole.log(Team({}))\n`,
+					resolveDir: root,
+					loader: "ts"
+				}
+			}
+		)
+		// Team's units read User's, Name's and Email's, whose validators it drops
+		// esbuild annotates the function's call itself, as Rolldown doesn't
+		const flat =
+			/^var \w+ = (?:\/\* @__PURE__ \*\/ )?\(\(\) => {$([\S\s]*?)^}\)\(\);$/m.exec(
+				js
+			)
+		attest(flat?.[1].includes("__PURE__")).equals(false)
+	})
+
+	it("creates in the function a validator whose creator nothing else calls", async () => {
+		const contents = `import { Team } from "./types.ts"\n\nconsole.log(Team({ lead: {}, members: [] }).summary)\n`
+		const [js] = await bundle(
+			{},
+			{ stdin: { contents, resolveDir: root, loader: "ts" } }
+		)
+		const [whole] = await bundle(
+			{ prune: false },
+			{ stdin: { contents, resolveDir: root, loader: "ts" } }
+		)
+		attest(run(js)).snap("lead.email is missing\nlead.name is missing\n")
+		attest(run(js)).equals(run(whole))
+		attest(js.includes("{ 0: allows")).equals(false)
+		attest(js.includes("var Team =")).equals(false)
+	})
+
+	it("writes a function its one call passes its parameters where it's called", async () => {
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const Discount = type({ discount: "number > 0 | null" })
+
+for (const discount of [0, "0", null]) {
+	const out = Discount({ discount })
+	console.log(out instanceof type.errors ? out.summary : "valid")
+}
+`
+			},
+			fromHere("temp", "flatInlined")
+		)
+		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
+		const [js] = await bundle({}, options)
+		const [whole] = await bundle({ prune: false }, options)
+		attest(run(js)).snap(`discount must be positive
+discount must be a number or null
+valid
+`)
+		attest(run(js)).equals(run(whole))
+		// each branch's Apply is its case of the union's
+		attest(js.match(/case "(?:number|null)": {/g)?.length).equals(2)
+	})
+
+	it("creates as its assert a validator read only for it", async () => {
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const User = type({ name: "string" })
+
+const check = (data: unknown) => User.assert(data)
+
+for (const data of [{ name: "Ada" }, {}]) {
+	try {
+		console.log(check(data))
+	} catch (e) {
+		console.log((e as Error).message)
+	}
+}
+`
+			},
+			fromHere("temp", "flatAssert")
+		)
+		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
+		const [js] = await bundle({}, options)
+		const [whole] = await bundle({ prune: false }, options)
+		attest(run(js)).snap(`{ name: 'Ada' }
+name is missing
+`)
+		attest(run(js)).equals(run(whole))
+		attest(/\.assert\b|\bassert:/.test(js)).equals(false)
+	})
+
 	it("keeps each unit a module of its own with prune: false", async () => {
 		const [whole] = await bundle({ prune: false })
 		attest(factoryParam.test(whole)).equals(true)
@@ -137,19 +232,6 @@ contextualize(() => {
 		attest(split.some(js => factoryParam.test(js))).equals(true)
 	})
 
-	it("keeps each unit a module of its own where the function is larger", async () => {
-		const files = writeFixture(
-			{
-				"main.ts": `import { type } from "arktype"\n\nexport const Email = type("string.email")\nexport const Id = type("string.uuid")\n`
-			},
-			fromHere("temp", "flatLarger")
-		)
-		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
-		attest(await bundle({}, options)).equals(
-			await bundle({ prune: false }, options)
-		)
-	})
-
 	it("declares the units of a one-chunk Vite build in one function", async () => {
 		// Vite reads its mode from NODE_ENV
 		const viteBundle = async (opts: PrecompileUnpluginOptions) => {
@@ -179,6 +261,111 @@ contextualize(() => {
 		attest(run(flat)).equals(run(whole))
 		attest(factoryParam.test(whole)).equals(true)
 		attest(factoryParam.test(flat)).equals(false)
+	})
+
+	it("declares a unit however its array is written", () => {
+		// errors "none" writes a unit without its Apply, e.g. [allows, ]
+		const arrays = [
+			"[(data => data > 0), ]",
+			"[(data => data < 9) /* , */ ]",
+			"[(data => data !== 5), // apply\n]",
+			"[(data => data % 2 === 0) , (data => data) ,]"
+		]
+		const modules: Record<string, string> = {
+			"~arktype/date": `import * as runtime from "arktype/runtime"
+
+const date = /* @__PURE__ */ ((dateR0) => {
+const dateAllows = (data => data instanceof Date && dateR0(data))
+return [dateAllows, ]
+})(runtime.isValidDate)
+
+export { date }`
+		}
+		for (const [i, array] of arrays.entries()) {
+			modules[`~arktype/unit${i}`] =
+				`const unit${i} = ${array}\n\nexport { unit${i} }`
+		}
+		const names = ["date", ...arrays.map((_, i) => `unit${i}`)]
+		const site = `${names.map(name => `import { ${name} } from "~arktype/${name}"`).join("\n")}
+
+export const read = [${names.join(", ")}]`
+		const flat = flattenBundle(
+			{ "site.js": site },
+			modules,
+			new Map([["site.js", true]]),
+			false
+		)!
+		const written = Object.keys(flat.modules).filter(
+			specifier => !(specifier in modules)
+		)
+		attest(written.length).equals(1)
+		const code = flat.modules[written[0]]
+		attest(parseSync("flat.js", code, { sourceType: "module" }).errors).equals(
+			[]
+		)
+		attest(code).snap(`import * as runtime from "arktype/runtime"
+
+const [date, unit0, unit1, unit2, unit3] = (() => {
+const dateR0 = runtime.isValidDate
+
+const dateAllows = (data => data instanceof Date && dateR0(data))
+
+const unit0Allows = (data => data > 0)
+const unit1Allows = (data => data < 9) /* , */ 
+const unit2Allows = (data => data !== 5)
+const unit3Allows = (data => data % 2 === 0) , unit3Apply = (data => data) 
+return [[dateAllows], [unit0Allows], [unit1Allows], [unit2Allows], [unit3Allows, unit3Apply]]
+})()
+
+export { date, unit0, unit1, unit2, unit3 }
+`)
+	})
+
+	it("writes in place a once-called function its function declares last", () => {
+		const unit = `import * as runtime from "arktype/runtime"
+
+const unit = /* @__PURE__ */ ((unitR0) => {
+const unitAllows = (data => unitR0(data))
+const unitApply = (data, ctx) => {
+	if (unitR0(data)) return true
+	return unitFails(data, ctx)
+}
+const unitFails = (data, ctx) => {
+	return !ctx.failsAt(runtime.siteOf("proto", "a Date"), data)
+}
+return [unitAllows, unitApply]
+})(runtime.isValidDate)
+
+export { unit }`
+		const flat = flattenBundle(
+			{
+				"site.js": `import { unit } from "~arktype/unit"\n\nexport const read = unit`
+			},
+			{ "~arktype/unit": unit },
+			new Map([["site.js", true]]),
+			false
+		)!
+		const [code] = Object.entries(flat.modules).flatMap(([specifier, code]) =>
+			specifier === "~arktype/unit" ? [] : [code]
+		)
+		attest(code).snap(`import * as runtime from "arktype/runtime"
+
+const unit = (() => {
+const unitR0 = runtime.isValidDate
+
+const unitAllows = (data => unitR0(data))
+const unitApply = (data, ctx) => {
+	if (unitR0(data)) return true
+	{
+	return !ctx.failsAt(runtime.siteOf("proto", "a Date"), data)
+}
+}
+
+return [unitAllows, unitApply]
+})()
+
+export { unit }
+`)
 	})
 
 	describe("a module built from code its scan didn't read", () => {

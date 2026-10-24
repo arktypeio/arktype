@@ -134,8 +134,9 @@ export const Team = /* @__PURE__ */ $ark_#0($ark_#3Allows)`)
 
 		it("creates a lazy build's validators where a module reads them as it loads", () => {
 			const result = precompile(
-				`import { type } from "arktype"
+				`import { type, type Type } from "arktype"
 export const Name = type("string > 0")
+export const Id = type("string > 2") satisfies Type<string>
 export const nameOf = () => type("string > 1")`,
 				{},
 				{ creationChecks: "none", config: false }
@@ -144,9 +145,12 @@ export const nameOf = () => type("string > 1")`,
 import { #0 as $ark_#0 } from "~arktype/#1"
 import { #2 as $ark_#2 } from "~arktype/#1"
 import { #3 as $ark_#3 } from "~arktype/#1"
-import { #4 as $ark#4 } from "~arktype/#1"
+import { #4 as $ark_#4 } from "~arktype/#1"
+import { #5 as $ark_#5 } from "~arktype/#1"
+import { #6 as $ark#6 } from "~arktype/#1"
 export const Name = /* @__PURE__ */ $ark_#0($ark_#2, $ark_#3)
-export const nameOf = () => $ark#4()`)
+export const Id = /* @__PURE__ */ $ark_#0($ark_#4, $ark_#5) satisfies Type<string>
+export const nameOf = () => $ark#6()`)
 		})
 
 		it("compiles a size build's artifact too small for checkers to pay off", () => {

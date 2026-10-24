@@ -82,6 +82,7 @@ export {
 	FirstIssues,
 	FirstIssueTraversal,
 	fixConfig,
+	foundErrors,
 	fixConfigured,
 	holdsOnlyIndices,
 	InternalTraversal,
@@ -547,37 +548,29 @@ export const raisingTraversalOf = (
 		}
 	}
 
-// the Apply of a union whose key's condition rejected its value
-export const failing = ((site: FailureSite): CompactApply =>
-	(data, ctx) =>
-		!ctx.failsAt(site, data)) satisfies Fn
-
 // a unified traversal reports to a ctx it's passed, and passed none (or
 // filter's index), stops at its first failure
 export const failsAt = ((
 	ctx: FailureContext | undefined,
 	site: FailureSite,
 	data: unknown,
-	key?: PropertyKey,
-	absent?: true
-): boolean | undefined =>
-	!ctx?.failsAt || ctx.failsAt(site, data, key, absent)) satisfies Fn
+	key?: PropertyKey
+): boolean | undefined => !ctx?._at || ctx._at(site, data, key)) satisfies Fn
 
 export const failsIn = ((
 	ctx: FailureContext | undefined,
 	apply: CompactApply,
 	value: unknown,
-	key?: PropertyKey,
+	key: PropertyKey,
 	missing?: FailureSite,
 	data?: unknown
 ): boolean | undefined =>
-	ctx?.failsAt ?
-		ctx.failsIn(apply, value, key, missing, data)
+	ctx?._at ?
+		ctx._in(apply, value, key, missing, data)
 	:	!(apply as Fn)(value)) satisfies Fn
 
-export const requiredSite: FailureSite = {
-	missing: /* @__PURE__ */ siteOf("required")
-}
+// a literal, as an annotated call's annotation is kept by oxc's minifier
+export const requiredSite: FailureSite = { missing: { code: "required" } }
 
 // a key's site, reporting "required" where the key is missing
 export const keySiteOf = ((
@@ -624,7 +617,7 @@ const elementsFrom =
 	): CompactApply =>
 	(_, ctx) => {
 		for (let j = i; j < data.length; j++)
-			if (!allows(data[j]) && ctx.failsIn(apply, data[j], j)) return false
+			if (!allows(data[j]) && ctx._in(apply, data[j], j)) return false
 		return true
 	}
 
@@ -754,22 +747,6 @@ export const unreadErrors = (
 	Ctx: UnreadErrorsOf
 ): unknown => {
 	const errors = new (Ctx())(apply, data)
-	return onFail ? onFail(errors) : errors
-}
-
-// where every failure's issues are read as it returns, as by assert or
-// ~standard, waiting buys nothing
-export const foundErrors = (
-	apply: CompactApply,
-	data: unknown,
-	onFail: ArkErrors.Handler | null,
-	Ctx: new () => ArkErrors
-): unknown => {
-	const errors = new Ctx()
-	// as issuesOf, which a program of these never ships
-	apply(data, errors)
-	if (!errors._.length) errors.failsAt({ code: "predicate" }, data)
-	releasePath(errors)
 	return onFail ? onFail(errors) : errors
 }
 

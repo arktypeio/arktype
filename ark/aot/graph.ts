@@ -3599,6 +3599,14 @@ export const isSetLast = (binding: Binding): boolean => {
 
 // a statement's first variable, so nothing it runs precedes its site
 export const declarationStartOf = (node: Node): number | undefined => {
+	// e.g. `type({ ... }) satisfies Type<Data>`, which runs as its expression
+	while (
+		(node.parent?.type === "TSSatisfiesExpression" ||
+			node.parent?.type === "TSAsExpression" ||
+			node.parent?.type === "TSNonNullExpression") &&
+		node.parent.expression === node
+	)
+		node = node.parent
 	const declarator = node.parent
 	if (declarator?.type !== "VariableDeclarator" || declarator.init !== node)
 		return

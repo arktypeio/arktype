@@ -31,10 +31,10 @@ const userAllows = (data: unknown) =>
 
 const user: CompactApply = (data, ctx) => {
 	if (typeof data !== "object" || data === null)
-		return !ctx.failsAt(site("domain", "an object"), data)
+		return !ctx._at(site("domain", "an object"), data)
 	if (
 		typeof (data as { name?: unknown }).name !== "string" &&
-		ctx.failsAt(nameSite, data, "name")
+		ctx._at(nameSite, data, "name")
 	)
 		return false
 	return true
@@ -75,11 +75,11 @@ contextualize(() => {
 		const users: CompactApply = (data, ctx) => {
 			const list = data as unknown[]
 			for (let i = 0; i < list.length; i++)
-				if (!userAllows(list[i]) && ctx.failsIn(user, list[i], i)) return false
+				if (!userAllows(list[i]) && ctx._in(user, list[i], i)) return false
 			return true
 		}
 		const owner: CompactApply = (data, ctx) =>
-			!ctx.failsIn(
+			!ctx._in(
 				users,
 				(data as { members?: unknown }).members,
 				"members",
@@ -107,7 +107,7 @@ contextualize(() => {
 	it("adds a discriminant's issue at the path its site holds", () => {
 		const errors = new ArkErrors()
 		errors._p.push("item")
-		errors.failsAt(
+		errors._at(
 			{
 				value: { code: "discriminant", description: '"a" or "b"' },
 				path: ["kind"]
@@ -174,7 +174,7 @@ supplied`)
 		user({ name: 1 }, merged)
 		user({}, merged)
 		// as a build writes an undeclared key's site
-		merged.failsAt(
+		merged._at(
 			{ value: { code: "undeclared", description: "removed" } },
 			{ extra: 1 },
 			"extra"
@@ -189,7 +189,7 @@ owner.extra must be removed`)
 	it("builds arktype's error from a site holding its node's context", () => {
 		const n = rootSchema({ domain: "string" }).assertHasKind("domain")
 		const ctx = new ArkTraversal(5, n.$.resolvedConfig)
-		ctx.failsAt({ value: n.errorContext }, 5)
+		ctx._at({ value: n.errorContext }, 5)
 		attest(String(ctx.finalize())).equals(String(n.traverse(5)))
 	})
 })
