@@ -373,12 +373,10 @@ export class ArkTraversal extends Traversal {
 	override failsAt(
 		site: FailureSite,
 		data: unknown,
-		key?: PropertyKey,
-		absent?: true
+		key?: PropertyKey
 	): boolean {
 		const missing =
-			absent ||
-			(key !== undefined && site.missing && !(key in (data as object)))
+			key !== undefined && site.missing && !(key in (data as object))
 		this.addError(
 			errorOfNodeContext(
 				(missing ? site.missing : site.value) as NodeErrorContextInput,

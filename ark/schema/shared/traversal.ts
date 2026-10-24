@@ -169,13 +169,8 @@ export class InternalTraversal implements FailureContext {
 	}
 
 	/** @internal */
-	failsAt(
-		site: FailureSite,
-		data: unknown,
-		key?: PropertyKey,
-		absent?: true
-	): boolean {
-		this.addError(issueAt(this.path, site, data, key, absent))
+	failsAt(site: FailureSite, data: unknown, key?: PropertyKey): boolean {
+		this.addError(issueAt(this.path, site, data, key))
 		return this.failFast
 	}
 
@@ -188,7 +183,7 @@ export class InternalTraversal implements FailureContext {
 		data?: unknown
 	): boolean | undefined {
 		if (missing && value === undefined && !(key in (data as object)))
-			return this.failsAt(missing, data, key, true)
+			return this.failsAt(missing, data, key)
 		this.path.push(key)
 		const continues = apply(value, this)
 		this.path.pop()

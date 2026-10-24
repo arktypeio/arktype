@@ -45,8 +45,7 @@ export interface FailureContext {
 	failsAt(
 		site: FailureSite,
 		data: unknown,
-		key?: PropertyKey,
-		absent?: true
+		key?: PropertyKey
 	): boolean | undefined
 	failsIn(
 		apply: CompactApply,
@@ -132,16 +131,14 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	failsAt(
 		site: FailureSite,
 		data: unknown,
-		key?: PropertyKey,
-		absent?: true
+		key?: PropertyKey
 	): true | undefined {
 		// a key's site reports the missing key or its value
 		const path = this._p
 		let context = site.value ?? (site as SiteContext)
 		if (key !== undefined) {
 			path.push(key)
-			if (absent || (site.missing && !(key in (data as object))))
-				context = site.missing!
+			if (site.missing && !(key in (data as object))) context = site.missing
 			else data = (data as Keyed)[key]
 		}
 		const issue: ArkIssue = {
@@ -167,7 +164,7 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		data?: unknown
 	): boolean | undefined {
 		if (missing && value === undefined && !(key in (data as object)))
-			return this.failsAt(missing, data, key, true)
+			return this.failsAt(missing, data, key)
 		this._p.push(key)
 		const continues = apply(value, this)
 		this._p.pop()
@@ -248,14 +245,12 @@ export const issueAt = (
 	path: PropertyKey[],
 	site: FailureSite,
 	data: unknown,
-	key: PropertyKey | undefined,
-	absent?: true
+	key: PropertyKey | undefined
 ): ArkIssue => {
 	let context = site.value ?? (site as SiteContext)
 	if (key !== undefined) {
 		path.push(key)
-		if (absent || (site.missing && !(key in (data as object))))
-			context = site.missing!
+		if (site.missing && !(key in (data as object))) context = site.missing
 		else data = (data as Keyed)[key]
 	}
 	const issuePath =

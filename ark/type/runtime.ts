@@ -554,10 +554,9 @@ export const failsAt = ((
 	ctx: FailureContext | undefined,
 	site: FailureSite,
 	data: unknown,
-	key?: PropertyKey,
-	absent?: true
+	key?: PropertyKey
 ): boolean | undefined =>
-	!ctx?.failsAt || ctx.failsAt(site, data, key, absent)) satisfies Fn
+	!ctx?.failsAt || ctx.failsAt(site, data, key)) satisfies Fn
 
 export const failsIn = ((
 	ctx: FailureContext | undefined,

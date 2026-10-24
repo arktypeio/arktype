@@ -48,12 +48,12 @@ var ArkIssues = class {
 		return this.summary
 	}
 	/** @internal */
-	failsAt(site, data, key, absent) {
+	failsAt(site, data, key) {
 		const path = this._p
 		let context = site.value ?? site
 		if (key !== void 0) {
 			path.push(key)
-			if (absent || (site.missing && !(key in data))) context = site.missing
+			if (site.missing && !(key in data)) context = site.missing
 			else data = data[key]
 		}
 		const issue = {
@@ -72,7 +72,7 @@ var ArkIssues = class {
 	/** @internal */
 	failsIn(apply, value, key, missing, data) {
 		if (missing && value === void 0 && !(key in data))
-			return this.failsAt(missing, data, key, true)
+			return this.failsAt(missing, data, key)
 		this._p.push(key)
 		const continues = apply(value, this)
 		this._p.pop()
@@ -200,8 +200,8 @@ var domains = (cases, description) => {
 var freeze = Object.freeze
 var holesByValue = /* @__PURE__ */ new WeakMap()
 var siteOf = (code, description) => ({ code, description })
-var failsAt = (ctx, site, data, key, absent) =>
-	!ctx?.failsAt || ctx.failsAt(site, data, key, absent)
+var failsAt = (ctx, site, data, key) =>
+	!ctx?.failsAt || ctx.failsAt(site, data, key)
 var failsIn = (ctx, apply, value, key, missing, data) =>
 	ctx?.failsAt ? ctx.failsIn(apply, value, key, missing, data) : !apply(value)
 var holdHoles = (value, id, holes = []) => {
