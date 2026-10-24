@@ -15,6 +15,26 @@ Positions are your source's, even where another plugin transpiled it first. Run 
 
 Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `Set allowUnsafe: true to build anyway, with a warning.` [`allowUnsafe`](/docs/precompile/options#allowunsafe) reports those as warnings instead, and what they report may then throw at runtime. What a build with `runtime: "arktype"` leaves to arktype is always reported as a warning, since nothing fails at runtime.
 
+## Not supported [#not-supported]
+
+Each of these is reported by the build, or listed here where nothing can report it. Where a program needs one, build with `runtime: "arktype"`, or leave that part dynamic.
+
+| What                                                                                 | Instead                                                                                                               |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Parcel, Deno and Jest, which have no plugin or driver                                | Bundle with a [supported bundler](/docs/precompile/setup#bundlers), and test with Vitest, `node --test` or `bun test` |
+| esbuild without `bundle: true`                                                       | Set `bundle: true`                                                                                                    |
+| `arktype` left external, as by `external` or webpack's `externals`                   | Let the bundler bundle it                                                                                             |
+| Types defined in a Svelte component or another file that isn't JS or TS              | Define them in a `.ts` or `.js` module the component imports                                                          |
+| Types defined in a virtual module, esbuild's `stdin`, a `data:` URL or `node --eval` | Define them in a file                                                                                                 |
+| A definition reading a value known only at runtime                                   | Make it static, or mark it as a [runtime island](/docs/precompile/advanced#runtime-islands)                           |
+| Composing or introspecting a Type at runtime, like `.and()` or `.json`               | Compose inside a definition, or set [`members`](/docs/precompile/options#members)                                     |
+| Errors in a [locale](/docs/i18n) other than English                                  | A runtime island                                                                                                      |
+| A dependency that defines Types at runtime                                           | Have it [opt in](/docs/precompile/advanced#libraries)                                                                 |
+| A dependency that ships its own precompiled validators                               | Have it publish its source and opt in                                                                                 |
+| `prune: true` outside Vite, Rollup, Rolldown and esbuild                             | Leave `prune` unset                                                                                                   |
+| `declare: true` with esbuild, Bun, Farm or Node                                      | Run `arktype-precompile --declare` after building                                                                     |
+| `errors: "none"` or `optimizeErrors: "size"` with `arktype-precompile --emit`        | A bundler or the Node driver                                                                                          |
+
 ## Definitions
 
 **`... cannot be precompiled`**: the definition reads a value known only at runtime, like a parameter or the result of a call the build can't evaluate. Make the value static, mark the definition as a [runtime island](/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`.

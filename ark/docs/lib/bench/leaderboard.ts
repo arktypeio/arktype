@@ -50,8 +50,10 @@ const suiteScores = (suite: Suite) => {
 	)
 }
 
-const leaderboardOf = (category: CategoryId): Leaderboard => {
-	const suites = (data.suites as Suite[]).filter(s => s.category === category)
+const leaderboardOf = (category: CategoryId, without?: string): Leaderboard => {
+	const suites = (data.suites as Suite[]).filter(
+		s => s.category === category && s.label !== without
+	)
 	const scored = suites.map(suiteScores)
 	const libraries = new Set(scored.flatMap(Object.keys))
 	const standings = [...libraries]
@@ -81,6 +83,18 @@ export const resultsOf = (suiteId: string, rowId: string) =>
 		.find(s => s.id === suiteId)!
 		.rows.find(row => row.id === rowId)!.results
 
+/** each row's results across a category's suites */
+export const rowsOf = (category: CategoryId) =>
+	(data.suites as Suite[])
+		.filter(s => s.category === category)
+		.flatMap(s => s.rows.map(row => row.results))
+
 /** whether ArkType has the best average in a category */
 export const leads = (category: CategoryId) =>
 	leaderboards[category].standings[0]?.library === "ArkType"
+
+/** the suites without which ArkType wouldn't have a category's best average */
+export const leadDependsOn = (category: CategoryId) =>
+	leaderboards[category].suites.filter(
+		label => leaderboardOf(category, label).standings[0]?.library !== "ArkType"
+	)

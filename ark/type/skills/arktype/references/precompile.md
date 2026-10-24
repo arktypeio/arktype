@@ -1,0 +1,140 @@
+# Precompiling ArkType
+
+`@ark/aot` constructs each Type when the project builds and replaces it with a standalone validator that imports only `arktype/runtime`, so arktype's parser never ships. Inferred types stay as they are, and so do most definitions; one built from values known only at runtime is rewritten as [below](#writing-definitions-the-build-accepts). Full docs: https://arktype.io/docs/precompile/llms.txt.
+
+## Set up
+
+1. Add `arktype` to `dependencies` and `@ark/aot` to `devDependencies` with the project's package manager, e.g. `npm i arktype` and `npm i -D @ark/aot`. Keep one copy of `arktype`: the build fails if the program resolves two. `@ark/aot` needs Node 22.12 or later.
+2. Add the plugin to the bundler, as below.
+3. If the project calls `configure()`, name its module as `config` in an `ark.json` beside `package.json`, as below. Put build options there rather than in the plugin call: the plugin, the test drivers, `arktype-precompile` and the ESLint rule all read `ark.json`, but only the plugin sees options passed to it, so `--check` and the tests would fail without them.
+4. Make the tests run precompiled too, as below.
+5. Run `npx arktype-precompile --check "src/**/*.ts"`. It lists each definition the build would refuse, with the fix, and should end with every site accepted. Then run the build and the tests.
+
+The ESLint rule reports the same errors as code is written: add `configs.recommended` from `@ark/aot/eslint` to `eslint.config.js`.
+
+```json
+{
+	"$schema": "./node_modules/@ark/aot/ark.schema.json",
+	"precompile": { "config": "./src/arktype.config.ts" }
+}
+```
+
+### Bundlers
+
+Vite, and Vitest, which runs tests through the same plugin:
+
+```ts
+// vite.config.ts
+import { precompile } from "@ark/aot/unplugin"
+
+export default {
+	plugins: [precompile.vite()]
+}
+```
+
+esbuild, which needs `bundle: true`. Put `precompile.esbuild()` ahead of any plugin that loads `.ts` files. Add `conditions: ["production"]` to a production build, which then leaves out the checks validators make in development:
+
+```ts
+// build.ts
+import { precompile } from "@ark/aot/unplugin"
+import { build } from "esbuild"
+
+await build({
+	entryPoints: ["src/main.ts"],
+	bundle: true,
+	platform: "node",
+	outfile: "dist/main.js",
+	plugins: [precompile.esbuild()]
+})
+```
+
+Others take the same plugin: `precompile.rollup()` (ahead of `@rollup/plugin-typescript`), `precompile.rolldown()`, `precompile.webpack()`, `precompile.rspack()`, `precompile.rsbuild()`, `precompile.farm()` and `precompile.bun()` for `Bun.build`. With webpack, set ts-loader's `transpileOnly: true` and type-check with `tsc --noEmit`. Snippets for each: https://arktype.io/docs/precompile/setup.md.
+
+### Next.js
+
+Next 16 builds with Turbopack. Add a loader rule for each extension that holds a definition or the config module, and alias arktype's entries to the runtime:
+
+```js
+// next.config.js (or the same object in next.config.ts)
+export default {
+	turbopack: {
+		rules: {
+			"*.ts": { loaders: ["@ark/aot/turbopack"] },
+			"*.tsx": { loaders: ["@ark/aot/turbopack"] }
+		},
+		resolveAlias: {
+			arktype: "arktype/runtime",
+			"arktype/codecs": "arktype/runtime",
+			"arktype/config": "arktype/runtime",
+			"arktype/errors": "arktype/runtime",
+			"arktype/mutatesInput": "arktype/runtime"
+		}
+	}
+}
+```
+
+With `next build --webpack`, push `precompile.webpack()` onto `config.plugins` in the `webpack` function instead.
+
+### Without a bundler
+
+A project that `tsc` compiles to run from its `outDir` precompiles what it emits: `"build": "tsc && arktype-precompile --emit"`.
+
+### Tests
+
+- Vitest: nothing to add beyond the Vite plugin.
+- `node --test`, or any Node program (Node 22.15 or later): `node --import ./register.ts --test`, with this file beside `package.json` (as `register.js` where Node can't run TypeScript):
+
+```ts
+// register.ts
+import { register } from "@ark/aot/node"
+
+register()
+```
+
+- Bun: `Bun.plugin(precompile())` with `precompile` from `@ark/aot/bun`, in a file listed under `preload` in `bunfig.toml`.
+
+To check that each precompiled validator behaves as arktype does, run the tests once with `precompile.vite({ shadow: true })`.
+
+## Writing definitions the build accepts
+
+The build evaluates each definition. It must be built from values the build knows, and anything composing a Type must happen inside a definition.
+
+| Instead of                                                          | Write                                                                                                                        |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| a factory, ``(max: number) => type(`string <= ${max}`)``            | the definition at each use, `"string <= 80"`                                                                                 |
+| a helper calling methods, `<t>(T: Type<t>) => T.or("null")`         | a Generic, `const nullable = type("<t>", "t \| null")`, used as `nullable(Product)`, or `Product.or("null")` where it's used |
+| a shape object built or changed at runtime, then `type(shape)`      | each variant as its own Type, chosen at runtime: `const Post = import.meta.env.DEV ? DevPost : BasePost`                     |
+| composing at runtime, as in `(keys: Key[]) => User.pick(...keys)`   | a Type for each case the program needs                                                                                       |
+| `import("arktype")` or `require("arktype")`                         | an `import` declaration                                                                                                      |
+| a Zod or Valibot schema inside a definition                         | the schema converted to ArkType; until it is, build with `runtime: "arktype"`                                                |
+| a definition only known at runtime, like one loaded from a database | `// @ark-runtime` on the line before it, which ships arktype for that module                                                 |
+
+Composing inside a definition is fine anywhere, even in a function body: `const Updates = StockUpdate.array().atLeastLength(1)` precompiles, and so does `User.and({ role: "'admin'" })`. A read the build sees, like `Sku.description`, is replaced by its value.
+
+## What changes at runtime
+
+- A validator validates, `.assert()`s and is a Standard Schema, but has no `.and`, `.or`, `.pick` or other composing method. The build fails where it sees one called outside a definition.
+- Error messages say what failed but not what the value was: `email must be an email address`, without `(was "x")`. Text you configure with `.configure({ message })` or `.describe()` is kept.
+- Introspection members like `toJsonSchema()`, `json` and `~standard.jsonSchema` ship only when the `members` option sets them. A library that converts a Type to JSON Schema itself, like the MCP SDK or the AI SDK, needs `"members": { "~standard.jsonSchema": true }` in `ark.json`.
+- Locales from `arktype/i18n` aren't supported.
+
+## Errors and their fixes
+
+Each build error names the file, line and column, then why, then the fix on its last line. Apply that fix. A bundler stops at the first error, so run `npx arktype-precompile --check "src/**/*.ts"` to see them all. Don't set `allowUnsafe` to get past one, and don't switch to `runtime: "arktype"` unless the program really composes or introspects Types at runtime; that ships arktype's parser again.
+
+| The build says                                                                      | Fix                                                                                                                |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `` `max` is a parameter of boundedText ...; its value is known only at runtime ``   | write the definition where it's used, or make the helper a Generic; see the table above                            |
+| `T.or reads or, which a standalone validator lacks`                                 | compose inside a definition, or replace the helper with a Generic                                                  |
+| `` `shape` is written at ..., so its value at the site is not known ``              | write the object whole in its literal, or define each variant as its own Type                                      |
+| `User.description reads description, which a standalone validator lacks`            | read it inside a definition, or set that member under `members`                                                    |
+| `configure() is called, but the build has no config module`                         | add `"config"` to `ark.json`, as above                                                                             |
+| `... loads src/schemas.ts, which creates a Type, before the config module ... runs` | import the config module first in that file, before any module that creates a Type                                 |
+| `` `User` comes from `~/schemas`, which the build can't resolve ``                  | add the alias to `tsconfig.json`'s `paths`                                                                         |
+| `arktype resolves to more than one copy`, or a version mismatch                     | install one version of `arktype`, then clear the bundler's cache                                                   |
+| `my-lib imports arktype, which a standalone build resolves to arktype/runtime`      | the dependency defines Types at runtime; it opts in with `"arktype": { "precompile": true }` in its `package.json` |
+| `precompile.esbuild() needs bundle: true`                                           | set `bundle: true`                                                                                                 |
+| `arktype resolves to ... rather than arktype/runtime` (Turbopack)                   | add the `resolveAlias` entries it lists                                                                            |
+| `type is not a function` at runtime                                                 | a module defining Types wasn't precompiled, e.g. no Turbopack rule matches its extension; add one                  |
+
+Every message and its fix: https://arktype.io/docs/precompile/troubleshooting.md.

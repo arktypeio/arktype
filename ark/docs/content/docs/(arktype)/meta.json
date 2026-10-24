@@ -8,10 +8,12 @@
 		"intro/your-first-type",
 		"intro/adding-constraints",
 		"intro/morphs-and-more",
+		"[Precompile](/docs/precompile)",
 		"cheat-sheet",
 		"agents",
 		"editor",
-		"[Precompile](/docs/precompile)",
+		"migrating",
+		"upgrading",
 		"---Definitions---",
 		"primitives",
 		"objects",
@@ -37,8 +39,6 @@
 		"---Reference---",
 		"type-api",
 		"packages",
-		"migrating",
-		"upgrading",
 		"faq"
 	]
 }

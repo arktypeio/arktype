@@ -1,6 +1,6 @@
 ---
 title: Setup
-description: Add precompilation to your bundler, test runner or framework
+description: Add precompilation to your bundler, framework, test runner or Node program
 ---
 
 ## Installation
@@ -13,7 +13,11 @@ description: Add precompilation to your bundler, test runner or framework
 
 `@ark/aot/unplugin` precompiles a program as your bundler builds it.
 
-<Tabs items={["Vite", "Rollup", "webpack", "Rspack", "esbuild", "Others"]}>
+<Tabs
+	items={["Vite", "Rolldown", "Rollup", "webpack", "Rspack", "esbuild", "Bun", "Others"]}
+	groupId="bundler"
+	persist
+>
 <Tab value="Vite">
 
 ```ts title="vite.config.ts"
@@ -27,6 +31,21 @@ export default defineConfig({
 ```
 
 Vitest runs tests through the same plugin.
+
+</Tab>
+<Tab value="Rolldown">
+
+```ts title="rolldown.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "rolldown"
+
+export default defineConfig({
+	input: "src/main.ts",
+	output: { file: "dist/main.js" },
+	plugins: [precompile.rolldown()]
+})
+```
 
 </Tab>
 <Tab value="Rollup">
@@ -48,12 +67,11 @@ export default {
 }
 ```
 
-Rolldown takes `precompile.rolldown()`.
-
 </Tab>
 <Tab value="webpack">
 
 ```js title="webpack.config.js"
+// @noErrors
 import { precompile } from "@ark/aot/unplugin"
 
 export default {
@@ -74,6 +92,7 @@ ts-loader is handed modules the plugin already precompiled, which import validat
 <Tab value="Rspack">
 
 ```js title="rspack.config.js"
+// @noErrors
 import { precompile } from "@ark/aot/unplugin"
 
 export default {
@@ -97,7 +116,6 @@ export default {
 <Tab value="esbuild">
 
 ```ts title="build.ts"
-// @noErrors
 import { precompile } from "@ark/aot/unplugin"
 import { build } from "esbuild"
 
@@ -110,19 +128,52 @@ await build({
 })
 ```
 
+Put `precompile.esbuild()` ahead of any plugin that loads your TypeScript modules, since esbuild loads a module with the first plugin that returns it.
+
+</Tab>
+<Tab value="Bun">
+
+```ts title="build.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+
+await Bun.build({
+	entrypoints: ["src/main.ts"],
+	outdir: "dist",
+	plugins: [precompile.bun()]
+})
+```
+
+Bun's bundler needs Bun 1.2.22 or later. To precompile as Bun runs your code, see [Bun](#bun).
+
 </Tab>
 <Tab value="Others">
 
-Rsbuild takes `precompile.rsbuild()`, Bun's bundler `precompile.bun()` (Bun 1.2.22 or later) and Farm `precompile.farm()`.
+Rsbuild takes `precompile.rsbuild()` and Farm `precompile.farm()`. For Next.js, see [Next.js](#next).
 
 </Tab>
 </Tabs>
 
 By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`. A dependency that imports `arktype` gets `arktype/runtime` too, where defining a Type throws, so the build fails for each such package unless it [opts in](/docs/precompile/advanced#libraries).
 
+## Options in ark.json [#ark-json]
+
+Set [options](/docs/precompile/options) in `ark.json` beside your `package.json` rather than in the plugin call, so `arktype-precompile --check`, the Node and Bun drivers and the ESLint rule build as your bundler does. A program that calls `configure()` names its config module there:
+
+```json title="ark.json"
+{
+	"$schema": "./node_modules/@ark/aot/ark.schema.json",
+	"precompile": {
+		"config": "./src/arktype.config.ts"
+	}
+}
+```
+
+A validator leaves out its JSON Schema unless the build sets it, so a library that reads it through Standard Schema, like the MCP SDK's `inputSchema` or an AI SDK 6 tool, finds `undefined` there. Add `"members": { "~standard.jsonSchema": true }` to `precompile` for it. See [members](/docs/precompile/options#members).
+
 ## Next.js [#next]
 
-With Turbopack, add the loader as a rule for each extension your definitions and config module are in, and alias arktype's entries to the runtime:
+With Turbopack, the default, add the loader as a rule for each extension your definitions and config module are in, and alias arktype's entries to the runtime:
 
 ```js title="next.config.js"
 export default {
@@ -147,6 +198,7 @@ The loader fails a module whose `arktype` imports resolve otherwise, naming the 
 With webpack (`next build --webpack`), add the plugin:
 
 ```js title="next.config.js"
+// @noErrors
 import { precompile } from "@ark/aot/unplugin"
 
 export default {
@@ -157,7 +209,26 @@ export default {
 }
 ```
 
-## TypeScript without a bundler [#tsc]
+## Node [#node]
+
+### Run a program
+
+Node 22.15 or later precompiles each module as it loads, for `node --test` or any program:
+
+```ts title="register.ts"
+import { register } from "@ark/aot/node"
+
+register()
+```
+
+```sh
+node --import ./register.ts src/main.ts
+node --import ./register.ts --test
+```
+
+Pass `--enable-source-maps` for original lines in stack traces.
+
+### Build with tsc [#tsc]
 
 A program `tsc` compiles to run from its `outDir` precompiles what it emits with `--emit`, run after `tsc`:
 
@@ -175,20 +246,9 @@ Dependencies are left to Node, so one that imports `arktype` loads it beside the
 
 `--emit --declare` also writes [declarations](/docs/precompile/advanced#declarations) as `--declare` does.
 
-## Test runners and runtimes
+## Bun [#bun]
 
-Vitest uses the Vite plugin. For the others, each driver takes the plugin's options, fails on the same errors, except that Bun doesn't check dependencies, and resolves `arktype` to `arktype/runtime` where its host allows. The precompiler runs in a worker thread, sharing no module state with your program.
-
-Node 22.15 or later, for `node --test` or any program (pass `--enable-source-maps` for original lines in stack traces):
-
-```ts title="register.ts"
-// run with `node --import ./register.ts --test`
-import { register } from "@ark/aot/node"
-
-register()
-```
-
-Bun, for `bun test` or any program, from a file listed in `preload` in `bunfig.toml`:
+To precompile as Bun loads your code, for `bun test` or any program, register the plugin from a file listed in `preload` in `bunfig.toml`:
 
 ```ts title="preload.ts"
 // @noErrors
@@ -197,9 +257,26 @@ import { precompile } from "@ark/aot/bun"
 Bun.plugin(precompile())
 ```
 
-Bun doesn't ask a runtime plugin to resolve packages, so `arktype` resolves to the runtime `cwd` resolves for every importer, and dependencies aren't checked for copies of arktype.
+```toml title="bunfig.toml"
+preload = ["./preload.ts"]
+```
+
+Bun doesn't ask a runtime plugin to resolve packages, so `arktype` resolves to the runtime `cwd` resolves for every importer, and dependencies aren't checked for copies of arktype. To bundle with Bun, use `precompile.bun()` from [`@ark/aot/unplugin`](#bundlers).
+
+## Test runners
+
+Each driver takes the plugin's options, fails on the same errors, except that Bun's doesn't check dependencies, and resolves `arktype` to `arktype/runtime` where its host allows. The precompiler runs in a worker thread, sharing no module state with your program.
+
+- **Vitest** uses the Vite plugin from your `vite.config.ts` or `vitest.config.ts`.
+- **`node --test`** uses the [Node driver](#node).
+- **`bun test`** uses the [Bun driver](#bun).
+- **Jest** has no driver, so it runs your Types with arktype, unprecompiled. Your definitions behave the same either way, but to test the validators you ship, run tests with one of the above.
 
 To test that your precompiled validators behave as arktype does, run tests in [shadow mode](/docs/precompile/advanced#shadow-mode).
+
+## Not supported
+
+Some tools and modules can't be precompiled. [Troubleshooting](/docs/precompile/troubleshooting#not-supported) lists each, with the error the build reports and what to do instead.
 
 ## Check an existing project
 
@@ -215,6 +292,8 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
   `limit` is a parameter of makeField (src/forms.ts:12:22); its value is known only at runtime
   Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
 ```
+
+Without a pattern, it checks every JavaScript and TypeScript file under the current directory outside `node_modules`, `dist`, `out` and `build`.
 
 It reads [`ark.json`](/docs/precompile/options#arkjson) as a build does, and takes each [option](/docs/precompile/options) as a flag, like `--preset smallest`, `--optimize-errors size`, `--no-freeze` or `--members '{"assert":false}'`. It exits with 1 where the build would fail. `--fail-under <percent>` exits with 1 only if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
 
