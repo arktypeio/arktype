@@ -22,11 +22,13 @@ import { disallowed } from "../runtime.ts"
 import { runtimeKeyOf } from "../standalone.ts"
 import { combines, writeCombinator } from "./combinators.ts"
 import {
+	isDescribed,
 	isInlineSite,
 	isKeyword,
 	issueContextOf,
 	issueSite,
 	issueSiteOf,
+	requiredIssue,
 	unionKeySiteOf,
 	withoutStrings,
 	writeSiteOf,
@@ -70,10 +72,20 @@ class StandaloneCompiler extends TraversalCompiler {
 			:	"false"
 	}
 
-	// a site of literals is built where it fails, and stays a ref the unit keys
+	// a site of literals, or a key's site of them, is built where it fails, and
+	// stays a ref the unit keys
 	siteRef(site: object): string {
 		const ref = this.ref(site)
-		return isInlineSite(site) ? writeSiteOf(site, JSON.stringify) : ref
+		if (isInlineSite(site)) return writeSiteOf(site, JSON.stringify)
+		const { value, missing } = site as { value?: object; missing?: object }
+		return (
+				missing === requiredIssue &&
+					value &&
+					isInlineSite(value) &&
+					isDescribed(value)
+			) ?
+				writeSiteOf(value, JSON.stringify, "keySiteOf")
+			:	ref
 	}
 
 	// a keyword check adds no issues itself, so its Apply needn't count them
