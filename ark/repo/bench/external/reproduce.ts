@@ -248,19 +248,25 @@ const sb = () => {
 	})
 	count(join(here, "out/sb-arms.json"), `sb-counts${suffix}.json`, 3)
 	// the download test is the suite's own script, the precompiled entry built
-	// as a production build resolves the default options
-	run(node26, node26, ["src/scripts/download.ts"], {
-		cwd: join(dir, "bench"),
-		env: {
-			...aot,
-			ARK_OPTIONS: JSON.stringify({
-				freeze: false,
-				creationChecks: "none",
-				config: false,
-				prune: true
-			})
+	// as a production build resolves the default options. It shells out to
+	// pnpm, so it runs under the suite's
+	run(
+		node26,
+		"npx",
+		["-y", "pnpm@11.28.7", "exec", "node", "src/scripts/download.ts"],
+		{
+			cwd: join(dir, "bench"),
+			env: {
+				...aot,
+				ARK_OPTIONS: JSON.stringify({
+					freeze: false,
+					creationChecks: "none",
+					config: false,
+					prune: true
+				})
+			}
 		}
-	})
+	)
 	cpSync(
 		join(dir, "bench/download.json"),
 		join(fresh, `sb-download${suffix}.json`)
