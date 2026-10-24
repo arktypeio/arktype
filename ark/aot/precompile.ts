@@ -130,6 +130,8 @@ import {
 	type BindingKind
 } from "./scope.ts"
 import type { ShadowContract } from "./shadow.ts"
+import { flattenBundle, importedNamesOf } from "./flat.ts"
+import { writeUnscannedFlatMessage } from "./scan.ts"
 import { linkBundle, type LinkedSite } from "./link.ts"
 import {
 	passedReaderOf,
@@ -229,6 +231,8 @@ export interface ScannedProgram {
 	modules: Record<string, ScannedModule>
 	// what each module's specifiers resolve to, where the bundle holds it
 	targets: Record<string, Record<string, string>>
+	// whether the bundle writes every module it holds into one file
+	isOneChunk?: boolean
 }
 
 export interface ScannedModule {
@@ -244,6 +248,8 @@ interface ProgramUsage {
 	sources: Record<string, string>
 	// each module as the bundle is written, linked across it
 	written: Record<string, PrecompiledModule>
+	// modules it no longer reads as their units are declared in one function
+	replaced: ReadonlySet<string>
 }
 
 export interface ScannedUsage {
@@ -251,6 +257,9 @@ export interface ScannedUsage {
 	dropped: ValidatorMember[]
 	// whether a checker the bundle reads once is written where it's read
 	linked: boolean
+	// modules it no longer reads, as the units its validators read are
+	// declared in one function, which code it didn't write mustn't read
+	replaced: string[]
 	// whether it wrote each module, for a transform naming the bundle to read
 	written: boolean
 }
@@ -556,6 +565,7 @@ export class Precompiler {
 		const unwritten: ScannedUsage = {
 			dropped: [],
 			linked: false,
+			replaced: [],
 			written: false
 		}
 		if (this.mode !== "standalone") return unwritten
@@ -586,9 +596,15 @@ export class Precompiler {
 				)
 			:	[]
 		const called = !used || used.has("call")
+		// a size build's units are already module constants
+		const flattens =
+			!!program.isOneChunk &&
+			!this.inline &&
+			this.standalone.optimize === "speed"
 		// a lazy validator reads its checkers where it's created, unlinkable
-		if (!dropped.length && called && (this.inline || this.standalone.lazy))
-			return unwritten
+		const changesOnlyIfFlat =
+			!dropped.length && called && (this.inline || this.standalone.lazy)
+		if (changesOnlyIfFlat && !flattens) return unwritten
 		const usage: ProgramUsage = {
 			members: {
 				...this.members,
@@ -596,7 +612,8 @@ export class Precompiler {
 			},
 			called,
 			sources,
-			written: {}
+			written: {},
+			replaced: new Set()
 		}
 		this.usagesByProgram.set(program.key, usage)
 		const written: Record<string, PrecompiledModule> = {}
@@ -620,8 +637,17 @@ export class Precompiler {
 			!this.inline &&
 			!this.standalone.lazy &&
 			this.linkWritten(written, sources)
+		const replaced =
+			flattens ?
+				this.flattenWritten(written, sources, program, runtimes)
+			:	undefined
+		if (changesOnlyIfFlat && !replaced) {
+			this.usagesByProgram.delete(program.key)
+			return unwritten
+		}
 		usage.written = written
-		return { dropped, linked, written: true }
+		if (replaced) usage.replaced = new Set(replaced)
+		return { dropped, linked, replaced: replaced ?? [], written: true }
 	}
 
 	private usedIn(
@@ -702,15 +728,7 @@ export class Precompiler {
 			}
 		}
 		for (const id in written) {
-			const reached: Record<string, string> = {}
-			const pending = [written[id].code]
-			for (const code of pending) {
-				for (const [, specifier] of code.matchAll(virtualSpecifier)) {
-					if (specifier in reached || !(specifier in linked.modules)) continue
-					reached[specifier] = linked.modules[specifier]
-					pending.push(reached[specifier])
-				}
-			}
+			const reached = reachedModulesOf(written[id].code, linked.modules)
 			if (
 				Object.keys(reached).some(
 					specifier => reached[specifier] !== written[id].modules[specifier]
@@ -720,6 +738,48 @@ export class Precompiler {
 			written[id] = { ...written[id], modules: reached }
 		}
 		return changed
+	}
+
+	// declares the units a one-chunk bundle reads in one function, if it pays
+	private flattenWritten(
+		written: Record<string, PrecompiledModule>,
+		sources: Record<string, string>,
+		program: ScannedProgram,
+		runtimes: ReadonlyMap<string, RuntimeModule>
+	): string[] | undefined {
+		const sites: Record<string, string> = {}
+		const modules: Record<string, string> = {}
+		for (const id in written) {
+			sites[id] = written[id].code
+			Object.assign(modules, written[id].modules)
+		}
+		const flat = flattenBundle(
+			sites,
+			modules,
+			importedNamesOf(
+				[...runtimes.values()].map(runtime => runtime.module),
+				program.entries,
+				(specifier, importer) => program.targets[importer]?.[specifier]
+			)
+		)
+		if (!flat) return
+		for (const id in written) {
+			const { code, map } = flat.sites[id]
+			const precompiled = written[id].map
+			written[id] = {
+				...written[id],
+				code,
+				map:
+					map && precompiled ?
+						({
+							...precompiled,
+							mappings: mapToSource(map, precompiled, sources[id]).mappings
+						} as never)
+					:	precompiled,
+				modules: reachedModulesOf(code, flat.modules)
+			}
+		}
+		return flat.replaced
 	}
 
 	private usageIn(
@@ -1029,6 +1089,39 @@ export class Precompiler {
 	): PrecompiledModule {
 		const written = this.writtenIn(program, id, source)
 		if (written) return written
+		const precompiled = this.precompileUnscanned(source, id, mappings, program)
+		const usage =
+			program === undefined ? undefined : this.usagesByProgram.get(program)
+		// its units would be copies of those the bundle reads from one function,
+		// which another validator of the same Type could tell apart from its own
+		if (
+			usage &&
+			Object.keys(precompiled.modules).some(specifier =>
+				usage.replaced.has(specifier)
+			)
+		) {
+			precompiled.diagnostics.push({
+				severity: "error",
+				rule: "unsupported",
+				file: id,
+				start: 0,
+				end: 0,
+				line: 1,
+				column: 0,
+				message: writeUnscannedFlatMessage(this.graph.pathOf(id)),
+				reasons: [],
+				hint: undefined
+			})
+		}
+		return precompiled
+	}
+
+	private precompileUnscanned(
+		source: string,
+		id: string,
+		mappings: string | undefined,
+		program: string | undefined
+	): PrecompiledModule {
 		const module = this.add(id, source, mappings)
 		this.configuration ??= this.applyConfiguration()
 		const { sites, diagnostics } = this.analysisOf(module)
@@ -4502,6 +4595,23 @@ export const specifierOf = (importer: string, file: string): string => {
 }
 
 const virtualSpecifier = /"(~arktype\/[^"]+)"/g
+
+// the virtual modules code reaches, by specifier
+const reachedModulesOf = (
+	code: string,
+	modules: Record<string, string>
+): Record<string, string> => {
+	const reached: Record<string, string> = {}
+	const pending = [code]
+	for (const read of pending) {
+		for (const [, specifier] of read.matchAll(virtualSpecifier)) {
+			if (specifier in reached || !(specifier in modules)) continue
+			reached[specifier] = modules[specifier]
+			pending.push(reached[specifier])
+		}
+	}
+	return reached
+}
 
 const createsValidator = (site: Site) =>
 	!site.introspection && !site.parseError && hasArkKind(site.value, "root")
