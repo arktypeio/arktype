@@ -32,6 +32,7 @@ import {
 	writeUnbakedMessage
 } from "arktype/runtime"
 import { DynamicValue } from "@ark/aot/internal/dynamic.ts"
+import { flattenBundle } from "@ark/aot/internal/flat.ts"
 import {
 	keptIssuesOf,
 	keptOf,
@@ -64,9 +65,17 @@ const comparesExpecteds = detailsErrors && !firstIssue
 
 // compares a Type with its precompiled validators on each call's outcome
 
-type Layout = "inline" | "modules"
+// "flat" is the modules with their units declared in one function, as a
+// one-chunk production bundle declares them, which size-optimized units never are
+type Layout = "inline" | "modules" | "flat"
 
-export const layouts: Layout[] = ["inline", "modules"]
+export const layouts: Layout[] =
+	testedOptions.optimize === "size" ?
+		["inline", "modules"]
+	:	["inline", "modules", "flat"]
+
+// artifacts whose units were declared in one function
+export let flattened = 0
 
 let out: string | undefined
 
@@ -249,6 +258,20 @@ const loadArtifact = async (
 	if (layout === "inline") code = precompileStandalone(exports, opts).code
 	else {
 		const artifact = precompileStandaloneModules(exports, opts)
+		const flat =
+			layout === "flat" ?
+				flattenBundle(
+					{ "artifact.js": artifact.code },
+					artifact.modules,
+					new Map([["artifact.js", true]]),
+					false
+				)
+			:	undefined
+		if (flat) {
+			flattened++
+			artifact.code = flat.sites["artifact.js"].code
+			artifact.modules = flat.modules
+		}
 		for (const [specifier, module] of Object.entries(artifact.modules)) {
 			const written = modulesBySpecifier[specifier]
 			if (written === undefined) {

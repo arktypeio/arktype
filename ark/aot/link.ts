@@ -60,7 +60,7 @@ const maxPasses = 8
 const virtualSource = /"(~arktype\/[^"]+)"/g
 
 // each changed module, by what it holds, then each importing it, in order
-const renamedOf = (
+export const renamedOf = (
 	codes: Record<string, string>,
 	original: Record<string, string>
 ): Record<string, string> | undefined => {

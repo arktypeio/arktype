@@ -25,6 +25,7 @@ import {
 	optedInPackagesOf,
 	precompiledDependencyOf,
 	packageNameOf,
+	printablePathOf,
 	realPathOf,
 	reportDiagnostics,
 	readsNodes,
@@ -54,6 +55,7 @@ import {
 	addLoaded,
 	scanProgram,
 	unseenProblemOf,
+	writeUnscannedFlatMessage,
 	type ImportKind,
 	type Imports,
 	type LoadedSources,
@@ -328,7 +330,27 @@ export const precompile: UnpluginInstance<
 		return transformed
 	}
 	// each Rollup, Rolldown or Vite build's scan, by its Vite environment
-	const scansByBuild = new WeakMap<object, RollupScan>()
+	const scansByBuild = new WeakMap<object, BundleScan>()
+	let esbuildScan: BundleScan | undefined
+	// a module the scan didn't write reading a unit it declares in one
+	// function would read a copy, which another validator could tell apart
+	const copiedProblemOf = (
+		context: unknown,
+		id: string,
+		importer: string
+	): string | undefined => {
+		const scan =
+			meta.framework === "esbuild" ?
+				esbuildScan
+			:	scansByBuild.get(buildOf(context))
+		if (!scan?.replaced.has(id) || importer.startsWith(`${virtual}~arktype/`))
+			return
+		const file = fileOf(importer)
+		if (scan.loaded.get(file) === scan.scanned.modules[file]?.source) return
+		return writeUnscannedFlatMessage(
+			printablePathOf(realPathOf(opts?.cwd ?? process.cwd()), file)
+		)
+	}
 	const rollupBuild = {}
 	const buildOf = (context: unknown) =>
 		(context as { environment?: object }).environment ?? rollupBuild
@@ -393,7 +415,10 @@ export const precompile: UnpluginInstance<
 					if (meta.framework !== "webpack") throwBuildError(message)
 					this.error(message)
 				}
-				if (id.startsWith("~arktype/")) return virtual + id
+				if (id.startsWith("~arktype/")) {
+					const problem = importer && copiedProblemOf(this, id, importer)
+					return problem ? refuse(problem) : virtual + id
+				}
 				if (!importer) return
 				// a virtual module resolves from the module it was written for
 				if (importer.startsWith(`${virtual}~arktype/`))
@@ -613,12 +638,14 @@ export const precompile: UnpluginInstance<
 				let scanned: ScannedProgram | undefined
 				let verifies = false
 				const loaded: LoadedSources = new Map()
+				esbuildScan = undefined
 				if (program) {
 					build.initialOptions.metafile = true
 					const cwd = build.initialOptions.absWorkingDir ?? process.cwd()
 					build.onStart(async () => {
 						scanned = undefined
 						verifies = false
+						esbuildScan = undefined
 						loaded.clear()
 						const usage = await esbuildScanOf(
 							build,
@@ -632,6 +659,12 @@ export const precompile: UnpluginInstance<
 						scanned = usage[0]
 						// only what it dropped can fail a read the scan didn't see
 						verifies = !!usage[1].dropped.length
+						esbuildScan = {
+							scanned,
+							verifies,
+							loaded,
+							replaced: new Set(usage[1].replaced)
+						}
 					})
 					build.onEnd(result => {
 						if (
@@ -799,10 +832,12 @@ const esbuildResolution = "arktype"
 
 let scans = 0
 
-interface RollupScan {
+interface BundleScan {
 	scanned: ScannedProgram
 	// whether it left out what a read it didn't see could need
 	verifies: boolean
+	// what only modules it wrote may import
+	replaced: ReadonlySet<string>
 	// each module as this plugin transformed it
 	loaded: LoadedSources
 }
@@ -828,7 +863,7 @@ const rollupScanOf = async (
 	inputs: string[],
 	isTransformed: (id: string) => boolean,
 	scan: (program: ScannedProgram) => Promise<ScannedUsage>
-): Promise<RollupScan | undefined> => {
+): Promise<BundleScan | undefined> => {
 	const entries: ScanEntry[] = []
 	for (const input of inputs) {
 		const resolved = await context.resolve(input, undefined, { isEntry: true })
@@ -859,7 +894,12 @@ const rollupScanOf = async (
 	if (!scanned) return
 	const usage = await scan(scanned)
 	return usage.written ?
-			{ scanned, verifies: !!usage.dropped.length, loaded: new Map() }
+			{
+				scanned,
+				verifies: !!usage.dropped.length,
+				replaced: new Set(usage.replaced),
+				loaded: new Map()
+			}
 		:	undefined
 }
 
@@ -907,6 +947,8 @@ const cachedFileOf = (): ((id: string) => string) => {
 interface EsbuildBuild {
 	initialOptions: {
 		entryPoints?: unknown
+		splitting?: boolean
+		inject?: string[]
 		stdin?: {
 			contents: string | Uint8Array
 			resolveDir?: string
@@ -1015,6 +1057,12 @@ const esbuildScanOf = async (
 			idOf: fileOf
 		}))
 	if (!scanned) return
+	// each entry is its own bundle, unless it splits what they share, and an
+	// injected module is one the scan doesn't read
+	scanned.isOneChunk =
+		scanned.entries.length === 1 &&
+		!build.initialOptions.splitting &&
+		!build.initialOptions.inject?.length
 	const usage = await scan(scanned)
 	return usage.written ? [scanned, usage] : undefined
 }

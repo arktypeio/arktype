@@ -47,6 +47,8 @@ export const scanProgram = async (
 		return id
 	}
 	const given = new Map(entries.map(entry => [add(entry.id), entry.source]))
+	// a module imported dynamically is a chunk of its own where a bundler splits
+	let importsDynamically = false
 	for (const [id, hostId] of pending) {
 		const source = given.get(id) ?? host.readFile(hostId)
 		if (source === undefined) return
@@ -64,10 +66,17 @@ export const scanProgram = async (
 			if (target === null || isInert(target, host)) continue
 			// e.g. a Vue component, which may read a validator the build can't see
 			if (!transformedId.test(target)) return
+			if (kind === "dynamic-import") importsDynamically = true
 			resolved[specifier] = add(target)
 		}
 	}
-	return { key, entries: [...given.keys()], modules, targets }
+	return {
+		key,
+		entries: [...given.keys()],
+		modules,
+		targets,
+		isOneChunk: given.size === 1 && !importsDynamically
+	}
 }
 
 // arktype's own, which never import the program
@@ -213,3 +222,6 @@ export const unseenProblemOf = (
 
 export const writeUnseenMessage = (reason: string): string =>
 	`A production build leaves out of its validators what no read of them needs, as it found reading the bundle's modules, but ${reason}, so a read it didn't see may need what it left out. Set prune: false to build them whole.`
+
+export const writeUnscannedFlatMessage = (path: string): string =>
+	`A production build declares the units its validators read in one function, as it found reading the bundle's modules first, but it built ${path} from code it didn't read, whose validators would read copies of them. Build again, or set prune: false to build each unit as a module of its own.`

@@ -4,6 +4,7 @@ import { join } from "node:path"
 import {
 	cloneInput,
 	compare,
+	flattened,
 	layouts,
 	observeArktype,
 	outDir
@@ -75,7 +76,7 @@ const run = async () => {
 	}
 	console.log(disagreements.slice(0, 20).join("\n\n"))
 	console.log(
-		`\n${disagreements.length ? "❌" : "✅"} ${precompiledRoots} of ${roots.length} roots precompiled, ${introspected} with their introspection baked (${unbaked} throwing why a schema can't be) and ${folded} folded where a site reads it, ${calls} calls, each in the ${layouts.join(", ")} layouts: ${disagreements.length} disagreeing, ${harnessLimited} beyond the harness`
+		`\n${disagreements.length ? "❌" : "✅"} ${precompiledRoots} of ${roots.length} roots precompiled, ${introspected} with their introspection baked (${unbaked} throwing why a schema can't be) and ${folded} folded where a site reads it, ${calls} calls, each in the ${layouts.join(", ")} layouts (${flattened} flattened): ${disagreements.length} disagreeing, ${harnessLimited} beyond the harness`
 	)
 	if (!disagreements.length) return
 	const report = join(await outDir(), "differential.json")
