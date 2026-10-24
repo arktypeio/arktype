@@ -783,6 +783,8 @@ type Declaration =
 			fn: Arrow
 			// a validator a creation returns, rather than functions
 			returnsValue: boolean
+			// what it's destructured as, if not a unit
+			names: string[] | undefined
 	  }
 	// its functions, e.g. [allows, apply]
 	| { kind: "array"; name: string; node: Node; array: ArrayLiteral }
@@ -822,7 +824,11 @@ const writeFlat = (
 		created.add(name)
 		texts.push(`const ${name} = (${creator})(${args.join(", ")})`)
 	}
-	const code = texts.join("\n")
+	const inlined = withTemplatesInlined(texts.join("\n"))
+	if (!inlined) return
+	const { code } = inlined
+	// an inlined template is no longer the function's to return
+	for (const name of inlined.names) specifiersByName.delete(name)
 	const { program, errors } = parseSync("units.js", code, {
 		sourceType: "module",
 		preserveParens: false
@@ -961,12 +967,22 @@ const writeFlat = (
 			d.returnsValue && returned.argument?.type === "Identifier" ?
 				scopes.refsById.get(returned.argument)?.binding
 			:	undefined
+		// what a destructured call returns is named as it's destructured
+		const destructured = new Map<Binding | undefined, string>(
+			d.names?.map((name, i) => [
+				scopes.refsById.get(
+					(returned.argument as ArrayLiteral).elements[i] as never
+				)?.binding,
+				name
+			])
+		)
 		for (const binding of bindingsIn.get(d.fn) ?? []) {
 			if (binding.kind === "param") continue
 			const name =
-				binding === returnedLocal ? d.name
-				: isFree(binding.name) ? binding.name
-				: fresh(binding.name)
+				binding === returnedLocal ?
+					d.name
+				:	(destructured.get(binding) ??
+					(isFree(binding.name) ? binding.name : fresh(binding.name)))
 			values.set(name, name)
 			if (name !== binding.name) renamed.set(binding, name)
 		}
@@ -979,7 +995,7 @@ const writeFlat = (
 			for (const id of ids) if (id.start > body.start) replace(id, name)
 		}
 		s.overwrite(d.node.start, body.start + 1, aliases)
-		if (returnedLocal) {
+		if (returnedLocal || d.names) {
 			s.overwrite(returned.start, d.node.end, "")
 			return
 		}
@@ -1187,18 +1203,90 @@ const declarationOf = (
 				callee.type === "ArrowFunctionExpression" &&
 				isFactory(init!, callee, scopes, created.has(name))
 			) {
-				return {
-					kind: "factory",
-					name,
-					node,
-					call: init!,
-					fn: callee,
-					returnsValue: created.has(name)
+				// e.g. a template called once, inlined as its call's function
+				const names =
+					id.type === "ArrayPattern" ?
+						id.elements.map(e => (e?.type === "Identifier" ? e.name : ""))
+					:	undefined
+				if (!names || namesReturnedLocals(names, callee, scopes)) {
+					return {
+						kind: "factory",
+						name: names ? names.join(", ") : name,
+						node,
+						call: init!,
+						fn: callee,
+						returnsValue: created.has(name),
+						names
+					}
 				}
 			}
 		}
 	}
 	return { kind: "value", name, node }
+}
+
+// a template called once as its call's function, which the function then
+// flattens as a factory, so what it's called with is the function's constant
+const withTemplatesInlined = (
+	code: string
+): { code: string; names: string[] } | undefined => {
+	const { program, errors } = parseSync("units.js", code, {
+		sourceType: "module",
+		preserveParens: false
+	})
+	if (errors.length) return
+	const scopes = new ModuleScopes(program)
+	const s = new MagicString(code)
+	const names: string[] = []
+	for (const statement of program.body as Node[]) {
+		if (
+			statement.type !== "VariableDeclaration" ||
+			statement.declarations.length !== 1
+		)
+			continue
+		const { id, init } = statement.declarations[0]
+		const fn = init && unwrapParentheses(init)
+		if (fn?.type !== "ArrowFunctionExpression" || !returnedLengthOf(fn))
+			continue
+		const references = scopes.bindingsById.get(id)?.references ?? []
+		const callee = references[0]?.id
+		const call = callee?.parent
+		const declarator = call?.parent
+		if (
+			references.length === 1 &&
+			call?.type === "CallExpression" &&
+			call.callee === callee &&
+			declarator?.type === "VariableDeclarator" &&
+			declarator.init === call &&
+			(declarator.id.type === "Identifier" ||
+				declarator.id.type === "ArrayPattern") &&
+			statementOf(declarator).parent?.type === "Program"
+		) {
+			s.overwrite(callee.start, callee.end, `(${code.slice(fn.start, fn.end)})`)
+			s.remove(statement.start, statement.end)
+			names.push((id as { name: string }).name)
+		}
+	}
+	return { code: s.toString(), names }
+}
+
+// whether a function returns as many distinct locals as names destructure it
+const namesReturnedLocals = (
+	names: string[],
+	fn: Arrow,
+	scopes: ModuleScopes
+): boolean => {
+	if (!names.every(Boolean) || names.length !== returnedLengthOf(fn))
+		return false
+	const body = (fn.body as Block).body
+	const returned = (body[body.length - 1] as Return).argument as ArrayLiteral
+	const bindings = returned.elements.map(
+		e => scopes.refsById.get(e as never)?.binding
+	)
+	return (
+		new Set(bindings).size === bindings.length &&
+		bindings.every(binding => binding?.scope.node === fn)
+	)
 }
 
 // how many functions a template or factory returns, by name

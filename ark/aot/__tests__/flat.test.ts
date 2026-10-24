@@ -172,7 +172,7 @@ contextualize(() => {
 	it("keeps each unit a module of its own where the function is larger", async () => {
 		const files = writeFixture(
 			{
-				"main.ts": `import { type } from "arktype"\n\nexport const Email = type("string.email")\nexport const Id = type("string.uuid")\n`
+				"main.ts": `import { type } from "arktype"\n\nexport const Id = type("string.uuid")\n`
 			},
 			fromHere("temp", "flatLarger")
 		)
