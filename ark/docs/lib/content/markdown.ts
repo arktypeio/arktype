@@ -358,7 +358,7 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 			return [
 				...[speedChart, sizeChart].flatMap(claimChartMarkdown),
 				paragraph(
-					`${claimMarkdown(claims.chartsSummary)} The charts come from different builds: each names its benchmark and the options it was built with.`
+					`${claimMarkdown(claims.chartsSummary)} Each chart names its benchmark and the options ArkType was built with.`
 				)
 			]
 		case "summary":

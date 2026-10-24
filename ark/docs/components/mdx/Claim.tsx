@@ -97,8 +97,8 @@ export const ClaimCharts = () => (
 			<ClaimChart chart={sizeChart} />
 		</div>
 		<p>
-			<ClaimText claim={claims.chartsSummary} /> The charts come from different
-			builds: each names its benchmark and the options it was built with.
+			<ClaimText claim={claims.chartsSummary} /> Each chart names its benchmark
+			and the options ArkType was built with.
 		</p>
 	</>
 )
