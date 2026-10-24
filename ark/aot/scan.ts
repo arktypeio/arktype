@@ -80,6 +80,18 @@ export const scanProgram = async (
 	}
 }
 
+// what loads no module from import.meta: a value the bundler defines, a path, a
+// URL, which a module loads only through an import() the scan can't read, or
+// hot, which Vite's build defines as undefined and other bundlers leave
+// unimplemented, so no update it accepts runs where a bundle prunes
+export const isInertMetaProperty = (name: unknown): boolean =>
+	name === "env" ||
+	name === "hot" ||
+	name === "url" ||
+	name === "resolve" ||
+	name === "dirname" ||
+	name === "filename"
+
 // arktype's own, which never import the program
 const runtimeSpecifier =
 	/^(?:arktype|@ark\/(?:schema|util))(?:\/|$)|^~arktype\//
@@ -122,8 +134,9 @@ const importsOf = (
 		result.push([specifier, "dynamic-import"])
 	}
 	for (const { end } of module.importMetas) {
-		// e.g. import.meta.glob() or a worker's URL, reaching modules unseen
-		if (!/^\s*\.\s*(?:env|dirname|filename)\b/.test(source.slice(end))) return
+		// e.g. import.meta.glob(), reaching modules unseen
+		const read = /^\s*\.\s*([\w$]+)/.exec(source.slice(end))
+		if (!read || !isInertMetaProperty(read[1])) return
 	}
 	if (/\brequire\b/.test(source)) {
 		walk(program as never, (node: Node) => {

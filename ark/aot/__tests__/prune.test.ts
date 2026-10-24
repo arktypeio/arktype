@@ -405,6 +405,22 @@ contextualize(function (this: Mocha.Suite) {
 				everyMember
 			)
 		})
+
+		it("but import.meta.hot, which a bundle reads as undefined", async () => {
+			attest(
+				await droppedReading(
+					`if (import.meta.hot) import.meta.hot.accept()\nUser({})`
+				)
+			).equals(everyMember)
+		})
+
+		it("but a URL import.meta locates", async () => {
+			attest(
+				await droppedReading(
+					`new URL("./logo.svg", import.meta.url)\nimport.meta.resolve("./types.ts")\nimport.meta.dirname\nUser({})`
+				)
+			).equals(everyMember)
+		})
 	})
 
 	describe("ids", () => {
@@ -929,6 +945,22 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(run(whole)).equals(run(pruned))
 			attest(whole.includes("~standard")).equals(true)
 			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("leaves out what no read needs where a module accepts hot updates", async () => {
+			const main = join(root, "main.ts")
+			const source = readFileSync(main, "utf8")
+			writeFileSync(
+				main,
+				`${source}\nif (import.meta.hot) import.meta.hot.accept()\n`
+			)
+			try {
+				const pruned = await bundle()
+				attest(run(pruned)).snap("name must be a string\n")
+				attest(pruned.includes("~standard")).equals(false)
+			} finally {
+				writeFileSync(main, source)
+			}
 		})
 
 		it("reads a page's module scripts", async () => {

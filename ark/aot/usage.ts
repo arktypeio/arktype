@@ -1,6 +1,7 @@
 import { parseSync, type Node, type Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
+import { isInertMetaProperty } from "./scan.ts"
 import {
 	exportNameOf,
 	isWriteTarget,
@@ -195,7 +196,7 @@ class UsageAnalysis {
 				node.meta.name === "import" &&
 				!isInertMetaRead(node)
 			)
-				// e.g. import.meta.glob() or a worker's URL, reaching modules unseen
+				// e.g. import.meta.glob(), reaching modules unseen
 				escape()
 			return true
 		})
@@ -359,9 +360,7 @@ const isInertMetaRead = (node: Node): boolean => {
 	return (
 		parent?.type === "MemberExpression" &&
 		parent.object === node &&
-		(memberNameOf(parent) === "env" ||
-			memberNameOf(parent) === "dirname" ||
-			memberNameOf(parent) === "filename")
+		isInertMetaProperty(memberNameOf(parent))
 	)
 }
 
