@@ -232,6 +232,22 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 		).snap(["0 sites in 1 file: 0 accepted (100.0%)"])
 	})
 
+	it("reports the config load order a plugin call's config fails", () => {
+		const root = writeFixture({
+			"package.json": "{}",
+			"vite.config.ts": `import { precompile } from "@ark/aot/unplugin"\n\nexport default { plugins: [precompile.vite({ config: "src/config.ts" })] }\n`,
+			"src/config.ts": `import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: "delete" })\n`,
+			"src/schemas.ts": `import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n`,
+			"src/main.ts": `import { User } from "./schemas.ts"\nimport "./config.ts"\n\nconsole.log(User({ name: "a", extra: 1 }))\n`
+		})
+		attest(check(["src/**/*.ts"], { cwd: root }).lines).snap([
+			"vite.config.ts:3:28  precompile.vite() sets config, so --check does too",
+			'src/main.ts:1:1  import { User } from "./schemas.ts" loads src/schemas.ts, which creates a Type, before the config module src/config.ts runs configure()\n  unless the program loaded src/config.ts earlier, creating the Type throws\n  Import src/config.ts first, before any module that creates a Type. Set allowUnsafe: true to build anyway, with a warning.',
+			"src/schemas.ts:3:21  accepted",
+			"1 site in 3 files: 1 accepted (100.0%), 1 error outside a site"
+		])
+	})
+
 	it("rejects invalid arguments", () => {
 		attest(
 			[
