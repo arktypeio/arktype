@@ -372,6 +372,19 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			}
 		})
 
+		it("configured by a module --import preloads", () => {
+			const expected = runPlain(configured)
+			for (const runtime of [undefined, "arktype"] as const) {
+				attest(
+					node(
+						["--import", "./config.ts", "main.ts"],
+						{ runtime, config: "config.ts" },
+						configured
+					).stdout
+				).equals(expected)
+			}
+		})
+
 		it("configured behind a transpiling loader", () => {
 			const expected = runPlain(transpiled)
 			for (const runtime of [undefined, "arktype"] as const) {
@@ -454,7 +467,7 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				},
 				fromHere("temp", "unstarted")
 			)
-			// --input-type fails a worker that inherits it
+			// --input-type fails a worker given it
 			attest(
 				node(
 					[
@@ -466,11 +479,14 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 					root
 				).stdout
 			).equals("{ a: 1 }\n")
-			const { status, stderr } = node(
-				["--import", "./noWorkers.ts", "main.ts"],
-				{},
-				root
-			)
+			// a preload given as a flag stays out of the precompiler's thread
+			attest(
+				node(["--import", "./noWorkers.ts", "main.ts"], {}, root).status
+			).equals(0)
+			// one in NODE_OPTIONS runs in every thread
+			const { status, stderr } = node(["main.ts"], {}, root, {
+				NODE_OPTIONS: "--import ./noWorkers.ts"
+			})
 			attest([status, thrownMessage(stderr, root)]).equals([
 				1,
 				"@ark/aot's precompiler stopped before it answered, as it does where a module the process preloads throws in a worker"

@@ -23,14 +23,18 @@ const driverUrl = new URL(
 	import.meta.url
 )
 
-// --input-type fails a worker, as its entry isn't --eval code
-const driverExecArgv =
-	process.execArgv.some(arg => arg.startsWith("--input-type")) ?
-		process.execArgv.filter(
-			(arg, i, args) =>
-				!arg.startsWith("--input-type") && args[i - 1] !== "--input-type"
-		)
-	:	undefined
+// the precompiler loads only its own modules and arktype's, so its thread
+// takes only the flags that resolve and read them. Others would run a module
+// the program preloads, like its config module, before the build configures
+// arktype there, or fail the worker, as --input-type does
+const driverFlag =
+	/^(?:--conditions|-C|--preserve-symlinks|--experimental-strip-types|--no-experimental-strip-types|--experimental-transform-types)(?:=|$)/
+const driverFlagWithValue = /^(?:--conditions|-C)$/
+
+const driverExecArgv = process.execArgv.filter(
+	(arg, i, args) =>
+		driverFlag.test(arg) || driverFlagWithValue.test(args[i - 1] ?? "")
+)
 
 const waiting = 0
 const answered = 1

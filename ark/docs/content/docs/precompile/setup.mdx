@@ -275,7 +275,7 @@ Each driver takes the plugin's options, fails on the same errors, except that Bu
 - **`bun test`** uses the [Bun driver](#bun).
 - **Jest** has no driver, so it runs your Types with arktype, unprecompiled. Your definitions behave the same either way, but to test the validators you ship, run tests with one of the above.
 
-A test file is an entry of its own, so in a program with a [config module](/docs/precompile/options#configuration), the first validator a test file loads throws that it was created before `configure()` ran, unless the config module loads first. List it in Vitest's `test.setupFiles` or after the plugin in the `[test]` preload of `bunfig.toml`. Under `node --test`, import it at the top of each test file: a module `--import` preloads also loads in the precompiler's thread, which fails.
+A test file is an entry of its own, so in a program with a [config module](/docs/precompile/options#configuration), the first validator a test file loads throws that it was created before `configure()` ran, unless the config module loads first. List it in Vitest's `test.setupFiles`, after the plugin in the `[test]` preload of `bunfig.toml`, or after the Node driver: `node --import ./register.ts --import ./src/arktype.config.ts --test`.
 
 To test that your precompiled validators behave as arktype does, run tests in [shadow mode](/docs/precompile/advanced#shadow-mode).
 
