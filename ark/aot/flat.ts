@@ -727,12 +727,12 @@ const writeFlat = (units: UnitModule[]): Flat | undefined => {
 		exported,
 		code: body,
 		write: (read, asModule) => {
-			const returned = read.map(name =>
-				membersOf.has(name) ? wholeOf(name) : name
-			)
+			const returned = `[${read
+				.map(name => (membersOf.has(name) ? wholeOf(name) : name))
+				.join(", ")}]`
 			const declaration = `const [${read.join(", ")}] = /* @__PURE__ */ (() => {
-${body}
-return [${returned.join(", ")}]
+${inGzipOrder(withoutUnread(body, returned))}
+return ${returned}
 })()`
 			return asModule ?
 					`import * as runtime from "arktype/runtime"
@@ -745,6 +745,85 @@ export { ${read.join(", ")} }
 		}
 	}
 }
+
+// what a function declares that nothing reads, which a bundler keeps as it
+// drops only a module's declarations, left out, as is what only it read
+const withoutUnread = (body: string, returned: string): string => {
+	for (;;) {
+		const code = `${body}\n;${returned}`
+		const { program } = parseSync("units.js", code, {
+			sourceType: "module",
+			preserveParens: false
+		})
+		const scopes = new ModuleScopes(program)
+		const s = new MagicString(code)
+		for (const statement of program.body as Node[]) {
+			if (statement.type !== "VariableDeclaration") continue
+			const { declarations } = statement
+			const unread = declarations.map(declarator => {
+				const binding =
+					declarator.id.type === "Identifier" ?
+						scopes.bindingsById.get(declarator.id)
+					:	undefined
+				return (
+					!!binding &&
+					!binding.references.length &&
+					(!declarator.init || isPureExpression(declarator.init, code))
+				)
+			})
+			if (unread.every(Boolean)) s.remove(statement.start, statement.end)
+			else if (unread.some(Boolean)) {
+				const kept = declarations.filter((_, i) => !unread[i])
+				s.overwrite(
+					statement.start,
+					statement.end,
+					`${statement.kind} ${kept.map(d => code.slice(d.start, d.end)).join(", ")}`
+				)
+			}
+		}
+		if (!s.hasChanged()) return body
+		body = s.toString().slice(0, -returned.length - 2)
+	}
+}
+
+// each function the units declare, which reads nothing as it's declared, first
+// and beside those like it, so gzip finds their repeats, then the rest in order
+const inGzipOrder = (body: string): string => {
+	const { program } = parseSync("units.js", body, {
+		sourceType: "module",
+		preserveParens: false
+	})
+	const functions: [key: string, text: string][] = []
+	const rest: string[] = []
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") {
+			rest.push(body.slice(statement.start, statement.end))
+			continue
+		}
+		for (const declarator of statement.declarations) {
+			const text = `${statement.kind} ${body.slice(declarator.start, declarator.end)}`
+			const init = declarator.init && unwrapParentheses(declarator.init)
+			if (
+				init?.type === "ArrowFunctionExpression" ||
+				init?.type === "FunctionExpression"
+			) {
+				functions.push([
+					body.slice(init.start, init.end).replace(unitName, "_"),
+					text
+				])
+			} else rest.push(text)
+		}
+	}
+	functions.sort(([l], [r]) =>
+		l < r ? -1
+		: l > r ? 1
+		: 0
+	)
+	return [...functions.map(([, text]) => text), ...rest].join("\n")
+}
+
+// a name the build derives from a unit's, e.g. its Allows
+const unitName = /\b\w+?(?:R\d+|Allows|Apply|Transform)\b/g
 
 const declarationOf = (
 	statement: Node,
