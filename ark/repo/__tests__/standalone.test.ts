@@ -1393,7 +1393,7 @@ age is missing`)
 		const fallback = {
 			date: (ctx: { base: object }) => ({ ...ctx.base, format: "date-time" })
 		}
-		const keepBase = (ctx: { base: object }) => ctx.base
+		const keepBase: ToJsonSchema.UniversalFallback = ctx => ctx.base
 		attest(t.toJsonSchema({ fallback: keepBase })).equals(
 			T.toJsonSchema({ fallback: keepBase })
 		)
