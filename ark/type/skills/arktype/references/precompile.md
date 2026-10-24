@@ -91,7 +91,9 @@ import { register } from "@ark/aot/node"
 register()
 ```
 
-- Bun: `Bun.plugin(precompile())` with `precompile` from `@ark/aot/bun`, in a file listed under `preload` in `bunfig.toml`.
+- Bun: `Bun.plugin(precompile())` with `precompile` from `@ark/aot/bun`, in a file listed under `preload` in `bunfig.toml`, and again under `[test]` for `bun test`.
+
+A project with a config module loads it before each test file, or the first validator a test loads throws that it was created before `configure()` ran: list it in Vitest's `test.setupFiles` or after the plugin in Bun's `[test]` preload, or import it atop each `node --test` file (not with `--import`, which also loads it in the precompiler's thread).
 
 To check that each precompiled validator behaves as arktype does, run the tests once with `precompile.vite({ shadow: true })`.
 

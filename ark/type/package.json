@@ -42,6 +42,9 @@
 			"internal": [
 				"./out/internal.d.ts"
 			],
+			"internal/arktype.js": [
+				"./out/index.d.ts"
+			],
 			"internal/*": [
 				"./out/*"
 			]

@@ -28,7 +28,8 @@ export interface CheckReport {
 
 const defaultSources = ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"]
 
-const ignoredDirs = /(^|[/\\])(node_modules|out|dist|build)[/\\]/
+// globSync tests a directory by its name and its path, and a file by its name
+const ignoredDirs = /(^|[/\\])(node_modules|out|dist|build)([/\\]|$)/
 
 export const check = (
 	patterns: string[],
