@@ -91,7 +91,7 @@ import { register } from "@ark/aot/node"
 register()
 ```
 
-- Bun: `Bun.plugin(precompile())` with `precompile` from `@ark/aot/bun`, in a file listed under `preload` in `bunfig.toml`.
+- Bun: `Bun.plugin(precompile())` with `precompile` from `@ark/aot/bun`, in a file listed under `preload` in `bunfig.toml`, and again under `[test]` for `bun test`.
 
 To check that each precompiled validator behaves as arktype does, run the tests once with `precompile.vite({ shadow: true })`.
 

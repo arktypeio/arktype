@@ -361,7 +361,7 @@ Dependencies are left to Node, so one that imports `arktype` loads it beside the
 
 ## Bun
 
-To precompile as Bun loads your code, for `bun test` or any program, register the plugin from a file listed in `preload` in `bunfig.toml`:
+To precompile as Bun loads your code, for `bun test` or any program, register the plugin from a file `bunfig.toml` preloads. `bun test` reads only the `preload` in its `[test]` section, so list the file in both:
 
 ```ts
 import { precompile } from "@ark/aot/bun"
@@ -370,6 +370,9 @@ Bun.plugin(precompile())
 ```
 
 ```toml
+preload = ["./preload.ts"]
+
+[test]
 preload = ["./preload.ts"]
 ```
 
