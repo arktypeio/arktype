@@ -10,6 +10,7 @@ import {
 	enInfo,
 	errorsOf,
 	FirstIssues,
+	issuesOf,
 	mergeIssues,
 	messageOf,
 	problemOf,
@@ -211,7 +212,7 @@ export const standardResultOf = (
 ): StandardSchemaV1.Result<unknown> =>
 	out instanceof ArkErrors ?
 		{
-			issues: (out._issues ? (out.issues as ArkIssue[]) : out._).map(issue =>
+			issues: (out._i ? (out.issues as ArkIssue[]) : out._).map(issue =>
 				(
 					issue.path.length &&
 					(issue.message === undefined || issue.message === messageOf(issue))
@@ -665,17 +666,19 @@ type UnreadErrorsOf = () => UnreadErrors
 
 const unreadOf = (Ctx: new () => ArkErrors): UnreadErrors => {
 	class Unread {
-		declare _apply: CompactApply
-		declare _data: unknown
-		declare _found?: ArkIssue[]
+		// its Apply, the data it reads and, once read, the issues found, each
+		// named short, as every bundle reading errors writes them
+		declare _a: CompactApply
+		declare _d: unknown
+		declare _f?: ArkIssue[]
 
 		constructor(apply: CompactApply, data: unknown) {
-			this._apply = apply
-			this._data = data
+			this._a = apply
+			this._d = data
 		}
 
 		get _(): ArkIssue[] {
-			return (this._found ??= issuesOf(this._apply, this._data, new Ctx()))
+			return (this._f ??= issuesOf(this._a, this._d, new Ctx()))
 		}
 	}
 	// a Ctx, built without the fields its constructor sets
@@ -683,14 +686,6 @@ const unreadOf = (Ctx: new () => ArkErrors): UnreadErrors => {
 	// keeps the prototype's own constructor, still not enumerable
 	Unread.prototype.constructor = Ctx
 	return Unread as never
-}
-
-const issuesOf = (apply: CompactApply, data: unknown, ctx: ArkErrors) => {
-	apply(data, ctx)
-	// data a write or a getter has made valid since fails as a whole
-	if (!ctx._.length) ctx.failsAt({ code: "predicate" }, data)
-	releasePath(ctx)
-	return ctx._
 }
 
 let unreadArkErrors: UnreadErrors | undefined
@@ -704,10 +699,11 @@ export const UnreadFirstIssues: UnreadErrorsOf = () =>
 	(unreadFirstIssues ??= unreadOf(FirstIssues))
 
 interface UnreadFields {
-	_apply?: CompactApply
-	_data: unknown
-	_found?: ArkIssue[]
-	_first?: WrittenIssue
+	_a?: CompactApply
+	_d: unknown
+	_f?: ArkIssue[]
+	// the first issue, found alone
+	_1?: WrittenIssue
 }
 
 type WrittenIssue = ArkErrors["issues"][number]
@@ -718,29 +714,29 @@ type WrittenIssue = ArkErrors["issues"][number]
  */
 export const firstIssue = (errors: ArkErrors): WrittenIssue => {
 	const unread = errors as ArkErrors & UnreadFields
-	if (unread._first) return unread._first
-	if (!unread._apply || unread._found) return errors.issues[0]
+	if (unread._1) return unread._1
+	if (!unread._a || unread._f) return errors.issues[0]
 	// an Unread's constructor is the class whose issues it finds
 	const ctx = new (errors.constructor as new () => ArkErrors)()
 	ctx.failFast ||= true
-	issuesOf(unread._apply, unread._data, ctx)
-	return (unread._first = ctx.issues[0])
+	issuesOf(unread._a, unread._d, ctx)
+	return (unread._1 = ctx.issues[0])
 }
 
 // errors "none"'s failure, its one issue built once read
 export const InvalidErrors: new (data: unknown) => ArkErrors =
 	/* @__PURE__ */ (() => {
 		class Invalid {
-			declare _data: unknown
-			declare _found?: ArkIssue[]
+			declare _d: unknown
+			declare _f?: ArkIssue[]
 
 			constructor(data: unknown) {
-				this._data = data
+				this._d = data
 			}
 
 			get _(): ArkIssue[] {
-				return (this._found ??= [
-					{ code: "predicate", path: [], data: this._data } as never
+				return (this._f ??= [
+					{ code: "predicate", path: [], data: this._d } as never
 				])
 			}
 		}
@@ -770,7 +766,10 @@ export const foundErrors = (
 	Ctx: new () => ArkErrors
 ): unknown => {
 	const errors = new Ctx()
-	issuesOf(apply, data, errors)
+	// as issuesOf, which a program of these never ships
+	apply(data, errors)
+	if (!errors._.length) errors.failsAt({ code: "predicate" }, data)
+	releasePath(errors)
 	return onFail ? onFail(errors) : errors
 }
 

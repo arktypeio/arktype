@@ -65,7 +65,7 @@ let releasedPath: PropertyKey[] | undefined
 
 /** @internal once their Apply returns, errors pass their path on */
 export const releasePath = (errors: ArkIssues): ArkIssues => {
-	releasedPath = errors._path
+	releasedPath = errors._p
 	return errors
 }
 
@@ -80,11 +80,11 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	/** @internal each issue in the order it was added */
 	declare _: ArkIssue[]
 	/** @internal the path a fused traversal is at */
-	declare _path: PropertyKey[]
+	declare _p: PropertyKey[]
 
 	constructor() {
 		this._ = []
-		this._path = releasedPath ?? []
+		this._p = releasedPath ?? []
 		releasedPath = undefined
 	}
 
@@ -135,7 +135,24 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		key?: PropertyKey,
 		absent?: true
 	): true | undefined {
-		const issue = issueAt(this._path, site, data, key, absent)
+		// a key's site reports the missing key or its value
+		const path = this._p
+		let context = site.value ?? (site as SiteContext)
+		if (key !== undefined) {
+			path.push(key)
+			if (absent || (site.missing && !(key in (data as object))))
+				context = site.missing!
+			else data = (data as Keyed)[key]
+		}
+		const issue: ArkIssue = {
+			code: context.code,
+			path: site.path ? path.concat(site.path) : path.slice(),
+			data,
+			expected: context.description,
+			message: undefined
+		}
+		context.text?.(issue)
+		if (key !== undefined) path.pop()
 		if (this._.length) this._.push(issue)
 		else this._ = [issue]
 		return this.failFast
@@ -149,7 +166,13 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		missing?: FailureSite,
 		data?: unknown
 	): boolean | undefined {
-		return failsIn(this, this._path, apply, value, key, missing, data)
+		if (key === undefined) return !apply(value, this)
+		if (missing && value === undefined && !(key in (data as object)))
+			return this.failsAt(missing, data, key, true)
+		this._p.push(key)
+		const continues = apply(value, this)
+		this._p.pop()
+		return !continues
 	}
 }
 
@@ -177,20 +200,35 @@ export const applyIssues = (
 	)
 }
 
+// the issues an Apply finds in data it rejected
+export const issuesOf = (
+	apply: CompactApply,
+	data: unknown,
+	errors: ArkIssues
+): ArkIssue[] => {
+	apply(data, errors)
+	// data a write or a getter has made valid since fails as a whole
+	if (!errors._.length) errors.failsAt({ code: "predicate" }, data)
+	releasedPath = errors._p
+	return errors._
+}
+
 interface ArkIssues {
 	/** @internal set by a build asking for only the first issue */
 	failFast?: true
 	/** @internal arktype's errors, which copy their contexts when merged */
 	_merge?(merged: ArkIssues, prefix: array<PropertyKey>): void
 	/** @internal arktype's errors, grouped by path */
-	readonly _issues?: ArkIssue[]
+	readonly _i?: ArkIssue[]
 	/** @internal arktype's TraversalError message, one line per error */
-	readonly _thrown?: string
+	readonly _t?: string
 }
 
 type Keyed = Record<PropertyKey, unknown>
 
-// a key's site reports the missing key or its value
+// a traversal's issue, as ArkErrors' failsAt writes it, but copying a path of
+// one or two keys as a literal, which TurboFan allocates inline where slice()
+// calls a builtin
 export const issueAt = (
 	path: PropertyKey[],
 	site: FailureSite,
@@ -220,24 +258,6 @@ export const issueAt = (
 	context.text?.(issue)
 	if (key !== undefined) path.pop()
 	return issue
-}
-
-export const failsIn = (
-	ctx: FailureContext,
-	path: PropertyKey[],
-	apply: CompactApply,
-	value: unknown,
-	key: PropertyKey | undefined,
-	missing: FailureSite | undefined,
-	data: unknown
-): boolean | undefined => {
-	if (key === undefined) return !apply(value, ctx)
-	if (missing && value === undefined && !(key in (data as object)))
-		return ctx.failsAt(missing, data, key, true)
-	path.push(key)
-	const continues = apply(value, ctx)
-	path.pop()
-	return !continues
 }
 
 // a default's onFail, read from a standalone runtime
@@ -292,7 +312,7 @@ export class TraversalError extends Error {
 	declare arkErrors: ArkIssues
 
 	constructor(errors: ArkIssues) {
-		super(errors._thrown ?? errors.summary)
+		super(errors._t ?? errors.summary)
 
 		// assigned, as a field's initializer compiles where the class is defined
 		this.name = "TraversalError"

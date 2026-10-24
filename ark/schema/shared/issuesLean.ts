@@ -16,7 +16,7 @@ export class ArkErrors implements FailureContext {
 	/** @internal each issue in the order it was added */
 	_: ArkIssue[] = []
 	/** @internal the path a fused traversal is at */
-	_path: PropertyKey[] = []
+	_p: PropertyKey[] = []
 
 	/**
 	 * The number of issues.
@@ -62,7 +62,7 @@ export class ArkErrors implements FailureContext {
 		key?: PropertyKey,
 		absent?: true
 	): true | undefined {
-		const path = this._path
+		const path = this._p
 		let context = site.value ?? (site as SiteContext)
 		if (key !== undefined) {
 			path.push(key)
@@ -94,9 +94,9 @@ export class ArkErrors implements FailureContext {
 		if (key === undefined) return !apply(value, this)
 		if (missing && value === undefined && !(key in (data as object)))
 			return this.failsAt(missing, data, key, true)
-		this._path.push(key)
+		this._p.push(key)
 		const continues = apply(value, this)
-		this._path.pop()
+		this._p.pop()
 		return !continues
 	}
 }
@@ -143,22 +143,16 @@ export const issueAt = (
 	return issue
 }
 
-export const failsIn = (
-	ctx: FailureContext,
-	path: PropertyKey[],
+// the issues an Apply finds in data it rejected
+export const issuesOf = (
 	apply: CompactApply,
-	value: unknown,
-	key: PropertyKey | undefined,
-	missing: FailureSite | undefined,
-	data: unknown
-): boolean | undefined => {
-	if (key === undefined) return !apply(value, ctx)
-	if (missing && value === undefined && !(key in (data as object)))
-		return ctx.failsAt(missing, data, key, true)
-	path.push(key)
-	const continues = apply(value, ctx)
-	path.pop()
-	return !continues
+	data: unknown,
+	errors: ArkErrors
+): ArkIssue[] => {
+	apply(data, errors)
+	// data a write or a getter has made valid since fails as a whole
+	if (!errors._.length) errors.failsAt({ code: "predicate" }, data)
+	return errors._
 }
 
 // a root reporting into ArkErrors, as a size build applies it; they hold

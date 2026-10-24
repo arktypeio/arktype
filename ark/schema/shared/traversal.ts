@@ -19,7 +19,6 @@ import type {
 } from "./errors.ts"
 import {
 	ArkErrors as BaseArkErrors,
-	failsIn,
 	issueAt,
 	mergeIssues,
 	messageOf,
@@ -188,7 +187,13 @@ export class InternalTraversal implements FailureContext {
 		missing?: FailureSite,
 		data?: unknown
 	): boolean | undefined {
-		return failsIn(this, this.path, apply, value, key, missing, data)
+		if (key === undefined) return !apply(value, this)
+		if (missing && value === undefined && !(key in (data as object)))
+			return this.failsAt(missing, data, key, true)
+		this.path.push(key)
+		const continues = apply(value, this)
+		this.path.pop()
+		return !continues
 	}
 
 	/** @internal */
@@ -841,8 +846,7 @@ const exitUntracked = (
 
 const invalidResolution = (
 	ctx: InternalTraversal,
-	error = ctx.currentBranch?.error ??
-		lastOf(ctx._errors!._issues ?? ctx._errors!._)
+	error = ctx.currentBranch?.error ?? lastOf(ctx._errors!._i ?? ctx._errors!._)
 ): InvalidResolution => ({
 	error,
 	reported: !ctx.currentBranch

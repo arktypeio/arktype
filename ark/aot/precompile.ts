@@ -241,10 +241,19 @@ export interface ScannedModule {
 	transformed: boolean
 }
 
+type ProgramReads = Pick<
+	ProgramUsage,
+	"members" | "called" | "readsAllows" | "piped"
+>
+
 interface ProgramUsage {
 	members: ValidatorMembers
 	// false where no read may leave a failure's errors unread
 	called: boolean
+	// false where no read takes a validator's .allows
+	readsAllows: boolean
+	// false where no call passes a second argument, a traversal to pipe into
+	piped: boolean
 	sources: Record<string, string>
 	// each module as the bundle is written, linked across it
 	written: Record<string, PrecompiledModule>
@@ -596,14 +605,16 @@ export class Precompiler {
 				)
 			:	[]
 		const called = !used || used.has("call")
+		const readsAllows = !used || used.has("allows")
+		const piped = !used || used.has("piped")
+		const isWhole = !dropped.length && called && readsAllows && piped
 		// a size build's units are already module constants
 		const flattens =
 			!!program.isOneChunk &&
 			!this.inline &&
 			this.standalone.optimize === "speed"
 		// a lazy validator reads its checkers where it's created, unlinkable
-		const changesOnlyIfFlat =
-			!dropped.length && called && (this.inline || this.standalone.lazy)
+		const changesOnlyIfFlat = isWhole && (this.inline || this.standalone.lazy)
 		if (changesOnlyIfFlat && !flattens) return unwritten
 		const usage: ProgramUsage = {
 			members: {
@@ -611,6 +622,8 @@ export class Precompiler {
 				...Object.fromEntries(dropped.map(member => [member, false]))
 			},
 			called,
+			readsAllows,
+			piped,
 			sources,
 			written: {},
 			replaced: new Set()
@@ -628,8 +641,15 @@ export class Precompiler {
 		}
 		// as written, a validator may be read in a way the plan didn't see, as
 		// where a factory checks a Type it's passed
-		const usedAsWritten = dropped.length ? this.usedIn(program, runtimes) : used
-		if (dropped.some(member => !usedAsWritten || usedAsWritten.has(member))) {
+		const usedAsWritten = isWhole ? used : this.usedIn(program, runtimes)
+		const isReadAsWritten = (read: UsedMember) =>
+			!usedAsWritten || usedAsWritten.has(read)
+		if (
+			dropped.some(isReadAsWritten) ||
+			(!called && isReadAsWritten("call")) ||
+			(!readsAllows && isReadAsWritten("allows")) ||
+			(!piped && isReadAsWritten("piped"))
+		) {
 			this.usagesByProgram.delete(program.key)
 			return unwritten
 		}
@@ -786,13 +806,13 @@ export class Precompiler {
 		program: string | undefined,
 		id: string,
 		source: string
-	): Pick<ProgramUsage, "members" | "called"> {
+	): ProgramReads {
 		const usage =
 			program === undefined ? undefined : this.usagesByProgram.get(program)
 		// the host fails a bundle holding a module unlike its scan read it
 		return usage?.sources[id] === source ?
 				usage
-			:	{ members: this.members, called: true }
+			:	{ members: this.members, called: true, readsAllows: true, piped: true }
 	}
 
 	// a module as its bundle's scan wrote it, if it's unchanged since
@@ -1708,7 +1728,7 @@ export class Precompiler {
 		modules: Record<string, string>,
 		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[],
-		{ members, called }: Pick<ProgramUsage, "members" | "called">
+		{ members, called, readsAllows, piped }: ProgramReads
 	): Record<string, Record<string, string>> {
 		const inputImports: Record<string, Record<string, string>> = {}
 		const { namesBySite, factoriesBySite, exportsByName, folded } =
@@ -1727,6 +1747,8 @@ export class Precompiler {
 						...this.standalone,
 						members,
 						called,
+						readsAllows,
+						piped,
 						configured,
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module),

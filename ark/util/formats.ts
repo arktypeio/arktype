@@ -7,11 +7,6 @@ import { isDigitCode } from "./numbers.ts"
 const isHexCode = (code: number) =>
 	(code - 48) >>> 0 < 10 || ((code | 32) - 97) >>> 0 < 6
 
-const isHexRun = (s: string, i: number, end: number) => {
-	while (i < end) if (!isHexCode(s.charCodeAt(i++))) return false
-	return true
-}
-
 // 2 digits at i writing at most max
 const isTwoDigitsAtMost = (s: string, i: number, max: number) => {
 	const tens = s.charCodeAt(i) - 48
@@ -22,34 +17,10 @@ const isTwoDigitsAtMost = (s: string, i: number, max: number) => {
 export const uuidMatcher: RegExp =
 	/^(?:[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-[1-8][\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}|0{8}-(?:0{4}-){3}0{12}|f{8}-(?:f{4}-){3}f{12})$/
 
-export const isUuid = (s: string): boolean => {
-	if (
-		s.length !== 36 ||
-		s.charCodeAt(8) !== 45 ||
-		s.charCodeAt(13) !== 45 ||
-		s.charCodeAt(18) !== 45 ||
-		s.charCodeAt(23) !== 45 ||
-		!isHexRun(s, 0, 8) ||
-		!isHexRun(s, 9, 13) ||
-		!isHexRun(s, 15, 18) ||
-		!isHexRun(s, 20, 23) ||
-		!isHexRun(s, 24, 36)
-	)
-		return false
-	// hex digits wherever they're in range
-	const version = s.charCodeAt(14)
-	const variant = s.charCodeAt(19)
-	return (
-		(version >= 49 &&
-			version <= 56 &&
-			(variant === 56 ||
-				variant === 57 ||
-				(variant | 32) === 97 ||
-				(variant | 32) === 98)) ||
-		s === "00000000-0000-0000-0000-000000000000" ||
-		s === "ffffffff-ffff-ffff-ffff-ffffffffffff"
-	)
-}
+// its length rejects most strings before the RegExp, which costs ~210
+// instructions to enter. A reader of its chars was no faster on valid ones
+export const isUuid = (s: string): boolean =>
+	s.length === 36 && uuidMatcher.test(s)
 
 // based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
 export const ipv4Matcher: RegExp =

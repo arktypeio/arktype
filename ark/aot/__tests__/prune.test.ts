@@ -554,10 +554,30 @@ for (const data of [{ name: 5 }, flipping]) {
 			)
 			attest(run(asserting)).snap("name must be a string\nis invalid\n")
 			// errors finding their issues once read hold the data until then
-			attest(asserting.includes("_data")).equals(false)
-			attest((await bundle({ preset: undefined })).includes("_data")).equals(
+			attest(asserting.includes("._d=")).equals(false)
+			attest((await bundle({ preset: undefined })).includes("._d=")).equals(
 				true
 			)
+		})
+
+		it("writes a validator called with its data alone as its Apply", async () => {
+			const applied = await bundle({ preset: undefined })
+			attest(run(applied)).snap("name must be a string\n")
+			attest(applied.includes("allows")).equals(false)
+			// a call passing more keeps where the validator reads it
+			const handling = {
+				contents: `import { User } from "./types.ts"
+
+console.log(User({ name: 5 }, undefined, () => "handled"))
+`,
+				resolveDir: root,
+				loader: "ts"
+			} as const
+			for (const errors of [undefined, "none"] as const) {
+				attest(
+					run(await bundle({ preset: undefined, errors }, { stdin: handling }))
+				).equals("handled\n")
+			}
 		})
 
 		it("keeps a build other than for production whole", async () => {
