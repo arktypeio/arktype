@@ -62,7 +62,9 @@ export const isError = (data: unknown) => data instanceof ArkErrors`)
 				"~arktype/#1",
 				"~arktype/#2",
 				"~arktype/#3",
-				"~arktype/#4"
+				"~arktype/#4",
+				"~arktype/#5",
+				"~arktype/#6"
 			])
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
@@ -128,6 +130,23 @@ import { #3Allows as $ark_#3Allows } from "~arktype/#1"
 import { User } from "./user.ts"
 export const Name = /* @__PURE__ */ $ark_#0($ark_#2Allows)
 export const Team = /* @__PURE__ */ $ark_#0($ark_#3Allows)`)
+		})
+
+		it("creates a lazy build's validators where a module reads them as it loads", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+export const Name = type("string > 0")
+export const nameOf = () => type("string > 1")`,
+				{},
+				{ creationChecks: "none", config: false }
+			)
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark_#0 } from "~arktype/#1"
+import { #2 as $ark_#2 } from "~arktype/#1"
+import { #3 as $ark_#3 } from "~arktype/#1"
+import { #4 as $ark#4 } from "~arktype/#1"
+export const Name = /* @__PURE__ */ $ark_#0($ark_#2, $ark_#3)
+export const nameOf = () => $ark#4()`)
 		})
 
 		it("compiles a size build's artifact too small for checkers to pay off", () => {
@@ -648,7 +667,7 @@ export const E = type("strng")`,
 				"}",
 				"$ark$load2();",
 				'import "arktype"',
-				'import { siteOf as $ark$0$siteOf, freeze as $ark$0$freeze, fixConfig as $ark$0$fixConfig, createValidatorWith as $ark$0$createValidatorWith, unreadCallErrors as $ark$0$unreadCallErrors, UnreadArkErrors as $ark$0$UnreadArkErrors, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
+				'import { siteOf as $ark$0$siteOf, freeze as $ark$0$freeze, unreadCallErrors as $ark$0$unreadCallErrors, UnreadArkErrors as $ark$0$UnreadArkErrors, fixConfig as $ark$0$fixConfig, createValidatorWith as $ark$0$createValidatorWith, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
 				'const Array = "shadowed"',
 				"$arkfixConfig()",
 				"export const T = /* @__PURE__ */ $ark#0()",

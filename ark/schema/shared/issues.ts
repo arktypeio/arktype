@@ -288,12 +288,14 @@ export const problemOf = (issue: ArkIssue): string =>
 	: "is invalid")
 
 export class TraversalError extends Error {
-	readonly name = "TraversalError"
+	declare readonly name: "TraversalError"
 	declare arkErrors: ArkIssues
 
 	constructor(errors: ArkIssues) {
 		super(errors._thrown ?? errors.summary)
 
+		// assigned, as a field's initializer compiles where the class is defined
+		this.name = "TraversalError"
 		// defined, so it's neither enumerable nor writable
 		Object.defineProperty(this, "arkErrors", { value: errors })
 	}

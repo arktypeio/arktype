@@ -1638,7 +1638,10 @@ export class Precompiler {
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module),
 						// shadow mode calls what it compares
-						values: !this.shadow
+						values: !this.shadow,
+						readOnLoad: [...namesBySite]
+							.filter(([site]) => site.declarationStart !== undefined)
+							.map(([, name]) => name)
 					},
 					refusalsByName,
 					this.inline

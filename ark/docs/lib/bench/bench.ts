@@ -195,6 +195,17 @@ const stripRows = () => bench.scenarios.filter(s => s.mode === "strip")
 
 const copyingKeys = arms.filter(arm => arm.copies).map(arm => arm.key)
 
+/** the parse rows whose output is new for every library, as each transforms or defaults its input; ArkType's Types there remove undeclared keys, as Zod's do */
+const transformingRows = new Set(
+	[
+		"parse morph",
+		"parse defaults",
+		"parse items morph",
+		"parse items defaults",
+		"parse moltar morph"
+	].map(id => find(id).id)
+)
+
 export type BenchSet = "valid" | "invalid"
 
 type Domain = { min: number; max: number; ticks: number[] }
@@ -342,7 +353,8 @@ const panel = (
 		const tie = v.verdict === "tie"
 		const end = x(v.speedup)
 		const [lo, hi] = s.iqrNs[key]
-		const copies = arm.copies && s.mode === "parse"
+		const copies =
+			arm.copies && s.mode === "parse" && !transformingRows.has(s.id)
 		// * marks an arm running a stand-in path, as in the table
 		const standIn = s.armNotes?.[key]
 		const mark = standIn ? "*" : ""
@@ -711,7 +723,7 @@ export const benchNotes = (): string[] => [
 			`the precompile branch (${provenance.commit}), which hasn't shipped; the numbers will be rerun on the release commit.`
 		:	`${provenance.commit}.`
 	}`,
-	`Zod's parse, compiled or not, and Valibot's remove undeclared keys and return a copy, where ArkType, typia, TypeBox and ajv return the input as is. The strip rows compare like for like, since every library removes them there. ${stripRows()
+	`Zod's parse, compiled or not, and Valibot's remove undeclared keys and return a copy, where ArkType, typia, TypeBox and ajv return the input as is. The strip rows compare like for like, since every library removes them there, as do the rows that transform or default their input, where every library returns new output and ArkType's Types remove undeclared keys too. ${stripRows()
 		.map(s => `On ${s.id}, ${versusEach(s, copyingKeys)}.`)
 		.join(" ")}`,
 	[

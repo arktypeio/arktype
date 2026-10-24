@@ -12,11 +12,17 @@ import {
 	discriminatedData,
 	Items,
 	itemsData,
+	ItemsDefaults,
+	itemsDefaultsData,
 	itemsInvalidData,
+	ItemsMorph,
+	itemsMorphData,
 	Moltar,
 	moltarData,
 	moltarExtraKeysData,
 	moltarInvalidData,
+	MoltarMorph,
+	moltarMorphData,
 	MoltarStrict,
 	MoltarStrip,
 	Morph,
@@ -92,6 +98,33 @@ contextualize(() => {
 		accepts(Morph, morphData, 12345)
 		accepts(Defaults, defaultsData, { a: "s", b: 5, c: true, d: "x" })
 		accepts(Tree, treeData)
+	})
+
+	// rows whose every output is new remove undeclared keys alike
+	it("transforms alike, removing undeclared keys", () => {
+		accepts(
+			Defaults,
+			{ ...defaultsData, extra: 1 },
+			{ a: "s", b: 5, c: true, d: "x" }
+		)
+		const [item] = itemsMorphData
+		accepts(ItemsMorph, [{ ...item, extra: 1 }], [{ ...item, count: 0 }])
+		const [defaulted] = itemsDefaultsData
+		accepts(
+			ItemsDefaults,
+			[{ ...defaulted, extra: 1 }],
+			[{ ...defaulted, active: false }]
+		)
+		const { deeplyNested } = moltarMorphData
+		accepts(
+			MoltarMorph,
+			{
+				...moltarMorphData,
+				extra: 1,
+				deeplyNested: { ...deeplyNested, extra: 1 }
+			},
+			{ ...moltarMorphData, deeplyNested: { ...deeplyNested, num: 1 } }
+		)
 	})
 
 	it("rejects alike", () => {

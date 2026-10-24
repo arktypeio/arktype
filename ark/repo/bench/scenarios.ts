@@ -815,6 +815,8 @@ export const Morph = {
 
 export const defaultsData = { a: "s", c: true }
 
+// a row whose Zod output is a new object of only its declared keys has
+// ArkType remove undeclared keys too, so both return the same output
 export const Defaults = {
 	arktype: type({
 		a: "string",
@@ -822,7 +824,7 @@ export const Defaults = {
 		"c?": "boolean",
 		d: "string = 'x'",
 		"e?": "number"
-	}),
+	}).onDeepUndeclaredKey("delete"),
 	zod: z.object({
 		a: z.string(),
 		b: z.number().default(5),
@@ -942,7 +944,9 @@ export const ItemsMorph = {
 		id: "number",
 		name: "string",
 		count: "string.numeric.parse"
-	}).array(),
+	})
+		.array()
+		.onDeepUndeclaredKey("delete"),
 	zod: z.array(
 		z.object({
 			id: z.number(),
@@ -995,7 +999,9 @@ export const ItemsDefaults = {
 		id: "number",
 		name: "string",
 		active: "boolean = false"
-	}).array(),
+	})
+		.array()
+		.onDeepUndeclaredKey("delete"),
 	zod: z.array(
 		z.object({
 			id: z.number(),
@@ -1058,7 +1064,7 @@ export const MoltarMorph = {
 			num: "string.numeric.parse",
 			bool: "boolean"
 		}
-	}),
+	}).onDeepUndeclaredKey("delete"),
 	zod: z.object({
 		...Moltar.zod.shape,
 		deeplyNested: z.object({

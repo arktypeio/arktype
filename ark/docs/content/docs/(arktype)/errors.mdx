@@ -43,10 +43,11 @@ if (out instanceof type.errors) {
 | `toLocaleString(locale?)` | the summary in a [locale](/docs/i18n#rendering-in-a-locale)                           |
 | `throw()`                 | throws a [`TraversalError`](#traversalerror)                                          |
 
-`arktype` exports functions that group an `ArkErrors` by path:
+`arktype` exports functions that read an `ArkErrors`, most grouping it by path:
 
 | function                   | what it returns                                                                                  |
 | -------------------------- | ------------------------------------------------------------------------------------------------ |
+| `firstIssue(out)`          | the first error in `issues`, found [without the rest](#finding-only-the-first) where it can be   |
 | `byPath(out)`              | an object mapping each path's `propString` to its error                                          |
 | `flatByPath(out)`          | like `byPath`, but each value is an array, with an `intersection` split into its errors          |
 | `flatProblemsByPath(out)`  | like `flatByPath`, but with each error's `problem`                                               |
@@ -68,6 +69,23 @@ form.name = "Ada"
 ```
 
 A getter or `Proxy` trap the check reads runs again at that read, and what it throws is thrown there. Each error's text is written at that first read too.
+
+### Finding only the first
+
+Where a form shows one error at a time, read it with `firstIssue`. A [precompiled](/docs/precompile) validator's errors that haven't found their issues yet find only that one, reading the data until it fails, so the rest cost nothing until `issues` or `summary` is read:
+
+```ts
+import { firstIssue, type } from "arktype"
+
+const User = type({ name: "string", age: "number >= 0" })
+
+const out = User({ name: 5, age: -1 })
+
+// age must be non-negative (was -1)
+if (out instanceof type.errors) console.error(firstIssue(out).message)
+```
+
+It's the error `issues[0]` holds. Unlike [`errors: "first"`](/docs/configuration#errors), it leaves the rest to be found, and it's the first a full validation finds, not whichever is cheapest.
 
 ## ArkError
 

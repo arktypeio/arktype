@@ -265,6 +265,9 @@ export interface StandaloneOptions {
 	hoisted?: boolean | undefined
 	// export as values what a site would call a function only to read
 	values?: boolean | undefined
+	// exports whose site its module runs once as it loads, where a lazy build
+	// creates the validator in place, as a getter called there would
+	readOnLoad?: readonly string[] | undefined
 	// false where a size build with detailed errors compiles each node rather
 	// than writing it as a checker
 	combines?: boolean | undefined
@@ -301,6 +304,8 @@ interface RootApplier {
 	apply: string
 	args: string
 	failure?: keyof typeof failureSources
+	// reads a name its module declares, so it can't be shared
+	local?: boolean
 }
 
 const writeFunction = (
@@ -315,6 +320,11 @@ const writeFunction = (
 	: baking.shortest || !isCalledOnLoad ?
 		`const ${name} = (${params}) => {\n${body}\n}`
 	:	`const ${name} = ((${params}) => {\n${body}\n})`
+
+// a validator's only attribute is its meta, which its creator is passed bare
+const holdsOnlyMeta = (members: ReadonlySet<ValidatorMember>) =>
+	members.has("meta") &&
+	!introspectionMembers.some(member => members.has(member))
 
 const isCreatedByRuntime = (
 	members: ReadonlySet<ValidatorMember>,
@@ -625,6 +635,14 @@ const writeArtifact = (
 			!rekeying || (rekeying.length === 1 && rekeying[0] === "return created")
 		)
 	}
+	// a size build's sites create their validators where they can, as does a
+	// lazy build's site its module runs once as it loads
+	const createsInPlace = (name: string) =>
+		isModular &&
+		!!opts.values &&
+		!baking.hoisted &&
+		isUnchecked(name) &&
+		(opts.lazy === false ? baking.shortest : !!opts.readOnLoad?.includes(name))
 	const [creations, reads] = writeCreations(
 		types,
 		templates,
@@ -634,7 +652,7 @@ const writeArtifact = (
 		shared,
 		imports,
 		values,
-		isUnchecked,
+		createsInPlace,
 		calls
 	)
 	// a factory checking nothing it's passed is read as what it returns
@@ -731,7 +749,7 @@ const writeCreations = (
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>,
 	values: string[] | undefined,
-	isUnchecked: (name: string) => boolean,
+	createsInPlace: (name: string) => boolean,
 	calls: StandaloneModules["calls"]
 ): [code: string[], reads: Record<string, CreationRead>] => {
 	const names = Object.keys(types)
@@ -771,13 +789,8 @@ const writeCreations = (
 		(l, r) => l.indices[0] - r.indices[0]
 	)) {
 		const [index] = creation.indices
-		// a size build's sites create their validators where they can
 		const created =
-			(
-				values &&
-				baking.shortest &&
-				creation.indices.every(i => isUnchecked(names[i]))
-			) ?
+			creation.indices.every(i => createsInPlace(names[i])) ?
 				artifactOf(creation.indices).writeCalls(configured)
 			:	undefined
 		if (created) {
@@ -1984,13 +1997,17 @@ ${writeFunction(
 			!keepsMeta && root.meta.onFail ? this.emit(root.meta.onFail) : undefined
 		const rootApply = () =>
 			typeof applied === "string" ? applied : (
-				`${this.emitApplier(applied.params, applied.apply, applied.failure)}(${applied.args})`
+				`${this.emitApplier(applied)}(${applied.args})`
 			)
+		// a creator per applier calls each validator's Allows itself, where one
+		// creator calling a shared root apply would call it through a closure
+		// every validator of the shape shares, whose call V8 can't inline once
+		// it has seen several
 		const fused =
 			(
-				this.baking.shortest &&
 				typeof applied === "object" &&
-				/^\[?allows\b/.test(applied.params) &&
+				/^(?:\[|{ 0: )?allows\b/.test(applied.params) &&
+				(this.baking.shortest || (!ownsValidator && !applied.local)) &&
 				!isTemplate &&
 				!isCreatedByRuntime(members, this.baking)
 			) ?
@@ -2008,10 +2025,9 @@ ${writeFunction(
 				applied
 			:	undefined
 		const written =
-			// a size build's creator defaults the attributes of a validator
-			// with only an empty meta
+			// a creator defaults the attributes of a validator with only an
+			// empty meta, so a site can create it from imports alone
 			(
-				this.baking.shortest &&
 				!isTemplate &&
 				!this.baking.checksTypes &&
 				!onFail &&
@@ -2020,14 +2036,19 @@ ${writeFunction(
 				attributes[0] === "meta: runtime.emptyMeta"
 			) ?
 				[]
+			: (
+				!isTemplate &&
+				!isCreatedByRuntime(members, this.baking) &&
+				holdsOnlyMeta(members)
+			) ?
+				[meta!]
 			: attributes.length ? [`{ ${attributes.join(", ")} }`]
 			: []
 		const createsWith =
 			!isTemplate && ownsValidator && isCreatedByRuntime(members, this.baking)
 		const args = [
 			...(fused ? [fused.args]
-			: made ?
-				[this.emitApplier(made.params, made.apply, made.failure), made.args]
+			: made ? [this.emitApplier(made), made.args]
 			: ownsValidator && !isCompact ?
 				[
 					pipes ?
@@ -2076,6 +2097,7 @@ ${writeFunction(
 		const configured = !unconfigured
 		const hasAttributes =
 			keepsMeta || introspectionMembers.some(member => members.has(member))
+		const metaOf = holdsOnlyMeta(members) ? "meta" : "attributes.meta"
 		const pipes = this.pipes(members, unconfigured)
 		const signature =
 			pipes ?
@@ -2110,13 +2132,15 @@ ${writeFunction(
 			: "",
 			!keepsMeta || !configured ? ""
 			: this.baking.readsConfig ?
-				"const configuredOnFail = attributes.meta.onFail ?? runtime.runtimeConfig.onFail"
-			:	"const configuredOnFail = attributes.meta.onFail",
+				`const configuredOnFail = ${metaOf}.onFail ?? runtime.runtimeConfig.onFail`
+			:	`const configuredOnFail = ${metaOf}.onFail`,
 			`const validator = ${members.has("methods") ? `runtime.setPrototypeOf(${call}, runtime.freeze(runtime.Validator.prototype))` : call}`,
 			members.has("assert") ?
 				`validator.assert = ${this.frozen("(data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault)")}`
 			:	"",
-			hasAttributes ? "runtime.assign(validator, attributes)" : "",
+			!hasAttributes ? ""
+			: holdsOnlyMeta(members) ? "validator.meta = meta"
+			: "runtime.assign(validator, attributes)",
 			`validator.allows = ${this.frozen(ownsValidator || makes ? "parts[0]" : "allows")}`,
 			members.has("~standard") ?
 				`validator["~standard"] = ${this.frozen(`{
@@ -2137,9 +2161,9 @@ ${writeFunction(
 			: applier ? [applier.params]
 			: ["rootApply", "allows"]),
 			...(!hasAttributes ? []
-			: this.baking.shortest && keepsMeta ?
-				["attributes = { meta: runtime.emptyMeta }"]
-			:	["attributes"]),
+			: holdsOnlyMeta(members) ? ["meta = runtime.emptyMeta"]
+			: keepsMeta ? ["attributes = { meta: runtime.emptyMeta }"]
+			: ["attributes"]),
 			...(this.baking.checksTypes ? ["id", "holes = []"] : []),
 			...(!configured || keepsMeta ? []
 			: this.baking.readsConfig ?
@@ -2486,6 +2510,7 @@ ${writeFunction(
 				!unreads ? refOf("Traversal")
 				: this.baking.firstIssue ? "runtime.UnreadFirstIssues"
 				: "runtime.UnreadArkErrors"
+			const local = !Ctx.startsWith("runtime.")
 			// a unified root applies by its Allows
 			const apply = this.appliedIndexOf(root) ? "apply" : "allows"
 			const pattern =
@@ -2508,22 +2533,33 @@ ${writeFunction(
 			const elements =
 				asValidator && !transforms && this.elementTraversalsOf(root)
 			if (elements) {
+				const args = `[${traversals}[0], ${traversals}[${this.appliedIndexOf(root)}], ${elements}]`
 				return [
-					// a minifier inlines a const read once, but not a default
-					`(({ 1: apply, 2: allowsElement, 3: applyElement }, onFail, rejectedIn = data => {
+					this.emitApplier({
+						// a minifier inlines a const read once, but not a default
+						params: `{ 1: apply, 2: allowsElement, 3: applyElement }, onFail, rejectedIn = data => {
 	for (let i = 0; i < data.length; i++) if (!allowsElement(data[i])) return i
-}) => ${this.validatorOnLoad(`(data, ...args) => {
+}`,
+						apply: `(data, ...args) => {
 	if (!Array.isArray(data)) return ${callErrors}(apply, data, args, onFail, ${Ctx})
 	const i = rejectedIn(data)
 	return i === undefined ? data : ${elementErrors}(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
-}`)})`,
-					`[${traversals}[0], ${traversals}[${this.appliedIndexOf(root)}], ${elements}]`,
+}`,
+						args,
+						local
+					}),
+					args,
 					true
 				]
 			}
 			if (asValidator) {
 				return [
-					`((${pattern}${unconfigured ? "" : ", onFail"}) => ${this.validatorOnLoad(`(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`)})`,
+					this.emitApplier({
+						params: `${pattern}${unconfigured ? "" : ", onFail"}`,
+						apply: `(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`,
+						args: parts,
+						local
+					}),
 					parts,
 					true
 				]
@@ -2539,7 +2575,8 @@ ${writeFunction(
 							`runtime.applyIssues(${apply}, data, onFail${this.baking.firstIssue ? `, ${Ctx}` : ""})`
 						:	`runtime.applyErrors(${apply}, data, ${refOf("config")}, onFail, ${Ctx})`
 					}`,
-					args: parts
+					args: parts,
+					local
 				},
 				flat ? flat[0] : `${traversals}[0]`,
 				false
@@ -2547,11 +2584,13 @@ ${writeFunction(
 		}
 		const shape = this.shapeOf(root)
 		if (isArrow) {
+			const Traversal = refOf("Traversal")
 			return [
 				{
 					params: "node",
-					apply: `(data, onFail) => node.allows(data) ? ${transforms ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`,
-					args: shape
+					apply: `(data, onFail) => node.allows(data) ? ${transforms ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${Traversal})`,
+					args: shape,
+					local: !Traversal.startsWith("runtime.")
 				},
 				`${shape}.allows`,
 				false
@@ -2584,8 +2623,7 @@ ${writeFunction(
 		pipes: boolean
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const strategy = root.applyStrategy
-		const invalid = () =>
-			`${this.baking.shortest ? "invalid" : this.readFailure("invalid")}(data, onFail)`
+		const invalid = "invalid(data, onFail)"
 		const transforms = root.transforms
 		// an undiscriminated union transforms what a branch allows, else unset
 		const selects =
@@ -2614,23 +2652,23 @@ ${writeFunction(
 					...(resolves ?
 						[
 							"const untracked = runtime.allowsAcyclic(node, data)",
-							`if (!(untracked ?? runtime.allowsInContext(node, data, runtime.runtimeConfig))) return ${invalid()}`,
+							`if (!(untracked ?? runtime.allowsInContext(node, data, runtime.runtimeConfig))) return ${invalid}`,
 							`const ctx = new runtime.${ctx}(data, runtime.runtimeConfig)`,
 							"ctx.tracksMorphs = untracked === undefined",
 							`const result = runtime.transformResolution(ctx, ${JSON.stringify(this.headUnitOf(root).names[root.id])}, data, node.traverseTransform)`
 						]
 					:	[
-							`if (!${allows}(data)) return ${invalid()}`,
+							`if (!${allows}(data)) return ${invalid}`,
 							`const ctx = new runtime.${ctx}(data, runtime.runtimeConfig)`,
 							`const result = ${transform}(data, ctx)`
 						]),
-					`return ctx.hasError() ? ${invalid()} : result`
+					`return ctx.hasError() ? ${invalid} : result`
 				]
 			: fails.length ?
 				[
-					...(selects ? [] : [`if (!${allows}(data)) return ${invalid()}`]),
+					...(selects ? [] : [`if (!${allows}(data)) return ${invalid}`]),
 					`const result = ${transform}(data)`,
-					`return ${fails.join(" || ")} ? ${invalid()} : result`
+					`return ${fails.join(" || ")} ? ${invalid} : result`
 				]
 			:	undefined
 		const params =
@@ -2653,11 +2691,15 @@ ${writeFunction(
 			:	traversals
 		if (asValidator && parts && !body) {
 			return [
-				`((${params}${unconfigured ? "" : ", onFail"}) => ${this.validatorOnLoad(
-					pipes ?
-						`(data, ...args) => ${allows}(data) ? ${valid} : ${this.readFailure("invalidCall")}(data, args${unconfigured ? "" : ", onFail"})`
-					:	`(data, _, onFail) => ${allows}(data) ? ${valid} : ${this.readFailure("invalid")}(data, onFail)`
-				)})`,
+				this.emitApplier({
+					params: `${params}${unconfigured ? "" : ", onFail"}`,
+					apply:
+						pipes ?
+							`(data, ...args) => ${allows}(data) ? ${valid} : invalidCall(data, args${unconfigured ? "" : ", onFail"})`
+						:	`(data, _, onFail) => ${allows}(data) ? ${valid} : ${invalid}`,
+					failure: pipes ? "invalidCall" : "invalid",
+					args: parts
+				}),
 				parts,
 				true
 			]
@@ -2665,7 +2707,7 @@ ${writeFunction(
 		const apply =
 			body ?
 				`(data, onFail) => {\n\t\t${body.join("\n\t\t")}\n\t}`
-			:	`(data, onFail) => ${allows}(data) ? ${valid} : ${invalid()}`
+			:	`(data, onFail) => ${allows}(data) ? ${valid} : ${invalid}`
 		const node = parts ?? shape
 		return [
 			{
@@ -2681,15 +2723,23 @@ ${writeFunction(
 		]
 	}
 
-	emitApplier(
-		params: string,
-		apply: string,
-		failure?: keyof typeof failureSources
-	): string {
-		if (!this.baking.shortest)
-			return `((${params}) => ${this.validatorOnLoad(apply)})`
-		const body = `\treturn ${apply}`
-		const name = `apply${hashOf(`${params}\n${body}`)}`
+	// what applies a root or makes its validator from its traversals, written
+	// once for every root alike in a size build, as each function a module
+	// writes costs its load. A speed build writes one for each root's args, as
+	// V8 keeps one call feedback for every closure of a function, so one shared
+	// by several roots calls their Allows through a call it can't inline
+	emitApplier({
+		params,
+		apply,
+		failure,
+		local,
+		args
+	}: Omit<RootApplier, "args"> & { args?: string }): string {
+		if (local) return `((${params}) => ${this.validatorOnLoad(apply)})`
+		const body = `\treturn ${this.validatorOnLoad(apply)}`
+		const name = `apply${hashOf(
+			`${params}\n${body}${this.baking.shortest || args === undefined ? "" : `\n${args}`}`
+		)}`
 		return this.read(
 			this.share(
 				name,

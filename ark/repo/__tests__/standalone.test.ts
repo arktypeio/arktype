@@ -594,6 +594,58 @@ age must be non-negative`)
 		})
 	})
 
+	it("firstIssue finds only the first of issues it hasn't read", async () => {
+		const T = type({ a: "string", b: "number" })
+		const { Lazy, Items, runtime } = await load(
+			{ Lazy: T, Items: T.array() },
+			{ configure: exportsRuntime }
+		)
+		let reads = 0
+		const counted = () => ({
+			a: 0,
+			get b() {
+				reads++
+				return "b"
+			}
+		})
+		// how often b is read as errors are
+		const readsOf = (read: () => unknown) => {
+			const before = reads
+			read()
+			return reads - before
+		}
+		const errors = Lazy(counted())
+		const items = Items([{ a: "a", b: 0 }, counted(), counted()])
+		attest({
+			// stops at a, then the rest are found once read
+			reads: [
+				readsOf(() => runtime.firstIssue(errors)),
+				readsOf(() => errors.summary)
+			],
+			// stops in the first element rejected
+			itemReads: [
+				readsOf(() => runtime.firstIssue(items)),
+				readsOf(() => items.summary)
+			],
+			firstItem: runtime.firstIssue(items).message
+		}).snap({
+			reads: [0, 2],
+			itemReads: [2, 8],
+			firstItem: "[1].a must be a string"
+		})
+		const first = runtime.firstIssue(errors)
+		attest(first).snap({
+			code: "domain",
+			path: ["a"],
+			data: 0,
+			expected: "a string",
+			message: "a must be a string"
+		})
+		attest(errors.issues[0]).equals(first)
+		// kept, as issues are once read
+		attest(runtime.firstIssue(errors)).is(first)
+	})
+
 	it("errors written for size", async () => {
 		const T = type({ a: "string", b: { c: "number[]" } })
 		const outputs = await Promise.all(

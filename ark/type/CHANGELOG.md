@@ -26,6 +26,19 @@ The error `"none"` returns holds the code `"predicate"`, an empty path and the d
 
 A Type another Scope references validates as that Scope is configured, so `type({ x: X })` reports `X`'s errors in full even where `X`'s own Scope configures `errors: "none"`.
 
+### Read only the first error with `firstIssue`
+
+`firstIssue(out)` returns the first error in an `ArkErrors`' `issues`. A precompiled validator's errors find their issues once read, and until then `firstIssue` finds only that one, reading the data until it fails, so showing one error doesn't pay for finding the rest:
+
+```ts
+import { firstIssue, type } from "arktype"
+
+const out = User(data)
+if (out instanceof type.errors) console.error(firstIssue(out).message)
+```
+
+Unlike `errors: "first"`, it's the error a full validation finds first, and `issues` still holds every error once read.
+
 ### Transform a valid input in place with `mutatesInput`
 
 By default, a transform copies each object it changes other than a builtin like a `Date`, so the input is otherwise never written. `mutatesInput` writes what a Type transforms, its defaults and its morphed values, into the input, which it returns. It can be configured globally or for a Scope:

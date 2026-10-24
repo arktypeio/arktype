@@ -4,6 +4,7 @@ export {
 	byAncestorPath,
 	byPath,
 	flatByPath,
+	firstIssue,
 	flatProblemsByPath,
 	messageIn,
 	Traversal,

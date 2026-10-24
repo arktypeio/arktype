@@ -4,6 +4,7 @@
 // BENCH_ARKTYPE_CONFIG and BENCH_STANDALONE_OPTIONS configure arktype's arms
 import { arktypeConfigJson } from "./arktypeConfig.ts"
 import { noSuggest } from "@ark/util"
+import { firstIssue } from "arktype"
 import {
 	precompileStandalone,
 	type Optimization,
@@ -167,6 +168,10 @@ const standaloneOf = async (errors: "all" | "first") => {
 
 const standalone = await standaloneOf("all")
 
+// the runtime the artifacts load, whose firstIssue finds only the first of
+// issues it hasn't read
+const runtime = await import("arktype/runtime")
+
 // built with errors: "first", which stops at the first issue
 const standaloneFirst = await standaloneOf("first")
 
@@ -225,14 +230,17 @@ const isInvalidMode = (mode: Mode) =>
 const arkArm = (
 	mode: Mode,
 	validator: unknown,
+	first: { firstIssue: (errors: never) => { message: string } },
 	hasFirstMode: boolean
 ): ArmSpec =>
 	mode === "allows" ? { validator, body: f => `r = ${f}.allows(data)` }
-	: mode === "errors" || mode === "first" ?
+	: mode === "errors" ? { validator, body: f => `r = ${f}(data).summary` }
+	: mode === "first" ?
 		{
 			validator,
-			body: f => `r = ${f}(data).summary`,
-			nearest: mode === "first" && !hasFirstMode
+			$: first.firstIssue,
+			body: f => `r = $(${f}(data)).message`,
+			nearest: !hasFirstMode
 		}
 	: mode === "issues" ? { validator, body: f => `r = ${f}(data).count` }
 	: { validator, body: f => `r = ${f}(data)` }
@@ -361,13 +369,18 @@ const caseOf = (
 			validators.typebox === undefined ?
 				undefined
 			:	typeboxArm(mode, validators.typebox, opts?.typeboxMethod ?? "Check"),
-		arktype: arkArm(mode, validators.arktype, arktypeErrors === "first"),
-		standalone: arkArm(mode, validators.standalone, false),
+		arktype: arkArm(
+			mode,
+			validators.arktype,
+			{ firstIssue },
+			arktypeErrors === "first"
+		),
+		standalone: arkArm(mode, validators.standalone, runtime, true),
 		// a first-error build can't collect every error
 		standaloneFirst:
 			mode === "issues" || mode === "errors" ?
 				undefined
-			:	arkArm(mode, validators.standaloneFirst, true)
+			:	arkArm(mode, validators.standaloneFirst, runtime, true)
 	}
 })
 
@@ -847,7 +860,7 @@ const modeTitles: Record<Mode, string> = {
 	errors:
 		"invalid data, every error with message text: arktype reads summary, typia ~standard.validate, ajv has messages: true",
 	first:
-		'invalid data, first error only, with message text: standaloneFirst is built with errors: "first" (* has no first-error mode: all-errors path)',
+		'invalid data, first error only, with message text: arktype reads firstIssue, which finds only the first where its issues are unread, and standaloneFirst is built with errors: "first" (* has no first-error mode: all-errors path)',
 	allows: "boolean check"
 }
 
