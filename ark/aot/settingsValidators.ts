@@ -4,13 +4,13 @@
 // ark/schema/shared/issues.ts
 var releasedPath
 var releasePath = errors => {
-	releasedPath = errors._path
+	releasedPath = errors._p
 	return errors
 }
 var ArkIssues = class {
 	constructor() {
 		this._ = []
-		this._path = releasedPath ?? []
+		this._p = releasedPath ?? []
 		releasedPath = void 0
 	}
 	/**
@@ -49,7 +49,7 @@ var ArkIssues = class {
 	}
 	/** @internal */
 	failsAt(site, data, key, absent) {
-		const path = this._path
+		const path = this._p
 		let context = site.value ?? site
 		if (key !== void 0) {
 			path.push(key)
@@ -74,9 +74,9 @@ var ArkIssues = class {
 		if (key === void 0) return !apply(value, this)
 		if (missing && value === void 0 && !(key in data))
 			return this.failsAt(missing, data, key, true)
-		this._path.push(key)
+		this._p.push(key)
 		const continues = apply(value, this)
-		this._path.pop()
+		this._p.pop()
 		return !continues
 	}
 }
@@ -112,7 +112,7 @@ var problemOf = issue =>
 	: "is invalid")
 var TraversalError = class extends Error {
 	constructor(errors) {
-		super(errors._thrown ?? errors.summary)
+		super(errors._t ?? errors.summary)
 		this.name = "TraversalError"
 		Object.defineProperty(this, "arkErrors", { value: errors })
 	}

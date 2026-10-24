@@ -55,7 +55,7 @@ export class UndetailedErrors extends ArkErrors {
 	}
 
 	// arktype's grouped issues, which merging reads
-	override get _issues(): ArkError[] {
+	override get _i(): ArkError[] {
 		return this.issues as ArkError[]
 	}
 }
