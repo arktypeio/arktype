@@ -150,7 +150,7 @@ export const Admin = User.and({ role: "'admin'" })`
 				{ errors: [], warnings: [] },
 				{
 					errors: [
-						'lib imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it. Set allowUnsafe: true to build anyway, with a warning.'
+						'lib imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it, or build with runtime: "arktype".'
 					],
 					warnings: []
 				}

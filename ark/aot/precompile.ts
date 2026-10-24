@@ -1051,8 +1051,9 @@ export class Precompiler {
 		) {
 			this.reportedDependencies.add(dependency)
 			const message = writeStandaloneDependencyMessage(dependency)
+			// what it reads off arktype throws at runtime, so the hint isn't allowUnsafe
 			if (this.allowUnsafe) warnings.push(message)
-			else errors.push(`${message} ${allowUnsafeHint}`)
+			else errors.push(message)
 		}
 		return { errors, warnings }
 	}

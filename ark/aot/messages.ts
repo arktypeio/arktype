@@ -19,10 +19,10 @@ export const configurationConflictReason =
 export const writeStandaloneDependencyMessage = <name extends string>(
 	name: name
 ): writeStandaloneDependencyMessage<name> =>
-	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it.`
+	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it, or build with runtime: "arktype".`
 
 export type writeStandaloneDependencyMessage<name extends string> =
-	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it.`
+	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it, or build with runtime: "arktype".`
 
 export const versionHint =
 	"A precompiled validator is written for the arktype it was built with. Install one version of each, so @ark/aot imports what the program does."

@@ -731,7 +731,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 
 Positions are your source's, even where another plugin transpiled it first. Run [`arktype-precompile --check`](https://arktype.io/docs/precompile/setup#check-an-existing-project) to see every report at once.
 
-Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `Set allowUnsafe: true to build anyway, with a warning.` [`allowUnsafe`](https://arktype.io/docs/precompile/options#allowunsafe) reports those as warnings instead, and what they report may then throw at runtime. What a build with `runtime: "arktype"` leaves to arktype is always reported as a warning, since nothing fails at runtime.
+Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency shipping precompiled validators, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `Set allowUnsafe: true to build anyway, with a warning.` [`allowUnsafe`](https://arktype.io/docs/precompile/options#allowunsafe) reports those as warnings instead, and what they report may then throw at runtime. What a build with `runtime: "arktype"` leaves to arktype is always reported as a warning, since nothing fails at runtime.
 
 ## Not supported
 
@@ -803,7 +803,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`precompile.esbuild() needs bundle: true`**: precompiled modules import validators the bundle includes.
 
-**`my-schemas imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws`**: a dependency defines Types at runtime. Have it publish its source and [opt in](https://arktype.io/docs/precompile/advanced#libraries) with `"arktype": { "precompile": true }` in its `package.json`, so your build precompiles it. A dependency reading only `type.errors` or `ArkErrors` off arktype, like `@hono/arktype-validator`, builds as it is. `drizzle-arktype` creates Types from your tables as it runs, so a program using it builds with `runtime: "arktype"`. Rather than t3-env's `presets-arktype`, list the variables you read in your own `createEnv`.
+**`my-schemas imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws`**: a dependency defines Types at runtime. Have it publish its source and [opt in](https://arktype.io/docs/precompile/advanced#libraries) with `"arktype": { "precompile": true }` in its `package.json`, so your build precompiles it, or build with `runtime: "arktype"`. `allowUnsafe` builds it anyway, but the dependency then throws where it defines a Type. A dependency reading only `type.errors` or `ArkErrors` off arktype, like `@hono/arktype-validator`, builds as it is. `drizzle-arktype` creates Types from your tables as it runs, so a program using it builds with `runtime: "arktype"`. Rather than t3-env's `presets-arktype`, list the variables you read in your own `createEnv`.
 
 **`my-schemas imports arktype/runtime, so it ships validators precompiled for one version of arktype`**: a dependency shipped its own precompiled build, which runs only on the arktype it was built with. Have it publish its source and opt in instead.
 

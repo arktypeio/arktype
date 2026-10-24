@@ -881,7 +881,7 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 		const shared = writeStandaloneDependencyMessage("shared")
 		const prebuilt = writePrecompiledDependencyMessage("prebuilt")
 		attest(await buildDependency("shared.ts")).equals({
-			errors: [`${shared} ${allowUnsafeHint}`],
+			errors: [shared],
 			warnings: []
 		})
 		attest(await buildDependency("prebuilt.ts")).equals({
