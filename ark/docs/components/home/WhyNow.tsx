@@ -1,4 +1,6 @@
 import type { CSSProperties } from "react"
+import { provenance } from "../../lib/bench/bench.ts"
+import { headlineMethod } from "../../lib/claims.ts"
 
 /** what a change to precompiled output has to agree with, each a script in package.json */
 const checks: [script: string, what: string][] = [
@@ -27,9 +29,6 @@ const checks: [script: string, what: string][] = [
 		"a program prints the same in other time zones and locales, on Bun, Deno, Chromium and Firefox"
 	]
 ]
-
-const plan =
-	"https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md"
 
 /** a dev loop, one step a chip; `slow` is the step it waits on */
 const Loop = ({ steps, slow }: { steps: string[]; slow?: string }) => (
@@ -133,10 +132,12 @@ export const WhyNow = () => (
 		<div className="receipt" data-reveal>
 			<span className="side-who">and the numbers</span>
 			<p>
-				Every speed sentence on this page is a test we fixed before its data:
-				one run, published whatever it shows.{" "}
-				<a className="link ext" href={plan}>
-					The plan
+				Our benchmark in 05 is one run of every library, {provenance.passes}{" "}
+				passes at one commit, published whatever it showed, and a second run
+				checks each verdict. The board's averages follow a rule we wrote before
+				computing any.{" "}
+				<a className="link ext" href={headlineMethod.href}>
+					{headlineMethod.label}
 				</a>
 			</p>
 		</div>

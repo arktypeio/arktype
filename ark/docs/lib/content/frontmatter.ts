@@ -8,7 +8,9 @@ export const Frontmatter = type({
 	"toc?": "boolean",
 	"icon?": "'New' | 'Advanced'",
 	/** when a blog post was announced, as YYYY-MM-DD */
-	"date?": /^\d{4}-\d{2}-\d{2}$/
+	"date?": /^\d{4}-\d{2}-\d{2}$/,
+	/** the page's social card, under public/image, in place of ogDocs.png */
+	"ogImage?": "string > 0"
 })
 
 export type Frontmatter = typeof Frontmatter.infer

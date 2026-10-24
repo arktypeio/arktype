@@ -23,14 +23,18 @@ import {
 	type BenchFacts
 } from "../../lib/bench/bench.ts"
 import { claims, draftOf } from "../../lib/claims.ts"
-import { defineMetadata } from "../metadata.ts"
+import { defineMetadata, tagline } from "../metadata.ts"
 
 const lede = `${draftOf(claims.headline)} ${draftOf(claims.pickThree)} The build step is your agent's job: every error it reports says what to change.`
 
-const title = "ArkType · TypeScript's 1:1 validator"
+const title = `ArkType · ${tagline}`
 
 export const metadata: Metadata = {
-	...defineMetadata({ title, description: lede }),
+	...defineMetadata({
+		title,
+		description: lede,
+		ogImageAlt: `${draftOf(claims.headline)} ${draftOf(claims.boardTitle)}`
+	}),
 	title: { absolute: title }
 }
 
