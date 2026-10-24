@@ -310,8 +310,6 @@ export abstract class NodeCompiler extends CompiledFunction<
 	failingSiteOf?(prop: BaseNode): string | undefined
 	// what a key's value whose condition failed is applied by, if not its Apply
 	failingApplyOf?(value: BaseNode): string | undefined
-	// what a required key's value is allowed by before it's applied, if anything
-	gate?(value: BaseNode, arg: string): string | undefined
 	// whether a predicate can't add issues itself, so Apply needn't count them
 	addsNoIssues?(predicate: Predicate): boolean
 
