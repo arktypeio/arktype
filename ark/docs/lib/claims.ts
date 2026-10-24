@@ -61,7 +61,7 @@ export interface BenchmarkChart {
  * without errors. The headline's superlatives and the board's standings
  * instead follow the README's "Best average" rule over every suite
  * (lib/bench/leaderboard.ts), with ArkType as its default production build
- * throughout, each of its rows measured at 7daf33b7e.
+ * throughout, each of its rows measured at 90d510484.
  */
 
 // moltar's typescript-runtime-type-benchmarks, perf instruction counts in
@@ -120,11 +120,11 @@ export const sizeChart: BenchmarkChart = {
 // after its first validation of valid data, less a bundle that validates
 // nothing (ark/repo/bench/external/startup.ts). Planned before any count: 20
 // rounds, a two-sided sign test per library paired by round. Node 24 medians
-// at 7daf33b7e (results/startup-7daf33b7e-node24.json): the default build had
+// at 90d510484 (results/startup-90d510484-node24.json): the default build had
 // the fewest against all seven in 20 of 20 (p 1.9e-6), as it had in 19-20 of
-// 20 on Node 24 and 25 at 4fd880692. On valibot.dev's login form it was 1.18M
-// to Valibot's 2.36M and on shop 10.77M to Valibot's 12.26M, 20 of 20; Typia
-// has fewer on the moltar app, 1.16M to 1.17M. No wall-clock run yet, so
+// 20 on Node 24 and 25 at 4fd880692. On valibot.dev's login form it was 1.04M
+// to Valibot's 2.37M, on shop 10.47M to Valibot's 12.26M, 20 of 20, and on the
+// moltar app 1.05M to Typia's 1.16M, 19 of 20. No wall-clock run yet, so
 // nothing says it starts faster.
 export const startupChart: BenchmarkChart = {
 	title: "Cold start",
@@ -234,9 +234,9 @@ const sizeRival = leaderboards.size.standings[size.place === 1 ? 1 : 0]
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
 	// each superlative names a category ArkType must have the best average in
-	// (lib/bench/leaderboard.ts), as headlineCategories below checks. Pending:
-	// ArkType leads speed and startup, and is second on size (Valibot 1.360,
-	// ArkType 1.462), whose framing is open
+	// (lib/bench/leaderboard.ts), as headlineCategories below checks. Pending
+	// David's call: ArkType leads all three, size narrowly (1.372, Valibot
+	// 1.400)
 	headline: { pending: "TypeScript's smallest, fastest validator." },
 	headlineNote: `*Best average across public benchmarks, each result a ratio to the best: ${leaderboards.speed.rows} results for validation speed, ${leaderboards.startup.rows} for startup and ${leaderboards.size.rows} for bundle size.`,
 	// the fastest and the smallest builds differ: optimize "size" makes the
@@ -301,7 +301,7 @@ export const claims = {
 	// startupChart against Zod and Valibot alone: fewer than each of them in
 	// 20 of 20 rounds on Node 24, on the login app and on the form
 	startupVersus: `On the homepage's login app, precompiled ArkType takes ${valueOf(startupChart, "ArkType (precompiled)")}M instructions from import to its first validation, beyond loading an empty module, against Valibot's ${valueOf(startupChart, "Valibot")}M, Zod Mini's ${valueOf(startupChart, "Zod Mini")}M, Zod's ${valueOf(startupChart, "Zod")}M and compiled Zod's ${valueOf(startupChart, "Zod (compiled)")}M: fewer than each in all 20 paired runs on Node 24.`,
-	// startupChart; the form is 1.18M vs Valibot's 2.36M, 20 of 20
+	// startupChart; the form is 1.04M vs Valibot's 2.37M, 20 of 20
 	startupLogin:
 		"On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than ajv, Valibot, Typia, Zod Mini, Zod, compiled Zod or TypeBox, in all 20 paired runs on Node 24.",
 	// speedChart and H1

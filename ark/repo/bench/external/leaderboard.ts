@@ -11,10 +11,10 @@ const docs = join(here, "..", "..", "..", "docs")
 // the stored results each suite reads: its rivals', which don't depend on
 // ArkType's build, and ArkType's rows, each measured again on one commit
 const sources = {
-	arkType: "results/arktype-7daf33b7e.json",
+	arkType: "results/arktype-90d510484.json",
 	counts: "results/counts-a306152ce.json",
 	homepageCounts: "results/homepage-counts-54777c69a.json",
-	startup: "results/startup-7daf33b7e-node24.json",
+	startup: "results/startup-90d510484-node24.json",
 	forms: "results/forms-642b4517e.json",
 	sbCounts: "results/sb-counts-6c5fd9862.json",
 	sbDownload: "results/sb-download-6c5fd9862.json",

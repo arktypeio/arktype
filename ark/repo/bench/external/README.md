@@ -372,13 +372,13 @@ suite, where ArkType's score is 1.375. Leaving out one suite at a time,
 ArkType leads speed without the homepage's (1.143, ata 1.151) or without
 schemabenchmarks.dev (1.125), and ata leads otherwise.
 
-### ArkType's rows at 7daf33b7e
+### ArkType's rows at 90d510484
 
-Every ArkType row was measured again on one commit, lane/mangle 7daf33b7e,
-the default build in every suite: `results/arktype-7daf33b7e.json` holds
-them in each suite's own format, and `leaderboard.ts` puts them over each
-suite's rivals, which don't depend on ArkType's build. `startup.ts` was run
-whole there (`results/startup-7daf33b7e-node24.json`), rivals included. The
+Every ArkType row was measured again on one commit, 90d510484, the default
+build in every suite: `results/arktype-90d510484.json` holds them in each
+suite's own format, and `leaderboard.ts` puts them over each suite's
+rivals, which don't depend on ArkType's build. `startup.ts` was run whole
+there (`results/startup-90d510484-node24.json`), rivals included. The
 homepage's apps are sized as production builds (`bench/bundle.ts`, above).
 
 The homepage's speed rows are now instructions per call (`count.ts`), as
@@ -388,25 +388,28 @@ more, which it was. Its rivals are the counts at 54777c69a
 Zod, Zod Mini, Typia and TypeBox aren't counted there, so their speed scores
 average one suite fewer. None of them is fastest on any of the suite's rows
 by wall clock, so ArkType's score doesn't depend on them. With the suite in
-`benchData.json`'s median ns, every library in, ArkType still leads speed,
-1.116 against ata's 1.253. The homepage's cold start is still its quiet,
-development-built ms.
+`benchData.json`'s median ns, every library in, ArkType still leads speed
+(1.116 against ata's 1.253 with 7daf33b7e's rows). The homepage's cold
+start is still its quiet, development-built ms.
 
 | category | 1             | 2             | 3                   | 4             |
 | -------- | ------------- | ------------- | ------------------- | ------------- |
-| speed    | ArkType 1.092 | ata 1.253\*   | Typia 2.771\*       | ajv 2.881\*   |
-| startup  | ArkType 1.014 | Typia 2.706\* | Valibot 28.5        | Zod Mini 62.6 |
-| size     | Valibot 1.360 | ArkType 1.462 | Superstruct 1.464\* | Typia 1.570\* |
+| speed    | ArkType 1.096 | ata 1.251\*   | Typia 2.767\*       | ajv 2.876\*   |
+| startup  | ArkType 1.013 | Typia 2.791\* | Valibot 29.2        | Zod Mini 64.7 |
+| size     | ArkType 1.372 | Valibot 1.400 | Superstruct 1.464\* | Typia 1.570\* |
 
 \* ranked on 2 to 4 of the category's suites. ArkType has the best score in
-every speed suite: moltar's 1.067, the homepage's 1.236, schemabenchmarks.dev's
-1.078 (ata 1.488), Sury's 1.000 and ata's 1.091 (ata 1.158). It has the best
-in every startup suite but the homepage's cold start (1.054, Valibot 1.050).
-In size it's best only in Sury's (1264 B, Valibot 1304); the login form 1.406
-(1315 B; ajv 935, Typia 1252), the homepage's apps 2.218 (ajv 1.346, Valibot
-1.508) and schemabenchmarks.dev's download 1.466 (2298 B against
-@railway-ts/pipelines' 1568). So the board says ArkType leads speed and
-startup, and gives its size standing without a claim.
+every speed suite: moltar's 1.067, the homepage's 1.251, schemabenchmarks.dev's
+1.078 (ata 1.485), Sury's 1.000 and ata's 1.097 (ata 1.156). It has the best
+in every startup suite but the homepage's cold start (1.054, Valibot 1.050),
+and the fewest instructions on all four of `startup.ts`'s apps. In size it's
+best in Sury's (1124 B, Valibot 1304) and second to ajv on the login form
+(1172 B; ajv 935, Typia 1252); the homepage's apps 2.118 (ajv 1.346, Valibot
+1.508) and schemabenchmarks.dev's download 1.336 (2095 B against
+@railway-ts/pipelines' 1568, Valibot 2058). Its size lead is 2.0%.
+
+At 7daf33b7e, the commit before, size was Valibot 1.360 against ArkType
+1.462, with speed 1.092 and startup 1.014 leading.
 
 ## The login form across validators
 
