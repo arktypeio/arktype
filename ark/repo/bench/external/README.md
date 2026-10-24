@@ -137,6 +137,17 @@ hypothesis holds.
 At 89510709d, a leaner error writer shrank B2's login form to 1313 B gzipped
 (`results/login-89510709d.json`); every other size is unchanged.
 
+## The homepage's apps
+
+`bench/size.ts` sizes each of the homepage's apps as `bench/bundle.ts`
+bundles it: the app's exports, minified by esbuild with the `"production"`
+condition and gzipped. Every library is bundled the same way, as a
+production build ships. At e9e6ebc10 only the `"smallest"` preset's bundles
+had the condition, so the default build was sized as a development build,
+without the usage pruning a production build does: login 1809 B gzipped,
+moltar 1885, shop 9445 and saas 16030. As production builds they are 1649,
+1680, 7057 and 12374. No other library's bundle changes.
+
 ## Cold start
 
 `startup.ts` counts what a fresh process spends from just before it imports
