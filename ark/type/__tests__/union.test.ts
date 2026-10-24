@@ -398,6 +398,14 @@ x must be a string (was a number)`)
 			attest(T({})).equals({})
 		})
 
+		it("merge a key optional on one side among others", () => {
+			const T = type({ a: "string", b: "number" }).or({
+				"a?": "boolean",
+				b: "number"
+			})
+			attest(T.expression).snap("{ b: number, a?: string | false | true }")
+		})
+
 		it("keep a default to its branch", () => {
 			const T = type({ a: "string" }).or({ a: "number = 5" })
 			attest(T.expression).snap("{ a: number = 5 } | { a: string }")

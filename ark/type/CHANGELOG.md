@@ -96,6 +96,10 @@ A merged `kind: "a" | "b"` still discriminates, since each value of a literal un
 
 Data invalid for a merged object is reported as for any other object rather than by the union: `{ x: 5 }` is `kind must be "a" or "b" (was missing)` and `x must be a string (was a number)`, where it was `kind must be "a" or "b" (was undefined)`. A message configured on the union now replaces only an error at the object itself, like `must be an object`, so it no longer replaces the error on `kind`.
 
+### Reduce wide unions of objects faster
+
+A union is reduced by checking each pair of its branches, which intersected both objects in full. Objects requiring a key whose values are disjoint are now known to be disjoint from that key alone, and only branches alike enough to merge are tried for a merge. Merging eleven two-branch unions into 2048 branches (#1652) took about 90 seconds and now takes about 5.
+
 ### Export `Default` and `To` as types
 
 `arktype` exports the `Default` and `To` types an inferred Type holds, so a declaration can name them as `import("arktype").Default`, like `Out` and `Brand`.
