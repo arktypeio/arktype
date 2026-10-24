@@ -83,14 +83,13 @@ const ARKTYPE = type({
 
 const suryParse = S.parseOrThrow(SURY)
 const typeboxCheck = TypeCompiler.Compile(TYPEBOX)
-// z.compile, Zod's compiled mode, which the suite predates: added as ArkType's
-// arm is, so Zod is measured in its fastest mode too
-const zodCompiled = z.compile(ZOD)
+// z.compile, Zod's compiled mode, which the suite's pinned zod 4.4.3 predates:
+// added as ArkType's arm is, so a zod that has it is measured in it too
+const zodCompile = (z as Partial<typeof z>).compile
 
 export const cases: Record<string, () => unknown> = {
 	"parse Sury": () => suryParse(VALUE),
 	"parse Zod": () => ZOD.parse(VALUE),
-	"parse Zod (compiled)": () => zodCompiled.parse(VALUE),
 	"parse TypeBox": () => typeboxCheck.Check(VALUE),
 	"parse Valibot": () => v.parse(VALIBOT, VALUE),
 	"parse ArkType (dynamic)": () => ARKTYPE.assert(VALUE),
@@ -122,24 +121,6 @@ export const cases: Record<string, () => unknown> = {
 				})
 			})
 			.parse(VALUE),
-	"build Zod (compiled)": () =>
-		z
-			.compile(
-				z.object({
-					number: z.number(),
-					negNumber: z.number(),
-					maxNumber: z.number(),
-					string: z.string(),
-					longString: z.string(),
-					boolean: z.boolean(),
-					deeplyNested: z.object({
-						foo: z.string(),
-						num: z.number(),
-						bool: z.boolean()
-					})
-				})
-			)
-			.parse(VALUE),
 	"build TypeBox": () => Value.Check(TYPEBOX, VALUE),
 	"build Valibot": () =>
 		v.parse(
@@ -168,4 +149,27 @@ export const cases: Record<string, () => unknown> = {
 			boolean: "boolean",
 			deeplyNested: { foo: "string", num: "number", bool: "boolean" }
 		}).assert(VALUE)
+}
+
+if (zodCompile) {
+	const zodCompiled = zodCompile(ZOD)
+	Object.assign(cases, {
+		"parse Zod (compiled)": () => zodCompiled.parse(VALUE),
+		"build Zod (compiled)": () =>
+			zodCompile(
+				z.object({
+					number: z.number(),
+					negNumber: z.number(),
+					maxNumber: z.number(),
+					string: z.string(),
+					longString: z.string(),
+					boolean: z.boolean(),
+					deeplyNested: z.object({
+						foo: z.string(),
+						num: z.number(),
+						bool: z.boolean()
+					})
+				})
+			).parse(VALUE)
+	})
 }
