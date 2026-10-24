@@ -195,10 +195,27 @@ const turbopackOptionsOf = (node: ObjectExpression): Node | undefined => {
 		if (property.type !== "Property" || property.computed) continue
 		const key = exportNameOf(property.key)
 		if (key === "loader")
-			isLoader = literalOf(property.value) === turbopackLoader
+			isLoader = loaderOf(property.value) === turbopackLoader
 		else if (key === "options") options = property.value
 	}
 	return isLoader ? options : undefined
+}
+
+// a loader's name, or the one `require.resolve()` or `import.meta.resolve()`
+// is passed
+const loaderOf = (value: Node): unknown => {
+	const node = unwrapExpression(value)
+	if (node.type !== "CallExpression" || node.callee.type !== "MemberExpression")
+		return literalOf(node)
+	const { object } = node.callee
+	return (
+			node.arguments.length &&
+				memberNameOf(node.callee) === "resolve" &&
+				((object.type === "Identifier" && object.name === "require") ||
+					(object.type === "MetaProperty" && object.meta.name === "import"))
+		) ?
+			literalOf(node.arguments[0])
+		:	undefined
 }
 
 const unread = Symbol("unread")

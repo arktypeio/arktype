@@ -248,7 +248,7 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 		])
 	})
 
-	it("reads a plugin call through require, a namespace or import()", () => {
+	it("reads a plugin or loader required, namespaced or imported by import()", () => {
 		const linesOf = (file: string, source: string) => {
 			const root = writeFixture({
 				"package.json": "{}",
@@ -279,6 +279,10 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 				"vite.config.ts",
 				`export default async () => {\n\tconst { precompile } = await import("@ark/aot/unplugin")\n\treturn { plugins: [precompile.vite(${options})] }\n}\n`
 			),
+			linesOf(
+				"next.config.js",
+				`module.exports = {\n\tturbopack: { rules: { "*.ts": { loaders: [{ loader: require.resolve("@ark/aot/turbopack"), options: ${options} }] } } }\n}\n`
+			),
 			// a call it can't follow stops it rather than checking another build
 			linesOf(
 				"vite.config.ts",
@@ -289,6 +293,7 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 			"next.config.js:3:40  aot.precompile.webpack() sets config, errors, so --check does too",
 			"vite.config.ts:3:28  aot.precompile.vite() sets config, errors, so --check does too",
 			"vite.config.ts:3:21  precompile.vite() sets config, errors, so --check does too",
+			"next.config.js:2:44  the @ark/aot/turbopack loader sets config, errors, so --check does too",
 			"Error: vite.config.ts:1:1  --check can't read the options the plugin is passed, so it can't check what the build does\n  Set the options in ark.json, as { \"precompile\": { ... } }, which the plugin reads too, or pass each to --check as a flag."
 		])
 	})
