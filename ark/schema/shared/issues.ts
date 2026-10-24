@@ -135,7 +135,24 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		key?: PropertyKey,
 		absent?: true
 	): true | undefined {
-		const issue = issueAt(this._path, site, data, key, absent)
+		// a key's site reports the missing key or its value
+		const path = this._path
+		let context = site.value ?? (site as SiteContext)
+		if (key !== undefined) {
+			path.push(key)
+			if (absent || (site.missing && !(key in (data as object))))
+				context = site.missing!
+			else data = (data as Keyed)[key]
+		}
+		const issue: ArkIssue = {
+			code: context.code,
+			path: site.path ? path.concat(site.path) : path.slice(),
+			data,
+			expected: context.description,
+			message: undefined
+		}
+		context.text?.(issue)
+		if (key !== undefined) path.pop()
 		if (this._.length) this._.push(issue)
 		else this._ = [issue]
 		return this.failFast
@@ -209,7 +226,9 @@ interface ArkIssues {
 
 type Keyed = Record<PropertyKey, unknown>
 
-// a key's site reports the missing key or its value
+// a traversal's issue, as ArkErrors' failsAt writes it, but copying a path of
+// one or two keys as a literal, which TurboFan allocates inline where slice()
+// calls a builtin
 export const issueAt = (
 	path: PropertyKey[],
 	site: FailureSite,

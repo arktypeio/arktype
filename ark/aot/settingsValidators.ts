@@ -49,7 +49,22 @@ var ArkIssues = class {
 	}
 	/** @internal */
 	failsAt(site, data, key, absent) {
-		const issue = issueAt(this._path, site, data, key, absent)
+		const path = this._path
+		let context = site.value ?? site
+		if (key !== void 0) {
+			path.push(key)
+			if (absent || (site.missing && !(key in data))) context = site.missing
+			else data = data[key]
+		}
+		const issue = {
+			code: context.code,
+			path: site.path ? path.concat(site.path) : path.slice(),
+			data,
+			expected: context.description,
+			message: void 0
+		}
+		context.text?.(issue)
+		if (key !== void 0) path.pop()
 		if (this._.length) this._.push(issue)
 		else this._ = [issue]
 		return this.failFast
@@ -73,29 +88,6 @@ var applyIssues = (apply, data, onFail, Ctx = ArkIssues) => {
 		: onFail ? onFail(errors)
 		: errors
 	)
-}
-var issueAt = (path, site, data, key, absent) => {
-	let context = site.value ?? site
-	if (key !== void 0) {
-		path.push(key)
-		if (absent || (site.missing && !(key in data))) context = site.missing
-		else data = data[key]
-	}
-	const issuePath =
-		site.path ? path.concat(site.path)
-		: path.length === 1 ? [path[0]]
-		: path.length === 2 ? [path[0], path[1]]
-		: path.slice()
-	const issue = {
-		code: context.code,
-		path: issuePath,
-		data,
-		expected: context.description,
-		message: void 0
-	}
-	context.text?.(issue)
-	if (key !== void 0) path.pop()
-	return issue
 }
 var indexSegments = []
 var messageOf = issue => {
