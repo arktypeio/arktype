@@ -12,7 +12,12 @@ const docs = join(here, "..", "..", "..", "docs")
 const sources = {
 	counts: "results/counts-a306152ce.json",
 	startup: "results/startup-4fd880692-node24.json",
-	forms: "results/forms-642b4517e.json"
+	forms: "results/forms-642b4517e.json",
+	sbCounts: "results/sb-counts-6c5fd9862.json",
+	sbDownload: "results/sb-download-6c5fd9862.json",
+	suryCounts: "results/sury-counts-6c5fd9862.json",
+	surySize: "results/sury-size-6c5fd9862.json",
+	ataCounts: "results/ata-counts-6c5fd9862.json"
 }
 
 const read = (path: string) => JSON.parse(readFileSync(path, "utf8"))
@@ -45,7 +50,20 @@ const names: Record<string, string> = {
 	"typia (createValidate)": "Typia",
 	typebox: "TypeBox",
 	ajv: "ajv",
-	"ajv (standalone, ajv-errors)": "ajv"
+	"ajv (standalone, ajv-errors)": "ajv",
+	// schemabenchmarks.dev, Sury's and ata's names
+	"arktype (precompiled)": "ArkType",
+	"arktype/precompiled": "ArkType",
+	"zod/mini": "Zod Mini",
+	"zod/v3": "Zod 3",
+	"ata-validator": "ata",
+	"@paseri/paseri": "paseri",
+	"@paseri/compiler": "paseri",
+	effect: "Effect Schema",
+	superstruct: "Superstruct",
+	yup: "Yup",
+	joi: "Joi",
+	Sury: "sury"
 }
 
 // a mode in parentheses after a library's name is a variant of it
@@ -76,7 +94,8 @@ const byCase = (entries: [string, number][]) => {
 			key.slice(0, key.indexOf(" ")),
 			key.slice(key.indexOf(" ") + 1)
 		]
-		;(cases[id] ??= {})[arm] = value
+		const byArm = (cases[id] ??= {})
+		byArm[arm] = Math.min(byArm[arm] ?? Infinity, value)
 	}
 	return Object.entries(cases).map(([id, byArm]) => rowOf(id, byArm))
 }
@@ -126,6 +145,70 @@ const appsOf = (
 	)
 
 const forms: Record<string, { gzip: number }> = read(join(here, sources.forms))
+
+// schemabenchmarks.dev: a label is a library and, in parentheses, its
+// variant, except that zod's z.compile variants are Zod (compiled), as the
+// homepage names it
+const sbNameOf = (label: string) => {
+	const [, base, note] = /^(.*?)(?: \((.*)\))?$/.exec(label)!
+	if (base.startsWith("zod") && note?.includes("compile"))
+		return "Zod (compiled)"
+	return note === "precompiled" ? nameOf(label) : nameOf(base)
+}
+const sbRows = (cases: [string, number][]) => {
+	const rows: Record<string, Record<string, number>> = {}
+	for (const [key, value] of cases) {
+		const [type, dataType, variant, label] = key.slice(3).split("|")
+		const id =
+			type === "string" ? `string ${variant} ${dataType}`
+			: type === "initialization" ? type
+			: `${type} ${dataType}`
+		const arm = sbNameOf(label)
+		const row = (rows[id] ??= {})
+		row[arm] = Math.min(row[arm] ?? Infinity, value)
+	}
+	return Object.entries(rows).map(([id, byArm]) => rowOf(id, byArm))
+}
+const sbCounts = Object.entries(
+	read(join(here, sources.sbCounts)) as Record<string, number[]>
+).map(([key, reps]): [string, number] => [key, median(reps)])
+const sbDownload: {
+	minified: { libraryName: string; note?: string; gzipBytes: number }[]
+} = read(join(here, sources.sbDownload))
+
+// Sury's schema benchmark: "parse X" and "build X" rows, sizes as built in
+// production
+const suryCounts = Object.entries(
+	read(join(here, sources.suryCounts)) as Record<string, number[]>
+).map(([key, reps]): [string, number] => [key, median(reps)])
+const suryRow = (id: string, prefix: string) =>
+	rowOf(
+		id,
+		Object.fromEntries(
+			suryCounts
+				.filter(([key]) => key.startsWith(`sury ${prefix} `))
+				.map(([key, value]) => [key.slice(`sury ${prefix} `.length), value])
+		)
+	)
+const surySize: {
+	production: Record<string, { gzip: number }>
+} = read(join(here, sources.surySize))
+
+// ata's validator-benchmarks: a scene and a body per row; its arktype adapter
+// is the default precompiled build
+const ataRows = byCase(
+	Object.entries(
+		read(join(here, sources.ataCounts)) as Record<string, number[]>
+	).map(([key, reps]): [string, number] => {
+		const [scene, body, lib] = key.slice(4).split("|")
+		const arm =
+			lib === "arktype" ? "ArkType"
+			: lib === "typebox (Value.Check)" ? "TypeBox"
+			: lib.startsWith("ata") ? "ata"
+			: lib
+		return [`${scene}|${body} ${arm}`, median(reps)]
+	})
+)
 
 const suites = [
 	{
@@ -182,6 +265,89 @@ const suites = [
 		unit: "B gzipped",
 		source: "benchData.json size",
 		rows: appsOf(bench.size, "gzip")
+	},
+	{
+		category: "speed",
+		id: "sb",
+		label: "schemabenchmarks.dev",
+		unit: "instructions per call",
+		source: sources.sbCounts,
+		rows: sbRows(
+			sbCounts.filter(([key]) => !key.startsWith("sb initialization"))
+		)
+	},
+	{
+		category: "speed",
+		id: "sury",
+		label: "Sury's schema benchmark",
+		unit: "instructions per call",
+		source: sources.suryCounts,
+		rows: [suryRow("parse", "parse")]
+	},
+	{
+		category: "speed",
+		id: "ata",
+		label: "ata's validator-benchmarks",
+		unit: "instructions per document",
+		source: sources.ataCounts,
+		rows: ataRows
+	},
+	{
+		category: "startup",
+		id: "sbStartup",
+		label: "schemabenchmarks.dev's initialization",
+		unit: "instructions per call",
+		source: sources.sbCounts,
+		rows: sbRows(
+			sbCounts.filter(([key]) => key.startsWith("sb initialization"))
+		)
+	},
+	{
+		category: "startup",
+		id: "suryStartup",
+		label: "Sury's build and parse once",
+		unit: "instructions per call",
+		source: sources.suryCounts,
+		rows: [suryRow("build", "build")]
+	},
+	{
+		category: "size",
+		id: "sbSize",
+		label: "schemabenchmarks.dev's download",
+		unit: "B gzipped",
+		source: sources.sbDownload,
+		rows: [
+			rowOf(
+				"download",
+				sbDownload.minified.reduce<Record<string, number>>((byArm, r) => {
+					const arm = sbNameOf(
+						r.note ? `${r.libraryName} (${r.note})` : r.libraryName
+					)
+					byArm[arm] = Math.min(byArm[arm] ?? Infinity, r.gzipBytes)
+					return byArm
+				}, {})
+			)
+		]
+	},
+	{
+		category: "size",
+		id: "surySize",
+		label: "Sury's schema bundle",
+		unit: "B gzipped",
+		source: sources.surySize,
+		rows: [
+			rowOf(
+				"schema",
+				Object.fromEntries(
+					Object.entries(surySize.production)
+						.filter(([label]) => label.endsWith(" schema"))
+						.map(([label, { gzip }]) => [
+							label.slice(0, -" schema".length),
+							gzip
+						])
+				)
+			)
+		]
 	}
 ]
 

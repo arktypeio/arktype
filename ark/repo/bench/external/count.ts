@@ -1,6 +1,7 @@
 // instructions per call of each count arm (C1): perf's count over 2n calls
 // minus its count over n, so startup and warmup cancel. Pinned to COUNT_CORES
-// (default 10-15); resumes from out.json
+// (default 10-15); resumes from out.json. COUNT_ARMS names another arms file,
+// as sb/allArms.ts writes
 // node count.ts <out.json> <reps> [concurrency]
 import { spawn, spawnSync } from "node:child_process"
 import {
@@ -16,7 +17,7 @@ import type { Arm } from "./arms.ts"
 const [outPath, reps, concurrency = "3"] = process.argv.slice(2)
 const here = import.meta.dirname
 const arms: Record<string, Arm> = JSON.parse(
-	readFileSync(join(here, "out/arms.json"), "utf8")
+	readFileSync(process.env.COUNT_ARMS ?? join(here, "out/arms.json"), "utf8")
 ).count
 // no background GC or timers, and a big old space, so counts are stable
 const nodeArgs = [

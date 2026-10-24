@@ -1,0 +1,38 @@
+diff --git a/bench/src/scripts/download.ts b/bench/src/scripts/download.ts
+index 9ee1f0e1..ced81707 100644
+--- a/bench/src/scripts/download.ts
++++ b/bench/src/scripts/download.ts
+@@ -7,6 +7,7 @@ import ttsc from "@ttsc/unplugin/rolldown";
+ import { gzipSize } from "gzip-size";
+ import pLimit from "p-limit";
+ import { Rolldown } from "vite-plus/pack";
++import { pathToFileURL } from "node:url";
+ 
+ import {
+   type DownloadResult,
+@@ -17,6 +18,12 @@ import {
+ 
+ const sigintSignal = getSigintSignal();
+ 
++// arktype's precompiler, from ARK_AOT, for the arktype/precompiled entry; ARK_OPTIONS its options
++const { precompile } = await import(
++  pathToFileURL(path.join(process.env.ARK_AOT!, "out", "unplugin.js")).href
++);
++const arkOptions = JSON.parse(process.env.ARK_OPTIONS ?? "{}");
++
+ interface FileDescription {
+   path: string;
+   compiledPath: string;
+@@ -45,7 +52,11 @@ function getPackageName(libraryName: string) {
+ async function measureFile(file: FileDescription, minify: MinifyType): Promise<DownloadResult> {
+   const bundle = await Rolldown.rolldown({
+     input: file.path,
+-    plugins: file.path.includes("typia") ? [ttsc()] : [],
++    plugins: file.path.includes("typia")
++      ? [ttsc()]
++      : file.path.includes("arktype/precompiled")
++        ? [precompile.rolldown(arkOptions)]
++        : [],
+     external: [/node:/],
+   });
+   const output = await bundle.generate({

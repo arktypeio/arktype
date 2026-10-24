@@ -2,7 +2,12 @@
 	"sources": {
 		"counts": "results/counts-a306152ce.json",
 		"startup": "results/startup-4fd880692-node24.json",
-		"forms": "results/forms-642b4517e.json"
+		"forms": "results/forms-642b4517e.json",
+		"sbCounts": "results/sb-counts-6c5fd9862.json",
+		"sbDownload": "results/sb-download-6c5fd9862.json",
+		"suryCounts": "results/sury-counts-6c5fd9862.json",
+		"surySize": "results/sury-size-6c5fd9862.json",
+		"ataCounts": "results/ata-counts-6c5fd9862.json"
 	},
 	"suites": [
 		{
@@ -690,6 +695,778 @@
 					"results": {
 						"Valibot": 5173,
 						"ArkType": 14355
+					}
+				}
+			]
+		},
+		{
+			"category": "speed",
+			"id": "sb",
+			"label": "schemabenchmarks.dev",
+			"unit": "instructions per call",
+			"source": "results/sb-counts-6c5fd9862.json",
+			"rows": [
+				{
+					"id": "parsing invalid",
+					"results": {
+						"paseri": 13924.867886178861,
+						"@railway-ts/pipelines": 7056.541923076923,
+						"@remix-run/data-schema": 3560.35818,
+						"@sapphire/shapeshift": 1422795.853,
+						"ata": 301.286985,
+						"decoders": 362723.2565,
+						"Effect Schema": 6149.88443,
+						"io-ts": 63543.68458536585,
+						"Joi": 28034.575642857144,
+						"runtypes": 1662181.154,
+						"Superstruct": 59322.749818181815,
+						"sury": 30778.152636363637,
+						"TypeBox": 98921.8866,
+						"Typia": 211501.25844444445,
+						"Valibot": 4704.18137,
+						"Yup": 520802.9035,
+						"Zod": 125328.1856923077,
+						"Zod (compiled)": 124725.5123076923,
+						"Zod Mini": 205462.02133333334,
+						"Zod 3": 307160.423,
+						"zod-compiler": 250.314575,
+						"ArkType": 138.38587
+					}
+				},
+				{
+					"id": "parsing valid",
+					"results": {
+						"paseri": 11044.476979919678,
+						"@railway-ts/pipelines": 162816.24783333333,
+						"@remix-run/data-schema": 79000.03232258065,
+						"@sapphire/shapeshift": 169109.28488888888,
+						"ata": 6853.149805,
+						"decoders": 89262.74528,
+						"Effect Schema": 78483.50724137931,
+						"io-ts": 57549.49195652174,
+						"Joi": 318854.357,
+						"runtypes": 745531.6626666667,
+						"Superstruct": 481499.0525,
+						"sury": 14191.406778378378,
+						"TypeBox": 9786.6566,
+						"Typia": 43053.03713636364,
+						"Valibot": 73924.36272727273,
+						"Yup": 1024445.43,
+						"Zod": 61169.02061904762,
+						"Zod (compiled)": 13979.22772815534,
+						"Zod Mini": 127440.19463636364,
+						"Zod 3": 124245.855875,
+						"zod-compiler": 13537.952865,
+						"ArkType": 6017.60543
+					}
+				},
+				{
+					"id": "standard valid",
+					"results": {
+						"paseri": 11036.866014440433,
+						"@railway-ts/pipelines": 163495.9596,
+						"@remix-run/data-schema": 79064.67666666667,
+						"ata": 6842.662575,
+						"decoders": 88168.0716,
+						"Effect Schema": 93150.46882352942,
+						"Joi": 355975.3912,
+						"sury": 14224.6792125,
+						"Typia": 43063.667368421055,
+						"Valibot": 73864.59893617021,
+						"Yup": 1300560.705,
+						"Zod": 61180.883804878045,
+						"Zod (compiled)": 13989.444105849581,
+						"Zod Mini": 127602.99968421053,
+						"Zod 3": 127894.9169,
+						"zod-compiler": 13570.377295,
+						"ArkType": 6142.42911
+					}
+				},
+				{
+					"id": "standard invalid",
+					"results": {
+						"paseri": 37737.30293023256,
+						"@railway-ts/pipelines": 202166.634,
+						"@remix-run/data-schema": 129432.48228571429,
+						"ata": 34644.06003448276,
+						"decoders": 624806.198,
+						"Effect Schema": 208780.4032,
+						"Joi": 32319.649870967743,
+						"sury": 31528.251189189188,
+						"Typia": 192687.0342857143,
+						"Valibot": 113677.5212,
+						"Yup": 3770273.166,
+						"Zod": 150961.9694,
+						"Zod (compiled)": 151573.10022222222,
+						"Zod Mini": 218562.03844444445,
+						"Zod 3": 248766.5088,
+						"zod-compiler": 60315.87289473684,
+						"ArkType": 57307.673616438355
+					}
+				},
+				{
+					"id": "string date-time valid",
+					"results": {
+						"paseri": 637.420755,
+						"@railway-ts/pipelines": 15973.44722368421,
+						"ajv": 6124.737675,
+						"ata": 566.470465,
+						"Joi": 28365.643791666665,
+						"sury": 618.452525,
+						"TypeBox": 14230.88225136612,
+						"Typia": 4547.99099,
+						"Yup": 12961.682772727272,
+						"Zod": 867.796595,
+						"Zod Mini": 870.921605,
+						"Zod 3": 7876.361696,
+						"ArkType": 737.465595
+					}
+				},
+				{
+					"id": "string date valid",
+					"results": {
+						"paseri": 535.48092,
+						"@railway-ts/pipelines": 13680.862089385475,
+						"@sapphire/shapeshift": 1340.05075,
+						"ajv": 2212.517885,
+						"ata": 249.49009,
+						"sury": 493.472425,
+						"TypeBox": 10178.996513011152,
+						"Typia": 2361.13427,
+						"Valibot": 837.849165,
+						"Zod": 803.942395,
+						"Zod Mini": 803.837565,
+						"Zod 3": 1436.525885
+					}
+				},
+				{
+					"id": "string time valid",
+					"results": {
+						"paseri": 389.470045,
+						"@railway-ts/pipelines": 3139.96068,
+						"ajv": 2506.532125,
+						"ata": 329.499245,
+						"sury": 383.46501,
+						"TypeBox": 10441.177444839857,
+						"Typia": 1217.560815
+					}
+				},
+				{
+					"id": "string email valid",
+					"results": {
+						"paseri": 1132.470045,
+						"@railway-ts/pipelines": 1430.56257,
+						"@sapphire/shapeshift": 4657.95218,
+						"ajv": 775.50126,
+						"ata": 825.457745,
+						"Joi": 13939.077266666667,
+						"sury": 1165.49809,
+						"TypeBox": 8803.668211604096,
+						"Typia": 772.468295,
+						"Valibot": 1008.853235,
+						"Yup": 6965.224247191011,
+						"Zod": 1149.825215,
+						"Zod Mini": 1149.685555,
+						"Zod 3": 1814.28143,
+						"ArkType": 653.403915
+					}
+				},
+				{
+					"id": "string url valid",
+					"results": {
+						"paseri": 1244.885695,
+						"@railway-ts/pipelines": 2844.55961,
+						"@sapphire/shapeshift": 2284.01103,
+						"ajv": 1447.970385,
+						"Joi": 3336.35007,
+						"sury": 1594.881065,
+						"TypeBox": 9310.760536082475,
+						"Typia": 1698.039515,
+						"Valibot": 1684.650235,
+						"Yup": 10127.818260465116,
+						"Zod": 2267.9809,
+						"Zod Mini": 2271.095445,
+						"Zod 3": 2956.796865,
+						"ArkType": 755.43749
+					}
+				},
+				{
+					"id": "string uuid valid",
+					"results": {
+						"paseri": 1181.43484,
+						"@railway-ts/pipelines": 2131.41344,
+						"@sapphire/shapeshift": 1290.32697,
+						"ajv": 1366.46967,
+						"ata": 494.560045,
+						"Joi": 3508.052125,
+						"sury": 1371.488835,
+						"TypeBox": 9298.816383763839,
+						"Typia": 1363.554435,
+						"Valibot": 1727.42136,
+						"Yup": 7295.164868217054,
+						"Zod": 1483.02131,
+						"Zod Mini": 1482.93893,
+						"Zod 3": 2053.51499,
+						"ArkType": 1137.45948
+					}
+				},
+				{
+					"id": "string ipv4 valid",
+					"results": {
+						"paseri": 474.48384,
+						"@sapphire/shapeshift": 723.09865,
+						"ajv": 414.46996,
+						"ata": 417.542435,
+						"Joi": 2143.454885,
+						"sury": 428.502175,
+						"TypeBox": 8355.28431617647,
+						"Typia": 411.43441,
+						"Valibot": 820.832595,
+						"Zod": 727.0215,
+						"Zod Mini": 726.83488,
+						"Zod 3": 1139.46845,
+						"ArkType": 545.45467
+					}
+				},
+				{
+					"id": "string ipv6 valid",
+					"results": {
+						"paseri": 890.48365,
+						"@sapphire/shapeshift": 1483.540035,
+						"ajv": 3242.921105,
+						"ata": 855.466735,
+						"Joi": 2481.29298,
+						"sury": 859.4701,
+						"TypeBox": 8788.097724409448,
+						"Typia": 3240.05691,
+						"Valibot": 1178.911755,
+						"Zod": 4270.62325,
+						"Zod Mini": 4267.44982,
+						"Zod 3": 2383.53822,
+						"ArkType": 1062.490145
+					}
+				},
+				{
+					"id": "string date invalid",
+					"results": {
+						"paseri": 288.507755,
+						"@railway-ts/pipelines": 1047.940195,
+						"@sapphire/shapeshift": 27594.51307692308,
+						"ajv": 414.51923,
+						"ata": 27.465875,
+						"sury": 27265.248537037038,
+						"TypeBox": 4294.481015,
+						"Typia": 307.419015,
+						"Valibot": 1216.03851,
+						"Zod": 4427.98674,
+						"Zod Mini": 4417.85135,
+						"Zod 3": 10518.89434074074
+					}
+				},
+				{
+					"id": "string date-time invalid",
+					"results": {
+						"paseri": 279.470095,
+						"@railway-ts/pipelines": 1138.185585,
+						"ajv": 844.931695,
+						"ata": 95.47001,
+						"Joi": 12293.944086956522,
+						"sury": 28141.414105263157,
+						"TypeBox": 4863.376985,
+						"Typia": 380.47001,
+						"Yup": 123731.93875,
+						"Zod": 4429.066635,
+						"Zod Mini": 4423.96664,
+						"Zod 3": 16511.67152,
+						"ArkType": 268.47985
+					}
+				},
+				{
+					"id": "string time invalid",
+					"results": {
+						"paseri": 279.470205,
+						"@railway-ts/pipelines": 1110.893555,
+						"ajv": 471.4144,
+						"ata": 94.470005,
+						"sury": 27256.844025974027,
+						"TypeBox": 4380.422355,
+						"Typia": 322.51113
+					}
+				},
+				{
+					"id": "string email invalid",
+					"results": {
+						"paseri": 600.523945,
+						"@railway-ts/pipelines": 1198.28056,
+						"@sapphire/shapeshift": 28472.43307317073,
+						"ajv": 546.46849,
+						"ata": 399.459785,
+						"Joi": 12767.663229813665,
+						"sury": 28002.630870588237,
+						"TypeBox": 4489.303615,
+						"Typia": 406.47002,
+						"Valibot": 1361.956945,
+						"Yup": 123548.5085,
+						"Zod": 4733.00189,
+						"Zod Mini": 4734.56672,
+						"Zod 3": 10572.514103773585,
+						"ArkType": 380.483185
+					}
+				},
+				{
+					"id": "string uuid invalid",
+					"results": {
+						"paseri": 279.47002,
+						"@railway-ts/pipelines": 1040.327895,
+						"@sapphire/shapeshift": 26919.60126190476,
+						"ajv": 363.490185,
+						"ata": 27.45738,
+						"Joi": 11951.1271,
+						"sury": 27273.455777777777,
+						"TypeBox": 4262.54758,
+						"Typia": 223.436975,
+						"Valibot": 1210.079025,
+						"Yup": 122569.22825,
+						"Zod": 4410.79441,
+						"Zod Mini": 4413.153955,
+						"Zod 3": 10087.24143083004,
+						"ArkType": 227.4827
+					}
+				},
+				{
+					"id": "string url invalid",
+					"results": {
+						"paseri": 1423.963915,
+						"@railway-ts/pipelines": 31194.553966666666,
+						"@sapphire/shapeshift": 61714.06606060606,
+						"ajv": 366.69091,
+						"Joi": 12469.952183908046,
+						"sury": 27645.081435897435,
+						"TypeBox": 4898.074005,
+						"Typia": 223.407335,
+						"Valibot": 1843.12699,
+						"Yup": 128236.31109090909,
+						"Zod": 1725.084145,
+						"Zod Mini": 1729.18638,
+						"Zod 3": 45354.46656716418,
+						"ArkType": 374.456125
+					}
+				},
+				{
+					"id": "string ipv4 invalid",
+					"results": {
+						"paseri": 300.4667,
+						"@sapphire/shapeshift": 26949.016988235293,
+						"ajv": 383.7367,
+						"ata": 248.45544,
+						"Joi": 16765.539955555556,
+						"sury": 27267.856282608696,
+						"TypeBox": 4262.782265,
+						"Typia": 240.47002,
+						"Valibot": 1198.927105,
+						"Zod": 4446.869825,
+						"Zod Mini": 4439.78007,
+						"Zod 3": 10129.937102739726,
+						"ArkType": 258.44113
+					}
+				},
+				{
+					"id": "string ipv6 invalid",
+					"results": {
+						"paseri": 542.54581,
+						"@sapphire/shapeshift": 26639.817402985074,
+						"ajv": 1847.352525,
+						"ata": 266.469915,
+						"Joi": 17111.06403305785,
+						"sury": 26972.240743589744,
+						"TypeBox": 4663.290015,
+						"Typia": 1703.98444,
+						"Valibot": 1377.40724,
+						"Zod": 958.46886,
+						"Zod Mini": 954.582345,
+						"Zod 3": 10656.779242105264,
+						"ArkType": 709.480055
+					}
+				},
+				{
+					"id": "validation valid",
+					"results": {
+						"@railway-ts/pipelines": 165391.3985,
+						"@sapphire/shapeshift": 172939.79075,
+						"ajv": 43877.57057971015,
+						"ata": 6379.04064,
+						"Effect Schema": 78175.6514,
+						"io-ts": 31315.717333333334,
+						"runtypes": 748849.942,
+						"Superstruct": 480044.2035,
+						"sury": 13974.546372093024,
+						"TypeBox": 9685.583145,
+						"Typia": 42983.18132258065,
+						"Valibot": 73872.8942051282,
+						"Yup": 1326744.621,
+						"Zod": 61169.908,
+						"Zod (compiled)": 10317.97044,
+						"Zod Mini": 128907.06243478261,
+						"zod-compiler": 13480.331899082568,
+						"ArkType": 5927.97043
+					}
+				},
+				{
+					"id": "validation invalid",
+					"results": {
+						"@railway-ts/pipelines": 7020.401105,
+						"@sapphire/shapeshift": 1439847.3,
+						"ajv": 410.445845,
+						"ata": 168.48918,
+						"Effect Schema": 6129.59056,
+						"io-ts": 846.47003,
+						"runtypes": 1658779.968,
+						"Superstruct": 64688.7172,
+						"sury": 30722.358545454546,
+						"TypeBox": 159.51655,
+						"Typia": 67.88027,
+						"Valibot": 4490.391915,
+						"Yup": 774446.294,
+						"Zod": 11883.001316129032,
+						"Zod (compiled)": 175.45263,
+						"Zod Mini": 27477.057325842696,
+						"zod-compiler": 150.42017,
+						"ArkType": 33.466805
+					}
+				},
+				{
+					"id": "string duration valid",
+					"results": {
+						"@railway-ts/pipelines": 1356.568445,
+						"ajv": 794.51914,
+						"ata": 605.582375,
+						"Joi": 2533.545695,
+						"sury": 588.50088,
+						"TypeBox": 8871.870308196721,
+						"Typia": 791.43448,
+						"Zod": 1466.01364,
+						"Zod Mini": 1466.00349,
+						"Zod 3": 1365.39983
+					}
+				},
+				{
+					"id": "string duration invalid",
+					"results": {
+						"@railway-ts/pipelines": 1022.19951,
+						"ajv": 445.458175,
+						"ata": 262.54879,
+						"Joi": 12105.48956,
+						"sury": 27259.933384615386,
+						"TypeBox": 4404.50218,
+						"Typia": 305.39916,
+						"Zod": 4496.987225,
+						"Zod Mini": 4514.79997,
+						"Zod 3": 10923.616388489208
+					}
+				},
+				{
+					"id": "codec encode",
+					"results": {
+						"Effect Schema": 2507.151265,
+						"io-ts": 629.927945,
+						"sury": 650.992665,
+						"TypeBox": 60382.21242105263,
+						"Zod": 1010.681755,
+						"Zod (compiled)": 1027.143695,
+						"Zod Mini": 1007.65544
+					}
+				},
+				{
+					"id": "codec decode",
+					"results": {
+						"Effect Schema": 3516.38984,
+						"io-ts": 1549.69395,
+						"sury": 1559.393115,
+						"TypeBox": 58943.351217391304,
+						"Zod": 1688.512155,
+						"Zod (compiled)": 1618.948435,
+						"Zod Mini": 1686.468265
+					}
+				}
+			]
+		},
+		{
+			"category": "speed",
+			"id": "sury",
+			"label": "Sury's schema benchmark",
+			"unit": "instructions per call",
+			"source": "results/sury-counts-6c5fd9862.json",
+			"rows": [
+				{
+					"id": "parse",
+					"results": {
+						"sury": 316.573255,
+						"Zod": 2319.785225,
+						"TypeBox": 158.99896,
+						"Valibot": 9888.880843835617,
+						"ArkType": 87.005955
+					}
+				}
+			]
+		},
+		{
+			"category": "speed",
+			"id": "ata",
+			"label": "ata's validator-benchmarks",
+			"unit": "instructions per document",
+			"source": "results/ata-counts-6c5fd9862.json",
+			"rows": [
+				{
+					"id": "verdict-valid|user",
+					"results": {
+						"ata": 1286.34637478342,
+						"ajv": 2368.374775436356,
+						"@exodus/schemasafe": 1909.3992595591542,
+						"TypeBox": 1577.8782741915188,
+						"Typia": 2891.7192210767466,
+						"@cfworker/json-schema": 45464.89450980392,
+						"Valibot": 5755.682450835791,
+						"Zod": 6651.89524702561,
+						"ArkType": 930.2900590463458
+					}
+				},
+				{
+					"id": "verdict-valid|order",
+					"results": {
+						"ata": 6381.271549439348,
+						"ajv": 19729.790788530467,
+						"@exodus/schemasafe": 30028.132541666666,
+						"Typia": 23130.38996124031,
+						"TypeBox": 14978.078607918264,
+						"@cfworker/json-schema": 452608.686,
+						"Zod": 56840.62960960961,
+						"ArkType": 6975.117050572167,
+						"Valibot": 55556.29307070707
+					}
+				},
+				{
+					"id": "verdict-valid|config",
+					"results": {
+						"ata": 410311.93611111114,
+						"ajv": 621006.7204545455,
+						"@exodus/schemasafe": 611166.0166666667,
+						"@cfworker/json-schema": 8457708.154166667
+					}
+				},
+				{
+					"id": "verdict-invalid|user",
+					"results": {
+						"ata": 1414.4477836298377,
+						"ajv": 1329.0171915361364,
+						"@exodus/schemasafe": 1552.3351653891307,
+						"@cfworker/json-schema": 91750.48,
+						"Typia": 2374.9617107309487,
+						"TypeBox": 1470.3392480298382,
+						"Zod": 18193.640909090907,
+						"Valibot": 29238.07216931217,
+						"ArkType": 743.6282699872999
+					}
+				},
+				{
+					"id": "verdict-invalid|order",
+					"results": {
+						"ata": 3732.3832116294793,
+						"@exodus/schemasafe": 13301.462172043011,
+						"ajv": 6715.075266666667,
+						"@cfworker/json-schema": 193624.58159722222,
+						"Typia": 8455.086591538158,
+						"TypeBox": 5075.23606060606,
+						"Zod": 72692.5115079365,
+						"Valibot": 62144.81529292929,
+						"ArkType": 2382.5156950067476
+					}
+				},
+				{
+					"id": "verdict-invalid|config",
+					"results": {
+						"ata": 226009.28166666668,
+						"@exodus/schemasafe": 1023948.6628205128,
+						"ajv": 737160.5672222222,
+						"@cfworker/json-schema": 4027570.7583333333
+					}
+				},
+				{
+					"id": "errors-invalid|user",
+					"results": {
+						"ata": 3012.7678321995463,
+						"ajv": 3344.6778968253966,
+						"@exodus/schemasafe": 4010.7040788398695,
+						"@cfworker/json-schema": 114775.72414814815,
+						"Typia": 8875.53438247012,
+						"TypeBox": 19838.300657407406,
+						"Zod": 30414.378421052632,
+						"Valibot": 29222.92867208672,
+						"ArkType": 3552.3150320336813
+					}
+				},
+				{
+					"id": "errors-invalid|order",
+					"results": {
+						"ata": 7946.348831236897,
+						"ajv": 20862.115425425425,
+						"@exodus/schemasafe": 41208.86908675799,
+						"@cfworker/json-schema": 456167.94933333335,
+						"Typia": 42026.717277777774,
+						"TypeBox": 208964.49212962962,
+						"Zod": 90629.92177777778,
+						"Valibot": 62203.69906810036,
+						"ArkType": 11444.961611111112
+					}
+				},
+				{
+					"id": "errors-invalid|config",
+					"results": {
+						"ata": 793489.2019607843,
+						"@exodus/schemasafe": 1419489.901388889,
+						"ajv": 1287904.080952381,
+						"@cfworker/json-schema": 8205626.741666666
+					}
+				},
+				{
+					"id": "blocked-verdict-valid|user",
+					"results": {
+						"ata": 1286.343669015357,
+						"@cfworker/json-schema": 45326.57621468927,
+						"Typia": 2891.052237373737,
+						"Zod": 9864.444837662337,
+						"TypeBox": 4927.637653581725,
+						"Valibot": 5749.900852999017,
+						"ArkType": 930.2967230318884
+					}
+				},
+				{
+					"id": "blocked-verdict-valid|order",
+					"results": {
+						"ata": 6388.055352733686,
+						"@cfworker/json-schema": 459725.32481481484,
+						"Typia": 23100.08077294686,
+						"TypeBox": 94234.15503703704,
+						"Zod": 104824.58259259259,
+						"ArkType": 6890.358729359082,
+						"Valibot": 55527.29231884058
+					}
+				},
+				{
+					"id": "blocked-verdict-valid|config",
+					"results": {
+						"ata": 454057.06388888886,
+						"@cfworker/json-schema": 8437755.994444445
+					}
+				}
+			]
+		},
+		{
+			"category": "startup",
+			"id": "sbStartup",
+			"label": "schemabenchmarks.dev's initialization",
+			"unit": "instructions per call",
+			"source": "results/sb-counts-6c5fd9862.json",
+			"rows": [
+				{
+					"id": "initialization",
+					"results": {
+						"paseri": 28526.583948717947,
+						"@railway-ts/pipelines": 7933.4228794326245,
+						"@remix-run/data-schema": 80825.01705882353,
+						"@sapphire/shapeshift": 595451.329,
+						"ajv": 40753569.682,
+						"ata": 16278.164721153846,
+						"decoders": 33584.9523030303,
+						"Effect Schema": 180648.5785,
+						"io-ts": 30285.960631578946,
+						"Joi": 1300299.21,
+						"Superstruct": 42192.19559322034,
+						"runtypes": 11949077.12,
+						"sury": 70500.91913043478,
+						"TypeBox": 119322.4561,
+						"Typia": 380.62601,
+						"Valibot": 24071.560583333332,
+						"Yup": 1033753.322,
+						"Zod": 877938.816,
+						"Zod (compiled)": 2628710.266,
+						"Zod Mini": 782393.3173333333,
+						"Zod 3": 506556.0324,
+						"ArkType": 42.459745
+					}
+				}
+			]
+		},
+		{
+			"category": "startup",
+			"id": "suryStartup",
+			"label": "Sury's build and parse once",
+			"unit": "instructions per call",
+			"source": "results/sury-counts-6c5fd9862.json",
+			"rows": [
+				{
+					"id": "build",
+					"results": {
+						"sury": 276837.485,
+						"TypeBox": 6378.50351,
+						"Zod": 1656991.932,
+						"Valibot": 66026.45073913044,
+						"ArkType": 105.97933
+					}
+				}
+			]
+		},
+		{
+			"category": "size",
+			"id": "sbSize",
+			"label": "schemabenchmarks.dev's download",
+			"unit": "B gzipped",
+			"source": "results/sb-download-6c5fd9862.json",
+			"rows": [
+				{
+					"id": "download",
+					"results": {
+						"@railway-ts/pipelines": 1568,
+						"Superstruct": 1935,
+						"@remix-run/data-schema": 1923,
+						"Typia": 1846,
+						"Valibot": 2058,
+						"ArkType": 2598,
+						"decoders": 3506,
+						"io-ts": 3617,
+						"paseri": 3633,
+						"runtypes": 4828,
+						"Zod Mini": 6816,
+						"sury": 15790,
+						"Yup": 13076,
+						"TypeBox": 13634,
+						"Zod (compiled)": 15561,
+						"Zod 3": 13052,
+						"Effect Schema": 23949,
+						"Zod": 24272,
+						"zod-compiler": 25995,
+						"@sapphire/shapeshift": 25288,
+						"ajv": 41477,
+						"Joi": 52943,
+						"ata": 131004
+					}
+				}
+			]
+		},
+		{
+			"category": "size",
+			"id": "surySize",
+			"label": "Sury's schema bundle",
+			"unit": "B gzipped",
+			"source": "results/sury-size-6c5fd9862.json",
+			"rows": [
+				{
+					"id": "schema",
+					"results": {
+						"sury": 11599,
+						"Zod": 64686,
+						"TypeBox": 22568,
+						"Valibot": 1304,
+						"ArkType": 1531
 					}
 				}
 			]

@@ -200,9 +200,11 @@ every row.
 | size     | valibot.dev's login form                    | the form, written in each library (`forms/`)      | gzipped bytes (`results/forms-*.json`)                                |
 | size     | the homepage's apps                         | its apps                                          | gzipped bytes (`benchData.json`)                                      |
 
-schemabenchmarks.dev isn't a suite: our reproduction (`sb/`) runs only
-ArkType. The wall-clock runs aren't either: they time a subset of moltar's
-rows and libraries that the counts already cover.
+Which public suites belong in the table is decided by the rule under
+"Which suites" below, which adds schemabenchmarks.dev, Sury's schema
+benchmark and ata's validator-benchmarks. The wall-clock runs aren't suites:
+they time a subset of moltar's rows and libraries that the counts already
+cover.
 
 **ArkType's build.** One config everywhere: the default options in a
 production esbuild build, which prunes by usage. Where a suite bundles,
@@ -257,6 +259,107 @@ put every arm at 4x its quiet time and tied all of them. The quiet,
 development-built rows stand, which only handicap ArkType (its build there
 isn't pruned). With the loaded production rows instead, startup's order is the
 same: ArkType 1.098, Valibot 1.289.
+
+### Which suites
+
+A skeptic's first question is why these suites. This rule, written at
+2026-10-23T22:12Z before any search for suites and before ArkType's standing
+in any suite not above was seen, decides it. A suite counts in a category iff:
+
+1. its harness and its results are public;
+2. its harness or its published results changed in the last 12 months;
+3. it measures the category on runtime validators: time or instructions per
+   validation or parse (speed), to create a schema or import and first
+   validate (startup), or bytes of bundles that use a validator (size).
+   Type-checking time and memory are other categories;
+4. it measures both Zod and Valibot, so it compares the field rather than two
+   libraries;
+5. it runs locally from its own steps, plus adding a library the way it adds
+   one. One that can't is listed with its published results, outside the
+   average.
+
+Who runs a suite doesn't matter: a library author's benchmark counts as ours
+does. Rows are the suite's own, in its own measure, except that wall-clock
+rows are counted in instructions while the machine's 1-minute load is 4 or
+more, as moltar's are here. ArkType enters each as the default build, added
+the way the suite adds a library; where a suite already has `type()`, that
+arm is dynamic ArkType and is left out like ArkType's other builds.
+
+| suite                                          | run by                   | verdict                                                                                                           |
+| ---------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| moltar's typescript-runtime-type-benchmarks    | moltar                   | in (speed)                                                                                                        |
+| schemabenchmarks.dev (open-circle)             | Open Circle              | in: speed (26 rows), startup (initialization), size (download)                                                    |
+| Sury's schema benchmark (`docs/benchmarks`)    | Sury's author            | in: speed (parse), startup (build and parse once), size (what the schema ships); its whole-library row is out (3) |
+| ata's validator-benchmarks                     | ata's author             | in (speed, 12 rows)                                                                                               |
+| the homepage, `startup.ts`, valibot.dev's form | us, and Valibot's author | in                                                                                                                |
+| Zod's published comparisons                    | Zod's author             | out as a suite: its cross-library numbers are moltar runs, its sizes Zod against Zod Mini (4)                     |
+| typia's `benchmark/`                           | typia's author           | out: no Valibot (4)                                                                                               |
+| TypeBox's benchmarks                           | TypeBox's author         | out: ajv only (4)                                                                                                 |
+| icebob/validator-benchmark and smaller repos   | various                  | out: unchanged since 2024 or before (2)                                                                           |
+| blog comparisons, bundlephobia, pkg-size       | various                  | out: no harness, or the whole package rather than a bundle using it (1, 3)                                        |
+
+How each new suite is run, at the commits measured (schema-benchmarks
+94e2dccc on Node 26.12.1, its `.node-version`; Sury 1f035c5 and ata's
+8676ca6 on Node 24.14.1, with their own pinned installs):
+
+- schemabenchmarks.dev: `sb/precompiled/` is added to the clone as
+  `schemas/libraries/arktype/precompiled/`, as zod-compiler is added: its
+  generate.ts compiles the arktype entry's schema with the suite's tsdown
+  config and the precompile plugin (with `node_modules/arktype` linked to
+  this repo's `ark/type`), and `sb/download.patch` adds the plugin to the
+  download test for that entry, as typia's is. Rolldown and tsdown can't tell
+  the plugin a build is for production, so it's given what the default
+  resolves to in one: `prune: true` and the production defaults. After
+  `vp pack --no-dts` in `schemas`, `sb/allArms.ts` lists every runtime case of
+  every library and `count.ts` counts them (`COUNT_ARMS=out/sb-arms.json`);
+  the download test is the suite's own script.
+- Sury's: `sury/cases.ts` is its schema topic's timed calls verbatim,
+  bundled against its installs, and `sury/arktype.ts` the same ArkType calls,
+  precompiled (`sury/bundle.ts`, `sury/arms.ts`, then `count.ts`).
+  `sury/size.ts` is its bundle-size code with its esbuild, each bundle run on
+  its value before it's counted; ArkType's snippet is a file, `sury/schema.ts`,
+  since the precompiler doesn't read esbuild's stdin.
+- ata's: `ata/validators.ts` writes its user and order bodies in ArkType,
+  `ata/build.ts` precompiles them, and `ata/impls.patch` adds an adapter as
+  typia's is added. `ata/arms.ts` and `count.ts` count instructions per
+  document; a child exits where an adapter disagrees with a scene.
+
+Two startup rows time no build for a library that compiles ahead of time:
+schemabenchmarks.dev's initialization and Sury's build-and-parse-once.
+ArkType's default build creates a validator once and reuses it (42 and 106
+instructions; typia's createIs 381), so on those rows it wins by what the
+rows don't measure. They're the suites' rows, so they stay.
+
+### Every qualifying suite, at 6c5fd9862
+
+lane/homepage with lane/integrate 3381cbce3. Each suite's rivals were counted
+at 4971a30a1 and ArkType's arms again at 6c5fd9862 (no rival depends on the
+build). `results/sb-counts-*`, `sb-download-*`, `sury-counts-*`,
+`sury-size-*` and `ata-counts-*`; `node standings.ts [suites]` prints the
+standings over any set of suites.
+
+| category | 1             | 2                   | 3             | 4             |
+| -------- | ------------- | ------------------- | ------------- | ------------- |
+| speed    | ata 1.151\*   | ArkType 1.186       | ajv 2.645\*   | Typia 3.449\* |
+| startup  | ArkType 1.041 | Typia 2.602\*       | Valibot 27.3  | Zod Mini 59.7 |
+| size     | Valibot 1.349 | Superstruct 1.464\* | Typia 1.570\* | ArkType 1.699 |
+
+\* ranked on 2 to 4 of the category's suites. Each suite's own scores:
+ArkType has the best score in every speed suite but schemabenchmarks.dev
+(1.468, ata 1.154), and the best in every startup suite but the homepage's
+cold start (1.054, Valibot 1.050). In size it's best in none: the login form
+1.705 (ajv 1.000), the homepage's apps 2.511 (ajv), schemabenchmarks.dev's
+download 1.657 (2598 B against @railway-ts/pipelines' 1568, Typia 1846,
+Valibot 2058), Sury's 1.174 (1531 B against Valibot's 1304).
+
+Speed turns on schemabenchmarks.dev's string formats and invalid Standard
+Schema row, where ata's checks take a fraction of ArkType's instructions:
+uuid 27 against 227 invalid (8.3x) and 495 against 1137 valid, date-time 95
+against 268 invalid, ipv6 266 against 709 invalid, and Standard Schema's
+invalid row 57308 against Sury's 31528 (1.8x). ata isn't in the homepage's
+suite, where ArkType's score is 1.375. Leaving out one suite at a time,
+ArkType leads speed without the homepage's (1.143, ata 1.151) or without
+schemabenchmarks.dev (1.125), and ata leads otherwise.
 
 ## The login form across validators
 

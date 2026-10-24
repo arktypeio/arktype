@@ -1,0 +1,26 @@
+diff --git a/impls/index.mjs b/impls/index.mjs
+index c95eb0f..bd7a8db 100644
+--- a/impls/index.mjs
++++ b/impls/index.mjs
+@@ -21,6 +21,7 @@ export const libs = {
+   'typebox (Value.Check)': { blocked: true, kind: 'equivalent' },
+   zod: { blocked: true, kind: 'equivalent' },
+   valibot: { blocked: true, kind: 'equivalent' },
++  arktype: { blocked: true, kind: 'equivalent', bodies: ['user', 'order'] },
+ }
+ 
+ export function versions () {
+@@ -116,5 +117,13 @@ export async function make (lib, body, scene) {
+     const s = body.valibot
+     return scene === 'verdict' ? (d) => v.safeParse(s, d).success : (d) => { const r = v.safeParse(s, d, { abortEarly: false }); return r.success ? 0 : count(r.issues) }
+   }
++  if (lib === 'arktype') {
++    // Precompiled at build time from ArkType definitions by @ark/aot (arktype's
++    // bench/external/ata/build.ts, output in ARK_VALIDATORS); the runtime holds
++    // plain functions, as typia's does.
++    const t = await import(process.env.ARK_VALIDATORS)
++    const T = body.name === 'user' ? t.User : t.Order
++    return scene === 'verdict' ? (d) => T.allows(d) : (d) => { const r = T(d); return t.isErrors(r) ? count(r.issues) : 0 }
++  }
+   throw new Error('unknown lib ' + lib)
+ }
