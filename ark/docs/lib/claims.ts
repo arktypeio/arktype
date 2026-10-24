@@ -101,7 +101,8 @@ export const speedChart: BenchmarkChart = {
 // default build 1779 in production. Sizes measured at 89510709d
 // (results/login-89510709d.json). Zod Mini's form is valibot.dev's code as
 // written, which throws at its first parse on zod 4.6.7 (z.check takes no
-// schema); written to run (z.email(...).check(...)), it is 5107.
+// schema); written to run (z.email(...).check(...)), it is 5107. Dynamic
+// ArkType's bar is 82946, measured at 5acd85130 (results/login-5acd85130.json).
 export const sizeChart: BenchmarkChart = {
 	title: "Bundle size",
 	detail:
@@ -117,7 +118,7 @@ export const sizeChart: BenchmarkChart = {
 		{ name: "Valibot", kind: "other", value: 1547 },
 		{ name: "Zod Mini", kind: "other", value: 5127 },
 		{ name: "Zod", kind: "other", value: 25058 },
-		{ name: "ArkType (dynamic)", kind: "dynamic", value: 82263 }
+		{ name: "ArkType (dynamic)", kind: "dynamic", value: 82946 }
 	]
 }
 
@@ -347,11 +348,11 @@ export const claims = {
 	noInit:
 		"A precompiled Type costs nothing to create: it was built when you built.",
 	// `import { type } from "arktype"` by ark/repo/bench/bundle.ts's method
-	// (esbuild bundle + minify, esm, neutral, gzip) at f29b8d153: 82292 vs
-	// 2.2.9's 47803 B gz (258336 vs 156113 min); sizeChart's dynamic bar, the
-	// login form, is 82263
+	// (esbuild 0.25.10 bundle + minify, esm, neutral, "production", gzip) at
+	// 5acd85130: 82983 vs 2.2.9's 47797 B gz from npm (260519 vs 156116 min);
+	// sizeChart's dynamic bar, the login form, is 82946
 	dynamicSize:
-		"Dynamic ArkType is 82.3 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.",
+		"Dynamic ArkType is 83.0 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.",
 	zodSpec: `faster than Zod 4 in ${zodScenarios} we ran`,
 	zodSpeed: `Precompiled ArkType was faster than Zod 4 in ${zodScenarios} of our benchmark, by ${zod.min} to ${zod.max}, and faster than Zod 4's z.compile in ${zodCompiled.wins} of ${zodCompiled.count}${zodCompiledLosses}.`,
 	// the error rows from benchData.json
