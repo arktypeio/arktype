@@ -62,9 +62,13 @@ writeFileSync(
 
 console.log(`🔍 Type checking ${count} examples from the ArkType skill...`)
 
+// Windows spawns pnpm's .cmd shim only through a shell
 const result = spawnSync("pnpm", ["exec", "tsc", "--project", tempDir], {
-	stdio: "inherit"
+	stdio: "inherit",
+	shell: process.platform === "win32"
 })
+
+if (result.error) throw result.error
 
 if (result.status !== 0) {
 	throw new Error(
