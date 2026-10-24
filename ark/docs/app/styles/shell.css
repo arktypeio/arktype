@@ -8,7 +8,7 @@
 	z-index: var(--z-skip);
 	padding: 8px 14px;
 	border-radius: var(--r-sm);
-	background: var(--gold);
+	background: var(--gold-fill);
 	color: var(--on-gold);
 	font-weight: 700;
 }
@@ -309,6 +309,31 @@ html:not([data-mac]) .kbd-mac {
 .tb-icon:hover {
 	color: var(--ink);
 	background: color-mix(in oklab, var(--ink) 6%, transparent);
+}
+
+.tb-theme {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: 36px;
+	height: 36px;
+	margin-left: -14px;
+	border-radius: var(--r-md);
+	color: var(--ink-2);
+	cursor: pointer;
+	transition:
+		color var(--t-micro),
+		background-color var(--t-micro);
+}
+
+.tb-theme:hover {
+	color: var(--ink);
+	background: color-mix(in oklab, var(--ink) 6%, transparent);
+}
+
+.theme-toggle svg {
+	width: 18px;
+	height: 18px;
 }
 
 /* ===== docs grid ===== */
@@ -822,7 +847,7 @@ html:not([data-mac]) .kbd-mac {
 	padding: 4px 12px 12px;
 	background: var(--surface);
 	border-block: 1px solid var(--line);
-	box-shadow: 0 24px 40px -20px rgb(0 0 0 / 0.8);
+	box-shadow: var(--shadow-deep);
 }
 
 .mtoc-list:not([hidden]) {
@@ -890,7 +915,7 @@ dialog.search[open] {
 }
 
 dialog.search::backdrop {
-	background: rgb(3 6 12 / 0.62);
+	background: var(--scrim);
 	-webkit-backdrop-filter: blur(3px);
 	backdrop-filter: blur(3px);
 	animation: fade-in 0.16s ease-out;
@@ -1399,7 +1424,7 @@ dialog.search::backdrop {
 		position: fixed;
 		inset: 0;
 		z-index: var(--z-scrim);
-		background: rgb(3 6 12 / 0.6);
+		background: var(--scrim);
 		opacity: 0;
 		visibility: hidden;
 		transition:

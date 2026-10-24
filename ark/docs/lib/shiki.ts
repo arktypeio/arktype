@@ -5,6 +5,7 @@ import type {
 	ThemeRegistration
 } from "shiki"
 import type { TwoslashOptions } from "twoslash"
+import { withArkLightContrast } from "./arkLight.ts"
 
 /** for some reason a standard import with an attribute like:
 
@@ -19,23 +20,39 @@ like the one above if possible in the future without breaking the build.*/
 
 const require = createRequire(import.meta.url)
 
-export const arkDarkTheme: ThemeRegistration = structuredClone(
-	require("arkthemes/arkdark.json")
-)
 const arkTypePackageJson = require("arkdark/package.json")
 const arkTypeTmJson = require("arkdark/tsWithArkType.tmLanguage.json")
+
+/** VS Code colors braces with editorBracketHighlight, which Shiki doesn't read */
+const withBraces = (theme: ThemeRegistration, color: string) => {
+	theme.tokenColors!.push({
+		scope: ["meta.brace"],
+		settings: { foreground: color }
+	})
+	return theme
+}
+
+export const arkDarkTheme: ThemeRegistration = withBraces(
+	structuredClone(require("arkthemes/arkdark.json")),
+	"#f5cf8f"
+)
 
 /** should match --code-bg in app/styles/tokens.css */
 arkDarkTheme.colors!["editor.background"] = "#060c18"
 
-arkDarkTheme.tokenColors!.push({
-	// this is covered by editorBracketHighlight.foreground1 etc. in VSCode,
-	// but it's not available in Shiki so add a replacement
-	scope: ["meta.brace"],
-	settings: {
-		foreground: "#f5cf8f"
-	}
-})
+export const arkLightTheme: ThemeRegistration = withBraces(
+	withArkLightContrast(structuredClone(require("arkthemes/arklight.json"))),
+	"#844c13"
+)
+
+/** should match --code-bg under ArkLight in app/styles/tokens.css */
+arkLightTheme.colors!["editor.background"] = "#fdfbec"
+
+/** both themes, ArkDark inline and ArkLight in --shiki-light (app/styles/code.css) */
+export const arkThemes = {
+	themes: { dark: "ArkDark", light: "ArkLight" },
+	defaultColor: "dark"
+} as const
 
 /** TypeScript with ArkType's grammar, which highlights inside definition strings */
 export const arkTypeScript: LanguageRegistration = {

@@ -65,7 +65,10 @@ export const SiteFooter = () => (
 		</div>
 		<div className="legal">
 			<span>MIT licensed</span>
-			<span>built with ArkType, ArkDark and Cascadia Code</span>
+			<span>
+				built with ArkType, <span className="only-dark">ArkDark</span>
+				<span className="only-light">ArkLight</span> and Cascadia Code
+			</span>
 		</div>
 	</div>
 )

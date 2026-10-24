@@ -37,9 +37,10 @@ export const RuntimeBenchmarksGraph: React.FC<{ className?: string }> = ({
 			fontWeight: 500,
 			display: "flex",
 			flexDirection: "column",
-			flexGrow: 1
+			flexGrow: 1,
+			color: "var(--ink)"
 		}}
-		className={cx("font-semibold text-white", className)}
+		className={cx("font-semibold", className)}
 	>
 		<figcaption style={{ display: "flex", flexDirection: "row" }}>
 			<span className="text-xl mb-2">Object Validation, Node v23.6.1</span>{" "}
@@ -47,7 +48,7 @@ export const RuntimeBenchmarksGraph: React.FC<{ className?: string }> = ({
 				className="underline ml-2"
 				target="_blank"
 				href="https://moltar.github.io/typescript-runtime-type-benchmarks/"
-				style={{ textDecoration: "underline", color: "#1e90ff" }}
+				style={{ textDecoration: "underline", color: "var(--sky)" }}
 			>
 				(source)
 			</a>

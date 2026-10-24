@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { ThemeToggle } from "../shell/ThemeToggle.tsx"
 import { SearchPill } from "./SearchPill.tsx"
 import { DiscordIcon, GitHubIcon, Logo } from "./icons.tsx"
 
@@ -36,6 +37,7 @@ export const HomeNav = () => (
 				>
 					<DiscordIcon />
 				</a>
+				<ThemeToggle className="icon-btn" />
 			</div>
 		</div>
 	</header>

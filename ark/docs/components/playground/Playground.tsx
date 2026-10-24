@@ -12,11 +12,12 @@ import React, {
 	useState,
 	type RefObject
 } from "react"
+import { useTheme } from "../shell/ThemeToggle.tsx"
 import { setupCompletionProvider } from "./completions.ts"
 import { setupErrorLens } from "./errorLens.ts"
 import { executeCode, type ExecutionResult } from "./execute.ts"
 import { formatEditor } from "./format.ts"
-import { setupTextmateGrammar, theme } from "./highlights.ts"
+import { editorThemes, setupTextmateGrammar } from "./highlights.ts"
 import { setupHoverProvider } from "./hovers.ts"
 import { ParseResult } from "./ParseResult.tsx"
 import { RestoreDefault } from "./RestoreDefault.tsx"
@@ -46,7 +47,8 @@ const setupMonaco = async (
 ): Promise<Monaco.languages.typescript.TypeScriptWorker> => {
 	if (!monacoInitialized) {
 		await onigasmLoaded
-		monaco.editor.defineTheme("arkdark", theme)
+		for (const [name, theme] of Object.entries(editorThemes))
+			monaco.editor.defineTheme(name, theme)
 		if (!tsLanguageServiceInstance) {
 			const ts = await getInitializedTypeScriptService(
 				monaco,
@@ -222,6 +224,7 @@ const PlaygroundEditor = React.memo(
 		shareCode,
 		withResults
 	}: PlaygroundEditorProps) => {
+		const theme = useTheme()
 		const handleChange = useCallback(
 			(code: string | undefined) => {
 				if (code !== undefined) validateNow(code)
@@ -264,7 +267,7 @@ const PlaygroundEditor = React.memo(
 					defaultLanguage="typescript"
 					defaultValue={defaultValue}
 					path={editorFileUri}
-					theme="arkdark"
+					theme={theme === "light" ? "arklight" : "arkdark"}
 					options={{
 						minimap: { enabled: false },
 						scrollBeyondLastLine: false,

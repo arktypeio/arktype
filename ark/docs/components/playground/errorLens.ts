@@ -131,4 +131,7 @@ const styles = `
         color:  ${arkdarkColors.colors["errorLens.errorForeground"]};
         font-style: italic;
     }
+    :root[data-theme="light"] .error-text {
+        color: var(--violet-text);
+    }
 `

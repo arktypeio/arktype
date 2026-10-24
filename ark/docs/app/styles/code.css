@@ -1,5 +1,14 @@
 /* code blocks, result lines, twoslash and the quickinfo */
 
+/* ===== ArkLight =====
+   Code is highlighted with both themes: ArkDark inline, ArkLight in each
+   token's --shiki-light. Ties the result lines below, which win. */
+
+:root[data-theme="light"] pre.shiki,
+:root[data-theme="light"] pre.shiki span[style] {
+	color: var(--shiki-light) !important;
+}
+
 /* ===== frame ===== */
 
 .cb {

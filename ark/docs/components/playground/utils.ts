@@ -22,9 +22,9 @@ export const editorFileUri = "file:///main.ts"
 export type ResultKind = "failure" | "success" | "none"
 
 export const backgroundsByResultKind: Record<ResultKind, string> = {
-	failure: "#17080888",
-	success: "#08161788",
-	none: "#080d17"
+	failure: "color-mix(in oklab, var(--red) 8%, var(--bg))",
+	success: "color-mix(in oklab, var(--teal) 6%, var(--bg))",
+	none: "var(--bg)"
 }
 
 type RequestMap = Map<string, number>

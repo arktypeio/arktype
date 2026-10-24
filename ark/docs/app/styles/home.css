@@ -9,16 +9,8 @@
 	min-height: 100dvh;
 	overflow-x: clip;
 	background:
-		radial-gradient(
-			900px 560px at 80% -6%,
-			rgb(64 143 222 / 0.17),
-			transparent 70%
-		),
-		radial-gradient(
-			760px 460px at 6% -10%,
-			rgb(245 207 143 / 0.075),
-			transparent 70%
-		),
+		radial-gradient(900px 560px at 80% -6%, var(--glow-a), transparent 70%),
+		radial-gradient(760px 460px at 6% -10%, var(--glow-b), transparent 70%),
 		var(--bg);
 	background-repeat: no-repeat;
 	color: var(--ink);
@@ -32,7 +24,7 @@
 		inset: 0;
 		pointer-events: none;
 		z-index: var(--z-grain);
-		opacity: 0.05;
+		opacity: var(--grain);
 		mix-blend-mode: overlay;
 		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 	}
@@ -145,17 +137,17 @@
 		}
 	}
 	.btn-gold {
-		background: var(--gold);
+		background: var(--gold-fill);
 		color: var(--on-gold);
 		border-color: transparent;
 		font-family: var(--mono);
 		font-weight: 600;
 		box-shadow: var(--shadow-cta);
 		&:hover {
-			background: var(--gold-hi);
+			background: var(--gold-fill-hi);
 			box-shadow:
-				0 0 0 4px rgb(245 207 143 / 0.16),
-				0 8px 28px -10px rgb(245 207 143 / 0.6);
+				0 0 0 4px color-mix(in oklab, var(--gold-fill) 16%, transparent),
+				0 8px 28px -10px color-mix(in oklab, var(--gold-fill) 60%, transparent);
 		}
 	}
 	/* idle and done share one grid cell, so a copy button never resizes */
@@ -390,7 +382,7 @@
 		isolation: isolate;
 		background: linear-gradient(
 			180deg,
-			color-mix(in oklab, var(--surface) 92%, var(--blue) 8%),
+			color-mix(in oklab, var(--surface) 92%, var(--tint) 8%),
 			var(--surface)
 		);
 		border: 1px solid var(--rule);
@@ -908,7 +900,7 @@
 		border-radius: var(--r-lg);
 		background: var(--sunk);
 		border: 1px solid var(--line);
-		box-shadow: 0 30px 60px -30px rgb(0 0 0 / 0.8);
+		box-shadow: var(--shadow-deep);
 		overflow: hidden;
 		pre.out {
 			margin: 0;
@@ -1151,11 +1143,11 @@
 		font-size: 12.5px;
 	}
 	.d-del {
-		color: #f5a3a3;
+		color: var(--red-ink);
 		background: color-mix(in oklab, var(--red) 9%, transparent);
 	}
 	.d-add {
-		color: #9ff2e6;
+		color: var(--teal-ink);
 		background: color-mix(in oklab, var(--teal) 9%, transparent);
 	}
 	.t-ok {
@@ -1784,7 +1776,7 @@
 		border: 1px solid var(--rule);
 		background: linear-gradient(
 			180deg,
-			color-mix(in oklab, var(--surface) 90%, var(--blue) 10%),
+			color-mix(in oklab, var(--surface) 90%, var(--tint) 10%),
 			var(--surface) 55%
 		);
 		box-shadow: var(--shadow-card);
@@ -1845,7 +1837,7 @@
 		letter-spacing: -0.045em;
 		font-variant-numeric: tabular-nums;
 		color: var(--gold);
-		text-shadow: 0 0 42px color-mix(in oklab, var(--gold) 28%, transparent);
+		text-shadow: 0 0 42px color-mix(in oklab, var(--gold-glow) 28%, transparent);
 		white-space: nowrap;
 	}
 	.card-unit {
@@ -1917,11 +1909,11 @@
 		.lane-bar {
 			background: linear-gradient(
 				90deg,
-				color-mix(in oklab, var(--gold) 70%, var(--copper)),
-				var(--gold)
+				color-mix(in oklab, var(--gold-fill) 70%, var(--copper)),
+				var(--gold-fill)
 			);
 			box-shadow: 0 0 14px -2px
-				color-mix(in oklab, var(--gold) 55%, transparent);
+				color-mix(in oklab, var(--gold-glow) 55%, transparent);
 		}
 	}
 	/* the speed card: each scenario a dot, at its ratio on a log axis */
@@ -2304,7 +2296,7 @@
 		width: 26px;
 		height: 26px;
 		border-radius: 50%;
-		background: var(--gold);
+		background: var(--gold-fill);
 		color: var(--on-gold);
 		font: 700 13px / 1 var(--mono);
 		box-shadow: 0 0 0 4px color-mix(in oklab, var(--gold) 14%, transparent);
@@ -3095,9 +3087,7 @@
 /* ---------- playground panels ---------- */
 .glass-container,
 .monaco-editor {
-	box-shadow:
-		0 10px 15px 0 rgba(0, 0, 0, 0.3),
-		0 15px 30px 0 rgba(0, 0, 0, 0.22);
+	box-shadow: var(--shadow-panel);
 	backdrop-filter: blur(16px);
 	/* without this Monaco adds a 1px outline at the top of the editor */
 	outline-width: 0px !important;
