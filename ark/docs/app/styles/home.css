@@ -1735,6 +1735,13 @@
 	.lede {
 		max-width: 34ch;
 		margin-bottom: 36px;
+		/* half of body text is too small to see or tap; the glyph already sits high */
+		.star {
+			font-size: 0.9em;
+			font-weight: 700;
+			vertical-align: 0.25em;
+			padding-inline: 0.1em;
+		}
 	}
 	.cmd .comment {
 		color: var(--ink-3);
@@ -2559,7 +2566,7 @@
 		/* the struck phrase's line is drawn in, so it starts as a background */
 		.board-head s {
 			text-decoration-color: transparent;
-			background: linear-gradient(currentColor, currentColor) no-repeat 0 60% /
+			background: linear-gradient(currentColor, currentColor) no-repeat 0 50% /
 				0 0.07em;
 		}
 		.board[data-play] {
