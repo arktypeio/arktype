@@ -6,6 +6,7 @@ import {
 	draftOf,
 	headlineMethod,
 	isPending,
+	leadsEvery,
 	oneBuild,
 	type BarCategory,
 	type Category,
@@ -43,6 +44,11 @@ const Big = ({ value, unit }: { value: string; unit: string }) => {
 		</p>
 	)
 }
+
+/** ArkType's place by best average, the same in every card so "Pick 3" reads at a glance */
+const Place = ({ category }: { category: Category }) => (
+	<Big value={category.place} unit={`of ${category.ranked} libraries`} />
+)
 
 const Head = ({ category }: { category: Category }) => (
 	<header className="card-head">
@@ -94,13 +100,10 @@ const BarCard = ({ category }: { category: BarCategory }) => {
 	const percent = Math.floor((1 - ours.value / valibot.value) * 100)
 	return (
 		<>
-			<Big
-				value={formatRatio(zod.value / ours.value)}
-				unit={`${category.margin} Zod`}
-			/>
+			<Place category={category} />
 			<p className="card-margin">
-				{category.format(ours.value)} against Zod's {category.format(zod.value)}
-				, and <b>{percent}%</b> {category.margin} Valibot
+				<b>{formatRatio(zod.value / ours.value)}</b> {category.margin} Zod and{" "}
+				<b>{percent}%</b> less than Valibot
 			</p>
 			<ol
 				className="race"
@@ -141,13 +144,13 @@ const SpreadCard = ({ category }: { category: SpreadCategory }) => {
 	const [zod] = category.versus
 	return (
 		<>
-			<Big
-				value={`${zod.versus.wins}/${zod.versus.count}`}
-				unit="scenarios faster than Zod"
-			/>
+			<Place category={category} />
 			<p className="card-margin">
-				by <b>{zod.versus.min}</b> to <b>{zod.versus.max}</b>, scenario by
-				scenario
+				<b>
+					{zod.versus.wins}/{zod.versus.count}
+				</b>{" "}
+				scenarios faster than Zod, by <b>{zod.versus.min}</b> to{" "}
+				<b>{zod.versus.max}</b>
 			</p>
 			<ol
 				className="race spread"
@@ -210,10 +213,8 @@ const StandingCard = ({ category }: { category: StandingCategory }) => {
 	const axis = Math.max(...category.standings.map(s => s.score))
 	return (
 		<>
-			<Big value={category.place} unit="by best average" />
-			<p className="card-margin">
-				of {category.ranked} libraries, each result a ratio to the smallest
-			</p>
+			<Place category={category} />
+			<p className="card-margin">each result a ratio to the smallest</p>
 			<ol
 				className="race"
 				aria-label="best average, each result a ratio to the smallest, lower is better"
@@ -247,7 +248,17 @@ const StandingCard = ({ category }: { category: StandingCategory }) => {
 	)
 }
 
-/** each category against Zod and Valibot, every number from lib/claims.ts */
+const pickTwo = "Pick 2."
+
+/** the title's sentences, the trade-off it ends struck out before "Pick 3" */
+const titlePhrases = () => {
+	const phrases = draftOf(claims.boardTitle).split(/(?<=\.) /)
+	return leadsEvery ?
+			[...phrases.slice(0, -1), pickTwo, ...phrases.slice(-1)]
+		:	phrases
+}
+
+/** ArkType's place in each category, then each against Zod and Valibot, every number from lib/claims.ts */
 export const Board = () => (
 	<section
 		className="board"
@@ -258,24 +269,33 @@ export const Board = () => (
 		<div className="board-head">
 			<div className="sec-label">
 				<b>{"//"}</b>
-				against Zod and Valibot
+				every category, across public benchmarks
 			</div>
 			<h2
 				id="board-title"
 				className={isPending(claims.boardTitle) ? "pending-claim" : undefined}
 			>
-				{draftOf(claims.boardTitle)
-					.split(/(?<=\.) /)
-					.map((phrase, i) => (
-						<Fragment key={phrase}>
-							{i > 0 && " "}
-							<span className="phrase" style={{ "--i": i } as CSSProperties}>
-								{phrase}
-							</span>
-						</Fragment>
-					))}
+				{titlePhrases().map((phrase, i) => (
+					<Fragment key={phrase}>
+						{i > 0 && " "}
+						<span
+							className="phrase"
+							style={{ "--i": i } as CSSProperties}
+							aria-hidden={phrase === pickTwo || undefined}
+						>
+							{phrase === pickTwo ?
+								<s>{phrase}</s>
+							:	phrase}
+						</span>
+					</Fragment>
+				))}
 			</h2>
 			{oneBuild && <span className="stamp">one build</span>}
+			{draftOf(claims.boardNextBest) && (
+				<p className="deck">
+					<ClaimText claim={claims.boardNextBest} />
+				</p>
+			)}
 		</div>
 		<div className="cards">
 			{categories.map((category, i) => (

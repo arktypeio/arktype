@@ -22,11 +22,10 @@ import {
 	provenance,
 	type BenchFacts
 } from "../../lib/bench/bench.ts"
-import { claims } from "../../lib/claims.ts"
+import { claims, draftOf } from "../../lib/claims.ts"
 import { defineMetadata } from "../metadata.ts"
 
-const lede =
-	"Write the type you'd write anyway. ArkType precompiles it to just the checks it needs, with no parser shipped, and your agent handles the build: every error says what to change."
+const lede = `${draftOf(claims.headline)} ${draftOf(claims.pickThree)} The build step is your agent's job: every error it reports says what to change.`
 
 const title = "ArkType · TypeScript's 1:1 validator"
 
@@ -263,31 +262,40 @@ export default function HomePage() {
 							>
 								*
 							</a>{" "}
-							<a className="one" href="#agentic">
-								Designed for agentic DX.
+							<a className="one" href="#why">
+								The build step is your agent's job.
 							</a>
 						</h1>
 						<p className="lede rise" style={rise(1)}>
-							Write the <span className="decl c-sky">type</span> you'd write
-							anyway. ArkType precompiles it to just the checks it needs, with
-							no parser shipped, and your{" "}
-							<span className="decl c-teal">agent</span> handles the build:
-							every error says what to change.
+							<ClaimText claim={claims.pickThree} />
+							<a
+								className="star"
+								href="#board-note"
+								aria-label="How we measured"
+							>
+								*
+							</a>{" "}
+							Your <span className="decl c-teal">agent</span> sets up the build,
+							and every error it reports says what to change.
 						</p>
 						<div className="ctas rise" style={rise(2)}>
-							<InstallButton />
-							<a className="btn" href="#migrate">
-								Migrate with one prompt{" "}
-								<span className="arrow down" aria-hidden>
-									↓
-								</span>
-							</a>
-							<Link className="text-link" href="/docs/intro/setup">
-								Read the docs{" "}
+							<Link className="btn btn-gold" href="/docs/intro/setup">
+								Get started{" "}
 								<span className="arrow" aria-hidden>
 									→
 								</span>
 							</Link>
+							<Link className="btn" href="/docs/precompile/setup">
+								Set up precompile
+							</Link>
+							<CopyCommand
+								text="npx skills add arktypeio/arktype"
+								label="Copy the command that adds the ArkType skill to your agent"
+							>
+								<span className="comment"># add the skill to your agent</span>
+								<br />
+								<span className="p">$</span> npx skills add arktypeio/arktype
+							</CopyCommand>
 						</div>
 					</div>
 					<LiveType ghost={ghostStates} arg={liveArg} />
@@ -821,14 +829,14 @@ export default function HomePage() {
 					</div>
 					<div className="ctas">
 						<InstallButton />
-						<Link className="btn" href="/docs/intro/your-first-type">
-							Your first type{" "}
+						<Link className="btn" href="/docs/intro/setup">
+							Get started{" "}
 							<span className="arrow" aria-hidden>
 								→
 							</span>
 						</Link>
-						<Link className="btn" href="/playground">
-							Open the playground
+						<Link className="btn" href="/docs/precompile/setup">
+							Set up precompile
 						</Link>
 					</div>
 					<SiteFooter />
