@@ -54,6 +54,7 @@ import {
 	writeCreatedBeforeConfigureMessage,
 	writtenConfigMessage
 } from "@ark/schema/runtime"
+import { bakedJsonSchemaOptionsMessage } from "arktype/runtime"
 import {
 	packageFiles,
 	runPlain,
@@ -401,6 +402,47 @@ contextualize(function (this: Mocha.Suite) {
 			introspected
 		)
 		attest(run(standalone)).equals(runPlain(introspected))
+	})
+
+	it("esbuild ignores a library's fallback where no fallback writes the schema", async () => {
+		const root = writeFixture(
+			{
+				// as hono-openapi and @orpc/arktype convert a Type they're passed
+				"main.ts": `import { type } from "arktype"
+
+const User = type({ name: "string", "tags?": "string[]" })
+const Event = type({ at: "Date" })
+
+const convert = (t: typeof User | typeof Event, opts: object) => {
+	try {
+		return t.toJsonSchema(opts)
+	} catch (e) {
+		return String(e)
+	}
+}
+
+const date = { date: (ctx: { base: object }) => ({ ...ctx.base, format: "date-time" }) }
+
+console.log(
+	JSON.stringify([
+		convert(User, { fallback: (ctx: { base: object }) => ctx.base }),
+		convert(User, { fallback: date }),
+		convert(Event, { fallback: date })
+	])
+)
+`
+			},
+			fromHere("temp", "fallback")
+		)
+		const standalone = await bundlers.esbuild(
+			{ cwd: root, members: { toJsonSchema: true } },
+			root
+		)
+		const [ignored, ignoredWithDate, needed] = JSON.parse(run(standalone))
+		const [user, userWithDate, event] = JSON.parse(runPlain(root))
+		attest([ignored, ignoredWithDate]).equals([user, userWithDate])
+		attest(event.properties.at).equals({ format: "date-time" })
+		attest(needed).equals(`Error: ${bakedJsonSchemaOptionsMessage}`)
 	})
 
 	it("esbuild writes no NUL into its output", async () => {
