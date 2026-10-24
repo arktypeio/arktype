@@ -7,11 +7,18 @@
  * pending, so nothing unverified reads as a claim.
  */
 
-import { benchFacts, versusLibrary, type LibraryVersus } from "./bench/bench.ts"
+import {
+	benchFacts,
+	formatRatio,
+	versusLibrary,
+	type LibraryVersus
+} from "./bench/bench.ts"
 import {
 	leaderboards,
+	leadDependsOn,
 	leads,
 	resultsOf,
+	rowsOf,
 	type CategoryId,
 	type Standing
 } from "./bench/leaderboard.ts"
@@ -167,6 +174,15 @@ const zodCompiledLosses =
 	:	`. z.compile was faster on ${zodCompiled.losses}`
 const bench = benchFacts()
 
+/** the median of a library's ratios to the default build across the scenarios both ran */
+const medianOf = ({ rows }: LibraryVersus) => {
+	const ratios = rows.map(row => row.speedup).sort((l, r) => l - r)
+	const mid = ratios.length >> 1
+	return formatRatio(
+		ratios.length % 2 ? ratios[mid] : (ratios[mid - 1] + ratios[mid]) / 2
+	)
+}
+
 const valueOf = (chart: BenchmarkChart, name: string) =>
 	chart.bars.find(bar => bar.name === name)!.value!
 
@@ -228,6 +244,62 @@ const listOf = (items: string[]) =>
 	items.length < 2 ?
 		items.join("")
 	:	`${items.slice(0, -1).join(", ")} and ${items.at(-1)}`
+
+/** a category's standing and best average, beside the next best's where ArkType leads, otherwise beside the leader's */
+const averagesOf = (category: CategoryId) => {
+	const { place, score } = placeOf(category)
+	const other = leaderboards[category].standings[place === 1 ? 1 : 0]
+	return `${standingOf(category).standing}: ${score.toFixed(2)} against ${other.library}'s ${other.score.toFixed(2)}.`
+}
+
+/** the benchmarks we wrote, by label; every other suite is another project's */
+const ownSuites = [
+	"the homepage's benchmark",
+	"startup.ts",
+	"the homepage's cold start",
+	"the homepage's apps"
+]
+for (const label of ownSuites) {
+	if (
+		!boardOrder.some(category => leaderboards[category].suites.includes(label))
+	)
+		throw new Error(`No leaderboard has a suite labeled ${label}`)
+}
+
+/** how many of each category's benchmarks are ours */
+const ownedPerCategory = listOf(
+	boardOrder.map(category => {
+		const { suites } = leaderboards[category]
+		return `${suites.filter(label => ownSuites.includes(label)).length} of the ${suites.length} for ${wording[category].measures}`
+	})
+)
+
+/** which leads hold with any one benchmark left out, and which suites the others depend on */
+const leadsWithoutEach = () => {
+	const robust = led.filter(category => !leadDependsOn(category).length)
+	const sentences = led
+		.filter(category => leadDependsOn(category).length)
+		.map(
+			category =>
+				`The ${wording[category].measures} lead doesn't survive leaving out any one of ${listOf(leadDependsOn(category))}.`
+		)
+	if (robust.length) {
+		sentences.unshift(
+			`The ${listOf(robust.map(category => wording[category].measures))} ${robust.length > 1 ? "leads hold" : "lead holds"} with any one benchmark left out.`
+		)
+	}
+	return sentences.join(" ")
+}
+
+/** the size results a library ships less than ArkType on, including the largest bundle ArkType ships if it's one */
+const sizeResultsBeating = (library: string) => {
+	const rows = rowsOf("size")
+	const largest = rows.reduce((l, r) => (r.ArkType > l.ArkType ? r : l))
+	const count = rows.filter(
+		results => results[library] < results.ArkType
+	).length
+	return `${count} of the ${rows.length} size results${largest[library] < largest.ArkType ? ", including the largest bundle we measured" : ""}`
+}
 
 const size = placeOf("size")
 // the library after ArkType where it leads, otherwise the leader
@@ -325,7 +397,21 @@ export const claims = {
 		"On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than ajv, Valibot, Typia, Zod Mini, Zod, compiled Zod or TypeBox, in all 20 paired runs on Node 24.",
 	// speedChart and H1
 	parseSafe:
-		"On moltar's parseSafe benchmark, precompiled ArkType takes the fewest instructions per call, and by wall clock it was faster than each of the six libraries closest to it, Typia among them, in at least 28 of 30 paired runs."
+		"On moltar's parseSafe benchmark, precompiled ArkType takes the fewest instructions per call, and by wall clock it was faster than each of the six libraries closest to it, Typia among them, in at least 28 of 30 paired runs.",
+	// the blog post's answer to "pick 2", a line per category
+	speedAverage: averagesOf("speed"),
+	startupAverage: averagesOf("startup"),
+	sizeAverage: averagesOf("size"),
+	// size is the narrow lead: 1.355 against Valibot's 1.405 at 808927feb, and
+	// it doesn't survive leaving out the form, schemabenchmarks.dev or Sury
+	sizeClose: `Size is the close one: ${sizeRival.library} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}, and ArkType's lead is in the average.`,
+	// public isn't independent: which of the averages' benchmarks are ours
+	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory}; the rest are other projects'.`,
+	// the leads that depend on a single benchmark, and which: at 808927feb,
+	// only size's, on the form, schemabenchmarks.dev or Sury
+	leaveOneOut: leadsWithoutEach(),
+	// the middle of zodSpeed's range
+	zodMedian: `The median was ${medianOf(zod)} against Zod 4 and ${medianOf(zodCompiled)} against z.compile.`
 } satisfies Record<string, Claim<string>>
 
 export type ClaimId = keyof typeof claims
@@ -351,6 +437,9 @@ if (!isPending(claims.headline)) {
 	for (const category of headlineCategories)
 		assertLeads(category, "The headline")
 }
+
+// the blog post answers "pick 2" with all three
+for (const category of boardOrder) assertLeads(category, "The blog post")
 
 /** the libraries the board compares against: with ArkType, the two that wrote Standard Schema */
 const isRival = (bar: BenchmarkBar) => /^(Valibot|Zod)\b/.test(bar.name)
