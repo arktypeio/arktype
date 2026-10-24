@@ -134,6 +134,33 @@ contextualize(() => {
 		attest(js.includes("var Team =")).equals(false)
 	})
 
+	it("writes a function its one call passes its parameters where it's called", async () => {
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const Discount = type({ discount: "number > 0 | null" })
+
+for (const discount of [0, "0", null]) {
+	const out = Discount({ discount })
+	console.log(out instanceof type.errors ? out.summary : "valid")
+}
+`
+			},
+			fromHere("temp", "flatInlined")
+		)
+		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
+		const [js] = await bundle({}, options)
+		const [whole] = await bundle({ prune: false }, options)
+		attest(run(js)).snap(`discount must be positive
+discount must be a number or null
+valid
+`)
+		attest(run(js)).equals(run(whole))
+		// each branch's Apply is its case of the union's
+		attest(js.match(/case "(?:number|null)": {/g)?.length).equals(2)
+	})
+
 	it("keeps each unit a module of its own with prune: false", async () => {
 		const [whole] = await bundle({ prune: false })
 		attest(factoryParam.test(whole)).equals(true)
@@ -261,6 +288,53 @@ return [[dateAllows], [unit0Allows], [unit1Allows], [unit2Allows], [unit3Allows,
 })()
 
 export { date, unit0, unit1, unit2, unit3 }
+`)
+	})
+
+	it("writes in place a once-called function its function declares last", () => {
+		const unit = `import * as runtime from "arktype/runtime"
+
+const unit = /* @__PURE__ */ ((unitR0) => {
+const unitAllows = (data => unitR0(data))
+const unitApply = (data, ctx) => {
+	if (unitR0(data)) return true
+	return unitFails(data, ctx)
+}
+const unitFails = (data, ctx) => {
+	return !ctx.failsAt(runtime.siteOf("proto", "a Date"), data)
+}
+return [unitAllows, unitApply]
+})(runtime.isValidDate)
+
+export { unit }`
+		const flat = flattenBundle(
+			{
+				"site.js": `import { unit } from "~arktype/unit"\n\nexport const read = unit`
+			},
+			{ "~arktype/unit": unit },
+			new Map([["site.js", true]]),
+			false
+		)!
+		const [code] = Object.entries(flat.modules).flatMap(([specifier, code]) =>
+			specifier === "~arktype/unit" ? [] : [code]
+		)
+		attest(code).snap(`import * as runtime from "arktype/runtime"
+
+const unit = (() => {
+const unitR0 = runtime.isValidDate
+
+const unitAllows = (data => unitR0(data))
+const unitApply = (data, ctx) => {
+	if (unitR0(data)) return true
+	{
+	return !ctx.failsAt(runtime.siteOf("proto", "a Date"), data)
+}
+}
+
+return [unitAllows, unitApply]
+})()
+
+export { unit }
 `)
 	})
 

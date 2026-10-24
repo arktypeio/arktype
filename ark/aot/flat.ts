@@ -1082,7 +1082,7 @@ const writeFlat = (
 			// kept code reads what it returns, so a bundler keeps its call, and
 			// annotations saying it could drop it are bytes oxc's minifier keeps
 			const declaration = `const ${read.length === 1 ? read[0] : `[${read.join(", ")}]`} = (() => {
-${withoutAnnotations(inGzipOrder(withoutUnread(withoutForwarders(body, returned), returned)))}
+${withoutAnnotations(inGzipOrder(withoutUnread(withCallsInlined(withoutForwarders(body, returned), returned), returned)))}
 return ${returned}
 })()`
 			return asModule ?
@@ -1148,13 +1148,7 @@ const forwardedOf = (node: Node, scopes: ModuleScopes): Binding | undefined => {
 	if (
 		call?.type !== "CallExpression" ||
 		call.callee.type !== "Identifier" ||
-		call.arguments.length !== fn.params.length ||
-		!fn.params.every(
-			(param, i) =>
-				param.type === "Identifier" &&
-				call.arguments[i].type === "Identifier" &&
-				(call.arguments[i] as { name: string }).name === param.name
-		)
+		!passesParams(call, fn)
 	)
 		return
 	const target = scopes.refsById.get(call.callee)?.binding
@@ -1162,6 +1156,93 @@ const forwardedOf = (node: Node, scopes: ModuleScopes): Binding | undefined => {
 			target
 		:	undefined
 }
+
+// a function the units declare whose one read is a call passing its own
+// parameters, e.g. a union branch's Apply, is its body where it's called:
+// its expression, or its statements where the call is returned and they end
+// in a return. Each other name it reads is one declared once, so the same
+// where it's called
+const withCallsInlined = (body: string, returned: string): string => {
+	for (;;) {
+		const code = `${body}\n;${returned}`
+		const { program } = parseSync("units.js", code, {
+			sourceType: "module",
+			preserveParens: false
+		})
+		const scopes = new ModuleScopes(program)
+		const declared = new Map<string, number>()
+		for (const { name } of scopes.bindingsById.values())
+			declared.set(name, (declared.get(name) ?? 0) + 1)
+		const readsAlike = (fn: Node) =>
+			scopes.references.every(
+				({ id, binding }) =>
+					id.start < fn.start ||
+					id.end > fn.end ||
+					(binding?.declaration === fn ? !binding.writes.length
+					: binding && binding.id.start > fn.start && binding.id.end < fn.end ?
+						binding.kind !== "var"
+					:	(declared.get(id.name) ?? 0) <= 1)
+			)
+		const s = new MagicString(code)
+		for (const statement of program.body as Node[]) {
+			if (statement.type !== "VariableDeclaration") continue
+			const { declarations } = statement
+			for (const [i, { id, init }] of declarations.entries()) {
+				const fn = init && unwrapParentheses(init)
+				const references = scopes.bindingsById.get(id)?.references ?? []
+				const call = references[0]?.id.parent
+				if (
+					fn?.type !== "ArrowFunctionExpression" ||
+					fn.async ||
+					references.length !== 1 ||
+					call?.type !== "CallExpression" ||
+					call.callee !== references[0].id ||
+					(call.start > fn.start && call.end < fn.end) ||
+					!passesParams(call, fn) ||
+					!readsAlike(fn)
+				)
+					continue
+				const [replaced, text] =
+					fn.body.type !== "BlockStatement" ?
+						[call, `(${code.slice(fn.body.start, fn.body.end)})`]
+					: (
+						call.parent?.type === "ReturnStatement" &&
+						fn.body.body[fn.body.body.length - 1]?.type === "ReturnStatement"
+					) ?
+						[call.parent, code.slice(fn.body.start, fn.body.end)]
+					:	[]
+				if (!replaced) continue
+				s.overwrite(replaced.start, replaced.end, text!)
+				if (declarations.length === 1)
+					s.remove(statement.start, statementEndIn(body, statement))
+				else if (i < declarations.length - 1)
+					s.remove(declarations[i].start, declarations[i + 1].start)
+				else s.remove(declarations[i - 1].end, declarations[i].end)
+				break
+			}
+			if (s.hasChanged()) break
+		}
+		if (!s.hasChanged()) return body
+		body = s.toString().slice(0, -returned.length - 2)
+	}
+}
+
+// a statement's end in a body a pass parses with what it returns after a `;`,
+// which the last statement's span takes in
+const statementEndIn = (body: string, statement: Node): number =>
+	Math.min(statement.end, body.length)
+
+const passesParams = (
+	call: Node & { type: "CallExpression" },
+	fn: Node & { type: "ArrowFunctionExpression" }
+) =>
+	call.arguments.length === fn.params.length &&
+	fn.params.every(
+		(param, i) =>
+			param.type === "Identifier" &&
+			call.arguments[i].type === "Identifier" &&
+			(call.arguments[i] as { name: string }).name === param.name
+	)
 
 // what a function declares that nothing reads, which a bundler keeps as it
 // drops only a module's declarations, left out, as is what only it read
@@ -1188,12 +1269,13 @@ const withoutUnread = (body: string, returned: string): string => {
 					(!declarator.init || isPureExpression(declarator.init, code))
 				)
 			})
-			if (unread.every(Boolean)) s.remove(statement.start, statement.end)
+			if (unread.every(Boolean))
+				s.remove(statement.start, statementEndIn(body, statement))
 			else if (unread.some(Boolean)) {
 				const kept = declarations.filter((_, i) => !unread[i])
 				s.overwrite(
 					statement.start,
-					statement.end,
+					statementEndIn(body, statement),
 					`${statement.kind} ${kept.map(d => code.slice(d.start, d.end)).join(", ")}`
 				)
 			}
