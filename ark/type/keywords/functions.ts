@@ -2,6 +2,7 @@ import type { ArkError, Locale, Traversal } from "@ark/schema"
 import {
 	FileConstructor,
 	hasOwn,
+	iso8601Matcher,
 	printable,
 	type Fn,
 	type Json
@@ -78,9 +79,6 @@ const dateParseError = /* @__PURE__ */ keywordError(
 
 export const parseDate = (s: string, ctx: Traversal): Date | ArkError =>
 	readDate(s) ?? ctx.error(dateParseError)
-
-export const iso8601Matcher =
-	/^[+-]?\d{4}(?!\d{2}\b)(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\1(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?:T(?:(?:(?:[01]\d|2[0-3])(?:(:?)[0-5]\d)?|24:?00)(?:[,.]\d+(?!:))?)?(?:\2[0-5]\d(?:[,.]\d+)?)?(?:[Zz]|[+-](?:[01]\d|2[0-3]):?(?:[0-5]\d)?)?)?)?$/
 
 // a date that doesn't exist, like 2025-02-29, isn't an ISO 8601 date either
 const isoDateParseError = /* @__PURE__ */ keywordError(

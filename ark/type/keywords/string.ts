@@ -10,7 +10,11 @@ import {
 import {
 	cached,
 	flatMorph,
+	ipv4Matcher,
+	ipv6Matcher,
+	iso8601Matcher,
 	numericStringMatcher,
+	uuidMatcher,
 	wellFormedIntegerMatcher,
 	type Json
 } from "@ark/util"
@@ -24,7 +28,6 @@ import {
 	isLuhnValid,
 	isParsableDate,
 	isParsableUrl,
-	iso8601Matcher,
 	isRegexPattern,
 	lowercaseString,
 	normalizationsByForm,
@@ -238,10 +241,6 @@ export type DateOptions = {
 	format?: DateFormat
 }
 
-// ISO 8601 date/time modernized from https://github.com/validatorjs/validator.js/blob/master/src/lib/isISO8601.js
-// Based on https://tc39.es/ecma262/#sec-date-time-string-format, the T
-// delimiter for date/time is mandatory. Regex from validator.js strict matcher:
-// only the two groups its backreferences read capture
 export { iso8601Matcher }
 
 type ParsedDayParts = {
@@ -402,31 +401,6 @@ const email = () =>
 		"string.email",
 		{ format: "email" }
 	)
-
-// based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
-const ipv4Segment = "(?:(?:[1-9]|1\\d|2[0-4])?\\d|25[0-5])"
-const ipv4Address = `(${ipv4Segment}\\.){3}${ipv4Segment}`
-const ipv4Matcher = new RegExp(`^${ipv4Address}$`)
-
-// an address ends in two segments or an IPv4 address unless "::" ends it or
-// precedes its last segment. Before those, a full address has 6 segments and
-// a compressed one at most 5 around its "::". V8 compiles a copy of a
-// non-capturing group per repetition when there are few, so those capture
-const ipv6Segment = "[\\dA-Fa-f]{1,4}"
-const ipv6Matcher = new RegExp(
-	"^(?:(?:" +
-		`(?:${ipv6Segment}:){6}|` +
-		`::(?:${ipv6Segment}:){0,5}|` +
-		`${ipv6Segment}::(?:${ipv6Segment}:){0,4}|` +
-		`(${ipv6Segment}:){2}:(${ipv6Segment}:){0,3}|` +
-		`(${ipv6Segment}:){3}:(${ipv6Segment}:){0,2}|` +
-		`(?:${ipv6Segment}:){4}:(${ipv6Segment}:)?|` +
-		`(?:${ipv6Segment}:){5}:` +
-		`)(?:${ipv6Segment}:${ipv6Segment}|${ipv4Address})|` +
-		`(?:(${ipv6Segment}:){1,6}|:):[\\dA-Fa-f]{0,4}|` +
-		`(?:${ipv6Segment}:){7}:` +
-		")(%[\\d.A-Za-z]+)?$"
-)
 
 export const ip: ip.module = keywordModule(
 	{
@@ -817,7 +791,7 @@ export const uuid: uuid.module = keywordModule(
 		root: [
 			// one pattern rather than a union with the nil and max literals, which
 			// as an index signature's key would make them required keys
-			/^(?:[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-[1-8][\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}|0{8}-(?:0{4}-){3}0{12}|f{8}-(?:f{4}-){3}f{12})$/,
+			uuidMatcher,
 			"@",
 			{ ...keywordMeta("string.uuid"), format: "uuid" }
 		],
