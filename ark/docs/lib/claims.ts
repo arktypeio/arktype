@@ -186,9 +186,6 @@ const medianOf = ({ rows }: LibraryVersus) => {
 	)
 }
 
-const valueOf = (chart: BenchmarkChart, name: string) =>
-	chart.bars.find(bar => bar.name === name)!.value!
-
 const ordinal = (n: number) =>
 	n % 10 === 1 && n % 100 !== 11 ? `${n}st`
 	: n % 10 === 2 && n % 100 !== 12 ? `${n}nd`
@@ -308,18 +305,13 @@ const size = placeOf("size")
 // the library after ArkType where it leads, otherwise the leader
 const sizeRival = leaderboards.size.standings[size.place === 1 ? 1 : 0]
 
-/** the library with the best average after ArkType's, in each category it leads */
-const nextBest = led.map(
-	category => leaderboards[category].standings[1].library
-)
-
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
 	// each superlative names a category ArkType must have the best average in
 	// (lib/bench/leaderboard.ts), as headlineCategories below checks. Size is
 	// the narrow one: 1.355 against Valibot's 1.405 at 808927feb
 	headline: "TypeScript's smallest, fastest validator.",
-	headlineNote: `*Best average across public benchmarks, each result a ratio to the best: ${leaderboards.speed.rows} results for validation speed, ${leaderboards.startup.rows} for startup and ${leaderboards.size.rows} for bundle size.`,
+	headlineNote: `Ranked by best average across public benchmarks, each result a ratio to the best: ${leaderboards.speed.rows} results for validation speed, ${leaderboards.startup.rows} for startup and ${leaderboards.size.rows} for bundle size.`,
 	// the fastest and the smallest builds differ: optimize "size" makes the
 	// product schema's valid data 2.2x slower
 	buildChoice:
@@ -368,10 +360,10 @@ export const claims = {
 	// MCP SDK v1
 	zodMigration:
 		"With the skill, one prompt fully migrated 4 of 10 open-source Zod projects we picked by stars before running it: typecheck and tests pass, Zod is gone, generated inputs get the same results and no casts were added.",
-	// the hero's second sentence states a lead in every category, so
-	// pickThreeCategories below checks each, and that one build holds them
-	pickThree:
-		"Validators made you choose between fast, small and quick to start. Precompiled with its defaults, ArkType leads all three.",
+	// the hero's third superlative, after the headline's two: with them it
+	// says ArkType leads every category, so the blog post's check below holds
+	// each lead, and the one after oneBuild that one build holds them all
+	pickThree: "Quickest to start, too.",
 	// the homepage board's title: "Pick 3" only while ArkType leads every
 	// category, otherwise a phrase per category it leads on average: runs
 	// faster, starts lighter (instructions rather than time), ships less
@@ -379,26 +371,8 @@ export const claims = {
 		leadsEvery ?
 			"Fast. Small. Quick to start. Pick 3."
 		:	led.map(category => wording[category].phrase).join(" "),
-	// that no other library is a close second everywhere: only while a
-	// different one has the best average after ArkType's in each category
-	boardNextBest:
-		leadsEvery && new Set(nextBest).size === nextBest.length ?
-			`Behind ArkType, the best average is a different library's in each: ${listOf(led.map((category, i) => `${nextBest[i]} for ${wording[category].measures}`))}.`
-		:	"",
-	// the board's subtitle, shown only while one build holds every category
-	// (Board checks oneBuild, below)
-	boardOneBuild:
-		"Every result from the default build — no tuning per benchmark.",
 	// what the board's superlatives average
-	boardNote: `*Best average across public benchmarks, each result a ratio to the best: ${listOf(led.map((category, i) => `${leaderboards[category].rows}${i ? "" : " results"} for ${wording[category].measures}`))}.`,
-	// the board's size standing, a lead only where the average says so
-	sizeStanding:
-		size.place === 1 ?
-			`The default build has the best average bundle size, ${size.score.toFixed(2)}, against ${sizeRival.library}'s ${sizeRival.score.toFixed(2)}.`
-		:	`${sizeRival.library} has the best average bundle size, ${sizeRival.score.toFixed(2)}, against the default build's ${size.score.toFixed(2)}.`,
-	// startupChart against Zod and Valibot alone: fewer than each of them in
-	// 20 of 20 rounds on Node 24, on the login app and on the form
-	startupVersus: `On the homepage's login app, precompiled ArkType takes ${valueOf(startupChart, "ArkType (precompiled)")}M instructions from import to its first validation, beyond loading an empty module, against Valibot's ${valueOf(startupChart, "Valibot")}M, Zod Mini's ${valueOf(startupChart, "Zod Mini")}M, Zod's ${valueOf(startupChart, "Zod")}M and compiled Zod's ${valueOf(startupChart, "Zod (compiled)")}M: fewer than each in all 20 paired runs on Node 24.`,
+	boardNote: `Ranked by best average across public benchmarks, each result a ratio to the best: ${listOf(led.map((category, i) => `${leaderboards[category].rows}${i ? "" : " results"} for ${wording[category].measures}`))}.`,
 	// startupChart; the form is 1.04M vs Valibot's 2.37M, 20 of 20
 	startupLogin:
 		"On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than ajv, Valibot, Typia, Zod Mini, Zod, compiled Zod or TypeBox, in all 20 paired runs on Node 24.",
@@ -462,9 +436,8 @@ type CategoryBase = {
 	ranked: number
 	/** where ArkType's best average places it */
 	standing: string
-	/** whether the standing is a superlative, footnoted by the board's note */
+	/** whether ArkType has the best average, checked on the board */
 	leads: boolean
-	claim: Claim<string>
 	source: BenchmarkChart["source"]
 }
 
@@ -496,7 +469,7 @@ export type StandingCategory = CategoryBase & {
 
 export type Category = BarCategory | SpreadCategory | StandingCategory
 
-/** ArkType, Zod and Valibot, and the library the board's deck names as the category's runner-up */
+/** ArkType, Zod and Valibot, and the library with the next best average */
 const onBoard = (chart: BenchmarkChart, runnerUp: string) =>
 	chart.bars.filter(
 		bar => bar.kind === "precompiled" || isRival(bar) || bar.name === runnerUp
@@ -515,7 +488,6 @@ export const categories: Category[] = [
 			{ name: "Zod Mini", versus: versusLibrary("zodMini") },
 			{ name: "Valibot", versus: versusLibrary("valibot") }
 		],
-		claim: claims.zodSpeed,
 		source: { label: "the benchmark below", href: "#run" }
 	},
 	{
@@ -527,7 +499,6 @@ export const categories: Category[] = [
 		unit: "million instructions",
 		format: n => `${n}M`,
 		margin: "less startup work than",
-		claim: claims.startupVersus,
 		source: startupChart.source
 	},
 	{
@@ -539,12 +510,11 @@ export const categories: Category[] = [
 			0,
 			Math.max(5, size.place + 1)
 		),
-		claim: claims.sizeStanding,
 		source: headlineMethod
 	}
 ]
 
-/** whether one build holds every category, the only time the board may say so */
+/** whether one build holds every category, as "Pick 3" implies without saying */
 export const oneBuild = new Set(categories.map(c => c.build)).size === 1
 
 // the blog post's assert above already holds every category's lead

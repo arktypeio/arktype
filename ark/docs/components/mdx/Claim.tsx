@@ -27,13 +27,8 @@ export const Claim = ({ id }: { id: ClaimId }) => (
 	<ClaimText claim={claims[id]} />
 )
 
-/** the headline, its asterisk linking the note that scopes it */
-export const Headline = () => (
-	<>
-		<ClaimText claim={claims.headline} />
-		<a href="#headline-note">*</a>
-	</>
-)
+/** the headline, as claims.ts states and guards it */
+export const Headline = () => <ClaimText claim={claims.headline} />
 
 /** what the headline's superlatives average, linking the rule */
 export const HeadlineNote = ({ className }: { className?: string }) => (

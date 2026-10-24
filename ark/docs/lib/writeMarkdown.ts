@@ -150,7 +150,7 @@ const llmsIndex = (sections: Section[]) => {
 	return (
 		[
 			"# ArkType",
-			`> ${tagline}*`,
+			`> ${tagline}.`,
 			`${draftOf(claims.headlineNote)} [${headlineMethod.label}](${headlineMethod.href})`,
 			"ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. @ark/aot precompiles them when a project builds, so its validators ship without arktype's parser. ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.",
 			`Each link below is a docs page as Markdown. [llms-full.txt](${siteUrl}/llms-full.txt) has every ArkType page in one file. Coding agents can also install the ArkType skill, which covers writing, precompiling and migrating to ArkType, with \`npx skills add arktypeio/arktype\`; see [Agents](${siteUrl}/docs/agents.md).`,

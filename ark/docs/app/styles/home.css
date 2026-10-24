@@ -1722,28 +1722,20 @@
 			margin: 0;
 		}
 	}
-	.hero .star {
-		display: inline-block;
-		margin-left: 0.04em;
-		font-size: 0.5em;
-		vertical-align: 0.7em;
-		line-height: 0;
-		color: var(--copper);
+	.lede {
+		max-width: 34ch;
+		margin-bottom: 36px;
+	}
+	/* an invitation to check the numbers, quiet beside the claim it backs */
+	.how {
+		margin-left: 0.6ch;
+		font: 400 0.62em / 1 var(--mono);
+		color: var(--ink-3);
+		white-space: nowrap;
 		text-decoration: none;
 		transition: color var(--t-micro);
 		&:hover {
 			color: var(--gold);
-		}
-	}
-	.lede {
-		max-width: 34ch;
-		margin-bottom: 36px;
-		/* half of body text is too small to see or tap; the glyph already sits high */
-		.star {
-			font-size: 0.9em;
-			font-weight: 700;
-			vertical-align: 0.25em;
-			padding-inline: 0.1em;
 		}
 	}
 	.cmd .comment {
@@ -1815,7 +1807,7 @@
 		position: relative;
 		display: grid;
 		grid-template-rows: subgrid;
-		grid-row: span 7;
+		grid-row: span 6;
 		align-content: start;
 		min-width: 0;
 		padding: 22px 22px 18px;
@@ -1862,27 +1854,8 @@
 			height: 13px;
 		}
 	}
-	.card-build {
-		margin-left: auto;
-		padding: 3px 9px;
-		border-radius: var(--r-pill);
-		border: 1px solid var(--line);
-		color: var(--ink-2);
-		font-size: 11.5px;
-		white-space: nowrap;
-	}
 	.card-label {
 		font: inherit;
-	}
-	.card-standing {
-		flex-basis: 100%;
-		margin: 2px 0 0;
-		font: 600 13px / 1.4 var(--sans);
-		color: var(--ink);
-		a {
-			color: var(--gold);
-			text-decoration: none;
-		}
 	}
 	.board-note {
 		margin: 18px 0 0;
@@ -2145,14 +2118,6 @@
 	}
 	.card-foot {
 		align-self: end;
-	}
-	.card-claim {
-		margin: 18px 0 0;
-		padding-top: 14px;
-		border-top: 1px solid var(--rule-soft);
-		font-size: 13.5px;
-		line-height: 1.5;
-		color: var(--ink-2);
 	}
 	.card-src {
 		justify-self: start;

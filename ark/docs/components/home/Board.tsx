@@ -7,7 +7,6 @@ import {
 	headlineMethod,
 	isPending,
 	leadsEvery,
-	oneBuild,
 	type BarCategory,
 	type Category,
 	type SpreadCategory,
@@ -122,31 +121,21 @@ const Head = ({ category }: { category: Category }) => (
 		<h3 id={`card-${category.id}`} className="card-label">
 			{category.label}
 		</h3>
-		<span className="card-build">{category.build}</span>
-		<p className="card-standing">
-			{category.standing}
-			{category.leads && <a href="#board-note">*</a>}
-		</p>
 	</header>
 )
 
 const Foot = ({ category }: { category: Category }) => (
-	<>
-		<p className="card-claim">
-			<ClaimText claim={category.claim} />
-		</p>
-		<footer className="card-foot">
-			<a
-				className="card-src"
-				href={category.source.href}
-				{...(category.source.href.startsWith("#") ?
-					{}
-				:	{ target: "_blank", rel: "noreferrer" })}
-			>
-				{category.source.label}
-			</a>
-		</footer>
-	</>
+	<footer className="card-foot">
+		<a
+			className="card-src"
+			href={category.source.href}
+			{...(category.source.href.startsWith("#") ?
+				{}
+			:	{ target: "_blank", rel: "noreferrer" })}
+		>
+			{category.source.label}
+		</a>
+	</footer>
 )
 
 const BarCard = ({ category }: { category: BarCategory }) => {
@@ -363,7 +352,7 @@ export const Board = () => (
 		<div className="board-head">
 			<div className="sec-label">
 				<b>{"//"}</b>
-				every category, across public benchmarks
+				the scoreboard
 			</div>
 			<h2
 				id="board-title"
@@ -384,12 +373,6 @@ export const Board = () => (
 					</Fragment>
 				))}
 			</h2>
-			{(oneBuild || draftOf(claims.boardNextBest)) && (
-				<p className="deck">
-					{oneBuild && <ClaimText claim={claims.boardOneBuild} />}{" "}
-					<ClaimText claim={claims.boardNextBest} />
-				</p>
-			)}
 		</div>
 		<div className="cards">
 			{categories.map((category, i) => (

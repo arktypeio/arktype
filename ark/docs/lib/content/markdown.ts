@@ -335,7 +335,7 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 				:	[paragraph(text)]
 		}
 		case "Headline": {
-			const text = `${claimMarkdown(claims.headline)}*`
+			const text = claimMarkdown(claims.headline)
 			return node.type === "mdxJsxTextElement" ?
 					[{ type: "text", value: text }]
 				:	[paragraph(text)]

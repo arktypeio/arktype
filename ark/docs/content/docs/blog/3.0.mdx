@@ -1,6 +1,6 @@
 ---
 title: Announcing ArkType 3.0
-description: Fast, small and quick to start, from one build. The build step is your agent's job.
+description: "Fast, small and quick to start: pick 3. The build step is your agent's job."
 ogImage: blog/3.0.png
 date: 2026-10-21 # the release sets this, and blog/index.mdx's date, to the day it publishes
 ---
@@ -13,15 +13,7 @@ We recently asked which of the three you care about most. Trick question.
 
 Pick 3.
 
-**<Headline />** Precompiled with its defaults, one ArkType build leads all three:
-
-- ⚡ <Claim id="speedAverage" />
-- 🧊 <Claim id="startupAverage" />
-- 📦 <Claim id="sizeAverage" />
-
-Each score divides a library's results by the best on each row, then takes the geometric mean per benchmark and across them, so lower is better. <Claim id="sizeClose" /> [The numbers](#the-numbers) shows which leads depend on a single benchmark, and [what it costs](#what-it-costs) what the default build leaves out.
-
-<HeadlineNote />
+**<Headline />** <Claim id="pickThree" /> [How we measured ↓](#the-numbers)
 
 If speed was never your issue, you're in good company. We hear that a lot, and it's fair: ArkType was always about the DX. Definitions read like the types you'd write anyway, `tsc` checks them as you type and errors say what went wrong.
 
@@ -110,10 +102,18 @@ Below is everything else that's new. If you're upgrading, [Upgrading](/docs/upgr
 
 ## The numbers
 
+- ⚡ <Claim id="speedAverage" />
+- 🧊 <Claim id="startupAverage" />
+- 📦 <Claim id="sizeAverage" />
+
+Each score divides a library's results by the best on each row, then takes the geometric mean per benchmark and across them, so lower is better. <Claim id="sizeClose" />
+
+<HeadlineNote />
+
 - <Claim id="benchmarkOwners" />
 - <Claim id="leaveOneOut" />
 
-Each result below is scoped to one benchmark and one build, and [Speed and size](/docs/precompile#speed-and-size) charts them.
+Each result below is scoped to a single benchmark, and [Speed and size](/docs/precompile#speed-and-size) charts them.
 
 - <Claim id="zodSpeed" /> <Claim id="zodMedian" />
 - <Claim id="speedScope" />

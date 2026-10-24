@@ -258,29 +258,18 @@ export default function HomePage() {
 							</Link>
 						</div>
 						<h1 id="hero-title" className="rise-fade is-long">
-							<ClaimText claim={claims.headline} />
-							<a
-								className="star"
-								href="#headline-note"
-								aria-label="How we measured"
-							>
-								*
-							</a>{" "}
+							<ClaimText claim={claims.headline} />{" "}
 							<a className="one" href="#why">
 								The build step is your agent's job.
 							</a>
 						</h1>
 						<p className="lede rise" style={rise(1)}>
-							<ClaimText claim={claims.pickThree} />
-							<a
-								className="star"
-								href="#board-note"
-								aria-label="How we measured"
-							>
-								*
-							</a>{" "}
-							Your <span className="decl c-teal">agent</span> sets up the build,
-							and every error it reports says what to change.
+							<ClaimText claim={claims.pickThree} /> Your{" "}
+							<span className="decl c-teal">agent</span> sets up the build, and
+							every error it reports says what to change.
+							<a className="how" href="#board-note">
+								how we measured ↓
+							</a>
 						</p>
 						<div className="ctas rise" style={rise(2)}>
 							<Link className="btn btn-gold" href="/docs/intro/setup">
