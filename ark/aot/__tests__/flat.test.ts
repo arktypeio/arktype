@@ -112,6 +112,22 @@ contextualize(() => {
 		attest(js.includes("__PURE__")).equals(false)
 	})
 
+	it("creates in the function a validator whose creator nothing else calls", async () => {
+		const contents = `import { Team } from "./types.ts"\n\nconsole.log(Team({ lead: {}, members: [] }).summary)\n`
+		const [js] = await bundle(
+			{},
+			{ stdin: { contents, resolveDir: root, loader: "ts" } }
+		)
+		const [whole] = await bundle(
+			{ prune: false },
+			{ stdin: { contents, resolveDir: root, loader: "ts" } }
+		)
+		attest(run(js)).snap("lead.email is missing\nlead.name is missing\n")
+		attest(run(js)).equals(run(whole))
+		attest(js.includes("{ 0: allows")).equals(false)
+		attest(js.includes("var Team =")).equals(false)
+	})
+
 	it("keeps each unit a module of its own with prune: false", async () => {
 		const [whole] = await bundle({ prune: false })
 		attest(factoryParam.test(whole)).equals(true)

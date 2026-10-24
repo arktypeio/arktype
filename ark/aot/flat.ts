@@ -49,17 +49,35 @@ export const flattenBundle = (
 	}
 	for (const id in sites) parsed.set(id, new SourceModule(id, sites[id], id))
 	if ([...parsed.values()].some(module => module.parseErrors.length)) return
-	const kept = new KeptCode(parsed)
-	for (const id in sites) kept.keepRead(parsed.get(id)!, imported.get(id))
-	for (const specifier in modules) kept.keepRead(parsed.get(specifier)!)
+	const keptIn = (skipped?: ReadonlyMap<SourceModule, Creation[]>) => {
+		const kept = new KeptCode(parsed, skipped)
+		for (const id in sites) kept.keepRead(parsed.get(id)!, imported.get(id))
+		for (const specifier in modules) kept.keepRead(parsed.get(specifier)!)
+		return kept
+	}
+	const kept = keptIn()
 	const units = unitsOf(modules, parsed, kept)
 	if (!units) return
-	const flat = writeFlat(units)
+	const creationsBySite = creationsIn(sites, parsed, units, kept)
+	const creations = [...creationsBySite.values()].flat()
+	const flat = writeFlat(units, creations)
 	if (!flat) return
 	const specifier = `~arktype/${hashOf(flat.code)}`
 	const flattened = new Set(units.map(unit => unit.specifier))
-	// what reads a flattened unit reads it from the function's module
-	const read = new Set<string>()
+	// what reads a flattened unit reads it from the function's module, except
+	// what only a creation the function makes in its place read
+	const read = new Set(creations.map(creation => creation.name))
+	const readKept =
+		creations.length ?
+			keptIn(
+				new Map(
+					[...creationsBySite].map(([id, creations]) => [
+						parsed.get(id)!,
+						creations
+					])
+				)
+			)
+		:	kept
 	const repointed = new Map<string, Repointed[]>()
 	for (const [key, module] of parsed) {
 		if (flattened.has(key)) continue
@@ -69,16 +87,19 @@ export const flattenBundle = (
 			flat.exported,
 			specifier,
 			read,
-			kept
+			readKept
 		)
 		if (!edits) return
 		if (edits.length) repointed.set(key, edits)
 	}
 	if (!read.size) return
 	// as a minifier writes them, flat only where it's smaller
-	const unflattened = units.flatMap(unit =>
-		unit.declarations.map(d => unit.module.source.slice(d.start, d.end))
-	)
+	const unflattened = [
+		...units.flatMap(unit =>
+			unit.declarations.map(d => unit.module.source.slice(d.start, d.end))
+		),
+		...creations.map(creation => creation.creator)
+	]
 	if (
 		whereSmaller &&
 		minifiedLengthOf(flat.write([...read], false)) >=
@@ -138,9 +159,30 @@ export const flattenBundle = (
 	}
 	for (const id in sites) {
 		let s = edit(id, rename)
+		const created = creationsBySite.get(id) ?? []
 		for (const [start, end] of keptAnnotationsIn(parsed.get(id)!, kept)) {
+			if (
+				created.some(creation => creation.start <= start && end <= creation.end)
+			)
+				continue
 			s ??= new MagicString(sites[id])
 			s.remove(start, end)
+		}
+		for (const { start, end, name, declared } of created) {
+			s ??= new MagicString(sites[id])
+			const source = JSON.stringify(rename(specifier))
+			// a declaration of it alone is an import, which a bundler doesn't
+			// write as a variable holding another
+			if (declared) {
+				s.overwrite(
+					declared.start,
+					declared.end,
+					`import { ${name} as ${declared.name} } from ${source}\n${declared.exported ? `export { ${declared.name} }\n` : ""}`
+				)
+			} else {
+				s.overwrite(start, end, `$ark_${name}`)
+				s.prepend(`import { ${name} as $ark_${name} } from ${source}\n`)
+			}
 		}
 		bundle.sites[id] =
 			s ?
@@ -151,6 +193,163 @@ export const flattenBundle = (
 }
 
 const unrenamed = (specifier: string) => specifier
+
+// a validator a site creates in place by calling a creator nothing else
+// calls, with units the function declares, which the function creates in its
+// place, so its creator's body reads them as its constants
+interface Creation {
+	// the call's span, with its annotation
+	start: number
+	end: number
+	// what the function returns it as
+	name: string
+	// the creator's function, which the function calls
+	creator: string
+	args: string[]
+	// the declaration it's all of, which an import of it can replace
+	declared:
+		| { start: number; end: number; name: string; exported: boolean }
+		| undefined
+}
+
+const creationsIn = (
+	sites: Record<string, string>,
+	parsed: Map<string, SourceModule>,
+	units: UnitModule[],
+	kept: KeptCode
+): Map<string, Creation[]> => {
+	const result = new Map<string, Creation[]>()
+	const declaredIn = new Map(units.map(unit => [unit.specifier, unit]))
+	// the module declaring what an import reads, and its name there
+	const originOf = (
+		module: SourceModule,
+		binding: Binding | undefined
+	): [specifier: string, name: string] | undefined => {
+		if (binding?.kind !== "import") return
+		const specifier = binding.declaration
+		if (
+			specifier.type !== "ImportSpecifier" ||
+			specifier.parent?.type !== "ImportDeclaration"
+		)
+			return
+		const source = specifier.parent.source.value
+		const target = parsed.get(source)
+		const entry = target?.scopes.exportsByName[exportNameOf(specifier.imported)]
+		if (entry?.kind !== "binding") return
+		return entry.binding.kind === "import" ?
+				originOf(target!, entry.binding)
+			:	[source, entry.binding.name]
+	}
+	const callsOf = new Map<string, number>()
+	for (const module of parsed.values()) {
+		for (const binding of Object.values(module.scopes.root.bindings)) {
+			const origin = originOf(module, binding)
+			if (!origin) continue
+			const key = origin.join("\0")
+			const calls = binding.references.filter(
+				reference =>
+					reference.id.parent?.type !== "ExportSpecifier" &&
+					kept.statements.has(statementOf(reference.id))
+			).length
+			callsOf.set(key, (callsOf.get(key) ?? 0) + calls)
+		}
+	}
+	for (const id in sites) {
+		const module = parsed.get(id)!
+		const creations: Creation[] = []
+		for (const statement of module.program.body) {
+			const declaration =
+				statement.type === "ExportNamedDeclaration" ?
+					statement.declaration
+				:	statement
+			if (
+				declaration?.type !== "VariableDeclaration" ||
+				!kept.statements.has(statement)
+			)
+				continue
+			for (const { init } of declaration.declarations) {
+				const call = init && unwrapExpression(init)
+				if (
+					call?.type !== "CallExpression" ||
+					call.callee.type !== "Identifier" ||
+					!call.arguments.length ||
+					!call.arguments.every(arg => arg.type === "Identifier")
+				)
+					continue
+				// a creation the precompiler marks pure runs the same anywhere
+				const annotation = module.source
+					.slice(Math.max(0, call.start - 32), call.start)
+					.match(pureAnnotated)
+				if (!annotation) continue
+				const bindingOf = (id: Node) =>
+					module.scopes.root.bindings[(id as { name: string }).name]
+				const creator = originOf(module, bindingOf(call.callee))
+				const args = call.arguments.map(arg => originOf(module, bindingOf(arg)))
+				const fn = creator && creatorFnOf(parsed.get(creator[0])!)
+				if (
+					!fn ||
+					callsOf.get(creator.join("\0")) !== 1 ||
+					!args.every(
+						arg =>
+							arg &&
+							declaredIn
+								.get(arg[0])
+								?.declarations.some(d => declaredNames(d).includes(arg[1]))
+					)
+				)
+					continue
+				const [declarator] = declaration.declarations
+				creations.push({
+					start: call.start - annotation[0].length,
+					end: call.end,
+					name: `${creator[1]}Validator`,
+					creator: fn,
+					args: args.map(arg => arg![1]),
+					declared:
+						(
+							declaration.kind === "const" &&
+							declaration.declarations.length === 1 &&
+							declarator.id.type === "Identifier"
+						) ?
+							{
+								start: statement.start,
+								end: statement.end,
+								name: declarator.id.name,
+								exported: statement !== declaration
+							}
+						:	undefined
+				})
+			}
+		}
+		if (creations.length) result.set(id, creations)
+	}
+	return result
+}
+
+// a creator's function, if it reads only units and runtime members that
+// don't change after its module loads, as configuration may
+const creatorFnOf = (module: SourceModule): string | undefined => {
+	if (!isUnitModule(module)) return
+	const declarations = module.program.body.filter(
+		statement => statement.type === "VariableDeclaration"
+	)
+	if (
+		declarations.length !== 1 ||
+		declarations[0].type !== "VariableDeclaration"
+	)
+		return
+	const init = unwrapParentheses(declarations[0].declarations[0].init!)
+	if (
+		init.type !== "ArrowFunctionExpression" ||
+		init.body.type !== "BlockStatement" ||
+		importsOf(module).some(source => source !== runtimeSource)
+	)
+		return
+	const text = module.source.slice(init.start, init.end)
+	return /\bruntime\.(?:runtimeConfig|holdHoles)\b/.test(text) ? undefined : (
+			text
+		)
+}
 
 // the annotations of the creations a site declares that kept code reads, which
 // a bundler keeps anyway, as oxc's minifier keeps their annotations
@@ -276,9 +475,15 @@ class KeptCode {
 	private imports = new Set<Binding>()
 	private modules: Map<string, SourceModule>
 	private referencesIn = new Map<SourceModule, Map<Node, Reference[]>>()
+	// spans whose references keep nothing, as the function makes them
+	private skipped: ReadonlyMap<SourceModule, readonly Creation[]>
 
-	constructor(modules: Map<string, SourceModule>) {
+	constructor(
+		modules: Map<string, SourceModule>,
+		skipped: ReadonlyMap<SourceModule, readonly Creation[]> = new Map()
+	) {
 		this.modules = modules
+		this.skipped = skipped
 	}
 
 	// what runs as it loads, and each export another module may import
@@ -308,8 +513,12 @@ class KeptCode {
 	keep(module: SourceModule, statement: Node): void {
 		if (this.statements.has(statement)) return
 		this.statements.add(statement)
-		for (const reference of this.referencesOf(module).get(statement) ?? [])
-			this.keepBinding(module, reference.binding)
+		const skipped = this.skipped.get(module) ?? []
+		for (const reference of this.referencesOf(module).get(statement) ?? []) {
+			const { start } = reference.id
+			if (!skipped.some(span => span.start <= start && start < span.end))
+				this.keepBinding(module, reference.binding)
+		}
 	}
 
 	reads(binding: Binding | undefined): boolean {
@@ -566,7 +775,15 @@ type Member = { key: { value: number }; value: Node }
 // a unit's declaration, as the function declares it
 type Declaration =
 	// a function of the units it reads, called with them
-	| { kind: "factory"; name: string; node: Node; call: Call; fn: Arrow }
+	| {
+			kind: "factory"
+			name: string
+			node: Node
+			call: Call
+			fn: Arrow
+			// a validator a creation returns, rather than functions
+			returnsValue: boolean
+	  }
 	// its functions, e.g. [allows, apply]
 	| { kind: "array"; name: string; node: Node; array: ArrayLiteral }
 	// a template's functions for its constants
@@ -586,7 +803,10 @@ interface Flat {
 }
 
 // the units' declarations in one function, returning what's read outside it
-const writeFlat = (units: UnitModule[]): Flat | undefined => {
+const writeFlat = (
+	units: UnitModule[],
+	creations: Creation[]
+): Flat | undefined => {
 	const specifiersByName = new Map<string, string>()
 	const texts: string[] = []
 	for (const unit of units) {
@@ -595,6 +815,12 @@ const writeFlat = (units: UnitModule[]): Flat | undefined => {
 			for (const name of declaredNames(declaration))
 				specifiersByName.set(name, unit.specifier)
 		}
+	}
+	const created = new Set<string>()
+	for (const { name, creator, args } of creations) {
+		if (specifiersByName.has(name) || created.has(name)) return
+		created.add(name)
+		texts.push(`const ${name} = (${creator})(${args.join(", ")})`)
 	}
 	const code = texts.join("\n")
 	const { program, errors } = parseSync("units.js", code, {
@@ -606,7 +832,7 @@ const writeFlat = (units: UnitModule[]): Flat | undefined => {
 	const top = scopes.root.bindings
 	const templates = new Map<string, number>()
 	const declarations = (program.body as Node[]).map(statement =>
-		declarationOf(statement, scopes, templates)
+		declarationOf(statement, scopes, templates, created)
 	)
 	const factories = declarations.filter(
 		(d): d is Factory => d.kind === "factory"
@@ -690,7 +916,9 @@ const writeFlat = (units: UnitModule[]): Flat | undefined => {
 		// a parameter reads what the function already holds, if no local hides it
 		const alias = (binding: Binding, value: string) => {
 			if (binding.name === value) return
-			const holder = holders.get(value)
+			// e.g. what a factory flattened before declares
+			const holder =
+				holders.get(value) ?? (values.get(value) === value ? value : undefined)
 			const isHidden = bindingsNamed
 				.get(holder!)
 				?.some(
@@ -727,9 +955,18 @@ const writeFlat = (units: UnitModule[]): Flat | undefined => {
 				}
 			}
 		}
+		const returned = body.body[body.body.length - 1] as Return
+		// a creation is the local its creator returns, if it returns one
+		const returnedLocal =
+			d.returnsValue && returned.argument?.type === "Identifier" ?
+				scopes.refsById.get(returned.argument)?.binding
+			:	undefined
 		for (const binding of bindingsIn.get(d.fn) ?? []) {
 			if (binding.kind === "param") continue
-			const name = isFree(binding.name) ? binding.name : fresh(binding.name)
+			const name =
+				binding === returnedLocal ? d.name
+				: isFree(binding.name) ? binding.name
+				: fresh(binding.name)
 			values.set(name, name)
 			if (name !== binding.name) renamed.set(binding, name)
 		}
@@ -741,7 +978,17 @@ const writeFlat = (units: UnitModule[]): Flat | undefined => {
 			])
 			for (const id of ids) if (id.start > body.start) replace(id, name)
 		}
-		const returned = body.body[body.body.length - 1] as Return
+		s.overwrite(d.node.start, body.start + 1, aliases)
+		if (returnedLocal) {
+			s.overwrite(returned.start, d.node.end, "")
+			return
+		}
+		if (d.returnsValue) {
+			const value = returned.argument!
+			s.overwrite(returned.start, value.start, `const ${d.name} = `)
+			s.overwrite(value.end, d.node.end, "")
+			return
+		}
 		const elements = (returned.argument as ArrayLiteral).elements as Node[]
 		membersOf.set(
 			d.name,
@@ -750,7 +997,6 @@ const writeFlat = (units: UnitModule[]): Flat | undefined => {
 				return (binding && renamed.get(binding)) ?? (e as { name: string }).name
 			})
 		)
-		s.overwrite(d.node.start, body.start + 1, aliases)
 		s.overwrite(returned.start, d.node.end, "")
 	}
 	for (const d of declarations) {
@@ -906,7 +1152,8 @@ const unitName = /\b\w+?(?:R\d+|Allows|Apply|Transform)\b/g
 const declarationOf = (
 	statement: Node,
 	scopes: ModuleScopes,
-	templates: Map<string, number>
+	templates: Map<string, number>,
+	created: ReadonlySet<string>
 ): Declaration => {
 	const { id, init } = (
 		statement as Extract<Node, { type: "VariableDeclaration" }>
@@ -938,9 +1185,17 @@ const declarationOf = (
 				if (length) return { kind: "templateCall", name, node, id, length }
 			} else if (
 				callee.type === "ArrowFunctionExpression" &&
-				isFactory(init!, callee, scopes)
-			)
-				return { kind: "factory", name, node, call: init!, fn: callee }
+				isFactory(init!, callee, scopes, created.has(name))
+			) {
+				return {
+					kind: "factory",
+					name,
+					node,
+					call: init!,
+					fn: callee,
+					returnsValue: created.has(name)
+				}
+			}
 		}
 	}
 	return { kind: "value", name, node }
@@ -964,8 +1219,13 @@ const returnedLengthOf = (fn: Node): number | undefined => {
 	return returned.argument.elements.length
 }
 
-const isFactory = (call: Call, fn: Arrow, scopes: ModuleScopes): boolean => {
-	if (fn.async || !returnedLengthOf(fn)) return false
+const isFactory = (
+	call: Call,
+	fn: Arrow,
+	scopes: ModuleScopes,
+	returnsValue: boolean
+): boolean => {
+	if (fn.async || (!returnsValue && !returnedLengthOf(fn))) return false
 	let params = fn.params as Node[]
 	const rest = params[params.length - 1] as Node | undefined
 	if (rest?.type === "RestElement") {
