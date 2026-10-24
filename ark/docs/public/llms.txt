@@ -2,9 +2,9 @@
 
 > TypeScript's 1:1 validator, optimized from editor to runtime
 
-ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. @ark/aot, ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.
+ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. @ark/aot precompiles them when a project builds, so its validators ship without arktype's parser. ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.
 
-Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/llms-full.txt) has every ArkType page in one file.
+Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/llms-full.txt) has every ArkType page in one file. Coding agents can also install the ArkType skill, which covers writing, precompiling and migrating to ArkType, with `npx skills add arktypeio/arktype`; see [Agents](https://arktype.io/docs/agents.md).
 
 ## ArkType: Get started
 

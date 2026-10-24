@@ -1,10 +1,13 @@
+import { execFileSync } from "node:child_process"
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { createRequire } from "node:module"
 import { dirname, join } from "node:path"
+import { tagline } from "../app/metadata.ts"
 import { getPageTree } from "./content/docs.ts"
 import { parseMdx } from "./content/frontmatter.ts"
 import { mdxToMarkdown, siteUrl } from "./content/markdown.ts"
 import type { NavItem, Page, Section } from "./content/pageTree.ts"
-import { publicDir } from "./content/paths.ts"
+import { docsDir, publicDir, repoArkDir } from "./content/paths.ts"
 import { redirects } from "./content/redirects.ts"
 
 /** sections with their own full file, and where it's served */
@@ -17,6 +20,16 @@ const fullFiles: Record<string, string> = {
 	sets: "docs/sets/llms.txt",
 	internals: "docs/internals/llms.txt"
 }
+
+/** the skill's copy of /docs/migrating */
+const skillMigratingPath = join(
+	repoArkDir,
+	"type",
+	"skills",
+	"arktype",
+	"references",
+	"migrating.md"
+)
 
 const write = (path: string, contents: string) => {
 	mkdirSync(dirname(path), { recursive: true })
@@ -31,6 +44,7 @@ const write = (path: string, contents: string) => {
  * - /llms.txt, an index of the pages in the navigation (https://llmstxt.org)
  * - /llms-full.txt, every ArkType page in one file, and a file like it for
  *   each other section except the blog
+ * - the skill's references/migrating.md, from /docs/migrating
  */
 export const writeMarkdown = (): void => {
 	const tree = getPageTree()
@@ -72,6 +86,28 @@ export const writeMarkdown = (): void => {
 	}
 
 	write(join(publicDir, "llms.txt"), llmsIndex(sections))
+	writeSkillMigrating(markdownByUrl.get("/docs/migrating")!)
+}
+
+/** formatted as the repo formats Markdown, since the skill is checked in */
+const writeSkillMigrating = (page: string) => {
+	const prettier = createRequire(join(docsDir, "package.json")).resolve(
+		"prettier/bin/prettier.cjs"
+	)
+	const markdown = [
+		"# Migrating to ArkType",
+		"<!-- written from ark/docs/content/docs/(arktype)/migrating.mdx when the docs build; edit that instead -->",
+		"How to convert schemas from Zod (v3, v4 and Zod Mini), Valibot, TypeBox, Yup, Joi, Effect Schema and JSON Schema to ArkType.",
+		page.slice(page.indexOf("## Migrating a project"))
+	].join("\n\n")
+	writeFileSync(
+		skillMigratingPath,
+		execFileSync(
+			process.execPath,
+			[prettier, "--stdin-filepath", skillMigratingPath],
+			{ input: markdown, encoding: "utf8" }
+		)
+	)
 }
 
 const pageLink = (page: Page) =>
@@ -107,9 +143,9 @@ const llmsIndex = (sections: Section[]) => {
 	return (
 		[
 			"# ArkType",
-			"> TypeScript's 1:1 validator, optimized from editor to runtime",
-			"ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. @ark/aot, ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.",
-			`Each link below is a docs page as Markdown. [llms-full.txt](${siteUrl}/llms-full.txt) has every ArkType page in one file.`,
+			`> ${tagline}`,
+			"ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. @ark/aot precompiles them when a project builds, so its validators ship without arktype's parser. ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.",
+			`Each link below is a docs page as Markdown. [llms-full.txt](${siteUrl}/llms-full.txt) has every ArkType page in one file. Coding agents can also install the ArkType skill, which covers writing, precompiling and migrating to ArkType, with \`npx skills add arktypeio/arktype\`; see [Agents](${siteUrl}/docs/agents.md).`,
 			...sections.flatMap(sectionLists),
 			[
 				"## Optional",
