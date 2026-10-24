@@ -40,14 +40,15 @@ export const User = type({ name: "string" })
 `
 
 // the members a production build for size leaves out of the program's
-// validators, "open" where its scan can't read every module, or the errors
-// failing its build
+// validators, why it leaves none where it can't, or the errors failing its
+// build
 const droppedFrom = async (
 	files: Record<string, string>,
 	opts?: PrecompileOptions
 ) => {
 	const precompiler = new Precompiler(memoryHost(files), {
 		preset: "smallest",
+		cwd: "/",
 		...opts
 	})
 	const scanned = await scanProgram("test", [{ id: "/main.ts" }], {
@@ -58,9 +59,10 @@ const droppedFrom = async (
 		},
 		readFile: id => files[id],
 		isTransformed: () => true,
-		idOf: id => id
+		idOf: id => id,
+		cwd: "/"
 	})
-	if (!scanned) return "open"
+	if (typeof scanned === "string") return scanned
 	// a module that fails its build would hide what the scan read
 	for (const id in scanned.modules) {
 		const errors = precompiler
@@ -68,7 +70,8 @@ const droppedFrom = async (
 			.diagnostics.filter(diagnostic => diagnostic.severity === "error")
 		if (errors.length) return errors.map(error => error.message)
 	}
-	return precompiler.scan(scanned).dropped
+	const usage = precompiler.scan(scanned)
+	return usage.unpruned ?? usage.dropped
 }
 
 // main.ts reading types.ts's User as `read` does
@@ -251,23 +254,28 @@ contextualize(function (this: Mocha.Suite) {
 	})
 
 	describe("reads that keep every member", () => {
-		const keepsAll = async (read: string) =>
-			attest(await droppedReading(read)).equals([])
-
 		it("an entry's export", async () => {
-			await keepsAll(`export { User }`)
+			attest(await droppedReading(`export { User }`)).snap(
+				"main.ts exports User, which code outside the bundle may read"
+			)
 		})
 
 		it("an argument", async () => {
-			await keepsAll(`console.log(User)`)
+			attest(await droppedReading(`console.log(User)`)).snap(
+				"main.ts:3:13 passes User to a function, which may read any member"
+			)
 		})
 
 		it("a property", async () => {
-			await keepsAll(`export const types = { User }`)
+			attest(await droppedReading(`export const types = { User }`)).snap(
+				"main.ts:3:24 reads User other than to call it or read a member it knows"
+			)
 		})
 
 		it("a member it doesn't know", async () => {
-			await keepsAll(`User.bind(null)`)
+			attest(await droppedReading(`User.bind(null)`)).snap(
+				"main.ts:3:1 reads User.bind, a member it doesn't know"
+			)
 		})
 
 		it("a binding other than a const", async () => {
@@ -275,7 +283,9 @@ contextualize(function (this: Mocha.Suite) {
 				await droppedFrom({
 					"/main.ts": `import { type } from "arktype"\n\nlet User = type({ name: "string" })\n\nUser({})`
 				})
-			).equals([])
+			).snap(
+				'main.ts:3:12 holds type({ name: "string" }) in User, which isn\'t a const'
+			)
 		})
 
 		it("a namespace read whole", async () => {
@@ -284,7 +294,7 @@ contextualize(function (this: Mocha.Suite) {
 					"/types.ts": types,
 					"/main.ts": `import * as t from "./types.ts"\n\nconsole.log(t)`
 				})
-			).equals([])
+			).snap("main.ts:3:13 reads the namespace t, which holds User, whole")
 		})
 
 		it("export * as", async () => {
@@ -294,11 +304,15 @@ contextualize(function (this: Mocha.Suite) {
 					"/barrel.ts": `export * as t from "./types.ts"`,
 					"/main.ts": `import { t } from "./barrel.ts"\n\nt.User({})`
 				})
-			).equals([])
+			).snap(
+				"barrel.ts:1:1 re-exports types.ts as a namespace, which may read its User any way"
+			)
 		})
 
 		it("a dynamic import", async () => {
-			await keepsAll(`await import("./types.ts")`)
+			attest(await droppedReading(`await import("./types.ts")`)).snap(
+				"main.ts:3:7 loads types.ts by import(), which may read its User any way"
+			)
 		})
 
 		it("require", async () => {
@@ -307,11 +321,15 @@ contextualize(function (this: Mocha.Suite) {
 					"/types.ts": types,
 					"/main.ts": `const { User } = require("./types.ts")\n\nUser({})`
 				})
-			).equals([])
+			).snap(
+				"main.ts:1:18 loads types.ts by require(), which may read its User any way"
+			)
 		})
 
 		it("eval", async () => {
-			await keepsAll(`User({})\neval("User.assert({})")`)
+			attest(await droppedReading(`User({})\neval("User.assert({})")`)).snap(
+				"main.ts:4:1 calls eval, which may read any binding"
+			)
 		})
 
 		it("a validator created outside a const", async () => {
@@ -319,7 +337,9 @@ contextualize(function (this: Mocha.Suite) {
 				await droppedFrom({
 					"/main.ts": `import { type } from "arktype"\n\nconsole.log(type({ name: "string" }))`
 				})
-			).equals([])
+			).snap(
+				'main.ts:3:13 passes type({ name: "string" }) to a function, which may read any member'
+			)
 		})
 
 		it("an import a factory checks", async () => {
@@ -328,7 +348,9 @@ contextualize(function (this: Mocha.Suite) {
 					preset: undefined,
 					creationChecks: "types"
 				})
-			).equals([])
+			).snap(
+				"admin.ts:2:10 passes User to a factory that checks it, which may read any member"
+			)
 		})
 
 		it("an import whose function a factory reads", async () => {
@@ -341,7 +363,9 @@ contextualize(function (this: Mocha.Suite) {
 					},
 					{ preset: undefined, creationChecks: "none" }
 				)
-			).equals([])
+			).snap(
+				"admin.ts:4:35 reads Trimmed other than to call it or read a member it knows"
+			)
 		})
 
 		it("a Scope", async () => {
@@ -349,7 +373,9 @@ contextualize(function (this: Mocha.Suite) {
 				await droppedFrom({
 					"/main.ts": `import { scope } from "arktype"\n\nconst $ = scope({ user: { name: "string" } }).export()\n\n$.user({})`
 				})
-			).equals([])
+			).snap(
+				"main.ts creates a Scope, Module or Generic, whose validators it can't follow"
+			)
 		})
 
 		it("JSX", async () => {
@@ -359,14 +385,16 @@ contextualize(function (this: Mocha.Suite) {
 					"/main.ts": `import "./view.tsx"`,
 					"/view.tsx": `import { User } from "./types.ts"\n\nexport const view = <User />`
 				})
-			).equals([])
+			).snap(
+				"view.tsx:3:22 reads User other than to call it or read a member it knows"
+			)
 		})
 	})
 
 	describe("programs it can't read", () => {
 		it("a specifier it can't resolve", async () => {
-			attest(await droppedReading(`import "./unresolved.ts"\nUser({})`)).equals(
-				"open"
+			attest(await droppedReading(`import "./unresolved.ts"\nUser({})`)).snap(
+				'main.ts:3:1 imports "./unresolved.ts", which doesn\'t resolve to a file'
 			)
 		})
 
@@ -375,29 +403,31 @@ contextualize(function (this: Mocha.Suite) {
 				await droppedReading(`import "./view.vue"\nUser({})`, {
 					"/view.vue": "<script setup>User.assert({})</script>"
 				})
-			).equals("open")
+			).snap("main.ts:3:1 imports view.vue, which isn't a script it can read")
 		})
 
 		it("a computed dynamic import", async () => {
 			attest(
 				await droppedReading(`const path = "./types.ts"\nawait import(path)`)
-			).equals("open")
+			).snap("main.ts:4:7 imports a module by a computed specifier")
 		})
 
 		it("a computed require", async () => {
 			attest(
 				await droppedReading(`const path = "./types.ts"\nrequire(path)`)
-			).equals("open")
+			).snap("main.ts:4:1 calls require() by a computed specifier")
 		})
 
 		it("require read as a value", async () => {
-			attest(await droppedReading(`const load = require`)).equals("open")
+			attest(await droppedReading(`const load = require`)).snap(
+				"main.ts:3:14 reads require other than to call it"
+			)
 		})
 
 		it("import.meta.glob", async () => {
-			attest(
-				await droppedReading(`import.meta.glob("./*.ts")\nUser({})`)
-			).equals("open")
+			attest(await droppedReading(`import.meta.glob("./*.ts")\nUser({})`)).snap(
+				"main.ts:3:1 reads import.meta.glob, which may load modules it can't name"
+			)
 		})
 
 		it("but import.meta.env", async () => {
@@ -448,10 +478,13 @@ contextualize(function (this: Mocha.Suite) {
 					win32.join(win32.dirname(importer), specifier).replace(/\\/g, "/"),
 				readFile: id => files[win32.normalize(id)],
 				isTransformed: () => true,
-				idOf: win32.normalize
+				idOf: win32.normalize,
+				cwd: "C:\\app"
 			})
-			attest(scanned?.entries).equals(["C:\\app\\main.ts"])
-			attest(scanned?.targets).equals({
+			attest(typeof scanned !== "string" && scanned.entries).equals([
+				"C:\\app\\main.ts"
+			])
+			attest(typeof scanned !== "string" && scanned.targets).equals({
 				"C:\\app\\main.ts": { "./types.ts": "C:\\app\\types.ts" },
 				"C:\\app\\types.ts": {}
 			})
@@ -520,6 +553,23 @@ console.log(out instanceof type.errors ? out.summary : out)
 			})
 			return outputFiles![0].text
 		}
+
+		const warningsOf = async (
+			opts: PrecompileUnpluginOptions,
+			{ plugins = [] }: BuildOptions = {}
+		) =>
+			(
+				await build({
+					entryPoints: [join(root, "main.ts")],
+					absWorkingDir: root,
+					bundle: true,
+					write: false,
+					format: "esm",
+					conditions,
+					logLevel: "silent",
+					plugins: [precompile.esbuild({ conditions, ...opts }), ...plugins]
+				})
+			).warnings
 
 		const run = (js: string) =>
 			spawnSync(process.execPath, ["--input-type=module"], {
@@ -629,6 +679,27 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			attest(await bundle({}, { plugins })).equals(
 				await bundle({ prune: false }, { plugins })
 			)
+			attest(
+				(await warningsOf({}, { plugins })).map(warning => warning.text)
+			).snap([
+				"prune: off, because a plugin follows arktype's among esbuild's plugins, which may load a module after it reads the bundle, so the build keeps every member of its validators. Move arktype's plugin last, or set prune: false to build them whole without this warning."
+			])
+		})
+
+		it("warns where it keeps every member as a read may need any", async () => {
+			const main = join(root, "main.ts")
+			const source = readFileSync(main, "utf8")
+			writeFileSync(main, `${source}console.log({ User })\n`)
+			try {
+				attest(
+					(await warningsOf({ preset: undefined })).map(warning => warning.text)
+				).snap([
+					"prune: off, because main.ts:6:15 reads User other than to call it or read a member it knows, so the build keeps every member of its validators. Set each member you know no read needs false in ark.json's members, or set prune: false to build them whole without this warning."
+				])
+				attest(await warningsOf({ prune: false })).equals([])
+			} finally {
+				writeFileSync(main, source)
+			}
 		})
 
 		it("fails prune: true where a plugin after it may load a module", async () => {
@@ -916,8 +987,13 @@ console.log(out instanceof type.errors ? out.summary : out)
 			opts: PrecompileUnpluginOptions = {},
 			{
 				plugins = [],
-				lib = true
-			}: { plugins?: VitePlugin[]; lib?: boolean } = {}
+				lib = true,
+				onwarn
+			}: {
+				plugins?: VitePlugin[]
+				lib?: boolean
+				onwarn?: (warning: { message: string }) => void
+			} = {}
 		) => {
 			const { NODE_ENV } = process.env
 			process.env.NODE_ENV = "production"
@@ -931,7 +1007,8 @@ console.log(out instanceof type.errors ? out.summary : out)
 					build: {
 						write: false,
 						minify: true,
-						...(lib && { lib: { entry: "main.ts", formats: ["es"] } })
+						...(lib && { lib: { entry: "main.ts", formats: ["es"] } }),
+						...(onwarn && { rollupOptions: { onwarn } })
 					}
 				}
 				const result = (await viteBuild(config)) as
@@ -971,6 +1048,21 @@ console.log(out instanceof type.errors ? out.summary : out)
 				const pruned = await bundle()
 				attest(run(pruned)).snap("name must be a string\n")
 				attest(pruned.includes("~standard")).equals(false)
+			} finally {
+				writeFileSync(main, source)
+			}
+		})
+
+		it("warns where a module reads import.meta.glob", async () => {
+			const main = join(root, "main.ts")
+			const source = readFileSync(main, "utf8")
+			writeFileSync(main, `${source}import.meta.glob("./*.ts")\n`)
+			const warnings: string[] = []
+			try {
+				await bundle({}, { onwarn: warning => warnings.push(warning.message) })
+				attest(warnings).snap([
+					"prune: off, because main.ts:6:1 reads import.meta.glob, which may load modules it can't name, so the build keeps every member of its validators. Set prune: false to build them whole without this warning."
+				])
 			} finally {
 				writeFileSync(main, source)
 			}

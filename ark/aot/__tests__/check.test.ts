@@ -2,6 +2,8 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { check } from "@ark/aot/internal/check.ts"
 import { spawnSync } from "node:child_process"
+import { writeFileSync } from "node:fs"
+import { join } from "node:path"
 import { runCli, writeFixture } from "./utils.ts"
 
 const cwd = fromHere("checked")
@@ -167,6 +169,35 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
   With runtime: "arktype", arktype defines this at runtime.
 3 sites in 1 file: 1 accepted (33.3%)
 `)
+	})
+
+	it("says why a production bundle would keep every member", () => {
+		const root = writeFixture({
+			"types.ts": `import { type } from "arktype"\nexport const User = type({ name: "string" })\n`,
+			"main.ts": `import { User } from "./types.ts"\nconst pages = import.meta.glob("./pages/*.ts")\nUser({})\n`,
+			"types.test.ts": `import { User } from "./types.ts"\nconsole.log(User)\n`
+		})
+		const { NODE_ENV } = process.env
+		process.env.NODE_ENV = "production"
+		try {
+			attest(check([], { cwd: root }).lines).snap([
+				"types.ts:2:21  accepted",
+				"prune: off, because main.ts:2:15 reads import.meta.glob, which may load modules it can't name",
+				"1 site in 3 files: 1 accepted (100.0%)"
+			])
+			// a test isn't in the bundle
+			writeFileSync(
+				join(root, "main.ts"),
+				`import { User } from "./types.ts"\nUser({})\n`
+			)
+			attest(check([], { cwd: root }).lines).snap([
+				"types.ts:2:21  accepted",
+				"1 site in 3 files: 1 accepted (100.0%)"
+			])
+		} finally {
+			if (NODE_ENV === undefined) delete process.env.NODE_ENV
+			else process.env.NODE_ENV = NODE_ENV
+		}
 	})
 
 	it("fails on an error outside every site", () => {

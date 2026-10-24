@@ -277,6 +277,8 @@ export interface ScannedUsage {
 	replaced: string[]
 	// whether it wrote each module, for a transform naming the bundle to read
 	written: boolean
+	// why it left no member out, where some read may need any
+	unpruned?: string | undefined
 }
 
 export interface ModuleAnalysis {
@@ -604,15 +606,18 @@ export class Precompiler {
 			} else planned.set(id, unprecompiled(this.graph.add(id, source)))
 		}
 		const used = this.usedIn(program, planned)
+		const unpruned = typeof used === "string" ? used : undefined
 		const dropped =
-			used ?
-				defaultMembers.filter(
+			typeof used === "string" ?
+				[]
+			:	defaultMembers.filter(
 					member => this.members[member] === undefined && !used.has(member)
 				)
-			:	[]
-		const called = !used || used.has("call")
-		const readsAllows = !used || used.has("allows")
-		const piped = !used || used.has("piped")
+		const isRead = (read: UsedMember) =>
+			typeof used === "string" || used.has(read)
+		const called = isRead("call")
+		const readsAllows = isRead("allows")
+		const piped = isRead("piped")
 		const isWhole = !dropped.length && called && readsAllows && piped
 		// a size build's units are already module constants
 		const flattens =
@@ -621,7 +626,7 @@ export class Precompiler {
 			this.standalone.optimize === "speed"
 		// a lazy validator reads its checkers where it's created, unlinkable
 		const changesOnlyIfFlat = isWhole && (this.inline || this.standalone.lazy)
-		if (changesOnlyIfFlat && !flattens) return unwritten
+		if (changesOnlyIfFlat && !flattens) return { ...unwritten, unpruned }
 		const usage: ProgramUsage = {
 			members: {
 				...this.members,
@@ -649,7 +654,7 @@ export class Precompiler {
 		// where a factory checks a Type it's passed
 		const usedAsWritten = isWhole ? used : this.usedIn(program, runtimes)
 		const isReadAsWritten = (read: UsedMember) =>
-			!usedAsWritten || usedAsWritten.has(read)
+			typeof usedAsWritten === "string" || usedAsWritten.has(read)
 		if (
 			dropped.some(isReadAsWritten) ||
 			(!called && isReadAsWritten("call")) ||
@@ -657,7 +662,13 @@ export class Precompiler {
 			(!piped && isReadAsWritten("piped"))
 		) {
 			this.usagesByProgram.delete(program.key)
-			return unwritten
+			return {
+				...unwritten,
+				unpruned:
+					typeof usedAsWritten === "string" ? usedAsWritten : (
+						"its precompiled code reads more of a validator than the program does"
+					)
+			}
 		}
 		const linked =
 			!this.inline &&
@@ -669,17 +680,23 @@ export class Precompiler {
 			:	undefined
 		if (changesOnlyIfFlat && !replaced) {
 			this.usagesByProgram.delete(program.key)
-			return unwritten
+			return { ...unwritten, unpruned }
 		}
 		usage.written = written
 		if (replaced) usage.replaced = new Set(replaced)
-		return { dropped, linked, replaced: replaced ?? [], written: true }
+		return {
+			dropped,
+			linked,
+			replaced: replaced ?? [],
+			written: true,
+			unpruned
+		}
 	}
 
 	private usedIn(
 		program: ScannedProgram,
 		modules: ReadonlyMap<string, RuntimeModule>
-	): Set<UsedMember> | undefined {
+	): Set<UsedMember> | string {
 		return usedMembersOf({
 			entries: new Set(program.entries),
 			modules,

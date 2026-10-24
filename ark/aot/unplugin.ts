@@ -55,6 +55,7 @@ import {
 	addLoaded,
 	scanProgram,
 	unseenProblemOf,
+	writeUnprunedMessage,
 	writeUnscannedFlatMessage,
 	type ImportKind,
 	type Imports,
@@ -390,9 +391,15 @@ export const precompile: UnpluginInstance<
 			id =>
 				transformedFilter.include.test(id) &&
 				!transformedFilter.exclude.test(id),
-			async scanned => (await request("scan", scanned)) as ScannedUsage
-		).catch(() => undefined)
-		if (scan) scansByBuild.set(build, scan)
+			async scanned => (await request("scan", scanned)) as ScannedUsage,
+			realPathOf(opts?.cwd ?? process.cwd())
+		).catch(
+			(e: unknown): ProgramScan<BundleScan> => ({
+				unpruned: unreadMessageOf(e)
+			})
+		)
+		if (scan.unpruned) this.warn(scan.unpruned)
+		if (scan.read) scansByBuild.set(build, scan.read)
 	}
 	// a module Rollup's watch mode kept was written for an earlier bundle
 	const shouldTransformCachedModule = ({ id }: { id: string }) =>
@@ -634,6 +641,12 @@ export const precompile: UnpluginInstance<
 					throwBuildError(pruneBeforePluginMessage)
 				const program =
 					prunesIn(production) && isLast ? `${++scans}` : undefined
+				// a plugin after this one may load a module unlike it was read
+				if (prunesIn(production) && !isLast) {
+					build.onStart(() => ({
+						warnings: [{ text: writeUnprunedMessage(...unprunedBeforePlugin) }]
+					}))
+				}
 				// the scan's facts hold only while the bundle is what it read
 				let scanned: ScannedProgram | undefined
 				let verifies = false
@@ -647,24 +660,32 @@ export const precompile: UnpluginInstance<
 						verifies = false
 						esbuildScan = undefined
 						loaded.clear()
-						const usage = await esbuildScanOf(
+						const scan = await esbuildScanOf(
 							build,
 							program,
 							path =>
 								transformedFilter.include.test(path) &&
 								!transformedFilter.exclude.test(path),
-							async scanned => (await request("scan", scanned)) as ScannedUsage
-						).catch(() => undefined)
-						if (!usage) return
-						scanned = usage[0]
+							async scanned => (await request("scan", scanned)) as ScannedUsage,
+							realPathOf(opts?.cwd ?? process.cwd())
+						).catch(
+							(e: unknown): ProgramScan<[ScannedProgram, ScannedUsage]> => ({
+								unpruned: unreadMessageOf(e)
+							})
+						)
+						const warnings = scan.unpruned ? [{ text: scan.unpruned }] : []
+						if (!scan.read) return { warnings }
+						const [read, usage] = scan.read
+						scanned = read
 						// only what it dropped can fail a read the scan didn't see
-						verifies = !!usage[1].dropped.length
+						verifies = !!usage.dropped.length
 						esbuildScan = {
 							scanned,
 							verifies,
 							loaded,
-							replaced: new Set(usage[1].replaced)
+							replaced: new Set(usage.replaced)
 						}
+						return { warnings }
 					})
 					build.onEnd(result => {
 						if (
@@ -855,26 +876,63 @@ interface RollupContext {
 		importedIds: readonly string[]
 		dynamicallyImportedIds: readonly string[]
 	} | null
+	warn: (message: string) => void
 }
+
+// what a production bundle's scan read, if it changes what the plugin
+// writes, and why it left every member, if it did
+interface ProgramScan<read> {
+	read?: read | undefined
+	unpruned?: string | undefined
+}
+
+const unprunedMessageOf = (usage: ScannedUsage): string | undefined =>
+	usage.unpruned &&
+	writeUnprunedMessage(
+		usage.unpruned,
+		"Set each member you know no read needs false in ark.json's members, or set prune: false to build them whole without this warning."
+	)
+
+const unreadMessageOf = (e: unknown): string =>
+	writeUnprunedMessage(`reading the bundle's modules threw ${String(e)}`)
+
+// a plugin after this one may load a module unlike it was read
+const unprunedBeforePlugin = [
+	"a plugin follows arktype's among esbuild's plugins, which may load a module after it reads the bundle",
+	"Move arktype's plugin last, or set prune: false to build them whole without this warning."
+] as const
 
 const rollupScanOf = async (
 	context: RollupContext,
 	program: string,
 	inputs: string[],
 	isTransformed: (id: string) => boolean,
-	scan: (program: ScannedProgram) => Promise<ScannedUsage>
-): Promise<BundleScan | undefined> => {
+	scan: (program: ScannedProgram) => Promise<ScannedUsage>,
+	cwd: string
+): Promise<ProgramScan<BundleScan>> => {
 	const entries: ScanEntry[] = []
 	for (const input of inputs) {
 		const resolved = await context.resolve(input, undefined, { isEntry: true })
-		if (!resolved || resolved.external || !isAbsolute(resolved.id)) return
+		if (!resolved || resolved.external || !isAbsolute(resolved.id)) {
+			return {
+				unpruned: writeUnprunedMessage(
+					`the entry "${input}" doesn't resolve to a file`
+				)
+			}
+		}
 		if (!htmlId.test(resolved.id)) {
 			entries.push({ id: resolved.id })
 			continue
 		}
 		// a page's module scripts, as Vite builds them
 		const source = scriptsOf(readFileSync(resolved.id, "utf8"))
-		if (source === undefined) return
+		if (source === undefined) {
+			return {
+				unpruned: writeUnprunedMessage(
+					`${printablePathOf(cwd, resolved.id)} holds an inline module script, which it can't read before the build writes it as a module`
+				)
+			}
+		}
 		entries.push({ id: resolved.id, source })
 	}
 	const scanned = await scanProgram(program, entries, {
@@ -889,18 +947,24 @@ const rollupScanOf = async (
 		},
 		readFile: id => readFileSync(id, "utf8"),
 		isTransformed,
-		idOf: fileOf
+		idOf: fileOf,
+		cwd
 	})
-	if (!scanned) return
+	if (typeof scanned === "string")
+		return { unpruned: writeUnprunedMessage(scanned) }
 	const usage = await scan(scanned)
-	return usage.written ?
-			{
-				scanned,
-				verifies: !!usage.dropped.length,
-				replaced: new Set(usage.replaced),
-				loaded: new Map()
-			}
-		:	undefined
+	return {
+		read:
+			usage.written ?
+				{
+					scanned,
+					verifies: !!usage.dropped.length,
+					replaced: new Set(usage.replaced),
+					loaded: new Map()
+				}
+			:	undefined,
+		unpruned: unprunedMessageOf(usage)
+	}
 }
 
 const htmlId = /\.html$/
@@ -976,7 +1040,7 @@ interface EsbuildBuild {
 // the modules esbuild starts from, stdin as a file beside what it imports
 const esbuildEntriesOf = async (
 	build: EsbuildBuild
-): Promise<ScanEntry[] | undefined> => {
+): Promise<ScanEntry[] | string> => {
 	const { entryPoints, absWorkingDir = process.cwd() } = build.initialOptions
 	const paths =
 		Array.isArray(entryPoints) ?
@@ -991,7 +1055,8 @@ const esbuildEntriesOf = async (
 			resolveDir: absWorkingDir,
 			pluginData: esbuildResolution
 		})
-		if (result.errors.length || result.namespace !== "file") return
+		if (result.errors.length || result.namespace !== "file")
+			return `the entry "${path}" doesn't resolve to a file`
 		entries.push({ id: result.path })
 	}
 	const entry = stdinEntryOf(build.initialOptions)
@@ -1032,31 +1097,34 @@ const esbuildScanOf = async (
 	build: EsbuildBuild,
 	program: string,
 	isTransformed: (path: string) => boolean,
-	scan: (program: ScannedProgram) => Promise<ScannedUsage>
-): Promise<[ScannedProgram, ScannedUsage] | undefined> => {
+	scan: (program: ScannedProgram) => Promise<ScannedUsage>,
+	cwd: string
+): Promise<ProgramScan<[ScannedProgram, ScannedUsage]>> => {
 	const entries = await esbuildEntriesOf(build)
-	const scanned =
-		entries &&
-		(await scanProgram(program, entries, {
-			resolve: async (specifier, importer, kind) => {
-				const result = await build.resolve(specifier, {
-					kind,
-					importer,
-					resolveDir: dirname(importer),
-					pluginData: esbuildResolution
-				})
-				return (
-					result.errors.length ? undefined
-					: result.external ? null
-					: result.namespace === "file" ? result.path
-					: undefined
-				)
-			},
-			readFile: path => readFileSync(path, "utf8"),
-			isTransformed,
-			idOf: fileOf
-		}))
-	if (!scanned) return
+	if (typeof entries === "string")
+		return { unpruned: writeUnprunedMessage(entries) }
+	const scanned = await scanProgram(program, entries, {
+		resolve: async (specifier, importer, kind) => {
+			const result = await build.resolve(specifier, {
+				kind,
+				importer,
+				resolveDir: dirname(importer),
+				pluginData: esbuildResolution
+			})
+			return (
+				result.errors.length ? undefined
+				: result.external ? null
+				: result.namespace === "file" ? result.path
+				: undefined
+			)
+		},
+		readFile: path => readFileSync(path, "utf8"),
+		isTransformed,
+		idOf: fileOf,
+		cwd
+	})
+	if (typeof scanned === "string")
+		return { unpruned: writeUnprunedMessage(scanned) }
 	// each entry is its own bundle, unless it splits what they share, and an
 	// injected module is one the scan doesn't read
 	scanned.isOneChunk =
@@ -1064,7 +1132,10 @@ const esbuildScanOf = async (
 		!build.initialOptions.splitting &&
 		!build.initialOptions.inject?.length
 	const usage = await scan(scanned)
-	return usage.written ? [scanned, usage] : undefined
+	return {
+		read: usage.written ? [scanned, usage] : undefined,
+		unpruned: unprunedMessageOf(usage)
+	}
 }
 
 // the importers esbuild bundled, by module, from its metafile

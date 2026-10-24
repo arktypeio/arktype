@@ -405,7 +405,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
   Write the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call.
 ```
 
-Without a pattern, it checks every JavaScript and TypeScript file under the current directory outside `node_modules`, `dist`, `out` and `build`.
+Without a pattern, it checks every JavaScript and TypeScript file under the current directory outside `node_modules`, `dist`, `out` and `build`. Where `NODE_ENV` is `production`, it also prints why a production bundle of those files would [keep every member](https://arktype.io/docs/precompile/options#prune) of its validators, if it would.
 
 It reads [`ark.json`](https://arktype.io/docs/precompile/options#arkjson) as a build does, and the options a plugin call passes, like `precompile.vite({ config: "src/config.ts" })`, in a file at the project's root such as `vite.config.ts`, saying where it found them. Where an option isn't written as a literal there, or the file loads the plugin in a way it can't follow, it can't tell what the build gets, so it fails, asking for it in `ark.json` or as a flag. It takes each [option](https://arktype.io/docs/precompile/options) as a flag, which overrides both, like `--preset smallest`, `--optimize-errors size`, `--no-freeze` or `--members '{"assert":false}'`. It exits with 1 where the build would fail. `--fail-under <percent>` exits with 1 only if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
 
@@ -662,6 +662,14 @@ A bundle written as one chunk, an esbuild build with one entry and neither `spli
 
 The build leaves a member wherever it can't prove no code reads it: when an entry exports a validator or a module holding one, a validator is passed to a function, stored, or read by a member it doesn't know, a module is imported dynamically, through `require` or `import.meta.glob()`, reads an `import.meta` property other than `env`, `hot`, `url`, `resolve`, `dirname` and `filename`, or holds a Scope, and when the bundle holds a module it can't read, like a Vue component. A member set true is always kept.
 
+Where it leaves every member, the build warns once, in the bundler's own warnings, naming the first module that kept it from pruning and how, and the fix where there is one:
+
+```
+prune: off, because src/routes.ts:3:1 reads import.meta.glob, which may load modules it can't name, so the build keeps every member of its validators. Set prune: false to build them whole without this warning.
+```
+
+`prune: false` builds them whole without it. Where `NODE_ENV` is `production`, `arktype-precompile --check` prints the same reason for a bundle of the files it checks, but tests, stories and configs. It follows relative imports alone and reads no file as an entry, so it misses what an alias, a virtual module or an entry's exports lead to.
+
 Vite, Rollup, Rolldown and esbuild bundles prune, esbuild only where this plugin is the last, so no plugin loads a module after it reads it. `prune: true` also prunes a Rollup, Rolldown or esbuild bundle that isn't for production, which the build can't tell. webpack, Rspack, Turbopack, the Node and Bun drivers and `arktype-precompile` build every validator whole, and fail with `prune: true`, set in their options or `ark.json`, as does an esbuild build where a plugin follows this one.
 
 Once the bundle is built, the build checks that it read each entry, module and import the bundle holds as the bundle holds it, and fails without its output where another plugin loaded, rewrote or resolved one otherwise, as a read it didn't see may need what it left out. It relies on a plugin that transforms a module after this one keeping what the module reads, as a TypeScript or JSX transform does. `prune: false` builds every validator whole, each unit a module of its own.
@@ -811,6 +819,8 @@ Each of these is reported by the build, or listed here where nothing can report 
 **`~standard.jsonSchema isn't baked into this validator`** at runtime, outside production: a library converting a validator to JSON Schema through Standard Schema, like the MCP SDK or the AI SDK, read a member the build left out, which a production build would read as `undefined`. Add `"members": { "~standard.jsonSchema": true }` to `ark.json`.
 
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
+
+**`prune: off, because src/server.ts:12:30 passes User to a function, which may read any member`**: a production build couldn't prove what its validators are read for, so it kept every member of each, as a build with `prune: false` does. The warning names the first read or module that stopped it, as [prune](https://arktype.io/docs/precompile/options#prune) lists them. Where you know a member is never read, like `assert` where nothing asserts, set it false in `members`, which leaves it out whatever reads the build can't follow. Otherwise set `prune: false` to build every validator whole without the warning.
 
 # Advanced
 
