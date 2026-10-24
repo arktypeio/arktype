@@ -1,5 +1,7 @@
 # Migrating to ArkType
 
+<!-- written from ark/docs/content/docs/(arktype)/migrating.mdx when the docs build; edit that instead -->
+
 How to convert schemas from Zod (v3, v4 and Zod Mini), Valibot, TypeBox, Yup, Joi, Effect Schema and JSON Schema to ArkType.
 
 ## Migrating a project
