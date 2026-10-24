@@ -1,9 +1,10 @@
 import type { Metadata } from "next"
+import { claims, draftOf } from "../lib/claims.ts"
 
 export const siteUrl = "https://arktype.io"
 
-export const tagline =
-	"TypeScript's 1:1 validator, optimized from editor to runtime"
+/** the homepage's headline, which claims.ts checks against the benchmarks */
+export const tagline = draftOf(claims.headline).replace(/\.$/, "")
 
 export type MetadataOptions = {
 	/** the page's own title; the root layout's template adds " · ArkType" */
