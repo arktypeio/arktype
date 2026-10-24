@@ -2,6 +2,7 @@ import type { CSSProperties } from "react"
 import {
 	claims,
 	draftOf,
+	headlineMethod,
 	isPending,
 	sizeChart,
 	speedChart,
@@ -25,19 +26,24 @@ export const Claim = ({ id }: { id: ClaimId }) => (
 	<ClaimText claim={claims[id]} />
 )
 
-/** the headline's detail, its asterisk linking the notes that qualify it */
-export const HeadlineDetail = () => (
+/** the headline, its asterisk linking the note that scopes it */
+export const Headline = () => (
 	<>
-		<ClaimText claim={claims.headlineDetail} />
+		<ClaimText claim={claims.headline} />
 		<a href="#headline-note">*</a>
 	</>
 )
 
-/** what the headline's numbers measure */
+/** what the headline's superlatives average, linking the rule */
 export const HeadlineNote = ({ className }: { className?: string }) => (
-	<p id="headline-note" className={className}>
-		<ClaimText claim={claims.headlineNote} />
-	</p>
+	<div id="headline-note" className={className}>
+		<p>
+			<ClaimText claim={claims.headlineNote} />{" "}
+			<a href={headlineMethod.href} target="_blank" rel="noreferrer">
+				{headlineMethod.label} ↗
+			</a>
+		</p>
+	</div>
 )
 
 const ClaimChart = ({ chart }: { chart: BenchmarkChart }) => {

@@ -9,13 +9,11 @@ import { evaluate } from "../../components/home/evaluate.ts"
 import { HomeCode, PlainCode } from "../../components/home/HomeCode.tsx"
 import { HomeEffects } from "../../components/home/HomeEffects.tsx"
 import { LiveType } from "../../components/home/LiveType.tsx"
+import { Board } from "../../components/home/Board.tsx"
+import { Migrate } from "../../components/home/Migrate.tsx"
+import { WhyNow } from "../../components/home/WhyNow.tsx"
 import { BenchmarkChart } from "../../components/mdx/BenchmarkChart.tsx"
-import {
-	ClaimCharts,
-	ClaimText,
-	HeadlineDetail,
-	HeadlineNote
-} from "../../components/mdx/Claim.tsx"
+import { ClaimText, HeadlineNote } from "../../components/mdx/Claim.tsx"
 import { BoatLane } from "../../components/shell/BoatLane.tsx"
 import { SiteFooter } from "../../components/shell/SiteFooter.tsx"
 import {
@@ -28,7 +26,7 @@ import { claims } from "../../lib/claims.ts"
 import { defineMetadata } from "../metadata.ts"
 
 const lede =
-	"Write the type you'd write anyway. Precompile it into a validator with no parser: the build step is your agent's job now, and every error names its fix."
+	"Write the type you'd write anyway. ArkType precompiles it to just the checks it needs, with no parser shipped, and your agent handles the build: every error says what to change."
 
 const title = "ArkType · TypeScript's 1:1 validator"
 
@@ -160,22 +158,22 @@ const BenchSource = ({ facts }: { facts: BenchFacts }) => (
 		{validShare(facts)}
 		<span className="twoslash-popup-container" popover="manual">
 			<code className="twoslash-popup-code">
-				<span style={{ color: "#BA7E41" }}>const</span>
-				<span style={{ color: "#EEEEEE" }}> fasterThanArkType</span>
-				<span style={{ color: "#BA7E41" }}>:</span>
-				<span style={{ color: "#EEEEEE" }}> {"{"}</span>
+				<span style={{ color: "var(--copper)" }}>const</span>
+				<span style={{ color: "var(--ink)" }}> fasterThanArkType</span>
+				<span style={{ color: "var(--copper)" }}>:</span>
+				<span style={{ color: "var(--ink)" }}> {"{"}</span>
 				{facts.fasterCounts.map(([library, rows], i) => (
 					<span key={library}>
-						{i > 0 && <span style={{ color: "#BA7E41" }}>;</span>}
-						<span style={{ color: "#EEEEEE" }}>
+						{i > 0 && <span style={{ color: "var(--copper)" }}>;</span>}
+						<span style={{ color: "var(--ink)" }}>
 							{" "}
 							{/^\w+$/.test(library) ? library : `"${library}"`}
 						</span>
-						<span style={{ color: "#BA7E41" }}>:</span>
-						<span style={{ color: "#408FDE" }}> {rows}</span>
+						<span style={{ color: "var(--copper)" }}>:</span>
+						<span style={{ color: "var(--blue)" }}> {rows}</span>
 					</span>
 				))}
-				<span style={{ color: "#EEEEEE" }}> {"}"}</span>
+				<span style={{ color: "var(--ink)" }}> {"}"}</span>
 			</code>
 			<span className="qi-doc">
 				{facts.mostFaster ?
@@ -239,50 +237,8 @@ const Caption = ({ name, kind, aside }: Record<string, string>) => (
 	</figcaption>
 )
 
-/** each category's win and where it stops, every number from lib/claims.ts or lib/bench */
-const wins = (
-	facts: BenchFacts
-): [category: string, win: React.ReactNode, scope: React.ReactNode][] => [
-	[
-		"speed",
-		<ClaimText key="win" claim={claims.zodSpec} />,
-		`ajv is faster on ${facts.ajvFasterCount} of ${facts.errorCount} rows that report errors`
-	],
-	[
-		"size",
-		"no parser, only the checks your types need",
-		<ClaimText key="scope" claim={claims.sizeSpec} />
-	],
-	[
-		"types",
-		"TypeScript's syntax, inferred as you'd write it",
-		"the same definitions and types, precompiled or dynamic"
-	],
-	["errors", "each names its fix", "from tsc, the build and validation"],
-	[
-		"schemas",
-		"Standard Schema, JSON Schema and OpenAPI 3.0",
-		"a precompiled validator keeps what its members option bakes"
-	],
-	[
-		"agents",
-		"a skill, and every page as Markdown",
-		"npx skills add arktypeio/arktype"
-	],
-	[
-		"migration",
-		// pending until the Zod-migration success rate is measured
-		<ClaimText key="win" claim={claims.zodMigrationSpec} />,
-		"from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema"
-	]
-]
-
 export default function HomePage() {
 	const facts = benchFacts()
-	const validRuntime =
-		facts.mostFaster ?
-			"no other library faster in more than"
-		:	"fastest or tied on valid data in"
 	const ajvRows =
 		facts.ajvFasterCount === facts.errorCount ?
 			`all ${facts.errorCount}`
@@ -294,164 +250,95 @@ export default function HomePage() {
 					<div>
 						<div className="eyebrow rise" style={rise(0)}>
 							<b>arktype</b> {"//"} TypeScript's 1:1 validator
+							<Link className="eyebrow-new" href="/docs/precompile">
+								precompiled <NextTag />
+							</Link>
 						</div>
 						<h1 id="hero-title" className="rise-fade is-long">
-							<ClaimText claim={claims.headline} />{" "}
-							<span className="one">Optimized for agentic dev.</span>
+							<ClaimText claim={claims.headline} />
+							<a
+								className="star"
+								href="#headline-note"
+								aria-label="How we measured"
+							>
+								*
+							</a>{" "}
+							<a className="one" href="#agentic">
+								Designed for agentic DX.
+							</a>
 						</h1>
 						<p className="lede rise" style={rise(1)}>
 							Write the <span className="decl c-sky">type</span> you'd write
-							anyway. <HeadlineDetail /> The build step is your{" "}
-							<span className="decl c-teal">agent</span>'s job now.
+							anyway. ArkType precompiles it to just the checks it needs, with
+							no parser shipped, and your{" "}
+							<span className="decl c-teal">agent</span> handles the build:
+							every error says what to change.
 						</p>
-						<dl className="spec rise" style={rise(2)}>
-							<dt>speed</dt>
-							<dd>
-								<b>no parser shipped</b> <NextTag /> · {validRuntime}{" "}
-								<BenchSource facts={facts} />
-							</dd>
-							<dt>size</dt>
-							<dd>
-								<ClaimText claim={claims.sizeSpec} />
-							</dd>
-							<dt>types</dt>
-							<dd>
-								<b>TypeScript's own syntax</b>, checked by <code>tsc</code> as
-								you type
-							</dd>
-							<dt>errors</dt>
-							<dd>
-								<b>each names its fix</b>, from <code>tsc</code>, the build and
-								at runtime
-							</dd>
-							<dt>dynamic</dt>
-							<dd>
-								<b>no build step</b> · <ClaimText claim={claims.dynamicSpec} />
-							</dd>
-						</dl>
-						<div className="ctas rise" style={rise(3)}>
+						<div className="ctas rise" style={rise(2)}>
 							<InstallButton />
-							<Link className="btn" href="/docs/intro/setup">
+							<a className="btn" href="#migrate">
+								Migrate with one prompt{" "}
+								<span className="arrow down" aria-hidden>
+									↓
+								</span>
+							</a>
+							<Link className="text-link" href="/docs/intro/setup">
 								Read the docs{" "}
 								<span className="arrow" aria-hidden>
 									→
 								</span>
 							</Link>
-							<a className="btn" href="#agents">
-								With your agent
-							</a>
 						</div>
-						<HeadlineNote className="note" />
 					</div>
 					<LiveType ghost={ghostStates} arg={liveArg} />
 				</section>
 
-				<nav className="strip rise" style={rise(5)} aria-label="On this page">
-					<a href="#write">
-						<span className="n">01 // write</span>
-						<b>The syntax you know</b>
-						<span>a TypeScript type, in strings</span>
-					</a>
-					<a href="#check">
-						<span className="n">02 // check</span>
-						<b>Errors that name the fix</b>
-						<span>in your editor and your agent's terminal</span>
-					</a>
-					<a href="#run">
-						<span className="n">
-							03 // run <NextTag />
-						</span>
-						<b>Pick speed or size</b>
-						<span>
-							{facts.mostFaster ?
-								`no library faster in more than ${facts.mostFaster} of ${facts.validCount}`
-							:	"fastest or tied on valid data"}
-						</span>
-					</a>
-					<a href="#agents">
-						<span className="n">04 // agents</span>
-						<b>The loop, set up once</b>
-						<span>skill, Markdown, AGENTS.md</span>
-					</a>
-				</nav>
+				<Board />
+				<WhyNow />
+				<Migrate />
 
-				<section className="block" id="why" data-reveal>
+				<section className="block" id="agentic" aria-labelledby="agentic-title">
 					<div className="sec-label">
-						<b>00</b>
-						{"// why"}
+						<b>03</b>
+						{"// agentic DX"}
 					</div>
-					<h2>The build step was the only catch.</h2>
+					<h2 id="agentic-title">Designed for agentic DX.</h2>
 					<p className="deck">
-						Precompiled validators have always been faster and smaller. What
-						they cost was a build step: a plugin to set up, errors you'd never
-						seen and a second model of what runs where. Your agent doesn't care.
-						It writes the definition, runs the build, reads the error and fixes
-						it, so your users get the speed and size, and you keep ArkType's
-						syntax, errors and set theory.
+						An agent works in a loop: write, build, read the error, fix. ArkType
+						keeps each turn of it short, from your editor to the build to a tool
+						call. Every message in this section is real ArkType and TypeScript
+						output.
 					</p>
-					<dl className="wins">
-						{wins(facts).map(([category, win, scope]) => (
-							<div key={category}>
-								<dt>{category}</dt>
-								<dd>
-									<b>{win}</b>
-									<span>{scope}</span>
-								</dd>
-							</div>
-						))}
-					</dl>
-					<p className="note">
-						{
-							'// where a program needs arktype at runtime, runtime: "arktype" ships it for whatever can\'t be precompiled'
-						}
-					</p>
-				</section>
-
-				<section className="block" id="write" data-reveal>
-					<div className="sec-label">
-						<b>01</b>
-						{"// write"}
-					</div>
-					<h2>Same type. Now it runs.</h2>
-					<p className="deck">
-						Definitions use TypeScript's names, operators and optional keys,
-						written as strings and objects. The type ArkType infers is the one
-						you would have written by hand.
-					</p>
-					<div className="twin-code">
-						<figure className="code-card">
-							<Caption name="user.ts" kind="TypeScript" aside="types only" />
-							<HomeCode code={snippets.ts} />
-						</figure>
-						<div className="eq" aria-hidden>
-							<span>≡</span>
-							<span>≡</span>
-							<span>+</span>
-							<span>+</span>
-							<span>≡</span>
-							<span>≡</span>
-						</div>
-						<figure className="code-card glow">
-							<Caption
-								name="user.ts"
-								kind="ArkType"
-								aside="types and runtime"
-							/>
-							<HomeCode code={snippets.ark} />
-						</figure>
-					</div>
-					<p className="note">
-						{"// the two lines TypeScript can't check, ArkType can: "}
-						<code>string.email</code> and <code>number.integer &gt;= 0</code>
-					</p>
-				</section>
-
-				<section className="block" id="check" data-reveal>
-					<div className="sec-label">
-						<b>02</b>
-						{"// check"}
-					</div>
-					<h2>Your editor's feedback is your agent's feedback.</h2>
+					<ol className="proofs" data-reveal>
+						<li>
+							<a href="#errors">
+								<span className="n">01</span>
+								<b>Every error names its fix</b>
+								<span>
+									from <code>tsc</code>, the build and validation
+								</span>
+							</a>
+						</li>
+						<li>
+							<a href="#loop">
+								<span className="n">02</span>
+								<b>The loop, without a docs lookup</b>
+								<span>write, check, fix and validate in one session</span>
+							</a>
+						</li>
+						<li>
+							<a href="#setup">
+								<span className="n">03</span>
+								<b>Docs your agent reads</b>
+								<span>
+									a skill, every page as Markdown, one line in AGENTS.md
+								</span>
+							</a>
+						</li>
+					</ol>
+					<h3 className="sub" id="errors">
+						Your editor's feedback is your agent's feedback.
+					</h3>
 					<p className="deck">
 						TypeScript's own type system parses every definition, so a typo
 						fails <code>tsc</code> where it was written and the message is the
@@ -541,144 +428,14 @@ export default function HomePage() {
 							</p>
 						</div>
 					</div>
-				</section>
-
-				<section className="block" id="run" data-reveal>
-					<div className="sec-label">
-						<b>03</b>
-						{"// run"} <NextTag />
-					</div>
-					<h2>No parser. Just your validator.</h2>
-					<p className="deck">
-						Run ArkType two ways. <b>Dynamic</b>, <code>type()</code> parses
-						each definition at runtime, with no build step. <b>Precompiled</b>
-						{preview ? ", in the next release," : ""} your bundler constructs
-						each Type when you build, so no parser ships and nothing compiles at
-						runtime. Your definitions are the same either way.
-					</p>
-					<div className="claims-home">
-						<ClaimCharts />
-					</div>
-					<p className="deck">
-						We also raced the precompiled build against the ahead-of-time
-						compilers (typia, TypeBox, ajv) and the libraries you'd otherwise
-						write schemas with (Zod 4, compiled or not, and Valibot), each in
-						its own process, on the same inputs.
-					</p>
-					<div className="figs">
-						<div className="fig">
-							<div className="n">
-								{facts.mostFaster ?
-									`${facts.mostFaster} of ${facts.validCount}`
-								:	`${facts.validWins} of ${facts.validCount}`}
-							</div>
-						</div>
-						{facts.mostFaster ?
-							<p className="fig-p">
-								valid-data scenarios is the most any one library beat
-								precompiled ArkType on: {facts.mostFasterBy}.
-								{facts.fasterOthers &&
-									` Also faster: ${facts.fasterOthers}${facts.fasterOthersMostlyTied ? ", ties in most other runs that day" : ""}.`}
-								{!facts.fasterOthersMostlyTied &&
-									facts.unsteadyLosses &&
-									` In most other runs that day, ${facts.unsteadyLosses} were ties.`}{" "}
-								ArkType was fastest in {facts.validWins}
-								{facts.ties && ` and tied ${facts.ties}`}.
-							</p>
-						:	<p className="fig-p">
-								valid-data scenarios where precompiled ArkType was fastest.
-								{facts.ties && ` Tied: ${facts.ties}.`}
-							</p>
-						}
-						<div className="fig">
-							<div className="n sm">ajv</div>
-						</div>
-						<p className="fig-p">
-							was faster on {ajvRows} rows that report errors on invalid data,
-							by {facts.ajvMin} to {facts.ajvMax}. If your hot path reports
-							errors, ajv is the one to beat.
-							{facts.rejection &&
-								` Rejecting invalid input with a boolean check, ArkType was ${facts.rejection}.`}
-						</p>
-					</div>
-					<BenchmarkChart animate>
-						<div className="b-pre">
-							<div>
-								<h3>What precompiling removes</h3>
-								<p>
-									On valid data the precompiled build is {facts.versusJit}. The
-									bigger change is everything before the first call.
-								</p>
-								<dl className="facts">
-									<div>
-										<dt>cold start, login form app</dt>
-										<dd>
-											<b>{facts.coldStandalone}</b>
-											<span>JIT {facts.coldJit}</span>
-										</dd>
-									</div>
-									<div>
-										<dt>shipped validator, gzip</dt>
-										<dd>
-											<b>{facts.sizeStandalone}</b>
-											<span>JIT {facts.sizeJit}</span>
-										</dd>
-									</div>
-									<div>
-										<dt>parsing at startup</dt>
-										<dd>
-											<b>none</b>
-											<span>
-												no <code>new Function</code>, so it runs under strict
-												CSP
-											</span>
-										</dd>
-									</div>
-								</dl>
-							</div>
-							<div>
-								<p className="b-pre-lead">
-									A definition it can't precompile fails the check with the
-									reason: one more message your agent can act on.
-								</p>
-								<Terminal
-									title="before you build"
-									label="Output of arktype-precompile --check"
-								>
-									<span className="p">$</span> npx arktype-precompile --check
-									"src/**/*.ts"
-									{"\n"}
-									<span className="loc">src/forms.ts:14:19</span>
-									{"  "}
-									<span className="err">
-										{"type(`string <= ${limit}`) cannot be precompiled"}
-									</span>
-									{"\n  "}
-									<span className="dim">
-										`limit` is a parameter of makeField (src/forms.ts:12:22);
-										its value is known only at runtime
-									</span>
-									{"\n  "}Standalone builds construct every Type at build time.
-									Make it static, or build with runtime: "arktype".
-								</Terminal>
-							</div>
-						</div>
-					</BenchmarkChart>
-				</section>
-
-				<section className="block" id="agents" data-reveal>
-					<div className="sec-label">
-						<b>04</b>
-						{"// agents"}
-					</div>
-					<h2>Your agent's loop, set up once.</h2>
+					<h3 className="sub" id="loop">
+						The loop, end to end.
+					</h3>
 					<p className="deck">
 						It writes a definition, runs <code>tsc</code>, reads the error,
 						fixes it, then validates real input. A precompiled build adds one
 						more step of the same kind, its errors naming the file, line, reason
-						and fix. That step was the whole cost of precompiling, and your
-						agent pays it. Every message in this transcript is real ArkType and
-						TypeScript output.
+						and fix.
 					</p>
 					<div className="agents">
 						<figure
@@ -757,7 +514,9 @@ export default function HomePage() {
 							</ol>
 						</figure>
 						<div>
-							<h3 className="rows-title">Set it up once</h3>
+							<h3 className="rows-title" id="setup">
+								Set it up once
+							</h3>
 							<div className="rows">
 								<div className="row">
 									<span className="idx">01</span>
@@ -817,9 +576,148 @@ export default function HomePage() {
 					</div>
 				</section>
 
-				<section className="block" data-reveal aria-labelledby="more-title">
+				<section className="block" id="write" data-reveal>
+					<div className="sec-label">
+						<b>04</b>
+						{"// write"}
+					</div>
+					<h2>Same type. Now it runs.</h2>
+					<p className="deck">
+						Definitions use TypeScript's names, operators and optional keys,
+						written as strings and objects. The type ArkType infers is the one
+						you would have written by hand.
+					</p>
+					<div className="twin-code">
+						<figure className="code-card">
+							<Caption name="user.ts" kind="TypeScript" aside="types only" />
+							<HomeCode code={snippets.ts} />
+						</figure>
+						<div className="eq" aria-hidden>
+							<span>≡</span>
+							<span>≡</span>
+							<span>+</span>
+							<span>+</span>
+							<span>≡</span>
+							<span>≡</span>
+						</div>
+						<figure className="code-card glow">
+							<Caption
+								name="user.ts"
+								kind="ArkType"
+								aside="types and runtime"
+							/>
+							<HomeCode code={snippets.ark} />
+						</figure>
+					</div>
+					<p className="note">
+						{"// the two lines TypeScript can't check, ArkType can: "}
+						<code>string.email</code> and <code>number.integer &gt;= 0</code>
+					</p>
+				</section>
+
+				<section className="block" id="run" data-reveal>
 					<div className="sec-label">
 						<b>05</b>
+						{"// run"} <NextTag />
+					</div>
+					<h2>
+						Precompiled, it was <ClaimText claim={claims.zodSpec} />.
+					</h2>
+					<p className="deck">
+						We raced it against the ahead-of-time compilers (typia, TypeBox,
+						ajv) and the libraries you'd otherwise write schemas with (Zod 4,
+						compiled or not, and Valibot), each in its own process, on the same
+						inputs.{" "}
+						{facts.mostFaster ?
+							"On valid data, no other library was faster in more than "
+						:	"On valid data, it was fastest or tied in "}
+						<BenchSource facts={facts} />.
+					</p>
+					<p className="note">
+						{
+							"// prefer no build step? dynamic ArkType runs the same definitions, "
+						}
+						<ClaimText claim={claims.dynamicSpec} />
+					</p>
+					<div className="figs">
+						<div className="fig">
+							<div className="n">
+								{facts.mostFaster ?
+									`${facts.mostFaster} of ${facts.validCount}`
+								:	`${facts.validWins} of ${facts.validCount}`}
+							</div>
+						</div>
+						{facts.mostFaster ?
+							<p className="fig-p">
+								valid-data scenarios is the most any one library beat
+								precompiled ArkType on: {facts.mostFasterBy}.
+								{facts.fasterOthers &&
+									` Also faster: ${facts.fasterOthers}${facts.fasterOthersMostlyTied ? ", ties in most other runs that day" : ""}.`}
+								{!facts.fasterOthersMostlyTied &&
+									facts.unsteadyLosses &&
+									` In most other runs that day, ${facts.unsteadyLosses} were ties.`}{" "}
+								ArkType was fastest in {facts.validWins}
+								{facts.ties && ` and tied ${facts.ties}`}.
+							</p>
+						:	<p className="fig-p">
+								valid-data scenarios where precompiled ArkType was fastest.
+								{facts.ties && ` Tied: ${facts.ties}.`}
+							</p>
+						}
+						<div className="fig">
+							<div className="n sm">ajv</div>
+						</div>
+						<p className="fig-p">
+							was faster on {ajvRows} rows that report errors on invalid data,
+							by {facts.ajvMin} to {facts.ajvMax}. If your hot path reports
+							errors, ajv is the one to beat.
+							{facts.rejection &&
+								` Rejecting invalid input with a boolean check, ArkType was ${facts.rejection}.`}
+						</p>
+					</div>
+					<HeadlineNote className="note" />
+					<BenchmarkChart animate>
+						<div className="b-pre">
+							<div>
+								<h3>What precompiling removes</h3>
+								<p>
+									On valid data the precompiled build is {facts.versusJit}. The
+									bigger change is everything before the first call.
+								</p>
+								<dl className="facts">
+									<div>
+										<dt>cold start, login form app</dt>
+										<dd>
+											<b>{facts.coldStandalone}</b>
+											<span>JIT {facts.coldJit}</span>
+										</dd>
+									</div>
+									<div>
+										<dt>shipped validator, gzip</dt>
+										<dd>
+											<b>{facts.sizeStandalone}</b>
+											<span>JIT {facts.sizeJit}</span>
+										</dd>
+									</div>
+									<div>
+										<dt>parsing at startup</dt>
+										<dd>
+											<b>none</b>
+											<span>
+												no <code>new Function</code>, so it runs under strict
+												CSP
+											</span>
+										</dd>
+									</div>
+								</dl>
+							</div>
+						</div>
+					</BenchmarkChart>
+				</section>
+
+				<section className="block" data-reveal aria-labelledby="more-title">
+					<div className="sec-label">
+						<b>06</b>
 						{"// sets"}
 					</div>
 					<h2 id="more-title">Types as sets, reduced before they ship.</h2>
@@ -902,7 +800,25 @@ export default function HomePage() {
 			<footer className="closer">
 				<BoatLane />
 				<div className="wrap">
-					<h2>Start with your first type.</h2>
+					<h2>
+						Start with your first type.{" "}
+						<span className="hl">Or your agent's first prompt.</span>
+					</h2>
+					<div className="closer-agent">
+						<CopyCommand
+							text="npx skills add arktypeio/arktype"
+							label="Copy skill install command"
+						>
+							<span className="p">$</span> npx skills add arktypeio/arktype
+						</CopyCommand>
+						<CopyCommand
+							text="Migrate this project from Zod to ArkType."
+							label="Copy migration prompt"
+						>
+							<span className="p">›</span> Migrate this project from Zod to
+							ArkType.
+						</CopyCommand>
+					</div>
 					<div className="ctas">
 						<InstallButton />
 						<Link className="btn" href="/docs/intro/your-first-type">

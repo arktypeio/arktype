@@ -41,8 +41,9 @@ const ajvModule = async (scenario: SizedScenario) => {
 	)
 }
 
-// sized only: arktype precompiled with the "smallest" preset in a production
-// build (esbuild's "production" condition)
+// sized only: arktype precompiled with the "smallest" preset. Every bundle is
+// a production build (esbuild's "production" condition), which prunes a
+// precompiled validator by usage
 export const sizedLibraries = [...libraries, "standaloneSmallest"] as const
 
 export type SizedLibrary = (typeof sizedLibraries)[number]
@@ -117,7 +118,7 @@ export const bundle = async (
 		write: false,
 		metafile: true,
 		logLevel: "error",
-		conditions: library === "standaloneSmallest" ? ["production"] : [],
+		conditions: ["production"],
 		plugins:
 			library === "standalone" ?
 				[precompile.esbuild({ cwd: apps, ...standaloneOptions })]

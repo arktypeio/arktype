@@ -28,6 +28,7 @@ import snippetContentsById from "../../components/snippets/contentsById.ts"
 import {
 	claims,
 	draftOf,
+	headlineMethod,
 	isPending,
 	sizeChart,
 	speedChart,
@@ -310,14 +311,26 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 					[{ type: "text", value: text }]
 				:	[paragraph(text)]
 		}
-		case "HeadlineDetail": {
-			const text = `${claimMarkdown(claims.headlineDetail)}*`
+		case "Headline": {
+			const text = `${claimMarkdown(claims.headline)}*`
 			return node.type === "mdxJsxTextElement" ?
 					[{ type: "text", value: text }]
 				:	[paragraph(text)]
 		}
 		case "HeadlineNote":
-			return [paragraph(claimMarkdown(claims.headlineNote))]
+			return [
+				{
+					type: "paragraph",
+					children: [
+						{ type: "text", value: `${claimMarkdown(claims.headlineNote)} ` },
+						{
+							type: "link",
+							url: headlineMethod.href,
+							children: [{ type: "text", value: headlineMethod.label }]
+						}
+					]
+				} satisfies Paragraph
+			]
 		case "ClaimCharts":
 			return [
 				...[speedChart, sizeChart].map(claimChartMarkdown),

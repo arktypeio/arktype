@@ -40,6 +40,8 @@
 		"./ark/repo/tsCompat/workers.d.ts",
 		// run inside external benchmarks, against their sources and installs
 		"./ark/repo/bench/external/moltar/cjs",
-		"./ark/repo/bench/external/sb"
+		"./ark/repo/bench/external/sb",
+		// its forms import libraries from its own install
+		"./ark/repo/bench/external/forms"
 	]
 }
