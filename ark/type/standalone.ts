@@ -2126,13 +2126,22 @@ ${writeFunction(
 			: pipes ?
 				"(data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault)"
 			:	"data => validator(data, undefined, runtime.throwOnDefault)"
+		const allowsOf = this.frozen(ownsValidator || makes ? "parts[0]" : "allows")
 		const call =
 			ownsValidator ? `make(parts${configured ? ", configuredOnFail" : ""})`
 			: isApply ?
 				applier ? applier.apply
 				: makes ? "make(parts)"
 				: "rootApply"
-			: !isCalled ? "{}"
+			: !isCalled ?
+				// an object nothing calls is a literal of its members
+				`{ ${[
+					members.has("assert") && `assert: ${this.frozen(assertion)}`,
+					hasAttributes && (holdsOnlyMeta(members) ? "meta" : "...attributes"),
+					reads.readsAllows && `allows: ${allowsOf}`
+				]
+					.filter(member => member)
+					.join(", ")} }`
 			: inlined ? `${signature} => ${inlined}`
 			: failing ? `${signature} => rootApply(data, ${failing})`
 			: `${signature} => pipedFromCtx ? runtime.pipedIntoUndetailed(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)`
@@ -2146,15 +2155,13 @@ ${writeFunction(
 				`const configuredOnFail = ${metaOf}.onFail ?? runtime.runtimeConfig.onFail`
 			:	`const configuredOnFail = ${metaOf}.onFail`,
 			`const validator = ${members.has("methods") ? `runtime.setPrototypeOf(${call}, runtime.freeze(runtime.Validator.prototype))` : call}`,
-			members.has("assert") ?
+			members.has("assert") && isCalled ?
 				`validator.assert = ${this.frozen(assertion)}`
 			:	"",
-			!hasAttributes ? ""
+			!hasAttributes || !isCalled ? ""
 			: holdsOnlyMeta(members) ? "validator.meta = meta"
 			: "runtime.assign(validator, attributes)",
-			reads.readsAllows ?
-				`validator.allows = ${this.frozen(ownsValidator || makes ? "parts[0]" : "allows")}`
-			:	"",
+			reads.readsAllows && isCalled ? `validator.allows = ${allowsOf}` : "",
 			members.has("~standard") ?
 				`validator["~standard"] = ${this.frozen(`{
 		vendor: "arktype",
