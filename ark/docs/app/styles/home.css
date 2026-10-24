@@ -1736,6 +1736,9 @@
 		max-width: 34ch;
 		margin-bottom: 36px;
 	}
+	.cmd .comment {
+		color: var(--ink-3);
+	}
 	.btn .arrow.down {
 		display: inline-block;
 	}
@@ -1784,6 +1787,11 @@
 		}
 		.phrase:last-child {
 			color: var(--gold);
+		}
+		/* the trade-off the title strikes out */
+		s {
+			color: var(--ink-3);
+			text-decoration-thickness: 0.07em;
 		}
 	}
 	/* beside the section label, clear of a title that runs the full width */

@@ -55,9 +55,9 @@ export const WhyNow = () => (
 		</h2>
 		<p className="deck">
 			Precompiled validators have always been faster and smaller. Runtime
-			validators won on DX anyway, because a build step taxed the loop you work
-			in. With agents writing most of the code, that trade has flipped, and
-			ArkType is designed for the loop as it runs now.
+			validators won anyway, because a build step taxed the loop you worked in.
+			Now your agent works in that loop, so the trade has flipped, and ArkType's
+			build is made for it.
 		</p>
 		<div className="sides" data-reveal>
 			<div className="side">
@@ -134,9 +134,7 @@ export const WhyNow = () => (
 			<span className="side-who">and the numbers</span>
 			<p>
 				Every speed sentence on this page is a test we fixed before its data:
-				one run, published whatever it shows. When the release candidate missed
-				one, its sentence fell back to what the instruction counts proved, until
-				the release's run of the same plan held.{" "}
+				one run, published whatever it shows.{" "}
 				<a className="link ext" href={plan}>
 					The plan
 				</a>

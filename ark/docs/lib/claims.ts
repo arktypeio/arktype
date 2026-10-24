@@ -206,19 +206,21 @@ const boardOrder = ["speed", "startup", "size"] as const satisfies CategoryId[]
 /** the categories ArkType has the best average in, the only ones the board states a win in */
 const led = boardOrder.filter(leads)
 
+/** whether ArkType leads every category the board shows, the only time it may say "Pick 3" */
+export const leadsEvery = led.length === boardOrder.length
+
 /** where ArkType's best average places it in a category, a superlative only where it leads */
 const standingOf = (category: CategoryId) => {
 	const across = `across ${leaderboards[category].suites.length} public benchmarks`
-	if (leads(category)) {
-		return {
-			leads: true,
-			standing: `${wording[category].superlative} on average ${across}`
-		}
-	}
 	const { place, ranked } = placeOf(category)
 	return {
-		leads: false,
-		standing: `${ordinal(place)} of ${ranked} on average ${across}`
+		leads: leads(category),
+		place: ordinal(place),
+		ranked,
+		standing:
+			leads(category) ?
+				`${wording[category].superlative} on average ${across}`
+			:	`${ordinal(place)} of ${ranked} on average ${across}`
 	}
 }
 
@@ -230,6 +232,11 @@ const listOf = (items: string[]) =>
 const size = placeOf("size")
 // the library after ArkType where it leads, otherwise the leader
 const sizeRival = leaderboards.size.standings[size.place === 1 ? 1 : 0]
+
+/** the library with the best average after ArkType's, in each category it leads */
+const nextBest = led.map(
+	category => leaderboards[category].standings[1].library
+)
 
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
@@ -286,10 +293,23 @@ export const claims = {
 	// MCP SDK v1
 	zodMigration:
 		"With the skill, one prompt fully migrated 4 of 10 open-source Zod projects we picked by stars before running it: typecheck and tests pass, Zod is gone, generated inputs get the same results and no casts were added.",
-	// the homepage board's title, a phrase per category ArkType leads on
-	// average: runs faster, starts lighter (instructions rather than time),
-	// ships less
-	boardTitle: led.map(category => wording[category].phrase).join(" "),
+	// the hero's second sentence states a lead in every category, so
+	// pickThreeCategories below checks each, and that one build holds them
+	pickThree:
+		"Validators made you choose between fast, small and quick to start. Precompiled with its defaults, ArkType leads all three.",
+	// the homepage board's title: "Pick 3" only while ArkType leads every
+	// category, otherwise a phrase per category it leads on average: runs
+	// faster, starts lighter (instructions rather than time), ships less
+	boardTitle:
+		leadsEvery ?
+			"Fast. Small. Quick to start. Pick 3."
+		:	led.map(category => wording[category].phrase).join(" "),
+	// that no other library is a close second everywhere: only while a
+	// different one has the best average after ArkType's in each category
+	boardNextBest:
+		leadsEvery && new Set(nextBest).size === nextBest.length ?
+			`Behind ArkType, the best average is a different library's in each: ${listOf(led.map((category, i) => `${nextBest[i]} for ${wording[category].measures}`))}.`
+		:	"",
 	// what the board's superlatives average
 	boardNote: `*Best average across public benchmarks, each result a ratio to the best: ${listOf(led.map((category, i) => `${leaderboards[category].rows}${i ? "" : " results"} for ${wording[category].measures}`))}.`,
 	// the board's size standing, a lead only where the average says so
@@ -340,6 +360,10 @@ type CategoryBase = {
 	label: string
 	/** the options ArkType's numbers were built with */
 	build: string
+	/** ArkType's place by best average: "1st" */
+	place: string
+	/** how many libraries the category ranks */
+	ranked: number
 	/** where ArkType's best average places it */
 	standing: string
 	/** whether the standing is a superlative, footnoted by the board's note */
@@ -370,10 +394,6 @@ export type SpreadCategory = CategoryBase & {
 /** a category drawn as its best averages, ArkType's among them */
 export type StandingCategory = CategoryBase & {
 	id: "size"
-	/** ArkType's place: "2nd" */
-	place: string
-	/** how many libraries the category ranks */
-	ranked: number
 	/** the leaders, at least three and through one past ArkType */
 	standings: Standing[]
 }
@@ -416,8 +436,6 @@ export const categories: Category[] = [
 		label: "bundle size",
 		build: "default build",
 		...standingOf("size"),
-		place: ordinal(size.place),
-		ranked: size.ranked,
 		standings: leaderboards.size.standings.slice(
 			0,
 			Math.max(3, size.place + 1)
@@ -429,3 +447,12 @@ export const categories: Category[] = [
 
 /** whether one build holds every category, the only time the board may say so */
 export const oneBuild = new Set(categories.map(c => c.build)).size === 1
+
+if (!isPending(claims.pickThree)) {
+	for (const category of boardOrder) assertLeads(category, "The hero")
+	if (!oneBuild) {
+		throw new Error(
+			`The hero claims one build leads every category, but the board's categories come from ${listOf([...new Set(categories.map(c => c.build))])}`
+		)
+	}
+}
