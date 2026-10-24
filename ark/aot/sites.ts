@@ -2,6 +2,7 @@ import type { Node } from "oxc-parser"
 import {
 	enclosingFunctionOf,
 	isArk,
+	staticBodyOf,
 	isRuntimeExport,
 	isIntrospectedProperty,
 	isValidatorMember,
@@ -29,6 +30,8 @@ export interface SiteCandidate {
 	fallbacks: Node[]
 	// what it reads a validator member of, innermost first, ending at a Type
 	ends: Node[]
+	// the function a call to a static helper calls, e.g. `text` for `text(50)`
+	callee?: [FunctionNode, SourceModule]
 	isSite?: boolean
 }
 
@@ -51,10 +54,16 @@ export const findSites = (
 	for (const reference of module.scopes.references) {
 		const found = rootOf(reference, module, graph)
 		if (!found) continue
-		const [kind, root] = found
-		const fallbacks: Node[] = []
+		const [kind, root, callee] = found
+		const fallbacks: Node[] = callee ? [root] : []
 		const ends: Node[] = []
-		const climbed = climb(root, fallbacks, ends, module, graph)
+		const climbed = climb(
+			callee ? operatorOf(root)[1]! : root,
+			fallbacks,
+			ends,
+			module,
+			graph
+		)
 		const top =
 			(foldsIntrospection && introspectionReadOf(climbed, module, graph)) ||
 			climbed
@@ -70,6 +79,7 @@ export const findSites = (
 				fallbacks,
 				ends
 			}
+			if (callee) candidate.callee = callee
 		}
 		reads.push({ reference, kind, root, candidate })
 	}
@@ -109,7 +119,9 @@ const rootOf = (
 	reference: Reference,
 	module: SourceModule,
 	graph: ModuleGraph
-): [kind: SiteKind, root: Node] | undefined => {
+):
+	| [kind: SiteKind, root: Node, callee?: [FunctionNode, SourceModule]]
+	| undefined => {
 	const binding = reference.binding
 	if (!binding || reference.isWrite) return
 	const [name, read] = graph.arkExportOf(reference, module) ?? []
@@ -118,6 +130,22 @@ const rootOf = (
 		return ["reference", reference.id]
 	const member = arkMemberOf(reference.id, module, graph)
 	if (member) return ["reference", member]
+	const [operand, parent] = operatorOf(reference.id)
+	const callee =
+		parent?.type === "MemberExpression" && parent.object === operand ?
+			parent
+		:	reference.id
+	const fn = graph.functionOf(callee, module)
+	if (!fn || !staticBodyOf(fn[0])) return
+	const [calleeOperand, call] = operatorOf(callee)
+	if (
+		graph.composerOf(callee, module) ||
+		// e.g. `nullable(User)`, whose kind is what it returns for `User`
+		(call?.type === "CallExpression" &&
+			call.callee === calleeOperand &&
+			isArk(graph.kindOf(call, module)))
+	)
+		return ["reference", callee, fn]
 }
 
 // e.g. `schemas.users.User` with `schemas` a namespace or object literal

@@ -543,6 +543,10 @@ export const isOnlyType = (kind: KindBits): boolean =>
 const isFactory = (kind: KindBits): boolean =>
 	(kind & (kinds.returnsType | kinds.returnsArk)) !== 0
 
+// e.g. `T => T.or("null")`, whose call returns a Type when passed one
+export const mayReturnArk = (kind: KindBits): boolean =>
+	isFactory(kind) || (kind & kinds.returnsUnsure) !== 0
+
 interface Application {
 	fn: FunctionNode
 	args: readonly KindBits[]
@@ -2933,7 +2937,8 @@ export class ModuleGraph {
 		}
 	}
 
-	private functionOf(
+	// e.g. `text` for `text(50)`, imported or read off a namespace
+	functionOf(
 		callee: Node,
 		module: SourceModule
 	): [FunctionNode, SourceModule] | undefined {
@@ -3364,7 +3369,7 @@ const onlyReturnOf = (fn: FunctionNode): Node | undefined => {
 const isStatic = (fn: FunctionNode): boolean =>
 	!!staticBodyOf(fn) && !readsArguments(fn)
 
-const functionOfBinding = (
+export const functionOfBinding = (
 	binding: Binding,
 	module: SourceModule
 ): FunctionNode | undefined => {

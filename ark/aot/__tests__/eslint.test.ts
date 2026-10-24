@@ -31,12 +31,12 @@ contextualize(() => {
 		attest(
 			new Linter({ configType: "flat", cwd: fromHere("checked") })
 				.verify(
-					'import { type } from "arktype"\nexport const makeField = limit => type(`string <= ${limit}`)\n',
+					'import { type } from "arktype"\nexport const fields = [1, 2].map(limit => type(`string <= ${limit}`))\n',
 					[configs.recommended],
 					{ filename: fromHere("checked", "linted.ts") }
 				)
 				.map(message => `${message.line}:${message.column} ${message.ruleId}`)
-		).equals(["2:35 @ark/aot/precompilable"])
+		).equals(["2:43 @ark/aot/precompilable"])
 	})
 
 	it("reports sites that cannot be precompiled", () => {

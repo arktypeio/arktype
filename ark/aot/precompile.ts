@@ -67,12 +67,15 @@ import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
 	arkPackageSpecifier,
+	bindingOfFunction,
 	contains,
 	declarationStartOf,
 	importsValues,
 	isArk,
 	isArkObject,
 	isComposingMember,
+	functionOfBinding,
+	mayReturnArk,
 	isFunctionNode,
 	isObjectWrite,
 	writeOf,
@@ -160,6 +163,7 @@ import {
 	hintsByRule,
 	opaqueSchemaHint,
 	writeGenericHint,
+	writeHelperCallHint,
 	writeOpaqueParameterHint,
 	islandHint,
 	islandValueMessage,
@@ -496,7 +500,12 @@ export class Precompiler {
 	private loadedBeforeConfigure: string[] | undefined
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
 	private readsByModule = new WeakMap<SourceModule, SiteRead[]>()
+	private readCandidatesByModule = new WeakMap<SourceModule, SiteCandidate[]>()
 	private candidatesByModule = new WeakMap<SourceModule, SiteCandidate[]>()
+	private calledParamsByFn = new WeakMap<
+		FunctionNode,
+		CalledParam | undefined
+	>()
 	private inertByModule = new WeakMap<SourceModule, boolean>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
 	// each module's import cycle (SCC), numbered as found
@@ -2784,43 +2793,281 @@ export class Precompiler {
 			}
 		}
 		diagnostics.push(...this.checkConfiguration(module))
+		let quiet: FunctionNode[] = []
 		if (this.mode === "standalone") {
+			quiet = this.quietFunctionsOf(module, sites)
 			diagnostics.push(
 				...this.checkStandalone(module, candidates, settled),
 				...this.checkIslands(module, sites),
-				...this.checkDynamicImports(module)
+				...this.checkDynamicImports(module),
+				...this.checkHelperReads(module, sites, quiet)
 			)
 		}
+		// nothing runs what they hold unless the build reports it
+		const isQuiet = (span: Span) => quiet.some(fn => contains(fn, span))
 		return {
-			sites: sites.sort((l, r) => l.start - r.start),
-			diagnostics: diagnostics.sort((l, r) => l.start - r.start),
+			sites: sites
+				.filter(site => site.status === "accepted" || !isQuiet(site))
+				.sort((l, r) => l.start - r.start),
+			diagnostics: diagnostics
+				.filter(
+					diagnostic => diagnostic.file !== module.id || !isQuiet(diagnostic)
+				)
+				.sort((l, r) => l.start - r.start),
 			dependencies: this.graph.dependenciesOf(module.id)
 		}
 	}
 
-	// registered first, so each site runs once however it's reached
+	// a helper whose calls the build folds, and each function the program
+	// reaches only through sites, which run what they read only at build
+	private quietFunctionsOf(
+		module: SourceModule,
+		sites: Site[]
+	): FunctionNode[] {
+		const quiet: FunctionNode[] = []
+		const unread: [FunctionNode, Binding][] = []
+		for (const binding of module.scopes.bindingsById.values()) {
+			const fn = functionOfBinding(binding, module)
+			if (!fn) continue
+			if (this.calledParamOf(fn, module)) quiet.push(fn)
+			else if (!binding.exportNames.length) unread.push([fn, binding])
+		}
+		for (let grew = true; grew; ) {
+			grew = false
+			for (const [fn, binding] of unread) {
+				if (
+					quiet.includes(fn) ||
+					!binding.references.every(reference =>
+						isReachedOnlyAtBuild(reference.id, sites, quiet)
+					)
+				)
+					continue
+				quiet.push(fn)
+				grew = true
+			}
+		}
+		return quiet
+	}
+
+	// e.g. `[10, 20].map(text)`, which calls text where the build can't fold it
+	private checkHelperReads(
+		module: SourceModule,
+		sites: Site[],
+		quiet: FunctionNode[]
+	): Diagnostic[] {
+		const result: Diagnostic[] = []
+		const report = (read: Node, fn: FunctionNode, called: CalledParam) => {
+			const name = inferredNameOf(fn)
+			result.push(
+				this.diagnostic(
+					module,
+					read,
+					"R1",
+					`\`${module.snippetOf(read)}\` is read outside a call the build precompiles`,
+					[
+						`${called.module.snippetOf(called.read)} (${called.module.positionOf(called.read)}) reads \`${called.param.name}\`, a parameter of ${inferredNameOf(called.param.declaration as FunctionNode) || "a function"}, so the build precompiles it at each call to ${name}`
+					],
+					writeHelperCallHint(name)
+				)
+			)
+		}
+		for (const reference of module.scopes.references) {
+			const binding = reference.binding
+			if (
+				!binding ||
+				reference.isWrite ||
+				(binding.kind !== "import" && !functionOfBinding(binding, module))
+			)
+				continue
+			let read: Node = reference.id
+			const [operand, parent] = operatorOf(read)
+			const target =
+				binding.kind === "import" ?
+					this.graph.importOf(binding, module)
+				:	undefined
+			if (target?.kind === "namespace") {
+				if (parent?.type === "MemberExpression" && parent.object === operand)
+					read = parent
+				// e.g. `Object.values(fields)`, reading each helper it exports
+				else if (read.parent?.type !== "ExportSpecifier") {
+					const [helper] = this.foldedHelpersOf(target.module)
+					if (helper && !isReachedOnlyAtBuild(read, sites, quiet))
+						report(read, helper[1], helper[2])
+					continue
+				}
+			}
+			const fn = this.graph.functionOf(read, module)
+			const called = fn && this.calledParamOf(...fn)
+			if (
+				called &&
+				read.parent?.type !== "ExportSpecifier" &&
+				!isReachedOnlyAtBuild(read, sites, quiet)
+			)
+				report(read, fn[0], called)
+		}
+		// e.g. `import("./fields.ts")`, whose namespace holds each helper
+		walk(module.program, node => {
+			const source = loadedSpecifierOf(node)
+			const target =
+				typeof source === "string" ?
+					this.graph.resolve(source, module)
+				:	undefined
+			const [helper] =
+				target instanceof SourceModule ? this.foldedHelpersOf(target) : []
+			if (helper && !isReachedOnlyAtBuild(node, sites, quiet))
+				report(node, helper[1], helper[2])
+			return true
+		})
+		return result
+	}
+
+	// e.g. `text` for `export const text = (max: number) => type(...)`, which a
+	// module the build doesn't precompile can't call
+	private foldedHelpersOf(
+		module: SourceModule,
+		seen = new Set<SourceModule>()
+	): [name: string, fn: FunctionNode, called: CalledParam][] {
+		seen.add(module)
+		const result: [string, FunctionNode, CalledParam][] = []
+		for (const name in module.scopes.exportsByName) {
+			const target = this.graph.exportOf(module, name)
+			const fn =
+				target.kind === "binding" &&
+				functionOfBinding(target.binding, target.module)
+			const called = fn && this.calledParamOf(fn, target.module)
+			if (called) result.push([name, fn, called])
+		}
+		for (const specifier of module.scopes.starExports) {
+			const target = this.graph.resolve(specifier, module)
+			if (!(target instanceof SourceModule) || seen.has(target)) continue
+			for (const helper of this.foldedHelpersOf(target, seen)) {
+				if (
+					helper[0] !== "default" &&
+					!(helper[0] in module.scopes.exportsByName)
+				)
+					result.push(helper)
+			}
+		}
+		return result
+	}
+
+	// registered first, so each site runs once however it's reached, but a
+	// call to a helper only once the build folds its calls
 	private readsOf(module: SourceModule): SiteRead[] {
 		const cached = this.readsByModule.get(module)
 		if (cached) return cached
 		const reads = findSites(module, this.graph, this.mode === "standalone")
 		this.readsByModule.set(module, reads)
 		for (const { candidate } of reads) {
-			if (candidate)
+			if (candidate && !candidate.callee)
 				this.interpreter.sitesByNode.set(candidate.state.node, candidate.state)
 		}
 		return reads
 	}
 
-	private candidatesOf(module: SourceModule): SiteCandidate[] {
-		const cached = this.candidatesByModule.get(module)
+	// with calls to helpers, which are sites only where the helper needs them
+	private readCandidatesOf(module: SourceModule): SiteCandidate[] {
+		const cached = this.readCandidatesByModule.get(module)
 		if (cached) return cached
 		const candidates = filterSites(
 			this.readsOf(module),
 			module,
 			this.interpreter
 		)
+		this.readCandidatesByModule.set(module, candidates)
+		return candidates
+	}
+
+	private candidatesOf(module: SourceModule): SiteCandidate[] {
+		const cached = this.candidatesByModule.get(module)
+		if (cached) return cached
+		const candidates = this.readCandidatesOf(module).filter(
+			candidate => !candidate.callee || this.foldsCallsTo(candidate)
+		)
 		this.candidatesByModule.set(module, candidates)
 		return candidates
+	}
+
+	private foldsCallsTo(call: SiteCandidate): boolean {
+		if (!this.calledParamOf(...call.callee!)) return false
+		this.interpreter.sitesByNode.set(call.state.node, call.state)
+		return true
+	}
+
+	// e.g. `max` in `const text = (max: number) => type(`string <= ${max}`)`,
+	// which the build knows only where text is called, so it folds each call
+	private calledParamOf(
+		fn: FunctionNode,
+		module: SourceModule
+	): CalledParam | undefined {
+		if (this.calledParamsByFn.has(fn)) return this.calledParamsByFn.get(fn)
+		// a helper reaching itself is judged by its other reads
+		this.calledParamsByFn.set(fn, undefined)
+		// a declaration's kind is its binding's
+		const binding = bindingOfFunction(fn, module)
+		if (
+			this.mode !== "standalone" ||
+			!staticBodyOf(fn) ||
+			!mayReturnArk(
+				binding ?
+					this.graph.bindingKindOf(binding, module)
+				:	this.graph.kindOf(fn, module)
+			)
+		)
+			return
+		let result: CalledParam | undefined
+		const candidates = this.readCandidatesOf(module)
+		for (const candidate of candidates) {
+			if (
+				!contains(fn, candidate.state.node) ||
+				(candidate.callee && !this.foldsCallsTo(candidate))
+			)
+				continue
+			if (!(candidate.isSite ??= this.settle(candidate))) continue
+			const param = paramOf(rejectionOf(candidate.state))
+			if (param) {
+				result = { module, read: candidate.state.node, param }
+				break
+			}
+		}
+		// e.g. `T.or("null")` in `<t>(T: Type<t>) => T.or("null")`
+		walk(fn, node => {
+			if (
+				result ||
+				candidates.some(candidate => contains(candidate.state.node, node))
+			)
+				return false
+			const [read, object, isUnsure] =
+				(node.type === "MemberExpression" &&
+					!isWriteTarget(node) &&
+					this.graph.unavailableReadOf(
+						node,
+						module,
+						this.unsureLackedMembers
+					)) ||
+				[]
+			const id = object && unwrapChain(object)
+			const binding =
+				id?.type === "Identifier" ?
+					module.scopes.refsById.get(id)?.binding
+				:	undefined
+			if (
+				typeof read === "string" &&
+				isComposingMember(read) &&
+				binding?.kind === "param" &&
+				binding.declaration === fn &&
+				!isInIsland(node, module) &&
+				// arktype's own packages are the runtime, as checkStandalone reads them
+				!(
+					isUnsure &&
+					arkPackageName.test(this.graph.packageNameOf(module.id) ?? "")
+				)
+			)
+				result = { module, read: node, param: binding }
+			return !result
+		})
+		this.calledParamsByFn.set(fn, result)
+		return result
 	}
 
 	private settle(candidate: SiteCandidate): boolean {
@@ -4254,28 +4501,7 @@ export class Precompiler {
 	private checkDynamicImports(module: SourceModule): Diagnostic[] {
 		const result: Diagnostic[] = []
 		walk(module.program, node => {
-			const source =
-				node.type === "ImportExpression" ? node.source
-					// e.g. one createRequire() returns
-				: (
-					node.type === "CallExpression" &&
-					node.callee.type === "Identifier" &&
-					node.callee.name === "require"
-				) ?
-					node.arguments[0]
-				: (
-					node.type === "TSImportEqualsDeclaration" &&
-					node.importKind !== "type" &&
-					node.moduleReference.type === "TSExternalModuleReference"
-				) ?
-					node.moduleReference.expression
-				:	undefined
-			if (
-				source?.type === "Literal" &&
-				typeof source.value === "string" &&
-				source.value === "arktype" &&
-				!isDiscarded(node)
-			) {
+			if (loadedSpecifierOf(node) === "arktype" && !isDiscarded(node)) {
 				result.push(
 					this.diagnostic(
 						module,
@@ -4640,6 +4866,28 @@ const sharedSchemaExports = Object.keys(runtimeExports).filter(
 const isEncodingError = (e: Error) =>
 	e.message.startsWith(writeMissingInverseMessage(""))
 
+// e.g. "./a.ts" for `import("./a.ts")`, `require("./a.ts")` or
+// `import a = require("./a.ts")`
+const loadedSpecifierOf = (node: Node): unknown => {
+	const source =
+		node.type === "ImportExpression" ? node.source
+			// e.g. one createRequire() returns
+		: (
+			node.type === "CallExpression" &&
+			node.callee.type === "Identifier" &&
+			node.callee.name === "require"
+		) ?
+			node.arguments[0]
+		: (
+			node.type === "TSImportEqualsDeclaration" &&
+			node.importKind !== "type" &&
+			node.moduleReference.type === "TSExternalModuleReference"
+		) ?
+			node.moduleReference.expression
+		:	undefined
+	return source?.type === "Literal" ? source.value : undefined
+}
+
 // e.g. `await import("arktype")` as a statement, loading a module only to run it
 const isDiscarded = (node: Node): boolean => {
 	let [, parent] = operatorOf(node)
@@ -4822,6 +5070,37 @@ const runsOnceAtLoad = (call: Node): boolean => {
 			statement.type === "ExportDefaultDeclaration")
 	)
 }
+
+// a parameter a helper reads where the build refuses it, as each call passes it
+interface CalledParam {
+	module: SourceModule
+	read: Node
+	param: Binding
+}
+
+// e.g. `max` for "`max` is a parameter of text ..."
+const paramOf = (rejection: DynamicValue | undefined): Binding | undefined => {
+	for (let link = rejection; link; link = link.cause) {
+		if (link.code === "parameter")
+			return link.module.scopes.refsById.get(link.node)?.binding
+	}
+}
+
+// a read the output keeps runs only if the build folds it or reports it
+const isReachedOnlyAtBuild = (
+	node: Node,
+	sites: Site[],
+	quiet: FunctionNode[]
+): boolean =>
+	quiet.some(fn => contains(fn, node)) ||
+	sites.some(
+		site =>
+			contains(site, node) &&
+			(site.status === "rejected" ||
+				(site.status === "accepted" &&
+					!site.references.some(reference => contains(reference, node)) &&
+					!(site.definition && contains(site.definition, node))))
+	)
 
 const rejectionOf = (state: SiteState): DynamicValue | undefined =>
 	state.error instanceof DynamicValue ? state.error

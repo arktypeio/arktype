@@ -113,6 +113,9 @@ export const writeGenericHint = (
 		` If \`${param}\` isn't a Type, annotate it with its type.`
 	))
 
+export const writeHelperCallHint = (fn: string): string =>
+	`Call ${fn} directly, with arguments the build can read, like literals and consts, so it precompiles each call.`
+
 // reasons a standalone build refuses a site, with how to fix each
 const textHints: [
 	pattern: RegExp,
