@@ -13,7 +13,6 @@ const docs = join(here, "..", "..", "..", "docs")
 const sources = {
 	arkType: "results/arktype-90d510484.json",
 	counts: "results/counts-a306152ce.json",
-	homepageCounts: "results/homepage-counts-54777c69a.json",
 	startup: "results/startup-90d510484-node24.json",
 	forms: "results/forms-642b4517e.json",
 	sbCounts: "results/sb-counts-6c5fd9862.json",
@@ -116,20 +115,9 @@ const moltar = byCase(
 )
 
 const bench = read(join(docs, "lib", "bench", "benchData.json"))
-// counted in instructions, as the README's "Which suites" counts wall-clock
-// rows measured under load
-const homepageCounts: Record<string, Record<string, number[]>> = read(
-	join(here, sources.homepageCounts)
-)
-const homepage: Row[] = Object.entries(homepageCounts).map(([id, byArm]) =>
-	rowOf(
-		id,
-		Object.fromEntries(
-			Object.entries({ ...byArm, ...arkType.homepage[id] }).map(
-				([arm, reps]) => [arm, median(reps as number[])]
-			)
-		)
-	)
+const homepage: Row[] = bench.scenarios.map(
+	(s: { id: string; medianNs: Record<string, number> }) =>
+		rowOf(s.id, s.medianNs)
 )
 const homepageSize = Object.fromEntries(
 	Object.entries(bench.size).map(([app, byArm]) => [
@@ -265,8 +253,8 @@ const suites = [
 		category: "speed",
 		id: "homepage",
 		label: "the homepage's benchmark",
-		unit: "instructions per call",
-		source: sources.homepageCounts,
+		unit: "ns per call",
+		source: "benchData.json scenarios",
 		rows: homepage
 	},
 	{

@@ -205,7 +205,7 @@ every row.
 | category | suite                                       | rows                                              | measure                                                               |
 | -------- | ------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------- |
 | speed    | moltar's typescript-runtime-type-benchmarks | parseSafe, parseStrict, assertLoose, assertStrict | instructions per call (`results/counts-*.json`)                       |
-| speed    | the homepage's benchmark                    | its 32 scenarios                                  | median instructions per call (`results/homepage-counts-*.json`)       |
+| speed    | the homepage's benchmark                    | its 32 scenarios                                  | median ns per call (`ark/docs/lib/bench/benchData.json`)              |
 | startup  | `startup.ts`                                | its scenarios on Node 24                          | median instructions, less the baseline bundle's (`results/startup-*`) |
 | startup  | the homepage's cold start                   | its apps                                          | median ms from import to first validation (`benchData.json`)          |
 | size     | valibot.dev's login form                    | the form, written in each library (`forms/`)      | gzipped bytes (`results/forms-*.json`)                                |
