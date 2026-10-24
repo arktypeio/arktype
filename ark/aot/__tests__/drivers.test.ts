@@ -208,6 +208,38 @@ contextualize(function (this: Mocha.Suite) {
 			).satisfies(/^ArkIssues {/)
 		})
 
+		it("a ~standard.jsonSchema the build left out, read outside production", () => {
+			const dir = writeFixture(
+				{
+					"main.ts": `import { type } from "arktype"
+
+const jsonSchemaOf = (schema: any) => {
+	try {
+		return JSON.stringify(schema["~standard"].jsonSchema?.input({ target: "draft-2020-12" }))
+	} catch (e) {
+		return (e as Error).message
+	}
+}
+
+console.log(jsonSchemaOf(type({ a: "string" })))
+`
+				},
+				fromHere("temp", "lackedJsonSchema")
+			)
+			attest(node(["main.ts"], {}, dir).stdout)
+				.snap(`~standard.jsonSchema isn't baked into this validator, which a library converting it to JSON Schema reads. Set "members": { "~standard.jsonSchema": true } in ark.json.
+`)
+			attest(node(["main.ts"], {}, dir, { NODE_ENV: "production" }).stdout)
+				.snap(`undefined
+`)
+			attest(
+				node(["main.ts"], { members: { "~standard.jsonSchema": true } }, dir)
+					.stdout
+			)
+				.snap(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"a":{"type":"string"}},"required":["a"]}
+`)
+		})
+
 		it("import cycle", () => {
 			const expected = runPlain(cycle)
 			// a module reached before it loads creates lazily, even with lazy false

@@ -115,7 +115,7 @@ Composing inside a definition is fine anywhere, even in a function body: `const 
 
 - A validator validates, `.assert()`s and is a Standard Schema, but has no `.and`, `.or`, `.pick` or other composing method. The build fails where it sees one called outside a definition.
 - Error messages say what failed but not what the value was: `email must be an email address`, without `(was "x")`. Text you configure with `.configure({ message })` or `.describe()` is kept.
-- Introspection members like `toJsonSchema()`, `json` and `~standard.jsonSchema` ship only when the `members` option sets them. A library that converts a Type to JSON Schema itself, like the MCP SDK or the AI SDK, needs `"members": { "~standard.jsonSchema": true }` in `ark.json`.
+- Introspection members like `toJsonSchema()`, `json` and `~standard.jsonSchema` ship only when the `members` option sets them. A library that converts a Type to JSON Schema itself, like the MCP SDK or the AI SDK, needs `"members": { "~standard.jsonSchema": true }` in `ark.json`. Without it, the library reads `undefined` in production, and outside production the read throws, naming that fix.
 - Locales from `arktype/i18n` aren't supported.
 
 ## Errors and their fixes

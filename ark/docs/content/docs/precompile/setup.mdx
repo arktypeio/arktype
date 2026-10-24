@@ -169,7 +169,7 @@ Set [options](/docs/precompile/options) in `ark.json` beside your `package.json`
 }
 ```
 
-A validator leaves out its JSON Schema unless the build sets it, so a library that reads it through Standard Schema, like the MCP SDK's `inputSchema` or an AI SDK 6 tool, finds `undefined` there. Add `"members": { "~standard.jsonSchema": true }` to `precompile` for it. See [members](/docs/precompile/options#members).
+A validator leaves out its JSON Schema unless the build sets it, so a library that reads it through Standard Schema, like the MCP SDK's `inputSchema` or an AI SDK 6 tool, finds `undefined` there in production. Outside production, reading it throws, naming the fix. Add `"members": { "~standard.jsonSchema": true }` to `precompile` for it. See [members](/docs/precompile/options#members).
 
 ## Next.js [#next]
 
