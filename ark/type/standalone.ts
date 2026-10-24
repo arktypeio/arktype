@@ -2127,6 +2127,11 @@ ${writeFunction(
 				"(data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault)"
 			:	"data => validator(data, undefined, runtime.throwOnDefault)"
 		const allowsOf = this.frozen(ownsValidator || makes ? "parts[0]" : "allows")
+		const standard = this.frozen(`{
+		vendor: "arktype",
+		version: 1,
+		validate: ${this.frozen("input => runtime.standardResultOf(validator(input))")}${members.has("~standard.jsonSchema") ? `,\n\t\t...attributes["~standard"]` : ""}
+	}`)
 		const call =
 			ownsValidator ? `make(parts${configured ? ", configuredOnFail" : ""})`
 			: isApply ?
@@ -2163,11 +2168,13 @@ ${writeFunction(
 			: "runtime.assign(validator, attributes)",
 			reads.readsAllows && isCalled ? `validator.allows = ${allowsOf}` : "",
 			members.has("~standard") ?
-				`validator["~standard"] = ${this.frozen(`{
-		vendor: "arktype",
-		version: 1,
-		validate: ${this.frozen("input => runtime.standardResultOf(validator(input))")}${members.has("~standard.jsonSchema") ? `,\n\t\t...attributes["~standard"]` : ""}
-	}`)}`
+				`validator["~standard"] = ${
+					// where the build checks what it built, reading a JSON Schema it
+					// left out throws, saying how to keep it
+					this.baking.checksTypes && !members.has("~standard.jsonSchema") ?
+						`runtime.withoutJsonSchema(${standard})`
+					:	standard
+				}`
 			:	"",
 			this.baking.checksTypes ?
 				`return runtime.holdHoles(${this.frozen("validator")}, id, holes)`

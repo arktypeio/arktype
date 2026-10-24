@@ -296,13 +296,14 @@ const typeHandlerOf = (
 			return Object.freeze(meta)
 		}
 		if (k === "~standard") {
-			const { validate, jsonSchema, ...standard } = counterpart[
-				"~standard"
-			] as Record<string, unknown>
+			const { validate, ...standard } = counterpart["~standard"] as Record<
+				string,
+				unknown
+			>
 			return {
 				...standard,
 				validate: validate && validator("~standard", "validate"),
-				...(jsonSchema !== undefined && {
+				...("jsonSchema" in standard && {
 					jsonSchema: {
 						input: introspector("~standard", "jsonSchema", "input"),
 						output: introspector("~standard", "jsonSchema", "output")

@@ -390,9 +390,9 @@ export function make(jitless: boolean) {
 	return T
 }`)
 			).snap([
-				'/main.ts:2:38  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of makeField (/main.ts:2:20); its value is known only at runtime\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
-				'/main.ts:5:12  scope({}, { jitless }) cannot be precompiled\n  arktype holds `jitless` as a value rather than a definition, so it must be static\n  `jitless` is a parameter of make (/main.ts:4:22); its value is known only at runtime\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
-				'/main.ts:6:12  $.type("string") cannot be precompiled\n  `$` is the Scope at /main.ts:5:12, which the build refuses\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+				"/main.ts:2:38  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of makeField (/main.ts:2:20); its value is known only at runtime\n  Write the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call.",
+				"/main.ts:5:12  scope({}, { jitless }) cannot be precompiled\n  arktype holds `jitless` as a value rather than a definition, so it must be static\n  `jitless` is a parameter of make (/main.ts:4:22); its value is known only at runtime\n  Write the definition where make is called, with the value it passes for `jitless`, so the build precompiles each call.",
+				'/main.ts:6:12  $.type("string") cannot be precompiled\n  `$` is the Scope at /main.ts:5:12, which the build refuses\n  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.'
 			])
 		})
 
@@ -445,7 +445,7 @@ const A = type({ name: z.string() })`
 				"/main.ts:7:11  type({ name: z.string() }) can't be precompiled yet"
 			])
 			attest(diagnosticsOf(source)).snap([
-				"/main.ts:4:32  `schema` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `schema` is a parameter of wrap (/main.ts:3:15); its value is known only at runtime\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it's a Type, make it static so the build precompiles it with the site.",
+				'/main.ts:4:32  `schema` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `schema` is a parameter of wrap (/main.ts:3:15); its value is known only at runtime\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it\'s a Type, make wrap a Generic, which the build precompiles where it\'s called: `const wrap = type("<t>", { value: "t" })`.',
 				"/main.ts:7:24  `z.string()` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `zod` is a package the build does not read\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it's a Type, make it static so the build precompiles it with the site."
 			])
 		})
@@ -752,8 +752,46 @@ export const forms = {
 }
 const User = type({ name: "string" })`)
 			).snap([
-				"/main.ts:3:12  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-				"/main.ts:8:10  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+				'/main.ts:3:12  t.or reads or, which a standalone validator lacks\n  `t` is a parameter of nullable, so it may be a Type, which the standalone runtime replaces with a validator\n  Make nullable a Generic, which the build precompiles where it\'s called: `const nullable = type("<t>", "t | null")`.',
+				'/main.ts:8:10  t.or reads or, which a standalone validator lacks\n  `t` is a parameter of optional, so it may be a Type, which the standalone runtime replaces with a validator\n  Make optional a Generic, which the build precompiles where it\'s called: `const optional = type("<t>", "t | undefined")`.'
+			])
+		})
+
+		it("a Generic for a helper composing its parameter", () => {
+			attest(
+				diagnosticsOf(`import { type, type Type } from "arktype"
+const Id = type({ id: "string" })
+export const withId = <t>(T: Type<t>) => T.and(Id)
+export const listOf = T => T.array()
+export const piped = <t>(T: Type<t>) => T.pipe(v => v)
+export const boxed = <t>(T: Type<t>) => type({ value: T, all: [T, "[]"] })
+export const unwrapped = (all: Type[]) => all.map(T => T.or("null"))`)
+			).snap([
+				'/main.ts:3:42  T.and reads and, which a standalone validator lacks\n  `T` is a parameter of withId, so it may be a Type, which the standalone runtime replaces with a validator\n  Make withId a Generic, which the build precompiles where it\'s called: `const withId = type("<t>", ["t", "&", Id])`.',
+				'/main.ts:4:28  T.array reads array, which a standalone validator lacks\n  `T` is a parameter of listOf, so it may be a Type, which the standalone runtime replaces with a validator\n  Make listOf a Generic, which the build precompiles where it\'s called: `const listOf = type("<t>", "t[]")`. If `T` isn\'t a Type, annotate it with its type.',
+				'/main.ts:5:41  T.pipe reads pipe, which a standalone validator lacks\n  `T` is a parameter of piped, so it may be a Type, which the standalone runtime replaces with a validator\n  Make piped a Generic, which the build precompiles where it\'s called: `const piped = type("<t>", def)`, with "t" in def where it reads `T`.',
+				'/main.ts:6:55  `T` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `T` is a parameter of boxed (/main.ts:6:26); its value is known only at runtime\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it\'s a Type, make boxed a Generic, which the build precompiles where it\'s called: `const boxed = type("<t>", { value: "t", all: ["t", "[]"] })`.',
+				'/main.ts:6:64  `T` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `T` is a parameter of boxed (/main.ts:6:26); its value is known only at runtime\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it\'s a Type, make boxed a Generic, which the build precompiles where it\'s called: `const boxed = type("<t>", { value: "t", all: ["t", "[]"] })`.',
+				"/main.ts:7:56  T.or reads or, which a standalone validator lacks\n  the build can't tell where `T` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+			])
+		})
+
+		it("a fix for each value a definition can't know", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+export const bounded = (max: number) => type(\`string <= \${max}\`)
+const shape: Record<string, string> = { title: "string" }
+if (import.meta.env.DEV) shape["debugNote?"] = "string"
+export const Post = type(shape)
+const Bad = type("string & number")
+export const Holder = type({ bad: Bad })`).map(d =>
+					d.slice(d.lastIndexOf("\n") + 3)
+				)
+			).snap([
+				"Write the definition where bounded is called, with the value it passes for `max`, so the build precompiles each call.",
+				"Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime.",
+				"Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.",
+				"Fix the definition it reads, which throws the same ParseError at runtime."
 			])
 		})
 

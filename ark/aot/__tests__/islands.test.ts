@@ -81,9 +81,9 @@ export const FromIsland = type({ a: One })
 export const FromIntersection = type({ b: Both })
 export const FromGetter = type({ b: G.baseInstance as never })`)
 		).snap([
-			'/main.ts:16:27  type({ a: One }) cannot be precompiled\n  `type({ a: One })` reads a definition that throws a ParseError\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
-			'/main.ts:17:33  type({ b: Both }) cannot be precompiled\n  `type({ b: Both })` reads a definition that throws a ParseError\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
-			'/main.ts:18:27  type({ b: G.baseInstance as never }) cannot be precompiled\n  `type({ b: G.baseInstance as never })` reads a definition that throws a ParseError\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+			"/main.ts:16:27  type({ a: One }) cannot be precompiled\n  `type({ a: One })` reads a definition that throws a ParseError\n  Fix the definition it reads, which throws the same ParseError at runtime.",
+			"/main.ts:17:33  type({ b: Both }) cannot be precompiled\n  `type({ b: Both })` reads a definition that throws a ParseError\n  Fix the definition it reads, which throws the same ParseError at runtime.",
+			"/main.ts:18:27  type({ b: G.baseInstance as never }) cannot be precompiled\n  `type({ b: G.baseInstance as never })` reads a definition that throws a ParseError\n  Fix the definition it reads, which throws the same ParseError at runtime."
 		])
 	})
 
@@ -106,8 +106,8 @@ export const Imported = type("string")`
 				}
 			).diagnostics.map(renderDiagnostic)
 		).snap([
-			"/main.ts:8:18  type({ a: Trimmed }) can't be precompiled yet\n  `Trimmed` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
-			"/main.ts:9:18  type({ b: Alias, c: Static }) can't be precompiled yet\n  `Imported` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+			"/main.ts:8:18  type({ a: Trimmed }) can't be precompiled yet\n  `Trimmed` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.",
+			"/main.ts:9:18  type({ b: Alias, c: Static }) can't be precompiled yet\n  `Imported` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
 		])
 	})
 
@@ -119,7 +119,7 @@ ${mark}export const types = $.export()`
 		const diagnosticsOfMarked = (mark: string) =>
 			precompile(writeSource(mark)).diagnostics.map(renderDiagnostic)
 		attest(diagnosticsOfMarked("")).snap([
-			"/main.ts:4:22  $.export() can't be precompiled yet\n  arktype holds `(n: number) => n === 0` (/main.ts:2:16), which the site reads outside its own source\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+			"/main.ts:4:22  $.export() can't be precompiled yet\n  arktype holds `(n: number) => n === 0` (/main.ts:2:16), which the site reads outside its own source\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
 		])
 		attest(diagnosticsOfMarked("// @ark-runtime\n")).equals([])
 	})

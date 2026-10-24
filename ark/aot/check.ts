@@ -2,6 +2,11 @@ import { globSync, readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
 import { printablePathOf } from "./host.ts"
+import {
+	pluginCallLinesOf,
+	pluginCallsIn,
+	withPluginCalls
+} from "./pluginCalls.ts"
 import { renderDiagnostic, type Diagnostic } from "./precompile.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
 import { withSettingsFile } from "./settings.ts"
@@ -36,15 +41,21 @@ export const check = (
 	})
 		.map(file => resolve(cwd, file))
 		.sort()
+	// what the build's own plugin call passes, as in vite.config.ts
+	const calls = pluginCallsIn(cwd)
+	const given = opts ?? {}
 	// a worker applies the configuration to arktype as the build does
 	const request = createSyncPrecompiler({
-		precompilerOptions: withEnvironment(withSettingsFile({ ...opts, cwd }), {
-			production: isProductionEnv(),
-			testing: false
-		})
+		precompilerOptions: withEnvironment(
+			withSettingsFile({ ...withPluginCalls(calls, given), cwd }),
+			{
+				production: isProductionEnv(),
+				testing: false
+			}
+		)
 	})
 	const report: CheckReport = {
-		lines: [],
+		lines: pluginCallLinesOf(calls, given),
 		sites: 0,
 		accepted: 0,
 		islands: 0,

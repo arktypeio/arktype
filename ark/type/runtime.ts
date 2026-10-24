@@ -224,6 +224,21 @@ export const standardResultOf = (
 		}
 	:	{ value: out }
 
+// where the build checks what it built, a library reading a JSON Schema it
+// left out fails saying how to keep it, rather than reading undefined as it
+// does in production. "jsonSchema" in it stays false, as a library may test
+export const withoutJsonSchema = <standard extends object>(
+	standard: standard
+): standard =>
+	new Proxy(standard, {
+		get: (target, k) =>
+			k === "jsonSchema" ?
+				throwError(
+					'~standard.jsonSchema isn\'t baked into this validator, which a library converting it to JSON Schema reads. Set "members": { "~standard.jsonSchema": true } in ark.json.'
+				)
+			:	Reflect.get(target, k)
+	})
+
 // parenthesized (kept by `satisfies`) to compile as the module loads
 export const createValidator = ((
 	rootApply: RootApply,
@@ -251,12 +266,14 @@ export const createValidator = ((
 	)
 	assign(validator, attributes)
 	validator.allows = freeze(allows)
-	validator["~standard"] = freeze({
+	const standard = freeze({
 		vendor: "arktype",
 		version: 1,
 		validate: freeze((input: unknown) => standardResultOf(validator(input))),
 		...attributes["~standard"]
 	})
+	validator["~standard"] =
+		attributes["~standard"] ? standard : withoutJsonSchema(standard)
 	return holdHoles(freeze(validator), id, holes)
 }) satisfies Fn
 
@@ -277,12 +294,14 @@ export const createValidatorWith = ((
 	)
 	assign(validator, attributes)
 	validator.allows = freeze(parts[0] as never)
-	validator["~standard"] = freeze({
+	const standard = freeze({
 		vendor: "arktype",
 		version: 1,
 		validate: freeze((input: unknown) => standardResultOf(validator(input))),
 		...attributes["~standard"]
 	})
+	validator["~standard"] =
+		attributes["~standard"] ? standard : withoutJsonSchema(standard)
 	return holdHoles(freeze(validator), id, holes)
 }) satisfies Fn
 

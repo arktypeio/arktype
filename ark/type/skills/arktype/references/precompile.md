@@ -6,7 +6,7 @@
 
 1. Add `arktype` to `dependencies` and `@ark/aot` to `devDependencies` with the project's package manager, e.g. `npm i arktype` and `npm i -D @ark/aot`. Keep one copy of `arktype`: the build fails if the program resolves two. `@ark/aot` needs Node 22.12 or later.
 2. Add the plugin to the bundler, as below.
-3. If the project calls `configure()`, name its module as `config` in an `ark.json` beside `package.json`, as below. Put build options there rather than in the plugin call: the plugin, the test drivers, `arktype-precompile` and the ESLint rule all read `ark.json`, but only the plugin sees options passed to it, so `--check` and the tests would fail without them.
+3. If the project calls `configure()`, name its module as `config` in an `ark.json` beside `package.json`, as below. Put build options there rather than in the plugin call: the plugin, the test drivers, `arktype-precompile` and the ESLint rule all read `ark.json`, but a test driver doesn't see options passed to the plugin, so the tests would fail without them.
 4. Make the tests run precompiled too, as below.
 5. Run `npx arktype-precompile --check "src/**/*.ts"`. It lists each definition the build would refuse, with the fix, and should end with every site accepted. Then run the build and the tests.
 
@@ -115,7 +115,7 @@ Composing inside a definition is fine anywhere, even in a function body: `const 
 
 - A validator validates, `.assert()`s and is a Standard Schema, but has no `.and`, `.or`, `.pick` or other composing method. The build fails where it sees one called outside a definition.
 - Error messages say what failed but not what the value was: `email must be an email address`, without `(was "x")`. Text you configure with `.configure({ message })` or `.describe()` is kept.
-- Introspection members like `toJsonSchema()`, `json` and `~standard.jsonSchema` ship only when the `members` option sets them. A library that converts a Type to JSON Schema itself, like the MCP SDK or the AI SDK, needs `"members": { "~standard.jsonSchema": true }` in `ark.json`.
+- Introspection members like `toJsonSchema()`, `json` and `~standard.jsonSchema` ship only when the `members` option sets them. A library that converts a Type to JSON Schema itself, like the MCP SDK or the AI SDK, needs `"members": { "~standard.jsonSchema": true }` in `ark.json`. Without it, the library reads `undefined` in production, and outside production the read throws, naming that fix.
 - Locales from `arktype/i18n` aren't supported.
 
 ## Errors and their fixes

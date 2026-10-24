@@ -48,7 +48,7 @@ export const makeField = limit => {
 	return Field
 }`)
 		).snap([
-			'4:16-4:42 type(`string <= ${limit}`) cannot be precompiled\n`limit` is a parameter of makeField (linted.js:3:26); its value is known only at runtime\nStandalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+			"4:16-4:42 type(`string <= ${limit}`) cannot be precompiled\n`limit` is a parameter of makeField (linted.js:3:26); its value is known only at runtime\nWrite the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call."
 		])
 	})
 
@@ -96,7 +96,7 @@ const isLong = s => s.length > 3
 export const Long = type("string").narrow(isLong)`
 		attest(lint(code, {}, join(dir, "linted.js"), dir)).equals([])
 		attest(lint(code, { config }, join(dir, "linted.js"), dir)).snap([
-			'3:21-3:50 type("string").narrow(isLong) can\'t be precompiled yet\n`node.expression` (config.ts:5:38) prints the name of `isLong` (linted.js:2:16), which the build knows only by a placeholder\nStandalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+			"3:21-3:50 type(\"string\").narrow(isLong) can't be precompiled yet\n`node.expression` (config.ts:5:38) prints the name of `isLong` (linted.js:2:16), which the build knows only by a placeholder\nStandalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
 		])
 		writeFileSync(
 			config,
@@ -119,7 +119,7 @@ export const Field = type(\`string <= \${max}\`)`
 		writeFileSync(limits, "export const max = Number(process.env.MAX)\n")
 		utimesSync(limits, new Date(Date.now() + 1000), new Date(Date.now() + 1000))
 		attest(lint(code, {}, filename, dir)).snap([
-			'3:22-3:46 type(`string <= ${max}`) cannot be precompiled\n`max` is imported from limits.ts\n`process` is a global the build does not read\nStandalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+			"3:22-3:46 type(`string <= ${max}`) cannot be precompiled\n`max` is imported from limits.ts\n`process` is a global the build does not read\nStandalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime."
 		])
 	})
 

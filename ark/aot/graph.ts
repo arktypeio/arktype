@@ -3082,6 +3082,10 @@ export const isTypeMemberRead = (
 ): boolean =>
 	(read in typeMemberKinds || lacked.has(read)) && !isContainerMethod(read)
 
+// e.g. `or`, which returns a Type built from the one it's read off
+export const isComposingMember = (name: string): boolean =>
+	typeMemberKinds[name] === typeMethod
+
 const isContainerMethod = (name: unknown): boolean =>
 	typeof name === "string" && (name in Array.prototype || name in Map.prototype)
 

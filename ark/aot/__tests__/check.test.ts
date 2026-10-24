@@ -51,7 +51,7 @@ contextualize(function (this: Mocha.Suite) {
 				config: "config.ts"
 			}).lines
 		).snap([
-			'main.ts:6:18  type("string").narrow(() => lenient) can\'t be precompiled yet\n  arktype calls `() => lenient` (main.ts:6:40)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+			"main.ts:6:18  type(\"string\").narrow(() => lenient) can't be precompiled yet\n  arktype calls `() => lenient` (main.ts:6:40)\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.",
 			"main.ts:8:29  accepted",
 			"2 sites in 2 files: 1 accepted (50.0%)"
 		])
@@ -193,6 +193,58 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 		).snap([
 			'forms.ts:16:2  a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under errors: "none"\n  a build whose errors say only that data is invalid gives its validators a runtime of their own\n  Precompile the definition, or build without errors: "none".',
 			'forms.ts:16:2  a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under optimizeErrors: "size"\n  a build writing its errors for size gives its validators a runtime of their own\n  Precompile the definition, or build with optimizeErrors: "speed".'
+		])
+	})
+
+	it("reads the options a plugin call passes", () => {
+		const root = writeFixture({
+			"package.json": "{}",
+			"vite.config.ts": `import { precompile } from "@ark/aot/unplugin"\nimport { defineConfig } from "vite"\n\nexport default defineConfig({\n\tplugins: [precompile.vite({ config: "src/config.ts", include: /src/ })]\n})\n`,
+			"src/config.ts": `import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: "delete" })\n`,
+			"src/main.ts": `import "./config.ts"\nimport { type } from "arktype"\n\nexport const User = type({ name: "string" })\n`
+		})
+		attest(check(["src/**/*.ts"], { cwd: root }).lines).snap([
+			"vite.config.ts:5:12  precompile.vite() sets config, so --check does too",
+			"src/main.ts:4:21  accepted",
+			"1 site in 2 files: 1 accepted (100.0%)"
+		])
+	})
+
+	it("fails where a plugin call's options can't be read", () => {
+		const root = writeFixture({
+			"package.json": "{}",
+			"build.ts": `import { precompile } from "@ark/aot/unplugin"\nimport { build } from "esbuild"\n\nconst config = "config.ts"\nawait build({ plugins: [precompile.esbuild({ config, errors: "first" })] })\n`,
+			"vitest.config.ts": `import { precompile } from "@ark/aot/unplugin"\n\nexport default { plugins: [precompile.vite({ errors: "all" })] }\n`,
+			"config.ts": `import "arktype/errors"\nimport { configure } from "arktype/config"\n\nconfigure({ errors: "first" })\n`
+		})
+		const result = runCli(root, "--check", "config.ts")
+		attest(`${result.status} ${result.stderr}`).snap(
+			'1 build.ts:5:25  --check can\'t read the `config` precompile.esbuild() is passed, so it can\'t check what the build does\n  Set config in ark.json, as { "precompile": { "config": ... } }, which precompile.esbuild() reads too, or pass it to --check as --config.\n'
+		)
+		attest(() =>
+			check(["config.ts"], { cwd: root, config: "config.ts" })
+		).throws.snap(
+			"Error: vitest.config.ts:3:28  precompile.vite() sets errors other than precompile.esbuild() at build.ts:5:25, so --check can't tell which build to check\n  Pass the one to check as --errors, or set it once in ark.json."
+		)
+		attest(
+			check(["config.ts"], { cwd: root, config: "config.ts", errors: "first" })
+				.lines
+		).snap(["0 sites in 1 file: 0 accepted (100.0%)"])
+	})
+
+	it("reports the config load order a plugin call's config fails", () => {
+		const root = writeFixture({
+			"package.json": "{}",
+			"vite.config.ts": `import { precompile } from "@ark/aot/unplugin"\n\nexport default { plugins: [precompile.vite({ config: "src/config.ts" })] }\n`,
+			"src/config.ts": `import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: "delete" })\n`,
+			"src/schemas.ts": `import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n`,
+			"src/main.ts": `import { User } from "./schemas.ts"\nimport "./config.ts"\n\nconsole.log(User({ name: "a", extra: 1 }))\n`
+		})
+		attest(check(["src/**/*.ts"], { cwd: root }).lines).snap([
+			"vite.config.ts:3:28  precompile.vite() sets config, so --check does too",
+			'src/main.ts:1:1  import { User } from "./schemas.ts" loads src/schemas.ts, which creates a Type, before the config module src/config.ts runs configure()\n  unless the program loaded src/config.ts earlier, creating the Type throws\n  Import src/config.ts first, before any module that creates a Type. Set allowUnsafe: true to build anyway, with a warning.',
+			"src/schemas.ts:3:21  accepted",
+			"1 site in 3 files: 1 accepted (100.0%), 1 error outside a site"
 		])
 	})
 

@@ -24,7 +24,7 @@ A definition holding functions, like a narrow, a morph or a class, becomes a cal
 
 ## What a validator has
 
-Besides being called, a validator has `allows()`, and by default `assert()`, `meta`, `~standard`, `traverse()`, `from()` and `toString()`. `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` ship only where the build's [`members`](/docs/precompile/options#members) option sets them, baked as arktype returns them. A read the build sees, like `User.expression`, is replaced by its value either way. One it doesn't bake reads `undefined`, but throws, naming the member to set, where `arktype/runtime` resolves under the `"development"` condition.
+Besides being called, a validator has `allows()`, and by default `assert()`, `meta`, `~standard`, `traverse()`, `from()` and `toString()`. `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` ship only where the build's [`members`](/docs/precompile/options#members) option sets them, baked as arktype returns them. A read the build sees, like `User.expression`, is replaced by its value either way. One it doesn't bake reads `undefined`, but throws, naming the member to set, where `arktype/runtime` resolves under the `"development"` condition, and for `~standard.jsonSchema`, outside a production build.
 
 It lacks the methods that compose or relate a Type, like `.and`, `.or`, `.in` or `.extends`. The build fails where it sees one read outside a definition it precompiles, including off a value it lost track of after a Type reached it, and, once for each import, off an import it can't resolve, like one only a bundler alias names:
 
