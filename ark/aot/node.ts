@@ -45,7 +45,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	if (!module.registerHooks)
 		throwError(writeNodeVersionMessage("@ark/aot/node", "22.15"))
 	refuseDeclare(opts, "Node")
-	// the worker inherits the flags that registered these hooks
+	// a worker still runs what NODE_OPTIONS preloads, which may register these hooks
 	if (isPrecompilerWorker) return
 	const set = withSettingsFile(opts)
 	refusePrune(set, "Node")

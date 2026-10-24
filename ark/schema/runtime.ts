@@ -138,10 +138,14 @@ export const fixConfig = ((): void => {
 	checkConfigured?.()
 }) satisfies Fn
 
-export const fixConfigured = (fingerprint: string, path: string): void => {
+export const fixConfigured = (
+	fingerprint: string,
+	path: string,
+	config: string
+): void => {
 	Object.freeze(runtimeConfig)
 	if (!checkConfigured)
-		return throwParseError(writeCreatedBeforeConfigureMessage(path))
+		return throwParseError(writeCreatedBeforeConfigureMessage(path, config))
 	checkConfigured(fingerprint)
 }
 
@@ -165,10 +169,21 @@ export const writtenConfigMessage =
 export const configMismatchMessage =
 	"an artifact must run under the configuration it was built with"
 
-export const writeCreatedBeforeConfigureMessage = <path extends string>(
-	path: path
-): writeCreatedBeforeConfigureMessage<path> =>
-	`${path} creates a Type before configure() runs`
+// config is the config module's specifier from path
+export const writeCreatedBeforeConfigureMessage = <
+	path extends string,
+	config extends string
+>(
+	path: path,
+	config: config
+): writeCreatedBeforeConfigureMessage<path, config> =>
+	`${path} creates a Type before configure() runs
+  Import the config module before any module that creates a Type: first in the entry or test setup file that loads ${path}, or at the top of ${path}:
+  import "${config}"`
 
-export type writeCreatedBeforeConfigureMessage<path extends string> =
-	`${path} creates a Type before configure() runs`
+export type writeCreatedBeforeConfigureMessage<
+	path extends string,
+	config extends string
+> = `${path} creates a Type before configure() runs
+  Import the config module before any module that creates a Type: first in the entry or test setup file that loads ${path}, or at the top of ${path}:
+  import "${config}"`

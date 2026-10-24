@@ -123,7 +123,7 @@ const load = async (
 		configured:
 			opts.configured ??
 			(fingerprint === undefined ? undefined : (
-				{ fingerprint, path: "main.ts" }
+				{ fingerprint, path: "main.ts", config: "./config.ts" }
 			)),
 		members
 	})
@@ -1085,7 +1085,10 @@ a must be a number`)
 		] as const) {
 			const { code } = precompileStandalone(
 				{ T: type("string"), Parsed: type("string.numeric.parse") },
-				{ configured: { fingerprint, path: "main.ts" }, members }
+				{
+					configured: { fingerprint, path: "main.ts", config: "./config.ts" },
+					members
+				}
 			)
 			const { js } = bundle(`${code.replace(
 				runtimeImport,
@@ -2237,7 +2240,7 @@ age is missing`)
 	it("throws for another configuration", async () => {
 		const built = fingerprintOf({})
 		attest(await messageOf("", built)).equals(
-			writeCreatedBeforeConfigureMessage("main.ts")
+			writeCreatedBeforeConfigureMessage("main.ts", "./config.ts")
 		)
 		attest(
 			await messageOf(
@@ -2331,7 +2334,8 @@ age is missing`)
 					{
 						configured: {
 							fingerprint: fingerprintOf({ onUndeclaredKey: "delete" }),
-							path: "main.ts"
+							path: "main.ts",
+							config: "./config.ts"
 						}
 					}
 				).code.replace(
@@ -2358,7 +2362,8 @@ config.onUndeclaredKey = "reject"`
 						{
 							configured: {
 								fingerprint: fingerprintOf(config),
-								path: "main.ts"
+								path: "main.ts",
+								config: "./config.ts"
 							}
 						}
 					).code
@@ -2376,7 +2381,11 @@ config.onUndeclaredKey = "reject"`
 					precompileStandalone(
 						{ T: type("string") },
 						{
-							configured: { fingerprint: fingerprintOf({}), path: "main.ts" },
+							configured: {
+								fingerprint: fingerprintOf({}),
+								path: "main.ts",
+								config: "./config.ts"
+							},
 							lazy: false
 						}
 					).code
@@ -2385,7 +2394,7 @@ config.onUndeclaredKey = "reject"`
 				() => "",
 				(e: Error) => e.message
 			)
-		).equals(writeCreatedBeforeConfigureMessage("main.ts"))
+		).equals(writeCreatedBeforeConfigureMessage("main.ts", "./config.ts"))
 	})
 
 	it("fixes config on a Scope's first read", async () => {
@@ -2403,7 +2412,11 @@ config.onUndeclaredKey = "reject"`
 						precompileStandalone(
 							{ [name]: value },
 							{
-								configured: { fingerprint: fingerprintOf({}), path: "main.ts" }
+								configured: {
+									fingerprint: fingerprintOf({}),
+									path: "main.ts",
+									config: "./config.ts"
+								}
 							}
 						).code
 					}\nexport const configure = runtime.configure`

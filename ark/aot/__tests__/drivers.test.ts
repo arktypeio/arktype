@@ -21,7 +21,6 @@ import { readFileSync, utimesSync, writeFileSync } from "node:fs"
 import { join, relative, sep } from "node:path"
 import { pathToFileURL } from "node:url"
 import { configureAfterTypeMessage } from "@ark/schema"
-import { writeCreatedBeforeConfigureMessage } from "@ark/schema/runtime"
 import {
 	hasBun,
 	inFreshProcess,
@@ -372,6 +371,19 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			}
 		})
 
+		it("configured by a module --import preloads", () => {
+			const expected = runPlain(configured)
+			for (const runtime of [undefined, "arktype"] as const) {
+				attest(
+					node(
+						["--import", "./config.ts", "main.ts"],
+						{ runtime, config: "config.ts" },
+						configured
+					).stdout
+				).equals(expected)
+			}
+		})
+
 		it("configured behind a transpiling loader", () => {
 			const expected = runPlain(transpiled)
 			for (const runtime of [undefined, "arktype"] as const) {
@@ -454,7 +466,7 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				},
 				fromHere("temp", "unstarted")
 			)
-			// --input-type fails a worker that inherits it
+			// --input-type fails a worker given it
 			attest(
 				node(
 					[
@@ -466,11 +478,14 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 					root
 				).stdout
 			).equals("{ a: 1 }\n")
-			const { status, stderr } = node(
-				["--import", "./noWorkers.ts", "main.ts"],
-				{},
-				root
-			)
+			// a preload given as a flag stays out of the precompiler's thread
+			attest(
+				node(["--import", "./noWorkers.ts", "main.ts"], {}, root).status
+			).equals(0)
+			// one in NODE_OPTIONS runs in every thread
+			const { status, stderr } = node(["main.ts"], {}, root, {
+				NODE_OPTIONS: "--import ./noWorkers.ts"
+			})
 			attest([status, thrownMessage(stderr, root)]).equals([
 				1,
 				"@ark/aot's precompiler stopped before it answered, as it does where a module the process preloads throws in a worker"
@@ -478,10 +493,7 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 		})
 
 		it("configured after a keyword Type is created", () => {
-			for (const [entry, path] of [
-				["exportedFirst.ts", "exported.ts"],
-				["earlyFirst.ts", "schemas.ts"]
-			]) {
+			const thrown = ["exportedFirst.ts", "earlyFirst.ts"].map(entry => {
 				const plain = spawnSync(
 					process.execPath,
 					["--conditions", "ark-ts", entry],
@@ -496,10 +508,12 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 					{ config: "config.ts", allowUnsafe: true },
 					configured
 				)
-				attest(
-					stderr.includes(writeCreatedBeforeConfigureMessage(path))
-				).equals(true)
-			}
+				return thrownMessage(stderr, configured, "ParseError: ")
+			})
+			attest(thrown).snap([
+				'exported.ts creates a Type before configure() runs\n  Import the config module before any module that creates a Type: first in the entry or test setup file that loads exported.ts, or at the top of exported.ts:\n  import "./config.ts"',
+				'schemas.ts creates a Type before configure() runs\n  Import the config module before any module that creates a Type: first in the entry or test setup file that loads schemas.ts, or at the top of schemas.ts:\n  import "./config.ts"'
+			])
 		})
 
 		it("fails where an import loads a Type before the config module", () => {
@@ -710,7 +724,9 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 		it("shares a configuration and its writers' refusals with the precompiler it replaces", () => {
 			const [before, after] = loadedAcrossReplacement(configured, ["main.ts"])
 			attest(after).equals(before)
-			attest(before[0]).satisfies(/fixConfigured\("\w+", "main.ts"\)/)
+			attest(before[0]).satisfies(
+				/fixConfigured\("\w+", "main.ts", ".\/config.ts"\)/
+			)
 			const [refused, refusedAfter] = loadedAcrossReplacement(writers, [
 				"main.ts"
 			])
