@@ -950,7 +950,19 @@ const writeFlat = (
 					arg.type === "Identifier" && membersOf.has(arg.name) ?
 						wholeOf(arg.name)
 					:	code.slice(arg.start, arg.end)
-				alias(scopes.bindingsById.get(param)!, value)
+				const binding = scopes.bindingsById.get(param)!
+				// a runtime value the code only passes on, e.g. a failure site, is
+				// read where it's passed, as no call through it needs a constant
+				if (
+					runtimeMember.test(value) &&
+					binding.references.every(
+						({ id }) =>
+							id.parent?.type === "CallExpression" &&
+							id.parent.arguments.includes(id as never)
+					)
+				)
+					renamed.set(binding, value)
+				else alias(binding, value)
 			} else if (param.type === "ObjectPattern") {
 				const unit = (arg as { name: string }).name
 				for (const p of param.properties as never as Member[]) {
@@ -1161,6 +1173,8 @@ const inGzipOrder = (body: string): string => {
 }
 
 const minSortedFunctions = 64
+
+const runtimeMember = /^runtime\.\w+$/
 
 // a name the build derives from a unit's, e.g. its Allows
 const unitName = /\b\w+?(?:R\d+|Allows|Apply|Transform)\b/g
