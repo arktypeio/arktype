@@ -1,6 +1,6 @@
 import { hashOf } from "@ark/util"
 import MagicString, { type SourceMap } from "magic-string"
-import { parseSync, type Node } from "oxc-parser"
+import { parseSync, type Node, type Program } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
 import { renamedOf } from "./link.ts"
 import { SourceModule } from "./module.ts"
@@ -1128,11 +1128,17 @@ const writeFlat = (
 			if (written === undefined) {
 				// kept code reads what it returns, so a bundler keeps its call, and
 				// annotations saying it could drop it are bytes oxc's minifier keeps
+				const parse = unitsParser()
 				written = withoutAnnotations(
 					inGzipOrder(
 						withoutUnread(
-							withCallsInlined(withoutForwarders(body, returned), returned),
-							returned
+							withCallsInlined(
+								withoutForwarders(body, returned, parse),
+								returned,
+								parse
+							),
+							returned,
+							parse
 						)
 					)
 				)
@@ -1196,17 +1202,35 @@ const withAssertsUnwrapped = (
 	return { body: s.toString(), asserting }
 }
 
+type UnitsParser = (code: string) => { program: Program; scopes: ModuleScopes }
+
+// each pass parses what the one before wrote, which that one parsed already
+// where it changed nothing
+const unitsParser = (): UnitsParser => {
+	let last: { code: string; program: Program; scopes: ModuleScopes } | undefined
+	return code => {
+		if (last?.code !== code) {
+			const { program } = parseSync("units.js", code, {
+				sourceType: "module",
+				preserveParens: false
+			})
+			last = { code, program, scopes: new ModuleScopes(program) }
+		}
+		return last
+	}
+}
+
 // a function the units declare that only calls another of them with its own
 // parameters, e.g. a predicate's Allows, is read as that one where it's
 // called, so a call reaches it directly
-const withoutForwarders = (body: string, returned: string): string => {
+const withoutForwarders = (
+	body: string,
+	returned: string,
+	parse: UnitsParser
+): string => {
 	for (;;) {
 		const code = `${body}\n;${returned}`
-		const { program } = parseSync("units.js", code, {
-			sourceType: "module",
-			preserveParens: false
-		})
-		const scopes = new ModuleScopes(program)
+		const { program, scopes } = parse(code)
 		const s = new MagicString(code)
 		for (const statement of program.body as Node[]) {
 			if (statement.type !== "VariableDeclaration") continue
@@ -1260,14 +1284,14 @@ const forwardedOf = (node: Node, scopes: ModuleScopes): Binding | undefined => {
 // its expression, or its statements where the call is returned and they end
 // in a return. Each other name it reads is one declared once, so the same
 // where it's called
-const withCallsInlined = (body: string, returned: string): string => {
+const withCallsInlined = (
+	body: string,
+	returned: string,
+	parse: UnitsParser
+): string => {
 	for (;;) {
 		const code = `${body}\n;${returned}`
-		const { program } = parseSync("units.js", code, {
-			sourceType: "module",
-			preserveParens: false
-		})
-		const scopes = new ModuleScopes(program)
+		const { program, scopes } = parse(code)
 		const declared = new Map<string, number>()
 		for (const { name } of scopes.bindingsById.values())
 			declared.set(name, (declared.get(name) ?? 0) + 1)
@@ -1353,14 +1377,14 @@ const passesParams = (
 
 // what a function declares that nothing reads, which a bundler keeps as it
 // drops only a module's declarations, left out, as is what only it read
-const withoutUnread = (body: string, returned: string): string => {
+const withoutUnread = (
+	body: string,
+	returned: string,
+	parse: UnitsParser
+): string => {
 	for (;;) {
 		const code = `${body}\n;${returned}`
-		const { program } = parseSync("units.js", code, {
-			sourceType: "module",
-			preserveParens: false
-		})
-		const scopes = new ModuleScopes(program)
+		const { program, scopes } = parse(code)
 		const s = new MagicString(code)
 		for (const statement of program.body as Node[]) {
 			if (statement.type !== "VariableDeclaration") continue
