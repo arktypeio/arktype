@@ -1111,6 +1111,8 @@ const writeFlat = (
 	const exported = new Set<string>()
 	for (const [name, specifier] of specifiersByName)
 		exported.add(`${specifier}\0${name}`)
+	// as measured for size, then written
+	const bodiesByReturned = new Map<string, string>()
 	return {
 		exported,
 		asserting,
@@ -1122,10 +1124,22 @@ const writeFlat = (
 			// one value is returned as itself
 			const returned =
 				values.length === 1 ? values[0] : `[${values.join(", ")}]`
-			// kept code reads what it returns, so a bundler keeps its call, and
-			// annotations saying it could drop it are bytes oxc's minifier keeps
+			let written = bodiesByReturned.get(returned)
+			if (written === undefined) {
+				// kept code reads what it returns, so a bundler keeps its call, and
+				// annotations saying it could drop it are bytes oxc's minifier keeps
+				written = withoutAnnotations(
+					inGzipOrder(
+						withoutUnread(
+							withCallsInlined(withoutForwarders(body, returned), returned),
+							returned
+						)
+					)
+				)
+				bodiesByReturned.set(returned, written)
+			}
 			const declaration = `const ${read.length === 1 ? read[0] : `[${read.join(", ")}]`} = (() => {
-${withoutAnnotations(inGzipOrder(withoutUnread(withCallsInlined(withoutForwarders(body, returned), returned), returned)))}
+${written}
 return ${returned}
 })()`
 			return asModule ?
@@ -1212,7 +1226,6 @@ const withoutForwarders = (body: string, returned: string): string => {
 				for (const reference of binding.references)
 					s.overwrite(reference.id.start, reference.id.end, target.name)
 			}
-			if (s.hasChanged()) break
 		}
 		if (!s.hasChanged()) return body
 		body = s.toString().slice(0, -returned.length - 2)
@@ -1269,6 +1282,11 @@ const withCallsInlined = (body: string, returned: string): string => {
 					:	(declared.get(id.name) ?? 0) <= 1)
 			)
 		const s = new MagicString(code)
+		// what each inline this pass replaces or removes, which no other may
+		// touch, as each reads the code as parsed
+		const edited: [start: number, end: number][] = []
+		const isEdited = (start: number, end: number) =>
+			edited.some(span => start < span[1] && span[0] < end)
 		for (const statement of program.body as Node[]) {
 			if (statement.type !== "VariableDeclaration") continue
 			const { declarations } = statement
@@ -1297,15 +1315,19 @@ const withCallsInlined = (body: string, returned: string): string => {
 						[call.parent, code.slice(fn.body.start, fn.body.end)]
 					:	[]
 				if (!replaced) continue
+				const [start, end] =
+					declarations.length === 1 ?
+						[statement.start, statementEndIn(body, statement)]
+					: i < declarations.length - 1 ?
+						[declarations[i].start, declarations[i + 1].start]
+					:	[declarations[i - 1].end, declarations[i].end]
+				if (isEdited(replaced.start, replaced.end) || isEdited(start, end))
+					continue
+				edited.push([replaced.start, replaced.end], [start, end])
 				s.overwrite(replaced.start, replaced.end, text!)
-				if (declarations.length === 1)
-					s.remove(statement.start, statementEndIn(body, statement))
-				else if (i < declarations.length - 1)
-					s.remove(declarations[i].start, declarations[i + 1].start)
-				else s.remove(declarations[i - 1].end, declarations[i].end)
+				s.remove(start, end)
 				break
 			}
-			if (s.hasChanged()) break
 		}
 		if (!s.hasChanged()) return body
 		body = s.toString().slice(0, -returned.length - 2)
