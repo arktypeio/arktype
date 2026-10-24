@@ -203,7 +203,7 @@ TypeScript `>=5.1`, including TypeScript 7, with:
 - [`skipLibCheck`](https://www.typescriptlang.org/tsconfig#skipLibCheck) is recommended. It avoids harmless errors from differences between your config and ours (see [FAQ](https://arktype.io/docs/faq#why-do-i-see-type-errors-in-an-arktype-package-in-node_modules)) and speeds up your editor.
 - [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig#exactOptionalPropertyTypes) is recommended. It makes your inferred types match runtime behavior. ArkType rejects `undefined` for an optional key unless its value allows it, so without this flag, `typeof User.infer` accepts `{ age: undefined }` while `User` rejects it.
 
-ArkType is ESM-only, but a CommonJS project can `require` it on runtimes that support `require(esm)`, like Node `>=20.19` or `>=22.12`. `@ark/aot` runs on Node 22.12 or later.
+ArkType is ESM-only, but a CommonJS project can `require` it on runtimes that support `require(esm)`, like Node `>=20.19` or `>=22.12`. TypeScript allows that `require` under `"module": "nodenext"` from 5.8, where `node16` reports TS1479. `@ark/aot` runs on Node 22.12 or later.
 
 ## Runtimes
 
