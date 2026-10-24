@@ -74,7 +74,7 @@ export const generateMetadata = async ({
 		title,
 		description,
 		ogImage: ogImage ?? "ogDocs.png",
-		ogImageAlt: ogImage && title,
+		...(ogImage && { ogImageAlt: title }),
 		url
 	})
 	return {
