@@ -137,6 +137,13 @@ hypothesis holds.
 At 89510709d, a leaner error writer shrank B2's login form to 1313 B gzipped
 (`results/login-89510709d.json`); every other size is unchanged.
 
+At 1e74181e4, B1 is 1140 B gzipped, B2 1037 and dynamic ArkType 82965
+(`results/login-1e74181e4.json`); every other library's size is unchanged.
+Since 89510709d, B1 has shrunk from 1779 and B2 from 1313. B1 here
+and the default build's 1158 in "Best average" (forms/, measured at 808927feb,
+and the same at 1e74181e4) are the same form with the same esbuild settings:
+`forms/arktype.ts` exports its assert where `login/arktype.ts` calls it once.
+
 ## The homepage's apps
 
 `bench/size.ts` sizes each of the homepage's apps as `bench/bundle.ts`
@@ -193,10 +200,53 @@ Typia 2.43M (gross 4.95M against ajv's 5.52M). On moltar Typia adds fewer
 
 ## Best average
 
-The headline's superlatives come from this rule, written before any average
-was computed. A library is the fastest, the quickest to start or the
-smallest if it has the best average in that category across the public
-benchmarks below.
+The headline's superlatives come from a rule, written before any average was
+computed: a library is the fastest, the quickest to start or the smallest if
+it has the best average in that category across the public benchmarks that
+qualify. The current standings come first, then the rule, then each earlier
+average as its record.
+
+### Current standings, at 808927feb
+
+Thirteen suites qualify: 5 for speed (75 rows), 4 for startup (9) and 4 for
+size (7). `ark/docs/lib/bench/leaderboard.json` holds every row, and
+`ark/docs/lib/claims.ts` computes the standings from it.
+
+| category | suite                                       | rows | measure                          | run by                   |
+| -------- | ------------------------------------------- | ---- | -------------------------------- | ------------------------ |
+| speed    | moltar's typescript-runtime-type-benchmarks | 4    | instructions per call            | moltar                   |
+| speed    | the homepage's benchmark                    | 32   | median ns per call               | us                       |
+| speed    | schemabenchmarks.dev                        | 26   | instructions per call            | Open Circle              |
+| speed    | Sury's schema benchmark                     | 1    | instructions per call            | Sury's author            |
+| speed    | ata's validator-benchmarks                  | 12   | instructions per document        | ata's author             |
+| startup  | `startup.ts`                                | 4    | instructions beyond the baseline | us                       |
+| startup  | the homepage's cold start                   | 3    | median ms                        | us                       |
+| startup  | schemabenchmarks.dev's initialization       | 1    | instructions per call            | Open Circle              |
+| startup  | Sury's build and parse once                 | 1    | instructions per call            | Sury's author            |
+| size     | valibot.dev's login form                    | 1    | gzipped bytes                    | us, and Valibot's author |
+| size     | the homepage's apps                         | 4    | gzipped bytes                    | us                       |
+| size     | schemabenchmarks.dev's download             | 1    | gzipped bytes                    | Open Circle              |
+| size     | Sury's schema bundle                        | 1    | gzipped bytes                    | Sury's author            |
+
+ArkType's rows are measured at 808927feb, after the first issue began to be
+pushed directly (a size trade) and object issues began to be reported in
+declaration order: `benchData.json`'s scenarios rerun, 20 passes then a
+10-pass replica, every library in, at 1-minute loads of 2.3 to 4.9 at the
+runs' starts and ends (each started under 4); every other ArkType row in
+`results/arktype-808927feb.json` and `results/startup-808927feb-node24.json`.
+
+| category | 1             | 2             | 3                   |
+| -------- | ------------- | ------------- | ------------------- |
+| speed    | ArkType 1.103 | ata 1.255\*   | ajv 2.873\*         |
+| startup  | ArkType 1.013 | Typia 2.815\* | Valibot 29.4        |
+| size     | ArkType 1.355 | Valibot 1.405 | Superstruct 1.464\* |
+
+\* ranked on 2 to 4 of the category's suites. The homepage's speed suite is
+ArkType 1.282, ajv 1.963. Size: the login form 1158 B, the homepage's apps
+2.095, schemabenchmarks.dev's download 2037 B (1.299), Sury's 1107 B. Leads:
+speed 13.8%, startup 178%, size 3.7%.
+
+### The rule
 
 **Categories and benchmarks.** Each category is a set of suites, each suite a
 set of rows. A row is one measured result per library; lower is better on
@@ -247,29 +297,6 @@ counted score in at least half of the category's suites.
 `ark/docs/lib/bench/leaderboard.json`; `ark/docs/lib/claims.ts` computes the
 scores from it and throws if the headline claims a category ArkType doesn't
 win. Nothing is rerun to change a result.
-
-### The first average, at 642b4517e
-
-`ark/docs/lib/bench/leaderboard.json`; the score is the geometric mean of
-ratios to each row's best, so 1 is best everywhere.
-
-| category | 1                    | 2             | 3                   | 4              | 5                         |
-| -------- | -------------------- | ------------- | ------------------- | -------------- | ------------------------- |
-| speed    | @ts-runtypes 1.101\* | ata 1.141\*   | ArkType 1.211       | paseri 1.302\* | ts-runtime-checks 1.330\* |
-| startup  | ArkType 1.083        | Valibot 1.256 | ajv 1.385           | Typia 1.402    | Zod Mini 3.395            |
-| size     | ajv 1.160            | Valibot 1.588 | Superstruct 1.736\* | Typia 1.812    | ArkType 2.069             |
-
-\* ranked on one of the category's two suites. ArkType has the best score in
-each speed suite on its own (moltar's 1.067, the homepage's 1.375), but
-@ts-runtypes and ata are only in moltar's, so the rule averages ArkType's
-homepage score in and not theirs. So only startup backs a superlative.
-
-One deviation: the homepage's cold-start rows weren't remeasured in
-production. The 1-minute load stayed above 15 for 40 minutes; a run at 16-22
-put every arm at 4x its quiet time and tied all of them. The quiet,
-development-built rows stand, which only handicap ArkType (its build there
-isn't pruned). With the loaded production rows instead, startup's order is the
-same: ArkType 1.098, Valibot 1.289.
 
 ### Which suites
 
@@ -341,7 +368,36 @@ ArkType's default build creates a validator once and reuses it (42 and 106
 instructions; typia's createIs 381), so on those rows it wins by what the
 rows don't measure. They're the suites' rows, so they stay.
 
-### Every qualifying suite, at 6c5fd9862
+### History
+
+Each average below was computed at the commit it names, before the current
+standings, and stands as its record. Nothing in it was rerun to change a
+result.
+
+#### The first average, at 642b4517e
+
+`ark/docs/lib/bench/leaderboard.json`; the score is the geometric mean of
+ratios to each row's best, so 1 is best everywhere.
+
+| category | 1                    | 2             | 3                   | 4              | 5                         |
+| -------- | -------------------- | ------------- | ------------------- | -------------- | ------------------------- |
+| speed    | @ts-runtypes 1.101\* | ata 1.141\*   | ArkType 1.211       | paseri 1.302\* | ts-runtime-checks 1.330\* |
+| startup  | ArkType 1.083        | Valibot 1.256 | ajv 1.385           | Typia 1.402    | Zod Mini 3.395            |
+| size     | ajv 1.160            | Valibot 1.588 | Superstruct 1.736\* | Typia 1.812    | ArkType 2.069             |
+
+\* ranked on one of the category's two suites. ArkType has the best score in
+each speed suite on its own (moltar's 1.067, the homepage's 1.375), but
+@ts-runtypes and ata are only in moltar's, so the rule averages ArkType's
+homepage score in and not theirs. So only startup backs a superlative.
+
+One deviation: the homepage's cold-start rows weren't remeasured in
+production. The 1-minute load stayed above 15 for 40 minutes; a run at 16-22
+put every arm at 4x its quiet time and tied all of them. The quiet,
+development-built rows stand, which only handicap ArkType (its build there
+isn't pruned). With the loaded production rows instead, startup's order is the
+same: ArkType 1.098, Valibot 1.289.
+
+#### Every qualifying suite, at 6c5fd9862
 
 lane/homepage with lane/integrate 3381cbce3. Each suite's rivals were counted
 at 4971a30a1 and ArkType's arms again at 6c5fd9862 (no rival depends on the
@@ -372,7 +428,7 @@ suite, where ArkType's score is 1.375. Leaving out one suite at a time,
 ArkType leads speed without the homepage's (1.143, ata 1.151) or without
 schemabenchmarks.dev (1.125), and ata leads otherwise.
 
-### ArkType's rows at 90d510484
+#### ArkType's rows at 90d510484
 
 Every ArkType row was measured again on one commit, 90d510484, the default
 build in every suite: `results/arktype-90d510484.json` holds them in each
@@ -411,7 +467,7 @@ best in Sury's (1124 B, Valibot 1304) and second to ajv on the login form
 At 7daf33b7e, the commit before, size was Valibot 1.360 against ArkType
 1.462, with speed 1.092 and startup 1.014 leading.
 
-### ArkType's rows at fea8e68e0, the homepage's speed in ns
+#### ArkType's rows at fea8e68e0, the homepage's speed in ns
 
 The homepage's speed suite is scored by the table's measure again, median
 ns per call from `benchData.json`, every library from one run. Counting it
@@ -438,26 +494,6 @@ start. In size it's best in Sury's (1112 B, Valibot 1304) and second to ajv
 on the login form (1168 B); the homepage's apps 2.100 (ajv 1.346, Valibot
 1.508) and schemabenchmarks.dev's download 1.315 (2062 B). Leads: speed
 13.0%, startup 178%, size 3.0%.
-
-### ArkType's rows at 808927feb
-
-The same measurements at 808927feb, after the first issue began to be pushed
-directly (a size trade) and object issues began to be reported in
-declaration order: `benchData.json`'s scenarios rerun, 20 passes then a
-10-pass replica, every library in, at 1-minute loads of 2.3 to 4.9 at the
-runs' starts and ends (each started under 4); every other ArkType row in
-`results/arktype-808927feb.json` and `results/startup-808927feb-node24.json`.
-
-| category | 1             | 2             | 3                   |
-| -------- | ------------- | ------------- | ------------------- |
-| speed    | ArkType 1.103 | ata 1.255\*   | ajv 2.873\*         |
-| startup  | ArkType 1.013 | Typia 2.815\* | Valibot 29.4        |
-| size     | ArkType 1.355 | Valibot 1.405 | Superstruct 1.464\* |
-
-\* ranked on 2 to 4 of the category's suites. The homepage's speed suite is
-ArkType 1.282, ajv 1.963. Size: the login form 1158 B, the homepage's apps
-2.095, schemabenchmarks.dev's download 2037 B (1.299), Sury's 1107 B. Leads:
-speed 13.8%, startup 178%, size 3.7%.
 
 ## The login form across validators
 
