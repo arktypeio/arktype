@@ -117,9 +117,10 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 			}
 		:	this.instance.test.bind(this.instance))
 
-	// a ref, so a pattern the engine rejects fails only its definition
+	// a ref, so a pattern the engine rejects fails only its definition. A
+	// size build reads the RegExp, smaller than its test with what that calls
 	compileCondition(js: NodeCompiler, data: string): string {
-		if (this.test) return `${js.ref(this.test)}(${data})`
+		if (this.test && !js.shortest) return `${js.ref(this.test)}(${data})`
 		const instance = js.ref(this.instance)
 		if (this.isRepeated)
 			return `${js.ref(matchesRepeated)}(${instance}, ${data})`

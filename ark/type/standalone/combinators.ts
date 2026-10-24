@@ -400,14 +400,6 @@ const isObjectCheck = (node: BaseNode): boolean => {
 
 const writeCheck = (js: CombinatorCompiler, node: BaseNode): string => {
 	const site = checkOf(node)!
-	// a pattern read by a test of its own is written as its smaller RegExp
-	if (node.hasKind("pattern") && node.test) {
-		return writeCall(
-			"pattern",
-			js.ref(node.instance),
-			unlessDerived(runtime.pattern(node.instance).description, site)
-		)
-	}
 	const condition = node.compileCondition!(js, "data")!
 	const constant = constantChecks[condition]
 	if (constant) {
