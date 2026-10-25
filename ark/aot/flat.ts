@@ -1,6 +1,6 @@
 import { hashOf } from "@ark/util"
 import MagicString, { type SourceMap } from "magic-string"
-import { parseSync, type Node } from "oxc-parser"
+import { parseSync, type Node, type Program, type Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
 import { renamedOf } from "./link.ts"
 import { SourceModule } from "./module.ts"
@@ -1096,11 +1096,12 @@ const writeFlat = (
 		} else flattenFactory(d)
 	}
 	// a unit read whole in the function is its members
+	const isFactoryArg = spansContaining(factories.flatMap(d => d.call.arguments))
 	for (const { id, binding } of scopes.references) {
 		if (
 			binding?.scope === scopes.root &&
 			membersOf.has(binding.name) &&
-			!isFactoryArg(id, factories)
+			!isFactoryArg(id)
 		)
 			replace(id, wholeOf(binding.name))
 	}
@@ -1111,6 +1112,8 @@ const writeFlat = (
 	const exported = new Set<string>()
 	for (const [name, specifier] of specifiersByName)
 		exported.add(`${specifier}\0${name}`)
+	// as measured for size, then written
+	const bodiesByReturned = new Map<string, string>()
 	return {
 		exported,
 		asserting,
@@ -1122,10 +1125,28 @@ const writeFlat = (
 			// one value is returned as itself
 			const returned =
 				values.length === 1 ? values[0] : `[${values.join(", ")}]`
-			// kept code reads what it returns, so a bundler keeps its call, and
-			// annotations saying it could drop it are bytes oxc's minifier keeps
+			let written = bodiesByReturned.get(returned)
+			if (written === undefined) {
+				// kept code reads what it returns, so a bundler keeps its call, and
+				// annotations saying it could drop it are bytes oxc's minifier keeps
+				const parse = unitsParser()
+				written = withoutAnnotations(
+					inGzipOrder(
+						withoutUnread(
+							withCallsInlined(
+								withoutForwarders(body, returned, parse),
+								returned,
+								parse
+							),
+							returned,
+							parse
+						)
+					)
+				)
+				bodiesByReturned.set(returned, written)
+			}
 			const declaration = `const ${read.length === 1 ? read[0] : `[${read.join(", ")}]`} = (() => {
-${withoutAnnotations(inGzipOrder(withoutUnread(withCallsInlined(withoutForwarders(body, returned), returned), returned)))}
+${written}
 return ${returned}
 })()`
 			return asModule ?
@@ -1182,17 +1203,35 @@ const withAssertsUnwrapped = (
 	return { body: s.toString(), asserting }
 }
 
+type UnitsParser = (code: string) => { program: Program; scopes: ModuleScopes }
+
+// each pass parses what the one before wrote, which that one parsed already
+// where it changed nothing
+const unitsParser = (): UnitsParser => {
+	let last: { code: string; program: Program; scopes: ModuleScopes } | undefined
+	return code => {
+		if (last?.code !== code) {
+			const { program } = parseSync("units.js", code, {
+				sourceType: "module",
+				preserveParens: false
+			})
+			last = { code, program, scopes: new ModuleScopes(program) }
+		}
+		return last
+	}
+}
+
 // a function the units declare that only calls another of them with its own
 // parameters, e.g. a predicate's Allows, is read as that one where it's
 // called, so a call reaches it directly
-const withoutForwarders = (body: string, returned: string): string => {
+const withoutForwarders = (
+	body: string,
+	returned: string,
+	parse: UnitsParser
+): string => {
 	for (;;) {
 		const code = `${body}\n;${returned}`
-		const { program } = parseSync("units.js", code, {
-			sourceType: "module",
-			preserveParens: false
-		})
-		const scopes = new ModuleScopes(program)
+		const { program, scopes } = parse(code)
 		const s = new MagicString(code)
 		for (const statement of program.body as Node[]) {
 			if (statement.type !== "VariableDeclaration") continue
@@ -1212,7 +1251,6 @@ const withoutForwarders = (body: string, returned: string): string => {
 				for (const reference of binding.references)
 					s.overwrite(reference.id.start, reference.id.end, target.name)
 			}
-			if (s.hasChanged()) break
 		}
 		if (!s.hasChanged()) return body
 		body = s.toString().slice(0, -returned.length - 2)
@@ -1247,14 +1285,14 @@ const forwardedOf = (node: Node, scopes: ModuleScopes): Binding | undefined => {
 // its expression, or its statements where the call is returned and they end
 // in a return. Each other name it reads is one declared once, so the same
 // where it's called
-const withCallsInlined = (body: string, returned: string): string => {
+const withCallsInlined = (
+	body: string,
+	returned: string,
+	parse: UnitsParser
+): string => {
 	for (;;) {
 		const code = `${body}\n;${returned}`
-		const { program } = parseSync("units.js", code, {
-			sourceType: "module",
-			preserveParens: false
-		})
-		const scopes = new ModuleScopes(program)
+		const { program, scopes } = parse(code)
 		const declared = new Map<string, number>()
 		for (const { name } of scopes.bindingsById.values())
 			declared.set(name, (declared.get(name) ?? 0) + 1)
@@ -1269,6 +1307,11 @@ const withCallsInlined = (body: string, returned: string): string => {
 					:	(declared.get(id.name) ?? 0) <= 1)
 			)
 		const s = new MagicString(code)
+		// what each inline this pass replaces or removes, which no other may
+		// touch, as each reads the code as parsed
+		const edited: [start: number, end: number][] = []
+		const isEdited = (start: number, end: number) =>
+			edited.some(span => start < span[1] && span[0] < end)
 		for (const statement of program.body as Node[]) {
 			if (statement.type !== "VariableDeclaration") continue
 			const { declarations } = statement
@@ -1297,15 +1340,19 @@ const withCallsInlined = (body: string, returned: string): string => {
 						[call.parent, code.slice(fn.body.start, fn.body.end)]
 					:	[]
 				if (!replaced) continue
+				const [start, end] =
+					declarations.length === 1 ?
+						[statement.start, statementEndIn(body, statement)]
+					: i < declarations.length - 1 ?
+						[declarations[i].start, declarations[i + 1].start]
+					:	[declarations[i - 1].end, declarations[i].end]
+				if (isEdited(replaced.start, replaced.end) || isEdited(start, end))
+					continue
+				edited.push([replaced.start, replaced.end], [start, end])
 				s.overwrite(replaced.start, replaced.end, text!)
-				if (declarations.length === 1)
-					s.remove(statement.start, statementEndIn(body, statement))
-				else if (i < declarations.length - 1)
-					s.remove(declarations[i].start, declarations[i + 1].start)
-				else s.remove(declarations[i - 1].end, declarations[i].end)
+				s.remove(start, end)
 				break
 			}
-			if (s.hasChanged()) break
 		}
 		if (!s.hasChanged()) return body
 		body = s.toString().slice(0, -returned.length - 2)
@@ -1331,14 +1378,14 @@ const passesParams = (
 
 // what a function declares that nothing reads, which a bundler keeps as it
 // drops only a module's declarations, left out, as is what only it read
-const withoutUnread = (body: string, returned: string): string => {
+const withoutUnread = (
+	body: string,
+	returned: string,
+	parse: UnitsParser
+): string => {
 	for (;;) {
 		const code = `${body}\n;${returned}`
-		const { program } = parseSync("units.js", code, {
-			sourceType: "module",
-			preserveParens: false
-		})
-		const scopes = new ModuleScopes(program)
+		const { program, scopes } = parse(code)
 		const s = new MagicString(code)
 		for (const statement of program.body as Node[]) {
 			if (statement.type !== "VariableDeclaration") continue
@@ -1616,10 +1663,29 @@ const isFunction = (node: Node) =>
 	node.type === "ClassExpression" ||
 	node.type === "ClassDeclaration"
 
-const isFactoryArg = (node: Node, factories: Factory[]): boolean =>
-	factories.some(d =>
-		d.call.arguments.some(arg => arg.start <= node.start && node.end <= arg.end)
-	)
+// whether a token is within any of the spans, from their union, as a token
+// can't run across the text between two spans
+const spansContaining = (
+	spans: readonly Span[]
+): ((token: Span) => boolean) => {
+	const union: Span[] = []
+	for (const span of [...spans].sort((l, r) => l.start - r.start)) {
+		const last = union[union.length - 1]
+		if (last && span.start <= last.end) last.end = Math.max(last.end, span.end)
+		else union.push({ start: span.start, end: span.end })
+	}
+	return token => {
+		let low = 0
+		let high = union.length - 1
+		while (low <= high) {
+			const mid = (low + high) >> 1
+			if (union[mid].end < token.end) low = mid + 1
+			else if (union[mid].start > token.start) high = mid - 1
+			else return true
+		}
+		return false
+	}
+}
 
 const pushTo = <k, v>(map: Map<k, v[]>, key: k, value: v) => {
 	const values = map.get(key)

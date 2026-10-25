@@ -36,6 +36,7 @@ import {
 	arkKindOf,
 	cached,
 	constructorNameOf,
+	flatMorph,
 	functionNameOf,
 	hashOf,
 	hasDomain,
@@ -50,7 +51,8 @@ import {
 	prototypeOf,
 	throwInternalError,
 	throwParseError,
-	unset
+	unset,
+	type Fn
 } from "@ark/util"
 import type { InternalTypedFn, TypedFn } from "./fn.ts"
 import type { Generic } from "./generic.ts"
@@ -245,6 +247,8 @@ export type Optimization = "speed" | "size"
 interface ConfiguredModule {
 	fingerprint: string
 	path: string
+	// the config module's specifier from path
+	config: string
 }
 
 export interface StandaloneOptions {
@@ -815,7 +819,7 @@ const writeCreations = (
 export const writeFixConfig = (configured: Configured): string =>
 	configured === false ? ""
 	: configured ?
-		`runtime.fixConfigured(${JSON.stringify(configured.fingerprint)}, ${JSON.stringify(configured.path)})`
+		`runtime.fixConfigured(${JSON.stringify(configured.fingerprint)}, ${JSON.stringify(configured.path)}, ${JSON.stringify(configured.config)})`
 	:	"runtime.fixConfig()"
 
 interface WriteDataOptions {
@@ -2277,7 +2281,7 @@ ${writeFunction(
 					) ?? 0
 			)
 			members.push(
-				`toJsonSchema: runtime.bakedJsonSchema(${written}, [${byTarget.join(", ")}])`
+				`toJsonSchema: runtime.bakedJsonSchema(${written}, [${byTarget.join(", ")}]${this.writesWithoutFallback(root) ? ", 1" : ""})`
 			)
 		}
 		if (standard) {
@@ -2286,6 +2290,32 @@ ${writeFunction(
 			)
 		}
 		return members
+	}
+
+	// whether no fallback writes any schema it bakes, so one a call passes,
+	// as libraries like hono-openapi do, changes nothing
+	writesWithoutFallback(root: BaseRoot): boolean {
+		let fellBack = false
+		const fallback = flatMorph(
+			root.$.resolvedConfig.toJsonSchema.fallback,
+			(code, handler: Fn) => [
+				code,
+				(ctx: object) => {
+					fellBack = true
+					return handler(ctx)
+				}
+			]
+		) as ToJsonSchema.HandlerByCode
+		try {
+			this.baking.write(() => {
+				root.toJsonSchema({ fallback })
+				for (const target of supportedJsonSchemaTargets)
+					root.toJsonSchema({ target, fallback })
+			})
+		} catch {
+			return false
+		}
+		return !fellBack
 	}
 
 	// nodes share json unless it prints a hole

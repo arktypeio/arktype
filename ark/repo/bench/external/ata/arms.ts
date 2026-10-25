@@ -22,6 +22,8 @@ const count: Record<string, Arm> = {}
 for (const [sceneName, sc] of Object.entries(scenes)) {
 	for (const bodyName of Object.keys(bodies)) {
 		for (const lib of Object.keys(libs)) {
+			// a library that generates code runs only where code generation is allowed
+			if (sc.blocked && !libs[lib].blocked) continue
 			if (!(await make(lib, bodies[bodyName], sc.scene))) continue
 			const args = [
 				...(sc.blocked ? ["--disallow-code-generation-from-strings"] : []),

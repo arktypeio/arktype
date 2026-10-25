@@ -16,6 +16,7 @@ Migrating from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema? Re
 A project whose bundler config uses `@ark/aot` (e.g. `precompile.vite()` from `@ark/aot/unplugin`) constructs every Type at build time and replaces it with a standalone validator, so arktype's parser doesn't ship. To set it up, to add validation to such a project or to fix a build error from it, read [references/precompile.md](references/precompile.md): it has the setup for each bundler, Next.js and test runner, how to write definitions the build accepts, and each build error with its fix. In short:
 
 - Define Types from static values, and compose them inside definitions, like `const Admin = User.and({ role: "'admin'" })`. A definition reading a parameter, or a function calling `.or`, `.pick` or another composing method at runtime, fails the build. To reuse a pattern, define a Generic.
+- Define Types in JavaScript or TypeScript modules. A Svelte component's script isn't precompiled, so one importing arktype fails the build: put the Types, and any code checking a result against `type.errors`, in a `.ts` module the component imports.
 - If the project calls `configure()`, name its module as `config` under `precompile` in an `ark.json` beside `package.json`, which the plugin, the test drivers, the CLI and the ESLint rule all read.
 - A build error names the file, line and column, then why, then the fix on its last line. Apply that fix. Don't set `allowUnsafe` or switch to `runtime: "arktype"` to get past one. `npx arktype-precompile --check "src/**/*.ts"` lists every one without bundling.
 - A validator's error messages say what failed but not what the value was, like `name must be a string`.
@@ -80,7 +81,7 @@ Strings use TypeScript's operators. Write string literals in single quotes insid
 | array of a Type        | `Item.array()`, `Item.array().atLeastLength(1)`           |
 | custom error message   | `type("string >= 8").configure({ message: "Too short" })` |
 
-Bounds bind tighter than `|`, so `"string <= 500 | null"` is a string of at most 500 characters, or null.
+A regex with flags, like `/^a$/i`, must be a RegExp. Bounds bind tighter than `|`, so `"string <= 500 | null"` is a string of at most 500 characters, or null.
 
 Common keywords: `string.email`, `string.uuid`, `string.url`, `string.ip`, `string.semver`, `string.date.iso`, `string.alphanumeric`, `number.integer`, `number.safe`, `number.epoch`. The full list is at https://arktype.io/docs/keywords.md.
 
@@ -172,7 +173,7 @@ Other morph keywords: `string.trim`, `string.lower`, `string.upper`, `string.num
 
 ## Custom rules
 
-Use `.narrow()` when a rule involves more than one value. Return `true` to accept, or `ctx.reject()` to give a message and a path.
+Use `.narrow()` when a rule involves more than one value. Return `true` to accept, or `ctx.reject()` to give a message and a path. A narrow on an object runs only once every key is valid, so its error is never reported alongside a key's.
 
 ```ts
 const Signup = type({

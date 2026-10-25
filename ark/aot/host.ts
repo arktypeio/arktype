@@ -103,17 +103,51 @@ export const createDevelopmentHost = (opts?: NodeHostOptions): PrecompileHost =>
 const readFile = (path: string) =>
 	existsSync(path) ? readFileSync(path, "utf8") : undefined
 
-// e.g. `"arktype": { "precompile": true }`
+// `"ark": { "aot": true }`
 export const optsIn = (manifest: string | undefined): boolean =>
-	manifest !== undefined && JSON.parse(manifest).arktype?.precompile === true
+	manifest !== undefined && JSON.parse(manifest).ark?.aot === true
 
-// the package in node_modules a file belongs to, if any
+export type DependencyMode = "aot" | "arktype"
+
+export type DependencyModes = Record<string, DependencyMode>
+
+// what a dependency's imports of arktype resolve to where it runs on
+// arktype, as a runtime island's do
+export const islandDependencySpecifier = "arktype/internal/islandDependency.js"
+
+// a dependency the program's settings run on arktype
+export const runsOnArktype = (
+	importer: string | undefined,
+	dependencies: DependencyModes | undefined
+): boolean => {
+	const [, name] = (importer && dependencyOf(importer.split("?")[0])) || []
+	return !!name && dependencies?.[name] === "arktype"
+}
+
+// the package in node_modules a file belongs to, if any, from the innermost
+// node_modules it names one in
 export const dependencyOf = (
 	file: string
 ): [root: string, name: string] | undefined => {
-	const match = /.*[/\\]node_modules[/\\]((?:@[^/\\]+[/\\])?[^/\\]+)/.exec(file)
-	return match ? [match[0], match[1].replace("\\", "/")] : undefined
+	const starts = [...file.matchAll(nodeModulesSegment)]
+	for (let i = starts.length - 1; i >= 0; i--) {
+		packageInNodeModules.lastIndex = starts[i].index
+		const match = packageInNodeModules.exec(file)
+		if (match) {
+			return [
+				file.slice(0, packageInNodeModules.lastIndex),
+				match[1].replace("\\", "/")
+			]
+		}
+	}
 }
+
+// read from each start rather than through a leading .*, which backtracks
+// across a long path once for every character
+const nodeModulesSegment = /[/\\]node_modules(?=[/\\])/g
+
+const packageInNodeModules =
+	/[/\\]node_modules[/\\]((?:@[^/\\]+[/\\])?[^/\\]+)/y
 
 // a module's file as the resolver writes it. Vite writes / on Windows, and
 // an entry under a root given through a symlink or an 8.3 name like RUNNER~1
@@ -134,15 +168,26 @@ export const realPathOf = (path: string): string => {
 export const printablePathOf = (from: string, to: string): string =>
 	relative(from, to).split(sep).join("/")
 
-// for a host that must be told before the build which packages it transforms
-export const optedInPackagesOf = (cwd: string): string[] => {
-	const result: string[] = []
+// the directory of the nearest package.json
+export const projectOf = (cwd: string): string => {
 	let project = cwd
 	while (
 		!existsSync(join(project, "package.json")) &&
 		project !== dirname(project)
 	)
 		project = dirname(project)
+	return project
+}
+
+// for a host that must be told before the build which packages it transforms
+export const optedInPackagesOf = (
+	cwd: string,
+	dependencies?: DependencyModes
+): string[] => {
+	const result = Object.keys(dependencies ?? {}).filter(
+		name => dependencies![name] === "aot"
+	)
+	const project = projectOf(cwd)
 	// every package the project reaches, as one that doesn't opt in may depend on one that does
 	const packages: [root: string, name: string][] = [[project, ""]]
 	const visited = new Set([realPathOf(project)])
@@ -175,7 +220,10 @@ export const optedInPackagesOf = (cwd: string): string[] => {
 }
 
 // where Node finds a package imported from a directory
-const packageRootOf = (name: string, from: string): string | undefined => {
+export const packageRootOf = (
+	name: string,
+	from: string
+): string | undefined => {
 	for (let dir = from; ; dir = dirname(dir)) {
 		const root = join(dir, "node_modules", name)
 		if (
@@ -396,7 +444,7 @@ export const precompiledDependencyOf = (
 }
 
 export const writePrecompiledDependencyMessage = (name: string): string =>
-	`${name} imports arktype/runtime, so it ships validators precompiled for one version of arktype, which may not be this build's. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it.`
+	`${name} imports arktype/runtime, so it ships validators precompiled for one version of arktype, which may not be this build's. Have it publish its source with "ark": { "aot": true } in its package.json, so this build precompiles it.`
 
 export const writeUntransformedImportMessage = (
 	file: string,

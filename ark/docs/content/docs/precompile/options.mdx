@@ -15,7 +15,7 @@ precompile.vite({
 })
 ```
 
-`errors`, `mutatesInput`, `members`, `optimize`, `optimizeErrors`, `freeze`, `lazy`, `creationChecks`, `jsonInput`, `shadow` and `prune` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
+`errors`, `mutatesInput`, `members`, `optimize`, `optimizeErrors`, `freeze`, `lazy`, `creationChecks`, `jsonInput`, `shadow`, `prune` and `dependencies` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
 
 ## Presets
 
@@ -68,11 +68,24 @@ The plugin, the Node and Bun drivers, Turbopack, `arktype-precompile` and the ES
 }
 ```
 
-It takes each option but `cwd`, `inline` and `declare`, and resolves `config` and `tsconfig` against its own directory. An option given in a call overrides it, `members` key by key, and a preset fills in only what neither sets. A dependency's `ark.json` isn't read, as the program's options build every package. The build reads the file as it starts, and fails on an option it sets wrongly, naming the file and key:
+It takes each option but `cwd`, `inline` and `declare`, and resolves `config` and `tsconfig` against its own directory. An option given in a call overrides it, `members` and `dependencies` key by key, and a preset fills in only what neither sets. A dependency's `ark.json` isn't read, as the program's options build every package. The build reads the file as it starts, and fails on an option it sets wrongly, naming the file and key:
 
 ```
 /app/ark.json: precompile.optimize must be "size" or "speed" (was "small")
 ```
+
+The same settings can go under an `"ark"` key in that `package.json` instead, resolved against its directory:
+
+```json title="package.json"
+{
+	"name": "my-app",
+	"ark": {
+		"precompile": { "config": "./src/config.ts" }
+	}
+}
+```
+
+Where `package.json` sets `"ark"` and an `ark.json` is beside it, the build fails, naming both, so keep one. A library's `package.json` also sets `"aot": true` under `"ark"` to [opt in](/docs/precompile/advanced#libraries), which is unrelated to `"precompile"`, how the program reading the file builds.
 
 ## Settings
 
@@ -102,7 +115,9 @@ The values are [arktype's `errors`](/docs/configuration#errors) option's, and a 
 
 `members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true; `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema` default to false. A dropped member reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`. Where it can't see one, `String(User)` without `expression` is `"Type"`, and reading another introspection member throws under the `"development"` condition rather than reading `undefined`. So does reading `~standard.jsonSchema` off a validator outside a [production build](#production-builds), as a library converting it to JSON Schema does.
 
-Each introspection member set true is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`. A JSON Schema the build can't bake throws where it's read.
+Keep `assert` or `~standard` on validators you pass to a library. tRPC, for one, calls a validator that has neither as a plain parse function, so it passes on the errors the validator returns as if they were the parsed input.
+
+Each introspection member set true is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`, and a `fallback` only where no fallback writes the schema, so a library passing its own, as hono-openapi and oRPC do, gets what arktype returns. A JSON Schema the build can't bake throws where it's read.
 
 ```ts
 import { precompile } from "@ark/aot/unplugin"
@@ -170,6 +185,25 @@ prune: off, because src/routes.ts:3:1 reads import.meta.glob, which may load mod
 Vite, Rollup, Rolldown and esbuild bundles prune, esbuild only where this plugin is the last, so no plugin loads a module after it reads it. `prune: true` also prunes a Rollup, Rolldown or esbuild bundle that isn't for production, which the build can't tell. webpack, Rspack, Turbopack, the Node and Bun drivers and `arktype-precompile` build every validator whole, and fail with `prune: true`, set in their options or `ark.json`, as does an esbuild build where a plugin follows this one.
 
 Once the bundle is built, the build checks that it read each entry, module and import the bundle holds as the bundle holds it, and fails without its output where another plugin loaded, rewrote or resolved one otherwise, as a read it didn't see may need what it left out. An import of a module that neither creates a validator nor imports one that may, like a framework's runtime importing the app's generated config, needs no reading. A Vite, Rollup or Rolldown build reads a module as the plugins ahead of this one transformed it, and relies on a plugin that transforms it after this one keeping what it reads, as a TypeScript or JSX transform does. `prune: false` builds every validator whole, each unit a module of its own.
+
+### dependencies
+
+`dependencies` decides how the build treats a package that imports arktype but doesn't [opt in](/docs/precompile/advanced#libraries), which otherwise fails it. `"aot"` precompiles the package as if it opted in, for one whose Types are static, like t3-env's `presets-arktype`. `"arktype"` runs it on arktype, as a [runtime island](/docs/precompile/advanced#runtime-islands) runs, for one creating Types from values it reads as it runs, like `drizzle-arktype`:
+
+```json title="ark.json"
+{
+	"precompile": {
+		"dependencies": {
+			"@t3-oss/env-core": "aot",
+			"drizzle-arktype": "arktype"
+		}
+	}
+}
+```
+
+A package run on arktype ships arktype's parser for the Types it creates, under the program's configuration. Its errors are instances of `type.errors`, as a precompiled validator's are, and its Types are Standard Schemas, so the rest of the program reads them as it reads any. `"arktype"` fails the build with `errors: "none"` or `optimizeErrors: "size"`, whose errors are a class of their own, and with Turbopack or Bun's runtime plugin, which replace arktype for every importer. A name the program can't resolve fails the build.
+
+A package precompiled with `"aot"` is read as the program is, so a value it returns that the build can't tell from a Type is checked where it's read: `JSON.stringify(env)` on t3-env's result fails as reading `toJSON`, unless `env` is annotated with its type.
 
 ### allowUnsafe
 

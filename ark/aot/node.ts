@@ -12,6 +12,7 @@ import {
 	appendSourceMap,
 	dependencyOf,
 	driverOptionsOf,
+	islandDependencySpecifier,
 	optedInPackagesOf,
 	precompiledDependencyOf,
 	printablePathOf,
@@ -20,6 +21,7 @@ import {
 	realPathOf,
 	resolvesToRuntime,
 	resolvedVariantOf,
+	runsOnArktype,
 	runtimeSpecifiers,
 	schemaSpecifier,
 	transformedFilterOf,
@@ -45,7 +47,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	if (!module.registerHooks)
 		throwError(writeNodeVersionMessage("@ark/aot/node", "22.15"))
 	refuseDeclare(opts, "Node")
-	// the worker inherits the flags that registered these hooks
+	// a worker still runs what NODE_OPTIONS preloads, which may register these hooks
 	if (isPrecompilerWorker) return
 	const set = withSettingsFile(opts)
 	refusePrune(set, "Node")
@@ -61,7 +63,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 		)
 	})
 	const filter = transformedFilterOf(
-		optedInPackagesOf(opts?.cwd ?? process.cwd())
+		optedInPackagesOf(opts?.cwd ?? process.cwd(), opts.dependencies)
 	)
 	const isTransformed = (id: string) =>
 		filter.include.test(id) && !filter.exclude.test(id)
@@ -158,7 +160,10 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 				)
 			}
 			return resolveRuntime(
-				isRedirected ? "arktype/runtime" : specifier,
+				!isRedirected ? specifier
+				: runsOnArktype(importer, opts?.dependencies) ?
+					islandDependencySpecifier
+				:	"arktype/runtime",
 				context,
 				nextResolve
 			)

@@ -309,7 +309,7 @@ const sizeRival = leaderboards.size.standings[size.place === 1 ? 1 : 0]
 export const claims = {
 	// each superlative names a category ArkType must have the best average in
 	// (lib/bench/leaderboard.ts), as headlineCategories below checks. Size is
-	// the narrow one: 1.355 against Valibot's 1.405 at 808927feb
+	// the narrow one: 1.355 against Valibot's 1.394 (current releases, 2026-10-24)
 	headline: "TypeScript's smallest, fastest validator.",
 	headlineNote: `Ranked by best average across public benchmarks, each result a ratio to the best: ${leaderboards.speed.rows} results for validation speed, ${leaderboards.startup.rows} for startup and ${leaderboards.size.rows} for bundle size.`,
 	// the fastest and the smallest builds differ: optimize "size" makes the
@@ -383,7 +383,7 @@ export const claims = {
 	speedAverage: averagesOf("speed"),
 	startupAverage: averagesOf("startup"),
 	sizeAverage: averagesOf("size"),
-	// size is the narrow lead: 1.355 against Valibot's 1.405 at 808927feb, and
+	// size is the narrow lead: 1.355 against Valibot's 1.394, and
 	// it doesn't survive leaving out the form, schemabenchmarks.dev or Sury
 	sizeClose: `Size is the close one: ${sizeRival.library} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}, and ArkType's lead is in the average.`,
 	// public isn't independent: which of the averages' benchmarks are ours

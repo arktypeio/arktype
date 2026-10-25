@@ -291,16 +291,25 @@ const SpreadCard = ({ category }: { category: SpreadCategory }) => {
 	)
 }
 
+/** a best average, as a multiple of the best result: "1.36×" */
+const multiple = (score: number) => `${score.toFixed(2)}×`
+
 const StandingCard = ({ category }: { category: StandingCategory }) => {
 	const ours = category.standings.findIndex(s => s.library === "ArkType")
 	const axis = Math.max(...category.standings.map(s => s.score))
+	// the leader where ArkType isn't, otherwise the next best
+	const other = category.standings[ours ? 0 : 1]
 	return (
 		<>
 			<Place category={category} />
-			<p className="card-margin">each result a ratio to the smallest</p>
+			<p className="card-margin">
+				{ours ? `${other.library}'s average is lower: ` : "Lowest average: "}
+				<b>{multiple(category.standings[ours].score)}</b> the smallest bundle,
+				to {other.library}'s <b>{multiple(other.score)}</b>
+			</p>
 			<ol
 				className="race"
-				aria-label="best average, each result a ratio to the smallest, lower is better"
+				aria-label="each library's bundles as a multiple of the smallest, averaged, lower is better"
 				style={
 					{
 						"--won": `${pack.stagger * ours + pack.length}s`
@@ -322,11 +331,13 @@ const StandingCard = ({ category }: { category: StandingCategory }) => {
 						<span className="lane-track">
 							<span className="lane-bar" />
 						</span>
-						<span className="lane-val">{s.score.toFixed(2)}</span>
+						<span className="lane-val">{multiple(s.score)}</span>
 					</li>
 				))}
 			</ol>
-			<p className="card-rest">best average, lower is better</p>
+			<p className="card-rest">
+				1× = the smallest bundle everywhere · lower is better
+			</p>
 		</>
 	)
 }

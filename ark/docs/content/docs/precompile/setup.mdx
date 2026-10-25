@@ -169,7 +169,9 @@ Set [options](/docs/precompile/options) in `ark.json` beside your `package.json`
 }
 ```
 
-A validator leaves out its JSON Schema unless the build sets it, so a library that reads it through Standard Schema, like the MCP SDK's `inputSchema` or an AI SDK 6 tool, finds `undefined` there in production. Outside production, reading it throws, naming the fix. Add `"members": { "~standard.jsonSchema": true }` to `precompile` for it. See [members](/docs/precompile/options#members).
+The same settings can go under an `"ark"` key in `package.json` instead. Keep one: the build fails if both are set. See [ark.json](/docs/precompile/options#arkjson).
+
+A validator leaves out its JSON Schema unless the build sets it, so a library that reads it through Standard Schema, like the MCP SDK's `inputSchema`, an AI SDK tool or Elysia's OpenAPI plugin, finds `undefined` there in production. Outside production, reading it throws, naming the fix. Add `"members": { "~standard.jsonSchema": true }` to `precompile` for it, or `"toJsonSchema": true` for one that calls `toJsonSchema()`, like hono-openapi or oRPC's ArkType converter. See [integrations](/docs/integrations#precompiled-validators) and [members](/docs/precompile/options#members).
 
 ## Frameworks [#frameworks]
 
@@ -307,7 +309,7 @@ Dependencies are left to Node, so one that imports `arktype` loads it beside the
 
 ## Bun [#bun]
 
-To precompile as Bun loads your code, for `bun test` or any program, register the plugin from a file listed in `preload` in `bunfig.toml`:
+To precompile as Bun loads your code, for `bun test` or any program, register the plugin from a file `bunfig.toml` preloads. `bun test` reads only the `preload` in its `[test]` section, so list the file in both:
 
 ```ts title="preload.ts"
 // @noErrors
@@ -317,6 +319,9 @@ Bun.plugin(precompile())
 ```
 
 ```toml title="bunfig.toml"
+preload = ["./preload.ts"]
+
+[test]
 preload = ["./preload.ts"]
 ```
 
@@ -330,6 +335,8 @@ Each driver takes the plugin's options, fails on the same errors, except that Bu
 - **`node --test`** uses the [Node driver](#node).
 - **`bun test`** uses the [Bun driver](#bun).
 - **Jest** has no driver, so it runs your Types with arktype, unprecompiled. Your definitions behave the same either way, but to test the validators you ship, run tests with one of the above.
+
+A test file is an entry of its own, so in a program with a [config module](/docs/precompile/options#configuration), the first validator a test file loads throws that it was created before `configure()` ran, unless the config module loads first. List it in Vitest's `test.setupFiles`, after the plugin in the `[test]` preload of `bunfig.toml`, or after the Node driver: `node --import ./register.ts --import ./src/arktype.config.ts --test`.
 
 To test that your precompiled validators behave as arktype does, run tests in [shadow mode](/docs/precompile/advanced#shadow-mode).
 
@@ -360,7 +367,7 @@ The same analysis is available as `new Precompiler(host, options).analyze(source
 
 ## ESLint
 
-The ESLint rule reports what the build would, as you edit:
+The ESLint rules report what the build would, as you edit:
 
 ```js title="eslint.config.js"
 // @noErrors
@@ -376,4 +383,4 @@ export default [
 ]
 ```
 
-`configs.recommended` lints JavaScript and TypeScript files. ESLint parses TypeScript only through a parser like typescript-eslint's, which a project already linting TypeScript configures.
+`configs.recommended` lints JavaScript and TypeScript files. It reports what fails the build as an error, through `@ark/aot/precompilable`, and what the build warns about, like a problem [`allowUnsafe`](/docs/precompile/options#allowunsafe) builds past, as a warning, through `@ark/aot/warnings`. Each takes the build's options, which `ark.json` gives both. ESLint parses TypeScript only through a parser like typescript-eslint's, which a project already linting TypeScript configures.

@@ -7,8 +7,11 @@ import {
 	writeFileSync
 } from "node:fs"
 import { join } from "node:path"
+import { fileURLToPath } from "node:url"
 
-const skillDir = new URL("../type/skills/arktype/", import.meta.url).pathname
+const skillDir = fileURLToPath(
+	new URL("../type/skills/arktype/", import.meta.url)
+)
 
 // references/migrating.md is written from a docs page whose examples the docs
 // build already checks
@@ -19,8 +22,9 @@ const skillFiles = [
 		.map(file => `references/${file}`)
 ]
 // under node_modules, so typecheckRepo leaves the examples to this script
-const tempDir = new URL("./node_modules/.cache/skill/", import.meta.url)
-	.pathname
+const tempDir = fileURLToPath(
+	new URL("./node_modules/.cache/skill/", import.meta.url)
+)
 
 rmSync(tempDir, { recursive: true, force: true })
 mkdirSync(tempDir, { recursive: true })
@@ -58,9 +62,13 @@ writeFileSync(
 
 console.log(`🔍 Type checking ${count} examples from the ArkType skill...`)
 
+// Windows spawns pnpm's .cmd shim only through a shell
 const result = spawnSync("pnpm", ["exec", "tsc", "--project", tempDir], {
-	stdio: "inherit"
+	stdio: "inherit",
+	shell: process.platform === "win32"
 })
+
+if (result.error) throw result.error
 
 if (result.status !== 0) {
 	throw new Error(

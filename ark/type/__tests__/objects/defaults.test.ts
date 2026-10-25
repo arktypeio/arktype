@@ -527,6 +527,21 @@ contextualize(() => {
 			})
 		})
 
+		// https://github.com/arktypeio/arktype/issues/1510
+		it("default of an alias configured in scope", () => {
+			const $ = scope({
+				version: type.string.describe("a version"),
+				tag: type.string.configure({ description: "a tag" }, "self"),
+				release: { version: "version = 'v0'", tag: "tag = 'latest'" }
+			}).export()
+
+			attest($.release.t).type.toString.snap(`{
+	version: Default<string, "v0">
+	tag: Default<string, "latest">
+}`)
+			attest($.release({})).equals({ version: "v0", tag: "latest" })
+		})
+
 		it("optional with default", () => {
 			attest(() =>
 				// @ts-expect-error

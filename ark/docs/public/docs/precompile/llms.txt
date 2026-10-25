@@ -283,7 +283,9 @@ Set [options](https://arktype.io/docs/precompile/options) in `ark.json` beside y
 }
 ```
 
-A validator leaves out its JSON Schema unless the build sets it, so a library that reads it through Standard Schema, like the MCP SDK's `inputSchema` or an AI SDK 6 tool, finds `undefined` there in production. Outside production, reading it throws, naming the fix. Add `"members": { "~standard.jsonSchema": true }` to `precompile` for it. See [members](https://arktype.io/docs/precompile/options#members).
+The same settings can go under an `"ark"` key in `package.json` instead. Keep one: the build fails if both are set. See [ark.json](https://arktype.io/docs/precompile/options#arkjson).
+
+A validator leaves out its JSON Schema unless the build sets it, so a library that reads it through Standard Schema, like the MCP SDK's `inputSchema`, an AI SDK tool or Elysia's OpenAPI plugin, finds `undefined` there in production. Outside production, reading it throws, naming the fix. Add `"members": { "~standard.jsonSchema": true }` to `precompile` for it, or `"toJsonSchema": true` for one that calls `toJsonSchema()`, like hono-openapi or oRPC's ArkType converter. See [integrations](https://arktype.io/docs/integrations#precompiled-validators) and [members](https://arktype.io/docs/precompile/options#members).
 
 ## Next.js
 
@@ -361,7 +363,7 @@ Dependencies are left to Node, so one that imports `arktype` loads it beside the
 
 ## Bun
 
-To precompile as Bun loads your code, for `bun test` or any program, register the plugin from a file listed in `preload` in `bunfig.toml`:
+To precompile as Bun loads your code, for `bun test` or any program, register the plugin from a file `bunfig.toml` preloads. `bun test` reads only the `preload` in its `[test]` section, so list the file in both:
 
 ```ts
 import { precompile } from "@ark/aot/bun"
@@ -370,6 +372,9 @@ Bun.plugin(precompile())
 ```
 
 ```toml
+preload = ["./preload.ts"]
+
+[test]
 preload = ["./preload.ts"]
 ```
 
@@ -383,6 +388,8 @@ Each driver takes the plugin's options, fails on the same errors, except that Bu
 - **`node --test`** uses the [Node driver](https://arktype.io/docs/precompile/setup#node).
 - **`bun test`** uses the [Bun driver](https://arktype.io/docs/precompile/setup#bun).
 - **Jest** has no driver, so it runs your Types with arktype, unprecompiled. Your definitions behave the same either way, but to test the validators you ship, run tests with one of the above.
+
+A test file is an entry of its own, so in a program with a [config module](https://arktype.io/docs/precompile/options#configuration), the first validator a test file loads throws that it was created before `configure()` ran, unless the config module loads first. List it in Vitest's `test.setupFiles`, after the plugin in the `[test]` preload of `bunfig.toml`, or after the Node driver: `node --import ./register.ts --import ./src/arktype.config.ts --test`.
 
 To test that your precompiled validators behave as arktype does, run tests in [shadow mode](https://arktype.io/docs/precompile/advanced#shadow-mode).
 
@@ -413,7 +420,7 @@ The same analysis is available as `new Precompiler(host, options).analyze(source
 
 ## ESLint
 
-The ESLint rule reports what the build would, as you edit:
+The ESLint rules report what the build would, as you edit:
 
 ```js
 import { configs } from "@ark/aot/eslint"
@@ -428,7 +435,7 @@ export default [
 ]
 ```
 
-`configs.recommended` lints JavaScript and TypeScript files. ESLint parses TypeScript only through a parser like typescript-eslint's, which a project already linting TypeScript configures.
+`configs.recommended` lints JavaScript and TypeScript files. It reports what fails the build as an error, through `@ark/aot/precompilable`, and what the build warns about, like a problem [`allowUnsafe`](https://arktype.io/docs/precompile/options#allowunsafe) builds past, as a warning, through `@ark/aot/warnings`. Each takes the build's options, which `ark.json` gives both. ESLint parses TypeScript only through a parser like typescript-eslint's, which a project already linting TypeScript configures.
 
 # Validators
 
@@ -524,7 +531,7 @@ precompile.vite({
 })
 ```
 
-`errors`, `mutatesInput`, `members`, `optimize`, `optimizeErrors`, `freeze`, `lazy`, `creationChecks`, `jsonInput`, `shadow` and `prune` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
+`errors`, `mutatesInput`, `members`, `optimize`, `optimizeErrors`, `freeze`, `lazy`, `creationChecks`, `jsonInput`, `shadow`, `prune` and `dependencies` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
 
 ## Presets
 
@@ -575,11 +582,24 @@ The plugin, the Node and Bun drivers, Turbopack, `arktype-precompile` and the ES
 }
 ```
 
-It takes each option but `cwd`, `inline` and `declare`, and resolves `config` and `tsconfig` against its own directory. An option given in a call overrides it, `members` key by key, and a preset fills in only what neither sets. A dependency's `ark.json` isn't read, as the program's options build every package. The build reads the file as it starts, and fails on an option it sets wrongly, naming the file and key:
+It takes each option but `cwd`, `inline` and `declare`, and resolves `config` and `tsconfig` against its own directory. An option given in a call overrides it, `members` and `dependencies` key by key, and a preset fills in only what neither sets. A dependency's `ark.json` isn't read, as the program's options build every package. The build reads the file as it starts, and fails on an option it sets wrongly, naming the file and key:
 
 ```
 /app/ark.json: precompile.optimize must be "size" or "speed" (was "small")
 ```
+
+The same settings can go under an `"ark"` key in that `package.json` instead, resolved against its directory:
+
+```json
+{
+	"name": "my-app",
+	"ark": {
+		"precompile": { "config": "./src/config.ts" }
+	}
+}
+```
+
+Where `package.json` sets `"ark"` and an `ark.json` is beside it, the build fails, naming both, so keep one. A library's `package.json` also sets `"aot": true` under `"ark"` to [opt in](https://arktype.io/docs/precompile/advanced#libraries), which is unrelated to `"precompile"`, how the program reading the file builds.
 
 ## Settings
 
@@ -609,7 +629,9 @@ The values are [arktype's `errors`](https://arktype.io/docs/configuration#errors
 
 `members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true; `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema` default to false. A dropped member reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`. Where it can't see one, `String(User)` without `expression` is `"Type"`, and reading another introspection member throws under the `"development"` condition rather than reading `undefined`. So does reading `~standard.jsonSchema` off a validator outside a [production build](https://arktype.io/docs/precompile/options#production-builds), as a library converting it to JSON Schema does.
 
-Each introspection member set true is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`. A JSON Schema the build can't bake throws where it's read.
+Keep `assert` or `~standard` on validators you pass to a library. tRPC, for one, calls a validator that has neither as a plain parse function, so it passes on the errors the validator returns as if they were the parsed input.
+
+Each introspection member set true is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`, and a `fallback` only where no fallback writes the schema, so a library passing its own, as hono-openapi and oRPC do, gets what arktype returns. A JSON Schema the build can't bake throws where it's read.
 
 ```ts
 precompile.vite({
@@ -674,6 +696,25 @@ Vite, Rollup, Rolldown and esbuild bundles prune, esbuild only where this plugin
 
 Once the bundle is built, the build checks that it read each entry, module and import the bundle holds as the bundle holds it, and fails without its output where another plugin loaded, rewrote or resolved one otherwise, as a read it didn't see may need what it left out. It relies on a plugin that transforms a module after this one keeping what the module reads, as a TypeScript or JSX transform does. `prune: false` builds every validator whole, each unit a module of its own.
 
+### dependencies
+
+`dependencies` decides how the build treats a package that imports arktype but doesn't [opt in](https://arktype.io/docs/precompile/advanced#libraries), which otherwise fails it. `"aot"` precompiles the package as if it opted in, for one whose Types are static, like t3-env's `presets-arktype`. `"arktype"` runs it on arktype, as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands) runs, for one creating Types from values it reads as it runs, like `drizzle-arktype`:
+
+```json
+{
+	"precompile": {
+		"dependencies": {
+			"@t3-oss/env-core": "aot",
+			"drizzle-arktype": "arktype"
+		}
+	}
+}
+```
+
+A package run on arktype ships arktype's parser for the Types it creates, under the program's configuration. Its errors are instances of `type.errors`, as a precompiled validator's are, and its Types are Standard Schemas, so the rest of the program reads them as it reads any. `"arktype"` fails the build with `errors: "none"` or `optimizeErrors: "size"`, whose errors are a class of their own, and with Turbopack or Bun's runtime plugin, which replace arktype for every importer. A name the program can't resolve fails the build.
+
+A package precompiled with `"aot"` is read as the program is, so a value it returns that the build can't tell from a Type is checked where it's read: `JSON.stringify(env)` on t3-env's result fails as reading `toJSON`, unless `env` is annotated with its type.
+
 ### allowUnsafe
 
 `allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `@ark/schema/runtime` that doesn't match `errors` and `optimizeErrors`, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
@@ -732,7 +773,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 
 Positions are your source's, even where another plugin transpiled it first. Run [`arktype-precompile --check`](https://arktype.io/docs/precompile/setup#check-an-existing-project) to see every report at once.
 
-Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `Set allowUnsafe: true to build anyway, with a warning.` [`allowUnsafe`](https://arktype.io/docs/precompile/options#allowunsafe) reports those as warnings instead, and what they report may then throw at runtime. What a build with `runtime: "arktype"` leaves to arktype is always reported as a warning, since nothing fails at runtime.
+Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency shipping precompiled validators, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `Set allowUnsafe: true to build anyway, with a warning.` [`allowUnsafe`](https://arktype.io/docs/precompile/options#allowunsafe) reports those as warnings instead, and what they report may then throw at runtime. What a build with `runtime: "arktype"` leaves to arktype is always reported as a warning, since nothing fails at runtime.
 
 ## Not supported
 
@@ -748,7 +789,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 | A definition reading a value known only at runtime | Make it static, or mark it as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands) |
 | Composing or introspecting a Type at runtime, like `.and()` or `.json` | Compose inside a definition, or set [`members`](https://arktype.io/docs/precompile/options#members) |
 | Errors in a [locale](https://arktype.io/docs/i18n) other than English | A runtime island |
-| A dependency that defines Types at runtime | Have it [opt in](https://arktype.io/docs/precompile/advanced#libraries) |
+| A dependency that defines Types but doesn't opt in | Set it in [`dependencies`](https://arktype.io/docs/precompile/options#dependencies), or have it [opt in](https://arktype.io/docs/precompile/advanced#libraries) |
 | A dependency that ships its own precompiled validators | Have it publish its source and opt in |
 | `prune: true` outside Vite, Rollup, Rolldown and esbuild | Leave `prune` unset |
 | `declare: true` with esbuild, Bun, Farm or Node | Run `arktype-precompile --declare` after building |
@@ -804,9 +845,23 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`precompile.esbuild() needs bundle: true`**: precompiled modules import validators the bundle includes.
 
-**`my-schemas imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws`**: a dependency defines Types at runtime. Have it publish its source and [opt in](https://arktype.io/docs/precompile/advanced#libraries) with `"arktype": { "precompile": true }` in its `package.json`, so your build precompiles it.
+**`my-schemas imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws`**: a dependency defines Types but doesn't [opt in](https://arktype.io/docs/precompile/advanced#libraries). Where it defines them statically, like t3-env's `presets-arktype`, precompile it with this in `ark.json` (or `package.json`'s `"ark"` key):
 
-**`my-schemas imports arktype/runtime, so it ships validators precompiled for one version of arktype`**: a dependency shipped its own precompiled build, which runs only on the arktype it was built with. Have it publish its source and opt in instead.
+```json
+"precompile": { "dependencies": { "my-schemas": "aot" } }
+```
+
+Where it creates them from values it reads as it runs, like `drizzle-arktype` from your tables, set `"arktype"` in place of `"aot"` to run it on arktype. See [`dependencies`](https://arktype.io/docs/precompile/options#dependencies). Better still, have it publish its source with `"ark": { "aot": true }` in its `package.json`. `allowUnsafe` builds it anyway, but the dependency then throws where it defines a Type. A dependency reading only `type.errors` or `ArkErrors` off arktype, like `@hono/arktype-validator`, builds as it is.
+
+**`precompile.dependencies names drizzle-arktyp, which can't be resolved from /app`**: name a package the program depends on, as its `package.json` names it.
+
+**`drizzle-arktype runs on arktype, whose errors aren't instances of type.errors under errors: "none"`** (or `optimizeErrors: "size"`): a build writing errors of its own can't mix them with arktype's. Precompile it with `"aot"` if its Types are static, or build without that option.
+
+**`precompile.dependencies runs drizzle-arktype on arktype, which Turbopack can't`** (or Bun's runtime plugin): it replaces arktype for every importer. Build with `runtime: "arktype"`, or with webpack (`next build --webpack`) or `Bun.build`.
+
+**`/app/package.json sets "ark" and /app/ark.json is beside it`**: both set the build's options. Move `ark.json`'s contents under `package.json`'s `"ark"` key, or delete that key.
+
+**`my-schemas imports arktype/runtime, so it ships validators precompiled for one version of arktype`**: a dependency shipped its own precompiled build, which runs only on the arktype it was built with. Have it publish its source and opt in instead, with `"ark": { "aot": true }`.
 
 **`src/Form.svelte imports arktype, which a standalone build resolves to arktype/runtime`**: the build can't precompile a module that isn't JavaScript or TypeScript, like a Svelte component's script. Define the Types it uses in a module that is.
 
@@ -816,7 +871,11 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`type is not a function`** at runtime: a module that defines a Type loaded `arktype/runtime` without being precompiled. Bun's driver and Turbopack replace `arktype` for every importer, so they can't fail for a module they don't load, like one another plugin supplies or, with Turbopack, one no loader rule matches. Define the Types it uses in a file they precompile.
 
-**`~standard.jsonSchema isn't baked into this validator`** at runtime, outside production: a library converting a validator to JSON Schema through Standard Schema, like the MCP SDK or the AI SDK, read a member the build left out, which a production build would read as `undefined`. Add `"members": { "~standard.jsonSchema": true }` to `ark.json`.
+**`~standard.jsonSchema isn't baked into this validator`** at runtime, outside production: a library converting a validator to JSON Schema through Standard Schema, like the MCP SDK, the AI SDK or Elysia's OpenAPI plugin, read a member the build left out, which a production build would read as `undefined`. Add `"members": { "~standard.jsonSchema": true }` to `ark.json`. In production, the AI SDK throws `Standard schema vendor 'arktype' does not support JSON Schema conversion`, the MCP SDK throws `Schema library "arktype" does not implement StandardJSONSchemaV1`, and Elysia leaves the schema out of its OpenAPI document.
+
+**`toJsonSchema is not a function`** at runtime, from hono-openapi or oRPC's `@orpc/arktype` converter: they call `toJsonSchema()`, which a validator has only where the build sets it. Add `"members": { "toJsonSchema": true }` to `ark.json`.
+
+**`a standalone validator's JSON Schema takes only a target it was built with, and a fallback only where its schema needs none`**: a library passed options to `toJsonSchema()` that a baked schema can't apply. hono-openapi and oRPC pass a fallback, which changes a Type holding a morph or a Date, as arktype falls back on those. Build with `runtime: "arktype"`, or keep the morph or Date out of the Types you document.
 
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
 
@@ -848,11 +907,11 @@ A library ships its source, and the build precompiles it with the program if its
 ```json
 {
 	"name": "my-schemas",
-	"arktype": { "precompile": true }
+	"ark": { "aot": true }
 }
 ```
 
-Its definitions are then precompiled like the program's. The plugin and drivers find such packages among those the nearest `package.json` to `cwd` depends on, directly or through other packages, and the plugin keeps Vite and Vitest from prebundling or externalizing them.
+Its definitions are then precompiled like the program's. A program can do the same for a package that doesn't opt in, with `"precompile": { "dependencies": { "my-schemas": "aot" } }` in its settings; see [`dependencies`](https://arktype.io/docs/precompile/options#dependencies). The plugin and drivers find such packages among those the nearest `package.json` to `cwd` depends on, directly or through other packages, and the plugin keeps Vite and Vitest from prebundling or externalizing them.
 
 A library shouldn't ship what its own build precompiled, which runs only on the arktype it was built with, so the build fails for each dependency that imports `arktype/runtime`.
 

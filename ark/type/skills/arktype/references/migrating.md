@@ -269,7 +269,7 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `v.object`, `v.looseObject`, `v.strictObject`               | `"+": "delete"`, the default, `"+": "reject"`                                      |
 | `v.objectWithRest(entries, rest)`                           | an index signature, `"[string]": ...`                                              |
 | `v.optional(T)`, `v.exactOptional(T)`                       | `"key?": "T \| undefined"`, `"key?": "T"`                                          |
-| `v.optional(T, default)`                                    | `"key": "T = default"`                                                             |
+| `v.optional(T, default)`                                    | `"key": "T = default"`, which applies it only where the key is missing             |
 | `v.nullable(T)`, `v.nullish(T)`                             | `"T \| null"`, `"key?": "T \| null \| undefined"`                                  |
 | `v.picklist(["a", "b"])`, `v.enum(E)`                       | `"'a' \| 'b'"`, `type.valueOf(E)`                                                  |
 | `v.union`, `v.variant("type", [...])`, `v.intersect`        | `A.or(B)`, `A.or(B)`, `A.and(B)`                                                   |
@@ -315,7 +315,7 @@ TypeBox schemas are JSON Schema, so [JSON Schema](#json-schema-and-ajv) also app
 
 ## Yup
 
-Yup converts values unless `.strict()`, and treats a field as optional unless `.required()`. Translate what the data actually is: a form posting strings needs `"string.numeric.parse"` where Yup's `number()` converted.
+Yup converts values unless `.strict()`, and treats a field as optional unless `.required()`. Translate what the data actually is: a form posting strings needs `"string.numeric.parse"` where Yup's `number()` converted. Like Joi, Yup applies a default to a key present as `undefined`, where `"key": "T = x"` rejects it; [Defaults that differ](#defaults-that-differ) has the pattern that keeps it.
 
 | Yup                                                   | ArkType                                                        |
 | ----------------------------------------------------- | -------------------------------------------------------------- |
@@ -330,6 +330,7 @@ Yup converts values unless `.strict()`, and treats a field as optional unless `.
 | `.oneOf(["a", "b"])`                                  | `"'a' \| 'b'"`                                                 |
 | `array().of(T)`, `tuple([A, B])`                      | `T.array()`, `[A, B]`                                          |
 | `.test(name, message, fn)`                            | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message }))`      |
+| `.oneOf([ref("password")])`                           | a `.narrow()` on the object comparing the keys                 |
 | `.transform(fn)`                                      | `.pipe(fn)`                                                    |
 | `.when("other", ...)`                                 | a union of the cases, or a `.narrow()` on the object           |
 | `lazy`                                                | a scope or `this`                                              |
@@ -339,7 +340,7 @@ Yup converts values unless `.strict()`, and treats a field as optional unless `.
 
 ## Joi
 
-Joi rejects undeclared keys, rejects empty strings, and converts strings to numbers, booleans and dates unless `convert: false`. It infers no types, so `typeof T.infer` replaces the interfaces written next to Joi schemas.
+Joi rejects undeclared keys, rejects empty strings, and converts strings to numbers, booleans and dates unless `convert: false`. ArkType reads an ISO date-time without an offset as UTC, where Joi reads it in local time. Joi also applies a default to a key present as `undefined`; see [Defaults that differ](#defaults-that-differ). It infers no types, so `typeof T.infer` replaces the interfaces written next to Joi schemas.
 
 | Joi                                            | ArkType                                                                        |
 | ---------------------------------------------- | ------------------------------------------------------------------------------ |
@@ -352,8 +353,9 @@ Joi rejects undeclared keys, rejects empty strings, and converts strings to numb
 | `Joi.number().integer().positive()`            | `"number.integer > 0"`                                                         |
 | `Joi.number()` reading strings                 | `"number \| string.numeric.parse"`                                             |
 | `Joi.boolean()` reading strings                | `type("boolean \| 'true' \| 'false'").pipe(v => v === true \|\| v === "true")` |
-| `Joi.date()`, `.iso()`                         | `"Date \| string.date.parse"`, `"string.date.iso"`                             |
+| `Joi.date()`, `Joi.date().iso()`               | `"Date \| string.date.parse"`, `"string.date.iso.parse"`                       |
 | `Joi.array().items(T)`, `.min(1)`              | `T.array()`, `"T[] >= 1"`                                                      |
+| `.unique()`                                    | `.narrow((a, ctx) => new Set(a).size === a.length \|\| ctx.reject("unique"))`  |
 | `Joi.alternatives().try(A, B)`                 | `A.or(B)`                                                                      |
 | `.default(x)`                                  | `"key": "T = x"`                                                               |
 | `.custom(fn)`                                  | `.narrow()` or `.pipe()`                                                       |
