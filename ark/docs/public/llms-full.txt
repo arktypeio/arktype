@@ -1210,7 +1210,7 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `v.object`, `v.looseObject`, `v.strictObject` | `"+": "delete"`, the default, `"+": "reject"` |
 | `v.objectWithRest(entries, rest)` | an index signature, `"[string]": ...` |
 | `v.optional(T)`, `v.exactOptional(T)` | `"key?": "T \| undefined"`, `"key?": "T"` |
-| `v.optional(T, default)` | `"key": "T = default"`, which applies it only where the key is missing |
+| `v.optional(T, default)` | `"key": "T = default"`, which applies it only where the key is missing; Valibot also applies it to `undefined`, so see [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ) |
 | `v.nullable(T)`, `v.nullish(T)` | `"T \| null"`, `"key?": "T \| null \| undefined"` |
 | `v.picklist(["a", "b"])`, `v.enum(E)` | `"'a' \| 'b'"`, `type.valueOf(E)` |
 | `v.union`, `v.variant("type", [...])`, `v.intersect` | `A.or(B)`, `A.or(B)`, `A.and(B)` |
@@ -1271,7 +1271,7 @@ Yup converts values unless `.strict()`, and treats a field as optional unless `.
 | `.oneOf(["a", "b"])` | `"'a' \| 'b'"` |
 | `array().of(T)`, `tuple([A, B])` | `T.array()`, `[A, B]` |
 | `.test(name, message, fn)` | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message }))` |
-| `.oneOf([ref("password")])` | a `.narrow()` on the object comparing the keys |
+| `.oneOf([ref("password")])` | a `.narrow()` on the object comparing the keys, which runs only once every key is valid, where Yup reports the mismatch beside other errors |
 | `.transform(fn)` | `.pipe(fn)` |
 | `.when("other", ...)` | a union of the cases, or a `.narrow()` on the object |
 | `lazy` | a scope or `this` |

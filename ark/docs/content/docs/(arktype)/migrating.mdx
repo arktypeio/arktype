@@ -364,30 +364,30 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 
 ## Valibot
 
-| Valibot                                                     | ArkType                                                                            |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `v.object`, `v.looseObject`, `v.strictObject`               | `"+": "delete"`, the default, `"+": "reject"`                                      |
-| `v.objectWithRest(entries, rest)`                           | an index signature, `"[string]": ...`                                              |
-| `v.optional(T)`, `v.exactOptional(T)`                       | `"key?": "T \| undefined"`, `"key?": "T"`                                          |
-| `v.optional(T, default)`                                    | `"key": "T = default"`, which applies it only where the key is missing             |
-| `v.nullable(T)`, `v.nullish(T)`                             | `"T \| null"`, `"key?": "T \| null \| undefined"`                                  |
-| `v.picklist(["a", "b"])`, `v.enum(E)`                       | `"'a' \| 'b'"`, `type.valueOf(E)`                                                  |
-| `v.union`, `v.variant("type", [...])`, `v.intersect`        | `A.or(B)`, `A.or(B)`, `A.and(B)`                                                   |
-| `v.array`, `v.tuple`, `v.tupleWithRest`, `v.record`         | `"T[]"`, `[A, B]`, `[A, "...", "B[]"]`, `"Record<string, T>"`                      |
-| `v.lazy`                                                    | a scope or `this`                                                                  |
-| `v.pipe(v.string(), v.email(), v.maxLength(255))`           | `"string.email <= 255"`                                                            |
-| `v.minLength`, `v.maxLength`, `v.length`, `v.nonEmpty`      | `"string >= n"`, `"string <= n"`, `"string == n"`, `"string > 0"`                  |
-| `v.minValue`, `v.maxValue`, `v.integer`, `v.multipleOf`     | `"number >= n"`, `"number <= n"`, `"number.integer"`, `"number % n"`               |
-| `v.url`, `v.uuid`, `v.isoDateTime`, `v.regex(r)`            | `"string.url"`, `"string.uuid"`, `"string.date.iso"`, `/r/`                        |
-| `v.trim()`, `v.toLowerCase()`, `v.toNumber()`, `v.toDate()` | `"string.trim"`, `"string.lower"`, `"string.numeric.parse"`, `"string.date.parse"` |
-| `v.check(fn, msg)`, `v.rawCheck`                            | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message: msg }))`                     |
-| `v.forward(v.partialCheck(...), ["key"])`                   | `.narrow(...)` with `ctx.reject({ path: ["key"] })`                                |
-| `v.transform(fn)`                                           | `.pipe(fn)`                                                                        |
-| `v.brand("Id")`                                             | `.brand("Id")`                                                                     |
-| `v.instance(C)`, `v.date()`, `v.custom(fn)`                 | `type.instanceOf(C)`, `"Date"`, `type("unknown").narrow(fn)`                       |
-| `v.fallback(T, x)`                                          | none; handle the `ArkErrors` result                                                |
-| `v.InferOutput`, `v.InferInput`                             | `typeof T.infer`, `typeof T.inferIn`                                               |
-| `v.parse(S, x)`, `v.safeParse(S, x)`                        | `T.assert(x)`, `T(x)`                                                              |
+| Valibot                                                     | ArkType                                                                                                                                                              |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `v.object`, `v.looseObject`, `v.strictObject`               | `"+": "delete"`, the default, `"+": "reject"`                                                                                                                        |
+| `v.objectWithRest(entries, rest)`                           | an index signature, `"[string]": ...`                                                                                                                                |
+| `v.optional(T)`, `v.exactOptional(T)`                       | `"key?": "T \| undefined"`, `"key?": "T"`                                                                                                                            |
+| `v.optional(T, default)`                                    | `"key": "T = default"`, which applies it only where the key is missing; Valibot also applies it to `undefined`, so see [Defaults that differ](#defaults-that-differ) |
+| `v.nullable(T)`, `v.nullish(T)`                             | `"T \| null"`, `"key?": "T \| null \| undefined"`                                                                                                                    |
+| `v.picklist(["a", "b"])`, `v.enum(E)`                       | `"'a' \| 'b'"`, `type.valueOf(E)`                                                                                                                                    |
+| `v.union`, `v.variant("type", [...])`, `v.intersect`        | `A.or(B)`, `A.or(B)`, `A.and(B)`                                                                                                                                     |
+| `v.array`, `v.tuple`, `v.tupleWithRest`, `v.record`         | `"T[]"`, `[A, B]`, `[A, "...", "B[]"]`, `"Record<string, T>"`                                                                                                        |
+| `v.lazy`                                                    | a scope or `this`                                                                                                                                                    |
+| `v.pipe(v.string(), v.email(), v.maxLength(255))`           | `"string.email <= 255"`                                                                                                                                              |
+| `v.minLength`, `v.maxLength`, `v.length`, `v.nonEmpty`      | `"string >= n"`, `"string <= n"`, `"string == n"`, `"string > 0"`                                                                                                    |
+| `v.minValue`, `v.maxValue`, `v.integer`, `v.multipleOf`     | `"number >= n"`, `"number <= n"`, `"number.integer"`, `"number % n"`                                                                                                 |
+| `v.url`, `v.uuid`, `v.isoDateTime`, `v.regex(r)`            | `"string.url"`, `"string.uuid"`, `"string.date.iso"`, `/r/`                                                                                                          |
+| `v.trim()`, `v.toLowerCase()`, `v.toNumber()`, `v.toDate()` | `"string.trim"`, `"string.lower"`, `"string.numeric.parse"`, `"string.date.parse"`                                                                                   |
+| `v.check(fn, msg)`, `v.rawCheck`                            | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message: msg }))`                                                                                                       |
+| `v.forward(v.partialCheck(...), ["key"])`                   | `.narrow(...)` with `ctx.reject({ path: ["key"] })`                                                                                                                  |
+| `v.transform(fn)`                                           | `.pipe(fn)`                                                                                                                                                          |
+| `v.brand("Id")`                                             | `.brand("Id")`                                                                                                                                                       |
+| `v.instance(C)`, `v.date()`, `v.custom(fn)`                 | `type.instanceOf(C)`, `"Date"`, `type("unknown").narrow(fn)`                                                                                                         |
+| `v.fallback(T, x)`                                          | none; handle the `ArkErrors` result                                                                                                                                  |
+| `v.InferOutput`, `v.InferInput`                             | `typeof T.infer`, `typeof T.inferIn`                                                                                                                                 |
+| `v.parse(S, x)`, `v.safeParse(S, x)`                        | `T.assert(x)`, `T(x)`                                                                                                                                                |
 
 ## TypeBox
 
@@ -417,26 +417,26 @@ TypeBox schemas are JSON Schema, so [JSON Schema](#json-schema-and-ajv) also app
 
 Yup converts values unless `.strict()`, and treats a field as optional unless `.required()`. Translate what the data actually is: a form posting strings needs `"string.numeric.parse"` where Yup's `number()` converted. Like Joi, Yup applies a default to a key present as `undefined`, where `"key": "T = x"` rejects it; [Defaults that differ](#defaults-that-differ) has the pattern that keeps it.
 
-| Yup                                                   | ArkType                                                        |
-| ----------------------------------------------------- | -------------------------------------------------------------- |
-| `object({...})`, `.shape({...})`                      | `type({...})`, `.merge({...})`                                 |
-| `string()` (not required)                             | `"key?": "string \| undefined"`                                |
-| `.required()`, `.defined()`, `.nullable()`            | `"key": "string > 0"` for strings, `"key": "T"`, `"T \| null"` |
-| `.default(x)`                                         | `"key": "T = x"`                                               |
-| `.email()`, `.url()`, `.uuid()`, `.matches(r)`        | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/`       |
-| `.min(n)`, `.max(n)`, `.length(n)` on strings, arrays | `"string >= n"`, `"T[] <= n"`, `"string == n"`                 |
-| `.integer()`, `.positive()`, `.moreThan(n)`           | `"number.integer"`, `"number > 0"`, `"number > n"`             |
-| `.trim()`, `.lowercase()`                             | `"string.trim"`, `"string.lower"`                              |
-| `.oneOf(["a", "b"])`                                  | `"'a' \| 'b'"`                                                 |
-| `array().of(T)`, `tuple([A, B])`                      | `T.array()`, `[A, B]`                                          |
-| `.test(name, message, fn)`                            | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message }))`      |
-| `.oneOf([ref("password")])`                           | a `.narrow()` on the object comparing the keys                 |
-| `.transform(fn)`                                      | `.pipe(fn)`                                                    |
-| `.when("other", ...)`                                 | a union of the cases, or a `.narrow()` on the object           |
-| `lazy`                                                | a scope or `this`                                              |
-| `.noUnknown()`, `stripUnknown: true`                  | `"+": "reject"`, `"+": "delete"`                               |
-| `InferType<typeof S>`                                 | `typeof T.infer`                                               |
-| `validateSync(x)`, `isValidSync(x)`, `validate(x)`    | `T.assert(x)`, `T.allows(x)`, `T(x)`                           |
+| Yup                                                   | ArkType                                                                                                                                     |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `object({...})`, `.shape({...})`                      | `type({...})`, `.merge({...})`                                                                                                              |
+| `string()` (not required)                             | `"key?": "string \| undefined"`                                                                                                             |
+| `.required()`, `.defined()`, `.nullable()`            | `"key": "string > 0"` for strings, `"key": "T"`, `"T \| null"`                                                                              |
+| `.default(x)`                                         | `"key": "T = x"`                                                                                                                            |
+| `.email()`, `.url()`, `.uuid()`, `.matches(r)`        | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/`                                                                                    |
+| `.min(n)`, `.max(n)`, `.length(n)` on strings, arrays | `"string >= n"`, `"T[] <= n"`, `"string == n"`                                                                                              |
+| `.integer()`, `.positive()`, `.moreThan(n)`           | `"number.integer"`, `"number > 0"`, `"number > n"`                                                                                          |
+| `.trim()`, `.lowercase()`                             | `"string.trim"`, `"string.lower"`                                                                                                           |
+| `.oneOf(["a", "b"])`                                  | `"'a' \| 'b'"`                                                                                                                              |
+| `array().of(T)`, `tuple([A, B])`                      | `T.array()`, `[A, B]`                                                                                                                       |
+| `.test(name, message, fn)`                            | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message }))`                                                                                   |
+| `.oneOf([ref("password")])`                           | a `.narrow()` on the object comparing the keys, which runs only once every key is valid, where Yup reports the mismatch beside other errors |
+| `.transform(fn)`                                      | `.pipe(fn)`                                                                                                                                 |
+| `.when("other", ...)`                                 | a union of the cases, or a `.narrow()` on the object                                                                                        |
+| `lazy`                                                | a scope or `this`                                                                                                                           |
+| `.noUnknown()`, `stripUnknown: true`                  | `"+": "reject"`, `"+": "delete"`                                                                                                            |
+| `InferType<typeof S>`                                 | `typeof T.infer`                                                                                                                            |
+| `validateSync(x)`, `isValidSync(x)`, `validate(x)`    | `T.assert(x)`, `T.allows(x)`, `T(x)`                                                                                                        |
 
 ## Joi
 
