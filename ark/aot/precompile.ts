@@ -237,6 +237,9 @@ export interface ScannedProgram {
 	targets: Record<string, Record<string, string>>
 	// each module import() loads, which a bundler that splits builds as an entry
 	dynamicImports: string[]
+	// each module with no file, like a framework's virtual module, which its
+	// runtime may import from code the scan doesn't read, as it may an entry
+	exposed: string[]
 	// whether the bundle writes every module it holds into one file
 	isOneChunk?: boolean
 }
@@ -245,6 +248,9 @@ export interface ScannedModule {
 	source: string
 	// whether the host precompiles it, as it may not an entry it's given
 	transformed: boolean
+	// how its lines map to its file's, where a plugin ahead of the host's
+	// transformed it
+	mappings?: string | undefined
 }
 
 type ProgramReads = Pick<
@@ -277,6 +283,9 @@ export interface ScannedUsage {
 	replaced: string[]
 	// whether it wrote each module, for a transform naming the bundle to read
 	written: boolean
+	// each module creating a validator, which only a module reaching it may
+	// read
+	holders: string[]
 	// why it left no member out, where some read may need any
 	unpruned?: string | undefined
 }
@@ -583,7 +592,8 @@ export class Precompiler {
 			dropped: [],
 			linked: false,
 			replaced: [],
-			written: false
+			written: false,
+			holders: []
 		}
 		if (this.mode !== "standalone") return unwritten
 		const sources: Record<string, string> = {}
@@ -591,16 +601,21 @@ export class Precompiler {
 		const planned = new Map<string, RuntimeModule>()
 		const precompiled: string[] = []
 		for (const id in program.modules) {
-			const { source, transformed } = program.modules[id]
+			const { source, transformed, mappings } = program.modules[id]
 			sources[id] = source
 			if (
 				transformed &&
 				this.isTransformed(id) &&
 				this.importsArk(source, id)
 			) {
-				const runtime = this.plannedRuntimeOf(source, id)
-				// a bundle that fails is left to report it
-				if (!runtime) return unwritten
+				const runtime = this.plannedRuntimeOf(source, id, mappings)
+				// a bundle building the module as read fails, reporting why
+				if (!runtime) {
+					return {
+						...unwritten,
+						unpruned: `${this.graph.pathOf(id)} fails to precompile`
+					}
+				}
 				planned.set(id, runtime)
 				precompiled.push(id)
 			} else planned.set(id, unprecompiled(this.graph.add(id, source)))
@@ -643,7 +658,12 @@ export class Precompiler {
 		const written: Record<string, PrecompiledModule> = {}
 		const runtimes = new Map(planned)
 		for (const id of precompiled) {
-			written[id] = this.precompile(sources[id], id, undefined, program.key)
+			written[id] = this.precompile(
+				sources[id],
+				id,
+				program.modules[id].mappings,
+				program.key
+			)
 			runtimes.set(id, this.runtimesById[id])
 			if (written[id].diagnostics.some(d => d.severity === "error")) {
 				this.usagesByProgram.delete(program.key)
@@ -689,6 +709,10 @@ export class Precompiler {
 			linked,
 			replaced: replaced ?? [],
 			written: true,
+			holders: precompiled.filter(id => {
+				const runtime = planned.get(id)!
+				return runtime.validators.length > 0 || runtime.holdsOther
+			}),
 			unpruned
 		}
 	}
@@ -698,7 +722,7 @@ export class Precompiler {
 		modules: ReadonlyMap<string, RuntimeModule>
 	): Set<UsedMember> | string {
 		return usedMembersOf({
-			entries: new Set(program.entries),
+			entries: new Set([...program.entries, ...program.exposed]),
 			modules,
 			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
 		})
@@ -708,9 +732,10 @@ export class Precompiler {
 	// it would fold, before it writes them, or undefined where it fails
 	private plannedRuntimeOf(
 		source: string,
-		id: string
+		id: string,
+		mappings: string | undefined
 	): RuntimeModule | undefined {
-		const module = this.add(id, source)
+		const module = this.add(id, source, mappings)
 		this.configuration ??= this.applyConfiguration()
 		const { sites, diagnostics } = this.analysisOf(module)
 		let prefix = "$ark"

@@ -1,7 +1,7 @@
 import { globSync, readFileSync, statSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
-import { printablePathOf } from "./host.ts"
+import { printablePathOf, transformedId } from "./host.ts"
 import {
 	pluginCallLinesOf,
 	pluginCallsIn,
@@ -143,8 +143,9 @@ const unbundledFile =
 
 // why a production bundle of the checked files would keep every member of
 // its validators, as far as --check can tell: it follows relative imports
-// alone and reads no file as an entry, so it misses a read reached through
-// an alias, a virtual module or an entry's exports
+// of scripts alone and reads no file as an entry, so it misses a read
+// reached through an alias, a virtual module, a component or an entry's
+// exports
 const unprunedReasonOf = (
 	files: string[],
 	cwd: string,
@@ -155,10 +156,11 @@ const unprunedReasonOf = (
 		"check",
 		bundled.map(id => ({ id })),
 		{
-			resolve: (specifier, importer) =>
-				/^\.\.?\//.test(specifier) ?
-					(scriptOf(resolve(dirname(importer), specifier)) ?? null)
-				:	null,
+			resolve: (specifier, importer) => {
+				if (!/^\.\.?\//.test(specifier)) return null
+				const script = scriptOf(resolve(dirname(importer), specifier))
+				return script && transformedId.test(script) ? script : null
+			},
 			readFile: file => readFileSync(file, "utf8"),
 			isTransformed: () => true,
 			idOf: file => file,

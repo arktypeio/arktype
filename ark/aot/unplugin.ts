@@ -344,6 +344,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	}
 	// each Rollup, Rolldown or Vite build's scan, by its Vite environment
 	const scansByBuild = new WeakMap<object, BundleScan>()
+	// a production build's scan, begun as the plugin transforms a module, as
+	// only then can it load what another plugin writes, like a Svelte component
+	const pendingScans = new WeakMap<object, PendingScan>()
+	const warnedUnpruned = new Set<string>()
 	let esbuildScan: BundleScan | undefined
 	// a module the scan didn't write reading a unit it declares in one
 	// function would read a copy, which another validator could tell apart
@@ -387,31 +391,58 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		if (key) declarationsByApp.set(key, declarations)
 		return declarations
 	}
-	// reads the bundle a production build's entries reach, before it loads one
-	async function rollupBuildStart(
+	// a production build reads the bundle its entries reach, from the first
+	// module it transforms
+	function rollupBuildStart(
 		this: RollupContext,
 		options: { input: string[] | Record<string, string> }
 	) {
 		reset()
 		const build = buildOf(this)
 		scansByBuild.delete(build)
+		pendingScans.delete(build)
 		if (isServing || !prunesIn(!!environment?.production)) return
-		const scan = await rollupScanOf(
-			this,
+		pendingScans.set(build, {
+			inputs: Object.values(options.input),
+			arrivals: new Map(),
+			mappings: new Map()
+		})
+	}
+	// the build's scan, once it has read every module its entries reach
+	const scanOf = (
+		context: RollupContext,
+		file: string,
+		code: string,
+		mappings: string | undefined
+	): Promise<BundleScan | undefined> | BundleScan | undefined => {
+		const build = buildOf(context)
+		const pending = pendingScans.get(build)
+		if (!pending) return scansByBuild.get(build)
+		arrive(pending, file, code)
+		if (mappings) pending.mappings.set(file, mappings)
+		pending.scanned ??= rollupScanOf(
+			context,
 			`${++scans}`,
-			Object.values(options.input),
+			pending.inputs,
 			id =>
 				transformedFilter.include.test(id) &&
 				!transformedFilter.exclude.test(id),
+			id => arrivalOf(pending, id),
+			id => pending.mappings.get(id),
 			async scanned => (await request("scan", scanned)) as ScannedUsage,
 			realPathOf(opts?.cwd ?? process.cwd())
-		).catch(
-			(e: unknown): ProgramScan<BundleScan> => ({
-				unpruned: unreadMessageOf(e)
-			})
 		)
-		if (scan.unpruned) this.warn(scan.unpruned)
-		if (scan.read) scansByBuild.set(build, scan.read)
+			.catch(
+				(e: unknown): ProgramScan<BundleScan> => ({
+					unpruned: unreadMessageOf(e)
+				})
+			)
+			.then(scan => {
+				pending.unpruned = scan.unpruned
+				if (scan.read) scansByBuild.set(build, scan.read)
+				return scan.read
+			})
+		return pending.scanned
 	}
 	// a module Rollup's watch mode kept was written for an earlier bundle
 	const shouldTransformCachedModule = ({ id }: { id: string }) =>
@@ -546,7 +577,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 										| { inputSourceMap?: { mappings: string } }
 										| undefined
 								)?.inputSourceMap)
-						const scan = scansByBuild.get(buildOf(this))
+						const scan = await scanOf(this as never, file, code, map?.mappings)
 						if (scan) addLoaded(scan.loaded, file, code)
 						const transformed = await transform(
 							code,
@@ -627,12 +658,19 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		buildStart: reset,
 		// a build that won't rerun releases its worker
 		buildEnd(error?: Error) {
+			const unpruned = pendingScans.get(buildOf(this))?.unpruned
+			// once, though each of an app's environments may find it
+			if (unpruned && !error && !warnedUnpruned.has(unpruned)) {
+				warnedUnpruned.add(unpruned)
+				;(this as never as RollupContext).warn(unpruned)
+			}
 			const scan = scansByBuild.get(buildOf(this))
 			if (scan?.verifies && !error) {
 				const problem = unseenProblemOf(
 					scan.scanned,
 					rollupImportsOf(this as never),
 					scan.loaded,
+					scan.holders,
 					realPathOf(opts?.cwd ?? process.cwd())
 				)
 				// fails before the bundle is written
@@ -710,6 +748,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				// the scan's facts hold only while the bundle is what it read
 				let scanned: ScannedProgram | undefined
 				let verifies = false
+				let holders: ReadonlySet<string> = new Set()
 				const loaded: LoadedSources = new Map()
 				esbuildScan = undefined
 				if (program) {
@@ -739,11 +778,13 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 						scanned = read
 						// only what it dropped can fail a read the scan didn't see
 						verifies = !!usage.dropped.length
+						holders = new Set(usage.holders)
 						esbuildScan = {
 							scanned,
 							verifies,
 							loaded,
-							replaced: new Set(usage.replaced)
+							replaced: new Set(usage.replaced),
+							holders
 						}
 						return { warnings }
 					})
@@ -759,6 +800,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 							scanned,
 							esbuildImportsOf(result.metafile, cwd, scanned),
 							loaded,
+							holders,
 							realPathOf(opts?.cwd ?? process.cwd())
 						)
 						if (!problem) return
@@ -924,8 +966,48 @@ interface BundleScan {
 	verifies: boolean
 	// what only modules it wrote may import
 	replaced: ReadonlySet<string>
+	// each module creating a validator
+	holders: ReadonlySet<string>
 	// each module as this plugin transformed it
 	loaded: LoadedSources
+}
+
+// a production build's scan, from its first transformed module on
+interface PendingScan {
+	inputs: string[]
+	scanned?: Promise<BundleScan | undefined>
+	// each module as it reached the plugin's transform, which waits for the
+	// scan, or as the scan waits for it, by the precompiler's name for it
+	arrivals: Map<string, string | Arrival>
+	// how each one's lines map to its file's, where a plugin ahead of this
+	// one transformed it
+	mappings: Map<string, string>
+	unpruned?: string | undefined
+}
+
+interface Arrival {
+	promise: Promise<string>
+	resolve: (code: string) => void
+}
+
+const arrive = (pending: PendingScan, id: string, code: string) => {
+	const arrival = pending.arrivals.get(id)
+	if (typeof arrival === "string") return
+	arrival?.resolve(code)
+	pending.arrivals.set(id, code)
+}
+
+const arrivalOf = (
+	pending: PendingScan,
+	id: string
+): string | Promise<string> => {
+	const arrival = pending.arrivals.get(id)
+	if (typeof arrival === "string") return arrival
+	if (arrival) return arrival.promise
+	let resolve!: (code: string) => void
+	const promise = new Promise<string>(settle => (resolve = settle))
+	pending.arrivals.set(id, { promise, resolve })
+	return promise
 }
 
 // what the plugin reads of a Rollup, Rolldown or Vite build
@@ -934,7 +1016,12 @@ interface RollupContext {
 		source: string,
 		importer?: string,
 		options?: { isEntry?: boolean }
-	) => Promise<{ id: string; external?: boolean | string } | null>
+	) => Promise<RollupResolution | null>
+	// a module once it's transformed and parsed, by the resolution it's
+	// loaded with
+	load: (
+		options: Partial<RollupResolution> & { id: string }
+	) => Promise<{ code?: string | null } | null>
 	getModuleIds: () => IterableIterator<string>
 	getModuleInfo: (id: string) => {
 		isEntry: boolean
@@ -967,24 +1054,36 @@ const unprunedBeforePlugin = [
 	"Move arktype's plugin last, or set prune: false to build them whole without this warning."
 ] as const
 
+interface RollupResolution {
+	id: string
+	external?: boolean | string
+}
+
 const rollupScanOf = async (
 	context: RollupContext,
 	program: string,
 	inputs: string[],
 	isTransformed: (id: string) => boolean,
+	// a module the plugin transforms, as it reaches the plugin
+	arrivalOf: (id: string) => string | Promise<string>,
+	mappingsOf: (id: string) => string | undefined,
 	scan: (program: ScannedProgram) => Promise<ScannedUsage>,
 	cwd: string
 ): Promise<ProgramScan<BundleScan>> => {
+	// each module's resolution, as a plugin may resolve it with options to
+	// load it by
+	const resolutions = new Map<string, RollupResolution>()
 	const entries: ScanEntry[] = []
 	for (const input of inputs) {
 		const resolved = await context.resolve(input, undefined, { isEntry: true })
-		if (!resolved || resolved.external || !isAbsolute(resolved.id)) {
+		if (!resolved || resolved.external) {
 			return {
 				unpruned: writeUnprunedMessage(
-					`the entry "${input}" doesn't resolve to a file`
+					`the entry "${input}" doesn't resolve to a module`
 				)
 			}
 		}
+		resolutions.set(resolved.id, resolved)
 		if (!htmlId.test(resolved.id)) {
 			entries.push({ id: resolved.id })
 			continue
@@ -1003,20 +1102,30 @@ const rollupScanOf = async (
 	const scanned = await scanProgram(program, entries, {
 		resolve: async (specifier, importer) => {
 			const resolved = await context.resolve(specifier, importer)
-			return (
-				!resolved ? undefined
-				: resolved.external ? null
-				: isAbsolute(resolved.id) ? resolved.id
-				: undefined
-			)
+			if (!resolved) return
+			if (resolved.external) return null
+			resolutions.set(resolved.id, resolved)
+			return resolved.id
 		},
-		readFile: id => readFileSync(id, "utf8"),
+		load: async id => {
+			// the plugin's transform waits for the scan, so a module it
+			// transforms is read as it reaches it, after any plugin ahead of it
+			const arrival = isTransformed(id) ? arrivalOf(fileOf(id)) : undefined
+			if (typeof arrival === "string") return arrival
+			const loaded = context.load({ ...resolutions.get(id), id }).then(
+				info => info?.code ?? undefined,
+				() => undefined
+			)
+			return arrival ? Promise.race([arrival, loaded]) : loaded
+		},
 		isTransformed,
 		idOf: fileOf,
 		cwd
 	})
 	if (typeof scanned === "string")
 		return { unpruned: writeUnprunedMessage(scanned) }
+	for (const id in scanned.modules)
+		scanned.modules[id].mappings = mappingsOf(id)
 	const usage = await scan(scanned)
 	return {
 		read:
@@ -1025,6 +1134,7 @@ const rollupScanOf = async (
 					scanned,
 					verifies: !!usage.dropped.length,
 					replaced: new Set(usage.replaced),
+					holders: new Set(usage.holders),
 					loaded: new Map()
 				}
 			:	undefined,

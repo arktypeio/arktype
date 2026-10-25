@@ -12,7 +12,12 @@ export type ScanResolution = string | null | undefined
 
 export interface ScanHost<resolution = Promise<ScanResolution>> {
 	resolve: (specifier: string, importer: string, kind: ImportKind) => resolution
-	readFile: (id: string) => string | undefined
+	// a module's code as its file holds it, where the bundler can't load it
+	readFile?: (id: string) => string | undefined
+	// a module's code as the bundler loads it, through the plugins ahead of
+	// this one, or each plugin where it doesn't transform it, like a Svelte
+	// component's
+	load?: (id: string) => Promise<string | undefined>
 	// whether the plugin precompiles a module the bundler loads
 	isTransformed: (id: string) => boolean
 	// the precompiler's name for a module, which a bundler may write otherwise,
@@ -37,7 +42,13 @@ export const scanProgram = async (
 ): Promise<ScannedProgram | string> => {
 	const steps = programSteps(key, entries, host)
 	let step = steps.next()
-	while (!step.done) step = steps.next(await host.resolve(...step.value))
+	while (!step.done) {
+		step = steps.next(
+			typeof step.value === "string" ?
+				await host.load!(step.value)
+			:	await host.resolve(...step.value)
+		)
+	}
 	return step.value
 }
 
@@ -45,26 +56,32 @@ export const scanProgram = async (
 export const scanProgramSync = (
 	key: string,
 	entries: ScanEntry[],
-	host: ScanHost<ScanResolution>
+	host: Omit<ScanHost<ScanResolution>, "load">
 ): ScannedProgram | string => {
 	const steps = programSteps(key, entries, host)
 	let step = steps.next()
-	while (!step.done) step = steps.next(host.resolve(...step.value))
+	// with no load, it reads each module's file itself
+	while (!step.done) {
+		step = steps.next(
+			typeof step.value === "string" ? undefined : host.resolve(...step.value)
+		)
+	}
 	return step.value
 }
 
-// yields each import to resolve, and is passed what it resolves to
+// yields each import to resolve, or module to load, and is passed what it
+// resolves to or holds
 function* programSteps(
 	key: string,
 	entries: ScanEntry[],
 	host: Omit<ScanHost<unknown>, "resolve">
 ): Generator<
-	[specifier: string, importer: string, kind: ImportKind],
+	[specifier: string, importer: string, kind: ImportKind] | string,
 	ScannedProgram | string,
 	ScanResolution
 > {
 	const pathOf = (id: string) =>
-		isAbsolute(id) ? printablePathOf(host.cwd, id) : id
+		isAbsolute(id) ? printablePathOf(host.cwd, id) : id.replace(/^\0/, "")
 	const modules: Record<string, ScannedModule> = {}
 	const targets: Record<string, Record<string, string>> = {}
 	// the bundler's id for each module, which it resolves from
@@ -77,8 +94,11 @@ function* programSteps(
 	const given = new Map(entries.map(entry => [add(entry.id), entry.source]))
 	// a module imported dynamically is a chunk of its own where a bundler splits
 	const dynamicImports = new Set<string>()
+	const exposed = new Set<string>()
 	for (const [id, hostId] of pending) {
-		const source = given.get(id) ?? host.readFile(hostId)
+		const source =
+			given.get(id) ??
+			(host.load ? ((yield hostId) ?? undefined) : host.readFile?.(hostId))
 		if (source === undefined) return `${pathOf(id)} can't be read`
 		modules[id] = {
 			source,
@@ -100,7 +120,7 @@ function* programSteps(
 			}
 			if (target === null || isInert(target, host)) continue
 			// e.g. a Vue component, which may read a validator the build can't see
-			if (!transformedId.test(target)) {
+			if (!transformedId.test(target) && !host.load) {
 				return unreadAt(
 					offset,
 					`imports ${pathOf(target)}, which isn't a script it can read`
@@ -108,6 +128,7 @@ function* programSteps(
 			}
 			resolved[specifier] = add(target)
 			if (kind === "dynamic-import") dynamicImports.add(resolved[specifier])
+			if (!isAbsolute(resolved[specifier])) exposed.add(resolved[specifier])
 		}
 	}
 	return {
@@ -116,6 +137,7 @@ function* programSteps(
 		modules,
 		targets,
 		dynamicImports: [...dynamicImports],
+		exposed: [...exposed],
 		isOneChunk: given.size === 1 && !dynamicImports.size
 	}
 }
@@ -277,20 +299,22 @@ export const unseenProblemOf = (
 	scanned: ScannedProgram,
 	imports: Imports,
 	loaded: LoadedSources,
+	// each module creating a validator
+	holders: ReadonlySet<string>,
 	// what messages name paths from
 	cwd: string
 ): string | undefined => {
 	const pathOf = (id: string) =>
 		isAbsolute(id) ? printablePathOf(cwd, id) : id
+	// what any code may import, as their exports are read whole: entries,
+	// what import() loads, and modules with no file
+	const whole = new Set([
+		...scanned.entries,
+		...scanned.dynamicImports,
+		...scanned.exposed
+	])
 	for (const entry of imports.entries) {
-		// import() reads its module whole, as a read of an entry's exports does
-		if (
-			entry === undefined ||
-			!(
-				scanned.entries.includes(entry) ||
-				scanned.dynamicImports.includes(entry)
-			)
-		) {
+		if (entry === undefined || !whole.has(entry)) {
 			return writeUnseenMessage(
 				`it built ${entry === undefined ? "an entry" : pathOf(entry)} as an entry`
 			)
@@ -307,8 +331,10 @@ export const unseenProblemOf = (
 			)
 		}
 	}
+	const reaching = reachingOf(scanned, holders)
 	for (const [importer, target] of imports.edges) {
-		if (!(target in scanned.modules)) continue
+		// e.g. a framework's runtime importing the app's generated config
+		if (!reaching.has(target) || whole.has(target)) continue
 		if (
 			importer === undefined ||
 			!Object.values(scanned.targets[importer] ?? {}).includes(target)
@@ -318,6 +344,27 @@ export const unseenProblemOf = (
 			)
 		}
 	}
+}
+
+// each module a validator may be imported through: one creating it, or one
+// importing a module it may be imported through
+const reachingOf = (
+	scanned: ScannedProgram,
+	holders: ReadonlySet<string>
+): Set<string> => {
+	const importersByTarget = new Map<string, string[]>()
+	for (const importer in scanned.targets) {
+		for (const target of Object.values(scanned.targets[importer])) {
+			const importers = importersByTarget.get(target)
+			if (importers) importers.push(importer)
+			else importersByTarget.set(target, [importer])
+		}
+	}
+	const reaching = new Set(holders)
+	for (const id of reaching)
+		for (const importer of importersByTarget.get(id) ?? [])
+			reaching.add(importer)
+	return reaching
 }
 
 // e.g. "src/routes.ts:3:1 reads import.meta.glob, ...", once a build reads it
