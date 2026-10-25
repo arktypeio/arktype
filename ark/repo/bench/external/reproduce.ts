@@ -237,6 +237,7 @@ const sb = () => {
 	run(node26, process.execPath, [join(here, "sb/ataCompiled.ts")], {
 		env: { SB: dir }
 	})
+	run(node26, node26, [join(here, "sb/ajvStandalone.ts")], { env: { SB: dir } })
 	const aot = { ARK_AOT: join(repo, "ark/aot") }
 	run(node26, node26, ["libraries/arktype/precompiled/generate.ts"], {
 		cwd: schemas,

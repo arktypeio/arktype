@@ -1815,13 +1815,20 @@ ${writeFunction(
 	declareMembers(unit: RootUnit, readers: string[]): string[] {
 		const called = calledMembersOf(unit.members, readers)
 		const forwarded = forwardedOf(called)
+		// an Allows shares its params' text with an Apply, unless a program
+		// only reads .allows, so no Apply is kept
+		const dropsCtx =
+			this.baking.shortest ||
+			(!this.baking.called &&
+				!this.baking.members.has("assert") &&
+				!this.baking.members.has("~standard"))
 		const declarations = called.flatMap(([name, source]) => {
 			if (forwarded.has(name)) return []
 			// plain params; size and writing traversals drop a trailing unread ctx
 			const arrow = source.replace(
 				/^function\(([^)]*)\) {/,
 				(signature, params: string) =>
-					`(${(this.baking.shortest || isWriting(name)) && !/\bctx\b/.test(source.slice(signature.length)) ? params.replace(/, ctx$/, "") : params}) => {${
+					`(${(dropsCtx || isWriting(name)) && !/\bctx\b/.test(source.slice(signature.length)) ? params.replace(/, ctx$/, "") : params}) => {${
 						// a writing traversal is strict even where a bundle's format isn't
 						isWriting(name) ? `\n"use strict"\n` : ""
 					}`

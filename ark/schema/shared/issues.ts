@@ -21,7 +21,9 @@ type WrittenIssue = ArkIssue & { message: string }
 export interface SiteContext {
 	code: ArkErrorCode
 	description?: string | undefined
-	/** writes text configured for the site onto its issue */
+	/** the message configured for the site */
+	x?: string | undefined
+	/** writes other text configured for the site onto its issue */
 	text?: (issue: ArkIssue) => void
 }
 
@@ -147,7 +149,7 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 			path: path.slice(),
 			data,
 			expected: context.description,
-			message: undefined
+			message: context.x
 		}
 		context.text?.(issue)
 		if (key !== undefined) path.pop()
@@ -262,7 +264,7 @@ export const issueAt = (
 		path: issuePath,
 		data,
 		expected: context.description,
-		message: undefined
+		message: context.x
 	}
 	context.text?.(issue)
 	if (key !== undefined) path.pop()

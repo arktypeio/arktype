@@ -61,7 +61,7 @@ var ArkIssues = class {
 			path: path.slice(),
 			data,
 			expected: context.description,
-			message: void 0
+			message: context.x
 		}
 		context.text?.(issue)
 		if (key !== void 0) path.pop()
@@ -196,7 +196,7 @@ var domains = (cases, description) => {
 // ark/type/runtime.ts
 var freeze = Object.freeze
 var holesByValue = /* @__PURE__ */ new WeakMap()
-var siteOf = (code, description) => ({ code, description })
+var siteOf = (code, description, message) => ({ code, description, x: message })
 var failsAt = (ctx, site, data, key) => !ctx?._at || ctx._at(site, data, key)
 var failsIn = (ctx, apply, value, key, missing, data) =>
 	ctx?._at ? ctx._in(apply, value, key, missing, data) : !apply(value)

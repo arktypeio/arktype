@@ -11,14 +11,14 @@
 			"results/sb-counts-6c5fd9862.json",
 			"results/sb-counts-latest-2026-10-24.json"
 		],
-		"sbDownload": "results/sb-download-6c5fd9862.json",
+		"sbDownload": "results/sb-download-ajv-standalone-2026-10-24.json",
 		"suryCounts": [
 			"results/sury-counts-6c5fd9862.json",
 			"results/sury-counts-latest-2026-10-24.json"
 		],
 		"surySize": [
-			"results/sury-size-6c5fd9862.json",
-			"results/sury-size-latest-2026-10-24.json"
+			"results/sury-size-396778442.json",
+			"results/sury-size-latest-2026-10-25.json"
 		],
 		"ataCounts": [
 			"results/ata-counts-pinned-2026-10-24.json",
@@ -1462,7 +1462,7 @@
 			"id": "sbSize",
 			"label": "schemabenchmarks.dev's download",
 			"unit": "B gzipped",
-			"source": "results/sb-download-6c5fd9862.json",
+			"source": "results/sb-download-ajv-standalone-2026-10-24.json",
 			"rows": [
 				{
 					"id": "download",
@@ -1471,12 +1471,13 @@
 						"Superstruct": 1935,
 						"@remix-run/data-schema": 1923,
 						"Typia": 1846,
-						"Valibot": 2058,
 						"ArkType": 2037,
+						"Valibot": 2058,
 						"decoders": 3506,
 						"io-ts": 3617,
 						"paseri": 3633,
 						"runtypes": 4828,
+						"ajv": 2718,
 						"Zod Mini": 6816,
 						"sury": 15790,
 						"Yup": 13076,
@@ -1487,7 +1488,6 @@
 						"Zod": 24272,
 						"zod-compiler": 25995,
 						"@sapphire/shapeshift": 25288,
-						"ajv": 41477,
 						"Joi": 52943,
 						"ata": 131004
 					}
@@ -1497,11 +1497,11 @@
 		{
 			"category": "size",
 			"id": "surySize",
-			"label": "Sury's schema bundle",
+			"label": "Sury's schema bundle, as a check",
 			"unit": "B gzipped",
 			"source": [
-				"results/sury-size-6c5fd9862.json",
-				"results/sury-size-latest-2026-10-24.json"
+				"results/sury-size-396778442.json",
+				"results/sury-size-latest-2026-10-25.json"
 			],
 			"rows": [
 				{
@@ -1509,9 +1509,9 @@
 					"results": {
 						"sury": 11599,
 						"Zod": 64686,
-						"TypeBox": 22568,
-						"Valibot": 1261,
-						"ArkType": 1107
+						"TypeBox": 213,
+						"Valibot": 1198,
+						"ArkType": 289
 					}
 				}
 			]

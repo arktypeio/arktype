@@ -469,24 +469,27 @@ export const type: { errors: typeof ArkErrors } = /* @__PURE__ */ freeze({
 export const canParseUrl = ((s: string): boolean =>
 	URL.canParse(s)) satisfies Fn
 
-// shorter at each site than a literal
+// shorter at each site than a literal. A configured message is one
+// parameter of it rather than a helper of its own, as a program configuring
+// one also has sites that don't
 export const siteOf = ((
 	code: ArkErrorCode,
-	description?: string
-): SiteContext => ({ code, description })) satisfies Fn
+	description?: string,
+	message?: string
+): SiteContext => ({ code, description, x: message })) satisfies Fn
 
-// a site whose text is configured
-export const textSiteOf = ((
+// a site whose problem is configured, and maybe its message
+export const problemSiteOf = ((
 	code: ArkErrorCode,
 	description: string | undefined,
 	message: string | undefined,
-	problem?: string
+	problem: string
 ): SiteContext => ({
 	code,
 	description,
+	x: message,
 	text: issue => {
 		issue.problem = problem
-		issue.message = message
 	}
 })) satisfies Fn
 

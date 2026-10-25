@@ -453,6 +453,25 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			: js.traversalKind === "Transform" ? "data"
 			: (js.missFails?.(this) ??
 				`${js.ref(this)}.applyMiss(data, ctx, ${value})`)
+		// an Apply of one domain or a unit it allows, as `T | null`, needn't switch
+		if (js.traversalKind === "Apply" && written.length === 2) {
+			const unitIndex = written.findIndex(
+				([label, result]) =>
+					result === "true" &&
+					(label === `case "null"` || label === `case "undefined"`)
+			)
+			const [label, result] = written[1 - unitIndex] ?? []
+			if (
+				unitIndex !== -1 &&
+				label !== `case "object"` &&
+				label !== "default"
+			) {
+				js.return(
+					`${value} === ${written[unitIndex][0].slice(6, -1)} || (typeof ${value} === ${label!.slice(5)} ? ${result} : ${otherwise})`
+				)
+				return
+			}
+		}
 		js.switch(
 			discriminant.kind === "domain" ?
 				compileDomainOf(
