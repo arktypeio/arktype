@@ -44,6 +44,7 @@ import {
 	build as viteBuild,
 	defaultClientConditions,
 	defaultServerConditions,
+	normalizePath,
 	type InlineConfig,
 	type Rolldown
 } from "vite"
@@ -571,8 +572,10 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 			const before = (await runner.import("/main.ts")).allows(2)
 			const file = join(root, "page.ts")
 			writeFileSync(file, page(2))
-			const pageModule =
-				server.environments.ssr.moduleGraph.getModuleById(file)!
+			// Vite's id for a file, which writes / on Windows
+			const pageModule = server.environments.ssr.moduleGraph.getModuleById(
+				normalizePath(file)
+			)!
 			server.watcher.emit("change", file)
 			for (let waited = 0; pageModule.transformResult; waited += 10) {
 				if (waited > 10_000) throw new Error("page.ts was never invalidated")
@@ -1677,12 +1680,13 @@ export const U = make()
 			},
 			fromHere("temp", "dropped")
 		)
+		// Node on Windows ends each line it prints of an uncaught error with \r\n
 		const stderrOf = (args: string[], input?: string) =>
 			spawnSync(process.execPath, args, {
 				cwd: root,
 				input,
 				encoding: "utf8"
-			}).stderr
+			}).stderr.replaceAll("\r\n", "\n")
 		attest(
 			stderrOf(["--conditions", "ark-ts", "main.ts"]).includes(
 				configureAfterTypeMessage
