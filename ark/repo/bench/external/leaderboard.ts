@@ -34,8 +34,8 @@ const committed = {
 		"results/sury-counts-latest-2026-10-24.json"
 	],
 	surySize: [
-		"results/sury-size-6c5fd9862.json",
-		"results/sury-size-latest-2026-10-24.json"
+		"results/sury-size-396778442.json",
+		"results/sury-size-latest-2026-10-25.json"
 	],
 	ataCounts: [
 		"results/ata-counts-pinned-2026-10-24.json",
@@ -280,7 +280,9 @@ const suryRow = (id: string, prefix: string) =>
 				.map(([key, value]) => [key.slice(`sury ${prefix} `.length), value])
 		)
 	)
-// each bundle's smallest production build of the two installs
+// each bundle's smallest production build of the two installs; a library's
+// row is the smaller of its schema arm (the suite's operation) and its check
+// arm (its boolean check), as the row compares checks
 const surySize: Record<string, { gzip: number }> = {}
 for (const path of sources.surySize) {
 	const { production } = read(path) as {
@@ -433,19 +435,19 @@ const suites = [
 	{
 		category: "size",
 		id: "surySize",
-		label: "Sury's schema bundle",
+		label: "Sury's schema bundle, as a check",
 		unit: "B gzipped",
 		source: sources.surySize,
 		rows: [
 			rowOf(
 				"schema",
-				Object.fromEntries(
-					Object.entries(surySize)
-						.filter(([label]) => label.endsWith(" schema"))
-						.map(([label, { gzip }]) => [
-							label.slice(0, -" schema".length),
-							gzip
-						])
+				Object.entries(surySize).reduce<Record<string, number>>(
+					(byArm, [label, { gzip }]) => {
+						const arm = /^(.+) (schema|check)$/.exec(label)?.[1]
+						if (arm) byArm[arm] = Math.min(byArm[arm] ?? Infinity, gzip)
+						return byArm
+					},
+					{}
 				)
 			)
 		]

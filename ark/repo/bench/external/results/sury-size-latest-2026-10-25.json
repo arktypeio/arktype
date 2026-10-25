@@ -1,0 +1,135 @@
+{
+	"esbuild": "0.28.1",
+	"suite": {
+		"Sury schema": {
+			"minified": 26807,
+			"gzip": 11599
+		},
+		"Zod schema": {
+			"minified": 454117,
+			"gzip": 93014
+		},
+		"TypeBox schema": {
+			"minified": 92844,
+			"gzip": 22568
+		},
+		"Valibot schema": {
+			"minified": 3239,
+			"gzip": 1261
+		},
+		"ArkType (dynamic) schema": {
+			"minified": 158098,
+			"gzip": 47770
+		},
+		"Sury check": {
+			"minified": 26854,
+			"gzip": 11616
+		},
+		"Zod check": {
+			"minified": 454129,
+			"gzip": 93017
+		},
+		"TypeBox check": {
+			"minified": 475,
+			"gzip": 213
+		},
+		"Valibot check": {
+			"minified": 3116,
+			"gzip": 1198
+		},
+		"Sury all": {
+			"minified": 165920,
+			"gzip": 62944
+		},
+		"Zod all": {
+			"minified": 457812,
+			"gzip": 94487
+		},
+		"TypeBox all": {
+			"minified": 125764,
+			"gzip": 31148
+		},
+		"Valibot all": {
+			"minified": 84688,
+			"gzip": 15353
+		},
+		"ArkType (dynamic) all": {
+			"minified": 158330,
+			"gzip": 47876
+		},
+		"ArkType schema": {
+			"minified": 4412,
+			"gzip": 1874
+		},
+		"ArkType check": {
+			"minified": 4412,
+			"gzip": 1875
+		}
+	},
+	"production": {
+		"Sury schema": {
+			"minified": 26807,
+			"gzip": 11599
+		},
+		"Zod schema": {
+			"minified": 454117,
+			"gzip": 93014
+		},
+		"TypeBox schema": {
+			"minified": 92844,
+			"gzip": 22568
+		},
+		"Valibot schema": {
+			"minified": 3239,
+			"gzip": 1261
+		},
+		"ArkType (dynamic) schema": {
+			"minified": 158098,
+			"gzip": 47770
+		},
+		"Sury check": {
+			"minified": 26854,
+			"gzip": 11616
+		},
+		"Zod check": {
+			"minified": 454129,
+			"gzip": 93017
+		},
+		"TypeBox check": {
+			"minified": 475,
+			"gzip": 213
+		},
+		"Valibot check": {
+			"minified": 3116,
+			"gzip": 1198
+		},
+		"Sury all": {
+			"minified": 165920,
+			"gzip": 62944
+		},
+		"Zod all": {
+			"minified": 457812,
+			"gzip": 94487
+		},
+		"TypeBox all": {
+			"minified": 125764,
+			"gzip": 31148
+		},
+		"Valibot all": {
+			"minified": 84688,
+			"gzip": 15353
+		},
+		"ArkType (dynamic) all": {
+			"minified": 158330,
+			"gzip": 47876
+		},
+		"ArkType schema": {
+			"minified": 2867,
+			"gzip": 1092
+		},
+		"ArkType check": {
+			"minified": 625,
+			"gzip": 289
+		}
+	}
+}

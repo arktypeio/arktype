@@ -17,8 +17,8 @@
 			"results/sury-counts-latest-2026-10-24.json"
 		],
 		"surySize": [
-			"results/sury-size-6c5fd9862.json",
-			"results/sury-size-latest-2026-10-24.json"
+			"results/sury-size-396778442.json",
+			"results/sury-size-latest-2026-10-25.json"
 		],
 		"ataCounts": [
 			"results/ata-counts-pinned-2026-10-24.json",
@@ -1497,11 +1497,11 @@
 		{
 			"category": "size",
 			"id": "surySize",
-			"label": "Sury's schema bundle",
+			"label": "Sury's schema bundle, as a check",
 			"unit": "B gzipped",
 			"source": [
-				"results/sury-size-6c5fd9862.json",
-				"results/sury-size-latest-2026-10-24.json"
+				"results/sury-size-396778442.json",
+				"results/sury-size-latest-2026-10-25.json"
 			],
 			"rows": [
 				{
@@ -1509,9 +1509,9 @@
 					"results": {
 						"sury": 11599,
 						"Zod": 64686,
-						"TypeBox": 22568,
-						"Valibot": 1261,
-						"ArkType": 1107
+						"TypeBox": 213,
+						"Valibot": 1198,
+						"ArkType": 289
 					}
 				}
 			]
