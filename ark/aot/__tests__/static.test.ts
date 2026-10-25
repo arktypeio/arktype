@@ -429,6 +429,24 @@ export function make(input: Input, url: string): Resp {
 				)
 			).equals([])
 		})
+		it("data a function validates with a Type it's passed", () => {
+			attest(
+				diagnosticsOf(
+					`import { Product } from "./a.ts"
+import { request } from "./api.ts"
+const product = await request("/p", Product)
+console.log(product.description, product.items[0].description)`,
+					{
+						"/a.ts": `import { type } from "arktype"
+export const Product = type({ description: "string", items: [{ description: "string" }] })`,
+						"/api.ts": `export async function request(path: string, schema: { assert: (data: unknown) => any }) {
+	const res = await fetch(path)
+	return schema.assert(await res.json())
+}`
+					}
+				)
+			).equals([])
+		})
 	})
 
 	describe("helpers", () => {
@@ -1235,6 +1253,38 @@ export function make(input: { error?: string }) {
 				)
 			).snap([
 				"/main.ts:2:13  make({}).resource.description reads description, which a standalone validator lacks\n  the build can't tell where `make({}).resource` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("a Type passed to an exported function holding its parameter", () => {
+			attest(
+				unhinted(
+					`import { User } from "./a.ts"
+import { id, wrap } from "./adapt.ts"
+console.log(wrap(User).schema.description, id(User).description)
+console.log(later(User).description)`,
+					{
+						"/a.ts": `import { type } from "arktype"
+export const User = type({ name: "string" })`,
+						"/adapt.ts": `export function wrap(input: unknown) {
+	const result: any = {}
+	result.schema = input
+	return result
+}
+export function id(input: unknown) {
+	if (!input) throw new Error("no input")
+	return input
+}
+export const later = (input: unknown) => {
+	const read = () => input
+	return read()
+}`
+					}
+				)
+			).snap([
+				"/main.ts:3:13  wrap(User).schema.description reads description, which a standalone validator lacks\n  the build can't tell where `wrap(User).schema` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:3:44  id(User).description reads description, which a standalone validator lacks\n  `id(User)` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:4:13  later(User).description reads description, which a standalone validator lacks\n  the build can't tell where `later(User)` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 

@@ -578,6 +578,16 @@ type Key = Binding | FunctionNode | Application | Member
 
 type KindOfKey = (key: Key, module: SourceModule) => KindBits
 
+// where a key is declared, e.g. a binding's id
+const anchorOf = (key: Key): Span =>
+	"kind" in key ? key.id
+	: "args" in key ? key.fn
+	: "owner" in key ?
+		"type" in key.owner ?
+			key.owner
+		:	key.owner.id
+	:	key
+
 // e.g. `{ t }` from `wrap(A)` with `wrap = t => ({ t })`
 interface Located {
 	node: Node
@@ -954,8 +964,8 @@ export class ModuleGraph {
 		kindOfKey: KindOfKey
 	): KindBits {
 		if ("args" in key) {
-			return this.transfer(
-				staticBodyOf(key.fn)!,
+			return this.returnKindIn(
+				key.fn,
 				module,
 				this.appliedKindOfKey(key, module, kindOfKey)
 			)
@@ -1734,13 +1744,11 @@ export class ModuleGraph {
 						:	0)
 					)
 				}
-				if (
-					node.type !== "CallExpression" ||
-					!isStatic(fn[0]) ||
-					!runtimeParamsOf(fn[0]).length
-				)
+				if (node.type !== "CallExpression" || !runtimeParamsOf(fn[0]).length)
 					return kindOfKey(...fn)
-				// e.g. `withId(A)` with `withId = t => t.and({ id: "string" })`
+				// e.g. `withId(A)` with `withId = t => t.and({ id: "string" })`, whose
+				// parameters hold what this call passes, where callers the build
+				// can't see may pass others
 				return kindOfKey(
 					this.applicationOf(node, fn[0], module, kindOfKey),
 					fn[1]
@@ -2018,28 +2026,34 @@ export class ModuleGraph {
 		kindOfKey: KindOfKey
 	): KindOfKey {
 		const params = runtimeParamsOf(fn)
-		const consts = staticConstsOf(fn)
-		const declaring = new Set<Key>()
+		const derived = new Map<Key, KindBits>()
 		const result: KindOfKey = (key, keyModule) => {
-			// e.g. `N` in `{ const N = T.or("null"); return N }`, for the `T` passed
-			if (
-				"kind" in key &&
-				consts.includes(key.declaration as VariableDeclarator) &&
-				!declaring.has(key)
-			) {
-				declaring.add(key)
-				try {
-					return this.keyKindOf(key, keyModule, result)
-				} finally {
-					declaring.delete(key)
-				}
+			if ("kind" in key && key.kind === "param" && key.declaration === fn) {
+				const index = params.findIndex(param => contains(param, key.id))
+				return index === -1 ?
+						kinds.data
+					:	this.patternKindOf(
+							key.id,
+							params[index],
+							args[index],
+							module,
+							result
+						)
 			}
-			if (!("kind" in key) || key.kind !== "param" || key.declaration !== fn)
+			// what fn declares, e.g. `N` in `{ const N = T.or("null"); return N }`
+			// or the closure `() => T`, for the `T` passed, but not a call to fn
+			// itself, applied with what that call passes
+			const anchor = anchorOf(key)
+			if (keyModule !== module || anchor === fn || !contains(fn, anchor))
 				return kindOfKey(key, keyModule)
-			const index = params.findIndex(param => contains(param, key.id))
-			return index === -1 ?
-					kinds.data
-				:	this.patternKindOf(key.id, params[index], args[index], module, result)
+			let kind = derived.get(key)
+			if (kind === undefined) {
+				// what any call gives it, where it's read while it's derived
+				derived.set(key, kindOfKey(key, keyModule))
+				kind = this.keyKindOf(key, keyModule, result)
+				derived.set(key, kind)
+			}
+			return kind
 		}
 		this.bindingKindOfKeys.add(result)
 		return result
