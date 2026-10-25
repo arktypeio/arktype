@@ -14,6 +14,7 @@ import {
 	exportNameOf,
 	isWriteTarget,
 	ModuleScopes,
+	unwrapExpression,
 	walk,
 	type Binding,
 	type Reference
@@ -415,16 +416,6 @@ const keptAnnotationsIn = (
 		const annotation = pureAnnotationOf(module.source, call)
 		return annotation ? [[call.start - annotation.length, call.start]] : []
 	})
-
-// e.g. `type({ ... }) satisfies Type<Data>`, which runs as its expression
-const unwrapExpression = (node: Node): Node =>
-	(
-		node.type === "TSSatisfiesExpression" ||
-		node.type === "TSAsExpression" ||
-		node.type === "TSNonNullExpression"
-	) ?
-		unwrapExpression(node.expression)
-	:	node
 
 // an import of units rewritten, each name read from the function's module
 // if it's there, else from the unit's own

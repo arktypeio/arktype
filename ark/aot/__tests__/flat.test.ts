@@ -133,6 +133,24 @@ lead.email is missing
 		attest(js.includes("var Team =")).equals(false)
 	})
 
+	it("creates in the function a validator under a type assertion", async () => {
+		const files = writeFixture(
+			{
+				"types.ts": types.replace(
+					"export const Team = type(",
+					"export const Team = <type.Any>type("
+				),
+				"main.ts": `import { Team } from "./types.ts"\n\nconsole.log(String(Team({ lead: {}, members: [] })))\n`
+			},
+			fromHere("temp", "flatAsserted")
+		)
+		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
+		attest(run(js)).snap(`lead.name is missing
+lead.email is missing
+`)
+		attest(js.includes("var Team =")).equals(false)
+	})
+
 	it("writes a function its one call passes its parameters where it's called", async () => {
 		const files = writeFixture(
 			{
