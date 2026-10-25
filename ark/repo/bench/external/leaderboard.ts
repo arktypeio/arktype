@@ -28,7 +28,7 @@ const committed = {
 		"results/sb-counts-6c5fd9862.json",
 		"results/sb-counts-latest-2026-10-24.json"
 	],
-	sbDownload: "results/sb-download-6c5fd9862.json",
+	sbDownload: "results/sb-download-ajv-standalone-2026-10-24.json",
 	suryCounts: [
 		"results/sury-counts-6c5fd9862.json",
 		"results/sury-counts-latest-2026-10-24.json"
