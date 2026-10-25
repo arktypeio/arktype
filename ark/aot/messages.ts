@@ -24,6 +24,10 @@ export const writeStandaloneDependencyMessage = <name extends string>(
 export type writeStandaloneDependencyMessage<name extends string> =
 	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Where it defines its Types statically, precompile it with this in ark.json (or package.json's "ark" key):\n  "precompile": { "dependencies": { "${name}": "aot" } }\nWhere it defines them from values known only at runtime, as from a database table, set "arktype" in place of "aot" to run it on arktype.`
 
+// Turbopack aliases arktype for every importer, so it can't run one on arktype
+export const writeTurbopackDependencyMessage = (name: string): string =>
+	`${name} imports arktype, which Turbopack resolves to arktype/runtime, where defining a Type throws. Where it defines its Types statically, precompile it with this in ark.json (or package.json's "ark" key):\n  "precompile": { "dependencies": { "${name}": "aot" } }\nWhere it defines them from values known only at runtime, as from a database table, build with webpack, which can run it on arktype, or with runtime: "arktype".`
+
 export const versionHint =
 	"A precompiled validator is written for the arktype it was built with. Install one version of each, so @ark/aot imports what the program does."
 

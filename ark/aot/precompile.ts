@@ -178,6 +178,7 @@ import {
 	writeMutatesInputMismatchMessage,
 	writeSchemaExportHint,
 	writeStandaloneDependencyMessage,
+	writeTurbopackDependencyMessage,
 	writeUnreadableConfigMessage,
 	writeUnsureHint
 } from "./messages.ts"
@@ -1040,7 +1041,10 @@ export class Precompiler {
 	}
 
 	// a dependency that isn't transformed is checked here
-	readDependency(importer: string): { errors: string[]; warnings: string[] } {
+	readDependency(
+		importer: string,
+		host?: "Turbopack"
+	): { errors: string[]; warnings: string[] } {
 		const [, dependency] = dependencyOf(importer) ?? []
 		if (!dependency || this.graph.isFollowed(importer))
 			return { errors: [], warnings: [] }
@@ -1060,7 +1064,10 @@ export class Precompiler {
 			!this.readsOnlyRuntime(importer)
 		) {
 			this.reportedDependencies.add(dependency)
-			const message = writeStandaloneDependencyMessage(dependency)
+			const message =
+				host ?
+					writeTurbopackDependencyMessage(dependency)
+				:	writeStandaloneDependencyMessage(dependency)
 			// what it reads off arktype throws at runtime, so the hint isn't allowUnsafe
 			if (this.allowUnsafe) warnings.push(message)
 			else errors.push(message)

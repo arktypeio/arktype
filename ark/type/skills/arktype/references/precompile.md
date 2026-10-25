@@ -55,7 +55,7 @@ Others take the same plugin: `precompile.rollup()` (ahead of `@rollup/plugin-typ
 
 ### Next.js
 
-Next 16 builds with Turbopack. Add a loader rule for each extension that holds a definition or the config module, and alias arktype's entries to the runtime:
+Next 16 builds with Turbopack. Add a loader rule for each extension that holds a definition or the config module, and one for JavaScript mentioning arktype, so a dependency that defines Types fails the build rather than at runtime. Then alias arktype's entries to the runtime:
 
 ```js
 // next.config.js (or the same object in next.config.ts)
@@ -63,7 +63,11 @@ export default {
 	turbopack: {
 		rules: {
 			"*.ts": { loaders: ["@ark/aot/turbopack"] },
-			"*.tsx": { loaders: ["@ark/aot/turbopack"] }
+			"*.tsx": { loaders: ["@ark/aot/turbopack"] },
+			"*.{js,mjs}": {
+				condition: { content: /arktype/ },
+				loaders: ["@ark/aot/turbopack"]
+			}
 		},
 		resolveAlias: {
 			arktype: "arktype/runtime",
