@@ -36,6 +36,22 @@ const driverExecArgv = process.execArgv.filter(
 		driverFlag.test(arg) || driverFlagWithValue.test(args[i - 1] ?? "")
 )
 
+// e.g. ["./setup.ts"] for NODE_OPTIONS="--import ./setup.ts"
+const nodeOptionPreloads = (): string[] =>
+	[
+		...(process.env.NODE_OPTIONS ?? "").matchAll(
+			/(?:^|\s)(?:--import|--require|-r)(?:=|\s+)(\S+)/g
+		)
+	].map(match => match[1])
+
+export const writeStoppedMessage = (
+	stopped: string,
+	fails: "throws" | "exits"
+): string => {
+	const preloads = nodeOptionPreloads()
+	return `@ark/aot's precompiler ${stopped} before it answered, as it does where a module the process preloads ${fails} in a worker thread${preloads.length ? `, like ${preloads.join(" or ")}, which NODE_OPTIONS loads` : ""}. Pass it to node as a flag instead, as \`node --import ${preloads[0] ?? "./setup.ts"}\`, which keeps it out of the precompiler's thread, or return from it early where \`isMainThread\` from node:worker_threads is false. To see its error and stack, run \`node -e 'new (require("node:worker_threads").Worker)(new URL("data:text/javascript,"))'\` with the same NODE_OPTIONS.`
+}
+
 const waiting = 0
 const answered = 1
 const stopped = 2
@@ -105,11 +121,7 @@ export const createSyncPrecompiler = (
 			| PrecompileAnswer
 			| undefined
 		if (!answer || request[0] === "close") worker = undefined
-		if (!answer) {
-			throwError(
-				"@ark/aot's precompiler stopped before it answered, as it does where a module the process preloads throws in a worker"
-			)
-		}
+		if (!answer) throwError(writeStoppedMessage("stopped", "throws"))
 		if ("error" in answer) throw answer.error
 		return answer.result
 	}
@@ -138,7 +150,7 @@ export const createAsyncPrecompiler = (
 			started.on("exit", code => {
 				if (worker === started) worker = undefined
 				error ??= new Error(
-					`@ark/aot's precompiler exited with code ${code} before it answered`
+					writeStoppedMessage(`exited with code ${code}`, "exits")
 				)
 				for (const settle of pending.splice(0)) settle({ error })
 			})

@@ -767,7 +767,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 
 Positions are your source's, even where another plugin transpiled it first. Run [`arktype-precompile --check`](https://arktype.io/docs/precompile/setup#check-an-existing-project) to see every report at once.
 
-Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency shipping precompiled validators, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `Set allowUnsafe: true to build anyway, with a warning.` [`allowUnsafe`](https://arktype.io/docs/precompile/options#allowunsafe) reports those as warnings instead, and what they report may then throw at runtime. What a build with `runtime: "arktype"` leaves to arktype is always reported as a warning, since nothing fails at runtime.
+Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency shipping precompiled validators, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `or set allowUnsafe: true to build anyway, with a warning.` [`allowUnsafe`](https://arktype.io/docs/precompile/options#allowunsafe) reports those as warnings instead, and what they report may then throw at runtime. What a build with `runtime: "arktype"` leaves to arktype is always reported as a warning, since nothing fails at runtime.
 
 ## Not supported
 
@@ -791,13 +791,15 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 ## Definitions
 
-**`... cannot be precompiled`**: the definition reads a value known only at runtime, like a parameter or the result of a call the build can't evaluate. Make the value static, mark the definition as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`. For a parameter, write the definition where the function is called, with the value it passes.
+**`... cannot be precompiled`**: the definition reads a value known only at runtime, like a parameter or the result of a call the build can't evaluate. The hint names the value, as in ``Replace `process.env.MAX` with a value the build can read``: make it a literal or a const holding one, mark the definition as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`. For a parameter, write the definition where the function is called, with the value it passes.
 
 **`` `shape` is written at ..., so its value at the site is not known ``**: the definition reads an object or array the program changes before it, through a member, a method like `push`, `Object.assign` or a function writing its argument, so the build can't tell what it holds there. Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime.
 
 **Both Types of `import.meta.env.DEV ? DevPost : Post` ship**: nothing reports this. The build reads each module before the bundler replaces a constant like `import.meta.env.DEV`, so it precompiles both Types, and a production bundle written as one chunk declares the units every validator it reaches reads in [one function](https://arktype.io/docs/precompile/options#prune), which the bundler keeps whole. It drops `DevPost` but not the checks only `DevPost` reads. Set `prune: false` to let the bundler drop those too, at the cost of what pruning saves elsewhere, or define one Type for both.
 
 **`... can't be precompiled yet`**: the definition uses something the build doesn't support yet. Build it as a runtime island, or with `runtime: "arktype"`.
+
+**`.default() gives the definition of an object's key, not a Type`**: `.default()` and `.optional()` return what an object's key is defined as, not a Type, so a `const` can't hold one in a standalone build. Write it at the key it's for, as the message shows: `{ plan: Tier.default("free") }` in place of `const Plan = Tier.default("free")` and `{ plan: Plan }`.
 
 **`arktype runs this callback while defining the type`**: a callback arktype calls during definition, rather than during validation, must be a static helper the build can compute: one expression or one `return`.
 
@@ -810,6 +812,8 @@ Each of these is reported by the build, or listed here where nothing can report 
 ## Reads
 
 **`` `type` is used outside a precompiled site ``**: a standalone build doesn't ship arktype, so a call that creates a Type must be a definition the build precompiles. Move it into one, or build with `runtime: "arktype"`.
+
+**`flatProblemsByPath(out) calls flatProblemsByPath, which arktype/runtime doesn't export`**: so do `byPath`, `flatByPath` and `byAncestorPath`. Read `out.issues`, each with its `path` and `message`, as in `for (const { path, message } of out.issues)`, or build with `runtime: "arktype"`. For `messageIn(issue, locale)`, read `issue.message`, which a standalone validator writes in English.
 
 **`import("arktype") loads arktype, which a standalone build replaces with arktype/runtime`**: the build precompiles definitions it sees through an `import` declaration, and resolves every other load of arktype to its runtime, which can't create a Type. Import it with an `import` declaration, or build with `runtime: "arktype"`.
 
@@ -831,7 +835,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`arktype resolves to ... rather than arktype/runtime`** (Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config. See [Next.js](https://arktype.io/docs/precompile/setup#next).
 
-**`configure() is called, but the build has no config module`**: name the module that calls it as the build's [`config`](https://arktype.io/docs/precompile/options#configuration).
+**`configure() is called, but the build has no config module`**: name the module that calls it as the build's [`config`](https://arktype.io/docs/precompile/options#configuration) in `ark.json`, as `{ "precompile": { "config": "./src/arktype.config.ts" } }`.
 
 **``--check can't read the `config` precompile.vite() is passed``** or **`... sets errors other than precompile.vite() at vite.config.ts:5:12`**: `arktype-precompile --check` reads the options a plugin call at the project's root passes, but only those written as literals, and only where every call agrees. Set the option in `ark.json`, which the plugin reads too, or pass it to `--check` as a flag.
 
@@ -851,13 +855,13 @@ Where it creates them from values it reads as it runs, like `drizzle-arktype` fr
 
 **`drizzle-arktype runs on arktype, whose errors aren't instances of type.errors under errors: "none"`** (or `optimizeErrors: "size"`): a build writing errors of its own can't mix them with arktype's. Precompile it with `"aot"` if its Types are static, or build without that option.
 
-**`precompile.dependencies runs drizzle-arktype on arktype, which Turbopack can't`** (or Bun's runtime plugin): it replaces arktype for every importer. Build with `runtime: "arktype"`, or with webpack (`next build --webpack`) or `Bun.build`.
+**`precompile.dependencies runs drizzle-arktype on arktype, which Turbopack can't`** (or Bun's runtime plugin): it replaces arktype for every importer. Set the dependency to `"aot"` if its Types are static, or build with webpack (`next build --webpack`) or `Bun.build`, or with `runtime: "arktype"`.
 
 **`/app/package.json sets "ark" and /app/ark.json is beside it`**: both set the build's options. Move `ark.json`'s contents under `package.json`'s `"ark"` key, or delete that key.
 
 **`my-schemas imports arktype/runtime, so it ships validators precompiled for one version of arktype`**: a dependency shipped its own precompiled build, which runs only on the arktype it was built with. Have it publish its source and opt in instead, with `"ark": { "aot": true }`.
 
-**`src/Form.svelte imports arktype, which a standalone build resolves to arktype/runtime`**: the build can't precompile a module that isn't JavaScript or TypeScript, like a Svelte component's script. Define the Types it uses in a module that is.
+**`src/Form.svelte imports arktype, which a standalone build resolves to arktype/runtime`**: the build can't precompile a module that isn't JavaScript or TypeScript, like a Svelte component's script. Move what it reads off arktype, from Types to `instanceof type.errors` checks, into a `.ts` module it imports.
 
 **`virtual:schemas imports arktype ... as it can't precompile a module with no file of its own`**: the build precompiles modules from their files, so not one a plugin loads from a virtual id or namespace, esbuild's `stdin`, a `data:` URL or code given to `node --eval`. Define the Types it uses in a file it imports.
 
@@ -872,6 +876,12 @@ Where it creates them from values it reads as it runs, like `drizzle-arktype` fr
 **`a standalone validator's JSON Schema takes only a target it was built with, and a fallback only where its schema needs none`**: a library passed options to `toJsonSchema()` that a baked schema can't apply. hono-openapi and oRPC pass a fallback, which changes a Type holding a morph or a Date, as arktype falls back on those. Build with `runtime: "arktype"`, or keep the morph or Date out of the Types you document.
 
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
+
+**`configure() is given other values than arktype in this thread already applied`**: the config module changed while the build ran, as by an edit in watch mode, or a plugin ahead of arktype's transforms it before arktype reads it. Restart the build after an edit. Otherwise put arktype's plugin ahead of the one the message names (Vite names it; other bundlers can't tell which).
+
+**`@ark/aot's precompiler stopped before it answered`**: the precompiler runs in a worker thread, and a module the process preloads into every thread, usually through `NODE_OPTIONS`, threw there. The message names the preloads `NODE_OPTIONS` lists. Pass the module to `node` as a flag instead, as `node --import ./setup.ts`, which stays out of the precompiler's thread, or return from it early where `isMainThread` from `node:worker_threads` is false. The worker's error isn't printed, since the build stops first; the message gives a one-line `node -e` command that starts a worker under the same `NODE_OPTIONS` and prints it, with its stack.
+
+**`No tsconfig.json is in ... or a directory above it`** (`--emit`, `--declare` or `declare: true`): create the file the message names, as `{ "compilerOptions": { "rootDir": "src", "outDir": "dist" }, "include": ["src"] }`, or name the one `tsc` builds with as `--tsconfig`, or as `"tsconfig"` in `ark.json`.
 
 # Advanced
 
