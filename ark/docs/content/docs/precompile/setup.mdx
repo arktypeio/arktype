@@ -186,7 +186,7 @@ Each line was checked with a production build of a small app, on SvelteKit 3.1, 
 | Next.js              | See [Next.js](#next)                                                                                                                                                                                                           |
 | Monorepos            | Nothing extra. A workspace package linked into `node_modules`, as pnpm, npm, Yarn and Bun workspaces link it, resolves to its own directory, so the build precompiles it with the program                                      |
 | Jest                 | Not supported. It has no driver, so it runs your Types on arktype, unprecompiled. See [Test runners](#test-runners)                                                                                                            |
-| Deno                 | Not supported. It has no driver, so `deno run` loads arktype unprecompiled. Build with Node                                                                                                                                    |
+| Deno                 | A bundler plugin works under Deno, e.g. `deno run -A npm:vite build` with `precompile.vite()`. There's no driver, so `deno run` on your source loads arktype unprecompiled                                                     |
 
 ## Next.js [#next]
 
