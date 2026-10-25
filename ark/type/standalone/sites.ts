@@ -77,8 +77,8 @@ const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 			if (!failureSites.has(ref as object)) continue
 			const site = ref as FailureSite
 			if (site.code) codes.add(site.code)
-			if (site.value) codes.add(site.value.code)
-			if (site.missing) codes.add(site.missing.code)
+			if (site.v) codes.add(site.v.code)
+			if (site.m) codes.add(site.m.code)
 		}
 		for (const node of unit.declared) {
 			if (node.hasKind("union") && node.discriminantJit)
@@ -114,9 +114,9 @@ const siteWords = new Set([
 	"siteOf",
 	"textSiteOf",
 	"keySiteOf",
-	"value",
-	"path",
-	"missing"
+	"v",
+	"p",
+	"m"
 ])
 
 // a site written from literals alone, so alike in every unit
@@ -316,9 +316,9 @@ export const isDescribed = (context: IssueContext): boolean =>
 
 // issues hold only code and text, so equal sites share
 export const issueSiteOf = (site: FailureSite | UnionSite): object => {
-	const { value, missing } = site as {
-		value?: TextContext
-		missing?: TextContext
+	const { v: value, m: missing } = site as {
+		v?: TextContext
+		m?: TextContext
 	}
 	const missingContext = missing && issueContextOf(missing)
 	// a key's own text makes its site its own
@@ -336,11 +336,11 @@ export const issueSiteOf = (site: FailureSite | UnionSite): object => {
 		!missingContext ? valueContext!
 		: valueContext ?
 			{
-				value: valueContext,
-				missing: isDescribed(missingContext) ? requiredIssue : missingContext
+				v: valueContext,
+				m: isDescribed(missingContext) ? requiredIssue : missingContext
 			}
 		: isDescribed(missingContext) ? runtime.requiredSite
-		: { missing: missingContext }
+		: { m: missingContext }
 	))
 }
 
@@ -354,7 +354,7 @@ export const unionKeySiteOf = (
 ): object => {
 	let value = unionContexts.get(union)
 	if (!value) unionContexts.set(union, (value = { ...union, code: "union" }))
-	return issueSiteOf({ value, missing })
+	return issueSiteOf({ v: value, m: missing })
 }
 
 // runtime keywords with one param never read Traversal

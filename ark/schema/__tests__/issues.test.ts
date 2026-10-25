@@ -15,12 +15,12 @@ import {
 } from "@ark/schema/runtime"
 
 const site = (code: ArkErrorCode, description: string): FailureSite => ({
-	value: { code, description }
+	v: { code, description }
 })
 
 const nameSite: FailureSite = {
 	...site("domain", "a string"),
-	missing: { code: "required" }
+	m: { code: "required" }
 }
 
 // { name: string }'s Allows and Apply, as a standalone build compiles them
@@ -83,7 +83,7 @@ contextualize(() => {
 				users,
 				(data as { members?: unknown }).members,
 				"members",
-				{ missing: { code: "required" } },
+				{ m: { code: "required" } },
 				data
 			)
 		const errors = new ArkErrors()
@@ -109,8 +109,8 @@ contextualize(() => {
 		errors._p.push("item")
 		errors._at(
 			{
-				value: { code: "discriminant", description: '"a" or "b"' },
-				path: ["kind"]
+				v: { code: "discriminant", description: '"a" or "b"' },
+				p: ["kind"]
 			},
 			"c"
 		)
@@ -175,7 +175,7 @@ supplied`)
 		user({}, merged)
 		// as a build writes an undeclared key's site
 		merged._at(
-			{ value: { code: "undeclared", description: "removed" } },
+			{ v: { code: "undeclared", description: "removed" } },
 			{ extra: 1 },
 			"extra"
 		)
@@ -189,7 +189,7 @@ owner.extra must be removed`)
 	it("builds arktype's error from a site holding its node's context", () => {
 		const n = rootSchema({ domain: "string" }).assertHasKind("domain")
 		const ctx = new ArkTraversal(5, n.$.resolvedConfig)
-		ctx._at({ value: n.errorContext }, 5)
+		ctx._at({ v: n.errorContext }, 5)
 		attest(String(ctx.finalize())).equals(String(n.traverse(5)))
 	})
 })

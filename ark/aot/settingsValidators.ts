@@ -50,15 +50,15 @@ var ArkIssues = class {
 	/** @internal */
 	_at(site, data, key) {
 		const path = this._p
-		let context = site.value ?? site
+		let context = site.v ?? site
 		if (key !== void 0) {
 			path.push(key)
-			if (site.missing && !(key in data)) context = site.missing
+			if (site.m && !(key in data)) context = site.m
 			else data = data[key]
 		}
 		const issue = {
 			code: context.code,
-			path: site.path ? path.concat(site.path) : path.slice(),
+			path: site.p ? path.concat(site.p) : path.slice(),
 			data,
 			expected: context.description,
 			message: void 0

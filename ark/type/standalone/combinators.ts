@@ -337,9 +337,9 @@ const structureCalleesOf = (
 
 // a missing key whose issue is required's alone
 const missesAsRequired = (prop: Prop.Node): boolean => {
-	const { missing } = issueSiteOf(prop.failureSite) as { missing?: object }
+	const { m: missing } = issueSiteOf(prop.failureSite) as { m?: object }
 	return (
-		missing === runtime.requiredSite.missing ||
+		missing === runtime.requiredSite.m ||
 		(missing !== undefined &&
 			plainContextOf(missing)?.code === "required" &&
 			(missing as IssueContext).description === undefined)

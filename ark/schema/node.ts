@@ -705,7 +705,7 @@ export abstract class BaseNode<
 	// what compiled code reports when this node fails
 	get failureSite(): FailureSite | UnionSite {
 		return (this.cache.failureSite ??= {
-			value: (this as never as { errorContext: SiteContext }).errorContext
+			v: (this as never as { errorContext: SiteContext }).errorContext
 		})
 	}
 
