@@ -152,8 +152,7 @@ export const Playground = ({
 
 			if (!stripped) return
 
-			const result = executeCode(stripped)
-			setValidationResult(result)
+			setValidationResult({ ...executeCode(stripped), source: code })
 		},
 		[tsLanguageServiceInstance, monaco]
 	)
@@ -318,7 +317,7 @@ const PlaygroundLoader = () => (
 const PlaygroundResults = (result: PlaygroundResultsProps) => (
 	<div className="flex flex-col h-full gap-4">
 		<div className="flex-[2] min-h-0">
-			<ParseResult {...result} />
+			<ParseResult {...result} source={result.source ?? ""} />
 		</div>
 		<div className="flex-[1] min-h-0">
 			<TraverseResult {...result} />
