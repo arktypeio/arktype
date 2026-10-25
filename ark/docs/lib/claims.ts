@@ -207,16 +207,19 @@ const placeOf = (category: CategoryId) => {
 const wording = {
 	speed: {
 		superlative: "Fastest",
+		comparative: "faster",
 		phrase: "Runs faster.",
 		measures: "validation speed"
 	},
 	startup: {
 		superlative: "Quickest to start",
+		comparative: "quicker to start",
 		phrase: "Starts lighter.",
 		measures: "startup"
 	},
 	size: {
 		superlative: "Smallest",
+		comparative: "smaller",
 		phrase: "Ships less.",
 		measures: "bundle size"
 	}
@@ -297,6 +300,14 @@ const fullBoardPlaces = listOf(
 /** where ArkType places on the full board, stated wherever the headline's standings are */
 const fullBoardNote = `With our own benchmarks added, ArkType is ${fullBoardPlaces}.`
 
+/** the full board's leaders where they aren't ArkType: "ajv averages smaller" */
+const fullBoardLeaders = boardOrder.flatMap(category => {
+	const [first] = fullLeaderboards[category].standings
+	return first.library === "ArkType" ?
+			[]
+		:	[`${first.library} averages ${wording[category].comparative}`]
+})
+
 /** how the standings treat noise and stay current, after the notes on them */
 const methodNote = `Sizes within ${tieMargin} of the best average count as a tie, since releases, engines and bundlers move them by about that much. We rerun the board regularly at each library's newest release and publish all of it.`
 
@@ -359,6 +370,9 @@ const sizeResultsBeating = (library: string) => {
 
 const sizeRival = averageOf("size").other
 
+/** how far below the next best's ArkType's size average is, where it leads */
+const sizeLead = 1 - placeOf("size").score / sizeRival.score
+
 /** each category's results on the independent suites, for the headline's notes, and what startup's measure */
 const independentResults = `${listOf(
 	boardOrder.map(
@@ -377,6 +391,8 @@ export const claims = {
 		leads("size") ?
 			"TypeScript's smallest, fastest validator."
 		:	"TypeScript's fastest validator.",
+	// the headline's basis in one line, under it in the blog post
+	headlineBasis: `Ranked by best average across the public benchmarks we didn't write.${fullBoardLeaders.length ? ` With ours added, ${listOf(fullBoardLeaders)}.` : ""}`,
 	headlineNote: `Ranked by best average across the public benchmarks we didn't write, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote}`,
 	// the fastest and the smallest builds differ: optimize "size" makes the
 	// product schema's valid data 2.2x slower
@@ -464,7 +480,7 @@ export const claims = {
 		ties("size") ?
 			`Size is the close one: ${sizeRival.library} has the best average, ${sizeRival.score.toFixed(2)} to ArkType's ${placeOf("size").score.toFixed(2)}, within the ${tieMargin} we count as a tie, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`
 		: leads("size") ?
-			`Size is the close one: ${sizeRival.library} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}, and ArkType's lead is in the average.`
+			`Size is the close one: ArkType's average is ${(sizeLead * 100).toFixed(1)}% below ${sizeRival.library}'s${sizeLead < sizeTie ? `, inside the ${tieMargin} we count as a tie,` : ""} and ${sizeRival.library} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`
 		:	`Size is the close one: ${sizeRival.library} has the best average, ${sizeRival.score.toFixed(2)} to ArkType's ${placeOf("size").score.toFixed(2)}, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
 	// which benchmarks are ours, and that the averages leave them out
 	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory} on the full board; the averages above leave those out.`,
@@ -488,9 +504,21 @@ const assertLeads = (category: CategoryId, by: string) => {
 	}
 }
 
-// the copy that states standings: naming a category's superlative needs
-// ArkType to claim it, and "Pick 3" needs all three, so it can't claim a lead
-// the standings don't have
+/**
+ * Throws if copy states a standing ArkType can't claim: naming a category's
+ * superlative needs ArkType to claim it, and "Pick 3" needs all three
+ */
+export const assertStandings = (copy: string, by: string) => {
+	for (const category of boardOrder) {
+		if (new RegExp(`\\b${wording[category].superlative}\\b`, "i").test(copy))
+			assertLeads(category, by)
+	}
+	if (/\bpick 3\b/i.test(copy))
+		for (const category of boardOrder) assertLeads(category, by)
+}
+
+// the copy that states standings; the blog's frontmatter, which can't read
+// claims, is checked as its social cards are written (lib/writeOgImages.ts)
 const standingClaims = [
 	"headline",
 	"pickThree",
@@ -499,13 +527,7 @@ const standingClaims = [
 ] as const satisfies ClaimId[]
 for (const id of standingClaims) {
 	const claim = claims[id]
-	if (isPending(claim)) continue
-	for (const category of boardOrder) {
-		if (new RegExp(`\\b${wording[category].superlative}\\b`, "i").test(claim))
-			assertLeads(category, id)
-	}
-	if (/\bPick 3\b/.test(claim))
-		for (const category of boardOrder) assertLeads(category, id)
+	if (!isPending(claim)) assertStandings(claim, id)
 }
 
 /** the libraries the board compares against: with ArkType, the two that wrote Standard Schema */
