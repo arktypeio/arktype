@@ -119,7 +119,7 @@ ${mark}export const types = $.export()`
 		const diagnosticsOfMarked = (mark: string) =>
 			precompile(writeSource(mark)).diagnostics.map(renderDiagnostic)
 		attest(diagnosticsOfMarked("")).snap([
-			"/main.ts:4:22  $.export() can't be precompiled yet\n  arktype holds `(n: number) => n === 0` (/main.ts:2:16), which the site reads outside its own source\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
+			"/main.ts:4:22  $.export() can't be precompiled yet\n  the site's value holds `(n: number) => n === 0` (/main.ts:2:16), which it reads outside its own source\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
 		])
 		attest(diagnosticsOfMarked("// @ark-runtime\n")).equals([])
 	})

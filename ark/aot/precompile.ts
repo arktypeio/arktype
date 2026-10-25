@@ -160,14 +160,15 @@ import {
 	configurationConflictMessage,
 	configurationConflictReason,
 	configuredHintOf,
+	isUnstaticHelperReason,
 	configuredThreadMessage,
 	copiesHint,
 	derivedHint,
 	frozenHint,
 	hintsByRule,
-	opaqueSchemaHint,
 	writeGenericHint,
 	writeHelperCallHint,
+	writeOpaqueHelperHint,
 	writeOpaqueParameterHint,
 	islandHint,
 	islandValueMessage,
@@ -2210,7 +2211,7 @@ export class Precompiler {
 			) {
 				// e.g. `pipe.try`'s morph, which arktype calls from a function of its own
 				reasons.push(
-					`arktype holds ${labelOf(module, reference)} in a function of its own, which a standalone validator can't create yet`
+					`${labelOf(module, reference)} is wrapped in a function arktype creates, which a standalone validator can't create yet`
 				)
 				continue
 			}
@@ -2277,7 +2278,7 @@ export class Precompiler {
 			if (!source) continue
 			const [node, origin] = source
 			reasons.push(
-				`arktype holds ${labelOf(origin, node)}, which the site ${holesByValue.has(value) ? "reads outside its own source" : "cannot pass to its factory"}`
+				`the site's value holds ${labelOf(origin, node)}, which ${holesByValue.has(value) ? "it reads outside its own source" : "its factory can't receive"}`
 			)
 		}
 		return passed
@@ -2578,7 +2579,12 @@ export class Precompiler {
 		site: Site,
 		reasons: string[]
 	): Diagnostic {
-		const diagnostic = this.refusal(module, site, "unsupported", reasons)
+		const diagnostic = this.refusal(
+			module,
+			site,
+			reasons.some(isUnstaticHelperReason) ? "R1" : "unsupported",
+			reasons
+		)
 		refuse(site, reasons)
 		return diagnostic
 	}
@@ -2727,9 +2733,17 @@ export class Precompiler {
 			const isReceived = !hole.isCalledAtDefinition && hole.kind !== "opaque"
 			if (isReceived && !site.parseError) continue
 			const holeModule = this.graph.moduleOf(hole.file) as SourceModule
-			result.push(
-				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} ${labelOf(holeModule, hole)}`
-			)
+			const label = labelOf(holeModule, hole)
+			if (hole.isCalledAtDefinition) result.push(`arktype calls ${label}`)
+			else if (hole.kind !== "opaque")
+				result.push(`${label} is read by a definition that throws a ParseError`)
+			else {
+				const dynamic = this.standInOf(hole.value)?.dynamic
+				result.push(
+					`${label} ${dynamic ? "is not static, so the site holds it" : "is held"} as a Standard Schema, which a standalone validator can't receive yet`,
+					...(dynamic ? chainOf(dynamic) : [])
+				)
+			}
 		}
 		result.push(...this.incomparableReasonsOf(site, module))
 		result.push(...this.configuredReasonsOf(site))
@@ -3128,6 +3142,8 @@ export class Precompiler {
 		if (
 			this.mode !== "standalone" ||
 			!staticBodyOf(fn) ||
+			// a runtime island, which arktype defines at each call
+			module.islands.some(island => contains(fn, island)) ||
 			!mayReturnArk(
 				binding ?
 					this.graph.bindingKindOf(binding, module)
@@ -3704,7 +3720,7 @@ export class Precompiler {
 					this.interpreter.holesIn(candidate.state.value).has(value)
 				) ?
 					`the build can't tell how a Scope holds \`${origin.snippetOf(node)}\` before arktype resolves its aliases`
-				:	`arktype holds \`${origin.snippetOf(node)}\` as a value rather than a definition, so it must be static`,
+				:	`\`${origin.snippetOf(node)}\` is passed as a value rather than a definition, so it must be static`,
 				standIn.dynamic
 			)
 		}
@@ -3794,7 +3810,7 @@ export class Precompiler {
 		let link: DynamicValue | undefined = dynamic
 		while (link && link.code !== "parameter") link = link.cause
 		const param = link && parameterOf(link.node, link.module)
-		if (!param?.fn) return opaqueSchemaHint
+		if (!param?.fn) return writeOpaqueHelperHint(chainOf(dynamic))
 		return writeOpaqueParameterHint(
 			param.fn,
 			param.binding.name,

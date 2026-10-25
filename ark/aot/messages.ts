@@ -46,7 +46,7 @@ export const derivedHint = `If it isn't a Type, read it off a value the build ca
 
 export const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	R1: "Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.",
-	R2: "arktype runs this callback while defining the type, so the build computes its result. Make it a static helper: one expression or one `return` in the static subset.",
+	R2: "arktype runs this callback while defining the type, so the build computes its result. Make it a static helper: one expression, or consts and one `return`, in the static subset.",
 	R3: "The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
 	R4: `Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".`,
 	unsupported:
@@ -156,6 +156,25 @@ export const writeGenericHint = (
 export const writeHelperCallHint = (fn: string): string =>
 	`Call ${fn} directly, with arguments the build can read, like literals and consts, so it precompiles each call.`
 
+// e.g. a helper whose body runs an `if` before it returns
+const unstaticHelperPattern =
+	/^`(.+)` \(.+\) is not a static helper: it (?:runs|ends with)/
+
+export const isUnstaticHelperReason = (reason: string): boolean =>
+	unstaticHelperPattern.test(reason)
+
+const writeHelperBodyFix = (fn: string): string =>
+	`write ${fn} as one expression, or as consts and one \`return\`, so the build precompiles each call with the values it's passed`
+
+export const writeOpaqueHelperHint = (reasons: string[]): string => {
+	const fn = reasons
+		.map(reason => unstaticHelperPattern.exec(reason)?.[1])
+		.find(fn => fn)
+	return fn ?
+			`${opaqueSchemaNote} If it's a Type, ${writeHelperBodyFix(fn)}.`
+		:	opaqueSchemaHint
+}
+
 // reasons a standalone build refuses a site, with how to fix each
 const textHints: [
 	pattern: RegExp,
@@ -165,6 +184,11 @@ const textHints: [
 		/^`(.+)` is a parameter of (.+) \(.+\); its value is known only at runtime$/,
 		(param, fn) =>
 			`Write the definition where ${fn === "a function" ? "that function" : fn} is called, with the value it passes for \`${param}\`, so the build precompiles each call.`
+	],
+	[unstaticHelperPattern, fn => `${capitalize(writeHelperBodyFix(fn))}.`],
+	[
+		/^`(.+)` is read before its declaration/,
+		name => `Declare \`${name}\` before the const that reads it.`
 	],
 	[
 		/reads a definition that throws a ParseError$/,

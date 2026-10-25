@@ -596,7 +596,8 @@ const helpers: fc.Arbitrary<FragmentOf> = fc
 				const declarations = [
 					`const bounded${id} = max => type(\`${element} <= \${max}\`)`,
 					`function boxed${id}(max) { return type({ value: \`${element} >= \${max}\` }) }`,
-					`const below${id} = max => bounded${id}(max - 1)`
+					`const below${id} = max => bounded${id}(max - 1)`,
+					`const described${id} = max => {\n\tconst T = bounded${id}(max)\n\treturn T.describe(\`at most \${max}\`)\n}`
 				]
 				return {
 					containers:
@@ -604,7 +605,9 @@ const helpers: fc.Arbitrary<FragmentOf> = fc
 							declarations.map(declaration => `export ${declaration}`)
 						:	[],
 					exports:
-						isImported ? [`bounded${id}`, `boxed${id}`, `below${id}`] : [],
+						isImported ?
+							[`bounded${id}`, `boxed${id}`, `below${id}`, `described${id}`]
+						:	[],
 					main: [
 						...(isImported ? [] : declarations),
 						// local, as the build trusts an arktype package's exports, which
@@ -617,7 +620,17 @@ const helpers: fc.Arbitrary<FragmentOf> = fc
 							`type({ value: below${id}(${limit}) }).or(boxed${id}(${limit}))`,
 							inputs
 						),
-						observed(`${id}.3`, `nullable${id}(bounded${id}(${limit}))`, inputs)
+						observed(
+							`${id}.3`,
+							`nullable${id}(bounded${id}(${limit}))`,
+							inputs
+						),
+						observed(`${id}.4`, `described${id}(${limit})`, inputs),
+						observed(
+							`${id}.5`,
+							`type({ value: described${id}(${limit}) })`,
+							inputs
+						)
 					]
 				}
 			}
