@@ -1,0 +1,113 @@
+name: leaderboard
+
+# Every Monday, reruns the independent suites that measure bundle size (the
+# login form, schemabenchmarks.dev's download and Sury's bundle) with each
+# rival at its newest release and ArkType at main, rewrites the leaderboard
+# from them and checks the site's claims against it. A changed leaderboard
+# opens a pull request, and a claim the new standings don't back fails the run
+# once that request is open. The speed and startup suites count instructions
+# with perf, which needs hardware counters hosted runners don't expose, so
+# they're rerun by hand (ark/repo/bench/external/README.md, "Reproduce").
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: leaderboard
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  rerun:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # schemabenchmarks.dev runs on its own .node-version
+      - name: Setup Node 26
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 26.12.1
+
+      - name: Locate Node 26
+        run: echo "NODE26=$(command -v node)" >> "$GITHUB_ENV"
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+        with:
+          node: 24.14.1
+
+      - name: Locate Node 24
+        run: echo "NODE24=$(command -v node)" >> "$GITHUB_ENV"
+
+      - name: Claims before
+        run: node ark/docs/lib/bench/headline.ts > "$RUNNER_TEMP/before.md" 2>&1 || true
+
+      # ttsc's first Go build of typia's plugin can fail, so a failed run is
+      # tried once more
+      - name: Rerun the size suites
+        run: pnpm benchExternal size --newest || pnpm benchExternal size --newest
+
+      # results/newest/run.json's date and commit change every week, so only a
+      # changed leaderboard is kept for a pull request
+      - name: Keep only a changed leaderboard
+        run: |
+          if git diff --quiet ark/docs/lib/bench/leaderboard.json; then
+            git checkout -- ark/repo/bench/external/results
+            git clean -fdq ark/repo/bench/external/results
+          fi
+
+      - name: Check the claims
+        id: claims
+        continue-on-error: true
+        run: node ark/docs/lib/bench/headline.ts > "$RUNNER_TEMP/after.md" 2>&1
+
+      - name: Write the pull request's body
+        env:
+          CLAIMS: ${{ steps.claims.outcome }}
+        run: |
+          {
+            echo "The weekly rerun of the size suites, each rival at its newest release and ArkType at ${GITHUB_SHA::9}. \`results/newest/run.json\` lists the installs."
+            echo
+            if [ "$CLAIMS" = failure ]; then
+              echo "**A claim on the site isn't backed by these standings. Change the copy in \`ark/docs/lib/claims.ts\` before merging.**"
+              echo
+            fi
+            echo "### Claims after"
+            echo
+            cat "$RUNNER_TEMP/after.md"
+            echo
+            echo "### Claims before"
+            echo
+            cat "$RUNNER_TEMP/before.md"
+          } > "$RUNNER_TEMP/body.md"
+
+      - name: Open a pull request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          branch: bench/leaderboard
+          delete-branch: true
+          add-paths: |
+            ark/docs/lib/bench/leaderboard.json
+            ark/repo/bench/external/results/newest
+          commit-message: "bench: rerun the size suites at each rival's newest release"
+          title: "bench: rerun the size suites at each rival's newest release"
+          body-path: ${{ runner.temp }}/body.md
+
+      - name: Fail on an unbacked claim
+        if: steps.claims.outcome == 'failure'
+        run: |
+          cat "$RUNNER_TEMP/after.md"
+          echo "::error::A claim on the site isn't backed by the new standings"
+          exit 1

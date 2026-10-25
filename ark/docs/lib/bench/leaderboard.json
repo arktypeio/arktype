@@ -6,12 +6,12 @@
 			"results/counts-latest-2026-10-24.json"
 		],
 		"startup": "results/startup-808927feb-node24.json",
-		"forms": "results/forms-642b4517e.json",
+		"forms": ["results/forms-642b4517e.json"],
 		"sbCounts": [
 			"results/sb-counts-6c5fd9862.json",
 			"results/sb-counts-latest-2026-10-24.json"
 		],
-		"sbDownload": "results/sb-download-ajv-standalone-2026-10-24.json",
+		"sbDownload": ["results/sb-download-ajv-standalone-2026-10-24.json"],
 		"suryCounts": [
 			"results/sury-counts-6c5fd9862.json",
 			"results/sury-counts-latest-2026-10-24.json"
@@ -642,7 +642,7 @@
 			"id": "form",
 			"label": "valibot.dev's login form",
 			"unit": "B gzipped",
-			"source": "results/forms-642b4517e.json",
+			"source": ["results/forms-642b4517e.json"],
 			"rows": [
 				{
 					"id": "login form",
@@ -1462,7 +1462,7 @@
 			"id": "sbSize",
 			"label": "schemabenchmarks.dev's download",
 			"unit": "B gzipped",
-			"source": "results/sb-download-ajv-standalone-2026-10-24.json",
+			"source": ["results/sb-download-ajv-standalone-2026-10-24.json"],
 			"rows": [
 				{
 					"id": "download",

@@ -14,12 +14,15 @@ clean checkout after `pnpm i && pnpm build`, on Linux with `perf` and
 ```sh
 NODE24=<node 24.14.1> NODE26=<node 26.12.1> pnpm benchExternal <suite>
 pnpm benchExternal <suite> --latest # its rivals at their 2026-10-24 releases
+pnpm benchExternal <suite> --newest # its rivals at their newest releases, kept in results/newest/
 pnpm benchValidate # the homepage's speed rows
 pnpm benchSize # the homepage's app sizes
 pnpm benchImport # the homepage's cold start
 ```
 
-`<suite>` is `moltar`, `sb`, `sury`, `ata`, `form`, `startup` or `all`.
+`<suite>` is `moltar`, `sb`, `sury`, `ata`, `form`, `startup`, `size` or
+`all`, where `size` is the form and the download and bundle rows of
+schemabenchmarks.dev and Sury, without counting anything.
 `benchExternal` clones each external suite at the commit its rows were
 counted on into `out/clones/`, installs it from its own lockfile, adds
 ArkType as "How each new suite is run" describes, counts every arm into
@@ -33,6 +36,22 @@ under WSL2 (Linux 6.18, perf 6.18), pinned to cores 10-15, on Node 24.14.1
 for moltar's, Sury's and ata's suites and `startup.ts`, 26.12.1 for
 schemabenchmarks.dev (its `.node-version`) and 25.2.1 for the homepage's
 benchmark.
+
+**Weekly.** `.github/workflows/leaderboard.yml` runs
+`pnpm benchExternal size --newest` every Monday on a GitHub-hosted runner:
+ArkType at main, each rival at its newest release. `--newest` keeps the run
+in `results/newest/`, with each suite's commit, date and installed versions
+in `run.json`, and rewrites `ark/docs/lib/bench/leaderboard.json`, where
+each rival keeps its smaller bundle of its pinned, 2026-10-24 and newest
+installs and ArkType's rows are the run's. If the leaderboard changed, it
+opens a pull request listing the site's claims before and after
+(`ark/docs/lib/bench/headline.ts`), and the run fails if the new standings
+don't back a claim. The speed and startup suites count instructions with
+perf, and hosted runners don't expose hardware counters, so they're rerun by
+hand on a machine that does, with `--newest` keeping them the same way. A
+pull request the workflow opens needs "Allow GitHub Actions to create and
+approve pull requests" in the repository's settings, and doesn't trigger
+`pr.yml`.
 
 **Expected variance.** Load doesn't move an instruction count, but a run's
 tiering and garbage collection do. Every suite rerun from a clean clone
@@ -254,8 +273,9 @@ qualify. Since 2026-10-25 the headline counts only the independent ones, the
 suites we didn't write ("The headline's suites"), and the full board, every
 suite, is published beside it. Sizes within 5% of the best average count as
 a tie ("Ties"), since releases, engines and bundlers move them by about that
-much. The current standings come first, then the rule, then each earlier
-average as its record.
+much. The size suites are rerun every week at each library's newest release
+("Weekly" under "Reproduce"). The standings at 808927feb come first, then the
+rule, then each earlier average as its record.
 
 ### Current standings: ArkType at 808927feb, rivals at their releases of 2026-10-24
 
@@ -405,7 +425,8 @@ counted score in at least half of the category's suites.
 **Use.** `ark/repo/bench/external/leaderboard.ts` gathers every row into
 `ark/docs/lib/bench/leaderboard.json`; `ark/docs/lib/claims.ts` computes the
 scores from it and throws if the headline claims a category ArkType can't
-claim. Nothing is rerun to change a result.
+claim. Nothing is rerun to change a result: the weekly rerun runs on its
+schedule whatever the last one showed.
 
 ### Which suites
 
@@ -488,9 +509,11 @@ install today: moltar's typia 9.7.2 and ata-validator 1.32.1, ata's suite's
 own ata-validator 1.48.0, Sury's zod 4.4.3 and valibot 1.4.2. So each suite's
 rivals are counted twice, at its pins and at the latest npm releases of
 2026-10-24 (`--latest`, `results/*-latest-2026-10-24.json`), and each arm
-keeps its faster count. Rivals can only gain from this. Newer isn't always
-faster: ata 1.60.0 takes 195 instructions on moltar's assertLoose to 1.32.1's
-94, so moltar's ata rows keep 1.32.1.
+keeps its faster count. Rivals can only gain from this. The weekly rerun of
+the size suites adds a third install, each rival at its newest release
+(`results/newest/`). Newer isn't always faster: ata 1.60.0 takes 195
+instructions on moltar's assertLoose to 1.32.1's 94, so moltar's ata rows
+keep 1.32.1.
 
 | suite                | at their latest releases                                                                                                        | left at the suite's pin                                                                             |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
