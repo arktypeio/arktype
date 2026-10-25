@@ -3330,6 +3330,112 @@
 	border-radius: 16px;
 }
 
+/* the playground's precompiled tab */
+.precompiled {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	p {
+		margin: 0;
+	}
+	code {
+		font-family: var(--mono);
+	}
+	[data-stale] {
+		opacity: 0.55;
+		transition: opacity var(--t-micro);
+	}
+}
+
+.pc-head {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: center;
+	gap: 10px 16px;
+}
+
+.pc-seg {
+	display: inline-flex;
+	padding: 3px;
+	border-radius: var(--r-pill);
+	border: 1px solid var(--line);
+	background: var(--sunk);
+	button {
+		font: 400 12.5px / 1 var(--mono);
+		color: var(--ink-3);
+		padding: 7px 12px;
+		border-radius: var(--r-pill);
+		cursor: pointer;
+		transition:
+			color var(--t-micro),
+			background var(--t-ui) var(--ease-out);
+		&:hover {
+			color: var(--ink-2);
+		}
+		&[aria-checked="true"] {
+			background: var(--raised);
+			color: var(--ink);
+			box-shadow: 0 0 0 1px var(--line);
+		}
+	}
+}
+
+.pc-size {
+	font: 400 12.5px / 1.2 var(--mono);
+	color: var(--ink-3);
+}
+
+.pc-gz {
+	color: var(--gold);
+	font-size: 16px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.pc-split {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	font-size: 12.5px;
+	color: var(--ink-3);
+}
+
+/* the validator's share of what ships, then the runtime's */
+.pc-bar {
+	display: grid;
+	gap: 2px;
+	height: 4px;
+	border-radius: 2px;
+	overflow: hidden;
+	transition: grid-template-columns var(--t-reveal) var(--ease-out);
+	i:first-child {
+		background: var(--gold);
+	}
+	i:last-child {
+		background: var(--bar);
+	}
+}
+
+.pc-refusal {
+	font-size: 13px;
+	color: var(--red-text);
+}
+
+.pc-foot,
+.pc-note {
+	font-size: 12.5px;
+	color: var(--ink-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.precompiled [data-stale],
+	.pc-seg button,
+	.pc-bar {
+		transition: none;
+	}
+}
+
 /* the play button on the blog's autoplay demo */
 @media (prefers-reduced-motion: no-preference) {
 	.wiggle-animation {

@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { writeLiveWorker } from "./lib/writeLiveWorker.ts"
 import { writeMarkdown } from "./lib/writeMarkdown.ts"
 import { writeOgImages } from "./lib/writeOgImages.ts"
+import { writePrecompileWorker } from "./lib/writePrecompileWorker.ts"
 import { updateSnippetsEntrypoint } from "./lib/writeSnippetsEntrypoint.ts"
 
 // workaround for a bug in Node 25 that creates localStorage as an empty proxy,
@@ -49,5 +50,6 @@ export default async (): Promise<NextConfig> => {
 	writeMarkdown()
 	writeLiveWorker()
 	await writeOgImages()
+	writePrecompileWorker()
 	return config
 }

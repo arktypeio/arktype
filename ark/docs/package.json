@@ -92,6 +92,7 @@
 		"mdast-util-mdx-jsx": "3.2.0",
 		"react-hook-form": "7.90.0",
 		"tailwindcss": "4.1.4",
+		"terser": "5.51.2",
 		"typescript": "catalog:ts6",
 		"valibot": "1.1.0",
 		"wawoff2": "2.0.1",

@@ -9,13 +9,12 @@ import {
 	type BaseRoot,
 	type CacheReach
 } from "@ark/schema"
-import { hashOf, hasDomain, isDotAccessible, ParseError } from "@ark/util"
+import { hasDomain, ParseError } from "@ark/util"
 import { configure } from "arktype"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
 import {
 	holeNamePattern,
-	holeNameMarker,
 	keyOf,
 	type DefaultCheck,
 	type FoldedMember,
@@ -47,6 +46,7 @@ import {
 	type PureBuiltin
 } from "./builtins.ts"
 import { DynamicValue, type DynamicCode } from "./dynamic.ts"
+import { declaredNameOf, holeNameOf } from "./holeNames.ts"
 import {
 	bindingOfFunction,
 	contains,
@@ -2132,15 +2132,10 @@ export class Interpreter {
 		return this.callNative(callee as Function, args, undefined, node, ctx, true)
 	}
 
-	// a placeholder led by the declared name, which arktype sorts by
 	private holeNameOf(node: Node, module: SourceModule, name?: string): string {
 		return this.opts.runtime === "arktype" ?
 				""
-			:	`${
-					name === undefined ? ""
-					: isDotAccessible(name) ? name
-					: "fn"
-				}${holeNameMarker}${hashOf(`${module.path}:${node.start}`)}`
+			:	holeNameOf(name, module.path, node.start)
 	}
 
 	private functionStandIn(closure: Closure, node: Node): object {
@@ -2736,34 +2731,6 @@ const parameterCount = (fn: FunctionNode): number => {
 }
 
 // the name JS infers for a function or class from its position, if any
-const declaredNameOf = (node: FunctionNode | Class): string | undefined => {
-	if (node.id) return node.id.name
-	const parent = node.parent
-	switch (parent?.type) {
-		case "VariableDeclarator":
-			return parent.init === node && parent.id.type === "Identifier" ?
-					parent.id.name
-				:	undefined
-		case "Property":
-			return (
-					parent.value === node &&
-						parent.kind === "init" &&
-						!parent.computed &&
-						parent.key.type === "Identifier"
-				) ?
-					parent.key.name
-				:	undefined
-		case "ArrayExpression":
-		case "ReturnStatement":
-			return ""
-		case "ArrowFunctionExpression":
-			return parent.body === node ? "" : undefined
-		case "CallExpression":
-		case "NewExpression":
-			return parent.callee === node ? undefined : ""
-	}
-}
-
 export const inferredNameOf = (fn: FunctionNode): string => {
 	const parent = fn.parent
 	return (

@@ -19,6 +19,7 @@ import { SourceModule } from "./module.ts"
 import { reasonsOf, type Site } from "./precompile.ts"
 import { minifiedSizeOf } from "./runtimeSize.ts"
 import { exportNameOf, type Binding } from "./scope.ts"
+import { combinesChecks, smallerOf } from "./smaller.ts"
 
 export const noValidators: StandaloneModules = {
 	code: "",
@@ -64,32 +65,8 @@ export const writeValidators = (
 		written = write(names)
 	}
 	return combinesChecks(opts) ?
-			smallerOf(written, () => write(names, false))
+			smallerOf(written, () => write(names, false), minifiedSizeOf)
 		:	written
-}
-
-// a size build with detailed errors writes checkers
-const combinesChecks = (opts: StandaloneOptions) =>
-	opts.optimize === "size" &&
-	opts.errors !== "none" &&
-	opts.errors !== "first" &&
-	opts.combines !== false
-
-// checkers, unless an artifact too small to amortize their runtime is
-// smaller compiled, counting that runtime as if no other artifact read it
-const smallerOf = (
-	checkers: StandaloneModules,
-	writeCompiled: () => StandaloneModules
-): StandaloneModules => {
-	let compiled: StandaloneModules
-	try {
-		compiled = writeCompiled()
-	} catch {
-		return checkers
-	}
-	return minifiedSizeOf(compiled) < minifiedSizeOf(checkers) ?
-			compiled
-		:	checkers
 }
 
 // fixes the configuration as a failed definition does
