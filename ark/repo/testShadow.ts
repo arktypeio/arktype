@@ -123,9 +123,11 @@ try {
 		})
 		const installDir = join(packedDir, "node_modules", name)
 		mkdirSync(installDir, { recursive: true })
-		// as npm installs it, beside each package it depends on
+		// as npm installs it, beside each package it depends on. The archive is
+		// named relative to its directory, since GNU tar reads `C:` as a host
 		execSync(
-			`tar -xzf "${join(packDir, readdirSync(packDir)[0])}" -C "${installDir}" --strip-components=1`
+			`tar -xzf "${readdirSync(packDir)[0]}" -C "${installDir}" --strip-components=1`,
+			{ cwd: packDir }
 		)
 	}
 	runIn(packedDir)

@@ -1829,6 +1829,8 @@ console.log(JSON.stringify(User.toJsonSchema()))
 		// in this repo the runtime it loads in place of @ark/schema's re-exports it
 		const { metafile } = await esbuild({
 			entryPoints: [join(undetailed, "main.ts")],
+			// which each input's path is relative to
+			absWorkingDir: fromHere("..", "..", ".."),
 			bundle: true,
 			write: false,
 			metafile: true,

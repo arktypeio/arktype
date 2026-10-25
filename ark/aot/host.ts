@@ -107,7 +107,7 @@ export const createDevelopmentHost = (opts?: NodeHostOptions): PrecompileHost =>
 		conditions: [...(opts?.conditions ?? nodeConditions), "development"]
 	})
 
-const readFile = (path: string) =>
+export const readFile = (path: string): string | undefined =>
 	existsSync(path) ? readFileSync(path, "utf8") : undefined
 
 // `"ark": { "aot": true }`
