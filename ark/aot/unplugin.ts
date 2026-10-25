@@ -1099,7 +1099,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 								:	untransformedProblemOf(
 										args.path,
 										args.importer,
-										args.namespace
+										// as a plugin's build.resolve may name none for a file
+										args.namespace || "file"
 									),
 								{ errors, warnings }
 							)
@@ -1479,10 +1480,11 @@ const isStdinOf = (
 	{ stdin }: EsbuildBuild["initialOptions"],
 	args: { importer: string; namespace: string }
 ): boolean =>
-	args.namespace === "" ||
-	(stdin?.resolveDir !== undefined &&
-		stdin.sourcefile !== undefined &&
-		args.importer === resolve(stdin.resolveDir, stdin.sourcefile))
+	stdin !== undefined &&
+	(args.namespace === "" ||
+		(stdin.resolveDir !== undefined &&
+			stdin.sourcefile !== undefined &&
+			args.importer === resolve(stdin.resolveDir, stdin.sourcefile)))
 
 // what a production bundle's validators are read for, if the scan changes
 // what the plugin writes

@@ -1270,15 +1270,11 @@ console.log(
 							path: join(shared, `${args.path.slice("#shared/".length)}.ts`)
 						})
 					)
+					// naming no namespace, as many plugins resolve
 					build.onResolve(
-						{ filter: /^#validation$/, namespace: "file" },
+						{ filter: /^#validation$/ },
 						({ kind, importer, resolveDir }) =>
-							build.resolve("arktype", {
-								kind,
-								importer,
-								namespace: "file",
-								resolveDir
-							})
+							build.resolve("arktype", { kind, importer, resolveDir })
 					)
 				}
 			}
