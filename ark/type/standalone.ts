@@ -45,6 +45,7 @@ import {
 	isDate,
 	isDateObject,
 	isRegExpObject,
+	isStandardSchema,
 	isThunk,
 	nameOf,
 	ParseError,
@@ -1193,6 +1194,12 @@ class StandaloneArtifact {
 				`runtime.checkInput(${expression}, ${this.emit(value)}, ${JSON.stringify(label)})`
 			)
 			return
+		}
+		// arktype validates one with a morph of its own, calling its validate
+		if (isStandardSchema(value)) {
+			throwParseError(
+				writeUnprecompilableMessage(`the Standard Schema ${label}`)
+			)
 		}
 		if (
 			arkKindOf(value) !== undefined ||
