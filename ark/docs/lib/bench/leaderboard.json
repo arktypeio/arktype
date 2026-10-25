@@ -651,7 +651,7 @@
 				{
 					"id": "login form",
 					"results": {
-						"ArkType": 1116,
+						"ArkType": 1107,
 						"Valibot": 1564,
 						"Zod": 25076,
 						"Zod Mini": 5124,
@@ -1478,7 +1478,7 @@
 						"Superstruct": 1935,
 						"@remix-run/data-schema": 1923,
 						"Typia": 1846,
-						"ArkType": 1977,
+						"ArkType": 1934,
 						"Valibot": 2058,
 						"decoders": 3506,
 						"io-ts": 3617,

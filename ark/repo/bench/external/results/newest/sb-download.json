@@ -25,8 +25,8 @@
 			"fileName": "arktype/precompiled/download/index.ts",
 			"libraryName": "arktype/precompiled",
 			"version": "2.2.9",
-			"bytes": 6806,
-			"gzipBytes": 1977
+			"bytes": 6654,
+			"gzipBytes": 1934
 		},
 		{
 			"fileName": "typia/download/index.ts",
@@ -270,8 +270,8 @@
 			"fileName": "arktype/download/index.ts",
 			"libraryName": "arktype",
 			"version": "2.2.9",
-			"bytes": 262106,
-			"gzipBytes": 81599
+			"bytes": 262086,
+			"gzipBytes": 81589
 		},
 		{
 			"fileName": "ata-validator/download/index.ts",
@@ -304,18 +304,18 @@
 			"gzipBytes": 3589
 		},
 		{
+			"fileName": "arktype/precompiled/download/index.ts",
+			"libraryName": "arktype/precompiled",
+			"version": "2.2.9",
+			"bytes": 15356,
+			"gzipBytes": 2970
+		},
+		{
 			"fileName": "valibot/download/index.ts",
 			"libraryName": "valibot",
 			"version": "1.5.0",
 			"bytes": 15372,
 			"gzipBytes": 3227
-		},
-		{
-			"fileName": "arktype/precompiled/download/index.ts",
-			"libraryName": "arktype/precompiled",
-			"version": "2.2.9",
-			"bytes": 15583,
-			"gzipBytes": 3037
 		},
 		{
 			"fileName": "typia/download/index.ts",
@@ -552,8 +552,8 @@
 			"fileName": "arktype/download/index.ts",
 			"libraryName": "arktype",
 			"version": "2.2.9",
-			"bytes": 461711,
-			"gzipBytes": 114272
+			"bytes": 461659,
+			"gzipBytes": 114257
 		},
 		{
 			"fileName": "ata-validator/download/index.ts",

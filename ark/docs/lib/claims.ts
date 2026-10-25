@@ -399,8 +399,8 @@ const independentResults = `${listOf(
 export const claims = {
 	// each superlative names a category ArkType must claim
 	// (lib/bench/leaderboard.ts), as the check of the copy below holds. Size
-	// is the close one: ArkType 1.252 to Typia's 1.256 since the size rows of
-	// results/newest/, and tieBand keeps the claim within 5% of the best
+	// is the close one: ArkType 1.240 to Typia's 1.256 on results/newest/'s
+	// size rows (624a5d716), and tieBand keeps the claim within 5% of the best
 	headline:
 		leads("size") ?
 			"TypeScript's smallest, fastest validator."
@@ -486,7 +486,7 @@ export const claims = {
 	// default build skips; the full board adds our cold starts of whole apps
 	startupBasis: `${startupIsCreation ? `Each of the ${leaderboards.startup.rows} independent startup results times creating a schema, which a precompiled build does when it builds. ` : ""}Our own startup benchmarks time importing an app through its first validation (${fullLeaderboards.startup.rows - leaderboards.startup.rows} results), and with them ArkType is ${ordinal(placeOf("startup", fullLeaderboards).place)} for startup.`,
 	sizeAverage: averagesOf("size"),
-	// ArkType 1.252 to Typia's 1.256, Typia on 2 of the 3 suites; at
+	// ArkType 1.240 to Typia's 1.256, Typia on 2 of the 3 suites; at
 	// 808927feb's rows Typia had it, 1.256 to 1.297
 	sizeClose:
 		leads("size") && !ties("size") ?

@@ -1,6 +1,6 @@
 {
 	"form": {
-		"commit": "2cc2aa949",
+		"commit": "624a5d716",
 		"date": "2026-10-25",
 		"installed": {
 			"@sinclair/typebox": "0.34.52",
@@ -19,7 +19,7 @@
 		}
 	},
 	"sb": {
-		"commit": "2cc2aa949",
+		"commit": "624a5d716",
 		"date": "2026-10-25",
 		"installed": {
 			"ata-validator": "1.60.0",
@@ -27,7 +27,7 @@
 		}
 	},
 	"sury": {
-		"commit": "2cc2aa949",
+		"commit": "624a5d716",
 		"date": "2026-10-25",
 		"installed": {
 			"zod": "4.6.7",

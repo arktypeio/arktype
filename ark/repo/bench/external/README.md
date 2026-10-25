@@ -329,11 +329,12 @@ counts as first. Both startup rows time creating a schema, which ArkType's
 default build does when it builds, so they show little. Speed and startup hold with any one suite left out.
 
 The size rows have since been rerun (`results/newest/`, "Weekly" under
-"Reproduce"): ArkType at 2cc2aa949, its form 1116 B, schemabenchmarks.dev's
-download 1977 B and Sury's check 278 B, every rival at its newest release of
-2026-10-25. The headline's size standings are then ArkType 1.252, Typia
-1.256\*, ajv 1.317\*, and the full board's ajv 1.326\*, ArkType 1.424,
-Superstruct 1.464\*. `leaderboard.json` holds those; the tables here stay
+"Reproduce"): ArkType at 624a5d716, its form 1107 B, schemabenchmarks.dev's
+download 1934 B and Sury's check 278 B, every rival at its newest release of
+2026-10-25. The headline's size standings are then ArkType 1.240, Typia
+1.256\*, ajv 1.317\*, and the full board's ajv 1.326\*, ArkType 1.414,
+Superstruct 1.464\*. The run before it, at 2cc2aa949 (form 1116 B, download
+1977 B, the same rivals), had ArkType 1.252. `leaderboard.json` holds those; the tables here stay
 the record at 808927feb.
 
 The full board, every suite:
@@ -633,11 +634,11 @@ closest is without schemabenchmarks.dev: ArkType 1.110, ata 1.151, a 3.7%
 lead.
 
 **"Size isn't close."** Over the independent suites, with the size rows
-rerun at 2cc2aa949, ArkType leads it by 0.3%, 1.252 to Typia's 1.256 on the
+rerun at 624a5d716, ArkType leads it by 1.3%, 1.240 to Typia's 1.256 on the
 two of three Typia is in. Both count as first, within 5% of the best, and the
 lead doesn't survive leaving out any one suite. At 808927feb's rows Typia led by
 3.3%, 1.256 to 1.297. On the full board ajv leads it, 1.326 against
-ArkType's 1.424 (7.4%). At 808927feb's rows, ajv led by 10.3%, 1.326 against
+ArkType's 1.414 (6.6%). At 808927feb's rows, ajv led by 10.3%, 1.326 against
 ArkType's 1.462, and the lead survived leaving out schemabenchmarks.dev (ajv 1.160, in
 two of three suites), Sury's (ajv 1.326, with ArkType fourth at 1.499) or the
 form (ajv 1.527 to ArkType's 1.546), not the homepage's apps (Typia 1.256 in
