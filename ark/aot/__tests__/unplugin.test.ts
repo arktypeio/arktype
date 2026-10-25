@@ -1374,7 +1374,10 @@ console.log(
 						e.errors?.map(e => e.message) ?? [e.message]
 				)
 			attest(await build("main.ts")).equals([])
-			attest(await build("form.js")).equals([untransformed])
+			// the plugin reading what others write refuses the call first
+			attest(await build("form.js")).equals([
+				"Form.svelte:3:21  text(50) can't be precompiled in a module another plugin writes\n  the build reads Form.svelte only once another plugin has written it, so it can't write a validator there\n  Move it into a .ts or .js module of its own that this one imports, which the build precompiles, or build with runtime: \"arktype\"."
+			])
 		})
 
 		const compilers = {
