@@ -264,12 +264,12 @@ export default function HomePage() {
 							</a>
 						</h1>
 						<p className="lede rise" style={rise(1)}>
-							<ClaimText claim={claims.pickThree} /> Your{" "}
-							<span className="decl c-teal">agent</span> sets up the build, and
-							every error it reports says what to change.
+							<ClaimText claim={claims.pickThree} />
 							<a className="how" href="#board-note">
 								how we measured ↓
-							</a>
+							</a>{" "}
+							Your <span className="decl c-teal">agent</span> sets up the build,
+							and every error it reports says what to change.
 						</p>
 						<div className="ctas rise" style={rise(2)}>
 							<Link className="btn btn-gold" href="/docs/intro/setup">
@@ -307,8 +307,8 @@ export default function HomePage() {
 					<p className="deck">
 						An agent works in a loop: write, build, read the error, fix. ArkType
 						keeps each turn of it short, from your editor to the build to a tool
-						call. Every message in this section is real ArkType and TypeScript
-						output.
+						call. Every message in this section is real output from ArkType, tsc
+						or the MCP SDK, and the agent session below is scripted around it.
 					</p>
 					<ol className="proofs" data-reveal>
 						<li>
@@ -417,15 +417,22 @@ export default function HomePage() {
 										</span>
 										<b>isError</b>
 									</div>
-									<div className="m">times must be at most 5 (was 99)</div>
+									<div className="m">
+										Input validation error: Invalid arguments for tool greet:
+										times: must be at most 5 (was 99)
+									</div>
 								</div>
 							</figure>
 							<h3>Tool inputs, without a wrapper</h3>
 							<p>
 								A <code>Type</code> is a Standard Schema that can describe
-								itself as JSON Schema, so the MCP TypeScript SDK takes it as a
-								tool's <code>inputSchema</code>. A bad call comes back as a
-								message the model can act on.
+								itself as JSON Schema, so v2 of the MCP TypeScript SDK takes it
+								as a tool's <code>inputSchema</code>. A bad call comes back as a
+								message the model can act on. Precompiled, set{" "}
+								<a href="/docs/integrations#precompiled-validators">
+									one option
+								</a>{" "}
+								so the build keeps its JSON Schema.
 							</p>
 						</div>
 					</div>

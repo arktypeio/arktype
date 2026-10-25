@@ -575,6 +575,67 @@ const bindings: fc.Arbitrary<FragmentOf> = fc
 			}
 	)
 
+// helpers whose definitions read their parameters, called with literals
+const helpers: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		limit: fc.integer({ min: 1, max: 4 }),
+		element: fc.constantFrom("string", "number"),
+		isImported: fc.boolean(),
+		inputs: inputsOf(
+			fc.oneof(
+				fc.integer({ min: -1, max: 6 }),
+				fc.string({ maxLength: 6 }),
+				fc.constant(null),
+				fc.record({ value: noise }, { requiredKeys: [] })
+			)
+		)
+	})
+	.map(
+		({ limit, element, isImported, inputs }): FragmentOf =>
+			id => {
+				const declarations = [
+					`const bounded${id} = max => type(\`${element} <= \${max}\`)`,
+					`function boxed${id}(max) { return type({ value: \`${element} >= \${max}\` }) }`,
+					`const below${id} = max => bounded${id}(max - 1)`,
+					`const described${id} = max => {\n\tconst T = bounded${id}(max)\n\treturn T.describe(\`at most \${max}\`)\n}`
+				]
+				return {
+					containers:
+						isImported ?
+							declarations.map(declaration => `export ${declaration}`)
+						:	[],
+					exports:
+						isImported ?
+							[`bounded${id}`, `boxed${id}`, `below${id}`, `described${id}`]
+						:	[],
+					main: [
+						...(isImported ? [] : declarations),
+						// local, as the build trusts an arktype package's exports, which
+						// these are, to read members off their parameters
+						`const nullable${id} = T => T.or("null")`,
+						observed(`${id}.0`, `bounded${id}(${limit})`, inputs),
+						observed(`${id}.1`, `boxed${id}(${limit})`, inputs),
+						observed(
+							`${id}.2`,
+							`type({ value: below${id}(${limit}) }).or(boxed${id}(${limit}))`,
+							inputs
+						),
+						observed(
+							`${id}.3`,
+							`nullable${id}(bounded${id}(${limit}))`,
+							inputs
+						),
+						observed(`${id}.4`, `described${id}(${limit})`, inputs),
+						observed(
+							`${id}.5`,
+							`type({ value: described${id}(${limit}) })`,
+							inputs
+						)
+					]
+				}
+			}
+	)
+
 const keywordCases = ["string", "number", "boolean", "bigint", "object"]
 
 // matchers and TypedFns, each calling holes the program holds
@@ -729,6 +790,7 @@ const programs = fc
 			generics,
 			derived,
 			bindings,
+			helpers,
 			matchers,
 			throughCalls,
 			throughCycle,

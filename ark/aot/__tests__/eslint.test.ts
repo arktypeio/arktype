@@ -36,19 +36,19 @@ contextualize(() => {
 		attest(
 			new Linter({ configType: "flat", cwd: fromHere("checked") })
 				.verify(
-					'import { type } from "arktype"\nexport const makeField = limit => type(`string <= ${limit}`)\n',
+					'import { type } from "arktype"\nexport const fields = [1, 2].map(limit => type(`string <= ${limit}`))\n',
 					[configs.recommended],
 					{ filename: fromHere("checked", "linted.ts") }
 				)
 				.map(message => `${message.line}:${message.column} ${message.ruleId}`)
-		).equals(["2:35 @ark/aot/precompilable"])
+		).equals(["2:43 @ark/aot/precompilable"])
 	})
 
 	it("reports what fails the build as an error, and its warnings as warnings", () => {
 		const severities = (...overrides: Linter.Config[]) =>
 			new Linter({ configType: "flat", cwd: fromHere("checked") })
 				.verify(
-					'import { type } from "arktype"\nexport const A = type("string & number")\nexport const makeField = limit => type(`string <= ${limit}`)\n',
+					'import { type } from "arktype"\nexport const A = type("string & number")\nexport const fields = [1, 2].map(limit => type(`string <= ${limit}`))\n',
 					[configs.recommended, ...overrides],
 					{ filename: fromHere("checked", "linted.ts") }
 				)
@@ -58,7 +58,7 @@ contextualize(() => {
 				)
 		attest(severities()).equals([
 			"2:18 @ark/aot/precompilable error",
-			"3:35 @ark/aot/precompilable error"
+			"3:43 @ark/aot/precompilable error"
 		])
 		const unsafe = { allowUnsafe: true }
 		attest(
@@ -70,7 +70,7 @@ contextualize(() => {
 			})
 		).equals([
 			"2:18 @ark/aot/warnings warning",
-			"3:35 @ark/aot/precompilable error"
+			"3:43 @ark/aot/precompilable error"
 		])
 	})
 
@@ -79,11 +79,11 @@ contextualize(() => {
 			lint(`import { type } from "arktype"
 export const User = type({ name: "string" })
 export const makeField = limit => {
-	const Field = type(\`string <= \${limit}\`)
+	let Field = type(\`string <= \${limit}\`)
 	return Field
 }`)
 		).snap([
-			"4:16-4:42 type(`string <= ${limit}`) cannot be precompiled\n`limit` is a parameter of makeField (linted.js:3:26); its value is known only at runtime\nWrite the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call."
+			"4:14-4:40 type(`string <= ${limit}`) cannot be precompiled\n`limit` is a parameter of makeField (linted.js:3:26); its value is known only at runtime\nWrite the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call."
 		])
 	})
 
@@ -154,7 +154,7 @@ export const Field = type(\`string <= \${max}\`)`
 		writeFileSync(limits, "export const max = Number(process.env.MAX)\n")
 		utimesSync(limits, new Date(Date.now() + 1000), new Date(Date.now() + 1000))
 		attest(lint(code, {}, filename, dir)).snap([
-			"3:22-3:46 type(`string <= ${max}`) cannot be precompiled\n`max` is imported from limits.ts\n`process` is a global the build does not read\nStandalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime."
+			"3:22-3:46 type(`string <= ${max}`) cannot be precompiled\n`max` is imported from limits.ts\n`process` is a global the build does not read\nReplace `process.env.MAX` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime."
 		])
 	})
 

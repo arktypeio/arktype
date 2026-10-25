@@ -25,6 +25,7 @@ import type {
 	CallExpression,
 	ClassElement,
 	Function,
+	FunctionBody,
 	ImportSpecifier,
 	MemberExpression,
 	NewExpression,
@@ -36,7 +37,8 @@ import type {
 	TSTypeAnnotation,
 	TSTypeParameter,
 	TSTypeAliasDeclaration,
-	Span
+	Span,
+	VariableDeclarator
 } from "oxc-parser"
 import { dirname, join } from "node:path"
 import { isArkValue } from "./builtins.ts"
@@ -94,6 +96,18 @@ export const runtimeExports: Record<string, 1> = Object.setPrototypeOf(
 		ParseError: 1,
 		Traversal: 1,
 		TraversalError: 1
+	} satisfies { [name in ArkExportName]?: 1 },
+	null
+)
+
+// functions reading errors that arktype/runtime doesn't export
+export const errorReaders: Record<string, 1> = Object.setPrototypeOf(
+	{
+		byAncestorPath: 1,
+		byPath: 1,
+		flatByPath: 1,
+		flatProblemsByPath: 1,
+		messageIn: 1
 	} satisfies { [name in ArkExportName]?: 1 },
 	null
 )
@@ -489,7 +503,7 @@ const typeMemberKinds: Record<string, KindBits> = Object.setPrototypeOf(
 )
 
 const exportKindOf = (name: ArkExportName): KindBits =>
-	isRuntimeExport(name) ? kinds.data
+	isRuntimeExport(name) || name in errorReaders ? kinds.data
 	: name === "type" ? kinds.otherArk | kinds.returnsType | kinds.returnsArk
 	: name === "codec" ? typeMethod
 	: kinds.otherArk | kinds.returnsArk
@@ -543,6 +557,10 @@ export const isOnlyType = (kind: KindBits): boolean =>
 
 const isFactory = (kind: KindBits): boolean =>
 	(kind & (kinds.returnsType | kinds.returnsArk)) !== 0
+
+// e.g. `T => T.or("null")`, whose call returns a Type when passed one
+export const mayReturnArk = (kind: KindBits): boolean =>
+	isFactory(kind) || (kind & kinds.returnsUnsure) !== 0
 
 interface Application {
 	fn: FunctionNode
@@ -1999,7 +2017,22 @@ export class ModuleGraph {
 		kindOfKey: KindOfKey
 	): KindOfKey {
 		const params = runtimeParamsOf(fn)
+		const consts = staticConstsOf(fn)
+		const declaring = new Set<Key>()
 		const result: KindOfKey = (key, keyModule) => {
+			// e.g. `N` in `{ const N = T.or("null"); return N }`, for the `T` passed
+			if (
+				"kind" in key &&
+				consts.includes(key.declaration as VariableDeclarator) &&
+				!declaring.has(key)
+			) {
+				declaring.add(key)
+				try {
+					return this.keyKindOf(key, keyModule, result)
+				} finally {
+					declaring.delete(key)
+				}
+			}
 			if (!("kind" in key) || key.kind !== "param" || key.declaration !== fn)
 				return kindOfKey(key, keyModule)
 			const index = params.findIndex(param => contains(param, key.id))
@@ -2942,7 +2975,8 @@ export class ModuleGraph {
 		}
 	}
 
-	private functionOf(
+	// e.g. `text` for `text(50)`, imported or read off a namespace
+	functionOf(
 		callee: Node,
 		module: SourceModule
 	): [FunctionNode, SourceModule] | undefined {
@@ -3314,16 +3348,46 @@ export const isFunctionNode = (node: Node): node is FunctionNode =>
 	node.type === "FunctionExpression" ||
 	node.type === "FunctionDeclaration"
 
+// e.g. `t.describe("short")` in `{ const t = type("string"); return t.describe("short") }`
 export const staticBodyOf = (fn: FunctionNode): Node | undefined => {
 	if (fn.async || fn.generator || !fn.body) return
 	if (fn.body.type !== "BlockStatement") return fn.body
-	const statements = fn.body.body.filter(
-		statement => !("directive" in statement && statement.directive)
-	)
-	return statements.length === 1 && statements[0].type === "ReturnStatement" ?
-			(statements[0].argument ?? undefined)
+	const statements = statementsOf(fn.body)
+	const last = statements[statements.length - 1]
+	return last?.type === "ReturnStatement" && !unstaticStatementOf(fn) ?
+			(last.argument ?? undefined)
 		:	undefined
 }
+
+// e.g. `if (max > 10)`, where a static helper declares only consts before it returns
+export const unstaticStatementOf = (fn: FunctionNode): Node | undefined => {
+	if (fn.body?.type !== "BlockStatement") return
+	const statements = statementsOf(fn.body)
+	return statements.find((statement, i) =>
+		i === statements.length - 1 ?
+			statement.type !== "ReturnStatement"
+		:	!isDeclaredBeforeReturn(statement)
+	)
+}
+
+// what a call to a static helper evaluates before its `return`
+export const staticConstsOf = (fn: FunctionNode): VariableDeclarator[] =>
+	fn.body?.type === "BlockStatement" ?
+		fn.body.body.flatMap(statement =>
+			statement.type === "VariableDeclaration" ? statement.declarations : []
+		)
+	:	[]
+
+const statementsOf = (body: FunctionBody) =>
+	body.body.filter(
+		statement => !("directive" in statement && statement.directive)
+	)
+
+const isDeclaredBeforeReturn = (statement: Node): boolean =>
+	statement.type === "VariableDeclaration" ?
+		statement.kind === "const"
+	:	statement.type === "TSTypeAliasDeclaration" ||
+		statement.type === "TSInterfaceDeclaration"
 
 // e.g. `{ User }` for `() => ({ User })`
 const returnedOf = (fn: FunctionNode): Node | undefined =>
@@ -3373,7 +3437,7 @@ const onlyReturnOf = (fn: FunctionNode): Node | undefined => {
 const isStatic = (fn: FunctionNode): boolean =>
 	!!staticBodyOf(fn) && !readsArguments(fn)
 
-const functionOfBinding = (
+export const functionOfBinding = (
 	binding: Binding,
 	module: SourceModule
 ): FunctionNode | undefined => {

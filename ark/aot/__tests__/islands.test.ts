@@ -106,8 +106,8 @@ export const Imported = type("string")`
 				}
 			).diagnostics.map(renderDiagnostic)
 		).snap([
-			"/main.ts:8:18  type({ a: Trimmed }) can't be precompiled yet\n  `Trimmed` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.",
-			"/main.ts:9:18  type({ b: Alias, c: Static }) can't be precompiled yet\n  `Imported` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
+			"/main.ts:8:18  type({ a: Trimmed }) can't be precompiled yet\n  `Trimmed` is a runtime island's Type, which a precompiled site can't receive\n  Precompile `Trimmed` too, by removing its // @ark-runtime where the build can, or mark this definition // @ark-runtime as well.",
+			"/main.ts:9:18  type({ b: Alias, c: Static }) can't be precompiled yet\n  `Imported` is a runtime island's Type, which a precompiled site can't receive\n  Precompile `Imported` too, by removing its // @ark-runtime where the build can, or mark this definition // @ark-runtime as well."
 		])
 	})
 
@@ -119,7 +119,7 @@ ${mark}export const types = $.export()`
 		const diagnosticsOfMarked = (mark: string) =>
 			precompile(writeSource(mark)).diagnostics.map(renderDiagnostic)
 		attest(diagnosticsOfMarked("")).snap([
-			"/main.ts:4:22  $.export() can't be precompiled yet\n  arktype holds `(n: number) => n === 0` (/main.ts:2:16), which the site reads outside its own source\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
+			"/main.ts:4:22  $.export() can't be precompiled yet\n  the site's value holds `(n: number) => n === 0` (/main.ts:2:16), which it reads outside its own source\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
 		])
 		attest(diagnosticsOfMarked("// @ark-runtime\n")).equals([])
 	})

@@ -1,5 +1,5 @@
-import { globSync, readFileSync } from "node:fs"
-import { resolve } from "node:path"
+import { globSync, readFileSync, statSync } from "node:fs"
+import { resolve, sep } from "node:path"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
 import { printablePathOf } from "./host.ts"
 import {
@@ -31,17 +31,41 @@ const defaultSources = ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"]
 // globSync tests a directory by its name and its path, and a file by its name
 const ignoredDirs = /(^|[/\\])(node_modules|out|dist|build)([/\\]|$)/
 
+const isExcluded = (path: string) =>
+	ignoredDirs.test(path) || path.endsWith(".d.ts")
+
+const scriptFile = /\.(?:[cm]?[jt]s|[jt]sx)$/
+
+// what each pattern matches, with a directory, as `src` or each of `src/**`,
+// standing for the scripts it holds
+const sourcesOf = (patterns: string[], cwd: string): string[] => {
+	const files = new Set<string>()
+	const dirs: string[] = []
+	// a directory sorts before what it holds
+	const matches = globSync(patterns, { cwd, exclude: isExcluded })
+		.map(match => resolve(cwd, match))
+		.sort()
+	for (const path of matches) {
+		if (!statSync(path).isDirectory()) {
+			if (scriptFile.test(path)) files.add(path)
+		} else if (!dirs.some(dir => path.startsWith(dir + sep))) dirs.push(path)
+	}
+	for (const dir of dirs) {
+		for (const file of globSync(defaultSources, {
+			cwd: dir,
+			exclude: isExcluded
+		}))
+			files.add(resolve(dir, file))
+	}
+	return [...files].sort()
+}
+
 export const check = (
 	patterns: string[],
 	opts?: PrecompilePluginOptions
 ): CheckReport => {
 	const cwd = opts?.cwd ?? process.cwd()
-	const files = globSync(patterns.length ? patterns : defaultSources, {
-		cwd,
-		exclude: path => ignoredDirs.test(path) || path.endsWith(".d.ts")
-	})
-		.map(file => resolve(cwd, file))
-		.sort()
+	const files = sourcesOf(patterns.length ? patterns : defaultSources, cwd)
 	// what the build's own plugin call passes, as in vite.config.ts
 	const calls = pluginCallsIn(cwd)
 	const given = opts ?? {}

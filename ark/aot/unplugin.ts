@@ -16,7 +16,6 @@ import type {
 	TransformedModule
 } from "./driver.ts"
 import {
-	allowUnsafeHint,
 	appendSourceMap,
 	createDevelopmentHost,
 	createNodeHost,
@@ -49,13 +48,16 @@ import {
 	writeUnwrittenModuleMessage,
 	writeVariantImportMessage,
 	writeUntransformedImportMessage,
-	type PrecompileHost
+	type PrecompileHost,
+	withAllowUnsafe
 } from "./host.ts"
+import { conflictingPluginPhrase, writeConflictingPlugins } from "./messages.ts"
 import type { ScannedProgram, ScannedUsage } from "./precompile.ts"
 import { withEnvironment, type Environment } from "./presets.ts"
 import {
 	addLoaded,
 	scanProgram,
+	unfoldedCallProblemOf,
 	unseenProblemOf,
 	writeUnscannedFlatMessage,
 	type ImportKind,
@@ -213,7 +215,7 @@ export const precompile: UnpluginInstance<
 		if (!specifier) return
 		const problem = writeExternalizedMessage(specifier, option)
 		if (opts?.allowUnsafe) warn(problem)
-		else throwBuildError(`${problem} ${allowUnsafeHint}`)
+		else throwBuildError(withAllowUnsafe(problem))
 	}
 	const checkInputExternal = function (
 		this: { warn: (message: string) => void },
@@ -238,6 +240,16 @@ export const precompile: UnpluginInstance<
 		// webpack and Rspack decide externals, e.g. Next's, before resolving
 		bundler.hooks.compilation.tap("arktype", compilation =>
 			compilation.hooks.finishModules.tap("arktype", modules => {
+				const problem =
+					foldedHelpersById.size &&
+					unfoldedCallProblemOf(
+						foldedHelpersById,
+						bundlerImportsOf(modules, compilation.moduleGraph),
+						isTransformedId,
+						realPathOf(opts?.cwd ?? process.cwd())
+					)
+				if (problem)
+					compilation.errors.push(new bundler.webpack.WebpackError(problem))
 				const requests = new Set<string>()
 				for (const module of modules) {
 					if (module instanceof bundler.webpack.ExternalModule)
@@ -273,6 +285,22 @@ export const precompile: UnpluginInstance<
 		importersById[id] = stored[0]
 		return (modules[id] = stored[1])
 	}
+	// Vite's plugins ahead of this one that transform, which a config
+	// module given anew names
+	let transformersAhead: string[] = []
+	const namingTransformers = (
+		diagnostics: RenderedDiagnostics
+	): RenderedDiagnostics =>
+		transformersAhead.length ?
+			{
+				warnings: diagnostics.warnings,
+				errors: diagnostics.errors.map(error =>
+					error
+						.split(conflictingPluginPhrase)
+						.join(writeConflictingPlugins(transformersAhead))
+				)
+			}
+		:	diagnostics
 	// what may throw at runtime fails unless allowUnsafe is set
 	const reportUnsafe = (
 		problem: string | undefined,
@@ -280,7 +308,7 @@ export const precompile: UnpluginInstance<
 	) => {
 		if (!problem) return
 		if (opts?.allowUnsafe) diagnostics.warnings.push(problem)
-		else diagnostics.errors.push(`${problem} ${allowUnsafeHint}`)
+		else diagnostics.errors.push(withAllowUnsafe(problem))
 	}
 	const reportedPrecompiled = new Set<string>()
 	const precompiledProblemOf = (id: string, importer: string) => {
@@ -317,6 +345,10 @@ export const precompile: UnpluginInstance<
 		if (problem) reportedUntransformed.add(file)
 		return problem
 	}
+	// the helpers each module exports whose calls the build folds, by file
+	const foldedHelpersById = new Map<string, string[]>()
+	const isTransformedId = (id: string) =>
+		transformedFilter.include.test(id) && !transformedFilter.exclude.test(id)
 	// keeps the modules a transformed one writes, for its importers to load
 	const transform = async (
 		code: string,
@@ -332,6 +364,9 @@ export const precompile: UnpluginInstance<
 			program
 		)) as TransformedModule | undefined
 		if (!transformed) return
+		if (transformed.foldedHelpers.length)
+			foldedHelpersById.set(fileOf(id), transformed.foldedHelpers)
+		else foldedHelpersById.delete(fileOf(id))
 		for (const specifier in transformed.modules) {
 			const virtualId = virtual + specifier
 			if (virtualId in modules) continue
@@ -509,7 +544,7 @@ export const precompile: UnpluginInstance<
 							;(dependentsByFile[dependency] ??= new Set()).add(id)
 						}
 						reportDiagnostics(
-							transformed,
+							namingTransformers(transformed),
 							warning => this.warn(warning),
 							throwBuildError
 						)
@@ -573,6 +608,16 @@ export const precompile: UnpluginInstance<
 			// a factory checks its helpers against what Vitest's mocks replace
 			configResolved: config => {
 				isServing = config.command === "serve"
+				transformersAhead = config.plugins
+					.slice(
+						0,
+						config.plugins.findIndex(plugin => plugin.name === "arktype")
+					)
+					.filter(
+						plugin =>
+							plugin.transform && !/^(?:vite|builtin|native):/.test(plugin.name)
+					)
+					.map(plugin => plugin.name)
 				resolveIn(!config.isProduction)
 				for (const [name, environment] of Object.entries(
 					config.environments ?? { ssr: { resolve: config.ssr } }
@@ -599,6 +644,20 @@ export const precompile: UnpluginInstance<
 		buildStart: reset,
 		// a build that won't rerun releases its worker
 		buildEnd(error?: Error) {
+			if (
+				!error &&
+				!isServing &&
+				foldedHelpersById.size &&
+				"getModuleIds" in this
+			) {
+				const problem = unfoldedCallProblemOf(
+					foldedHelpersById,
+					rollupImportsOf(this as never, id => id),
+					isTransformedId,
+					realPathOf(opts?.cwd ?? process.cwd())
+				)
+				if (problem) throwBuildError(problem)
+			}
 			const scan = scansByBuild.get(buildOf(this))
 			if (scan?.verifies && !error) {
 				const problem = unseenProblemOf(
@@ -673,6 +732,28 @@ export const precompile: UnpluginInstance<
 					throwBuildError(pruneBeforePluginMessage)
 				const program =
 					prunesIn(production) && isLast ? `${++scans}` : undefined
+				if (isStandalone) {
+					const cwd = build.initialOptions.absWorkingDir ?? process.cwd()
+					build.initialOptions.metafile = true
+					build.onEnd(result => {
+						if (!result.metafile || result.errors.length) return
+						const problem =
+							foldedHelpersById.size &&
+							unfoldedCallProblemOf(
+								foldedHelpersById,
+								esbuildImportsOf(result.metafile, cwd),
+								isTransformedId,
+								realPathOf(opts?.cwd ?? process.cwd())
+							)
+						if (!problem) return
+						// it wrote calls that throw at runtime
+						if (build.initialOptions.write !== false) {
+							for (const path in result.metafile.outputs)
+								rmSync(resolve(cwd, path), { force: true })
+						}
+						return { errors: [{ text: problem }] }
+					})
+				}
 				// the scan's facts hold only while the bundle is what it read
 				let scanned: ScannedProgram | undefined
 				let verifies = false
@@ -960,9 +1041,11 @@ const scriptsOf = (html: string): string | undefined => {
 }
 
 // the importers a Rollup, Rolldown or Vite build bundled, by module
-const rollupImportsOf = (context: RollupContext): Imports => {
+const rollupImportsOf = (
+	context: RollupContext,
+	idOf = cachedFileOf()
+): Imports => {
 	const imports: Imports = { entries: [], modules: [], edges: [] }
-	const idOf = cachedFileOf()
 	for (const id of context.getModuleIds()) {
 		const info = context.getModuleInfo(id)
 		if (!info) continue
@@ -1112,9 +1195,9 @@ const esbuildScanOf = async (
 const esbuildImportsOf = (
 	metafile: Metafile,
 	cwd: string,
-	scanned: ScannedProgram
+	scanned?: ScannedProgram
 ): Imports => {
-	const stdin = scanned.entries.find(id => basename(id).startsWith("<stdin>."))
+	const stdin = scanned?.entries.find(id => basename(id).startsWith("<stdin>."))
 	const fileIdOf = cachedFileOf()
 	const idOf = (path: string) =>
 		path === "<stdin>" ? stdin
@@ -1181,8 +1264,33 @@ const environmentOf = (compiler: BundlerCompiler): Environment => ({
 
 interface BundlerCompilation {
 	hooks: { finishModules: Tap<Iterable<unknown>> }
+	moduleGraph: BundlerModuleGraph
 	errors: Error[]
 	warnings: Error[]
+}
+
+interface BundlerModuleGraph {
+	getIncomingConnections: (module: never) => Iterable<{ originModule: unknown }>
+}
+
+// the importers a webpack or Rspack build bundled, by module
+const bundlerImportsOf = (
+	modules: Iterable<unknown>,
+	graph: BundlerModuleGraph
+): Imports => {
+	const imports: Imports = { entries: [], modules: [], edges: [] }
+	for (const module of modules as { resource?: string }[]) {
+		const target = module.resource
+		if (target === undefined) continue
+		for (const { originModule } of graph.getIncomingConnections(
+			module as never
+		)) {
+			const importer = originModule as { resource?: string } | null
+			if (importer) imports.edges.push([importer.resource, target])
+			else imports.entries.push(target)
+		}
+	}
+	return imports
 }
 
 interface Tap<arg> {

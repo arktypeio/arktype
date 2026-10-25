@@ -8,7 +8,6 @@ import type {
 	TransformedModule
 } from "./driver.ts"
 import {
-	allowUnsafeHint,
 	appendSourceMap,
 	dependencyOf,
 	driverOptionsOf,
@@ -31,7 +30,8 @@ import {
 	writePrecompiledDependencyMessage,
 	writeTextlessMessage,
 	writeUntransformedImportMessage,
-	writeVariantImportMessage
+	writeVariantImportMessage,
+	withAllowUnsafe
 } from "./host.ts"
 import { refuseDeclare } from "./declare.ts"
 import { isProductionEnv } from "./presets.ts"
@@ -87,7 +87,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	// what may throw at runtime fails unless allowUnsafe is set
 	const reportUnsafe = (problem: string) => {
 		if (opts?.allowUnsafe) process.emitWarning(problem)
-		else throwError(`${problem} ${allowUnsafeHint}`)
+		else throwError(withAllowUnsafe(problem))
 	}
 	const reportedPrecompiled = new Set<string>()
 	const checkPrecompiled = (specifier: string, importer: string) => {

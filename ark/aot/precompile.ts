@@ -68,12 +68,16 @@ import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
 	arkPackageSpecifier,
+	bindingOfFunction,
 	contains,
 	declarationStartOf,
+	errorReaders,
 	importsValues,
 	isArk,
 	isArkObject,
 	isComposingMember,
+	functionOfBinding,
+	mayReturnArk,
 	isFunctionNode,
 	isObjectWrite,
 	writeOf,
@@ -95,7 +99,6 @@ import {
 	type StandInKind
 } from "./graph.ts"
 import {
-	allowUnsafeHint,
 	arkPackageName,
 	dependencyOf,
 	mapToSource,
@@ -106,7 +109,8 @@ import {
 	writeVariantOption,
 	type DependencyModes,
 	type PrecompileHost,
-	type RuntimeVariant
+	type RuntimeVariant,
+	withAllowUnsafe
 } from "./host.ts"
 import {
 	createSiteState,
@@ -156,13 +160,15 @@ import {
 	configurationConflictMessage,
 	configurationConflictReason,
 	configuredHintOf,
+	isUnstaticHelperReason,
 	configuredThreadMessage,
 	copiesHint,
 	derivedHint,
 	frozenHint,
 	hintsByRule,
-	opaqueSchemaHint,
 	writeGenericHint,
+	writeHelperCallHint,
+	writeOpaqueHelperHint,
 	writeOpaqueParameterHint,
 	islandHint,
 	islandValueMessage,
@@ -173,10 +179,19 @@ import {
 	dynamicImportHint,
 	unresolvedHint,
 	versionHint,
+	writeVersionHint,
+	writeConfiguredOptionHint,
+	writeConflictHint,
+	writeErrorReaderHint,
+	writeMessageInHint,
+	writeNoConfigHint,
+	writeStaticHint,
 	writeErrorsMismatchMessage,
+	writeKeyedHint,
 	writeMutatesInputMismatchMessage,
 	writeSchemaExportHint,
 	writeStandaloneDependencyMessage,
+	writeTurbopackDependencyMessage,
 	writeUnreadableConfigMessage,
 	writeUnsureHint
 } from "./messages.ts"
@@ -294,6 +309,9 @@ export interface PrecompiledModule extends ModuleAnalysis {
 	map: SourceMap | undefined
 	// virtual module sources by specifier
 	modules: Record<string, string>
+	// the helpers it exports whose calls the build folds, which only a module
+	// the build precompiles can call
+	foldedHelpers: string[]
 }
 
 // an arktype export, or "reference" for the program's own Type
@@ -501,7 +519,12 @@ export class Precompiler {
 	private loadedBeforeConfigure: string[] | undefined
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
 	private readsByModule = new WeakMap<SourceModule, SiteRead[]>()
+	private readCandidatesByModule = new WeakMap<SourceModule, SiteCandidate[]>()
 	private candidatesByModule = new WeakMap<SourceModule, SiteCandidate[]>()
+	private calledParamsByFn = new WeakMap<
+		FunctionNode,
+		CalledParam | undefined
+	>()
 	private inertByModule = new WeakMap<SourceModule, boolean>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
 	// each module's import cycle (SCC), numbered as found
@@ -1023,7 +1046,11 @@ export class Precompiler {
 					`${version} at ${this.graph.pathOf(root)}, reached from ${this.graph.pathOf(importer)}`,
 					`${own[1]} at ${this.graph.pathOf(own[0])}, which @ark/aot imports`
 				],
-				hint: versionHint
+				// a dependency's copy is deduped, not matched
+				hint:
+					name === "arktype" && !dependencyOf(importer) ?
+						this.versionHintOf(root, version)
+					:	versionHint
 			})
 		}
 		// arktype's own dependencies may resolve to copies of their own
@@ -1035,7 +1062,10 @@ export class Precompiler {
 	}
 
 	// a dependency that isn't transformed is checked here
-	readDependency(importer: string): { errors: string[]; warnings: string[] } {
+	readDependency(
+		importer: string,
+		host?: "Turbopack"
+	): { errors: string[]; warnings: string[] } {
 		const [, dependency] = dependencyOf(importer) ?? []
 		if (!dependency || this.graph.isFollowed(importer))
 			return { errors: [], warnings: [] }
@@ -1055,7 +1085,10 @@ export class Precompiler {
 			!this.readsOnlyRuntime(importer)
 		) {
 			this.reportedDependencies.add(dependency)
-			const message = writeStandaloneDependencyMessage(dependency)
+			const message =
+				host ?
+					writeTurbopackDependencyMessage(dependency)
+				:	writeStandaloneDependencyMessage(dependency)
 			// what it reads off arktype throws at runtime, so the hint isn't allowUnsafe
 			if (this.allowUnsafe) warnings.push(message)
 			else errors.push(message)
@@ -1135,6 +1168,16 @@ export class Precompiler {
 			),
 			this.packageOf("@ark/aot", fileURLToPath(import.meta.url))[0]
 		].map(root => join(root, "package.json"))
+	}
+
+	// the @ark/aot released with a program's arktype, which arktype's package.json names
+	private versionHintOf(root: string, version: string): string {
+		const { arkAotVersion } = JSON.parse(
+			this.graph.host.readFile(join(root, "package.json"))!
+		)
+		return arkAotVersion ?
+				writeVersionHint(version, arkAotVersion)
+			:	versionHint
 	}
 
 	// the copy the precompiler builds with, which its validators are written for
@@ -1334,7 +1377,11 @@ export class Precompiler {
 			sites,
 			dependencies: this.dependenciesOfArtifact(module),
 			diagnostics,
-			modules: this.inline ? {} : modules
+			modules: this.inline ? {} : modules,
+			foldedHelpers:
+				this.mode === "standalone" ?
+					this.foldedHelpersOf(module).map(([name]) => name)
+				:	[]
 		}
 	}
 
@@ -1539,7 +1586,8 @@ export class Precompiler {
 						...configuration,
 						fingerprint: undefined,
 						problem: configurationConflictMessage,
-						reasons: [configurationConflictReason]
+						reasons: [configurationConflictReason],
+						hint: writeConflictHint(this.graph.pathOf(this.config!))
 					}
 		}
 		if (evaluated) {
@@ -1972,7 +2020,7 @@ export class Precompiler {
 				])
 			)
 		)
-		diagnostics.push(...this.checkRuntimeImports(module, sites))
+		this.checkRuntimeImports(module, sites, diagnostics)
 		diagnostics.sort((l, r) => l.start - r.start)
 		return inputImports
 	}
@@ -2011,9 +2059,9 @@ export class Precompiler {
 	// an arktype import that arktype/runtime lacks fails to link
 	private checkRuntimeImports(
 		module: SourceModule,
-		sites: Site[]
-	): Diagnostic[] {
-		const result: Diagnostic[] = []
+		sites: Site[],
+		diagnostics: Diagnostic[]
+	): void {
 		const spans = [...sites, ...module.islands]
 		for (const statement of module.program.body) {
 			if (
@@ -2026,14 +2074,20 @@ export class Precompiler {
 				if (
 					specifier.type !== "ImportSpecifier" ||
 					specifier.importKind === "type" ||
-					exportNameOf(specifier.imported) in arktypeRuntime
+					exportNameOf(specifier.imported) in arktypeRuntime ||
+					// reported at each call
+					exportNameOf(specifier.imported) in errorReaders
 				)
 					continue
 				const read = module.scopes.bindingsById
 					.get(specifier.local)
 					?.references.find(({ id }) => !spans.some(span => contains(span, id)))
 				if (!read) continue
-				result.push(
+				// reported by the analysis as used outside a site, reported once here
+				const outside = `\`${specifier.local.name}\` is used outside a precompiled site`
+				for (let i = diagnostics.length - 1; i >= 0; i--)
+					if (diagnostics[i].message === outside) diagnostics.splice(i, 1)
+				diagnostics.push(
 					this.diagnostic(
 						module,
 						read.id,
@@ -2045,7 +2099,6 @@ export class Precompiler {
 				)
 			}
 		}
-		return result
 	}
 
 	// only another module's export can be a mock
@@ -2180,7 +2233,7 @@ export class Precompiler {
 			) {
 				// e.g. `pipe.try`'s morph, which arktype calls from a function of its own
 				reasons.push(
-					`arktype holds ${labelOf(module, reference)} in a function of its own, which a standalone validator can't create yet`
+					`${labelOf(module, reference)} is wrapped in a function arktype creates, which a standalone validator can't create yet`
 				)
 				continue
 			}
@@ -2247,7 +2300,7 @@ export class Precompiler {
 			if (!source) continue
 			const [node, origin] = source
 			reasons.push(
-				`arktype holds ${labelOf(origin, node)}, which the site ${holesByValue.has(value) ? "reads outside its own source" : "cannot pass to its factory"}`
+				`the site's value holds ${labelOf(origin, node)}, which ${holesByValue.has(value) ? "it reads outside its own source" : "its factory can't receive"}`
 			)
 		}
 		return passed
@@ -2499,16 +2552,47 @@ export class Precompiler {
 		module: SourceModule,
 		site: Site,
 		rule: "R1" | "R2" | "unsupported",
-		reasons = site.reasons
+		reasons = site.reasons,
+		// why it's refused, whose innermost value the hint names
+		dynamic?: DynamicValue
 	): Diagnostic {
+		const keyed = keyedMethodOf(site)
 		return this.diagnostic(
 			module,
 			site,
 			rule,
 			`${module.snippetOf(site)} ${rule === "unsupported" ? "can't be precompiled yet" : "cannot be precompiled"}`,
 			reasons.map(reason => this.sourceNamed(reason, site, module)),
-			configuredHintOf(reasons)
+			keyed && rule === "unsupported" ?
+				writeKeyedHint(module.snippetOf(site), this.keyHoldingOf(site, module))
+			:	(configuredHintOf(reasons) ??
+					(rule === "R1" && dynamic ?
+						writeStaticHint(innermostSnippetOf(dynamic, site, module))
+					:	undefined))
 		)
+	}
+
+	// e.g. `plan` for `const Plan = T.default("free")` read as `{ plan: Plan }`
+	private keyHoldingOf(site: Site, module: SourceModule): string | undefined {
+		let key: string | undefined
+		walk(module.program, node => {
+			if (key !== undefined) return false
+			if (
+				node.type !== "VariableDeclarator" ||
+				node.init?.start !== site.start ||
+				node.init.end !== site.end
+			)
+				return true
+			const property = module.scopes.bindingsById
+				.get(node.id)
+				?.references.find(
+					({ id }) => id.parent?.type === "Property" && id.parent.value === id
+				)?.id.parent
+			if (property?.type === "Property" && !property.computed)
+				key = module.snippetOf(property.key)
+			return false
+		})
+		return key
 	}
 
 	// so returned sites agree with diagnostics
@@ -2517,7 +2601,12 @@ export class Precompiler {
 		site: Site,
 		reasons: string[]
 	): Diagnostic {
-		const diagnostic = this.refusal(module, site, "unsupported", reasons)
+		const diagnostic = this.refusal(
+			module,
+			site,
+			reasons.some(isUnstaticHelperReason) ? "R1" : "unsupported",
+			reasons
+		)
 		refuse(site, reasons)
 		return diagnostic
 	}
@@ -2528,7 +2617,13 @@ export class Precompiler {
 		e: unknown
 	): Diagnostic {
 		refuse(site, reasonsOf(e))
-		return this.refusal(module, site, "R1")
+		return this.refusal(
+			module,
+			site,
+			"R1",
+			site.reasons,
+			e instanceof DynamicValue ? e : undefined
+		)
 	}
 
 	// a factory compares by definition, which misses what calls return
@@ -2642,11 +2737,15 @@ export class Precompiler {
 	}
 
 	private unsupportedReasonsOf(site: Site, module: SourceModule): string[] {
+		const keyed = keyedMethodOf(site)
 		const result =
-			site.parseError || isFoldable(site.value) || site.introspection ?
-				[]
+			site.parseError || isFoldable(site.value) || site.introspection ? []
+			: keyed ?
+				[
+					`.${keyed}() gives the definition of an object's key, not a Type, so it's precompiled where an object holds it`
+				]
 			:	["its value is not a Type, Module, Scope, Generic or TypedFn"]
-		if (result.length && site.unavailableRead) {
+		if (result.length && site.unavailableRead && !keyed) {
 			result.push(
 				`it reads \`${site.unavailableRead}\`, which a standalone validator lacks`
 			)
@@ -2656,9 +2755,17 @@ export class Precompiler {
 			const isReceived = !hole.isCalledAtDefinition && hole.kind !== "opaque"
 			if (isReceived && !site.parseError) continue
 			const holeModule = this.graph.moduleOf(hole.file) as SourceModule
-			result.push(
-				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} ${labelOf(holeModule, hole)}`
-			)
+			const label = labelOf(holeModule, hole)
+			if (hole.isCalledAtDefinition) result.push(`arktype calls ${label}`)
+			else if (hole.kind !== "opaque")
+				result.push(`${label} is read by a definition that throws a ParseError`)
+			else {
+				const dynamic = this.standInOf(hole.value)?.dynamic
+				result.push(
+					`${label} ${dynamic ? "is not static, so the site holds it" : "is held"} as a Standard Schema, which a standalone validator can't receive yet`,
+					...(dynamic ? chainOf(dynamic) : [])
+				)
+			}
 		}
 		result.push(...this.incomparableReasonsOf(site, module))
 		result.push(...this.configuredReasonsOf(site))
@@ -2842,43 +2949,283 @@ export class Precompiler {
 			}
 		}
 		diagnostics.push(...this.checkConfiguration(module))
+		let quiet: FunctionNode[] = []
 		if (this.mode === "standalone") {
+			quiet = this.quietFunctionsOf(module, sites)
 			diagnostics.push(
 				...this.checkStandalone(module, candidates, settled),
 				...this.checkIslands(module, sites),
-				...this.checkDynamicImports(module)
+				...this.checkDynamicImports(module),
+				...this.checkHelperReads(module, sites, quiet)
 			)
 		}
+		// nothing runs what they hold unless the build reports it
+		const isQuiet = (span: Span) => quiet.some(fn => contains(fn, span))
 		return {
-			sites: sites.sort((l, r) => l.start - r.start),
-			diagnostics: diagnostics.sort((l, r) => l.start - r.start),
+			sites: sites
+				.filter(site => site.status === "accepted" || !isQuiet(site))
+				.sort((l, r) => l.start - r.start),
+			diagnostics: diagnostics
+				.filter(
+					diagnostic => diagnostic.file !== module.id || !isQuiet(diagnostic)
+				)
+				.sort((l, r) => l.start - r.start),
 			dependencies: this.graph.dependenciesOf(module.id)
 		}
 	}
 
-	// registered first, so each site runs once however it's reached
+	// a helper whose calls the build folds, and each function the program
+	// reaches only through sites, which run what they read only at build
+	private quietFunctionsOf(
+		module: SourceModule,
+		sites: Site[]
+	): FunctionNode[] {
+		const quiet: FunctionNode[] = []
+		const unread: [FunctionNode, Binding][] = []
+		for (const binding of module.scopes.bindingsById.values()) {
+			const fn = functionOfBinding(binding, module)
+			if (!fn) continue
+			if (this.calledParamOf(fn, module)) quiet.push(fn)
+			else if (!binding.exportNames.length) unread.push([fn, binding])
+		}
+		for (let grew = true; grew; ) {
+			grew = false
+			for (const [fn, binding] of unread) {
+				if (
+					quiet.includes(fn) ||
+					!binding.references.every(reference =>
+						isReachedOnlyAtBuild(reference.id, sites, quiet)
+					)
+				)
+					continue
+				quiet.push(fn)
+				grew = true
+			}
+		}
+		return quiet
+	}
+
+	// e.g. `[10, 20].map(text)`, which calls text where the build can't fold it
+	private checkHelperReads(
+		module: SourceModule,
+		sites: Site[],
+		quiet: FunctionNode[]
+	): Diagnostic[] {
+		const result: Diagnostic[] = []
+		const report = (read: Node, fn: FunctionNode, called: CalledParam) => {
+			const name = inferredNameOf(fn)
+			result.push(
+				this.diagnostic(
+					module,
+					read,
+					"R1",
+					`\`${module.snippetOf(read)}\` is read outside a call the build precompiles`,
+					[
+						`${called.module.snippetOf(called.read)} (${called.module.positionOf(called.read)}) reads \`${called.param.name}\`, a parameter of ${inferredNameOf(called.param.declaration as FunctionNode) || "a function"}, so the build precompiles it at each call to ${name}`
+					],
+					writeHelperCallHint(name)
+				)
+			)
+		}
+		for (const reference of module.scopes.references) {
+			const binding = reference.binding
+			if (
+				!binding ||
+				reference.isWrite ||
+				(binding.kind !== "import" && !functionOfBinding(binding, module))
+			)
+				continue
+			let read: Node = reference.id
+			const [operand, parent] = operatorOf(read)
+			const target =
+				binding.kind === "import" ?
+					this.graph.importOf(binding, module)
+				:	undefined
+			if (target?.kind === "namespace") {
+				if (parent?.type === "MemberExpression" && parent.object === operand)
+					read = parent
+				// e.g. `Object.values(fields)`, reading each helper it exports
+				else if (read.parent?.type !== "ExportSpecifier") {
+					const [helper] = this.foldedHelpersOf(target.module)
+					if (helper && !isReachedOnlyAtBuild(read, sites, quiet))
+						report(read, helper[1], helper[2])
+					continue
+				}
+			}
+			const fn = this.graph.functionOf(read, module)
+			const called = fn && this.calledParamOf(...fn)
+			if (
+				called &&
+				read.parent?.type !== "ExportSpecifier" &&
+				!isReachedOnlyAtBuild(read, sites, quiet)
+			)
+				report(read, fn[0], called)
+		}
+		// e.g. `import("./fields.ts")`, whose namespace holds each helper
+		walk(module.program, node => {
+			const source = loadedSpecifierOf(node)
+			const target =
+				typeof source === "string" ?
+					this.graph.resolve(source, module)
+				:	undefined
+			const [helper] =
+				target instanceof SourceModule ? this.foldedHelpersOf(target) : []
+			if (helper && !isReachedOnlyAtBuild(node, sites, quiet))
+				report(node, helper[1], helper[2])
+			return true
+		})
+		return result
+	}
+
+	// e.g. `text` for `export const text = (max: number) => type(...)`, which a
+	// module the build doesn't precompile can't call
+	private foldedHelpersOf(
+		module: SourceModule,
+		seen = new Set<SourceModule>()
+	): [name: string, fn: FunctionNode, called: CalledParam][] {
+		seen.add(module)
+		const result: [string, FunctionNode, CalledParam][] = []
+		for (const name in module.scopes.exportsByName) {
+			const target = this.graph.exportOf(module, name)
+			const fn =
+				target.kind === "binding" &&
+				functionOfBinding(target.binding, target.module)
+			const called = fn && this.calledParamOf(fn, target.module)
+			if (called) result.push([name, fn, called])
+		}
+		for (const specifier of module.scopes.starExports) {
+			const target = this.graph.resolve(specifier, module)
+			if (!(target instanceof SourceModule) || seen.has(target)) continue
+			for (const helper of this.foldedHelpersOf(target, seen)) {
+				if (
+					helper[0] !== "default" &&
+					!(helper[0] in module.scopes.exportsByName)
+				)
+					result.push(helper)
+			}
+		}
+		return result
+	}
+
+	// registered first, so each site runs once however it's reached, but a
+	// call to a helper only once the build folds its calls
 	private readsOf(module: SourceModule): SiteRead[] {
 		const cached = this.readsByModule.get(module)
 		if (cached) return cached
 		const reads = findSites(module, this.graph, this.mode === "standalone")
 		this.readsByModule.set(module, reads)
 		for (const { candidate } of reads) {
-			if (candidate)
+			if (candidate && !candidate.callee)
 				this.interpreter.sitesByNode.set(candidate.state.node, candidate.state)
 		}
 		return reads
 	}
 
-	private candidatesOf(module: SourceModule): SiteCandidate[] {
-		const cached = this.candidatesByModule.get(module)
+	// with calls to helpers, which are sites only where the helper needs them
+	private readCandidatesOf(module: SourceModule): SiteCandidate[] {
+		const cached = this.readCandidatesByModule.get(module)
 		if (cached) return cached
 		const candidates = filterSites(
 			this.readsOf(module),
 			module,
 			this.interpreter
 		)
+		this.readCandidatesByModule.set(module, candidates)
+		return candidates
+	}
+
+	private candidatesOf(module: SourceModule): SiteCandidate[] {
+		const cached = this.candidatesByModule.get(module)
+		if (cached) return cached
+		const candidates = this.readCandidatesOf(module).filter(
+			candidate => !candidate.callee || this.foldsCallsTo(candidate)
+		)
 		this.candidatesByModule.set(module, candidates)
 		return candidates
+	}
+
+	private foldsCallsTo(call: SiteCandidate): boolean {
+		if (!this.calledParamOf(...call.callee!)) return false
+		this.interpreter.sitesByNode.set(call.state.node, call.state)
+		return true
+	}
+
+	// e.g. `max` in `const text = (max: number) => type(`string <= ${max}`)`,
+	// which the build knows only where text is called, so it folds each call
+	private calledParamOf(
+		fn: FunctionNode,
+		module: SourceModule
+	): CalledParam | undefined {
+		if (this.calledParamsByFn.has(fn)) return this.calledParamsByFn.get(fn)
+		// a helper reaching itself is judged by its other reads
+		this.calledParamsByFn.set(fn, undefined)
+		// a declaration's kind is its binding's
+		const binding = bindingOfFunction(fn, module)
+		if (
+			this.mode !== "standalone" ||
+			!staticBodyOf(fn) ||
+			// a runtime island, which arktype defines at each call
+			module.islands.some(island => contains(fn, island)) ||
+			!mayReturnArk(
+				binding ?
+					this.graph.bindingKindOf(binding, module)
+				:	this.graph.kindOf(fn, module)
+			)
+		)
+			return
+		let result: CalledParam | undefined
+		const candidates = this.readCandidatesOf(module)
+		for (const candidate of candidates) {
+			if (
+				!contains(fn, candidate.state.node) ||
+				(candidate.callee && !this.foldsCallsTo(candidate))
+			)
+				continue
+			if (!(candidate.isSite ??= this.settle(candidate))) continue
+			const param = paramOf(rejectionOf(candidate.state))
+			if (param) {
+				result = { module, read: candidate.state.node, param }
+				break
+			}
+		}
+		// e.g. `T.or("null")` in `<t>(T: Type<t>) => T.or("null")`
+		walk(fn, node => {
+			if (
+				result ||
+				candidates.some(candidate => contains(candidate.state.node, node))
+			)
+				return false
+			const [read, object, isUnsure] =
+				(node.type === "MemberExpression" &&
+					!isWriteTarget(node) &&
+					this.graph.unavailableReadOf(
+						node,
+						module,
+						this.unsureLackedMembers
+					)) ||
+				[]
+			const id = object && unwrapChain(object)
+			const binding =
+				id?.type === "Identifier" ?
+					module.scopes.refsById.get(id)?.binding
+				:	undefined
+			if (
+				typeof read === "string" &&
+				isComposingMember(read) &&
+				binding?.kind === "param" &&
+				binding.declaration === fn &&
+				!isInIsland(node, module) &&
+				// arktype's own packages are the runtime, as checkStandalone reads them
+				!(
+					isUnsure &&
+					arkPackageName.test(this.graph.packageNameOf(module.id) ?? "")
+				)
+			)
+				result = { module, read: node, param: binding }
+			return !result
+		})
+		this.calledParamsByFn.set(fn, result)
+		return result
 	}
 
 	private settle(candidate: SiteCandidate): boolean {
@@ -3395,7 +3742,7 @@ export class Precompiler {
 					this.interpreter.holesIn(candidate.state.value).has(value)
 				) ?
 					`the build can't tell how a Scope holds \`${origin.snippetOf(node)}\` before arktype resolves its aliases`
-				:	`arktype holds \`${origin.snippetOf(node)}\` as a value rather than a definition, so it must be static`,
+				:	`\`${origin.snippetOf(node)}\` is passed as a value rather than a definition, so it must be static`,
 				standIn.dynamic
 			)
 		}
@@ -3424,7 +3771,9 @@ export class Precompiler {
 					site,
 					rejection?.hasCode("unsupported") ? "unsupported"
 					: rejection?.hasCode("callback") ? "R2"
-					: "R1"
+					: "R1",
+					site.reasons,
+					rejection
 				)
 			]
 		}
@@ -3447,7 +3796,7 @@ export class Precompiler {
 					// arktype throws it too, so it fails with runtime: "arktype" as well
 					this.allowUnsafe ?
 						hintsByRule.parse
-					:	`${hintsByRule.parse} ${allowUnsafeHint}`,
+					:	withAllowUnsafe(hintsByRule.parse),
 					this.allowUnsafe ? "warning" : "error"
 				)
 			)
@@ -3483,7 +3832,7 @@ export class Precompiler {
 		let link: DynamicValue | undefined = dynamic
 		while (link && link.code !== "parameter") link = link.cause
 		const param = link && parameterOf(link.node, link.module)
-		if (!param?.fn) return opaqueSchemaHint
+		if (!param?.fn) return writeOpaqueHelperHint(chainOf(dynamic))
 		return writeOpaqueParameterHint(
 			param.fn,
 			param.binding.name,
@@ -3651,9 +4000,8 @@ export class Precompiler {
 						hint:
 							!this.configures ?
 								"Remove the call, or name its module as the build's `config`."
-							: this.config === undefined ?
-								`Name this module as the build's config: { config: ${JSON.stringify(module.path)} }`
-							:	undefined
+							: this.config === undefined ? writeNoConfigHint(module.path)
+							: undefined
 					}
 				:	(this.configuration ??
 					this.evaluateConfiguration(
@@ -3708,7 +4056,7 @@ export class Precompiler {
 								built.mutatesInput
 							),
 						[],
-						`Build with ${option}: ${printable(configured)} too, as a standalone validator returns what arktype does as the program configures it.`
+						writeConfiguredOptionHint(option, printable(configured))
 					)
 				)
 			}
@@ -3976,18 +4324,21 @@ export class Precompiler {
 				(name === "configure" &&
 					parent?.type === "CallExpression" &&
 					parent.callee === read) ||
-				this.graph.leavesArk(id, module) ||
+				// a function of errors reads data, which a validator returns
+				(this.graph.leavesArk(id, module) && !(name && name in errorReaders)) ||
 				isInIsland(id, module)
 			)
 				continue
 			if (isWithin(id, candidateRanges)) continue
 			result.push(
-				this.diagnostic(
-					module,
-					id,
-					"R4",
-					`\`${binding.name}\` is used outside a precompiled site`
-				)
+				name && name in errorReaders ?
+					this.errorReaderDiagnostic(module, name, read!)
+				:	this.diagnostic(
+						module,
+						id,
+						"R4",
+						`\`${binding.name}\` is used outside a precompiled site`
+					)
 			)
 		}
 		const settledValues = new Map(
@@ -4182,6 +4533,32 @@ export class Precompiler {
 		return result
 	}
 
+	// e.g. `flatProblemsByPath(out)`, which the program can write from `out.issues`
+	private errorReaderDiagnostic(
+		module: SourceModule,
+		name: string,
+		read: Node
+	): Diagnostic {
+		const [callee, call] = operatorOf(read)
+		const isCall = call?.type === "CallExpression" && call.callee === callee
+		const errors =
+			isCall && call.arguments.length ? module.snippetOf(call.arguments[0])
+			: name === "messageIn" ? "issue"
+			: "errors"
+		return this.diagnostic(
+			module,
+			isCall ? call : read,
+			"R4",
+			isCall ?
+				`${module.snippetOf(call)} calls ${name}, which arktype/runtime doesn't export`
+			:	`\`${module.snippetOf(read)}\` is arktype's, which arktype/runtime doesn't export`,
+			[],
+			name === "messageIn" ?
+				writeMessageInHint(errors)
+			:	writeErrorReaderHint(errors)
+		)
+	}
+
 	// e.g. `each($)` with `$` a Scope another module's build precompiles,
 	// which checks only its own reads of it
 	private importedEscapesOf(module: SourceModule): Diagnostic[] {
@@ -4312,28 +4689,7 @@ export class Precompiler {
 	private checkDynamicImports(module: SourceModule): Diagnostic[] {
 		const result: Diagnostic[] = []
 		walk(module.program, node => {
-			const source =
-				node.type === "ImportExpression" ? node.source
-					// e.g. one createRequire() returns
-				: (
-					node.type === "CallExpression" &&
-					node.callee.type === "Identifier" &&
-					node.callee.name === "require"
-				) ?
-					node.arguments[0]
-				: (
-					node.type === "TSImportEqualsDeclaration" &&
-					node.importKind !== "type" &&
-					node.moduleReference.type === "TSExternalModuleReference"
-				) ?
-					node.moduleReference.expression
-				:	undefined
-			if (
-				source?.type === "Literal" &&
-				typeof source.value === "string" &&
-				source.value === "arktype" &&
-				!isDiscarded(node)
-			) {
+			if (loadedSpecifierOf(node) === "arktype" && !isDiscarded(node)) {
 				result.push(
 					this.diagnostic(
 						module,
@@ -4608,7 +4964,7 @@ export class Precompiler {
 	}
 
 	private unsafeHintOf(hint: string): string {
-		return this.unsafeSeverity === "error" ? `${hint} ${allowUnsafeHint}` : hint
+		return this.unsafeSeverity === "error" ? withAllowUnsafe(hint) : hint
 	}
 
 	private diagnostic(
@@ -4643,6 +4999,12 @@ export class Precompiler {
 		}
 	}
 }
+
+// e.g. "default" for `T.default("free")`, a key's definition a validator lacks
+const keyedMethodOf = (site: Site): string | undefined =>
+	Array.isArray(site.value) ?
+		/\.(default|optional)$/.exec(site.unavailableRead ?? "")?.[1]
+	:	undefined
 
 const methodMembers = ["traverse", "from", "toString"] as const
 
@@ -4697,6 +5059,28 @@ const sharedSchemaExports = Object.keys(runtimeExports).filter(
 // a missing inverse, which a Type's definition alone decides, whatever the build reads
 const isEncodingError = (e: Error) =>
 	e.message.startsWith(writeMissingInverseMessage(""))
+
+// e.g. "./a.ts" for `import("./a.ts")`, `require("./a.ts")` or
+// `import a = require("./a.ts")`
+const loadedSpecifierOf = (node: Node): unknown => {
+	const source =
+		node.type === "ImportExpression" ? node.source
+			// e.g. one createRequire() returns
+		: (
+			node.type === "CallExpression" &&
+			node.callee.type === "Identifier" &&
+			node.callee.name === "require"
+		) ?
+			node.arguments[0]
+		: (
+			node.type === "TSImportEqualsDeclaration" &&
+			node.importKind !== "type" &&
+			node.moduleReference.type === "TSExternalModuleReference"
+		) ?
+			node.moduleReference.expression
+		:	undefined
+	return source?.type === "Literal" ? source.value : undefined
+}
 
 // e.g. `await import("arktype")` as a statement, loading a module only to run it
 const isDiscarded = (node: Node): boolean => {
@@ -4902,6 +5286,37 @@ const runsOnceAtLoad = (call: Node): boolean => {
 	)
 }
 
+// a parameter a helper reads where the build refuses it, as each call passes it
+interface CalledParam {
+	module: SourceModule
+	read: Node
+	param: Binding
+}
+
+// e.g. `max` for "`max` is a parameter of text ..."
+const paramOf = (rejection: DynamicValue | undefined): Binding | undefined => {
+	for (let link = rejection; link; link = link.cause) {
+		if (link.code === "parameter")
+			return link.module.scopes.refsById.get(link.node)?.binding
+	}
+}
+
+// a read the output keeps runs only if the build folds it or reports it
+const isReachedOnlyAtBuild = (
+	node: Node,
+	sites: Site[],
+	quiet: FunctionNode[]
+): boolean =>
+	quiet.some(fn => contains(fn, node)) ||
+	sites.some(
+		site =>
+			contains(site, node) &&
+			(site.status === "rejected" ||
+				(site.status === "accepted" &&
+					!site.references.some(reference => contains(reference, node)) &&
+					!(site.definition && contains(site.definition, node))))
+	)
+
 const rejectionOf = (state: SiteState): DynamicValue | undefined =>
 	state.error instanceof DynamicValue ? state.error
 	: state.error === undefined ? findDynamic(state.value)
@@ -4980,6 +5395,35 @@ const genericSiteDefinitionOf = (
 		text = `${text.slice(0, id.start - arg.start)}"t"${text.slice(id.end - arg.start)}`
 	}
 	return text.includes("\n") || text.length > 60 ? undefined : text
+}
+
+// e.g. `Math.random()` for `type({ a: Math.random() > 0.5 ? "string" : "number" })`,
+// or the binding holding it where that's too long to quote whole
+const innermostSnippetOf = (
+	dynamic: DynamicValue,
+	site: Span,
+	module: SourceModule
+): string | undefined => {
+	const snippets: string[] = []
+	for (let link: DynamicValue | undefined = dynamic; link; link = link.cause) {
+		// e.g. `process.env.MAX` for `process`, or `Math.random()` for its callee
+		let node = link.node
+		for (;;) {
+			const [operand, operator] = operatorOf(node)
+			if (
+				(operator?.type === "MemberExpression" &&
+					operator.object === operand &&
+					!operator.computed) ||
+				(operator?.type === "CallExpression" && operator.callee === operand)
+			)
+				node = operator
+			else break
+		}
+		// the site itself, as where it throws, is no value to replace
+		if (link.module === module && contains(node, site)) continue
+		snippets.unshift(link.module.snippetOf(node))
+	}
+	return snippets.find(snippet => !snippet.endsWith("…")) ?? snippets[0]
 }
 
 const chainOf = (dynamic: DynamicValue): string[] => {

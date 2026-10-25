@@ -36,7 +36,7 @@ configure({ exactOptionalPropertyTypes: false })`
 				)
 			]).snap([
 				"/main.ts:2:1  configure() is called outside the config module /config.ts\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
-				'/main.ts:2:1  configure() is called, but the build has no `config` module\n  Name this module as the build\'s config: { config: "/main.ts" }',
+				'/main.ts:2:1  configure() is called, but the build has no `config` module\n  Name this module as the build\'s config in ark.json: { "precompile": { "config": "/main.ts" } }',
 				"/main.ts:2:1  configure() is called, but the build's `config` is false\n  Remove the call, or name its module as the build's `config`.",
 				"/main.ts:3:1  configure() is called more than once\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 			])
@@ -48,7 +48,7 @@ configure({ exactOptionalPropertyTypes: false })`
 					const { precompile } = await import("./utils.ts")
 					const files = {
 						"/config.ts":
-							'import { configure } from "arktype/config"\nimport { type } from "arktype"\nexport const shared = { version: 1 }\nexport const flags = { strict: true }\nconfigure({ toJsonSchema: { fallback: { predicate: ctx => ({ ...ctx.base, version: shared.version }), date: ctx => { const { base } = ctx; return base }, unit: ctx => (flags.strict ? type("nope") : ctx.base) } } })'
+							'import { configure } from "arktype/config"\nimport { type } from "arktype"\nexport const shared = { version: 1 }\nexport const flags = { strict: true }\nconfigure({ toJsonSchema: { fallback: { predicate: ctx => ({ ...ctx.base, version: shared.version }), date: ctx => { let { base } = ctx; return base }, unit: ctx => (flags.strict ? type("nope") : ctx.base) } } })'
 					}
 					const source =
 						'import { type } from "arktype"\nconst isEven = (n: number) => n % 2 === 0\nexport const Even = type("number").narrow(isEven)\nexport const At = type("Date")\nexport const Big = type("1n")\nexport const schema = Even.toJsonSchema()'
@@ -70,7 +70,7 @@ configure({ exactOptionalPropertyTypes: false })`
 				})
 			).snap([
 				"export const schema = $ark($ark)",
-				"a JSON Schema whose configured writer the build can't evaluate can't be precompiled to a standalone validator: arktype calls `date` (/config.ts:5:109) while defining the type, so it must be a static helper: `date` (/config.ts:5:109) is not a static helper: its body is not one expression or one `return`",
+				"a JSON Schema whose configured writer the build can't evaluate can't be precompiled to a standalone validator: arktype calls `date` (/config.ts:5:109) while defining the type, so it must be a static helper: `date` (/config.ts:5:109) is not a static helper: it runs `let { base } = ctx;` (/config.ts:5:118), where a static helper declares only consts before one `return`",
 				"a JSON Schema whose configured writer reads `flags.strict`, which the program can change, can't be precompiled to a standalone validator",
 				"a JSON Schema whose configured writer reads `shared.version`, which the program can change, can't be precompiled to a standalone validator"
 			])
@@ -85,7 +85,9 @@ configure({ exactOptionalPropertyTypes: false })`,
 					{},
 					{ config: "/main.ts" }
 				)
-			).throws(configuredThreadMessage)
+			).throws(
+				"arktype in this thread holds a configuration other than the build's, which it can't change once set, so the build must restart in a thread of its own. Restart the process that runs it."
+			)
 		})
 
 		it("configure in a thread another configuration reached", () => {
@@ -214,10 +216,10 @@ configure({ exactOptionalPropertyTypes: false })`,
 				[],
 				[],
 				[
-					"/config.ts:2:1  configure() is given other values than arktype in this thread already applied\n  a module the configuration reads was given anew, as when a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+					"/config.ts:2:1  configure() is given other values than arktype in this thread already applied\n  a module the configuration reads was given anew, as when it's edited while the build runs or a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  Restart the build to apply an edit to /config.ts. If it wasn't edited, put arktype's plugin ahead of the plugin transforming it."
 				],
 				[
-					"/main.ts:2:18  type({ a: \"string\" }) is created under a configuration the build can't apply\n  configure() is given other values than arktype in this thread already applied (/config.ts)\n  a module the configuration reads was given anew, as when a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+					"/main.ts:2:18  type({ a: \"string\" }) is created under a configuration the build can't apply\n  configure() is given other values than arktype in this thread already applied (/config.ts)\n  a module the configuration reads was given anew, as when it's edited while the build runs or a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  Restart the build to apply an edit to /config.ts. If it wasn't edited, put arktype's plugin ahead of the plugin transforming it."
 				]
 			])
 		})
@@ -358,8 +360,8 @@ export const later = () => {
 					return diagnostics.map(diagnostic => diagnostic.hint)
 				})
 			).snap([
-				"Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.",
-				"Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.",
+				"Replace `Math.random()` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.",
+				"Replace `Math.random()` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.",
 				"Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
 			])
 		})
@@ -440,7 +442,7 @@ configure({ numberAllowsNaN: process.argv.includes("--nan") })`,
 				diagnosticsOf(
 					`import { configure } from "arktype/config"
 const describe = (n: unknown) => {
-	const text = "a number"
+	let text = "a number"
 	return text
 }
 configure({ domain: { description: describe } })`,
@@ -454,7 +456,7 @@ configure({ domain: { description: describe } })`,
 				diagnosticsOf(
 					`import { configure } from "arktype/config"
 const describe = (n: unknown) => {
-	const text = "a number"
+	let text = "a number"
 	return text
 }
 const meta = { description: describe }
@@ -636,14 +638,14 @@ export const parse = (data: unknown) => {
 			const source = `import { type } from "arktype"
 const make = type
 export const field = (limit: number) => {
-	const Field = type(\`string <= \${limit}\`)
+	let Field = type(\`string <= \${limit}\`)
 	return Field
 }`
 			attest(
 				analyze(source).diagnostics.map(d => `${d.rule} ${d.severity}`)
 			).snap(["R4 error", "R1 error"])
 			attest(diagnosticsOf(source, {}, { runtime: "arktype" })).snap([
-				'/main.ts:4:16  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of field (/main.ts:3:23); its value is known only at runtime\n  With runtime: "arktype", arktype defines this at runtime.'
+				'/main.ts:4:14  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of field (/main.ts:3:23); its value is known only at runtime\n  With runtime: "arktype", arktype defines this at runtime.'
 			])
 			// it holds no value the build cannot read
 			attest(

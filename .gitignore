@@ -19,3 +19,6 @@ coverage
 ark/docs/public/docs/**/*.md
 # bundled from ark/docs/components/home/ark.worker.ts, see ark/docs/lib/writeLiveWorker.ts
 ark/docs/public/live
+# social cards drawn from claims.ts and blog frontmatter, see ark/docs/lib/writeOgImages.ts
+ark/docs/public/image/og.png
+ark/docs/public/image/blog

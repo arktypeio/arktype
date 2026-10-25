@@ -1,10 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
 import { Precompiler, renderDiagnostic, type PrecompileOptions } from "@ark/aot"
+import { writeArktypeRuntimeOptionMessage } from "@ark/aot/internal/settings.ts"
 import {
-	standardJsonSchemaWithoutStandardMessage,
-	writeArktypeRuntimeOptionMessage
-} from "@ark/aot/internal/settings.ts"
-import { analyze, diagnosticsOf, memoryHost, statusesOf } from "./utils.ts"
+	analyze,
+	diagnosticsOf,
+	memoryHost,
+	precompile,
+	statusesOf
+} from "./utils.ts"
 
 // a diagnostic without its hint, where the reason is the behavior
 const unhinted = (...args: Parameters<typeof diagnosticsOf>) =>
@@ -378,6 +381,189 @@ export const createClient = (token: string) => connect({ url: env.API_URL, token
 		})
 	})
 
+	describe("helpers", () => {
+		it("calls with arguments the build reads", () => {
+			const source = `import { type, type Type } from "arktype"
+const text = (max: number) => type(\`0 < string <= \${max}\`)
+function range(min: number, max: number) {
+	return type({ value: \`\${min} <= number <= \${max}\` })
+}
+const short = (max: number) => text(max / 10)
+const nullable = <t>(T: Type<t>) => T.or("null")
+const LIMIT = 50
+export const Name = text(LIMIT)
+export const Bio = nullable(text(LIMIT * 10))
+export const Signup = type({ name: Name, age: range(0, 150), code: short(60) })`
+			attest(statusesOf(source)).snap([
+				"9:21 accepted 1 <= string <= 50",
+				"10:20 accepted 1 <= string <= 500 | null",
+				"11:23 accepted { age: { value: 0 <= number <= 150 }, code: 1 <= string <= 6, name: 1 <= string <= 50 }"
+			])
+			attest(diagnosticsOf(source)).equals([])
+		})
+
+		it("imported by name, through a barrel or off a namespace", () => {
+			const files = {
+				"/fields.ts": `import { type, type Type } from "arktype"
+export const text = (max: number) => type(\`0 < string <= \${max}\`)
+export const word = (max: number) => text(max).and("string.alpha")
+export const nullable = <t>(T: Type<t>) => T.or("null")`,
+				"/index.ts": `export * from "./fields.ts"`
+			}
+			const source = `import { type } from "arktype"
+import { text } from "./fields.ts"
+import { word } from "./index.ts"
+import * as fields from "./fields.ts"
+export const Name = text(50)
+export const Word = word(80)
+export const Bio = fields.text(500)
+export const Form = type({ name: text(20), word: fields.word(40) })
+export const Nickname = fields.nullable(text(10)).array()`
+			attest(statusesOf(source, files)).snap([
+				"5:21 accepted 1 <= string <= 50",
+				"6:21 accepted 1 <= /^[A-Za-z]*$/ <= 80",
+				"7:20 accepted 1 <= string <= 500",
+				"8:21 accepted { name: 1 <= string <= 20, word: 1 <= /^[A-Za-z]*$/ <= 40 }",
+				"9:25 accepted (1 <= string <= 10 | null)[]"
+			])
+			attest(diagnosticsOf(source, files)).equals([])
+			// each importer checks its own calls
+			const exporter = new Precompiler(memoryHost(files)).analyzeSites(
+				files["/fields.ts"],
+				"/fields.ts"
+			)
+			attest([exporter.sites, exporter.diagnostics]).equals([[], []])
+		})
+
+		it("a call with arguments the build can't read", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+const text = (max: number) => type(\`0 < string <= \${max}\`)
+const twice = (max: number) => text(max * 2)
+export function field(input: { max: number }) {
+	let Field = twice(input.max)
+	return Field
+}
+export const Short = twice(5)`)
+			).snap([
+				"/main.ts:5:14  twice(input.max) cannot be precompiled\n  `input` is a parameter of field (/main.ts:4:23); its value is known only at runtime\n  Write the definition where field is called, with the value it passes for `input`, so the build precompiles each call."
+			])
+		})
+
+		it("reads outside a call the build precompiles", () => {
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+import * as fields from "./fields.ts"
+const text = (max: number) => type(\`0 < string <= \${max}\`)
+export const limits = [10, 20].map(text)
+export const byName = { text }
+export default text
+export const all = Object.values(fields)
+export const loaded = import("./fields.ts")
+// @ark-runtime
+export const Island = text(5)`,
+					{
+						"/fields.ts": `import { type } from "arktype"
+export const email = (max: number) => type(\`string.email <= \${max}\`)`
+					}
+				)
+			).snap([
+				"/main.ts:4:36  `text` is read outside a call the build precompiles\n  type(`0 < string <= ${max}`) (/main.ts:3:31) reads `max`, a parameter of text, so the build precompiles it at each call to text\n  Call text directly, with arguments the build can read, like literals and consts, so it precompiles each call.",
+				"/main.ts:5:25  `text` is read outside a call the build precompiles\n  type(`0 < string <= ${max}`) (/main.ts:3:31) reads `max`, a parameter of text, so the build precompiles it at each call to text\n  Call text directly, with arguments the build can read, like literals and consts, so it precompiles each call.",
+				"/main.ts:6:16  `text` is read outside a call the build precompiles\n  type(`0 < string <= ${max}`) (/main.ts:3:31) reads `max`, a parameter of text, so the build precompiles it at each call to text\n  Call text directly, with arguments the build can read, like literals and consts, so it precompiles each call.",
+				"/main.ts:7:34  `fields` is read outside a call the build precompiles\n  type(`string.email <= ${max}`) (/fields.ts:2:39) reads `max`, a parameter of email, so the build precompiles it at each call to email\n  Call email directly, with arguments the build can read, like literals and consts, so it precompiles each call.",
+				'/main.ts:8:23  `import("./fields.ts")` is read outside a call the build precompiles\n  type(`string.email <= ${max}`) (/fields.ts:2:39) reads `max`, a parameter of email, so the build precompiles it at each call to email\n  Call email directly, with arguments the build can read, like literals and consts, so it precompiles each call.',
+				"/main.ts:10:23  `text` is read outside a call the build precompiles\n  type(`0 < string <= ${max}`) (/main.ts:3:31) reads `max`, a parameter of text, so the build precompiles it at each call to text\n  Call text directly, with arguments the build can read, like literals and consts, so it precompiles each call."
+			])
+		})
+
+		it("functions no code reaches", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+function unused(n: number) {
+	let T = type(\`string <= \${n}\`)
+	return T
+}
+function used(n: number) {
+	let T = type(\`string <= \${n}\`)
+	return T
+}
+export const read = (n: number) => used(n)`)
+			).snap([
+				"/main.ts:7:10  type(`string <= ${n}`) cannot be precompiled\n  `n` is a parameter of used (/main.ts:6:15); its value is known only at runtime\n  Write the definition where used is called, with the value it passes for `n`, so the build precompiles each call."
+			])
+		})
+
+		it("consts before one return", () => {
+			const files = {
+				"/fields.ts": `export const nullable = T => {
+	const N = T.or("null")
+	return N
+}`
+			}
+			const source = `import { type } from "arktype"
+import { nullable } from "./fields.ts"
+const text = (max: number) => {
+	const T = type(\`0 < string <= \${max}\`)
+	return T.describe(\`at most \${max} characters\`)
+}
+function range(bounds: { min: number; max?: number }) {
+	type Bounds = typeof bounds
+	const { min, max = 100 } = bounds
+	return type(\`\${min} <= number <= \${max}\`)
+}
+export const Name = text(20)
+export const User = type({ name: text(50), age: range({ min: 0 }), bio: nullable(text(280)) })`
+			attest(statusesOf(source, files)).snap([
+				"12:21 accepted 1 <= string <= 20",
+				"13:21 accepted { age: 0 <= number <= 100, bio: 1 <= string <= 280 | null, name: 1 <= string <= 50 }"
+			])
+			attest(diagnosticsOf(source, files)).equals([])
+		})
+
+		it("a const read before its declaration", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+const text = (max: number) => {
+	const limit = () => doubled
+	const T = type(\`string <= \${limit()}\`)
+	const doubled = max * 2
+	return T
+}
+export const Name = text(5)`)
+			).snap([
+				"/main.ts:8:21  text(5) cannot be precompiled\n  `doubled` is read before its declaration (/main.ts:5:8)\n  Declare `doubled` before the const that reads it."
+			])
+		})
+
+		it("a const nothing reads", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+const text = (max: number) => {
+	const startedAt = Date.now()
+	return type(\`string <= \${max}\`)
+}
+export const Name = text(5)`)
+			).snap([
+				"/main.ts:6:21  text(5) cannot be precompiled\n  `Date.now` is not one of the build's pure built-ins\n  Replace `Date.now()` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime."
+			])
+		})
+
+		it("a body with other statements", () => {
+			attest(
+				precompile(`import { type } from "arktype"
+const text = (max: number) => {
+	if (max > 1000) throw new Error("too long")
+	return type(\`string <= \${max}\`)
+}
+export const User = type({ name: text(50) })`).diagnostics.map(renderDiagnostic)
+			).snap([
+				"/main.ts:6:21  type({ name: text(50) }) cannot be precompiled\n  `text(50)` (/main.ts:6:34) is not static, so the site holds it as a Standard Schema, which a standalone validator can't receive yet\n  `text(50)` calls a function the build does not interpret\n  `text` (/main.ts:2:14) is not a static helper: it runs `if (max > 1000) throw new Error(\"too long\")` (/main.ts:3:2), where a static helper declares only consts before one `return`\n  Write text as one expression, or as consts and one `return`, so the build precompiles each call with the values it's passed."
+			])
+		})
+	})
+
 	describe("rejected", () => {
 		it("parameter", () => {
 			attest(
@@ -390,8 +576,8 @@ export function make(jitless: boolean) {
 	return T
 }`)
 			).snap([
-				"/main.ts:2:38  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of makeField (/main.ts:2:20); its value is known only at runtime\n  Write the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call.",
-				"/main.ts:5:12  scope({}, { jitless }) cannot be precompiled\n  arktype holds `jitless` as a value rather than a definition, so it must be static\n  `jitless` is a parameter of make (/main.ts:4:22); its value is known only at runtime\n  Write the definition where make is called, with the value it passes for `jitless`, so the build precompiles each call.",
+				"/main.ts:3:34  `makeField` is read outside a call the build precompiles\n  type(`string <= ${limit}`) (/main.ts:2:38) reads `limit`, a parameter of makeField, so the build precompiles it at each call to makeField\n  Call makeField directly, with arguments the build can read, like literals and consts, so it precompiles each call.",
+				"/main.ts:5:12  scope({}, { jitless }) cannot be precompiled\n  `jitless` is passed as a value rather than a definition, so it must be static\n  `jitless` is a parameter of make (/main.ts:4:22); its value is known only at runtime\n  Write the definition where make is called, with the value it passes for `jitless`, so the build precompiles each call.",
 				'/main.ts:6:12  $.type("string") cannot be precompiled\n  `$` is the Scope at /main.ts:5:12, which the build refuses\n  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.'
 			])
 		})
@@ -403,7 +589,7 @@ export function make(jitless: boolean) {
 import { max } from "lodash"
 import { most } from "./limits.ts"
 const load = () => {
-	const def = 5
+	let def = 5
 	return def
 }
 const limits = { max: () => 5 }
@@ -418,7 +604,7 @@ const E = T.json`,
 					}
 				)
 			).snap([
-				"9:11 rejected\n  `load()` calls a function the build does not interpret\n  `load` (/main.ts:4:14) is not a static helper: its body is not one expression or one `return`",
+				"9:11 rejected\n  `load()` calls a function the build does not interpret\n  `load` (/main.ts:4:14) is not a static helper: it runs `let def = 5` (/main.ts:5:2), where a static helper declares only consts before one `return`",
 				"10:11 rejected\n  `lodash` is a package the build does not read",
 				"11:11 rejected\n  `limits.max` is a function reached through a property rather than a binding",
 				"12:11 rejected\n  the site reads `limits` (/limits.ts:1:7), which its module cannot import, so the site cannot compare it at creation",
@@ -430,7 +616,7 @@ const E = T.json`,
 		it("opaque definitions are Standard Schemas", () => {
 			const source = `import { type } from "arktype"
 import { z } from "zod"
-const wrap = (schema: unknown) => {
+export const wrap = (schema: unknown) => {
 	const Wrapped = type({ value: schema })
 	return Wrapped
 }
@@ -445,7 +631,7 @@ const A = type({ name: z.string() })`
 				"/main.ts:7:11  type({ name: z.string() }) can't be precompiled yet"
 			])
 			attest(diagnosticsOf(source)).snap([
-				'/main.ts:4:32  `schema` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `schema` is a parameter of wrap (/main.ts:3:15); its value is known only at runtime\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it\'s a Type, make wrap a Generic, which the build precompiles where it\'s called: `const wrap = type("<t>", { value: "t" })`.',
+				'/main.ts:4:32  `schema` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `schema` is a parameter of wrap (/main.ts:3:22); its value is known only at runtime\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it\'s a Type, make wrap a Generic, which the build precompiles where it\'s called: `const wrap = type("<t>", { value: "t" })`.',
 				"/main.ts:7:24  `z.string()` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `zod` is a package the build does not read\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it's a Type, make it static so the build precompiles it with the site."
 			])
 		})
@@ -467,19 +653,19 @@ const B = type({ ...{ a: z.string() }, a: "number" })`)
 			attest(
 				statusesOf(`import { type } from "arktype"
 export function make(v: unknown, n: number, p: (s: string) => boolean) {
-	const A = type("string").and(type.unit(v))
-	const B = type.string.atMostLength(n)
-	const C = type("string").narrow(p)
-	const D = type({ a: "string" }).configure({ examples: [v] })
-	const E = type({ a: v })
+	let A = type("string").and(type.unit(v))
+	let B = type.string.atMostLength(n)
+	let C = type("string").narrow(p)
+	let D = type({ a: "string" }).configure({ examples: [v] })
+	let E = type({ a: v })
 	return [A, B, C, D, E]
 }`)
 			).snap([
-				"3:12 rejected\n  arktype reads `v` while defining the type, so it must be static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
-				"4:12 rejected\n  `type.string.atMostLength(n)` reads the structure of `n`, which is not static\n  `n` is a parameter of make (/main.ts:2:34); its value is known only at runtime",
-				"5:12 rejected\n  arktype reads `p` while defining the type, so it must be static\n  `p` is a parameter of make (/main.ts:2:45); its value is known only at runtime",
-				"6:12 rejected\n  arktype reads `v` while defining the type, so it must be static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
-				"7:12 accepted { a: (In: unknown) => Out<unknown> }"
+				"3:10 rejected\n  arktype reads `v` while defining the type, so it must be static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
+				"4:10 rejected\n  `type.string.atMostLength(n)` reads the structure of `n`, which is not static\n  `n` is a parameter of make (/main.ts:2:34); its value is known only at runtime",
+				"5:10 rejected\n  arktype reads `p` while defining the type, so it must be static\n  `p` is a parameter of make (/main.ts:2:45); its value is known only at runtime",
+				"6:10 rejected\n  arktype reads `v` while defining the type, so it must be static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
+				"7:10 accepted { a: (In: unknown) => Out<unknown> }"
 			])
 		})
 
@@ -742,7 +928,7 @@ export const anded = Sub.and({ b: "string" })`)
 			attest(
 				diagnosticsOf(`import { type, type Type } from "arktype"
 export function nullable(t: Type) {
-	const n = t.or("null")
+	let n = t.or("null")
 	return n
 }
 export const forms = {
@@ -752,7 +938,7 @@ export const forms = {
 }
 const User = type({ name: "string" })`)
 			).snap([
-				'/main.ts:3:12  t.or reads or, which a standalone validator lacks\n  `t` is a parameter of nullable, so it may be a Type, which the standalone runtime replaces with a validator\n  Make nullable a Generic, which the build precompiles where it\'s called: `const nullable = type("<t>", "t | null")`.',
+				'/main.ts:3:10  t.or reads or, which a standalone validator lacks\n  `t` is a parameter of nullable, so it may be a Type, which the standalone runtime replaces with a validator\n  Make nullable a Generic, which the build precompiles where it\'s called: `const nullable = type("<t>", "t | null")`.',
 				'/main.ts:8:10  t.or reads or, which a standalone validator lacks\n  `t` is a parameter of optional, so it may be a Type, which the standalone runtime replaces with a validator\n  Make optional a Generic, which the build precompiles where it\'s called: `const optional = type("<t>", "t | undefined")`.'
 			])
 		})
@@ -761,15 +947,15 @@ const User = type({ name: "string" })`)
 			attest(
 				diagnosticsOf(`import { type, type Type } from "arktype"
 const Id = type({ id: "string" })
-export const withId = <t>(T: Type<t>) => T.and(Id)
-export const listOf = T => T.array()
-export const piped = <t>(T: Type<t>) => T.pipe(v => v)
+export function withId<t>(T: Type<t>) { let R = T.and(Id); return R }
+export function listOf(T) { let R = T.array(); return R }
+export function piped<t>(T: Type<t>) { let R = T.pipe(v => v); return R }
 export const boxed = <t>(T: Type<t>) => type({ value: T, all: [T, "[]"] })
 export const unwrapped = (all: Type[]) => all.map(T => T.or("null"))`)
 			).snap([
-				'/main.ts:3:42  T.and reads and, which a standalone validator lacks\n  `T` is a parameter of withId, so it may be a Type, which the standalone runtime replaces with a validator\n  Make withId a Generic, which the build precompiles where it\'s called: `const withId = type("<t>", ["t", "&", Id])`.',
-				'/main.ts:4:28  T.array reads array, which a standalone validator lacks\n  `T` is a parameter of listOf, so it may be a Type, which the standalone runtime replaces with a validator\n  Make listOf a Generic, which the build precompiles where it\'s called: `const listOf = type("<t>", "t[]")`. If `T` isn\'t a Type, annotate it with its type.',
-				'/main.ts:5:41  T.pipe reads pipe, which a standalone validator lacks\n  `T` is a parameter of piped, so it may be a Type, which the standalone runtime replaces with a validator\n  Make piped a Generic, which the build precompiles where it\'s called: `const piped = type("<t>", def)`, with "t" in def where it reads `T`.',
+				'/main.ts:3:49  T.and reads and, which a standalone validator lacks\n  `T` is a parameter of withId, so it may be a Type, which the standalone runtime replaces with a validator\n  Make withId a Generic, which the build precompiles where it\'s called: `const withId = type("<t>", ["t", "&", Id])`.',
+				'/main.ts:4:37  T.array reads array, which a standalone validator lacks\n  `T` is a parameter of listOf, so it may be a Type, which the standalone runtime replaces with a validator\n  Make listOf a Generic, which the build precompiles where it\'s called: `const listOf = type("<t>", "t[]")`. If `T` isn\'t a Type, annotate it with its type.',
+				'/main.ts:5:48  T.pipe reads pipe, which a standalone validator lacks\n  `T` is a parameter of piped, so it may be a Type, which the standalone runtime replaces with a validator\n  Make piped a Generic, which the build precompiles where it\'s called: `const piped = type("<t>", def)`, with "t" in def where it reads `T`.',
 				'/main.ts:6:55  `T` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `T` is a parameter of boxed (/main.ts:6:26); its value is known only at runtime\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it\'s a Type, make boxed a Generic, which the build precompiles where it\'s called: `const boxed = type("<t>", { value: "t", all: ["t", "[]"] })`.',
 				'/main.ts:6:64  `T` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `T` is a parameter of boxed (/main.ts:6:26); its value is known only at runtime\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it\'s a Type, make boxed a Generic, which the build precompiles where it\'s called: `const boxed = type("<t>", { value: "t", all: ["t", "[]"] })`.',
 				"/main.ts:7:56  T.or reads or, which a standalone validator lacks\n  the build can't tell where `T` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
@@ -779,7 +965,10 @@ export const unwrapped = (all: Type[]) => all.map(T => T.or("null"))`)
 		it("a fix for each value a definition can't know", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"
-export const bounded = (max: number) => type(\`string <= \${max}\`)
+export function bounded(max: number) {
+	let Bounded = type(\`string <= \${max}\`)
+	return Bounded
+}
 const shape: Record<string, string> = { title: "string" }
 if (import.meta.env.DEV) shape["debugNote?"] = "string"
 export const Post = type(shape)
@@ -790,8 +979,69 @@ export const Holder = type({ bad: Bad })`).map(d =>
 			).snap([
 				"Write the definition where bounded is called, with the value it passes for `max`, so the build precompiles each call.",
 				"Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime.",
-				"Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.",
+				"Fix the definition, which throws the same ParseError at runtime, or set allowUnsafe: true to build anyway, with a warning.",
 				"Fix the definition it reads, which throws the same ParseError at runtime."
+			])
+		})
+
+		it("a key's definition in a const", () => {
+			attest(
+				precompile(`import { type } from "arktype"
+const Tier = type("'free' | 'pro'")
+const Plan = Tier.default("free")
+const Nickname = type("string").optional()
+export const Note = type("string").default("")
+export const User = type({ plan: Plan, "nickname": Nickname })`).diagnostics.map(
+					renderDiagnostic
+				)
+			).snap([
+				"/main.ts:3:14  Tier.default(\"free\") can't be precompiled yet\n  .default() gives the definition of an object's key, not a Type, so it's precompiled where an object holds it\n  Write it at the key it's for, in place of the const: `{ plan: Tier.default(\"free\") }`.",
+				'/main.ts:4:18  type("string").optional() can\'t be precompiled yet\n  .optional() gives the definition of an object\'s key, not a Type, so it\'s precompiled where an object holds it\n  Write it at the key it\'s for, in place of the const: `{ "nickname": type("string").optional() }`.',
+				'/main.ts:5:21  type("string").default("") can\'t be precompiled yet\n  .default() gives the definition of an object\'s key, not a Type, so it\'s precompiled where an object holds it\n  Write it at the key it\'s for, in place of the const: `{ key: type("string").default("") }`.'
+			])
+		})
+
+		it("functions of errors arktype/runtime doesn't export", () => {
+			attest(
+				diagnosticsOf(`import { type, flatProblemsByPath, type ArkErrors } from "arktype"
+import * as ark from "arktype"
+const User = type({ name: "string" })
+export const report = (errors: ArkErrors) => flatProblemsByPath(errors)
+export const check = (data: unknown) => {
+	const out = User(data)
+	return out instanceof type.errors ? ark.byPath(out) : out
+}
+export const readers = [ark.flatByPath]
+export const translated = (out: ArkErrors) => out.issues.map(issue => ark.messageIn(issue, {} as never))`)
+			).snap([
+				'/main.ts:4:46  flatProblemsByPath(errors) calls flatProblemsByPath, which arktype/runtime doesn\'t export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: "arktype".',
+				'/main.ts:7:38  ark.byPath(out) calls byPath, which arktype/runtime doesn\'t export\n  Read `out.issues`, each with its path and message, as in `for (const { path, message } of out.issues)`, or build with runtime: "arktype".',
+				"/main.ts:9:25  `ark.flatByPath` is arktype's, which arktype/runtime doesn't export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: \"arktype\".",
+				'/main.ts:10:71  ark.messageIn(issue, {} as never) calls messageIn, which arktype/runtime doesn\'t export\n  Read `issue.message`, which a standalone validator writes in English, or build with runtime: "arktype" to write it in a locale.'
+			])
+		})
+
+		it("a value only known at runtime, named in the fix", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+export const Flipped = type({ a: Math.random() > 0.5 ? "string" : "number" })
+const def = await fetch("https://example.com/schema.json").then(r => r.json())
+export const Fetched = type(def)`).map(d => d.slice(d.lastIndexOf("\n") + 3))
+			).snap([
+				"Replace `Math.random()` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.",
+				"Replace `def` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime."
+			])
+		})
+
+		it("an export arktype/runtime lacks, reported once", () => {
+			attest(
+				precompile(`import { Type } from "arktype"
+export const isType = (x: unknown) => x instanceof Type
+export const isAlsoType = (x: unknown) => x instanceof Type`).diagnostics.map(
+					renderDiagnostic
+				)
+			).snap([
+				"/main.ts:2:52  `Type` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module\n  Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: \"arktype\"."
 			])
 		})
 
@@ -813,8 +1063,8 @@ export const Tag = z.string().optional()`
 					.analyzeSites(source, "/main.ts")
 					.diagnostics.map(d => `${d.severity} ${renderDiagnostic(d)}`)
 			).snap([
-				"error /main.ts:4:22  User.and reads and, which a standalone validator lacks\n  `User` comes from `~/schemas`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it. Set allowUnsafe: true to build anyway, with a warning.",
-				"error /main.ts:7:20  z.string().optional reads optional, which a standalone validator lacks\n  `z.string()` comes from `astro:content`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it. Set allowUnsafe: true to build anyway, with a warning."
+				"error /main.ts:4:22  User.and reads and, which a standalone validator lacks\n  `User` comes from `~/schemas`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it, or set allowUnsafe: true to build anyway, with a warning.",
+				"error /main.ts:7:20  z.string().optional reads optional, which a standalone validator lacks\n  `z.string()` comes from `astro:content`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it, or set allowUnsafe: true to build anyway, with a warning."
 			])
 		})
 
@@ -1016,7 +1266,7 @@ console.log(values.map(v => (v as any).from))`,
 				],
 				[
 					{ members: { "~standard": false, "~standard.jsonSchema": true } },
-					standardJsonSchemaWithoutStandardMessage
+					'members bakes "~standard.jsonSchema" into "~standard", which it sets false. Leave "~standard" unset, or remove "~standard.jsonSchema".'
 				],
 				[
 					{ config: true as never },
@@ -1047,7 +1297,7 @@ console.log(values.map(v => (v as any).from))`,
 				],
 				[
 					{ runtime: "arktype", config: false },
-					writeArktypeRuntimeOptionMessage("config: false")
+					'config: false chooses what a standalone build writes, which runtime: "arktype" doesn\'t. Remove runtime: "arktype" to precompile, or remove config: false.'
 				]
 			]
 			for (const [opts, message] of refused)
@@ -1513,11 +1763,11 @@ const A = type({ a: "1" }).and({ a: "2" })`,
 			).diagnostics.map(d => `${d.severity} ${renderDiagnostic(d)}`)
 		const failed = parseErrorsOf()
 		attest(failed).snap([
-			'error /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.'
+			'error /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, which throws the same ParseError at runtime, or set allowUnsafe: true to build anyway, with a warning.'
 		])
 		attest(parseErrorsOf({ runtime: "arktype" })).equals(failed)
 		attest(parseErrorsOf({ allowUnsafe: true })).snap([
-			'warning /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime.'
+			'warning /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, which throws the same ParseError at runtime.'
 		])
 		// any other error rejects the site
 		attest(

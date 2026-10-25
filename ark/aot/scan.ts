@@ -1,6 +1,6 @@
 import { isAbsolute } from "node:path"
 import { parseSync, type Node } from "oxc-parser"
-import { dependencyOf, printablePathOf, transformedId } from "./host.ts"
+import { dependencyOf, fileOf, printablePathOf, transformedId } from "./host.ts"
 import type { ScannedModule, ScannedProgram } from "./precompile.ts"
 import { walk } from "./scope.ts"
 
@@ -219,6 +219,47 @@ export const unseenProblemOf = (
 		}
 	}
 }
+
+// a call to a helper whose calls the build folds runs only where the plugin
+// transforms it, so neither code it leaves nor code outside the bundle can call it
+export const unfoldedCallProblemOf = (
+	foldedHelpersById: ReadonlyMap<string, string[]>,
+	imports: Imports,
+	isTransformed: (id: string) => boolean,
+	// what messages name paths from
+	cwd: string
+): string | undefined => {
+	const pathOf = (id: string) =>
+		isAbsolute(id) ? printablePathOf(cwd, fileOf(id)) : id
+	for (const entry of imports.entries) {
+		const [helper] =
+			(entry !== undefined && foldedHelpersById.get(fileOf(entry))) || []
+		if (helper) return writeEntryHelperMessage(pathOf(entry!), helper)
+	}
+	for (const [importer, target] of imports.edges) {
+		const [helper] = foldedHelpersById.get(fileOf(target)) ?? []
+		if (helper && (importer === undefined || !isTransformed(importer))) {
+			return writeUntransformedHelperMessage(
+				importer === undefined ? "a module it can't read" : pathOf(importer),
+				pathOf(target),
+				helper
+			)
+		}
+	}
+}
+
+export const writeUntransformedHelperMessage = (
+	importer: string,
+	exporter: string,
+	helper: string
+): string =>
+	`${exporter} exports ${helper}, a helper the build precompiles at each call, but ${importer} imports it and isn't a module the plugin transforms, so a call to ${helper} there would throw at runtime. Call ${helper} in a module the plugin transforms, like a .ts file, and import what it returns, or move ${helper} to a module ${importer} doesn't import.`
+
+export const writeEntryHelperMessage = (
+	entry: string,
+	helper: string
+): string =>
+	`${entry} exports ${helper}, a helper the build precompiles at each call, but it's an entry, so code outside the bundle may call ${helper}, which would throw at runtime. Export what ${helper} returns instead.`
 
 export const writeUnseenMessage = (reason: string): string =>
 	`A production build leaves out of its validators what no read of them needs, as it found reading the bundle's modules, but ${reason}, so a read it didn't see may need what it left out. Set prune: false to build them whole.`

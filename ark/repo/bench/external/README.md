@@ -257,7 +257,11 @@ average as its record.
 
 Thirteen suites qualify: 5 for speed (75 rows), 4 for startup (9) and 4 for
 size (7). `ark/docs/lib/bench/leaderboard.json` holds every row, and
-`ark/docs/lib/claims.ts` computes the standings from it.
+`ark/docs/lib/claims.ts` computes the standings from it. The size rows
+measure production Vite, Rollup, Rolldown or esbuild builds, which prune
+validators by usage; webpack, Rspack and Turbopack don't
+([`prune`](https://arktype.io/docs/precompile/options#prune)), so their
+bundles are larger.
 
 | category | suite                                       | rows | measure                          | run by                   |
 | -------- | ------------------------------------------- | ---- | -------------------------------- | ------------------------ |
@@ -503,11 +507,15 @@ its average is over the three suites it's in.
 because these runs share a machine (1-minute loads of 9 to 20), and wall
 clock there measures the neighbors. A count misses cache misses and branch
 mispredictions, so it favors code that does less work badly. Where both
-were measured, they rank alike: by wall clock, in paired runs, the default
+were measured, they mostly rank alike: by wall clock, in paired runs, the default
 build beat each of the six libraries closest to it on moltar's parseSafe in
 28 or 29 of 30 passes (p 8.7e-7) and ts-runtime-checks on assertLoose in 24
 of 30 (p 0.0014), as their counts order them ("The release's wall-clock
-run"). The homepage's suite is wall clock: median ns over 20 passes and a
+run"). Not always: in the same plan's run at the release candidate,
+the default build took the fewest instructions on parseSafe, but
+rescript-schema and @sx3/gate were faster by wall clock in 21 and 24 of 30
+passes, so H1 failed there ("The release candidate's run"). The homepage's
+suite is wall clock: median ns over 20 passes and a
 10-pass replica.
 
 **"Best average is cherry-picked."** The rule (which suites count, a ratio
