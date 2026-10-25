@@ -1130,7 +1130,10 @@ console.log(
 				() => "built",
 				(e: Error) => {
 					const message = stripVTControlCharacters(e.message)
-					return message.slice(message.indexOf("config.ts:"))
+					// main.ts's error about the same configuration may race in after it
+					return message
+						.slice(message.indexOf("config.ts:"))
+						.split("\n[plugin ")[0]
 				}
 			)
 		const arktype = precompile.vite({ config: "config.ts", conditions })
