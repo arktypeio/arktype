@@ -33,6 +33,7 @@ export const metadata: Metadata = {
 	...defineMetadata({
 		title,
 		description: lede,
+		url: "/",
 		ogImageAlt: `${draftOf(claims.headline)} ${draftOf(claims.boardTitle)}`
 	}),
 	title: { absolute: title }

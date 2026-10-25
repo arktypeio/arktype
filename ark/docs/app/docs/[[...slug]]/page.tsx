@@ -68,21 +68,18 @@ export const generateMetadata = async ({
 	if (!page) notFound()
 	const { title, description, ogImage } = page.frontmatter
 	const absolute = titleOf(tree, page)
-	// a shared link's card reads the whole title, and follows og:url
-	const shared = { title: absolute ?? `${title} · ArkType` }
 	const metadata = defineMetadata({
 		title,
 		description,
 		ogImage: ogImage ?? "ogDocs.png",
 		...(ogImage && { ogImageAlt: title }),
-		url
+		url,
+		// a shared link's card reads the whole title
+		sharedTitle: absolute ?? `${title} · ArkType`
 	})
 	return {
 		...metadata,
-		...(absolute && { title: { absolute } }),
-		openGraph: { ...metadata.openGraph, ...shared },
-		twitter: { ...metadata.twitter, ...shared },
-		alternates: { canonical: url }
+		...(absolute && { title: { absolute } })
 	}
 }
 
