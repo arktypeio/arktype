@@ -12,7 +12,10 @@ import {
 	writeUntransformedImportMessage,
 	writeVariantImportMessage
 } from "@ark/aot/internal/host.ts"
-import { configuredThreadMessage } from "@ark/aot/internal/messages.ts"
+import {
+	configuredThreadMessage,
+	writeTurbopackDependencyMessage
+} from "@ark/aot/internal/messages.ts"
 import { register } from "@ark/aot/node"
 import turbopack from "@ark/aot/turbopack"
 import type { PrecompilePluginOptions } from "@ark/aot/unplugin"
@@ -574,6 +577,33 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			attest(standalone.dependencies).equals(["ark.ts", tsconfig, ...manifests])
 			attest(load(app, "schemas.ts", { runtime: "arktype" }).out).satisfies(
 				/^;\(\(registerPrecompiledUnits\) => {/
+			)
+		})
+
+		it("fails a dependency that defines a Type, unless it's precompiled", () => {
+			const dir = writeFixture({
+				"package.json": "{}",
+				...packageFiles("defines-types", {
+					"index.js":
+						'import { type } from "arktype"\nexport const User = type({ name: "string" })\n'
+				}),
+				// as @hono/arktype-validator, which reads only `type.errors`
+				...packageFiles("reads-errors", {
+					"index.js":
+						'import { type } from "arktype"\nexport const failed = out => out instanceof type.errors\n'
+				})
+			})
+			const definesTypes = "node_modules/defines-types/index.js"
+			attest(load(dir, definesTypes).out).equals(
+				writeTurbopackDependencyMessage("defines-types")
+			)
+			attest(
+				load(dir, definesTypes, { dependencies: { "defines-types": "aot" } })
+					.out
+			).satisfies(/^var \$ark\$exports0;/)
+			const readsErrors = "node_modules/reads-errors/index.js"
+			attest(load(dir, readsErrors).out).equals(
+				readFileSync(join(dir, readsErrors), "utf8")
 			)
 		})
 

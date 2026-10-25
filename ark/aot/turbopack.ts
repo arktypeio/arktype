@@ -4,6 +4,7 @@ import { parseSync } from "oxc-parser"
 import {
 	createKeyedPrecompiler,
 	type KeyedModule,
+	type KeyedPrecompiler,
 	type PrecompilePluginOptions
 } from "./driver.ts"
 import { refuseDeclare } from "./declare.ts"
@@ -17,6 +18,7 @@ import {
 import {
 	createNodeHost,
 	createDevelopmentHost,
+	dependencyOf,
 	printablePathOf,
 	reportDiagnostics,
 	resolvedVariantOf,
@@ -41,10 +43,7 @@ export interface TurbopackLoaderContext {
 	async?(): (error: Error | null, result?: string) => void
 }
 
-const precompilersByOptions: Record<
-	string,
-	(source: string, id: string) => KeyedModule
-> = {}
+const precompilersByOptions: Record<string, KeyedPrecompiler> = {}
 
 // ark.json is read once for each option set the loader is given
 const resolvedByOptions: Record<string, PrecompilePluginOptions> = {}
@@ -77,11 +76,11 @@ export default function (
 	} catch (e) {
 		return rethrowAsBuildError(e)
 	}
-	const precompile = (precompilersByOptions[JSON.stringify(opts)] ??=
+	const precompiler = (precompilersByOptions[JSON.stringify(opts)] ??=
 		createKeyedPrecompiler(opts))
 	let keyed: KeyedModule
 	try {
-		keyed = precompile(source, this.resourcePath)
+		keyed = precompiler.precompile(source, this.resourcePath)
 	} catch (e) {
 		return rethrowAsBuildError(e)
 	}
@@ -98,6 +97,15 @@ export default function (
 		source.includes("arktype") ?
 			runtimeImportsOf(source, this.resourcePath)
 		:	[]
+	// resolveAlias gives a dependency the runtime too, so a rule for its
+	// extension has the loader fail one that would define a Type there
+	if (specifiers.length && dependencyOf(this.resourcePath)) {
+		reportDiagnostics(
+			precompiler.readDependency(this.resourcePath),
+			warning => this.emitWarning(new Error(warning)),
+			throwBuildError
+		)
+	}
 	if (!specifiers.length || !this.getResolve || !this.async) return code
 	const done = this.async()
 	checkAliases(

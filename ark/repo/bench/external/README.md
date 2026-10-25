@@ -257,7 +257,11 @@ average as its record.
 
 Thirteen suites qualify: 5 for speed (75 rows), 4 for startup (9) and 4 for
 size (7). `ark/docs/lib/bench/leaderboard.json` holds every row, and
-`ark/docs/lib/claims.ts` computes the standings from it.
+`ark/docs/lib/claims.ts` computes the standings from it. The size rows
+measure production Vite, Rollup, Rolldown or esbuild builds, which prune
+validators by usage; webpack, Rspack and Turbopack don't
+([`prune`](https://arktype.io/docs/precompile/options#prune)), so their
+bundles are larger.
 
 | category | suite                                       | rows | measure                          | run by                   |
 | -------- | ------------------------------------------- | ---- | -------------------------------- | ------------------------ |

@@ -118,6 +118,22 @@ for (const pkg of packages) {
 	headChangelog(pkg, next)
 }
 
+// the @ark/aot released with arktype, which a version mismatch tells a
+// program to install
+const nextAot = nextVersions.get("@ark/aot")!
+rewriteFile(packagesByScope.type.packageJsonPath, contents => {
+	const bumped = contents.replace(
+		/^(\t"arkAotVersion": )"[^"]*"/m,
+		`$1"${nextAot}"`
+	)
+	if (bumped === contents) {
+		throw new Error(
+			`Found no arkAotVersion in ${packagesByScope.type.packageJsonPath}`
+		)
+	}
+	return bumped
+})
+
 const util = packagesByScope.util
 const nextUtil = nextVersions.get(util.name)!
 // registry.ts, and the copy of its declarations the playground loads

@@ -32,6 +32,9 @@
 		"ajv": "8.20.0",
 		"ajv-formats": "3.0.1",
 		"ajv-keywords": "5.1.0",
+		"next": "16.4.1",
+		"react": "19.2.9",
+		"react-dom": "19.2.9",
 		"ttsc": "0.31.5",
 		"typebox": "1.3.37",
 		"typia": "15.1.0"

@@ -287,16 +287,35 @@ The same settings can go under an `"ark"` key in `package.json` instead. Keep on
 
 A validator leaves out its JSON Schema unless the build sets it, so a library that reads it through Standard Schema, like the MCP SDK's `inputSchema`, an AI SDK tool or Elysia's OpenAPI plugin, finds `undefined` there in production. Outside production, reading it throws, naming the fix. Add `"members": { "~standard.jsonSchema": true }` to `precompile` for it, or `"toJsonSchema": true` for one that calls `toJsonSchema()`, like hono-openapi or oRPC's ArkType converter. See [integrations](https://arktype.io/docs/integrations#precompiled-validators) and [members](https://arktype.io/docs/precompile/options#members).
 
+## Frameworks
+
+Each line was checked with a production build of a small app, on SvelteKit 3.1, Astro 7.4, Nuxt 4.6 and React Router 8.5:
+
+| Framework | Setup |
+| - | - |
+| SvelteKit | `plugins: [sveltekit(), precompile.vite()]` in `vite.config.ts` |
+| Astro | `vite: { plugins: [precompile.vite()] }` in `astro.config.ts` |
+| Nuxt | `vite: { plugins: [precompile.vite()] }` and `nitro: { rollupConfig: { plugins: [precompile.rollup()] } }` in `nuxt.config.ts`. Nitro bundles server routes and `shared/` itself, so without the second it ships arktype whole |
+| React Router (Remix) | `plugins: [reactRouter(), precompile.vite()]` in `vite.config.ts` |
+| Next.js | See [Next.js](https://arktype.io/docs/precompile/setup#next) |
+| Monorepos | Nothing extra. A workspace package linked into `node_modules`, as pnpm, npm, Yarn and Bun workspaces link it, resolves to its own directory, so the build precompiles it with the program |
+| Jest | Not supported. It has no driver, so it runs your Types on arktype, unprecompiled. See [Test runners](https://arktype.io/docs/precompile/setup#test-runners) |
+| Deno | Not supported. It has no driver, so `deno run` loads arktype unprecompiled. Build with Node |
+
 ## Next.js
 
-With Turbopack, the default, add the loader as a rule for each extension your definitions and config module are in, and alias arktype's entries to the runtime:
+With Turbopack, the default, add the loader as a rule for each extension your definitions and config module are in, and for JavaScript that mentions arktype, which checks your dependencies, then alias arktype's entries to the runtime:
 
 ```js
 export default {
 	turbopack: {
 		rules: {
 			"*.ts": { loaders: ["@ark/aot/turbopack"] },
-			"*.tsx": { loaders: ["@ark/aot/turbopack"] }
+			"*.tsx": { loaders: ["@ark/aot/turbopack"] },
+			"*.{js,mjs}": {
+				condition: { content: /arktype/ },
+				loaders: ["@ark/aot/turbopack"]
+			}
 		},
 		resolveAlias: {
 			arktype: "arktype/runtime",
@@ -311,7 +330,7 @@ export default {
 
 The loader fails a module whose `arktype` imports resolve otherwise, naming the aliases to add. With `runtime: "arktype"` or `shadow: true`, leave the aliases out, since the loader fails a module they resolve to the runtime. It reruns when a module's local imports change, and applies a changed configuration once the dev server restarts.
 
-The aliases also point a dependency's `arktype` imports at the runtime, and Turbopack never shows the loader those imports, so it can't fail the build for them. A dependency that defines Types, like `drizzle-arktype`, throws `type is not a function` when it loads instead. Build a program with one with webpack, which checks every dependency and runs it on arktype where [`dependencies`](https://arktype.io/docs/precompile/options#dependencies) says to, or with `runtime: "arktype"`.
+The aliases also point a dependency's `arktype` imports at the runtime, so the `*.{js,mjs}` rule has the loader fail the build for a dependency that defines Types but doesn't [opt in](https://arktype.io/docs/precompile/advanced#libraries), and precompile one that does or that [`dependencies`](https://arktype.io/docs/precompile/options#dependencies) sets to `"aot"`. Turbopack can't run one dependency on arktype, so for one that creates Types from values it reads as it runs, like `drizzle-arktype`, build with webpack or with `runtime: "arktype"`. The loader reads only `import` and `export` declarations, so a CommonJS dependency that `require`s arktype throws `type is not a function` when it loads instead.
 
 With webpack (`next build --webpack`), add the plugin:
 
@@ -829,7 +848,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 ## Setup
 
-**`arktype resolves to 2.3.0, but @ark/aot runs on 2.2.9`**: validators run only on the arktype they were built with. Install one version, e.g. with your package manager's dedupe or overrides.
+**`arktype resolves to 2.3.0, but @ark/aot runs on 2.2.9`**: validators run only on the arktype they were built with. Where your program imports the other version, as after upgrading arktype alone, the message names the `@ark/aot` released with it, e.g. `npm i -D @ark/aot@<version>`. Where a dependency does, install one version, e.g. with your package manager's dedupe or overrides.
 
 **`precompiledForArktype_<version>` is not exported by `arktype/runtime`** (each bundler words it its own way): every module of validators imports an export of `arktype/runtime` named for the version it was built for, so linking it to another version's runtime fails rather than misbehaving at runtime. It usually means a bundler cache from before an upgrade, or a second copy of arktype. Install one version and clear the bundler's cache.
 
@@ -851,7 +870,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 "precompile": { "dependencies": { "my-schemas": "aot" } }
 ```
 
-Where it creates them from values it reads as it runs, like `drizzle-arktype` from your tables, set `"arktype"` in place of `"aot"` to run it on arktype. See [`dependencies`](https://arktype.io/docs/precompile/options#dependencies). Better still, have it publish its source with `"ark": { "aot": true }` in its `package.json`. `allowUnsafe` builds it anyway, but the dependency then throws where it defines a Type. A dependency reading only `type.errors` or `ArkErrors` off arktype, like `@hono/arktype-validator`, builds as it is.
+Where it creates them from values it reads as it runs, like `drizzle-arktype` from your tables, set `"arktype"` in place of `"aot"` to run it on arktype. Turbopack can't, so its message (`which Turbopack resolves to arktype/runtime`) says to build with webpack or `runtime: "arktype"`. See [`dependencies`](https://arktype.io/docs/precompile/options#dependencies). Better still, have it publish its source with `"ark": { "aot": true }` in its `package.json`. `allowUnsafe` builds it anyway, but the dependency then throws where it defines a Type. A dependency reading only `type.errors` or `ArkErrors` off arktype, like `@hono/arktype-validator`, builds as it is.
 
 **`precompile.dependencies names drizzle-arktyp, which can't be resolved from /app`**: name a package the program depends on, as its `package.json` names it.
 

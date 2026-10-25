@@ -264,12 +264,12 @@ export default function HomePage() {
 							</a>
 						</h1>
 						<p className="lede rise" style={rise(1)}>
-							<ClaimText claim={claims.pickThree} /> Your{" "}
-							<span className="decl c-teal">agent</span> sets up the build, and
-							every error it reports says what to change.
+							<ClaimText claim={claims.pickThree} />
 							<a className="how" href="#board-note">
 								how we measured ↓
-							</a>
+							</a>{" "}
+							Your <span className="decl c-teal">agent</span> sets up the build,
+							and every error it reports says what to change.
 						</p>
 						<div className="ctas rise" style={rise(2)}>
 							<Link className="btn btn-gold" href="/docs/intro/setup">

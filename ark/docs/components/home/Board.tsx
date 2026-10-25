@@ -192,6 +192,23 @@ const BarCard = ({ category }: { category: BarCategory }) => {
 	)
 }
 
+/** a best average, as a multiple of the best result: "1.36×" */
+const multiple = (score: number) => `${score.toFixed(2)}×`
+
+/** ArkType's best average beside the next best's, or the leader's where ArkType isn't first */
+const Average = ({ category, of }: { category: Category; of: string }) => {
+	const { score, other } = category.average
+	return (
+		<>
+			{category.leads ?
+				"Lowest average: "
+			:	`${other.library}'s average is lower: `}
+			<b>{multiple(score)}</b> {of}, to {other.library}'s{" "}
+			<b>{multiple(other.score)}</b>
+		</>
+	)
+}
+
 const SpreadCard = ({ category }: { category: SpreadCategory }) => {
 	const [zod] = category.versus
 	const axis = spreadAxis(
@@ -204,12 +221,18 @@ const SpreadCard = ({ category }: { category: SpreadCategory }) => {
 	return (
 		<>
 			<Place category={category} />
-			<p className="card-margin">
-				<b>
-					{zod.versus.wins}/{zod.versus.count}
-				</b>{" "}
-				scenarios faster than Zod, by a median of <b>{medianOf(zod.versus)}</b>
-			</p>
+			<div className="card-margin">
+				<p>
+					<b>
+						{zod.versus.wins}/{zod.versus.count}
+					</b>{" "}
+					scenarios faster than Zod, by a median of{" "}
+					<b>{medianOf(zod.versus)}</b>
+				</p>
+				<p>
+					<Average category={category} of="the fastest result" />
+				</p>
+			</div>
 			<div className="spread-plot">
 				<ol
 					className="race spread"
@@ -291,21 +314,14 @@ const SpreadCard = ({ category }: { category: SpreadCategory }) => {
 	)
 }
 
-/** a best average, as a multiple of the best result: "1.36×" */
-const multiple = (score: number) => `${score.toFixed(2)}×`
-
 const StandingCard = ({ category }: { category: StandingCategory }) => {
 	const ours = category.standings.findIndex(s => s.library === "ArkType")
 	const axis = Math.max(...category.standings.map(s => s.score))
-	// the leader where ArkType isn't, otherwise the next best
-	const other = category.standings[ours ? 0 : 1]
 	return (
 		<>
 			<Place category={category} />
 			<p className="card-margin">
-				{ours ? `${other.library}'s average is lower: ` : "Lowest average: "}
-				<b>{multiple(category.standings[ours].score)}</b> the smallest bundle,
-				to {other.library}'s <b>{multiple(other.score)}</b>
+				<Average category={category} of="the smallest bundle" />
 			</p>
 			<ol
 				className="race"

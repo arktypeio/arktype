@@ -305,23 +305,33 @@ const isStale = (
 ) =>
 	Object.keys(readTimes).some(file => readTimes[file] !== currentMtimeOf(file))
 
+export interface KeyedPrecompiler {
+	precompile(source: string, id: string): KeyedModule
+	// a dependency the build doesn't precompile, as a bundler checks one importing arktype
+	readDependency(importer: string): RenderedDiagnostics
+}
+
 // Turbopack has no worker, so it keeps one precompiler per option set
 export const createKeyedPrecompiler = (
 	opts: PrecompilePluginOptions
-): ((source: string, id: string) => KeyedModule) => {
+): KeyedPrecompiler => {
 	let tracked = createTrackedPrecompiler({ ...opts, inline: true })
-	return (source, id) => {
-		const mtimes: Record<string, number> = {}
-		const currentMtimeOf = (file: string) => (mtimes[file] ??= mtimeOf(file))
-		if (isStale(tracked, currentMtimeOf))
-			tracked = createTrackedPrecompiler({ ...opts, inline: true })
-		if (tracked.hasAnswered) {
-			const keyed = keyedModuleOf(tracked, source, id, currentMtimeOf)
-			if (resolvesAsRecorded(tracked, id)) return keyed
-			tracked = createTrackedPrecompiler({ ...opts, inline: true })
-		}
-		tracked.hasAnswered = true
-		return keyedModuleOf(tracked, source, id, currentMtimeOf)
+	return {
+		precompile: (source, id) => {
+			const mtimes: Record<string, number> = {}
+			const currentMtimeOf = (file: string) => (mtimes[file] ??= mtimeOf(file))
+			if (isStale(tracked, currentMtimeOf))
+				tracked = createTrackedPrecompiler({ ...opts, inline: true })
+			if (tracked.hasAnswered) {
+				const keyed = keyedModuleOf(tracked, source, id, currentMtimeOf)
+				if (resolvesAsRecorded(tracked, id)) return keyed
+				tracked = createTrackedPrecompiler({ ...opts, inline: true })
+			}
+			tracked.hasAnswered = true
+			return keyedModuleOf(tracked, source, id, currentMtimeOf)
+		},
+		readDependency: importer =>
+			tracked.precompiler.readDependency(importer, "Turbopack")
 	}
 }
 

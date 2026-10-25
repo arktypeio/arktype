@@ -178,6 +178,7 @@ import {
 	dynamicImportHint,
 	unresolvedHint,
 	versionHint,
+	writeVersionHint,
 	writeConfiguredOptionHint,
 	writeConflictHint,
 	writeErrorReaderHint,
@@ -189,6 +190,7 @@ import {
 	writeMutatesInputMismatchMessage,
 	writeSchemaExportHint,
 	writeStandaloneDependencyMessage,
+	writeTurbopackDependencyMessage,
 	writeUnreadableConfigMessage,
 	writeUnsureHint
 } from "./messages.ts"
@@ -1043,7 +1045,11 @@ export class Precompiler {
 					`${version} at ${this.graph.pathOf(root)}, reached from ${this.graph.pathOf(importer)}`,
 					`${own[1]} at ${this.graph.pathOf(own[0])}, which @ark/aot imports`
 				],
-				hint: versionHint
+				// a dependency's copy is deduped, not matched
+				hint:
+					name === "arktype" && !dependencyOf(importer) ?
+						this.versionHintOf(root, version)
+					:	versionHint
 			})
 		}
 		// arktype's own dependencies may resolve to copies of their own
@@ -1055,7 +1061,10 @@ export class Precompiler {
 	}
 
 	// a dependency that isn't transformed is checked here
-	readDependency(importer: string): { errors: string[]; warnings: string[] } {
+	readDependency(
+		importer: string,
+		host?: "Turbopack"
+	): { errors: string[]; warnings: string[] } {
 		const [, dependency] = dependencyOf(importer) ?? []
 		if (!dependency || this.graph.isFollowed(importer))
 			return { errors: [], warnings: [] }
@@ -1075,7 +1084,10 @@ export class Precompiler {
 			!this.readsOnlyRuntime(importer)
 		) {
 			this.reportedDependencies.add(dependency)
-			const message = writeStandaloneDependencyMessage(dependency)
+			const message =
+				host ?
+					writeTurbopackDependencyMessage(dependency)
+				:	writeStandaloneDependencyMessage(dependency)
 			// what it reads off arktype throws at runtime, so the hint isn't allowUnsafe
 			if (this.allowUnsafe) warnings.push(message)
 			else errors.push(message)
@@ -1155,6 +1167,16 @@ export class Precompiler {
 			),
 			this.packageOf("@ark/aot", fileURLToPath(import.meta.url))[0]
 		].map(root => join(root, "package.json"))
+	}
+
+	// the @ark/aot released with a program's arktype, which arktype's package.json names
+	private versionHintOf(root: string, version: string): string {
+		const { arkAotVersion } = JSON.parse(
+			this.graph.host.readFile(join(root, "package.json"))!
+		)
+		return arkAotVersion ?
+				writeVersionHint(version, arkAotVersion)
+			:	versionHint
 	}
 
 	// the copy the precompiler builds with, which its validators are written for
