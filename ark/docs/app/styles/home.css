@@ -767,9 +767,6 @@
 			max-width: 52ch;
 		}
 	}
-	.pair2 + .pair2 {
-		margin-top: 40px;
-	}
 	.term {
 		margin: 0;
 		display: flex;
@@ -1596,12 +1593,6 @@
 	.cmd .comment {
 		color: var(--ink-3);
 	}
-	.btn .arrow.down {
-		display: inline-block;
-	}
-	.btn:hover .arrow.down {
-		translate: 0 2px;
-	}
 	.hl {
 		color: var(--gold);
 	}
@@ -1784,11 +1775,6 @@
 		background: var(--bar);
 		transform-origin: left;
 	}
-	/* runs off the axis: a torn end */
-	.lane-bar.is-clipped {
-		border-radius: var(--r-pill) 0 0 var(--r-pill);
-		mask: linear-gradient(90deg, #000 calc(100% - 10px), transparent);
-	}
 	.lane.is-ours {
 		color: var(--ink);
 		.lane-name {
@@ -1954,9 +1940,6 @@
 		margin: 12px 0 0;
 		font: 400 11.5px / 1.5 var(--mono);
 		color: var(--ink-3);
-		&:empty {
-			margin: 0;
-		}
 	}
 	.card-foot {
 		align-self: end;
