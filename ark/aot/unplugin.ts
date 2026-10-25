@@ -1202,13 +1202,6 @@ interface ProgramScan<read> {
 	unpruned?: string | undefined
 }
 
-const unprunedMessageOf = (usage: ScannedUsage): string | undefined =>
-	usage.unpruned &&
-	writeUnprunedMessage(
-		usage.unpruned,
-		"Set each member you know no read needs false in ark.json's members, or set prune: false to build them whole without this warning."
-	)
-
 const unreadMessageOf = (e: unknown): string =>
 	writeUnprunedMessage(`reading the bundle's modules threw ${String(e)}`)
 
@@ -1350,7 +1343,7 @@ const rollupScanOf = async (
 					loaded: new Map()
 				}
 			:	undefined,
-		unpruned: unprunedMessageOf(usage)
+		unpruned: usage.unpruned
 	}
 }
 
@@ -1537,7 +1530,7 @@ const esbuildScanOf = async (
 	const usage = await scan(scanned)
 	return {
 		read: usage.written ? [scanned, usage] : undefined,
-		unpruned: unprunedMessageOf(usage)
+		unpruned: usage.unpruned
 	}
 }
 

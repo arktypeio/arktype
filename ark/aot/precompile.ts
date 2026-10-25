@@ -140,7 +140,11 @@ import {
 } from "./scope.ts"
 import type { ShadowContract } from "./shadow.ts"
 import { flattenBundle, importedNamesOf } from "./flat.ts"
-import { writeUnscannedFlatMessage } from "./scan.ts"
+import {
+	writeKeptMembersMessage,
+	writeUnprunedMessage,
+	writeUnscannedFlatMessage
+} from "./scan.ts"
 import { linkBundle, prefixOf, type LinkedSite } from "./link.ts"
 import {
 	passedReaderOf,
@@ -306,7 +310,8 @@ export interface ScannedUsage {
 	// each module creating a validator, which only a module reaching it may
 	// read
 	holders: string[]
-	// why it left no member out, where some read may need any
+	// the warning where it left out no member members leaves to it, as some
+	// read may need any
 	unpruned?: string | undefined
 }
 
@@ -641,7 +646,9 @@ export class Precompiler {
 				if (!runtime) {
 					return {
 						...unwritten,
-						unpruned: `${this.graph.pathOf(id)} fails to precompile`
+						unpruned: writeUnprunedMessage(
+							`${this.graph.pathOf(id)} fails to precompile`
+						)
 					}
 				}
 				planned.set(id, runtime)
@@ -649,7 +656,8 @@ export class Precompiler {
 			} else planned.set(id, unprecompiled(this.graph.add(id, source)))
 		}
 		const used = this.usedIn(program, planned)
-		const unpruned = typeof used === "string" ? used : undefined
+		const unpruned =
+			typeof used === "string" ? this.keptMembersMessageOf(used) : undefined
 		const dropped =
 			typeof used === "string" ?
 				[]
@@ -713,9 +721,11 @@ export class Precompiler {
 			return {
 				...unwritten,
 				unpruned:
-					typeof usedAsWritten === "string" ? usedAsWritten : (
-						"its precompiled code reads more of a validator than the program does"
-					)
+					typeof usedAsWritten === "string" ?
+						this.keptMembersMessageOf(usedAsWritten)
+					:	writeUnprunedMessage(
+							"its precompiled code reads more of a validator than the program does"
+						)
 			}
 		}
 		const linked =
@@ -743,6 +753,14 @@ export class Precompiler {
 			}),
 			unpruned
 		}
+	}
+
+	// a member members sets is the same whatever the program reads
+	private keptMembersMessageOf(reason: string): string | undefined {
+		const kept = defaultMembers.filter(
+			member => this.members[member] === undefined
+		)
+		return kept.length ? writeKeptMembersMessage(reason, kept) : undefined
 	}
 
 	private usedIn(

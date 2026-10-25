@@ -186,7 +186,7 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 `)
 	})
 
-	it("says why a production bundle would keep every member", () => {
+	it("warns as a production bundle would where it can't prune", () => {
 		const root = writeFixture({
 			"types.ts": `import { type } from "arktype"\nexport const User = type({ name: "string" })\n`,
 			"main.ts": `import { User } from "./types.ts"\nconst pages = import.meta.glob("./pages/*.ts")\nUser({})\n`,
@@ -197,7 +197,7 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 		try {
 			attest(check([], { cwd: root }).lines).snap([
 				"types.ts:2:21  accepted",
-				"prune: off, because main.ts:2:15 reads import.meta.glob, which may load modules it can't name",
+				"prune: off, because main.ts:2:15 reads import.meta.glob, which may load modules it can't name, so the build keeps every member of its validators. Set prune: false to build them whole without this warning.",
 				"1 site in 3 files: 1 accepted (100.0%)"
 			])
 			// a test isn't in the bundle

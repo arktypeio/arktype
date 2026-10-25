@@ -14,7 +14,7 @@ import {
 	type ScannedUsage
 } from "./precompile.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
-import { scanProgramSync } from "./scan.ts"
+import { scanProgramSync, writeUnprunedMessage } from "./scan.ts"
 import { withSettingsFile } from "./settings.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
@@ -142,8 +142,8 @@ export const check = (
 		const unpruned =
 			isProductionEnv() &&
 			precompilerOptions.prune !== false &&
-			unprunedReasonOf(files, cwd, request)
-		if (unpruned) report.lines.push(`prune: off, because ${unpruned}`)
+			unprunedMessageOf(files, cwd, request)
+		if (unpruned) report.lines.push(unpruned)
 	} finally {
 		request("close")
 	}
@@ -166,12 +166,11 @@ export const check = (
 const unbundledFile =
 	/(?:^|[/\\])__(?:tests|mocks)__[/\\]|\.(?:test|spec|bench|stories|config)\.[cm]?[jt]sx?$/
 
-// why a production bundle of the checked files would keep every member of
-// its validators, as far as --check can tell: it follows relative imports
-// of scripts alone and reads no file as an entry, so it misses a read
-// reached through an alias, a virtual module, a component or an entry's
-// exports
-const unprunedReasonOf = (
+// the warning a production bundle of the checked files would print where it
+// can't prune, as far as --check can tell: it follows relative imports of
+// scripts alone and reads no file as an entry, so it misses a read reached
+// through an alias, a virtual module, a component or an entry's exports
+const unprunedMessageOf = (
 	files: string[],
 	cwd: string,
 	request: (...request: ["scan", ScannedProgram]) => unknown
@@ -192,7 +191,7 @@ const unprunedReasonOf = (
 			cwd
 		}
 	)
-	if (typeof scanned === "string") return scanned
+	if (typeof scanned === "string") return writeUnprunedMessage(scanned)
 	return (request("scan", { ...scanned, entries: [] }) as ScannedUsage).unpruned
 }
 
