@@ -22,8 +22,8 @@ export const PickThree = () => (
 				<ClaimText claim={pickThreeTable.title} />
 			</h3>
 			<p>
-				Best average across the independent benchmarks, as a multiple of the
-				best result, lower is better.
+				Each library's best average, as a multiple of the best result. Lower is
+				better.
 			</p>
 		</figcaption>
 		<table className="p3-table">
