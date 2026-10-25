@@ -98,6 +98,17 @@ export const runtimeExports: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
+// functions reading errors that arktype/runtime doesn't export
+export const errorReaders: Record<string, 1> = Object.setPrototypeOf(
+	{
+		byAncestorPath: 1,
+		byPath: 1,
+		flatByPath: 1,
+		flatProblemsByPath: 1
+	} satisfies { [name in ArkExportName]?: 1 },
+	null
+)
+
 // configure() runs as a call the build rewrites to pass its fingerprint
 export const isRuntimeExport = (name: string): boolean =>
 	name in runtimeExports || name === "configure"
@@ -489,7 +500,7 @@ const typeMemberKinds: Record<string, KindBits> = Object.setPrototypeOf(
 )
 
 const exportKindOf = (name: ArkExportName): KindBits =>
-	isRuntimeExport(name) ? kinds.data
+	isRuntimeExport(name) || name in errorReaders ? kinds.data
 	: name === "type" ? kinds.otherArk | kinds.returnsType | kinds.returnsArk
 	: name === "codec" ? typeMethod
 	: kinds.otherArk | kinds.returnsArk

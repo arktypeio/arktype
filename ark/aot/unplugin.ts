@@ -16,7 +16,6 @@ import type {
 	TransformedModule
 } from "./driver.ts"
 import {
-	allowUnsafeHint,
 	appendSourceMap,
 	createDevelopmentHost,
 	createNodeHost,
@@ -49,7 +48,8 @@ import {
 	writeUnwrittenModuleMessage,
 	writeVariantImportMessage,
 	writeUntransformedImportMessage,
-	type PrecompileHost
+	type PrecompileHost,
+	withAllowUnsafe
 } from "./host.ts"
 import type { ScannedProgram, ScannedUsage } from "./precompile.ts"
 import { withEnvironment, type Environment } from "./presets.ts"
@@ -213,7 +213,7 @@ export const precompile: UnpluginInstance<
 		if (!specifier) return
 		const problem = writeExternalizedMessage(specifier, option)
 		if (opts?.allowUnsafe) warn(problem)
-		else throwBuildError(`${problem} ${allowUnsafeHint}`)
+		else throwBuildError(withAllowUnsafe(problem))
 	}
 	const checkInputExternal = function (
 		this: { warn: (message: string) => void },
@@ -280,7 +280,7 @@ export const precompile: UnpluginInstance<
 	) => {
 		if (!problem) return
 		if (opts?.allowUnsafe) diagnostics.warnings.push(problem)
-		else diagnostics.errors.push(`${problem} ${allowUnsafeHint}`)
+		else diagnostics.errors.push(withAllowUnsafe(problem))
 	}
 	const reportedPrecompiled = new Set<string>()
 	const precompiledProblemOf = (id: string, importer: string) => {

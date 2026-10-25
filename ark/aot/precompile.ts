@@ -70,6 +70,7 @@ import {
 	arkPackageSpecifier,
 	contains,
 	declarationStartOf,
+	errorReaders,
 	importsValues,
 	isArk,
 	isArkObject,
@@ -95,7 +96,6 @@ import {
 	type StandInKind
 } from "./graph.ts"
 import {
-	allowUnsafeHint,
 	arkPackageName,
 	dependencyOf,
 	mapToSource,
@@ -106,7 +106,8 @@ import {
 	writeVariantOption,
 	type DependencyModes,
 	type PrecompileHost,
-	type RuntimeVariant
+	type RuntimeVariant,
+	withAllowUnsafe
 } from "./host.ts"
 import {
 	createSiteState,
@@ -173,7 +174,11 @@ import {
 	dynamicImportHint,
 	unresolvedHint,
 	versionHint,
+	writeConfiguredOptionHint,
+	writeErrorReaderHint,
+	writeNoConfigHint,
 	writeErrorsMismatchMessage,
+	writeKeyedHint,
 	writeMutatesInputMismatchMessage,
 	writeSchemaExportHint,
 	writeStandaloneDependencyMessage,
@@ -2026,7 +2031,9 @@ export class Precompiler {
 				if (
 					specifier.type !== "ImportSpecifier" ||
 					specifier.importKind === "type" ||
-					exportNameOf(specifier.imported) in arktypeRuntime
+					exportNameOf(specifier.imported) in arktypeRuntime ||
+					// reported at each call
+					exportNameOf(specifier.imported) in errorReaders
 				)
 					continue
 				const read = module.scopes.bindingsById
@@ -2501,14 +2508,40 @@ export class Precompiler {
 		rule: "R1" | "R2" | "unsupported",
 		reasons = site.reasons
 	): Diagnostic {
+		const keyed = keyedMethodOf(site)
 		return this.diagnostic(
 			module,
 			site,
 			rule,
 			`${module.snippetOf(site)} ${rule === "unsupported" ? "can't be precompiled yet" : "cannot be precompiled"}`,
 			reasons.map(reason => this.sourceNamed(reason, site, module)),
-			configuredHintOf(reasons)
+			keyed && rule === "unsupported" ?
+				writeKeyedHint(module.snippetOf(site), this.keyHoldingOf(site, module))
+			:	configuredHintOf(reasons)
 		)
+	}
+
+	// e.g. `plan` for `const Plan = T.default("free")` read as `{ plan: Plan }`
+	private keyHoldingOf(site: Site, module: SourceModule): string | undefined {
+		let key: string | undefined
+		walk(module.program, node => {
+			if (key !== undefined) return false
+			if (
+				node.type !== "VariableDeclarator" ||
+				node.init?.start !== site.start ||
+				node.init.end !== site.end
+			)
+				return true
+			const property = module.scopes.bindingsById
+				.get(node.id)
+				?.references.find(
+					({ id }) => id.parent?.type === "Property" && id.parent.value === id
+				)?.id.parent
+			if (property?.type === "Property" && !property.computed)
+				key = module.snippetOf(property.key)
+			return false
+		})
+		return key
 	}
 
 	// so returned sites agree with diagnostics
@@ -2642,11 +2675,15 @@ export class Precompiler {
 	}
 
 	private unsupportedReasonsOf(site: Site, module: SourceModule): string[] {
+		const keyed = keyedMethodOf(site)
 		const result =
-			site.parseError || isFoldable(site.value) || site.introspection ?
-				[]
+			site.parseError || isFoldable(site.value) || site.introspection ? []
+			: keyed ?
+				[
+					`.${keyed}() gives the definition of an object's key, not a Type, so it's precompiled where an object holds it`
+				]
 			:	["its value is not a Type, Module, Scope, Generic or TypedFn"]
-		if (result.length && site.unavailableRead) {
+		if (result.length && site.unavailableRead && !keyed) {
 			result.push(
 				`it reads \`${site.unavailableRead}\`, which a standalone validator lacks`
 			)
@@ -3447,7 +3484,7 @@ export class Precompiler {
 					// arktype throws it too, so it fails with runtime: "arktype" as well
 					this.allowUnsafe ?
 						hintsByRule.parse
-					:	`${hintsByRule.parse} ${allowUnsafeHint}`,
+					:	withAllowUnsafe(hintsByRule.parse),
 					this.allowUnsafe ? "warning" : "error"
 				)
 			)
@@ -3651,9 +3688,8 @@ export class Precompiler {
 						hint:
 							!this.configures ?
 								"Remove the call, or name its module as the build's `config`."
-							: this.config === undefined ?
-								`Name this module as the build's config: { config: ${JSON.stringify(module.path)} }`
-							:	undefined
+							: this.config === undefined ? writeNoConfigHint(module.path)
+							: undefined
 					}
 				:	(this.configuration ??
 					this.evaluateConfiguration(
@@ -3708,7 +3744,7 @@ export class Precompiler {
 								built.mutatesInput
 							),
 						[],
-						`Build with ${option}: ${printable(configured)} too, as a standalone validator returns what arktype does as the program configures it.`
+						writeConfiguredOptionHint(option, printable(configured))
 					)
 				)
 			}
@@ -3976,18 +4012,21 @@ export class Precompiler {
 				(name === "configure" &&
 					parent?.type === "CallExpression" &&
 					parent.callee === read) ||
-				this.graph.leavesArk(id, module) ||
+				// a function of errors reads data, which a validator returns
+				(this.graph.leavesArk(id, module) && !(name && name in errorReaders)) ||
 				isInIsland(id, module)
 			)
 				continue
 			if (isWithin(id, candidateRanges)) continue
 			result.push(
-				this.diagnostic(
-					module,
-					id,
-					"R4",
-					`\`${binding.name}\` is used outside a precompiled site`
-				)
+				name && name in errorReaders ?
+					this.errorReaderDiagnostic(module, name, read!)
+				:	this.diagnostic(
+						module,
+						id,
+						"R4",
+						`\`${binding.name}\` is used outside a precompiled site`
+					)
 			)
 		}
 		const settledValues = new Map(
@@ -4180,6 +4219,30 @@ export class Precompiler {
 			}
 		}
 		return result
+	}
+
+	// e.g. `flatProblemsByPath(out)`, which the program can write from `out.issues`
+	private errorReaderDiagnostic(
+		module: SourceModule,
+		name: string,
+		read: Node
+	): Diagnostic {
+		const [callee, call] = operatorOf(read)
+		const isCall = call?.type === "CallExpression" && call.callee === callee
+		const errors =
+			isCall && call.arguments.length ?
+				module.snippetOf(call.arguments[0])
+			:	"errors"
+		return this.diagnostic(
+			module,
+			isCall ? call : read,
+			"R4",
+			isCall ?
+				`${module.snippetOf(call)} calls ${name}, which arktype/runtime doesn't export`
+			:	`\`${module.snippetOf(read)}\` is arktype's, which arktype/runtime doesn't export`,
+			[],
+			writeErrorReaderHint(errors)
+		)
 	}
 
 	// e.g. `each($)` with `$` a Scope another module's build precompiles,
@@ -4608,7 +4671,7 @@ export class Precompiler {
 	}
 
 	private unsafeHintOf(hint: string): string {
-		return this.unsafeSeverity === "error" ? `${hint} ${allowUnsafeHint}` : hint
+		return this.unsafeSeverity === "error" ? withAllowUnsafe(hint) : hint
 	}
 
 	private diagnostic(
@@ -4643,6 +4706,12 @@ export class Precompiler {
 		}
 	}
 }
+
+// e.g. "default" for `T.default("free")`, a key's definition a validator lacks
+const keyedMethodOf = (site: Site): string | undefined =>
+	Array.isArray(site.value) ?
+		/\.(default|optional)$/.exec(site.unavailableRead ?? "")?.[1]
+	:	undefined
 
 const methodMembers = ["traverse", "from", "toString"] as const
 

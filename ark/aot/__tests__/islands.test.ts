@@ -106,8 +106,8 @@ export const Imported = type("string")`
 				}
 			).diagnostics.map(renderDiagnostic)
 		).snap([
-			"/main.ts:8:18  type({ a: Trimmed }) can't be precompiled yet\n  `Trimmed` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.",
-			"/main.ts:9:18  type({ b: Alias, c: Static }) can't be precompiled yet\n  `Imported` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
+			"/main.ts:8:18  type({ a: Trimmed }) can't be precompiled yet\n  `Trimmed` is a runtime island's Type, which a precompiled site can't receive\n  Precompile `Trimmed` too, by removing its // @ark-runtime where the build can, or mark this definition // @ark-runtime as well.",
+			"/main.ts:9:18  type({ b: Alias, c: Static }) can't be precompiled yet\n  `Imported` is a runtime island's Type, which a precompiled site can't receive\n  Precompile `Imported` too, by removing its // @ark-runtime where the build can, or mark this definition // @ark-runtime as well."
 		])
 	})
 

@@ -6,7 +6,7 @@ import {
 	writeDeclaredOutsideMessage
 } from "@ark/aot/internal/declare.ts"
 import {
-	allowUnsafeHint,
+	withAllowUnsafe,
 	unbundledMessage,
 	writeExternalizedMessage,
 	writeFilelessImportMessage,
@@ -14,8 +14,7 @@ import {
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
 	writeUntransformedImportMessage,
-	writeUnwrittenModuleMessage,
-	writeVariantImportMessage
+	writeUnwrittenModuleMessage
 } from "@ark/aot/internal/host.ts"
 import { writeStandaloneDependencyMessage } from "@ark/aot/internal/messages.ts"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
@@ -616,8 +615,8 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 				).close()
 			)
 		]).equals([
-			`${writeExternalizedMessage("arktype", "external")} ${allowUnsafeHint}`,
-			`${writeExternalizedMessage("@ark/schema", "ssr.external")} ${allowUnsafeHint}`
+			withAllowUnsafe(writeExternalizedMessage("arktype", "external")),
+			withAllowUnsafe(writeExternalizedMessage("@ark/schema", "ssr.external"))
 		])
 	})
 
@@ -983,7 +982,7 @@ console.log(Limited({ n: 2 }) instanceof type.errors, Other({ s: "" }) instanceo
 			warnings: []
 		})
 		attest(await buildDependency("prebuilt.ts")).equals({
-			errors: [`${prebuilt} ${allowUnsafeHint}`],
+			errors: [withAllowUnsafe(prebuilt)],
 			warnings: []
 		})
 		attest(await buildDependency("shared.ts", { runtime: "arktype" })).equals({
@@ -1129,8 +1128,8 @@ console.log(
 			"arktype",
 			root
 		)
-		attest((await build()).errors.map(error => error.text)).equals([
-			`${message} ${allowUnsafeHint}`
+		attest((await build()).errors.map(error => error.text)).snap([
+			"Form.svelte imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws, as it can't precompile a module that isn't JavaScript or TypeScript. Move what it reads off arktype, from Types to `instanceof type.errors` checks, into a .ts module it imports, or set allowUnsafe: true to build anyway, with a warning."
 		])
 		const unsafe = await build(true)
 		attest("warnings" in unsafe && unsafe.warnings.map(w => w.text)).equals([
@@ -1147,7 +1146,7 @@ console.log(
 			fromHere("temp", "fileless")
 		)
 		const failure = (id: string) =>
-			`${writeFilelessImportMessage(id, "arktype")} ${allowUnsafeHint}`
+			withAllowUnsafe(writeFilelessImportMessage(id, "arktype"))
 
 		it("esbuild", async () => {
 			const build = (options: BuildOptions) =>
@@ -1270,7 +1269,9 @@ console.log(
 			(e: { errors: { text: string }[] }) => e.errors.map(e => e.text)
 		)
 		attest(errors).equals([
-			`${writeLoadedFirstMessage(join(root, "main.ts"), "arktype", root)} ${allowUnsafeHint}`
+			withAllowUnsafe(
+				writeLoadedFirstMessage(join(root, "main.ts"), "arktype", root)
+			)
 		])
 	})
 
@@ -1375,11 +1376,7 @@ console.log(JSON.stringify(User.toJsonSchema()))
 
 	it("undetailed bundles", async () => {
 		const reads = join(undetailed, "reads")
-		const message = writeVariantImportMessage(
-			join(undetailed, "node_modules", "reads", "index.js"),
-			"@ark/schema",
-			"none"
-		)
+		const message = `${join(undetailed, "node_modules", "reads", "index.js")} imports @ark/schema, which a build with errors: "none" can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build without errors: "none".`
 		for (const bundler of ["esbuild", "vite"] as const) {
 			attest(
 				run(
@@ -1551,7 +1548,7 @@ console.log(JSON.stringify(User.toJsonSchema()))
 		])
 		// thrown by the precompiler's worker rather than reported for a module
 		attest(await thrownBy({ config: "missing.ts" })).snap([
-			"the config module missing.ts can't be read",
+			"the config module missing.ts can't be read. Name a module that exists as the build's config.",
 			""
 		])
 	})

@@ -88,7 +88,7 @@ export const emitDeclarations = (opts?: DeclareOptions): Declarations => {
 }
 
 export const writeSharedCollisionMessage = (file: string): string =>
-	`${file} would be declared at ${sharedDeclarationFile}, which holds the shapes of the build's Types`
+	`${file} would be declared at ${sharedDeclarationFile}, which holds the shapes of the build's Types. Rename ${file}.`
 
 // a driver that can't tell a build from a rebuild can't declare
 export const refuseDeclare = (opts: object | undefined, name: string): void => {

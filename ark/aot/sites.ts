@@ -1,6 +1,7 @@
 import type { Node } from "oxc-parser"
 import {
 	enclosingFunctionOf,
+	errorReaders,
 	isArk,
 	isRuntimeExport,
 	isIntrospectedProperty,
@@ -113,7 +114,11 @@ const rootOf = (
 	const binding = reference.binding
 	if (!binding || reference.isWrite) return
 	const [name, read] = graph.arkExportOf(reference, module) ?? []
-	if (name) return isRuntimeExport(name) ? undefined : [name, read!]
+	if (name) {
+		return isRuntimeExport(name) || name in errorReaders ?
+				undefined
+			:	[name, read!]
+	}
 	if (isArk(graph.bindingKindOf(binding, module)))
 		return ["reference", reference.id]
 	const member = arkMemberOf(reference.id, module, graph)

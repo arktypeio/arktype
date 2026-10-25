@@ -36,7 +36,7 @@ configure({ exactOptionalPropertyTypes: false })`
 				)
 			]).snap([
 				"/main.ts:2:1  configure() is called outside the config module /config.ts\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
-				'/main.ts:2:1  configure() is called, but the build has no `config` module\n  Name this module as the build\'s config: { config: "/main.ts" }',
+				'/main.ts:2:1  configure() is called, but the build has no `config` module\n  Name this module as the build\'s config in ark.json: { "precompile": { "config": "/main.ts" } }',
 				"/main.ts:2:1  configure() is called, but the build's `config` is false\n  Remove the call, or name its module as the build's `config`.",
 				"/main.ts:3:1  configure() is called more than once\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 			])
@@ -85,7 +85,9 @@ configure({ exactOptionalPropertyTypes: false })`,
 					{},
 					{ config: "/main.ts" }
 				)
-			).throws(configuredThreadMessage)
+			).throws(
+				"arktype in this thread holds a configuration other than the build's, which it can't change once set, so the build must restart in a thread of its own. Restart the process that runs it."
+			)
 		})
 
 		it("configure in a thread another configuration reached", () => {
