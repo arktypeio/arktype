@@ -5,7 +5,8 @@
  * the geometric mean over the suite's rows it's on, its category score the
  * geometric mean over its suite scores. It counts a suite only with at least
  * half that suite's rows, and is ranked only with at least half the
- * category's suites.
+ * category's suites. The headline's standings average the independent
+ * suites; the full board, every suite, is published beside them.
  */
 import data from "./leaderboard.json" with { type: "json" }
 
@@ -50,9 +51,34 @@ const suiteScores = (suite: Suite) => {
 	)
 }
 
-const leaderboardOf = (category: CategoryId, without?: string): Leaderboard => {
+/** the suites we wrote, by id */
+const ownSuites = ["homepage", "startup", "homepageStartup", "homepageSize"]
+
+for (const id of ownSuites) {
+	if (!(data.suites as Suite[]).some(s => s.id === id))
+		throw new Error(`No leaderboard suite has the id ${id}`)
+}
+
+/** whether we wrote a suite, by its label */
+export const isOwnSuite = (label: string) =>
+	ownSuites.some(
+		id => (data.suites as Suite[]).find(s => s.id === id)!.label === label
+	)
+
+/**
+ * The headline's basis: independent suites only, every suite but the ones we
+ * wrote, so ArkType's own benchmarks don't decide its claims. It applies to
+ * every category alike.
+ */
+const independentSuites = (suite: Suite) => !ownSuites.includes(suite.id)
+
+const leaderboardOf = (
+	category: CategoryId,
+	counts: (suite: Suite) => boolean,
+	without?: string
+): Leaderboard => {
 	const suites = (data.suites as Suite[]).filter(
-		s => s.category === category && s.label !== without
+		s => s.category === category && counts(s) && s.label !== without
 	)
 	const scored = suites.map(suiteScores)
 	const libraries = new Set(scored.flatMap(Object.keys))
@@ -71,11 +97,18 @@ const leaderboardOf = (category: CategoryId, without?: string): Leaderboard => {
 	}
 }
 
-export const leaderboards = {
-	speed: leaderboardOf("speed"),
-	startup: leaderboardOf("startup"),
-	size: leaderboardOf("size")
-} satisfies Record<CategoryId, Leaderboard>
+const leaderboardsOf = (counts: (suite: Suite) => boolean) =>
+	({
+		speed: leaderboardOf("speed", counts),
+		startup: leaderboardOf("startup", counts),
+		size: leaderboardOf("size", counts)
+	}) satisfies Record<CategoryId, Leaderboard>
+
+/** the standings the headline and the board state, over independent suites */
+export const leaderboards = leaderboardsOf(independentSuites)
+
+/** every suite, ours included, published beside the headline's standings */
+export const fullLeaderboards = leaderboardsOf(() => true)
 
 /** a suite's row: each library's result, in the suite's unit */
 export const resultsOf = (suiteId: string, rowId: string) =>
@@ -83,10 +116,10 @@ export const resultsOf = (suiteId: string, rowId: string) =>
 		.find(s => s.id === suiteId)!
 		.rows.find(row => row.id === rowId)!.results
 
-/** each row's results across a category's suites */
+/** each row's results across a category's independent suites */
 export const rowsOf = (category: CategoryId) =>
 	(data.suites as Suite[])
-		.filter(s => s.category === category)
+		.filter(s => s.category === category && independentSuites(s))
 		.flatMap(s => s.rows.map(row => row.results))
 
 /** whether ArkType has the best average in a category */
@@ -96,5 +129,7 @@ export const leads = (category: CategoryId) =>
 /** the suites without which ArkType wouldn't have a category's best average */
 export const leadDependsOn = (category: CategoryId) =>
 	leaderboards[category].suites.filter(
-		label => leaderboardOf(category, label).standings[0]?.library !== "ArkType"
+		label =>
+			leaderboardOf(category, independentSuites, label).standings[0]
+				?.library !== "ArkType"
 	)

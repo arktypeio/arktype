@@ -250,8 +250,10 @@ Typia 2.43M (gross 4.95M against ajv's 5.52M). On moltar Typia adds fewer
 The headline's superlatives come from a rule, written before any average was
 computed: a library is the fastest, the quickest to start or the smallest if
 it has the best average in that category across the public benchmarks that
-qualify. The current standings come first, then the rule, then each earlier
-average as its record.
+qualify. Since 2026-10-25 the headline counts only the independent ones, the
+suites we didn't write ("The headline's suites"), and the full board, every
+suite, is published beside it. The current standings come first, then the
+rule, then each earlier average as its record.
 
 ### Current standings: ArkType at 808927feb, rivals at their releases of 2026-10-24
 
@@ -289,6 +291,23 @@ runs' starts and ends (each started under 4); every other ArkType row in
 Each rival arm is the faster of two counts, at its suite's pins and at the
 latest releases ("Versions" below).
 
+The headline's standings, over the 9 independent suites: 4 for speed (43
+rows), 2 for startup (2) and 3 for size (3).
+
+| category | 1             | 2             | 3                             |
+| -------- | ------------- | ------------- | ----------------------------- |
+| speed    | ArkType 1.067 | ata 1.255\*   | paseri 2.142\*                |
+| startup  | ArkType 1.000 | Typia 8.962\* | @railway-ts/pipelines 186.8\* |
+| size     | Typia 1.256\* | ArkType 1.297 | ajv 1.317\*                   |
+
+\* ranked on half to three quarters of the category's suites. Leads: speed
+17.6%, startup 796%; Typia leads size by 3.3%, on the form and
+schemabenchmarks.dev's download (it isn't in Sury's). Both startup rows time
+creating a schema, which ArkType's default build does when it builds, so
+they show little. Speed and startup hold with any one suite left out.
+
+The full board, every suite:
+
 | category | 1             | 2             | 3                   |
 | -------- | ------------- | ------------- | ------------------- |
 | speed    | ArkType 1.107 | ata 1.255\*   | ajv 2.912\*         |
@@ -302,6 +321,27 @@ Sury's check 289 B (1.357, TypeBox's 213). ajv's: the form 1.000, the
 homepage's apps 1.346, schemabenchmarks.dev's download 2718 B (1.733), and
 it isn't in Sury's. Leads: speed 13.4%, startup 178%; ajv leads size by
 10.3%.
+
+### The headline's suites
+
+The headline and the homepage's board rank by the independent suites only,
+every qualifying suite but the four we wrote (the homepage's benchmark,
+`startup.ts`, the homepage's cold start and the homepage's apps), so
+ArkType's own benchmarks don't decide its claims. It applies to all three
+categories alike. valibot.dev's login form counts: its code is Valibot's,
+though the script that sizes it is ours. `independentSuites` in
+`ark/docs/lib/bench/leaderboard.ts` is the rule, and `claims.ts` computes
+the headline, the board and their notes from it, so a rerun that changes a
+standing changes the copy. The build throws if the copy names a category's
+superlative, or says "Pick 3", while ArkType doesn't lead it.
+
+The rule was chosen on 2026-10-25, after the standings above were known, as
+the subset a reader can check fastest: no suite in it is ours. Every other
+uniform subset we computed (suites by library count, suites that measure all
+three categories, rows without boolean checks, libraries measured on every
+suite) left size with ajv or Typia too, and some only by unranking the
+runners-up. Wherever the headline's standings are stated, the site states
+ArkType's place on the full board beside them.
 
 ### The rule
 
@@ -507,14 +547,15 @@ bundle in Sury's suite is 1261 B gzipped, 1.4.2's 1304.
 
 **"Half of these benchmarks are yours."** We wrote 1 of the 5 speed suites,
 2 of the 4 startup suites and 1 of the 4 size suites (the form is
-valibot.dev's; the script that sizes it is ours). Without any of ours, speed
-is ArkType 1.067 against ata 1.255: the homepage's suite is ArkType's worst
-(1.282). Size without ours is @railway-ts/pipelines 1.000, Typia 1.177,
-@remix-run/data-schema 1.226 and Superstruct 1.234, each in one suite, then
-ArkType 1.328. Startup without ours is two rows that time
-creating a schema, which a precompiled build doesn't do, so they show
-little. ata, the closest at speed, isn't in the homepage's suite or Sury's;
-its average is over the three suites it's in.
+valibot.dev's; the script that sizes it is ours), and the headline counts
+none of them ("The headline's suites"). On the full board, with ours, speed
+is ArkType 1.107 against ata 1.255 (the homepage's suite is ArkType's worst,
+1.282), startup ArkType 1.013 against Typia 2.815, and size ajv 1.326
+against ArkType's 1.462. Startup without ours is two rows that time creating
+a schema, which a precompiled build doesn't do, so they show little; with
+ours, which time whole apps from import to first validation, ArkType is
+still first. ata, the closest at speed, isn't in the homepage's suite or
+Sury's; its average is over the three suites it's in.
 
 **"Instruction counts aren't time."** They aren't. They're the measure
 because these runs share a machine (1-minute loads of 9 to 20), and wall
@@ -539,7 +580,9 @@ records. Speed and startup hold with any one suite left out. Speed's
 closest is without schemabenchmarks.dev: ArkType 1.110, ata 1.151, a 3.7%
 lead.
 
-**"Size isn't close."** ajv leads it by 10.3%, 1.326 against ArkType's
+**"Size isn't close."** Over the independent suites, Typia leads it by
+3.3%, 1.256 to ArkType's 1.297, on the two of three it's in. On the full
+board, ajv leads it by 10.3%, 1.326 against ArkType's
 1.462, and the lead survives leaving out schemabenchmarks.dev (ajv 1.160, in
 two of three suites), Sury's (ajv 1.326, with ArkType fourth at 1.499) or the
 form (ajv 1.527 to ArkType's 1.546), not the homepage's apps (Typia 1.256 in
