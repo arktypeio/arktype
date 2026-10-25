@@ -28,6 +28,22 @@ Thanks to @lprnmns for #1705.
 
 A cyclic Type whose object has only an index signature, like `object.json` or `scope({ tree: { "[string]": "tree | number" } })`, threw fast-check's `Tie has not been initialized`. It now generates.
 
+### Generate cycles through arrays and tuples
+
+A cycle through an array or a tuple, like `scope({ tree: ["number", "tree[]"] })`, threw `Tie has not been initialized` as one through an index signature did. A required cycle with a way out, like `linked: { value: "number", next: "linked | null" }`, generates values that end, and `Infinitely deep cycles are not supported.` is thrown only for a cycle with no finite value.
+
+### Omit every tuple element after an omitted optional one
+
+A variadic element was still generated after an omitted optional one, so `[string, boolean?, ...number[]]` could generate `["a", 1]`, which it rejects.
+
+### Generate only keys every matching index signature allows
+
+An object with several index signatures, like `{ "[string]": "number", "[/^a/]": "0 < number < 10" }`, merged entries each generated for one signature, so a key another signature matched could hold a value that one rejects. Such a key is now kept only where every signature matching it allows its value.
+
+### Generate what `number` and `!=` accept
+
+`number` no longer generates `Infinity` or `-Infinity`, which arktype rejects unless `numberAllowsInfinity` is configured, and a Type constrained with `!=`, like `"0 <= number.integer <= 5 & number != 1"`, generates only values other than its limit.
+
 ### Name the class an arbitrary can't be generated for
 
 A class with no builder, like `Map` or `type.instanceOf(Foo)`, threw `buildProtoArbitrary[node.proto.name] is not a function`. It now throws `Foo instances can't be generated`.

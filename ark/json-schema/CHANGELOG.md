@@ -36,7 +36,7 @@ const T = jsonSchemaToType(User)
 jsonSchema({ type: "string", minLength: -1 })
 ```
 
-Inference follows `$ref`s, including recursive ones, composition, conditionals and `not`, and resolves `$defs`, `definitions` and OpenAPI `components.schemas`. An inferred type may be wider than the schema, since constraints like `minimum` and `pattern` don't narrow it, but it never rejects a value the schema accepts. At runtime, `jsonSchema` returns its input.
+Inference follows `$ref`s, including recursive ones, composition, conditionals and `not`, and resolves `$defs`, `definitions` and OpenAPI `components.schemas`. An inferred type may be wider than the schema, since constraints like `minimum` and `pattern` don't narrow it, but it never rejects a value the schema accepts. A keyword `jsonSchemaToType` can't read, like `unevaluatedProperties`, `$dynamicRef` or a draft-04 boolean `exclusiveMinimum`, is a type error. At runtime, `jsonSchema` returns its input.
 
 A schema TypeScript can't see as a literal, like one read from a `.json` file, can be cast with `jsonSchema.as<t>()`. `jsonSchema.infer` and `jsonSchema.validate` are the underlying types, for writing your own wrappers.
 
@@ -69,6 +69,7 @@ A pointer like `#/$defs/a` within a nested `$id` resolves against that resource,
 - `minimum` beside `exclusiveMinimum`, `required` without `properties`, and `propertyNames` beside `patternProperties` read rather than throw.
 - Composition keywords apply together, where only the first of `allOf`, `anyOf`, `not` and `oneOf` did, and `oneOf` with disjoint branches is a union.
 - `$ref` (including recursive refs), `if`/`then`/`else`, `dependentRequired` and `dependentSchemas` are read (#1485).
+- A fractional `multipleOf`, which threw, is read, and draft-07 `dependencies`, which were ignored, apply.
 - An invalid keyword, or one that can't be read exactly like `unevaluatedProperties` or a remote `$ref`, throws a `ParseError` naming its JSON Pointer, like `#/minLength must be a non-negative integer (was -1)`, where some threw a `TraversalError`.
 - The `writeJsonSchema*Message` functions and their types, like `writeJsonSchemaInsufficientKeysMessage`, are no longer exported, since the errors they wrote are no longer thrown.
 

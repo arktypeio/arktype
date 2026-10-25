@@ -86,6 +86,10 @@ regex("^(?=(a))a(b)$")
 
 arkregex publishes under one name. `@ark/regex`, the same package under another name, is deprecated at its last version, and `@arktype/regex` is no longer published. Replace each `@ark/regex` import with `arkregex`.
 
+### import internals from `arkregex/internal`
+
+`arkregex/internal` exports the names of every arkregex module. A deep import like `arkregex/internal/parse.ts` keeps its module's types and loads that entry at runtime.
+
 ## 0.0.14
 
 ### allow `}` to be escaped

@@ -891,7 +891,7 @@ A call to `define`, which returns its argument, is replaced by the argument.
 A validator differs from the Type it replaces:
 
 - It lacks the members that compose a Type, like `and` or `in`, so calling one is a TypeError, and keeps `meta` but not a keyword's.
-- It has `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` only where the build's `members` option sets them, and reads `undefined` for one it lacks.
+- It has `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` only where the build's `members` option sets them, and reads `undefined` for one it lacks. Where `arktype/runtime` resolves under the `"development"` condition, as in Vite's dev server, Vitest and webpack's development mode, reading one it lacks throws, naming the member to set, and `console.log` prints its errors as their issues. Outside a production build, reading a `~standard.jsonSchema` it lacks throws too, so a library converting it to JSON Schema says what to set rather than failing on `undefined`.
 - It and its members are frozen, except a Date or RegExp it holds, unless the build sets `freeze: false`.
 - The build refuses what the runtime can't reproduce, like an instance of a class other than Date or RegExp, naming it.
 - A build installs encoding itself, so `.encode` works in a precompiled program that never imports `arktype/codecs`, where arktype throws. A Type with a morph that has no inverse fails the build where its `.encode` is read.
@@ -938,6 +938,7 @@ Other keys that first differ at a space, `!`, `"` or a backslash keep their orde
 - `$.node(kind, input)` takes a node's inner, with children already nodes, rather than the schema format, so `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
 - `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, prereduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context. A node's id is registered as it's created, from its `alias` or kind unless `id` is passed, so a schema that resolves to a node the scope already holds registers none.
 - Members nothing used are gone: an alias's `resolutionId` (read `resolution.id`), a node's `assertHasKindIn`, `isConstraint` and `isRefinement`, a root's `shortDescription`, a morph's `declareIn` and `serializedMorphs`, a structure's `optionalKeys`, and `Scanner`'s `jumpToIndex` in `@ark/util`.
+- Fields each node computed whether or not it was compiled are gone: a constraint's `compiledCondition`, a predicate's `compiledNegation`, a morph's `compiledMorphs` and a sequence's `optionalsLength`. A leaf writes its check with `compileCondition(js, data)`. The `PrecompiledReferences` type, which described a precompiled unit nothing builds, is gone too.
 - Derived and memoized keys moved from a node's own enumerable keys to `node.cache`, like the `includes*` flags, `innerEntries`, a structure's `propsByKey`, a node's `assert` and the `expression` of a union, intersection, structure, required prop or index signature; each reads as before, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
 
 ### Shorten long internal names
