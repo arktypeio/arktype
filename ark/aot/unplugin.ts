@@ -2,7 +2,11 @@ import { throwError, type KeySet } from "@ark/util"
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { basename, dirname, isAbsolute, join, resolve } from "node:path"
 import { relative } from "node:path/posix"
-import { createUnplugin, type UnpluginInstance } from "unplugin"
+import {
+	createUnplugin,
+	type UnpluginInstance,
+	type UnpluginOptions
+} from "unplugin"
 import {
 	emitDeclarations,
 	refuseDeclare,
@@ -53,6 +57,7 @@ import type { ScannedProgram, ScannedUsage } from "./precompile.ts"
 import { withEnvironment, type Environment } from "./presets.ts"
 import {
 	addLoaded,
+	isAsset,
 	scanProgram,
 	unseenProblemOf,
 	writeUnprunedMessage,
@@ -77,10 +82,17 @@ export interface PrecompileUnpluginOptions extends PrecompilePluginOptions {
 	declare?: boolean | undefined
 }
 
-export const precompile: UnpluginInstance<
-	PrecompileUnpluginOptions | undefined,
-	false
-> = createUnplugin((opts, meta) => {
+type Options = PrecompileUnpluginOptions | undefined
+
+// Vite, Rollup and Rolldown's plugin is followed by one reading what other
+// plugins write
+export type PrecompileUnplugin = Omit<
+	UnpluginInstance<Options, false>,
+	keyof typeof checkingFrameworks
+> &
+	Pick<UnpluginInstance<Options, true>, keyof typeof checkingFrameworks>
+
+const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	if (!(meta.framework in declaringFrameworks))
 		refuseDeclare(opts, meta.framework)
 	// set here or in ark.json, as a host that can't prune would ignore it
@@ -406,7 +418,64 @@ export const precompile: UnpluginInstance<
 		prunesIn(!!environment?.production) &&
 		transformedFilter.include.test(id) &&
 		!transformedFilter.exclude.test(id)
-	return {
+	// what another plugin writes, like a compiled Svelte component, is read
+	// once it's written, as a validator it reads may lack what it reads
+	const unwrittenChecker: UnpluginOptions = {
+		name: "arktype:unwritten",
+		enforce: "post",
+		transform: {
+			// after each other plugin's, as Rollup and Rolldown run it, but
+			// before Vite's dev server writes each import as a URL
+			...(meta.framework !== "vite" && { order: "post" }),
+			filter: {
+				id: { exclude: [/^\0/, /[/\\]node_modules[/\\]/] },
+				code: /\bimport\b/
+			},
+			async handler(code, id) {
+				if (
+					!isStandalone ||
+					opts?.shadow ||
+					(transformedFilter.include.test(id) &&
+						!transformedFilter.exclude.test(id)) ||
+					isAsset(id)
+				)
+					return
+				const map = (
+					this as { getCombinedSourcemap?: () => { mappings: string } }
+				).getCombinedSourcemap?.()
+				reportDiagnostics(
+					(await request(
+						"checkUnwritten",
+						code,
+						fileOf(id),
+						map?.mappings
+					)) as RenderedDiagnostics,
+					warning => this.warn(warning),
+					throwBuildError
+				)
+			}
+		}
+	}
+	// Vitest's, which Vite's Plugin type declares only where Vitest is installed
+	const vitestHooks = {
+		// a module's precompiled code depends on files other than its own,
+		// and the modules it imports are written only as it is transformed.
+		// An inlined runtime module is cached with @ark/schema/runtime resolved
+		// to the variant the options chose, so another variant can't reuse it
+		configureVitest: (context: VitestPluginContext) =>
+			(
+				context.defineCacheKeyGenerator ??
+				context.experimental_defineCacheKeyGenerator
+			)?.(({ id }) =>
+				(
+					transformedFilter.include.test(id) &&
+					!transformedFilter.exclude.test(id)
+				) ?
+					false
+				:	variant
+			)
+	}
+	const plugin: UnpluginOptions = {
 		name: "arktype",
 		enforce: "pre",
 		resolveId: {
@@ -521,25 +590,16 @@ export const precompile: UnpluginInstance<
 			// e.g. Astro's prerender, a server environment other than ssr
 			configEnvironment: () =>
 				inlined.length ? { resolve: { noExternal: inlined } } : undefined,
-			// a module's precompiled code depends on files other than its own,
-			// and the modules it imports are written only as it is transformed.
-			// An inlined runtime module is cached with @ark/schema/runtime resolved
-			// to the variant the options chose, so another variant can't reuse it
-			configureVitest: (context: VitestPluginContext) =>
-				(
-					context.defineCacheKeyGenerator ??
-					context.experimental_defineCacheKeyGenerator
-				)?.(({ id }) =>
-					(
-						transformedFilter.include.test(id) &&
-						!transformedFilter.exclude.test(id)
-					) ?
-						false
-					:	variant
-				),
+			...vitestHooks,
 			options: checkInputExternal,
 			// a factory checks its helpers against what Vitest's mocks replace
 			configResolved: config => {
+				const own = config.plugins.findIndex(({ name }) => name === "arktype")
+				if (
+					config.plugins.findIndex(({ name }) => name === tanstackSplitter) >
+					own
+				)
+					throwError(writeAheadOfSplitterMessage("tanstackRouter()"))
 				isServing = config.command === "serve"
 				resolveIn(!config.isProduction)
 				for (const [name, environment] of Object.entries(
@@ -847,7 +907,12 @@ export const precompile: UnpluginInstance<
 			}
 		}
 	}
+	return meta.framework in checkingFrameworks ?
+			[plugin, unwrittenChecker]
+		:	plugin
 })
+
+export const precompile = unplugin as PrecompileUnplugin
 
 const esbuildResolution = "arktype"
 
@@ -1279,6 +1344,19 @@ const specifiersOf = (...specifiers: string[]) =>
 const resolvedSpecifier = new RegExp(
 	`${specifiersOf(...runtimeSpecifiers, "arktype/runtime", ...internalSpecifiers).source}|^~arktype\\/`
 )
+
+// each runs a plugin after the others, which reads what they write
+const checkingFrameworks = {
+	vite: 1,
+	rollup: 1,
+	rolldown: 1
+} as const satisfies KeySet
+
+// the plugin TanStack Router splits a route's code with
+const tanstackSplitter = "tanstack-router:code-splitter:compile-reference-file"
+
+const writeAheadOfSplitterMessage = (call: string): string =>
+	`arktype's plugin is listed ahead of TanStack Router's, which splits a route's code after arktype's precompiles it, into modules it reads unprecompiled. List precompile.vite() after ${call} in vite.config's plugins.`
 
 // each reads the whole bundle before it transforms a module
 const pruningFrameworks = {

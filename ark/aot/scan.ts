@@ -140,9 +140,11 @@ const runtimeSpecifier =
 // string or as a worker, a bundle of its own, which import nothing of the
 // program
 const isInert = (id: string, host: Pick<ScanHost, "isTransformed">) =>
-	(dependencyOf(id) !== undefined && !host.isTransformed(id)) ||
-	inertExtension.test(id) ||
-	inertQuery.test(id)
+	(dependencyOf(id) !== undefined && !host.isTransformed(id)) || isAsset(id)
+
+// e.g. a stylesheet, or a module Vite writes as a string or as a worker
+export const isAsset = (id: string): boolean =>
+	inertExtension.test(id) || inertQuery.test(id)
 
 // with a query too, as Vite's ?inline or SVGR's ?react
 const inertExtension =

@@ -77,6 +77,12 @@ export type PrecompileRequest =
 	  ]
 	| [kind: "scan", program: ScannedProgram]
 	| [kind: "check", source: string, id: string]
+	| [
+			kind: "checkUnwritten",
+			source: string,
+			id: string,
+			mappings?: string | undefined
+	  ]
 	| [kind: "lint", source: string, id: string]
 	| [kind: "readDependency", importer: string]
 	| [kind: "reset"]
@@ -132,6 +138,12 @@ const answerRequests = (
 		if (request[0] === "scan") return precompiler.scan(request[1])
 		if (request[0] === "check")
 			return checkedModuleOf(precompiler, request[1], request[2])
+		if (request[0] === "checkUnwritten") {
+			return renderDiagnostics(
+				precompiler.checkUnwritten(request[1], request[2], request[3]),
+				id => precompiler.graph.pathOf(id)
+			)
+		}
 		precompiler.forgetCopies()
 		const { hasAnswered } = tracked
 		tracked.hasAnswered = true

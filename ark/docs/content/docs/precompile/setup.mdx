@@ -30,7 +30,7 @@ export default defineConfig({
 })
 ```
 
-Vitest runs tests through the same plugin.
+Vitest runs tests through the same plugin. With a framework's plugins, list it after them, as [Frameworks](#frameworks) shows.
 
 </Tab>
 <Tab value="esbuild">
@@ -170,6 +170,63 @@ Set [options](/docs/precompile/options) in `ark.json` beside your `package.json`
 ```
 
 A validator leaves out its JSON Schema unless the build sets it, so a library that reads it through Standard Schema, like the MCP SDK's `inputSchema` or an AI SDK 6 tool, finds `undefined` there in production. Outside production, reading it throws, naming the fix. Add `"members": { "~standard.jsonSchema": true }` to `precompile` for it. See [members](/docs/precompile/options#members).
+
+## Frameworks [#frameworks]
+
+With Vite, list `precompile.vite()` after your framework's plugins:
+
+<Tabs items={["SvelteKit", "TanStack Router", "Astro"]} groupId="framework" persist>
+<Tab value="SvelteKit">
+
+```ts title="vite.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { sveltekit } from "@sveltejs/kit/vite"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+	plugins: [sveltekit(), precompile.vite()]
+})
+```
+
+</Tab>
+<Tab value="TanStack Router">
+
+```ts title="vite.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { tanstackRouter } from "@tanstack/router-plugin/vite"
+import react from "@vitejs/plugin-react"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+	plugins: [
+		tanstackRouter({ target: "react", autoCodeSplitting: true }),
+		react(),
+		precompile.vite()
+	]
+})
+```
+
+Its code splitting moves a route's component into a module of its own after the plugins ahead of it run, so the build fails where arktype's plugin comes first.
+
+</Tab>
+<Tab value="Astro">
+
+```ts title="astro.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "astro/config"
+
+export default defineConfig({
+	vite: { plugins: [precompile.vite()] }
+})
+```
+
+</Tab>
+</Tabs>
+
+Define your Types in `.ts` or `.js` modules. A component another plugin compiles, like a Svelte, Vue or Astro component or an MDX page, can call a validator or read its `.allows` and `.assert`, but the build can't write a validator inside it. So a read there that only a precompiled site could serve, like `.description` or `.omit()`, or that a validator lacks, like `.errors`, fails the build, or the dev server's request for the component, naming the read. Move it into a module the component imports, e.g. as a function the component calls.
 
 ## Next.js [#next]
 

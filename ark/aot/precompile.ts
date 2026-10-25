@@ -878,6 +878,33 @@ export class Precompiler {
 		return analysis
 	}
 
+	// what a build reports for a module another plugin writes, like a
+	// compiled Svelte component, which it reads but doesn't precompile: each
+	// read of a validator the standalone runtime lacks, and each site, whose
+	// read no module it writes holds
+	checkUnwritten(source: string, id: string, mappings?: string): Diagnostic[] {
+		if (this.mode !== "standalone" || !this.importsArk(source, id)) return []
+		const module = this.add(id, source, mappings)
+		this.configuration ??= this.applyConfiguration()
+		const { sites, diagnostics } = this.analysisOf(module)
+		for (const site of sites) {
+			if (site.status === "island") continue
+			diagnostics.push(
+				this.diagnostic(
+					module,
+					site,
+					"unsupported",
+					`${module.snippetOf(site)} can't be precompiled in a module another plugin writes`,
+					[
+						`the build reads ${module.path} only once another plugin has written it, so it can't write a validator there`
+					],
+					unwrittenHint
+				)
+			)
+		}
+		return diagnostics
+	}
+
 	// a config module given anew is read again
 	private add(id: string, source: string, mappings?: string): SourceModule {
 		const module = this.graph.add(id, source, mappings)
@@ -4609,6 +4636,9 @@ export class Precompiler {
 }
 
 const methodMembers = ["traverse", "from", "toString"] as const
+
+const unwrittenHint =
+	'Move it into a .ts or .js module of its own that this one imports, which the build precompiles, or build with runtime: "arktype".'
 
 export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 	[
