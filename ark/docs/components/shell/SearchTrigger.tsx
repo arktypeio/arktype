@@ -11,7 +11,6 @@ export const SearchButton = ({ query }: { query?: string | undefined }) => (
 	<button
 		type="button"
 		className="search-btn"
-		aria-label="Search docs"
 		aria-keyshortcuts={shortcuts}
 		onPointerEnter={preloadSearch}
 		onFocus={preloadSearch}
@@ -20,7 +19,7 @@ export const SearchButton = ({ query }: { query?: string | undefined }) => (
 		<SearchIcon aria-hidden />
 		<span className="sb-text">Search docs</span>
 		{/* CSS shows the one for the platform, which the head script marks */}
-		<kbd className="sb-kbd">
+		<kbd className="sb-kbd" aria-hidden>
 			<span className="kbd-mac">⌘K</span>
 			<span className="kbd-other">Ctrl K</span>
 		</kbd>
