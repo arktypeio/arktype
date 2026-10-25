@@ -99,6 +99,13 @@ const importCode = (js: string): Promise<any> => import(urlOf(js))
 // what most tests compare a validator's strings by
 const printed: ValidatorMembers = { expression: true, description: true }
 
+// as a build configures main.ts by ./config.ts
+const configuredBy = (fingerprint: string) => ({
+	fingerprint,
+	path: "main.ts",
+	config: "./config.ts"
+})
+
 interface LoadOptions extends StandaloneOptions {
 	// run before the artifact, as a program's config module is
 	configure?: string
@@ -122,9 +129,7 @@ const load = async (
 		...opts,
 		configured:
 			opts.configured ??
-			(fingerprint === undefined ? undefined : (
-				{ fingerprint, path: "main.ts", config: "./config.ts" }
-			)),
+			(fingerprint === undefined ? undefined : configuredBy(fingerprint)),
 		members
 	})
 	const source = code.replace(runtimeImport, `${runtimeImport}\n${configure}`)
@@ -1086,7 +1091,7 @@ a must be a number`)
 			const { code } = precompileStandalone(
 				{ T: type("string"), Parsed: type("string.numeric.parse") },
 				{
-					configured: { fingerprint, path: "main.ts", config: "./config.ts" },
+					configured: configuredBy(fingerprint),
 					members
 				}
 			)
@@ -2332,11 +2337,9 @@ age is missing`)
 				precompileStandalone(
 					{ A: type("string"), B: type("number") },
 					{
-						configured: {
-							fingerprint: fingerprintOf({ onUndeclaredKey: "delete" }),
-							path: "main.ts",
-							config: "./config.ts"
-						}
+						configured: configuredBy(
+							fingerprintOf({ onUndeclaredKey: "delete" })
+						)
 					}
 				).code.replace(
 					runtimeImport,
@@ -2360,11 +2363,7 @@ config.onUndeclaredKey = "reject"`
 					precompileStandalone(
 						{ T: type({ a: "string" }) },
 						{
-							configured: {
-								fingerprint: fingerprintOf(config),
-								path: "main.ts",
-								config: "./config.ts"
-							}
+							configured: configuredBy(fingerprintOf(config))
 						}
 					).code
 				}\nexport const configure = runtime.configure`
@@ -2381,11 +2380,7 @@ config.onUndeclaredKey = "reject"`
 					precompileStandalone(
 						{ T: type("string") },
 						{
-							configured: {
-								fingerprint: fingerprintOf({}),
-								path: "main.ts",
-								config: "./config.ts"
-							},
+							configured: configuredBy(fingerprintOf({})),
 							lazy: false
 						}
 					).code
@@ -2412,11 +2407,7 @@ config.onUndeclaredKey = "reject"`
 						precompileStandalone(
 							{ [name]: value },
 							{
-								configured: {
-									fingerprint: fingerprintOf({}),
-									path: "main.ts",
-									config: "./config.ts"
-								}
+								configured: configuredBy(fingerprintOf({}))
 							}
 						).code
 					}\nexport const configure = runtime.configure`
