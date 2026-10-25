@@ -93,6 +93,7 @@ const arktypeNamespacesBySpecifier: Record<string, object> =
 export const runtimeExports: Record<string, 1> = Object.setPrototypeOf(
 	{
 		ArkErrors: 1,
+		firstIssue: 1,
 		ParseError: 1,
 		Traversal: 1,
 		TraversalError: 1
@@ -1099,7 +1100,7 @@ export class ModuleGraph {
 					stored |= this.transfer(arg, module, kindOfKey)
 			}
 		}
-		return stored & ~kinds.data ? kinds.holder : 0
+		return holderOf(stored) & ~kinds.data
 	}
 
 	// e.g. what `assigned` may be after `({ assigned } = { assigned: A })`

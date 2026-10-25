@@ -2708,15 +2708,15 @@
 				animation: strike 0.3s var(--ease-out) 0.72s both;
 			}
 		}
-		.proof:not([data-play]) .proof-body li {
-			opacity: 0.4;
-			.tick {
-				opacity: 0;
-			}
+		/* only the marks wait dimmed: the checks stay readable before they run */
+		.proof:not([data-play]) .proof-body .tick {
+			opacity: 0;
 		}
 		.proof[data-play] .proof-body li {
 			--at: calc(0.35s + var(--i) * 0.34s);
-			animation: lit 0.3s ease-out var(--at) both;
+			.proof-mark {
+				animation: lit 0.3s ease-out var(--at) both;
+			}
 			.spin {
 				display: block;
 				animation:

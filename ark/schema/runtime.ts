@@ -8,7 +8,6 @@ export type {
 	ErrorContextsByCode
 } from "./shared/errors.ts"
 export * from "./shared/enWriters.ts"
-export { describePredicate } from "./shared/errorWriters.ts"
 export * from "./shared/issues.ts"
 export {
 	supportedJsonSchemaTargets,

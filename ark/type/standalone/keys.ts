@@ -2,6 +2,7 @@ import {
 	hasArkKind,
 	isNode,
 	LazyGenericRoot,
+	madeMorphs,
 	type BaseRoot,
 	type BaseScope
 } from "@ark/schema"
@@ -178,6 +179,12 @@ export const encodeKey = (
 			write(value.bodyDef, path, true)
 		} else if (isDefinition && isThunk(value))
 			refuse(`holds a thunk${at(path)}, whose result decides what it creates`)
+		else if (madeMorphs.has(value as never)) {
+			// e.g. pipe.try's, holding the morph it wraps
+			const [make, args] = madeMorphs.get(value as never)!
+			values.push(`made ${runtimeKeyOf(make)}`)
+			write(args, path, false)
+		}
 		// e.g. a description writer, which arktype calls as it creates each Type
 		else if (isConfig && isHole(value)) {
 			refuse(

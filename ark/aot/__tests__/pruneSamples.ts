@@ -228,6 +228,13 @@ export const samplesByApp: Record<string, Samples> = {
 	saas: saas()
 }
 
+// apps of shapes no bench app has, kept out of the bench's numbers
+export const testedSamplesByApp: Record<string, Samples> = {
+	parsed: {
+		Token: [() => ({ payload: "YQ==", claims: "{}", version: "v1" })]
+	}
+}
+
 // what a mutation sets a key to, around each app's bounds and formats
 export const values: unknown[] = [
 	undefined,

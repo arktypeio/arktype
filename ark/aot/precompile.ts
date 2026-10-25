@@ -18,6 +18,7 @@ import {
 	hasDomain,
 	includes,
 	InternalArktypeError,
+	isThunk,
 	ParseError,
 	printable,
 	registeredNameOf,
@@ -140,8 +141,12 @@ import {
 } from "./scope.ts"
 import type { ShadowContract } from "./shadow.ts"
 import { flattenBundle, importedNamesOf } from "./flat.ts"
-import { writeUnscannedFlatMessage } from "./scan.ts"
-import { linkBundle, type LinkedSite } from "./link.ts"
+import {
+	writeKeptMembersMessage,
+	writeUnprunedMessage,
+	writeUnscannedFlatMessage
+} from "./scan.ts"
+import { linkBundle, prefixOf, type LinkedSite } from "./link.ts"
 import {
 	passedReaderOf,
 	unprecompiled,
@@ -255,6 +260,11 @@ export interface ScannedProgram {
 	modules: Record<string, ScannedModule>
 	// what each module's specifiers resolve to, where the bundle holds it
 	targets: Record<string, Record<string, string>>
+	// each module import() loads, which a bundler that splits builds as an entry
+	dynamicImports: string[]
+	// each module with no file, like a framework's virtual module, which its
+	// runtime may import from code the scan doesn't read, as it may an entry
+	exposed: string[]
 	// whether the bundle writes every module it holds into one file
 	isOneChunk?: boolean
 }
@@ -263,6 +273,9 @@ export interface ScannedModule {
 	source: string
 	// whether the host precompiles it, as it may not an entry it's given
 	transformed: boolean
+	// how its lines map to its file's, where a plugin ahead of the host's
+	// transformed it
+	mappings?: string | undefined
 }
 
 type ProgramReads = Pick<
@@ -295,6 +308,12 @@ export interface ScannedUsage {
 	replaced: string[]
 	// whether it wrote each module, for a transform naming the bundle to read
 	written: boolean
+	// each module creating a validator, which only a module reaching it may
+	// read
+	holders: string[]
+	// the warning where it left out no member members leaves to it, as some
+	// read may need any
+	unpruned?: string | undefined
 }
 
 export interface ModuleAnalysis {
@@ -527,6 +546,10 @@ export class Precompiler {
 	>()
 	private inertByModule = new WeakMap<SourceModule, boolean>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
+	private valueSpecifiersById: Record<
+		string,
+		[source: string, specifiers: ReadonlySet<string> | undefined]
+	> = Object.create(null)
 	// each module's import cycle (SCC), numbered as found
 	private componentsById: Record<string, number> = Object.create(null)
 	private exportsArkByModule = new WeakMap<SourceModule, boolean>()
@@ -607,7 +630,8 @@ export class Precompiler {
 			dropped: [],
 			linked: false,
 			replaced: [],
-			written: false
+			written: false,
+			holders: []
 		}
 		if (this.mode !== "standalone") return unwritten
 		const sources: Record<string, string> = {}
@@ -615,30 +639,41 @@ export class Precompiler {
 		const planned = new Map<string, RuntimeModule>()
 		const precompiled: string[] = []
 		for (const id in program.modules) {
-			const { source, transformed } = program.modules[id]
+			const { source, transformed, mappings } = program.modules[id]
 			sources[id] = source
 			if (
 				transformed &&
 				this.isTransformed(id) &&
 				this.importsArk(source, id)
 			) {
-				const runtime = this.plannedRuntimeOf(source, id)
-				// a bundle that fails is left to report it
-				if (!runtime) return unwritten
+				const runtime = this.plannedRuntimeOf(source, id, mappings)
+				// a bundle building the module as read fails, reporting why
+				if (!runtime) {
+					return {
+						...unwritten,
+						unpruned: writeUnprunedMessage(
+							`${this.graph.pathOf(id)} fails to precompile`
+						)
+					}
+				}
 				planned.set(id, runtime)
 				precompiled.push(id)
 			} else planned.set(id, unprecompiled(this.graph.add(id, source)))
 		}
 		const used = this.usedIn(program, planned)
+		const unpruned =
+			typeof used === "string" ? this.keptMembersMessageOf(used) : undefined
 		const dropped =
-			used ?
-				defaultMembers.filter(
+			typeof used === "string" ?
+				[]
+			:	defaultMembers.filter(
 					member => this.members[member] === undefined && !used.has(member)
 				)
-			:	[]
-		const called = !used || used.has("call")
-		const readsAllows = !used || used.has("allows")
-		const piped = !used || used.has("piped")
+		const isRead = (read: UsedMember) =>
+			typeof used === "string" || used.has(read)
+		const called = isRead("call")
+		const readsAllows = isRead("allows")
+		const piped = isRead("piped")
 		const isWhole = !dropped.length && called && readsAllows && piped
 		// a size build's units are already module constants
 		const flattens =
@@ -647,7 +682,7 @@ export class Precompiler {
 			this.standalone.optimize === "speed"
 		// a lazy validator reads its checkers where it's created, unlinkable
 		const changesOnlyIfFlat = isWhole && (this.inline || this.standalone.lazy)
-		if (changesOnlyIfFlat && !flattens) return unwritten
+		if (changesOnlyIfFlat && !flattens) return { ...unwritten, unpruned }
 		const usage: ProgramUsage = {
 			members: {
 				...this.members,
@@ -664,7 +699,12 @@ export class Precompiler {
 		const written: Record<string, PrecompiledModule> = {}
 		const runtimes = new Map(planned)
 		for (const id of precompiled) {
-			written[id] = this.precompile(sources[id], id, undefined, program.key)
+			written[id] = this.precompile(
+				sources[id],
+				id,
+				program.modules[id].mappings,
+				program.key
+			)
 			runtimes.set(id, this.runtimesById[id])
 			if (written[id].diagnostics.some(d => d.severity === "error")) {
 				this.usagesByProgram.delete(program.key)
@@ -675,7 +715,7 @@ export class Precompiler {
 		// where a factory checks a Type it's passed
 		const usedAsWritten = isWhole ? used : this.usedIn(program, runtimes)
 		const isReadAsWritten = (read: UsedMember) =>
-			!usedAsWritten || usedAsWritten.has(read)
+			typeof usedAsWritten === "string" || usedAsWritten.has(read)
 		if (
 			dropped.some(isReadAsWritten) ||
 			(!called && isReadAsWritten("call")) ||
@@ -683,7 +723,15 @@ export class Precompiler {
 			(!piped && isReadAsWritten("piped"))
 		) {
 			this.usagesByProgram.delete(program.key)
-			return unwritten
+			return {
+				...unwritten,
+				unpruned:
+					typeof usedAsWritten === "string" ?
+						this.keptMembersMessageOf(usedAsWritten)
+					:	writeUnprunedMessage(
+							"its precompiled code reads more of a validator than the program does"
+						)
+			}
 		}
 		const linked =
 			!this.inline &&
@@ -695,19 +743,37 @@ export class Precompiler {
 			:	undefined
 		if (changesOnlyIfFlat && !replaced) {
 			this.usagesByProgram.delete(program.key)
-			return unwritten
+			return { ...unwritten, unpruned }
 		}
 		usage.written = written
 		if (replaced) usage.replaced = new Set(replaced)
-		return { dropped, linked, replaced: replaced ?? [], written: true }
+		return {
+			dropped,
+			linked,
+			replaced: replaced ?? [],
+			written: true,
+			holders: precompiled.filter(id => {
+				const runtime = planned.get(id)!
+				return runtime.validators.length > 0 || runtime.holdsOther
+			}),
+			unpruned
+		}
+	}
+
+	// a member members sets is the same whatever the program reads
+	private keptMembersMessageOf(reason: string): string | undefined {
+		const kept = defaultMembers.filter(
+			member => this.members[member] === undefined
+		)
+		return kept.length ? writeKeptMembersMessage(reason, kept) : undefined
 	}
 
 	private usedIn(
 		program: ScannedProgram,
 		modules: ReadonlyMap<string, RuntimeModule>
-	): Set<UsedMember> | undefined {
+	): Set<UsedMember> | string {
 		return usedMembersOf({
-			entries: new Set(program.entries),
+			entries: new Set([...program.entries, ...program.exposed]),
 			modules,
 			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
 		})
@@ -717,13 +783,13 @@ export class Precompiler {
 	// it would fold, before it writes them, or undefined where it fails
 	private plannedRuntimeOf(
 		source: string,
-		id: string
+		id: string,
+		mappings: string | undefined
 	): RuntimeModule | undefined {
-		const module = this.add(id, source)
+		const module = this.add(id, source, mappings)
 		this.configuration ??= this.applyConfiguration()
 		const { sites, diagnostics } = this.analysisOf(module)
-		let prefix = "$ark"
-		while (source.includes(prefix)) prefix += "$"
+		const prefix = prefixOf(source, id)
 		const { namesBySite, factoriesBySite, folded } = this.planSites(
 			module,
 			sites,
@@ -887,6 +953,33 @@ export class Precompiler {
 		return analysis
 	}
 
+	// what a build reports for a module another plugin writes, like a
+	// compiled Svelte component, which it reads but doesn't precompile: each
+	// read of a validator the standalone runtime lacks, and each site, whose
+	// read no module it writes holds
+	checkUnwritten(source: string, id: string, mappings?: string): Diagnostic[] {
+		if (this.mode !== "standalone" || !this.importsArk(source, id)) return []
+		const module = this.add(id, source, mappings)
+		this.configuration ??= this.applyConfiguration()
+		const { sites, diagnostics } = this.analysisOf(module)
+		for (const site of sites) {
+			if (site.status === "island") continue
+			diagnostics.push(
+				this.diagnostic(
+					module,
+					site,
+					"unsupported",
+					`${module.snippetOf(site)} can't be precompiled in a module another plugin writes`,
+					[
+						`the build reads ${module.path} only once another plugin has written it, so it can't write a validator there`
+					],
+					unwrittenHint
+				)
+			)
+		}
+		return diagnostics
+	}
+
 	// a config module given anew is read again
 	private add(id: string, source: string, mappings?: string): SourceModule {
 		const module = this.graph.add(id, source, mappings)
@@ -919,10 +1012,49 @@ export class Precompiler {
 		const result: string[] = []
 		for (const [, specifier] of source.matchAll(importSpecifier)) {
 			if (arkPackageSpecifier.test(specifier)) continue
-			const targetId = this.graph.host.resolve(specifier, id)
+			const targetId = this.graph.host.resolve(specifier, id, () => {
+				const specifiers = this.valueSpecifiersOf(source, id)
+				return !specifiers || specifiers.has(specifier)
+			})
 			if (targetId && this.graph.isFollowed(targetId)) result.push(targetId)
 		}
 		return result
+	}
+
+	// what a module's text may import a value from, as a Type is, unlike an
+	// `import type`, an import only types read or a string that reads like
+	// one, or undefined where it doesn't parse
+	private valueSpecifiersOf(
+		source: string,
+		id: string
+	): ReadonlySet<string> | undefined {
+		const cached = this.valueSpecifiersById[id]
+		if (cached?.[0] === source) return cached[1]
+		const module = new SourceModule(id, source, this.graph.pathOf(id))
+		let specifiers: Set<string> | undefined
+		if (!module.parseErrors.length) {
+			specifiers = new Set()
+			walk(module.program, node => {
+				const specifier =
+					node.type === "ImportDeclaration" ?
+						this.isKept(node, module) && node.source.value
+					: node.type === "ExportNamedDeclaration" ?
+						!!node.source &&
+						node.exportKind !== "type" &&
+						(!node.specifiers.length ||
+							node.specifiers.some(
+								specifier => specifier.exportKind !== "type"
+							)) &&
+						node.source.value
+					: node.type === "ExportAllDeclaration" ?
+						node.exportKind !== "type" && node.source.value
+					:	loadedSpecifierOf(node)
+				if (typeof specifier === "string") specifiers!.add(specifier)
+				return true
+			})
+		}
+		this.valueSpecifiersById[id] = [source, specifiers]
+		return specifiers
 	}
 
 	textClosureOf(
@@ -1272,8 +1404,7 @@ export class Precompiler {
 			}
 		}
 		const s = new MagicString(source)
-		let prefix = "$ark"
-		while (source.includes(prefix)) prefix += "$"
+		const prefix = prefixOf(source, id)
 		const modules: Record<string, string> = {}
 		// locals for virtual modules' exports, by specifier
 		const imports: Record<string, Record<string, string>> = {}
@@ -2128,7 +2259,7 @@ export class Precompiler {
 				([node]) => traversalKeyOf(node.in as BaseRoot)[1]
 			)
 		]
-		// e.g. `pipe.try` holding its morph
+		// e.g. a Standard Schema's morph, holding its validate
 		if (
 			held.some(
 				value =>
@@ -2198,6 +2329,13 @@ export class Precompiler {
 		return factory
 	}
 
+	// what a Scope's definitions hold for arktype to call as an alias resolves,
+	// which may not have happened yet, so it isn't yet known as called
+	private thunksOf(site: Site): unknown[] {
+		if (!hasArkKind(site.value, "scope")) return []
+		return thunksIn(this.interpreter.definitionsByScope.get(site.value))
+	}
+
 	private receiveReferences(
 		site: Site,
 		module: SourceModule,
@@ -2218,11 +2356,15 @@ export class Precompiler {
 		const calledByChecks = new Set(
 			site.defaultChecks.flatMap(([node]) => keyOf(node.in as BaseRoot)[1])
 		)
+		const thunks = this.thunksOf(site)
 		for (const reference of site.references) {
 			const text = module.snippetOf(reference)
 			const hole = holesByValue.get(reference.value)
-			// e.g. beside `pipe.try`'s morph, where nothing the site reads is dropped
+			// e.g. beside a Standard Schema's morph, where nothing the site reads is dropped
 			if (hole && site.called.includes(hole) && !dropped.has(hole.value))
+				continue
+			// a standalone Scope never calls one, as its key doesn't hold them
+			if (hole && !held.includes(hole.value) && thunks.includes(hole.value))
 				continue
 			// a dropped class decided which branch survived
 			if (
@@ -2231,9 +2373,12 @@ export class Precompiler {
 				hole.kind !== "class" &&
 				!dropped.has(hole.value)
 			) {
-				// e.g. `pipe.try`'s morph, which arktype calls from a function of its own
 				reasons.push(
-					`${labelOf(module, reference)} is wrapped in a function arktype creates, which a standalone validator can't create yet`
+					site.arktypeArguments.some(arg => holdsValidate(arg, hole.value)) ?
+						writeUnprecompilableMessage(
+							`the Standard Schema holding ${labelOf(module, reference)}`
+						)
+					:	`${labelOf(module, reference)} is wrapped in a function arktype creates, which a standalone validator can't create yet`
 				)
 				continue
 			}
@@ -3878,7 +4023,11 @@ export class Precompiler {
 		for (const statement of module.program.body) {
 			const specifier = "source" in statement && statement.source?.value
 			if (!specifier || arkPackageSpecifier.test(specifier)) continue
-			const target = this.graph.host.resolve(specifier, module.id)
+			const target = this.graph.host.resolve(
+				specifier,
+				module.id,
+				() => !isTypeOnly(statement)
+			)
 			if (target && this.graph.isFollowed(target))
 				result.push([target, isTypeOnly(statement)])
 		}
@@ -4195,10 +4344,12 @@ export class Precompiler {
 	private unresolvedReadsOf(module: SourceModule): Diagnostic[] {
 		const result: Diagnostic[] = []
 		const warned = new Set<string>()
+		// only an import that's kept binds what a read reads, so none other,
+		// like an `import type`, is resolved
 		if (
 			!module.program.body.some(
 				statement =>
-					statement.type === "ImportDeclaration" &&
+					this.isKept(statement, module) &&
 					this.isUnresolved(statement.source.value, module)
 			)
 		)
@@ -4507,9 +4658,12 @@ export class Precompiler {
 								reference.id,
 								"R4",
 								`\`${binding!.name}\` is @ark/schema's, not the standalone runtime's`,
-								[
-									`what a standalone validator creates isn't an instance of @ark/schema's ${name}`
-								],
+								// a class, unlike a function like firstIssue
+								/^[A-Z]/.test(name) ?
+									[
+										`what a standalone validator creates isn't an instance of @ark/schema's ${name}`
+									]
+								:	[],
 								writeSchemaExportHint(name)
 							)
 						:	this.diagnostic(
@@ -5008,6 +5162,9 @@ const keyedMethodOf = (site: Site): string | undefined =>
 
 const methodMembers = ["traverse", "from", "toString"] as const
 
+const unwrittenHint =
+	'Move it into a .ts or .js module of its own that this one imports, which the build precompiles, or build with runtime: "arktype".'
+
 export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 	[
 		`${diagnostic.file}:${diagnostic.line}:${diagnostic.column}  ${diagnostic.message}`,
@@ -5466,6 +5623,34 @@ const textOfInput = (input: Input) =>
 
 const labelOf = (module: SourceModule, span: Span) =>
 	`\`${module.snippetOf(span)}\` (${module.positionOf(span)})`
+
+const thunksIn = (
+	value: unknown,
+	thunks: unknown[] = [],
+	seen = new Set<unknown>()
+): unknown[] => {
+	if (isThunk(value)) thunks.push(value)
+	else if (isPlainContainer(value) && !seen.has(value)) {
+		seen.add(value)
+		for (const v of Object.values(value)) thunksIn(v, thunks, seen)
+	}
+	return thunks
+}
+
+// whether a Standard Schema in a value passed to arktype validates with fn
+const holdsValidate = (
+	value: unknown,
+	fn: unknown,
+	seen = new Set<unknown>()
+): boolean => {
+	if (!isPlainContainer(value) || seen.has(value)) return false
+	seen.add(value)
+	const standard = Reflect.get(value, "~standard")
+	return (
+		(isPlainContainer(standard) && Reflect.get(standard, "validate") === fn) ||
+		Object.values(value).some(v => holdsValidate(v, fn, seen))
+	)
+}
 
 const isCoveredBy = (input: Input, existing: Input) =>
 	input.kind === existing.kind &&

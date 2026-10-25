@@ -30,7 +30,7 @@ export default defineConfig({
 })
 ```
 
-Vitest runs tests through the same plugin.
+Vitest runs tests through the same plugin. With a framework's plugins, list it after them, as [Frameworks](#frameworks) shows.
 
 </Tab>
 <Tab value="esbuild">
@@ -175,18 +175,23 @@ A validator leaves out its JSON Schema unless the build sets it, so a library th
 
 ## Frameworks [#frameworks]
 
-Each line was checked with a production build of a small app, on SvelteKit 3.1, Astro 7.4, Nuxt 4.6 and React Router 8.5:
+With Vite, list `precompile.vite()` after your framework's plugins. Each line was checked with a production build of a small app, on SvelteKit 3.1, Astro 7.4, Nuxt 4.6, React Router 8.5 and TanStack Router 1.168:
 
-| Framework            | Setup                                                                                                                                                                                                                          |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| SvelteKit            | `plugins: [sveltekit(), precompile.vite()]` in `vite.config.ts`                                                                                                                                                                |
-| Astro                | `vite: { plugins: [precompile.vite()] }` in `astro.config.ts`                                                                                                                                                                  |
-| Nuxt                 | `vite: { plugins: [precompile.vite()] }` and `nitro: { rollupConfig: { plugins: [precompile.rollup()] } }` in `nuxt.config.ts`. Nitro bundles server routes and `shared/` itself, so without the second it ships arktype whole |
-| React Router (Remix) | `plugins: [reactRouter(), precompile.vite()]` in `vite.config.ts`                                                                                                                                                              |
-| Next.js              | See [Next.js](#next)                                                                                                                                                                                                           |
-| Monorepos            | Nothing extra. A workspace package linked into `node_modules`, as pnpm, npm, Yarn and Bun workspaces link it, resolves to its own directory, so the build precompiles it with the program                                      |
-| Jest                 | Not supported. It has no driver, so it runs your Types on arktype, unprecompiled. See [Test runners](#test-runners)                                                                                                            |
-| Deno                 | A bundler plugin works under Deno, e.g. `deno run -A npm:vite build` with `precompile.vite()`. There's no driver, so `deno run` on your source loads arktype unprecompiled                                                     |
+| Framework            | Setup                                                                                                                                                                                                                                                                                     |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SvelteKit            | `plugins: [sveltekit(), precompile.vite()]` in `vite.config.ts`                                                                                                                                                                                                                           |
+| Astro                | `vite: { plugins: [precompile.vite()] }` in `astro.config.ts`                                                                                                                                                                                                                             |
+| Nuxt                 | `vite: { plugins: [precompile.vite()] }` and `nitro: { rollupConfig: { plugins: [precompile.rollup()] } }` in `nuxt.config.ts`. Nitro bundles server routes and `shared/` itself, so without the second it ships arktype whole                                                            |
+| React Router (Remix) | `plugins: [reactRouter(), precompile.vite()]` in `vite.config.ts`                                                                                                                                                                                                                         |
+| TanStack Router      | `plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), precompile.vite()]` in `vite.config.ts`. Its code splitting moves a route's component into a module of its own after the plugins ahead of it run, so the build fails where arktype's plugin comes first |
+| Next.js              | See [Next.js](#next)                                                                                                                                                                                                                                                                      |
+| Monorepos            | Nothing extra. A workspace package linked into `node_modules`, as pnpm, npm, Yarn and Bun workspaces link it, resolves to its own directory, so the build precompiles it with the program                                                                                                 |
+| Jest                 | Not supported. It has no driver, so it runs your Types on arktype, unprecompiled. See [Test runners](#test-runners)                                                                                                                                                                       |
+| Deno                 | A bundler plugin works under Deno, e.g. `deno run -A npm:vite build` with `precompile.vite()`. There's no driver, so `deno run` on your source loads arktype unprecompiled                                                                                                                |
+
+Define your Types in `.ts` or `.js` modules. A component another plugin compiles, like a Svelte, Vue or Astro component or an MDX page, can call a validator or read its `.allows` and `.assert`, but the build can't write a validator inside it. So a read there that only a precompiled site could serve, like `.description` or `.omit()`, or that a validator lacks, like `.errors`, fails the build, or the dev server's request for the component, naming the read. Move it into a module the component imports, e.g. as a function the component calls.
+
+A production build reads each component as its framework compiles it, and each virtual module, like SvelteKit's `$env/static/private`, so it [prunes](/docs/precompile/options#prune) through them. Where something still keeps it from pruning, like `import.meta.glob()` or a validator passed to a form library's adapter, it warns once, saying why.
 
 ## Next.js [#next]
 
@@ -321,9 +326,9 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
   Write the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call.
 ```
 
-Without a pattern, it checks every JavaScript and TypeScript file under the current directory outside `node_modules`, `dist`, `out` and `build`.
+Without a pattern, it checks every JavaScript and TypeScript file under the current directory outside `node_modules`, `dist`, `out` and `build`. Where `NODE_ENV` is `production`, it also prints the warning a production bundle of those files would give where it [can't prune](/docs/precompile/options#prune). It reads no Svelte, Vue or Astro component or MDX page, whose reads of a validator only its framework's compiled code shows, so it names those under the current directory that import a module, which only the build checks.
 
-It reads [`ark.json`](/docs/precompile/options#arkjson) as a build does, and the options a plugin call passes, like `precompile.vite({ config: "src/config.ts" })`, in a file at the project's root such as `vite.config.ts`, saying where it found them. Where an option isn't written as a literal there, it can't tell what the build gets, so it fails, asking for it in `ark.json` or as a flag. It takes each [option](/docs/precompile/options) as a flag, which overrides both, like `--preset smallest`, `--optimize-errors size`, `--no-freeze` or `--members '{"assert":false}'`. It exits with 1 where the build would fail. `--fail-under <percent>` exits with 1 only if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
+It reads [`ark.json`](/docs/precompile/options#arkjson) as a build does, and the options a plugin call passes, like `precompile.vite({ config: "src/config.ts" })`, in a file at the project's root such as `vite.config.ts`, saying where it found them. Where an option isn't written as a literal there, or the file loads the plugin in a way it can't follow, it can't tell what the build gets, so it fails, asking for it in `ark.json` or as a flag. It takes each [option](/docs/precompile/options) as a flag, which overrides both, like `--preset smallest`, `--optimize-errors size`, `--no-freeze` or `--members '{"assert":false}'`. It exits with 1 where the build would fail. `--fail-under <percent>` exits with 1 only if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
 
 The same analysis is available as `new Precompiler(host, options).analyze(source, id)` from `@ark/aot`, which, as a build does, applies the program's configuration to arktype in its thread.
 

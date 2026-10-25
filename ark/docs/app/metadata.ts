@@ -13,8 +13,10 @@ export type MetadataOptions = {
 	ogImage?: string
 	/** what the card shows, for readers who can't see it */
 	ogImageAlt?: string
-	/** the page's path, for og:url, e.g. "/playground" */
+	/** the page's path, for og:url and the canonical link, e.g. "/playground" */
 	url?: string
+	/** the title a shared link's card shows, if not `title` */
+	sharedTitle?: string
 }
 
 export const defineMetadata = ({
@@ -22,14 +24,16 @@ export const defineMetadata = ({
 	description = tagline,
 	ogImage = "og.png",
 	ogImageAlt,
-	url = ""
+	url,
+	sharedTitle = title ?? "ArkType"
 }: MetadataOptions): Metadata => ({
 	...(title && { title }),
 	description,
+	...(url && { alternates: { canonical: url } }),
 	openGraph: {
-		title: title ?? "ArkType",
+		title: sharedTitle,
 		description,
-		url: `${siteUrl}${url}`,
+		url: `${siteUrl}${url ?? ""}`,
 		siteName: "ArkType",
 		images: [
 			{
@@ -42,6 +46,7 @@ export const defineMetadata = ({
 		type: "website"
 	},
 	twitter: {
-		card: "summary_large_image"
+		card: "summary_large_image",
+		title: sharedTitle
 	}
 })

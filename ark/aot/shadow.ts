@@ -159,7 +159,9 @@ const shadowOf = (
 		counterpart: "value" in precompiled ? precompiled.value : undefined
 	}
 	const isType = hasArkKind(original, "root")
-	const isData = !isHeld(original) && typeof original !== "function"
+	// e.g. not a validator, where arktype threw creating its Type
+	const isData =
+		"value" in defined && !isHeld(original) && typeof original !== "function"
 	const observeCreation = (outcome: Outcome) =>
 		"thrown" in outcome ? { threw: thrownOf(outcome.thrown) }
 		: isType && contract.members?.meta !== false ?

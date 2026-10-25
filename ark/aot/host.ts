@@ -21,7 +21,14 @@ import type { PrecompileOptions } from "./precompile.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
 
 export interface PrecompileHost {
-	resolve(specifier: string, importer: string): string | undefined
+	// isValueImport, where given, says whether the import may carry a value,
+	// as a Type is, which a host asking the bundler what it can't resolve
+	// asks only for one that may
+	resolve(
+		specifier: string,
+		importer: string,
+		isValueImport?: () => boolean
+	): string | undefined
 	readFile(path: string): string | undefined
 	// a host watches it, since its `paths` change what an import resolves to
 	tsconfigOf?(importer: string): string | undefined
@@ -253,8 +260,13 @@ export const runtimeSpecifiers = [
 	"arktype/mutatesInput"
 ]
 
-// what arktype/runtime loads
-export const runtimePackages = ["arktype", "@ark/schema", "@ark/util"]
+// what arktype/runtime loads, and arksets, which arktype's parser loads
+export const runtimePackages = [
+	"arktype",
+	"arksets",
+	"@ark/schema",
+	"@ark/util"
+]
 
 // shadow mode keeps arktype, resolving only its config to the runtime
 export const resolvesToRuntime = (
@@ -455,7 +467,7 @@ export const writeUntransformedImportMessage = (
 	writeUnprecompiledMessage(
 		printablePathOf(cwd, file),
 		specifier,
-		"it can't precompile a module that isn't JavaScript or TypeScript. Move what it reads off arktype, from Types to `instanceof type.errors` checks, into a .ts module it imports."
+		"it can't precompile a module that isn't JavaScript or TypeScript. Move what it reads off arktype into a .ts module it imports: define its Types there, and check for errors with a function exported from there, like `export const isInvalid = (out: unknown) => out instanceof type.errors`."
 	)
 
 // e.g. esbuild's stdin, or a module a plugin loads from a virtual id

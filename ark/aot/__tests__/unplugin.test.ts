@@ -1134,7 +1134,10 @@ console.log(
 				build: { write: false, lib: { entry: "main.ts", formats: ["es"] } }
 			}).then(
 				() => "built",
-				(e: Error) => e.message.slice(e.message.indexOf("config.ts:"))
+				(e: Error) => {
+					const message = stripVTControlCharacters(e.message)
+					return message.slice(message.indexOf("config.ts:"))
+				}
 			)
 		const arktype = precompile.vite({ config: "config.ts", conditions })
 		attest(await build([rewrite, arktype]))
@@ -1188,12 +1191,245 @@ console.log(
 			root
 		)
 		attest((await build()).errors.map(error => error.text)).snap([
-			"Form.svelte imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws, as it can't precompile a module that isn't JavaScript or TypeScript. Move what it reads off arktype, from Types to `instanceof type.errors` checks, into a .ts module it imports, or set allowUnsafe: true to build anyway, with a warning."
+			"Form.svelte imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws, as it can't precompile a module that isn't JavaScript or TypeScript. Move what it reads off arktype into a .ts module it imports: define its Types there, and check for errors with a function exported from there, like `export const isInvalid = (out: unknown) => out instanceof type.errors`."
 		])
 		const unsafe = await build(true)
 		attest("warnings" in unsafe && unsafe.warnings.map(w => w.text)).equals([
 			message
 		])
+	})
+
+	describe("an import only the bundler resolves", () => {
+		// an alias in the bundler's config alone, as Nuxt's #shared without
+		// the tsconfig.json that would name it, imported from JavaScript, which
+		// the repo's typecheck skips
+		const root = writeFixture(
+			{
+				"shared/types.ts":
+					'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n',
+				"main.js":
+					'import { User } from "#shared/types"\n\nconsole.log(String(User.errors))\n',
+				"allows.js":
+					'import { User } from "#shared/types"\n\nconsole.log(User.allows({ name: "Ada" }))\n',
+				"Form.svelte": "<script>\n</script>\n",
+				"form.js": 'import read from "./Form.svelte"\n\nconsole.log(read)\n',
+				// an alias to arktype, which the bundler resolves through this
+				// plugin while the precompiler waits on its answer
+				"validation.js":
+					'import { type } from "#validation"\n\nconst User = type({ name: "string" })\n\nconsole.log(User.allows({ name: "Ada" }))\n',
+				// read as the build starts, before a module asks the bundler
+				"config.js":
+					'import { configure } from "arktype/config"\nimport { describe } from "#shared/describe"\n\nconfigure({ domain: { description: describe } })\n',
+				"shared/describe.ts": 'export const describe = () => "a numeral"\n'
+			},
+			fromHere("temp", "aliased")
+		)
+		const shared = join(root, "shared")
+		const failure =
+			"main.js:3:20  User.errors reads errors, which a standalone validator lacks"
+
+		it("vite", async () => {
+			// compiles a component reading User.errors, as Svelte's does
+			const svelte: VitePlugin = {
+				name: "svelte",
+				enforce: "pre",
+				transform: (_, id) =>
+					id.endsWith(".svelte") ?
+						'import { User } from "#shared/types"\n\nexport default String(User.errors)\n'
+					:	undefined
+			}
+			const config = viteConfig(undefined, root)
+			const build = (entry: string, opts?: PrecompileUnpluginOptions) =>
+				viteBuild({
+					...config,
+					plugins: [
+						svelte,
+						precompile.vite({ ...opts, cwd: root, conditions })
+					],
+					resolve: {
+						...config.resolve,
+						alias: [
+							{ find: /^#shared\//, replacement: `${shared}/` },
+							{ find: /^#validation$/, replacement: "arktype" }
+						]
+					},
+					build: { write: false, lib: { entry, formats: ["es"] } }
+				}).then(
+					() => [],
+					(e: { errors?: Error[] } & Error) =>
+						(e.errors ?? [e]).map(
+							e => stripVTControlCharacters(e.message).split("\n")[0]
+						)
+				)
+			attest(await build("allows.js")).equals([])
+			attest(await build("main.js")).equals([failure])
+			attest(await build("form.js")).equals([
+				"Form.svelte:3:23  User.errors reads errors, which a standalone validator lacks"
+			])
+			attest(await build("validation.js")).equals([])
+			attest(await build("allows.js", { config: "config.js" })).equals([])
+		})
+
+		it("esbuild", async () => {
+			const alias: Plugin = {
+				name: "alias",
+				setup: build => {
+					// in the file namespace, as most plugins resolve
+					build.onResolve(
+						{ filter: /^#shared\//, namespace: "file" },
+						args => ({
+							path: join(shared, `${args.path.slice("#shared/".length)}.ts`)
+						})
+					)
+					// naming no namespace, as many plugins resolve
+					build.onResolve(
+						{ filter: /^#validation$/ },
+						({ kind, importer, resolveDir }) =>
+							build.resolve("arktype", { kind, importer, resolveDir })
+					)
+				}
+			}
+			const build = (entry: string) =>
+				esbuild({
+					entryPoints: [join(root, entry)],
+					bundle: true,
+					write: false,
+					conditions,
+					logLevel: "silent",
+					plugins: [alias, precompile.esbuild({ cwd: root, conditions })]
+				}).then(
+					() => [],
+					(e: { errors: { text: string }[] }) =>
+						e.errors.map(e => e.text.split("\n")[0])
+				)
+			attest(await build("main.js")).equals([failure])
+			attest(await build("validation.js")).equals([])
+		})
+
+		it("webpack", async () => {
+			const compiler = webpack({
+				mode: "production",
+				context: root,
+				entry: "./main.js",
+				target: "node",
+				output: { path: join(root, "out") },
+				resolve: { alias: { "#shared": shared }, extensions: [".ts", ".js"] },
+				plugins: [precompile.webpack({ cwd: root })]
+			})
+			const stats = await new Promise<Stats | undefined>((resolve, reject) =>
+				compiler.run((error, stats) =>
+					compiler.close(() => (error ? reject(error) : resolve(stats)))
+				)
+			)
+			attest(
+				stats?.toJson().errors?.map(error => error.message.includes(failure))
+			).equals([true])
+		})
+	})
+
+	describe("modules another plugin writes", () => {
+		const root = writeFixture(
+			{
+				"types.ts":
+					'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n',
+				"Form.svelte": "<script>\n</script>\n",
+				"main.js": 'import read from "./Form.svelte"\n\nconsole.log(read)\n'
+			},
+			fromHere("temp", "unwritten")
+		)
+		// compiles a component reading User as `read` does, as Svelte's does
+		const svelte = (read: string): VitePlugin => ({
+			name: "svelte",
+			enforce: "pre",
+			transform: (_, id) =>
+				id.endsWith(".svelte") ?
+					`import { User } from "./types.ts"\n\nexport default ${read}\n`
+				:	undefined
+		})
+		const build = (read: string, opts: PrecompileUnpluginOptions = {}) =>
+			viteBuild({
+				...viteConfig(undefined, root),
+				plugins: [
+					svelte(read),
+					precompile.vite({ cwd: root, conditions, ...opts })
+				],
+				build: { write: false, lib: { entry: "main.js", formats: ["es"] } }
+			}).then(
+				() => [],
+				(e: { errors?: Error[] } & Error) =>
+					(e.errors ?? [e]).map(e => stripVTControlCharacters(e.message))
+			)
+
+		it("builds one reading what a validator has", async () => {
+			attest(await build('User.allows({ name: "Ada" })')).equals([])
+		})
+
+		it("fails one reading what a validator lacks, as each build checks", async () => {
+			const failure = [
+				"Form.svelte:3:16  User.errors reads errors, which a standalone validator lacks"
+			]
+			const messages = await build("User.errors")
+			attest(messages.map(message => message.split("\n")[0])).equals(failure)
+			for (const prune of [true, false]) {
+				attest(
+					(
+						await withNodeEnv("production", () =>
+							build("User.errors", { prune })
+						)
+					).map(message => message.split("\n")[0])
+				).equals(failure)
+			}
+		})
+
+		it("fails one reading what only a precompiled site could", async () => {
+			attest(await build("User.description")).snap([
+				"Form.svelte:3:16  User.description can't be precompiled in a module another plugin writes\n  the build reads Form.svelte only once another plugin has written it, so it can't write a validator there\n  Move it into a .ts or .js module of its own that this one imports, which the build precompiles, or build with runtime: \"arktype\"."
+			])
+		})
+
+		it("fails a development server's", async () => {
+			const server = await withNodeEnv("development", () =>
+				createServer({
+					...viteConfig(undefined, root),
+					plugins: [
+						svelte("User.errors"),
+						precompile.vite({ cwd: root, conditions })
+					]
+				})
+			)
+			try {
+				const message = await server.environments.client
+					.transformRequest("/Form.svelte")
+					.then(
+						() => "",
+						(e: Error) => e.message
+					)
+				attest(message.split("\n")[0]).equals(
+					"Form.svelte:3:16  User.errors reads errors, which a standalone validator lacks"
+				)
+			} finally {
+				await server.close()
+			}
+		})
+
+		it("fails a build listing it ahead of TanStack Router's code splitter", async () => {
+			const message = await viteBuild({
+				...viteConfig(undefined, root),
+				plugins: [
+					precompile.vite({ cwd: root, conditions }),
+					{
+						name: "tanstack-router:code-splitter:compile-reference-file",
+						enforce: "pre"
+					}
+				]
+			}).then(
+				() => "",
+				(e: Error) => e.message
+			)
+			attest(message).snap(
+				"arktype's plugin is listed ahead of TanStack Router's, which splits a route's code after arktype's precompiles it, into modules it reads unprecompiled. List precompile.vite() after tanstackRouter() in vite.config's plugins."
+			)
+		})
 	})
 
 	describe("fails where a module it leaves can call a helper it folds", () => {
@@ -1269,7 +1505,10 @@ console.log(
 						e.errors?.map(e => e.message) ?? [e.message]
 				)
 			attest(await build("main.ts")).equals([])
-			attest(await build("form.js")).equals([untransformed])
+			// the plugin reading what others write refuses the call first
+			attest(await build("form.js")).equals([
+				"Form.svelte:3:21  text(50) can't be precompiled in a module another plugin writes\n  the build reads Form.svelte only once another plugin has written it, so it can't write a validator there\n  Move it into a .ts or .js module of its own that this one imports, which the build precompiles, or build with runtime: \"arktype\"."
+			])
 		})
 
 		const compilers = {
@@ -1311,7 +1550,9 @@ console.log(
 				attest(
 					stats
 						?.toJson()
-						.errors?.map(error => error.message.trim().replace(/^× /, ""))
+						.errors?.map(error =>
+							stripVTControlCharacters(error.message).trim().replace(/^× /, "")
+						)
 				).equals([
 					writeUntransformedHelperMessage("Form.svelte", "fields.js", "text")
 				])
@@ -1327,8 +1568,7 @@ console.log(
 			{ "main.js": `export { User } from ${JSON.stringify(url)}\n` },
 			fromHere("temp", "fileless")
 		)
-		const failure = (id: string) =>
-			withAllowUnsafe(writeFilelessImportMessage(id, "arktype"))
+		const failure = (id: string) => writeFilelessImportMessage(id, "arktype")
 
 		it("esbuild", async () => {
 			const build = (options: BuildOptions) =>
@@ -1451,9 +1691,7 @@ console.log(
 			(e: { errors: { text: string }[] }) => e.errors.map(e => e.text)
 		)
 		attest(errors).equals([
-			withAllowUnsafe(
-				writeLoadedFirstMessage(join(root, "main.ts"), "arktype", root)
-			)
+			writeLoadedFirstMessage(join(root, "main.ts"), "arktype", root)
 		])
 	})
 
@@ -1713,10 +1951,11 @@ console.log(JSON.stringify(User.toJsonSchema()))
 	})
 
 	it("names a module no build wrote, where nothing caches it", () => {
-		const { load } = precompile.raw(
+		// Vite's, followed by the plugin reading what others write
+		const [{ load }] = precompile.raw(
 			{ cwd: app, conditions },
 			{ framework: "vite", versions: {} }
-		) as unknown as RawHooks
+		) as unknown as RawHooks[]
 		attest(() => load.handler("\0~arktype/lost")).throws(
 			writeUnwrittenModuleMessage("~arktype/lost")
 		)
@@ -1728,10 +1967,10 @@ console.log(JSON.stringify(User.toJsonSchema()))
 				'import { type } from "arktype"\n\nexport const T = type(`number < ${Math.random()}`)\n'
 		})
 		const thrownBy = async (opts: PrecompileUnpluginOptions) => {
-			const { transform } = precompile.raw(
+			const [{ transform }] = precompile.raw(
 				{ ...opts, cwd: root, conditions },
 				{ framework: "vite", versions: {} }
-			) as unknown as RawHooks
+			) as unknown as RawHooks[]
 			const thrown = (await transform.handler
 				.call(
 					{ addWatchFile: () => {}, warn: () => {} },

@@ -64,22 +64,22 @@ if (out instanceof type.errors) {
 
 Strings use TypeScript's operators. Write string literals in single quotes inside the definition. Object types don't go in strings: `"{ a: string }"` doesn't parse, so write objects as objects and name them in a scope to reuse them in a string.
 
-| Want                   | Write                                                     |
-| ---------------------- | --------------------------------------------------------- |
-| optional key           | `"key?": "string"`                                        |
-| default (objects only) | `count: "number = 0"`                                     |
-| union                  | `"string \| number"`, `"'a' \| 'b'"`                      |
-| array                  | `"string[]"`, `"(string \| number)[]"`                    |
-| tuple                  | `["string", "number"]`                                    |
-| number range           | `"number > 0"`, `"0 <= number < 1"`, `"number != 0"`      |
-| string or array length | `"string > 0"`, `"1 <= string <= 255"`, `"string[] >= 1"` |
-| divisibility           | `"number % 2"`                                            |
-| regex                  | `/^\d+$/` as a RegExp, or `"/^\\d+$/"` in a string        |
-| record                 | `"Record<string, number>"` or `{ "[string]": "number" }`  |
-| class instance         | `"Date"`, `"Map"`, or `type.instanceOf(MyClass)`          |
-| enum from values       | `type.enumerated("a", "b")` or `type.valueOf(MyEnum)`     |
-| array of a Type        | `Item.array()`, `Item.array().atLeastLength(1)`           |
-| custom error message   | `type("string >= 8").configure({ message: "Too short" })` |
+| Want                   | Write                                                               |
+| ---------------------- | ------------------------------------------------------------------- |
+| optional key           | `"key?": "string"`                                                  |
+| default (objects only) | `count: "number = 0"`, `plan: "'free' \| 'pro' = 'free'"`           |
+| union                  | `"string \| number"`, `"'a' \| 'b'"`                                |
+| array                  | `"string[]"`, `"(string \| number)[]"`                              |
+| tuple                  | `["string", "number"]`                                              |
+| number range           | `"number > 0"`, `"0 <= number < 1"`, `"1 <= number.integer <= 100"` |
+| string or array length | `"string > 0"`, `"1 <= string <= 255"`, `"string[] >= 1"`           |
+| divisibility           | `"number % 2"`                                                      |
+| regex                  | `/^\d+$/` as a RegExp, or `"/^\\d+$/"` in a string                  |
+| record                 | `"Record<string, number>"` or `{ "[string]": "number" }`            |
+| class instance         | `"Date"`, `"Map"`, or `type.instanceOf(MyClass)`                    |
+| enum from values       | `type.enumerated("a", "b")` or `type.valueOf(MyEnum)`               |
+| array of a Type        | `Item.array()`, `Item.array().atLeastLength(1)`                     |
+| custom error message   | `type("string >= 8").configure({ message: "Too short" })`           |
 
 A regex with flags, like `/^a$/i`, must be a RegExp. Bounds bind tighter than `|`, so `"string <= 500 | null"` is a string of at most 500 characters, or null.
 

@@ -1,4 +1,5 @@
 import {
+	functionNameOf,
 	hasDomain,
 	isArray,
 	isThunk,
@@ -9,6 +10,7 @@ import {
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
 import type { BaseNode } from "../node.ts"
+import type { Predicate } from "../predicate.ts"
 import type { Morph } from "../roots/morph.ts"
 import type {
 	ArkError,
@@ -327,7 +329,10 @@ export class Traversal extends InternalTraversal {
 			],
 			data: "data" in supplied ? supplied.data : this.data,
 			// a keyword raises its errors with the description of what it checks
-			expected: supplied.expected ?? supplied.description
+			expected:
+				supplied.expected ??
+				supplied.description ??
+				(supplied.morph && describePredicate(supplied))
 		}
 		if (supplied.problem !== undefined) issue.problem = supplied.problem
 		if (supplied.message !== undefined) issue.message = supplied.message
@@ -357,6 +362,7 @@ type SuppliedIssue = {
 	description?: string
 	problem?: string
 	message?: string
+	morph?: Morph
 }
 
 export const errorsOf = (ctx: InternalTraversal): BaseArkErrors =>
@@ -378,6 +384,32 @@ const receive = (ctx: InternalTraversal, data: unknown): void => {
 	ctx.received = data
 	ctx.receivedDepth = ctx.path.length
 }
+
+// reads predicate, or for pipe.try the morph that threw
+export const describePredicate = (ctx: {
+	predicate?: Predicate
+	morph?: Morph
+}): string => {
+	const fn = ctx.predicate ?? ctx.morph
+	return `valid according to ${(fn && functionNameOf(fn)) || "an anonymous predicate"}`
+}
+
+// pipe.try's morph, failing with what the one it wraps throws
+export const tryMorph =
+	(morph: Morph): Morph =>
+	(In, ctx) => {
+		try {
+			return morph(In, ctx)
+		} catch (cause) {
+			return ctx.error({ code: "predicate", morph, cause })
+		}
+	}
+
+// an `x/.../` literal's morph
+export const execMorph =
+	(regex: RegExp): Morph =>
+	(s: string) =>
+		regex.exec(s)
 
 // a morph reads data from its input until it returns
 export const callMorph = (

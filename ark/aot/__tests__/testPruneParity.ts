@@ -1,8 +1,8 @@
 // checks that a production bundle leaving out what no read needs validates as
-// one built whole: for each bench app, preset and way a program reads its
-// validators, both bundles run every input through each validator and must
-// return the same. Negative controls first show the comparison catches a
-// changed message and a dropped check. pnpm testPruneParity
+// one built whole: for each bench app and one of shapes they lack, each preset
+// and way a program reads its validators, both bundles run every input through
+// each validator and must return the same. Negative controls first show the
+// comparison catches a changed message and a dropped check. pnpm testPruneParity
 import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { build } from "esbuild"
@@ -10,9 +10,18 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { samplesByApp, values } from "./pruneSamples.ts"
+import {
+	samplesByApp as benchSamplesByApp,
+	testedSamplesByApp,
+	values
+} from "./pruneSamples.ts"
 
-const apps = fromHere("..", "..", "repo", "bench", "apps")
+const samplesByApp = { ...benchSamplesByApp, ...testedSamplesByApp }
+
+const appsOf = (app: string) =>
+	app in testedSamplesByApp ?
+		fromHere("pruned")
+	:	fromHere("..", "..", "repo", "bench", "apps")
 
 // how a program reads each validator, as a handler of its data
 const profiles = {
@@ -43,6 +52,7 @@ const bundle = async (
 	opts: PrecompileUnpluginOptions,
 	mutate: (js: string) => string = js => js
 ): Promise<{ handlers: Handlers; js: string }> => {
+	const apps = appsOf(app)
 	const names = Object.keys(await import(join(apps, app, "arktype.ts")))
 	const { outputFiles } = await build({
 		stdin: {
@@ -153,7 +163,7 @@ const failures: string[] = []
 for (const app of Object.keys(samplesByApp)) {
 	const whole = await bundle(app, "call", { prune: false })
 	const reworded = await bundle(app, "call", { prune: false }, js =>
-		js.replace("must be ", "must  be ")
+		js.replace(/must be /g, "must  be ")
 	)
 	const accepting = Object.fromEntries(
 		Object.keys(whole.handlers).map(name => [

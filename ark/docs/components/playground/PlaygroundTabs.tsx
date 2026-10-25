@@ -94,6 +94,7 @@ export const Tabs = ({
 				role="tabpanel"
 				id={`tabpanel-${activeTab}`}
 				aria-labelledby={`tab-${activeTab}`}
+				tabIndex={0}
 				className={cx("flex-grow min-h-0 overflow-y-auto", tabContentClassName)}
 			>
 				{activeTabContent}

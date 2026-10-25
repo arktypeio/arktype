@@ -13,8 +13,9 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you install `@ark/type`, `@ark/regex` or an `@arktype/*` package? [Rename it](#package-names).
 - Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](#arkerrors-is-no-longer-an-array).
 - Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](#errors-are-plain-objects).
-- Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](#undeclared-keys-have-the-undeclared-code) and [discriminant](#union-misses-have-the-discriminant-code).
+- Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](#undeclared-keys-have-the-undeclared-code), [discriminant](#union-misses-have-the-discriminant-code) and [notEqual](#excluded-values-have-the-notequal-codes).
 - Do you snapshot or assert error messages, or their order? See [Errors](#errors): objects, dates and union misses print differently, errors follow the order keys are declared, and configured messages apply to more errors.
+- Do you show the messages of Standard Schema issues, as a form library does? [They leave out the path](#standard-schema-messages-leave-out-the-path).
 - Do you configure an `expected`, `actual` or `message` writer? [Writers take the error](#error-writers-receive-the-error-and-the-locale).
 - Do you call `configure()` after a Type is created, or pass a global-only option to a Scope? See [Configuration](#configuration).
 - Do you use `number` for data that can be `Infinity`? [Allow it](#number-rejects-infinity).
@@ -25,10 +26,10 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you use function defaults, or morphs on defaults? [They run on each call](#defaults-run-each-time-theyre-applied).
 - Do you chain two right bounds, like `number < 5 < 6`? [Group them](#a-second-right-bound-throws).
 - Do you embed an async Standard Schema, like a Zod schema with an async refinement? [It throws](#standard-schemas-must-validate-synchronously).
-- Do you store or snapshot `toJsonSchema()`, `.expression` or `.json`? See [Output](#output).
+- Do you store or snapshot `toJsonSchema()`, `.expression` or `.json`, or convert `NaN` or `Infinity` literals to JSON Schema? See [Output](#output).
 - Do you rely on what `.required()`, `.map()` or arkregex infer? See [Inference](#inference) and [ArkRegex](#arkregex).
 - Do you import from `@ark/schema`, `@ark/util` or a deep path like `arktype/internal/...`? See [@ark/schema](#arkschema), [@ark/util](#arkutil) and [Deep imports](#deep-imports).
-- Do you use `@ark/json-schema`, `@ark/fast-check` or attest? See their sections below.
+- Do you use `@ark/json-schema`, `@ark/fast-check` or attest, or run attest on TypeScript 7? See their sections below.
 
 ## Bundle size
 
@@ -56,7 +57,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-`Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`. A [Standard Schema](/docs/standard-schema) failure is no longer the `ArkErrors`: it's `{ issues }`, a plain array with a copy of each error whose message leaves its path out, since a Standard Schema consumer prints the path before the message. Read `summary` from the errors calling the Type returns.
+`Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`. A [Standard Schema](/docs/standard-schema) failure is no longer the `ArkErrors`, but `{ issues }`, as [below](#standard-schema-messages-leave-out-the-path).
 
 `ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()`, `toString()` and `toLocaleString(locale)`. `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`. `byPath`, `flatByPath`, `flatProblemsByPath` and `byAncestorPath` are functions `arktype` exports:
 
@@ -74,6 +75,20 @@ if (out instanceof type.errors) {
 A [precompiled](/docs/precompile/validators#errors) build's `arktype/runtime` doesn't export them, and its errors have no `propString` or `problem`, so there group `out.issues` by `issue.path` instead.
 
 A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`.
+
+### Standard Schema messages leave out the path
+
+A [Standard Schema](/docs/standard-schema) failure is `{ issues }`, a plain array with a copy of each error whose `message` leaves its path out, since a consumer like a form library shows it beside the field or prints the path before it:
+
+```ts
+const T = type({ name: "string > 1" })
+
+// [{ message: "must be at least length 2 (was 1)", path: ["name"], ... }]
+// before: "name must be at least length 2 (was 1)"
+T["~standard"].validate({ name: "x" })
+```
+
+Update snapshots of those messages, and read `summary` from the errors calling the Type returns for one line naming each path.
 
 ### Errors are plain objects
 
@@ -148,7 +163,7 @@ if (out instanceof type.errors) {
 
 A described union's miss is at the union's own path, with the union's value as its `data`. A union reports `union` rather than `discriminant` where its discriminant can't tell the branches apart: for data that can't hold it, like `5` for a union of objects, for data matching none of its values when some branches don't have its key, and for a miss of a union discriminated by its value whose branch is described.
 
-Configure its text under `discriminant` instead of `predicate`. An exhaustive `switch` over `ArkErrorCode` must handle `undeclared` and `discriminant`.
+Configure its text under `discriminant` instead of `predicate`.
 
 Where every object a union discriminated by type expects is an array, its `cases` holds `"Array"` in place of `"object"`, and its message says `an array`:
 
@@ -159,6 +174,15 @@ type("string | string[]")(5)
 ```
 
 A `switch` over `cases` must handle `"Array"`.
+
+### Excluded values have the notEqual codes
+
+`!=` excludes one value from a range, like `number != 0`, and unions of ranges one value apart reduce to it. Its errors have the codes `notEqual` and `notEqualLength`, so with `undeclared` and `discriminant`, an exhaustive `switch` over `ArkErrorCode`, or a `Record<ArkErrorCode, ...>`, must handle four new codes:
+
+```ts
+// ArkErrors: must be other than 0 (was 0)
+type("number != 0")(0)
+```
 
 ### Unions report each branch their discriminant can't rule out
 
@@ -609,6 +633,7 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - A string index signature beside declared keys becomes `patternProperties: { "": ... }` instead of `additionalProperties`.
 - `toJsonSchema()` throws for a regex flag JSON Schema can't express, instead of leaving it out: `type(/^a/i).toJsonSchema()` throws (code `patternFlags`), before: `{ type: "string", pattern: "^a" }`, which rejects `"A"`.
 - `toJsonSchema()` throws for an index signature key it can't express, instead of leaving out the index signature: `type({ "[string <= 3]": "number" }).toJsonSchema()` throws (code `indexKey`), before: `{ type: "object" }`. See [JSON Schema](/docs/json-schema/to-json-schema#how-types-map) for the keys it can write.
+- `toJsonSchema()` throws for a `NaN`, `Infinity` or `-Infinity` literal, like `number.NaN` or `number.Infinity`, since JSON can't hold one, where it wrote `const: Infinity`, which serializes as `null`. [Handle the `unit` code](/docs/json-schema/to-json-schema#fallback-codes), e.g. `unit: ctx => (typeof ctx.unit === "number" ? { type: "number" } : ctx.base)`.
 - `toJsonSchema()` throws for `object.json` and the Types it's part of, like `string.json.parse`'s output, since its check that an object is plain is a `predicate`. [Handle that code](/docs/json-schema/to-json-schema#fallback-codes) to write it as before.
 - `toJsonSchema()` throws a `ParseError` for a `target` other than `"draft-2020-12"`, `"draft-07"` or `"openapi-3.0"`, where it wrote draft 2020-12: `type("string").toJsonSchema({ target: "draft-04" })`, before: `{ type: "string" }`.
 - Expressions keep length bounds and protos beside a structure: `type("number[] > 1").expression` is `number[] >= 2`, before: `number[]`.
@@ -675,6 +700,8 @@ Other patterns infer what they match more exactly, which can widen or narrow an 
 `arktype` is a peer dependency at the version released with `@ark/fast-check`, where it was a dependency, so install the two together.
 
 ## Attest
+
+Under TypeScript 7, attest analyzes with its native API, which needs 7.1 or later, so 7.0.x throws `@ark/attest requires TypeScript 7.1+`. Where attest runs, install TypeScript 7.1 or later, or keep TypeScript 6, which it analyzes with its JS API as before.
 
 Runtime benches run in a loop compiled for each bench, after a warmup, so their times don't compare with earlier versions'. Re-record stored runtime baselines.
 

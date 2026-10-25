@@ -1,13 +1,21 @@
+import { throwError } from "@ark/util"
 import { readFileSync, statSync } from "node:fs"
-import { resolve } from "node:path"
+import { isAbsolute, resolve } from "node:path"
 import type { SourceMap } from "magic-string"
-import { parentPort, workerData, type MessagePort } from "node:worker_threads"
+import {
+	parentPort,
+	receiveMessageOnPort,
+	workerData,
+	type MessagePort
+} from "node:worker_threads"
 import {
 	appendSourceMap,
 	createNodeHost,
+	printablePathOf,
 	realPathOf,
 	type NodeHostOptions
 } from "./host.ts"
+import { writeUnansweredResolveMessage } from "./messages.ts"
 import {
 	Precompiler,
 	renderDiagnostic,
@@ -65,6 +73,11 @@ export interface PrecompilerWorkerData {
 	answered?: Int32Array | undefined
 	// closes as the thread stops, so a host waiting synchronously hears it
 	lifeline?: MessagePort | undefined
+	// asks the bundler what the precompiler can't resolve, waiting on resolved
+	resolver?: MessagePort | undefined
+	resolved?: Int32Array | undefined
+	// how long it waits for an answer, in milliseconds
+	resolveTimeout?: number | undefined
 }
 
 export type PrecompileRequest =
@@ -77,6 +90,12 @@ export type PrecompileRequest =
 	  ]
 	| [kind: "scan", program: ScannedProgram]
 	| [kind: "check", source: string, id: string]
+	| [
+			kind: "checkUnwritten",
+			source: string,
+			id: string,
+			mappings?: string | undefined
+	  ]
 	| [kind: "lint", source: string, id: string]
 	| [kind: "readDependency", importer: string]
 	| [kind: "reset"]
@@ -108,15 +127,33 @@ const answerRequests = (
 ): void => {
 	let tracked: TrackedPrecompiler | undefined
 	let conflictsWithThread = false
-	const track = () => createTrackedPrecompiler(data.precompilerOptions)
+	// the request it's answering, by its place among those it was sent
+	let answering = -1
+	// whether it couldn't ask the bundler for that request
+	let unasked = false
+	const resolveInBundler = bundlerResolverOf(
+		data,
+		() => answering,
+		() => (unasked = true),
+		// what it read before it stopped waiting may be partial
+		() => (tracked = undefined)
+	)
+	const track = () =>
+		createTrackedPrecompiler(data.precompilerOptions, resolveInBundler)
 	// kept across resets, as a rebuild asks again for modules nothing changed
 	const transformedById: Record<string, KeptModule> = {}
 	const answer = (request: PrecompileRequest): unknown => {
 		if (request[0] === "close") return
 		if (request[0] === "refresh" && tracked && !isStale(tracked)) return false
 		if (request[0] === "reset" || request[0] === "refresh") {
+			unasked = false
 			tracked = track()
-			return conflictsWithThread || tracked.precompiler.needsNewThread
+			const needsNewThread =
+				conflictsWithThread || tracked.precompiler.needsNewThread
+			// the next request asks the bundler what reading the configuration
+			// couldn't, like an import through an alias only the bundler names
+			if (unasked) tracked = undefined
+			return needsNewThread
 		}
 		tracked ??= track()
 		const { precompiler } = tracked
@@ -165,6 +202,12 @@ const answerRequests = (
 		if (request[0] === "scan") return precompiler.scan(request[1])
 		if (request[0] === "check")
 			return checkedModuleOf(precompiler, request[1], request[2])
+		if (request[0] === "checkUnwritten") {
+			return renderDiagnostics(
+				precompiler.checkUnwritten(request[1], request[2], request[3]),
+				id => precompiler.graph.pathOf(id)
+			)
+		}
 		precompiler.forgetCopies()
 		const { hasAnswered } = tracked
 		tracked.hasAnswered = true
@@ -181,6 +224,7 @@ const answerRequests = (
 		tracked = undefined
 	}
 	port.on("message", (request: PrecompileRequest) => {
+		answering++
 		try {
 			port.postMessage({ result: answer(request) } satisfies PrecompileAnswer)
 		} catch (e) {
@@ -196,6 +240,71 @@ const answerRequests = (
 			else (globalThis as { close?: () => void }).close?.()
 		}
 	})
+}
+
+// what the bundler resolves where the precompiler can't, like an alias only
+// the bundler's config names, as Nuxt's #shared
+type BundlerResolver = (
+	specifier: string,
+	importer: string
+) => string | undefined
+
+// the precompiler is synchronous, so its thread waits for the bundler's
+// answer, failing the request where none comes, as where resolving waits on
+// the precompiler in turn
+const bundlerResolverOf = (
+	{
+		resolver,
+		resolved,
+		resolveTimeout = 30_000,
+		precompilerOptions
+	}: PrecompilerWorkerData,
+	answering: () => number,
+	unasked: () => void,
+	unanswered: () => void
+): BundlerResolver | undefined => {
+	if (!resolver || !resolved) return
+	const cwd = realPathOf(precompilerOptions.cwd ?? process.cwd())
+	let asked = 0
+	return (specifier, importer) => {
+		if (!isAbsolute(importer)) return
+		const question = ++asked
+		const deadline = performance.now() + resolveTimeout
+		resolver.postMessage([question, answering(), specifier, importer])
+		for (;;) {
+			// read before draining, so an answer posted since wakes the wait
+			const answers = Atomics.load(resolved, 0)
+			for (
+				let received = receiveMessageOnPort(resolver);
+				received;
+				received = receiveMessageOnPort(resolver)
+			) {
+				const [answered, path] = received.message as [
+					number,
+					string | null | undefined
+				]
+				// one to a question it stopped waiting for
+				if (answered !== question) continue
+				// null where the request it's answering can't ask the bundler
+				if (path === null) unasked()
+				return path ? realPathOf(path) : undefined
+			}
+			const left = deadline - performance.now()
+			if (
+				left <= 0 ||
+				Atomics.wait(resolved, 0, answers, left) === "timed-out"
+			) {
+				unanswered()
+				return throwError(
+					writeUnansweredResolveMessage(
+						specifier,
+						printablePathOf(cwd, importer),
+						resolveTimeout
+					)
+				)
+			}
+		}
+	}
 }
 
 const checkedModuleOf = (
@@ -226,6 +335,11 @@ export interface KeyedModule extends InlineModule {
 	files: string[]
 }
 
+export interface PrecompiledKeyedModule extends KeyedModule {
+	// imports the precompiler couldn't resolve, which the bundler may
+	unresolved: [specifier: string, importer: string][]
+}
+
 const mtimeOf = (file: string) =>
 	statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? -1
 
@@ -240,7 +354,8 @@ interface TrackedPrecompiler {
 }
 
 const createTrackedPrecompiler = (
-	opts: PrecompilePluginOptions
+	opts: PrecompilePluginOptions,
+	resolveInBundler?: BundlerResolver
 ): TrackedPrecompiler => {
 	// as the plugin, a driver, the CLI or the ESLint rule read it
 	opts = withSettingsFile(opts)
@@ -251,11 +366,20 @@ const createTrackedPrecompiler = (
 	const { host } = precompiler.graph
 	precompiler.graph.host = {
 		...host,
-		resolve: (specifier, importer) => {
+		resolve: (specifier, importer, isValueImport) => {
 			const targets = (targetsByImporter[importer] ??= Object.create(null))
-			if (!(specifier in targets))
-				targets[specifier] = host.resolve(specifier, importer)
-			return targets[specifier]
+			if (specifier in targets) return targets[specifier]
+			const target = host.resolve(specifier, importer)
+			// the bundler isn't asked for an import that can't carry a Type, nor
+			// is the miss kept, so a value import of it still asks
+			if (
+				target === undefined &&
+				resolveInBundler &&
+				isValueImport?.() === false
+			)
+				return
+			return (targets[specifier] =
+				target ?? resolveInBundler?.(specifier, importer))
 		},
 		readFile: file => {
 			// before reading, so a write meanwhile counts as a change
@@ -276,7 +400,8 @@ const createTrackedPrecompiler = (
 // a kept precompiler's imports must resolve as they did
 const resolvesAsRecorded = (
 	{ precompiler, targetsByImporter, opts }: TrackedPrecompiler,
-	id: string
+	id: string,
+	resolveInBundler?: BundlerResolver
 ): boolean => {
 	const host = createNodeHost(opts)
 	const reached = new Set([id])
@@ -285,7 +410,11 @@ const resolvesAsRecorded = (
 		const targets = targetsByImporter[importer]
 		for (const specifier in targets) {
 			const target = targets[specifier]
-			if (host.resolve(specifier, importer) !== target) return false
+			if (
+				(host.resolve(specifier, importer) ??
+					resolveInBundler?.(specifier, importer)) !== target
+			)
+				return false
 			if (target !== undefined) reached.add(target)
 		}
 	}
@@ -310,32 +439,66 @@ const isStale = (
 	Object.keys(readTimes).some(file => readTimes[file] !== currentMtimeOf(file))
 
 export interface KeyedPrecompiler {
-	precompile(source: string, id: string): KeyedModule
+	precompile(source: string, id: string): PrecompiledKeyedModule
 	// a dependency the build doesn't precompile, as a bundler checks one importing arktype
 	readDependency(importer: string): RenderedDiagnostics
+	// what the bundler resolved each unresolved import to, true where one
+	// resolved, so a module precompiled before may read it otherwise
+	learn(
+		resolved: [specifier: string, importer: string, path: string | undefined][]
+	): boolean
 }
 
 // Turbopack has no worker, so it keeps one precompiler per option set
 export const createKeyedPrecompiler = (
 	opts: PrecompilePluginOptions
 ): KeyedPrecompiler => {
-	let tracked = createTrackedPrecompiler({ ...opts, inline: true })
+	// what Turbopack resolves where the precompiler can't. What it can't
+	// either is asked again, as a module written since may resolve it
+	const resolutions: Record<string, Record<string, string>> = {}
+	// what it hasn't been asked yet, which a module precompiled meanwhile may
+	// read too
+	const unresolved = new Map<string, [specifier: string, importer: string]>()
+	const resolveLearned: BundlerResolver = (specifier, importer) => {
+		const learned = resolutions[importer]?.[specifier]
+		if (learned === undefined && isAbsolute(importer))
+			unresolved.set(`${importer}\0${specifier}`, [specifier, importer])
+		return learned
+	}
+	const track = () =>
+		createTrackedPrecompiler({ ...opts, inline: true }, resolveLearned)
+	let tracked = track()
+	const precompile = (source: string, id: string): KeyedModule => {
+		const mtimes: Record<string, number> = {}
+		const currentMtimeOf = (file: string) => (mtimes[file] ??= mtimeOf(file))
+		if (isStale(tracked, currentMtimeOf)) tracked = track()
+		if (tracked.hasAnswered) {
+			const keyed = keyedModuleOf(tracked, source, id, currentMtimeOf)
+			if (resolvesAsRecorded(tracked, id, resolveLearned)) return keyed
+			tracked = track()
+		}
+		tracked.hasAnswered = true
+		return keyedModuleOf(tracked, source, id, currentMtimeOf)
+	}
 	return {
-		precompile: (source, id) => {
-			const mtimes: Record<string, number> = {}
-			const currentMtimeOf = (file: string) => (mtimes[file] ??= mtimeOf(file))
-			if (isStale(tracked, currentMtimeOf))
-				tracked = createTrackedPrecompiler({ ...opts, inline: true })
-			if (tracked.hasAnswered) {
-				const keyed = keyedModuleOf(tracked, source, id, currentMtimeOf)
-				if (resolvesAsRecorded(tracked, id)) return keyed
-				tracked = createTrackedPrecompiler({ ...opts, inline: true })
-			}
-			tracked.hasAnswered = true
-			return keyedModuleOf(tracked, source, id, currentMtimeOf)
-		},
+		precompile: (source, id) => ({
+			...precompile(source, id),
+			unresolved: [...unresolved.values()]
+		}),
 		readDependency: importer =>
-			tracked.precompiler.readDependency(importer, "Turbopack")
+			tracked.precompiler.readDependency(importer, "Turbopack"),
+		learn: resolved => {
+			let learned = false
+			for (const [specifier, importer, path] of resolved) {
+				unresolved.delete(`${importer}\0${specifier}`)
+				if (!path) continue
+				;(resolutions[importer] ??= Object.create(null))[specifier] =
+					realPathOf(path)
+				learned = true
+			}
+			if (learned) tracked = track()
+			return learned
+		}
 	}
 }
 

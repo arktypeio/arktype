@@ -84,10 +84,11 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	const importersByUrl: Record<string, string> = {}
 	// modules whose text these hooks were given
 	const givenUrls = new Set<string>()
-	// what may throw at runtime fails unless allowUnsafe is set
-	const reportUnsafe = (problem: string) => {
+	// what may throw at runtime fails unless allowUnsafe is set, which a
+	// message offers only where building anyway may be what's wanted
+	const reportUnsafe = (problem: string, offersAllowUnsafe = true) => {
 		if (opts?.allowUnsafe) process.emitWarning(problem)
-		else throwError(withAllowUnsafe(problem))
+		else throwError(offersAllowUnsafe ? withAllowUnsafe(problem) : problem)
 	}
 	const reportedPrecompiled = new Set<string>()
 	const checkPrecompiled = (specifier: string, importer: string) => {
@@ -148,7 +149,8 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 				resolvesToRuntime(specifier, opts) && !readsNodes(importer)
 			if (isRedirected && importer) {
 				const problem = untransformedProblemOf(specifier, importer)
-				if (problem) reportUnsafe(problem)
+				// a Type it defines would throw, so the fix is moving it, not allowUnsafe
+				if (problem) reportUnsafe(problem, false)
 			}
 			if (importer?.includes("/node_modules/")) {
 				reportDiagnostics(

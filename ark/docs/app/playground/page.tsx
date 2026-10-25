@@ -5,7 +5,8 @@ import { defineMetadata } from "../metadata.ts"
 export const metadata = defineMetadata({
 	title: "Playground",
 	ogImage: "ogPlayground.png",
-	url: "/playground"
+	url: "/playground",
+	sharedTitle: "Playground · ArkType"
 })
 
 export default function PlaygroundPage() {

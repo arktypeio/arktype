@@ -84,22 +84,43 @@ const workspaceDependenciesOf = (pkg: ArkPackage) =>
 		...pkg.json.peerDependencies
 	}).flatMap(name => packages.filter(dependency => dependency.name === name))
 
-/** each package after those it depends on, so none is installable before them */
-export const publishOrder: ArkPackage[] = []
+const installedDependenciesOf = (pkg: ArkPackage) =>
+	Object.keys({ ...pkg.json.dependencies, ...pkg.json.optionalDependencies })
 
-const addToPublishOrder = (pkg: ArkPackage, dependents: ArkPackage[]) => {
-	if (publishOrder.includes(pkg)) return
+const dependencyOrder: ArkPackage[] = []
+
+const addToDependencyOrder = (pkg: ArkPackage, dependents: ArkPackage[]) => {
+	if (dependencyOrder.includes(pkg)) return
 	if (dependents.includes(pkg)) {
 		throwInternalError(
 			`${[...dependents, pkg].map(({ name }) => name).join(" -> ")} is a cycle`
 		)
 	}
 	for (const dependency of workspaceDependenciesOf(pkg))
-		addToPublishOrder(dependency, [...dependents, pkg])
-	publishOrder.push(pkg)
+		addToDependencyOrder(dependency, [...dependents, pkg])
+	dependencyOrder.push(pkg)
 }
 
-for (const pkg of packages) addToPublishOrder(pkg, [])
+for (const pkg of packages) addToDependencyOrder(pkg, [])
+
+// arktype and whatever installs it, e.g. @ark/attest
+const installsType = new Set([packagesByScope.type.name])
+for (const pkg of dependencyOrder) {
+	if (installedDependenciesOf(pkg).some(name => installsType.has(name)))
+		installsType.add(pkg.name)
+}
+
+/**
+ * each package after those it depends on, so none is installable before them,
+ * and arktype after every package that doesn't install it. A peer needn't be
+ * on npm first, so a run that fails partway leaves latest at the previous
+ * arktype rather than at one whose docs name a package that isn't out yet,
+ * like @ark/aot.
+ */
+export const publishOrder: ArkPackage[] = [
+	...dependencyOrder.filter(pkg => !installsType.has(pkg.name)),
+	...dependencyOrder.filter(pkg => installsType.has(pkg.name))
+]
 
 /** the versions of a package on npm, none if it isn't there yet */
 export const publishedVersionsOf = async (name: string): Promise<string[]> => {

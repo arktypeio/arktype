@@ -2,6 +2,8 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { check } from "@ark/aot/internal/check.ts"
 import { spawnSync } from "node:child_process"
+import { writeFileSync } from "node:fs"
+import { join } from "node:path"
 import { runCli, writeFixture } from "./utils.ts"
 
 const cwd = fromHere("checked")
@@ -184,6 +186,54 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 `)
 	})
 
+	it("warns as a production bundle would where it can't prune", () => {
+		const root = writeFixture({
+			"types.ts": `import { type } from "arktype"\nexport const User = type({ name: "string" })\n`,
+			"main.ts": `import { User } from "./types.ts"\nconst pages = import.meta.glob("./pages/*.ts")\nUser({})\n`,
+			"types.test.ts": `import { User } from "./types.ts"\nconsole.log(User)\n`
+		})
+		const { NODE_ENV } = process.env
+		process.env.NODE_ENV = "production"
+		try {
+			attest(check([], { cwd: root }).lines).snap([
+				"types.ts:2:21  accepted",
+				"prune: off, because main.ts:2:15 reads import.meta.glob, which may load modules it can't name, so the build keeps every member of its validators. Set prune: false to build them whole without this warning.",
+				"1 site in 3 files: 1 accepted (100.0%)"
+			])
+			// a test isn't in the bundle
+			writeFileSync(
+				join(root, "main.ts"),
+				`import { User } from "./types.ts"\nUser({})\n`
+			)
+			attest(check([], { cwd: root }).lines).snap([
+				"types.ts:2:21  accepted",
+				"1 site in 3 files: 1 accepted (100.0%)"
+			])
+		} finally {
+			if (NODE_ENV === undefined) delete process.env.NODE_ENV
+			else process.env.NODE_ENV = NODE_ENV
+		}
+	})
+
+	it("names the components only the build checks", () => {
+		const root = writeFixture({
+			"src/types.ts": `import { type } from "arktype"\nexport const User = type({ name: "string" })\n`,
+			"src/Form.svelte": `<script>\n\timport { User } from "./types.ts"\n</script>\n\n<p>{User({}) instanceof Error}</p>\n`,
+			"src/Page.vue": `<script setup>\nimport Form from "./Form.vue"\n</script>\n`,
+			"src/Static.astro": `<p>no imports</p>\n`
+		})
+		attest(check(["src/**/*.ts"], { cwd: root }).lines).snap([
+			"src/types.ts:2:21  accepted",
+			"src/Form.svelte and 1 other component aren't checked here, as the build checks a component once its framework compiles it",
+			"1 site in 1 file: 1 accepted (100.0%)"
+		])
+		attest(
+			check([], { cwd: root, runtime: "arktype" }).lines.some(line =>
+				line.includes("component")
+			)
+		).equals(false)
+	})
+
 	it("fails on an error outside every site", () => {
 		const dir = fromHere("unconfigured")
 		attest(check([], { cwd: dir }).lines).snap([
@@ -278,6 +328,56 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 			'src/main.ts:1:1  import { User } from "./schemas.ts" loads src/schemas.ts, which creates a Type, before the config module src/config.ts runs configure()\n  unless the program loaded src/config.ts earlier, creating the Type throws\n  Import src/config.ts first, before any module that creates a Type, or set allowUnsafe: true to build anyway, with a warning.',
 			"src/schemas.ts:3:21  accepted",
 			"1 site in 3 files: 1 accepted (100.0%), 1 error outside a site"
+		])
+	})
+
+	it("reads a plugin or loader required, namespaced or imported by import()", () => {
+		const linesOf = (file: string, source: string) => {
+			const root = writeFixture({
+				"package.json": "{}",
+				[file]: source,
+				"config.ts": `import "arktype/errors"\nimport { configure } from "arktype/config"\n\nconfigure({ errors: "first" })\n`
+			})
+			try {
+				return check(["config.ts"], { cwd: root }).lines[0]
+			} catch (e) {
+				return String(e)
+			}
+		}
+		const options = `{ config: "config.ts", errors: "first" }`
+		attest([
+			linesOf(
+				"webpack.config.cjs",
+				`const { precompile } = require("@ark/aot/unplugin")\n\nmodule.exports = { plugins: [precompile.webpack(${options})] }\n`
+			),
+			linesOf(
+				"next.config.js",
+				`const aot = require("@ark/aot/unplugin")\n\nmodule.exports = { webpack: config => [aot.precompile.webpack(${options})] }\n`
+			),
+			linesOf(
+				"vite.config.ts",
+				`import * as aot from "@ark/aot/unplugin"\n\nexport default { plugins: [aot.precompile.vite(${options})] }\n`
+			),
+			linesOf(
+				"vite.config.ts",
+				`export default async () => {\n\tconst { precompile } = await import("@ark/aot/unplugin")\n\treturn { plugins: [precompile.vite(${options})] }\n}\n`
+			),
+			linesOf(
+				"next.config.js",
+				`module.exports = {\n\tturbopack: { rules: { "*.ts": { loaders: [{ loader: require.resolve("@ark/aot/turbopack"), options: ${options} }] } } }\n}\n`
+			),
+			// a call it can't follow stops it rather than checking another build
+			linesOf(
+				"vite.config.ts",
+				`import { precompile } from "@ark/aot/unplugin"\n\nconst plugins = [precompile.vite]\n\nexport default { plugins: [plugins[0](${options})] }\n`
+			)
+		]).snap([
+			"webpack.config.cjs:3:30  precompile.webpack() sets config, errors, so --check does too",
+			"next.config.js:3:40  aot.precompile.webpack() sets config, errors, so --check does too",
+			"vite.config.ts:3:28  aot.precompile.vite() sets config, errors, so --check does too",
+			"vite.config.ts:3:21  precompile.vite() sets config, errors, so --check does too",
+			"next.config.js:2:44  the @ark/aot/turbopack loader sets config, errors, so --check does too",
+			'Error: vite.config.ts:1:1  --check can\'t read the options the plugin is passed, so it can\'t check what the build does\n  Set the options in ark.json (or package.json\'s "ark" key), as { "precompile": { ... } }, which the plugin reads too, or pass each to --check as a flag.'
 		])
 	})
 

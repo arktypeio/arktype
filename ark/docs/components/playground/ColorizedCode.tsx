@@ -32,7 +32,7 @@ export const ColorizedCode = ({
 	}, [monaco, code, lang])
 
 	return (
-		<pre className="colorized-code">
+		<pre className="colorized-code" tabIndex={0}>
 			{html ?
 				<code dangerouslySetInnerHTML={{ __html: html }} />
 			:	<code>{code}</code>}

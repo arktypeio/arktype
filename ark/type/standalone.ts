@@ -4,6 +4,7 @@ import {
 	isDecidedByAllows,
 	isNode,
 	isRefinedPattern,
+	madeMorphs,
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
 	type BaseNode,
@@ -44,6 +45,7 @@ import {
 	isDate,
 	isDateObject,
 	isRegExpObject,
+	isStandardSchema,
 	isThunk,
 	nameOf,
 	ParseError,
@@ -119,6 +121,7 @@ type DeclarationRole =
 	| "shape"
 	| "keys"
 	| "literal"
+	| "made"
 	| "standIn"
 	| "json"
 	| "jsonSchema"
@@ -840,6 +843,7 @@ const createDeclarations = (): Declarations => ({
 		shape: [],
 		keys: [],
 		literal: [],
+		made: [],
 		standIn: [],
 		json: [],
 		jsonSchema: [],
@@ -1190,6 +1194,12 @@ class StandaloneArtifact {
 				`runtime.checkInput(${expression}, ${this.emit(value)}, ${JSON.stringify(label)})`
 			)
 			return
+		}
+		// arktype validates one with a morph of its own, calling its validate
+		if (isStandardSchema(value)) {
+			throwParseError(
+				writeUnprecompilableMessage(`the Standard Schema ${label}`)
+			)
 		}
 		if (
 			arkKindOf(value) !== undefined ||
@@ -3121,6 +3131,14 @@ ${writeFunction(
 		if (declared) return declared
 		const defaulted = this.defaultsByMorph.get(value)
 		if (defaulted) return this.emitDefault(value, ...defaulted)
+		const made = madeMorphs.get(value as never)
+		if (made) {
+			return this.declareConst(
+				value,
+				"made",
+				`${this.emit(made[0])}(${made[1].map(arg => this.emit(arg)).join(", ")})`
+			)
+		}
 		// a unit is compared by reference, so a copy wouldn't equal it
 		if (this.objectUnits.has(value)) {
 			throwParseError(
@@ -3598,6 +3616,8 @@ const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 	if (seen.has(value)) return false
 	seen.add(value)
 	if (typeof value === "string") return value.includes(holeNameMarker)
+	const made = madeMorphs.get(value as never)
+	if (made) return made[1].some(arg => holdsLocal(arg, seen))
 	if (isHole(value)) return true
 	if (!hasDomain(value, "object") || isNode(value) || !isPlainLiteral(value))
 		return false

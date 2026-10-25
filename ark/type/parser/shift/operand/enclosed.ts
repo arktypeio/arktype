@@ -1,4 +1,4 @@
-import { node } from "@ark/schema"
+import { execMorph, makeMorph, node } from "@ark/schema"
 import {
 	Backslash,
 	cached,
@@ -84,7 +84,7 @@ export const parseEnclosed = (
 		if (enclosing === "x/") {
 			s.root = s.ctx.$.node("morph", {
 				in: s.root,
-				morphs: [(s: string) => regex.exec(s)],
+				morphs: [makeMorph(execMorph, regex)],
 				declaredOut: regexExecArray()
 			})
 		}

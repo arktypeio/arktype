@@ -95,7 +95,7 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 			const filter = new RegExp(`^(?!.*${exclude.source}).*${include.source}`)
 			build.onLoad({ filter }, async ({ path }) => {
 				const source = readFileSync(path, "utf8")
-				const transformed = (await request("transform", source, path)) as
+				const transformed = (await request(["transform", source, path])) as
 					| TransformedModule
 					| undefined
 				reportDiagnostics(transformed, warning => console.warn(warning))

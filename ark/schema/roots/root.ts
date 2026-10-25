@@ -62,6 +62,7 @@ import type {
 	StandardSchemaV1
 } from "../shared/standardSchema.ts"
 import { ToJsonSchema } from "../shared/toJsonSchema.ts"
+import { tryMorph } from "../shared/traversal.ts"
 import { hasArkKind, isNode } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
@@ -444,17 +445,8 @@ export abstract class BaseRoot<
 
 	protected tryPipe(...morphs: Morph[]): BaseRoot {
 		return this._pipe(
-			...morphs.map(
-				(morph): Morph =>
-					hasArkKind(morph, "root") ? morph : (
-						(In, ctx) => {
-							try {
-								return morph(In, ctx)
-							} catch (e) {
-								return ctx.error({ code: "predicate", morph, cause: e })
-							}
-						}
-					)
+			...morphs.map(morph =>
+				hasArkKind(morph, "root") ? morph : makeMorph(tryMorph, morph)
 			)
 		)
 	}
@@ -688,6 +680,23 @@ export abstract class BaseRoot<
 	earlierThan(schema: ExclusiveDateRangeSchema): BaseRoot {
 		return this.constrain("before", exclusivizeRangeSchema(schema))
 	}
+}
+
+export type MadeMorph = [
+	make: (...args: never[]) => Morph,
+	args: readonly unknown[]
+]
+
+// a morph arktype makes from values, which a standalone build makes again
+export const madeMorphs: WeakMap<Morph, MadeMorph> = new WeakMap()
+
+export const makeMorph = <args extends unknown[]>(
+	make: (...args: args) => Morph,
+	...args: args
+): Morph => {
+	const morph = make(...args)
+	madeMorphs.set(morph, [make as never, args])
+	return morph
 }
 
 export type UndeclaredKeyConfig = {

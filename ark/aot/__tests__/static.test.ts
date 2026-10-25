@@ -302,6 +302,29 @@ export const skus = (data: unknown[]) =>
 			).equals([])
 		})
 
+		it("a Scope's thunks, whether or not an importer resolved them first", () => {
+			const scoped = `import { scope } from "arktype"
+export const $ = scope({
+	topic: ["string", ":", s => s.length > 0],
+	Post: { body: "string", "replies?": () => $.type("Post[]") }
+})
+export const Post = $.export().Post`
+			const files = {
+				"/scoped.ts": scoped,
+				"/main.ts": 'import { Post } from "./scoped.ts"\nPost({ body: "a" })'
+			}
+			const alone = new Precompiler(memoryHost(files)).precompile(
+				scoped,
+				"/scoped.ts"
+			)
+			const afterImporter = new Precompiler(memoryHost(files))
+			afterImporter.analyzeSites(files["/main.ts"], "/main.ts")
+			attest(alone.diagnostics).equals([])
+			attest(afterImporter.precompile(scoped, "/scoped.ts").modules).equals(
+				alone.modules
+			)
+		})
+
 		it("what a Generic's instantiation validates", () => {
 			const source = `import { generic, scope, type } from "arktype"
 const Page = generic("t")({ items: "t[]", total: "number" })
@@ -378,6 +401,33 @@ export const createClient = (token: string) => connect({ url: env.API_URL, token
 				"5:13 accepted",
 				"23:29 accepted"
 			])
+		})
+
+		it("an introspection read off what holds an exported function's parameter", () => {
+			attest(
+				diagnosticsOf(
+					`import type { Resp } from "./a.ts"
+import { make } from "./adapt.ts"
+const out: Resp = make({}, "u")
+console.log(out.resource.description)`,
+					{
+						"/a.ts": `import { type } from "arktype"
+export const Info = type({ url: "string", "description?": "string" })
+export type Info = typeof Info.infer
+export const Resp = type({ resource: Info, "error?": "string" })
+export type Resp = typeof Resp.infer
+export const Input = type({ "error?": "string" })
+export type Input = typeof Input.infer`,
+						"/adapt.ts": `import type { Info, Input, Resp } from "./a.ts"
+export function make(input: Input, url: string): Resp {
+	const resource: Info = { url }
+	const result: Resp = { resource }
+	if (input.error) result.error = input.error
+	return result
+}`
+					}
+				)
+			).equals([])
 		})
 	})
 
@@ -633,6 +683,20 @@ const A = type({ name: z.string() })`
 			attest(diagnosticsOf(source)).snap([
 				'/main.ts:4:32  `schema` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `schema` is a parameter of wrap (/main.ts:3:22); its value is known only at runtime\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it\'s a Type, make wrap a Generic, which the build precompiles where it\'s called: `const wrap = type("<t>", { value: "t" })`.',
 				"/main.ts:7:24  `z.string()` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `zod` is a package the build does not read\n  A Standard Schema other than a Type, like a Zod schema, needs no change. If it's a Type, make it static so the build precompiles it with the site."
+			])
+		})
+
+		it("static Standard Schemas", () => {
+			attest(
+				precompile(`import { type } from "arktype"
+const schema = { "~standard": { version: 1, vendor: "x", validate: (value: unknown) => ({ value }) } }
+export const A = type({ a: schema })
+export const B = type({ b: { "~standard": { version: 1, vendor: "x", validate: (value: unknown) => ({ value }) } } })`).diagnostics.map(
+					renderDiagnostic
+				)
+			).snap([
+				"/main.ts:3:18  type({ a: schema }) can't be precompiled yet\n  the Standard Schema `schema` can't be precompiled to a standalone validator\n  Define the schema with ArkType, which the build precompiles, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime.",
+				'/main.ts:4:18  type({ b: { "~standard": { version: 1, vendor: "x", validat… can\'t be precompiled yet\n  the Standard Schema holding `(value: unknown) => ({ value })` (/main.ts:4:80) can\'t be precompiled to a standalone validator\n  Define the schema with ArkType, which the build precompiles, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime.'
 			])
 		})
 
@@ -1149,6 +1213,28 @@ export const d = new Proxy(User, {}).or("null")`)
 				"/main.ts:22:18  new Holder().get().or reads or, which a standalone validator lacks\n  the build can't tell where `new Holder().get()` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
 				"/main.ts:23:18  Static.T.or reads or, which a standalone validator lacks\n  the build can't tell where `Static.T` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
 				"/main.ts:24:18  new Proxy(User, {}).or reads or, which a standalone validator lacks\n  the build can't tell where `new Proxy(User, {})` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("a Type written beside an exported function's parameter", () => {
+			attest(
+				unhinted(
+					`import { make } from "./adapt.ts"
+console.log(make({}).resource.description)`,
+					{
+						"/a.ts": `import { type } from "arktype"
+export const Info = type({ url: "string", "description?": "string" })`,
+						"/adapt.ts": `import { Info } from "./a.ts"
+export function make(input: { error?: string }) {
+	const result: any = {}
+	if (input.error) result.error = input.error
+	result.resource = Info
+	return result
+}`
+					}
+				)
+			).snap([
+				"/main.ts:2:13  make({}).resource.description reads description, which a standalone validator lacks\n  the build can't tell where `make({}).resource` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 

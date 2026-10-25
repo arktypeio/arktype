@@ -1,6 +1,7 @@
 import { parseSync, type Node, type Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
+import { isInertMetaProperty } from "./scan.ts"
 import {
 	exportNameOf,
 	isWriteTarget,
@@ -58,25 +59,31 @@ export interface UsageProgram {
 	resolve: (specifier: string, importer: string) => string | undefined
 }
 
-// the members some read of a validator needs, or undefined where one
-// reaches code that may read anything
+// the members some read of a validator needs, or why one reaches code that
+// may read anything
 export const usedMembersOf = (
 	program: UsageProgram
-): Set<UsedMember> | undefined => {
+): Set<UsedMember> | string => {
 	const analysis = new UsageAnalysis(program)
 	try {
 		analysis.analyze()
 	} catch (e) {
-		if (e === escaped) return
+		if (e instanceof Escape) return e.reason
 		throw e
 	}
 	return analysis.used
 }
 
-const escaped = Symbol("escaped")
+class Escape {
+	reason: string
 
-const escape = (): never => {
-	throw escaped
+	constructor(reason: string) {
+		this.reason = reason
+	}
+}
+
+const escape = (reason: string): never => {
+	throw new Escape(reason)
 }
 
 type ImportEdge =
@@ -85,7 +92,7 @@ type ImportEdge =
 	| { kind: "reexport"; name: string; as: string; importer: RuntimeModule }
 	| { kind: "star"; importer: RuntimeModule }
 	// e.g. import(), require() or `export * as ns`, handing over every export
-	| { kind: "whole" }
+	| { kind: "whole"; at: string; how: (path: string) => string }
 	// read by a factory, which may read anything off it
 	| { kind: "input"; name: string }
 
@@ -103,7 +110,11 @@ class UsageAnalysis {
 	analyze(): void {
 		for (const runtime of this.program.modules.values()) this.link(runtime)
 		for (const runtime of this.program.modules.values()) {
-			if (runtime.holdsOther) escape()
+			if (runtime.holdsOther) {
+				escape(
+					`${runtime.module.path} creates a Scope, Module or Generic, whose validators it can't follow`
+				)
+			}
 			for (const node of nodesAt(runtime.module, runtime.validators))
 				this.readValue(node, runtime)
 		}
@@ -160,12 +171,21 @@ class UsageAnalysis {
 				add(
 					statement.source.value,
 					statement.exported ?
-						{ kind: "whole" }
+						{
+							kind: "whole",
+							at: module.positionOf(statement),
+							how: path => `re-exports ${path} as a namespace`
+						}
 					:	{ kind: "star", importer: runtime }
 				)
 			} else if (statement.type === "TSImportEqualsDeclaration") {
-				if (statement.moduleReference.type === "TSExternalModuleReference")
-					add(statement.moduleReference.expression.value, { kind: "whole" })
+				if (statement.moduleReference.type === "TSExternalModuleReference") {
+					add(statement.moduleReference.expression.value, {
+						kind: "whole",
+						at: module.positionOf(statement),
+						how: path => `loads ${path} by import =`
+					})
+				}
 			}
 		}
 		for (const specifier in runtime.inputs) {
@@ -175,28 +195,55 @@ class UsageAnalysis {
 		for (const { id, binding } of module.scopes.root.unresolved) {
 			if (binding) continue
 			// direct eval reads any binding in scope
-			if (id.name === "eval") escape()
+			if (id.name === "eval") {
+				escape(
+					`${module.positionOf(id)} calls eval, which may read any binding`
+				)
+			}
 			if (id.name !== "require") continue
 			const [operand, parent] = operatorOf(id)
 			const specifier =
 				parent?.type === "CallExpression" && parent.callee === operand ?
 					literalOf(parent.arguments[0])
 				:	undefined
-			if (specifier === undefined) return escape()
-			add(specifier, { kind: "whole" })
+			if (specifier === undefined) {
+				return escape(
+					`${module.positionOf(id)} reads require other than to call it with a string`
+				)
+			}
+			add(specifier, {
+				kind: "whole",
+				at: module.positionOf(id),
+				how: path => `loads ${path} by require()`
+			})
 		}
 		walk(module.program, node => {
 			if (node.type === "ImportExpression") {
 				const specifier = literalOf(node.source)
-				if (specifier === undefined) return escape()
-				add(specifier, { kind: "whole" })
+				if (specifier === undefined) {
+					return escape(
+						`${module.positionOf(node)} imports a module by a computed specifier`
+					)
+				}
+				add(specifier, {
+					kind: "whole",
+					at: module.positionOf(node),
+					how: path => `loads ${path} by import()`
+				})
 			} else if (
 				node.type === "MetaProperty" &&
 				node.meta.name === "import" &&
 				!isInertMetaRead(node)
-			)
-				// e.g. import.meta.glob() or a worker's URL, reaching modules unseen
-				escape()
+			) {
+				// e.g. import.meta.glob(), reaching modules unseen
+				const name =
+					node.parent?.type === "MemberExpression" ?
+						memberNameOf(node.parent)
+					:	undefined
+				escape(
+					`${module.positionOf(node)} ${typeof name === "string" ? `reads import.meta.${name}, which may load modules it can't name` : "reads import.meta whole"}`
+				)
+			}
 			return true
 		})
 	}
@@ -215,27 +262,42 @@ class UsageAnalysis {
 			if (
 				declaration.parent?.type === "ExportNamedDeclaration" &&
 				declaration.parent.parent?.type !== "Program"
-			)
-				escape()
+			) {
+				escape(
+					`${runtime.module.positionOf(declaration)} exports a validator from a namespace`
+				)
+			}
 			return this.readBinding(
 				runtime.module.scopes.bindingsById.get(parent.id)!,
 				runtime
 			)
 		}
-		this.read(operand, parent)
+		this.read(operand, parent, runtime.module)
 	}
 
 	private readBinding(binding: Binding, runtime: RuntimeModule): void {
 		if (this.readBindings.has(binding)) return
 		this.readBindings.add(binding)
-		if (
-			binding.writes.length ||
-			(binding.kind !== "const" && binding.kind !== "import") ||
-			runtime.passed.includes(binding)
-		)
-			escape()
+		const { module } = runtime
+		const write =
+			binding.writes[0] ??
+			binding.references.find(reference => reference.isWrite)?.id
+		if (write) {
+			escape(
+				`${module.positionOf(write)} assigns ${binding.name}, which holds a validator`
+			)
+		}
+		if (binding.kind !== "const" && binding.kind !== "import") {
+			escape(
+				`${module.positionOf(binding.id)} holds a validator in ${binding.name}, which isn't a const`
+			)
+		}
+		if (runtime.passed.includes(binding)) {
+			escape(
+				`${module.positionOf(binding.id)} passes ${binding.name} to a factory that checks it, which may read any member`
+			)
+		}
 		for (const reference of binding.references) {
-			if (reference.isWrite) escape()
 			if (isDead(reference.id, runtime)) continue
 			const [operand, parent] = operatorOf(reference.id)
 			// read by importers through the export
@@ -244,7 +306,7 @@ class UsageAnalysis {
 				parent?.type === "ExportDefaultDeclaration"
 			)
 				continue
-			this.read(operand, parent)
+			this.read(operand, parent, module)
 		}
 		for (const name of binding.exportNames) this.readExport(runtime, name)
 	}
@@ -254,7 +316,11 @@ class UsageAnalysis {
 		const key = `${id}\0${name}`
 		if (this.readExports.has(key)) return
 		this.readExports.add(key)
-		if (this.program.entries.has(id)) escape()
+		if (this.program.entries.has(id)) {
+			escape(
+				`${runtime.module.path} exports ${name}, which code outside the bundle may read`
+			)
+		}
 		for (const edge of this.edgesByTarget.get(id) ?? []) {
 			switch (edge.kind) {
 				case "named":
@@ -270,10 +336,16 @@ class UsageAnalysis {
 					if (name !== "default") this.readExport(edge.importer, name)
 					break
 				case "whole":
-					escape()
+					escape(
+						`${edge.at} ${edge.how(runtime.module.path)}, which may read its ${name} any way`
+					)
 					break
 				case "input":
-					if (edge.name === name) escape()
+					if (edge.name === name) {
+						escape(
+							`${runtime.module.path}'s ${name} is passed to a factory, which may read any member`
+						)
+					}
 			}
 		}
 	}
@@ -284,7 +356,10 @@ class UsageAnalysis {
 		runtime: RuntimeModule,
 		name: string
 	): void {
-		if (binding.exportNames.length || runtime.passed.includes(binding)) escape()
+		const { module } = runtime
+		const wholeRead = `reads the namespace ${binding.name}, which holds ${name}, whole`
+		if (binding.exportNames.length || runtime.passed.includes(binding))
+			escape(`${module.positionOf(binding.id)} ${wholeRead}`)
 		for (const reference of binding.references) {
 			if (isDead(reference.id, runtime)) continue
 			const [operand, parent] = operatorOf(reference.id)
@@ -293,17 +368,25 @@ class UsageAnalysis {
 				parent.object !== operand ||
 				isWriteTarget(parent)
 			)
-				return escape()
+				return escape(`${module.positionOf(reference.id)} ${wholeRead}`)
 			const read = memberNameOf(parent)
-			if (typeof read !== "string") return escape()
+			if (typeof read !== "string") {
+				return escape(
+					`${module.positionOf(reference.id)} reads the namespace ${binding.name}, which holds ${name}, at a computed key`
+				)
+			}
 			if (read !== name) continue
 			const [member, memberParent] = operatorOf(parent)
-			this.read(member, memberParent)
+			this.read(member, memberParent, module)
 		}
 	}
 
 	// a validator read at `node`, as its parent reads it
-	private read(node: Node, parent: Node | null | undefined): void {
+	private read(
+		node: Node,
+		parent: Node | null | undefined,
+		module: SourceModule
+	): void {
 		if (parent?.type === "CallExpression" && parent.callee === node) {
 			this.used.add("call")
 			this.readArguments(parent)
@@ -330,7 +413,9 @@ class UsageAnalysis {
 				return
 			}
 		}
-		escape()
+		escape(
+			`${module.positionOf(node)} ${unfollowedReadOf(node, parent, module)}`
+		)
 	}
 
 	// a call's second argument is where its failure may pipe
@@ -353,15 +438,39 @@ const literalOf = (node: Node | undefined): string | undefined =>
 		node.quasis[0].value.cooked
 	:	undefined
 
+// how a read the analysis doesn't follow reads a validator
+const unfollowedReadOf = (
+	node: Node,
+	parent: Node | null | undefined,
+	module: SourceModule
+): string => {
+	const text = module.snippetOf(node)
+	if (parent?.type === "CallExpression" || parent?.type === "NewExpression")
+		return `passes ${text} to a function, which may read any member`
+	if (parent?.type === "VariableDeclarator") {
+		return parent.id.type === "Identifier" ?
+				`holds ${text} in ${parent.id.name}, which isn't a const`
+			:	`destructures ${text}`
+	}
+	if (parent?.type === "MemberExpression" && parent.object === node) {
+		const name = memberNameOf(parent)
+		return (
+			isWriteTarget(parent) ? `writes to ${module.snippetOf(parent)}`
+			: typeof name === "string" ?
+				`reads ${module.snippetOf(parent)}, a member it doesn't know`
+			:	`reads ${text} at a computed key`
+		)
+	}
+	return `reads ${text} other than to call it or read a member it knows`
+}
+
 // e.g. import.meta.env.PROD, which loads nothing
 const isInertMetaRead = (node: Node): boolean => {
 	const parent = node.parent
 	return (
 		parent?.type === "MemberExpression" &&
 		parent.object === node &&
-		(memberNameOf(parent) === "env" ||
-			memberNameOf(parent) === "dirname" ||
-			memberNameOf(parent) === "filename")
+		isInertMetaProperty(memberNameOf(parent))
 	)
 }
 
@@ -387,7 +496,10 @@ const nodesAt = (module: SourceModule, spans: Span[]): Node[] => {
 		if (nodesByRange.has(range)) nodesByRange.set(range, node)
 		return spans.some(span => isIn(span, node))
 	})
-	return [...nodesByRange.values()].map(node => node ?? escape())
+	return [...nodesByRange.values()].map(
+		node =>
+			node ?? escape(`${module.path} holds a validator its sites don't name`)
+	)
 }
 
 // a module no site of which the host folds

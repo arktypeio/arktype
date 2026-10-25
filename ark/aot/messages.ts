@@ -5,6 +5,13 @@ import type { Rule } from "./precompile.ts"
 export const writeUnreadableConfigMessage = (path: string): string =>
 	`the config module ${path} can't be read. Name a module that exists as the build's config.`
 
+export const writeUnansweredResolveMessage = (
+	specifier: string,
+	importer: string,
+	timeout: number
+): string =>
+	`The bundler didn't resolve \`${specifier}\` from ${importer} within ${timeout / 1000}s, as where resolving it waits on arktype's precompiler, which waits on the answer: a plugin resolving it may load a module arktype's plugin transforms. The precompiler asks the bundler only for an import it can't resolve as TypeScript does, so add the alias it resolves through to tsconfig.json's \`paths\`.`
+
 export const configuredThreadMessage =
 	"arktype in this thread holds a configuration other than the build's, which it can't change once set, so the build must restart in a thread of its own. Restart the process that runs it."
 
@@ -230,6 +237,10 @@ const textHints: [
 	[
 		/^`.+` \(.+\) is a static helper its module doesn't export through a binding/,
 		"Export it by name, as `export const helper = ...`, and import that name, so a test driver can register it."
+	],
+	[
+		/^the Standard Schema .+ can't be precompiled to a standalone validator$/,
+		"Define the schema with ArkType, which the build precompiles, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime."
 	],
 	[
 		/writer, which reads each branch's errors/,

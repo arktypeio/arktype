@@ -7,6 +7,7 @@ import {
 	addLoaded,
 	scanProgram,
 	unseenProblemOf,
+	writeKeptMembersMessage,
 	writeUnseenMessage,
 	type LoadedSources
 } from "@ark/aot/internal/scan.ts"
@@ -30,7 +31,7 @@ import {
 import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
-import { join, posix, win32 } from "node:path"
+import { join, posix, relative, win32 } from "node:path"
 import { stripVTControlCharacters } from "node:util"
 import { memoryHost, normalized, runCli, writeFixture } from "./utils.ts"
 
@@ -40,14 +41,15 @@ export const User = type({ name: "string" })
 `
 
 // the members a production build for size leaves out of the program's
-// validators, "open" where its scan can't read every module, or the errors
-// failing its build
+// validators, why it leaves none where it can't, or the errors failing its
+// build
 const droppedFrom = async (
 	files: Record<string, string>,
 	opts?: PrecompileOptions
 ) => {
 	const precompiler = new Precompiler(memoryHost(files), {
 		preset: "smallest",
+		cwd: "/",
 		...opts
 	})
 	const scanned = await scanProgram("test", [{ id: "/main.ts" }], {
@@ -58,9 +60,10 @@ const droppedFrom = async (
 		},
 		readFile: id => files[id],
 		isTransformed: () => true,
-		idOf: id => id
+		idOf: id => id,
+		cwd: "/"
 	})
-	if (!scanned) return "open"
+	if (typeof scanned === "string") return scanned
 	// a module that fails its build would hide what the scan read
 	for (const id in scanned.modules) {
 		const errors = precompiler
@@ -68,7 +71,13 @@ const droppedFrom = async (
 			.diagnostics.filter(diagnostic => diagnostic.severity === "error")
 		if (errors.length) return errors.map(error => error.message)
 	}
-	return precompiler.scan(scanned).dropped
+	const usage = precompiler.scan(scanned)
+	if (!usage.unpruned) return usage.dropped
+	// the reason alone, where it keeps every member
+	const [before, after] = writeKeptMembersMessage("\0", everyMember).split("\0")
+	return usage.unpruned.startsWith(before) && usage.unpruned.endsWith(after) ?
+			usage.unpruned.slice(before.length, -after.length)
+		:	usage.unpruned
 }
 
 // main.ts reading types.ts's User as `read` does
@@ -251,23 +260,28 @@ contextualize(function (this: Mocha.Suite) {
 	})
 
 	describe("reads that keep every member", () => {
-		const keepsAll = async (read: string) =>
-			attest(await droppedReading(read)).equals([])
-
 		it("an entry's export", async () => {
-			await keepsAll(`export { User }`)
+			attest(await droppedReading(`export { User }`)).snap(
+				"main.ts exports User, which code outside the bundle may read"
+			)
 		})
 
 		it("an argument", async () => {
-			await keepsAll(`console.log(User)`)
+			attest(await droppedReading(`console.log(User)`)).snap(
+				"main.ts:3:13 passes User to a function, which may read any member"
+			)
 		})
 
 		it("a property", async () => {
-			await keepsAll(`export const types = { User }`)
+			attest(await droppedReading(`export const types = { User }`)).snap(
+				"main.ts:3:24 reads User other than to call it or read a member it knows"
+			)
 		})
 
 		it("a member it doesn't know", async () => {
-			await keepsAll(`User.bind(null)`)
+			attest(await droppedReading(`User.bind(null)`)).snap(
+				"main.ts:3:1 reads User.bind, a member it doesn't know"
+			)
 		})
 
 		it("a binding other than a const", async () => {
@@ -275,7 +289,9 @@ contextualize(function (this: Mocha.Suite) {
 				await droppedFrom({
 					"/main.ts": `import { type } from "arktype"\n\nlet User = type({ name: "string" })\n\nUser({})`
 				})
-			).equals([])
+			).snap(
+				'main.ts:3:12 holds type({ name: "string" }) in User, which isn\'t a const'
+			)
 		})
 
 		it("a namespace read whole", async () => {
@@ -284,7 +300,7 @@ contextualize(function (this: Mocha.Suite) {
 					"/types.ts": types,
 					"/main.ts": `import * as t from "./types.ts"\n\nconsole.log(t)`
 				})
-			).equals([])
+			).snap("main.ts:3:13 reads the namespace t, which holds User, whole")
 		})
 
 		it("export * as", async () => {
@@ -294,11 +310,15 @@ contextualize(function (this: Mocha.Suite) {
 					"/barrel.ts": `export * as t from "./types.ts"`,
 					"/main.ts": `import { t } from "./barrel.ts"\n\nt.User({})`
 				})
-			).equals([])
+			).snap(
+				"barrel.ts:1:1 re-exports types.ts as a namespace, which may read its User any way"
+			)
 		})
 
 		it("a dynamic import", async () => {
-			await keepsAll(`await import("./types.ts")`)
+			attest(await droppedReading(`await import("./types.ts")`)).snap(
+				"main.ts:3:7 loads types.ts by import(), which may read its User any way"
+			)
 		})
 
 		it("require", async () => {
@@ -307,11 +327,15 @@ contextualize(function (this: Mocha.Suite) {
 					"/types.ts": types,
 					"/main.ts": `const { User } = require("./types.ts")\n\nUser({})`
 				})
-			).equals([])
+			).snap(
+				"main.ts:1:18 loads types.ts by require(), which may read its User any way"
+			)
 		})
 
 		it("eval", async () => {
-			await keepsAll(`User({})\neval("User.assert({})")`)
+			attest(await droppedReading(`User({})\neval("User.assert({})")`)).snap(
+				"main.ts:4:1 calls eval, which may read any binding"
+			)
 		})
 
 		it("a validator created outside a const", async () => {
@@ -319,7 +343,9 @@ contextualize(function (this: Mocha.Suite) {
 				await droppedFrom({
 					"/main.ts": `import { type } from "arktype"\n\nconsole.log(type({ name: "string" }))`
 				})
-			).equals([])
+			).snap(
+				'main.ts:3:13 passes type({ name: "string" }) to a function, which may read any member'
+			)
 		})
 
 		it("an import a factory checks", async () => {
@@ -328,7 +354,9 @@ contextualize(function (this: Mocha.Suite) {
 					preset: undefined,
 					creationChecks: "types"
 				})
-			).equals([])
+			).snap(
+				"admin.ts:2:10 passes User to a factory that checks it, which may read any member"
+			)
 		})
 
 		it("an import whose function a factory reads", async () => {
@@ -341,7 +369,9 @@ contextualize(function (this: Mocha.Suite) {
 					},
 					{ preset: undefined, creationChecks: "none" }
 				)
-			).equals([])
+			).snap(
+				"admin.ts:4:35 reads Trimmed other than to call it or read a member it knows"
+			)
 		})
 
 		it("a Scope", async () => {
@@ -349,7 +379,9 @@ contextualize(function (this: Mocha.Suite) {
 				await droppedFrom({
 					"/main.ts": `import { scope } from "arktype"\n\nconst $ = scope({ user: { name: "string" } }).export()\n\n$.user({})`
 				})
-			).equals([])
+			).snap(
+				"main.ts creates a Scope, Module or Generic, whose validators it can't follow"
+			)
 		})
 
 		it("JSX", async () => {
@@ -359,14 +391,16 @@ contextualize(function (this: Mocha.Suite) {
 					"/main.ts": `import "./view.tsx"`,
 					"/view.tsx": `import { User } from "./types.ts"\n\nexport const view = <User />`
 				})
-			).equals([])
+			).snap(
+				"view.tsx:3:22 reads User other than to call it or read a member it knows"
+			)
 		})
 	})
 
 	describe("programs it can't read", () => {
 		it("a specifier it can't resolve", async () => {
-			attest(await droppedReading(`import "./unresolved.ts"\nUser({})`)).equals(
-				"open"
+			attest(await droppedReading(`import "./unresolved.ts"\nUser({})`)).snap(
+				'main.ts:3:1 imports "./unresolved.ts", which doesn\'t resolve to a file'
 			)
 		})
 
@@ -375,35 +409,66 @@ contextualize(function (this: Mocha.Suite) {
 				await droppedReading(`import "./view.vue"\nUser({})`, {
 					"/view.vue": "<script setup>User.assert({})</script>"
 				})
-			).equals("open")
+			).snap("main.ts:3:1 imports view.vue, which isn't a script it can read")
 		})
 
 		it("a computed dynamic import", async () => {
 			attest(
 				await droppedReading(`const path = "./types.ts"\nawait import(path)`)
-			).equals("open")
+			).snap("main.ts:4:7 imports a module by a computed specifier")
 		})
 
 		it("a computed require", async () => {
 			attest(
 				await droppedReading(`const path = "./types.ts"\nrequire(path)`)
-			).equals("open")
+			).snap("main.ts:4:1 calls require() by a computed specifier")
 		})
 
 		it("require read as a value", async () => {
-			attest(await droppedReading(`const load = require`)).equals("open")
+			attest(await droppedReading(`const load = require`)).snap(
+				"main.ts:3:14 reads require other than to call it"
+			)
 		})
 
 		it("import.meta.glob", async () => {
-			attest(
-				await droppedReading(`import.meta.glob("./*.ts")\nUser({})`)
-			).equals("open")
+			attest(await droppedReading(`import.meta.glob("./*.ts")\nUser({})`)).snap(
+				"main.ts:3:1 reads import.meta.glob, which may load modules it can't name"
+			)
 		})
 
 		it("but import.meta.env", async () => {
 			attest(await droppedReading(`if (import.meta.env.PROD) User({})`)).equals(
 				everyMember
 			)
+		})
+
+		it("but import.meta.hot, which a bundle reads as undefined", async () => {
+			attest(
+				await droppedReading(
+					`if (import.meta.hot) import.meta.hot.accept()\nUser({})`
+				)
+			).equals(everyMember)
+		})
+
+		it("but a URL import.meta locates", async () => {
+			attest(
+				await droppedReading(
+					`new URL("./logo.svg", import.meta.url)\nimport.meta.resolve("./types.ts")\nimport.meta.dirname\nUser({})`
+				)
+			).equals(everyMember)
+		})
+
+		it("but a module Vite loads as a string or a worker", async () => {
+			attest(
+				await droppedReading(
+					`import source from "./types.ts?raw"\nimport logo from "./logo.svg?url"\nimport Reader from "./reader.ts?worker&inline"\nUser({})`,
+					{
+						"/types.ts?raw": "",
+						"/logo.svg?url": "",
+						"/reader.ts?worker&inline": ""
+					}
+				)
+			).equals(everyMember)
 		})
 	})
 
@@ -419,10 +484,13 @@ contextualize(function (this: Mocha.Suite) {
 					win32.join(win32.dirname(importer), specifier).replace(/\\/g, "/"),
 				readFile: id => files[win32.normalize(id)],
 				isTransformed: () => true,
-				idOf: win32.normalize
+				idOf: win32.normalize,
+				cwd: "C:\\app"
 			})
-			attest(scanned?.entries).equals(["C:\\app\\main.ts"])
-			attest(scanned?.targets).equals({
+			attest(typeof scanned !== "string" && scanned.entries).equals([
+				"C:\\app\\main.ts"
+			])
+			attest(typeof scanned !== "string" && scanned.targets).equals({
 				"C:\\app\\main.ts": { "./types.ts": "C:\\app\\types.ts" },
 				"C:\\app\\types.ts": {}
 			})
@@ -441,10 +509,13 @@ contextualize(function (this: Mocha.Suite) {
 						modules: {
 							"/app/main.ts": { source: "User({})", transformed: true }
 						},
-						targets: { "/app/main.ts": {} }
+						targets: { "/app/main.ts": {} },
+						dynamicImports: [],
+						exposed: []
 					},
 					{ entries: ["/app/main.ts"], modules: ["/app/main.ts"], edges: [] },
 					loaded,
+					new Set(),
 					"/app"
 				)
 			).equals(
@@ -490,6 +561,23 @@ console.log(out instanceof type.errors ? out.summary : out)
 			})
 			return outputFiles![0].text
 		}
+
+		const warningsOf = async (
+			opts: PrecompileUnpluginOptions,
+			{ plugins = [] }: BuildOptions = {}
+		) =>
+			(
+				await build({
+					entryPoints: [join(root, "main.ts")],
+					absWorkingDir: root,
+					bundle: true,
+					write: false,
+					format: "esm",
+					conditions,
+					logLevel: "silent",
+					plugins: [precompile.esbuild({ conditions, ...opts }), ...plugins]
+				})
+			).warnings
 
 		const run = (js: string) =>
 			spawnSync(process.execPath, ["--input-type=module"], {
@@ -599,6 +687,46 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			attest(await bundle({}, { plugins })).equals(
 				await bundle({ prune: false }, { plugins })
 			)
+			attest(
+				(await warningsOf({}, { plugins })).map(warning => warning.text)
+			).snap([
+				"prune: off, because a plugin follows arktype's among esbuild's plugins, which may load a module after it reads the bundle, so the build keeps every member of its validators. Move arktype's plugin last, or set prune: false to build them whole without this warning."
+			])
+			attest(await warningsOf({ prune: false }, { plugins })).equals([])
+			const last = await build({
+				entryPoints: [join(root, "main.ts")],
+				bundle: true,
+				write: false,
+				conditions,
+				logLevel: "silent",
+				plugins: [...plugins, precompile.esbuild({ conditions })]
+			})
+			attest(last.warnings).equals([])
+			attest(last.outputFiles[0].text.includes("~standard")).equals(false)
+		})
+
+		it("warns where it keeps each member members leaves to it", async () => {
+			const main = join(root, "main.ts")
+			const source = readFileSync(main, "utf8")
+			writeFileSync(main, `${source}console.log({ User })\n`)
+			const textsOf = async (opts: PrecompileUnpluginOptions) =>
+				(await warningsOf(opts)).map(warning => warning.text)
+			const members = Object.fromEntries(
+				everyMember.map(member => [member, true])
+			)
+			try {
+				attest(await textsOf({ preset: undefined })).snap([
+					"prune: keeping assert, meta, ~standard and methods, because main.ts:6:15 reads User other than to call it or read a member it knows. Set assert, meta, ~standard and methods in members, each false where no code reads it, to build without this warning."
+				])
+				attest(await textsOf({ members: { assert: true } })).snap([
+					"prune: keeping meta, ~standard and methods, because main.ts:6:15 reads User other than to call it or read a member it knows. Set meta, ~standard and methods in members, each false where no code reads it, to build without this warning."
+				])
+				attest(await textsOf({ members })).equals([])
+				// setting what it kept changes nothing it writes
+				attest(await bundle({ members })).equals(await bundle())
+			} finally {
+				writeFileSync(main, source)
+			}
 		})
 
 		it("fails prune: true where a plugin after it may load a module", async () => {
@@ -674,6 +802,43 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			).equals([writeUnseenMessage("asserter.ts imports types.ts")])
 		})
 
+		it("prunes a module import() loads, which splitting builds as an entry", async () => {
+			const files = writeFixture(
+				{
+					"types.ts": types,
+					"reader.ts": `import { User } from "./types.ts"\n\nexport const read = () => User.allows({})\n`,
+					"main.ts": `const { read } = await import("./reader.ts")\n\nconsole.log(read())\n`
+				},
+				fromHere("temp", "prunedSplit")
+			)
+			const { outputFiles } = await build({
+				entryPoints: [join(files, "main.ts")],
+				absWorkingDir: files,
+				bundle: true,
+				splitting: true,
+				write: false,
+				outdir: join(files, "out"),
+				format: "esm",
+				conditions,
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ preset: "smallest", conditions })]
+			})
+			writeFixture(
+				Object.fromEntries(
+					outputFiles!.map(({ path, text }) => [relative(files, path), text])
+				),
+				files
+			)
+			attest(
+				spawnSync(process.execPath, [join(files, "out", "main.js")], {
+					encoding: "utf8"
+				}).stdout
+			).snap("false\n")
+			attest(
+				outputFiles!.some(({ text }) => text.includes("~standard"))
+			).equals(false)
+		})
+
 		it("reads an entry from stdin", async () => {
 			const js = await bundle(
 				{},
@@ -687,6 +852,21 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			)
 			attest(run(js)).snap("name must be a string\n")
 			attest(js.includes("~standard")).equals(false)
+		})
+
+		it("reads an entry named from its working directory without ./", async () => {
+			for (const entryPoints of [
+				["main.ts"],
+				[{ in: "main.ts", out: "main" }],
+				{ main: "main.ts" }
+			]) {
+				const js = await bundle(
+					{},
+					{ entryPoints, absWorkingDir: root, outdir: "out" }
+				)
+				attest(run(js)).snap("name must be a string\n")
+				attest(js.includes("~standard")).equals(false)
+			}
 		})
 
 		it("rereads what each rebuild reads", async () => {
@@ -849,8 +1029,15 @@ console.log(out instanceof type.errors ? out.summary : out)
 			opts: PrecompileUnpluginOptions = {},
 			{
 				plugins = [],
-				lib = true
-			}: { plugins?: VitePlugin[]; lib?: boolean } = {}
+				following = [],
+				lib = true,
+				onwarn
+			}: {
+				plugins?: VitePlugin[]
+				following?: VitePlugin[]
+				lib?: boolean
+				onwarn?: (warning: { message: string; plugin?: string }) => void
+			} = {}
 		) => {
 			const { NODE_ENV } = process.env
 			process.env.NODE_ENV = "production"
@@ -859,12 +1046,17 @@ console.log(out instanceof type.errors ? out.summary : out)
 					root,
 					configFile: false,
 					logLevel: "silent",
-					plugins: [...plugins, precompile.vite({ conditions, ...opts })],
+					plugins: [
+						...plugins,
+						precompile.vite({ conditions, ...opts }),
+						...following
+					],
 					resolve: { conditions: [...conditions, ...defaultClientConditions] },
 					build: {
 						write: false,
 						minify: true,
-						...(lib && { lib: { entry: "main.ts", formats: ["es"] } })
+						...(lib && { lib: { entry: "main.ts", formats: ["es"] } }),
+						...(onwarn && { rollupOptions: { onwarn } })
 					}
 				}
 				const result = (await viteBuild(config)) as
@@ -893,6 +1085,74 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(pruned.includes("~standard")).equals(false)
 		})
 
+		it("leaves out what no read needs where a module accepts hot updates", async () => {
+			const main = join(root, "main.ts")
+			const source = readFileSync(main, "utf8")
+			writeFileSync(
+				main,
+				`${source}\nif (import.meta.hot) import.meta.hot.accept()\n`
+			)
+			try {
+				const pruned = await bundle()
+				attest(run(pruned)).snap("name must be a string\n")
+				attest(pruned.includes("~standard")).equals(false)
+			} finally {
+				writeFileSync(main, source)
+			}
+		})
+
+		it("warns where a module reads import.meta.glob", async () => {
+			const main = join(root, "main.ts")
+			const source = readFileSync(main, "utf8")
+			writeFileSync(main, `${source}import.meta.glob("./*.ts")\n`)
+			const warnings: string[] = []
+			try {
+				// Rolldown also warns where plugins take most of a build's time
+				await bundle(
+					{},
+					{
+						onwarn: warning => {
+							if (warning.plugin === "arktype") warnings.push(warning.message)
+						}
+					}
+				)
+				attest(warnings).snap([
+					"prune: off, because main.ts:6:1 reads import.meta.glob, which may load modules it can't name, so the build keeps every member of its validators. Set prune: false to build them whole without this warning."
+				])
+				warnings.length = 0
+				// which builds it as it was built
+				const whole = await bundle(
+					{ prune: false },
+					{
+						onwarn: warning => {
+							if (warning.plugin === "arktype") warnings.push(warning.message)
+						}
+					}
+				)
+				attest(warnings).equals([])
+				attest(whole).equals(await bundle())
+			} finally {
+				writeFileSync(main, source)
+			}
+		})
+
+		it("leaves out what no read needs where a module imports a file as a string", async () => {
+			const main = join(root, "main.ts")
+			const source = readFileSync(main, "utf8")
+			writeFileSync(join(root, "notes.md"), "# notes\n")
+			writeFileSync(
+				main,
+				`${source}\nimport notes from "./notes.md?raw"\nconsole.log(notes)\n`
+			)
+			try {
+				const pruned = await bundle()
+				attest(run(pruned)).snap("name must be a string\n# notes\n\n")
+				attest(pruned.includes("~standard")).equals(false)
+			} finally {
+				writeFileSync(main, source)
+			}
+		})
+
 		it("reads a page's module scripts", async () => {
 			const pruned = await bundle({}, { lib: false })
 			attest(pruned.includes("~standard")).equals(false)
@@ -917,7 +1177,97 @@ console.log(out instanceof type.errors ? out.summary : out)
 			}
 		})
 
-		it("fails a build holding a module another plugin transformed", async () => {
+		// main.ts importing `imports` too, beside a component and a dependency
+		// importing `dependency`
+		const importing = async <t>(
+			imports: string,
+			run: () => Promise<t>,
+			dependency = "../../config.ts"
+		) => {
+			const main = join(root, "main.ts")
+			const source = readFileSync(main, "utf8")
+			writeFileSync(join(root, "Form.svelte"), "<script>\n</script>\n")
+			writeFileSync(join(root, "config.ts"), "export const debug = false\n")
+			writeFileSync(main, `${imports}\n${source}`)
+			writeFixture(
+				{
+					"package.json": "{}",
+					"index.js": `import ${JSON.stringify(dependency)}\n`
+				},
+				join(root, "node_modules", "fw")
+			)
+			try {
+				return await run()
+			} finally {
+				writeFileSync(main, source)
+			}
+		}
+
+		// compiles a component and writes a virtual module, each reading
+		// `read`, as Svelte's plugin and SvelteKit's do
+		const framework = (read: string): VitePlugin => {
+			const code = `import { User } from ${JSON.stringify(join(root, "types.ts"))}\nexport default ${read}\n`
+			return {
+				name: "framework",
+				enforce: "pre",
+				resolveId: id => (id === "$app/routes" ? "\0app/routes" : undefined),
+				load: id => (id === "\0app/routes" ? code : undefined),
+				transform: (_, id) => (id.endsWith(".svelte") ? code : undefined)
+			}
+		}
+
+		it("reads a module another plugin compiles, like a Svelte component", async () => {
+			const pruned = await importing(
+				'import read from "./Form.svelte"\nconsole.log(read)',
+				() =>
+					bundle(
+						{},
+						{ plugins: [framework('User.assert({ name: "Ada" }).name')] }
+					)
+			)
+			attest(run(pruned)).snap("Ada\nname must be a string\n")
+			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("reads a virtual module another plugin writes", async () => {
+			const pruned = await importing(
+				'import read from "$app/routes"\nconsole.log(read)',
+				() =>
+					bundle(
+						{},
+						{ plugins: [framework('User.assert({ name: "Ada" }).name')] }
+					)
+			)
+			attest(run(pruned)).snap("Ada\nname must be a string\n")
+			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("leaves out what no read needs where a dependency imports a module holding no validator", async () => {
+			const pruned = await importing(
+				'import "fw"\nimport { debug } from "./config.ts"\nconsole.log(debug)',
+				() => bundle()
+			)
+			attest(run(pruned)).snap("false\nname must be a string\n")
+			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("fails a bundle where a dependency imports a module holding a validator", async () => {
+			const message = await importing(
+				'import "fw"',
+				() =>
+					bundle().then(
+						() => "",
+						(e: Error) => stripVTControlCharacters(e.message)
+					),
+				"../../types.ts"
+			)
+			const expected = writeUnseenMessage(
+				"node_modules/fw/index.js imports types.ts"
+			)
+			attest(message.slice(-expected.length)).equals(expected)
+		})
+
+		it("reads a module as a plugin ahead of it transformed it", async () => {
 			const asserting: VitePlugin = {
 				name: "asserting",
 				enforce: "pre",
@@ -926,15 +1276,15 @@ console.log(out instanceof type.errors ? out.summary : out)
 						code.replace("User({ name: 5 })", "User.assert({ name: 5 })")
 					:	undefined
 			}
-			const message = await bundle({}, { plugins: [asserting] }).then(
-				() => "",
-				// Vite colors the message where picocolors sees CI
-				(e: Error) => stripVTControlCharacters(e.message)
+			const pruned = await bundle({}, { plugins: [asserting] })
+			const { stderr } = spawnSync(process.execPath, ["--input-type=module"], {
+				input: pruned,
+				encoding: "utf8"
+			})
+			attest(stderr.includes("[TraversalError]: name must be a string")).equals(
+				true
 			)
-			const expected = writeUnseenMessage(
-				"it built main.ts from other code than it read"
-			)
-			attest(message.slice(-expected.length)).equals(expected)
+			attest(pruned.includes("~standard")).equals(false)
 		})
 	})
 

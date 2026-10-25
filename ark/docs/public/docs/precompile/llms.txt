@@ -159,7 +159,7 @@ export default defineConfig({
 })
 ```
 
-Vitest runs tests through the same plugin.
+Vitest runs tests through the same plugin. With a framework's plugins, list it after them, as [Frameworks](https://arktype.io/docs/precompile/setup#frameworks) shows.
 
 **esbuild**
 
@@ -289,7 +289,7 @@ A validator leaves out its JSON Schema unless the build sets it, so a library th
 
 ## Frameworks
 
-Each line was checked with a production build of a small app, on SvelteKit 3.1, Astro 7.4, Nuxt 4.6 and React Router 8.5:
+With Vite, list `precompile.vite()` after your framework's plugins. Each line was checked with a production build of a small app, on SvelteKit 3.1, Astro 7.4, Nuxt 4.6, React Router 8.5 and TanStack Router 1.168:
 
 | Framework | Setup |
 | - | - |
@@ -297,10 +297,15 @@ Each line was checked with a production build of a small app, on SvelteKit 3.1, 
 | Astro | `vite: { plugins: [precompile.vite()] }` in `astro.config.ts` |
 | Nuxt | `vite: { plugins: [precompile.vite()] }` and `nitro: { rollupConfig: { plugins: [precompile.rollup()] } }` in `nuxt.config.ts`. Nitro bundles server routes and `shared/` itself, so without the second it ships arktype whole |
 | React Router (Remix) | `plugins: [reactRouter(), precompile.vite()]` in `vite.config.ts` |
+| TanStack Router | `plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), precompile.vite()]` in `vite.config.ts`. Its code splitting moves a route's component into a module of its own after the plugins ahead of it run, so the build fails where arktype's plugin comes first |
 | Next.js | See [Next.js](https://arktype.io/docs/precompile/setup#next) |
 | Monorepos | Nothing extra. A workspace package linked into `node_modules`, as pnpm, npm, Yarn and Bun workspaces link it, resolves to its own directory, so the build precompiles it with the program |
 | Jest | Not supported. It has no driver, so it runs your Types on arktype, unprecompiled. See [Test runners](https://arktype.io/docs/precompile/setup#test-runners) |
-| Deno | Not supported. It has no driver, so `deno run` loads arktype unprecompiled. Build with Node |
+| Deno | A bundler plugin works under Deno, e.g. `deno run -A npm:vite build` with `precompile.vite()`. There's no driver, so `deno run` on your source loads arktype unprecompiled |
+
+Define your Types in `.ts` or `.js` modules. A component another plugin compiles, like a Svelte, Vue or Astro component or an MDX page, can call a validator or read its `.allows` and `.assert`, but the build can't write a validator inside it. So a read there that only a precompiled site could serve, like `.description` or `.omit()`, or that a validator lacks, like `.errors`, fails the build, or the dev server's request for the component, naming the read. Move it into a module the component imports, e.g. as a function the component calls.
+
+A production build reads each component as its framework compiles it, and each virtual module, like SvelteKit's `$env/static/private`, so it [prunes](https://arktype.io/docs/precompile/options#prune) through them. Where something still keeps it from pruning, like `import.meta.glob()` or a validator passed to a form library's adapter, it warns once, saying why.
 
 ## Next.js
 
@@ -433,9 +438,9 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
   Write the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call.
 ```
 
-Without a pattern, it checks every JavaScript and TypeScript file under the current directory outside `node_modules`, `dist`, `out` and `build`.
+Without a pattern, it checks every JavaScript and TypeScript file under the current directory outside `node_modules`, `dist`, `out` and `build`. Where `NODE_ENV` is `production`, it also prints the warning a production bundle of those files would give where it [can't prune](https://arktype.io/docs/precompile/options#prune). It reads no Svelte, Vue or Astro component or MDX page, whose reads of a validator only its framework's compiled code shows, so it names those under the current directory that import a module, which only the build checks.
 
-It reads [`ark.json`](https://arktype.io/docs/precompile/options#arkjson) as a build does, and the options a plugin call passes, like `precompile.vite({ config: "src/config.ts" })`, in a file at the project's root such as `vite.config.ts`, saying where it found them. Where an option isn't written as a literal there, it can't tell what the build gets, so it fails, asking for it in `ark.json` or as a flag. It takes each [option](https://arktype.io/docs/precompile/options) as a flag, which overrides both, like `--preset smallest`, `--optimize-errors size`, `--no-freeze` or `--members '{"assert":false}'`. It exits with 1 where the build would fail. `--fail-under <percent>` exits with 1 only if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
+It reads [`ark.json`](https://arktype.io/docs/precompile/options#arkjson) as a build does, and the options a plugin call passes, like `precompile.vite({ config: "src/config.ts" })`, in a file at the project's root such as `vite.config.ts`, saying where it found them. Where an option isn't written as a literal there, or the file loads the plugin in a way it can't follow, it can't tell what the build gets, so it fails, asking for it in `ark.json` or as a flag. It takes each [option](https://arktype.io/docs/precompile/options) as a flag, which overrides both, like `--preset smallest`, `--optimize-errors size`, `--no-freeze` or `--members '{"assert":false}'`. It exits with 1 where the build would fail. `--fail-under <percent>` exits with 1 only if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
 
 The same analysis is available as `new Precompiler(host, options).analyze(source, id)` from `@ark/aot`, which, as a build does, applies the program's configuration to arktype in its thread.
 
@@ -483,13 +488,15 @@ A definition holding functions, like a narrow, a morph or a class, becomes a cal
 
 Besides being called, a validator has `allows()`, and by default `assert()`, `meta`, `~standard`, `traverse()`, `from()` and `toString()`. `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` ship only where the build's [`members`](https://arktype.io/docs/precompile/options#members) option sets them, baked as arktype returns them. A read the build sees, like `User.expression`, is replaced by its value either way. One it doesn't bake reads `undefined`, but throws, naming the member to set, where `arktype/runtime` resolves under the `"development"` condition, and for `~standard.jsonSchema`, outside a production build.
 
-It lacks the methods that compose or relate a Type, like `.and`, `.or`, `.in` or `.extends`. The build fails where it sees one read outside a definition it precompiles, including off a value it lost track of after a Type reached it, and, once for each import, off an import it can't resolve, like one only a bundler alias names:
+It lacks the methods that compose or relate a Type, like `.and`, `.or`, `.in` or `.extends`. The build fails where it sees one read outside a definition it precompiles, including off a value it lost track of after a Type reached it, and, once for each import, off an import it can't resolve:
 
 ```
 main.ts:8:29  Long.description reads description, which a standalone validator lacks
   `Long` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read
   Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".
 ```
+
+The build resolves an import as TypeScript does, and where that fails, a bundler's plugin or loader asks the bundler, so an import only an alias in the bundler's config names, like Nuxt's `#shared` without its `tsconfig.json`, is checked like any other. `--check`, the ESLint rule, Bun and the Node driver resolve as TypeScript does alone.
 
 Composing inside a definition is fine, since the build evaluates it: `export const Admin = User.and({ role: "'admin'" })` is precompiled to a validator of its own. So is [`.encode`](https://arktype.io/docs/codecs) wherever the build sees it read, like `const encode = (event: unknown) => Event.encode(event)`: the encoder is precompiled like any other Type, and receives each codec's `encode` function from the validator holding it. The build installs encoding itself, so a precompiled `.encode` works even where the program never imports `arktype/codecs`.
 
@@ -503,7 +510,7 @@ A validator returns errors of its own, instances of `type.errors` and of `arktyp
 - A missing key's message is `name is missing`, without what was expected.
 - `assert` throws a `TraversalError` whose message is the errors' `summary`, one line per issue, rather than arktype's bulleted list.
 - A path starting with an index reads `[0] must be a string`, without arktype's `value at`, even where a problem is configured.
-- Text a narrow or morph puts in `ctx.reject({ meta })` isn't written, so pass it as `expected`, `problem` or `message` instead. An issue raised without one, like that of a `pipe.try` morph that throws, reads `is invalid` rather than naming the function.
+- Text a narrow or morph puts in `ctx.reject({ meta })` isn't written, so pass it as `expected`, `problem` or `message` instead. An issue a narrow raises without one reads `is invalid` rather than naming the function. One a `pipe.try` morph raises by throwing expects what arktype's does, like `valid according to parse`, but has no `morph` or `cause`.
 - A validator a morph calls with its `ctx` adds its issues to that validation.
 - `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`.
 - [`firstIssue(out)`](https://arktype.io/docs/errors#finding-only-the-first) finds only the first issue of errors that haven't found theirs, stopping where the data first fails.
@@ -531,6 +538,7 @@ To leave only some definitions to arktype in a standalone build, mark them as [r
 - A module importing neither arktype nor a module exporting a Type isn't checked, so a member one of its functions reads off a Type passed to it is missed. Annotating the parameter with arktype's `Type` has the build check it.
 - A definition whose branches arktype orders by the names of the functions they hold, like `type.instanceOf(Cat).or(type.instanceOf(Dog))`, is reported, since a minifier can rename them.
 - A definition holding a function a parameter holds, or resolving a Scope alias a thunk defines whose Type holds one, is reported. Mark it as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands).
+- A definition holding a Standard Schema that isn't a Type, like a Zod schema, is reported. Define the schema with ArkType, or mark the definition as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands).
 - A union whose branches print alike once their functions are named prints as `X or X` where arktype prints `X`.
 - A Date or RegExp a Type holds is one object for every Type and validation holding it.
 - A builtin class a Type holds, like `Uint8Array`, is read as the validator's module loads, so a later polyfill isn't seen.
@@ -703,11 +711,25 @@ A [production](https://arktype.io/docs/precompile/options#production-builds) bun
 
 A bundle written as one chunk, an esbuild build with one entry and neither `splitting` nor `inject`, or a Rollup, Rolldown or Vite build with one entry that imports nothing dynamically, also declares the units its validators read in one function wherever that's smaller, as constants each unit calls the others through, which V8 inlines as it does a factory's parameters. A module the build didn't read as the bundle holds it, like a file changed after the build read it or precompiled code another plugin loads, fails the build where it reads one of those units, as it would read a copy another validator could tell apart from its own.
 
-The build leaves a member wherever it can't prove no code reads it: when an entry exports a validator or a module holding one, a validator is passed to a function, stored, or read by a member it doesn't know, a module is imported dynamically, through `require` or `import.meta`, or holds a Scope, and when the bundle holds a module it can't read, like a Vue component. A member set true is always kept.
+The build leaves a member wherever it can't prove no code reads it: when an entry exports a validator or a module holding one, a validator is passed to a function, stored, or read by a member it doesn't know, a module is imported dynamically, through `require` or `import.meta.glob()`, reads an `import.meta` property other than `env`, `hot`, `url`, `resolve`, `dirname` and `filename`, or holds a Scope, and when an esbuild bundle holds a module it can't read, like a Vue component. A Vite, Rollup or Rolldown build reads each module as the bundler loads it, so it reads a component as its framework's plugin compiles it, like a Svelte, Vue or Astro component or an MDX page, and a virtual module as the plugin writing it does. A member set true is always kept.
+
+Where it can't prune, the build warns once, in the bundler's own warnings, naming the first module that kept it from pruning and how, and the fix. Where it can't read every module the bundle holds, it builds as `prune: false` does:
+
+```
+prune: off, because src/routes.ts:3:1 reads import.meta.glob, which may load modules it can't name, so the build keeps every member of its validators. Set prune: false to build them whole without this warning.
+```
+
+Where it reads them all but not what a read of its validators needs, it keeps each member `members` leaves to it, and still writes what else pruning does:
+
+```
+prune: keeping assert, meta, ~standard and methods, because src/index.ts exports User, which code outside the bundle may read. Set assert, meta, ~standard and methods in members, each false where no code reads it, to build without this warning.
+```
+
+Setting each in `members` clears it, as the build then has no member left to decide. Where `NODE_ENV` is `production`, `arktype-precompile --check` prints the same warning for a bundle of the files it checks, but tests, stories and configs. It follows relative imports of scripts alone and reads no file as an entry, so it misses what an alias, a virtual module, a component or an entry's exports lead to.
 
 Vite, Rollup, Rolldown and esbuild bundles prune, esbuild only where this plugin is the last, so no plugin loads a module after it reads it. `prune: true` also prunes a Rollup, Rolldown or esbuild bundle that isn't for production, which the build can't tell. webpack, Rspack, Turbopack, the Node and Bun drivers and `arktype-precompile` build every validator whole, and fail with `prune: true`, set in their options or `ark.json`, as does an esbuild build where a plugin follows this one.
 
-Once the bundle is built, the build checks that it read each entry, module and import the bundle holds as the bundle holds it, and fails without its output where another plugin loaded, rewrote or resolved one otherwise, as a read it didn't see may need what it left out. It relies on a plugin that transforms a module after this one keeping what the module reads, as a TypeScript or JSX transform does. `prune: false` builds every validator whole, each unit a module of its own.
+Once the bundle is built, the build checks that it read each entry, module and import the bundle holds as the bundle holds it, and fails without its output where another plugin loaded, rewrote or resolved one otherwise, as a read it didn't see may need what it left out. An import of a module that neither creates a validator nor imports one that may, like a framework's runtime importing the app's generated config, needs no reading. A Vite, Rollup or Rolldown build reads a module as the plugins ahead of this one transformed it, and relies on a plugin that transforms it after this one keeping what it reads, as a TypeScript or JSX transform does. `prune: false` builds every validator whole, each unit a module of its own.
 
 ### dependencies
 
@@ -842,7 +864,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`User.description reads description, which a standalone validator lacks`**: a validator lacks the methods that compose a Type and the introspection members its build's [`members`](https://arktype.io/docs/precompile/options#members) option doesn't set. Compose inside a definition, set the member, or build with `runtime: "arktype"`. A helper composing a Type it's passed, as `<t>(T: Type<t>) => T.or("null")` does, precompiles at each call passing it a Type the build knows, as long as its body is one expression, or consts and one `return`. Otherwise, make it a Generic, `type("<t>", "t | null")`, which the build precompiles where it's called.
 
-**`` `User` comes from `~/schemas`, which the build can't resolve ``**: the build resolves imports as TypeScript does, so it can't check reads off an import only a bundler alias resolves. Add the alias to `tsconfig.json`'s `paths`, or name that tsconfig as the build's `tsconfig`. If the value isn't a Type, annotate it with its type.
+**`` `User` comes from `~/schemas`, which the build can't resolve ``**: the build resolves imports as TypeScript does, then as the bundler does, so it can't check reads off one neither resolves to a file, like a virtual module. `--check`, the ESLint rule, Bun and the Node driver resolve as TypeScript does alone, so there an import only a bundler alias resolves can't be checked either. Add the alias to `tsconfig.json`'s `paths`, or name that tsconfig as the build's `tsconfig`. If the value isn't a Type, annotate it with its type.
 
 **`` `out.items` is read off what may be an arktype value ``**: the build lost track of what a value is somewhere between it and an arktype value, like a Module it can't read, so it may be a Type, which a validator replaces. An annotation doesn't change that. Define a Scope or Module in a const, as `scope({ ... })` or `scope({ ... }).export()`, which the build reads alias by alias, or build with `runtime: "arktype"`.
 
@@ -860,7 +882,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`configure() is called, but the build has no config module`**: name the module that calls it as the build's [`config`](https://arktype.io/docs/precompile/options#configuration) in `ark.json`, as `{ "precompile": { "config": "./src/arktype.config.ts" } }`.
 
-**``--check can't read the `config` precompile.vite() is passed``** or **`... sets errors other than precompile.vite() at vite.config.ts:5:12`**: `arktype-precompile --check` reads the options a plugin call at the project's root passes, but only those written as literals, and only where every call agrees. Set the option in `ark.json`, which the plugin reads too, or pass it to `--check` as a flag.
+**``--check can't read the `config` precompile.vite() is passed``** or **`... sets errors other than precompile.vite() at vite.config.ts:5:12`**: `arktype-precompile --check` reads the options a plugin call at the project's root passes, imported, required or loaded by `import()`, but only those written as literals, and only where every call agrees. Set the option in `ark.json`, which the plugin reads too, or pass it to `--check` as a flag.
 
 **`... loads src/schemas.ts, which creates a Type, before the config module src/config.ts runs configure()`**: creating that Type would throw unless the program loaded the config module earlier. Import the config module first, before any module that creates a Type.
 
@@ -884,7 +906,11 @@ Where it creates them from values it reads as it runs, like `drizzle-arktype` fr
 
 **`my-schemas imports arktype/runtime, so it ships validators precompiled for one version of arktype`**: a dependency shipped its own precompiled build, which runs only on the arktype it was built with. Have it publish its source and opt in instead, with `"ark": { "aot": true }`.
 
-**`src/Form.svelte imports arktype, which a standalone build resolves to arktype/runtime`**: the build can't precompile a module that isn't JavaScript or TypeScript, like a Svelte component's script. Move what it reads off arktype, from Types to `instanceof type.errors` checks, into a `.ts` module it imports.
+**`src/Form.svelte imports arktype, which a standalone build resolves to arktype/runtime`**: the build can't precompile a module that isn't JavaScript or TypeScript, like a Svelte component's script. Move what it reads off arktype into a `.ts` module it imports: define its Types there, and for an `instanceof type.errors` check, export a function the component calls, like `export const isInvalid = (out: unknown) => out instanceof type.errors`.
+
+**`src/Form.svelte:4:20  User.description can't be precompiled in a module another plugin writes`** or **`src/Form.svelte:9:21  User.errors reads errors, which a standalone validator lacks`**: Vite, Rollup and Rolldown builds read a component as its framework's plugin compiles it, like a Svelte, Vue or Astro component, an MDX page or a route TanStack Router splits, but can't write a validator there. Calling a validator and reading its `.allows` or `.assert` there works, but a read only a precompiled site serves, or one a validator lacks, would read `undefined` at runtime. Move it into a `.ts` or `.js` module the component imports, e.g. as a function the component calls.
+
+**`arktype's plugin is listed ahead of TanStack Router's`**: TanStack Router's code splitting moves a route's component into a module of its own, so arktype's plugin has to read the route after it. List `precompile.vite()` after `tanstackRouter()`, as [Frameworks](https://arktype.io/docs/precompile/setup#frameworks) shows.
 
 **`src/fields.ts exports text, a helper the build precompiles at each call, but src/Form.svelte imports it and isn't a module the plugin transforms`** or **`... exports text, a helper the build precompiles at each call, but it's an entry`**: the build precompiles a helper whose definition reads its parameters at each call it sees, so a call it can't see, from a module it doesn't transform or from outside the bundle, would throw at runtime. Call the helper in a module the plugin transforms and import what it returns, or, from an entry, export what it returns. A Rollup, Rolldown, Vite, esbuild, webpack or Rspack build reports this; the Vite dev server, Vitest and the other drivers don't, so there it's the runtime error below.
 
@@ -901,6 +927,10 @@ Where it creates them from values it reads as it runs, like `drizzle-arktype` fr
 **`a standalone validator's JSON Schema takes only a target it was built with, and a fallback only where its schema needs none`**: a library passed options to `toJsonSchema()` that a baked schema can't apply. hono-openapi and oRPC pass a fallback, which changes a Type holding a morph or a Date, as arktype falls back on those. Build with `runtime: "arktype"`, or keep the morph or Date out of the Types you document.
 
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
+
+**`prune: keeping assert, meta, ~standard and methods, because src/server.ts:12:30 passes User to a function, which may read any member`**: a production build couldn't prove what its validators are read for, so it kept each member [`members`](https://arktype.io/docs/precompile/options#members) leaves to it. The warning names the first read or module that stopped it, as [prune](https://arktype.io/docs/precompile/options#prune) lists them. Set each member it names in `members`, false where no code reads it, like `assert` where nothing asserts, and true where a library may, like `~standard` for one taking a Standard Schema. The build then writes what you set without the warning, and still prunes what else it can. `prune: false` would build each unit as a module of its own as well, which is larger.
+
+**`prune: off, because src/routes.ts:3:1 reads import.meta.glob, which may load modules it can't name`**: a production build couldn't read every module the bundle holds, so it built its validators as `prune: false` does. Set `prune: false` to build them the same without the warning.
 
 **`configure() is given other values than arktype in this thread already applied`**: the config module changed while the build ran, as by an edit in watch mode, or a plugin ahead of arktype's transforms it before arktype reads it. Restart the build after an edit. Otherwise put arktype's plugin ahead of the one the message names (Vite names it; other bundlers can't tell which).
 

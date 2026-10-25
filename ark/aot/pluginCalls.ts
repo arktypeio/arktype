@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import type { Node, ObjectExpression } from "oxc-parser"
 import type { PrecompilePluginOptions } from "./driver.ts"
+import { memberNameOf } from "./graph.ts"
 import { printablePathOf, throwBuildError } from "./host.ts"
 import { SourceModule } from "./module.ts"
 import { exportNameOf, unwrapExpression, walk } from "./scope.ts"
@@ -17,11 +18,15 @@ export interface PluginCall {
 	unread: string[]
 }
 
-const entries: Record<string, (name: string) => boolean> = {
-	"@ark/aot/unplugin": name => name === "precompile",
-	"@ark/aot/bun": name => name === "precompile",
-	"@ark/aot/node": name => name === "register"
-}
+// what each entry exports that a build's options are passed to
+const entries: Record<string, string> = Object.setPrototypeOf(
+	{
+		"@ark/aot/unplugin": "precompile",
+		"@ark/aot/bun": "precompile",
+		"@ark/aot/node": "register"
+	},
+	null
+)
 
 const turbopackLoader = "@ark/aot/turbopack"
 
@@ -53,6 +58,9 @@ export const pluginCallsIn = (cwd: string): PluginCall[] => {
 
 const callsIn = (module: SourceModule): PluginCall[] => {
 	const result: PluginCall[] = []
+	// where a module loads an entry, in case none of its calls can be followed
+	let loaded: Node | undefined
+	let called = false
 	walk(module.program, node => {
 		if (node.type === "ObjectExpression") {
 			const options = turbopackOptionsOf(node)
@@ -64,33 +72,119 @@ const callsIn = (module: SourceModule): PluginCall[] => {
 				})
 			}
 		}
-		if (node.type !== "CallExpression" || !node.arguments.length) return true
-		const callee = unwrapExpression(node.callee)
-		const id =
-			callee.type === "MemberExpression" ?
-				unwrapExpression(callee.object)
-			:	callee
-		if (id.type !== "Identifier" || !isEntryImport(id, module)) return true
+		if (node.type === "ImportDeclaration") {
+			if (
+				node.source.value in entries &&
+				node.importKind !== "type" &&
+				node.specifiers.some(
+					specifier =>
+						specifier.type !== "ImportSpecifier" ||
+						specifier.importKind !== "type"
+				)
+			)
+				loaded ??= node
+			return true
+		}
+		if (entryOf(node) !== undefined) loaded ??= node
+		if (node.type !== "CallExpression") return true
+		const read = entryReadOf(node.callee, module)
+		if (
+			!read ||
+			read[1][0] !== entries[read[0]] ||
+			read[1].length > (read[0] === "@ark/aot/unplugin" ? 2 : 1)
+		)
+			return true
+		called = true
+		if (!node.arguments.length) return true
 		result.push({
 			position: module.positionOf(node),
-			label: `${module.textOf(callee)}()`,
+			label: `${module.textOf(unwrapExpression(node.callee))}()`,
 			...optionsOf(node.arguments[0], module)
 		})
 		return true
 	})
+	// e.g. a call through a variable, whose options the build may be passed
+	if (loaded && !called) {
+		result.push({
+			position: module.positionOf(loaded),
+			label: "the plugin",
+			options: {},
+			unread: ["*"]
+		})
+	}
 	return result
 }
 
-const isEntryImport = (id: Node, module: SourceModule): boolean => {
-	const binding = module.scopes.refsById.get(id as never)?.binding
+// the entry `require(entry)` or `import(entry)` loads
+const entryOf = (node: Node): string | undefined => {
+	const source =
+		node.type === "ImportExpression" ? node.source
+		: (
+			node.type === "CallExpression" &&
+			node.callee.type === "Identifier" &&
+			node.callee.name === "require"
+		) ?
+			node.arguments[0]
+		:	undefined
+	const specifier = source && literalOf(source)
+	return typeof specifier === "string" && specifier in entries ?
+			specifier
+		:	undefined
+}
+
+// the entry an expression reads and the path of what it reads off it, e.g.
+// ["precompile", "vite"] for `precompile.vite`, `aot.precompile.vite` or
+// `require("@ark/aot/unplugin").precompile.vite`
+const entryReadOf = (
+	expression: Node,
+	module: SourceModule
+): [entry: string, path: string[]] | undefined => {
+	const node = unwrapExpression(expression)
+	if (node.type === "AwaitExpression") return entryReadOf(node.argument, module)
+	if (node.type === "MemberExpression") {
+		const name = memberNameOf(node)
+		const object = entryReadOf(node.object, module)
+		return object && typeof name === "string" ?
+				[object[0], [...object[1], name]]
+			:	undefined
+	}
+	const entry = entryOf(node)
+	if (entry !== undefined) return [entry, []]
+	if (node.type !== "Identifier") return
+	const binding = module.scopes.refsById.get(node as never)?.binding
 	const declaration = binding?.declaration
 	if (
-		declaration?.type !== "ImportSpecifier" ||
-		declaration.parent?.type !== "ImportDeclaration"
+		declaration?.type === "ImportSpecifier" ||
+		declaration?.type === "ImportNamespaceSpecifier"
+	) {
+		const source = (declaration.parent as { source: { value: string } }).source
+			.value
+		if (!(source in entries)) return
+		return [
+			source,
+			declaration.type === "ImportSpecifier" ?
+				[exportNameOf(declaration.imported)]
+			:	[]
+		]
+	}
+	if (
+		binding?.kind !== "const" ||
+		declaration?.type !== "VariableDeclarator" ||
+		!declaration.init
 	)
-		return false
-	const isEntry = entries[declaration.parent.source.value]
-	return !!isEntry?.(exportNameOf(declaration.imported))
+		return
+	const init = entryReadOf(declaration.init, module)
+	if (!init || declaration.id === binding.id) return init
+	// e.g. `const { precompile } = require("@ark/aot/unplugin")`
+	const property = binding.id.parent
+	return (
+			property?.type === "Property" &&
+				property.value === binding.id &&
+				property.parent === declaration.id &&
+				!property.computed
+		) ?
+			[init[0], [...init[1], exportNameOf(property.key)]]
+		:	undefined
 }
 
 // e.g. `{ loader: "@ark/aot/turbopack", options: { config: "..." } }`
@@ -101,10 +195,27 @@ const turbopackOptionsOf = (node: ObjectExpression): Node | undefined => {
 		if (property.type !== "Property" || property.computed) continue
 		const key = exportNameOf(property.key)
 		if (key === "loader")
-			isLoader = literalOf(property.value) === turbopackLoader
+			isLoader = loaderOf(property.value) === turbopackLoader
 		else if (key === "options") options = property.value
 	}
 	return isLoader ? options : undefined
+}
+
+// a loader's name, or the one `require.resolve()` or `import.meta.resolve()`
+// is passed
+const loaderOf = (value: Node): unknown => {
+	const node = unwrapExpression(value)
+	if (node.type !== "CallExpression" || node.callee.type !== "MemberExpression")
+		return literalOf(node)
+	const { object } = node.callee
+	return (
+			node.arguments.length &&
+				memberNameOf(node.callee) === "resolve" &&
+				((object.type === "Identifier" && object.name === "require") ||
+					(object.type === "MetaProperty" && object.meta.name === "import"))
+		) ?
+			literalOf(node.arguments[0])
+		:	undefined
 }
 
 const unread = Symbol("unread")

@@ -1,8 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 import { configureAfterTypeMessage } from "@ark/schema"
 import { precompileModule, renderDiagnostic } from "@ark/aot"
+import { isRuntimeExport } from "@ark/aot/internal/graph.ts"
 import { configuredThreadMessage } from "@ark/aot/internal/messages.ts"
+import * as arktype from "arktype"
 import { type } from "arktype"
+import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	analyze,
 	diagnosticsOf,
@@ -592,6 +595,23 @@ export const make = (def: string) => {
 				diagnosticsOf(`import { type, scope } from "arktype"
 export { type }
 export default scope`)
+			).equals([])
+		})
+
+		it("calls at runtime each arktype export its runtime shares", () => {
+			// but type, whose runtime copy holds only errors
+			attest(
+				Object.keys(arktype).filter(
+					name => name in arktypeRuntime && !isRuntimeExport(name)
+				)
+			).equals(["type"])
+			attest(
+				diagnosticsOf(`import { firstIssue, type } from "arktype"
+const User = type({ name: "string" })
+export const messageOf = (data: unknown) => {
+	const out = User(data)
+	return out instanceof type.errors ? firstIssue(out).message : ""
+}`)
 			).equals([])
 		})
 

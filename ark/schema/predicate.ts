@@ -7,12 +7,12 @@ import type {
 	BaseNodeInput,
 	declareNode
 } from "./shared/declare.ts"
-import { describePredicate } from "./shared/errorWriters.ts"
 import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
-import type {
-	AliasDepth,
-	InternalTraversal,
-	Traversal
+import {
+	describePredicate,
+	type AliasDepth,
+	type InternalTraversal,
+	type Traversal
 } from "./shared/traversal.ts"
 
 export declare namespace Predicate {

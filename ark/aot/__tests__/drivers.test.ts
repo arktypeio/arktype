@@ -13,14 +13,30 @@ import {
 	writeVariantImportMessage
 } from "@ark/aot/internal/host.ts"
 import {
+	createKeyedPrecompiler,
+	type TransformedModule
+} from "@ark/aot/internal/driver.ts"
+import {
 	configuredThreadMessage,
-	writeTurbopackDependencyMessage
+	writeTurbopackDependencyMessage,
+	writeUnansweredResolveMessage
 } from "@ark/aot/internal/messages.ts"
+import {
+	createAsyncPrecompiler,
+	type BundlerResolve
+} from "@ark/aot/internal/worker.ts"
 import { register } from "@ark/aot/node"
 import turbopack from "@ark/aot/turbopack"
 import type { PrecompilePluginOptions } from "@ark/aot/unplugin"
 import { spawnSync } from "node:child_process"
-import { readFileSync, utimesSync, writeFileSync } from "node:fs"
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	symlinkSync,
+	utimesSync,
+	writeFileSync
+} from "node:fs"
 import { join, relative, sep } from "node:path"
 import { pathToFileURL } from "node:url"
 import { configureAfterTypeMessage } from "@ark/schema"
@@ -452,13 +468,11 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			}
 			attest(failure(["cli"])).equals([
 				1,
-				withAllowUnsafe(
-					writeUntransformedImportMessage(join(root, "cli"), "arktype", root)
-				)
+				writeUntransformedImportMessage(join(root, "cli"), "arktype", root)
 			])
 			attest(failure(["--eval", 'import("arktype")'])).equals([
 				1,
-				withAllowUnsafe(writeFilelessImportMessage("[eval]", "arktype"))
+				writeFilelessImportMessage("[eval]", "arktype")
 			])
 		})
 
@@ -568,6 +582,96 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				return { out: (e as Error).message, dependencies }
 			}
 		}
+
+		// the first line of what main.ts loads as, or of the message it fails
+		// with, where Turbopack resolves what `resolve` returns a path for
+		const loadResolving = (
+			dir: string,
+			resolve: (request: string) => string | undefined
+		) =>
+			new Promise<string | undefined>(settle => {
+				try {
+					const returned = turbopack.call(
+						{
+							resourcePath: join(dir, "main.ts"),
+							getOptions: () => ({ conditions, cwd: dir }),
+							addDependency: () => {},
+							emitWarning: warning => {
+								throw warning
+							},
+							getResolve: () => async (_, request) => {
+								const path = resolve(request)
+								if (path === undefined)
+									throw new Error(`Can't resolve ${request}`)
+								return path
+							},
+							async: () => (error, result) => settle(error?.message ?? result)
+						},
+						readFileSync(join(dir, "main.ts"), "utf8")
+					)
+					if (returned !== undefined) settle(returned)
+				} catch (e) {
+					settle((e as Error).message)
+				}
+			}).then(out => out?.split("\n")[0])
+
+		// an alias resolveAlias names, which no tsconfig.json does
+		const aliasedMain = {
+			"package.json": "{}",
+			"main.ts":
+				'import { User } from "#shared/types"\n\nconsole.log(String(User.errors))\n'
+		}
+		const sharedTypes = {
+			"shared/types.ts":
+				'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n'
+		}
+		const unreadErrors =
+			"main.ts:3:20  User.errors reads errors, which a standalone validator lacks"
+
+		it("reads an import only Turbopack resolves", async () => {
+			const dir = writeFixture({ ...aliasedMain, ...sharedTypes })
+			const out = await loadResolving(dir, request =>
+				request === "#shared/types" ? join(dir, "shared/types.ts") : undefined
+			)
+			attest(out).equals(unreadErrors)
+		})
+
+		it("asks Turbopack only about an import that can carry a Type", () => {
+			const dir = writeFixture({
+				"package.json": "{}",
+				"main.ts": `import { type } from "arktype"
+import type { PageLoad } from "./$types"
+import { type Shape } from "#types/inline"
+import { Read } from "#types/read"
+import { Value } from "#shared/value"
+import "#shared/effect"
+export { Other } from "#shared/other"
+export type { Kind } from "#types/kind"
+
+const note = 'import "#types/text"'
+const load: PageLoad = () => ({}) as Read & Shape
+export const User = type({ name: "string" })
+console.log(Value, note, load, await import("#shared/lazy"))
+`
+			})
+			// as installed, so the precompiler resolves it itself
+			mkdirSync(join(dir, "node_modules"))
+			symlinkSync(
+				fromHere("..", "..", "type"),
+				join(dir, "node_modules", "arktype")
+			)
+			const main = join(dir, "main.ts")
+			const { unresolved } = createKeyedPrecompiler({
+				conditions,
+				cwd: dir
+			}).precompile(readFileSync(main, "utf8"), main)
+			attest(unresolved.map(([specifier]) => specifier).sort()).equals([
+				"#shared/effect",
+				"#shared/lazy",
+				"#shared/other",
+				"#shared/value"
+			])
+		})
 
 		it("precompiles a module in either mode", () => {
 			const standalone = load(app, "schemas.ts")
@@ -821,6 +925,18 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				attest(load(dir).out.includes('"number"')).equals(true)
 			})
 
+			it("a module only Turbopack resolves an import to is created", async () => {
+				const dir = writeFixture(aliasedMain)
+				const types = join(dir, "shared/types.ts")
+				const resolve = (request: string) =>
+					request === "#shared/types" && existsSync(types) ? types : undefined
+				attest(await loadResolving(dir, resolve)).equals(
+					'import { User } from "#shared/types"'
+				)
+				writeFixture(sharedTypes, dir)
+				attest(await loadResolving(dir, resolve)).equals(unreadErrors)
+			})
+
 			it("a module it followed past a comment changes", () => {
 				const dir = tempDir()
 				writeMain(dir, '/* shapes */ "./shape.ts"')
@@ -854,6 +970,46 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				writeTsconfig("./b.ts")
 				attest(load(dir).out.includes('"number"')).equals(true)
 			})
+		})
+	})
+
+	describe("worker", () => {
+		it("fails a request the bundler doesn't resolve an import for", async () => {
+			const dir = writeFixture({
+				"package.json": "{}",
+				"main.ts":
+					'import { User } from "#shared/types"\n\nconsole.log(String(User.errors))\n',
+				"shared/types.ts":
+					'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n',
+				// what the answer it stops waiting for names
+				"shared/other.ts": 'export const User = { errors: "" }\n'
+			})
+			const main = join(dir, "main.ts")
+			const source = readFileSync(main, "utf8")
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions },
+				resolveTimeout: 500
+			})
+			// resolving waits on the worker, which waits on the resolution
+			const cyclic: BundlerResolve = async () => {
+				await send(["readDependency", main])
+				return join(dir, "shared/other.ts")
+			}
+			const failure = await send(["transform", source, main], cyclic).then(
+				() => undefined,
+				(e: Error) => e.message
+			)
+			attest(failure).equals(
+				writeUnansweredResolveMessage("#shared/types", "main.ts", 500)
+			)
+			// the next question isn't answered with other.ts, the late answer
+			const transformed = (await send(["transform", source, main], async () =>
+				join(dir, "shared/types.ts")
+			)) as TransformedModule
+			attest(transformed.errors.map(error => error.split("\n")[0])).equals([
+				"main.ts:3:20  User.errors reads errors, which a standalone validator lacks"
+			])
+			await send(["close"])
 		})
 	})
 

@@ -15,6 +15,15 @@ const outcomeOf = (run: () => unknown) => {
 	}
 }
 
+// a validator for a definition arktype can't parse
+const unparsed = () =>
+	shadow(
+		"unparsed",
+		() => type("string > 0"),
+		() => type("0 < string" as never),
+		[]
+	)
+
 const isA = (s: string) => s.startsWith("a")
 
 class Counter {
@@ -127,6 +136,7 @@ const reordered = shadowUnder(
 ) as type.Any
 
 const caught = {
+	unparsed: outcomeOf(unparsed),
 	validated: outcomeOf(() => validated(2)),
 	called: outcomeOf(() => called("abc")),
 	checked: outcomeOf(() => checked("abc")),

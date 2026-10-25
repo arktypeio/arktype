@@ -29,8 +29,8 @@ const grow = (grid: HTMLElement | null) => {
 
 /**
  * The chart's only client code: the valid/invalid radiogroup, the row
- * tooltip (median, IQR and the sign test) and, on the homepage, bars that
- * grow once when the chart scrolls into view.
+ * tooltip (median, IQR and the sign test), arrow keys between rows and, on
+ * the homepage, bars that grow once when the chart scrolls into view.
  */
 export const BenchmarkControls = ({
 	animate = false
@@ -115,10 +115,36 @@ export const BenchmarkControls = ({
 		const onKeyDown = (e: globalThis.KeyboardEvent) => {
 			if (e.key === "Escape" && !tip.hidden) hide()
 		}
+		/** a set's rows are one tab stop; the arrow keys, Home and End move within it */
+		const onRowKey = (e: globalThis.KeyboardEvent) => {
+			const row =
+				(
+					e.target instanceof HTMLElement &&
+					e.target.matches(".b-row[data-tip]")
+				) ?
+					e.target
+				:	null
+			const grid = row?.closest(".b-grid")
+			if (!row || !grid) return
+			const rows = [...grid.querySelectorAll<HTMLElement>(".b-row[data-tip]")]
+			const i = rows.indexOf(row)
+			const next =
+				e.key === "ArrowDown" || e.key === "ArrowRight" ? rows[i + 1]
+				: e.key === "ArrowUp" || e.key === "ArrowLeft" ? rows[i - 1]
+				: e.key === "Home" ? rows[0]
+				: e.key === "End" ? rows.at(-1)
+				: undefined
+			if (!next) return
+			e.preventDefault()
+			row.tabIndex = -1
+			next.tabIndex = 0
+			next.focus()
+		}
 		chart.addEventListener("pointerover", onTarget)
 		chart.addEventListener("focusin", onTarget)
 		chart.addEventListener("pointerleave", hide)
 		chart.addEventListener("focusout", hide)
+		chart.addEventListener("keydown", onRowKey)
 		addEventListener("scroll", hide, { passive: true })
 		addEventListener("keydown", onKeyDown)
 
@@ -147,6 +173,7 @@ export const BenchmarkControls = ({
 			chart.removeEventListener("focusin", onTarget)
 			chart.removeEventListener("pointerleave", hide)
 			chart.removeEventListener("focusout", hide)
+			chart.removeEventListener("keydown", onRowKey)
 			removeEventListener("scroll", hide)
 			removeEventListener("keydown", onKeyDown)
 			observer?.disconnect()
