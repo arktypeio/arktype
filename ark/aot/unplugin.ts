@@ -182,6 +182,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		isStandalone ?
 			[
 				...runtimePackages,
+				// shadow mode, which reads its validators as arktype's runtime
+				...(opts?.shadow ? ["@ark/aot"] : []),
 				...packages,
 				...Object.keys(opts?.dependencies ?? {}).filter(
 					name => opts!.dependencies![name] === "arktype"
