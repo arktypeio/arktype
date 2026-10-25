@@ -662,6 +662,17 @@ const forEachChild = (node: Node, f: (child: Node) => void) => {
 	}
 }
 
+// e.g. "./a.ts" in `import("./a.ts")` or `require("./a.ts")`
+export const loadedSourceOf = (node: Node): Node | undefined =>
+	node.type === "ImportExpression" ? node.source
+	: (
+		node.type === "CallExpression" &&
+		node.callee.type === "Identifier" &&
+		node.callee.name === "require"
+	) ?
+		node.arguments[0]
+	:	undefined
+
 export const exportNameOf = (node: Node): string =>
 	node.type === "Literal" ?
 		String(node.value)

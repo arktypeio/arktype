@@ -5,7 +5,12 @@ import type { PrecompilePluginOptions } from "./driver.ts"
 import { memberNameOf } from "./graph.ts"
 import { printablePathOf, throwBuildError } from "./host.ts"
 import { SourceModule } from "./module.ts"
-import { exportNameOf, unwrapExpression, walk } from "./scope.ts"
+import {
+	exportNameOf,
+	loadedSourceOf,
+	unwrapExpression,
+	walk
+} from "./scope.ts"
 import { cliOptions } from "./settingsValidators.ts"
 
 // a call passing the build its options, as `precompile.vite({ ... })` in
@@ -117,15 +122,7 @@ const callsIn = (module: SourceModule): PluginCall[] => {
 
 // the entry `require(entry)` or `import(entry)` loads
 const entryOf = (node: Node): string | undefined => {
-	const source =
-		node.type === "ImportExpression" ? node.source
-		: (
-			node.type === "CallExpression" &&
-			node.callee.type === "Identifier" &&
-			node.callee.name === "require"
-		) ?
-			node.arguments[0]
-		:	undefined
+	const source = loadedSourceOf(node)
 	const specifier = source && literalOf(source)
 	return typeof specifier === "string" && specifier in entries ?
 			specifier

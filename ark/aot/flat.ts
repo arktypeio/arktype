@@ -13,6 +13,7 @@ import { SourceModule } from "./module.ts"
 import {
 	exportNameOf,
 	isWriteTarget,
+	loadedSourceOf,
 	ModuleScopes,
 	unwrapExpression,
 	walk,
@@ -301,7 +302,7 @@ const creationsIn = (
 						arg &&
 						declaredIn
 							.get(arg[0])
-							?.declarations.some(d => declaredNames(d).includes(arg[1]))
+							?.declarations.some(d => declaredNameOf(d) === arg[1])
 				)
 			)
 				continue
@@ -590,18 +591,12 @@ class KeptCode {
 const isImported = (imported: Set<string> | true | undefined, name: string) =>
 	imported === true || !!imported?.has(name)
 
-const declaredNames = (declaration: Node): string[] =>
-	declaration.type === "VariableDeclaration" ?
-		declaration.declarations.flatMap(declarator =>
-			declarator.id.type === "Identifier" ? [declarator.id.name] : []
-		)
-	: (
-		(declaration.type === "FunctionDeclaration" ||
-			declaration.type === "ClassDeclaration") &&
-		declaration.id
-	) ?
-		[declaration.id.name]
-	:	[]
+// a unit module declares each value as one const, as isUnitModule checks
+const declaredNameOf = (declaration: Node): string =>
+	(
+		(declaration as Extract<Node, { type: "VariableDeclaration" }>)
+			.declarations[0].id as { name: string }
+	).name
 
 // whether a bundler may drop a statement no kept code reads
 const isPure = (statement: Node, source: string): boolean => {
@@ -819,8 +814,7 @@ const writeFlat = (
 	for (const unit of units) {
 		for (const declaration of unit.declarations) {
 			texts.push(unit.module.source.slice(declaration.start, declaration.end))
-			for (const name of declaredNames(declaration))
-				specifiersByName.set(name, unit.specifier)
+			specifiersByName.set(declaredNameOf(declaration), unit.specifier)
 		}
 	}
 	const created = new Set<string>()
@@ -1686,15 +1680,7 @@ export const importedNamesOf = (
 		}
 		// e.g. import() or require(), reading every export
 		walk(module.program, node => {
-			const read =
-				node.type === "ImportExpression" ? node.source
-				: (
-					node.type === "CallExpression" &&
-					node.callee.type === "Identifier" &&
-					node.callee.name === "require"
-				) ?
-					node.arguments[0]
-				:	undefined
+			const read = loadedSourceOf(node)
 			if (read?.type === "Literal" && typeof read.value === "string")
 				add(targetOf(read.value), true)
 			return true

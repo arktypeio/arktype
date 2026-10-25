@@ -131,6 +131,7 @@ import { resolvePrecompileOptions } from "./settings.ts"
 import {
 	exportNameOf,
 	isTransparent,
+	loadedSourceOf,
 	isWriteTarget,
 	unwrapChain,
 	operatorOf,
@@ -1242,17 +1243,10 @@ export class Precompiler {
 				(
 					node.type === "ImportDeclaration" ||
 					node.type === "ExportNamedDeclaration" ||
-					node.type === "ExportAllDeclaration" ||
-					node.type === "ImportExpression"
+					node.type === "ExportAllDeclaration"
 				) ?
 					node.source
-				: (
-					node.type === "CallExpression" &&
-					node.callee.type === "Identifier" &&
-					node.callee.name === "require"
-				) ?
-					node.arguments[0]
-				:	undefined
+				:	loadedSourceOf(node)
 			if (!specifier) return true
 			if (
 				specifier.type !== "Literal" ||
@@ -5221,22 +5215,16 @@ const isEncodingError = (e: Error) =>
 // e.g. "./a.ts" for `import("./a.ts")`, `require("./a.ts")` or
 // `import a = require("./a.ts")`
 const loadedSpecifierOf = (node: Node): unknown => {
+	// a require() may be one createRequire() returns
 	const source =
-		node.type === "ImportExpression" ? node.source
-			// e.g. one createRequire() returns
-		: (
-			node.type === "CallExpression" &&
-			node.callee.type === "Identifier" &&
-			node.callee.name === "require"
-		) ?
-			node.arguments[0]
-		: (
+		loadedSourceOf(node) ??
+		((
 			node.type === "TSImportEqualsDeclaration" &&
 			node.importKind !== "type" &&
 			node.moduleReference.type === "TSExternalModuleReference"
 		) ?
 			node.moduleReference.expression
-		:	undefined
+		:	undefined)
 	return source?.type === "Literal" ? source.value : undefined
 }
 
