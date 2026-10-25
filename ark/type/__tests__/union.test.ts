@@ -49,6 +49,18 @@ contextualize(() => {
 		])
 	})
 
+	it("compiled apply of one domain or a unit it allows", () => {
+		const T = type({ n: "number > 0 | null", s: "string > 0 | undefined" })
+		// the first data is checked uncompiled
+		T({ n: null, s: undefined })
+		attest(T({ n: null, s: undefined })).equals({ n: null, s: undefined })
+		attest(T({ n: 0, s: "" }).toString()).snap(`n must be positive (was 0)
+s must be non-empty`)
+		attest(T({ n: "1", s: null }).toString())
+			.snap(`n must be a number or null (was a string)
+s must be a string or undefined (was null)`)
+	})
+
 	it("boolean is a union of true | false", () => {
 		const T = type("true|false")
 		attest(T.infer).type.toString("boolean")

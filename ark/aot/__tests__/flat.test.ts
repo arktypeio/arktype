@@ -145,7 +145,7 @@ lead.email is missing
 			{
 				"main.ts": `import { type } from "arktype"
 
-const Discount = type({ discount: "number > 0 | null" })
+const Discount = type({ discount: "number > 0 | null | undefined" })
 
 for (const discount of [0, "0", null]) {
 	const out = Discount({ discount })
@@ -159,14 +159,14 @@ for (const discount of [0, "0", null]) {
 		const [js] = await bundle({}, options)
 		const [whole] = await bundle({ prune: false }, options)
 		attest(run(js)).snap(`discount must be positive
-discount must be a number or null
+discount must be a number, undefined or null
 valid
 `)
 		attest(run(js)).equals(run(whole))
 		// the number branch's Apply is its case of the union's, and null's
-		// case has nothing left to check
+		// case has nothing left to check, in Allows as in Apply
 		attest(js.match(/case "number": {/g)?.length).equals(1)
-		attest(js.match(/case "null":\s+return true/g)?.length).equals(1)
+		attest(js.match(/case "null":\s+return true/g)?.length).equals(2)
 	})
 
 	it("creates as its assert a validator read only for it", async () => {
