@@ -18,6 +18,7 @@ import {
 	hasDomain,
 	includes,
 	InternalArktypeError,
+	isThunk,
 	ParseError,
 	printable,
 	registeredNameOf,
@@ -2267,19 +2268,11 @@ export class Precompiler {
 		return factory
 	}
 
-	// a Scope's thunk aliases, as written in its definitions
+	// what a Scope's definitions hold for arktype to call as an alias resolves,
+	// which may not have happened yet, so it isn't yet known as called
 	private thunksOf(site: Site): unknown[] {
 		if (!hasArkKind(site.value, "scope")) return []
-		const definitions = this.interpreter.definitionsByScope.get(site.value)
-		if (!isPlainContainer(definitions)) return []
-		return keyOf(site.value)[3].flatMap(([$, alias]) =>
-			$ === site.value ?
-				[
-					Reflect.get(definitions, alias) ??
-						Reflect.get(definitions, `#${alias}`)
-				]
-			:	[]
-		)
+		return thunksIn(this.interpreter.definitionsByScope.get(site.value))
 	}
 
 	private receiveReferences(
@@ -2310,7 +2303,8 @@ export class Precompiler {
 			if (hole && site.called.includes(hole) && !dropped.has(hole.value))
 				continue
 			// a standalone Scope never calls one, as its key doesn't hold them
-			if (hole && thunks.includes(hole.value)) continue
+			if (hole && !held.includes(hole.value) && thunks.includes(hole.value))
+				continue
 			// a dropped class decided which branch survived
 			if (
 				hole &&
@@ -5562,6 +5556,19 @@ const textOfInput = (input: Input) =>
 
 const labelOf = (module: SourceModule, span: Span) =>
 	`\`${module.snippetOf(span)}\` (${module.positionOf(span)})`
+
+const thunksIn = (
+	value: unknown,
+	thunks: unknown[] = [],
+	seen = new Set<unknown>()
+): unknown[] => {
+	if (isThunk(value)) thunks.push(value)
+	else if (isPlainContainer(value) && !seen.has(value)) {
+		seen.add(value)
+		for (const v of Object.values(value)) thunksIn(v, thunks, seen)
+	}
+	return thunks
+}
 
 // whether a Standard Schema in a value passed to arktype validates with fn
 const holdsValidate = (

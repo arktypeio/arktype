@@ -302,6 +302,29 @@ export const skus = (data: unknown[]) =>
 			).equals([])
 		})
 
+		it("a Scope's thunks, whether or not an importer resolved them first", () => {
+			const scoped = `import { scope } from "arktype"
+export const $ = scope({
+	topic: ["string", ":", s => s.length > 0],
+	Post: { body: "string", "replies?": () => $.type("Post[]") }
+})
+export const Post = $.export().Post`
+			const files = {
+				"/scoped.ts": scoped,
+				"/main.ts": 'import { Post } from "./scoped.ts"\nPost({ body: "a" })'
+			}
+			const alone = new Precompiler(memoryHost(files)).precompile(
+				scoped,
+				"/scoped.ts"
+			)
+			const afterImporter = new Precompiler(memoryHost(files))
+			afterImporter.analyzeSites(files["/main.ts"], "/main.ts")
+			attest(alone.diagnostics).equals([])
+			attest(afterImporter.precompile(scoped, "/scoped.ts").modules).equals(
+				alone.modules
+			)
+		})
+
 		it("what a Generic's instantiation validates", () => {
 			const source = `import { generic, scope, type } from "arktype"
 const Page = generic("t")({ items: "t[]", total: "number" })
