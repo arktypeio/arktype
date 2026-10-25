@@ -186,7 +186,7 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 `)
 	})
 
-	it("says why a production bundle would keep every member", () => {
+	it("warns as a production bundle would where it can't prune", () => {
 		const root = writeFixture({
 			"types.ts": `import { type } from "arktype"\nexport const User = type({ name: "string" })\n`,
 			"main.ts": `import { User } from "./types.ts"\nconst pages = import.meta.glob("./pages/*.ts")\nUser({})\n`,
@@ -197,7 +197,7 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 		try {
 			attest(check([], { cwd: root }).lines).snap([
 				"types.ts:2:21  accepted",
-				"prune: off, because main.ts:2:15 reads import.meta.glob, which may load modules it can't name",
+				"prune: off, because main.ts:2:15 reads import.meta.glob, which may load modules it can't name, so the build keeps every member of its validators. Set prune: false to build them whole without this warning.",
 				"1 site in 3 files: 1 accepted (100.0%)"
 			])
 			// a test isn't in the bundle
@@ -213,6 +213,25 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 			if (NODE_ENV === undefined) delete process.env.NODE_ENV
 			else process.env.NODE_ENV = NODE_ENV
 		}
+	})
+
+	it("names the components only the build checks", () => {
+		const root = writeFixture({
+			"src/types.ts": `import { type } from "arktype"\nexport const User = type({ name: "string" })\n`,
+			"src/Form.svelte": `<script>\n\timport { User } from "./types.ts"\n</script>\n\n<p>{User({}) instanceof Error}</p>\n`,
+			"src/Page.vue": `<script setup>\nimport Form from "./Form.vue"\n</script>\n`,
+			"src/Static.astro": `<p>no imports</p>\n`
+		})
+		attest(check(["src/**/*.ts"], { cwd: root }).lines).snap([
+			"src/types.ts:2:21  accepted",
+			"src/Form.svelte and 1 other component aren't checked here, as the build checks a component once its framework compiles it",
+			"1 site in 1 file: 1 accepted (100.0%)"
+		])
+		attest(
+			check([], { cwd: root, runtime: "arktype" }).lines.some(line =>
+				line.includes("component")
+			)
+		).equals(false)
 	})
 
 	it("fails on an error outside every site", () => {

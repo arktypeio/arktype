@@ -54,7 +54,7 @@ export const bundle = (): void => {
 	const kept = developmentEntryPoints(process.cwd())
 	for (const path of modulePaths) if (!kept.includes(path)) rmRf(path)
 	for (const file of outputFiles)
-		writeFile(file.path, nameSelfReferencingClasses(file.text))
+		writeFile(file.path, nameSelfReferencingClasses(reexportImports(file.text)))
 }
 
 // esbuild splits an entry listed twice into a chunk
@@ -92,6 +92,109 @@ const applyEdits = (js: string, edits: Edit[]) =>
 			js
 		)
 
+const parse = (js: string) =>
+	ts.createSourceFile(
+		"bundle.js",
+		js,
+		ts.ScriptTarget.Latest,
+		true,
+		ts.ScriptKind.JS
+	)
+
+// esbuild writes a re-export, like `export { x } from "pkg"` or an entry's of
+// a chunk's export, as an import its export list reads, which Rollup warns
+// is never used, where the package is external, wherever a bundle reads none
+// of those exports. So each is written as a re-export again, and a name
+// nothing reads is dropped
+const reexportImports = (js: string): string => {
+	const file = parse(js)
+	// each name read other than to import or export it
+	const read = new Set<string>()
+	const exportLists: ts.ExportDeclaration[] = []
+	const visit = (node: ts.Node): void => {
+		if (
+			ts.isIdentifier(node) &&
+			!ts.isImportSpecifier(node.parent) &&
+			!ts.isExportSpecifier(node.parent)
+		)
+			read.add(node.text)
+		if (
+			ts.isExportDeclaration(node) &&
+			!node.moduleSpecifier &&
+			node.exportClause &&
+			ts.isNamedExports(node.exportClause)
+		)
+			exportLists.push(node)
+		ts.forEachChild(node, visit)
+	}
+	visit(file)
+	const reexported = new Set<ts.ExportSpecifier>()
+	const edits: Edit[] = []
+	for (const statement of file.statements) {
+		if (
+			!ts.isImportDeclaration(statement) ||
+			!statement.importClause ||
+			statement.importClause.name ||
+			!statement.importClause.namedBindings ||
+			!ts.isNamedImports(statement.importClause.namedBindings)
+		)
+			continue
+		const kept: string[] = []
+		const forwarded: string[] = []
+		for (const specifier of statement.importClause.namedBindings.elements) {
+			const local = specifier.name.text
+			if (read.has(local)) {
+				kept.push(specifier.getText())
+				continue
+			}
+			const imported = (specifier.propertyName ?? specifier.name).getText()
+			for (const list of exportLists) {
+				for (const exported of (list.exportClause as ts.NamedExports)
+					.elements) {
+					if ((exported.propertyName ?? exported.name).getText() !== local)
+						continue
+					reexported.add(exported)
+					const name = exported.name.getText()
+					forwarded.push(name === imported ? name : `${imported} as ${name}`)
+				}
+			}
+		}
+		if (kept.length === statement.importClause.namedBindings.elements.length)
+			continue
+		const from = statement.moduleSpecifier.getText()
+		const written = [
+			kept.length ? `import { ${kept.join(", ")} } from ${from};`
+			: forwarded.length ? ""
+			: `import ${from};`,
+			forwarded.length ? `export { ${forwarded.join(", ")} } from ${from};` : ""
+		]
+		edits.push([
+			statement.getStart(),
+			statement.getEnd(),
+			written.filter(Boolean).join("\n")
+		])
+	}
+	for (const list of exportLists) {
+		const elements = (list.exportClause as ts.NamedExports).elements
+		const kept = elements.filter(element => !reexported.has(element))
+		if (kept.length === elements.length) continue
+		edits.push(
+			kept.length ?
+				[
+					list.getStart(),
+					list.getEnd(),
+					`export {\n${kept.map(element => `  ${element.getText()}`).join(",\n")}\n};`
+				]
+			:	[
+					list.getStart(),
+					js[list.getEnd()] === "\n" ? list.getEnd() + 1 : list.getEnd(),
+					""
+				]
+		)
+	}
+	return applyEdits(js, edits)
+}
+
 // esbuild names a self-referencing class _X, as in `var X = class _X {...}`
 const nameSelfReferencingClasses = (js: string): string => {
 	const edits: Edit[] = []
@@ -107,15 +210,7 @@ const nameSelfReferencingClasses = (js: string): string => {
 		}
 		ts.forEachChild(node, visit)
 	}
-	visit(
-		ts.createSourceFile(
-			"bundle.js",
-			js,
-			ts.ScriptTarget.Latest,
-			true,
-			ts.ScriptKind.JS
-		)
-	)
+	visit(parse(js))
 	for (const name of runtimeNames) {
 		const collided = collidedNameOf(name, identifiers)
 		if (collided) {

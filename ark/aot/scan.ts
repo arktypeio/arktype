@@ -368,12 +368,26 @@ const reachingOf = (
 	return reaching
 }
 
-// e.g. "src/routes.ts:3:1 reads import.meta.glob, ...", once a build reads it
+// e.g. "src/routes.ts:3:1 reads import.meta.glob, ...", where the build
+// can't read the bundle, so it writes it as prune: false would
 export const writeUnprunedMessage = (
 	reason: string,
 	fix = "Set prune: false to build them whole without this warning."
 ): string =>
 	`prune: off, because ${reason}, so the build keeps every member of its validators. ${fix}`
+
+// where the build reads the bundle but not what a read of its validators
+// needs, so it keeps each member members leaves to it
+export const writeKeptMembersMessage = (
+	reason: string,
+	kept: readonly string[]
+): string => {
+	const list =
+		kept.length === 1 ?
+			kept[0]
+		:	`${kept.slice(0, -1).join(", ")} and ${kept[kept.length - 1]}`
+	return `prune: keeping ${list}, because ${reason}. Set ${list} in members, ${kept.length === 1 ? "" : "each "}false where no code reads it, to build without this warning.`
+}
 
 // a call to a helper whose calls the build folds runs only where the plugin
 // transforms it, so neither code it leaves nor code outside the bundle can call it

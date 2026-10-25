@@ -14,7 +14,7 @@ import {
 	type ScannedUsage
 } from "./precompile.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
-import { scanProgramSync } from "./scan.ts"
+import { scanProgramSync, writeUnprunedMessage } from "./scan.ts"
 import { withSettingsFile } from "./settings.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
@@ -65,6 +65,14 @@ const sourcesOf = (patterns: string[], cwd: string): string[] => {
 	}
 	return [...files].sort()
 }
+
+// each component importing a module, which may read a validator as only its
+// framework's compiled code shows
+const componentsOf = (cwd: string): string[] =>
+	globSync("**/*.{svelte,vue,astro,mdx}", { cwd, exclude: isExcluded })
+		.map(match => resolve(cwd, match))
+		.filter(file => /\bimport\b/.test(readFileSync(file, "utf8")))
+		.sort()
 
 export const check = (
 	patterns: string[],
@@ -142,8 +150,19 @@ export const check = (
 		const unpruned =
 			isProductionEnv() &&
 			precompilerOptions.prune !== false &&
-			unprunedReasonOf(files, cwd, request)
-		if (unpruned) report.lines.push(`prune: off, because ${unpruned}`)
+			unprunedMessageOf(files, cwd, request)
+		if (unpruned) report.lines.push(unpruned)
+		if (
+			precompilerOptions.runtime !== "arktype" &&
+			!precompilerOptions.shadow
+		) {
+			const components = componentsOf(cwd)
+			if (components.length) {
+				report.lines.push(
+					`${printablePathOf(cwd, components[0])}${components.length > 1 ? ` and ${countOf(components.length - 1, "other component")} aren't` : " isn't"} checked here, as the build checks a component once its framework compiles it`
+				)
+			}
+		}
 	} finally {
 		request("close")
 	}
@@ -166,12 +185,11 @@ export const check = (
 const unbundledFile =
 	/(?:^|[/\\])__(?:tests|mocks)__[/\\]|\.(?:test|spec|bench|stories|config)\.[cm]?[jt]sx?$/
 
-// why a production bundle of the checked files would keep every member of
-// its validators, as far as --check can tell: it follows relative imports
-// of scripts alone and reads no file as an entry, so it misses a read
-// reached through an alias, a virtual module, a component or an entry's
-// exports
-const unprunedReasonOf = (
+// the warning a production bundle of the checked files would print where it
+// can't prune, as far as --check can tell: it follows relative imports of
+// scripts alone and reads no file as an entry, so it misses a read reached
+// through an alias, a virtual module, a component or an entry's exports
+const unprunedMessageOf = (
 	files: string[],
 	cwd: string,
 	request: (...request: ["scan", ScannedProgram]) => unknown
@@ -192,7 +210,7 @@ const unprunedReasonOf = (
 			cwd
 		}
 	)
-	if (typeof scanned === "string") return scanned
+	if (typeof scanned === "string") return writeUnprunedMessage(scanned)
 	return (request("scan", { ...scanned, entries: [] }) as ScannedUsage).unpruned
 }
 

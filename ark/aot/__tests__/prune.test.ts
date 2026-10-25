@@ -7,6 +7,7 @@ import {
 	addLoaded,
 	scanProgram,
 	unseenProblemOf,
+	writeKeptMembersMessage,
 	writeUnseenMessage,
 	type LoadedSources
 } from "@ark/aot/internal/scan.ts"
@@ -71,7 +72,12 @@ const droppedFrom = async (
 		if (errors.length) return errors.map(error => error.message)
 	}
 	const usage = precompiler.scan(scanned)
-	return usage.unpruned ?? usage.dropped
+	if (!usage.unpruned) return usage.dropped
+	// the reason alone, where it keeps every member
+	const [before, after] = writeKeptMembersMessage("\0", everyMember).split("\0")
+	return usage.unpruned.startsWith(before) && usage.unpruned.endsWith(after) ?
+			usage.unpruned.slice(before.length, -after.length)
+		:	usage.unpruned
 }
 
 // main.ts reading types.ts's User as `read` does
@@ -686,19 +692,38 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			).snap([
 				"prune: off, because a plugin follows arktype's among esbuild's plugins, which may load a module after it reads the bundle, so the build keeps every member of its validators. Move arktype's plugin last, or set prune: false to build them whole without this warning."
 			])
+			attest(await warningsOf({ prune: false }, { plugins })).equals([])
+			const last = await build({
+				entryPoints: [join(root, "main.ts")],
+				bundle: true,
+				write: false,
+				conditions,
+				logLevel: "silent",
+				plugins: [...plugins, precompile.esbuild({ conditions })]
+			})
+			attest(last.warnings).equals([])
+			attest(last.outputFiles[0].text.includes("~standard")).equals(false)
 		})
 
-		it("warns where it keeps every member as a read may need any", async () => {
+		it("warns where it keeps each member members leaves to it", async () => {
 			const main = join(root, "main.ts")
 			const source = readFileSync(main, "utf8")
 			writeFileSync(main, `${source}console.log({ User })\n`)
+			const textsOf = async (opts: PrecompileUnpluginOptions) =>
+				(await warningsOf(opts)).map(warning => warning.text)
+			const members = Object.fromEntries(
+				everyMember.map(member => [member, true])
+			)
 			try {
-				attest(
-					(await warningsOf({ preset: undefined })).map(warning => warning.text)
-				).snap([
-					"prune: off, because main.ts:6:15 reads User other than to call it or read a member it knows, so the build keeps every member of its validators. Set each member you know no read needs false in ark.json's members, or set prune: false to build them whole without this warning."
+				attest(await textsOf({ preset: undefined })).snap([
+					"prune: keeping assert, meta, ~standard and methods, because main.ts:6:15 reads User other than to call it or read a member it knows. Set assert, meta, ~standard and methods in members, each false where no code reads it, to build without this warning."
 				])
-				attest(await warningsOf({ prune: false })).equals([])
+				attest(await textsOf({ members: { assert: true } })).snap([
+					"prune: keeping meta, ~standard and methods, because main.ts:6:15 reads User other than to call it or read a member it knows. Set meta, ~standard and methods in members, each false where no code reads it, to build without this warning."
+				])
+				attest(await textsOf({ members })).equals([])
+				// setting what it kept changes nothing it writes
+				attest(await bundle({ members })).equals(await bundle())
 			} finally {
 				writeFileSync(main, source)
 			}
@@ -827,6 +852,21 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			)
 			attest(run(js)).snap("name must be a string\n")
 			attest(js.includes("~standard")).equals(false)
+		})
+
+		it("reads an entry named from its working directory without ./", async () => {
+			for (const entryPoints of [
+				["main.ts"],
+				[{ in: "main.ts", out: "main" }],
+				{ main: "main.ts" }
+			]) {
+				const js = await bundle(
+					{},
+					{ entryPoints, absWorkingDir: root, outdir: "out" }
+				)
+				attest(run(js)).snap("name must be a string\n")
+				attest(js.includes("~standard")).equals(false)
+			}
 		})
 
 		it("rereads what each rebuild reads", async () => {
@@ -1079,6 +1119,18 @@ console.log(out instanceof type.errors ? out.summary : out)
 				attest(warnings).snap([
 					"prune: off, because main.ts:6:1 reads import.meta.glob, which may load modules it can't name, so the build keeps every member of its validators. Set prune: false to build them whole without this warning."
 				])
+				warnings.length = 0
+				// which builds it as it was built
+				const whole = await bundle(
+					{ prune: false },
+					{
+						onwarn: warning => {
+							if (warning.plugin === "arktype") warnings.push(warning.message)
+						}
+					}
+				)
+				attest(warnings).equals([])
+				attest(whole).equals(await bundle())
 			} finally {
 				writeFileSync(main, source)
 			}

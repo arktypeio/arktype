@@ -1,5 +1,11 @@
 import { throwError, type KeySet } from "@ark/util"
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import {
+	mkdirSync,
+	readFileSync,
+	rmSync,
+	statSync,
+	writeFileSync
+} from "node:fs"
 import { basename, dirname, isAbsolute, join, resolve } from "node:path"
 import { relative } from "node:path/posix"
 import {
@@ -1204,13 +1210,6 @@ interface ProgramScan<read> {
 	unpruned?: string | undefined
 }
 
-const unprunedMessageOf = (usage: ScannedUsage): string | undefined =>
-	usage.unpruned &&
-	writeUnprunedMessage(
-		usage.unpruned,
-		"Set each member you know no read needs false in ark.json's members, or set prune: false to build them whole without this warning."
-	)
-
 const unreadMessageOf = (e: unknown): string =>
 	writeUnprunedMessage(`reading the bundle's modules threw ${String(e)}`)
 
@@ -1352,7 +1351,7 @@ const rollupScanOf = async (
 					loaded: new Map()
 				}
 			:	undefined,
-		unpruned: unprunedMessageOf(usage)
+		unpruned: usage.unpruned
 	}
 }
 
@@ -1441,11 +1440,14 @@ const esbuildEntriesOf = async (
 		:	[]
 	const entries: ScanEntry[] = []
 	for (const path of paths) {
-		const result = await build.resolve(path, {
-			kind: "entry-point",
-			resolveDir: absWorkingDir,
-			pluginData: esbuildResolution
-		})
+		const result = await build.resolve(
+			esbuildEntryPathOf(path, absWorkingDir),
+			{
+				kind: "entry-point",
+				resolveDir: absWorkingDir,
+				pluginData: esbuildResolution
+			}
+		)
 		if (result.errors.length || result.namespace !== "file")
 			return `the entry "${path}" doesn't resolve to a file`
 		entries.push({ id: result.path })
@@ -1454,6 +1456,17 @@ const esbuildEntriesOf = async (
 	if (entry) entries.push(entry)
 	return entries
 }
+
+// esbuild reads an entry naming a file in its working directory as a path,
+// though it would resolve the specifier as a package
+const esbuildEntryPathOf = (path: string, cwd: string) =>
+	(
+		!isAbsolute(path) &&
+		!/^\.\.?(?:\/|$)/.test(path) &&
+		statSync(join(cwd, path), { throwIfNoEntry: false })?.isFile()
+	) ?
+		`./${path}`
+	:	path
 
 // esbuild's stdin, as a file beside what it imports
 const stdinEntryOf = ({
@@ -1525,7 +1538,7 @@ const esbuildScanOf = async (
 	const usage = await scan(scanned)
 	return {
 		read: usage.written ? [scanned, usage] : undefined,
-		unpruned: unprunedMessageOf(usage)
+		unpruned: usage.unpruned
 	}
 }
 
