@@ -83,6 +83,12 @@ const ARKTYPE = type({
 
 const suryParse = S.parseOrThrow(SURY)
 const typeboxCheck = TypeCompiler.Compile(TYPEBOX)
+// TypeBox's ahead-of-time Check, the code TypeCompiler.Code writes, as
+// sury/size.ts bundles it: added as ArkType's precompiled arm is, so like it,
+// its schema is built before the build and parse once row runs
+const typeboxAot = new Function(
+	TypeCompiler.Code(TYPEBOX, [], { language: "javascript" })
+)() as (value: unknown) => boolean
 // z.compile, Zod's compiled mode, which the suite's pinned zod 4.4.3 predates:
 // added as ArkType's arm is, so a zod that has it is measured in it too
 const zodCompile = (z as Partial<typeof z>).compile
@@ -91,6 +97,7 @@ export const cases: Record<string, () => unknown> = {
 	"parse Sury": () => suryParse(VALUE),
 	"parse Zod": () => ZOD.parse(VALUE),
 	"parse TypeBox": () => typeboxCheck.Check(VALUE),
+	"parse TypeBox (ahead-of-time)": () => typeboxAot(VALUE),
 	"parse Valibot": () => v.parse(VALIBOT, VALUE),
 	"parse ArkType (dynamic)": () => ARKTYPE.assert(VALUE),
 	"build Sury": () =>
@@ -122,6 +129,7 @@ export const cases: Record<string, () => unknown> = {
 			})
 			.parse(VALUE),
 	"build TypeBox": () => Value.Check(TYPEBOX, VALUE),
+	"build TypeBox (ahead-of-time)": () => typeboxAot(VALUE),
 	"build Valibot": () =>
 		v.parse(
 			v.object({
