@@ -2,27 +2,75 @@
 // ark/docs/lib/bench/leaderboard.json, each library under one name and
 // ArkType only as its default production build; lib/claims.ts averages them
 // node leaderboard.ts
-import { readFileSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+// With LEADERBOARD_FRESH, the directory reproduce.ts counts into, each suite
+// it holds results for reads them instead, ArkType's rows included, and the
+// leaderboard is written there
+import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { join, resolve } from "node:path"
 
 const here = import.meta.dirname
 const docs = join(here, "..", "..", "..", "docs")
 
 // the stored results each suite reads: its rivals', which don't depend on
-// ArkType's build, and ArkType's rows, each measured again on one commit
-const sources = {
+// ArkType's build, and ArkType's rows, each measured again on one commit. A
+// suite's rivals were measured twice, at the suite's pinned versions and at
+// each library's latest release on 2026-10-24, and each arm keeps the faster
+// run (README, "Versions")
+const committed = {
 	arkType: "results/arktype-808927feb.json",
-	counts: "results/counts-a306152ce.json",
+	counts: [
+		"results/counts-a306152ce.json",
+		"results/counts-latest-2026-10-24.json"
+	],
 	startup: "results/startup-808927feb-node24.json",
 	forms: "results/forms-642b4517e.json",
-	sbCounts: "results/sb-counts-6c5fd9862.json",
+	sbCounts: [
+		"results/sb-counts-6c5fd9862.json",
+		"results/sb-counts-latest-2026-10-24.json"
+	],
 	sbDownload: "results/sb-download-6c5fd9862.json",
-	suryCounts: "results/sury-counts-6c5fd9862.json",
-	surySize: "results/sury-size-6c5fd9862.json",
-	ataCounts: "results/ata-counts-6c5fd9862.json"
+	suryCounts: [
+		"results/sury-counts-6c5fd9862.json",
+		"results/sury-counts-latest-2026-10-24.json"
+	],
+	surySize: [
+		"results/sury-size-6c5fd9862.json",
+		"results/sury-size-latest-2026-10-24.json"
+	],
+	ataCounts: [
+		"results/ata-counts-pinned-2026-10-24.json",
+		"results/ata-counts-latest-2026-10-24.json"
+	]
 }
 
-const read = (path: string) => JSON.parse(readFileSync(path, "utf8"))
+const freshDir = process.env.LEADERBOARD_FRESH
+
+// a suite's results in freshDir, pinned and latest, if it has any
+const freshOf = (...names: string[]) =>
+	freshDir ? names.map(name => join(freshDir, name)).filter(existsSync) : []
+
+const sources = {
+	...committed,
+	counts: freshOf("moltar-counts.json", "moltar-counts-latest.json"),
+	startup: freshOf("startup.json")[0],
+	forms: freshOf("forms.json")[0],
+	sbCounts: freshOf("sb-counts.json", "sb-counts-latest.json"),
+	sbDownload: freshOf("sb-download.json", "sb-download-latest.json")[0],
+	suryCounts: freshOf("sury-counts.json", "sury-counts-latest.json"),
+	surySize: freshOf("sury-size.json", "sury-size-latest.json"),
+	ataCounts: freshOf("ata-counts.json", "ata-counts-latest.json")
+}
+for (const [kind, source] of Object.entries(sources)) {
+	if (!source?.length)
+		Object.assign(sources, { [kind]: committed[kind as never] })
+}
+
+// ArkType's rows measured on one commit, for each suite read from committed results
+const arkTypeRowsOf = <kind extends keyof typeof committed>(kind: kind) =>
+	sources[kind] === committed[kind] ? arkType : {}
+
+const read = (path: string) =>
+	JSON.parse(readFileSync(resolve(here, path), "utf8"))
 
 const median = (values: readonly number[]) => {
 	const sorted = [...values].sort((l, r) => l - r)
@@ -30,6 +78,18 @@ const median = (values: readonly number[]) => {
 	return sorted.length % 2 ?
 			sorted[middle]
 		:	(sorted[middle - 1] + sorted[middle]) / 2
+}
+
+// each arm's reps from the run with the lowest median
+const fastestOf = (paths: readonly string[]) => {
+	const reps: Record<string, number[]> = {}
+	for (const path of paths) {
+		for (const [arm, values] of Object.entries(
+			read(path) as Record<string, number[]>
+		))
+			if (!reps[arm] || median(values) < median(reps[arm])) reps[arm] = values
+	}
+	return reps
 }
 
 // ArkType's other builds, left out of every row
@@ -102,11 +162,11 @@ const byCase = (entries: [string, number][]) => {
 	return Object.entries(cases).map(([id, byArm]) => rowOf(id, byArm))
 }
 
-const arkType = read(join(here, sources.arkType))
+const arkType = read(sources.arkType)
 
 const counts: Record<string, number[]> = {
-	...read(join(here, sources.counts)),
-	...arkType.moltar
+	...fastestOf(sources.counts),
+	...arkTypeRowsOf("counts").moltar
 }
 const moltar = byCase(
 	Object.entries(counts)
@@ -126,7 +186,7 @@ const homepageSize = Object.fromEntries(
 	])
 )
 
-const startup = read(join(here, sources.startup))
+const startup = read(sources.startup)
 const startupMedians = Object.fromEntries(
 	Object.entries(startup.samples as Record<string, number[]>).map(
 		([key, samples]) => [key, median(samples)]
@@ -158,8 +218,8 @@ const appsOf = (
 	)
 
 const forms: Record<string, { gzip: number }> = {
-	...read(join(here, sources.forms)),
-	...arkType.form
+	...read(sources.forms),
+	...arkTypeRowsOf("forms").form
 }
 
 // schemabenchmarks.dev: a label is a library and, in parentheses, its
@@ -186,25 +246,27 @@ const sbRows = (cases: [string, number][]) => {
 	return Object.entries(rows).map(([id, byArm]) => rowOf(id, byArm))
 }
 const sbCounts = Object.entries({
-	...read(join(here, sources.sbCounts)),
-	...arkType.sbCounts
+	...fastestOf(sources.sbCounts),
+	...arkTypeRowsOf("sbCounts").sbCounts
 } as Record<string, number[]>).map(([key, reps]): [string, number] => [
 	key,
 	median(reps)
 ])
 const sbDownload: {
 	minified: { libraryName: string; note?: string; gzipBytes: number }[]
-} = read(join(here, sources.sbDownload))
+} = read(sources.sbDownload)
 for (const r of sbDownload.minified) {
-	if (r.libraryName === "arktype/precompiled")
-		r.gzipBytes = arkType.sbDownload.gzipBytes
+	if (r.libraryName === "arktype/precompiled") {
+		r.gzipBytes =
+			arkTypeRowsOf("sbDownload").sbDownload?.gzipBytes ?? r.gzipBytes
+	}
 }
 
 // Sury's schema benchmark: "parse X" and "build X" rows, sizes as built in
 // production
 const suryCounts = Object.entries({
-	...read(join(here, sources.suryCounts)),
-	...arkType.suryCounts
+	...fastestOf(sources.suryCounts),
+	...arkTypeRowsOf("suryCounts").suryCounts
 } as Record<string, number[]>).map(([key, reps]): [string, number] => [
 	key,
 	median(reps)
@@ -218,23 +280,32 @@ const suryRow = (id: string, prefix: string) =>
 				.map(([key, value]) => [key.slice(`sury ${prefix} `.length), value])
 		)
 	)
-const surySize: {
-	production: Record<string, { gzip: number }>
-} = read(join(here, sources.surySize))
-Object.assign(surySize.production, arkType.surySize)
+// each bundle's smallest production build of the two installs
+const surySize: Record<string, { gzip: number }> = {}
+for (const path of sources.surySize) {
+	const { production } = read(path) as {
+		production: Record<string, { gzip: number }>
+	}
+	for (const [label, size] of Object.entries(production)) {
+		if (!surySize[label] || size.gzip < surySize[label].gzip)
+			surySize[label] = size
+	}
+}
+Object.assign(surySize, arkTypeRowsOf("surySize").surySize)
 
 // ata's validator-benchmarks: a scene and a body per row; its arktype adapter
 // is the default precompiled build
 const ataRows = byCase(
 	Object.entries({
-		...read(join(here, sources.ataCounts)),
-		...arkType.ataCounts
+		...fastestOf(sources.ataCounts),
+		...arkTypeRowsOf("ataCounts").ataCounts
 	} as Record<string, number[]>).map(([key, reps]): [string, number] => {
 		const [scene, body, lib] = key.slice(4).split("|")
 		const arm =
 			lib === "arktype" ? "ArkType"
 			: lib === "typebox (Value.Check)" ? "TypeBox"
 			: lib.startsWith("ata") ? "ata"
+			: lib === "valibot (is)" ? "valibot"
 			: lib
 		return [`${scene}|${body} ${arm}`, median(reps)]
 	})
@@ -369,7 +440,7 @@ const suites = [
 			rowOf(
 				"schema",
 				Object.fromEntries(
-					Object.entries(surySize.production)
+					Object.entries(surySize)
 						.filter(([label]) => label.endsWith(" schema"))
 						.map(([label, { gzip }]) => [
 							label.slice(0, -" schema".length),
@@ -382,6 +453,8 @@ const suites = [
 ]
 
 writeFileSync(
-	join(docs, "lib", "bench", "leaderboard.json"),
+	freshDir ?
+		join(freshDir, "leaderboard.json")
+	:	join(docs, "lib", "bench", "leaderboard.json"),
 	`${JSON.stringify({ sources, suites }, null, "\t")}\n`
 )

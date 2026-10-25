@@ -1,0 +1,37 @@
+diff --git a/schemas/libraries/ata-validator/benchmarks.ts b/schemas/libraries/ata-validator/benchmarks.ts
+index a00402df..9592c7f8 100644
+--- a/schemas/libraries/ata-validator/benchmarks.ts
++++ b/schemas/libraries/ata-validator/benchmarks.ts
+@@ -9,14 +9,26 @@ import type { StringBenchmarkConfig } from "#src";
+ import { defineBenchmarks, makeResultEnum } from "#src";
+ 
+ import { getAtaValidatorSchema } from ".";
++// @ts-expect-error written by arktype's bench/external/sb/ataCompiled.ts
++import * as compiled from "./compiled/index.mjs";
+ 
+-const createStringBenchmark = (format: FormatName): StringBenchmarkConfig => ({
+-  create() {
+-    const schema = new Validator({ type: "string", format } satisfies JSONSchemaType<string>);
+-    return (testString) => schema.isValidObject(testString);
++// the runtime Validator and, as a variant only arktype's harness reads, ata's compiled module
++const createStringBenchmark = (format: FormatName): StringBenchmarkConfig[] => [
++  {
++    create() {
++      const schema = new Validator({ type: "string", format } satisfies JSONSchemaType<string>);
++      return (testString) => schema.isValidObject(testString);
++    },
++    snippet: ts`new Validator({ type: "string", format: "${format}" })`,
+   },
+-  snippet: ts`new Validator({ type: "string", format: "${format}" })`,
+-});
++  {
++    create() {
++      return compiled.isValid[format];
++    },
++    snippet: ts`isValid(data) // ata build`,
++    note: "compiled",
++  },
++];
+ 
+ const schema = getAtaValidatorSchema();
+ 

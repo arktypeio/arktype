@@ -5,6 +5,48 @@ The site's speed and size claims outside the homepage's own benchmark
 directory holds what those runs need beyond the projects themselves, and the
 plan they follow, written before the release candidate's data existed.
 
+## Reproduce
+
+Every row on the leaderboard comes from one of these commands, run from a
+clean checkout after `pnpm i && pnpm build`, on Linux with `perf` and
+`taskset`:
+
+```sh
+NODE24=<node 24.14.1> NODE26=<node 26.12.1> pnpm benchExternal <suite>
+pnpm benchExternal <suite> --latest # its rivals at their 2026-10-24 releases
+pnpm benchValidate # the homepage's speed rows
+pnpm benchSize # the homepage's app sizes
+pnpm benchImport # the homepage's cold start
+```
+
+`<suite>` is `moltar`, `sb`, `sury`, `ata`, `form`, `startup` or `all`.
+`benchExternal` clones each external suite at the commit its rows were
+counted on into `out/clones/`, installs it from its own lockfile, adds
+ArkType as "How each new suite is run" describes, counts every arm into
+`out/fresh/`, and prints the standings over the fresh rows beside the
+published ones. Here `all` takes about 90 minutes: schemabenchmarks.dev 45,
+ata's 30, moltar's 10, Sury's 3, the form and `startup.ts` one each. If
+ttsc's first Go build of typia's plugin fails, run the suite again.
+
+The published rows were counted on an Intel i7-11700 (8 cores, 16 threads)
+under WSL2 (Linux 6.18, perf 6.18), pinned to cores 10-15, on Node 24.14.1
+for moltar's, Sury's and ata's suites and `startup.ts`, 26.12.1 for
+schemabenchmarks.dev (its `.node-version`) and 25.2.1 for the homepage's
+benchmark.
+
+**Expected variance.** Load doesn't move an instruction count, but a run's
+tiering and garbage collection do. Every suite rerun from a clean clone
+(2026-10-24) against the committed rivals' counts: moltar's 62 arms, 61
+within 1% and the last 3%; schemabenchmarks.dev's valid-data arms, 96% of
+207 within 3% and all within 11%, while arms that build error objects move
+up to 40% (typia's invalid createValidate 0.59x, its invalid Standard Schema
+1.47x); Sury's parse arms within 3%, its build arms, which allocate, up to
+18%; ata's 119 arms, 94% within 3%, the worst 1.44x (ata's own errors on the
+config body). Every bundle size reproduced to the byte, and no top-two
+score moved by more than 0.009 (Typia's startup, 2.815 to 2.824). On another CPU or Node build, expect each
+arm's count to shift by a few percent and ratios by less. The homepage's
+speed rows are wall clock, so compare their ratios, not their nanoseconds.
+
 ## The plan
 
 One run, published whatever it shows. Every published speed sentence is a
@@ -211,7 +253,7 @@ it has the best average in that category across the public benchmarks that
 qualify. The current standings come first, then the rule, then each earlier
 average as its record.
 
-### Current standings, at 808927feb
+### Current standings: ArkType at 808927feb, rivals at their releases of 2026-10-24
 
 Thirteen suites qualify: 5 for speed (75 rows), 4 for startup (9) and 4 for
 size (7). `ark/docs/lib/bench/leaderboard.json` holds every row, and
@@ -240,16 +282,19 @@ declaration order: `benchData.json`'s scenarios rerun, 20 passes then a
 runs' starts and ends (each started under 4); every other ArkType row in
 `results/arktype-808927feb.json` and `results/startup-808927feb-node24.json`.
 
+Each rival arm is the faster of two counts, at its suite's pins and at the
+latest releases ("Versions" below).
+
 | category | 1             | 2             | 3                   |
 | -------- | ------------- | ------------- | ------------------- |
-| speed    | ArkType 1.103 | ata 1.255\*   | ajv 2.873\*         |
-| startup  | ArkType 1.013 | Typia 2.815\* | Valibot 29.4        |
-| size     | ArkType 1.355 | Valibot 1.405 | Superstruct 1.464\* |
+| speed    | ArkType 1.107 | ata 1.255\*   | ajv 2.912\*         |
+| startup  | ArkType 1.013 | Typia 2.815\* | Valibot 18.0        |
+| size     | ArkType 1.355 | Valibot 1.394 | Superstruct 1.464\* |
 
 \* ranked on 2 to 4 of the category's suites. The homepage's speed suite is
 ArkType 1.282, ajv 1.963. Size: the login form 1158 B, the homepage's apps
 2.095, schemabenchmarks.dev's download 2037 B (1.299), Sury's 1107 B. Leads:
-speed 13.8%, startup 178%, size 3.7%.
+speed 13.4%, startup 178%, size 2.9%.
 
 ### The rule
 
@@ -373,11 +418,110 @@ ArkType's default build creates a validator once and reuses it (42 and 106
 instructions; typia's createIs 381), so on those rows it wins by what the
 rows don't measure. They're the suites' rows, so they stay.
 
+### Versions and modes
+
+Each suite pins its own installs, and some pins trail what a reader would
+install today: moltar's typia 9.7.2 and ata-validator 1.32.1, ata's suite's
+own ata-validator 1.48.0, Sury's zod 4.4.3 and valibot 1.4.2. So each suite's
+rivals are counted twice, at its pins and at the latest npm releases of
+2026-10-24 (`--latest`, `results/*-latest-2026-10-24.json`), and each arm
+keeps its faster count. Rivals can only gain from this. Newer isn't always
+faster: ata 1.60.0 takes 195 instructions on moltar's assertLoose to 1.32.1's
+94, so moltar's ata rows keep 1.32.1.
+
+| suite                | at their latest releases                                                                                                        | left at the suite's pin                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| moltar's             | typia 15.2.1, ata-validator 1.60.0, @ts-runtypes 0.12.2, @sx3/gate 1.0.10, pure-parse 1.0.3, zod 4.6.7, valibot 1.5.0           | stnl 1.1.6 and sury 11.0.0-rc.2, whose latest releases break moltar's cases for them                |
+| schemabenchmarks.dev | its 1c842272, with ata-validator 1.60.0 and typia 15.2.1                                                                        | none: the rest are current                                                                          |
+| Sury's               | zod 4.6.7, valibot 1.5.0                                                                                                        | @sinclair/typebox 0.34.52, that package's latest (TypeBox 1 is a new package the suite doesn't use) |
+| ata's                | ata-validator 1.60.0, typia 15.2.1, zod 4.6.7                                                                                   | @sinclair/typebox 0.34.52, as in Sury's                                                             |
+| ours                 | every library at its latest but typia 15.1.0, whose 15.2.1 writes the same validators byte for byte, and TypeBox 1.3.37 (1.4.3) | not counted again: TypeBox is last but one on the homepage's speed suite                            |
+
+Each rival runs in its fastest documented mode wherever the suite allows
+it: typia's compiled `createIs`, `createValidate` and `createAssert`,
+TypeBox's compiler, ajv's compiled validators (its standalone code where a
+suite measures size), ata's ahead-of-time modules, paseri's, Sury's compiled
+parsers and Zod's `z.compile`, counted as Zod (compiled). Where a suite had
+no arm for a mode, it's added as ArkType's arm is: `z.compile` in Sury's and
+ata's suites, Valibot's `v.is` for ata's verdicts, and ata's modules for
+schemabenchmarks.dev's string formats (`sb/ataCompiled.ts`, `sb/ata.patch`).
+ata won't write that suite's product schema as a module: its Date check is a
+`withKeywords()` wrapper JSON Schema can't express. ata's config body needs a
+5 s warmup to count reproducibly (`COUNT_WARM_US`); after 1 s, one arm's
+reps spread up to 2.3x.
+
+With ArkType's rows unchanged, the update moved speed from ArkType 1.103
+against ata 1.255 to 1.107 against 1.255, left startup alone, and moved size
+from 1.355 against Valibot's 1.405 to 1.355 against 1.394: Valibot 1.5.0's
+bundle in Sury's suite is 1261 B gzipped, 1.4.2's 1304.
+
+### Objections
+
+**"Half of these benchmarks are yours."** We wrote 1 of the 5 speed suites,
+2 of the 4 startup suites and 1 of the 4 size suites (the form is
+valibot.dev's; the script that sizes it is ours). Without any of ours, speed
+is ArkType 1.067 against ata 1.255: the homepage's suite is ArkType's worst
+(1.282). Size without ours is @railway-ts/pipelines 1.000 (in one suite),
+ArkType 1.140, Valibot 1.223. Startup without ours is two rows that time
+creating a schema, which a precompiled build doesn't do, so they show
+little. ata, the closest at speed, isn't in the homepage's suite or Sury's;
+its average is over the three suites it's in.
+
+**"Instruction counts aren't time."** They aren't. They're the measure
+because these runs share a machine (1-minute loads of 9 to 20), and wall
+clock there measures the neighbors. A count misses cache misses and branch
+mispredictions, so it favors code that does less work badly. Where both
+were measured, they rank alike: by wall clock, in paired runs, the default
+build beat each of the six libraries closest to it on moltar's parseSafe in
+28 or 29 of 30 passes (p 8.7e-7) and ts-runtime-checks on assertLoose in 24
+of 30 (p 0.0014), as their counts order them ("The release's wall-clock
+run"). The homepage's suite is wall clock: median ns over 20 passes and a
+10-pass replica.
+
+**"Best average is cherry-picked."** The rule (which suites count, a ratio
+to each row's best, a geometric mean per suite, each suite weighted the
+same) was written at 2026-10-23T22:12Z, before any search for suites. Its
+first averages had ArkType losing speed and size, and they stay below as
+records. Speed and startup hold with any one suite left out. Speed's
+closest is without schemabenchmarks.dev: ArkType 1.110, ata 1.151, a 3.7%
+lead.
+
+**"The size lead is 3%."** It is 2.9%: 1.355 against Valibot's 1.394, and
+it doesn't survive leaving out any one of three suites. Without the form,
+Valibot leads (1.311 to ArkType's 1.396); without schemabenchmarks.dev, ajv
+(1.160, in two of three suites); without Sury's, Superstruct (1.464, in two
+of three) and Valibot (1.491) do. Valibot ships less than the default build
+on 3 of the 7 size rows, and ajv's standalone code has the best score on
+the form and on the homepage's apps. The site calls size "the close one".
+
+**"Precompiled against runtime is apples to oranges."** Every library that
+documents a compiled mode is measured in it, where the suite's schema
+compiles ("Versions and modes"): typia, ata, TypeBox, ajv, Sury, paseri,
+@ts-runtypes and `z.compile`. Valibot, Zod Mini and the rest run as
+they ship, since they have no other mode. Plain `type()`, ArkType with no
+build step, is left out of every row, and so is every build but the
+default. The build step is a cost these numbers don't show: ArkType's
+default build needs its bundler plugin.
+
 ### History
 
 Each average below was computed at the commit it names, before the current
 standings, and stands as its record. Nothing in it was rerun to change a
 result.
+
+#### ArkType's rows at 808927feb, rivals at the suites' pins
+
+The standings before rivals were counted at their latest releases. The
+suites, rows and ArkType's rows are the current ones.
+
+| category | 1             | 2             | 3                   |
+| -------- | ------------- | ------------- | ------------------- |
+| speed    | ArkType 1.103 | ata 1.255\*   | ajv 2.873\*         |
+| startup  | ArkType 1.013 | Typia 2.815\* | Valibot 29.4        |
+| size     | ArkType 1.355 | Valibot 1.405 | Superstruct 1.464\* |
+
+\* ranked on 2 to 4 of the category's suites. Leads: speed 13.8%, startup
+178%, size 3.7%.
 
 #### The first average, at 642b4517e
 

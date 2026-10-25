@@ -45,9 +45,11 @@ let sink: unknown
 const passes = (count: number) => {
 	for (let i = 0; i < count; i++) for (const d of docs) sink = fn(d)
 }
+// COUNT_WARM_US lengthens the warmup, for bodies whose tiering outlasts a second
+const warmUs = Number(process.env.COUNT_WARM_US ?? 1e6)
 const warmFrom = process.cpuUsage().user
 let warmDocs = 0
-while (process.cpuUsage().user - warmFrom < 1e6) {
+while (process.cpuUsage().user - warmFrom < warmUs) {
 	passes(1)
 	warmDocs += docs.length
 }
