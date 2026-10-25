@@ -301,7 +301,7 @@ With Vite, list `precompile.vite()` after your framework's plugins. Each line wa
 | Next.js | See [Next.js](https://arktype.io/docs/precompile/setup#next) |
 | Monorepos | Nothing extra. A workspace package linked into `node_modules`, as pnpm, npm, Yarn and Bun workspaces link it, resolves to its own directory, so the build precompiles it with the program |
 | Jest | Not supported. It has no driver, so it runs your Types on arktype, unprecompiled. See [Test runners](https://arktype.io/docs/precompile/setup#test-runners) |
-| Deno | Not supported. It has no driver, so `deno run` loads arktype unprecompiled. Build with Node |
+| Deno | A bundler plugin works under Deno, e.g. `deno run -A npm:vite build` with `precompile.vite()`. There's no driver, so `deno run` on your source loads arktype unprecompiled |
 
 Define your Types in `.ts` or `.js` modules. A component another plugin compiles, like a Svelte, Vue or Astro component or an MDX page, can call a validator or read its `.allows` and `.assert`, but the build can't write a validator inside it. So a read there that only a precompiled site could serve, like `.description` or `.omit()`, or that a validator lacks, like `.errors`, fails the build, or the dev server's request for the component, naming the read. Move it into a module the component imports, e.g. as a function the component calls.
 
