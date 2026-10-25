@@ -104,15 +104,13 @@ contextualize(() => {
 		attest(Object.keys(new FirstIssues())).equals(Object.keys(new ArkErrors()))
 	})
 
-	it("adds a discriminant's issue at the path its site holds", () => {
+	it("adds a discriminant's issue at the key it reads", () => {
 		const errors = new ArkErrors()
 		errors._p.push("item")
 		errors._at(
-			{
-				v: { code: "discriminant", description: '"a" or "b"' },
-				p: ["kind"]
-			},
-			"c"
+			{ code: "discriminant", description: '"a" or "b"' },
+			{ kind: "c" },
+			"kind"
 		)
 		attest(errors.issues).snap([
 			{

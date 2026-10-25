@@ -18,7 +18,7 @@ import {
 	type UnionNode
 } from "@ark/schema"
 import { throwInternalError } from "@ark/util"
-import { disallowed } from "../runtime.ts"
+import { disallowed, failsAtPath } from "../runtime.ts"
 import { runtimeKeyOf } from "../standalone.ts"
 import { combines, writeCombinator } from "./combinators.ts"
 import {
@@ -153,7 +153,7 @@ class StandaloneCompiler extends TraversalCompiler {
 
 	// reported at the discriminant so branches don't rerun, unless data can't
 	// be read there, when it fails each branch
-	override missFails(node: UnionNode, value: string): string {
+	override missFails(node: UnionNode): string {
 		if (node.missListsBranches) return this.unionFails(node)
 		const path = node.missPath
 		const context = issueContextOf({
@@ -161,8 +161,12 @@ class StandaloneCompiler extends TraversalCompiler {
 			description: node.discriminantDescription,
 			meta: node.discriminantMeta
 		})
-		const site = issueSite(path.length ? { v: context, p: path } : context)
-		const fails = `!${this.fails("failsAt", `${this.siteRef(site)}, ${path.length ? value : "data"}`)}`
+		const site = this.siteRef(issueSite(context))
+		// a key below data is read as a key site reads it
+		const fails =
+			path.length > 1 ?
+				`!${this.ref(failsAtPath)}(ctx, ${site}, data, [${path.map(k => this.serialize(k)).join(", ")}])`
+			:	`!${this.fails("failsAt", path.length ? `${site}, data, ${this.serialize(path[0])}` : `${site}, data`)}`
 		const [k, ...deeper] = node.discriminant!.path
 		if (k === undefined) return fails
 		const reads: string[] = []

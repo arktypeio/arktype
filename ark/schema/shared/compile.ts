@@ -301,7 +301,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	// written by standalone builds, whose issues hold no node contexts
 	unionFails?(node: UnionNode): string
 	// a discriminated union's failure of data matching none of its cases
-	missFails?(node: UnionNode, value: string): string
+	missFails?(node: UnionNode): string
 	// a discriminated union's Apply of data in its default case
 	defaultFails?(node: UnionNode, caseNode: BaseRoot): string
 	undeclaredFails?(node: StructureNode): string
