@@ -37,6 +37,21 @@ contextualize(function (this: Mocha.Suite) {
 		])
 	})
 
+	it("skips what a build wrote, at any depth", () => {
+		const site = `import { type } from "arktype"\nexport const A = type("string")\n`
+		const root = writeFixture({
+			"main.ts": site,
+			"dist/main.js": site,
+			"out/main.js": site,
+			"build/nested/main.js": site,
+			"src/build/main.ts": site
+		})
+		attest(check([], { cwd: root }).lines).snap([
+			"main.ts:2:18  accepted",
+			"1 site in 1 file: 1 accepted (100.0%)"
+		])
+	})
+
 	it("resolves past a tsconfig it cannot load", () => {
 		attest(check([], { cwd: fromHere("unloadableTsconfig") }).lines).snap([
 			"site.ts:4:21  accepted",
@@ -219,12 +234,12 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 		})
 		const result = runCli(root, "--check", "config.ts")
 		attest(`${result.status} ${result.stderr}`).snap(
-			'1 build.ts:5:25  --check can\'t read the `config` precompile.esbuild() is passed, so it can\'t check what the build does\n  Set config in ark.json, as { "precompile": { "config": ... } }, which precompile.esbuild() reads too, or pass it to --check as --config.\n'
+			'1 build.ts:5:25  --check can\'t read the `config` precompile.esbuild() is passed, so it can\'t check what the build does\n  Set config in ark.json (or package.json\'s "ark" key), as { "precompile": { "config": ... } }, which precompile.esbuild() reads too, or pass it to --check as --config.\n'
 		)
 		attest(() =>
 			check(["config.ts"], { cwd: root, config: "config.ts" })
 		).throws.snap(
-			"Error: vitest.config.ts:3:28  precompile.vite() sets errors other than precompile.esbuild() at build.ts:5:25, so --check can't tell which build to check\n  Pass the one to check as --errors, or set it once in ark.json."
+			"Error: vitest.config.ts:3:28  precompile.vite() sets errors other than precompile.esbuild() at build.ts:5:25, so --check can't tell which build to check\n  Pass the one to check as --errors, or set it once in ark.json (or package.json's \"ark\" key)."
 		)
 		attest(
 			check(["config.ts"], { cwd: root, config: "config.ts", errors: "first" })

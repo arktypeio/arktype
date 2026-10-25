@@ -6,7 +6,7 @@ import { build } from "esbuild"
 import { writeFileSync } from "node:fs"
 import { dirname } from "node:path"
 import { format, resolveConfig } from "prettier"
-import { ArkJson, PrecompileOptions } from "./settingsSchema.ts"
+import { ArkJson, PackageArk, PrecompileOptions } from "./settingsSchema.ts"
 
 export const validatorsPath = fromHere("..", "settingsValidators.ts")
 
@@ -62,7 +62,7 @@ const formatted = async (code: string, path: string) =>
 // since the runtime a program loads must be the one the build resolves
 export const writeSettingsFiles = async (): Promise<Record<string, string>> => {
 	const { code } = precompileStandalone(
-		{ PrecompileOptions, ArkJson } as never,
+		{ PrecompileOptions, ArkJson, PackageArk } as never,
 		{
 			// reads no configuration, so it leaves the program's to configure()
 			configured: false,

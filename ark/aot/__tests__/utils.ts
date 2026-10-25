@@ -156,7 +156,7 @@ export const writeLibrary = (): string =>
 				"index.js":
 					'import { type } from "arktype"\n\nexport const Tagged = type({ tag: "string" })\n'
 			},
-			{ arktype: { precompile: true } }
+			{ ark: { aot: true } }
 		),
 		fromHere("library")
 	)

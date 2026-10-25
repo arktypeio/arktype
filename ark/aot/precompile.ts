@@ -59,6 +59,7 @@ import { fileURLToPath } from "node:url"
 import type {
 	CallExpression,
 	ImportDeclaration,
+	ImportSpecifier,
 	MemberExpression,
 	Node,
 	Span
@@ -102,9 +103,11 @@ import {
 	dependencyOf,
 	mapToSource,
 	readsNodes,
+	runsOnArktype,
 	runtimeVariantOf,
 	transformedId,
 	writeVariantOption,
+	type DependencyModes,
 	type PrecompileHost,
 	type RuntimeVariant
 } from "./host.ts"
@@ -229,6 +232,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	prune?: boolean | undefined
 	/** warn rather than fail where the output may throw at runtime */
 	allowUnsafe?: boolean | undefined
+	/** packages that don't opt in, precompiled ("aot") or run on arktype */
+	dependencies?: DependencyModes | undefined
 }
 
 // a bundle's modules, as the bundler resolves and transforms them
@@ -537,7 +542,7 @@ export class Precompiler {
 
 	constructor(host: PrecompileHost, opts: PrecompileOptions = {}) {
 		opts = resolvePrecompileOptions(opts)
-		this.graph = new ModuleGraph(host, opts.cwd)
+		this.graph = new ModuleGraph(host, opts.cwd, opts.dependencies)
 		this.interpreter = new Interpreter(this.graph, opts, module =>
 			this.readsOf(module)
 		)
@@ -1057,14 +1062,63 @@ export class Precompiler {
 		if (
 			this.mode === "standalone" &&
 			!readsNodes(importer) &&
-			!this.reportedDependencies.has(dependency)
+			!runsOnArktype(importer, this.graph.dependencies) &&
+			!this.reportedDependencies.has(dependency) &&
+			!this.readsOnlyRuntime(importer)
 		) {
 			this.reportedDependencies.add(dependency)
 			const message = writeStandaloneDependencyMessage(dependency)
+			// what it reads off arktype throws at runtime, so the hint isn't allowUnsafe
 			if (this.allowUnsafe) warnings.push(message)
-			else errors.push(`${message} ${allowUnsafeHint}`)
+			else errors.push(message)
 		}
 		return { errors, warnings }
+	}
+
+	// e.g. @hono/arktype-validator, reading only `type.errors`
+	private readsOnlyRuntime(file: string): boolean {
+		const source = this.graph.host.readFile(file)
+		if (source === undefined) return false
+		const module = new SourceModule(file, source, file)
+		if (module.parseErrors.length) return false
+		let readsOnlyRuntime = true
+		walk(module.program, node => {
+			if (!readsOnlyRuntime) return false
+			const specifier =
+				(
+					node.type === "ImportDeclaration" ||
+					node.type === "ExportNamedDeclaration" ||
+					node.type === "ExportAllDeclaration" ||
+					node.type === "ImportExpression"
+				) ?
+					node.source
+				: (
+					node.type === "CallExpression" &&
+					node.callee.type === "Identifier" &&
+					node.callee.name === "require"
+				) ?
+					node.arguments[0]
+				:	undefined
+			if (!specifier) return true
+			if (
+				specifier.type !== "Literal" ||
+				typeof specifier.value !== "string" ||
+				!/^arktype(?:\/|$)/.test(specifier.value)
+			)
+				return true
+			readsOnlyRuntime =
+				node.type === "ImportDeclaration" &&
+				(node.importKind === "type" ||
+					(specifier.value === "arktype" &&
+						node.specifiers.every(
+							imported =>
+								imported.type === "ImportSpecifier" &&
+								(imported.importKind === "type" ||
+									readsRuntimeExport(module, imported))
+						)))
+			return false
+		})
+		return readsOnlyRuntime
 	}
 
 	private packageOf(
@@ -1758,7 +1812,11 @@ export class Precompiler {
 		const configured =
 			!this.configures ? false
 			: fingerprint === undefined || problem ? undefined
-			: { fingerprint, path: module.path }
+			: {
+					fingerprint,
+					path: module.path,
+					config: specifierOf(module.id, this.config!)
+				}
 		const validators =
 			Object.keys(exportsByName).length ?
 				writeValidators(
@@ -4935,6 +4993,27 @@ const reachedModulesOf = (
 		}
 	}
 	return reached
+}
+
+// arktype/runtime's `type` holds only `errors`
+const readsRuntimeExport = (
+	module: SourceModule,
+	specifier: ImportSpecifier
+): boolean => {
+	const name = exportNameOf(specifier.imported)
+	if (name in runtimeExports) return true
+	const binding = module.scopes.bindingsById.get(specifier.local)
+	return (
+		name === "type" &&
+		!!binding?.references.every(
+			({ id, isWrite }) =>
+				!isWrite &&
+				id.parent?.type === "MemberExpression" &&
+				id.parent.object === id &&
+				!id.parent.computed &&
+				id.parent.property.name === "errors"
+		)
+	)
 }
 
 const createsValidator = (site: Site) =>

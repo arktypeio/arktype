@@ -109,6 +109,8 @@ const answerRequests = (
 	let tracked: TrackedPrecompiler | undefined
 	let conflictsWithThread = false
 	const track = () => createTrackedPrecompiler(data.precompilerOptions)
+	// kept across resets, as a rebuild asks again for modules nothing changed
+	const transformedById: Record<string, KeptModule> = {}
 	const answer = (request: PrecompileRequest): unknown => {
 		if (request[0] === "close") return
 		if (request[0] === "refresh" && tracked && !isStale(tracked)) return false
@@ -121,14 +123,44 @@ const answerRequests = (
 		if (request[0] === "readDependency")
 			return precompiler.readDependency(request[1])
 		if (request[0] === "transform") {
-			return transformedModuleOf(
-				precompiler,
-				request[1],
-				request[2],
-				undefined,
-				request[3],
-				request[4]
+			const [, source, id, mappings, program] = request
+			// a bundle's scan decides what its modules leave out
+			if (program !== undefined) {
+				return transformedModuleOf(
+					precompiler,
+					source,
+					id,
+					undefined,
+					mappings,
+					program
+				)
+			}
+			const kept = transformedById[id]
+			if (
+				kept?.source === source &&
+				kept.mappings === mappings &&
+				kept.mtimes.every(([file, mtime]) => mtimeOf(file) === mtime)
 			)
+				return kept.transformed
+			if (!precompiler.isTransformed(id)) return
+			const result = precompiledOf(precompiler, source, id, undefined, mappings)
+			if (!result) return unprecompiledOf(precompiler, source, id)
+			const transformed = transformedOf(precompiler, result)
+			// e.g. an import that can't resolve until a file is written, which
+			// no mtime here would show
+			if (transformed.errors.length || transformed.warnings.length)
+				return transformed
+			transformedById[id] = {
+				source,
+				mappings,
+				transformed,
+				// as each was when first read, so a write meanwhile counts as a change
+				mtimes: transformed.dependencies.map(file => [
+					file,
+					tracked!.readTimes[file] ?? mtimeOf(file)
+				])
+			}
+			return transformed
 		}
 		if (request[0] === "scan") return precompiler.scan(request[1])
 		if (request[0] === "check")
@@ -354,29 +386,46 @@ const transformedModuleOf = (
 		mappings,
 		program
 	)
-	if (!result) {
-		return {
-			code: undefined,
-			map: undefined,
-			// an import may come to export a Type, which only the plugin watches
-			dependencies:
-				precompiler.inline ? [] : precompiler.textImportsOf(source, id),
-			modules: {},
-			foldedHelpers: [],
-			errors: [],
-			warnings: []
-		}
-	}
-	return {
-		code: result.map && result.code,
-		map: result.map,
-		dependencies: [
-			...new Set([...result.dependencies, ...precompiler.ownManifests])
-		],
-		modules: result.modules,
-		foldedHelpers: result.foldedHelpers,
-		...renderDiagnostics(result.diagnostics, id => precompiler.graph.pathOf(id))
-	}
+	return result ?
+			transformedOf(precompiler, result)
+		:	unprecompiledOf(precompiler, source, id)
+}
+
+const transformedOf = (
+	precompiler: Precompiler,
+	result: PrecompiledModule
+): TransformedModule => ({
+	code: result.map && result.code,
+	map: result.map,
+	dependencies: [
+		...new Set([...result.dependencies, ...precompiler.ownManifests])
+	],
+	modules: result.modules,
+	foldedHelpers: result.foldedHelpers,
+	...renderDiagnostics(result.diagnostics, id => precompiler.graph.pathOf(id))
+})
+
+const unprecompiledOf = (
+	precompiler: Precompiler,
+	source: string,
+	id: string
+): TransformedModule => ({
+	code: undefined,
+	map: undefined,
+	// an import may come to export a Type, which only the plugin watches
+	dependencies: precompiler.inline ? [] : precompiler.textImportsOf(source, id),
+	modules: {},
+	foldedHelpers: [],
+	errors: [],
+	warnings: []
+})
+
+// a module's precompiled code, with the mtime of each file it was read from
+interface KeptModule {
+	source: string
+	mappings: string | undefined
+	transformed: TransformedModule
+	mtimes: [file: string, mtimeMs: number][]
 }
 
 if (isPrecompilerWorker) {

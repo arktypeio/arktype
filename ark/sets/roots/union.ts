@@ -654,6 +654,7 @@ export const reduceBranches = ({
 			if (branches[i].hasKind("unit") && branches[j].hasKind("unit")) continue
 			// an alias branch is reduced once the union is rebuilt from its resolution
 			if (branches[i].hasShallowAlias || branches[j].hasShallowAlias) continue
+			if (requireDisjointProps(branches[i].rawIn, branches[j].rawIn)) continue
 			const intersection = intersectNodesRoot(
 				branches[i].rawIn,
 				branches[j].rawIn,
@@ -674,12 +675,30 @@ export const reduceBranches = ({
 	return ordered ? uniqueBranches : mergeAlike(uniqueBranches)
 }
 
+// objects requiring a key whose values can't meet are disjoint, which is
+// found without intersecting the rest of their structures
+const requireDisjointProps = (l: BaseRoot, r: BaseRoot): boolean => {
+	if (!l.hasKind("intersection") || !r.hasKind("intersection")) return false
+	const rProps = r.structure?.propsByKey
+	if (!rProps) return false
+	for (const prop of l.structure?.required ?? []) {
+		const match = rProps[prop.key]
+		if (
+			match?.required &&
+			intersectNodesRoot(prop.value, match.value, l.$) instanceof Disjoint
+		)
+			return true
+	}
+	return false
+}
+
 // branches differing in one way union to one branch
 const mergeAlike = (
 	branches: readonly Union.ChildNode[]
 ): readonly Union.ChildNode[] => {
+	const candidates = mergeCandidates(branches)
 	for (let i = 0; i < branches.length; i++) {
-		for (let j = i + 1; j < branches.length; j++) {
+		for (const j of candidates[i]) {
 			const merged =
 				mergeRangeBranches(branches[i], branches[j]) ??
 				mergePropBranches(branches[i], branches[j])
@@ -694,6 +713,56 @@ const mergeAlike = (
 		}
 	}
 	return branches
+}
+
+// the later branches each one could merge with, found by what a pair must
+// share: everything but a range, or everything but one prop. a unit could
+// extend any intersection's range
+const mergeCandidates = (branches: readonly Union.ChildNode[]): number[][] => {
+	const ids = new Map<unknown, number>()
+	const signatureId = (hashOrKey: unknown) => {
+		let id = ids.get(hashOrKey)
+		if (id === undefined) ids.set(hashOrKey, (id = ids.size))
+		return id
+	}
+	const hashIds = (nodes: readonly BaseNode[]) =>
+		nodes.map(node => signatureId(node.hash)).join()
+	const alike: Record<string, number[]> = {}
+	const units: number[] = []
+	const intersections: number[] = []
+	for (const [i, branch] of branches.entries()) {
+		if (branch.hasKind("unit")) {
+			if (typeof branch.unit === "number" || branch.unit instanceof Date)
+				units.push(i)
+			continue
+		}
+		if (!branch.hasKind("intersection")) continue
+		intersections.push(i)
+		const signatures = rangeFamilies.map(
+			(family, f) => `${f}:${hashIds(childrenExcept(branch, family.kinds))}`
+		)
+		const { structure } = branch
+		if (structure) {
+			const rest = `${hashIds(childrenExcept(branch, ["structure"]))}|${structure.undeclared}|${hashIds(structure.index ?? [])}|${structure.sequence?.hash}`
+			// the other props keep their order
+			const props = structure.props.map(prop => signatureId(prop.hash))
+			for (const [p, prop] of structure.props.entries()) {
+				signatures.push(
+					`${rest}|${signatureId(prop.key)}|${props.filter((_, q) => q !== p).join()}`
+				)
+			}
+		}
+		for (const signature of signatures) (alike[signature] ??= []).push(i)
+	}
+	const candidates = branches.map(() => new Set<number>())
+	const pair = (i: number, j: number) =>
+		i < j ? candidates[i].add(j) : candidates[j].add(i)
+	for (const indices of Object.values(alike)) {
+		for (let a = 0; a < indices.length; a++)
+			for (let b = a + 1; b < indices.length; b++) pair(indices[a], indices[b])
+	}
+	for (const u of units) for (const i of intersections) pair(u, i)
+	return candidates.map(set => [...set].sort((l, r) => l - r))
 }
 
 // branches alike but for their range, like 0 < number < 5 and 3 <= number

@@ -42,6 +42,9 @@
 			"internal": [
 				"./out/internal.d.ts"
 			],
+			"internal/arktype.js": [
+				"./out/index.d.ts"
+			],
 			"internal/*": [
 				"./out/*"
 			]
@@ -115,6 +118,10 @@
 		"./internal/island.js": {
 			"ark-ts": "./island.ts",
 			"default": "./out/island.js"
+		},
+		"./internal/islandDependency.js": {
+			"ark-ts": "./islandDependency.ts",
+			"default": "./out/islandDependency.js"
 		},
 		"./internal/arktype.js": {
 			"ark-ts": "./index.ts",

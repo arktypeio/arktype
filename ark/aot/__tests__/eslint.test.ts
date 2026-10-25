@@ -17,7 +17,12 @@ const lint = (
 			code,
 			[
 				{ files: ["**/*.{js,ts}"], ...configs.recommended },
-				{ rules: { "@ark/aot/precompilable": ["warn", options] } }
+				{
+					rules: {
+						"@ark/aot/precompilable": ["warn", options],
+						"@ark/aot/warnings": ["warn", options]
+					}
+				}
 			],
 			{ filename }
 		)
@@ -37,6 +42,36 @@ contextualize(() => {
 				)
 				.map(message => `${message.line}:${message.column} ${message.ruleId}`)
 		).equals(["2:43 @ark/aot/precompilable"])
+	})
+
+	it("reports what fails the build as an error, and its warnings as warnings", () => {
+		const severities = (...overrides: Linter.Config[]) =>
+			new Linter({ configType: "flat", cwd: fromHere("checked") })
+				.verify(
+					'import { type } from "arktype"\nexport const A = type("string & number")\nexport const makeField = limit => type(`string <= ${limit}`)\n',
+					[configs.recommended, ...overrides],
+					{ filename: fromHere("checked", "linted.ts") }
+				)
+				.map(
+					message =>
+						`${message.line}:${message.column} ${message.ruleId} ${message.severity === 2 ? "error" : "warning"}`
+				)
+		attest(severities()).equals([
+			"2:18 @ark/aot/precompilable error",
+			"3:35 @ark/aot/precompilable error"
+		])
+		const unsafe = { allowUnsafe: true }
+		attest(
+			severities({
+				rules: {
+					"@ark/aot/precompilable": ["error", unsafe],
+					"@ark/aot/warnings": ["warn", unsafe]
+				}
+			})
+		).equals([
+			"2:18 @ark/aot/warnings warning",
+			"3:35 @ark/aot/precompilable error"
+		])
 	})
 
 	it("reports sites that cannot be precompiled", () => {

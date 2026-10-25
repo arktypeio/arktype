@@ -203,7 +203,7 @@ TypeScript `>=5.1`, including TypeScript 7, with:
 - [`skipLibCheck`](https://www.typescriptlang.org/tsconfig#skipLibCheck) is recommended. It avoids harmless errors from differences between your config and ours (see [FAQ](https://arktype.io/docs/faq#why-do-i-see-type-errors-in-an-arktype-package-in-node_modules)) and speeds up your editor.
 - [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig#exactOptionalPropertyTypes) is recommended. It makes your inferred types match runtime behavior. ArkType rejects `undefined` for an optional key unless its value allows it, so without this flag, `typeof User.infer` accepts `{ age: undefined }` while `User` rejects it.
 
-ArkType is ESM-only, but a CommonJS project can `require` it on runtimes that support `require(esm)`, like Node `>=20.19` or `>=22.12`. `@ark/aot` runs on Node 22.12 or later.
+ArkType is ESM-only, but a CommonJS project can `require` it on runtimes that support `require(esm)`, like Node `>=20.19` or `>=22.12`. TypeScript allows that `require` under `"module": "nodenext"` from 5.8, where `node16` reports TS1479. `@ark/aot` runs on Node 22.12 or later.
 
 ## Runtimes
 
@@ -953,9 +953,10 @@ To move a whole project off Zod, or another library below, work through it in th
    - `z.object()` removes undeclared keys, and so should the migrated objects, even where the code reads only declared keys, since parsed data often reaches a database or a response whole. Call `configure({ onUndeclaredKey: "delete" })` from `arktype/config` in one file, like `src/arktype.config.ts`, and import it first in every file that creates a Type, so it applies whichever file loads first, tests included. If the project [precompiles](https://arktype.io/docs/precompile), also name that file as the build's `config` in [`ark.json`](https://arktype.io/docs/precompile/setup#ark-json), which the CLI and test drivers read as the bundler does. Then `.passthrough()` and `z.looseObject()` become `"+": "ignore"`, and `.strict()` becomes `"+": "reject"`.
    - Without that setting, write `"+": "delete"` in every object instead, nested ones included. `.merge()` takes `"+"` from the object merged in, so write `.merge({ "+": "delete", ... })`; with the global setting, merged objects keep deleting.
    - A union of such objects throws a `ParseError` saying it's indeterminate unless a key tells them apart. Follow [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ) for it, and keep the global setting: `"+": "ignore"` belongs only on the union's branches.
-   - `.optional()` also accepts `undefined`, so write `"key?": "T | undefined"`. Zod lets any key be missing whose schema accepts `undefined`, so a `z.unknown()` key is `"key?": "unknown"`. In Zod 4, `.default(x).optional()` still fills in `x`, so it's `key: T.default(x)`.
-   - `z.any()` is `"unknown.any"`, or `"key?": "unknown.any"` as a key. It infers `any` as Zod's did, so refinements that read its properties type-check without casts.
+   - `.optional()` also accepts `undefined`, so write `"key?": "T | undefined"`. Before Zod 4.4, any key whose schema accepts `undefined` may be missing, so a `z.unknown()` key is `"key?": "unknown"`; from 4.4, only `.optional()` and defaults let a key be missing, so it stays `key: "unknown"`. Check the version the project installs. In Zod 4, `.default(x).optional()` still fills in `x`, so it's `key: T.default(x)`.
+   - `z.any()` is `"unknown.any"`, or `"key?": "unknown.any"` as a key before Zod 4.4. It infers `any` as Zod's did, so refinements that read its properties type-check without casts.
    - Translate coercions and refinements literally, as in [Coercion is a parse](https://arktype.io/docs/migrating#semantics-to-check). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema.
+   - `string.email` and Zod 4's `z.email()` disagree on some addresses: Zod rejects `a..b@x.co` and `.a@x.co` and accepts `a'b@x.co`, and ArkType does the opposite. Where that matters, keep Zod's pattern as a regex.
    - Keep custom messages. `.min(1, "Name is required")` becomes `type("string >= 1").configure({ message: "Name is required" })`.
 4. **Update call sites.**
    - `X.parse(data)` becomes `X.assert(data)`, which throws.
@@ -1184,7 +1185,8 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `.min(n)` / `.max(n)` / `.length(n)` on strings | `"string >= n"`, `"string <= n"`, `"string == n"` |
 | `.int()`, `.positive()`, `.nonnegative()`, `.gt(n)` | `"number.integer"`, `"number > 0"`, `"number >= 0"`, `"number > n"` |
 | `.multipleOf(n)` | `"number % n"` |
-| `.email()`, `.url()`, `.uuid()`, `.ip()`, `.regex(r)` | `"string.email"`, `"string.url"`, `"string.uuid"`, `"string.ip"`, `/r/` |
+| `.email()`, `.url()`, `.uuid()`, `.regex(r)` | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/` |
+| `.ip()` (Zod 3), `z.ipv4()`, `z.ipv6()` | `"string.ip"`, `"string.ip.v4"`, `"string.ip.v6"` |
 | `.datetime()`, `z.iso.datetime()` | `"string.date.iso"` |
 | `.trim()`, `.toLowerCase()` | `"string.trim"`, `"string.lower"` |
 | `z.date()`, `z.instanceof(C)` | `"Date"`, `type.instanceOf(C)` |
@@ -1208,7 +1210,7 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `v.object`, `v.looseObject`, `v.strictObject` | `"+": "delete"`, the default, `"+": "reject"` |
 | `v.objectWithRest(entries, rest)` | an index signature, `"[string]": ...` |
 | `v.optional(T)`, `v.exactOptional(T)` | `"key?": "T \| undefined"`, `"key?": "T"` |
-| `v.optional(T, default)` | `"key": "T = default"` |
+| `v.optional(T, default)` | `"key": "T = default"`, which applies it only where the key is missing |
 | `v.nullable(T)`, `v.nullish(T)` | `"T \| null"`, `"key?": "T \| null \| undefined"` |
 | `v.picklist(["a", "b"])`, `v.enum(E)` | `"'a' \| 'b'"`, `type.valueOf(E)` |
 | `v.union`, `v.variant("type", [...])`, `v.intersect` | `A.or(B)`, `A.or(B)`, `A.and(B)` |
@@ -1254,7 +1256,7 @@ TypeBox schemas are JSON Schema, so [JSON Schema](https://arktype.io/docs/migrat
 
 ## Yup
 
-Yup converts values unless `.strict()`, and treats a field as optional unless `.required()`. Translate what the data actually is: a form posting strings needs `"string.numeric.parse"` where Yup's `number()` converted.
+Yup converts values unless `.strict()`, and treats a field as optional unless `.required()`. Translate what the data actually is: a form posting strings needs `"string.numeric.parse"` where Yup's `number()` converted. Like Joi, Yup applies a default to a key present as `undefined`, where `"key": "T = x"` rejects it; [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ) has the pattern that keeps it.
 
 | Yup | ArkType |
 | - | - |
@@ -1269,6 +1271,7 @@ Yup converts values unless `.strict()`, and treats a field as optional unless `.
 | `.oneOf(["a", "b"])` | `"'a' \| 'b'"` |
 | `array().of(T)`, `tuple([A, B])` | `T.array()`, `[A, B]` |
 | `.test(name, message, fn)` | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message }))` |
+| `.oneOf([ref("password")])` | a `.narrow()` on the object comparing the keys |
 | `.transform(fn)` | `.pipe(fn)` |
 | `.when("other", ...)` | a union of the cases, or a `.narrow()` on the object |
 | `lazy` | a scope or `this` |
@@ -1278,7 +1281,7 @@ Yup converts values unless `.strict()`, and treats a field as optional unless `.
 
 ## Joi
 
-Joi rejects undeclared keys, rejects empty strings, and converts strings to numbers, booleans and dates unless `convert: false`. It infers no types, so `typeof T.infer` replaces the interfaces written next to Joi schemas.
+Joi rejects undeclared keys, rejects empty strings, and converts strings to numbers, booleans and dates unless `convert: false`. ArkType reads an ISO date-time without an offset as UTC, where Joi reads it in local time. Joi also applies a default to a key present as `undefined`; see [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ). It infers no types, so `typeof T.infer` replaces the interfaces written next to Joi schemas.
 
 | Joi | ArkType |
 | - | - |
@@ -1291,8 +1294,9 @@ Joi rejects undeclared keys, rejects empty strings, and converts strings to numb
 | `Joi.number().integer().positive()` | `"number.integer > 0"` |
 | `Joi.number()` reading strings | `"number \| string.numeric.parse"` |
 | `Joi.boolean()` reading strings | `type("boolean \| 'true' \| 'false'").pipe(v => v === true \|\| v === "true")` |
-| `Joi.date()`, `.iso()` | `"Date \| string.date.parse"`, `"string.date.iso"` |
+| `Joi.date()`, `Joi.date().iso()` | `"Date \| string.date.parse"`, `"string.date.iso.parse"` |
 | `Joi.array().items(T)`, `.min(1)` | `T.array()`, `"T[] >= 1"` |
+| `.unique()` | `.narrow((a, ctx) => new Set(a).size === a.length \|\| ctx.reject("unique"))` |
 | `Joi.alternatives().try(A, B)` | `A.or(B)` |
 | `.default(x)` | `"key": "T = x"` |
 | `.custom(fn)` | `.narrow()` or `.pipe()` |
@@ -1425,6 +1429,8 @@ if (out instanceof type.errors) {
 	flatProblemsByPath(out)
 }
 ```
+
+A [precompiled](https://arktype.io/docs/precompile/validators#errors) build's `arktype/runtime` doesn't export them, and its errors have no `propString` or `problem`, so there group `out.issues` by `issue.path` instead.
 
 A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`.
 
@@ -1953,6 +1959,8 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - `jsonSchema` meta is the Type's JSON Schema, replacing what its constraints imply, where it was written into the schema as an ordinary `jsonSchema` key. See [Your own schema](https://arktype.io/docs/json-schema/to-json-schema#your-own-schema).
 
 - Unions of ranges that overlap, meet or leave out one value, and of objects alike but for one key's value, are one range or object: `1 < number < 10 | 10 <= number < 100` is `1 < number < 100`, `number < 0 | number > 0` is `number != 0`, and `{ kind: "a", x: string } | { kind: "b", x: string }` is `{ kind: "a" | "b", x: string }`.
+
+- `string.date.iso` writes `format: "date-time"` beside its `pattern`, whose groups no longer capture, and a format keyword constrained further keeps its `format`: `"string.email < 255"` writes `format: "email"`, before: none. The [CHANGELOG](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md#write-string-keywords-formats-in-json-schema) lists each keyword's.
 
 - A union of literals with configured meta becomes `enum`: `type("'a' | 'b'").configure({ title: "Letter" }).toJsonSchema()` is `{ type: "string", enum: ["a", "b"], title: "Letter" }` instead of an `anyOf` of `const`s.
 
@@ -6835,6 +6843,19 @@ const weather = tool({
 
 The model sees the JSON Schema from [`~standard.jsonSchema`](https://arktype.io/docs/standard-schema#standard-json-schema), and the AI SDK validates its response with the Type. Parts of a Type with no JSON Schema equivalent, like a `narrow`, aren't described to the model, but its response is still checked against them. Structured output arrives as JSON, so use `string.date.iso.parse` rather than `Date` for a date.
 
+## Precompiled validators
+
+A [precompiled](https://arktype.io/docs/precompile) validator validates through Standard Schema as a Type does, so tRPC, oRPC, Hono's validators, React Hook Form, TanStack Form and Router, Elysia, t3-env and Next.js server actions take one with nothing to set. A library that converts it to JSON Schema reads a member the build leaves out unless [`members`](https://arktype.io/docs/precompile/options#members) sets it, and a library that defines Types itself needs [`dependencies`](https://arktype.io/docs/precompile/options#dependencies) set:
+
+| Library | Set in `ark.json` (or `package.json`'s `"ark"` key) |
+| - | - |
+| MCP SDK, AI SDK, Elysia's `@elysiajs/openapi` | `"precompile": { "members": { "~standard.jsonSchema": true } }` |
+| hono-openapi, oRPC's `OpenAPIGenerator` with `@orpc/arktype` | `"precompile": { "members": { "toJsonSchema": true } }` |
+| `drizzle-arktype`, which creates Types from tables as it runs | `"precompile": { "dependencies": { "drizzle-arktype": "arktype" } }` |
+| t3-env's `presets-arktype`, which defines static Types | `"precompile": { "dependencies": { "@t3-oss/env-core": "aot" } }` |
+
+Without it, the MCP SDK and AI SDK throw when they convert a tool's schema, hono-openapi and oRPC fail to generate a document, Elysia leaves the schema out of its document, and a build importing `drizzle-arktype` or `presets-arktype` fails, naming the setting. [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) has each message.
+
 # fast-check
 
 > Generate test data from a Type for property-based tests with @ark/fast-check.
@@ -7967,7 +7988,7 @@ const User = type({
 })
 ```
 
-That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](https://arktype.io/docs/precompile), it ships no parser. On Valibot's own login form, ArkType's default build reports every error, with its message, in a smaller bundle than Valibot: 1.14 kB gzipped against 1.55 kB.
+That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](https://arktype.io/docs/precompile), it ships no parser. On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.14 kB gzipped against 1.55 kB.
 
 Coming from Zod, most APIs have a direct equivalent:
 

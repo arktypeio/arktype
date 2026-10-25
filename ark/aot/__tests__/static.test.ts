@@ -133,7 +133,7 @@ export const User = type({ name: "string" })`
 export const Admin = User.and({ role: "'admin'" })`
 			const optedIn = libraryFiles({
 				name: "lib",
-				arktype: { precompile: true }
+				ark: { aot: true }
 			})
 			const plain = libraryFiles({ name: "lib" })
 			attest(statusesOf(source, optedIn)).snap([
@@ -150,7 +150,7 @@ export const Admin = User.and({ role: "'admin'" })`
 				{ errors: [], warnings: [] },
 				{
 					errors: [
-						'lib imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it. Set allowUnsafe: true to build anyway, with a warning.'
+						'lib imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Where it defines its Types statically, precompile it with this in ark.json (or package.json\'s "ark" key):\n  "precompile": { "dependencies": { "lib": "aot" } }\nWhere it defines them from values known only at runtime, as from a database table, set "arktype" in place of "aot" to run it on arktype.'
 					],
 					warnings: []
 				}
@@ -1330,7 +1330,7 @@ export const A = $.type("a")
 export { $ }`
 			const optedIn = escapesOf(
 				source,
-				files({ name: "lib", arktype: { precompile: true } })
+				files({ name: "lib", ark: { aot: true } })
 			)
 			attest(optedIn).snap([
 				"6:6",

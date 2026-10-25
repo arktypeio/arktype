@@ -59,6 +59,7 @@ import {
 	writeCreatedBeforeConfigureMessage,
 	writtenConfigMessage
 } from "@ark/schema/runtime"
+import { bakedJsonSchemaOptionsMessage } from "arktype/runtime"
 import {
 	packageFiles,
 	runPlain,
@@ -220,7 +221,7 @@ const fakePackage = (path: string, name: string, version: string) =>
 		name,
 		{
 			"index.js":
-				"export const type = () => {}\nexport const registerPrecompiledUnits = () => {}\n"
+				"export const type = () => {}\nexport class ArkErrors {}\nexport const registerPrecompiledUnits = () => {}\n"
 		},
 		{
 			version,
@@ -268,6 +269,12 @@ const dependencyFiles = {
 		'import { type } from "arktype"\nexport const shared = typeof type\n',
 	"node_modules/shared/other.js":
 		'import { type } from "arktype"\nexport const other = typeof type\n',
+	// as @hono/arktype-validator, which reads only `type.errors`
+	...fakePackage("node_modules/adapter", "adapter", "1.0.0"),
+	"node_modules/adapter/index.js":
+		'import { type, ArkErrors } from "arktype"\nexport const failed = out => out instanceof type.errors || out instanceof ArkErrors\nexport const shadowed = type => type.string\n',
+	"adapter.ts":
+		'import { failed, shadowed } from "adapter"\nconsole.log(failed, shadowed)\n',
 	...fakePackage("node_modules/forked", "forked", "1.0.0"),
 	...fakePackage(
 		"node_modules/forked/node_modules/arktype",
@@ -408,6 +415,47 @@ contextualize(function (this: Mocha.Suite) {
 		attest(run(standalone)).equals(runPlain(introspected))
 	})
 
+	it("esbuild ignores a library's fallback where no fallback writes the schema", async () => {
+		const root = writeFixture(
+			{
+				// as hono-openapi and @orpc/arktype convert a Type they're passed
+				"main.ts": `import { type } from "arktype"
+
+const User = type({ name: "string", "tags?": "string[]" })
+const Event = type({ at: "Date" })
+
+const convert = (t: typeof User | typeof Event, opts: object) => {
+	try {
+		return t.toJsonSchema(opts)
+	} catch (e) {
+		return String(e)
+	}
+}
+
+const date = { date: (ctx: { base: object }) => ({ ...ctx.base, format: "date-time" }) }
+
+console.log(
+	JSON.stringify([
+		convert(User, { fallback: (ctx: { base: object }) => ctx.base }),
+		convert(User, { fallback: date }),
+		convert(Event, { fallback: date })
+	])
+)
+`
+			},
+			fromHere("temp", "fallback")
+		)
+		const standalone = await bundlers.esbuild(
+			{ cwd: root, members: { toJsonSchema: true } },
+			root
+		)
+		const [ignored, ignoredWithDate, needed] = JSON.parse(run(standalone))
+		const [user, userWithDate, event] = JSON.parse(runPlain(root))
+		attest([ignored, ignoredWithDate]).equals([user, userWithDate])
+		attest(event.properties.at).equals({ format: "date-time" })
+		attest(needed).equals(`Error: ${bakedJsonSchemaOptionsMessage}`)
+	})
+
 	it("esbuild writes no NUL into its output", async () => {
 		const standalone = await bundlers.esbuild({}, app, false)
 		attest(standalone.includes("~arktype/")).equals(true)
@@ -490,6 +538,60 @@ export const describe = (t: { description: string }) => t.description
 				'description isn\'t baked into this validator. Set members.description true, or build with runtime: "arktype".'
 			]
 		])
+	})
+
+	it("vite's development server rewrites the importers of a changed Type", async () => {
+		const page = (max: number) =>
+			`import { type } from "arktype"\n\nexport const Page = type({ n: "number <= ${max}" })\n`
+		const root = writeFixture({
+			"page.ts": page(1),
+			"search.ts": `import { type } from "arktype"
+import { Page } from "./page.ts"
+
+export const Search = type({ q: "string" }).and(Page)
+`,
+			"main.ts": `import { type } from "arktype"
+import { Search } from "./search.ts"
+
+export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.errors)
+`
+		})
+		mkdirSync(join(root, "node_modules"))
+		symlinkSync(
+			fromHere("..", "..", "type"),
+			join(root, "node_modules/arktype")
+		)
+		const config = viteConfig({}, root)
+		const server = await withNodeEnv("development", () =>
+			createServer({
+				...config,
+				resolve: { ...config.resolve, preserveSymlinks: true },
+				ssr: { resolve: { ...config.ssr!.resolve, externalConditions: [] } }
+			})
+		)
+		const runner = createServerModuleRunner(server.environments.ssr, {
+			hmr: false
+		})
+		try {
+			const before = (await runner.import("/main.ts")).allows(2)
+			const file = join(root, "page.ts")
+			writeFileSync(file, page(2))
+			const pageModule =
+				server.environments.ssr.moduleGraph.getModuleById(file)!
+			server.watcher.emit("change", file)
+			for (let waited = 0; pageModule.transformResult; waited += 10) {
+				if (waited > 10_000) throw new Error("page.ts was never invalidated")
+				await new Promise(resolve => setTimeout(resolve, 10))
+			}
+			runner.clearCache()
+			attest([before, (await runner.import("/main.ts")).allows(2)]).equals([
+				false,
+				true
+			])
+		} finally {
+			await runner.close()
+			await server.close()
+		}
 	})
 
 	it("fails a build whose external option takes arktype from the bundle", async () => {
@@ -789,6 +891,50 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 		attest(Object.keys(watchedBy).length).equals(count - 1)
 	})
 
+	it("esbuild rebuilds what reads a changed Type", async () => {
+		const max = (n: number) =>
+			`import { type } from "arktype"\n\nexport const Max = type("number <= ${n}")\n`
+		const root = writeFixture(
+			{
+				"max.ts": max(1),
+				"limited.ts": `import { type } from "arktype"
+import { Max } from "./max.ts"
+
+export const Limited = type({ n: Max })
+`,
+				"other.ts": `import { type } from "arktype"
+
+export const Other = type({ s: "string" })
+`,
+				"main.ts": `import { type } from "arktype"
+import { Limited } from "./limited.ts"
+import { Other } from "./other.ts"
+
+console.log(Limited({ n: 2 }) instanceof type.errors, Other({ s: "" }) instanceof type.errors)
+`
+			},
+			fromHere("temp", "rebuilt")
+		)
+		const ctx = await context({
+			entryPoints: [join(root, "main.ts")],
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [precompile.esbuild({ cwd: root, conditions })]
+		})
+		try {
+			const outputs = [run((await ctx.rebuild()).outputFiles![0].text)]
+			// kept from the first build, until a file it was precompiled from changes
+			writeFileSync(join(root, "max.ts"), max(2))
+			outputs.push(run((await ctx.rebuild()).outputFiles![0].text))
+			attest(outputs).equals(["true false\n", "false false\n"])
+		} finally {
+			await ctx.dispose()
+		}
+	})
+
 	it("keeps a configured worker until its config changes", async () => {
 		const root = fromHere("temp", "watched")
 		const write = (file: string, text: string) =>
@@ -838,7 +984,7 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 		const shared = writeStandaloneDependencyMessage("shared")
 		const prebuilt = writePrecompiledDependencyMessage("prebuilt")
 		attest(await buildDependency("shared.ts")).equals({
-			errors: [`${shared} ${allowUnsafeHint}`],
+			errors: [shared],
 			warnings: []
 		})
 		attest(await buildDependency("prebuilt.ts")).equals({
@@ -856,6 +1002,97 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 		attest(await buildDependency("prebuilt.ts", { allowUnsafe: true })).equals({
 			errors: [],
 			warnings: [prebuilt]
+		})
+	})
+
+	it("precompiles a dependency the program's settings name", async () => {
+		const root = writeFixture(
+			{
+				"package.json": '{ "type": "module" }',
+				...packageFiles("untagged", {
+					"index.js":
+						'import { type } from "arktype"\n\nexport const Tagged = type({ tag: "string" })\n',
+					"index.d.ts":
+						'export declare const Tagged: import("arktype").Type<{ tag: string }>\n'
+				}),
+				"main.ts": readFileSync(join(library, "main.ts"), "utf8").replace(
+					'from "tagged"',
+					'from "untagged"'
+				)
+			},
+			fromHere("temp", "untagged")
+		)
+		const refused = await bundlers
+			.esbuild({ cwd: root }, root)
+			.catch((e: { errors: { text: string }[] }) => e.errors[0].text)
+		attest(refused).equals(writeStandaloneDependencyMessage("untagged"))
+		const standalone = await bundlers.esbuild(
+			{ cwd: root, dependencies: { untagged: "aot" } },
+			root
+		)
+		attest(run(standalone)).equals(runPlain(library))
+		attest(standalone.includes(parserMessage)).equals(false)
+	})
+
+	it("runs a dependency the program's settings name on arktype", async () => {
+		const root = writeFixture(
+			{
+				"package.json": '{ "type": "module" }',
+				// as drizzle-arktype creates Types from tables
+				...packageFiles("tables", {
+					"index.js":
+						'import { type } from "arktype"\n\nexport const typeOf = columns => type(Object.fromEntries(columns.map(c => [c, "string"])))\n',
+					"index.d.ts":
+						'export declare const typeOf: (columns: string[]) => import("arktype").Type<Record<string, string>>\n'
+				}),
+				"config.ts":
+					'import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: "delete" })\n',
+				"main.ts": `import "./config.ts"
+import { type } from "arktype"
+import { typeOf } from "tables"
+
+const Row = typeOf(["name"])
+const Email = type({ email: "string.email" })
+
+const failed = [Row({ name: 1 }), Email({ email: "x" })]
+console.log(
+	JSON.stringify([
+		Row({ name: "Ada", extra: 1 }),
+		failed.map(out => out instanceof type.errors && out.summary),
+		(await Row["~standard"].validate({})).issues?.map(issue => issue.message)
+	])
+)
+`
+			},
+			fromHere("temp", "tables")
+		)
+		const opts = {
+			cwd: root,
+			config: "config.ts",
+			dependencies: { tables: "arktype" }
+		} as const
+		const expected = runPlain(root)
+		attest(JSON.parse(expected)).snap([
+			{ name: "Ada" },
+			[
+				"name must be a string (was a number)",
+				'email must be an email address (was "x")'
+			],
+			["must be a string (was missing)"]
+		])
+		// the dependency's Types are arktype's, and only Email is precompiled
+		const precompiled = (out: string) => out.replace(' (was \\"x\\")', "")
+		for (const bundle of [
+			await bundlers.esbuild(opts, root),
+			await withNodeEnv("production", () => bundlers.vite(opts, root))
+		])
+			attest(run(bundle)).equals(precompiled(expected))
+	})
+
+	it("builds a dependency reading only what arktype's runtime exports", async () => {
+		attest(await buildDependency("adapter.ts")).equals({
+			errors: [],
+			warnings: []
 		})
 	})
 
@@ -1586,7 +1823,7 @@ export const U = make()
 		attest(bundle.includes("dropped")).equals(false)
 		attest(
 			stderrOf(["--input-type=module"], bundle).includes(
-				writeCreatedBeforeConfigureMessage("unread.ts")
+				writeCreatedBeforeConfigureMessage("unread.ts", "./config.ts")
 			)
 		).equals(true)
 	})

@@ -1,5 +1,6 @@
-import type { ESLint, Linter, Rule } from "eslint"
+import type { ESLint, Linter, Rule, SourceCode } from "eslint"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
+import type { Diagnostic } from "./precompile.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
 import { withSettingsFile } from "./settings.ts"
 import { createSyncPrecompiler } from "./worker.ts"
@@ -33,13 +34,26 @@ const check = (
 	)
 }
 
-const precompilable: Rule.RuleModule = {
+// both rules read one result for each file a lint run parses
+const checkedBySource = new WeakMap<SourceCode, Record<string, CheckedModule>>()
+
+const checkOnce = (context: Rule.RuleContext): CheckedModule => {
+	const { sourceCode } = context
+	const opts = { ...context.options[0], cwd: context.cwd }
+	const key = JSON.stringify(opts)
+	let checked = checkedBySource.get(sourceCode)
+	if (!checked) checkedBySource.set(sourceCode, (checked = {}))
+	return (checked[key] ??= check(opts, sourceCode.text, context.filename))
+}
+
+// reports the build's diagnostics of one severity
+const reporterOf = (
+	severity: Diagnostic["severity"],
+	description: string
+): Rule.RuleModule => ({
 	meta: {
 		type: "problem",
-		docs: {
-			description:
-				"Report arktype definitions that cannot be precompiled, with the reasons why"
-		},
+		docs: { description },
 		schema: [
 			{
 				type: "object",
@@ -83,13 +97,13 @@ const precompilable: Rule.RuleModule = {
 	},
 	create: context => ({
 		"Program:exit": () => {
-			const result = check(
-				{ ...context.options[0], cwd: context.cwd },
-				context.sourceCode.text,
-				context.filename
-			)
+			const result = checkOnce(context)
 			for (const diagnostic of result.diagnostics) {
-				if (diagnostic.file !== context.filename) continue
+				if (
+					diagnostic.file !== context.filename ||
+					diagnostic.severity !== severity
+				)
+					continue
 				context.report({
 					loc: {
 						start: context.sourceCode.getLocFromIndex(diagnostic.start),
@@ -104,11 +118,20 @@ const precompilable: Rule.RuleModule = {
 			}
 		}
 	})
-}
+})
 
 export const plugin: ESLint.Plugin = {
 	meta: { name: "@ark/aot" },
-	rules: { precompilable }
+	rules: {
+		precompilable: reporterOf(
+			"error",
+			"Report what fails the build, like arktype definitions that cannot be precompiled, with the reasons why"
+		),
+		warnings: reporterOf(
+			"warning",
+			"Report what the build warns about, like a problem allowUnsafe builds past"
+		)
+	}
 }
 
 export const configs: Record<string, Linter.Config> = {
@@ -116,6 +139,9 @@ export const configs: Record<string, Linter.Config> = {
 		// ESLint lints only JavaScript unless a configuration names other files
 		files: ["**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}"],
 		plugins: { "@ark/aot": plugin },
-		rules: { "@ark/aot/precompilable": "warn" }
+		rules: {
+			"@ark/aot/precompilable": "error",
+			"@ark/aot/warnings": "warn"
+		}
 	}
 }

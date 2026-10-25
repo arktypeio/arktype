@@ -95,9 +95,10 @@ export const speedChart: BenchmarkChart = {
 }
 
 // bundlejs-style esbuild of valibot.dev's login form as written, every entry
-// reporting every error with its message, in a production build (esbuild's
-// "production" condition), which prunes a precompiled validator to what the
-// form uses. Every bar is from results/login-5acd85130.json: the default build
+// reporting an error for every invalid field with the form's messages (a blank
+// password gets ArkType's one, where Valibot also says it's empty), in a
+// production build (esbuild's "production" condition), which prunes a
+// precompiled validator to what the form uses. Every bar is from results/login-5acd85130.json: the default build
 // is 2494 / 1140 B min / gz, the "smallest" preset 1037. forms/, the size
 // suite in the README's "Best average", bundles the same form with the same
 // settings, but exporting a function that asserts rather than asserting once,
@@ -108,7 +109,7 @@ export const speedChart: BenchmarkChart = {
 export const sizeChart: BenchmarkChart = {
 	title: "Bundle size",
 	detail:
-		"the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled with its default options in a production build. Zod Mini's form, as valibot.dev writes it, throws at its first parse; written so it runs, it is the same size within 20 B",
+		"the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports an error for every invalid field. ArkType is precompiled with its default options in a production build. Zod Mini's form, as valibot.dev writes it, throws at its first parse; written so it runs, it is the same size within 20 B",
 	unit: "bytes gzipped",
 	source: {
 		label: "the form from valibot.dev's comparison",
@@ -178,7 +179,7 @@ const zodCompiledLosses =
 const bench = benchFacts()
 
 /** the median of a library's ratios to the default build across the scenarios both ran */
-const medianOf = ({ rows }: LibraryVersus) => {
+export const medianOf = ({ rows }: LibraryVersus) => {
 	const ratios = rows.map(row => row.speedup).sort((l, r) => l - r)
 	const mid = ratios.length >> 1
 	return formatRatio(
@@ -309,7 +310,7 @@ const sizeRival = leaderboards.size.standings[size.place === 1 ? 1 : 0]
 export const claims = {
 	// each superlative names a category ArkType must have the best average in
 	// (lib/bench/leaderboard.ts), as headlineCategories below checks. Size is
-	// the narrow one: 1.355 against Valibot's 1.405 at 808927feb
+	// the narrow one: 1.355 against Valibot's 1.394 (current releases, 2026-10-24)
 	headline: "TypeScript's smallest, fastest validator.",
 	headlineNote: `Ranked by best average across public benchmarks, each result a ratio to the best: ${leaderboards.speed.rows} results for validation speed, ${leaderboards.startup.rows} for startup and ${leaderboards.size.rows} for bundle size.`,
 	// the fastest and the smallest builds differ: optimize "size" makes the
@@ -320,10 +321,10 @@ export const claims = {
 	dynamicSpec:
 		"as fast as precompiled on valid data in our runs of schemabenchmarks.dev's benchmark",
 	sizeSpec:
-		"precompiled with its defaults, smaller than Valibot on its own login form, with every error message",
+		"precompiled with its defaults, smaller than Valibot on its own login form, with the form's messages",
 	// the sentence under the docs' charts
 	chartsSummary:
-		"In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled with its defaults, it reports every error on Valibot's own login form, with its message, in a smaller bundle than Valibot.",
+		"In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled with its defaults, it reports an error for every invalid field of Valibot's own login form, with the form's messages, in a smaller bundle than Valibot.",
 	// the product schema, valid data: 6005 vs 6003 instructions; by wall clock
 	// (H3), dynamic took 0.999x the default build's time and stayed under 1.05x
 	// in 24 of 30 passes (p 0.00072)
@@ -331,7 +332,7 @@ export const claims = {
 		"In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType.",
 	// the default build in production, 1140 vs 1547 B gz, the form as written
 	loginSize:
-		"On Valibot's own login form, ArkType's default build reports every error, with its message, in a smaller bundle than Valibot: 1.14 kB gzipped against 1.55 kB.",
+		"On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.14 kB gzipped against 1.55 kB.",
 	// moltar strict, dynamic, 2.2.9 to now: assertStrict 5326 -> 348,
 	// parseStrict 4277 -> 365 instructions (2.2.9's counts vary by 20-26%
 	// between reps, its ratios 10.2x to 17.1x); by wall clock (H4), 0.074x
@@ -357,9 +358,10 @@ export const claims = {
 	// run (stars, 3-30 files importing zod), one Sonnet run each with the skill
 	// at fc054f29f, graded on typecheck, tests, zod removed, differential parity
 	// and no new casts. 4/10, 95% CI 0.12-0.74; 2 of the failures keep Zod for
-	// MCP SDK v1
+	// MCP SDK v1. The rule counted a project without a test script as passing
+	// its tests, and all four successes were such projects
 	zodMigration:
-		"With the skill, one prompt fully migrated 4 of 10 open-source Zod projects we picked by stars before running it: typecheck and tests pass, Zod is gone, generated inputs get the same results and no casts were added.",
+		"With the skill, one prompt fully migrated 4 of 10 open-source Zod projects we picked by stars before running it: typecheck passes, Zod is removed, generated inputs get the same results and no casts were added. None of the four had a test script to run.",
 	// the hero's third superlative, after the headline's two: with them it
 	// says ArkType leads every category, so the blog post's check below holds
 	// each lead, and the one after oneBuild that one build holds them all
@@ -383,7 +385,7 @@ export const claims = {
 	speedAverage: averagesOf("speed"),
 	startupAverage: averagesOf("startup"),
 	sizeAverage: averagesOf("size"),
-	// size is the narrow lead: 1.355 against Valibot's 1.405 at 808927feb, and
+	// size is the narrow lead: 1.355 against Valibot's 1.394, and
 	// it doesn't survive leaving out the form, schemabenchmarks.dev or Sury
 	sizeClose: `Size is the close one: ${sizeRival.library} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}, and ArkType's lead is in the average.`,
 	// public isn't independent: which of the averages' benchmarks are ours
@@ -469,11 +471,17 @@ export type StandingCategory = CategoryBase & {
 
 export type Category = BarCategory | SpreadCategory | StandingCategory
 
-/** ArkType, Zod and Valibot, and the library with the next best average */
-const onBoard = (chart: BenchmarkChart, runnerUp: string) =>
-	chart.bars.filter(
-		bar => bar.kind === "precompiled" || isRival(bar) || bar.name === runnerUp
+/** ArkType, Zod and Valibot, the library with the next best average and the closest on the chart */
+const onBoard = (chart: BenchmarkChart, runnerUp: string) => {
+	const closest = chart.bars.find(bar => bar.kind !== "precompiled")
+	return chart.bars.filter(
+		bar =>
+			bar.kind === "precompiled" ||
+			isRival(bar) ||
+			bar.name === runnerUp ||
+			bar === closest
 	)
+}
 
 /** the homepage's board: each category against Zod and Valibot, every number from a chart above */
 export const categories: Category[] = [

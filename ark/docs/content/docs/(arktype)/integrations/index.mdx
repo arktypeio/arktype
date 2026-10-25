@@ -203,3 +203,16 @@ const weather = tool({
 ```
 
 The model sees the JSON Schema from [`~standard.jsonSchema`](/docs/standard-schema#standard-json-schema), and the AI SDK validates its response with the Type. Parts of a Type with no JSON Schema equivalent, like a `narrow`, aren't described to the model, but its response is still checked against them. Structured output arrives as JSON, so use `string.date.iso.parse` rather than `Date` for a date.
+
+## Precompiled validators
+
+A [precompiled](/docs/precompile) validator validates through Standard Schema as a Type does, so tRPC, oRPC, Hono's validators, React Hook Form, TanStack Form and Router, Elysia, t3-env and Next.js server actions take one with nothing to set. A library that converts it to JSON Schema reads a member the build leaves out unless [`members`](/docs/precompile/options#members) sets it, and a library that defines Types itself needs [`dependencies`](/docs/precompile/options#dependencies) set:
+
+| Library                                                       | Set in `ark.json` (or `package.json`'s `"ark"` key)                  |
+| ------------------------------------------------------------- | -------------------------------------------------------------------- |
+| MCP SDK, AI SDK, Elysia's `@elysiajs/openapi`                 | `"precompile": { "members": { "~standard.jsonSchema": true } }`      |
+| hono-openapi, oRPC's `OpenAPIGenerator` with `@orpc/arktype`  | `"precompile": { "members": { "toJsonSchema": true } }`              |
+| `drizzle-arktype`, which creates Types from tables as it runs | `"precompile": { "dependencies": { "drizzle-arktype": "arktype" } }` |
+| t3-env's `presets-arktype`, which defines static Types        | `"precompile": { "dependencies": { "@t3-oss/env-core": "aot" } }`    |
+
+Without it, the MCP SDK and AI SDK throw when they convert a tool's schema, hono-openapi and oRPC fail to generate a document, Elysia leaves the schema out of its document, and a build importing `drizzle-arktype` or `presets-arktype` fails, naming the setting. [Troubleshooting](/docs/precompile/troubleshooting) has each message.

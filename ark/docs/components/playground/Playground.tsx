@@ -65,12 +65,16 @@ const setupMonaco = async (
 	return tsLanguageServiceInstance!
 }
 
-const stripTypes = async (): Promise<string | undefined> => {
-	if (!tsLanguageServiceInstance) return
-
+const stripTypes = async (
+	monaco: typeof Monaco
+): Promise<string | undefined> => {
 	try {
-		const emitOutput =
-			await tsLanguageServiceInstance.getEmitOutput(editorFileUri)
+		// a worker client syncs the model as it's created, so a kept one would
+		// emit the code as it was then
+		const worker = await (
+			await monaco.languages.typescript.getTypeScriptWorker()
+		)(monaco.Uri.parse(editorFileUri))
+		const emitOutput = await worker.getEmitOutput(editorFileUri)
 		if (emitOutput.outputFiles.length) return emitOutput.outputFiles[0].text
 	} catch (e) {
 		console.error("Error transforming .ts to .js:", e)
@@ -141,17 +145,16 @@ export const Playground = ({
 
 	const validateNow = useCallback(
 		async (code: string) => {
-			if (!tsLanguageServiceInstance) return
+			if (!tsLanguageServiceInstance || !monaco) return
 
 			setCurrentCode(code)
-			const stripped = await stripTypes()
+			const stripped = await stripTypes(monaco)
 
 			if (!stripped) return
 
-			const result = executeCode(stripped)
-			setValidationResult(result)
+			setValidationResult({ ...executeCode(stripped), source: code })
 		},
-		[tsLanguageServiceInstance]
+		[tsLanguageServiceInstance, monaco]
 	)
 
 	const shareCode = useCallback(() => {
@@ -314,7 +317,7 @@ const PlaygroundLoader = () => (
 const PlaygroundResults = (result: PlaygroundResultsProps) => (
 	<div className="flex flex-col h-full gap-4">
 		<div className="flex-[2] min-h-0">
-			<ParseResult {...result} />
+			<ParseResult {...result} source={result.source ?? ""} />
 		</div>
 		<div className="flex-[1] min-h-0">
 			<TraverseResult {...result} />

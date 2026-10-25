@@ -13,9 +13,13 @@ type Suite = {
 	rows: { id: string; results: Record<string, number> }[]
 }
 
+// with LEADERBOARD_FRESH, the leaderboard reproduce.ts wrote there
+const fresh = process.env.LEADERBOARD_FRESH
 const data: { suites: Suite[] } = JSON.parse(
 	readFileSync(
-		join(import.meta.dirname, "../../../docs/lib/bench/leaderboard.json"),
+		fresh ?
+			join(fresh, "leaderboard.json")
+		:	join(import.meta.dirname, "../../../docs/lib/bench/leaderboard.json"),
 		"utf8"
 	)
 )
@@ -50,7 +54,7 @@ for (const category of ["speed", "startup", "size"] as const) {
 		})
 		.filter(s => s.suites * 2 >= suites.length)
 		.sort((l, r) => l.score - r.score)
-	if (!only) {
+	if (!only && !fresh) {
 		const docs = leaderboards[category].standings
 		if (JSON.stringify(docs) !== JSON.stringify(standings))
 			throw new Error(`${category} differs from lib/bench/leaderboard.ts`)

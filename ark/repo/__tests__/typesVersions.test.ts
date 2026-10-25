@@ -27,7 +27,7 @@ const mismatchedSubpaths = (pkg: string) => {
 		fromHere("..", "..", pkg, "package.json")
 	) as {
 		exports: Record<string, Target>
-		typesVersions: Record<string, Record<string, string[]>>
+		typesVersions?: Record<string, Record<string, string[]>>
 	}
 	const mismatched: Record<string, string | undefined> = {}
 	for (const [key, target] of Object.entries(exports)) {
@@ -35,7 +35,8 @@ const mismatchedSubpaths = (pkg: string) => {
 		if (!subpath || subpath.includes("*") || subpath.startsWith("internal/"))
 			continue
 		const js = typeof target === "string" ? target : target.default
-		const actual = typesVersionsTarget(typesVersions["*"], subpath)
+		if (!js.endsWith(".js")) continue
+		const actual = typesVersionsTarget(typesVersions?.["*"] ?? {}, subpath)
 		if (actual !== js.replace(/\.js$/, ".d.ts")) mismatched[subpath] = actual
 	}
 	return mismatched
@@ -46,5 +47,8 @@ contextualize(() => {
 		attest(mismatchedSubpaths("type")).equals({})
 		attest(mismatchedSubpaths("schema")).equals({})
 		attest(mismatchedSubpaths("aot")).equals({})
+		attest(mismatchedSubpaths("util")).equals({})
+		attest(mismatchedSubpaths("regex")).equals({})
+		attest(mismatchedSubpaths("sets")).equals({})
 	})
 })

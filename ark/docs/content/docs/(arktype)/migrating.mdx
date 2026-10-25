@@ -107,9 +107,10 @@ To move a whole project off Zod, or another library below, work through it in th
    - `z.object()` removes undeclared keys, and so should the migrated objects, even where the code reads only declared keys, since parsed data often reaches a database or a response whole. Call `configure({ onUndeclaredKey: "delete" })` from `arktype/config` in one file, like `src/arktype.config.ts`, and import it first in every file that creates a Type, so it applies whichever file loads first, tests included. If the project [precompiles](/docs/precompile), also name that file as the build's `config` in [`ark.json`](/docs/precompile/setup#ark-json), which the CLI and test drivers read as the bundler does. Then `.passthrough()` and `z.looseObject()` become `"+": "ignore"`, and `.strict()` becomes `"+": "reject"`.
    - Without that setting, write `"+": "delete"` in every object instead, nested ones included. `.merge()` takes `"+"` from the object merged in, so write `.merge({ "+": "delete", ... })`; with the global setting, merged objects keep deleting.
    - A union of such objects throws a `ParseError` saying it's indeterminate unless a key tells them apart. Follow [Defaults that differ](#defaults-that-differ) for it, and keep the global setting: `"+": "ignore"` belongs only on the union's branches.
-   - `.optional()` also accepts `undefined`, so write `"key?": "T | undefined"`. Zod lets any key be missing whose schema accepts `undefined`, so a `z.unknown()` key is `"key?": "unknown"`. In Zod 4, `.default(x).optional()` still fills in `x`, so it's `key: T.default(x)`.
-   - `z.any()` is `"unknown.any"`, or `"key?": "unknown.any"` as a key. It infers `any` as Zod's did, so refinements that read its properties type-check without casts.
+   - `.optional()` also accepts `undefined`, so write `"key?": "T | undefined"`. Before Zod 4.4, any key whose schema accepts `undefined` may be missing, so a `z.unknown()` key is `"key?": "unknown"`; from 4.4, only `.optional()` and defaults let a key be missing, so it stays `key: "unknown"`. Check the version the project installs. In Zod 4, `.default(x).optional()` still fills in `x`, so it's `key: T.default(x)`.
+   - `z.any()` is `"unknown.any"`, or `"key?": "unknown.any"` as a key before Zod 4.4. It infers `any` as Zod's did, so refinements that read its properties type-check without casts.
    - Translate coercions and refinements literally, as in [Coercion is a parse](#semantics-to-check). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema.
+   - `string.email` and Zod 4's `z.email()` disagree on some addresses: Zod rejects `a..b@x.co` and `.a@x.co` and accepts `a'b@x.co`, and ArkType does the opposite. Where that matters, keep Zod's pattern as a regex.
    - Keep custom messages. `.min(1, "Name is required")` becomes `type("string >= 1").configure({ message: "Name is required" })`.
 4. **Update call sites.**
    - `X.parse(data)` becomes `X.assert(data)`, which throws.
@@ -317,48 +318,49 @@ Delete the hand-written TypeScript type that `z.lazy` needed; `typeof types.Filt
 
 Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like `z.string().optional()`, and `z.string().check(z.minLength(1))` like `z.string().min(1)`.
 
-| Zod                                                   | ArkType                                                                 |
-| ----------------------------------------------------- | ----------------------------------------------------------------------- |
-| `z.string()`, `z.number()`, `z.boolean()`, `z.null()` | `"string"`, `"number"`, `"boolean"`, `"null"`                           |
-| `z.unknown()`, `z.any()`, `z.never()`                 | `"unknown"`, `"unknown.any"`, `"never"`                                 |
-| `z.literal("a")`, `z.literal(0.5)`                    | `"'a'"`, `"0.5"`                                                        |
-| `z.enum(["a", "b"])`                                  | `"'a' \| 'b'"` or `type.enumerated("a", "b")`                           |
-| `z.nativeEnum(E)`, `z.enum(E)`                        | `type.valueOf(E)`                                                       |
-| `z.object({ ... })`                                   | `type({ ... })`, nested objects as plain objects                        |
-| `.optional()` on a property                           | `"key?": "T \| undefined"`                                              |
-| `.nullable()`, `.nullish()`                           | `"string \| null"`; `"key?": "string \| null \| undefined"`             |
-| `.default(x)` on a property                           | `"key": "number = 0"` or `key: T.default(x)`                            |
-| `z.array(T)`, `.min(1)`, `.nonempty()`                | `"T[]"` or `T.array()`, `"string[] >= 1"`                               |
-| `z.array(T).min(1)`, `T` a Type in a variable         | `T.array().atLeastLength(1)`                                            |
-| `z.tuple([A, B])`, `.rest(C)`                         | `[A, B]`, `[A, B, "...", "C[]"]`                                        |
-| `z.union([A, B])`, `A.or(B)`, `z.discriminatedUnion`  | `A.or(B)`, `"A \| B"`                                                   |
-| `z.intersection(A, B)`, `A.and(B)`                    | `A.and(B)`                                                              |
-| `z.record(z.string(), T)`                             | `"Record<string, T>"` or `{ "[string]": T }`                            |
-| `.extend({ ... })`, `.merge(B)`                       | `.merge({ ... })`                                                       |
-| `.pick`, `.omit`, `.partial`, `.required`, `.keyof`   | same names                                                              |
-| `.strict()`, `z.strictObject`                         | `"+": "reject"`                                                         |
-| `.passthrough()`, `z.looseObject`                     | the default                                                             |
-| `.strip()`, the default `z.object`                    | `"+": "delete"`                                                         |
-| `z.lazy(() => T)`                                     | a scope or `this`                                                       |
-| `.min(n)` / `.max(n)` / `.length(n)` on strings       | `"string >= n"`, `"string <= n"`, `"string == n"`                       |
-| `.int()`, `.positive()`, `.nonnegative()`, `.gt(n)`   | `"number.integer"`, `"number > 0"`, `"number >= 0"`, `"number > n"`     |
-| `.multipleOf(n)`                                      | `"number % n"`                                                          |
-| `.email()`, `.url()`, `.uuid()`, `.ip()`, `.regex(r)` | `"string.email"`, `"string.url"`, `"string.uuid"`, `"string.ip"`, `/r/` |
-| `.datetime()`, `z.iso.datetime()`                     | `"string.date.iso"`                                                     |
-| `.trim()`, `.toLowerCase()`                           | `"string.trim"`, `"string.lower"`                                       |
-| `z.date()`, `z.instanceof(C)`                         | `"Date"`, `type.instanceOf(C)`                                          |
-| `.refine(fn, msg)`, `.superRefine(fn)`                | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message: msg }))`          |
-| `.transform(fn)`, `.pipe(T)`                          | `.pipe(fn)`, `.to(T)`                                                   |
-| `z.preprocess(fn, T)`                                 | `type("unknown").pipe(fn).to(T)`                                        |
-| `z.coerce.number()`, `z.coerce.date()`                | `type("unknown").pipe(Number).to("number")`, see above                  |
-| `z.custom<T>(fn)`                                     | `type("unknown").narrow((v): v is T => fn(v))`                          |
-| `.brand<"Id">()`                                      | `.brand("Id")` or `"string#Id"`                                         |
-| `.describe(text)`                                     | a comment or `.configure({ title: text })`                              |
-| `{ message }`, `{ error }`, `required_error`          | `.configure({ message })`, or `.describe(...)` for "must be ..."        |
-| `z.infer`, `z.output`, `z.input`                      | `typeof T.infer`, `typeof T.inferIn`                                    |
-| `.parse(x)`, `.safeParse(x)`                          | `T.assert(x)`, `T(x)` then `instanceof type.errors`                     |
-| `ZodError`, `.flatten().fieldErrors`                  | `type.errors`, `flatByPath(out)`                                        |
-| `z.ZodTypeAny` in a helper's signature                | `type.Any`                                                              |
+| Zod                                                   | ArkType                                                             |
+| ----------------------------------------------------- | ------------------------------------------------------------------- |
+| `z.string()`, `z.number()`, `z.boolean()`, `z.null()` | `"string"`, `"number"`, `"boolean"`, `"null"`                       |
+| `z.unknown()`, `z.any()`, `z.never()`                 | `"unknown"`, `"unknown.any"`, `"never"`                             |
+| `z.literal("a")`, `z.literal(0.5)`                    | `"'a'"`, `"0.5"`                                                    |
+| `z.enum(["a", "b"])`                                  | `"'a' \| 'b'"` or `type.enumerated("a", "b")`                       |
+| `z.nativeEnum(E)`, `z.enum(E)`                        | `type.valueOf(E)`                                                   |
+| `z.object({ ... })`                                   | `type({ ... })`, nested objects as plain objects                    |
+| `.optional()` on a property                           | `"key?": "T \| undefined"`                                          |
+| `.nullable()`, `.nullish()`                           | `"string \| null"`; `"key?": "string \| null \| undefined"`         |
+| `.default(x)` on a property                           | `"key": "number = 0"` or `key: T.default(x)`                        |
+| `z.array(T)`, `.min(1)`, `.nonempty()`                | `"T[]"` or `T.array()`, `"string[] >= 1"`                           |
+| `z.array(T).min(1)`, `T` a Type in a variable         | `T.array().atLeastLength(1)`                                        |
+| `z.tuple([A, B])`, `.rest(C)`                         | `[A, B]`, `[A, B, "...", "C[]"]`                                    |
+| `z.union([A, B])`, `A.or(B)`, `z.discriminatedUnion`  | `A.or(B)`, `"A \| B"`                                               |
+| `z.intersection(A, B)`, `A.and(B)`                    | `A.and(B)`                                                          |
+| `z.record(z.string(), T)`                             | `"Record<string, T>"` or `{ "[string]": T }`                        |
+| `.extend({ ... })`, `.merge(B)`                       | `.merge({ ... })`                                                   |
+| `.pick`, `.omit`, `.partial`, `.required`, `.keyof`   | same names                                                          |
+| `.strict()`, `z.strictObject`                         | `"+": "reject"`                                                     |
+| `.passthrough()`, `z.looseObject`                     | the default                                                         |
+| `.strip()`, the default `z.object`                    | `"+": "delete"`                                                     |
+| `z.lazy(() => T)`                                     | a scope or `this`                                                   |
+| `.min(n)` / `.max(n)` / `.length(n)` on strings       | `"string >= n"`, `"string <= n"`, `"string == n"`                   |
+| `.int()`, `.positive()`, `.nonnegative()`, `.gt(n)`   | `"number.integer"`, `"number > 0"`, `"number >= 0"`, `"number > n"` |
+| `.multipleOf(n)`                                      | `"number % n"`                                                      |
+| `.email()`, `.url()`, `.uuid()`, `.regex(r)`          | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/`            |
+| `.ip()` (Zod 3), `z.ipv4()`, `z.ipv6()`               | `"string.ip"`, `"string.ip.v4"`, `"string.ip.v6"`                   |
+| `.datetime()`, `z.iso.datetime()`                     | `"string.date.iso"`                                                 |
+| `.trim()`, `.toLowerCase()`                           | `"string.trim"`, `"string.lower"`                                   |
+| `z.date()`, `z.instanceof(C)`                         | `"Date"`, `type.instanceOf(C)`                                      |
+| `.refine(fn, msg)`, `.superRefine(fn)`                | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message: msg }))`      |
+| `.transform(fn)`, `.pipe(T)`                          | `.pipe(fn)`, `.to(T)`                                               |
+| `z.preprocess(fn, T)`                                 | `type("unknown").pipe(fn).to(T)`                                    |
+| `z.coerce.number()`, `z.coerce.date()`                | `type("unknown").pipe(Number).to("number")`, see above              |
+| `z.custom<T>(fn)`                                     | `type("unknown").narrow((v): v is T => fn(v))`                      |
+| `.brand<"Id">()`                                      | `.brand("Id")` or `"string#Id"`                                     |
+| `.describe(text)`                                     | a comment or `.configure({ title: text })`                          |
+| `{ message }`, `{ error }`, `required_error`          | `.configure({ message })`, or `.describe(...)` for "must be ..."    |
+| `z.infer`, `z.output`, `z.input`                      | `typeof T.infer`, `typeof T.inferIn`                                |
+| `.parse(x)`, `.safeParse(x)`                          | `T.assert(x)`, `T(x)` then `instanceof type.errors`                 |
+| `ZodError`, `.flatten().fieldErrors`                  | `type.errors`, `flatByPath(out)`                                    |
+| `z.ZodTypeAny` in a helper's signature                | `type.Any`                                                          |
 
 ## Valibot
 
@@ -367,7 +369,7 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `v.object`, `v.looseObject`, `v.strictObject`               | `"+": "delete"`, the default, `"+": "reject"`                                      |
 | `v.objectWithRest(entries, rest)`                           | an index signature, `"[string]": ...`                                              |
 | `v.optional(T)`, `v.exactOptional(T)`                       | `"key?": "T \| undefined"`, `"key?": "T"`                                          |
-| `v.optional(T, default)`                                    | `"key": "T = default"`                                                             |
+| `v.optional(T, default)`                                    | `"key": "T = default"`, which applies it only where the key is missing             |
 | `v.nullable(T)`, `v.nullish(T)`                             | `"T \| null"`, `"key?": "T \| null \| undefined"`                                  |
 | `v.picklist(["a", "b"])`, `v.enum(E)`                       | `"'a' \| 'b'"`, `type.valueOf(E)`                                                  |
 | `v.union`, `v.variant("type", [...])`, `v.intersect`        | `A.or(B)`, `A.or(B)`, `A.and(B)`                                                   |
@@ -413,7 +415,7 @@ TypeBox schemas are JSON Schema, so [JSON Schema](#json-schema-and-ajv) also app
 
 ## Yup
 
-Yup converts values unless `.strict()`, and treats a field as optional unless `.required()`. Translate what the data actually is: a form posting strings needs `"string.numeric.parse"` where Yup's `number()` converted.
+Yup converts values unless `.strict()`, and treats a field as optional unless `.required()`. Translate what the data actually is: a form posting strings needs `"string.numeric.parse"` where Yup's `number()` converted. Like Joi, Yup applies a default to a key present as `undefined`, where `"key": "T = x"` rejects it; [Defaults that differ](#defaults-that-differ) has the pattern that keeps it.
 
 | Yup                                                   | ArkType                                                        |
 | ----------------------------------------------------- | -------------------------------------------------------------- |
@@ -428,6 +430,7 @@ Yup converts values unless `.strict()`, and treats a field as optional unless `.
 | `.oneOf(["a", "b"])`                                  | `"'a' \| 'b'"`                                                 |
 | `array().of(T)`, `tuple([A, B])`                      | `T.array()`, `[A, B]`                                          |
 | `.test(name, message, fn)`                            | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message }))`      |
+| `.oneOf([ref("password")])`                           | a `.narrow()` on the object comparing the keys                 |
 | `.transform(fn)`                                      | `.pipe(fn)`                                                    |
 | `.when("other", ...)`                                 | a union of the cases, or a `.narrow()` on the object           |
 | `lazy`                                                | a scope or `this`                                              |
@@ -437,7 +440,7 @@ Yup converts values unless `.strict()`, and treats a field as optional unless `.
 
 ## Joi
 
-Joi rejects undeclared keys, rejects empty strings, and converts strings to numbers, booleans and dates unless `convert: false`. It infers no types, so `typeof T.infer` replaces the interfaces written next to Joi schemas.
+Joi rejects undeclared keys, rejects empty strings, and converts strings to numbers, booleans and dates unless `convert: false`. ArkType reads an ISO date-time without an offset as UTC, where Joi reads it in local time. Joi also applies a default to a key present as `undefined`; see [Defaults that differ](#defaults-that-differ). It infers no types, so `typeof T.infer` replaces the interfaces written next to Joi schemas.
 
 | Joi                                            | ArkType                                                                        |
 | ---------------------------------------------- | ------------------------------------------------------------------------------ |
@@ -450,8 +453,9 @@ Joi rejects undeclared keys, rejects empty strings, and converts strings to numb
 | `Joi.number().integer().positive()`            | `"number.integer > 0"`                                                         |
 | `Joi.number()` reading strings                 | `"number \| string.numeric.parse"`                                             |
 | `Joi.boolean()` reading strings                | `type("boolean \| 'true' \| 'false'").pipe(v => v === true \|\| v === "true")` |
-| `Joi.date()`, `.iso()`                         | `"Date \| string.date.parse"`, `"string.date.iso"`                             |
+| `Joi.date()`, `Joi.date().iso()`               | `"Date \| string.date.parse"`, `"string.date.iso.parse"`                       |
 | `Joi.array().items(T)`, `.min(1)`              | `T.array()`, `"T[] >= 1"`                                                      |
+| `.unique()`                                    | `.narrow((a, ctx) => new Set(a).size === a.length \|\| ctx.reject("unique"))`  |
 | `Joi.alternatives().try(A, B)`                 | `A.or(B)`                                                                      |
 | `.default(x)`                                  | `"key": "T = x"`                                                               |
 | `.custom(fn)`                                  | `.narrow()` or `.pipe()`                                                       |
