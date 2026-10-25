@@ -15,7 +15,7 @@ import {
 } from "node:fs"
 import { SourceMap, type SourceMapping } from "node:module"
 import { join } from "node:path"
-import { runCli } from "./utils.ts"
+import { runCli, tempDir } from "./utils.ts"
 
 const emitted = fromHere("emitted")
 const out = join(emitted, "out")
@@ -135,6 +135,13 @@ contextualize(() => {
 	it("refuses a runtime only a bundler can load", () => {
 		attest(() => emitPrecompiled({ cwd: emitted, errors: "none" })).throws(
 			writeEmittedVariantMessage("none")
+		)
+	})
+
+	it("names the tsconfig to create where none is found", () => {
+		const dir = tempDir()
+		attest(() => emitPrecompiled({ cwd: dir })).throws(
+			`No tsconfig.json is in ${dir} or a directory above it. Create ${join(dir, "tsconfig.json")}, as { "compilerOptions": { "rootDir": "src", "outDir": "dist" }, "include": ["src"] }, or name the one tsc builds with as --tsconfig, or as "tsconfig" in ark.json.`
 		)
 	})
 

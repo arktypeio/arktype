@@ -16,7 +16,6 @@ import {
 	withSettingsFile
 } from "./settings.ts"
 import {
-	allowUnsafeHint,
 	createNodeHost,
 	createDevelopmentHost,
 	dependencyOf,
@@ -28,7 +27,8 @@ import {
 	runtimeSpecifiers,
 	throwBuildError,
 	writeAliasMessage,
-	writeRuntimeAliasMessage
+	writeRuntimeAliasMessage,
+	withAllowUnsafe
 } from "./host.ts"
 
 export interface TurbopackLoaderContext {
@@ -175,7 +175,7 @@ const checkAliases = async (
 		variant
 	)
 	if (opts.allowUnsafe) warn(problem)
-	else throwBuildError(`${problem} ${allowUnsafeHint}`)
+	else throwBuildError(withAllowUnsafe(problem))
 }
 
 // the runtime specifiers a module imports or exports from, not those it mentions

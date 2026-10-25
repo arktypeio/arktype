@@ -70,6 +70,7 @@ import {
 	arkPackageSpecifier,
 	contains,
 	declarationStartOf,
+	errorReaders,
 	importsValues,
 	isArk,
 	isArkObject,
@@ -95,7 +96,6 @@ import {
 	type StandInKind
 } from "./graph.ts"
 import {
-	allowUnsafeHint,
 	arkPackageName,
 	dependencyOf,
 	mapToSource,
@@ -106,7 +106,8 @@ import {
 	writeVariantOption,
 	type DependencyModes,
 	type PrecompileHost,
-	type RuntimeVariant
+	type RuntimeVariant,
+	withAllowUnsafe
 } from "./host.ts"
 import {
 	createSiteState,
@@ -174,7 +175,14 @@ import {
 	unresolvedHint,
 	versionHint,
 	writeVersionHint,
+	writeConfiguredOptionHint,
+	writeConflictHint,
+	writeErrorReaderHint,
+	writeMessageInHint,
+	writeNoConfigHint,
+	writeStaticHint,
 	writeErrorsMismatchMessage,
+	writeKeyedHint,
 	writeMutatesInputMismatchMessage,
 	writeSchemaExportHint,
 	writeStandaloneDependencyMessage,
@@ -1561,7 +1569,8 @@ export class Precompiler {
 						...configuration,
 						fingerprint: undefined,
 						problem: configurationConflictMessage,
-						reasons: [configurationConflictReason]
+						reasons: [configurationConflictReason],
+						hint: writeConflictHint(this.graph.pathOf(this.config!))
 					}
 		}
 		if (evaluated) {
@@ -1994,7 +2003,7 @@ export class Precompiler {
 				])
 			)
 		)
-		diagnostics.push(...this.checkRuntimeImports(module, sites))
+		this.checkRuntimeImports(module, sites, diagnostics)
 		diagnostics.sort((l, r) => l.start - r.start)
 		return inputImports
 	}
@@ -2033,9 +2042,9 @@ export class Precompiler {
 	// an arktype import that arktype/runtime lacks fails to link
 	private checkRuntimeImports(
 		module: SourceModule,
-		sites: Site[]
-	): Diagnostic[] {
-		const result: Diagnostic[] = []
+		sites: Site[],
+		diagnostics: Diagnostic[]
+	): void {
 		const spans = [...sites, ...module.islands]
 		for (const statement of module.program.body) {
 			if (
@@ -2048,14 +2057,20 @@ export class Precompiler {
 				if (
 					specifier.type !== "ImportSpecifier" ||
 					specifier.importKind === "type" ||
-					exportNameOf(specifier.imported) in arktypeRuntime
+					exportNameOf(specifier.imported) in arktypeRuntime ||
+					// reported at each call
+					exportNameOf(specifier.imported) in errorReaders
 				)
 					continue
 				const read = module.scopes.bindingsById
 					.get(specifier.local)
 					?.references.find(({ id }) => !spans.some(span => contains(span, id)))
 				if (!read) continue
-				result.push(
+				// reported by the analysis as used outside a site, reported once here
+				const outside = `\`${specifier.local.name}\` is used outside a precompiled site`
+				for (let i = diagnostics.length - 1; i >= 0; i--)
+					if (diagnostics[i].message === outside) diagnostics.splice(i, 1)
+				diagnostics.push(
 					this.diagnostic(
 						module,
 						read.id,
@@ -2067,7 +2082,6 @@ export class Precompiler {
 				)
 			}
 		}
-		return result
 	}
 
 	// only another module's export can be a mock
@@ -2521,16 +2535,47 @@ export class Precompiler {
 		module: SourceModule,
 		site: Site,
 		rule: "R1" | "R2" | "unsupported",
-		reasons = site.reasons
+		reasons = site.reasons,
+		// why it's refused, whose innermost value the hint names
+		dynamic?: DynamicValue
 	): Diagnostic {
+		const keyed = keyedMethodOf(site)
 		return this.diagnostic(
 			module,
 			site,
 			rule,
 			`${module.snippetOf(site)} ${rule === "unsupported" ? "can't be precompiled yet" : "cannot be precompiled"}`,
 			reasons.map(reason => this.sourceNamed(reason, site, module)),
-			configuredHintOf(reasons)
+			keyed && rule === "unsupported" ?
+				writeKeyedHint(module.snippetOf(site), this.keyHoldingOf(site, module))
+			:	(configuredHintOf(reasons) ??
+					(rule === "R1" && dynamic ?
+						writeStaticHint(innermostSnippetOf(dynamic, site, module))
+					:	undefined))
 		)
+	}
+
+	// e.g. `plan` for `const Plan = T.default("free")` read as `{ plan: Plan }`
+	private keyHoldingOf(site: Site, module: SourceModule): string | undefined {
+		let key: string | undefined
+		walk(module.program, node => {
+			if (key !== undefined) return false
+			if (
+				node.type !== "VariableDeclarator" ||
+				node.init?.start !== site.start ||
+				node.init.end !== site.end
+			)
+				return true
+			const property = module.scopes.bindingsById
+				.get(node.id)
+				?.references.find(
+					({ id }) => id.parent?.type === "Property" && id.parent.value === id
+				)?.id.parent
+			if (property?.type === "Property" && !property.computed)
+				key = module.snippetOf(property.key)
+			return false
+		})
+		return key
 	}
 
 	// so returned sites agree with diagnostics
@@ -2550,7 +2595,13 @@ export class Precompiler {
 		e: unknown
 	): Diagnostic {
 		refuse(site, reasonsOf(e))
-		return this.refusal(module, site, "R1")
+		return this.refusal(
+			module,
+			site,
+			"R1",
+			site.reasons,
+			e instanceof DynamicValue ? e : undefined
+		)
 	}
 
 	// a factory compares by definition, which misses what calls return
@@ -2664,11 +2715,15 @@ export class Precompiler {
 	}
 
 	private unsupportedReasonsOf(site: Site, module: SourceModule): string[] {
+		const keyed = keyedMethodOf(site)
 		const result =
-			site.parseError || isFoldable(site.value) || site.introspection ?
-				[]
+			site.parseError || isFoldable(site.value) || site.introspection ? []
+			: keyed ?
+				[
+					`.${keyed}() gives the definition of an object's key, not a Type, so it's precompiled where an object holds it`
+				]
 			:	["its value is not a Type, Module, Scope, Generic or TypedFn"]
-		if (result.length && site.unavailableRead) {
+		if (result.length && site.unavailableRead && !keyed) {
 			result.push(
 				`it reads \`${site.unavailableRead}\`, which a standalone validator lacks`
 			)
@@ -3446,7 +3501,9 @@ export class Precompiler {
 					site,
 					rejection?.hasCode("unsupported") ? "unsupported"
 					: rejection?.hasCode("callback") ? "R2"
-					: "R1"
+					: "R1",
+					site.reasons,
+					rejection
 				)
 			]
 		}
@@ -3469,7 +3526,7 @@ export class Precompiler {
 					// arktype throws it too, so it fails with runtime: "arktype" as well
 					this.allowUnsafe ?
 						hintsByRule.parse
-					:	`${hintsByRule.parse} ${allowUnsafeHint}`,
+					:	withAllowUnsafe(hintsByRule.parse),
 					this.allowUnsafe ? "warning" : "error"
 				)
 			)
@@ -3673,9 +3730,8 @@ export class Precompiler {
 						hint:
 							!this.configures ?
 								"Remove the call, or name its module as the build's `config`."
-							: this.config === undefined ?
-								`Name this module as the build's config: { config: ${JSON.stringify(module.path)} }`
-							:	undefined
+							: this.config === undefined ? writeNoConfigHint(module.path)
+							: undefined
 					}
 				:	(this.configuration ??
 					this.evaluateConfiguration(
@@ -3730,7 +3786,7 @@ export class Precompiler {
 								built.mutatesInput
 							),
 						[],
-						`Build with ${option}: ${printable(configured)} too, as a standalone validator returns what arktype does as the program configures it.`
+						writeConfiguredOptionHint(option, printable(configured))
 					)
 				)
 			}
@@ -3998,18 +4054,21 @@ export class Precompiler {
 				(name === "configure" &&
 					parent?.type === "CallExpression" &&
 					parent.callee === read) ||
-				this.graph.leavesArk(id, module) ||
+				// a function of errors reads data, which a validator returns
+				(this.graph.leavesArk(id, module) && !(name && name in errorReaders)) ||
 				isInIsland(id, module)
 			)
 				continue
 			if (isWithin(id, candidateRanges)) continue
 			result.push(
-				this.diagnostic(
-					module,
-					id,
-					"R4",
-					`\`${binding.name}\` is used outside a precompiled site`
-				)
+				name && name in errorReaders ?
+					this.errorReaderDiagnostic(module, name, read!)
+				:	this.diagnostic(
+						module,
+						id,
+						"R4",
+						`\`${binding.name}\` is used outside a precompiled site`
+					)
 			)
 		}
 		const settledValues = new Map(
@@ -4202,6 +4261,32 @@ export class Precompiler {
 			}
 		}
 		return result
+	}
+
+	// e.g. `flatProblemsByPath(out)`, which the program can write from `out.issues`
+	private errorReaderDiagnostic(
+		module: SourceModule,
+		name: string,
+		read: Node
+	): Diagnostic {
+		const [callee, call] = operatorOf(read)
+		const isCall = call?.type === "CallExpression" && call.callee === callee
+		const errors =
+			isCall && call.arguments.length ? module.snippetOf(call.arguments[0])
+			: name === "messageIn" ? "issue"
+			: "errors"
+		return this.diagnostic(
+			module,
+			isCall ? call : read,
+			"R4",
+			isCall ?
+				`${module.snippetOf(call)} calls ${name}, which arktype/runtime doesn't export`
+			:	`\`${module.snippetOf(read)}\` is arktype's, which arktype/runtime doesn't export`,
+			[],
+			name === "messageIn" ?
+				writeMessageInHint(errors)
+			:	writeErrorReaderHint(errors)
+		)
 	}
 
 	// e.g. `each($)` with `$` a Scope another module's build precompiles,
@@ -4630,7 +4715,7 @@ export class Precompiler {
 	}
 
 	private unsafeHintOf(hint: string): string {
-		return this.unsafeSeverity === "error" ? `${hint} ${allowUnsafeHint}` : hint
+		return this.unsafeSeverity === "error" ? withAllowUnsafe(hint) : hint
 	}
 
 	private diagnostic(
@@ -4665,6 +4750,12 @@ export class Precompiler {
 		}
 	}
 }
+
+// e.g. "default" for `T.default("free")`, a key's definition a validator lacks
+const keyedMethodOf = (site: Site): string | undefined =>
+	Array.isArray(site.value) ?
+		/\.(default|optional)$/.exec(site.unavailableRead ?? "")?.[1]
+	:	undefined
 
 const methodMembers = ["traverse", "from", "toString"] as const
 
@@ -5002,6 +5093,35 @@ const genericSiteDefinitionOf = (
 		text = `${text.slice(0, id.start - arg.start)}"t"${text.slice(id.end - arg.start)}`
 	}
 	return text.includes("\n") || text.length > 60 ? undefined : text
+}
+
+// e.g. `Math.random()` for `type({ a: Math.random() > 0.5 ? "string" : "number" })`,
+// or the binding holding it where that's too long to quote whole
+const innermostSnippetOf = (
+	dynamic: DynamicValue,
+	site: Span,
+	module: SourceModule
+): string | undefined => {
+	const snippets: string[] = []
+	for (let link: DynamicValue | undefined = dynamic; link; link = link.cause) {
+		// e.g. `process.env.MAX` for `process`, or `Math.random()` for its callee
+		let node = link.node
+		for (;;) {
+			const [operand, operator] = operatorOf(node)
+			if (
+				(operator?.type === "MemberExpression" &&
+					operator.object === operand &&
+					!operator.computed) ||
+				(operator?.type === "CallExpression" && operator.callee === operand)
+			)
+				node = operator
+			else break
+		}
+		// the site itself, as where it throws, is no value to replace
+		if (link.module === module && contains(node, site)) continue
+		snippets.unshift(link.module.snippetOf(node))
+	}
+	return snippets.find(snippet => !snippet.endsWith("…")) ?? snippets[0]
 }
 
 const chainOf = (dynamic: DynamicValue): string[] => {

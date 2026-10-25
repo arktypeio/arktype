@@ -6,7 +6,7 @@ import {
 	writeDeclaredOutsideMessage
 } from "@ark/aot/internal/declare.ts"
 import {
-	allowUnsafeHint,
+	withAllowUnsafe,
 	unbundledMessage,
 	writeExternalizedMessage,
 	writeFilelessImportMessage,
@@ -14,8 +14,7 @@ import {
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
 	writeUntransformedImportMessage,
-	writeUnwrittenModuleMessage,
-	writeVariantImportMessage
+	writeUnwrittenModuleMessage
 } from "@ark/aot/internal/host.ts"
 import { writeStandaloneDependencyMessage } from "@ark/aot/internal/messages.ts"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
@@ -44,7 +43,9 @@ import {
 	build as viteBuild,
 	defaultClientConditions,
 	defaultServerConditions,
+	normalizePath,
 	type InlineConfig,
+	type Plugin as VitePlugin,
 	type Rolldown
 } from "vite"
 import { startVitest } from "vitest/node"
@@ -583,8 +584,10 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 			const before = (await runner.import("/main.ts")).allows(2)
 			const file = join(root, "page.ts")
 			writeFileSync(file, page(2))
-			const pageModule =
-				server.environments.ssr.moduleGraph.getModuleById(file)!
+			// Vite's id for a file, which writes / on Windows
+			const pageModule = server.environments.ssr.moduleGraph.getModuleById(
+				normalizePath(file)
+			)!
 			server.watcher.emit("change", file)
 			for (let waited = 0; pageModule.transformResult; waited += 10) {
 				if (waited > 10_000) throw new Error("page.ts was never invalidated")
@@ -628,8 +631,8 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 				).close()
 			)
 		]).equals([
-			`${writeExternalizedMessage("arktype", "external")} ${allowUnsafeHint}`,
-			`${writeExternalizedMessage("@ark/schema", "ssr.external")} ${allowUnsafeHint}`
+			withAllowUnsafe(writeExternalizedMessage("arktype", "external")),
+			withAllowUnsafe(writeExternalizedMessage("@ark/schema", "ssr.external"))
 		])
 	})
 
@@ -831,7 +834,7 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 			.snap(`main.ts:9:21  type({ name: \`string <= \${settings.limit}\` }) cannot be precompiled
   \`settings\` is \`{ limit: Math.random() }\` (main.ts:7:7)
   \`Math.random\` is not one of the build's pure built-ins
-  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.`)
+  Replace \`Math.random()\` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.`)
 	})
 
 	// a list that grew with the build made a 100-module build 15 times slower
@@ -995,7 +998,7 @@ console.log(Limited({ n: 2 }) instanceof type.errors, Other({ s: "" }) instanceo
 			warnings: []
 		})
 		attest(await buildDependency("prebuilt.ts")).equals({
-			errors: [`${prebuilt} ${allowUnsafeHint}`],
+			errors: [withAllowUnsafe(prebuilt)],
 			warnings: []
 		})
 		attest(await buildDependency("shared.ts", { runtime: "arktype" })).equals({
@@ -1103,6 +1106,44 @@ console.log(
 		})
 	})
 
+	it("names a Vite plugin ahead of it that transforms the config module", async () => {
+		const root = writeFixture(
+			{
+				"config.ts":
+					'import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: "delete" })\n',
+				"main.ts":
+					'import "./config.ts"\nimport { type } from "arktype"\n\nexport const User = type({ name: "string" })\n'
+			},
+			fromHere("temp", "transformedConfig")
+		)
+		const rewrite: VitePlugin = {
+			name: "rewrite-config",
+			enforce: "pre",
+			transform: (code, id) =>
+				id.endsWith("config.ts") ? code.replace("delete", "reject") : undefined
+		}
+		const build = (plugins: (VitePlugin | VitePlugin[])[]) =>
+			viteBuild({
+				...viteConfig(undefined, root),
+				plugins,
+				build: { write: false, lib: { entry: "main.ts", formats: ["es"] } }
+			}).then(
+				() => "built",
+				(e: Error) => e.message.slice(e.message.indexOf("config.ts:"))
+			)
+		const arktype = precompile.vite({ config: "config.ts", conditions })
+		attest(await build([rewrite, arktype]))
+			.snap(`config.ts:3:1  configure() is given other values than arktype in this thread already applied
+  a module the configuration reads was given anew, as when it's edited while the build runs or a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set
+  Restart the build to apply an edit to config.ts. If it wasn't edited, put arktype's plugin ahead of rewrite-config, which transforms it.`)
+		attest(
+			await build([
+				precompile.vite({ config: "config.ts", conditions }),
+				rewrite
+			])
+		).equals("built")
+	})
+
 	it("fails where a module it can't precompile imports arktype", async () => {
 		const root = writeFixture(
 			{
@@ -1141,8 +1182,8 @@ console.log(
 			"arktype",
 			root
 		)
-		attest((await build()).errors.map(error => error.text)).equals([
-			`${message} ${allowUnsafeHint}`
+		attest((await build()).errors.map(error => error.text)).snap([
+			"Form.svelte imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws, as it can't precompile a module that isn't JavaScript or TypeScript. Move what it reads off arktype, from Types to `instanceof type.errors` checks, into a .ts module it imports, or set allowUnsafe: true to build anyway, with a warning."
 		])
 		const unsafe = await build(true)
 		attest("warnings" in unsafe && unsafe.warnings.map(w => w.text)).equals([
@@ -1159,7 +1200,7 @@ console.log(
 			fromHere("temp", "fileless")
 		)
 		const failure = (id: string) =>
-			`${writeFilelessImportMessage(id, "arktype")} ${allowUnsafeHint}`
+			withAllowUnsafe(writeFilelessImportMessage(id, "arktype"))
 
 		it("esbuild", async () => {
 			const build = (options: BuildOptions) =>
@@ -1282,7 +1323,9 @@ console.log(
 			(e: { errors: { text: string }[] }) => e.errors.map(e => e.text)
 		)
 		attest(errors).equals([
-			`${writeLoadedFirstMessage(join(root, "main.ts"), "arktype", root)} ${allowUnsafeHint}`
+			withAllowUnsafe(
+				writeLoadedFirstMessage(join(root, "main.ts"), "arktype", root)
+			)
 		])
 	})
 
@@ -1404,11 +1447,7 @@ console.log(JSON.stringify(User.toJsonSchema()))
 
 	it("undetailed bundles", async () => {
 		const reads = join(undetailed, "reads")
-		const message = writeVariantImportMessage(
-			join(undetailed, "node_modules", "reads", "index.js"),
-			"@ark/schema",
-			"none"
-		)
+		const message = `${join(undetailed, "node_modules", "reads", "index.js")} imports @ark/schema, which a build with errors: "none" can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build without errors: "none".`
 		for (const bundler of ["esbuild", "vite"] as const) {
 			attest(
 				run(
@@ -1575,12 +1614,12 @@ console.log(JSON.stringify(User.toJsonSchema()))
 			return [thrown.message, thrown.stack]
 		}
 		attest(await thrownBy({})).snap([
-			"main.ts:3:18  type(`number < ${Math.random()}`) cannot be precompiled\n  `Math.random` is not one of the build's pure built-ins\n  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.",
+			"main.ts:3:18  type(`number < ${Math.random()}`) cannot be precompiled\n  `Math.random` is not one of the build's pure built-ins\n  Replace `Math.random()` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.",
 			""
 		])
 		// thrown by the precompiler's worker rather than reported for a module
 		attest(await thrownBy({ config: "missing.ts" })).snap([
-			"the config module missing.ts can't be read",
+			"the config module missing.ts can't be read. Name a module that exists as the build's config.",
 			""
 		])
 	})
@@ -1706,12 +1745,13 @@ export const U = make()
 			},
 			fromHere("temp", "dropped")
 		)
+		// Node on Windows ends each line it prints of an uncaught error with \r\n
 		const stderrOf = (args: string[], input?: string) =>
 			spawnSync(process.execPath, args, {
 				cwd: root,
 				input,
 				encoding: "utf8"
-			}).stderr
+			}).stderr.replaceAll("\r\n", "\n")
 		attest(
 			stderrOf(["--conditions", "ark-ts", "main.ts"]).includes(
 				configureAfterTypeMessage

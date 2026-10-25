@@ -3,10 +3,10 @@ import { capitalize, printable } from "@ark/util"
 import type { Rule } from "./precompile.ts"
 
 export const writeUnreadableConfigMessage = (path: string): string =>
-	`the config module ${path} can't be read`
+	`the config module ${path} can't be read. Name a module that exists as the build's config.`
 
 export const configuredThreadMessage =
-	"arktype in this thread holds a configuration other than the build's, which it can't change once set, so the build must restart in a thread of its own"
+	"arktype in this thread holds a configuration other than the build's, which it can't change once set, so the build must restart in a thread of its own. Restart the process that runs it."
 
 export type configuredThreadMessage = typeof configuredThreadMessage
 
@@ -14,7 +14,16 @@ export const configurationConflictMessage =
 	"configure() is given other values than arktype in this thread already applied"
 
 export const configurationConflictReason =
-	"a module the configuration reads was given anew, as when a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set"
+	"a module the configuration reads was given anew, as when it's edited while the build runs or a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set"
+
+// a bundler that knows its plugins names those ahead of arktype's in its place
+export const conflictingPluginPhrase = "the plugin transforming it"
+
+export const writeConflictHint = (config: string): string =>
+	`Restart the build to apply an edit to ${config}. If it wasn't edited, put arktype's plugin ahead of ${conflictingPluginPhrase}.`
+
+export const writeConflictingPlugins = (names: string[]): string =>
+	`${names.join(", ")}, ${names.length > 1 ? "one of which transforms" : "which transforms"} it`
 
 export const writeStandaloneDependencyMessage = <name extends string>(
 	name: name
@@ -49,7 +58,7 @@ export const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	R4: `Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".`,
 	unsupported:
 		"Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.",
-	parse: "Fix the definition, or it throws the same ParseError at runtime.",
+	parse: "Fix the definition, which throws the same ParseError at runtime.",
 	copies: copiesHint
 }
 
@@ -88,6 +97,37 @@ export const writeSchemaExportHint = (name: string): string =>
 	`Import ${name} from arktype, which a standalone build resolves to its runtime${name === "ArkErrors" ? ", or read type.errors" : ""}.`
 
 export const localeHint = `Write errors in a locale in a definition marked // @ark-runtime, or build with runtime: "arktype".`
+
+// e.g. `{ plan: type("'free' | 'pro'").default("free") }`
+export const writeKeyedHint = (
+	definition: string,
+	key: string | undefined
+): string =>
+	`Write it at the key it's for, in place of the const: \`{ ${key ?? "key"}: ${definition} }\`.`
+
+// a standalone validator returns what arktype does as the program configures it
+export const writeConfiguredOptionHint = (
+	option: string,
+	// e.g. `"first"`
+	configured: string
+): string =>
+	`Build with the ${option} arktype is configured with, in ark.json: { "precompile": { "${option}": ${configured} } }`
+
+export const writeStaticHint = (
+	dynamic: string | undefined
+): string | undefined =>
+	dynamic &&
+	`Replace \`${dynamic}\` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.`
+
+export const writeNoConfigHint = (path: string): string =>
+	`Name this module as the build's config in ark.json: { "precompile": { "config": ${JSON.stringify(/^\.{0,2}\//.test(path) ? path : `./${path}`)} } }`
+
+export const writeErrorReaderHint = (errors: string): string =>
+	`Read \`${errors}.issues\`, each with its path and message, as in \`for (const { path, message } of ${errors}.issues)\`, or build with runtime: "arktype".`
+
+// a standalone validator writes its errors only in English
+export const writeMessageInHint = (issue: string): string =>
+	`Read \`${issue}.message\`, which a standalone validator writes in English, or build with runtime: "arktype" to write it in a locale.`
 
 export const writeErrorsMismatchMessage = (
 	configured: ErrorDetail,
@@ -151,17 +191,34 @@ const textHints: [
 		`A standalone validator writes what a narrow or morph raises from what it passes to ctx.reject(). Pass the text there, or build with runtime: "arktype".`
 	],
 	[
+		/^`(.+)` is a runtime island's Type, which a precompiled site can't receive$/,
+		name =>
+			`Precompile \`${name}\` too, by removing its // @ark-runtime where the build can, or mark this definition // @ark-runtime as well.`
+	],
+	[
+		/^`(.+)` \(.+\) is shadowed where the site is written/,
+		name =>
+			`Rename the \`${name}\` declared around the site, which hides the one it reads.`
+	],
+	[
+		/^`.+` \(.+\) is a static helper its module doesn't export through a binding/,
+		"Export it by name, as `export const helper = ...`, and import that name, so a test driver can register it."
+	],
+	[
 		/writer, which reads each branch's errors/,
 		`A standalone validator keeps no union branch's errors. Configure the text as a string, or build with runtime: "arktype".`
 	]
 ]
 
 export const configuredHintOf = (reasons: string[]): string | undefined => {
-	const option = reasons
-		.map(reason => /^arktype is configured with (\w+)/.exec(reason)?.[1])
-		.find(option => option !== undefined)
-	if (option !== undefined)
-		return `A standalone validator returns what arktype does as the program configures it. Build with the ${option} arktype is configured with.`
+	const configured = reasons
+		.map(reason =>
+			/^arktype is configured with (\w+): (.+), where/.exec(reason)
+		)
+		.find(match => match)
+	// a Scope's, which the program can leave to the build
+	if (configured)
+		return `${writeConfiguredOptionHint(configured[1], configured[2])}, or leave ${configured[1]} out of the Scope's configuration.`
 	for (const [pattern, hint] of textHints) {
 		for (const reason of reasons) {
 			const match = pattern.exec(reason)

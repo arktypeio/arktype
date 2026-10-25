@@ -3,7 +3,7 @@ import { fromHere } from "@ark/fs"
 import { precompile as bunPlugin } from "@ark/aot/bun"
 import { writeDeclareFrameworkMessage } from "@ark/aot/internal/declare.ts"
 import {
-	allowUnsafeHint,
+	withAllowUnsafe,
 	createNodeHost,
 	writeAliasMessage,
 	writeFilelessImportMessage,
@@ -275,7 +275,7 @@ console.log(jsonSchemaOf(type({ a: "string" })))
 			attest(thrownMessage(stdout, app))
 				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
   \`process\` is a global the build does not read
-  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.`)
+  Replace \`process.env.ADMIN_ROLE\` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.`)
 		})
 
 		it("a package reading arktype's nodes in a runtime island", () => {
@@ -359,7 +359,7 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				warned.stderr.includes(writePrecompiledDependencyMessage("prebuilt"))
 			]).equals([
 				1,
-				`${writePrecompiledDependencyMessage("prebuilt")} ${allowUnsafeHint}`,
+				withAllowUnsafe(writePrecompiledDependencyMessage("prebuilt")),
 				"object\n",
 				true
 			])
@@ -431,7 +431,9 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			)
 			attest(status).equals(1)
 			attest(
-				stderr.includes(writeTextlessMessage(join(transpiled, "start.ts")))
+				stderr.includes(
+					`${join(transpiled, "start.ts")} imports arktype but was loaded without @ark/aot/node's hooks, before register() ran or by a loader that compiles it itself, as tsx does in a CommonJS package, so a standalone build can't precompile it. Register them first, as with \`node --import ./register.ts\`, and let Node run the TypeScript rather than a loader like tsx.`
+				)
 			).equals(true)
 		})
 
@@ -450,11 +452,13 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			}
 			attest(failure(["cli"])).equals([
 				1,
-				`${writeUntransformedImportMessage(join(root, "cli"), "arktype", root)} ${allowUnsafeHint}`
+				withAllowUnsafe(
+					writeUntransformedImportMessage(join(root, "cli"), "arktype", root)
+				)
 			])
 			attest(failure(["--eval", 'import("arktype")'])).equals([
 				1,
-				`${writeFilelessImportMessage("[eval]", "arktype")} ${allowUnsafeHint}`
+				withAllowUnsafe(writeFilelessImportMessage("[eval]", "arktype"))
 			])
 		})
 
@@ -491,7 +495,7 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			})
 			attest([status, thrownMessage(stderr, root)]).equals([
 				1,
-				"@ark/aot's precompiler stopped before it answered, as it does where a module the process preloads throws in a worker"
+				"@ark/aot's precompiler stopped before it answered, as it does where a module the process preloads throws in a worker thread, like ./noWorkers.ts, which NODE_OPTIONS loads. Pass it to node as a flag instead, as `node --import ./noWorkers.ts`, which keeps it out of the precompiler's thread, or return from it early where `isMainThread` from node:worker_threads is false. To see its error and stack, run `node -e 'new (require(\"node:worker_threads\").Worker)(new URL(\"data:text/javascript,\"))'` with the same NODE_OPTIONS."
 			])
 		})
 
@@ -529,7 +533,7 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			attest(thrownMessage(stderr, configured))
 				.snap(`earlyFirst.ts:1:1  import { Email } from "./early.ts" loads schemas.ts, which creates a Type, before the config module config.ts runs configure()
   unless the program loaded config.ts earlier, creating the Type throws
-  Import config.ts first, before any module that creates a Type. Set allowUnsafe: true to build anyway, with a warning.`)
+  Import config.ts first, before any module that creates a Type, or set allowUnsafe: true to build anyway, with a warning.`)
 		})
 	})
 
@@ -691,7 +695,7 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			const none = { errors: "none" } as const
 			attest(await outcomeOf("@ark/schema/runtime/none", none)).equals([])
 			attest(await outcomeOf("@ark/schema/runtime", none)).snap([
-				'@ark/schema/runtime resolves to ../../../schema/runtime.ts rather than @ark/schema/runtime/none, which a build with errors: "none" loads in its place. Add to turbopack.resolveAlias: {"@ark/schema/runtime":"@ark/schema/runtime/none"}, and install @ark/schema if your package manager doesn\'t hoist it, as pnpm doesn\'t. Set allowUnsafe: true to build anyway, with a warning.'
+				'@ark/schema/runtime resolves to ../../../schema/runtime.ts rather than @ark/schema/runtime/none, which a build with errors: "none" loads in its place. Add to turbopack.resolveAlias: {"@ark/schema/runtime":"@ark/schema/runtime/none"}, and install @ark/schema if your package manager doesn\'t hoist it, as pnpm doesn\'t, or set allowUnsafe: true to build anyway, with a warning.'
 			])
 			attest(
 				await outcomeOf("@ark/schema/runtime", { ...none, allowUnsafe: true })
@@ -700,7 +704,7 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			])
 			attest(await outcomeOf("@ark/schema/runtime")).equals([])
 			attest(await outcomeOf("@ark/schema/runtime/none")).snap([
-				'@ark/schema/runtime resolves to ../../../schema/runtimeNone.ts, a copy for a build with errors: "none" or optimizeErrors: "size". Remove its turbopack.resolveAlias. Set allowUnsafe: true to build anyway, with a warning.'
+				'@ark/schema/runtime resolves to ../../../schema/runtimeNone.ts, a copy for a build with errors: "none" or optimizeErrors: "size". Remove its turbopack.resolveAlias, or set allowUnsafe: true to build anyway, with a warning.'
 			])
 			// shadow mode loads arktype, so leaves @ark/schema/runtime unchecked
 			attest(
@@ -947,7 +951,7 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			attest(thrownMessage(stderr, app, "error: "))
 				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
   \`process\` is a global the build does not read
-  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.`)
+  Replace \`process.env.ADMIN_ROLE\` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.`)
 		})
 	})
 })
