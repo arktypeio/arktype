@@ -330,9 +330,12 @@ const StandingCard = ({ category }: { category: StandingCategory }) => {
 	return (
 		<>
 			<Place category={category} />
-			<p className="card-margin">
-				<Average category={category} of="the smallest bundle" />
-			</p>
+			<div className="card-margin">
+				<p>
+					<Average category={category} of="the smallest bundle" />
+				</p>
+				{!isPending(claims.sizePreset) && <p>{claims.sizePreset}</p>}
+			</div>
 			<ol
 				className="race"
 				aria-label="each library's bundles as a multiple of the smallest, averaged, lower is better"

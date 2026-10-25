@@ -22,10 +22,9 @@ export const ClaimText = ({ claim }: { claim: ClaimValue<string> }) =>
 		</span>
 	:	<>{claim}</>
 
-/** a claim from lib/claims.ts, inline in a paragraph, marked while it's pending */
-export const Claim = ({ id }: { id: ClaimId }) => (
-	<ClaimText claim={claims[id]} />
-)
+/** a claim from lib/claims.ts, inline in a paragraph, marked while it's pending, or with `ifBacked` left out until it isn't */
+export const Claim = ({ id, ifBacked }: { id: ClaimId; ifBacked?: boolean }) =>
+	ifBacked && isPending(claims[id]) ? null : <ClaimText claim={claims[id]} />
 
 /** the headline, as claims.ts states and guards it */
 export const Headline = () => <ClaimText claim={claims.headline} />

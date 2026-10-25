@@ -319,7 +319,9 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 			]
 		}
 		case "Claim": {
-			const text = claimMarkdown(claims[attr(node, "id") as ClaimId])
+			const claim = claims[attr(node, "id") as ClaimId]
+			if (attr(node, "ifBacked") && isPending(claim)) return []
+			const text = claimMarkdown(claim)
 			return node.type === "mdxJsxTextElement" ?
 					[{ type: "text", value: text }]
 				:	[paragraph(text)]

@@ -23,6 +23,7 @@ import {
 	leads,
 	resultsOf,
 	rowsOf,
+	suiteRowsOf,
 	tieBand,
 	ties,
 	type CategoryId,
@@ -491,6 +492,15 @@ export const claims = {
 		leads("size") && !ties("size") ?
 			`Size is the close one: ArkType's average is ${standingOf("size").by} below ${sizeRival.library}'s, and ${sizeRival.library} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`
 		:	`Size is the close one: ${sizeRival.library} has the best average, ${averageText(sizeRival.score)} to ArkType's ${averageText(placeOf("size").score)}${ties("size") ? `, ArkType's within ${tieMargin} of it` : ""}, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
+	// the "size" preset for schema-heavy frontends, where the default build's
+	// lead at form scale (sizeAverage) doesn't carry. Pending until
+	// leaderboard.json has a presetSize suite with the preset under Valibot on
+	// every row, which the check below the claims holds; while it's pending,
+	// nothing renders it
+	sizePreset: {
+		pending:
+			'Big frontend? optimize: "size" is smaller than Valibot at any scale.'
+	},
 	// which benchmarks are ours, and that the averages leave them out
 	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory} on the full board; the averages above leave those out.${writtenSuites ? ` They keep ${writtenSuites}, Valibot's code, which we wrote in each library and size with our own script.` : ""}`,
 	// the claims that depend on a single benchmark, and which
@@ -524,6 +534,21 @@ export const assertStandings = (copy: string, by: string) => {
 	}
 	if (/\bpick 3\b/i.test(copy))
 		for (const category of boardOrder) assertLeads(category, by)
+}
+
+/** whether every row of the presetSize suite has ArkType's "size" preset under Valibot */
+const presetBeatsValibot = () => {
+	const rows = suiteRowsOf("presetSize")
+	return (
+		rows.length > 0 &&
+		rows.every(results => results["ArkType (size)"] < results.Valibot)
+	)
+}
+
+if (!isPending(claims.sizePreset) && !presetBeatsValibot()) {
+	throw new Error(
+		`sizePreset claims the "size" preset is smaller than Valibot at any scale, but leaderboard.json has no presetSize suite with it under Valibot on every row`
+	)
 }
 
 // the copy that states standings; the blog's frontmatter, which can't read
