@@ -69,6 +69,30 @@ export const isError = (data: unknown) => data instanceof ArkErrors`)
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
 
+		it("names its locals without a leading $ in a module Svelte compiles", () => {
+			// Svelte refuses a name beginning with $ there, as it reads one as a rune
+			const source = `import { type } from "arktype"
+export const Quantity = type("number.integer > 0")
+export const cartOf = () => {
+	let count = $state(0)
+	return { add: (n: unknown) => Quantity.assert(n) + count }
+}`
+			const result = precompileModule(
+				source,
+				"/cart.svelte.ts",
+				memoryHost({ "/cart.svelte.ts": source })
+			)
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as ark$#0 } from "~arktype/#1"
+import ark$fixConfig from "~arktype/#2"
+ark$fixConfig()
+export const Quantity = /* @__PURE__ */ ark$#0()
+export const cartOf = () => {
+	let count = $state(0)
+	return { add: (n: unknown) => Quantity.assert(n) + count }
+}`)
+		})
+
 		it("reads validators created eagerly and checking nothing", () => {
 			const result = precompile(
 				`import { type } from "arktype"
