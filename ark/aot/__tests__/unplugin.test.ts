@@ -1209,7 +1209,11 @@ console.log(
 				"allows.js":
 					'import { User } from "#shared/types"\n\nconsole.log(User.allows({ name: "Ada" }))\n',
 				"Form.svelte": "<script>\n</script>\n",
-				"form.js": 'import read from "./Form.svelte"\n\nconsole.log(read)\n'
+				"form.js": 'import read from "./Form.svelte"\n\nconsole.log(read)\n',
+				// an alias to arktype, which the bundler resolves through this
+				// plugin while the precompiler waits on its answer
+				"validation.js":
+					'import { type } from "#validation"\n\nconst User = type({ name: "string" })\n\nconsole.log(User.allows({ name: "Ada" }))\n'
 			},
 			fromHere("temp", "aliased")
 		)
@@ -1234,7 +1238,10 @@ console.log(
 					plugins: [svelte, precompile.vite({ cwd: root, conditions })],
 					resolve: {
 						...config.resolve,
-						alias: [{ find: /^#shared\//, replacement: `${shared}/` }]
+						alias: [
+							{ find: /^#shared\//, replacement: `${shared}/` },
+							{ find: /^#validation$/, replacement: "arktype" }
+						]
 					},
 					build: { write: false, lib: { entry, formats: ["es"] } }
 				}).then(
@@ -1249,33 +1256,47 @@ console.log(
 			attest(await build("form.js")).equals([
 				"Form.svelte:3:23  User.errors reads errors, which a standalone validator lacks"
 			])
+			attest(await build("validation.js")).equals([])
 		})
 
 		it("esbuild", async () => {
 			const alias: Plugin = {
 				name: "alias",
-				// in the file namespace, as most plugins resolve
-				setup: build =>
+				setup: build => {
+					// in the file namespace, as most plugins resolve
 					build.onResolve(
 						{ filter: /^#shared\//, namespace: "file" },
 						args => ({
 							path: join(shared, `${args.path.slice("#shared/".length)}.ts`)
 						})
 					)
+					build.onResolve(
+						{ filter: /^#validation$/, namespace: "file" },
+						({ kind, importer, resolveDir }) =>
+							build.resolve("arktype", {
+								kind,
+								importer,
+								namespace: "file",
+								resolveDir
+							})
+					)
+				}
 			}
-			const errors = await esbuild({
-				entryPoints: [join(root, "main.js")],
-				bundle: true,
-				write: false,
-				conditions,
-				logLevel: "silent",
-				plugins: [alias, precompile.esbuild({ cwd: root, conditions })]
-			}).then(
-				() => [],
-				(e: { errors: { text: string }[] }) =>
-					e.errors.map(e => e.text.split("\n")[0])
-			)
-			attest(errors).equals([failure])
+			const build = (entry: string) =>
+				esbuild({
+					entryPoints: [join(root, entry)],
+					bundle: true,
+					write: false,
+					conditions,
+					logLevel: "silent",
+					plugins: [alias, precompile.esbuild({ cwd: root, conditions })]
+				}).then(
+					() => [],
+					(e: { errors: { text: string }[] }) =>
+						e.errors.map(e => e.text.split("\n")[0])
+				)
+			attest(await build("main.js")).equals([failure])
+			attest(await build("validation.js")).equals([])
 		})
 
 		it("webpack", async () => {

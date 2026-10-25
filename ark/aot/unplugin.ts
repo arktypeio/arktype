@@ -150,8 +150,17 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			(await send(["reset"]).catch(() => false)) ? replace(send) : send
 		)
 	}
-	const readDependency = (importer: string) =>
-		request("readDependency", fileOf(importer)) as Promise<RenderedDiagnostics>
+	// a module outside node_modules is no dependency, so resolving arktype for
+	// one doesn't wait on the worker, which may be waiting on the bundler to
+	// resolve an alias to arktype
+	const readDependency = async (
+		importer: string
+	): Promise<RenderedDiagnostics> => {
+		const file = fileOf(importer)
+		return dependencyOf(file) ?
+				(request("readDependency", file) as Promise<RenderedDiagnostics>)
+			:	noDiagnostics()
+	}
 	let productionHost = createNodeHost(opts)
 	let developmentHost: PrecompileHost | undefined
 	// resolves as the bundler's mode would, e.g. arktype/runtime in development
