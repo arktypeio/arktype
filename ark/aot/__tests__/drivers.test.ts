@@ -452,13 +452,11 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			}
 			attest(failure(["cli"])).equals([
 				1,
-				withAllowUnsafe(
-					writeUntransformedImportMessage(join(root, "cli"), "arktype", root)
-				)
+				writeUntransformedImportMessage(join(root, "cli"), "arktype", root)
 			])
 			attest(failure(["--eval", 'import("arktype")'])).equals([
 				1,
-				withAllowUnsafe(writeFilelessImportMessage("[eval]", "arktype"))
+				writeFilelessImportMessage("[eval]", "arktype")
 			])
 		})
 

@@ -1191,7 +1191,7 @@ console.log(
 			root
 		)
 		attest((await build()).errors.map(error => error.text)).snap([
-			"Form.svelte imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws, as it can't precompile a module that isn't JavaScript or TypeScript. Move what it reads off arktype, from Types to `instanceof type.errors` checks, into a .ts module it imports, or set allowUnsafe: true to build anyway, with a warning."
+			"Form.svelte imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws, as it can't precompile a module that isn't JavaScript or TypeScript. Move what it reads off arktype into a .ts module it imports: define its Types there, and check for errors with a function exported from there, like `export const isInvalid = (out: unknown) => out instanceof type.errors`."
 		])
 		const unsafe = await build(true)
 		attest("warnings" in unsafe && unsafe.warnings.map(w => w.text)).equals([
@@ -1539,8 +1539,7 @@ console.log(
 			{ "main.js": `export { User } from ${JSON.stringify(url)}\n` },
 			fromHere("temp", "fileless")
 		)
-		const failure = (id: string) =>
-			withAllowUnsafe(writeFilelessImportMessage(id, "arktype"))
+		const failure = (id: string) => writeFilelessImportMessage(id, "arktype")
 
 		it("esbuild", async () => {
 			const build = (options: BuildOptions) =>
@@ -1663,9 +1662,7 @@ console.log(
 			(e: { errors: { text: string }[] }) => e.errors.map(e => e.text)
 		)
 		attest(errors).equals([
-			withAllowUnsafe(
-				writeLoadedFirstMessage(join(root, "main.ts"), "arktype", root)
-			)
+			writeLoadedFirstMessage(join(root, "main.ts"), "arktype", root)
 		])
 	})
 

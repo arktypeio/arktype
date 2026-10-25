@@ -455,7 +455,7 @@ export const writeUntransformedImportMessage = (
 	writeUnprecompiledMessage(
 		printablePathOf(cwd, file),
 		specifier,
-		"it can't precompile a module that isn't JavaScript or TypeScript. Move what it reads off arktype, from Types to `instanceof type.errors` checks, into a .ts module it imports."
+		"it can't precompile a module that isn't JavaScript or TypeScript. Move what it reads off arktype into a .ts module it imports: define its Types there, and check for errors with a function exported from there, like `export const isInvalid = (out: unknown) => out instanceof type.errors`."
 	)
 
 // e.g. esbuild's stdin, or a module a plugin loads from a virtual id
