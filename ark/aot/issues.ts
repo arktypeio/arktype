@@ -65,9 +65,3 @@ export const pathKeyOf = (path: readonly PropertyKey[]): string =>
 
 const sortKeyOf = (issue: KeptIssue) =>
 	[...issue.path.map(String), issue.code].join("\0")
-
-// a default's ParseError, minus what its value was
-export const keptParseMessageOf = (message: string): string =>
-	message.startsWith("Default") ?
-		message.replace(/ \(was .*\)$/gm, "")
-	:	message
