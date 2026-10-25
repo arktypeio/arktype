@@ -123,6 +123,25 @@ const Panel = ({ panel, index, entry }: PanelProps) => (
 	</figure>
 )
 
+const Head = ({ labels }: { labels: readonly string[] }) => (
+	<thead>
+		<tr>
+			{labels.map(label => (
+				<th key={label} scope="col">
+					{label}
+				</th>
+			))}
+		</tr>
+	</thead>
+)
+
+const Cells = ({ cells }: { cells: readonly string[] }) =>
+	cells.map((cell, i) => (
+		<td key={i} className={i === 0 ? "t-ours" : undefined}>
+			{cell}
+		</td>
+	))
+
 const setLabels: Record<BenchSet, string> = {
 	valid: "Valid data",
 	invalid: "Reporting errors on invalid data"
@@ -219,15 +238,7 @@ export const BenchmarkChart = ({ animate, children }: BenchmarkChartProps) => {
 						tables
 					</summary>
 					<Table className="b-table">
-						<thead>
-							<tr>
-								{table.head.map(label => (
-									<th key={label} scope="col">
-										{label}
-									</th>
-								))}
-							</tr>
-						</thead>
+						<Head labels={table.head} />
 						<tbody>
 							{table.rows.map(row => (
 								<tr key={row.scenario} className={`t-${row.verdict}`}>
@@ -237,11 +248,7 @@ export const BenchmarkChart = ({ animate, children }: BenchmarkChartProps) => {
 											<span className="t-note"> first-error build</span>
 										)}
 									</th>
-									{row.cells.map((cell, i) => (
-										<td key={i} className={i === 0 ? "t-ours" : undefined}>
-											{cell}
-										</td>
-									))}
+									<Cells cells={row.cells} />
 									<td>{row.fastestOther}</td>
 									<td className="t-verdict">{row.versus}</td>
 								</tr>
@@ -249,24 +256,12 @@ export const BenchmarkChart = ({ animate, children }: BenchmarkChartProps) => {
 						</tbody>
 					</Table>
 					<Table className="b-table">
-						<thead>
-							<tr>
-								{startup.head.map(label => (
-									<th key={label} scope="col">
-										{label}
-									</th>
-								))}
-							</tr>
-						</thead>
+						<Head labels={startup.head} />
 						<tbody>
 							{startup.rows.map(row => (
 								<tr key={row.metric}>
 									<th scope="row">{row.metric}</th>
-									{row.cells.map((cell, i) => (
-										<td key={i} className={i === 0 ? "t-ours" : undefined}>
-											{cell}
-										</td>
-									))}
+									<Cells cells={row.cells} />
 								</tr>
 							))}
 						</tbody>

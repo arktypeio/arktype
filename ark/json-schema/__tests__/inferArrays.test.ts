@@ -2,24 +2,12 @@ import { attest, contextualize } from "@ark/attest"
 import { type jsonSchema, jsonSchemaToType } from "@ark/json-schema"
 import type { array } from "@ark/util"
 import type { JsonSchema } from "arktype"
-
-// checks inference without reading the schema at runtime
-// like jsonSchemaToType, the result is read back with `infer` so attest's
-// contextual type isn't inferred into jsonSchema.infer
-const inferred = <const schema, r = jsonSchema.infer<schema>>(
-	schema: jsonSchema.validate<schema>
-): r extends infer _ ? _ : never => schema as never
+import { inferred, type elementAt } from "./utils.ts"
 
 // display of a hand-written (mutable) schema type
 const inferType = <schema>(): jsonSchema.infer<schema> => ({}) as never
 
 type isAny<t> = 0 extends 1 & t ? true : false
-
-/** the element type `depth` levels into nested arrays */
-type elementAt<t, depth extends number, i extends 1[] = []> =
-	i["length"] extends depth ? t
-	: t extends readonly (infer element)[] ? elementAt<element, depth, [...i, 1]>
-	: t
 
 contextualize(() => {
 	describe("items", () => {

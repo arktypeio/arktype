@@ -42,36 +42,16 @@
 	translate: 2px -2px;
 }
 
-/* every "Copy page" state shares one grid cell, so the button never resizes */
-.copy-face {
-	display: inline-grid;
-	place-items: center start;
-}
-
-.copy-face > * {
-	grid-area: 1 / 1;
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	transition:
-		opacity var(--t-pop-in),
-		translate 0.2s var(--ease-out);
-}
-
+/* "Copy page" shares .copy-face with code blocks (code.css) */
 .copy-face svg {
 	width: 14px;
 	height: 14px;
 	flex: none;
 }
 
-.copy-done,
 .copy-failed {
 	opacity: 0;
 	translate: 0 4px;
-	color: var(--teal);
-}
-
-.copy-failed {
 	color: var(--red-text);
 }
 
@@ -1529,8 +1509,7 @@ dialog.search::backdrop {
 	.docs-sidebar[data-open],
 	.scrim,
 	.scrim[data-open],
-	.toc-rail,
-	.copy-face > * {
+	.toc-rail {
 		transition: none;
 	}
 
