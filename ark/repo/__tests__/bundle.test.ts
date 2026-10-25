@@ -1,6 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
 import { buildSync } from "esbuild"
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import {
+	mkdirSync,
+	mkdtempSync,
+	readdirSync,
+	readFileSync,
+	rmSync,
+	writeFileSync
+} from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { pathToFileURL } from "node:url"
@@ -76,6 +83,34 @@ contextualize(() => {
 		attest(evaluated()).equals(["b", "internal"])
 		attest(Object.keys(internal)).equals(["x", "y"])
 		attest(internal.x).is(root.x)
+	})
+
+	it("writes an import only an export list reads as a re-export", async () => {
+		const dir = writePackage(
+			{
+				"index.js": `export * from "./shared.js";`,
+				"internal.js": `import "./shared.js"; export const i = 0;`,
+				"shared.js": `export { join } from "node:path"; import { basename, sep } from "node:path"; const separator = () => sep; export const base = () => basename("a/b");`
+			},
+			{ ".": "./out/index.js", "./internal": "./out/internal.js" }
+		)
+		const fromOut = bundleIn(dir)
+		const [chunk] = readdirSync(join(dir, "out")).filter(file =>
+			file.startsWith("chunk-")
+		)
+		attest(
+			readFileSync(join(dir, "out", chunk), "utf8").match(/^.*node:path.*$/gm)
+		).equals([
+			`export { join } from "node:path";`,
+			`import { basename } from "node:path";`
+		])
+		// as an entry re-exports a chunk's export
+		attest(readFileSync(join(dir, "out", "index.js"), "utf8")).equals(
+			`export { base, join } from "./${chunk}";\n`
+		)
+		const { base, join: joined } = await import(fromOut("index.js"))
+		attest(base()).equals("b")
+		attest(joined).is(join)
 	})
 
 	it("names a self-referencing class", async () => {
