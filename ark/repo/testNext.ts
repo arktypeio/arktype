@@ -20,7 +20,7 @@ const appDir = fileURLToPath(new URL("./temp/next/", import.meta.url))
 
 // the Turbopack config Setup shows, so the docs and this build can't drift
 const config =
-	/```js title="next\.config\.js"\n(export default \{\n\tturbopack[\S\s]*?)^```$/m.exec(
+	/```js title="next\.config\.js"\n(export default {\n\tturbopack[\S\s]*?)^```$/m.exec(
 		readFileSync(setup, "utf8")
 	)?.[1]
 if (!config) throw new Error(`Found no Turbopack next.config.js in ${setup}`)

@@ -126,10 +126,11 @@ rewriteFile(packagesByScope.type.packageJsonPath, contents => {
 		/^(\t"arkAotVersion": )"[^"]*"/m,
 		`$1"${nextAot}"`
 	)
-	if (bumped === contents)
+	if (bumped === contents) {
 		throw new Error(
 			`Found no arkAotVersion in ${packagesByScope.type.packageJsonPath}`
 		)
+	}
 	return bumped
 })
 
