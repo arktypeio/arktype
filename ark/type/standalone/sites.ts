@@ -112,7 +112,6 @@ const siteWords = new Set([
 	"runtime",
 	"void",
 	"siteOf",
-	"textSiteOf",
 	"problemSiteOf",
 	"keySiteOf",
 	"v",
@@ -142,7 +141,7 @@ export const writeSiteOf = (
 	while (args[args.length - 1] === undefined) args.pop()
 	return `runtime.${
 		args.length > 3 ? "problemSiteOf"
-		: args.length > 2 ? "textSiteOf"
+		: args.length > 2 ? "siteOf"
 		: writer
 	}(${args.map(arg => (arg === undefined ? "void 0" : emit(arg))).join(", ")})`
 }
