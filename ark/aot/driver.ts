@@ -190,7 +190,11 @@ const answerRequests = (
 			Atomics.store(data.answered, 0, 1)
 			Atomics.notify(data.answered, 0)
 		}
-		if (request[0] === "close") port.close()
+		if (request[0] === "close") {
+			if ("close" in port) port.close()
+			// Deno's parentPort can't close, but its worker can close itself
+			else (globalThis as { close?: () => void }).close?.()
+		}
 	})
 }
 
