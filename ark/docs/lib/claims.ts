@@ -21,6 +21,8 @@ import {
 	leads,
 	resultsOf,
 	rowsOf,
+	sizeTie,
+	ties,
 	type CategoryId,
 	type Standing
 } from "./bench/leaderboard.ts"
@@ -222,10 +224,10 @@ const wording = {
 
 const boardOrder = ["speed", "startup", "size"] as const satisfies CategoryId[]
 
-/** the categories ArkType has the best average in, the only ones the board states a win in */
+/** the categories ArkType may claim, the only ones the board states a win in */
 const led = boardOrder.filter(leads)
 
-/** whether ArkType leads every category the board shows, the only time it may say "Pick 3" */
+/** whether ArkType may claim every category the board shows, the only time it may say "Pick 3" */
 export const leadsEvery = led.length === boardOrder.length
 
 /** ArkType's best average, and the next best where ArkType leads, otherwise the leader */
@@ -234,17 +236,24 @@ const averageOf = (category: CategoryId) => {
 	return { score, other: leaderboards[category].standings[place === 1 ? 1 : 0] }
 }
 
-/** where ArkType's best average places it in a category, a superlative only where it leads */
+/** how far above the best size average ArkType's may be and still tie it: "5%" */
+export const tieMargin = `${Math.round(sizeTie * 100)}%`
+
+/** where ArkType's best average places it in a category, a superlative only where it may claim one */
 const standingOf = (category: CategoryId) => {
 	const across = `across ${leaderboards[category].suites.length} independent benchmarks`
 	const { place, ranked } = placeOf(category)
+	const [first] = leaderboards[category].standings
 	return {
 		leads: leads(category),
+		ties: ties(category),
 		place: ordinal(place),
 		ranked,
 		average: averageOf(category),
 		standing:
-			leads(category) ?
+			ties(category) ?
+				`Tied for ${wording[category].superlative.toLowerCase()} on average ${across}, within ${tieMargin} of ${first.library}`
+			: leads(category) ?
 				`${wording[category].superlative} on average ${across}`
 			:	`${ordinal(place)} of ${ranked} on average ${across}`
 	}
@@ -283,6 +292,9 @@ const fullBoardPlaces = listOf(
 /** where ArkType places on the full board, stated wherever the headline's standings are */
 const fullBoardNote = `With our own benchmarks added, ArkType is ${fullBoardPlaces}.`
 
+/** how the standings treat noise and stay current, after the notes on them */
+const methodNote = `Sizes within ${tieMargin} of the best average count as a tie, since releases, engines and bundlers move them by about that much. We rerun the board regularly at each library's newest release and publish all of it.`
+
 /** the startup suites that time creating a schema, which a precompiled build does when it builds */
 const creationOnly = [
 	"schemabenchmarks.dev's initialization",
@@ -292,18 +304,35 @@ const startupIsCreation = leaderboards.startup.suites.every(label =>
 	creationOnly.includes(label)
 )
 
-/** which leads hold with any one benchmark left out, and which suites the others depend on */
+/** a claim's kind: "lead", or "tie" where another library has the best average */
+const claimOf = (category: CategoryId) => (ties(category) ? "tie" : "lead")
+
+/** the claims, "the startup lead" or "the speed and startup leads and the size tie" */
+const claimsOf = (categories: CategoryId[]) =>
+	listOf(
+		(["lead", "tie"] as const).flatMap(kind => {
+			const of = categories.filter(category => claimOf(category) === kind)
+			return of.length ?
+					[
+						`the ${listOf(of.map(category => wording[category].measures))} ${kind}${of.length > 1 ? "s" : ""}`
+					]
+				:	[]
+		})
+	)
+
+/** which claims hold with any one benchmark left out, and which suites the others depend on */
 const leadsWithoutEach = () => {
 	const robust = led.filter(category => !leadDependsOn(category).length)
 	const sentences = led
 		.filter(category => leadDependsOn(category).length)
 		.map(
 			category =>
-				`The ${wording[category].measures} lead doesn't survive leaving out any one of ${listOf(leadDependsOn(category))}.`
+				`The ${wording[category].measures} ${claimOf(category)} doesn't survive leaving out any one of ${listOf(leadDependsOn(category))}.`
 		)
 	if (robust.length) {
+		const claims = claimsOf(robust)
 		sentences.unshift(
-			`The ${listOf(robust.map(category => wording[category].measures))} ${robust.length > 1 ? "leads hold" : "lead holds"} with any one benchmark left out.`
+			`${claims[0].toUpperCase()}${claims.slice(1)} ${robust.length > 1 ? "hold" : "holds"} with any one benchmark left out.`
 		)
 	}
 	return sentences.join(" ")
@@ -335,15 +364,15 @@ const independentResults = `${listOf(
 
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
-	// each superlative names a category ArkType must have the best average in
+	// each superlative names a category ArkType must claim
 	// (lib/bench/leaderboard.ts), as the check of the copy below holds. Size
-	// is the close one: Typia leads it, 1.256 to 1.297, until a rerun says
-	// otherwise
+	// is the close one: ArkType 1.252 to Typia's 1.256 since the size rows of
+	// results/newest/, and sizeTie keeps the claim within 5% of the best
 	headline:
 		leads("size") ?
 			"TypeScript's smallest, fastest validator."
 		:	"TypeScript's fastest validator.",
-	headlineNote: `Ranked by best average across the public benchmarks we didn't write, each result a ratio to the best: ${independentResults}. ${fullBoardNote}`,
+	headlineNote: `Ranked by best average across the public benchmarks we didn't write, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote}`,
 	// the fastest and the smallest builds differ: optimize "size" makes the
 	// product schema's valid data 2.2x slower
 	buildChoice:
@@ -410,7 +439,7 @@ export const claims = {
 			"Fast. Small. Quick to start. Pick 3."
 		:	led.map(category => wording[category].phrase).join(" "),
 	// what the board's superlatives average
-	boardNote: `Ranked by best average across the public benchmarks we didn't write, each result a ratio to the best: ${independentResults}. ${fullBoardNote}`,
+	boardNote: `Ranked by best average across the public benchmarks we didn't write, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote}`,
 	// startupChart; the form is 1.04M vs Valibot's 2.37M, 20 of 20
 	startupLogin:
 		"On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than ajv, Valibot, Typia, Zod Mini, Zod, compiled Zod or TypeBox, in all 20 paired runs on Node 24.",
@@ -424,16 +453,15 @@ export const claims = {
 	// default build skips; the full board adds our cold starts of whole apps
 	startupBasis: `${startupIsCreation ? `Each of the ${leaderboards.startup.rows} independent startup results times creating a schema, which a precompiled build does when it builds. ` : ""}Our own startup benchmarks time importing an app through its first validation (${fullLeaderboards.startup.rows - leaderboards.startup.rows} results), and with them ArkType is ${ordinal(placeOf("startup", fullLeaderboards).place)} for startup.`,
 	sizeAverage: averagesOf("size"),
-	// Typia leads size, 1.256 to 1.297, on 2 of its 3 suites; tip rows
-	// (lane/loop-size2) narrow it to 1.0%
+	// ArkType 1.252 to Typia's 1.256, Typia on 2 of the 3 suites; at
+	// 808927feb's rows Typia had it, 1.256 to 1.297
 	sizeClose:
-		leads("size") ?
+		leads("size") && !ties("size") ?
 			`Size is the close one: ${sizeRival.library} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}, and ArkType's lead is in the average.`
-		:	`Size is the close one: ${sizeRival.library} has the best average, ${sizeRival.score.toFixed(2)} to ArkType's ${placeOf("size").score.toFixed(2)}, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
+		:	`Size is the close one: ${sizeRival.library} has the best average, ${sizeRival.score.toFixed(2)} to ArkType's ${placeOf("size").score.toFixed(2)}${ties("size") ? `, within the ${tieMargin} we count as a tie` : ""}, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
 	// which benchmarks are ours, and that the averages leave them out
 	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory} on the full board; the averages above leave those out.`,
-	// the leads that depend on a single benchmark, and which: at 808927feb,
-	// only size's, on the form, schemabenchmarks.dev or Sury
+	// the claims that depend on a single benchmark, and which
 	leaveOneOut: leadsWithoutEach()
 } satisfies Record<string, Claim<string>>
 
@@ -448,13 +476,13 @@ export const headlineMethod = {
 const assertLeads = (category: CategoryId, by: string) => {
 	if (!leads(category)) {
 		throw new Error(
-			`${by} claims ArkType is best on ${category}, but ${leaderboards[category].standings[0].library} has the best average: ${JSON.stringify(leaderboards[category].standings.slice(0, 5))}`
+			`${by} claims ArkType is best on ${category}, but ${leaderboards[category].standings[0].library} has the best average${category === "size" ? `, and ArkType's is more than ${tieMargin} above it` : ""}: ${JSON.stringify(leaderboards[category].standings.slice(0, 5))}`
 		)
 	}
 }
 
 // the copy that states standings: naming a category's superlative needs
-// ArkType to lead it, and "Pick 3" needs all three, so it can't claim a lead
+// ArkType to claim it, and "Pick 3" needs all three, so it can't claim a lead
 // the standings don't have
 const standingClaims = [
 	"headline",
@@ -487,8 +515,10 @@ type CategoryBase = {
 	ranked: number
 	/** where ArkType's best average places it */
 	standing: string
-	/** whether ArkType has the best average, checked on the board */
+	/** whether ArkType has the best average or, for size, one tied for it, checked on the board */
 	leads: boolean
+	/** whether that's a tie, another library having the best average */
+	ties: boolean
 	/** ArkType's best average, and the library the card names beside it */
 	average: { score: number; other: Standing }
 	source: BenchmarkChart["source"]

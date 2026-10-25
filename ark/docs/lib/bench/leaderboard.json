@@ -6,19 +6,23 @@
 			"results/counts-latest-2026-10-24.json"
 		],
 		"startup": "results/startup-808927feb-node24.json",
-		"forms": "results/forms-642b4517e.json",
+		"forms": ["results/forms-642b4517e.json", "results/newest/forms.json"],
 		"sbCounts": [
 			"results/sb-counts-6c5fd9862.json",
 			"results/sb-counts-latest-2026-10-24.json"
 		],
-		"sbDownload": "results/sb-download-ajv-standalone-2026-10-24.json",
+		"sbDownload": [
+			"results/sb-download-ajv-standalone-2026-10-24.json",
+			"results/newest/sb-download.json"
+		],
 		"suryCounts": [
 			"results/sury-counts-6c5fd9862.json",
 			"results/sury-counts-latest-2026-10-24.json"
 		],
 		"surySize": [
 			"results/sury-size-396778442.json",
-			"results/sury-size-latest-2026-10-25.json"
+			"results/sury-size-latest-2026-10-25.json",
+			"results/newest/sury-size.json"
 		],
 		"ataCounts": [
 			"results/ata-counts-pinned-2026-10-24.json",
@@ -642,12 +646,12 @@
 			"id": "form",
 			"label": "valibot.dev's login form",
 			"unit": "B gzipped",
-			"source": "results/forms-642b4517e.json",
+			"source": ["results/forms-642b4517e.json", "results/newest/forms.json"],
 			"rows": [
 				{
 					"id": "login form",
 					"results": {
-						"ArkType": 1158,
+						"ArkType": 1116,
 						"Valibot": 1564,
 						"Zod": 25076,
 						"Zod Mini": 5124,
@@ -1462,7 +1466,10 @@
 			"id": "sbSize",
 			"label": "schemabenchmarks.dev's download",
 			"unit": "B gzipped",
-			"source": "results/sb-download-ajv-standalone-2026-10-24.json",
+			"source": [
+				"results/sb-download-ajv-standalone-2026-10-24.json",
+				"results/newest/sb-download.json"
+			],
 			"rows": [
 				{
 					"id": "download",
@@ -1471,7 +1478,7 @@
 						"Superstruct": 1935,
 						"@remix-run/data-schema": 1923,
 						"Typia": 1846,
-						"ArkType": 2037,
+						"ArkType": 1977,
 						"Valibot": 2058,
 						"decoders": 3506,
 						"io-ts": 3617,
@@ -1501,7 +1508,8 @@
 			"unit": "B gzipped",
 			"source": [
 				"results/sury-size-396778442.json",
-				"results/sury-size-latest-2026-10-25.json"
+				"results/sury-size-latest-2026-10-25.json",
+				"results/newest/sury-size.json"
 			],
 			"rows": [
 				{
@@ -1511,7 +1519,7 @@
 						"Zod": 64686,
 						"TypeBox": 213,
 						"Valibot": 1198,
-						"ArkType": 289
+						"ArkType": 278
 					}
 				}
 			]

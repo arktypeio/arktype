@@ -4,9 +4,12 @@
 // node leaderboard.ts
 // With LEADERBOARD_FRESH, the directory reproduce.ts counts into, each suite
 // it holds results for reads them instead, ArkType's rows included, and the
-// leaderboard is written there
+// leaderboard is written there. results/newest/ holds the last run with every
+// rival at its newest release (reproduce.ts --newest): each of its files is
+// read beside the committed ones, its ArkType rows in place of theirs
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
+import { format, resolveConfig } from "prettier"
 
 const here = import.meta.dirname
 const docs = join(here, "..", "..", "..", "docs")
@@ -23,12 +26,12 @@ const committed = {
 		"results/counts-latest-2026-10-24.json"
 	],
 	startup: "results/startup-808927feb-node24.json",
-	forms: "results/forms-642b4517e.json",
+	forms: ["results/forms-642b4517e.json"],
 	sbCounts: [
 		"results/sb-counts-6c5fd9862.json",
 		"results/sb-counts-latest-2026-10-24.json"
 	],
-	sbDownload: "results/sb-download-ajv-standalone-2026-10-24.json",
+	sbDownload: ["results/sb-download-ajv-standalone-2026-10-24.json"],
 	suryCounts: [
 		"results/sury-counts-6c5fd9862.json",
 		"results/sury-counts-latest-2026-10-24.json"
@@ -45,24 +48,39 @@ const committed = {
 
 const freshDir = process.env.LEADERBOARD_FRESH
 
-// a suite's results in freshDir, pinned and latest, if it has any
-const freshOf = (...names: string[]) =>
-	freshDir ? names.map(name => join(freshDir, name)).filter(existsSync) : []
+// a suite's results in freshDir, pinned, latest and newest, if it has any
+const freshOf = (name: string) =>
+	freshDir ?
+		["", "-latest", "-newest"]
+			.map(suffix => join(freshDir, `${name}${suffix}.json`))
+			.filter(existsSync)
+	:	[]
+
+const newestOf = (name: string) =>
+	[`results/newest/${name}.json`].filter(path => existsSync(join(here, path)))
+
+const fileNames = {
+	counts: "moltar-counts",
+	forms: "forms",
+	sbCounts: "sb-counts",
+	sbDownload: "sb-download",
+	suryCounts: "sury-counts",
+	surySize: "sury-size",
+	ataCounts: "ata-counts"
+}
 
 const sources = {
 	...committed,
-	counts: freshOf("moltar-counts.json", "moltar-counts-latest.json"),
-	startup: freshOf("startup.json")[0],
-	forms: freshOf("forms.json")[0],
-	sbCounts: freshOf("sb-counts.json", "sb-counts-latest.json"),
-	sbDownload: freshOf("sb-download.json", "sb-download-latest.json")[0],
-	suryCounts: freshOf("sury-counts.json", "sury-counts-latest.json"),
-	surySize: freshOf("sury-size.json", "sury-size-latest.json"),
-	ataCounts: freshOf("ata-counts.json", "ata-counts-latest.json")
+	startup: freshOf("startup")[0] ?? committed.startup
 }
-for (const [kind, source] of Object.entries(sources)) {
-	if (!source?.length)
-		Object.assign(sources, { [kind]: committed[kind as never] })
+for (const [kind, name] of Object.entries(fileNames) as [
+	keyof typeof fileNames,
+	string
+][]) {
+	const fresh = freshOf(name)
+	const newest = newestOf(name)
+	if (fresh.length) sources[kind] = fresh
+	else if (newest.length) sources[kind] = [...committed[kind], ...newest]
 }
 
 // ArkType's rows measured on one commit, for each suite read from committed results
@@ -80,17 +98,29 @@ const median = (values: readonly number[]) => {
 		:	(sorted[middle - 1] + sorted[middle]) / 2
 }
 
-// each arm's reps from the run with the lowest median
-const fastestOf = (paths: readonly string[]) => {
-	const reps: Record<string, number[]> = {}
-	for (const path of paths) {
-		for (const [arm, values] of Object.entries(
-			read(path) as Record<string, number[]>
-		))
-			if (!reps[arm] || median(values) < median(reps[arm])) reps[arm] = values
+// each arm's best result across a suite's runs, by measure; ArkType's arms,
+// measured on one commit, from the last run that has them
+const bestOf = <result>(
+	runs: Record<string, result>[],
+	measure: (result: result) => number
+) => {
+	const best: Record<string, result> = {}
+	for (const run of runs) {
+		for (const [arm, result] of Object.entries(run)) {
+			if (
+				!best[arm] ||
+				/\barktype\b/i.test(arm) ||
+				measure(result) < measure(best[arm])
+			)
+				best[arm] = result
+		}
 	}
-	return reps
+	return best
 }
+
+// each arm's reps from the run with the lowest median
+const fastestOf = (paths: readonly string[]) =>
+	bestOf<number[]>(paths.map(read), median)
 
 // ArkType's other builds, left out of every row
 const otherBuild =
@@ -218,7 +248,7 @@ const appsOf = (
 	)
 
 const forms: Record<string, { gzip: number }> = {
-	...read(sources.forms),
+	...bestOf<{ gzip: number }>(sources.forms.map(read), size => size.gzip),
 	...arkTypeRowsOf("forms").form
 }
 
@@ -252,15 +282,27 @@ const sbCounts = Object.entries({
 	key,
 	median(reps)
 ])
-const sbDownload: {
-	minified: { libraryName: string; note?: string; gzipBytes: number }[]
-} = read(sources.sbDownload)
-for (const r of sbDownload.minified) {
-	if (r.libraryName === "arktype/precompiled") {
-		r.gzipBytes =
-			arkTypeRowsOf("sbDownload").sbDownload?.gzipBytes ?? r.gzipBytes
-	}
-}
+type Download = { libraryName: string; note?: string; gzipBytes: number }
+const sbLabelOf = (r: Download) =>
+	r.note ? `${r.libraryName} (${r.note})` : r.libraryName
+const sbDownload = Object.values(
+	bestOf<Download>(
+		sources.sbDownload.map(path =>
+			Object.fromEntries(
+				(read(path).minified as Download[]).map(r => [sbLabelOf(r), r])
+			)
+		),
+		r => r.gzipBytes
+	)
+).map(r =>
+	r.libraryName === "arktype/precompiled" ?
+		{
+			...r,
+			gzipBytes:
+				arkTypeRowsOf("sbDownload").sbDownload?.gzipBytes ?? r.gzipBytes
+		}
+	:	r
+)
 
 // Sury's schema benchmark: "parse X" and "build X" rows, sizes as built in
 // production
@@ -283,17 +325,13 @@ const suryRow = (id: string, prefix: string) =>
 // each bundle's smallest production build of the two installs; a library's
 // row is the smaller of its schema arm (the suite's operation) and its check
 // arm (its boolean check), as the row compares checks
-const surySize: Record<string, { gzip: number }> = {}
-for (const path of sources.surySize) {
-	const { production } = read(path) as {
-		production: Record<string, { gzip: number }>
-	}
-	for (const [label, size] of Object.entries(production)) {
-		if (!surySize[label] || size.gzip < surySize[label].gzip)
-			surySize[label] = size
-	}
+const surySize: Record<string, { gzip: number }> = {
+	...bestOf<{ gzip: number }>(
+		sources.surySize.map(path => read(path).production),
+		size => size.gzip
+	),
+	...arkTypeRowsOf("surySize").surySize
 }
-Object.assign(surySize, arkTypeRowsOf("surySize").surySize)
 
 // ata's validator-benchmarks: a scene and a body per row; its arktype adapter
 // is the default precompiled build
@@ -422,10 +460,8 @@ const suites = [
 		rows: [
 			rowOf(
 				"download",
-				sbDownload.minified.reduce<Record<string, number>>((byArm, r) => {
-					const arm = sbNameOf(
-						r.note ? `${r.libraryName} (${r.note})` : r.libraryName
-					)
+				sbDownload.reduce<Record<string, number>>((byArm, r) => {
+					const arm = sbNameOf(sbLabelOf(r))
 					byArm[arm] = Math.min(byArm[arm] ?? Infinity, r.gzipBytes)
 					return byArm
 				}, {})
@@ -454,9 +490,15 @@ const suites = [
 	}
 ]
 
-writeFileSync(
+// formatted as the repo's prettier config formats it, so a rewrite passes lint
+const out =
 	freshDir ?
 		join(freshDir, "leaderboard.json")
-	:	join(docs, "lib", "bench", "leaderboard.json"),
-	`${JSON.stringify({ sources, suites }, null, "\t")}\n`
+	:	join(docs, "lib", "bench", "leaderboard.json")
+writeFileSync(
+	out,
+	await format(JSON.stringify({ sources, suites }, null, "\t"), {
+		...(await resolveConfig(out)),
+		filepath: out
+	})
 )
