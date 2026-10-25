@@ -141,7 +141,7 @@ import {
 import type { ShadowContract } from "./shadow.ts"
 import { flattenBundle, importedNamesOf } from "./flat.ts"
 import { writeUnscannedFlatMessage } from "./scan.ts"
-import { linkBundle, type LinkedSite } from "./link.ts"
+import { linkBundle, prefixOf, type LinkedSite } from "./link.ts"
 import {
 	passedReaderOf,
 	unprecompiled,
@@ -255,6 +255,11 @@ export interface ScannedProgram {
 	modules: Record<string, ScannedModule>
 	// what each module's specifiers resolve to, where the bundle holds it
 	targets: Record<string, Record<string, string>>
+	// each module import() loads, which a bundler that splits builds as an entry
+	dynamicImports: string[]
+	// each module with no file, like a framework's virtual module, which its
+	// runtime may import from code the scan doesn't read, as it may an entry
+	exposed: string[]
 	// whether the bundle writes every module it holds into one file
 	isOneChunk?: boolean
 }
@@ -263,6 +268,9 @@ export interface ScannedModule {
 	source: string
 	// whether the host precompiles it, as it may not an entry it's given
 	transformed: boolean
+	// how its lines map to its file's, where a plugin ahead of the host's
+	// transformed it
+	mappings?: string | undefined
 }
 
 type ProgramReads = Pick<
@@ -295,6 +303,11 @@ export interface ScannedUsage {
 	replaced: string[]
 	// whether it wrote each module, for a transform naming the bundle to read
 	written: boolean
+	// each module creating a validator, which only a module reaching it may
+	// read
+	holders: string[]
+	// why it left no member out, where some read may need any
+	unpruned?: string | undefined
 }
 
 export interface ModuleAnalysis {
@@ -607,7 +620,8 @@ export class Precompiler {
 			dropped: [],
 			linked: false,
 			replaced: [],
-			written: false
+			written: false,
+			holders: []
 		}
 		if (this.mode !== "standalone") return unwritten
 		const sources: Record<string, string> = {}
@@ -615,30 +629,38 @@ export class Precompiler {
 		const planned = new Map<string, RuntimeModule>()
 		const precompiled: string[] = []
 		for (const id in program.modules) {
-			const { source, transformed } = program.modules[id]
+			const { source, transformed, mappings } = program.modules[id]
 			sources[id] = source
 			if (
 				transformed &&
 				this.isTransformed(id) &&
 				this.importsArk(source, id)
 			) {
-				const runtime = this.plannedRuntimeOf(source, id)
-				// a bundle that fails is left to report it
-				if (!runtime) return unwritten
+				const runtime = this.plannedRuntimeOf(source, id, mappings)
+				// a bundle building the module as read fails, reporting why
+				if (!runtime) {
+					return {
+						...unwritten,
+						unpruned: `${this.graph.pathOf(id)} fails to precompile`
+					}
+				}
 				planned.set(id, runtime)
 				precompiled.push(id)
 			} else planned.set(id, unprecompiled(this.graph.add(id, source)))
 		}
 		const used = this.usedIn(program, planned)
+		const unpruned = typeof used === "string" ? used : undefined
 		const dropped =
-			used ?
-				defaultMembers.filter(
+			typeof used === "string" ?
+				[]
+			:	defaultMembers.filter(
 					member => this.members[member] === undefined && !used.has(member)
 				)
-			:	[]
-		const called = !used || used.has("call")
-		const readsAllows = !used || used.has("allows")
-		const piped = !used || used.has("piped")
+		const isRead = (read: UsedMember) =>
+			typeof used === "string" || used.has(read)
+		const called = isRead("call")
+		const readsAllows = isRead("allows")
+		const piped = isRead("piped")
 		const isWhole = !dropped.length && called && readsAllows && piped
 		// a size build's units are already module constants
 		const flattens =
@@ -647,7 +669,7 @@ export class Precompiler {
 			this.standalone.optimize === "speed"
 		// a lazy validator reads its checkers where it's created, unlinkable
 		const changesOnlyIfFlat = isWhole && (this.inline || this.standalone.lazy)
-		if (changesOnlyIfFlat && !flattens) return unwritten
+		if (changesOnlyIfFlat && !flattens) return { ...unwritten, unpruned }
 		const usage: ProgramUsage = {
 			members: {
 				...this.members,
@@ -664,7 +686,12 @@ export class Precompiler {
 		const written: Record<string, PrecompiledModule> = {}
 		const runtimes = new Map(planned)
 		for (const id of precompiled) {
-			written[id] = this.precompile(sources[id], id, undefined, program.key)
+			written[id] = this.precompile(
+				sources[id],
+				id,
+				program.modules[id].mappings,
+				program.key
+			)
 			runtimes.set(id, this.runtimesById[id])
 			if (written[id].diagnostics.some(d => d.severity === "error")) {
 				this.usagesByProgram.delete(program.key)
@@ -675,7 +702,7 @@ export class Precompiler {
 		// where a factory checks a Type it's passed
 		const usedAsWritten = isWhole ? used : this.usedIn(program, runtimes)
 		const isReadAsWritten = (read: UsedMember) =>
-			!usedAsWritten || usedAsWritten.has(read)
+			typeof usedAsWritten === "string" || usedAsWritten.has(read)
 		if (
 			dropped.some(isReadAsWritten) ||
 			(!called && isReadAsWritten("call")) ||
@@ -683,7 +710,13 @@ export class Precompiler {
 			(!piped && isReadAsWritten("piped"))
 		) {
 			this.usagesByProgram.delete(program.key)
-			return unwritten
+			return {
+				...unwritten,
+				unpruned:
+					typeof usedAsWritten === "string" ? usedAsWritten : (
+						"its precompiled code reads more of a validator than the program does"
+					)
+			}
 		}
 		const linked =
 			!this.inline &&
@@ -695,19 +728,29 @@ export class Precompiler {
 			:	undefined
 		if (changesOnlyIfFlat && !replaced) {
 			this.usagesByProgram.delete(program.key)
-			return unwritten
+			return { ...unwritten, unpruned }
 		}
 		usage.written = written
 		if (replaced) usage.replaced = new Set(replaced)
-		return { dropped, linked, replaced: replaced ?? [], written: true }
+		return {
+			dropped,
+			linked,
+			replaced: replaced ?? [],
+			written: true,
+			holders: precompiled.filter(id => {
+				const runtime = planned.get(id)!
+				return runtime.validators.length > 0 || runtime.holdsOther
+			}),
+			unpruned
+		}
 	}
 
 	private usedIn(
 		program: ScannedProgram,
 		modules: ReadonlyMap<string, RuntimeModule>
-	): Set<UsedMember> | undefined {
+	): Set<UsedMember> | string {
 		return usedMembersOf({
-			entries: new Set(program.entries),
+			entries: new Set([...program.entries, ...program.exposed]),
 			modules,
 			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
 		})
@@ -717,13 +760,13 @@ export class Precompiler {
 	// it would fold, before it writes them, or undefined where it fails
 	private plannedRuntimeOf(
 		source: string,
-		id: string
+		id: string,
+		mappings: string | undefined
 	): RuntimeModule | undefined {
-		const module = this.add(id, source)
+		const module = this.add(id, source, mappings)
 		this.configuration ??= this.applyConfiguration()
 		const { sites, diagnostics } = this.analysisOf(module)
-		let prefix = "$ark"
-		while (source.includes(prefix)) prefix += "$"
+		const prefix = prefixOf(source, id)
 		const { namesBySite, factoriesBySite, folded } = this.planSites(
 			module,
 			sites,
@@ -885,6 +928,33 @@ export class Precompiler {
 		const analysis = this.analysisOf(module)
 		analysis.diagnostics.push(...this.checkConfigOrder(module))
 		return analysis
+	}
+
+	// what a build reports for a module another plugin writes, like a
+	// compiled Svelte component, which it reads but doesn't precompile: each
+	// read of a validator the standalone runtime lacks, and each site, whose
+	// read no module it writes holds
+	checkUnwritten(source: string, id: string, mappings?: string): Diagnostic[] {
+		if (this.mode !== "standalone" || !this.importsArk(source, id)) return []
+		const module = this.add(id, source, mappings)
+		this.configuration ??= this.applyConfiguration()
+		const { sites, diagnostics } = this.analysisOf(module)
+		for (const site of sites) {
+			if (site.status === "island") continue
+			diagnostics.push(
+				this.diagnostic(
+					module,
+					site,
+					"unsupported",
+					`${module.snippetOf(site)} can't be precompiled in a module another plugin writes`,
+					[
+						`the build reads ${module.path} only once another plugin has written it, so it can't write a validator there`
+					],
+					unwrittenHint
+				)
+			)
+		}
+		return diagnostics
 	}
 
 	// a config module given anew is read again
@@ -1272,8 +1342,7 @@ export class Precompiler {
 			}
 		}
 		const s = new MagicString(source)
-		let prefix = "$ark"
-		while (source.includes(prefix)) prefix += "$"
+		const prefix = prefixOf(source, id)
 		const modules: Record<string, string> = {}
 		// locals for virtual modules' exports, by specifier
 		const imports: Record<string, Record<string, string>> = {}
@@ -4507,9 +4576,12 @@ export class Precompiler {
 								reference.id,
 								"R4",
 								`\`${binding!.name}\` is @ark/schema's, not the standalone runtime's`,
-								[
-									`what a standalone validator creates isn't an instance of @ark/schema's ${name}`
-								],
+								// a class, unlike a function like firstIssue
+								/^[A-Z]/.test(name) ?
+									[
+										`what a standalone validator creates isn't an instance of @ark/schema's ${name}`
+									]
+								:	[],
 								writeSchemaExportHint(name)
 							)
 						:	this.diagnostic(
@@ -5007,6 +5079,9 @@ const keyedMethodOf = (site: Site): string | undefined =>
 	:	undefined
 
 const methodMembers = ["traverse", "from", "toString"] as const
+
+const unwrittenHint =
+	'Move it into a .ts or .js module of its own that this one imports, which the build precompiles, or build with runtime: "arktype".'
 
 export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 	[

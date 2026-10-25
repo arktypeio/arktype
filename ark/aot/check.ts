@@ -1,14 +1,20 @@
 import { globSync, readFileSync, statSync } from "node:fs"
-import { resolve, sep } from "node:path"
+import { dirname, resolve, sep } from "node:path"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
-import { printablePathOf } from "./host.ts"
+import { printablePathOf, transformedId } from "./host.ts"
 import {
 	pluginCallLinesOf,
 	pluginCallsIn,
 	withPluginCalls
 } from "./pluginCalls.ts"
-import { renderDiagnostic, type Diagnostic } from "./precompile.ts"
+import {
+	renderDiagnostic,
+	type Diagnostic,
+	type ScannedProgram,
+	type ScannedUsage
+} from "./precompile.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
+import { scanProgramSync } from "./scan.ts"
 import { withSettingsFile } from "./settings.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
@@ -69,16 +75,15 @@ export const check = (
 	// what the build's own plugin call passes, as in vite.config.ts
 	const calls = pluginCallsIn(cwd)
 	const given = opts ?? {}
+	const precompilerOptions = withEnvironment(
+		withSettingsFile({ ...withPluginCalls(calls, given), cwd }),
+		{
+			production: isProductionEnv(),
+			testing: false
+		}
+	)
 	// a worker applies the configuration to arktype as the build does
-	const request = createSyncPrecompiler({
-		precompilerOptions: withEnvironment(
-			withSettingsFile({ ...withPluginCalls(calls, given), cwd }),
-			{
-				production: isProductionEnv(),
-				testing: false
-			}
-		)
-	})
+	const request = createSyncPrecompiler({ precompilerOptions })
 	const report: CheckReport = {
 		lines: pluginCallLinesOf(calls, given),
 		sites: 0,
@@ -133,6 +138,12 @@ export const check = (
 			entries.sort((l, r) => l[0] - r[0])
 			for (const [, line] of entries) report.lines.push(line)
 		}
+		// as a production build prunes
+		const unpruned =
+			isProductionEnv() &&
+			precompilerOptions.prune !== false &&
+			unprunedReasonOf(files, cwd, request)
+		if (unpruned) report.lines.push(`prune: off, because ${unpruned}`)
 	} finally {
 		request("close")
 	}
@@ -150,6 +161,62 @@ export const check = (
 	report.lines.push(summary.join(", "))
 	return report
 }
+
+// a file a bundle doesn't hold, like a test, a story or a config
+const unbundledFile =
+	/(?:^|[/\\])__(?:tests|mocks)__[/\\]|\.(?:test|spec|bench|stories|config)\.[cm]?[jt]sx?$/
+
+// why a production bundle of the checked files would keep every member of
+// its validators, as far as --check can tell: it follows relative imports
+// of scripts alone and reads no file as an entry, so it misses a read
+// reached through an alias, a virtual module, a component or an entry's
+// exports
+const unprunedReasonOf = (
+	files: string[],
+	cwd: string,
+	request: (...request: ["scan", ScannedProgram]) => unknown
+): string | undefined => {
+	const bundled = files.filter(file => !unbundledFile.test(file))
+	const scanned = scanProgramSync(
+		"check",
+		bundled.map(id => ({ id })),
+		{
+			resolve: (specifier, importer) => {
+				if (!/^\.\.?\//.test(specifier)) return null
+				const script = scriptOf(resolve(dirname(importer), specifier))
+				return script && transformedId.test(script) ? script : null
+			},
+			readFile: file => readFileSync(file, "utf8"),
+			isTransformed: () => true,
+			idOf: file => file,
+			cwd
+		}
+	)
+	if (typeof scanned === "string") return scanned
+	return (request("scan", { ...scanned, entries: [] }) as ScannedUsage).unpruned
+}
+
+// the file a relative specifier names, as TypeScript resolves it
+const scriptOf = (path: string): string | undefined =>
+	[
+		path,
+		path.replace(/\.([cm]?)js(x?)$/, ".$1ts$2"),
+		...scriptExtensions.flatMap(extension => [
+			path + extension,
+			resolve(path, `index${extension}`)
+		])
+	].find(candidate => statSync(candidate, { throwIfNoEntry: false })?.isFile())
+
+const scriptExtensions = [
+	".ts",
+	".tsx",
+	".mts",
+	".cts",
+	".js",
+	".jsx",
+	".mjs",
+	".cjs"
+]
 
 export const countOf = (n: number, noun: string): string =>
 	`${n} ${noun}${n === 1 ? "" : "s"}`

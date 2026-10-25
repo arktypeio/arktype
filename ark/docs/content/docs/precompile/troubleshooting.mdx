@@ -87,7 +87,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`configure() is called, but the build has no config module`**: name the module that calls it as the build's [`config`](/docs/precompile/options#configuration) in `ark.json`, as `{ "precompile": { "config": "./src/arktype.config.ts" } }`.
 
-**``--check can't read the `config` precompile.vite() is passed``** or **`... sets errors other than precompile.vite() at vite.config.ts:5:12`**: `arktype-precompile --check` reads the options a plugin call at the project's root passes, but only those written as literals, and only where every call agrees. Set the option in `ark.json`, which the plugin reads too, or pass it to `--check` as a flag.
+**``--check can't read the `config` precompile.vite() is passed``** or **`... sets errors other than precompile.vite() at vite.config.ts:5:12`**: `arktype-precompile --check` reads the options a plugin call at the project's root passes, imported, required or loaded by `import()`, but only those written as literals, and only where every call agrees. Set the option in `ark.json`, which the plugin reads too, or pass it to `--check` as a flag.
 
 **`... loads src/schemas.ts, which creates a Type, before the config module src/config.ts runs configure()`**: creating that Type would throw unless the program loaded the config module earlier. Import the config module first, before any module that creates a Type.
 
@@ -113,6 +113,10 @@ Where it creates them from values it reads as it runs, like `drizzle-arktype` fr
 
 **`src/Form.svelte imports arktype, which a standalone build resolves to arktype/runtime`**: the build can't precompile a module that isn't JavaScript or TypeScript, like a Svelte component's script. Move what it reads off arktype, from Types to `instanceof type.errors` checks, into a `.ts` module it imports.
 
+**`src/Form.svelte:4:20  User.description can't be precompiled in a module another plugin writes`** or **`src/Form.svelte:9:21  User.errors reads errors, which a standalone validator lacks`**: Vite, Rollup and Rolldown builds read a component as its framework's plugin compiles it, like a Svelte, Vue or Astro component, an MDX page or a route TanStack Router splits, but can't write a validator there. Calling a validator and reading its `.allows` or `.assert` there works, but a read only a precompiled site serves, or one a validator lacks, would read `undefined` at runtime. Move it into a `.ts` or `.js` module the component imports, e.g. as a function the component calls.
+
+**`arktype's plugin is listed ahead of TanStack Router's`**: TanStack Router's code splitting moves a route's component into a module of its own, so arktype's plugin has to read the route after it. List `precompile.vite()` after `tanstackRouter()`, as [Frameworks](/docs/precompile/setup#frameworks) shows.
+
 **`src/fields.ts exports text, a helper the build precompiles at each call, but src/Form.svelte imports it and isn't a module the plugin transforms`** or **`... exports text, a helper the build precompiles at each call, but it's an entry`**: the build precompiles a helper whose definition reads its parameters at each call it sees, so a call it can't see, from a module it doesn't transform or from outside the bundle, would throw at runtime. Call the helper in a module the plugin transforms and import what it returns, or, from an entry, export what it returns. A Rollup, Rolldown, Vite, esbuild, webpack or Rspack build reports this; the Vite dev server, Vitest and the other drivers don't, so there it's the runtime error below.
 
 **`virtual:schemas imports arktype ... as it can't precompile a module with no file of its own`**: the build precompiles modules from their files, so not one a plugin loads from a virtual id or namespace, esbuild's `stdin`, a `data:` URL or code given to `node --eval`. Define the Types it uses in a file it imports.
@@ -128,6 +132,8 @@ Where it creates them from values it reads as it runs, like `drizzle-arktype` fr
 **`a standalone validator's JSON Schema takes only a target it was built with, and a fallback only where its schema needs none`**: a library passed options to `toJsonSchema()` that a baked schema can't apply. hono-openapi and oRPC pass a fallback, which changes a Type holding a morph or a Date, as arktype falls back on those. Build with `runtime: "arktype"`, or keep the morph or Date out of the Types you document.
 
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
+
+**`prune: off, because src/server.ts:12:30 passes User to a function, which may read any member`**: a production build couldn't prove what its validators are read for, so it kept every member of each, as a build with `prune: false` does. The warning names the first read or module that stopped it, as [prune](/docs/precompile/options#prune) lists them. Where you know a member is never read, like `assert` where nothing asserts, set it false in `members`, which leaves it out whatever reads the build can't follow. Otherwise set `prune: false` to build every validator whole without the warning.
 
 **`configure() is given other values than arktype in this thread already applied`**: the config module changed while the build ran, as by an edit in watch mode, or a plugin ahead of arktype's transforms it before arktype reads it. Restart the build after an edit. Otherwise put arktype's plugin ahead of the one the message names (Vite names it; other bundlers can't tell which).
 

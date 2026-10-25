@@ -2,7 +2,11 @@ import { throwError, type KeySet } from "@ark/util"
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { basename, dirname, isAbsolute, join, resolve } from "node:path"
 import { relative } from "node:path/posix"
-import { createUnplugin, type UnpluginInstance } from "unplugin"
+import {
+	createUnplugin,
+	type UnpluginInstance,
+	type UnpluginOptions
+} from "unplugin"
 import {
 	emitDeclarations,
 	refuseDeclare,
@@ -56,9 +60,11 @@ import type { ScannedProgram, ScannedUsage } from "./precompile.ts"
 import { withEnvironment, type Environment } from "./presets.ts"
 import {
 	addLoaded,
+	isAsset,
 	scanProgram,
 	unfoldedCallProblemOf,
 	unseenProblemOf,
+	writeUnprunedMessage,
 	writeUnscannedFlatMessage,
 	type ImportKind,
 	type Imports,
@@ -80,10 +86,17 @@ export interface PrecompileUnpluginOptions extends PrecompilePluginOptions {
 	declare?: boolean | undefined
 }
 
-export const precompile: UnpluginInstance<
-	PrecompileUnpluginOptions | undefined,
-	false
-> = createUnplugin((opts, meta) => {
+type Options = PrecompileUnpluginOptions | undefined
+
+// Vite, Rollup and Rolldown's plugin is followed by one reading what other
+// plugins write
+export type PrecompileUnplugin = Omit<
+	UnpluginInstance<Options, false>,
+	keyof typeof checkingFrameworks
+> &
+	Pick<UnpluginInstance<Options, true>, keyof typeof checkingFrameworks>
+
+const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	if (!(meta.framework in declaringFrameworks))
 		refuseDeclare(opts, meta.framework)
 	// set here or in ark.json, as a host that can't prune would ignore it
@@ -384,6 +397,10 @@ export const precompile: UnpluginInstance<
 	}
 	// each Rollup, Rolldown or Vite build's scan, by its Vite environment
 	const scansByBuild = new WeakMap<object, BundleScan>()
+	// a production build's scan, begun as the plugin transforms a module, as
+	// only then can it load what another plugin writes, like a Svelte component
+	const pendingScans = new WeakMap<object, PendingScan>()
+	const warnedUnpruned = new Set<string>()
 	let esbuildScan: BundleScan | undefined
 	// a module the scan didn't write reading a unit it declares in one
 	// function would read a copy, which another validator could tell apart
@@ -427,32 +444,122 @@ export const precompile: UnpluginInstance<
 		if (key) declarationsByApp.set(key, declarations)
 		return declarations
 	}
-	// reads the bundle a production build's entries reach, before it loads one
-	async function rollupBuildStart(
+	// a production build reads the bundle its entries reach, from the first
+	// module it transforms
+	function rollupBuildStart(
 		this: RollupContext,
 		options: { input: string[] | Record<string, string> }
 	) {
 		reset()
 		const build = buildOf(this)
 		scansByBuild.delete(build)
+		pendingScans.delete(build)
 		if (isServing || !prunesIn(!!environment?.production)) return
-		const scan = await rollupScanOf(
-			this,
+		pendingScans.set(build, {
+			inputs: Object.values(options.input),
+			arrivals: new Map(),
+			mappings: new Map()
+		})
+	}
+	// the build's scan, once it has read every module its entries reach
+	const scanOf = (
+		context: RollupContext,
+		file: string,
+		code: string,
+		mappings: string | undefined
+	): Promise<BundleScan | undefined> | BundleScan | undefined => {
+		const build = buildOf(context)
+		const pending = pendingScans.get(build)
+		if (!pending) return scansByBuild.get(build)
+		arrive(pending, file, code)
+		if (mappings) pending.mappings.set(file, mappings)
+		pending.scanned ??= rollupScanOf(
+			context,
 			`${++scans}`,
-			Object.values(options.input),
+			pending.inputs,
 			id =>
 				transformedFilter.include.test(id) &&
 				!transformedFilter.exclude.test(id),
-			async scanned => (await request("scan", scanned)) as ScannedUsage
-		).catch(() => undefined)
-		if (scan) scansByBuild.set(build, scan)
+			id => arrivalOf(pending, id),
+			id => pending.mappings.get(id),
+			async scanned => (await request("scan", scanned)) as ScannedUsage,
+			realPathOf(opts?.cwd ?? process.cwd())
+		)
+			.catch(
+				(e: unknown): ProgramScan<BundleScan> => ({
+					unpruned: unreadMessageOf(e)
+				})
+			)
+			.then(scan => {
+				pending.unpruned = scan.unpruned
+				if (scan.read) scansByBuild.set(build, scan.read)
+				return scan.read
+			})
+		return pending.scanned
 	}
 	// a module Rollup's watch mode kept was written for an earlier bundle
 	const shouldTransformCachedModule = ({ id }: { id: string }) =>
 		prunesIn(!!environment?.production) &&
 		transformedFilter.include.test(id) &&
 		!transformedFilter.exclude.test(id)
-	return {
+	// what another plugin writes, like a compiled Svelte component, is read
+	// once it's written, as a validator it reads may lack what it reads
+	const unwrittenChecker: UnpluginOptions = {
+		name: "arktype:unwritten",
+		enforce: "post",
+		transform: {
+			// after each other plugin's, as Rollup and Rolldown run it, but
+			// before Vite's dev server writes each import as a URL
+			...(meta.framework !== "vite" && { order: "post" }),
+			filter: {
+				id: { exclude: [/^\0/, /[/\\]node_modules[/\\]/] },
+				code: /\bimport\b/
+			},
+			async handler(code, id) {
+				if (
+					!isStandalone ||
+					opts?.shadow ||
+					(transformedFilter.include.test(id) &&
+						!transformedFilter.exclude.test(id)) ||
+					isAsset(id)
+				)
+					return
+				const map = (
+					this as { getCombinedSourcemap?: () => { mappings: string } }
+				).getCombinedSourcemap?.()
+				reportDiagnostics(
+					(await request(
+						"checkUnwritten",
+						code,
+						fileOf(id),
+						map?.mappings
+					)) as RenderedDiagnostics,
+					warning => this.warn(warning),
+					throwBuildError
+				)
+			}
+		}
+	}
+	// Vitest's, which Vite's Plugin type declares only where Vitest is installed
+	const vitestHooks = {
+		// a module's precompiled code depends on files other than its own,
+		// and the modules it imports are written only as it is transformed.
+		// An inlined runtime module is cached with @ark/schema/runtime resolved
+		// to the variant the options chose, so another variant can't reuse it
+		configureVitest: (context: VitestPluginContext) =>
+			(
+				context.defineCacheKeyGenerator ??
+				context.experimental_defineCacheKeyGenerator
+			)?.(({ id }) =>
+				(
+					transformedFilter.include.test(id) &&
+					!transformedFilter.exclude.test(id)
+				) ?
+					false
+				:	variant
+			)
+	}
+	const plugin: UnpluginOptions = {
 		name: "arktype",
 		enforce: "pre",
 		resolveId: {
@@ -529,7 +636,7 @@ export const precompile: UnpluginInstance<
 										| { inputSourceMap?: { mappings: string } }
 										| undefined
 								)?.inputSourceMap)
-						const scan = scansByBuild.get(buildOf(this))
+						const scan = await scanOf(this as never, file, code, map?.mappings)
 						if (scan) addLoaded(scan.loaded, file, code)
 						const transformed = await transform(
 							code,
@@ -576,22 +683,7 @@ export const precompile: UnpluginInstance<
 			// e.g. Astro's prerender, a server environment other than ssr
 			configEnvironment: () =>
 				inlined.length ? { resolve: { noExternal: inlined } } : undefined,
-			// a module's precompiled code depends on files other than its own,
-			// and the modules it imports are written only as it is transformed.
-			// An inlined runtime module is cached with @ark/schema/runtime resolved
-			// to the variant the options chose, so another variant can't reuse it
-			configureVitest: (context: VitestPluginContext) =>
-				(
-					context.defineCacheKeyGenerator ??
-					context.experimental_defineCacheKeyGenerator
-				)?.(({ id }) =>
-					(
-						transformedFilter.include.test(id) &&
-						!transformedFilter.exclude.test(id)
-					) ?
-						false
-					:	variant
-				),
+			...vitestHooks,
 			options: checkInputExternal,
 			// Vite transforms a changed module's importers again only where they
 			// don't import it, but a module's validators are written from what
@@ -607,6 +699,12 @@ export const precompile: UnpluginInstance<
 			},
 			// a factory checks its helpers against what Vitest's mocks replace
 			configResolved: config => {
+				const own = config.plugins.findIndex(({ name }) => name === "arktype")
+				if (
+					config.plugins.findIndex(({ name }) => name === tanstackSplitter) >
+					own
+				)
+					throwError(writeAheadOfSplitterMessage("tanstackRouter()"))
 				isServing = config.command === "serve"
 				transformersAhead = config.plugins
 					.slice(
@@ -658,12 +756,19 @@ export const precompile: UnpluginInstance<
 				)
 				if (problem) throwBuildError(problem)
 			}
+			const unpruned = pendingScans.get(buildOf(this))?.unpruned
+			// once, though each of an app's environments may find it
+			if (unpruned && !error && !warnedUnpruned.has(unpruned)) {
+				warnedUnpruned.add(unpruned)
+				;(this as never as RollupContext).warn(unpruned)
+			}
 			const scan = scansByBuild.get(buildOf(this))
 			if (scan?.verifies && !error) {
 				const problem = unseenProblemOf(
 					scan.scanned,
 					rollupImportsOf(this as never),
 					scan.loaded,
+					scan.holders,
 					realPathOf(opts?.cwd ?? process.cwd())
 				)
 				// fails before the bundle is written
@@ -732,6 +837,12 @@ export const precompile: UnpluginInstance<
 					throwBuildError(pruneBeforePluginMessage)
 				const program =
 					prunesIn(production) && isLast ? `${++scans}` : undefined
+				// a plugin after this one may load a module unlike it was read
+				if (prunesIn(production) && !isLast) {
+					build.onStart(() => ({
+						warnings: [{ text: writeUnprunedMessage(...unprunedBeforePlugin) }]
+					}))
+				}
 				if (isStandalone) {
 					const cwd = build.initialOptions.absWorkingDir ?? process.cwd()
 					build.initialOptions.metafile = true
@@ -757,6 +868,7 @@ export const precompile: UnpluginInstance<
 				// the scan's facts hold only while the bundle is what it read
 				let scanned: ScannedProgram | undefined
 				let verifies = false
+				let holders: ReadonlySet<string> = new Set()
 				const loaded: LoadedSources = new Map()
 				esbuildScan = undefined
 				if (program) {
@@ -767,24 +879,34 @@ export const precompile: UnpluginInstance<
 						verifies = false
 						esbuildScan = undefined
 						loaded.clear()
-						const usage = await esbuildScanOf(
+						const scan = await esbuildScanOf(
 							build,
 							program,
 							path =>
 								transformedFilter.include.test(path) &&
 								!transformedFilter.exclude.test(path),
-							async scanned => (await request("scan", scanned)) as ScannedUsage
-						).catch(() => undefined)
-						if (!usage) return
-						scanned = usage[0]
+							async scanned => (await request("scan", scanned)) as ScannedUsage,
+							realPathOf(opts?.cwd ?? process.cwd())
+						).catch(
+							(e: unknown): ProgramScan<[ScannedProgram, ScannedUsage]> => ({
+								unpruned: unreadMessageOf(e)
+							})
+						)
+						const warnings = scan.unpruned ? [{ text: scan.unpruned }] : []
+						if (!scan.read) return { warnings }
+						const [read, usage] = scan.read
+						scanned = read
 						// only what it dropped can fail a read the scan didn't see
-						verifies = !!usage[1].dropped.length
+						verifies = !!usage.dropped.length
+						holders = new Set(usage.holders)
 						esbuildScan = {
 							scanned,
 							verifies,
 							loaded,
-							replaced: new Set(usage[1].replaced)
+							replaced: new Set(usage.replaced),
+							holders
 						}
+						return { warnings }
 					})
 					build.onEnd(result => {
 						if (
@@ -798,6 +920,7 @@ export const precompile: UnpluginInstance<
 							scanned,
 							esbuildImportsOf(result.metafile, cwd, scanned),
 							loaded,
+							holders,
 							realPathOf(opts?.cwd ?? process.cwd())
 						)
 						if (!problem) return
@@ -948,7 +1071,12 @@ export const precompile: UnpluginInstance<
 			}
 		}
 	}
+	return meta.framework in checkingFrameworks ?
+			[plugin, unwrittenChecker]
+		:	plugin
 })
+
+export const precompile = unplugin as PrecompileUnplugin
 
 const esbuildResolution = "arktype"
 
@@ -960,8 +1088,48 @@ interface BundleScan {
 	verifies: boolean
 	// what only modules it wrote may import
 	replaced: ReadonlySet<string>
+	// each module creating a validator
+	holders: ReadonlySet<string>
 	// each module as this plugin transformed it
 	loaded: LoadedSources
+}
+
+// a production build's scan, from its first transformed module on
+interface PendingScan {
+	inputs: string[]
+	scanned?: Promise<BundleScan | undefined>
+	// each module as it reached the plugin's transform, which waits for the
+	// scan, or as the scan waits for it, by the precompiler's name for it
+	arrivals: Map<string, string | Arrival>
+	// how each one's lines map to its file's, where a plugin ahead of this
+	// one transformed it
+	mappings: Map<string, string>
+	unpruned?: string | undefined
+}
+
+interface Arrival {
+	promise: Promise<string>
+	resolve: (code: string) => void
+}
+
+const arrive = (pending: PendingScan, id: string, code: string) => {
+	const arrival = pending.arrivals.get(id)
+	if (typeof arrival === "string") return
+	arrival?.resolve(code)
+	pending.arrivals.set(id, code)
+}
+
+const arrivalOf = (
+	pending: PendingScan,
+	id: string
+): string | Promise<string> => {
+	const arrival = pending.arrivals.get(id)
+	if (typeof arrival === "string") return arrival
+	if (arrival) return arrival.promise
+	let resolve!: (code: string) => void
+	const promise = new Promise<string>(settle => (resolve = settle))
+	pending.arrivals.set(id, { promise, resolve })
+	return promise
 }
 
 // what the plugin reads of a Rollup, Rolldown or Vite build
@@ -970,13 +1138,47 @@ interface RollupContext {
 		source: string,
 		importer?: string,
 		options?: { isEntry?: boolean }
-	) => Promise<{ id: string; external?: boolean | string } | null>
+	) => Promise<RollupResolution | null>
+	// a module once it's transformed and parsed, by the resolution it's
+	// loaded with
+	load: (
+		options: Partial<RollupResolution> & { id: string }
+	) => Promise<{ code?: string | null } | null>
 	getModuleIds: () => IterableIterator<string>
 	getModuleInfo: (id: string) => {
 		isEntry: boolean
 		importedIds: readonly string[]
 		dynamicallyImportedIds: readonly string[]
 	} | null
+	warn: (message: string) => void
+}
+
+// what a production bundle's scan read, if it changes what the plugin
+// writes, and why it left every member, if it did
+interface ProgramScan<read> {
+	read?: read | undefined
+	unpruned?: string | undefined
+}
+
+const unprunedMessageOf = (usage: ScannedUsage): string | undefined =>
+	usage.unpruned &&
+	writeUnprunedMessage(
+		usage.unpruned,
+		"Set each member you know no read needs false in ark.json's members, or set prune: false to build them whole without this warning."
+	)
+
+const unreadMessageOf = (e: unknown): string =>
+	writeUnprunedMessage(`reading the bundle's modules threw ${String(e)}`)
+
+// a plugin after this one may load a module unlike it was read
+const unprunedBeforePlugin = [
+	"a plugin follows arktype's among esbuild's plugins, which may load a module after it reads the bundle",
+	"Move arktype's plugin last, or set prune: false to build them whole without this warning."
+] as const
+
+interface RollupResolution {
+	id: string
+	external?: boolean | string
 }
 
 const rollupScanOf = async (
@@ -984,45 +1186,82 @@ const rollupScanOf = async (
 	program: string,
 	inputs: string[],
 	isTransformed: (id: string) => boolean,
-	scan: (program: ScannedProgram) => Promise<ScannedUsage>
-): Promise<BundleScan | undefined> => {
+	// a module the plugin transforms, as it reaches the plugin
+	arrivalOf: (id: string) => string | Promise<string>,
+	mappingsOf: (id: string) => string | undefined,
+	scan: (program: ScannedProgram) => Promise<ScannedUsage>,
+	cwd: string
+): Promise<ProgramScan<BundleScan>> => {
+	// each module's resolution, as a plugin may resolve it with options to
+	// load it by
+	const resolutions = new Map<string, RollupResolution>()
 	const entries: ScanEntry[] = []
 	for (const input of inputs) {
 		const resolved = await context.resolve(input, undefined, { isEntry: true })
-		if (!resolved || resolved.external || !isAbsolute(resolved.id)) return
+		if (!resolved || resolved.external) {
+			return {
+				unpruned: writeUnprunedMessage(
+					`the entry "${input}" doesn't resolve to a module`
+				)
+			}
+		}
+		resolutions.set(resolved.id, resolved)
 		if (!htmlId.test(resolved.id)) {
 			entries.push({ id: resolved.id })
 			continue
 		}
 		// a page's module scripts, as Vite builds them
 		const source = scriptsOf(readFileSync(resolved.id, "utf8"))
-		if (source === undefined) return
+		if (source === undefined) {
+			return {
+				unpruned: writeUnprunedMessage(
+					`${printablePathOf(cwd, resolved.id)} holds an inline module script, which it can't read before the build writes it as a module`
+				)
+			}
+		}
 		entries.push({ id: resolved.id, source })
 	}
 	const scanned = await scanProgram(program, entries, {
 		resolve: async (specifier, importer) => {
 			const resolved = await context.resolve(specifier, importer)
-			return (
-				!resolved ? undefined
-				: resolved.external ? null
-				: isAbsolute(resolved.id) ? resolved.id
-				: undefined
-			)
+			if (!resolved) return
+			if (resolved.external) return null
+			resolutions.set(resolved.id, resolved)
+			return resolved.id
 		},
-		readFile: id => readFileSync(id, "utf8"),
+		load: async id => {
+			// the plugin's transform waits for the scan, so a module it
+			// transforms is read as it reaches it, after any plugin ahead of it
+			const arrival = isTransformed(id) ? arrivalOf(fileOf(id)) : undefined
+			if (typeof arrival === "string") return arrival
+			const loaded = context.load({ ...resolutions.get(id), id }).then(
+				info => info?.code ?? undefined,
+				() => undefined
+			)
+			return arrival ? Promise.race([arrival, loaded]) : loaded
+		},
 		isTransformed,
-		idOf: fileOf
+		idOf: fileOf,
+		cwd
 	})
-	if (!scanned) return
+	if (typeof scanned === "string")
+		return { unpruned: writeUnprunedMessage(scanned) }
+	for (const id in scanned.modules)
+		scanned.modules[id].mappings = mappingsOf(id)
 	const usage = await scan(scanned)
-	return usage.written ?
-			{
-				scanned,
-				verifies: !!usage.dropped.length,
-				replaced: new Set(usage.replaced),
-				loaded: new Map()
-			}
-		:	undefined
+	return {
+		read:
+			usage.written ?
+				{
+					scanned,
+					verifies: !!usage.dropped.length,
+					replaced: new Set(usage.replaced),
+					holders: new Set(usage.holders),
+					loaded: new Map()
+				}
+			:	undefined,
+		unpruned: unprunedMessageOf(usage)
+	}
 }
 
 const htmlId = /\.html$/
@@ -1100,7 +1339,7 @@ interface EsbuildBuild {
 // the modules esbuild starts from, stdin as a file beside what it imports
 const esbuildEntriesOf = async (
 	build: EsbuildBuild
-): Promise<ScanEntry[] | undefined> => {
+): Promise<ScanEntry[] | string> => {
 	const { entryPoints, absWorkingDir = process.cwd() } = build.initialOptions
 	const paths =
 		Array.isArray(entryPoints) ?
@@ -1115,7 +1354,8 @@ const esbuildEntriesOf = async (
 			resolveDir: absWorkingDir,
 			pluginData: esbuildResolution
 		})
-		if (result.errors.length || result.namespace !== "file") return
+		if (result.errors.length || result.namespace !== "file")
+			return `the entry "${path}" doesn't resolve to a file`
 		entries.push({ id: result.path })
 	}
 	const entry = stdinEntryOf(build.initialOptions)
@@ -1156,31 +1396,34 @@ const esbuildScanOf = async (
 	build: EsbuildBuild,
 	program: string,
 	isTransformed: (path: string) => boolean,
-	scan: (program: ScannedProgram) => Promise<ScannedUsage>
-): Promise<[ScannedProgram, ScannedUsage] | undefined> => {
+	scan: (program: ScannedProgram) => Promise<ScannedUsage>,
+	cwd: string
+): Promise<ProgramScan<[ScannedProgram, ScannedUsage]>> => {
 	const entries = await esbuildEntriesOf(build)
-	const scanned =
-		entries &&
-		(await scanProgram(program, entries, {
-			resolve: async (specifier, importer, kind) => {
-				const result = await build.resolve(specifier, {
-					kind,
-					importer,
-					resolveDir: dirname(importer),
-					pluginData: esbuildResolution
-				})
-				return (
-					result.errors.length ? undefined
-					: result.external ? null
-					: result.namespace === "file" ? result.path
-					: undefined
-				)
-			},
-			readFile: path => readFileSync(path, "utf8"),
-			isTransformed,
-			idOf: fileOf
-		}))
-	if (!scanned) return
+	if (typeof entries === "string")
+		return { unpruned: writeUnprunedMessage(entries) }
+	const scanned = await scanProgram(program, entries, {
+		resolve: async (specifier, importer, kind) => {
+			const result = await build.resolve(specifier, {
+				kind,
+				importer,
+				resolveDir: dirname(importer),
+				pluginData: esbuildResolution
+			})
+			return (
+				result.errors.length ? undefined
+				: result.external ? null
+				: result.namespace === "file" ? result.path
+				: undefined
+			)
+		},
+		readFile: path => readFileSync(path, "utf8"),
+		isTransformed,
+		idOf: fileOf,
+		cwd
+	})
+	if (typeof scanned === "string")
+		return { unpruned: writeUnprunedMessage(scanned) }
 	// each entry is its own bundle, unless it splits what they share, and an
 	// injected module is one the scan doesn't read
 	scanned.isOneChunk =
@@ -1188,7 +1431,10 @@ const esbuildScanOf = async (
 		!build.initialOptions.splitting &&
 		!build.initialOptions.inject?.length
 	const usage = await scan(scanned)
-	return usage.written ? [scanned, usage] : undefined
+	return {
+		read: usage.written ? [scanned, usage] : undefined,
+		unpruned: unprunedMessageOf(usage)
+	}
 }
 
 // the importers esbuild bundled, by module, from its metafile
@@ -1357,6 +1603,19 @@ const specifiersOf = (...specifiers: string[]) =>
 const resolvedSpecifier = new RegExp(
 	`${specifiersOf(...runtimeSpecifiers, "arktype/runtime", ...internalSpecifiers).source}|^~arktype\\/`
 )
+
+// each runs a plugin after the others, which reads what they write
+const checkingFrameworks = {
+	vite: 1,
+	rollup: 1,
+	rolldown: 1
+} as const satisfies KeySet
+
+// the plugin TanStack Router splits a route's code with
+const tanstackSplitter = "tanstack-router:code-splitter:compile-reference-file"
+
+const writeAheadOfSplitterMessage = (call: string): string =>
+	`arktype's plugin is listed ahead of TanStack Router's, which splits a route's code after arktype's precompiles it, into modules it reads unprecompiled. List precompile.vite() after ${call} in vite.config's plugins.`
 
 // each reads the whole bundle before it transforms a module
 const pruningFrameworks = {

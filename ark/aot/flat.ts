@@ -2,7 +2,7 @@ import { hashOf } from "@ark/util"
 import MagicString, { type SourceMap } from "magic-string"
 import { parseSync, type Node, type Program, type Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
-import { renamedOf } from "./link.ts"
+import { prefixOf, renamedOf } from "./link.ts"
 import { SourceModule } from "./module.ts"
 import {
 	exportNameOf,
@@ -170,6 +170,7 @@ export const flattenBundle = (
 			s ??= new MagicString(sites[id])
 			s.remove(start, end)
 		}
+		const prefix = prefixOf(sites[id], id)
 		for (const { start, end, name, declared } of created) {
 			s ??= new MagicString(sites[id])
 			const source = JSON.stringify(rename(specifier))
@@ -185,8 +186,9 @@ export const flattenBundle = (
 				if (flat.asserting.has(name))
 					for (const [start, end] of declared.assertReads!) s.remove(start, end)
 			} else {
-				s.overwrite(start, end, `$ark_${name}`)
-				s.prepend(`import { ${name} as $ark_${name} } from ${source}\n`)
+				const local = `${prefix}_${name}`
+				s.overwrite(start, end, local)
+				s.prepend(`import { ${name} as ${local} } from ${source}\n`)
 			}
 		}
 		bundle.sites[id] =
