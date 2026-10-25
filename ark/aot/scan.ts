@@ -361,9 +361,10 @@ const reachingOf = (
 		}
 	}
 	const reaching = new Set(holders)
-	for (const id of reaching)
+	for (const id of reaching) {
 		for (const importer of importersByTarget.get(id) ?? [])
 			reaching.add(importer)
+	}
 	return reaching
 }
 
