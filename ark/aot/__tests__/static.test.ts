@@ -618,6 +618,24 @@ export const Name = text(5)`)
 			])
 		})
 
+		it("a value a call computes that nothing reads", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+const text = (max: number, startedAt = Date.now()) => type(\`string <= \${max}\`)
+const label = (max: number) => {
+	const { at = Date.now() } = {} as { at?: number }
+	return type(\`string <= \${max}\`)
+}
+export const Defaulted = text(5)
+export const Passed = text(5, Date.now())
+export const Destructured = label(5)`)
+			).snap([
+				"/main.ts:7:26  text(5) cannot be precompiled\n  `Date.now` is not one of the build's pure built-ins",
+				"/main.ts:8:23  text(5, Date.now()) cannot be precompiled\n  `Date.now` is not one of the build's pure built-ins",
+				"/main.ts:9:29  label(5) cannot be precompiled\n  `Date.now` is not one of the build's pure built-ins"
+			])
+		})
+
 		it("configure() in a helper", () => {
 			attest(
 				diagnosticsOf(`import { configure, type } from "arktype"
