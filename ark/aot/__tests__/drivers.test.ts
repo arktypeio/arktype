@@ -12,10 +12,16 @@ import {
 	writeUntransformedImportMessage,
 	writeVariantImportMessage
 } from "@ark/aot/internal/host.ts"
+import type { TransformedModule } from "@ark/aot/internal/driver.ts"
 import {
 	configuredThreadMessage,
-	writeTurbopackDependencyMessage
+	writeTurbopackDependencyMessage,
+	writeUnansweredResolveMessage
 } from "@ark/aot/internal/messages.ts"
+import {
+	createAsyncPrecompiler,
+	type BundlerResolve
+} from "@ark/aot/internal/worker.ts"
 import { register } from "@ark/aot/node"
 import turbopack from "@ark/aot/turbopack"
 import type { PrecompilePluginOptions } from "@ark/aot/unplugin"
@@ -919,6 +925,46 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				writeTsconfig("./b.ts")
 				attest(load(dir).out.includes('"number"')).equals(true)
 			})
+		})
+	})
+
+	describe("worker", () => {
+		it("fails a request the bundler doesn't resolve an import for", async () => {
+			const dir = writeFixture({
+				"package.json": "{}",
+				"main.ts":
+					'import { User } from "#shared/types"\n\nconsole.log(String(User.errors))\n',
+				"shared/types.ts":
+					'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n',
+				// what the answer it stops waiting for names
+				"shared/other.ts": 'export const User = { errors: "" }\n'
+			})
+			const main = join(dir, "main.ts")
+			const source = readFileSync(main, "utf8")
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions },
+				resolveTimeout: 500
+			})
+			// resolving waits on the worker, which waits on the resolution
+			const cyclic: BundlerResolve = async () => {
+				await send(["readDependency", main])
+				return join(dir, "shared/other.ts")
+			}
+			const failure = await send(["transform", source, main], cyclic).then(
+				() => undefined,
+				(e: Error) => e.message
+			)
+			attest(failure).equals(
+				writeUnansweredResolveMessage("#shared/types", "main.ts", 500)
+			)
+			// the next question isn't answered with other.ts, the late answer
+			const transformed = (await send(["transform", source, main], async () =>
+				join(dir, "shared/types.ts")
+			)) as TransformedModule
+			attest(transformed.errors.map(error => error.split("\n")[0])).equals([
+				"main.ts:3:20  User.errors reads errors, which a standalone validator lacks"
+			])
+			await send(["close"])
 		})
 	})
 

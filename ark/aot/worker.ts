@@ -142,7 +142,8 @@ interface PendingRequest {
 
 // carries what the driver asks the bundler to resolve, which its thread waits
 // for. A question names the request it's answered for, as the answer to the
-// one before may not have arrived. Bun doesn't deliver it while the thread
+// one before may not have arrived, and is numbered, as its thread drops an
+// answer it stopped waiting for. Bun doesn't deliver it while the thread
 // asking waits
 const resolvingChannelOf = (
 	pending: PendingRequest[]
@@ -152,15 +153,21 @@ const resolvingChannelOf = (
 	const resolved = new Int32Array(new SharedArrayBuffer(4))
 	port1.on(
 		"message",
-		async ([index, specifier, importer]: [number, string, string]) => {
+		async ([question, index, specifier, importer]: [
+			number,
+			number,
+			string,
+			string
+		]) => {
 			const resolve = pending.find(entry => entry.index === index)?.resolve
 			// null where the request can't ask, so the driver can ask again
 			const path =
 				resolve ?
 					await resolve(specifier, importer).catch(() => undefined)
 				:	null
-			port1.postMessage(path)
-			Atomics.store(resolved, 0, answered)
+			port1.postMessage([question, path])
+			// counts the answers, so one arriving as the thread waits wakes it
+			Atomics.add(resolved, 0, 1)
 			Atomics.notify(resolved, 0)
 		}
 	)

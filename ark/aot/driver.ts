@@ -1,3 +1,4 @@
+import { throwError } from "@ark/util"
 import { readFileSync, statSync } from "node:fs"
 import { isAbsolute, resolve } from "node:path"
 import type { SourceMap } from "magic-string"
@@ -10,9 +11,11 @@ import {
 import {
 	appendSourceMap,
 	createNodeHost,
+	printablePathOf,
 	realPathOf,
 	type NodeHostOptions
 } from "./host.ts"
+import { writeUnansweredResolveMessage } from "./messages.ts"
 import {
 	Precompiler,
 	renderDiagnostic,
@@ -73,6 +76,8 @@ export interface PrecompilerWorkerData {
 	// asks the bundler what the precompiler can't resolve, waiting on resolved
 	resolver?: MessagePort | undefined
 	resolved?: Int32Array | undefined
+	// how long it waits for an answer, in milliseconds
+	resolveTimeout?: number | undefined
 }
 
 export type PrecompileRequest =
@@ -129,7 +134,9 @@ const answerRequests = (
 	const resolveInBundler = bundlerResolverOf(
 		data,
 		() => answering,
-		() => (unasked = true)
+		() => (unasked = true),
+		// what it read before it stopped waiting may be partial
+		() => (tracked = undefined)
 	)
 	const track = () =>
 		createTrackedPrecompiler(data.precompilerOptions, resolveInBundler)
@@ -242,27 +249,63 @@ type BundlerResolver = (
 	importer: string
 ) => string | undefined
 
-// the precompiler is synchronous, so its thread waits for the bundler's answer
+// the precompiler is synchronous, so its thread waits for the bundler's
+// answer, failing the request where none comes, as where resolving waits on
+// the precompiler in turn
 const bundlerResolverOf = (
-	{ resolver, resolved }: PrecompilerWorkerData,
+	{
+		resolver,
+		resolved,
+		resolveTimeout = 30_000,
+		precompilerOptions
+	}: PrecompilerWorkerData,
 	answering: () => number,
-	unasked: () => void
-): BundlerResolver | undefined =>
-	resolver &&
-	resolved &&
-	((specifier, importer) => {
+	unasked: () => void,
+	unanswered: () => void
+): BundlerResolver | undefined => {
+	if (!resolver || !resolved) return
+	const cwd = realPathOf(precompilerOptions.cwd ?? process.cwd())
+	let asked = 0
+	return (specifier, importer) => {
 		if (!isAbsolute(importer)) return
-		Atomics.store(resolved, 0, 0)
-		resolver.postMessage([answering(), specifier, importer])
-		Atomics.wait(resolved, 0, 0)
-		// null where the request it's answering can't ask the bundler
-		const path = receiveMessageOnPort(resolver)?.message as
-			| string
-			| null
-			| undefined
-		if (path === null) unasked()
-		return path ? realPathOf(path) : undefined
-	})
+		const question = ++asked
+		const deadline = performance.now() + resolveTimeout
+		resolver.postMessage([question, answering(), specifier, importer])
+		for (;;) {
+			// read before draining, so an answer posted since wakes the wait
+			const answers = Atomics.load(resolved, 0)
+			for (
+				let received = receiveMessageOnPort(resolver);
+				received;
+				received = receiveMessageOnPort(resolver)
+			) {
+				const [answered, path] = received.message as [
+					number,
+					string | null | undefined
+				]
+				// one to a question it stopped waiting for
+				if (answered !== question) continue
+				// null where the request it's answering can't ask the bundler
+				if (path === null) unasked()
+				return path ? realPathOf(path) : undefined
+			}
+			const left = deadline - performance.now()
+			if (
+				left <= 0 ||
+				Atomics.wait(resolved, 0, answers, left) === "timed-out"
+			) {
+				unanswered()
+				return throwError(
+					writeUnansweredResolveMessage(
+						specifier,
+						printablePathOf(cwd, importer),
+						resolveTimeout
+					)
+				)
+			}
+		}
+	}
+}
 
 const checkedModuleOf = (
 	precompiler: Precompiler,
