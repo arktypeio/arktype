@@ -75,17 +75,11 @@ contextualize(() => {
 		const users: CompactApply = (data, ctx) => {
 			const list = data as unknown[]
 			for (let i = 0; i < list.length; i++)
-				if (!userAllows(list[i]) && ctx._in(user, list[i], i)) return false
+				if (!userAllows(list[i]) && ctx._in(user, list, i)) return false
 			return true
 		}
 		const owner: CompactApply = (data, ctx) =>
-			!ctx._in(
-				users,
-				(data as { members?: unknown }).members,
-				"members",
-				{ m: { code: "required" } },
-				data
-			)
+			!ctx._in(users, data, "members", { m: { code: "required" } })
 		const errors = new ArkErrors()
 		owner({ members: [{ name: "a" }, {}, { name: 2 }] }, errors)
 		owner({}, errors)

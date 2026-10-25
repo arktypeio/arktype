@@ -182,7 +182,7 @@ export const props = ((declared: Props, optional?: string[]): Checker =>
 			if (
 				value === undefined && !(k in data) ?
 					!optional?.includes(k) && failsAt(ctx as never, requiredSite, data, k)
-				:	failsIn(ctx as never, declared[k] as CompactApply, value, k)
+				:	failsIn(ctx as never, declared[k] as CompactApply, data, k)
 			)
 				return false
 		}
@@ -250,10 +250,8 @@ export const transformingProps = ((
 // an array's elements, each checked at its index
 export const elementsOf = ((element: Checker): Checker =>
 	(data: any, ctx) => {
-		for (let i = 0; i < data.length; i++) {
-			if (failsIn(ctx as never, element as CompactApply, data[i], i))
-				return false
-		}
+		for (let i = 0; i < data.length; i++)
+			if (failsIn(ctx as never, element as CompactApply, data, i)) return false
 		return true
 	}) satisfies Fn
 

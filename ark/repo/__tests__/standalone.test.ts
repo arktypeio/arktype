@@ -366,10 +366,10 @@ c must be a number`)
 	it("literals reading as the code around them", async () => {
 		const Gated = type({ b: "string > 3" })
 		// a leaf's Apply is named for its content, so a key can name it
-		const apply = /\._in\((\w+Apply), data\.b/.exec(
+		const apply = /\._in\((\w+Apply), data, "b"/.exec(
 			precompileStandalone({ Gated }).code
 		)![1]
-		const gate = `, xR1, data)!ctx._in(${apply}, data.b, `
+		const gate = `, xR1)!ctx._in(${apply}, data, `
 		const types = {
 			Keyed: type({
 				"ctx._at(": "string",
