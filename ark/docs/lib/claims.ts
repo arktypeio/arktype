@@ -14,6 +14,8 @@ import {
 	type LibraryVersus
 } from "./bench/bench.ts"
 import {
+	fullLeaderboards,
+	isOwnSuite,
 	leaderboards,
 	leadDependsOn,
 	leads,
@@ -66,7 +68,7 @@ export interface BenchmarkChart {
  * four hypotheses held. At the release candidate (wall.md) H1 had failed. Each
  * claim is scoped: precompiled or dynamic, valid or invalid data, with or
  * without errors. The headline's superlatives and the board's standings
- * instead follow the README's "Best average" rule over every suite
+ * instead follow the README's "Best average" rule over the independent suites
  * (lib/bench/leaderboard.ts), with ArkType as its default production build
  * throughout, each of its rows measured at 90d510484.
  */
@@ -234,7 +236,7 @@ const averageOf = (category: CategoryId) => {
 
 /** where ArkType's best average places it in a category, a superlative only where it leads */
 const standingOf = (category: CategoryId) => {
-	const across = `across ${leaderboards[category].suites.length} public benchmarks`
+	const across = `across ${leaderboards[category].suites.length} independent benchmarks`
 	const { place, ranked } = placeOf(category)
 	return {
 		leads: leads(category),
@@ -259,26 +261,40 @@ const averagesOf = (category: CategoryId) => {
 	return `${standingOf(category).standing}: ${score.toFixed(2)} against ${other.library}'s ${other.score.toFixed(2)}.`
 }
 
-/** the benchmarks we wrote, by label; every other suite is another project's */
-const ownSuites = [
-	"the homepage's benchmark",
-	"startup.ts",
-	"the homepage's cold start",
-	"the homepage's apps"
-]
-for (const label of ownSuites) {
-	if (
-		!boardOrder.some(category => leaderboards[category].suites.includes(label))
-	)
-		throw new Error(`No leaderboard has a suite labeled ${label}`)
-}
-
-/** how many of each category's benchmarks are ours */
+/** how many of each category's benchmarks on the full board are ours */
 const ownedPerCategory = listOf(
 	boardOrder.map(category => {
-		const { suites } = leaderboards[category]
-		return `${suites.filter(label => ownSuites.includes(label)).length} of the ${suites.length} for ${wording[category].measures}`
+		const { suites } = fullLeaderboards[category]
+		return `${suites.filter(isOwnSuite).length} of the ${suites.length} for ${wording[category].measures}`
 	})
+)
+
+/** ArkType's place on a board: "1st" */
+const placeOn = ({ standings }: { standings: Standing[] }) =>
+	ordinal(standings.findIndex(s => s.library === "ArkType") + 1)
+
+/** ArkType's place in each category on the full board, beside the leader where it isn't first */
+const fullBoardPlaces = listOf(
+	boardOrder.map(category => {
+		const { standings } = fullLeaderboards[category]
+		const i = standings.findIndex(s => s.library === "ArkType")
+		const [first] = standings
+		return i === 0 ?
+				`1st for ${wording[category].measures}`
+			:	`${ordinal(i + 1)} of ${standings.length} for ${wording[category].measures}, ${standings[i].score.toFixed(2)} to ${first.library}'s ${first.score.toFixed(2)}`
+	})
+)
+
+/** where ArkType places on the full board, stated wherever the headline's standings are */
+const fullBoardNote = `With our own benchmarks added, ArkType is ${fullBoardPlaces}.`
+
+/** the startup suites that time creating a schema, which a precompiled build does when it builds */
+const creationOnly = [
+	"schemabenchmarks.dev's initialization",
+	"Sury's build and parse once"
+]
+const startupIsCreation = leaderboards.startup.suites.every(label =>
+	creationOnly.includes(label)
 )
 
 /** which leads hold with any one benchmark left out, and which suites the others depend on */
@@ -298,25 +314,41 @@ const leadsWithoutEach = () => {
 	return sentences.join(" ")
 }
 
-/** the size results a library ships less than ArkType on, including the largest bundle ArkType ships if it's one */
+/** the size results a library ships less than ArkType on, of those it's in, including the largest bundle ArkType ships if it's one */
 const sizeResultsBeating = (library: string) => {
-	const rows = rowsOf("size")
+	const rows = rowsOf("size").filter(results => library in results)
 	const largest = rows.reduce((l, r) => (r.ArkType > l.ArkType ? r : l))
 	const count = rows.filter(
 		results => results[library] < results.ArkType
 	).length
-	return `${count} of the ${rows.length} size results${largest[library] < largest.ArkType ? ", including the largest bundle we measured" : ""}`
+	const of =
+		rows.length === rowsOf("size").length ?
+			`${rows.length} size results`
+		:	`${rows.length} size results it's in`
+	return `${count} of the ${of}${largest[library] < largest.ArkType ? ", including the largest bundle we measured" : ""}`
 }
 
 const sizeRival = averageOf("size").other
 
+/** each category's results on the independent suites, for the headline's notes, and what startup's measure */
+const independentResults = `${listOf(
+	boardOrder.map(
+		(category, i) =>
+			`${leaderboards[category].rows}${i ? "" : " results"} for ${wording[category].measures}`
+	)
+)}${startupIsCreation ? `; the ${leaderboards.startup.rows} for startup time creating a schema` : ""}`
+
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
 	// each superlative names a category ArkType must have the best average in
-	// (lib/bench/leaderboard.ts), as headlineCategories below checks. Size is
-	// the narrow one: 1.355 against Valibot's 1.394 (current releases, 2026-10-24)
-	headline: "TypeScript's smallest, fastest validator.",
-	headlineNote: `Ranked by best average across public benchmarks, each result a ratio to the best: ${leaderboards.speed.rows} results for validation speed, ${leaderboards.startup.rows} for startup and ${leaderboards.size.rows} for bundle size.`,
+	// (lib/bench/leaderboard.ts), as the check of the copy below holds. Size
+	// is the close one: Typia leads it, 1.256 to 1.297, until a rerun says
+	// otherwise
+	headline:
+		leads("size") ?
+			"TypeScript's smallest, fastest validator."
+		:	"TypeScript's fastest validator.",
+	headlineNote: `Ranked by best average across the public benchmarks we didn't write, each result a ratio to the best: ${independentResults}. ${fullBoardNote}`,
 	// the fastest and the smallest builds differ: optimize "size" makes the
 	// product schema's valid data 2.2x slower
 	buildChoice:
@@ -372,6 +404,9 @@ export const claims = {
 	// says ArkType leads every category, so the blog post's check below holds
 	// each lead, and the one after oneBuild that one build holds them all
 	pickThree: "Quickest to start, too.",
+	// the blog post's answer to "pick 2", stated only while ArkType leads all
+	// three, and draft otherwise
+	pickThreeLine: leadsEvery ? "Pick 3." : { pending: "Pick 3." },
 	// the homepage board's title: "Pick 3" only while ArkType leads every
 	// category, otherwise a phrase per category it leads on average: runs
 	// faster, starts lighter (instructions rather than time), ships less
@@ -380,7 +415,7 @@ export const claims = {
 			"Fast. Small. Quick to start. Pick 3."
 		:	led.map(category => wording[category].phrase).join(" "),
 	// what the board's superlatives average
-	boardNote: `Ranked by best average across public benchmarks, each result a ratio to the best: ${listOf(led.map((category, i) => `${leaderboards[category].rows}${i ? "" : " results"} for ${wording[category].measures}`))}.`,
+	boardNote: `Ranked by best average across the public benchmarks we didn't write, each result a ratio to the best: ${independentResults}. ${fullBoardNote}`,
 	// startupChart; the form is 1.04M vs Valibot's 2.37M, 20 of 20
 	startupLogin:
 		"On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than ajv, Valibot, Typia, Zod Mini, Zod, compiled Zod or TypeBox, in all 20 paired runs on Node 24.",
@@ -390,12 +425,18 @@ export const claims = {
 	// the blog post's answer to "pick 2", a line per category
 	speedAverage: averagesOf("speed"),
 	startupAverage: averagesOf("startup"),
+	// the independent startup rows time creating a schema, which ArkType's
+	// default build skips; the full board adds our cold starts of whole apps
+	startupBasis: `${startupIsCreation ? `Each of the ${leaderboards.startup.rows} independent startup results times creating a schema, which a precompiled build does when it builds. ` : ""}Our own startup benchmarks time importing an app through its first validation (${fullLeaderboards.startup.rows - leaderboards.startup.rows} results), and with them ArkType is ${placeOn(fullLeaderboards.startup)} for startup.`,
 	sizeAverage: averagesOf("size"),
-	// size is the narrow lead: 1.355 against Valibot's 1.394, and
-	// it doesn't survive leaving out the form, schemabenchmarks.dev or Sury
-	sizeClose: `Size is the close one: ${sizeRival.library} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}, and ArkType's lead is in the average.`,
-	// public isn't independent: which of the averages' benchmarks are ours
-	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory}; the rest are other projects'.`,
+	// Typia leads size, 1.256 to 1.297, on 2 of its 3 suites; tip rows
+	// (lane/loop-size2) narrow it to 1.0%
+	sizeClose:
+		leads("size") ?
+			`Size is the close one: ${sizeRival.library} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}, and ArkType's lead is in the average.`
+		:	`Size is the close one: ${sizeRival.library} has the best average, ${sizeRival.score.toFixed(2)} to ArkType's ${placeOf("size").score.toFixed(2)}, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
+	// which benchmarks are ours, and that the averages leave them out
+	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory} on the full board; the averages above leave those out.`,
 	// the leads that depend on a single benchmark, and which: at 808927feb,
 	// only size's, on the form, schemabenchmarks.dev or Sury
 	leaveOneOut: leadsWithoutEach()
@@ -417,16 +458,25 @@ const assertLeads = (category: CategoryId, by: string) => {
 	}
 }
 
-// the categories the headline's superlatives name, each of which ArkType
-// must lead on average once the headline isn't pending
-const headlineCategories: CategoryId[] = ["size", "speed"]
-if (!isPending(claims.headline)) {
-	for (const category of headlineCategories)
-		assertLeads(category, "The headline")
+// the copy that states standings: naming a category's superlative needs
+// ArkType to lead it, and "Pick 3" needs all three, so it can't claim a lead
+// the standings don't have
+const standingClaims = [
+	"headline",
+	"pickThree",
+	"pickThreeLine",
+	"boardTitle"
+] as const satisfies ClaimId[]
+for (const id of standingClaims) {
+	const claim = claims[id]
+	if (isPending(claim)) continue
+	for (const category of boardOrder) {
+		if (new RegExp(`\\b${wording[category].superlative}\\b`, "i").test(claim))
+			assertLeads(category, id)
+	}
+	if (/\bPick 3\b/.test(claim))
+		for (const category of boardOrder) assertLeads(category, id)
 }
-
-// the blog post answers "pick 2" with all three
-for (const category of boardOrder) assertLeads(category, "The blog post")
 
 /** the libraries the board compares against: with ArkType, the two that wrote Standard Schema */
 const isRival = (bar: BenchmarkBar) => /^(Valibot|Zod)\b/.test(bar.name)
