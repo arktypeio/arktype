@@ -80,15 +80,14 @@ export class ArkErrors implements FailureContext {
 	/** @internal */
 	_in(
 		apply: CompactApply,
-		value: unknown,
+		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite,
-		data?: unknown
+		missing?: FailureSite
 	): boolean | undefined {
-		if (missing && value === undefined && !(key in (data as object)))
+		if (missing && !(key in (data as object)))
 			return this._at(missing, data, key)
 		this._p.push(key)
-		const continues = apply(value, this)
+		const continues = apply((data as Keyed)[key], this)
 		this._p.pop()
 		return !continues
 	}

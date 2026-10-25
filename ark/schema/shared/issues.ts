@@ -49,17 +49,16 @@ export type CompactApply = (data: unknown, ctx: FailureContext) => boolean
 /**
  * where a compact Apply reports failures; each returns whether to stop. A
  * minifier keeps property names, and compiled code calls these at each
- * failure, so they're named short: _at fails a site (failsAt), _in applies a
- * value at its key (failsIn)
+ * failure, so they're named short: _at fails a site (failsAt), _in applies
+ * data's value at a key (failsIn)
  */
 export interface FailureContext {
 	_at(site: FailureSite, data: unknown, key?: PropertyKey): boolean | undefined
 	_in(
 		apply: CompactApply,
-		value: unknown,
+		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite,
-		data?: unknown
+		missing?: FailureSite
 	): boolean | undefined
 }
 
@@ -160,15 +159,14 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	/** @internal */
 	_in(
 		apply: CompactApply,
-		value: unknown,
+		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite,
-		data?: unknown
+		missing?: FailureSite
 	): boolean | undefined {
-		if (missing && value === undefined && !(key in (data as object)))
+		if (missing && !(key in (data as object)))
 			return this._at(missing, data, key)
 		this._p.push(key)
-		const continues = apply(value, this)
+		const continues = apply((data as Keyed)[key], this)
 		this._p.pop()
 		return !continues
 	}
