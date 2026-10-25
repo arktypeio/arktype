@@ -14,7 +14,16 @@ export const configurationConflictMessage =
 	"configure() is given other values than arktype in this thread already applied"
 
 export const configurationConflictReason =
-	"a module the configuration reads was given anew, as when a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set"
+	"a module the configuration reads was given anew, as when it's edited while the build runs or a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set"
+
+// a bundler that knows its plugins names those ahead of arktype's in its place
+export const conflictingPluginPhrase = "the plugin transforming it"
+
+export const writeConflictHint = (config: string): string =>
+	`Restart the build to apply an edit to ${config}. If it wasn't edited, put arktype's plugin ahead of ${conflictingPluginPhrase}.`
+
+export const writeConflictingPlugins = (names: string[]): string =>
+	`${names.join(", ")}, ${names.length > 1 ? "one of which transforms" : "which transforms"} it`
 
 export const writeStandaloneDependencyMessage = <name extends string>(
 	name: name
@@ -97,11 +106,21 @@ export const writeConfiguredOptionHint = (
 ): string =>
 	`Build with the ${option} arktype is configured with, in ark.json: { "precompile": { "${option}": ${configured} } }`
 
+export const writeStaticHint = (
+	dynamic: string | undefined
+): string | undefined =>
+	dynamic &&
+	`Replace \`${dynamic}\` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.`
+
 export const writeNoConfigHint = (path: string): string =>
 	`Name this module as the build's config in ark.json: { "precompile": { "config": ${JSON.stringify(/^\.{0,2}\//.test(path) ? path : `./${path}`)} } }`
 
 export const writeErrorReaderHint = (errors: string): string =>
 	`Read \`${errors}.issues\`, each with its path and message, as in \`for (const { path, message } of ${errors}.issues)\`, or build with runtime: "arktype".`
+
+// a standalone validator writes its errors only in English
+export const writeMessageInHint = (issue: string): string =>
+	`Read \`${issue}.message\`, which a standalone validator writes in English, or build with runtime: "arktype" to write it in a locale.`
 
 export const writeErrorsMismatchMessage = (
 	configured: ErrorDetail,

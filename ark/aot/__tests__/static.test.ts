@@ -825,11 +825,37 @@ export const check = (data: unknown) => {
 	const out = User(data)
 	return out instanceof type.errors ? ark.byPath(out) : out
 }
-export const readers = [ark.flatByPath]`)
+export const readers = [ark.flatByPath]
+export const translated = (out: ArkErrors) => out.issues.map(issue => ark.messageIn(issue, {} as never))`)
 			).snap([
 				'/main.ts:4:46  flatProblemsByPath(errors) calls flatProblemsByPath, which arktype/runtime doesn\'t export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: "arktype".',
 				'/main.ts:7:38  ark.byPath(out) calls byPath, which arktype/runtime doesn\'t export\n  Read `out.issues`, each with its path and message, as in `for (const { path, message } of out.issues)`, or build with runtime: "arktype".',
-				"/main.ts:9:25  `ark.flatByPath` is arktype's, which arktype/runtime doesn't export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: \"arktype\"."
+				"/main.ts:9:25  `ark.flatByPath` is arktype's, which arktype/runtime doesn't export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: \"arktype\".",
+				'/main.ts:10:71  ark.messageIn(issue, {} as never) calls messageIn, which arktype/runtime doesn\'t export\n  Read `issue.message`, which a standalone validator writes in English, or build with runtime: "arktype" to write it in a locale.'
+			])
+		})
+
+		it("a value only known at runtime, named in the fix", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+export const Flipped = type({ a: Math.random() > 0.5 ? "string" : "number" })
+const def = await fetch("https://example.com/schema.json").then(r => r.json())
+export const Fetched = type(def)`).map(d => d.slice(d.lastIndexOf("\n") + 3))
+			).snap([
+				"Replace `Math.random()` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.",
+				"Replace `def` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime."
+			])
+		})
+
+		it("an export arktype/runtime lacks, reported once", () => {
+			attest(
+				precompile(`import { Type } from "arktype"
+export const isType = (x: unknown) => x instanceof Type
+export const isAlsoType = (x: unknown) => x instanceof Type`).diagnostics.map(
+					renderDiagnostic
+				)
+			).snap([
+				"/main.ts:2:52  `Type` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module\n  Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: \"arktype\"."
 			])
 		})
 

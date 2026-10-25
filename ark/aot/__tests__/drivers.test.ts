@@ -272,7 +272,7 @@ console.log(jsonSchemaOf(type({ a: "string" })))
 			attest(thrownMessage(stdout, app))
 				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
   \`process\` is a global the build does not read
-  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.`)
+  Replace \`process.env.ADMIN_ROLE\` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.`)
 		})
 
 		it("a package reading arktype's nodes in a runtime island", () => {
@@ -492,7 +492,7 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			})
 			attest([status, thrownMessage(stderr, root)]).equals([
 				1,
-				"@ark/aot's precompiler stopped before it answered, as it does where a module the process preloads throws in a worker"
+				"@ark/aot's precompiler stopped before it answered, as it does where a module the process preloads throws in a worker thread, like ./noWorkers.ts, which NODE_OPTIONS loads. Pass it to node as a flag instead, as `node --import ./noWorkers.ts`, which keeps it out of the precompiler's thread, or return from it early where `isMainThread` from node:worker_threads is false. To see its error and stack, run `node -e 'new (require(\"node:worker_threads\").Worker)(new URL(\"data:text/javascript,\"))'` with the same NODE_OPTIONS."
 			])
 		})
 
@@ -921,7 +921,7 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			attest(thrownMessage(stderr, app, "error: "))
 				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
   \`process\` is a global the build does not read
-  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.`)
+  Replace \`process.env.ADMIN_ROLE\` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.`)
 		})
 	})
 })

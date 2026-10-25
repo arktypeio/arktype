@@ -87,6 +87,9 @@ export const emitDeclarations = (opts?: DeclareOptions): Declarations => {
 	}
 }
 
+export const writeNoTsconfigMessage = (cwd: string): string =>
+	`No tsconfig.json is in ${cwd} or a directory above it. Create ${join(cwd, "tsconfig.json")}, as { "compilerOptions": { "rootDir": "src", "outDir": "dist" }, "include": ["src"] }, or name the one tsc builds with as --tsconfig, or as "tsconfig" in ark.json.`
+
 export const writeSharedCollisionMessage = (file: string): string =>
 	`${file} would be declared at ${sharedDeclarationFile}, which holds the shapes of the build's Types. Rename ${file}.`
 
@@ -139,7 +142,7 @@ export const parseConfig = (
 		tsconfig ?
 			resolve(cwd, tsconfig)
 		:	(ts.findConfigFile(cwd, ts.sys.fileExists) ??
-			throwError(`No tsconfig.json was found from ${cwd}`))
+			throwError(writeNoTsconfigMessage(cwd)))
 	const config = ts.getParsedCommandLineOfConfigFile(configPath, undefined, {
 		...ts.sys,
 		onUnRecoverableConfigFileDiagnostic: d => diagnostics.push(d)

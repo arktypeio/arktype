@@ -154,7 +154,7 @@ export const Field = type(\`string <= \${max}\`)`
 		writeFileSync(limits, "export const max = Number(process.env.MAX)\n")
 		utimesSync(limits, new Date(Date.now() + 1000), new Date(Date.now() + 1000))
 		attest(lint(code, {}, filename, dir)).snap([
-			"3:22-3:46 type(`string <= ${max}`) cannot be precompiled\n`max` is imported from limits.ts\n`process` is a global the build does not read\nStandalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime."
+			"3:22-3:46 type(`string <= ${max}`) cannot be precompiled\n`max` is imported from limits.ts\n`process` is a global the build does not read\nReplace `process.env.MAX` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime."
 		])
 	})
 

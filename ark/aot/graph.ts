@@ -104,7 +104,8 @@ export const errorReaders: Record<string, 1> = Object.setPrototypeOf(
 		byAncestorPath: 1,
 		byPath: 1,
 		flatByPath: 1,
-		flatProblemsByPath: 1
+		flatProblemsByPath: 1,
+		messageIn: 1
 	} satisfies { [name in ArkExportName]?: 1 },
 	null
 )

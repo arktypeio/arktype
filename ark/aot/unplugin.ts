@@ -51,6 +51,7 @@ import {
 	type PrecompileHost,
 	withAllowUnsafe
 } from "./host.ts"
+import { conflictingPluginPhrase, writeConflictingPlugins } from "./messages.ts"
 import type { ScannedProgram, ScannedUsage } from "./precompile.ts"
 import { withEnvironment, type Environment } from "./presets.ts"
 import {
@@ -273,6 +274,22 @@ export const precompile: UnpluginInstance<
 		importersById[id] = stored[0]
 		return (modules[id] = stored[1])
 	}
+	// Vite's plugins ahead of this one that transform, which a config
+	// module given anew names
+	let transformersAhead: string[] = []
+	const namingTransformers = (
+		diagnostics: RenderedDiagnostics
+	): RenderedDiagnostics =>
+		transformersAhead.length ?
+			{
+				warnings: diagnostics.warnings,
+				errors: diagnostics.errors.map(error =>
+					error
+						.split(conflictingPluginPhrase)
+						.join(writeConflictingPlugins(transformersAhead))
+				)
+			}
+		:	diagnostics
 	// what may throw at runtime fails unless allowUnsafe is set
 	const reportUnsafe = (
 		problem: string | undefined,
@@ -509,7 +526,7 @@ export const precompile: UnpluginInstance<
 							;(dependentsByFile[dependency] ??= new Set()).add(id)
 						}
 						reportDiagnostics(
-							transformed,
+							namingTransformers(transformed),
 							warning => this.warn(warning),
 							throwBuildError
 						)
@@ -573,6 +590,16 @@ export const precompile: UnpluginInstance<
 			// a factory checks its helpers against what Vitest's mocks replace
 			configResolved: config => {
 				isServing = config.command === "serve"
+				transformersAhead = config.plugins
+					.slice(
+						0,
+						config.plugins.findIndex(plugin => plugin.name === "arktype")
+					)
+					.filter(
+						plugin =>
+							plugin.transform && !/^(?:vite|builtin|native):/.test(plugin.name)
+					)
+					.map(plugin => plugin.name)
 				resolveIn(!config.isProduction)
 				for (const [name, environment] of Object.entries(
 					config.environments ?? { ssr: { resolve: config.ssr } }
