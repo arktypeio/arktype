@@ -7,6 +7,7 @@ import {
 	headlineMethod,
 	isPending,
 	leadsEvery,
+	medianOf,
 	type BarCategory,
 	type Category,
 	type SpreadCategory,
@@ -207,8 +208,7 @@ const SpreadCard = ({ category }: { category: SpreadCategory }) => {
 				<b>
 					{zod.versus.wins}/{zod.versus.count}
 				</b>{" "}
-				scenarios faster than Zod, by <b>{zod.versus.min}</b> to{" "}
-				<b>{zod.versus.max}</b>
+				scenarios faster than Zod, by a median of <b>{medianOf(zod.versus)}</b>
 			</p>
 			<div className="spread-plot">
 				<ol

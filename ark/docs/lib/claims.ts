@@ -178,7 +178,7 @@ const zodCompiledLosses =
 const bench = benchFacts()
 
 /** the median of a library's ratios to the default build across the scenarios both ran */
-const medianOf = ({ rows }: LibraryVersus) => {
+export const medianOf = ({ rows }: LibraryVersus) => {
 	const ratios = rows.map(row => row.speedup).sort((l, r) => l - r)
 	const mid = ratios.length >> 1
 	return formatRatio(
@@ -469,11 +469,17 @@ export type StandingCategory = CategoryBase & {
 
 export type Category = BarCategory | SpreadCategory | StandingCategory
 
-/** ArkType, Zod and Valibot, and the library with the next best average */
-const onBoard = (chart: BenchmarkChart, runnerUp: string) =>
-	chart.bars.filter(
-		bar => bar.kind === "precompiled" || isRival(bar) || bar.name === runnerUp
+/** ArkType, Zod and Valibot, the library with the next best average and the closest on the chart */
+const onBoard = (chart: BenchmarkChart, runnerUp: string) => {
+	const closest = chart.bars.find(bar => bar.kind !== "precompiled")
+	return chart.bars.filter(
+		bar =>
+			bar.kind === "precompiled" ||
+			isRival(bar) ||
+			bar.name === runnerUp ||
+			bar === closest
 	)
+}
 
 /** the homepage's board: each category against Zod and Valibot, every number from a chart above */
 export const categories: Category[] = [
