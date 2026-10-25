@@ -27,6 +27,9 @@ export type writeStandaloneDependencyMessage<name extends string> =
 export const versionHint =
 	"A precompiled validator is written for the arktype it was built with. Install one version of each, so @ark/aot imports what the program does."
 
+export const writeVersionHint = (arktype: string, aot: string): string =>
+	`A precompiled validator is written for the arktype it was built with. Install the @ark/aot released with arktype ${arktype}, so it imports what the program does: npm i -D @ark/aot@${aot}`
+
 export const copiesHint =
 	"Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
 

@@ -211,7 +211,12 @@ const run = (js: string) => runBundle(js).stdout
 const thrownBy = (js: string) =>
 	/^(?:[\w$]+ \[)?\w*Error]?: (.*)$/m.exec(runBundle(js).stderr)?.[1]
 
-const fakePackage = (path: string, name: string, version: string) =>
+const fakePackage = (
+	path: string,
+	name: string,
+	version: string,
+	manifest: object = {}
+) =>
 	packageFiles(
 		name,
 		{
@@ -220,6 +225,7 @@ const fakePackage = (path: string, name: string, version: string) =>
 		},
 		{
 			version,
+			...manifest,
 			exports: {
 				".": "./index.js",
 				"./runtime": "./index.js",
@@ -278,6 +284,12 @@ const dependencyFiles = {
 	),
 	"node_modules/forked/index.js":
 		'import { type } from "arktype"\nexport const forked = typeof type\n',
+	// a workspace that upgraded arktype without @ark/aot
+	...fakePackage("upgraded/node_modules/arktype", "arktype", "9.0.0", {
+		arkAotVersion: "9.1.0"
+	}),
+	"upgraded/main.ts":
+		'import { type } from "arktype"\nexport const T = type("string")\n',
 	...fakePackage("node_modules/prebuilt", "prebuilt", "1.0.0"),
 	"node_modules/prebuilt/index.js":
 		'import { registerPrecompiledUnits } from "arktype/runtime"\nexport const prebuilt = typeof registerPrecompiledUnits\n',
@@ -1306,6 +1318,23 @@ console.log(
   ${versionHint}`
 			])
 		}
+	})
+
+	it("names the @ark/aot released with a program's own arktype", async () => {
+		attest(
+			(await buildDependency("upgraded/main.ts")).errors.filter(text =>
+				text.includes("arktype resolves to")
+			)
+		).equals([
+			`upgraded/main.ts:1:22  arktype resolves to 9.0.0, but @ark/aot runs on ${arktypeVersion}
+  9.0.0 at upgraded/node_modules/arktype, reached from upgraded/main.ts
+  ${arktypeVersion} at ${ownPath("type")}, which @ark/aot imports
+  A precompiled validator is written for the arktype it was built with. Install the @ark/aot released with arktype 9.0.0, so it imports what the program does: npm i -D @ark/aot@9.1.0
+upgraded/main.ts:1:22  @ark/schema resolves to 0.1.0, but @ark/aot runs on ${schemaVersion}
+  0.1.0 at node_modules/@ark/schema, reached from upgraded/node_modules/arktype/index.js
+  ${schemaVersion} at ${ownPath("schema")}, which @ark/aot imports
+  ${versionHint}`
+		])
 	})
 
 	it("fails for a second copy of a package arktype runs on", async () => {
