@@ -302,13 +302,33 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 
 	// a failed basis or prestructural stops this node's Apply
 	compile(js: NodeCompiler): void {
-		// a loop keeps a minifier from joining its checks into one expression,
-		// which a build for size lets it do
 		if (js.traversalKind === "Allows") {
 			const read =
 				this.inner.domain?.domain === "object" && !this.prestructurals.length ?
 					this.structure?.allowsProps[0]
 				:	undefined
+			// a key is read before data is checked to be an object, in a switch
+			// rejecting what none can be read from. The checks are one condition
+			// in its block, where a minifier keeps them apart from the returns
+			if (read && !js.shortest) {
+				js.block("switch (data)", () =>
+					js
+						.line("case null: case undefined: break")
+						.line("default:")
+						.line(`data${js.prop(read.key)}`)
+						.if(
+							this.children
+								.map(child =>
+									child === this.basis ?
+										objectCondition
+									:	`(${js.condition(child)})`
+								)
+								.join(" && "),
+							() => js.return(true)
+						)
+				).return(js.rejection(this))
+				return
+			}
 			const sequence = this.inlinedSequence
 			const checks = () => {
 				for (const child of this.children) {
@@ -320,16 +340,15 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 					if (child !== this.basis || !read)
 						js.check(child, { breaks: !js.shortest })
 					else {
-						// a key is read before data is checked to be an object
 						js.rejectNullish(this)
 							.line(`data${js.prop(read.key)}`)
-							.if("!(data instanceof Object || Object(data) === data)", () =>
-								js.shortest ? js.return(false) : js.line("break")
-							)
+							.if(`!${objectCondition}`, () => js.return(false))
 					}
 				}
 				return js.return(true)
 			}
+			// a loop keeps a minifier from joining its checks into one expression,
+			// which a build for size lets it do
 			if (js.shortest) checks()
 			else js.block("for (;;)", checks).return(js.rejection(this))
 			return
@@ -399,6 +418,10 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		js.return(js.invoke(predicates[predicates.length - 1]))
 	}
 }
+
+// whether data is an object, which V8 folds once a read of its key has
+// checked its map
+const objectCondition = "(data instanceof Object || Object(data) === data)"
 
 export const Intersection = {
 	implementation,
