@@ -33,7 +33,7 @@ export default {
 }
 ```
 
-Frameworks that build with Vite take the same plugin: SvelteKit in `vite.config.ts`, as `plugins: [precompile.vite(), sveltekit()]`, and Astro in `astro.config`, as `vite: { plugins: [precompile.vite()] }`. The build precompiles JavaScript and TypeScript modules, including an Astro `<script>`, but not a Svelte component's script or another file that isn't JavaScript or TypeScript: define the Types a component uses in a `.ts` module, with any function that checks a result against `type.errors`, and import those from the component.
+Frameworks that build with Vite take the same plugin, listed after theirs: SvelteKit in `vite.config.ts`, as `plugins: [sveltekit(), precompile.vite()]`, TanStack Router as `plugins: [tanstackRouter(), react(), precompile.vite()]`, which the build requires where it splits routes, and Astro in `astro.config`, as `vite: { plugins: [precompile.vite()] }`. The build precompiles JavaScript and TypeScript modules, including an Astro `<script>`, but not a Svelte component's script or another file that isn't JavaScript or TypeScript: define the Types a component uses in a `.ts` module, with any function that checks a result against `type.errors`, and import those from the component.
 
 esbuild, which needs `bundle: true`. Put `precompile.esbuild()` ahead of any plugin that loads `.ts` files. Add `conditions: ["production"]` to a production build, which then leaves out the checks validators make in development:
 
