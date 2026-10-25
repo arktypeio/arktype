@@ -379,6 +379,33 @@ export const createClient = (token: string) => connect({ url: env.API_URL, token
 				"23:29 accepted"
 			])
 		})
+
+		it("an introspection read off what holds an exported function's parameter", () => {
+			attest(
+				diagnosticsOf(
+					`import type { Resp } from "./a.ts"
+import { make } from "./adapt.ts"
+const out: Resp = make({}, "u")
+console.log(out.resource.description)`,
+					{
+						"/a.ts": `import { type } from "arktype"
+export const Info = type({ url: "string", "description?": "string" })
+export type Info = typeof Info.infer
+export const Resp = type({ resource: Info, "error?": "string" })
+export type Resp = typeof Resp.infer
+export const Input = type({ "error?": "string" })
+export type Input = typeof Input.infer`,
+						"/adapt.ts": `import type { Info, Input, Resp } from "./a.ts"
+export function make(input: Input, url: string): Resp {
+	const resource: Info = { url }
+	const result: Resp = { resource }
+	if (input.error) result.error = input.error
+	return result
+}`
+					}
+				)
+			).equals([])
+		})
 	})
 
 	describe("helpers", () => {
@@ -1149,6 +1176,28 @@ export const d = new Proxy(User, {}).or("null")`)
 				"/main.ts:22:18  new Holder().get().or reads or, which a standalone validator lacks\n  the build can't tell where `new Holder().get()` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
 				"/main.ts:23:18  Static.T.or reads or, which a standalone validator lacks\n  the build can't tell where `Static.T` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
 				"/main.ts:24:18  new Proxy(User, {}).or reads or, which a standalone validator lacks\n  the build can't tell where `new Proxy(User, {})` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("a Type written beside an exported function's parameter", () => {
+			attest(
+				unhinted(
+					`import { make } from "./adapt.ts"
+console.log(make({}).resource.description)`,
+					{
+						"/a.ts": `import { type } from "arktype"
+export const Info = type({ url: "string", "description?": "string" })`,
+						"/adapt.ts": `import { Info } from "./a.ts"
+export function make(input: { error?: string }) {
+	const result: any = {}
+	if (input.error) result.error = input.error
+	result.resource = Info
+	return result
+}`
+					}
+				)
+			).snap([
+				"/main.ts:2:13  make({}).resource.description reads description, which a standalone validator lacks\n  the build can't tell where `make({}).resource` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
