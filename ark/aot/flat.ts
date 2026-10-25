@@ -2,12 +2,20 @@ import { hashOf } from "@ark/util"
 import MagicString, { type SourceMap } from "magic-string"
 import { parseSync, type Node, type Program, type Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
-import { prefixOf, renamedOf } from "./link.ts"
+import {
+	prefixOf,
+	pureAnnotationOf,
+	renamedOf,
+	statementOf,
+	virtualSource
+} from "./link.ts"
 import { SourceModule } from "./module.ts"
 import {
 	exportNameOf,
 	isWriteTarget,
+	loadedSourceOf,
 	ModuleScopes,
+	unwrapExpression,
 	walk,
 	type Binding,
 	type Reference
@@ -271,77 +279,86 @@ const creationsIn = (
 	for (const id in sites) {
 		const module = parsed.get(id)!
 		const creations: Creation[] = []
-		for (const statement of module.program.body) {
-			const declaration =
-				statement.type === "ExportNamedDeclaration" ?
-					statement.declaration
-				:	statement
+		for (const { statement, declaration, call } of keptCallsIn(module, kept)) {
 			if (
-				declaration?.type !== "VariableDeclaration" ||
-				!kept.statements.has(statement)
+				call.callee.type !== "Identifier" ||
+				!call.arguments.length ||
+				!call.arguments.every(arg => arg.type === "Identifier")
 			)
 				continue
-			for (const { init } of declaration.declarations) {
-				const call = init && unwrapExpression(init)
-				if (
-					call?.type !== "CallExpression" ||
-					call.callee.type !== "Identifier" ||
-					!call.arguments.length ||
-					!call.arguments.every(arg => arg.type === "Identifier")
+			// a creation the precompiler marks pure runs the same anywhere
+			const annotation = pureAnnotationOf(module.source, call)
+			if (!annotation) continue
+			const bindingOf = (id: Node) =>
+				module.scopes.root.bindings[(id as { name: string }).name]
+			const creator = originOf(module, bindingOf(call.callee))
+			const args = call.arguments.map(arg => originOf(module, bindingOf(arg)))
+			const fn = creator && creatorFnOf(parsed.get(creator[0])!)
+			if (
+				!fn ||
+				callsOf.get(creator.join("\0")) !== 1 ||
+				!args.every(
+					arg =>
+						arg &&
+						declaredIn
+							.get(arg[0])
+							?.declarations.some(d => declaredNameOf(d) === arg[1])
 				)
-					continue
-				// a creation the precompiler marks pure runs the same anywhere
-				const annotation = module.source
-					.slice(Math.max(0, call.start - 32), call.start)
-					.match(pureAnnotated)
-				if (!annotation) continue
-				const bindingOf = (id: Node) =>
-					module.scopes.root.bindings[(id as { name: string }).name]
-				const creator = originOf(module, bindingOf(call.callee))
-				const args = call.arguments.map(arg => originOf(module, bindingOf(arg)))
-				const fn = creator && creatorFnOf(parsed.get(creator[0])!)
-				if (
-					!fn ||
-					callsOf.get(creator.join("\0")) !== 1 ||
-					!args.every(
-						arg =>
-							arg &&
-							declaredIn
-								.get(arg[0])
-								?.declarations.some(d => declaredNames(d).includes(arg[1]))
-					)
-				)
-					continue
-				const [declarator] = declaration.declarations
-				creations.push({
-					start: call.start - annotation[0].length,
-					end: call.end,
-					name: `${creator[1]}Validator`,
-					creator: fn,
-					args: args.map(arg => arg![1]),
-					declared:
-						(
-							declaration.kind === "const" &&
-							declaration.declarations.length === 1 &&
-							declarator.id.type === "Identifier"
-						) ?
-							{
-								start: statement.start,
-								end: statement.end,
-								name: declarator.id.name,
-								exported: statement !== declaration,
-								assertReads:
-									statement === declaration ?
-										assertReadsOf(
-											module.scopes.root.bindings[declarator.id.name]
-										)
-									:	undefined
-							}
-						:	undefined
-				})
-			}
+			)
+				continue
+			const [declarator] = declaration.declarations
+			creations.push({
+				start: call.start - annotation.length,
+				end: call.end,
+				name: `${creator[1]}Validator`,
+				creator: fn,
+				args: args.map(arg => arg![1]),
+				declared:
+					(
+						declaration.kind === "const" &&
+						declaration.declarations.length === 1 &&
+						declarator.id.type === "Identifier"
+					) ?
+						{
+							start: statement.start,
+							end: statement.end,
+							name: declarator.id.name,
+							exported: statement !== declaration,
+							assertReads:
+								statement === declaration ?
+									assertReadsOf(module.scopes.root.bindings[declarator.id.name])
+								:	undefined
+						}
+					:	undefined
+			})
 		}
 		if (creations.length) result.set(id, creations)
+	}
+	return result
+}
+
+// each call initializing a declaration of a site module that kept code reads
+const keptCallsIn = (module: SourceModule, kept: KeptCode) => {
+	const result: {
+		statement: Node
+		declaration: Extract<Node, { type: "VariableDeclaration" }>
+		call: Call
+	}[] = []
+	for (const statement of module.program.body) {
+		const declaration =
+			statement.type === "ExportNamedDeclaration" ?
+				statement.declaration
+			:	statement
+		if (
+			declaration?.type !== "VariableDeclaration" ||
+			!kept.statements.has(statement)
+		)
+			continue
+		for (const { init } of declaration.declarations) {
+			const call = init && unwrapExpression(init)
+			if (call?.type === "CallExpression")
+				result.push({ statement, declaration, call })
+		}
 	}
 	return result
 }
@@ -358,7 +375,7 @@ const creatorFnOf = (module: SourceModule): string | undefined => {
 		declarations[0].type !== "VariableDeclaration"
 	)
 		return
-	const init = unwrapParentheses(declarations[0].declarations[0].init!)
+	const init = declarations[0].declarations[0].init!
 	if (
 		init.type !== "ArrowFunctionExpression" ||
 		init.body.type !== "BlockStatement" ||
@@ -395,43 +412,11 @@ const assertReadsOf = (
 const keptAnnotationsIn = (
 	module: SourceModule,
 	kept: KeptCode
-): [start: number, end: number][] => {
-	const result: [number, number][] = []
-	for (const statement of module.program.body) {
-		const declaration =
-			statement.type === "ExportNamedDeclaration" ?
-				statement.declaration
-			:	statement
-		if (
-			declaration?.type !== "VariableDeclaration" ||
-			!kept.statements.has(statement)
-		)
-			continue
-		for (const { init } of declaration.declarations) {
-			const call = init && unwrapExpression(init)
-			if (call?.type !== "CallExpression") continue
-			const before = module.source.slice(
-				Math.max(0, call.start - 32),
-				call.start
-			)
-			const annotation = before.match(pureAnnotated)
-			if (annotation)
-				result.push([call.start - annotation[0].length, call.start])
-		}
-	}
-	return result
-}
-
-// e.g. `type({ ... }) satisfies Type<Data>`, which runs as its expression
-const unwrapExpression = (node: Node): Node =>
-	(
-		node.type === "ParenthesizedExpression" ||
-		node.type === "TSSatisfiesExpression" ||
-		node.type === "TSAsExpression" ||
-		node.type === "TSNonNullExpression"
-	) ?
-		unwrapExpression(node.expression)
-	:	node
+): [start: number, end: number][] =>
+	keptCallsIn(module, kept).flatMap(({ call }) => {
+		const annotation = pureAnnotationOf(module.source, call)
+		return annotation ? [[call.start - annotation.length, call.start]] : []
+	})
 
 // an import of units rewritten, each name read from the function's module
 // if it's there, else from the unit's own
@@ -498,8 +483,6 @@ const writeImports = (
 				`import { ${names.join(", ")} } from ${JSON.stringify(rename(specifier))}`
 		)
 		.join("\n")
-
-const virtualSource = /"(~arktype\/[^"]+)"/g
 
 // a module a bundle keeps of its units, and the declarations it keeps
 interface UnitModule {
@@ -608,18 +591,12 @@ class KeptCode {
 const isImported = (imported: Set<string> | true | undefined, name: string) =>
 	imported === true || !!imported?.has(name)
 
-const declaredNames = (declaration: Node): string[] =>
-	declaration.type === "VariableDeclaration" ?
-		declaration.declarations.flatMap(declarator =>
-			declarator.id.type === "Identifier" ? [declarator.id.name] : []
-		)
-	: (
-		(declaration.type === "FunctionDeclaration" ||
-			declaration.type === "ClassDeclaration") &&
-		declaration.id
-	) ?
-		[declaration.id.name]
-	:	[]
+// a unit module declares each value as one const, as isUnitModule checks
+const declaredNameOf = (declaration: Node): string =>
+	(
+		(declaration as Extract<Node, { type: "VariableDeclaration" }>)
+			.declarations[0].id as { name: string }
+	).name
 
 // whether a bundler may drop a statement no kept code reads
 const isPure = (statement: Node, source: string): boolean => {
@@ -644,8 +621,6 @@ const isPureExpression = (node: Node, source: string): boolean => {
 		case "ArrowFunctionExpression":
 		case "FunctionExpression":
 			return true
-		case "ParenthesizedExpression":
-			return isPureExpression(node.expression, source)
 		case "TemplateLiteral":
 			return node.expressions.every(e => isPureExpression(e, source))
 		case "ArrayExpression":
@@ -654,18 +629,9 @@ const isPureExpression = (node: Node, source: string): boolean => {
 			)
 		case "CallExpression":
 		case "NewExpression":
-			return pureAnnotated.test(
-				source.slice(Math.max(0, node.start - 32), node.start)
-			)
+			return pureAnnotationOf(source, node) !== undefined
 	}
 	return false
-}
-
-const pureAnnotated = /\/\*\s*[#@]__PURE__\s*\*\/\s*$/
-
-const statementOf = (node: Node): Node => {
-	while (node.parent && node.parent.type !== "Program") node = node.parent
-	return node
 }
 
 // the modules of units a bundle keeps, each after those it reads, or
@@ -743,10 +709,8 @@ const unitsOf = (
 
 // whether it declares a unit's functions, rather than a value
 const declaresUnit = (declaration: Node): boolean => {
-	const init = unwrapParentheses(
-		(declaration as Extract<Node, { type: "VariableDeclaration" }>)
-			.declarations[0].init!
-	)
+	const init = (declaration as Extract<Node, { type: "VariableDeclaration" }>)
+		.declarations[0].init!
 	return (
 		init.type === "ArrayExpression" ||
 		(init.type === "CallExpression" &&
@@ -755,11 +719,6 @@ const declaresUnit = (declaration: Node): boolean => {
 					init.callee.params.length > 0)))
 	)
 }
-
-const unwrapParentheses = (node: Node): Node =>
-	node.type === "ParenthesizedExpression" ?
-		unwrapParentheses(node.expression)
-	:	node
 
 const runtimeSource = "arktype/runtime"
 
@@ -855,8 +814,7 @@ const writeFlat = (
 	for (const unit of units) {
 		for (const declaration of unit.declarations) {
 			texts.push(unit.module.source.slice(declaration.start, declaration.end))
-			for (const name of declaredNames(declaration))
-				specifiersByName.set(name, unit.specifier)
+			specifiersByName.set(declaredNameOf(declaration), unit.specifier)
 		}
 	}
 	const created = new Set<string>()
@@ -870,10 +828,7 @@ const writeFlat = (
 	const { code } = inlined
 	// an inlined template is no longer the function's to return
 	for (const name of inlined.names) specifiersByName.delete(name)
-	const { program, errors } = parseSync("units.js", code, {
-		sourceType: "module",
-		preserveParens: false
-	})
+	const { program, errors } = parseUnits(code)
 	if (errors.length) return
 	const scopes = new ModuleScopes(program)
 	const top = scopes.root.bindings
@@ -1129,22 +1084,13 @@ const writeFlat = (
 				values.length === 1 ? values[0] : `[${values.join(", ")}]`
 			let written = bodiesByReturned.get(returned)
 			if (written === undefined) {
+				const parse = unitsParser()
+				written = body
+				for (const pass of [skipForwarders, inlineCalls, dropUnread])
+					written = untilUnchanged(written, returned, parse, pass)
 				// kept code reads what it returns, so a bundler keeps its call, and
 				// annotations saying it could drop it are bytes oxc's minifier keeps
-				const parse = unitsParser()
-				written = withoutAnnotations(
-					inGzipOrder(
-						withoutUnread(
-							withCallsInlined(
-								withoutForwarders(body, returned, parse),
-								returned,
-								parse
-							),
-							returned,
-							parse
-						)
-					)
-				)
+				written = withoutAnnotations(inGzipOrder(written))
 				bodiesByReturned.set(returned, written)
 			}
 			const declaration = `const ${read.length === 1 ? read[0] : `[${read.join(", ")}]`} = (() => {
@@ -1170,18 +1116,14 @@ const withAssertsUnwrapped = (
 ): { body: string; asserting: Set<string> } => {
 	const asserting = new Set<string>()
 	if (!names.length) return { body: code, asserting }
-	const { program } = parseSync("units.js", code, {
-		sourceType: "module",
-		preserveParens: false
-	})
+	const { program } = parseUnits(code)
 	const s = new MagicString(code)
 	for (const statement of program.body as Node[]) {
 		if (statement.type !== "VariableDeclaration") continue
 		for (const { id, init } of statement.declarations) {
-			const object = init && unwrapParentheses(init)
 			const [property] =
-				object?.type === "ObjectExpression" && object.properties.length === 1 ?
-					object.properties
+				init?.type === "ObjectExpression" && init.properties.length === 1 ?
+					init.properties
 				:	[]
 			if (
 				id.type !== "Identifier" ||
@@ -1195,8 +1137,8 @@ const withAssertsUnwrapped = (
 			)
 				continue
 			s.overwrite(
-				object!.start,
-				object!.end,
+				init!.start,
+				init!.end,
 				code.slice(property.value.start, property.value.end)
 			)
 			asserting.add(id.name)
@@ -1205,64 +1147,78 @@ const withAssertsUnwrapped = (
 	return { body: s.toString(), asserting }
 }
 
-type UnitsParser = (code: string) => { program: Program; scopes: ModuleScopes }
+// the units' code, parsed as it's written, without parentheses
+const parseUnits = (code: string) =>
+	parseSync("units.js", code, { sourceType: "module", preserveParens: false })
+
+interface ParsedUnits {
+	code: string
+	program: Program
+	scopes: ModuleScopes
+}
+
+type UnitsParser = (code: string) => ParsedUnits
 
 // each pass parses what the one before wrote, which that one parsed already
 // where it changed nothing
 const unitsParser = (): UnitsParser => {
-	let last: { code: string; program: Program; scopes: ModuleScopes } | undefined
+	let last: ParsedUnits | undefined
 	return code => {
 		if (last?.code !== code) {
-			const { program } = parseSync("units.js", code, {
-				sourceType: "module",
-				preserveParens: false
-			})
+			const { program } = parseUnits(code)
 			last = { code, program, scopes: new ModuleScopes(program) }
 		}
 		return last
 	}
 }
 
-// a function the units declare that only calls another of them with its own
-// parameters, e.g. a predicate's Allows, is read as that one where it's
-// called, so a call reaches it directly
-const withoutForwarders = (
+// an edit of the units' body, parsed with what it returns after a `;`
+type UnitsPass = (units: ParsedUnits, s: MagicString, body: string) => void
+
+// the body as a pass leaves it once it changes nothing more
+const untilUnchanged = (
 	body: string,
 	returned: string,
-	parse: UnitsParser
+	parse: UnitsParser,
+	pass: UnitsPass
 ): string => {
 	for (;;) {
 		const code = `${body}\n;${returned}`
-		const { program, scopes } = parse(code)
 		const s = new MagicString(code)
-		for (const statement of program.body as Node[]) {
-			if (statement.type !== "VariableDeclaration") continue
-			for (const { id, init } of statement.declarations) {
-				const binding = scopes.bindingsById.get(id)
-				const target = init && forwardedOf(init, scopes)
-				if (
-					!binding ||
-					!target ||
-					target === binding ||
-					!binding.references.every(
-						({ id }) =>
-							id.parent?.type === "CallExpression" && id.parent.callee === id
-					)
-				)
-					continue
-				for (const reference of binding.references)
-					s.overwrite(reference.id.start, reference.id.end, target.name)
-			}
-		}
+		pass(parse(code), s, body)
 		if (!s.hasChanged()) return body
 		body = s.toString().slice(0, -returned.length - 2)
 	}
 }
 
+// a function the units declare that only calls another of them with its own
+// parameters, e.g. a predicate's Allows, is read as that one where it's
+// called, so a call reaches it directly
+const skipForwarders: UnitsPass = ({ program, scopes }, s) => {
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") continue
+		for (const { id, init } of statement.declarations) {
+			const binding = scopes.bindingsById.get(id)
+			const target = init && forwardedOf(init, scopes)
+			if (
+				!binding ||
+				!target ||
+				target === binding ||
+				!binding.references.every(
+					({ id }) =>
+						id.parent?.type === "CallExpression" && id.parent.callee === id
+				)
+			)
+				continue
+			for (const reference of binding.references)
+				s.overwrite(reference.id.start, reference.id.end, target.name)
+		}
+	}
+}
+
 // what a function calls with its own parameters, in order, if that's all it
 // does and it's a constant of the units' function
-const forwardedOf = (node: Node, scopes: ModuleScopes): Binding | undefined => {
-	const fn = unwrapParentheses(node)
+const forwardedOf = (fn: Node, scopes: ModuleScopes): Binding | undefined => {
 	if (fn.type !== "ArrowFunctionExpression" || fn.async) return
 	const [only] = fn.body.type === "BlockStatement" ? fn.body.body : []
 	const call =
@@ -1287,77 +1243,65 @@ const forwardedOf = (node: Node, scopes: ModuleScopes): Binding | undefined => {
 // its expression, or its statements where the call is returned and they end
 // in a return. Each other name it reads is one declared once, so the same
 // where it's called
-const withCallsInlined = (
-	body: string,
-	returned: string,
-	parse: UnitsParser
-): string => {
-	for (;;) {
-		const code = `${body}\n;${returned}`
-		const { program, scopes } = parse(code)
-		const declared = new Map<string, number>()
-		for (const { name } of scopes.bindingsById.values())
-			declared.set(name, (declared.get(name) ?? 0) + 1)
-		const readsAlike = (fn: Node) =>
-			scopes.references.every(
-				({ id, binding }) =>
-					id.start < fn.start ||
-					id.end > fn.end ||
-					(binding?.declaration === fn ? !binding.writes.length
-					: binding && binding.id.start > fn.start && binding.id.end < fn.end ?
-						binding.kind !== "var"
-					:	(declared.get(id.name) ?? 0) <= 1)
+const inlineCalls: UnitsPass = ({ code, program, scopes }, s, body) => {
+	const declared = new Map<string, number>()
+	for (const { name } of scopes.bindingsById.values())
+		declared.set(name, (declared.get(name) ?? 0) + 1)
+	const readsAlike = (fn: Node) =>
+		scopes.references.every(
+			({ id, binding }) =>
+				id.start < fn.start ||
+				id.end > fn.end ||
+				(binding?.declaration === fn ? !binding.writes.length
+				: binding && binding.id.start > fn.start && binding.id.end < fn.end ?
+					binding.kind !== "var"
+				:	(declared.get(id.name) ?? 0) <= 1)
+		)
+	// what each inline this pass replaces or removes, which no other may
+	// touch, as each reads the code as parsed
+	const edited: [start: number, end: number][] = []
+	const isEdited = (start: number, end: number) =>
+		edited.some(span => start < span[1] && span[0] < end)
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") continue
+		const { declarations } = statement
+		for (const [i, { id, init: fn }] of declarations.entries()) {
+			const references = scopes.bindingsById.get(id)?.references ?? []
+			const call = references[0]?.id.parent
+			if (
+				fn?.type !== "ArrowFunctionExpression" ||
+				fn.async ||
+				references.length !== 1 ||
+				call?.type !== "CallExpression" ||
+				call.callee !== references[0].id ||
+				(call.start > fn.start && call.end < fn.end) ||
+				!passesParams(call, fn) ||
+				!readsAlike(fn)
 			)
-		const s = new MagicString(code)
-		// what each inline this pass replaces or removes, which no other may
-		// touch, as each reads the code as parsed
-		const edited: [start: number, end: number][] = []
-		const isEdited = (start: number, end: number) =>
-			edited.some(span => start < span[1] && span[0] < end)
-		for (const statement of program.body as Node[]) {
-			if (statement.type !== "VariableDeclaration") continue
-			const { declarations } = statement
-			for (const [i, { id, init }] of declarations.entries()) {
-				const fn = init && unwrapParentheses(init)
-				const references = scopes.bindingsById.get(id)?.references ?? []
-				const call = references[0]?.id.parent
-				if (
-					fn?.type !== "ArrowFunctionExpression" ||
-					fn.async ||
-					references.length !== 1 ||
-					call?.type !== "CallExpression" ||
-					call.callee !== references[0].id ||
-					(call.start > fn.start && call.end < fn.end) ||
-					!passesParams(call, fn) ||
-					!readsAlike(fn)
-				)
-					continue
-				const [replaced, text] =
-					fn.body.type !== "BlockStatement" ?
-						[call, `(${code.slice(fn.body.start, fn.body.end)})`]
-					: (
-						call.parent?.type === "ReturnStatement" &&
-						fn.body.body[fn.body.body.length - 1]?.type === "ReturnStatement"
-					) ?
-						[call.parent, code.slice(fn.body.start, fn.body.end)]
-					:	[]
-				if (!replaced) continue
-				const [start, end] =
-					declarations.length === 1 ?
-						[statement.start, statementEndIn(body, statement)]
-					: i < declarations.length - 1 ?
-						[declarations[i].start, declarations[i + 1].start]
-					:	[declarations[i - 1].end, declarations[i].end]
-				if (isEdited(replaced.start, replaced.end) || isEdited(start, end))
-					continue
-				edited.push([replaced.start, replaced.end], [start, end])
-				s.overwrite(replaced.start, replaced.end, text!)
-				s.remove(start, end)
-				break
-			}
+				continue
+			const [replaced, text] =
+				fn.body.type !== "BlockStatement" ?
+					[call, `(${code.slice(fn.body.start, fn.body.end)})`]
+				: (
+					call.parent?.type === "ReturnStatement" &&
+					fn.body.body[fn.body.body.length - 1]?.type === "ReturnStatement"
+				) ?
+					[call.parent, code.slice(fn.body.start, fn.body.end)]
+				:	[]
+			if (!replaced) continue
+			const [start, end] =
+				declarations.length === 1 ?
+					[statement.start, statementEndIn(body, statement)]
+				: i < declarations.length - 1 ?
+					[declarations[i].start, declarations[i + 1].start]
+				:	[declarations[i - 1].end, declarations[i].end]
+			if (isEdited(replaced.start, replaced.end) || isEdited(start, end))
+				continue
+			edited.push([replaced.start, replaced.end], [start, end])
+			s.overwrite(replaced.start, replaced.end, text!)
+			s.remove(start, end)
+			break
 		}
-		if (!s.hasChanged()) return body
-		body = s.toString().slice(0, -returned.length - 2)
 	}
 }
 
@@ -1380,47 +1324,36 @@ const passesParams = (
 
 // what a function declares that nothing reads, which a bundler keeps as it
 // drops only a module's declarations, left out, as is what only it read
-const withoutUnread = (
-	body: string,
-	returned: string,
-	parse: UnitsParser
-): string => {
-	for (;;) {
-		const code = `${body}\n;${returned}`
-		const { program, scopes } = parse(code)
-		const s = new MagicString(code)
-		for (const statement of program.body as Node[]) {
-			if (statement.type !== "VariableDeclaration") continue
-			const { declarations } = statement
-			const unread = declarations.map(declarator => {
-				const binding =
-					declarator.id.type === "Identifier" ?
-						scopes.bindingsById.get(declarator.id)
-					:	undefined
-				return (
-					!!binding &&
-					!binding.references.length &&
-					(!declarator.init || isPureExpression(declarator.init, code))
-				)
-			})
-			if (unread.every(Boolean))
-				s.remove(statement.start, statementEndIn(body, statement))
-			else if (unread.some(Boolean)) {
-				const kept = declarations.filter((_, i) => !unread[i])
-				s.overwrite(
-					statement.start,
-					statementEndIn(body, statement),
-					`${statement.kind} ${kept.map(d => code.slice(d.start, d.end)).join(", ")}`
-				)
-			}
+const dropUnread: UnitsPass = ({ code, program, scopes }, s, body) => {
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") continue
+		const { declarations } = statement
+		const unread = declarations.map(declarator => {
+			const binding =
+				declarator.id.type === "Identifier" ?
+					scopes.bindingsById.get(declarator.id)
+				:	undefined
+			return (
+				!!binding &&
+				!binding.references.length &&
+				(!declarator.init || isPureExpression(declarator.init, code))
+			)
+		})
+		if (unread.every(Boolean))
+			s.remove(statement.start, statementEndIn(body, statement))
+		else if (unread.some(Boolean)) {
+			const kept = declarations.filter((_, i) => !unread[i])
+			s.overwrite(
+				statement.start,
+				statementEndIn(body, statement),
+				`${statement.kind} ${kept.map(d => code.slice(d.start, d.end)).join(", ")}`
+			)
 		}
-		if (!s.hasChanged()) return body
-		body = s.toString().slice(0, -returned.length - 2)
 	}
 }
 
 const withoutAnnotations = (body: string): string => {
-	const { comments } = parseSync("units.js", body, { sourceType: "module" })
+	const { comments } = parseUnits(body)
 	const s = new MagicString(body)
 	for (const comment of comments)
 		if (pureAnnotation.test(comment.value)) s.remove(comment.start, comment.end)
@@ -1434,10 +1367,7 @@ const pureAnnotation = /^\s*[#@]__PURE__\s*$/
 // order, where there are enough for the order to pay rather than move gzip
 // either way
 const inGzipOrder = (body: string): string => {
-	const { program } = parseSync("units.js", body, {
-		sourceType: "module",
-		preserveParens: false
-	})
+	const { program } = parseUnits(body)
 	const functions: [key: string, text: string][] = []
 	const rest: string[] = []
 	for (const statement of program.body as Node[]) {
@@ -1447,7 +1377,7 @@ const inGzipOrder = (body: string): string => {
 		}
 		for (const declarator of statement.declarations) {
 			const text = `${statement.kind} ${body.slice(declarator.start, declarator.end)}`
-			const init = declarator.init && unwrapParentheses(declarator.init)
+			const { init } = declarator
 			if (
 				init?.type === "ArrowFunctionExpression" ||
 				init?.type === "FunctionExpression"
@@ -1540,10 +1470,7 @@ const declarationOf = (
 const withTemplatesInlined = (
 	code: string
 ): { code: string; names: string[] } | undefined => {
-	const { program, errors } = parseSync("units.js", code, {
-		sourceType: "module",
-		preserveParens: false
-	})
+	const { program, errors } = parseUnits(code)
 	if (errors.length) return
 	const scopes = new ModuleScopes(program)
 	const s = new MagicString(code)
@@ -1554,8 +1481,7 @@ const withTemplatesInlined = (
 			statement.declarations.length !== 1
 		)
 			continue
-		const { id, init } = statement.declarations[0]
-		const fn = init && unwrapParentheses(init)
+		const { id, init: fn } = statement.declarations[0]
 		if (fn?.type !== "ArrowFunctionExpression" || !returnedLengthOf(fn))
 			continue
 		const references = scopes.bindingsById.get(id)?.references ?? []
@@ -1754,15 +1680,7 @@ export const importedNamesOf = (
 		}
 		// e.g. import() or require(), reading every export
 		walk(module.program, node => {
-			const read =
-				node.type === "ImportExpression" ? node.source
-				: (
-					node.type === "CallExpression" &&
-					node.callee.type === "Identifier" &&
-					node.callee.name === "require"
-				) ?
-					node.arguments[0]
-				:	undefined
+			const read = loadedSourceOf(node)
 			if (read?.type === "Literal" && typeof read.value === "string")
 				add(targetOf(read.value), true)
 			return true

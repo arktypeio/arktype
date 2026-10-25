@@ -7,7 +7,6 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { inspect } from "node:util"
 import {
 	keptIssuesOf,
-	keptParseMessageOf,
 	thrownErrorsOf,
 	type KeptIssue
 } from "@ark/aot/internal/issues.ts"
@@ -513,6 +512,12 @@ const thrownKeptOf = (e: unknown): KeptIssue[] | undefined => {
 	const errors = thrownErrorsOf(e)
 	return errors && keptOf(errors)
 }
+
+// a default's ParseError, minus what its value was
+const keptParseMessageOf = (message: string): string =>
+	message.startsWith("Default") ?
+		message.replace(/ \(was .*\)$/gm, "")
+	:	message
 
 const messageOf = (e: unknown) => {
 	const issues = thrownKeptOf(e)

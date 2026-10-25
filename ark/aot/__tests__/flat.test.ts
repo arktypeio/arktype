@@ -10,9 +10,8 @@ import {
 	type Rolldown
 } from "vite"
 import { parseSync } from "oxc-parser"
-import { spawnSync } from "node:child_process"
 import { join } from "node:path"
-import { writeFixture } from "./utils.ts"
+import { run, writeFixture } from "./utils.ts"
 
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts", "production"]
@@ -61,12 +60,6 @@ const bundle = async (
 	})
 	return outputFiles!.map(file => file.text)
 }
-
-const run = (js: string) =>
-	spawnSync(process.execPath, ["--input-type=module"], {
-		input: js,
-		encoding: "utf8"
-	}).stdout
 
 // a factory's parameter destructuring a unit it reads
 const factoryParam = /{ 0: \w+Allows/
@@ -137,6 +130,24 @@ lead.email is missing
 `)
 		attest(run(js)).equals(run(whole))
 		attest(js.includes("{ 0: allows")).equals(false)
+		attest(js.includes("var Team =")).equals(false)
+	})
+
+	it("creates in the function a validator under a type assertion", async () => {
+		const files = writeFixture(
+			{
+				"types.ts": types.replace(
+					"export const Team = type(",
+					"export const Team = <type.Any>type("
+				),
+				"main.ts": `import { Team } from "./types.ts"\n\nconsole.log(String(Team({ lead: {}, members: [] })))\n`
+			},
+			fromHere("temp", "flatAsserted")
+		)
+		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
+		attest(run(js)).snap(`lead.name is missing
+lead.email is missing
+`)
 		attest(js.includes("var Team =")).equals(false)
 	})
 

@@ -3819,9 +3819,8 @@ export const isSetLast = (binding: Binding): boolean => {
 export const declarationStartOf = (node: Node): number | undefined => {
 	// e.g. `type({ ... }) satisfies Type<Data>`, which runs as its expression
 	while (
-		(node.parent?.type === "TSSatisfiesExpression" ||
-			node.parent?.type === "TSAsExpression" ||
-			node.parent?.type === "TSNonNullExpression") &&
+		node.parent &&
+		isTransparent(node.parent) &&
 		node.parent.expression === node
 	)
 		node = node.parent

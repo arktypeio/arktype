@@ -1,6 +1,7 @@
 import { isAbsolute } from "node:path"
 import { parseSync, type Node } from "oxc-parser"
 import { dependencyOf, fileOf, printablePathOf, transformedId } from "./host.ts"
+import { langOf } from "./module.ts"
 import type { ScannedModule, ScannedProgram } from "./precompile.ts"
 import { walk } from "./scope.ts"
 
@@ -378,12 +379,6 @@ const positionIn = (path: string, source: string, offset: number) => {
 
 const literalIn = (text: string): string | undefined =>
 	/^(["'`])([^"$'\\`]*)\1$/.exec(text.trim())?.[2]
-
-const langOf = (id: string) =>
-	/\.[cm]?tsx$/.test(id) ? "tsx"
-	: /\.[cm]?ts$/.test(id) ? "ts"
-	: /\.jsx$/.test(id) ? "jsx"
-	: "js"
 
 // the modules a bundle holds, and each import of one, from what it bundled,
 // each as the precompiler names it

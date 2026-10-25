@@ -1,8 +1,8 @@
 import { hashOf } from "@ark/util"
 import MagicString, { type SourceMap } from "magic-string"
-import type { Node } from "oxc-parser"
+import type { Node, Span } from "oxc-parser"
 import { SourceModule } from "./module.ts"
-import { walk, type Binding, type Reference } from "./scope.ts"
+import { exportNameOf, walk, type Binding, type Reference } from "./scope.ts"
 
 export interface LinkedSite {
 	// the module's source, which names its own locals
@@ -44,20 +44,20 @@ export const linkBundle = (
 	codes = linker.codes()
 	const renamed = renamedOf(codes, modules)
 	if (!renamed) return
-	const rename = (code: string) =>
-		code.replace(virtualSource, (match, specifier: string) =>
-			specifier in renamed ? `"${renamed[specifier]}"` : match
-		)
 	const linked: LinkedBundle = { sites: {}, modules: {} }
-	for (const specifier in codes)
-		linked.modules[renamed[specifier] ?? specifier] = rename(codes[specifier])
+	for (const specifier in codes) {
+		linked.modules[renamed[specifier] ?? specifier] = withRenamed(
+			codes[specifier],
+			renamed
+		)
+	}
 	for (const [id, site] of linker.sites(renamed)) linked.sites[id] = site
 	return linked
 }
 
 const maxPasses = 8
 
-const virtualSource = /"(~arktype\/[^"]+)"/g
+export const virtualSource = /"(~arktype\/[^"]+)"/g
 
 // each changed module, by what it holds, then each importing it, in order
 export const renamedOf = (
@@ -76,9 +76,7 @@ export const renamedOf = (
 		state[specifier] = "visiting"
 		const imports = importsOf(specifier)
 		for (const imported of imports) if (!visit(imported)) return false
-		const code = codes[specifier].replace(virtualSource, (match, imported) =>
-			imported in renamed ? `"${renamed[imported]}"` : match
-		)
+		const code = withRenamed(codes[specifier], renamed)
 		if (code !== original[specifier])
 			renamed[specifier] = `${specifier}-${hashOf(code)}`
 		state[specifier] = "done"
@@ -91,6 +89,12 @@ export const renamedOf = (
 	}
 	return renamed
 }
+
+// each import of a renamed module renamed
+const withRenamed = (code: string, renamed: Record<string, string>) =>
+	code.replace(virtualSource, (match, specifier: string) =>
+		specifier in renamed ? `"${renamed[specifier]}"` : match
+	)
 
 interface Unit {
 	key: string
@@ -160,8 +164,6 @@ class Linker {
 
 	// each site module, with what it imports renamed
 	sites(renamed: Record<string, string>): [id: string, LinkedCode][] {
-		const rename = (match: string, specifier: string) =>
-			specifier in renamed ? `"${renamed[specifier]}"` : match
 		return this.units.flatMap((unit): [string, LinkedCode][] => {
 			if (!unit.isSite) return []
 			const { edits, module } = unit
@@ -179,9 +181,7 @@ class Linker {
 				[
 					unit.key,
 					{
-						code:
-							edits.toString() +
-							unit.added.join("").replace(virtualSource, rename),
+						code: edits.toString() + withRenamed(unit.added.join(""), renamed),
 						map:
 							edits.hasChanged() ?
 								edits.generateMap({ hires: "boundary" })
@@ -273,11 +273,8 @@ class Linker {
 			)
 				return
 			const target = this.unitsByKey.get(specifier.parent.source.value)
-			const name =
-				specifier.imported.type === "Identifier" ?
-					specifier.imported.name
-				:	String(specifier.imported.value)
-			const exported = target?.module.scopes.exportsByName[name]
+			const exported =
+				target?.module.scopes.exportsByName[exportNameOf(specifier.imported)]
 			if (!target || exported?.kind !== "binding") return
 			unit = target
 			binding = exported.binding
@@ -498,7 +495,16 @@ const writesIn = (expression: Node, source: string): boolean => {
 
 const pureAnnotated = /\/\*\s*[#@]__PURE__\s*\*\/\s*$/
 
-const statementOf = (node: Node): Node => {
+// the annotation marking a call pure, if one ends where it starts
+export const pureAnnotationOf = (
+	source: string,
+	call: Span
+): string | undefined =>
+	pureAnnotated.exec(
+		source.slice(Math.max(0, call.start - 32), call.start)
+	)?.[0]
+
+export const statementOf = (node: Node): Node => {
 	while (node.parent && node.parent.type !== "Program") node = node.parent
 	return node
 }
@@ -529,9 +535,7 @@ const isNamespaceImport = (binding: Binding): boolean =>
 
 const importedNameOf = (binding: Binding): string =>
 	binding.declaration.type === "ImportSpecifier" ?
-		binding.declaration.imported.type === "Identifier" ?
-			binding.declaration.imported.name
-		:	String(binding.declaration.imported.value)
+		exportNameOf(binding.declaration.imported)
 	:	"default"
 
 // as the precompiler names a module's locals, by what its source lacks.

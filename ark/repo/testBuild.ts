@@ -155,37 +155,28 @@ for (const pkg of packages) {
 if ("$ark2" in globalThis)
 	throw new Error("⚠️  A deep import installed a registry of its own.")
 
-// what errors "none" loads in place of @ark/schema/runtime
-const undetailedRuntime = await importBuilt("@ark/schema/runtime/none")
+const runtimeNames = Object.keys(
+	await importBuilt("@ark/schema/runtime")
+).join()
 
-if (
-	Object.keys(undetailedRuntime).join() !==
-	Object.keys(await importBuilt("@ark/schema/runtime")).join()
-) {
-	throw new Error(
-		"⚠️  @ark/schema/runtime/none exports other names than @ark/schema/runtime."
-	)
-}
-
-if ("_at" in (undetailedRuntime.ArkErrors as Function).prototype)
-	throw new Error("⚠️  @ark/schema/runtime/none bundles shared/issues.ts.")
-
-// what builds writing errors for size load in place of it
-for (const variant of ["lean", "none-lean"]) {
-	const leanRuntime = await importBuilt(`@ark/schema/runtime/${variant}`)
-	if (
-		Object.keys(leanRuntime).join() !==
-		Object.keys(await importBuilt("@ark/schema/runtime")).join()
-	) {
+// what errors "none" and builds writing errors for size load in place of
+// @ark/schema/runtime
+const runtimeVariant = async (variant: string) => {
+	const runtime = await importBuilt(`@ark/schema/runtime/${variant}`)
+	if (Object.keys(runtime).join() !== runtimeNames) {
 		throw new Error(
 			`⚠️  @ark/schema/runtime/${variant} exports other names than @ark/schema/runtime.`
 		)
 	}
+	return (runtime.ArkErrors as Function).prototype
+}
+
+if ("_at" in (await runtimeVariant("none")))
+	throw new Error("⚠️  @ark/schema/runtime/none bundles shared/issues.ts.")
+
+for (const variant of ["lean", "none-lean"]) {
 	// only the errors they replace have an arkKind
-	if (
-		Object.getOwnPropertySymbols((leanRuntime.ArkErrors as Function).prototype)
-			.length
-	) {
+	if (Object.getOwnPropertySymbols(await runtimeVariant(variant)).length) {
 		throw new Error(
 			`⚠️  @ark/schema/runtime/${variant} bundles the errors it replaces.`
 		)
@@ -240,11 +231,37 @@ for (const marker of ["__export(", "initialRegistryContents"]) {
 		throw new Error(`⚠️  Bundling arktype/runtime keeps ${marker}.`)
 }
 
-// errors "none" runs on it as published, where errors have no throw()
 const undetailed = fileURLToPath(new URL("temp/undetailed/", import.meta.url))
 mkdirSync(undetailed, { recursive: true })
-writeFileSync(
-	`${undetailed}main.ts`,
+
+const { precompile } = await import("@ark/aot/unplugin")
+
+// what a program logs, built with errors "none"
+const undetailedLogsOf = async (
+	file: string,
+	program: string,
+	conditions?: string[]
+) => {
+	writeFileSync(`${undetailed}${file}`, program)
+	const { outputFiles } = await build({
+		entryPoints: [`${undetailed}${file}`],
+		bundle: true,
+		write: false,
+		format: "esm",
+		platform: "node",
+		logLevel: "silent",
+		...(conditions && { conditions }),
+		plugins: [precompile.esbuild({ cwd: undetailed, errors: "none" })]
+	})
+	return spawnSync(process.execPath, ["--input-type=module"], {
+		input: outputFiles![0].text,
+		encoding: "utf8"
+	}).stdout
+}
+
+// errors "none" runs on it as published, where errors have no throw()
+const undetailedOutput = await undetailedLogsOf(
+	"main.ts",
 	`import { type } from "arktype"
 
 const T = type({ a: "string" })
@@ -257,21 +274,6 @@ try {
 }
 `
 )
-const { precompile } = await import("@ark/aot/unplugin")
-const undetailedOutput = spawnSync(process.execPath, ["--input-type=module"], {
-	input: (
-		await build({
-			entryPoints: [`${undetailed}main.ts`],
-			bundle: true,
-			write: false,
-			format: "esm",
-			platform: "node",
-			logLevel: "silent",
-			plugins: [precompile.esbuild({ cwd: undetailed, errors: "none" })]
-		})
-	).outputFiles[0].text,
-	encoding: "utf8"
-}).stdout
 
 if (
 	undetailedOutput !== "true is invalid undefined\nError: is invalid true\n"
@@ -282,25 +284,11 @@ if (
 }
 
 // a development build loads the runtime as published, beside what it adds
-writeFileSync(
-	`${undetailed}inspected.ts`,
-	`import { type } from "arktype"\n\nconsole.log(type({ a: "string" })({ a: 1 }))\n`
+const inspectedOutput = await undetailedLogsOf(
+	"inspected.ts",
+	`import { type } from "arktype"\n\nconsole.log(type({ a: "string" })({ a: 1 }))\n`,
+	["development"]
 )
-const inspectedOutput = spawnSync(process.execPath, ["--input-type=module"], {
-	input: (
-		await build({
-			entryPoints: [`${undetailed}inspected.ts`],
-			bundle: true,
-			write: false,
-			format: "esm",
-			platform: "node",
-			logLevel: "silent",
-			conditions: ["development"],
-			plugins: [precompile.esbuild({ cwd: undetailed, errors: "none" })]
-		})
-	).outputFiles[0].text,
-	encoding: "utf8"
-}).stdout
 
 if (
 	inspectedOutput.replace(/\s+/g, " ") !==

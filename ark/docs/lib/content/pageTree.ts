@@ -268,18 +268,3 @@ export const neighborsOf = (tree: PageTree, page: Page): Neighbors => {
 
 export const sectionOf = (tree: PageTree, page: Page): Section | undefined =>
 	tree.sections.find(section => section.id === page.section)
-
-/** titles of the folders containing a page, outermost first */
-export const folderTrailOf = (section: Section, page: Page): string[] => {
-	const search = (items: NavItem[], trail: string[]): string[] | undefined => {
-		for (const item of items) {
-			if (item.kind === "page" && item.page === page) return trail
-			if (item.kind === "folder") {
-				if (item.index === page) return trail
-				const found = search(item.items, [...trail, item.title])
-				if (found) return found
-			}
-		}
-	}
-	return search(section.items, []) ?? []
-}

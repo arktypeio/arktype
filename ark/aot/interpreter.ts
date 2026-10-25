@@ -231,6 +231,22 @@ interface Lookup {
 	read?: Read
 }
 
+// a value read whole off its root
+const lookupOf = (root: InputRoot, value: unknown): Lookup => ({
+	value,
+	read: { root, path: [], value }
+})
+
+const exportRootOf = (
+	target: Extract<ImportTarget, { kind: "binding" | "expression" }>,
+	importer?: SourceModule
+): InputRoot => ({
+	kind: "export",
+	file: target.module.id,
+	name: target.kind === "binding" ? target.name : "default",
+	importer
+})
+
 interface Evaluated {
 	value: unknown
 	trace: Trace
@@ -1000,14 +1016,7 @@ export class Interpreter {
 			])
 		}
 		return isReceived || (isReadFirst && !isChecked) ?
-				{
-					value: result.value,
-					read: {
-						root: { kind: "binding", module, binding },
-						path: [],
-						value: result.value
-					}
-				}
+				lookupOf({ kind: "binding", module, binding }, result.value)
 			:	{ value: result.value }
 	}
 
@@ -1054,14 +1063,10 @@ export class Interpreter {
 					)
 				}
 			case "json":
-				return {
-					value: target.value,
-					read: {
-						root: { kind: "export", file: target.id, name: "default" },
-						path: [],
-						value: target.value
-					}
-				}
+				return lookupOf(
+					{ kind: "export", file: target.id, name: "default" },
+					target.value
+				)
 		}
 		const result = this.exportValue(target)
 		if (result.error !== undefined) throw result.error
@@ -1103,19 +1108,10 @@ export class Interpreter {
 		const isDirect =
 			declaration?.type === "ImportDeclaration" &&
 			this.graph.resolve(declaration.source.value, ctx.module) === target.module
-		return {
-			value: result.value,
-			read: {
-				root: {
-					kind: "export",
-					file: target.module.id,
-					name: target.kind === "binding" ? target.name : "default",
-					importer: isDirect ? ctx.module : undefined
-				},
-				path: [],
-				value: result.value
-			}
-		}
+		return lookupOf(
+			exportRootOf(target, isDirect ? ctx.module : undefined),
+			result.value
+		)
 	}
 
 	// an export is static only if its own module could not change it
@@ -1646,21 +1642,7 @@ export class Interpreter {
 					this.writtenIn(target.binding, target.module, ctx)
 				if (written) return new DynamicValue(target.module, node, written)
 				if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)
-				return this.consume(
-					{
-						value: result.value,
-						read: {
-							root: {
-								kind: "export",
-								file: target.module.id,
-								name: target.kind === "binding" ? target.name : "default"
-							},
-							path: [],
-							value: result.value
-						}
-					},
-					ctx
-				)
+				return this.consume(lookupOf(exportRootOf(target), result.value), ctx)
 			}
 		}
 		return this.reject(node, ctx, "reads a nested namespace import")
