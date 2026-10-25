@@ -1,5 +1,11 @@
 import { throwError, type KeySet } from "@ark/util"
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import {
+	mkdirSync,
+	readFileSync,
+	rmSync,
+	statSync,
+	writeFileSync
+} from "node:fs"
 import { basename, dirname, isAbsolute, join, resolve } from "node:path"
 import { relative } from "node:path/posix"
 import {
@@ -1433,11 +1439,14 @@ const esbuildEntriesOf = async (
 		:	[]
 	const entries: ScanEntry[] = []
 	for (const path of paths) {
-		const result = await build.resolve(path, {
-			kind: "entry-point",
-			resolveDir: absWorkingDir,
-			pluginData: esbuildResolution
-		})
+		const result = await build.resolve(
+			esbuildEntryPathOf(path, absWorkingDir),
+			{
+				kind: "entry-point",
+				resolveDir: absWorkingDir,
+				pluginData: esbuildResolution
+			}
+		)
 		if (result.errors.length || result.namespace !== "file")
 			return `the entry "${path}" doesn't resolve to a file`
 		entries.push({ id: result.path })
@@ -1446,6 +1455,17 @@ const esbuildEntriesOf = async (
 	if (entry) entries.push(entry)
 	return entries
 }
+
+// esbuild reads an entry naming a file in its working directory as a path,
+// though it would resolve the specifier as a package
+const esbuildEntryPathOf = (path: string, cwd: string) =>
+	(
+		!isAbsolute(path) &&
+		!/^\.\.?(?:\/|$)/.test(path) &&
+		statSync(join(cwd, path), { throwIfNoEntry: false })?.isFile()
+	) ?
+		`./${path}`
+	:	path
 
 // esbuild's stdin, as a file beside what it imports
 const stdinEntryOf = ({

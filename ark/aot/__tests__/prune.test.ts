@@ -829,6 +829,21 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			attest(js.includes("~standard")).equals(false)
 		})
 
+		it("reads an entry named from its working directory without ./", async () => {
+			for (const entryPoints of [
+				["main.ts"],
+				[{ in: "main.ts", out: "main" }],
+				{ main: "main.ts" }
+			]) {
+				const js = await bundle(
+					{},
+					{ entryPoints, absWorkingDir: root, outdir: "out" }
+				)
+				attest(run(js)).snap("name must be a string\n")
+				attest(js.includes("~standard")).equals(false)
+			}
+		})
+
 		it("rereads what each rebuild reads", async () => {
 			const files = writeFixture(
 				{
