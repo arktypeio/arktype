@@ -48,7 +48,7 @@ contextualize(() => {
 		const severities = (...overrides: Linter.Config[]) =>
 			new Linter({ configType: "flat", cwd: fromHere("checked") })
 				.verify(
-					'import { type } from "arktype"\nexport const A = type("string & number")\nexport const makeField = limit => type(`string <= ${limit}`)\n',
+					'import { type } from "arktype"\nexport const A = type("string & number")\nexport const fields = [1, 2].map(limit => type(`string <= ${limit}`))\n',
 					[configs.recommended, ...overrides],
 					{ filename: fromHere("checked", "linted.ts") }
 				)
@@ -58,7 +58,7 @@ contextualize(() => {
 				)
 		attest(severities()).equals([
 			"2:18 @ark/aot/precompilable error",
-			"3:35 @ark/aot/precompilable error"
+			"3:43 @ark/aot/precompilable error"
 		])
 		const unsafe = { allowUnsafe: true }
 		attest(
@@ -70,7 +70,7 @@ contextualize(() => {
 			})
 		).equals([
 			"2:18 @ark/aot/warnings warning",
-			"3:35 @ark/aot/precompilable error"
+			"3:43 @ark/aot/precompilable error"
 		])
 	})
 
