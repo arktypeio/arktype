@@ -504,10 +504,12 @@ contextualize(function (this: Mocha.Suite) {
 							"/app/main.ts": { source: "User({})", transformed: true }
 						},
 						targets: { "/app/main.ts": {} },
-						dynamicImports: []
+						dynamicImports: [],
+						exposed: []
 					},
 					{ entries: ["/app/main.ts"], modules: ["/app/main.ts"], edges: [] },
 					loaded,
+					new Set(),
 					"/app"
 				)
 			).equals(
@@ -987,10 +989,12 @@ console.log(out instanceof type.errors ? out.summary : out)
 			opts: PrecompileUnpluginOptions = {},
 			{
 				plugins = [],
+				following = [],
 				lib = true,
 				onwarn
 			}: {
 				plugins?: VitePlugin[]
+				following?: VitePlugin[]
 				lib?: boolean
 				onwarn?: (warning: { message: string }) => void
 			} = {}
@@ -1002,7 +1006,11 @@ console.log(out instanceof type.errors ? out.summary : out)
 					root,
 					configFile: false,
 					logLevel: "silent",
-					plugins: [...plugins, precompile.vite({ conditions, ...opts })],
+					plugins: [
+						...plugins,
+						precompile.vite({ conditions, ...opts }),
+						...following
+					],
 					resolve: { conditions: [...conditions, ...defaultClientConditions] },
 					build: {
 						write: false,
@@ -1109,7 +1117,97 @@ console.log(out instanceof type.errors ? out.summary : out)
 			}
 		})
 
-		it("fails a build holding a module another plugin transformed", async () => {
+		// main.ts importing `imports` too, beside a component and a dependency
+		// importing `dependency`
+		const importing = async <t>(
+			imports: string,
+			run: () => Promise<t>,
+			dependency = "../../config.ts"
+		) => {
+			const main = join(root, "main.ts")
+			const source = readFileSync(main, "utf8")
+			writeFileSync(join(root, "Form.svelte"), "<script>\n</script>\n")
+			writeFileSync(join(root, "config.ts"), "export const debug = false\n")
+			writeFileSync(main, `${imports}\n${source}`)
+			writeFixture(
+				{
+					"package.json": "{}",
+					"index.js": `import ${JSON.stringify(dependency)}\n`
+				},
+				join(root, "node_modules", "fw")
+			)
+			try {
+				return await run()
+			} finally {
+				writeFileSync(main, source)
+			}
+		}
+
+		// compiles a component and writes a virtual module, each reading
+		// `read`, as Svelte's plugin and SvelteKit's do
+		const framework = (read: string): VitePlugin => {
+			const code = `import { User } from ${JSON.stringify(join(root, "types.ts"))}\nexport default ${read}\n`
+			return {
+				name: "framework",
+				enforce: "pre",
+				resolveId: id => (id === "$app/routes" ? "\0app/routes" : undefined),
+				load: id => (id === "\0app/routes" ? code : undefined),
+				transform: (_, id) => (id.endsWith(".svelte") ? code : undefined)
+			}
+		}
+
+		it("reads a module another plugin compiles, like a Svelte component", async () => {
+			const pruned = await importing(
+				'import read from "./Form.svelte"\nconsole.log(read)',
+				() =>
+					bundle(
+						{},
+						{ plugins: [framework('User.assert({ name: "Ada" }).name')] }
+					)
+			)
+			attest(run(pruned)).snap("Ada\nname must be a string\n")
+			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("reads a virtual module another plugin writes", async () => {
+			const pruned = await importing(
+				'import read from "$app/routes"\nconsole.log(read)',
+				() =>
+					bundle(
+						{},
+						{ plugins: [framework('User.assert({ name: "Ada" }).name')] }
+					)
+			)
+			attest(run(pruned)).snap("Ada\nname must be a string\n")
+			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("leaves out what no read needs where a dependency imports a module holding no validator", async () => {
+			const pruned = await importing(
+				'import "fw"\nimport { debug } from "./config.ts"\nconsole.log(debug)',
+				() => bundle()
+			)
+			attest(run(pruned)).snap("false\nname must be a string\n")
+			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("fails a bundle where a dependency imports a module holding a validator", async () => {
+			const message = await importing(
+				'import "fw"',
+				() =>
+					bundle().then(
+						() => "",
+						(e: Error) => stripVTControlCharacters(e.message)
+					),
+				"../../types.ts"
+			)
+			const expected = writeUnseenMessage(
+				"node_modules/fw/index.js imports types.ts"
+			)
+			attest(message.slice(-expected.length)).equals(expected)
+		})
+
+		it("reads a module as a plugin ahead of it transformed it", async () => {
 			const asserting: VitePlugin = {
 				name: "asserting",
 				enforce: "pre",
@@ -1118,15 +1216,15 @@ console.log(out instanceof type.errors ? out.summary : out)
 						code.replace("User({ name: 5 })", "User.assert({ name: 5 })")
 					:	undefined
 			}
-			const message = await bundle({}, { plugins: [asserting] }).then(
-				() => "",
-				// Vite colors the message where picocolors sees CI
-				(e: Error) => stripVTControlCharacters(e.message)
+			const pruned = await bundle({}, { plugins: [asserting] })
+			const { stderr } = spawnSync(process.execPath, ["--input-type=module"], {
+				input: pruned,
+				encoding: "utf8"
+			})
+			attest(stderr.includes("[TraversalError]: name must be a string")).equals(
+				true
 			)
-			const expected = writeUnseenMessage(
-				"it built main.ts from other code than it read"
-			)
-			attest(message.slice(-expected.length)).equals(expected)
+			attest(pruned.includes("~standard")).equals(false)
 		})
 	})
 
