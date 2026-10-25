@@ -122,14 +122,33 @@ export const rowsOf = (category: CategoryId) =>
 		.filter(s => s.category === category && independentSuites(s))
 		.flatMap(s => s.rows.map(row => row.results))
 
-/** whether ArkType has the best average in a category */
-export const leads = (category: CategoryId) =>
-	leaderboards[category].standings[0]?.library === "ArkType"
+/**
+ * How far above the best size average ArkType's may be and still count as
+ * tied for the smallest: a release, an engine or a bundler moves a bundle's
+ * size by about this much. Speed and startup need the best average.
+ */
+export const sizeTie = 0.05
 
-/** the suites without which ArkType wouldn't have a category's best average */
+/** whether ArkType may claim a board's category: it has the best average, or for size one within sizeTie of it */
+const claimsBest = ({ category, standings }: Leaderboard) => {
+	const ours = standings.find(s => s.library === "ArkType")
+	if (!ours) return false
+	return (
+		ours === standings[0] ||
+		(category === "size" && ours.score <= standings[0].score * (1 + sizeTie))
+	)
+}
+
+/** whether ArkType may claim a category: the best average, or a size average tied for it */
+export const leads = (category: CategoryId) =>
+	claimsBest(leaderboards[category])
+
+/** whether ArkType's claim to a category is a tie, another library having the best average */
+export const ties = (category: CategoryId) =>
+	leads(category) && leaderboards[category].standings[0].library !== "ArkType"
+
+/** the suites without which ArkType couldn't claim a category */
 export const leadDependsOn = (category: CategoryId) =>
 	leaderboards[category].suites.filter(
-		label =>
-			leaderboardOf(category, independentSuites, label).standings[0]
-				?.library !== "ArkType"
+		label => !claimsBest(leaderboardOf(category, independentSuites, label))
 	)

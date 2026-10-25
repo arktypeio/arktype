@@ -8,6 +8,7 @@ import {
 	isPending,
 	leadsEvery,
 	medianOf,
+	tieMargin,
 	type BarCategory,
 	type Category,
 	type SpreadCategory,
@@ -195,12 +196,14 @@ const BarCard = ({ category }: { category: BarCategory }) => {
 /** a best average, as a multiple of the best result: "1.36×" */
 const multiple = (score: number) => `${score.toFixed(2)}×`
 
-/** ArkType's best average beside the next best's, or the leader's where ArkType isn't first */
+/** ArkType's best average beside the next best's, or the leader's where ArkType isn't first, saying so where it's a tie */
 const Average = ({ category, of }: { category: Category; of: string }) => {
 	const { score, other } = category.average
 	return (
 		<>
-			{category.leads ?
+			{category.ties ?
+				`Within ${tieMargin} of ${other.library}'s average: `
+			: category.leads ?
 				"Lowest average: "
 			:	`${other.library}'s average is lower: `}
 			<b>{multiple(score)}</b> {of}, to {other.library}'s{" "}

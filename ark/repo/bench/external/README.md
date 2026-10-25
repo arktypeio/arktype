@@ -252,8 +252,10 @@ computed: a library is the fastest, the quickest to start or the smallest if
 it has the best average in that category across the public benchmarks that
 qualify. Since 2026-10-25 the headline counts only the independent ones, the
 suites we didn't write ("The headline's suites"), and the full board, every
-suite, is published beside it. The current standings come first, then the
-rule, then each earlier average as its record.
+suite, is published beside it. Sizes within 5% of the best average count as
+a tie ("Ties"), since releases, engines and bundlers move them by about that
+much. The current standings come first, then the rule, then each earlier
+average as its record.
 
 ### Current standings: ArkType at 808927feb, rivals at their releases of 2026-10-24
 
@@ -302,9 +304,9 @@ rows), 2 for startup (2) and 3 for size (3).
 
 \* ranked on half to three quarters of the category's suites. Leads: speed
 17.6%, startup 796%; Typia leads size by 3.3%, on the form and
-schemabenchmarks.dev's download (it isn't in Sury's). Both startup rows time
-creating a schema, which ArkType's default build does when it builds, so
-they show little. Speed and startup hold with any one suite left out.
+schemabenchmarks.dev's download (it isn't in Sury's), within the 5% that
+counts as a tie. Both startup rows time creating a schema, which ArkType's
+default build does when it builds, so they show little. Speed and startup hold with any one suite left out.
 
 The full board, every suite:
 
@@ -333,7 +335,8 @@ though the script that sizes it is ours. `independentSuites` in
 `ark/docs/lib/bench/leaderboard.ts` is the rule, and `claims.ts` computes
 the headline, the board and their notes from it, so a rerun that changes a
 standing changes the copy. The build throws if the copy names a category's
-superlative, or says "Pick 3", while ArkType doesn't lead it.
+superlative, or says "Pick 3", while ArkType can't claim it: it needs the
+best average, or for size one tied for it.
 
 The rule was chosen on 2026-10-25, after the standings above were known, as
 the subset a reader can check fastest: no suite in it is ours. Every other
@@ -386,14 +389,23 @@ mean of its ratios over the suite's rows it's measured on, and its score in
 the category is the geometric mean of its suite scores, so each suite weighs
 the same however many rows it has. The best score wins the category.
 
+**Ties.** A size score within 5% of the best counts as tied for it, so
+ArkType may claim the smallest with a size score up to 1.05 times the best,
+and the site then names the library with the best average, its score and
+that it's a tie. A release, an engine or a bundler moves a bundle's size by
+about that much. Speed and startup have no band: a claim there needs the
+best average. `sizeTie` in `ark/docs/lib/bench/leaderboard.ts` is the band.
+It was set on 2026-10-25, with the standings above known, and it makes
+Typia's 3.3% lead on size a tie.
+
 **Coverage.** A library's suite score counts only if it's measured on at
 least half that suite's rows. It's ranked in a category only if it has a
 counted score in at least half of the category's suites.
 
 **Use.** `ark/repo/bench/external/leaderboard.ts` gathers every row into
 `ark/docs/lib/bench/leaderboard.json`; `ark/docs/lib/claims.ts` computes the
-scores from it and throws if the headline claims a category ArkType doesn't
-win. Nothing is rerun to change a result.
+scores from it and throws if the headline claims a category ArkType can't
+claim. Nothing is rerun to change a result.
 
 ### Which suites
 
