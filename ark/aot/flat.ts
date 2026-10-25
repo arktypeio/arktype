@@ -244,7 +244,6 @@ const creationsIn = (
 	const declaredIn = new Map(units.map(unit => [unit.specifier, unit]))
 	// the module declaring what an import reads, and its name there
 	const originOf = (
-		module: SourceModule,
 		binding: Binding | undefined
 	): [specifier: string, name: string] | undefined => {
 		if (binding?.kind !== "import") return
@@ -259,13 +258,13 @@ const creationsIn = (
 		const entry = target?.scopes.exportsByName[exportNameOf(specifier.imported)]
 		if (entry?.kind !== "binding") return
 		return entry.binding.kind === "import" ?
-				originOf(target!, entry.binding)
+				originOf(entry.binding)
 			:	[source, entry.binding.name]
 	}
 	const callsOf = new Map<string, number>()
 	for (const module of parsed.values()) {
 		for (const binding of Object.values(module.scopes.root.bindings)) {
-			const origin = originOf(module, binding)
+			const origin = originOf(binding)
 			if (!origin) continue
 			const key = origin.join("\0")
 			const calls = binding.references.filter(
@@ -291,8 +290,8 @@ const creationsIn = (
 			if (!annotation) continue
 			const bindingOf = (id: Node) =>
 				module.scopes.root.bindings[(id as { name: string }).name]
-			const creator = originOf(module, bindingOf(call.callee))
-			const args = call.arguments.map(arg => originOf(module, bindingOf(arg)))
+			const creator = originOf(bindingOf(call.callee))
+			const args = call.arguments.map(arg => originOf(bindingOf(arg)))
 			const fn = creator && creatorFnOf(parsed.get(creator[0])!)
 			if (
 				!fn ||

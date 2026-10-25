@@ -612,7 +612,7 @@ const writeArtifact = (
 			} else {
 				if (factory.internedBy !== undefined) tables.add(factory.internedBy)
 				factories.push(
-					artifact.writeFactory(name, index, configured),
+					artifact.writeFactory(index, configured),
 					writeExport(name, index)
 				)
 			}
@@ -1388,7 +1388,7 @@ class StandaloneArtifact {
 		return calls
 	}
 
-	writeFactory(name: string, index: number, configured: Configured): string {
+	writeFactory(index: number, configured: Configured): string {
 		const { type, params, internedBy } = this.factory!
 		this.writeSharedUnits()
 		const value = this.validatorNames.get(type as never) ?? this.exportOf(type)
