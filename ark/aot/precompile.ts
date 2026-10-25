@@ -2128,7 +2128,7 @@ export class Precompiler {
 				([node]) => traversalKeyOf(node.in as BaseRoot)[1]
 			)
 		]
-		// e.g. `pipe.try` holding its morph
+		// e.g. a Standard Schema's morph, holding its validate
 		if (
 			held.some(
 				value =>
@@ -2221,7 +2221,7 @@ export class Precompiler {
 		for (const reference of site.references) {
 			const text = module.snippetOf(reference)
 			const hole = holesByValue.get(reference.value)
-			// e.g. beside `pipe.try`'s morph, where nothing the site reads is dropped
+			// e.g. beside a Standard Schema's morph, where nothing the site reads is dropped
 			if (hole && site.called.includes(hole) && !dropped.has(hole.value))
 				continue
 			// a dropped class decided which branch survived
@@ -2231,7 +2231,7 @@ export class Precompiler {
 				hole.kind !== "class" &&
 				!dropped.has(hole.value)
 			) {
-				// e.g. `pipe.try`'s morph, which arktype calls from a function of its own
+				// e.g. a Standard Schema's validate, which arktype calls from a function of its own
 				reasons.push(
 					`${labelOf(module, reference)} is wrapped in a function arktype creates, which a standalone validator can't create yet`
 				)

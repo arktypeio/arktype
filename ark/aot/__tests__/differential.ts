@@ -545,10 +545,12 @@ const expectedsOf = (errors: ArkErrors) =>
 		}))
 		.sort((l, r) => (l.at < r.at ? -1 : 1))
 
-// a check's error holds its description, which a raised one doesn't
+// a check's error holds its description, which a raised one doesn't unless
+// pipe.try raised it, describing it by its morph
 const raisesUnexpected = (error: ArkError) =>
 	error.code !== "union" &&
 	error.description === undefined &&
+	(error as ArkError<"predicate">).morph === undefined &&
 	suppliedTextOf(error, "expected") === undefined
 
 const unionExpectedOf = (error: ArkError<"union">): string | null => {

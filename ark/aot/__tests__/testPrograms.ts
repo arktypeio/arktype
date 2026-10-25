@@ -15,6 +15,7 @@ import {
 	nodeOf,
 	predicates,
 	sourceOf,
+	tried,
 	type Node
 } from "./grammar.ts"
 import { lacks, testedOptions } from "./contract.ts"
@@ -445,6 +446,9 @@ const derivations = {
 	pick: (l: string) => `${l}.pick("a", "b")`,
 	array: (l: string) => `${l}.array()`,
 	pipe: (l: string) => `${l}.pipe(${morphs.size.name})`,
+	try: (l: string) =>
+		`${l}.pipe.try(${tried.parse.name}, ${tried.refuse.name})`,
+	exec: (l: string) => `${l}.or("x/^(a)b?$/")`,
 	narrow: (l: string) => `${l}.narrow(${predicates.isEven.name})`
 }
 
@@ -746,7 +750,12 @@ const codecs: fc.Arbitrary<FragmentOf> = fc
 			)
 	)
 
-const holes: Record<string, Function> = { ...morphs, ...predicates, emptyArray }
+const holes: Record<string, Function> = {
+	...morphs,
+	...tried,
+	...predicates,
+	emptyArray
+}
 
 interface Program {
 	containers: string

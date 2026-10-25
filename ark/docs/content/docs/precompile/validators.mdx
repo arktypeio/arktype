@@ -46,7 +46,7 @@ A validator returns errors of its own, instances of `type.errors` and of `arktyp
 - A missing key's message is `name is missing`, without what was expected.
 - `assert` throws a `TraversalError` whose message is the errors' `summary`, one line per issue, rather than arktype's bulleted list.
 - A path starting with an index reads `[0] must be a string`, without arktype's `value at`, even where a problem is configured.
-- Text a narrow or morph puts in `ctx.reject({ meta })` isn't written, so pass it as `expected`, `problem` or `message` instead. An issue raised without one, like that of a `pipe.try` morph that throws, reads `is invalid` rather than naming the function.
+- Text a narrow or morph puts in `ctx.reject({ meta })` isn't written, so pass it as `expected`, `problem` or `message` instead. An issue a narrow raises without one reads `is invalid` rather than naming the function. One a `pipe.try` morph raises by throwing expects what arktype's does, like `valid according to parse`, but has no `morph` or `cause`.
 - A validator a morph calls with its `ctx` adds its issues to that validation.
 - `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`.
 - [`firstIssue(out)`](/docs/errors#finding-only-the-first) finds only the first issue of errors that haven't found theirs, stopping where the data first fails.
