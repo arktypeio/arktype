@@ -1100,7 +1100,7 @@ export class ModuleGraph {
 					stored |= this.transfer(arg, module, kindOfKey)
 			}
 		}
-		return stored & ~kinds.data ? kinds.holder : 0
+		return holderOf(stored) & ~kinds.data
 	}
 
 	// e.g. what `assigned` may be after `({ assigned } = { assigned: A })`
