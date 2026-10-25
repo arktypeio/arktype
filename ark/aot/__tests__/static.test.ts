@@ -618,6 +618,19 @@ export const Name = text(5)`)
 			])
 		})
 
+		it("configure() in a helper", () => {
+			attest(
+				diagnosticsOf(`import { configure, type } from "arktype"
+const text = (max: number) => {
+	const config = configure({ exactOptionalPropertyTypes: false })
+	return type(\`string <= \${max}\`)
+}
+export const Name = text(5)`)
+			).snap([
+				"/main.ts:6:21  text(5) cannot be precompiled\n  `configure({ exactOptionalPropertyTypes: false })` configures arktype as the function runs, which a call the build precompiles doesn't\n  Call configure() in the build's config module instead, so every Type is precompiled with what it sets."
+			])
+		})
+
 		it("a body with other statements", () => {
 			attest(
 				precompile(`import { type } from "arktype"

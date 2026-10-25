@@ -194,6 +194,10 @@ const textHints: [
 	],
 	[unstaticHelperPattern, fn => `${capitalize(writeHelperBodyFix(fn))}.`],
 	[
+		/configures arktype as the function runs/,
+		"Call configure() in the build's config module instead, so every Type is precompiled with what it sets."
+	],
+	[
 		/^`(.+)` is read before its declaration/,
 		name => `Declare \`${name}\` before the const that reads it.`
 	],

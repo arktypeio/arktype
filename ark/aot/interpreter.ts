@@ -1774,9 +1774,16 @@ export class Interpreter {
 					"validation"
 				)
 			case "arktype":
-				return fn === configure ?
-						this.configurationOf(node, args[0], ctx)
-					:	this.callArktype(fn as Function, args, receiver, node, ctx)
+				if (fn !== configure)
+					return this.callArktype(fn as Function, args, receiver, node, ctx)
+				// e.g. in a helper, which a precompiled call no longer runs
+				return ctx.env ?
+						this.reject(
+							node,
+							ctx,
+							"configures arktype as the function runs, which a call the build precompiles doesn't"
+						)
+					:	this.configurationOf(node, args[0], ctx)
 		}
 		return this.reject(
 			node,
