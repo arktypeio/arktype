@@ -7988,7 +7988,7 @@ const User = type({
 })
 ```
 
-That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](https://arktype.io/docs/precompile), it ships no parser. On Valibot's own login form, ArkType's default build reports every error, with its message, in a smaller bundle than Valibot: 1.14 kB gzipped against 1.55 kB.
+That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](https://arktype.io/docs/precompile), it ships no parser. On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.14 kB gzipped against 1.55 kB.
 
 Coming from Zod, most APIs have a direct equivalent:
 
