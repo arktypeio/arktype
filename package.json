@@ -41,7 +41,7 @@
 		"testPruneParity": "node --conditions ark-ts ./ark/aot/__tests__/testPruneParity.ts",
 		"testAlgebra": "node --conditions ark-ts ./ark/type/__tests__/algebra/testAlgebra.ts",
 		"testDifferential": "pnpm test --exclude ark/type/__tests__/gc.test.ts --require ./ark/aot/__tests__/testDifferential.ts",
-		"testJitless": "pnpm test --exclude \"ark/aot/**\" --grep \"jit by default|has jit|compiled code|deep invalid data through an undiscriminated union\" --invert --require ./ark/repo/testJitless.ts",
+		"testJitless": "pnpm test --exclude \"ark/aot/**\" --exclude \"ark/docs/components/playground/__tests__/precompile.test.ts\" --grep \"jit by default|has jit|compiled code|deep invalid data through an undiscriminated union\" --invert --require ./ark/repo/testJitless.ts",
 		"testCache": "pnpm test --exclude ark/type/__tests__/gc.test.ts --exclude ark/type/__tests__/facts.test.ts --exclude ark/type/__tests__/precompile.test.ts --grep \"^config jitless$|NaN in discriminated unions jitless$|Object.prototype members are undeclared jitless$\" --invert --require ./ark/aot/__tests__/testCache.ts",
 		"testTsVersions": "ts ./ark/repo/testTsVersions.ts",
 		"testTsCompat": "tsc --project ark/repo/tsCompat && tsc --project ark/repo/tsCompat/tsconfig.loose.json && tsc --project ark/repo/tsCompat/tsconfig.attest.json && tsc --project ark/repo/tsCompat/tsconfig.workers.json && tsc --project ark/repo/tsCompat/tsconfig.meta.json",
