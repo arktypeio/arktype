@@ -211,6 +211,24 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 		])
 	})
 
+	it("reads a directory a pattern matches as the scripts it holds", () => {
+		const root = writeFixture({
+			"package.json": "{}",
+			"src/main.ts": `import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n`,
+			"src/forms/login.ts": `import { type } from "arktype"\n\nexport const Login = type({ email: "string.email" })\n`,
+			"src/styles.css": "body {}\n",
+			"src/types.d.ts": "export {}\n"
+		})
+		const expected = [
+			"src/forms/login.ts:3:22  accepted",
+			"src/main.ts:3:21  accepted",
+			"2 sites in 2 files: 2 accepted (100.0%)"
+		]
+		attest(check(["src/**"], { cwd: root }).lines).equals(expected)
+		attest(check(["src"], { cwd: root }).lines).equals(expected)
+		attest(check(["src", "src/**/*.ts"], { cwd: root }).lines).equals(expected)
+	})
+
 	it("reads the options a plugin call passes", () => {
 		const root = writeFixture({
 			"package.json": "{}",
