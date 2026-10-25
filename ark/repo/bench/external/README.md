@@ -269,11 +269,11 @@ Typia 2.43M (gross 4.95M against ajv's 5.52M). On moltar Typia adds fewer
 The headline's superlatives come from a rule, written before any average was
 computed: a library is the fastest, the quickest to start or the smallest if
 it has the best average in that category across the public benchmarks that
-qualify. Since 2026-10-25 the headline counts only the independent ones, the
-suites we didn't write ("The headline's suites"), and the full board, every
-suite, is published beside it. Sizes within 5% of the best average count as
-a tie ("Ties"), since releases, engines and bundlers move them by about that
-much. The size suites are rerun every week at each library's newest release
+qualify. Since 2026-10-25 the headline counts only the independent ones:
+other projects' suites, and valibot.dev's login form, whose code is Valibot's
+though we wrote it in each library and size it with our script ("The
+headline's suites"). The full board, every suite, is published beside it. Sizes within 5% of the best average count as
+a tie ("Ties"), since one release can move a bundle by about that much. The size suites are rerun every week at each library's newest release
 ("Weekly" under "Reproduce"). The standings at 808927feb come first, then the
 rule, then each earlier average as its record.
 
@@ -355,11 +355,14 @@ it isn't in Sury's. Leads: speed 13.4%, startup 178%; ajv leads size by
 ### The headline's suites
 
 The headline and the homepage's board rank by the independent suites only,
-every qualifying suite but the four we wrote (the homepage's benchmark,
+every qualifying suite but the four we designed (the homepage's benchmark,
 `startup.ts`, the homepage's cold start and the homepage's apps), so
 ArkType's own benchmarks don't decide its claims. It applies to all three
-categories alike. valibot.dev's login form counts: its code is Valibot's,
-though the script that sizes it is ours. `independentSuites` in
+categories alike. valibot.dev's login form counts, and it's partly ours: its
+schema is Valibot's code from valibot.dev, but we wrote it in every other
+library (`forms/`) and wrote the script that sizes it. The site says so
+wherever it states these standings (`isWrittenByUs`). Size's lead doesn't
+survive leaving it out. `independentSuites` in
 `ark/docs/lib/bench/leaderboard.ts` is the rule, and `claims.ts` computes
 the headline, the board and their notes from it, so a rerun that changes a
 standing changes the copy. The build throws if the copy names a category's
@@ -420,8 +423,10 @@ the same however many rows it has. The best score wins the category.
 **Ties.** A size score within 5% of the best counts as tied for it, so
 ArkType may claim the smallest with a size score up to 1.05 times the best,
 and the site then names the library with the best average, its score and
-that it's a tie. A release, an engine or a bundler moves a bundle's size by
-about that much. Speed and startup have no band: a claim there needs the
+that it's a tie. One release can move a bundle's size by about that much:
+Valibot 1.5.0's bundle in Sury's suite is 3.3% smaller than 1.4.2's. Engines
+don't move it, and in the newest run (2026-10-25) every rival's bundle in
+the form and Sury's suite was byte for byte its earlier one's. Speed and startup have no band: a claim there needs the
 best average. `sizeTie` in `ark/docs/lib/bench/leaderboard.ts` is the band.
 It was set on 2026-10-25, with the standings above known, and it makes
 Typia's 3.3% lead on size a tie.
@@ -588,10 +593,12 @@ bundle in Sury's suite is 1261 B gzipped, 1.4.2's 1304.
 
 ### Objections
 
-**"Half of these benchmarks are yours."** We wrote 1 of the 5 speed suites,
-2 of the 4 startup suites and 1 of the 4 size suites (the form is
-valibot.dev's; the script that sizes it is ours), and the headline counts
-none of them ("The headline's suites"). On the full board, with ours, speed
+**"Half of these benchmarks are yours."** We designed 1 of the 5 speed suites,
+2 of the 4 startup suites and 1 of the 4 size suites, and the headline counts
+none of them ("The headline's suites"). It does count valibot.dev's login
+form, a size suite: its schema is Valibot's, but we wrote it in every other
+library and wrote the script that sizes it. Without it, size goes to
+@railway-ts/pipelines (one suite), then Typia 1.177, then ArkType 1.283. On the full board, with ours, speed
 is ArkType 1.107 against ata 1.255 (the homepage's suite is ArkType's worst,
 1.282), startup ArkType 1.013 against Typia 2.815, and size ajv 1.326
 against ArkType's 1.462. Startup without ours is two rows that time creating
@@ -623,10 +630,13 @@ records. Speed and startup hold with any one suite left out. Speed's
 closest is without schemabenchmarks.dev: ArkType 1.110, ata 1.151, a 3.7%
 lead.
 
-**"Size isn't close."** Over the independent suites, Typia leads it by
-3.3%, 1.256 to ArkType's 1.297, on the two of three it's in. On the full
-board, ajv leads it by 10.3%, 1.326 against ArkType's
-1.462, and the lead survives leaving out schemabenchmarks.dev (ajv 1.160, in
+**"Size isn't close."** Over the independent suites, with the size rows
+rerun at 2cc2aa949, ArkType leads it by 0.3%, 1.252 to Typia's 1.256 on the
+two of three Typia is in, inside the 5% that counts as a tie, and the lead
+doesn't survive leaving out any one suite. At 808927feb's rows Typia led by
+3.3%, 1.256 to 1.297. On the full board ajv leads it, 1.326 against
+ArkType's 1.424 (7.4%). At 808927feb's rows, ajv led by 10.3%, 1.326 against
+ArkType's 1.462, and the lead survived leaving out schemabenchmarks.dev (ajv 1.160, in
 two of three suites), Sury's (ajv 1.326, with ArkType fourth at 1.499) or the
 form (ajv 1.527 to ArkType's 1.546), not the homepage's apps (Typia 1.256 in
 two of three, ArkType 1.297). Valibot ships less than the default build on 3 of the 7

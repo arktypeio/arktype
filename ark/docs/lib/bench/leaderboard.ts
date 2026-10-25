@@ -56,19 +56,35 @@ const suiteScores = (suite: Suite) => {
 /** the suites we wrote, by id */
 const ownSuites = ["homepage", "startup", "homepageStartup", "homepageSize"]
 
-const ownLabels = ownSuites.map(id => {
-	const suite = suites.find(s => s.id === id)
-	if (!suite) throw new Error(`No leaderboard suite has the id ${id}`)
-	return suite.label
-})
+/**
+ * The independent suites whose code for each library we wrote: valibot.dev's
+ * login form, Valibot's code there, written by us in every other library and
+ * sized by our script
+ */
+const writtenByUs = ["form"]
+
+const labelsOf = (ids: string[]) =>
+	ids.map(id => {
+		const suite = suites.find(s => s.id === id)
+		if (!suite) throw new Error(`No leaderboard suite has the id ${id}`)
+		return suite.label
+	})
+
+const ownLabels = labelsOf(ownSuites)
+
+const writtenLabels = labelsOf(writtenByUs)
 
 /** whether we wrote a suite, by its label */
 export const isOwnSuite = (label: string) => ownLabels.includes(label)
 
+/** whether we wrote a suite's code for each library, by its label */
+export const isWrittenByUs = (label: string) => writtenLabels.includes(label)
+
 /**
- * The headline's basis: independent suites only, every suite but the ones we
- * wrote, so ArkType's own benchmarks don't decide its claims. It applies to
- * every category alike.
+ * The headline's basis: every suite but the ones we designed, so ArkType's own
+ * benchmarks don't decide its claims. It keeps valibot.dev's login form, whose
+ * code is Valibot's though we wrote it in each library. It applies to every
+ * category alike.
  */
 const independentSuites = (suite: Suite) => !ownSuites.includes(suite.id)
 
@@ -123,8 +139,8 @@ export const rowsOf = (category: CategoryId) =>
 
 /**
  * How far above the best size average ArkType's may be and still count as
- * tied for the smallest: a release, an engine or a bundler moves a bundle's
- * size by about this much. Speed and startup need the best average.
+ * tied for the smallest: one release can move a bundle's size by about this
+ * much. Speed and startup need the best average.
  */
 export const sizeTie = 0.05
 

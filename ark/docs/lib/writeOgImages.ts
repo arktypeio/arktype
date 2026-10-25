@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { decompress } from "wawoff2"
 import { leaderboards, type CategoryId } from "./bench/leaderboard.ts"
-import { claims, draftOf } from "./claims.ts"
+import { assertStandings, claims, draftOf } from "./claims.ts"
 import { getPageTree } from "./content/docs.ts"
 import { docsDir, publicDir } from "./content/paths.ts"
 
@@ -384,16 +384,28 @@ const writePng = (path: string, svg: string) => {
 	writeFileSync(path, new Resvg(svg).render().asPng())
 }
 
+/** a blog page's description and its cards' (the index's), which state standings claims.ts can't render */
+const blogCopyOf = (path: string, description: string) => [
+	description,
+	...[...readFileSync(path, "utf8").matchAll(/\bdescription="([^"]*)"/g)].map(
+		([, card]) => card
+	)
+]
+
 /**
  * Writes the social cards whose text comes from claims.ts or a page's
  * frontmatter, so they can't fall behind it: the homepage's og.png and each
- * blog post's ogImage.
+ * blog post's ogImage. Throws if a blog description states a standing
+ * the board doesn't back.
  */
 export const writeOgImages = async (): Promise<void> => {
 	await loadFonts()
 	writePng(join(publicDir, "image", "og.png"), homeCard())
-	for (const { section, frontmatter } of getPageTree().pages) {
-		if (section !== "blog" || !frontmatter.ogImage) continue
+	for (const { section, frontmatter, path } of getPageTree().pages) {
+		if (section !== "blog") continue
+		for (const copy of blogCopyOf(path, frontmatter.description))
+			assertStandings(copy, path)
+		if (!frontmatter.ogImage) continue
 		writePng(
 			join(publicDir, "image", frontmatter.ogImage),
 			postCard(frontmatter.title, frontmatter.description)
