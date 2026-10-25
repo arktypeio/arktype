@@ -1152,11 +1152,14 @@ export const pruneDiscriminant = (
 					return !isReadableOnPrimitive(discriminantCtx.path[ctx.path.length])
 
 				if (
-					(node.hasKind("domain") || discriminantCtx.kind === "unit") &&
+					(node.hasKind("domain") ||
+						discriminantCtx.kind === "unit" ||
+						isDomainUnit(node)) &&
 					propString === discriminantCtx.chainedPropString
 				)
 					// if the discriminant has already checked the domain at the current path
-					// (or a unit literal, implying a domain), we don't need to recheck it
+					// (or a unit literal, implying a domain, or null or undefined, which
+					// their domain implies), we don't need to recheck it
 					return true
 
 				// we don't need to recurse into index nodes as they will never
@@ -1165,6 +1168,10 @@ export const pruneDiscriminant = (
 			}
 		}
 	)
+
+// a unit its domain holds nothing else of
+const isDomainUnit = (node: BaseNode): boolean =>
+	node.hasKind("unit") && (node.unit === null || node.unit === undefined)
 
 const primitivePrototypes = [
 	String.prototype,
