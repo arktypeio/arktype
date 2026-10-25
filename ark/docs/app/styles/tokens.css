@@ -109,18 +109,6 @@
 	--column: 48rem;
 	--measure: 40rem;
 
-	/* space: 4px base */
-	--s-1: 4px;
-	--s-2: 8px;
-	--s-3: 12px;
-	--s-4: 16px;
-	--s-5: 24px;
-	--s-6: 32px;
-	--s-7: 48px;
-	--s-8: 64px;
-	--s-9: 96px;
-	--s-10: 128px;
-
 	--r-xs: 4px;
 	--r-sm: 6px;
 	--r-md: 10px;
@@ -132,7 +120,6 @@
 	--ease-pop: cubic-bezier(0.16, 1, 0.3, 1);
 	--t-pop-in: 0.14s;
 	--t-pop-out: 0.09s;
-	--t-intent: 80ms;
 	--t-micro: 0.16s;
 	--t-ui: 0.24s;
 	--t-drawer: 0.32s;
@@ -140,7 +127,6 @@
 	--t-enter: 0.52s;
 	--t-draw: 0.7s;
 
-	--z-content: 1;
 	--z-sticky-sub: 20;
 	--z-menu: 30;
 	--z-nav: 60;
@@ -148,7 +134,6 @@
 	--z-scrim: 80;
 	--z-drawer: 90;
 	--z-grain: 100;
-	--z-dialog: 120;
 	--z-skip: 200;
 }
 

@@ -63,9 +63,6 @@
 		font-feature-settings: "ss01", "calt";
 		letter-spacing: -0.01em;
 	}
-	.c-sky {
-		color: var(--sky);
-	}
 	.c-teal {
 		color: var(--teal);
 	}
@@ -1631,10 +1628,6 @@
 		.ctas .btn-gold {
 			flex-basis: 100%;
 		}
-		.ctas .text-link {
-			flex-basis: 100%;
-			justify-content: center;
-		}
 		.block {
 			padding-top: 96px;
 		}
@@ -1743,26 +1736,6 @@
 	}
 	.btn .arrow.down {
 		display: inline-block;
-	}
-	.text-link {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		height: 44px;
-		padding: 0 8px;
-		color: var(--ink-2);
-		font: 600 15px / 1 var(--sans);
-		text-decoration: none;
-		transition: color var(--t-micro);
-		.arrow {
-			transition: translate var(--t-micro) var(--ease-out);
-		}
-		&:hover {
-			color: var(--ink);
-			.arrow {
-				translate: 3px 0;
-			}
-		}
 	}
 	.btn:hover .arrow.down {
 		translate: 0 2px;

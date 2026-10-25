@@ -1,9 +1,5 @@
 import { createRequire } from "node:module"
-import type {
-	LanguageRegistration,
-	ShikiTransformer,
-	ThemeRegistration
-} from "shiki"
+import type { LanguageRegistration, ThemeRegistration } from "shiki"
 import type { TwoslashOptions } from "twoslash"
 import { withArkLightContrast } from "./arkLight.ts"
 
@@ -187,33 +183,6 @@ declare global {
 				return true
 			default:
 				return true
-		}
-	}
-}
-
-type HastElement = Parameters<ShikiTransformer["line"] & {}>[0]
-const descendantIncludesText = (
-	node: HastElement,
-	...texts: string[]
-): boolean =>
-	node.children &&
-	node.children.some(
-		c =>
-			(c.type === "text" && texts.some(s => c.value.includes(s))) ||
-			descendantIncludesText(c as never, ...texts)
-	)
-
-/** marks lines with an inline error comment, ErrorLens style */
-export const errorLineTransformer: ShikiTransformer = {
-	name: "ark:error-lines",
-	line(node) {
-		if (descendantIncludesText(node, "// ArkErrors:", "// ParseError:")) {
-			this.addClassToHast(node, "highlighted")
-			this.addClassToHast(node, "error")
-			this.addClassToHast(node, "runtime-error")
-		} else if (descendantIncludesText(node, "// TypeScript:")) {
-			this.addClassToHast(node, "highlighted")
-			this.addClassToHast(node, "error")
 		}
 	}
 }
