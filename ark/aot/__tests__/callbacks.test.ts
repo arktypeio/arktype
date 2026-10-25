@@ -4,7 +4,7 @@ import type { Type } from "arktype"
 import { analyze, diagnosticsOf, normalized, statusesOf } from "./utils.ts"
 
 const nonStatic = `{
-	const result = "string"
+	let result = "string"
 	return result
 }`
 
@@ -46,7 +46,7 @@ const E = scope({ a: "number" }, { domain: { description: () => ${nonStatic} } }
 const F = type("string").pipe(s => s.length).toJsonSchema({ fallback: ctx => ${nonStatic} })`
 		attest(statusesOf(source)[0]).snap(`2:11 rejected
   arktype calls a function (/main.ts:2:16) while defining the type, so it must be a static helper
-  a function (/main.ts:2:16) is not a static helper: its body is not one expression or one \`return\``)
+  a function (/main.ts:2:16) is not a static helper: it runs \`let result = "string"\` (/main.ts:3:2), where a static helper declares only consts before one \`return\``)
 		attest(
 			analyze(source).sites.map(site => `${site.line} ${site.status}`)
 		).snap([
@@ -127,7 +127,7 @@ const B = type("'a' | 'b'").narrow(s => ${nonStatic})
 const C = type("string").narrow(s => ${nonStatic})`)
 		).snap([
 			'2:11 accepted "a"',
-			"3:11 rejected\n  arktype calls a function (/main.ts:3:36) while defining the type, so it must be a static helper\n  a function (/main.ts:3:36) is not a static helper: its body is not one expression or one `return`",
+			'3:11 rejected\n  arktype calls a function (/main.ts:3:36) while defining the type, so it must be a static helper\n  a function (/main.ts:3:36) is not a static helper: it runs `let result = "string"` (/main.ts:4:2), where a static helper declares only consts before one `return`',
 			"7:11 accepted string"
 		])
 	})

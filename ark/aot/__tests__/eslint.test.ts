@@ -79,11 +79,11 @@ contextualize(() => {
 			lint(`import { type } from "arktype"
 export const User = type({ name: "string" })
 export const makeField = limit => {
-	const Field = type(\`string <= \${limit}\`)
+	let Field = type(\`string <= \${limit}\`)
 	return Field
 }`)
 		).snap([
-			"4:16-4:42 type(`string <= ${limit}`) cannot be precompiled\n`limit` is a parameter of makeField (linted.js:3:26); its value is known only at runtime\nWrite the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call."
+			"4:14-4:40 type(`string <= ${limit}`) cannot be precompiled\n`limit` is a parameter of makeField (linted.js:3:26); its value is known only at runtime\nWrite the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call."
 		])
 	})
 

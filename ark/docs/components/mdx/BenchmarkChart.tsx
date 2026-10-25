@@ -15,7 +15,14 @@ import { Table } from "./Table.tsx"
 
 const pct = (n: number) => `${n.toFixed(2)}%`
 
-const Panel = ({ panel, index }: { panel: BenchPanel; index: number }) => (
+type PanelProps = {
+	panel: BenchPanel
+	index: number
+	/** the row that's its set's one tab stop, if it's in this panel (see BenchmarkControls) */
+	entry: number
+}
+
+const Panel = ({ panel, index, entry }: PanelProps) => (
 	<figure
 		className={
 			panel.rows.some(row => row.faster && !row.tie) ?
@@ -45,7 +52,13 @@ const Panel = ({ panel, index }: { panel: BenchPanel; index: number }) => (
 						:	"b-row"
 					}
 					style={{ "--r": r } as CSSProperties}
-					tabIndex={row.ours ? undefined : 0}
+					tabIndex={
+						row.tip ?
+							r === entry ?
+								0
+							:	-1
+						:	undefined
+					}
 					data-tip={row.tip || undefined}
 				>
 					<span className="b-label">
@@ -117,6 +130,7 @@ const setLabels: Record<BenchSet, string> = {
 
 const SetGrid = ({ set, hidden }: { set: BenchSet; hidden?: boolean }) => {
 	const panels = benchPanels(set)
+	const first = panels.findIndex(panel => panel.rows.some(row => row.tip))
 	return (
 		<div
 			className="b-grid"
@@ -126,7 +140,12 @@ const SetGrid = ({ set, hidden }: { set: BenchSet; hidden?: boolean }) => {
 			hidden={hidden}
 		>
 			{panels.map((panel, i) => (
-				<Panel key={panel.id} panel={panel} index={i} />
+				<Panel
+					key={panel.id}
+					panel={panel}
+					index={i}
+					entry={i === first ? panel.rows.findIndex(row => row.tip) : -1}
+				/>
 			))}
 		</div>
 	)
