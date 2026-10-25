@@ -1751,7 +1751,7 @@ export const U = make()
 				cwd: root,
 				input,
 				encoding: "utf8"
-			}).stderr.replaceAll("\r\n", "\n")
+			}).stderr.replace(/\r\n/g, "\n")
 		attest(
 			stderrOf(["--conditions", "ark-ts", "main.ts"]).includes(
 				configureAfterTypeMessage
