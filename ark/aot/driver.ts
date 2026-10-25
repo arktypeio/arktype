@@ -386,19 +386,17 @@ export interface KeyedPrecompiler {
 export const createKeyedPrecompiler = (
 	opts: PrecompilePluginOptions
 ): KeyedPrecompiler => {
-	// what Turbopack resolves where the precompiler can't, or undefined
-	const resolutions: Record<
-		string,
-		Record<string, string | undefined>
-	> = Object.create(null)
+	// what Turbopack resolves where the precompiler can't. What it can't
+	// either is asked again, as a module written since may resolve it
+	const resolutions: Record<string, Record<string, string>> = {}
 	// what it hasn't been asked yet, which a module precompiled meanwhile may
 	// read too
 	const unresolved = new Map<string, [specifier: string, importer: string]>()
 	const resolveLearned: BundlerResolver = (specifier, importer) => {
-		const learned = resolutions[importer]
-		if (learned && specifier in learned) return learned[specifier]
-		if (isAbsolute(importer))
+		const learned = resolutions[importer]?.[specifier]
+		if (learned === undefined && isAbsolute(importer))
 			unresolved.set(`${importer}\0${specifier}`, [specifier, importer])
+		return learned
 	}
 	const track = () =>
 		createTrackedPrecompiler({ ...opts, inline: true }, resolveLearned)
@@ -425,10 +423,11 @@ export const createKeyedPrecompiler = (
 		learn: resolved => {
 			let learned = false
 			for (const [specifier, importer, path] of resolved) {
-				;(resolutions[importer] ??= Object.create(null))[specifier] =
-					path && realPathOf(path)
 				unresolved.delete(`${importer}\0${specifier}`)
-				if (path) learned = true
+				if (!path) continue
+				;(resolutions[importer] ??= Object.create(null))[specifier] =
+					realPathOf(path)
+				learned = true
 			}
 			if (learned) tracked = track()
 			return learned

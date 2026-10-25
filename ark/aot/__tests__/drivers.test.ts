@@ -20,7 +20,7 @@ import { register } from "@ark/aot/node"
 import turbopack from "@ark/aot/turbopack"
 import type { PrecompilePluginOptions } from "@ark/aot/unplugin"
 import { spawnSync } from "node:child_process"
-import { readFileSync, utimesSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, utimesSync, writeFileSync } from "node:fs"
 import { join, relative, sep } from "node:path"
 import { pathToFileURL } from "node:url"
 import { configureAfterTypeMessage } from "@ark/schema"
@@ -569,16 +569,13 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			}
 		}
 
-		it("reads an import only Turbopack resolves", async () => {
-			// an alias resolveAlias names, which no tsconfig.json does
-			const dir = writeFixture({
-				"package.json": "{}",
-				"shared/types.ts":
-					'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n',
-				"main.ts":
-					'import { User } from "#shared/types"\n\nconsole.log(String(User.errors))\n'
-			})
-			const out = await new Promise<string | undefined>(resolve => {
+		// the first line of what main.ts loads as, or of the message it fails
+		// with, where Turbopack resolves what `resolve` returns a path for
+		const loadResolving = (
+			dir: string,
+			resolve: (request: string) => string | undefined
+		) =>
+			new Promise<string | undefined>(settle => {
 				try {
 					const returned = turbopack.call(
 						{
@@ -589,22 +586,40 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 								throw warning
 							},
 							getResolve: () => async (_, request) => {
-								if (!request.startsWith("#shared/"))
+								const path = resolve(request)
+								if (path === undefined)
 									throw new Error(`Can't resolve ${request}`)
-								return join(dir, "shared", `${request.slice(8)}.ts`)
+								return path
 							},
-							async: () => (error, result) => resolve(error?.message ?? result)
+							async: () => (error, result) => settle(error?.message ?? result)
 						},
 						readFileSync(join(dir, "main.ts"), "utf8")
 					)
-					if (returned !== undefined) resolve(returned)
+					if (returned !== undefined) settle(returned)
 				} catch (e) {
-					resolve((e as Error).message)
+					settle((e as Error).message)
 				}
-			})
-			attest(out?.split("\n")[0]).equals(
-				"main.ts:3:20  User.errors reads errors, which a standalone validator lacks"
+			}).then(out => out?.split("\n")[0])
+
+		// an alias resolveAlias names, which no tsconfig.json does
+		const aliasedMain = {
+			"package.json": "{}",
+			"main.ts":
+				'import { User } from "#shared/types"\n\nconsole.log(String(User.errors))\n'
+		}
+		const sharedTypes = {
+			"shared/types.ts":
+				'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n'
+		}
+		const unreadErrors =
+			"main.ts:3:20  User.errors reads errors, which a standalone validator lacks"
+
+		it("reads an import only Turbopack resolves", async () => {
+			const dir = writeFixture({ ...aliasedMain, ...sharedTypes })
+			const out = await loadResolving(dir, request =>
+				request === "#shared/types" ? join(dir, "shared/types.ts") : undefined
 			)
+			attest(out).equals(unreadErrors)
 		})
 
 		it("precompiles a module in either mode", () => {
@@ -857,6 +872,18 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				attest(load(dir).out).satisfies(/cannot be precompiled/)
 				writeShape(join(dir, "shape.ts"), "number")
 				attest(load(dir).out.includes('"number"')).equals(true)
+			})
+
+			it("a module only Turbopack resolves an import to is created", async () => {
+				const dir = writeFixture(aliasedMain)
+				const types = join(dir, "shared/types.ts")
+				const resolve = (request: string) =>
+					request === "#shared/types" && existsSync(types) ? types : undefined
+				attest(await loadResolving(dir, resolve)).equals(
+					'import { User } from "#shared/types"'
+				)
+				writeFixture(sharedTypes, dir)
+				attest(await loadResolving(dir, resolve)).equals(unreadErrors)
 			})
 
 			it("a module it followed past a comment changes", () => {
