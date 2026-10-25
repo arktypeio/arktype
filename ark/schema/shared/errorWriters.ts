@@ -2,14 +2,11 @@ import {
 	describeCollapsibleDate,
 	domainDescriptions,
 	domainOf,
-	functionNameOf,
 	printKind,
 	type requireKeys
 } from "@ark/util"
 import type { ErrorConfig } from "../config.ts"
 import type { Declaration, Inner } from "../kinds.ts"
-import type { Predicate } from "../predicate.ts"
-import type { Morph } from "../roots/morph.ts"
 import type { BaseErrorContext } from "./declare.ts"
 import type {
 	ActualWriter,
@@ -36,6 +33,7 @@ import {
 	keywordWriterOf,
 	type Locale
 } from "./locale.ts"
+import { describePredicate } from "./traversal.ts"
 import { describeBranches, describeCases } from "./utils.ts"
 
 export const writeMessage: MessageWriter = ctx => {
@@ -224,12 +222,3 @@ export type errorWritersOf<code extends ArkErrorCode> = requireKeys<
 		:	"expected"
 	:	"expected"
 >
-
-// reads predicate, or for pipe.try the morph that threw
-export const describePredicate = (ctx: {
-	predicate?: Predicate
-	morph?: Morph
-}): string => {
-	const fn = ctx.predicate ?? ctx.morph
-	return `valid according to ${(fn && functionNameOf(fn)) || "an anonymous predicate"}`
-}

@@ -90,6 +90,15 @@ export const morphs = {
 	fail: (data, ctx) => ctx.error("something else")
 } satisfies Record<string, (data: unknown, ctx: Traversal) => unknown>
 
+// for pipe.try, throwing an Error or what they were passed
+export const tried = {
+	parse: data => JSON.parse(String(data)),
+	refuse: data => {
+		if (typeof data !== "number") throw data
+		return -data
+	}
+} satisfies Record<string, (data: unknown) => unknown>
+
 export const predicates = {
 	isTruthy: data => !!data,
 	isShort: data => String(data).length < 3,
