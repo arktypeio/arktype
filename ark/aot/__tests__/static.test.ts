@@ -1319,6 +1319,32 @@ export const later = (input: unknown) => {
 			])
 		})
 
+		it("a Type assigned to a parameter", () => {
+			attest(
+				unhinted(
+					`import { User } from "./a.ts"
+import { orUser } from "./adapt.ts"
+function local(x?: unknown) {
+	if (!x) x = User
+	return x
+}
+console.log(local().description, orUser().description)`,
+					{
+						"/a.ts": `import { type } from "arktype"
+export const User = type({ name: "string" })`,
+						"/adapt.ts": `import { User } from "./a.ts"
+export function orUser(x?: unknown) {
+	if (!x) x = User
+	return x
+}`
+					}
+				)
+			).snap([
+				"/main.ts:7:13  local().description reads description, which a standalone validator lacks\n  the build can't tell where `local()` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:7:34  orUser().description reads description, which a standalone validator lacks\n  the build can't tell where `orUser()` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
 		it("a Type a Vue template reads", () => {
 			const user = {
 				"/a.ts": `import { type } from "arktype"

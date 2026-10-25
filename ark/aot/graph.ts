@@ -1009,7 +1009,10 @@ export class ModuleGraph {
 			case "import":
 				return this.targetKindOf(this.importOf(binding, module), kindOfKey)
 			case "param":
-				return this.paramKindOf(binding, module, kindOfKey)
+				return (
+					this.paramKindOf(binding, module, kindOfKey) |
+					this.writtenKindOf(binding, module, kindOfKey)
+				)
 			case "function":
 				return (
 					functionKindOf(
@@ -1044,7 +1047,7 @@ export class ModuleGraph {
 				return kinds.data
 		}
 		const declaration = binding.declaration
-		let result =
+		const result =
 			(declaration.type !== "VariableDeclarator" ? kinds.data
 			: declaration.init ?
 				this.patternKindOf(
@@ -1056,7 +1059,18 @@ export class ModuleGraph {
 					{ node: declaration.init, module, kindOfKey }
 				)
 			:	this.iteratedKindOf(declaration, binding, module, kindOfKey)) |
-			this.storedKindOf(binding, module, kindOfKey)
+			this.storedKindOf(binding, module, kindOfKey) |
+			this.writtenKindOf(binding, module, kindOfKey)
+		return annotate(result, this.annotatedKindOf(binding.id, module, kindOfKey))
+	}
+
+	// e.g. `User` for `x` given `x = User`
+	private writtenKindOf(
+		binding: Binding,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits {
+		let result = 0
 		for (const write of binding.writes) {
 			const parent = write.parent
 			result |=
@@ -1070,7 +1084,7 @@ export class ModuleGraph {
 					this.transfer(parent.init, module, kindOfKey)
 				:	this.destructuredWriteOf(write, module, kindOfKey)
 		}
-		return annotate(result, this.annotatedKindOf(binding.id, module, kindOfKey))
+		return result
 	}
 
 	// e.g. `N` given `namespace N { export const User = type(...) }`, where
@@ -2100,31 +2114,39 @@ export class ModuleGraph {
 		const params = runtimeParamsOf(fn)
 		const derived = new Map<Key, KindBits>()
 		const result: KindOfKey = (key, keyModule) => {
-			if ("kind" in key && key.kind === "param" && key.declaration === fn) {
-				const index = params.findIndex(param => contains(param, key.id))
-				return index === -1 ?
-						kinds.data
-					:	this.patternKindOf(
-							key.id,
-							params[index],
-							args[index],
-							module,
-							result
-						)
-			}
+			const index =
+				"kind" in key && key.kind === "param" && key.declaration === fn ?
+					params.findIndex(param => contains(param, key.id))
+				:	undefined
 			// what fn declares, e.g. `N` in `{ const N = T.or("null"); return N }`
 			// or the closure `() => T`, for the `T` passed, but not a call to fn
 			// itself, applied with what that call passes
 			const anchor = anchorOf(key)
-			if (keyModule !== module || anchor === fn || !contains(fn, anchor))
+			if (
+				index === undefined &&
+				(keyModule !== module || anchor === fn || !contains(fn, anchor))
+			)
 				return kindOfKey(key, keyModule)
 			let kind = derived.get(key)
-			if (kind === undefined) {
-				// what any call gives it, where it's read while it's derived
-				derived.set(key, kindOfKey(key, keyModule))
-				kind = this.keyKindOf(key, keyModule, result)
-				derived.set(key, kind)
-			}
+			if (kind !== undefined) return kind
+			// what it holds where it's read while it's derived: a parameter what
+			// the call passes, else what any call gives it
+			kind =
+				index === undefined ? kindOfKey(key, keyModule)
+				: index === -1 ? kinds.data
+				: this.patternKindOf(
+						(key as Binding).id,
+						params[index],
+						args[index],
+						module,
+						result
+					)
+			derived.set(key, kind)
+			kind =
+				index === undefined ?
+					this.keyKindOf(key, keyModule, result)
+				:	kind | this.writtenKindOf(key as Binding, module, result)
+			derived.set(key, kind)
 			return kind
 		}
 		this.bindingKindOfKeys.add(result)
