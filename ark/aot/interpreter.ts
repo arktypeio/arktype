@@ -297,6 +297,8 @@ export class Interpreter {
 	// what computing each cache entry reached, by cache and key
 	private reachedByEntry = new WeakMap<object, Map<unknown, Set<Reached>>>()
 	private aliasesByScope = new WeakMap<object, Map<string, ScopeAlias>>()
+	// the definitions each Scope was created from
+	definitionsByScope = new WeakMap<object, unknown>()
 	sourcesBySymbol = new Map<symbol, [Node, SourceModule]>()
 	// values reused by every evaluation of the expression creating them
 	private standInsByNode = new Map<Node, object>()
@@ -1948,6 +1950,11 @@ export class Interpreter {
 			if (isPlainContainer(result)) this.arkObjects.add(result)
 			else if (ctx.site && hasArkKind(result, "root"))
 				ctx.site.roots.push(result)
+			else if (
+				hasArkKind(result, "scope") &&
+				!this.definitionsByScope.has(result)
+			)
+				this.definitionsByScope.set(result, converted[0])
 			if (opaque && hasDomain(result, "object"))
 				this.opaqueStandInsByValue.set(result, opaque)
 			return result

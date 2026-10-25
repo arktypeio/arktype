@@ -232,6 +232,10 @@ const textHints: [
 		"Export it by name, as `export const helper = ...`, and import that name, so a test driver can register it."
 	],
 	[
+		/^the Standard Schema .+ can't be precompiled to a standalone validator$/,
+		"Define the schema with ArkType, which the build precompiles, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime."
+	],
+	[
 		/writer, which reads each branch's errors/,
 		`A standalone validator keeps no union branch's errors. Configure the text as a string, or build with runtime: "arktype".`
 	]

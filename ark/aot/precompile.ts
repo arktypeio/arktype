@@ -2267,6 +2267,21 @@ export class Precompiler {
 		return factory
 	}
 
+	// a Scope's thunk aliases, as written in its definitions
+	private thunksOf(site: Site): unknown[] {
+		if (!hasArkKind(site.value, "scope")) return []
+		const definitions = this.interpreter.definitionsByScope.get(site.value)
+		if (!isPlainContainer(definitions)) return []
+		return keyOf(site.value)[3].flatMap(([$, alias]) =>
+			$ === site.value ?
+				[
+					Reflect.get(definitions, alias) ??
+						Reflect.get(definitions, `#${alias}`)
+				]
+			:	[]
+		)
+	}
+
 	private receiveReferences(
 		site: Site,
 		module: SourceModule,
@@ -2287,12 +2302,15 @@ export class Precompiler {
 		const calledByChecks = new Set(
 			site.defaultChecks.flatMap(([node]) => keyOf(node.in as BaseRoot)[1])
 		)
+		const thunks = this.thunksOf(site)
 		for (const reference of site.references) {
 			const text = module.snippetOf(reference)
 			const hole = holesByValue.get(reference.value)
 			// e.g. beside a Standard Schema's morph, where nothing the site reads is dropped
 			if (hole && site.called.includes(hole) && !dropped.has(hole.value))
 				continue
+			// a standalone Scope never calls one, as its key doesn't hold them
+			if (hole && thunks.includes(hole.value)) continue
 			// a dropped class decided which branch survived
 			if (
 				hole &&
@@ -2300,9 +2318,12 @@ export class Precompiler {
 				hole.kind !== "class" &&
 				!dropped.has(hole.value)
 			) {
-				// e.g. a Standard Schema's validate, which arktype calls from a function of its own
 				reasons.push(
-					`${labelOf(module, reference)} is wrapped in a function arktype creates, which a standalone validator can't create yet`
+					site.arktypeArguments.some(arg => holdsValidate(arg, hole.value)) ?
+						writeUnprecompilableMessage(
+							`the Standard Schema holding ${labelOf(module, reference)}`
+						)
+					:	`${labelOf(module, reference)} is wrapped in a function arktype creates, which a standalone validator can't create yet`
 				)
 				continue
 			}
@@ -5541,6 +5562,21 @@ const textOfInput = (input: Input) =>
 
 const labelOf = (module: SourceModule, span: Span) =>
 	`\`${module.snippetOf(span)}\` (${module.positionOf(span)})`
+
+// whether a Standard Schema in a value passed to arktype validates with fn
+const holdsValidate = (
+	value: unknown,
+	fn: unknown,
+	seen = new Set<unknown>()
+): boolean => {
+	if (!isPlainContainer(value) || seen.has(value)) return false
+	seen.add(value)
+	const standard = Reflect.get(value, "~standard")
+	return (
+		(isPlainContainer(standard) && Reflect.get(standard, "validate") === fn) ||
+		Object.values(value).some(v => holdsValidate(v, fn, seen))
+	)
+}
 
 const isCoveredBy = (input: Input, existing: Input) =>
 	input.kind === existing.kind &&

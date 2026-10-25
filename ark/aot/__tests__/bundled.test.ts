@@ -8,7 +8,7 @@ import { writeFixture } from "./utils.ts"
 
 const conditions = ["ark-ts"]
 
-// each input's issues as code, path, data and expected, and their summary but
+// each input's issues as code, path, data and expected, and their messages but
 // for what the value was, which only arktype writes; or what it's morphed to
 const observe = `const observed: Record<string, unknown[]> = {}
 const observe = (name: string, T: (data: unknown) => unknown, ...inputs: unknown[]) => {
@@ -18,7 +18,7 @@ const observe = (name: string, T: (data: unknown) => unknown, ...inputs: unknown
 			out instanceof type.errors ?
 				[
 					out.issues.map(({ code, path, data, expected }) => ({ code, path, data, expected })),
-					out.summary.replace(/ \\(was [^]*\\)$/, "")
+					out.issues.map(issue => issue.message.replace(/ \\(was [^]*\\)$/, "")).join("\\n")
 				]
 			: Array.isArray(out) && "index" in out ?
 				[...out, out.index, (out as RegExpExecArray).groups]
@@ -50,8 +50,20 @@ export const Either = type("number").or(type("string").pipe.try(readJson))
 export const Version = type("x/^v([0-9]+)$/")
 export const Versioned = type({ v: "x/^v([0-9]+)$/" }).or("number")
 `,
+		"scoped.ts": `import { scope } from "arktype"
+
+const isEven = (n: number) => n % 2 === 0
+
+export const $ = scope({
+	even: ["number", ":", isEven],
+	evens: () => $.type("even[]")
+})
+// a program that never resolves the thunk
+export const Pair = $.type({ first: "even", rest: "even[]" })
+`,
 		"main.ts": `import { type } from "arktype"
 import { Either, Parsed, Payload, Refused, Reported, Version, Versioned } from "./types.ts"
+import { Pair } from "./scoped.ts"
 
 ${observe}
 
@@ -62,10 +74,11 @@ observe("Payload", Payload, { payload: "YQ==", json: "1" }, { payload: "", json:
 observe("Either", Either, 1, "[1]", "{")
 observe("Version", Version, "v12", "x")
 observe("Versioned", Versioned, { v: "v3" }, { v: "3" }, 2)
+observe("Pair", Pair, { first: 2, rest: [] }, { first: 1, rest: [3] })
 console.log(JSON.stringify(observed))
 `
 	},
-	fromHere("temp", "made")
+	fromHere("temp", "bundled")
 )
 
 type Observed = Record<string, unknown[]>
@@ -218,6 +231,29 @@ contextualize(() => {
 					}
 				],
 				"must be matched by ^v([0-9]+)$"
+			]
+		])
+	})
+
+	it("a Scope with a thunk, holding a function", () => {
+		observed("Pair").snap([
+			{ first: 2, rest: [] },
+			[
+				[
+					{
+						code: "predicate",
+						path: ["first"],
+						data: 1,
+						expected: "valid according to isEven"
+					},
+					{
+						code: "predicate",
+						path: ["rest", 0],
+						data: 3,
+						expected: "valid according to isEven"
+					}
+				],
+				"first must be valid according to isEven\nrest[0] must be valid according to isEven"
 			]
 		])
 	})
