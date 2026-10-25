@@ -349,7 +349,9 @@ export const claims = {
 	dynamicSize:
 		"Dynamic ArkType is 83.0 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.",
 	zodSpec: `faster than Zod 4 in ${zodScenarios} we ran`,
-	zodSpeed: `Precompiled ArkType was faster than Zod 4 in ${zodScenarios} of our benchmark, by ${zod.min} to ${zod.max}, and faster than Zod 4's z.compile in ${zodCompiled.wins} of ${zodCompiled.count}${zodCompiledLosses}.`,
+	// the median, not the range: the largest ratio is a first-error row, and
+	// Zod has no first-error mode
+	zodSpeed: `Precompiled ArkType was faster than Zod 4 in ${zodScenarios} of our benchmark, by a median of ${medianOf(zod)}, and faster than Zod 4's z.compile in ${zodCompiled.wins} of ${zodCompiled.count}, by a median of ${medianOf(zodCompiled)}${zodCompiledLosses}.`,
 	// the error rows from benchData.json
 	speedScope: `It isn't the fastest at everything. On the rows that report errors for invalid data, ajv was faster on ${bench.ajvFasterCount} of ${bench.errorCount}.`,
 	// no rate: 4 of 10 can't headline a row
@@ -392,9 +394,7 @@ export const claims = {
 	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory}; the rest are other projects'.`,
 	// the leads that depend on a single benchmark, and which: at 808927feb,
 	// only size's, on the form, schemabenchmarks.dev or Sury
-	leaveOneOut: leadsWithoutEach(),
-	// the middle of zodSpeed's range
-	zodMedian: `The median was ${medianOf(zod)} against Zod 4 and ${medianOf(zodCompiled)} against z.compile.`
+	leaveOneOut: leadsWithoutEach()
 } satisfies Record<string, Claim<string>>
 
 export type ClaimId = keyof typeof claims

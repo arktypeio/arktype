@@ -709,15 +709,9 @@ export type BenchFacts = ReturnType<typeof benchFacts>
 export const versusLibrary = (key: string) => {
 	const measured = bench.scenarios.filter(s => s.standaloneVs[key])
 	const lost = measured.filter(s => s.standaloneVs[key].verdict === "loss")
-	const speedups = measured
-		.map(s => s.standaloneVs[key])
-		.filter(v => v.verdict === "win")
-		.map(v => v.speedup)
 	return {
 		count: measured.length,
-		wins: speedups.length,
-		min: formatRatio(Math.min(...speedups)),
-		max: formatRatio(Math.max(...speedups)),
+		wins: measured.filter(s => s.standaloneVs[key].verdict === "win").length,
 		lost,
 		/** "items morph and moltar morph" */
 		losses: list(lost.map(scenarioName)),
