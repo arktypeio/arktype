@@ -5,7 +5,7 @@
 // node standings.ts [suite id,...]
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { leaderboards } from "../../../docs/lib/bench/leaderboard.ts"
+import { fullLeaderboards } from "../../../docs/lib/bench/leaderboard.ts"
 
 type Suite = {
 	category: string
@@ -55,7 +55,7 @@ for (const category of ["speed", "startup", "size"] as const) {
 		.filter(s => s.suites * 2 >= suites.length)
 		.sort((l, r) => l.score - r.score)
 	if (!only && !fresh) {
-		const docs = leaderboards[category].standings
+		const docs = fullLeaderboards[category].standings
 		if (JSON.stringify(docs) !== JSON.stringify(standings))
 			throw new Error(`${category} differs from lib/bench/leaderboard.ts`)
 	}
