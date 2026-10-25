@@ -569,6 +569,44 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			}
 		}
 
+		it("reads an import only Turbopack resolves", async () => {
+			// an alias resolveAlias names, which no tsconfig.json does
+			const dir = writeFixture({
+				"package.json": "{}",
+				"shared/types.ts":
+					'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n',
+				"main.ts":
+					'import { User } from "#shared/types"\n\nconsole.log(String(User.errors))\n'
+			})
+			const out = await new Promise<string | undefined>(resolve => {
+				try {
+					const returned = turbopack.call(
+						{
+							resourcePath: join(dir, "main.ts"),
+							getOptions: () => ({ conditions, cwd: dir }),
+							addDependency: () => {},
+							emitWarning: warning => {
+								throw warning
+							},
+							getResolve: () => async (_, request) => {
+								if (!request.startsWith("#shared/"))
+									throw new Error(`Can't resolve ${request}`)
+								return join(dir, "shared", `${request.slice(8)}.ts`)
+							},
+							async: () => (error, result) => resolve(error?.message ?? result)
+						},
+						readFileSync(join(dir, "main.ts"), "utf8")
+					)
+					if (returned !== undefined) resolve(returned)
+				} catch (e) {
+					resolve((e as Error).message)
+				}
+			})
+			attest(out?.split("\n")[0]).equals(
+				"main.ts:3:20  User.errors reads errors, which a standalone validator lacks"
+			)
+		})
+
 		it("precompiles a module in either mode", () => {
 			const standalone = load(app, "schemas.ts")
 			attest(standalone.out).satisfies(
