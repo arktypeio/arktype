@@ -579,11 +579,20 @@ and its `.assert` row is still 808927feb's. The other size suites' TypeBox
 operations report errors, which the ahead-of-time Check doesn't. In TypeBox
 1, `typebox/compile`'s `Code` is the same Check.
 
-The same gap is in two startup rows, schemabenchmarks.dev's initialization
-(ajv compiles there) and Sury's build (TypeBox's compiler), and neither is
-measured with the ahead-of-time arm yet. Neither can change the lead: at 1
-on those rows, ajv's startup would be 1.344 and TypeBox's 31.2, against
-ArkType's 1.013.
+The same gap was in the two independent startup rows. schemabenchmarks.dev
+times initialization only for libraries that build a schema at runtime: its
+own precompiled entries, zod-compiler and @paseri/compiler, have no such
+case, while ArkType's precompiled entry returns the validators its build
+wrote. `sb/aotInit.ts` gives ajv's standalone code, zod-compiler and
+@paseri/compiler the same case, and Sury's build and parse once runs
+TypeBox's ahead-of-time Check beside its `Value.Check`
+(`results/sb-counts-aot-init-2026-10-25.json`,
+`results/sury-counts-aot-2026-10-25.json`). In instructions per call:
+@paseri/compiler 16.0, zod-compiler 16.1, ajv 20.0 and ArkType 42.5 on
+initialization; ArkType 104 and TypeBox 153 on Sury's build. Over the
+independent suites, startup is then paseri 1.000, zod-compiler 1.004 and ajv
+1.248, each on one suite, then ArkType 1.630. On the full board ArkType
+leads, 1.293 to ajv's 1.448.
 
 With ArkType's rows unchanged, the update moved speed from ArkType 1.103
 against ata 1.255 to 1.107 against 1.255, left startup alone, and moved size
@@ -643,8 +652,8 @@ the homepage's apps.
 documents a compiled mode is measured in it, where the suite's schema
 compiles ("Versions and modes"): typia, ata, TypeBox, ajv, Sury, paseri,
 @ts-runtypes and `z.compile`, and TypeBox's ahead-of-time Check in Sury's
-bundle. Not yet: that Check in Sury's build, and ajv's standalone code in
-schemabenchmarks.dev's initialization; "Versions and modes" bounds each. Valibot, Zod Mini and the rest run as
+bundle and build, and ajv's standalone code, zod-compiler and
+@paseri/compiler in schemabenchmarks.dev's initialization. Valibot, Zod Mini and the rest run as
 they ship, since they have no other mode. Plain `type()`, ArkType with no
 build step, is left out of every row, and so is every build but the
 default. The build step is a cost these numbers don't show: ArkType's

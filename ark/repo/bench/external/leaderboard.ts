@@ -29,12 +29,14 @@ const committed = {
 	forms: ["results/forms-642b4517e.json"],
 	sbCounts: [
 		"results/sb-counts-6c5fd9862.json",
-		"results/sb-counts-latest-2026-10-24.json"
+		"results/sb-counts-latest-2026-10-24.json",
+		"results/sb-counts-aot-init-2026-10-25.json"
 	],
 	sbDownload: ["results/sb-download-ajv-standalone-2026-10-24.json"],
 	suryCounts: [
 		"results/sury-counts-6c5fd9862.json",
-		"results/sury-counts-latest-2026-10-24.json"
+		"results/sury-counts-latest-2026-10-24.json",
+		"results/sury-counts-aot-2026-10-25.json"
 	],
 	surySize: [
 		"results/sury-size-396778442.json",
