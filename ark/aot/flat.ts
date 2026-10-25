@@ -917,6 +917,19 @@ const writeFlat = (
 		// a parameter reads what the function already holds, if no local hides it
 		const alias = (binding: Binding, value: string) => {
 			if (binding.name === value) return
+			// a primitive is written where it's read, as a template called once
+			// is passed its descriptions
+			if (
+				primitive.test(value) &&
+				!binding.writes.length &&
+				binding.references.every(
+					({ id }) =>
+						id.parent?.type !== "MemberExpression" || id.parent.object !== id
+				)
+			) {
+				renamed.set(binding, value)
+				return
+			}
 			// e.g. what a factory flattened before declares
 			const holder =
 				holders.get(value) ?? (values.get(value) === value ? value : undefined)
@@ -1400,6 +1413,9 @@ const inGzipOrder = (body: string): string => {
 const minSortedFunctions = 64
 
 const runtimeMember = /^runtime\.\w+$/
+
+const primitive =
+	/^(?:\d[\d+.e]*|"(?:[^\n"\\]|\\.)*"|true|false|null|undefined)$/
 
 // a name the build derives from a unit's, e.g. its Allows
 const unitName = /\b\w+?(?:R\d+|Allows|Apply|Transform)\b/g
