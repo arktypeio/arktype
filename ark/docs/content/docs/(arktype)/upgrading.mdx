@@ -655,6 +655,7 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - Call a node's `traverseAllows`, `traverseApply` and `traverseTransform` on the node, as in `node.traverseAllows(data, ctx)`, not detached, as in `[x].every(node.traverseAllows)`, until the JIT compiles it.
 - `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, prereduced }`.
 - An alias's `resolutionId` (read `resolution.id`), a node's `assertHasKindIn`, `isConstraint` and `isRefinement`, a root's `shortDescription`, a morph's `declareIn` and `serializedMorphs` and a structure's `optionalKeys` are removed.
+- A constraint's `compiledCondition`, a predicate's `compiledNegation`, a morph's `compiledMorphs`, a sequence's `optionalsLength` and the `PrecompiledReferences` type are removed. A leaf writes its check with `compileCondition(js, data)`.
 - Derived keys like the `includes*` flags, `innerEntries` and `propsByKey` moved from a node's own enumerable keys to `node.cache`, so spreading or iterating a node no longer includes them.
 
 ## @ark/util
