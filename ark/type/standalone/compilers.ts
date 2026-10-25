@@ -390,8 +390,6 @@ const domainChecks = new Map<string, string>([
 	]
 ])
 
-const dataDomain = compileDomainOf("data")
-
 // a build for size writes Allows' checks as the returns they stand for, and a
 // switch over data's domain as the checks its cases do
 const forSize = (compiler: typeof StandaloneCompiler) =>
@@ -407,7 +405,11 @@ const forSize = (compiler: typeof StandaloneCompiler) =>
 		): this {
 			if (
 				!this.shortest ||
-				on !== dataDomain ||
+				on !==
+					compileDomainOf(
+						"data",
+						cases.map(([label]) => label)
+					) ||
 				cases.some(([label]) => !domainChecks.has(label))
 			)
 				return super.switch(on, cases, otherwise)

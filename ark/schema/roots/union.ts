@@ -417,10 +417,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 		// we need to access the path as optional so we don't throw if it isn't present
 		const value = `data${discriminant.path.map(k => js.prop(k, true)).join("")}`
-		let condition = value
-
-		if (discriminant.kind === "domain") condition = compileDomainOf(condition)
-
 		const cases = discriminant.cases
 		const written: SwitchCase[] = []
 		for (const k in cases) {
@@ -457,7 +453,16 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			: js.traversalKind === "Transform" ? "data"
 			: (js.missFails?.(this, value) ??
 				`${js.ref(this)}.applyMiss(data, ctx, ${value})`)
-		js.switch(condition, written, otherwise)
+		js.switch(
+			discriminant.kind === "domain" ?
+				compileDomainOf(
+					value,
+					written.map(([label]) => label)
+				)
+			:	value,
+			written,
+			otherwise
+		)
 	}
 
 	private compileIndiscriminable(
@@ -537,9 +542,18 @@ export const Union = {
 
 const maxInlinedBranches = 4
 
-// the name of a value's domain, a function's being "object"
-export const compileDomainOf = (value: string): string =>
-	`typeof ${value} === "object" ? ${value} === null ? "null" : "object" : typeof ${value} === "function" ? "object" : typeof ${value}`
+// the name of a value's domain a switch with these case labels reads: a
+// function's is "object", and without an object case, any but null's is its
+// typeof
+export const compileDomainOf = (
+	value: string,
+	labels: readonly string[]
+): string =>
+	labels.includes(`case "object"`) ?
+		`typeof ${value} === "object" ? ${value} === null ? "null" : "object" : typeof ${value} === "function" ? "object" : typeof ${value}`
+	: labels.includes(`case "null"`) ?
+		`${value} === null ? "null" : typeof ${value}`
+	:	`typeof ${value}`
 
 // an intersection binds more tightly than a union, so it never needs parens
 const expressBranch = (branch: Union.ChildNode): string =>
