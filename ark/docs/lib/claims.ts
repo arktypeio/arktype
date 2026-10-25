@@ -195,8 +195,8 @@ const ordinal = (n: number) =>
 	: n % 10 === 3 && n % 100 !== 13 ? `${n}rd`
 	: `${n}th`
 
-const placeOf = (category: CategoryId) => {
-	const { standings } = leaderboards[category]
+const placeOf = (category: CategoryId, boards = leaderboards) => {
+	const { standings } = boards[category]
 	const i = standings.findIndex(s => s.library === "ArkType")
 	return { place: i + 1, ranked: standings.length, ...standings[i] }
 }
@@ -269,19 +269,14 @@ const ownedPerCategory = listOf(
 	})
 )
 
-/** ArkType's place on a board: "1st" */
-const placeOn = ({ standings }: { standings: Standing[] }) =>
-	ordinal(standings.findIndex(s => s.library === "ArkType") + 1)
-
 /** ArkType's place in each category on the full board, beside the leader where it isn't first */
 const fullBoardPlaces = listOf(
 	boardOrder.map(category => {
-		const { standings } = fullLeaderboards[category]
-		const i = standings.findIndex(s => s.library === "ArkType")
-		const [first] = standings
-		return i === 0 ?
+		const { place, ranked, score } = placeOf(category, fullLeaderboards)
+		const [first] = fullLeaderboards[category].standings
+		return place === 1 ?
 				`1st for ${wording[category].measures}`
-			:	`${ordinal(i + 1)} of ${standings.length} for ${wording[category].measures}, ${standings[i].score.toFixed(2)} to ${first.library}'s ${first.score.toFixed(2)}`
+			:	`${ordinal(place)} of ${ranked} for ${wording[category].measures}, ${score.toFixed(2)} to ${first.library}'s ${first.score.toFixed(2)}`
 	})
 )
 
@@ -427,7 +422,7 @@ export const claims = {
 	startupAverage: averagesOf("startup"),
 	// the independent startup rows time creating a schema, which ArkType's
 	// default build skips; the full board adds our cold starts of whole apps
-	startupBasis: `${startupIsCreation ? `Each of the ${leaderboards.startup.rows} independent startup results times creating a schema, which a precompiled build does when it builds. ` : ""}Our own startup benchmarks time importing an app through its first validation (${fullLeaderboards.startup.rows - leaderboards.startup.rows} results), and with them ArkType is ${placeOn(fullLeaderboards.startup)} for startup.`,
+	startupBasis: `${startupIsCreation ? `Each of the ${leaderboards.startup.rows} independent startup results times creating a schema, which a precompiled build does when it builds. ` : ""}Our own startup benchmarks time importing an app through its first validation (${fullLeaderboards.startup.rows - leaderboards.startup.rows} results), and with them ArkType is ${ordinal(placeOf("startup", fullLeaderboards).place)} for startup.`,
 	sizeAverage: averagesOf("size"),
 	// Typia leads size, 1.256 to 1.297, on 2 of its 3 suites; tip rows
 	// (lane/loop-size2) narrow it to 1.0%

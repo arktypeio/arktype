@@ -19,6 +19,8 @@ type Suite = {
 	rows: { id: string; results: Record<string, number> }[]
 }
 
+const suites = data.suites as Suite[]
+
 export type Standing = {
 	library: string
 	/** geometric mean of its suite scores: 1 is best on every row */
@@ -54,16 +56,14 @@ const suiteScores = (suite: Suite) => {
 /** the suites we wrote, by id */
 const ownSuites = ["homepage", "startup", "homepageStartup", "homepageSize"]
 
-for (const id of ownSuites) {
-	if (!(data.suites as Suite[]).some(s => s.id === id))
-		throw new Error(`No leaderboard suite has the id ${id}`)
-}
+const ownLabels = ownSuites.map(id => {
+	const suite = suites.find(s => s.id === id)
+	if (!suite) throw new Error(`No leaderboard suite has the id ${id}`)
+	return suite.label
+})
 
 /** whether we wrote a suite, by its label */
-export const isOwnSuite = (label: string) =>
-	ownSuites.some(
-		id => (data.suites as Suite[]).find(s => s.id === id)!.label === label
-	)
+export const isOwnSuite = (label: string) => ownLabels.includes(label)
 
 /**
  * The headline's basis: independent suites only, every suite but the ones we
@@ -77,22 +77,22 @@ const leaderboardOf = (
 	counts: (suite: Suite) => boolean,
 	without?: string
 ): Leaderboard => {
-	const suites = (data.suites as Suite[]).filter(
+	const counted = suites.filter(
 		s => s.category === category && counts(s) && s.label !== without
 	)
-	const scored = suites.map(suiteScores)
+	const scored = counted.map(suiteScores)
 	const libraries = new Set(scored.flatMap(Object.keys))
 	const standings = [...libraries]
 		.map(library => {
 			const scores = scored.flatMap(s => (library in s ? [s[library]] : []))
 			return { library, score: geomean(scores), suites: scores.length }
 		})
-		.filter(s => s.suites * 2 >= suites.length)
+		.filter(s => s.suites * 2 >= counted.length)
 		.sort((l, r) => l.score - r.score)
 	return {
 		category,
-		suites: suites.map(s => s.label),
-		rows: suites.reduce((sum, s) => sum + s.rows.length, 0),
+		suites: counted.map(s => s.label),
+		rows: counted.reduce((sum, s) => sum + s.rows.length, 0),
 		standings
 	}
 }
@@ -112,13 +112,12 @@ export const fullLeaderboards = leaderboardsOf(() => true)
 
 /** a suite's row: each library's result, in the suite's unit */
 export const resultsOf = (suiteId: string, rowId: string) =>
-	(data.suites as Suite[])
-		.find(s => s.id === suiteId)!
-		.rows.find(row => row.id === rowId)!.results
+	suites.find(s => s.id === suiteId)!.rows.find(row => row.id === rowId)!
+		.results
 
 /** each row's results across a category's independent suites */
 export const rowsOf = (category: CategoryId) =>
-	(data.suites as Suite[])
+	suites
 		.filter(s => s.category === category && independentSuites(s))
 		.flatMap(s => s.rows.map(row => row.results))
 
