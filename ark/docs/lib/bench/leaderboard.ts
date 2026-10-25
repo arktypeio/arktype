@@ -138,8 +138,8 @@ export const rowsOf = (category: CategoryId) =>
 
 /**
  * How far above the best size average ArkType's may be and still count as
- * tied for the smallest: a release, an engine or a bundler moves a bundle's
- * size by about this much. Speed and startup need the best average.
+ * tied for the smallest: one release can move a bundle's size by about this
+ * much. Speed and startup need the best average.
  */
 export const sizeTie = 0.05
 

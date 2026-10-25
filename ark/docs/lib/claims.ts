@@ -316,7 +316,7 @@ const fullBoardPlaces = listOf(
 const fullBoardNote = `With our own benchmarks added, ArkType is ${fullBoardPlaces}.`
 
 /** how the standings treat noise and stay current, after the notes on them */
-const methodNote = `Sizes within ${tieMargin} of the best average count as a tie, since releases, engines and bundlers move them by about that much. We rerun the board regularly at each library's newest release and publish all of it.`
+const methodNote = `Sizes within ${tieMargin} of the best average count as a tie, since one release can move a bundle by about that much. A weekly job reruns the size benchmarks at each library's newest release.`
 
 /** the startup suites that time creating a schema, which a precompiled build does when it builds */
 const creationOnly = [

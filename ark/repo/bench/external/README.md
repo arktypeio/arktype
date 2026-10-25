@@ -273,8 +273,7 @@ qualify. Since 2026-10-25 the headline counts only the independent ones:
 other projects' suites, and valibot.dev's login form, whose code is Valibot's
 though we wrote it in each library and size it with our script ("The
 headline's suites"). The full board, every suite, is published beside it. Sizes within 5% of the best average count as
-a tie ("Ties"), since releases, engines and bundlers move them by about that
-much. The size suites are rerun every week at each library's newest release
+a tie ("Ties"), since one release can move a bundle by about that much. The size suites are rerun every week at each library's newest release
 ("Weekly" under "Reproduce"). The standings at 808927feb come first, then the
 rule, then each earlier average as its record.
 
@@ -424,8 +423,10 @@ the same however many rows it has. The best score wins the category.
 **Ties.** A size score within 5% of the best counts as tied for it, so
 ArkType may claim the smallest with a size score up to 1.05 times the best,
 and the site then names the library with the best average, its score and
-that it's a tie. A release, an engine or a bundler moves a bundle's size by
-about that much. Speed and startup have no band: a claim there needs the
+that it's a tie. One release can move a bundle's size by about that much:
+Valibot 1.5.0's bundle in Sury's suite is 3.3% smaller than 1.4.2's. Engines
+don't move it, and in the newest run (2026-10-25) every rival's bundle in
+the form and Sury's suite was byte for byte its earlier one's. Speed and startup have no band: a claim there needs the
 best average. `sizeTie` in `ark/docs/lib/bench/leaderboard.ts` is the band.
 It was set on 2026-10-25, with the standings above known, and it makes
 Typia's 3.3% lead on size a tie.
@@ -629,10 +630,13 @@ records. Speed and startup hold with any one suite left out. Speed's
 closest is without schemabenchmarks.dev: ArkType 1.110, ata 1.151, a 3.7%
 lead.
 
-**"Size isn't close."** Over the independent suites, Typia leads it by
-3.3%, 1.256 to ArkType's 1.297, on the two of three it's in. On the full
-board, ajv leads it by 10.3%, 1.326 against ArkType's
-1.462, and the lead survives leaving out schemabenchmarks.dev (ajv 1.160, in
+**"Size isn't close."** Over the independent suites, with the size rows
+rerun at 2cc2aa949, ArkType leads it by 0.3%, 1.252 to Typia's 1.256 on the
+two of three Typia is in, inside the 5% that counts as a tie, and the lead
+doesn't survive leaving out any one suite. At 808927feb's rows Typia led by
+3.3%, 1.256 to 1.297. On the full board ajv leads it, 1.326 against
+ArkType's 1.424 (7.4%). At 808927feb's rows, ajv led by 10.3%, 1.326 against
+ArkType's 1.462, and the lead survived leaving out schemabenchmarks.dev (ajv 1.160, in
 two of three suites), Sury's (ajv 1.326, with ArkType fourth at 1.499) or the
 form (ajv 1.527 to ArkType's 1.546), not the homepage's apps (Typia 1.256 in
 two of three, ArkType 1.297). Valibot ships less than the default build on 3 of the 7
