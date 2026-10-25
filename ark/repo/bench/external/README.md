@@ -328,6 +328,14 @@ schemabenchmarks.dev's download (it isn't in Sury's), within the 5% that
 counts as a tie. Both startup rows time creating a schema, which ArkType's
 default build does when it builds, so they show little. Speed and startup hold with any one suite left out.
 
+The size rows have since been rerun (`results/newest/`, "Weekly" under
+"Reproduce"): ArkType at 2cc2aa949, its form 1116 B, schemabenchmarks.dev's
+download 1977 B and Sury's check 278 B, every rival at its newest release of
+2026-10-25. The headline's size standings are then ArkType 1.252, Typia
+1.256\*, ajv 1.317\*, and the full board's ajv 1.326\*, ArkType 1.424,
+Superstruct 1.464\*. `leaderboard.json` holds those; the tables here stay
+the record at 808927feb.
+
 The full board, every suite:
 
 | category | 1             | 2             | 3                   |

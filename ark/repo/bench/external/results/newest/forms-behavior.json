@@ -1,0 +1,92 @@
+{
+	"ArkType (precompiled, default)": {
+		"empty": "email is missing\npassword is missing",
+		"blank": "The email address is badly formatted.\nPlease enter your email.\nYour password must have 8 characters or more.",
+		"invalid": "The email address is badly formatted.\nYour password must have 8 characters or more.",
+		"valid": "ok"
+	},
+	"ArkType (precompiled, smallest)": {
+		"empty": "email is missing\npassword is missing",
+		"blank": "The email address is badly formatted.\nPlease enter your email.\nYour password must have 8 characters or more.",
+		"invalid": "The email address is badly formatted.\nYour password must have 8 characters or more.",
+		"valid": "ok"
+	},
+	"ArkType (dynamic)": {
+		"empty": "\n  • email must be a string (was missing)\n  • password must be a string (was missing)",
+		"blank": "\n  • email (\"\") must be...\n    ◦ an email address\n    ◦ non-empty\n  • Your password must have 8 characters or more.",
+		"invalid": "\n  • The email address is badly formatted.\n  • Your password must have 8 characters or more.",
+		"valid": "ok"
+	},
+	"Valibot": {
+		"empty": "Invalid key: Expected \"email\" but received undefined | Invalid key: Expected \"password\" but received undefined",
+		"blank": "Please enter your email. | The email address is badly formatted. | Please enter your password. | Your password must have 8 characters or more.",
+		"invalid": "The email address is badly formatted. | Your password must have 8 characters or more.",
+		"valid": "ok"
+	},
+	"Zod": {
+		"empty": "Invalid input: expected string, received undefined | Invalid input: expected string, received undefined",
+		"blank": "Please enter your email. | The email address is badly formatted. | Please enter your password. | Your password must have 8 characters or more.",
+		"invalid": "The email address is badly formatted. | Your password must have 8 characters or more.",
+		"valid": "ok"
+	},
+	"Zod Mini": {
+		"empty": "Invalid input: expected string, received undefined | Invalid input: expected string, received undefined",
+		"blank": "Please enter your email. | The email address is badly formatted. | Please enter your password. | Your password must have 8 characters or more.",
+		"invalid": "The email address is badly formatted. | Your password must have 8 characters or more.",
+		"valid": "ok"
+	},
+	"typia (createValidate)": {
+		"empty": "$input.email: expected (string & MinLength<1> & Format<\"email\">)\n$input.password: expected (string & MinLength<8>)",
+		"blank": "$input.email: expected string & MinLength<1>\n$input.password: expected string & MinLength<8>",
+		"invalid": "$input.email: expected string & Format<\"email\">\n$input.password: expected string & MinLength<8>",
+		"valid": "ok"
+	},
+	"TypeBox (TypeCompiler)": {
+		"empty": "Expected required property\nExpected required property\nExpected string\nExpected string\nExpected string\nExpected all values to match",
+		"blank": "Please enter your email.\nThe email address is badly formatted.\nPlease enter your password.\nYour password must have 8 characters or more.\nExpected all values to match",
+		"invalid": "The email address is badly formatted.\nYour password must have 8 characters or more.\nExpected all values to match",
+		"valid": "ok"
+	},
+	"TypeBox (Value)": {
+		"empty": "Expected required property\nExpected required property\nExpected string\nExpected string\nExpected string\nExpected all values to match",
+		"blank": "Please enter your email.\nThe email address is badly formatted.\nPlease enter your password.\nYour password must have 8 characters or more.\nExpected all values to match",
+		"invalid": "The email address is badly formatted.\nYour password must have 8 characters or more.\nExpected all values to match",
+		"valid": "ok"
+	},
+	"Effect Schema": {
+		"empty": "Missing key\n  at [\"email\"]\nMissing key\n  at [\"password\"]",
+		"blank": "Please enter your email.\n  at [\"email\"]\nThe email address is badly formatted.\n  at [\"email\"]\nPlease enter your password.\n  at [\"password\"]\nYour password must have 8 characters or more.\n  at [\"password\"]",
+		"invalid": "The email address is badly formatted.\n  at [\"email\"]\nYour password must have 8 characters or more.\n  at [\"password\"]",
+		"valid": "ok"
+	},
+	"runtypes": {
+		"empty": "Expected string, but was missing | Expected string, but was missing",
+		"blank": "Constraint failed: Please enter your email. | Constraint failed: Please enter your password.",
+		"invalid": "Constraint failed: The email address is badly formatted. | Constraint failed: Your password must have 8 characters or more.",
+		"valid": "ok"
+	},
+	"Superstruct": {
+		"empty": "Expected a string, but received: undefined | Expected a string, but received: undefined",
+		"blank": "Please enter your email. | The email address is badly formatted. | Please enter your password. | Your password must have 8 characters or more.",
+		"invalid": "The email address is badly formatted. | Your password must have 8 characters or more.",
+		"valid": "ok"
+	},
+	"Yup": {
+		"empty": "Please enter your email. | Please enter your password.",
+		"blank": "Please enter your email. | Please enter your password. | Your password must have 8 characters or more.",
+		"invalid": "The email address is badly formatted. | Your password must have 8 characters or more.",
+		"valid": "ok"
+	},
+	"Joi": {
+		"empty": "Please enter your email. | Please enter your password.",
+		"blank": "Please enter your email. | Please enter your password.",
+		"invalid": "The email address is badly formatted. | Your password must have 8 characters or more.",
+		"valid": "ok"
+	},
+	"ajv (standalone, ajv-errors)": {
+		"empty": "must have required property 'email'\nmust have required property 'password'",
+		"blank": "Please enter your email.\nThe email address is badly formatted.\nPlease enter your password.\nYour password must have 8 characters or more.",
+		"invalid": "The email address is badly formatted.\nYour password must have 8 characters or more.",
+		"valid": "ok"
+	}
+}

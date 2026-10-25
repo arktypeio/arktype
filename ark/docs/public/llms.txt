@@ -2,7 +2,7 @@
 
 > TypeScript's smallest, fastest validator.
 
-Ranked by best average across the public benchmarks we didn't write, each result a ratio to the best: 43 results for validation speed, 2 for startup and 3 for bundle size; the 2 for startup time creating a schema. With our own benchmarks added, ArkType is 1st for validation speed, 1st for startup and 2nd of 14 for bundle size, 1.46 to ajv's 1.33. Sizes within 5% of the best average count as a tie, since releases, engines and bundlers move them by about that much. We rerun the board regularly at each library's newest release and publish all of it. [Method](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md#best-average)
+Ranked by best average across the public benchmarks we didn't write, each result a ratio to the best: 43 results for validation speed, 2 for startup and 3 for bundle size; the 2 for startup time creating a schema. With our own benchmarks added, ArkType is 1st for validation speed, 1st for startup and 2nd of 14 for bundle size, 1.42 to ajv's 1.33. Sizes within 5% of the best average count as a tie, since releases, engines and bundlers move them by about that much. We rerun the board regularly at each library's newest release and publish all of it. [Method](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md#best-average)
 
 ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. @ark/aot precompiles them when a project builds, so its validators ship without arktype's parser. ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.
 
