@@ -35,7 +35,7 @@ A validator that compiles at runtime ships its compiler, and one that interprets
 - ArkType (dynamic): 216
 - ata-validator (AOT): 220
 
-**Bundle size** (bytes gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled with its default options in a production build. Zod Mini's form, as valibot.dev writes it, throws at its first parse; written so it runs, it is the same size within 20 B. Source: [the form from valibot.dev's comparison](https://valibot.dev/guides/comparison/)
+**Bundle size** (bytes gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports an error for every invalid field. ArkType is precompiled with its default options in a production build. Zod Mini's form, as valibot.dev writes it, throws at its first parse; written so it runs, it is the same size within 20 B. Source: [the form from valibot.dev's comparison](https://valibot.dev/guides/comparison/)
 
 - ArkType (precompiled): 1,140
 - Valibot: 1,547
@@ -43,7 +43,7 @@ A validator that compiles at runtime ships its compiler, and one that interprets
 - Zod: 25,058
 - ArkType (dynamic): 82,946
 
-In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled with its defaults, it reports every error on Valibot's own login form, with its message, in a smaller bundle than Valibot. Each chart names its benchmark and the options ArkType was built with.
+In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled with its defaults, it reports an error for every invalid field of Valibot's own login form, with the form's messages, in a smaller bundle than Valibot. Each chart names its benchmark and the options ArkType was built with.
 
 Because every Type is built when you build, a precompiled validator has no initialization cost, and because nothing is generated at runtime, it runs under a Content-Security-Policy that blocks `eval`.
 
@@ -310,6 +310,8 @@ export default {
 ```
 
 The loader fails a module whose `arktype` imports resolve otherwise, naming the aliases to add. With `runtime: "arktype"` or `shadow: true`, leave the aliases out, since the loader fails a module they resolve to the runtime. It reruns when a module's local imports change, and applies a changed configuration once the dev server restarts.
+
+The aliases also point a dependency's `arktype` imports at the runtime, and Turbopack never shows the loader those imports, so it can't fail the build for them. A dependency that defines Types, like `drizzle-arktype`, throws `type is not a function` when it loads instead. Build a program with one with webpack, which checks every dependency and runs it on arktype where [`dependencies`](https://arktype.io/docs/precompile/options#dependencies) says to, or with `runtime: "arktype"`.
 
 With webpack (`next build --webpack`), add the plugin:
 
