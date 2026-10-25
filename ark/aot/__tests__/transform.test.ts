@@ -688,7 +688,7 @@ export const E = type("strng")`,
 			const lines = result.code.split("\n")
 			attest(normalized([lines[0], ...lines.slice(-12)])).snap([
 				"var $ark$exports0;",
-				"})($ark$0$fixConfig))",
+				"})($ark$0$fixConfig)) : $ark$exports2)",
 				"}",
 				"function $arkfixConfig(...args) {",
 				'return $ark$load2()["default"](...args)',

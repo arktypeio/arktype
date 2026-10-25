@@ -2,6 +2,7 @@ import {
 	precompileStandalone,
 	precompileStandaloneModules,
 	writeFixConfig,
+	writeLazyRead,
 	type Configured,
 	type StandaloneExport,
 	type StandaloneModules,
@@ -168,7 +169,7 @@ export const inlineModules = (
 		// declared, so a cycle can call them before the body runs
 		const exports = `${prefix}$exports${loaders}`
 		const load = `${prefix}$load${loaders++}`
-		declarations += `var ${exports};\nfunction ${load}() {\nreturn (${exports} ??= ${call})\n}\n${names
+		declarations += `var ${exports};\nfunction ${load}() {\nreturn ${writeLazyRead(exports, call)}\n}\n${names
 			.map(
 				name =>
 					`function ${locals[name]}(...args) {\nreturn ${load}()[${JSON.stringify(name)}](...args)\n}\n`

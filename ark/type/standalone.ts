@@ -362,9 +362,14 @@ const isCreatedByRuntime = (
 	baking.checksTypes &&
 	defaultMembers.every(member => members.has(member))
 
+// a lazy variable's read: V8 compiles a strict check against undefined to one
+// comparison, where `??=` and `== null` test the value's map
+export const writeLazyRead = (name: string, initial: string): string =>
+	`(${name} === undefined ? (${name} = ${initial}) : ${name})`
+
 const writeValue = (hoisted: boolean, name: string, expression: string) =>
 	hoisted ?
-		`var ${name}Value\nfunction ${name}() {\n\treturn (${name}Value ??= ${expression})\n}`
+		`var ${name}Value\nfunction ${name}() {\n\treturn ${writeLazyRead(`${name}Value`, expression)}\n}`
 	:	`const ${name} = /* @__PURE__ */ (() => ${expression})()`
 
 // errors "none"'s root issue, found once read where it defers issues
@@ -801,9 +806,10 @@ const writeCreations = (
 		)
 		for (const [position, i] of creation.indices.entries()) {
 			reads[names[i]] = [
-				isInlined ? `(created${index} ??= (() => {\n${body}\n})())`
-				: baking.createsLazily ? `(created${index} ??= create${index}())`
-				: `created${index}`,
+				isInlined ? writeLazyRead(`created${index}`, `(() => {\n${body}\n})()`)
+				: baking.createsLazily ?
+					writeLazyRead(`created${index}`, `create${index}()`)
+				:	`created${index}`,
 				isShared ? position : undefined
 			]
 		}
@@ -1407,7 +1413,7 @@ class StandaloneArtifact {
 			configured,
 			holes ?
 				[
-					`return runtime.intern((interned${internedBy} ??= runtime.internTable()), [${holes.join(", ")}], () => {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
+					`return runtime.intern(${writeLazyRead(`interned${internedBy}`, "runtime.internTable()")}, [${holes.join(", ")}], () => {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
 				]
 			:	body
 		)
@@ -1481,8 +1487,8 @@ ${writeFunction(
 	}
 
 	writeCalledBody(index: number): string[] {
-		return this.writeBody(
-			(unitFunction, i) => `(unit${index}_${i} ??= ${unitFunction})`
+		return this.writeBody((unitFunction, i) =>
+			writeLazyRead(`unit${index}_${i}`, unitFunction)
 		)
 	}
 
@@ -1659,7 +1665,7 @@ ${writeFunction(
 				...(this.baking.hoisted ?
 					[
 						`var ${unit.name}Unit`,
-						`function ${unit.name}() {\n\treturn (${unit.name}Unit ??= ${built})\n}`
+						`function ${unit.name}() {\n\treturn ${writeLazyRead(`${unit.name}Unit`, built)}\n}`
 					]
 				:	[`const ${unit.name} = ${array ? "" : "/* @__PURE__ */ "}${built}`])
 			)
