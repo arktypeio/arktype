@@ -1,9 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import {
-	emitDeclarations,
-	writeSharedCollisionMessage
-} from "@ark/aot/internal/declare.ts"
+import { emitDeclarations } from "@ark/aot/internal/declare.ts"
 import { spawnSync } from "node:child_process"
 import {
 	mkdirSync,
@@ -388,8 +385,9 @@ export type Elements = [string, number?];
 
 	it("refuses a module declared where the shapes are", () => {
 		const collision = fromHere("declaredCollision")
+		const file = tsPath(join(collision, "src", "~arktype.ts"))
 		attest(() => emitDeclarations({ cwd: collision })).throws(
-			writeSharedCollisionMessage(tsPath(join(collision, "src", "~arktype.ts")))
+			`${file} would be declared at ~arktype.d.ts, which holds the shapes of the build's Types. Rename ${file}.`
 		)
 	})
 

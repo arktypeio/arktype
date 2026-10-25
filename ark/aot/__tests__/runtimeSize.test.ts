@@ -1,9 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import {
-	minifiedLengthOf,
-	reachedLengthOf
+	minifiedSizeOf,
+	reachedLengthOf,
+	runtimeReachesOf
 } from "@ark/aot/internal/runtimeSize.ts"
+import { minifiedLengthOf } from "@ark/aot/internal/smaller.ts"
 
 const entry = fromHere("runtimeSize", "entry.ts")
 
@@ -34,5 +36,19 @@ contextualize(() => {
 		attest(reachedLengthOf(entry, ["imported"])).equals(
 			lengthOf(`imported = () => "imported"`)
 		)
+	})
+
+	it("counts what the runtime's exports reach as minifiedSizeOf does", () => {
+		// two exports reaching a declaration both read
+		const names = ["ArkErrors", "applyIssues"]
+		const { lengths, reached } = runtimeReachesOf(names)
+		const counted = new Set(names.flatMap(name => reached[name]))
+		const code = names.map(name => `runtime.${name}`).join("\n")
+		attest(
+			counted.size < reached.ArkErrors.length + reached.applyIssues.length
+		).equals(true)
+		attest(
+			[...counted].reduce((sum, i) => sum + lengths[i], minifiedLengthOf(code))
+		).equals(minifiedSizeOf({ code, modules: {} } as never))
 	})
 })

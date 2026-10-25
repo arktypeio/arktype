@@ -330,7 +330,7 @@ export const K = type("string").extends(type("string").in)`,
 				{ "/limits.ts": "export const max = 5" }
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				"/main.ts:6:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.",
+				"/main.ts:6:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  Fix the definition, which throws the same ParseError at runtime, or set allowUnsafe: true to build anyway, with a warning.",
 				'/main.ts:7:18  type({ "+": "delete", "[string]": "string", a: type("string… can\'t be precompiled yet\n  structure { [string]: string, a: (In: string) => Out<Date> | (In: number) => Out<unknown>, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.',
 				'/main.ts:9:18  type("string").equals("string") can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type("string").equals`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.',
 				'/main.ts:11:18  type({ a: "string" }).props[0].key can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type({ a: "string" }).props`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.',
@@ -361,7 +361,7 @@ import "arktype/codecs"
 const T = type("string").pipe(s => s.length)
 export const encode = (v: unknown) => T.encode(v)`)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				"/main.ts:4:39  T.encode throws a ParseError\n  A morph must have an inverse to be encoded: (In: string) => Out<unknown>\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning."
+				"/main.ts:4:39  T.encode throws a ParseError\n  A morph must have an inverse to be encoded: (In: string) => Out<unknown>\n  Fix the definition, which throws the same ParseError at runtime, or set allowUnsafe: true to build anyway, with a warning."
 			])
 			attest(
 				normalized(
@@ -481,7 +481,7 @@ export const Shadowed = (() => {
 				})
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				"/inputs.ts:17:9  type(alias.name) can't be precompiled yet\n  `o` (/inputs.ts:7:7) is shadowed where the site is written, so its factory can't receive it\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
+				"/inputs.ts:17:9  type(alias.name) can't be precompiled yet\n  `o` (/inputs.ts:7:7) is shadowed where the site is written, so its factory can't receive it\n  Rename the `o` declared around the site, which hides the one it reads."
 			])
 			attest(foldedCode(result.code)).snap(`import { type } from "arktype"
 import { max } from "./limits.ts"
@@ -575,7 +575,7 @@ export default (def: string) => def`,
 			attest(build("/checked.ts").diagnostics).equals([])
 			const checked = build("/checked.ts", "helpers")
 			attest(checked.diagnostics.map(renderDiagnostic)).snap([
-				"/checked.ts:8:23  type(single(\"string\")) can't be precompiled yet\n  `default` (/helpers.ts:5:16) is a static helper its module doesn't export through a binding, so a test driver can't register it\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
+				"/checked.ts:8:23  type(single(\"string\")) can't be precompiled yet\n  `default` (/helpers.ts:5:16) is a static helper its module doesn't export through a binding, so a test driver can't register it\n  Export it by name, as `export const helper = ...`, and import that name, so a test driver can register it."
 			])
 			attest(foldedCode(checked.code)).snap(`import { type } from "arktype"
 import single, { list } from "./helpers.ts"

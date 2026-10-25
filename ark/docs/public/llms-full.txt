@@ -953,9 +953,10 @@ To move a whole project off Zod, or another library below, work through it in th
    - `z.object()` removes undeclared keys, and so should the migrated objects, even where the code reads only declared keys, since parsed data often reaches a database or a response whole. Call `configure({ onUndeclaredKey: "delete" })` from `arktype/config` in one file, like `src/arktype.config.ts`, and import it first in every file that creates a Type, so it applies whichever file loads first, tests included. If the project [precompiles](https://arktype.io/docs/precompile), also name that file as the build's `config` in [`ark.json`](https://arktype.io/docs/precompile/setup#ark-json), which the CLI and test drivers read as the bundler does. Then `.passthrough()` and `z.looseObject()` become `"+": "ignore"`, and `.strict()` becomes `"+": "reject"`.
    - Without that setting, write `"+": "delete"` in every object instead, nested ones included. `.merge()` takes `"+"` from the object merged in, so write `.merge({ "+": "delete", ... })`; with the global setting, merged objects keep deleting.
    - A union of such objects throws a `ParseError` saying it's indeterminate unless a key tells them apart. Follow [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ) for it, and keep the global setting: `"+": "ignore"` belongs only on the union's branches.
-   - `.optional()` also accepts `undefined`, so write `"key?": "T | undefined"`. Zod lets any key be missing whose schema accepts `undefined`, so a `z.unknown()` key is `"key?": "unknown"`. In Zod 4, `.default(x).optional()` still fills in `x`, so it's `key: T.default(x)`.
-   - `z.any()` is `"unknown.any"`, or `"key?": "unknown.any"` as a key. It infers `any` as Zod's did, so refinements that read its properties type-check without casts.
+   - `.optional()` also accepts `undefined`, so write `"key?": "T | undefined"`. Before Zod 4.4, any key whose schema accepts `undefined` may be missing, so a `z.unknown()` key is `"key?": "unknown"`; from 4.4, only `.optional()` and defaults let a key be missing, so it stays `key: "unknown"`. Check the version the project installs. In Zod 4, `.default(x).optional()` still fills in `x`, so it's `key: T.default(x)`.
+   - `z.any()` is `"unknown.any"`, or `"key?": "unknown.any"` as a key before Zod 4.4. It infers `any` as Zod's did, so refinements that read its properties type-check without casts.
    - Translate coercions and refinements literally, as in [Coercion is a parse](https://arktype.io/docs/migrating#semantics-to-check). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema.
+   - `string.email` and Zod 4's `z.email()` disagree on some addresses: Zod rejects `a..b@x.co` and `.a@x.co` and accepts `a'b@x.co`, and ArkType does the opposite. Where that matters, keep Zod's pattern as a regex.
    - Keep custom messages. `.min(1, "Name is required")` becomes `type("string >= 1").configure({ message: "Name is required" })`.
 4. **Update call sites.**
    - `X.parse(data)` becomes `X.assert(data)`, which throws.
@@ -1184,7 +1185,8 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `.min(n)` / `.max(n)` / `.length(n)` on strings | `"string >= n"`, `"string <= n"`, `"string == n"` |
 | `.int()`, `.positive()`, `.nonnegative()`, `.gt(n)` | `"number.integer"`, `"number > 0"`, `"number >= 0"`, `"number > n"` |
 | `.multipleOf(n)` | `"number % n"` |
-| `.email()`, `.url()`, `.uuid()`, `.ip()`, `.regex(r)` | `"string.email"`, `"string.url"`, `"string.uuid"`, `"string.ip"`, `/r/` |
+| `.email()`, `.url()`, `.uuid()`, `.regex(r)` | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/` |
+| `.ip()` (Zod 3), `z.ipv4()`, `z.ipv6()` | `"string.ip"`, `"string.ip.v4"`, `"string.ip.v6"` |
 | `.datetime()`, `z.iso.datetime()` | `"string.date.iso"` |
 | `.trim()`, `.toLowerCase()` | `"string.trim"`, `"string.lower"` |
 | `z.date()`, `z.instanceof(C)` | `"Date"`, `type.instanceOf(C)` |
@@ -7986,7 +7988,7 @@ const User = type({
 })
 ```
 
-That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](https://arktype.io/docs/precompile), it ships no parser. On Valibot's own login form, ArkType's default build reports every error, with its message, in a smaller bundle than Valibot: 1.14 kB gzipped against 1.55 kB.
+That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](https://arktype.io/docs/precompile), it ships no parser. On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.14 kB gzipped against 1.55 kB.
 
 Coming from Zod, most APIs have a direct equivalent:
 

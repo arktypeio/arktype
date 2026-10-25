@@ -4,7 +4,6 @@ import { parseSync, type Node, type Program, type Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
 import { prefixOf, renamedOf } from "./link.ts"
 import { SourceModule } from "./module.ts"
-import { minifiedLengthOf } from "./runtimeSize.ts"
 import {
 	exportNameOf,
 	isWriteTarget,
@@ -13,6 +12,7 @@ import {
 	type Binding,
 	type Reference
 } from "./scope.ts"
+import { minifiedLengthOf } from "./smaller.ts"
 
 export interface FlatBundle {
 	sites: Record<string, FlatSite>

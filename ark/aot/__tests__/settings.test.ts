@@ -264,7 +264,7 @@ contextualize(() => {
 					"Turbopack"
 				)
 			).throws(
-				'precompile.dependencies runs tables on arktype, which Turbopack can\'t, as it replaces arktype for every importer. Build with runtime: "arktype", or with webpack.'
+				'precompile.dependencies runs tables on arktype, which Turbopack can\'t, as it replaces arktype for every importer. Set it to "aot" if its Types are static, or build with webpack (next build --webpack), or with runtime: "arktype".'
 			)
 			attest(() =>
 				refuseArktypeDependencies(
@@ -272,7 +272,7 @@ contextualize(() => {
 					"Bun's runtime plugin"
 				)
 			).throws(
-				"precompile.dependencies runs tables on arktype, which Bun's runtime plugin can't, as it replaces arktype for every importer. Build with runtime: \"arktype\", or with Bun.build and precompile.bun()."
+				'precompile.dependencies runs tables on arktype, which Bun\'s runtime plugin can\'t, as it replaces arktype for every importer. Set it to "aot" if its Types are static, or build with Bun.build and precompile.bun(), or with runtime: "arktype".'
 			)
 		})
 	})

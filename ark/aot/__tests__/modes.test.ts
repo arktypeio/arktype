@@ -39,7 +39,7 @@ configure({ exactOptionalPropertyTypes: false })`
 				)
 			]).snap([
 				"/main.ts:2:1  configure() is called outside the config module /config.ts\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
-				'/main.ts:2:1  configure() is called, but the build has no `config` module\n  Name this module as the build\'s config: { config: "/main.ts" }',
+				'/main.ts:2:1  configure() is called, but the build has no `config` module\n  Name this module as the build\'s config in ark.json: { "precompile": { "config": "/main.ts" } }',
 				"/main.ts:2:1  configure() is called, but the build's `config` is false\n  Remove the call, or name its module as the build's `config`.",
 				"/main.ts:3:1  configure() is called more than once\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 			])
@@ -88,7 +88,9 @@ configure({ exactOptionalPropertyTypes: false })`,
 					{},
 					{ config: "/main.ts" }
 				)
-			).throws(configuredThreadMessage)
+			).throws(
+				"arktype in this thread holds a configuration other than the build's, which it can't change once set, so the build must restart in a thread of its own. Restart the process that runs it."
+			)
 		})
 
 		it("configure in a thread another configuration reached", () => {
@@ -217,10 +219,10 @@ configure({ exactOptionalPropertyTypes: false })`,
 				[],
 				[],
 				[
-					"/config.ts:2:1  configure() is given other values than arktype in this thread already applied\n  a module the configuration reads was given anew, as when a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+					"/config.ts:2:1  configure() is given other values than arktype in this thread already applied\n  a module the configuration reads was given anew, as when it's edited while the build runs or a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  Restart the build to apply an edit to /config.ts. If it wasn't edited, put arktype's plugin ahead of the plugin transforming it."
 				],
 				[
-					"/main.ts:2:18  type({ a: \"string\" }) is created under a configuration the build can't apply\n  configure() is given other values than arktype in this thread already applied (/config.ts)\n  a module the configuration reads was given anew, as when a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+					"/main.ts:2:18  type({ a: \"string\" }) is created under a configuration the build can't apply\n  configure() is given other values than arktype in this thread already applied (/config.ts)\n  a module the configuration reads was given anew, as when it's edited while the build runs or a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  Restart the build to apply an edit to /config.ts. If it wasn't edited, put arktype's plugin ahead of the plugin transforming it."
 				]
 			])
 		})
@@ -361,8 +363,8 @@ export const later = () => {
 					return diagnostics.map(diagnostic => diagnostic.hint)
 				})
 			).snap([
-				"Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.",
-				"Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.",
+				"Replace `Math.random()` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.",
+				"Replace `Math.random()` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.",
 				"Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
 			])
 		})

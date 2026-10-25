@@ -179,7 +179,7 @@ const standaloneOptions = [
 ] as const satisfies (keyof PrecompileOptions)[]
 
 export const standardJsonSchemaWithoutStandardMessage =
-	'members bakes "~standard.jsonSchema" into "~standard", which it sets false'
+	'members bakes "~standard.jsonSchema" into "~standard", which it sets false. Leave "~standard" unset, or remove "~standard.jsonSchema".'
 
 export type standardJsonSchemaWithoutStandardMessage =
 	typeof standardJsonSchemaWithoutStandardMessage
@@ -187,10 +187,10 @@ export type standardJsonSchemaWithoutStandardMessage =
 export const writeArktypeRuntimeOptionMessage = <option extends string>(
 	option: option
 ): writeArktypeRuntimeOptionMessage<option> =>
-	`${option} chooses what a standalone build writes, which runtime: "arktype" doesn't`
+	`${option} chooses what a standalone build writes, which runtime: "arktype" doesn't. Remove runtime: "arktype" to precompile, or remove ${option}.`
 
 export type writeArktypeRuntimeOptionMessage<option extends string> =
-	`${option} chooses what a standalone build writes, which runtime: "arktype" doesn't`
+	`${option} chooses what a standalone build writes, which runtime: "arktype" doesn't. Remove runtime: "arktype" to precompile, or remove ${option}.`
 
 // a host replacing arktype for every importer, which can't leave one on it
 export const refuseArktypeDependencies = (
@@ -207,7 +207,7 @@ export const writeArktypeDependencyHostMessage = (
 	name: string,
 	host: string
 ): string =>
-	`precompile.dependencies runs ${name} on arktype, which ${host} can't, as it replaces arktype for every importer. Build with runtime: "arktype"${host === "Turbopack" ? ", or with webpack" : ", or with Bun.build and precompile.bun()"}.`
+	`precompile.dependencies runs ${name} on arktype, which ${host} can't, as it replaces arktype for every importer. Set it to "aot" if its Types are static, or build with ${host === "Turbopack" ? "webpack (next build --webpack)" : "Bun.build and precompile.bun()"}, or with runtime: "arktype".`
 
 // a host that transforms a module before it can read the whole bundle
 export const refusePrune = (
