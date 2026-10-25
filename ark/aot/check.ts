@@ -66,6 +66,14 @@ const sourcesOf = (patterns: string[], cwd: string): string[] => {
 	return [...files].sort()
 }
 
+// each component importing a module, which may read a validator as only its
+// framework's compiled code shows
+const componentsOf = (cwd: string): string[] =>
+	globSync("**/*.{svelte,vue,astro,mdx}", { cwd, exclude: isExcluded })
+		.map(match => resolve(cwd, match))
+		.filter(file => /\bimport\b/.test(readFileSync(file, "utf8")))
+		.sort()
+
 export const check = (
 	patterns: string[],
 	opts?: PrecompilePluginOptions
@@ -144,6 +152,17 @@ export const check = (
 			precompilerOptions.prune !== false &&
 			unprunedMessageOf(files, cwd, request)
 		if (unpruned) report.lines.push(unpruned)
+		if (
+			precompilerOptions.runtime !== "arktype" &&
+			!precompilerOptions.shadow
+		) {
+			const components = componentsOf(cwd)
+			if (components.length) {
+				report.lines.push(
+					`${printablePathOf(cwd, components[0])}${components.length > 1 ? ` and ${countOf(components.length - 1, "other component")} aren't` : " isn't"} checked here, as the build checks a component once its framework compiles it`
+				)
+			}
+		}
 	} finally {
 		request("close")
 	}

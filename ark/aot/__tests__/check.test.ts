@@ -215,6 +215,25 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 		}
 	})
 
+	it("names the components only the build checks", () => {
+		const root = writeFixture({
+			"src/types.ts": `import { type } from "arktype"\nexport const User = type({ name: "string" })\n`,
+			"src/Form.svelte": `<script>\n\timport { User } from "./types.ts"\n</script>\n\n<p>{User({}) instanceof Error}</p>\n`,
+			"src/Page.vue": `<script setup>\nimport Form from "./Form.vue"\n</script>\n`,
+			"src/Static.astro": `<p>no imports</p>\n`
+		})
+		attest(check(["src/**/*.ts"], { cwd: root }).lines).snap([
+			"src/types.ts:2:21  accepted",
+			"src/Form.svelte and 1 other component aren't checked here, as the build checks a component once its framework compiles it",
+			"1 site in 1 file: 1 accepted (100.0%)"
+		])
+		attest(
+			check([], { cwd: root, runtime: "arktype" }).lines.some(line =>
+				line.includes("component")
+			)
+		).equals(false)
+	})
+
 	it("fails on an error outside every site", () => {
 		const dir = fromHere("unconfigured")
 		attest(check([], { cwd: dir }).lines).snap([
