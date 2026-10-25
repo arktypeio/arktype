@@ -138,32 +138,29 @@ export const rowsOf = (category: CategoryId) =>
 		.flatMap(s => s.rows.map(row => row.results))
 
 /**
- * How far above the best size average ArkType's may be and still count as
- * tied for the smallest: one release can move a bundle's size by about this
- * much. Speed and startup need the best average.
+ * How far above a category's best average a library's may be and still count
+ * as first, in every category alike: one release can move a result by about
+ * this much
  */
-export const sizeTie = 0.05
+export const tieBand = 0.05
 
-/** whether ArkType may claim a board's category: it has the best average, or for size one within sizeTie of it */
-const claimsBest = ({ category, standings }: Leaderboard) => {
-	const ours = standings.find(s => s.library === "ArkType")
-	if (!ours) return false
-	return (
-		ours === standings[0] ||
-		(category === "size" && ours.score <= standings[0].score * (1 + sizeTie))
-	)
+/** whether a library counts as first on a board: the best average, or one within tieBand of it */
+export const isFirst = ({ standings }: Leaderboard, library: string) => {
+	const standing = standings.find(s => s.library === library)
+	return !!standing && standing.score <= standings[0].score * (1 + tieBand)
 }
 
-/** whether ArkType may claim a category: the best average, or a size average tied for it */
+/** whether ArkType counts as first in a category */
 export const leads = (category: CategoryId) =>
-	claimsBest(leaderboards[category])
+	isFirst(leaderboards[category], "ArkType")
 
-/** whether ArkType's claim to a category is a tie, another library having the best average */
+/** whether ArkType is first by the band, another library having the best average */
 export const ties = (category: CategoryId) =>
 	leads(category) && leaderboards[category].standings[0].library !== "ArkType"
 
-/** the suites without which ArkType couldn't claim a category */
+/** the suites without which ArkType wouldn't count as first in a category */
 export const leadDependsOn = (category: CategoryId) =>
 	leaderboards[category].suites.filter(
-		label => !claimsBest(leaderboardOf(category, independentSuites, label))
+		label =>
+			!isFirst(leaderboardOf(category, independentSuites, label), "ArkType")
 	)

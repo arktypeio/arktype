@@ -1,6 +1,7 @@
 import { Fragment, type CSSProperties } from "react"
 import { formatRatio } from "../../lib/bench/bench.ts"
 import {
+	averageText,
 	categories,
 	claims,
 	draftOf,
@@ -140,6 +141,26 @@ const Foot = ({ category }: { category: Category }) => (
 	</footer>
 )
 
+/** a best average, as a multiple of the best result: "1.252×" */
+const multiple = (score: number) => `${averageText(score)}×`
+
+/** ArkType's best average beside the next best's and how far below it, or the leader's where ArkType isn't first, within the band or not */
+const Average = ({ category, of }: { category: Category; of: string }) => {
+	const { score, other } = category.average
+	return category.leads && !category.ties ?
+			<>
+				Lowest average: <b>{multiple(score)}</b> {of}, <b>{category.by}</b>{" "}
+				below {other.library}'s <b>{multiple(other.score)}</b>
+			</>
+		:	<>
+				{category.ties ?
+					`Within ${tieMargin} of ${other.library}'s average: `
+				:	`${other.library}'s average is lower: `}
+				<b>{multiple(score)}</b> {of}, to {other.library}'s{" "}
+				<b>{multiple(other.score)}</b>
+			</>
+}
+
 const BarCard = ({ category }: { category: BarCategory }) => {
 	const [ours, ...rivals] = category.bars.map(bar => ({
 		name: bar.name,
@@ -154,10 +175,15 @@ const BarCard = ({ category }: { category: BarCategory }) => {
 	return (
 		<>
 			<Place category={category} />
-			<p className="card-margin">
-				<b>{formatRatio(zod.value / ours.value)}</b> {category.margin} Zod and{" "}
-				<b>{percent}%</b> less than Valibot
-			</p>
+			<div className="card-margin">
+				<p>
+					<b>{formatRatio(zod.value / ours.value)}</b> {category.margin} Zod and{" "}
+					<b>{percent}%</b> less than Valibot on the login app
+				</p>
+				<p>
+					<Average category={category} of="the least work" />
+				</p>
+			</div>
 			<ol
 				className="race"
 				aria-label={`${category.unit}, lower is better`}
@@ -189,25 +215,6 @@ const BarCard = ({ category }: { category: BarCategory }) => {
 				))}
 			</ol>
 			<p className="card-rest">{category.unit}, lower is better</p>
-		</>
-	)
-}
-
-/** a best average, as a multiple of the best result: "1.36×" */
-const multiple = (score: number) => `${score.toFixed(2)}×`
-
-/** ArkType's best average beside the next best's, or the leader's where ArkType isn't first, saying so where it's a tie */
-const Average = ({ category, of }: { category: Category; of: string }) => {
-	const { score, other } = category.average
-	return (
-		<>
-			{category.ties ?
-				`Within ${tieMargin} of ${other.library}'s average: `
-			: category.leads ?
-				"Lowest average: "
-			:	`${other.library}'s average is lower: `}
-			<b>{multiple(score)}</b> {of}, to {other.library}'s{" "}
-			<b>{multiple(other.score)}</b>
 		</>
 	)
 }

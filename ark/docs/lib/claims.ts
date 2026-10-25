@@ -16,13 +16,14 @@ import {
 import {
 	fullLeaderboards,
 	isOwnSuite,
+	isFirst,
 	isWrittenByUs,
 	leaderboards,
 	leadDependsOn,
 	leads,
 	resultsOf,
 	rowsOf,
-	sizeTie,
+	tieBand,
 	ties,
 	type CategoryId,
 	type Standing
@@ -208,19 +209,16 @@ const placeOf = (category: CategoryId, boards = leaderboards) => {
 const wording = {
 	speed: {
 		superlative: "Fastest",
-		comparative: "faster",
 		phrase: "Runs faster.",
 		measures: "validation speed"
 	},
 	startup: {
 		superlative: "Quickest to start",
-		comparative: "quicker to start",
 		phrase: "Starts lighter.",
 		measures: "startup"
 	},
 	size: {
 		superlative: "Smallest",
-		comparative: "smaller",
 		phrase: "Ships less.",
 		measures: "bundle size"
 	}
@@ -240,8 +238,17 @@ const averageOf = (category: CategoryId) => {
 	return { score, other: leaderboards[category].standings[place === 1 ? 1 : 0] }
 }
 
-/** how far above the best size average ArkType's may be and still tie it: "5%" */
-export const tieMargin = `${Math.round(sizeTie * 100)}%`
+/** how far above a category's best average still counts as first: "5%" */
+export const tieMargin = `${Math.round(tieBand * 100)}%`
+
+/** an average as the board prints it, to three decimals: "1.252" */
+export const averageText = (score: number) => score.toFixed(3)
+
+/** how far below the next best's ArkType's average is: "15.0%", or "less than 0.1%" */
+const leadText = (score: number, next: number) => {
+	const percent = (1 - score / next) * 100
+	return percent < 0.1 ? "less than 0.1%" : `${percent.toFixed(1)}%`
+}
 
 /** where ArkType's best average places it in a category, a superlative only where it may claim one */
 const standingOf = (category: CategoryId) => {
@@ -253,15 +260,19 @@ const standingOf = (category: CategoryId) => {
 		:	`across ${suites.length} independent benchmarks`
 	const { place, ranked } = placeOf(category)
 	const [first] = leaderboards[category].standings
+	const average = averageOf(category)
+	const by = place === 1 ? leadText(average.score, average.other.score) : ""
 	return {
 		leads: leads(category),
 		ties: ties(category),
-		place: ordinal(place),
+		place: leads(category) ? "1st" : ordinal(place),
 		ranked,
-		average: averageOf(category),
+		average,
+		/** how far ArkType's average is below the next best's, where it's the best: "15.0%" */
+		by,
 		standing:
 			ties(category) ?
-				`Tied for ${wording[category].superlative.toLowerCase()} on average ${across}, within ${tieMargin} of ${first.library}`
+				`${wording[category].superlative} on average ${across}, within ${tieMargin} of ${first.library}`
 			: leads(category) ?
 				`${wording[category].superlative} on average ${across}`
 			:	`${ordinal(place)} of ${ranked} on average ${across}`
@@ -273,10 +284,10 @@ const listOf = (items: string[]) =>
 		items.join("")
 	:	`${items.slice(0, -1).join(", ")} and ${items.at(-1)}`
 
-/** a category's standing and best average, beside the next best's where ArkType leads, otherwise beside the leader's */
+/** a category's standing and best average, beside the next best's and by how much where ArkType leads, otherwise beside the leader's */
 const averagesOf = (category: CategoryId) => {
-	const { score, other } = averageOf(category)
-	return `${standingOf(category).standing}: ${score.toFixed(2)} against ${other.library}'s ${other.score.toFixed(2)}.`
+	const { standing, average, by } = standingOf(category)
+	return `${standing}: ${averageText(average.score)} against ${average.other.library}'s ${averageText(average.other.score)}${by && `, ${by} lower`}.`
 }
 
 /** the headline's suites whose code for each library we wrote: "valibot.dev's login form" */
@@ -306,23 +317,15 @@ const fullBoardPlaces = listOf(
 		const [first] = fullLeaderboards[category].standings
 		return place === 1 ?
 				`1st for ${wording[category].measures}`
-			:	`${ordinal(place)} of ${ranked} for ${wording[category].measures}, ${score.toFixed(2)} to ${first.library}'s ${first.score.toFixed(2)}`
+			:	`${ordinal(place)} of ${ranked} for ${wording[category].measures}, ${averageText(score)} to ${first.library}'s ${averageText(first.score)}`
 	})
 )
 
 /** where ArkType places on the full board, stated wherever the headline's standings are */
 const fullBoardNote = `With our own benchmarks added, ArkType is ${fullBoardPlaces}.`
 
-/** the full board's leaders where they aren't ArkType: "ajv averages smaller" */
-const fullBoardLeaders = boardOrder.flatMap(category => {
-	const [first] = fullLeaderboards[category].standings
-	return first.library === "ArkType" ?
-			[]
-		:	[`${first.library} averages ${wording[category].comparative}`]
-})
-
-/** how the standings treat noise and stay current, after the notes on them */
-const methodNote = `Sizes within ${tieMargin} of the best average count as a tie, since one release can move a bundle by about that much. A weekly job reruns the size benchmarks at each library's newest release.`
+/** how the standings treat noise, the same in every category */
+const methodNote = `In every category, an average within ${tieMargin} of the best counts as first, since one release can move a result by about that much.`
 
 /** the startup suites that time creating a schema, which a precompiled build does when it builds */
 const creationOnly = [
@@ -356,7 +359,7 @@ const leadsWithoutEach = () => {
 		.filter(category => leadDependsOn(category).length)
 		.map(
 			category =>
-				`The ${wording[category].measures} ${claimOf(category)} doesn't survive leaving out any one of ${listOf(leadDependsOn(category))}.`
+				`The ${wording[category].measures} ${claimOf(category)} doesn't survive leaving out ${leadDependsOn(category).length > 1 ? "any one of " : ""}${listOf(leadDependsOn(category))}.`
 		)
 	if (robust.length) {
 		const claims = claimsOf(robust)
@@ -383,9 +386,6 @@ const sizeResultsBeating = (library: string) => {
 
 const sizeRival = averageOf("size").other
 
-/** how far below the next best's ArkType's size average is, where it leads */
-const sizeLead = 1 - placeOf("size").score / sizeRival.score
-
 /** each category's results on the independent suites, for the headline's notes, and what startup's measure */
 const independentResults = `${listOf(
 	boardOrder.map(
@@ -399,14 +399,12 @@ export const claims = {
 	// each superlative names a category ArkType must claim
 	// (lib/bench/leaderboard.ts), as the check of the copy below holds. Size
 	// is the close one: ArkType 1.252 to Typia's 1.256 since the size rows of
-	// results/newest/, and sizeTie keeps the claim within 5% of the best
+	// results/newest/, and tieBand keeps the claim within 5% of the best
 	headline:
 		leads("size") ?
 			"TypeScript's smallest, fastest validator."
 		:	"TypeScript's fastest validator.",
-	// the headline's basis in one line, under it in the blog post
-	headlineBasis: `${rankedBy}.${fullBoardLeaders.length ? ` With our own benchmarks added, ${listOf(fullBoardLeaders)}.` : ""}`,
-	headlineNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote}`,
+	headlineNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote} A weekly job reruns the size benchmarks at each library's newest release.`,
 	// the fastest and the smallest builds differ: optimize "size" makes the
 	// product schema's valid data 2.2x slower
 	buildChoice:
@@ -491,8 +489,8 @@ export const claims = {
 	// 808927feb's rows Typia had it, 1.256 to 1.297
 	sizeClose:
 		leads("size") && !ties("size") ?
-			`Size is the close one: ArkType's average is ${(sizeLead * 100).toFixed(1)}% below ${sizeRival.library}'s${sizeLead < sizeTie ? `, inside the ${tieMargin} we count as a tie,` : ""} and ${sizeRival.library} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`
-		:	`Size is the close one: ${sizeRival.library} has the best average, ${sizeRival.score.toFixed(2)} to ArkType's ${placeOf("size").score.toFixed(2)}${ties("size") ? `, within the ${tieMargin} we count as a tie` : ""}, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
+			`Size is the close one: ArkType's average is ${standingOf("size").by} below ${sizeRival.library}'s, and ${sizeRival.library} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`
+		:	`Size is the close one: ${sizeRival.library} has the best average, ${averageText(sizeRival.score)} to ArkType's ${averageText(placeOf("size").score)}${ties("size") ? `, ArkType's within ${tieMargin} of it` : ""}, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
 	// which benchmarks are ours, and that the averages leave them out
 	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory} on the full board; the averages above leave those out.${writtenSuites ? ` They keep ${writtenSuites}, Valibot's code, which we wrote in each library and size with our own script.` : ""}`,
 	// the claims that depend on a single benchmark, and which
@@ -549,7 +547,7 @@ type CategoryBase = {
 	label: string
 	/** the options ArkType's numbers were built with */
 	build: string
-	/** ArkType's place by best average: "1st" */
+	/** ArkType's place by best average, "1st" wherever it counts as first */
 	place: string
 	/** how many libraries the category ranks */
 	ranked: number
@@ -561,6 +559,8 @@ type CategoryBase = {
 	ties: boolean
 	/** ArkType's best average, and the library the card names beside it */
 	average: { score: number; other: Standing }
+	/** how far ArkType's average is below the next best's, where it's the best: "15.0%" */
+	by: string
 	source: BenchmarkChart["source"]
 }
 
@@ -651,4 +651,69 @@ if (!isPending(claims.pickThree) && !oneBuild) {
 	throw new Error(
 		`The hero claims one build leads every category, but the board's categories come from ${listOf([...new Set(categories.map(c => c.build))])}`
 	)
+}
+
+/** a library's averages in the Pick 3 table, each null where it isn't ranked */
+export type PickThreeRow = {
+	library: string
+	cells: Record<CategoryId, { score: number; first: boolean } | null>
+}
+
+const rowOf = (library: string): PickThreeRow => ({
+	library,
+	cells: Object.fromEntries(
+		boardOrder.map(category => {
+			const board = leaderboards[category]
+			const standing = board.standings.find(s => s.library === library)
+			return [
+				category,
+				standing ?
+					{ score: standing.score, first: isFirst(board, library) }
+				:	null
+			]
+		})
+	) as PickThreeRow["cells"]
+})
+
+/** every ranked library first in all three categories */
+const firstInAll = [
+	...new Set(
+		boardOrder.flatMap(c => leaderboards[c].standings.map(s => s.library))
+	)
+].filter(library =>
+	boardOrder.every(category => isFirst(leaderboards[category], library))
+)
+
+/**
+ * The homepage's Pick 3 table: ArkType, every library first in a category
+ * or next best in one, then Valibot and Zod, the two that wrote Standard
+ * Schema with it
+ */
+export const pickThreeTable: {
+	title: Claim<string>
+	categories: { id: CategoryId; label: string }[]
+	rows: PickThreeRow[]
+} = {
+	title:
+		leadsEvery && firstInAll.length === 1 ?
+			"Only ArkType is first in all three."
+		:	{ pending: "Only ArkType is first in all three." },
+	categories: boardOrder.map(category => ({
+		id: category,
+		label: wording[category].measures
+	})),
+	rows: [
+		...new Set([
+			"ArkType",
+			...boardOrder.flatMap(category => {
+				const board = leaderboards[category]
+				return [
+					...board.standings.filter(s => isFirst(board, s.library)),
+					board.standings.find(s => s.library !== "ArkType")!
+				].map(s => s.library)
+			}),
+			"Valibot",
+			"Zod"
+		])
+	].map(rowOf)
 }
