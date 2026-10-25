@@ -54,7 +54,14 @@ const suiteScores = (suite: Suite) => {
 /** the suites we wrote, by id */
 const ownSuites = ["homepage", "startup", "homepageStartup", "homepageSize"]
 
-for (const id of ownSuites) {
+/**
+ * The independent suites whose code for each library we wrote: valibot.dev's
+ * login form, Valibot's code there, written by us in every other library and
+ * sized by our script
+ */
+const writtenByUs = ["form"]
+
+for (const id of [...ownSuites, ...writtenByUs]) {
 	if (!(data.suites as Suite[]).some(s => s.id === id))
 		throw new Error(`No leaderboard suite has the id ${id}`)
 }
@@ -65,10 +72,17 @@ export const isOwnSuite = (label: string) =>
 		id => (data.suites as Suite[]).find(s => s.id === id)!.label === label
 	)
 
+/** whether we wrote a suite's code for each library, by its label */
+export const isWrittenByUs = (label: string) =>
+	writtenByUs.some(
+		id => (data.suites as Suite[]).find(s => s.id === id)!.label === label
+	)
+
 /**
- * The headline's basis: independent suites only, every suite but the ones we
- * wrote, so ArkType's own benchmarks don't decide its claims. It applies to
- * every category alike.
+ * The headline's basis: every suite but the ones we designed, so ArkType's own
+ * benchmarks don't decide its claims. It keeps valibot.dev's login form, whose
+ * code is Valibot's though we wrote it in each library. It applies to every
+ * category alike.
  */
 const independentSuites = (suite: Suite) => !ownSuites.includes(suite.id)
 

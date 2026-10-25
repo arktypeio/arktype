@@ -16,6 +16,7 @@ import {
 import {
 	fullLeaderboards,
 	isOwnSuite,
+	isWrittenByUs,
 	leaderboards,
 	leadDependsOn,
 	leads,
@@ -241,7 +242,12 @@ export const tieMargin = `${Math.round(sizeTie * 100)}%`
 
 /** where ArkType's best average places it in a category, a superlative only where it may claim one */
 const standingOf = (category: CategoryId) => {
-	const across = `across ${leaderboards[category].suites.length} independent benchmarks`
+	const { suites } = leaderboards[category]
+	const written = suites.filter(isWrittenByUs)
+	const across =
+		written.length ?
+			`across ${suites.length - written.length} independent benchmarks and ${listOf(written)}`
+		:	`across ${suites.length} independent benchmarks`
 	const { place, ranked } = placeOf(category)
 	const [first] = leaderboards[category].standings
 	return {
@@ -269,6 +275,18 @@ const averagesOf = (category: CategoryId) => {
 	const { score, other } = averageOf(category)
 	return `${standingOf(category).standing}: ${score.toFixed(2)} against ${other.library}'s ${other.score.toFixed(2)}.`
 }
+
+/** the headline's suites whose code for each library we wrote: "valibot.dev's login form" */
+const writtenSuites = listOf([
+	...new Set(
+		boardOrder.flatMap(category =>
+			leaderboards[category].suites.filter(isWrittenByUs)
+		)
+	)
+])
+
+/** what the headline's standings average, for its notes */
+const headlineBasis = `Ranked by best average across other projects' public benchmarks${writtenSuites ? ` and ${writtenSuites}, which we wrote in each library from Valibot's code` : ""}, each result a ratio to the best`
 
 /** how many of each category's benchmarks on the full board are ours */
 const ownedPerCategory = listOf(
@@ -377,7 +395,7 @@ export const claims = {
 		leads("size") ?
 			"TypeScript's smallest, fastest validator."
 		:	"TypeScript's fastest validator.",
-	headlineNote: `Ranked by best average across the public benchmarks we didn't write, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote}`,
+	headlineNote: `${headlineBasis}: ${independentResults}. ${fullBoardNote} ${methodNote}`,
 	// the fastest and the smallest builds differ: optimize "size" makes the
 	// product schema's valid data 2.2x slower
 	buildChoice:
@@ -444,7 +462,7 @@ export const claims = {
 			"Fast. Small. Quick to start. Pick 3."
 		:	led.map(category => wording[category].phrase).join(" "),
 	// what the board's superlatives average
-	boardNote: `Ranked by best average across the public benchmarks we didn't write, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote}`,
+	boardNote: `${headlineBasis}: ${independentResults}. ${fullBoardNote} ${methodNote}`,
 	// startupChart; the form is 1.04M vs Valibot's 2.37M, 20 of 20
 	startupLogin:
 		"On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than ajv, Valibot, Typia, Zod Mini, Zod, compiled Zod or TypeBox, in all 20 paired runs on Node 24.",
@@ -467,7 +485,7 @@ export const claims = {
 			`Size is the close one: ${sizeRival.library} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}, and ArkType's lead is in the average.`
 		:	`Size is the close one: ${sizeRival.library} has the best average, ${sizeRival.score.toFixed(2)} to ArkType's ${placeOf("size").score.toFixed(2)}, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
 	// which benchmarks are ours, and that the averages leave them out
-	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory} on the full board; the averages above leave those out.`,
+	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory} on the full board; the averages above leave those out.${writtenSuites ? ` They keep ${writtenSuites}, Valibot's code, which we wrote in each library and size with our own script.` : ""}`,
 	// the claims that depend on a single benchmark, and which
 	leaveOneOut: leadsWithoutEach()
 } satisfies Record<string, Claim<string>>
