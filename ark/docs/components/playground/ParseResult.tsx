@@ -54,7 +54,7 @@ export const ParseResult = ({
 			}}
 			className="glass-container editor-bg flex h-full flex-col p-4 rounded-2xl"
 		>
-			<h3 className="text-3xl text-ink font-semibold mb-2">{title}</h3>
+			<h2 className="text-3xl text-ink font-semibold mb-2">{title}</h2>
 			{contents}
 		</div>
 	)
