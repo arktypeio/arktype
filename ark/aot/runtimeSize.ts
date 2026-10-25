@@ -4,17 +4,13 @@ import { createRequire } from "node:module"
 import { visitorKeys, type Node } from "oxc-parser"
 import { SourceModule } from "./module.ts"
 import type { Binding } from "./scope.ts"
-
-// about the length a minifier leaves of code: no comments, spaces or names
-// longer than two characters
-export const minifiedLengthOf = (code: string): number =>
-	code
-		.replace(/\/\*[\S\s]*?\*\/|\/\/[^\n]*/g, "")
-		.replace(/\s+/g, "")
-		.replace(/[$A-Z_a-z][\w$]{2,}/g, "ab").length
+import { minifiedLengthOf, runtimeReadsOf } from "./smaller.ts"
 
 // resolved as the precompiler's own arktype resolves it
 let runtimeFile: string | undefined
+
+const runtimeFileOf = () =>
+	(runtimeFile ??= fileOf("arktype/runtime", import.meta.url))
 
 /** about the length a minifier leaves of modules and the runtime they read */
 export const minifiedSizeOf = ({
@@ -24,10 +20,7 @@ export const minifiedSizeOf = ({
 	const text = [code, ...Object.values(modules)].join("\n")
 	return (
 		minifiedLengthOf(text) +
-		reachedLengthOf(
-			(runtimeFile ??= fileOf("arktype/runtime", import.meta.url)),
-			text.match(/(?<=\bruntime\.)[\w$]+/g) ?? []
-		)
+		reachedLengthOf(runtimeFileOf(), runtimeReadsOf(text))
 	)
 }
 
@@ -39,6 +32,37 @@ export const reachedLengthOf = (
 	file: string | undefined,
 	names: Iterable<string>
 ): number => {
+	let length = 0
+	for (const declared of reachedBy(file, names)) length += declared.length
+	return length
+}
+
+export interface RuntimeReaches {
+	lengths: number[]
+	// the indices of the lengths each export reaches
+	reached: Record<string, number[]>
+}
+
+/** what minifiedSizeOf counts of the runtime, for code that can't read it */
+export const runtimeReachesOf = (names: Iterable<string>): RuntimeReaches => {
+	const indices = new Map<Declared, number>()
+	const lengths: number[] = []
+	const reached: Record<string, number[]> = {}
+	for (const name of names) {
+		reached[name] = [...reachedBy(runtimeFileOf(), [name])].map(declared => {
+			let index = indices.get(declared)
+			if (index === undefined)
+				indices.set(declared, (index = lengths.push(declared.length) - 1))
+			return index
+		})
+	}
+	return { lengths, reached }
+}
+
+const reachedBy = (
+	file: string | undefined,
+	names: Iterable<string>
+): Set<Declared> => {
 	const reached = new Set<Declared>()
 	const reach = (declared: Declared | undefined) => {
 		if (!declared || reached.has(declared)) return
@@ -46,9 +70,7 @@ export const reachedLengthOf = (
 		for (const read of readsOf(declared)) reach(read)
 	}
 	for (const name of names) reach(exportedBy(file, name))
-	let length = 0
-	for (const declared of reached) length += declared.length
-	return length
+	return reached
 }
 
 // a top-level declaration of one of the runtime's modules
