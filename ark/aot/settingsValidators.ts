@@ -189,11 +189,11 @@ var domains = (cases, description) => {
 
 // ark/type/runtime.ts
 var freeze = Object.freeze
-var holesByValue = /* @__PURE__ */ new WeakMap()
 var siteOf = (code, description, message) => ({ code, description, x: message })
 var failsAt = (ctx, site, data, key) => !ctx?._at || ctx._at(site, data, key)
 var failsIn = (ctx, apply, data, key, missing) =>
 	ctx?._at ? ctx._in(apply, data, key, missing) : !apply(data[key])
+var holesByValue = /* @__PURE__ */ new WeakMap()
 var holdHoles = (value, id, holes = []) => {
 	holesByValue.set(value, [id, freeze(holes)])
 	return value
