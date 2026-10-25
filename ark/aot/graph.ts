@@ -1258,17 +1258,13 @@ export class ModuleGraph {
 		)
 		let result = 0
 		for (const call of calls ?? [undefined]) {
-			const args = call?.arguments ?? []
-			const spread = args.findIndex(arg => arg.type === "SpreadElement")
-			const arg = args[index]
 			result |= this.patternKindOf(
 				binding.id,
 				param,
 				annotate(
-					!call ? this.passedKindOf(fn, module, kindOfKey)
-					: spread !== -1 && spread <= index ? kinds.data
-					: arg ? this.transfer(arg, module, kindOfKey)
-					: kinds.data,
+					call ?
+						this.argKindOf(call, params, index, module, kindOfKey)
+					:	this.passedKindOf(fn, module, kindOfKey),
 					annotated
 				),
 				module,
@@ -1276,6 +1272,38 @@ export class ModuleGraph {
 			)
 		}
 		return result
+	}
+
+	// what a call passes the parameter at index, e.g. what `[A]` holds for
+	// `t` given `f(...[A])`, or an array of it for `...ts`
+	private argKindOf(
+		call: CallExpression | NewExpression,
+		params: readonly Node[],
+		index: number,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits {
+		const args = call.arguments
+		const spread = args.findIndex(arg => arg.type === "SpreadElement")
+		const isRest = params[index]?.type === "RestElement"
+		if (!isRest && (spread === -1 || index < spread)) {
+			return args[index] ?
+					this.transfer(args[index], module, kindOfKey)
+				:	kinds.data
+		}
+		let held = 0
+		for (const arg of args.slice(
+			spread === -1 ? index : Math.min(spread, index)
+		)) {
+			held |=
+				arg.type === "SpreadElement" ?
+					memberKindOf(
+						this.transfer(arg.argument, module, kindOfKey),
+						undefined
+					)
+				:	this.transfer(arg, module, kindOfKey)
+		}
+		return isRest ? holderOf(held) : held | kinds.data
 	}
 
 	// e.g. `t` in `list.map(t => t.or(B))`
@@ -2071,7 +2099,14 @@ export class ModuleGraph {
 			const args = call.arguments
 			const spread = args.findIndex(arg => arg.type === "SpreadElement")
 			const arg = args[index]
-			if (!arg || (spread !== -1 && spread <= index)) {
+			if (spread !== -1 && spread <= index) {
+				result |= memberKindOf(
+					this.argKindOf(call, runtimeParamsOf(fn), index, module, kindOfKey),
+					name
+				)
+				continue
+			}
+			if (!arg) {
 				result |= kinds.data
 				continue
 			}
@@ -2091,12 +2126,9 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey
 	): Application {
-		const spread = call.arguments.findIndex(arg => arg.type === "SpreadElement")
-		const args = runtimeParamsOf(fn).map((param, i) =>
-			param.type === "RestElement" || (spread !== -1 && spread <= i) ?
-				kinds.data
-			: call.arguments[i] ? this.transfer(call.arguments[i], module, kindOfKey)
-			: kinds.data
+		const params = runtimeParamsOf(fn)
+		const args = params.map((_, i) =>
+			this.argKindOf(call, params, i, module, kindOfKey)
 		)
 		let applications = this.applicationsByFn.get(fn)
 		if (!applications) this.applicationsByFn.set(fn, (applications = new Map()))

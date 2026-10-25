@@ -1345,6 +1345,28 @@ export function orUser(x?: unknown) {
 			])
 		})
 
+		it("a Type passed by a spread or to a rest parameter", () => {
+			attest(
+				unhinted(
+					`import { User } from "./a.ts"
+function field(schema: unknown, label: string) {
+	if (!label) throw new Error("no label")
+	return { schema, label }
+}
+const logged = (...args: [unknown, string]) => field(...args)
+const first = (...ts: unknown[]) => ts[0]
+console.log(logged(User, "user").schema.description, first(User).description)`,
+					{
+						"/a.ts": `import { type } from "arktype"
+export const User = type({ name: "string" })`
+					}
+				)
+			).snap([
+				'/main.ts:8:13  logged(User, "user").schema.description reads description, which a standalone validator lacks\n  the build can\'t tell where `logged(User, "user").schema` comes from, so it may be a Type, which the standalone runtime replaces with a validator',
+				"/main.ts:8:54  first(User).description reads description, which a standalone validator lacks\n  the build can't tell where `first(User)` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
 		it("a Type a Vue template reads", () => {
 			const user = {
 				"/a.ts": `import { type } from "arktype"
