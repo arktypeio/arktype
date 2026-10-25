@@ -219,6 +219,16 @@ export const writeFixture = (
 	return root
 }
 
+// runs a bundle as an ES module
+export const runBundle = (js: string) =>
+	spawnSync(process.execPath, ["--input-type=module"], {
+		input: js,
+		encoding: "utf8"
+	})
+
+// what a bundle logs
+export const run = (js: string): string => runBundle(js).stdout
+
 export const runPlain = (cwd: string, ...args: string[]): string =>
 	spawnSync(
 		process.execPath,

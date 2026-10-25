@@ -33,7 +33,14 @@ import { spawnSync } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join, posix, relative, win32 } from "node:path"
 import { stripVTControlCharacters } from "node:util"
-import { memoryHost, normalized, runCli, writeFixture } from "./utils.ts"
+import {
+	memoryHost,
+	normalized,
+	run,
+	runBundle,
+	runCli,
+	writeFixture
+} from "./utils.ts"
 
 const types = `import { type } from "arktype"
 
@@ -579,12 +586,6 @@ console.log(out instanceof type.errors ? out.summary : out)
 				})
 			).warnings
 
-		const run = (js: string) =>
-			spawnSync(process.execPath, ["--input-type=module"], {
-				input: js,
-				encoding: "utf8"
-			}).stdout
-
 		it("leaves out of a production build for size what no read needs", async () => {
 			const pruned = await bundle()
 			const whole = await bundle({ prune: false })
@@ -1070,12 +1071,6 @@ console.log(out instanceof type.errors ? out.summary : out)
 			}
 		}
 
-		const run = (js: string) =>
-			spawnSync(process.execPath, ["--input-type=module"], {
-				input: js,
-				encoding: "utf8"
-			}).stdout
-
 		it("leaves out of a production build what no read needs", async () => {
 			const pruned = await bundle()
 			const whole = await bundle({ prune: false })
@@ -1277,10 +1272,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 					:	undefined
 			}
 			const pruned = await bundle({}, { plugins: [asserting] })
-			const { stderr } = spawnSync(process.execPath, ["--input-type=module"], {
-				input: pruned,
-				encoding: "utf8"
-			})
+			const { stderr } = runBundle(pruned)
 			attest(stderr.includes("[TraversalError]: name must be a string")).equals(
 				true
 			)

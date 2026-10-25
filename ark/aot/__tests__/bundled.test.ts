@@ -2,9 +2,8 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { precompile } from "@ark/aot/unplugin"
 import { build, type Plugin } from "esbuild"
-import { spawnSync } from "node:child_process"
 import { join } from "node:path"
-import { writeFixture } from "./utils.ts"
+import { run, writeFixture } from "./utils.ts"
 
 const conditions = ["ark-ts"]
 
@@ -102,11 +101,7 @@ const bundled = async (plugins: Plugin[]): Promise<[Observed, string]> => {
 		plugins
 	})
 	const js = outputFiles[0].text
-	const { stdout } = spawnSync(process.execPath, ["--input-type=module"], {
-		input: js,
-		encoding: "utf8"
-	})
-	return [JSON.parse(stdout), js]
+	return [JSON.parse(run(js)), js]
 }
 
 contextualize(() => {

@@ -10,9 +10,8 @@ import {
 	type Rolldown
 } from "vite"
 import { parseSync } from "oxc-parser"
-import { spawnSync } from "node:child_process"
 import { join } from "node:path"
-import { writeFixture } from "./utils.ts"
+import { run, writeFixture } from "./utils.ts"
 
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts", "production"]
@@ -61,12 +60,6 @@ const bundle = async (
 	})
 	return outputFiles!.map(file => file.text)
 }
-
-const run = (js: string) =>
-	spawnSync(process.execPath, ["--input-type=module"], {
-		input: js,
-		encoding: "utf8"
-	}).stdout
 
 // a factory's parameter destructuring a unit it reads
 const factoryParam = /{ 0: \w+Allows/

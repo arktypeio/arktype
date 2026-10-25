@@ -63,6 +63,8 @@ import {
 import { bakedJsonSchemaOptionsMessage } from "arktype/runtime"
 import {
 	packageFiles,
+	run,
+	runBundle,
 	runPlain,
 	tempDir,
 	undetailedOutput,
@@ -204,14 +206,6 @@ const nextThreadId = () => {
 	void worker.terminate()
 	return worker.threadId
 }
-
-const runBundle = (js: string) =>
-	spawnSync(process.execPath, ["--input-type=module"], {
-		input: js,
-		encoding: "utf8"
-	})
-
-const run = (js: string) => runBundle(js).stdout
 
 // a minified class prints its error's name, as `ce [ParseError]: `
 const thrownBy = (js: string) =>
