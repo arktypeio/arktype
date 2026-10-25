@@ -1319,6 +1319,39 @@ export const later = (input: unknown) => {
 			])
 		})
 
+		it("a Type a Vue template reads", () => {
+			const user = {
+				"/a.ts": `import { type } from "arktype"
+export const User = type({ name: "string" })`
+			}
+			// as @vue/compiler-sfc writes script setup, setup() and data()
+			attest(
+				unhinted(
+					`import { unref as _unref, toDisplayString as _toDisplayString } from "vue"
+import { User } from "./a.ts"
+export default {
+	setup: () => (_ctx: unknown) => _toDisplayString(_unref(User).description)
+}`,
+					user
+				)
+			).snap([
+				"/main.ts:4:51  _unref(User).description reads description, which a standalone validator lacks\n  `_unref(User)` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
+			])
+			attest(
+				unhinted(
+					`import { toDisplayString as _toDisplayString } from "vue"
+import { User } from "./a.ts"
+const _sfc_main = { setup: () => ({ Schema: User }), data: () => ({ product: { description: "" } }) }
+export function render(_ctx: any, _cache: any, $props: any, $setup: any) {
+	return [$setup.Schema.description, _ctx.product.description, $setup.Schema.allows(1)].map(_toDisplayString)
+}`,
+					user
+				)
+			).snap([
+				"/main.ts:5:10  $setup.Schema.description reads description, which a standalone validator lacks\n  the build can't tell where `$setup.Schema` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
 		it("a Type a TypeScript namespace exports", () => {
 			attest(
 				unhinted(`import { type } from "arktype"

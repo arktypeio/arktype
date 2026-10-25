@@ -26,6 +26,7 @@ import type {
 	ClassElement,
 	Function,
 	FunctionBody,
+	ImportDeclaration,
 	ImportSpecifier,
 	MemberExpression,
 	NewExpression,
@@ -417,6 +418,33 @@ const lostOf = (kind: KindBits): KindBits =>
 	kind & ~opaque ? unsure
 	: kind & kinds.opaque ? opaque
 	: kinds.data
+
+// e.g. `User` in `_unref(User)`, as Vue compiles a script setup binding its
+// template reads, which returns what isn't a ref
+const unrefedOf = (call: CallExpression, module: SourceModule) => {
+	const callee = unwrapChain(call.callee)
+	const declaration =
+		callee.type === "Identifier" ?
+			module.scopes.refsById.get(callee)?.binding?.declaration
+		:	undefined
+	const [arg] = call.arguments
+	return (
+			declaration?.type === "ImportSpecifier" &&
+				exportNameOf(declaration.imported) === "unref" &&
+				/^(?:vue|@vue\/[\w-]+)$/.test(
+					(declaration.parent as ImportDeclaration).source.value
+				) &&
+				arg?.type !== "SpreadElement"
+		) ?
+			arg
+		:	undefined
+}
+
+// what a render function Vue compiles reads a component's script through
+const componentContexts: Record<string, 1> = Object.setPrototypeOf(
+	{ _ctx: 1, $setup: 1, $data: 1 },
+	null
+)
 
 // methods by which an array, Map or Set holds what it's passed
 const storingMethods: Record<string, 1> = Object.setPrototypeOf(
@@ -1699,7 +1727,10 @@ export class ModuleGraph {
 					this.arkExportNameOf(node.object, module) === "type"
 				)
 					return kinds.data
-				return memberKindOf(this.transfer(node.object, module, kindOfKey), name)
+				return (
+					memberKindOf(this.transfer(node.object, module, kindOfKey), name) |
+					this.exposedKindOf(node, module, kindOfKey)
+				)
 			}
 			case "CallExpression":
 			case "TaggedTemplateExpression": {
@@ -1737,6 +1768,9 @@ export class ModuleGraph {
 					this.functionOf(callee, module) ??
 					this.methodOf(callee, module, kindOfKey)
 				if (!fn) {
+					const unrefed =
+						node.type === "CallExpression" && unrefedOf(node, module)
+					if (unrefed) return this.transfer(unrefed, module, kindOfKey)
 					return (
 						callKindOf(this.transfer(callee, module, kindOfKey)) |
 						(node.type === "CallExpression" ?
@@ -1949,6 +1983,44 @@ export class ModuleGraph {
 	}
 
 	// e.g. data for `opts.db` given `route({ db, input: type(...) })`
+	// e.g. `$setup.User` in a render function Vue compiles, which reads what
+	// the component's script exposes by that name: one of the module's
+	// bindings for script setup, or what its `setup()` or `data()` returns
+	private exposedKindOf(
+		member: MemberExpression,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits {
+		const object = unwrapChain(member.object)
+		const name = memberNameOf(member)
+		const context =
+			object.type === "Identifier" ?
+				module.scopes.refsById.get(object)?.binding
+			:	undefined
+		if (
+			context?.kind !== "param" ||
+			!(context.name in componentContexts) ||
+			typeof name !== "string"
+		)
+			return 0
+		const { bindings } = module.scopes.root
+		if (bindings[name]) return kindOfKey(bindings[name], module)
+		const options =
+			bindings._sfc_main &&
+			this.bindingLiteralOf(bindings._sfc_main, module, kindOfKey, new Set())
+		let result = 0
+		for (const key of ["setup", "data"]) {
+			const fn = options && this.valueIn(options, key)
+			const returned = fn && isFunctionNode(fn.node) && returnedOf(fn.node)
+			const exposed =
+				returned && this.literalOf(returned, fn.module, fn.kindOfKey)
+			const value = exposed && this.valueIn(exposed, name)
+			if (value)
+				result |= this.transfer(value.node, value.module, value.kindOfKey)
+		}
+		return result
+	}
+
 	private passedMemberKindOf(
 		member: MemberExpression,
 		module: SourceModule,
