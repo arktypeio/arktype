@@ -996,7 +996,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 				plugins?: VitePlugin[]
 				following?: VitePlugin[]
 				lib?: boolean
-				onwarn?: (warning: { message: string }) => void
+				onwarn?: (warning: { message: string; plugin?: string }) => void
 			} = {}
 		) => {
 			const { NODE_ENV } = process.env
@@ -1067,7 +1067,15 @@ console.log(out instanceof type.errors ? out.summary : out)
 			writeFileSync(main, `${source}import.meta.glob("./*.ts")\n`)
 			const warnings: string[] = []
 			try {
-				await bundle({}, { onwarn: warning => warnings.push(warning.message) })
+				// Rolldown also warns where plugins take most of a build's time
+				await bundle(
+					{},
+					{
+						onwarn: warning => {
+							if (warning.plugin === "arktype") warnings.push(warning.message)
+						}
+					}
+				)
 				attest(warnings).snap([
 					"prune: off, because main.ts:6:1 reads import.meta.glob, which may load modules it can't name, so the build keeps every member of its validators. Set prune: false to build them whole without this warning."
 				])
