@@ -1692,6 +1692,127 @@
 			color: var(--sky);
 		}
 	}
+
+	/* Pick 3: each library's best averages, a mark where it counts as first */
+	.p3 {
+		max-width: 880px;
+		margin: 40px 0 0;
+		padding: 24px 24px 18px;
+		border-radius: var(--r-lg);
+		border: 1px solid var(--rule);
+		background: linear-gradient(
+			180deg,
+			color-mix(in oklab, var(--surface) 90%, var(--tint) 10%),
+			var(--surface) 55%
+		);
+		box-shadow: var(--shadow-card);
+	}
+	.p3-head {
+		h3 {
+			margin: 0;
+			font: 800 clamp(1.5rem, 1.1rem + 1.2vw, 2.1rem) / 1.1 var(--sans);
+			letter-spacing: -0.03em;
+		}
+		p {
+			margin: 8px 0 0;
+			font-size: 14px;
+			color: var(--ink-2);
+		}
+	}
+	.p3-table {
+		width: 100%;
+		margin-top: 20px;
+		border-collapse: collapse;
+		table-layout: fixed;
+		font: 400 14px / 1.3 var(--mono);
+		font-variant-numeric: tabular-nums;
+		th,
+		td {
+			padding: 11px 8px;
+			text-align: right;
+			white-space: nowrap;
+		}
+		:is(th, td):first-child {
+			width: 26%;
+			padding-left: 12px;
+			text-align: left;
+		}
+		thead th {
+			padding-block: 0 10px;
+			font-size: 12px;
+			font-weight: 400;
+			color: var(--ink-3);
+		}
+		tbody tr {
+			border-top: 1px solid var(--rule);
+		}
+		tbody th {
+			font-weight: 400;
+			color: var(--ink-2);
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		td {
+			color: var(--ink-3);
+		}
+		td.is-first {
+			color: var(--ink);
+		}
+		tr.is-ours {
+			background: color-mix(in oklab, var(--gold) 8%, transparent);
+			th {
+				box-shadow: inset 3px 0 0 var(--gold);
+				color: var(--gold);
+				font-weight: 700;
+			}
+			td {
+				color: var(--ink);
+				font-weight: 700;
+			}
+		}
+	}
+	.p3-cell {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.p3-mark {
+		display: inline-grid;
+		flex: none;
+		place-items: center;
+		width: 18px;
+		height: 18px;
+		border-radius: 50%;
+		background: color-mix(in oklab, var(--teal) 16%, transparent);
+		box-shadow: inset 0 0 0 1px
+			color-mix(in oklab, var(--teal) 55%, transparent);
+		color: var(--teal);
+		svg {
+			width: 11px;
+			height: 11px;
+		}
+	}
+	.p3-none {
+		color: var(--ink-3);
+	}
+	.p3-foot {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 18px;
+		margin: 14px 0 0;
+		font: 400 12px / 1.5 var(--mono);
+		color: var(--ink-3);
+		a {
+			margin-left: auto;
+			color: var(--sky);
+		}
+	}
+	.p3-key {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+	}
 	.card-big {
 		display: grid;
 		gap: 6px;
@@ -3295,5 +3416,89 @@
 	}
 	98% {
 		rotate: 0deg;
+	}
+}
+
+/* Pick 3: rows fade in, every other library's marks land, then ArkType's,
+   one per category, and a glint crosses its row; html[data-motion] holds the
+   start until the table is seen */
+@media (prefers-reduced-motion: no-preference) {
+	:root[data-motion] .home {
+		.p3:not([data-play]) {
+			tbody tr,
+			.p3-table .p3-mark {
+				opacity: 0;
+			}
+		}
+		.p3[data-play] {
+			tbody tr {
+				animation: rise-fade 0.3s ease-out both;
+				animation-delay: calc(var(--r) * 0.06s);
+			}
+			.p3-table .p3-mark {
+				animation: stamp-in 0.42s var(--ease-pop) both;
+				animation-delay: var(--at);
+			}
+			tr.is-ours {
+				background-image: linear-gradient(
+					90deg,
+					transparent,
+					color-mix(in oklab, var(--gold) 22%, transparent),
+					transparent
+				);
+				background-repeat: no-repeat;
+				background-size: 40% 100%;
+				animation:
+					rise-fade 0.3s ease-out both,
+					p3-glint 0.7s ease-out 1.45s both;
+			}
+		}
+	}
+}
+@keyframes p3-glint {
+	from {
+		background-position-x: -80%;
+	}
+	to {
+		background-position-x: 180%;
+	}
+}
+
+@media (max-width: 760px) {
+	.home {
+		.p3 {
+			padding: 18px 10px 14px;
+		}
+		.p3-head {
+			padding-inline: 6px;
+		}
+		.p3-table {
+			font-size: 12.5px;
+			th,
+			td {
+				padding: 10px 4px;
+			}
+			:is(th, td):first-child {
+				width: 24%;
+				padding-left: 6px;
+			}
+		}
+		.p3-cell {
+			gap: 5px;
+		}
+		.p3-mark {
+			width: 15px;
+			height: 15px;
+			svg {
+				width: 9px;
+				height: 9px;
+			}
+		}
+		.p3-foot {
+			padding-inline: 6px;
+			a {
+				margin-left: 0;
+			}
+		}
 	}
 }

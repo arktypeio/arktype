@@ -258,6 +258,9 @@ const wireBoard = () => {
 const wireProof = () =>
 	playWhenSeen(document.querySelector<HTMLElement>("[data-proof]"), 0.45)
 
+const wirePickThree = () =>
+	playWhenSeen(document.querySelector<HTMLElement>("[data-pick3]"), 0.5)
+
 /**
  * The agent transcript's steps appear in order once it is half visible; a
  * press finishes it and "replay" plays it again. The markup is the final
@@ -337,7 +340,8 @@ export const HomeEffects = () => {
 			wireTranscript(),
 			wireBoard(),
 			wireSpots(),
-			wireProof()
+			wireProof(),
+			wirePickThree()
 		]
 		return () => {
 			for (const cleanup of cleanups) cleanup?.()

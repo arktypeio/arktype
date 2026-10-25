@@ -11,9 +11,10 @@ import { HomeEffects } from "../../components/home/HomeEffects.tsx"
 import { LiveType } from "../../components/home/LiveType.tsx"
 import { Board } from "../../components/home/Board.tsx"
 import { Migrate } from "../../components/home/Migrate.tsx"
+import { PickThree } from "../../components/home/PickThree.tsx"
 import { WhyNow } from "../../components/home/WhyNow.tsx"
 import { BenchmarkChart } from "../../components/mdx/BenchmarkChart.tsx"
-import { ClaimText, HeadlineNote } from "../../components/mdx/Claim.tsx"
+import { ClaimText } from "../../components/mdx/Claim.tsx"
 import { BoatLane } from "../../components/shell/BoatLane.tsx"
 import { SiteFooter } from "../../components/shell/SiteFooter.tsx"
 import {
@@ -684,7 +685,7 @@ export default function HomePage() {
 								` Rejecting invalid input with a boolean check, ArkType was ${facts.rejection}.`}
 						</p>
 					</div>
-					<HeadlineNote className="note" />
+					<PickThree />
 					<BenchmarkChart animate>
 						<div className="b-pre">
 							<div>

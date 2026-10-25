@@ -457,32 +457,6 @@ export type BenchTable = {
 	}[]
 }
 
-export type StartupTable = {
-	head: string[]
-	rows: { metric: string; cells: string[] }[]
-}
-
-/** cold start and bundle size for the login form app, every library */
-export const startupTable = (): StartupTable => {
-	const cold = bench.startup.login
-	const size = bench.size.login
-	return {
-		head: ["login form app", ...tableArms.map(([, label]) => label)],
-		rows: [
-			{
-				metric: "cold start",
-				cells: tableArms.map(([key]) =>
-					cold[key] ? `${cold[key].coldMs} ms` : "—"
-				)
-			},
-			{
-				metric: "gzip",
-				cells: tableArms.map(([key]) => (size[key] ? kb(size[key].gzip) : "—"))
-			}
-		]
-	}
-}
-
 /** every scenario, the text equivalent of the chart */
 export const benchTable = (): BenchTable => ({
 	head: [
@@ -750,5 +724,5 @@ export const benchNotes = (): string[] => [
 			)
 		)
 	].join(" "),
-	`Cold start and size are for a login form app (an email and a password check) bundled and minified with esbuild. Cold start is the median time for a fresh Node process to import the bundle and validate once, measured ${provenance.startup.date} at ${provenance.startup.commit}; size is the gzipped bundle: validators, the library code they import and, for Valibot and Zod Mini, the functions matching a precompiled validator's entry points (calling it, .allows, .assert and its errors' .summary) where the library has one. Both are in the second table.`
+	`Cold start and size, precompiled against the JIT, are for a login form app (an email and a password check) bundled and minified with esbuild. Cold start is the median time for a fresh Node process to import the bundle and validate once, measured ${provenance.startup.date} at ${provenance.startup.commit}; size is the gzipped bundle, the validators and the library code they import.`
 ]

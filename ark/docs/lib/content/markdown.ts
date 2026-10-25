@@ -19,12 +19,7 @@ import remarkParse from "remark-parse"
 import { unified } from "unified"
 import { visit } from "unist-util-visit"
 import { installCommand } from "../../components/installCommand.ts"
-import {
-	benchNotes,
-	benchTable,
-	harness,
-	startupTable
-} from "../bench/bench.ts"
+import { benchNotes, benchTable, harness } from "../bench/bench.ts"
 import snippetContentsById from "../../components/snippets/contentsById.ts"
 import {
 	claims,
@@ -296,7 +291,6 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 		}
 		case "BenchmarkChart": {
 			const bench = benchTable()
-			const startup = startupTable()
 			return [
 				table(
 					bench.head,
@@ -308,10 +302,6 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 						row.fastestOther,
 						row.versus
 					])
-				),
-				table(
-					startup.head,
-					startup.rows.map(row => [row.metric, ...row.cells])
 				),
 				...benchNotes().map(note => paragraph(note)),
 				{

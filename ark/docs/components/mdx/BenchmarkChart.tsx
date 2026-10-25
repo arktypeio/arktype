@@ -6,7 +6,6 @@ import {
 	benchTable,
 	harness,
 	preview,
-	startupTable,
 	type BenchPanel,
 	type BenchSet
 } from "../../lib/bench/bench.ts"
@@ -185,7 +184,6 @@ export type BenchmarkChartProps = {
 export const BenchmarkChart = ({ animate, children }: BenchmarkChartProps) => {
 	const facts = benchFacts()
 	const table = benchTable()
-	const startup = startupTable()
 	const [method, ...notes] = benchNotes()
 	return (
 		<div className="bench" data-bench>
@@ -233,10 +231,7 @@ export const BenchmarkChart = ({ animate, children }: BenchmarkChartProps) => {
 					.
 				</p>
 				<details className="twin">
-					<summary>
-						all {facts.scenarioCount} scenarios, plus startup and size, as
-						tables
-					</summary>
+					<summary>all {facts.scenarioCount} scenarios, as a table</summary>
 					<Table className="b-table">
 						<Head labels={table.head} />
 						<tbody>
@@ -251,17 +246,6 @@ export const BenchmarkChart = ({ animate, children }: BenchmarkChartProps) => {
 									<Cells cells={row.cells} />
 									<td>{row.fastestOther}</td>
 									<td className="t-verdict">{row.versus}</td>
-								</tr>
-							))}
-						</tbody>
-					</Table>
-					<Table className="b-table">
-						<Head labels={startup.head} />
-						<tbody>
-							{startup.rows.map(row => (
-								<tr key={row.metric}>
-									<th scope="row">{row.metric}</th>
-									<Cells cells={row.cells} />
 								</tr>
 							))}
 						</tbody>
