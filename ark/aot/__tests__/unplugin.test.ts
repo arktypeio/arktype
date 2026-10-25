@@ -1254,10 +1254,14 @@ console.log(
 		it("esbuild", async () => {
 			const alias: Plugin = {
 				name: "alias",
+				// in the file namespace, as most plugins resolve
 				setup: build =>
-					build.onResolve({ filter: /^#shared\// }, args => ({
-						path: join(shared, `${args.path.slice("#shared/".length)}.ts`)
-					}))
+					build.onResolve(
+						{ filter: /^#shared\//, namespace: "file" },
+						args => ({
+							path: join(shared, `${args.path.slice("#shared/".length)}.ts`)
+						})
+					)
 			}
 			const errors = await esbuild({
 				entryPoints: [join(root, "main.js")],

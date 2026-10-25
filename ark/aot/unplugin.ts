@@ -849,6 +849,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					if (isOwnSpecifier(specifier)) return
 					const resolved = await build.resolve(specifier, {
 						importer,
+						namespace: "file",
 						resolveDir: dirname(importer),
 						kind: "import-statement"
 					})
