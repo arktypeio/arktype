@@ -54,12 +54,16 @@ const droppedFrom = async (
 	})
 	const scanned = await scanProgram("test", [{ id: "/main.ts" }], {
 		resolve: async (specifier, importer) => {
-			if (!specifier.startsWith(".")) return null
+			// a package installed in /node_modules, or one left external
+			if (!specifier.startsWith(".")) {
+				const id = `/node_modules/${specifier}/index.js`
+				return id in files ? id : null
+			}
 			const id = posix.join(posix.dirname(importer), specifier)
 			return id in files ? id : undefined
 		},
 		readFile: id => files[id],
-		isTransformed: () => true,
+		isTransformed: id => !id.startsWith("/node_modules/"),
 		idOf: id => id,
 		cwd: "/"
 	})
@@ -450,6 +454,14 @@ contextualize(function (this: Mocha.Suite) {
 			).equals(everyMember)
 		})
 
+		it("but import.meta.webpackHot, or a flag Nuxt defines", async () => {
+			attest(
+				await droppedReading(
+					`if (import.meta.webpackHot) import.meta.webpackHot.accept()\nif (import.meta.client && !import.meta.dev) User({})`
+				)
+			).equals(everyMember)
+		})
+
 		it("but a URL import.meta locates", async () => {
 			attest(
 				await droppedReading(
@@ -469,6 +481,45 @@ contextualize(function (this: Mocha.Suite) {
 					}
 				)
 			).equals(everyMember)
+		})
+	})
+
+	describe("dependencies", () => {
+		// main.ts importing fw, a package whose index.js holds `fw`
+		const droppedThrough = (fw: string, files: Record<string, string> = {}) =>
+			droppedFrom({
+				"/types.ts": types,
+				"/main.ts": `import "fw"\n`,
+				"/node_modules/fw/index.js": fw,
+				...files
+			})
+
+		it("reads the program a dependency imports, as Nuxt's runtime imports its pages", async () => {
+			attest(
+				await droppedThrough(
+					`export const routes = [() => import("../../page.ts")]\n`,
+					{
+						"/page.ts": `import { User } from "./types.ts"\n\nUser.assert({})\n`
+					}
+				)
+			).equals(["meta", "~standard", "methods"])
+		})
+
+		it("keeps what a dependency may read of a module it imports", async () => {
+			attest(await droppedThrough(`import "../../types.ts"\n`)).snap(
+				"types.ts exports User, which a dependency may read"
+			)
+		})
+
+		it("reads past what a dependency loads unnamed", async () => {
+			attest(
+				await droppedThrough(
+					`import.meta.glob("./*.js")\nrequire(process.env.PLUGIN)\nimport "../../page.ts"\n`,
+					{
+						"/page.ts": `import { User } from "./types.ts"\n\nUser.assert({})\n`
+					}
+				)
+			).equals(["meta", "~standard", "methods"])
 		})
 	})
 
@@ -1251,20 +1302,76 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(pruned.includes("~standard")).equals(false)
 		})
 
-		it("fails a bundle where a dependency imports a module holding a validator", async () => {
-			const message = await importing(
+		it("reads the program a dependency imports, as Nuxt's runtime imports its pages", async () => {
+			writeFileSync(
+				join(root, "page.ts"),
+				'import { User } from "./types.ts"\nconsole.log(User.assert({ name: "Ada" }).name)\n'
+			)
+			const pruned = await importing(
 				'import "fw"',
-				() =>
-					bundle().then(
-						() => "",
-						(e: Error) => stripVTControlCharacters(e.message)
-					),
-				"../../types.ts"
+				() => bundle(),
+				"../../page.ts"
+			)
+			attest(run(pruned)).snap("Ada\nname must be a string\n")
+			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("fails a bundle where a plugin following it adds an import to a dependency", async () => {
+			const adding: VitePlugin = {
+				name: "adding",
+				transform: (code, id) =>
+					id.endsWith("/fw/index.js") ?
+						`import "../../types.ts"\n${code}`
+					:	undefined
+			}
+			const message = await importing('import "fw"', () =>
+				bundle({}, { following: [adding] }).then(
+					() => "",
+					(e: Error) => stripVTControlCharacters(e.message)
+				)
 			)
 			const expected = writeUnseenMessage(
 				"node_modules/fw/index.js imports types.ts"
 			)
 			attest(message.slice(-expected.length)).equals(expected)
+		})
+
+		it("builds a stylesheet another plugin emits as an entry, as Nuxt's server build does", async () => {
+			writeFileSync(join(root, "theme.css"), "p { color: goldenrod }\n")
+			const emitting: VitePlugin = {
+				name: "emitting",
+				buildStart() {
+					this.emitFile({ type: "chunk", id: join(root, "theme.css?inline") })
+				}
+			}
+			const pruned = await bundle({}, { plugins: [emitting] })
+			attest(run(pruned)).snap("name must be a string\n")
+			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("resolves a relative import as a require, which Rollup's CommonJS plugin answers without loading it", async () => {
+			// loads a module of the program an import resolves to, as
+			// @rollup/plugin-commonjs does a .js file to tell whether it's
+			// CommonJS, which waits on arktype's transform
+			const loading: VitePlugin = {
+				name: "loading",
+				enforce: "pre",
+				async resolveId(specifier, importer, options) {
+					const custom = options.custom as
+						| { "node-resolve"?: { isRequire?: boolean } }
+						| undefined
+					if (!importer || custom?.["node-resolve"]?.isRequire) return
+					const resolved = await this.resolve(specifier, importer, {
+						...options,
+						skipSelf: true
+					})
+					if (resolved?.id.startsWith(root)) await this.load(resolved)
+					return resolved
+				}
+			}
+			const pruned = await bundle({}, { plugins: [loading] })
+			attest(run(pruned)).snap("name must be a string\n")
+			attest(pruned.includes("~standard")).equals(false)
 		})
 
 		it("reads a module as a plugin ahead of it transformed it", async () => {

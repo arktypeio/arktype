@@ -42,6 +42,7 @@ import {
 	resolvesToRuntime,
 	runsOnArktype,
 	resolvedVariantOf,
+	readFile,
 	rethrowAsBuildError,
 	runtimePackages,
 	runtimeSpecifiers,
@@ -1187,7 +1188,7 @@ interface RollupContext {
 	resolve: (
 		source: string,
 		importer?: string,
-		options?: { isEntry?: boolean; skipSelf?: boolean }
+		options?: { isEntry?: boolean; skipSelf?: boolean; custom?: object }
 	) => Promise<RollupResolution | null>
 	// a module once it's transformed and parsed, by the resolution it's
 	// loaded with
@@ -1314,7 +1315,11 @@ const rollupScanOf = async (
 	}
 	const scanned = await scanProgram(program, entries, {
 		resolve: async (specifier, importer) => {
-			const resolved = await context.resolve(specifier, importer)
+			const resolved = await context.resolve(
+				specifier,
+				importer,
+				relativeSpecifier.test(specifier) ? asRequired : undefined
+			)
 			if (!resolved) return
 			if (resolved.external) return null
 			resolutions.set(resolved.id, resolved)
@@ -1331,6 +1336,7 @@ const rollupScanOf = async (
 			)
 			return arrival ? Promise.race([arrival, loaded]) : loaded
 		},
+		readFile,
 		isTransformed,
 		idOf: fileOf,
 		cwd
@@ -1356,6 +1362,13 @@ const rollupScanOf = async (
 }
 
 const htmlId = /\.html$/
+
+// Rollup's CommonJS plugin loads the module an import resolves to, whose
+// transform here waits on the scan, but not one a require resolves to, as a
+// relative import resolves alike
+const asRequired = { custom: { "node-resolve": { isRequire: true } } }
+
+const relativeSpecifier = /^\.\.?(?:\/|$)/
 
 // imports of a page's module scripts, or undefined where one is inline,
 // whose module the build writes from the page

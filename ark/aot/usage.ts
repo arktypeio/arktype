@@ -54,6 +54,8 @@ export interface RuntimeModule {
 
 export interface UsageProgram {
 	entries: ReadonlySet<string>
+	// e.g. a module a framework's runtime imports, as its exports are read
+	exposed: ReadonlySet<string>
 	modules: ReadonlyMap<string, RuntimeModule>
 	// the module a specifier resolves to, if the program holds it
 	resolve: (specifier: string, importer: string) => string | undefined
@@ -319,6 +321,11 @@ class UsageAnalysis {
 		if (this.program.entries.has(id)) {
 			escape(
 				`${runtime.module.path} exports ${name}, which code outside the bundle may read`
+			)
+		}
+		if (this.program.exposed.has(id)) {
+			escape(
+				`${runtime.module.path} exports ${name}, which a dependency may read`
 			)
 		}
 		for (const edge of this.edgesByTarget.get(id) ?? []) {

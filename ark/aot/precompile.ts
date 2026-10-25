@@ -769,7 +769,8 @@ export class Precompiler {
 		modules: ReadonlyMap<string, RuntimeModule>
 	): Set<UsedMember> | string {
 		return usedMembersOf({
-			entries: new Set([...program.entries, ...program.exposed]),
+			entries: new Set(program.entries),
+			exposed: new Set(program.exposed),
 			modules,
 			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
 		})
@@ -872,7 +873,7 @@ export class Precompiler {
 			modules,
 			importedNamesOf(
 				[...runtimes.values()].map(runtime => runtime.module),
-				program.entries,
+				[...program.entries, ...program.exposed],
 				(specifier, importer) => program.targets[importer]?.[specifier]
 			)
 		)
