@@ -634,6 +634,11 @@ export abstract class NodeCompiler extends CompiledFunction<
 			:	this.if("failed", () => this.return("failed"))
 	}
 
+	// what a node's Allows holds for, as an expression
+	condition(node: BaseNode): string {
+		return node.compileCondition?.(this, this.data) ?? this.invoke(node)
+	}
+
 	// Apply reports a failed condition at its site
 	check(node: BaseNode, opts?: CheckOptions): this {
 		const arg = opts?.arg ?? this.data
