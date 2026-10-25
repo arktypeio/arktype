@@ -93,7 +93,7 @@ const parse = (id: string, source: string, lang: Lang) =>
 
 type Lang = "js" | "jsx" | "ts" | "tsx"
 
-const langOf = (id: string): Lang =>
+export const langOf = (id: string): Lang =>
 	/\.[cm]?tsx$/.test(id) ? "tsx"
 	: /\.[cm]?ts$/.test(id) ? "ts"
 	: /\.jsx$/.test(id) ? "jsx"

@@ -568,7 +568,7 @@ const varScopeKinds = {
 	StaticBlock: 1
 } as const satisfies KeySet
 
-const typeKeys = {
+export const typeKeys = {
 	typeAnnotation: 1,
 	typeParameters: 1,
 	typeArguments: 1,

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { visitorKeys, type Node } from "oxc-parser"
 import { SourceModule } from "./module.ts"
-import type { Binding } from "./scope.ts"
+import { typeKeys, type Binding } from "./scope.ts"
 import { minifiedLengthOf, runtimeReadsOf } from "./smaller.ts"
 
 // resolved as the precompiler's own arktype resolves it
@@ -170,15 +170,6 @@ const readsOf = (declared: Declared): Declared[] => {
 	return reads
 }
 
-const typeKeys = new Set([
-	"typeAnnotation",
-	"typeParameters",
-	"typeArguments",
-	"returnType",
-	"superTypeArguments",
-	"implements"
-])
-
 // a declaration's code without its types, as a runtime read from source (as
 // in this repo) is minified once they're stripped
 const javaScriptOf = (module: SourceModule, declaration: Node): string => {
@@ -200,7 +191,7 @@ const javaScriptOf = (module: SourceModule, declaration: Node): string => {
 			const child = (node as never)[k] as Node | (Node | null)[] | null
 			for (const item of Array.isArray(child) ? child : [child]) {
 				if (!item) continue
-				if (typeKeys.has(k)) blank(item)
+				if (k in typeKeys) blank(item)
 				else visit(item)
 			}
 		}
