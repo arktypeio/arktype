@@ -38,13 +38,24 @@ const vsCodeThemeToMonaco = (
 
 /** Monaco's themes, by name */
 export const editorThemes = {
-	arkdark: vsCodeThemeToMonaco(arkdarkColors, "vs-dark"),
+	arkdark: vsCodeThemeToMonaco(
+		{
+			...arkdarkColors,
+			// the themes' line numbers are 4.2:1, under AA
+			colors: {
+				...arkdarkColors.colors,
+				"editorLineNumber.foreground": "#888899"
+			}
+		},
+		"vs-dark"
+	),
 	arklight: vsCodeThemeToMonaco(
 		withArkLightContrast({
 			...arklightColors,
 			// nested brackets: the deeper two were under 3:1 on parchment
 			colors: {
 				...arklightColors.colors,
+				"editorLineNumber.foreground": "#5e5e70",
 				"editorBracketHighlight.foreground2": "#925514",
 				"editorBracketHighlight.foreground3": "#a6560c",
 				"editorBracketHighlight.unexpectedBracket.foreground": "#925514"
