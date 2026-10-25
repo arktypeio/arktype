@@ -77,7 +77,7 @@ import {
 	resolvePrecompileOptions,
 	withSettingsFile
 } from "./settings.ts"
-import { createAsyncPrecompiler } from "./worker.ts"
+import { createAsyncPrecompiler, type BundlerResolve } from "./worker.ts"
 
 export type { PrecompilePluginOptions } from "./driver.ts"
 
@@ -117,10 +117,16 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	const create = () =>
 		createAsyncPrecompiler({ precompilerOptions: workerOptions })
 	let precompiler = Promise.resolve(create())
+	// what the precompiler can't resolve while it answers, the bundler may
+	const requestResolving = (
+		resolve: BundlerResolve | undefined,
+		...message: PrecompileRequest
+	) =>
+		precompiler.then(send => send(message, resolve)).catch(rethrowAsBuildError)
 	const request = (...message: PrecompileRequest) =>
-		precompiler.then(send => send(...message)).catch(rethrowAsBuildError)
+		requestResolving(undefined, ...message)
 	const replace = (send: ReturnType<typeof create>) => {
-		void send("close")
+		void send(["close"])
 		return create()
 	}
 	const restart = () => {
@@ -141,7 +147,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	const reset = () => {
 		precompiler = precompiler.then(async send =>
 			// a config the worker can't read is reported at the next transform
-			(await send("reset").catch(() => false)) ? replace(send) : send
+			(await send(["reset"]).catch(() => false)) ? replace(send) : send
 		)
 	}
 	const readDependency = (importer: string) =>
@@ -367,9 +373,11 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		code: string,
 		id: string,
 		mappings: string | undefined,
-		program?: string
+		program: string | undefined,
+		resolve: BundlerResolve | undefined
 	) => {
-		const transformed = (await request(
+		const transformed = (await requestResolving(
+			resolve,
 			"transform",
 			code,
 			fileOf(id),
@@ -482,7 +490,12 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				!transformedFilter.exclude.test(id),
 			id => arrivalOf(pending, id),
 			id => pending.mappings.get(id),
-			async scanned => (await request("scan", scanned)) as ScannedUsage,
+			async scanned =>
+				(await requestResolving(
+					bundlerResolveOf(context),
+					"scan",
+					scanned
+				)) as ScannedUsage,
 			realPathOf(opts?.cwd ?? process.cwd())
 		)
 			.catch(
@@ -528,7 +541,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					this as { getCombinedSourcemap?: () => { mappings: string } }
 				).getCombinedSourcemap?.()
 				reportDiagnostics(
-					(await request(
+					(await requestResolving(
+						bundlerResolveOf(this),
 						"checkUnwritten",
 						code,
 						fileOf(id),
@@ -642,7 +656,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 							code,
 							id,
 							map?.mappings,
-							scan?.scanned.key
+							scan?.scanned.key,
+							bundlerResolveOf(this)
 						)
 						if (!transformed) return
 						for (const dependency of transformed.dependencies) {
@@ -830,6 +845,21 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					!!build.initialOptions.conditions?.includes("production")
 				setEnvironment({ production, testing: false })
 				build.onDispose(restart)
+				const esbuildResolve: BundlerResolve = async (specifier, importer) => {
+					if (isOwnSpecifier(specifier)) return
+					const resolved = await build.resolve(specifier, {
+						importer,
+						resolveDir: dirname(importer),
+						kind: "import-statement"
+					})
+					return (
+							resolved.errors.length ||
+								resolved.external ||
+								resolved.namespace !== "file"
+						) ?
+							undefined
+						:	resolved.path
+				}
 				const plugins = build.initialOptions.plugins ?? []
 				// a plugin after this one may load a module it leaves, unlike it was read
 				const isLast = plugins[plugins.length - 1]?.name === "arktype"
@@ -885,7 +915,12 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 							path =>
 								transformedFilter.include.test(path) &&
 								!transformedFilter.exclude.test(path),
-							async scanned => (await request("scan", scanned)) as ScannedUsage,
+							async scanned =>
+								(await requestResolving(
+									esbuildResolve,
+									"scan",
+									scanned
+								)) as ScannedUsage,
 							realPathOf(opts?.cwd ?? process.cwd())
 						).catch(
 							(e: unknown): ProgramScan<[ScannedProgram, ScannedUsage]> => ({
@@ -960,7 +995,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 						code,
 						args.path,
 						undefined,
-						scanned?.key
+						scanned?.key,
+						esbuildResolve
 					)
 					if (!transformed?.code && !transformed?.errors.length) return
 					return {
@@ -1137,7 +1173,7 @@ interface RollupContext {
 	resolve: (
 		source: string,
 		importer?: string,
-		options?: { isEntry?: boolean }
+		options?: { isEntry?: boolean; skipSelf?: boolean }
 	) => Promise<RollupResolution | null>
 	// a module once it's transformed and parsed, by the resolution it's
 	// loaded with
@@ -1179,6 +1215,54 @@ const unprunedBeforePlugin = [
 interface RollupResolution {
 	id: string
 	external?: boolean | string
+}
+
+// a specifier this plugin resolves, which would ask the worker that waits on it
+const isOwnSpecifier = (specifier: string) =>
+	resolvedSpecifier.test(specifier) || schemaSpecifier.test(specifier)
+
+// how a hook's bundler resolves an import, which the precompiler asks for one
+// it can't resolve itself, like an alias only the bundler's config names
+const bundlerResolveOf = (context: unknown): BundlerResolve | undefined => {
+	const rollup = context as Partial<RollupContext>
+	if (rollup.resolve) {
+		return async (specifier, importer) => {
+			if (isOwnSpecifier(specifier)) return
+			const resolved = await rollup.resolve!(specifier, importer, {
+				skipSelf: true
+			})
+			return (
+					resolved &&
+						!resolved.external &&
+						isAbsolute(resolved.id) &&
+						!resolved.id.includes("?")
+				) ?
+					resolved.id
+				:	undefined
+		}
+	}
+	// webpack and Rspack
+	const loaderResolve = (
+		context as {
+			getNativeBuildContext?: () =>
+				| {
+						loaderContext?: {
+							getResolve?: (options: {
+								dependencyType: string
+							}) => (context: string, request: string) => Promise<string>
+						}
+				  }
+				| undefined
+		}
+	)
+		.getNativeBuildContext?.()
+		?.loaderContext?.getResolve?.({ dependencyType: "esm" })
+	if (loaderResolve) {
+		return async (specifier, importer) =>
+			isOwnSpecifier(specifier) ? undefined : (
+				loaderResolve(dirname(importer), specifier).catch(() => undefined)
+			)
+	}
 }
 
 const rollupScanOf = async (
