@@ -1213,7 +1213,11 @@ console.log(
 				// an alias to arktype, which the bundler resolves through this
 				// plugin while the precompiler waits on its answer
 				"validation.js":
-					'import { type } from "#validation"\n\nconst User = type({ name: "string" })\n\nconsole.log(User.allows({ name: "Ada" }))\n'
+					'import { type } from "#validation"\n\nconst User = type({ name: "string" })\n\nconsole.log(User.allows({ name: "Ada" }))\n',
+				// read as the build starts, before a module asks the bundler
+				"config.js":
+					'import { configure } from "arktype/config"\nimport { describe } from "#shared/describe"\n\nconfigure({ domain: { description: describe } })\n',
+				"shared/describe.ts": 'export const describe = () => "a numeral"\n'
 			},
 			fromHere("temp", "aliased")
 		)
@@ -1232,10 +1236,13 @@ console.log(
 					:	undefined
 			}
 			const config = viteConfig(undefined, root)
-			const build = (entry: string) =>
+			const build = (entry: string, opts?: PrecompileUnpluginOptions) =>
 				viteBuild({
 					...config,
-					plugins: [svelte, precompile.vite({ cwd: root, conditions })],
+					plugins: [
+						svelte,
+						precompile.vite({ ...opts, cwd: root, conditions })
+					],
 					resolve: {
 						...config.resolve,
 						alias: [
@@ -1257,6 +1264,7 @@ console.log(
 				"Form.svelte:3:23  User.errors reads errors, which a standalone validator lacks"
 			])
 			attest(await build("validation.js")).equals([])
+			attest(await build("allows.js", { config: "config.js" })).equals([])
 		})
 
 		it("esbuild", async () => {

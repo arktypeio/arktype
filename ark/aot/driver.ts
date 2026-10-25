@@ -124,7 +124,13 @@ const answerRequests = (
 	let conflictsWithThread = false
 	// the request it's answering, by its place among those it was sent
 	let answering = -1
-	const resolveInBundler = bundlerResolverOf(data, () => answering)
+	// whether it couldn't ask the bundler for that request
+	let unasked = false
+	const resolveInBundler = bundlerResolverOf(
+		data,
+		() => answering,
+		() => (unasked = true)
+	)
 	const track = () =>
 		createTrackedPrecompiler(data.precompilerOptions, resolveInBundler)
 	// kept across resets, as a rebuild asks again for modules nothing changed
@@ -133,8 +139,14 @@ const answerRequests = (
 		if (request[0] === "close") return
 		if (request[0] === "refresh" && tracked && !isStale(tracked)) return false
 		if (request[0] === "reset" || request[0] === "refresh") {
+			unasked = false
 			tracked = track()
-			return conflictsWithThread || tracked.precompiler.needsNewThread
+			const needsNewThread =
+				conflictsWithThread || tracked.precompiler.needsNewThread
+			// the next request asks the bundler what reading the configuration
+			// couldn't, like an import through an alias only the bundler names
+			if (unasked) tracked = undefined
+			return needsNewThread
 		}
 		tracked ??= track()
 		const { precompiler } = tracked
@@ -233,7 +245,8 @@ type BundlerResolver = (
 // the precompiler is synchronous, so its thread waits for the bundler's answer
 const bundlerResolverOf = (
 	{ resolver, resolved }: PrecompilerWorkerData,
-	answering: () => number
+	answering: () => number,
+	unasked: () => void
 ): BundlerResolver | undefined =>
 	resolver &&
 	resolved &&
@@ -242,8 +255,13 @@ const bundlerResolverOf = (
 		Atomics.store(resolved, 0, 0)
 		resolver.postMessage([answering(), specifier, importer])
 		Atomics.wait(resolved, 0, 0)
-		const path = receiveMessageOnPort(resolver)?.message as string | undefined
-		return path && realPathOf(path)
+		// null where the request it's answering can't ask the bundler
+		const path = receiveMessageOnPort(resolver)?.message as
+			| string
+			| null
+			| undefined
+		if (path === null) unasked()
+		return path ? realPathOf(path) : undefined
 	})
 
 const checkedModuleOf = (

@@ -153,10 +153,12 @@ const resolvingChannelOf = (
 	port1.on(
 		"message",
 		async ([index, specifier, importer]: [number, string, string]) => {
-			const path = await pending
-				.find(entry => entry.index === index)
-				?.resolve?.(specifier, importer)
-				.catch(() => undefined)
+			const resolve = pending.find(entry => entry.index === index)?.resolve
+			// null where the request can't ask, so the driver can ask again
+			const path =
+				resolve ?
+					await resolve(specifier, importer).catch(() => undefined)
+				:	null
 			port1.postMessage(path)
 			Atomics.store(resolved, 0, answered)
 			Atomics.notify(resolved, 0)
