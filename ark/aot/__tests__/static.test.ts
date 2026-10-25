@@ -1,10 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
 import { Precompiler, renderDiagnostic, type PrecompileOptions } from "@ark/aot"
+import { writeArktypeRuntimeOptionMessage } from "@ark/aot/internal/settings.ts"
 import {
-	standardJsonSchemaWithoutStandardMessage,
-	writeArktypeRuntimeOptionMessage
-} from "@ark/aot/internal/settings.ts"
-import { analyze, diagnosticsOf, memoryHost, statusesOf } from "./utils.ts"
+	analyze,
+	diagnosticsOf,
+	memoryHost,
+	precompile,
+	statusesOf
+} from "./utils.ts"
 
 // a diagnostic without its hint, where the reason is the behavior
 const unhinted = (...args: Parameters<typeof diagnosticsOf>) =>
@@ -908,8 +911,69 @@ export const Holder = type({ bad: Bad })`).map(d =>
 			).snap([
 				"Write the definition where bounded is called, with the value it passes for `max`, so the build precompiles each call.",
 				"Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime.",
-				"Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.",
+				"Fix the definition, which throws the same ParseError at runtime, or set allowUnsafe: true to build anyway, with a warning.",
 				"Fix the definition it reads, which throws the same ParseError at runtime."
+			])
+		})
+
+		it("a key's definition in a const", () => {
+			attest(
+				precompile(`import { type } from "arktype"
+const Tier = type("'free' | 'pro'")
+const Plan = Tier.default("free")
+const Nickname = type("string").optional()
+export const Note = type("string").default("")
+export const User = type({ plan: Plan, "nickname": Nickname })`).diagnostics.map(
+					renderDiagnostic
+				)
+			).snap([
+				"/main.ts:3:14  Tier.default(\"free\") can't be precompiled yet\n  .default() gives the definition of an object's key, not a Type, so it's precompiled where an object holds it\n  Write it at the key it's for, in place of the const: `{ plan: Tier.default(\"free\") }`.",
+				'/main.ts:4:18  type("string").optional() can\'t be precompiled yet\n  .optional() gives the definition of an object\'s key, not a Type, so it\'s precompiled where an object holds it\n  Write it at the key it\'s for, in place of the const: `{ "nickname": type("string").optional() }`.',
+				'/main.ts:5:21  type("string").default("") can\'t be precompiled yet\n  .default() gives the definition of an object\'s key, not a Type, so it\'s precompiled where an object holds it\n  Write it at the key it\'s for, in place of the const: `{ key: type("string").default("") }`.'
+			])
+		})
+
+		it("functions of errors arktype/runtime doesn't export", () => {
+			attest(
+				diagnosticsOf(`import { type, flatProblemsByPath, type ArkErrors } from "arktype"
+import * as ark from "arktype"
+const User = type({ name: "string" })
+export const report = (errors: ArkErrors) => flatProblemsByPath(errors)
+export const check = (data: unknown) => {
+	const out = User(data)
+	return out instanceof type.errors ? ark.byPath(out) : out
+}
+export const readers = [ark.flatByPath]
+export const translated = (out: ArkErrors) => out.issues.map(issue => ark.messageIn(issue, {} as never))`)
+			).snap([
+				'/main.ts:4:46  flatProblemsByPath(errors) calls flatProblemsByPath, which arktype/runtime doesn\'t export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: "arktype".',
+				'/main.ts:7:38  ark.byPath(out) calls byPath, which arktype/runtime doesn\'t export\n  Read `out.issues`, each with its path and message, as in `for (const { path, message } of out.issues)`, or build with runtime: "arktype".',
+				"/main.ts:9:25  `ark.flatByPath` is arktype's, which arktype/runtime doesn't export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: \"arktype\".",
+				'/main.ts:10:71  ark.messageIn(issue, {} as never) calls messageIn, which arktype/runtime doesn\'t export\n  Read `issue.message`, which a standalone validator writes in English, or build with runtime: "arktype" to write it in a locale.'
+			])
+		})
+
+		it("a value only known at runtime, named in the fix", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+export const Flipped = type({ a: Math.random() > 0.5 ? "string" : "number" })
+const def = await fetch("https://example.com/schema.json").then(r => r.json())
+export const Fetched = type(def)`).map(d => d.slice(d.lastIndexOf("\n") + 3))
+			).snap([
+				"Replace `Math.random()` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.",
+				"Replace `def` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime."
+			])
+		})
+
+		it("an export arktype/runtime lacks, reported once", () => {
+			attest(
+				precompile(`import { Type } from "arktype"
+export const isType = (x: unknown) => x instanceof Type
+export const isAlsoType = (x: unknown) => x instanceof Type`).diagnostics.map(
+					renderDiagnostic
+				)
+			).snap([
+				"/main.ts:2:52  `Type` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module\n  Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: \"arktype\"."
 			])
 		})
 
@@ -931,8 +995,8 @@ export const Tag = z.string().optional()`
 					.analyzeSites(source, "/main.ts")
 					.diagnostics.map(d => `${d.severity} ${renderDiagnostic(d)}`)
 			).snap([
-				"error /main.ts:4:22  User.and reads and, which a standalone validator lacks\n  `User` comes from `~/schemas`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it. Set allowUnsafe: true to build anyway, with a warning.",
-				"error /main.ts:7:20  z.string().optional reads optional, which a standalone validator lacks\n  `z.string()` comes from `astro:content`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it. Set allowUnsafe: true to build anyway, with a warning."
+				"error /main.ts:4:22  User.and reads and, which a standalone validator lacks\n  `User` comes from `~/schemas`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it, or set allowUnsafe: true to build anyway, with a warning.",
+				"error /main.ts:7:20  z.string().optional reads optional, which a standalone validator lacks\n  `z.string()` comes from `astro:content`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it, or set allowUnsafe: true to build anyway, with a warning."
 			])
 		})
 
@@ -1134,7 +1198,7 @@ console.log(values.map(v => (v as any).from))`,
 				],
 				[
 					{ members: { "~standard": false, "~standard.jsonSchema": true } },
-					standardJsonSchemaWithoutStandardMessage
+					'members bakes "~standard.jsonSchema" into "~standard", which it sets false. Leave "~standard" unset, or remove "~standard.jsonSchema".'
 				],
 				[
 					{ config: true as never },
@@ -1165,7 +1229,7 @@ console.log(values.map(v => (v as any).from))`,
 				],
 				[
 					{ runtime: "arktype", config: false },
-					writeArktypeRuntimeOptionMessage("config: false")
+					'config: false chooses what a standalone build writes, which runtime: "arktype" doesn\'t. Remove runtime: "arktype" to precompile, or remove config: false.'
 				]
 			]
 			for (const [opts, message] of refused)
@@ -1631,11 +1695,11 @@ const A = type({ a: "1" }).and({ a: "2" })`,
 			).diagnostics.map(d => `${d.severity} ${renderDiagnostic(d)}`)
 		const failed = parseErrorsOf()
 		attest(failed).snap([
-			'error /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.'
+			'error /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, which throws the same ParseError at runtime, or set allowUnsafe: true to build anyway, with a warning.'
 		])
 		attest(parseErrorsOf({ runtime: "arktype" })).equals(failed)
 		attest(parseErrorsOf({ allowUnsafe: true })).snap([
-			'warning /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime.'
+			'warning /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, which throws the same ParseError at runtime.'
 		])
 		// any other error rejects the site
 		attest(

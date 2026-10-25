@@ -308,7 +308,7 @@ export const writeVariantImportMessage = (
 	specifier: string,
 	variant: RuntimeVariant
 ): string =>
-	`${importer} imports ${specifier}, which a build with ${writeVariantOption(variant)} can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own`
+	`${importer} imports ${specifier}, which a build with ${writeVariantOption(variant)} can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build ${variant === "lean" ? 'with optimizeErrors: "speed"' : `without ${writeVariantOption(variant)}`}.`
 
 // not a virtual module like Rolldown's `\0rolldown/runtime.js`
 export const transformedId = /^[^\0].*\.(?:[cm]?[jt]s|[jt]sx)$/
@@ -327,7 +327,7 @@ export const transformedFilterOf = (
 })
 
 export const writeTextlessMessage = (path: string): string =>
-	`${path} imports arktype but was loaded without @ark/aot/node's hooks, before register() ran or by a loader that compiles it itself, as tsx does in a CommonJS package, so a standalone build can't precompile it`
+	`${path} imports arktype but was loaded without @ark/aot/node's hooks, before register() ran or by a loader that compiles it itself, as tsx does in a CommonJS package, so a standalone build can't precompile it. Register them first, as with \`node --import ./register.ts\`, and let Node run the TypeScript rather than a loader like tsx.`
 
 export const driverOptionsOf = (
 	opts: PrecompilePluginOptions,
@@ -430,8 +430,9 @@ export const readsNodes = (importer: string | undefined): boolean => {
 	return !!name && /^(?:arksets|@ark\/(?:json-schema|fast-check))$/.test(name)
 }
 
-export const allowUnsafeHint =
-	"Set allowUnsafe: true to build anyway, with a warning."
+// the fix, then the escape hatch, as in "Remove it, or set allowUnsafe: ..."
+export const withAllowUnsafe = (fix: string): string =>
+	`${fix.replace(/\.$/, "")}, or set allowUnsafe: true to build anyway, with a warning.`
 
 // a dependency importing the runtime ships what another build precompiled
 export const precompiledDependencyOf = (
@@ -454,7 +455,7 @@ export const writeUntransformedImportMessage = (
 	writeUnprecompiledMessage(
 		printablePathOf(cwd, file),
 		specifier,
-		"it can't precompile what isn't a JavaScript or TypeScript module. Define the Types it uses in a module that is."
+		"it can't precompile a module that isn't JavaScript or TypeScript. Move what it reads off arktype, from Types to `instanceof type.errors` checks, into a .ts module it imports."
 	)
 
 // e.g. esbuild's stdin, or a module a plugin loads from a virtual id

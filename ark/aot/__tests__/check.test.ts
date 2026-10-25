@@ -15,12 +15,12 @@ contextualize(function (this: Mocha.Suite) {
 			"main.ts": `import { type } from "arktype"\nexport const A = type("string & number")\nexport const B = type("string")\n`
 		})
 		attest(check([], { cwd: root }).lines).snap([
-			'main.ts:2:18  type("string & number") throws a ParseError\n  Intersection of string and number results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.',
+			'main.ts:2:18  type("string & number") throws a ParseError\n  Intersection of string and number results in an unsatisfiable type\n  Fix the definition, which throws the same ParseError at runtime, or set allowUnsafe: true to build anyway, with a warning.',
 			"main.ts:3:18  accepted",
 			"2 sites in 1 file: 1 accepted (50.0%)"
 		])
 		attest(check([], { cwd: root, allowUnsafe: true }).lines).snap([
-			'main.ts:2:18  type("string & number") throws a ParseError\n  Intersection of string and number results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime.',
+			'main.ts:2:18  type("string & number") throws a ParseError\n  Intersection of string and number results in an unsatisfiable type\n  Fix the definition, which throws the same ParseError at runtime.',
 			"main.ts:2:18  accepted",
 			"main.ts:3:18  accepted",
 			"2 sites in 1 file: 2 accepted (100.0%)"
@@ -95,14 +95,14 @@ contextualize(function (this: Mocha.Suite) {
 			)
 		).snap([
 			[
-				'config.ts:4:1  arktype is configured with errors: "first", where the build\'s errors are "all"\n  Build with errors: "first" too, as a standalone validator returns what arktype does as the program configures it.',
+				'config.ts:4:1  arktype is configured with errors: "first", where the build\'s errors are "all"\n  Build with the errors arktype is configured with, in ark.json: { "precompile": { "errors": "first" } }',
 				"main.ts:4:21  accepted",
-				'scoped.ts:5:18  scope({ U: { b: "number" } }, { errors: "none" }) can\'t be precompiled yet\n  arktype is configured with errors: "none", where the build\'s errors are "all"\n  A standalone validator returns what arktype does as the program configures it. Build with the errors arktype is configured with.',
+				'scoped.ts:5:18  scope({ U: { b: "number" } }, { errors: "none" }) can\'t be precompiled yet\n  arktype is configured with errors: "none", where the build\'s errors are "all"\n  Build with the errors arktype is configured with, in ark.json: { "precompile": { "errors": "none" } }, or leave errors out of the Scope\'s configuration.',
 				"2 sites in 3 files: 1 accepted (50.0%), 1 error outside a site"
 			],
 			[
 				"main.ts:4:21  accepted",
-				'scoped.ts:5:18  scope({ U: { b: "number" } }, { errors: "none" }) can\'t be precompiled yet\n  arktype is configured with errors: "none", where the build\'s errors are "first"\n  A standalone validator returns what arktype does as the program configures it. Build with the errors arktype is configured with.',
+				'scoped.ts:5:18  scope({ U: { b: "number" } }, { errors: "none" }) can\'t be precompiled yet\n  arktype is configured with errors: "none", where the build\'s errors are "first"\n  Build with the errors arktype is configured with, in ark.json: { "precompile": { "errors": "none" } }, or leave errors out of the Scope\'s configuration.',
 				"2 sites in 3 files: 1 accepted (50.0%)"
 			]
 		])
@@ -134,14 +134,14 @@ contextualize(function (this: Mocha.Suite) {
 			)
 		).snap([
 			[
-				"config.ts:4:1  arktype is configured with mutatesInput: true, where the build's mutatesInput is false\n  Build with mutatesInput: true too, as a standalone validator returns what arktype does as the program configures it.",
+				'config.ts:4:1  arktype is configured with mutatesInput: true, where the build\'s mutatesInput is false\n  Build with the mutatesInput arktype is configured with, in ark.json: { "precompile": { "mutatesInput": true } }',
 				"main.ts:4:21  accepted",
-				'scoped.ts:5:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can\'t be precompiled yet\n  arktype is configured with mutatesInput: "always", where the build\'s mutatesInput is false\n  A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.',
+				'scoped.ts:5:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can\'t be precompiled yet\n  arktype is configured with mutatesInput: "always", where the build\'s mutatesInput is false\n  Build with the mutatesInput arktype is configured with, in ark.json: { "precompile": { "mutatesInput": "always" } }, or leave mutatesInput out of the Scope\'s configuration.',
 				"2 sites in 3 files: 1 accepted (50.0%), 1 error outside a site"
 			],
 			[
 				"main.ts:4:21  accepted",
-				'scoped.ts:5:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can\'t be precompiled yet\n  arktype is configured with mutatesInput: "always", where the build\'s mutatesInput is true\n  A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.',
+				'scoped.ts:5:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can\'t be precompiled yet\n  arktype is configured with mutatesInput: "always", where the build\'s mutatesInput is true\n  Build with the mutatesInput arktype is configured with, in ark.json: { "precompile": { "mutatesInput": "always" } }, or leave mutatesInput out of the Scope\'s configuration.',
 				"2 sites in 3 files: 1 accepted (50.0%)"
 			]
 		])
@@ -187,7 +187,7 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 	it("fails on an error outside every site", () => {
 		const dir = fromHere("unconfigured")
 		attest(check([], { cwd: dir }).lines).snap([
-			'config.ts:3:1  configure() is called, but the build has no `config` module\n  Name this module as the build\'s config: { config: "config.ts" }',
+			'config.ts:3:1  configure() is called, but the build has no `config` module\n  Name this module as the build\'s config in ark.json: { "precompile": { "config": "./config.ts" } }',
 			"main.ts:4:21  accepted",
 			'main.ts:6:21  JSON.stringify(User) reads toJSON, which a standalone validator lacks\n  `User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
 			"1 site in 2 files: 1 accepted (100.0%), 2 errors outside a site"
@@ -209,6 +209,24 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 			'forms.ts:16:2  a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under errors: "none"\n  a build whose errors say only that data is invalid gives its validators a runtime of their own\n  Precompile the definition, or build without errors: "none".',
 			'forms.ts:16:2  a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under optimizeErrors: "size"\n  a build writing its errors for size gives its validators a runtime of their own\n  Precompile the definition, or build with optimizeErrors: "speed".'
 		])
+	})
+
+	it("reads a directory a pattern matches as the scripts it holds", () => {
+		const root = writeFixture({
+			"package.json": "{}",
+			"src/main.ts": `import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n`,
+			"src/forms/login.ts": `import { type } from "arktype"\n\nexport const Login = type({ email: "string.email" })\n`,
+			"src/styles.css": "body {}\n",
+			"src/types.d.ts": "export {}\n"
+		})
+		const expected = [
+			"src/forms/login.ts:3:22  accepted",
+			"src/main.ts:3:21  accepted",
+			"2 sites in 2 files: 2 accepted (100.0%)"
+		]
+		attest(check(["src/**"], { cwd: root }).lines).equals(expected)
+		attest(check(["src"], { cwd: root }).lines).equals(expected)
+		attest(check(["src", "src/**/*.ts"], { cwd: root }).lines).equals(expected)
 	})
 
 	it("reads the options a plugin call passes", () => {
@@ -257,7 +275,7 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 		})
 		attest(check(["src/**/*.ts"], { cwd: root }).lines).snap([
 			"vite.config.ts:3:28  precompile.vite() sets config, so --check does too",
-			'src/main.ts:1:1  import { User } from "./schemas.ts" loads src/schemas.ts, which creates a Type, before the config module src/config.ts runs configure()\n  unless the program loaded src/config.ts earlier, creating the Type throws\n  Import src/config.ts first, before any module that creates a Type. Set allowUnsafe: true to build anyway, with a warning.',
+			'src/main.ts:1:1  import { User } from "./schemas.ts" loads src/schemas.ts, which creates a Type, before the config module src/config.ts runs configure()\n  unless the program loaded src/config.ts earlier, creating the Type throws\n  Import src/config.ts first, before any module that creates a Type, or set allowUnsafe: true to build anyway, with a warning.',
 			"src/schemas.ts:3:21  accepted",
 			"1 site in 3 files: 1 accepted (100.0%), 1 error outside a site"
 		])
@@ -282,9 +300,9 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 			"2 --fail-under must be a percentage (was most)",
 			"2 --members must be JSON (was assert)",
 			'2 mutatesInput must be "always", false or true (was "yes")',
-			"1 the config module missing.ts can't be read",
+			"1 the config module missing.ts can't be read. Name a module that exists as the build's config.",
 			'2 creationChecks must be "helpers", "none" or "types" (was "bogus")',
-			'2 creationChecks chooses what a standalone build writes, which runtime: "arktype" doesn\'t'
+			'2 creationChecks chooses what a standalone build writes, which runtime: "arktype" doesn\'t. Remove runtime: "arktype" to precompile, or remove creationChecks.'
 		])
 	})
 })
