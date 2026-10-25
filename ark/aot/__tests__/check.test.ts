@@ -340,7 +340,7 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 			"vite.config.ts:3:28  aot.precompile.vite() sets config, errors, so --check does too",
 			"vite.config.ts:3:21  precompile.vite() sets config, errors, so --check does too",
 			"next.config.js:2:44  the @ark/aot/turbopack loader sets config, errors, so --check does too",
-			"Error: vite.config.ts:1:1  --check can't read the options the plugin is passed, so it can't check what the build does\n  Set the options in ark.json, as { \"precompile\": { ... } }, which the plugin reads too, or pass each to --check as a flag."
+			'Error: vite.config.ts:1:1  --check can\'t read the options the plugin is passed, so it can\'t check what the build does\n  Set the options in ark.json (or package.json\'s "ark" key), as { "precompile": { ... } }, which the plugin reads too, or pass each to --check as a flag.'
 		])
 	})
 
