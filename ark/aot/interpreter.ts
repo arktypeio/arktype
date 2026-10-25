@@ -118,6 +118,7 @@ export interface Trace {
 
 interface Environment {
 	valuesByBinding: Map<Binding, unknown>
+	read: Set<Binding>
 	parent: Environment | undefined
 }
 
@@ -308,6 +309,7 @@ export class Interpreter {
 	private valuesByNode = new Map<Node, Evaluated>()
 	// unknown values a declaration computes at runtime however a site uses them
 	private declaredDynamics = new WeakSet<DynamicValue>()
+	private dynamicFree = new WeakSet<object>()
 	// a site reading one receives it, so its declaration runs
 	private comparedAtCreation = new WeakSet<object>()
 	// a site reading only introspection of one checked at creation receives it
@@ -889,8 +891,10 @@ export class Interpreter {
 					}
 		}
 		for (let env = ctx.env; env; env = env.parent) {
-			if (env.valuesByBinding.has(binding))
+			if (env.valuesByBinding.has(binding)) {
+				env.read.add(binding)
 				return { value: env.valuesByBinding.get(binding) }
+			}
 		}
 		return this.readBinding(binding, node, ctx)
 	}
@@ -1774,9 +1778,16 @@ export class Interpreter {
 					"validation"
 				)
 			case "arktype":
-				return fn === configure ?
-						this.configurationOf(node, args[0], ctx)
-					:	this.callArktype(fn as Function, args, receiver, node, ctx)
+				if (fn !== configure)
+					return this.callArktype(fn as Function, args, receiver, node, ctx)
+				// e.g. in a helper, which a precompiled call no longer runs
+				return ctx.env ?
+						this.reject(
+							node,
+							ctx,
+							"configures arktype as the function runs, which a call the build precompiles doesn't"
+						)
+					:	this.configurationOf(node, args[0], ctx)
 		}
 		return this.reject(
 			node,
@@ -2132,7 +2143,38 @@ export class Interpreter {
 			if (dynamic) return dynamic
 			this.destructure(declarator.id, value, callCtx)
 		}
-		return this.evaluate(staticBodyOf(closure.node)!, callCtx)
+		const result = this.evaluate(staticBodyOf(closure.node)!, callCtx)
+		if (isDynamic(result) && !result.isOpaque) return result
+		// e.g. `note()` in `(max, tag = note()) => ...`, which the program runs
+		// for its effect, though the precompiled call drops it
+		const env = callCtx.env!
+		const unread = [...env.valuesByBinding].flatMap(([binding, value]) =>
+			env.read.has(binding) ? [] : [value]
+		)
+		if (params[params.length - 1]?.type !== "RestElement")
+			unread.push(...args.slice(params.length))
+		return this.dynamicIn(unread)?.asOperand() ?? result
+	}
+
+	// as findDynamic, remembering containers that hold none, as a callback
+	// over a long array is passed it at each call
+	private dynamicIn(value: unknown): DynamicValue | undefined {
+		const walked: object[] = []
+		const find = (value: unknown): DynamicValue | undefined => {
+			if (isDynamic(value)) return value
+			if (!isPlainContainer(value) || this.dynamicFree.has(value)) return
+			// nothing writes to a container interpreted code holds
+			this.dynamicFree.add(value)
+			walked.push(value)
+			for (const k of Reflect.ownKeys(value)) {
+				const dynamic = find(Reflect.get(value, k))
+				if (dynamic) return dynamic
+			}
+		}
+		const dynamic = find(value)
+		if (dynamic)
+			for (const container of walked) this.dynamicFree.delete(container)
+		return dynamic
 	}
 
 	// a const read before its declarator runs throws, so it refuses the call
@@ -2602,6 +2644,7 @@ const defineData = (o: object, k: PropertyKey, v: unknown) =>
 
 const createEnvironment = (parent: Environment | undefined): Environment => ({
 	valuesByBinding: new Map(),
+	read: new Set(),
 	parent
 })
 

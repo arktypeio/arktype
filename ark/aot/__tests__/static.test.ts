@@ -429,6 +429,24 @@ export function make(input: Input, url: string): Resp {
 				)
 			).equals([])
 		})
+		it("data a function validates with a Type it's passed", () => {
+			attest(
+				diagnosticsOf(
+					`import { Product } from "./a.ts"
+import { request } from "./api.ts"
+const product = await request("/p", Product)
+console.log(product.description, product.items[0].description)`,
+					{
+						"/a.ts": `import { type } from "arktype"
+export const Product = type({ description: "string", items: [{ description: "string" }] })`,
+						"/api.ts": `export async function request(path: string, schema: { assert: (data: unknown) => any }) {
+	const res = await fetch(path)
+	return schema.assert(await res.json())
+}`
+					}
+				)
+			).equals([])
+		})
 	})
 
 	describe("helpers", () => {
@@ -597,6 +615,37 @@ const text = (max: number) => {
 export const Name = text(5)`)
 			).snap([
 				"/main.ts:6:21  text(5) cannot be precompiled\n  `Date.now` is not one of the build's pure built-ins\n  Replace `Date.now()` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime."
+			])
+		})
+
+		it("a value a call computes that nothing reads", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+const text = (max: number, startedAt = Date.now()) => type(\`string <= \${max}\`)
+const label = (max: number) => {
+	const { at = Date.now() } = {} as { at?: number }
+	return type(\`string <= \${max}\`)
+}
+export const Defaulted = text(5)
+export const Passed = text(5, Date.now())
+export const Destructured = label(5)`)
+			).snap([
+				"/main.ts:7:26  text(5) cannot be precompiled\n  `Date.now` is not one of the build's pure built-ins",
+				"/main.ts:8:23  text(5, Date.now()) cannot be precompiled\n  `Date.now` is not one of the build's pure built-ins",
+				"/main.ts:9:29  label(5) cannot be precompiled\n  `Date.now` is not one of the build's pure built-ins"
+			])
+		})
+
+		it("configure() in a helper", () => {
+			attest(
+				diagnosticsOf(`import { configure, type } from "arktype"
+const text = (max: number) => {
+	const config = configure({ exactOptionalPropertyTypes: false })
+	return type(\`string <= \${max}\`)
+}
+export const Name = text(5)`)
+			).snap([
+				"/main.ts:6:21  text(5) cannot be precompiled\n  `configure({ exactOptionalPropertyTypes: false })` configures arktype as the function runs, which a call the build precompiles doesn't\n  Call configure() in the build's config module instead, so every Type is precompiled with what it sets."
 			])
 		})
 
@@ -1235,6 +1284,119 @@ export function make(input: { error?: string }) {
 				)
 			).snap([
 				"/main.ts:2:13  make({}).resource.description reads description, which a standalone validator lacks\n  the build can't tell where `make({}).resource` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("a Type passed to an exported function holding its parameter", () => {
+			attest(
+				unhinted(
+					`import { User } from "./a.ts"
+import { id, wrap } from "./adapt.ts"
+console.log(wrap(User).schema.description, id(User).description)
+console.log(later(User).description)`,
+					{
+						"/a.ts": `import { type } from "arktype"
+export const User = type({ name: "string" })`,
+						"/adapt.ts": `export function wrap(input: unknown) {
+	const result: any = {}
+	result.schema = input
+	return result
+}
+export function id(input: unknown) {
+	if (!input) throw new Error("no input")
+	return input
+}
+export const later = (input: unknown) => {
+	const read = () => input
+	return read()
+}`
+					}
+				)
+			).snap([
+				"/main.ts:3:13  wrap(User).schema.description reads description, which a standalone validator lacks\n  the build can't tell where `wrap(User).schema` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:3:44  id(User).description reads description, which a standalone validator lacks\n  `id(User)` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:4:13  later(User).description reads description, which a standalone validator lacks\n  the build can't tell where `later(User)` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("a Type assigned to a parameter", () => {
+			attest(
+				unhinted(
+					`import { User } from "./a.ts"
+import { orUser } from "./adapt.ts"
+function local(x?: unknown) {
+	if (!x) x = User
+	return x
+}
+console.log(local().description, orUser().description)`,
+					{
+						"/a.ts": `import { type } from "arktype"
+export const User = type({ name: "string" })`,
+						"/adapt.ts": `import { User } from "./a.ts"
+export function orUser(x?: unknown) {
+	if (!x) x = User
+	return x
+}`
+					}
+				)
+			).snap([
+				"/main.ts:7:13  local().description reads description, which a standalone validator lacks\n  the build can't tell where `local()` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:7:34  orUser().description reads description, which a standalone validator lacks\n  the build can't tell where `orUser()` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("a Type passed by a spread or to a rest parameter", () => {
+			attest(
+				unhinted(
+					`import { User } from "./a.ts"
+function field(schema: unknown, label: string) {
+	if (!label) throw new Error("no label")
+	return { schema, label }
+}
+const logged = (...args: [unknown, string]) => field(...args)
+const first = (...ts: unknown[]) => ts[0]
+console.log(logged(User, "user").schema.description, first(User).description)`,
+					{
+						"/a.ts": `import { type } from "arktype"
+export const User = type({ name: "string" })`
+					}
+				)
+			).snap([
+				'/main.ts:8:13  logged(User, "user").schema.description reads description, which a standalone validator lacks\n  the build can\'t tell where `logged(User, "user").schema` comes from, so it may be a Type, which the standalone runtime replaces with a validator',
+				"/main.ts:8:54  first(User).description reads description, which a standalone validator lacks\n  the build can't tell where `first(User)` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("a Type a Vue template reads", () => {
+			const user = {
+				"/a.ts": `import { type } from "arktype"
+export const User = type({ name: "string" })`
+			}
+			// as @vue/compiler-sfc writes script setup, setup() and data()
+			attest(
+				unhinted(
+					`import { unref as _unref, toDisplayString as _toDisplayString } from "vue"
+import { User } from "./a.ts"
+export default {
+	setup: () => (_ctx: unknown) => _toDisplayString(_unref(User).description)
+}`,
+					user
+				)
+			).snap([
+				"/main.ts:4:51  _unref(User).description reads description, which a standalone validator lacks\n  `_unref(User)` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
+			])
+			attest(
+				unhinted(
+					`import { toDisplayString as _toDisplayString } from "vue"
+import { User } from "./a.ts"
+const _sfc_main = { setup: () => ({ Schema: User }), data: () => ({ product: { description: "" } }) }
+export function render(_ctx: any, _cache: any, $props: any, $setup: any) {
+	return [$setup.Schema.description, _ctx.product.description, $setup.Schema.allows(1)].map(_toDisplayString)
+}`,
+					user
+				)
+			).snap([
+				"/main.ts:5:10  $setup.Schema.description reads description, which a standalone validator lacks\n  the build can't tell where `$setup.Schema` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 

@@ -26,6 +26,7 @@ import type {
 	ClassElement,
 	Function,
 	FunctionBody,
+	ImportDeclaration,
 	ImportSpecifier,
 	MemberExpression,
 	NewExpression,
@@ -418,6 +419,33 @@ const lostOf = (kind: KindBits): KindBits =>
 	: kind & kinds.opaque ? opaque
 	: kinds.data
 
+// e.g. `User` in `_unref(User)`, as Vue compiles a script setup binding its
+// template reads, which returns what isn't a ref
+const unrefedOf = (call: CallExpression, module: SourceModule) => {
+	const callee = unwrapChain(call.callee)
+	const declaration =
+		callee.type === "Identifier" ?
+			module.scopes.refsById.get(callee)?.binding?.declaration
+		:	undefined
+	const [arg] = call.arguments
+	return (
+			declaration?.type === "ImportSpecifier" &&
+				exportNameOf(declaration.imported) === "unref" &&
+				/^(?:vue|@vue\/[\w-]+)$/.test(
+					(declaration.parent as ImportDeclaration).source.value
+				) &&
+				arg?.type !== "SpreadElement"
+		) ?
+			arg
+		:	undefined
+}
+
+// what a render function Vue compiles reads a component's script through
+const componentContexts: Record<string, 1> = Object.setPrototypeOf(
+	{ _ctx: 1, $setup: 1, $data: 1 },
+	null
+)
+
 // methods by which an array, Map or Set holds what it's passed
 const storingMethods: Record<string, 1> = Object.setPrototypeOf(
 	{ push: 1, unshift: 1, splice: 1, fill: 1, set: 1, add: 1 },
@@ -577,6 +605,16 @@ interface Member {
 type Key = Binding | FunctionNode | Application | Member
 
 type KindOfKey = (key: Key, module: SourceModule) => KindBits
+
+// where a key is declared, e.g. a binding's id
+const anchorOf = (key: Key): Span =>
+	"kind" in key ? key.id
+	: "args" in key ? key.fn
+	: "owner" in key ?
+		"type" in key.owner ?
+			key.owner
+		:	key.owner.id
+	:	key
 
 // e.g. `{ t }` from `wrap(A)` with `wrap = t => ({ t })`
 interface Located {
@@ -954,8 +992,8 @@ export class ModuleGraph {
 		kindOfKey: KindOfKey
 	): KindBits {
 		if ("args" in key) {
-			return this.transfer(
-				staticBodyOf(key.fn)!,
+			return this.returnKindIn(
+				key.fn,
 				module,
 				this.appliedKindOfKey(key, module, kindOfKey)
 			)
@@ -971,7 +1009,10 @@ export class ModuleGraph {
 			case "import":
 				return this.targetKindOf(this.importOf(binding, module), kindOfKey)
 			case "param":
-				return this.paramKindOf(binding, module, kindOfKey)
+				return (
+					this.paramKindOf(binding, module, kindOfKey) |
+					this.writtenKindOf(binding, module, kindOfKey)
+				)
 			case "function":
 				return (
 					functionKindOf(
@@ -1006,7 +1047,7 @@ export class ModuleGraph {
 				return kinds.data
 		}
 		const declaration = binding.declaration
-		let result =
+		const result =
 			(declaration.type !== "VariableDeclarator" ? kinds.data
 			: declaration.init ?
 				this.patternKindOf(
@@ -1018,7 +1059,18 @@ export class ModuleGraph {
 					{ node: declaration.init, module, kindOfKey }
 				)
 			:	this.iteratedKindOf(declaration, binding, module, kindOfKey)) |
-			this.storedKindOf(binding, module, kindOfKey)
+			this.storedKindOf(binding, module, kindOfKey) |
+			this.writtenKindOf(binding, module, kindOfKey)
+		return annotate(result, this.annotatedKindOf(binding.id, module, kindOfKey))
+	}
+
+	// e.g. `User` for `x` given `x = User`
+	private writtenKindOf(
+		binding: Binding,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits {
+		let result = 0
 		for (const write of binding.writes) {
 			const parent = write.parent
 			result |=
@@ -1032,7 +1084,7 @@ export class ModuleGraph {
 					this.transfer(parent.init, module, kindOfKey)
 				:	this.destructuredWriteOf(write, module, kindOfKey)
 		}
-		return annotate(result, this.annotatedKindOf(binding.id, module, kindOfKey))
+		return result
 	}
 
 	// e.g. `N` given `namespace N { export const User = type(...) }`, where
@@ -1206,17 +1258,13 @@ export class ModuleGraph {
 		)
 		let result = 0
 		for (const call of calls ?? [undefined]) {
-			const args = call?.arguments ?? []
-			const spread = args.findIndex(arg => arg.type === "SpreadElement")
-			const arg = args[index]
 			result |= this.patternKindOf(
 				binding.id,
 				param,
 				annotate(
-					!call ? this.passedKindOf(fn, module, kindOfKey)
-					: spread !== -1 && spread <= index ? kinds.data
-					: arg ? this.transfer(arg, module, kindOfKey)
-					: kinds.data,
+					call ?
+						this.argKindOf(call, params, index, module, kindOfKey)
+					:	this.passedKindOf(fn, module, kindOfKey),
 					annotated
 				),
 				module,
@@ -1224,6 +1272,38 @@ export class ModuleGraph {
 			)
 		}
 		return result
+	}
+
+	// what a call passes the parameter at index, e.g. what `[A]` holds for
+	// `t` given `f(...[A])`, or an array of it for `...ts`
+	private argKindOf(
+		call: CallExpression | NewExpression,
+		params: readonly Node[],
+		index: number,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits {
+		const args = call.arguments
+		const spread = args.findIndex(arg => arg.type === "SpreadElement")
+		const isRest = params[index]?.type === "RestElement"
+		if (!isRest && (spread === -1 || index < spread)) {
+			return args[index] ?
+					this.transfer(args[index], module, kindOfKey)
+				:	kinds.data
+		}
+		let held = 0
+		for (const arg of args.slice(
+			spread === -1 ? index : Math.min(spread, index)
+		)) {
+			held |=
+				arg.type === "SpreadElement" ?
+					memberKindOf(
+						this.transfer(arg.argument, module, kindOfKey),
+						undefined
+					)
+				:	this.transfer(arg, module, kindOfKey)
+		}
+		return isRest ? holderOf(held) : held | kinds.data
 	}
 
 	// e.g. `t` in `list.map(t => t.or(B))`
@@ -1689,7 +1769,10 @@ export class ModuleGraph {
 					this.arkExportNameOf(node.object, module) === "type"
 				)
 					return kinds.data
-				return memberKindOf(this.transfer(node.object, module, kindOfKey), name)
+				return (
+					memberKindOf(this.transfer(node.object, module, kindOfKey), name) |
+					this.exposedKindOf(node, module, kindOfKey)
+				)
 			}
 			case "CallExpression":
 			case "TaggedTemplateExpression": {
@@ -1727,6 +1810,9 @@ export class ModuleGraph {
 					this.functionOf(callee, module) ??
 					this.methodOf(callee, module, kindOfKey)
 				if (!fn) {
+					const unrefed =
+						node.type === "CallExpression" && unrefedOf(node, module)
+					if (unrefed) return this.transfer(unrefed, module, kindOfKey)
 					return (
 						callKindOf(this.transfer(callee, module, kindOfKey)) |
 						(node.type === "CallExpression" ?
@@ -1734,13 +1820,11 @@ export class ModuleGraph {
 						:	0)
 					)
 				}
-				if (
-					node.type !== "CallExpression" ||
-					!isStatic(fn[0]) ||
-					!runtimeParamsOf(fn[0]).length
-				)
+				if (node.type !== "CallExpression" || !runtimeParamsOf(fn[0]).length)
 					return kindOfKey(...fn)
-				// e.g. `withId(A)` with `withId = t => t.and({ id: "string" })`
+				// e.g. `withId(A)` with `withId = t => t.and({ id: "string" })`, whose
+				// parameters hold what this call passes, where callers the build
+				// can't see may pass others
 				return kindOfKey(
 					this.applicationOf(node, fn[0], module, kindOfKey),
 					fn[1]
@@ -1941,6 +2025,44 @@ export class ModuleGraph {
 	}
 
 	// e.g. data for `opts.db` given `route({ db, input: type(...) })`
+	// e.g. `$setup.User` in a render function Vue compiles, which reads what
+	// the component's script exposes by that name: one of the module's
+	// bindings for script setup, or what its `setup()` or `data()` returns
+	private exposedKindOf(
+		member: MemberExpression,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits {
+		const object = unwrapChain(member.object)
+		const name = memberNameOf(member)
+		const context =
+			object.type === "Identifier" ?
+				module.scopes.refsById.get(object)?.binding
+			:	undefined
+		if (
+			context?.kind !== "param" ||
+			!(context.name in componentContexts) ||
+			typeof name !== "string"
+		)
+			return 0
+		const { bindings } = module.scopes.root
+		if (bindings[name]) return kindOfKey(bindings[name], module)
+		const options =
+			bindings._sfc_main &&
+			this.bindingLiteralOf(bindings._sfc_main, module, kindOfKey, new Set())
+		let result = 0
+		for (const key of ["setup", "data"]) {
+			const fn = options && this.valueIn(options, key)
+			const returned = fn && isFunctionNode(fn.node) && returnedOf(fn.node)
+			const exposed =
+				returned && this.literalOf(returned, fn.module, fn.kindOfKey)
+			const value = exposed && this.valueIn(exposed, name)
+			if (value)
+				result |= this.transfer(value.node, value.module, value.kindOfKey)
+		}
+		return result
+	}
+
 	private passedMemberKindOf(
 		member: MemberExpression,
 		module: SourceModule,
@@ -1977,7 +2099,14 @@ export class ModuleGraph {
 			const args = call.arguments
 			const spread = args.findIndex(arg => arg.type === "SpreadElement")
 			const arg = args[index]
-			if (!arg || (spread !== -1 && spread <= index)) {
+			if (spread !== -1 && spread <= index) {
+				result |= memberKindOf(
+					this.argKindOf(call, runtimeParamsOf(fn), index, module, kindOfKey),
+					name
+				)
+				continue
+			}
+			if (!arg) {
 				result |= kinds.data
 				continue
 			}
@@ -1997,12 +2126,9 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey
 	): Application {
-		const spread = call.arguments.findIndex(arg => arg.type === "SpreadElement")
-		const args = runtimeParamsOf(fn).map((param, i) =>
-			param.type === "RestElement" || (spread !== -1 && spread <= i) ?
-				kinds.data
-			: call.arguments[i] ? this.transfer(call.arguments[i], module, kindOfKey)
-			: kinds.data
+		const params = runtimeParamsOf(fn)
+		const args = params.map((_, i) =>
+			this.argKindOf(call, params, i, module, kindOfKey)
 		)
 		let applications = this.applicationsByFn.get(fn)
 		if (!applications) this.applicationsByFn.set(fn, (applications = new Map()))
@@ -2018,28 +2144,42 @@ export class ModuleGraph {
 		kindOfKey: KindOfKey
 	): KindOfKey {
 		const params = runtimeParamsOf(fn)
-		const consts = staticConstsOf(fn)
-		const declaring = new Set<Key>()
+		const derived = new Map<Key, KindBits>()
 		const result: KindOfKey = (key, keyModule) => {
-			// e.g. `N` in `{ const N = T.or("null"); return N }`, for the `T` passed
+			const index =
+				"kind" in key && key.kind === "param" && key.declaration === fn ?
+					params.findIndex(param => contains(param, key.id))
+				:	undefined
+			// what fn declares, e.g. `N` in `{ const N = T.or("null"); return N }`
+			// or the closure `() => T`, for the `T` passed, but not a call to fn
+			// itself, applied with what that call passes
+			const anchor = anchorOf(key)
 			if (
-				"kind" in key &&
-				consts.includes(key.declaration as VariableDeclarator) &&
-				!declaring.has(key)
-			) {
-				declaring.add(key)
-				try {
-					return this.keyKindOf(key, keyModule, result)
-				} finally {
-					declaring.delete(key)
-				}
-			}
-			if (!("kind" in key) || key.kind !== "param" || key.declaration !== fn)
+				index === undefined &&
+				(keyModule !== module || anchor === fn || !contains(fn, anchor))
+			)
 				return kindOfKey(key, keyModule)
-			const index = params.findIndex(param => contains(param, key.id))
-			return index === -1 ?
-					kinds.data
-				:	this.patternKindOf(key.id, params[index], args[index], module, result)
+			let kind = derived.get(key)
+			if (kind !== undefined) return kind
+			// what it holds where it's read while it's derived: a parameter what
+			// the call passes, else what any call gives it
+			kind =
+				index === undefined ? kindOfKey(key, keyModule)
+				: index === -1 ? kinds.data
+				: this.patternKindOf(
+						(key as Binding).id,
+						params[index],
+						args[index],
+						module,
+						result
+					)
+			derived.set(key, kind)
+			kind =
+				index === undefined ?
+					this.keyKindOf(key, keyModule, result)
+				:	kind | this.writtenKindOf(key as Binding, module, result)
+			derived.set(key, kind)
+			return kind
 		}
 		this.bindingKindOfKeys.add(result)
 		return result
