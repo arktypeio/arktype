@@ -1134,7 +1134,10 @@ console.log(
 				build: { write: false, lib: { entry: "main.ts", formats: ["es"] } }
 			}).then(
 				() => "built",
-				(e: Error) => e.message.slice(e.message.indexOf("config.ts:"))
+				(e: Error) => {
+					const message = stripVTControlCharacters(e.message)
+					return message.slice(message.indexOf("config.ts:"))
+				}
 			)
 		const arktype = precompile.vite({ config: "config.ts", conditions })
 		attest(await build([rewrite, arktype]))
@@ -1419,7 +1422,9 @@ console.log(
 				attest(
 					stats
 						?.toJson()
-						.errors?.map(error => error.message.trim().replace(/^× /, ""))
+						.errors?.map(error =>
+							stripVTControlCharacters(error.message).trim().replace(/^× /, "")
+						)
 				).equals([
 					writeUntransformedHelperMessage("Form.svelte", "fields.js", "text")
 				])
