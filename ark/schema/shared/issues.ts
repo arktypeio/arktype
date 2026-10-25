@@ -25,11 +25,17 @@ export interface SiteContext {
 	text?: (issue: ArkIssue) => void
 }
 
-/** a check's site: its node's context, or a key's value and missing ones */
+/**
+ * a check's site: its node's context, or a key's. Every site is written into
+ * the bundle and a minifier keeps property names, so a key's are short
+ */
 export interface FailureSite extends Partial<SiteContext> {
-	value?: SiteContext
-	missing?: SiteContext
-	path?: PropertyKey[]
+	/** the context its value fails with */
+	v?: SiteContext
+	/** the context the missing key fails with */
+	m?: SiteContext
+	/** where below the data it fails */
+	p?: PropertyKey[]
 }
 
 export interface UnionSite {
@@ -132,15 +138,15 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	_at(site: FailureSite, data: unknown, key?: PropertyKey): true | undefined {
 		// a key's site reports the missing key or its value
 		const path = this._p
-		let context = site.value ?? (site as SiteContext)
+		let context = site.v ?? (site as SiteContext)
 		if (key !== undefined) {
 			path.push(key)
-			if (site.missing && !(key in (data as object))) context = site.missing
+			if (site.m && !(key in (data as object))) context = site.m
 			else data = (data as Keyed)[key]
 		}
 		const issue: ArkIssue = {
 			code: context.code,
-			path: site.path ? path.concat(site.path) : path.slice(),
+			path: site.p ? path.concat(site.p) : path.slice(),
 			data,
 			expected: context.description,
 			message: undefined
@@ -243,14 +249,14 @@ export const issueAt = (
 	data: unknown,
 	key: PropertyKey | undefined
 ): ArkIssue => {
-	let context = site.value ?? (site as SiteContext)
+	let context = site.v ?? (site as SiteContext)
 	if (key !== undefined) {
 		path.push(key)
-		if (site.missing && !(key in (data as object))) context = site.missing
+		if (site.m && !(key in (data as object))) context = site.m
 		else data = (data as Keyed)[key]
 	}
 	const issuePath =
-		site.path ? path.concat(site.path)
+		site.p ? path.concat(site.p)
 		: path.length === 1 ? [path[0]]
 		: path.length === 2 ? [path[0], path[1]]
 		: path.slice()

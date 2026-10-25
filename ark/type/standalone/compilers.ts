@@ -77,7 +77,7 @@ class StandaloneCompiler extends TraversalCompiler {
 	siteRef(site: object): string {
 		const ref = this.ref(site)
 		if (isInlineSite(site)) return writeSiteOf(site, JSON.stringify)
-		const { value, missing } = site as { value?: object; missing?: object }
+		const { v: value, m: missing } = site as { v?: object; m?: object }
 		return (
 				missing === requiredIssue &&
 					value &&
@@ -161,7 +161,7 @@ class StandaloneCompiler extends TraversalCompiler {
 			description: node.discriminantDescription,
 			meta: node.discriminantMeta
 		})
-		const site = issueSite(path.length ? { value: context, path } : context)
+		const site = issueSite(path.length ? { v: context, p: path } : context)
 		const fails = `!${this.fails("failsAt", `${this.siteRef(site)}, ${path.length ? value : "data"}`)}`
 		const [k, ...deeper] = node.discriminant!.path
 		if (k === undefined) return fails
@@ -268,9 +268,7 @@ const findBases = (node: UnionNode): Bases | null => {
 			: checked?.hasKind("domain") || checked?.hasKind("proto") ? checked
 			: null
 		if (!basis) return null
-		const context = issueContextOf(
-			(basis.failureSite as { value: TextContext }).value
-		)
+		const context = issueContextOf((basis.failureSite as { v: TextContext }).v)
 		// an expected written from data can't be known here
 		if (context.written && context.written.keeps & 1) return null
 		if (!nodes.includes(basis)) nodes.push(basis)

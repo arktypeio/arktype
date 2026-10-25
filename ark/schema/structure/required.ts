@@ -85,8 +85,8 @@ export class RequiredNode extends BaseProp<"required"> {
 	override get failureSite(): FailureSite {
 		return (this.cache.failureSite ??=
 			this.value.isBasis() ?
-				{ value: this.value.errorContext, missing: this.errorContext }
-			:	{ missing: this.errorContext }) as FailureSite
+				{ v: this.value.errorContext, m: this.errorContext }
+			:	{ m: this.errorContext }) as FailureSite
 	}
 }
 

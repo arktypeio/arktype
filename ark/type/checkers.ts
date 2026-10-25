@@ -170,7 +170,7 @@ export const intersection = ((
 type Props = Record<string, Checker>
 
 // a missing key, as runtime's requiredSite without siteOf
-const requiredSite: FailureSite = { missing: { code: "required" } }
+const requiredSite: FailureSite = { m: { code: "required" } }
 
 // an object's keys, each checked in the order declared
 export const props = ((declared: Props, optional?: string[]): Checker =>
@@ -320,7 +320,7 @@ export const discriminate = ((
 	// keyed by string, so no other value is a case
 	const byValue = new Map(Object.entries(cases))
 	const site: SiteContext = { code: "discriminant", description }
-	const keySite: FailureSite = isOwn ? site : { value: site, path: [key] }
+	const keySite: FailureSite = isOwn ? site : { v: site, p: [key] }
 	const checker: Checker = (data: any, ctx) => {
 		const branch = byValue.get(data?.[key])
 		return (

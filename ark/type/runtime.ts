@@ -593,15 +593,15 @@ export const failsIn = ((
 	:	!(apply as Fn)(value)) satisfies Fn
 
 // a literal, as an annotated call's annotation is kept by oxc's minifier
-export const requiredSite: FailureSite = { missing: { code: "required" } }
+export const requiredSite: FailureSite = { m: { code: "required" } }
 
 // a key's site, reporting "required" where the key is missing
 export const keySiteOf = ((
 	code: ArkErrorCode,
 	description?: string
 ): FailureSite => ({
-	value: siteOf(code, description),
-	missing: requiredSite.missing!
+	v: siteOf(code, description),
+	m: requiredSite.m!
 })) satisfies Fn
 
 // compact roots report into ArkErrors, loading no Traversal

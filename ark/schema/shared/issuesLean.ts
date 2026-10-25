@@ -58,15 +58,15 @@ export class ArkErrors implements FailureContext {
 	/** @internal */
 	_at(site: FailureSite, data: unknown, key?: PropertyKey): true | undefined {
 		const path = this._p
-		let context = site.value ?? (site as SiteContext)
+		let context = site.v ?? (site as SiteContext)
 		if (key !== undefined) {
 			path.push(key)
-			if (site.missing && !(key in (data as object))) context = site.missing
+			if (site.m && !(key in (data as object))) context = site.m
 			else data = (data as Keyed)[key]
 		}
 		const issue: ArkIssue = {
 			code: context.code,
-			path: site.path ? path.concat(site.path) : path.slice(),
+			path: site.p ? path.concat(site.p) : path.slice(),
 			data,
 			expected: context.description,
 			message: undefined
@@ -116,15 +116,15 @@ export const issueAt = (
 	data: unknown,
 	key: PropertyKey | undefined
 ): ArkIssue => {
-	let context = site.value ?? (site as SiteContext)
+	let context = site.v ?? (site as SiteContext)
 	if (key !== undefined) {
 		path.push(key)
-		if (site.missing && !(key in (data as object))) context = site.missing
+		if (site.m && !(key in (data as object))) context = site.m
 		else data = (data as Keyed)[key]
 	}
 	const issue: ArkIssue = {
 		code: context.code,
-		path: site.path ? path.concat(site.path) : path.slice(),
+		path: site.p ? path.concat(site.p) : path.slice(),
 		data,
 		expected: context.description,
 		message: undefined

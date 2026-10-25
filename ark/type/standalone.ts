@@ -3295,11 +3295,11 @@ ${writeFunction(
 			return `runtime.writtenSiteOf(${this.emit(code)}, ${description === undefined ? "void 0" : this.emitString(description)}, ${this.emit(written.context)}, ${this.emitWriters(written.writers)}${written.keeps ? `, ${written.keeps}` : ""})`
 		}
 		if (
-			(site as FailureSite).missing === requiredIssue &&
-			isDescribed((site as FailureSite).value as IssueContext)
+			(site as FailureSite).m === requiredIssue &&
+			isDescribed((site as FailureSite).v as IssueContext)
 		) {
 			return writeSiteOf(
-				(site as FailureSite).value!,
+				(site as FailureSite).v!,
 				s => this.emitString(s),
 				"keySiteOf"
 			)
