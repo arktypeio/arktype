@@ -13,6 +13,7 @@ export type ScanResolution = string | null | undefined
 export interface ScanHost<resolution = Promise<ScanResolution>> {
 	resolve: (specifier: string, importer: string, kind: ImportKind) => resolution
 	// a module's code as its file holds it, where the bundler can't load it
+	// or it's a dependency's script, which the scan reads for its imports alone
 	readFile?: (id: string) => string | undefined
 	// a module's code as the bundler loads it, through the plugins ahead of
 	// this one, or each plugin where it doesn't transform it, like a Svelte
@@ -43,10 +44,13 @@ export const scanProgram = async (
 	const steps = programSteps(key, entries, host)
 	let step = steps.next()
 	while (!step.done) {
+		const [kind, requests] = step.value
 		step = steps.next(
-			typeof step.value === "string" ?
-				await host.load!(step.value)
-			:	await host.resolve(...step.value)
+			await Promise.all(
+				kind === "load" ?
+					requests.map(id => host.load!(id))
+				:	requests.map(request => host.resolve(...request))
+			)
 		)
 	}
 	return step.value
@@ -62,73 +66,156 @@ export const scanProgramSync = (
 	let step = steps.next()
 	// with no load, it reads each module's file itself
 	while (!step.done) {
+		const [kind, requests] = step.value
 		step = steps.next(
-			typeof step.value === "string" ? undefined : host.resolve(...step.value)
+			kind === "load" ? [] : requests.map(request => host.resolve(...request))
 		)
 	}
 	return step.value
 }
 
-// yields each import to resolve, or module to load, and is passed what it
-// resolves to or holds
+type ImportRequest = [specifier: string, importer: string, kind: ImportKind]
+
+// what the scan asks its host for at once: the modules to load, or the imports
+// to resolve, each of every module it read last
+type ScanStep = ["load", ids: string[]] | ["resolve", requests: ImportRequest[]]
+
+// yields what to load or resolve, and is passed what each holds or resolves
+// to, reading the modules its entries reach a layer at a time
 function* programSteps(
 	key: string,
 	entries: ScanEntry[],
 	host: Omit<ScanHost<unknown>, "resolve">
 ): Generator<
-	[specifier: string, importer: string, kind: ImportKind] | string,
+	ScanStep,
 	ScannedProgram | string,
-	ScanResolution
+	(string | undefined)[] | ScanResolution[]
 > {
 	const pathOf = (id: string) =>
 		isAbsolute(id) ? printablePathOf(host.cwd, id) : id.replace(/^\0/, "")
 	const modules: Record<string, ScannedModule> = {}
 	const targets: Record<string, Record<string, string>> = {}
 	// the bundler's id for each module, which it resolves from
-	const pending = new Map<string, string>()
+	const hostIds = new Map<string, string>()
+	let layer: string[] = []
 	const add = (hostId: string) => {
 		const id = host.idOf(hostId)
-		if (!pending.has(id)) pending.set(id, hostId)
+		if (!hostIds.has(id)) {
+			hostIds.set(id, hostId)
+			layer.push(id)
+		}
 		return id
 	}
 	const given = new Map(entries.map(entry => [add(entry.id), entry.source]))
 	// a module imported dynamically is a chunk of its own where a bundler splits
 	const dynamicImports = new Set<string>()
 	const exposed = new Set<string>()
-	for (const [id, hostId] of pending) {
-		const source =
-			given.get(id) ??
-			(host.load ? ((yield hostId) ?? undefined) : host.readFile?.(hostId))
-		if (source === undefined) return `${pathOf(id)} can't be read`
-		modules[id] = {
-			source,
-			transformed: given.get(id) === undefined && host.isTransformed(hostId)
+	// whether a dependency imports a module of the program, which it may
+	// write into a chunk of its own
+	let isImportedByDependency = false
+	while (layer.length) {
+		const read = layer.map(id => {
+			const hostId = hostIds.get(id)!
+			const isDependency = isLeftDependency(hostId, host)
+			return {
+				id,
+				hostId,
+				isDependency,
+				// a dependency's script is read as its file holds it, for its
+				// imports alone
+				isLoaded:
+					given.get(id) === undefined &&
+					!!host.load &&
+					!(isDependency && transformedId.test(hostId))
+			}
+		})
+		layer = []
+		const loading = read.filter(module => module.isLoaded)
+		const loaded =
+			loading.length ?
+				((yield ["load", loading.map(module => module.hostId)]) as (
+					| string
+					| undefined
+				)[])
+			:	[]
+		let loadedIndex = 0
+		const reads = read.map(module => {
+			const source =
+				given.get(module.id) ??
+				(module.isLoaded ?
+					loaded[loadedIndex++]
+				:	host.readFile?.(module.hostId))
+			return {
+				...module,
+				source,
+				...(source === undefined ?
+					{ imports: [], unnamed: undefined }
+				:	importsOf(module.id, source))
+			}
+		})
+		const requests: ImportRequest[] = []
+		for (const { hostId, imports } of reads) {
+			for (const [specifier, kind] of imports) {
+				if (!runtimeSpecifier.test(specifier))
+					requests.push([specifier, hostId, kind])
+			}
 		}
-		const unreadAt = (offset: number, reason: string) =>
-			`${positionIn(pathOf(id), source, offset)} ${reason}`
-		const imports = importsOf(id, source)
-		if (!Array.isArray(imports)) return unreadAt(imports.offset, imports.reason)
-		const resolved: Record<string, string> = (targets[id] = {})
-		for (const [specifier, kind, offset] of imports) {
-			if (runtimeSpecifier.test(specifier)) continue
-			const target = yield [specifier, hostId, kind]
-			if (target === undefined) {
-				return unreadAt(
-					offset,
-					`imports "${specifier}", which doesn't resolve to a file`
-				)
+		const resolutions =
+			requests.length ? ((yield ["resolve", requests]) as ScanResolution[]) : []
+		let next = 0
+		for (const {
+			id,
+			hostId,
+			source,
+			isDependency,
+			imports,
+			unnamed
+		} of reads) {
+			if (source === undefined) {
+				if (isDependency) continue
+				return `${pathOf(id)} can't be read`
 			}
-			if (target === null || isInert(target, host)) continue
-			// e.g. a Vue component, which may read a validator the build can't see
-			if (!transformedId.test(target) && !host.load) {
-				return unreadAt(
-					offset,
-					`imports ${pathOf(target)}, which isn't a script it can read`
-				)
+			if (!isDependency) {
+				modules[id] = {
+					source,
+					transformed: given.get(id) === undefined && host.isTransformed(hostId)
+				}
 			}
-			resolved[specifier] = add(target)
-			if (kind === "dynamic-import") dynamicImports.add(resolved[specifier])
-			if (!isAbsolute(resolved[specifier])) exposed.add(resolved[specifier])
+			const unreadAt = (offset: number, reason: string) =>
+				`${positionIn(pathOf(id), source, offset)} ${reason}`
+			if (unnamed && !isDependency)
+				return unreadAt(unnamed.offset, unnamed.reason)
+			const resolved: Record<string, string> = {}
+			if (!isDependency) targets[id] = resolved
+			for (const [specifier, kind, offset] of imports) {
+				if (runtimeSpecifier.test(specifier)) continue
+				const target = resolutions[next++]
+				if (target === undefined) {
+					if (isDependency) continue
+					return unreadAt(
+						offset,
+						`imports "${specifier}", which doesn't resolve to a file`
+					)
+				}
+				if (target === null || isAsset(target)) continue
+				const isTargetDependency = isLeftDependency(target, host)
+				// e.g. a Vue component, which may read a validator the build can't see
+				if (!transformedId.test(target) && !host.load) {
+					if (isTargetDependency) continue
+					return unreadAt(
+						offset,
+						`imports ${pathOf(target)}, which isn't a script it can read`
+					)
+				}
+				const targetId = add(target)
+				if (isTargetDependency) continue
+				if (isDependency) {
+					exposed.add(targetId)
+					isImportedByDependency = true
+				} else resolved[specifier] = targetId
+				if (kind === "dynamic-import") dynamicImports.add(targetId)
+				if (!isAbsolute(targetId)) exposed.add(targetId)
+			}
 		}
 	}
 	return {
@@ -138,31 +225,47 @@ function* programSteps(
 		targets,
 		dynamicImports: [...dynamicImports],
 		exposed: [...exposed],
-		isOneChunk: given.size === 1 && !dynamicImports.size
+		isOneChunk:
+			given.size === 1 && !dynamicImports.size && !isImportedByDependency
 	}
 }
 
-// what loads no module from import.meta: a value the bundler defines, a path, a
-// URL, which a module loads only through an import() the scan can't read, or
-// hot, which Vite's build defines as undefined and other bundlers leave
-// unimplemented, so no update it accepts runs where a bundle prunes
+// what loads no module from import.meta: a value the bundler defines, like
+// env, or a flag Nuxt defines, a path, a URL, which a module loads only
+// through an import() the scan can't read, or hot or webpackHot, which a
+// production build defines as undefined or leaves unimplemented, so no update
+// it accepts runs where a bundle prunes
 export const isInertMetaProperty = (name: unknown): boolean =>
-	name === "env" ||
-	name === "hot" ||
-	name === "url" ||
-	name === "resolve" ||
-	name === "dirname" ||
-	name === "filename"
+	inertMetaProperties.has(name as never)
+
+const inertMetaProperties = new Set([
+	"env",
+	"client",
+	"server",
+	"browser",
+	"dev",
+	"test",
+	"nitro",
+	"prerender",
+	"envName",
+	"url",
+	"resolve",
+	"dirname",
+	"filename",
+	"hot",
+	"webpackHot"
+])
 
 // arktype's own, which never import the program
 const runtimeSpecifier =
 	/^(?:arktype|@ark\/(?:schema|util))(?:\/|$)|^~arktype\//
 
-// a dependency the plugin leaves, an asset, or a module Vite writes as a
-// string or as a worker, a bundle of its own, which import nothing of the
-// program
-const isInert = (id: string, host: Pick<ScanHost, "isTransformed">) =>
-	(dependencyOf(id) !== undefined && !host.isTransformed(id)) || isAsset(id)
+// a dependency the plugin leaves, read only for the modules of the program it
+// imports, as a framework's runtime imports the app's routes, which it may
+// read any way. Where it loads a module the scan can't name, it's assumed to
+// be another dependency, and where it isn't, the build fails its check
+const isLeftDependency = (id: string, host: Pick<ScanHost, "isTransformed">) =>
+	dependencyOf(id) !== undefined && !host.isTransformed(id)
 
 // e.g. a stylesheet, or a module Vite writes as a string or as a worker
 export const isAsset = (id: string): boolean =>
@@ -186,51 +289,61 @@ const unnamedAt = (offset: number, reason: string): UnnamedImport => ({
 	reason
 })
 
-// each specifier a module loads, or where and why it loads one unnamed
-const importsOf = (id: string, source: string): Import[] | UnnamedImport => {
-	const { module, program, errors } = parseSync(id, source, {
+// each specifier a module loads, and where and why it first loads one unnamed
+const importsOf = (
+	id: string,
+	source: string
+): { imports: Import[]; unnamed: UnnamedImport | undefined } => {
+	// whose program is read only where it may call require, as reading it
+	// copies the whole tree into JavaScript
+	const parsed = parseSync(id, source, {
 		lang: langOf(id),
 		sourceType: /\.c[jt]s$/.test(id) ? "commonjs" : "module"
 	})
-	if (errors.length)
-		return unnamedAt(errors[0].labels[0]?.start ?? 0, "can't be parsed")
-	const result: Import[] = []
+	const { module, errors } = parsed
+	const imports: Import[] = []
+	if (errors.length) {
+		return {
+			imports,
+			unnamed: unnamedAt(errors[0].labels[0]?.start ?? 0, "can't be parsed")
+		}
+	}
+	let unnamed: UnnamedImport | undefined
 	for (const { start, moduleRequest, entries } of module.staticImports) {
 		if (entries.length && entries.every(entry => entry.isType)) continue
-		result.push([moduleRequest.value, "import-statement", start])
+		imports.push([moduleRequest.value, "import-statement", start])
 	}
 	for (const { start, entries } of module.staticExports) {
 		for (const entry of entries) {
 			if (entry.moduleRequest && !entry.isType)
-				result.push([entry.moduleRequest.value, "import-statement", start])
+				imports.push([entry.moduleRequest.value, "import-statement", start])
 		}
 	}
 	for (const { start, moduleRequest } of module.dynamicImports) {
 		const specifier = literalIn(
 			source.slice(moduleRequest.start, moduleRequest.end)
 		)
-		if (specifier === undefined)
-			return unnamedAt(start, "imports a module by a computed specifier")
-		result.push([specifier, "dynamic-import", start])
+		if (specifier !== undefined)
+			imports.push([specifier, "dynamic-import", start])
+		else
+			unnamed ??= unnamedAt(start, "imports a module by a computed specifier")
 	}
 	for (const { start, end } of module.importMetas) {
 		// e.g. import.meta.glob(), reaching modules unseen
 		const read = /^\s*\.\s*([\w$]+)/.exec(source.slice(end))
-		if (!read) return unnamedAt(start, "reads import.meta whole")
-		if (!isInertMetaProperty(read[1])) {
-			return unnamedAt(
+		if (!read) unnamed ??= unnamedAt(start, "reads import.meta whole")
+		else if (!isInertMetaProperty(read[1])) {
+			unnamed ??= unnamedAt(
 				start,
 				`reads import.meta.${read[1]}, which may load modules it can't name`
 			)
 		}
 	}
-	let computed: UnnamedImport | undefined
 	if (/\brequire\b/.test(source)) {
-		walk(program as never, (node: Node) => {
-			if (computed) return false
+		walk(parsed.program as never, (node: Node) => {
 			if (node.type === "TSImportEqualsDeclaration") {
 				if (node.moduleReference.type === "TSExternalModuleReference") {
-					result.push([
+					imports.push([
 						node.moduleReference.expression.value,
 						"require-call",
 						node.start
@@ -241,20 +354,20 @@ const importsOf = (id: string, source: string): Import[] | UnnamedImport => {
 					return true
 				const [argument] = node.arguments
 				if (argument?.type === "Literal" && typeof argument.value === "string")
-					result.push([argument.value, "require-call", node.start])
+					imports.push([argument.value, "require-call", node.start])
 				else {
-					computed = unnamedAt(
+					unnamed ??= unnamedAt(
 						node.start,
 						"calls require() by a computed specifier"
 					)
 				}
 				return false
 			} else if (node.type === "Identifier" && node.name === "require")
-				computed = unnamedAt(node.start, "reads require other than to call it")
+				unnamed ??= unnamedAt(node.start, "reads require other than to call it")
 			return true
 		})
 	}
-	return computed ?? result
+	return { imports, unnamed }
 }
 
 // e.g. src/main.ts:3:1
@@ -314,7 +427,7 @@ export const unseenProblemOf = (
 		...scanned.exposed
 	])
 	for (const entry of imports.entries) {
-		if (entry === undefined || !whole.has(entry)) {
+		if (entry === undefined || !(whole.has(entry) || isAsset(entry))) {
 			return writeUnseenMessage(
 				`it built ${entry === undefined ? "an entry" : pathOf(entry)} as an entry`
 			)

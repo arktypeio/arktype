@@ -82,6 +82,8 @@ export const writeSettingsFiles = async (): Promise<Record<string, string>> => {
 			resolveDir: dirname(validatorsPath),
 			loader: "js"
 		},
+		// which the comment naming each module's path is relative to
+		absWorkingDir: fromHere("..", "..", ".."),
 		bundle: true,
 		format: "esm",
 		platform: "neutral",
