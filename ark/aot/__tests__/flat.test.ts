@@ -163,8 +163,10 @@ discount must be a number or null
 valid
 `)
 		attest(run(js)).equals(run(whole))
-		// each branch's Apply is its case of the union's
-		attest(js.match(/case "(?:number|null)": {/g)?.length).equals(2)
+		// the number branch's Apply is its case of the union's, and null's
+		// case has nothing left to check
+		attest(js.match(/case "number": {/g)?.length).equals(1)
+		attest(js.match(/case "null":\s+return true/g)?.length).equals(1)
 	})
 
 	it("creates as its assert a validator read only for it", async () => {
