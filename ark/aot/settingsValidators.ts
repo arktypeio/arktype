@@ -58,7 +58,7 @@ var ArkIssues = class {
 		}
 		const issue = {
 			code: context.code,
-			path: site.p ? path.concat(site.p) : path.slice(),
+			path: path.slice(),
 			data,
 			expected: context.description,
 			message: void 0

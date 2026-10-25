@@ -320,13 +320,12 @@ export const discriminate = ((
 	// keyed by string, so no other value is a case
 	const byValue = new Map(Object.entries(cases))
 	const site: SiteContext = { code: "discriminant", description }
-	const keySite: FailureSite = isOwn ? site : { v: site, p: [key] }
 	const checker: Checker = (data: any, ctx) => {
 		const branch = byValue.get(data?.[key])
 		return (
 			branch ? branch === 1 || branch(data, ctx)
 			: objectCheck.test(data) ?
-				!failsAt(ctx as never, keySite, isOwn ? data : data[key])
+				!failsAt(ctx as never, site, data, isOwn ? undefined : key)
 			:	!failsAt(ctx as never, missed, data)
 		)
 	}

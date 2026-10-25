@@ -1060,6 +1060,7 @@ contextualize(() => {
 			}
 			attest(nestedAbsent({ v: {} })).equals(true)
 			attest(nestedAbsent({ v: { k: "d" } })).equals(false)
+			attest(nestedAbsent({ v: { k: undefined } })).equals(false)
 		})
 
 		it("keep their path when merged", () => {

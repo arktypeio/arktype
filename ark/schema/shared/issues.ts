@@ -34,8 +34,6 @@ export interface FailureSite extends Partial<SiteContext> {
 	v?: SiteContext
 	/** the context the missing key fails with */
 	m?: SiteContext
-	/** where below the data it fails */
-	p?: PropertyKey[]
 }
 
 export interface UnionSite {
@@ -146,7 +144,7 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		}
 		const issue: ArkIssue = {
 			code: context.code,
-			path: site.p ? path.concat(site.p) : path.slice(),
+			path: path.slice(),
 			data,
 			expected: context.description,
 			message: undefined
@@ -256,8 +254,7 @@ export const issueAt = (
 		else data = (data as Keyed)[key]
 	}
 	const issuePath =
-		site.p ? path.concat(site.p)
-		: path.length === 1 ? [path[0]]
+		path.length === 1 ? [path[0]]
 		: path.length === 2 ? [path[0], path[1]]
 		: path.slice()
 	const issue: ArkIssue = {

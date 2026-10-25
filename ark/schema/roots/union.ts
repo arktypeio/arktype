@@ -451,7 +451,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		const otherwise =
 			js.traversalKind === "Allows" ? "false"
 			: js.traversalKind === "Transform" ? "data"
-			: (js.missFails?.(this, value) ??
+			: (js.missFails?.(this) ??
 				`${js.ref(this)}.applyMiss(data, ctx, ${value})`)
 		js.switch(
 			discriminant.kind === "domain" ?
