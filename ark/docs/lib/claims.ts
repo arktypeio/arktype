@@ -383,7 +383,7 @@ const sizeResultsBeating = (library: string) => {
 		rows.length === rowsOf("size").length ?
 			`${rows.length} size results`
 		:	`${rows.length} size results it's in`
-	return `${count} of the ${of}${largest[library] < largest.ArkType ? ", including the largest bundle we measured" : ""}`
+	return `${count} of the ${of}${largest[library] < largest.ArkType ? ", including the largest of ArkType's bundles among them" : ""}`
 }
 
 const sizeRival = averageOf("size").other
