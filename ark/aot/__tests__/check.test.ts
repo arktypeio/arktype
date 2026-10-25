@@ -174,11 +174,11 @@ contextualize(function (this: Mocha.Suite) {
 		// a build with runtime: "arktype" only warns
 		attest(cached.status).equals(0)
 		attest(cached.stdout).snap(`forms.ts:4:21  accepted
-forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
+forms.ts:11:16  type(\`string <= \${limit}\`) cannot be precompiled
   \`limit\` is a parameter of makeField (forms.ts:9:27); its value is known only at runtime
   With runtime: "arktype", arktype defines this at runtime.
-forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
-  \`limit\` is a parameter of makeRuntimeField (forms.ts:14:34); its value is known only at runtime
+forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
+  \`limit\` is a parameter of makeRuntimeField (forms.ts:15:34); its value is known only at runtime
   With runtime: "arktype", arktype defines this at runtime.
 3 sites in 1 file: 1 accepted (33.3%)
 `)
@@ -206,8 +206,8 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 					.filter(line => line.includes("runtime island returns"))
 			)
 		).snap([
-			'forms.ts:16:2  a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under errors: "none"\n  a build whose errors say only that data is invalid gives its validators a runtime of their own\n  Precompile the definition, or build without errors: "none".',
-			'forms.ts:16:2  a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under optimizeErrors: "size"\n  a build writing its errors for size gives its validators a runtime of their own\n  Precompile the definition, or build with optimizeErrors: "speed".'
+			'forms.ts:17:2  a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under errors: "none"\n  a build whose errors say only that data is invalid gives its validators a runtime of their own\n  Precompile the definition, or build without errors: "none".',
+			'forms.ts:17:2  a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under optimizeErrors: "size"\n  a build writing its errors for size gives its validators a runtime of their own\n  Precompile the definition, or build with optimizeErrors: "speed".'
 		])
 	})
 

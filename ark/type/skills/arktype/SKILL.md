@@ -130,7 +130,7 @@ Never interpolate a type into a string, as in ``type(`${Address}[]`)``. Use `Add
 
 - `.merge()` adds keys and replaces existing ones. `.and()` intersects, and throws when a key's types conflict.
 - To share keys between types, merge a base Type. To reuse a pattern across Types, define a Generic: `const Page = type("<t>", { items: "t[]", total: "number" })`, called as `Page(Item)`.
-- A helper can compose Types by taking a `Type<t>` and calling its methods, which type-checks without casts: `const withId = <t extends object>(T: Type<t>) => T.and({ id: "string" })`. In a precompiled project, keep it to one expression or one `return` and call it with Types the build knows, like `withId(User)`. A helper that passes a generic definition to `type()` needs casts.
+- A helper can compose Types by taking a `Type<t>` and calling its methods, which type-checks without casts: `const withId = <t extends object>(T: Type<t>) => T.and({ id: "string" })`. In a precompiled project, keep its body to one expression, or consts and one `return`, and call it with Types the build knows, like `withId(User)`. A helper that passes a generic definition to `type()` needs casts.
 - A function that accepts any Type takes `type.Any`, not `Type<any>`. To embed the Type it receives in a new definition, take `type.Any<t>`: `const page = <t>(item: type.Any<t>) => type({ items: item.array(), total: "number" })`.
 - `.as<T>()` is a cast. To infer a narrower type, use `.narrow()` with a type predicate, e.g. `(s): s is \`data-${string}\` => s.startsWith("data-")`.
 

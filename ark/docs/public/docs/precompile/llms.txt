@@ -810,7 +810,9 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 ## Definitions
 
-**`... cannot be precompiled`**: the definition reads a value known only at runtime, like a parameter or the result of a call the build can't evaluate. The hint names the value, as in ``Replace `process.env.MAX` with a value the build can read``: make it a literal or a const holding one, mark the definition as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`. A helper with one expression or one `return`, like ``(max: number) => type(`0 < string <= ${max}`)``, precompiles at each call passing it values the build can read, like literals, consts and Types. For a parameter of another function, write the definition or the call where that function is called, with the value it passes.
+**`... cannot be precompiled`**: the definition reads a value known only at runtime, like a parameter or the result of a call the build can't evaluate. The hint names the value, as in ``Replace `process.env.MAX` with a value the build can read``: make it a literal or a const holding one, mark the definition as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`. A helper whose body is one expression, or consts and one `return`, like ``(max: number) => type(`0 < string <= ${max}`)``, precompiles at each call passing it values the build can read, like literals, consts and Types. For a parameter of another function, write the definition or the call where that function is called, with the value it passes.
+
+**`` `text` (...) is not a static helper: it runs `if (max > 1000) ...` ``**: the build evaluates a helper's body at each call only when it's one expression, or consts and one `return`. Any other statement, like an `if`, a `let` or a loop, keeps it from evaluating the call, which then can't be precompiled. Write the helper in that shape, as the hint says, e.g. a check moved into a conditional expression or the definition itself.
 
 **`` `shape` is written at ..., so its value at the site is not known ``**: the definition reads an object or array the program changes before it, through a member, a method like `push`, `Object.assign` or a function writing its argument, so the build can't tell what it holds there. Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime.
 
@@ -820,7 +822,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`.default() gives the definition of an object's key, not a Type`**: `.default()` and `.optional()` return what an object's key is defined as, not a Type, so a `const` can't hold one in a standalone build. Write it at the key it's for, as the message shows: `{ plan: Tier.default("free") }` in place of `const Plan = Tier.default("free")` and `{ plan: Plan }`.
 
-**`arktype runs this callback while defining the type`**: a callback arktype calls during definition, rather than during validation, must be a static helper the build can compute: one expression or one `return`.
+**`arktype runs this callback while defining the type`**: a callback arktype calls during definition, rather than during validation, must be a static helper the build can compute: one expression, or consts and one `return`.
 
 **`` `f` can run before `B` (...) is set; export `B` so the site can receive it ``**: an import cycle can reach the definition before a binding it reads is set. Export the binding.
 
@@ -838,7 +840,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`` `text` is read outside a call the build precompiles ``**: the build precompiles a helper whose definition reads its parameters at each call, so the helper itself never runs. Passed as a callback, held in an object, exported as a default or loaded with `import()`, it would be called where the build can't see the call. Call it directly, with arguments the build can read.
 
-**`User.description reads description, which a standalone validator lacks`**: a validator lacks the methods that compose a Type and the introspection members its build's [`members`](https://arktype.io/docs/precompile/options#members) option doesn't set. Compose inside a definition, set the member, or build with `runtime: "arktype"`. A helper composing a Type it's passed, as `<t>(T: Type<t>) => T.or("null")` does, precompiles at each call passing it a Type the build knows, as long as it's one expression or one `return`. Otherwise, make it a Generic, `type("<t>", "t | null")`, which the build precompiles where it's called.
+**`User.description reads description, which a standalone validator lacks`**: a validator lacks the methods that compose a Type and the introspection members its build's [`members`](https://arktype.io/docs/precompile/options#members) option doesn't set. Compose inside a definition, set the member, or build with `runtime: "arktype"`. A helper composing a Type it's passed, as `<t>(T: Type<t>) => T.or("null")` does, precompiles at each call passing it a Type the build knows, as long as its body is one expression, or consts and one `return`. Otherwise, make it a Generic, `type("<t>", "t | null")`, which the build precompiles where it's called.
 
 **`` `User` comes from `~/schemas`, which the build can't resolve ``**: the build resolves imports as TypeScript does, so it can't check reads off an import only a bundler alias resolves. Add the alias to `tsconfig.json`'s `paths`, or name that tsconfig as the build's `tsconfig`. If the value isn't a Type, annotate it with its type.
 

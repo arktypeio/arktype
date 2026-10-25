@@ -7,6 +7,7 @@ export const User = type({
 })
 
 export const makeField = (limit: number) => {
+	if (limit < 1) throw new RangeError("limit must be positive")
 	const Field = type(`string <= ${limit}`)
 	return Field
 }

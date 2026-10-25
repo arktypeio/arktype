@@ -67,6 +67,8 @@ import {
 	runtimeMembers,
 	unstableArkMembers,
 	staticBodyOf,
+	staticConstsOf,
+	unstaticStatementOf,
 	validatorMembers,
 	type FunctionNode,
 	type ImportTarget,
@@ -2113,7 +2115,36 @@ export class Interpreter {
 		addHelper(ctx.trace.helpers, closure.node, closure.module)
 		if (ctx.site && closure.module === ctx.site.module)
 			ctx.site.interpreted.add(closure.node)
+		const declarators = staticConstsOf(closure.node)
+		for (const declarator of declarators)
+			this.declareUnset(declarator.id, callCtx)
+		for (const declarator of declarators) {
+			const value = this.evaluate(declarator.init!, callCtx)
+			// even one nothing reads, which the program may run for its effect
+			const dynamic = findDynamic(value)
+			if (dynamic) return dynamic
+			this.destructure(declarator.id, value, callCtx)
+		}
 		return this.evaluate(staticBodyOf(closure.node)!, callCtx)
+	}
+
+	// a const read before its declarator runs throws, so it refuses the call
+	private declareUnset(pattern: Node, ctx: Context): void {
+		walk(pattern, node => {
+			if (isFunctionNode(node)) return false
+			const binding = ctx.module.scopes.bindingsById.get(node)
+			if (binding) {
+				ctx.env!.valuesByBinding.set(
+					binding,
+					new DynamicValue(
+						ctx.module,
+						node,
+						`\`${binding.name}\` is read before its declaration (${ctx.module.positionOf(node)})`
+					)
+				)
+			}
+			return true
+		})
 	}
 
 	private evaluateNew(node: NewExpression, ctx: Context): unknown {
@@ -2216,10 +2247,21 @@ export class Interpreter {
 	}
 
 	private notStaticHelper(standIn: StandIn): DynamicValue {
+		const { node: fn, module } = standIn.closure!
+		const statement = unstaticStatementOf(fn)
+		const isLast =
+			fn.body?.type === "BlockStatement" &&
+			statement === fn.body.body[fn.body.body.length - 1]
 		return new DynamicValue(
-			standIn.module,
+			module,
 			standIn.node,
-			`${this.labelOf(standIn)} is not a static helper: its body is not one expression or one \`return\``
+			`${this.labelOf(standIn)} is not a static helper: ${
+				fn.async ? "it's async"
+				: fn.generator ? "it's a generator"
+				: statement ?
+					`it ${isLast ? "ends with" : "runs"} \`${module.snippetOf(statement)}\` (${module.positionOf(statement)}), where a static helper declares only consts before one \`return\``
+				:	"its body is not one expression, or consts and one `return`"
+			}`
 		)
 	}
 
