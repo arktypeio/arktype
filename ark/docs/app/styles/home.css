@@ -48,44 +48,11 @@
 		width: min(var(--max), calc(100% - 2 * var(--gutter)));
 		margin-inline: auto;
 	}
-	.sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		overflow: hidden;
-		clip-path: inset(50%);
-		white-space: nowrap;
-	}
 	.decl {
-		font-family: var(--cursive);
-		font-style: italic;
-		font-weight: 400;
-		font-feature-settings: "ss01", "calt";
 		letter-spacing: -0.01em;
 	}
 	.c-teal {
 		color: var(--teal);
-	}
-	.link {
-		color: var(--sky);
-		text-decoration: underline;
-		text-decoration-color: color-mix(in oklab, var(--sky) 35%, transparent);
-		text-underline-offset: 3px;
-		text-decoration-thickness: 1px;
-		transition: text-decoration-color var(--t-micro);
-		&:hover {
-			text-decoration-color: var(--sky);
-		}
-	}
-	.ext::after {
-		content: "↗" / "";
-		display: inline-block;
-		margin-left: 0.18em;
-		font-size: 0.85em;
-		transition: translate var(--t-micro) var(--ease-out);
-	}
-	.ext:hover::after {
-		translate: 2px -2px;
 	}
 	kbd {
 		display: inline-flex;
@@ -353,22 +320,12 @@
 		white-space: nowrap;
 	}
 	/* a sourced number; its popup opens in the site's quickinfo */
+	/* over code.css's .twoslash-hover:hover and global.css's :focus-visible */
 	.tok {
-		cursor: help;
 		border-radius: 3px;
 		text-decoration: underline dotted
 			color-mix(in oklab, currentColor 50%, transparent);
-		text-underline-offset: 4px;
-		text-decoration-thickness: 1px;
 		transition: background var(--t-micro);
-		&:hover,
-		&[data-open] {
-			background: color-mix(in oklab, var(--sky) 12%, transparent);
-		}
-		&:focus-visible {
-			outline: 2px solid var(--blue);
-			outline-offset: 2px;
-		}
 	}
 
 	/* ---------- code cards ---------- */
@@ -438,97 +395,23 @@
 		font-feature-settings: "calt";
 		tab-size: 2;
 		background: transparent !important;
-		code {
-			display: block;
-			min-width: max-content;
-			font: inherit;
-		}
-		.line {
-			display: inline-block;
-			min-width: 100%;
-			min-height: 1lh;
-		}
 		/* ArkDark's cursive: functions and declared names */
 		span[style*="color:#80CFF8"] {
 			font-family: var(--cursive);
 			font-style: italic;
 			font-feature-settings: "ss01";
 		}
-		.line.error-line {
-			vertical-align: top;
-			/* exactly the visible width, pinned while the code scrolls sideways */
-			width: calc(100cqw + 2 * var(--pre-x));
-			min-width: 0;
-			position: sticky;
-			left: calc(-1 * var(--pre-x));
-			margin-inline: calc(-1 * var(--pre-x));
-			padding: 1px var(--pre-x) 1px calc(var(--pre-x) - 2px + 3ch);
-			text-indent: -3ch;
-			white-space: pre-wrap;
-			overflow-wrap: anywhere;
-			span {
-				font-family: var(--mono) !important;
-				font-style: normal !important;
-			}
-		}
-		.line.error-line.runtime {
-			background: color-mix(in oklab, var(--red) 9%, transparent);
-			box-shadow: inset 2px 0 0 color-mix(in oklab, var(--red) 70%, transparent);
-			span {
-				color: var(--red-ink) !important;
-			}
-		}
-		.line.error-line.compile {
-			background: color-mix(in oklab, var(--violet) 11%, transparent);
-			box-shadow: inset 2px 0 0 var(--violet);
-			span {
-				color: var(--violet-ink) !important;
-			}
-		}
 		.twoslash-error {
 			--squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 3' height='3' width='6'%3E%3Cg fill='%239558f8'%3E%3Cpolygon points='5.5,0 2.5,3 1.1,3 4.1,0'/%3E%3Cpolygon points='4,0 6,2 6,0.6 5.4,0'/%3E%3Cpolygon points='0,2 1,3 2.4,3 0,0.6'/%3E%3C/g%3E%3C/svg%3E");
 			position: relative;
 			background: var(--squiggle) repeat-x left bottom / 6px 3px;
-			padding-bottom: 2px;
-			box-decoration-break: clone;
-		}
-		.twoslash-error-line {
-			display: block;
-			width: calc(100cqw + 2 * var(--pre-x));
-			position: sticky;
-			left: calc(-1 * var(--pre-x));
-			margin: 2px calc(-1 * var(--pre-x)) 4px;
-			padding: 4px var(--pre-x) 4px calc(var(--pre-x) - 2px + 3ch);
-			text-indent: -3ch;
-			box-shadow: inset 2px 0 0 var(--violet);
-			background: color-mix(in oklab, var(--violet) 11%, transparent);
-			color: var(--violet-ink);
-			font-size: 12.5px;
-			line-height: 1.55;
-			white-space: pre-wrap;
-			overflow-wrap: anywhere;
 		}
 		.twoslash-meta-line:not(.twoslash-error-line) {
 			display: none;
 		}
 		/* a persisted ^? renders in flow, never over the code */
 		.query-block {
-			display: block;
-			width: calc(100cqw + 2 * var(--pre-x));
-			position: sticky;
-			left: calc(-1 * var(--pre-x));
-			margin: 2px calc(-1 * var(--pre-x)) 0;
-			padding: 6px var(--pre-x) 6px calc(var(--pre-x) - 2px);
-			box-shadow: inset 2px 0 0 color-mix(in oklab, var(--sky) 70%, transparent);
-			background: color-mix(in oklab, var(--sky) 7%, transparent);
 			white-space: normal;
-			&::before {
-				content: "// ^?";
-				display: block;
-				margin-bottom: 2px;
-				font: 400 11px / 1.4 var(--mono);
-				color: color-mix(in oklab, var(--sky) 70%, transparent);
-			}
 			pre.shiki {
 				container-type: normal;
 				margin: 0;
@@ -541,34 +424,14 @@
 			code {
 				min-width: 0;
 			}
-			span {
-				font-family: var(--mono) !important;
-				font-style: normal !important;
-			}
 		}
 		.query-block + .line:empty {
 			display: none;
 		}
-		.twoslash-popup-container {
-			display: none;
-		}
 		.twoslash-hover {
 			border-radius: 3px;
-			cursor: help;
-			text-decoration: underline dotted
-				color-mix(in oklab, currentColor 45%, transparent);
-			text-underline-offset: 4px;
-			text-decoration-thickness: 1px;
 			transition: background var(--t-micro);
-			&:hover,
-			&[data-open] {
-				background: color-mix(in oklab, var(--sky) 12%, transparent);
-				text-decoration-color: transparent;
-			}
 		}
-	}
-	.tok .twoslash-popup-container {
-		display: none;
 	}
 	.dot {
 		color: var(--ink-3);
@@ -1527,7 +1390,6 @@
 		.swap > * {
 			transition: none;
 		}
-		.ext:hover::after,
 		.btn:hover .arrow {
 			translate: none;
 		}
@@ -1831,8 +1693,9 @@
 		font: inherit;
 	}
 	.board-note {
-		margin: 18px 0 0;
-		font: 400 12px / 1.5 var(--mono);
+		max-width: 120ch;
+		margin: 22px 0 0;
+		font: 400 12px / 1.65 var(--mono);
 		color: var(--ink-3);
 		a {
 			color: var(--sky);
@@ -2118,12 +1981,6 @@
 		&:hover::after {
 			translate: 2px -2px;
 		}
-	}
-	.board-note {
-		max-width: 120ch;
-		margin-top: 22px;
-		font-size: 12px;
-		line-height: 1.65;
 	}
 
 	.hero a.one {

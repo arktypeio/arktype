@@ -3,7 +3,7 @@ import { CheckIcon, CopyIcon } from "./icons.tsx"
 /** the gold install button; HomeEffects copies `data-copy` on click */
 export const InstallButton = () => (
 	<button type="button" className="btn btn-gold" data-copy="npm i arktype">
-		<span className="sr-only">Copy install command: </span>
+		<span className="visually-hidden">Copy install command: </span>
 		<span className="swap">
 			<span className="idle">
 				npm i arktype <CopyIcon />
@@ -12,7 +12,7 @@ export const InstallButton = () => (
 				copied <CheckIcon />
 			</span>
 		</span>
-		<span className="sr-only" role="status" />
+		<span className="visually-hidden" role="status" />
 	</button>
 )
 
@@ -27,7 +27,7 @@ export type CopyCommandProps = {
 
 export const CopyCommand = ({ children, text, label }: CopyCommandProps) => (
 	<button type="button" className="cmd" data-copy={text}>
-		<span className="sr-only">{label}: </span>
+		<span className="visually-hidden">{label}: </span>
 		<span>{children}</span>
 		<span className="cp">
 			<span className="swap">
@@ -39,6 +39,6 @@ export const CopyCommand = ({ children, text, label }: CopyCommandProps) => (
 				</span>
 			</span>
 		</span>
-		<span className="sr-only" role="status" />
+		<span className="visually-hidden" role="status" />
 	</button>
 )
