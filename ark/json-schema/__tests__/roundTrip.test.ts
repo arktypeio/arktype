@@ -1,14 +1,9 @@
 import { attest, contextualize, getChecker } from "@ark/attest"
 import { arkToArbitrary } from "@ark/fast-check/internal/arktypeFastCheck.ts"
-import { jsonSchemaToType, type jsonSchema } from "@ark/json-schema"
+import { jsonSchemaToType } from "@ark/json-schema"
 import { scope, type, type JsonSchema } from "arktype"
 import { anything, sample } from "fast-check"
-
-// like jsonSchemaToType, the result is read back with `infer` so attest's
-// contextual type isn't inferred into jsonSchema.infer
-const inferred = <const schema, r = jsonSchema.infer<schema>>(
-	schema: jsonSchema.validate<schema>
-): r extends infer _ ? _ : never => schema as never
+import { inferred } from "./utils.ts"
 
 /** replaces generated node ids like `intersection216` with ids based on order
  * of appearance so the pasted schema stays comparable as ids shift */

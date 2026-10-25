@@ -1,16 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { jsonSchemaToType, type jsonSchema } from "@ark/json-schema"
 import type { array } from "@ark/util"
-
-const inferred = <const schema, r = jsonSchema.infer<schema>>(
-	schema: jsonSchema.validate<schema>
-): r extends infer _ ? _ : never => schema as never
-
-/** the element type `depth` levels into nested arrays */
-type elementAt<t, depth extends number, i extends 1[] = []> =
-	i["length"] extends depth ? t
-	: t extends readonly (infer element)[] ? elementAt<element, depth, [...i, 1]>
-	: t
+import { inferred, type elementAt } from "./utils.ts"
 
 // every keyword path, nested as deep as the depth bar requires (32 levels, or
 // 40 for compositions) in a written-out schema, since a generic alias that

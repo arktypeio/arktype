@@ -1,12 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { type jsonSchema, jsonSchemaToType } from "@ark/json-schema"
-
-// checks inference without reading the schema at runtime
-// like jsonSchemaToType, the result is read back with `infer` so attest's
-// contextual type isn't inferred into jsonSchema.infer
-const inferred = <const schema, r = jsonSchema.infer<schema>>(
-	schema: jsonSchema.validate<schema>
-): r extends infer _ ? _ : never => schema as never
+import { inferred } from "./utils.ts"
 
 // a value of type t for display assertions on hand-written schema types
 const of = <t>(): t => ({}) as never
