@@ -5,6 +5,7 @@ import {
 	createKeyedPrecompiler,
 	type KeyedModule,
 	type KeyedPrecompiler,
+	type PrecompiledKeyedModule,
 	type PrecompilePluginOptions
 } from "./driver.ts"
 import { refuseDeclare } from "./declare.ts"
@@ -78,43 +79,94 @@ export default function (
 	}
 	const precompiler = (precompilersByOptions[JSON.stringify(opts)] ??=
 		createKeyedPrecompiler(opts))
-	let keyed: KeyedModule
+	let keyed: PrecompiledKeyedModule
 	try {
 		keyed = precompiler.precompile(source, this.resourcePath)
 	} catch (e) {
 		return rethrowAsBuildError(e)
 	}
+	const resolve = this.async && this.getResolve?.()
+	if (!keyed.unresolved.length || !resolve) {
+		const loaded = loadedOf(this, precompiler, keyed, source, opts)
+		if (typeof loaded !== "object") return loaded
+		const done = this.async!()
+		loaded.then(code => done(null, code), done)
+		return
+	}
+	const done = this.async!()
+	resolvedAgain(precompiler, keyed, resolve, source, this.resourcePath)
+		.then(keyed => loadedOf(this, precompiler, keyed, source, opts))
+		.then(code => done(null, code), done)
+}
+
+// precompiles a module again once Turbopack resolves imports the precompiler
+// couldn't, like one only resolveAlias names, so reads through them are checked
+const resolvedAgain = async (
+	precompiler: KeyedPrecompiler,
+	keyed: PrecompiledKeyedModule,
+	resolve: (context: string, request: string) => Promise<string>,
+	source: string,
+	id: string
+): Promise<PrecompiledKeyedModule> => {
+	while (keyed.unresolved.length) {
+		const resolved = await Promise.all(
+			keyed.unresolved.map(
+				async ([specifier, importer]) =>
+					[
+						specifier,
+						importer,
+						await resolve(dirname(importer), specifier).catch(() => undefined)
+					] as [string, string, string | undefined]
+			)
+		)
+		if (!precompiler.learn(resolved)) break
+		try {
+			keyed = precompiler.precompile(source, id)
+		} catch (e) {
+			return rethrowAsBuildError(e)
+		}
+	}
+	return keyed
+}
+
+// the module's code, once what it reads is checked
+const loadedOf = (
+	context: TurbopackLoaderContext,
+	precompiler: KeyedPrecompiler,
+	keyed: KeyedModule,
+	source: string,
+	opts: PrecompilePluginOptions
+): string | Promise<string> => {
 	// before any error, so a fix to one of them reruns the loader
 	for (const file of keyed.files)
-		if (file !== this.resourcePath) this.addDependency(file)
+		if (file !== context.resourcePath) context.addDependency(file)
 	reportDiagnostics(
 		keyed,
-		warning => this.emitWarning(new Error(warning)),
+		warning => context.emitWarning(new Error(warning)),
 		throwBuildError
 	)
 	const code = keyed.code ?? source
 	const specifiers =
 		source.includes("arktype") ?
-			runtimeImportsOf(source, this.resourcePath)
+			runtimeImportsOf(source, context.resourcePath)
 		:	[]
 	// resolveAlias gives a dependency the runtime too, so a rule for its
 	// extension has the loader fail one that would define a Type there
-	if (specifiers.length && dependencyOf(this.resourcePath)) {
+	if (specifiers.length && dependencyOf(context.resourcePath)) {
 		reportDiagnostics(
-			precompiler.readDependency(this.resourcePath),
-			warning => this.emitWarning(new Error(warning)),
+			precompiler.readDependency(context.resourcePath),
+			warning => context.emitWarning(new Error(warning)),
 			throwBuildError
 		)
 	}
-	if (!specifiers.length || !this.getResolve || !this.async) return code
-	const done = this.async()
-	checkAliases(
-		this.getResolve(),
-		this.resourcePath,
+	if (!specifiers.length || !context.getResolve || !context.async) return code
+	return checkAliases(
+		context.getResolve(),
+		context.resourcePath,
 		specifiers,
 		opts,
-		warning => this.emitWarning(new Error(warning))
-	).then(() => done(null, code), done)
+		warning => context.emitWarning(new Error(warning))
+	).then(() => code)
 }
 
 // Turbopack resolves arktype as `resolveAlias` says, which the loader can't change

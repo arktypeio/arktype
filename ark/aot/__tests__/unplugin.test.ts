@@ -1199,6 +1199,105 @@ console.log(
 		])
 	})
 
+	describe("an import only the bundler resolves", () => {
+		// an alias in the bundler's config alone, as Nuxt's #shared without
+		// the tsconfig.json that would name it, imported from JavaScript, which
+		// the repo's typecheck skips
+		const root = writeFixture(
+			{
+				"shared/types.ts":
+					'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n',
+				"main.js":
+					'import { User } from "#shared/types"\n\nconsole.log(String(User.errors))\n',
+				"allows.js":
+					'import { User } from "#shared/types"\n\nconsole.log(User.allows({ name: "Ada" }))\n',
+				"Form.svelte": "<script>\n</script>\n",
+				"form.js": 'import read from "./Form.svelte"\n\nconsole.log(read)\n'
+			},
+			fromHere("temp", "aliased")
+		)
+		const shared = join(root, "shared")
+		const failure =
+			"main.js:3:20  User.errors reads errors, which a standalone validator lacks"
+
+		it("vite", async () => {
+			// compiles a component reading User.errors, as Svelte's does
+			const svelte: VitePlugin = {
+				name: "svelte",
+				enforce: "pre",
+				transform: (_, id) =>
+					id.endsWith(".svelte") ?
+						'import { User } from "#shared/types"\n\nexport default String(User.errors)\n'
+					:	undefined
+			}
+			const config = viteConfig(undefined, root)
+			const build = (entry: string) =>
+				viteBuild({
+					...config,
+					plugins: [svelte, precompile.vite({ cwd: root, conditions })],
+					resolve: {
+						...config.resolve,
+						alias: [{ find: /^#shared\//, replacement: `${shared}/` }]
+					},
+					build: { write: false, lib: { entry, formats: ["es"] } }
+				}).then(
+					() => [],
+					(e: { errors?: Error[] } & Error) =>
+						(e.errors ?? [e]).map(
+							e => stripVTControlCharacters(e.message).split("\n")[0]
+						)
+				)
+			attest(await build("allows.js")).equals([])
+			attest(await build("main.js")).equals([failure])
+			attest(await build("form.js")).equals([
+				"Form.svelte:3:23  User.errors reads errors, which a standalone validator lacks"
+			])
+		})
+
+		it("esbuild", async () => {
+			const alias: Plugin = {
+				name: "alias",
+				setup: build =>
+					build.onResolve({ filter: /^#shared\// }, args => ({
+						path: join(shared, `${args.path.slice("#shared/".length)}.ts`)
+					}))
+			}
+			const errors = await esbuild({
+				entryPoints: [join(root, "main.js")],
+				bundle: true,
+				write: false,
+				conditions,
+				logLevel: "silent",
+				plugins: [alias, precompile.esbuild({ cwd: root, conditions })]
+			}).then(
+				() => [],
+				(e: { errors: { text: string }[] }) =>
+					e.errors.map(e => e.text.split("\n")[0])
+			)
+			attest(errors).equals([failure])
+		})
+
+		it("webpack", async () => {
+			const compiler = webpack({
+				mode: "production",
+				context: root,
+				entry: "./main.js",
+				target: "node",
+				output: { path: join(root, "out") },
+				resolve: { alias: { "#shared": shared }, extensions: [".ts", ".js"] },
+				plugins: [precompile.webpack({ cwd: root })]
+			})
+			const stats = await new Promise<Stats | undefined>((resolve, reject) =>
+				compiler.run((error, stats) =>
+					compiler.close(() => (error ? reject(error) : resolve(stats)))
+				)
+			)
+			attest(
+				stats?.toJson().errors?.map(error => error.message.includes(failure))
+			).equals([true])
+		})
+	})
+
 	describe("modules another plugin writes", () => {
 		const root = writeFixture(
 			{

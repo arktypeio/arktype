@@ -127,21 +127,70 @@ export const createSyncPrecompiler = (
 	}
 }
 
+// what a bundler resolves a specifier to, as an alias only its config names
+export type BundlerResolve = (
+	specifier: string,
+	importer: string
+) => Promise<string | undefined>
+
+interface PendingRequest {
+	// its place among the requests its worker was sent
+	index: number
+	settle: (answer: PrecompileAnswer) => void
+	resolve: BundlerResolve | undefined
+}
+
+// carries what the driver asks the bundler to resolve, which its thread waits
+// for. A question names the request it's answered for, as the answer to the
+// one before may not have arrived. Bun doesn't deliver it while the thread
+// asking waits
+const resolvingChannelOf = (
+	pending: PendingRequest[]
+): { resolver: MessagePort; resolved: Int32Array } | undefined => {
+	if ("bun" in process.versions) return
+	const { port1, port2 } = new MessageChannel()
+	const resolved = new Int32Array(new SharedArrayBuffer(4))
+	port1.on(
+		"message",
+		async ([index, specifier, importer]: [number, string, string]) => {
+			const path = await pending
+				.find(entry => entry.index === index)
+				?.resolve?.(specifier, importer)
+				.catch(() => undefined)
+			port1.postMessage(path)
+			Atomics.store(resolved, 0, answered)
+			Atomics.notify(resolved, 0)
+		}
+	)
+	port1.unref()
+	return { resolver: port2, resolved }
+}
+
 export const createAsyncPrecompiler = (
-	data: Omit<PrecompilerWorkerData, "port" | "answered" | "lifeline">
-): ((...request: PrecompileRequest) => Promise<unknown>) => {
-	const pending: ((answer: PrecompileAnswer) => void)[] = []
+	data: Omit<
+		PrecompilerWorkerData,
+		"port" | "answered" | "lifeline" | "resolver" | "resolved"
+	>
+): ((
+	request: PrecompileRequest,
+	resolve?: BundlerResolve
+) => Promise<unknown>) => {
+	const pending: PendingRequest[] = []
 	let worker: Worker | undefined
-	return (...request) => {
+	let sent = 0
+	return (request, resolve) => {
 		if (!worker) {
 			if (request[0] === "close") return Promise.resolve()
+			sent = 0
+			const channel = resolvingChannelOf(pending)
 			const started = new Worker(driverUrl, {
-				workerData: data satisfies PrecompilerWorkerData,
+				workerData: { ...data, ...channel } satisfies PrecompilerWorkerData,
+				transferList: channel ? [channel.resolver] : [],
 				execArgv: driverExecArgv
 			})
 			// it keeps the host's process alive only while a request is pending
 			started.on("message", (answer: PrecompileAnswer) => {
-				pending.shift()!(answer)
+				pending.shift()!.settle(answer)
 				if (!pending.length) started.unref()
 			})
 			// a stopped worker fails what it was asked, and the next request restarts it
@@ -152,16 +201,19 @@ export const createAsyncPrecompiler = (
 				error ??= new Error(
 					writeStoppedMessage(`exited with code ${code}`, "exits")
 				)
-				for (const settle of pending.splice(0)) settle({ error })
+				for (const { settle } of pending.splice(0)) settle({ error })
 			})
 			worker = started
 		}
 		worker.ref()
 		worker.postMessage(request)
-		return new Promise((resolve, reject) =>
-			pending.push(answer =>
-				"error" in answer ? reject(answer.error) : resolve(answer.result)
-			)
+		return new Promise((settled, failed) =>
+			pending.push({
+				index: sent++,
+				settle: answer =>
+					"error" in answer ? failed(answer.error) : settled(answer.result),
+				resolve
+			})
 		)
 	}
 }
