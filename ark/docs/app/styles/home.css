@@ -1888,6 +1888,12 @@
 		font-size: 15px;
 		line-height: 1.45;
 		color: var(--ink-2);
+		p {
+			margin: 0;
+		}
+		p + p {
+			margin-top: 8px;
+		}
 		b {
 			color: var(--teal);
 			font-weight: 700;

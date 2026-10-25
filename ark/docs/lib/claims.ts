@@ -226,6 +226,12 @@ const led = boardOrder.filter(leads)
 /** whether ArkType leads every category the board shows, the only time it may say "Pick 3" */
 export const leadsEvery = led.length === boardOrder.length
 
+/** ArkType's best average, and the next best where ArkType leads, otherwise the leader */
+const averageOf = (category: CategoryId) => {
+	const { place, score } = placeOf(category)
+	return { score, other: leaderboards[category].standings[place === 1 ? 1 : 0] }
+}
+
 /** where ArkType's best average places it in a category, a superlative only where it leads */
 const standingOf = (category: CategoryId) => {
 	const across = `across ${leaderboards[category].suites.length} public benchmarks`
@@ -234,6 +240,7 @@ const standingOf = (category: CategoryId) => {
 		leads: leads(category),
 		place: ordinal(place),
 		ranked,
+		average: averageOf(category),
 		standing:
 			leads(category) ?
 				`${wording[category].superlative} on average ${across}`
@@ -248,8 +255,7 @@ const listOf = (items: string[]) =>
 
 /** a category's standing and best average, beside the next best's where ArkType leads, otherwise beside the leader's */
 const averagesOf = (category: CategoryId) => {
-	const { place, score } = placeOf(category)
-	const other = leaderboards[category].standings[place === 1 ? 1 : 0]
+	const { score, other } = averageOf(category)
 	return `${standingOf(category).standing}: ${score.toFixed(2)} against ${other.library}'s ${other.score.toFixed(2)}.`
 }
 
@@ -302,9 +308,7 @@ const sizeResultsBeating = (library: string) => {
 	return `${count} of the ${rows.length} size results${largest[library] < largest.ArkType ? ", including the largest bundle we measured" : ""}`
 }
 
-const size = placeOf("size")
-// the library after ArkType where it leads, otherwise the leader
-const sizeRival = leaderboards.size.standings[size.place === 1 ? 1 : 0]
+const sizeRival = averageOf("size").other
 
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
@@ -440,6 +444,8 @@ type CategoryBase = {
 	standing: string
 	/** whether ArkType has the best average, checked on the board */
 	leads: boolean
+	/** ArkType's best average, and the library the card names beside it */
+	average: { score: number; other: Standing }
 	source: BenchmarkChart["source"]
 }
 
@@ -516,7 +522,7 @@ export const categories: Category[] = [
 		...standingOf("size"),
 		standings: leaderboards.size.standings.slice(
 			0,
-			Math.max(5, size.place + 1)
+			Math.max(5, placeOf("size").place + 1)
 		),
 		source: headlineMethod
 	}
