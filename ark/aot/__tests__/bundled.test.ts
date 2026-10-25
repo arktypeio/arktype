@@ -60,10 +60,17 @@ export const $ = scope({
 })
 // a program that never resolves the thunk
 export const Pair = $.type({ first: "even", rest: "even[]" })
+
+const $posts = scope({
+	topic: ["string", ":", (s: string) => s.length > 0],
+	Post: { body: "string", "replies?": () => $posts.type("Post[]") }
+})
+// annotated, as its inferred type is cyclic
+export const Post: (data: unknown) => unknown = $posts.export().Post
 `,
 		"main.ts": `import { type } from "arktype"
 import { Either, Parsed, Payload, Refused, Reported, Version, Versioned } from "./types.ts"
-import { Pair } from "./scoped.ts"
+import { Pair, Post } from "./scoped.ts"
 
 ${observe}
 
@@ -75,6 +82,7 @@ observe("Either", Either, 1, "[1]", "{")
 observe("Version", Version, "v12", "x")
 observe("Versioned", Versioned, { v: "v3" }, { v: "3" }, 2)
 observe("Pair", Pair, { first: 2, rest: [] }, { first: 1, rest: [3] })
+observe("Post", Post, { body: "a", replies: [{ body: "b" }] }, { body: "a", replies: [{ body: 1 }] })
 console.log(JSON.stringify(observed))
 `
 	},
@@ -254,6 +262,23 @@ contextualize(() => {
 					}
 				],
 				"first must be valid according to isEven\nrest[0] must be valid according to isEven"
+			]
+		])
+	})
+
+	it("a Scope with a thunk in a recursive alias, holding a function", () => {
+		observed("Post").snap([
+			{ body: "a", replies: [{ body: "b" }] },
+			[
+				[
+					{
+						code: "domain",
+						path: ["replies", 0, "body"],
+						data: 1,
+						expected: "a string"
+					}
+				],
+				"replies[0].body must be a string"
 			]
 		])
 	})

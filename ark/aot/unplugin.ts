@@ -322,14 +322,18 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				)
 			}
 		:	diagnostics
-	// what may throw at runtime fails unless allowUnsafe is set
+	// what may throw at runtime fails unless allowUnsafe is set, which a
+	// message offers only where building anyway may be what's wanted
 	const reportUnsafe = (
 		problem: string | undefined,
-		diagnostics: RenderedDiagnostics
+		diagnostics: RenderedDiagnostics,
+		offersAllowUnsafe = true
 	) => {
 		if (!problem) return
-		if (opts?.allowUnsafe) diagnostics.warnings.push(problem)
-		else diagnostics.errors.push(withAllowUnsafe(problem))
+		if (opts?.allowUnsafe) return void diagnostics.warnings.push(problem)
+		diagnostics.errors.push(
+			offersAllowUnsafe ? withAllowUnsafe(problem) : problem
+		)
 	}
 	const reportedPrecompiled = new Set<string>()
 	const precompiledProblemOf = (id: string, importer: string) => {
@@ -609,8 +613,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				const diagnostics =
 					isRuntime ? await readDependency(importer) : noDiagnostics()
 				reportUnsafe(precompiledProblemOf(id, importer), diagnostics)
+				// a Type it defines would throw, so the fix is moving it, not allowUnsafe
 				if (isRuntime)
-					reportUnsafe(untransformedProblemOf(id, importer), diagnostics)
+					reportUnsafe(untransformedProblemOf(id, importer), diagnostics, false)
 				for (const warning of diagnostics.warnings) this.warn(warning)
 				if (diagnostics.errors.length)
 					return refuse(diagnostics.errors.join("\n"))
@@ -1093,7 +1098,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 										args.importer,
 										args.namespace
 									),
-								{ errors, warnings }
+								{ errors, warnings },
+								false
 							)
 						}
 						return {
