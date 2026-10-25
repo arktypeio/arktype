@@ -11,7 +11,7 @@ import {
 	writeFileSync
 } from "node:fs"
 import { tmpdir } from "node:os"
-import { dirname, join } from "node:path"
+import { dirname, join, relative, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const arkDir = fileURLToPath(new URL("..", import.meta.url))
@@ -123,11 +123,15 @@ try {
 		})
 		const installDir = join(packedDir, "node_modules", name)
 		mkdirSync(installDir, { recursive: true })
-		// as npm installs it, beside each package it depends on. The archive is
-		// named relative to its directory, since GNU tar reads `C:` as a host
+		// as npm installs it, beside each package it depends on. tar runs where
+		// it extracts and is given a relative path, since GNU tar on Windows
+		// reads `C:` as a host and can't open a backslashed -C directory
+		const archive = relative(installDir, join(packDir, readdirSync(packDir)[0]))
 		execSync(
-			`tar -xzf "${readdirSync(packDir)[0]}" -C "${installDir}" --strip-components=1`,
-			{ cwd: packDir }
+			`tar -xzf "${archive.split(sep).join("/")}" --strip-components=1`,
+			{
+				cwd: installDir
+			}
 		)
 	}
 	runIn(packedDir)
