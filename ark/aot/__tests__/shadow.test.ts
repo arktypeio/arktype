@@ -208,6 +208,8 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 		it("throws naming where, or raises again what's caught", () => {
 			const { reported, swallowed, reordered, ...thrown } = outcomes
 			attest(thrown).snap({
+				unparsed:
+					'Error: unparsed diverges from arktype at creation: arktype gives {"threw":"ParseError: Left bounds are only valid when paired with right bounds (try ...>0)"}, its validator {}',
 				validated:
 					'Error: validated diverges from arktype at call(2): arktype gives {"out":2}, its validator {"issues":[{"code":"predicate","path":[],"data":2}]}',
 				called:

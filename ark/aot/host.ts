@@ -253,8 +253,13 @@ export const runtimeSpecifiers = [
 	"arktype/mutatesInput"
 ]
 
-// what arktype/runtime loads
-export const runtimePackages = ["arktype", "@ark/schema", "@ark/util"]
+// what arktype/runtime loads, and arksets, which arktype's parser loads
+export const runtimePackages = [
+	"arktype",
+	"arksets",
+	"@ark/schema",
+	"@ark/util"
+]
 
 // shadow mode keeps arktype, resolving only its config to the runtime
 export const resolvesToRuntime = (
