@@ -95,8 +95,8 @@ export const WhyNow = () => (
 						`limit` is a parameter of makeField (src/forms.ts:12:22); its value
 						is known only at runtime
 					</span>
-					{"\n  "}Standalone builds construct every Type at build time. Make it
-					static, or build with runtime: "arktype".
+					{"\n  "}Write the definition where makeField is called, with the value
+					it passes for `limit`, so the build precompiles each call.
 				</pre>
 			</div>
 		</div>
