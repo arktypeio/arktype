@@ -33,8 +33,15 @@ export const writeStandaloneDependencyMessage = <name extends string>(
 export type writeStandaloneDependencyMessage<name extends string> =
 	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Where it defines its Types statically, precompile it with this in ark.json (or package.json's "ark" key):\n  "precompile": { "dependencies": { "${name}": "aot" } }\nWhere it defines them from values known only at runtime, as from a database table, set "arktype" in place of "aot" to run it on arktype.`
 
+// Turbopack aliases arktype for every importer, so it can't run one on arktype
+export const writeTurbopackDependencyMessage = (name: string): string =>
+	`${name} imports arktype, which Turbopack resolves to arktype/runtime, where defining a Type throws. Where it defines its Types statically, precompile it with this in ark.json (or package.json's "ark" key):\n  "precompile": { "dependencies": { "${name}": "aot" } }\nWhere it defines them from values known only at runtime, as from a database table, build with webpack, which can run it on arktype, or with runtime: "arktype".`
+
 export const versionHint =
 	"A precompiled validator is written for the arktype it was built with. Install one version of each, so @ark/aot imports what the program does."
+
+export const writeVersionHint = (arktype: string, aot: string): string =>
+	`A precompiled validator is written for the arktype it was built with. Install the @ark/aot released with arktype ${arktype}, so it imports what the program does: npm i -D @ark/aot@${aot}`
 
 export const copiesHint =
 	"Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
@@ -152,6 +159,9 @@ export const writeGenericHint = (
 	(isAnnotated ? "" : (
 		` If \`${param}\` isn't a Type, annotate it with its type.`
 	))
+
+export const writeHelperCallHint = (fn: string): string =>
+	`Call ${fn} directly, with arguments the build can read, like literals and consts, so it precompiles each call.`
 
 // reasons a standalone build refuses a site, with how to fix each
 const textHints: [

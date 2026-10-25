@@ -55,7 +55,7 @@ Others take the same plugin: `precompile.rollup()` (ahead of `@rollup/plugin-typ
 
 ### Next.js
 
-Next 16 builds with Turbopack. Add a loader rule for each extension that holds a definition or the config module, and alias arktype's entries to the runtime:
+Next 16 builds with Turbopack. Add a loader rule for each extension that holds a definition or the config module, and one for JavaScript mentioning arktype, so a dependency that defines Types fails the build rather than at runtime. Then alias arktype's entries to the runtime:
 
 ```js
 // next.config.js (or the same object in next.config.ts)
@@ -63,7 +63,11 @@ export default {
 	turbopack: {
 		rules: {
 			"*.ts": { loaders: ["@ark/aot/turbopack"] },
-			"*.tsx": { loaders: ["@ark/aot/turbopack"] }
+			"*.tsx": { loaders: ["@ark/aot/turbopack"] },
+			"*.{js,mjs}": {
+				condition: { content: /arktype/ },
+				loaders: ["@ark/aot/turbopack"]
+			}
 		},
 		resolveAlias: {
 			arktype: "arktype/runtime",
@@ -104,16 +108,17 @@ To check that each precompiled validator behaves as arktype does, run the tests 
 
 The build evaluates each definition. It must be built from values the build knows, and anything composing a Type must happen inside a definition.
 
-| Instead of                                                          | Write                                                                                                                        |
-| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| a factory, ``(max: number) => type(`string <= ${max}`)``            | the definition at each use, `"string <= 80"`                                                                                 |
-| a helper calling methods, `<t>(T: Type<t>) => T.or("null")`         | a Generic, `const nullable = type("<t>", "t \| null")`, used as `nullable(Product)`, or `Product.or("null")` where it's used |
-| a shape object built or changed at runtime, then `type(shape)`      | each variant as its own Type, chosen at runtime: `const Post = import.meta.env.DEV ? DevPost : BasePost`                     |
-| composing at runtime, as in `(keys: Key[]) => User.pick(...keys)`   | a Type for each case the program needs                                                                                       |
-| `const Plan = T.default(x)`, then `{ plan: Plan }`                  | `plan: T.default(x)` at the key: `.default()` gives a key's definition, not a Type                                           |
-| `import("arktype")` or `require("arktype")`                         | an `import` declaration                                                                                                      |
-| a Zod or Valibot schema inside a definition                         | the schema converted to ArkType; until it is, build with `runtime: "arktype"`                                                |
-| a definition only known at runtime, like one loaded from a database | `// @ark-runtime` on the line before it, which ships arktype for that module                                                 |
+Helpers called with static arguments just work. A helper with one expression or one `return`, like ``const text = (max: number) => type(`0 < string <= ${max}`)`` or `const nullable = <t>(T: Type<t>) => T.or("null")`, precompiles at each call passing it values the build can read, like `text(50)`, `text(LIMIT * 10)` or `nullable(Product)`. Call it directly: passed as a callback or held in an object, it fails the build, and a module the plugin doesn't transform, like a `.svelte` file, can't call it.
+
+| Instead of                                                           | Write                                                                                                    |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| a helper called with a value known only at runtime, like a parameter | the call where that value is known, as `text(80)`                                                        |
+| a shape object built or changed at runtime, then `type(shape)`       | each variant as its own Type, chosen at runtime: `const Post = import.meta.env.DEV ? DevPost : BasePost` |
+| composing at runtime, as in `(keys: Key[]) => User.pick(...keys)`    | a Type for each case the program needs                                                                   |
+| `const Plan = T.default(x)`, then `{ plan: Plan }`                   | `plan: T.default(x)` at the key: `.default()` gives a key's definition, not a Type                       |
+| `import("arktype")` or `require("arktype")`                          | an `import` declaration                                                                                  |
+| a Zod or Valibot schema inside a definition                          | the schema converted to ArkType; until it is, build with `runtime: "arktype"`                            |
+| a definition only known at runtime, like one loaded from a database  | `// @ark-runtime` on the line before it, which ships arktype for that module                             |
 
 Composing inside a definition is fine anywhere, even in a function body: `const Updates = StockUpdate.array().atLeastLength(1)` precompiles, and so does `User.and({ role: "'admin'" })`. A read the build sees, like `Sku.description`, is replaced by its value.
 
@@ -132,8 +137,10 @@ Each build error names the file, line and column, then why, then the fix on its 
 
 | The build says                                                                                                                                                                  | Fix                                                                                                                                     |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `` `max` is a parameter of boundedText ...; its value is known only at runtime ``                                                                                               | write the definition where it's used, or make the helper a Generic; see the table above                                                 |
-| `T.or reads or, which a standalone validator lacks`                                                                                                                             | compose inside a definition, or replace the helper with a Generic                                                                       |
+| `` `limit` is a parameter of makeField ...; its value is known only at runtime ``                                                                                               | call the helper where that value is known, with it; see the table above                                                                 |
+| `T.or reads or, which a standalone validator lacks`                                                                                                                             | compose inside a definition, or make the helper one expression or one `return`, or a Generic                                            |
+| `` `text` is read outside a call the build precompiles ``                                                                                                                       | call the helper directly, with arguments the build can read                                                                             |
+| `... exports text, a helper the build precompiles at each call, but ... imports it`                                                                                             | call the helper in a `.ts` or `.js` module and import what it returns                                                                   |
 | `` `shape` is written at ..., so its value at the site is not known ``                                                                                                          | write the object whole in its literal, or define each variant as its own Type                                                           |
 | `User.description reads description, which a standalone validator lacks`                                                                                                        | read it inside a definition, or set that member under `members`                                                                         |
 | `T.default(x) can't be precompiled yet`, `.default() gives the definition of an object's key`                                                                                   | write `.default(x)` at the object key it's for, not in a `const`, as the message shows                                                  |

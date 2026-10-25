@@ -37,7 +37,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 ## Definitions
 
-**`... cannot be precompiled`**: the definition reads a value known only at runtime, like a parameter or the result of a call the build can't evaluate. The hint names the value, as in ``Replace `process.env.MAX` with a value the build can read``: make it a literal or a const holding one, mark the definition as a [runtime island](/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`. For a parameter, write the definition where the function is called, with the value it passes.
+**`... cannot be precompiled`**: the definition reads a value known only at runtime, like a parameter or the result of a call the build can't evaluate. The hint names the value, as in ``Replace `process.env.MAX` with a value the build can read``: make it a literal or a const holding one, mark the definition as a [runtime island](/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`. A helper with one expression or one `return`, like ``(max: number) => type(`0 < string <= ${max}`)``, precompiles at each call passing it values the build can read, like literals, consts and Types. For a parameter of another function, write the definition or the call where that function is called, with the value it passes.
 
 **`` `shape` is written at ..., so its value at the site is not known ``**: the definition reads an object or array the program changes before it, through a member, a method like `push`, `Object.assign` or a function writing its argument, so the build can't tell what it holds there. Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime.
 
@@ -63,7 +63,9 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`import("arktype") loads arktype, which a standalone build replaces with arktype/runtime`**: the build precompiles definitions it sees through an `import` declaration, and resolves every other load of arktype to its runtime, which can't create a Type. Import it with an `import` declaration, or build with `runtime: "arktype"`.
 
-**`User.description reads description, which a standalone validator lacks`**: a validator lacks the methods that compose a Type and the introspection members its build's [`members`](/docs/precompile/options#members) option doesn't set. Compose inside a definition, set the member, or build with `runtime: "arktype"`. Where a helper composes a Type it's passed, as `<t>(T: Type<t>) => T.or("null")` does, make it a Generic, `type("<t>", "t | null")`, which the build precompiles where it's called.
+**`` `text` is read outside a call the build precompiles ``**: the build precompiles a helper whose definition reads its parameters at each call, so the helper itself never runs. Passed as a callback, held in an object, exported as a default or loaded with `import()`, it would be called where the build can't see the call. Call it directly, with arguments the build can read.
+
+**`User.description reads description, which a standalone validator lacks`**: a validator lacks the methods that compose a Type and the introspection members its build's [`members`](/docs/precompile/options#members) option doesn't set. Compose inside a definition, set the member, or build with `runtime: "arktype"`. A helper composing a Type it's passed, as `<t>(T: Type<t>) => T.or("null")` does, precompiles at each call passing it a Type the build knows, as long as it's one expression or one `return`. Otherwise, make it a Generic, `type("<t>", "t | null")`, which the build precompiles where it's called.
 
 **`` `User` comes from `~/schemas`, which the build can't resolve ``**: the build resolves imports as TypeScript does, so it can't check reads off an import only a bundler alias resolves. Add the alias to `tsconfig.json`'s `paths`, or name that tsconfig as the build's `tsconfig`. If the value isn't a Type, annotate it with its type.
 
@@ -73,7 +75,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 ## Setup
 
-**`arktype resolves to 2.3.0, but @ark/aot runs on 2.2.9`**: validators run only on the arktype they were built with. Install one version, e.g. with your package manager's dedupe or overrides.
+**`arktype resolves to 2.3.0, but @ark/aot runs on 2.2.9`**: validators run only on the arktype they were built with. Where your program imports the other version, as after upgrading arktype alone, the message names the `@ark/aot` released with it, e.g. `npm i -D @ark/aot@<version>`. Where a dependency does, install one version, e.g. with your package manager's dedupe or overrides.
 
 **`precompiledForArktype_<version>` is not exported by `arktype/runtime`** (each bundler words it its own way): every module of validators imports an export of `arktype/runtime` named for the version it was built for, so linking it to another version's runtime fails rather than misbehaving at runtime. It usually means a bundler cache from before an upgrade, or a second copy of arktype. Install one version and clear the bundler's cache.
 
@@ -95,7 +97,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 "precompile": { "dependencies": { "my-schemas": "aot" } }
 ```
 
-Where it creates them from values it reads as it runs, like `drizzle-arktype` from your tables, set `"arktype"` in place of `"aot"` to run it on arktype. See [`dependencies`](/docs/precompile/options#dependencies). Better still, have it publish its source with `"ark": { "aot": true }` in its `package.json`. `allowUnsafe` builds it anyway, but the dependency then throws where it defines a Type. A dependency reading only `type.errors` or `ArkErrors` off arktype, like `@hono/arktype-validator`, builds as it is.
+Where it creates them from values it reads as it runs, like `drizzle-arktype` from your tables, set `"arktype"` in place of `"aot"` to run it on arktype. Turbopack can't, so its message (`which Turbopack resolves to arktype/runtime`) says to build with webpack or `runtime: "arktype"`. See [`dependencies`](/docs/precompile/options#dependencies). Better still, have it publish its source with `"ark": { "aot": true }` in its `package.json`. `allowUnsafe` builds it anyway, but the dependency then throws where it defines a Type. A dependency reading only `type.errors` or `ArkErrors` off arktype, like `@hono/arktype-validator`, builds as it is.
 
 **`precompile.dependencies names drizzle-arktyp, which can't be resolved from /app`**: name a package the program depends on, as its `package.json` names it.
 
@@ -113,11 +115,13 @@ Where it creates them from values it reads as it runs, like `drizzle-arktype` fr
 
 **`arktype's plugin is listed ahead of TanStack Router's`**: TanStack Router's code splitting moves a route's component into a module of its own, so arktype's plugin has to read the route after it. List `precompile.vite()` after `tanstackRouter()`, as [Frameworks](/docs/precompile/setup#frameworks) shows.
 
+**`src/fields.ts exports text, a helper the build precompiles at each call, but src/Form.svelte imports it and isn't a module the plugin transforms`** or **`... exports text, a helper the build precompiles at each call, but it's an entry`**: the build precompiles a helper whose definition reads its parameters at each call it sees, so a call it can't see, from a module it doesn't transform or from outside the bundle, would throw at runtime. Call the helper in a module the plugin transforms and import what it returns, or, from an entry, export what it returns. A Rollup, Rolldown, Vite, esbuild, webpack or Rspack build reports this; the Vite dev server, Vitest and the other drivers don't, so there it's the runtime error below.
+
 **`virtual:schemas imports arktype ... as it can't precompile a module with no file of its own`**: the build precompiles modules from their files, so not one a plugin loads from a virtual id or namespace, esbuild's `stdin`, a `data:` URL or code given to `node --eval`. Define the Types it uses in a file it imports.
 
 **`src/schemas.ts imports arktype ... as another plugin loaded it before precompile.esbuild() could`**: esbuild loads a module with the first plugin that returns its contents, so a plugin ahead of this one kept it from being precompiled. Put `precompile.esbuild()` ahead of that plugin.
 
-**`type is not a function`** at runtime: a module that defines a Type loaded `arktype/runtime` without being precompiled. Bun's driver and Turbopack replace `arktype` for every importer, so they can't fail for a module they don't load, like one another plugin supplies or, with Turbopack, one no loader rule matches. Define the Types it uses in a file they precompile.
+**`type is not a function`** at runtime: a module that defines a Type loaded `arktype/runtime` without being precompiled. Bun's driver and Turbopack replace `arktype` for every importer, so they can't fail for a module they don't load, like one another plugin supplies or, with Turbopack, one no loader rule matches. Define the Types it uses in a file they precompile. The same error comes from a call to a helper the build precompiles at each call, made from a module the build doesn't transform: call the helper where it does.
 
 **`~standard.jsonSchema isn't baked into this validator`** at runtime, outside production: a library converting a validator to JSON Schema through Standard Schema, like the MCP SDK, the AI SDK or Elysia's OpenAPI plugin, read a member the build left out, which a production build would read as `undefined`. Add `"members": { "~standard.jsonSchema": true }` to `ark.json`. In production, the AI SDK throws `Standard schema vendor 'arktype' does not support JSON Schema conversion`, the MCP SDK throws `Schema library "arktype" does not implement StandardJSONSchemaV1`, and Elysia leaves the schema out of its OpenAPI document.
 

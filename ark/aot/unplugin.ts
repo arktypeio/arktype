@@ -62,6 +62,7 @@ import {
 	addLoaded,
 	isAsset,
 	scanProgram,
+	unfoldedCallProblemOf,
 	unseenProblemOf,
 	writeUnprunedMessage,
 	writeUnscannedFlatMessage,
@@ -252,6 +253,16 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		// webpack and Rspack decide externals, e.g. Next's, before resolving
 		bundler.hooks.compilation.tap("arktype", compilation =>
 			compilation.hooks.finishModules.tap("arktype", modules => {
+				const problem =
+					foldedHelpersById.size &&
+					unfoldedCallProblemOf(
+						foldedHelpersById,
+						bundlerImportsOf(modules, compilation.moduleGraph),
+						isTransformedId,
+						realPathOf(opts?.cwd ?? process.cwd())
+					)
+				if (problem)
+					compilation.errors.push(new bundler.webpack.WebpackError(problem))
 				const requests = new Set<string>()
 				for (const module of modules) {
 					if (module instanceof bundler.webpack.ExternalModule)
@@ -347,6 +358,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		if (problem) reportedUntransformed.add(file)
 		return problem
 	}
+	// the helpers each module exports whose calls the build folds, by file
+	const foldedHelpersById = new Map<string, string[]>()
+	const isTransformedId = (id: string) =>
+		transformedFilter.include.test(id) && !transformedFilter.exclude.test(id)
 	// keeps the modules a transformed one writes, for its importers to load
 	const transform = async (
 		code: string,
@@ -362,6 +377,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			program
 		)) as TransformedModule | undefined
 		if (!transformed) return
+		if (transformed.foldedHelpers.length)
+			foldedHelpersById.set(fileOf(id), transformed.foldedHelpers)
+		else foldedHelpersById.delete(fileOf(id))
 		for (const specifier in transformed.modules) {
 			const virtualId = virtual + specifier
 			if (virtualId in modules) continue
@@ -724,6 +742,20 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		buildStart: reset,
 		// a build that won't rerun releases its worker
 		buildEnd(error?: Error) {
+			if (
+				!error &&
+				!isServing &&
+				foldedHelpersById.size &&
+				"getModuleIds" in this
+			) {
+				const problem = unfoldedCallProblemOf(
+					foldedHelpersById,
+					rollupImportsOf(this as never, id => id),
+					isTransformedId,
+					realPathOf(opts?.cwd ?? process.cwd())
+				)
+				if (problem) throwBuildError(problem)
+			}
 			const unpruned = pendingScans.get(buildOf(this))?.unpruned
 			// once, though each of an app's environments may find it
 			if (unpruned && !error && !warnedUnpruned.has(unpruned)) {
@@ -810,6 +842,28 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					build.onStart(() => ({
 						warnings: [{ text: writeUnprunedMessage(...unprunedBeforePlugin) }]
 					}))
+				}
+				if (isStandalone) {
+					const cwd = build.initialOptions.absWorkingDir ?? process.cwd()
+					build.initialOptions.metafile = true
+					build.onEnd(result => {
+						if (!result.metafile || result.errors.length) return
+						const problem =
+							foldedHelpersById.size &&
+							unfoldedCallProblemOf(
+								foldedHelpersById,
+								esbuildImportsOf(result.metafile, cwd),
+								isTransformedId,
+								realPathOf(opts?.cwd ?? process.cwd())
+							)
+						if (!problem) return
+						// it wrote calls that throw at runtime
+						if (build.initialOptions.write !== false) {
+							for (const path in result.metafile.outputs)
+								rmSync(resolve(cwd, path), { force: true })
+						}
+						return { errors: [{ text: problem }] }
+					})
 				}
 				// the scan's facts hold only while the bundle is what it read
 				let scanned: ScannedProgram | undefined
@@ -1226,9 +1280,11 @@ const scriptsOf = (html: string): string | undefined => {
 }
 
 // the importers a Rollup, Rolldown or Vite build bundled, by module
-const rollupImportsOf = (context: RollupContext): Imports => {
+const rollupImportsOf = (
+	context: RollupContext,
+	idOf = cachedFileOf()
+): Imports => {
 	const imports: Imports = { entries: [], modules: [], edges: [] }
-	const idOf = cachedFileOf()
 	for (const id of context.getModuleIds()) {
 		const info = context.getModuleInfo(id)
 		if (!info) continue
@@ -1385,9 +1441,9 @@ const esbuildScanOf = async (
 const esbuildImportsOf = (
 	metafile: Metafile,
 	cwd: string,
-	scanned: ScannedProgram
+	scanned?: ScannedProgram
 ): Imports => {
-	const stdin = scanned.entries.find(id => basename(id).startsWith("<stdin>."))
+	const stdin = scanned?.entries.find(id => basename(id).startsWith("<stdin>."))
 	const fileIdOf = cachedFileOf()
 	const idOf = (path: string) =>
 		path === "<stdin>" ? stdin
@@ -1454,8 +1510,33 @@ const environmentOf = (compiler: BundlerCompiler): Environment => ({
 
 interface BundlerCompilation {
 	hooks: { finishModules: Tap<Iterable<unknown>> }
+	moduleGraph: BundlerModuleGraph
 	errors: Error[]
 	warnings: Error[]
+}
+
+interface BundlerModuleGraph {
+	getIncomingConnections: (module: never) => Iterable<{ originModule: unknown }>
+}
+
+// the importers a webpack or Rspack build bundled, by module
+const bundlerImportsOf = (
+	modules: Iterable<unknown>,
+	graph: BundlerModuleGraph
+): Imports => {
+	const imports: Imports = { entries: [], modules: [], edges: [] }
+	for (const module of modules as { resource?: string }[]) {
+		const target = module.resource
+		if (target === undefined) continue
+		for (const { originModule } of graph.getIncomingConnections(
+			module as never
+		)) {
+			const importer = originModule as { resource?: string } | null
+			if (importer) imports.edges.push([importer.resource, target])
+			else imports.entries.push(target)
+		}
+	}
+	return imports
 }
 
 interface Tap<arg> {

@@ -565,6 +565,15 @@ importers:
       ajv-keywords:
         specifier: 5.1.0
         version: 5.1.0(ajv@8.20.0)
+      next:
+        specifier: 16.4.1
+        version: 16.4.1(@types/node@24.7.2)(react-dom@19.2.9(react@19.2.9))(react@19.2.9)
+      react:
+        specifier: 19.2.9
+        version: 19.2.9
+      react-dom:
+        specifier: 19.2.9
+        version: 19.2.9(react@19.2.9)
       ttsc:
         specifier: 0.31.5
         version: 0.31.5
