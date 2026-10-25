@@ -540,6 +540,10 @@ export class Precompiler {
 	>()
 	private inertByModule = new WeakMap<SourceModule, boolean>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
+	private valueSpecifiersById: Record<
+		string,
+		[source: string, specifiers: ReadonlySet<string> | undefined]
+	> = Object.create(null)
 	// each module's import cycle (SCC), numbered as found
 	private componentsById: Record<string, number> = Object.create(null)
 	private exportsArkByModule = new WeakMap<SourceModule, boolean>()
@@ -989,10 +993,49 @@ export class Precompiler {
 		const result: string[] = []
 		for (const [, specifier] of source.matchAll(importSpecifier)) {
 			if (arkPackageSpecifier.test(specifier)) continue
-			const targetId = this.graph.host.resolve(specifier, id)
+			const targetId = this.graph.host.resolve(specifier, id, () => {
+				const specifiers = this.valueSpecifiersOf(source, id)
+				return !specifiers || specifiers.has(specifier)
+			})
 			if (targetId && this.graph.isFollowed(targetId)) result.push(targetId)
 		}
 		return result
+	}
+
+	// what a module's text may import a value from, as a Type is, unlike an
+	// `import type`, an import only types read or a string that reads like
+	// one, or undefined where it doesn't parse
+	private valueSpecifiersOf(
+		source: string,
+		id: string
+	): ReadonlySet<string> | undefined {
+		const cached = this.valueSpecifiersById[id]
+		if (cached?.[0] === source) return cached[1]
+		const module = new SourceModule(id, source, this.graph.pathOf(id))
+		let specifiers: Set<string> | undefined
+		if (!module.parseErrors.length) {
+			specifiers = new Set()
+			walk(module.program, node => {
+				const specifier =
+					node.type === "ImportDeclaration" ?
+						this.isKept(node, module) && node.source.value
+					: node.type === "ExportNamedDeclaration" ?
+						!!node.source &&
+						node.exportKind !== "type" &&
+						(!node.specifiers.length ||
+							node.specifiers.some(
+								specifier => specifier.exportKind !== "type"
+							)) &&
+						node.source.value
+					: node.type === "ExportAllDeclaration" ?
+						node.exportKind !== "type" && node.source.value
+					:	loadedSpecifierOf(node)
+				if (typeof specifier === "string") specifiers!.add(specifier)
+				return true
+			})
+		}
+		this.valueSpecifiersById[id] = [source, specifiers]
+		return specifiers
 	}
 
 	textClosureOf(
@@ -3947,7 +3990,11 @@ export class Precompiler {
 		for (const statement of module.program.body) {
 			const specifier = "source" in statement && statement.source?.value
 			if (!specifier || arkPackageSpecifier.test(specifier)) continue
-			const target = this.graph.host.resolve(specifier, module.id)
+			const target = this.graph.host.resolve(
+				specifier,
+				module.id,
+				() => !isTypeOnly(statement)
+			)
 			if (target && this.graph.isFollowed(target))
 				result.push([target, isTypeOnly(statement)])
 		}
@@ -4264,10 +4311,12 @@ export class Precompiler {
 	private unresolvedReadsOf(module: SourceModule): Diagnostic[] {
 		const result: Diagnostic[] = []
 		const warned = new Set<string>()
+		// only an import that's kept binds what a read reads, so none other,
+		// like an `import type`, is resolved
 		if (
 			!module.program.body.some(
 				statement =>
-					statement.type === "ImportDeclaration" &&
+					this.isKept(statement, module) &&
 					this.isUnresolved(statement.source.value, module)
 			)
 		)

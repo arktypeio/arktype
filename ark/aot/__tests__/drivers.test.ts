@@ -12,7 +12,10 @@ import {
 	writeUntransformedImportMessage,
 	writeVariantImportMessage
 } from "@ark/aot/internal/host.ts"
-import type { TransformedModule } from "@ark/aot/internal/driver.ts"
+import {
+	createKeyedPrecompiler,
+	type TransformedModule
+} from "@ark/aot/internal/driver.ts"
 import {
 	configuredThreadMessage,
 	writeTurbopackDependencyMessage,
@@ -26,7 +29,14 @@ import { register } from "@ark/aot/node"
 import turbopack from "@ark/aot/turbopack"
 import type { PrecompilePluginOptions } from "@ark/aot/unplugin"
 import { spawnSync } from "node:child_process"
-import { existsSync, readFileSync, utimesSync, writeFileSync } from "node:fs"
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	symlinkSync,
+	utimesSync,
+	writeFileSync
+} from "node:fs"
 import { join, relative, sep } from "node:path"
 import { pathToFileURL } from "node:url"
 import { configureAfterTypeMessage } from "@ark/schema"
@@ -626,6 +636,43 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				request === "#shared/types" ? join(dir, "shared/types.ts") : undefined
 			)
 			attest(out).equals(unreadErrors)
+		})
+
+		it("asks Turbopack only about an import that can carry a Type", () => {
+			const dir = writeFixture({
+				"package.json": "{}",
+				"main.ts": `import { type } from "arktype"
+import type { PageLoad } from "./$types"
+import { type Shape } from "#types/inline"
+import { Read } from "#types/read"
+import { Value } from "#shared/value"
+import "#shared/effect"
+export { Other } from "#shared/other"
+export type { Kind } from "#types/kind"
+
+const note = 'import "#types/text"'
+const load: PageLoad = () => ({}) as Read & Shape
+export const User = type({ name: "string" })
+console.log(Value, note, load, await import("#shared/lazy"))
+`
+			})
+			// as installed, so the precompiler resolves it itself
+			mkdirSync(join(dir, "node_modules"))
+			symlinkSync(
+				fromHere("..", "..", "type"),
+				join(dir, "node_modules", "arktype")
+			)
+			const main = join(dir, "main.ts")
+			const { unresolved } = createKeyedPrecompiler({
+				conditions,
+				cwd: dir
+			}).precompile(readFileSync(main, "utf8"), main)
+			attest(unresolved.map(([specifier]) => specifier).sort()).equals([
+				"#shared/effect",
+				"#shared/lazy",
+				"#shared/other",
+				"#shared/value"
+			])
 		})
 
 		it("precompiles a module in either mode", () => {

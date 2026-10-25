@@ -21,7 +21,14 @@ import type { PrecompileOptions } from "./precompile.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
 
 export interface PrecompileHost {
-	resolve(specifier: string, importer: string): string | undefined
+	// isValueImport, where given, says whether the import may carry a value,
+	// as a Type is, which a host asking the bundler what it can't resolve
+	// asks only for one that may
+	resolve(
+		specifier: string,
+		importer: string,
+		isValueImport?: () => boolean
+	): string | undefined
 	readFile(path: string): string | undefined
 	// a host watches it, since its `paths` change what an import resolves to
 	tsconfigOf?(importer: string): string | undefined

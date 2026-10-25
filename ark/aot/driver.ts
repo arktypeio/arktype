@@ -366,14 +366,20 @@ const createTrackedPrecompiler = (
 	const { host } = precompiler.graph
 	precompiler.graph.host = {
 		...host,
-		resolve: (specifier, importer) => {
+		resolve: (specifier, importer, isValueImport) => {
 			const targets = (targetsByImporter[importer] ??= Object.create(null))
-			if (!(specifier in targets)) {
-				targets[specifier] =
-					host.resolve(specifier, importer) ??
-					resolveInBundler?.(specifier, importer)
-			}
-			return targets[specifier]
+			if (specifier in targets) return targets[specifier]
+			const target = host.resolve(specifier, importer)
+			// the bundler isn't asked for an import that can't carry a Type, nor
+			// is the miss kept, so a value import of it still asks
+			if (
+				target === undefined &&
+				resolveInBundler &&
+				isValueImport?.() === false
+			)
+				return
+			return (targets[specifier] =
+				target ?? resolveInBundler?.(specifier, importer))
 		},
 		readFile: file => {
 			// before reading, so a write meanwhile counts as a change
