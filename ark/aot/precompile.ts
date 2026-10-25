@@ -137,7 +137,7 @@ import {
 import type { ShadowContract } from "./shadow.ts"
 import { flattenBundle, importedNamesOf } from "./flat.ts"
 import { writeUnscannedFlatMessage } from "./scan.ts"
-import { linkBundle, type LinkedSite } from "./link.ts"
+import { linkBundle, prefixOf, type LinkedSite } from "./link.ts"
 import {
 	passedReaderOf,
 	unprecompiled,
@@ -743,8 +743,7 @@ export class Precompiler {
 		const module = this.add(id, source, mappings)
 		this.configuration ??= this.applyConfiguration()
 		const { sites, diagnostics } = this.analysisOf(module)
-		let prefix = "$ark"
-		while (source.includes(prefix)) prefix += "$"
+		const prefix = prefixOf(source, id)
 		const { namesBySite, factoriesBySite, folded } = this.planSites(
 			module,
 			sites,
@@ -1300,8 +1299,7 @@ export class Precompiler {
 			}
 		}
 		const s = new MagicString(source)
-		let prefix = "$ark"
-		while (source.includes(prefix)) prefix += "$"
+		const prefix = prefixOf(source, id)
 		const modules: Record<string, string> = {}
 		// locals for virtual modules' exports, by specifier
 		const imports: Record<string, Record<string, string>> = {}

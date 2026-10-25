@@ -127,7 +127,7 @@ class Linker {
 				id,
 				new SourceModule(id, siteCodes[id], id),
 				true,
-				prefixOf(sites[id].source)
+				prefixOf(sites[id].source, id)
 			)
 		}
 	}
@@ -534,9 +534,11 @@ const importedNameOf = (binding: Binding): string =>
 		:	String(binding.declaration.imported.value)
 	:	"default"
 
-// as the precompiler names a module's locals, by what its source lacks
-export const prefixOf = (source: string): string => {
-	let prefix = "$ark"
+// as the precompiler names a module's locals, by what its source lacks.
+// Svelte compiles a module like cart.svelte.ts after it, refusing a name
+// that begins with $
+export const prefixOf = (source: string, id: string): string => {
+	let prefix = /\.svelte\.\w+$/.test(id) ? "ark$" : "$ark"
 	while (source.includes(prefix)) prefix += "$"
 	return prefix
 }
