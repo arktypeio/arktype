@@ -312,7 +312,9 @@ export const writePrecompiled = async (
 			:	(value as StandaloneExport)
 	}
 	let names = Object.keys(exportsByName)
-	if (!names.length) return { written: [], refusals }
+	// a build writes the others beside it, which changes how they're written
+	if (!names.length || Object.keys(refusals).length)
+		return { written: [], refusals }
 	const write = (names: string[], combines = true) =>
 		precompileStandalone(
 			Object.fromEntries(names.map(name => [name, exportsByName[name]])),
