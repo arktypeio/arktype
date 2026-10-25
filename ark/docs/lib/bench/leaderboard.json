@@ -1,6 +1,6 @@
 {
 	"sources": {
-		"arkType": "results/arktype-808927feb.json",
+		"arkType": ["results/arktype-808927feb.json"],
 		"counts": [
 			"results/counts-a306152ce.json",
 			"results/counts-latest-2026-10-24.json"

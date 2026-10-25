@@ -15,12 +15,13 @@ const here = import.meta.dirname
 const docs = join(here, "..", "..", "..", "docs")
 
 // the stored results each suite reads: its rivals', which don't depend on
-// ArkType's build, and ArkType's rows, each measured again on one commit. A
+// ArkType's build, and ArkType's rows, each measured again on one commit, a
+// later file's measures replacing an earlier one's where it remeasures them. A
 // suite's rivals were measured twice, at the suite's pinned versions and at
 // each library's latest release on 2026-10-24, and each arm keeps the faster
 // run (README, "Versions")
 const committed = {
-	arkType: "results/arktype-808927feb.json",
+	arkType: ["results/arktype-808927feb.json"],
 	counts: [
 		"results/counts-a306152ce.json",
 		"results/counts-latest-2026-10-24.json"
@@ -192,7 +193,16 @@ const byCase = (entries: [string, number][]) => {
 	return Object.entries(cases).map(([id, byArm]) => rowOf(id, byArm))
 }
 
-const arkType = read(sources.arkType)
+// each of ArkType's measures from the last file that has it
+const arkType: Record<string, any> = {}
+for (const rows of sources.arkType.map(read)) {
+	for (const [kind, measures] of Object.entries(rows)) {
+		arkType[kind] =
+			typeof measures === "object" ?
+				{ ...arkType[kind], ...(measures as object) }
+			:	measures
+	}
+}
 
 const counts: Record<string, number[]> = {
 	...fastestOf(sources.counts),
@@ -404,7 +414,7 @@ const suites = [
 		id: "homepageSize",
 		label: "the homepage's apps",
 		unit: "B gzipped",
-		source: `benchData.json size, ArkType's from ${sources.arkType}`,
+		source: `benchData.json size, ArkType's from ${sources.arkType.join(", ")}`,
 		rows: appsOf(homepageSize, "gzip")
 	},
 	{
