@@ -461,11 +461,9 @@ export const claims = {
 	// ArkType 1.252 to Typia's 1.256, Typia on 2 of the 3 suites; at
 	// 808927feb's rows Typia had it, 1.256 to 1.297
 	sizeClose:
-		ties("size") ?
-			`Size is the close one: ${sizeRival.library} has the best average, ${sizeRival.score.toFixed(2)} to ArkType's ${placeOf("size").score.toFixed(2)}, within the ${tieMargin} we count as a tie, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`
-		: leads("size") ?
+		leads("size") && !ties("size") ?
 			`Size is the close one: ${sizeRival.library} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}, and ArkType's lead is in the average.`
-		:	`Size is the close one: ${sizeRival.library} has the best average, ${sizeRival.score.toFixed(2)} to ArkType's ${placeOf("size").score.toFixed(2)}, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
+		:	`Size is the close one: ${sizeRival.library} has the best average, ${sizeRival.score.toFixed(2)} to ArkType's ${placeOf("size").score.toFixed(2)}${ties("size") ? `, within the ${tieMargin} we count as a tie` : ""}, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
 	// which benchmarks are ours, and that the averages leave them out
 	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory} on the full board; the averages above leave those out.`,
 	// the claims that depend on a single benchmark, and which
