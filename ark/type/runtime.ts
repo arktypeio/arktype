@@ -581,20 +581,22 @@ export const failsAt = ((
 ): boolean | undefined => !ctx?._at || ctx._at(site, data, key)) satisfies Fn
 
 // fails a site at a path below data, as a discriminant deeper than one key
-// misses, entering each key but the last as an Apply would
+// misses, entering each key but the last as an Apply would. Like failsAt, it
+// stops where there's no ctx to report to, as an Allows of a size build has
 export const failsAtPath = ((
-	ctx: FailureContext,
+	ctx: FailureContext | undefined,
 	site: FailureSite,
 	data: unknown,
 	[k, ...deeper]: PropertyKey[]
 ): boolean | undefined =>
-	deeper.length ?
+	!ctx?._at ||
+	(deeper.length ?
 		ctx._in(
 			(value, ctx) => !failsAtPath(ctx, site, value, deeper),
 			(data as Record<PropertyKey, unknown>)[k],
 			k
 		)
-	:	ctx._at(site, data, k)) satisfies Fn
+	:	ctx._at(site, data, k))) satisfies Fn
 
 export const failsIn = ((
 	ctx: FailureContext | undefined,
