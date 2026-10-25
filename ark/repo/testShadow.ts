@@ -47,6 +47,16 @@ import { defineConfig } from "vitest/config"
 
 export default defineConfig({ plugins: [precompile.vite({ shadow: true })] })
 `,
+	// Vite keeping each path as it's given, as it can an 8.3 name on Windows,
+	// which arktype's resolver doesn't
+	"vitest.preserved.config.ts": `import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "vitest/config"
+
+export default defineConfig({
+	plugins: [precompile.vite({ shadow: true })],
+	resolve: { preserveSymlinks: true }
+})
+`,
 	"fields.ts": `import { type } from "arktype"
 
 export const Title = type("string <= 120")
@@ -85,7 +95,7 @@ const link = (target: string, path: string) => {
 	symlinkSync(target, path, "junction")
 }
 
-const runIn = (appDir: string) => {
+const writeApp = (appDir: string) => {
 	for (const [path, contents] of Object.entries(files)) {
 		mkdirSync(dirname(join(appDir, path)), { recursive: true })
 		writeFileSync(join(appDir, path), contents)
@@ -96,9 +106,19 @@ const runIn = (appDir: string) => {
 			join(appDir, "node_modules", name)
 		)
 	}
+}
+
+const runIn = (appDir: string, config = "vitest.config.ts") => {
 	const result = spawnSync(
 		process.execPath,
-		[join(appDir, "node_modules/vitest/vitest.mjs"), "run"],
+		[
+			join(appDir, "node_modules/vitest/vitest.mjs"),
+			"run",
+			"--root",
+			appDir,
+			"--config",
+			config
+		],
 		{ cwd: appDir, encoding: "utf8" }
 	)
 	if (result.error) throw result.error
@@ -134,12 +154,19 @@ try {
 			}
 		)
 	}
+	writeApp(packedDir)
 	runIn(packedDir)
+
+	console.log("🌘 Running it through a path Vite keeps as it's given...")
+	const aliasDir = join(tempDir, "alias")
+	link(packedDir, aliasDir)
+	runIn(aliasDir, "vitest.preserved.config.ts")
 
 	console.log("🌘 Running it on packages linked from this repo...")
 	const linkedDir = join(tempDir, "linked")
 	for (const name of ["arktype", "@ark/aot"])
 		link(join(arkDir, dirsByName[name]), join(linkedDir, "node_modules", name))
+	writeApp(linkedDir)
 	runIn(linkedDir)
 } finally {
 	rmSync(tempDir, { recursive: true, force: true })

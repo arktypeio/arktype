@@ -619,6 +619,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				// a virtual module resolves from the module it was written for
 				if (importer.startsWith(`${virtual}~arktype/`))
 					return host.resolve(id, importersById[importer])
+				// resolved as arktype is in shadow mode, below
+				if (id === shadowSpecifier)
+					return opts?.shadow ? host.resolve(id, importer) : undefined
 				if (variant && schemaSpecifier.test(id)) {
 					const specifier = variantSpecifierOf(id, variant)
 					return specifier ?
@@ -643,6 +646,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 						importer
 					)
 				}
+				// as its validators' runtime is, since a bundler can write another path
+				// to the same file, like Vite on Windows an 8.3 name such as RUNNER~1,
+				// loading a second arktype
+				if (isRuntime && opts?.shadow) return host.resolve(id, importer)
 			}
 		},
 		load: {
@@ -1730,8 +1737,11 @@ const specifiersOf = (...specifiers: string[]) =>
 		`^(?:${specifiers.map(s => s.replace(/[$()*+./?[\\\]^{|}]/g, "\\$&")).join("|")})$`
 	)
 
+// what precompiled modules import in shadow mode
+const shadowSpecifier = "@ark/aot/shadow"
+
 const resolvedSpecifier = new RegExp(
-	`${specifiersOf(...runtimeSpecifiers, "arktype/runtime", ...internalSpecifiers).source}|^~arktype\\/`
+	`${specifiersOf(...runtimeSpecifiers, "arktype/runtime", ...internalSpecifiers, shadowSpecifier).source}|^~arktype\\/`
 )
 
 // each runs a plugin after the others, which reads what they write
