@@ -65,15 +65,6 @@ export interface FailureContext {
 // named apart from arktype's subclass, which keeps the name ArkErrors
 export { ArkIssues as ArkErrors }
 
-// the path stack a validation left empty, which the next one takes
-let releasedPath: PropertyKey[] | undefined
-
-/** @internal once their Apply returns, errors pass their path on */
-export const releasePath = (errors: ArkIssues): ArkIssues => {
-	releasedPath = errors._p
-	return errors
-}
-
 declare namespace ArkIssues {
 	export type Handler<returns = unknown> = (errors: ArkIssues) => returns
 }
@@ -83,15 +74,9 @@ declare namespace ArkIssues {
  */
 class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	/** @internal each issue in the order it was added */
-	declare _: ArkIssue[]
+	_: ArkIssue[] = []
 	/** @internal the path a fused traversal is at */
-	declare _p: PropertyKey[]
-
-	constructor() {
-		this._ = []
-		this._p = releasedPath ?? []
-		releasedPath = undefined
-	}
+	_p: PropertyKey[] = []
 
 	/**
 	 * The number of issues.
@@ -190,7 +175,7 @@ export const applyIssues = (
 	const errors = new Ctx()
 	apply(data, errors)
 	return (
-		!releasePath(errors).count ? data
+		!errors.count ? data
 		: onFail ? onFail(errors)
 		: errors
 	)
@@ -205,7 +190,6 @@ export const issuesOf = (
 	apply(data, errors)
 	// data a write or a getter has made valid since fails as a whole
 	if (!errors._.length) errors._at({ code: "predicate" }, data)
-	releasedPath = errors._p
 	return errors._
 }
 
@@ -221,7 +205,6 @@ export const foundErrors = (
 	// as issuesOf, which a program of these never ships
 	apply(data, errors)
 	if (!errors._.length) errors._at({ code: "predicate" }, data)
-	releasedPath = errors._p
 	return onFail ? onFail(errors) : errors
 }
 
@@ -292,17 +275,9 @@ export const mergeIssues = (
 
 export const messageOf = (issue: ArkIssue): string => {
 	let path = ""
-	for (const k of issue.path) {
-		if (typeof k === "number") path += `[${k}]`
-		else {
-			if (path) path += "."
-			path += typeof k === "string" ? k : String(k)
-		}
-	}
-	if (!path) return problemOf(issue)
-	return issue.problem === undefined && issue.expected !== undefined ?
-			path + " must be " + issue.expected
-		:	path + " " + problemOf(issue)
+	for (const k of issue.path)
+		path += typeof k === "number" ? `[${k}]` : (path && ".") + String(k)
+	return (path && path + " ") + problemOf(issue)
 }
 
 // an undeclared key's site says what's expected

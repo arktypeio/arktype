@@ -2,17 +2,11 @@
 // @ts-nocheck
 // written by __tests__/writeSettings.ts from __tests__/settingsSchema.ts
 // ark/schema/shared/issues.ts
-var releasedPath
-var releasePath = errors => {
-	releasedPath = errors._p
-	return errors
-}
 var ArkIssues = class {
-	constructor() {
-		this._ = []
-		this._p = releasedPath ?? []
-		releasedPath = void 0
-	}
+	/** @internal each issue in the order it was added */
+	_ = []
+	/** @internal the path a fused traversal is at */
+	_p = []
 	/**
 	 * The number of issues.
 	 */
@@ -81,24 +75,16 @@ var applyIssues = (apply, data, onFail, Ctx = ArkIssues) => {
 	const errors = new Ctx()
 	apply(data, errors)
 	return (
-		!releasePath(errors).count ? data
+		!errors.count ? data
 		: onFail ? onFail(errors)
 		: errors
 	)
 }
 var messageOf = issue => {
 	let path = ""
-	for (const k of issue.path) {
-		if (typeof k === "number") path += `[${k}]`
-		else {
-			if (path) path += "."
-			path += typeof k === "string" ? k : String(k)
-		}
-	}
-	if (!path) return problemOf(issue)
-	return issue.problem === void 0 && issue.expected !== void 0 ?
-			path + " must be " + issue.expected
-		:	path + " " + problemOf(issue)
+	for (const k of issue.path)
+		path += typeof k === "number" ? `[${k}]` : (path && ".") + String(k)
+	return (path && path + " ") + problemOf(issue)
 }
 var problemOf = issue =>
 	issue.problem ??

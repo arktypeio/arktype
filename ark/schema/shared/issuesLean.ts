@@ -107,8 +107,6 @@ export class FirstIssues extends ArkErrors {
 	}
 }
 
-export const releasePath = (errors: ArkErrors): ArkErrors => errors
-
 export const issueAt = (
 	path: PropertyKey[],
 	site: FailureSite,
