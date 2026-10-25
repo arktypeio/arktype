@@ -61,7 +61,7 @@ var ArkIssues = class {
 			path: path.slice(),
 			data,
 			expected: context.description,
-			message: void 0
+			message: context.x
 		}
 		context.text?.(issue)
 		if (key !== void 0) path.pop()

@@ -69,7 +69,7 @@ export class ArkErrors implements FailureContext {
 			path: path.slice(),
 			data,
 			expected: context.description,
-			message: undefined
+			message: context.x
 		}
 		context.text?.(issue)
 		if (key !== undefined) path.pop()
@@ -127,7 +127,7 @@ export const issueAt = (
 		path: path.slice(),
 		data,
 		expected: context.description,
-		message: undefined
+		message: context.x
 	}
 	context.text?.(issue)
 	if (key !== undefined) path.pop()
