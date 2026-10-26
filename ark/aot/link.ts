@@ -24,10 +24,6 @@ export interface LinkedCode {
 	map: SourceMap | undefined
 }
 
-// a bundle's precompiled modules with each checker the bundle reads once
-// written where it's read, as a unit of its own costs its name twice. Each
-// module it changes is renamed for what it holds, and the original is kept,
-// so a module the bundle loads unlinked reads what it always did
 export interface LinkOptions {
 	// each validator exposes what it's created from as allows
 	exposesAllows?: boolean
@@ -35,6 +31,10 @@ export interface LinkOptions {
 	isOneChunk?: boolean
 }
 
+// a bundle's precompiled modules with each checker the bundle reads once
+// written where it's read, as a unit of its own costs its name twice. Each
+// module it changes is renamed for what it holds, and the original is kept,
+// so a module the bundle loads unlinked reads what it always did
 export const linkBundle = (
 	sites: Record<string, LinkedSite>,
 	modules: Record<string, string>,
@@ -505,12 +505,7 @@ class Linker {
 				)
 			}
 		}
-		for (const [unit, imports] of importsByUnit) {
-			for (const [local, statement] of imports) {
-				unit.importsByLocal.set(local, statement)
-				unit.added.push(statement)
-			}
-		}
+		for (const [unit, imports] of importsByUnit) addImports(unit, imports)
 	}
 
 	// the checker a validator is created from, read as a call, as a bundler
@@ -570,10 +565,7 @@ class Linker {
 		if (!edits) return true
 		owner.edits.prependRight(init.start, `${local}(/* @__PURE__ */ `)
 		owner.edits.appendLeft(init.end, ")")
-		for (const [local, statement] of imports) {
-			owner.importsByLocal.set(local, statement)
-			owner.added.push(statement)
-		}
+		addImports(owner, imports)
 		site.edits.overwrite(
 			statement.start,
 			statement.end,
@@ -709,10 +701,7 @@ class Linker {
 			id.end,
 			`${annotation ? "/* @__PURE__ */ " : ""}${text.slice(init.start, init.end)}`
 		)
-		for (const [local, statement] of imports) {
-			read.unit.importsByLocal.set(local, statement)
-			read.unit.added.push(statement)
-		}
+		addImports(read.unit, imports)
 		for (const name of exports) {
 			const statement = `\nexport { ${name} }`
 			if (!owner.added.includes(statement)) owner.added.push(statement)
@@ -801,6 +790,14 @@ const creationOf = (site: Unit, checker: Reference): Creation | undefined => {
 		name: binding.name,
 		creator,
 		checker
+	}
+}
+
+// what a unit reads by the imports localOf staged for it
+const addImports = (unit: Unit, imports: Map<string, string>): void => {
+	for (const [local, statement] of imports) {
+		unit.importsByLocal.set(local, statement)
+		unit.added.push(statement)
 	}
 }
 
