@@ -5,55 +5,62 @@ import {
 	writeUnprecompilableMessage
 } from "arktype/internal/standalone.ts"
 
-// each level references the one below twice, so written out in full, it
-// would be twice as long as the level below
-const levels = (
-	depth: number,
-	name: "string" | "number" | "string | number" = "string",
-	$ = scope({})
-): type.Any => {
-	let T: type.Any = $.type({ name })
-	for (let i = 0; i < depth; i++)
-		T = $.type({ id: "string", left: T.array(), right: T.array() })
+// each level references the one below four times, so written out in full, it
+// would be four times as long as the level below. two calls share no nodes.
+const levels = (depth: number): type.Any => {
+	const $ = scope({})
+	let T: type.Any = $.type({ name: "string" })
+	for (let i = 0; i < depth; i++) {
+		const each = T.array()
+		T = $.type({ id: "string", a: each, b: each, c: each, d: each })
+	}
 	return T
 }
 
-// valid data reaching the bottom level through each right
-const rightmost = (depth: number, name: unknown = "Ada"): object => {
+// valid data reaching the bottom level through each d
+const deepest = (depth: number, name: unknown = "Ada"): object => {
 	let data: object = { name }
-	for (let i = 0; i < depth; i++) data = { id: `${i}`, left: [], right: [data] }
+	for (let i = 0; i < depth; i++)
+		data = { id: `${i}`, a: [], b: [], c: [], d: [data] }
 	return data
 }
 
 contextualize(() => {
 	it("prints a nested type past 1000 characters as ...", () => {
-		const T = levels(61)
-		attest(T.expression).snap("{ id: string, left: ...[], right: ...[] }")
-		attest(T.description).snap("{ id: a string, left: ...[], right: ...[] }")
+		const T = levels(13)
+		attest(T.expression).snap(
+			"{ a: ...[], b: ...[], c: ...[], d: ...[], id: string }"
+		)
+		attest(T.description).snap(
+			"{ a: ...[], b: ...[], c: ...[], d: ...[], id: a string }"
+		)
 		attest(T.and({ extra: "string" }).expression).snap(
-			"{ extra: string, id: string, left: ...[], right: ...[] }"
+			"{ a: ...[], b: ...[], c: ...[], d: ...[], extra: string, id: string }"
 		)
 	})
 
 	it("compares types whose hashes differ past their prefix", () => {
-		const T = levels(60)
-		attest(T.equals(levels(60, "string", scope({})))).equals(true)
-		attest(T.equals(levels(60, "number"))).equals(false)
-		attest(T.extends(levels(60, "string | number"))).equals(true)
-		attest(T.allows(rightmost(60))).equals(true)
-		attest(T.allows(rightmost(60, 0))).equals(false)
+		const T = levels(8)
+		// a hash writes a out before id, so a new id changes it only past its prefix
+		const withId = (id: "number" | "string | number") =>
+			T.omit("id").and({ id })
+		attest(T.equals(levels(8))).equals(true)
+		attest(T.equals(withId("number"))).equals(false)
+		attest(T.extends(withId("string | number"))).equals(true)
+		attest(T.allows(deepest(8))).equals(true)
+		attest(T.allows(deepest(8, 0))).equals(false)
 	})
 
 	it("validates data through a type reused at each level", () => {
-		const T = levels(10)
-		attest(T(rightmost(10))).equals(rightmost(10))
-		attest(T(rightmost(10, 0)).toString()).snap(
-			"right[0].right[0].right[0].right[0].right[0].right[0].right[0].right[0].right[0].right[0].name must be a string (was a number)"
+		const T = levels(5)
+		attest(T(deepest(5))).equals(deepest(5))
+		attest(T(deepest(5, 0)).toString()).snap(
+			"d[0].d[0].d[0].d[0].d[0].name must be a string (was a number)"
 		)
 	})
 
 	it("orders the cases of a union of types reused at each level", () => {
-		const T = levels(10)
+		const T = levels(5)
 		const Kinds = type({ kind: "'b'", b: T }).or({ kind: "'a'", a: T })
 		attest(Kinds({ kind: "c" }).toString()).snap(
 			'kind must be "a" or "b" (was "c")'
@@ -61,18 +68,21 @@ contextualize(() => {
 	})
 
 	it("precompiles a type reused at each level", () => {
-		const lengthAt = (depth: number, opts?: { optimize: "size" }) =>
-			precompileStandalone({ T: levels(depth) }, opts).code.length
+		const Shallow = levels(7)
+		const Deep = levels(14)
+		const lengthOf = (T: type.Any, opts?: { optimize: "size" }) =>
+			precompileStandalone({ T }, opts).code.length
 		// twice the levels, about twice the code
-		attest(lengthAt(60) / lengthAt(30)).satisfies("number < 2.2")
+		attest(lengthOf(Deep) / lengthOf(Shallow)).satisfies("number < 2.2")
 		attest(
-			lengthAt(60, { optimize: "size" }) / lengthAt(30, { optimize: "size" })
+			lengthOf(Deep, { optimize: "size" }) /
+				lengthOf(Shallow, { optimize: "size" })
 		).satisfies("number < 2.2")
 		attest(() =>
-			precompileStandalone({ T: levels(20) }, { members: { json: true } })
+			precompileStandalone({ T: levels(8) }, { members: { json: true } })
 		).throws(
 			writeUnprecompilableMessage(
-				"introspection writing out about 272 MB of JSON, as it repeats each Type it references"
+				"introspection writing out about 11 MB of JSON, as it repeats each Type it references"
 			)
 		)
 	})
