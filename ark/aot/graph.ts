@@ -3815,8 +3815,8 @@ export const isSetLast = (binding: Binding): boolean => {
 	return true
 }
 
-// a statement's first variable, so nothing it runs precedes its site
-export const declarationStartOf = (node: Node): number | undefined => {
+// the variable a site initializes, which a bundler may drop with it
+export const initializedOf = (node: Node): VariableDeclarator | undefined => {
 	// e.g. `type({ ... }) satisfies Type<Data>`, which runs as its expression
 	while (
 		node.parent &&
@@ -3825,9 +3825,15 @@ export const declarationStartOf = (node: Node): number | undefined => {
 	)
 		node = node.parent
 	const declarator = node.parent
-	if (declarator?.type !== "VariableDeclarator" || declarator.init !== node)
-		return
-	const declaration = declarator.parent
+	return declarator?.type === "VariableDeclarator" && declarator.init === node ?
+			declarator
+		:	undefined
+}
+
+// a statement's first variable, so nothing it runs precedes its site
+export const declarationStartOf = (node: Node): number | undefined => {
+	const declarator = initializedOf(node)
+	const declaration = declarator?.parent
 	if (
 		declaration?.type !== "VariableDeclaration" ||
 		declaration.declarations[0] !== declarator

@@ -69,6 +69,29 @@ export const isError = (data: unknown) => data instanceof ArkErrors`)
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
 
+		it("lets a bundler drop a function's unread Type where creating fixes no config", () => {
+			const source = `import { type } from "arktype"
+const trim = (s: string) => s.trim()
+export const productOf = () => {
+	const Image = type({ id: "number" })
+	const Trimmed = type("string").pipe(trim)
+	return type({ images: Image.array() })
+}`
+			const bodyOf = (code: string) =>
+				normalized(code).split("\n").slice(-4, -1)
+			attest(bodyOf(precompile(source, {}, { config: false }).code)).snap([
+				"\tconst Image = /* @__PURE__ */ $ark#0()",
+				"\tconst Trimmed = $ark#2(trim)",
+				"\treturn $ark#3()"
+			])
+			// creating its first Type fixes the config, as arktype's would
+			attest(bodyOf(precompile(source).code)).snap([
+				"\tconst Image = $ark#0()",
+				"\tconst Trimmed = $ark#2(trim)",
+				"\treturn $ark#3()"
+			])
+		})
+
 		it("names its locals without a leading $ in a module Svelte compiles", () => {
 			// Svelte refuses a name beginning with $ there, as it reads one as a rune
 			const source = `import { type } from "arktype"
@@ -688,7 +711,7 @@ export const E = type("strng")`,
 			const lines = result.code.split("\n")
 			attest(normalized([lines[0], ...lines.slice(-12)])).snap([
 				"var $ark$exports0;",
-				"})($ark$0$fixConfig))",
+				"})($ark$0$fixConfig)) : $ark$exports2)",
 				"}",
 				"function $arkfixConfig(...args) {",
 				'return $ark$load2()["default"](...args)',
