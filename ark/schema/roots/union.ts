@@ -11,7 +11,7 @@ import {
 	type show
 } from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
-import type { BaseNode } from "../node.ts"
+import { forgetReferences, type BaseNode } from "../node.ts"
 import {
 	compileSerializedValue,
 	expectedOf,
@@ -219,6 +219,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			for (const node of this.caseNodes)
 				Object.assign(this.cache.refsById, node.refsById)
 		}
+		// what was read of its references while discriminating lacks its cases
+		forgetReferences(this)
 		return discriminant
 	}
 

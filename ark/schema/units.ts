@@ -89,11 +89,13 @@ export const precompile = (
 	unbound?: UnboundTraversals
 ): Fn => {
 	const linkage = createLinkage()
+	const reused = new Set<BaseNode>()
+	linkage.reused = reused
 	for (const node of references) linkage.refsById[node.id] = node
 	const declared: BaseNode[] = []
 	for (const node of references) {
 		if (node.cache.isReusableLeaf && isLeafIn(node, linkage.refsById))
-			linkage.reused.add(node)
+			reused.add(node)
 		else if (
 			node.compiledUnit &&
 			(!owningScope || node.$ !== owningScope) &&
@@ -534,7 +536,7 @@ type UnitDependency = [node: BaseNode, kind: TraversalKind]
 
 interface UnitLinkage {
 	refsById: Record<string, BaseNode>
-	reused: Set<BaseNode>
+	reused: Pick<ReadonlySet<BaseNode>, "has">
 	unreached: Set<BaseNode>
 	reached: BaseNode[]
 	// each traversal of a reused node the unit calls, by the name it calls
@@ -547,13 +549,15 @@ interface UnitLinkage {
 	unit?: string | undefined
 }
 
+const noneReused: ReadonlySet<BaseNode> = new Set()
+
 const createLinkage = (
 	nameOf?: (id: NodeId) => string,
 	opts: UnitOptions = {},
 	unit?: string
 ): UnitLinkage => ({
 	refsById: {},
-	reused: new Set(),
+	reused: noneReused,
 	unreached: new Set(),
 	reached: [],
 	dependencies: {},
@@ -715,44 +719,117 @@ const unitsOf = (s: ContentNamingState, opts: UnitOptions): RootUnit[] => {
 	const unitsById: Record<NodeId, RootUnit> = {}
 	// a component is completed after every component it calls
 	for (const component of s.components) {
-		const roots: BaseNode[] = component.filter(node => node.isRoot())
-		roots.sort((l, r) => (s.names[l.id] < s.names[r.id] ? -1 : 1))
-		if (!roots.length) continue
-		const declaredByName: Record<string, BaseNode> = {}
-		const reached: BaseNode[] = [...roots]
-		for (const node of reached) {
-			if (declaredByName[s.names[node.id]]) continue
-			declaredByName[s.names[node.id]] = node
-			for (const callee of s.refsById[node.id].callees)
-				if (!callee.isRoot() || roots.includes(callee)) reached.push(callee)
+		let written = s.written.units.get(component[0])
+		if (!written || !readsMatch(written, component, s)) {
+			written = writeComponent(component, s, opts)
+			if (!written) continue
+			s.written.units.set(component[0], written)
 		}
-		const linkage = createLinkage(id => s.names[id], opts, s.names[roots[0].id])
-		for (const node of s.reached) {
-			linkage.refsById[node.id] = node
-			if (node.isRoot() && !declaredByName[s.names[node.id]])
-				linkage.reused.add(node)
-		}
-		const declared = Object.values(declaredByName)
-		const declaredTraversals = declared.map(node =>
-			declareTraversals(linkage, node)
-		)
 		const unit: RootUnit = {
-			name: s.names[roots[0].id],
+			name: written.name,
 			names: s.names,
-			roots: roots as BaseRoot[],
-			traversals: declaredTraversals.slice(0, roots.length),
-			declared,
-			declaredTraversals,
-			members: linkage.members,
-			refs: [...linkage.refs.keys()],
-			dependencies: linkage.dependencies,
+			roots: written.roots,
+			traversals: written.declaredTraversals.slice(0, written.roots.length),
+			declared: written.declared,
+			declaredTraversals: written.declaredTraversals,
+			members: written.members,
+			refs: written.refs,
+			dependencies: written.dependencies,
 			identityNamed: s.identityNamed,
 			unitsById
 		}
 		units.push(unit)
-		for (const root of roots) unitsById[root.id] = unit
+		for (const root of written.roots) unitsById[root.id] = unit
 	}
 	return units
+}
+
+// a component's unit as written in one pass, which another pass reaching it
+// shares if it reads the same names and reaches the same nodes by id
+interface WrittenUnit {
+	component: readonly BaseNode[]
+	namesRead: Map<NodeId, string | undefined>
+	reachedRead: Map<NodeId, BaseNode | undefined>
+	name: string
+	roots: BaseRoot[]
+	declared: BaseNode[]
+	declaredTraversals: string[][]
+	members: UnitMember[]
+	refs: unknown[]
+	dependencies: Record<string, UnitDependency>
+}
+
+const readsMatch = (
+	written: WrittenUnit,
+	component: readonly BaseNode[],
+	s: ContentNamingState
+): boolean => {
+	if (written.component.length !== component.length) return false
+	for (let i = 0; i < component.length; i++)
+		if (written.component[i] !== component[i]) return false
+	for (const [id, name] of written.namesRead)
+		if (s.names[id] !== name) return false
+	for (const [id, node] of written.reachedRead)
+		if (s.refsById[id]?.node !== node) return false
+	return true
+}
+
+const writeComponent = (
+	component: readonly BaseNode[],
+	s: ContentNamingState,
+	opts: UnitOptions
+): WrittenUnit | undefined => {
+	const namesRead = new Map<NodeId, string | undefined>()
+	const readName = (id: NodeId) => {
+		const name = s.names[id]
+		namesRead.set(id, name)
+		return name
+	}
+	const reachedRead = new Map<NodeId, BaseNode | undefined>()
+	const reachedAt = (id: NodeId) => {
+		const node = s.refsById[id]?.node
+		reachedRead.set(id, node)
+		return node
+	}
+	const roots: BaseNode[] = component.filter(node => node.isRoot())
+	roots.sort((l, r) => (readName(l.id) < readName(r.id) ? -1 : 1))
+	if (!roots.length) return
+	const declaredByName: Record<string, BaseNode> = {}
+	const reached: BaseNode[] = [...roots]
+	for (const node of reached) {
+		if (declaredByName[readName(node.id)]) continue
+		declaredByName[readName(node.id)] = node
+		for (const callee of s.refsById[node.id].callees)
+			if (!callee.isRoot() || roots.includes(callee)) reached.push(callee)
+	}
+	const linkage = createLinkage(readName, opts, readName(roots[0].id))
+	// reads through to what the pass reached
+	linkage.refsById = Object.create(
+		new Proxy({}, { get: (_, id) => reachedAt(id as NodeId) })
+	)
+	// a reached root another component declares
+	linkage.reused = {
+		has: node =>
+			reachedAt(node.id) === node &&
+			node.isRoot() &&
+			!declaredByName[readName(node.id)]
+	}
+	const declared = Object.values(declaredByName)
+	const declaredTraversals = declared.map(node =>
+		declareTraversals(linkage, node)
+	)
+	return {
+		component,
+		namesRead,
+		reachedRead,
+		name: readName(roots[0].id),
+		roots: roots as BaseRoot[],
+		declared,
+		declaredTraversals,
+		members: linkage.members,
+		refs: [...linkage.refs.keys()],
+		dependencies: linkage.dependencies
+	}
 }
 
 interface ContentNamingState {
@@ -766,6 +843,39 @@ interface ContentNamingState {
 	inputsByHash: Record<string, string>
 	occurrencesById: Record<NodeId, number>
 	identityNamed: Set<NodeId>
+	written: WrittenByCompiler
+}
+
+// what a compiler, keying values as keyOf does, wrote of each node, by node
+interface WrittenByCompiler {
+	contents: WeakMap<BaseNode, WrittenContent>
+	units: WeakMap<BaseNode, WrittenUnit>
+}
+
+const writtenByOptions = new Map<
+	UnitOptions["compiler"],
+	Map<ContentKeyOf | undefined, WrittenByCompiler>
+>()
+
+const writtenOf = (opts: UnitOptions): WrittenByCompiler => {
+	let byKeyOf = writtenByOptions.get(opts.compiler)
+	if (!byKeyOf) writtenByOptions.set(opts.compiler, (byKeyOf = new Map()))
+	let written = byKeyOf.get(opts.keyOf)
+	if (!written) {
+		byKeyOf.set(
+			opts.keyOf,
+			(written = { contents: new WeakMap(), units: new WeakMap() })
+		)
+	}
+	return written
+}
+
+// a node's content holding no value by identity, and nameComponent's input
+// for it alone, by the names of its callees
+interface WrittenContent {
+	content: string
+	callees: BaseNode[]
+	named?: [calleeNames: (string | undefined)[], input: string, hash: string]
 }
 
 const nameContent = (
@@ -792,7 +902,8 @@ const nameReferences = (
 		names: {},
 		inputsByHash: {},
 		occurrencesById,
-		identityNamed: new Set()
+		identityNamed: new Set(),
+		written: writtenOf(opts)
 	}
 	for (const root of roots) if (!s.refsById[root.id]) nameReference(s, root)
 	return s
@@ -802,6 +913,8 @@ const nameReferences = (
 const occurrencesOfResolutions = (
 	s: ContentNamingState
 ): Record<NodeId, number> | undefined => {
+	// only an alias or what it resolves to is numbered
+	if (!s.reached.some(node => node.includesAlias)) return
 	const resolutionIds: Record<NodeId, true> = {}
 	const reachedByName: Record<string, BaseNode[]> = {}
 	for (const node of s.reached) {
@@ -829,6 +942,8 @@ interface ContentReference {
 	callees: BaseNode[]
 	index: number
 	lowLink: number
+	// set where content is the same in any pass
+	written: WrittenContent | undefined
 }
 
 // Tarjan's algorithm
@@ -872,6 +987,20 @@ const compileContent = (
 	s: ContentNamingState,
 	node: BaseNode
 ): ContentReference => {
+	const occurrence = s.occurrencesById[node.id]
+	const cached =
+		occurrence === undefined ? s.written.contents.get(node) : undefined
+	if (cached) {
+		return {
+			node,
+			content: cached.content,
+			holdsIdentity: false,
+			callees: cached.callees,
+			index: s.reached.length,
+			lowLink: s.reached.length,
+			written: cached
+		}
+	}
 	const calleeIds: NodeId[] = []
 	const positionsById: Record<NodeId, number> = {}
 	const positionOf = (id: NodeId) =>
@@ -913,7 +1042,6 @@ const compileContent = (
 		serializing.delete(value as object)
 		return content
 	}
-	const occurrence = s.occurrencesById[node.id]
 	const content = [
 		node.kind,
 		// a program's nodes stay apart from another scope's
@@ -922,18 +1050,37 @@ const compileContent = (
 		[...linkage.refs.keys()].map(serialize).join(),
 		...(occurrence === undefined ? [] : [`#${occurrence}`])
 	].join("\n")
+	const callees = calleeIds.map(
+		id =>
+			linkage.refsById[id] ??
+			referenceOf(node, id) ??
+			throwInternalError(`Unexpected unresolvable reference ${id}`)
+	)
+	let written: WrittenContent | undefined
+	if (!holdsIdentity && occurrence === undefined)
+		s.written.contents.set(node, (written = { content, callees }))
 	return {
 		node,
 		content,
 		holdsIdentity,
-		callees: calleeIds.map(
-			id =>
-				linkage.refsById[id] ??
-				node.refsById[id] ??
-				throwInternalError(`Unexpected unresolvable reference ${id}`)
-		),
+		callees,
 		index: s.reached.length,
-		lowLink: s.reached.length
+		lowLink: s.reached.length,
+		written
+	}
+}
+
+// node.refsById[id], searched for nearest first through what node references
+// unless an alias, which can replace a node sharing its id, or refsById itself
+// is there
+const referenceOf = (node: BaseNode, id: NodeId): BaseNode | undefined => {
+	if (node.cache.refsById) return node.refsById[id]
+	const queued = new Set<BaseNode>([node])
+	for (const reference of queued) {
+		if (reference.includesAlias) return node.refsById[id]
+		if (reference.id === id) return reference
+		for (const child of reference.children) queued.add(child)
+		for (const other of reference.otherReferences) queued.add(other)
 	}
 }
 
@@ -951,6 +1098,8 @@ const nameComponent = (
 	s: ContentNamingState,
 	members: ContentReference[]
 ): void => {
+	if (members.length === 1 && members[0].written)
+		return nameAlone(s, members[0].node, members[0].written)
 	const positionsById: Record<NodeId, number> = {}
 	for (let i = 0; i < members.length; i++) positionsById[members[i].node.id] = i
 	const inputOf = (
@@ -988,6 +1137,30 @@ const nameComponent = (
 				`${node.kind}${hash}`
 			:	`${node.kind}${hash}_${canonicalPositions[i]}`
 	}
+}
+
+// a component of one node, named as nameComponent would, its input reused
+// while its callees' names are
+const nameAlone = (
+	s: ContentNamingState,
+	node: BaseNode,
+	written: WrittenContent
+): void => {
+	const calleeNames = written.callees.map(callee => s.names[callee.id])
+	let named = written.named
+	if (
+		!named ||
+		named[0].length !== calleeNames.length ||
+		named[0].some((name, i) => name !== calleeNames[i])
+	) {
+		// a callee unnamed here is the node itself, at position 0
+		const input = `${written.content}\n${calleeNames.map(name => name ?? "#0")}`
+		named = written.named = [calleeNames, input, hashOf(input)]
+	}
+	const [, input, hash] = named
+	if ((s.inputsByHash[hash] ??= input) !== input)
+		throwInternalError(`Unexpected hash collision for ${hash}`)
+	s.names[node.id] = `${node.kind}${hash}`
 }
 
 export const writePrecompiledUnits = (

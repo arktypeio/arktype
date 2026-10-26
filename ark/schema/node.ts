@@ -114,6 +114,52 @@ import type { UnboundTraversals } from "./units.ts"
 
 const noReferences: readonly BaseNode[] = []
 
+interface Selections {
+	// null where a node's selection is read from its refsById
+	byNode: WeakMap<BaseNode, readonly BaseNode[] | null>
+	byRefs: WeakMap<object, readonly BaseNode[]>
+}
+
+const selectionsByPredicate = new Map<Fn, Selections>()
+
+// drops what was selected from a node's references once they grow
+export const forgetReferences = (node: BaseNode): void => {
+	for (const { byNode, byRefs } of selectionsByPredicate.values()) {
+		byNode.delete(node)
+		if (node.cache.refsById) byRefs.delete(node.cache.refsById)
+	}
+}
+
+// refsById lists a node, then what each node it references does, each once
+const selectedFrom = (
+	node: BaseNode,
+	selects: (node: BaseNode) => boolean,
+	referenced: readonly BaseNode[],
+	byNode: Selections["byNode"]
+): readonly BaseNode[] | null => {
+	let selected: readonly BaseNode[] = selects(node) ? [node] : noReferences
+	let merged: Set<BaseNode> | undefined
+	for (const reference of referenced) {
+		const fromReference = byNode.get(reference)
+		if (fromReference === null) return null
+		if (!fromReference!.length || fromReference === selected) continue
+		if (!selected.length) {
+			selected = fromReference!
+			continue
+		}
+		if (!merged) {
+			merged = new Set(selected)
+			selected = [...selected]
+		}
+		for (const node of fromReference!) {
+			if (merged.has(node)) continue
+			merged.add(node)
+			;(selected as BaseNode[]).push(node)
+		}
+	}
+	return selected
+}
+
 // derived values and bound traversals, stored apart from the node
 class NodeCache {
 	expression: string | undefined
@@ -564,6 +610,59 @@ export abstract class BaseNode<
 
 	get refsById(): Record<string, BaseNode> {
 		return (this.cache.refsById ??= this.collectReferences())
+	}
+
+	// the references a predicate selects, in refsById's order, each node's
+	// read from those it references, so nodes many others reach are read once
+	selectReferences(selects: (node: BaseNode) => boolean): readonly BaseNode[] {
+		let selections = selectionsByPredicate.get(selects)
+		if (!selections) {
+			selectionsByPredicate.set(
+				selects,
+				(selections = { byNode: new WeakMap(), byRefs: new WeakMap() })
+			)
+		}
+		const { byNode, byRefs } = selections
+		const entered = new Set<BaseNode>()
+		const stack: BaseNode[] = [this]
+		while (stack.length) {
+			const node = stack[stack.length - 1]
+			if (byNode.has(node)) {
+				stack.pop()
+				continue
+			}
+			// an alias can close a cycle or replace a node sharing its id, so
+			// what reaches one reads its refsById
+			if (node.includesAlias) {
+				byNode.set(node, null)
+				stack.pop()
+				continue
+			}
+			const referenced = [...node.children, ...node.otherReferences]
+			const pending = referenced.filter(reference => !byNode.has(reference))
+			if (pending.length) {
+				// entered again before its references are read: a cycle
+				if (entered.has(node)) {
+					byNode.set(node, null)
+					stack.pop()
+				} else {
+					entered.add(node)
+					stack.push(...pending)
+				}
+				continue
+			}
+			stack.pop()
+			byNode.set(node, selectedFrom(node, selects, referenced, byNode))
+		}
+		const selected = byNode.get(this)
+		if (selected) return selected
+		const refsById = this.refsById
+		let fromRefs = byRefs.get(refsById)
+		if (!fromRefs) {
+			fromRefs = Object.values(refsById).filter(selects)
+			byRefs.set(refsById, fromRefs)
+		}
+		return fromRefs
 	}
 
 	get otherReferences(): readonly BaseNode[] {

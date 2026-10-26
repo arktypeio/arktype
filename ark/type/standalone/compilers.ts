@@ -340,19 +340,21 @@ export const unifies = (node: BaseNode): boolean => {
 			!node.hasTransform &&
 			!node.includesAlias &&
 			!node.allowsNeedsCtx &&
-			Object.values(node.refsById).every(reference =>
-				reference.hasKind("predicate") ? isKeyword(reference.predicate)
-				: reference.hasKind("union") ?
-					!!reference.discriminantJit || isDecidedByAllows(reference)
-				: reference.hasKind("intersection") ?
-					// Apply counts issues between its structure and predicates
-					(reference.inner.predicate?.length ?? 0) + +!!reference.structure < 2
-				:	!reference.hasKind("morph")
-			)
+			!node.selectReferences(reportsApart).length
 		unifiedByNode.set(node, unified)
 	}
 	return unified
 }
+
+// a reference whose Apply reports other than its Allows decides
+const reportsApart = (reference: BaseNode): boolean =>
+	reference.hasKind("predicate") ? !isKeyword(reference.predicate)
+	: reference.hasKind("union") ?
+		!reference.discriminantJit && !isDecidedByAllows(reference)
+	: reference.hasKind("intersection") ?
+		// Apply counts issues between its structure and predicates
+		(reference.inner.predicate?.length ?? 0) + +!!reference.structure >= 2
+	:	reference.hasKind("morph")
 
 // a detailed size build's traversals: a node that unifies has one, its
 // Apply named as its Allows, reporting a failure only to a ctx it's passed
@@ -391,15 +393,24 @@ class UnifiedCompiler extends StandaloneCompiler {
 	}
 }
 
+// by the members a unit was written with, which passes reaching it share
+const unifiedMembers = new WeakMap<RootUnit["members"], RootUnit["members"]>()
+
 // a unified node's Apply, declared after its Allows, replaces it
 const unifyMembers = (unit: RootUnit): void => {
-	const sourcesByName = new Map(unit.members)
-	unit.members = [...sourcesByName]
-	for (const [i, node] of unit.declared.entries()) {
-		const source = sourcesByName.get(unit.declaredTraversals[i][0])!
-		if (unifies(node) && /(?<![\w$.])ctx\./.test(withoutStrings(source)))
-			throwInternalError(`Unified traversal reads ctx: ${source}`)
+	const written = unit.members
+	let members = unifiedMembers.get(written)
+	if (!members) {
+		const sourcesByName = new Map(written)
+		members = [...sourcesByName]
+		for (const [i, node] of unit.declared.entries()) {
+			const source = sourcesByName.get(unit.declaredTraversals[i][0])!
+			if (unifies(node) && /(?<![\w$.])ctx\./.test(withoutStrings(source)))
+				throwInternalError(`Unified traversal reads ctx: ${source}`)
+		}
+		unifiedMembers.set(written, members)
 	}
+	unit.members = members
 }
 
 const issues = new FirstIssues()

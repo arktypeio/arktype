@@ -1,6 +1,7 @@
 import {
 	$ark,
 	type ArkErrorCode,
+	type BaseNode,
 	type BaseRoot,
 	type RootUnit
 } from "@ark/schema"
@@ -21,7 +22,7 @@ import {
 	runtimeKeyOf,
 	runtimePathsByValue,
 	writeUnprecompilableMessage,
-	writtenNodesOf,
+	writtenSelectedOf,
 	type IssueFeatures
 } from "../standalone.ts"
 
@@ -55,24 +56,29 @@ export const assertDescribed = (root: BaseRoot): void => {
 			if (reason) throwParseError(writeUnprecompilableMessage(reason))
 		}
 	}
-	for (const unit of rootUnitsOf(root)) {
-		for (const node of writtenNodesOf(unit)) {
-			if (!node.hasKind("union")) continue
-			for (const k of describingKeys) {
-				if (k !== "actual" && typeof node.meta[k] === "function") {
-					throwParseError(
-						writeUnprecompilableMessage(
-							`\`${node.expression}\`'s ${k} writer, which reads each branch's errors`
-						)
+	for (const node of writtenSelectedOf(rootUnitsOf(root), isUnion)) {
+		for (const k of describingKeys) {
+			if (k !== "actual" && typeof node.meta[k] === "function") {
+				throwParseError(
+					writeUnprecompilableMessage(
+						`\`${node.expression}\`'s ${k} writer, which reads each branch's errors`
 					)
-				}
+				)
 			}
 		}
 	}
 }
 
+const raisableCodesByRoot = new WeakMap<BaseRoot, "any" | Set<ArkErrorCode>>()
+
 // a callback can raise any code
 const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
+	let codes = raisableCodesByRoot.get(root)
+	if (!codes) raisableCodesByRoot.set(root, (codes = readRaisableCodes(root)))
+	return codes
+}
+
+const readRaisableCodes = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 	if (
 		declares(root, node => node.hasKind("predicate") || node.hasKind("morph"))
 	)
@@ -99,9 +105,10 @@ const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 // a callback may raise an issue at any path, with any text
 export const addIssueFeatures = (
 	features: IssueFeatures,
-	unit: RootUnit
+	units: readonly RootUnit[],
+	written: readonly BaseNode[]
 ): void => {
-	for (const node of writtenNodesOf(unit)) {
+	for (const node of written) {
 		if (node.hasKind("sequence")) features.reportsIndices = true
 		else if (
 			node.hasKind("morph") ||
@@ -111,14 +118,18 @@ export const addIssueFeatures = (
 			features.writesText = true
 		}
 	}
-	for (const ref of unit.refs) {
-		if (!failureSites.has(ref as object)) continue
-		const site = ref as FailureSite
-		if (site.v) features.readsKeySites = true
-		const contexts = [site, site.v, site.m] as (IssueContext | undefined)[]
-		if (contexts.some(writesText)) features.writesText = true
+	for (const unit of units) {
+		for (const ref of unit.refs) {
+			if (!failureSites.has(ref as object)) continue
+			const site = ref as FailureSite
+			if (site.v) features.readsKeySites = true
+			const contexts = [site, site.v, site.m] as (IssueContext | undefined)[]
+			if (contexts.some(writesText)) features.writesText = true
+		}
 	}
 }
+
+const isUnion = (node: BaseNode): boolean => node.hasKind("union")
 
 // a problem, or text written from the program's config, each set by a call
 // on its issue
