@@ -1,5 +1,6 @@
 import type { array } from "@ark/util"
 import type { ArkErrorCode } from "./errors.ts"
+import { readsKeySites, reportsIndices, writesText } from "./issueFeatures.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 
 /**
@@ -122,7 +123,7 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	_at(site: FailureSite, data: unknown, key?: PropertyKey): true | undefined {
 		// a key's site reports the missing key or its value
 		const path = this._p
-		let context = site.v ?? (site as SiteContext)
+		let context = (readsKeySites ? site.v : undefined) ?? (site as SiteContext)
 		if (key !== undefined) {
 			path.push(key)
 			if (site.m && !(key in (data as object))) context = site.m
@@ -135,7 +136,7 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 			expected: context.description,
 			message: context.x
 		}
-		context.text?.(issue)
+		if (writesText) context.text?.(issue)
 		if (key !== undefined) path.pop()
 		this._.push(issue)
 		// only errors stopping at the first issue stop at this one
@@ -236,7 +237,7 @@ export const issueAt = (
 	data: unknown,
 	key: PropertyKey | undefined
 ): ArkIssue => {
-	let context = site.v ?? (site as SiteContext)
+	let context = (readsKeySites ? site.v : undefined) ?? (site as SiteContext)
 	if (key !== undefined) {
 		path.push(key)
 		if (site.m && !(key in (data as object))) context = site.m
@@ -253,7 +254,7 @@ export const issueAt = (
 		expected: context.description,
 		message: context.x
 	}
-	context.text?.(issue)
+	if (writesText) context.text?.(issue)
 	if (key !== undefined) path.pop()
 	return issue
 }
@@ -281,14 +282,18 @@ export const mergeIssues = (
 
 export const messageOf = (issue: ArkIssue): string => {
 	let path = ""
-	for (const k of issue.path)
-		path += typeof k === "number" ? `[${k}]` : (path && ".") + String(k)
+	for (const k of issue.path) {
+		path +=
+			reportsIndices && typeof k === "number" ?
+				`[${k}]`
+			:	(path && ".") + String(k)
+	}
 	return (path && path + " ") + problemOf(issue)
 }
 
 // an undeclared key's site says what's expected
 export const problemOf = (issue: ArkIssue): string =>
-	issue.problem ??
+	(writesText ? issue.problem : undefined) ??
 	(issue.expected !== undefined ? "must be " + issue.expected
 	: issue.code === "required" ? "is missing"
 	: "is invalid")

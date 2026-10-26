@@ -39,6 +39,7 @@ import {
 	isTypedFn,
 	keyOf,
 	kindNameOf,
+	noIssueFeatures,
 	traversalKeyOf,
 	writeUnprecompilableMessage,
 	type Checks,
@@ -48,6 +49,7 @@ import {
 	type DefaultCheck,
 	type FactoryParam,
 	type Foldable,
+	type IssueFeatures,
 	type StandaloneExport,
 	type StandaloneFactory,
 	type StandaloneIntrospection,
@@ -106,6 +108,7 @@ import {
 	mapToSource,
 	readsNodes,
 	runsOnArktype,
+	runtimeSpecifiers,
 	runtimeVariantOf,
 	transformedId,
 	writeVariantOption,
@@ -262,6 +265,8 @@ export interface ScannedProgram {
 	modules: Record<string, ScannedModule>
 	// what each module's specifiers resolve to, where the bundle holds it
 	targets: Record<string, Record<string, string>>
+	// what each module, a dependency's too, imports of arktype's packages
+	arkImports: Record<string, string[]>
 	// each module import() loads, which a bundler that splits builds as an entry
 	dynamicImports: string[]
 	// each module with no file, like a framework's virtual module, which its
@@ -316,6 +321,8 @@ export interface ScannedUsage {
 	// the warning where it left out no member members leaves to it, as some
 	// read may need any
 	unpruned?: string | undefined
+	// what its issues may hold, unless they may hold anything
+	issues?: IssueFeatures | undefined
 }
 
 export interface ModuleAnalysis {
@@ -330,6 +337,8 @@ export interface PrecompiledModule extends ModuleAnalysis {
 	map: SourceMap | undefined
 	// virtual module sources by specifier
 	modules: Record<string, string>
+	// what its validators' issues may hold, where it writes any
+	issues?: IssueFeatures | undefined
 	// the helpers it exports whose calls the build folds, which only a module
 	// the build precompiles can call
 	foldedHelpers: string[]
@@ -625,6 +634,36 @@ export class Precompiler {
 			Object.keys(contract).length ? JSON.stringify(contract) : undefined
 	}
 
+	// what a bundle's issues may hold, where arktype's own runtime can't add
+	// any, nor a validator another build wrote
+	private issuesOf(
+		program: ScannedProgram,
+		written: Record<string, PrecompiledModule>
+	): IssueFeatures | undefined {
+		for (const id in program.arkImports) {
+			if (
+				readsNodes(id) ||
+				runsOnArktype(id, this.graph.dependencies) ||
+				program.arkImports[id].some(
+					specifier =>
+						!runtimeSpecifiers.includes(specifier) &&
+						!specifier.startsWith("@ark/util")
+				)
+			)
+				return
+		}
+		const issues: IssueFeatures = { ...noIssueFeatures }
+		for (const id in written) {
+			const held = written[id].issues
+			if (!held) continue
+			for (const k in issues) {
+				const feature = k as keyof IssueFeatures
+				issues[feature] ||= held[feature]
+			}
+		}
+		return issues
+	}
+
 	// what a bundle's validators are read for, so that what it transforms next
 	// leaves out members no read needs, and its checkers read once are written
 	// where they're read
@@ -760,7 +799,8 @@ export class Precompiler {
 				const runtime = planned.get(id)!
 				return runtime.validators.length > 0 || runtime.holdsOther
 			}),
-			unpruned
+			unpruned,
+			issues: this.issuesOf(program, written)
 		}
 	}
 
@@ -1406,8 +1446,9 @@ export class Precompiler {
 		const modules: Record<string, string> = {}
 		// locals for virtual modules' exports, by specifier
 		const imports: Record<string, Record<string, string>> = {}
+		let issues: IssueFeatures | undefined
 		if (this.mode === "standalone") {
-			const inputImports = this.foldSites(
+			const [inputImports, written] = this.foldSites(
 				module,
 				sites,
 				s,
@@ -1417,6 +1458,8 @@ export class Precompiler {
 				diagnostics,
 				this.usageIn(program, id, source)
 			)
+			// an island's errors are arktype's, which may hold anything
+			issues = module.islands.length ? anyIssues : written
 			this.linkIslands(module, sites, s, prefix)
 			this.markProgress(module, sites, s, prefix)
 			// registered so factories can check against module mocks
@@ -1507,6 +1550,7 @@ export class Precompiler {
 			dependencies: this.dependenciesOfArtifact(module),
 			diagnostics,
 			modules: this.inline ? {} : modules,
+			issues,
 			foldedHelpers:
 				this.mode === "standalone" ?
 					this.foldedHelpersOf(module).map(([name]) => name)
@@ -1964,7 +2008,10 @@ export class Precompiler {
 		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[],
 		{ members, called, readsAllows, piped }: ProgramReads
-	): Record<string, Record<string, string>> {
+	): [
+		inputImports: Record<string, Record<string, string>>,
+		issues: IssueFeatures
+	] {
 		const inputImports: Record<string, Record<string, string>> = {}
 		const { namesBySite, factoriesBySite, exportsByName, folded } =
 			this.planSites(module, sites, s, prefix, diagnostics)
@@ -2157,7 +2204,7 @@ export class Precompiler {
 		)
 		this.checkRuntimeImports(module, sites, diagnostics)
 		diagnostics.sort((l, r) => l.start - r.start)
-		return inputImports
+		return [inputImports, validators.issues]
 	}
 
 	// arktype receives each span through a parameter, evaluated once
@@ -5590,6 +5637,12 @@ const chainOf = (dynamic: DynamicValue): string[] => {
 }
 
 // e.g. a configured writer calling a function in a site's meta
+const anyIssues: IssueFeatures = {
+	reportsIndices: true,
+	writesText: true,
+	readsKeySites: true
+}
+
 export const reasonsOf = (e: unknown): string[] =>
 	e instanceof DynamicValue ? chainOf(e)
 	: e instanceof InternalArktypeError ?

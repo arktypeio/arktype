@@ -1,4 +1,5 @@
 import {
+	noIssueFeatures,
 	precompileStandalone,
 	precompileStandaloneModules,
 	writeFixConfig,
@@ -28,7 +29,8 @@ export const noValidators: StandaloneModules = {
 	folds: {},
 	checking: [],
 	values: [],
-	calls: {}
+	calls: {},
+	issues: noIssueFeatures
 }
 
 // one bad export refuses a whole artifact, so retry each alone

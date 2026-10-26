@@ -96,6 +96,7 @@ function* programSteps(
 		isAbsolute(id) ? printablePathOf(host.cwd, id) : id.replace(/^\0/, "")
 	const modules: Record<string, ScannedModule> = {}
 	const targets: Record<string, Record<string, string>> = {}
+	const arkImports: Record<string, string[]> = {}
 	// the bundler's id for each module, which it resolves from
 	const hostIds = new Map<string, string>()
 	let layer: string[] = []
@@ -155,10 +156,11 @@ function* programSteps(
 			}
 		})
 		const requests: ImportRequest[] = []
-		for (const { hostId, imports } of reads) {
+		for (const { id, hostId, imports } of reads) {
 			for (const [specifier, kind] of imports) {
 				if (!runtimeSpecifier.test(specifier))
 					requests.push([specifier, hostId, kind])
+				else (arkImports[id] ??= []).push(specifier)
 			}
 		}
 		const resolutions =
@@ -224,6 +226,7 @@ function* programSteps(
 		entries: [...given.keys()],
 		modules,
 		targets,
+		arkImports,
 		dynamicImports: [...dynamicImports],
 		exposed: [...exposed],
 		isOneChunk:

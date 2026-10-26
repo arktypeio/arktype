@@ -74,6 +74,7 @@ import {
 	type UnitScope
 } from "./standalone/modules.ts"
 import {
+	addIssueFeatures,
 	assertDescribed,
 	ConfiguredWriter,
 	failureSites,
@@ -322,6 +323,8 @@ interface Baking extends ValidatorReads {
 	compiledInputs: ReadonlySet<string>
 	// errors find their issues once read, for a call that may never read them
 	defersIssues: boolean
+	// what the issues of each validator written so far may hold
+	issues: IssueFeatures
 }
 
 interface RootApplier {
@@ -412,6 +415,19 @@ const failureSources = {
 	]
 } as const
 
+/** what the issues of a program's validators may hold */
+export interface IssueFeatures {
+	reportsIndices: boolean
+	writesText: boolean
+	readsKeySites: boolean
+}
+
+export const noIssueFeatures: IssueFeatures = {
+	reportsIndices: false,
+	writesText: false,
+	readsKeySites: false
+}
+
 export interface StandaloneModules {
 	code: string
 	modules: Record<string, string>
@@ -423,6 +439,7 @@ export interface StandaloneModules {
 	values: string[]
 	// exports a site creates in place, as a call of names the code exports
 	calls: Record<string, string[]>
+	issues: IssueFeatures
 }
 
 export const runtimeImport = `import * as runtime from "arktype/runtime"`
@@ -439,7 +456,7 @@ export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
 ): StandaloneModules => {
-	const { sections, shared, imports, folds, checking, values, calls } =
+	const { sections, shared, imports, folds, checking, values, calls, issues } =
 		writeArtifact(exports, opts, false)
 	// nothing outside the artifact reads its units
 	mergeUnits(shared, imports, opts)
@@ -453,7 +470,8 @@ export const precompileStandalone = (
 		folds,
 		checking,
 		values,
-		calls
+		calls,
+		issues
 	}
 }
 
@@ -461,7 +479,7 @@ export const precompileStandaloneModules = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
 ): StandaloneModules => {
-	const { sections, shared, imports, folds, checking, values, calls } =
+	const { sections, shared, imports, folds, checking, values, calls, issues } =
 		writeArtifact(exports, opts, true)
 	// each module is shared by every artifact that reads it, so none merges
 	// another's units into its own
@@ -477,7 +495,8 @@ export const precompileStandaloneModules = (
 		folds,
 		checking,
 		values,
-		calls
+		calls,
+		issues
 	}
 }
 
@@ -540,7 +559,8 @@ const writeArtifact = (
 		defersIssues: opts.optimize !== "size" && opts.called !== false,
 		called: opts.called !== false,
 		readsAllows: opts.readsAllows !== false,
-		piped: opts.piped !== false
+		piped: opts.piped !== false,
+		issues: { ...noIssueFeatures }
 	}
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<unknown>()
@@ -710,7 +730,8 @@ ${writeExport(name, index)}`
 		folds,
 		checking,
 		values: values ?? [],
-		calls
+		calls,
+		issues: baking.issues
 	}
 }
 
@@ -966,6 +987,7 @@ class StandaloneArtifact {
 				throwParseError(writeUnprecompilableMessage("onFail"))
 		}
 		for (const unit of this.units) {
+			addIssueFeatures(this.baking.issues, unit)
 			for (const node of writtenNodesOf(unit)) {
 				this.metas.add(node.meta)
 				if (node.hasKind("structure")) this.keyLookups.add(node.propsByKey)

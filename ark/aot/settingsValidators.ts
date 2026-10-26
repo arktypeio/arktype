@@ -1,6 +1,11 @@
 /* eslint-disable */
 // @ts-nocheck
 // written by __tests__/writeSettings.ts from __tests__/settingsSchema.ts
+// ark/schema/shared/issueFeatures.ts
+var reportsIndices = true
+var writesText = true
+var readsKeySites = true
+
 // ark/schema/shared/issues.ts
 var ArkIssues = class {
 	/** @internal each issue in the order it was added */
@@ -44,7 +49,7 @@ var ArkIssues = class {
 	/** @internal */
 	_at(site, data, key) {
 		const path = this._p
-		let context = site.v ?? site
+		let context = (readsKeySites ? site.v : void 0) ?? site
 		if (key !== void 0) {
 			path.push(key)
 			if (site.m && !(key in data)) context = site.m
@@ -57,7 +62,7 @@ var ArkIssues = class {
 			expected: context.description,
 			message: context.x
 		}
-		context.text?.(issue)
+		if (writesText) context.text?.(issue)
 		if (key !== void 0) path.pop()
 		this._.push(issue)
 		return void 0
@@ -82,12 +87,16 @@ var applyIssues = (apply, data, onFail, Ctx = ArkIssues) => {
 }
 var messageOf = issue => {
 	let path = ""
-	for (const k of issue.path)
-		path += typeof k === "number" ? `[${k}]` : (path && ".") + String(k)
+	for (const k of issue.path) {
+		path +=
+			reportsIndices && typeof k === "number" ?
+				`[${k}]`
+			:	(path && ".") + String(k)
+	}
 	return (path && path + " ") + problemOf(issue)
 }
 var problemOf = issue =>
-	issue.problem ??
+	(writesText ? issue.problem : void 0) ??
 	(issue.expected !== void 0 ? "must be " + issue.expected
 	: issue.code === "required" ? "is missing"
 	: "is invalid")

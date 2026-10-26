@@ -29,7 +29,8 @@ export const bundle = (): void => {
 		charset: "utf8",
 		absWorkingDir: process.cwd(),
 		write: false,
-		logLevel: "warning"
+		logLevel: "warning",
+		external: [issueFeaturesPath()]
 	} satisfies BuildOptions
 	// a module several entries import evaluates once only if they share one build
 	const { outputFiles } = buildSync({
@@ -51,11 +52,26 @@ export const bundle = (): void => {
 				.outputFiles
 		)
 	}
-	const kept = developmentEntryPoints(process.cwd())
+	const kept = [...developmentEntryPoints(process.cwd()), issueFeaturesPath()]
 	for (const path of modulePaths) if (!kept.includes(path)) rmRf(path)
-	for (const file of outputFiles)
-		writeFile(file.path, nameSelfReferencingClasses(reexportImports(file.text)))
+	for (const file of outputFiles) {
+		writeFile(
+			file.path,
+			nameSelfReferencingClasses(
+				reexportImports(importingIssueFeatures(file.text))
+			)
+		)
+	}
 }
+
+// what a program's issues may hold, kept as tsc writes it, so a bundler
+// inlines its constants and a build reading each validator writes it again
+const issueFeaturesPath = () => fromCwd("out", "shared", "issueFeatures.js")
+
+// as shared/issues.js imports it, from beside shared/, as every entry and
+// chunk is written
+const importingIssueFeatures = (js: string) =>
+	js.split('"./issueFeatures.js"').join('"./shared/issueFeatures.js"')
 
 // esbuild splits an entry listed twice into a chunk
 export const publicEntryPoints = (dir: string): string[] => [
