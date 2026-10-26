@@ -148,7 +148,12 @@ import {
 	writeUnprunedMessage,
 	writeUnscannedFlatMessage
 } from "./scan.ts"
-import { linkBundle, prefixOf, type LinkedSite } from "./link.ts"
+import {
+	linkBundle,
+	prefixOf,
+	type LinkedSite,
+	type LinkOptions
+} from "./link.ts"
 import {
 	passedReaderOf,
 	unprecompiled,
@@ -214,6 +219,8 @@ import {
 	writeUnitTable,
 	writeValidators
 } from "./output.ts"
+import { programSizeOf } from "./runtimeSize.ts"
+import { combinesChecks } from "./smaller.ts"
 export * from "./messages.ts"
 export * from "./presets.ts"
 export * from "./settings.ts"
@@ -282,7 +289,7 @@ export interface ScannedModule {
 
 type ProgramReads = Pick<
 	ProgramUsage,
-	"members" | "called" | "readsAllows" | "piped"
+	"members" | "called" | "readsAllows" | "piped" | "combines" | "shapes"
 >
 
 interface ProgramUsage {
@@ -298,6 +305,12 @@ interface ProgramUsage {
 	written: Record<string, PrecompiledModule>
 	// modules it no longer reads as their units are declared in one function
 	replaced: ReadonlySet<string>
+	// whether a size build writes the program's nodes as checkers, as is
+	// smaller for the program as a whole rather than for each module alone
+	combines?: boolean
+	// whether its checkers write common intersections as shapes, as is smaller
+	// for the program as a whole
+	shapes?: boolean
 }
 
 export interface ScannedUsage {
@@ -515,6 +528,35 @@ export const precompileModule = (
 	opts?: PrecompileOptions
 ): PrecompiledModule => new Precompiler(host, opts).precompile(source, id)
 
+// each shape's runtime and what each call of it saves, gzipped bytes as
+// measured on bundles from 10 to 1000 schemas, as a program's size estimate
+// can't see what gzip saves
+const shapeCosts = {
+	stringRange: [48, 0.37],
+	integerRange: [64, 0.76],
+	arrayOf: [56, 0.47],
+	nullable: [25, 1.76]
+}
+
+// whether a program written with shapes saves more than they cost
+const shapesPayIn = (
+	written: Record<string, Pick<PrecompiledModule, "modules">>
+): boolean => {
+	const modules: Record<string, string> = {}
+	for (const id in written) Object.assign(modules, written[id].modules)
+	const text = Object.values(modules).join("\n")
+	let saved = 0
+	for (const [shape, [runtime, call]] of Object.entries(shapeCosts)) {
+		const calls = text.split(`runtime.${shape}(`).length - 1
+		if (calls) saved += calls * call - runtime
+	}
+	return saved > 0
+}
+
+// a validator exposing allows costs its creation a write, which declaring
+// about this many units as the validators created from them repays gzipped
+const unitsExposingAllowsPays = 6
+
 export class Precompiler {
 	graph: ModuleGraph
 	interpreter: Interpreter
@@ -700,21 +742,45 @@ export class Precompiler {
 			replaced: new Set()
 		}
 		this.usagesByProgram.set(program.key, usage)
-		const written: Record<string, PrecompiledModule> = {}
-		const runtimes = new Map(planned)
-		for (const id of precompiled) {
-			written[id] = this.precompile(
-				sources[id],
-				id,
-				program.modules[id].mappings,
-				program.key
+		const writeProgram = () => {
+			const written: Record<string, PrecompiledModule> = {}
+			const runtimes = new Map(planned)
+			for (const id of precompiled) {
+				written[id] = this.precompile(
+					sources[id],
+					id,
+					program.modules[id].mappings,
+					program.key
+				)
+				runtimes.set(id, this.runtimesById[id])
+				if (written[id].diagnostics.some(d => d.severity === "error")) return
+			}
+			return { written, runtimes }
+		}
+		// checkers or compiled nodes, whichever the program is smaller written as,
+		// counting the runtime each reads once
+		const decides = combinesChecks(this.standalone)
+		if (decides) usage.combines = true
+		let wrote = writeProgram()
+		if (wrote && decides) {
+			usage.combines = false
+			const compiled = writeProgram()
+			if (
+				compiled &&
+				programSizeOf(compiled.written) < programSizeOf(wrote.written)
 			)
-			runtimes.set(id, this.runtimesById[id])
-			if (written[id].diagnostics.some(d => d.severity === "error")) {
-				this.usagesByProgram.delete(program.key)
-				return unwritten
+				wrote = compiled
+			else {
+				usage.combines = true
+				for (const [id, runtime] of wrote.runtimes)
+					if (precompiled.includes(id)) this.runtimesById[id] = runtime
 			}
 		}
+		if (!wrote) {
+			this.usagesByProgram.delete(program.key)
+			return unwritten
+		}
+		let { written, runtimes } = wrote
 		// as written, a validator may be read in a way the plan didn't see, as
 		// where a factory checks a Type it's passed
 		const usedAsWritten = isWhole ? used : this.usedIn(program, runtimes)
@@ -737,10 +803,56 @@ export class Precompiler {
 						)
 			}
 		}
-		const linked =
-			!this.inline &&
-			!this.standalone.lazy &&
-			this.linkWritten(written, sources)
+		let linked = false
+		if (!this.inline && !this.standalone.lazy) {
+			// a size build's units, where the bundle is one chunk, are one module
+			const isOneChunk =
+				!!program.isOneChunk && this.standalone.optimize === "size"
+			let link = this.linkWritten(written, sources, {
+				exposesAllows: readsAllows,
+				isOneChunk
+			})
+			// a unit a site creates its validator from is declared as that
+			// validator where validators expose allows, as a program reading
+			// none is written again to where enough units would be
+			if (link.unexposed >= unitsExposingAllowsPays && usage.combines) {
+				usage.readsAllows = true
+				const exposed = writeProgram()
+				if (exposed) {
+					;({ written, runtimes } = exposed)
+					link = this.linkWritten(written, sources, {
+						exposesAllows: true,
+						isOneChunk
+					})
+				} else {
+					usage.readsAllows = false
+					for (const [id, runtime] of runtimes)
+						if (precompiled.includes(id)) this.runtimesById[id] = runtime
+				}
+			}
+			// checkers writing common intersections as shapes, where enough do
+			// to repay the runtime they read, as counted in what their units,
+			// being one module, declare
+			if (isOneChunk && usage.combines) {
+				usage.shapes = true
+				const shaped = writeProgram()
+				const shapedLink =
+					shaped &&
+					this.linkWritten(shaped.written, sources, {
+						exposesAllows: usage.readsAllows,
+						isOneChunk
+					})
+				if (shaped && shapedLink && shapesPayIn(shaped.written)) {
+					;({ written, runtimes } = shaped)
+					link = shapedLink
+				} else {
+					usage.shapes = false
+					for (const [id, runtime] of runtimes)
+						if (precompiled.includes(id)) this.runtimesById[id] = runtime
+				}
+			}
+			linked = link.changed
+		}
 		const replaced =
 			flattens ?
 				this.flattenWritten(written, sources, program, runtimes)
@@ -825,16 +937,17 @@ export class Precompiler {
 	// links what a bundle's modules write, if anything changes
 	private linkWritten(
 		written: Record<string, PrecompiledModule>,
-		sources: Record<string, string>
-	): boolean {
+		sources: Record<string, string>,
+		opts: LinkOptions
+	): { changed: boolean; unexposed: number } {
 		const sites: Record<string, LinkedSite> = {}
 		const modules: Record<string, string> = {}
 		for (const id in written) {
 			sites[id] = { source: sources[id], code: written[id].code }
 			Object.assign(modules, written[id].modules)
 		}
-		const linked = linkBundle(sites, modules)
-		if (!linked) return false
+		const linked = linkBundle(sites, modules, opts)
+		if (!linked) return { changed: false, unexposed: 0 }
 		let changed = false
 		for (const id in written) {
 			const { code, map } = linked.sites[id]
@@ -860,7 +973,7 @@ export class Precompiler {
 				changed = true
 			written[id] = { ...written[id], modules: reached }
 		}
-		return changed
+		return { changed, unexposed: linked.unexposed }
 	}
 
 	// declares the units a one-chunk bundle reads in one function, if it pays
@@ -1963,7 +2076,7 @@ export class Precompiler {
 		modules: Record<string, string>,
 		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[],
-		{ members, called, readsAllows, piped }: ProgramReads
+		{ members, called, readsAllows, piped, combines, shapes }: ProgramReads
 	): Record<string, Record<string, string>> {
 		const inputImports: Record<string, Record<string, string>> = {}
 		const { namesBySite, factoriesBySite, exportsByName, folded } =
@@ -1988,6 +2101,8 @@ export class Precompiler {
 						called,
 						readsAllows,
 						piped,
+						combines,
+						shapes,
 						configured,
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module),

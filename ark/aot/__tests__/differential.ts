@@ -66,12 +66,14 @@ const comparesExpecteds = detailsErrors && !firstIssue
 // compares a Type with its precompiled validators on each call's outcome
 
 // "flat" is the modules with their units declared in one function, as a
-// one-chunk production bundle declares them, which size-optimized units never are
-type Layout = "inline" | "modules" | "flat"
+// one-chunk production bundle declares them, which size-optimized units never
+// are; "shaped" is a size build's modules with common intersections written as
+// shapes, as a program with enough of them is
+type Layout = "inline" | "modules" | "flat" | "shaped"
 
 export const layouts: Layout[] =
 	testedOptions.optimize === "size" ?
-		["inline", "modules"]
+		["inline", "modules", "shaped"]
 	:	["inline", "modules", "flat"]
 
 // artifacts whose units were declared in one function
@@ -252,7 +254,8 @@ const loadArtifact = async (
 		mutatesInput: testedOptions.mutatesInput,
 		optimize: testedOptions.optimize,
 		jsonInput: testedOptions.jsonInput,
-		configured: testedOptions.config === false ? (false as const) : undefined
+		configured: testedOptions.config === false ? (false as const) : undefined,
+		shapes: layout === "shaped"
 	}
 	let code: string
 	if (layout === "inline") code = precompileStandalone(exports, opts).code

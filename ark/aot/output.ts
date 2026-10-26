@@ -65,7 +65,8 @@ export const writeValidators = (
 		if (!names.length) return noValidators
 		written = write(names)
 	}
-	return combinesChecks(opts) ?
+	// a program choosing for its modules has chosen checkers
+	return combinesChecks(opts) && opts.combines === undefined ?
 			smallerOf(written, () => write(names, false), minifiedSizeOf)
 		:	written
 }

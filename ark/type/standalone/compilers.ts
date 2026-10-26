@@ -431,6 +431,8 @@ const forSize = (compiler: typeof StandaloneCompiler) =>
 // a detailed size build writes each node it can as a checker, whose Apply
 // is its Allows, transforming by its t
 class CombinatorCompiler extends forSize(UnifiedCompiler) {
+	readonly shapes: boolean = false
+
 	override unifies(node: BaseNode): boolean {
 		return combines(node) || unifies(node)
 	}
@@ -472,6 +474,14 @@ const compilers = [false, true].flatMap(shortest =>
 export const compiledForSize: number =
 	compilers.push(forSize(UnifiedCompiler)) - 1
 
+// a size build writing checkers that writes common intersections as shapes
+export const shapedForSize: number =
+	compilers.push(
+		class extends CombinatorCompiler {
+			override readonly shapes: boolean = true
+		}
+	) - 1
+
 // a jsonInput build's compilers follow the others in the same order, each
 // trusting data to be plain, as JSON.parse returns
 const jsonOffset = compilers.length
@@ -505,7 +515,7 @@ export const rootUnitsOf = (root: BaseRoot, variant = 0): RootUnit[] => {
 			}))
 		)
 		const base = baseVariantOf(variant)
-		if (base % 3 === 2 || base === compiledForSize)
+		if (base % 3 === 2 || base >= compiledForSize)
 			for (const unit of units) unifyMembers(unit)
 	}
 	return units
@@ -513,7 +523,9 @@ export const rootUnitsOf = (root: BaseRoot, variant = 0): RootUnit[] => {
 
 // whether a root's validator is created from its checker
 export const isChecker = (root: BaseRoot, variant: number): boolean =>
-	compilers[baseVariantOf(variant)] === CombinatorCompiler && combines(root)
+	(compilers[baseVariantOf(variant)] === CombinatorCompiler ||
+		baseVariantOf(variant) === shapedForSize) &&
+	combines(root)
 
 // a pass can reach content-equal roots, which share a name but not a unit
 export const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>

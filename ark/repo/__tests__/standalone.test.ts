@@ -329,7 +329,7 @@ c must be a number`)
 			])
 		})
 
-		it("check each case by the branch it was told apart from", () => {
+		it("check each case without the key that told it apart", () => {
 			const Card = type({ type: "'card'", last4: "string" })
 			const { code } = precompileStandalone(
 				{
@@ -339,13 +339,86 @@ c must be a number`)
 				},
 				{ optimize: "size" }
 			)
-			// pruned of what told them apart, the cases would be checkers of their own
+			// a case is written without the key, even beside its branch's own
+			// checker, as gzip shrinks what they share
 			attest([
 				code
+					.match(/runtime\.discriminate\(.*/)?.[0]
 					.match(/runtime\.props\({[^}]*}/g)
-					?.every(call => call.includes("type: ")),
+					?.some(call => call.includes("type: ")),
 				code.match(/\/\^\(\?:\[\\dA-Fa-f]/g)?.length
-			]).equals([true, 1])
+			]).equals([false, 1])
+		})
+
+		it("write common intersections as shapes where asked", async () => {
+			const T = type({
+				name: "1 <= string <= 100",
+				age: "0 <= number.integer <= 150",
+				tags: "string[] <= 3",
+				nick: "string | null"
+			})
+			const { code } = precompileStandalone(
+				{ T },
+				{ optimize: "size", shapes: true }
+			)
+			// each written as a shape, not an intersection or a domains call
+			attest(
+				code.match(
+					/runtime\.(stringRange|integerRange|arrayOf|nullable|intersection|domains)\(/g
+				)
+			).equals([
+				"runtime.stringRange(",
+				"runtime.integerRange(",
+				"runtime.arrayOf(",
+				"runtime.nullable("
+			])
+			const { T: Shaped } = await load(
+				{ T },
+				{ optimize: "size", shapes: true }
+			)
+			attest(
+				(
+					Shaped({
+						name: "",
+						age: 1.5,
+						tags: ["a", "b", "c", "d"],
+						nick: 0
+					}) as any
+				).summary
+			).snap(`name must be non-empty
+age must be an integer
+tags must be at most length 3
+nick must be a string or null`)
+		})
+
+		it("check data holding no case by the branches lacking the key", async () => {
+			const T = type({ kind: "'a'", a: "string" })
+				.or({ kind: "'b'", b: "number" })
+				.or({ c: "string" })
+			const { code } = precompileStandalone({ T }, { optimize: "size" })
+			attest(code.includes("runtime.discriminateOr(")).equals(true)
+			const { T: Precompiled } = await load({ T }, { optimize: "size" })
+			const outcomes = [
+				{ kind: "a", a: "" },
+				{ kind: "a", a: 0 },
+				{ kind: "a", c: "y" },
+				{ kind: "b", b: 0 },
+				{ c: "x" },
+				{ kind: "z", c: 0 },
+				5
+			].map(data => {
+				const out: any = Precompiled(data)
+				return out?.summary ?? out
+			})
+			attest(outcomes).snap([
+				{ kind: "a", a: "" },
+				"must be { a: a string } or { c: a string }",
+				{ kind: "a", c: "y" },
+				{ kind: "b", b: 0 },
+				{ c: "x" },
+				'must be { a: a string, kind: "a" }, { b: a number, kind: "b" } or { c: a string }',
+				"must be an object"
+			])
 		})
 
 		it("copy an instance whose class writes its own tag", async () => {

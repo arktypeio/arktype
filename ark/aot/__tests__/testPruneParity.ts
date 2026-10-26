@@ -10,6 +10,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
+import { gzipSync } from "node:zlib"
 import {
 	samplesByApp as benchSamplesByApp,
 	testedSamplesByApp,
@@ -185,13 +186,14 @@ for (const app of Object.keys(samplesByApp)) {
 		for (const profile of Object.keys(profiles) as Profile[]) {
 			const whole = await bundle(app, profile, { ...opts, prune: false })
 			const pruned = await bundle(app, profile, opts)
-			// identical bundles would compare nothing
-			if (pruned.js.length >= whole.js.length)
+			// identical bundles would compare nothing, and a size build weighs
+			// what it writes gzipped, as it may write more to compress better
+			const saved = gzipSync(whole.js).length - gzipSync(pruned.js).length
+			if (saved <= 0)
 				failures.push(`${app} ${preset} ${profile} left nothing out`)
 			const differences = differencesOf(app, whole.handlers, pruned.handlers)
-			const saved = whole.js.length - pruned.js.length
 			console.log(
-				`${app} ${preset} ${profile}: ${differences} differences, ${saved} B min saved`
+				`${app} ${preset} ${profile}: ${differences} differences, ${saved} B gzipped saved`
 			)
 			if (differences)
 				failures.push(`${app} ${preset} ${profile}: ${differences} differences`)

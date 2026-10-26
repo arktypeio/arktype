@@ -36,6 +36,22 @@ No preset changes what a program observes: none sets `errors`, `mutatesInput` or
 
 With Turbopack, `"smallest"` needs the `@ark/schema/runtime` alias [`optimize: "size"`](#optimize-and-optimizeerrors) does.
 
+### Choosing smallest
+
+The default build compiles each validator to the code that checks its Type fastest. `"smallest"` writes it as calls to a runtime of small checkers, shared by every validator, so each Type adds about what its definition says. The more Types a bundle holds, the more that saves:
+
+| App, gzipped production bundle | Default | `"smallest"` | Valibot |
+| ------------------------------ | ------- | ------------ | ------- |
+| a login form, 1 Type           | 1.4 KB  | 1.2 KB       | 1.7 KB  |
+| a shop, 23 Types               | 6.5 KB  | 3.4 KB       | 3.6 KB  |
+| 50 Types                       | 13.8 KB | 5.4 KB       | 5.5 KB  |
+| 200 Types                      | 38.8 KB | 11.2 KB      | 11.3 KB |
+| 1000 Types                     | 160 KB  | 38.5 KB      | 39.5 KB |
+
+What it costs is speed. At 200 Types, validating valid data takes about 2.7 times as long as the default build's validators, though still about half as long as Valibot's, and the bundle loads in about twice the default's time, creating every validator as it loads. Choose `"smallest"` where your bundle holds more than a handful of Types and validates input as it arrives, like a frontend's forms and API responses. Keep the default for a server, for validation on a hot path, and for a program that only reads [`.allows`](/docs/type-api) of a Type or two, which the default writes as a single function smaller than the checkers' runtime.
+
+A [production bundle](#prune) built as one chunk by `"smallest"` also decides, from the Types it holds, how to write them smallest: checkers or compiled code, each validator declared once among the checkers others read, and common Types like `1 <= string <= 50`, `number.integer >= 0`, `string[] <= 10` and `string | null` as checkers of their own where enough of them repay that runtime.
+
 ## Production builds
 
 In development and tests, validators check at runtime what the build verified, so a program the build couldn't fully see fails where it would otherwise misbehave:
@@ -170,7 +186,7 @@ An instance of a class, or any object whose prototype isn't `Object.prototype`, 
 
 A [production](#production-builds) bundle reads every module its entries reach before it precompiles one, and leaves out of its validators each member of [`members`](#members) no read needs. A validator only called, or read for `.allows`, keeps neither `assert`, `meta`, `~standard` nor `methods`, and one read as `User.assert(data)` keeps `assert`. With `lazy: false`, as `"smallest"` sets, it also writes a checker that only one validator reads where that validator is created, rather than as a declaration of its own.
 
-A bundle written as one chunk, an esbuild build with one entry and neither `splitting` nor `inject`, or a Rollup, Rolldown or Vite build with one entry that imports nothing dynamically, also declares the units its validators read in one function wherever that's smaller, as constants each unit calls the others through, which V8 inlines as it does a factory's parameters. A module the build didn't read as the bundle holds it, like a file changed after the build read it or precompiled code another plugin loads, fails the build where it reads one of those units, as it would read a copy another validator could tell apart from its own.
+A bundle written as one chunk, an esbuild build with one entry and neither `splitting` nor `inject`, or a Rollup, Rolldown or Vite build with one entry that imports nothing dynamically, also declares the units its validators read in one function wherever that's smaller, as constants each unit calls the others through, which V8 inlines as it does a factory's parameters. Built for size, it declares them in one module instead, in the order its validators read them, each validator among them. A module the build didn't read as the bundle holds it, like a file changed after the build read it or precompiled code another plugin loads, fails the build where it reads one of those units, as it would read a copy another validator could tell apart from its own.
 
 The build leaves a member wherever it can't prove no code reads it: when an entry, or a module a dependency imports, exports a validator or a module holding one, a validator is passed to a function, stored, or read by a member it doesn't know, a module is imported dynamically, through `require` or `import.meta.glob()`, reads an `import.meta` property other than `env`, `hot`, `webpackHot`, `url`, `resolve`, `dirname`, `filename` and the flags Nuxt defines, like `client` and `dev`, or holds a Scope, and when an esbuild bundle holds a module it can't read, like a Vue component. A Vite, Rollup or Rolldown build reads each module as the bundler loads it, so it reads a component as its framework's plugin compiles it, like a Svelte, Vue or Astro component or an MDX page, and a virtual module as the plugin writing it does. A member set true is always kept.
 

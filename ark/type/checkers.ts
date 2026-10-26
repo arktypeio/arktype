@@ -17,6 +17,10 @@ export interface Checker {
 	(data: unknown, ctx?: FailureContext | number): boolean
 	/** where it transforms, e.g. by writing a default, data it allows */
 	t?: ((data: any) => unknown) | undefined
+	/** where it checks a key that may be absent */
+	o?: 1
+	/** the default of a key that may be absent, if it has one */
+	d?: [value?: unknown]
 }
 
 /** a site, and the checker of the test data passes to avoid it */
@@ -36,6 +40,10 @@ export const check = ((
 	checker.test = test
 	return checker
 }) satisfies Fn
+
+/** the checker a validator is created from, as a call a bundler may drop */
+export const allowsOf = ((validator: { allows: Checker }): Checker =>
+	validator.allows) satisfies Fn
 
 export const stringCheck: Check = /* @__PURE__ */ check(
 	"domain",
@@ -124,6 +132,49 @@ export const pattern = ((
 ): Check =>
 	check("pattern", description, data => instance.test(data))) satisfies Fn
 
+// shapes of the intersections most nodes are, each checking its refinements in
+// the order intersection does, with a bound left undefined never failing
+
+// a string whose length is at most max and at least min
+export const stringRange = ((max?: number, min?: number): Checker => {
+	const tooLong = max === undefined ? stringCheck : maxLength(max)
+	const tooShort = min === undefined ? stringCheck : minLength(min)
+	return (data: any, ctx) =>
+		typeof data !== "string" ? !failsAt(ctx as never, stringCheck, data)
+		: data.length > max! ? !failsAt(ctx as never, tooLong, data)
+		: !(data.length < min!) || !failsAt(ctx as never, tooShort, data)
+}) satisfies Fn
+
+// an integer at least least and at most most
+export const integerRange = ((least?: number, most?: number): Checker => {
+	const integer = divisor(1)
+	const tooSmall = least === undefined ? numberCheck : min(least)
+	const tooLarge = most === undefined ? numberCheck : max(most)
+	return (data: any, ctx) =>
+		Number.isFinite(data) ?
+			(data % 1 === 0 || !failsAt(ctx as never, integer, data)) &&
+			(!(data > most!) || !failsAt(ctx as never, tooLarge, data)) &&
+			(!(data < least!) || !failsAt(ctx as never, tooSmall, data))
+		:	!failsAt(ctx as never, numberCheck, data)
+}) satisfies Fn
+
+// an array of element, which transforms nothing, its length at most max and
+// at least min
+export const arrayOf = ((
+	element: Checker,
+	max?: number,
+	min?: number
+): Checker => {
+	const tooLong = max === undefined ? arrayCheck : maxLength(max)
+	const tooShort = min === undefined ? arrayCheck : minLength(min)
+	const within = elementsOf(element)
+	return (data: any, ctx) =>
+		!Array.isArray(data) ? !failsAt(ctx as never, arrayCheck, data)
+		: data.length > max! ? !failsAt(ctx as never, tooLong, data)
+		: data.length < min! ? !failsAt(ctx as never, tooShort, data)
+		: within(data, ctx)
+}) satisfies Fn
+
 const printValue = (value: unknown): string =>
 	typeof value === "string" ? JSON.stringify(value) : `${value}`
 
@@ -167,13 +218,23 @@ export const intersection = ((
 	return checker
 }) satisfies Fn
 
+// a key's checker where the key may be absent, written as value where value
+// is passed, even undefined
+export const optional = ((checker: Checker, ...value: [unknown?]): Checker => {
+	const wrapped: Checker = (data, ctx) => checker(data, ctx)
+	wrapped.o = 1
+	wrapped.d = value
+	wrapped.t = checker.t
+	return wrapped
+}) satisfies Fn
+
 type Props = Record<string, Checker>
 
 // a missing key, as runtime's requiredSite without siteOf
 const requiredSite: FailureSite = { m: { code: "required" } }
 
 // an object's keys, each checked in the order declared
-export const props = ((declared: Props, optional?: string[]): Checker =>
+export const props = ((declared: Props): Checker =>
 	(data: any, ctx) => {
 		if (!objectCheck.test(data))
 			return !failsAt(ctx as never, objectCheck, data)
@@ -182,7 +243,7 @@ export const props = ((declared: Props, optional?: string[]): Checker =>
 			// only a failed value is read again, as failsIn reports it
 			if (
 				value === undefined && !(k in data) ?
-					!optional?.includes(k) && failsAt(ctx as never, requiredSite, data, k)
+					!declared[k].o && failsAt(ctx as never, requiredSite, data, k)
 				:	!declared[k](value) &&
 					failsIn(ctx as never, declared[k] as CompactApply, data, k)
 			)
@@ -225,19 +286,18 @@ const copyForWriting = (data: any): any => {
 
 // props whose values transform or default, copied where one is written and
 // keeping each declared key data holds
-export const transformingProps = ((
-	declared: Props,
-	optional?: string[],
-	defaults: Record<string, unknown> = {}
-): Checker => {
-	const checker = props(declared, optional)
+export const transformingProps = ((declared: Props): Checker => {
+	const checker = props(declared)
 	checker.t = data => {
 		let out = data
 		for (const k in declared) {
 			const holds = k in data
-			const value = holds ? declared[k].t?.(data[k]) : defaults[k]
+			const defaulted = declared[k].d
+			const value = holds ? declared[k].t?.(data[k]) : defaulted?.[0]
 			// a default is written even where it's undefined
-			if (holds ? value !== undefined && value !== data[k] : k in defaults) {
+			if (
+				holds ? value !== undefined && value !== data[k] : defaulted?.length
+			) {
 				if (out === data) out = copyForWriting(data)
 				out[k] = value
 			}
@@ -307,6 +367,16 @@ export const domains = ((
 	return checker
 }) satisfies Fn
 
+export const nullableDescriptionOf = (domain: string): string =>
+	`${domain === "object" ? "an" : "a"} ${domain} or null`
+
+// a domain's checker or null
+export const nullable = ((checker: Checker | 1, domain = "string"): Checker =>
+	domains(
+		{ [domain]: checker, null: 1 },
+		nullableDescriptionOf(domain)
+	)) satisfies Fn
+
 // a union of objects told apart by the string at one key; data that isn't an
 // object, or holds no case at the key, fails the union or that key
 export const discriminate = ((
@@ -331,6 +401,31 @@ export const discriminate = ((
 	}
 	if (Object.values(cases).some(branch => (branch as Checker).t))
 		checker.t = data => (byValue.get(data[key]) as Checker).t?.(data) ?? data
+	return checker
+}) satisfies Fn
+
+// a discriminated union with branches lacking the key, which check data
+// holding no case: data they don't allow fails the union as described
+export const discriminateOr = ((
+	otherwise: Checker,
+	key: string,
+	cases: Record<string, Checker | 1>,
+	description: string,
+	missed: FailureSite = { code: "union", description: "an object" }
+): Checker => {
+	const byValue = new Map(Object.entries(cases))
+	const site: FailureSite = { code: "union", description }
+	const checker: Checker = (data: any, ctx) => {
+		const branch = byValue.get(data?.[key])
+		return branch ?
+				branch === 1 || branch(data, ctx)
+			:	otherwise(data) ||
+					!failsAt(ctx as never, objectCheck.test(data) ? site : missed, data)
+	}
+	if ([...byValue.values(), otherwise].some(branch => (branch as Checker).t)) {
+		checker.t = data =>
+			((byValue.get(data[key]) ?? otherwise) as Checker).t?.(data) ?? data
+	}
 	return checker
 }) satisfies Fn
 

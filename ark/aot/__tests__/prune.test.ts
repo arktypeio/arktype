@@ -1014,6 +1014,105 @@ import * as $ark_runtime from "arktype/runtime"`)
 			).equals(code)
 		})
 
+		describe("a checker a site creates its validator from", () => {
+			const b = `import * as runtime from "arktype/runtime"
+import { aAllows } from "~arktype/a"
+
+const bAllows = /* @__PURE__ */ runtime.props({ a: aAllows })
+
+export { bAllows }
+`
+			const code = `${main}import { bAllows as $ark_bAllows } from "~arktype/b"
+
+export const B = /* @__PURE__ */ $ark_create($ark_bAllows)
+`
+			const linkedWith = (code: string, exposesAllows: boolean) =>
+				linkBundle(
+					{ "/main.ts": { source: "export const A = type({})", code } },
+					{ ...units, "~arktype/b": b },
+					{ exposesAllows }
+				)!
+
+			it("is declared as the validator where validators expose allows", () => {
+				const linked = linkedWith(code, true)
+				const [declared] = Object.entries(linked.modules).filter(
+					([specifier]) => specifier.startsWith("~arktype/a-")
+				)
+				attest(normalized(`// ${declared[0]}\n${declared[1]}`))
+					.snap(`// ~arktype/a-#0
+import * as runtime from "arktype/runtime"
+
+const aAllows = /* @__PURE__ */ create(/* @__PURE__ */ runtime.props({ name: runtime.string }))
+
+export { aAllows }
+
+import { create } from "~arktype/create"`)
+				attest(normalized(linked.sites["/main.ts"].code))
+					.snap(`import { aAllows as $ark_aAllows } from "~arktype/a-#0"
+import { create as $ark_create } from "~arktype/create"
+
+export { $ark_aAllows as A }
+import { bAllows as $ark_bAllows } from "~arktype/b-#1"
+
+export const B = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props({ a: /* @__PURE__ */ $ark_runtime.allowsOf($ark_aAllows) }))
+
+import * as $ark_runtime from "arktype/runtime"`)
+			})
+
+			it("counts where validators don't", () => {
+				const linked = linkedWith(code, false)
+				attest(linked.unexposed).equals(1)
+				attest(linked.sites["/main.ts"].code.includes("export const A")).equals(
+					true
+				)
+			})
+
+			it("keeps one two sites create validators from, each its own", () => {
+				const twice = `${code}export const C = /* @__PURE__ */ $ark_create($ark_aAllows)\n`
+				const linked = linkedWith(twice, true)
+				attest(linked.unexposed).equals(0)
+				attest(linked.modules["~arktype/a"]).equals(units["~arktype/a"])
+			})
+		})
+
+		it("declares a one-chunk bundle's units in one module, as its sites read them", () => {
+			const linked = linkBundle(
+				{
+					"/main.ts": {
+						source: "export const A = type({})",
+						code: `import { aAllows as $ark_aAllows } from "~arktype/a"
+import { create as $ark_create } from "~arktype/create"
+
+export const A = /* @__PURE__ */ $ark_create($ark_aAllows)
+`
+					}
+				},
+				{
+					...units,
+					"~arktype/a": units["~arktype/a"].replace(
+						"export {",
+						"const a = [aAllows]\n\nexport { a, "
+					)
+				},
+				{ isOneChunk: true }
+			)!
+			attest(
+				normalized(
+					Object.entries(linked.modules).map(
+						([specifier, code]) => `// ${specifier}\n${code}`
+					)
+				)
+			).snap([
+				'// ~arktype/#0\nimport * as runtime from "arktype/runtime"\nconst create = allows => data => allows(data)\nconst aAllows = /* @__PURE__ */ create(/* @__PURE__ */ runtime.props({ name: runtime.string }))\nexport { aAllows, create }'
+			])
+			attest(normalized(linked.sites["/main.ts"].code))
+				.snap(`import { aAllows as $ark_aAllows } from "~arktype/#0"
+import { create as $ark_create } from "~arktype/#0"
+
+export { $ark_aAllows as A }
+`)
+		})
+
 		it("renames a module it writes into, which another may read unlinked", () => {
 			const b = `import * as runtime from "arktype/runtime"
 import { aAllows } from "~arktype/a"
