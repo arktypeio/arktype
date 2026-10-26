@@ -8,6 +8,7 @@ import type { Observation, Plan, RunResult, Step } from "./historyWorker.ts"
 // checks each unit of arktype's suites observes the same thing fresh, twice
 // in one process, and after a random sample of other units:
 // pnpm testHistory [file...] [--grep text] [--seed n] [--jobs n] [--chain n]
+// [--slowest n]
 
 const { values: opts, positionals } = parseArgs({
 	options: {
@@ -17,7 +18,8 @@ const { values: opts, positionals } = parseArgs({
 			type: "string",
 			default: String(Math.ceil(availableParallelism() / 2))
 		},
-		chain: { type: "string", default: "20" }
+		chain: { type: "string", default: "20" },
+		slowest: { type: "string", default: "0" }
 	},
 	allowPositionals: true
 })
@@ -37,8 +39,12 @@ const now = Date.now()
 
 const workerPath = new URL("./historyWorker.ts", import.meta.url)
 
+let workerMs = 0
+const msByPlan = new Map<Plan, number>()
+
 const runWorker = (plan: Plan) =>
 	new Promise<RunResult>((resolve, reject) => {
+		const start = performance.now()
 		let stderr = ""
 		const worker = fork(workerPath, [String(now)], {
 			execArgv: ["--conditions", "ark-ts", "--no-warnings"],
@@ -46,7 +52,12 @@ const runWorker = (plan: Plan) =>
 			silent: true
 		})
 		worker.stderr!.on("data", data => (stderr += data))
-		worker.once("message", result => resolve(result as RunResult))
+		worker.once("message", result => {
+			const ms = performance.now() - start
+			workerMs += ms
+			msByPlan.set(plan, ms)
+			resolve(result as RunResult)
+		})
 		// unlike exit, close follows every message
 		worker.once("close", code =>
 			reject(
@@ -95,9 +106,11 @@ const chains: Step[][] = []
 for (let i = 0; i < shuffled.length; i += chainLength)
 	chains.push(shuffled.slice(i, i + chainLength))
 
+const freshPlans = steps.map((step): Plan => ({ steps: [step, step] }))
+
 const results = await pool([
 	...chains.map(chain => () => runWorker({ steps: chain })),
-	...steps.map(step => () => runWorker({ steps: [step, step] }))
+	...freshPlans.map(plan => () => runWorker(plan))
 ])
 
 const freshByUnit = Object.fromEntries(
@@ -196,9 +209,20 @@ for (const unit of Object.keys(runsByUnit).sort()) {
 	}
 }
 
-const seconds = ((performance.now() - start) / 1000).toFixed(1)
+const seconds = (ms: number) => `${(ms / 1000).toFixed(1)}s`
+
+const slowest = Number(opts.slowest)
+if (slowest) {
+	const msOf = (i: number) => msByPlan.get(freshPlans[i])!
+	console.log("\nslowest units, run twice in a fresh process:")
+	for (const i of [...steps.keys()]
+		.sort((l, r) => msOf(r) - msOf(l))
+		.slice(0, slowest))
+		console.log(`  ${seconds(msOf(i))} ${steps[i][0]}`)
+}
+
 console.log(
-	`\n${violations ? "❌" : "✅"} ${steps.length} units in ${files.length} files, ${violations} history-dependent, ${Object.keys(skippedUnits).length} skipped (seed ${seed}, ${seconds}s)`
+	`\n${violations ? "❌" : "✅"} ${steps.length} units in ${files.length} files, ${violations} history-dependent, ${Object.keys(skippedUnits).length} skipped (seed ${seed}, ${seconds(performance.now() - start)}, ${seconds(workerMs)} across workers)`
 )
 if (failing.length) {
 	console.log(
