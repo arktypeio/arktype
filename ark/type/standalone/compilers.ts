@@ -19,7 +19,7 @@ import {
 	type UnionNode
 } from "@ark/schema"
 import { throwInternalError } from "@ark/util"
-import { disallowed, failsAtPath } from "../runtime.ts"
+import { disallowed, failsAtPath, FirstIssues } from "../runtime.ts"
 import { runtimeKeyOf } from "../standalone.ts"
 import { combines, writeCombinator } from "./combinators.ts"
 import {
@@ -399,6 +399,27 @@ const unifyMembers = (unit: RootUnit): void => {
 		const source = sourcesByName.get(unit.declaredTraversals[i][0])!
 		if (unifies(node) && /(?<![\w$.])ctx\./.test(withoutStrings(source)))
 			throwInternalError(`Unified traversal reads ctx: ${source}`)
+	}
+}
+
+const issues = new FirstIssues()
+
+const unitsReportingIssues = new WeakSet<RootUnit>()
+
+const ctxReads = /(?<![\w$.])ctx\.([\w$]+)/g
+
+// a root reporting into ArkErrors reads only their members off ctx, since
+// one only arktype's traversal has would throw where data first fails
+export const assertReportsIssues = (units: readonly RootUnit[]): void => {
+	for (const unit of units) {
+		if (unitsReportingIssues.has(unit)) continue
+		for (const [name, source] of unit.members) {
+			for (const [, member] of withoutStrings(source).matchAll(ctxReads)) {
+				if (member in issues) continue
+				throwInternalError(`${name} reads ctx.${member}, which ArkErrors lack`)
+			}
+		}
+		unitsReportingIssues.add(unit)
 	}
 }
 
