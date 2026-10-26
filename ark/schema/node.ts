@@ -768,8 +768,11 @@ export abstract class BaseNode<
 	deferJit(): void {
 		if (this.cache.allowsPreJit) return
 		const allows = (this.cache.allowsPreJit = this.allows)
-		// a detached reference can call this after compiling
+		// a detached reference can call this after compiling, so it keeps what
+		// compiled rather than reading the Type's each call
+		let compiled: BaseNode["allows"] | undefined
 		this.allows = data => {
+			if (compiled !== undefined) return compiled(data)
 			if (this.cache.allowsPreJit) {
 				if (this.checksUncompiled) {
 					this.cache.usedBeforeJit = true
@@ -777,7 +780,7 @@ export abstract class BaseNode<
 				}
 				this.$.jit(this)
 			}
-			return this.allows(data)
+			return (compiled = this.allows)(data)
 		}
 	}
 
