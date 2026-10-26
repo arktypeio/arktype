@@ -1749,8 +1749,7 @@
 		tbody th {
 			font-weight: 400;
 			color: var(--ink-2);
-			overflow: hidden;
-			text-overflow: ellipsis;
+			white-space: normal;
 		}
 		td {
 			color: var(--ink-3);
