@@ -459,6 +459,29 @@ nick must be a string or null`)
 		})
 	})
 
+	it("a union's default case holding a keyword's predicate", async () => {
+		const types = {
+			Units: type("'a' | 'b' | 'c'").or("string.url"),
+			Keyed: type({ k: "'a'", a: "string" })
+				.or({ k: "'b'", a: "number" })
+				.or({ k: "string.url", a: "boolean" })
+		}
+		const inputs = [
+			"d",
+			"https://arktype.io",
+			{},
+			{ k: "d", a: true },
+			{ k: "https://arktype.io", a: true }
+		]
+		for (const opts of [
+			{},
+			{ errors: "first" },
+			{ optimizeErrors: "size" },
+			{ optimize: "size", errors: "first" }
+		] as const)
+			agrees(await load(types, opts), types, inputs)
+	})
+
 	it("literals reading as the code around them", async () => {
 		const Gated = type({ b: "string > 3" })
 		// a leaf's Apply is named for its content, so a key can name it
