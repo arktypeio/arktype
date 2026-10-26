@@ -576,6 +576,33 @@ d must be a number (was a string)`)
 b must be a number (was a string)`)
 	})
 
+	it("firstIssue intersects the errors at its path", () => {
+		const out = type({ a: "string >= 5", b: "number" }).and({ a: /^x/ })({
+			a: "abc",
+			b: "b"
+		}) as ArkErrors
+		attest(firstIssue(out).message).snap(`a ("abc") must be...
+  ◦ matched by ^x
+  ◦ at least length 5`)
+		attest(firstIssue(out)).is(out.issues[0])
+	})
+
+	it("firstIssue at a path reached again", () => {
+		const out = type({
+			"[string]": "number % 2",
+			a: "number > 0",
+			c: "number"
+		})({
+			a: -1,
+			c: "x"
+		}) as ArkErrors
+		attest(out._.map(e => e.path.join("."))).equals(["a", "c", "a", "c"])
+		attest(firstIssue(out).message).snap(`a (-1) must be...
+  ◦ positive
+  ◦ even`)
+		attest(firstIssue(out)).is(out.issues[0])
+	})
+
 	it("inspected errors print their issues", () => {
 		const out = type({ a: "string" })({ a: 1 })
 		attest(inspect(out)).snap(`[

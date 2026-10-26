@@ -130,10 +130,18 @@ export class ArkErrors extends BaseArkErrors {
 
 	/** @internal the first of issues, its text written alone */
 	get _first(): ArkError | undefined {
-		const first = this._i[0]
-		if (first && !this.written)
+		const added = this._
+		const first = added[0]
+		// the first added is the first grouped, unless another shares its path,
+		// so the rest are grouped only then
+		if (this.groupedCount === 0 && first && isFirstAloneAtPath(added)) {
 			writeError(first, this.config, this.selectedLocale)
-		return first
+			return first
+		}
+		const grouped = this._i[0]
+		if (grouped && !this.written)
+			writeError(grouped, this.config, this.selectedLocale)
+		return grouped
 	}
 
 	private get selectedLocale(): Locale {
@@ -247,6 +255,12 @@ const indexByPath = (issues: ArkError[]): Record<string, ArkError> => {
 	const byPath: Record<string, ArkError> = Object.create(null)
 	for (const error of issues) byPath[pathKeyOf(error)] = error
 	return byPath
+}
+
+const isFirstAloneAtPath = (errors: readonly ArkError[]) => {
+	for (let i = 1; i < errors.length; i++)
+		if (pathEquals(errors[i].path, errors[0].path)) return false
+	return true
 }
 
 // compared from the end, where paths usually differ
