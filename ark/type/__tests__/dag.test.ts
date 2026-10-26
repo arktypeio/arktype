@@ -7,9 +7,9 @@ import {
 
 // each level references the one below four times, so written out in full, it
 // would be four times as long as the level below. two calls share no nodes.
-const levels = (depth: number): type.Any => {
+const levels = (depth: number): type<Record<string, unknown>> => {
 	const $ = scope({})
-	let T: type.Any = $.type({ name: "string" })
+	let T: type<Record<string, unknown>> = $.type({ name: "string" })
 	for (let i = 0; i < depth; i++) {
 		const each = T.array()
 		T = $.type({ id: "string", a: each, b: each, c: each, d: each })
@@ -18,8 +18,11 @@ const levels = (depth: number): type.Any => {
 }
 
 // valid data reaching the bottom level through each d
-const deepest = (depth: number, name: unknown = "Ada"): object => {
-	let data: object = { name }
+const deepest = (
+	depth: number,
+	name: unknown = "Ada"
+): Record<string, unknown> => {
+	let data: Record<string, unknown> = { name }
 	for (let i = 0; i < depth; i++)
 		data = { id: `${i}`, a: [], b: [], c: [], d: [data] }
 	return data
