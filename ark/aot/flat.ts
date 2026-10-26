@@ -917,6 +917,19 @@ const writeFlat = (
 		// a parameter reads what the function already holds, if no local hides it
 		const alias = (binding: Binding, value: string) => {
 			if (binding.name === value) return
+			// a primitive is written where it's read, as a template called once
+			// is passed its descriptions
+			if (
+				primitive.test(value) &&
+				!binding.writes.length &&
+				binding.references.every(
+					({ id }) =>
+						id.parent?.type !== "MemberExpression" || id.parent.object !== id
+				)
+			) {
+				renamed.set(binding, value)
+				return
+			}
 			// e.g. what a factory flattened before declares
 			const holder =
 				holders.get(value) ?? (values.get(value) === value ? value : undefined)
@@ -1069,7 +1082,7 @@ const writeFlat = (
 	for (const [name, specifier] of specifiersByName)
 		exported.add(`${specifier}\0${name}`)
 	// as measured for size, then written
-	const bodiesByReturned = new Map<string, string>()
+	const writtenByReturned = new Map<string, WrittenUnits>()
 	return {
 		exported,
 		asserting,
@@ -1081,20 +1094,25 @@ const writeFlat = (
 			// one value is returned as itself
 			const returned =
 				values.length === 1 ? values[0] : `[${values.join(", ")}]`
-			let written = bodiesByReturned.get(returned)
+			let written = writtenByReturned.get(returned)
 			if (written === undefined) {
 				const parse = unitsParser()
-				written = body
-				for (const pass of [skipForwarders, inlineCalls, dropUnread])
-					written = untilUnchanged(written, returned, parse, pass)
+				written = { body, returned }
+				for (const pass of [
+					skipAliases,
+					skipForwarders,
+					inlineCalls,
+					dropUnread
+				])
+					written = untilUnchanged(written, parse, pass)
 				// kept code reads what it returns, so a bundler keeps its call, and
 				// annotations saying it could drop it are bytes oxc's minifier keeps
-				written = withoutAnnotations(inGzipOrder(written))
-				bodiesByReturned.set(returned, written)
+				written.body = withoutAnnotations(inGzipOrder(written.body))
+				writtenByReturned.set(returned, written)
 			}
 			const declaration = `const ${read.length === 1 ? read[0] : `[${read.join(", ")}]`} = (() => {
-${written}
-return ${returned}
+${written.body}
+return ${written.returned}
 })()`
 			return asModule ?
 					`import * as runtime from "arktype/runtime"
@@ -1171,22 +1189,28 @@ const unitsParser = (): UnitsParser => {
 	}
 }
 
+// the units' statements and the expression their function returns
+interface WrittenUnits {
+	body: string
+	returned: string
+}
+
 // an edit of the units' body, parsed with what it returns after a `;`
 type UnitsPass = (units: ParsedUnits, s: MagicString, body: string) => void
 
-// the body as a pass leaves it once it changes nothing more
+// the units as a pass leaves them once it changes nothing more
 const untilUnchanged = (
-	body: string,
-	returned: string,
+	{ body, returned }: WrittenUnits,
 	parse: UnitsParser,
 	pass: UnitsPass
-): string => {
+): WrittenUnits => {
 	for (;;) {
 		const code = `${body}\n;${returned}`
 		const s = new MagicString(code)
 		pass(parse(code), s, body)
-		if (!s.hasChanged()) return body
-		body = s.toString().slice(0, -returned.length - 2)
+		if (!s.hasChanged()) return { body, returned }
+		returned = s.slice(body.length + 2, code.length)
+		body = s.slice(0, body.length)
 	}
 }
 
@@ -1211,6 +1235,39 @@ const skipForwarders: UnitsPass = ({ program, scopes }, s) => {
 				continue
 			for (const reference of binding.references)
 				s.overwrite(reference.id.start, reference.id.end, target.name)
+		}
+	}
+}
+
+// a constant the units declare as another of theirs, e.g. an intersection's
+// Transform that is its structure's, is read as that one
+const skipAliases: UnitsPass = ({ program, scopes }, s) => {
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration" || statement.kind !== "const")
+			continue
+		for (const { id, init } of statement.declarations) {
+			const binding = scopes.bindingsById.get(id)
+			const target =
+				init?.type === "Identifier" ?
+					scopes.refsById.get(init)?.binding
+				:	undefined
+			if (
+				!binding ||
+				target?.scope !== scopes.root ||
+				target.kind !== "const" ||
+				target === binding
+			)
+				continue
+			for (const { id } of binding.references) {
+				const parent = id.parent
+				s.overwrite(
+					id.start,
+					id.end,
+					parent?.type === "Property" && parent.shorthand ?
+						`${binding.name}: ${target.name}`
+					:	target.name
+				)
+			}
 		}
 	}
 }
@@ -1400,6 +1457,9 @@ const inGzipOrder = (body: string): string => {
 const minSortedFunctions = 64
 
 const runtimeMember = /^runtime\.\w+$/
+
+const primitive =
+	/^(?:\d[\d+.e]*|"(?:[^\n"\\]|\\.)*"|true|false|null|undefined)$/
 
 // a name the build derives from a unit's, e.g. its Allows
 const unitName = /\b\w+?(?:R\d+|Allows|Apply|Transform)\b/g

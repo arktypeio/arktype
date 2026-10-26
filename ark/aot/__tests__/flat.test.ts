@@ -180,6 +180,47 @@ valid
 		attest(js.match(/case "null":\s+return true/g)?.length).equals(2)
 	})
 
+	it("writes a primitive its one call passes where its parameter is read", async () => {
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const Email = type("string.email")
+
+const out = Email("ada")
+
+if (out instanceof type.errors) console.log(out.summary)
+`
+			},
+			fromHere("temp", "flatPrimitive")
+		)
+		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
+		attest(run(js)).snap(`must be an email address
+`)
+		attest(js).satisfies(/"pattern", "an email address"/)
+		attest(/const \w+ = "an email address"/.test(js)).equals(false)
+	})
+
+	it("reads a unit declared as another of the units as that one", async () => {
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const User = type({ name: "string", role: "string = 'member'" })
+
+console.log(User({ name: "Ada" }))
+`
+			},
+			fromHere("temp", "flatAlias")
+		)
+		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
+		attest(run(js)).snap(`{ name: 'Ada', role: 'member' }
+`)
+		// the object's Transform is its structure's
+		attest(js).satisfies(/structure\w+Transform\(data\)/)
+		attest(/intersection\w+Transform/.test(js)).equals(false)
+	})
+
 	it("creates as its assert a validator read only for it", async () => {
 		const files = writeFixture(
 			{
