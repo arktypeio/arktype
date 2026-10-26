@@ -1,4 +1,9 @@
-import { $ark, type ArkErrorCode, type BaseRoot } from "@ark/schema"
+import {
+	$ark,
+	type ArkErrorCode,
+	type BaseRoot,
+	type RootUnit
+} from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	errorWriters,
@@ -16,7 +21,8 @@ import {
 	runtimeKeyOf,
 	runtimePathsByValue,
 	writeUnprecompilableMessage,
-	writtenNodesOf
+	writtenNodesOf,
+	type IssueFeatures
 } from "../standalone.ts"
 
 // the text a site's issue carries in place of what the runtime writes
@@ -89,6 +95,35 @@ const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 	}
 	return codes
 }
+
+// a callback may raise an issue at any path, with any text
+export const addIssueFeatures = (
+	features: IssueFeatures,
+	unit: RootUnit
+): void => {
+	for (const node of writtenNodesOf(unit)) {
+		if (node.hasKind("sequence")) features.reportsIndices = true
+		else if (
+			node.hasKind("morph") ||
+			(node.hasKind("predicate") && !isKeyword(node.predicate))
+		) {
+			features.reportsIndices = true
+			features.writesText = true
+		}
+	}
+	for (const ref of unit.refs) {
+		if (!failureSites.has(ref as object)) continue
+		const site = ref as FailureSite
+		if (site.v) features.readsKeySites = true
+		const contexts = [site, site.v, site.m] as (IssueContext | undefined)[]
+		if (contexts.some(writesText)) features.writesText = true
+	}
+}
+
+// a problem, or text written from the program's config, each set by a call
+// on its issue
+const writesText = (context: IssueContext | undefined) =>
+	context?.problem !== undefined || !!context?.written
 
 // sites only traversal reads, emitted as-is
 export const failureSites = new WeakSet<object>()

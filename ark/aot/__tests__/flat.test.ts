@@ -264,6 +264,33 @@ name is missing
 		attest(/\.assert\b|\bassert:/.test(js)).equals(false)
 	})
 
+	it("creates as its allows a validator read only for it", async () => {
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const User = type({ name: "string" })
+
+console.log(User.allows({ name: "Ada" }), User.allows({}))
+`,
+				"both.ts": `import { type } from "arktype"
+
+const User = type({ name: "string" })
+
+console.log(User.allows({ name: "Ada" }), User.assert({ name: "Ada" }))
+`
+			},
+			fromHere("temp", "flatAllows")
+		)
+		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
+		attest(run(js)).snap("true false\n")
+		attest(/\.allows\b|\ballows:/.test(js)).equals(false)
+		// a validator whose reads differ in what they read stays their object
+		const [both] = await bundle({}, { entryPoints: [join(files, "both.ts")] })
+		attest(run(both)).snap("true { name: 'Ada' }\n")
+		attest(/\ballows:/.test(both)).equals(true)
+	})
+
 	it("keeps each unit a module of its own with prune: false", async () => {
 		const [whole] = await bundle({ prune: false })
 		attest(factoryParam.test(whole)).equals(true)

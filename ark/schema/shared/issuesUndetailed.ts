@@ -3,8 +3,6 @@ import { throwInternalError, type array } from "@ark/util"
 import type { ArkErrors } from "./issuesNone.ts"
 import type { ArkIssue } from "./issues.ts"
 
-export const releasePath = (errors: ArkErrors): ArkErrors => errors
-
 // a size build's root apply, which errors "none" never writes
 export const applyIssues = (): never =>
 	throwInternalError('errors "none" applies no issues')
@@ -14,6 +12,8 @@ export const issuesOf = (): never =>
 	throwInternalError('errors "none" finds no issues')
 
 export const foundErrors = issuesOf
+
+export const throwIssues = issuesOf
 
 export class TraversalError extends Error {
 	declare readonly name: "TraversalError"

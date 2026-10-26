@@ -14,7 +14,6 @@ import {
 	mergeIssues,
 	messageOf,
 	problemOf,
-	releasePath,
 	runtimeConfig,
 	supportedJsonSchemaTargets,
 	throwOnDefault,
@@ -98,6 +97,7 @@ export {
 	rejects,
 	runtimeConfig,
 	runtimeScope,
+	throwIssues,
 	throwOnDefault,
 	TransformErrors,
 	transformed,
@@ -624,7 +624,7 @@ export const applyErrors = (
 ): unknown => {
 	const ctx = new Ctx(data, config)
 	apply(data, ctx)
-	const errors = ctx instanceof ArkErrors ? releasePath(ctx) : ctx._errors
+	const errors = ctx instanceof ArkErrors ? ctx : ctx._errors
 	return (
 		!errors?.count ? data
 		: onFail ? onFail(errors)
@@ -674,7 +674,7 @@ export const applyCallErrors = (
 ): unknown => {
 	const ctx = new Ctx(data, runtimeConfig)
 	apply(data, ctx)
-	const errors = ctx instanceof ArkErrors ? releasePath(ctx) : ctx._errors
+	const errors = ctx instanceof ArkErrors ? ctx : ctx._errors
 	if (!errors?.count) return data
 	if (args.length) {
 		if (args[0]) return args[0].piped(errors as never)
@@ -770,9 +770,7 @@ export const firstIssue = (errors: ArkErrors): WrittenIssue => {
 	const unread = errors as ArkErrors & UnreadFields
 	if (unread._1) return unread._1
 	if (!unread._a || unread._f) return errors.issues[0]
-	// an Unread's constructor is the class whose issues it finds
-	const ctx = new (errors.constructor as new () => ArkErrors)()
-	ctx.failFast ||= true
+	const ctx = new FirstIssues()
 	issuesOf(unread._a, unread._d, ctx)
 	return (unread._1 = ctx.issues[0])
 }

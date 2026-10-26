@@ -568,6 +568,7 @@ contextualize(function (this: Mocha.Suite) {
 							"/app/main.ts": { source: "User({})", transformed: true }
 						},
 						targets: { "/app/main.ts": {} },
+						arkImports: {},
 						dynamicImports: [],
 						exposed: []
 					},
@@ -655,6 +656,58 @@ console.log(out instanceof type.errors ? out.summary : out)
 					"~standard"
 				)
 			).equals(true)
+		})
+
+		it("drops what reads what no validator's issues hold", async () => {
+			const files = writeFixture(
+				{
+					"user.ts": `import { type } from "arktype"\n\nconsole.log(type({ name: "string" })({ name: 5 }).toString())\n`,
+					"tagged.ts": `import { type } from "arktype"\n\nconsole.log(type({ tags: "string[]" })({ tags: ["a", 5] }).toString())\n`,
+					"flagged.ts": `import { type } from "arktype"
+
+const Flagged = type({ name: "string" }).narrow((_, ctx) =>
+	ctx.reject({ path: ["flags", 0], problem: "is unset" })
+)
+
+console.log(Flagged({ name: "Ada" }).toString())
+`
+				},
+				fromHere("temp", "prunedIssues")
+			)
+			const bundleOf = (entry: string) =>
+				bundle({ preset: undefined }, { entryPoints: [join(files, entry)] })
+			const user = await bundleOf("user.ts")
+			attest(run(user)).snap("name must be a string\n")
+			attest(user.includes("`[${")).equals(false)
+			attest(user.includes(".text?.(")).equals(false)
+			const tagged = await bundleOf("tagged.ts")
+			attest(run(tagged)).snap("tags[1] must be a string\n")
+			attest(tagged.includes("`[${")).equals(true)
+			attest(tagged.includes(".text?.(")).equals(false)
+			// a callback may raise an issue at any path, with any text
+			const flagged = await bundleOf("flagged.ts")
+			attest(run(flagged)).snap("flags[0] is unset\n")
+			attest(flagged.includes("`[${")).equals(true)
+			attest(flagged.includes(".text?.(")).equals(true)
+		})
+
+		it("allows as a boolean where a narrow returns otherwise", async () => {
+			const files = writeFixture(
+				{
+					"main.ts": `import { type } from "arktype"
+
+const Named = type("string").narrow(s => s.length as never)
+
+console.log(Named.allows("Ada"), Named.allows(""))
+`
+				},
+				fromHere("temp", "prunedNarrow")
+			)
+			const js = await bundle(
+				{ preset: undefined },
+				{ entryPoints: [join(files, "main.ts")] }
+			)
+			attest(run(js)).snap("true false\n")
 		})
 
 		it("finds issues as a call returns where no read calls a validator", async () => {
@@ -1228,6 +1281,9 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(run(whole)).equals(run(pruned))
 			attest(whole.includes("~standard")).equals(true)
 			attest(pruned.includes("~standard")).equals(false)
+			// nor what reads an index, which no validator's issues hold
+			attest(whole.includes("`[${")).equals(true)
+			attest(pruned.includes("`[${")).equals(false)
 		})
 
 		it("leaves out what no read needs where a module accepts hot updates", async () => {

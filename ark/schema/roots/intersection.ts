@@ -347,10 +347,22 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 				}
 				return js.return(true)
 			}
+			const rejection = js.rejection(this)
 			// a loop keeps a minifier from joining its checks into one expression,
-			// which a build for size lets it do
+			// which a build for size lets it do, as does a node of leaf checks
+			// reading no key, whose caller tests what it returns. A check calling
+			// another node keeps the loop, which V8 runs faster
 			if (js.shortest) checks()
-			else js.block("for (;;)", checks).return(js.rejection(this))
+			else if (
+				!sequence &&
+				rejection === "false" &&
+				this.children.every(child => child.compileCondition !== undefined)
+			) {
+				js.return(
+					this.children.map(child => `(${js.condition(child)})`).join(" && ") ||
+						"true"
+				)
+			} else js.block("for (;;)", checks).return(rejection)
 			return
 		}
 		// only a structure can transform an intersection's data

@@ -193,9 +193,11 @@ export const flattenBundle = (
 					declared.end,
 					`import { ${name} as ${declared.name} } from ${source}\n${declared.exported ? `export { ${declared.name} }\n` : ""}`
 				)
-				// a read of its assert reads the validator it is
-				if (flat.asserting.has(name))
-					for (const [start, end] of declared.assertReads!) s.remove(start, end)
+				// a read of its one member reads the validator it is
+				if (flat.unwrapped.has(name)) {
+					for (const [start, end] of declared.memberReads!.spans)
+						s.remove(start, end)
+				}
 			} else {
 				const local = `${prefix}_${name}`
 				s.overwrite(start, end, local)
@@ -237,8 +239,8 @@ interface Creation {
 				end: number
 				name: string
 				exported: boolean
-				// the `.assert` of each read, where that's all any reads
-				assertReads: [start: number, end: number][] | undefined
+				// the member each read reads, where all read the same one
+				memberReads: MemberReads | undefined
 		  }
 		| undefined
 }
@@ -342,9 +344,9 @@ const creationsIn = (
 							end: statement.end,
 							name: declarator.id.name,
 							exported: statement !== declaration,
-							assertReads:
+							memberReads:
 								statement === declaration ?
-									assertReadsOf(module.scopes.root.bindings[declarator.id.name])
+									memberReadsOf(module.scopes.root.bindings[declarator.id.name])
 								:	undefined
 						}
 					:	undefined
@@ -406,23 +408,33 @@ const creatorFnOf = (module: SourceModule): string | undefined => {
 		)
 }
 
-// the `.assert` of each read of a binding, if every read is one
-const assertReadsOf = (
-	binding: Binding
-): [start: number, end: number][] | undefined => {
+interface MemberReads {
+	name: string
+	// each read's `.name`
+	spans: [start: number, end: number][]
+}
+
+// the member each read of a binding reads, if every read reads the same one,
+// as `.assert` or `.allows`
+const memberReadsOf = (binding: Binding): MemberReads | undefined => {
+	let name: string | undefined
 	const spans: [number, number][] = []
 	for (const { id } of binding.references) {
 		const member = id.parent
+		const read =
+			member?.type === "MemberExpression" && member.object === id ?
+				memberNameOf(member)
+			:	undefined
 		if (
-			member?.type !== "MemberExpression" ||
-			member.object !== id ||
-			memberNameOf(member) !== "assert" ||
-			isWriteTarget(member)
+			typeof read !== "string" ||
+			(name !== undefined && read !== name) ||
+			isWriteTarget(member!)
 		)
 			return
-		spans.push([id.end, member.end])
+		name = read
+		spans.push([id.end, member!.end])
 	}
-	return spans.length ? spans : undefined
+	return name === undefined ? undefined : { name, spans }
 }
 
 // the annotations of the creations a site declares that kept code reads, which
@@ -816,8 +828,9 @@ const roles = ["Allows", "Apply", "Transform"]
 interface Flat {
 	// each unit's declaration a module outside the function may read
 	exported: Set<string>
-	// each creation that is its validator's assert, as a site reads only that
-	asserting: Set<string>
+	// each creation that is its validator's one member, as a site reads only
+	// that
+	unwrapped: Set<string>
 	code: string
 	write: (read: string[], asModule: boolean) => string
 }
@@ -1110,9 +1123,13 @@ const writeFlat = (
 		)
 			replace(id, wholeOf(binding.name))
 	}
-	const { body, asserting } = withAssertsUnwrapped(
+	const { body, unwrapped } = withMembersUnwrapped(
 		s.toString(),
-		creations.filter(c => c.declared?.assertReads).map(c => c.name)
+		Object.fromEntries(
+			creations.flatMap(c =>
+				c.declared?.memberReads ? [[c.name, c.declared.memberReads.name]] : []
+			)
+		)
 	)
 	const exported = new Set<string>()
 	for (const [name, specifier] of specifiersByName)
@@ -1121,7 +1138,7 @@ const writeFlat = (
 	const writtenByReturned = new Map<string, WrittenUnits>()
 	return {
 		exported,
-		asserting,
+		unwrapped,
 		code: body,
 		write: (read, asModule) => {
 			const values = read.map(name =>
@@ -1159,13 +1176,14 @@ export { ${read.join(", ")} }
 	}
 }
 
-// a validator created as an object of its assert alone is that function
-const withAssertsUnwrapped = (
+// a validator created as an object of the one member each read reads is that
+// member
+const withMembersUnwrapped = (
 	code: string,
-	names: string[]
-): { body: string; asserting: Set<string> } => {
-	const asserting = new Set<string>()
-	if (!names.length) return { body: code, asserting }
+	readMembers: Record<string, string>
+): { body: string; unwrapped: Set<string> } => {
+	const unwrapped = new Set<string>()
+	if (!Object.keys(readMembers).length) return { body: code, unwrapped }
 	const { program } = parseUnits(code)
 	const s = new MagicString(code)
 	for (const statement of program.body as Node[]) {
@@ -1177,13 +1195,13 @@ const withAssertsUnwrapped = (
 				:	[]
 			if (
 				id.type !== "Identifier" ||
-				!names.includes(id.name) ||
+				!(id.name in readMembers) ||
 				property?.type !== "Property" ||
 				property.kind !== "init" ||
 				property.method ||
 				property.computed ||
 				property.key.type !== "Identifier" ||
-				property.key.name !== "assert"
+				property.key.name !== readMembers[id.name]
 			)
 				continue
 			s.overwrite(
@@ -1191,10 +1209,10 @@ const withAssertsUnwrapped = (
 				init!.end,
 				code.slice(property.value.start, property.value.end)
 			)
-			asserting.add(id.name)
+			unwrapped.add(id.name)
 		}
 	}
-	return { body: s.toString(), asserting }
+	return { body: s.toString(), unwrapped }
 }
 
 // the units' code, parsed as it's written, without parentheses

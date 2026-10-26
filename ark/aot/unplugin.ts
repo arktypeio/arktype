@@ -32,6 +32,8 @@ import {
 	dependencyOf,
 	fileOf,
 	islandDependencySpecifier,
+	issueFeaturesFile,
+	narrowsIssues,
 	optedInPackagesOf,
 	precompiledDependencyOf,
 	packageNameOf,
@@ -54,6 +56,7 @@ import {
 	writePrecompiledDependencyMessage,
 	writeExternalizedMessage,
 	writeFilelessImportMessage,
+	writeIssueFeatures,
 	writeLoadedFirstMessage,
 	writeUncachedModuleMessage,
 	writeUnwrittenModuleMessage,
@@ -63,6 +66,7 @@ import {
 	withAllowUnsafe
 } from "./host.ts"
 import { conflictingPluginPhrase, writeConflictingPlugins } from "./messages.ts"
+import type { IssueFeatures } from "arktype/internal/standalone.ts"
 import type { ScannedProgram, ScannedUsage } from "./precompile.ts"
 import { withEnvironment, type Environment } from "./presets.ts"
 import {
@@ -332,6 +336,13 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		}
 		importersById[id] = stored[0]
 		return (modules[id] = stored[1])
+	}
+	// what a pruned build's issues may hold, once its scan reads every
+	// validator, where it begins before the module loads
+	const loadIssueFeatures = async (build: object) => {
+		const pending = pendingScans.get(build)
+		const scan = pending ? await pending.scanned : scansByBuild.get(build)
+		if (scan?.issues) return writeIssueFeatures(scan.issues)
 	}
 	// Vite's plugins ahead of this one that transform, which a config
 	// module given anew names
@@ -670,8 +681,15 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			}
 		},
 		load: {
-			filter: { id: virtual ? /^\0~arktype\// : /^~arktype\// },
-			handler: loadModule
+			filter: {
+				id: [virtual ? /^\0~arktype\// : /^~arktype\//, issueFeaturesFile]
+			},
+			// a virtual module loads synchronously, as webpack's cache reads it
+			handler(id) {
+				return issueFeaturesFile.test(id) ?
+						loadIssueFeatures(buildOf(this))
+					:	loadModule(id)
+			}
 		},
 		// esbuild loads each module natively, as unplugin's adapter returns every
 		// file a build has watched from each of its hooks
@@ -982,14 +1000,15 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 						const [read, usage] = scan.read
 						scanned = read
 						// only what it dropped can fail a read the scan didn't see
-						verifies = !!usage.dropped.length
+						verifies = !!usage.dropped.length || narrowsIssues(usage.issues)
 						holders = new Set(usage.holders)
 						esbuildScan = {
 							scanned,
 							verifies,
 							loaded,
 							replaced: new Set(usage.replaced),
-							holders
+							holders,
+							issues: usage.issues
 						}
 						return { warnings }
 					})
@@ -1025,6 +1044,11 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					if (transformed?.code || transformed?.errors.length)
 						return untransformedProblemOf(specifier, "<stdin>", "")
 				}
+				build.onLoad({ filter: issueFeaturesFile }, () => {
+					const issues = esbuildScan?.issues
+					if (issues)
+						return { contents: writeIssueFeatures(issues), loader: "js" }
+				})
 				// each module watches what it read, which esbuild takes only from onLoad
 				build.onLoad({ filter: esbuildTransformed }, async args => {
 					if (args.namespace !== "file") return
@@ -1175,6 +1199,8 @@ interface BundleScan {
 	holders: ReadonlySet<string>
 	// each module as this plugin transformed it
 	loaded: LoadedSources
+	// what its issues may hold, unless they may hold anything
+	issues: IssueFeatures | undefined
 }
 
 // a production build's scan, from its first transformed module on
@@ -1379,10 +1405,11 @@ const rollupScanOf = async (
 			usage.written ?
 				{
 					scanned,
-					verifies: !!usage.dropped.length,
+					verifies: !!usage.dropped.length || narrowsIssues(usage.issues),
 					replaced: new Set(usage.replaced),
 					holders: new Set(usage.holders),
-					loaded: new Map()
+					loaded: new Map(),
+					issues: usage.issues
 				}
 			:	undefined,
 		unpruned: usage.unpruned

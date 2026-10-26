@@ -74,7 +74,8 @@ export class ArkErrors implements FailureContext {
 		context.text?.(issue)
 		if (key !== undefined) path.pop()
 		this._.push(issue)
-		return this.failFast
+		// only errors stopping at the first issue stop at this one
+		return undefined
 	}
 
 	/** @internal */
@@ -105,9 +106,12 @@ export class FirstIssues extends ArkErrors {
 	override get failFast(): true {
 		return true
 	}
-}
 
-export const releasePath = (errors: ArkErrors): ArkErrors => errors
+	override _at(site: FailureSite, data: unknown, key?: PropertyKey): true {
+		super._at(site, data, key)
+		return true
+	}
+}
 
 export const issueAt = (
 	path: PropertyKey[],
@@ -154,6 +158,12 @@ export const foundErrors = (
 	const errors = new Ctx()
 	issuesOf(apply, data, errors)
 	return onFail ? onFail(errors) : errors
+}
+
+export const throwIssues = (apply: CompactApply, data: unknown): never => {
+	const errors = new ArkErrors()
+	issuesOf(apply, data, errors)
+	return errors.throw()
 }
 
 // a root reporting into ArkErrors, as a size build applies it; they hold

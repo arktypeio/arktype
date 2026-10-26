@@ -15,6 +15,7 @@ import {
 	resolve,
 	sep
 } from "node:path"
+import type { IssueFeatures } from "arktype/internal/standalone.ts"
 import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
 import type { PrecompilePluginOptions, RenderedDiagnostics } from "./driver.ts"
 import type { PrecompileOptions } from "./precompile.ts"
@@ -311,6 +312,20 @@ export const variantSpecifierOf = (
 	) ?
 		`@ark/schema/runtime/${variant}`
 	:	undefined
+
+// @ark/schema's constants for what a program's issues may hold, which a build
+// reading each of its validators writes again
+export const issueFeaturesFile =
+	/[/\\]@?ark[/\\]schema(?:[/\\]out)?[/\\]shared[/\\]issueFeatures\.[jt]s$/
+
+export const writeIssueFeatures = (issues: IssueFeatures): string =>
+	Object.entries(issues)
+		.map(([name, holds]) => `export const ${name} = ${holds}\n`)
+		.join("")
+
+// whether a build drops what reads a feature none of its issues hold
+export const narrowsIssues = (issues: IssueFeatures | undefined): boolean =>
+	!!issues && Object.values(issues).includes(false)
 
 export const writeVariantOption = (variant: RuntimeVariant): string =>
 	variant === "lean" ? 'optimizeErrors: "size"' : 'errors: "none"'

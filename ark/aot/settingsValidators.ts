@@ -1,17 +1,17 @@
 /* eslint-disable */
 // @ts-nocheck
 // written by __tests__/writeSettings.ts from __tests__/settingsSchema.ts
+// ark/schema/shared/issueFeatures.ts
+var reportsIndices = true
+var writesText = true
+var readsKeySites = true
+
 // ark/schema/shared/issues.ts
-var releasedPath
-var releasePath = errors => {
-	releasedPath = errors._p
-	return errors
-}
 var ArkIssues = class {
+	// assigned, as a target lowering class fields defines each with a helper
 	constructor() {
 		this._ = []
-		this._p = releasedPath ?? []
-		releasedPath = void 0
+		this._p = []
 	}
 	/**
 	 * The number of issues.
@@ -50,7 +50,7 @@ var ArkIssues = class {
 	/** @internal */
 	_at(site, data, key) {
 		const path = this._p
-		let context = site.v ?? site
+		let context = (readsKeySites ? site.v : void 0) ?? site
 		if (key !== void 0) {
 			path.push(key)
 			if (site.m && !(key in data)) context = site.m
@@ -63,10 +63,10 @@ var ArkIssues = class {
 			expected: context.description,
 			message: context.x
 		}
-		context.text?.(issue)
+		if (writesText) context.text?.(issue)
 		if (key !== void 0) path.pop()
 		this._.push(issue)
-		return this.failFast
+		return void 0
 	}
 	/** @internal */
 	_in(apply, data, key, missing) {
@@ -81,7 +81,7 @@ var applyIssues = (apply, data, onFail, Ctx = ArkIssues) => {
 	const errors = new Ctx()
 	apply(data, errors)
 	return (
-		!releasePath(errors).count ? data
+		!errors.count ? data
 		: onFail ? onFail(errors)
 		: errors
 	)
@@ -89,19 +89,15 @@ var applyIssues = (apply, data, onFail, Ctx = ArkIssues) => {
 var messageOf = issue => {
 	let path = ""
 	for (const k of issue.path) {
-		if (typeof k === "number") path += `[${k}]`
-		else {
-			if (path) path += "."
-			path += typeof k === "string" ? k : String(k)
-		}
+		path +=
+			reportsIndices && typeof k === "number" ?
+				`[${k}]`
+			:	(path && ".") + String(k)
 	}
-	if (!path) return problemOf(issue)
-	return issue.problem === void 0 && issue.expected !== void 0 ?
-			path + " must be " + issue.expected
-		:	path + " " + problemOf(issue)
+	return (path && path + " ") + problemOf(issue)
 }
 var problemOf = issue =>
-	issue.problem ??
+	(writesText ? issue.problem : void 0) ??
 	(issue.expected !== void 0 ? "must be " + issue.expected
 	: issue.code === "required" ? "is missing"
 	: "is invalid")
@@ -1038,7 +1034,7 @@ var get0 = () => {
 			(created0 = (() => {
 				const validator0 = create10n7yuw0bfhpvo(
 					intersection139rh990qijtgx,
-					"1nhmizm0"
+					"tm4cwb17"
 				)
 				return validator0
 			})())
@@ -1049,7 +1045,7 @@ var get1 = () => {
 			(created1 = (() => {
 				const validator0 = create10n7yuw0bfhpvo(
 					intersection1199sgb0d8uguh,
-					"ftca021j"
+					"19ncfm81"
 				)
 				return validator0
 			})())
@@ -1060,7 +1056,7 @@ var get2 = () => {
 			(created2 = (() => {
 				const validator0 = create10n7yuw0bfhpvo(
 					intersectionzl2r971lulg5q,
-					"kdoh7z0r"
+					"17d23qx0"
 				)
 				return validator0
 			})())

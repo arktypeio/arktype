@@ -3403,6 +3403,7 @@ export default shared`).js
 			"schema/shared/errorWriters.ts",
 			"schema/shared/issues.ts",
 			"schema/shared/errors.ts",
+			"schema/shared/issueFeatures.ts",
 			"schema/shared/jsonSchema.ts",
 			"schema/shared/locale.ts",
 			"schema/shared/registry.ts",
