@@ -365,18 +365,18 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 			if (this._1 || this._f)
 				return this._1 ?? (this as {} as ArkErrors)._firstGrouped()
 			const node = this._node
-			// an index signature checks keys a prop has, as an alias can
-			const revisitsPaths =
-				node.includesAlias || node.selectReferences(isIndex).length !== 0
 			const ctx = new (firstPathTraversalOf(this._ctor))(
 				this._d,
 				this.config,
-				!revisitsPaths
+				!revisitsPaths(node)
 			)
 			node.traverseApply(this._d, ctx)
 			if (!ctx.hasError())
 				ctx.reject({ expected: "valid", problem: "is invalid" })
-			return (this._1 = (ctx.finalize(null) as ArkErrors)._first)
+			const errors = ctx.finalize(null) as ArkErrors
+			if (errors._.includes(skipped))
+				errors._ = errors._.filter(error => error !== skipped)
+			return (this._1 = errors._first)
 		}
 	}
 	// an ArkErrors, built without the fields its constructor sets
@@ -392,18 +392,21 @@ type FirstPathTraversal = new (
 	stopsElsewhere: boolean
 ) => ArkTraversal
 
+// added in place of an error elsewhere than the first's path, so it's counted
+const skipped = {} as ArkError
+
 const firstPathTraversals = new WeakMap<typeof Traversal, FirstPathTraversal>()
 
 // a traversal keeping only the errors at the path of its first, as firstIssue
-// groups them, so it builds no others. Each counts as added, so traversal
-// stops where it would have, or, where no node revisits a path, at the first
-// error elsewhere after it
+// groups them, so it builds no others. One elsewhere is counted as added, so
+// every check stops where it would have. Where no node revisits a path, it
+// stops once it fails elsewhere or leaves the first's path, as every error
+// there is then behind it
 const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
 	let FirstPath = firstPathTraversals.get(Base)
 	if (FirstPath) return FirstPath
 	FirstPath = class extends (Base as typeof ArkTraversal) {
 		declare firstPath: PropertyKey[] | undefined
-		declare elsewhere: number
 		declare stopsElsewhere: boolean
 		declare left: boolean
 
@@ -414,20 +417,8 @@ const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
 		) {
 			super(root, config)
 			this.firstPath = undefined
-			this.elsewhere = 0
 			this.stopsElsewhere = stopsElsewhere
 			this.left = false
-		}
-
-		override get failFast(): boolean {
-			return this.left || super.failFast
-		}
-
-		override get currentErrorCount(): number {
-			return (
-				super.currentErrorCount +
-				(this.branches.length === 0 ? this.elsewhere : 0)
-			)
 		}
 
 		// whether an error at this path, or a key below it, is elsewhere than
@@ -435,6 +426,7 @@ const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
 		private isElsewhere(key?: PropertyKey): boolean {
 			const first = this.firstPath
 			if (first === undefined || this.branches.length !== 0) return false
+			if (this.left) return true
 			const path = this.path
 			if (first.length !== path.length + (key === undefined ? 0 : 1))
 				return true
@@ -444,16 +436,31 @@ const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
 			return false
 		}
 
-		private failElsewhere(): boolean {
-			this.elsewhere++
+		private skip(): boolean {
 			if (this.stopsElsewhere) this.left = true
-			return this.failFast
+			super.addError(skipped)
+			return this.left || this.failFast
 		}
 
 		override _at(site: FailureSite, data: unknown, key?: PropertyKey): boolean {
-			return this.isElsewhere(key) ?
-					this.failElsewhere()
-				:	super._at(site, data, key)
+			return this.isElsewhere(key) ? this.skip() : super._at(site, data, key)
+		}
+
+		override _in(
+			apply: CompactApply,
+			data: unknown,
+			key: PropertyKey,
+			missing?: FailureSite
+		): boolean | undefined {
+			const stops = super._in(apply, data, key, missing)
+			if (
+				this.stopsElsewhere &&
+				this.firstPath !== undefined &&
+				this.path.length < this.firstPath.length &&
+				this.branches.length === 0
+			)
+				this.left = true
+			return stops || this.left
 		}
 
 		override failsUnion(
@@ -462,15 +469,15 @@ const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
 			data: unknown
 		): boolean {
 			return this.isElsewhere() ?
-					this.failElsewhere()
+					this.skip()
 				:	super.failsUnion(branches, site, data)
 		}
 
 		override addError<error extends ArkIssue>(error: error): error {
 			if (this.branches.length === 0) {
 				if (this.firstPath === undefined) this.firstPath = error.path
-				else if (!pathEquals(error.path, this.firstPath)) {
-					this.failElsewhere()
+				else if (this.left || !pathEquals(error.path, this.firstPath)) {
+					this.skip()
 					return error
 				}
 			}
@@ -481,7 +488,19 @@ const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
 	return FirstPath
 }
 
-const isIndex = (node: BaseNode) => node.hasKind("index")
+const revisitsPathsByNode = new WeakMap<BaseNode, boolean>()
+
+// an index signature checks keys a prop has, as an alias can
+const revisitsPaths = (node: BaseNode): boolean => {
+	let revisits = revisitsPathsByNode.get(node)
+	if (revisits === undefined) {
+		revisits =
+			node.includesAlias ||
+			node.references.some(reference => reference.hasKind("index"))
+		revisitsPathsByNode.set(node, revisits)
+	}
+	return revisits
+}
 
 // a root calling no user code and transforming nothing finds its issues once
 // they're read
