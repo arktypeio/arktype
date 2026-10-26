@@ -291,11 +291,34 @@ const normalizeJson = (json: string) =>
 			`$ark.${reference.replace(/^[^.]*\./, "").replace(/\$\d+|(?<=[A-Z_a-z])\d+/g, "")}`
 	)
 
+const sha1 = (text: string) => createHash("sha1").update(text).digest("hex")
+
+// a node's json shares the json of each node it references, so it's written
+// once per object, with any text past maxString replaced by its digest
+const writeJson = (value: unknown, texts: Map<object, string>): string => {
+	if (typeof value !== "object" || value === null)
+		return normalizeJson(JSON.stringify(value))
+	let text = texts.get(value)
+	if (text !== undefined) return text
+	text =
+		Array.isArray(value) ?
+			`[${value.map(item => writeJson(item, texts)).join(",")}]`
+		:	`{${Object.entries(value)
+				.map(
+					([k, v]) =>
+						`${normalizeJson(JSON.stringify(k))}:${writeJson(v, texts)}`
+				)
+				.join(",")}}`
+	if (text.length > maxString) text = `{"~sha1":"${sha1(text)}"}`
+	texts.set(value, text)
+	return text
+}
+
 const textsOf = (node: BaseNode) => ({
 	expression: read(() => node.expression),
 	description: read(() => node.description),
 	string: read(() => node.toString()),
-	json: read(() => normalizeJson(JSON.stringify(node.json)))
+	json: read(() => writeJson(node.json, new Map()))
 })
 
 const record = (value: unknown): unknown => {
@@ -320,8 +343,7 @@ const serialize = (
 ): unknown => {
 	if (typeof value === "string") {
 		return (
-			value.length > maxString ?
-				{ "~sha1": createHash("sha1").update(value).digest("hex") }
+			value.length > maxString ? { "~sha1": sha1(value) }
 			: value.startsWith("$ark") ? normalizeJson(value)
 			: value
 		)
