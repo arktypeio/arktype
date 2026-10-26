@@ -123,10 +123,21 @@ export class ArkErrors extends BaseArkErrors {
 		const issues = this._i
 		if (this.written) return issues
 		this.written = true
-		const locale = (this.locale ??=
-			renderer?.select(this.config) ?? this.config.locale)
+		const locale = this.selectedLocale
 		for (const error of issues) writeError(error, this.config, locale)
 		return issues
+	}
+
+	/** @internal the first of issues, its text written alone */
+	get _first(): ArkError | undefined {
+		const first = this._i[0]
+		if (first && !this.written)
+			writeError(first, this.config, this.selectedLocale)
+		return first
+	}
+
+	private get selectedLocale(): Locale {
+		return (this.locale ??= renderer?.select(this.config) ?? this.config.locale)
 	}
 
 	/**
@@ -821,9 +832,10 @@ const excludedFromJson = {
 }
 
 /**
- * The first of `errors.issues`.
+ * The first of `errors.issues`, its text written without the rest's.
  */
-export const firstIssue = (errors: ArkErrors): ArkError => errors.issues[0]
+export const firstIssue = (errors: ArkErrors): ArkError =>
+	errors._first ?? errors.issues[0]
 
 /**
  * Errors by the string of their path.

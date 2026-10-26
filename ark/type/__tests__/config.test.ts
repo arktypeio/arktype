@@ -486,6 +486,17 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		attest(types.inner.foo.precompilation).satisfies("string")
 	})
 
+	it("allows read before a Type is used checks once it compiles", () => {
+		const T = type({ a: "string" })
+		const allows = T.allows
+		attest([allows({ a: "x" }), allows({ a: 1 }), allows({ a: "y" })]).equals([
+			true,
+			false,
+			true
+		])
+		attest(allows({ a: 2 })).equals(false)
+	})
+
 	it("referenced types keep their descriptions", () => {
 		const custom = { domain: { description: () => "a custom number" } }
 		const plain = scope({ x: "number" }).export()

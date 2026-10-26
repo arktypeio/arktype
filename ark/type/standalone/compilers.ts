@@ -1,5 +1,4 @@
 import {
-	compileDefault,
 	compileDomainOf,
 	describeBranches,
 	isDecidedByAllows,
@@ -19,7 +18,7 @@ import {
 	type UnionNode
 } from "@ark/schema"
 import { throwInternalError } from "@ark/util"
-import { disallowed, failsAtPath, FirstIssues } from "../runtime.ts"
+import { failsAtPath, FirstIssues } from "../runtime.ts"
 import { runtimeKeyOf } from "../standalone.ts"
 import { combines, writeCombinator } from "./combinators.ts"
 import {
@@ -77,17 +76,6 @@ class StandaloneCompiler extends TraversalCompiler {
 		return this.siteRef(issueSiteOf(node.failureSite))
 	}
 
-	// a transforming object's Allows rejects through a call V8 has no feedback
-	// for until data fails, so the transform after it is compiled with its
-	// checks and repeats none of their reads
-	override rejection(node: BaseNode): string {
-		return (
-				this.traversalKind === "Allows" && !this.shortest && node.transforms
-			) ?
-				`${this.ref(disallowed)}()`
-			:	"false"
-	}
-
 	// a site of literals, or a key's site of them, is built where it fails, and
 	// stays a ref the unit keys
 	siteRef(site: object): string {
@@ -107,53 +95,6 @@ class StandaloneCompiler extends TraversalCompiler {
 	// a keyword check adds no issues itself, so its Apply needn't count them
 	override addsNoIssues(predicate: Predicate): boolean {
 		return isKeyword(predicate)
-	}
-
-	// a case returning what the next one does falls through to it
-	override switch(
-		on: string,
-		cases: readonly SwitchCase[],
-		otherwise: string
-	): this {
-		return this.block(`switch(${on})`, () => {
-			for (const [i, [label, returned]] of cases.entries()) {
-				const next = cases[i + 1]
-				const fallsThrough =
-					label !== "default" &&
-					next?.[0] !== "default" &&
-					next?.[1] === returned
-				this.line(fallsThrough ? `${label}:` : `${label}: return ${returned}`)
-			}
-			return this
-		}).return(otherwise)
-	}
-
-	// a plain object missing every default, its only changes, is copied once
-	override initializeTransform(
-		transformedChildren: readonly BaseNode[],
-		structure?: StructureNode
-	): this {
-		super.initializeTransform(transformedChildren)
-		if (
-			!structure ||
-			transformedChildren.length < 2 ||
-			transformedChildren.length !== structure.defaultable.length ||
-			structure.includesMorph ||
-			structure.undeclared === "delete" ||
-			this.inPlace
-		)
-			return this
-		const keys = structure.defaultable.map(prop => prop.key)
-		return this.if(
-			`${keys.map(k => `!(${this.serialize(k)} in data) && `).join("")}${structure.compileShapeCheck(this)}Object.getPrototypeOf(data) === Object.prototype`,
-			() => {
-				this.const("out", "{ ...data }")
-				for (const prop of structure.defaultable)
-					compileDefault(this, prop, "out")
-				structure.compileDeclaredCopy(this, keys)
-				return this.return("out")
-			}
-		)
 	}
 
 	// a union no branch allows reports its description, unless data fails
