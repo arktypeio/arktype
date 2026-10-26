@@ -42,6 +42,10 @@ export class UndetailedErrors extends ArkErrors {
 		return issues
 	}
 
+	override get _first(): ArkError | undefined {
+		return this.issues[0]
+	}
+
 	override get summary(): string {
 		return this._.reduce(
 			(summary, issue) =>

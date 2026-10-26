@@ -4,6 +4,7 @@ import { flatMorph, throwError } from "@ark/util"
 import {
 	byAncestorPath,
 	byPath,
+	firstIssue,
 	flatByPath,
 	flatProblemsByPath,
 	scope,
@@ -561,6 +562,18 @@ d must be a number (was a string)`)
 		data.b = 0
 		attest(out.summary).snap("b must be a number (was a string)")
 		attest(out.constructor).equals(type.errors)
+	})
+
+	it("firstIssue writes the first issue's text alone", () => {
+		const out = type({ a: "string", b: "number" })({
+			a: 0,
+			b: "b"
+		}) as ArkErrors
+		attest(firstIssue(out).message).snap("a must be a string (was a number)")
+		attest(out._[1].message as string | undefined).equals(undefined)
+		attest(out.issues[0]).is(firstIssue(out))
+		attest(out.summary).snap(`a must be a string (was a number)
+b must be a number (was a string)`)
 	})
 
 	it("inspected errors print their issues", () => {
