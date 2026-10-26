@@ -177,6 +177,34 @@ contextualize(() => {
 		attest(T({ kind: "c", z: 1 }).toString()).snap("z must be boolean (was 1)")
 	})
 
+	it("cases include units no pair of branches was told apart by", () => {
+		// each pair with the third branch differs first at g, so only the
+		// branches themselves hold its id
+		const T = type({ g: "'x'", id: "1", a: "string" })
+			.or({ g: "'x'", id: "2", b: "string" })
+			.or({ g: "'y'", id: "4", d: "string" })
+			.or({ e: "string" })
+		attest(
+			Object.keys(T.internal.assertHasKind("union").discriminant!.cases)
+		).snap(["1", "2", "4", "default"])
+		attest(T({ g: "y", id: 4 }).toString()).snap(
+			"d must be a string (was missing) or e must be a string (was missing)"
+		)
+		attest(T({ id: 5 }).toString()).snap(
+			"id must be 1, 2 or 4 (was 5) or e must be a string (was missing)"
+		)
+	})
+
+	it("cases include domains no pair of branches was told apart by", () => {
+		const T = type({ g: "'x'", v: "string", a: "string" })
+			.or({ g: "'x'", v: "number", b: "string" })
+			.or({ g: "'y'", v: "boolean", d: "string" })
+			.or({ e: "string" })
+		attest(T({ g: "y", v: true }).toString()).snap(
+			"d must be a string (was missing) or e must be a string (was missing)"
+		)
+	})
+
 	it("indiscriminable", () => {
 		const T = getPlaces().type([
 			"ocean",

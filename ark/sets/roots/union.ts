@@ -197,6 +197,17 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 		}
 	}
 
+	// a pair's disjoint is only its first differing key, so a branch told apart
+	// from every other at another key may hold a case none recorded
+	for (const candidate of candidates) {
+		const cases = Object.values(candidate.cases) as CaseContext[]
+		for (let i = 0; i < node.branches.length; i++) {
+			if (cases.some(c => c.branchIndices.includes(i))) continue
+			for (const [k, condition] of casesHeldAt(node.branches[i], candidate))
+				addCase(candidate.cases, k, i, condition)
+		}
+	}
+
 	const viableCandidates =
 		node.ordered ?
 			viableOrderedCandidates(candidates, node.branches)
@@ -278,6 +289,59 @@ const addUnitCases = (
 		addCase(candidate.cases, unit.serializedUnit, lIndex, unit)
 	for (const unit of entry.r)
 		addCase(candidate.cases, unit.serializedUnit, rIndex, unit)
+}
+
+// the cases a branch holds at a candidate's path, each key to it required,
+// as a disjoint at the path finds them
+const casesHeldAt = (
+	branch: BaseRoot,
+	{ kind, path }: DiscriminantCandidate
+): [k: string, condition: unknown][] => {
+	let value = branch.rawIn
+	for (const k of path) {
+		const prop =
+			typeof k === "number" || !value.hasKind("intersection") ?
+				undefined
+			:	value.structure?.propsByKey[k]
+		if (!prop?.required) return []
+		value = prop.value
+	}
+	const values = value.hasKind("union") ? value.branches : [value]
+	if (kind === "unit") {
+		const units = values.filter(
+			(v): v is Unit.Node =>
+				v.hasKind("unit") &&
+				isCaseUnit(v) &&
+				!(path.length && isUndefinedCase(v.serializedUnit))
+		)
+		if (units.length !== values.length) return []
+		return units.map(unit => [unit.serializedUnit, unit])
+	}
+	const domains = new Set(values.map(domainCaseOf))
+	if (domains.size !== 1) return []
+	const [domain] = domains
+	if (!domain || (path.length && domain === "undefined")) return []
+	return [
+		[
+			`"${domain}"`,
+			value.hasKind("domain") ? value
+			: domain === "undefined" || domain === "null" || domain === "boolean" ?
+				domain
+			:	$ark.intrinsic[domain]
+		]
+	]
+}
+
+// the domain a domain discriminant reads a node as, if it has one
+const domainCaseOf = (node: BaseRoot): Domain | undefined => {
+	if (node.hasKind("unit")) return node.domain
+	if (node.hasKind("domain")) return node.domain
+	const basis = node.hasKind("intersection") ? node.basis : null
+	return (
+		basis?.hasKind("domain") ? basis.domain
+		: basis?.hasKind("proto") ? "object"
+		: undefined
+	)
 }
 
 const addCase = (

@@ -97,7 +97,7 @@ contextualize(() => {
 		const getBad = () => matcher(null)
 		attest<() => never>(getBad)
 		attest(getBad).throws.snap(
-			"TraversalError: must be a string, a number, false or true (was null)"
+			"TraversalError: must be a string, a number or boolean (was null)"
 		)
 	})
 
