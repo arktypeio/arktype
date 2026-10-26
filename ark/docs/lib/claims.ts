@@ -17,6 +17,7 @@ import {
 	fullLeaderboards,
 	isOwnSuite,
 	isFirst,
+	isWellKnown,
 	isWrittenByUs,
 	leaderboards,
 	leadDependsOn,
@@ -26,6 +27,9 @@ import {
 	suiteRowsOf,
 	tieBand,
 	ties,
+	unnamed,
+	wellKnownDownloads,
+	wellKnownRule,
 	type CategoryId,
 	type Standing
 } from "./bench/leaderboard.ts"
@@ -233,11 +237,28 @@ const led = boardOrder.filter(leads)
 /** whether ArkType may claim every category the board shows, the only time it may say "Pick 3" */
 export const leadsEvery = led.length === boardOrder.length
 
-/** ArkType's best average, and the next best where ArkType leads, otherwise the leader */
+/**
+ * ArkType's best average, the next best's where ArkType leads, otherwise the
+ * leader's, and the best of the other libraries the site may name
+ */
 const averageOf = (category: CategoryId) => {
 	const { place, score } = placeOf(category)
-	return { score, other: leaderboards[category].standings[place === 1 ? 1 : 0] }
+	const { standings } = leaderboards[category]
+	return {
+		score,
+		other: standings[place === 1 ? 1 : 0],
+		named: standings.find(
+			s => s.library !== "ArkType" && isWellKnown(s.library)
+		)!
+	}
 }
+
+/** a library's name where the site may state it, otherwise how the copy refers to it: "the best" */
+const nameOr = (library: string, otherwise: string) =>
+	isWellKnown(library) ? library : otherwise
+
+/** which libraries the site names */
+const namingNote = `We name only libraries with ${wellKnownRule}; every place, average and tie counts all of them.`
 
 /** how far above a category's best average still counts as first: "5%" */
 export const tieMargin = `${Math.round(tieBand * 100)}%`
@@ -273,7 +294,7 @@ const standingOf = (category: CategoryId) => {
 		by,
 		standing:
 			ties(category) ?
-				`${wording[category].superlative} on average ${across}, within ${tieMargin} of ${first.library}`
+				`${wording[category].superlative} on average ${across}, within ${tieMargin} of ${nameOr(first.library, "the best")}`
 			: leads(category) ?
 				`${wording[category].superlative} on average ${across}`
 			:	`${ordinal(place)} of ${ranked} on average ${across}`
@@ -285,10 +306,20 @@ const listOf = (items: string[]) =>
 		items.join("")
 	:	`${items.slice(0, -1).join(", ")} and ${items.at(-1)}`
 
-/** a category's standing and best average, beside the next best's and by how much where ArkType leads, otherwise beside the leader's */
+/**
+ * A category's standing and best average, beside the next best's and by how
+ * much where ArkType leads, otherwise beside the leader's, then the best named
+ * library's where the site doesn't name that one
+ */
 const averagesOf = (category: CategoryId) => {
 	const { standing, average, by } = standingOf(category)
-	return `${standing}: ${averageText(average.score)} against ${average.other.library}'s ${averageText(average.other.score)}${by && `, ${by} lower`}.`
+	const { score, other, named } = average
+	const versus =
+		other === named ?
+			`${averageText(score)} against ${other.library}'s ${averageText(other.score)}${by && `, ${by} lower`}.`
+		: by ? `${averageText(score)}, ${by} lower than the next best's.`
+		: `${averageText(score)} against the best's ${averageText(other.score)}.`
+	return `${standing}: ${versus}${other === named ? "" : ` The best of the other libraries with ${wellKnownRule} is ${named.library}, at ${averageText(named.score)}.`}`
 }
 
 /** the headline's suites whose code for each library we wrote: "valibot.dev's login form" */
@@ -318,7 +349,7 @@ const fullBoardPlaces = listOf(
 		const [first] = fullLeaderboards[category].standings
 		return place === 1 ?
 				`1st for ${wording[category].measures}`
-			:	`${ordinal(place)} of ${ranked} for ${wording[category].measures}, ${averageText(score)} to ${first.library}'s ${averageText(first.score)}`
+			:	`${ordinal(place)} of ${ranked} for ${wording[category].measures}, ${averageText(score)} to ${nameOr(first.library, "the best")}'s ${averageText(first.score)}`
 	})
 )
 
@@ -387,6 +418,12 @@ const sizeResultsBeating = (library: string) => {
 
 const sizeRival = averageOf("size").other
 
+/** how sizeClose refers to the library closest to ArkType */
+const sizeRivalName = nameOr(
+	sizeRival.library,
+	leads("size") && !ties("size") ? "the next best" : "another library"
+)
+
 /** each category's results on the independent suites, for the headline's notes, and what startup's measure */
 const independentResults = `${listOf(
 	boardOrder.map(
@@ -405,7 +442,7 @@ export const claims = {
 		leads("size") ?
 			"TypeScript's smallest, fastest validator."
 		:	"TypeScript's fastest validator.",
-	headlineNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote} A weekly job reruns the size benchmarks at each library's newest release.`,
+	headlineNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote} ${namingNote} A weekly job reruns the size benchmarks at each library's newest release.`,
 	// the fastest and the smallest builds differ: optimize "size" makes the
 	// product schema's valid data 2.2x slower
 	buildChoice:
@@ -472,7 +509,7 @@ export const claims = {
 			"Fast. Small. Quick to start. Pick 3."
 		:	led.map(category => wording[category].phrase).join(" "),
 	// what the board's superlatives average
-	boardNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote}`,
+	boardNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote} ${namingNote}`,
 	// startupChart; the form is 1.04M vs Valibot's 2.37M, 20 of 20
 	startupLogin:
 		"On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than ajv, Valibot, Typia, Zod Mini, Zod, compiled Zod or TypeBox, in all 20 paired runs on Node 24.",
@@ -490,8 +527,8 @@ export const claims = {
 	// 808927feb's rows Typia had it, 1.256 to 1.297
 	sizeClose:
 		leads("size") && !ties("size") ?
-			`Size is the close one: ArkType's average is ${standingOf("size").by} below ${sizeRival.library}'s, and ${sizeRival.library} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`
-		:	`Size is the close one: ${sizeRival.library} has the best average, ${averageText(sizeRival.score)} to ArkType's ${averageText(placeOf("size").score)}${ties("size") ? `, ArkType's within ${tieMargin} of it` : ""}, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
+			`Size is the close one: ArkType's average is ${standingOf("size").by} below ${sizeRivalName}'s, and ${sizeRivalName} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`
+		:	`Size is the close one: ${sizeRivalName} has the best average, ${averageText(sizeRival.score)} to ArkType's ${averageText(placeOf("size").score)}${ties("size") ? `, ArkType's within ${tieMargin} of it` : ""}, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
 	// the "size" preset for schema-heavy frontends, where the default build's
 	// lead at form scale (sizeAverage) doesn't carry. Pending until
 	// leaderboard.json has a presetSize suite with the preset under Valibot on
@@ -582,8 +619,8 @@ type CategoryBase = {
 	leads: boolean
 	/** whether that's a tie, another library having the best average */
 	ties: boolean
-	/** ArkType's best average, and the library the card names beside it */
-	average: { score: number; other: Standing }
+	/** ArkType's best average, the next best's or the leader's, and the best named library's */
+	average: { score: number; other: Standing; named: Standing }
 	/** how far ArkType's average is below the next best's, where it's the best: "15.0%" */
 	by: string
 	source: BenchmarkChart["source"]
@@ -611,16 +648,21 @@ export type SpreadCategory = CategoryBase & {
 /** a category drawn as its best averages, ArkType's among them */
 export type StandingCategory = CategoryBase & {
 	id: "size"
-	/** the leaders, at least five and through one past ArkType */
+	/** the named leaders, at least five and through one past ArkType */
 	standings: Standing[]
+	/** whether a library the site doesn't name ranks among them */
+	omits: boolean
 }
 
 export type Category = BarCategory | SpreadCategory | StandingCategory
 
-/** ArkType, Zod and Valibot, the library with the next best average and the closest on the chart */
+/** ArkType, Zod and Valibot, the best named library by average and the closest named one on the chart */
 const onBoard = (chart: BenchmarkChart, runnerUp: string) => {
-	const closest = chart.bars.find(bar => bar.kind !== "precompiled")
-	return chart.bars.filter(
+	const named = chart.bars.filter(
+		bar => bar.kind === "precompiled" || isWellKnown(bar.name)
+	)
+	const closest = named.find(bar => bar.kind !== "precompiled")
+	return named.filter(
 		bar =>
 			bar.kind === "precompiled" ||
 			isRival(bar) ||
@@ -628,6 +670,15 @@ const onBoard = (chart: BenchmarkChart, runnerUp: string) => {
 			bar === closest
 	)
 }
+
+/** the size card's named leaders, at least five and through one past ArkType */
+const sizeStandings = leaderboards.size.standings.filter(s =>
+	isWellKnown(s.library)
+)
+const shownSize = sizeStandings.slice(
+	0,
+	Math.max(5, sizeStandings.findIndex(s => s.library === "ArkType") + 2)
+)
 
 /** the homepage's board: each category against Zod and Valibot, every number from a chart above */
 export const categories: Category[] = [
@@ -649,7 +700,7 @@ export const categories: Category[] = [
 		label: "cold start",
 		build: "default build",
 		...standingOf("startup"),
-		bars: onBoard(startupChart, leaderboards.startup.standings[1].library),
+		bars: onBoard(startupChart, averageOf("startup").named.library),
 		unit: "million instructions",
 		format: n => `${n}M`,
 		margin: "less startup work than",
@@ -660,10 +711,10 @@ export const categories: Category[] = [
 		label: "bundle size",
 		build: "default build",
 		...standingOf("size"),
-		standings: leaderboards.size.standings.slice(
-			0,
-			Math.max(5, placeOf("size").place + 1)
-		),
+		standings: shownSize,
+		omits:
+			leaderboards.size.standings.indexOf(shownSize.at(-1)!) >=
+			shownSize.length,
 		source: headlineMethod
 	}
 ]
@@ -710,12 +761,14 @@ const firstInAll = [
 )
 
 /**
- * The homepage's Pick 3 table: ArkType, every library first in a category
- * or next best in one, then Valibot and Zod, the two that wrote Standard
- * Schema with it
+ * The homepage's Pick 3 table: ArkType, every named library first in a
+ * category or best of the others named in one, then Valibot and Zod, the two
+ * that wrote Standard Schema with it
  */
 export const pickThreeTable: {
 	title: Claim<string>
+	/** which libraries it shows */
+	shown: string
 	categories: { id: CategoryId; label: string }[]
 	rows: PickThreeRow[]
 } = {
@@ -723,6 +776,7 @@ export const pickThreeTable: {
 		leadsEvery && firstInAll.length === 1 ?
 			"Only ArkType is first in all three."
 		:	{ pending: "Only ArkType is first in all three." },
+	shown: `Libraries with ${wellKnownRule} shown, every library counted.`,
 	categories: boardOrder.map(category => ({
 		id: category,
 		label: wording[category].measures
@@ -734,11 +788,63 @@ export const pickThreeTable: {
 				const board = leaderboards[category]
 				return [
 					...board.standings.filter(s => isFirst(board, s.library)),
-					board.standings.find(s => s.library !== "ArkType")!
-				].map(s => s.library)
+					averageOf(category).named
+				]
+					.map(s => s.library)
+					.filter(isWellKnown)
 			}),
 			"Valibot",
 			"Zod"
 		])
 	].map(rowOf)
+}
+
+const escapeRegex = (text: string) =>
+	text.replace(/[$()*+./?[\\\]^{|}]/g, "\\$&")
+
+/** every suite's label, which may name the library whose benchmark it is */
+const suiteLabels = boardOrder.flatMap(
+	category => fullLeaderboards[category].suites
+)
+
+/** Throws if copy names a library the site may not, one under wellKnownDownloads */
+export const assertNamesWellKnown = (copy: string, by: string) => {
+	const prose = suiteLabels.reduce(
+		(text, label) => text.replaceAll(label, ""),
+		copy
+	)
+	const named = unnamed.filter(library =>
+		new RegExp(`(?<![\\w@/-])${escapeRegex(library)}(?![\\w/-])`, "i").test(
+			prose
+		)
+	)
+	if (named.length) {
+		throw new Error(
+			`${by} names ${listOf(named)}, which the site may not: each has under ${wellKnownDownloads} npm downloads a week`
+		)
+	}
+}
+
+for (const [id, claim] of Object.entries(claims))
+	assertNamesWellKnown(draftOf(claim), id)
+assertNamesWellKnown(draftOf(pickThreeTable.title), "pickThreeTable")
+
+// the names the board and the Pick 3 table show
+for (const library of [
+	...categories.flatMap(category => [
+		category.average.named.library,
+		...(category.id === "speed" ? category.versus.map(v => v.name)
+		: category.id === "startup" ?
+			category.bars
+				.filter(bar => bar.kind !== "precompiled")
+				.map(bar => bar.name)
+		:	category.standings.map(s => s.library))
+	]),
+	...pickThreeTable.rows.map(row => row.library)
+]) {
+	if (!isWellKnown(library)) {
+		throw new Error(
+			`The homepage names ${library}, which has under ${wellKnownDownloads} npm downloads a week`
+		)
+	}
 }

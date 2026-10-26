@@ -1,5 +1,6 @@
 import { Fragment, type CSSProperties } from "react"
 import { formatRatio } from "../../lib/bench/bench.ts"
+import { wellKnownRule } from "../../lib/bench/leaderboard.ts"
 import {
 	averageText,
 	categories,
@@ -144,21 +145,44 @@ const Foot = ({ category }: { category: Category }) => (
 /** a best average, as a multiple of the best result: "1.252×" */
 const multiple = (score: number) => `${averageText(score)}×`
 
-/** ArkType's best average beside the next best's and how far below it, or the leader's where ArkType isn't first, within the band or not */
+/**
+ * ArkType's best average beside the next best's and how far below it, or the
+ * leader's where ArkType isn't first, within the band or not, then the best
+ * named library's where the site doesn't name that one
+ */
 const Average = ({ category, of }: { category: Category; of: string }) => {
-	const { score, other } = category.average
-	return category.leads && !category.ties ?
-			<>
-				Lowest average: <b>{multiple(score)}</b> {of}, <b>{category.by}</b>{" "}
-				below {other.library}'s <b>{multiple(other.score)}</b>
-			</>
-		:	<>
-				{category.ties ?
-					`Within ${tieMargin} of ${other.library}'s average: `
-				:	`${other.library}'s average is lower: `}
-				<b>{multiple(score)}</b> {of}, to {other.library}'s{" "}
-				<b>{multiple(other.score)}</b>
-			</>
+	const { score, other, named } = category.average
+	const shown = other === named
+	const others = shown ? `${other.library}'s` : "the best's"
+	return (
+		<>
+			{category.leads && !category.ties ?
+				<>
+					Lowest average: <b>{multiple(score)}</b> {of}, <b>{category.by}</b>{" "}
+					below{" "}
+					{shown ?
+						<>
+							{others} <b>{multiple(other.score)}</b>
+						</>
+					:	"the next best's"}
+				</>
+			:	<>
+					{category.ties ?
+						`Within ${tieMargin} of ${shown ? `${other.library}'s average` : "the best average"}: `
+					:	`${shown ? `${other.library}'s average` : "The best average"} is lower: `
+					}
+					<b>{multiple(score)}</b> {of}, to {others}{" "}
+					<b>{multiple(other.score)}</b>
+				</>
+			}
+			{!shown && (
+				<>
+					. Best rival with {wellKnownRule}: {named.library}'s{" "}
+					<b>{multiple(named.score)}</b>
+				</>
+			)}
+		</>
+	)
 }
 
 const BarCard = ({ category }: { category: BarCategory }) => {
@@ -366,6 +390,7 @@ const StandingCard = ({ category }: { category: StandingCategory }) => {
 			</ol>
 			<p className="card-rest">
 				1× = the smallest bundle everywhere · lower is better
+				{category.omits && ` · libraries with ${wellKnownRule}`}
 			</p>
 		</>
 	)

@@ -378,6 +378,63 @@ suite) left size with ajv or Typia too, and some only by unranking the
 runners-up. Wherever the headline's standings are stated, the site states
 ArkType's place on the full board beside them.
 
+### Which libraries the site names
+
+Every standing, average and tie counts every library on the rows. The
+homepage, its social card and the blog post's numbers name a library only if
+its npm package had at least 100k downloads in the week before
+(`wellKnownDownloads` in `ark/docs/lib/bench/leaderboard.ts`), so the
+libraries named are ones a reader knows. Where the next best or the leader
+isn't named, the copy says "the next best" or "the best" and names the best
+library that is beside it. The docs build throws if the homepage or the blog
+post names one under the cutoff.
+
+`node downloads.ts` asks npm's public API
+(`api.npmjs.org/downloads/point/last-week/<package>`) for each library on a
+row and writes `results/downloads-<date>.json`, which `leaderboard.ts` copies
+into `leaderboard.json`. The week of 2026-10-16 to 2026-10-22:
+
+| library                                 | package                         | downloads   | named |
+| --------------------------------------- | ------------------------------- | ----------- | ----- |
+| ajv                                     | `ajv`                           | 249,308,485 | yes   |
+| Zod, Zod Mini, Zod 3 and Zod (compiled) | `zod`                           | 221,643,257 | yes   |
+| TypeBox                                 | `@sinclair/typebox` + `typebox` | 81,996,242  | yes   |
+| Effect Schema                           | `effect`                        | 31,551,008  | yes   |
+| Joi                                     | `joi`                           | 15,736,800  | yes   |
+| Valibot                                 | `valibot`                       | 14,436,274  | yes   |
+| Yup                                     | `yup`                           | 7,451,643   | yes   |
+| @cfworker/json-schema                   | `@cfworker/json-schema`         | 6,709,707   | yes   |
+| Superstruct                             | `superstruct`                   | 4,325,353   | yes   |
+| @exodus/schemasafe                      | `@exodus/schemasafe`            | 2,815,227   | yes   |
+| io-ts                                   | `io-ts`                         | 1,780,315   | yes   |
+| ArkType                                 | `arktype`                       | 1,445,087   | yes   |
+| @sapphire/shapeshift                    | `@sapphire/shapeshift`          | 1,000,634   | yes   |
+| sury                                    | `sury`                          | 269,129     | yes   |
+| Typia                                   | `typia`                         | 211,406     | yes   |
+| runtypes                                | `runtypes`                      | 147,816     | yes   |
+| pure-parse                              | `pure-parse`                    | 45,285      | no    |
+| zod-compiler                            | `zod-compiler`                  | 40,310      | no    |
+| @remix-run/data-schema                  | `@remix-run/data-schema`        | 32,295      | no    |
+| decoders                                | `decoders`                      | 18,035      | no    |
+| rescript-schema                         | `rescript-schema`               | 12,657      | no    |
+| ts-auto-guard                           | `ts-auto-guard`                 | 10,319      | no    |
+| ata                                     | `ata-validator`                 | 3,913       | no    |
+| @sinclair/typemap/valibot               | `@sinclair/typemap`             | 1,971       | no    |
+| spectypes                               | `spectypes`                     | 534         | no    |
+| ts-runtime-checks                       | `ts-runtime-checks`             | 294         | no    |
+| stnl                                    | `stnl`                          | 97          | no    |
+| type-predicate-generator                | `type-predicate-generator`      | 87          | no    |
+| @sx3/gate                               | `@sx3/gate`                     | 19          | no    |
+| @railway-ts/pipelines                   | `@railway-ts/pipelines`         | 14          | no    |
+| @ts-runtypes                            | `@ts-runtypes/core`             | 9           | no    |
+| paseri                                  | none: it publishes to JSR only  | 0           | no    |
+
+The cutoff sits in the widest gap near the least-downloaded validator
+readers know: Typia has 211k, runtypes 148k and pure-parse, the
+most-downloaded below them, 45k. Downloads count dependents too, so
+@cfworker/json-schema, @exodus/schemasafe and @sapphire/shapeshift clear it
+mostly as other packages' dependencies. None of them is named today.
+
 ### The rule
 
 **Categories and benchmarks.** Each category is a set of suites, each suite a

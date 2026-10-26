@@ -168,3 +168,28 @@ export const leadDependsOn = (category: CategoryId) =>
 		label =>
 			!isFirst(leaderboardOf(category, independentSuites, label), "ArkType")
 	)
+
+/** the weekly npm downloads a library needs for the site to name it: Typia, the least-downloaded validator most readers know, has 211k, and the most-downloaded niche one, pure-parse, 45k */
+export const wellKnownDownloads = 100_000
+
+/** wellKnownDownloads as the site states it */
+export const wellKnownRule = `${wellKnownDownloads / 1000}k+ npm downloads a week`
+
+const weekly: Record<string, number> = data.downloads.weekly
+
+/** whether the site may name a library; every standing still counts every library */
+export const isWellKnown = (library: string) => {
+	if (!(library in weekly)) {
+		throw new Error(
+			`${library} has no npm downloads in leaderboard.json: add its package to ark/repo/bench/external/downloads.ts and rerun it`
+		)
+	}
+	return weekly[library] >= wellKnownDownloads
+}
+
+/** every library on a row that the site may not name */
+export const unnamed = [
+	...new Set(
+		suites.flatMap(s => s.rows.flatMap(row => Object.keys(row.results)))
+	)
+].filter(library => !isWellKnown(library))

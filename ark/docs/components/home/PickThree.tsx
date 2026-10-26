@@ -23,7 +23,7 @@ export const PickThree = () => (
 			</h3>
 			<p>
 				Each library's best average, as a multiple of the best result. Lower is
-				better.
+				better. {pickThreeTable.shown}
 			</p>
 		</figcaption>
 		<table className="p3-table">

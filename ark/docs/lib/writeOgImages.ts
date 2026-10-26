@@ -4,7 +4,12 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { decompress } from "wawoff2"
 import { leaderboards, type CategoryId } from "./bench/leaderboard.ts"
-import { assertStandings, claims, draftOf } from "./claims.ts"
+import {
+	assertNamesWellKnown,
+	assertStandings,
+	claims,
+	draftOf
+} from "./claims.ts"
 import { getPageTree } from "./content/docs.ts"
 import { docsDir, publicDir } from "./content/paths.ts"
 
@@ -396,7 +401,7 @@ const blogCopyOf = (path: string, description: string) => [
  * Writes the social cards whose text comes from claims.ts or a page's
  * frontmatter, so they can't fall behind it: the homepage's og.png and each
  * blog post's ogImage. Throws if a blog description states a standing
- * the board doesn't back.
+ * the board doesn't back, or a blog post names a library the site may not.
  */
 export const writeOgImages = async (): Promise<void> => {
 	await loadFonts()
@@ -405,6 +410,7 @@ export const writeOgImages = async (): Promise<void> => {
 		if (section !== "blog") continue
 		for (const copy of blogCopyOf(path, frontmatter.description))
 			assertStandings(copy, path)
+		assertNamesWellKnown(readFileSync(path, "utf8"), path)
 		if (!frontmatter.ogImage) continue
 		writePng(
 			join(publicDir, "image", frontmatter.ogImage),
