@@ -1070,27 +1070,21 @@ export class Interpreter {
 		}
 		const result = this.exportValue(target)
 		if (result.error !== undefined) throw result.error
-		if (isDynamic(result.value)) {
-			return {
-				value: new DynamicValue(
-					ctx.module,
-					node,
-					`\`${binding.name}\` is imported from ${target.module.path}`,
-					result.value
-				)
-			}
-		}
 		const exported =
 			isChangeable(result.value) &&
 			target.kind === "binding" &&
 			this.writtenIn(target.binding, target.module, ctx)
-		if (exported) {
+		const dynamic =
+			isDynamic(result.value) ?
+				result.value
+			:	exported && new DynamicValue(target.module, target.binding.id, exported)
+		if (dynamic) {
 			return {
 				value: new DynamicValue(
 					ctx.module,
 					node,
 					`\`${binding.name}\` is imported from ${target.module.path}`,
-					new DynamicValue(target.module, target.binding.id, exported)
+					dynamic
 				)
 			}
 		}
