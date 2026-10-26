@@ -21,7 +21,7 @@ During a validation, each function a definition holds runs once, its calls and p
 
 ## Libraries
 
-A library ships its source, and the build precompiles it with the program if its `package.json` opts in:
+A library ships its definitions unprecompiled, as its source or what `tsc` emits from it, and the build precompiles them with the program if its `package.json` opts in:
 
 ```json title="package.json"
 {
