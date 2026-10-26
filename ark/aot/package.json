@@ -126,6 +126,7 @@
 		"arktype": "workspace:*",
 		"esbuild": "0.25.10",
 		"fast-check": "3.23.2",
+		"rollup": "4.52.4",
 		"typescript-6": "npm:typescript@6.0.3",
 		"vite": "8.3.4",
 		"vitest": "5.0.3",
