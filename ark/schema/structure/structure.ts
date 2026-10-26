@@ -1082,7 +1082,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		for (const index of transformedIndex) transformedChildren.push(index.value)
 		if (this.sequence?.transforms) transformedChildren.push(this.sequence)
 		transformedChildren.push(...this.defaultable)
-		js.initializeTransform(transformedChildren, this)
+		js.initializeTransform(transformedChildren)
+		if (
+			transformedChildren.length >= 2 &&
+			transformedChildren.length === this.defaultable.length
+		)
+			this.compileCopyOnce(js)
 		js.let("out", "data")
 		// a lone site nothing after can fail completes its copy itself
 		const once =
@@ -1166,6 +1171,21 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 		if (!once) this.compileDeclaredCopy(js)
 		js.return("out")
+	}
+
+	// a plain object missing every default, its only changes, is copied once
+	private compileCopyOnce(js: NodeCompiler): NodeCompiler {
+		if (this.includesMorph || this.undeclared === "delete" || js.inPlace)
+			return js
+		const keys = this.defaultable.map(prop => prop.key)
+		return js.if(
+			`${keys.map(k => `!(${js.serialize(k)} in data) && `).join("")}${this.compileShapeCheck(js)}Object.getPrototypeOf(data) === Object.prototype`,
+			() => {
+				js.const("out", "{ ...data }")
+				for (const prop of this.defaultable) compileDefault(js, prop, "out")
+				return this.compileDeclaredCopy(js, keys).return("out")
+			}
+		)
 	}
 
 	private compileDefaults(js: NodeCompiler, first?: boolean): NodeCompiler {

@@ -1,5 +1,4 @@
 import {
-	compileDefault,
 	compileDomainOf,
 	describeBranches,
 	isDecidedByAllows,
@@ -115,34 +114,6 @@ class StandaloneCompiler extends TraversalCompiler {
 			}
 			return this
 		}).return(otherwise)
-	}
-
-	// a plain object missing every default, its only changes, is copied once
-	override initializeTransform(
-		transformedChildren: readonly BaseNode[],
-		structure?: StructureNode
-	): this {
-		super.initializeTransform(transformedChildren)
-		if (
-			!structure ||
-			transformedChildren.length < 2 ||
-			transformedChildren.length !== structure.defaultable.length ||
-			structure.includesMorph ||
-			structure.undeclared === "delete" ||
-			this.inPlace
-		)
-			return this
-		const keys = structure.defaultable.map(prop => prop.key)
-		return this.if(
-			`${keys.map(k => `!(${this.serialize(k)} in data) && `).join("")}${structure.compileShapeCheck(this)}Object.getPrototypeOf(data) === Object.prototype`,
-			() => {
-				this.const("out", "{ ...data }")
-				for (const prop of structure.defaultable)
-					compileDefault(this, prop, "out")
-				structure.compileDeclaredCopy(this, keys)
-				return this.return("out")
-			}
-		)
 	}
 
 	// a union no branch allows reports its description, unless data fails

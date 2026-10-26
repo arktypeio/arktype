@@ -531,11 +531,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return this.line("ctx.path.pop()")
 	}
 
-	// a standalone build reads the structure it transforms
-	initializeTransform(
-		transformedChildren: readonly BaseNode[],
-		_structure?: StructureNode
-	): this {
+	initializeTransform(transformedChildren: readonly BaseNode[]): this {
 		this.checksMorphErrors = transformedChildren.some(
 			child => child.includesMorph || child.transformNeedsCtx
 		)
