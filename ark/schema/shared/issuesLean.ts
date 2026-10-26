@@ -74,7 +74,8 @@ export class ArkErrors implements FailureContext {
 		context.text?.(issue)
 		if (key !== undefined) path.pop()
 		this._.push(issue)
-		return this.failFast
+		// only errors stopping at the first issue stop at this one
+		return undefined
 	}
 
 	/** @internal */
@@ -103,6 +104,11 @@ export interface ArkErrors {
 // stops at the first issue
 export class FirstIssues extends ArkErrors {
 	override get failFast(): true {
+		return true
+	}
+
+	override _at(site: FailureSite, data: unknown, key?: PropertyKey): true {
+		super._at(site, data, key)
 		return true
 	}
 }

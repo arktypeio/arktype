@@ -60,7 +60,7 @@ var ArkIssues = class {
 		context.text?.(issue)
 		if (key !== void 0) path.pop()
 		this._.push(issue)
-		return this.failFast
+		return void 0
 	}
 	/** @internal */
 	_in(apply, data, key, missing) {

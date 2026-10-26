@@ -138,7 +138,8 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		context.text?.(issue)
 		if (key !== undefined) path.pop()
 		this._.push(issue)
-		return this.failFast
+		// only errors stopping at the first issue stop at this one
+		return undefined
 	}
 
 	/** @internal */
@@ -161,6 +162,11 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 export class FirstIssues extends ArkIssues {
 	// read from the prototype, so no errors object lists it among its own keys
 	override get failFast(): true {
+		return true
+	}
+
+	override _at(site: FailureSite, data: unknown, key?: PropertyKey): true {
+		super._at(site, data, key)
 		return true
 	}
 }

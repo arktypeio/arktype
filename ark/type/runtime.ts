@@ -747,9 +747,7 @@ export const firstIssue = (errors: ArkErrors): WrittenIssue => {
 	const unread = errors as ArkErrors & UnreadFields
 	if (unread._1) return unread._1
 	if (!unread._a || unread._f) return errors.issues[0]
-	// an Unread's constructor is the class whose issues it finds
-	const ctx = new (errors.constructor as new () => ArkErrors)()
-	ctx.failFast ||= true
+	const ctx = new FirstIssues()
 	issuesOf(unread._a, unread._d, ctx)
 	return (unread._1 = ctx.issues[0])
 }
