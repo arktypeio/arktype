@@ -611,8 +611,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			filter: {
 				id:
 					meta.framework === "rollup" || meta.framework === "rolldown" ?
-						new RegExp(`${resolvedId.source}|${relativeSpecifier.source}`)
-					:	resolvedId
+						new RegExp(`${ownSpecifier.source}|${relativeSpecifier.source}`)
+					:	ownSpecifier
 			},
 			async handler(id, importer) {
 				// the plugin resolves a standalone build's arktype in esbuild's own namespace
@@ -893,7 +893,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				setEnvironment({ production, testing: false })
 				build.onDispose(restart)
 				const esbuildResolve: BundlerResolve = async (specifier, importer) => {
-					if (isOwnSpecifier(specifier)) return
+					if (ownSpecifier.test(specifier)) return
 					const resolved = await build.resolve(specifier, {
 						importer,
 						namespace: "file",
@@ -1257,17 +1257,13 @@ interface RollupResolution {
 	external?: boolean | string
 }
 
-// a specifier this plugin resolves, which would ask the worker that waits on it
-const isOwnSpecifier = (specifier: string) =>
-	resolvedSpecifier.test(specifier) || schemaSpecifier.test(specifier)
-
 // how a hook's bundler resolves an import, which the precompiler asks for one
 // it can't resolve itself, like an alias only the bundler's config names
 const bundlerResolveOf = (context: unknown): BundlerResolve | undefined => {
 	const rollup = context as Partial<RollupContext>
 	if (rollup.resolve) {
 		return async (specifier, importer) => {
-			if (isOwnSpecifier(specifier)) return
+			if (ownSpecifier.test(specifier)) return
 			const resolved = await rollup.resolve!(specifier, importer, {
 				skipSelf: true
 			})
@@ -1299,7 +1295,7 @@ const bundlerResolveOf = (context: unknown): BundlerResolve | undefined => {
 		?.loaderContext?.getResolve?.({ dependencyType: "esm" })
 	if (loaderResolve) {
 		return async (specifier, importer) =>
-			isOwnSpecifier(specifier) ? undefined : (
+			ownSpecifier.test(specifier) ? undefined : (
 				loaderResolve(dirname(importer), specifier).catch(() => undefined)
 			)
 	}
@@ -1754,13 +1750,10 @@ const specifiersOf = (...specifiers: string[]) =>
 // what precompiled modules import in shadow mode
 const shadowSpecifier = "@ark/aot/shadow"
 
-const resolvedSpecifier = new RegExp(
-	`${specifiersOf(...runtimeSpecifiers, "arktype/runtime", ...internalSpecifiers, shadowSpecifier).source}|^~arktype\\/`
-)
-
-// what the plugin resolves itself
-const resolvedId = new RegExp(
-	`${resolvedSpecifier.source}|${schemaSpecifier.source}`
+// what the plugin resolves itself, and never asks a bundler to, which would ask
+// the worker waiting on it
+const ownSpecifier = new RegExp(
+	`${specifiersOf(...runtimeSpecifiers, "arktype/runtime", ...internalSpecifiers, shadowSpecifier).source}|^~arktype\\/|${schemaSpecifier.source}`
 )
 
 // each runs a plugin after the others, which reads what they write
