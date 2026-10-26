@@ -4,6 +4,7 @@ import {
 	isDecidedByAllows,
 	isNode,
 	isRefinedPattern,
+	jsonLengthOf,
 	madeMorphs,
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
@@ -126,6 +127,21 @@ type DeclarationRole =
 	| "json"
 	| "jsonSchema"
 	| "traversal"
+
+// json and JSON Schema repeat a Type each place it's referenced, so written
+// out, a Type reused at each level of another doubles with each level
+const maxWrittenJsonLength = 1 << 22
+
+const assertWritableJson = (root: BaseRoot): void => {
+	const length = jsonLengthOf(root.json)
+	if (length > maxWrittenJsonLength) {
+		throwParseError(
+			writeUnprecompilableMessage(
+				`introspection writing out about ${Math.round(length / 1e6)} MB of JSON, as it repeats each Type it references`
+			)
+		)
+	}
+}
 
 // constraints sorted by hash, which can include a function's name
 const sortedConstraintKeys = ["pattern", "index"] as const
@@ -2270,6 +2286,8 @@ ${writeFunction(
 		const members: string[] = []
 		const bakes = (member: IntrospectionMember) =>
 			this.baking.members.has(member)
+		if (bakes("toJsonSchema") || bakes("~standard.jsonSchema"))
+			assertWritableJson(root)
 		if (bakes("expression"))
 			members.push(`expression: ${this.emitExpression(root)}`)
 		if (bakes("description"))
@@ -2337,6 +2355,7 @@ ${writeFunction(
 
 	// nodes share json unless it prints a hole
 	readJson(root: BaseRoot): string {
+		assertWritableJson(root)
 		const value = `runtime.deepFreeze(${this.writeData(root.json)})`
 		if (holdsLocal(root.json)) {
 			return (
