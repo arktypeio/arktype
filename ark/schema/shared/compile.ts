@@ -675,12 +675,12 @@ export abstract class NodeCompiler extends CompiledFunction<
 export const returnsTransformErrors = (node: BaseNode): boolean =>
 	node.includesMorph && !node.transformNeedsCtx
 
-export const isDecidedByAllows = (node: BaseNode): boolean => {
-	if (node.includesMorph || node.allowsNeedsCtx) return false
-	for (const id in node.refsById)
-		if (node.refsById[id].hasKind("predicate")) return false
-	return true
-}
+const isPredicate = (node: BaseNode): boolean => node.hasKind("predicate")
+
+export const isDecidedByAllows = (node: BaseNode): boolean =>
+	!node.includesMorph &&
+	!node.allowsNeedsCtx &&
+	!node.selectReferences(isPredicate).length
 
 // a basis with one refinement
 export const isRefinedBasis = (node: BaseNode): node is IntersectionNode =>
