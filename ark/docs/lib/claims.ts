@@ -518,7 +518,7 @@ export const headlineMethod = {
 const assertLeads = (category: CategoryId, by: string) => {
 	if (!leads(category)) {
 		throw new Error(
-			`${by} claims ArkType is best on ${category}, but ${leaderboards[category].standings[0].library} has the best average${category === "size" ? `, and ArkType's is more than ${tieMargin} above it` : ""}: ${JSON.stringify(leaderboards[category].standings.slice(0, 5))}`
+			`${by} claims ArkType is best on ${category}, but ${leaderboards[category].standings[0].library} has the best average, and ArkType's is more than ${tieMargin} above it: ${JSON.stringify(leaderboards[category].standings.slice(0, 5))}`
 		)
 	}
 }
