@@ -65,6 +65,7 @@ import * as runtime from "./runtimeExports.ts"
 import type { Scope } from "./scope.ts"
 import {
 	mergeUnits,
+	noInlineOf,
 	writeDependencies,
 	writeImports,
 	writeModule,
@@ -718,7 +719,7 @@ interface Creation {
 const writeCreation = (baking: Baking, index: number, body: string) =>
 	baking.createsLazily ?
 		`var created${index}\n\n${writeFunction(baking, `create${index}`, "", body)}`
-	:	`const created${index} = /* @__PURE__ */ (() => {\n${body}\n})()`
+	:	`const created${index} = ${noInlineOf(baking.shortest)}/* @__PURE__ */ (() => {\n${body}\n})()`
 
 type CreationRead = [creation: string, position: number | undefined]
 
@@ -801,7 +802,8 @@ const writeCreations = (
 		)
 		for (const [position, i] of creation.indices.entries()) {
 			reads[names[i]] = [
-				isInlined ? `(created${index} ??= (() => {\n${body}\n})())`
+				isInlined ?
+					`(created${index} ??= ${noInlineOf(baking.shortest)}(() => {\n${body}\n})())`
 				: baking.createsLazily ? `(created${index} ??= create${index}())`
 				: `created${index}`,
 				isShared ? position : undefined
@@ -1661,7 +1663,9 @@ ${writeFunction(
 						`var ${unit.name}Unit`,
 						`function ${unit.name}() {\n\treturn (${unit.name}Unit ??= ${built})\n}`
 					]
-				:	[`const ${unit.name} = ${array ? "" : "/* @__PURE__ */ "}${built}`])
+				:	[
+						`const ${unit.name} = ${array ? "" : `${template ? "" : noInlineOf(this.baking.shortest)}/* @__PURE__ */ `}${built}`
+					])
 			)
 		}
 		for (const root of unit.roots) {
@@ -1933,7 +1937,7 @@ ${writeFunction(
 				returned
 			)
 			const args = [...dependencyArgs, ...refs]
-			return `const traversals${i} = ${wrapUnitFunction(unitFunction, i)}(${args.join(", ")})`
+			return `const traversals${i} = ${noInlineOf(this.baking.shortest)}${wrapUnitFunction(unitFunction, i)}(${args.join(", ")})`
 		})
 		// written before filtering, as a meta can read a later one
 		const validators = [...this.validatorNames].map(
@@ -3521,7 +3525,7 @@ const forwardedOf = (members: readonly UnitMember[]): Map<string, string> => {
 	const targetsByName = new Map<string, string>()
 	for (const [name, source] of members) {
 		const [, target, passesCtx] =
-			/^function\(data, ctx\) {\s*return ([\w$]+)\(data(, ctx)?\)\s*}$/.exec(
+			/^function\(data, ctx\) {\s*return (?:\/\* @__NOINLINE__ \*\/ )?([\w$]+)\(data(, ctx)?\)\s*}$/.exec(
 				source
 			) ?? []
 		const targetSource = sourcesByName.get(target)

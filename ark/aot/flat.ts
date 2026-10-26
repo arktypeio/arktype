@@ -1092,7 +1092,9 @@ const writeFlat = (
 				written = withoutAnnotations(inGzipOrder(written))
 				bodiesByReturned.set(returned, written)
 			}
-			const declaration = `const ${read.length === 1 ? read[0] : `[${read.join(", ")}]`} = (() => {
+			// swc writes a function called where it's declared into its caller, its
+			// constants then module variables, whose calls V8 doesn't inline
+			const declaration = `const ${read.length === 1 ? read[0] : `[${read.join(", ")}]`} = /* @__NOINLINE__ */ (() => {
 ${written}
 return ${returned}
 })()`

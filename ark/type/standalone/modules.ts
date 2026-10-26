@@ -169,7 +169,7 @@ const writeMerged = (
 		}
 	}
 	return {
-		declaration: `const ${rootScope.name} = /* @__PURE__ */ (${writeScope(
+		declaration: `const ${rootScope.name} = ${noInlineOf(shortest)}/* @__PURE__ */ (${writeScope(
 			params.length || shortest ? params : ["...$"],
 			statements,
 			rootScope.returned
@@ -197,6 +197,13 @@ export const writeDependencies = (
 	}
 	return [params, args]
 }
+
+// swc writes a function called where it's declared into its caller, so a
+// speed build's traversals would become module variables, whose calls V8
+// doesn't inline. Minifiers drop the annotation, written before any other as
+// terser reads only the nearest
+export const noInlineOf = (shortest: boolean): string =>
+	shortest ? "" : "/* @__NOINLINE__ */ "
 
 export const writeScope = (
 	params: string[],

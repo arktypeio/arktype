@@ -7,6 +7,7 @@ import {
 	TraversalCompiler,
 	type BaseNode,
 	type BaseRoot,
+	type InvokeOptions,
 	type NodeId,
 	type nodeOfKind,
 	type Predicate,
@@ -45,6 +46,21 @@ class StandaloneCompiler extends TraversalCompiler {
 	// whether a node's Apply is its Allows, as a unified build writes it
 	unifies(node: BaseNode): boolean {
 		return unifies(node)
+	}
+
+	// terser and swc write a function called once where it's called, as a
+	// closure created at each call, which slows the Allows or Transform
+	// calling it; minifiers drop the annotation
+	override invoke(node: BaseNode, opts?: InvokeOptions): string {
+		const call = super.invoke(node, opts)
+		return (
+				this.shortest ||
+					this.naming ||
+					(opts?.kind ?? this.traversalKind) === "Apply" ||
+					!/^[\w$]+\(/.test(call)
+			) ?
+				call
+			:	`/* @__NOINLINE__ */ ${call}`
 	}
 
 	// named for its unit, so units can share a scope
