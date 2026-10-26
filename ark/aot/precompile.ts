@@ -288,7 +288,7 @@ export interface ScannedModule {
 
 type ProgramReads = Pick<
 	ProgramUsage,
-	"members" | "called" | "readsAllows" | "piped" | "combines"
+	"members" | "called" | "readsAllows" | "piped" | "combines" | "shapes"
 >
 
 interface ProgramUsage {
@@ -307,6 +307,9 @@ interface ProgramUsage {
 	// whether a size build writes the program's nodes as checkers, as is
 	// smaller for the program as a whole rather than for each module alone
 	combines?: boolean
+	// whether its checkers write common intersections as shapes, as is smaller
+	// for the program as a whole
+	shapes?: boolean
 }
 
 export interface ScannedUsage {
@@ -521,6 +524,30 @@ export const precompileModule = (
 	host: PrecompileHost,
 	opts?: PrecompileOptions
 ): PrecompiledModule => new Precompiler(host, opts).precompile(source, id)
+
+// each shape's runtime and what each call of it saves, gzipped bytes as
+// measured on bundles from 10 to 1000 schemas, as a program's size estimate
+// can't see what gzip saves
+const shapeCosts = {
+	stringRange: [48, 0.37],
+	integerRange: [64, 0.76],
+	arrayOf: [56, 0.47]
+}
+
+// whether a program written with shapes saves more than they cost
+const shapesPayIn = (
+	written: Record<string, Pick<PrecompiledModule, "modules">>
+): boolean => {
+	const modules: Record<string, string> = {}
+	for (const id in written) Object.assign(modules, written[id].modules)
+	const text = Object.values(modules).join("\n")
+	let saved = 0
+	for (const [shape, [runtime, call]] of Object.entries(shapeCosts)) {
+		const calls = text.split(`runtime.${shape}(`).length - 1
+		if (calls) saved += calls * call - runtime
+	}
+	return saved > 0
+}
 
 // a validator exposing allows costs its creation a write, which declaring
 // about this many units as the validators created from them repays gzipped
@@ -795,6 +822,27 @@ export class Precompiler {
 					})
 				} else {
 					usage.readsAllows = false
+					for (const [id, runtime] of runtimes)
+						if (precompiled.includes(id)) this.runtimesById[id] = runtime
+				}
+			}
+			// checkers writing common intersections as shapes, where enough do
+			// to repay the runtime they read, as counted in what their units,
+			// being one module, declare
+			if (isOneChunk && usage.combines) {
+				usage.shapes = true
+				const shaped = writeProgram()
+				const shapedLink =
+					shaped &&
+					this.linkWritten(shaped.written, sources, {
+						exposesAllows: usage.readsAllows,
+						isOneChunk
+					})
+				if (shaped && shapedLink && shapesPayIn(shaped.written)) {
+					;({ written, runtimes } = shaped)
+					link = shapedLink
+				} else {
+					usage.shapes = false
 					for (const [id, runtime] of runtimes)
 						if (precompiled.includes(id)) this.runtimesById[id] = runtime
 				}
@@ -2024,7 +2072,7 @@ export class Precompiler {
 		modules: Record<string, string>,
 		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[],
-		{ members, called, readsAllows, piped, combines }: ProgramReads
+		{ members, called, readsAllows, piped, combines, shapes }: ProgramReads
 	): Record<string, Record<string, string>> {
 		const inputImports: Record<string, Record<string, string>> = {}
 		const { namesBySite, factoriesBySite, exportsByName, folded } =
@@ -2050,6 +2098,7 @@ export class Precompiler {
 						readsAllows,
 						piped,
 						combines,
+						shapes,
 						configured,
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module),

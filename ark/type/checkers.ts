@@ -132,6 +132,49 @@ export const pattern = ((
 ): Check =>
 	check("pattern", description, data => instance.test(data))) satisfies Fn
 
+// shapes of the intersections most nodes are, each checking its refinements in
+// the order intersection does, with a bound left undefined never failing
+
+// a string whose length is at most max and at least min
+export const stringRange = ((max?: number, min?: number): Checker => {
+	const tooLong = max === undefined ? stringCheck : maxLength(max)
+	const tooShort = min === undefined ? stringCheck : minLength(min)
+	return (data: any, ctx) =>
+		typeof data !== "string" ? !failsAt(ctx as never, stringCheck, data)
+		: data.length > max! ? !failsAt(ctx as never, tooLong, data)
+		: !(data.length < min!) || !failsAt(ctx as never, tooShort, data)
+}) satisfies Fn
+
+// an integer at least least and at most most
+export const integerRange = ((least?: number, most?: number): Checker => {
+	const integer = divisor(1)
+	const tooSmall = least === undefined ? numberCheck : min(least)
+	const tooLarge = most === undefined ? numberCheck : max(most)
+	return (data: any, ctx) =>
+		Number.isFinite(data) ?
+			(data % 1 === 0 || !failsAt(ctx as never, integer, data)) &&
+			(!(data > most!) || !failsAt(ctx as never, tooLarge, data)) &&
+			(!(data < least!) || !failsAt(ctx as never, tooSmall, data))
+		:	!failsAt(ctx as never, numberCheck, data)
+}) satisfies Fn
+
+// an array of element, which transforms nothing, its length at most max and
+// at least min
+export const arrayOf = ((
+	element: Checker,
+	max?: number,
+	min?: number
+): Checker => {
+	const tooLong = max === undefined ? arrayCheck : maxLength(max)
+	const tooShort = min === undefined ? arrayCheck : minLength(min)
+	const within = elementsOf(element)
+	return (data: any, ctx) =>
+		!Array.isArray(data) ? !failsAt(ctx as never, arrayCheck, data)
+		: data.length > max! ? !failsAt(ctx as never, tooLong, data)
+		: data.length < min! ? !failsAt(ctx as never, tooShort, data)
+		: within(data, ctx)
+}) satisfies Fn
+
 const printValue = (value: unknown): string =>
 	typeof value === "string" ? JSON.stringify(value) : `${value}`
 

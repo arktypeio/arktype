@@ -90,6 +90,7 @@ import {
 import { combines } from "./standalone/combinators.ts"
 import {
 	compiledForSize,
+	shapedForSize,
 	isChecker,
 	jsonVariantOf,
 	refNameOf,
@@ -278,6 +279,9 @@ export interface StandaloneOptions {
 	// false where a size build with detailed errors compiles each node rather
 	// than writing it as a checker
 	combines?: boolean | undefined
+	// where a size build writes checkers, write common intersections, e.g. a
+	// string's length bounds, as one call each, as pays where many are
+	shapes?: boolean | undefined
 	// false where nothing calls a validator, so every failure's errors are
 	// read as it returns, as by assert or ~standard
 	called?: boolean | undefined
@@ -318,6 +322,7 @@ interface Baking extends ValidatorReads {
 	shortest: boolean
 	flattens: boolean
 	combines: boolean
+	shapes: boolean
 	// the hashes of roots a build writing checkers compiles anyway
 	compiledInputs: ReadonlySet<string>
 	// errors find their issues once read, for a call that may never read them
@@ -530,6 +535,7 @@ const writeArtifact = (
 		shortest: opts.optimize === "size",
 		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular,
 		combines: opts.combines !== false,
+		shapes: opts.shapes === true,
 		compiledInputs:
 			opts.optimize === "size" ? compiledInputsOf(exports) : new Set(),
 		defersIssues: opts.optimize !== "size" && opts.called !== false,
@@ -1249,12 +1255,11 @@ class StandaloneArtifact {
 			3 * +this.baking.firstIssue +
 			6 * +this.baking.shortest
 		const compiled =
-			(
-				variant === 8 &&
-				(!this.baking.combines || this.baking.compiledInputs.has(root.hash))
-			) ?
+			variant !== 8 ? variant
+			: !this.baking.combines || this.baking.compiledInputs.has(root.hash) ?
 				compiledForSize
-			:	variant
+			: this.baking.shapes ? shapedForSize
+			: variant
 		return this.baking.jsonInput ? jsonVariantOf(compiled) : compiled
 	}
 

@@ -2,6 +2,7 @@ import {
 	isDecidedByAllows,
 	type BaseNode,
 	type BaseRoot,
+	type IntersectionNode,
 	type NodeCompiler,
 	type NodeId,
 	type Optional,
@@ -353,6 +354,8 @@ const missesAsRequired = (prop: Prop.Node): boolean => {
 
 // what a combinator's compiler reads, ref names and serializes
 export interface CombinatorCompiler extends NodeCompiler {
+	// whether it writes intersections a shape checks as that shape
+	readonly shapes: boolean
 	referenceToId(id: NodeId, opts?: { kind: "Allows" }): string
 }
 
@@ -531,6 +534,74 @@ const isInlined = (node: BaseNode): boolean => {
 	return inlined
 }
 
+type RuleKind = (typeof ruleFactories)[number]
+
+// each refinement's rule, in the order kinds lists them, if each is an
+// inclusive bound or divisor whose site its factory derives
+const rulesOf = (
+	refinements: readonly BaseNode[],
+	kinds: readonly RuleKind[]
+): (number | undefined)[] | undefined => {
+	const rules: (number | undefined)[] = kinds.map(() => undefined)
+	let i = 0
+	for (const node of refinements) {
+		while (i < kinds.length && !node.hasKind(kinds[i])) i++
+		if (i === kinds.length) return
+		const { rule, exclusive } = node.inner as {
+			rule?: unknown
+			exclusive?: true
+		}
+		const site = checkOf(node)
+		if (
+			typeof rule !== "number" ||
+			exclusive ||
+			!site ||
+			site.code !== kinds[i] ||
+			site.description !==
+				(runtime[kinds[i]] as (rule: number) => runtime.Check)(rule).description
+		)
+			return
+		rules[i++] = rule
+	}
+	return rules
+}
+
+const writeRules = (rules: (number | undefined)[]) =>
+	rules.map(rule => (rule === undefined ? undefined : `${rule}`))
+
+// an intersection one of the runtime's shapes checks, as one call
+const writeShape = (
+	js: CombinatorCompiler,
+	node: IntersectionNode
+): string | undefined => {
+	const { basis, structure, prestructurals } = node
+	if (!basis || node.inner.predicate) return
+	const checked = writeCheck(js, basis)
+	if (checked === "runtime.stringCheck" && !structure) {
+		const rules = rulesOf(prestructurals, ["maxLength", "minLength"])
+		if (rules) return writeCall("stringRange", ...writeRules(rules))
+	}
+	if (checked === "runtime.numberCheck" && !structure) {
+		const rules = rulesOf(prestructurals, ["divisor", "max", "min"])
+		if (rules?.[0] === 1)
+			return writeCall("integerRange", ...writeRules([rules[2], rules[1]]))
+	}
+	if (
+		checked === "runtime.arrayCheck" &&
+		structure?.sequence &&
+		!structure.sequence.variadic!.transforms
+	) {
+		const rules = rulesOf(prestructurals, ["maxLength", "minLength"])
+		if (rules) {
+			return writeCall(
+				"arrayOf",
+				readChecker(js, structure.sequence.variadic!),
+				...writeRules(rules)
+			)
+		}
+	}
+}
+
 const readChecker = (js: CombinatorCompiler, node: BaseNode): string =>
 	isInlined(node) ?
 		writeCombinator(js, node)!
@@ -553,6 +624,8 @@ export const writeCombinator = (
 		)
 	}
 	if (node.hasKind("intersection")) {
+		const shape = js.shapes && writeShape(js, node)
+		if (shape) return shape
 		const refinements = node.prestructurals.map(child => writeCheck(js, child))
 		const structure = node.structure && writeStructure(js, node.structure)
 		const predicate = node.inner.predicate?.[0]
