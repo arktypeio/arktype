@@ -161,15 +161,9 @@ export const disallowed = (): false => false
 
 // captured at load so a program can't replace them; each alone to tree-shake
 export const assign = Object.assign
-export const freeze = Object.freeze
 export const is = Object.is
+export const freeze = Object.freeze
 export const setPrototypeOf = Object.setPrototypeOf
-
-// kept off the value so a program can't read it
-const holesByValue = new WeakMap<
-	object,
-	[id: string, holes: readonly unknown[]]
->()
 
 /**
  * #### a Type precompiled to validate without arktype, frozen with what it holds
@@ -225,6 +219,27 @@ export const standardResultOf = (
 			) as StandardSchemaV1.Issue[]
 		}
 	:	{ value: out }
+
+// shorter at each site than a literal. A configured message is one
+// parameter of it rather than a helper of its own, as a program configuring
+// one also has sites that don't
+export const siteOf = ((
+	code: ArkErrorCode,
+	description?: string,
+	message?: string
+): SiteContext => ({ code, description, x: message })) satisfies Fn
+
+// a literal, as an annotated call's annotation is kept by oxc's minifier
+export const requiredSite: FailureSite = { m: { code: "required" } }
+
+// a key's site, reporting "required" where the key is missing
+export const keySiteOf = ((
+	code: ArkErrorCode,
+	description?: string
+): FailureSite => ({
+	v: siteOf(code, description),
+	m: requiredSite.m!
+})) satisfies Fn
 
 // where the build checks what it built, a library reading a JSON Schema it
 // left out fails saying how to keep it, rather than reading undefined as it
@@ -469,15 +484,6 @@ export const type: { errors: typeof ArkErrors } = /* @__PURE__ */ freeze({
 export const canParseUrl = ((s: string): boolean =>
 	URL.canParse(s)) satisfies Fn
 
-// shorter at each site than a literal. A configured message is one
-// parameter of it rather than a helper of its own, as a program configuring
-// one also has sites that don't
-export const siteOf = ((
-	code: ArkErrorCode,
-	description?: string,
-	message?: string
-): SiteContext => ({ code, description, x: message })) satisfies Fn
-
 // a site whose problem is configured, and maybe its message
 export const problemSiteOf = ((
 	code: ArkErrorCode,
@@ -608,18 +614,6 @@ export const failsIn = ((
 		ctx._in(apply, data, key, missing)
 	:	!(apply as Fn)((data as Record<PropertyKey, unknown>)[key])) satisfies Fn
 
-// a literal, as an annotated call's annotation is kept by oxc's minifier
-export const requiredSite: FailureSite = { m: { code: "required" } }
-
-// a key's site, reporting "required" where the key is missing
-export const keySiteOf = ((
-	code: ArkErrorCode,
-	description?: string
-): FailureSite => ({
-	v: siteOf(code, description),
-	m: requiredSite.m!
-})) satisfies Fn
-
 // compact roots report into ArkErrors, loading no Traversal
 export const applyErrors = (
 	apply: CompactApply,
@@ -725,6 +719,34 @@ let unreadArkErrors: UnreadErrors | undefined
 export const UnreadArkErrors: UnreadErrorsOf = () =>
 	(unreadArkErrors ??= unreadOf(ArkErrors))
 
+// an Apply reporting into ArkErrors calls no user code, so its issues can wait
+export const unreadErrors = (
+	apply: CompactApply,
+	data: unknown,
+	onFail: ArkErrors.Handler | null,
+	Ctx: UnreadErrorsOf
+): unknown => {
+	const errors = new (Ctx())(apply, data)
+	return onFail ? onFail(errors) : errors
+}
+
+export const unreadCallErrors = (
+	apply: CompactApply,
+	data: unknown,
+	args: ValidatorArgs,
+	onFail: ArkErrors.Handler | null,
+	Ctx: UnreadErrorsOf
+): unknown => {
+	const errors = new (Ctx())(apply, data)
+	if (args.length) {
+		if (args[0]) return args[0].piped(errors as never)
+		if (args[1] !== undefined) onFail = args[1] as never
+	}
+	return onFail ? onFail(errors) : errors
+}
+
+export const emptyMeta: ArkEnv.meta = /* @__PURE__ */ freeze({})
+
 let unreadFirstIssues: UnreadErrors | undefined
 
 export const UnreadFirstIssues: UnreadErrorsOf = () =>
@@ -778,17 +800,6 @@ export const InvalidErrors: new (data: unknown) => ArkErrors =
 		return Invalid as never
 	})()
 
-// an Apply reporting into ArkErrors calls no user code, so its issues can wait
-export const unreadErrors = (
-	apply: CompactApply,
-	data: unknown,
-	onFail: ArkErrors.Handler | null,
-	Ctx: UnreadErrorsOf
-): unknown => {
-	const errors = new (Ctx())(apply, data)
-	return onFail ? onFail(errors) : errors
-}
-
 export const unreadElements = (
 	allows: (data: unknown) => boolean,
 	apply: CompactApply,
@@ -805,21 +816,6 @@ export const unreadElements = (
 		onFail,
 		Ctx
 	)
-
-export const unreadCallErrors = (
-	apply: CompactApply,
-	data: unknown,
-	args: ValidatorArgs,
-	onFail: ArkErrors.Handler | null,
-	Ctx: UnreadErrorsOf
-): unknown => {
-	const errors = new (Ctx())(apply, data)
-	if (args.length) {
-		if (args[0]) return args[0].piped(errors as never)
-		if (args[1] !== undefined) onFail = args[1] as never
-	}
-	return onFail ? onFail(errors) : errors
-}
 
 export type HoleKind = "function" | "class" | "symbol"
 
@@ -971,6 +967,12 @@ export const checkFunction = (value: unknown, label: string): void => {
 		)
 	}
 }
+
+// kept off the value so a program can't read it
+const holesByValue = new WeakMap<
+	object,
+	[id: string, holes: readonly unknown[]]
+>()
 
 export const holdHoles = (<value extends object>(
 	value: value,
@@ -1127,8 +1129,6 @@ export const writeUnbakedMessage = <reason extends string>(
 
 export type writeUnbakedMessage<reason extends string> =
 	`${reason}. Build with runtime: "arktype" to write it where it's read.`
-
-export const emptyMeta: ArkEnv.meta = /* @__PURE__ */ freeze({})
 
 // json is shared between nodes, so frozen deeply
 export const deepFreeze = <t>(value: t): t => {

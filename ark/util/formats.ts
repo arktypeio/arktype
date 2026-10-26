@@ -165,15 +165,17 @@ const isTimeAfterDate = (s: string, length: number) => {
 }
 
 // YYYY-MM-DD, maybe with a time, as toISOString and most dates are written,
-// is read by char code, and other forms by the RegExp
+// is read by char code, and other forms by the RegExp. terser and swc would
+// write each function it calls once where it's called, as a closure created
+// at each call
 export const isIso8601 = (s: string): boolean => {
 	const length = s.length
 	const code = s.charCodeAt(0)
 	return (
 		(isDigitCode(code) || code === 43 || code === 45) &&
 		(((length === 10 || length >= 19) &&
-			isCalendarDate(s) &&
-			(length === 10 || isTimeAfterDate(s, length))) ||
+			/* @__NOINLINE__ */ isCalendarDate(s) &&
+			(length === 10 || /* @__NOINLINE__ */ isTimeAfterDate(s, length))) ||
 			iso8601Matcher.test(s))
 	)
 }

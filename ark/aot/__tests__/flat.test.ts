@@ -109,7 +109,7 @@ true
 		// Team's units read User's, Name's and Email's, whose validators it drops
 		// esbuild annotates the function's call itself, as Rolldown doesn't
 		const flat =
-			/^var \w+ = (?:\/\* @__PURE__ \*\/ )?\(\(\) => {$([\S\s]*?)^}\)\(\);$/m.exec(
+			/^var \w+ = (?:\(\s*\/\* @__NOINLINE__ \*\/\s*)?(?:\/\* @__PURE__ \*\/ )?\(\(\) => {$([\S\s]*?)^\s*}\)\(\)\s*\)?;$/m.exec(
 				js
 			)
 		attest(flat?.[1].includes("__PURE__")).equals(false)
@@ -131,6 +131,19 @@ lead.email is missing
 		attest(run(js)).equals(run(whole))
 		attest(js.includes("{ 0: allows")).equals(false)
 		attest(js.includes("var Team =")).equals(false)
+		// the Allows its creator was passed, now called by name
+		attest(/\/\* @__NOINLINE__ \*\/\s+\w+Allows\(data\) \?/.test(js)).equals(
+			true
+		)
+	})
+
+	it("creates in the function validators whose creator others call", async () => {
+		const [js] = await bundle()
+		const [whole] = await bundle({ prune: false })
+		attest(run(js)).equals(run(whole))
+		attest(js.includes("var Team =")).equals(false)
+		attest(js.includes("var User =")).equals(false)
+		attest(js.match(/\({ 0: allows, 1: apply }\) =>/g)?.length).equals(1)
 	})
 
 	it("creates in the function a validator under a type assertion", async () => {
@@ -365,7 +378,7 @@ export const read = [${names.join(", ")}]`
 		)
 		attest(code).snap(`import * as runtime from "arktype/runtime"
 
-const [date, unit0, unit1, unit2, unit3] = (() => {
+const [date, unit0, unit1, unit2, unit3] = /* @__NOINLINE__ */ (() => {
 const dateR0 = runtime.isValidDate
 
 const dateAllows = (data => data instanceof Date && dateR0(data))
@@ -410,7 +423,7 @@ export { unit }`
 		)
 		attest(code).snap(`import * as runtime from "arktype/runtime"
 
-const unit = (() => {
+const unit = /* @__NOINLINE__ */ (() => {
 const unitR0 = runtime.isValidDate
 
 const unitAllows = (data => unitR0(data))
