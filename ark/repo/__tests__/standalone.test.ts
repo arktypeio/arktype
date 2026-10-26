@@ -306,7 +306,7 @@ c must be a number`)
 			attest(T({ a: "" })).equals({ a: "", c: 1 })
 		})
 
-		it("check each case by the branch it was told apart from", () => {
+		it("check each case without the key that told it apart", () => {
 			const Card = type({ type: "'card'", last4: "string" })
 			const { code } = precompileStandalone(
 				{
@@ -316,13 +316,15 @@ c must be a number`)
 				},
 				{ optimize: "size" }
 			)
-			// pruned of what told them apart, the cases would be checkers of their own
+			// a case is written without the key, even beside its branch's own
+			// checker, as gzip shrinks what they share
 			attest([
 				code
+					.match(/runtime\.discriminate\(.*/)?.[0]
 					.match(/runtime\.props\({[^}]*}/g)
-					?.every(call => call.includes("type: ")),
+					?.some(call => call.includes("type: ")),
 				code.match(/\/\^\(\?:\[\\dA-Fa-f]/g)?.length
-			]).equals([true, 1])
+			]).equals([false, 1])
 		})
 
 		it("copy an instance whose class writes its own tag", async () => {

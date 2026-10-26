@@ -205,21 +205,26 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 		if (!k.startsWith('"')) return
 		const value = JSON.parse(k) as string
 		if (isWellFormedInteger(value) || value === "__proto__") return
-		cases[value] = unprunedOf(
-			node,
-			branch => {
-				const prop =
-					branch.hasKind("intersection") ?
-						branch.structure?.propsByKey[key]
-					:	undefined
-				return (
-					prop?.hasKind("required") === true &&
-					prop.value.hasKind("unit") &&
-					prop.value.unit === value
+		const pruned = discriminant.cases[k]
+		// a case's checker doesn't check the key again, unless it can't be one
+		cases[value] =
+			pruned === true || combines(pruned) ?
+				pruned
+			:	unprunedOf(
+					node,
+					branch => {
+						const prop =
+							branch.hasKind("intersection") ?
+								branch.structure?.propsByKey[key]
+							:	undefined
+						return (
+							prop?.hasKind("required") === true &&
+							prop.value.hasKind("unit") &&
+							prop.value.unit === value
+						)
+					},
+					pruned
 				)
-			},
-			discriminant.cases[k]
-		)
 	}
 	const site = discriminantSiteOf(node)
 	// data whose key can't be read fails each branch's basis, as an object
@@ -467,18 +472,18 @@ const writeStructure = (
 		)
 	}
 	// checked and written in the order arktype checks and writes them
-	const declared = structure.orderedProps.map(
-		prop => `${writeKey(prop.key as string)}: ${ref(prop.value)}`
-	)
-	const defaults = structure.defaultable.map(
-		prop => `${writeKey(prop.key as string)}: ${writeLiteral(js, prop.default)}`
-	)
+	const entries = structure.orderedProps.map(prop => {
+		const checker = ref(prop.value)
+		return `${writeKey(prop.key as string)}: ${
+			!prop.hasKind("optional") ? checker
+			: prop.hasDefault() ?
+				writeCall("optional", checker, writeLiteral(js, prop.default))
+			:	writeCall("optional", checker)
+		}`
+	})
 	return writeCall(
 		structure.transforms ? "transformingProps" : "props",
-		writeObject(declared),
-		structure.optional &&
-			`[${structure.optional.map(prop => JSON.stringify(prop.key))}]`,
-		defaults.length ? writeObject(defaults) : undefined
+		writeObject(entries)
 	)
 }
 
