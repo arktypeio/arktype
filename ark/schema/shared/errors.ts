@@ -130,6 +130,11 @@ export class ArkErrors extends BaseArkErrors {
 
 	/** @internal the first of issues, its text written alone */
 	get _first(): ArkError | undefined {
+		return this._firstGrouped()
+	}
+
+	/** @internal the first of issues, found with the rest */
+	_firstGrouped(): ArkError | undefined {
 		const added = this._
 		const first = added[0]
 		// the first added is the first grouped, unless another shares its path,
@@ -323,6 +328,8 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 		declare _d: unknown
 		declare _ctor: typeof Traversal
 		declare _f?: ArkError[]
+		// the first issue, found alone
+		declare _1?: ArkError | undefined
 
 		constructor(
 			node: BaseNode,
@@ -350,6 +357,26 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 			}
 			return this._f
 		}
+
+		// found by a traversal adding only the errors at its path, unless the
+		// rest were found first
+		get _first(): ArkError | undefined {
+			if (this._1 || this._f)
+				return this._1 ?? (this as {} as ArkErrors)._firstGrouped()
+			const node = this._node
+			// an index signature checks keys a prop has, as an alias can
+			const revisitsPaths =
+				node.includesAlias || node.selectReferences(isIndex).length !== 0
+			const ctx = new (firstPathTraversalOf(this._ctor))(
+				this._d,
+				this.config,
+				!revisitsPaths
+			)
+			node.traverseApply(this._d, ctx)
+			if (!ctx.hasError())
+				ctx.reject({ expected: "valid", problem: "is invalid" })
+			return (this._1 = (ctx.finalize(null) as ArkErrors)._first)
+		}
 	}
 	// an ArkErrors, built without the fields its constructor sets
 	Object.setPrototypeOf(Unread.prototype, ArkErrors.prototype)
@@ -357,6 +384,103 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 	Unread.prototype.constructor = ArkErrors
 	return Unread as never
 })()
+
+type FirstPathTraversal = new (
+	root: unknown,
+	config: ResolvedConfig,
+	stopsElsewhere: boolean
+) => ArkTraversal
+
+const firstPathTraversals = new WeakMap<typeof Traversal, FirstPathTraversal>()
+
+// a traversal keeping only the errors at the path of its first, as firstIssue
+// groups them, so it builds no others. Each counts as added, so traversal
+// stops where it would have, or, where no node revisits a path, at the first
+// error elsewhere after it
+const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
+	let FirstPath = firstPathTraversals.get(Base)
+	if (FirstPath) return FirstPath
+	FirstPath = class extends (Base as typeof ArkTraversal) {
+		declare firstPath: PropertyKey[] | undefined
+		declare elsewhere: number
+		declare stopsElsewhere: boolean
+		declare left: boolean
+
+		constructor(
+			root: unknown,
+			config: ResolvedConfig,
+			stopsElsewhere: boolean
+		) {
+			super(root, config)
+			this.firstPath = undefined
+			this.elsewhere = 0
+			this.stopsElsewhere = stopsElsewhere
+			this.left = false
+		}
+
+		override get failFast(): boolean {
+			return this.left || super.failFast
+		}
+
+		override get currentErrorCount(): number {
+			return (
+				super.currentErrorCount +
+				(this.branches.length === 0 ? this.elsewhere : 0)
+			)
+		}
+
+		// whether an error at this path, or a key below it, is elsewhere than
+		// the first, outside a union's branches, which build its error
+		private isElsewhere(key?: PropertyKey): boolean {
+			const first = this.firstPath
+			if (first === undefined || this.branches.length !== 0) return false
+			const path = this.path
+			if (first.length !== path.length + (key === undefined ? 0 : 1))
+				return true
+			if (key !== undefined && first[path.length] !== key) return true
+			for (let i = 0; i < path.length; i++)
+				if (first[i] !== path[i]) return true
+			return false
+		}
+
+		private failElsewhere(): boolean {
+			this.elsewhere++
+			if (this.stopsElsewhere) this.left = true
+			return this.failFast
+		}
+
+		override _at(site: FailureSite, data: unknown, key?: PropertyKey): boolean {
+			return this.isElsewhere(key) ?
+					this.failElsewhere()
+				:	super._at(site, data, key)
+		}
+
+		override failsUnion(
+			branches: readonly CompactApply[],
+			site: UnionSite,
+			data: unknown
+		): boolean {
+			return this.isElsewhere() ?
+					this.failElsewhere()
+				:	super.failsUnion(branches, site, data)
+		}
+
+		override addError<error extends ArkIssue>(error: error): error {
+			if (this.branches.length === 0) {
+				if (this.firstPath === undefined) this.firstPath = error.path
+				else if (!pathEquals(error.path, this.firstPath)) {
+					this.failElsewhere()
+					return error
+				}
+			}
+			return super.addError(error)
+		}
+	}
+	firstPathTraversals.set(Base, FirstPath)
+	return FirstPath
+}
+
+const isIndex = (node: BaseNode) => node.hasKind("index")
 
 // a root calling no user code and transforming nothing finds its issues once
 // they're read

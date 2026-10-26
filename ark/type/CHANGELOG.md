@@ -28,7 +28,7 @@ A Type another Scope references validates as that Scope is configured, so `type(
 
 ### Read only the first error with `firstIssue`
 
-`firstIssue(out)` returns the first error in an `ArkErrors`' `issues`. A precompiled validator's errors find their issues once read, and until then `firstIssue` finds only that one, reading the data until it fails, so showing one error doesn't pay for finding the rest:
+`firstIssue(out)` returns the first error in an `ArkErrors`' `issues`. The errors of a Type that calls no narrow or morph, like a precompiled validator's, find their issues once read, and until then `firstIssue` finds only that one, reading the data until it fails, so showing one error doesn't pay for finding the rest:
 
 ```ts
 import { firstIssue, type } from "arktype"

@@ -72,7 +72,7 @@ A getter or `Proxy` trap the check reads runs again at that read, and what it th
 
 ### Finding only the first
 
-Where a form shows one error at a time, read it with `firstIssue`. A [precompiled](/docs/precompile) validator's errors that haven't found their issues yet find only that one, reading the data until it fails, so the rest cost nothing until `issues` or `summary` is read:
+Where a form shows one error at a time, read it with `firstIssue`. Errors that haven't found their issues yet, like those of a Type that calls no narrow or morph or of a [precompiled](/docs/precompile) validator, find only that one, reading the data until it fails, so the rest cost nothing until `issues` or `summary` is read:
 
 ```ts
 import { firstIssue, type } from "arktype"

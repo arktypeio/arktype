@@ -571,7 +571,7 @@ d must be a number (was a string)`)
 		}) as ArkErrors
 		attest(firstIssue(out).message).snap("a must be a string (was a number)")
 		attest(out._[1].message as string | undefined).equals(undefined)
-		attest(out.issues[0]).is(firstIssue(out))
+		attest(out.issues[0]).equals(firstIssue(out))
 		attest(out.summary).snap(`a must be a string (was a number)
 b must be a number (was a string)`)
 	})
@@ -584,7 +584,7 @@ b must be a number (was a string)`)
 		attest(firstIssue(out).message).snap(`a ("abc") must be...
   ◦ matched by ^x
   ◦ at least length 5`)
-		attest(firstIssue(out)).is(out.issues[0])
+		attest(firstIssue(out)).equals(out.issues[0])
 	})
 
 	it("firstIssue at a path reached again", () => {
@@ -596,10 +596,19 @@ b must be a number (was a string)`)
 			a: -1,
 			c: "x"
 		}) as ArkErrors
-		attest(out._.map(e => e.path.join("."))).equals(["a", "c", "a", "c"])
 		attest(firstIssue(out).message).snap(`a (-1) must be...
   ◦ positive
   ◦ even`)
+		attest(out._.map(e => e.path.join("."))).equals(["a", "c", "a", "c"])
+		attest(firstIssue(out)).equals(out.issues[0])
+	})
+
+	it("firstIssue of errors already found", () => {
+		const out = type({ a: "string", b: "number" })({
+			a: 0,
+			b: "b"
+		}) as ArkErrors
+		attest(out.count).equals(2)
 		attest(firstIssue(out)).is(out.issues[0])
 	})
 
