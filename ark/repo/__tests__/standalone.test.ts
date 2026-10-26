@@ -29,6 +29,7 @@ import {
 	type StandaloneOptions,
 	type ValidatorMembers
 } from "arktype/internal/standalone.ts"
+import { assertReportsIssues } from "arktype/internal/standalone/compilers.ts"
 import {
 	bakedJsonSchemaOptionsMessage,
 	throwOnDefault as runtimeThrowOnDefault,
@@ -480,6 +481,20 @@ nick must be a string or null`)
 			{ optimize: "size", errors: "first" }
 		] as const)
 			agrees(await load(types, opts), types, inputs)
+	})
+
+	it("refuses a root reporting into ArkErrors that reads what they lack", () => {
+		const unitOf = (source: string): never =>
+			({ members: [["unionApply", source]] }) as never
+		// a string holding one isn't read
+		assertReportsIssues([unitOf('(data, ctx) => ctx._at(site, data, "ctx.x")')])
+		attest(() =>
+			assertReportsIssues([
+				unitOf(
+					"(data, ctx) => (ctx.pushBranch(), apply(data, ctx), ctx.popBranch().errorCount === 0)"
+				)
+			])
+		).throws("unionApply reads ctx.pushBranch, which ArkErrors lack")
 	})
 
 	it("literals reading as the code around them", async () => {

@@ -93,6 +93,7 @@ import {
 } from "./standalone/sites.ts"
 import { combines } from "./standalone/combinators.ts"
 import {
+	assertReportsIssues,
 	compiledForSize,
 	shapedForSize,
 	isChecker,
@@ -2643,6 +2644,7 @@ ${writeFunction(
 					source.includes("ctx.currentErrorCount")
 				)
 			)
+		if (reportsIssues) assertReportsIssues(this.unitsOf(root))
 		const ctx =
 			this.baking.firstIssue ?
 				reportsIssues ? "FirstIssues"
