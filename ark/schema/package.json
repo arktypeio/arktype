@@ -93,6 +93,10 @@
 			"ark-ts": "./runtimeLean.ts",
 			"default": "./out/runtimeLean.js"
 		},
+		"./issueFeatures": {
+			"ark-ts": "./shared/issueFeatures.ts",
+			"default": "./out/shared/issueFeatures.js"
+		},
 		"./internal": {
 			"ark-ts": "./internal.ts",
 			"default": "./out/internal.js"

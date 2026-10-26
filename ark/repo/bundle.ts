@@ -36,7 +36,9 @@ export const bundle = (): void => {
 	const { outputFiles } = buildSync({
 		...opts,
 		entryPoints: entryPoints.filter(
-			path => !variants.some(([runtime]) => runtime === path)
+			path =>
+				path !== issueFeaturesPath() &&
+				!variants.some(([runtime]) => runtime === path)
 		),
 		outdir: fromCwd("out"),
 		splitting: true
@@ -64,8 +66,9 @@ export const bundle = (): void => {
 	}
 }
 
-// what a program's issues may hold, kept as tsc writes it, so a bundler
-// inlines its constants and a build reading each validator writes it again
+// what a program's issues may hold, an entry every chunk reading it shares,
+// kept as tsc writes it, so a bundler inlines its constants and a build
+// reading each validator writes it again
 const issueFeaturesPath = () => fromCwd("out", "shared", "issueFeatures.js")
 
 // as shared/issues.js imports it, from beside shared/, as every entry and
