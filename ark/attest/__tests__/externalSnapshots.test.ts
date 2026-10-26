@@ -49,13 +49,21 @@ contextualize(() => {
 			"kt"
 		)
 		attest(1337).snap.toFile("toFileNew")
+		attest({} as { b: "b" | "a"; a: 1 }).type.toString.normalizedSnap.toFile(
+			"normalized"
+		)
 		const contents = readJson(defaultSnapPath)
 		attest(contents).equals({
 			[testFile]: {
 				...defaultSnapFileContents[testFile],
-				toFileNew: 1337
+				toFileNew: 1337,
+				normalized: '{ a: 1; b: "a" | "b" }'
 			}
 		})
+
+		attest({} as { a: 1; b: "a" | "b" }).type.toString.normalizedSnap.toFile(
+			"normalized"
+		)
 	})
 
 	it("update existing", () => {

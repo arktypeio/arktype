@@ -22,6 +22,22 @@ attest(Even.json).snap({
 })
 ```
 
+### Normalized type snapshots
+
+Use `.type.toString.normalizedSnap()` to sort object properties and union members alphabetically before snapshotting. This avoids failures caused only by a type checker's printing order.
+
+```ts
+import { attest } from "@ark/attest"
+
+const value = {} as { b: "b" | "a"; a: 1 }
+
+attest(value).type.toString.normalizedSnap('{ a: 1; b: "a" | "b" }')
+```
+
+Omit the argument to generate the snapshot, or use `updateSnapshots` to refresh it. Normalization includes nested types and uses your `typeToStringFormat` settings. The saved expectation is compared exactly against the normalized output.
+
+Tuple elements, function parameters and intersection members retain their order. Method signatures, overloads, index signatures and computed properties retain their positions. Type aliases are not expanded, so normalization does not make every equivalent type print identically.
+
 ### Errors
 
 ```ts
