@@ -2,6 +2,7 @@ import {
 	describeCollapsibleDate,
 	domainDescriptions,
 	domainOf,
+	isDotAccessible,
 	printKind,
 	type requireKeys
 } from "@ark/util"
@@ -40,10 +41,15 @@ export const writeMessage: MessageWriter = ctx => {
 	const propString = ctx.propString
 	if (propString === "") return ctx.problem
 	// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-	return propString[0] === "[" ?
+	return startsWithBracket(ctx.path) ?
 			`value at ${propString} ${ctx.problem}`
 		:	`${propString} ${ctx.problem}`
 }
+
+// whether a path's string starts with "[", read from its first key, as
+// indexing the string, written by concatenation, would flatten it
+const startsWithBracket = (path: readonly PropertyKey[]): boolean =>
+	typeof path[0] !== "string" || !isDotAccessible(path[0])
 
 // constraints described alike, like those under one configured message,
 // are written once
