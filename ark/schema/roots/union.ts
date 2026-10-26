@@ -8,6 +8,7 @@ import {
 	type SerializablePrimitive,
 	type SerializedPrimitive,
 	type array,
+	type omit,
 	type show
 } from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
@@ -26,10 +27,9 @@ import type {
 	declareNode
 } from "../shared/declare.ts"
 import {
-	errorFromContext,
+	errorFromNodeAt,
 	errorFromUnion,
-	type ArkError,
-	type ArkErrorContextInput
+	type ArkError
 } from "../shared/errors.ts"
 import type { UnionSite } from "../shared/issues.ts"
 import {
@@ -164,14 +164,14 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return (this._discriminantCases ??= casesOf(this.discriminant!))
 	}
 
+	private _missListsBranches: boolean | undefined
 	// a miss of the union's own value lists its branches if one is described,
 	// as an indiscriminable union's does
 	get missListsBranches(): boolean {
-		return (
+		return (this._missListsBranches ??=
 			!isAuthored(this) &&
 			this.discriminant!.path.length === 0 &&
-			this.branches.some(isAuthored)
-		)
+			this.branches.some(isAuthored))
 	}
 
 	private _discriminantDescription: string | undefined
@@ -301,7 +301,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	applyMiss(data: unknown, ctx: InternalTraversal, value: unknown): boolean {
 		if (this.missListsBranches || !readsPath(this.discriminant!.path, data))
 			this.applyBranches(data, ctx)
-		else errorFromContext(ctx, this.missOf(data, value))
+		else this.errorFromMiss(ctx, data, value)
 		return !ctx.failFast
 	}
 
@@ -316,25 +316,42 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			this.applyBranches(data, ctx)
 		else {
 			ctx.pushBranch()
-			errorFromContext(ctx, this.missOf(data, value))
+			this.errorFromMiss(ctx, data, value)
 			const miss = ctx.popBranch()!.error as ArkError
 			errorFromUnion(ctx, [miss, failed], this.meta, data)
 		}
 		return !ctx.failFast
 	}
 
-	private missOf(data: unknown, value: unknown): ArkErrorContextInput {
+	private errorFromMiss(
+		ctx: InternalTraversal,
+		data: unknown,
+		value: unknown
+	): ArkError {
 		const path = this.missPath
-		return {
-			code: "discriminant",
-			...this.discriminantCases,
-			onKey: path.length !== 0,
-			absent: value === undefined && isAbsent(path, data),
-			description: this.discriminantDescription,
-			relativePath: path,
-			data: path.length ? value : data,
-			meta: this.discriminantMeta
-		}
+		const absent = value === undefined && isAbsent(path, data)
+		return errorFromNodeAt(
+			ctx,
+			this.missContexts[absent ? 1 : 0],
+			path,
+			path.length ? value : data
+		)
+	}
+
+	private _missContexts: omit<DiscriminantErrorContext, "data">[] | undefined
+	// a miss's contexts, present and absent, built once as a node's is so its
+	// errors share a builder
+	private get missContexts(): omit<DiscriminantErrorContext, "data">[] {
+		return (this._missContexts ??= [false, true].map(
+			(absent): omit<DiscriminantErrorContext, "data"> => ({
+				code: "discriminant",
+				...this.discriminantCases,
+				onKey: this.missPath.length !== 0,
+				absent,
+				description: this.discriminantDescription,
+				meta: this.discriminantMeta
+			})
+		))
 	}
 
 	applyBranches(data: unknown, ctx: InternalTraversal): void {

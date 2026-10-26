@@ -1,6 +1,7 @@
 import {
 	appendStringifiedKey,
 	conflatenateAll,
+	pathAt,
 	printSymbol,
 	stringifyPath,
 	throwError,
@@ -33,6 +34,7 @@ import {
 	type ArkIssue,
 	type CompactApply,
 	type FailureSite,
+	type SiteContext,
 	type UnionSite
 } from "./issues.ts"
 import {
@@ -130,10 +132,23 @@ export class ArkErrors extends BaseArkErrors {
 
 	/** @internal the first of issues, its text written alone */
 	get _first(): ArkError | undefined {
-		const first = this._i[0]
-		if (first && !this.written)
+		return this._firstGrouped()
+	}
+
+	/** @internal the first of issues, found with the rest */
+	_firstGrouped(): ArkError | undefined {
+		const added = this._
+		const first = added[0]
+		// the first added is the first grouped, unless another shares its path,
+		// so the rest are grouped only then
+		if (this.groupedCount === 0 && first && isFirstAloneAtPath(added)) {
 			writeError(first, this.config, this.selectedLocale)
-		return first
+			return first
+		}
+		const grouped = this._i[0]
+		if (grouped && !this.written)
+			writeError(grouped, this.config, this.selectedLocale)
+		return grouped
 	}
 
 	private get selectedLocale(): Locale {
@@ -249,6 +264,12 @@ const indexByPath = (issues: ArkError[]): Record<string, ArkError> => {
 	return byPath
 }
 
+const isFirstAloneAtPath = (errors: readonly ArkError[]) => {
+	for (let i = 1; i < errors.length; i++)
+		if (pathEquals(errors[i].path, errors[0].path)) return false
+	return true
+}
+
 // compared from the end, where paths usually differ
 const pathEquals = (l: array<PropertyKey>, r: array<PropertyKey>) => {
 	if (l.length !== r.length) return false
@@ -309,6 +330,8 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 		declare _d: unknown
 		declare _ctor: typeof Traversal
 		declare _f?: ArkError[]
+		// the first issue, found alone
+		declare _1?: ArkError | undefined
 
 		constructor(
 			node: BaseNode,
@@ -336,6 +359,26 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 			}
 			return this._f
 		}
+
+		// found by a traversal adding only the errors at its path, unless the
+		// rest were found first
+		get _first(): ArkError | undefined {
+			if (this._1 || this._f)
+				return this._1 ?? (this as {} as ArkErrors)._firstGrouped()
+			const node = this._node
+			const ctx = new (firstPathTraversalOf(this._ctor))(
+				this._d,
+				this.config,
+				!revisitsPaths(node)
+			)
+			node.traverseApply(this._d, ctx)
+			if (!ctx.hasError())
+				ctx.reject({ expected: "valid", problem: "is invalid" })
+			const errors = ctx.finalize(null) as ArkErrors
+			if (errors._.includes(skipped))
+				errors._ = errors._.filter(error => error !== skipped)
+			return (this._1 = errors._first)
+		}
 	}
 	// an ArkErrors, built without the fields its constructor sets
 	Object.setPrototypeOf(Unread.prototype, ArkErrors.prototype)
@@ -343,6 +386,122 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 	Unread.prototype.constructor = ArkErrors
 	return Unread as never
 })()
+
+type FirstPathTraversal = new (
+	root: unknown,
+	config: ResolvedConfig,
+	stopsElsewhere: boolean
+) => ArkTraversal
+
+// added in place of an error elsewhere than the first's path, so it's counted
+const skipped = {} as ArkError
+
+const firstPathTraversals = new WeakMap<typeof Traversal, FirstPathTraversal>()
+
+// a traversal keeping only the errors at the path of its first, as firstIssue
+// groups them, so it builds no others. One elsewhere is counted as added, so
+// every check stops where it would have. Where no node revisits a path, it
+// stops once it fails elsewhere or leaves the first's path, as every error
+// there is then behind it
+const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
+	let FirstPath = firstPathTraversals.get(Base)
+	if (FirstPath) return FirstPath
+	FirstPath = class extends (Base as typeof ArkTraversal) {
+		declare firstPath: PropertyKey[] | undefined
+		declare stopsElsewhere: boolean
+		declare left: boolean
+
+		constructor(
+			root: unknown,
+			config: ResolvedConfig,
+			stopsElsewhere: boolean
+		) {
+			super(root, config)
+			this.firstPath = undefined
+			this.stopsElsewhere = stopsElsewhere
+			this.left = false
+		}
+
+		// whether an error at this path, or a key below it, is elsewhere than
+		// the first, outside a union's branches, which build its error
+		private isElsewhere(key?: PropertyKey): boolean {
+			const first = this.firstPath
+			if (first === undefined || this.branches.length !== 0) return false
+			if (this.left) return true
+			const path = this.path
+			if (first.length !== path.length + (key === undefined ? 0 : 1))
+				return true
+			if (key !== undefined && first[path.length] !== key) return true
+			for (let i = 0; i < path.length; i++)
+				if (first[i] !== path[i]) return true
+			return false
+		}
+
+		private skip(): boolean {
+			if (this.stopsElsewhere) this.left = true
+			super.addError(skipped)
+			return this.left || this.failFast
+		}
+
+		override _at(site: FailureSite, data: unknown, key?: PropertyKey): boolean {
+			return this.isElsewhere(key) ? this.skip() : super._at(site, data, key)
+		}
+
+		override _in(
+			apply: CompactApply,
+			data: unknown,
+			key: PropertyKey,
+			missing?: FailureSite
+		): boolean | undefined {
+			const stops = super._in(apply, data, key, missing)
+			if (
+				this.stopsElsewhere &&
+				this.firstPath !== undefined &&
+				this.path.length < this.firstPath.length &&
+				this.branches.length === 0
+			)
+				this.left = true
+			return stops || this.left
+		}
+
+		override failsUnion(
+			branches: readonly CompactApply[],
+			site: UnionSite,
+			data: unknown
+		): boolean {
+			return this.isElsewhere() ?
+					this.skip()
+				:	super.failsUnion(branches, site, data)
+		}
+
+		override addError<error extends ArkIssue>(error: error): error {
+			if (this.branches.length === 0) {
+				if (this.firstPath === undefined) this.firstPath = error.path
+				else if (this.left || !pathEquals(error.path, this.firstPath)) {
+					this.skip()
+					return error
+				}
+			}
+			return super.addError(error)
+		}
+	}
+	firstPathTraversals.set(Base, FirstPath)
+	return FirstPath
+}
+
+const revisitsPathsByNode = new WeakMap<BaseNode, boolean>()
+
+// an index signature checks keys a prop has, as an alias can
+const revisitsPaths = (node: BaseNode): boolean => {
+	let revisits = revisitsPathsByNode.get(node)
+	if (revisits === undefined) {
+		revisits =
+			node.includesAlias ||
+			node.references.some(reference => reference.hasKind("index"))
+		revisitsPathsByNode.set(node, revisits)
+	}
+	return revisits
+}
 
 // a root calling no user code and transforming nothing finds its issues once
 // they're read
@@ -376,7 +535,7 @@ export class ArkTraversal extends Traversal {
 		data: unknown
 	): ArkError {
 		return this.addError(
-			errorOfNodeContext(input, this.path.slice(), data, this.config)
+			errorOfNodeContext(input, pathAt(this.path), data, this.config)
 		)
 	}
 
@@ -386,7 +545,7 @@ export class ArkTraversal extends Traversal {
 		this.addError(
 			errorOfNodeContext(
 				(missing ? site.m : site.v) as NodeErrorContextInput,
-				key === undefined ? this.path.slice() : [...this.path, key],
+				pathAt(this.path, key),
 				key === undefined || missing ? data : (data as Keyed)[key],
 				this.config
 			)
@@ -429,6 +588,24 @@ export const errorFromContext = (
 	input: ArkErrorContextInput
 ): ArkError => ctx.addError(errorOfContext(input, ctx.path, ctx.config))
 
+/** adds a node's error at a path from ctx's, as a site's is added */
+export const errorFromNodeAt = (
+	ctx: InternalTraversal,
+	context: SiteContext,
+	relativePath: array<PropertyKey>,
+	data: unknown
+): ArkError =>
+	ctx.addError(
+		errorOfNodeContext(
+			context as never,
+			relativePath.length > 1 ?
+				[...ctx.path, ...relativePath]
+			:	pathAt(ctx.path, relativePath[0]),
+			data,
+			ctx.config
+		)
+	)
+
 /** adds a union's error from each branch's first */
 export const errorFromUnion = (
 	ctx: InternalTraversal,
@@ -440,7 +617,7 @@ export const errorFromUnion = (
 		stampError(
 			{
 				data,
-				path: ctx.path.slice(),
+				path: pathAt(ctx.path),
 				code: "union",
 				errors: flattenUnion(errors),
 				meta,

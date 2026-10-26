@@ -1,4 +1,4 @@
-import type { array } from "@ark/util"
+import { pathAt, type array } from "@ark/util"
 import type { ArkErrorCode } from "./errors.ts"
 import {
 	readsKeySites,
@@ -239,9 +239,7 @@ interface ArkIssues {
 
 type Keyed = Record<PropertyKey, unknown>
 
-// a traversal's issue, as ArkErrors' _at writes it, but copying a path of
-// one or two keys as a literal, which TurboFan allocates inline where slice()
-// calls a builtin
+// a traversal's issue, as ArkErrors' _at writes it
 export const issueAt = (
 	path: PropertyKey[],
 	site: FailureSite,
@@ -250,23 +248,17 @@ export const issueAt = (
 ): ArkIssue => {
 	let context = (readsKeySites ? site.v : undefined) ?? (site as SiteContext)
 	if (key !== undefined) {
-		path.push(key)
 		if (site.m && !(key in (data as object))) context = site.m
 		else data = (data as Keyed)[key]
 	}
-	const issuePath =
-		path.length === 1 ? [path[0]]
-		: path.length === 2 ? [path[0], path[1]]
-		: path.slice()
 	const issue: ArkIssue = {
 		code: context.code,
-		path: issuePath,
+		path: pathAt(path, key),
 		data,
 		expected: context.description,
 		message: context.x
 	}
 	if (writesText) context.text?.(issue)
-	if (key !== undefined) path.pop()
 	return issue
 }
 
