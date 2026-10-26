@@ -151,7 +151,7 @@ Configure its text under `undeclared` instead of `predicate`.
 
 ### Union misses have the discriminant code
 
-A value that matches no branch of a union ArkType checks by its type or by a literal value, like `number | null`, `"a" | "b" | "c"` or objects with a discriminant key, was a `predicate` error. Its code is now `discriminant`, and its `data` is the discriminating value:
+A value that matches no branch of a union ArkType checks by its type or by a literal value, like `number | null`, `"a" | "b" | "c"` or objects with a discriminant key, was a `predicate` error, and one of two literals, like `boolean`, was a `union` error. Its code is now `discriminant`, and its `data` is the discriminating value:
 
 ```ts
 const out = type("number | null")("x")

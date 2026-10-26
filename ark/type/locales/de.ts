@@ -214,13 +214,19 @@ const predicateOf: Locale.ExpectedWriter<"predicate"> = (e, locale) => {
 	return `gemäß ${name ? locale.verbatim(name) : "einem anonymen Prädikat"} gültig`
 }
 
+// false and true are named as one, as a union of them is
 const casesOf: Locale.ExpectedWriter<"discriminant"> = (e, locale) =>
-	locale.list(
-		e.discriminantKind === "domain" ?
-			e.cases.map(domain => locale.nouns[domain])
-		:	e.cases.map(value => print(value, locale)),
-		"or"
-	)
+	e.discriminantKind === "domain" ?
+		locale.list(
+			e.cases.map(domain => locale.nouns[domain]),
+			"or"
+		)
+	: e.cases.length === 2 && e.cases.every(value => typeof value === "boolean") ?
+		locale.nouns.boolean
+	:	locale.list(
+			e.cases.map(value => print(value, locale)),
+			"or"
+		)
 
 const describeProto = (proto: Function, locale: Locale) => {
 	const builtinName = getBuiltinNameOfConstructor(proto)

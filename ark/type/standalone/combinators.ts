@@ -87,7 +87,7 @@ const calleesOf = (node: BaseNode): BaseRoot[] | undefined => {
 			)
 		}
 		if (
-			node.discriminantJit ||
+			node.discriminant ||
 			!isDecidedByAllows(node) ||
 			!unionSiteOf(node) ||
 			basesSiteOf(node) === null
@@ -164,7 +164,7 @@ interface Units {
 const unitListOf = (node: UnionNode): Units | undefined => {
 	if (!node.branches.every(unitSiteOf)) return
 	const values = node.branches.map(branch => (branch as UnitNode).unit)
-	const discriminant = node.discriminantJit
+	const discriminant = node.discriminant
 	if (!discriminant) {
 		const site = unionSiteOf(node)
 		return site && { values, site }
@@ -203,7 +203,7 @@ interface Cases {
 
 // a union told apart by a string at one key
 const discriminatedOf = (node: UnionNode): Cases | undefined => {
-	const discriminant = node.discriminantJit
+	const discriminant = node.discriminant
 	if (
 		!discriminant ||
 		discriminant.kind !== "unit" ||
@@ -269,7 +269,7 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 const domainCasesOf = (
 	node: UnionNode
 ): Record<string, BaseRoot | true> | undefined => {
-	const discriminant = node.discriminantJit
+	const discriminant = node.discriminant
 	if (
 		!discriminant ||
 		discriminant.kind !== "domain" ||
@@ -675,7 +675,7 @@ export const writeCombinator = (
 		const units = unitListOf(node)
 		if (units) {
 			if (
-				units.site.code === "union" &&
+				units.site.code === "discriminant" &&
 				units.site.description === "boolean" &&
 				units.values.length === 2 &&
 				units.values.every(value => typeof value === "boolean")

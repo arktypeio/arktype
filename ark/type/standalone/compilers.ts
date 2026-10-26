@@ -204,7 +204,7 @@ const isDecidedByKeywords = (node: BaseNode): boolean =>
 	)
 
 const reportsItself = (value: BaseNode): value is UnionNode =>
-	value.hasKind("union") && !value.discriminantJit && !value.includesAlias
+	value.hasKind("union") && !value.discriminant && !value.includesAlias
 
 // whether a key is read from an object, or an index from an array, as
 // arktype reads a discriminant
@@ -291,7 +291,7 @@ export const unifies = (node: BaseNode): boolean => {
 const reportsApart = (reference: BaseNode): boolean =>
 	reference.hasKind("predicate") ? !isKeyword(reference.predicate)
 	: reference.hasKind("union") ?
-		!reference.discriminantJit && !isDecidedByAllows(reference)
+		!reference.discriminant && !isDecidedByAllows(reference)
 	: reference.hasKind("intersection") ?
 		// Apply counts issues between its structure and predicates
 		(reference.inner.predicate?.length ?? 0) + +!!reference.structure >= 2

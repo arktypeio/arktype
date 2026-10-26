@@ -2033,7 +2033,7 @@ age is missing`)
 			}),
 			unionMessageForKey: refusalOf({
 				T: scope({}, { union: { message: () => "configured" } }).type({
-					a: "boolean"
+					a: "number < 0 | number > 9"
 				})
 			}),
 			unionWriter: refusalOf({
