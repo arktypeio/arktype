@@ -133,6 +133,15 @@ lead.email is missing
 		attest(js.includes("var Team =")).equals(false)
 	})
 
+	it("creates in the function validators whose creator others call", async () => {
+		const [js] = await bundle()
+		const [whole] = await bundle({ prune: false })
+		attest(run(js)).equals(run(whole))
+		attest(js.includes("var Team =")).equals(false)
+		attest(js.includes("var User =")).equals(false)
+		attest(js.match(/\({ 0: allows, 1: apply }\) =>/g)?.length).equals(1)
+	})
+
 	it("creates in the function a validator under a type assertion", async () => {
 		const files = writeFixture(
 			{

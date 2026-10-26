@@ -108,7 +108,10 @@ export const flattenBundle = (
 		...units.flatMap(unit =>
 			unit.declarations.map(d => unit.module.source.slice(d.start, d.end))
 		),
-		...creations.map(creation => creation.creator)
+		...new Set(creations.map(creation => creation.creator)),
+		...creations.flatMap(creation =>
+			creation.args.filter(arg => arg.startsWith("("))
+		)
 	]
 	if (
 		whereSmaller &&
@@ -209,9 +212,12 @@ export const flattenBundle = (
 
 const unrenamed = (specifier: string) => specifier
 
-// a validator a site creates in place by calling a creator nothing else
-// calls, with units the function declares, which the function creates in its
-// place, so its creator's body reads them as its constants
+// a validator a site creates in place by calling a creator with units the
+// function declares, which the function creates in its place: through the
+// creator's body, reading them as its constants, if nothing else calls it,
+// else through one constant of it. A function passed it that nothing else
+// reads, e.g. a validator's applier, is written as its argument, still one
+// function for each validator
 interface Creation {
 	// the call's span, with its annotation
 	start: number
@@ -220,6 +226,9 @@ interface Creation {
 	name: string
 	// the creator's function, which the function calls
 	creator: string
+	// the name the function declares the creator as, if others call it
+	shared: string | undefined
+	// each unit's name or function's text
 	args: string[]
 	// the declaration it's all of, which an import of it can replace
 	declared:
@@ -275,6 +284,7 @@ const creationsIn = (
 			callsOf.set(key, (callsOf.get(key) ?? 0) + calls)
 		}
 	}
+	const names = new Set<string>()
 	for (const id in sites) {
 		const module = parsed.get(id)!
 		const creations: Creation[] = []
@@ -293,25 +303,34 @@ const creationsIn = (
 			const creator = originOf(bindingOf(call.callee))
 			const args = call.arguments.map(arg => originOf(bindingOf(arg)))
 			const fn = creator && creatorFnOf(parsed.get(creator[0])!)
-			if (
-				!fn ||
-				callsOf.get(creator.join("\0")) !== 1 ||
-				!args.every(
-					arg =>
-						arg &&
-						declaredIn
-							.get(arg[0])
-							?.declarations.some(d => declaredNameOf(d) === arg[1])
+			// a unit by its name, a function nothing else reads by its text
+			const written = args.map(arg => {
+				if (!arg) return
+				if (
+					declaredIn
+						.get(arg[0])
+						?.declarations.some(d => declaredNameOf(d) === arg[1])
 				)
-			)
-				continue
+					return arg[1]
+				const passed =
+					callsOf.get(arg.join("\0")) === 1 && creatorFnOf(parsed.get(arg[0])!)
+				// parenthesized, so it compiles as it loads
+				return passed && `(${passed})`
+			})
+			if (!fn || written.some(arg => !arg)) continue
+			const isShared = callsOf.get(creator.join("\0")) !== 1
+			// named for what it's created of where its creator creates others
+			const name = `${(isShared ? args[0]! : creator)[1]}Validator`
+			if (names.has(name)) continue
+			names.add(name)
 			const [declarator] = declaration.declarations
 			creations.push({
 				start: call.start - annotation.length,
 				end: call.end,
-				name: `${creator[1]}Validator`,
+				name,
 				creator: fn,
-				args: args.map(arg => arg![1]),
+				shared: isShared ? creator[1] : undefined,
+				args: written as string[],
 				declared:
 					(
 						declaration.kind === "const" &&
@@ -817,10 +836,18 @@ const writeFlat = (
 		}
 	}
 	const created = new Set<string>()
-	for (const { name, creator, args } of creations) {
+	const creators = new Set<string>()
+	for (const { name, creator, shared, args } of creations) {
 		if (specifiersByName.has(name) || created.has(name)) return
 		created.add(name)
-		texts.push(`const ${name} = (${creator})(${args.join(", ")})`)
+		if (shared && specifiersByName.has(shared)) return
+		if (shared && !creators.has(shared)) {
+			creators.add(shared)
+			texts.push(`const ${shared} = (${creator})`)
+		}
+		texts.push(
+			`const ${name} = ${shared ?? `(${creator})`}(${args.join(", ")})`
+		)
 	}
 	const inlined = withTemplatesInlined(texts.join("\n"))
 	if (!inlined) return
