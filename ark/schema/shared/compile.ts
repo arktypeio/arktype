@@ -20,6 +20,7 @@ import { mergeTransformed, TransformErrors } from "./transform.ts"
 import {
 	addMorphErrors,
 	allowsInBranchBy,
+	disallowed,
 	enterApplied,
 	exitApplied,
 	rejected,
@@ -428,10 +429,15 @@ export abstract class NodeCompiler extends CompiledFunction<
 		)
 	}
 
-	// what a node's Allows returns where it rejects data, which a build can
-	// write otherwise
-	rejection(_node: BaseNode): string {
-		return "false"
+	// a transforming object's Allows rejects through disallowed, so the
+	// transform after it is compiled with its checks. A build for size
+	// returns false
+	rejection(node: BaseNode): string {
+		return (
+				this.traversalKind === "Allows" && !this.shortest && node.transforms
+			) ?
+				`${this.ref(disallowed)}()`
+			:	"false"
 	}
 
 	initializeErrorCount(): this {

@@ -73,6 +73,7 @@ export {
 	copyOf,
 	describeCollapsibleDate,
 	describePredicate,
+	disallowed,
 	enInfo,
 	enterApplied,
 	enterResolution,
@@ -153,11 +154,6 @@ export type IntrospectionMember = (typeof introspectionMembers)[number]
 
 // each precompiled module imports it, so another version's runtime fails to link
 export const precompiledForArktype_2_2_9 = true
-
-// what a validator's Allows returns where data fails, through a call V8 has no
-// feedback for until then, so a transform it guards is compiled with its
-// checks and repeats none of their reads
-export const disallowed = (): false => false
 
 // captured at load so a program can't replace them; each alone to tree-shake
 export const assign = Object.assign
