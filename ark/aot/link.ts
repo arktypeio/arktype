@@ -1,8 +1,14 @@
 import { hashOf } from "@ark/util"
 import MagicString, { type SourceMap } from "magic-string"
-import type { Node, Span } from "oxc-parser"
+import type { MemberExpression, Node, Span } from "oxc-parser"
 import { SourceModule } from "./module.ts"
-import { exportNameOf, walk, type Binding, type Reference } from "./scope.ts"
+import {
+	exportNameOf,
+	isWriteTarget,
+	walk,
+	type Binding,
+	type Reference
+} from "./scope.ts"
 
 export interface LinkedSite {
 	// the module's source, which names its own locals
@@ -313,6 +319,8 @@ class Linker {
 	private ownerByBinding = new Map<Binding, Unit>()
 	// units declared as the validator a site creates from them
 	private declaresCreated = new Set<Binding>()
+	// checkers read as the validators created from them
+	private readAsCreated = new Set<Binding>()
 	unexposed = 0
 
 	constructor(
@@ -415,12 +423,20 @@ class Linker {
 					this.read(unit, reference)
 			}
 		}
-		if (intoSites) this.declareCreated(exposesAllows, declaresEach)
+		if (intoSites) {
+			this.declareCreated(exposesAllows, declaresEach)
+			this.readAllowsAsCreated()
+		}
 		// a declaration written into can't be copied before it's read again
 		const written = new Set<Node>()
 		let linked = false
 		for (const [binding, reads] of this.readsByBinding) {
-			if (reads.length !== 1 || this.declaresCreated.has(binding)) continue
+			if (
+				reads.length !== 1 ||
+				this.declaresCreated.has(binding) ||
+				this.readAsCreated.has(binding)
+			)
+				continue
 			const owner = this.ownerByBinding.get(binding)!
 			const [read] = reads
 			const into = statementOf(read.reference.id)
@@ -434,6 +450,73 @@ class Linker {
 			linked = true
 		}
 		return linked
+	}
+
+	// a validator every read reads `.allows` of, created as an object of that
+	// alone, is read as the checker it's created from
+	private readAllowsAsCreated(): void {
+		for (const site of this.units) {
+			if (!site.isSite) continue
+			const { module, edits } = site
+			for (const statement of module.program.body) {
+				if (
+					statement.type !== "VariableDeclaration" ||
+					statement.declarations.length !== 1
+				)
+					continue
+				const [{ id, init }] = statement.declarations
+				const binding =
+					id.type === "Identifier" ?
+						module.scopes.bindingsById.get(id)
+					:	undefined
+				const creator =
+					init?.type === "CallExpression" && init.callee.type === "Identifier" ?
+						module.scopes.refsById.get(init.callee)?.binding
+					:	undefined
+				if (
+					!binding?.references.length ||
+					binding.exportNames.length ||
+					!creator ||
+					!importSourceOf(creator)?.startsWith("~arktype/") ||
+					init!.type !== "CallExpression" ||
+					init.arguments.length !== 1 ||
+					!this.createsAllowsObject(importedNameOf(creator))
+				)
+					continue
+				const reads = binding.references.map(({ id }) => id.parent)
+				if (!reads.every(readsAllows)) continue
+				const [checker] = init.arguments
+				const imported =
+					checker.type === "Identifier" ?
+						module.scopes.refsById.get(checker)?.binding
+					:	undefined
+				const declared = imported && this.declarationOf(site, imported)
+				if (declared) {
+					// each read reads the checker, which stays declared, as an alias
+					// of it would be kept
+					this.readAsCreated.add(declared[1])
+					edits.remove(statement.start, statement.end)
+					for (const read of reads)
+						edits.overwrite(read.start, read.end, imported.name)
+					continue
+				}
+				const annotation = pureAnnotationOf(module.source, init) ?? ""
+				edits.remove(init.start - annotation.length, checker.start)
+				edits.remove(checker.end, init.end)
+				for (const read of reads) edits.remove(read.object.end, read.end)
+			}
+		}
+	}
+
+	// whether a create function the units declare makes an object of the
+	// allows it's passed alone
+	private createsAllowsObject(name: string): boolean {
+		const declaration = new RegExp(
+			`\\bconst ${name} = \\(?allows\\)? => \\{\\s*const validator = \\{ allows: allows \\}\\s*return validator\\s*\\}`
+		)
+		return this.units.some(
+			unit => !unit.isSite && declaration.test(unit.module.source)
+		)
 	}
 
 	// a checker a single site creates its validator from, declared as that
@@ -747,6 +830,13 @@ class Linker {
 		return local
 	}
 }
+
+const readsAllows = (read: Node | null | undefined): read is MemberExpression =>
+	read?.type === "MemberExpression" &&
+	!read.computed &&
+	read.property.type === "Identifier" &&
+	read.property.name === "allows" &&
+	!isWriteTarget(read)
 
 // a site's export declaring a validator a call creates from the checker a
 // reference reads alone, which nothing else in the module reads

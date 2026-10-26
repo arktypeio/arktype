@@ -595,6 +595,11 @@ import { User } from "./types.ts"
 
 const out = User({ name: 5 })
 console.log(out instanceof type.errors ? out.summary : out)
+`,
+				"allowing.ts": `import { type } from "arktype"
+
+const User = type({ name: "string" })
+console.log(User.allows({ name: 5 }), User.allows({ name: "Ada" }))
 `
 			},
 			fromHere("temp", "pruned")
@@ -782,19 +787,23 @@ for (const data of [{ name: 5 }, flipping]) {
 			)
 		})
 
-		it("bundles no Apply where only .allows is read", async () => {
+		it("bundles a program reading only .allows as its checkers", async () => {
 			const stdin = {
-				contents: `import { User } from "./types.ts"
-
-console.log(User.allows({ name: 5 }), User.allows({ name: "Ada" }))
-`,
+				contents: `import "./allowing.ts"`,
 				resolveDir: root,
 				loader: "ts" as const
 			}
 			const allowing = await bundle({}, { stdin })
 			attest(run(allowing)).snap("false true\n")
-			// what writes an issue
-			attest(allowing.includes("_at")).equals(false)
+			// neither what writes an issue nor a validator around its checker
+			attest([allowing.includes("_at"), allowing.includes("allows")]).equals([
+				false,
+				false
+			])
+			attest(
+				allowing.length <=
+					(await bundle({ preset: undefined }, { stdin })).length
+			).equals(true)
 		})
 
 		it("writes a validator called with its data alone as its Apply", async () => {
