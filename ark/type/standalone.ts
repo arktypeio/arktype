@@ -1306,6 +1306,14 @@ class StandaloneArtifact {
 		return [...this.validatorNames.keys()]
 	}
 
+	get readsOnlyAllows(): boolean {
+		return (
+			!this.baking.called &&
+			!this.baking.members.has("assert") &&
+			!this.baking.members.has("~standard")
+		)
+	}
+
 	// indexes the compilers writing a root's units
 	variantOf(root: BaseRoot): number {
 		const variant =
@@ -1317,7 +1325,10 @@ class StandaloneArtifact {
 		const compiled =
 			variant !== 8 ? variant
 			: !this.baking.combines || this.baking.compiledInputs.has(root.hash) ?
-				compiledForSize
+				// read only for allows, a validator writes no issues
+				this.readsOnlyAllows ?
+					0
+				:	compiledForSize
 			: this.baking.shapes ? shapedForSize
 			: variant
 		return this.baking.jsonInput ? jsonVariantOf(compiled) : compiled
@@ -2084,7 +2095,7 @@ ${writeFunction(
 		// creator calling a shared root apply would call it through a closure
 		// every validator of the shape shares, whose call V8 can't inline once
 		// it has seen several
-		const fused =
+		const fusedApplier =
 			(
 				typeof applied === "object" &&
 				!isTemplate &&
@@ -2098,6 +2109,20 @@ ${writeFunction(
 			) ?
 				applied
 			:	undefined
+		// a validator read only for allows is created from its Allows alone,
+		// so a bundle drops its Apply
+		const fused =
+			(
+				fusedApplier?.params === "allows, apply" &&
+				!members.has("assert") &&
+				this.preciseFormOf(members, unconfigured, reads) === "object"
+			) ?
+				{
+					...fusedApplier,
+					params: "allows",
+					args: fusedApplier.args.slice(0, fusedApplier.args.indexOf(","))
+				}
+			:	fusedApplier
 		const made =
 			(
 				!fused &&

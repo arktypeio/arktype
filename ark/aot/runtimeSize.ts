@@ -24,17 +24,61 @@ export const minifiedSizeOf = ({
 	)
 }
 
-/** about the length a minifier leaves of a program's modules, each shared one once */
+/**
+ * about the length a minifier leaves of a program: its code, and what that
+ * reaches of its modules and the runtime, each declaration once, as a bundler
+ * drops what nothing reads, like the Apply of a validator read only for allows
+ */
 export const programSizeOf = (
 	written: Record<string, Pick<StandaloneModules, "code" | "modules">>
 ): number => {
-	const modules: Record<string, string> = {}
-	let code = ""
+	const program = `\0${++programs}:`
 	for (const id in written) {
-		code += `${written[id].code}\n`
-		Object.assign(modules, written[id].modules)
+		for (const specifier in written[id].modules)
+			virtualSources.set(program + specifier, written[id].modules[specifier])
 	}
-	return minifiedSizeOf({ code, modules })
+	let length = 0
+	let text = ""
+	const reached = new Set<Declared>()
+	try {
+		for (const id in written) {
+			const { code } = written[id]
+			length += minifiedLengthOf(code)
+			text += code
+			const site = moduleAt(program + id, code)
+			for (const declared of reachedBy(site.id, importedNamesOf(site)))
+				reached.add(declared)
+		}
+	} finally {
+		for (const file in modulesByFile) if (file.startsWith(program)) forget(file)
+		for (const file of virtualSources.keys())
+			if (file.startsWith(program)) virtualSources.delete(file)
+	}
+	for (const declared of reached) text += declared.text
+	for (const declared of reachedBy(runtimeFileOf(), runtimeReadsOf(text)))
+		reached.add(declared)
+	for (const declared of reached) length += declared.length
+	return length
+}
+
+// a program's modules, read by the specifiers its code imports them by
+const virtualSources = new Map<string, string>()
+let programs = 0
+
+// what a site imports from a program's modules, each by its local name
+const importedNamesOf = (site: SourceModule): string[] =>
+	Object.keys(site.scopes.root.bindings).filter(name => {
+		const binding = site.scopes.root.bindings[name]
+		return (
+			binding.kind === "import" &&
+			declaredAs(binding)?.module.id.startsWith("\0")
+		)
+	})
+
+const forget = (file: string) => {
+	const { bindings } = modulesByFile[file].scopes.root
+	for (const name in bindings) declaredByBinding.delete(bindings[name])
+	delete modulesByFile[file]
 }
 
 /**
@@ -82,41 +126,55 @@ const reachedBy = (
 		reached.add(declared)
 		for (const read of readsOf(declared)) reach(read)
 	}
-	for (const name of names) reach(exportedBy(file, name))
+	for (const name of names) reach(exportedBy(file, name) ?? localOf(file, name))
 	return reached
 }
 
-// a top-level declaration of one of the runtime's modules
+// a top-level declaration of one of the runtime's or a program's modules
 interface Declared {
 	binding: Binding
 	module: SourceModule
+	text: string
 	length: number
 	reads?: Declared[]
+}
+
+const localOf = (file: string | undefined, name: string) => {
+	const binding = file && modulesByFile[file]?.scopes.root.bindings[name]
+	return binding ? declaredAs(binding) : undefined
 }
 
 const modulesByFile: Record<string, SourceModule> = {}
 const declaredByBinding = new Map<Binding, Declared>()
 
-const moduleAt = (file: string): SourceModule => {
+const moduleAt = (file: string, source?: string): SourceModule => {
 	if (modulesByFile[file]) return modulesByFile[file]
 	const module = (modulesByFile[file] = new SourceModule(
 		file,
-		readFileSync(file, "utf8"),
+		source ?? virtualSources.get(file) ?? readFileSync(file, "utf8"),
 		file
 	))
 	const { bindings } = module.scopes.root
 	for (const name in bindings) {
 		const binding = bindings[name]
+		const text = javaScriptOf(module, binding.declaration)
 		declaredByBinding.set(binding, {
 			binding,
 			module,
-			length: minifiedLengthOf(javaScriptOf(module, binding.declaration))
+			text,
+			length: minifiedLengthOf(text)
 		})
 	}
 	return module
 }
 
 const fileOf = (specifier: string, importer: string): string | undefined => {
+	// a program's module, as its code imports it
+	if (importer.startsWith("\0")) {
+		const program = importer.slice(0, importer.indexOf(":") + 1)
+		if (virtualSources.has(program + specifier)) return program + specifier
+		importer = import.meta.url
+	}
 	try {
 		return createRequire(importer).resolve(specifier)
 	} catch {
