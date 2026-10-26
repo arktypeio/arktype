@@ -1877,6 +1877,10 @@ age is missing`)
 			}))
 		const and = (n: number) => n > 0
 		const isEvenFn = (n: number) => n % 2 === 0
+		// reused at each level, so its JSON is past the 64K a hash writes in full
+		let reused: type.Any = type({ name: "string" })
+		for (let i = 0; i < 10; i++)
+			reused = type({ id: "string", l: reused.array(), r: reused.array() })
 		attest({
 			function: refusalOf({ T: type("number").narrow(isEvenFn) }),
 			unit: refusalOf({ T: type("===", { a: 1 }) }),
@@ -1964,6 +1968,18 @@ age is missing`)
 						["isPositive", unnamedPositive]
 					)
 				}
+			}),
+			// the branches differ past their hashes' prefix, so their digests,
+			// which read the holes' names, order them
+			digestedOrder: refusalOf({
+				T: {
+					type: type({
+						a: reused,
+						n: type("number").narrow(isEven),
+						x: "1"
+					}).or({ a: reused, n: type("number").narrow(isPositive), y: "1" }),
+					params: holes(["isEven", isEven], ["isPositive", isPositive])
+				}
 			})
 		}).snap({
 			function: "Function(isEvenFn)",
@@ -1990,7 +2006,8 @@ age is missing`)
 			nameOrder: "an order that depends on the name of `isEven`",
 			arityOrder: "an order that depends on the name of `isEven`",
 			keywordOrder: "an order that depends on the name of `isLong`",
-			unnamedOrder: "an order that depends on the name of `isEven`"
+			unnamedOrder: "an order that depends on the name of `isEven`",
+			digestedOrder: "an order that depends on the name of `isEven`"
 		})
 		// a build checks that nothing configured its thread, so it's left as it was
 		const config = $ark.config

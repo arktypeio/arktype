@@ -184,7 +184,7 @@ const keptForJob = (cache: NodeCache, hash: string): string => {
 // this length, a hash is the start of its JSON, by which siblings still sort,
 // and a digest of all of it
 const maxPlainHashLength = 65_536
-const hashedPrefixLength = 1024
+export const hashedPrefixLength = 1024
 // a digest reads an object nested past this length as that object's digest
 const maxInlinedLength = 256
 
