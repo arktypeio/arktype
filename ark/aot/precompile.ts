@@ -213,6 +213,8 @@ import {
 	writeUnitTable,
 	writeValidators
 } from "./output.ts"
+import { programSizeOf } from "./runtimeSize.ts"
+import { combinesChecks } from "./smaller.ts"
 export * from "./messages.ts"
 export * from "./presets.ts"
 export * from "./settings.ts"
@@ -281,7 +283,7 @@ export interface ScannedModule {
 
 type ProgramReads = Pick<
 	ProgramUsage,
-	"members" | "called" | "readsAllows" | "piped"
+	"members" | "called" | "readsAllows" | "piped" | "combines"
 >
 
 interface ProgramUsage {
@@ -297,6 +299,9 @@ interface ProgramUsage {
 	written: Record<string, PrecompiledModule>
 	// modules it no longer reads as their units are declared in one function
 	replaced: ReadonlySet<string>
+	// whether a size build writes the program's nodes as checkers, as is
+	// smaller for the program as a whole rather than for each module alone
+	combines?: boolean
 }
 
 export interface ScannedUsage {
@@ -697,21 +702,45 @@ export class Precompiler {
 			replaced: new Set()
 		}
 		this.usagesByProgram.set(program.key, usage)
-		const written: Record<string, PrecompiledModule> = {}
-		const runtimes = new Map(planned)
-		for (const id of precompiled) {
-			written[id] = this.precompile(
-				sources[id],
-				id,
-				program.modules[id].mappings,
-				program.key
+		const writeProgram = () => {
+			const written: Record<string, PrecompiledModule> = {}
+			const runtimes = new Map(planned)
+			for (const id of precompiled) {
+				written[id] = this.precompile(
+					sources[id],
+					id,
+					program.modules[id].mappings,
+					program.key
+				)
+				runtimes.set(id, this.runtimesById[id])
+				if (written[id].diagnostics.some(d => d.severity === "error")) return
+			}
+			return { written, runtimes }
+		}
+		// checkers or compiled nodes, whichever the program is smaller written as,
+		// counting the runtime each reads once
+		const decides = combinesChecks(this.standalone)
+		if (decides) usage.combines = true
+		let wrote = writeProgram()
+		if (wrote && decides) {
+			usage.combines = false
+			const compiled = writeProgram()
+			if (
+				compiled &&
+				programSizeOf(compiled.written) < programSizeOf(wrote.written)
 			)
-			runtimes.set(id, this.runtimesById[id])
-			if (written[id].diagnostics.some(d => d.severity === "error")) {
-				this.usagesByProgram.delete(program.key)
-				return unwritten
+				wrote = compiled
+			else {
+				usage.combines = true
+				for (const [id, runtime] of wrote.runtimes)
+					if (precompiled.includes(id)) this.runtimesById[id] = runtime
 			}
 		}
+		if (!wrote) {
+			this.usagesByProgram.delete(program.key)
+			return unwritten
+		}
+		const { written, runtimes } = wrote
 		// as written, a validator may be read in a way the plan didn't see, as
 		// where a factory checks a Type it's passed
 		const usedAsWritten = isWhole ? used : this.usedIn(program, runtimes)
@@ -1960,7 +1989,7 @@ export class Precompiler {
 		modules: Record<string, string>,
 		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[],
-		{ members, called, readsAllows, piped }: ProgramReads
+		{ members, called, readsAllows, piped, combines }: ProgramReads
 	): Record<string, Record<string, string>> {
 		const inputImports: Record<string, Record<string, string>> = {}
 		const { namesBySite, factoriesBySite, exportsByName, folded } =
@@ -1985,6 +2014,7 @@ export class Precompiler {
 						called,
 						readsAllows,
 						piped,
+						combines,
 						configured,
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module),

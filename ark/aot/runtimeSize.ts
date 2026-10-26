@@ -16,12 +16,25 @@ const runtimeFileOf = () =>
 export const minifiedSizeOf = ({
 	code,
 	modules
-}: StandaloneModules): number => {
+}: Pick<StandaloneModules, "code" | "modules">): number => {
 	const text = [code, ...Object.values(modules)].join("\n")
 	return (
 		minifiedLengthOf(text) +
 		reachedLengthOf(runtimeFileOf(), runtimeReadsOf(text))
 	)
+}
+
+/** about the length a minifier leaves of a program's modules, each shared one once */
+export const programSizeOf = (
+	written: Record<string, Pick<StandaloneModules, "code" | "modules">>
+): number => {
+	const modules: Record<string, string> = {}
+	let code = ""
+	for (const id in written) {
+		code += `${written[id].code}\n`
+		Object.assign(modules, written[id].modules)
+	}
+	return minifiedSizeOf({ code, modules })
 }
 
 /**
