@@ -169,6 +169,14 @@ contextualize(() => {
 		)
 	})
 
+	it("prefers a key every branch holds to one with more cases", () => {
+		const T = type({ kind: "'a'", channel: "'open' | 'closed'", x: "string" })
+			.or({ kind: "'b'", channel: "'read' | 'write'", y: "number" })
+			.or({ kind: "'c'", z: "boolean" })
+		attest(T.internal.assertHasKind("union").discriminant?.path).snap(["kind"])
+		attest(T({ kind: "c", z: 1 }).toString()).snap("z must be boolean (was 1)")
+	})
+
 	it("indiscriminable", () => {
 		const T = getPlaces().type([
 			"ocean",

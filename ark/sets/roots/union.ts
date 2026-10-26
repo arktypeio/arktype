@@ -309,11 +309,16 @@ const createCaseResolutionContext = (
 	viableCandidates: DiscriminantCandidate[],
 	node: Union.Node
 ): CaseResolutionContext => {
-	const ordered = viableCandidates.sort((l, r) =>
-		l.path.length === r.path.length ?
+	const covering = new Set(
+		viableCandidates.filter(c => holdsEveryBranch(c, node.branches.length))
+	)
+	// prefer shorter paths, then keys every branch holds, which leave no
+	// default case, then the most cases
+	const ordered = viableCandidates.sort(
+		(l, r) =>
+			l.path.length - r.path.length ||
+			Number(covering.has(r)) - Number(covering.has(l)) ||
 			Object.keys(r.cases).length - Object.keys(l.cases).length
-			// prefer shorter paths first
-		:	l.path.length - r.path.length
 	)
 
 	const best = ordered[0]
@@ -337,6 +342,17 @@ const createCaseResolutionContext = (
 		defaultPairs,
 		node
 	}
+}
+
+// whether each branch holds one of a candidate's cases
+const holdsEveryBranch = (
+	candidate: DiscriminantCandidate,
+	branchCount: number
+): boolean => {
+	const held = new Set<number>()
+	for (const { branchIndices } of Object.values(candidate.cases))
+		for (const i of branchIndices) held.add(i)
+	return held.size === branchCount
 }
 
 const resolveCase = (
