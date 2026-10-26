@@ -406,11 +406,18 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return `ctx.${method === "failsAt" ? "_at" : "_in"}(${args})`
 	}
 
-	// returns what the case on matches returns, or otherwise
+	// returns what the case on matches returns, or otherwise. A case returning
+	// what the next one does falls through to it
 	switch(on: string, cases: readonly SwitchCase[], otherwise: string): this {
 		return this.block(`switch(${on})`, () => {
-			for (const [label, returned] of cases)
-				this.line(`${label}: return ${returned}`)
+			for (const [i, [label, returned]] of cases.entries()) {
+				const next = cases[i + 1]
+				const fallsThrough =
+					label !== "default" &&
+					next?.[0] !== "default" &&
+					next?.[1] === returned
+				this.line(fallsThrough ? `${label}:` : `${label}: return ${returned}`)
+			}
 			return this
 		}).return(otherwise)
 	}
