@@ -147,7 +147,12 @@ import {
 	writeUnprunedMessage,
 	writeUnscannedFlatMessage
 } from "./scan.ts"
-import { linkBundle, prefixOf, type LinkedSite } from "./link.ts"
+import {
+	linkBundle,
+	prefixOf,
+	type LinkedSite,
+	type LinkOptions
+} from "./link.ts"
 import {
 	passedReaderOf,
 	unprecompiled,
@@ -769,7 +774,13 @@ export class Precompiler {
 		}
 		let linked = false
 		if (!this.inline && !this.standalone.lazy) {
-			let link = this.linkWritten(written, sources, readsAllows)
+			// a size build's units, where the bundle is one chunk, are one module
+			const isOneChunk =
+				!!program.isOneChunk && this.standalone.optimize === "size"
+			let link = this.linkWritten(written, sources, {
+				exposesAllows: readsAllows,
+				isOneChunk
+			})
 			// a unit a site creates its validator from is declared as that
 			// validator where validators expose allows, as a program reading
 			// none is written again to where enough units would be
@@ -778,7 +789,10 @@ export class Precompiler {
 				const exposed = writeProgram()
 				if (exposed) {
 					;({ written, runtimes } = exposed)
-					link = this.linkWritten(written, sources, true)
+					link = this.linkWritten(written, sources, {
+						exposesAllows: true,
+						isOneChunk
+					})
 				} else {
 					usage.readsAllows = false
 					for (const [id, runtime] of runtimes)
@@ -872,7 +886,7 @@ export class Precompiler {
 	private linkWritten(
 		written: Record<string, PrecompiledModule>,
 		sources: Record<string, string>,
-		exposesAllows: boolean
+		opts: LinkOptions
 	): { changed: boolean; unexposed: number } {
 		const sites: Record<string, LinkedSite> = {}
 		const modules: Record<string, string> = {}
@@ -880,7 +894,7 @@ export class Precompiler {
 			sites[id] = { source: sources[id], code: written[id].code }
 			Object.assign(modules, written[id].modules)
 		}
-		const linked = linkBundle(sites, modules, exposesAllows)
+		const linked = linkBundle(sites, modules, opts)
 		if (!linked) return { changed: false, unexposed: 0 }
 		let changed = false
 		for (const id in written) {
