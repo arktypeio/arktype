@@ -19,7 +19,7 @@ import {
 import { $ark } from "../shared/registry.ts"
 import { missingSetEngineMessage } from "../shared/sets.ts"
 import { computeDefaultValueMorph } from "../shared/traversal.ts"
-import { isResolutionFinal, queueUnchecked } from "../shared/utils.ts"
+import { elided, isResolutionFinal, queueUnchecked } from "../shared/utils.ts"
 import { BaseProp, type Prop } from "./prop.ts"
 
 export declare namespace Optional {
@@ -56,7 +56,8 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 			}
 		},
 		defaults: {
-			description: node => `${node.compiledKey}?: ${node.value.description}`
+			description: node =>
+				`${node.compiledKey}?: ${elided(node.value.description)}`
 		}
 	})
 
@@ -102,8 +103,8 @@ export class OptionalNode extends BaseProp<"optional"> {
 
 	expression: string =
 		this.hasDefault() ?
-			`${this.compiledKey}: ${this.value.expression} = ${printable(this.inner.default, { ownDataOnly: true })}`
-		:	`${this.compiledKey}?: ${this.value.expression}`
+			`${this.compiledKey}: ${elided(this.value.expression)} = ${printable(this.inner.default, { ownDataOnly: true })}`
+		:	`${this.compiledKey}?: ${elided(this.value.expression)}`
 
 	defaultMorph: Morph | undefined =
 		this.hasDefault() ?

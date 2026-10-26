@@ -153,6 +153,14 @@ export const composing = <t>(compose: () => t): t => {
 	}
 }
 
+// a node nested in another's expression or description prints as "..." past
+// this length, so a type reused at each level of another can't double its
+// length with each level
+const maxNestedLength = 1000
+
+export const elided = (nested: string): string =>
+	nested.length > maxNestedLength ? "..." : nested
+
 // prints as printedWithThis unless read while composing another node
 export const printSelfAsThis = <node extends BaseRoot>(
 	node: node,

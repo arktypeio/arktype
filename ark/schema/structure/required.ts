@@ -9,7 +9,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
-import { composing, isResolutionFinal } from "../shared/utils.ts"
+import { composing, elided, isResolutionFinal } from "../shared/utils.ts"
 import { BaseProp, type Prop } from "./prop.ts"
 
 export declare namespace Required {
@@ -59,14 +59,15 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 			}
 		},
 		defaults: {
-			description: node => `${node.compiledKey}: ${node.value.description}`
+			description: node =>
+				`${node.compiledKey}: ${elided(node.value.description)}`
 		}
 	})
 
 export class RequiredNode extends BaseProp<"required"> {
 	get expression(): string {
 		return (this.cache.expression ??= composing(
-			() => `${this.compiledKey}: ${this.value.expression}`
+			() => `${this.compiledKey}: ${elided(this.value.expression)}`
 		))
 	}
 
