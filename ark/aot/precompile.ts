@@ -5751,7 +5751,7 @@ const chainOf = (dynamic: DynamicValue): string[] => {
 	return result
 }
 
-// e.g. a configured writer calling a function in a site's meta
+// what arktype's own errors, like an island's, may hold
 const anyIssues: IssueFeatures = {
 	reportsIndices: true,
 	writesText: true,
@@ -5759,6 +5759,7 @@ const anyIssues: IssueFeatures = {
 	runsArktype: true
 }
 
+// e.g. a configured writer calling a function in a site's meta
 export const reasonsOf = (e: unknown): string[] =>
 	e instanceof DynamicValue ? chainOf(e)
 	: e instanceof InternalArktypeError ?
