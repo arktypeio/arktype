@@ -1,6 +1,7 @@
 // gathers every row of the suites the README's "Best average" lists into
 // ark/docs/lib/bench/leaderboard.json, each library under one name and
-// ArkType only as its default production build; lib/claims.ts averages them
+// ArkType only as its default production build, with each library's npm
+// downloads (downloads.ts); lib/claims.ts averages them
 // node leaderboard.ts
 // With LEADERBOARD_FRESH, the directory reproduce.ts counts into, each suite
 // it holds results for reads them instead, ArkType's rows included, and the
@@ -50,7 +51,9 @@ const committed = {
 	ataCounts: [
 		"results/ata-counts-pinned-2026-10-24.json",
 		"results/ata-counts-latest-2026-10-24.json"
-	]
+	],
+	// each library's npm downloads, which decide whether the site names it
+	downloads: "results/downloads-2026-10-26.json"
 }
 
 const freshDir = process.env.LEADERBOARD_FRESH
@@ -506,6 +509,16 @@ const suites = [
 	}
 ]
 
+const { week, libraries } = read(sources.downloads)
+const downloads = {
+	week,
+	weekly: Object.fromEntries(
+		Object.entries(libraries as Record<string, { downloads: number }>).map(
+			([library, { downloads }]) => [library, downloads]
+		)
+	)
+}
+
 // formatted as the repo's prettier config formats it, so a rewrite passes lint
 const out =
 	freshDir ?
@@ -513,7 +526,7 @@ const out =
 	:	join(docs, "lib", "bench", "leaderboard.json")
 writeFileSync(
 	out,
-	await format(JSON.stringify({ sources, suites }, null, "\t"), {
+	await format(JSON.stringify({ sources, downloads, suites }, null, "\t"), {
 		...(await resolveConfig(out)),
 		filepath: out
 	})

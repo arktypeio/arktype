@@ -33,7 +33,48 @@
 		"ataCounts": [
 			"results/ata-counts-pinned-2026-10-24.json",
 			"results/ata-counts-latest-2026-10-24.json"
-		]
+		],
+		"downloads": "results/downloads-2026-10-26.json"
+	},
+	"downloads": {
+		"week": "2026-10-16 to 2026-10-22",
+		"weekly": {
+			"ajv": 249308485,
+			"Zod (compiled)": 221643257,
+			"Zod": 221643257,
+			"Zod Mini": 221643257,
+			"Zod 3": 221643257,
+			"TypeBox": 81996242,
+			"Effect Schema": 31551008,
+			"Joi": 15736800,
+			"Valibot": 14436274,
+			"Yup": 7451643,
+			"@cfworker/json-schema": 6709707,
+			"Superstruct": 4325353,
+			"@exodus/schemasafe": 2815227,
+			"io-ts": 1780315,
+			"ArkType": 1445087,
+			"@sapphire/shapeshift": 1000634,
+			"sury": 269129,
+			"Typia": 211406,
+			"runtypes": 147816,
+			"pure-parse": 45285,
+			"zod-compiler": 40310,
+			"@remix-run/data-schema": 32295,
+			"decoders": 18035,
+			"rescript-schema": 12657,
+			"ts-auto-guard": 10319,
+			"ata": 3913,
+			"@sinclair/typemap/valibot": 1971,
+			"spectypes": 534,
+			"ts-runtime-checks": 294,
+			"stnl": 97,
+			"type-predicate-generator": 87,
+			"@sx3/gate": 19,
+			"@railway-ts/pipelines": 14,
+			"@ts-runtypes": 9,
+			"paseri": 0
+		}
 	},
 	"suites": [
 		{
