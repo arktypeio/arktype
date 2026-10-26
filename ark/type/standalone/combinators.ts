@@ -79,8 +79,11 @@ const calleesOf = (node: BaseNode): BaseRoot[] | undefined => {
 		}
 		const discriminated = discriminatedOf(node)
 		if (discriminated) {
-			return Object.values(discriminated.cases).filter(
-				(branch): branch is BaseRoot => branch !== true
+			return [
+				...Object.values(discriminated.cases),
+				discriminated.otherwise
+			].filter(
+				(branch): branch is BaseRoot => branch !== true && branch !== undefined
 			)
 		}
 		if (
@@ -133,6 +136,14 @@ const predicateSiteOf = (node: BaseNode): IssueContext | undefined =>
 		plainSiteOf(node)
 	:	undefined
 
+// whether a node's Allows passes as it does, as a keyword's predicate does
+const allowsDecides = (node: BaseRoot): boolean =>
+	!node.includesMorph &&
+	!node.allowsNeedsCtx &&
+	Object.values(node.refsById).every(
+		ref => !ref.hasKind("predicate") || !!predicateSiteOf(ref)
+	)
+
 // a value compared by identity and printed by the runtime
 const isPrinted = (value: unknown): boolean =>
 	typeof value === "string" ||
@@ -183,6 +194,8 @@ interface Cases {
 	// whether a miss is reported at the union's own path
 	isOwn: boolean
 	cases: Record<string, BaseRoot | true>
+	// the branches lacking the key, which data holding no case is checked by
+	otherwise?: BaseRoot
 	site: IssueContext
 	// what data that isn't an object fails
 	missed: IssueContext
@@ -202,7 +215,10 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 		return
 	const key = discriminant.path[0]
 	const cases: Record<string, BaseRoot | true> = {}
-	for (const k in discriminant.cases) {
+	const { default: otherwise, ...keyed } = discriminant.cases
+	// branches lacking the key are tried by their Allows
+	if (otherwise === true || (otherwise && !allowsDecides(otherwise))) return
+	for (const k in keyed) {
 		if (!k.startsWith('"')) return
 		const value = JSON.parse(k) as string
 		if (isWellFormedInteger(value) || value === "__proto__") return
@@ -227,7 +243,8 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 					pruned
 				)
 	}
-	const site = discriminantSiteOf(node)
+	const site =
+		otherwise === undefined ? discriminantSiteOf(node) : unionSiteOf(node)
 	// data whose key can't be read fails each branch's basis, as an object
 	const bases = basesSiteOf(node)
 	const missed =
@@ -241,6 +258,7 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 			key,
 			isOwn: node.missPath.length === 0,
 			cases,
+			otherwise,
 			site,
 			missed
 		}
@@ -686,25 +704,35 @@ export const writeCombinator = (
 		}
 		const discriminated = discriminatedOf(node)
 		if (discriminated) {
+			const { key, otherwise, site, missed } = discriminated
 			const keys = Object.keys(discriminated.cases)
-			const { missed } = discriminated
-			const missedDerived =
-				missed.code === "union" && missed.description === "an object"
-			return writeCall(
-				"discriminate",
-				JSON.stringify(discriminated.key),
-				writeObject(
-					keys.map(k => {
-						const branch = discriminated.cases[k]
-						return `${writeKey(k)}: ${branch === true ? "1" : ref(branch)}`
-					})
-				),
-				unlessDerived(runtime.describeValues(keys), discriminated.site),
-				missedDerived ? undefined : (
-					`{ code: "union", description: ${JSON.stringify(missed.description)} }`
-				),
-				discriminated.isOwn ? "1" : undefined
+			const cases = writeObject(
+				keys.map(k => {
+					const branch = discriminated.cases[k]
+					return `${writeKey(k)}: ${branch === true ? "1" : ref(branch)}`
+				})
 			)
+			const missedArg =
+				missed.code === "union" && missed.description === "an object" ?
+					undefined
+				:	`{ code: "union", description: ${JSON.stringify(missed.description)} }`
+			return otherwise ?
+					writeCall(
+						"discriminateOr",
+						ref(otherwise),
+						JSON.stringify(key),
+						cases,
+						JSON.stringify(site.description),
+						missedArg
+					)
+				:	writeCall(
+						"discriminate",
+						JSON.stringify(key),
+						cases,
+						unlessDerived(runtime.describeValues(keys), site),
+						missedArg,
+						discriminated.isOwn ? "1" : undefined
+					)
 		}
 		const bases = basesSiteOf(node)
 		return writeCall(

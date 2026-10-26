@@ -327,6 +327,36 @@ c must be a number`)
 			]).equals([false, 1])
 		})
 
+		it("check data holding no case by the branches lacking the key", async () => {
+			const T = type({ kind: "'a'", a: "string" })
+				.or({ kind: "'b'", b: "number" })
+				.or({ c: "string" })
+			const { code } = precompileStandalone({ T }, { optimize: "size" })
+			attest(code.includes("runtime.discriminateOr(")).equals(true)
+			const { T: Precompiled } = await load({ T }, { optimize: "size" })
+			const outcomes = [
+				{ kind: "a", a: "" },
+				{ kind: "a", a: 0 },
+				{ kind: "a", c: "y" },
+				{ kind: "b", b: 0 },
+				{ c: "x" },
+				{ kind: "z", c: 0 },
+				5
+			].map(data => {
+				const out: any = Precompiled(data)
+				return out?.summary ?? out
+			})
+			attest(outcomes).snap([
+				{ kind: "a", a: "" },
+				"must be { a: a string } or { c: a string }",
+				{ kind: "a", c: "y" },
+				{ kind: "b", b: 0 },
+				{ c: "x" },
+				'must be { a: a string, kind: "a" }, { b: a number, kind: "b" } or { c: a string }',
+				"must be an object"
+			])
+		})
+
 		it("copy an instance whose class writes its own tag", async () => {
 			class Tagged {
 				get [Symbol.toStringTag]() {

@@ -392,6 +392,31 @@ export const discriminate = ((
 	return checker
 }) satisfies Fn
 
+// a discriminated union with branches lacking the key, which check data
+// holding no case: data they don't allow fails the union as described
+export const discriminateOr = ((
+	otherwise: Checker,
+	key: string,
+	cases: Record<string, Checker | 1>,
+	description: string,
+	missed: FailureSite = { code: "union", description: "an object" }
+): Checker => {
+	const byValue = new Map(Object.entries(cases))
+	const site: FailureSite = { code: "union", description }
+	const checker: Checker = (data: any, ctx) => {
+		const branch = byValue.get(data?.[key])
+		return branch ?
+				branch === 1 || branch(data, ctx)
+			:	otherwise(data) ||
+					!failsAt(ctx as never, objectCheck.test(data) ? site : missed, data)
+	}
+	if ([...byValue.values(), otherwise].some(branch => (branch as Checker).t)) {
+		checker.t = data =>
+			((byValue.get(data[key]) ?? otherwise) as Checker).t?.(data) ?? data
+	}
+	return checker
+}) satisfies Fn
+
 // branches told apart by trying each, which fail as one issue: data failing
 // each branch's basis fails them, as bases describes them
 export const union = ((
