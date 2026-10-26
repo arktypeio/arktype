@@ -80,6 +80,52 @@ const definitions: fc.Arbitrary<FragmentOf> = nodeOf([]).chain(node =>
 	)
 )
 
+// unions discriminated but for a branch holding a node, which data matching
+// no case reaches as their default case
+const partlyDiscriminated = {
+	units: (rest: string) => `type("'a' | 'b'").or(${rest})`,
+	keyed: (rest: string) =>
+		`type({ k: "'a'", a: "string" }).or({ k: "'b'", a: "number" }).or({ k: ${rest}, a: "boolean" })`
+}
+
+// the default case holding a node Allows doesn't decide, as a predicate's
+const defaultCases: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		node: fc.oneof(
+			nodeOf([]),
+			fc.constant<Node>({ kind: "keyword", name: "string.url" })
+		),
+		holder: fc.constantFrom(
+			...(Object.keys(
+				partlyDiscriminated
+			) as (keyof typeof partlyDiscriminated)[])
+		)
+	})
+	.chain(({ node, holder }) => {
+		const rest = dataOf(node, noAliases)
+		return inputsOf(
+			holder === "units" ?
+				fc.oneof(rest, fc.constantFrom("a", "c"))
+			:	fc.oneof(
+					rest.map(k => ({ k, a: true })),
+					fc.constantFrom({ k: "a", a: true }, { k: "c", a: "" })
+				)
+		).map(
+			(inputs): FragmentOf =>
+				id => ({
+					containers: [],
+					exports: [],
+					main: [
+						observed(
+							id,
+							partlyDiscriminated[holder](sourceOf(defOf(node))),
+							inputs
+						)
+					]
+				})
+		)
+	})
+
 const holders = {
 	object: (element: string) => `type({ a: ${element} })`,
 	tuple: (element: string) => `type([${element}])`,
@@ -793,6 +839,7 @@ const programs = fc
 	.array(
 		fc.oneof(
 			definitions,
+			defaultCases,
 			narrowedState,
 			defaults,
 			containers,

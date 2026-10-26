@@ -198,10 +198,12 @@ class StandaloneCompiler extends TraversalCompiler {
 		return `${compileRead("data", k)} ? ${readable} : ${this.unreadableFails(node, k)}`
 	}
 
-	// as an indiscriminable union applies its branches
+	// as an indiscriminable union applies its branches, in a branch only
+	// arktype's traversal has, which a root holding a morph, alias or callback
+	// reports into
 	override defaultFails(node: UnionNode, caseNode: BaseRoot): string {
 		const passes =
-			!caseNode.includesAlias && isDecidedByAllows(caseNode) ?
+			isDecidedByKeywords(caseNode) ?
 				(caseNode.compileCondition?.(this, "data") ??
 				this.invoke(caseNode, { kind: "Allows" }))
 			:	`(ctx.pushBranch(), ${this.applyMember(caseNode)}, ctx.popBranch().errorCount === 0)`
@@ -248,6 +250,17 @@ class StandaloneCompiler extends TraversalCompiler {
 			return `(data, ctx) => ${this.unionFails(value)}`
 	}
 }
+
+// whether Allows decides a node, as it does one whose predicates are all
+// keywords, which add no issues of their own
+const isDecidedByKeywords = (node: BaseNode): boolean =>
+	!node.includesMorph &&
+	!node.includesAlias &&
+	!node.allowsNeedsCtx &&
+	Object.values(node.refsById).every(
+		reference =>
+			!reference.hasKind("predicate") || isKeyword(reference.predicate)
+	)
 
 const reportsItself = (value: BaseNode): value is UnionNode =>
 	value.hasKind("union") && !value.discriminantJit && !value.includesAlias
