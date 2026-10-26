@@ -34,6 +34,7 @@ import {
 	type ArkIssue,
 	type CompactApply,
 	type FailureSite,
+	type SiteContext,
 	type UnionSite
 } from "./issues.ts"
 import {
@@ -586,6 +587,24 @@ export const errorFromContext = (
 	ctx: InternalTraversal,
 	input: ArkErrorContextInput
 ): ArkError => ctx.addError(errorOfContext(input, ctx.path, ctx.config))
+
+/** adds a node's error at a path from ctx's, as a site's is added */
+export const errorFromNodeAt = (
+	ctx: InternalTraversal,
+	context: SiteContext,
+	relativePath: array<PropertyKey>,
+	data: unknown
+): ArkError =>
+	ctx.addError(
+		errorOfNodeContext(
+			context as never,
+			relativePath.length > 1 ?
+				[...ctx.path, ...relativePath]
+			:	pathAt(ctx.path, relativePath[0]),
+			data,
+			ctx.config
+		)
+	)
 
 /** adds a union's error from each branch's first */
 export const errorFromUnion = (
