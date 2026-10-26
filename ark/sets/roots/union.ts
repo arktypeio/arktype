@@ -6,6 +6,7 @@ import {
 	constraintInputOf,
 	flatMorphsAreEqual,
 	flatRefsAreEqual,
+	hashesMatch,
 	isResolutionFinal,
 	queueUnchecked,
 	type BaseNode,
@@ -27,6 +28,7 @@ import {
 	type Morph,
 	type NodeKind,
 	type Prop,
+	type Sequence,
 	type Union,
 	type Unit
 } from "@ark/schema"
@@ -990,7 +992,7 @@ const mergePropBranches = (
 		l.structure.props.length !== r.structure.props.length ||
 		l.structure.undeclared !== r.structure.undeclared ||
 		!nodesEqual(l.structure.index ?? [], r.structure.index ?? []) ||
-		l.structure.sequence?.hash !== r.structure.sequence?.hash ||
+		!sequencesMatch(l.structure.sequence, r.structure.sequence) ||
 		!nodesEqual(
 			childrenExcept(l, ["structure"]),
 			childrenExcept(r, ["structure"])
@@ -1002,7 +1004,7 @@ const mergePropBranches = (
 	for (const prop of l.structure.props) {
 		const match = r.structure.propsByKey[prop.key]
 		if (!match) return
-		if (prop.hash === match.hash) continue
+		if (hashesMatch(prop, match)) continue
 		if (lProp) return
 		lProp = prop
 		rProp = match
@@ -1048,7 +1050,12 @@ const mergePropBranches = (
 
 // a merge keeps a node only if its counterpart has the same meta
 const nodesEqual = (l: readonly BaseNode[], r: readonly BaseNode[]) =>
-	arrayEquals(l, r, { isEqual: (l, r) => l.hash === r.hash })
+	arrayEquals(l, r, { isEqual: hashesMatch })
+
+const sequencesMatch = (
+	l: Sequence.Node | undefined,
+	r: Sequence.Node | undefined
+) => (l && r ? hashesMatch(l, r) : l === r)
 
 // and replaces nodes only if they agree on the meta their replacement keeps
 const sameMeta = (nodes: readonly BaseNode[]) =>

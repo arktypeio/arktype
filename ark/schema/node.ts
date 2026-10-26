@@ -180,6 +180,139 @@ const keptForJob = (cache: NodeCache, hash: string): string => {
 	return hash
 }
 
+// a node referenced from several others repeats in each one's JSON, so past
+// this length, a hash is the start of its JSON, by which siblings still sort,
+// and a digest of all of it
+const maxPlainHashLength = 65_536
+const hashedPrefixLength = 1024
+// a digest reads an object nested past this length as that object's digest
+const maxInlinedLength = 256
+
+// JSON, or past maxPlainHashLength, the start of it and a digest, which,
+// following an unclosed object, can't be read as JSON
+const hashJsonOf = (json: object): string =>
+	jsonLengthOf(json) <= maxPlainHashLength ?
+		JSON.stringify(json)
+	:	`${jsonPrefixOf(json, hashedPrefixLength)}#${digestOf(json)}`
+
+const jsonLengths = new WeakMap<object, number>()
+
+// about the length of a value's JSON, read once per object, so a node's is
+// the sum of its children's
+export const jsonLengthOf = (json: unknown): number => {
+	if (typeof json !== "object" || json === null)
+		return typeof json === "string" ? json.length + 2 : 5
+	let length = jsonLengths.get(json)
+	if (length !== undefined) return length
+	length = 2
+	let nests = false
+	for (const k in json) {
+		const v = (json as Dict)[k]
+		if (typeof v === "object" && v !== null) nests = true
+		length += k.length + 4 + jsonLengthOf(v)
+	}
+	// one holding only primitives is read again as quickly
+	if (nests) jsonLengths.set(json, length)
+	return length
+}
+
+const isUnwritten = (v: unknown) =>
+	v === undefined || typeof v === "function" || typeof v === "symbol"
+
+const jsonPrefixOf = (json: unknown, max: number): string => {
+	if (max <= 0) return ""
+	if (typeof json !== "object" || json === null)
+		return JSON.stringify(json).slice(0, max)
+	const array = isArray(json)
+	let prefix = array ? "[" : "{"
+	for (const k of Object.keys(json)) {
+		if (prefix.length >= max) return prefix.slice(0, max)
+		const v = (json as Dict)[k]
+		if (!array && isUnwritten(v)) continue
+		if (prefix.length > 1) prefix += ","
+		if (!array) prefix += `${JSON.stringify(k)}:`
+		prefix += isUnwritten(v) ? "null" : jsonPrefixOf(v, max - prefix.length)
+	}
+	return `${prefix}${array ? "]" : "}"}`.slice(0, max)
+}
+
+const digests = new WeakMap<object, string>()
+
+// of JSON writing each long object nested in it as "#", which starts no JSON
+// value, and that object's digest
+const digestOf = (json: object): string => {
+	let digest = digests.get(json)
+	if (digest === undefined) {
+		const array = isArray(json)
+		const entries: string[] = []
+		for (const k of Object.keys(json)) {
+			const v = (json as Dict)[k]
+			const written =
+				(
+					typeof v === "object" &&
+					v !== null &&
+					jsonLengthOf(v) > maxInlinedLength
+				) ?
+					`#${digestOf(v)}`
+				:	(JSON.stringify(v) as string | undefined)
+			if (array) entries.push(written ?? "null")
+			else if (written !== undefined)
+				entries.push(`${JSON.stringify(k)}:${written}`)
+		}
+		digest = hashOf(array ? `[${entries.join()}]` : `{${entries.join()}}`)
+		digests.set(json, digest)
+	}
+	return digest
+}
+
+// a hash past maxPlainHashLength ends in a digest rather than "}", so two that
+// match are confirmed by their JSON, as digests of different JSON can collide
+export const hashesMatch = (l: BaseNode, r: BaseNode): boolean =>
+	l.hash === r.hash && (l.hash.endsWith("}") || isJsonEqual(l.json, r.json))
+
+export const innerHashesMatch = (l: BaseNode, r: BaseNode): boolean =>
+	l.innerHash === r.innerHash &&
+	(l.innerHash.endsWith("}") || isJsonEqual(l.innerJson, r.innerJson))
+
+const equalJson = new WeakMap<object, WeakSet<object>>()
+
+// whether two values write the same JSON, comparing each pair of objects once,
+// so objects a node's JSON shares with its children's are compared once
+const isJsonEqual = (l: unknown, r: unknown): boolean => {
+	if (l === r) return true
+	const isObject = typeof l === "object" && l !== null
+	if (isObject !== (typeof r === "object" && r !== null)) return false
+	if (!isObject) return JSON.stringify(l) === JSON.stringify(r)
+	if (equalJson.get(l)?.has(r as object)) return true
+	const array = isArray(l)
+	if (array !== isArray(r)) return false
+	const lKeys = writtenKeysOf(l, array)
+	const rKeys = writtenKeysOf(r as object, array)
+	if (lKeys.length !== rKeys.length) return false
+	for (let i = 0; i < lKeys.length; i++) {
+		const k = lKeys[i]
+		if (k !== rKeys[i]) return false
+		const lValue = (l as Dict)[k]
+		const rValue = (r as Dict)[k]
+		// an array writes these as null
+		if (
+			!(array && isUnwritten(lValue) ? isUnwritten(rValue) || rValue === null
+			: array && isUnwritten(rValue) ? lValue === null
+			: isJsonEqual(lValue, rValue))
+		)
+			return false
+	}
+	const equal = equalJson.get(l)
+	if (equal) equal.add(r as object)
+	else equalJson.set(l, new WeakSet([r as object]))
+	return true
+}
+
+const writtenKeysOf = (json: object, array: boolean): string[] =>
+	array ?
+		Object.keys(json)
+	:	Object.keys(json).filter(k => !isUnwritten((json as Dict)[k]))
+
 export abstract class BaseNode<
 	// uses -ignore rather than -expect-error because this is not an error in .d.ts
 	/** @ts-ignore allow instantiation assignment to the base type */
@@ -862,7 +995,7 @@ export abstract class BaseNode<
 	get innerHash(): string {
 		return (this.cache.innerHash ??= keptForJob(
 			this.cache,
-			JSON.stringify({ kind: this.kind, ...this.innerJson })
+			hashJsonOf({ kind: this.kind, ...this.innerJson })
 		))
 	}
 
@@ -870,10 +1003,7 @@ export abstract class BaseNode<
 		return (this.cache.hash ??=
 			isEmptyObject(this.meta) ?
 				this.innerHash
-			:	keptForJob(
-					this.cache,
-					JSON.stringify({ kind: this.kind, ...this.json })
-				))
+			:	keptForJob(this.cache, hashJsonOf({ kind: this.kind, ...this.json })))
 	}
 
 	protected get innerJsonFull(): JsonObject {
@@ -893,7 +1023,7 @@ export abstract class BaseNode<
 		// a hash includes its node's kind, so nodes of different kinds aren't hashed
 		if (
 			this === rNode ||
-			(this.kind === rNode.kind && this.innerHash === rNode.innerHash)
+			(this.kind === rNode.kind && innerHashesMatch(this, rNode))
 		)
 			return true
 		return (
@@ -1280,7 +1410,7 @@ interface SimulatedPair {
 // a cyclic node is within another if its unfolding is, so a pair of aliases
 // is assumed related until its unfoldings are compared
 const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
-	if (l.innerHash === r.innerHash) return true
+	if (innerHashesMatch(l, r)) return true
 	if (l.hasKind("alias") || r.hasKind("alias")) {
 		if (!s.unfoldsAliases) return true
 		if (s.subsumes) {
@@ -1334,19 +1464,13 @@ const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 			continue
 		}
 		if (l.impl.keys[k].child !== true) {
-			if (
-				JSON.stringify((l.innerJson as Dict)[k]) !==
-				JSON.stringify((r.innerJson as Dict)[k])
-			)
+			if (!isJsonEqual((l.innerJson as Dict)[k], (r.innerJson as Dict)[k]))
 				return false
 			continue
 		}
 		// a broader index signature constrains more keys, so signatures must match exactly
 		if (k === "signature") {
-			if (
-				(v as BaseNode).innerHash !==
-				((r.inner as Dict)[k] as BaseNode).innerHash
-			)
+			if (!innerHashesMatch(v as BaseNode, (r.inner as Dict)[k] as BaseNode))
 				return false
 			continue
 		}

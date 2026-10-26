@@ -21,6 +21,7 @@ import type { nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import {
 	BaseNode,
 	flatMorphsAreEqual,
+	innerHashesMatch,
 	isMutuallySimulated,
 	type GettableKeyOrNode,
 	type KeyOrKeyNode,
@@ -380,7 +381,7 @@ export abstract class BaseRoot<
 		// a node equal to r extends it, without intersecting them
 		if (
 			this.isNever() ||
-			(isNode(r) && this.kind === r.kind && this.innerHash === r.innerHash)
+			(isNode(r) && this.kind === r.kind && innerHashesMatch(this, r))
 		)
 			return true
 

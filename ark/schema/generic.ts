@@ -11,7 +11,7 @@ import {
 } from "@ark/util"
 import { intrinsic } from "./intrinsic.ts"
 import type { RootSchema } from "./parseSchema.ts"
-import { isMutuallySimulated, type BaseNode } from "./node.ts"
+import { isMutuallySimulated, jsonLengthOf, type BaseNode } from "./node.ts"
 import { registerNodeId, type NodeId } from "./parse.ts"
 import {
 	identityOf,
@@ -207,7 +207,7 @@ export class GenericRoot<
 			Math.max(open, depth) === maxOpenInstantiations ||
 			((open || depth) &&
 				this.names.reduce(
-					(length, name) => length + argNodes[name].hash.length,
+					(length, name) => length + jsonLengthOf(argNodes[name].json),
 					0
 				) > maxOpenArgumentsLength)
 		) {
