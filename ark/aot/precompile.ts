@@ -72,6 +72,7 @@ import {
 	bindingOfFunction,
 	contains,
 	declarationStartOf,
+	initializedOf,
 	errorReaders,
 	importsValues,
 	isArk,
@@ -368,6 +369,8 @@ export interface Site {
 	progress: [at: number, name: string] | undefined
 	// start of its declaring statement, which a bundler may drop
 	declarationStart: number | undefined
+	// whether it initializes a variable, e.g. one a function declares
+	initializes: boolean
 	// e.g. `User` and "json" for `User.json`
 	introspection:
 		| Pick<StandaloneIntrospection, "member" | "type" | "thrown">
@@ -2068,13 +2071,19 @@ export class Precompiler {
 				passed.push(binding)
 				if (readsPassed && inputs.includes(input)) read.push(binding)
 			}
-			// droppable with its variable unless it throws or checks
+			// droppable with its variable unless it throws or checks; a
+			// function's, only where creating fixes no config and it reads nothing
 			const isPure =
-				site.declarationStart !== undefined &&
 				!site.parseError &&
 				!site.introspection?.thrown &&
-				!checking.has(name)
-			if (isPure) fixedAt = Math.min(fixedAt, site.declarationStart!)
+				!checking.has(name) &&
+				(site.declarationStart !== undefined ||
+					(site.initializes &&
+						configured === false &&
+						!factory?.spans.length &&
+						!inputs.length))
+			if (isPure && site.declarationStart !== undefined)
+				fixedAt = Math.min(fixedAt, site.declarationStart)
 			const call = `${isPure ? "/* @__PURE__ */ " : ""}${
 				this.shadow ?
 					this.shadowCallOf(site, module, factory, local, index, prefix)
@@ -3576,6 +3585,7 @@ export class Precompiler {
 			defaultChecks: [],
 			aliases: [],
 			declarationStart: declarationStartOf(node),
+			initializes: !!initializedOf(node),
 			introspection: undefined,
 			unavailableRead: undefined,
 			progress: undefined

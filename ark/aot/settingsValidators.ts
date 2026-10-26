@@ -1034,31 +1034,37 @@ var created0
 var created1
 var created2
 var get0 = () => {
-	return (created0 ??= (() => {
-		const validator0 = create10n7yuw0bfhpvo(
-			intersection139rh990qijtgx,
-			"1nhmizm0"
-		)
-		return validator0
-	})())
+	return created0 === void 0 ?
+			(created0 = (() => {
+				const validator0 = create10n7yuw0bfhpvo(
+					intersection139rh990qijtgx,
+					"1nhmizm0"
+				)
+				return validator0
+			})())
+		:	created0
 }
 var get1 = () => {
-	return (created1 ??= (() => {
-		const validator0 = create10n7yuw0bfhpvo(
-			intersection1199sgb0d8uguh,
-			"ftca021j"
-		)
-		return validator0
-	})())
+	return created1 === void 0 ?
+			(created1 = (() => {
+				const validator0 = create10n7yuw0bfhpvo(
+					intersection1199sgb0d8uguh,
+					"ftca021j"
+				)
+				return validator0
+			})())
+		:	created1
 }
 var get2 = () => {
-	return (created2 ??= (() => {
-		const validator0 = create10n7yuw0bfhpvo(
-			intersectionzl2r971lulg5q,
-			"kdoh7z0r"
-		)
-		return validator0
-	})())
+	return created2 === void 0 ?
+			(created2 = (() => {
+				const validator0 = create10n7yuw0bfhpvo(
+					intersectionzl2r971lulg5q,
+					"kdoh7z0r"
+				)
+				return validator0
+			})())
+		:	created2
 }
 export { get1 as ArkJson, get2 as PackageArk, get0 as PrecompileOptions }
 

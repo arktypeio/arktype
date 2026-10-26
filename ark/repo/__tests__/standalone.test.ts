@@ -2893,7 +2893,7 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 				precompileStandalone(exports)
 					.code.split("const factory")
 					.slice(1)
-					.map(factory => /\(created\d+ \?\?= /.test(factory))
+					.map(factory => /\(created\d+ === undefined \? /.test(factory))
 			).equals([false, true, true, true])
 			const created = await load(exports)
 			const holder = created.$(isEven)

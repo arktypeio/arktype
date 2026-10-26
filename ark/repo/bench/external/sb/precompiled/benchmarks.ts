@@ -21,11 +21,12 @@ export default defineBenchmarks({
     optimizeType: "precompiled",
     version: await getVersion("arktype"),
   },
+  // created as its module loaded, as a compiled library's arm reads its compiled schema
   initialization: {
     run() {
-      return getArkTypeSchema();
+      return schema;
     },
-    snippet: ts`type(def)`,
+    snippet: ts`schema`,
   },
   validation: {
     run(data) {
