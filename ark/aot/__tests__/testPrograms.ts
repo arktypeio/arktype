@@ -805,7 +805,7 @@ const holes: Record<string, Function> = {
 
 interface Program {
 	containers: string
-	// one site to a line, so a site a build refuses is dropped by its line
+	// main.ts's lines, so a site is found and dropped by its line
 	main: string[]
 }
 
@@ -828,7 +828,7 @@ const programOf = (fragmentsOf: FragmentOf[]): Program => {
 			`import { codec } from "arktype/codecs"`,
 			`import { ${exported.join(", ")} } from "./containers.ts"`,
 			...main
-		]
+		].flatMap(entry => entry.split("\n"))
 	}
 }
 
@@ -1119,6 +1119,35 @@ const [runs = 20, seed = 1] =
 const out = fromHere("temp", "programs", `${seed}`)
 
 contextualize(() => {
+	it("excludes a disagreement by its line below a multiline declaration", () => {
+		const program = programOf([
+			() => ({
+				containers: [],
+				exports: [],
+				main: [
+					"const described = max => {\n\treturn max\n}",
+					"let max0 = 0",
+					"const atMost0 = n => n <= max0",
+					observed("0.0", `type({ a: [["number", ":", atMost0], "=", 1] })`, [
+						{}
+					])
+				]
+			})
+		])
+		// as main.ts holds it
+		const line = program.main.join("\n").split("\n").findIndex(isObserved) + 1
+		attest(
+			allowanceOf(exclusions, program, {
+				perturbation: "none",
+				site: `main.ts:${line}:26`,
+				original: {
+					threw: "ParseError: Default for a must be valid according to atMost0"
+				},
+				precompiled: {}
+			})
+		).equals(exclusions[0])
+	})
+
 	it("agree through the build", async () => {
 		rmSync(out, { recursive: true, force: true })
 		const counts: Counts = {
