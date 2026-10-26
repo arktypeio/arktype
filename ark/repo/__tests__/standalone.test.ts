@@ -306,6 +306,29 @@ c must be a number`)
 			attest(T({ a: "" })).equals({ a: "", c: 1 })
 		})
 
+		it("read each key of data they allow once", async () => {
+			const { T } = await load(
+				{ T: type({ name: "string", "age?": "number" }) },
+				{ optimize: "size" }
+			)
+			const reads: string[] = []
+			const data = {
+				get name() {
+					reads.push("name")
+					return "Alan"
+				},
+				get age() {
+					reads.push("age")
+					return 41
+				}
+			}
+			attest([T.allows(data), T(data) === data, reads]).equals([
+				true,
+				true,
+				["name", "age", "name", "age"]
+			])
+		})
+
 		it("check each case by the branch it was told apart from", () => {
 			const Card = type({ type: "'card'", last4: "string" })
 			const { code } = precompileStandalone(

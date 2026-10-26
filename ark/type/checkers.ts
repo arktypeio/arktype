@@ -179,10 +179,12 @@ export const props = ((declared: Props, optional?: string[]): Checker =>
 			return !failsAt(ctx as never, objectCheck, data)
 		for (const k in declared) {
 			const value = data[k]
+			// only a failed value is read again, as failsIn reports it
 			if (
 				value === undefined && !(k in data) ?
 					!optional?.includes(k) && failsAt(ctx as never, requiredSite, data, k)
-				:	failsIn(ctx as never, declared[k] as CompactApply, data, k)
+				:	!declared[k](value) &&
+					failsIn(ctx as never, declared[k] as CompactApply, data, k)
 			)
 				return false
 		}
