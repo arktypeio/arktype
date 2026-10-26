@@ -131,6 +131,10 @@ lead.email is missing
 		attest(run(js)).equals(run(whole))
 		attest(js.includes("{ 0: allows")).equals(false)
 		attest(js.includes("var Team =")).equals(false)
+		// the Allows its creator was passed, now called by name
+		attest(/\/\* @__NOINLINE__ \*\/\s+\w+Allows\(data\) \?/.test(js)).equals(
+			true
+		)
 	})
 
 	it("creates in the function validators whose creator others call", async () => {

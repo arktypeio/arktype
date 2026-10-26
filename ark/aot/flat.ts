@@ -1026,7 +1026,16 @@ const writeFlat = (
 				...binding.writes,
 				...binding.references.map(reference => reference.id)
 			])
-			for (const id of ids) if (id.start > body.start) replace(id, name)
+			for (const id of ids) {
+				if (id.start <= body.start) continue
+				// a function it was passed is now called by its name, so terser
+				// and swc would write one called once where it's called
+				const isCalled =
+					binding.kind === "param" &&
+					id.parent?.type === "CallExpression" &&
+					id.parent.callee === id
+				replace(id, isCalled ? `/* @__NOINLINE__ */ ${name}` : name)
+			}
 		}
 		s.overwrite(d.node.start, body.start + 1, aliases)
 		if (returnedLocal || d.names) {
