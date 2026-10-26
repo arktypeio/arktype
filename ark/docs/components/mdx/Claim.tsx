@@ -30,8 +30,8 @@ export const Claim = ({ id, ifBacked }: { id: ClaimId; ifBacked?: boolean }) =>
 export const Headline = () => <ClaimText claim={claims.headline} />
 
 /** what the headline's superlatives average, linking the rule */
-export const HeadlineNote = ({ className }: { className?: string }) => (
-	<div id="headline-note" className={className}>
+export const HeadlineNote = () => (
+	<div id="headline-note">
 		<p>
 			<ClaimText claim={claims.headlineNote} />{" "}
 			<a href={headlineMethod.href} target="_blank" rel="noreferrer">

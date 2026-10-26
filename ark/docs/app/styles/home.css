@@ -705,14 +705,6 @@
 		code {
 			color: var(--gold);
 		}
-		> p {
-			margin: 0;
-		}
-		/* only the first paragraph hangs its asterisk */
-		> p + p {
-			margin-top: 0.7em;
-			text-indent: 0;
-		}
 	}
 	.pair-note {
 		margin-top: 14px;
@@ -1770,7 +1762,8 @@
 			}
 		}
 	}
-	.p3-cell {
+	.p3-cell,
+	.p3-key {
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
@@ -1806,11 +1799,6 @@
 			margin-left: auto;
 			color: var(--sky);
 		}
-	}
-	.p3-key {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
 	}
 	.card-big {
 		display: grid;

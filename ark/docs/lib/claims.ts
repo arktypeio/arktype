@@ -578,7 +578,7 @@ type CategoryBase = {
 	ranked: number
 	/** where ArkType's best average places it */
 	standing: string
-	/** whether ArkType has the best average or, for size, one tied for it, checked on the board */
+	/** whether ArkType counts as first: the best average, or one within tieBand of it, checked on the board */
 	leads: boolean
 	/** whether that's a tie, another library having the best average */
 	ties: boolean
