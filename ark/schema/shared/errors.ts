@@ -1,6 +1,7 @@
 import {
 	appendStringifiedKey,
 	conflatenateAll,
+	pathAt,
 	printSymbol,
 	stringifyPath,
 	throwError,
@@ -514,7 +515,7 @@ export class ArkTraversal extends Traversal {
 		data: unknown
 	): ArkError {
 		return this.addError(
-			errorOfNodeContext(input, this.path.slice(), data, this.config)
+			errorOfNodeContext(input, pathAt(this.path), data, this.config)
 		)
 	}
 
@@ -524,7 +525,7 @@ export class ArkTraversal extends Traversal {
 		this.addError(
 			errorOfNodeContext(
 				(missing ? site.m : site.v) as NodeErrorContextInput,
-				key === undefined ? this.path.slice() : [...this.path, key],
+				pathAt(this.path, key),
 				key === undefined || missing ? data : (data as Keyed)[key],
 				this.config
 			)
@@ -578,7 +579,7 @@ export const errorFromUnion = (
 		stampError(
 			{
 				data,
-				path: ctx.path.slice(),
+				path: pathAt(ctx.path),
 				code: "union",
 				errors: flattenUnion(errors),
 				meta,

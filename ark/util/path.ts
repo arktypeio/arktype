@@ -63,6 +63,21 @@ export const stringifyPath: StringifyPathFn = ((
 	return s
 }) as never
 
+// a copy of path, with key below it, copying one or two keys as a literal,
+// which TurboFan allocates inline where slice() calls a builtin
+export const pathAt = (
+	path: PropertyKey[],
+	key?: PropertyKey
+): PropertyKey[] => {
+	if (key !== undefined) path.push(key)
+	const copy =
+		path.length === 1 ? [path[0]]
+		: path.length === 2 ? [path[0], path[1]]
+		: path.slice()
+	if (key !== undefined) path.pop()
+	return copy
+}
+
 export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 	// alternate strategy for caching since the base object is frozen
 	private cache: {
