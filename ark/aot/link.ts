@@ -13,6 +13,9 @@ export interface LinkedSite {
 export interface LinkedBundle {
 	sites: Record<string, LinkedCode>
 	modules: Record<string, string>
+	// the units that would be declared as the validator a site creates from
+	// them, were validators to expose allows
+	unexposed: number
 }
 
 export interface LinkedCode {
@@ -27,7 +30,9 @@ export interface LinkedCode {
 // so a module the bundle loads unlinked reads what it always did
 export const linkBundle = (
 	sites: Record<string, LinkedSite>,
-	modules: Record<string, string>
+	modules: Record<string, string>,
+	// each validator exposes what it's created from as allows
+	exposesAllows = false
 ): LinkedBundle | undefined => {
 	let codes = modules
 	const siteCodes = Object.fromEntries(
@@ -40,11 +45,15 @@ export const linkBundle = (
 		codes = linker.codes()
 	}
 	const linker = new Linker(codes, siteCodes, sites)
-	linker.link(true)
+	linker.link(true, exposesAllows)
 	codes = linker.codes()
 	const renamed = renamedOf(codes, modules)
 	if (!renamed) return
-	const linked: LinkedBundle = { sites: {}, modules: {} }
+	const linked: LinkedBundle = {
+		sites: {},
+		modules: {},
+		unexposed: linker.unexposed
+	}
 	for (const specifier in codes) {
 		linked.modules[renamed[specifier] ?? specifier] = withRenamed(
 			codes[specifier],
@@ -113,11 +122,24 @@ interface Read {
 	reference: Reference
 }
 
+// a site's export of the validator a call creates from a checker
+interface Creation {
+	site: Unit
+	statement: Node
+	name: string
+	// what creates it, e.g. a module's create function
+	creator: Binding
+	checker: Reference
+}
+
 class Linker {
 	private units: Unit[] = []
 	private unitsByKey = new Map<string, Unit>()
 	private readsByBinding = new Map<Binding, Read[]>()
 	private ownerByBinding = new Map<Binding, Unit>()
+	// units declared as the validator a site creates from them
+	private declaresCreated = new Set<Binding>()
+	unexposed = 0
 
 	constructor(
 		codes: Record<string, string>,
@@ -197,7 +219,7 @@ class Linker {
 	}
 
 	// whether it wrote any checker where it's read, in sites or other units
-	link(intoSites: boolean): boolean {
+	link(intoSites: boolean, exposesAllows = false): boolean {
 		// what runs reads what it references, e.g. a statement writing a checker
 		// read once, which a copy of it wouldn't have
 		for (const unit of this.units) {
@@ -210,6 +232,7 @@ class Linker {
 					this.read(unit, reference)
 			}
 		}
+		if (intoSites) this.declareCreated(exposesAllows)
 		// a declaration written into can't be copied before it's read again
 		const written = new Set<Node>()
 		let linked = false
@@ -228,6 +251,146 @@ class Linker {
 			linked = true
 		}
 		return linked
+	}
+
+	// a checker other units read that a single site creates its validator
+	// from, declared as that validator for the site to export, as a validator
+	// of its own costs the site's name twice. What reads the checker then
+	// reads the validator's allows
+	private declareCreated(exposesAllows: boolean): void {
+		const creationsByBinding = new Map<Binding, Creation | undefined>()
+		for (const unit of this.units) {
+			if (!unit.isSite) continue
+			for (const reference of unit.module.scopes.references) {
+				const declared =
+					reference.binding && this.declarationOf(unit, reference.binding)
+				if (!declared) continue
+				const [, binding] = declared
+				creationsByBinding.set(
+					binding,
+					creationsByBinding.has(binding) ? undefined : (
+						creationOf(unit, reference)
+					)
+				)
+			}
+		}
+		// what each unit reads of another, each read of a validator's checker
+		const readsOf = new Map<Binding, [Unit, Reference][]>()
+		for (const unit of this.units) {
+			if (unit.isSite) continue
+			for (const reference of unit.module.scopes.references) {
+				const declared =
+					reference.id.parent?.type !== "ExportSpecifier" &&
+					reference.binding &&
+					this.declarationOf(unit, reference.binding)
+				if (!declared || !creationsByBinding.get(declared[1])) continue
+				const reads = readsOf.get(declared[1])
+				if (reads) reads.push([unit, reference])
+				else readsOf.set(declared[1], [[unit, reference]])
+			}
+		}
+		const importsByUnit = new Map<Unit, Map<string, string>>()
+		for (const [binding, creation] of creationsByBinding) {
+			const reads = readsOf.get(binding) ?? []
+			if (
+				!creation ||
+				(this.readsByBinding.get(binding)?.length ?? 0) < 2 ||
+				reads.some(
+					([unit]) => this.allowsReadOf(unit, "", new Map()) === undefined
+				) ||
+				!this.declareAsCreated(binding, creation, exposesAllows)
+			)
+				continue
+			if (!exposesAllows) {
+				this.unexposed++
+				continue
+			}
+			this.declaresCreated.add(binding)
+			for (const [unit, { id }] of reads) {
+				let imports = importsByUnit.get(unit)
+				if (!imports) importsByUnit.set(unit, (imports = new Map()))
+				unit.edits.overwrite(
+					id.start,
+					id.end,
+					this.allowsReadOf(unit, id.name, imports)!
+				)
+			}
+		}
+		for (const [unit, imports] of importsByUnit) {
+			for (const [local, statement] of imports) {
+				unit.importsByLocal.set(local, statement)
+				unit.added.push(statement)
+			}
+		}
+	}
+
+	// the checker a validator is created from, read as a call, as a bundler
+	// keeps any property read of a declaration it otherwise drops
+	private allowsReadOf(
+		reader: Unit,
+		validator: string,
+		imports: Map<string, string>
+	): string | undefined {
+		const runtime = this.localOf(
+			reader,
+			"runtime",
+			"* as",
+			"arktype/runtime",
+			imports
+		)
+		return runtime && `/* @__PURE__ */ ${runtime}.allowsOf(${validator})`
+	}
+
+	private declareAsCreated(
+		binding: Binding,
+		{ site, statement, name, creator, checker }: Creation,
+		edits: boolean
+	): boolean {
+		const owner = this.ownerByBinding.get(binding)!
+		const declarator = binding.declaration
+		if (
+			declarator.type !== "VariableDeclarator" ||
+			declarator.init?.type !== "CallExpression" ||
+			!isAtTopLevel(declarator)
+		)
+			return false
+		const { init } = declarator
+		const { source } = owner.module
+		if (!pureAnnotation.test(source.slice(declarator.id.end, init.start)))
+			return false
+		// e.g. a statement writing the checker's transform, which would write
+		// the validator's
+		for (const reference of binding.references)
+			if (runs(statementOf(reference.id), source)) return false
+		const declared = this.declarationOf(site, creator)
+		if (!declared) return false
+		const [module, created] = declared
+		const imports = new Map<string, string>()
+		const local =
+			created.exportNames.length ?
+				this.localOf(
+					owner,
+					created.name,
+					created.exportNames[0],
+					module.key,
+					imports,
+					created
+				)
+			:	undefined
+		if (local === undefined) return false
+		if (!edits) return true
+		owner.edits.prependRight(init.start, `${local}(/* @__PURE__ */ `)
+		owner.edits.appendLeft(init.end, ")")
+		for (const [local, statement] of imports) {
+			owner.importsByLocal.set(local, statement)
+			owner.added.push(statement)
+		}
+		site.edits.overwrite(
+			statement.start,
+			statement.end,
+			`export { ${checker.id.name} as ${name} }`
+		)
+		return true
 	}
 
 	// a reference to what a unit declares, read where the reference is
@@ -339,7 +502,13 @@ class Linker {
 					return false
 			}
 			if (local === undefined) return false
-			if (local !== id.name) text.overwrite(id.start, id.end, local)
+			const declared = this.declarationOf(owner, outer)?.[1]
+			const value =
+				declared && this.declaresCreated.has(declared) ?
+					this.allowsReadOf(read.unit, local, imports)
+				:	local
+			if (value === undefined) return false
+			if (value !== id.name) text.overwrite(id.start, id.end, value)
 		}
 		const { id } = read.reference
 		// with its annotation, so a bundler still drops it where it's unread
@@ -398,6 +567,51 @@ class Linker {
 		if (added !== undefined) return added === statement ? local : undefined
 		imports.set(local, statement)
 		return local
+	}
+}
+
+// a site's export declaring a validator a call creates from the checker a
+// reference reads alone, which nothing else in the module reads
+const creationOf = (site: Unit, checker: Reference): Creation | undefined => {
+	const call = checker.id.parent
+	if (
+		call?.type !== "CallExpression" ||
+		call.arguments.length !== 1 ||
+		call.arguments[0] !== checker.id ||
+		call.callee.type !== "Identifier"
+	)
+		return
+	const declarator = call.parent
+	const declaration = declarator?.parent
+	if (
+		declarator?.type !== "VariableDeclarator" ||
+		declarator.init !== call ||
+		declarator.id.type !== "Identifier" ||
+		declarator.id.typeAnnotation ||
+		declaration?.type !== "VariableDeclaration" ||
+		declaration.kind !== "const" ||
+		declaration.declarations.length !== 1 ||
+		declaration.parent?.type !== "ExportNamedDeclaration"
+	)
+		return
+	const { scopes } = site.module
+	const binding = scopes.bindingsById.get(declarator.id)
+	const creator = scopes.refsById.get(call.callee)?.binding
+	if (
+		!binding ||
+		binding.references.length ||
+		binding.exportNames.length !== 1 ||
+		!creator ||
+		!importSourceOf(creator)?.startsWith("~arktype/") ||
+		!importedNameOf(creator).startsWith("create")
+	)
+		return
+	return {
+		site,
+		statement: declaration.parent,
+		name: binding.name,
+		creator,
+		checker
 	}
 }
 

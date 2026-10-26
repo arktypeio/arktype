@@ -41,6 +41,10 @@ export const check = ((
 	return checker
 }) satisfies Fn
 
+/** the checker a validator is created from, as a call a bundler may drop */
+export const allowsOf = ((validator: { allows: Checker }): Checker =>
+	validator.allows) satisfies Fn
+
 export const stringCheck: Check = /* @__PURE__ */ check(
 	"domain",
 	"a string",

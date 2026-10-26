@@ -517,6 +517,10 @@ export const precompileModule = (
 	opts?: PrecompileOptions
 ): PrecompiledModule => new Precompiler(host, opts).precompile(source, id)
 
+// a validator exposing allows costs its creation a write, which declaring
+// about this many units as the validators created from them repays gzipped
+const unitsExposingAllowsPays = 6
+
 export class Precompiler {
 	graph: ModuleGraph
 	interpreter: Interpreter
@@ -740,7 +744,7 @@ export class Precompiler {
 			this.usagesByProgram.delete(program.key)
 			return unwritten
 		}
-		const { written, runtimes } = wrote
+		let { written, runtimes } = wrote
 		// as written, a validator may be read in a way the plan didn't see, as
 		// where a factory checks a Type it's passed
 		const usedAsWritten = isWhole ? used : this.usedIn(program, runtimes)
@@ -763,10 +767,26 @@ export class Precompiler {
 						)
 			}
 		}
-		const linked =
-			!this.inline &&
-			!this.standalone.lazy &&
-			this.linkWritten(written, sources)
+		let linked = false
+		if (!this.inline && !this.standalone.lazy) {
+			let link = this.linkWritten(written, sources, readsAllows)
+			// a unit a site creates its validator from is declared as that
+			// validator where validators expose allows, as a program reading
+			// none is written again to where enough units would be
+			if (link.unexposed >= unitsExposingAllowsPays && usage.combines) {
+				usage.readsAllows = true
+				const exposed = writeProgram()
+				if (exposed) {
+					;({ written, runtimes } = exposed)
+					link = this.linkWritten(written, sources, true)
+				} else {
+					usage.readsAllows = false
+					for (const [id, runtime] of runtimes)
+						if (precompiled.includes(id)) this.runtimesById[id] = runtime
+				}
+			}
+			linked = link.changed
+		}
 		const replaced =
 			flattens ?
 				this.flattenWritten(written, sources, program, runtimes)
@@ -851,16 +871,17 @@ export class Precompiler {
 	// links what a bundle's modules write, if anything changes
 	private linkWritten(
 		written: Record<string, PrecompiledModule>,
-		sources: Record<string, string>
-	): boolean {
+		sources: Record<string, string>,
+		exposesAllows: boolean
+	): { changed: boolean; unexposed: number } {
 		const sites: Record<string, LinkedSite> = {}
 		const modules: Record<string, string> = {}
 		for (const id in written) {
 			sites[id] = { source: sources[id], code: written[id].code }
 			Object.assign(modules, written[id].modules)
 		}
-		const linked = linkBundle(sites, modules)
-		if (!linked) return false
+		const linked = linkBundle(sites, modules, exposesAllows)
+		if (!linked) return { changed: false, unexposed: 0 }
 		let changed = false
 		for (const id in written) {
 			const { code, map } = linked.sites[id]
@@ -886,7 +907,7 @@ export class Precompiler {
 				changed = true
 			written[id] = { ...written[id], modules: reached }
 		}
-		return changed
+		return { changed, unexposed: linked.unexposed }
 	}
 
 	// declares the units a one-chunk bundle reads in one function, if it pays
