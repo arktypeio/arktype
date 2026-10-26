@@ -420,12 +420,14 @@ export interface IssueFeatures {
 	reportsIndices: boolean
 	writesText: boolean
 	readsKeySites: boolean
+	runsArktype: boolean
 }
 
 export const noIssueFeatures: IssueFeatures = {
 	reportsIndices: false,
 	writesText: false,
-	readsKeySites: false
+	readsKeySites: false,
+	runsArktype: false
 }
 
 export interface StandaloneModules {

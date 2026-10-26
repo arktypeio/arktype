@@ -10,3 +10,6 @@ export const writesText: boolean = true
 
 /** a key's site, holding its value's context */
 export const readsKeySites: boolean = true
+
+/** errors arktype's own runtime writes, whose summary a TraversalError reads */
+export const runsArktype: boolean = true
