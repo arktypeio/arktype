@@ -180,6 +180,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				(developmentHost ??= createDevelopmentHost(opts))
 			:	productionHost
 	}
+	// the working directory, its symlinks resolved
+	const realCwd = () => realPathOf(opts?.cwd ?? process.cwd())
 	let isStandalone = opts?.runtime !== "arktype"
 	// a production bundle leaves out what no read of it needs, as does any
 	// with prune: true
@@ -283,7 +285,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 						foldedHelpersById,
 						bundlerImportsOf(modules, compilation.moduleGraph),
 						isTransformedId,
-						realPathOf(opts?.cwd ?? process.cwd())
+						realCwd()
 					)
 				if (problem)
 					compilation.errors.push(new bundler.webpack.WebpackError(problem))
@@ -370,7 +372,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	) => {
 		const file = importer.split("?")[0]
 		if (!resolvesToRuntime(id, opts) || reportedUntransformed.has(file)) return
-		const cwd = realPathOf(opts?.cwd ?? process.cwd())
+		const cwd = realCwd()
 		const problem =
 			namespace !== "file" || !isAbsolute(file) ?
 				writeFilelessImportMessage(importer, id)
@@ -447,9 +449,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			return
 		const file = fileOf(importer)
 		if (scan.loaded.get(file) === scan.scanned.modules[file]?.source) return
-		return writeUnscannedFlatMessage(
-			printablePathOf(realPathOf(opts?.cwd ?? process.cwd()), file)
-		)
+		return writeUnscannedFlatMessage(printablePathOf(realCwd(), file))
 	}
 	const rollupBuild = {}
 	const buildOf = (context: unknown) =>
@@ -518,7 +518,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					"scan",
 					scanned
 				)) as ScannedUsage,
-			realPathOf(opts?.cwd ?? process.cwd())
+			realCwd()
 		)
 			.catch(
 				(e: unknown): ProgramScan<BundleScan> => ({
@@ -797,7 +797,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					foldedHelpersById,
 					rollupImportsOf(this as never, id => id),
 					isTransformedId,
-					realPathOf(opts?.cwd ?? process.cwd())
+					realCwd()
 				)
 				if (problem) throwBuildError(problem)
 			}
@@ -814,7 +814,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					rollupImportsOf(this as never),
 					scan.loaded,
 					scan.holders,
-					realPathOf(opts?.cwd ?? process.cwd())
+					realCwd()
 				)
 				// fails before the bundle is written
 				if (problem) throwBuildError(problem)
@@ -904,8 +904,16 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 						warnings: [{ text: writeUnprunedMessage(...unprunedBeforePlugin) }]
 					}))
 				}
+				const cwd = build.initialOptions.absWorkingDir ?? process.cwd()
+				// a problem fails the build, removing what it wrote
+				const rejected = (metafile: Metafile, problem: string) => {
+					if (build.initialOptions.write !== false) {
+						for (const path in metafile.outputs)
+							rmSync(resolve(cwd, path), { force: true })
+					}
+					return { errors: [{ text: problem }] }
+				}
 				if (isStandalone) {
-					const cwd = build.initialOptions.absWorkingDir ?? process.cwd()
 					build.initialOptions.metafile = true
 					build.onEnd(result => {
 						if (!result.metafile || result.errors.length) return
@@ -915,15 +923,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 								foldedHelpersById,
 								esbuildImportsOf(result.metafile, cwd),
 								isTransformedId,
-								realPathOf(opts?.cwd ?? process.cwd())
+								realCwd()
 							)
-						if (!problem) return
 						// it wrote calls that throw at runtime
-						if (build.initialOptions.write !== false) {
-							for (const path in result.metafile.outputs)
-								rmSync(resolve(cwd, path), { force: true })
-						}
-						return { errors: [{ text: problem }] }
+						if (problem) return rejected(result.metafile, problem)
 					})
 				}
 				// the scan's facts hold only while the bundle is what it read
@@ -934,7 +937,6 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				esbuildScan = undefined
 				if (program) {
 					build.initialOptions.metafile = true
-					const cwd = build.initialOptions.absWorkingDir ?? process.cwd()
 					build.onStart(async () => {
 						scanned = undefined
 						verifies = false
@@ -952,7 +954,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 									"scan",
 									scanned
 								)) as ScannedUsage,
-							realPathOf(opts?.cwd ?? process.cwd())
+							realCwd()
 						).catch(
 							(e: unknown): ProgramScan<[ScannedProgram, ScannedUsage]> => ({
 								unpruned: unreadMessageOf(e)
@@ -987,15 +989,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 							esbuildImportsOf(result.metafile, cwd, scanned),
 							loaded,
 							holders,
-							realPathOf(opts?.cwd ?? process.cwd())
+							realCwd()
 						)
-						if (!problem) return
 						// what it wrote may lack what a module it couldn't see reads
-						if (build.initialOptions.write !== false) {
-							for (const path in result.metafile.outputs)
-								rmSync(resolve(cwd, path), { force: true })
-						}
-						return { errors: [{ text: problem }] }
+						if (problem) return rejected(result.metafile, problem)
 					})
 				}
 				// esbuild loads stdin as written, which the runtime runs only where it
