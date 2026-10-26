@@ -1098,12 +1098,7 @@ const writeFlat = (
 			if (written === undefined) {
 				const parse = unitsParser()
 				written = { body, returned }
-				for (const pass of [
-					skipAliases,
-					skipForwarders,
-					inlineCalls,
-					dropUnread
-				])
+				for (const pass of [skipAliases, inlineCalls, dropUnread])
 					written = untilUnchanged(written, parse, pass)
 				// kept code reads what it returns, so a bundler keeps its call, and
 				// annotations saying it could drop it are bytes oxc's minifier keeps
@@ -1214,48 +1209,30 @@ const untilUnchanged = (
 	}
 }
 
-// a function the units declare that only calls another of them with its own
-// parameters, e.g. a predicate's Allows, is read as that one where it's
-// called, so a call reaches it directly
-const skipForwarders: UnitsPass = ({ program, scopes }, s) => {
+// a constant the units declare as another of theirs, e.g. an intersection's
+// Transform that is its structure's, is read as that one, as is, where it's
+// called, a function that only calls another with its own parameters, e.g. a
+// predicate's Allows, so a call reaches it directly
+const skipAliases: UnitsPass = ({ program, scopes }, s) => {
 	for (const statement of program.body as Node[]) {
 		if (statement.type !== "VariableDeclaration") continue
 		for (const { id, init } of statement.declarations) {
 			const binding = scopes.bindingsById.get(id)
-			const target = init && forwardedOf(init, scopes)
-			if (
-				!binding ||
-				!target ||
-				target === binding ||
-				!binding.references.every(
-					({ id }) =>
-						id.parent?.type === "CallExpression" && id.parent.callee === id
-				)
-			)
-				continue
-			for (const reference of binding.references)
-				s.overwrite(reference.id.start, reference.id.end, target.name)
-		}
-	}
-}
-
-// a constant the units declare as another of theirs, e.g. an intersection's
-// Transform that is its structure's, is read as that one
-const skipAliases: UnitsPass = ({ program, scopes }, s) => {
-	for (const statement of program.body as Node[]) {
-		if (statement.type !== "VariableDeclaration" || statement.kind !== "const")
-			continue
-		for (const { id, init } of statement.declarations) {
-			const binding = scopes.bindingsById.get(id)
+			const isAlias = init?.type === "Identifier" && statement.kind === "const"
 			const target =
-				init?.type === "Identifier" ?
-					scopes.refsById.get(init)?.binding
-				:	undefined
+				isAlias ? scopes.refsById.get(init)?.binding
+				: init ? forwardedOf(init, scopes)
+				: undefined
 			if (
 				!binding ||
 				target?.scope !== scopes.root ||
 				target.kind !== "const" ||
-				target === binding
+				target === binding ||
+				(!isAlias &&
+					!binding.references.every(
+						({ id }) =>
+							id.parent?.type === "CallExpression" && id.parent.callee === id
+					))
 			)
 				continue
 			for (const { id } of binding.references) {
@@ -1272,8 +1249,7 @@ const skipAliases: UnitsPass = ({ program, scopes }, s) => {
 	}
 }
 
-// what a function calls with its own parameters, in order, if that's all it
-// does and it's a constant of the units' function
+// what a function calls with its own parameters, in order, if that's all it does
 const forwardedOf = (fn: Node, scopes: ModuleScopes): Binding | undefined => {
 	if (fn.type !== "ArrowFunctionExpression" || fn.async) return
 	const [only] = fn.body.type === "BlockStatement" ? fn.body.body : []
@@ -1288,10 +1264,7 @@ const forwardedOf = (fn: Node, scopes: ModuleScopes): Binding | undefined => {
 		!passesParams(call, fn)
 	)
 		return
-	const target = scopes.refsById.get(call.callee)?.binding
-	return target?.scope === scopes.root && target.kind === "const" ?
-			target
-		:	undefined
+	return scopes.refsById.get(call.callee)?.binding
 }
 
 // a function the units declare whose one read is a call passing its own
