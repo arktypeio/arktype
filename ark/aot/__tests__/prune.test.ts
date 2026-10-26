@@ -657,6 +657,25 @@ console.log(out instanceof type.errors ? out.summary : out)
 			).equals(true)
 		})
 
+		it("allows as a boolean where a narrow returns otherwise", async () => {
+			const files = writeFixture(
+				{
+					"main.ts": `import { type } from "arktype"
+
+const Named = type("string").narrow(s => s.length as never)
+
+console.log(Named.allows("Ada"), Named.allows(""))
+`
+				},
+				fromHere("temp", "prunedNarrow")
+			)
+			const js = await bundle(
+				{ preset: undefined },
+				{ entryPoints: [join(files, "main.ts")] }
+			)
+			attest(run(js)).snap("true false\n")
+		})
+
 		it("finds issues as a call returns where no read calls a validator", async () => {
 			const asserting = await bundle(
 				{ preset: undefined },
