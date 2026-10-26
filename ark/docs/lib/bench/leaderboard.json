@@ -1,6 +1,9 @@
 {
 	"sources": {
-		"arkType": ["results/arktype-808927feb.json"],
+		"arkType": [
+			"results/arktype-808927feb.json",
+			"results/arktype-init-11067f517.json"
+		],
 		"counts": [
 			"results/counts-a306152ce.json",
 			"results/counts-latest-2026-10-24.json"
@@ -10,7 +13,8 @@
 		"sbCounts": [
 			"results/sb-counts-6c5fd9862.json",
 			"results/sb-counts-latest-2026-10-24.json",
-			"results/sb-counts-aot-init-2026-10-25.json"
+			"results/sb-counts-aot-init-2026-10-25.json",
+			"results/sb-counts-init-11067f517.json"
 		],
 		"sbDownload": [
 			"results/sb-download-ajv-standalone-2026-10-24.json",
@@ -674,7 +678,7 @@
 			"id": "homepageSize",
 			"label": "the homepage's apps",
 			"unit": "B gzipped",
-			"source": "benchData.json size, ArkType's from results/arktype-808927feb.json",
+			"source": "benchData.json size, ArkType's from results/arktype-808927feb.json, results/arktype-init-11067f517.json",
 			"rows": [
 				{
 					"id": "login",
@@ -732,7 +736,8 @@
 			"source": [
 				"results/sb-counts-6c5fd9862.json",
 				"results/sb-counts-latest-2026-10-24.json",
-				"results/sb-counts-aot-init-2026-10-25.json"
+				"results/sb-counts-aot-init-2026-10-25.json",
+				"results/sb-counts-init-11067f517.json"
 			],
 			"rows": [
 				{
@@ -1237,7 +1242,7 @@
 						"Zod": 1173.50998,
 						"TypeBox": 152.980025,
 						"Valibot": 8188.567185,
-						"ArkType": 85.000005,
+						"ArkType": 84.979465,
 						"Zod (compiled)": 274.07353
 					}
 				}
@@ -1411,13 +1416,14 @@
 			"source": [
 				"results/sb-counts-6c5fd9862.json",
 				"results/sb-counts-latest-2026-10-24.json",
-				"results/sb-counts-aot-init-2026-10-25.json"
+				"results/sb-counts-aot-init-2026-10-25.json",
+				"results/sb-counts-init-11067f517.json"
 			],
 			"rows": [
 				{
 					"id": "initialization",
 					"results": {
-						"paseri": 15.992465,
+						"paseri": 15.95665,
 						"@railway-ts/pipelines": 7933.4228794326245,
 						"@remix-run/data-schema": 80825.01705882353,
 						"@sapphire/shapeshift": 595451.329,
@@ -1438,8 +1444,8 @@
 						"Zod (compiled)": 2628710.266,
 						"Zod Mini": 782393.3173333333,
 						"Zod 3": 506556.0324,
-						"ArkType": 42.47,
-						"zod-compiler": 16.05155
+						"ArkType": 15.953845,
+						"zod-compiler": 15.942605
 					}
 				}
 			]
@@ -1462,7 +1468,7 @@
 						"TypeBox": 153.0233,
 						"Zod": 962536.502,
 						"Valibot": 9381.642918238993,
-						"ArkType": 103.99993,
+						"ArkType": 101.92073,
 						"Zod (compiled)": 667380.077
 					}
 				}

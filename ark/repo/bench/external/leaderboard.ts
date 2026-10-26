@@ -21,7 +21,10 @@ const docs = join(here, "..", "..", "..", "docs")
 // each library's latest release on 2026-10-24, and each arm keeps the faster
 // run (README, "Versions")
 const committed = {
-	arkType: ["results/arktype-808927feb.json"],
+	arkType: [
+		"results/arktype-808927feb.json",
+		"results/arktype-init-11067f517.json"
+	],
 	counts: [
 		"results/counts-a306152ce.json",
 		"results/counts-latest-2026-10-24.json"
@@ -31,7 +34,8 @@ const committed = {
 	sbCounts: [
 		"results/sb-counts-6c5fd9862.json",
 		"results/sb-counts-latest-2026-10-24.json",
-		"results/sb-counts-aot-init-2026-10-25.json"
+		"results/sb-counts-aot-init-2026-10-25.json",
+		"results/sb-counts-init-11067f517.json"
 	],
 	sbDownload: ["results/sb-download-ajv-standalone-2026-10-24.json"],
 	suryCounts: [

@@ -586,17 +586,21 @@ operations report errors, which the ahead-of-time Check doesn't. In TypeBox
 The same gap was in the two independent startup rows. schemabenchmarks.dev
 times initialization only for libraries that build a schema at runtime: its
 own precompiled entries, zod-compiler and @paseri/compiler, have no such
-case, while ArkType's precompiled entry returns the validators its build
-wrote. `sb/aotInit.ts` gives ajv's standalone code, zod-compiler and
-@paseri/compiler the same case, and Sury's build and parse once runs
-TypeBox's ahead-of-time Check beside its `Value.Check`
-(`results/sb-counts-aot-init-2026-10-25.json`,
-`results/sury-counts-aot-2026-10-25.json`). In instructions per call:
-@paseri/compiler 16.0, zod-compiler 16.1, ajv 20.0 and ArkType 42.5 on
-initialization; ArkType 104 and TypeBox 153 on Sury's build. Over the
-independent suites, startup is then paseri 1.000, zod-compiler 1.004 and ajv
-1.248, each on one suite, then ArkType 1.630. On the full board ArkType
-leads, 1.293 to ajv's 1.448.
+case. `sb/aotInit.ts` gives ajv's standalone code, zod-compiler and
+@paseri/compiler one that returns the schema their module made as it loaded,
+and ArkType's precompiled arm reads its schema the same way
+(`sb/precompiled/benchmarks.ts`, 11067f517), where it had called a getter.
+Sury's build and parse once runs TypeBox's ahead-of-time Check beside its
+`Value.Check`. In instructions per call, one run of every ahead-of-time arm
+(`results/sb-counts-init-11067f517.json`, Node 26.12.1, 3 reps):
+zod-compiler 15.943, ArkType 15.954, @paseri/compiler 15.957, ajv 19.971,
+typia's createIs 381.2, the first three at the harness's floor, each arm's
+reps spreading 0.4-0.7%. On Sury's build, ArkType 101.9
+(`results/arktype-init-11067f517.json`, the build at 91d3e2e20) and TypeBox
+153.0 (`results/sury-counts-aot-2026-10-25.json`). Over the independent
+suites, startup is then zod-compiler 1.000 (one suite), ArkType 1.000 and
+@paseri/compiler 1.001 (one suite): ArkType counts as first within 5% of
+zod-compiler. On the full board ArkType leads, 1.013 to ajv's 1.449.
 
 With ArkType's rows unchanged, the update moved speed from ArkType 1.103
 against ata 1.255 to 1.107 against 1.255, left startup alone, and moved size
