@@ -70,7 +70,9 @@ const keywordData = {
 	"number.integer": fc.oneof(fc.integer(), fc.double()),
 	"string.numeric.parse": fc.oneof(fc.integer().map(String), fc.string()),
 	"string.trim": fc.constantFrom(" a ", "a", "", " "),
-	"string.email": fc.constantFrom("a@b.co", "a@b", "@", "")
+	"string.email": fc.constantFrom("a@b.co", "a@b", "@", ""),
+	// a keyword's predicate, which a root reporting into ArkErrors can hold
+	"string.url": fc.constantFrom("https://a.b", "a:", "a", "")
 }
 
 const keywords = Object.keys(keywordData) as Keyword[]
