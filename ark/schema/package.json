@@ -29,6 +29,9 @@
 			"i18n": [
 				"./out/i18n.d.ts"
 			],
+			"issueFeatures": [
+				"./out/shared/issueFeatures.d.ts"
+			],
 			"mutatesInput": [
 				"./out/mutatesInput.d.ts"
 			],
