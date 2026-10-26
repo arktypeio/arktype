@@ -1,9 +1,11 @@
 import {
 	$ark,
 	hasArkKind,
+	hashedPrefixLength,
 	isDecidedByAllows,
 	isNode,
 	isRefinedPattern,
+	jsonLengthOf,
 	madeMorphs,
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
@@ -126,6 +128,21 @@ type DeclarationRole =
 	| "json"
 	| "jsonSchema"
 	| "traversal"
+
+// json and JSON Schema repeat a Type each place it's referenced, so written
+// out, a Type reused at each level of another doubles with each level
+const maxWrittenJsonLength = 1 << 22
+
+const assertWritableJson = (root: BaseRoot): void => {
+	const length = jsonLengthOf(root.json)
+	if (length > maxWrittenJsonLength) {
+		throwParseError(
+			writeUnprecompilableMessage(
+				`introspection writing out about ${Math.round(length / 1e6)} MB of JSON, as it repeats each Type it references`
+			)
+		)
+	}
+}
 
 // constraints sorted by hash, which can include a function's name
 const sortedConstraintKeys = ["pattern", "index"] as const
@@ -1231,8 +1248,16 @@ class StandaloneArtifact {
 	refuseHoleOrdering(l: BaseNode, r: BaseNode): void {
 		let i = 0
 		while (i < l.hash.length && l.hash[i] === r.hash[i]) i++
-		const names = [l.hash, r.hash].map(hash => registeredNameAt(hash, i))
-		const name = names.find(name => name?.includes(holeNameMarker))
+		const name =
+			// past a long hash's prefix, a digest of all of its JSON orders it
+			(
+				i >= hashedPrefixLength &&
+				!(l.hash.endsWith("}") && r.hash.endsWith("}"))
+			) ?
+				(holeNameIn(l.json) ?? holeNameIn(r.json))
+			:	[l.hash, r.hash]
+					.map(hash => registeredNameAt(hash, i))
+					.find(name => name?.includes(holeNameMarker))
 		if (!name) return
 		const hole = this.holeNamed(name, nameOf) ?? name
 		throwParseError(
@@ -2276,6 +2301,8 @@ ${writeFunction(
 		const members: string[] = []
 		const bakes = (member: IntrospectionMember) =>
 			this.baking.members.has(member)
+		if (bakes("toJsonSchema") || bakes("~standard.jsonSchema"))
+			assertWritableJson(root)
 		if (bakes("expression"))
 			members.push(`expression: ${this.emitExpression(root)}`)
 		if (bakes("description"))
@@ -2343,6 +2370,7 @@ ${writeFunction(
 
 	// nodes share json unless it prints a hole
 	readJson(root: BaseRoot): string {
+		assertWritableJson(root)
 		const value = `runtime.deepFreeze(${this.writeData(root.json)})`
 		if (holdsLocal(root.json)) {
 			return (
@@ -3624,6 +3652,20 @@ export const declares = (
 	root: BaseRoot,
 	predicate: (node: BaseNode) => boolean
 ): boolean => rootUnitsOf(root).some(unit => unit.declared.some(predicate))
+
+// the first hole named in JSON, reading each object it shares once
+const holeNameIn = (
+	json: unknown,
+	seen = new Set<object>()
+): string | undefined => {
+	if (typeof json === "string") return json.match(holeNamePattern)?.[0]
+	if (typeof json !== "object" || json === null || seen.has(json)) return
+	seen.add(json)
+	for (const v of Object.values(json)) {
+		const name = holeNameIn(v, seen)
+		if (name) return name
+	}
+}
 
 const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 	if (seen.has(value)) return false

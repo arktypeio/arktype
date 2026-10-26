@@ -43,6 +43,7 @@ import {
 	type AliasDepth,
 	type InternalTraversal
 } from "../shared/traversal.ts"
+import { elided } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "./optional.ts"
 
 export declare namespace Sequence {
@@ -132,15 +133,17 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 		},
 		defaults: {
 			description: node => {
-				if (node.isVariadicOnly) return `${node.variadic!.nestedExpression}[]`
+				if (node.isVariadicOnly)
+					return `${elided(node.variadic!.nestedExpression)}[]`
 				const innerDescription = node.tuple
 					.map(element =>
 						element.kind === "defaultables" ?
-							`${element.node.nestedExpression} = ${printable(element.default, { ownDataOnly: true })}`
-						: element.kind === "optionals" ? `${element.node.nestedExpression}?`
+							`${elided(element.node.nestedExpression)} = ${printable(element.default, { ownDataOnly: true })}`
+						: element.kind === "optionals" ?
+							`${elided(element.node.nestedExpression)}?`
 						: element.kind === "variadic" ?
-							`...${element.node.nestedExpression}[]`
-						:	element.node.expression
+							`...${elided(element.node.nestedExpression)}[]`
+						:	elided(element.node.expression)
 					)
 					.join(", ")
 				return `[${innerDescription}]`

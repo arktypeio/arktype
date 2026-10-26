@@ -27,7 +27,7 @@ import {
 	type InternalTraversal,
 	type TraverseAllows
 } from "../shared/traversal.ts"
-import { composing } from "../shared/utils.ts"
+import { composing, elided } from "../shared/utils.ts"
 
 export declare namespace Index {
 	export type KeyKind = Exclude<RootKind, "unit">
@@ -67,7 +67,7 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 		},
 		defaults: {
 			description: node =>
-				`[${node.signature.expression}]: ${node.value.description}`
+				`[${node.signature.expression}]: ${elided(node.value.description)}`
 		}
 	})
 
@@ -75,7 +75,7 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	get expression(): string {
 		return (this.cache.expression ??= composing(
-			() => `[${this.signature.expression}]: ${this.value.expression}`
+			() => `[${this.signature.expression}]: ${elided(this.value.expression)}`
 		))
 	}
 
