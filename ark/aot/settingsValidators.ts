@@ -8,10 +8,11 @@ var readsKeySites = true
 
 // ark/schema/shared/issues.ts
 var ArkIssues = class {
-	/** @internal each issue in the order it was added */
-	_ = []
-	/** @internal the path a fused traversal is at */
-	_p = []
+	// assigned, as a target lowering class fields defines each with a helper
+	constructor() {
+		this._ = []
+		this._p = []
+	}
 	/**
 	 * The number of issues.
 	 */

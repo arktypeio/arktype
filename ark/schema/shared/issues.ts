@@ -75,9 +75,15 @@ declare namespace ArkIssues {
  */
 class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	/** @internal each issue in the order it was added */
-	_: ArkIssue[] = []
+	declare _: ArkIssue[]
 	/** @internal the path a fused traversal is at */
-	_p: PropertyKey[] = []
+	declare _p: PropertyKey[]
+
+	// assigned, as a target lowering class fields defines each with a helper
+	constructor() {
+		this._ = []
+		this._p = []
+	}
 
 	/**
 	 * The number of issues.
