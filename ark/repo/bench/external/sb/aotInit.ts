@@ -21,7 +21,7 @@ writeFileSync(
 )
 
 writeFileSync(
-	join(libraries, "ajv/standalone/benchmarks.ts"),
+	join(standalone, "benchmarks.ts"),
 	`import { getVersion } from "@schema-benchmarks/utils/node" with { type: "macro" };
 import ts from "dedent";
 
