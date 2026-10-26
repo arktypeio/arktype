@@ -147,7 +147,8 @@ for (const [name, { type, values: taken }] of options) {
 
 try {
 	const set = withSettingsFile(opts)
-	refusePrune(set, "arktype-precompile")
+	// --check reads prune as the bundler does, but --emit can't prune
+	if (values.emit) refusePrune(set, "arktype-precompile")
 	resolvePrecompileOptions(set)
 } catch (e) {
 	fail((e as Error).message)
