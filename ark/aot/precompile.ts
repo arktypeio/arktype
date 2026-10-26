@@ -5755,7 +5755,8 @@ const chainOf = (dynamic: DynamicValue): string[] => {
 const anyIssues: IssueFeatures = {
 	reportsIndices: true,
 	writesText: true,
-	readsKeySites: true
+	readsKeySites: true,
+	runsArktype: true
 }
 
 export const reasonsOf = (e: unknown): string[] =>

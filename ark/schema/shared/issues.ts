@@ -1,6 +1,11 @@
 import type { array } from "@ark/util"
 import type { ArkErrorCode } from "./errors.ts"
-import { readsKeySites, reportsIndices, writesText } from "./issueFeatures.ts"
+import {
+	readsKeySites,
+	reportsIndices,
+	runsArktype,
+	writesText
+} from "./issueFeatures.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 
 /**
@@ -309,7 +314,7 @@ export class TraversalError extends Error {
 	declare arkErrors: ArkIssues
 
 	constructor(errors: ArkIssues) {
-		super(errors._t ?? errors.summary)
+		super((runsArktype ? errors._t : undefined) ?? errors.summary)
 
 		// assigned, as a field's initializer compiles where the class is defined
 		this.name = "TraversalError"

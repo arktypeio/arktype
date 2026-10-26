@@ -5,6 +5,7 @@
 var reportsIndices = true
 var writesText = true
 var readsKeySites = true
+var runsArktype = true
 
 // ark/schema/shared/issues.ts
 var ArkIssues = class {
@@ -103,7 +104,7 @@ var problemOf = issue =>
 	: "is invalid")
 var TraversalError = class extends Error {
 	constructor(errors) {
-		super(errors._t ?? errors.summary)
+		super((runsArktype ? errors._t : void 0) ?? errors.summary)
 		this.name = "TraversalError"
 		Object.defineProperty(this, "arkErrors", { value: errors })
 	}

@@ -670,6 +670,23 @@ const Flagged = type({ name: "string" }).narrow((_, ctx) =>
 )
 
 console.log(Flagged({ name: "Ada" }).toString())
+`,
+					"asserted.ts": `import { type } from "arktype"
+
+try {
+	type({ name: "string", age: "number" }).assert({ name: 5, age: "5" })
+} catch (e) {
+	console.log((e as Error).message)
+}
+`,
+					"island.ts": `import { type } from "arktype"
+
+try {
+	// @ark-runtime
+	type({ name: "string", age: "number" }).assert({ name: 5, age: "5" })
+} catch (e) {
+	console.log((e as Error).message)
+}
 `
 				},
 				fromHere("temp", "prunedIssues")
@@ -689,6 +706,18 @@ console.log(Flagged({ name: "Ada" }).toString())
 			attest(run(flagged)).snap("flags[0] is unset\n")
 			attest(flagged.includes("`[${")).equals(true)
 			attest(flagged.includes(".text?.(")).equals(true)
+			const asserted = await bundleOf("asserted.ts")
+			attest(run(asserted)).snap(`name must be a string
+age must be a number
+`)
+			attest(asserted.includes("._t")).equals(false)
+			// arktype's own errors write a TraversalError's message
+			const island = await bundleOf("island.ts")
+			attest(run(island)).snap(`
+  • name must be a string (was a number)
+  • age must be a number (was a string)
+`)
+			attest(island.includes("._t")).equals(true)
 		})
 
 		it("allows as a boolean where a narrow returns otherwise", async () => {
