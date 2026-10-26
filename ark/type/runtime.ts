@@ -97,6 +97,7 @@ export {
 	rejects,
 	runtimeConfig,
 	runtimeScope,
+	throwIssues,
 	throwOnDefault,
 	TransformErrors,
 	transformed,

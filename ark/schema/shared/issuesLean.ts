@@ -160,6 +160,12 @@ export const foundErrors = (
 	return onFail ? onFail(errors) : errors
 }
 
+export const throwIssues = (apply: CompactApply, data: unknown): never => {
+	const errors = new ArkErrors()
+	issuesOf(apply, data, errors)
+	return errors.throw()
+}
+
 // a root reporting into ArkErrors, as a size build applies it; they hold
 // no path to release
 export const applyIssues = (

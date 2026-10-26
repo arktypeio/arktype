@@ -2005,11 +2005,17 @@ ${writeFunction(
 		// only a config or meta sets the onFail a validator is created with
 		const unconfigured = !this.baking.readsConfig && !root.meta.onFail
 		const pipes = this.pipes(members, unconfigured)
+		// a validator nothing calls fails only by its assert
+		const throws =
+			!isTemplate &&
+			!ownsValidator &&
+			this.preciseFormOf(members, unconfigured, reads) === "object"
 		const [applied, allows, isCompact] = this.emitRootApply(
 			root,
 			ownsValidator,
 			unconfigured,
-			pipes
+			pipes,
+			throws
 		)
 		// emit meta before keying so an unemittable value is named
 		const meta =
@@ -2148,12 +2154,13 @@ ${writeFunction(
 			: this.baking.detailsErrors ?
 				"(pipedFromCtx ? errors => pipedFromCtx.piped(errors) : onFail)"
 			:	undefined
-		// a root apply failing by its one onFail is written into the validator
+		// a root apply failing by its one onFail, or throwing, is written into
+		// the validator
 		const inlined =
 			(
 				failing &&
 				applier?.apply.startsWith(appliedSignature) &&
-				applier.apply.split(/\bonFail\b/).length === 3
+				applier.apply.split(/\bonFail\b/).length <= 3
 			) ?
 				applier.apply
 					.slice(appliedSignature.length)
@@ -2558,7 +2565,8 @@ ${writeFunction(
 		root: BaseRoot,
 		asValidator: boolean,
 		unconfigured: boolean,
-		pipes: boolean
+		pipes: boolean,
+		throws = false
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const callbacks = declares(
 			root,
@@ -2698,7 +2706,9 @@ ${writeFunction(
 					apply: `(data, onFail) => allows(data) ? ${valid} : ${
 						unreads ? `runtime.unreadErrors(${apply}, data, onFail, ${Ctx})`
 						: reportsIssues && !this.baking.shortest ?
-							`runtime.foundErrors(${apply}, data, onFail, ${Ctx})`
+							throws && Ctx === "runtime.ArkErrors" ?
+								`runtime.throwIssues(${apply}, data)`
+							:	`runtime.foundErrors(${apply}, data, onFail, ${Ctx})`
 						: reportsIssues ?
 							`runtime.applyIssues(${apply}, data, onFail${this.baking.firstIssue ? `, ${Ctx}` : ""})`
 						:	`runtime.applyErrors(${apply}, data, ${refOf("config")}, onFail, ${Ctx})`

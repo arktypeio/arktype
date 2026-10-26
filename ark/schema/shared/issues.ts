@@ -317,3 +317,11 @@ export class TraversalError extends Error {
 		Object.defineProperty(this, "arkErrors", { value: errors })
 	}
 }
+
+// as foundErrors where each failure throws, as where a program only asserts
+export const throwIssues = (apply: CompactApply, data: unknown): never => {
+	const errors = new ArkIssues()
+	apply(data, errors)
+	if (!errors._.length) errors._at({ code: "predicate" }, data)
+	return errors.throw()
+}

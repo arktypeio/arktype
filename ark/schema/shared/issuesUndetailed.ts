@@ -13,6 +13,8 @@ export const issuesOf = (): never =>
 
 export const foundErrors = issuesOf
 
+export const throwIssues = issuesOf
+
 export class TraversalError extends Error {
 	declare readonly name: "TraversalError"
 	declare arkErrors: ArkErrors
