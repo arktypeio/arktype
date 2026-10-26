@@ -531,7 +531,8 @@ export const precompileModule = (
 const shapeCosts = {
 	stringRange: [48, 0.37],
 	integerRange: [64, 0.76],
-	arrayOf: [56, 0.47]
+	arrayOf: [56, 0.47],
+	nullable: [25, 1.76]
 }
 
 // whether a program written with shapes saves more than they cost

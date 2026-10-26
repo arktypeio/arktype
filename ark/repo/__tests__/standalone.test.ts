@@ -327,6 +327,47 @@ c must be a number`)
 			]).equals([false, 1])
 		})
 
+		it("write common intersections as shapes where asked", async () => {
+			const T = type({
+				name: "1 <= string <= 100",
+				age: "0 <= number.integer <= 150",
+				tags: "string[] <= 3",
+				nick: "string | null"
+			})
+			const { code } = precompileStandalone(
+				{ T },
+				{ optimize: "size", shapes: true }
+			)
+			// each written as a shape, not an intersection or a domains call
+			attest(
+				code.match(
+					/runtime\.(stringRange|integerRange|arrayOf|nullable|intersection|domains)\(/g
+				)
+			).equals([
+				"runtime.stringRange(",
+				"runtime.integerRange(",
+				"runtime.arrayOf(",
+				"runtime.nullable("
+			])
+			const { T: Shaped } = await load(
+				{ T },
+				{ optimize: "size", shapes: true }
+			)
+			attest(
+				(
+					Shaped({
+						name: "",
+						age: 1.5,
+						tags: ["a", "b", "c", "d"],
+						nick: 0
+					}) as any
+				).summary
+			).snap(`name must be non-empty
+age must be an integer
+tags must be at most length 3
+nick must be a string or null`)
+		})
+
 		it("check data holding no case by the branches lacking the key", async () => {
 			const T = type({ kind: "'a'", a: "string" })
 				.or({ kind: "'b'", b: "number" })

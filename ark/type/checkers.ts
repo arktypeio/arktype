@@ -365,6 +365,16 @@ export const domains = ((
 	return checker
 }) satisfies Fn
 
+export const nullableDescriptionOf = (domain: string): string =>
+	`${domain === "object" ? "an" : "a"} ${domain} or null`
+
+// a domain's checker or null
+export const nullable = ((checker: Checker | 1, domain = "string"): Checker =>
+	domains(
+		{ [domain]: checker, null: 1 },
+		nullableDescriptionOf(domain)
+	)) satisfies Fn
+
 // a union of objects told apart by the string at one key; data that isn't an
 // object, or holds no case at the key, fails the union or that key
 export const discriminate = ((

@@ -690,16 +690,33 @@ export const writeCombinator = (
 		}
 		const domains = domainCasesOf(node)
 		if (domains) {
+			const cases = Object.entries(domains).map(
+				([domain, branch]): [string, string] => [
+					domain,
+					// null and undefined are their domain's only value
+					branch === true || domain === "null" || domain === "undefined" ?
+						"1"
+					:	ref(branch)
+				]
+			)
+			const { description } = discriminantSiteOf(node)!
+			const [domain, checker] = cases.find(([k]) => k !== "null")!
+			if (
+				js.shapes &&
+				cases.length === 2 &&
+				"null" in domains &&
+				description === runtime.nullableDescriptionOf(domain)
+			) {
+				return writeCall(
+					"nullable",
+					checker,
+					domain === "string" ? undefined : JSON.stringify(domain)
+				)
+			}
 			return writeCall(
 				"domains",
-				writeObject(
-					Object.entries(domains).map(
-						([domain, branch]) =>
-							// null and undefined are their domain's only value
-							`${domain}: ${branch === true || domain === "null" || domain === "undefined" ? "1" : ref(branch)}`
-					)
-				),
-				JSON.stringify(discriminantSiteOf(node)!.description)
+				writeObject(cases.map(([domain, branch]) => `${domain}: ${branch}`)),
+				JSON.stringify(description)
 			)
 		}
 		const discriminated = discriminatedOf(node)
