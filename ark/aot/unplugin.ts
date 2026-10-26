@@ -230,6 +230,15 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	}
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
+	// the files of arktype's packages the plugin resolved. Rollup and Rolldown
+	// resolve what they import relatively through it, as Nitro's development
+	// build would leave those to Node, at a path relative to its inputs
+	const resolvedFiles = new Set<string>()
+	const resolveFile = (specifier: string, importer: string) => {
+		const file = host.resolve(specifier, importer)
+		if (file) resolvedFiles.add(file)
+		return file
+	}
 	// the modules whose precompiled code read each file other than their own
 	const dependentsByFile: Record<string, Set<string>> = {}
 	// a persistent cache keeps a transformed module, but not the modules it wrote
@@ -600,7 +609,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		enforce: "pre",
 		resolveId: {
 			filter: {
-				id: new RegExp(`${resolvedSpecifier.source}|${schemaSpecifier.source}`)
+				id:
+					meta.framework === "rollup" || meta.framework === "rolldown" ?
+						new RegExp(`${resolvedId.source}|${relativeSpecifier.source}`)
+					:	resolvedId
 			},
 			async handler(id, importer) {
 				// the plugin resolves a standalone build's arktype in esbuild's own namespace
@@ -616,16 +628,21 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					return problem ? refuse(problem) : virtual + id
 				}
 				if (!importer) return
+				if (relativeSpecifier.test(id)) {
+					return resolvedFiles.has(importer) ?
+							resolveFile(id, importer)
+						:	undefined
+				}
 				// a virtual module resolves from the module it was written for
 				if (importer.startsWith(`${virtual}~arktype/`))
-					return host.resolve(id, importersById[importer])
+					return resolveFile(id, importersById[importer])
 				// resolved as arktype is in shadow mode, below
 				if (id === shadowSpecifier)
-					return opts?.shadow ? host.resolve(id, importer) : undefined
+					return opts?.shadow ? resolveFile(id, importer) : undefined
 				if (variant && schemaSpecifier.test(id)) {
 					const specifier = variantSpecifierOf(id, variant)
 					return specifier ?
-							host.resolve(specifier, importer)
+							resolveFile(specifier, importer)
 						:	refuse(writeVariantImportMessage(fileOf(importer), id, variant))
 				}
 				const isRuntime = runtimeSpecifiers.includes(id)
@@ -639,7 +656,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				if (diagnostics.errors.length)
 					return refuse(diagnostics.errors.join("\n"))
 				if (isRuntime && resolvesToRuntime(id, opts) && !readsNodes(importer)) {
-					return host.resolve(
+					return resolveFile(
 						runsOnArktype(importer, opts?.dependencies) ?
 							islandDependencySpecifier
 						:	"arktype/runtime",
@@ -649,7 +666,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				// as its validators' runtime is, since a bundler can write another path
 				// to the same file, like Vite on Windows an 8.3 name such as RUNNER~1,
 				// loading a second arktype
-				if (isRuntime && opts?.shadow) return host.resolve(id, importer)
+				if (isRuntime && opts?.shadow) return resolveFile(id, importer)
 			}
 		},
 		load: {
@@ -1739,6 +1756,11 @@ const shadowSpecifier = "@ark/aot/shadow"
 
 const resolvedSpecifier = new RegExp(
 	`${specifiersOf(...runtimeSpecifiers, "arktype/runtime", ...internalSpecifiers, shadowSpecifier).source}|^~arktype\\/`
+)
+
+// what the plugin resolves itself
+const resolvedId = new RegExp(
+	`${resolvedSpecifier.source}|${schemaSpecifier.source}`
 )
 
 // each runs a plugin after the others, which reads what they write

@@ -315,6 +315,18 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 		).snap(["0 sites in 1 file: 0 accepted (100.0%)"])
 	})
 
+	it("checks a build whose prune it can't read, as Nuxt's documented config sets it", () => {
+		const root = writeFixture({
+			"package.json": "{}",
+			"nuxt.config.ts": `import { precompile } from "@ark/aot/unplugin"\n\nexport default defineNuxtConfig({\n\tnitro: {\n\t\trollupConfig: {\n\t\t\tplugins: [precompile.rollup({ prune: process.env.NODE_ENV === "production" })]\n\t\t}\n\t}\n})\n`,
+			"main.ts": `import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n`
+		})
+		attest(check(["main.ts"], { cwd: root }).lines).snap([
+			"main.ts:3:21  accepted",
+			"1 site in 1 file: 1 accepted (100.0%)"
+		])
+	})
+
 	it("reports the config load order a plugin call's config fails", () => {
 		const root = writeFixture({
 			"package.json": "{}",

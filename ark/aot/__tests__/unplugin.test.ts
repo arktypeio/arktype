@@ -37,9 +37,10 @@ import {
 	symlinkSync,
 	writeFileSync
 } from "node:fs"
-import { join, relative, sep } from "node:path"
+import { isAbsolute, join, relative, sep } from "node:path"
 import { stripVTControlCharacters } from "node:util"
 import { Worker } from "node:worker_threads"
+import { rollup, type Plugin as RollupPlugin } from "rollup"
 import {
 	createBuilder,
 	createServer,
@@ -1322,6 +1323,44 @@ console.log(
 				stats?.toJson().errors?.map(error => error.message.includes(failure))
 			).equals([true])
 		})
+	})
+
+	it("bundles the files arktype's runtime imports where Rollup leaves dependencies to Node", async () => {
+		const root = writeFixture(
+			{
+				"main.ts":
+					'import { type } from "arktype"\n\nconst User = type({ name: "string" })\nconst out = User({ name: 5 })\n\nconsole.log(out instanceof type.errors ? out.summary : out)\n'
+			},
+			fromHere("temp", "leftToNode")
+		)
+		// leaves dependencies to Node, as Nitro's development build does, resolving
+		// a relative import of one to false, whose path Rollup then writes from
+		// the inputs' directory rather than the output's
+		const leaving: RollupPlugin = {
+			name: "leaving",
+			resolveId: (specifier, importer) =>
+				!importer || importer.startsWith(root) ? undefined
+				: specifier.startsWith(".") ? false
+				: { id: specifier, external: true }
+		}
+		const stripping: RollupPlugin = {
+			name: "stripping",
+			transform: (code, id) =>
+				id.endsWith(".ts") ?
+					transformSync(code, { loader: "ts" }).code
+				:	undefined
+		}
+		const build = await rollup({
+			input: join(root, "main.ts"),
+			plugins: [precompile.rollup({ conditions }), leaving, stripping],
+			onwarn: () => {}
+		})
+		const { output } = await build.generate({ format: "es" })
+		attest(
+			output[0].imports.filter(id => isAbsolute(id) || id.startsWith("."))
+		).equals([])
+		writeFileSync(join(root, "main.mjs"), output[0].code)
+		attest(runPlain(root, "main.mjs")).snap("name must be a string\n")
 	})
 
 	describe("modules another plugin writes", () => {

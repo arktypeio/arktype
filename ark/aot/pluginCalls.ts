@@ -236,7 +236,9 @@ const optionsOf = (
 		if (!(key in readOptions)) continue
 		const value = literalOf(property.value)
 		if (value === unread) {
-			unreadKeys.push(key)
+			// prune changes only a warning, which --check then writes as a build
+			// pruning by default would, in production
+			if (key !== "prune") unreadKeys.push(key)
 			continue
 		}
 		options[key] =

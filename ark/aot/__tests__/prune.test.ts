@@ -1513,19 +1513,31 @@ console.log(out instanceof type.errors ? out.summary : out)
 			])
 		})
 
-		it("refuses it with arktype-precompile", () => {
+		it("refuses it with arktype-precompile --emit", () => {
 			attest(refusals(emitPrecompiled)).equals([
 				writePruneHostMessage("arktype-precompile"),
 				writePruneHostMessage("arktype-precompile")
 			])
 			for (const { stderr, status } of [
-				runCli(fromHere(), "--check", "--prune"),
+				runCli(fromHere(), "--emit", "--prune"),
 				runCli(settled, "--emit")
 			]) {
 				attest(status).equals(2)
 				attest(
 					stderr.startsWith(writePruneHostMessage("arktype-precompile"))
 				).equals(true)
+			}
+		})
+
+		it("lets arktype-precompile --check a build that prunes", () => {
+			for (const { stdout, status } of [
+				runCli(settled, "--check", "--prune"),
+				runCli(settled, "--check")
+			]) {
+				attest([status, stdout]).equals([
+					0,
+					"0 sites in 0 files: 0 accepted (100.0%)\n"
+				])
 			}
 		})
 	})
