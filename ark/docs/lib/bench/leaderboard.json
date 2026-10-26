@@ -1,6 +1,9 @@
 {
 	"sources": {
-		"arkType": ["results/arktype-808927feb.json"],
+		"arkType": [
+			"results/arktype-808927feb.json",
+			"results/arktype-init-11067f517.json"
+		],
 		"counts": [
 			"results/counts-a306152ce.json",
 			"results/counts-latest-2026-10-24.json"
@@ -9,7 +12,9 @@
 		"forms": ["results/forms-642b4517e.json", "results/newest/forms.json"],
 		"sbCounts": [
 			"results/sb-counts-6c5fd9862.json",
-			"results/sb-counts-latest-2026-10-24.json"
+			"results/sb-counts-latest-2026-10-24.json",
+			"results/sb-counts-aot-init-2026-10-25.json",
+			"results/sb-counts-init-11067f517.json"
 		],
 		"sbDownload": [
 			"results/sb-download-ajv-standalone-2026-10-24.json",
@@ -17,7 +22,8 @@
 		],
 		"suryCounts": [
 			"results/sury-counts-6c5fd9862.json",
-			"results/sury-counts-latest-2026-10-24.json"
+			"results/sury-counts-latest-2026-10-24.json",
+			"results/sury-counts-aot-2026-10-25.json"
 		],
 		"surySize": [
 			"results/sury-size-396778442.json",
@@ -672,7 +678,7 @@
 			"id": "homepageSize",
 			"label": "the homepage's apps",
 			"unit": "B gzipped",
-			"source": "benchData.json size, ArkType's from results/arktype-808927feb.json",
+			"source": "benchData.json size, ArkType's from results/arktype-808927feb.json, results/arktype-init-11067f517.json",
 			"rows": [
 				{
 					"id": "login",
@@ -729,7 +735,9 @@
 			"unit": "instructions per call",
 			"source": [
 				"results/sb-counts-6c5fd9862.json",
-				"results/sb-counts-latest-2026-10-24.json"
+				"results/sb-counts-latest-2026-10-24.json",
+				"results/sb-counts-aot-init-2026-10-25.json",
+				"results/sb-counts-init-11067f517.json"
 			],
 			"rows": [
 				{
@@ -1223,7 +1231,8 @@
 			"unit": "instructions per call",
 			"source": [
 				"results/sury-counts-6c5fd9862.json",
-				"results/sury-counts-latest-2026-10-24.json"
+				"results/sury-counts-latest-2026-10-24.json",
+				"results/sury-counts-aot-2026-10-25.json"
 			],
 			"rows": [
 				{
@@ -1231,9 +1240,9 @@
 					"results": {
 						"sury": 316.573255,
 						"Zod": 1173.50998,
-						"TypeBox": 158.99896,
+						"TypeBox": 152.980025,
 						"Valibot": 8188.567185,
-						"ArkType": 85.000005,
+						"ArkType": 84.979465,
 						"Zod (compiled)": 274.07353
 					}
 				}
@@ -1406,17 +1415,19 @@
 			"unit": "instructions per call",
 			"source": [
 				"results/sb-counts-6c5fd9862.json",
-				"results/sb-counts-latest-2026-10-24.json"
+				"results/sb-counts-latest-2026-10-24.json",
+				"results/sb-counts-aot-init-2026-10-25.json",
+				"results/sb-counts-init-11067f517.json"
 			],
 			"rows": [
 				{
 					"id": "initialization",
 					"results": {
-						"paseri": 28526.583948717947,
+						"paseri": 15.95665,
 						"@railway-ts/pipelines": 7933.4228794326245,
 						"@remix-run/data-schema": 80825.01705882353,
 						"@sapphire/shapeshift": 595451.329,
-						"ajv": 40753569.682,
+						"ajv": 19.963915,
 						"ata": 16278.164721153846,
 						"decoders": 33584.9523030303,
 						"Effect Schema": 180648.5785,
@@ -1433,7 +1444,8 @@
 						"Zod (compiled)": 2628710.266,
 						"Zod Mini": 782393.3173333333,
 						"Zod 3": 506556.0324,
-						"ArkType": 42.47
+						"ArkType": 15.953845,
+						"zod-compiler": 15.942605
 					}
 				}
 			]
@@ -1445,17 +1457,18 @@
 			"unit": "instructions per call",
 			"source": [
 				"results/sury-counts-6c5fd9862.json",
-				"results/sury-counts-latest-2026-10-24.json"
+				"results/sury-counts-latest-2026-10-24.json",
+				"results/sury-counts-aot-2026-10-25.json"
 			],
 			"rows": [
 				{
 					"id": "build",
 					"results": {
 						"sury": 203296.9362857143,
-						"TypeBox": 6378.489945,
+						"TypeBox": 153.0233,
 						"Zod": 962536.502,
 						"Valibot": 9381.642918238993,
-						"ArkType": 103.99993,
+						"ArkType": 101.92073,
 						"Zod (compiled)": 667380.077
 					}
 				}
