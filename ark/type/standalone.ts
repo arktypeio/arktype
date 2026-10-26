@@ -916,6 +916,48 @@ interface SharedUnit {
 	shapesByName: Record<string, string>
 }
 
+// what a StandaloneArtifact's units write that it reads as it emits values
+interface Written {
+	issues: IssueFeatures
+	metas: Set<object>
+	keyLookups: Set<object>
+	patternInstances: Set<RegExp>
+	defaultsByMorph: Map<unknown, CollectedDefault>
+	objectUnits: Set<unknown>
+}
+
+const writtenByUnits = new WeakMap<readonly RootUnit[], Written>()
+
+const readWritten = (
+	units: readonly RootUnit[],
+	nodes: readonly BaseNode[]
+): Written => {
+	const written: Written = {
+		issues: { ...noIssueFeatures },
+		metas: new Set(),
+		keyLookups: new Set(),
+		patternInstances: new Set(),
+		defaultsByMorph: new Map(),
+		objectUnits: new Set()
+	}
+	addIssueFeatures(written.issues, units, nodes)
+	for (const node of nodes) {
+		written.metas.add(node.meta)
+		if (node.hasKind("structure")) written.keyLookups.add(node.propsByKey)
+		else if (node.hasKind("pattern"))
+			written.patternInstances.add(node.instance)
+		else if (node.hasKind("optional") || node.hasKind("sequence"))
+			collectDefaults(node, written.defaultsByMorph)
+		else if (
+			node.hasKind("unit") &&
+			hasDomain(node.unit, "object") &&
+			!isDate(node.unit)
+		)
+			written.objectUnits.add(node.unit)
+	}
+	return written
+}
+
 class StandaloneArtifact {
 	exports: Record<string, ExportedValue>
 	sharedModules: Record<string, SharedModule>
@@ -929,18 +971,20 @@ class StandaloneArtifact {
 	readRoots = new Set<BaseRoot>()
 	runtimeReadRoots = new Set<BaseRoot>()
 	unitRoots = new Set<BaseRoot>()
+	unitsRead: [rootCount: number, units: RootUnit[]] | undefined
+	writtenRead: [rootCount: number, nodes: BaseNode[]] | undefined
 	// keyed by variant and id, as nodes sharing an id share a unit
 	unitsByHead = new Map<string, RootUnit>()
 	localNamesByUnit = new Map<RootUnit, string>()
 	unit: RootUnit | undefined
 	writing: SharedUnit | undefined
 	// read only with `in`
-	keyLookups = new Set<object>()
-	patternInstances = new Set<RegExp>()
-	defaultsByMorph = new Map<unknown, CollectedDefault>()
+	keyLookups: ReadonlySet<object>
+	patternInstances: ReadonlySet<RegExp>
+	defaultsByMorph: ReadonlyMap<unknown, CollectedDefault>
 	defaultNames = new Map<unknown, string>()
-	objectUnits = new Set<unknown>()
-	metas = new Set<object>()
+	objectUnits: ReadonlySet<unknown>
+	metas: ReadonlySet<object>
 	declarations = createDeclarations()
 	sharedWriters = new Map<string, string>()
 	emitting = new Set<object>()
@@ -1016,23 +1060,22 @@ class StandaloneArtifact {
 			)
 				throwParseError(writeUnprecompilableMessage("onFail"))
 		}
-		for (const unit of this.units) {
-			addIssueFeatures(this.baking.issues, unit)
-			for (const node of writtenNodesOf(unit)) {
-				this.metas.add(node.meta)
-				if (node.hasKind("structure")) this.keyLookups.add(node.propsByKey)
-				else if (node.hasKind("pattern"))
-					this.patternInstances.add(node.instance)
-				else if (node.hasKind("optional") || node.hasKind("sequence"))
-					collectDefaults(node, this.defaultsByMorph)
-				else if (
-					node.hasKind("unit") &&
-					hasDomain(node.unit, "object") &&
-					!isDate(node.unit)
-				)
-					this.objectUnits.add(node.unit)
-			}
+		// what one root's units write is read once for every artifact writing it
+		const [root] = this.unitRoots
+		const units = this.unitRoots.size === 1 ? this.unitsOf(root) : undefined
+		let written = units && writtenByUnits.get(units)
+		if (!written) {
+			written = readWritten(this.units, this.writtenNodes)
+			if (units) writtenByUnits.set(units, written)
 		}
+		let feature: keyof IssueFeatures
+		for (feature in written.issues)
+			if (written.issues[feature]) this.baking.issues[feature] = true
+		this.metas = written.metas
+		this.keyLookups = written.keyLookups
+		this.patternInstances = written.patternInstances
+		this.defaultsByMorph = written.defaultsByMorph
+		this.objectUnits = written.objectUnits
 	}
 
 	get checksAtCreation(): boolean {
@@ -1222,10 +1265,7 @@ class StandaloneArtifact {
 				)
 			}
 			// relate a Module's, Scope's or Generic's classes to ours
-			const related =
-				isType ?
-					[value, ...value.references]
-				:	this.units.flatMap(writtenNodesOf)
+			const related = isType ? [value, ...value.references] : this.writtenNodes
 			const protos = related.flatMap(node =>
 				node.hasKind("proto") ? [node.proto] : []
 			)
@@ -1331,12 +1371,52 @@ class StandaloneArtifact {
 		return this.unitsByHead.get(`${this.variantOf(root)}${root.id}`)!
 	}
 
+	// each node the units write, once: what their roots reference
+	get writtenNodes(): BaseNode[] {
+		if (this.writtenRead?.[0] !== this.unitRoots.size) {
+			const written = new Set<BaseNode>()
+			// roots written with all they reference
+			const covered = new Set<BaseNode>()
+			const cover = (root: BaseRoot) => {
+				if (covered.has(root)) return
+				const reached = reachedFrom(root)
+				for (const node of reached ?? root.references) {
+					written.add(node)
+					if (reached && node.isRoot()) covered.add(node)
+				}
+				covered.add(root)
+			}
+			// the roots units were written for first, as they reach the others
+			for (const root of this.unitRoots) cover(root)
+			for (const unit of this.units) {
+				for (const node of unit.declared) written.add(node)
+				for (const root of unit.roots) cover(root)
+			}
+			this.writtenRead = [this.unitRoots.size, [...written]]
+		}
+		return this.writtenRead[1]
+	}
+
+	// writtenSelectedOf each root's units, as this.units lists them
+	writtenSelected(selects: (node: BaseNode) => boolean): BaseNode[] {
+		return [...this.unitRoots].flatMap(root =>
+			writtenSelectedOf(this.unitsOf(root), selects)
+		)
+	}
+
 	get declared(): BaseNode[] {
 		return this.units.flatMap(unit => unit.declared)
 	}
 
+	// unitRoots only grows
 	get units(): RootUnit[] {
-		return [...new Set([...this.unitRoots].flatMap(root => this.unitsOf(root)))]
+		if (this.unitsRead?.[0] !== this.unitRoots.size) {
+			this.unitsRead = [
+				this.unitRoots.size,
+				[...new Set([...this.unitRoots].flatMap(root => this.unitsOf(root)))]
+			]
+		}
+		return this.unitsRead[1]
 	}
 
 	get comparedValues(): unknown[] {
@@ -1380,10 +1460,8 @@ class StandaloneArtifact {
 			} else if (isPlainLiteral(value))
 				for (const v of Object.values(value)) collect(v)
 		}
-		for (const unit of this.units) {
-			for (const node of writtenNodesOf(unit))
-				for (const v of Object.values(node.meta)) collect(v)
-		}
+		for (const node of this.writtenSelected(holdsObjectMeta))
+			for (const v of Object.values(node.meta)) collect(v)
 		return this.validatorNames.size > typeCount
 	}
 
@@ -1394,12 +1472,10 @@ class StandaloneArtifact {
 			if (!this.validatorNames.has(value)) this.defaultValues.add(value)
 			this.collectType(value)
 		}
-		for (const unit of this.units) {
-			for (const node of writtenNodesOf(unit)) {
-				if (node.hasKind("optional") && node.defaultMorph) collect(node.value)
-				else if (node.hasKind("sequence"))
-					for (const [value] of node.defaultables ?? []) collect(value)
-			}
+		for (const node of this.writtenSelected(holdsDefaults)) {
+			if (node.hasKind("optional") && node.defaultMorph) collect(node.value)
+			else if (node.hasKind("sequence"))
+				for (const [value] of node.defaultables ?? []) collect(value)
 		}
 		return this.validatorNames.size > typeCount
 	}
@@ -3688,11 +3764,67 @@ const isSharedUnit = (unit: RootUnit): boolean => {
 	return shared
 }
 
-// includes nodes a parent checks inline
-export const writtenNodesOf = (unit: RootUnit): BaseNode[] => [
-	...unit.declared,
-	...unit.roots.flatMap(root => root.references)
-]
+const reachedByRoot = new WeakMap<BaseRoot, readonly BaseNode[] | null>()
+
+// the nodes a root references, as refsById holds them, read through each
+// node's children and other references, so what reaches a node many others
+// do needn't copy its refsById. Null where an alias can close a cycle or
+// replace a node sharing its id
+const reachedFrom = (root: BaseRoot): readonly BaseNode[] | null => {
+	let reached = reachedByRoot.get(root)
+	if (reached === undefined) {
+		const nodes = new Set<BaseNode>()
+		const stack: BaseNode[] = [root]
+		while (stack.length) {
+			const node = stack.pop()!
+			if (nodes.has(node)) continue
+			if (node.includesAlias) {
+				nodes.clear()
+				break
+			}
+			nodes.add(node)
+			stack.push(...node.children, ...node.otherReferences)
+		}
+		reached = nodes.size ? [...nodes] : null
+		reachedByRoot.set(root, reached)
+	}
+	return reached
+}
+
+const selectedByUnits = new WeakMap<
+	readonly RootUnit[],
+	Map<(node: BaseNode) => boolean, BaseNode[]>
+>()
+
+// what a root's units write that a predicate selects, in order: each unit's
+// declared nodes, then its roots' references, which a parent checks inline
+export const writtenSelectedOf = (
+	units: readonly RootUnit[],
+	selects: (node: BaseNode) => boolean
+): readonly BaseNode[] => {
+	let byPredicate = selectedByUnits.get(units)
+	if (!byPredicate) selectedByUnits.set(units, (byPredicate = new Map()))
+	let selected = byPredicate.get(selects)
+	if (!selected) {
+		selected = []
+		for (const unit of units) {
+			for (const node of unit.declared) if (selects(node)) selected.push(node)
+			for (const root of unit.roots)
+				for (const node of root.selectReferences(selects)) selected.push(node)
+		}
+		byPredicate.set(selects, selected)
+	}
+	return selected
+}
+
+// a meta holding an object, which can hold a Type
+const holdsObjectMeta = (node: BaseNode): boolean =>
+	Object.values(node.meta).some(v => hasDomain(v, "object"))
+
+export const holdsDefaults = (node: BaseNode): boolean =>
+	node.hasKind("optional") ?
+		!!node.defaultMorph
+	:	node.hasKind("sequence") && !!node.defaultables?.length
 
 export const declares = (
 	root: BaseRoot,

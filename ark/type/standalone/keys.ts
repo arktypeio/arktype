@@ -3,6 +3,7 @@ import {
 	isNode,
 	LazyGenericRoot,
 	madeMorphs,
+	type BaseNode,
 	type BaseRoot,
 	type BaseScope
 } from "@ark/schema"
@@ -22,8 +23,9 @@ import {
 	collectDefaults,
 	isHole,
 	isPlainLiteral,
+	holdsDefaults,
 	runtimeKeyOf,
-	writtenNodesOf,
+	writtenSelectedOf,
 	type CollectedDefault,
 	type Foldable
 } from "../standalone.ts"
@@ -64,13 +66,10 @@ const rootKeyOf = (root: BaseRoot, isScoped = true): Key => {
 	const defaultsByMorph = new Map<unknown, CollectedDefault>()
 	// held so a codec's validator can be encoded where it's received
 	const inverses: unknown[] = []
-	for (const unit of units) {
-		for (const node of writtenNodesOf(unit)) {
-			if (node.hasKind("optional") || node.hasKind("sequence"))
-				collectDefaults(node, defaultsByMorph)
-			else if (node.hasKind("morph") && node.inverse)
-				inverses.push(node.inverse)
-		}
+	for (const node of writtenSelectedOf(units, isKeyedBehavior)) {
+		if (node.hasKind("optional") || node.hasKind("sequence"))
+			collectDefaults(node, defaultsByMorph)
+		else if (node.hasKind("morph") && node.inverse) inverses.push(node.inverse)
 	}
 	// add each function or object's kind and repeat positions
 	return encodeKey(
@@ -85,6 +84,10 @@ const rootKeyOf = (root: BaseRoot, isScoped = true): Key => {
 		defaultsByMorph
 	)
 }
+
+// a default or a codec's inverse, each part of a key
+const isKeyedBehavior = (node: BaseNode): boolean =>
+	holdsDefaults(node) || (node.hasKind("morph") && !!node.inverse)
 
 // equal keys differ only in which functions they hold
 export const encodeKey = (
