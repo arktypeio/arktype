@@ -132,7 +132,7 @@ const Event = type({ kind: "'a'", x: "number" }).or({
 
 A default build writes each Type's checks as small functions calling each other, which V8 inlines as it runs them. terser, webpack's default minifier, and swc, Next.js's, write a function called once into its caller, as a closure created at each call or a module variable, either of which runs slower. So the build annotates each such call `/* @__NOINLINE__ */`, which both honor and every minifier drops from its output. Minified by either, validators run as fast as unminified, and the functions they keep cost some bytes, most in a large app minified by swc. esbuild and oxc don't inline them. A build for size calls the runtime's checkers instead, and writes no annotation.
 
-Rolldown, which Vite 8 bundles with, keeps only `@__PURE__`, `@__NO_SIDE_EFFECTS__` and `@vite-ignore` comments, so a terser pass after it never sees the annotations. A Vite build with `build.minify: "terser"` inlines the functions, and its validators run slower: on the shop app of ArkType's benchmarks, 6 to 8% more instructions per valid call. Keep Vite's default minifier, oxc, or use esbuild:
+Rolldown, which Vite 8 bundles with, keeps only `@__PURE__`, `@__NO_SIDE_EFFECTS__` and `@vite-ignore` comments, so a terser pass after it never sees the annotations. A Vite build with `build.minify: "terser"` inlines the functions, so its validators run slower. Keep Vite's default minifier, oxc, or use esbuild:
 
 ```ts title="vite.config.ts"
 // @noErrors
