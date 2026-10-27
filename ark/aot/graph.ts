@@ -1447,6 +1447,21 @@ export class ModuleGraph {
 			}
 			case "TSArrayType":
 				return union([type.elementType], depth + 1)
+			// e.g. data for `(typeof names)[number]` or `Options["mode"]`, given
+			// `names` or `Options` is, but not `Parameters<typeof f>[0]`, which
+			// isn't a member of what it's passed
+			case "TSIndexedAccessType": {
+				const object = type.objectType
+				if (
+					object.type !== "TSTypeQuery" &&
+					(object.type !== "TSTypeReference" || object.typeArguments)
+				)
+					return
+				const kind = this.typeKindOf(object, context, module, kindOfKey, depth)
+				return kind === undefined || isArk(kind) ?
+						undefined
+					:	memberKindOf(kind, undefined)
+			}
 			case "TSTypeLiteral":
 				return signaturesKindOf(type.members)
 			case "TSTypeQuery": {
@@ -1819,17 +1834,31 @@ export class ModuleGraph {
 		kindOfKey: KindOfKey
 	): KindBits {
 		if (fn.generator || !fn.body) return kinds.data
-		// e.g. a Type from `await load()`, which the build doesn't follow
-		const settled = (kind: KindBits) => (fn.async ? lostOf(kind) : kind)
-		if (fn.body.type !== "BlockStatement")
-			return settled(this.transfer(fn.body, module, kindOfKey))
-		const statements = fn.body.body
+		const returned = this.returnedKindIn(fn.body, module, kindOfKey)
+		return annotate(
+			// e.g. a Type from `await load()`, which the build doesn't follow
+			fn.async ? lostOf(returned) : returned,
+			// e.g. data for `(): Promise<{ id: string }>`, as for a parameter
+			fn.returnType ?
+				this.typeKindOf(fn.returnType, fn, module, kindOfKey)
+			:	undefined
+		)
+	}
+
+	private returnedKindIn(
+		body: NonNullable<FunctionNode["body"]>,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits {
+		if (body.type !== "BlockStatement")
+			return this.transfer(body, module, kindOfKey)
+		const statements = body.body
 		// one that can end without a return statement returns undefined
 		let result =
 			statements[statements.length - 1]?.type === "ReturnStatement" ?
 				0
 			:	kinds.data
-		walk(fn.body, node => {
+		walk(body, node => {
 			if (isFunctionNode(node)) return false
 			if (node.type === "ReturnStatement") {
 				result |=
@@ -1839,7 +1868,7 @@ export class ModuleGraph {
 			}
 			return true
 		})
-		return settled(result)
+		return result
 	}
 
 	private targetKindOf(

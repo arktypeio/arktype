@@ -496,6 +496,38 @@ export function piped(ctx: any) {
 			).equals([])
 		})
 
+		it("reads off what a method declares it returns", () => {
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+import { service } from "./service.ts"
+export const T = type("string")
+export const created = async () => {
+	const result = await service.create()
+	return \`/projects/\${result.id}\`
+}`,
+					{
+						"/service.ts": `import { randomUUID } from "node:crypto"
+export const service = new (class {
+	async create(): Promise<{ id: string }> {
+		return { id: randomUUID() }
+	}
+})()`
+					}
+				)
+			).equals([])
+		})
+
+		it("reads off a member typed as an element of a const array", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+export const T = type("string")
+const metrics = ["LCP", "INP"] as const
+export type Summary = { metric: (typeof metrics)[number]; detail: unknown }
+export const describe = (summary: Summary) => \`\${summary.metric}\``)
+			).equals([])
+		})
+
 		it("reads off a type literal with an unknown member", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"
