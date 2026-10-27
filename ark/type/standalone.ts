@@ -2736,7 +2736,7 @@ ${writeFunction(
 				root,
 				node =>
 					node.hasKind("union") &&
-					!node.discriminantJit &&
+					!node.discriminant &&
 					!isDecidedByAllows(node)
 			) &&
 			// errors count their issues, not a branch's
@@ -2778,7 +2778,7 @@ ${writeFunction(
 			(strategy === "allows" ||
 				(strategy === "transform" &&
 					!root.includesMorph &&
-					!(root.hasKind("union") && !root.discriminantJit)))
+					!(root.hasKind("union") && !root.discriminant)))
 		// a checker transforms by its t, so each is created alike
 		const checks = isChecker(root, this.variantOf(root))
 		const transforms = strategy === "transform" && !checks
@@ -2910,7 +2910,7 @@ ${writeFunction(
 		const transforms = root.transforms
 		// an undiscriminated union transforms what a branch allows, else unset
 		const selects =
-			strategy === "transform" && root.hasKind("union") && !root.discriminantJit
+			strategy === "transform" && root.hasKind("union") && !root.discriminant
 		const captures = strategy === "transform" && root.includesMorph
 		// a transform through a cycle, resolved from the root's shape
 		const resolves = strategy === "contextualTransform" && root.includesAlias

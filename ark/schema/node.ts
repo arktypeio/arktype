@@ -860,7 +860,7 @@ export abstract class BaseNode<
 						)
 					)
 						return this.createOptimisticRootApply(runtime)
-					if (this.hasKind("union") && !this.discriminantJit) {
+					if (this.hasKind("union") && !this.discriminant) {
 						return (data, onFail = this.onFail) => {
 							const ctx = new Traversal(data, this.$.resolvedConfig)
 							const result = transform(ctx, this, data)

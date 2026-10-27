@@ -232,7 +232,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 	// an indiscriminable union picks the branch it transforms by its Allows
 	protected override get selectsByCtx(): boolean {
-		const discriminant = this.discriminantJit
+		const discriminant = this.discriminant
 		if (!discriminant) return true
 		for (const k in discriminant.cases) {
 			const caseNode = discriminant.cases[k]
@@ -254,7 +254,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 	// uncompiled checks don't discriminate
 	private get foundDiscriminant(): Discriminant | null {
-		return this._discriminant === undefined ? null : this.discriminantJit
+		return this._discriminant === undefined ? null : this.discriminant
 	}
 
 	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
@@ -274,7 +274,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	traverseApply(data: unknown, ctx: InternalTraversal): void {
-		const discriminant = this.discriminantJit
+		const discriminant = this.discriminant
 		if (discriminant) {
 			const value = valueAtPath(discriminant.path, data)
 			const k = caseKeyOf(discriminant, value)
@@ -395,17 +395,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return this.transformNeedsCtx ? data : unset
 	}
 
-	get discriminantJit(): Discriminant | null {
-		// if we have a union of two units like `boolean`, the
-		// undiscriminated compilation will be just as fast
-		return (
-				this.unitBranches.length === this.branches.length &&
-					this.branches.length === 2
-			) ?
-				null
-			:	this.discriminant
-	}
-
 	compileCondition(js: NodeCompiler, data: string): string | undefined {
 		if (this.branches.length > maxInlinedBranches) return
 		const conditions: string[] = []
@@ -418,7 +407,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	compile(js: NodeCompiler): void {
-		const discriminant = this.discriminantJit
+		const discriminant = this.discriminant
 		if (!discriminant) return this.compileIndiscriminable(js)
 		// two branches of different domains are checked in turn, a unit first,
 		// which is cheaper than finding data's domain

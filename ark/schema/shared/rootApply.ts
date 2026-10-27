@@ -104,7 +104,7 @@ export const rootApplyParts = (
 				.const("result", "traverseTransform(data, ctx)")
 		}
 		js.return(`ctx.hasError() ? ctx.finalize(${handler}) : result`)
-	} else if (node.hasKind("union") && !node.discriminantJit) {
+	} else if (node.hasKind("union") && !node.discriminant) {
 		js.const("result", "traverseTransform(data)").if(
 			`result === ${JSON.stringify(unset)}`,
 			fallback

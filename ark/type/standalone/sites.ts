@@ -93,8 +93,7 @@ const readRaisableCodes = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 			if (site.m) codes.add(site.m.code)
 		}
 		for (const node of unit.declared) {
-			if (node.hasKind("union") && node.discriminantJit)
-				codes.add("discriminant")
+			if (node.hasKind("union") && node.discriminant) codes.add("discriminant")
 			else if (node.hasKind("structure") && node.undeclared === "reject")
 				codes.add("undeclared")
 		}

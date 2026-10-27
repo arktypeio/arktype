@@ -489,8 +489,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		// transforming values are checked by Allows first
 		const checksAllowsFirst =
 			node.transforms ||
-			((this.loopDepth > 0 ||
-				(node.hasKind("union") && !node.discriminantJit)) &&
+			((this.loopDepth > 0 || (node.hasKind("union") && !node.discriminant)) &&
 				isDecidedByAllows(node))
 		const condition =
 			node.hasKind("union") && !checksAllowsFirst ?

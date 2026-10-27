@@ -191,7 +191,7 @@ export const unit = ((
 ): Checker => check("unit", description, data => data === value)) satisfies Fn
 
 export const booleanChecker: Checker = /* @__PURE__ */ check(
-	"union",
+	"discriminant",
 	"boolean",
 	data => typeof data === "boolean"
 )
