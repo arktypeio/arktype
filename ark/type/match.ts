@@ -290,7 +290,7 @@ type finalizeMatchParser<
 		Match<ctx["input"], ctx["cases"]>
 	:	never
 
-export interface Match<In = any, cases extends Morph[] = Morph[]>
+export interface Match<in out In = any, in out cases extends Morph[] = Morph[]>
 	extends Inferred<
 		(In: Morph.In<cases[number]>) => Out<ReturnType<cases[number]>>
 	> {

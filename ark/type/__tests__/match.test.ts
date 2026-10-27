@@ -964,4 +964,15 @@ contextualize(() => {
 	[(In: Data) => string, (In: Data) => number]
 >`)
 	})
+
+	it("matchers of different inputs in an array", () => {
+		const fromString = match({ string: s => s.length, default: "assert" })
+		const fromNumber = match({ number: n => n, default: "assert" })
+		// relating the two Match types structurally compared their call
+		// signatures' isDisjoint results with data still generic, which was
+		// excessively deep (2.5M instantiations); their variance is annotated
+		const matchers = [fromString, fromNumber]
+		attest<(typeof fromString | typeof fromNumber)[]>(matchers)
+		attest(matchers.length).equals(2)
+	})
 })
