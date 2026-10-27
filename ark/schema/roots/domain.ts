@@ -48,16 +48,22 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 			numberAllowsNaN: {},
 			numberAllowsInfinity: {}
 		},
+		// an option is false unless set, which it need not be where config agrees,
+		// so equal domains share an inner
 		applyConfig: (inner, config) => {
 			if (inner.domain !== "number") return inner
-			if (inner.numberAllowsNaN === undefined && config.numberAllowsNaN)
-				inner = { ...inner, numberAllowsNaN: true }
-			if (
-				inner.numberAllowsInfinity === undefined &&
-				config.numberAllowsInfinity
-			)
-				inner = { ...inner, numberAllowsInfinity: true }
-			return inner
+			const { numberAllowsNaN, numberAllowsInfinity, ...rest } = inner
+			const allowsNaN = numberAllowsNaN ?? config.numberAllowsNaN
+			const allowsInfinity = numberAllowsInfinity ?? config.numberAllowsInfinity
+			return {
+				...rest,
+				...((allowsNaN || config.numberAllowsNaN) && {
+					numberAllowsNaN: allowsNaN
+				}),
+				...((allowsInfinity || config.numberAllowsInfinity) && {
+					numberAllowsInfinity: allowsInfinity
+				})
+			}
 		},
 		defaults: {
 			description: node => domainDescriptions[node.domain]

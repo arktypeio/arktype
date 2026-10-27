@@ -84,6 +84,10 @@ A second right bound throws `Expression number must have at most one right bound
 
 Thanks to @jkugsiya for #1692.
 
+### Leave out a number or Date option config already sets
+
+A `domain` schema's `numberAllowsNaN` or `numberAllowsInfinity`, or a `Date` `proto`'s `dateAllowsInvalid`, set to `false` where config leaves it `false` is left out, as it is when unset, so the two are equal. `number.safe`, which set `numberAllowsNaN: false`, now equals `-9007199254740991 <= number <= 9007199254740991`, and its `json` no longer lists the option.
+
 ### Merge unions of connected ranges
 
 Branches alike but for their range are one range when the ranges overlap or meet, as #751 asked: `1 < number < 10 | 10 <= number < 100` is `1 < number < 100`, `2 <= string <= 4 | 5 <= string <= 8` is `2 <= string <= 8`, and a unit at a bound joins it, so `number < 5 | number == 5` is `number <= 5`. Bounds covering every value are the basis alone: `number > 0 | number < 5` is `number` and `string >= 3 | string <= 2` is `string`. Ranges one value apart are their union excluding it, like `0 < number < 5 | 5 < number < 10`, which is `0 < (number != 5) < 10`, and wider gaps stay a union, as do branches with different descriptions or messages. A basis allowing `NaN` or invalid Dates, which every bound rejects, keeps the union.
