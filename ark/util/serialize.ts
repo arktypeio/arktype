@@ -88,7 +88,7 @@ export const printable = (data: unknown, opts?: PrintableOptions): string => {
 							_serialize(o, serializationOpts, []),
 							null,
 							opts?.indent
-						).replace(quotedBigIntMarker, "$1")
+						).replace(quotedMarkedValue, "$1")
 				:	stringifyUnquoted(o, opts?.indent ?? 0, "", serializationOpts)
 			)
 		case "symbol":
@@ -155,13 +155,17 @@ const stringifyUnquoted = (
 export const printSymbol = (symbol: symbol): string =>
 	`Symbol(${baseNameOfSymbol(symbol)})`
 
+// private use character that JSON.stringify leaves unescaped
+const unquotedMarker = "\uE000"
+
 const printableOpts = {
 	onCycle: () => "(cycle)",
 	onSymbol: printSymbol,
 	onFunction: v => `Function(${baseNameOf(v)})`,
-	// prefix bigints with a marker so printable can strip the quotes
-	// JSON.stringify adds, e.g. [1n] rather than ["1n"]
-	onBigInt: n => `${bigIntMarker}${n}n`
+	// prefix bigints and undefined with a marker so printable can strip the
+	// quotes JSON.stringify adds, e.g. [1n, undefined] not ["1n", "undefined"]
+	onBigInt: n => `${unquotedMarker}${n}n`,
+	onUndefined: `${unquotedMarker}undefined`
 } satisfies SerializationOptions
 
 const ownDataPrintableOpts = /* @__PURE__ */ Object.assign({}, printableOpts, {
@@ -169,10 +173,10 @@ const ownDataPrintableOpts = /* @__PURE__ */ Object.assign({}, printableOpts, {
 		descriptor.get ? "(getter)" : "(setter)"
 }) satisfies SerializationOptions
 
-// private use character that JSON.stringify leaves unescaped
-const bigIntMarker = "\uE000"
-
-const quotedBigIntMarker = /"\uE000(-?\d+n)"/g
+const quotedMarkedValue = new RegExp(
+	`"${unquotedMarker}(-?\\d+n|undefined)"`,
+	"g"
+)
 
 const _serialize = (
 	data: unknown,
