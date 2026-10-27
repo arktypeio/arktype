@@ -250,6 +250,19 @@ b must be A (was "y")`)
 		attest(Object.entries(original)).equals([["b", 1]])
 	})
 
+	it("transforms an object with its own toString tag in place", () => {
+		class PlainDate {
+			a = " x "
+			get [Symbol.toStringTag]() {
+				return "Temporal.PlainDate"
+			}
+		}
+		const T = type([type.instanceOf(PlainDate), "&", { a: "string.trim" }])
+		const original = new PlainDate()
+		attest(T.assert(original)).is(original)
+		attest(original.a).equals("x")
+	})
+
 	it("throws transforming a frozen builtin", () => {
 		const T = type(["Date", "&", { "a?": "string.trim" }])
 		const original = Object.freeze(Object.assign(new Date(5), { a: " x " }))

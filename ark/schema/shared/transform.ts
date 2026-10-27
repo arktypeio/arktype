@@ -1,10 +1,4 @@
-import {
-	defineValue,
-	hasDomain,
-	hasOwn,
-	isArray,
-	objectKindOf
-} from "@ark/util"
+import { defineValue, hasDomain, hasOwn, isArray } from "@ark/util"
 import type { BaseNode, RootApply } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import { arrayIndexMatcher } from "../structure/shared.ts"
@@ -88,8 +82,10 @@ export const copyOf = (data: object): object => {
 	}
 	const prototype = Object.getPrototypeOf(data)
 	if (prototype === Object.prototype) return { ...data }
-	// a builtin keeps state in internal slots, so it's written in place
-	return objectKindOf(data) === undefined ?
+	// a builtin keeps state in internal slots, so it's written in place. Each
+	// has its own toString tag, as does a host object, where a class instance
+	// is tagged Object
+	return Object.prototype.toString.call(data) === "[object Object]" ?
 			Object.setPrototypeOf({ ...data }, prototype)
 		:	data
 }
