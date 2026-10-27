@@ -2,7 +2,8 @@ import { bench } from "@ark/attest"
 import { match, type } from "arktype"
 
 bench.baseline(() => {
-	type("never")
+	// resolve the keywords the benches use, as any program's first Type would
+	type("never | string | number | boolean | symbol | object")
 	match.case("never", () => {}).default("assert")
 	match({
 		never: () => {},
@@ -45,7 +46,7 @@ bench("match.in<t> cases define and invoke", () => {
 	const one = matcher(4)
 	const two = matcher(true)
 	return [zero, one, two]
-}).types([2414, "instantiations"])
+}).types([2736, "instantiations"])
 
 bench("record(3, define)", () =>
 	match({
@@ -54,7 +55,7 @@ bench("record(3, define)", () =>
 		"22": n => `${n}` as const,
 		default: "assert"
 	})
-).types([2019, "instantiations"])
+).types([2001, "instantiations"])
 
 bench("record(10, define)", () =>
 	match({
@@ -70,7 +71,7 @@ bench("record(10, define)", () =>
 		"-9n": n => `${n}` as const,
 		default: "assert"
 	})
-).types([5302, "instantiations"])
+).types([5284, "instantiations"])
 
 bench("record.in<t> define and invoke", () => {
 	const matcher = match.in<string | number | boolean>().match({
@@ -84,7 +85,7 @@ bench("record.in<t> define and invoke", () => {
 	const one = matcher(4)
 	const two = matcher(true)
 	return [zero, one, two]
-}).types([3315, "instantiations"])
+}).types([2684, "instantiations"])
 
 const invokedCases3 = match
 	.case("31", n => `${n}` as const)
