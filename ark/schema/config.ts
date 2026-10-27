@@ -39,7 +39,8 @@ import { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
 export interface ArkSchemaRegistry extends ArkRegistry {
-	intrinsic: typeof intrinsic
+	/** the intrinsic nodes keywords are built from, like `unknown` and `string` */
+	kw: typeof intrinsic
 	config: ArkSchemaConfig
 	defaultConfig: ResolvedConfig
 	cfg?: ResolvedConfig

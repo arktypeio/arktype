@@ -196,7 +196,7 @@ Resolution: ${printable(resolution)}`)
 				let io = ioOf(this.resolution, ioKind)
 				while (io.is("alias") && io.operator === operator) {
 					const aliased = io.operands![0] as AliasNode
-					if (aliases.includes(aliased)) return $ark.intrinsic.never.internal
+					if (aliases.includes(aliased)) return $ark.kw.never.internal
 					aliases.push(aliased)
 					io = ioOf(aliased.resolution, ioKind)
 				}

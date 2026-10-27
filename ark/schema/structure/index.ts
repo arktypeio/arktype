@@ -72,7 +72,7 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 	})
 
 export class IndexNode extends BaseConstraint<Index.Declaration> {
-	implied: BaseRoot = $ark.intrinsic.object.internal
+	implied: BaseRoot = $ark.kw.object.internal
 	get expression(): string {
 		return (this.cache.expression ??= composing(
 			() => `[${this.signature.expression}]: ${elided(this.value.expression)}`
@@ -84,10 +84,10 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 		const key = this.signature
 		// checked by equality first so intrinsic json parses without a set engine
 		if (
-			!key.equals($ark.intrinsic.string) &&
-			!key.equals($ark.intrinsic.symbol) &&
-			!key.equals($ark.intrinsic.key) &&
-			!key.extends($ark.intrinsic.key)
+			!key.equals($ark.kw.string) &&
+			!key.equals($ark.kw.symbol) &&
+			!key.equals($ark.kw.key) &&
+			!key.extends($ark.kw.key)
 		)
 			throwParseError(writeInvalidPropertyKeyMessage(key.expression))
 		const enumerableBranches = key.branches.filter(b => b.is("unit"))

@@ -40,7 +40,7 @@ contextualize(() => {
 	})
 
 	it("boolean", () => {
-		attest(toJsonSchema($ark.intrinsic.boolean)).snap({
+		attest(toJsonSchema($ark.kw.boolean)).snap({
 			type: "boolean"
 		})
 	})
@@ -149,7 +149,7 @@ contextualize(() => {
 
 	it("cyclic", () => {
 		// JSON Schema can't require a plain object
-		const schema = toJsonSchema($ark.intrinsic.jsonObject, {
+		const schema = toJsonSchema($ark.kw.jsonObject, {
 			fallback: { predicate: ctx => ctx.base }
 		})
 

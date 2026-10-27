@@ -47,7 +47,7 @@ const encoderOf = (node: BaseRoot): BaseRoot =>
 	) as never
 
 const invert = (inner: Morph.Inner, $: BaseScope): BaseRoot => {
-	let encoder = inner.declaredOut ?? $ark.intrinsic.unknown.internal
+	let encoder = inner.declaredOut ?? $ark.kw.unknown.internal
 	// an inverse inverts the one function among its node's morphs
 	let inverse = inner.inverse
 	// a node first is the input, which the encoder ends by piping to

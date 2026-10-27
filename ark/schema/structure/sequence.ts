@@ -183,7 +183,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		this.ctxMorph ||= this.defMorphs.some(morph => morph.length === 2)
 	}
 
-	implied: BaseRoot = $ark.intrinsic.Array.internal
+	implied: BaseRoot = $ark.kw.Array.internal
 
 	tuple: SequenceTuple = sequenceInnerToTuple(this.inner)
 
@@ -220,7 +220,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			...this.trail.flatMap(element =>
 				// a postfix index can't be directly represented as a type
 				// key, so we just use the same matcher for variadic
-				flatRefsAt($ark.intrinsic.nonNegativeIntegerString.internal, element)
+				flatRefsAt($ark.kw.nonNegativeIntegerString.internal, element)
 			)
 		])
 		this.cache.flatMorphs = []
@@ -437,7 +437,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
 	): BaseNode | null {
-		ctx.path.push($ark.intrinsic.nonNegativeIntegerString.internal)
+		ctx.path.push($ark.kw.nonNegativeIntegerString.internal)
 		const result = super._tf(mapper, ctx)
 		ctx.path.pop()
 		return result

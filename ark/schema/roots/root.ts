@@ -237,7 +237,7 @@ export abstract class BaseRoot<
 		if (this._keyof) return this._keyof
 		const result = this.applyStruct("keyof", []).reduce(
 			(result, branch) => result.intersect(branch).toNeverIfDisjoint(),
-			$ark.intrinsic.unknown.internal
+			$ark.kw.unknown.internal
 		)
 
 		if (result.branches.length === 0) {
@@ -286,7 +286,7 @@ export abstract class BaseRoot<
 	): StructuralOperationBranchResultByName[operation][] {
 		return this.distribute(branch => {
 			if (
-				branch.equals($ark.intrinsic.object) &&
+				branch.equals($ark.kw.object) &&
 				operation !== "merge" &&
 				operation !== "props"
 			)
@@ -549,7 +549,7 @@ export abstract class BaseRoot<
 			return throwInvalidOperandError(
 				kind,
 				// a predicate implies no basis, but can't constrain a morph either
-				(constraint.implied ?? $ark.intrinsic.unknown.internal) as never,
+				(constraint.implied ?? $ark.kw.unknown.internal) as never,
 				this as never
 			)
 		}
@@ -773,13 +773,13 @@ const structureOf = (branch: Union.ChildNode): Structure.Node | null => {
 		return (
 			branch.inner.structure ??
 			(branch.basis?.domain === "object" ?
-				branch.$.bindRef($ark.intrinsic.emptyStructure)
+				branch.$.bindRef($ark.kw.emptyStructure)
 			:	null)
 		)
 	}
 
 	if (branch.isBasis() && branch.domain === "object")
-		return branch.$.bindRef($ark.intrinsic.emptyStructure)
+		return branch.$.bindRef($ark.kw.emptyStructure)
 
 	return null
 }

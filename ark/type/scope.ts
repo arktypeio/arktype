@@ -310,7 +310,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		)
 	}
 
-	protected normalizeScopeValue(resolution: unknown): unknown {
+	protected normValue(resolution: unknown): unknown {
 		if (isThunk(resolution) && !hasArkKind(resolution, "generic"))
 			return resolution()
 		return resolution

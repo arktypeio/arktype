@@ -58,7 +58,7 @@ const intersectPropsAndIndex = <
 		return kind === "optional" ?
 				($.node(
 					"optional",
-					{ key: l.key, value: $ark.intrinsic.never.internal },
+					{ key: l.key, value: $ark.kw.never.internal },
 					{ prereduced: true }
 				) as l)
 				// optional, since an index signature doesn't require the key
@@ -80,9 +80,9 @@ const propertyOf = (key: Key): Key =>
 const allowedKeysOf = (node: Structure.Node): BaseRoot => {
 	let keys = node.keyof()
 	if (node.sequence)
-		keys = keys.rawOr($ark.intrinsic.nonNegativeIntegerString.internal)
+		keys = keys.rawOr($ark.kw.nonNegativeIntegerString.internal)
 	return node.undeclared === "reject" ?
-			keys.rawOr($ark.intrinsic.symbol.internal)
+			keys.rawOr($ark.kw.symbol.internal)
 		:	keys
 }
 
@@ -96,8 +96,7 @@ const allowedIndexCountOf = (
 	keys: BaseRoot,
 	sequence: nodeOfKind<"sequence">
 ): number | null => {
-	if ($ark.intrinsic.nonNegativeIntegerString.internal.extends(keys))
-		return null
+	if ($ark.kw.nonNegativeIntegerString.internal.extends(keys)) return null
 	const max = Math.min(
 		sequence.maxLength ?? maxCountedIndices,
 		maxCountedIndices
@@ -146,7 +145,7 @@ const narrowToKeysOf = (
 		const sequence = other.sequence!
 		if (sequence.minLength > count) {
 			const value = requiredElementAt(sequence, count)
-			const never = $ark.intrinsic.never.internal
+			const never = $ark.kw.never.internal
 			disjoint.push(
 				...Disjoint.init(
 					"presence",
@@ -159,7 +158,7 @@ const narrowToKeysOf = (
 		// mistake for a discriminant of node, which needn't be an array
 		else if (count === 0) {
 			otherInner.sequence = $.node("sequence", {
-				variadic: $ark.intrinsic.never.internal
+				variadic: $ark.kw.never.internal
 			})
 		} else {
 			roots.push(
@@ -174,7 +173,7 @@ const narrowToKeysOf = (
 	for (const k of other.requiredKeys) {
 		if (keys.allowsUnused(k)) continue
 		const value = other.propsByKey[k]!.value
-		const never = $ark.intrinsic.never.internal
+		const never = $ark.kw.never.internal
 		disjoint.add("presence", isLeft ? never : value, isLeft ? value : never, {
 			path: [k],
 			undeclared: node.handlesUndeclared

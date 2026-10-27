@@ -89,7 +89,7 @@ const shiftComparator = (
 	s: RuntimeState,
 	start: ComparatorStartChar
 ): Comparator =>
-	s.scanner.lookaheadIs("=") ? `${start}${s.scanner.shift()}`
+	s.sc.peekIs("=") ? `${start}${s.sc.shift()}`
 	: start === "!" ? s.error(writeUnexpectedCharacterMessage(start))
 	: (start as OneCharComparator)
 
@@ -112,7 +112,7 @@ export const getBoundKinds = (
 	root: BaseRoot,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
-	if (root.extends($ark.intrinsic.number)) {
+	if (root.extends($ark.kw.number)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
 				writeInvalidLimitMessage(comparator, limit, boundKind)
@@ -126,7 +126,7 @@ export const getBoundKinds = (
 		)
 	}
 
-	if (root.extends($ark.intrinsic.lengthBoundable)) {
+	if (root.extends($ark.kw.lengthBoundable)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
 				writeInvalidLimitMessage(comparator, limit, boundKind)
@@ -139,7 +139,7 @@ export const getBoundKinds = (
 			: ["maxLength"]
 		)
 	}
-	if (root.extends($ark.intrinsic.Date)) {
+	if (root.extends($ark.kw.Date)) {
 		// allow either numeric or date limits
 		return (
 			comparator === "==" ? ["after", "before"]
@@ -152,20 +152,20 @@ export const getBoundKinds = (
 }
 
 const openLeftBoundToRoot = (
-	leftBound: OpenLeftBound
+	lBound: OpenLeftBound
 ): Constraint.Schema<BoundKind> => ({
 	rule:
-		isDateLiteral(leftBound.limit) ?
-			extractDateLiteralSource(leftBound.limit)
-		:	leftBound.limit,
-	exclusive: leftBound.comparator.length === 1
+		isDateLiteral(lBound.limit) ?
+			extractDateLiteralSource(lBound.limit)
+		:	lBound.limit,
+	exclusive: lBound.comparator.length === 1
 })
 
 export const parseRightBound = (
 	s: RootedRuntimeState,
 	comparator: Comparator
 ): void => {
-	if (s.scanner.unscanned.trimStart() === "")
+	if (s.sc.unscanned.trimStart() === "")
 		return s.error(writeMissingRightOperandMessage(comparator))
 	// store the node that will be bounded
 	const previousRoot = s.unsetRoot()
@@ -174,15 +174,12 @@ export const parseRightBound = (
 			writeDoubleRightBoundMessage(s.rightBounded.operand.expression)
 		)
 	}
-	const previousScannerIndex = s.scanner.location
+	const previousScannerIndex = s.sc.location
 	s.parseOperand()
 	const limitNode = s.unsetRoot()
 	// after parsing the next operand, use the locations to get the
 	// token from which it was parsed
-	const limitToken = s.scanner.sliceChars(
-		previousScannerIndex,
-		s.scanner.location
-	)
+	const limitToken = s.sc.sliceChars(previousScannerIndex, s.sc.location)
 	s.root = previousRoot
 	if (
 		!limitNode.is("unit") ||
@@ -206,7 +203,7 @@ export const parseRightBound = (
 		(
 			comparator === "!=" &&
 			typeof limit === "number" &&
-			previousRoot.extends($ark.intrinsic.Date)
+			previousRoot.extends($ark.kw.Date)
 		) ?
 			new Date(limit)
 		:	limit
@@ -214,7 +211,7 @@ export const parseRightBound = (
 	for (const kind of boundKinds)
 		s.constrainRoot(kind, comparator === "==" ? { rule } : { rule, exclusive })
 
-	if (!s.branches.leftBound) {
+	if (!s.branches.lBound) {
 		s.rightBounded = { root: s.root, operand: previousRoot }
 		return
 	}
@@ -224,13 +221,13 @@ export const parseRightBound = (
 		return s.error(writeUnpairableComparatorMessage(comparator))
 
 	const lowerBoundKind = getBoundKinds(
-		s.branches.leftBound.comparator,
-		s.branches.leftBound.limit,
+		s.branches.lBound.comparator,
+		s.branches.lBound.limit,
 		previousRoot,
 		"left"
 	)
-	s.constrainRoot(lowerBoundKind[0], openLeftBoundToRoot(s.branches.leftBound))
-	s.branches.leftBound = null
+	s.constrainRoot(lowerBoundKind[0], openLeftBoundToRoot(s.branches.lBound))
+	s.branches.lBound = null
 	s.rightBounded = { root: s.root, operand: previousRoot }
 }
 
@@ -246,12 +243,12 @@ export type parseRightBound<
 		nextState["root"] extends (
 			InferredAst<unknown, `${infer limit extends number | DateLiteral}`>
 		) ?
-			s["branches"]["leftBound"] extends {} ?
+			s["branches"]["lBound"] extends {} ?
 				comparator extends MaxComparator ?
 					s.reduceRange<
 						s,
-						s["branches"]["leftBound"]["limit"],
-						s["branches"]["leftBound"]["comparator"],
+						s["branches"]["lBound"]["limit"],
+						s["branches"]["lBound"]["comparator"],
 						comparator,
 						limit,
 						nextState["unscanned"]

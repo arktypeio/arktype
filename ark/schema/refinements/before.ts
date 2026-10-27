@@ -59,7 +59,7 @@ export class BeforeNode extends BaseRange<Before.Declaration> {
 		return data <= this.rule
 	}
 
-	implied: BaseRoot = $ark.intrinsic.Date.internal
+	implied: BaseRoot = $ark.kw.Date.internal
 }
 
 export const Before = {

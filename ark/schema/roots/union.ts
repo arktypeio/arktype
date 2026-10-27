@@ -637,7 +637,7 @@ const isAuthored = (node: { meta: ArkEnv.meta }): boolean =>
 	node.meta.description !== undefined && node.meta.keyword === undefined
 
 const isArrayCase = (caseNode: BaseRoot | true): boolean =>
-	caseNode !== true && caseNode._in.extends($ark.intrinsic.Array.internal)
+	caseNode !== true && caseNode._in.extends($ark.kw.Array.internal)
 
 const metaAtDiscriminant = (
 	meta: ArkEnv.meta,

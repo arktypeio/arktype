@@ -55,7 +55,7 @@ export abstract class BaseProp<
 		return this.kind === "optional"
 	}
 
-	implied: BaseRoot = $ark.intrinsic.object.internal
+	implied: BaseRoot = $ark.kw.object.internal
 
 	get serializedKey(): string {
 		return compileSerializedValue(this.key)

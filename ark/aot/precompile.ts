@@ -1606,9 +1606,7 @@ export class Precompiler {
 			if (roots.length) {
 				// arktype's builtin scopes, exported with the first Type
 				const intrinsicUnits = (this.intrinsicUnits ??= writePrecompiledUnits(
-					Object.values($ark.intrinsic).filter(value =>
-						hasArkKind(value, "root")
-					)
+					Object.values($ark.kw).filter(value => hasArkKind(value, "root"))
 				))
 				const intrinsicTable = writeUnitTable(intrinsicUnits)
 				const intrinsicSpecifier = `~arktype/units/${hashOf(intrinsicTable)}`

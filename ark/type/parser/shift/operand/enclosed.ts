@@ -51,18 +51,18 @@ export const parseEnclosed = (
 	s: RuntimeState,
 	enclosing: EnclosingStartToken
 ): void => {
-	const enclosed = s.scanner.shiftUntilEscapable(
+	const enclosed = s.sc.shiftUntilEscapable(
 		untilLookaheadIsClosing[enclosingTokens[enclosing]],
 		// within a regex literal, `\\` is a literal backslash and must be
 		// preserved verbatim in the pattern source; collapsing it to a single
 		// backslash would corrupt the regex (e.g. `\\d` -> `\d` digit class)
 		enclosing in enclosingRegexTokens ? Backslash : ""
 	)
-	if (s.scanner.lookahead === "")
+	if (s.sc.peek === "")
 		return s.error(writeUnterminatedEnclosedMessage(enclosed, enclosing))
 
 	// Shift the scanner one additional time for the second enclosing token
-	s.scanner.shift()
+	s.sc.shift()
 	if (enclosing in enclosingRegexTokens) {
 		let regex: RegExp
 
@@ -195,9 +195,9 @@ export const untilLookaheadIsClosing: Record<
 	EnclosingEndToken,
 	Scanner.UntilCondition
 > = {
-	"'": scanner => scanner.lookahead === `'`,
-	'"': scanner => scanner.lookahead === `"`,
-	"/": scanner => scanner.lookahead === `/`
+	"'": sc => sc.peek === `'`,
+	'"': sc => sc.peek === `"`,
+	"/": sc => sc.peek === `/`
 }
 
 const enclosingCharDescriptions = {

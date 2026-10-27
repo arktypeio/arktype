@@ -326,7 +326,7 @@ const casesHeldAt = (
 			value.is("domain") ? value
 			: domain === "undefined" || domain === "null" || domain === "boolean" ?
 				domain
-			:	$ark.intrinsic[domain]
+			:	$ark.kw[domain]
 		]
 	]
 }
@@ -707,10 +707,9 @@ let unknownUnionHashes: string[] | undefined
 
 // a union of every domain and unit without one allows anything
 const isUnknownUnion = (branches: readonly Union.ChildNode[]): boolean => {
-	if (branches.length !== unknownUnionBranches.length || !$ark.intrinsic)
-		return false
+	if (branches.length !== unknownUnionBranches.length || !$ark.kw) return false
 	unknownUnionHashes ??= unknownUnionBranches
-		.map(name => $ark.intrinsic[name].hash)
+		.map(name => $ark.kw[name].hash)
 		.sort()
 	return branches.every((branch, i) => branch.hash === unknownUnionHashes![i])
 }

@@ -286,7 +286,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 	}
 
-	implied: BaseRoot = $ark.intrinsic.object.internal
+	implied: BaseRoot = $ark.kw.object.internal
 	impliedBy: array<BaseConstraint> =
 		this.inner.sequence?.impliedBy ?? noSiblings
 
@@ -437,7 +437,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		if (
 			this.sequence &&
-			typeOrTermExtends(key, $ark.intrinsic.nonNegativeIntegerString)
+			typeOrTermExtends(key, $ark.kw.nonNegativeIntegerString)
 		) {
 			if (hasArkKind(key, "root")) {
 				if (this.sequence.variadic)
@@ -466,7 +466,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			if (
 				this.sequence?.variadic &&
 				hasArkKind(key, "root") &&
-				key.extends($ark.intrinsic.number)
+				key.extends($ark.kw.number)
 			) {
 				return throwParseError(
 					writeNumberIndexMessage(key.expression, this.sequence.expression)
@@ -476,7 +476,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		const result = value.get(...path)
-		return required ? result : result.or($ark.intrinsic.undefined)
+		return required ? result : result.or($ark.kw.undefined)
 	}
 
 	pick(...keys: KeyOrKeyNode[]): StructureNode {
@@ -1396,7 +1396,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	// without a set engine, any signature may match a symbol key
 	private get indexSyms(): boolean {
 		return !!this.index?.some(
-			node => !$ark.sets || !node.signature.extends($ark.intrinsic.string)
+			node => !$ark.sets || !node.signature.extends($ark.kw.string)
 		)
 	}
 

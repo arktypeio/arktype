@@ -114,10 +114,10 @@ const missingValueOf = (value: BaseRoot): MissingValue => {
 	}
 	if (value.is("alias")) {
 		return missingValueOf(
-			isResolutionFinal() ? value.resolution : $ark.intrinsic.object
+			isResolutionFinal() ? value.resolution : $ark.kw.object
 		)
 	}
 	if (value.is("unit") && value.domain === "object")
-		return missingValueOf($ark.intrinsic.object)
+		return missingValueOf($ark.kw.object)
 	return Object.freeze((value as nodeOfKind<BasisKind>).errorCtx)
 }

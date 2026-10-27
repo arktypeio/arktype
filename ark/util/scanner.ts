@@ -1,7 +1,7 @@
 import type { KeySet } from "./records.ts"
 import { Backslash, whitespaceChars, type WhitespaceChar } from "./strings.ts"
 
-export class Scanner<lookahead extends string = string> {
+export class Scanner<peek extends string = string> {
 	chars: string[]
 	i: number
 	def: string
@@ -12,16 +12,18 @@ export class Scanner<lookahead extends string = string> {
 		this.i = 0
 	}
 
-	/** Get lookahead and advance scanner by one */
-	shift(): this["lookahead"] {
+	/** the next character, advancing past it */
+	shift(): this["peek"] {
 		return (this.chars[this.i++] ?? "") as never
 	}
 
-	get lookahead(): lookahead {
+	/** the next character, or "" at the end */
+	get peek(): peek {
 		return (this.chars[this.i] ?? "") as never
 	}
 
-	get nextLookahead(): string {
+	/** the character after the next, or "" past the end */
+	get peekNext(): string {
 		return this.chars[this.i + 1] ?? ""
 	}
 
@@ -31,7 +33,7 @@ export class Scanner<lookahead extends string = string> {
 
 	shiftUntil(condition: Scanner.UntilCondition): string {
 		let shifted = ""
-		while (this.lookahead) {
+		while (this.peek) {
 			if (condition(this, shifted)) break
 			else shifted += this.shift()
 		}
@@ -43,11 +45,11 @@ export class Scanner<lookahead extends string = string> {
 		escapeEscape: typeof Backslash | "" = ""
 	): string {
 		let shifted = ""
-		while (this.lookahead) {
-			if (this.lookahead === Backslash) {
+		while (this.peek) {
+			if (this.peek === Backslash) {
 				this.shift()
 				if (condition(this, shifted)) shifted += this.shift()
-				else if (this.lookahead === Backslash)
+				else if (this.peek === Backslash)
 					shifted += `${escapeEscape}${this.shift()}`
 				else shifted += `${Backslash}${this.shift()}`
 			} else if (condition(this, shifted)) break
@@ -58,13 +60,13 @@ export class Scanner<lookahead extends string = string> {
 
 	shiftUntilNext(charOrSet: string | KeySet): string {
 		return typeof charOrSet === "string" ?
-				this.shiftUntil(s => s.lookahead === charOrSet)
-			:	this.shiftUntil(s => s.lookahead in charOrSet)
+				this.shiftUntil(s => s.peek === charOrSet)
+			:	this.shiftUntil(s => s.peek in charOrSet)
 	}
 
 	/** shifts past whitespace, returning what it shifted */
 	skipSpace(): string {
-		return this.shiftUntil(() => !(this.lookahead in whitespaceChars))
+		return this.shiftUntil(() => !(this.peek in whitespaceChars))
 	}
 
 	jumpForward(count: number): void {
@@ -87,24 +89,24 @@ export class Scanner<lookahead extends string = string> {
 		return this.chars.slice(start, end).join("")
 	}
 
-	lookaheadIs<char extends lookahead>(char: char): this is Scanner<char> {
-		return this.lookahead === char
+	peekIs<char extends peek>(char: char): this is Scanner<char> {
+		return this.peek === char
 	}
 
-	lookaheadIsIn<keySet extends KeySet>(
+	peekIsIn<keySet extends KeySet>(
 		tokens: keySet
 	): this is Scanner<Extract<keyof keySet, string>> {
-		return this.lookahead in tokens
+		return this.peek in tokens
 	}
 }
 
 export declare namespace Scanner {
-	export type UntilCondition = (scanner: Scanner, shifted: string) => boolean
+	export type UntilCondition = (sc: Scanner, shifted: string) => boolean
 
 	export type shift<
-		lookahead extends string,
+		peek extends string,
 		unscanned extends string
-	> = `${lookahead}${unscanned}`
+	> = `${peek}${unscanned}`
 
 	export type shiftUntil<
 		unscanned extends string,
@@ -128,14 +130,14 @@ export declare namespace Scanner {
 		unscanned extends `${infer head}${Backslash}${infer escaped}` ?
 			head extends `${infer scanned}${terminator}${infer rest}` ?
 				[`${appendTo}${scanned}`, `${terminator}${rest}${Backslash}${escaped}`]
-			: escaped extends shift<infer lookahead, infer nextUnscanned> ?
+			: escaped extends shift<infer peek, infer nextUnscanned> ?
 				shiftUntilEscapable<
 					nextUnscanned,
 					terminator,
 					escapeEscape,
-					`${appendTo}${head}${lookahead extends terminator ? ""
-					: lookahead extends Backslash ? escapeEscape
-					: Backslash}${lookahead}`
+					`${appendTo}${head}${peek extends terminator ? ""
+					: peek extends Backslash ? escapeEscape
+					: Backslash}${peek}`
 				>
 			:	[`${appendTo}${head}${Backslash}`, ""]
 		: unscanned extends `${infer scanned}${terminator}${infer rest}` ?
@@ -147,9 +149,9 @@ export declare namespace Scanner {
 		nonTerminator extends string,
 		appendTo extends string = ""
 	> =
-		unscanned extends shift<infer lookahead, infer nextUnscanned> ?
-			lookahead extends nonTerminator ?
-				shiftUntilNot<nextUnscanned, nonTerminator, `${appendTo}${lookahead}`>
+		unscanned extends shift<infer peek, infer nextUnscanned> ?
+			peek extends nonTerminator ?
+				shiftUntilNot<nextUnscanned, nonTerminator, `${appendTo}${peek}`>
 			:	[appendTo, unscanned]
 		:	[appendTo, ""]
 

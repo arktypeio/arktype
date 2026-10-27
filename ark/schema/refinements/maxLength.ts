@@ -51,7 +51,7 @@ const implementation: nodeImplementationOf<MaxLength.Declaration> =
 	})
 
 export class MaxLengthNode extends BaseRange<MaxLength.Declaration> {
-	readonly implied: BaseRoot = $ark.intrinsic.lengthBoundable.internal
+	readonly implied: BaseRoot = $ark.kw.lengthBoundable.internal
 
 	traverseAllows(data: LengthBoundableData): boolean {
 		return data.length <= this.rule

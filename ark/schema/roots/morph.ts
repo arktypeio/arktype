@@ -144,13 +144,11 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	}
 
 	override get _in(): BaseRoot {
-		return this.declaredIn ?? this.head?._in ?? $ark.intrinsic.unknown.internal
+		return this.declaredIn ?? this.head?._in ?? $ark.kw.unknown.internal
 	}
 
 	override get _out(): BaseRoot {
-		return (
-			this.declaredOut ?? this.tail?._out ?? $ark.intrinsic.unknown.internal
-		)
+		return this.declaredOut ?? this.tail?._out ?? $ark.kw.unknown.internal
 	}
 
 	declareOut(declaredOut: BaseRoot): MorphNode {

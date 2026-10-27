@@ -56,7 +56,7 @@ const meet = (l: Keys, r: Keys): boolean => {
 }
 
 const canBeObject = (node: BaseRoot): boolean =>
-	node.overlaps($ark.intrinsic.object.internal)
+	node.overlaps($ark.kw.object.internal)
 
 // a structure that writes what it transforms, as one deleting undeclared
 // keys copies all but the elements a sequence it doesn't slice transforms

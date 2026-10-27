@@ -14,7 +14,7 @@ import {
 import { intersectOrPipeNodes } from "../intersections.ts"
 
 const neverIfDisjoint = (result: BaseRoot | Disjoint): BaseRoot =>
-	result instanceof Disjoint ? $ark.intrinsic.never.internal : result
+	result instanceof Disjoint ? $ark.kw.never.internal : result
 
 const resolutionOf = (node: BaseRoot): BaseRoot =>
 	node.is("alias") ? node.resolution : node
@@ -73,7 +73,7 @@ export const alias: setImplementationOf<Alias.Declaration> = {
 			if (r.isUnknown()) return l
 			if (r.isNever()) return r
 			// a primitive is often disjoint from a cyclic type, which discrimination and morph unions need to know
-			if (!r.overlaps($ark.intrinsic.object) && isResolvable(l))
+			if (!r.overlaps($ark.kw.object) && isResolvable(l))
 				return intersectOrPipeNodes(l.resolution, r, ctx)
 			return operate(l, r, ctx)
 		})

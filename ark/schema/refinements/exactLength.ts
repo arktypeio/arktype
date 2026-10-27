@@ -67,7 +67,7 @@ export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Dec
 		return `${data}.length === ${this.rule}`
 	}
 
-	readonly implied: BaseRoot = $ark.intrinsic.lengthBoundable.internal
+	readonly implied: BaseRoot = $ark.kw.lengthBoundable.internal
 	readonly expression: string = `== ${this.rule}`
 }
 

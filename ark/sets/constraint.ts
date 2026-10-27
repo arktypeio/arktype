@@ -52,7 +52,7 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 				s.kind === "structure" &&
 				(!s.baseInner.undeclared || s.baseInner.undeclared === "ignore")
 			) ?
-				$ark.intrinsic.unknown.internal
+				$ark.kw.unknown.internal
 				// an intersection of a basis alone is the basis
 			: s.l.length === 0 && s.kind === "intersection" && basisOf(s.baseInner) ?
 				basisOf(s.baseInner)!

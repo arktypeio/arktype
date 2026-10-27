@@ -210,7 +210,7 @@ const _intersectSequences = (
 					:	"optional"
 				)
 			)
-			s.result = [...s.result, { kind, node: $ark.intrinsic.never.internal }]
+			s.result = [...s.result, { kind, node: $ark.kw.never.internal }]
 		} else if (kind === "optionals" || kind === "defaultables") {
 			// if the element result is optional and unsatisfiable, the
 			// intersection can still be satisfied as long as the tuple

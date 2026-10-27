@@ -23,7 +23,7 @@ export const intersectProps = (
 	let value = intersectOrPipeNodes(l.value, r.value, ctx)
 	const kind: Prop.Kind = l.required || r.required ? "required" : "optional"
 	if (value instanceof Disjoint) {
-		if (kind === "optional") value = $ark.intrinsic.never.internal
+		if (kind === "optional") value = $ark.kw.never.internal
 		else {
 			// if either operand was optional, the Disjoint has to be treated as optional
 			return value.withPrefixKey(
@@ -87,8 +87,7 @@ const valuesWithUndefined = new WeakMap<BaseRoot, BaseRoot>()
 const withUndefined = (value: BaseRoot): BaseRoot => {
 	let result = valuesWithUndefined.get(value)
 	if (!result) {
-		result =
-			value.allowsUnused(undefined) ? value : value.or($ark.intrinsic.undefined)
+		result = value.allowsUnused(undefined) ? value : value.or($ark.kw.undefined)
 		// an alias's union is reduced again once it resolves
 		if (!value.hasAlias) valuesWithUndefined.set(value, result)
 	}

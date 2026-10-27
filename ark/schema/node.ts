@@ -1399,7 +1399,7 @@ export abstract class BaseNode<
 			if (!ctx.undeclaredHandling) return null
 			transformedInner = {
 				...transformedInner,
-				value: $ark.intrinsic.unknown
+				value: $ark.kw.unknown
 			} as never
 		}
 

@@ -140,7 +140,7 @@ export class Disjoint extends Array<DisjointEntry> {
 	}
 
 	toNeverIfDisjoint(): BaseRoot {
-		return $ark.intrinsic.never as never
+		return $ark.kw.never as never
 	}
 }
 

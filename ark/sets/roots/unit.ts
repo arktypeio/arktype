@@ -27,7 +27,7 @@ export const unit: setImplementationOf<Unit.Declaration> = {
 				// we try to use a domain Disjoint if possible since it's better for discrimination
 				const rDomain =
 					rBasis.is("domain") ? rBasis
-					: rBasis.is("proto") ? ($ark.intrinsic.object as DomainNode)
+					: rBasis.is("proto") ? ($ark.kw.object as DomainNode)
 					: null
 				if (rDomain && l.domain !== rDomain.domain) {
 					const lDomainDisjointValue =
@@ -37,7 +37,7 @@ export const unit: setImplementationOf<Unit.Declaration> = {
 							l.domain === "boolean"
 						) ?
 							l.domain
-						:	($ark.intrinsic[l.domain] as DomainNode)
+						:	($ark.kw[l.domain] as DomainNode)
 					return Disjoint.init("domain", lDomainDisjointValue, rDomain)
 				}
 				return Disjoint.init("assignability", l, rBasis)

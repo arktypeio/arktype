@@ -175,7 +175,7 @@ contextualize(() => {
 				scopes.add(node.$)
 		}
 		eachType(keywords, collect)
-		eachType($ark.intrinsic, collect)
+		eachType($ark.kw, collect)
 		const names = [...scopes].map($ => $.isBuiltin && $.name)
 		attest(new Set(names).size).equals(scopes.size)
 		attest(names.sort()).snap([

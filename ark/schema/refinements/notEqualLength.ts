@@ -71,7 +71,7 @@ export class NotEqualLengthNode extends InternalPrimitiveConstraint<NotEqualLeng
 		return `${data}.length !== ${this.rule}`
 	}
 
-	readonly implied: BaseRoot = $ark.intrinsic.lengthBoundable.internal
+	readonly implied: BaseRoot = $ark.kw.lengthBoundable.internal
 	readonly expression: string = `!= ${this.rule}`
 }
 

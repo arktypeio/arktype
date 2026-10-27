@@ -151,7 +151,7 @@ const toResolvedJsonSchema = (
 		// "$ark.array1", so prefer the original value when it is valid JSON
 		// (jsonData's object domain also allows functions, so exclude them)
 		const jsonValue =
-			typeof v !== "function" && $ark.intrinsic.jsonData.allows(v) ? v
+			typeof v !== "function" && $ark.kw.jsonData.allows(v) ? v
 			: k === "default" ?
 				ctx.fallback.defaultValue({
 					code: "defaultValue",
@@ -172,10 +172,7 @@ const branchGroupsToJsonSchema = (
 ): JsonSchema => {
 	// special case to simplify { const: true } | { const: false }
 	// to the canonical JSON Schema representation { type: "boolean" }
-	if (
-		branchGroups.length === 1 &&
-		branchGroups[0].equals($ark.intrinsic.boolean)
-	)
+	if (branchGroups.length === 1 && branchGroups[0].equals($ark.kw.boolean))
 		return { type: "boolean" }
 
 	const jsonSchemaBranches = branchGroups.map(group =>
@@ -250,7 +247,7 @@ const branchGroupsOf = (node: Union.Node): BaseRoot[] => {
 			if (firstBooleanIndex === -1) {
 				firstBooleanIndex = branchGroups.length
 				branchGroups.push(branch)
-			} else branchGroups[firstBooleanIndex] = $ark.intrinsic.boolean
+			} else branchGroups[firstBooleanIndex] = $ark.kw.boolean
 			continue
 		}
 		branchGroups.push(branch)
@@ -298,7 +295,7 @@ const innerToJsonSchemaByKind: {
 		ctx.io === "in" ?
 			// its input as written, since _in drops the defaults it holds
 			toJsonSchemaRecurse(
-				node.declaredIn ?? node.head ?? $ark.intrinsic.unknown.internal,
+				node.declaredIn ?? node.head ?? $ark.kw.unknown.internal,
 				ctx
 			)
 		:	ctx.fallback.morph({
@@ -312,7 +309,7 @@ const innerToJsonSchemaByKind: {
 			ctx.target === "openapi-3.0" ?
 				openApiNull()
 			:	{ type: "null" }
-		: !$ark.intrinsic.jsonPrimitive.allows(node.unit) ?
+		: !$ark.kw.jsonPrimitive.allows(node.unit) ?
 			ctx.fallback.unit({ code: "unit", base: {}, unit: node.unit })
 		: ctx.target === "openapi-3.0" ?
 			{ type: typeof node.unit as JsonSchema.TypeName, enum: [node.unit] }
@@ -408,7 +405,7 @@ const reduceObjectJsonSchema = (
 			ctx.path = path
 
 			for (const keyBranch of index.signature.branches) {
-				if (!keyBranch.extends($ark.intrinsic.string)) {
+				if (!keyBranch.extends($ark.kw.string)) {
 					schema = ctx.fallback.symbolKey({
 						code: "symbolKey",
 						base: schema,
@@ -559,7 +556,7 @@ const writeDefault = (
 	const value =
 		typeof defaultInput === "function" ? defaultInput() : defaultInput
 	const jsonDefault =
-		$ark.intrinsic.jsonData.allows(value) ?
+		$ark.kw.jsonData.allows(value) ?
 			value
 		:	ctx.fallback.defaultValue({
 				code: "defaultValue",

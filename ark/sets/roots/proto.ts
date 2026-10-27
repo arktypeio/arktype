@@ -17,10 +17,6 @@ export const proto: setImplementationOf<Proto.Declaration> = {
 		domain: (proto, domain) =>
 			domain.domain === "object" ?
 				proto
-			:	Disjoint.init(
-					"domain",
-					$ark.intrinsic.object.internal as Domain.Node,
-					domain
-				)
+			:	Disjoint.init("domain", $ark.kw.object.internal as Domain.Node, domain)
 	}
 }

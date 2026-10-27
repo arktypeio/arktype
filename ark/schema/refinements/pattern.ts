@@ -143,7 +143,7 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 			:	`${instance}.test(${data})`
 	}
 
-	readonly implied: BaseRoot = $ark.intrinsic.string.internal
+	readonly implied: BaseRoot = $ark.kw.string.internal
 }
 
 export const Pattern = {

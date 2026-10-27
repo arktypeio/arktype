@@ -229,22 +229,22 @@ export type parseGenericParams<def extends string, $> = parseNextNameChar<
 type ParamsTerminator = WhitespaceChar | ","
 
 export const parseGenericParamName = (
-	scanner: Scanner,
+	sc: Scanner,
 	result: GenericParamDef[],
 	ctx: BaseParseContext
 ): GenericParamDef[] => {
-	scanner.skipSpace()
-	const name = shiftUntilTerminator(scanner)
+	sc.skipSpace()
+	const name = shiftUntilTerminator(sc)
 	if (name === "") {
 		// if we've reached the end of the string and have parsed at least one
 		// param, return the valid result
-		if (scanner.lookahead === "" && result.length) return result
+		if (sc.peek === "" && result.length) return result
 		return throwParseError(emptyGenericParameterMessage)
 	}
 
-	scanner.skipSpace()
+	sc.skipSpace()
 
-	return _parseOptionalConstraint(scanner, name, result, ctx)
+	return _parseOptionalConstraint(sc, name, result, ctx)
 }
 
 type parseName<
@@ -259,15 +259,15 @@ type parseNextNameChar<
 	result extends array<GenericParamAst>,
 	$
 > =
-	unscanned extends `${infer lookahead}${infer nextUnscanned}` ?
-		lookahead extends ParamsTerminator ?
+	unscanned extends `${infer peek}${infer nextUnscanned}` ?
+		peek extends ParamsTerminator ?
 			name extends "" ? ErrorMessage<emptyGenericParameterMessage>
-			: lookahead extends "," ?
+			: peek extends "," ?
 				parseName<nextUnscanned, [...result, [name, unknown]], $>
-			: lookahead extends WhitespaceChar ?
+			: peek extends WhitespaceChar ?
 				_parseOptionalConstraint<nextUnscanned, name, result, $>
 			:	never
-		:	parseNextNameChar<nextUnscanned, `${name}${lookahead}`, result, $>
+		:	parseNextNameChar<nextUnscanned, `${name}${peek}`, result, $>
 	: name extends "" ? result
 	: [...result, [name, unknown]]
 
@@ -276,26 +276,25 @@ const extendsToken = "extends "
 type extendsToken = typeof extendsToken
 
 const _parseOptionalConstraint = (
-	scanner: Scanner,
+	sc: Scanner,
 	name: string,
 	result: GenericParamDef[],
 	ctx: BaseParseContext
 ): GenericParamDef[] => {
-	scanner.skipSpace()
-	if (scanner.unscanned.startsWith(extendsToken))
-		scanner.jumpForward(extendsToken.length)
+	sc.skipSpace()
+	if (sc.unscanned.startsWith(extendsToken)) sc.jumpForward(extendsToken.length)
 	else {
 		// if we don't have a contraining token here, return now so we can
 		// assume in the rest of the function body we do have a constraint
-		if (scanner.lookahead === ",") scanner.shift()
+		if (sc.peek === ",") sc.shift()
 		result.push(name)
-		return parseGenericParamName(scanner, result, ctx)
+		return parseGenericParamName(sc, result, ctx)
 	}
 
-	const s = parseUntilFinalizer(new RuntimeState(scanner, ctx))
+	const s = parseUntilFinalizer(new RuntimeState(sc, ctx))
 	result.push([name, s.root])
 
-	return parseGenericParamName(scanner, result, ctx)
+	return parseGenericParamName(sc, result, ctx)
 }
 
 type _parseOptionalConstraint<

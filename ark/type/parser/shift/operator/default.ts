@@ -57,12 +57,12 @@ export const parseDefault = (
 	const baseNode = s.unsetRoot()
 	// an empty collection is not a unit literal, so it must be short-circuited
 	// here and represented as a thunk to keep each traversal's default distinct
-	s.scanner.skipSpace()
+	s.sc.skipSpace()
 	const emptyCollection = emptyCollectionLiterals.find(literal =>
-		s.scanner.unscanned.startsWith(literal)
+		s.sc.unscanned.startsWith(literal)
 	)
 	if (emptyCollection !== undefined) {
-		s.scanner.jumpForward(emptyCollection.length)
+		s.sc.jumpForward(emptyCollection.length)
 		return [baseNode, "=", emptyCollectionDefaults[emptyCollection]]
 	}
 	s.parseOperand()

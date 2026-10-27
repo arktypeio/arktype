@@ -35,7 +35,7 @@ contextualize(() => {
 		attest(Object.keys(intrinsic).includes("string")).equals(true)
 		attest(
 			Object.entries(intrinsic).every(
-				([k, v]) => v === $ark.intrinsic[k as keyof typeof intrinsic]
+				([k, v]) => v === $ark.kw[k as keyof typeof intrinsic]
 			)
 		).equals(true)
 	})

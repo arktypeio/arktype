@@ -75,8 +75,7 @@ export class NotEqualNode extends InternalPrimitiveConstraint<NotEqual.Declarati
 		return `${data}${this.isDate ? ".valueOf()" : ""} !== ${this.numRule}`
 	}
 
-	readonly implied: BaseRoot =
-		$ark.intrinsic[this.isDate ? "Date" : "number"].internal
+	readonly implied: BaseRoot = $ark.kw[this.isDate ? "Date" : "number"].internal
 
 	readonly expression: string = `!= ${
 		this.isDate ?

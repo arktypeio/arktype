@@ -29,7 +29,8 @@ import {
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	leftBound: OpenLeftBound | null
+	/** the bound before the operand, like `5 <` in `5 < n`, until its right side is parsed */
+	lBound: OpenLeftBound | null
 	intersection: BaseRoot | null
 	union: BaseRoot | null
 	pipe: BaseRoot | null
@@ -41,7 +42,7 @@ export class RuntimeState {
 	root: BaseRoot | undefined
 	branches: BranchState = {
 		prefixes: [],
-		leftBound: null,
+		lBound: null,
 		intersection: null,
 		union: null,
 		pipe: null
@@ -52,11 +53,12 @@ export class RuntimeState {
 	// next operand
 	rightBounded: { root: BaseRoot; operand: BaseRoot } | undefined
 
-	scanner: Scanner
+	/** what it's parsing, scanned up to its next token */
+	sc: Scanner
 	ctx: BaseParseContext
 
-	constructor(scanner: Scanner, ctx: BaseParseContext) {
-		this.scanner = scanner
+	constructor(sc: Scanner, ctx: BaseParseContext) {
+		this.sc = sc
 		this.ctx = ctx
 	}
 
@@ -94,17 +96,17 @@ export class RuntimeState {
 		if (!isKeyOf(invertedComparator, minComparators))
 			return this.error(writeUnpairableComparatorMessage(comparator))
 
-		if (this.branches.leftBound) {
+		if (this.branches.lBound) {
 			return this.error(
 				writeMultipleLeftBoundsMessage(
-					this.branches.leftBound.limit,
-					this.branches.leftBound.comparator,
+					this.branches.lBound.limit,
+					this.branches.lBound.comparator,
 					limit,
 					invertedComparator
 				)
 			)
 		}
-		this.branches.leftBound = {
+		this.branches.lBound = {
 			comparator: invertedComparator,
 			limit
 		}
@@ -137,11 +139,8 @@ export class RuntimeState {
 	finalizeGroup(): void {
 		this.finalizeBranches()
 		const topBranchState = this.groups.pop()
-		if (!topBranchState) {
-			return this.error(
-				writeUnmatchedGroupCloseMessage(")", this.scanner.unscanned)
-			)
-		}
+		if (!topBranchState)
+			return this.error(writeUnmatchedGroupCloseMessage(")", this.sc.unscanned))
 
 		this.branches = topBranchState
 		// a group's root can be bounded, as an expression prints a range
@@ -188,7 +187,7 @@ export class RuntimeState {
 	}
 
 	parseUntilFinalizer(): RootedRuntimeState {
-		return parseUntilFinalizer(new RuntimeState(this.scanner, this.ctx))
+		return parseUntilFinalizer(new RuntimeState(this.sc, this.ctx))
 	}
 
 	parseOperator(this: RootedRuntimeState): void {
@@ -201,11 +200,11 @@ export class RuntimeState {
 	}
 
 	private assertRangeUnset() {
-		if (this.branches.leftBound) {
+		if (this.branches.lBound) {
 			return this.error(
 				writeOpenRangeMessage(
-					this.branches.leftBound.limit,
-					this.branches.leftBound.comparator
+					this.branches.lBound.limit,
+					this.branches.lBound.comparator
 				)
 			)
 		}
@@ -215,7 +214,7 @@ export class RuntimeState {
 		this.groups.push(this.branches)
 		this.branches = {
 			prefixes: [],
-			leftBound: null,
+			lBound: null,
 			union: null,
 			intersection: null,
 			pipe: null
@@ -229,8 +228,8 @@ export class RuntimeState {
 		| undefined {
 		return (
 			// left bounds are stored inverted, as they'd be written on the right
-			(this.branches.leftBound &&
-				invertedComparators[this.branches.leftBound.comparator]) ??
+			(this.branches.lBound &&
+				invertedComparators[this.branches.lBound.comparator]) ??
 			this.branches.prefixes[this.branches.prefixes.length - 1] ??
 			(this.branches.intersection ? "&"
 			: this.branches.union ? "|"
@@ -240,7 +239,7 @@ export class RuntimeState {
 	}
 
 	shiftedBy(count: number): this {
-		this.scanner.jumpForward(count)
+		this.sc.jumpForward(count)
 		return this
 	}
 }

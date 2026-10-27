@@ -18,7 +18,7 @@ export const isDisjoint = (l: Schema, r: Schema): boolean =>
 export const intersect = (...schemas: Schema[]): Root =>
 	schemas.reduce<Root>(
 		(result, schema) => result.intersect(parse(schema)).toNeverIfDisjoint(),
-		$ark.intrinsic.unknown
+		$ark.kw.unknown
 	)
 
 /** the values any schema accepts, without the branches others subsume */

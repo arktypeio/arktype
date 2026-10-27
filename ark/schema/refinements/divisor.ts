@@ -74,7 +74,7 @@ export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration
 		return `${data} % ${this.rule} === 0`
 	}
 
-	readonly implied: BaseRoot = $ark.intrinsic.number.internal
+	readonly implied: BaseRoot = $ark.kw.number.internal
 	readonly expression: string = `% ${printDecimal(this.rule)}`
 }
 
@@ -84,7 +84,7 @@ export const Divisor = {
 }
 
 export const writeIndivisibleMessage = (t: BaseRoot): string =>
-	writeInvalidOperandMessage("divisor", $ark.intrinsic.number as never, t)
+	writeInvalidOperandMessage("divisor", $ark.kw.number as never, t)
 
 export type writeIndivisibleMessage<actual> = writeInvalidOperandMessage<
 	"divisor",

@@ -53,7 +53,7 @@ const implementation: nodeImplementationOf<After.Declaration> =
 	})
 
 export class AfterNode extends BaseRange<After.Declaration> {
-	implied: BaseRoot = $ark.intrinsic.Date.internal
+	implied: BaseRoot = $ark.kw.Date.internal
 
 	collapsibleLimitString = describeCollapsibleDate(this.rule)
 

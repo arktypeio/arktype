@@ -4,8 +4,8 @@ import type { StaticState, s } from "../../reduce/static.ts"
 import { shiftUntilTerminator } from "../tokens.ts"
 
 export const parseDivisor = (s: RootedRuntimeState): void => {
-	s.scanner.skipSpace()
-	const divisorToken = shiftUntilTerminator(s.scanner)
+	s.sc.skipSpace()
+	const divisorToken = shiftUntilTerminator(s.sc)
 	const divisor = tryParseInteger(divisorToken, {
 		errorOnFail: writeInvalidDivisorMessage(divisorToken)
 	})

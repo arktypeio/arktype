@@ -269,7 +269,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 	readonly resolutions: {
 		[alias: string]: CachedResolution | undefined
 	} = Object.create(null)
-	private readonly boundReferences = new WeakMap<
+	/** each reference bound to this scope, so it's bound once */
+	private readonly boundRefs = new WeakMap<
 		BaseNode | GenericRoot,
 		BaseNode | GenericRoot
 	>()
@@ -350,16 +351,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return this.memo("cfg", cfg)
 	}
 
-	get intrinsic(): Omit<typeof $ark.intrinsic, `json${string}`> {
+	get intrinsic(): Omit<typeof $ark.kw, `json${string}`> {
 		// intrinsic won't be available during bootstrapping,  so we lie
 		// about the type here as an extrnal convenience
 		const bound = {} as never
-		const intrinsic = $ark.intrinsic
+		const intrinsic = $ark.kw
 		for (const k in intrinsic) {
 			// don't include cyclic aliases from JSON scope
 			if (k.startsWith("json")) continue
 			defineLazily(bound, k, () =>
-				this.bindKeyword(intrinsic[k as keyof typeof intrinsic])
+				this.bindKw(intrinsic[k as keyof typeof intrinsic])
 			)
 		}
 		return this.memo("intrinsic", bound)
@@ -447,7 +448,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (reference.$ === this || (isNode(reference) && reference.is("alias")))
 			return reference
 		// bound once per scope
-		let bound = this.boundReferences.get(reference)
+		let bound = this.boundRefs.get(reference)
 		if (!bound) {
 			bound =
 				isNode(reference) ?
@@ -468,14 +469,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 						reference.hkt,
 						reference.alias
 					)
-			this.boundReferences.set(reference, bound)
+			this.boundRefs.set(reference, bound)
 		}
 		return bound as never
 	}
 
 	// a keyword resolved by name is described by this scope all the way down,
 	// except through a cycle, which would be printed unrolled
-	bindKeyword<reference extends BaseNode | GenericRoot>(
+	bindKw<reference extends BaseNode | GenericRoot>(
 		reference: reference
 	): reference {
 		if (
@@ -518,7 +519,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			maybeResolveSubalias(this.aliases, name)
 		if (resolution) return resolution
 		const keyword = maybeResolveSubalias(this.ambient, name)
-		return keyword && (this.resolutions[name] = this.bindKeyword(keyword))
+		return keyword && (this.resolutions[name] = this.bindKw(keyword))
 	}
 
 	get ambient(): InternalModule {
@@ -663,7 +664,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			this.resolutions[name] = ctx
 			ctx.phase = "resolving"
 			try {
-				def = defining(() => this.normalizeScopeValue(ctx.def))
+				def = defining(() => this.normValue(ctx.def))
 			} finally {
 				// if the call throws, its context stays registered so an alias parsed
 				// during it resolves by name
@@ -678,7 +679,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				return this.maybeResolve(name)
 			}
 			delete nodesById[ctx.id]
-		} else def = this.normalizeScopeValue(def)
+		} else def = this.normValue(def)
 
 		if (hasArkKind(def, "generic")) {
 			const generic = (this.resolutions[name] = this.bindRef(def))
@@ -696,14 +697,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (hasArkKind(def, "module")) {
 			if (!def.root) throwParseError(writeMissingSubmoduleAccessMessage(name))
 			return (this.resolutions[name] = this.fin(
-				isScopeAlias ? this.bindRef(def.root) : this.bindKeyword(def.root)
+				isScopeAlias ? this.bindRef(def.root) : this.bindKw(def.root)
 			))
 		}
 
 		return (this.resolutions[name] =
 			isScopeAlias ?
 				this.parse(def, { alias: name })
-			:	this.fin(this.bindKeyword(def as BaseRoot)))
+			:	this.fin(this.bindKw(def as BaseRoot)))
 	}
 
 	protected createParseCtx<input extends BaseParseContextInput>(
@@ -974,7 +975,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 	/** an alias's entry as the scope writes it, its generic params and keyword config applied, before it's parsed */
 	protected abstract preparseEntry(k: string, v: unknown): AliasDefEntry
 
-	protected abstract normalizeScopeValue(resolution: unknown): unknown
+	/** a scope value as the definition it's parsed from, e.g. a Type's internal node */
+	protected abstract normValue(resolution: unknown): unknown
 }
 
 export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
@@ -995,7 +997,7 @@ export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 		return [k, v]
 	}
 
-	protected normalizeScopeValue(v: unknown): unknown {
+	protected normValue(v: unknown): unknown {
 		return v
 	}
 }
