@@ -1,4 +1,5 @@
 import { attest, cleanup, setup } from "@ark/attest"
+import { attestInternal } from "@ark/attest/internal/assert/attest.ts"
 import type { makeComplexType } from "./utils.ts"
 
 setup({ typeToStringFormat: { useTabs: true } })
@@ -50,6 +51,12 @@ attest({
 } as const).type.toString.snap()
 
 attest({ [Symbol("mySymbol")]: 1 }).snap()
+
+attest({} as { b: "b" | "a"; a: 1 }).type.toString.normalizedSnap()
+
+attestInternal({} as { b: "b" | "a"; a: 1 }, {
+	cfg: { updateSnapshots: true }
+}).type.toString.normalizedSnap("old type")
 
 const it = (name: string, fn: () => void) => fn()
 
