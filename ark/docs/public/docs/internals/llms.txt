@@ -92,7 +92,7 @@ Composite kinds are built from other nodes:
 | - | - | - |
 | `alias` | Whatever the node it references allows. Aliases are how cyclic types refer to themselves. | `{ reference: "$node" }` |
 | `union` | Data any branch allows. `ordered: true` keeps branches in the order given. | `["string", "number"]` |
-| `morph` | Data its `in` node allows, which it then transforms with its `morphs` | `{ in: "string", morphs: [s => s.trim()] }` |
+| `morph` | Data the first of its `morphs` allows if it's a node, which the rest then transform | `{ morphs: ["string", s => s.trim()] }` |
 | `intersection` | Data its basis and every constraint allow | `{ domain: "number", divisor: 5 }` |
 
 `unknown` is an intersection with no constraints (`{}`), and `never` is a union with no branches (`[]`).
@@ -195,7 +195,7 @@ A root schema is one of:
 - a domain name: `"string"`
 - a constructor: `Date`
 - an array of schemas, for a union: `["string", { unit: 5 }]`
-- an object keyed by node kinds: `{ domain: "number", min: 0 }`, `{ unit: 5 }`, `{ in: "string", morphs: [...] }`
+- an object keyed by node kinds: `{ domain: "number", min: 0 }`, `{ unit: 5 }`, `{ morphs: ["string", ...] }`
 
 ## type.schema
 
