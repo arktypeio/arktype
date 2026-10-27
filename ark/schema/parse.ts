@@ -109,7 +109,11 @@ export const nodesById: Record<
 
 $ark.nodesById = nodesById
 
+// an id names the functions compiled code declares and calls, so an alias
+// it starts with is written as an identifier, never as the alias is
 export const registerNodeId = (prefix: string): NodeId => {
+	prefix = prefix.replace(/[^\w$]/g, "_")
+	if (/^\d/.test(prefix)) prefix = `_${prefix}`
 	if (/\d$/.test(prefix)) prefix += "_"
 	nodeCountsByPrefix[prefix] ??= 0
 	return `${prefix}${++nodeCountsByPrefix[prefix]!}` as NodeId
