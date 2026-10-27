@@ -1,7 +1,7 @@
 {
 	"form": {
-		"commit": "624a5d716",
-		"date": "2026-10-25",
+		"commit": "2c1a6a86e",
+		"date": "2026-10-27",
 		"installed": {
 			"@sinclair/typebox": "0.34.52",
 			"ajv": "8.20.0",
@@ -19,16 +19,16 @@
 		}
 	},
 	"sb": {
-		"commit": "624a5d716",
-		"date": "2026-10-25",
+		"commit": "2c1a6a86e",
+		"date": "2026-10-27",
 		"installed": {
 			"ata-validator": "1.60.0",
 			"typia": "15.2.1"
 		}
 	},
 	"sury": {
-		"commit": "624a5d716",
-		"date": "2026-10-25",
+		"commit": "2c1a6a86e",
+		"date": "2026-10-27",
 		"installed": {
 			"zod": "4.6.7",
 			"valibot": "1.5.0"

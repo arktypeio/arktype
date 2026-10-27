@@ -58,12 +58,12 @@
 			"gzip": 47876
 		},
 		"ArkType schema": {
-			"minified": 4363,
-			"gzip": 1861
+			"minified": 4352,
+			"gzip": 1874
 		},
 		"ArkType check": {
-			"minified": 4363,
-			"gzip": 1862
+			"minified": 4352,
+			"gzip": 1876
 		}
 	},
 	"production": {
@@ -124,12 +124,12 @@
 			"gzip": 47876
 		},
 		"ArkType schema": {
-			"minified": 2818,
-			"gzip": 1077
+			"minified": 2639,
+			"gzip": 1014
 		},
 		"ArkType check": {
-			"minified": 589,
-			"gzip": 278
+			"minified": 573,
+			"gzip": 270
 		}
 	}
 }
