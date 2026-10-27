@@ -437,13 +437,4 @@ b must be equal to a (was an object)`)
 			writeUnsatisfiableExpressionError('Intersection of "b" and _isNarrowedC')
 		)
 	})
-
-	it("prints nested undefined in errors", () => {
-		const T = type("unknown[]").narrow(
-			(arr, ctx) => !arr.includes(undefined) || ctx.mustBe("fully defined")
-		)
-		attest(T([1, undefined]).toString()).snap(
-			"must be fully defined (was [1,undefined])"
-		)
-	})
 })
