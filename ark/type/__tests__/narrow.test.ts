@@ -294,4 +294,13 @@ contextualize(() => {
 		)
 		attest(T([1n, 0n, 1n]).toString()).snap("must be unique (was [1n,0n,1n])")
 	})
+
+	it("prints nested undefined in errors", () => {
+		const T = type("unknown[]").narrow(
+			(arr, ctx) => !arr.includes(undefined) || ctx.mustBe("fully defined")
+		)
+		attest(T([1, undefined]).toString()).snap(
+			"must be fully defined (was [1,undefined])"
+		)
+	})
 })
