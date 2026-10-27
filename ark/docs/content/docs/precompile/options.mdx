@@ -64,11 +64,12 @@ A production build leaves these out, as `freeze: false`, `creationChecks: "none"
 
 - Vite's `build` command, outside Vitest
 - webpack, Rspack and Rsbuild in `production` mode, their default
+- Farm in `production` mode, as `farm build` sets it
 - esbuild with `"production"` among its `conditions`
 - `arktype-precompile --emit`, unless `NODE_ENV` is set to something else
 - Turbopack, the Node and Bun drivers, `arktype-precompile --check` and the ESLint rule where `NODE_ENV` is `production`, as `next build` sets it
 
-Rollup, Rolldown and Farm builds keep the checks unless set.
+Rollup and Rolldown builds keep the checks unless set.
 
 ## ark.json
 

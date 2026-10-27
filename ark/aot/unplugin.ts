@@ -688,7 +688,12 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		},
 		load: {
 			filter: {
-				id: [virtual ? /^\0~arktype\// : /^~arktype\//, issueFeaturesFile]
+				id: [
+					virtual ? /^\0~arktype\// : /^~arktype\//,
+					// written by a pruned Rollup, Rolldown or Vite build's scan, as
+					// Farm fails a load answering nothing
+					...(meta.framework in checkingFrameworks ? [issueFeaturesFile] : [])
+				]
 			},
 			// a virtual module loads synchronously, as webpack's cache reads it
 			handler(id) {
@@ -899,6 +904,14 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				api.modifyRspackConfig(config => {
 					config.plugins.push({ apply: applyRspack })
 				})
+		},
+		farm: {
+			configResolved: (config: FarmConfig) => {
+				if (config.root) setRoot(resolve(config.root))
+				const mode = config.compilation?.mode
+				resolveIn(mode === "development")
+				setEnvironment({ production: mode === "production", testing: false })
+			}
 		},
 		rollup: {
 			options: checkInputExternal,
@@ -1690,6 +1703,12 @@ const environmentOf = (compiler: BundlerCompiler): Environment => ({
 	production: (compiler.options.mode ?? "production") === "production",
 	testing: false
 })
+
+// what the plugin reads of Farm's resolved config
+interface FarmConfig {
+	root?: string | undefined
+	compilation?: { mode?: string | undefined } | undefined
+}
 
 // what the plugin reads of Rsbuild's plugin API
 interface RsbuildApi {

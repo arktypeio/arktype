@@ -1949,6 +1949,53 @@ console.log(JSON.stringify(User.toJsonSchema()))
 		]).snap(["type/runtimeDevelopment.ts", "type/runtime.ts"])
 	})
 
+	it("resolves the runtime of Farm's mode, leaving it the files it loads", async () => {
+		const farmPlugin = precompile.farm({ cwd: app, conditions }) as unknown as {
+			configResolved(config: object): void
+			resolve: {
+				executor(
+					params: object,
+					context: object
+				): Promise<{
+					resolvedPath: string
+				} | null>
+			}
+			load: { executor(params: object, context: object): Promise<unknown> }
+		}
+		const context = { warn: () => {}, error: () => {} }
+		const resolvedIn = async (mode: string) => {
+			farmPlugin.configResolved({ compilation: { mode } })
+			const resolved = await farmPlugin.resolve.executor(
+				{ source: "arktype", importer: join(app, "main.ts"), kind: "import" },
+				context
+			)
+			return relative(fromHere("..", ".."), resolved!.resolvedPath).replace(
+				/\\/g,
+				"/"
+			)
+		}
+		attest([
+			await resolvedIn("development"),
+			await resolvedIn("production")
+		]).snap(["type/runtimeDevelopment.ts", "type/runtime.ts"])
+		// Farm fails a load a plugin answers with nothing
+		attest(
+			await farmPlugin.load.executor(
+				{
+					resolvedPath: fromHere(
+						"..",
+						"..",
+						"schema",
+						"shared",
+						"issueFeatures.ts"
+					),
+					query: []
+				},
+				context
+			)
+		).equals(null)
+	})
+
 	it("loads the modules a webpack build's cache kept", async () => {
 		const cache = {
 			type: "filesystem",
