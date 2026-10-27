@@ -49,13 +49,13 @@ import {
 import { errorFromContext } from "../shared/errors.ts"
 import type { FailureSite, SiteContext } from "../shared/issues.ts"
 import {
-	addMorphErrors,
+	addMorphErrs,
 	allowsInBranch,
 	applyValue,
 	transform,
 	transformedInApply,
 	transformsValid,
-	traverseKey,
+	travKey,
 	type AliasDepth,
 	type InternalTraversal,
 	type TraversalKind
@@ -570,7 +570,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		ctx: InternalTraversal,
 		transformsKeys = true
 	): boolean {
-		const errorCount = ctx?.errCount ?? 0
+		const errN = ctx?.errN ?? 0
 		const props = trav === "Allows" ? this.allowsProps : this.inOrder
 		for (let i = 0; i < props.length; i++) {
 			const prop = props[i]
@@ -580,15 +580,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				// a prop's Apply would transform before an index signature checks it
 				if (transformsKeys) prop.traverseApply(data as never, ctx)
 				else if (prop.key in data) {
-					traverseKey(
+					travKey(
 						prop.key,
 						() => applyValue(prop.value, data[prop.key as never], ctx, false),
 						ctx
 					)
 				} else if (prop.is("required"))
-					traverseKey(prop.key, () => ctx.nodeError(prop.errorCtx, data), ctx)
+					travKey(prop.key, () => ctx.nodeError(prop.errorCtx, data), ctx)
 
-				if (ctx.failFast && ctx.errCount > errorCount) return false
+				if (ctx.failFast && ctx.errN > errN) return false
 			}
 		}
 
@@ -597,7 +597,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (!this.sequence.traverseAllows(data as never, ctx)) return false
 			} else {
 				this.sequence.traverseApply(data as never, ctx)
-				if (ctx.failFast && ctx.errCount > errorCount) return false
+				if (ctx.failFast && ctx.errN > errN) return false
 			}
 		}
 
@@ -611,14 +611,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					for (const node of this.index) {
 						if (node.allowsKey(k, ctx)) {
 							if (trav === "Allows") {
-								const result = traverseKey(
+								const result = travKey(
 									k,
 									() => node.value.traverseAllows(data[k as never], ctx),
 									ctx
 								)
 								if (!result) return false
 							} else {
-								traverseKey(
+								travKey(
 									k,
 									() =>
 										applyValue(
@@ -629,7 +629,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 										),
 									ctx
 								)
-								if (ctx.failFast && ctx.errCount > errorCount) return false
+								if (ctx.failFast && ctx.errN > errN) return false
 							}
 						}
 					}
@@ -658,16 +658,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	traverseTransform(data: object, ctx: InternalTraversal): unknown {
-		const errorCount = ctx.errCount
+		const errN = ctx.errN
 		const copies = !this.writesInto(ctx)
 		let out: any = data
-		const transformKey = (
-			k: Key,
-			value: unknown,
-			node: BaseNode,
-			input = value
-		) => {
-			let transformed = traverseKey(k, () => transform(ctx, node, input), ctx)
+		const tfKey = (k: Key, value: unknown, node: BaseNode, input = value) => {
+			let transformed = travKey(k, () => transform(ctx, node, input), ctx)
 			if (input !== value)
 				transformed = mergeTransformed(input, value, transformed)
 			if (Object.is(transformed, value)) return value
@@ -680,18 +675,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			const prop = props[i]
 			if (!hasIndexedProp) {
 				if (prop.value.transforms && prop.key in data)
-					transformKey(prop.key, data[prop.key as never], prop.value)
+					tfKey(prop.key, data[prop.key as never], prop.value)
 				continue
 			}
 			if (!(prop.key in data)) continue
-			const keyErrorCount = ctx.errCount
+			const keyErrorCount = ctx.errN
 			const input: unknown = data[prop.key as never]
 			let value = input
 			for (const step of this.transformsOf(prop)) {
-				if (ctx.errCount > keyErrorCount) break
+				if (ctx.errN > keyErrorCount) break
 				if (step.signature && !allowsInBranch(ctx, step.signature, prop.key))
 					continue
-				value = transformKey(
+				value = tfKey(
 					prop.key,
 					value,
 					step.node,
@@ -720,10 +715,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					if (!node.value.transforms || !allowsInBranch(ctx, node.signature, k))
 						continue
 					if (keyErrorCount === undefined) {
-						keyErrorCount = ctx.errCount
+						keyErrorCount = ctx.errN
 						value = input = data[k as never]
-					} else if (ctx.errCount > keyErrorCount) break
-					value = transformKey(
+					} else if (ctx.errN > keyErrorCount) break
+					value = tfKey(
 						k,
 						value,
 						node.value,
@@ -732,7 +727,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				}
 			}
 		}
-		if (ctx.errCount > errorCount) return data
+		if (ctx.errN > errN) return data
 		return this.applyStructuralMorph(data, out, ctx)
 	}
 
@@ -749,13 +744,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	// whether traversal continues, as a compiled Apply returns
 	applySharedKeys(data: object, ctx: InternalTraversal): boolean {
-		const errorCount = ctx.errCount
+		const errN = ctx.errN
 		this._traverse("Apply", data, ctx, false)
 		for (const prop of this.inOrder)
 			if (prop.key in data) this.transformSharedKey(data, prop.key, ctx)
 		for (const k of ownKeysOf(data))
 			if (!(k in this.propsByKey)) this.transformSharedKey(data, k, ctx)
-		return !ctx.failFast || ctx.errCount === errorCount
+		return !ctx.failFast || ctx.errN === errN
 	}
 
 	private transformSharedKey(
@@ -775,21 +770,21 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const input: unknown = data[k as never]
 		if (
 			!steps.length ||
-			!traverseKey(
+			!travKey(
 				k,
 				() => constraints.every(n => allowsInBranch(ctx, n, input)),
 				ctx
 			)
 		)
 			return
-		const errorCount = ctx.errCount
+		const errN = ctx.errN
 		let value = input
 		for (const step of steps) {
-			if (ctx.errCount > errorCount) break
+			if (ctx.errN > errN) break
 			if (step.signature && !allowsInBranch(ctx, step.signature, k)) continue
 			const stepInput =
 				value === input || step.node.allows(value) ? value : input
-			const transformed = traverseKey(
+			const transformed = travKey(
 				k,
 				() => transform(ctx, step.node, stepInput),
 				ctx
@@ -839,7 +834,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (failed) {
 			// a transform without ctx returns its errors
 			if (!ctx) return failed
-			addMorphErrors(ctx, failed)
+			addMorphErrs(ctx, failed)
 		}
 		// an object's copy drops a declared key data holds as a non-enumerable own prop
 		if (out !== data && !sequence) {
@@ -1055,7 +1050,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			...this.propsOf(js),
 			...(this.sequence ? [this.sequence] : [])
 		]
-		return children.map(child => js.invoke(child)).join(" && ") || "true"
+		return children.map(child => js.inv(child)).join(" && ") || "true"
 	}
 
 	/** writes its Transform */
@@ -1072,7 +1067,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		for (const index of transformedIndex) transformedChildren.push(index.value)
 		if (this.sequence?.transforms) transformedChildren.push(this.sequence)
 		transformedChildren.push(...this.defaultable)
-		js.initTransform(transformedChildren)
+		js.initTf(transformedChildren)
 		if (
 			transformedChildren.length >= 2 &&
 			transformedChildren.length === this.defaultable.length
@@ -1091,7 +1086,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				this.jsCopy(js, i === 0).line(`out${js.prop(key)} = transformed${i}`)
 				if (once) this.jsDeclaredCopy(js, [key])
 			}
-			js.const(`value${i}`, `data${js.prop(key)}`).transformKey(
+			js.const(`value${i}`, `data${js.prop(key)}`).tfKey(
 				`transformed${i}`,
 				`value${i}`,
 				this.transformsOf(transformedProps[i]),
@@ -1104,40 +1099,33 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 		if (this.slicesSequence) this.sequence!.jsElementTransforms(js, true)
 		else if (this.sequence?.transforms) {
-			js.transformKey(
-				"transformedSequence",
-				"data",
-				[{ node: this.sequence }],
-				{
-					onChange: () =>
-						this.jsCopyProps(js, "out", "transformedSequence").set(
-							"out",
-							"transformedSequence"
-						)
-				}
-			)
+			js.tfKey("transformedSequence", "data", [{ node: this.sequence }], {
+				onChange: () =>
+					this.jsCopyProps(js, "out", "transformedSequence").set(
+						"out",
+						"transformedSequence"
+					)
+			})
 		}
 		if (transformedIndex.length) {
 			this.jsForOwnKeys(js, "data", () => {
 				if (this.hasIndexedProp)
 					js.if(`k in ${js.ref(this.propsByKey)}`, () => js.line("continue"))
-				const transformKey = (steps: TransformStep[]) =>
-					js
-						.const("value", "data[k]")
-						.transformKey("transformed", "value", steps, {
-							keyExpr: "k",
-							onChange: () => this.jsCopy(js).line("out[k] = transformed")
-						})
+				const tfKey = (steps: TransformStep[]) =>
+					js.const("value", "data[k]").tfKey("transformed", "value", steps, {
+						keyExpr: "k",
+						onChange: () => this.jsCopy(js).line("out[k] = transformed")
+					})
 				if (transformedIndex.length === 1) {
 					return js.if(
-						js.invoke(transformedIndex[0].signature, {
+						js.inv(transformedIndex[0].signature, {
 							arg: "k",
 							kind: "Allows"
 						}),
-						() => transformKey([{ node: transformedIndex[0].value }])
+						() => tfKey([{ node: transformedIndex[0].value }])
 					)
 				}
-				return transformKey(
+				return tfKey(
 					transformedIndex.map(index => ({
 						node: index.value,
 						signature: index.signature
@@ -1145,7 +1133,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				)
 			})
 		}
-		js.returnIfFailed()
+		js.retIfFailed()
 		if (deletes) {
 			return this.jsDeleteTransform(
 				js,
@@ -1183,7 +1171,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			first = false
 		}
 		this.jsSequenceDefaults(js)
-		return js.returnIfFailed()
+		return js.retIfFailed()
 	}
 
 	/** writes `out`, which a transform writes into: data at the first site and where it writes in place */
@@ -1284,7 +1272,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const deleteFromCopy = (js: NodeCompiler) => {
 			for (let i = 0; i < transformedProps.length; i++) {
 				const prop = transformedProps[i]
-				const changed = js.compareTransformed(
+				const changed = js.cmpTfd(
 					this.transformsOf(prop),
 					`transformed${i}`,
 					"!==",
@@ -1325,7 +1313,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			if (outMayBeCopied) unchanged.push("out === data")
 			for (let i = 0; i < transformedProps.length; i++) {
 				unchanged.push(
-					js.compareTransformed(
+					js.cmpTfd(
 						this.transformsOf(transformedProps[i]),
 						`transformed${i}`,
 						"===",
@@ -1409,7 +1397,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				"outSymbols"
 			)
 		}
-		js.returnIfFailed().return("result")
+		js.retIfFailed().return("result")
 	}
 
 	// without a set engine, any signature may match a symbol key
@@ -1449,7 +1437,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.index) {
 			for (const node of this.index) {
 				js.if(js.allows(node.signature, "k"), () =>
-					js.traverseKey("k", "data[k]", node.value)
+					js.travKey("k", "data[k]", node.value)
 				)
 			}
 		}
@@ -1567,7 +1555,7 @@ const compileDefaultMorph = (
 	node.hasMorph ?
 		js
 			.const("defaulted", call)
-			.if(`defaulted !== ${out}`, () => js.addMorphErrors("defaulted"))
+			.if(`defaulted !== ${out}`, () => js.addMorphErrs("defaulted"))
 	:	js.line(call)
 
 const compileDeclaredKeySwitch = (

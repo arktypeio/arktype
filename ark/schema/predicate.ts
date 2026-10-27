@@ -79,9 +79,9 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	}
 
 	traverseApply(data: unknown, ctx: InternalTraversal): void {
-		const errorCount = ctx.errCount
+		const errN = ctx.errN
 		const predicate = this.predicate
-		if (!predicate(data, ctx.external) && ctx.errCount === errorCount)
+		if (!predicate(data, ctx.external) && ctx.errN === errN)
 			ctx.nodeError(this.errorCtx, data)
 	}
 
@@ -99,10 +99,10 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		js.initErrCount()
 		js.if(
 			// only add the default error if the predicate didn't add one itself
-			`!${condition} && ctx.errCount === errorCount`,
+			`!${condition} && ctx.errN === errN`,
 			() => js.return(`!${js.error(this)}`)
 		)
-		js.return("!ctx.failFast || ctx.errCount === errorCount")
+		js.return("!ctx.failFast || ctx.errN === errN")
 	}
 }
 

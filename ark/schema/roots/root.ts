@@ -177,7 +177,7 @@ export abstract class BaseRoot<
 		const rNode = this.$.parseDef(r)
 		const result = this.rawIntersect(rNode)
 		if (result instanceof Disjoint) return result
-		return this.$.finalize(result as BaseRoot, jit)
+		return this.$.fin(result as BaseRoot, jit)
 	}
 
 	rawIntersect(r: BaseRoot): BaseRoot {
@@ -200,7 +200,7 @@ export abstract class BaseRoot<
 
 	or(r: unknown): BaseRoot {
 		const rNode = this.$.parseDef(r)
-		return this.$.finalize(this.rawOr(rNode)) as never
+		return this.$.fin(this.rawOr(rNode)) as never
 	}
 
 	rawOr(r: BaseRoot): BaseRoot {
@@ -209,7 +209,7 @@ export abstract class BaseRoot<
 	}
 
 	private rootOfBranches(branches: readonly BaseRoot[]): BaseRoot {
-		return this.$.finalize(this.$.node("union", { branches }))
+		return this.$.fin(this.$.node("union", { branches }))
 	}
 
 	map(flatMapEntry: PropFlatMapper): BaseRoot {
@@ -245,7 +245,7 @@ export abstract class BaseRoot<
 				writeUnsatisfiableExpressionError(`keyof ${this.expression}`)
 			)
 		}
-		return (this._keyof = this.$.finalize(result))
+		return (this._keyof = this.$.fin(result))
 	}
 
 	get props(): Prop.Node[] {
@@ -356,7 +356,7 @@ export abstract class BaseRoot<
 	}
 
 	array(): BaseRoot {
-		return this.$.finalize(this.rawArray())
+		return this.$.fin(this.rawArray())
 	}
 
 	rawArray(): BaseRoot {
@@ -443,7 +443,7 @@ export abstract class BaseRoot<
 			(acc, morph) => acc.rawPipeOnce(morph),
 			this
 		)
-		return this.$.finalize(result)
+		return this.$.fin(result)
 	}
 
 	protected tryPipe(...morphs: Morph[]): BaseRoot {
@@ -464,7 +464,7 @@ export abstract class BaseRoot<
 	}
 
 	to(def: unknown): BaseRoot {
-		return this.$.finalize(this.toNode(this.$.parseDef(def)))
+		return this.$.fin(this.toNode(this.$.parseDef(def)))
 	}
 
 	private toNode(root: BaseRoot): BaseRoot {
@@ -500,21 +500,21 @@ export abstract class BaseRoot<
 		kind: kind,
 		schema: Constraint.Schema<kind>
 	): BaseRoot {
-		return this.$.finalize(this._constrain("root", kind, schema))
+		return this.$.fin(this._constrain("root", kind, schema))
 	}
 
 	constrainIn<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
 		schema: Constraint.Schema<kind>
 	): BaseRoot {
-		return this.$.finalize(this._constrain("in", kind, schema))
+		return this.$.fin(this._constrain("in", kind, schema))
 	}
 
 	constrainOut<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
 		schema: Constraint.Schema<kind>
 	): BaseRoot {
-		return this.$.finalize(this._constrain("out", kind, schema))
+		return this.$.fin(this._constrain("out", kind, schema))
 	}
 
 	rawConstrain<kind extends Constraint.PrimitiveKind>(
@@ -583,7 +583,7 @@ export abstract class BaseRoot<
 	onUndeclaredKey(cfg: UndeclaredKeyBehavior | UndeclaredKeyConfig): BaseRoot {
 		const rule = typeof cfg === "string" ? cfg : cfg.rule
 		const deep = typeof cfg === "string" ? false : cfg.deep
-		return this.$.finalize(
+		return this.$.fin(
 			this.transform(
 				(kind, inner) =>
 					kind === "structure" ? { ...inner, undeclared: rule } : inner,

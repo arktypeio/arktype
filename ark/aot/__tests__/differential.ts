@@ -836,7 +836,7 @@ const validatedOf = (
 	let resolved = node
 	while (resolved.is("alias")) resolved = resolved.resolution
 	const bound = $.bindRef(resolved)
-	return inPlace ? $.finalize(bound) : bound
+	return inPlace ? $.fin(bound) : bound
 }
 
 // a hole returning arktype's errors or nodes, foreign to the runtime

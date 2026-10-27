@@ -40,7 +40,7 @@ class StandaloneCompiler extends TraversalCompiler {
 	override readonly reportsFirst: boolean = false
 	// a unit is named for its content as compiled without the size forms that
 	// follow from it
-	readonly naming: boolean = this.linkage.unit === undefined
+	readonly naming: boolean = this.link.unit === undefined
 
 	// whether a node's Apply is its Allows, as a unified build writes it
 	unifies(node: BaseNode): boolean {
@@ -50,8 +50,8 @@ class StandaloneCompiler extends TraversalCompiler {
 	// terser and swc write a function called once where it's called, as a
 	// closure created at each call, which slows the Allows or Transform
 	// calling it; minifiers drop the annotation
-	override invoke(node: BaseNode, opts?: InvokeOptions): string {
-		const call = super.invoke(node, opts)
+	override inv(node: BaseNode, opts?: InvokeOptions): string {
+		const call = super.inv(node, opts)
 		return (
 				this.shortest ||
 					this.naming ||
@@ -64,7 +64,7 @@ class StandaloneCompiler extends TraversalCompiler {
 
 	// named for its unit, so units can share a scope
 	override ref(value: object | symbol): string {
-		const { unit } = this.linkage
+		const { unit } = this.link
 		if (unit === undefined) return super.ref(value)
 		let name = this.refs!.get(value)
 		if (name === undefined)
@@ -146,8 +146,8 @@ class StandaloneCompiler extends TraversalCompiler {
 		const passes =
 			isDecidedByKeywords(caseNode) ?
 				(caseNode.compileCondition?.(this, "data") ??
-				this.invoke(caseNode, { kind: "Allows" }))
-			:	`(ctx.pushBranch(), ${this.applyMember(caseNode)}, ctx.popBranch().errorCount === 0)`
+				this.inv(caseNode, { kind: "Allows" }))
+			:	`(ctx.pushBr(), ${this.applyMember(caseNode)}, ctx.popBr().errN === 0)`
 		return `${passes} || ${this.unionFails(node)}`
 	}
 
@@ -300,7 +300,7 @@ const reportsApart = (reference: BaseNode): boolean =>
 // Apply named as its Allows, reporting a failure only to a ctx it's passed
 class UnifiedCompiler extends StandaloneCompiler {
 	override refToId(id: NodeId, opts?: ReferenceOptions): string {
-		const node = this.linkage.refsById[id]
+		const node = this.link.refsById[id]
 		return super.refToId(
 			id,
 			node && (opts?.kind ?? this.trav) === "Apply" && this.unifies(node) ?
@@ -438,10 +438,10 @@ class CombinatorCompiler extends forSize(UnifiedCompiler) {
 		const source = writeCombinator(this, node)
 		if (source === undefined) return
 		const allows = this.refToId(node.id, { kind: "Allows" })
-		this.linkage.members.push([allows, source])
+		this.link.members.push([allows, source])
 		if (!node.transforms) return [allows, allows]
 		const transform = this.refToId(node.id, { kind: "Transform" })
-		this.linkage.members.push([
+		this.link.members.push([
 			transform,
 			`/* @__PURE__ */ runtime.transformOf(${allows})`
 		])

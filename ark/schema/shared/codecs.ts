@@ -18,7 +18,7 @@ export const writeMissingInverseMessage = (expression: string): string =>
 
 export const encode = (node: BaseRoot): BaseRoot => {
 	let encoder = encoders.get(node)
-	if (!encoder) encoders.set(node, (encoder = node.$.finalize(encoderOf(node))))
+	if (!encoder) encoders.set(node, (encoder = node.$.fin(encoderOf(node))))
 	return encoder
 }
 

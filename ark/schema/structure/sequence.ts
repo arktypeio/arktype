@@ -38,7 +38,7 @@ import {
 	applyValue,
 	computeDefaultValueMorph,
 	transform,
-	traverseKey,
+	travKey,
 	type AliasDepth,
 	type InternalTraversal
 } from "../shared/traversal.ts"
@@ -301,10 +301,10 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	}
 
 	traverseApply(data: array, ctx: InternalTraversal): void {
-		const errorCount = ctx.errCount
+		const errN = ctx.errN
 		let i = 0
 		for (; i < data.length; i++) {
-			traverseKey(
+			travKey(
 				i,
 				() => applyValue(this.atIndex(data, i).node, data[i], ctx),
 				ctx
@@ -312,7 +312,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			// bail out of subsequent elements in fail-fast mode (e.g. inside a
 			// union branch) so we don't traverse an element whose basis has
 			// already failed - see https://github.com/arktypeio/arktype/issues/1458
-			if (ctx.failFast && ctx.errCount > errorCount) return
+			if (ctx.failFast && ctx.errN > errN) return
 		}
 	}
 
@@ -337,11 +337,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			const node = this.atIndex(data, i).node
 			if (!node.transforms) continue
 			const element = data[i]
-			const transformed = traverseKey(
-				i,
-				() => transform(ctx, node, element),
-				ctx
-			)
+			const transformed = travKey(i, () => transform(ctx, node, element), ctx)
 			if (Object.is(transformed, element)) continue
 			if (out === data && (slices || !ctx.inPlace)) {
 				out =
@@ -360,16 +356,16 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		// basis has already failed - see
 		// https://github.com/arktypeio/arktype/issues/1458
 		this.jsElements(js, (keyExpr, node) =>
-			js.traverseKey(keyExpr, `data[${keyExpr}]`, node)
+			js.travKey(keyExpr, `data[${keyExpr}]`, node)
 		)
 
 		js.return(true)
 	}
 
 	private jsTransform(js: NodeCompiler): void {
-		js.initTransform(this.children).let("out", "data")
+		js.initTf(this.children).let("out", "data")
 		this.jsElementTransforms(js, false)
-		js.returnIfFailed().return("out")
+		js.retIfFailed().return("out")
 	}
 
 	/** writes the transforms of data's elements */
@@ -385,7 +381,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			const transformed = `transformed${i++}`
 			return js
 				.const(element, `data[${keyExpr}]`)
-				.transformKey(transformed, element, [{ node }], {
+				.tfKey(transformed, element, [{ node }], {
 					keyExpr,
 					onChange: () =>
 						(copy ? js.if("out === data", () => js.set("out", copy)) : js).line(

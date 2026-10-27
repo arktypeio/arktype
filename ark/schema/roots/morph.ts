@@ -168,7 +168,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	compile(js: NodeCompiler): void {
 		if (js.trav === "Allows") {
-			js.return(this.head ? js.invoke(this.head) : true)
+			js.return(this.head ? js.inv(this.head) : true)
 			return
 		}
 		if (js.trav === "Transform") return this.jsTransform(js)
@@ -178,9 +178,9 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	private jsTransform(js: NodeCompiler): void {
 		let result = "data"
 		if (this.head?.transforms) {
-			js.initTransform([this.head])
-				.transformKey("transformedIn", "data", [{ node: this.head }])
-				.returnIfFailed()
+			js.initTf([this.head])
+				.tfKey("transformedIn", "data", [{ node: this.head }])
+				.retIfFailed()
 			result = "transformedIn"
 		}
 		const morphs = this.traversedMorphs
@@ -221,9 +221,9 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	}
 
 	traverseTransform(data: unknown, ctx: InternalTraversal): unknown {
-		const errorCount = ctx.errCount
+		const errN = ctx.errN
 		let result = this.head?.transforms ? transform(ctx, this.head, data) : data
-		if (ctx.errCount > errorCount) return data
+		if (ctx.errN > errN) return data
 		const morphs = this.traversedMorphs
 		for (let i = this.head ? 1 : 0; i < morphs.length; i++) {
 			const morph = morphs[i]

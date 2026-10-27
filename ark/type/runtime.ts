@@ -54,7 +54,7 @@ import type { StringType } from "./variants/string.ts"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 export {
 	addErrors,
-	addMorphErrors,
+	addMorphErrs,
 	aliasVisits,
 	allowsAcyclic,
 	allowsInBranch,

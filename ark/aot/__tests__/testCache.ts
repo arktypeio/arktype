@@ -93,17 +93,17 @@ const checkBound = (root: BaseRoot) => {
 		unbound.push(root.expression)
 }
 
-const { finalize } = BaseScope.prototype
-BaseScope.prototype.finalize = function <node extends BaseRoot>(
+const { fin } = BaseScope.prototype
+BaseScope.prototype.fin = function <node extends BaseRoot>(
 	this: BaseScope,
 	node: node,
 	jit = true
 ): node {
 	// a jitless scope leaves its roots uncompiled, as its tests expect
 	if (!jit || node.unitFn || node.hasAlias || this.cfg.jitless)
-		return finalize.call(this, node, jit) as node
+		return fin.call(this, node, jit) as node
 	finalizedUnits.set(node, register([node]))
-	finalize.call(this, node, jit)
+	fin.call(this, node, jit)
 	checkBound(node)
 	return node
 }

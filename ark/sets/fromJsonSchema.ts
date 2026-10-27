@@ -73,7 +73,7 @@ export const readJsonSchema = (
 	const id = idOf(document, ctx)
 	if (id !== undefined) documentResource.uri = resolveUri(id, documentUri, "#")
 	try {
-		return rootSchemaScope.finalize(defining(() => read(schema, "#", ctx)))
+		return rootSchemaScope.fin(defining(() => read(schema, "#", ctx)))
 	} finally {
 		for (const ref in ctx.cyclesByRef)
 			delete $ark.nodesById[ctx.cyclesByRef[ref].id]

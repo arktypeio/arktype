@@ -355,7 +355,7 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 				const errors = this as {} as ArkErrors
 				// an ArkErrors holding what its traversal found
 				errors._init(this.config)
-				this._f = (ctx.finalize(null) as ArkErrors)._
+				this._f = (ctx.fin(null) as ArkErrors)._
 			}
 			return this._f
 		}
@@ -374,7 +374,7 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 			node.traverseApply(this._d, ctx)
 			if (!ctx.hasError())
 				ctx.reject({ expected: "valid", problem: "is invalid" })
-			const errors = ctx.finalize(null) as ArkErrors
+			const errors = ctx.fin(null) as ArkErrors
 			if (errors._.includes(skipped))
 				errors._ = errors._.filter(error => error !== skipped)
 			return (this._1 = errors._first)
@@ -556,9 +556,9 @@ export class ArkTraversal extends Traversal {
 		data: unknown
 	): boolean {
 		const errors = branches.map(branch => {
-			this.pushBranch()
+			this.pushBr()
 			branch(data, this)
-			return this.popBranch()!.error as ArkError
+			return this.popBr()!.error as ArkError
 		})
 		errorFromUnion(this, errors, site.meta as ArkEnv.meta, data)
 		return this.failFast

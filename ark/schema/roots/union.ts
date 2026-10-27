@@ -308,16 +308,16 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// data in the default case was matched by no case, so the branches without
 	// the discriminant fail beside its miss
 	applyDefault(data: unknown, ctx: InternalTraversal, value: unknown): boolean {
-		ctx.pushBranch()
+		ctx.pushBr()
 		applyMember(this.discriminant!.cases.default as BaseRoot, data, ctx)
-		const failed = ctx.popBranch()!.error as ArkError | undefined
+		const failed = ctx.popBr()!.error as ArkError | undefined
 		if (!failed) return true
 		if (this.missLists || !readsPath(this.discriminant!.path, data))
 			this.applyBranches(data, ctx)
 		else {
-			ctx.pushBranch()
+			ctx.pushBr()
 			this.errorFromMiss(ctx, data, value)
-			const miss = ctx.popBranch()!.error as ArkError
+			const miss = ctx.popBr()!.error as ArkError
 			errorFromUnion(ctx, [miss, failed], this.meta, data)
 		}
 		return !ctx.failFast
@@ -358,13 +358,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		const errors: ArkError[] = []
 		for (let i = 0; i < this.branches.length; i++) {
 			const branch = this.branches[i]
-			ctx.pushBranch()
+			ctx.pushBr()
 			applyMember(branch, data, ctx)
 			if (!ctx.hasError()) {
-				ctx.popBranch()
+				ctx.popBr()
 				return
 			}
-			errors.push(ctx.popBranch()!.error as ArkError)
+			errors.push(ctx.popBr()!.error as ArkError)
 		}
 		errorFromUnion(ctx, errors, this.meta, data)
 	}
@@ -445,12 +445,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 						invokeTransform(js, v, member)
 					:	"data"
 				: v === true ? "true"
-				: js.trav !== "Apply" ? js.invoke(v)
+				: js.trav !== "Apply" ? js.inv(v)
 				: k === "default" ?
 					(js.defaultFails?.(this, v) ??
 					`${js.ref(this)}.applyDefault(data, ctx, ${value})`)
 				: member ? js.applyMember(v, member)
-				: js.invoke(v)
+				: js.inv(v)
 			written.push([caseCondition, caseResult])
 		}
 		const otherwise =
@@ -495,7 +495,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			for (const branch of this.branches) {
 				js.if(
 					branch.compileCondition?.(js, "data") ??
-						js.invoke(branch, { kind: "Allows" }),
+						js.inv(branch, { kind: "Allows" }),
 					() => js.return(true)
 				)
 			}
@@ -509,12 +509,10 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			const collects = !js.unionFails
 			if (collects) js.const("errors", "[]")
 			for (const branch of this.branches) {
-				js.line("ctx.pushBranch()")
+				js.line("ctx.pushBr()")
 					.line(js.applyMember(branch))
-					.if("!ctx.hasError()", () => js.line("ctx.popBranch()").return(true))
-					.line(
-						collects ? "errors.push(ctx.popBranch().error)" : "ctx.popBranch()"
-					)
+					.if("!ctx.hasError()", () => js.line("ctx.popBr()").return(true))
+					.line(collects ? "errors.push(ctx.popBr().error)" : "ctx.popBr()")
 			}
 			if (collects) {
 				js.line(
@@ -527,7 +525,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				js.if(
 					branch.checksCtx ?
 						`${js.ref(allowsInBranch)}(ctx, ${js.ref(branch)}, data)`
-					:	(branch.compileCondition?.(js, "data") ?? js.invoke(branch)),
+					:	(branch.compileCondition?.(js, "data") ?? js.inv(branch)),
 					() => js.return(true)
 				)
 			}
@@ -536,7 +534,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			for (const branch of this.branches) {
 				js.if(
 					branch.compileCondition?.(js, "data") ??
-						js.invoke(branch, { kind: "Allows" }),
+						js.inv(branch, { kind: "Allows" }),
 					() =>
 						js.return(branch.transforms ? invokeTransform(js, branch) : "data")
 				)
@@ -665,8 +663,8 @@ const invokeTransform = (
 	member ?
 		`${js.ref(transformResolution)}(ctx, "${js.nameOf(member.id)}", data, ${js.refToId(branch.id, { kind: "Transform" })})`
 	: js.needsCtx && returnsTransformErrors(branch) ?
-		`${js.ref(transformed)}(ctx, ${js.invoke(branch)}, data)`
-	:	js.invoke(branch)
+		`${js.ref(transformed)}(ctx, ${js.inv(branch)}, data)`
+	:	js.inv(branch)
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"

@@ -4,7 +4,7 @@ import { CompiledFunction } from "./compile.ts"
 import { applyUnread, ArkTraversal } from "./errors.ts"
 import { TransformErrors } from "./transform.ts"
 import {
-	addMorphErrors,
+	addMorphErrs,
 	allowsAcyclic,
 	allowsInContext,
 	applyCyclic,
@@ -14,7 +14,7 @@ import {
 export const rootApplyRuntime = {
 	Traversal: ArkTraversal,
 	TransformErrors,
-	addMorphErrors,
+	addMorphErrs,
 	applyCyclic,
 	applyRejected: applyUnread,
 	allowsAcyclic,
@@ -57,7 +57,7 @@ export const rootApplyParts = (
 	const fallback = (body: typeof js) =>
 		node.hasAlias ?
 			body.return(
-				`${ref("applyCyclic")}(node, data, ${newCtx}).finalize(${handler})`
+				`${ref("applyCyclic")}(node, data, ${newCtx}).fin(${handler})`
 			)
 		:	body.return(
 				`${ref("applyRejected")}(node, data, ${ref("config")}, ${handler}, ${ref("Traversal")})`
@@ -70,8 +70,8 @@ export const rootApplyParts = (
 					() =>
 						js
 							.const("ctx", newCtx)
-							.line(`${ref("addMorphErrors")}(ctx, result)`)
-							.return(`ctx.finalize(${handler})`)
+							.line(`${ref("addMorphErrs")}(ctx, result)`)
+							.return(`ctx.fin(${handler})`)
 				)
 				.return("result")
 		:	js.return("result")
@@ -93,7 +93,7 @@ export const rootApplyParts = (
 					fallback
 				)
 				.const("ctx", newCtx)
-				.set("ctx.tracksMorphs", "untracked === undefined")
+				.set("ctx.isTree", "untracked === undefined")
 				.const(
 					"result",
 					`${ref("transformResolution")}(ctx, "${name}", data, traverseTransform)`
@@ -103,7 +103,7 @@ export const rootApplyParts = (
 				.const("ctx", newCtx)
 				.const("result", "traverseTransform(data, ctx)")
 		}
-		js.return(`ctx.hasError() ? ctx.finalize(${handler}) : result`)
+		js.return(`ctx.hasError() ? ctx.fin(${handler}) : result`)
 	} else if (node.is("union") && !node.discriminant) {
 		js.const("result", "traverseTransform(data)").if(
 			`result === ${JSON.stringify(unset)}`,

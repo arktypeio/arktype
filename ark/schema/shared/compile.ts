@@ -18,7 +18,7 @@ import { registerBuilderCompiler, type ErrorBuilder } from "./errors.ts"
 import { registeredReference } from "./registry.ts"
 import { mergeTransformed, TransformErrors } from "./transform.ts"
 import {
-	addMorphErrors,
+	addMorphErrs,
 	allowsInBranchBy,
 	disallowed,
 	enterApplied,
@@ -326,7 +326,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 		body: (js: NodeCompiler) => unknown
 	): this
 
-	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
+	/** an expression calling node's traversal, or a referenced one's by id */
+	inv(node: BaseNode | NodeId, opts?: InvokeOptions): string {
 		const arg = opts?.arg ?? this.data
 		if (typeof node === "string")
 			return `${this.refToId(node, opts)}(${arg}, ${this.ctx})`
@@ -343,16 +344,14 @@ export abstract class NodeCompiler extends CompiledFunction<
 
 	// Allows adds no errors to ctx, so a predicate reading it runs in a branch
 	allows(node: BaseNode, arg: string = this.data): string {
-		if (!node.allowsCtx) return this.invoke(node, { arg, kind: "Allows" })
+		if (!node.allowsCtx) return this.inv(node, { arg, kind: "Allows" })
 		return node.checksCtx ?
 				`${this.ref(allowsInBranchBy)}(${this.ctx}, ${this.refToId(node.id, { kind: "Allows" })}, ${arg})`
 			:	`${this.ref(node)}.allows(${arg})`
 	}
 
 	applyMember(node: BaseNode, member: BaseNode = node): string {
-		return member.hasAlias ?
-				this.resolution(node, member.id)
-			:	this.invoke(node)
+		return member.hasAlias ? this.resolution(node, member.id) : this.inv(node)
 	}
 
 	// a cycle member is entered as a resolution, so it is applied once
@@ -450,10 +449,10 @@ export abstract class NodeCompiler extends CompiledFunction<
 
 	/** writes a const holding the error count, to tell whether a child added errors */
 	initErrCount(): this {
-		return this.const("errorCount", "ctx.errCount")
+		return this.const("errN", "ctx.errN")
 	}
 
-	traverseKey(keyExpr: string, accessExpression: string, node: BaseNode): this {
+	travKey(keyExpr: string, accessExpression: string, node: BaseNode): this {
 		const fails = this.keyFails(keyExpr, accessExpression, node)
 		if (fails !== undefined) return this.if(fails, () => this.return(false))
 		if (this.trav === "Apply")
@@ -481,7 +480,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 				(node.allowsCtx && node.checksCtx)
 			)
 				return
-			return `!${this.invoke(node, { arg: value })}`
+			return `!${this.inv(node, { arg: value })}`
 		}
 		if (node.hasMorph || node.hasAlias) return
 		// transforming values are checked by Allows first
@@ -512,7 +511,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		const apply =
 			node.entersAlias && node.hasAlias ?
 				`(${this.resolution(node, node.id, value)})`
-			:	this.invoke(node, { arg: value })
+			:	this.inv(node, { arg: value })
 		const fails = () => this.line("ctx.path.pop()").return(false)
 		this.line(`ctx.path.push(${key})`)
 		// only transforming a value Apply finds valid finds its morphs' errors
@@ -521,7 +520,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 				`${this.ref(transformsValid)}(ctx) && ${this.allows(node, value)}`,
 				() =>
 					this.line(
-						`${this.ref(transformedInApply)}(ctx, ${this.invoke(node, { arg: value, kind: "Transform" })})`
+						`${this.ref(transformedInApply)}(ctx, ${this.inv(node, { arg: value, kind: "Transform" })})`
 					)
 			).elseIf(`!${apply}`, fails)
 		} else {
@@ -536,7 +535,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	}
 
 	/** writes what a transform of `transformedChildren` needs before it starts */
-	initTransform(transformedChildren: readonly BaseNode[]): this {
+	initTf(transformedChildren: readonly BaseNode[]): this {
 		this.checksErrs = transformedChildren.some(
 			child => child.hasMorph || child.transformCtx
 		)
@@ -544,7 +543,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return this.needsCtx ? this.initErrCount() : this.line("let failed")
 	}
 
-	transformKey(
+	/** writes transforming a key's value through its steps into `name` */
+	tfKey(
 		name: string,
 		input: string,
 		steps: readonly TransformStep[],
@@ -558,28 +558,28 @@ export abstract class NodeCompiler extends CompiledFunction<
 			// a step rejecting an earlier step's output transforms the input instead
 			const transformed =
 				arg === input ?
-					this.invoke(node, { arg })
-				:	`${arg} === ${input} || ${this.ref(node)}.allows(${arg}) ? ${this.invoke(node, { arg })} : ${this.ref(mergeTransformed)}(${input}, ${arg}, ${this.invoke(node, { arg: input })})`
+					this.inv(node, { arg })
+				:	`${arg} === ${input} || ${this.ref(node)}.allows(${arg}) ? ${this.inv(node, { arg })} : ${this.ref(mergeTransformed)}(${input}, ${arg}, ${this.inv(node, { arg: input })})`
 			this.line(`${assignee} = ${transformed}`)
 			return pushesKey ? this.line(`${this.ctx}.path.pop()`) : this
 		}
 		const isTransformErrors = () =>
 			`typeof ${name} === "function" && ${name} instanceof ${this.ref(TransformErrors)}`
 		const assignSteps = () => {
-			const errorCount = `${name}ErrorCount`
+			const errN = `${name}ErrorCount`
 			if (nodes.slice(0, -1).some(node => node.transformCtx))
-				this.const(errorCount, `${this.ctx}.errCount`)
+				this.const(errN, `${this.ctx}.errN`)
 			for (let i = 0; i < steps.length; i++) {
 				const { node, signature } = steps[i]
 				const previous = nodes.slice(0, i)
 				const conditions =
 					signature ?
-						[this.invoke(signature, { arg: keyExpr!, kind: "Allows" })]
+						[this.inv(signature, { arg: keyExpr!, kind: "Allows" })]
 					:	[]
 				if (previous.some(returnsTransformErrors))
 					conditions.push(`!(${isTransformErrors()})`)
 				if (previous.some(node => node.transformCtx))
-					conditions.push(`${this.ctx}.errCount === ${errorCount}`)
+					conditions.push(`${this.ctx}.errN === ${errN}`)
 				const assignStep = () => assign(name, node, i === 0 ? input : name)
 				if (conditions.length) this.if(conditions.join(" && "), assignStep)
 				else assignStep()
@@ -599,23 +599,25 @@ export abstract class NodeCompiler extends CompiledFunction<
 		}
 		const checksErrors = nodes.some(returnsTransformErrors)
 		if (!checksErrors && !opts?.onChange) return this
-		return this.if(this.compareTransformed(steps, name, "!==", input), () => {
+		return this.if(this.cmpTfd(steps, name, "!==", input), () => {
 			if (!checksErrors) return onChange()
-			this.if(isTransformErrors(), () => this.addMorphErrors(name, keyExpr))
+			this.if(isTransformErrors(), () => this.addMorphErrs(name, keyExpr))
 			return opts?.onChange ? this.else(onChange) : this
 		})
 	}
 
-	addMorphErrors(errors: string, keyExpr?: string): this {
+	/** writes adding the errors a morph returned */
+	addMorphErrs(errors: string, keyExpr?: string): this {
 		const key = keyExpr === undefined ? "" : `, ${keyExpr}`
 		return this.line(
 			this.needsCtx ?
-				`${this.ref(addMorphErrors)}(${this.ctx}, ${errors}${key})`
+				`${this.ref(addMorphErrs)}(${this.ctx}, ${errors}${key})`
 			:	`failed = ${errors}.addTo(failed${key})`
 		)
 	}
 
-	compareTransformed(
+	/** an expression comparing what steps transformed with their input */
+	cmpTfd(
 		steps: readonly TransformStep[],
 		transformed: string,
 		operator: "===" | "!==",
@@ -630,16 +632,17 @@ export abstract class NodeCompiler extends CompiledFunction<
 			:	`${transformed} ${operator} ${input}`
 	}
 
-	returnIfFailed(): this {
+	/** writes returning `data` if a morph added errors */
+	retIfFailed(): this {
 		if (!this.checksErrs) return this
 		return this.needsCtx ?
-				this.if("ctx.errCount > errorCount", () => this.return("data"))
+				this.if("ctx.errN > errN", () => this.return("data"))
 			:	this.if("failed", () => this.return("failed"))
 	}
 
 	// what a node's Allows holds for, as an expression
 	condition(node: BaseNode): string {
-		return node.compileCondition?.(this, this.data) ?? this.invoke(node)
+		return node.compileCondition?.(this, this.data) ?? this.inv(node)
 	}
 
 	// Apply reports a failed condition at its site
@@ -651,7 +654,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 			:	node.compileCondition?.(this, arg)
 		const fail = () => (opts?.breaks ? this.line("break") : this.return(false))
 		if (condition === undefined)
-			return this.if(`!${this.invoke(node, opts)}`, fail)
+			return this.if(`!${this.inv(node, opts)}`, fail)
 		return this.if(
 			this.trav === "Allows" ?
 				`!(${condition})`

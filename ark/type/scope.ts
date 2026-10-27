@@ -359,7 +359,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		this.node("proto", { proto: ctor }, { prereduced: true }) as never
 
 	or: NaryUnionParser<$> = (...defs: unknown[]) =>
-		this.finalize(
+		this.fin(
 			this.node("union", {
 				branches: defs.map(def => this.parse(def))
 			})

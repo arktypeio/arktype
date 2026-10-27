@@ -17,7 +17,7 @@ import type { RootKind } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
 	applyValue,
-	traverseKey,
+	travKey,
 	type AliasDepth,
 	type InternalTraversal
 } from "../shared/traversal.ts"
@@ -88,7 +88,7 @@ export abstract class BaseProp<
 	traverseAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
 		if (this.key in data) {
 			// ctx will be undefined if this node isn't context-dependent
-			return traverseKey(
+			return travKey(
 				this.key,
 				() => this.value.traverseAllows((data as any)[this.key], ctx),
 				ctx
@@ -99,13 +99,13 @@ export abstract class BaseProp<
 
 	traverseApply(data: object, ctx: InternalTraversal): void {
 		if (this.key in data) {
-			traverseKey(
+			travKey(
 				this.key,
 				() => applyValue(this.value, (data as any)[this.key], ctx),
 				ctx
 			)
 		} else if (this.is("required"))
-			traverseKey(this.key, () => ctx.nodeError(this.errorCtx, data), ctx)
+			travKey(this.key, () => ctx.nodeError(this.errorCtx, data), ctx)
 	}
 
 	compile(js: NodeCompiler): void {
@@ -116,7 +116,7 @@ export abstract class BaseProp<
 		}
 		const key = js.serialize(this.key)
 		js.if(`${key} in data`, () =>
-			js.traverseKey(key, `data${js.prop(this.key)}`, this.value)
+			js.travKey(key, `data${js.prop(this.key)}`, this.value)
 		)
 
 		if (this.is("required")) {
@@ -164,7 +164,7 @@ export abstract class BaseProp<
 			if (this.value.allowsCtx && this.value.checksCtx) return
 			return (
 				this.value.compileCondition?.(js, value) ??
-				js.invoke(this.value, { arg: value })
+				js.inv(this.value, { arg: value })
 			)
 		}
 		const fails = js.keyFails(key, value, this.value)

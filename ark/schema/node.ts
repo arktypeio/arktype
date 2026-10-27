@@ -834,7 +834,7 @@ export abstract class BaseNode<
 						const allowed = untracked ?? allowsInContext(this, data, this.$.cfg)
 						if (!allowed) return this.rejectRoot(data, onFail, runtime)
 						const ctx = new Traversal(data, this.$.cfg)
-						ctx.tracksMorphs = untracked === undefined
+						ctx.isTree = untracked === undefined
 						const result = transformResolution(
 							ctx,
 							this.id,
@@ -842,7 +842,7 @@ export abstract class BaseNode<
 							this.traverseTransform!,
 							this
 						)
-						return ctx.hasError() ? ctx.finalize(onFail) : result
+						return ctx.hasError() ? ctx.fin(onFail) : result
 					}
 				}
 				if (!this.transformCtx) {
@@ -860,7 +860,7 @@ export abstract class BaseNode<
 							const result = transform(ctx, this, data)
 							if (result === unset)
 								return this.rejectRoot(data, onFail, runtime)
-							return ctx.hasError() ? ctx.finalize(onFail) : result
+							return ctx.hasError() ? ctx.fin(onFail) : result
 						}
 					}
 				}
@@ -868,7 +868,7 @@ export abstract class BaseNode<
 					if (!this.allows(data)) return this.rejectRoot(data, onFail, runtime)
 					const ctx = new Traversal(data, this.$.cfg)
 					const result = transform(ctx, this, data)
-					return ctx.hasError() ? ctx.finalize(onFail) : result
+					return ctx.hasError() ? ctx.fin(onFail) : result
 				}
 			default:
 				this.applyMode satisfies never
@@ -896,7 +896,7 @@ export abstract class BaseNode<
 					if (morphed instanceof BaseArkErrors) {
 						const ctx = new Traversal(data, this.$.cfg)
 						addErrors(ctx, morphed)
-						return ctx.finalize(onFail)
+						return ctx.fin(onFail)
 					}
 					result = morphed
 				}
@@ -914,7 +914,7 @@ export abstract class BaseNode<
 	): unknown {
 		const config = this.$.cfg
 		return this.hasAlias ?
-				applyCyclic(this, data, new Traversal(data, config)).finalize(onFail)
+				applyCyclic(this, data, new Traversal(data, config)).fin(onFail)
 			:	applyRejected(this, data, config, onFail, Traversal)
 	}
 
@@ -1016,7 +1016,7 @@ export abstract class BaseNode<
 	}
 
 	private finalized(io: BaseNode): BaseNode {
-		return io.isRoot() ? this.$.finalize(io) : io
+		return io.isRoot() ? this.$.fin(io) : io
 	}
 
 	// an open alias's io isn't final, so it isn't cached
@@ -1459,7 +1459,7 @@ export abstract class BaseNode<
 			: normalized.boundary === "shallow" ? node => node.kind !== "structure"
 			: () => true
 
-		return this.$.finalize(
+		return this.$.fin(
 			this.transform(mapper, {
 				shouldTransform,
 				selected

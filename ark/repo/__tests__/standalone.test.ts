@@ -503,10 +503,10 @@ nick must be a string or null`)
 		attest(() =>
 			assertReportsIssues([
 				unitOf(
-					"(data, ctx) => (ctx.pushBranch(), apply(data, ctx), ctx.popBranch().errorCount === 0)"
+					"(data, ctx) => (ctx.pushBr(), apply(data, ctx), ctx.popBr().errN === 0)"
 				)
 			])
-		).throws("unionApply reads ctx.pushBranch, which ArkErrors lack")
+		).throws("unionApply reads ctx.pushBr, which ArkErrors lack")
 	})
 
 	it("literals reading as the code around them", async () => {
@@ -534,7 +534,7 @@ nick must be a string or null`)
 			Looped: type({
 				"for (;;) {": type.enumerated("${", "`", '"', "\\\\"),
 				"         break": "string.url",
-				"const errorCount = ctx.errCount\n": "number",
+				"const errN = ctx.errN\n": "number",
 				"    return false  }": "string"
 			})
 		}
@@ -545,7 +545,7 @@ nick must be a string or null`)
 		) => ({
 			"for (;;) {": first,
 			[key]: url,
-			"const errorCount = ctx.errCount\n": 0,
+			"const errN = ctx.errN\n": 0,
 			"    return false\u2028 }": ""
 		})
 		// each input fails with at most one issue, so a first-issue build keeps

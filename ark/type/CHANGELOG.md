@@ -998,7 +998,7 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 
 | Was                                           | Now                   |
 | --------------------------------------------- | --------------------- |
-| `addTransformErrors`                          | `addMorphErrors`      |
+| `addTransformErrors`                          | `addMorphErrs`        |
 | `allowsBeforeJit`                             | `preJit`              |
 | `allowsRequiresContext`                       | `allowsCtx`           |
 | `allowsRequiresTraversal`                     | `checksCtx`           |
@@ -1008,9 +1008,11 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `bindReference`                               | `bindRef`             |
 | `boundOperandKind`                            | `operandKind`         |
 | `cacheGetter`                                 | `memo`                |
+| `checksOnly`                                  | `chkOnly`             |
 | `checksTransformErrors`                       | `checksErrs`          |
 | `collapsibleJson`                             | `bareJson`            |
 | `collapsibleKey`                              | `bareKey`             |
+| `compareTransformed`                          | `cmpTfd`              |
 | `compileConjunction`                          | `jsConjunction`       |
 | `compileCopiedDeclaredKeys`                   | `jsDeclaredCopy`      |
 | `compileCopy`                                 | `jsCopy`              |
@@ -1037,7 +1039,7 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `configureReferences`                         | `configureRefs`       |
 | `createOptimisticRootApply`                   | `optimisticApply`     |
 | `createParseContext`                          | `createParseCtx`      |
-| `currentErrorCount`                           | `errCount`            |
+| `currentErrorCount`                           | `errN`                |
 | `defaultablesAndOptionals`                    | `maybes`              |
 | `defaultablesLength`                          | `defLen`              |
 | `defaultEntries`                              | `defaultPairs`        |
@@ -1052,16 +1054,18 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `_discriminantMeta`                           | `_discMeta`           |
 | `earliestAssumed`                             | `assumedFrom`         |
 | `elementAtIndex`                              | `atIndex`             |
+| `enteredCount`                                | `nEntered`            |
 | `entersResolution`                            | `entersAlias`         |
 | `errorContext`                                | `errorCtx`            |
 | `_errorContext`                               | `_errorCtx`           |
+| `errorCount`                                  | `errN`                |
 | `errorFromNodeContext`                        | `nodeError`           |
 | `_exportedResolutions`                        | `_exported`           |
 | `failureSite`                                 | `failSite`            |
+| `finalize`                                    | `fin`                 |
 | `hasAssociatedError`                          | `ownErr`              |
 | `hasEqualMorphs`                              | `sameMorphs`          |
 | `hasKind`                                     | `is`                  |
-| `Morph.implementation`, as each kind's module | `Morph.impl`          |
 | `impliedBasis`                                | `implied`             |
 | `impliedSiblings`                             | `impliedBy`           |
 | `includesAlias`                               | `hasAlias`            |
@@ -1076,18 +1080,21 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `inheritableProps`                            | `protoProps`          |
 | `initializeErrorCount`                        | `initErrCount`        |
 | `initializeFlatRefs`                          | `initFlatRefs`        |
-| `initializeTransform`                         | `initTransform`       |
+| `initializeTransform`                         | `initTf`              |
 | `intersectionIsOpen`                          | `stacks`              |
 | `introspectableIn`                            | `head`                |
 | `introspectableOut`                           | `tail._out`           |
+| `invoke`                                      | `inv`                 |
 | `isUsedBeforeJit`                             | `usedPreJit`          |
 | `keyExpression`                               | `keyExpr`             |
 | `lastMorphIfNode`                             | `tail`                |
 | `lazyExports`                                 | `_lazy`               |
+| `linkage`                                     | `link`                |
 | `maxLengthNode`                               | `maxNode`             |
 | `minLengthNode`                               | `minNode`             |
 | `missListsBranches`                           | `missLists`           |
 | `_missListsBranches`                          | `_missLists`          |
+| `Morph.implementation`, as each kind's module | `Morph.impl`          |
 | `nestableExpression`                          | `nestedExpr`          |
 | `nodesByRegisteredId`                         | `nodesById`           |
 | `normalizeRootScopeValue`                     | `normalizeScopeValue` |
@@ -1099,17 +1106,23 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `orderedKeys`                                 | `keyOrder`            |
 | `orderedProps`                                | `inOrder`             |
 | `outerEarliestAssumed`                        | `assumedOuter`        |
+| `outerReachedInvalid`                         | `outerInvalid`        |
 | `parseDefinition`                             | `parseDef`            |
 | `parseOpenDefinition`                         | `parseOpenDef`        |
 | `parseOwnDefinitionFormat`                    | `parseOwn`            |
+| `popBranch`                                   | `popBr`               |
 | `postfixLength`                               | `postLen`             |
 | `prefixLength`                                | `preLen`              |
 | `preparseOwnAliasEntry`                       | `preparseEntry`       |
 | `preparseOwnDefinitionFormat`                 | `preparseOwn`         |
 | `prestructurals`                              | `preStruct`           |
 | `prevariadic`                                 | `leading`             |
+| `pushBranch`                                  | `pushBr`              |
 | `pushRootToBranch`                            | `pushRootBranch`      |
-| `receivedDepth`                               | `recvDepth`           |
+| `reachedInvalid`                              | `invalid`             |
+| `received`                                    | `recv`                |
+| `receivedDepth`                               | `recvAt`              |
+| `recordedFailure`                             | `hasFailed`           |
 | `referencedBesidesChildren`                   | `otherRefs`           |
 | `referencesById`                              | `refsById`            |
 | `_referencesById`                             | `_refsById`           |
@@ -1120,7 +1133,8 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `requiresInvalidDateCheck`                    | `checksInvalid`       |
 | `requiresNaNCheck`                            | `checksNaN`           |
 | `resolvedConfig`                              | `cfg`                 |
-| `returnIfTransformFailed`                     | `returnIfFailed`      |
+| `returnedFrom`                                | `retFrom`             |
+| `returnIfTransformFailed`                     | `retIfFailed`         |
 | `rootApplyStrategy`                           | `applyMode`           |
 | `serializedValue`                             | `jsUnit`              |
 | `shallowMorphs`                               | `topMorphs`           |
@@ -1130,13 +1144,16 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `shiftUntilNonWhitespace`                     | `skipSpace`           |
 | `structuralMorph`                             | `structMorph`         |
 | `throwInternalOperandError`                   | `throwOperandError`   |
-| `tracksTransforms`                            | `tracksMorphs`        |
-| `transformedByResolutionId`                   | `transformedById`     |
+| `tracksTransforms`                            | `isTree`              |
+| `transformedByResolutionId`                   | `tfdById`             |
+| `transformKey`                                | `tfKey`               |
 | `transformRequiresContext`                    | `transformCtx`        |
 | `transformSelectsByContext`                   | `selectsByCtx`        |
 | `traversalKind`                               | `trav`                |
+| `traverseKey`                                 | `travKey`             |
 | `uncollapsedInnerJson`                        | `innerJsonFull`       |
 | `undeclaredKeyHandling`                       | `undeclaredHandling`  |
+| `untrackedVisits`                             | `visits`              |
 | `variadicOrPostfix`                           | `trail`               |
 
 ### Read an object definition's values as its keys are parsed

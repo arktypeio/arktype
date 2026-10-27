@@ -263,7 +263,7 @@ Resolution: ${printable(resolution)}`)
 			js.return(js.resolution(resolution, id))
 			return
 		}
-		const traverse = js.invoke(resolution)
+		const traverse = js.inv(resolution)
 		if (!this.closesCycle) {
 			js.return(traverse)
 			return

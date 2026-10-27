@@ -215,7 +215,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 				called:
 					'Error: called diverges from arktype at call("abc"): arktype gives calls isA("abc"), its validator calls isA("abc!")',
 				checked:
-					'Error: checked diverges from arktype at call("abc"): arktype gives calls isFirst("abc", ctx {"path":[],"errorCount":0,"errors":[],"data":"abc"}), its validator calls isFirst("abc", ctx {"path":[],"errorCount":1,"errors":[["predicate"]],"data":"abc"})',
+					'Error: checked diverges from arktype at call("abc"): arktype gives calls isFirst("abc", ctx {"path":[],"errN":0,"errors":[],"data":"abc"}), its validator calls isFirst("abc", ctx {"path":[],"errN":1,"errors":[["predicate"]],"data":"abc"})',
 				shared:
 					'Error: shared diverges from arktype at call({}), the input as arktype\'s morphs left it, though each prints alike: arktype gives {"out":{"a":{},"b":{}},"input":{}}, its validator {"out":{"a":{},"b":{}},"input":{}}',
 				length:
@@ -225,7 +225,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 				aliased:
 					'Error: aliased diverges from arktype at call({}), the input as arktype\'s morphs left it, though each prints alike: arktype gives calls isSame({"a":{},"b":{}}), its validator calls isSame({"a":{},"b":{}})',
 				rooted:
-					'Error: rooted diverges from arktype at call({"a":"x"}): arktype gives calls isFlagged("x", ctx {"path":["a"],"errorCount":0,"errors":[],"data":"x"}), its validator calls isFlagged("x", ctx {"path":["a"],"errorCount":0,"errors":[],"data":"x"}) with another ctx.root'
+					'Error: rooted diverges from arktype at call({"a":"x"}): arktype gives calls isFlagged("x", ctx {"path":["a"],"errN":0,"errors":[],"data":"x"}), its validator calls isFlagged("x", ctx {"path":["a"],"errN":0,"errors":[],"data":"x"}) with another ctx.root'
 			})
 			attest(swallowed).equals("fallback")
 			attest(reported.slice(0, -1)).equals(Object.values(thrown))

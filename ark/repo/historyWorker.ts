@@ -184,7 +184,7 @@ const observeMethod = (name: string, method: Function) =>
 		const callers = callersOf(callSites())
 		const observation: Observation | undefined =
 			calledByUser(callers) ? { call: name }
-			: name === "BaseScope.finalize" && reachedFromUser(callers) ? {}
+			: name === "BaseScope.fin" && reachedFromUser(callers) ? {}
 			: undefined
 		if (observation?.call) {
 			observation.self = record(this)

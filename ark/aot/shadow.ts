@@ -541,7 +541,7 @@ const ctxStateOf = (
 ) =>
 	ctx && {
 		path: [...ctx.path],
-		errorCount: ctx.errCount,
+		errN: ctx.errN,
 		errors: ctx._errors?._.map(e => [e.code, ...e.path]) ?? [],
 		data: copied?.get(ctx.data as never) ?? ctx.data
 	}
@@ -571,7 +571,7 @@ const record = (
 			copyOf(outcome.value, copiedAfter)
 		:	uncopyable
 	const isRepeated =
-		ctx?.errCount !== ctxState?.errorCount ||
+		ctx?.errN !== ctxState?.errN ||
 		!isReplayable({ copies, copied, copiedAfter, written, result })
 	current.calls.push({
 		callee,

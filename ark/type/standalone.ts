@@ -2737,7 +2737,7 @@ ${writeFunction(
 			) &&
 			// errors count their issues, not a branch's
 			!this.unitsOf(root).some(unit =>
-				unit.members.some(([, source]) => source.includes("ctx.errCount"))
+				unit.members.some(([, source]) => source.includes("ctx.errN"))
 			)
 		if (reportsIssues) assertReportsIssues(this.unitsOf(root))
 		const ctx =
@@ -2933,7 +2933,7 @@ ${writeFunction(
 							"const untracked = runtime.allowsAcyclic(node, data)",
 							`if (!(untracked ?? runtime.allowsInContext(node, data, runtime.runtimeConfig))) return ${invalid}`,
 							`const ctx = new runtime.${ctx}(data, runtime.runtimeConfig)`,
-							"ctx.tracksMorphs = untracked === undefined",
+							"ctx.isTree = untracked === undefined",
 							`const result = runtime.transformResolution(ctx, ${JSON.stringify(this.headUnitOf(root).names[root.id])}, data, node.traverseTransform)`
 						]
 					:	[

@@ -22,7 +22,7 @@ import { $ark } from "../shared/registry.ts"
 import {
 	allowsInBranch,
 	applyValue,
-	traverseKey,
+	travKey,
 	type AliasDepth,
 	type InternalTraversal,
 	type TraverseAllows
@@ -119,7 +119,7 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	traverseAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
 		return stringAndSymbolicEntriesOf(data).every(entry => {
 			if (this.allowsKey(entry[0], ctx)) {
-				return traverseKey(
+				return travKey(
 					entry[0],
 					() => this.value.traverseAllows(entry[1], ctx),
 					ctx
@@ -132,7 +132,7 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	traverseApply(data: object, ctx: InternalTraversal): void {
 		for (const entry of stringAndSymbolicEntriesOf(data)) {
 			if (this.allowsKey(entry[0], ctx))
-				traverseKey(entry[0], () => applyValue(this.value, entry[1], ctx), ctx)
+				travKey(entry[0], () => applyValue(this.value, entry[1], ctx), ctx)
 		}
 	}
 

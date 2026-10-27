@@ -439,7 +439,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	schema = (schema: RootSchema, opts?: BaseParseOptions): BaseRoot =>
-		this.finalize(parseSchema(schema, this, opts))
+		this.fin(parseSchema(schema, this, opts))
 
 	/** `reference` copied into this scope, unless it's already this scope's or an alias */
 	bindRef<reference extends BaseNode | GenericRoot>(
@@ -696,7 +696,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (hasArkKind(def, "module")) {
 			if (!def.root) throwParseError(writeMissingSubmoduleAccessMessage(name))
-			return (this.resolutions[name] = this.finalize(
+			return (this.resolutions[name] = this.fin(
 				isScopeAlias ? this.bindRef(def.root) : this.bindKeyword(def.root)
 			))
 		}
@@ -704,7 +704,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return (this.resolutions[name] =
 			isScopeAlias ?
 				this.parse(def, { alias: name })
-			:	this.finalize(this.bindKeyword(def as BaseRoot)))
+			:	this.fin(this.bindKeyword(def as BaseRoot)))
 	}
 
 	protected createParseCtx<input extends BaseParseContextInput>(
@@ -892,7 +892,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot =>
-		this.finalize(this.parseDef(def, opts))
+		this.fin(this.parseDef(def, opts))
 
 	/** parses a definition in this scope to a node */
 	parseDef(def: unknown, opts: BaseParseOptions = {}): BaseRoot {
@@ -939,7 +939,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return defining(() => this.bindRef(this.parseOwn(def, ctx)))
 	}
 
-	finalize<node extends BaseRoot>(node: node, jit = true): node {
+	fin<node extends BaseRoot>(node: node, jit = true): node {
 		// an alias may reference a definition that is still being parsed,
 		// e.g. Record<string, this>, so the outermost parse finalizes it
 		if ((inProgress.definitions || inProgress.resolutions) && node.hasAlias)
@@ -1020,7 +1020,7 @@ export const finalizeExport = (
 	$: BaseScope,
 	resolution: BaseRoot | GenericRoot
 ): BaseRoot | GenericRoot =>
-	hasArkKind(resolution, "root") ? $.finalize(resolution) : resolution
+	hasArkKind(resolution, "root") ? $.fin(resolution) : resolution
 
 const openDefinitions: BaseParseContext[] = []
 const openMembers: BaseParseContext[] = []

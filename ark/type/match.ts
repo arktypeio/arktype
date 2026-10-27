@@ -435,7 +435,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 
 		const cases = this.$.node("union", schema)
 
-		if (!this.in) return this.$.finalize(cases) as never
+		if (!this.in) return this.$.fin(cases) as never
 
 		let inputValidatedCases = this.in.pipe(cases)
 
@@ -448,7 +448,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 			)
 		}
 
-		return this.$.finalize(inputValidatedCases) as never
+		return this.$.fin(inputValidatedCases) as never
 	}
 }
 
