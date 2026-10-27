@@ -1,3 +1,4 @@
+import { inProgress, queueUnchecked, type BaseRoot } from "@ark/schema"
 import type { LimitLiteral } from "../../attributes.ts"
 
 export type StringifiablePrefixOperator = "keyof"
@@ -46,6 +47,24 @@ export type InvertedComparators = {
 }
 
 export type BranchOperator = "&" | "|" | "|>"
+
+const unaliased = (node: BaseRoot): BaseRoot =>
+	node.hasKind("alias") ? node.resolution : node
+
+// an intersection a definition writes with a cyclic operand is decided once
+// definitions close, where an empty one throws as if written out
+export const checkWrittenIntersection = (
+	result: BaseRoot,
+	l: BaseRoot,
+	r: BaseRoot
+): void => {
+	if (
+		inProgress.definitions &&
+		result.hasKind("alias") &&
+		result.operator === "&"
+	)
+		queueUnchecked(() => void unaliased(l).rawAnd(unaliased(r)), result.id)
+}
 
 export type OpenLeftBound = { limit: LimitLiteral; comparator: MinComparator }
 

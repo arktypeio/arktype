@@ -38,7 +38,10 @@ import {
 	shallowOptionalMessage
 } from "./ast/validate.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
-import type { BranchOperator } from "./reduce/shared.ts"
+import {
+	checkWrittenIntersection,
+	type BranchOperator
+} from "./reduce/shared.ts"
 import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
 import type { InfixToken } from "./shift/tokens.ts"
 import type { BaseCompletions } from "./string.ts"
@@ -152,6 +155,7 @@ const parseBranchTuple: IndexOneParser<BranchOperator> = (def, ctx) => {
 			intersectNodesRoot(l, r, ctx.$)
 		:	pipeNodesRoot(l, r, ctx.$)
 	if (result instanceof Disjoint) return result.throw()
+	if (def[1] === "&") checkWrittenIntersection(result, l, r)
 	return result
 }
 
