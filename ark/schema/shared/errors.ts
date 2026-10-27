@@ -720,7 +720,8 @@ const assignSymbols = (target: object, source: object) => {
 const flattenUnion = (errors: readonly ArkError[]): ArkError[] => {
 	const flat: ArkError[] = []
 	for (const inner of errors) {
-		if (inner.code !== "union") appendError(flat, inner)
+		// a union of no branches, like never, is its own error
+		if (inner.code !== "union" || !inner.errors.length) appendError(flat, inner)
 		else for (const e of inner.errors) appendError(flat, e)
 	}
 	return flat
