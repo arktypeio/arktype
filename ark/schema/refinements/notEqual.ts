@@ -1,4 +1,4 @@
-import { describeCollapsibleDate } from "@ark/util"
+import { describeCollapsibleDate, printDecimal } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
@@ -79,7 +79,9 @@ export class NotEqualNode extends InternalPrimitiveConstraint<NotEqual.Declarati
 		$ark.intrinsic[this.isDate ? "Date" : "number"].internal
 
 	readonly expression: string = `!= ${
-		this.isDate ? `d'${(this.rule as Date).toISOString()}'` : this.rule
+		this.isDate ?
+			`d'${(this.rule as Date).toISOString()}'`
+		:	printDecimal(this.rule as number)
 	}`
 }
 

@@ -389,6 +389,12 @@ contextualize(() => {
 		})
 	})
 
+	it("limit String writes with an exponent", () => {
+		const T = type("number").moreThan(1e-7)
+		attest(T.expression).snap("number > 0.0000001")
+		attest(type.raw(T.expression).json).equals(T.json)
+	})
+
 	describe("!=", () => {
 		it("number", () => {
 			const T = type("number != 0")

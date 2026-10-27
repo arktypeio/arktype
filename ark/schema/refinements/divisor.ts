@@ -1,4 +1,4 @@
-import { throwParseError } from "@ark/util"
+import { printDecimal, throwParseError } from "@ark/util"
 import {
 	InternalPrimitiveConstraint,
 	writeInvalidOperandMessage
@@ -75,7 +75,7 @@ export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration
 	}
 
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.number.internal
-	readonly expression: string = `% ${this.rule}`
+	readonly expression: string = `% ${printDecimal(this.rule)}`
 }
 
 export const Divisor = {
