@@ -8,7 +8,7 @@ Each definition becomes a standalone validator running on `arktype/runtime`, whi
 npm i -D @ark/aot
 ```
 
-Add its plugin to your bundler. It works with Vite, Rollup, Rolldown, webpack, Rspack, esbuild, Bun and Farm, and Vitest runs tests through it too:
+Add its plugin to your bundler. It works with Vite, Rollup, Rolldown, webpack, Rspack, Rsbuild, esbuild, Bun and Farm, and Vitest runs tests through it too:
 
 ```ts
 // vite.config.ts

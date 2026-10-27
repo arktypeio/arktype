@@ -55,7 +55,11 @@ export default {
 	turbopack: {
 		rules: {
 			"*.ts": { loaders: ["@ark/aot/turbopack"] },
-			"*.tsx": { loaders: ["@ark/aot/turbopack"] }
+			"*.tsx": { loaders: ["@ark/aot/turbopack"] },
+			"*.{js,mjs}": {
+				condition: { content: /arktype/ },
+				loaders: ["@ark/aot/turbopack"]
+			}
 		},
 		resolveAlias: {
 			arktype: "arktype/runtime",
