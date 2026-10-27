@@ -307,6 +307,15 @@ const out = User(form)
 const summary = out instanceof type.errors ? out.summary : ""
 ```
 
+### Print a nested Type longer than 1000 characters as `...`
+
+A Type reusing another at several keys was written out in full at each, so its `expression` and `description` doubled with each level, and past about 20 levels defining it threw `RangeError: Invalid string length`. A nested value whose own string would be longer than 1000 characters is now printed as `...`, as `list<...>` already was:
+
+```ts
+// a Type reusing the one below at a, b, c and d, 13 levels deep
+T.expression // { a: ...[], b: ...[], c: ...[], d: ...[], id: string }
+```
+
 ### Print objects in error messages by their kind
 
 An error's `actual` prints an object as `an object`, an array as `an array` and a function as `a function`, where it printed an object or array as compact JSON, a Date as its date, a function as `Function(name)` and another instance by its class's name. A message no longer grows with the data, and nothing an object holds reaches a log through it. Primitives print as before, and `before`, `after`, `!=` and a Date literal, like `d'2020-01-01'` or one of `type.enumerated`'s Dates, still print the Date they rejected:
