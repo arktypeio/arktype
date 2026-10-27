@@ -14,7 +14,7 @@ description: Add precompilation to your bundler, framework, test runner or Node 
 `@ark/aot/unplugin` precompiles a program as your bundler builds it.
 
 <Tabs
-	items={["Vite", "esbuild", "Rolldown", "Rollup", "webpack", "Rspack", "Bun", "Others"]}
+	items={["Vite", "esbuild", "Rolldown", "Rollup", "webpack", "Rspack", "Rsbuild", "Bun", "Others"]}
 	groupId="bundler"
 	persist
 >
@@ -50,6 +50,8 @@ await build({
 
 Put `precompile.esbuild()` ahead of any plugin that loads your TypeScript modules, since esbuild loads a module with the first plugin that returns it.
 
+tsup takes it in `esbuildPlugins`, and leaves your dependencies external unless told to bundle them, so add `noExternal: ["arktype"]`. The build fails without it, as the program would load arktype beside the runtime its validators use.
+
 </Tab>
 <Tab value="Rolldown">
 
@@ -64,6 +66,8 @@ export default defineConfig({
 	plugins: [precompile.rolldown()]
 })
 ```
+
+tsdown takes it in `plugins`, and leaves your dependencies external unless told to bundle them, so add `deps: { alwaysBundle: [/^arktype(\/|$)/] }`. The build fails without it, as the program would load arktype beside the runtime its validators use.
 
 </Tab>
 <Tab value="Rollup">
@@ -131,6 +135,19 @@ export default {
 ```
 
 </Tab>
+<Tab value="Rsbuild">
+
+```ts title="rsbuild.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "@rsbuild/core"
+
+export default defineConfig({
+	plugins: [precompile.rsbuild()]
+})
+```
+
+</Tab>
 <Tab value="Bun">
 
 ```ts title="build.ts"
@@ -149,7 +166,7 @@ Bun's bundler needs Bun 1.2.22 or later. To precompile as Bun runs your code, se
 </Tab>
 <Tab value="Others">
 
-Rsbuild takes `precompile.rsbuild()` and Farm `precompile.farm()`. For Next.js, see [Next.js](#next).
+Farm takes `precompile.farm()`. For Next.js, see [Next.js](#next).
 
 </Tab>
 </Tabs>
@@ -175,7 +192,7 @@ A validator leaves out its JSON Schema unless the build sets it, so a library th
 
 ## Frameworks [#frameworks]
 
-With Vite, list `precompile.vite()` after your framework's plugins. Each line was checked with a production build of a small app, on SvelteKit 3.1, Astro 7.4, Nuxt 4.6, React Router 8.5 and TanStack Router 1.168:
+With Vite, list `precompile.vite()` after your framework's plugins. Each line was checked with a production build of a small app, on SvelteKit 3.1, Astro 7.4, Nuxt 4.6, React Router 8.5, TanStack Router 1.168, Cloudflare's Vite plugin 1.65 with Wrangler 4.153, and Metro 0.87:
 
 | Framework            | Setup                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -185,9 +202,12 @@ With Vite, list `precompile.vite()` after your framework's plugins. Each line wa
 | React Router (Remix) | `plugins: [reactRouter(), precompile.vite()]` in `vite.config.ts`                                                                                                                                                                                                                                                                                                                                                           |
 | TanStack Router      | `plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), precompile.vite()]` in `vite.config.ts`. Its code splitting moves a route's component into a module of its own after the plugins ahead of it run, so the build fails where arktype's plugin comes first                                                                                                                                   |
 | Next.js              | See [Next.js](#next)                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Cloudflare Workers   | With `@cloudflare/vite-plugin`, `plugins: [cloudflare(), precompile.vite()]` in `vite.config.ts`. Wrangler bundles with esbuild but takes no plugins, so without Vite, build the worker with esbuild and `precompile.esbuild()` from Wrangler's `build.command`, and point `main` at its output. Workers don't let arktype compile a validator as it runs, which a precompiled one doesn't need                             |
 | Monorepos            | Nothing extra. A workspace package linked into `node_modules`, as pnpm, npm, Yarn and Bun workspaces link it, resolves to its own directory, so the build precompiles it with the program                                                                                                                                                                                                                                   |
 | Jest                 | Not supported. It has no driver, so it runs your Types on arktype, unprecompiled. See [Test runners](#test-runners)                                                                                                                                                                                                                                                                                                         |
 | Deno                 | A bundler plugin works under Deno, e.g. `deno run -A npm:vite build` with `precompile.vite()`. There's no driver, so `deno run` on your source loads arktype unprecompiled                                                                                                                                                                                                                                                  |
+| React Native (Metro) | Not supported. Metro caches each module by its own text, so a module whose validators are written from a Type it imports would keep them after that Type changed. Precompile the modules defining your Types as a package of their own, with `tsc && arktype-precompile --emit` ([Build with tsc](#tsc)), and import that package, rather than `arktype`, from the app                                                      |
+| Parcel               | Not supported. Bundle with a [supported bundler](#bundlers)                                                                                                                                                                                                                                                                                                                                                                 |
 
 Define your Types in `.ts` or `.js` modules. A component another plugin compiles, like a Svelte, Vue or Astro component or an MDX page, can call a validator or read its `.allows` and `.assert`, but the build can't write a validator inside it. So a read there that only a precompiled site could serve, like `.description` or `.omit()`, or that a validator lacks, like `.errors`, fails the build, or the dev server's request for the component, naming the read. Move it into a module the component imports, e.g. as a function the component calls.
 

@@ -54,6 +54,7 @@ import {
 	unbundledMessage,
 	variantSpecifierOf,
 	writePrecompiledDependencyMessage,
+	writeBundledExternalMessage,
 	writeExternalizedMessage,
 	writeFilelessImportMessage,
 	writeIssueFeatures,
@@ -114,8 +115,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	const refusePruneIn = (set: PrecompileUnpluginOptions) => {
 		if (!(meta.framework in pruningFrameworks)) refusePrune(set, meta.framework)
 	}
-	// Rollup's mark of a virtual module, which esbuild prints as a NUL
-	const virtual = meta.framework === "esbuild" ? "" : "\0"
+	// Rollup's mark of a virtual module, which esbuild and Bun print as a NUL
+	const virtual =
+		meta.framework === "esbuild" || meta.framework === "bun" ? "" : "\0"
 	const given = opts
 	// the worker applies the preset, after the environment's defaults, which a
 	// bundler says once it has read its own configuration
@@ -279,6 +281,19 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			message => this.warn(message)
 		)
 	}
+	// a tool may leave arktype external through a plugin of its own, as
+	// tsup and tsdown do with dependencies, which only the bundle shows
+	const checkBundledExternals = (
+		bundle: BundleModules,
+		warn = (message: string) => console.warn(message)
+	) => {
+		if (!isStandalone || opts?.shadow) return
+		const specifier = unsharedExternalOf(bundle)
+		if (!specifier) return
+		const problem = writeBundledExternalMessage(specifier)
+		if (opts?.allowUnsafe) warn(problem)
+		else throwBuildError(withAllowUnsafe(problem))
+	}
 	const keepCompiler = (bundler: BundlerCompiler) => {
 		compiler = bundler
 		resolveIn(bundler.options.mode === "development")
@@ -323,6 +338,12 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				}
 			})
 		)
+	}
+	// each compiler Rspack or Rsbuild creates, e.g. one for each environment
+	const applyRspack = (compiler: BundlerCompiler) => {
+		setRoot(compiler.context)
+		keepCompiler(compiler)
+		setEnvironment(environmentOf(compiler))
 	}
 	const loadModule = (id: string) => {
 		if (id in modules) return modules[id]
@@ -682,7 +703,12 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		},
 		load: {
 			filter: {
-				id: [virtual ? /^\0~arktype\// : /^~arktype\//, issueFeaturesFile]
+				id: [
+					virtual ? /^\0~arktype\// : /^~arktype\//,
+					// written by a pruned Rollup, Rolldown or Vite build's scan, as
+					// Farm fails a load answering nothing
+					...(meta.framework in checkingFrameworks ? [issueFeaturesFile] : [])
+				]
 			},
 			// a virtual module loads synchronously, as webpack's cache reads it
 			handler(id) {
@@ -822,6 +848,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		buildStart: reset,
 		// a build that won't rerun releases its worker
 		buildEnd(error?: Error) {
+			if (!error && !isServing && "getModuleIds" in this)
+				checkBundledExternals(rollupBundleOf(this as never))
 			if (
 				!error &&
 				!isServing &&
@@ -886,10 +914,21 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				parser: { exportsPresence: "error" }
 			})
 		},
-		rspack: compiler => {
-			setRoot(compiler.context)
-			keepCompiler(compiler)
-			setEnvironment(environmentOf(compiler))
+		rspack: applyRspack,
+		// unplugin gives the rspack hook only Rspack's own compiler
+		rsbuild: {
+			setup: (api: RsbuildApi) =>
+				api.modifyRspackConfig(config => {
+					config.plugins.push({ apply: applyRspack })
+				})
+		},
+		farm: {
+			configResolved: (config: FarmConfig) => {
+				if (config.root) setRoot(resolve(config.root))
+				const mode = config.compilation?.mode
+				resolveIn(mode === "development")
+				setEnvironment({ production: mode === "production", testing: false })
+			}
 		},
 		rollup: {
 			options: checkInputExternal,
@@ -897,6 +936,25 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			shouldTransformCachedModule
 		},
 		rolldown: { options: checkInputExternal, buildStart: rollupBuildStart },
+		bun: {
+			setup: build => {
+				const { conditions, external = [] } = build.config
+				// as esbuild, Bun.build has no mode, but may resolve for production
+				setEnvironment({
+					production: [conditions].flat().includes("production"),
+					testing: false
+				})
+				// Bun leaves what `external` names to itself, asking no plugin
+				checkExternal(
+					specifier =>
+						external.some((pattern: string) =>
+							matchesBunExternal(pattern, specifier)
+						),
+					"external",
+					warning => console.warn(warning)
+				)
+			}
+		},
 		esbuild: {
 			// read before config, so the handler leaves a standalone build's
 			// arktype to resolve natively, outside the plugin's esbuild namespace
@@ -952,6 +1010,15 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					build.initialOptions.metafile = true
 					build.onEnd(result => {
 						if (!result.metafile || result.errors.length) return
+						const warnings: { text: string }[] = []
+						try {
+							checkBundledExternals(
+								esbuildBundleOf(result.metafile, cwd),
+								warning => warnings.push({ text: warning })
+							)
+						} catch (e) {
+							return rejected(result.metafile, (e as Error).message)
+						}
 						const problem =
 							foldedHelpersById.size &&
 							unfoldedCallProblemOf(
@@ -962,6 +1029,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 							)
 						// it wrote calls that throw at runtime
 						if (problem) return rejected(result.metafile, problem)
+						return { warnings }
 					})
 				}
 				// the scan's facts hold only while the bundle is what it read
@@ -1256,6 +1324,8 @@ interface RollupContext {
 	getModuleIds: () => IterableIterator<string>
 	getModuleInfo: (id: string) => {
 		isEntry: boolean
+		isExternal?: boolean
+		code?: string | null
 		importedIds: readonly string[]
 		dynamicallyImportedIds: readonly string[]
 	} | null
@@ -1644,7 +1714,13 @@ interface Metafile {
 		string,
 		{ imports: { path: string; external?: boolean | undefined }[] }
 	>
-	outputs: Record<string, { entryPoint?: string | undefined }>
+	outputs: Record<
+		string,
+		{
+			entryPoint?: string | undefined
+			imports?: { path: string; external?: boolean | undefined }[]
+		}
+	>
 }
 
 // transformedId, which esbuild's Go regexes can read
@@ -1682,6 +1758,21 @@ const environmentOf = (compiler: BundlerCompiler): Environment => ({
 	testing: false
 })
 
+// what the plugin reads of Farm's resolved config
+interface FarmConfig {
+	root?: string | undefined
+	compilation?: { mode?: string | undefined } | undefined
+}
+
+// what the plugin reads of Rsbuild's plugin API
+interface RsbuildApi {
+	modifyRspackConfig(
+		modify: (config: {
+			plugins: { apply: (compiler: BundlerCompiler) => void }[]
+		}) => void
+	): void
+}
+
 interface BundlerCompilation {
 	hooks: { finishModules: Tap<Iterable<unknown>> }
 	moduleGraph: BundlerModuleGraph
@@ -1715,6 +1806,92 @@ const bundlerImportsOf = (
 
 interface Tap<arg> {
 	tap(name: string, fn: (arg: arg) => void): void
+}
+
+// a pattern Bun.build's `external` takes, a package's name matching its subpaths
+const matchesBunExternal = (pattern: string, specifier: string): boolean =>
+	pattern.includes("*") ?
+		new RegExp(
+			`^${pattern
+				.split("*")
+				.map(part => part.replace(/[$()+./?[\\\]^{|}]/g, "\\$&"))
+				.join(".*")}$`
+		).test(specifier)
+	:	specifier === pattern || specifier.startsWith(`${pattern}/`)
+
+// what a bundle left external, and the files it holds
+interface BundleModules {
+	externals: string[]
+	files: string[]
+}
+
+// Rolldown's module info has no isExternal, but no code for an external
+const rollupBundleOf = (context: RollupContext): BundleModules => {
+	const bundle: BundleModules = { externals: [], files: [] }
+	const seen = new Set<string>()
+	const add = (id: string) => {
+		if (seen.has(id)) return
+		seen.add(id)
+		const info = context.getModuleInfo(id)
+		if (!info || (info.isExternal ?? info.code === null))
+			bundle.externals.push(id)
+		else bundle.files.push(id)
+	}
+	for (const id of context.getModuleIds()) {
+		add(id)
+		const info = context.getModuleInfo(id)
+		for (const target of [
+			...(info?.importedIds ?? []),
+			...(info?.dynamicallyImportedIds ?? [])
+		])
+			add(target)
+	}
+	return bundle
+}
+
+const esbuildBundleOf = (metafile: Metafile, cwd: string): BundleModules => ({
+	externals: Object.values(metafile.outputs).flatMap(
+		output =>
+			output.imports?.flatMap(entry => (entry.external ? entry.path : [])) ?? []
+	),
+	files: Object.keys(metafile.inputs).map(path => resolve(cwd, path))
+})
+
+// an external the validators' runtime can't share: an entry of arktype, which
+// loads arktype itself, or a package the bundle holds a copy of too
+const unsharedExternalOf = ({
+	externals,
+	files
+}: BundleModules): string | undefined => {
+	const entry = externals.find(specifier =>
+		runtimeSpecifiers.includes(specifier)
+	)
+	if (entry) return entry
+	const shared = externals.filter(specifier =>
+		externalizableSpecifiers.includes(specifier)
+	)
+	if (!shared.length) return
+	const bundled = new Set(
+		files.flatMap(file => (isAbsolute(file) ? packageOfFile(file) : []))
+	)
+	return shared.find(specifier => bundled.has(packageNameOf(specifier)))
+}
+
+const packagesByDir = new Map<string, string | undefined>()
+
+// the name in the nearest package.json, which a workspace's linked packages
+// have outside node_modules
+const packageOfFile = (file: string): string | undefined => {
+	const dir = dirname(file)
+	if (packagesByDir.has(dir)) return packagesByDir.get(dir)
+	let name: string | undefined
+	try {
+		name = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).name
+	} catch {
+		name = dir === dirname(dir) ? undefined : packageOfFile(dir)
+	}
+	packagesByDir.set(dir, name)
+	return name
 }
 
 // what a program or the runtime imports of arktype's packages

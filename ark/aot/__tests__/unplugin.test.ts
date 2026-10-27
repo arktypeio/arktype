@@ -8,6 +8,7 @@ import {
 import {
 	withAllowUnsafe,
 	unbundledMessage,
+	writeBundledExternalMessage,
 	writeExternalizedMessage,
 	writeFilelessImportMessage,
 	writeLoadedFirstMessage,
@@ -634,6 +635,96 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 			withAllowUnsafe(writeExternalizedMessage("arktype", "external")),
 			withAllowUnsafe(writeExternalizedMessage("@ark/schema", "ssr.external"))
 		])
+	})
+
+	describe("fails a bundle another plugin leaves arktype external in, as tsup and tsdown do", () => {
+		// where `pattern` matches, as a tool externalizing dependencies would
+		const externalizing = (pattern: RegExp) => ({
+			esbuild: {
+				name: "externals",
+				setup: build =>
+					build.onResolve({ filter: pattern }, ({ path }) => ({
+						path,
+						external: true
+					}))
+			} satisfies Plugin,
+			rollup: {
+				name: "externals",
+				resolveId: id => (pattern.test(id) ? { id, external: true } : null)
+			} satisfies RollupPlugin
+		})
+		const esbuildMessage = (pattern: RegExp) =>
+			esbuild({
+				entryPoints: [join(app, "main.ts")],
+				bundle: true,
+				write: false,
+				format: "esm",
+				conditions,
+				logLevel: "silent",
+				plugins: [
+					externalizing(pattern).esbuild,
+					precompile.esbuild({ cwd: app, conditions })
+				]
+			}).then(
+				() => "built",
+				(e: { errors: { text: string }[] }) => e.errors[0].text
+			)
+		const rollupMessage = (pattern: RegExp) =>
+			rollup({
+				input: join(app, "main.ts"),
+				logLevel: "silent",
+				plugins: [
+					externalizing(pattern).rollup,
+					precompile.rollup({ cwd: app, conditions }),
+					{
+						name: "strip",
+						transform: (code, id) =>
+							id.endsWith(".ts") ?
+								transformSync(code, { loader: "ts" }).code
+							:	null
+					},
+					{
+						name: "resolve",
+						resolveId: (id, importer) =>
+							importer && id.startsWith(".") ? join(importer, "..", id) : null
+					}
+				]
+			}).then(
+				() => "built",
+				(e: Error) => stripVTControlCharacters(e.message)
+			)
+
+		it("esbuild", async () => {
+			attest(await esbuildMessage(/^arktype$/)).equals(
+				withAllowUnsafe(writeBundledExternalMessage("arktype"))
+			)
+		})
+
+		it("rollup", async () => {
+			attest([
+				await rollupMessage(/^arktype$/),
+				// a second copy of the runtime, bundled for the program's imports
+				await rollupMessage(/^arktype\/runtime$/)
+			]).equals([
+				withAllowUnsafe(writeBundledExternalMessage("arktype")),
+				withAllowUnsafe(writeBundledExternalMessage("arktype/runtime"))
+			])
+		})
+
+		it("builds where every copy of a package arktype's runtime imports is external", async () => {
+			attest(
+				await esbuild({
+					entryPoints: [join(app, "main.ts")],
+					bundle: true,
+					write: false,
+					format: "esm",
+					conditions,
+					logLevel: "silent",
+					packages: "external",
+					plugins: [precompile.esbuild({ cwd: app, conditions })]
+				}).then(() => "built")
+			).equals("built")
+		})
 	})
 
 	it("vite builds the same bundle from a cache an earlier build left", async () => {
@@ -1914,6 +2005,86 @@ console.log(JSON.stringify(User.toJsonSchema()))
 			await resolvedIn("development"),
 			await resolvedIn("production")
 		]).snap(["type/runtimeDevelopment.ts", "type/runtime.ts"])
+	})
+
+	it("resolves the runtime of the mode Rsbuild gives each compiler", async () => {
+		const resolvedIn = async (mode: string) => {
+			const plugin = precompile.raw(
+				{ cwd: app, conditions },
+				{ framework: "rsbuild", versions: {} }
+			) as unknown as RawHooks & {
+				rsbuild: { setup(api: object): void }
+			}
+			const plugins: { apply(compiler: object): void }[] = []
+			plugin.rsbuild.setup({
+				modifyRspackConfig: (modify: (config: object) => void) =>
+					modify({ plugins })
+			})
+			for (const { apply } of plugins) {
+				apply({
+					context: app,
+					options: { cache: false, mode, module: { rules: [] } },
+					hooks: { compilation: { tap: () => {} } }
+				})
+			}
+			const resolved = await plugin.resolveId.handler.call(
+				{ warn: () => {} },
+				"arktype",
+				join(app, "main.ts")
+			)
+			return relative(fromHere("..", ".."), resolved!).replace(/\\/g, "/")
+		}
+		attest([
+			await resolvedIn("development"),
+			await resolvedIn("production")
+		]).snap(["type/runtimeDevelopment.ts", "type/runtime.ts"])
+	})
+
+	it("resolves the runtime of Farm's mode, leaving it the files it loads", async () => {
+		const farmPlugin = precompile.farm({ cwd: app, conditions }) as unknown as {
+			configResolved(config: object): void
+			resolve: {
+				executor(
+					params: object,
+					context: object
+				): Promise<{
+					resolvedPath: string
+				} | null>
+			}
+			load: { executor(params: object, context: object): Promise<unknown> }
+		}
+		const context = { warn: () => {}, error: () => {} }
+		const resolvedIn = async (mode: string) => {
+			farmPlugin.configResolved({ compilation: { mode } })
+			const resolved = await farmPlugin.resolve.executor(
+				{ source: "arktype", importer: join(app, "main.ts"), kind: "import" },
+				context
+			)
+			return relative(fromHere("..", ".."), resolved!.resolvedPath).replace(
+				/\\/g,
+				"/"
+			)
+		}
+		attest([
+			await resolvedIn("development"),
+			await resolvedIn("production")
+		]).snap(["type/runtimeDevelopment.ts", "type/runtime.ts"])
+		// Farm fails a load a plugin answers with nothing
+		attest(
+			await farmPlugin.load.executor(
+				{
+					resolvedPath: fromHere(
+						"..",
+						"..",
+						"schema",
+						"shared",
+						"issueFeatures.ts"
+					),
+					query: []
+				},
+				context
+			)
+		).equals(null)
 	})
 
 	it("loads the modules a webpack build's cache kept", async () => {
