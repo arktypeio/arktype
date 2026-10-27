@@ -4789,14 +4789,24 @@ export class Precompiler {
 							generic.fn,
 							generic.binding.name,
 							genericDefinitionOf(node, module),
-							!isUnsure || generic.isAnnotated
+							!isUnsure || generic.isAnnotated,
+							isUnsure ?
+								annotationSnippetOf(
+									this.graph.unreadAnnotationOf(object, module),
+									module
+								)
+							:	undefined
 						)
 					: isUnsure ?
 						writeUnsureHint(
 							dropped ? `leave members[${JSON.stringify(dropped)}] unset`
 							: includes(introspectionMembers, read) ?
 								`set members[${JSON.stringify(read)}] true, or build with runtime: "arktype"`
-							:	'build with runtime: "arktype"'
+							:	'build with runtime: "arktype"',
+							annotationSnippetOf(
+								this.graph.unreadAnnotationOf(object, module),
+								module
+							)
 						)
 					: dropped ?
 						`Leave members[${JSON.stringify(dropped)}] unset if the program reads it.`
@@ -5665,6 +5675,18 @@ const parameterOf = (
 		isAnnotated: !!(binding.id as { typeAnnotation?: unknown }).typeAnnotation
 	}
 }
+
+// e.g. "BeforeNavigate" for `nav: BeforeNavigate`
+const annotationSnippetOf = (
+	annotation: Node | undefined,
+	module: SourceModule
+): string | undefined =>
+	annotation &&
+	module.snippetOf(
+		annotation.type === "TSTypeAnnotation" ?
+			annotation.typeAnnotation
+		:	annotation
+	)
 
 // what a Generic defines for a call composing its parameter, e.g. "t | null"
 // for `T.or("null")`, if the call is that simple
