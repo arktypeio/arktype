@@ -44,7 +44,7 @@ export declare namespace Index {
 			kind: "index"
 			inner: Inner
 			prerequisite: object
-			openIntersection: true
+			stacks: true
 			childKind: RootKind
 		}> {}
 
@@ -54,8 +54,8 @@ export declare namespace Index {
 const implementation: nodeImplementationOf<Index.Declaration> =
 	implementNode<Index.Declaration>({
 		kind: "index",
-		ownsError: false,
-		openIntersection: true,
+		ownErr: false,
+		stacks: true,
 		keys: {
 			signature: {
 				child: true
@@ -72,7 +72,7 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 	})
 
 export class IndexNode extends BaseConstraint<Index.Declaration> {
-	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
+	implied: BaseRoot = $ark.intrinsic.object.internal
 	get expression(): string {
 		return (this.cache.expression ??= composing(
 			() => `[${this.signature.expression}]: ${elided(this.value.expression)}`
@@ -90,7 +90,7 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 			!key.extends($ark.intrinsic.key)
 		)
 			throwParseError(writeInvalidPropertyKeyMessage(key.expression))
-		const enumerableBranches = key.branches.filter(b => b.hasKind("unit"))
+		const enumerableBranches = key.branches.filter(b => b.is("unit"))
 		if (enumerableBranches.length) {
 			throwParseError(
 				writeEnumerableIndexBranches(
@@ -102,7 +102,7 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 
 	// its structure picks the keys it transforms by the signature's Allows
 	protected override get selectsByCtx(): boolean {
-		return this.signature.hasCtxPredicate || super.selectsByCtx
+		return this.signature.ctxPred || super.selectsByCtx
 	}
 
 	protected override initFlatRefs(): void {
@@ -112,7 +112,7 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 
 	// a key the signature rejects is undeclared, so its errors are dropped
 	allowsKey: TraverseAllows<PropertyKey> = (k, ctx) =>
-		this.signature.allowsNeedsTraversal ?
+		this.signature.checksCtx ?
 			allowsInBranch(ctx as InternalTraversal, this.signature, k)
 		:	this.signature.traverseAllows(k, ctx)
 

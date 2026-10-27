@@ -55,9 +55,9 @@ export interface BaseNodeInput {
 interface DeclarationInput {
 	kind: NodeKind
 	inner: object
-	errorContext?: BaseErrorContext
+	errorCtx?: BaseErrorContext
 	reducibleTo?: NodeKind
-	openIntersection?: true
+	stacks?: true
 	prerequisite?: unknown
 	childKind?: NodeKind
 }
@@ -81,11 +81,11 @@ export type declareNode<
 	} & DeclarationInput
 > = merge<
 	{
-		openIntersection: false
+		stacks: false
 		prerequisite: prerequisiteOf<d>
 		childKind: never
 		reducibleTo: d["kind"]
-		errorContext: null
+		errorCtx: null
 	},
 	d
 >
@@ -106,9 +106,9 @@ export interface BaseNodeDeclaration {
 	inner: {}
 	reducibleTo: NodeKind
 	prerequisite: any
-	openIntersection: boolean
+	stacks: boolean
 	childKind: NodeKind
-	errorContext: BaseErrorContext | null
+	errorCtx: BaseErrorContext | null
 }
 
 export type ownIntersectionResult<d extends BaseNodeDeclaration> =

@@ -120,7 +120,7 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 		}
 
 		// exactLength, minLength, and maxLength don't need to be defined
-		// here since impliedSiblings guarantees they will be added
+		// here since impliedBy guarantees they will be added
 		// directly to the IntersectionNode parent of the SequenceNode
 		// they exist on
 	}

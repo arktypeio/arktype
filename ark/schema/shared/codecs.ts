@@ -42,8 +42,7 @@ const encoderOf = (node: BaseRoot): BaseRoot =>
 				}
 			:	inner,
 		{
-			shouldTransform: n =>
-				n.transforms || (n.hasKind("optional") && n.hasDefault())
+			shouldTransform: n => n.transforms || (n.is("optional") && n.hasDefault())
 		}
 	) as never
 
@@ -88,8 +87,8 @@ const requireDefaulted = (inner: Structure.Inner): Structure.Inner => {
 	const props = [...(inner.required ?? []), ...inner.optional]
 	return {
 		...inner,
-		required: props.filter(prop => prop.hasKind("required")),
-		optional: props.filter(prop => prop.hasKind("optional")),
+		required: props.filter(prop => prop.is("required")),
+		optional: props.filter(prop => prop.is("optional")),
 		order: inner.order ?? props.map(prop => prop.key)
 	} as never
 }

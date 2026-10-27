@@ -69,7 +69,7 @@ export const parseDefault = (
 	const defaultNode = s.unsetRoot()
 	// after parsing the next operand, use the locations to get the
 	// token from which it was parsed
-	if (!defaultNode.hasKind("unit"))
+	if (!defaultNode.is("unit"))
 		return s.error(writeNonLiteralDefaultMessage(defaultNode.expression))
 	const defaultValue =
 		defaultNode.unit instanceof Date ?

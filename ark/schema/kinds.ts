@@ -134,8 +134,8 @@ const describeDiscriminant: Locale.ActualWriter<"discriminant"> = (
 	: printKind(data)
 
 export const en: Locale.Complete = {
-	...(flatMorph(nodeImplementationsByKind, (kind, { ownsError, defaults }) =>
-		ownsError ? [kind, enWritersOf(kind, defaults)] : []
+	...(flatMorph(nodeImplementationsByKind, (kind, { ownErr, defaults }) =>
+		ownErr ? [kind, enWritersOf(kind, defaults)] : []
 	) as Pick<Locale.Complete, ArkErrorCode & NodeKind>),
 	undeclared: {
 		...errorWritersByCode.undeclared,
@@ -149,7 +149,7 @@ export const en: Locale.Complete = {
 	...enInfo,
 	cite: text => text,
 	// a domain is named by its noun whatever its meta, as DomainNode's
-	// defaultBrief does
+	// brief does
 	basis: (basis, locale) =>
 		basis.code === "domain" ? locale.nouns[basis.domain]
 		: basis.meta.description === undefined ?
@@ -272,9 +272,9 @@ export type innerAttachedAs<kind extends ConstraintKind> =
 export type mutableInnerOfKind<kind extends NodeKind> =
 	makeRootAndArrayPropertiesMutable<Inner<kind>>
 
-export type errorContext<code extends ArkErrorCode> = ErrorContextsByCode[code]
+export type errorCtx<code extends ArkErrorCode> = ErrorContextsByCode[code]
 
 export type NodeErrorContextsByKind = {
-	[kind in NodeKind as Declaration<kind>["errorContext"] extends null ? never
-	:	kind]: Declaration<kind>["errorContext"]
+	[kind in NodeKind as Declaration<kind>["errorCtx"] extends null ? never
+	:	kind]: Declaration<kind>["errorCtx"]
 }

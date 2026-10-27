@@ -158,8 +158,8 @@ contextualize(() => {
 		eachType(keywords, (t, path) => {
 			for (const node of t.internal.references) {
 				const fns =
-					node.hasKind("morph") ? node.morphs
-					: node.hasKind("predicate") ? [node.predicate]
+					node.is("morph") ? node.morphs
+					: node.is("predicate") ? [node.predicate]
 					: []
 				for (const fn of fns)
 					if (!isNode(fn) && !exported.has(fn)) unexported.push(path)

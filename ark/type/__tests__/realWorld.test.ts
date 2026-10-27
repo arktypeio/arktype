@@ -1069,7 +1069,7 @@ extra must be a string or null (was missing)`)
 		attest(T.out({ foo: "hi", bar: 3 }).toString()).snap("bar must be removed")
 	})
 
-	it("includesMorph only when expected", () => {
+	it("hasMorph only when expected", () => {
 		const Unmorphed = type({
 			"optional?": "string",
 			required: "string",
@@ -1080,41 +1080,41 @@ extra must be a string or null (was missing)`)
 				a: "true"
 			}
 		})
-		attest(Unmorphed.internal.hasTransform).equals(false)
+		attest(Unmorphed.internal.alters).equals(false)
 	})
 
-	it("morph includesMorph", () => {
+	it("morph hasMorph", () => {
 		const T = type({
 			prop: ["string", "=>", s => s.length]
 		})
 
-		attest(T.internal.hasTransform).equals(true)
+		attest(T.internal.alters).equals(true)
 	})
 
-	it("default prop includesMorph", () => {
+	it("default prop hasMorph", () => {
 		const T = type({
 			prop: "number = 5"
 		})
 
-		attest(T.internal.hasTransform).equals(true)
+		attest(T.internal.alters).equals(true)
 	})
 
-	it("default tuple includesMorph", () => {
+	it("default tuple hasMorph", () => {
 		const T = type({
 			tuple: ["number = 5"]
 		})
 
-		attest(T.internal.hasTransform).equals(true)
+		attest(T.internal.alters).equals(true)
 	})
 
-	it("onUndeclaredKey delete includesMorph", () => {
+	it("onUndeclaredKey delete hasMorph", () => {
 		const T = type({
 			inner: {
 				"+": "delete",
 				foo: "string"
 			}
 		})
-		attest(T.internal.hasTransform).equals(true)
+		attest(T.internal.alters).equals(true)
 	})
 
 	it("distill doesn't treat functions returning any/never as morphs", () => {

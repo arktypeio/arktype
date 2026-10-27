@@ -43,8 +43,10 @@ export declare namespace Constraint {
 	export type ReductionResult = BaseRoot | Disjoint | Intersection.Inner.mutable
 
 	export interface Attachments {
-		impliedBasis: BaseRoot | null
-		impliedSiblings?: array<BaseConstraint> | null
+		/** the basis it constrains, which an intersection holding it must have */
+		implied: BaseRoot | null
+		/** the constraints an intersection holding it must also hold */
+		impliedBy?: array<BaseConstraint> | null
 	}
 
 	export type PrimitiveKind = Exclude<ConstraintKind, StructuralKind>
@@ -79,8 +81,8 @@ export abstract class BaseConstraint<
 		return "constraint"
 	}
 
-	abstract readonly impliedBasis: BaseRoot | null
-	declare readonly impliedSiblings?: array<BaseConstraint>
+	abstract readonly implied: BaseRoot | null
+	declare readonly impliedBy?: array<BaseConstraint>
 
 	intersect<r extends BaseConstraint>(
 		r: r
@@ -100,16 +102,18 @@ export abstract class InternalPrimitiveConstraint<
 
 	traverseApply(data: d["prerequisite"], ctx: InternalTraversal): void {
 		if (!this.traverseAllows(data, ctx))
-			ctx.errorFromNode(this.errorContext as never, data)
+			ctx.errorFromNode(this.errorCtx as never, data)
 	}
 
 	compile(js: NodeCompiler): void {
 		js.checkLeaf(this)
 	}
 
-	private _errorContext: d["errorContext"] | undefined
-	get errorContext(): d["errorContext"] {
-		return (this._errorContext ??= {
+	/** `errorCtx`, once read */
+	private _errorCtx: d["errorCtx"] | undefined
+	/** the context of the error it reports when data fails it */
+	get errorCtx(): d["errorCtx"] {
+		return (this._errorCtx ??= {
 			code: this.kind,
 			description: this.description,
 			meta: this.meta,
@@ -117,8 +121,9 @@ export abstract class InternalPrimitiveConstraint<
 		})
 	}
 
-	get compiledErrorContext(): string {
-		return compileObjectLiteral(this.errorContext!)
+	/** `errorCtx` written as JavaScript, as compiled code reports it */
+	get jsErrorCtx(): string {
+		return compileObjectLiteral(this.errorCtx!)
 	}
 }
 
@@ -184,9 +189,9 @@ export const writeInvalidOperandMessage = <
 	actual: actual
 ): string => {
 	const actualDescription =
-		actual.hasKind("morph") ? "a morph"
+		actual.is("morph") ? "a morph"
 		: actual.isUnknown() ? "unknown"
-		: actual.exclude(expected).defaultBrief
+		: actual.exclude(expected).brief
 
 	return `${capitalize(kind)} operand must be ${
 		expected.description

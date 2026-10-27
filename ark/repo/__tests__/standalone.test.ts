@@ -3189,9 +3189,7 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 			// stands in for a narrow the build can't call, so the default is valid
 			const isEven = standIn((n: number) => n === n, "iseven")
 			const T = type({ a: [["number", ":", isEven], "=", 3] })
-			const optional = T.internal.references.find(node =>
-				node.hasKind("optional")
-			)!
+			const optional = T.internal.references.find(node => node.is("optional"))!
 			const exports = {
 				T: {
 					type: T,

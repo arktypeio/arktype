@@ -297,7 +297,7 @@ const loadArtifact = async (
 const exportOf = (node: BaseRoot, holes: unknown[]): StandaloneExport => {
 	if (!holes.length) return node as never
 	const classes = new Set(
-		[node, ...node.references].flatMap(n => (n.hasKind("proto") ? n.proto : []))
+		[node, ...node.references].flatMap(n => (n.is("proto") ? n.proto : []))
 	)
 	return {
 		type: node as never,
@@ -834,7 +834,7 @@ const validatedOf = (
 	const $ = inPlace ? inPlaceScopeOf(node, errors) : erroringScopeOf(errors)
 	if (!$) return node
 	let resolved = node
-	while (resolved.hasKind("alias")) resolved = resolved.resolution
+	while (resolved.is("alias")) resolved = resolved.resolution
 	const bound = $.bindReference(resolved)
 	return inPlace ? $.finalize(bound) : bound
 }

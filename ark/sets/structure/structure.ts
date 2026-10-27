@@ -31,12 +31,11 @@ const intersectPropsAndIndex = <
 	const kind = l.required ? "required" : "optional"
 
 	// a signature reading ctx can only decide a key it's traversing
-	if (r.signature.allowsNeedsCtx || !r.signature.allowsUnused(l.key))
-		return null
+	if (r.signature.allowsCtx || !r.signature.allowsUnused(l.key)) return null
 
 	// a key's transforms apply in turn once each value allows its input
 	const intersectValues = (lValue: BaseRoot, rValue: BaseRoot) =>
-		lValue.hasTransform && rValue.hasTransform ?
+		lValue.alters && rValue.alters ?
 			intersectNodesRoot(lValue._in, rValue._in, $)
 		:	intersectNodesRoot(lValue, rValue, $)
 	const value = intersectValues(l.value, r.value)
@@ -46,7 +45,7 @@ const intersectPropsAndIndex = <
 		kind === "required" &&
 		inProgress.definitions &&
 		!(value instanceof Disjoint) &&
-		value.hasKind("alias")
+		value.is("alias")
 	) {
 		queueUnchecked(() => {
 			const resolved = intersectValues(unaliased(l.value), unaliased(r.value))
@@ -70,7 +69,7 @@ const intersectPropsAndIndex = <
 }
 
 const unaliased = (node: BaseRoot): BaseRoot =>
-	node.hasKind("alias") ? node.resolution : node
+	node.is("alias") ? node.resolution : node
 
 // a number key names the same property as its string
 const propertyOf = (key: Key): Key =>
@@ -113,9 +112,9 @@ const requiredElementAt = (
 	sequence: nodeOfKind<"sequence">,
 	i: number
 ): BaseRoot => {
-	const variadicEnd = sequence.prefixLength + sequence.minVariadicLength
+	const variadicEnd = sequence.preLen + sequence.minVariadicLength
 	return (
-		i < sequence.prefixLength ? sequence.prefix![i]
+		i < sequence.preLen ? sequence.prefix![i]
 		: i < variadicEnd ? sequence.variadic!
 		: sequence.postfix![i - variadicEnd]
 	)
@@ -248,7 +247,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			// as a spread would, keys keep l's order and r's new keys follow
 			const baseInner: Structure.Inner.mutable =
 				l.props.length || r.props.length ?
-					{ order: [...l.orderedKeys, ...r.orderedKeys] }
+					{ order: [...l.keyOrder, ...r.keyOrder] }
 				:	{}
 
 			if (l.undeclared || r.undeclared) {

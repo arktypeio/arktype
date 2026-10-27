@@ -79,7 +79,7 @@ export const toJsonSchemaRecurse = (
 	ctx: JsonSchemaContext
 ): JsonSchema => {
 	// a cyclic alias's resolution is written once, named by the alias
-	if (node.hasKind("alias")) {
+	if (node.is("alias")) {
 		const name = aliasNameOf(node)
 		if (name !== undefined) nameDef(node.resolution, name, ctx)
 		return toJsonSchemaRecurse(node.resolution, ctx)
@@ -246,7 +246,7 @@ const branchGroupsOf = (node: Union.Node): BaseRoot[] => {
 	const branchGroups: BaseRoot[] = []
 	let firstBooleanIndex = -1
 	for (const branch of node.branches) {
-		if (branch.hasKind("unit") && branch.domain === "boolean") {
+		if (branch.is("unit") && branch.domain === "boolean") {
 			if (firstBooleanIndex === -1) {
 				firstBooleanIndex = branchGroups.length
 				branchGroups.push(branch)
@@ -422,7 +422,7 @@ const reduceObjectJsonSchema = (
 
 				let keyIn: BaseRoot = keyBranch
 				let keySchema: JsonSchema.String | undefined
-				if (keyBranch.hasKind("morph")) {
+				if (keyBranch.is("morph")) {
 					keyIn = keyBranch._in
 					// a key's schema can't be a $ref
 					if (ctx.io !== "in") {
@@ -528,10 +528,10 @@ const keyPatternOf = (
 ): string | undefined => {
 	// declared keys are checked against an index signature too, which
 	// additionalProperties would skip
-	if (key.hasKind("domain")) return ""
-	if (!key.hasKind("intersection") || key.refinements.length !== 1) return
+	if (key.is("domain")) return ""
+	if (!key.is("intersection") || key.refinements.length !== 1) return
 	const [refinement] = key.refinements
-	return refinement.hasKind("pattern") && isJsonSchemaPattern(refinement, ctx) ?
+	return refinement.is("pattern") && isJsonSchemaPattern(refinement, ctx) ?
 			refinement.rule
 		:	undefined
 }
@@ -579,8 +579,8 @@ const reduceSequenceJsonSchema = (
 
 	const path = ctx.path
 	let prefixSchemas: JsonSchema[] | undefined
-	if (node.prevariadic.length) {
-		prefixSchemas = node.prevariadic.map((el, i) => {
+	if (node.leading.length) {
+		prefixSchemas = node.leading.map((el, i) => {
 			ctx.path = appendStringifiedKey(path, i)
 			const valueSchema = toJsonSchemaRecurse(el.node, ctx)
 			if (el.kind === "defaultables") writeDefault(valueSchema, el.default, ctx)
@@ -606,7 +606,7 @@ const reduceSequenceJsonSchema = (
 
 		// draft-07 uses additionalItems when items is an array (tuple),
 		// draft-2020-12 uses items
-		if (isDraft07 && node.prevariadic.length)
+		if (isDraft07 && node.leading.length)
 			schema.additionalItems = variadicItemSchema
 		else schema.items = variadicItemSchema
 

@@ -18,7 +18,7 @@ import type { ArkSchemaConfig, ResolvedConfig } from "../config.ts"
 import type {
 	NodeErrorContextsByKind,
 	Prerequisite,
-	errorContext
+	errorCtx
 } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
 import type { DiscriminantErrorContext } from "../roots/union.ts"
@@ -62,7 +62,7 @@ export const TraversalError: new (errors: ArkErrors) => TraversalError =
  */
 export type ArkError<code extends ArkErrorCode = ArkErrorCode> =
 	code extends unknown ?
-		mutable<omit<errorContext<code>, "meta">> & WrittenErrorContext<code>
+		mutable<omit<errorCtx<code>, "meta">> & WrittenErrorContext<code>
 	:	never
 
 export interface WrittenErrorContext<code extends ArkErrorCode>
@@ -496,8 +496,7 @@ const revisitsPaths = (node: BaseNode): boolean => {
 	let revisits = revisitsPathsByNode.get(node)
 	if (revisits === undefined) {
 		revisits =
-			node.includesAlias ||
-			node.references.some(reference => reference.hasKind("index"))
+			node.hasAlias || node.references.some(reference => reference.is("index"))
 		revisitsPathsByNode.set(node, revisits)
 	}
 	return revisits
@@ -512,7 +511,7 @@ export const applyUnread = (
 	onFail: FailHandler | null,
 	ctor: typeof Traversal
 ): unknown => {
-	if (node.hasUserCode || node.hasTransform)
+	if (node.userCode || node.alters)
 		return applyRejected(node, data, config, onFail, ctor)
 	const errors = new UnreadErrors(node, data, config, ctor)
 	return onFail ? onFail(errors as never) : errors
@@ -1121,7 +1120,7 @@ export interface ErrorContextsByCode extends NodeErrorContextsByKind {
 export type ArkErrorCode = keyof ErrorContextsByCode
 
 type ArkErrorContextInputsByCode = {
-	[code in ArkErrorCode]: errorContext<code> & DerivableErrorContextInput<code>
+	[code in ArkErrorCode]: errorCtx<code> & DerivableErrorContextInput<code>
 }
 
 export type ArkErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =

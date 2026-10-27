@@ -62,7 +62,7 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 					{ prereduced: true }
 				)
 		// a root, e.g. an empty array, can only meet the object a structure constrains
-		if (s.roots.length && result.hasKind("structure"))
+		if (s.roots.length && result.is("structure"))
 			result = s.ctx.$.node("intersection", { structure: result })
 
 		for (const root of s.roots) {
@@ -90,7 +90,7 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 			matched = true
 			// a sequence narrowed by the intersection implies its own length
 			if (s.kind === "intersection")
-				for (const node of s.l[i].impliedSiblings ?? []) appendUnique(s.r, node)
+				for (const node of s.l[i].impliedBy ?? []) appendUnique(s.r, node)
 		} else {
 			// a head can narrow two constraints, e.g. <= 1 meeting >= 1 and <= 2
 			s.l.splice(i--, 1)
@@ -100,8 +100,8 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 	if (!matched) s.l.push(head)
 
 	if (s.kind === "intersection") {
-		if (head.impliedSiblings)
-			for (const node of head.impliedSiblings) appendUnique(s.r, node)
+		if (head.impliedBy)
+			for (const node of head.impliedBy) appendUnique(s.r, node)
 	}
 	return intersectConstraints(s)
 }
@@ -137,7 +137,7 @@ export const sortSiblings = <node extends BaseNode>(
 // union's own doesn't, but unions are never siblings), nodes of different
 // kinds order by kind without writing theirs
 const compareSiblings = (l: BaseNode, r: BaseNode): number =>
-	l.hasKind("required") || l.hasKind("optional") ?
+	l.is("required") || l.is("optional") ?
 		compareKeys(l.key, (r as BaseProp).key) || compareHashes(l.hash, r.hash)
 	: l.kind === r.kind ? compareHashes(l.hash, r.hash)
 	: l.kind < r.kind ? -1

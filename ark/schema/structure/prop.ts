@@ -37,7 +37,7 @@ export declare namespace Prop {
 	export interface Declaration<kind extends Kind = Kind> {
 		kind: kind
 		prerequisite: object
-		openIntersection: true
+		stacks: true
 		childKind: RootKind
 	}
 }
@@ -55,13 +55,14 @@ export abstract class BaseProp<
 		return this.kind === "optional"
 	}
 
-	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
+	implied: BaseRoot = $ark.intrinsic.object.internal
 
 	get serializedKey(): string {
 		return compileSerializedValue(this.key)
 	}
 
-	get compiledKey(): string {
+	/** its key as a path prints it, a symbol by its name */
+	get keyStr(): string {
 		return typeof this.key === "string" ? this.key : printable(this.key)
 	}
 
@@ -103,12 +104,8 @@ export abstract class BaseProp<
 				() => applyValue(this.value, (data as any)[this.key], ctx),
 				ctx
 			)
-		} else if (this.hasKind("required")) {
-			traverseKey(
-				this.key,
-				() => ctx.errorFromNode(this.errorContext, data),
-				ctx
-			)
+		} else if (this.is("required")) {
+			traverseKey(this.key, () => ctx.errorFromNode(this.errorCtx, data), ctx)
 		}
 	}
 
@@ -123,7 +120,7 @@ export abstract class BaseProp<
 			js.traverseKey(key, `data${js.prop(this.key)}`, this.value)
 		)
 
-		if (this.hasKind("required")) {
+		if (this.is("required")) {
 			js.else(() =>
 				js.traversalKind === "Apply" ?
 					js.if(js.error(this, key), () => js.return(false))
@@ -139,16 +136,15 @@ export abstract class BaseProp<
 		const value = `data${js.prop(this.key)}`
 		// a value no branch of which allows undefined fails a missing key too
 		if (
-			this.hasKind("required") &&
+			this.is("required") &&
 			(js.traversalKind === "Allows" ||
 				(!this.value.transforms && !this.value.entersAlias)) &&
 			this.value.branches.every(branch => {
 				// Allows checks a morph's input
-				const input = branch.hasKind("morph") ? branch.head : branch
-				const basis = input?.hasKind("intersection") ? input.basis : input
+				const input = branch.is("morph") ? branch.head : branch
+				const basis = input?.is("intersection") ? input.basis : input
 				return (
-					!!basis?.isBasis() &&
-					!(basis.hasKind("unit") && basis.unit === undefined)
+					!!basis?.isBasis() && !(basis.is("unit") && basis.unit === undefined)
 				)
 			})
 		) {
@@ -166,7 +162,7 @@ export abstract class BaseProp<
 				return condition ? `${condition} || ${fails}` : fails
 			}
 			// a value whose predicates read ctx is checked at its key's path
-			if (this.value.allowsNeedsCtx && this.value.allowsNeedsTraversal) return
+			if (this.value.allowsCtx && this.value.checksCtx) return
 			return (
 				this.value.compileCondition?.(js, value) ??
 				js.invoke(this.value, { arg: value })
@@ -175,7 +171,7 @@ export abstract class BaseProp<
 		const fails = js.keyFails(key, value, this.value)
 		if (fails === undefined) return
 		return (
-			this.hasKind("optional") ? `!(${key} in data) || !(${fails})`
+			this.is("optional") ? `!(${key} in data) || !(${fails})`
 			: js.traversalKind === "Apply" ?
 				`${key} in data ? !(${fails}) : !${js.error(this, key)}`
 			:	`${key} in data && !(${fails})`

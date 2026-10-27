@@ -55,8 +55,8 @@ export declare namespace Alias {
 const implementation: nodeImplementationOf<Alias.Declaration> =
 	implementNode<Alias.Declaration>({
 		kind: "alias",
-		ownsError: false,
-		collapseKey: "reference",
+		ownErr: false,
+		bareKey: "reference",
 		keys: {
 			reference: {
 				serialize: s => {
@@ -120,7 +120,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		let resolution: BaseRoot
 		try {
 			resolution = this._resolve()
-			if (resolution.hasKind("alias")) resolution = resolution.resolution
+			if (resolution.is("alias")) resolution = resolution.resolution
 			if (this.resolve) resolution.cache.isAliasResolution = true
 			if (this.resolve ? isFinal : this.$.resolved)
 				this._resolution = resolution
@@ -181,9 +181,9 @@ Resolution: ${printable(resolution)}`)
 		return others.length < this.operands!.length ? others : undefined
 	}
 
-	get defaultBrief(): string {
+	get brief(): string {
 		return isResolutionFinal() ?
-				this.resolution.defaultBrief
+				this.resolution.brief
 			:	domainDescriptions.object
 	}
 
@@ -194,7 +194,7 @@ Resolution: ${printable(resolution)}`)
 			() => {
 				const aliases: AliasNode[] = [this]
 				let io = ioOf(this.resolution, ioKind)
-				while (io.hasKind("alias") && io.operator === operator) {
+				while (io.is("alias") && io.operator === operator) {
 					const aliased = io.operands![0] as AliasNode
 					if (aliases.includes(aliased)) return $ark.intrinsic.never.internal
 					aliases.push(aliased)
@@ -208,7 +208,7 @@ Resolution: ${printable(resolution)}`)
 		)
 	}
 
-	get nestedExpression(): string {
+	get nestedExpr(): string {
 		if (this.operator === "&" || this.operator === "=>")
 			return `(${this.expression})`
 		const referenced = nodesById[this.reference as NodeId]
@@ -216,7 +216,7 @@ Resolution: ${printable(resolution)}`)
 				hasArkKind(referenced, "root") &&
 					referenced.expression === this.expression
 			) ?
-				referenced.nestedExpression
+				referenced.nestedExpr
 			:	this.expression
 	}
 
@@ -289,7 +289,7 @@ const expressionOf = (node: AliasNode): string => {
 	if (node.operands) {
 		const joinsOperands = node.operator === "&" || node.operator === "=>"
 		const operands = node.operands.map(operand =>
-			joinsOperands ? operand.nestedExpression
+			joinsOperands ? operand.nestedExpr
 			: nestsOperations(operand) ? "..."
 			: operand.expression
 		)
@@ -304,11 +304,11 @@ const expressionOf = (node: AliasNode): string => {
 }
 
 const operationsOf = (node: BaseRoot, seen: BaseRoot[] = []): AliasNode[] => {
-	if (!node.includesAlias || seen.includes(node)) return []
+	if (!node.hasAlias || seen.includes(node)) return []
 	seen.push(node)
 	const operations: AliasNode[] = []
 	for (const reference of node.references) {
-		if (!reference.hasKind("alias")) continue
+		if (!reference.is("alias")) continue
 		if (reference.operands) operations.push(reference)
 		else {
 			const referenced = nodesById[reference.reference as NodeId]
@@ -330,16 +330,16 @@ const aliasNameOf = (node: AliasNode): string =>
 const resolvingAliases: AliasNode[] = []
 
 export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
-	if (!node.hasShallowAlias) return node
-	if (node.hasKind("alias")) return node.resolution
-	if (node.hasKind("union")) {
+	if (!node.topAlias) return node
+	if (node.is("alias")) return node.resolution
+	if (node.is("union")) {
 		return node.$.node("union", {
 			...node.inner,
 			branches: node.branches.map(resolveShallowAliases),
 			meta: node.meta
 		} as never)
 	}
-	if (node.hasKind("morph")) {
+	if (node.is("morph")) {
 		return node.$.node("morph", {
 			...node.inner,
 			morphs:
@@ -355,13 +355,13 @@ export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
 }
 
 export const identityOf = (node: BaseNode): string =>
-	node.hasKind("alias") ? node.reference : node.id
+	node.is("alias") ? node.reference : node.id
 
 export const isResolvable = (node: BaseRoot): boolean => {
-	if (!node.hasShallowAlias) return true
-	if (node.hasKind("union")) return node.branches.every(isResolvable)
-	if (node.hasKind("morph")) return !node.head || isResolvable(node.head)
-	if (!node.hasKind("alias") || resolvingAliases.includes(node)) return false
+	if (!node.topAlias) return true
+	if (node.is("union")) return node.branches.every(isResolvable)
+	if (node.is("morph")) return !node.head || isResolvable(node.head)
+	if (!node.is("alias") || resolvingAliases.includes(node)) return false
 	if (node.isIo) return isResolvable(node.operands![0])
 	// a transform's alias resolves to what it transformed once the transform returns
 	if (node.resolve && !node.operator) return isResolutionFinal()

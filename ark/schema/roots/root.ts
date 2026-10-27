@@ -140,7 +140,7 @@ export abstract class BaseRoot<
 	}
 
 	readonly branches: readonly nodeOfKind<Union.ChildKind>[] =
-		this.hasKind("union") ? this.inner.branches : [this as never]
+		this.is("union") ? this.inner.branches : [this as never]
 
 	distribute<mapOut, reduceOut = mapOut[]>(
 		mapBranch: (
@@ -154,7 +154,8 @@ export abstract class BaseRoot<
 		return reduceMapped?.(mappedBranches) ?? (mappedBranches as never)
 	}
 
-	abstract get defaultBrief(): string
+	/** its description when none is configured */
+	abstract get brief(): string
 
 	toJsonSchema(opts: ToJsonSchema.Options = {}): JsonSchema {
 		return sets().toJsonSchema(this, opts)
@@ -168,7 +169,7 @@ export abstract class BaseRoot<
 		return (
 			this.isBasis() ||
 			this.kind === "alias" ||
-			(this.hasKind("union") && this.isBoolean)
+			(this.is("union") && this.isBoolean)
 		)
 	}
 
@@ -257,8 +258,8 @@ export abstract class BaseRoot<
 		const rNode = this.$.parseDefinition(r)
 		// like a spread, merge only extends object literals
 		for (const branch of [...this.branches, ...rNode.branches]) {
-			const basis = branch.hasKind("intersection") ? branch.basis : branch
-			if (basis?.hasKind("proto"))
+			const basis = branch.is("intersection") ? branch.basis : branch
+			if (basis?.is("proto"))
 				throwParseError(writeInvalidMergeOperandMessage(branch.expression))
 		}
 		return this.rootOfBranches(
@@ -390,8 +391,8 @@ export abstract class BaseRoot<
 		// meta like a description doesn't change the values a node allows
 		return (
 			this.equals(intersection) ||
-			(!this.includesAlias &&
-				!intersection.includesAlias &&
+			(!this.hasAlias &&
+				!intersection.hasAlias &&
 				isMutuallySimulated(this, intersection))
 		)
 	}
@@ -409,7 +410,7 @@ export abstract class BaseRoot<
 		meta: TypeMeta.MappableInput,
 		selector: NodeSelector = "shallow"
 	): this {
-		return this.configureReferences(meta, selector)
+		return this.configureRefs(meta, selector)
 	}
 
 	describe(description: string, selector: NodeSelector = "shallow"): this {
@@ -484,9 +485,7 @@ export abstract class BaseRoot<
 			branch =>
 				this.$.node("morph", {
 					morphs:
-						branch.hasKind("morph") ?
-							[...branch.morphs, morph]
-						:	[branch, morph]
+						branch.is("morph") ? [...branch.morphs, morph] : [branch, morph]
 				}),
 			branches => this.$.node("union", { branches })
 		)
@@ -543,13 +542,13 @@ export abstract class BaseRoot<
 			: io === "in" ? this._in
 			: this._out
 		if (
-			operand.hasKind("morph") ||
-			(constraint.impliedBasis && !operand.extends(constraint.impliedBasis))
+			operand.is("morph") ||
+			(constraint.implied && !operand.extends(constraint.implied))
 		) {
 			return throwInvalidOperandError(
 				kind,
 				// a predicate implies no basis, but can't constrain a morph either
-				(constraint.impliedBasis ?? $ark.intrinsic.unknown.internal) as never,
+				(constraint.implied ?? $ark.intrinsic.unknown.internal) as never,
 				this as never
 			)
 		}
@@ -563,8 +562,7 @@ export abstract class BaseRoot<
 		if (meetsBasis) inner[this.kind] = this
 		// important this is constraint.kind instead of kind in case
 		// the node was reduced during parsing
-		inner[constraint.kind] =
-			constraint.impl.openIntersection ? [constraint] : constraint
+		inner[constraint.kind] = constraint.impl.stacks ? [constraint] : constraint
 		const partialIntersection = this.$.node("intersection", inner, {
 			prereduced: true
 		})
@@ -595,10 +593,11 @@ export abstract class BaseRoot<
 		)
 	}
 
-	hasEqualMorphs(r: BaseRoot): boolean {
-		if (!this.hasTransform && !r.hasTransform) return true
+	/** whether the morphs of `r` are the same as its own */
+	sameMorphs(r: BaseRoot): boolean {
+		if (!this.alters && !r.alters) return true
 
-		if (!arrayEquals(this.shallowMorphs as Morph[], r.shallowMorphs as Morph[]))
+		if (!arrayEquals(this.topMorphs as Morph[], r.topMorphs as Morph[]))
 			return false
 
 		if (
@@ -767,9 +766,9 @@ export type schemaKindOrRightOf<kind extends RootKind> =
 	| schemaKindRightOf<kind>
 
 const structureOf = (branch: Union.ChildNode): Structure.Node | null => {
-	if (branch.hasKind("morph")) return null
+	if (branch.is("morph")) return null
 
-	if (branch.hasKind("intersection")) {
+	if (branch.is("intersection")) {
 		return (
 			branch.inner.structure ??
 			(branch.basis?.domain === "object" ?

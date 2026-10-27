@@ -655,7 +655,7 @@ const notArray = /* @__PURE__ */ cached(() => {
 
 // sound since an Array basis checks Array.isArray
 const disjointFromArray = (node: BaseNode): Disjoint | undefined => {
-	if (!node.hasKind("intersection")) return
+	if (!node.is("intersection")) return
 	const { proto, predicate } = node.inner
 	const nonArray = predicate?.find(node => node.predicate === isNonArray)
 	return proto?.proto === Array && nonArray ?
@@ -773,7 +773,7 @@ const withAnnotations = (root: BaseRoot, o: dict): BaseRoot => {
 	const meta = flatMorph(annotationKeys, (i, k) =>
 		o[k] === undefined ? [] : [k, o[k]]
 	)
-	return Object.keys(meta).length === 0 || root.hasKind("alias") ?
+	return Object.keys(meta).length === 0 || root.is("alias") ?
 			root
 		:	root.configure(meta as never, "self")
 }

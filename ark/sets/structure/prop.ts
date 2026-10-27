@@ -90,7 +90,7 @@ const withUndefined = (value: BaseRoot): BaseRoot => {
 		result =
 			value.allowsUnused(undefined) ? value : value.or($ark.intrinsic.undefined)
 		// an alias's union is reduced again once it resolves
-		if (!value.includesAlias) valuesWithUndefined.set(value, result)
+		if (!value.hasAlias) valuesWithUndefined.set(value, result)
 	}
 	return result
 }

@@ -237,8 +237,8 @@ export const nodeMembers: Record<string, 1> = Object.setPrototypeOf(
 		required: 1,
 		kind: 1,
 		inner: 1,
-		hasKind: 1,
-		assertHasKind: 1,
+		is: 1,
+		assertIs: 1,
 		toString: 1
 	} satisfies Partial<
 		Record<
@@ -251,12 +251,7 @@ export const nodeMembers: Record<string, 1> = Object.setPrototypeOf(
 				| keyof ObjectType
 				| Extract<
 						keyof BaseRoot,
-						| "kind"
-						| "inner"
-						| "hasKind"
-						| "assertHasKind"
-						| "traverse"
-						| "toString"
+						"kind" | "inner" | "is" | "assertIs" | "traverse" | "toString"
 				  >,
 				UnstableArkMember
 			>,
@@ -330,7 +325,7 @@ export const unstableArkMembers = {
 	typeJson: 1,
 	innerJson: 1,
 	metaJson: 1,
-	collapsedJson: 1,
+	bareJson: 1,
 	toJSON: 1,
 	references: 1,
 	shallowRefs: 1,

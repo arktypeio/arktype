@@ -596,7 +596,7 @@ contextualize(() => {
 			)
 			.default("assert")
 
-		attest(discriminantJsonOf(m.internal.assertHasKind("union"))).snap({
+		attest(discriminantJsonOf(m.internal.assertIs("union"))).snap({
 			kind: "domain",
 			path: ["id"],
 			cases: {

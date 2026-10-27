@@ -944,13 +944,12 @@ const readWritten = (
 	addIssueFeatures(written.issues, units, nodes)
 	for (const node of nodes) {
 		written.metas.add(node.meta)
-		if (node.hasKind("structure")) written.keyLookups.add(node.propsByKey)
-		else if (node.hasKind("pattern"))
-			written.patternInstances.add(node.instance)
-		else if (node.hasKind("optional") || node.hasKind("sequence"))
+		if (node.is("structure")) written.keyLookups.add(node.propsByKey)
+		else if (node.is("pattern")) written.patternInstances.add(node.instance)
+		else if (node.is("optional") || node.is("sequence"))
 			collectDefaults(node, written.defaultsByMorph)
 		else if (
-			node.hasKind("unit") &&
+			node.is("unit") &&
 			hasDomain(node.unit, "object") &&
 			!isDate(node.unit)
 		)
@@ -1176,7 +1175,7 @@ class StandaloneArtifact {
 		}
 		for (const node of this.declared) {
 			const lists =
-				node.hasKind("union") ?
+				node.is("union") ?
 					node.inner.ordered ?
 						[]
 					:	[node.branches]
@@ -1268,7 +1267,7 @@ class StandaloneArtifact {
 			// relate a Module's, Scope's or Generic's classes to ours
 			const related = isType ? [value, ...value.references] : this.writtenNodes
 			const protos = related.flatMap(node =>
-				node.hasKind("proto") ? [node.proto] : []
+				node.is("proto") ? [node.proto] : []
 			)
 			for (let i = 0; i < holes.length; i++) {
 				this.receiveHole(holes[i], `${holesName}[${i}]`, `${label}'s hole ${i}`)
@@ -1394,7 +1393,7 @@ class StandaloneArtifact {
 				const reached = root.selectReferences(isAny)
 				// what reaches an alias is read from refsById, which can hold a
 				// node sharing another root's id
-				const coversRoots = !reached.some(node => node.includesAlias)
+				const coversRoots = !reached.some(node => node.hasAlias)
 				for (const node of reached) {
 					written.add(node)
 					if (coversRoots && node.isRoot()) covered.add(node)
@@ -1488,8 +1487,8 @@ class StandaloneArtifact {
 			this.collectType(value)
 		}
 		for (const node of this.writtenSelected(holdsDefaults)) {
-			if (node.hasKind("optional") && node.defaultMorph) collect(node.value)
-			else if (node.hasKind("sequence"))
+			if (node.is("optional") && node.defaultMorph) collect(node.value)
+			else if (node.is("sequence"))
 				for (const [value] of node.defaultables ?? []) collect(value)
 		}
 		return this.validatorNames.size > typeCount
@@ -2718,8 +2717,7 @@ ${writeFunction(
 		const callbacks = declares(
 			root,
 			node =>
-				node.hasKind("morph") ||
-				(node.hasKind("predicate") && !isKeyword(node.predicate))
+				node.is("morph") || (node.is("predicate") && !isKeyword(node.predicate))
 		)
 		if (!this.baking.detailsErrors) {
 			return this.emitUndetailedApply(
@@ -2732,15 +2730,13 @@ ${writeFunction(
 		}
 		// callbacks only into runtime keywords report into ArkErrors
 		const reportsIssues =
-			!root.includesAlias &&
-			!root.includesMorph &&
+			!root.hasAlias &&
+			!root.hasMorph &&
 			!callbacks &&
 			!declares(
 				root,
 				node =>
-					node.hasKind("union") &&
-					!node.discriminant &&
-					!isDecidedByAllows(node)
+					node.is("union") && !node.discriminant && !isDecidedByAllows(node)
 			) &&
 			// errors count their issues, not a branch's
 			!this.unitsOf(root).some(unit =>
@@ -2775,20 +2771,20 @@ ${writeFunction(
 				appliesErrors ? "runtime.applyNodeErrors"
 				:	"runtime.applyRejected"
 			:	this.emit(rootApplyRuntime[param])
-		const strategy = root.applyStrategy
+		const strategy = root.applyMode
 		// a checker transforms by its t, so each is created alike
 		const checks = isChecker(root, this.variantOf(root))
 		// an undiscriminated union's Transform finds the branch data allows,
 		// where a checker's t transforms only what its Allows passed
 		const isArrow =
-			!root.includesAlias &&
+			!root.hasAlias &&
 			(strategy === "allows" ||
 				(strategy === "transform" &&
-					!root.includesMorph &&
-					(checks || !(root.hasKind("union") && !root.discriminant))))
+					!root.hasMorph &&
+					(checks || !(root.is("union") && !root.discriminant))))
 		const transforms = strategy === "transform" && !checks
 		const [flat, traversals] =
-			isArrow && appliesErrors && !root.allowsNeedsCtx ?
+			isArrow && appliesErrors && !root.allowsCtx ?
 				this.compactPartsOf(root, transforms ? [0, 1, 2] : [0, 1], asValidator)
 			:	[]
 		if (traversals) {
@@ -2910,17 +2906,17 @@ ${writeFunction(
 		unconfigured: boolean,
 		pipes: boolean
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
-		const strategy = root.applyStrategy
+		const strategy = root.applyMode
 		const invalid = "invalid(data, onFail)"
 		const transforms = root.transforms
 		// an undiscriminated union transforms what a branch allows, else unset
 		const selects =
-			strategy === "transform" && root.hasKind("union") && !root.discriminant
-		const captures = strategy === "transform" && root.includesMorph
+			strategy === "transform" && root.is("union") && !root.discriminant
+		const captures = strategy === "transform" && root.hasMorph
 		// a transform through a cycle, resolved from the root's shape
-		const resolves = strategy === "contextualTransform" && root.includesAlias
+		const resolves = strategy === "contextualTransform" && root.hasAlias
 		const [flat, traversals] =
-			!root.allowsNeedsCtx && !resolves ?
+			!root.allowsCtx && !resolves ?
 				this.compactPartsOf(root, transforms ? [0, 2] : [0], asValidator)
 			:	[]
 		const shape = traversals ? undefined : this.shapeOf(root)
@@ -3279,7 +3275,7 @@ ${writeFunction(
 	): string {
 		// read only when entering a cycle's resolution
 		const ids =
-			node.includesAlias ?
+			node.hasAlias ?
 				`\n\tid: ${JSON.stringify(unit.names[node.id])},\n\ttrackedId: ${JSON.stringify(
 					unit.names[node.trackedId as NodeId] ??
 						throwParseError(
@@ -3291,18 +3287,17 @@ ${writeFunction(
 			node[flag] ? [`\n\t${flag}: true,`] : []
 		)
 		// read past allows only by a cycle or a ctx-reading predicate
-		const traverses =
-			node.includesAlias || node.allowsNeedsCtx || node.allowsNeedsTraversal
+		const traverses = node.hasAlias || node.allowsCtx || node.checksCtx
 		const transform =
 			traversals[2] ? `\n\ttraverseTransform: ${traversals[2]},` : ""
 		const apply =
 			this.baking.detailsErrors ? traversals[1]
-			: node.allowsNeedsCtx && !node.includesAlias ?
+			: node.allowsCtx && !node.hasAlias ?
 				`${this.readFailure("applyBy")}(${traversals[0]})`
 			:	this.readFailure("applyInvalid")
 		return `{${ids}${flags.join("")}${traverses ? `\n\ttraverseAllows: ${traversals[0]},` : ""}
 	traverseApply: ${apply},${transform}
-	allows: ${node.allowsNeedsCtx ? `data => runtime.allowsUntracked(${shape}, data) ?? runtime.allowsInContext(${shape}, data, runtime.runtimeConfig)` : traversals[0]}${traverses ? ",\n\t$: runtime.runtimeScope" : ""}
+	allows: ${node.allowsCtx ? `data => runtime.allowsUntracked(${shape}, data) ?? runtime.allowsInContext(${shape}, data, runtime.runtimeConfig)` : traversals[0]}${traverses ? ",\n\t$: runtime.runtimeScope" : ""}
 }`
 	}
 
@@ -3446,7 +3441,7 @@ ${writeFunction(
 			typeof defaultValue === "function" && isThunk(defaultValue)
 		// the morph traverses the value only to transform what it writes
 		const validator =
-			isThunkInput || value.hasTransform || value.includesAlias ?
+			isThunkInput || value.alters || value.hasAlias ?
 				this.readByRuntime(value)
 			:	this.readValidator(value)
 		this.defaults.push(
@@ -3620,15 +3615,15 @@ const assertBakeableJsonSchema = (root: BaseRoot): void => {
 
 const shapeFlags = [
 	"isTransformedById",
-	"includesAlias",
+	"hasAlias",
 	"transforms",
-	"allowsNeedsCtx",
-	"allowsNeedsTraversal"
+	"allowsCtx",
+	"checksCtx"
 ] as const
 
 const callsDefaultThunk = (node: BaseNode): boolean =>
-	node.hasKind("optional") ? typeof node.inner.default === "function"
-	: node.hasKind("sequence") ?
+	node.is("optional") ? typeof node.inner.default === "function"
+	: node.is("sequence") ?
 		!!node.defaultables?.some(([, value]) => typeof value === "function")
 	:	false
 
@@ -3655,10 +3650,10 @@ export type CollectedDefault = [
 ]
 
 const defaultedNodeKeys = [
-	"hasTransform",
-	"includesAlias",
-	"allowsNeedsCtx",
-	"hasCtxMorph",
+	"alters",
+	"hasAlias",
+	"allowsCtx",
+	"ctxMorph",
 	"transforms"
 ] as const satisfies (keyof DefaultedNode)[]
 
@@ -3666,7 +3661,7 @@ export const collectDefaults = (
 	node: Optional.Node | Sequence.Node,
 	defaultsByMorph: Map<unknown, CollectedDefault>
 ): void => {
-	if (node.hasKind("optional")) {
+	if (node.is("optional")) {
 		if (node.defaultMorph) {
 			defaultsByMorph.set(node.defaultMorph, [
 				node.key,
@@ -3679,7 +3674,7 @@ export const collectDefaults = (
 	for (let i = 0; i < node.defaultMorphs.length; i++) {
 		const [value, defaultValue] = node.defaultables![i]
 		defaultsByMorph.set(node.defaultMorphs[i], [
-			node.prefixLength + i,
+			node.preLen + i,
 			value,
 			defaultValue
 		])
@@ -3773,8 +3768,8 @@ const readUnitsOf = (unit: RootUnit): RootUnit[] =>
 
 // an array of only a variadic element
 const isVariadicArray = (root: BaseRoot): root is IntersectionNode =>
-	root.hasKind("intersection") &&
-	root.basis?.hasKind("proto") === true &&
+	root.is("intersection") &&
+	root.basis?.is("proto") === true &&
 	root.basis.proto === Array &&
 	Object.keys(root.inner).length === 2 &&
 	Object.keys(root.structure?.inner ?? {}).join() === "sequence" &&
@@ -3829,9 +3824,9 @@ const holdsObjectMeta = (node: BaseNode): boolean =>
 	Object.values(node.meta).some(v => hasDomain(v, "object"))
 
 export const holdsDefaults = (node: BaseNode): boolean =>
-	node.hasKind("optional") ?
+	node.is("optional") ?
 		!!node.defaultMorph
-	:	node.hasKind("sequence") && !!node.defaultables?.length
+	:	node.is("sequence") && !!node.defaultables?.length
 
 export const declares = (
 	root: BaseRoot,

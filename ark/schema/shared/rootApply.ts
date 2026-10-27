@@ -55,7 +55,7 @@ export const rootApplyParts = (
 	const handler =
 		refOf ? "onFail" : "onFail === undefined ? node.onFail : onFail"
 	const fallback = (body: typeof js) =>
-		node.includesAlias ?
+		node.hasAlias ?
 			body.return(
 				`${ref("applyCyclic")}(node, data, ${newCtx}).finalize(${handler})`
 			)
@@ -63,7 +63,7 @@ export const rootApplyParts = (
 				`${ref("applyRejected")}(node, data, ${ref("config")}, ${handler}, ${ref("Traversal")})`
 			)
 	const returnResult = () =>
-		node.includesMorph ?
+		node.hasMorph ?
 			js
 				.if(
 					`result !== data && typeof result === "function" && result instanceof ${ref("TransformErrors")}`,
@@ -75,7 +75,7 @@ export const rootApplyParts = (
 				)
 				.return("result")
 		:	js.return("result")
-	if (node.applyStrategy === "contextual") {
+	if (node.applyMode === "contextual") {
 		// failure path is its own function
 		fallback(applyFailed)
 		js.const("ctx", newCtx)
@@ -83,10 +83,10 @@ export const rootApplyParts = (
 				js.return("applyFailed(data, onFail)")
 			)
 			.return("data")
-	} else if (node.applyStrategy === "allows")
+	} else if (node.applyMode === "allows")
 		js.if("!allows(data)", fallback).return("data")
-	else if (node.applyStrategy === "contextualTransform") {
-		if (node.includesAlias) {
+	else if (node.applyMode === "contextualTransform") {
+		if (node.hasAlias) {
 			js.const("untracked", `${ref("allowsAcyclic")}(node, data)`)
 				.if(
 					`!(untracked ?? ${ref("allowsInContext")}(node, data, ${ref("config")}))`,
@@ -104,13 +104,13 @@ export const rootApplyParts = (
 				.const("result", "traverseTransform(data, ctx)")
 		}
 		js.return(`ctx.hasError() ? ctx.finalize(${handler}) : result`)
-	} else if (node.hasKind("union") && !node.discriminant) {
+	} else if (node.is("union") && !node.discriminant) {
 		js.const("result", "traverseTransform(data)").if(
 			`result === ${JSON.stringify(unset)}`,
 			fallback
 		)
 		returnResult()
-	} else if (node.includesMorph) {
+	} else if (node.hasMorph) {
 		js.if("!allows(data)", fallback).const("result", "traverseTransform(data)")
 		returnResult()
 	} else js.if("!allows(data)", fallback).return("traverseTransform(data)")

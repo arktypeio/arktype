@@ -179,9 +179,9 @@ owner.extra must be removed`)
 	})
 
 	it("builds arktype's error from a site holding its node's context", () => {
-		const n = rootSchema({ domain: "string" }).assertHasKind("domain")
+		const n = rootSchema({ domain: "string" }).assertIs("domain")
 		const ctx = new ArkTraversal(5, n.$.resolvedConfig)
-		ctx._at({ v: n.errorContext }, 5)
+		ctx._at({ v: n.errorCtx }, 5)
 		attest(String(ctx.finalize())).equals(String(n.traverse(5)))
 	})
 })

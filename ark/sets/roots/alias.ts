@@ -17,10 +17,10 @@ const neverIfDisjoint = (result: BaseRoot | Disjoint): BaseRoot =>
 	result instanceof Disjoint ? $ark.intrinsic.never.internal : result
 
 const resolutionOf = (node: BaseRoot): BaseRoot =>
-	node.hasKind("alias") ? node.resolution : node
+	node.is("alias") ? node.resolution : node
 
 const intersectedOperandsOf = (node: BaseRoot): readonly BaseRoot[] =>
-	node.hasKind("alias") && node.operands && node.operator === "&" ?
+	node.is("alias") && node.operands && node.operator === "&" ?
 		node.operands
 	:	[node]
 
@@ -47,7 +47,7 @@ const operate = (
 		...intersectedOperandsOf(r)
 	]) {
 		const identity = identityOf(operand)
-		if (!operandsByIdentity[identity]?.hasKind("alias"))
+		if (!operandsByIdentity[identity]?.is("alias"))
 			operandsByIdentity[identity] = operand
 	}
 	const identities = Object.keys(operandsByIdentity).sort()

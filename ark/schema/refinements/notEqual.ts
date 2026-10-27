@@ -31,9 +31,9 @@ export declare namespace NotEqual {
 		extends declareNode<{
 			kind: "notEqual"
 			inner: Inner
-			openIntersection: true
+			stacks: true
 			prerequisite: number | Date
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = NotEqualNode
@@ -42,14 +42,14 @@ export declare namespace NotEqual {
 const implementation: nodeImplementationOf<NotEqual.Declaration> =
 	implementNode<NotEqual.Declaration>({
 		kind: "notEqual",
-		collapseKey: "rule",
+		bareKey: "rule",
 		keys: {
 			rule: {
 				serialize: rule => (rule instanceof Date ? rule.toISOString() : rule)
 			}
 		},
-		ownsError: true,
-		openIntersection: true,
+		ownErr: true,
+		stacks: true,
 		defaults: {
 			description: node =>
 				`other than ${
@@ -58,24 +58,24 @@ const implementation: nodeImplementationOf<NotEqual.Declaration> =
 					:	node.rule
 				}`
 		},
-		coversBasisNoun: true
+		coversNoun: true
 	})
 
 // the negation of a unit, comparing a Date by its time
 export class NotEqualNode extends InternalPrimitiveConstraint<NotEqual.Declaration> {
 	private readonly isDate = this.rule instanceof Date
-	readonly numericLimit: number = this.rule.valueOf()
+	readonly numRule: number = this.rule.valueOf()
 
 	traverseAllows: (data: number | Date) => boolean =
 		this.isDate ?
-			data => data.valueOf() !== this.numericLimit
-		:	data => data !== this.numericLimit
+			data => data.valueOf() !== this.numRule
+		:	data => data !== this.numRule
 
 	compileCondition(js: NodeCompiler, data: string): string {
-		return `${data}${this.isDate ? ".valueOf()" : ""} !== ${this.numericLimit}`
+		return `${data}${this.isDate ? ".valueOf()" : ""} !== ${this.numRule}`
 	}
 
-	readonly impliedBasis: BaseRoot =
+	readonly implied: BaseRoot =
 		$ark.intrinsic[this.isDate ? "Date" : "number"].internal
 
 	readonly expression: string = `!= ${

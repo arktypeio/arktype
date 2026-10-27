@@ -440,7 +440,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		let inputValidatedCases = this.in.pipe(cases)
 
 		if (defaultCase === "never" || defaultCase === "assert") {
-			inputValidatedCases = inputValidatedCases.configureReferences(
+			inputValidatedCases = inputValidatedCases.configureRefs(
 				{
 					onFail: throwOnDefault
 				},

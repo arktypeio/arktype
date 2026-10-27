@@ -57,13 +57,13 @@ export type Morph<i = never, o = unknown> = (In: i, ctx: Traversal) => o
 const implementation: nodeImplementationOf<Morph.Declaration> =
 	implementNode<Morph.Declaration>({
 		kind: "morph",
-		ownsError: false,
+		ownErr: false,
 		keys: {
 			morphs: {
 				child: morphs => (hasArkKind(morphs[0], "root") ? [morphs[0]] : []),
 				serialize: morphs =>
 					morphs.map(m =>
-						hasArkKind(m, "root") ? m.collapsedJson : namedReference(m)
+						hasArkKind(m, "root") ? m.bareJson : namedReference(m)
 					)
 			},
 			declaredIn: {
@@ -100,7 +100,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	/** what its head pipes to: its morphs and the nodes they pipe to */
 	piped: array<Morph | BaseRoot> =
 		this.head ? this.morphs.slice(1) : this.morphs
-	// fixed at creation, as hasCtxMorph is
+	// fixed at creation, as ctxMorph is
 	contextFree: boolean[] = this.morphs.map(
 		morph => !hasArkKind(morph, "root") && arityOf(morph) === 1
 	)
@@ -124,11 +124,11 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		last: Morph | BaseRoot | undefined
 	): BaseRoot | undefined {
 		if (this.morphs.length === 1 || !hasArkKind(last, "root")) return
-		this.includesAlias ||= last.includesAlias
+		this.hasAlias ||= last.hasAlias
 		return last
 	}
 
-	override get otherReferences(): readonly BaseNode[] {
+	override get otherRefs(): readonly BaseNode[] {
 		if (!this.tail) return []
 		// a configured message's copy is what traversal pipes to
 		const morphs = this.traversedMorphs
@@ -136,10 +136,10 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		return traversed === this.tail ? [this.tail] : [this.tail, traversed]
 	}
 
-	get shallowMorphs(): array<Morph> {
+	get topMorphs(): array<Morph> {
 		// if the morph input is a union, it should not contain any other shallow morphs
-		return isArray(this.head?.shallowMorphs) ?
-				[...this.head.shallowMorphs, ...this.piped]
+		return isArray(this.head?.topMorphs) ?
+				[...this.head.topMorphs, ...this.piped]
 			:	(this.piped as array<Morph>)
 	}
 
@@ -162,8 +162,8 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	expression = `(In: ${this._in.expression}) => ${this.tail ? "To" : "Out"}<${this._out.expression}>`
 
-	get defaultBrief(): string {
-		return this._in.meta.description ?? this._in.defaultBrief
+	get brief(): string {
+		return this._in.meta.description ?? this._in.brief
 	}
 
 	compile(js: NodeCompiler): void {
@@ -246,7 +246,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	}
 
 	/** Check if the morphs of r are equal to those of this node */
-	override hasEqualMorphs(r: MorphNode): boolean {
+	override sameMorphs(r: MorphNode): boolean {
 		return (
 			this.inverse === r.inverse &&
 			arrayEquals(this.piped, r.piped, {

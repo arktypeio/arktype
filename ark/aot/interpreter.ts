@@ -300,7 +300,7 @@ const lacksMember = (object: unknown, key: PropertyKey): boolean =>
 
 // an alias's reference is the node id of what it resolves to
 const holdsNodeId = (node: BaseNode, key: string) =>
-	node.hasKind("alias") && (key === "reference" || key === "inner")
+	node.is("alias") && (key === "reference" || key === "inner")
 
 export class Interpreter {
 	private graph: ModuleGraph
@@ -2029,7 +2029,7 @@ export class Interpreter {
 	private holdsStandIn(root: BaseRoot): boolean {
 		return [root, ...root.references].some(node =>
 			[
-				...(node.hasKind("predicate") ? [node.predicate] : []),
+				...(node.is("predicate") ? [node.predicate] : []),
 				...Object.values(node.meta)
 			].some(value => typeof value === "function" && this.standIns.has(value))
 		)

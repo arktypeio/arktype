@@ -68,7 +68,7 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		}
 		const mark = $ark.reached?.mark()
 
-		const isPureIntersection = !ctx.pipe || (!l.hasTransform && !r.hasTransform)
+		const isPureIntersection = !ctx.pipe || (!l.alters && !r.alters)
 
 		if (isPureIntersection && l.equals(r)) return l
 
@@ -99,8 +99,8 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 const listsKeysAlike = (l: BaseNode, r: BaseNode): boolean =>
 	l === r ||
 	(l.children.length === r.children.length &&
-		!(l as Structure.Node).orderedProps?.some(
-			(prop, i) => prop.key !== (r as Structure.Node).orderedProps[i].key
+		!(l as Structure.Node).inOrder?.some(
+			(prop, i) => prop.key !== (r as Structure.Node).inOrder[i].key
 		) &&
 		l.children.every((child, i) => listsKeysAlike(child, r.children[i])))
 
@@ -131,7 +131,7 @@ const _pipeNodes = (
 	r: nodeOfKind<RootKind>,
 	ctx: IntersectionContext
 ) =>
-	l.hasTransform || r.hasTransform ?
+	l.alters || r.alters ?
 		ctx.invert ?
 			pipeMorphed(r, l, ctx)
 		:	pipeMorphed(l, r, ctx)
@@ -160,7 +160,7 @@ const _pipeMorphed = (
 	to: nodeOfKind<RootKind>,
 	ctx: IntersectionContext
 ): Morph.Node | Disjoint => {
-	const fromIsMorph = from.hasKind("morph")
+	const fromIsMorph = from.is("morph")
 
 	if (fromIsMorph) {
 		const morphs = [...from.morphs]
@@ -177,7 +177,7 @@ const _pipeMorphed = (
 		})
 	}
 
-	if (to.hasKind("morph")) {
+	if (to.is("morph")) {
 		const inTersection = intersectOrPipeNodes(from, to._in, ctx)
 		if (inTersection instanceof Disjoint) return inTersection
 

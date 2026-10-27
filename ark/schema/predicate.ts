@@ -40,8 +40,8 @@ export declare namespace Predicate {
 		extends declareNode<{
 			kind: "predicate"
 			inner: Inner
-			openIntersection: true
-			errorContext: ErrorContext
+			stacks: true
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = PredicateNode
@@ -50,19 +50,19 @@ export declare namespace Predicate {
 const implementation: nodeImplementationOf<Predicate.Declaration> =
 	implementNode<Predicate.Declaration>({
 		kind: "predicate",
-		ownsError: true,
-		collapseKey: "predicate",
+		ownErr: true,
+		bareKey: "predicate",
 		keys: {
 			predicate: {}
 		},
 		defaults: {
 			description: describePredicate
 		},
-		openIntersection: true
+		stacks: true
 	})
 
 export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
-	impliedBasis = null
+	implied = null
 
 	expression: string = baseNameOf(this.predicate)
 	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
@@ -71,7 +71,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		return predicate(data, ctx as never)
 	}
 
-	errorContext: Predicate.ErrorContext = {
+	errorCtx: Predicate.ErrorContext = {
 		code: "predicate",
 		description: this.description,
 		predicate: this.predicate,
@@ -82,7 +82,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		const errorCount = ctx.currentErrorCount
 		const predicate = this.predicate
 		if (!predicate(data, ctx.external) && ctx.currentErrorCount === errorCount)
-			ctx.errorFromNode(this.errorContext, data)
+			ctx.errorFromNode(this.errorCtx, data)
 	}
 
 	compile(js: NodeCompiler): void {

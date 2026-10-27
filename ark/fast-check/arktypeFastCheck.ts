@@ -24,7 +24,7 @@ export const buildArbitrary = (
 	node: nodeOfKind<NodeKind>,
 	ctx: Ctx
 ): fc.Arbitrary<unknown> => {
-	if (node.includesAlias && !ctx.tieStack.length)
+	if (node.hasAlias && !ctx.tieStack.length)
 		return buildCyclicArbitrary(node, () => buildArbitrary(node, ctx), ctx)
 	switch (node.kind) {
 		case "intersection":
@@ -69,7 +69,7 @@ export const buildArbitrary = (
 			return fc.oneof(
 				{ maxDepth: 4, depthIdentifier: ctx.depthIdentifier },
 				...[...node.children]
-					.sort((l, r) => Number(l.includesAlias) - Number(r.includesAlias))
+					.sort((l, r) => Number(l.hasAlias) - Number(r.hasAlias))
 					.map(child => buildArbitrary(child, ctx))
 			)
 		case "unit":
@@ -128,7 +128,7 @@ export const buildStructureArbitrary = (
 ): fc.Arbitrary<unknown> => {
 	const structure = node.structure
 
-	if (node.basis?.hasKind("domain")) {
+	if (node.basis?.is("domain")) {
 		if (structure === undefined)
 			throwInternalError("Expected a structure node.")
 

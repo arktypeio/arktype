@@ -31,7 +31,7 @@ export declare namespace Before {
 			kind: "before"
 			inner: Inner
 			prerequisite: Date
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = BeforeNode
@@ -40,8 +40,8 @@ export declare namespace Before {
 const implementation: nodeImplementationOf<Before.Declaration> =
 	implementNode<Before.Declaration>({
 		kind: "before",
-		collapseKey: "rule",
-		ownsError: true,
+		bareKey: "rule",
+		ownErr: true,
 		keys: {
 			rule: {
 				serialize: schema => schema.toISOString()
@@ -59,7 +59,7 @@ export class BeforeNode extends BaseRange<Before.Declaration> {
 		return data <= this.rule
 	}
 
-	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
+	implied: BaseRoot = $ark.intrinsic.Date.internal
 }
 
 export const Before = {

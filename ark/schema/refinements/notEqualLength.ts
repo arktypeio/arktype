@@ -32,10 +32,10 @@ export declare namespace NotEqualLength {
 		extends declareNode<{
 			kind: "notEqualLength"
 			inner: Inner
-			openIntersection: true
+			stacks: true
 			reducibleTo: "intersection"
 			prerequisite: LengthBoundableData
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = NotEqualLengthNode
@@ -44,12 +44,12 @@ export declare namespace NotEqualLength {
 const implementation: nodeImplementationOf<NotEqualLength.Declaration> =
 	implementNode<NotEqualLength.Declaration>({
 		kind: "notEqualLength",
-		collapseKey: "rule",
+		bareKey: "rule",
 		keys: {
 			rule: {}
 		},
-		ownsError: true,
-		openIntersection: true,
+		ownErr: true,
+		stacks: true,
 		defaults: {
 			description: node => `other than length ${node.rule}`
 		}
@@ -71,7 +71,7 @@ export class NotEqualLengthNode extends InternalPrimitiveConstraint<NotEqualLeng
 		return `${data}.length !== ${this.rule}`
 	}
 
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
+	readonly implied: BaseRoot = $ark.intrinsic.lengthBoundable.internal
 	readonly expression: string = `!= ${this.rule}`
 }
 

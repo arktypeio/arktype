@@ -462,9 +462,9 @@ export const transformed = (
 
 // the one pipe a node needs
 export const pipeOf = (node: BaseNode): TraversePipe =>
-	node.includesAlias ? pipe
+	node.hasAlias ? pipe
 	: node.transforms ? pipeTransformed
-	: node.allowsNeedsCtx ? pipeChecked
+	: node.allowsCtx ? pipeChecked
 	: pipeApplied
 
 export type TraversePipe = (
@@ -489,7 +489,7 @@ export const pipeTransformed: TraversePipe = (ctx, node, data) =>
 	:	errorsOf(ctx)
 
 export const pipe: TraversePipe = (ctx, node, data) => {
-	if (!node.includesAlias) return pipeOf(node)(ctx, node, data)
+	if (!node.hasAlias) return pipeOf(node)(ctx, node, data)
 	if (!node.allows(data)) {
 		applyPipedResolution(ctx, node, data)
 		return errorsOf(ctx)
@@ -511,7 +511,7 @@ const allowsPiped = (
 	data: unknown
 ): boolean => {
 	// Allows would detach a contextual node's predicates from this path
-	if (node.allowsNeedsCtx) return applyPiped(ctx, node, data)
+	if (node.allowsCtx) return applyPiped(ctx, node, data)
 	if (node.allows(data)) return true
 	applyPiped(ctx, node, data)
 	return false
@@ -584,7 +584,7 @@ export const transformIfAllowed = (
 	data: unknown
 ): boolean => {
 	if (!transformsValid(ctx)) return false
-	if (node.includesAlias) {
+	if (node.hasAlias) {
 		const untracked = allowsAcyclic(node, data)
 		if (!(untracked ?? allowsInTraversal(node, data, traversalOf(ctx, data))))
 			return false
@@ -602,7 +602,7 @@ export const allowsInBranch = (
 	node: BaseNode,
 	data: unknown
 ): boolean =>
-	node.allowsNeedsTraversal ?
+	node.checksCtx ?
 		allowsInBranchBy(ctx, node.traverseAllows, data, node)
 	:	node.allows(data)
 
@@ -983,7 +983,7 @@ export const applyMember = (
 	ctx: InternalTraversal,
 	member: BaseNode = node
 ): void =>
-	member.includesAlias ?
+	member.hasAlias ?
 		applyResolution(member.id, node, data, ctx)
 	:	node.traverseApply(data, ctx)
 
@@ -996,7 +996,7 @@ export const applyValue = (
 ): void => {
 	if (
 		node.transforms &&
-		(transforms && (node.includesMorph || node.includesAlias) ?
+		(transforms && (node.hasMorph || node.hasAlias) ?
 			transformIfAllowed(ctx, node, data)
 		:	allowsInBranch(ctx, node, data))
 	)
@@ -1011,12 +1011,7 @@ export const allowsUntracked = (
 	node: BaseNode,
 	data: unknown
 ): boolean | undefined => {
-	if (
-		inProgress.definitions ||
-		inProgress.resolutions ||
-		node.allowsNeedsTraversal
-	)
-		return
+	if (inProgress.definitions || inProgress.resolutions || node.checksCtx) return
 	const outerVisits = aliasVisits.count
 	const outerContinuation = continuation
 	const outerConfig = continuationConfig
@@ -1114,11 +1109,7 @@ interface DefaultedValue {
 
 export type DefaultedNode = Pick<
 	BaseNode,
-	| "hasTransform"
-	| "includesAlias"
-	| "allowsNeedsCtx"
-	| "hasCtxMorph"
-	| "transforms"
+	"alters" | "hasAlias" | "allowsCtx" | "ctxMorph" | "transforms"
 >
 
 export const computeDefaultValueMorph = (
@@ -1131,13 +1122,13 @@ export const computeDefaultValueMorph = (
 	isThunkInput = isThunk(defaultInput)
 ): Morph<any> => {
 	const thunk = isThunkInput ? (defaultInput as () => unknown) : undefined
-	if (!thunk && !node.hasTransform && !node.includesAlias) {
+	if (!thunk && !node.alters && !node.hasAlias) {
 		return data => {
 			data[key] = defaultInput
 			return data
 		}
 	}
-	if (!node.allowsNeedsCtx && !node.hasCtxMorph) {
+	if (!node.allowsCtx && !node.ctxMorph) {
 		return data => {
 			const input = thunk ? thunk() : defaultInput
 			const output = value.traverse(input)

@@ -27,7 +27,7 @@ export const buildCyclicArbitrary = (
 
 // an alias already being resolved can't contribute to a finite member
 const hasFiniteMember = (node: BaseNode, resolving: Set<string>): boolean => {
-	if (node.hasKind("alias")) {
+	if (node.is("alias")) {
 		const id = node.resolution.id
 		if (resolving.has(id)) return false
 		resolving.add(id)
@@ -35,11 +35,11 @@ const hasFiniteMember = (node: BaseNode, resolving: Set<string>): boolean => {
 		resolving.delete(id)
 		return result
 	}
-	if (node.hasKind("union"))
+	if (node.is("union"))
 		return node.children.some(child => hasFiniteMember(child, resolving))
-	if (node.hasKind("morph"))
+	if (node.is("morph"))
 		return !node.head || hasFiniteMember(node.head, resolving)
-	if (!node.hasKind("intersection") || !node.structure) return true
+	if (!node.is("intersection") || !node.structure) return true
 	const structure = node.structure
 	return (
 		structure.required?.every(prop =>

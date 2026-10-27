@@ -30,7 +30,7 @@ contextualize(() => {
 		attest(Object.is($.type({ a: ["number", "=", 0] }).assert({}).a, 0)).equals(
 			true
 		)
-		const zero = $.type.unit(-0).internal.assertHasKind("unit").unit
+		const zero = $.type.unit(-0).internal.assertIs("unit").unit
 		attest(Object.is(zero, 0)).equals(true)
 		$.type.unit(new Date(0))
 		const iso = "1970-01-01T00:00:00.000Z"

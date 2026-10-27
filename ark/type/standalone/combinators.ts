@@ -37,10 +37,10 @@ export const combines = (node: BaseNode): boolean => {
 		combinableByNode.set(node, false)
 		combinable =
 			node.isRoot() &&
-			!node.includesAlias &&
-			!node.includesMorph &&
-			!node.allowsNeedsCtx &&
-			!node.transformNeedsCtx &&
+			!node.hasAlias &&
+			!node.hasMorph &&
+			!node.allowsCtx &&
+			!node.transformCtx &&
 			calleesOf(node)?.every(isCallable) === true
 		combinableByNode.set(node, combinable)
 	}
@@ -53,23 +53,22 @@ const isCallable = (node: BaseRoot): boolean => combines(node) || unifies(node)
 
 // the roots a node's checker calls, if it can be written
 const calleesOf = (node: BaseNode): BaseRoot[] | undefined => {
-	if (node.hasKind("domain") || node.hasKind("proto"))
-		return checkOf(node) && []
-	if (node.hasKind("unit")) return unitSiteOf(node) && []
-	if (node.hasKind("intersection")) {
+	if (node.is("domain") || node.is("proto")) return checkOf(node) && []
+	if (node.is("unit")) return unitSiteOf(node) && []
+	if (node.is("intersection")) {
 		const predicates = node.inner.predicate ?? []
 		// a structure's issues stop its predicates, which Allows can't count,
 		// and the first of several predicates failing stops the rest
 		if (
 			predicates.length > (node.structure ? 0 : 1) ||
 			!predicates.every(predicateSiteOf) ||
-			!node.prestructurals.every(checkOf) ||
+			!node.preStruct.every(checkOf) ||
 			(node.basis && !checkOf(node.basis))
 		)
 			return
 		return node.structure ? structureCalleesOf(node.structure) : []
 	}
-	if (node.hasKind("union")) {
+	if (node.is("union")) {
 		if (unitListOf(node)) return []
 		const domains = domainCasesOf(node)
 		if (domains) {
@@ -102,17 +101,17 @@ const plainContextOf = (context: object): IssueContext | undefined =>
 
 // a node's own site, if it holds only a code and a description
 const plainSiteOf = (node: BaseNode): IssueContext | undefined =>
-	plainContextOf(issueSiteOf(node.failureSite))
+	plainContextOf(issueSiteOf(node.failSite))
 
 const unionSiteOf = (node: UnionNode): IssueContext | undefined =>
-	plainContextOf(issueContextOf({ ...node.failureSite, code: "union" }))
+	plainContextOf(issueContextOf({ ...node.failSite, code: "union" }))
 
 const discriminantSiteOf = (node: UnionNode): IssueContext | undefined =>
 	plainContextOf(
 		issueContextOf({
 			code: "discriminant",
-			description: node.discriminantDescription,
-			meta: node.discriminantMeta
+			description: node.discDesc,
+			meta: node.discMeta
 		})
 	)
 
@@ -132,16 +131,16 @@ const checkOf = (node: BaseNode): IssueContext | undefined =>
 
 // a keyword's predicate, which reads no ctx
 const predicateSiteOf = (node: BaseNode): IssueContext | undefined =>
-	node.hasKind("predicate") && isKeyword(node.predicate) ?
+	node.is("predicate") && isKeyword(node.predicate) ?
 		plainSiteOf(node)
 	:	undefined
 
 // whether a node's Allows passes as it does, as a keyword's predicate does
 const allowsDecides = (node: BaseRoot): boolean =>
-	!node.includesMorph &&
-	!node.allowsNeedsCtx &&
+	!node.hasMorph &&
+	!node.allowsCtx &&
 	Object.values(node.refsById).every(
-		ref => !ref.hasKind("predicate") || !!predicateSiteOf(ref)
+		ref => !ref.is("predicate") || !!predicateSiteOf(ref)
 	)
 
 // a value compared by identity and printed by the runtime
@@ -153,7 +152,7 @@ const isPrinted = (value: unknown): boolean =>
 	(typeof value === "number" && !Object.is(value, -0) && value === value)
 
 const unitSiteOf = (node: BaseNode): IssueContext | undefined =>
-	node.hasKind("unit") && isPrinted(node.unit) ? plainSiteOf(node) : undefined
+	node.is("unit") && isPrinted(node.unit) ? plainSiteOf(node) : undefined
 
 interface Units {
 	values: unknown[]
@@ -172,7 +171,7 @@ const unitListOf = (node: UnionNode): Units | undefined => {
 	if (
 		discriminant.kind !== "unit" ||
 		discriminant.path.length ||
-		node.missListsBranches ||
+		node.missLists ||
 		"default" in discriminant.cases
 	)
 		return
@@ -210,7 +209,7 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 		discriminant.path.length !== 1 ||
 		typeof discriminant.path[0] !== "string" ||
 		discriminant.members ||
-		node.missListsBranches
+		node.missLists
 	)
 		return
 	const key = discriminant.path[0]
@@ -231,12 +230,12 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 					node,
 					branch => {
 						const prop =
-							branch.hasKind("intersection") ?
+							branch.is("intersection") ?
 								branch.structure?.propsByKey[key]
 							:	undefined
 						return (
-							prop?.hasKind("required") === true &&
-							prop.value.hasKind("unit") &&
+							prop?.is("required") === true &&
+							prop.value.is("unit") &&
 							prop.value.unit === value
 						)
 					},
@@ -275,7 +274,7 @@ const domainCasesOf = (
 		discriminant.kind !== "domain" ||
 		discriminant.path.length ||
 		discriminant.members ||
-		node.missListsBranches ||
+		node.missLists ||
 		"default" in discriminant.cases ||
 		!discriminantSiteOf(node)
 	)
@@ -293,11 +292,11 @@ const domainCasesOf = (
 }
 
 const domainOfBranch = (branch: BaseRoot): string | undefined =>
-	branch.hasKind("unit") ? domainOf(branch.unit)
-	: branch.hasKind("domain") ? branch.domain
-	: branch.hasKind("proto") ? "object"
-	: branch.hasKind("intersection") && branch.basis ?
-		branch.basis.hasKind("domain") ?
+	branch.is("unit") ? domainOf(branch.unit)
+	: branch.is("domain") ? branch.domain
+	: branch.is("proto") ? "object"
+	: branch.is("intersection") && branch.basis ?
+		branch.basis.is("domain") ?
 			branch.basis.domain
 		:	"object"
 	:	undefined
@@ -329,11 +328,7 @@ const structureCalleesOf = (
 	structure: StructureNode
 ): BaseRoot[] | undefined => {
 	// its structural morph, if any, writes its defaults
-	if (
-		structure.index ||
-		structure.undeclared ||
-		structure.inheritableProps.length
-	)
+	if (structure.index || structure.undeclared || structure.protoProps.length)
 		return
 	const { sequence } = structure
 	if (sequence) {
@@ -351,8 +346,8 @@ const structureCalleesOf = (
 	for (const prop of structure.props) {
 		if (
 			!isLiteralKey(prop.key) ||
-			(prop.hasKind("required") && !missesAsRequired(prop)) ||
-			(prop.hasKind("optional") && prop.hasDefault() && !isLiteralDefault(prop))
+			(prop.is("required") && !missesAsRequired(prop)) ||
+			(prop.is("optional") && prop.hasDefault() && !isLiteralDefault(prop))
 		)
 			return
 	}
@@ -361,7 +356,7 @@ const structureCalleesOf = (
 
 // a missing key whose issue is required's alone
 const missesAsRequired = (prop: Prop.Node): boolean => {
-	const { m: missing } = issueSiteOf(prop.failureSite) as { m?: object }
+	const { m: missing } = issueSiteOf(prop.failSite) as { m?: object }
 	return (
 		missing === runtime.requiredSite.m ||
 		(missing !== undefined &&
@@ -417,7 +412,7 @@ const ruleFactories = [
 const isObjectCheck = (node: BaseNode): boolean => {
 	const site = checkOf(node)!
 	return (
-		node.hasKind("domain") &&
+		node.is("domain") &&
 		node.domain === "object" &&
 		site.code === runtime.objectCheck.code &&
 		site.description === runtime.objectCheck.description
@@ -439,7 +434,7 @@ const writeCheck = (js: CombinatorCompiler, node: BaseNode): string => {
 					`runtime.${constant}.test`
 				)
 	}
-	const factory = ruleFactories.find(kind => node.hasKind(kind))
+	const factory = ruleFactories.find(kind => node.is(kind))
 	const { rule, exclusive } = node.inner as { rule?: unknown; exclusive?: true }
 	if (factory && typeof rule === "number") {
 		const bounds = factory === "min" || factory === "max"
@@ -454,7 +449,7 @@ const writeCheck = (js: CombinatorCompiler, node: BaseNode): string => {
 			unlessDerived(derived.description, site)
 		)
 	}
-	if (node.hasKind("pattern")) {
+	if (node.is("pattern")) {
 		const instance = js.ref(node.instance)
 		if (condition === `${instance}.test(data)`) {
 			return writeCall(
@@ -493,10 +488,10 @@ const writeStructure = (
 		)
 	}
 	// checked and written in the order arktype checks and writes them
-	const entries = structure.orderedProps.map(prop => {
+	const entries = structure.inOrder.map(prop => {
 		const checker = ref(prop.value)
 		return `${writeKey(prop.key as string)}: ${
-			!prop.hasKind("optional") ? checker
+			!prop.is("optional") ? checker
 			: prop.hasDefault() ?
 				writeCall("optional", checker, writeLiteral(js, prop.default))
 			:	writeCall("optional", checker)
@@ -516,10 +511,10 @@ const ownNodesOf = (node: BaseNode): BaseNode[] =>
 
 // a node whose checker would declare a value, as a pattern does its RegExp
 const declaresRef = (node: BaseNode): boolean =>
-	node.hasKind("pattern") ||
-	node.hasKind("predicate") ||
-	(node.hasKind("proto") && node.proto !== Array) ||
-	(node.hasKind("union") && !!discriminatedOf(node))
+	node.is("pattern") ||
+	node.is("predicate") ||
+	(node.is("proto") && node.proto !== Array) ||
+	(node.is("union") && !!discriminatedOf(node))
 
 const maxInlinedNodes = 8
 
@@ -544,7 +539,7 @@ const isInlined = (node: BaseNode): boolean => {
 				(own.length <= maxInlinedObjectNodes &&
 					own.every(
 						child =>
-							!child.hasKind("structure") ||
+							!child.is("structure") ||
 							child.props.every(prop => isInlined(prop.value))
 					)))
 		inlinedByNode.set(node, inlined)
@@ -563,7 +558,7 @@ const rulesOf = (
 	const rules: (number | undefined)[] = kinds.map(() => undefined)
 	let i = 0
 	for (const node of refinements) {
-		while (i < kinds.length && !node.hasKind(kinds[i])) i++
+		while (i < kinds.length && !node.is(kinds[i])) i++
 		if (i === kinds.length) return
 		const { rule, exclusive } = node.inner as {
 			rule?: unknown
@@ -592,15 +587,15 @@ const writeShape = (
 	js: CombinatorCompiler,
 	node: IntersectionNode
 ): string | undefined => {
-	const { basis, structure, prestructurals } = node
+	const { basis, structure, preStruct } = node
 	if (!basis || node.inner.predicate) return
 	const checked = writeCheck(js, basis)
 	if (checked === "runtime.stringCheck" && !structure) {
-		const rules = rulesOf(prestructurals, ["maxLength", "minLength"])
+		const rules = rulesOf(preStruct, ["maxLength", "minLength"])
 		if (rules) return writeCall("stringRange", ...writeRules(rules))
 	}
 	if (checked === "runtime.numberCheck" && !structure) {
-		const rules = rulesOf(prestructurals, ["divisor", "max", "min"])
+		const rules = rulesOf(preStruct, ["divisor", "max", "min"])
 		if (rules?.[0] === 1)
 			return writeCall("integerRange", ...writeRules([rules[2], rules[1]]))
 	}
@@ -609,7 +604,7 @@ const writeShape = (
 		structure?.sequence &&
 		!structure.sequence.variadic!.transforms
 	) {
-		const rules = rulesOf(prestructurals, ["maxLength", "minLength"])
+		const rules = rulesOf(preStruct, ["maxLength", "minLength"])
 		if (rules) {
 			return writeCall(
 				"arrayOf",
@@ -632,19 +627,18 @@ export const writeCombinator = (
 ): string | undefined => {
 	if (!combines(node)) return
 	const ref = (node: BaseNode) => readChecker(js, node)
-	if (node.hasKind("domain") || node.hasKind("proto"))
-		return writeCheck(js, node)
-	if (node.hasKind("unit")) {
+	if (node.is("domain") || node.is("proto")) return writeCheck(js, node)
+	if (node.is("unit")) {
 		return writeCall(
 			"unit",
 			writeLiteral(js, node.unit),
 			unlessDerived(runtime.describeValues([node.unit]), unitSiteOf(node)!)
 		)
 	}
-	if (node.hasKind("intersection")) {
+	if (node.is("intersection")) {
 		const shape = js.shapes && writeShape(js, node)
 		if (shape) return shape
-		const refinements = node.prestructurals.map(child => writeCheck(js, child))
+		const refinements = node.preStruct.map(child => writeCheck(js, child))
 		const structure = node.structure && writeStructure(js, node.structure)
 		const predicate = node.inner.predicate?.[0]
 		const within =
@@ -671,7 +665,7 @@ export const writeCombinator = (
 			within
 		)
 	}
-	if (node.hasKind("union")) {
+	if (node.is("union")) {
 		const units = unitListOf(node)
 		if (units) {
 			if (

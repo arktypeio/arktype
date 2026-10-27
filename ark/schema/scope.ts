@@ -242,18 +242,19 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return "scope"
 	}
 
-	private _referencesById: { [id: string]: BaseNode } | undefined
+	/** `refsById`, once read */
+	private _refsById: { [id: string]: BaseNode } | undefined
 	// collected when first read
 	get refsById(): { [id: string]: BaseNode } {
-		if (!this._referencesById && this._exported) {
-			this._referencesById = {}
+		if (!this._refsById && this._exported) {
+			this._refsById = {}
 			for (const name in this._exported) {
 				const resolution = this._exported[name]
 				if (isNode(resolution))
-					addReferences(this._referencesById, resolution.refsById)
+					addReferences(this._refsById, resolution.refsById)
 			}
 		}
-		return this._referencesById ?? {}
+		return this._refsById ?? {}
 	}
 
 	private _references: readonly BaseNode[] | undefined
@@ -443,10 +444,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	bindReference<reference extends BaseNode | GenericRoot>(
 		reference: reference
 	): reference {
-		if (
-			reference.$ === this ||
-			(isNode(reference) && reference.hasKind("alias"))
-		)
+		if (reference.$ === this || (isNode(reference) && reference.is("alias")))
 			return reference
 		// bound once per scope
 		let bound = this.boundReferences.get(reference)
@@ -456,11 +454,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 					composing(() => {
 						const copy = new (reference.constructor as any)(reference, this)
 						// a bound node keeps the descriptions of the scope that created it
-						if (
-							reference.includesKeptDescription ||
-							!this.describesLike(reference.$)
-						) {
-							copy.includesKeptDescription = true
+						if (reference.keptDesc || !this.describesLike(reference.$)) {
+							copy.keptDesc = true
 							copy.cache.description = reference.description
 						}
 						return resolveDescription(copy as BaseNode)
@@ -572,7 +567,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		const cached = this.resolutions[name]
 		if (cached && !hasArkKind(cached, "context")) {
 			$ark.reached?.cached(this.resolutions, name)
-			if (hasArkKind(cached, "root") && cached.hasShallowAlias)
+			if (hasArkKind(cached, "root") && cached.topAlias)
 				return this.resolvePending(name, cached)
 			return this.bindReference(cached)
 		}
@@ -615,7 +610,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				openDefinitions.pop()
 			}
 			reach(v)
-			if (v.lowlink < v.index && !node.hasShallowAlias) {
+			if (v.lowlink < v.index && !node.topAlias) {
 				v.phase = "member"
 				v.resolution = node
 				openMembers.push(v)
@@ -635,7 +630,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 							delete member.resolution
 						}
 					}
-					return node.hasShallowAlias ?
+					return node.topAlias ?
 							this.resolvePending(
 								name,
 								(this.resolutions[name] = withId(node, v.id))
@@ -751,10 +746,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 		) as never
 	}
 
-	compiledUnit: Fn | undefined
+	unitFn: Fn | undefined
 
 	get precompilation(): string | undefined {
-		return this.compiledUnit?.toString()
+		return this.unitFn?.toString()
 	}
 
 	private _exported: InternalResolutions | undefined
@@ -791,24 +786,23 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.resolutions, this._exported)
 
 			if (!this.lazyExports) {
-				const includesAlias = Object.values(this._exported).some(
-					resolution => isNode(resolution) && resolution.includesAlias
+				const hasAlias = Object.values(this._exported).some(
+					resolution => isNode(resolution) && resolution.hasAlias
 				)
-				let uncompiled =
-					includesAlias || bindPrecompiledUnits ? this.references : []
+				let uncompiled = hasAlias || bindPrecompiledUnits ? this.references : []
 				if (bindPrecompiledUnits) {
 					// inline-compiled branches bind on their own
 					bindPrecompiledUnits(uncompiled)
-					uncompiled = uncompiled.filter(node => !node.compiledUnit)
+					uncompiled = uncompiled.filter(node => !node.unitFn)
 				}
 				if (canJit(this.resolvedConfig)) {
 					// resolving aliases can throw, so they compile on export
-					if (uncompiled.some(node => node.includesAlias))
-						this.compiledUnit = tryJit(() => precompile(uncompiled, this))
+					if (uncompiled.some(node => node.hasAlias))
+						this.unitFn = tryJit(() => precompile(uncompiled, this))
 					else {
 						for (const name in this._exported) {
 							const resolution = this._exported[name]
-							if (hasArkKind(resolution, "root") && !resolution.compiledUnit)
+							if (hasArkKind(resolution, "root") && !resolution.unitFn)
 								resolution.deferJit()
 						}
 					}
@@ -866,7 +860,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (kind === "union") {
 			const union = input as Union.Inner
 			const branches = union.branches.flatMap(branch =>
-				(branch as BaseRoot).hasKind("union") ?
+				(branch as BaseRoot).is("union") ?
 					(branch as {} as Union.Node).branches
 				:	branch
 			)
@@ -877,7 +871,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				!union.ordered &&
 				!$ark.sets &&
 				branches.length > 1 &&
-				branches.some(branch => branch.hasTransform)
+				branches.some(branch => branch.alters)
 			)
 				throwParseError(missingSetEngineMessage)
 			input = { ...input, branches } as never
@@ -913,7 +907,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		const ctx = registerParseContext(this.createParseCtx(ctxInputOrNode))
 		let node = this.parseOpenDefinition(def, ctx)
 		node = resolving(() => {
-			if (node.hasShallowAlias && !inProgress.definitions)
+			if (node.topAlias && !inProgress.definitions)
 				node = resolveShallowAliases(node)
 
 			// if the node is recursive e.g. { box: "this" }, we need to make sure it
@@ -950,18 +944,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 	finalize<node extends BaseRoot>(node: node, jit = true): node {
 		// an alias may reference a definition that is still being parsed,
 		// e.g. Record<string, this>, so the outermost parse finalizes it
-		if (
-			(inProgress.definitions || inProgress.resolutions) &&
-			node.includesAlias
-		)
+		if ((inProgress.definitions || inProgress.resolutions) && node.hasAlias)
 			return node
 
 		// resolving aliases can throw, so they compile on definition
 		const references =
-			node.includesAlias ? referencesThroughAliases(node.references) : undefined
-		if (node.compiledUnit || !jit) return node
+			node.hasAlias ? referencesThroughAliases(node.references) : undefined
+		if (node.unitFn || !jit) return node
 		bindPrecompiledUnits?.([node])
-		if (node.compiledUnit || !canJit(this.resolvedConfig)) return node
+		if (node.unitFn || !canJit(this.resolvedConfig)) return node
 		if (references) tryJit(() => precompileRoot(node, references))
 		else node.deferJit()
 		return node
@@ -970,9 +961,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 	jit(node: BaseNode): void {
 		tryJit(() => precompileRoot(node, node.references))
 		// compiling binds what it checked before, unless the host refused
-		if (node.cache.allowsPreJit) {
-			node.allows = node.cache.allowsPreJit
-			node.cache.allowsPreJit = undefined
+		if (node.cache.preJit) {
+			node.allows = node.cache.preJit
+			node.cache.preJit = undefined
 		}
 	}
 

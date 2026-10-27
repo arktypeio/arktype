@@ -172,16 +172,17 @@ class NodeCache {
 	innerJsonFull: JsonObject | undefined
 	innerJson: JsonStructure | undefined
 	json: JsonStructure | undefined
-	collapsedJson: Json | undefined
+	bareJson: Json | undefined
 	innerHash: string | undefined
 	hash: string | undefined
 	flatMorphs: FlatRef<Morph.Node | Intersection.Node>[] | undefined
 	entersAlias: boolean | undefined
 	trackedId: string | undefined
 	transforms: boolean | undefined
-	allowsNeedsTraversal: boolean | undefined
-	usedBeforeJit: boolean | undefined
-	failureSite: FailureSite | UnionSite | undefined
+	checksCtx: boolean | undefined
+	/** whether it was used before it was compiled, so it's compiled at its next use */
+	usedPreJit: boolean | undefined
+	failSite: FailureSite | UnionSite | undefined
 	finalizedIn: unknown
 	_in: BaseNode | undefined
 	finalizedOut: unknown
@@ -191,8 +192,8 @@ class NodeCache {
 	description: string | undefined
 	// resolved by an alias's thunk, which doesn't register its id
 	isAliasResolution: boolean | undefined
-	// set while a Type defers compiling until it's used
-	allowsPreJit: BaseNode["allows"] | undefined
+	/** the `allows` a Type has while it defers compiling until it's used */
+	preJit: BaseNode["allows"] | undefined
 	isReusableLeaf: boolean | undefined
 	declare onFail: ArkErrors.Handler | null
 	declare rootApply?: RootApply
@@ -373,25 +374,33 @@ export abstract class BaseNode<
 	declare $: BaseScope
 	// flags, read through flagBits' accessors
 	declare bits: number
-	declare hasTransform: boolean
-	declare includesMorph: boolean
-	declare hasCtxPredicate: boolean
+	/** whether it or a node it holds alters data, with a morph or a default */
+	declare alters: boolean
+	/** whether it or a node it holds is a morph */
+	declare hasMorph: boolean
+	/** whether it or a node it holds has a narrow that reads `ctx` */
+	declare ctxPred: boolean
 	declare isCyclic: boolean
-	declare includesAlias: boolean
-	declare hasShallowAlias: boolean
-	declare allowsNeedsCtx: boolean
-	declare hasCtxMorph: boolean
-	// keeps the description it had in its original scope
-	declare includesKeptDescription: boolean
-	// a morph or a predicate other than a keyword's
-	declare hasUserCode: boolean
-	// a sequence or a pattern, which loops or runs a regex
-	declare includesCostly: boolean
+	/** whether it or a node it holds is an alias */
+	declare hasAlias: boolean
+	/** whether it is an alias, or a union or morph whose own data an alias checks */
+	declare topAlias: boolean
+	/** whether its Allows needs `ctx`, so it can't be called with data alone */
+	declare allowsCtx: boolean
+	/** whether it or a node it holds has a morph that reads `ctx` or pipes to a node */
+	declare ctxMorph: boolean
+	/** whether it or a node it holds keeps the description it had in its original scope */
+	declare keptDesc: boolean
+	/** whether it or a node it holds calls a morph or a narrow other than a keyword's */
+	declare userCode: boolean
+	/** whether it or a node it holds loops or runs a regex, as a sequence or a pattern does */
+	declare costly: boolean
 	declare readonly cache: NodeCache
 
 	declare allows: (data: d["prerequisite"]) => boolean
 
-	get shallowMorphs(): array<Morph> {
+	/** the morphs its own data passes through, not a prop's */
+	get topMorphs(): array<Morph> {
 		return []
 	}
 
@@ -449,39 +458,37 @@ export abstract class BaseNode<
 		if (traverseTransform) this.traverseTransform = traverseTransform
 
 		let bits = 0
-		if (this.hasKind("morph")) {
-			bits =
-				flagBits.includesMorph | flagBits.hasTransform | flagBits.hasUserCode
+		if (this.is("morph")) {
+			bits = flagBits.hasMorph | flagBits.alters | flagBits.userCode
 			// a node first is its input, not one it pipes to
 			if (
 				this.inner.morphs.some((morph, i) =>
 					isNode(morph) ? i !== 0 : arityOf(morph) !== 1
 				)
 			)
-				bits |= flagBits.hasCtxMorph
-		} else if (this.hasKind("sequence")) {
-			if (this.inner.defaultables !== undefined) bits = flagBits.hasTransform
-		} else if (this.hasKind("predicate")) {
-			if (this.meta.keyword === undefined) bits = flagBits.hasUserCode
+				bits |= flagBits.ctxMorph
+		} else if (this.is("sequence")) {
+			if (this.inner.defaultables !== undefined) bits = flagBits.alters
+		} else if (this.is("predicate")) {
+			if (this.meta.keyword === undefined) bits = flagBits.userCode
 			// if a predicate accepts exactly one arg, we can safely skip passing context
 			// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
 			// that would break here, but it feels like a pathological case and is better to let people optimize
-			if (arityOf(this.inner.predicate) !== 1) bits |= flagBits.hasCtxPredicate
-		} else if (this.hasKind("alias")) {
-			bits =
-				flagBits.isCyclic | flagBits.includesAlias | flagBits.hasShallowAlias
+			if (arityOf(this.inner.predicate) !== 1) bits |= flagBits.ctxPred
+		} else if (this.is("alias")) {
+			bits = flagBits.isCyclic | flagBits.hasAlias | flagBits.topAlias
 		}
 
 		// an alias belongs in a structural value, so one there doesn't make its parent shallow
-		const inherited = this.isStructural() ? ~flagBits.hasShallowAlias : ~0
+		const inherited = this.isStructural() ? ~flagBits.topAlias : ~0
 		for (let i = 0; i < this.children.length; i++)
 			bits |= this.children[i].bits & inherited
-		if (bits & (flagBits.hasCtxPredicate | flagBits.isCyclic))
-			bits |= flagBits.allowsNeedsCtx
+		if (bits & (flagBits.ctxPred | flagBits.isCyclic))
+			bits |= flagBits.allowsCtx
 		this.bits = bits
 
 		this.allows =
-			this.allowsNeedsCtx ?
+			this.allowsCtx ?
 				data =>
 					allowsUntracked(this, data) ??
 					allowsInContext(this, data, this.$.resolvedConfig)
@@ -494,7 +501,7 @@ export abstract class BaseNode<
 			this.isCyclic &&
 			(this.cache.isAliasResolution ||
 				isNode($ark.nodesById[this.id]) ||
-				(this.hasKind("intersection") && !!this.structure?.props.length))
+				(this.is("intersection") && !!this.structure?.props.length))
 		return isResolutionFinal() ?
 				(this.cache.entersAlias = entersAlias)
 			:	entersAlias
@@ -505,41 +512,40 @@ export abstract class BaseNode<
 	get trackedId(): string {
 		if (this.cache.trackedId) return this.cache.trackedId
 		if (!isResolutionFinal()) return this.id
-		if (this.hasKind("alias") || isNode($ark.nodesById[this.id]))
+		if (this.is("alias") || isNode($ark.nodesById[this.id]))
 			return (this.cache.trackedId = this.id)
 		const alias = referencesThroughAliases(this.references).find(
 			reference =>
-				reference.hasKind("alias") &&
+				reference.is("alias") &&
 				reference.resolution.kind === this.kind &&
 				_isMutuallySimulated(this, reference.resolution, true, false)
 		) as AliasNode | undefined
 		return (this.cache.trackedId = alias ? alias.resolution.id : this.id)
 	}
 
-	// hasTransform doesn't see an alias's resolution, final once nothing
+	// alters doesn't see an alias's resolution, final once nothing
 	// but inputs and outputs is open
 	get transforms(): boolean {
 		if (this.cache.transforms !== undefined) return this.cache.transforms
-		const transforms = this.reaches("hasTransform")
+		const transforms = this.reaches("alters")
 		return isIoFinal() ? (this.cache.transforms = transforms) : transforms
 	}
 
-	get allowsNeedsTraversal(): boolean {
-		if (this.cache.allowsNeedsTraversal !== undefined)
-			return this.cache.allowsNeedsTraversal
-		const requiresTraversal = this.reaches("hasCtxPredicate")
+	/** whether checking data reaches a narrow that reads `ctx`, through aliases too, so Allows needs a traversal */
+	get checksCtx(): boolean {
+		if (this.cache.checksCtx !== undefined) return this.cache.checksCtx
+		const requiresTraversal = this.reaches("ctxPred")
 		return isIoFinal() ?
-				(this.cache.allowsNeedsTraversal = requiresTraversal)
+				(this.cache.checksCtx = requiresTraversal)
 			:	requiresTraversal
 	}
 
 	private reaches(
-		flag: "hasTransform" | "hasCtxPredicate",
+		flag: "alters" | "ctxPred",
 		resolvesIntersections = false
 	): boolean {
-		if (this[flag] || !this.includesAlias) return this[flag]
-		const cached =
-			flag === "hasTransform" ? "transforms" : "allowsNeedsTraversal"
+		if (this[flag] || !this.hasAlias) return this[flag]
+		const cached = flag === "alters" ? "transforms" : "checksCtx"
 		let reachesOperands = false
 		// a Map visits the ids added while it's iterated
 		const reached = new Map<string, BaseNode>([[this.id, this]])
@@ -548,7 +554,7 @@ export abstract class BaseNode<
 				const reference = node.refsById[id]
 				// an intersection can drop what its operands reach, so only resolving it decides
 				if (reference[flag]) return !reachesOperands || this.reaches(flag, true)
-				if (!reference.hasKind("alias")) continue
+				if (!reference.is("alias")) continue
 				// an intersection reaches nothing its operands don't, and resolving one can
 				// create others or reenter an operand still resolving
 				if (
@@ -564,9 +570,8 @@ export abstract class BaseNode<
 				const resolution =
 					isNode(registered) ? registered
 					: !reference.isIo ? reference.resolution
-					: flag !== "hasTransform" ?
-						(reference.operands![0] as AliasNode).resolution
-					:	undefined
+					: flag !== "alters" ? (reference.operands![0] as AliasNode).resolution
+					: undefined
 				if (resolution && resolution.cache[cached] !== false)
 					reached.set(resolution.id, resolution)
 			}
@@ -579,29 +584,29 @@ export abstract class BaseNode<
 
 	// entered directly, it keys its output by id as an alias resolving to it does
 	get isTransformedById(): boolean {
-		return this.includesAlias && $ark.nodesById[this.id] !== undefined
+		return this.hasAlias && $ark.nodesById[this.id] !== undefined
 	}
 
-	get transformNeedsCtx(): boolean {
+	/** whether transforming data needs `ctx`: a morph reading it, an alias, or a `ctx` narrow choosing a branch */
+	get transformCtx(): boolean {
 		return (
 			this.transforms &&
-			(this.hasCtxMorph ||
-				this.includesAlias ||
-				(this.hasCtxPredicate && this.selectsByCtx))
+			(this.ctxMorph || this.hasAlias || (this.ctxPred && this.selectsByCtx))
 		)
 	}
 
 	protected get selectsByCtx(): boolean {
-		return this.children.some(child => child.transformNeedsCtx)
+		return this.children.some(child => child.transformCtx)
 	}
 
-	get applyStrategy(): RootApplyStrategy {
+	/** how its root apply validates: by Allows alone, with a traversal, or transforming with or without `ctx` */
+	get applyMode(): RootApplyStrategy {
 		return (
 			this.transforms ?
-				this.transformNeedsCtx ?
+				this.transformCtx ?
 					"contextualTransform"
 				:	"transform"
-			: this.allowsNeedsTraversal ? "contextual"
+			: this.checksCtx ? "contextual"
 			: "allows"
 		)
 	}
@@ -631,12 +636,12 @@ export abstract class BaseNode<
 			}
 			// an alias can close a cycle or replace a node sharing its id, so
 			// what reaches one reads its refsById
-			if (node.includesAlias) {
+			if (node.hasAlias) {
 				byNode.set(node, null)
 				stack.pop()
 				continue
 			}
-			const referenced = [...node.children, ...node.otherReferences]
+			const referenced = [...node.children, ...node.otherRefs]
 			const pending = referenced.filter(reference => !byNode.has(reference))
 			if (pending.length) {
 				// entered again before its references are read: a cycle
@@ -663,7 +668,8 @@ export abstract class BaseNode<
 		return fromRefs
 	}
 
-	get otherReferences(): readonly BaseNode[] {
+	/** the nodes it references that aren't its children, like the node a morph pipes to */
+	get otherRefs(): readonly BaseNode[] {
 		return noReferences
 	}
 
@@ -687,7 +693,7 @@ export abstract class BaseNode<
 			if (included !== undefined) replaced = true
 			collected.set(node.id, node)
 			for (let i = 0; i < node.children.length; i++) include(node.children[i])
-			for (const referenced of node.otherReferences) include(referenced)
+			for (const referenced of node.otherRefs) include(referenced)
 		}
 		include(this)
 		this.cache.hasReplacedReferences = replaced
@@ -696,7 +702,7 @@ export abstract class BaseNode<
 
 	get shallowRefs(): BaseNode[] {
 		return (this.cache.shallowRefs ??=
-			this.hasKind("structure") ?
+			this.is("structure") ?
 				[this as BaseNode, ...(this.children as never)]
 			:	this.children.reduce<BaseNode[]>(
 					(acc, child) => appendUniqueNodes(acc, child.shallowRefs),
@@ -722,9 +728,9 @@ export abstract class BaseNode<
 		for (const ref of flatRefs) {
 			for (const branch of ref.node.branches) {
 				if (
-					branch.hasKind("morph") ||
-					(branch.hasKind("intersection") &&
-						branch.structure?.structuralMorph !== undefined)
+					branch.is("morph") ||
+					(branch.is("intersection") &&
+						branch.structure?.structMorph !== undefined)
 				) {
 					flatMorphs.push({
 						path: ref.path,
@@ -750,24 +756,23 @@ export abstract class BaseNode<
 	// a Type without contextual callbacks checks its first data uncompiled
 	private get checksUncompiled(): boolean {
 		return (
-			!this.hasCtxPredicate &&
-			!this.hasCtxMorph &&
-			($ark.inPlace?.checksUncompiled(this as never) ??
-				!this.cache.usedBeforeJit)
+			!this.ctxPred &&
+			!this.ctxMorph &&
+			($ark.inPlace?.checksUncompiled(this as never) ?? !this.cache.usedPreJit)
 		)
 	}
 
 	deferJit(): void {
-		if (this.cache.allowsPreJit) return
-		const allows = (this.cache.allowsPreJit = this.allows)
+		if (this.cache.preJit) return
+		const allows = (this.cache.preJit = this.allows)
 		// a detached reference can call this after compiling, so it keeps what
 		// compiled rather than reading the Type's each call
 		let compiled: BaseNode["allows"] | undefined
 		this.allows = data => {
 			if (compiled !== undefined) return compiled(data)
-			if (this.cache.allowsPreJit) {
+			if (this.cache.preJit) {
 				if (this.checksUncompiled) {
-					this.cache.usedBeforeJit = true
+					this.cache.usedPreJit = true
 					return allows(data)
 				}
 				this.$.jit(this)
@@ -777,13 +782,13 @@ export abstract class BaseNode<
 	}
 
 	private initRootApply(): RootApply {
-		if (this.cache.allowsPreJit) {
+		if (this.cache.preJit) {
 			if (this.checksUncompiled) {
 				const rootApply = this.createRootApply()
 				// marked used once it returns, so an allows it calls doesn't compile
 				const apply: RootApply = (data, onFail) => {
 					const result = rootApply(data, onFail)
-					this.cache.usedBeforeJit = true
+					this.cache.usedPreJit = true
 					return result
 				}
 				const checked =
@@ -795,7 +800,7 @@ export abstract class BaseNode<
 			this.$.jit(this)
 		}
 		return (this.cache.rootApply =
-			(this.compiledUnit &&
+			(this.unitFn &&
 				this.isRoot() &&
 				canJit(this.$.resolvedConfig) &&
 				tryJit(() =>
@@ -808,7 +813,7 @@ export abstract class BaseNode<
 		const byErrors = rootApplyRuntimeOf(this.$.resolvedConfig)
 		const runtime = $ark.inPlace?.runtimeOf(this as never, byErrors) ?? byErrors
 		const { Traversal } = runtime
-		switch (this.applyStrategy) {
+		switch (this.applyMode) {
 			case "allows":
 				return (data, onFail = this.onFail) => {
 					if (this.allows(data)) return data
@@ -825,7 +830,7 @@ export abstract class BaseNode<
 
 			case "transform":
 			case "contextualTransform":
-				if (this.includesAlias) {
+				if (this.hasAlias) {
 					return (data, onFail = this.onFail) => {
 						const untracked = allowsAcyclic(this, data)
 						const allowed =
@@ -843,16 +848,16 @@ export abstract class BaseNode<
 						return ctx.hasError() ? ctx.finalize(onFail) : result
 					}
 				}
-				if (!this.transformNeedsCtx) {
+				if (!this.transformCtx) {
 					if (
 						(this as {} as BaseRoot).branches.every(
 							branch =>
 								!branch.transforms ||
-								(branch.hasKind("morph") && !branch.head?.transforms)
+								(branch.is("morph") && !branch.head?.transforms)
 						)
 					)
-						return this.createOptimisticRootApply(runtime)
-					if (this.hasKind("union") && !this.discriminant) {
+						return this.optimisticApply(runtime)
+					if (this.is("union") && !this.discriminant) {
 						return (data, onFail = this.onFail) => {
 							const ctx = new Traversal(data, this.$.resolvedConfig)
 							const result = transform(ctx, this, data)
@@ -869,22 +874,23 @@ export abstract class BaseNode<
 					return ctx.hasError() ? ctx.finalize(onFail) : result
 				}
 			default:
-				this.applyStrategy satisfies never
-				return throwInternalError(
-					`Unexpected applyStrategy ${this.applyStrategy}`
-				)
+				this.applyMode satisfies never
+				return throwInternalError(`Unexpected applyMode ${this.applyMode}`)
 		}
 	}
 
-	// a root whose transform doesn't require ctx has only context-free morphs
-	private createOptimisticRootApply(runtime: RootApplyRuntime): RootApply {
+	/**
+	 * a root apply that transforms the first branch data is allowed by, with no `ctx`
+	 * a root whose transform doesn't require ctx has only context-free morphs
+	 */
+	private optimisticApply(runtime: RootApplyRuntime): RootApply {
 		const { Traversal } = runtime
 		const branches = (this as {} as BaseRoot).branches
 		return (data, onFail = this.onFail) => {
 			for (let i = 0; i < branches.length; i++) {
 				const branch = branches[i]
 				if (!branch.allows(data)) continue
-				if (!branch.hasKind("morph")) return data
+				if (!branch.is("morph")) return data
 				let result = data
 				for (let j = 0; j < branch.piped.length; j++) {
 					// called detached, as compiled code calls it
@@ -910,7 +916,7 @@ export abstract class BaseNode<
 		{ Traversal, applyCyclic, applyRejected }: RootApplyRuntime
 	): unknown {
 		const config = this.$.resolvedConfig
-		return this.includesAlias ?
+		return this.hasAlias ?
 				applyCyclic(this, data, new Traversal(data, config)).finalize(onFail)
 			:	applyRejected(this, data, config, onFail, Traversal)
 	}
@@ -929,10 +935,10 @@ export abstract class BaseNode<
 	// one expression computing the traversal's result, if any
 	compileExpression?(js: NodeCompiler): string | undefined
 
-	// what compiled code reports when this node fails
-	get failureSite(): FailureSite | UnionSite {
-		return (this.cache.failureSite ??= {
-			v: (this as never as { errorContext: SiteContext }).errorContext
+	/** what compiled code reports when data fails it, holding its `errorCtx` as `v` */
+	get failSite(): FailureSite | UnionSite {
+		return (this.cache.failSite ??= {
+			v: (this as never as { errorCtx: SiteContext }).errorCtx
 		})
 	}
 
@@ -954,11 +960,12 @@ export abstract class BaseNode<
 		return precedenceOfKind(this.kind)
 	}
 
-	compiledUnit: Fn | undefined
+	/** its precompiled unit's function, whose source is its `precompilation` */
+	unitFn: Fn | undefined
 
 	get precompilation(): string | undefined {
-		if (this.cache.allowsPreJit) this.$.jit(this)
-		return this.compiledUnit?.toString()
+		if (this.cache.preJit) this.$.jit(this)
+		return this.unitFn?.toString()
 	}
 
 	// an arrow function, created when first read, since it is often detached,
@@ -976,18 +983,18 @@ export abstract class BaseNode<
 
 	// checks data without marking the Type used, e.g. a default
 	traverseUnused(data: d["prerequisite"]): ArkErrors | {} | null | undefined {
-		const usedBeforeJit = this.cache.usedBeforeJit
+		const usedPreJit = this.cache.usedPreJit
 		const out = this.traverse(data)
-		this.cache.usedBeforeJit = usedBeforeJit
+		this.cache.usedPreJit = usedPreJit
 		return out
 	}
 
 	// allows data without marking the Type used, e.g. a unit or key an
 	// intersection checks
 	allowsUnused(data: d["prerequisite"]): boolean {
-		const usedBeforeJit = this.cache.usedBeforeJit
+		const usedPreJit = this.cache.usedPreJit
 		const out = this.allows(data)
-		this.cache.usedBeforeJit = usedBeforeJit
+		this.cache.usedPreJit = usedPreJit
 		return out
 	}
 
@@ -1020,7 +1027,7 @@ export abstract class BaseNode<
 	// an open alias's io isn't final, so it isn't cached
 	private cachedIo(ioKind: "in" | "out"): BaseNode {
 		const io = this.getIo(ioKind)
-		if (!this.includesAlias || isIoFinal())
+		if (!this.hasAlias || isIoFinal())
 			this.cache[ioKind === "in" ? "_in" : "_out"] = io
 		return io
 	}
@@ -1028,8 +1035,7 @@ export abstract class BaseNode<
 	// Should be refactored to use transform
 	// https://github.com/arktypeio/arktype/issues/1020
 	getIo(ioKind: "in" | "out"): BaseNode {
-		if (!this.hasTransform && !(isIoFinal() && this.transforms))
-			return this as never
+		if (!this.alters && !(isIoFinal() && this.transforms)) return this as never
 
 		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.innerEntries) {
@@ -1050,14 +1056,14 @@ export abstract class BaseNode<
 		// an alias read while definitions are open stands for its input and output
 		// alike, so a union of them is reduced once final
 		return this.$.node(this.kind, ioInner as never, {
-			prereduced: this.hasKind("union") && this.includesAlias && !isIoFinal()
+			prereduced: this.is("union") && this.hasAlias && !isIoFinal()
 		})
 	}
 
 	get innerJson(): JsonStructure {
 		return (this.cache.innerJson ??= possiblyCollapse(
 			this.innerJsonFull,
-			this.impl.collapseKey,
+			this.impl.bareKey,
 			false
 		))
 	}
@@ -1075,15 +1081,16 @@ export abstract class BaseNode<
 							true
 						)
 					},
-					this.impl.collapseKey,
+					this.impl.bareKey,
 					false
 				))
 	}
 
-	get collapsedJson(): Json {
-		return (this.cache.collapsedJson ??= possiblyCollapse(
+	/** its json, or the value of its `bareKey` alone where that's all it holds */
+	get bareJson(): Json {
+		return (this.cache.bareJson ??= possiblyCollapse(
 			this.json as JsonObject,
-			this.impl.collapseKey,
+			this.impl.bareKey,
 			true
 		))
 	}
@@ -1123,7 +1130,7 @@ export abstract class BaseNode<
 		)
 			return true
 		return (
-			(this.includesAlias || rNode.includesAlias) &&
+			(this.hasAlias || rNode.hasAlias) &&
 			isResolutionFinal() &&
 			isMutuallySimulated(this, rNode)
 		)
@@ -1133,11 +1140,13 @@ export abstract class BaseNode<
 		return this.equals(r) ? this : undefined
 	}
 
-	hasKind<kind extends NodeKind>(kind: kind): this is nodeOfKind<kind> {
+	/** whether it's a node of `kind`, narrowing it to that kind's node */
+	is<kind extends NodeKind>(kind: kind): this is nodeOfKind<kind> {
 		return this.kind === (kind as never)
 	}
 
-	assertHasKind<kind extends NodeKind>(kind: kind): nodeOfKind<kind> {
+	/** it as a node of `kind`, or a thrown error if it's another kind */
+	assertIs<kind extends NodeKind>(kind: kind): nodeOfKind<kind> {
 		if (this.kind !== kind)
 			throwError(`${this.kind} node was not of asserted kind ${kind}`)
 		return this as never
@@ -1162,22 +1171,23 @@ export abstract class BaseNode<
 	}
 
 	isUnknown(): boolean {
-		return this.hasKind("intersection") && this.children.length === 0
+		return this.is("intersection") && this.children.length === 0
 	}
 
 	isNever(): boolean {
-		return this.hasKind("union") && this.children.length === 0
+		return this.is("union") && this.children.length === 0
 	}
 
 	hasUnit<value>(value: unknown): this is Unit.Node & { unit: value } {
-		return this.hasKind("unit") && this.allows(value)
+		return this.is("unit") && this.allows(value)
 	}
 
 	hasOpenIntersection(): this is nodeOfKind<OpenNodeKind> {
-		return this.impl.openIntersection as never
+		return this.impl.stacks as never
 	}
 
-	get nestedExpression(): string {
+	/** its expression written inside another, grouped where precedence needs it */
+	get nestedExpr(): string {
 		return this.expression
 	}
 
@@ -1284,7 +1294,7 @@ export abstract class BaseNode<
 		const transformedResolution = seen?.()
 		if (transformedResolution) return transformedResolution
 		if (ctx.shouldTransform?.(this as never, ctx) === false) return this
-		if (this.hasKind("alias") && ctx.throughAliases) {
+		if (this.is("alias") && ctx.throughAliases) {
 			const resolution = this.resolution
 			if (!ctx.seen[resolution.id]) {
 				const transformed = resolution._transform(mapper, ctx)
@@ -1306,7 +1316,7 @@ export abstract class BaseNode<
 		ctx.seen[this.id] = () => transformedNode
 
 		if (
-			this.hasKind("structure") &&
+			this.is("structure") &&
 			this.handlesUndeclared !== ctx.undeclaredHandling
 		) {
 			ctx = {
@@ -1397,7 +1407,8 @@ export abstract class BaseNode<
 		) as never)
 	}
 
-	configureReferences(
+	/** a copy with meta applied to the references a selector picks */
+	configureRefs(
 		meta: TypeMeta.MappableInput.Internal,
 		selector: NodeSelector = "references"
 	): this {
@@ -1412,7 +1423,7 @@ export abstract class BaseNode<
 			!normalized.where
 		) {
 			const { jsonSchema, ...rest } = meta
-			return this.configureReferences(rest, selector).configureReferences(
+			return this.configureRefs(rest, selector).configureRefs(
 				{ jsonSchema },
 				"self"
 			)
@@ -1463,17 +1474,17 @@ export abstract class BaseNode<
 }
 
 const flagBits = {
-	hasTransform: 1,
-	includesMorph: 2,
-	hasCtxPredicate: 4,
+	alters: 1,
+	hasMorph: 2,
+	ctxPred: 4,
 	isCyclic: 8,
-	includesAlias: 16,
-	hasShallowAlias: 32,
-	allowsNeedsCtx: 64,
-	hasCtxMorph: 128,
-	includesKeptDescription: 256,
-	hasUserCode: 512,
-	includesCostly: 1024
+	hasAlias: 16,
+	topAlias: 32,
+	allowsCtx: 64,
+	ctxMorph: 128,
+	keptDesc: 256,
+	userCode: 512,
+	costly: 1024
 }
 
 for (const name in flagBits) {
@@ -1508,18 +1519,18 @@ interface SimulatedPair {
 // is assumed related until its unfoldings are compared
 const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 	if (innerHashesMatch(l, r)) return true
-	if (l.hasKind("alias") || r.hasKind("alias")) {
+	if (l.is("alias") || r.is("alias")) {
 		if (!s.unfoldsAliases) return true
 		if (s.subsumes) {
-			if (l.hasKind("alias") && l.operandsBesides(r)) return true
-			const others = r.hasKind("alias") && r.operandsBesides(l)
+			if (l.is("alias") && l.operandsBesides(r)) return true
+			const others = r.is("alias") && r.operandsBesides(l)
 			if (others) return others.every(other => isAssumed(l, other, s, true))
 		}
 		return isAssumed(l, r, s, false)
 	}
 	// branches of an unreduced union may subsume each other, so each need only be
 	// within one on the other side or another branch that is
-	if (l.hasKind("union") && !l.inner.ordered) {
+	if (l.is("union") && !l.inner.ordered) {
 		return l.branches.every(
 			branch =>
 				isSimulated(branch, r, s) ||
@@ -1532,14 +1543,9 @@ const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 					))
 		)
 	}
-	if (r.hasKind("union") && !r.inner.ordered)
+	if (r.is("union") && !r.inner.ordered)
 		return r.branches.some(branch => isSimulated(l, branch, s))
-	if (
-		l.hasKind("sequence") &&
-		r.hasKind("sequence") &&
-		!l.defaultableCount &&
-		!r.defaultableCount
-	)
+	if (l.is("sequence") && r.is("sequence") && !l.defLen && !r.defLen)
 		return isSequenceSimulated(l, r, s)
 	const lEntries = simulatedEntriesOf(l)
 	if (l.kind !== r.kind || lEntries.length !== simulatedEntriesOf(r).length)
@@ -1603,15 +1609,12 @@ const isSequenceSimulated = (
 	r: Sequence.Node,
 	s: SimulationState
 ): boolean => {
-	const minLength = Math.max(
-		l.prefixLength + l.postfixLength,
-		r.prefixLength + r.postfixLength
-	)
+	const minLength = Math.max(l.preLen + l.postLen, r.preLen + r.postLen)
 	const maxLength = Math.min(
 		l.maxLength ?? Number.POSITIVE_INFINITY,
 		r.maxLength ?? Number.POSITIVE_INFINITY,
-		Math.max(l.prevariadic.length, r.prevariadic.length) +
-			Math.max(l.postfixLength, r.postfixLength) +
+		Math.max(l.leading.length, r.leading.length) +
+			Math.max(l.postLen, r.postLen) +
 			1
 	)
 	for (let length = minLength; length <= maxLength; length++) {
@@ -1624,15 +1627,14 @@ const isSequenceSimulated = (
 }
 
 const elementAt = (node: Sequence.Node, length: number, i: number): BaseNode =>
-	i < node.prevariadic.length ? node.prevariadic[i].node
-	: i >= length - node.postfixLength ?
-		node.postfix![i - length + node.postfixLength]
-	:	node.variadic!
+	i < node.leading.length ? node.leading[i].node
+	: i >= length - node.postLen ? node.postfix![i - length + node.postLen]
+	: node.variadic!
 
 const simulatedEntriesOf = (node: BaseNode): BaseNode["innerEntries"] =>
-	node.hasKind("sequence") && node.inner.minVariadicLength ?
+	node.is("sequence") && node.inner.minVariadicLength ?
 		node.innerEntries.filter(([k]) => k !== "minVariadicLength")
-	: node.hasKind("structure") && node.inner.order ?
+	: node.is("structure") && node.inner.order ?
 		node.innerEntries.filter(([k]) => k !== "order")
 	:	node.innerEntries
 
@@ -1697,8 +1699,8 @@ const _isMutuallySimulated = (
 		if (s.failed[pair]) continue
 		const compared = s.pairs[pair]
 		s.comparing = pair
-		const l = compared.l.hasKind("alias") ? compared.l.resolution : compared.l
-		const r = compared.r.hasKind("alias") ? compared.r.resolution : compared.r
+		const l = compared.l.is("alias") ? compared.l.resolution : compared.l
+		const r = compared.r.is("alias") ? compared.r.resolution : compared.r
 		if (
 			compared.within ?
 				isWithin(l as BaseRoot, r as BaseRoot, s)
@@ -1743,7 +1745,7 @@ export const referencesThroughAliases = (
 		references.map(reference => [reference.id, reference])
 	)
 	for (const reference of reached.values()) {
-		if (!reference.hasKind("alias")) continue
+		if (!reference.is("alias")) continue
 		const resolved = reference.resolution.refsById
 		for (const id in resolved)
 			if (!reached.has(id)) reached.set(id, resolved[id])
@@ -1955,10 +1957,9 @@ export const flatMorphsAreEqual = (
 	r: FlatRef<Morph.Node | Intersection.Node>
 ): boolean =>
 	l.propString === r.propString &&
-	(l.node.hasKind("morph") && r.node.hasKind("morph") ?
-		l.node.hasEqualMorphs(r.node)
-	: l.node.hasKind("intersection") && r.node.hasKind("intersection") ?
-		l.node.structure?.structuralMorph === r.node.structure?.structuralMorph
+	(l.node.is("morph") && r.node.is("morph") ? l.node.sameMorphs(r.node)
+	: l.node.is("intersection") && r.node.is("intersection") ?
+		l.node.structure?.structMorph === r.node.structure?.structMorph
 	:	false)
 
 // refs are equal only at the same path, so a DAG's refs, one per path, are
@@ -2043,8 +2044,8 @@ export const writeInnerJson = (node: BaseNode): JsonObject => {
 
 const serializeListableChild = (listableNode: listable<BaseNode>) =>
 	isArray(listableNode) ?
-		listableNode.map(node => node.collapsedJson)
-	:	listableNode.collapsedJson
+		listableNode.map(node => node.bareJson)
+	:	listableNode.bareJson
 
 const possiblyCollapse = <allowPrimitive extends boolean>(
 	json: JsonObject,

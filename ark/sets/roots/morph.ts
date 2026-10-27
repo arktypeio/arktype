@@ -63,7 +63,7 @@ export const morph: setImplementationOf<Morph.Declaration> = {
 }
 
 const assertEqualMorphs = (l: Morph.Node, r: Morph.Node): void => {
-	if (!l.hasEqualMorphs(r))
+	if (!l.sameMorphs(r))
 		throwParseError(writeMorphIntersectionMessage(l.expression, r.expression))
 }
 

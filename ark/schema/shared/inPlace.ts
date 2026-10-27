@@ -61,7 +61,7 @@ const canBeObject = (node: BaseRoot): boolean =>
 // a structure that writes what it transforms, as one deleting undeclared
 // keys copies all but the elements a sequence it doesn't slice transforms
 const writerOf = (node: BaseNode): StructureNode | undefined => {
-	const structure = node.hasKind("intersection") ? node.structure : undefined
+	const structure = node.is("intersection") ? node.structure : undefined
 	if (!structure?.transforms) return
 	if (
 		structure.undeclared !== "delete" ||
@@ -74,10 +74,10 @@ const writerOf = (node: BaseNode): StructureNode | undefined => {
 const returnsInput = (node: BaseNode, seen = new Set<BaseNode>()): boolean => {
 	if (!node.transforms || seen.has(node)) return true
 	seen.add(node)
-	if (node.hasKind("alias")) return returnsInput(node.resolution, seen)
-	if (node.hasKind("union"))
+	if (node.is("alias")) return returnsInput(node.resolution, seen)
+	if (node.is("union"))
 		return node.branches.every(branch => returnsInput(branch, seen))
-	if (node.hasKind("intersection"))
+	if (node.is("intersection"))
 		return !!node.structure && node.structure.undeclared !== "delete"
 	return false
 }
@@ -111,9 +111,8 @@ const writesOf = (structure: StructureNode): Writes => {
 
 const readsOf = (node: BaseRoot): Reads | undefined => {
 	// a function can read any key of what it receives
-	if (node.hasKind("morph"))
-		return canBeObject(node._in) ? everyRead() : undefined
-	if (!node.hasKind("intersection")) return
+	if (node.is("morph")) return canBeObject(node._in) ? everyRead() : undefined
+	if (!node.is("intersection")) return
 	if (node.inner.predicate) return everyRead()
 	const structure = node.structure
 	// a length bound reads the elements a tuple's defaults add
@@ -172,14 +171,14 @@ const placesOf = (root: BaseRoot): Map<string, Place> => {
 		position: number,
 		afterFunction: boolean
 	): void => {
-		if (node.hasKind("alias"))
+		if (node.is("alias"))
 			return enter(node.resolution, count, position, afterFunction)
-		if (node.hasKind("union")) {
+		if (node.is("union")) {
 			for (const branch of node.branches)
 				enter(branch, count, position, afterFunction)
 			return
 		}
-		if (node.hasKind("morph")) {
+		if (node.is("morph")) {
 			// its head and any node before its first function check data in place
 			let piped = false
 			for (const morph of node.morphs) {
@@ -189,7 +188,7 @@ const placesOf = (root: BaseRoot): Map<string, Place> => {
 			}
 			return
 		}
-		const structure = node.hasKind("intersection") ? node.structure : undefined
+		const structure = node.is("intersection") ? node.structure : undefined
 		if (!structure) return
 		for (const prop of structure.props)
 			enterNew(prop.value, count, afterFunction)
@@ -197,7 +196,7 @@ const placesOf = (root: BaseRoot): Map<string, Place> => {
 			enterNew(index.value, 2, afterFunction)
 		const sequence = structure.sequence
 		if (!sequence) return
-		for (const element of sequence.prevariadic)
+		for (const element of sequence.leading)
 			enterNew(element.node, count, afterFunction)
 		if (sequence.variadic) enterNew(sequence.variadic, 2, afterFunction)
 		for (const element of sequence.postfix ?? [])
@@ -210,9 +209,9 @@ const placesOf = (root: BaseRoot): Map<string, Place> => {
 // a key two constraints transform, each reading the value as it received it
 const transformsKeyTwice = (structure: StructureNode): boolean => {
 	const writes = (node: BaseNode) =>
-		node.includesAlias ||
+		node.hasAlias ||
 		node.references.some(
-			reference => reference.hasKind("structure") && reference.transforms
+			reference => reference.is("structure") && reference.transforms
 		)
 	const index = structure.index?.filter(index => index.value.transforms) ?? []
 	if (!index.length) return false
@@ -241,7 +240,7 @@ const holdsWriter = (places: Map<string, Place>): boolean => {
 // whether writing in place returns what copying would
 const writesSoundly = (places: Map<string, Place>): boolean => {
 	for (const { node } of places.values()) {
-		const structure = node.hasKind("intersection") ? node.structure : undefined
+		const structure = node.is("intersection") ? node.structure : undefined
 		if (structure && transformsKeyTwice(structure)) return false
 	}
 	return true
@@ -293,7 +292,7 @@ export const inputOnlyMorphs: WeakSet<Function> = new WeakSet()
 const passesContext = (places: Map<string, Place>): boolean => {
 	for (const { node } of places.values()) {
 		if (
-			node.hasKind("morph") &&
+			node.is("morph") &&
 			node.morphs.some(
 				morph =>
 					!hasArkKind(morph, "root") &&
@@ -349,26 +348,25 @@ const writesInPlaceAsConfigured = (root: BaseRoot) =>
 	writesInPlace(root, root.$.resolvedConfig.mutatesInput)
 
 const isWriter = (node: BaseNode): boolean =>
-	(node.hasKind("structure") || node.hasKind("sequence")) && node.transforms
+	(node.is("structure") || node.is("sequence")) && node.transforms
 
 // a compiled transform copies what it writes, unless it reaches no writer
 const copiesCompiled = (node: BaseNode): boolean =>
 	node.transforms &&
-	node.compiledUnit !== undefined &&
-	(node.includesAlias || isWriter(node) || node.references.some(isWriter))
+	node.unitFn !== undefined &&
+	(node.hasAlias || isWriter(node) || node.references.some(isWriter))
 
 // the transforms a root's traversal can call, ignoring discrimination
 const transformsCalledBy = (root: BaseRoot): BaseNode[] => {
 	const called: BaseNode[] = []
 	const call = (node: BaseNode) => {
-		const structure = node.hasKind("intersection") ? node.structure : undefined
+		const structure = node.is("intersection") ? node.structure : undefined
 		for (const reached of [node, structure, structure?.sequence])
 			if (reached?.transforms) called.push(reached)
 	}
 	for (const { node } of placesOf(root).values()) {
 		call(node)
-		if (node.hasKind("union"))
-			for (const caseNode of node.caseNodes) call(caseNode)
+		if (node.is("union")) for (const caseNode of node.caseNodes) call(caseNode)
 	}
 	return called
 }
@@ -377,7 +375,7 @@ const transformsCalledBy = (root: BaseRoot): BaseNode[] => {
 let checking: Set<BaseNode> | undefined
 
 export const inPlaceTransforms: InPlaceTransforms = {
-	checksUncompiled: root => checking?.has(root) || !root.cache.usedBeforeJit,
+	checksUncompiled: root => checking?.has(root) || !root.cache.usedPreJit,
 	checkedUncompiled: (root, apply) => {
 		if (!writesInPlaceAsConfigured(root)) return apply
 		const called = transformsCalledBy(root)

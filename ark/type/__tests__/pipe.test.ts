@@ -862,7 +862,7 @@ contextualize(() => {
 
 		attest<[number] | ((In: [string]) => Out<string[]>)>(types.c.t)
 
-		attest(discriminantJsonOf(types.c.internal.assertHasKind("union"))).snap({
+		attest(discriminantJsonOf(types.c.internal.assertIs("union"))).snap({
 			kind: "domain",
 			path: ["0"],
 			cases: {

@@ -46,9 +46,9 @@ export declare namespace Pattern {
 		extends declareNode<{
 			kind: "pattern"
 			inner: Inner
-			openIntersection: true
+			stacks: true
 			prerequisite: string
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = PatternNode
@@ -57,15 +57,15 @@ export declare namespace Pattern {
 const implementation: nodeImplementationOf<Pattern.Declaration> =
 	implementNode<Pattern.Declaration>({
 		kind: "pattern",
-		collapseKey: "rule",
+		bareKey: "rule",
 		keys: {
 			rule: {},
 			flags: {}
 		},
-		coversBasisNoun: true,
-		obviatesBasisExpression: true,
-		ownsError: true,
-		openIntersection: true,
+		coversNoun: true,
+		coversExpr: true,
+		ownErr: true,
+		stacks: true,
 		defaults: {
 			description: node => `matched by ${node.rule}`
 		}
@@ -109,7 +109,7 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 		...args: ConstructorParameters<typeof InternalPrimitiveConstraint>
 	) {
 		super(...args)
-		this.includesCostly = true
+		this.costly = true
 	}
 
 	readonly instance: RegExp = new RegExp(this.rule, this.flags)
@@ -143,7 +143,7 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 			:	`${instance}.test(${data})`
 	}
 
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal
+	readonly implied: BaseRoot = $ark.intrinsic.string.internal
 }
 
 export const Pattern = {

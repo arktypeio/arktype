@@ -1,4 +1,4 @@
-import type { errorContext, nodeOfKind } from "../kinds.ts"
+import type { errorCtx, nodeOfKind } from "../kinds.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import type { NodeErrorContextInput } from "../shared/errors.ts"
@@ -24,7 +24,7 @@ export declare namespace Required {
 	export type Declaration = declareNode<
 		Prop.Declaration<"required"> & {
 			inner: Inner
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}
 	>
 
@@ -40,17 +40,17 @@ export type MissingValue =
 	| { readonly code: "union"; readonly branches: readonly MissingValue[] }
 
 export type MissingBasis =
-	| errorContext<"domain">
-	| errorContext<"unit">
-	| errorContext<"proto">
+	| errorCtx<"domain">
+	| errorCtx<"unit">
+	| errorCtx<"proto">
 	// a morph whose input has a description: the input's meta
 	| { readonly code: "morph"; readonly meta: ArkEnv.meta }
 
 const implementation: nodeImplementationOf<Required.Declaration> =
 	implementNode<Required.Declaration>({
 		kind: "required",
-		ownsError: true,
-		openIntersection: true,
+		ownErr: true,
+		stacks: true,
 		keys: {
 			key: {},
 			value: {
@@ -59,23 +59,22 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 			}
 		},
 		defaults: {
-			description: node =>
-				`${node.compiledKey}: ${elided(node.value.description)}`
+			description: node => `${node.keyStr}: ${elided(node.value.description)}`
 		}
 	})
 
 export class RequiredNode extends BaseProp<"required"> {
 	get expression(): string {
 		return (this.cache.expression ??= composing(
-			() => `${this.compiledKey}: ${elided(this.value.expression)}`
+			() => `${this.keyStr}: ${elided(this.value.expression)}`
 		))
 	}
 
-	private _errorContext: NodeErrorContextInput<"required"> | undefined
-	get errorContext(): NodeErrorContextInput<"required"> {
-		return (this._errorContext ??= Object.freeze({
+	private _errorCtx: NodeErrorContextInput<"required"> | undefined
+	get errorCtx(): NodeErrorContextInput<"required"> {
+		return (this._errorCtx ??= Object.freeze({
 			code: "required",
-			missingValueDescription: this.value.defaultBrief,
+			missingValueDescription: this.value.brief,
 			missing: missingValueOf(this.value),
 			valueMeta: this.value.meta,
 			meta: this.meta
@@ -83,11 +82,11 @@ export class RequiredNode extends BaseProp<"required"> {
 	}
 
 	// a basis value shares the key's site, as a missing key fails it too
-	override get failureSite(): FailureSite {
-		return (this.cache.failureSite ??=
+	override get failSite(): FailureSite {
+		return (this.cache.failSite ??=
 			this.value.isBasis() ?
-				{ v: this.value.errorContext, m: this.errorContext }
-			:	{ m: this.errorContext }) as FailureSite
+				{ v: this.value.errorCtx, m: this.errorCtx }
+			:	{ m: this.errorCtx }) as FailureSite
 	}
 }
 
@@ -98,27 +97,27 @@ export const Required = {
 
 const unknownValue: MissingValue = Object.freeze({ code: "intersection" })
 
-// the walk of defaultBrief, keeping each basis's context
+// the walk of brief, keeping each basis's context
 const missingValueOf = (value: BaseRoot): MissingValue => {
-	if (value.hasKind("union")) {
+	if (value.is("union")) {
 		return Object.freeze({
 			code: "union",
 			branches: Object.freeze(value.branches.map(missingValueOf))
 		})
 	}
-	if (value.hasKind("intersection"))
+	if (value.is("intersection"))
 		return value.basis ? missingValueOf(value.basis) : unknownValue
-	if (value.hasKind("morph")) {
+	if (value.is("morph")) {
 		return value._in.meta.description === undefined ?
 				missingValueOf(value._in)
 			:	Object.freeze({ code: "morph", meta: value._in.meta })
 	}
-	if (value.hasKind("alias")) {
+	if (value.is("alias")) {
 		return missingValueOf(
 			isResolutionFinal() ? value.resolution : $ark.intrinsic.object
 		)
 	}
-	if (value.hasKind("unit") && value.domain === "object")
+	if (value.is("unit") && value.domain === "object")
 		return missingValueOf($ark.intrinsic.object)
-	return Object.freeze((value as nodeOfKind<BasisKind>).errorContext)
+	return Object.freeze((value as nodeOfKind<BasisKind>).errorCtx)
 }

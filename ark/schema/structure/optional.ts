@@ -43,8 +43,8 @@ export declare namespace Optional {
 const implementation: nodeImplementationOf<Optional.Declaration> =
 	implementNode<Optional.Declaration>({
 		kind: "optional",
-		ownsError: false,
-		openIntersection: true,
+		ownErr: false,
+		stacks: true,
 		keys: {
 			key: {},
 			value: {
@@ -56,8 +56,7 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 			}
 		},
 		defaults: {
-			description: node =>
-				`${node.compiledKey}?: ${elided(node.value.description)}`
+			description: node => `${node.keyStr}?: ${elided(node.value.description)}`
 		}
 	})
 
@@ -78,8 +77,8 @@ export class OptionalNode extends BaseProp<"optional"> {
 			)
 		}
 		// a function default can fail as it's applied, like a morph
-		this.includesMorph ||= typeof this.inner.default === "function"
-		this.hasCtxMorph ||= this.defaultMorph?.length === 2
+		this.hasMorph ||= typeof this.inner.default === "function"
+		this.ctxMorph ||= this.defaultMorph?.length === 2
 	}
 
 	override getIo(ioKind: "in" | "out"): BaseNode {
@@ -103,8 +102,8 @@ export class OptionalNode extends BaseProp<"optional"> {
 
 	expression: string =
 		this.hasDefault() ?
-			`${this.compiledKey}: ${elided(this.value.expression)} = ${printable(this.inner.default, { ownDataOnly: true })}`
-		:	`${this.compiledKey}?: ${elided(this.value.expression)}`
+			`${this.keyStr}: ${elided(this.value.expression)} = ${printable(this.inner.default, { ownDataOnly: true })}`
+		:	`${this.keyStr}?: ${elided(this.value.expression)}`
 
 	defaultMorph: Morph | undefined =
 		this.hasDefault() ?
@@ -159,7 +158,7 @@ export const checkDefault = (
 	// the node whose creation checks it, if any
 	owner?: BaseNode
 ): unknown => {
-	if (!isResolutionFinal() && node.includesAlias) {
+	if (!isResolutionFinal() && node.hasAlias) {
 		queueUnchecked(() => checkDefault(node, value, key, owner))
 		return value
 	}
@@ -173,7 +172,7 @@ export const checkDefault = (
 
 	if (out instanceof ArkErrors) {
 		const errors =
-			node.meta.description !== undefined && node.hasTransform ?
+			node.meta.description !== undefined && node.alters ?
 				inputErrors(node, value)
 			:	out
 		// a ParseError is for the developer, so it renders in English

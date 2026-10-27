@@ -49,7 +49,7 @@ export type InvertedComparators = {
 export type BranchOperator = "&" | "|" | "|>"
 
 const unaliased = (node: BaseRoot): BaseRoot =>
-	node.hasKind("alias") ? node.resolution : node
+	node.is("alias") ? node.resolution : node
 
 // an intersection a definition writes with a cyclic operand is decided once
 // definitions close, where an empty one throws as if written out
@@ -58,11 +58,7 @@ export const checkWrittenIntersection = (
 	l: BaseRoot,
 	r: BaseRoot
 ): void => {
-	if (
-		inProgress.definitions &&
-		result.hasKind("alias") &&
-		result.operator === "&"
-	)
+	if (inProgress.definitions && result.is("alias") && result.operator === "&")
 		queueUnchecked(() => void unaliased(l).rawAnd(unaliased(r)), result.id)
 }
 

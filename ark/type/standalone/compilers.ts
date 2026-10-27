@@ -73,7 +73,7 @@ class StandaloneCompiler extends TraversalCompiler {
 	}
 
 	override site(node: BaseNode): string {
-		return this.siteRef(issueSiteOf(node.failureSite))
+		return this.siteRef(issueSiteOf(node.failSite))
 	}
 
 	// a site of literals, or a key's site of them, is built where it fails, and
@@ -111,12 +111,12 @@ class StandaloneCompiler extends TraversalCompiler {
 	// reported at the discriminant so branches don't rerun, unless data can't
 	// be read there, when it fails each branch
 	override missFails(node: UnionNode): string {
-		if (node.missListsBranches) return this.unionFails(node)
+		if (node.missLists) return this.unionFails(node)
 		const path = node.missPath
 		const context = issueContextOf({
 			code: "discriminant",
-			description: node.discriminantDescription,
-			meta: node.discriminantMeta
+			description: node.discDesc,
+			meta: node.discMeta
 		})
 		const site = this.siteRef(issueSite(context))
 		// a key below data is read as a key site reads it
@@ -158,7 +158,7 @@ class StandaloneCompiler extends TraversalCompiler {
 		return (
 				bases?.nodes.every(basis =>
 					typeof k === "number" ?
-						basis.hasKind("proto") && basis.proto === Array
+						basis.is("proto") && basis.proto === Array
 					:	basis.domain === "object"
 				)
 			) ?
@@ -180,9 +180,9 @@ class StandaloneCompiler extends TraversalCompiler {
 
 	// a rejected union value reports the union's issue at its key, not its Apply
 	override failingSiteOf(prop: BaseNode): string | undefined {
-		const { value, errorContext } = prop as nodeOfKind<"required">
+		const { value, errorCtx } = prop as nodeOfKind<"required">
 		if (reportsItself(value) && !basesOf(value))
-			return this.siteRef(unionKeySiteOf(value.failureSite, errorContext))
+			return this.siteRef(unionKeySiteOf(value.failSite, errorCtx))
 	}
 
 	// unless data failing its branches' bases is described by them
@@ -195,16 +195,15 @@ class StandaloneCompiler extends TraversalCompiler {
 // whether Allows decides a node, as it does one whose predicates are all
 // keywords, which add no issues of their own
 const isDecidedByKeywords = (node: BaseNode): boolean =>
-	!node.includesMorph &&
-	!node.includesAlias &&
-	!node.allowsNeedsCtx &&
+	!node.hasMorph &&
+	!node.hasAlias &&
+	!node.allowsCtx &&
 	Object.values(node.refsById).every(
-		reference =>
-			!reference.hasKind("predicate") || isKeyword(reference.predicate)
+		reference => !reference.is("predicate") || isKeyword(reference.predicate)
 	)
 
 const reportsItself = (value: BaseNode): value is UnionNode =>
-	value.hasKind("union") && !value.discriminant && !value.includesAlias
+	value.is("union") && !value.discriminant && !value.hasAlias
 
 // whether a key is read from an object, or an index from an array, as
 // arktype reads a discriminant
@@ -236,13 +235,13 @@ const findBases = (node: UnionNode): Bases | null => {
 	const nodes: nodeOfKind<"domain" | "proto">[] = []
 	const expected: string[] = []
 	for (const branch of node.branches) {
-		const checked = branch.hasKind("morph") ? branch.head : branch
+		const checked = branch.is("morph") ? branch.head : branch
 		const basis =
-			checked?.hasKind("intersection") ? checked.basis
-			: checked?.hasKind("domain") || checked?.hasKind("proto") ? checked
+			checked?.is("intersection") ? checked.basis
+			: checked?.is("domain") || checked?.is("proto") ? checked
 			: null
 		if (!basis) return null
-		const context = issueContextOf((basis.failureSite as { v: TextContext }).v)
+		const context = issueContextOf((basis.failSite as { v: TextContext }).v)
 		// an expected written from data can't be known here
 		if (context.written && context.written.keeps & 1) return null
 		if (!nodes.includes(basis)) nodes.push(basis)
@@ -253,7 +252,7 @@ const findBases = (node: UnionNode): Bases | null => {
 		meta: node.meta,
 		description: describeBranches(expected)
 	}) as IssueContext
-	const unionSite = issueSiteOf(node.failureSite) as IssueContext
+	const unionSite = issueSiteOf(node.failSite) as IssueContext
 	return site.description === unionSite.description ? null : { nodes, site }
 }
 
@@ -278,9 +277,9 @@ export const unifies = (node: BaseNode): boolean => {
 	let unified = unifiedByNode.get(node)
 	if (unified === undefined) {
 		unified =
-			!node.hasTransform &&
-			!node.includesAlias &&
-			!node.allowsNeedsCtx &&
+			!node.alters &&
+			!node.hasAlias &&
+			!node.allowsCtx &&
 			!node.selectReferences(reportsApart).length
 		unifiedByNode.set(node, unified)
 	}
@@ -289,13 +288,13 @@ export const unifies = (node: BaseNode): boolean => {
 
 // a reference whose Apply reports other than its Allows decides
 const reportsApart = (reference: BaseNode): boolean =>
-	reference.hasKind("predicate") ? !isKeyword(reference.predicate)
-	: reference.hasKind("union") ?
+	reference.is("predicate") ? !isKeyword(reference.predicate)
+	: reference.is("union") ?
 		!reference.discriminant && !isDecidedByAllows(reference)
-	: reference.hasKind("intersection") ?
+	: reference.is("intersection") ?
 		// Apply counts issues between its structure and predicates
 		(reference.inner.predicate?.length ?? 0) + +!!reference.structure >= 2
-	:	reference.hasKind("morph")
+	:	reference.is("morph")
 
 // a detailed size build's traversals: a node that unifies has one, its
 // Apply named as its Allows, reporting a failure only to a ctx it's passed

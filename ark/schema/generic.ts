@@ -224,7 +224,7 @@ export class GenericRoot<
 				this.defIsLazy() ?
 					this.arg$.parse(this.$.parseDefinition(this.bodyDef(argNodes)))
 				:	this.$.parse(this.bodyDef, { args: argNodes, id })
-			if (inProgress.definitions && node.hasShallowAlias)
+			if (inProgress.definitions && node.topAlias)
 				delete this.instantiations[key]
 			else {
 				this.instantiations[key] = node
@@ -328,7 +328,7 @@ const maxOpenInstantiations = 100
 const maxOpenArgumentsLength = 1_000_000
 
 const mayExtend = (l: BaseRoot, r: BaseRoot): boolean => {
-	if (!l.includesAlias && !r.includesAlias) return false
+	if (!l.hasAlias && !r.hasAlias) return false
 	const intersection = l.intersect(r, false)
 	return (
 		!(intersection instanceof Disjoint) &&

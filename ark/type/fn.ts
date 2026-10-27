@@ -83,7 +83,7 @@ export class InternalFnParser extends Callable<(...args: unknown[]) => Fn> {
 
 			const paramDefs = signature.slice(0, lastParamIndex + 1)
 
-			const paramTuple = $.parse(paramDefs).assertHasKind("intersection")
+			const paramTuple = $.parse(paramDefs).assertIs("intersection")
 
 			let returnType: BaseRoot = $.intrinsic.unknown
 

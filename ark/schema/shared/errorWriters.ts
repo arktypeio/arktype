@@ -220,7 +220,7 @@ export type errorWritersOf<code extends ArkErrorCode> = requireKeys<
 	code extends NodeKind ?
 		Inner<code> extends (
 			Omit<
-				Declaration<code>["errorContext"],
+				Declaration<code>["errorCtx"],
 				keyof BaseErrorContext | "description"
 			>
 		) ?

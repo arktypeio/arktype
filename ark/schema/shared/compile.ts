@@ -237,7 +237,8 @@ export interface ReferenceOptions {
 }
 
 export interface TransformKeyOptions {
-	keyExpression?: string
+	/** the expression of the key a transformed value is written to */
+	keyExpr?: string
 	condition?: string
 	onChange?: () => unknown
 }
@@ -329,7 +330,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		if (
 			this.traversalKind === "Transform" &&
 			kind === "Allows" &&
-			node.allowsNeedsCtx
+			node.allowsCtx
 		)
 			return this.allows(node, arg)
 		const reference = this.referenceToId(node.id, opts)
@@ -342,14 +343,14 @@ export abstract class NodeCompiler extends CompiledFunction<
 
 	// Allows adds no errors to ctx, so a predicate reading it runs in a branch
 	allows(node: BaseNode, arg: string = this.data): string {
-		if (!node.allowsNeedsCtx) return this.invoke(node, { arg, kind: "Allows" })
-		return node.allowsNeedsTraversal ?
+		if (!node.allowsCtx) return this.invoke(node, { arg, kind: "Allows" })
+		return node.checksCtx ?
 				`${this.ref(allowsInBranchBy)}(${this.ctx}, ${this.referenceToId(node.id, { kind: "Allows" })}, ${arg})`
 			:	`${this.ref(node)}.allows(${arg})`
 	}
 
 	applyMember(node: BaseNode, member: BaseNode = node): string {
-		return member.includesAlias ?
+		return member.hasAlias ?
 				this.resolution(node, member.id)
 			:	this.invoke(node)
 	}
@@ -391,7 +392,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	}
 
 	site(node: BaseNode): string {
-		return this.ref(node.failureSite)
+		return this.ref(node.failSite)
 	}
 
 	error(node: BaseNode, key?: string, data = "data"): string {
@@ -425,7 +426,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	requiresContextFor(node: BaseNode, kind = this.traversalKind): boolean {
 		return (
 			this.traversalKind === "Apply" ||
-			(kind === "Transform" ? node.transformNeedsCtx : node.allowsNeedsCtx)
+			(kind === "Transform" ? node.transformCtx : node.allowsCtx)
 		)
 	}
 
@@ -451,15 +452,11 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return this.const("errorCount", "ctx.currentErrorCount")
 	}
 
-	traverseKey(
-		keyExpression: string,
-		accessExpression: string,
-		node: BaseNode
-	): this {
-		const fails = this.keyFails(keyExpression, accessExpression, node)
+	traverseKey(keyExpr: string, accessExpression: string, node: BaseNode): this {
+		const fails = this.keyFails(keyExpr, accessExpression, node)
 		if (fails !== undefined) return this.if(fails, () => this.return(false))
 		if (this.traversalKind === "Apply")
-			return this.applyKey(keyExpression, accessExpression, node)
+			return this.applyKey(keyExpr, accessExpression, node)
 		// read once, so the string remembered is the one its pattern rejected
 		if (this.loopDepth > 0 && isRefinedPattern(node)) {
 			const allows = this.traversal(node, "Allows")
@@ -468,7 +465,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 			)
 		}
 		// a value whose predicates read ctx is checked at its key's path
-		this.line(`${this.ctx}.path.push(${keyExpression})`)
+		this.line(`${this.ctx}.path.push(${keyExpr})`)
 		this.check(node, { arg: accessExpression })
 		return this.line(`${this.ctx}.path.pop()`)
 	}
@@ -480,22 +477,22 @@ export abstract class NodeCompiler extends CompiledFunction<
 			if (condition !== undefined) return `!(${condition})`
 			if (
 				(this.loopDepth > 0 && isRefinedPattern(node)) ||
-				(node.allowsNeedsCtx && node.allowsNeedsTraversal)
+				(node.allowsCtx && node.checksCtx)
 			)
 				return
 			return `!${this.invoke(node, { arg: value })}`
 		}
-		if (node.includesMorph || node.includesAlias) return
+		if (node.hasMorph || node.hasAlias) return
 		// transforming values are checked by Allows first
 		const checksAllowsFirst =
 			node.transforms ||
-			((this.loopDepth > 0 || (node.hasKind("union") && !node.discriminant)) &&
+			((this.loopDepth > 0 || (node.is("union") && !node.discriminant)) &&
 				isDecidedByAllows(node))
 		const condition =
-			node.hasKind("union") && !checksAllowsFirst ?
+			node.is("union") && !checksAllowsFirst ?
 				undefined
 			:	node.compileCondition?.(this, value)
-		if (condition !== undefined && !node.hasKind("union"))
+		if (condition !== undefined && !node.is("union"))
 			return `!(${condition}) && ${this.error(node, key)}`
 		const allows =
 			!checksAllowsFirst ? ""
@@ -505,20 +502,20 @@ export abstract class NodeCompiler extends CompiledFunction<
 			: `!(${condition}) && `
 		// a refined basis Allows rejected failed its basis or its refinement
 		if (checksAllowsFirst && isRefinedBasis(node))
-			return `${allows}${this.fails("failsAt", `${node.basis!.compileCondition(this, value)} ? ${this.site(node.prestructurals[0])} : ${this.site(node.basis!)}, data, ${key}`)}`
+			return `${allows}${this.fails("failsAt", `${node.basis!.compileCondition(this, value)} ? ${this.site(node.preStruct[0])} : ${this.site(node.basis!)}, data, ${key}`)}`
 		return `${allows}${this.fails("failsIn", `${this.traversal(node, "Apply")}, ${this.data}, ${key}`)}`
 	}
 
 	// a cyclic value is applied inline
 	private applyKey(key: string, value: string, node: BaseNode): this {
 		const apply =
-			node.entersAlias && node.includesAlias ?
+			node.entersAlias && node.hasAlias ?
 				`(${this.resolution(node, node.id, value)})`
 			:	this.invoke(node, { arg: value })
 		const fails = () => this.line("ctx.path.pop()").return(false)
 		this.line(`ctx.path.push(${key})`)
 		// only transforming a value Apply finds valid finds its morphs' errors
-		if (!node.includesAlias) {
+		if (!node.hasAlias) {
 			this.if(
 				`${this.ref(transformsValid)}(ctx) && ${this.allows(node, value)}`,
 				() =>
@@ -539,7 +536,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 
 	initializeTransform(transformedChildren: readonly BaseNode[]): this {
 		this.checksMorphErrors = transformedChildren.some(
-			child => child.includesMorph || child.transformNeedsCtx
+			child => child.hasMorph || child.transformCtx
 		)
 		if (!this.checksMorphErrors) return this
 		return this.requiresContext ?
@@ -554,10 +551,10 @@ export abstract class NodeCompiler extends CompiledFunction<
 		opts?: TransformKeyOptions
 	): this {
 		const nodes = steps.map(step => step.node)
-		const keyExpression = opts?.keyExpression
+		const keyExpr = opts?.keyExpr
 		const assign = (assignee: string, node: BaseNode, arg: string) => {
-			const pushesKey = keyExpression !== undefined && node.transformNeedsCtx
-			if (pushesKey) this.line(`${this.ctx}.path.push(${keyExpression})`)
+			const pushesKey = keyExpr !== undefined && node.transformCtx
+			if (pushesKey) this.line(`${this.ctx}.path.push(${keyExpr})`)
 			// a step rejecting an earlier step's output transforms the input instead
 			const transformed =
 				arg === input ?
@@ -570,18 +567,18 @@ export abstract class NodeCompiler extends CompiledFunction<
 			`typeof ${name} === "function" && ${name} instanceof ${this.ref(TransformErrors)}`
 		const assignSteps = () => {
 			const errorCount = `${name}ErrorCount`
-			if (nodes.slice(0, -1).some(node => node.transformNeedsCtx))
+			if (nodes.slice(0, -1).some(node => node.transformCtx))
 				this.const(errorCount, `${this.ctx}.currentErrorCount`)
 			for (let i = 0; i < steps.length; i++) {
 				const { node, signature } = steps[i]
 				const previous = nodes.slice(0, i)
 				const conditions =
 					signature ?
-						[this.invoke(signature, { arg: keyExpression!, kind: "Allows" })]
+						[this.invoke(signature, { arg: keyExpr!, kind: "Allows" })]
 					:	[]
 				if (previous.some(returnsTransformErrors))
 					conditions.push(`!(${isTransformErrors()})`)
-				if (previous.some(node => node.transformNeedsCtx))
+				if (previous.some(node => node.transformCtx))
 					conditions.push(`${this.ctx}.currentErrorCount === ${errorCount}`)
 				const assignStep = () => assign(name, node, i === 0 ? input : name)
 				if (conditions.length) this.if(conditions.join(" && "), assignStep)
@@ -604,15 +601,13 @@ export abstract class NodeCompiler extends CompiledFunction<
 		if (!checksErrors && !opts?.onChange) return this
 		return this.if(this.compareTransformed(steps, name, "!==", input), () => {
 			if (!checksErrors) return onChange()
-			this.if(isTransformErrors(), () =>
-				this.addMorphErrors(name, keyExpression)
-			)
+			this.if(isTransformErrors(), () => this.addMorphErrors(name, keyExpr))
 			return opts?.onChange ? this.else(onChange) : this
 		})
 	}
 
-	addMorphErrors(errors: string, keyExpression?: string): this {
-		const key = keyExpression === undefined ? "" : `, ${keyExpression}`
+	addMorphErrors(errors: string, keyExpr?: string): this {
+		const key = keyExpr === undefined ? "" : `, ${keyExpr}`
 		return this.line(
 			this.requiresContext ?
 				`${this.ref(addMorphErrors)}(${this.ctx}, ${errors}${key})`
@@ -628,7 +623,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	): string {
 		const canChangeSignOfZero = steps.some(
 			({ node }) =>
-				node.isRoot() && node.branches.some(n => !n.hasKind("intersection"))
+				node.isRoot() && node.branches.some(n => !n.is("intersection"))
 		)
 		return canChangeSignOfZero ?
 				`${operator === "===" ? "" : "!"}Object.is(${transformed}, ${input})`
@@ -651,7 +646,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	check(node: BaseNode, opts?: CheckOptions): this {
 		const arg = opts?.arg ?? this.data
 		const condition =
-			opts?.kind || (this.traversalKind === "Apply" && node.hasKind("union")) ?
+			opts?.kind || (this.traversalKind === "Apply" && node.is("union")) ?
 				undefined
 			:	node.compileCondition?.(this, arg)
 		const fail = () => (opts?.breaks ? this.line("break") : this.return(false))
@@ -681,22 +676,22 @@ export abstract class NodeCompiler extends CompiledFunction<
 }
 
 export const returnsTransformErrors = (node: BaseNode): boolean =>
-	node.includesMorph && !node.transformNeedsCtx
+	node.hasMorph && !node.transformCtx
 
-const isPredicate = (node: BaseNode): boolean => node.hasKind("predicate")
+const isPredicate = (node: BaseNode): boolean => node.is("predicate")
 
 export const isDecidedByAllows = (node: BaseNode): boolean =>
-	!node.includesMorph &&
-	!node.allowsNeedsCtx &&
+	!node.hasMorph &&
+	!node.allowsCtx &&
 	!node.selectReferences(isPredicate).length
 
 // a basis with one refinement
 export const isRefinedBasis = (node: BaseNode): node is IntersectionNode =>
-	node.hasKind("intersection") &&
+	node.is("intersection") &&
 	node.basis !== null &&
 	node.children.length === 2 &&
-	node.prestructurals.length === 1
+	node.preStruct.length === 1
 
 // a pattern's verdict never changes, so Apply reuses Allows'
 export const isRefinedPattern = (node: BaseNode): node is IntersectionNode =>
-	isRefinedBasis(node) && node.prestructurals[0].hasKind("pattern")
+	isRefinedBasis(node) && node.preStruct[0].is("pattern")

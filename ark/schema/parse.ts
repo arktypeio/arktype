@@ -155,7 +155,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 				if (reduced instanceof Disjoint) return reduced.throw()
 
 				// we can't cache this reduction for now in case the reduction involved
-				// impliedSiblings
+				// impliedBy
 				return withMeta(reduced, meta)
 			}
 		}
@@ -188,7 +188,7 @@ const deferAliases = (v: unknown, $: BaseScope): unknown => {
 		const deferred = v.map(element => deferAliases(element, $))
 		return deferred.some((element, i) => element !== v[i]) ? deferred : v
 	}
-	if (!isNode(v) || !v.hasShallowAlias || v.hasKind("alias")) return v
+	if (!isNode(v) || !v.topAlias || v.is("alias")) return v
 	nodesById[v.id] = v
 	return $.node("alias", { reference: v.id }, { prereduced: true })
 }
@@ -326,7 +326,7 @@ export const requiredPropOf = (
 	value: BaseRoot,
 	$: BaseScope
 ): nodeOfKind<"required"> => {
-	if (!holdsWeakly || value.hasShallowAlias || value.$ !== $)
+	if (!holdsWeakly || value.topAlias || value.$ !== $)
 		return $.node("required", { key, value })
 	const props = (value.cache.requiredProps ??= new Map())
 	let prop = props.get(key)?.deref()
@@ -353,7 +353,7 @@ export const resolveDescription = <node extends BaseNode>(node: node): node => {
 			void node.description
 	}
 	// an alias's expression changes as it resolves, so write it now
-	else if (node.includesAlias) void node.expression
+	else if (node.hasAlias) void node.expression
 	return node
 }
 

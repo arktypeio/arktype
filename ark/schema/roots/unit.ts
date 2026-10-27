@@ -33,7 +33,7 @@ export declare namespace Unit {
 		extends declareNode<{
 			kind: "unit"
 			inner: Inner
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = UnitNode
@@ -48,7 +48,7 @@ const serializeUnit = (unit: unknown): JsonPrimitive =>
 const implementation: nodeImplementationOf<Unit.Declaration> =
 	implementNode<Unit.Declaration>({
 		kind: "unit",
-		ownsError: true,
+		ownErr: true,
 		keys: {
 			unit: {
 				preserveUndefined: true,
@@ -61,10 +61,12 @@ const implementation: nodeImplementationOf<Unit.Declaration> =
 	})
 
 export class UnitNode extends InternalBasis<Unit.Declaration> {
-	compiledValue: JsonPrimitive = serializeUnit(this.unit)
-	serializedUnit: string =
+	/** its unit as JSON: a Date by its ISO string, an object or symbol by its registered reference */
+	unitJson: JsonPrimitive = serializeUnit(this.unit)
+	/** its unit written as a JavaScript literal, as compiled code compares data to it */
+	jsUnit: string =
 		isDate(this.unit) ?
-			JSON.stringify(this.compiledValue)
+			JSON.stringify(this.unitJson)
 		:	compileSerializedValue(this.unit)
 
 	compileCondition(js: NodeCompiler, data: string): string {
@@ -74,17 +76,17 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 			: Number.isNaN(this.unit) ? `Number.isNaN(${data})`
 			: hasDomain(this.unit, "object") || typeof this.unit === "symbol" ?
 				`${data} === ${js.ref(this.unit)}`
-			:	`${data} === ${this.serializedUnit}`
+			:	`${data} === ${this.jsUnit}`
 		)
 	}
 
 	expression: string =
-		isDate(this.unit) ? `d'${this.compiledValue}'`
+		isDate(this.unit) ? `d'${this.unitJson}'`
 		: typeof this.unit === "number" ? printDecimal(this.unit)
 		: printable(this.unit, { ownDataOnly: true })
 	domain: Domain = domainOf(this.unit)
 
-	get defaultBrief(): string {
+	get brief(): string {
 		return this.domain === "object" ?
 				domainDescriptions.object
 			:	this.description

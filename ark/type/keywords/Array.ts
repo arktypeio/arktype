@@ -18,7 +18,7 @@ const liftFrom = () =>
 			.rawOr(lifted)
 			.pipe(liftArray)
 			.distribute(
-				branch => branch.assertHasKind("morph").declareOut(lifted),
+				branch => branch.assertIs("morph").declareOut(lifted),
 				rootSchema
 			)
 	}, liftFromHkt)

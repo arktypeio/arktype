@@ -77,8 +77,8 @@ export declare namespace Sequence {
 const implementation: nodeImplementationOf<Sequence.Declaration> =
 	implementNode<Sequence.Declaration>({
 		kind: "sequence",
-		ownsError: false,
-		collapseKey: "variadic",
+		ownErr: false,
+		bareKey: "variadic",
 		keys: {
 			prefix: {
 				child: true,
@@ -107,7 +107,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 				structural: true,
 				serialize: defaults =>
 					defaults.map(element => [
-						element[0].collapsedJson,
+						element[0].bareJson,
 						defaultValueSerializer(element[1])
 					]),
 				reduceIo: (ioKind, inner, defaultables) => {
@@ -132,16 +132,15 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 		},
 		defaults: {
 			description: node => {
-				if (node.isVariadicOnly)
-					return `${elided(node.variadic!.nestedExpression)}[]`
+				if (node.isVariadicOnly) return `${elided(node.variadic!.nestedExpr)}[]`
 				const innerDescription = node.tuple
 					.map(element =>
 						element.kind === "defaultables" ?
-							`${elided(element.node.nestedExpression)} = ${printable(element.default, { ownDataOnly: true })}`
+							`${elided(element.node.nestedExpr)} = ${printable(element.default, { ownDataOnly: true })}`
 						: element.kind === "optionals" ?
-							`${elided(element.node.nestedExpression)}?`
+							`${elided(element.node.nestedExpr)}?`
 						: element.kind === "variadic" ?
-							`...${elided(element.node.nestedExpression)}[]`
+							`...${elided(element.node.nestedExpr)}[]`
 						:	elided(element.node.expression)
 					)
 					.join(", ")
@@ -153,7 +152,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
 		super(...args)
-		this.includesCostly = true
+		this.costly = true
 		if (this.inner.postfix) {
 			if (!this.inner.variadic) throwParseError(postfixWithoutVariadicMessage)
 			if (this.inner.optionals || this.inner.defaultables)
@@ -178,25 +177,30 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				assertDefaultValueAssignability(node, value, null, this)
 		}
 		// a function default can fail as it's applied, like a morph
-		this.includesMorph ||= !!this.defaultables?.some(
+		this.hasMorph ||= !!this.defaultables?.some(
 			([, defaultValue]) => typeof defaultValue === "function"
 		)
-		this.hasCtxMorph ||= this.defaultMorphs.some(morph => morph.length === 2)
+		this.ctxMorph ||= this.defaultMorphs.some(morph => morph.length === 2)
 	}
 
-	impliedBasis: BaseRoot = $ark.intrinsic.Array.internal
+	implied: BaseRoot = $ark.intrinsic.Array.internal
 
 	tuple: SequenceTuple = sequenceInnerToTuple(this.inner)
 
-	prefixLength: number = this.prefix?.length ?? 0
-	defaultableCount: number = this.defaultables?.length ?? 0
-	postfixLength: number = this.postfix?.length ?? 0
-	optionalsAndDefaults: BaseRoot[] = []
-	prevariadic: array<PrevariadicSequenceElement> = this.tuple.filter(
+	/** how many prefix elements it has */
+	preLen: number = this.prefix?.length ?? 0
+	/** how many defaultable elements it has */
+	defLen: number = this.defaultables?.length ?? 0
+	/** how many postfix elements it has */
+	postLen: number = this.postfix?.length ?? 0
+	/** its defaultable and optional elements, in order */
+	maybes: BaseRoot[] = []
+	/** its elements before its variadic element, with their kinds */
+	leading: array<PrevariadicSequenceElement> = this.tuple.filter(
 		(el): el is PrevariadicSequenceElement => {
 			if (el.kind === "defaultables" || el.kind === "optionals") {
-				// populate optionalsAndDefaults while filtering prevariadic
-				this.optionalsAndDefaults.push(el.node)
+				// populate maybes while filtering leading
+				this.maybes.push(el.node)
 				return true
 			}
 
@@ -204,17 +208,16 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}
 	)
 
-	variadicOrPostfix: array<BaseRoot> = conflatenate(
+	/** its variadic element, if any, then its postfix elements */
+	trail: array<BaseRoot> = conflatenate(
 		this.variadic && [this.variadic],
 		this.postfix
 	)
 
 	protected override initFlatRefs(): void {
 		this.cache.flatRefs = uniqueFlatRefs([
-			...this.prevariadic.flatMap((element, i) =>
-				flatRefsAt(`${i}`, element.node)
-			),
-			...this.variadicOrPostfix.flatMap(element =>
+			...this.leading.flatMap((element, i) => flatRefsAt(`${i}`, element.node)),
+			...this.trail.flatMap(element =>
 				// a postfix index can't be directly represented as a type
 				// key, so we just use the same matcher for variadic
 				flatRefsAt($ark.intrinsic.nonNegativeIntegerString.internal, element)
@@ -223,32 +226,33 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		this.cache.flatMorphs = []
 	}
 
-	isVariadicOnly: boolean = this.prevariadic.length + this.postfixLength === 0
+	isVariadicOnly: boolean = this.leading.length + this.postLen === 0
 	minVariadicLength: number = this.inner.minVariadicLength ?? 0
-	minLength: number =
-		this.prefixLength + this.minVariadicLength + this.postfixLength
-	minLengthNode: MinLengthNode | null =
+	minLength: number = this.preLen + this.minVariadicLength + this.postLen
+	/** the minLength node its length implies, if any */
+	minNode: MinLengthNode | null =
 		this.minLength === 0 ?
 			null
 			// cast is safe here as the only time this would not be a
 			// MinLengthNode would be when minLength is 0
 		:	(this.$.node("minLength", { rule: this.minLength }) as never)
 	maxLength: number | null = this.variadic ? null : this.tuple.length
-	maxLengthNode: MaxLengthNode | ExactLengthNode | null =
+	/** the maxLength or exactLength node its length implies, if any */
+	maxNode: MaxLengthNode | ExactLengthNode | null =
 		this.maxLength === null ?
 			null
 		:	this.$.node("maxLength", { rule: this.maxLength })
-	impliedSiblings: array<MaxLengthNode | MinLengthNode | ExactLengthNode> =
-		this.minLengthNode ?
-			this.maxLengthNode ?
-				[this.minLengthNode, this.maxLengthNode]
-			:	[this.minLengthNode]
-		: this.maxLengthNode ? [this.maxLengthNode]
+	impliedBy: array<MaxLengthNode | MinLengthNode | ExactLengthNode> =
+		this.minNode ?
+			this.maxNode ?
+				[this.minNode, this.maxNode]
+			:	[this.minNode]
+		: this.maxNode ? [this.maxNode]
 		: []
 
 	defaultMorphs: Morph[] =
 		this.defaultables?.map(([node, defaultValue], i) =>
-			computeDefaultValueMorph(this.prefixLength + i, node, defaultValue)
+			computeDefaultValueMorph(this.preLen + i, node, defaultValue)
 		) ?? []
 
 	optionalize(): SequenceNode {
@@ -260,7 +264,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 		return this.$.node("sequence", {
 			...inner,
-			optionals: conflatenate(prefix, this.optionalsAndDefaults)
+			optionals: conflatenate(prefix, this.maybes)
 		})
 	}
 
@@ -268,13 +272,14 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		const { defaultables, optionals, ...inner } = this.inner
 		return this.$.node("sequence", {
 			...inner,
-			prefix: conflatenate(this.prefix, this.optionalsAndDefaults)
+			prefix: conflatenate(this.prefix, this.maybes)
 		})
 	}
 
-	protected elementAtIndex(data: array, index: number): SequenceElement {
-		if (index < this.prevariadic.length) return this.tuple[index]
-		const firstPostfixIndex = data.length - this.postfixLength
+	/** the element that checks `data[index]` */
+	protected atIndex(data: array, index: number): SequenceElement {
+		if (index < this.leading.length) return this.tuple[index]
+		const firstPostfixIndex = data.length - this.postLen
 		if (index >= firstPostfixIndex)
 			return { kind: "postfix", node: this.postfix![index - firstPostfixIndex] }
 		return {
@@ -290,8 +295,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	// minLength/maxLength should be checked by Intersection before either traversal
 	traverseAllows(data: array, ctx: InternalTraversal | AliasDepth): boolean {
 		for (let i = 0; i < data.length; i++) {
-			if (!this.elementAtIndex(data, i).node.traverseAllows(data[i], ctx))
-				return false
+			if (!this.atIndex(data, i).node.traverseAllows(data[i], ctx)) return false
 		}
 
 		return true
@@ -303,7 +307,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		for (; i < data.length; i++) {
 			traverseKey(
 				i,
-				() => applyValue(this.elementAtIndex(data, i).node, data[i], ctx),
+				() => applyValue(this.atIndex(data, i).node, data[i], ctx),
 				ctx
 			)
 			// bail out of subsequent elements in fail-fast mode (e.g. inside a
@@ -331,7 +335,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	): array {
 		let out = data as unknown[]
 		for (let i = 0; i < data.length; i++) {
-			const node = this.elementAtIndex(data, i).node
+			const node = this.atIndex(data, i).node
 			if (!node.transforms) continue
 			const element = data[i]
 			const transformed = traverseKey(
@@ -356,8 +360,8 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		// (e.g. inside a union branch) so we don't traverse an element whose
 		// basis has already failed - see
 		// https://github.com/arktypeio/arktype/issues/1458
-		this.compileElements(js, (keyExpression, node) =>
-			js.traverseKey(keyExpression, `data[${keyExpression}]`, node)
+		this.compileElements(js, (keyExpr, node) =>
+			js.traverseKey(keyExpr, `data[${keyExpr}]`, node)
 		)
 
 		js.return(true)
@@ -376,16 +380,16 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			: slices ? "Array.prototype.slice.call(data)"
 			: `${js.ref(copyOf)}(data)`
 		let i = 0
-		this.compileElements(js, (keyExpression, node) => {
+		this.compileElements(js, (keyExpr, node) => {
 			const element = `element${i}`
 			const transformed = `transformed${i++}`
 			return js
-				.const(element, `data[${keyExpression}]`)
+				.const(element, `data[${keyExpr}]`)
 				.transformKey(transformed, element, [{ node }], {
-					keyExpression,
+					keyExpr,
 					onChange: () =>
 						(copy ? js.if("out === data", () => js.set("out", copy)) : js).line(
-							`out[${keyExpression}] = ${transformed}`
+							`out[${keyExpr}] = ${transformed}`
 						)
 				})
 		})
@@ -394,7 +398,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	private compileElements(
 		js: NodeCompiler,
-		compileElement: (keyExpression: string, node: BaseRoot) => NodeCompiler
+		compileElement: (keyExpr: string, node: BaseRoot) => NodeCompiler
 	): void {
 		// a transform skips each element that would return its input
 		const reaches = (node: BaseRoot) =>
@@ -405,8 +409,8 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				if (reaches(node)) compileElement(`${i}`, node)
 		}
 
-		for (const [i, node] of this.optionalsAndDefaults.entries()) {
-			const dataIndex = `${i + this.prefixLength}`
+		for (const [i, node] of this.maybes.entries()) {
+			const dataIndex = `${i + this.preLen}`
 			if (js.traversalKind === "Transform") {
 				if (node.transforms) {
 					js.if(`${dataIndex} < data.length`, () =>
@@ -428,7 +432,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			js.for(
 				`i < ${postfix.length ? "firstPostfixIndex" : "data.length"}`,
 				() => compileElement("i", variadic),
-				this.prevariadic.length
+				this.leading.length
 			)
 		}
 		for (const [i, node] of postfix.entries())

@@ -100,12 +100,7 @@ BaseScope.prototype.finalize = function <node extends BaseRoot>(
 	jit = true
 ): node {
 	// a jitless scope leaves its roots uncompiled, as its tests expect
-	if (
-		!jit ||
-		node.compiledUnit ||
-		node.includesAlias ||
-		this.resolvedConfig.jitless
-	)
+	if (!jit || node.unitFn || node.hasAlias || this.resolvedConfig.jitless)
 		return finalize.call(this, node, jit) as node
 	finalizedUnits.set(node, register([node]))
 	finalize.call(this, node, jit)
@@ -140,16 +135,16 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 				for (const resolution of Object.values(resolutions)) {
 					if (
 						hasArkKind(resolution, "root") &&
-						!resolution.compiledUnit &&
-						!resolution.includesAlias
+						!resolution.unitFn &&
+						!resolution.hasAlias
 					)
 						roots.push(resolution)
 				}
 				for (const node of value) {
 					if (
 						node.isRoot() &&
-						!node.compiledUnit &&
-						!node.includesAlias &&
+						!node.unitFn &&
+						!node.hasAlias &&
 						!roots.includes(node)
 					)
 						referenced.push(node)
@@ -166,12 +161,12 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 		return exported
 	} finally {
 		delete (this as { references?: unknown }).references
-		for (const root of roots) if (root.compiledUnit) checkBound(root)
+		for (const root of roots) if (root.unitFn) checkBound(root)
 		for (const root of referenced) {
-			if (!root.compiledUnit) continue
+			if (!root.unitFn) continue
 			// a build writes no unit for a root only a union inlines, so it compiles
 			if (
-				root.compiledUnit.toString().startsWith("function anonymous") &&
+				root.unitFn.toString().startsWith("function anonymous") &&
 				!Object.keys(writePrecompiledUnits([root])).every(key => key in written)
 			)
 				inlined++

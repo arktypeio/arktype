@@ -24,9 +24,7 @@ contextualize(() => {
 
 	it("a pipeline's first node is its input", () => {
 		const trim = (s: string) => s.trim()
-		const piped = rootSchema({ morphs: ["string", trim] }).assertHasKind(
-			"morph"
-		)
+		const piped = rootSchema({ morphs: ["string", trim] }).assertIs("morph")
 		attest(piped.json).snap({ morphs: ["string", namedReference(trim)] })
 		attest(piped.head?.expression).snap("string")
 		attest(piped.piped).equals([trim])
@@ -66,7 +64,7 @@ contextualize(() => {
 			const declared = rootSchema({
 				meta: "declared",
 				predicate: () => throwError("declared node should not be invoked")
-			}).assertHasKind("intersection")
+			}).assertIs("intersection")
 
 			const declaredMorph = rootSchema({
 				morphs: (s: string) => JSON.parse(s),
@@ -82,9 +80,7 @@ contextualize(() => {
 				declared
 			}) => {
 				attest(declaredMorph.json).equals({
-					morphs: declaredMorph
-						.assertHasKind("morph")
-						.morphs.map(namedReference),
+					morphs: declaredMorph.assertIs("morph").morphs.map(namedReference),
 					declaredIn: declared.json,
 					declaredOut: declared.json
 				})

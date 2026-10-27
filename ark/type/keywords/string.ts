@@ -300,7 +300,7 @@ const epochRoot = cached(() =>
 	stringInteger.root.internal
 		.narrow(isEpochString)
 		.configure(keywordMeta("string.date.epoch"), "self")
-		.assertHasKind("intersection")
+		.assertIs("intersection")
 )
 
 const epoch: Module<stringDate.epoch.$> = keywordModule(
@@ -320,7 +320,7 @@ const epoch: Module<stringDate.epoch.$> = keywordModule(
 const isoRoot = cached(() =>
 	regexStringNode(iso8601Matcher, "string.date.iso", {
 		format: "date-time"
-	}).internal.assertHasKind("intersection")
+	}).internal.assertIs("intersection")
 )
 
 const iso: Module<stringDate.iso.$> = keywordModule(

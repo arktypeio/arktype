@@ -32,7 +32,7 @@ export declare namespace Domain {
 		extends declareNode<{
 			kind: "domain"
 			inner: Inner
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = DomainNode
@@ -41,8 +41,8 @@ export declare namespace Domain {
 const implementation: nodeImplementationOf<Domain.Declaration> =
 	implementNode<Domain.Declaration>({
 		kind: "domain",
-		ownsError: true,
-		collapseKey: "domain",
+		ownErr: true,
+		bareKey: "domain",
 		keys: {
 			domain: {},
 			numberAllowsNaN: {},
@@ -81,16 +81,15 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 		}
 	}
 
-	private readonly requiresNaNCheck =
-		this.domain === "number" && !this.numberAllowsNaN
+	/** whether it rejects NaN, as the number domain does unless `numberAllowsNaN` */
+	private readonly checksNaN = this.domain === "number" && !this.numberAllowsNaN
 
 	private readonly checksInfinity =
 		this.domain === "number" && !this.numberAllowsInfinity
 
 	readonly traverseAllows: TraverseAllows =
-		this.requiresNaNCheck && this.checksInfinity ? data => Number.isFinite(data)
-		: this.requiresNaNCheck ?
-			data => typeof data === "number" && !Number.isNaN(data)
+		this.checksNaN && this.checksInfinity ? data => Number.isFinite(data)
+		: this.checksNaN ? data => typeof data === "number" && !Number.isNaN(data)
 		: this.checksInfinity ?
 			data =>
 				typeof data === "number" &&
@@ -106,10 +105,9 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 				js.traversalKind === "Apply" ?
 					`(${data} instanceof Object || Object(${data}) === ${data})`
 				:	`${data} !== null && (typeof ${data} === "object" || typeof ${data} === "function")`
-			: this.requiresNaNCheck && this.checksInfinity ?
-				`Number.isFinite(${data})`
-			:	`typeof ${data} === "${this.domain}"${
-					this.requiresNaNCheck ? ` && !Number.isNaN(${data})`
+			: this.checksNaN && this.checksInfinity ? `Number.isFinite(${data})`
+			: `typeof ${data} === "${this.domain}"${
+					this.checksNaN ? ` && !Number.isNaN(${data})`
 					: this.checksInfinity ?
 						` && ${data} !== Infinity && ${data} !== -Infinity`
 					:	""
@@ -122,13 +120,13 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 			`number${this.numberAllowsNaN ? " | NaN" : ""}${this.numberAllowsInfinity ? " | Infinity | -Infinity" : ""}`
 		:	this.domain
 
-	get nestedExpression(): string {
+	get nestedExpr(): string {
 		return this.expression === this.domain ?
 				this.expression
 			:	`(${this.expression})`
 	}
 
-	get defaultBrief(): string {
+	get brief(): string {
 		return domainDescriptions[this.domain]
 	}
 }
