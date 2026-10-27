@@ -990,7 +990,7 @@ Where it creates them from values it reads as it runs, like `drizzle-arktype` fr
 
 # Advanced
 
-> Shadow mode, libraries, runtime islands and declarations.
+> Shadow mode, libraries, runtime islands, declarations and optimizations.
 
 ## Shadow mode
 
@@ -1071,4 +1071,57 @@ Declarations read the compiler API of TypeScript 5.5 to 6 from the optional `typ
 
 ```sh
 npm i -D typescript-6@npm:typescript@6
+```
+
+## Optimizations
+
+What a build writes, for those squeezing it further. Each [option](https://arktype.io/docs/precompile/options) changes one part of it.
+
+### Valid and invalid data
+
+The default build writes two functions for each Type: a check returning whether data is valid, and a pass finding its issues, which a validator runs only for data the check rejects. Valid data costs only the check. For most Types without a narrow or morph, the pass runs once the errors' `issues` or `summary` is [first read](https://arktype.io/docs/errors#arkerrors), so invalid data costs little more than its check until then. A build for size finds them as it validates.
+
+| Option | Saves | Costs |
+| - | - | - |
+| [`preset: "smallest"`](https://arktype.io/docs/precompile/options#choosing-smallest) | bytes, more the more Types a bundle holds | validation speed, and startup, creating every validator |
+| [`optimizeErrors: "size"`](https://arktype.io/docs/precompile/options#optimize-and-optimizeerrors) | bytes of the issue-finding pass | time reading issues |
+| [`errors: "first"`](https://arktype.io/docs/precompile/options#errors) | time on invalid data, stopping at its first issue | the other issues |
+| [`errors: "none"`](https://arktype.io/docs/precompile/options#errors) | the issue-finding pass and every message | every issue but one root issue, `is invalid` |
+| [`members`](https://arktype.io/docs/precompile/options#members) | each member set false | reading it |
+| [`jsonInput: true`](https://arktype.io/docs/precompile/options#jsoninput) | time checking objects that reject undeclared keys, by counting the keys | an undeclared key can pass on data that isn't plain |
+
+### What nothing reads
+
+Each Type's creation is annotated `/* @__PURE__ */`, so your bundler drops a Type nothing reads, without `sideEffects: false` in your `package.json`, unless creating it could throw.
+
+A [production bundle](https://arktype.io/docs/precompile/options#prune) that reads every module it holds leaves out the members no read needs, and the parts of the error runtime no validator in it writes: formatting an array index in a path, writing text configured for a code and, where no [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands) runs, the message a TraversalError writes for errors arktype returns. Written as one chunk, it also declares the units its validators share in one function.
+
+### Unions
+
+A union of objects is checked by one key where a key tells its branches apart. Among keys at the shallowest path, ArkType prefers one every branch holds, then the one with the most values. A branch without the key is checked in every case, and data matching no case reports through it as well as the key, so give each branch the key:
+
+```ts
+// one switch on kind: { kind: "c" } fails with kind must be "a" or "b" (was "c")
+const Event = type({ kind: "'a'", x: "number" }).or({
+	kind: "'b'",
+	y: "string"
+})
+```
+
+[`discriminate`](https://arktype.io/docs/sets/discriminate) shows the discriminant ArkType finds for any union.
+
+### Minifiers
+
+A default build writes each Type's checks as small functions calling each other, which V8 inlines as it runs them. terser, webpack's default minifier, and swc, Next.js's, write a function called once into its caller, as a closure created at each call or a module variable, either of which runs slower. So the build annotates each such call `/* @__NOINLINE__ */`, which both honor and every minifier drops from its output. Minified by either, validators run as fast as unminified, and the functions they keep cost some bytes, most in a large app minified by swc. esbuild and oxc don't inline them. A build for size calls the runtime's checkers instead, and writes no annotation.
+
+Rolldown, which Vite 8 bundles with, keeps only `@__PURE__`, `@__NO_SIDE_EFFECTS__` and `@vite-ignore` comments, so a terser pass after it never sees the annotations. A Vite build with `build.minify: "terser"` inlines the functions, and its validators run slower: on the shop app of ArkType's benchmarks, 6 to 8% more instructions per valid call. Keep Vite's default minifier, oxc, or use esbuild:
+
+```ts
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+	plugins: [precompile.vite()],
+	build: { minify: "oxc" }
+})
 ```
