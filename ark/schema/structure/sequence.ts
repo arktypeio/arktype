@@ -294,9 +294,8 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	// minLength/maxLength should be checked by Intersection before either traversal
 	traverseAllows(data: array, ctx: InternalTraversal | AliasDepth): boolean {
-		for (let i = 0; i < data.length; i++) {
+		for (let i = 0; i < data.length; i++)
 			if (!this.atIndex(data, i).node.traverseAllows(data[i], ctx)) return false
-		}
 
 		return true
 	}

@@ -475,9 +475,8 @@ export abstract class BaseNode<
 			// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
 			// that would break here, but it feels like a pathological case and is better to let people optimize
 			if (arityOf(this.inner.predicate) !== 1) bits |= flagBits.ctxPred
-		} else if (this.is("alias")) {
+		} else if (this.is("alias"))
 			bits = flagBits.isCyclic | flagBits.hasAlias | flagBits.topAlias
-		}
 
 		// an alias belongs in a structural value, so one there doesn't make its parent shallow
 		const inherited = this.isStructural() ? ~flagBits.topAlias : ~0

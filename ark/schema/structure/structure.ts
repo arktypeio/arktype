@@ -585,9 +585,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 						() => applyValue(prop.value, data[prop.key as never], ctx, false),
 						ctx
 					)
-				} else if (prop.is("required")) {
+				} else if (prop.is("required"))
 					traverseKey(prop.key, () => ctx.nodeError(prop.errorCtx, data), ctx)
-				}
+
 				if (ctx.failFast && ctx.errCount > errorCount) return false
 			}
 		}

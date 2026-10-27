@@ -81,9 +81,9 @@ const getFastCheckNumberConstraints = (node: IntersectionNode) => {
 	for (const refinement of node.preStruct) {
 		if (refinement.hasKindIn("min", "max")) {
 			let rule = refinement.rule
-			if ("exclusive" in refinement) {
+			if ("exclusive" in refinement)
 				rule = nearestFloat(refinement.rule, refinement.is("min") ? "+" : "-")
-			}
+
 			if (hasDivisor !== undefined)
 				rule = refinement.is("min") ? Math.ceil(rule) : Math.floor(rule)
 			numberConstraints[refinement.kind] = rule

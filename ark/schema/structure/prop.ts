@@ -104,9 +104,8 @@ export abstract class BaseProp<
 				() => applyValue(this.value, (data as any)[this.key], ctx),
 				ctx
 			)
-		} else if (this.is("required")) {
+		} else if (this.is("required"))
 			traverseKey(this.key, () => ctx.nodeError(this.errorCtx, data), ctx)
-		}
 	}
 
 	compile(js: NodeCompiler): void {
