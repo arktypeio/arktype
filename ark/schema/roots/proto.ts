@@ -52,14 +52,15 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 			},
 			dateAllowsInvalid: {}
 		},
-		applyConfig: (inner, config) =>
-			(
-				inner.dateAllowsInvalid === undefined &&
-				inner.proto === Date &&
-				config.dateAllowsInvalid
-			) ?
-				{ ...inner, dateAllowsInvalid: true }
-			:	inner,
+		// like a number's options, set only where it or config allows
+		applyConfig: (inner, config) => {
+			if (inner.proto !== Date) return inner
+			const { dateAllowsInvalid, ...rest } = inner
+			const allowsInvalid = dateAllowsInvalid ?? config.dateAllowsInvalid
+			return allowsInvalid || config.dateAllowsInvalid ?
+					{ ...rest, dateAllowsInvalid: allowsInvalid }
+				:	rest
+		},
 		defaults: {
 			description: node => {
 				const builtinName = getBuiltinNameOfConstructor(node.proto)

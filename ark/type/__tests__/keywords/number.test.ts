@@ -51,6 +51,24 @@ contextualize(() => {
 		attest(Safe(NaN).toString()).snap("must be a number (was NaN)")
 	})
 
+	it("safe equals its range", () => {
+		attest(
+			type("number.safe").equals(
+				"-9007199254740991 <= number <= 9007199254740991"
+			)
+		).equals(true)
+	})
+
+	it("disallowing non-finite values like config is the default", () => {
+		const T = rootSchema({
+			domain: "number",
+			numberAllowsNaN: false,
+			numberAllowsInfinity: false
+		})
+		attest(T.json).snap({ domain: "number" })
+		attest(T.equals(type.number)).equals(true)
+	})
+
 	it("doesn't allow NaN by default", () => {
 		attest(type.number.allows(Number.NaN)).equals(false)
 		attest(type.number(Number.NaN).toString()).snap(

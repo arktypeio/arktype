@@ -80,13 +80,28 @@ It reduces like the other comparators: `number < 0 | number > 0` is `number != 0
 
 Its errors have the codes `notEqual`, whose `rule` is a number or a `Date`, and `notEqualLength`. A lone `!` still doesn't end a name, so an alias or brand like `a!b` parses as before.
 
-A second right bound throws `Expression number must have at most one right bound`, as its type already failed, so `number != 3 == 4` and `number < 5 < 6` no longer parse. The latter was `number < 5` in 2.2.9. Bound a group to bound a range again, as `0 < (number != 5) < 10` does.
+A second right bound throws `Expression number must have at most one right bound`, as its type already failed, so `number != 3 == 4` and `number < 5 < 6` no longer parse. The latter was `number < 5` in 2.2.9. Intersect a second comparator to use both, as in `0 < number < 10 & number != 5`.
 
 Thanks to @jkugsiya for #1692.
 
+### Write an `expression` that parses back
+
+A Type a string definition can write has an `expression` that parses back to it:
+
+- A `!=` past an operand's first comparator is an operand of its own, as in `number > -1 & number != 0` and `0 < number < 10 & number != 5`, which were `number > -1 != 0`, which throws, and `0 < (number != 5) < 10`, which fails its type.
+- A number `String` writes with an exponent, below `1e-6` or from `1e21`, is written in decimal, as `1000000000000000000000` or `number > 0.0000001`, where `1e+21` and `1e-7` didn't parse. Its type, like any number TypeScript writes with an exponent, still fails, so such a definition needs `type.raw`.
+- An array of `never` is `never[]`, where it was `(never)[]`.
+- A pattern is written as its source with each `/` escaped, where it was its RegExp's `toString()`, which leaves a `/` in a class unescaped and writes an empty pattern `(?:)`. So `type("/[\\/]/").expression` and `string.base64`'s are `/[\/]/` and `/^(?:[\d+\/A-Za-z]{4})*...$/`, where the first `/` in the class ended the literal they printed, and `type("//").expression` is `//`.
+
+### Leave out a number or Date option config already sets
+
+A `domain` schema's `numberAllowsNaN` or `numberAllowsInfinity`, or a `Date` `proto`'s `dateAllowsInvalid`, set to `false` where config leaves it `false` is left out, as it is when unset, so the two are equal. `number.safe`, which set `numberAllowsNaN: false`, now equals `-9007199254740991 <= number <= 9007199254740991`, and its `json` no longer lists the option.
+
 ### Merge unions of connected ranges
 
-Branches alike but for their range are one range when the ranges overlap or meet, as #751 asked: `1 < number < 10 | 10 <= number < 100` is `1 < number < 100`, `2 <= string <= 4 | 5 <= string <= 8` is `2 <= string <= 8`, and a unit at a bound joins it, so `number < 5 | number == 5` is `number <= 5`. Bounds covering every value are the basis alone: `number > 0 | number < 5` is `number` and `string >= 3 | string <= 2` is `string`. Ranges one value apart are their union excluding it, like `0 < number < 5 | 5 < number < 10`, which is `0 < (number != 5) < 10`, and wider gaps stay a union, as do branches with different descriptions or messages. A basis allowing `NaN` or invalid Dates, which every bound rejects, keeps the union.
+Branches alike but for their range are one range when the ranges overlap or meet, as #751 asked: `1 < number < 10 | 10 <= number < 100` is `1 < number < 100`, `2 <= string <= 4 | 5 <= string <= 8` is `2 <= string <= 8`, and a unit at a bound joins it, so `number < 5 | number == 5` is `number <= 5`. Bounds covering every value are the basis alone: `number > 0 | number < 5` is `number` and `string >= 3 | string <= 2` is `string`. Ranges one value apart are their union excluding it, like `0 < number < 5 | 5 < number < 10`, which is `0 < number < 10 & number != 5`, and wider gaps stay a union, as do branches with different descriptions or messages. A basis allowing `NaN` or invalid Dates, which every bound rejects, keeps the union.
+
+Ranges covering their whole basis reduce to the basis itself, so `number > 0 | number < 5` equals `type.number`, where it was an intersection holding only `number`, which `.json` and `.expression` matched but `.equals()` didn't.
 
 ### Merge unions of objects alike but for one key
 

@@ -163,5 +163,12 @@ contextualize(() => {
 			attest(T.json).snap({ domain: "string", pattern: ["^a/b$"] })
 			attest(T.allows("a/b")).equals(true)
 		})
+
+		it("escaped terminator in a class", () => {
+			const T = type("/^[\\/]$/")
+			attest(T.json).snap({ domain: "string", pattern: ["^[/]$"] })
+			attest(T.expression).snap("/^[\\/]$/")
+			attest(type.raw(T.expression).json).equals(T.json)
+		})
 	})
 })

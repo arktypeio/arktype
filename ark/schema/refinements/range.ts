@@ -1,5 +1,6 @@
 import {
 	isKeyOf,
+	printDecimal,
 	throwParseError,
 	type array,
 	type propValueOf,
@@ -42,7 +43,9 @@ export abstract class BaseRange<
 	}
 
 	readonly expression: string = `${this.comparator} ${
-		this.operandKind === "date" ? `d'${this.stringLimit}'` : this.rule
+		this.operandKind === "date" ?
+			`d'${this.stringLimit}'`
+		:	printDecimal(this.rule as number)
 	}`
 
 	get limitKind(): LimitKind {

@@ -61,6 +61,12 @@ contextualize(() => {
 			attest(T.expression).snap("{ a: string }[]")
 		})
 
+		it("never", () => {
+			const T = type("never[]")
+			attest<never[]>(T.infer)
+			attest(T.expression).snap("never[]")
+		})
+
 		it("incomplete token", () => {
 			// @ts-expect-error
 			attest(() => type("string[")).throwsAndHasTypeError(
