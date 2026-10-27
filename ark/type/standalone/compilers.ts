@@ -1,6 +1,7 @@
 import {
 	compileDomainOf,
 	describeBranches,
+	describeCases,
 	isDecidedByAllows,
 	precompileRootUnits,
 	TraversalCompiler,
@@ -234,20 +235,46 @@ const findBases = (node: UnionNode): Bases | null => {
 		return null
 	const nodes: nodeOfKind<"domain" | "proto">[] = []
 	const expected: string[] = []
-	for (const branch of node.branches) {
+	const addExpected = (description: string) => {
+		if (!expected.includes(description)) expected.push(description)
+	}
+	// the bases a branch's data fails, as arktype's union error lists them:
+	// a morph's input can be a union, whose miss lists its own bases where
+	// arktype lists its branches (a key discriminant can't be read from data
+	// failing them), or each case of its discriminant
+	const collect = (branch: BaseRoot, describes: boolean): boolean => {
 		const checked = branch.is("morph") ? branch.head : branch
+		if (checked?.is("union")) {
+			if (
+				checked.meta.description !== undefined &&
+				checked.meta.keyword === undefined
+			)
+				return false
+			const { discriminant } = checked
+			const lists =
+				!discriminant || discriminant.path.length !== 0 || checked.missLists
+			if (!checked.branches.every(b => collect(b, describes && lists)))
+				return false
+			if (describes && !lists) {
+				const { discriminantKind, cases } = checked.discCases
+				for (const c of cases)
+					addExpected(describeCases({ discriminantKind, cases: [c] } as never))
+			}
+			return true
+		}
 		const basis =
 			checked?.is("intersection") ? checked.basis
 			: checked?.is("domain") || checked?.is("proto") ? checked
 			: null
-		if (!basis) return null
+		if (!basis) return false
 		const context = issueContextOf((basis.failSite as { v: TextContext }).v)
 		// an expected written from data can't be known here
-		if (context.written && context.written.keeps & 1) return null
+		if (context.written && context.written.keeps & 1) return false
 		if (!nodes.includes(basis)) nodes.push(basis)
-		if (!expected.includes(context.description!))
-			expected.push(context.description!)
+		if (describes) addExpected(context.description!)
+		return true
 	}
+	for (const branch of node.branches) if (!collect(branch, true)) return null
 	const site = issueSiteOf({
 		meta: node.meta,
 		description: describeBranches(expected)
