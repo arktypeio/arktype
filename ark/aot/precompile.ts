@@ -421,6 +421,8 @@ export interface Reference {
 	isOwnHole: boolean
 	// imported from a module that only declares and has run
 	isInert: boolean
+	// created by a call to arktype the site makes, which its factory replaces
+	isCreated: boolean
 }
 
 type FactoryImport = [specifier: string, name: string, local: string]
@@ -2552,7 +2554,9 @@ export class Precompiler {
 			if (
 				(site.introspection || (hole && dropped.has(hole.value))) &&
 				!holes.some(value => calledByChecks.has(value)) &&
-				(hole ? reference.isOwnHole : !this.mustRun(reference, module))
+				(hole ?
+					reference.isOwnHole
+				:	reference.isCreated || !this.mustRun(reference, module))
 			) {
 				for (const value of holes) unchecked.add(value)
 				continue
@@ -3917,6 +3921,10 @@ export class Precompiler {
 						this.importedFromOf(node, module),
 						module,
 						runsFirst
+					),
+					isCreated: state.requests.some(
+						([request, declaring]) =>
+							declaring === module && contains(read, request)
 					)
 				})
 			}
