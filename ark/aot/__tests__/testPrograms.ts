@@ -85,16 +85,29 @@ const definitions: fc.Arbitrary<FragmentOf> = nodeOf([]).chain(node =>
 const partlyDiscriminated = {
 	units: (rest: string) => `type("'a' | 'b'").or(${rest})`,
 	keyed: (rest: string) =>
-		`type({ k: "'a'", a: "string" }).or({ k: "'b'", a: "number" }).or({ k: ${rest}, a: "boolean" })`
+		`type({ k: "'a'", a: "string" }).or({ k: "'b'", a: "number" }).or({ k: ${rest}, a: "boolean" })`,
+	paired: (rest: string) =>
+		`type({ k: "'a' | 'b'", a: "string" }).or({ k: "1 | true", a: "number" }).or({ k: ${rest}, a: "boolean" })`
 }
+
+// keywords whose predicate or morph a default case holds
+const defaultCaseNodes = fc.constantFrom<Node>(
+	{ kind: "keyword", name: "string.url" },
+	{ kind: "keyword", name: "string.email" },
+	{ kind: "keyword", name: "string.numeric.parse" },
+	{ kind: "keyword", name: "string.trim" },
+	{ kind: "morph", node: { kind: "keyword", name: "string" }, morph: "size" },
+	{
+		kind: "union",
+		l: { kind: "keyword", name: "string.url" },
+		r: { kind: "keyword", name: "string.numeric.parse" }
+	}
+)
 
 // the default case holding a node Allows doesn't decide, as a predicate's
 const defaultCases: fc.Arbitrary<FragmentOf> = fc
 	.record({
-		node: fc.oneof(
-			nodeOf([]),
-			fc.constant<Node>({ kind: "keyword", name: "string.url" })
-		),
+		node: fc.oneof(nodeOf([]), defaultCaseNodes),
 		holder: fc.constantFrom(
 			...(Object.keys(
 				partlyDiscriminated
@@ -108,7 +121,13 @@ const defaultCases: fc.Arbitrary<FragmentOf> = fc
 				fc.oneof(rest, fc.constantFrom("a", "c"))
 			:	fc.oneof(
 					rest.map(k => ({ k, a: true })),
-					fc.constantFrom({ k: "a", a: true }, { k: "c", a: "" })
+					fc.constantFrom(
+						{ k: "a", a: true },
+						{ k: "a", a: "" },
+						{ k: 1, a: 0 },
+						{ k: true, a: "" },
+						{ k: "c", a: "" }
+					)
 				)
 		).map(
 			(inputs): FragmentOf =>
@@ -125,6 +144,151 @@ const defaultCases: fc.Arbitrary<FragmentOf> = fc
 				})
 		)
 	})
+
+// each level of a DAG references the one below twice, so written out in full
+// its strings and hashes would double with each level
+const levels = {
+	arrays: {
+		def: (below: string) =>
+			`type({ id: "string", left: ${below}.array(), right: ${below}.array() })`,
+		data: (below: unknown, isRight: boolean) => ({
+			id: "",
+			left: isRight ? [] : [below],
+			right: isRight ? [below] : []
+		})
+	},
+	optional: {
+		def: (below: string) => `type({ "l?": ${below}, "r?": ${below}.array() })`,
+		data: (below: unknown, isRight: boolean) =>
+			isRight ? { r: [below] } : { l: below }
+	},
+	tuple: {
+		def: (below: string) => `type([${below}.array(), [${below}, "?"]])`,
+		data: (below: unknown, isRight: boolean) =>
+			isRight ? [[], below] : [[below]]
+	}
+}
+
+// data reaching the bottom through one side at each level, or noise at one
+const levelDataOf = (
+	bottom: Node,
+	shape: keyof typeof levels,
+	depth: number
+): fc.Arbitrary<unknown> =>
+	fc
+		.record({
+			data: dataOf(bottom, noAliases),
+			sides: fc.array(fc.boolean(), { minLength: depth, maxLength: depth }),
+			noisy: fc.option(fc.tuple(fc.nat(depth - 1), noise), { nil: undefined })
+		})
+		.map(({ data, sides, noisy }) =>
+			sides.reduce(
+				(below, isRight, i) =>
+					noisy?.[0] === i ? noisy[1] : levels[shape].data(below, isRight),
+				data
+			)
+		)
+
+// a Type reused at each level of another, deep enough that its expression is
+// elided and its hash digested, alone and in a union with one differing only
+// at the bottom
+const dags: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		bottom: nodeOf([]),
+		other: fc.option(nodeOf([]), { nil: undefined }),
+		shape: fc.constantFrom(...(Object.keys(levels) as (keyof typeof levels)[])),
+		depth: fc.oneof(
+			fc.integer({ min: 1, max: 4 }),
+			fc.integer({ min: 8, max: 12 })
+		)
+	})
+	// a Type the module declares must be definable for the module to load
+	.filter(
+		({ bottom, other }) =>
+			isDefinable(defOf(bottom)) && (!other || isDefinable(defOf(other)))
+	)
+	.chain(({ bottom, other, shape, depth }) =>
+		inputsOf(
+			other ?
+				fc.oneof(
+					levelDataOf(bottom, shape, depth),
+					levelDataOf(other, shape, depth)
+				)
+			:	levelDataOf(bottom, shape, depth)
+		).map(
+			(inputs): FragmentOf =>
+				id => {
+					const declare = (name: string, node: Node) =>
+						Array.from({ length: depth + 1 }, (_, i) =>
+							i === 0 ?
+								`const ${name}0 = type(${sourceOf(defOf(node))})`
+							:	`const ${name}${i} = ${levels[shape].def(`${name}${i - 1}`)}`
+						)
+					return {
+						containers: [],
+						exports: [],
+						main: [
+							...declare(`D${id}_`, bottom),
+							observed(id, `D${id}_${depth}`, inputs),
+							...(other ?
+								[
+									...declare(`E${id}_`, other),
+									observed(
+										`${id}.or`,
+										`D${id}_${depth}.or(E${id}_${depth})`,
+										inputs
+									)
+								]
+							:	[])
+						]
+					}
+				}
+		)
+	)
+
+// Types read only for .allows, by a site or a function calling it
+const allowsReads = {
+	inline: (def: string) => `type(${def}).allows`,
+	local: (def: string, id: string) => `A${id}.allows`,
+	checked: (def: string, id: string) => `check${id}`
+}
+
+const allowsOnly: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		node: nodeOf([]),
+		read: fc.constantFrom(
+			...(Object.keys(allowsReads) as (keyof typeof allowsReads)[])
+		),
+		isImported: fc.boolean()
+	})
+	.filter(({ node, read }) => read === "inline" || isDefinable(defOf(node)))
+	.chain(({ node, read, isImported }) =>
+		inputsOf(dataOf(node, noAliases)).map(
+			(inputs): FragmentOf =>
+				id => {
+					const def = sourceOf(defOf(node))
+					const declarations =
+						read === "inline" ?
+							[]
+						:	[
+								`const A${id} = type(${def})`,
+								`const check${id} = data => A${id}.allows(data)`
+							]
+					return {
+						containers:
+							isImported ?
+								declarations.map(declaration => `export ${declaration}`)
+							:	[],
+						exports:
+							isImported && declarations.length ? [`A${id}`, `check${id}`] : [],
+						main: [
+							...(isImported ? [] : declarations),
+							observed(id, allowsReads[read](def, id), inputs)
+						]
+					}
+				}
+		)
+	)
 
 const holders = {
 	object: (element: string) => `type({ a: ${element} })`,
@@ -836,26 +1000,36 @@ const sourceOfProgram = (program: Program) =>
 	`// containers.ts\n${program.containers}\n\n// main.ts\n${program.main.join("\n")}`
 
 const programs = fc
-	.array(
-		fc.oneof(
-			definitions,
-			defaultCases,
-			narrowedState,
-			defaults,
-			containers,
-			generics,
-			derived,
-			bindings,
-			helpers,
-			matchers,
-			throughCalls,
-			throughCycle,
-			codecs
-		),
+	.oneof(
 		{
-			minLength: 1,
-			maxLength: 3
-		}
+			weight: 9,
+			arbitrary: fc.array(
+				fc.oneof(
+					definitions,
+					defaultCases,
+					narrowedState,
+					defaults,
+					containers,
+					generics,
+					derived,
+					bindings,
+					helpers,
+					matchers,
+					throughCalls,
+					throughCycle,
+					codecs,
+					dags,
+					allowsOnly
+				),
+				{
+					minLength: 1,
+					maxLength: 3
+				}
+			)
+		},
+		// a program reading its Types only for .allows, which a size build
+		// writes without issues
+		fc.array(allowsOnly, { minLength: 1, maxLength: 3 })
 	)
 	.map(fragmentsOf => {
 		const program = programOf(fragmentsOf)

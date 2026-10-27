@@ -114,6 +114,25 @@ export const predicates = {
 
 export const emptyArray: () => never[] = () => []
 
+const literals: (Defaultable | bigint)[] = ["a", "", 0, -0, 1, -0.5, true, 5n]
+
+const unitOf = (value: Defaultable | bigint | null | undefined): Node =>
+	value === null || value === undefined ?
+		{ kind: "keyword", name: value === null ? "null" : "undefined" }
+	:	{ kind: "literal", value }
+
+const unionOf = (nodes: Node[]): Node =>
+	nodes.reduce((l, r) => ({ kind: "union", l, r }))
+
+// two units, which arktype discriminates as it does three or more
+const pairs = fc
+	.uniqueArray(fc.constantFrom(...literals, null, undefined), {
+		minLength: 2,
+		maxLength: 2,
+		comparator: "SameValue"
+	})
+	.map(values => unionOf(values.map(unitOf)))
+
 const leafOf = (aliases: string[]): fc.Arbitrary<Node> =>
 	fc.oneof(
 		{
@@ -123,8 +142,9 @@ const leafOf = (aliases: string[]): fc.Arbitrary<Node> =>
 				.map(name => ({ kind: "keyword", name }) as const)
 		},
 		fc
-			.constantFrom<Defaultable | bigint>("a", "", 0, -0, 1, -0.5, true, 5n)
+			.constantFrom(...literals)
 			.map(value => ({ kind: "literal", value }) as const),
+		pairs,
 		fc.record({
 			kind: fc.constant("bound" as const),
 			base: fc.constantFrom<Bounded>("number", "string", "number[]"),
@@ -150,6 +170,17 @@ const defaultOf = (node: Node): Prop["default"] =>
 	: node.name === "number" ? 0
 	: node.name === "boolean" ? false
 	: undefined
+
+const discriminants: (Defaultable | bigint | null)[] = [
+	"a",
+	"b",
+	"",
+	0,
+	1,
+	true,
+	5n,
+	null
+]
 
 export const nodeOf = (aliases: string[]): fc.Arbitrary<Node> =>
 	fc.letrec<{ node: Node; object: ObjectNode }>(tie => {
@@ -190,6 +221,37 @@ export const nodeOf = (aliases: string[]): fc.Arbitrary<Node> =>
 					description: fc.constantFrom("a thing", "")
 				}),
 				fc.record({ kind: fc.constant("keyof" as const), node }),
+				// objects discriminated by k, each case holding one or two of its values
+				fc
+					.record({
+						cases: fc.array(fc.tuple(object, fc.boolean()), {
+							minLength: 2,
+							maxLength: 3
+						}),
+						values: fc.shuffledSubarray(discriminants, {
+							minLength: 6,
+							maxLength: 6
+						})
+					})
+					.map(({ cases, values }) => {
+						let i = 0
+						return unionOf(
+							cases.map(([object, isPair]): ObjectNode => {
+								const held = values.slice(i, (i += isPair ? 2 : 1))
+								return {
+									...object,
+									props: [
+										{
+											key: "k",
+											optional: false,
+											node: unionOf(held.map(unitOf))
+										},
+										...object.props
+									]
+								}
+							})
+						)
+					}),
 				fc.record({
 					kind: fc.constant("narrow" as const),
 					node,
