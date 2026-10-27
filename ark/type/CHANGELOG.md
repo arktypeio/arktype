@@ -84,6 +84,12 @@ A second right bound throws `Expression number must have at most one right bound
 
 Thanks to @jkugsiya for #1692.
 
+### Write an `expression` that parses back
+
+A Type a string definition can write has an `expression` that parses back to it:
+
+- A pattern is written as its source with each `/` escaped, where it was its RegExp's `toString()`, which leaves a `/` in a class unescaped and writes an empty pattern `(?:)`. So `type("/[\\/]/").expression` and `string.base64`'s are `/[\/]/` and `/^(?:[\d+\/A-Za-z]{4})*...$/`, where the first `/` in the class ended the literal they printed, and `type("//").expression` is `//`.
+
 ### Leave out a number or Date option config already sets
 
 A `domain` schema's `numberAllowsNaN` or `numberAllowsInfinity`, or a `Date` `proto`'s `dateAllowsInvalid`, set to `false` where config leaves it `false` is left out, as it is when unset, so the two are equal. `number.safe`, which set `numberAllowsNaN: false`, now equals `-9007199254740991 <= number <= 9007199254740991`, and its `json` no longer lists the option.
