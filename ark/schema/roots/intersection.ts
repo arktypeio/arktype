@@ -442,7 +442,17 @@ export const Intersection = {
 
 const writeIntersectionExpression = (node: Intersection.Node) => {
 	const basis = writtenBasisOf(node)
-	const prestructurals = writtenPrestructuralsOf(node)
+	// an operand has at most one right comparator, so a != past the first is
+	// written as an operand of its own, as in `number > 0 & number != 5`
+	let prestructurals = writtenPrestructuralsOf(node)
+	let excluded = prestructurals.filter(isNotEqual)
+	if (excluded.length) {
+		prestructurals = prestructurals.filter(n => !isNotEqual(n))
+		if (!prestructurals.some(isComparator)) {
+			prestructurals = [...prestructurals, excluded[0]]
+			excluded = excluded.slice(1)
+		}
+	}
 
 	const basisExpression =
 		basis && !node.prestructurals.some(n => n.impl.obviatesBasisExpression) ?
@@ -469,28 +479,32 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 			"[]"
 		:	`${basisExpression}${basisExpression && refinementsExpression ? " " : ""}${refinementsExpression}`
 
-	const expression =
+	let expression =
 		node.structure ?
 			fullExpression ?
 				`${node.structure.expression}${basis ? " & " : " "}${fullExpression}`
 			:	node.structure.expression
 		:	fullExpression || "unknown"
 
-	if (!lower) return expression
-	const limit = lower.expression.slice(lower.comparator.length + 1)
-	// what it bounds is grouped if it intersects patterns or has a comparator
-	// of its own, as in `0 < (number != 5) < 10`
-	const operand =
-		(
-			expression.includes(" & ") ||
-			prestructurals.some(
-				n => n.kind === "notEqual" || n.kind === "notEqualLength"
-			)
-		) ?
-			`(${expression})`
-		:	expression
-	return `${limit} ${lower.comparator === ">" ? "<" : "<="} ${operand} ${upper.expression}`
+	if (lower) {
+		const limit = lower.expression.slice(lower.comparator.length + 1)
+		// what it bounds is grouped if it intersects patterns
+		const operand = expression.includes(" & ") ? `(${expression})` : expression
+		expression = `${limit} ${lower.comparator === ">" ? "<" : "<="} ${operand} ${upper.expression}`
+	}
+
+	// a case a union discriminates by domain has no basis of its own
+	for (const n of excluded)
+		expression += ` & ${(node.basis ?? n.impliedBasis).nestedExpression} ${n.expression}`
+
+	return expression
 }
+
+const isNotEqual = (node: nodeOfKind<PrestructuralKind>) =>
+	node.kind === "notEqual" || node.kind === "notEqualLength"
+
+const isComparator = (node: nodeOfKind<PrestructuralKind>) =>
+	node.kind !== "pattern" && node.kind !== "divisor"
 
 const isLimit = (
 	node: nodeOfKind<PrestructuralKind>,

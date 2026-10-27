@@ -444,8 +444,8 @@ contextualize(() => {
 
 		it("union of ranges meeting at a value", () => {
 			const T = type("0 < number < 5 | 5 < number < 10")
-			attest(T.expression).snap("0 < (number != 5) < 10")
-			attest(type.raw(T.expression).json).equals(T.json)
+			attest(T.expression).snap("0 < number < 10 & number != 5")
+			attest(type("0 < number < 10 & number != 5").json).equals(T.json)
 		})
 
 		it("union of ranges excluding several values", () => {
@@ -515,9 +515,9 @@ contextualize(() => {
 		})
 
 		it("intersection with an including bound", () => {
-			attest(type("number != 0 & number > -1").expression).snap(
-				"number > -1 != 0"
-			)
+			const T = type("number != 0 & number > -1")
+			attest(T.expression).snap("number > -1 & number != 0")
+			attest(type.raw(T.expression).json).equals(T.json)
 		})
 
 		it("intersection with a bound at the value", () => {
@@ -557,6 +557,7 @@ contextualize(() => {
 			const T = type("number != 10 & number != 2")
 			attest(T.json).snap({ domain: "number", notEqual: [2, 10] })
 			attest(T.json).equals(type("number != 2 & number != 10").json)
+			attest(T.expression).snap("number != 2 & number != 10")
 		})
 
 		it("subtype", () => {
