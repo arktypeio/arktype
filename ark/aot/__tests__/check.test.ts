@@ -4,7 +4,7 @@ import { check } from "@ark/aot/internal/check.ts"
 import { spawnSync } from "node:child_process"
 import { writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { runCli, writeFixture } from "./utils.ts"
+import { runCli, tempDir, writeFixture } from "./utils.ts"
 
 const cwd = fromHere("checked")
 
@@ -26,6 +26,24 @@ contextualize(function (this: Mocha.Suite) {
 			"main.ts:2:18  accepted",
 			"main.ts:3:18  accepted",
 			"2 sites in 1 file: 2 accepted (100.0%)"
+		])
+	})
+
+	it("checks a fixture as its own project under a directory reading options", () => {
+		// as a temp dir holding a package.json and a config calling the plugin
+		const parent = writeFixture({
+			"package.json": `{ "dependencies": { "puppeteer": "1" } }`,
+			"base.ts": `import { precompile } from "@ark/aot/unplugin"\nexport const configOf = opts => ({ plugins: [precompile.vite({ ...opts })] })\n`
+		})
+		const root = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"\nexport const A = type("string")\n`
+			},
+			tempDir("ark-precompile-", parent)
+		)
+		attest(check([], { cwd: root }).lines).snap([
+			"main.ts:2:18  accepted",
+			"1 site in 1 file: 1 accepted (100.0%)"
 		])
 	})
 
