@@ -14,7 +14,7 @@ const darkColorRegex = type(`/^(${join(options, "|")})Dark$/`)
 const literalValues = <t>(t: type.Any<t>): t[] => {
 	const literals: unknown[] = []
 	for (const branch of t.internal.branches) {
-		if (branch.hasKind("unit")) {
+		if (branch.is("unit")) {
 			literals.push(branch.unit)
 		}
 	}

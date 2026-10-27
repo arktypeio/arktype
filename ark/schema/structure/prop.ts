@@ -17,7 +17,7 @@ import type { RootKind } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
 	applyValue,
-	traverseKey,
+	travKey,
 	type AliasDepth,
 	type InternalTraversal
 } from "../shared/traversal.ts"
@@ -37,7 +37,7 @@ export declare namespace Prop {
 	export interface Declaration<kind extends Kind = Kind> {
 		kind: kind
 		prerequisite: object
-		openIntersection: true
+		stacks: true
 		childKind: RootKind
 	}
 }
@@ -55,77 +55,74 @@ export abstract class BaseProp<
 		return this.kind === "optional"
 	}
 
-	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
+	implied: BaseRoot = $ark.kw.object.internal
 
 	get serializedKey(): string {
 		return compileSerializedValue(this.key)
 	}
 
-	get compiledKey(): string {
+	/** its key as a path prints it, a symbol by its name */
+	get keyStr(): string {
 		return typeof this.key === "string" ? this.key : printable(this.key)
 	}
 
-	protected override initFlatRefs(): void {
-		this.cache.flatRefs = flatRefsAt(this.key, this.value)
-		this.cache.flatMorphs = []
+	protected override initFlat(): void {
+		this.c.flatRefs = flatRefsAt(this.key, this.value)
+		this.c.flatMorphs = []
 	}
 
-	protected override _transform(
+	protected override _tf(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
 	): BaseNode | null {
 		ctx.path.push(this.key)
-		const result = super._transform(mapper, ctx)
+		const result = super._tf(mapper, ctx)
 		ctx.path.pop()
 		return result
 	}
 
-	hasDefault(): this is Optional.Node.withDefault {
+	/** whether it's an optional prop with a default */
+	hasDef(): this is Optional.Node.withDefault {
 		return "default" in this.inner
 	}
 
-	traverseAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
+	tAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
 		if (this.key in data) {
 			// ctx will be undefined if this node isn't context-dependent
-			return traverseKey(
+			return travKey(
 				this.key,
-				() => this.value.traverseAllows((data as any)[this.key], ctx),
+				() => this.value.tAllows((data as any)[this.key], ctx),
 				ctx
 			)
 		}
 		return this.optional
 	}
 
-	traverseApply(data: object, ctx: InternalTraversal): void {
+	tApply(data: object, ctx: InternalTraversal): void {
 		if (this.key in data) {
-			traverseKey(
+			travKey(
 				this.key,
 				() => applyValue(this.value, (data as any)[this.key], ctx),
 				ctx
 			)
-		} else if (this.hasKind("required")) {
-			traverseKey(
-				this.key,
-				() => ctx.errorFromNode(this.errorContext, data),
-				ctx
-			)
-		}
+		} else if (this.is("required"))
+			travKey(this.key, () => ctx.nodeError(this.errorCtx, data), ctx)
 	}
 
 	compile(js: NodeCompiler): void {
-		const expression = this.compileExpression(js)
+		const expression = this.jsExpression(js)
 		if (expression !== undefined) {
 			js.return(expression)
 			return
 		}
 		const key = js.serialize(this.key)
 		js.if(`${key} in data`, () =>
-			js.traverseKey(key, `data${js.prop(this.key)}`, this.value)
+			js.travKey(key, `data${js.prop(this.key)}`, this.value)
 		)
 
-		if (this.hasKind("required")) {
+		if (this.is("required")) {
 			js.else(() =>
-				js.traversalKind === "Apply" ?
+				js.trav === "Apply" ?
 					js.if(js.error(this, key), () => js.return(false))
 				:	js.return(false)
 			)
@@ -134,30 +131,27 @@ export abstract class BaseProp<
 		js.return(true)
 	}
 
-	compileExpression(js: NodeCompiler): string | undefined {
+	jsExpression(js: NodeCompiler): string | undefined {
 		const key = js.serialize(this.key)
 		const value = `data${js.prop(this.key)}`
 		// a value no branch of which allows undefined fails a missing key too
 		if (
-			this.hasKind("required") &&
-			(js.traversalKind === "Allows" ||
-				(!this.value.transforms && !this.value.entersAlias)) &&
+			this.is("required") &&
+			(js.trav === "Allows" || (!this.value.tfs && !this.value.entersAlias)) &&
 			this.value.branches.every(branch => {
 				// Allows checks a morph's input
-				const input = branch.hasKind("morph") ? branch.inner.in : branch
-				const basis = input?.hasKind("intersection") ? input.basis : input
+				const input = branch.is("morph") ? branch.head : branch
+				const basis = input?.is("intersection") ? input.basis : input
 				return (
-					!!basis?.isBasis() &&
-					!(basis.hasKind("unit") && basis.unit === undefined)
+					!!basis?.isBasis() && !(basis.is("unit") && basis.unit === undefined)
 				)
 			})
 		) {
-			if (js.traversalKind === "Apply") {
+			if (js.trav === "Apply") {
 				// a value a condition decides is checked by it before it's applied,
 				// a union by its branches
 				const condition =
-					isDecidedByAllows(this.value) &&
-					this.value.compileCondition?.(js, value)
+					isDecidedByAllows(this.value) && this.value.jsCond?.(js, value)
 				const site = condition && js.failingSiteOf?.(this)
 				const fails =
 					this.value.isBasis() ? `!${js.error(this, key)}`
@@ -166,17 +160,16 @@ export abstract class BaseProp<
 				return condition ? `${condition} || ${fails}` : fails
 			}
 			// a value whose predicates read ctx is checked at its key's path
-			if (this.value.allowsNeedsCtx && this.value.allowsNeedsTraversal) return
+			if (this.value.allowsCtx && this.value.checksCtx) return
 			return (
-				this.value.compileCondition?.(js, value) ??
-				js.invoke(this.value, { arg: value })
+				this.value.jsCond?.(js, value) ?? js.inv(this.value, { arg: value })
 			)
 		}
 		const fails = js.keyFails(key, value, this.value)
 		if (fails === undefined) return
 		return (
-			this.hasKind("optional") ? `!(${key} in data) || !(${fails})`
-			: js.traversalKind === "Apply" ?
+			this.is("optional") ? `!(${key} in data) || !(${fails})`
+			: js.trav === "Apply" ?
 				`${key} in data ? !(${fails}) : !${js.error(this, key)}`
 			:	`${key} in data && !(${fails})`
 		)

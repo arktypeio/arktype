@@ -16,14 +16,14 @@ export class ArkFirstIssueTraversal extends ArkTraversal {
 		return true
 	}
 
-	override finalize(onFail?: FailHandler | null): unknown {
+	override fin(onFail?: FailHandler | null): unknown {
 		const errors = this._errors as ArkErrors | undefined
 		if (errors && errors._.length > 1) {
 			errors._.length = 1
 			// a callback reading ctx.errors grouped those dropped
 			errors._init(this.config)
 		}
-		return super.finalize(onFail)
+		return super.fin(onFail)
 	}
 }
 
@@ -35,10 +35,9 @@ export class UndetailedErrors extends ArkErrors {
 	// written once read, with every field an error has
 	override get issues(): readonly ArkError[] {
 		const issues = this._
-		for (let i = 0; i < issues.length; i++) {
-			if (!isArkError(issues[i]))
-				issues[i] = invalidError(issues[i], $ark.resolvedConfig!)
-		}
+		for (let i = 0; i < issues.length; i++)
+			if (!isArkError(issues[i])) issues[i] = invalidError(issues[i], $ark.cfg!)
+
 		return issues
 	}
 
@@ -71,7 +70,7 @@ export class UndetailedTraversal extends Traversal {
 	}
 
 	// a root apply finalizes it only once data is invalid
-	override finalize(onFail?: FailHandler | null): unknown {
+	override fin(onFail?: FailHandler | null): unknown {
 		return rejectUndetailed(null, this.root, this.config, onFail)
 	}
 }

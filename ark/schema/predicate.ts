@@ -40,8 +40,8 @@ export declare namespace Predicate {
 		extends declareNode<{
 			kind: "predicate"
 			inner: Inner
-			openIntersection: true
-			errorContext: ErrorContext
+			stacks: true
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = PredicateNode
@@ -50,44 +50,44 @@ export declare namespace Predicate {
 const implementation: nodeImplementationOf<Predicate.Declaration> =
 	implementNode<Predicate.Declaration>({
 		kind: "predicate",
-		ownsError: true,
-		collapseKey: "predicate",
+		ownErr: true,
+		bareKey: "predicate",
 		keys: {
 			predicate: {}
 		},
 		defaults: {
 			description: describePredicate
 		},
-		openIntersection: true
+		stacks: true
 	})
 
 export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
-	impliedBasis = null
+	implied = null
 
 	expression: string = baseNameOf(this.predicate)
-	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
+	tAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
 		// called detached, as compiled code calls it
 		const predicate = this.predicate
 		return predicate(data, ctx as never)
 	}
 
-	errorContext: Predicate.ErrorContext = {
+	errorCtx: Predicate.ErrorContext = {
 		code: "predicate",
 		description: this.description,
 		predicate: this.predicate,
 		meta: this.meta
 	}
 
-	traverseApply(data: unknown, ctx: InternalTraversal): void {
-		const errorCount = ctx.currentErrorCount
+	tApply(data: unknown, ctx: InternalTraversal): void {
+		const errN = ctx.errN
 		const predicate = this.predicate
-		if (!predicate(data, ctx.external) && ctx.currentErrorCount === errorCount)
-			ctx.errorFromNode(this.errorContext, data)
+		if (!predicate(data, ctx.external) && ctx.errN === errN)
+			ctx.nodeError(this.errorCtx, data)
 	}
 
 	compile(js: NodeCompiler): void {
 		const condition = `${js.ref(this.predicate)}(data, ctx)`
-		if (js.traversalKind === "Allows") {
+		if (js.trav === "Allows") {
 			js.return(condition)
 			return
 		}
@@ -96,18 +96,18 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 			return
 		}
 
-		js.initializeErrorCount()
+		js.initErrCount()
 		js.if(
 			// only add the default error if the predicate didn't add one itself
-			`!${condition} && ctx.currentErrorCount === errorCount`,
+			`!${condition} && ctx.errN === errN`,
 			() => js.return(`!${js.error(this)}`)
 		)
-		js.return("!ctx.failFast || ctx.currentErrorCount === errorCount")
+		js.return("!ctx.failFast || ctx.errN === errN")
 	}
 }
 
 export const Predicate = {
-	implementation,
+	impl: implementation,
 	Node: PredicateNode
 }
 

@@ -38,7 +38,8 @@ export type FailHandler = (errors: never) => unknown
 
 export type BranchTraversal = {
 	error: ArkIssue | undefined
-	errorCount: number
+	/** the errors the branch has added */
+	errN: number
 }
 
 export class InternalTraversal implements FailureContext {
@@ -68,21 +69,33 @@ export class InternalTraversal implements FailureContext {
 	declare config: ResolvedConfig
 
 	declare branches: BranchTraversal[]
-	// what it tracks of the cyclic nodes it enters, once it enters one
-	declare resolutions: Resolutions | undefined
-	// data a root allowed within the bounds is a tree, so each path is transformed
-	declare tracksMorphs: boolean
-	declare transformedById:
-		| { [id in string]?: Map<unknown, unknown> }
-		| undefined
+	/** what it tracks of the cyclic nodes it enters, once it enters one */
+	declare res: Resolutions | undefined
+	/**
+	 * whether data within its bounds is a tree, so each path is transformed
+	 * data a root allowed within the bounds is a tree, so each path is transformed
+	 */
+	declare isTree: boolean
+	/** each cyclic node's transformed data, keyed by the input it transformed */
+	declare tfdById: { [id in string]?: Map<unknown, unknown> } | undefined
 
-	// data is read from what a morph received, since root is the input
-	declare received: unknown
-	declare receivedDepth: number
-	// a piped node is transformed once Apply finds it valid
-	declare checksOnly: boolean
-	// a morph fails by returning any error ctx.error added during its call
-	declare returnedFrom: number | undefined
+	/**
+	 * the data the innermost running morph received
+	 * data is read from what a morph received, since root is the input
+	 */
+	declare recv: unknown
+	/** how deep in the root's path the data a morph received is */
+	declare recvAt: number
+	/**
+	 * whether a piped node is only checked, to be transformed once Apply finds it valid
+	 * a piped node is transformed once Apply finds it valid
+	 */
+	declare chkOnly: boolean
+	/**
+	 * the error count a running morph started from, since it fails by returning any error added after
+	 * a morph fails by returning any error ctx.error added during its call
+	 */
+	declare retFrom: number | undefined
 	// a valid input's transforms write into it
 	declare inPlace?: true
 
@@ -92,20 +105,20 @@ export class InternalTraversal implements FailureContext {
 		this.root = root
 		this.config = config
 		this.branches = []
-		this.resolutions = undefined
-		this.tracksMorphs = true
-		this.transformedById = undefined
-		this.received = root
-		this.receivedDepth = 0
-		this.checksOnly = false
-		this.returnedFrom = undefined
+		this.res = undefined
+		this.isTree = true
+		this.tfdById = undefined
+		this.recv = root
+		this.recvAt = 0
+		this.chkOnly = false
+		this.retFrom = undefined
 	}
 
 	/**
 	 * #### whether {@link currentBranch} (or the traversal root, outside a union) has one or more errors
 	 */
 	hasError(): boolean {
-		return this.currentErrorCount !== 0
+		return this.errN !== 0
 	}
 
 	get currentBranch(): BranchTraversal | undefined {
@@ -114,32 +127,36 @@ export class InternalTraversal implements FailureContext {
 			:	this.branches[this.branches.length - 1]
 	}
 
-	finalize(onFail?: FailHandler | null): unknown {
+	/** its result: the data, or its errors passed to `onFail` if it has any */
+	fin(onFail?: FailHandler | null): unknown {
 		if (this.hasError())
 			return onFail ? onFail(this._errors as never) : this._errors
 
 		return this.root
 	}
 
-	get currentErrorCount(): number {
+	/** how many errors the current union branch has, or the traversal has outside a union */
+	get errN(): number {
 		const branches = this.branches
 		return branches.length === 0 ?
 				(this._errors?.count ?? 0)
-			:	branches[branches.length - 1].errorCount
+			:	branches[branches.length - 1].errN
 	}
 
 	get failFast(): boolean {
 		return this.branches.length !== 0
 	}
 
-	pushBranch(): void {
+	/** starts counting a union branch's errors */
+	pushBr(): void {
 		this.branches.push({
 			error: undefined,
-			errorCount: 0
+			errN: 0
 		})
 	}
 
-	popBranch(): BranchTraversal | undefined {
+	/** stops counting the innermost union branch's errors, returning it */
+	popBr(): BranchTraversal | undefined {
 		return this.branches.pop()
 	}
 
@@ -154,14 +171,16 @@ export class InternalTraversal implements FailureContext {
 	}
 
 	/**
+	 * an error from a node's context and the data it rejected
+	 *
 	 * @internal a node's error, which arktype's traversal writes from its
 	 * context, and this one, checking Allows for arktype, adds as an issue
 	 */
-	errorFromNode<input extends NodeErrorContextInput>(
+	nodeError<input extends NodeErrorContextInput>(
 		input: input,
 		data: unknown
 	): ArkError<input["code"]>
-	errorFromNode(input: NodeErrorContextInput, data: unknown): ArkError {
+	nodeError(input: NodeErrorContextInput, data: unknown): ArkError {
 		return this.addError({
 			code: input.code,
 			path: this.path.slice(),
@@ -244,7 +263,7 @@ export class InternalTraversal implements FailureContext {
 	failBranch(error: ArkIssue): void {
 		const branch = this.currentBranch!
 		branch.error = error
-		branch.errorCount++
+		branch.errN++
 	}
 }
 
@@ -264,8 +283,8 @@ export class Traversal extends InternalTraversal {
 	 * ✅ the value at {@link path}, as transformed by any morphs that have already run
 	 */
 	get data(): unknown {
-		let result: any = this.received
-		for (let i = this.receivedDepth; i < this.path.length; i++)
+		let result: any = this.recv
+		for (let i = this.recvAt; i < this.path.length; i++)
 			result = result?.[this.path[i]]
 
 		return result
@@ -312,7 +331,7 @@ export class Traversal extends InternalTraversal {
 		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
 	>
 	error(input: ArkErrorInput): ArkError {
-		this.returnedFrom ??= errorsOf(this).count
+		this.retFrom ??= errorsOf(this).count
 		return this.raise(input)
 	}
 
@@ -345,9 +364,9 @@ export class FirstIssueTraversal extends Traversal {
 		return true
 	}
 
-	override finalize(onFail?: FailHandler | null): unknown {
+	override fin(onFail?: FailHandler | null): unknown {
 		this._errors?._.splice(1)
-		return super.finalize(onFail)
+		return super.fin(onFail)
 	}
 }
 
@@ -375,13 +394,13 @@ export const applyRejected = (
 	ctor: typeof InternalTraversal
 ): unknown => {
 	const ctx = new ctor(data, config)
-	node.traverseApply(data, ctx)
-	return ctx.finalize(onFail)
+	node.tApply(data, ctx)
+	return ctx.fin(onFail)
 }
 
 const receive = (ctx: InternalTraversal, data: unknown): void => {
-	ctx.received = data
-	ctx.receivedDepth = ctx.path.length
+	ctx.recv = data
+	ctx.recvAt = ctx.path.length
 }
 
 // reads predicate, or for pipe.try the morph that threw
@@ -416,20 +435,20 @@ export const callMorph = (
 	morph: Morph,
 	data: unknown
 ): unknown => {
-	const { received, receivedDepth } = ctx
+	const { recv, recvAt } = ctx
 	receive(ctx, data)
-	ctx.returnedFrom = undefined
+	ctx.retFrom = undefined
 	const result = morph(data as never, ctx as never)
-	ctx.received = received
-	ctx.receivedDepth = receivedDepth
-	return ctx.returnedFrom === undefined ? result : returned(ctx, result)
+	ctx.recv = recv
+	ctx.recvAt = recvAt
+	return ctx.retFrom === undefined ? result : returned(ctx, result)
 }
 
 // a morph returning errors ctx.error added fails with them
 const returned = (ctx: InternalTraversal, result: unknown): unknown =>
 	(
 		typeof result === "object" &&
-		ctx._errors!._.includes(result as never, ctx.returnedFrom)
+		ctx._errors!._.includes(result as never, ctx.retFrom)
 	) ?
 		ctx._errors
 	:	result
@@ -439,15 +458,15 @@ export const transform = (
 	node: BaseNode,
 	data: unknown
 ): unknown =>
-	node.isTransformedById ?
-		transformResolution(ctx, node.id, data, node.traverseTransform!, node)
+	node.tfsById ?
+		transformResolution(ctx, node.id, data, node.tTransform!, node)
 	:	transformAcyclic(ctx, node, data)
 
 const transformAcyclic = (
 	ctx: InternalTraversal,
 	node: BaseNode,
 	data: unknown
-): unknown => transformed(ctx, node.traverseTransform!(data, ctx), data)
+): unknown => transformed(ctx, node.tTransform!(data, ctx), data)
 
 // a transform that doesn't require ctx returns its errors
 export const transformed = (
@@ -456,15 +475,15 @@ export const transformed = (
 	data: unknown
 ): unknown => {
 	if (!(result instanceof TransformErrors)) return result
-	addMorphErrors(ctx, result)
+	addMorphErrs(ctx, result)
 	return data
 }
 
 // the one pipe a node needs
 export const pipeOf = (node: BaseNode): TraversePipe =>
-	node.includesAlias ? pipe
-	: node.transforms ? pipeTransformed
-	: node.allowsNeedsCtx ? pipeChecked
+	node.hasAlias ? pipe
+	: node.tfs ? pipeTransformed
+	: node.allowsCtx ? pipeChecked
 	: pipeApplied
 
 export type TraversePipe = (
@@ -479,7 +498,7 @@ export const pipeChecked: TraversePipe = (ctx, node, data) =>
 // a node reading no pipe state is applied as is
 export const pipeApplied: TraversePipe = (ctx, node, data) => {
 	if (node.allows(data)) return data
-	node.traverseApply(data, ctx)
+	node.tApply(data, ctx)
 	return errorsOf(ctx)
 }
 
@@ -489,19 +508,19 @@ export const pipeTransformed: TraversePipe = (ctx, node, data) =>
 	:	errorsOf(ctx)
 
 export const pipe: TraversePipe = (ctx, node, data) => {
-	if (!node.includesAlias) return pipeOf(node)(ctx, node, data)
+	if (!node.hasAlias) return pipeOf(node)(ctx, node, data)
 	if (!node.allows(data)) {
 		applyPipedResolution(ctx, node, data)
 		return errorsOf(ctx)
 	}
-	if (!node.transforms) return data
+	if (!node.tfs) return data
 	// a morph's output can share objects an earlier pass cached
-	const { transformedById, tracksMorphs } = ctx
-	ctx.transformedById = undefined
-	ctx.tracksMorphs = true
+	const { tfdById, isTree } = ctx
+	ctx.tfdById = undefined
+	ctx.isTree = true
 	const result = transformPiped(ctx, node, data, transform)
-	ctx.transformedById = transformedById
-	ctx.tracksMorphs = tracksMorphs
+	ctx.tfdById = tfdById
+	ctx.isTree = isTree
 	return result
 }
 
@@ -511,7 +530,7 @@ const allowsPiped = (
 	data: unknown
 ): boolean => {
 	// Allows would detach a contextual node's predicates from this path
-	if (node.allowsNeedsCtx) return applyPiped(ctx, node, data)
+	if (node.allowsCtx) return applyPiped(ctx, node, data)
 	if (node.allows(data)) return true
 	applyPiped(ctx, node, data)
 	return false
@@ -523,12 +542,12 @@ const transformPiped = (
 	data: unknown,
 	transformNode: typeof transform
 ): unknown => {
-	const { received, receivedDepth } = ctx
-	const errorCount = ctx.currentErrorCount
+	const { recv, recvAt } = ctx
+	const errN = ctx.errN
 	const result = transformNode(ctx, node, data)
-	ctx.received = received
-	ctx.receivedDepth = receivedDepth
-	return ctx.currentErrorCount > errorCount ? errorsOf(ctx) : result
+	ctx.recv = recv
+	ctx.recvAt = recvAt
+	return ctx.errN > errN ? errorsOf(ctx) : result
 }
 
 const applyPiped = (
@@ -536,15 +555,15 @@ const applyPiped = (
 	node: BaseNode,
 	data: unknown
 ): boolean => {
-	const errorCount = ctx.currentErrorCount
-	const { received, receivedDepth, checksOnly } = ctx
+	const errN = ctx.errN
+	const { recv, recvAt, chkOnly } = ctx
 	receive(ctx, data)
-	ctx.checksOnly = true
-	node.traverseApply(data, ctx)
-	ctx.checksOnly = checksOnly
-	ctx.received = received
-	ctx.receivedDepth = receivedDepth
-	return ctx.currentErrorCount === errorCount
+	ctx.chkOnly = true
+	node.tApply(data, ctx)
+	ctx.chkOnly = chkOnly
+	ctx.recv = recv
+	ctx.recvAt = recvAt
+	return ctx.errN === errN
 }
 
 // a morph's output is new data, tracked from the cyclic node's root
@@ -553,28 +572,28 @@ const applyPipedResolution = (
 	node: BaseNode,
 	data: unknown
 ): void => {
-	const { received, receivedDepth, checksOnly } = ctx
+	const { recv, recvAt, chkOnly } = ctx
 	receive(ctx, data)
-	ctx.checksOnly = true
+	ctx.chkOnly = true
 	const piped = traversalOf(ctx, data)
-	piped.checksOnly = true
+	piped.chkOnly = true
 	const { _errors } = applyCyclic(node, data, piped)
 	if (_errors) addErrors(ctx, _errors)
-	ctx.checksOnly = checksOnly
-	ctx.received = received
-	ctx.receivedDepth = receivedDepth
+	ctx.chkOnly = chkOnly
+	ctx.recv = recv
+	ctx.recvAt = recvAt
 }
 
 // Apply transforms valid values outside branches and pipes
 export const transformsValid = (ctx: InternalTraversal): boolean =>
-	ctx.branches.length === 0 && !ctx.checksOnly
+	ctx.branches.length === 0 && !ctx.chkOnly
 
 // a transform Apply runs returns or adds its errors
 export const transformedInApply = (
 	ctx: InternalTraversal,
 	result: unknown
 ): void => {
-	if (result instanceof TransformErrors) addMorphErrors(ctx, result)
+	if (result instanceof TransformErrors) addMorphErrs(ctx, result)
 }
 
 // whether data was allowed and transformed instead of applied
@@ -584,13 +603,13 @@ export const transformIfAllowed = (
 	data: unknown
 ): boolean => {
 	if (!transformsValid(ctx)) return false
-	if (node.includesAlias) {
+	if (node.hasAlias) {
 		const untracked = allowsAcyclic(node, data)
 		if (!(untracked ?? allowsInTraversal(node, data, traversalOf(ctx, data))))
 			return false
 		// as at a root, allowed data is a tree
-		ctx.tracksMorphs = untracked === undefined
-		ctx.transformedById = undefined
+		ctx.isTree = untracked === undefined
+		ctx.tfdById = undefined
 	} else if (!allowsInBranch(ctx, node, data)) return false
 	transformedInApply(ctx, transform(ctx, node, data))
 	return true
@@ -602,8 +621,8 @@ export const allowsInBranch = (
 	node: BaseNode,
 	data: unknown
 ): boolean =>
-	node.allowsNeedsTraversal ?
-		allowsInBranchBy(ctx, node.traverseAllows, data, node)
+	node.checksCtx ?
+		allowsInBranchBy(ctx, node.tAllows, data, node)
 	:	node.allows(data)
 
 // takes Allows, since a precompiled validator has no node
@@ -614,11 +633,11 @@ export const allowsInBranchBy = (
 	node?: BaseNode
 ): boolean => {
 	const pathLength = ctx.path.length
-	ctx.pushBranch()
+	ctx.pushBr()
 	const allowed = allows.call(node, data, ctx)
 	// compiled Allows returns false without popping the keys it pushed
 	ctx.path.length = pathLength
-	return ctx.popBranch()!.errorCount === 0 && allowed
+	return ctx.popBr()!.errN === 0 && allowed
 }
 
 // what an Allows returns where data fails, through a call V8 has no feedback
@@ -678,12 +697,12 @@ export const addErrors = (
 	else mergeIssues(target, errors, ctx.path)
 }
 
-export const addMorphErrors = (
+export const addMorphErrs = (
 	ctx: InternalTraversal,
 	errors: TransformErrors,
 	key?: PropertyKey
 ): void => {
-	const { path, received, receivedDepth } = ctx
+	const { path, recv, recvAt } = ctx
 	for (const { reversedPath, result, data } of errors.entries) {
 		ctx.path = [...path]
 		if (key !== undefined) ctx.path.push(key)
@@ -693,8 +712,8 @@ export const addMorphErrors = (
 		addErrors(ctx, result)
 	}
 	ctx.path = path
-	ctx.received = received
-	ctx.receivedDepth = receivedDepth
+	ctx.recv = recv
+	ctx.recvAt = recvAt
 }
 
 export const transformResolution = (
@@ -704,9 +723,9 @@ export const transformResolution = (
 	transform: TraverseTransform,
 	node?: BaseNode
 ): unknown => {
-	if (!ctx.tracksMorphs || !hasDomain(data, "object"))
+	if (!ctx.isTree || !hasDomain(data, "object"))
 		return transformed(ctx, transform.call(node, data, ctx), data)
-	const transformedByData = ((ctx.transformedById ??= {})[id] ??= new Map())
+	const transformedByData = ((ctx.tfdById ??= {})[id] ??= new Map())
 	if (transformedByData.has(data)) {
 		const result = transformedByData.get(data)
 		if (result !== transforming) return result
@@ -739,16 +758,20 @@ class Resolutions {
 	// reused by depth, so entering doesn't allocate
 	frames: ResolvingFrame[] | undefined = undefined
 	depth = 0
-	untrackedVisits = 0
-	recordedFailure = false
-	enteredCount = 0
+	/** how many nodes were entered while untracked, bounded so a cycle can't run forever */
+	visits = 0
+	/** whether a failure was recorded, so untracked lookups still find it */
+	hasFailed = false
+	/** how many resolutions were entered, numbering each */
+	nEntered = 0
 	assumedFrom = Number.POSITIVE_INFINITY
 	assumed: unknown[] | undefined = undefined
-	reachedInvalid: InvalidResolution | undefined = undefined
+	/** the first reported invalid resolution reached */
+	invalid: InvalidResolution | undefined = undefined
 }
 
 const resolutionsOf = (ctx: InternalTraversal): Resolutions =>
-	(ctx.resolutions ??= new Resolutions())
+	(ctx.res ??= new Resolutions())
 
 // undefined once entered, else whether data is known or assumed valid
 export const enterResolution = (
@@ -756,16 +779,13 @@ export const enterResolution = (
 	id: string,
 	data: unknown
 ): boolean | undefined => {
-	const resolutions = resolutionsOf(ctx)
+	const res = resolutionsOf(ctx)
 	// untracked, every state is a failure, so none is looked up
-	const states =
-		resolutions.tracked || resolutions.recordedFailure ?
-			resolutions.seen[id]
-		:	undefined
+	const states = res.tracked || res.hasFailed ? res.seen[id] : undefined
 	const state = states?.get(data)
 	if (state !== undefined) {
 		if (typeof state === "number") {
-			if (state < resolutions.assumedFrom) resolutions.assumedFrom = state
+			if (state < res.assumedFrom) res.assumedFrom = state
 			return true
 		}
 		if (typeof state === "boolean") return state
@@ -774,40 +794,36 @@ export const enterResolution = (
 			return false
 		}
 		if (state.reported) {
-			resolutions.reachedInvalid ??= state
+			res.invalid ??= state
 			return false
 		}
 		// its errors were discarded with a branch, so it's traversed again
 	}
 	if (
-		!resolutions.tracked &&
-		(resolutions.depth >= maxAliasDepth ||
-			++resolutions.untrackedVisits > maxAliasVisits)
+		!res.tracked &&
+		(res.depth >= maxAliasDepth || ++res.visits > maxAliasVisits)
 	)
 		throw untrackedBound
-	const frame = ((resolutions.frames ??= [])[resolutions.depth++] ??= {
+	const frame = ((res.frames ??= [])[res.depth++] ??= {
 		id,
 		data,
 		entered: 0,
-		errorCount: 0,
-		outerReachedInvalid: undefined,
+		errN: 0,
+		outerInvalid: undefined,
 		assumedOuter: 0,
 		assumedLength: 0
 	})
 	frame.id = id
 	frame.data = data
-	frame.errorCount = ctx.currentErrorCount
-	if (!resolutions.tracked) return
-	;(states ?? (resolutions.seen[id] = new Map())).set(
-		data,
-		++resolutions.enteredCount
-	)
-	frame.entered = resolutions.enteredCount
-	frame.outerReachedInvalid = resolutions.reachedInvalid
-	resolutions.reachedInvalid = undefined
-	frame.assumedOuter = resolutions.assumedFrom
-	frame.assumedLength = (resolutions.assumed ??= []).length
-	resolutions.assumedFrom = Number.POSITIVE_INFINITY
+	frame.errN = ctx.errN
+	if (!res.tracked) return
+	;(states ?? (res.seen[id] = new Map())).set(data, ++res.nEntered)
+	frame.entered = res.nEntered
+	frame.outerInvalid = res.invalid
+	res.invalid = undefined
+	frame.assumedOuter = res.assumedFrom
+	frame.assumedLength = (res.assumed ??= []).length
+	res.assumedFrom = Number.POSITIVE_INFINITY
 	return
 }
 
@@ -816,33 +832,28 @@ export const exitResolution = (
 	ctx: InternalTraversal,
 	allowed?: boolean
 ): boolean => {
-	const resolutions = ctx.resolutions!
-	const frame = resolutions.frames![--resolutions.depth]
-	if (!resolutions.tracked) return allowed ?? exitUntracked(ctx, frame)
-	const reachedInvalid = resolutions.reachedInvalid
-	resolutions.reachedInvalid = frame.outerReachedInvalid
-	const valid =
-		allowed ??
-		(reachedInvalid === undefined && ctx.currentErrorCount === frame.errorCount)
+	const res = ctx.res!
+	const frame = res.frames![--res.depth]
+	if (!res.tracked) return allowed ?? exitUntracked(ctx, frame)
+	const invalid = res.invalid
+	res.invalid = frame.outerInvalid
+	const valid = allowed ?? (invalid === undefined && ctx.errN === frame.errN)
 	const data = frame.data
-	const states = resolutions.seen[frame.id]!
+	const states = res.seen[frame.id]!
 	// a primitive has no identity, so each place reports its own errors
 	if (typeof data === "object" ? data === null : typeof data !== "function") {
-		resolutions.assumedFrom = frame.assumedOuter
+		res.assumedFrom = frame.assumedOuter
 		states.delete(data)
 		return valid
 	}
 	const state: ResolutionState =
-		valid || allowed === false ?
-			valid
-		:	invalidResolution(ctx, reachedInvalid?.error)
-	const assumedFrom = resolutions.assumedFrom
-	resolutions.assumedFrom = frame.assumedOuter
-	const assumed = resolutions.assumed!
+		valid || allowed === false ? valid : invalidResolution(ctx, invalid?.error)
+	const assumedFrom = res.assumedFrom
+	res.assumedFrom = frame.assumedOuter
+	const assumed = res.assumed!
 	if (valid && assumedFrom < frame.entered) {
 		assumed.push(states, data)
-		if (assumedFrom < resolutions.assumedFrom)
-			resolutions.assumedFrom = assumedFrom
+		if (assumedFrom < res.assumedFrom) res.assumedFrom = assumedFrom
 		return true
 	}
 	// settle each result that assumed this one
@@ -853,8 +864,7 @@ export const exitResolution = (
 	}
 	assumed.length = frame.assumedLength
 	states.set(data, state)
-	if (typeof state === "object" && state.reported)
-		resolutions.reachedInvalid ??= state
+	if (typeof state === "object" && state.reported) res.invalid ??= state
 	return valid
 }
 
@@ -863,14 +873,11 @@ const exitUntracked = (
 	ctx: InternalTraversal,
 	frame: ResolvingFrame
 ): boolean => {
-	if (ctx.currentErrorCount === frame.errorCount) return true
+	if (ctx.errN === frame.errN) return true
 	if (!hasDomain(frame.data, "object")) return false
-	const resolutions = ctx.resolutions!
-	;(resolutions.seen[frame.id] ??= new Map()).set(
-		frame.data,
-		invalidResolution(ctx)
-	)
-	resolutions.recordedFailure = true
+	const res = ctx.res!
+	;(res.seen[frame.id] ??= new Map()).set(frame.data, invalidResolution(ctx))
+	res.hasFailed = true
 	return false
 }
 
@@ -932,14 +939,14 @@ export const applyCyclic = <ctx extends InternalTraversal>(
 	ctx: ctx
 ): ctx => {
 	// a rerun would transform each value Apply found valid again
-	if (node.transforms) {
+	if (node.tfs) {
 		applyResolution(node.trackedId, node, data, ctx)
 		return ctx
 	}
 	resolutionsOf(ctx).tracked = false
 	try {
 		// data reaching its root again is cyclic, exceeding the untracked bounds
-		node.traverseApply(data, ctx)
+		node.tApply(data, ctx)
 	} catch (e) {
 		if (e !== untrackedBound) throw e
 		ctx = traversalOf(ctx, data)
@@ -955,7 +962,7 @@ export const applyResolution = (
 	ctx: InternalTraversal
 ): void => {
 	if (enterResolution(ctx, id, data) !== undefined) return
-	node.traverseApply(data, ctx)
+	node.tApply(data, ctx)
 	exitResolution(ctx)
 }
 
@@ -983,26 +990,26 @@ export const applyMember = (
 	ctx: InternalTraversal,
 	member: BaseNode = node
 ): void =>
-	member.includesAlias ?
+	member.hasAlias ?
 		applyResolution(member.id, node, data, ctx)
-	:	node.traverseApply(data, ctx)
+	:	node.tApply(data, ctx)
 
 // applies data Allows rejects; transforms what it accepts
 export const applyValue = (
 	node: BaseNode,
 	data: unknown,
 	ctx: InternalTraversal,
-	transforms = true
+	tfs = true
 ): void => {
 	if (
-		node.transforms &&
-		(transforms && (node.includesMorph || node.includesAlias) ?
+		node.tfs &&
+		(tfs && (node.hasMorph || node.hasAlias) ?
 			transformIfAllowed(ctx, node, data)
 		:	allowsInBranch(ctx, node, data))
 	)
 		return
 	if (node.entersAlias) applyResolution(node.id, node, data, ctx)
-	else node.traverseApply(data, ctx)
+	else node.tApply(data, ctx)
 }
 
 // within the bounds, data is traversed as a tree; past the visit bound it may
@@ -1011,21 +1018,16 @@ export const allowsUntracked = (
 	node: BaseNode,
 	data: unknown
 ): boolean | undefined => {
-	if (
-		inProgress.definitions ||
-		inProgress.resolutions ||
-		node.allowsNeedsTraversal
-	)
-		return
+	if (inProgress.definitions || inProgress.res || node.checksCtx) return
 	const outerVisits = aliasVisits.count
 	const outerContinuation = continuation
 	const outerConfig = continuationConfig
 	aliasVisits.count = 0
 	continuation = undefined
-	continuationConfig = node.$.resolvedConfig
+	continuationConfig = node.$.cfg
 	let allowed: boolean
 	try {
-		allowed = node.traverseAllows(data as never, 0)
+		allowed = node.tAllows(data as never, 0)
 	} catch (e) {
 		aliasVisits.count = outerVisits
 		continuation = outerContinuation
@@ -1066,7 +1068,7 @@ const allowsInTraversal = (
 	node: BaseNode,
 	data: unknown,
 	ctx: InternalTraversal
-): boolean => node.traverseAllows(data as never, ctx) && !ctx.hasError()
+): boolean => node.tAllows(data as never, ctx) && !ctx.hasError()
 
 // entered while in progress, then whether it is valid, or why Apply found it invalid
 type ResolutionState = number | boolean | InvalidResolution
@@ -1080,8 +1082,9 @@ interface ResolvingFrame {
 	id: string
 	data: unknown
 	entered: number
-	errorCount: number
-	outerReachedInvalid: InvalidResolution | undefined
+	errN: number
+	/** the invalid resolution reached before entering this frame */
+	outerInvalid: InvalidResolution | undefined
 	assumedOuter: number
 	assumedLength: number
 }
@@ -1092,7 +1095,7 @@ const canFill = (placeholder: unknown, result: unknown): result is object =>
 	result !== null &&
 	(isArray(placeholder) ? isArray(result) : objectKindOf(result) === undefined)
 
-export const traverseKey = <result>(
+export const travKey = <result>(
 	key: PropertyKey,
 	fn: () => result,
 	// ctx will be undefined if this node isn't context-dependent, or an alias depth
@@ -1114,11 +1117,7 @@ interface DefaultedValue {
 
 export type DefaultedNode = Pick<
 	BaseNode,
-	| "hasTransform"
-	| "includesAlias"
-	| "allowsNeedsCtx"
-	| "hasCtxMorph"
-	| "transforms"
+	"alters" | "hasAlias" | "allowsCtx" | "ctxMorph" | "tfs"
 >
 
 export const computeDefaultValueMorph = (
@@ -1131,13 +1130,13 @@ export const computeDefaultValueMorph = (
 	isThunkInput = isThunk(defaultInput)
 ): Morph<any> => {
 	const thunk = isThunkInput ? (defaultInput as () => unknown) : undefined
-	if (!thunk && !node.hasTransform && !node.includesAlias) {
+	if (!thunk && !node.alters && !node.hasAlias) {
 		return data => {
 			data[key] = defaultInput
 			return data
 		}
 	}
-	if (!node.allowsNeedsCtx && !node.hasCtxMorph) {
+	if (!node.allowsCtx && !node.ctxMorph) {
 		return data => {
 			const input = thunk ? thunk() : defaultInput
 			const output = value.traverse(input)
@@ -1151,13 +1150,13 @@ export const computeDefaultValueMorph = (
 	return (data, ctx) => {
 		// transforming a default through a cyclic value can reach this morph again
 		if (transformingDefault) return data
-		if (!thunk && !node.transforms) {
+		if (!thunk && !node.tfs) {
 			data[key] = defaultInput
 			return data
 		}
 		transformingDefault = true
 		try {
-			data[key] = traverseKey(
+			data[key] = travKey(
 				key,
 				() => value(thunk ? thunk() : defaultInput, ctx),
 				ctx

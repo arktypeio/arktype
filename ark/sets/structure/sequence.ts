@@ -67,7 +67,7 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 					postfix,
 					...(minVariadicLength ? { minVariadicLength } : {})
 				},
-				{ prereduced: true }
+				{ reduced: true }
 			)
 		}
 	},
@@ -120,7 +120,7 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 		}
 
 		// exactLength, minLength, and maxLength don't need to be defined
-		// here since impliedSiblings guarantees they will be added
+		// here since impliedBy guarantees they will be added
 		// directly to the IntersectionNode parent of the SequenceNode
 		// they exist on
 	}
@@ -210,7 +210,7 @@ const _intersectSequences = (
 					:	"optional"
 				)
 			)
-			s.result = [...s.result, { kind, node: $ark.intrinsic.never.internal }]
+			s.result = [...s.result, { kind, node: $ark.kw.never.internal }]
 		} else if (kind === "optionals" || kind === "defaultables") {
 			// if the element result is optional and unsatisfiable, the
 			// intersection can still be satisfied as long as the tuple

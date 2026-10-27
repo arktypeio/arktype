@@ -79,8 +79,9 @@ interface UnionSchema extends BaseNormalizedSchema {
 }
 
 interface MorphSchema extends BaseNormalizedSchema {
+	/** the schema its pipeline starts with, as morphs' first element can be */
 	readonly in?: RootSchema
-	readonly morphs: listable<Morph | BaseRoot>
+	readonly morphs: listable<Morph | RootSchema>
 	readonly declaredIn?: BaseRoot
 	readonly declaredOut?: BaseRoot
 }
@@ -268,7 +269,7 @@ const readers: Record<NodeKind, SchemaReader> = {
 	alias: (schema, $, opts) => {
 		const input: AliasSchema =
 			typeof schema === "string" ? { reference: schema } : schema
-		if (opts?.prereduced || !input.reference.startsWith("$")) return input
+		if (opts?.reduced || !input.reference.startsWith("$")) return input
 		const registered =
 			input.reference.startsWith("$ark.") ?
 				nodesById[input.reference.slice(5) as NodeId]
@@ -299,9 +300,14 @@ const readers: Record<NodeKind, SchemaReader> = {
 	},
 	morph: (schema: MorphSchema, $) => {
 		const { in: inSchema, morphs, ...input } = schema
-		return inSchema === undefined ?
-				{ ...input, morphs: liftArray(morphs) }
-			:	{ ...input, in: parseSchema(inSchema, $), morphs: liftArray(morphs) }
+		const steps = liftArray(morphs).map(step =>
+			typeof step === "function" ? step : parseSchema(step, $)
+		)
+		return {
+			...input,
+			morphs:
+				inSchema === undefined ? steps : [parseSchema(inSchema, $), ...steps]
+		}
 	},
 	intersection: (schema: dict, $) => {
 		const { structure, ...flattened } = schema
@@ -411,7 +417,7 @@ const parseConstraint = (
 	// a constraint that reduces to a root (like unknown for minLength: 0) is
 	// trivially satisfied
 	if (constraint.isRoot()) return
-	return constraint.hasOpenIntersection() ? [constraint] : constraint
+	return constraint.canStack() ? [constraint] : constraint
 }
 
 const isExpandedSequenceSchema = (

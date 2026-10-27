@@ -12,7 +12,7 @@ contextualize(() => {
 	const T = rootSchema({
 		domain: "object",
 		required: [{ key: "foo", value: "string" }]
-	}).assertHasKind("intersection")
+	}).assertIs("intersection")
 
 	it("kind", () => {
 		const result = rootSchema({ domain: "string" }).select("domain")
@@ -58,7 +58,7 @@ contextualize(() => {
 	})
 
 	it("predicate", () => {
-		const domains = T.select(n => n.hasKind("domain"))
+		const domains = T.select(n => n.is("domain"))
 		attest<DomainNode[]>(domains).snap([
 			{ domain: "object" },
 			{ domain: "string" }

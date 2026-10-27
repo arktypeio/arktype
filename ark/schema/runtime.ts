@@ -25,9 +25,9 @@ export const runtimeConfig: ResolvedConfig = {
 } as never
 
 // the $ a node shape reads its config from
-export const runtimeScope: { resolvedConfig: ResolvedConfig } =
+export const runtimeScope: { cfg: ResolvedConfig } =
 	/* @__PURE__ */ Object.freeze({
-		resolvedConfig: runtimeConfig
+		cfg: runtimeConfig
 	})
 
 // set by configure()

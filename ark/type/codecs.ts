@@ -69,7 +69,7 @@ export const codec = <
 	>
 ): r extends infer _ ? _ : never => {
 	const In = type(i as never).internal
-	return In.$.node("morph", { in: In, morphs: [decode], inverse: encode }).pipe(
+	return In.$.node("morph", { morphs: [In, decode], inverse: encode }).pipe(
 		type(o as never)
 	) as never
 }

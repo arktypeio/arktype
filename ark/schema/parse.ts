@@ -42,9 +42,9 @@ import { composing, hasArkKind, isNode } from "./shared/utils.ts"
 
 export type ContextualArgs = Record<string, BaseRoot | NodeId>
 
-export type BaseParseOptions<prereduced extends boolean = boolean> = {
+export type BaseParseOptions<reduced extends boolean = boolean> = {
 	alias?: string
-	prereduced?: prereduced
+	reduced?: reduced
 	args?: ContextualArgs
 	id?: NodeId
 	// printed for an anonymous cycle's references in place of this
@@ -65,7 +65,8 @@ export interface AttachedParseContext {
 	isReferencedAsThis?: true
 	index?: number
 	lowlink?: number
-	closesCycle?: true
+	/** whether a reference reached it while it was resolving */
+	closes?: true
 	resolution?: BaseRoot
 	error?: unknown
 }
@@ -89,7 +90,7 @@ export interface NodeParseContext<kind extends NodeKind = NodeKind> {
 	// registered only if a node is created
 	id: NodeId | undefined
 	alias: string | undefined
-	prereduced: boolean | undefined
+	reduced: boolean | undefined
 }
 
 export const writeInvalidSchemaMessage = (schema: unknown): string =>
@@ -116,8 +117,9 @@ export const registerNodeId = (prefix: string): NodeId => {
 
 export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[ctx.kind]
-	const input = (impl.applyConfig?.(ctx.def, ctx.$.resolvedConfig) ??
-		ctx.def) as dict & { meta?: ArkEnv.meta | string }
+	const input = (impl.applyConfig?.(ctx.def, ctx.$.cfg) ?? ctx.def) as dict & {
+		meta?: ArkEnv.meta | string
+	}
 
 	const metaInput = input.meta
 	const meta: ArkEnv.meta =
@@ -141,7 +143,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		if (!keyImpl)
 			return throwParseError(`Key ${k} is not valid on ${ctx.kind} schema`)
 		const v = input[k]
-		if (v === undefined && !keyImpl.preserveUndefined) continue
+		if (v === undefined && !keyImpl.keepUndef) continue
 		// an empty list of children is none, except a union's branches
 		if (keyImpl.child && isArray(v) && !v.length && k !== "branches") continue
 		inner[k] = keyImpl.structural ? deferAliases(v, ctx.$) : v
@@ -149,13 +151,13 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 
 	if ($ark.sets) {
 		$ark.sets.sort(ctx.kind, inner)
-		if (!ctx.prereduced) {
+		if (!ctx.reduced) {
 			const reduced = $ark.sets.reduce(ctx.kind, inner, ctx.$)
 			if (reduced) {
 				if (reduced instanceof Disjoint) return reduced.throw()
 
 				// we can't cache this reduction for now in case the reduction involved
-				// impliedSiblings
+				// impliedBy
 				return withMeta(reduced, meta)
 			}
 		}
@@ -188,9 +190,9 @@ const deferAliases = (v: unknown, $: BaseScope): unknown => {
 		const deferred = v.map(element => deferAliases(element, $))
 		return deferred.some((element, i) => element !== v[i]) ? deferred : v
 	}
-	if (!isNode(v) || !v.hasShallowAlias || v.hasKind("alias")) return v
+	if (!isNode(v) || !v.topAlias || v.is("alias")) return v
 	nodesById[v.id] = v
-	return $.node("alias", { reference: v.id }, { prereduced: true })
+	return $.node("alias", { reference: v.id }, { reduced: true })
 }
 
 export type CreateNodeInput = {
@@ -326,9 +328,9 @@ export const requiredPropOf = (
 	value: BaseRoot,
 	$: BaseScope
 ): nodeOfKind<"required"> => {
-	if (!holdsWeakly || value.hasShallowAlias || value.$ !== $)
+	if (!holdsWeakly || value.topAlias || value.$ !== $)
 		return $.node("required", { key, value })
-	const props = (value.cache.requiredProps ??= new Map())
+	const props = (value.c.requiredProps ??= new Map())
 	let prop = props.get(key)?.deref()
 	if (prop) $ark.reached?.node(prop)
 	else {
@@ -347,13 +349,13 @@ export const requiredPropOf = (
 export const resolveDescription = <node extends BaseNode>(node: node): node => {
 	if (node.isBasis() || includes(prestructuralKinds, node.kind)) {
 		if (
-			node.$.resolvedConfig[node.kind].description !==
+			node.$.cfg[node.kind].description !==
 			$ark.defaultConfig[node.kind].description
 		)
 			void node.description
 	}
 	// an alias's expression changes as it resolves, so write it now
-	else if (node.includesAlias) void node.expression
+	else if (node.hasAlias) void node.expression
 	return node
 }
 

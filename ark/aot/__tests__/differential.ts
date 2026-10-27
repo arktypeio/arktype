@@ -297,7 +297,7 @@ const loadArtifact = async (
 const exportOf = (node: BaseRoot, holes: unknown[]): StandaloneExport => {
 	if (!holes.length) return node as never
 	const classes = new Set(
-		[node, ...node.references].flatMap(n => (n.hasKind("proto") ? n.proto : []))
+		[node, ...node.references].flatMap(n => (n.is("proto") ? n.proto : []))
 	)
 	return {
 		type: node as never,
@@ -815,7 +815,7 @@ const erroringScopeOf = (errors: Errors): BaseScope | undefined => {
 const inPlaceScopesByOnFail = new Map<unknown, Map<Errors, BaseScope>>()
 
 const inPlaceScopeOf = (node: BaseRoot, errors: Errors): BaseScope => {
-	const { onFail } = (erroringScopeOf(testedErrors) ?? node.$).resolvedConfig
+	const { onFail } = (erroringScopeOf(testedErrors) ?? node.$).cfg
 	let scopes = inPlaceScopesByOnFail.get(onFail)
 	if (!scopes) inPlaceScopesByOnFail.set(onFail, (scopes = new Map()))
 	let $ = scopes.get(errors)
@@ -834,9 +834,9 @@ const validatedOf = (
 	const $ = inPlace ? inPlaceScopeOf(node, errors) : erroringScopeOf(errors)
 	if (!$) return node
 	let resolved = node
-	while (resolved.hasKind("alias")) resolved = resolved.resolution
-	const bound = $.bindReference(resolved)
-	return inPlace ? $.finalize(bound) : bound
+	while (resolved.is("alias")) resolved = resolved.resolution
+	const bound = $.bindRef(resolved)
+	return inPlace ? $.fin(bound) : bound
 }
 
 // a hole returning arktype's errors or nodes, foreign to the runtime

@@ -31,7 +31,7 @@ export declare namespace After {
 			kind: "after"
 			inner: Inner
 			prerequisite: Date
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = AfterNode
@@ -40,8 +40,8 @@ export declare namespace After {
 const implementation: nodeImplementationOf<After.Declaration> =
 	implementNode<After.Declaration>({
 		kind: "after",
-		collapseKey: "rule",
-		ownsError: true,
+		bareKey: "rule",
+		ownErr: true,
 		keys: {
 			rule: {
 				serialize: schema => schema.toISOString()
@@ -53,16 +53,16 @@ const implementation: nodeImplementationOf<After.Declaration> =
 	})
 
 export class AfterNode extends BaseRange<After.Declaration> {
-	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
+	implied: BaseRoot = $ark.kw.Date.internal
 
 	collapsibleLimitString = describeCollapsibleDate(this.rule)
 
-	traverseAllows(data: Date): boolean {
+	tAllows(data: Date): boolean {
 		return data >= this.rule
 	}
 }
 
 export const After = {
-	implementation,
+	impl: implementation,
 	Node: AfterNode
 }

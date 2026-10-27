@@ -184,7 +184,7 @@ const observeMethod = (name: string, method: Function) =>
 		const callers = callersOf(callSites())
 		const observation: Observation | undefined =
 			calledByUser(callers) ? { call: name }
-			: name === "BaseScope.finalize" && reachedFromUser(callers) ? {}
+			: name === "BaseScope.fin" && reachedFromUser(callers) ? {}
 			: undefined
 		if (observation?.call) {
 			observation.self = record(this)
@@ -260,8 +260,7 @@ const patch = (prototype: object, stopAt: object) => {
 						const rootApply: RootApply = method.call(this)
 						const observed = observeRootApply(this, rootApply)
 						// an apply that checks uncompiled data isn't kept
-						if (this.cache.rootApply === rootApply)
-							this.cache.rootApply = observed
+						if (this.c.rootApply === rootApply) this.c.rootApply = observed
 						return observed
 					}
 				:	observeMethod(name, method)

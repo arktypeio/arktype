@@ -31,13 +31,12 @@ const intersectPropsAndIndex = <
 	const kind = l.required ? "required" : "optional"
 
 	// a signature reading ctx can only decide a key it's traversing
-	if (r.signature.allowsNeedsCtx || !r.signature.allowsUnused(l.key))
-		return null
+	if (r.signature.allowsCtx || !r.signature.allowsUnused(l.key)) return null
 
 	// a key's transforms apply in turn once each value allows its input
 	const intersectValues = (lValue: BaseRoot, rValue: BaseRoot) =>
-		lValue.hasTransform && rValue.hasTransform ?
-			intersectNodesRoot(lValue.rawIn, rValue.rawIn, $)
+		lValue.alters && rValue.alters ?
+			intersectNodesRoot(lValue._in, rValue._in, $)
 		:	intersectNodesRoot(lValue, rValue, $)
 	const value = intersectValues(l.value, r.value)
 	// a cyclic value a definition's key meets is decided once definitions
@@ -46,7 +45,7 @@ const intersectPropsAndIndex = <
 		kind === "required" &&
 		inProgress.definitions &&
 		!(value instanceof Disjoint) &&
-		value.hasKind("alias")
+		value.is("alias")
 	) {
 		queueUnchecked(() => {
 			const resolved = intersectValues(unaliased(l.value), unaliased(r.value))
@@ -59,8 +58,8 @@ const intersectPropsAndIndex = <
 		return kind === "optional" ?
 				($.node(
 					"optional",
-					{ key: l.key, value: $ark.intrinsic.never.internal },
-					{ prereduced: true }
+					{ key: l.key, value: $ark.kw.never.internal },
+					{ reduced: true }
 				) as l)
 				// optional, since an index signature doesn't require the key
 			:	value.withPrefixKey(l.key, "optional")
@@ -70,7 +69,7 @@ const intersectPropsAndIndex = <
 }
 
 const unaliased = (node: BaseRoot): BaseRoot =>
-	node.hasKind("alias") ? node.resolution : node
+	node.is("alias") ? node.resolution : node
 
 // a number key names the same property as its string
 const propertyOf = (key: Key): Key =>
@@ -81,9 +80,9 @@ const propertyOf = (key: Key): Key =>
 const allowedKeysOf = (node: Structure.Node): BaseRoot => {
 	let keys = node.keyof()
 	if (node.sequence)
-		keys = keys.rawOr($ark.intrinsic.nonNegativeIntegerString.internal)
+		keys = keys.rawOr($ark.kw.nonNegativeIntegerString.internal)
 	return node.undeclared === "reject" ?
-			keys.rawOr($ark.intrinsic.symbol.internal)
+			keys.rawOr($ark.kw.symbol.internal)
 		:	keys
 }
 
@@ -97,8 +96,7 @@ const allowedIndexCountOf = (
 	keys: BaseRoot,
 	sequence: nodeOfKind<"sequence">
 ): number | null => {
-	if ($ark.intrinsic.nonNegativeIntegerString.internal.extends(keys))
-		return null
+	if ($ark.kw.nonNegativeIntegerString.internal.extends(keys)) return null
 	const max = Math.min(
 		sequence.maxLength ?? maxCountedIndices,
 		maxCountedIndices
@@ -113,9 +111,9 @@ const requiredElementAt = (
 	sequence: nodeOfKind<"sequence">,
 	i: number
 ): BaseRoot => {
-	const variadicEnd = sequence.prefixLength + sequence.minVariadicLength
+	const variadicEnd = sequence.preLen + sequence.minVariadicLength
 	return (
-		i < sequence.prefixLength ? sequence.prefix![i]
+		i < sequence.preLen ? sequence.prefix![i]
 		: i < variadicEnd ? sequence.variadic!
 		: sequence.postfix![i - variadicEnd]
 	)
@@ -147,7 +145,7 @@ const narrowToKeysOf = (
 		const sequence = other.sequence!
 		if (sequence.minLength > count) {
 			const value = requiredElementAt(sequence, count)
-			const never = $ark.intrinsic.never.internal
+			const never = $ark.kw.never.internal
 			disjoint.push(
 				...Disjoint.init(
 					"presence",
@@ -160,7 +158,7 @@ const narrowToKeysOf = (
 		// mistake for a discriminant of node, which needn't be an array
 		else if (count === 0) {
 			otherInner.sequence = $.node("sequence", {
-				variadic: $ark.intrinsic.never.internal
+				variadic: $ark.kw.never.internal
 			})
 		} else {
 			roots.push(
@@ -174,8 +172,8 @@ const narrowToKeysOf = (
 	}
 	for (const k of other.requiredKeys) {
 		if (keys.allowsUnused(k)) continue
-		const value = other.propsByKey[k]!.value
-		const never = $ark.intrinsic.never.internal
+		const value = other.byKey[k]!.value
+		const never = $ark.kw.never.internal
 		disjoint.add("presence", isLeft ? never : value, isLeft ? value : never, {
 			path: [k],
 			undeclared: node.handlesUndeclared
@@ -194,7 +192,7 @@ const narrowToKeysOf = (
 			const normalized = normalizeIndex(overlap, n.value, $)
 			// an index's value, which a loose scope doesn't widen
 			for (const prop of normalized.required ?? [])
-				derived.push($.node("optional", prop.inner, { prereduced: true }))
+				derived.push($.node("optional", prop.inner, { reduced: true }))
 			derived.push(...(normalized.optional ?? []))
 			return normalized.index ?? []
 		})
@@ -248,7 +246,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			// as a spread would, keys keep l's order and r's new keys follow
 			const baseInner: Structure.Inner.mutable =
 				l.props.length || r.props.length ?
-					{ order: [...l.orderedKeys, ...r.orderedKeys] }
+					{ order: [...l.keyOrder, ...r.keyOrder] }
 				:	{}
 
 			if (l.undeclared || r.undeclared) {
@@ -319,7 +317,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			return $.node(
 				"structure",
 				{ ...inner, optional: newOptionalProps },
-				{ prereduced: true }
+				{ reduced: true }
 			)
 		}
 	}

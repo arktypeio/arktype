@@ -18,7 +18,7 @@ export const isDisjoint = (l: Schema, r: Schema): boolean =>
 export const intersect = (...schemas: Schema[]): Root =>
 	schemas.reduce<Root>(
 		(result, schema) => result.intersect(parse(schema)).toNeverIfDisjoint(),
-		$ark.intrinsic.unknown
+		$ark.kw.unknown
 	)
 
 /** the values any schema accepts, without the branches others subsume */
@@ -42,12 +42,12 @@ export interface Discriminant {
 /** the path and cases a union's branches can be told apart by, or null if there are none */
 export const discriminate = (schema: Schema): Discriminant | null => {
 	const root = parse(schema)
-	if (!root.hasKind("union") || !root.discriminant) return null
+	if (!root.is("union") || !root.discriminant) return null
 	const { kind, path, cases } = root.discriminant
 	return {
 		path,
 		kind,
-		cases: root.discriminantCases.cases.map(described => {
+		cases: root.discCases.cases.map(described => {
 			// an object case only arrays reach is described as Array
 			const value = described === "Array" ? "object" : described
 			const atPath = discriminantCaseToNode(

@@ -149,11 +149,11 @@ export class GenericRoot<
 	}
 
 	get id(): NodeId {
-		return this.cacheGetter("id", registerNodeId(this.alias ?? "generic"))
+		return this.memo("id", registerNodeId(this.alias ?? "generic"))
 	}
 
 	get baseInstance(): BaseRoot {
-		return this.cacheGetter(
+		return this.memo(
 			"baseInstance",
 			this(...(this.constraints as any)) as never
 		)
@@ -173,7 +173,7 @@ export class GenericRoot<
 					operator: this.alias ?? "generic",
 					operands: this.names.map(name => argNodes[name])
 				},
-				{ prereduced: true }
+				{ reduced: true }
 			)
 		}
 		if (instantiation) {
@@ -222,9 +222,9 @@ export class GenericRoot<
 		try {
 			const node =
 				this.defIsLazy() ?
-					this.arg$.parse(this.$.parseDefinition(this.bodyDef(argNodes)))
+					this.arg$.parse(this.$.parseDef(this.bodyDef(argNodes)))
 				:	this.$.parse(this.bodyDef, { args: argNodes, id })
-			if (inProgress.definitions && node.hasShallowAlias)
+			if (inProgress.definitions && node.topAlias)
 				delete this.instantiations[key]
 			else {
 				this.instantiations[key] = node
@@ -243,7 +243,7 @@ export class GenericRoot<
 		return this.bodyDef instanceof LazyGenericBody
 	}
 
-	protected cacheGetter<name extends keyof this>(
+	protected memo<name extends keyof this>(
 		name: name,
 		value: this[name]
 	): this[name] {
@@ -252,7 +252,7 @@ export class GenericRoot<
 	}
 
 	get json(): JsonStructure {
-		return this.cacheGetter("json", {
+		return this.memo("json", {
 			params: this.params.map(param =>
 				param[1].isUnknown() ? param[0] : [param[0], param[1].json]
 			),
@@ -261,30 +261,30 @@ export class GenericRoot<
 	}
 
 	get params(): { [i in keyof params]: [params[i][0], BaseRoot] } {
-		return this.cacheGetter(
+		return this.memo(
 			"params",
 			this.paramDefs.map(param =>
 				typeof param === "string" ?
 					[param, intrinsic.unknown]
-				:	[param[0], this.$.parseDefinition(param[1])]
+				:	[param[0], this.$.parseDef(param[1])]
 			) as never
 		)
 	}
 
 	get names(): genericParamNames<params> {
-		return this.cacheGetter("names", this.params.map(e => e[0]) as never)
+		return this.memo("names", this.params.map(e => e[0]) as never)
 	}
 
 	get constraints(): { [i in keyof params]: BaseRoot } {
-		return this.cacheGetter("constraints", this.params.map(e => e[1]) as never)
+		return this.memo("constraints", this.params.map(e => e[1]) as never)
 	}
 
 	get internal(): this {
 		return this
 	}
 
-	get refsById(): Record<string, BaseNode> {
-		return this.baseInstance.internal.refsById
+	get byId(): Record<string, BaseNode> {
+		return this.baseInstance.internal.byId
 	}
 
 	get references(): BaseNode[] {
@@ -328,7 +328,7 @@ const maxOpenInstantiations = 100
 const maxOpenArgumentsLength = 1_000_000
 
 const mayExtend = (l: BaseRoot, r: BaseRoot): boolean => {
-	if (!l.includesAlias && !r.includesAlias) return false
+	if (!l.hasAlias && !r.hasAlias) return false
 	const intersection = l.intersect(r, false)
 	return (
 		!(intersection instanceof Disjoint) &&

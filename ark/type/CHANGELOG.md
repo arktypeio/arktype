@@ -959,82 +959,242 @@ Other keys that first differ at a space, `!`, `"` or a backslash keep their orde
 
 ### Simplify `@ark/schema` nodes
 
-- A scope's `references` and `refsById` are collected when first read rather than as it exports, unless code `@ark/aot` built with `runtime: "arktype"` is registered or it includes an alias.
-- A node's `traverseAllows`, `traverseApply` and `traverseTransform` are methods of its class, so call them on the node, as in `node.traverseAllows(data, ctx)`, rather than detached, as in `[x].every(node.traverseAllows)`, until the JIT compiles it, which replaces them with compiled functions that run detached. A jitless scope's nodes keep the methods, and `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes still create a `traverseAllows` of their own. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
+- A scope's `references` and `byId` are collected when first read rather than as it exports, unless code `@ark/aot` built with `runtime: "arktype"` is registered or it includes an alias.
+- A node's `tAllows`, `tApply` and `tTransform` (before: `traverseAllows`, `traverseApply`, `traverseTransform`) are methods of its class, so call them on the node, as in `node.tAllows(data, ctx)`, rather than detached, as in `[x].every(node.tAllows)`, until the JIT compiles it, which replaces them with compiled functions that run detached. A jitless scope's nodes keep the methods, and `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes still create a `tAllows` of their own. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
 - `$.node(kind, input)` takes a node's inner, with children already nodes, rather than the schema format, so `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
-- `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, prereduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context. A node's id is registered as it's created, from its `alias` or kind unless `id` is passed, so a schema that resolves to a node the scope already holds registers none.
+- `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, reduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context. A node's id is registered as it's created, from its `alias` or kind unless `id` is passed, so a schema that resolves to a node the scope already holds registers none.
 - Members nothing used are gone: an alias's `resolutionId` (read `resolution.id`), a node's `assertHasKindIn`, `isConstraint` and `isRefinement`, a root's `shortDescription`, a morph's `declareIn` and `serializedMorphs`, a structure's `optionalKeys`, a union's `compiledDiscriminant` (read `discriminant`, which a union of two literal values now has too), and `Scanner`'s `jumpToIndex` in `@ark/util`.
-- Fields each node computed whether or not it was compiled are gone: a constraint's `compiledCondition`, a predicate's `compiledNegation`, a morph's `compiledMorphs` and a sequence's `optionalsLength`. A leaf writes its check with `compileCondition(js, data)`. The `PrecompiledReferences` type, which described a precompiled unit nothing builds, is gone too.
-- Derived and memoized keys moved from a node's own enumerable keys to `node.cache`, like the `includes*` flags, `innerEntries`, a structure's `propsByKey`, a node's `assert` and the `expression` of a union, intersection, structure, required prop or index signature; each reads as before, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
+- Fields each node computed whether or not it was compiled are gone: a constraint's `compiledCondition`, a predicate's `compiledNegation`, a morph's `compiledMorphs` and a sequence's `optionalsLength`. A leaf writes its check with `jsCond(js, data)`. The `PrecompiledReferences` type, which described a precompiled unit nothing builds, is gone too.
+- Derived and memoized keys moved from a node's own enumerable keys to its cache, `node.c`, like the flags `hasAlias` and `hasMorph`, `kv`, a structure's `byKey`, a node's `assert` and the `expression` of a union, intersection, structure, required prop or index signature; each reads as before, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
+
+### Start a morph's `morphs` with its input
+
+A morph node's input is the first of its `morphs` rather than its own `in`, so its `json` is `{ morphs: ["string", "$ark.trim"] }` where it was `{ in: "string", morphs: ["$ark.trim"] }`, and a node it pipes to is written by its shorthand too (#1179). A schema or `$.node` input with `in` still parses, as the first of its `morphs`, and `morphs` in a schema can start with a schema. Each part has a name that says which it is:
+
+| Was                          | Now           |                                                                                                         |
+| ---------------------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
+| `inner.in`, `knownIn`        | `head`        | the node data must allow before any morph runs, its own morphs included                                 |
+| `morphs` without `in`        | `piped`       | what the head pipes data to: functions, then nodes                                                      |
+| `lastMorph`, `lastMorphNode` | `tail`        | the node the output is piped to, if `morphs` ends with one besides its head                             |
+| `knownOut`                   | `tail._out`   |                                                                                                         |
+| `rawIn`, `rawOut`            | `_in`, `_out` | any node's input or output with each morph replaced by its own, which `.in` and `.out` return as a Type |
+
+Intersecting two morphs intersects their heads, where it intersected their `rawIn`, which dropped the morphs within either input:
+
+```ts
+const keep = (o: object) => o
+const A = type({ a: "string.numeric.parse" }).pipe(keep)
+const B = type({ b: "string" }).pipe(keep)
+
+// { a: 5, b: "x" }, where a stayed "5"
+A.and(B)({ a: "5", b: "x" })
+```
+
+The `out` a JSON Schema `morph` fallback is given for a pipe to a cyclic alias is now that alias's output where it was its input.
 
 ### Shorten long internal names
 
-Internal members with long names, read through `.internal`, `@ark/schema` or `@ark/util`, are shorter, since a minifier keeps property names and the JIT writes some of them into the code it compiles. Each works as before under its new name:
+Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have short names, since a minifier keeps property names and the JIT writes some of them into the code it compiles. Each works as before under its new name, which its JSDoc spells out:
 
-| Was                           | Now                    |
-| ----------------------------- | ---------------------- |
-| `addTransformErrors`          | `addMorphErrors`       |
-| `allowsBeforeJit`             | `allowsPreJit`         |
-| `allowsRequiresContext`       | `allowsNeedsCtx`       |
-| `allowsRequiresTraversal`     | `allowsNeedsTraversal` |
-| `applyStructuralOperation`    | `applyStructural`      |
-| `baseInstantiation`           | `baseInstance`         |
-| `boundOperandKind`            | `operandKind`          |
-| `checksTransformErrors`       | `checksMorphErrors`    |
-| `collapsibleJson`             | `collapsedJson`        |
-| `collapsibleKey`              | `collapseKey`          |
-| `compileCopiedDeclaredKeys`   | `compileDeclaredCopy`  |
-| `compileExhaustiveEntry`      | `compileEntry`         |
-| `createParseContext`          | `createParseCtx`       |
-| `defaultablesAndOptionals`    | `optionalsAndDefaults` |
-| `defaultablesLength`          | `defaultableCount`     |
-| `defaultEntries`              | `defaultPairs`         |
-| `defaultShortDescription`     | `defaultBrief`         |
-| `defaultValueMorph`           | `defaultMorph`         |
-| `defaultValueMorphs`          | `defaultMorphs`        |
-| `earliestAssumed`             | `assumedFrom`          |
-| `entersResolution`            | `entersAlias`          |
-| `errorFromNodeContext`        | `errorFromNode`        |
-| `_exportedResolutions`        | `_exported`            |
-| `hasAssociatedError`          | `ownsError`            |
-| `includesContextualMorph`     | `hasCtxMorph`          |
-| `includesContextualPredicate` | `hasCtxPredicate`      |
-| `includesShallowAlias`        | `hasShallowAlias`      |
-| `includesTransform`           | `hasTransform`         |
-| `includesUserCode`            | `hasUserCode`          |
-| `initializeFlatRefs`          | `initFlatRefs`         |
-| `intersectionIsOpen`          | `openIntersection`     |
-| `introspectableIn`            | `knownIn`              |
-| `introspectableOut`           | `knownOut`             |
-| `isUsedBeforeJit`             | `usedBeforeJit`        |
-| `lastMorphIfNode`             | `lastMorphNode`        |
-| `nestableExpression`          | `nestedExpression`     |
-| `nodesByRegisteredId`         | `nodesById`            |
-| `normalizeRootScopeValue`     | `normalizeScopeValue`  |
-| `obviatesBasisDescription`    | `coversBasisNoun`      |
-| `openInstantiations`          | `openInstances`        |
-| `optionallyChainedPropString` | `chainedPropString`    |
-| `outerEarliestAssumed`        | `assumedOuter`         |
-| `parseOwnDefinitionFormat`    | `parseOwn`             |
-| `preparseOwnDefinitionFormat` | `preparseOwn`          |
-| `pushRootToBranch`            | `pushRootBranch`       |
-| `referencedBesidesChildren`   | `otherReferences`      |
-| `referencesById`              | `refsById`             |
-| `requiresInfinityCheck`       | `checksInfinity`       |
-| `returnIfTransformFailed`     | `returnIfFailed`       |
-| `rootApplyStrategy`           | `applyStrategy`        |
-| `serializedValue`             | `serializedUnit`       |
-| `shallowReferences`           | `shallowRefs`          |
-| `sharesTransformedKeys`       | `sharesTransforms`     |
-| `shiftUntilLookahead`         | `shiftUntilNext`       |
-| `shiftUntilNonWhitespace`     | `shiftPastWhitespace`  |
-| `throwInternalOperandError`   | `throwOperandError`    |
-| `tracksTransforms`            | `tracksMorphs`         |
-| `transformedByResolutionId`   | `transformedById`      |
-| `transformRequiresContext`    | `transformNeedsCtx`    |
-| `transformSelectsByContext`   | `selectsByCtx`         |
-| `uncollapsedInnerJson`        | `innerJsonFull`        |
-| `undeclaredKeyHandling`       | `undeclaredHandling`   |
+| Was                                           | Now                  |
+| --------------------------------------------- | -------------------- |
+| `$ark.intrinsic`                              | `$ark.kw`            |
+| `addTransformErrors`                          | `addMorphErrs`       |
+| `allowsBeforeJit`                             | `preJit`             |
+| `allowsRequiresContext`                       | `allowsCtx`          |
+| `allowsRequiresTraversal`                     | `checksCtx`          |
+| `applyStructuralMorph`                        | `applyStructMorph`   |
+| `applyStructuralOperation`                    | `applyStruct`        |
+| `assertHasKind`                               | `assertIs`           |
+| `baseInstantiation`                           | `baseInstance`       |
+| `bindKeyword`                                 | `bindKw`             |
+| `bindReference`                               | `bindRef`            |
+| `boundOperandKind`                            | `opKind`             |
+| `boundReferences`                             | `boundRefs`          |
+| `cache`                                       | `c`                  |
+| `cacheGetter`                                 | `memo`               |
+| `checksOnly`                                  | `chkOnly`            |
+| `checksTransformErrors`                       | `checksErrs`         |
+| `closesCycle`                                 | `closes`             |
+| `collapsibleJson`                             | `bareJson`           |
+| `collapsibleKey`                              | `bareKey`            |
+| `compareTransformed`                          | `cmpTfd`             |
+| `compileCondition`                            | `jsCond`             |
+| `compileConjunction`                          | `jsConjunction`      |
+| `compileCopiedDeclaredKeys`                   | `jsDeclaredCopy`     |
+| `compileCopy`                                 | `jsCopy`             |
+| `compileCopyOnce`                             | `jsCopyOnce`         |
+| `compileCopyProps`                            | `jsCopyProps`        |
+| `_compileDeclaresKey`                         | `_jsDeclaresKey`     |
+| `compileDefaults`                             | `jsDefaults`         |
+| `compileDeleteTransform`                      | `jsDeleteTransform`  |
+| `compiledErrorContext`                        | `jsErrorCtx`         |
+| `compiledKey`                                 | `keyStr`             |
+| `compiledUnit`                                | `unitFn`             |
+| `compiledValue`                               | `unitJson`           |
+| `compileElements`                             | `jsElements`         |
+| `compileElementTransforms`                    | `jsElemTfs`          |
+| `compileExhaustiveEntry`                      | `jsEntry`            |
+| `compileExpression`                           | `jsExpression`       |
+| `compileForOwnKeys`                           | `jsForOwnKeys`       |
+| `compileHoldsValue`                           | `jsHoldsValue`       |
+| `compileIndiscriminable`                      | `jsIndisc`           |
+| `compileKeyCount`                             | `jsKeyCount`         |
+| `compileSequenceDefaults`                     | `jsSequenceDefaults` |
+| `compileShapeCheck`                           | `jsShapeCheck`       |
+| `compileTransform`                            | `jsTf`               |
+| `configureReferences`                         | `configureRefs`      |
+| `createOptimisticRootApply`                   | `optimisticApply`    |
+| `createParseContext`                          | `createParseCtx`     |
+| `_createTransformContext`                     | `_tfContext`         |
+| `currentErrorCount`                           | `errN`               |
+| `defaultablesAndOptionals`                    | `maybes`             |
+| `defaultablesLength`                          | `defLen`             |
+| `defaultEntries`                              | `defaultPairs`       |
+| `defaultShortDescription`                     | `brief`              |
+| `defaultValueMorph`                           | `defMorph`           |
+| `defaultValueMorphs`                          | `defMorphs`          |
+| `_discriminant`                               | `_disc`              |
+| `discriminantCases`                           | `discCases`          |
+| `_discriminantCases`                          | `_discCases`         |
+| `discriminantDescription`                     | `discDesc`           |
+| `_discriminantDescription`                    | `_discDesc`          |
+| `discriminantMeta`                            | `discMeta`           |
+| `_discriminantMeta`                           | `_discMeta`          |
+| `earliestAssumed`                             | `assumedFrom`        |
+| `elementAtIndex`                              | `atIndex`            |
+| `enteredCount`                                | `nEntered`           |
+| `entersResolution`                            | `entersAlias`        |
+| `errorContext`                                | `errorCtx`           |
+| `_errorContext`                               | `_errorCtx`          |
+| `errorCount`                                  | `errN`               |
+| `errorFromNodeContext`                        | `nodeError`          |
+| `_exportedResolutions`                        | `_exported`          |
+| `failureSite`                                 | `failSite`           |
+| `finalize`                                    | `fin`                |
+| `finalizeInnerJson`                           | `fixJson`            |
+| `foundDiscriminant`                           | `foundDisc`          |
+| `hasAssociatedError`                          | `ownErr`             |
+| `hasDefault`                                  | `hasDef`             |
+| `hasEqualMorphs`                              | `sameMorphs`         |
+| `hasKind`                                     | `is`                 |
+| `hasOpenIntersection`                         | `canStack`           |
+| `hasReplacedReferences`                       | `replacedRefs`       |
+| `impliedBasis`                                | `implied`            |
+| `impliedSiblings`                             | `impliedBy`          |
+| `includesAlias`                               | `hasAlias`           |
+| `includesContextualMorph`                     | `ctxMorph`           |
+| `includesContextualPredicate`                 | `ctxPred`            |
+| `includesCostly`                              | `costly`             |
+| `includesKeptDescription`                     | `keptDesc`           |
+| `includesMorph`                               | `hasMorph`           |
+| `includesShallowAlias`                        | `topAlias`           |
+| `includesTransform`                           | `alters`             |
+| `includesUserCode`                            | `userCode`           |
+| `indexMatchesSymbols`                         | `indexSyms`          |
+| `inheritableProps`                            | `protoProps`         |
+| `initializeErrorCount`                        | `initErrCount`       |
+| `initializeFlatRefs`                          | `initFlat`           |
+| `initializeTransform`                         | `initTf`             |
+| `innerEntries`                                | `kv`                 |
+| `intersectionIsOpen`                          | `stacks`             |
+| `introspectableIn`                            | `head`               |
+| `introspectableOut`                           | `tail._out`          |
+| `invoke`                                      | `inv`                |
+| `isTransformedById`                           | `tfsById`            |
+| `isUsedBeforeJit`                             | `usedPreJit`         |
+| `keyExpression`                               | `keyExpr`            |
+| `lastMorphIfNode`                             | `tail`               |
+| `lazyExports`                                 | `_lazy`              |
+| `leftBound`                                   | `lBound`             |
+| `linkage`                                     | `link`               |
+| `lookahead`                                   | `peek`               |
+| `lookaheadIs`                                 | `peekIs`             |
+| `lookaheadIsIn`                               | `peekIsIn`           |
+| `maxLengthNode`                               | `maxNode`            |
+| `minLengthNode`                               | `minNode`            |
+| `missListsBranches`                           | `missLists`          |
+| `_missListsBranches`                          | `_missLists`         |
+| `Morph.implementation`, as each kind's module | `Morph.impl`         |
+| `nestableExpression`                          | `nestedExpr`         |
+| `nextLookahead`                               | `peekNext`           |
+| `nodesByRegisteredId`                         | `nodesById`          |
+| `normalizeRootScopeValue`                     | `normValue`          |
+| `numericLimit`                                | `numRule`            |
+| `obviatesBasisDescription`                    | `coversNoun`         |
+| `obviatesBasisExpression`                     | `coversExpr`         |
+| `openInstantiations`                          | `openInstances`      |
+| `optionallyChainedPropString`                 | `pathStr`            |
+| `orderedKeys`                                 | `keyOrder`           |
+| `orderedProps`                                | `inOrder`            |
+| `outerEarliestAssumed`                        | `assumedOuter`       |
+| `outerReachedInvalid`                         | `outerInvalid`       |
+| `parseDefinition`                             | `parseDef`           |
+| `parseOpenDefinition`                         | `parseOpenDef`       |
+| `parseOwnDefinitionFormat`                    | `parseOwn`           |
+| `popBranch`                                   | `popBr`              |
+| `postfixLength`                               | `postLen`            |
+| `prefixLength`                                | `preLen`             |
+| `preparseOwnAliasEntry`                       | `preparseEntry`      |
+| `preparseOwnDefinitionFormat`                 | `preparseOwn`        |
+| `prereduced`                                  | `reduced`            |
+| `preserveUndefined`                           | `keepUndef`          |
+| `prestructurals`                              | `preStruct`          |
+| `prevariadic`                                 | `leading`            |
+| `propsByKey`                                  | `byKey`              |
+| `pushBranch`                                  | `pushBr`             |
+| `pushRootToBranch`                            | `pushRootBranch`     |
+| `reachedInvalid`                              | `invalid`            |
+| `received`                                    | `recv`               |
+| `receivedDepth`                               | `recvAt`             |
+| `recordedFailure`                             | `hasFailed`          |
+| `referencedBesidesChildren`                   | `otherRefs`          |
+| `referencesById`                              | `byId`               |
+| `_referencesById`                             | `_refsById`          |
+| `referenceToId`                               | `refToId`            |
+| `requiresContext`                             | `needsCtx`           |
+| `requiresContextFor`                          | `needsCtxFor`        |
+| `requiresInfinityCheck`                       | `checksInf`          |
+| `requiresInvalidDateCheck`                    | `checksInvalid`      |
+| `requiresNaNCheck`                            | `checksNaN`          |
+| `resolutions`                                 | `res`                |
+| `resolvedConfig`                              | `cfg`                |
+| `returnedFrom`                                | `retFrom`            |
+| `returnIfTransformFailed`                     | `retIfFailed`        |
+| `rootApplyStrategy`                           | `applyMode`          |
+| `scanner`                                     | `sc`                 |
+| `serializedValue`                             | `jsUnit`             |
+| `shallowMorphs`                               | `topMorphs`          |
+| `shallowReferences`                           | `shallowRefs`        |
+| `sharesTransformedKeys`                       | `sharesTfs`          |
+| `shiftUntilLookahead`                         | `shiftUntilNext`     |
+| `shiftUntilNonWhitespace`                     | `skipSpace`          |
+| `shouldTransform`                             | `shouldTf`           |
+| `slicesSequence`                              | `slicesSeq`          |
+| `structuralMorph`                             | `structMorph`        |
+| `synthetics`                                  | `synth`              |
+| `throwInternalOperandError`                   | `throwOperandError`  |
+| `tracksTransforms`                            | `isTree`             |
+| `_transform`                                  | `_tf`                |
+| `transformedByResolutionId`                   | `tfdById`            |
+| `transformElements`                           | `tfElems`            |
+| `transformKey`                                | `tfKey`              |
+| `transformRequiresContext`                    | `tfCtx`              |
+| `transforms`                                  | `tfs`                |
+| `_transformsByKey`                            | `_tfsByKey`          |
+| `transformSelectsByContext`                   | `ctxSel`             |
+| `transformSharedKey`                          | `tfSharedKey`        |
+| `transformsOf`                                | `tfsOf`              |
+| `traversalKind`                               | `trav`               |
+| `traverseAllows`                              | `tAllows`            |
+| `traverseApply`                               | `tApply`             |
+| `traversedMorphs`                             | `travMorphs`         |
+| `traverseKey`                                 | `travKey`            |
+| `traverseTransform`                           | `tTransform`         |
+| `uncollapsedInnerJson`                        | `fullJson`           |
+| `undeclaredKeyHandling`                       | `undeclaredHandling` |
+| `untrackedVisits`                             | `visits`             |
+| `variadicOrPostfix`                           | `trail`              |
 
 ### Read an object definition's values as its keys are parsed
 
@@ -2051,7 +2211,7 @@ handleRequest({ id: 1 })
 
 A function stays in memory while a cyclic Type, a generic instantiation (always, for builtins like `type.Record`) or the first Type compiling a default's keyword holds it.
 
-The `$ark.x` names that functions get in a type's `json` or `expression` are unique names only and no longer resolve through `$ark`. `ctx.meta` in a compiled union or undeclared-key error is the type's own meta, as in jitless mode, so a value like `NaN` is no longer stringified. In `@ark/schema`, `BaseNode.compiledMeta` is removed, and `BaseScope.resolutions` holds an unresolved alias's parse context instead of its id.
+The `$ark.x` names that functions get in a type's `json` or `expression` are unique names only and no longer resolve through `$ark`. `ctx.meta` in a compiled union or undeclared-key error is the type's own meta, as in jitless mode, so a value like `NaN` is no longer stringified. In `@ark/schema`, `BaseNode.compiledMeta` is removed, and `BaseScope.res` (before: `resolutions`) holds an unresolved alias's parse context instead of its id.
 
 ### Define a matcher whose cases a reordering would separate
 

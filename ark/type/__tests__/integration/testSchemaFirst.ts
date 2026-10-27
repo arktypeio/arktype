@@ -18,9 +18,9 @@ cases({
 			String(type("object.json")({ a: 1n })),
 			"a must be a number, a string, an object, boolean or null (was a bigint)"
 		)
-		strictEqual(intrinsic.jsonPrimitive.hasKind("union"), true)
+		strictEqual(intrinsic.jsonPrimitive.is("union"), true)
 		strictEqual(
-			intrinsic.jsonData.assertHasKind("union").discriminant !== null,
+			intrinsic.jsonData.assertIs("union").discriminant !== null,
 			true
 		)
 	},

@@ -4,7 +4,7 @@ import { CompiledFunction } from "./compile.ts"
 import { applyUnread, ArkTraversal } from "./errors.ts"
 import { TransformErrors } from "./transform.ts"
 import {
-	addMorphErrors,
+	addMorphErrs,
 	allowsAcyclic,
 	allowsInContext,
 	applyCyclic,
@@ -14,7 +14,7 @@ import {
 export const rootApplyRuntime = {
 	Traversal: ArkTraversal,
 	TransformErrors,
-	addMorphErrors,
+	addMorphErrs,
 	applyCyclic,
 	applyRejected: applyUnread,
 	allowsAcyclic,
@@ -24,7 +24,7 @@ export const rootApplyRuntime = {
 
 export type RootApplyRuntime = typeof rootApplyRuntime
 
-const nodeMembers = ["allows", "traverseAllows", "traverseTransform"]
+const nodeMembers = ["allows", "tAllows", "tTransform"]
 
 export const rootApplyParams = [
 	"node",
@@ -55,65 +55,65 @@ export const rootApplyParts = (
 	const handler =
 		refOf ? "onFail" : "onFail === undefined ? node.onFail : onFail"
 	const fallback = (body: typeof js) =>
-		node.includesAlias ?
+		node.hasAlias ?
 			body.return(
-				`${ref("applyCyclic")}(node, data, ${newCtx}).finalize(${handler})`
+				`${ref("applyCyclic")}(node, data, ${newCtx}).fin(${handler})`
 			)
 		:	body.return(
 				`${ref("applyRejected")}(node, data, ${ref("config")}, ${handler}, ${ref("Traversal")})`
 			)
 	const returnResult = () =>
-		node.includesMorph ?
+		node.hasMorph ?
 			js
 				.if(
 					`result !== data && typeof result === "function" && result instanceof ${ref("TransformErrors")}`,
 					() =>
 						js
 							.const("ctx", newCtx)
-							.line(`${ref("addMorphErrors")}(ctx, result)`)
-							.return(`ctx.finalize(${handler})`)
+							.line(`${ref("addMorphErrs")}(ctx, result)`)
+							.return(`ctx.fin(${handler})`)
 				)
 				.return("result")
 		:	js.return("result")
-	if (node.applyStrategy === "contextual") {
+	if (node.applyMode === "contextual") {
 		// failure path is its own function
 		fallback(applyFailed)
 		js.const("ctx", newCtx)
-			.if("!traverseAllows(data, ctx) || ctx.hasError()", () =>
+			.if("!tAllows(data, ctx) || ctx.hasError()", () =>
 				js.return("applyFailed(data, onFail)")
 			)
 			.return("data")
-	} else if (node.applyStrategy === "allows")
+	} else if (node.applyMode === "allows")
 		js.if("!allows(data)", fallback).return("data")
-	else if (node.applyStrategy === "contextualTransform") {
-		if (node.includesAlias) {
+	else if (node.applyMode === "contextualTransform") {
+		if (node.hasAlias) {
 			js.const("untracked", `${ref("allowsAcyclic")}(node, data)`)
 				.if(
 					`!(untracked ?? ${ref("allowsInContext")}(node, data, ${ref("config")}))`,
 					fallback
 				)
 				.const("ctx", newCtx)
-				.set("ctx.tracksMorphs", "untracked === undefined")
+				.set("ctx.isTree", "untracked === undefined")
 				.const(
 					"result",
-					`${ref("transformResolution")}(ctx, "${name}", data, traverseTransform)`
+					`${ref("transformResolution")}(ctx, "${name}", data, tTransform)`
 				)
 		} else {
 			js.if("!allows(data)", fallback)
 				.const("ctx", newCtx)
-				.const("result", "traverseTransform(data, ctx)")
+				.const("result", "tTransform(data, ctx)")
 		}
-		js.return(`ctx.hasError() ? ctx.finalize(${handler}) : result`)
-	} else if (node.hasKind("union") && !node.discriminant) {
-		js.const("result", "traverseTransform(data)").if(
+		js.return(`ctx.hasError() ? ctx.fin(${handler}) : result`)
+	} else if (node.is("union") && !node.discriminant) {
+		js.const("result", "tTransform(data)").if(
 			`result === ${JSON.stringify(unset)}`,
 			fallback
 		)
 		returnResult()
-	} else if (node.includesMorph) {
-		js.if("!allows(data)", fallback).const("result", "traverseTransform(data)")
+	} else if (node.hasMorph) {
+		js.if("!allows(data)", fallback).const("result", "tTransform(data)")
 		returnResult()
-	} else js.if("!allows(data)", fallback).return("traverseTransform(data)")
+	} else js.if("!allows(data)", fallback).return("tTransform(data)")
 	const failurePath =
 		applyFailed.body ?
 			`const applyFailed = function ${applyFailed.write(`${name}ApplyFailed`)}\n`

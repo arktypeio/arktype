@@ -22,7 +22,7 @@ import { $ark } from "../shared/registry.ts"
 import {
 	allowsInBranch,
 	applyValue,
-	traverseKey,
+	travKey,
 	type AliasDepth,
 	type InternalTraversal,
 	type TraverseAllows
@@ -44,7 +44,7 @@ export declare namespace Index {
 			kind: "index"
 			inner: Inner
 			prerequisite: object
-			openIntersection: true
+			stacks: true
 			childKind: RootKind
 		}> {}
 
@@ -54,8 +54,8 @@ export declare namespace Index {
 const implementation: nodeImplementationOf<Index.Declaration> =
 	implementNode<Index.Declaration>({
 		kind: "index",
-		ownsError: false,
-		openIntersection: true,
+		ownErr: false,
+		stacks: true,
 		keys: {
 			signature: {
 				child: true
@@ -72,9 +72,9 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 	})
 
 export class IndexNode extends BaseConstraint<Index.Declaration> {
-	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
+	implied: BaseRoot = $ark.kw.object.internal
 	get expression(): string {
-		return (this.cache.expression ??= composing(
+		return (this.c.expression ??= composing(
 			() => `[${this.signature.expression}]: ${elided(this.value.expression)}`
 		))
 	}
@@ -84,13 +84,13 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 		const key = this.signature
 		// checked by equality first so intrinsic json parses without a set engine
 		if (
-			!key.equals($ark.intrinsic.string) &&
-			!key.equals($ark.intrinsic.symbol) &&
-			!key.equals($ark.intrinsic.key) &&
-			!key.extends($ark.intrinsic.key)
+			!key.equals($ark.kw.string) &&
+			!key.equals($ark.kw.symbol) &&
+			!key.equals($ark.kw.key) &&
+			!key.extends($ark.kw.key)
 		)
 			throwParseError(writeInvalidPropertyKeyMessage(key.expression))
-		const enumerableBranches = key.branches.filter(b => b.hasKind("unit"))
+		const enumerableBranches = key.branches.filter(b => b.is("unit"))
 		if (enumerableBranches.length) {
 			throwParseError(
 				writeEnumerableIndexBranches(
@@ -101,47 +101,43 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	}
 
 	// its structure picks the keys it transforms by the signature's Allows
-	protected override get selectsByCtx(): boolean {
-		return this.signature.hasCtxPredicate || super.selectsByCtx
+	protected override get ctxSel(): boolean {
+		return this.signature.ctxPred || super.ctxSel
 	}
 
-	protected override initFlatRefs(): void {
-		this.cache.flatRefs = flatRefsAt(this.signature, this.value)
-		this.cache.flatMorphs = []
+	protected override initFlat(): void {
+		this.c.flatRefs = flatRefsAt(this.signature, this.value)
+		this.c.flatMorphs = []
 	}
 
 	// a key the signature rejects is undeclared, so its errors are dropped
 	allowsKey: TraverseAllows<PropertyKey> = (k, ctx) =>
-		this.signature.allowsNeedsTraversal ?
+		this.signature.checksCtx ?
 			allowsInBranch(ctx as InternalTraversal, this.signature, k)
-		:	this.signature.traverseAllows(k, ctx)
+		:	this.signature.tAllows(k, ctx)
 
-	traverseAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
+	tAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
 		return stringAndSymbolicEntriesOf(data).every(entry => {
-			if (this.allowsKey(entry[0], ctx)) {
-				return traverseKey(
-					entry[0],
-					() => this.value.traverseAllows(entry[1], ctx),
-					ctx
-				)
-			}
+			if (this.allowsKey(entry[0], ctx))
+				return travKey(entry[0], () => this.value.tAllows(entry[1], ctx), ctx)
+
 			return true
 		})
 	}
 
-	traverseApply(data: object, ctx: InternalTraversal): void {
+	tApply(data: object, ctx: InternalTraversal): void {
 		for (const entry of stringAndSymbolicEntriesOf(data)) {
 			if (this.allowsKey(entry[0], ctx))
-				traverseKey(entry[0], () => applyValue(this.value, entry[1], ctx), ctx)
+				travKey(entry[0], () => applyValue(this.value, entry[1], ctx), ctx)
 		}
 	}
 
-	protected override _transform(
+	protected override _tf(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
 	): BaseNode | null {
 		ctx.path.push(this.signature)
-		const result = super._transform(mapper, ctx)
+		const result = super._tf(mapper, ctx)
 		ctx.path.pop()
 		return result
 	}
@@ -152,7 +148,7 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 }
 
 export const Index = {
-	implementation,
+	impl: implementation,
 	Node: IndexNode
 }
 

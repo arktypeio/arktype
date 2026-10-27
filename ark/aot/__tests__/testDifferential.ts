@@ -40,7 +40,7 @@ prototype.initRootApply = function (this: BaseRoot) {
 	}
 	// cached where arktype caches it, so a root checking its first data
 	// uncompiled compiles at its next call
-	if (this.cache.rootApply === apply) this.cache.rootApply = recordingApply
+	if (this.c.rootApply === apply) this.c.rootApply = recordingApply
 	return recordingApply
 }
 

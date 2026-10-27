@@ -34,7 +34,7 @@ export declare namespace Proto {
 		extends declareNode<{
 			kind: "proto"
 			inner: Inner
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = ProtoNode
@@ -43,8 +43,8 @@ export declare namespace Proto {
 const implementation: nodeImplementationOf<Proto.Declaration> =
 	implementNode<Proto.Declaration>({
 		kind: "proto",
-		ownsError: true,
-		collapseKey: "proto",
+		ownErr: true,
+		bareKey: "proto",
 		keys: {
 			proto: {
 				serialize: ctor =>
@@ -83,7 +83,8 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	builtinName: BuiltinObjectKind | null = getBuiltinNameOfConstructor(
 		this.proto
 	)
-	private readonly requiresInvalidDateCheck =
+	/** whether it rejects an invalid Date, as `Date` does unless `dateAllowsInvalid` */
+	private readonly checksInvalid =
 		this.proto === Date && !this.dateAllowsInvalid
 
 	// Array.isArray is realm-safe; `instanceof Array` rejects arrays from other
@@ -91,17 +92,16 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	private readonly isArrayProto = this.proto === Array
 
 	// Date.prototype's methods throw on an object only inheriting it
-	traverseAllows: TraverseAllows =
-		this.requiresInvalidDateCheck ?
-			data => data instanceof Date && isValidDate(data)
+	tAllows: TraverseAllows =
+		this.checksInvalid ? data => data instanceof Date && isValidDate(data)
 		: this.proto === Date ?
 			data => data instanceof Date && timeOf(data) !== undefined
 		: this.isArrayProto ? data => isArray(data)
 		: data => data instanceof this.proto
 
-	compileCondition(js: NodeCompiler, data: string): string {
+	jsCond(js: NodeCompiler, data: string): string {
 		return (
-			this.requiresInvalidDateCheck ?
+			this.checksInvalid ?
 				`${data} instanceof Date && ${js.ref(isValidDate)}(${data})`
 			: this.proto === Date ?
 				`${data} instanceof Date && ${js.ref(timeOf)}(${data}) !== undefined`
@@ -113,19 +113,19 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	expression: string =
 		this.dateAllowsInvalid ? "Date | InvalidDate" : functionNameOf(this.proto)
 
-	get nestedExpression(): string {
+	get nestedExpr(): string {
 		return this.dateAllowsInvalid ? `(${this.expression})` : this.expression
 	}
 
 	readonly domain = "object"
 
-	get defaultBrief(): string {
+	get brief(): string {
 		return this.description
 	}
 }
 
 export const Proto = {
-	implementation,
+	impl: implementation,
 	Node: ProtoNode,
 	writeBadInvalidDateMessage: (actual: Constructor): string =>
 		`dateAllowsInvalid may only be specified with constructor Date (was ${functionNameOf(actual)})`,

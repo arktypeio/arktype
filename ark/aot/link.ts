@@ -471,7 +471,7 @@ class Linker {
 					:	undefined
 				const creator =
 					init?.type === "CallExpression" && init.callee.type === "Identifier" ?
-						module.scopes.refsById.get(init.callee)?.binding
+						module.scopes.byId.get(init.callee)?.binding
 					:	undefined
 				if (
 					!binding?.references.length ||
@@ -488,7 +488,7 @@ class Linker {
 				const [checker] = init.arguments
 				const imported =
 					checker.type === "Identifier" ?
-						module.scopes.refsById.get(checker)?.binding
+						module.scopes.byId.get(checker)?.binding
 					:	undefined
 				const declared = imported && this.declarationOf(site, imported)
 				if (declared) {
@@ -864,7 +864,7 @@ const creationOf = (site: Unit, checker: Reference): Creation | undefined => {
 		return
 	const { scopes } = site.module
 	const binding = scopes.bindingsById.get(declarator.id)
-	const creator = scopes.refsById.get(call.callee)?.binding
+	const creator = scopes.byId.get(call.callee)?.binding
 	if (
 		!binding ||
 		binding.references.length ||
@@ -918,7 +918,7 @@ const unreadCreationsOf = (unit: Unit): Set<Node> => {
 			:	undefined
 		const creator =
 			callee?.type === "Identifier" ?
-				unit.module.scopes.refsById.get(callee)?.binding
+				unit.module.scopes.byId.get(callee)?.binding
 			:	undefined
 		if (
 			binding &&

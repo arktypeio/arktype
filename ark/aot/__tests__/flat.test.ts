@@ -471,12 +471,12 @@ export { unit }
 	describe("a module built from code its scan didn't read", () => {
 		// resolves reader.ts as the scan reads it, then as another module
 		const swapping = (to: string): Plugin => {
-			let resolutions = 0
+			let res = 0
 			return {
 				name: "swap",
 				setup: build =>
 					build.onResolve({ filter: /reader\.ts$/ }, () => ({
-						path: join(files, resolutions++ ? to : "reader.ts")
+						path: join(files, res++ ? to : "reader.ts")
 					}))
 			}
 		}

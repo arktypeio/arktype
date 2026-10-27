@@ -35,8 +35,7 @@ const standardRootsByIo = {
 /** the Root a schema's values make up */
 export const parse = (schema: Schema, options?: ParseOptions): Root => {
 	const io = options?.io ?? "in"
-	if (schema instanceof BaseRoot)
-		return io === "in" ? schema.rawIn : schema.rawOut
+	if (schema instanceof BaseRoot) return io === "in" ? schema._in : schema._out
 	if (typeof schema === "boolean") return readJsonSchema(schema, options?.root)
 	if (!hasDomain(schema, "object"))
 		return throwParseError(writeUnparsableSchemaMessage(printable(schema)))

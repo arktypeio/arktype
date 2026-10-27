@@ -12,31 +12,27 @@ import {
 import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.ts"
 
 export const parseOperand = (s: RuntimeState): void =>
-	s.scanner.lookahead === "" ? s.error(writeMissingOperandMessage(s))
-	: s.scanner.lookahead === "(" ? s.shiftedBy(1).reduceGroupOpen()
-	: s.scanner.lookaheadIsIn(enclosingChar) ? parseEnclosed(s, s.scanner.shift())
-	: s.scanner.lookaheadIsIn(whitespaceChars) ? parseOperand(s.shiftedBy(1))
-	: s.scanner.lookahead === "d" ?
-		s.scanner.nextLookahead in enclosingQuote ?
-			parseEnclosed(
-				s,
-				`${s.scanner.shift()}${s.scanner.shift()}` as EnclosingStartToken
-			)
+	s.sc.peek === "" ? s.error(writeMissingOperandMessage(s))
+	: s.sc.peek === "(" ? s.shiftedBy(1).reduceGroupOpen()
+	: s.sc.peekIsIn(enclosingChar) ? parseEnclosed(s, s.sc.shift())
+	: s.sc.peekIsIn(whitespaceChars) ? parseOperand(s.shiftedBy(1))
+	: s.sc.peek === "d" ?
+		s.sc.peekNext in enclosingQuote ?
+			parseEnclosed(s, `${s.sc.shift()}${s.sc.shift()}` as EnclosingStartToken)
 		:	parseUnenclosed(s)
-	: s.scanner.lookahead === "x" ?
-		s.scanner.nextLookahead === "/" ?
+	: s.sc.peek === "x" ?
+		s.sc.peekNext === "/" ?
 			s.shiftedBy(2) && parseEnclosed(s, "x/")
 		:	parseUnenclosed(s)
 	:	parseUnenclosed(s)
 
 export type parseOperand<s extends StaticState, $, args> =
-	s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned> ?
-		lookahead extends "(" ? s.reduceGroupOpen<s, unscanned>
-		: lookahead extends EnclosingStartToken ?
-			parseEnclosed<s, lookahead, unscanned>
-		: lookahead extends WhitespaceChar ?
+	s["unscanned"] extends Scanner.shift<infer peek, infer unscanned> ?
+		peek extends "(" ? s.reduceGroupOpen<s, unscanned>
+		: peek extends EnclosingStartToken ? parseEnclosed<s, peek, unscanned>
+		: peek extends WhitespaceChar ?
 			parseOperand<s.scanTo<s, unscanned>, $, args>
-		: lookahead extends "d" ?
+		: peek extends "d" ?
 			unscanned extends (
 				Scanner.shift<
 					infer enclosing extends EnclosingQuote,
@@ -45,7 +41,7 @@ export type parseOperand<s extends StaticState, $, args> =
 			) ?
 				parseEnclosed<s, `d${enclosing}`, nextUnscanned>
 			:	parseUnenclosed<s, $, args>
-		: lookahead extends "x" ?
+		: peek extends "x" ?
 			unscanned extends Scanner.shift<"/", infer nextUnscanned> ?
 				parseEnclosed<s, "x/", nextUnscanned>
 			:	parseUnenclosed<s, $, args>

@@ -31,7 +31,7 @@ export declare namespace MinLength {
 			inner: Inner
 			prerequisite: LengthBoundableData
 			reducibleTo: "intersection"
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = MinLengthNode
@@ -40,8 +40,8 @@ export declare namespace MinLength {
 const implementation: nodeImplementationOf<MinLength.Declaration> =
 	implementNode<MinLength.Declaration>({
 		kind: "minLength",
-		collapseKey: "rule",
-		ownsError: true,
+		bareKey: "rule",
+		ownErr: true,
 		keys: {
 			rule: {}
 		},
@@ -52,14 +52,14 @@ const implementation: nodeImplementationOf<MinLength.Declaration> =
 	})
 
 export class MinLengthNode extends BaseRange<MinLength.Declaration> {
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
+	readonly implied: BaseRoot = $ark.kw.lengthBoundable.internal
 
-	traverseAllows(data: LengthBoundableData): boolean {
+	tAllows(data: LengthBoundableData): boolean {
 		return data.length >= this.rule
 	}
 }
 
 export const MinLength = {
-	implementation,
+	impl: implementation,
 	Node: MinLengthNode
 }

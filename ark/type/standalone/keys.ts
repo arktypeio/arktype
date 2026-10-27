@@ -67,9 +67,9 @@ const rootKeyOf = (root: BaseRoot, isScoped = true): Key => {
 	// held so a codec's validator can be encoded where it's received
 	const inverses: unknown[] = []
 	for (const node of writtenSelectedOf(units, isKeyedBehavior)) {
-		if (node.hasKind("optional") || node.hasKind("sequence"))
+		if (node.is("optional") || node.is("sequence"))
 			collectDefaults(node, defaultsByMorph)
-		else if (node.hasKind("morph") && node.inverse) inverses.push(node.inverse)
+		else if (node.is("morph") && node.inverse) inverses.push(node.inverse)
 	}
 	// add each function or object's kind and repeat positions
 	return encodeKey(
@@ -87,7 +87,7 @@ const rootKeyOf = (root: BaseRoot, isScoped = true): Key => {
 
 // a default or a codec's inverse, each part of a key
 const isKeyedBehavior = (node: BaseNode): boolean =>
-	holdsDefaults(node) || (node.hasKind("morph") && !!node.inverse)
+	holdsDefaults(node) || (node.is("morph") && !!node.inverse)
 
 // equal keys differ only in which functions they hold
 export const encodeKey = (

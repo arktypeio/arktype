@@ -44,7 +44,7 @@ contextualize(() => {
 	it("a scope resolved before arktype's keywords has their phrases", () => {
 		const parseJson = rootSchema({
 			in: "string",
-			morphs: type("string.json.parse").internal.assertHasKind("morph").morphs
+			morphs: type("string.json.parse").internal.assertIs("morph").morphs
 		})
 		attest((parseJson("") as ArkErrors).toString()).snap(
 			"must be a JSON string (was empty)"

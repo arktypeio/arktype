@@ -44,7 +44,7 @@ import {
 } from "./shared/transform.ts"
 import {
 	addErrors,
-	addMorphErrors,
+	addMorphErrs,
 	allowsInBranch,
 	allowsInBranchBy,
 	callMorph,
@@ -67,17 +67,14 @@ import { hasArkKind, isNode } from "./shared/utils.ts"
 import { arrayIndexMatcher } from "./structure/shared.ts"
 
 // leaves read no object property
-const isLeafIn = (
-	node: BaseNode,
-	refsById: Record<string, BaseNode>
-): boolean => {
+const isLeafIn = (node: BaseNode, byId: Record<string, BaseNode>): boolean => {
 	if (!node.isRoot()) return false
-	for (const id in node.refsById) {
-		const reference = node.refsById[id]
+	for (const id in node.byId) {
+		const reference = node.byId[id]
 		if (
-			reference !== refsById[id] ||
-			reference.hasKind("structure") ||
-			reference.hasKind("alias")
+			reference !== byId[id] ||
+			reference.is("structure") ||
+			reference.is("alias")
 		)
 			return false
 	}
@@ -89,40 +86,39 @@ export const precompile = (
 	owningScope?: BaseScope,
 	unbound?: UnboundTraversals
 ): Fn => {
-	const linkage = createLinkage()
+	const link = createLinkage()
 	const reused = new Set<BaseNode>()
-	linkage.reused = reused
-	for (const node of references) linkage.refsById[node.id] = node
+	link.reused = reused
+	for (const node of references) link.byId[node.id] = node
 	const declared: BaseNode[] = []
 	for (const node of references) {
-		if (node.cache.isReusableLeaf && isLeafIn(node, linkage.refsById))
-			reused.add(node)
+		if (node.c.isReusableLeaf && isLeafIn(node, link.byId)) reused.add(node)
 		else if (
-			node.compiledUnit &&
+			node.unitFn &&
 			(!owningScope || node.$ !== owningScope) &&
 			// compiling an alias can create nodes, so every unit declares its own
-			!node.hasKind("alias")
+			!node.is("alias")
 		)
-			linkage.unreached.add(node)
+			link.unreached.add(node)
 		else declared.push(node)
 	}
-	const compiledUnit = precompileReferences(declared, linkage).compile()
+	const unitFn = precompileReferences(declared, link).compile()
 	bindUnit(
 		declared,
-		compiledUnit,
-		compiledUnit(
-			Object.values(linkage.dependencies).map(([node, kind]) => {
-				const traverse: Fn = node[`traverse${kind}`]!
+		unitFn,
+		unitFn(
+			Object.values(link.dependencies).map(([node, kind]) => {
+				const traverse: Fn = node[`t${kind}`]!
 				// an uncompiled node's traversal is its method, which reads the node
-				return hasOwn(node, `traverse${kind}`) ? traverse : traverse.bind(node)
+				return hasOwn(node, `t${kind}`) ? traverse : traverse.bind(node)
 			}),
-			[...linkage.refs.keys()]
+			[...link.refs.keys()]
 		),
-		linkage.refsById,
+		link.byId,
 		owningScope,
 		unbound
 	)
-	return compiledUnit
+	return unitFn
 }
 
 // a deferred Type's nodes aren't bound to another Type's unit
@@ -132,16 +128,15 @@ export const precompileRoot = (
 ): void => {
 	const unbound: UnboundTraversals = new Map()
 	for (const reference of references) {
-		if (reference === root || !reference.cache.allowsPreJit) continue
-		for (const id in reference.refsById)
-			unbound.set(reference.refsById[id], undefined)
+		if (reference === root || !reference.c.preJit) continue
+		for (const id in reference.byId) unbound.set(reference.byId[id], undefined)
 	}
 	// an apply checking data uncompiled to write in place reads no copy
 	for (const node of $ark.inPlace?.checking ?? []) unbound.set(node, undefined)
 	unbound.delete(root)
 	precompile(references, undefined, unbound)
 	// what an apply writing in place reads rather than compiling again
-	if ($ark.inPlace) root.cache.unbound = unbound
+	if ($ark.inPlace) root.c.unbound = unbound
 }
 
 // compiles in-place traversals for what root's writers reach
@@ -155,28 +150,28 @@ export const precompileInPlace = (
 	const shapes = new Map<
 		BaseNode,
 		{
-			traverseApply?: TraverseApply | undefined
-			traverseTransform?: TraverseTransform | undefined
+			tApply?: TraverseApply | undefined
+			tTransform?: TraverseTransform | undefined
 		}
 	>()
 	const include = (node: BaseNode): void => {
 		// a node included is included with what it references
-		if (linkage.refsById[node.id]) return
+		if (link.byId[node.id]) return
 		for (const reference of referencesThroughAliases([
 			node,
 			...node.references
 		])) {
-			if (linkage.refsById[reference.id]) continue
-			linkage.refsById[reference.id] = reference
+			if (link.byId[reference.id]) continue
+			link.byId[reference.id] = reference
 			const kinds: TraversalKind[] = []
-			const isCompiled = !!reference.compiledUnit || !!unbound?.get(reference)
+			const isCompiled = !!reference.unitFn || !!unbound?.get(reference)
 			if (!isCompiled) kinds.push("Allows")
-			if (reference.transforms ? !reference.cache.applyInPlace : !isCompiled)
+			if (reference.tfs ? !reference.c.applyInPlace : !isCompiled)
 				kinds.push("Apply")
 			if (
-				reference.transforms &&
+				reference.tfs &&
 				includes(transformedKinds, reference.kind) &&
-				!reference.cache.applyInPlace
+				!reference.c.applyInPlace
 			)
 				kinds.push("Transform")
 			if (!kinds.length) continue
@@ -191,20 +186,17 @@ export const precompileInPlace = (
 			include(node)
 		}
 
-		override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
-			const reference = this.linkage.refsById[id]
-			const kind = opts?.kind ?? this.traversalKind
-			if (reference && !kindsByNode.get(reference)?.includes(kind)) {
-				this.linkage.dependencies[`${this.nameOf(id)}${kind}`] = [
-					reference,
-					kind
-				]
-			}
-			return super.referenceToId(id, opts)
+		override refToId(id: NodeId, opts?: ReferenceOptions): string {
+			const reference = this.link.byId[id]
+			const kind = opts?.kind ?? this.trav
+			if (reference && !kindsByNode.get(reference)?.includes(kind))
+				this.link.dependencies[`${this.nameOf(id)}${kind}`] = [reference, kind]
+
+			return super.refToId(id, opts)
 		}
 
 		override ref(value: object | symbol): string {
-			if (!isNode(value) || !value.isRoot() || !value.transforms)
+			if (!isNode(value) || !value.isRoot() || !value.tfs)
 				return super.ref(value)
 			include(value)
 			let shape = shapes.get(value)
@@ -212,49 +204,46 @@ export const precompileInPlace = (
 			return super.ref(shape)
 		}
 	}
-	const linkage = createLinkage(undefined, { compiler: InPlaceCompiler })
+	const link = createLinkage(undefined, { compiler: InPlaceCompiler })
 	include(root)
 	const names: string[][] = []
 	for (let i = 0; i < declared.length; i++) {
 		const [node, kinds] = declared[i]
-		names.push(kinds.map(kind => declareTraversal(linkage, node, kind)))
+		names.push(kinds.map(kind => declareTraversal(link, node, kind)))
 	}
-	const compiledUnit = writeUnit(
-		Object.keys(linkage.dependencies),
-		[...linkage.refs.values()],
-		linkage.members,
+	const unitFn = writeUnit(
+		Object.keys(link.dependencies),
+		[...link.refs.values()],
+		link.members,
 		names
 	).compile()
-	const traversals = compiledUnit(
-		Object.values(linkage.dependencies).map(
+	const traversals = unitFn(
+		Object.values(link.dependencies).map(
 			([node, kind]): Fn =>
-				kind === "Allows" || !node.transforms ?
-					(unbound?.get(node)?.[kind === "Allows" ? 0 : 1] ??
-					node[`traverse${kind}`]!)
-				: kind === "Apply" ? node.cache.applyInPlace!
-				: node.cache.transformInPlace!
+				kind === "Allows" || !node.tfs ?
+					(unbound?.get(node)?.[kind === "Allows" ? 0 : 1] ?? node[`t${kind}`]!)
+				: kind === "Apply" ? node.c.applyInPlace!
+				: node.c.transformInPlace!
 		),
-		[...linkage.refs.keys()]
+		[...link.refs.keys()]
 	)
 	for (let i = 0; i < declared.length; i++) {
 		const [node, kinds] = declared[i]
-		if (!node.transforms) continue
-		node.cache.applyInPlace = traversals[i][kinds.indexOf("Apply")] as never
-		node.cache.transformInPlace = traversals[i][
-			kinds.indexOf("Transform")
-		] as never
+		if (!node.tfs) continue
+		node.c.applyInPlace = traversals[i][kinds.indexOf("Apply")] as never
+		node.c.transformInPlace = traversals[i][kinds.indexOf("Transform")] as never
 	}
 	for (const [node, shape] of shapes) {
-		shape.traverseApply = node.cache.applyInPlace
-		shape.traverseTransform = node.cache.transformInPlace
+		shape.tApply = node.c.applyInPlace
+		shape.tTransform = node.c.transformInPlace
 	}
 }
 
 const bindUnit = (
 	declared: readonly BaseNode[],
-	compiledUnit: CompiledUnit,
+	unitFn: CompiledUnit,
 	compiledTraversals: PrecompiledTraversals[],
-	refsById: Record<string, BaseNode>,
+	byId: Record<string, BaseNode>,
 	owningScope?: BaseScope,
 	unbound?: UnboundTraversals
 ): void => {
@@ -265,24 +254,23 @@ const bindUnit = (
 			continue
 		}
 		// if node has already been bound to another scope or anonymous type, don't rebind it
-		if (node.compiledUnit && (!owningScope || node.$ !== owningScope)) continue
-		const [traverseAllows, traverseApply, traverseTransform] =
-			compiledTraversals[i]
-		if (node.cache.allowsPreJit) {
-			node.allows = node.cache.allowsPreJit
-			node.cache.allowsPreJit = undefined
+		if (node.unitFn && (!owningScope || node.$ !== owningScope)) continue
+		const [tAllows, tApply, tTransform] = compiledTraversals[i]
+		if (node.c.preJit) {
+			node.allows = node.c.preJit
+			node.c.preJit = undefined
 		}
-		node.traverseAllows = traverseAllows
-		if (node.isRoot() && !node.allowsNeedsCtx) {
+		node.tAllows = tAllows
+		if (node.isRoot() && !node.allowsCtx) {
 			// if the reference doesn't require context, we can assign over
 			// it directly to avoid having to initialize it
-			node.allows = traverseAllows as never
+			node.allows = tAllows as never
 		}
-		node.traverseApply = traverseApply
-		if (traverseTransform) node.traverseTransform = traverseTransform
-		node.compiledUnit = compiledUnit
-		delete node.cache.rootApply
-		node.cache.isReusableLeaf = isLeafIn(node, refsById)
+		node.tApply = tApply
+		if (tTransform) node.tTransform = tTransform
+		node.unitFn = unitFn
+		delete node.c.rootApply
+		node.c.isReusableLeaf = isLeafIn(node, byId)
 	}
 }
 
@@ -302,7 +290,7 @@ type CompiledUnit = (
 
 const unitConstants = {
 	addErrors,
-	addMorphErrors,
+	addMorphErrs,
 	allowsInBranch,
 	allowsInBranchBy,
 	ArkErrors,
@@ -340,7 +328,7 @@ export type PrecompiledUnit = [
 		root: BaseNode,
 		constants: typeof unitConstants
 	) => [declared: BaseNode[], refs: unknown[], dependencies: BaseNode[]],
-	compiledUnit: CompiledUnit,
+	unitFn: CompiledUnit,
 	// root key and traversal-kind index of each unit called
 	dependencies: [key: string, kind: number][],
 	// reference count, compared before hashing
@@ -376,16 +364,12 @@ const bindRegisteredUnits = (values: readonly unknown[]): void => {
 	const sized: [root: BaseRoot, size: number][] = []
 	for (const value of values) {
 		// a cyclic unit keys its resolutions by node id
-		if (
-			hasArkKind(value, "root") &&
-			!value.compiledUnit &&
-			!value.includesAlias
-		)
+		if (hasArkKind(value, "root") && !value.unitFn && !value.hasAlias)
 			sized.push([value, sizeOf(value)])
 	}
 	sized.sort((l, r) => r[1] - l[1])
 	for (const [root, size] of sized) {
-		if (root.compiledUnit || !registeredSizes[size]) continue
+		if (root.unitFn || !registeredSizes[size]) continue
 		const precompiled = precompiledUnits[precompiledKeyOf(root)]
 		if (precompiled) bindPrecompiled(root, precompiled)
 	}
@@ -393,23 +377,17 @@ const bindRegisteredUnits = (values: readonly unknown[]): void => {
 
 const bindPrecompiled = (
 	root: BaseNode,
-	[bind, compiledUnit, dependencies]: PrecompiledUnit
+	[bind, unitFn, dependencies]: PrecompiledUnit
 ): void => {
 	const [declared, refs, dependencyNodes] = bind(root, unitConstants)
 	const traversals: Fn[] = []
 	for (let i = 0; i < dependencies.length; i++) {
 		const [key, kind] = dependencies[i]
 		const dependency = dependencyNodes[i]
-		if (!dependency.compiledUnit)
-			bindPrecompiled(dependency, precompiledUnits[key])
-		traversals.push(dependency[`traverse${traversalKinds[kind]}`]!)
+		if (!dependency.unitFn) bindPrecompiled(dependency, precompiledUnits[key])
+		traversals.push(dependency[`t${traversalKinds[kind]}`]!)
 	}
-	bindUnit(
-		declared,
-		compiledUnit,
-		compiledUnit(traversals, refs),
-		root.refsById
-	)
+	bindUnit(declared, unitFn, unitFn(traversals, refs), root.byId)
 }
 
 // a tuple's defaults nest each thunk in an array of pairs
@@ -425,17 +403,17 @@ const forEachElement = (
 
 let constantNames: Map<unknown, string> | undefined
 
-const sizeOf = (root: BaseRoot): number => Object.keys(root.refsById).length
+const sizeOf = (root: BaseRoot): number => Object.keys(root.byId).length
 
 // arity, the set engine, a scope's exactOptionalPropertyTypes and the order
 // keys are declared in affect compiling but not the hash
 const precompiledKeyOf = (root: BaseRoot): string => {
 	let childCounts = ""
-	for (const id in root.refsById) {
-		const node = root.refsById[id]
-		childCounts += `${node.children.length}${node.hasKind("optional") && node.defaultsUndefined ? "u" : ""},`
-		if (node.hasKind("structure") && node.order)
-			childCounts += `[${node.orderedProps.map(prop => node.props.indexOf(prop))}]`
+	for (const id in root.byId) {
+		const node = root.byId[id]
+		childCounts += `${node.children.length}${node.is("optional") && node.defaultsUndefined ? "u" : ""},`
+		if (node.is("structure") && node.order)
+			childCounts += `[${node.inOrder.map(prop => node.props.indexOf(prop))}]`
 	}
 	const content =
 		root.hash.includes(`"$ark.`) ? keyRegisteredNames(root) : root.hash
@@ -449,8 +427,8 @@ const keyRegisteredNames = (root: BaseRoot): string => {
 	)
 	// a constant is keyed as the constant
 	const kindsByName: Record<string, string> = Object.create(null)
-	for (const id in root.refsById) {
-		const node = root.refsById[id]
+	for (const id in root.byId) {
+		const node = root.byId[id]
 		for (const k in node.inner) {
 			// a unit value's function name would shift later registrations
 			forEachElement((node.inner as Dict)[k], k === "unit" ? 0 : 2, value => {
@@ -459,7 +437,7 @@ const keyRegisteredNames = (root: BaseRoot): string => {
 				else if (typeof value === "function" && !isNode(value)) {
 					// only predicate and morph arity is compiled
 					kindsByName[nameOf(value)] =
-						node.hasKind("predicate") || node.hasKind("morph") ?
+						node.is("predicate") || node.is("morph") ?
 							`fn:${arityOf(value)}`
 						:	"fn"
 				}
@@ -480,15 +458,15 @@ const keyRegisteredNames = (root: BaseRoot): string => {
 
 const precompileReferences = (
 	references: readonly BaseNode[],
-	linkage: UnitLinkage
+	link: UnitLinkage
 ) => {
-	const traversals = references.map(node => declareTraversals(linkage, node))
-	for (let i = 0; i < linkage.reached.length; i++)
-		declareTraversals(linkage, linkage.reached[i])
+	const traversals = references.map(node => declareTraversals(link, node))
+	for (let i = 0; i < link.reached.length; i++)
+		declareTraversals(link, link.reached[i])
 	return writeUnit(
-		Object.keys(linkage.dependencies),
-		[...linkage.refs.values()],
-		linkage.members,
+		Object.keys(link.dependencies),
+		[...link.refs.values()],
+		link.members,
 		traversals
 	)
 }
@@ -518,26 +496,26 @@ const writeUnit = (
 
 export type UnitMember = [name: string, source: string]
 
-const declareTraversals = (linkage: UnitLinkage, node: BaseNode): string[] => {
-	const Compiler = linkage.opts.compiler
+const declareTraversals = (link: UnitLinkage, node: BaseNode): string[] => {
+	const Compiler = link.opts.compiler
 	const declared =
 		Compiler?.prototype.declareTraversals &&
-		new Compiler("Allows", linkage, true).declareTraversals!(node)
+		new Compiler("Allows", link, true).declareTraversals!(node)
 	if (declared) return declared
 	const traversals = [
-		declareTraversal(linkage, node, "Allows"),
-		declareTraversal(linkage, node, "Apply")
+		declareTraversal(link, node, "Allows"),
+		declareTraversal(link, node, "Apply")
 	]
 	// a prop or index signature is transformed by its structure
-	if (node.transforms && includes(transformedKinds, node.kind))
-		traversals.push(declareTraversal(linkage, node, "Transform"))
+	if (node.tfs && includes(transformedKinds, node.kind))
+		traversals.push(declareTraversal(link, node, "Transform"))
 	return traversals
 }
 
 type UnitDependency = [node: BaseNode, kind: TraversalKind]
 
 interface UnitLinkage {
-	refsById: Record<string, BaseNode>
+	byId: Record<string, BaseNode>
 	reused: Pick<ReadonlySet<BaseNode>, "has">
 	unreached: Set<BaseNode>
 	reached: BaseNode[]
@@ -558,7 +536,7 @@ const createLinkage = (
 	opts: UnitOptions = {},
 	unit?: string
 ): UnitLinkage => ({
-	refsById: {},
+	byId: {},
 	reused: noneReused,
 	unreached: new Set(),
 	reached: [],
@@ -571,42 +549,37 @@ const createLinkage = (
 })
 
 export class TraversalCompiler extends NodeCompiler {
-	readonly linkage: UnitLinkage
+	/** how the units it writes reference one another */
+	readonly link: UnitLinkage
 
-	constructor(
-		kind: TraversalKind,
-		linkage: UnitLinkage,
-		requiresContext: boolean
-	) {
+	constructor(kind: TraversalKind, link: UnitLinkage, needsCtx: boolean) {
 		super({
 			kind,
-			requiresContext,
-			refs: linkage.refs
+			needsCtx,
+			refs: link.refs
 		})
-		this.linkage = linkage
+		this.link = link
 	}
 
 	// declares a node's traversals some other way, returning their names
 	declareTraversals?(node: BaseNode): string[] | undefined
 
 	// a one-expression node is written inline
-	override invoke(node: BaseNode, opts?: InvokeOptions): string {
+	override inv(node: BaseNode, opts?: InvokeOptions): string {
 		this.reach(node)
 		const expression =
 			(
-				(opts?.kind ?? this.traversalKind) !== this.traversalKind ||
+				(opts?.kind ?? this.trav) !== this.trav ||
 				(opts?.arg ?? this.data) !== this.data
 			) ?
 				undefined
-			: node.hasKind("structure") ?
+			: node.is("structure") ?
 				// a structure sharing transformed keys applies them in a call of its own
-				this.traversalKind === "Apply" && node.sharesTransforms ?
+				this.trav === "Apply" && node.sharesTfs ?
 					undefined
-				:	node.compileConjunction(this)
-			:	node.compileExpression?.(this)
-		return expression === undefined ?
-				super.invoke(node, opts)
-			:	`(${expression})`
+				:	node.jsConjunction(this)
+			:	node.jsExpression?.(this)
+		return expression === undefined ? super.inv(node, opts) : `(${expression})`
 	}
 
 	override traversal(node: BaseNode, kind: TraversalKind): string {
@@ -615,26 +588,26 @@ export class TraversalCompiler extends NodeCompiler {
 	}
 
 	reach(node: BaseNode): void {
-		if (!this.linkage.refsById[node.id]) {
-			this.linkage.refsById[node.id] = node
-			this.linkage.reached.push(node)
+		if (!this.link.byId[node.id]) {
+			this.link.byId[node.id] = node
+			this.link.reached.push(node)
 		}
 	}
 
 	// a node can be named without being invoked, e.g. an Allows passed
-	override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
-		const reference = this.linkage.refsById[id]
-		if (reference && this.linkage.unreached.delete(reference))
-			this.linkage.reached.push(reference)
-		if (reference && this.linkage.reused.has(reference)) {
-			const kind = opts?.kind ?? this.traversalKind
-			this.linkage.dependencies[`${this.nameOf(id)}${kind}`] = [reference, kind]
+	override refToId(id: NodeId, opts?: ReferenceOptions): string {
+		const reference = this.link.byId[id]
+		if (reference && this.link.unreached.delete(reference))
+			this.link.reached.push(reference)
+		if (reference && this.link.reused.has(reference)) {
+			const kind = opts?.kind ?? this.trav
+			this.link.dependencies[`${this.nameOf(id)}${kind}`] = [reference, kind]
 		}
-		return super.referenceToId(id, opts)
+		return super.refToId(id, opts)
 	}
 
 	override nameOf(id: NodeId): string {
-		return this.linkage.nameOf?.(id) ?? super.nameOf(id)
+		return this.link.nameOf?.(id) ?? super.nameOf(id)
 	}
 
 	override outline(
@@ -642,19 +615,18 @@ export class TraversalCompiler extends NodeCompiler {
 		args: readonly string[],
 		body: (js: NodeCompiler) => unknown
 	): this {
-		const js = new (this.linkage.opts.compiler ?? TraversalCompiler)(
-			this.traversalKind,
-			this.linkage,
-			this.requiresContext
+		const js = new (this.link.opts.compiler ?? TraversalCompiler)(
+			this.trav,
+			this.link,
+			this.needsCtx
 		).indent()
-		js.checksMorphErrors = this.checksMorphErrors
+		js.checksErrs = this.checksErrs
 		body(js)
 		const params = [this.data, this.ctx, ...args]
 		// the variable initializeTransform declares
-		if (this.checksMorphErrors)
-			params.push(this.requiresContext ? "errorCount" : "failed")
+		if (this.checksErrs) params.push(this.needsCtx ? "errN" : "failed")
 		const list = params.join(", ")
-		this.linkage.members.push([name, `function(${list}) { ${js.body} }`])
+		this.link.members.push([name, `function(${list}) { ${js.body} }`])
 		return this.return(`${name}(${list})`)
 	}
 }
@@ -669,18 +641,18 @@ const transformedKinds = [
 ] as const satisfies NodeKind[]
 
 const declareTraversal = (
-	linkage: UnitLinkage,
+	link: UnitLinkage,
 	node: BaseNode,
 	kind: TraversalKind
 ): string => {
-	const js = new (linkage.opts.compiler ?? TraversalCompiler)(
+	const js = new (link.opts.compiler ?? TraversalCompiler)(
 		kind,
-		linkage,
-		kind !== "Transform" || node.transformNeedsCtx
+		link,
+		kind !== "Transform" || node.tfCtx
 	).indent()
 	node.compile(js)
-	const name = js.referenceToId(node.id, { kind })
-	linkage.members.push([name, js.write("function")])
+	const name = js.refToId(node.id, { kind })
+	link.members.push([name, js.write("function")])
 	return name
 }
 
@@ -772,7 +744,7 @@ const readsMatch = (
 	for (const [id, name] of written.namesRead)
 		if (s.names[id] !== name) return false
 	for (const [id, node] of written.reachedRead)
-		if (s.refsById[id]?.node !== node) return false
+		if (s.byId[id]?.node !== node) return false
 	return true
 }
 
@@ -789,7 +761,7 @@ const writeComponent = (
 	}
 	const reachedRead = new Map<NodeId, BaseNode | undefined>()
 	const reachedAt = (id: NodeId) => {
-		const node = s.refsById[id]?.node
+		const node = s.byId[id]?.node
 		reachedRead.set(id, node)
 		return node
 	}
@@ -801,25 +773,23 @@ const writeComponent = (
 	for (const node of reached) {
 		if (declaredByName[readName(node.id)]) continue
 		declaredByName[readName(node.id)] = node
-		for (const callee of s.refsById[node.id].callees)
+		for (const callee of s.byId[node.id].callees)
 			if (!callee.isRoot() || roots.includes(callee)) reached.push(callee)
 	}
-	const linkage = createLinkage(readName, opts, readName(roots[0].id))
+	const link = createLinkage(readName, opts, readName(roots[0].id))
 	// reads through to what the pass reached
-	linkage.refsById = Object.create(
+	link.byId = Object.create(
 		new Proxy({}, { get: (_, id) => reachedAt(id as NodeId) })
 	)
 	// a reached root another component declares
-	linkage.reused = {
+	link.reused = {
 		has: node =>
 			reachedAt(node.id) === node &&
 			node.isRoot() &&
 			!declaredByName[readName(node.id)]
 	}
 	const declared = Object.values(declaredByName)
-	const declaredTraversals = declared.map(node =>
-		declareTraversals(linkage, node)
-	)
+	const declaredTraversals = declared.map(node => declareTraversals(link, node))
 	return {
 		component,
 		namesRead,
@@ -828,14 +798,14 @@ const writeComponent = (
 		roots: roots as BaseRoot[],
 		declared,
 		declaredTraversals,
-		members: linkage.members,
-		refs: [...linkage.refs.keys()],
-		dependencies: linkage.dependencies
+		members: link.members,
+		refs: [...link.refs.keys()],
+		dependencies: link.dependencies
 	}
 }
 
 interface ContentNamingState {
-	refsById: Record<NodeId, ContentReference>
+	byId: Record<NodeId, ContentReference>
 	reached: BaseNode[]
 	stack: ContentReference[]
 	components: BaseNode[][]
@@ -895,7 +865,7 @@ const nameReferences = (
 	opts: UnitOptions
 ): ContentNamingState => {
 	const s: ContentNamingState = {
-		refsById: {},
+		byId: {},
 		reached: [],
 		stack: [],
 		components: [],
@@ -907,7 +877,7 @@ const nameReferences = (
 		identityNamed: new Set(),
 		written: writtenOf(opts)
 	}
-	for (const root of roots) if (!s.refsById[root.id]) nameReference(s, root)
+	for (const root of roots) if (!s.byId[root.id]) nameReference(s, root)
 	return s
 }
 
@@ -916,11 +886,11 @@ const occurrencesOfResolutions = (
 	s: ContentNamingState
 ): Record<NodeId, number> | undefined => {
 	// only an alias or what it resolves to is numbered
-	if (!s.reached.some(node => node.includesAlias)) return
+	if (!s.reached.some(node => node.hasAlias)) return
 	const resolutionIds: Record<NodeId, true> = {}
 	const reachedByName: Record<string, BaseNode[]> = {}
 	for (const node of s.reached) {
-		if (node.hasKind("alias")) resolutionIds[node.resolution.id] = true
+		if (node.is("alias")) resolutionIds[node.resolution.id] = true
 		;(reachedByName[s.names[node.id]] ??= []).push(node)
 	}
 	let occurrencesById: Record<NodeId, number> | undefined
@@ -928,7 +898,7 @@ const occurrencesOfResolutions = (
 		const nodes = reachedByName[name]
 		if (
 			nodes.length === 1 ||
-			!nodes.some(node => node.includesAlias || resolutionIds[node.id])
+			!nodes.some(node => node.hasAlias || resolutionIds[node.id])
 		)
 			continue
 		for (let i = 1; i < nodes.length; i++)
@@ -954,11 +924,11 @@ const nameReference = (
 	node: BaseNode
 ): ContentReference => {
 	const reference = compileContent(s, node)
-	s.refsById[node.id] = reference
+	s.byId[node.id] = reference
 	s.reached.push(node)
 	s.stack.push(reference)
 	for (const callee of reference.callees) {
-		const calleeReference = s.refsById[callee.id]
+		const calleeReference = s.byId[callee.id]
 		if (!calleeReference) {
 			reference.lowLink = Math.min(
 				reference.lowLink,
@@ -1007,13 +977,13 @@ const compileContent = (
 	const positionsById: Record<NodeId, number> = {}
 	const positionOf = (id: NodeId) =>
 		id === node.id ? "$" : `$${(positionsById[id] ??= calleeIds.push(id) - 1)}`
-	const linkage = createLinkage(positionOf, s.opts)
-	declareTraversals(linkage, node)
+	const link = createLinkage(positionOf, s.opts)
+	declareTraversals(link, node)
 	const serializing = new Set<object>()
 	let holdsIdentity = false
 	const serialize = (value: unknown): string => {
 		if (isNode(value)) {
-			linkage.refsById[value.id] ??= value
+			link.byId[value.id] ??= value
 			return positionOf(value.id)
 		}
 		if (!hasDomain(value, "object") && typeof value !== "symbol")
@@ -1048,13 +1018,13 @@ const compileContent = (
 		node.kind,
 		// a program's nodes stay apart from another scope's
 		...(node.$.isBuiltin ? [] : [serialize(node.$)]),
-		...linkage.members.map(([name, source]) => `${name} = ${source}`),
-		[...linkage.refs.keys()].map(serialize).join(),
+		...link.members.map(([name, source]) => `${name} = ${source}`),
+		[...link.refs.keys()].map(serialize).join(),
 		...(occurrence === undefined ? [] : [`#${occurrence}`])
 	].join("\n")
 	const callees = calleeIds.map(
 		id =>
-			linkage.refsById[id] ??
+			link.byId[id] ??
 			referenceOf(node, id) ??
 			throwInternalError(`Unexpected unresolvable reference ${id}`)
 	)
@@ -1076,21 +1046,20 @@ const compileContent = (
 // unless an alias, which can replace a node sharing its id, or refsById itself
 // is there
 const referenceOf = (node: BaseNode, id: NodeId): BaseNode | undefined => {
-	if (node.cache.refsById) return node.refsById[id]
+	if (node.c.byId) return node.byId[id]
 	const queued = new Set<BaseNode>([node])
 	for (const reference of queued) {
-		if (reference.includesAlias) return node.refsById[id]
+		if (reference.hasAlias) return node.byId[id]
 		if (reference.id === id) return reference
 		for (const child of reference.children) queued.add(child)
-		for (const other of reference.otherReferences) queued.add(other)
+		for (const other of reference.otherRefs) queued.add(other)
 	}
 }
 
 const isPatternInstanceIn = (node: BaseNode, value: RegExp): boolean => {
-	for (const id in node.refsById) {
-		const reference = node.refsById[id]
-		if (reference.hasKind("pattern") && reference.instance === value)
-			return true
+	for (const id in node.byId) {
+		const reference = node.byId[id]
+		if (reference.is("pattern") && reference.instance === value) return true
 	}
 	return false
 }
@@ -1173,7 +1142,7 @@ export const writePrecompiledUnits = (
 	const keyOf = (root: BaseRoot) =>
 		(keysById[root.id] ??= precompiledKeyOf(root))
 	for (const root of roots) {
-		if (root.includesAlias || keyOf(root) in unitsByKey) continue
+		if (root.hasAlias || keyOf(root) in unitsByKey) continue
 		for (const unit of precompileRootUnits(root)) {
 			const key = keyOf(unit.roots[0])
 			if (!(key in unitsByKey))
@@ -1208,11 +1177,11 @@ const writePrecompiledUnit = (
 		if (
 			i !== 0 &&
 			nodes[i].isRoot() &&
-			!nodes[i].compileCondition &&
+			!nodes[i].jsCond &&
 			!isRefinedBasis(nodes[i])
 		)
 			continue
-		for (const key of ["children", "otherReferences"] as const) {
+		for (const key of ["children", "otherRefs"] as const) {
 			const referenced = nodes[i][key]
 			for (let j = 0; j < referenced.length; j++) {
 				if (variablesByNode.has(referenced[j])) continue
@@ -1259,23 +1228,15 @@ const writePrecompiledUnit = (
 		})
 	}
 	for (const node of nodes) {
-		if (
-			"errorContext" in node ||
-			node.hasKind("union") ||
-			node.hasKind("structure")
-		) {
+		if ("errorCtx" in node || node.is("union") || node.is("structure")) {
 			accessorsByValue.set(
-				node.failureSite,
-				`${variablesByNode.get(node)}.failureSite`
+				node.failSite,
+				`${variablesByNode.get(node)}.failSite`
 			)
 		}
 		// a structure's undeclared keys are checked against the props it indexes
-		if (node.hasKind("structure")) {
-			accessorsByValue.set(
-				node.propsByKey,
-				`${variablesByNode.get(node)}.propsByKey`
-			)
-		}
+		if (node.is("structure"))
+			accessorsByValue.set(node.byKey, `${variablesByNode.get(node)}.byKey`)
 	}
 	const refs = unit.refs.map(value => accessorsByValue.get(value))
 	if (refs.includes(undefined)) return

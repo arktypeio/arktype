@@ -62,7 +62,7 @@ export declare namespace Intersection {
 		kind: "intersection"
 		inner: Inner
 		reducibleTo: "intersection" | BasisKind
-		errorContext: ErrorContext
+		errorCtx: ErrorContext
 		childKind: ChildKind
 	}>
 
@@ -72,8 +72,8 @@ export declare namespace Intersection {
 const implementation: nodeImplementationOf<Intersection.Declaration> =
 	implementNode<Intersection.Declaration>({
 		kind: "intersection",
-		ownsError: true,
-		finalizeInnerJson: ({ structure, ...rest }) =>
+		ownErr: true,
+		fixJson: ({ structure, ...rest }) =>
 			hasDomain(structure, "object") ? { ...structure, ...rest } : rest,
 		keys: {
 			domain: {
@@ -85,8 +85,8 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 			structure: {
 				child: true,
 				serialize: node => {
-					if (!node.sequence?.minLength) return node.collapsedJson
-					const { sequence, ...structureJson } = node.collapsedJson as any
+					if (!node.sequence?.minLength) return node.bareJson
+					const { sequence, ...structureJson } = node.bareJson as any
 					const { minVariadicLength, ...sequenceJson } = sequence as JsonObject
 					const collapsibleSequenceJson =
 						sequenceJson.variadic && Object.keys(sequenceJson).length === 1 ?
@@ -137,12 +137,12 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 				if (node.children.length === 0) return "unknown"
 
 				const basis = writtenBasisOf(node)
-				const prestructurals = writtenPrestructuralsOf(node)
+				const preStruct = writtenPrestructuralsOf(node)
 				const childDescriptions: string[] = []
 
 				if (
 					basis &&
-					!node.prestructurals.some(r => r.impl.coversBasisNoun) &&
+					!node.preStruct.some(r => r.impl.coversNoun) &&
 					// a keyword's predicate, like string.url's, names its basis
 					!(
 						!node.structure &&
@@ -151,8 +151,8 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 				)
 					childDescriptions.push(basis.description)
 
-				if (prestructurals.length) {
-					const sortedRefinementDescriptions = prestructurals
+				if (preStruct.length) {
+					const sortedRefinementDescriptions = preStruct
 						.slice()
 						// override alphabetization to describe min before max
 						.sort((l, r) =>
@@ -191,12 +191,13 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	basis: nodeOfKind<Intersection.BasisKind> | null =
 		this.inner.domain ?? this.inner.proto ?? null
 
-	// children are ordered by kind: basis, prestructurals, structure, predicates
+	// children are ordered by kind: basis, preStruct, structure, predicates
 	refinements: array<nodeOfKind<RefinementKind>> = this.children.slice(
 		this.basis ? 1 : 0
 	) as never
 
-	prestructurals: array<nodeOfKind<PrestructuralKind>> = this.refinements.slice(
+	/** its refinements checked before its structure */
+	preStruct: array<nodeOfKind<PrestructuralKind>> = this.refinements.slice(
 		0,
 		this.refinements.length -
 			(this.inner.structure ? 1 : 0) -
@@ -206,82 +207,75 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	structure: Structure.Node | undefined = this.inner.structure
 
 	get expression(): string {
-		return (this.cache.expression ??= composing(() =>
+		return (this.c.expression ??= composing(() =>
 			writeIntersectionExpression(this)
 		))
 	}
 
-	get nestedExpression(): string {
+	get nestedExpr(): string {
 		// an expression written by a single child is already nestable
 		return (
 				this.expression === "unknown" ||
 					this.expression === "[]" ||
-					this.children.some(
-						child => child.nestedExpression === this.expression
-					)
+					this.children.some(child => child.nestedExpr === this.expression)
 			) ?
 				this.expression
 			:	`(${this.expression})`
 	}
 
-	get shallowMorphs(): array<Morph> {
-		return this.inner.structure?.structuralMorph ?
-				[this.inner.structure.structuralMorph]
+	get topMorphs(): array<Morph> {
+		return this.inner.structure?.structMorph ?
+				[this.inner.structure.structMorph]
 			:	[]
 	}
 
-	get defaultBrief(): string {
-		return this.basis?.defaultBrief ?? "present"
+	get brief(): string {
+		return this.basis?.brief ?? "present"
 	}
 
-	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
-		return this.children.every(child =>
-			child.traverseAllows(data as never, ctx)
-		)
+	tAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
+		return this.children.every(child => child.tAllows(data as never, ctx))
 	}
 
-	traverseApply(data: unknown, ctx: InternalTraversal): void {
-		const errorCount = ctx.currentErrorCount
+	tApply(data: unknown, ctx: InternalTraversal): void {
+		const errN = ctx.errN
 		if (this.basis) {
-			this.basis.traverseApply(data, ctx)
-			if (ctx.currentErrorCount > errorCount) return
+			this.basis.tApply(data, ctx)
+			if (ctx.errN > errN) return
 		}
-		if (this.prestructurals.length) {
-			for (let i = 0; i < this.prestructurals.length - 1; i++) {
-				this.prestructurals[i].traverseApply(data as never, ctx)
-				if (ctx.failFast && ctx.currentErrorCount > errorCount) return
+		if (this.preStruct.length) {
+			for (let i = 0; i < this.preStruct.length - 1; i++) {
+				this.preStruct[i].tApply(data as never, ctx)
+				if (ctx.failFast && ctx.errN > errN) return
 			}
-			this.prestructurals[this.prestructurals.length - 1]!.traverseApply(
-				data as never,
-				ctx
-			)
-			if (ctx.currentErrorCount > errorCount) return
+			this.preStruct[this.preStruct.length - 1]!.tApply(data as never, ctx)
+			if (ctx.errN > errN) return
 		}
 		if (this.structure) {
 			// transformed only if the predicates allow it
-			if (this.inner.predicate && this.structure.transforms) {
+			if (this.inner.predicate && this.structure.tfs) {
 				if (!allowsInBranch(ctx, this.structure, data)) {
-					this.structure.traverseApply(data as never, ctx)
+					this.structure.tApply(data as never, ctx)
 					return
 				}
 			} else {
-				this.structure.traverseApply(data as never, ctx)
-				if (ctx.currentErrorCount > errorCount) return
+				this.structure.tApply(data as never, ctx)
+				if (ctx.errN > errN) return
 			}
 		}
 		if (this.inner.predicate) {
 			for (let i = 0; i < this.inner.predicate.length - 1; i++) {
-				this.inner.predicate[i].traverseApply(data as never, ctx)
-				if (ctx.currentErrorCount > errorCount) return
+				this.inner.predicate[i].tApply(data as never, ctx)
+				if (ctx.errN > errN) return
 			}
-			this.inner.predicate[this.inner.predicate.length - 1]!.traverseApply(
+			this.inner.predicate[this.inner.predicate.length - 1]!.tApply(
 				data as never,
 				ctx
 			)
 		}
 	}
 
-	traverseTransform(data: unknown, ctx: InternalTraversal): unknown {
+	tTransform(data: unknown, ctx: InternalTraversal): unknown {
 		return transform(ctx, this.structure!, data)
 	}
 
@@ -293,8 +287,8 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		if (
 			structure?.sequence &&
 			!this.inner.predicate &&
-			!this.transforms &&
-			!structure.sequence.includesAlias &&
+			!this.tfs &&
+			!structure.sequence.hasAlias &&
 			Object.keys(structure.inner).length === 1
 		)
 			return structure.sequence
@@ -302,9 +296,9 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 
 	// a failed basis or prestructural stops this node's Apply
 	compile(js: NodeCompiler): void {
-		if (js.traversalKind === "Allows") {
+		if (js.trav === "Allows") {
 			const read =
-				this.inner.domain?.domain === "object" && !this.prestructurals.length ?
+				this.inner.domain?.domain === "object" && !this.preStruct.length ?
 					this.structure?.allowsProps[0]
 				:	undefined
 			// a key is read before data is checked to be an object, in a switch
@@ -356,7 +350,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			else if (
 				!sequence &&
 				rejection === "false" &&
-				this.children.every(child => child.compileCondition !== undefined)
+				this.children.every(child => child.jsCond !== undefined)
 			) {
 				js.return(
 					this.children.map(child => `(${js.condition(child)})`).join(" && ") ||
@@ -366,15 +360,15 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			return
 		}
 		// only a structure can transform an intersection's data
-		if (js.traversalKind === "Transform") {
-			js.return(js.invoke(this.structure!))
+		if (js.trav === "Transform") {
+			js.return(js.inv(this.structure!))
 			return
 		}
 
-		const { basis, prestructurals, structure } = this
+		const { basis, preStruct, structure } = this
 		const predicates = this.inner.predicate
 		if (basis) {
-			const condition = basis.compileCondition(js, "data")
+			const condition = basis.jsCond(js, "data")
 			if (this.children.length === 1) {
 				js.return(`${condition} || !${js.error(basis)}`)
 				return
@@ -382,52 +376,50 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			js.if(`!(${condition})`, () => js.return(`!${js.error(basis)}`))
 		}
 		if (!structure && !predicates) {
-			for (const node of prestructurals) js.check(node)
+			for (const node of preStruct) js.check(node)
 			js.return(true)
 			return
 		}
-		const conditions = prestructurals.map(node =>
-			node.compileCondition(js, "data")
-		)
+		const conditions = preStruct.map(node => node.jsCond(js, "data"))
 		if (conditions.length === 1) {
 			js.if(`!(${conditions[0]})`, () =>
-				js.return(`!${js.error(prestructurals[0])}`)
+				js.return(`!${js.error(preStruct[0])}`)
 			)
 		} else if (conditions.length) {
 			js.if(`!(${conditions.map(c => `(${c})`).join(" && ")})`, () =>
 				js.return(
-					`!(${conditions.map((c, i) => `(!(${c}) && ${js.error(prestructurals[i])})`).join(" || ")})`
+					`!(${conditions.map((c, i) => `(!(${c}) && ${js.error(preStruct[i])})`).join(" || ")})`
 				)
 			)
 		}
 		if (!predicates) {
 			const sequence = this.inlinedSequence
 			if (sequence) sequence.compile(js)
-			else js.return(js.invoke(structure!))
+			else js.return(js.inv(structure!))
 			return
 		}
 		// read only where a later check follows one that can add issues
-		if ((structure && !structure.transforms) || predicates.length > 1)
-			js.initializeErrorCount()
+		if ((structure && !structure.tfs) || predicates.length > 1)
+			js.initErrCount()
 		if (structure) {
 			// transformed only if the predicates allow it
-			if (structure.transforms)
-				js.if(`!${js.allows(structure)}`, () => js.return(js.invoke(structure)))
+			if (structure.tfs)
+				js.if(`!${js.allows(structure)}`, () => js.return(js.inv(structure)))
 			else {
-				js.if(`!${js.invoke(structure)}`, () => js.return(false)).if(
-					"ctx.currentErrorCount > errorCount",
+				js.if(`!${js.inv(structure)}`, () => js.return(false)).if(
+					"ctx.errN > errN",
 					() => js.return(true)
 				)
 			}
 		}
 		// since predicates can be chained, the first to fail stops this node
 		for (const predicate of predicates.slice(0, -1)) {
-			js.if(`!${js.invoke(predicate)}`, () => js.return(false)).if(
-				"ctx.currentErrorCount > errorCount",
+			js.if(`!${js.inv(predicate)}`, () => js.return(false)).if(
+				"ctx.errN > errN",
 				() => js.return(true)
 			)
 		}
-		js.return(js.invoke(predicates[predicates.length - 1]))
+		js.return(js.inv(predicates[predicates.length - 1]))
 	}
 }
 
@@ -436,7 +428,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 const objectCondition = "(data instanceof Object || Object(data) === data)"
 
 export const Intersection = {
-	implementation,
+	impl: implementation,
 	Node: IntersectionNode
 }
 
@@ -444,27 +436,27 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 	const basis = writtenBasisOf(node)
 	// an operand has at most one right comparator, so a != past the first is
 	// written as an operand of its own, as in `number > 0 & number != 5`
-	let prestructurals = writtenPrestructuralsOf(node)
-	let excluded = prestructurals.filter(isNotEqual)
+	let preStruct = writtenPrestructuralsOf(node)
+	let excluded = preStruct.filter(isNotEqual)
 	if (excluded.length) {
-		prestructurals = prestructurals.filter(n => !isNotEqual(n))
-		if (!prestructurals.some(isComparator)) {
-			prestructurals = [...prestructurals, excluded[0]]
+		preStruct = preStruct.filter(n => !isNotEqual(n))
+		if (!preStruct.some(isComparator)) {
+			preStruct = [...preStruct, excluded[0]]
 			excluded = excluded.slice(1)
 		}
 	}
 
 	const basisExpression =
-		basis && !node.prestructurals.some(n => n.impl.obviatesBasisExpression) ?
-			basis.nestedExpression
+		basis && !node.preStruct.some(n => n.impl.coversExpr) ?
+			basis.nestedExpr
 		:	""
 
 	// a range is written as it's parsed, e.g. `1 <= number <= 5`
-	const upper = prestructurals.find(n => isLimit(n, "upper"))
-	const lower = upper && prestructurals.find(n => isLimit(n, "lower"))
+	const upper = preStruct.find(n => isLimit(n, "upper"))
+	const lower = upper && preStruct.find(n => isLimit(n, "lower"))
 
 	// a pattern is an operand of its own, and other refinements follow theirs
-	const refinementsExpression = prestructurals
+	const refinementsExpression = preStruct
 		.filter(n => !lower || (n !== lower && n !== upper))
 		.map(
 			(n, i) =>
@@ -495,7 +487,7 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 
 	// a case a union discriminates by domain has no basis of its own
 	for (const n of excluded)
-		expression += ` & ${(node.basis ?? n.impliedBasis).nestedExpression} ${n.expression}`
+		expression += ` & ${(node.basis ?? n.implied).nestedExpr} ${n.expression}`
 
 	return expression
 }
@@ -516,7 +508,7 @@ const writtenBasisOf = (node: Intersection.Node) =>
 	(
 		node.structure &&
 		node.basis?.equals(
-			node.structure.sequence?.impliedBasis ?? node.structure.impliedBasis
+			node.structure.sequence?.implied ?? node.structure.implied
 		)
 	) ?
 		null
@@ -524,10 +516,10 @@ const writtenBasisOf = (node: Intersection.Node) =>
 
 const writtenPrestructuralsOf = (node: Intersection.Node) => {
 	const sequence = node.structure?.sequence
-	if (!sequence) return node.prestructurals
+	if (!sequence) return node.preStruct
 	// minVariadicLength is excluded since it isn't reflected in the intersection's id
-	const impliedMinLength = sequence.prefixLength + sequence.postfixLength
-	return node.prestructurals.filter(n =>
+	const impliedMinLength = sequence.preLen + sequence.postLen
+	return node.preStruct.filter(n =>
 		n.kind === "minLength" ? n.rule !== impliedMinLength
 		: n.kind === "maxLength" ? n.rule !== sequence.maxLength
 		: n.kind !== "exactLength" || impliedMinLength !== sequence.maxLength

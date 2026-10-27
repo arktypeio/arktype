@@ -42,7 +42,7 @@ contextualize(() => {
 			const T = rootSchema(["number", { unit: 1 }])
 			attest(T.kind).equals("union")
 			attest(T.expression).snap("number | 1")
-			attest(T.assertHasKind("union").discriminant).equals(null)
+			attest(T.assertIs("union").discriminant).equals(null)
 			attest(T.allows(1)).equals(true)
 			attest(T.allows("x")).equals(false)
 		})
@@ -95,9 +95,9 @@ contextualize(() => {
 			}
 		] as const
 		withoutEngine(() =>
-			attest(rootSchema(def).assertHasKind("union").discriminant).equals(null)
+			attest(rootSchema(def).assertIs("union").discriminant).equals(null)
 		)
-		attest(rootSchema(def).assertHasKind("union").discriminant?.path).equals([
+		attest(rootSchema(def).assertIs("union").discriminant?.path).equals([
 			"lateKind"
 		])
 	})
@@ -119,11 +119,11 @@ contextualize(() => {
 				]
 			}
 		] as const
-		attest(rootSchema(def).assertHasKind("union").discriminant?.path).equals([
+		attest(rootSchema(def).assertIs("union").discriminant?.path).equals([
 			"cachedKind"
 		])
 		withoutEngine(() =>
-			attest(rootSchema(def).assertHasKind("union").discriminant).equals(null)
+			attest(rootSchema(def).assertIs("union").discriminant).equals(null)
 		)
 	})
 

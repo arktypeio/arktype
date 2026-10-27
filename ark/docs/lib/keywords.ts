@@ -37,7 +37,7 @@ ark.export()
 
 const seen = new Set<string>()
 
-for (const [alias, v] of entriesOf(ark.internal.resolutions)
+for (const [alias, v] of entriesOf(ark.internal.res)
 	.map(
 		([alias, v]) =>
 			[alias.endsWith(".root") ? alias.slice(0, -5) : alias, v] as const

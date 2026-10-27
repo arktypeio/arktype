@@ -33,14 +33,14 @@ const excludeFromBound = (
 ): never => {
 	const value = notEqual.rule.valueOf()
 	return (
-		value === bound.numericLimit ?
+		value === bound.numRule ?
 			bound.exclusive ?
 				bound
 			:	ctx.$.node(
 					bound.kind,
 					constraintInputOf(bound.kind, { rule: bound.rule, exclusive: true })
 				)
-		: value > bound.numericLimit === (bound.limitKind === "upper") ? bound
+		: value > bound.numRule === (bound.limitKind === "upper") ? bound
 		: null) as never
 }
 
@@ -61,7 +61,7 @@ export const divisor: setImplementationOf<Divisor.Declaration> = {
 				)
 			}),
 		notEqual: (divisor, notEqual) =>
-			divisor.traverseAllows(notEqual.numericLimit) ? null : divisor
+			divisor.tAllows(notEqual.numRule) ? null : divisor
 	}
 }
 
@@ -156,7 +156,7 @@ export const minLength: setImplementationOf<MinLength.Declaration> = {
 	reduce: inner =>
 		inner.rule === 0 ?
 			// a minimum length of zero is trivially satisfied
-			($ark.intrinsic.unknown as IntersectionNode)
+			($ark.kw.unknown as IntersectionNode)
 		:	undefined,
 	intersections: {
 		minLength: stricter,

@@ -3,7 +3,7 @@ import { intrinsic } from "@ark/schema"
 
 contextualize(() => {
 	it("traverse always returns ArkErrors", () => {
-		const s = intrinsic.string.configureReferences(
+		const s = intrinsic.string.configureRefs(
 			{
 				onFail: () => "foo"
 			},
@@ -14,7 +14,7 @@ contextualize(() => {
 	})
 
 	it("assert always throws ArkErrors", () => {
-		const n = intrinsic.number.configureReferences(
+		const n = intrinsic.number.configureRefs(
 			{
 				onFail: () => "foo"
 			},
@@ -24,7 +24,7 @@ contextualize(() => {
 	})
 
 	it("passed onFail overrides meta", () => {
-		const b = intrinsic.bigint.configureReferences(
+		const b = intrinsic.bigint.configureRefs(
 			{
 				onFail: () => "foo"
 			},

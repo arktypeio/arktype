@@ -280,7 +280,7 @@ export class InternalTypeParser extends Callable<
 		// also won't be defined during bootstrapping
 		const typeAttachments = $arkTypeRegistry.typeAttachments
 		const resolve = (k: string) => {
-			const bound = $.bindKeyword(
+			const bound = $.bindKw(
 				typeAttachments![k as never] as BaseRoot | GenericRoot
 			)
 			// a resolved scope has already compiled the nodes bound before it

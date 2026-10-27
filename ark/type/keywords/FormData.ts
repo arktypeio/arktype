@@ -43,8 +43,7 @@ export const arkFormData: arkFormData.module = keywordModule(
 		parsed,
 		parse: () =>
 			node("morph", {
-				in: node("proto", { proto: FormData }),
-				morphs: [parseFormData],
+				morphs: [node("proto", { proto: FormData }), parseFormData],
 				declaredOut: parsed()
 			})
 	},

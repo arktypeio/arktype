@@ -53,7 +53,7 @@ export const parseTupleLiteral = (
 
 		i++
 		if (spread) {
-			if (!valueNode.extends($ark.intrinsic.Array))
+			if (!valueNode.extends($ark.kw.Array))
 				return throwParseError(writeNonArraySpreadMessage(valueNode.expression))
 
 			// a spread must be distributed over branches e.g.:
@@ -185,7 +185,7 @@ const appendSpreadBranch = (
 	const spread = branch.select({ method: "find", kind: "sequence" })
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
-		return appendVariadicElement(base, $ark.intrinsic.unknown)
+		return appendVariadicElement(base, $ark.kw.unknown)
 	}
 
 	if (spread.prefix)

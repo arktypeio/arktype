@@ -8,7 +8,7 @@ import type { ArkConfig } from "arktype/config"
 ark.export()
 
 const config: ArkConfig = {
-	keywords: flatMorph(ark.internal.resolutions, (qualifiedName, resolution) => {
+	keywords: flatMorph(ark.internal.res, (qualifiedName, resolution) => {
 		if (!resolution || hasArkKind(resolution, "context")) return []
 		if (hasArkKind(resolution, "generic")) return []
 		if (qualifiedName.endsWith(".root")) return []

@@ -68,7 +68,7 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		}
 		const mark = $ark.reached?.mark()
 
-		const isPureIntersection = !ctx.pipe || (!l.hasTransform && !r.hasTransform)
+		const isPureIntersection = !ctx.pipe || (!l.alters && !r.alters)
 
 		if (isPureIntersection && l.equals(r)) return l
 
@@ -99,8 +99,8 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 const listsKeysAlike = (l: BaseNode, r: BaseNode): boolean =>
 	l === r ||
 	(l.children.length === r.children.length &&
-		!(l as Structure.Node).orderedProps?.some(
-			(prop, i) => prop.key !== (r as Structure.Node).orderedProps[i].key
+		!(l as Structure.Node).inOrder?.some(
+			(prop, i) => prop.key !== (r as Structure.Node).inOrder[i].key
 		) &&
 		l.children.every((child, i) => listsKeysAlike(child, r.children[i])))
 
@@ -131,7 +131,7 @@ const _pipeNodes = (
 	r: nodeOfKind<RootKind>,
 	ctx: IntersectionContext
 ) =>
-	l.hasTransform || r.hasTransform ?
+	l.alters || r.alters ?
 		ctx.invert ?
 			pipeMorphed(r, l, ctx)
 		:	pipeMorphed(l, r, ctx)
@@ -149,35 +149,9 @@ const pipeMorphed = (
 				isNode as TypeGuard<unknown, Morph.Node>
 			)
 
-			if (viableBranches.length === 0)
-				return Disjoint.init("union", from.branches, to.branches)
-
-			// if the input type has changed, create a new node without preserving metadata
-			if (
-				viableBranches.length < from.branches.length ||
-				!from.branches.every((branch, i) =>
-					branch.rawIn.equals(viableBranches[i].rawIn)
-				)
-			)
-				return ctx.$.node("union", { branches: viableBranches })
-
-			// otherwise, the input has not changed so preserve metadata
-
-			let meta: ArkEnv.meta | undefined
-
-			if (viableBranches.length === 1) {
-				const onlyBranch = viableBranches[0]
-				if (!meta) return onlyBranch
-				return ctx.$.node("morph", {
-					...onlyBranch.inner,
-					in: onlyBranch.rawIn.configure(meta, "self")
-				})
-			}
-
-			return ctx.$.node(
-				"union",
-				meta ? { branches: viableBranches, meta } : { branches: viableBranches }
-			)
+			return viableBranches.length === 0 ?
+					Disjoint.init("union", from.branches, to.branches)
+				:	ctx.$.node("union", { branches: viableBranches })
 		}
 	)
 
@@ -186,36 +160,29 @@ const _pipeMorphed = (
 	to: nodeOfKind<RootKind>,
 	ctx: IntersectionContext
 ): Morph.Node | Disjoint => {
-	const fromIsMorph = from.hasKind("morph")
+	const fromIsMorph = from.is("morph")
 
 	if (fromIsMorph) {
 		const morphs = [...from.morphs]
-		if (from.lastMorphNode) {
+		if (from.tail) {
 			// still piped from context, so allows appending additional morphs
-			const outIntersection = intersectOrPipeNodes(from.lastMorphNode, to, ctx)
+			const outIntersection = intersectOrPipeNodes(from.tail, to, ctx)
 			if (outIntersection instanceof Disjoint) return outIntersection
 			morphs[morphs.length - 1] = outIntersection
 		} else morphs.push(to)
 
 		return ctx.$.node("morph", {
 			morphs,
-			in: from.inner.in as any,
 			inverse: from.inner.inverse as any
 		})
 	}
 
-	if (to.hasKind("morph")) {
-		const inTersection = intersectOrPipeNodes(from, to.rawIn, ctx)
+	if (to.is("morph")) {
+		const inTersection = intersectOrPipeNodes(from, to._in, ctx)
 		if (inTersection instanceof Disjoint) return inTersection
 
-		return ctx.$.node("morph", {
-			morphs: [to],
-			in: inTersection
-		})
+		return ctx.$.node("morph", { morphs: [inTersection, to] })
 	}
 
-	return ctx.$.node("morph", {
-		morphs: [to],
-		in: from
-	})
+	return ctx.$.node("morph", { morphs: [from, to] })
 }

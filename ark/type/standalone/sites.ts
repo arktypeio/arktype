@@ -32,7 +32,7 @@ const describingKeys = ["expected", "actual", "problem", "message"] as const
 // a site's text is written from the program's config, so a scope's own
 // isn't, nor is predicate text a callback raises
 export const assertDescribed = (root: BaseRoot): void => {
-	const config = root.$.resolvedConfig
+	const config = root.$.cfg
 	const raisable = raisableCodesOf(root)
 	let code: ArkErrorCode
 	for (code in errorWritersByCode) {
@@ -41,8 +41,7 @@ export const assertDescribed = (root: BaseRoot): void => {
 			const writer = config[code][k]
 			if (writer === $ark.defaultConfig[code][k]) continue
 			const reason =
-				writer !== $ark.resolvedConfig![code][k] ?
-					`a scope's configured ${code} ${k}`
+				writer !== $ark.cfg![code][k] ? `a scope's configured ${code} ${k}`
 					// a callback raises with code predicate unless it names another
 				: raisable === "any" && code === "predicate" ?
 					`a configured ${code} ${k} that a narrow or morph raises`
@@ -79,9 +78,7 @@ const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 }
 
 const readRaisableCodes = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
-	if (
-		declares(root, node => node.hasKind("predicate") || node.hasKind("morph"))
-	)
+	if (declares(root, node => node.is("predicate") || node.is("morph")))
 		return "any"
 	const codes = new Set<ArkErrorCode>()
 	for (const unit of rootUnitsOf(root)) {
@@ -93,8 +90,8 @@ const readRaisableCodes = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 			if (site.m) codes.add(site.m.code)
 		}
 		for (const node of unit.declared) {
-			if (node.hasKind("union") && node.discriminant) codes.add("discriminant")
-			else if (node.hasKind("structure") && node.undeclared === "reject")
+			if (node.is("union") && node.discriminant) codes.add("discriminant")
+			else if (node.is("structure") && node.undeclared === "reject")
 				codes.add("undeclared")
 		}
 	}
@@ -108,10 +105,10 @@ export const addIssueFeatures = (
 	written: readonly BaseNode[]
 ): void => {
 	for (const node of written) {
-		if (node.hasKind("sequence")) features.reportsIndices = true
+		if (node.is("sequence")) features.reportsIndices = true
 		else if (
-			node.hasKind("morph") ||
-			(node.hasKind("predicate") && !isKeyword(node.predicate))
+			node.is("morph") ||
+			(node.is("predicate") && !isKeyword(node.predicate))
 		) {
 			features.reportsIndices = true
 			features.writesText = true
@@ -128,7 +125,7 @@ export const addIssueFeatures = (
 	}
 }
 
-const isUnion = (node: BaseNode): boolean => node.hasKind("union")
+const isUnion = (node: BaseNode): boolean => node.is("union")
 
 // a problem, or text written from the program's config, each set by a call
 // on its issue
@@ -241,7 +238,7 @@ const unwritableCodes = new Set<ArkErrorCode>([
 // the text arktype writes from meta, then the program's config for the code
 export const issueContextOf = (context: TextContext): IssueContext => {
 	const { code } = context
-	const configured: Record<string, unknown> = $ark.resolvedConfig![code]
+	const configured: Record<string, unknown> = $ark.cfg![code]
 	const defaults: Record<string, unknown> = $ark.defaultConfig[code]
 	const meta: Record<string, unknown> = context.meta ?? {}
 	const custom: Partial<Record<DescribingKey, unknown>> = {}
@@ -249,7 +246,7 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 		const writer = meta[k] ?? configured[k]
 		if (writer !== defaults[k]) custom[k] = writer
 	}
-	const locale = $ark.resolvedConfig!.locale
+	const locale = $ark.cfg!.locale
 	const issueContext: IssueContext = {
 		code,
 		description:
@@ -320,12 +317,12 @@ export const raisedWritersByCode = (): [
 	writers: Writer[],
 	keeps: number
 ][] => {
-	const locale = $ark.resolvedConfig!.locale
+	const locale = $ark.cfg!.locale
 	const written: [ArkErrorCode, Writer[], number][] = []
 	let code: ArkErrorCode
 	for (code in errorWritersByCode) {
 		if (code === "predicate" || unwritableCodes.has(code)) continue
-		const configured: Record<string, unknown> = $ark.resolvedConfig![code]
+		const configured: Record<string, unknown> = $ark.cfg![code]
 		const defaults: Record<string, unknown> = $ark.defaultConfig[code]
 		const isCustom = (k: DescribingKey) => configured[k] !== defaults[k]
 		if (!describingKeys.some(isCustom)) continue

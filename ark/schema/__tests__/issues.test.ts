@@ -161,7 +161,7 @@ supplied`)
 	})
 
 	it("merges validator issues into arktype errors", () => {
-		const errors = new ArktypeErrors(rootSchema("string").$.resolvedConfig)
+		const errors = new ArktypeErrors(rootSchema("string").$.cfg)
 		const merged = new ArkErrors()
 		user({ name: 1 }, merged)
 		user({}, merged)
@@ -179,9 +179,9 @@ owner.extra must be removed`)
 	})
 
 	it("builds arktype's error from a site holding its node's context", () => {
-		const n = rootSchema({ domain: "string" }).assertHasKind("domain")
-		const ctx = new ArkTraversal(5, n.$.resolvedConfig)
-		ctx._at({ v: n.errorContext }, 5)
-		attest(String(ctx.finalize())).equals(String(n.traverse(5)))
+		const n = rootSchema({ domain: "string" }).assertIs("domain")
+		const ctx = new ArkTraversal(5, n.$.cfg)
+		ctx._at({ v: n.errorCtx }, 5)
+		attest(String(ctx.fin())).equals(String(n.traverse(5)))
 	})
 })

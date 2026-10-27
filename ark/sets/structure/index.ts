@@ -9,7 +9,7 @@ export const index: setImplementationOf<Index.Declaration> = {
 				const valueIntersection = intersectOrPipeNodes(l.value, r.value, ctx)
 				const value =
 					valueIntersection instanceof Disjoint ?
-						$ark.intrinsic.never.internal
+						$ark.kw.never.internal
 					:	valueIntersection
 				return ctx.$.node("index", { signature: l.signature, value })
 			}

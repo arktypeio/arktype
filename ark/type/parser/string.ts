@@ -300,17 +300,17 @@ export const fullStringParse = (s: RuntimeState): InnerParseResult => {
 	let result: InnerParseResult = parseUntilFinalizer(s).root
 	if (!result) {
 		return throwInternalError(
-			`Root was unexpectedly unset after parsing string '${s.scanner.scanned}'`
+			`Root was unexpectedly unset after parsing string '${s.sc.scanned}'`
 		)
 	}
 
 	if (s.finalizer === "=") result = parseDefault(s as RootedRuntimeState)
 	else if (s.finalizer === "?") result = [result, "?"]
 
-	s.scanner.shiftPastWhitespace()
-	if (s.scanner.lookahead) {
+	s.sc.skipSpace()
+	if (s.sc.peek) {
 		// throw a parse error if non-whitespace characters made it here without being parsed
-		throwParseError(writeUnexpectedCharacterMessage(s.scanner.lookahead))
+		throwParseError(writeUnexpectedCharacterMessage(s.sc.peek))
 	}
 	return result
 }

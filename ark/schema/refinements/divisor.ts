@@ -34,7 +34,7 @@ export declare namespace Divisor {
 			kind: "divisor"
 			inner: Inner
 			prerequisite: number
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = DivisorNode
@@ -43,18 +43,18 @@ export declare namespace Divisor {
 const implementation: nodeImplementationOf<Divisor.Declaration> =
 	implementNode<Divisor.Declaration>({
 		kind: "divisor",
-		collapseKey: "rule",
+		bareKey: "rule",
 		keys: {
 			rule: {}
 		},
-		ownsError: true,
+		ownErr: true,
 		defaults: {
 			description: node =>
 				node.rule === 1 ? "an integer"
 				: node.rule === 2 ? "even"
 				: `a multiple of ${node.rule}`
 		},
-		coversBasisNoun: true
+		coversNoun: true
 	})
 
 export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration> {
@@ -66,25 +66,25 @@ export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration
 			throwParseError(writeNonIntegerDivisorMessage(this.rule))
 	}
 
-	traverseAllows(data: number): boolean {
+	tAllows(data: number): boolean {
 		return data % this.rule === 0
 	}
 
-	compileCondition(js: NodeCompiler, data: string): string {
+	jsCond(js: NodeCompiler, data: string): string {
 		return `${data} % ${this.rule} === 0`
 	}
 
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.number.internal
+	readonly implied: BaseRoot = $ark.kw.number.internal
 	readonly expression: string = `% ${printDecimal(this.rule)}`
 }
 
 export const Divisor = {
-	implementation,
+	impl: implementation,
 	Node: DivisorNode
 }
 
 export const writeIndivisibleMessage = (t: BaseRoot): string =>
-	writeInvalidOperandMessage("divisor", $ark.intrinsic.number as never, t)
+	writeInvalidOperandMessage("divisor", $ark.kw.number as never, t)
 
 export type writeIndivisibleMessage<actual> = writeInvalidOperandMessage<
 	"divisor",

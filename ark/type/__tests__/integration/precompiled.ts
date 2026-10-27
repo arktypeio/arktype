@@ -28,7 +28,7 @@ export const isPrecompiled = (
 	units: Record<string, PrecompiledUnit>,
 	root: BaseRoot
 ): boolean => {
-	for (const key in units) if (units[key][1] === root.compiledUnit) return true
+	for (const key in units) if (units[key][1] === root.unitFn) return true
 	return false
 }
 

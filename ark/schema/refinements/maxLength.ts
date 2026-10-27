@@ -31,7 +31,7 @@ export declare namespace MaxLength {
 			reducibleTo: "exactLength"
 			inner: Inner
 			prerequisite: LengthBoundableData
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = MaxLengthNode
@@ -40,8 +40,8 @@ export declare namespace MaxLength {
 const implementation: nodeImplementationOf<MaxLength.Declaration> =
 	implementNode<MaxLength.Declaration>({
 		kind: "maxLength",
-		collapseKey: "rule",
-		ownsError: true,
+		bareKey: "rule",
+		ownErr: true,
 		keys: {
 			rule: {}
 		},
@@ -51,14 +51,14 @@ const implementation: nodeImplementationOf<MaxLength.Declaration> =
 	})
 
 export class MaxLengthNode extends BaseRange<MaxLength.Declaration> {
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
+	readonly implied: BaseRoot = $ark.kw.lengthBoundable.internal
 
-	traverseAllows(data: LengthBoundableData): boolean {
+	tAllows(data: LengthBoundableData): boolean {
 		return data.length <= this.rule
 	}
 }
 
 export const MaxLength = {
-	implementation,
+	impl: implementation,
 	Node: MaxLengthNode
 }

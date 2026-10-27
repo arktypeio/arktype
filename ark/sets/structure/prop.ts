@@ -23,7 +23,7 @@ export const intersectProps = (
 	let value = intersectOrPipeNodes(l.value, r.value, ctx)
 	const kind: Prop.Kind = l.required || r.required ? "required" : "optional"
 	if (value instanceof Disjoint) {
-		if (kind === "optional") value = $ark.intrinsic.never.internal
+		if (kind === "optional") value = $ark.kw.never.internal
 		else {
 			// if either operand was optional, the Disjoint has to be treated as optional
 			return value.withPrefixKey(
@@ -41,13 +41,13 @@ export const intersectProps = (
 	}
 
 	const defaultIntersection =
-		l.hasDefault() ?
-			r.hasDefault() ?
+		l.hasDef() ?
+			r.hasDef() ?
 				l.default === r.default ?
 					l.default
 				:	throwParseError(writeDefaultIntersectionMessage(l.default, r.default))
 			:	l.default
-		: r.hasDefault() ? r.default
+		: r.hasDef() ? r.default
 		: unset
 
 	// value allows undefined only if both did, whatever ctx.$ configures
@@ -56,7 +56,7 @@ export const intersectProps = (
 		defaultIntersection === unset ?
 			{ key, value }
 		:	{ key, value, default: defaultIntersection },
-		{ prereduced: true }
+		{ reduced: true }
 	)
 }
 
@@ -69,10 +69,10 @@ export const required: setImplementationOf<Required.Declaration> = {
 
 export const optional: setImplementationOf<Optional.Declaration> = {
 	reduce: (inner, $) => {
-		if ($.resolvedConfig.exactOptionalPropertyTypes === false) {
+		if ($.cfg.exactOptionalPropertyTypes === false) {
 			const value = withUndefined(inner.value)
 			if (value !== inner.value)
-				return $.node("optional", { ...inner, value }, { prereduced: true })
+				return $.node("optional", { ...inner, value }, { reduced: true })
 		}
 	},
 	intersections: {
@@ -87,10 +87,9 @@ const valuesWithUndefined = new WeakMap<BaseRoot, BaseRoot>()
 const withUndefined = (value: BaseRoot): BaseRoot => {
 	let result = valuesWithUndefined.get(value)
 	if (!result) {
-		result =
-			value.allowsUnused(undefined) ? value : value.or($ark.intrinsic.undefined)
+		result = value.allowsUnused(undefined) ? value : value.or($ark.kw.undefined)
 		// an alias's union is reduced again once it resolves
-		if (!value.includesAlias) valuesWithUndefined.set(value, result)
+		if (!value.hasAlias) valuesWithUndefined.set(value, result)
 	}
 	return result
 }

@@ -463,7 +463,7 @@ b isn't allowed`)
 
 		it("static", () => {
 			withConfig({ locale: xx }, () => {
-				attest($ark.resolvedConfig!.locale).is(xx)
+				attest($ark.cfg!.locale).is(xx)
 				const errors = scope({}).type("string")(5) as ArkErrors
 				attest(errors.toString()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
 				attest(errors.toLocaleString(en)).snap(
@@ -487,7 +487,7 @@ b isn't allowed`)
 					}
 				},
 				() => {
-					attest($ark.resolvedConfig!.locale).is(en)
+					attest($ark.cfg!.locale).is(en)
 					const errorsOf = () =>
 						type("(string >= 3) | (string <= 0)")("a") as ArkErrors
 					const errors = errorsOf()
@@ -610,9 +610,9 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 		it("interleaved requests each render in their own locale", async () => {
 			const store = new AsyncLocalStorage<Locale>()
 			// fixes the global config, as withConfig does, so there's one to restore
-			void type.$.internal.resolvedConfig
+			void type.$.internal.cfg
 			const originalConfig = { ...$ark.config }
-			const originalResolvedConfig = $ark.resolvedConfig!
+			const originalResolvedConfig = $ark.cfg!
 			reconfigure({ locale: () => store.getStore() })
 			try {
 				const T = type({ k: "string" })
@@ -635,7 +635,7 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 			} finally {
 				$ark.config = originalConfig
 				reconfigure({})
-				$ark.resolvedConfig = originalResolvedConfig
+				$ark.cfg = originalResolvedConfig
 			}
 		})
 

@@ -252,7 +252,7 @@ const typeHandlerOf = (
 ): ProxyHandler<any> => {
 	const membersByKey: Record<PropertyKey, unknown> = Object.create(null)
 	// allows runs no morph, so only a validation that can write the input copies it
-	const isWritten = inArktype(() => pair.original.transforms)
+	const isWritten = inArktype(() => pair.original.tfs)
 	const validator =
 		(...path: string[]) =>
 		(data: unknown) =>
@@ -541,7 +541,7 @@ const ctxStateOf = (
 ) =>
 	ctx && {
 		path: [...ctx.path],
-		errorCount: ctx.currentErrorCount,
+		errN: ctx.errN,
 		errors: ctx._errors?._.map(e => [e.code, ...e.path]) ?? [],
 		data: copied?.get(ctx.data as never) ?? ctx.data
 	}
@@ -571,7 +571,7 @@ const record = (
 			copyOf(outcome.value, copiedAfter)
 		:	uncopyable
 	const isRepeated =
-		ctx?.currentErrorCount !== ctxState?.errorCount ||
+		ctx?.errN !== ctxState?.errN ||
 		!isReplayable({ copies, copied, copiedAfter, written, result })
 	current.calls.push({
 		callee,
@@ -855,9 +855,9 @@ const fails = (outcome: Outcome) =>
 // the issues errors "all" finds, any of which errors "first" can return
 const allIssuesOf = (original: BaseRoot, data: unknown): KeptIssue[] =>
 	inArktype(() => {
-		const ctx = new ArkTraversal(data, original.$.resolvedConfig)
-		if (original.includesAlias) applyCyclic(original, data, ctx)
-		else original.traverseApply(data, ctx)
+		const ctx = new ArkTraversal(data, original.$.cfg)
+		if (original.hasAlias) applyCyclic(original, data, ctx)
+		else original.tApply(data, ctx)
 		return ctx._errors ? keptIssuesOf(ctx._errors as never, false) : []
 	})
 

@@ -52,7 +52,7 @@ const checkBind =
 	(root, constants) => {
 		const bound = bind(root, constants)
 		// writing would read what a jitless scope's tests expect unread
-		if (root.$.resolvedConfig.jitless) return bound
+		if (root.$.cfg.jitless) return bound
 		const own = (finalizedUnits.get(root) ??
 			writePrecompiledUnits([root as BaseRoot]))[key]
 		const ownBound = own && evaluate(own)[0](root, constants)
@@ -93,22 +93,17 @@ const checkBound = (root: BaseRoot) => {
 		unbound.push(root.expression)
 }
 
-const { finalize } = BaseScope.prototype
-BaseScope.prototype.finalize = function <node extends BaseRoot>(
+const { fin } = BaseScope.prototype
+BaseScope.prototype.fin = function <node extends BaseRoot>(
 	this: BaseScope,
 	node: node,
 	jit = true
 ): node {
 	// a jitless scope leaves its roots uncompiled, as its tests expect
-	if (
-		!jit ||
-		node.compiledUnit ||
-		node.includesAlias ||
-		this.resolvedConfig.jitless
-	)
-		return finalize.call(this, node, jit) as node
+	if (!jit || node.unitFn || node.hasAlias || this.cfg.jitless)
+		return fin.call(this, node, jit) as node
 	finalizedUnits.set(node, register([node]))
-	finalize.call(this, node, jit)
+	fin.call(this, node, jit)
 	checkBound(node)
 	return node
 }
@@ -119,8 +114,7 @@ const { export: exportScope } = BaseScope.prototype
 // a scope binding precompiled units reads its references as it exports
 registerPrecompiledUnits({})
 BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
-	if (this.resolved || this.resolvedConfig.jitless)
-		return exportScope.apply(this, names)
+	if (this.resolved || this.cfg.jitless) return exportScope.apply(this, names)
 	const roots: BaseRoot[] = []
 	const referenced: BaseRoot[] = []
 	let written: Record<string, string> = {}
@@ -133,23 +127,23 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 		configurable: true,
 		get: () => {
 			const value: readonly BaseNode[] = references.call(this)
-			const resolutions: Record<string, unknown> | undefined = (this as never)[
+			const res: Record<string, unknown> | undefined = (this as never)[
 				"_exported"
 			]
-			if (resolutions && !roots.length) {
-				for (const resolution of Object.values(resolutions)) {
+			if (res && !roots.length) {
+				for (const resolution of Object.values(res)) {
 					if (
 						hasArkKind(resolution, "root") &&
-						!resolution.compiledUnit &&
-						!resolution.includesAlias
+						!resolution.unitFn &&
+						!resolution.hasAlias
 					)
 						roots.push(resolution)
 				}
 				for (const node of value) {
 					if (
 						node.isRoot() &&
-						!node.compiledUnit &&
-						!node.includesAlias &&
+						!node.unitFn &&
+						!node.hasAlias &&
 						!roots.includes(node)
 					)
 						referenced.push(node)
@@ -166,12 +160,12 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 		return exported
 	} finally {
 		delete (this as { references?: unknown }).references
-		for (const root of roots) if (root.compiledUnit) checkBound(root)
+		for (const root of roots) if (root.unitFn) checkBound(root)
 		for (const root of referenced) {
-			if (!root.compiledUnit) continue
+			if (!root.unitFn) continue
 			// a build writes no unit for a root only a union inlines, so it compiles
 			if (
-				root.compiledUnit.toString().startsWith("function anonymous") &&
+				root.unitFn.toString().startsWith("function anonymous") &&
 				!Object.keys(writePrecompiledUnits([root])).every(key => key in written)
 			)
 				inlined++

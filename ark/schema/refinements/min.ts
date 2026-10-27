@@ -31,7 +31,7 @@ export declare namespace Min {
 			kind: "min"
 			inner: Inner
 			prerequisite: number
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = MinNode
@@ -40,8 +40,8 @@ export declare namespace Min {
 const implementation: nodeImplementationOf<Min.Declaration> =
 	implementNode<Min.Declaration>({
 		kind: "min",
-		collapseKey: "rule",
-		ownsError: true,
+		bareKey: "rule",
+		ownErr: true,
 		keys: {
 			rule: {},
 			exclusive: {}
@@ -52,17 +52,17 @@ const implementation: nodeImplementationOf<Min.Declaration> =
 				return `${node.exclusive ? "more than" : "at least"} ${node.rule}`
 			}
 		},
-		coversBasisNoun: true
+		coversNoun: true
 	})
 
 export class MinNode extends BaseRange<Min.Declaration> {
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.number.internal
+	readonly implied: BaseRoot = $ark.kw.number.internal
 
-	traverseAllows: TraverseAllows<number> =
+	tAllows: TraverseAllows<number> =
 		this.exclusive ? data => data > this.rule : data => data >= this.rule
 }
 
 export const Min = {
-	implementation,
+	impl: implementation,
 	Node: MinNode
 }

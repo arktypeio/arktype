@@ -37,7 +37,7 @@ import {
 } from "./genericArgs.ts"
 
 export const parseUnenclosed = (s: RuntimeState): void => {
-	const token = shiftUntilTerminator(s.scanner)
+	const token = shiftUntilTerminator(s.sc)
 	if (token === "keyof") s.addPrefix("keyof")
 	else s.root = unenclosedToNode(s, token)
 }
@@ -70,9 +70,9 @@ export const parseGenericInstantiation = (
 	g: GenericRoot,
 	s: RuntimeState
 ): BaseRoot => {
-	s.scanner.shiftPastWhitespace()
-	const lookahead = s.scanner.shift()
-	if (lookahead !== "<")
+	s.sc.skipSpace()
+	const peek = s.sc.shift()
+	if (peek !== "<")
 		return s.error(writeInvalidGenericArgCountMessage(name, g.names, []))
 
 	const parsedArgs = parseGenericArgs(name, g, s)
@@ -107,9 +107,9 @@ const unenclosedToNode = (s: RuntimeState, token: string): BaseRoot =>
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
 		token === "" ?
-			s.scanner.lookahead === "#" ?
+			s.sc.peek === "#" ?
 				writePrefixedPrivateReferenceMessage(
-					shiftUntilTerminator(s.shiftedBy(1).scanner)
+					shiftUntilTerminator(s.shiftedBy(1).sc)
 				)
 			:	writeMissingOperandMessage(s)
 		:	writeUnresolvableMessage(token)
@@ -123,7 +123,7 @@ const maybeParseReference = (
 		const arg = s.ctx.args[token]
 		if (typeof arg !== "string") return arg
 
-		return s.ctx.$.node("alias", { reference: arg }, { prereduced: true })
+		return s.ctx.$.node("alias", { reference: arg }, { reduced: true })
 	}
 	const resolution = s.ctx.$.maybeResolve(token)
 	if (hasArkKind(resolution, "root")) return resolution
@@ -230,7 +230,7 @@ type tryResolveSubmodule<
 export type unresolvableState<
 	s extends StaticState,
 	token extends string,
-	resolutions,
+	res,
 	args,
 	submodulePath extends string[]
 > =
@@ -240,12 +240,10 @@ export type unresolvableState<
 		) ?
 			s.error<writePrefixedPrivateReferenceMessage<name>>
 		:	never
-	: validReferenceFromToken<token, resolutions, args, submodulePath> extends (
-		never
-	) ?
+	: validReferenceFromToken<token, res, args, submodulePath> extends never ?
 		s.error<writeUnresolvableMessage<qualifiedReference<token, submodulePath>>>
 	:	s.completion<`${s["scanned"]}${qualifiedReference<
-			validReferenceFromToken<token, resolutions, args, submodulePath>,
+			validReferenceFromToken<token, res, args, submodulePath>,
 			submodulePath
 		>}`>
 
@@ -268,8 +266,8 @@ type validReferenceFromToken<
 export const writeMissingOperandMessage = (s: RuntimeState): string => {
 	const operator = s.previousOperator()
 	return operator ?
-			writeMissingRightOperandMessage(operator, s.scanner.unscanned)
-		:	writeExpressionExpectedMessage(s.scanner.unscanned)
+			writeMissingRightOperandMessage(operator, s.sc.unscanned)
+		:	writeExpressionExpectedMessage(s.sc.unscanned)
 }
 
 export type writeMissingRightOperandMessage<

@@ -158,8 +158,8 @@ contextualize(() => {
 		eachType(keywords, (t, path) => {
 			for (const node of t.internal.references) {
 				const fns =
-					node.hasKind("morph") ? node.morphs
-					: node.hasKind("predicate") ? [node.predicate]
+					node.is("morph") ? node.morphs
+					: node.is("predicate") ? [node.predicate]
 					: []
 				for (const fn of fns)
 					if (!isNode(fn) && !exported.has(fn)) unexported.push(path)
@@ -175,7 +175,7 @@ contextualize(() => {
 				scopes.add(node.$)
 		}
 		eachType(keywords, collect)
-		eachType($ark.intrinsic, collect)
+		eachType($ark.kw, collect)
 		const names = [...scopes].map($ => $.isBuiltin && $.name)
 		attest(new Set(names).size).equals(scopes.size)
 		attest(names.sort()).snap([

@@ -36,15 +36,15 @@ export declare namespace Optional {
 	export type Node = OptionalNode
 
 	export namespace Node {
-		export type withDefault = requireKeys<Node, "default" | "defaultMorph">
+		export type withDefault = requireKeys<Node, "default" | "defMorph">
 	}
 }
 
 const implementation: nodeImplementationOf<Optional.Declaration> =
 	implementNode<Optional.Declaration>({
 		kind: "optional",
-		ownsError: false,
-		openIntersection: true,
+		ownErr: false,
+		stacks: true,
 		keys: {
 			key: {},
 			value: {
@@ -52,22 +52,18 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 				structural: true
 			},
 			default: {
-				preserveUndefined: true
+				keepUndef: true
 			}
 		},
 		defaults: {
-			description: node =>
-				`${node.compiledKey}?: ${elided(node.value.description)}`
+			description: node => `${node.keyStr}?: ${elided(node.value.description)}`
 		}
 	})
 
 export class OptionalNode extends BaseProp<"optional"> {
 	constructor(...args: ConstructorParameters<typeof BaseProp>) {
 		super(...args)
-		if (
-			!$ark.sets &&
-			this.$.resolvedConfig.exactOptionalPropertyTypes === false
-		)
+		if (!$ark.sets && this.$.cfg.exactOptionalPropertyTypes === false)
 			throwParseError(missingSetEngineMessage)
 		if ("default" in this.inner) {
 			assertDefaultValueAssignability(
@@ -78,44 +74,44 @@ export class OptionalNode extends BaseProp<"optional"> {
 			)
 		}
 		// a function default can fail as it's applied, like a morph
-		this.includesMorph ||= typeof this.inner.default === "function"
-		this.hasCtxMorph ||= this.defaultMorph?.length === 2
+		this.hasMorph ||= typeof this.inner.default === "function"
+		this.ctxMorph ||= this.defMorph?.length === 2
 	}
 
 	override getIo(ioKind: "in" | "out"): BaseNode {
-		if (ioKind === "out" || !this.hasDefault()) return super.getIo(ioKind)
+		if (ioKind === "out" || !this.hasDef()) return super.getIo(ioKind)
 		return this.$.node(
 			"optional",
-			{ key: this.key, value: this.value.rawIn },
-			{ prereduced: true }
+			{ key: this.key, value: this.value._in },
+			{ reduced: true }
 		)
 	}
 
 	private _outProp: Prop.Node | undefined
 	get outProp(): Prop.Node {
-		if (!this.hasDefault()) return this
+		if (!this.hasDef()) return this
 		const { default: defaultValue, ...requiredInner } = this.inner
 
 		return (this._outProp ??= this.$.node("required", requiredInner, {
-			prereduced: true
+			reduced: true
 		}) as never)
 	}
 
 	expression: string =
-		this.hasDefault() ?
-			`${this.compiledKey}: ${elided(this.value.expression)} = ${printable(this.inner.default, { ownDataOnly: true })}`
-		:	`${this.compiledKey}?: ${elided(this.value.expression)}`
+		this.hasDef() ?
+			`${this.keyStr}: ${elided(this.value.expression)} = ${printable(this.inner.default, { ownDataOnly: true })}`
+		:	`${this.keyStr}?: ${elided(this.value.expression)}`
 
-	defaultMorph: Morph | undefined =
-		this.hasDefault() ?
+	/** the morph writing its default when its key is missing */
+	defMorph: Morph | undefined =
+		this.hasDef() ?
 			computeDefaultValueMorph(this.key, this.value, this.default)
 		:	undefined
 
 	// without exactOptionalPropertyTypes, undefined is as absent as a missing
 	// key, so a default replaces it too
 	readonly defaultsUndefined: boolean =
-		this.hasDefault() &&
-		this.$.resolvedConfig.exactOptionalPropertyTypes === false
+		this.hasDef() && this.$.cfg.exactOptionalPropertyTypes === false
 
 	// whether data has a value at this key, which a default leaves alone
 	holdsValue(data: object): boolean {
@@ -124,7 +120,8 @@ export class OptionalNode extends BaseProp<"optional"> {
 			:	this.key in data
 	}
 
-	compileHoldsValue(js: NodeCompiler, data: string): string {
+	/** writes whether `data` holds its key with a value */
+	jsHoldsValue(js: NodeCompiler, data: string): string {
 		return this.defaultsUndefined ?
 				`${data}${js.prop(this.key)} !== undefined`
 			:	`${js.serialize(this.key)} in ${data}`
@@ -132,7 +129,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 }
 
 export const Optional = {
-	implementation,
+	impl: implementation,
 	Node: OptionalNode
 }
 
@@ -159,7 +156,7 @@ export const checkDefault = (
 	// the node whose creation checks it, if any
 	owner?: BaseNode
 ): unknown => {
-	if (!isResolutionFinal() && node.includesAlias) {
+	if (!isResolutionFinal() && node.hasAlias) {
 		queueUnchecked(() => checkDefault(node, value, key, owner))
 		return value
 	}
@@ -168,12 +165,12 @@ export const checkDefault = (
 
 	// if the node has a default value, finalize it and apply JIT optimizations
 	// if applicable to ensure behavior + error logging is externally consistent
-	// (using .in here insead of .rawIn triggers finalization)
+	// (using .in here insead of ._in triggers finalization)
 	const out = (node.in as BaseRoot).traverseUnused(value)
 
 	if (out instanceof ArkErrors) {
 		const errors =
-			node.meta.description !== undefined && node.hasTransform ?
+			node.meta.description !== undefined && node.alters ?
 				inputErrors(node, value)
 			:	out
 		// a ParseError is for the developer, so it renders in English
@@ -184,7 +181,7 @@ export const checkDefault = (
 			throwParseError(`Default ${errors.toLocaleString(en)}`)
 		}
 
-		const atPath = new ArkErrors(node.$.resolvedConfig)
+		const atPath = new ArkErrors(node.$.cfg)
 		atPath._merge(errors, [key])
 
 		// e.g. "Default for bar must be assignable to number (was string)"

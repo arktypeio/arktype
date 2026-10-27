@@ -6,7 +6,7 @@ import type { DomainInputNode } from "./domain.ts"
 export const buildNumberArbitrary = (
 	node: DomainInputNode
 ): fc.Arbitrary<number> => {
-	if (node.hasKind("domain")) {
+	if (node.is("domain")) {
 		return fc.double({
 			noNaN: !node.numberAllowsNaN,
 			noDefaultInfinity: !node.numberAllowsInfinity
@@ -70,9 +70,7 @@ export const buildNumberArbitrary = (
 }
 
 const getFastCheckNumberConstraints = (node: IntersectionNode) => {
-	const hasDivisor = node.prestructurals.find(refinement =>
-		refinement.hasKind("divisor")
-	)
+	const hasDivisor = node.preStruct.find(refinement => refinement.is("divisor"))
 	const numberConstraints: fc.DoubleConstraints & {
 		divisor?: number
 	} = {
@@ -80,19 +78,16 @@ const getFastCheckNumberConstraints = (node: IntersectionNode) => {
 		noDefaultInfinity: !node.inner.domain?.numberAllowsInfinity
 	}
 
-	for (const refinement of node.prestructurals) {
+	for (const refinement of node.preStruct) {
 		if (refinement.hasKindIn("min", "max")) {
 			let rule = refinement.rule
-			if ("exclusive" in refinement) {
-				rule = nearestFloat(
-					refinement.rule,
-					refinement.hasKind("min") ? "+" : "-"
-				)
-			}
+			if ("exclusive" in refinement)
+				rule = nearestFloat(refinement.rule, refinement.is("min") ? "+" : "-")
+
 			if (hasDivisor !== undefined)
-				rule = refinement.hasKind("min") ? Math.ceil(rule) : Math.floor(rule)
+				rule = refinement.is("min") ? Math.ceil(rule) : Math.floor(rule)
 			numberConstraints[refinement.kind] = rule
-		} else if (refinement.hasKind("divisor"))
+		} else if (refinement.is("divisor"))
 			numberConstraints["divisor"] = refinement.rule
 	}
 

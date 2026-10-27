@@ -17,18 +17,17 @@ export const unit: setImplementationOf<Unit.Declaration> = {
 			// a basis pruned by a discriminant leaves constraints that can't check
 			// data outside the basis they imply
 			const rBasis =
-				r.hasKind("intersection") ?
+				r.is("intersection") ?
 					(r.basis ??
 					(r.children as BaseConstraint[]).find(
-						rConstraint =>
-							rConstraint.impliedBasis?.allowsUnused(l.unit) === false
-					)?.impliedBasis)
+						rConstraint => rConstraint.implied?.allowsUnused(l.unit) === false
+					)?.implied)
 				:	r
 			if (rBasis && !rBasis.allowsUnused(l.unit)) {
 				// we try to use a domain Disjoint if possible since it's better for discrimination
 				const rDomain =
-					rBasis.hasKind("domain") ? rBasis
-					: rBasis.hasKind("proto") ? ($ark.intrinsic.object as DomainNode)
+					rBasis.is("domain") ? rBasis
+					: rBasis.is("proto") ? ($ark.kw.object as DomainNode)
 					: null
 				if (rDomain && l.domain !== rDomain.domain) {
 					const lDomainDisjointValue =
@@ -38,7 +37,7 @@ export const unit: setImplementationOf<Unit.Declaration> = {
 							l.domain === "boolean"
 						) ?
 							l.domain
-						:	($ark.intrinsic[l.domain] as DomainNode)
+						:	($ark.kw[l.domain] as DomainNode)
 					return Disjoint.init("domain", lDomainDisjointValue, rDomain)
 				}
 				return Disjoint.init("assignability", l, rBasis)
@@ -49,7 +48,7 @@ export const unit: setImplementationOf<Unit.Declaration> = {
 			return Disjoint.init(
 				"assignability",
 				l,
-				r.hasKind("intersection") ?
+				r.is("intersection") ?
 					r.children.find(
 						rConstraint => !rConstraint.allowsUnused(l.unit as never)
 					)!

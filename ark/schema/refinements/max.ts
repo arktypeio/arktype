@@ -31,7 +31,7 @@ export declare namespace Max {
 			kind: "max"
 			inner: Inner
 			prerequisite: number
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = MaxNode
@@ -40,8 +40,8 @@ export declare namespace Max {
 const implementation: nodeImplementationOf<Max.Declaration> =
 	implementNode<Max.Declaration>({
 		kind: "max",
-		collapseKey: "rule",
-		ownsError: true,
+		bareKey: "rule",
+		ownErr: true,
 		keys: {
 			rule: {},
 			exclusive: {}
@@ -52,17 +52,17 @@ const implementation: nodeImplementationOf<Max.Declaration> =
 				return `${node.exclusive ? "less than" : "at most"} ${node.rule}`
 			}
 		},
-		coversBasisNoun: true
+		coversNoun: true
 	})
 
 export class MaxNode extends BaseRange<Max.Declaration> {
-	impliedBasis: BaseRoot = $ark.intrinsic.number.internal
+	implied: BaseRoot = $ark.kw.number.internal
 
-	traverseAllows: TraverseAllows<number> =
+	tAllows: TraverseAllows<number> =
 		this.exclusive ? data => data < this.rule : data => data <= this.rule
 }
 
 export const Max = {
-	implementation,
+	impl: implementation,
 	Node: MaxNode
 }

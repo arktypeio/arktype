@@ -868,13 +868,16 @@ contextualize(() => {
 			a.toJsonSchema({ fallback: { morph: ctx => ctx.out ?? ctx.base } })
 		).snap({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
-			$ref: "#/$defs/a",
+			type: "object",
+			properties: { n: { $ref: "#/$defs/a" } },
 			$defs: { a: { type: "object", properties: { n: { $ref: "#/$defs/a" } } } }
 		})
+		// the output is converted before the fallback chooses not to use it
 		attest(a.toJsonSchema({ fallback: { morph: ctx => ctx.base } })).snap({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
-			$ref: "#/$defs/a",
-			$defs: { a: { type: "object", properties: { n: { type: "string" } } } }
+			type: "object",
+			properties: { n: { type: "string" } },
+			$defs: { a: { type: "object", properties: { n: { $ref: "#/$defs/a" } } } }
 		})
 	})
 

@@ -57,19 +57,19 @@ export const parseDefault = (
 	const baseNode = s.unsetRoot()
 	// an empty collection is not a unit literal, so it must be short-circuited
 	// here and represented as a thunk to keep each traversal's default distinct
-	s.scanner.shiftPastWhitespace()
+	s.sc.skipSpace()
 	const emptyCollection = emptyCollectionLiterals.find(literal =>
-		s.scanner.unscanned.startsWith(literal)
+		s.sc.unscanned.startsWith(literal)
 	)
 	if (emptyCollection !== undefined) {
-		s.scanner.jumpForward(emptyCollection.length)
+		s.sc.jumpForward(emptyCollection.length)
 		return [baseNode, "=", emptyCollectionDefaults[emptyCollection]]
 	}
 	s.parseOperand()
 	const defaultNode = s.unsetRoot()
 	// after parsing the next operand, use the locations to get the
 	// token from which it was parsed
-	if (!defaultNode.hasKind("unit"))
+	if (!defaultNode.is("unit"))
 		return s.error(writeNonLiteralDefaultMessage(defaultNode.expression))
 	const defaultValue =
 		defaultNode.unit instanceof Date ?

@@ -218,7 +218,7 @@ export interface InternalScope {
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	get ambientAttachments(): Ark.boundTypeAttachments<$> | undefined {
 		if (!$arkTypeRegistry.typeAttachments) return
-		return this.cacheGetter(
+		return this.memo(
 			"ambientAttachments",
 			flatMorph(Object.keys($arkTypeRegistry.typeAttachments), (_, k) => [
 				k,
@@ -228,11 +228,11 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	}
 
 	private keywordConfigOf(qualifiedName: string): TypeMeta | undefined {
-		const { keywords } = this.resolvedConfig
+		const { keywords } = this.cfg
 		return hasOwn(keywords, qualifiedName) ? keywords[qualifiedName] : undefined
 	}
 
-	protected preparseOwnAliasEntry(alias: string, def: unknown): AliasDefEntry {
+	protected preparseEntry(alias: string, def: unknown): AliasDefEntry {
 		const firstParamIndex = alias.indexOf("<")
 		if (firstParamIndex === -1) {
 			if (hasArkKind(def, "module") || hasArkKind(def, "generic"))
@@ -310,7 +310,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		)
 	}
 
-	protected normalizeScopeValue(resolution: unknown): unknown {
+	protected normValue(resolution: unknown): unknown {
 		if (isThunk(resolution) && !hasArkKind(resolution, "generic"))
 			return resolution()
 		return resolution
@@ -356,10 +356,10 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		this.units(values) as never
 
 	instanceOf: InstanceOfTypeParser<$> = ctor =>
-		this.node("proto", { proto: ctor }, { prereduced: true }) as never
+		this.node("proto", { proto: ctor }, { reduced: true }) as never
 
 	or: NaryUnionParser<$> = (...defs: unknown[]) =>
-		this.finalize(
+		this.fin(
 			this.node("union", {
 				branches: defs.map(def => this.parse(def))
 			})

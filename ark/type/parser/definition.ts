@@ -86,7 +86,7 @@ export const parseInnerDefinition = (
 		const mark = $ark.reached?.mark()
 		const result = parseString(def, ctx)
 		const node = isArray(result) ? result[0] : result
-		if (!inProgress.definitions || !node.includesAlias) {
+		if (!inProgress.definitions || !node.hasAlias) {
 			scopeCache[def] = result
 			$ark.reached?.store(mark, scopeCache, def)
 		}
@@ -115,7 +115,7 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 						ctx.$.node("pattern", constraintInputOf("pattern", def as RegExp))
 					]
 				},
-				{ prereduced: true }
+				{ reduced: true }
 			)
 		case "Function": {
 			// e.g. Effect's standardSchemaV1, a class that can't be called as a thunk

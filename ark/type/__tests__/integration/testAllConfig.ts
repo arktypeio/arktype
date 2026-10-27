@@ -12,7 +12,7 @@ ark.export()
 cases({
 	allResolutionsHaveMatchingQualifiedName: () => {
 		const mismatches = flatMorph(
-			ark.internal.resolutions,
+			ark.internal.res,
 			(qualifiedName, resolution, i: number) => {
 				if (!resolution || hasArkKind(resolution, "context")) return []
 				if (hasArkKind(resolution, "generic")) return []

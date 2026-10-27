@@ -488,10 +488,10 @@ const firstKeptOf = (errors: ArkErrors): KeptIssue[] => {
 // the issues errors "all" finds, any one of which a first-issue validator
 // returns, up to a check that throws
 const allKeptOf = (t: BaseRoot, input: unknown): KeptIssue[] => {
-	const ctx = new ArkTraversal(input, t.$.resolvedConfig)
+	const ctx = new ArkTraversal(input, t.$.cfg)
 	try {
-		if (t.includesAlias) applyCyclic(t, input, ctx)
-		else t.traverseApply(input, ctx)
+		if (t.hasAlias) applyCyclic(t, input, ctx)
+		else t.tApply(input, ctx)
 	} catch {
 		// what it found before the throw stays in ctx
 	}

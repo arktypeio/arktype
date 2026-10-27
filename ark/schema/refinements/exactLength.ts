@@ -32,7 +32,7 @@ export declare namespace ExactLength {
 		kind: "exactLength"
 		inner: Inner
 		prerequisite: LengthBoundableData
-		errorContext: ErrorContext
+		errorCtx: ErrorContext
 	}>
 
 	export type Node = ExactLengthNode
@@ -41,11 +41,11 @@ export declare namespace ExactLength {
 const implementation: nodeImplementationOf<ExactLength.Declaration> =
 	implementNode<ExactLength.Declaration>({
 		kind: "exactLength",
-		collapseKey: "rule",
+		bareKey: "rule",
 		keys: {
 			rule: {}
 		},
-		ownsError: true,
+		ownErr: true,
 		defaults: {
 			description: node => `exactly length ${node.rule}`
 		}
@@ -59,19 +59,19 @@ export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Dec
 		assertLengthRule("exactLength", this.rule)
 	}
 
-	traverseAllows(data: LengthBoundableData): boolean {
+	tAllows(data: LengthBoundableData): boolean {
 		return data.length === this.rule
 	}
 
-	compileCondition(js: NodeCompiler, data: string): string {
+	jsCond(js: NodeCompiler, data: string): string {
 		return `${data}.length === ${this.rule}`
 	}
 
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
+	readonly implied: BaseRoot = $ark.kw.lengthBoundable.internal
 	readonly expression: string = `== ${this.rule}`
 }
 
 export const ExactLength = {
-	implementation,
+	impl: implementation,
 	Node: ExactLengthNode
 }

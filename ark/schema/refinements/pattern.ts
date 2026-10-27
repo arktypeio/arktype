@@ -46,9 +46,9 @@ export declare namespace Pattern {
 		extends declareNode<{
 			kind: "pattern"
 			inner: Inner
-			openIntersection: true
+			stacks: true
 			prerequisite: string
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = PatternNode
@@ -57,15 +57,15 @@ export declare namespace Pattern {
 const implementation: nodeImplementationOf<Pattern.Declaration> =
 	implementNode<Pattern.Declaration>({
 		kind: "pattern",
-		collapseKey: "rule",
+		bareKey: "rule",
 		keys: {
 			rule: {},
 			flags: {}
 		},
-		coversBasisNoun: true,
-		obviatesBasisExpression: true,
-		ownsError: true,
-		openIntersection: true,
+		coversNoun: true,
+		coversExpr: true,
+		ownErr: true,
+		stacks: true,
 		defaults: {
 			description: node => `matched by ${node.rule}`
 		}
@@ -109,7 +109,7 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 		...args: ConstructorParameters<typeof InternalPrimitiveConstraint>
 	) {
 		super(...args)
-		this.includesCostly = true
+		this.costly = true
 	}
 
 	readonly instance: RegExp = new RegExp(this.rule, this.flags)
@@ -121,7 +121,7 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 	private readonly resetsLastIndex =
 		this.instance.global || this.instance.sticky
 
-	traverseAllows: (string: string) => boolean =
+	tAllows: (string: string) => boolean =
 		this.test ??
 		(this.isRepeated ? string => matchesRepeated(this.instance, string)
 		: this.resetsLastIndex ?
@@ -133,7 +133,7 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 
 	// a ref, so a pattern the engine rejects fails only its definition. A
 	// size build reads the RegExp, smaller than its test with what that calls
-	compileCondition(js: NodeCompiler, data: string): string {
+	jsCond(js: NodeCompiler, data: string): string {
 		if (this.test && !js.shortest) return `${js.ref(this.test)}(${data})`
 		const instance = js.ref(this.instance)
 		if (this.isRepeated)
@@ -143,10 +143,10 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 			:	`${instance}.test(${data})`
 	}
 
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal
+	readonly implied: BaseRoot = $ark.kw.string.internal
 }
 
 export const Pattern = {
-	implementation,
+	impl: implementation,
 	Node: PatternNode
 }

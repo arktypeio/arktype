@@ -2083,13 +2083,15 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 
 ## @ark/schema
 
-- `BaseNode.compiledMeta` is removed, and `BaseScope.resolutions` holds an unresolved alias's parse context instead of its id.
+- `BaseNode.compiledMeta` is removed, and `BaseScope.res` (before: `resolutions`) holds an unresolved alias's parse context instead of its id.
 - `$.node(kind, input)` takes a node's inner, with children already nodes: `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
-- Call a node's `traverseAllows`, `traverseApply` and `traverseTransform` on the node, as in `node.traverseAllows(data, ctx)`, not detached, as in `[x].every(node.traverseAllows)`, until the JIT compiles it.
-- `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, prereduced }`.
+- A node's `traverseAllows`, `traverseApply` and `traverseTransform` are `tAllows`, `tApply` and `tTransform`. Call them on the node, as in `node.tAllows(data, ctx)`, not detached, as in `[x].every(node.tAllows)`, until the JIT compiles it.
+- `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, reduced }`, and the `prereduced` parse option is `reduced`.
+- Internal members have short names, each spelled out by its JSDoc, like `is` (before: `hasKind`), `alters` (before: `hasTransform`) and `errN` (before: `currentErrorCount`). The CHANGELOG lists every one.
+- A morph's input is the first of its `morphs`: its `json` is `{ morphs: ["string", "$ark.trim"] }`, before: `{ in: "string", morphs: ["$ark.trim"] }`, and a schema with `in` still parses to it. Read the input as `head` (before: `inner.in` or `knownIn`), what it pipes to as `piped` and the node it ends with as `tail` (before: `lastMorphNode`). A node's `rawIn` and `rawOut` are `_in` and `_out`.
 - An alias's `resolutionId` (read `resolution.id`), a node's `assertHasKindIn`, `isConstraint` and `isRefinement`, a root's `shortDescription`, a morph's `declareIn` and `serializedMorphs` and a structure's `optionalKeys` are removed.
-- A constraint's `compiledCondition`, a predicate's `compiledNegation`, a morph's `compiledMorphs`, a sequence's `optionalsLength` and the `PrecompiledReferences` type are removed. A leaf writes its check with `compileCondition(js, data)`.
-- Derived keys like the `includes*` flags, `innerEntries` and `propsByKey` moved from a node's own enumerable keys to `node.cache`, so spreading or iterating a node no longer includes them.
+- A constraint's `compiledCondition`, a predicate's `compiledNegation`, a morph's `compiledMorphs`, a sequence's `optionalsLength` and the `PrecompiledReferences` type are removed. A leaf writes its check with `jsCond(js, data)`.
+- Derived keys like the flags `hasAlias` and `hasMorph` (before: `includesAlias`, `includesMorph`), `kv` and `byKey` (before: `innerEntries`, `propsByKey`) moved from a node's own enumerable keys to its cache, `node.c`, so spreading or iterating a node no longer includes them.
 
 ## @ark/util
 

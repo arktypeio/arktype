@@ -20,10 +20,10 @@ export const terminatingChars = {
 export type TerminatingChar = keyof typeof terminatingChars
 
 // a token ends at a terminating char, or at != so a name like a!b still parses
-export const shiftUntilTerminator = (scanner: Scanner): string => {
-	const token = scanner.shiftUntilNext(terminatingChars)
-	if (!token.endsWith("!") || scanner.lookahead !== "=") return token
-	scanner.i--
+export const shiftUntilTerminator = (sc: Scanner): string => {
+	const token = sc.shiftUntilNext(terminatingChars)
+	if (!token.endsWith("!") || sc.peek !== "=") return token
+	sc.i--
 	return token.slice(0, -1)
 }
 
@@ -49,10 +49,10 @@ export const finalizingLookaheads = {
 export type FinalizingLookahead = keyof typeof finalizingLookaheads
 
 export const lookaheadIsFinalizing = (
-	lookahead: string,
+	peek: string,
 	unscanned: string
-): lookahead is ">" | "," | "=" | "?" =>
-	lookahead === ">" ?
+): peek is ">" | "," | "=" | "?" =>
+	peek === ">" ?
 		unscanned[0] === "=" ?
 			// >== would only occur in an expression like Array<number>==5
 			// otherwise, >= would only occur as part of a bound like number>=5
@@ -64,15 +64,15 @@ export const lookaheadIsFinalizing = (
 			unscanned.trimStart().startsWith("!=")
 		// "=" is a finalizer on its own (representing a default value),
 		// but not with a second "=" (an equality comparator)
-	: lookahead === "=" ? unscanned[0] !== "="
+	: peek === "=" ? unscanned[0] !== "="
 		// "," and "?" are unambiguously finalizers
-	: lookahead === "," || lookahead === "?"
+	: peek === "," || peek === "?"
 
 export type lookaheadIsFinalizing<
-	lookahead extends string,
+	peek extends string,
 	unscanned extends string
 > =
-	lookahead extends ">" ?
+	peek extends ">" ?
 		unscanned extends `=${infer nextUnscanned}` ?
 			nextUnscanned extends `=${string}` ?
 				true
@@ -82,11 +82,11 @@ export type lookaheadIsFinalizing<
 		) ?
 			true
 		:	false
-	: lookahead extends "=" ?
+	: peek extends "=" ?
 		unscanned extends `=${string}` ?
 			false
 		:	true
-	: lookahead extends "," | "?" ? true
+	: peek extends "," | "?" ? true
 	: false
 
 export type InfixToken =

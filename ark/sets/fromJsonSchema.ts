@@ -73,7 +73,7 @@ export const readJsonSchema = (
 	const id = idOf(document, ctx)
 	if (id !== undefined) documentResource.uri = resolveUri(id, documentUri, "#")
 	try {
-		return rootSchemaScope.finalize(defining(() => read(schema, "#", ctx)))
+		return rootSchemaScope.fin(defining(() => read(schema, "#", ctx)))
 	} finally {
 		for (const ref in ctx.cyclesByRef)
 			delete $ark.nodesById[ctx.cyclesByRef[ref].id]
@@ -82,7 +82,7 @@ export const readJsonSchema = (
 
 const read = (schema: unknown, pointer: string, ctx: ReadContext): BaseRoot => {
 	if (typeof schema === "boolean")
-		return schema ? $ark.intrinsic.unknown : $ark.intrinsic.never
+		return schema ? $ark.kw.unknown : $ark.kw.never
 	if (!isPlainObject(schema))
 		return throwParseError(writeInvalidJsonSchemaMessage(pointer, schema))
 	const o = schema as dict
@@ -97,7 +97,7 @@ const read = (schema: unknown, pointer: string, ctx: ReadContext): BaseRoot => {
 			uri: resolveUri(id, enclosing.uri, `${pointer}/${ctx.idKey}`)
 		}
 	}
-	let result = $ark.intrinsic.unknown
+	let result = $ark.kw.unknown
 	for (const readKeywords of keywordReaders) {
 		const constraint = readKeywords(o, pointer, ctx)
 		if (constraint) result = intersectRoots(result, constraint)
@@ -360,7 +360,7 @@ const keywordReaders: KeywordReader[] = [
 			undefined
 		:	readEach(o.allOf as array, `${pointer}/allOf`, ctx).reduce(
 				intersectRoots,
-				$ark.intrinsic.unknown
+				$ark.kw.unknown
 			),
 	(o, pointer, ctx) =>
 		o.anyOf === undefined ?
@@ -514,11 +514,11 @@ const readObject = (
 						`${pointer}/properties/${escapePointer(key)}`,
 						ctx
 					)
-				: isDeclared(key) ? $ark.intrinsic.unknown
+				: isDeclared(key) ? $ark.kw.unknown
 				: additional
 			)
 		if (!required.includes(key)) structure.optional.push({ key, value })
-		else if (value.isNever()) return [$ark.intrinsic.never]
+		else if (value.isNever()) return [$ark.kw.never]
 		else structure.required.push({ key, value })
 	}
 	if (additional.isNever()) structure.undeclared = "reject"
@@ -655,7 +655,7 @@ const notArray = /* @__PURE__ */ cached(() => {
 
 // sound since an Array basis checks Array.isArray
 const disjointFromArray = (node: BaseNode): Disjoint | undefined => {
-	if (!node.hasKind("intersection")) return
+	if (!node.is("intersection")) return
 	const { proto, predicate } = node.inner
 	const nonArray = predicate?.find(node => node.predicate === isNonArray)
 	return proto?.proto === Array && nonArray ?
@@ -665,12 +665,12 @@ const disjointFromArray = (node: BaseNode): Disjoint | undefined => {
 
 const typeRoots = /* @__PURE__ */ cached(
 	(): Record<JsonSchema.TypeName, BaseRoot> => ({
-		string: $ark.intrinsic.string,
-		number: $ark.intrinsic.number,
-		integer: $ark.intrinsic.integer,
-		boolean: $ark.intrinsic.boolean,
-		null: $ark.intrinsic.null,
-		array: $ark.intrinsic.Array,
+		string: $ark.kw.string,
+		number: $ark.kw.number,
+		integer: $ark.kw.integer,
+		boolean: $ark.kw.boolean,
+		null: $ark.kw.null,
+		array: $ark.kw.Array,
 		object: rootSchema({ domain: "object", predicate: [notArray()] })
 	})
 )
@@ -773,7 +773,7 @@ const withAnnotations = (root: BaseRoot, o: dict): BaseRoot => {
 	const meta = flatMorph(annotationKeys, (i, k) =>
 		o[k] === undefined ? [] : [k, o[k]]
 	)
-	return Object.keys(meta).length === 0 || root.hasKind("alias") ?
+	return Object.keys(meta).length === 0 || root.is("alias") ?
 			root
 		:	root.configure(meta as never, "self")
 }

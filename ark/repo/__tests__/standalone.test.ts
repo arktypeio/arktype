@@ -503,10 +503,10 @@ nick must be a string or null`)
 		attest(() =>
 			assertReportsIssues([
 				unitOf(
-					"(data, ctx) => (ctx.pushBranch(), apply(data, ctx), ctx.popBranch().errorCount === 0)"
+					"(data, ctx) => (ctx.pushBr(), apply(data, ctx), ctx.popBr().errN === 0)"
 				)
 			])
-		).throws("unionApply reads ctx.pushBranch, which ArkErrors lack")
+		).throws("unionApply reads ctx.pushBr, which ArkErrors lack")
 	})
 
 	it("literals reading as the code around them", async () => {
@@ -534,7 +534,7 @@ nick must be a string or null`)
 			Looped: type({
 				"for (;;) {": type.enumerated("${", "`", '"', "\\\\"),
 				"         break": "string.url",
-				"const errorCount = ctx.currentErrorCount\n": "number",
+				"const errN = ctx.errN\n": "number",
 				"    return false  }": "string"
 			})
 		}
@@ -545,7 +545,7 @@ nick must be a string or null`)
 		) => ({
 			"for (;;) {": first,
 			[key]: url,
-			"const errorCount = ctx.currentErrorCount\n": 0,
+			"const errN = ctx.errN\n": 0,
 			"    return false\u2028 }": ""
 		})
 		// each input fails with at most one issue, so a first-issue build keeps
@@ -1573,8 +1573,8 @@ age is missing`)
 		})
 		Object.defineProperty(length, "name", { value: "introspected" })
 		const validator = create(length)
-		attest(json).snap({ in: "string", morphs: ["$ark.$hole_length"] })
-		attest(validator.json).snap({ in: "string", morphs: ["$ark.introspected"] })
+		attest(json).snap({ morphs: ["string", "$ark.$hole_length"] })
+		attest(validator.json).snap({ morphs: ["string", "$ark.introspected"] })
 		attest(message)
 			.snap(`ToJsonSchemaError: Can't convert "morph" to JSON Schema. Configure fallback.morph to write it:
 {
@@ -3189,9 +3189,7 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 			// stands in for a narrow the build can't call, so the default is valid
 			const isEven = standIn((n: number) => n === n, "iseven")
 			const T = type({ a: [["number", ":", isEven], "=", 3] })
-			const optional = T.internal.references.find(node =>
-				node.hasKind("optional")
-			)!
+			const optional = T.internal.references.find(node => node.is("optional"))!
 			const exports = {
 				T: {
 					type: T,

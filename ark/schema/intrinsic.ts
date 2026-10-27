@@ -43,7 +43,7 @@ const bootstrapIntrinsic = () => {
 		{ prereducedAliases: true, name: "intrinsic" }
 	).export()
 
-	$ark.intrinsic = { ...intrinsicBases } as never
+	$ark.kw = { ...intrinsicBases } as never
 
 	const intrinsicRoots = builtinScope(
 		{
@@ -59,7 +59,7 @@ const bootstrapIntrinsic = () => {
 	).export()
 
 	// needed to parse index signatures for JSON
-	Object.assign($ark.intrinsic, intrinsicRoots)
+	Object.assign($ark.kw, intrinsicRoots)
 
 	const intrinsic = { ...intrinsicBases, ...intrinsicRoots }
 
@@ -101,23 +101,23 @@ const bootstrapIntrinsic = () => {
 
 	// assigned after JSON's keys, so it still enumerates last
 	const result = Object.assign(intrinsic as typeof intrinsic & IntrinsicJson, {
-		emptyStructure: node("structure", {}, { prereduced: true })
+		emptyStructure: node("structure", {}, { reduced: true })
 	})
 
-	$ark.intrinsic = result as never
+	$ark.kw = result as never
 
 	return result
 }
 
 let bootstrapped = false
 let bootstrappedWithEngine = false
-const intrinsicTarget: typeof $ark.intrinsic = {} as never
+const intrinsicTarget: typeof $ark.kw = {} as never
 
 const bootstrapOnRead = () =>
-	Object.defineProperty($ark, "intrinsic", {
+	Object.defineProperty($ark, "kw", {
 		get: () => {
 			bootstrap()
-			return $ark.intrinsic
+			return $ark.kw
 		},
 		enumerable: true,
 		configurable: true
@@ -130,7 +130,7 @@ export const bootstrap = (): void => {
 	if (bootstrapped && (bootstrappedWithEngine || !$ark.sets)) return
 	bootstrapped = true
 	bootstrappedWithEngine = $ark.sets !== undefined
-	defineValue($ark, "intrinsic", undefined)
+	defineValue($ark, "kw", undefined)
 	try {
 		bootstrapRootScope()
 		Object.defineProperties(
@@ -144,7 +144,7 @@ export const bootstrap = (): void => {
 	}
 }
 
-const currentIntrinsic = (): typeof $ark.intrinsic => {
+const currentIntrinsic = (): typeof $ark.kw => {
 	bootstrap()
 	return intrinsicTarget
 }

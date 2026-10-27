@@ -26,11 +26,12 @@ export abstract class BaseRange<
 		...args: ConstructorParameters<typeof InternalPrimitiveConstraint>
 	) {
 		super(...args)
-		if (this.operandKind === "length")
+		if (this.opKind === "length")
 			assertLengthRule(this.kind as LengthBoundKind, this.rule as number)
 	}
 
-	get operandKind(): OperandKindsByBoundKind[d["kind"]] {
+	/** the kind of data its bound applies to: a value, a length or a date */
+	get opKind(): OperandKindsByBoundKind[d["kind"]] {
 		return operandKindsByBoundKind[this.kind]
 	}
 
@@ -38,12 +39,13 @@ export abstract class BaseRange<
 		return compileComparator(this.kind, this.exclusive)
 	}
 
-	get numericLimit(): number {
+	/** its rule as a number, a Date's time where it's a Date */
+	get numRule(): number {
 		return this.rule.valueOf()
 	}
 
 	readonly expression: string = `${this.comparator} ${
-		this.operandKind === "date" ?
+		this.opKind === "date" ?
 			`d'${this.stringLimit}'`
 		:	printDecimal(this.rule as number)
 	}`
@@ -52,18 +54,18 @@ export abstract class BaseRange<
 		return this.comparator["0"] === "<" ? "upper" : "lower"
 	}
 
-	compileCondition(js: NodeCompiler, data: string): string {
+	jsCond(js: NodeCompiler, data: string): string {
 		const actual =
-			this.operandKind === "value" ? data
-			: this.operandKind === "length" ? `${data}.length`
+			this.opKind === "value" ? data
+			: this.opKind === "length" ? `${data}.length`
 			: `${data}.valueOf()`
-		return `${actual} ${this.comparator} ${this.numericLimit}`
+		return `${actual} ${this.comparator} ${this.numRule}`
 	}
 
 	get stringLimit(): string {
-		return this.operandKind === "date" ?
-				dateLimitToString(this.numericLimit)
-			:	`${this.numericLimit}`
+		return this.opKind === "date" ?
+				dateLimitToString(this.numRule)
+			:	`${this.numRule}`
 	}
 
 	isStricterThan(
@@ -71,27 +73,23 @@ export abstract class BaseRange<
 	): boolean {
 		const thisLimitIsStricter =
 			this.limitKind === "upper" ?
-				this.numericLimit < r.numericLimit
-			:	this.numericLimit > r.numericLimit
+				this.numRule < r.numRule
+			:	this.numRule > r.numRule
 		return (
 			thisLimitIsStricter ||
-			(this.numericLimit === r.numericLimit &&
-				this.exclusive === true &&
-				!r.exclusive)
+			(this.numRule === r.numRule && this.exclusive === true && !r.exclusive)
 		)
 	}
 
 	overlapsRange(r: nodeOfKind<pairedRangeKind<d["kind"]>>): boolean {
 		if (this.isStricterThan(r)) return false
-		if (this.numericLimit === r.numericLimit && (this.exclusive || r.exclusive))
+		if (this.numRule === r.numRule && (this.exclusive || r.exclusive))
 			return false
 		return true
 	}
 
 	overlapIsUnit(r: nodeOfKind<pairedRangeKind<d["kind"]>>): boolean {
-		return (
-			this.numericLimit === r.numericLimit && !this.exclusive && !r.exclusive
-		)
+		return this.numRule === r.numRule && !this.exclusive && !r.exclusive
 	}
 }
 

@@ -39,10 +39,11 @@ import { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
 export interface ArkSchemaRegistry extends ArkRegistry {
-	intrinsic: typeof intrinsic
+	/** the intrinsic nodes keywords are built from, like `unknown` and `string` */
+	kw: typeof intrinsic
 	config: ArkSchemaConfig
 	defaultConfig: ResolvedConfig
-	resolvedConfig?: ResolvedConfig
+	cfg?: ResolvedConfig
 	nodesById: typeof nodesById
 	sets?: SetEngine
 	encode?: (node: BaseRoot) => BaseRoot
@@ -121,7 +122,7 @@ export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 	const merged = mergeConfigs($ark.config, config)
 	// a config file evaluated again, like after a test runner resets its
 	// modules, can reapply what's already set
-	if ($ark.resolvedConfig && !isSameConfig(merged, $ark.config))
+	if ($ark.cfg && !isSameConfig(merged, $ark.config))
 		return throwParseError(configureAfterTypeMessage)
 	return Object.assign($ark.config, merged)
 }

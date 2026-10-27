@@ -18,7 +18,7 @@ import type { ArkSchemaConfig, ResolvedConfig } from "../config.ts"
 import type {
 	NodeErrorContextsByKind,
 	Prerequisite,
-	errorContext
+	errorCtx
 } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
 import type { DiscriminantErrorContext } from "../roots/union.ts"
@@ -62,7 +62,7 @@ export const TraversalError: new (errors: ArkErrors) => TraversalError =
  */
 export type ArkError<code extends ArkErrorCode = ArkErrorCode> =
 	code extends unknown ?
-		mutable<omit<errorContext<code>, "meta">> & WrittenErrorContext<code>
+		mutable<omit<errorCtx<code>, "meta">> & WrittenErrorContext<code>
 	:	never
 
 export interface WrittenErrorContext<code extends ArkErrorCode>
@@ -348,14 +348,14 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 		get _(): ArkError[] {
 			if (!this._f) {
 				const ctx = new this._ctor(this._d, this.config)
-				this._node.traverseApply(this._d, ctx)
+				this._node.tApply(this._d, ctx)
 				// data a write or a getter has made valid since fails as a whole
 				if (!ctx.hasError())
 					ctx.reject({ expected: "valid", problem: "is invalid" })
 				const errors = this as {} as ArkErrors
 				// an ArkErrors holding what its traversal found
 				errors._init(this.config)
-				this._f = (ctx.finalize(null) as ArkErrors)._
+				this._f = (ctx.fin(null) as ArkErrors)._
 			}
 			return this._f
 		}
@@ -371,10 +371,10 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 				this.config,
 				!revisitsPaths(node)
 			)
-			node.traverseApply(this._d, ctx)
+			node.tApply(this._d, ctx)
 			if (!ctx.hasError())
 				ctx.reject({ expected: "valid", problem: "is invalid" })
-			const errors = ctx.finalize(null) as ArkErrors
+			const errors = ctx.fin(null) as ArkErrors
 			if (errors._.includes(skipped))
 				errors._ = errors._.filter(error => error !== skipped)
 			return (this._1 = errors._first)
@@ -496,8 +496,7 @@ const revisitsPaths = (node: BaseNode): boolean => {
 	let revisits = revisitsPathsByNode.get(node)
 	if (revisits === undefined) {
 		revisits =
-			node.includesAlias ||
-			node.references.some(reference => reference.hasKind("index"))
+			node.hasAlias || node.references.some(reference => reference.is("index"))
 		revisitsPathsByNode.set(node, revisits)
 	}
 	return revisits
@@ -512,7 +511,7 @@ export const applyUnread = (
 	onFail: FailHandler | null,
 	ctor: typeof Traversal
 ): unknown => {
-	if (node.hasUserCode || node.hasTransform)
+	if (node.userCode || node.alters)
 		return applyRejected(node, data, config, onFail, ctor)
 	const errors = new UnreadErrors(node, data, config, ctor)
 	return onFail ? onFail(errors as never) : errors
@@ -526,14 +525,11 @@ export class ArkTraversal extends Traversal {
 		return new ArkErrors(this.config)
 	}
 
-	override errorFromNode<input extends NodeErrorContextInput>(
+	override nodeError<input extends NodeErrorContextInput>(
 		input: input,
 		data: unknown
 	): ArkError<input["code"]>
-	override errorFromNode(
-		input: NodeErrorContextInput,
-		data: unknown
-	): ArkError {
+	override nodeError(input: NodeErrorContextInput, data: unknown): ArkError {
 		return this.addError(
 			errorOfNodeContext(input, pathAt(this.path), data, this.config)
 		)
@@ -560,9 +556,9 @@ export class ArkTraversal extends Traversal {
 		data: unknown
 	): boolean {
 		const errors = branches.map(branch => {
-			this.pushBranch()
+			this.pushBr()
 			branch(data, this)
-			return this.popBranch()!.error as ArkError
+			return this.popBr()!.error as ArkError
 		})
 		errorFromUnion(this, errors, site.meta as ArkEnv.meta, data)
 		return this.failFast
@@ -1121,7 +1117,7 @@ export interface ErrorContextsByCode extends NodeErrorContextsByKind {
 export type ArkErrorCode = keyof ErrorContextsByCode
 
 type ArkErrorContextInputsByCode = {
-	[code in ArkErrorCode]: errorContext<code> & DerivableErrorContextInput<code>
+	[code in ArkErrorCode]: errorCtx<code> & DerivableErrorContextInput<code>
 }
 
 export type ArkErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =

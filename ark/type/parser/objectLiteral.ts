@@ -67,7 +67,7 @@ export const parseObjectLiteral = (
 			// treat object domain as empty for spreading (useful for generic constraints)
 			if (operand.equals(intrinsic.object)) continue
 			if (
-				!operand.hasKind("intersection") ||
+				!operand.is("intersection") ||
 				// still error on attempts to spread proto nodes like ...Date
 				!operand.basis?.equals(intrinsic.object)
 			) {
@@ -177,7 +177,7 @@ export const parseObjectLiteral = (
 			domain: objectDomainOf(ctx.$),
 			structure: spread?.merge(structureNode) ?? structureNode
 		},
-		{ prereduced: true }
+		{ reduced: true }
 	)
 
 	return meta === undefined ? node : node.configure(meta)

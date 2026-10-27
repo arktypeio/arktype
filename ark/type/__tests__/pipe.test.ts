@@ -119,18 +119,20 @@ contextualize(() => {
 
 		attest<string>(T.infer)
 		attest(T.json).snap({
-			in: "string",
 			morphs: [
+				"string",
 				"$ark.parseJson",
 				{
-					in: {
-						required: [
-							{ key: "age", value: "number" },
-							{ key: "name", value: "string" }
-						],
-						domain: "object"
-					},
-					morphs: [registeredReference(restringifyUser)]
+					morphs: [
+						{
+							required: [
+								{ key: "age", value: "number" },
+								{ key: "name", value: "string" }
+							],
+							domain: "object"
+						},
+						registeredReference(restringifyUser)
+					]
 				}
 			]
 		})
@@ -236,8 +238,7 @@ contextualize(() => {
 		attest<Type<(In: boolean) => Out<boolean>>>(T)
 
 		attest(T.json).snap({
-			in: [{ unit: false }, { unit: true }],
-			morphs: [registeredReference(notMorph)]
+			morphs: [[{ unit: false }, { unit: true }], registeredReference(notMorph)]
 		})
 
 		const out = T(true)
@@ -612,12 +613,16 @@ contextualize(() => {
 		>(T.t)
 		attest(T.json).snap([
 			{
-				in: { required: [{ key: "a", value: "number" }], domain: "object" },
-				morphs: [registeredReference(addOne)]
+				morphs: [
+					{ required: [{ key: "a", value: "number" }], domain: "object" },
+					registeredReference(addOne)
+				]
 			},
 			{
-				in: { required: [{ key: "a", value: "string" }], domain: "object" },
-				morphs: [registeredReference(appendExclamation)]
+				morphs: [
+					{ required: [{ key: "a", value: "string" }], domain: "object" },
+					registeredReference(appendExclamation)
+				]
 			}
 		])
 
@@ -664,11 +669,18 @@ contextualize(() => {
 
 		attest<(In: 3.14) => Out<string>>(types.aAndB.t)
 		attest(types.aAndB.json).snap({
-			in: { unit: 3.14 },
-			morphs: [registeredReference(stringifyNumberMorph)]
+			morphs: [{ unit: 3.14 }, registeredReference(stringifyNumberMorph)]
 		})
 		attest<typeof types.aAndB>(types.bAndA)
 		attest(types.bAndA).equals(types.aAndB)
+	})
+
+	it("intersection keeps its inputs' morphs", () => {
+		const id = (o: object) => o
+		const A = type({ a: "string.numeric.parse" }).pipe(id)
+		const B = type({ b: "string" }).pipe(id)
+		const T = A.and(B) as type.Any
+		attest(T({ a: "5", b: "x" })).equals({ a: 5, b: "x" })
 	})
 
 	it("object intersection", () => {
@@ -682,14 +694,16 @@ contextualize(() => {
 
 		attest(types.c.t).type.toString.snap("(In: { a: 1; b: 2 }) => Out<string>")
 		attest(types.c.json).snap({
-			in: {
-				required: [
-					{ key: "a", value: { unit: 1 } },
-					{ key: "b", value: { unit: 2 } }
-				],
-				domain: "object"
-			},
-			morphs: [registeredReference(_pipeScopedObjectIntersection)]
+			morphs: [
+				{
+					required: [
+						{ key: "a", value: { unit: 1 } },
+						{ key: "b", value: { unit: 2 } }
+					],
+					domain: "object"
+				},
+				registeredReference(_pipeScopedObjectIntersection)
+			]
 		})
 	})
 
@@ -705,8 +719,7 @@ contextualize(() => {
 
 		attest(types.aOrB.json).snap([
 			{
-				in: "number",
-				morphs: [registeredReference(_stringifyNumberUnionPipe)]
+				morphs: ["number", registeredReference(_stringifyNumberUnionPipe)]
 			},
 			{ unit: false },
 			{ unit: true }
@@ -743,8 +756,10 @@ contextualize(() => {
 					key: "a",
 					value: [
 						{
-							in: { domain: "number", min: { exclusive: true, rule: 0 } },
-							morphs: [registeredReference(_stringifyNumberUnionPipeDeep)]
+							morphs: [
+								{ domain: "number", min: { exclusive: true, rule: 0 } },
+								registeredReference(_stringifyNumberUnionPipeDeep)
+							]
 						},
 						"Function"
 					]
@@ -765,8 +780,8 @@ contextualize(() => {
 		attest<(In: string) => Out<boolean>>(types.b.t)
 
 		attest(types.b.json).snap({
-			in: "string",
 			morphs: [
+				"string",
 				registeredReference(stringToLength),
 				registeredReference(isZeroLength)
 			]
@@ -784,19 +799,20 @@ contextualize(() => {
 		const types = $.export()
 		attest<(In: { a: string }) => Out<boolean>>(types.b.t)
 		attest(types.b.json).snap({
-			in: {
-				required: [
-					{
-						key: "a",
-						value: {
-							in: "string",
-							morphs: [registeredReference(chainedNestedToLength)]
+			morphs: [
+				{
+					required: [
+						{
+							key: "a",
+							value: {
+								morphs: ["string", registeredReference(chainedNestedToLength)]
+							}
 						}
-					}
-				],
-				domain: "object"
-			},
-			morphs: [registeredReference(chainedNestedGetA)]
+					],
+					domain: "object"
+				},
+				registeredReference(chainedNestedGetA)
+			]
 		})
 	})
 
@@ -815,19 +831,23 @@ contextualize(() => {
 		attest<(In: { A: string }) => Out<boolean>>(T.t)
 		assertNodeKind(T.internal, "morph")
 		attest(T.json).snap({
-			in: {
-				required: [
-					{
-						key: "A",
-						value: {
-							in: "string",
-							morphs: [registeredReference(_directlyNestedStringToLength)]
+			morphs: [
+				{
+					required: [
+						{
+							key: "A",
+							value: {
+								morphs: [
+									"string",
+									registeredReference(_directlyNestedStringToLength)
+								]
+							}
 						}
-					}
-				],
-				domain: "object"
-			},
-			morphs: [registeredReference(_directlyNestedRoot)]
+					],
+					domain: "object"
+				},
+				registeredReference(_directlyNestedRoot)
+			]
 		})
 	})
 
@@ -842,7 +862,7 @@ contextualize(() => {
 
 		attest<[number] | ((In: [string]) => Out<string[]>)>(types.c.t)
 
-		attest(discriminantJsonOf(types.c.internal.assertHasKind("union"))).snap({
+		attest(discriminantJsonOf(types.c.internal.assertIs("union"))).snap({
 			kind: "domain",
 			path: ["0"],
 			cases: {
@@ -852,12 +872,14 @@ contextualize(() => {
 					exactLength: 1
 				},
 				'"string"': {
-					in: {
-						sequence: { prefix: ["string"] },
-						proto: "Array",
-						exactLength: 1
-					},
-					morphs: [registeredReference(_discriminableTupleUnionPipe)]
+					morphs: [
+						{
+							sequence: { prefix: ["string"] },
+							proto: "Array",
+							exactLength: 1
+						},
+						registeredReference(_discriminableTupleUnionPipe)
+					]
 				}
 			}
 		})
@@ -921,8 +943,10 @@ contextualize(() => {
 				{
 					key: "a",
 					value: {
-						in: { unit: 1 },
-						morphs: [registeredReference(_deepIntersectionPipePlusOne)]
+						morphs: [
+							{ unit: 1 },
+							registeredReference(_deepIntersectionPipePlusOne)
+						]
 					}
 				}
 			],
@@ -1150,11 +1174,13 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		>(T.t)
 
 		attest(T.json).snap({
-			in: [
-				{ required: [{ key: "bar", value: { unit: 1 } }], domain: "object" },
-				{ required: [{ key: "foo", value: { unit: 1 } }], domain: "object" }
-			],
-			morphs: [registeredReference(getObjectValues)]
+			morphs: [
+				[
+					{ required: [{ key: "bar", value: { unit: 1 } }], domain: "object" },
+					{ required: [{ key: "foo", value: { unit: 1 } }], domain: "object" }
+				],
+				registeredReference(getObjectValues)
+			]
 		})
 		attest(T({ foo: 1 })).snap([1])
 		attest(T({ bar: 1 })).snap([1])
@@ -1232,13 +1258,13 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		const appendLengths = type("string").pipe(appendLength, appendLength)
 
 		attest(appendLengths.json).snap({
-			in: "string",
 			morphs: [
+				"string",
 				{
-					in: "string",
 					morphs: [
+						"string",
 						"$ark.appendLengthMorph",
-						{ in: "string", morphs: ["$ark.appendLengthMorph"] }
+						{ morphs: ["string", "$ark.appendLengthMorph"] }
 					]
 				}
 			]
@@ -1262,21 +1288,21 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		)
 
 		attest(appendSeparatedLengths.json).snap({
-			in: "string",
 			morphs: [
+				"string",
 				{
-					in: "string",
 					morphs: [
+						"string",
 						registeredReference(appendLengthMorph),
-						{ in: "string", morphs: [registeredReference(appendLengthMorph)] }
+						{ morphs: ["string", registeredReference(appendLengthMorph)] }
 					]
 				},
 				registeredReference(appendSeparatorMorph),
 				{
-					in: "string",
 					morphs: [
+						"string",
 						registeredReference(appendLengthMorph),
-						{ in: "string", morphs: [registeredReference(appendLengthMorph)] }
+						{ morphs: ["string", registeredReference(appendLengthMorph)] }
 					]
 				}
 			]

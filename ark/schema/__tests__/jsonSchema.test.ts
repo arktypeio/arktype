@@ -40,7 +40,7 @@ contextualize(() => {
 	})
 
 	it("boolean", () => {
-		attest(toJsonSchema($ark.intrinsic.boolean)).snap({
+		attest(toJsonSchema($ark.kw.boolean)).snap({
 			type: "boolean"
 		})
 	})
@@ -149,7 +149,7 @@ contextualize(() => {
 
 	it("cyclic", () => {
 		// JSON Schema can't require a plain object
-		const schema = toJsonSchema($ark.intrinsic.jsonObject, {
+		const schema = toJsonSchema($ark.kw.jsonObject, {
 			fallback: { predicate: ctx => ctx.base }
 		})
 
@@ -178,7 +178,7 @@ contextualize(() => {
 			domain: "object",
 			required: [{ key: "a", value: "string" }]
 		})
-		const ctx = node.$.resolvedConfig.toJsonSchema
+		const ctx = node.$.cfg.toJsonSchema
 		attest(node.toJsonSchemaRecurse(ctx)).snap({
 			type: "object",
 			properties: { a: { type: "string" } },

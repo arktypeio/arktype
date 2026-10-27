@@ -1606,9 +1606,7 @@ export class Precompiler {
 			if (roots.length) {
 				// arktype's builtin scopes, exported with the first Type
 				const intrinsicUnits = (this.intrinsicUnits ??= writePrecompiledUnits(
-					Object.values($ark.intrinsic).filter(value =>
-						hasArkKind(value, "root")
-					)
+					Object.values($ark.kw).filter(value => hasArkKind(value, "root"))
 				))
 				const intrinsicTable = writeUnitTable(intrinsicUnits)
 				const intrinsicSpecifier = `~arktype/units/${hashOf(intrinsicTable)}`
@@ -1851,7 +1849,7 @@ export class Precompiler {
 			evaluated &&
 			(evaluated.problem ??
 				// configure() would throw after the first Type
-				(!applied && $ark.resolvedConfig ?
+				(!applied && $ark.cfg ?
 					"configure() is called after its argument creates a Type"
 				:	undefined))
 		const configuration: Configuration = {
@@ -1883,7 +1881,7 @@ export class Precompiler {
 			if (!problem) configure(evaluated.value as never)
 		}
 		// so a later configure() throws, as after the first Type
-		void ark.internal.resolvedConfig
+		void ark.internal.cfg
 		return configuration
 	}
 
@@ -3522,7 +3520,7 @@ export class Precompiler {
 			const id = object && unwrapChain(object)
 			const binding =
 				id?.type === "Identifier" ?
-					module.scopes.refsById.get(id)?.binding
+					module.scopes.byId.get(id)?.binding
 				:	undefined
 			if (
 				typeof read === "string" &&
@@ -3686,7 +3684,7 @@ export class Precompiler {
 		node = unwrapExpression(node)
 		while (node.type === "MemberExpression")
 			node = unwrapExpression(node.object)
-		const binding = module.scopes.refsById.get(node)?.binding
+		const binding = module.scopes.byId.get(node)?.binding
 		const declaration = binding?.kind === "import" && binding.declaration.parent
 		if (declaration && declaration.type === "ImportDeclaration") {
 			const target = this.graph.resolve(declaration.source.value, module)
@@ -3941,7 +3939,7 @@ export class Precompiler {
 		module: SourceModule
 	): Binding | undefined {
 		if (isImportInput || read.type !== "Identifier") return
-		const binding = module.scopes.refsById.get(read)?.binding
+		const binding = module.scopes.byId.get(read)?.binding
 		return this.isCreatedBy(binding, value) ? binding : undefined
 	}
 
@@ -3966,9 +3964,7 @@ export class Precompiler {
 		const [definition] = call.arguments
 		const callee = unwrapExpression(call.callee)
 		const reference =
-			callee.type === "Identifier" ?
-				module.scopes.refsById.get(callee)
-			:	undefined
+			callee.type === "Identifier" ? module.scopes.byId.get(callee) : undefined
 		const isDefine =
 			callee.type === "MemberExpression" ?
 				!callee.computed &&
@@ -3981,7 +3977,7 @@ export class Precompiler {
 		walk(definition, child => {
 			const binding =
 				child.type === "Identifier" ?
-					module.scopes.refsById.get(child)?.binding
+					module.scopes.byId.get(child)?.binding
 				:	undefined
 			readsArk ||= !!binding && this.definesArk(binding, module)
 			return !readsArk
@@ -4575,7 +4571,7 @@ export class Precompiler {
 				root.type === "MemberExpression" ? root.object : root.callee
 			)
 		}
-		const declaration = module.scopes.refsById.get(root)?.binding?.declaration
+		const declaration = module.scopes.byId.get(root)?.binding?.declaration
 		const specifier =
 			declaration?.parent?.type === "ImportDeclaration" ?
 				declaration.parent.source.value
@@ -4971,7 +4967,7 @@ export class Precompiler {
 		node = unwrapChain(node)
 		const binding =
 			node.type === "Identifier" ?
-				module.scopes.refsById.get(node)?.binding
+				module.scopes.byId.get(node)?.binding
 			:	undefined
 		return !!binding && isInIsland(binding.declaration, module)
 	}
@@ -5076,7 +5072,7 @@ export class Precompiler {
 			walk(node, child => {
 				const reference =
 					child.type === "Identifier" ?
-						origin.scopes.refsById.get(child)
+						origin.scopes.byId.get(child)
 					:	undefined
 				const binding = reference?.binding
 				if (
@@ -5369,7 +5365,7 @@ const holdsOtherConfiguration = (files: string | undefined): boolean =>
 	threadConfiguration ?
 		threadConfiguration.files !== files
 	:	Object.keys($ark.config).length > 0 ||
-		(files !== undefined && $ark.resolvedConfig !== undefined)
+		(files !== undefined && $ark.cfg !== undefined)
 
 const ownPackagesByName: Partial<
 	Record<ArkPackage, [root: string, version: string]>
@@ -5623,7 +5619,7 @@ interface CalledParam {
 const paramOf = (rejection: DynamicValue | undefined): Binding | undefined => {
 	for (let link = rejection; link; link = link.cause) {
 		if (link.code === "parameter")
-			return link.module.scopes.refsById.get(link.node)?.binding
+			return link.module.scopes.byId.get(link.node)?.binding
 	}
 }
 
@@ -5655,9 +5651,7 @@ const parameterOf = (
 ): { binding: Binding; fn: string; isAnnotated: boolean } | undefined => {
 	const id = unwrapChain(node)
 	const binding =
-		id.type === "Identifier" ?
-			module.scopes.refsById.get(id)?.binding
-		:	undefined
+		id.type === "Identifier" ? module.scopes.byId.get(id)?.binding : undefined
 	if (binding?.kind !== "param") return
 	return {
 		binding,

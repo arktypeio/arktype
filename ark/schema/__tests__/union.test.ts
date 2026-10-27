@@ -127,11 +127,7 @@ contextualize(() => {
 				]
 			}).and(index)
 		attest(() =>
-			node(
-				"union",
-				{ branches: [branch("a"), branch("b")] },
-				{ prereduced: true }
-			)
+			node("union", { branches: [branch("a"), branch("b")] }, { reduced: true })
 		).throws(
 			"Intersection at x of number and string results in an unsatisfiable type"
 		)

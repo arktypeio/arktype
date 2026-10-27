@@ -33,9 +33,9 @@ contextualize(() => {
 		const prefixOf = (id: string) => id.replace(/\d+$/, "")
 		const parsedFirst = scope({})
 		parsedFirst.schema({ domain: "object" })
-		attest(
-			prefixOf(parsedFirst.internal.bindReference(intrinsic.object).id)
-		).equals(prefixOf(scope({}).internal.bindReference(intrinsic.object).id))
+		attest(prefixOf(parsedFirst.internal.bindRef(intrinsic.object).id)).equals(
+			prefixOf(scope({}).internal.bindRef(intrinsic.object).id)
+		)
 	})
 
 	it("define", () => {

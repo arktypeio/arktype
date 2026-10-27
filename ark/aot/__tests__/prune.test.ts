@@ -936,13 +936,13 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 				},
 				fromHere("temp", "prunedResolved")
 			)
-			let resolutions = 0
+			let res = 0
 			// resolves reader.ts as the scan reads it, then as asserter.ts
 			const swap: Plugin = {
 				name: "swap",
 				setup: build =>
 					build.onResolve({ filter: /reader\.ts$/ }, () => ({
-						path: join(files, resolutions++ ? "asserter.ts" : "reader.ts")
+						path: join(files, res++ ? "asserter.ts" : "reader.ts")
 					}))
 			}
 			const result = await build({

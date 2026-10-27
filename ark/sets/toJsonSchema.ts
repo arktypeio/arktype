@@ -38,7 +38,7 @@ export const rootToJsonSchema = (
 	opts: ToJsonSchema.Options
 ): JsonSchema => {
 	const ctx: JsonSchemaContext = Object.assign(
-		mergeToJsonSchemaConfigs(node.$.resolvedConfig.toJsonSchema, opts),
+		mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, opts),
 		{ path: "", open: [], defNamesById: {}, defs: {} }
 	)
 	// a default handler throws naming where the part it can't convert is
@@ -79,7 +79,7 @@ export const toJsonSchemaRecurse = (
 	ctx: JsonSchemaContext
 ): JsonSchema => {
 	// a cyclic alias's resolution is written once, named by the alias
-	if (node.hasKind("alias")) {
+	if (node.is("alias")) {
 		const name = aliasNameOf(node)
 		if (name !== undefined) nameDef(node.resolution, name, ctx)
 		return toJsonSchemaRecurse(node.resolution, ctx)
@@ -151,7 +151,7 @@ const toResolvedJsonSchema = (
 		// "$ark.array1", so prefer the original value when it is valid JSON
 		// (jsonData's object domain also allows functions, so exclude them)
 		const jsonValue =
-			typeof v !== "function" && $ark.intrinsic.jsonData.allows(v) ? v
+			typeof v !== "function" && $ark.kw.jsonData.allows(v) ? v
 			: k === "default" ?
 				ctx.fallback.defaultValue({
 					code: "defaultValue",
@@ -172,10 +172,7 @@ const branchGroupsToJsonSchema = (
 ): JsonSchema => {
 	// special case to simplify { const: true } | { const: false }
 	// to the canonical JSON Schema representation { type: "boolean" }
-	if (
-		branchGroups.length === 1 &&
-		branchGroups[0].equals($ark.intrinsic.boolean)
-	)
+	if (branchGroups.length === 1 && branchGroups[0].equals($ark.kw.boolean))
 		return { type: "boolean" }
 
 	const jsonSchemaBranches = branchGroups.map(group =>
@@ -246,11 +243,11 @@ const branchGroupsOf = (node: Union.Node): BaseRoot[] => {
 	const branchGroups: BaseRoot[] = []
 	let firstBooleanIndex = -1
 	for (const branch of node.branches) {
-		if (branch.hasKind("unit") && branch.domain === "boolean") {
+		if (branch.is("unit") && branch.domain === "boolean") {
 			if (firstBooleanIndex === -1) {
 				firstBooleanIndex = branchGroups.length
 				branchGroups.push(branch)
-			} else branchGroups[firstBooleanIndex] = $ark.intrinsic.boolean
+			} else branchGroups[firstBooleanIndex] = $ark.kw.boolean
 			continue
 		}
 		branchGroups.push(branch)
@@ -296,15 +293,15 @@ const innerToJsonSchemaByKind: {
 	},
 	morph: (node, ctx) =>
 		ctx.io === "in" ?
-			// its input as written, since rawIn drops the defaults it holds
+			// its input as written, since _in drops the defaults it holds
 			toJsonSchemaRecurse(
-				node.declaredIn ?? node.inner.in ?? $ark.intrinsic.unknown.internal,
+				node.declaredIn ?? node.head ?? $ark.kw.unknown.internal,
 				ctx
 			)
 		:	ctx.fallback.morph({
 				code: "morph",
-				base: toJsonSchemaRecurse(node.rawIn, ctx),
-				out: node.knownOut ? toJsonSchemaRecurse(node.knownOut, ctx) : null
+				base: toJsonSchemaRecurse(node._in, ctx),
+				out: node.tail ? toJsonSchemaRecurse(node.tail._out, ctx) : null
 			}),
 	unit: (node, ctx) =>
 		// this is the more standard JSON schema representation, especially for Open API
@@ -312,7 +309,7 @@ const innerToJsonSchemaByKind: {
 			ctx.target === "openapi-3.0" ?
 				openApiNull()
 			:	{ type: "null" }
-		: !$ark.intrinsic.jsonPrimitive.allows(node.unit) ?
+		: !$ark.kw.jsonPrimitive.allows(node.unit) ?
 			ctx.fallback.unit({ code: "unit", base: {}, unit: node.unit })
 		: ctx.target === "openapi-3.0" ?
 			{ type: typeof node.unit as JsonSchema.TypeName, enum: [node.unit] }
@@ -387,7 +384,7 @@ const reduceObjectJsonSchema = (
 				continue
 			}
 
-			if (prop.hasDefault()) writeDefault(valueSchema, prop.default, ctx)
+			if (prop.hasDef()) writeDefault(valueSchema, prop.default, ctx)
 
 			schema.properties![prop.key] = valueSchema
 		}
@@ -408,7 +405,7 @@ const reduceObjectJsonSchema = (
 			ctx.path = path
 
 			for (const keyBranch of index.signature.branches) {
-				if (!keyBranch.extends($ark.intrinsic.string)) {
+				if (!keyBranch.extends($ark.kw.string)) {
 					schema = ctx.fallback.symbolKey({
 						code: "symbolKey",
 						base: schema,
@@ -422,16 +419,16 @@ const reduceObjectJsonSchema = (
 
 				let keyIn: BaseRoot = keyBranch
 				let keySchema: JsonSchema.String | undefined
-				if (keyBranch.hasKind("morph")) {
-					keyIn = keyBranch.rawIn
+				if (keyBranch.is("morph")) {
+					keyIn = keyBranch._in
 					// a key's schema can't be a $ref
 					if (ctx.io !== "in") {
 						keySchema = ctx.fallback.morph({
 							code: "morph",
-							base: toResolvedJsonSchema(keyBranch.rawIn, ctx),
+							base: toResolvedJsonSchema(keyBranch._in, ctx),
 							out:
-								keyBranch.knownOut ?
-									toResolvedJsonSchema(keyBranch.knownOut, ctx)
+								keyBranch.tail ?
+									toResolvedJsonSchema(keyBranch.tail._out, ctx)
 								:	null
 						}) as never
 					}
@@ -528,10 +525,10 @@ const keyPatternOf = (
 ): string | undefined => {
 	// declared keys are checked against an index signature too, which
 	// additionalProperties would skip
-	if (key.hasKind("domain")) return ""
-	if (!key.hasKind("intersection") || key.refinements.length !== 1) return
+	if (key.is("domain")) return ""
+	if (!key.is("intersection") || key.refinements.length !== 1) return
 	const [refinement] = key.refinements
-	return refinement.hasKind("pattern") && isJsonSchemaPattern(refinement, ctx) ?
+	return refinement.is("pattern") && isJsonSchemaPattern(refinement, ctx) ?
 			refinement.rule
 		:	undefined
 }
@@ -559,7 +556,7 @@ const writeDefault = (
 	const value =
 		typeof defaultInput === "function" ? defaultInput() : defaultInput
 	const jsonDefault =
-		$ark.intrinsic.jsonData.allows(value) ?
+		$ark.kw.jsonData.allows(value) ?
 			value
 		:	ctx.fallback.defaultValue({
 				code: "defaultValue",
@@ -579,8 +576,8 @@ const reduceSequenceJsonSchema = (
 
 	const path = ctx.path
 	let prefixSchemas: JsonSchema[] | undefined
-	if (node.prevariadic.length) {
-		prefixSchemas = node.prevariadic.map((el, i) => {
+	if (node.leading.length) {
+		prefixSchemas = node.leading.map((el, i) => {
 			ctx.path = appendStringifiedKey(path, i)
 			const valueSchema = toJsonSchemaRecurse(el.node, ctx)
 			if (el.kind === "defaultables") writeDefault(valueSchema, el.default, ctx)
@@ -606,7 +603,7 @@ const reduceSequenceJsonSchema = (
 
 		// draft-07 uses additionalItems when items is an array (tuple),
 		// draft-2020-12 uses items
-		if (isDraft07 && node.prevariadic.length)
+		if (isDraft07 && node.leading.length)
 			schema.additionalItems = variadicItemSchema
 		else schema.items = variadicItemSchema
 

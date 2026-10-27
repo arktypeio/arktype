@@ -242,34 +242,36 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return "scope"
 	}
 
-	private _referencesById: { [id: string]: BaseNode } | undefined
+	/** `refsById`, once read */
+	private _refsById: { [id: string]: BaseNode } | undefined
 	// collected when first read
-	get refsById(): { [id: string]: BaseNode } {
-		if (!this._referencesById && this._exported) {
-			this._referencesById = {}
+	get byId(): { [id: string]: BaseNode } {
+		if (!this._refsById && this._exported) {
+			this._refsById = {}
 			for (const name in this._exported) {
 				const resolution = this._exported[name]
-				if (isNode(resolution))
-					addReferences(this._referencesById, resolution.refsById)
+				if (isNode(resolution)) addReferences(this._refsById, resolution.byId)
 			}
 		}
-		return this._referencesById ?? {}
+		return this._refsById ?? {}
 	}
 
 	private _references: readonly BaseNode[] | undefined
 	get references(): readonly BaseNode[] {
 		if (!this._references && this._exported) {
-			const references = Object.values(this.refsById)
+			const references = Object.values(this.byId)
 			this._references =
-				this.lazyExports ? references : referencesThroughAliases(references)
+				this._lazy ? references : referencesThroughAliases(references)
 		}
 		return this._references ?? []
 	}
 
-	readonly resolutions: {
+	/** each alias's resolution, or the parse context of one still unresolved */
+	readonly res: {
 		[alias: string]: CachedResolution | undefined
 	} = Object.create(null)
-	private readonly boundReferences = new WeakMap<
+	/** each reference bound to this scope, so it's bound once */
+	private readonly boundRefs = new WeakMap<
 		BaseNode | GenericRoot,
 		BaseNode | GenericRoot
 	>()
@@ -296,7 +298,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}
 
 		const aliasEntries = Object.entries(def).map(entry =>
-			this.preparseOwnAliasEntry(...entry)
+			this.preparseEntry(...entry)
 		)
 
 		for (const [k, v] of aliasEntries) {
@@ -318,9 +320,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 				!isThunk(v)
 			) {
 				const preparsed = this.preparseOwn(v, { alias: name })
-				this.resolutions[name] =
+				this.res[name] =
 					hasArkKind(preparsed, "root") ?
-						this.bindReference(preparsed)
+						this.bindRef(preparsed)
 					:	this.createParseCtx(preparsed)
 			}
 		}
@@ -330,43 +332,43 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return mergeConfigs($ark.config, this.scopeConfig)
 	}
 
-	get resolvedConfig(): ResolvedScopeConfig {
+	/** its config, with defaults and global config applied */
+	get cfg(): ResolvedScopeConfig {
 		// the first read fixes the global config, so configure throws after it
-		const globalConfig = ($ark.resolvedConfig ??= resolveGlobalConfig(
-			$ark.defaultConfig
-		))
-		const resolvedConfig = mergeConfigs(globalConfig, this.scopeConfig)
+		const globalConfig = ($ark.cfg ??= resolveGlobalConfig($ark.defaultConfig))
+		const cfg = mergeConfigs(globalConfig, this.scopeConfig)
 		const missing: InstalledOption | undefined =
-			resolvedConfig.errors !== "all" && !$ark.errorModes ? "errors"
-			: resolvedConfig.mutatesInput && !$ark.inPlace ? "mutatesInput"
+			cfg.errors !== "all" && !$ark.errorModes ? "errors"
+			: cfg.mutatesInput && !$ark.inPlace ? "mutatesInput"
 			: undefined
 		if (missing) {
 			throwParseError(
-				writeMissingImportMessage(missing, printable(resolvedConfig[missing]))
+				writeMissingImportMessage(missing, printable(cfg[missing]))
 			)
 		}
 		// locale is global-only, though an untyped config can pass one
-		if (resolvedConfig.locale !== globalConfig.locale)
-			(resolvedConfig as { locale: Locale }).locale = globalConfig.locale
-		return this.cacheGetter("resolvedConfig", resolvedConfig)
+		if (cfg.locale !== globalConfig.locale)
+			(cfg as { locale: Locale }).locale = globalConfig.locale
+		return this.memo("cfg", cfg)
 	}
 
-	get intrinsic(): Omit<typeof $ark.intrinsic, `json${string}`> {
+	get intrinsic(): Omit<typeof $ark.kw, `json${string}`> {
 		// intrinsic won't be available during bootstrapping,  so we lie
 		// about the type here as an extrnal convenience
 		const bound = {} as never
-		const intrinsic = $ark.intrinsic
+		const intrinsic = $ark.kw
 		for (const k in intrinsic) {
 			// don't include cyclic aliases from JSON scope
 			if (k.startsWith("json")) continue
 			defineLazily(bound, k, () =>
-				this.bindKeyword(intrinsic[k as keyof typeof intrinsic])
+				this.bindKw(intrinsic[k as keyof typeof intrinsic])
 			)
 		}
-		return this.cacheGetter("intrinsic", bound)
+		return this.memo("intrinsic", bound)
 	}
 
-	protected cacheGetter<name extends keyof this>(
+	/** defines `name` as an own property holding `value`, so the getter it shadows runs once */
+	protected memo<name extends keyof this>(
 		name: name,
 		value: this[name]
 	): this[name] {
@@ -417,7 +419,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			{ branches },
 			{
 				...opts,
-				prereduced: true
+				reduced: true
 			}
 		)
 	}
@@ -433,35 +435,30 @@ export abstract class BaseScope<$ extends {} = {}> {
 			operator && operands ?
 				{ reference, resolve, operator, operands }
 			:	{ reference, resolve },
-			{ prereduced: true }
+			{ reduced: true }
 		)
 	}
 
 	schema = (schema: RootSchema, opts?: BaseParseOptions): BaseRoot =>
-		this.finalize(parseSchema(schema, this, opts))
+		this.fin(parseSchema(schema, this, opts))
 
-	bindReference<reference extends BaseNode | GenericRoot>(
+	/** `reference` copied into this scope, unless it's already this scope's or an alias */
+	bindRef<reference extends BaseNode | GenericRoot>(
 		reference: reference
 	): reference {
-		if (
-			reference.$ === this ||
-			(isNode(reference) && reference.hasKind("alias"))
-		)
+		if (reference.$ === this || (isNode(reference) && reference.is("alias")))
 			return reference
 		// bound once per scope
-		let bound = this.boundReferences.get(reference)
+		let bound = this.boundRefs.get(reference)
 		if (!bound) {
 			bound =
 				isNode(reference) ?
 					composing(() => {
 						const copy = new (reference.constructor as any)(reference, this)
 						// a bound node keeps the descriptions of the scope that created it
-						if (
-							reference.includesKeptDescription ||
-							!this.describesLike(reference.$)
-						) {
-							copy.includesKeptDescription = true
-							copy.cache.description = reference.description
+						if (reference.keptDesc || !this.describesLike(reference.$)) {
+							copy.keptDesc = true
+							copy.c.description = reference.description
 						}
 						return resolveDescription(copy as BaseNode)
 					})
@@ -473,14 +470,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 						reference.hkt,
 						reference.alias
 					)
-			this.boundReferences.set(reference, bound)
+			this.boundRefs.set(reference, bound)
 		}
 		return bound as never
 	}
 
 	// a keyword resolved by name is described by this scope all the way down,
 	// except through a cycle, which would be printed unrolled
-	bindKeyword<reference extends BaseNode | GenericRoot>(
+	bindKw<reference extends BaseNode | GenericRoot>(
 		reference: reference
 	): reference {
 		if (
@@ -488,18 +485,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 			reference.isCyclic ||
 			this.describesLike(reference.$)
 		)
-			return this.bindReference(reference)
+			return this.bindRef(reference)
 		return reference.transform((kind, inner) => inner, {
 			bindScope: this,
-			prereduced: true
+			reduced: true
 		}) as never
 	}
 
 	private describesLike($: BaseScope): boolean {
 		return nodeKinds.every(
-			kind =>
-				this.resolvedConfig[kind].description ===
-				$.resolvedConfig[kind].description
+			kind => this.cfg[kind].description === $.cfg[kind].description
 		)
 	}
 
@@ -521,11 +516,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 		name: string
 	): BaseRoot | GenericRoot | undefined {
 		const resolution =
-			(this.lazyExports && maybeResolveExport(this.lazyExports, name)) ??
+			(this._lazy && maybeResolveExport(this._lazy, name)) ??
 			maybeResolveSubalias(this.aliases, name)
 		if (resolution) return resolution
 		const keyword = maybeResolveSubalias(this.ambient, name)
-		return keyword && (this.resolutions[name] = this.bindKeyword(keyword))
+		return keyword && (this.res[name] = this.bindKw(keyword))
 	}
 
 	get ambient(): InternalModule {
@@ -533,12 +528,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	private aliasOf(ctx: BaseParseContext): Alias.Node {
-		const alias = this.node(
-			"alias",
-			{ reference: ctx.id },
-			{ prereduced: true }
-		)
-		if (!ctx.closesCycle) alias.closesCycle = false
+		const alias = this.node("alias", { reference: ctx.id }, { reduced: true })
+		if (!ctx.closes) alias.closes = false
 		return alias
 	}
 
@@ -551,34 +542,34 @@ export abstract class BaseScope<$ extends {} = {}> {
 			if (nodesById[node.id] !== node) node = withId(node, ctx.id)
 			nodesById[ctx.id] = node
 		} else delete nodesById[ctx.id]
-		return (this.resolutions[name] = node)
+		return (this.res[name] = node)
 	}
 
 	private resolvePending(name: string, pending: BaseRoot): BaseRoot {
 		if (inProgress.definitions && !isResolvable(pending))
-			return this.node("alias", { reference: pending.id }, { prereduced: true })
+			return this.node("alias", { reference: pending.id }, { reduced: true })
 		const ctx = nodesById[pending.id] as BaseParseContext
 		const mark = $ark.reached?.mark()
 		const resolution = resolving(() =>
 			this.resolveContext(name, ctx, resolveShallowAliases(pending))
 		)
-		$ark.reached?.store(mark, this.resolutions, name)
+		$ark.reached?.store(mark, this.res, name)
 		return resolution
 	}
 
 	maybeResolve(
 		name: string
 	): Exclude<CachedResolution, BaseParseContext> | undefined {
-		const cached = this.resolutions[name]
+		const cached = this.res[name]
 		if (cached && !hasArkKind(cached, "context")) {
-			$ark.reached?.cached(this.resolutions, name)
-			if (hasArkKind(cached, "root") && cached.hasShallowAlias)
+			$ark.reached?.cached(this.res, name)
+			if (hasArkKind(cached, "root") && cached.topAlias)
 				return this.resolvePending(name, cached)
-			return this.bindReference(cached)
+			return this.bindRef(cached)
 		}
 		const mark = $ark.reached?.mark()
 		const resolution = this.resolveUncached(name, cached, mark)
-		$ark.reached?.store(mark, this.resolutions, name)
+		$ark.reached?.store(mark, this.res, name)
 		return resolution
 	}
 
@@ -592,7 +583,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			const v = cached
 			if (v.phase === "resolving" || v.phase === "member") {
 				reach(v)
-				if (v.phase === "resolving") v.closesCycle = true
+				if (v.phase === "resolving") v.closes = true
 				return this.aliasOf(v)
 			}
 			if (v.phase === "failed") throw v.error
@@ -606,7 +597,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			const membersStart = openMembers.length
 			let node: BaseRoot
 			try {
-				node = this.parseOpenDefinition(v.def, v)
+				node = this.parseOpenDef(v.def, v)
 			} catch (e) {
 				// reset so the next reference reparses it and throws the same error
 				v.phase = "unresolved"
@@ -615,7 +606,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				openDefinitions.pop()
 			}
 			reach(v)
-			if (v.lowlink < v.index && !node.hasShallowAlias) {
+			if (v.lowlink < v.index && !node.topAlias) {
 				v.phase = "member"
 				v.resolution = node
 				openMembers.push(v)
@@ -631,15 +622,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 							component.push(member)
 							member.phase = "resolved"
 							member.$.resolveContext(member.alias!, member, member.resolution!)
-							$ark.reached?.store(mark, member.$.resolutions, member.alias)
+							$ark.reached?.store(mark, member.$.res, member.alias)
 							delete member.resolution
 						}
 					}
-					return node.hasShallowAlias ?
-							this.resolvePending(
-								name,
-								(this.resolutions[name] = withId(node, v.id))
-							)
+					return node.topAlias ?
+							this.resolvePending(name, (this.res[name] = withId(node, v.id)))
 						:	this.resolveContext(name, v, node)
 				})
 			} catch (e) {
@@ -647,7 +635,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				for (const ctx of component) {
 					ctx.phase = "failed"
 					ctx.error = e
-					ctx.$.resolutions[ctx.alias!] = ctx
+					ctx.$.res[ctx.alias!] = ctx
 				}
 				throw e
 			}
@@ -667,34 +655,34 @@ export abstract class BaseScope<$ extends {} = {}> {
 			const ctx = registerParseContext(
 				this.createParseCtx(preparsed as BaseParseContextInput)
 			)
-			this.resolutions[name] = ctx
+			this.res[name] = ctx
 			ctx.phase = "resolving"
 			try {
-				def = defining(() => this.normalizeScopeValue(ctx.def))
+				def = defining(() => this.normValue(ctx.def))
 			} finally {
 				// if the call throws, its context stays registered so an alias parsed
 				// during it resolves by name
-				delete this.resolutions[name]
+				delete this.res[name]
 			}
 			if (!hasArkKind(def, "generic") && !hasArkKind(def, "module")) {
 				ctx.def = def
 				ctx.phase = "unresolved"
-				this.resolutions[name] = ctx
+				this.res[name] = ctx
 				// parsing its definition discards checks still open, so they're made first
 				assertUnchecked()
 				return this.maybeResolve(name)
 			}
 			delete nodesById[ctx.id]
-		} else def = this.normalizeScopeValue(def)
+		} else def = this.normValue(def)
 
 		if (hasArkKind(def, "generic")) {
-			const generic = (this.resolutions[name] = this.bindReference(def))
+			const generic = (this.res[name] = this.bindRef(def))
 			generic.alias ??= name
 			// instantiated once cached, so its errors surface here and its body can reference it
 			try {
 				void generic.baseInstance
 			} catch (e) {
-				delete this.resolutions[name]
+				delete this.res[name]
 				throw e
 			}
 			return generic
@@ -702,15 +690,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (hasArkKind(def, "module")) {
 			if (!def.root) throwParseError(writeMissingSubmoduleAccessMessage(name))
-			return (this.resolutions[name] = this.finalize(
-				isScopeAlias ? this.bindReference(def.root) : this.bindKeyword(def.root)
+			return (this.res[name] = this.fin(
+				isScopeAlias ? this.bindRef(def.root) : this.bindKw(def.root)
 			))
 		}
 
-		return (this.resolutions[name] =
+		return (this.res[name] =
 			isScopeAlias ?
 				this.parse(def, { alias: name })
-			:	this.finalize(this.bindKeyword(def as BaseRoot)))
+			:	this.fin(this.bindKw(def as BaseRoot)))
 	}
 
 	protected createParseCtx<input extends BaseParseContextInput>(
@@ -726,10 +714,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	traversal(root: unknown): Traversal {
-		return new (rootApplyRuntimeOf(this.resolvedConfig).Traversal)(
-			root,
-			this.resolvedConfig
-		)
+		return new (rootApplyRuntimeOf(this.cfg).Traversal)(root, this.cfg)
 	}
 
 	import(): SchemaModule<{
@@ -751,10 +736,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 		) as never
 	}
 
-	compiledUnit: Fn | undefined
+	unitFn: Fn | undefined
 
 	get precompilation(): string | undefined {
-		return this.compiledUnit?.toString()
+		return this.unitFn?.toString()
 	}
 
 	private _exported: InternalResolutions | undefined
@@ -776,7 +761,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				for (const name of this.exportedNames) {
 					const def = this.aliases[name]
 					this._exports[name] =
-						this.lazyExports ? this.lazyExports[name]
+						this._lazy ? this._lazy[name]
 						: hasArkKind(def, "module") ? bindModule(def, this)
 						: this.maybeResolve(name)!
 				}
@@ -788,27 +773,26 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			this._exported = resolutionsOfModule(this, this._exports)
 
-			Object.assign(this.resolutions, this._exported)
+			Object.assign(this.res, this._exported)
 
-			if (!this.lazyExports) {
-				const includesAlias = Object.values(this._exported).some(
-					resolution => isNode(resolution) && resolution.includesAlias
+			if (!this._lazy) {
+				const hasAlias = Object.values(this._exported).some(
+					resolution => isNode(resolution) && resolution.hasAlias
 				)
-				let uncompiled =
-					includesAlias || bindPrecompiledUnits ? this.references : []
+				let uncompiled = hasAlias || bindPrecompiledUnits ? this.references : []
 				if (bindPrecompiledUnits) {
 					// inline-compiled branches bind on their own
 					bindPrecompiledUnits(uncompiled)
-					uncompiled = uncompiled.filter(node => !node.compiledUnit)
+					uncompiled = uncompiled.filter(node => !node.unitFn)
 				}
-				if (canJit(this.resolvedConfig)) {
+				if (canJit(this.cfg)) {
 					// resolving aliases can throw, so they compile on export
-					if (uncompiled.some(node => node.includesAlias))
-						this.compiledUnit = tryJit(() => precompile(uncompiled, this))
+					if (uncompiled.some(node => node.hasAlias))
+						this.unitFn = tryJit(() => precompile(uncompiled, this))
 					else {
 						for (const name in this._exported) {
 							const resolution = this._exported[name]
-							if (hasArkKind(resolution, "root") && !resolution.compiledUnit)
+							if (hasArkKind(resolution, "root") && !resolution.unitFn)
 								resolution.deferJit()
 						}
 					}
@@ -829,13 +813,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 	resolve<name extends exportedNameOf<$>>(
 		name: name
 	): instantiateRoot<$[name]> {
-		return (this.lazyExports ?? this.export())[name as never]
+		return (this._lazy ?? this.export())[name as never]
 	}
 
-	private lazyExports: InternalModule | undefined
+	/** the module `exportLazily` returns, once read */
+	private _lazy: InternalModule | undefined
 
 	exportLazily(): SchemaModule<{ [k in exportedNameOf<$>]: $[k] }> {
-		if (!this.lazyExports) {
+		if (!this._lazy) {
 			const exports = new RootModule({})
 			const resolve = (name: string) => {
 				const def = this.aliases[name]
@@ -845,39 +830,39 @@ export abstract class BaseScope<$ extends {} = {}> {
 			}
 			for (const name of this.exportedNames)
 				defineLazily(exports, name, resolve)
-			this.lazyExports = exports as never
+			this._lazy = exports as never
 			this.resolved = true
 		}
-		return this.lazyExports as never
+		return this._lazy as never
 	}
 
-	node = <kind extends NodeKind, prereduced extends boolean = false>(
+	node = <kind extends NodeKind, reduced extends boolean = false>(
 		kind: kind,
 		input: NodeInput<kind>,
-		opts = {} as BaseParseOptions<prereduced>
-	): nodeOfKind<prereduced extends true ? kind : reducibleKindOf<kind>> => {
+		opts = {} as BaseParseOptions<reduced>
+	): nodeOfKind<reduced extends true ? kind : reducibleKindOf<kind>> => {
 		// nodes are functions, so a schema object is never one
 		if (typeof (input as unknown) === "function" && isNode(input)) {
 			return input.kind === kind ?
-					(this.bindReference(input) as never)
+					(this.bindRef(input) as never)
 				:	throwMismatchedNodeRootError(kind, input.kind)
 		}
 
 		if (kind === "union") {
 			const union = input as Union.Inner
 			const branches = union.branches.flatMap(branch =>
-				(branch as BaseRoot).hasKind("union") ?
+				(branch as BaseRoot).is("union") ?
 					(branch as {} as Union.Node).branches
 				:	branch
 			)
 			// a union of one branch is that branch
-			if (branches.length === 1) return this.bindReference(branches[0]) as never
+			if (branches.length === 1) return this.bindRef(branches[0]) as never
 			// a set engine rejects overlapping branches that transform differently
 			if (
 				!union.ordered &&
 				!$ark.sets &&
 				branches.length > 1 &&
-				branches.some(branch => branch.hasTransform)
+				branches.some(branch => branch.alters)
 			)
 				throwParseError(missingSetEngineMessage)
 			input = { ...input, branches } as never
@@ -888,32 +873,32 @@ export abstract class BaseScope<$ extends {} = {}> {
 			input = { ...input, unit: 0 } as never
 
 		bootstrap()
-		return this.bindReference(
+		return this.bindRef(
 			parseNode({
 				kind,
 				def: input as NodeInput,
 				$: this,
 				id: opts.id,
 				alias: opts.alias,
-				prereduced: opts.prereduced
+				reduced: opts.reduced
 			})
 		) as never
 	}
 
 	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot =>
-		this.finalize(this.parseDefinition(def, opts))
+		this.fin(this.parseDef(def, opts))
 
-	parseDefinition(def: unknown, opts: BaseParseOptions = {}): BaseRoot {
-		if (hasArkKind(def, "root")) return this.bindReference(def)
+	/** parses a definition in this scope to a node */
+	parseDef(def: unknown, opts: BaseParseOptions = {}): BaseRoot {
+		if (hasArkKind(def, "root")) return this.bindRef(def)
 
 		const ctxInputOrNode = this.preparseOwn(def, opts)
-		if (hasArkKind(ctxInputOrNode, "root"))
-			return this.bindReference(ctxInputOrNode)
+		if (hasArkKind(ctxInputOrNode, "root")) return this.bindRef(ctxInputOrNode)
 
 		const ctx = registerParseContext(this.createParseCtx(ctxInputOrNode))
-		let node = this.parseOpenDefinition(def, ctx)
+		let node = this.parseOpenDef(def, ctx)
 		node = resolving(() => {
-			if (node.hasShallowAlias && !inProgress.definitions)
+			if (node.topAlias && !inProgress.definitions)
 				node = resolveShallowAliases(node)
 
 			// if the node is recursive e.g. { box: "this" }, we need to make sure it
@@ -925,7 +910,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (!ctx.isReferencedAsThis || ctx.name) return node
 		// parsed again, since the nodes that reference it have printed `this`
 		return printSelfAsThis(
-			this.parseDefinition(def, {
+			this.parseDef(def, {
 				...opts,
 				name: `${ctx.prefix}${hashOf(node.expression)}`
 			}),
@@ -943,25 +928,22 @@ export abstract class BaseScope<$ extends {} = {}> {
 		)
 	}
 
-	private parseOpenDefinition(def: unknown, ctx: BaseParseContext): BaseRoot {
-		return defining(() => this.bindReference(this.parseOwn(def, ctx)))
+	/** parses a definition in this scope while its aliases may still be open */
+	private parseOpenDef(def: unknown, ctx: BaseParseContext): BaseRoot {
+		return defining(() => this.bindRef(this.parseOwn(def, ctx)))
 	}
 
-	finalize<node extends BaseRoot>(node: node, jit = true): node {
+	fin<node extends BaseRoot>(node: node, jit = true): node {
 		// an alias may reference a definition that is still being parsed,
 		// e.g. Record<string, this>, so the outermost parse finalizes it
-		if (
-			(inProgress.definitions || inProgress.resolutions) &&
-			node.includesAlias
-		)
-			return node
+		if ((inProgress.definitions || inProgress.res) && node.hasAlias) return node
 
 		// resolving aliases can throw, so they compile on definition
 		const references =
-			node.includesAlias ? referencesThroughAliases(node.references) : undefined
-		if (node.compiledUnit || !jit) return node
+			node.hasAlias ? referencesThroughAliases(node.references) : undefined
+		if (node.unitFn || !jit) return node
 		bindPrecompiledUnits?.([node])
-		if (node.compiledUnit || !canJit(this.resolvedConfig)) return node
+		if (node.unitFn || !canJit(this.cfg)) return node
 		if (references) tryJit(() => precompileRoot(node, references))
 		else node.deferJit()
 		return node
@@ -970,9 +952,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 	jit(node: BaseNode): void {
 		tryJit(() => precompileRoot(node, node.references))
 		// compiling binds what it checked before, unless the host refused
-		if (node.cache.allowsPreJit) {
-			node.allows = node.cache.allowsPreJit
-			node.cache.allowsPreJit = undefined
+		if (node.c.preJit) {
+			node.allows = node.c.preJit
+			node.c.preJit = undefined
 		}
 	}
 
@@ -983,9 +965,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	abstract parseOwn(def: unknown, ctx: BaseParseContext): BaseRoot
 
-	protected abstract preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry
+	/** an alias's entry as the scope writes it, its generic params and keyword config applied, before it's parsed */
+	protected abstract preparseEntry(k: string, v: unknown): AliasDefEntry
 
-	protected abstract normalizeScopeValue(resolution: unknown): unknown
+	/** a scope value as the definition it's parsed from, e.g. a Type's internal node */
+	protected abstract normValue(resolution: unknown): unknown
 }
 
 export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
@@ -1002,11 +986,11 @@ export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 			)
 	}
 
-	protected preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry {
+	protected preparseEntry(k: string, v: unknown): AliasDefEntry {
 		return [k, v]
 	}
 
-	protected normalizeScopeValue(v: unknown): unknown {
+	protected normValue(v: unknown): unknown {
 		return v
 	}
 }
@@ -1020,7 +1004,7 @@ const bindModuleLazily = (
 		const resolution = module[k]
 		return hasArkKind(resolution, "module") ?
 				bindModuleLazily(resolution, $)
-			:	finalizeExport($, $.bindReference(resolution as BaseRoot | GenericRoot))
+			:	finalizeExport($, $.bindRef(resolution as BaseRoot | GenericRoot))
 	}
 	for (const k in module) defineLazily(bound, k, resolve)
 	return bound as never
@@ -1030,7 +1014,7 @@ export const finalizeExport = (
 	$: BaseScope,
 	resolution: BaseRoot | GenericRoot
 ): BaseRoot | GenericRoot =>
-	hasArkKind(resolution, "root") ? $.finalize(resolution) : resolution
+	hasArkKind(resolution, "root") ? $.fin(resolution) : resolution
 
 const openDefinitions: BaseParseContext[] = []
 const openMembers: BaseParseContext[] = []
@@ -1057,14 +1041,14 @@ const maybeResolveExport = (
 }
 
 const addReferences = (
-	base: BaseNode["refsById"],
-	references: BaseNode["refsById"]
+	base: BaseNode["byId"],
+	references: BaseNode["byId"]
 ) => {
 	for (const id in references) base[id] ??= references[id]
 }
 
-const resolutionsToJson = (resolutions: InternalResolutions): JsonStructure =>
-	flatMorph(resolutions, (k, v) => [
+const resolutionsToJson = (res: InternalResolutions): JsonStructure =>
+	flatMorph(res, (k, v) => [
 		k,
 		hasArkKind(v, "root") || hasArkKind(v, "generic") ? v.json
 		: hasArkKind(v, "module") ? resolutionsToJson(v)

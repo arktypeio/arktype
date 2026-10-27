@@ -141,7 +141,7 @@ contextualize(() => {
 		const Pair = always.type({ kind: "'pair'", items: [Item, Item] })
 		const Event = Pair.or({ kind: "'item'", item: Item })
 		// a precompiled unit binds as a Type is created
-		const units = () => [Event, Pair, Item].map(T => T.internal.compiledUnit)
+		const units = () => [Event, Pair, Item].map(T => T.internal.unitFn)
 		const created = units()
 		const items = [{ id: "1" }, { id: "2" }]
 		attest(Event({ kind: "pair", items }) as object).snap({
@@ -152,13 +152,13 @@ contextualize(() => {
 		const item = { id: "3" }
 		Event({ kind: "item", item })
 		attest(item as object).snap({ id: 3 })
-		attest(typeof Event.internal.compiledUnit).equals("function")
+		attest(typeof Event.internal.unitFn).equals("function")
 	})
 
 	it("compiles no Type it reads uncompiled", () => {
 		const Item = always.type({ kind: "'a'", n: "string.numeric.parse" })
 		Item({ kind: "a", n: "0" })
-		const { compiledUnit } = Item.internal
+		const { unitFn } = Item.internal
 		const List = always.type([Item, "|", { kind: "'b'" }]).array()
 		const input = [
 			{ kind: "a", n: "1" },
@@ -169,7 +169,7 @@ contextualize(() => {
 			{ kind: "a", n: 1 },
 			{ kind: "a", n: 2 }
 		])
-		attest(Item.internal.compiledUnit).equals(compiledUnit)
+		attest(Item.internal.unitFn).equals(unitFn)
 	})
 
 	it("binds compiled code to a Type a morph calls", () => {
@@ -182,7 +182,7 @@ contextualize(() => {
 		const b = { count: "1" }
 		attest(T.assert({ a: "2", b }).b as object).is(b)
 		attest(b as object).snap({ count: 1 })
-		attest(typeof Held.internal.compiledUnit).equals("function")
+		attest(typeof Held.internal.unitFn).equals("function")
 	})
 
 	it("finds each issue of an input it rejects, as copying does", () => {
