@@ -14,7 +14,7 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](#arkerrors-is-no-longer-an-array).
 - Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](#errors-are-plain-objects).
 - Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](#undeclared-keys-have-the-undeclared-code), [discriminant](#union-misses-have-the-discriminant-code) and [notEqual](#excluded-values-have-the-notequal-codes).
-- Do you snapshot or assert error messages, or their order? See [Errors](#errors): objects, dates and union misses print differently, errors follow the order keys are declared, and configured messages apply to more errors.
+- Do you snapshot or assert error messages, or their order? See [Errors](#errors): objects, dates and union misses print differently, errors follow the order keys are declared, configured messages apply to more errors, and [other messages changed](#other-messages-that-changed).
 - Do you show the messages of Standard Schema issues, as a form library does? [They leave out the path](#standard-schema-messages-leave-out-the-path).
 - Do you configure an `expected`, `actual` or `message` writer? [Writers take the error](#error-writers-receive-the-error-and-the-locale).
 - Do you call `configure()` after a Type is created, or pass a global-only option to a Scope? See [Configuration](#configuration).
@@ -28,7 +28,8 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you embed an async Standard Schema, like a Zod schema with an async refinement? [It throws](#standard-schemas-must-validate-synchronously).
 - Do you store or snapshot `toJsonSchema()`, `.expression` or `.json`, or convert `NaN` or `Infinity` literals to JSON Schema? See [Output](#output).
 - Do you rely on what `.required()`, `.map()` or arkregex infer? See [Inference](#inference) and [ArkRegex](#arkregex).
-- Do you import from `@ark/schema`, `@ark/util` or a deep path like `arktype/internal/...`? See [@ark/schema](#arkschema), [@ark/util](#arkutil) and [Deep imports](#deep-imports).
+- Do you use `@ark/schema` without `arktype`? [Import `arksets`](#arkschema).
+- Do you import from `@ark/schema`, `@ark/util` or a deep path like `arktype/internal/...`, or read `.internal`? See [@ark/schema](#arkschema), [@ark/util](#arkutil) and [Deep imports](#deep-imports).
 - Do you use `@ark/json-schema`, `@ark/fast-check` or attest, or run attest on TypeScript 7? See their sections below.
 
 ## Bundle size
@@ -321,6 +322,25 @@ const T = type("Date < d'2000-01-01T12:30:00Z'")
 T(new Date("2001-06-01"))
 ```
 
+### Other messages that changed
+
+Each was wrong or unclear, but a snapshot or message assertion may hold it:
+
+- `string.regex`: `must be a regex pattern (SyntaxError: Invalid regular expression: /(/: Unterminated group)`, before: the bare `SyntaxError: ...`.
+- A discriminated union's missing key: `kind must be "circle" or "square" (was missing)`, before: `(was undefined)`.
+- A key that must be `never`: `files must be never (was 1)`, before: `never`.
+- A length bound a description replaces: `must be a strong password (was length 1)`, before: `(was 1)`.
+- A described union: `must be a shape (was an object)`, where it listed its cases or its branches' errors.
+- An object `===` unit: `must be {} (was an object)`, before: `must be reference equal to {} (serialized to the same value)`.
+- A value inside `object.json` that JSON can't hold: `a must be a number, a string, an object, boolean or null (was a bigint)`, before: `a must be an object (was a bigint)`.
+- `number.safe` and other ranges given `Infinity`: `must be a number (was Infinity)`, before: their range error.
+- An arktype Type embedded through `~standard`: `user.age must be an integer (was 1.5)`, before: `user.age age must be ...`.
+- Keyword descriptions: `string.url` is `a URL string` (before: `a string and a URL string`), `string.creditCard` is `a credit card number` (before: repeated), and `string.lower` and `string.upper`'s outputs are `lowercase` and `uppercase` (before: `only lowercase letters`).
+- A `ToJsonSchemaError` starts with a sentence: `Can't convert "date" at user.createdAt to JSON Schema. Configure fallback.date to write it:`, then the context it printed before.
+- A default a morph's input rejects throws `ParseError: Default for flag must be "false" or "true" (was false)`, written from the input, where it threw `TraversalError: must be boolean (was false)` from the morph's description.
+- `ParseError`s for an indeterminate union or intersection of morphs end with a line saying how to fix it, and one for an intersection adding a key the other side deletes or rejects names that key on two more lines.
+- `ParseError`s name what they reject: `Token '>=' requires a right operand` for `"number >="` (before: `Expected an expression`), the narrow in `Intersection of "a" | "b" and isC results in an unsatisfiable type` (before: `and unknown`), and only the conflicting elements of an unsatisfiable tuple intersection.
+
 ## Validation
 
 ### "@" holds an object's metadata
@@ -520,7 +540,7 @@ T({ a: "1", z: 0, b: "2" }) // { b: "2", a: "1" }, before: { a: "1", b: "2" }
 
 ### "+": "reject" checks string keys only
 
-`"+": "reject"` allows undeclared symbol keys, so `rejectAllowsSymbolKeys` is gone. Reject types that differ only by a symbol key now overlap, so a union of them with a morph is indeterminate:
+`"+": "reject"` allows undeclared symbol keys. Reject types that differ only by a symbol key now overlap, so a union of them with a morph is indeterminate:
 
 ```ts
 const T = type({ "+": "reject", a: "string" })
@@ -637,6 +657,11 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - `toJsonSchema()` throws for `object.json` and the Types it's part of, like `string.json.parse`'s output, since its check that an object is plain is a `predicate`. [Handle that code](/docs/json-schema/to-json-schema#fallback-codes) to write it as before.
 - `toJsonSchema()` throws a `ParseError` for a `target` other than `"draft-2020-12"`, `"draft-07"` or `"openapi-3.0"`, where it wrote draft 2020-12: `type("string").toJsonSchema({ target: "draft-04" })`, before: `{ type: "string" }`.
 - Expressions keep length bounds and protos beside a structure: `type("number[] > 1").expression` is `number[] >= 2`, before: `number[]`.
+- Expressions parse back: `type("1 <= number <= 5").expression` is `1 <= number <= 5`, before: `number <= 5 & >= 1`, and a Date is an ISO literal, `Date >= d'2000-01-01T00:00:00.000Z'`, before: its `toString()` in the local time zone.
+- A cyclic Type's `json` names an alias it references by its registered resolution, like `"$ark.tree2"`, before: `"$tree"`, and its `expression` prints another alias of its cycle by name: `{ b: $b }`, before: `{ b: { a?: $a } }`. A `this` reference prints as `this`, before: an id like `type64`.
+- In an `expression` or `description`, a nested Type whose own string would be longer than 1000 characters prints as `...`, as `list<...>` already did. Before, it was written in full at each reference.
+- `object.json`'s `expression` and `description` are `{ [string]: $jsonData }`, before: its alias's branches.
+- Functions and symbols print by name: `{ Symbol(tag): string }`, before: `{ $ark.tag: string }`. In `json`, a repeated name is counted as `isLong$1`, before: `isLong1`, and keyword morphs are named by what they do, like `$ark.trimString`, before: `$ark.morphs12`.
 - Optional keys are listed by name, whether or not they have a default: `{ bar?: number, foo: string = "foo" }`, before: `{ foo: string = "foo", bar?: number }`.
 - The `$ark.x` names that functions get in `.json` and `.expression` are names only and no longer resolve through `$ark`.
 
@@ -647,18 +672,22 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - `.required()` makes a defaulted key required in `inferIn`, as it already did at runtime: `type({ foo: "string = 'bar'" }).required()` infers `{ foo: string }` as input, before: `{ foo?: string }`.
 - `.map()` on a union infers each branch: `type({ kind: "'a'", a: "string" }).or({ kind: "'b'", b: "number" }).map(p => p)` is `Type<{ kind: "a"; a: string } | { kind: "b"; b: number }>`, before: `Type<{ kind: "a" | "b" }>`, and the callback's argument holds each branch's props, not only those every branch shares.
 - A morph that returns `any` infers `any` as its output: `type({ a: ["string", "=>", s => JSON.parse(s)] }).infer` is `{ a: any }`, before: `{ a: (In: string) => Out<any> }`.
+- Without TypeScript's `exactOptionalPropertyTypes`, a key whose value is a Type allowing `undefined` keeps it: `type({ age: type("number | undefined") }).infer` is `{ age: number | undefined }`, before: `{ age: number }`.
+- A defaulted key beside an index signature is optional in `inferIn`: `type({ a: "number = 5", "[string]": "number" })` infers `a?: number` as input, before: `a: number`.
+- `toJsonSchema()`'s `JsonSchema` no longer declares `exclusiveMinimum` and `exclusiveMaximum`, since `target: "openapi-3.0"` writes `true` for them, so they read as `unknown`.
 
 ## @ark/schema
 
+- The set algebra that intersects nodes, reduces unions and writes JSON Schema moved to `arksets`, which `arktype` imports. Using `@ark/schema` alone, `import "arksets"` first, or `.and()` and `toJsonSchema()` throw `Set algebra is not installed` and unions aren't reduced. Its functions, like `intersectNodesRoot` and `reduceBranches`, are exported by `arksets/internal`, as is `discriminantJsonOf(union)`, which replaces a union's `discriminantJson`.
 - `BaseNode.compiledMeta` is removed, and `BaseScope.res` (before: `resolutions`) holds an unresolved alias's parse context instead of its id.
 - `$.node(kind, input)` takes a node's inner, with children already nodes: `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
-- A node's `traverseAllows`, `traverseApply` and `traverseTransform` are `tAllows`, `tApply` and `tTransform`. Call them on the node, as in `node.tAllows(data, ctx)`, not detached, as in `[x].every(node.tAllows)`, until the JIT compiles it.
+- A node's `traverseAllows` and `traverseApply` are `tAllows` and `tApply`. Call them on the node, as in `node.tAllows(data, ctx)`, not detached, as in `[x].every(node.tAllows)`, until the JIT compiles it.
 - `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, reduced }`, and the `prereduced` parse option is `reduced`.
-- Internal members have short names, each spelled out by its JSDoc, like `is` (before: `hasKind`), `alters` (before: `hasTransform`) and `errN` (before: `currentErrorCount`). The CHANGELOG lists every one.
-- A morph's input is the first of its `morphs`: its `json` is `{ morphs: ["string", "$ark.trim"] }`, before: `{ in: "string", morphs: ["$ark.trim"] }`, and a schema with `in` still parses to it. Read the input as `head` (before: `inner.in` or `knownIn`), what it pipes to as `piped` and the node it ends with as `tail` (before: `lastMorphNode`). A node's `rawIn` and `rawOut` are `_in` and `_out`.
+- Internal members have short names, each spelled out by its JSDoc, like `is` (before: `hasKind`), `alters` (before: `includesTransform`) and `errN` (before: `currentErrorCount`). [The CHANGELOG's table](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md#shorten-long-internal-names) maps each old name to its new one.
+- A morph's input is the first of its `morphs`: its `json` is `{ morphs: ["string", "$ark.trim"] }`, before: `{ in: "string", morphs: ["$ark.trim"] }`, and a schema with `in` still parses to it. Read the input as `head` (before: `inner.in` or `introspectableIn`), what it pipes to as `piped` and the node it ends with as `tail` (before: `lastMorphIfNode`). A node's `rawIn` and `rawOut` are `_in` and `_out`.
 - An alias's `resolutionId` (read `resolution.id`), a node's `assertHasKindIn`, `isConstraint` and `isRefinement`, a root's `shortDescription`, a morph's `declareIn` and `serializedMorphs` and a structure's `optionalKeys` are removed.
 - A constraint's `compiledCondition`, a predicate's `compiledNegation`, a morph's `compiledMorphs`, a sequence's `optionalsLength` and the `PrecompiledReferences` type are removed. A leaf writes its check with `jsCond(js, data)`.
-- Derived keys like the flags `hasAlias` and `hasMorph` (before: `includesAlias`, `includesMorph`), `kv` and `byKey` (before: `innerEntries`, `propsByKey`) moved from a node's own enumerable keys to its cache, `node.c`, so spreading or iterating a node no longer includes them.
+- Derived keys like the flags `alters` and `ctxPred` (before: `includesTransform`, `includesContextualPredicate`), `kv` and `byKey` (before: `innerEntries`, `propsByKey`) moved from a node's own enumerable keys to its cache, `node.c`, so spreading or iterating a node no longer includes them.
 
 ## @ark/util
 
@@ -704,12 +733,13 @@ Other patterns infer what they match more exactly, which can widen or narrow an 
 
 ## Attest
 
-Under TypeScript 7, attest analyzes with its native API, which needs 7.1 or later, so 7.0.x throws `@ark/attest requires TypeScript 7.1+`. Where attest runs, install TypeScript 7.1 or later, or keep TypeScript 6, which it analyzes with its JS API as before.
+If you're upgrading attest from before 0.57: under TypeScript 7, attest analyzes with its native API, which needs 7.1 or later, so 7.0.x throws `@ark/attest requires TypeScript 7.1+`. Where attest runs, install TypeScript 7.1 or later, or keep TypeScript 6, which it analyzes with its JS API as before.
 
 Runtime benches run in a loop compiled for each bench, after a warmup, so their times don't compare with earlier versions'. Re-record stored runtime baselines.
 
 - A bench should return the result it computes, so V8 can't drop the work. attest warns when a bench returns `undefined`.
 - `until.count` and `until.ms` bound the samples taken after the warmup. Before, they counted sets of 1000 calls and time from the bench's start.
+- `benchErrorOnThresholdExceeded: "types"` fails a `.types()` bench that exceeds its baseline, and `"runtime"` no longer does.
 - Instantiation counts include evaluating the type a bench returns as fully as displaying it would. Re-record type benches whose results weren't already fully evaluated.
 
 ## Package names
