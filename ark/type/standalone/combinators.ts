@@ -40,7 +40,7 @@ export const combines = (node: BaseNode): boolean => {
 			!node.hasAlias &&
 			!node.hasMorph &&
 			!node.allowsCtx &&
-			!node.transformCtx &&
+			!node.tfCtx &&
 			calleesOf(node)?.every(isCallable) === true
 		combinableByNode.set(node, combinable)
 	}
@@ -139,7 +139,7 @@ const predicateSiteOf = (node: BaseNode): IssueContext | undefined =>
 const allowsDecides = (node: BaseRoot): boolean =>
 	!node.hasMorph &&
 	!node.allowsCtx &&
-	Object.values(node.refsById).every(
+	Object.values(node.byId).every(
 		ref => !ref.is("predicate") || !!predicateSiteOf(ref)
 	)
 
@@ -322,7 +322,7 @@ const isLiteralKey = (key: PropertyKey): key is string =>
 
 // a primitive default, written where its key is absent
 const isLiteralDefault = (prop: Optional.Node): boolean =>
-	!prop.defaultsUndefined && !prop.value.transforms && isPrinted(prop.default)
+	!prop.defaultsUndefined && !prop.value.tfs && isPrinted(prop.default)
 
 const structureCalleesOf = (
 	structure: StructureNode
@@ -347,7 +347,7 @@ const structureCalleesOf = (
 		if (
 			!isLiteralKey(prop.key) ||
 			(prop.is("required") && !missesAsRequired(prop)) ||
-			(prop.is("optional") && prop.hasDefault() && !isLiteralDefault(prop))
+			(prop.is("optional") && prop.hasDef() && !isLiteralDefault(prop))
 		)
 			return
 	}
@@ -483,7 +483,7 @@ const writeStructure = (
 	if (structure.sequence) {
 		const element = structure.sequence.variadic!
 		return writeCall(
-			element.transforms ? "transformingElementsOf" : "elementsOf",
+			element.tfs ? "transformingElementsOf" : "elementsOf",
 			ref(element)
 		)
 	}
@@ -492,13 +492,13 @@ const writeStructure = (
 		const checker = ref(prop.value)
 		return `${writeKey(prop.key as string)}: ${
 			!prop.is("optional") ? checker
-			: prop.hasDefault() ?
+			: prop.hasDef() ?
 				writeCall("optional", checker, writeLiteral(js, prop.default))
 			:	writeCall("optional", checker)
 		}`
 	})
 	return writeCall(
-		structure.transforms ? "transformingProps" : "props",
+		structure.tfs ? "transformingProps" : "props",
 		writeObject(entries)
 	)
 }
@@ -602,7 +602,7 @@ const writeShape = (
 	if (
 		checked === "runtime.arrayCheck" &&
 		structure?.sequence &&
-		!structure.sequence.variadic!.transforms
+		!structure.sequence.variadic!.tfs
 	) {
 		const rules = rulesOf(preStruct, ["maxLength", "minLength"])
 		if (rules) {

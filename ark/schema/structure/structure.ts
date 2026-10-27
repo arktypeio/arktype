@@ -173,7 +173,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 					}
 
 					// a default's prop is required on output, where it keeps its order
-					if (!inner.order && nodes!.some(node => node.hasDefault())) {
+					if (!inner.order && nodes!.some(node => node.hasDef())) {
 						inner.order = conflatenate<Prop.Node>(inner.required, nodes).map(
 							node => node.key
 						)
@@ -278,11 +278,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	// deleting undeclared keys picks them by each signature's Allows
-	protected override get selectsByCtx(): boolean {
+	protected override get ctxSel(): boolean {
 		return (
 			(this.undeclared === "delete" &&
 				!!this.index?.some(node => node.signature.ctxPred)) ||
-			super.selectsByCtx
+			super.ctxSel
 		)
 	}
 
@@ -559,8 +559,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	traverseApply(data: object, ctx: InternalTraversal): void {
-		if (this.sharesTransforms && transformsValid(ctx))
-			this.applySharedKeys(data, ctx)
+		if (this.sharesTfs && transformsValid(ctx)) this.applySharedKeys(data, ctx)
 		else this._traverse("Apply", data, ctx)
 	}
 
@@ -674,7 +673,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		for (let i = 0; i < props.length; i++) {
 			const prop = props[i]
 			if (!hasIndexedProp) {
-				if (prop.value.transforms && prop.key in data)
+				if (prop.value.tfs && prop.key in data)
 					tfKey(prop.key, data[prop.key as never], prop.value)
 				continue
 			}
@@ -682,7 +681,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			const keyErrorCount = ctx.errN
 			const input: unknown = data[prop.key as never]
 			let value = input
-			for (const step of this.transformsOf(prop)) {
+			for (const step of this.tfsOf(prop)) {
 				if (ctx.errN > keyErrorCount) break
 				if (step.signature && !allowsInBranch(ctx, step.signature, prop.key))
 					continue
@@ -696,9 +695,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				)
 			}
 		}
-		if (this.slicesSequence)
-			out = this.sequence!.transformElements(data as array, ctx, true)
-		else if (this.sequence?.transforms) {
+		if (this.slicesSeq) out = this.sequence!.tfElems(data as array, ctx, true)
+		else if (this.sequence?.tfs) {
 			const transformedSequence = transform(ctx, this.sequence, data)
 			if (transformedSequence !== data)
 				out = this.copy(out, transformedSequence as object)
@@ -712,7 +710,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				let value: unknown
 				let keyErrorCount: number | undefined
 				for (const node of this.index) {
-					if (!node.value.transforms || !allowsInBranch(ctx, node.signature, k))
+					if (!node.value.tfs || !allowsInBranch(ctx, node.signature, k))
 						continue
 					if (keyErrorCount === undefined) {
 						keyErrorCount = ctx.errN
@@ -728,14 +726,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 		if (ctx.errN > errN) return data
-		return this.applyStructuralMorph(data, out, ctx)
+		return this.applyStructMorph(data, out, ctx)
 	}
 
 	// a key several constraints transform, one of which can fail
-	get sharesTransforms(): boolean {
+	get sharesTfs(): boolean {
 		return (
 			this.index !== undefined &&
-			this.transforms &&
+			this.tfs &&
 			(this.hasIndexedProp || this.index.length > 1) &&
 			(this.props.some(prop => canFailTransforming(prop.value)) ||
 				this.index.some(index => canFailTransforming(index.value)))
@@ -747,26 +745,23 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const errN = ctx.errN
 		this._traverse("Apply", data, ctx, false)
 		for (const prop of this.inOrder)
-			if (prop.key in data) this.transformSharedKey(data, prop.key, ctx)
+			if (prop.key in data) this.tfSharedKey(data, prop.key, ctx)
 		for (const k of ownKeysOf(data))
-			if (!(k in this.propsByKey)) this.transformSharedKey(data, k, ctx)
+			if (!(k in this.propsByKey)) this.tfSharedKey(data, k, ctx)
 		return !ctx.failFast || ctx.errN === errN
 	}
 
-	private transformSharedKey(
-		data: object,
-		k: Key,
-		ctx: InternalTraversal
-	): void {
+	/** transforms a key's value through each constraint transforming it: its prop or the index signatures it matches */
+	private tfSharedKey(data: object, k: Key, ctx: InternalTraversal): void {
 		const prop = this.propsByKey[k]
-		if (prop && !this.transformsOf(prop).length) return
+		if (prop && !this.tfsOf(prop).length) return
 		const constraints: BaseNode[] = prop ? [prop.value] : []
 		for (const index of this.index!)
 			if (allowsInBranch(ctx, index.signature, k)) constraints.push(index.value)
 		const steps: TransformStep[] =
 			prop ?
-				this.transformsOf(prop)
-			:	constraints.filter(n => n.transforms).map(node => ({ node }))
+				this.tfsOf(prop)
+			:	constraints.filter(n => n.tfs).map(node => ({ node }))
 		const input: unknown = data[k as never]
 		if (
 			!steps.length ||
@@ -797,17 +792,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		transformedInApply(ctx, value)
 	}
 
-	applyStructuralMorph(
+	/** applies its defaults and structural morphs to data, writing into `out` */
+	applyStructMorph(
 		data: object,
 		out: object,
 		ctx: InternalTraversal | undefined
 	): object | TransformErrors {
-		const sliced = out !== data && this.slicesSequence
+		const sliced = out !== data && this.slicesSeq
 		let failed: TransformErrors | undefined
 		for (let i = 0; i < this.defaultable.length; i++) {
 			if (!this.defaultable[i].holdsValue(data)) {
 				if (out === data && !this.writesInto(ctx)) out = this.copy(data)
-				const defaulted = this.defaultable[i].defaultMorph(
+				const defaulted = this.defaultable[i].defMorph(
 					out as never,
 					ctx as never
 				)
@@ -826,7 +822,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				i < sequence.defaultables.length;
 				i++
 			) {
-				const defaulted = sequence.defaultMorphs[i](out as never, ctx as never)
+				const defaulted = sequence.defMorphs[i](out as never, ctx as never)
 				if (defaulted instanceof TransformErrors)
 					failed = defaulted.addTo(failed)
 			}
@@ -863,7 +859,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		for (const prop of this.inOrder)
 			if (prop.key in out) result[prop.key] = out[prop.key as never]
 		for (const prop of this.protoProps) {
-			if (!this.transformsOf(prop).length && !hasOwn(data, prop.key))
+			if (!this.tfsOf(prop).length && !hasOwn(data, prop.key))
 				delete result[prop.key]
 		}
 		if (this.index) {
@@ -904,30 +900,28 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			))
 	}
 
-	private _transformsByKey: Record<Key, TransformStep[]> | undefined
-	transformsOf(prop: Prop.Node): TransformStep[] {
-		const cached = this._transformsByKey?.[prop.key]
+	private _tfsByKey: Record<Key, TransformStep[]> | undefined
+	/** the steps transforming prop's value, shared by the constraints transforming its key */
+	tfsOf(prop: Prop.Node): TransformStep[] {
+		const cached = this._tfsByKey?.[prop.key]
 		if (cached) return cached
-		const transforms: TransformStep[] =
-			prop.value.transforms ? [{ node: prop.value }] : []
-		if (!this.index) return transforms
+		const tfs: TransformStep[] = prop.value.tfs ? [{ node: prop.value }] : []
+		if (!this.index) return tfs
 		for (const index of this.index) {
-			if (!index.value.transforms || index.value === prop.value) continue
+			if (!index.value.tfs || index.value === prop.value) continue
 			if (index.signature.allowsCtx)
-				transforms.push({ node: index.value, signature: index.signature })
-			else if (index.signature.allows(prop.key))
-				transforms.push({ node: index.value })
+				tfs.push({ node: index.value, signature: index.signature })
+			else if (index.signature.allows(prop.key)) tfs.push({ node: index.value })
 		}
-		if (!isResolutionFinal()) return transforms
-		return ((this._transformsByKey ??= Object.create(null))[prop.key] =
-			transforms)
+		if (!isResolutionFinal()) return tfs
+		return ((this._tfsByKey ??= Object.create(null))[prop.key] = tfs)
 	}
 
 	// in order, so data missing several gets them as declared
 	readonly defaultable: Optional.Node.withDefault[] =
-		this.optional?.some(prop => prop.hasDefault()) ?
+		this.optional?.some(prop => prop.hasDef()) ?
 			(this.inOrder.filter(prop =>
-				prop.hasDefault()
+				prop.hasDef()
 			) as Optional.Node.withDefault[])
 		:	[]
 
@@ -959,12 +953,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	// copied by slice: declares only indices and no cycle runs through it
-	get slicesSequence(): boolean {
+	get slicesSeq(): boolean {
 		return (
 			this.undeclared === "delete" &&
 			!this.props.length &&
 			!this.index &&
-			!!this.sequence?.transforms &&
+			!!this.sequence?.tfs &&
 			!this.sequence.hasAlias
 		)
 	}
@@ -973,8 +967,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	readonly structMorph: Morph | undefined = getPossibleMorph(this)
 
 	compile(js: NodeCompiler): unknown {
-		if (js.trav === "Transform") return this.jsTransform(js)
-		if (js.trav === "Apply" && this.sharesTransforms) {
+		if (js.trav === "Transform") return this.jsTf(js)
+		if (js.trav === "Apply" && this.sharesTfs) {
 			js.if(`${js.ref(transformsValid)}(ctx)`, () =>
 				js.return(`${js.ref(this)}.applySharedKeys(data, ctx)`)
 			)
@@ -991,7 +985,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			js.const("keys", "Object.keys(data)").for("i < keys.length", () =>
 				this.jsEntry(js.const("k", "keys[i]"), "string")
 			)
-			if (this.indexMatchesSymbols) {
+			if (this.indexSyms) {
 				js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
 					this.jsEntry(js, "symbol")
 				)
@@ -1054,18 +1048,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	/** writes its Transform */
-	private jsTransform(js: NodeCompiler): void {
+	private jsTf(js: NodeCompiler): void {
 		const transformedProps = this.inOrder.filter(
-			prop => this.transformsOf(prop).length
+			prop => this.tfsOf(prop).length
 		)
-		const transformedIndex =
-			this.index?.filter(index => index.value.transforms) ?? []
+		const transformedIndex = this.index?.filter(index => index.value.tfs) ?? []
 		const deletes = this.undeclared === "delete"
 		const transformedChildren = transformedProps.flatMap(prop =>
-			this.transformsOf(prop).map(step => step.node)
+			this.tfsOf(prop).map(step => step.node)
 		)
 		for (const index of transformedIndex) transformedChildren.push(index.value)
-		if (this.sequence?.transforms) transformedChildren.push(this.sequence)
+		if (this.sequence?.tfs) transformedChildren.push(this.sequence)
 		transformedChildren.push(...this.defaultable)
 		js.initTf(transformedChildren)
 		if (
@@ -1089,7 +1082,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			js.const(`value${i}`, `data${js.prop(key)}`).tfKey(
 				`transformed${i}`,
 				`value${i}`,
-				this.transformsOf(transformedProps[i]),
+				this.tfsOf(transformedProps[i]),
 				{
 					keyExpr,
 					...(optional ? { condition: `${keyExpr} in data` } : {}),
@@ -1097,8 +1090,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				}
 			)
 		}
-		if (this.slicesSequence) this.sequence!.jsElementTransforms(js, true)
-		else if (this.sequence?.transforms) {
+		if (this.slicesSeq) this.sequence!.jsElemTfs(js, true)
+		else if (this.sequence?.tfs) {
 			js.tfKey("transformedSequence", "data", [{ node: this.sequence }], {
 				onChange: () =>
 					this.jsCopyProps(js, "out", "transformedSequence").set(
@@ -1138,7 +1131,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			return this.jsDeleteTransform(
 				js,
 				transformedProps,
-				this.sequence?.transforms || transformedIndex.length !== 0
+				this.sequence?.tfs || transformedIndex.length !== 0
 			)
 		}
 		this.jsDefaults(js, transformedChildren.length === this.defaultable.length)
@@ -1247,9 +1240,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			for (let i = 0; i < defaultables.length; i++) {
 				const [node, defaultValue] = defaultables[i]
 				const index = sequence.preLen + i
-				const morph = sequence.defaultMorphs[i]
+				const morph = sequence.defMorphs[i]
 				js.if(`data.length <= ${index}`, () =>
-					typeof defaultValue !== "function" && !node.transforms ?
+					typeof defaultValue !== "function" && !node.tfs ?
 						js.line(`out[${index}] = ${serializeDefault(js, defaultValue)}`)
 					:	compileDefaultMorph(
 							js,
@@ -1273,7 +1266,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			for (let i = 0; i < transformedProps.length; i++) {
 				const prop = transformedProps[i]
 				const changed = js.cmpTfd(
-					this.transformsOf(prop),
+					this.tfsOf(prop),
 					`transformed${i}`,
 					"!==",
 					`value${i}`
@@ -1307,14 +1300,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			// only an array with non-index keys is scanned for undeclared ones
 			js.const(
 				"indexed",
-				`${this.slicesSequence ? "out !== data || " : ""}${js.ref(holdsOnlyIndices)}(data)`
+				`${this.slicesSeq ? "out !== data || " : ""}${js.ref(holdsOnlyIndices)}(data)`
 			)
 			const unchanged = ["indexed"]
 			if (outMayBeCopied) unchanged.push("out === data")
 			for (let i = 0; i < transformedProps.length; i++) {
 				unchanged.push(
 					js.cmpTfd(
-						this.transformsOf(transformedProps[i]),
+						this.tfsOf(transformedProps[i]),
 						`transformed${i}`,
 						"===",
 						`value${i}`
@@ -1374,7 +1367,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			if (prop.is("required")) store()
 			else {
 				js.if(prop.jsHoldsValue(js, "data"), store)
-				if (prop.hasDefault()) js.else(() => compileDefault(js, prop, "result"))
+				if (prop.hasDef()) js.else(() => compileDefault(js, prop, "result"))
 			}
 		}
 		for (const prop of this.protoProps) {
@@ -1401,7 +1394,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	// without a set engine, any signature may match a symbol key
-	private get indexMatchesSymbols(): boolean {
+	private get indexSyms(): boolean {
 		return !!this.index?.some(
 			node => !$ark.sets || !node.signature.extends($ark.intrinsic.string)
 		)
@@ -1414,7 +1407,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		body: () => NodeCompiler,
 		keys = "keys",
 		symbols = "symbols",
-		withSymbols = this.indexMatchesSymbols
+		withSymbols = this.indexSyms
 	): NodeCompiler {
 		js.const(keys, `Object.keys(${object})`)
 		if (withSymbols) {
@@ -1479,10 +1472,10 @@ const constructStructuralMorphCacheKey = (
 
 	// nameOf names each morph uniquely without registering, which would keep it alive
 	for (let i = 0; i < node.defaultable.length; i++)
-		cacheKey += `${nameOf(node.defaultable[i].defaultMorph)} `
+		cacheKey += `${nameOf(node.defaultable[i].defMorph)} `
 
-	if (node.sequence?.defaultMorphs.length)
-		cacheKey += `${nameOf(node.sequence.defaultMorphs)} `
+	if (node.sequence?.defMorphs.length)
+		cacheKey += `${nameOf(node.sequence.defMorphs)} `
 
 	if (node.undeclared === "delete") {
 		cacheKey += "delete !("
@@ -1514,7 +1507,7 @@ const getPossibleMorph = (
 	if (cached) return cached
 
 	const $arkStructuralMorph: Morph<any> = (data, ctx) =>
-		(node as Structure.Node).applyStructuralMorph(data, data, ctx)
+		(node as Structure.Node).applyStructMorph(data, data, ctx)
 
 	return defaultableMorphsCache.set(cacheKey, $arkStructuralMorph)
 }
@@ -1524,7 +1517,7 @@ export const compileDefault = (
 	node: Optional.Node.withDefault,
 	out: string
 ): NodeCompiler => {
-	if (typeof node.default !== "function" && !node.value.transforms) {
+	if (typeof node.default !== "function" && !node.value.tfs) {
 		return js.line(
 			`${out}${js.prop(node.key)} = ${serializeDefault(js, node.default)}`
 		)
@@ -1532,7 +1525,7 @@ export const compileDefault = (
 	return compileDefaultMorph(
 		js,
 		node,
-		`${js.ref(node.defaultMorph)}(${out}${node.defaultMorph.length === 2 ? ", ctx" : ""})`,
+		`${js.ref(node.defMorph)}(${out}${node.defMorph.length === 2 ? ", ctx" : ""})`,
 		out
 	)
 }
@@ -1543,7 +1536,7 @@ const serializeDefault = (js: NodeCompiler, value: unknown): string =>
 
 // a morph or a transform reading ctx can add errors
 const canFailTransforming = (node: BaseNode): boolean =>
-	node.hasMorph || node.transformCtx
+	node.hasMorph || node.tfCtx
 
 // only a default on a node that hasMorph can return TransformErrors
 const compileDefaultMorph = (

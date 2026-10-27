@@ -387,7 +387,7 @@ const reduceObjectJsonSchema = (
 				continue
 			}
 
-			if (prop.hasDefault()) writeDefault(valueSchema, prop.default, ctx)
+			if (prop.hasDef()) writeDefault(valueSchema, prop.default, ctx)
 
 			schema.properties![prop.key] = valueSchema
 		}

@@ -588,7 +588,7 @@ export abstract class BaseRoot<
 				(kind, inner) =>
 					kind === "structure" ? { ...inner, undeclared: rule } : inner,
 				deep ? undefined : (
-					{ shouldTransform: node => !includes(structuralKinds, node.kind) }
+					{ shouldTf: node => !includes(structuralKinds, node.kind) }
 				)
 			)
 		)

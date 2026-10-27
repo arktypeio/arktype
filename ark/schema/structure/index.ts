@@ -101,11 +101,11 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	}
 
 	// its structure picks the keys it transforms by the signature's Allows
-	protected override get selectsByCtx(): boolean {
-		return this.signature.ctxPred || super.selectsByCtx
+	protected override get ctxSel(): boolean {
+		return this.signature.ctxPred || super.ctxSel
 	}
 
-	protected override initFlatRefs(): void {
+	protected override initFlat(): void {
 		this.cache.flatRefs = flatRefsAt(this.signature, this.value)
 		this.cache.flatMorphs = []
 	}
@@ -136,12 +136,12 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 		}
 	}
 
-	protected override _transform(
+	protected override _tf(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
 	): BaseNode | null {
 		ctx.path.push(this.signature)
-		const result = super._transform(mapper, ctx)
+		const result = super._tf(mapper, ctx)
 		ctx.path.pop()
 		return result
 	}

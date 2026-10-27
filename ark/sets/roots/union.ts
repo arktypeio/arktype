@@ -137,7 +137,7 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 		return {
 			kind: "unit",
 			path: [],
-			chainedPropString: "data",
+			pathStr: "data",
 			cases
 		}
 	}
@@ -389,7 +389,7 @@ const createCaseResolutionContext = (
 	const location: DiscriminantLocation = {
 		kind: best.kind,
 		path: best.path,
-		chainedPropString: optionallyChainPropString(best.path)
+		pathStr: optionallyChainPropString(best.path)
 	}
 
 	const defaultPairs = node.branches.map(
@@ -1097,8 +1097,8 @@ const mergePropBranches = (
 		!sameMeta([lProp, rProp!]) ||
 		lProp.value.hasAlias ||
 		rProp!.value.hasAlias ||
-		(lProp.is("optional") && lProp.hasDefault()) ||
-		(rProp!.is("optional") && rProp!.hasDefault())
+		(lProp.is("optional") && lProp.hasDef()) ||
+		(rProp!.is("optional") && rProp!.hasDef())
 	)
 		return
 	const kind = lProp.required && rProp!.required ? "required" : "optional"
@@ -1152,7 +1152,7 @@ const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 			// aliased branches' transforms and overlap are known once definitions close
 			queueUnchecked(() => {
 				if (
-					(l.transforms || r.transforms) &&
+					(l.tfs || r.tfs) &&
 					!l.equals(r) &&
 					!(intersectNodesRoot(l._in, r._in, l.$) instanceof Disjoint)
 				)
@@ -1160,7 +1160,7 @@ const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 			}, `${l.id}|${r.id}`)
 			return
 		}
-		if (!l.transforms && !r.transforms) return
+		if (!l.tfs && !r.tfs) return
 	} else if (!l.alters && !r.alters) return
 
 	if (
@@ -1178,7 +1178,7 @@ const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 }
 
 const transformingAliasRefsOf = (node: BaseRoot): FlatRef[] =>
-	node.flatRefs.filter(ref => ref.node.is("alias") && ref.node.transforms)
+	node.flatRefs.filter(ref => ref.node.is("alias") && ref.node.tfs)
 
 type DiscriminantCandidate<kind extends DiscriminantKind = DiscriminantKind> = {
 	path: PropertyKey[]
@@ -1222,12 +1222,11 @@ export const pruneDiscriminant = (
 			return inner
 		},
 		{
-			shouldTransform: (node, ctx) => {
+			shouldTf: (node, ctx) => {
 				// safe to cast here as index nodes are never discriminants
 				const propString = optionallyChainPropString(ctx.path as PropertyKey[])
 
-				if (!discriminantCtx.chainedPropString.startsWith(propString))
-					return false
+				if (!discriminantCtx.pathStr.startsWith(propString)) return false
 
 				// pruning a union's branches narrows it, e.g. string | number to number
 				if (node.is("union")) return false
@@ -1242,7 +1241,7 @@ export const pruneDiscriminant = (
 					(node.is("domain") ||
 						discriminantCtx.kind === "unit" ||
 						isDomainUnit(node)) &&
-					propString === discriminantCtx.chainedPropString
+					propString === discriminantCtx.pathStr
 				)
 					// if the discriminant has already checked the domain at the current path
 					// (or a unit literal, implying a domain, or null or undefined, which

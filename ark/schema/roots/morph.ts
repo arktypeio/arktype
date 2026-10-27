@@ -109,7 +109,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	// a configured message is its output's errors' too, though the output's
 	// description and JSON Schema stay its own
-	get traversedMorphs(): array<Morph | BaseRoot> {
+	get travMorphs(): array<Morph | BaseRoot> {
 		const { message } = this.meta
 		return (this._traversedMorphs ??=
 			message === undefined ?
@@ -131,7 +131,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	override get otherRefs(): readonly BaseNode[] {
 		if (!this.tail) return []
 		// a configured message's copy is what traversal pipes to
-		const morphs = this.traversedMorphs
+		const morphs = this.travMorphs
 		const traversed = morphs[morphs.length - 1] as BaseRoot
 		return traversed === this.tail ? [this.tail] : [this.tail, traversed]
 	}
@@ -171,19 +171,19 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 			js.return(this.head ? js.inv(this.head) : true)
 			return
 		}
-		if (js.trav === "Transform") return this.jsTransform(js)
+		if (js.trav === "Transform") return this.jsTf(js)
 		js.return(this.head ? js.applyMember(this.head) : true)
 	}
 
-	private jsTransform(js: NodeCompiler): void {
+	private jsTf(js: NodeCompiler): void {
 		let result = "data"
-		if (this.head?.transforms) {
+		if (this.head?.tfs) {
 			js.initTf([this.head])
 				.tfKey("transformedIn", "data", [{ node: this.head }])
 				.retIfFailed()
 			result = "transformedIn"
 		}
-		const morphs = this.traversedMorphs
+		const morphs = this.travMorphs
 		for (let i = this.head ? 1 : 0; i < morphs.length; i++) {
 			const morph = morphs[i]
 			const morphed = `morphed${i}`
@@ -222,9 +222,9 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	traverseTransform(data: unknown, ctx: InternalTraversal): unknown {
 		const errN = ctx.errN
-		let result = this.head?.transforms ? transform(ctx, this.head, data) : data
+		let result = this.head?.tfs ? transform(ctx, this.head, data) : data
 		if (ctx.errN > errN) return data
-		const morphs = this.traversedMorphs
+		const morphs = this.travMorphs
 		for (let i = this.head ? 1 : 0; i < morphs.length; i++) {
 			const morph = morphs[i]
 			if (hasArkKind(morph, "root")) {

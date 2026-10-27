@@ -84,13 +84,14 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 	/** whether it rejects NaN, as the number domain does unless `numberAllowsNaN` */
 	private readonly checksNaN = this.domain === "number" && !this.numberAllowsNaN
 
-	private readonly checksInfinity =
+	/** whether it checks a number is finite */
+	private readonly checksInf =
 		this.domain === "number" && !this.numberAllowsInfinity
 
 	readonly traverseAllows: TraverseAllows =
-		this.checksNaN && this.checksInfinity ? data => Number.isFinite(data)
+		this.checksNaN && this.checksInf ? data => Number.isFinite(data)
 		: this.checksNaN ? data => typeof data === "number" && !Number.isNaN(data)
-		: this.checksInfinity ?
+		: this.checksInf ?
 			data =>
 				typeof data === "number" &&
 				data !== Number.POSITIVE_INFINITY &&
@@ -105,12 +106,11 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 				js.trav === "Apply" ?
 					`(${data} instanceof Object || Object(${data}) === ${data})`
 				:	`${data} !== null && (typeof ${data} === "object" || typeof ${data} === "function")`
-			: this.checksNaN && this.checksInfinity ? `Number.isFinite(${data})`
+			: this.checksNaN && this.checksInf ? `Number.isFinite(${data})`
 			: `typeof ${data} === "${this.domain}"${
 					this.checksNaN ? ` && !Number.isNaN(${data})`
-					: this.checksInfinity ?
-						` && ${data} !== Infinity && ${data} !== -Infinity`
-					:	""
+					: this.checksInf ? ` && ${data} !== Infinity && ${data} !== -Infinity`
+					: ""
 				}`
 		)
 	}

@@ -51,7 +51,7 @@ const implementation: nodeImplementationOf<Unit.Declaration> =
 		ownErr: true,
 		keys: {
 			unit: {
-				preserveUndefined: true,
+				keepUndef: true,
 				serialize: serializeUnit
 			}
 		},

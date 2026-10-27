@@ -62,7 +62,7 @@ type ExportEntry =
 export class ModuleScopes {
 	root: Scope
 	references: Reference[] = []
-	refsById = new Map<Node, Reference>()
+	byId = new Map<Node, Reference>()
 	bindingsById = new Map<Node, Binding>()
 	exportsByName: Record<string, ExportEntry> = Object.create(null)
 	starExports: string[] = []
@@ -511,7 +511,7 @@ export class ModuleScopes {
 	): Reference {
 		const reference: Reference = { id, binding: undefined, isWrite }
 		this.references.push(reference)
-		this.refsById.set(id, reference)
+		this.byId.set(id, reference)
 		this.scope.unresolved.push(reference)
 		return reference
 	}

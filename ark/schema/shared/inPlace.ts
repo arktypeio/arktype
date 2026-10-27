@@ -62,17 +62,17 @@ const canBeObject = (node: BaseRoot): boolean =>
 // keys copies all but the elements a sequence it doesn't slice transforms
 const writerOf = (node: BaseNode): StructureNode | undefined => {
 	const structure = node.is("intersection") ? node.structure : undefined
-	if (!structure?.transforms) return
+	if (!structure?.tfs) return
 	if (
 		structure.undeclared !== "delete" ||
-		(structure.sequence?.transforms && !structure.slicesSequence)
+		(structure.sequence?.tfs && !structure.slicesSeq)
 	)
 		return structure
 }
 
 // written in place, a transform returns its input or the errors it found
 const returnsInput = (node: BaseNode, seen = new Set<BaseNode>()): boolean => {
-	if (!node.transforms || seen.has(node)) return true
+	if (!node.tfs || seen.has(node)) return true
 	seen.add(node)
 	if (node.is("alias")) return returnsInput(node.resolution, seen)
 	if (node.is("union"))
@@ -94,16 +94,16 @@ const writesOf = (structure: StructureNode): Writes => {
 	if (structure.undeclared === "delete") return writes
 	for (const prop of structure.props) {
 		if (!returnsInput(prop.value)) writes.values.named.add(prop.key)
-		if (prop.hasDefault()) {
+		if (prop.hasDef()) {
 			writes.added.named.add(prop.key)
-			if (prop.value.transforms) writes.addsOnlyDefaults = false
+			if (prop.value.tfs) writes.addsOnlyDefaults = false
 		}
 	}
 	if (structure.index?.some(index => !returnsInput(index.value)))
 		writes.values.every = true
 	if (sequence?.defaultables) {
 		writes.added.indices = true
-		if (sequence.defaultables.some(([node]) => node.transforms))
+		if (sequence.defaultables.some(([node]) => node.tfs))
 			writes.addsOnlyDefaults = false
 	}
 	return writes
@@ -211,13 +211,13 @@ const transformsKeyTwice = (structure: StructureNode): boolean => {
 	const writes = (node: BaseNode) =>
 		node.hasAlias ||
 		node.references.some(
-			reference => reference.is("structure") && reference.transforms
+			reference => reference.is("structure") && reference.tfs
 		)
-	const index = structure.index?.filter(index => index.value.transforms) ?? []
+	const index = structure.index?.filter(index => index.value.tfs) ?? []
 	if (!index.length) return false
 	if (index.length > 1 && index.some(index => writes(index.value))) return true
 	return structure.props.some(prop => {
-		const steps = structure.transformsOf(prop)
+		const steps = structure.tfsOf(prop)
 		return steps.length > 1 && steps.some(step => writes(step.node))
 	})
 }
@@ -315,7 +315,7 @@ export const writesInPlace = (
 	root: BaseRoot,
 	mutatesInput: MutatesInput | undefined
 ): boolean => {
-	if (!mutatesInput || !root.transforms) return false
+	if (!mutatesInput || !root.tfs) return false
 	const cache = writesInPlaceByMode[mutatesInput === true ? "true" : "always"]
 	let writes = cache.get(root)
 	if (writes === undefined) {
@@ -348,11 +348,11 @@ const writesInPlaceAsConfigured = (root: BaseRoot) =>
 	writesInPlace(root, root.$.cfg.mutatesInput)
 
 const isWriter = (node: BaseNode): boolean =>
-	(node.is("structure") || node.is("sequence")) && node.transforms
+	(node.is("structure") || node.is("sequence")) && node.tfs
 
 // a compiled transform copies what it writes, unless it reaches no writer
 const copiesCompiled = (node: BaseNode): boolean =>
-	node.transforms &&
+	node.tfs &&
 	node.unitFn !== undefined &&
 	(node.hasAlias || isWriter(node) || node.references.some(isWriter))
 
@@ -362,7 +362,7 @@ const transformsCalledBy = (root: BaseRoot): BaseNode[] => {
 	const call = (node: BaseNode) => {
 		const structure = node.is("intersection") ? node.structure : undefined
 		for (const reached of [node, structure, structure?.sequence])
-			if (reached?.transforms) called.push(reached)
+			if (reached?.tfs) called.push(reached)
 	}
 	for (const { node } of placesOf(root).values()) {
 		call(node)

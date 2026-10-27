@@ -1025,12 +1025,12 @@ const writeFlat = (
 		// a creation is the local its creator returns, if it returns one
 		const returnedLocal =
 			d.returnsValue && returned.argument?.type === "Identifier" ?
-				scopes.refsById.get(returned.argument)?.binding
+				scopes.byId.get(returned.argument)?.binding
 			:	undefined
 		// what a destructured call returns is named as it's destructured
 		const destructured = new Map<Binding | undefined, string>(
 			d.names?.map((name, i) => [
-				scopes.refsById.get(
+				scopes.byId.get(
 					(returned.argument as ArrayLiteral).elements[i] as never
 				)?.binding,
 				name
@@ -1078,7 +1078,7 @@ const writeFlat = (
 		membersOf.set(
 			d.name,
 			elements.map(e => {
-				const binding = scopes.refsById.get(e as never)?.binding
+				const binding = scopes.byId.get(e as never)?.binding
 				return (binding && renamed.get(binding)) ?? (e as { name: string }).name
 			})
 		)
@@ -1276,7 +1276,7 @@ const skipAliases: UnitsPass = ({ program, scopes }, s) => {
 			const binding = scopes.bindingsById.get(id)
 			const isAlias = init?.type === "Identifier" && statement.kind === "const"
 			const target =
-				isAlias ? scopes.refsById.get(init)?.binding
+				isAlias ? scopes.byId.get(init)?.binding
 				: init ? forwardedOf(init, scopes)
 				: undefined
 			if (
@@ -1320,7 +1320,7 @@ const forwardedOf = (fn: Node, scopes: ModuleScopes): Binding | undefined => {
 		!passesParams(call, fn)
 	)
 		return
-	return scopes.refsById.get(call.callee)?.binding
+	return scopes.byId.get(call.callee)?.binding
 }
 
 // a function the units declare whose one read is a call passing its own
@@ -1605,7 +1605,7 @@ const namesReturnedLocals = (
 	const body = (fn.body as Block).body
 	const returned = (body[body.length - 1] as Return).argument as ArrayLiteral
 	const bindings = returned.elements.map(
-		e => scopes.refsById.get(e as never)?.binding
+		e => scopes.byId.get(e as never)?.binding
 	)
 	return (
 		new Set(bindings).size === bindings.length &&

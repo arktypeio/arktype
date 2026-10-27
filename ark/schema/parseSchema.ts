@@ -417,7 +417,7 @@ const parseConstraint = (
 	// a constraint that reduces to a root (like unknown for minLength: 0) is
 	// trivially satisfied
 	if (constraint.isRoot()) return
-	return constraint.hasOpenIntersection() ? [constraint] : constraint
+	return constraint.canStack() ? [constraint] : constraint
 }
 
 const isExpandedSequenceSchema = (

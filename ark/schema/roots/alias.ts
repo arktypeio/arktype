@@ -74,7 +74,7 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 				serialize: () => null
 			}
 		},
-		finalizeInnerJson: json => ({ reference: json.reference }),
+		fixJson: json => ({ reference: json.reference }),
 		defaults: {
 			description: node => node.expression
 		}
@@ -86,7 +86,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseRoot>) {
 		super(...args)
 		// written now, so a later resolution stays a reference
-		this.cache.innerJsonFull = writeInnerJson(this)
+		this.cache.fullJson = writeInnerJson(this)
 		this.expression = expressionOf(this)
 		const referenced = nodesById[this.reference as NodeId]
 		if (hasArkKind(referenced, "context")) {
@@ -98,7 +98,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly structure = undefined
 	// a cycle passes an alias referencing its definition while it's parsed, so
 	// Allows bounds only those
-	closesCycle = true
+	closes = true
 	private _resolution: BaseRoot | undefined
 
 	get resolution(): BaseRoot {
@@ -188,7 +188,7 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	override getIo(ioKind: "in" | "out"): BaseRoot {
-		if (!isIoFinal() || !this.transforms) return this
+		if (!isIoFinal() || !this.tfs) return this
 		const operator = ioKind === "in" ? "In" : "Out"
 		return this.$.lazilyResolve(
 			() => {
@@ -221,7 +221,7 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
-		if (!this.closesCycle) return this.resolution.traverseAllows(data, ctx)
+		if (!this.closes) return this.resolution.traverseAllows(data, ctx)
 		if (typeof ctx === "number") {
 			if (ctx < maxAliasDepth && ++aliasVisits.count <= maxAliasVisits)
 				return this.resolution.traverseAllows(data, ctx + 1)
@@ -264,7 +264,7 @@ Resolution: ${printable(resolution)}`)
 			return
 		}
 		const traverse = js.inv(resolution)
-		if (!this.closesCycle) {
+		if (!this.closes) {
 			js.return(traverse)
 			return
 		}

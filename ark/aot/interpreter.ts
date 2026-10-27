@@ -894,7 +894,7 @@ export class Interpreter {
 	}
 
 	private readIdentifier(node: IdentifierReference, ctx: Context): Lookup {
-		const binding = ctx.module.scopes.refsById.get(node)?.binding
+		const binding = ctx.module.scopes.byId.get(node)?.binding
 		if (!binding) {
 			return node.name in globalsByName ?
 					{ value: globalsByName[node.name] }
@@ -1307,7 +1307,7 @@ export class Interpreter {
 		if (node === source) return true
 		const binding =
 			node.type === "Identifier" ?
-				module.scopes.refsById.get(node)?.binding
+				module.scopes.byId.get(node)?.binding
 			:	undefined
 		if (!binding || binding.writes.length) return false
 		const { declaration } = binding

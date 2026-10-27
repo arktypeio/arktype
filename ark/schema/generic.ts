@@ -283,8 +283,8 @@ export class GenericRoot<
 		return this
 	}
 
-	get refsById(): Record<string, BaseNode> {
-		return this.baseInstance.internal.refsById
+	get byId(): Record<string, BaseNode> {
+		return this.baseInstance.internal.byId
 	}
 
 	get references(): BaseNode[] {

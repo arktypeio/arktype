@@ -125,7 +125,7 @@ const selectionsByPredicate = new Map<Fn, Selections>()
 export const forgetReferences = (node: BaseNode): void => {
 	for (const { byNode, byRefs } of selectionsByPredicate.values()) {
 		byNode.delete(node)
-		if (node.cache.refsById) byRefs.delete(node.cache.refsById)
+		if (node.cache.byId) byRefs.delete(node.cache.byId)
 	}
 }
 
@@ -165,11 +165,12 @@ class NodeCache {
 	requiredProps: Map<Key, { deref(): BaseNode | undefined }> | undefined
 	innerEntries: readonly Entry<string>[] | undefined
 	metaJson: object | undefined
-	refsById: Record<string, BaseNode> | undefined
-	hasReplacedReferences: boolean | undefined
+	byId: Record<string, BaseNode> | undefined
+	/** whether collecting its references replaced one with an equal node */
+	replacedRefs: boolean | undefined
 	shallowRefs: BaseNode[] | undefined
 	flatRefs: FlatRef[] | undefined
-	innerJsonFull: JsonObject | undefined
+	fullJson: JsonObject | undefined
 	innerJson: JsonStructure | undefined
 	json: JsonStructure | undefined
 	bareJson: Json | undefined
@@ -178,7 +179,7 @@ class NodeCache {
 	flatMorphs: FlatRef<Morph.Node | Intersection.Node>[] | undefined
 	entersAlias: boolean | undefined
 	trackedId: string | undefined
-	transforms: boolean | undefined
+	tfs: boolean | undefined
 	checksCtx: boolean | undefined
 	/** whether it was used before it was compiled, so it's compiled at its next use */
 	usedPreJit: boolean | undefined
@@ -521,12 +522,15 @@ export abstract class BaseNode<
 		return (this.cache.trackedId = alias ? alias.resolution.id : this.id)
 	}
 
-	// alters doesn't see an alias's resolution, final once nothing
-	// but inputs and outputs is open
-	get transforms(): boolean {
-		if (this.cache.transforms !== undefined) return this.cache.transforms
-		const transforms = this.reaches("alters")
-		return isIoFinal() ? (this.cache.transforms = transforms) : transforms
+	/**
+	 * whether it alters data, counting what it reaches through aliases
+	 * alters doesn't see an alias's resolution, final once nothing
+	 * but inputs and outputs is open
+	 */
+	get tfs(): boolean {
+		if (this.cache.tfs !== undefined) return this.cache.tfs
+		const tfs = this.reaches("alters")
+		return isIoFinal() ? (this.cache.tfs = tfs) : tfs
 	}
 
 	/** whether checking data reaches a narrow that reads `ctx`, through aliases too, so Allows needs a traversal */
@@ -543,13 +547,13 @@ export abstract class BaseNode<
 		resolvesIntersections = false
 	): boolean {
 		if (this[flag] || !this.hasAlias) return this[flag]
-		const cached = flag === "alters" ? "transforms" : "checksCtx"
+		const cached = flag === "alters" ? "tfs" : "checksCtx"
 		let reachesOperands = false
 		// a Map visits the ids added while it's iterated
 		const reached = new Map<string, BaseNode>([[this.id, this]])
 		for (const node of reached.values()) {
-			for (const id in node.refsById) {
-				const reference = node.refsById[id]
+			for (const id in node.byId) {
+				const reference = node.byId[id]
 				// an intersection can drop what its operands reach, so only resolving it decides
 				if (reference[flag]) return !reachesOperands || this.reaches(flag, true)
 				if (!reference.is("alias")) continue
@@ -581,27 +585,28 @@ export abstract class BaseNode<
 	}
 
 	// entered directly, it keys its output by id as an alias resolving to it does
-	get isTransformedById(): boolean {
+	get tfsById(): boolean {
 		return this.hasAlias && $ark.nodesById[this.id] !== undefined
 	}
 
 	/** whether transforming data needs `ctx`: a morph reading it, an alias, or a `ctx` narrow choosing a branch */
-	get transformCtx(): boolean {
+	get tfCtx(): boolean {
 		return (
-			this.transforms &&
-			(this.ctxMorph || this.hasAlias || (this.ctxPred && this.selectsByCtx))
+			this.tfs &&
+			(this.ctxMorph || this.hasAlias || (this.ctxPred && this.ctxSel))
 		)
 	}
 
-	protected get selectsByCtx(): boolean {
-		return this.children.some(child => child.transformCtx)
+	/** whether a child's transform needs `ctx`, so a `ctx` narrow choosing between children does too */
+	protected get ctxSel(): boolean {
+		return this.children.some(child => child.tfCtx)
 	}
 
 	/** how its root apply validates: by Allows alone, with a traversal, or transforming with or without `ctx` */
 	get applyMode(): RootApplyStrategy {
 		return (
-			this.transforms ?
-				this.transformCtx ?
+			this.tfs ?
+				this.tfCtx ?
 					"contextualTransform"
 				:	"transform"
 			: this.checksCtx ? "contextual"
@@ -609,8 +614,9 @@ export abstract class BaseNode<
 		)
 	}
 
-	get refsById(): Record<string, BaseNode> {
-		return (this.cache.refsById ??= this.collectReferences())
+	/** each node it references, keyed by id */
+	get byId(): Record<string, BaseNode> {
+		return (this.cache.byId ??= this.collectReferences())
 	}
 
 	// the references a predicate selects, in refsById's order, each node's
@@ -657,11 +663,11 @@ export abstract class BaseNode<
 		}
 		const selected = byNode.get(this)
 		if (selected) return selected
-		const refsById = this.refsById
-		let fromRefs = byRefs.get(refsById)
+		const byId = this.byId
+		let fromRefs = byRefs.get(byId)
 		if (!fromRefs) {
-			fromRefs = Object.values(refsById).filter(selects)
-			byRefs.set(refsById, fromRefs)
+			fromRefs = Object.values(byId).filter(selects)
+			byRefs.set(byId, fromRefs)
 		}
 		return fromRefs
 	}
@@ -675,9 +681,9 @@ export abstract class BaseNode<
 		const collected = new Map<string, BaseNode>()
 		let replaced = false
 		const include = (node: BaseNode): void => {
-			if (replaced || node.cache.refsById) {
-				const references = node.refsById
-				if (node.cache.hasReplacedReferences) replaced = true
+			if (replaced || node.cache.byId) {
+				const references = node.byId
+				if (node.cache.replacedRefs) replaced = true
 				for (const id in references) {
 					const included = collected.get(id)
 					if (included !== undefined && included !== references[id])
@@ -694,7 +700,7 @@ export abstract class BaseNode<
 			for (const referenced of node.otherRefs) include(referenced)
 		}
 		include(this)
-		this.cache.hasReplacedReferences = replaced
+		this.cache.replacedRefs = replaced
 		return Object.fromEntries(collected)
 	}
 
@@ -709,16 +715,17 @@ export abstract class BaseNode<
 	}
 
 	get flatRefs(): FlatRef[] {
-		if (!this.cache.flatRefs) this.initFlatRefs()
+		if (!this.cache.flatRefs) this.initFlat()
 		return this.cache.flatRefs!
 	}
 
 	get flatMorphs(): FlatRef<Morph.Node | Intersection.Node>[] {
-		if (!this.cache.flatMorphs) this.initFlatRefs()
+		if (!this.cache.flatMorphs) this.initFlat()
 		return this.cache.flatMorphs!
 	}
 
-	protected initFlatRefs(): void {
+	/** collects its flat references and flat morphs */
+	protected initFlat(): void {
 		const flatRefs = uniqueFlatRefs(
 			this.children.flatMap(child => child.flatRefs)
 		)
@@ -845,12 +852,10 @@ export abstract class BaseNode<
 						return ctx.hasError() ? ctx.fin(onFail) : result
 					}
 				}
-				if (!this.transformCtx) {
+				if (!this.tfCtx) {
 					if (
 						(this as {} as BaseRoot).branches.every(
-							branch =>
-								!branch.transforms ||
-								(branch.is("morph") && !branch.head?.transforms)
+							branch => !branch.tfs || (branch.is("morph") && !branch.head?.tfs)
 						)
 					)
 						return this.optimisticApply(runtime)
@@ -948,7 +953,7 @@ export abstract class BaseNode<
 	// we don't cache this currently since it can be updated once a scope finishes
 	// resolving cyclic references, although it may be possible to ensure it is cached safely
 	get references(): BaseNode[] {
-		return Object.values(this.refsById)
+		return Object.values(this.byId)
 	}
 
 	get precedence(): number {
@@ -1030,7 +1035,7 @@ export abstract class BaseNode<
 	// Should be refactored to use transform
 	// https://github.com/arktypeio/arktype/issues/1020
 	getIo(ioKind: "in" | "out"): BaseNode {
-		if (!this.alters && !(isIoFinal() && this.transforms)) return this as never
+		if (!this.alters && !(isIoFinal() && this.tfs)) return this as never
 
 		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.innerEntries) {
@@ -1057,7 +1062,7 @@ export abstract class BaseNode<
 
 	get innerJson(): JsonStructure {
 		return (this.cache.innerJson ??= possiblyCollapse(
-			this.innerJsonFull,
+			this.fullJson,
 			this.impl.bareKey,
 			false
 		))
@@ -1069,7 +1074,7 @@ export abstract class BaseNode<
 				this.innerJson
 			:	possiblyCollapse(
 					{
-						...this.innerJsonFull,
+						...this.fullJson,
 						meta: possiblyCollapse(
 							this.metaJson as JsonObject,
 							"description",
@@ -1104,8 +1109,9 @@ export abstract class BaseNode<
 			:	keptForJob(this.cache, hashJsonOf({ kind: this.kind, ...this.json })))
 	}
 
-	protected get innerJsonFull(): JsonObject {
-		return (this.cache.innerJsonFull ??= writeInnerJson(this))
+	/** its inner JSON before collapsing, with every key it has */
+	protected get fullJson(): JsonObject {
+		return (this.cache.fullJson ??= writeInnerJson(this))
 	}
 
 	toJSON(): JsonStructure {
@@ -1177,7 +1183,8 @@ export abstract class BaseNode<
 		return this.is("unit") && this.allows(value)
 	}
 
-	hasOpenIntersection(): this is nodeOfKind<OpenNodeKind> {
+	/** whether its kind's intersection can hold several of it, like predicates */
+	canStack(): this is nodeOfKind<OpenNodeKind> {
 		return this.impl.stacks as never
 	}
 
@@ -1224,28 +1231,27 @@ export abstract class BaseNode<
 	):
 		| nodeOfKind<reducibleKindOf<this["kind"]>>
 		| Extract<ReturnType<mapper>, null> {
-		const ctx = this._createTransformContext(opts)
-		if (!ctx.throughAliases) return this._transform(mapper, ctx) as never
+		const ctx = this._tfContext(opts)
+		if (!ctx.throughAliases) return this._tf(mapper, ctx) as never
 		// an alias to a resolution still being transformed resolves once the
 		// transform returns
 		inProgress.resolutions++
 		let transformed: BaseNode | null
 		try {
-			transformed = this._transform(mapper, ctx)
+			transformed = this._tf(mapper, ctx)
 		} finally {
 			inProgress.resolutions--
-			for (const id in ctx.synthetics)
-				delete $ark.nodesById[ctx.synthetics[id].id]
+			for (const id in ctx.synth) delete $ark.nodesById[ctx.synth[id].id]
 		}
 		if (!transformed || opts?.names) return transformed as never
 		// again, now that synthetics have printed their names
 		let name: string | undefined
 		const names: Record<string, string> = {}
-		for (const id in ctx.synthetics) {
+		for (const id in ctx.synth) {
 			if (id === this.id) name = `synthetic${hashOf(transformed.expression)}`
 			else {
 				names[id] =
-					`synthetic${hashOf(`${transformed.expression}\n${ctx.synthetics[id].name}`)}`
+					`synthetic${hashOf(`${transformed.expression}\n${ctx.synth[id].name}`)}`
 			}
 		}
 		const named =
@@ -1262,7 +1268,8 @@ export abstract class BaseNode<
 		) as never
 	}
 
-	protected _createTransformContext(
+	/** the context a transform starts with */
+	protected _tfContext(
 		opts: DeepNodeTransformOptions | undefined
 	): DeepNodeTransformContext {
 		return {
@@ -1275,12 +1282,13 @@ export abstract class BaseNode<
 			},
 			undeclaredHandling: undefined,
 			throughAliases: isResolutionFinal(),
-			synthetics: {},
+			synth: {},
 			...opts
 		}
 	}
 
-	protected _transform(
+	/** transforms it and the nodes it holds with mapper, returning null to remove it */
+	protected _tf(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
 	): BaseNode | null {
@@ -1288,21 +1296,21 @@ export abstract class BaseNode<
 		const seen = ctx.seen[this.id]
 		const transformedResolution = seen?.()
 		if (transformedResolution) return transformedResolution
-		if (ctx.shouldTransform?.(this as never, ctx) === false) return this
+		if (ctx.shouldTf?.(this as never, ctx) === false) return this
 		if (this.is("alias") && ctx.throughAliases) {
 			const resolution = this.resolution
 			if (!ctx.seen[resolution.id]) {
-				const transformed = resolution._transform(mapper, ctx)
+				const transformed = resolution._tf(mapper, ctx)
 				if (!transformed) return transformed
 				ctx.seen[resolution.id] = () => transformed
 			}
-			ctx.synthetics[resolution.id] ??= this.$.openSynthetic(
+			ctx.synth[resolution.id] ??= this.$.openSynthetic(
 				ctx.names?.[resolution.id] ??
 					(resolution === ctx.root ? undefined : this.expression)
 			)
 			return this.$.lazilyResolve(
 				ctx.seen[resolution.id]! as never,
-				ctx.synthetics[resolution.id].id
+				ctx.synth[resolution.id].id
 			)
 		}
 
@@ -1327,12 +1335,12 @@ export abstract class BaseNode<
 				// a morph's only child is the head of its pipeline
 				if (k === "morphs") {
 					const { head, piped } = this as {} as Morph.Node
-					const transformed = head?._transform(mapper, ctx)
+					const transformed = head?._tf(mapper, ctx)
 					return [k, transformed ? [transformed, ...piped] : piped]
 				}
 				const children = v as listable<BaseNode>
 				if (!isArray(children)) {
-					const transformed = children._transform(mapper, ctx)
+					const transformed = children._tf(mapper, ctx)
 					return transformed ? [k, transformed] : []
 				}
 				// if the value was previously explicitly set to an empty list,
@@ -1343,12 +1351,12 @@ export abstract class BaseNode<
 				).flatMap<BaseNode | Sequence.DefaultableElement>(n => {
 					// a defaultable element pairs its node with its default value
 					if (isArray(n)) {
-						const transformedElement = n[0]._transform(mapper, ctx)
+						const transformedElement = n[0]._tf(mapper, ctx)
 						return transformedElement ?
 								[[transformedElement as BaseRoot, n[1]]]
 							:	[]
 					}
-					const transformedChild = n._transform(mapper, ctx)
+					const transformedChild = n._tf(mapper, ctx)
 					return transformedChild ?? []
 				})
 				return transformed.length ? [k, transformed] : []
@@ -1453,7 +1461,7 @@ export abstract class BaseNode<
 		const rawSelected = this._select(normalized)
 		const selected = rawSelected && liftArray(rawSelected)
 
-		const shouldTransform: ShouldTransformFn =
+		const shouldTf: ShouldTransformFn =
 			normalized.boundary === "child" ?
 				(node, ctx) => ctx.root.children.includes(node as never)
 			: normalized.boundary === "shallow" ? node => node.kind !== "structure"
@@ -1461,7 +1469,7 @@ export abstract class BaseNode<
 
 		return this.$.fin(
 			this.transform(mapper, {
-				shouldTransform,
+				shouldTf,
 				selected
 			}) as never
 		)
@@ -1741,7 +1749,7 @@ export const referencesThroughAliases = (
 	)
 	for (const reference of reached.values()) {
 		if (!reference.is("alias")) continue
-		const resolved = reference.resolution.refsById
+		const resolved = reference.resolution.byId
 		for (const id in resolved)
 			if (!reached.has(id)) reached.set(id, resolved[id])
 	}
@@ -1980,7 +1988,8 @@ export const appendUniqueNodes = <node extends BaseNode>(
 	})
 
 export type DeepNodeTransformOptions = {
-	shouldTransform?: ShouldTransformFn
+	/** whether a transform visits a node, else it's kept as is */
+	shouldTf?: ShouldTransformFn
 	bindScope?: BaseScope
 	prereduced?: boolean
 	selected?: readonly BaseNode[] | undefined
@@ -2000,7 +2009,8 @@ export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
 	parseOptions: BaseParseOptions
 	undeclaredHandling: UndeclaredKeyHandling | undefined
 	throughAliases: boolean
-	synthetics: Record<string, BaseParseContext>
+	/** the synthetic aliases a transform opened for the resolutions it transformed, by id */
+	synth: Record<string, BaseParseContext>
 }
 
 export type DeepNodeTransformation = <kind extends NodeKind>(
@@ -2030,7 +2040,7 @@ export const writeInnerJson = (node: BaseNode): JsonObject => {
 			(keyImpl.child ? serializeListableChild : defaultValueSerializer)
 		json[k] = serialize(v as never)
 	}
-	return (node.impl.finalizeInnerJson?.(json) as JsonObject | undefined) ?? json
+	return (node.impl.fixJson?.(json) as JsonObject | undefined) ?? json
 }
 
 const serializeListableChild = (listableNode: listable<BaseNode>) =>

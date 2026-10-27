@@ -185,7 +185,7 @@ export const unflattenConstraints = (
 ): FlatIntersectionInner => {
 	const inner: MutableFlatIntersectionInner = {}
 	for (const constraint of constraints) {
-		if (constraint.hasOpenIntersection()) {
+		if (constraint.canStack()) {
 			inner[constraint.kind] = append(
 				inner[constraint.kind],
 				constraint

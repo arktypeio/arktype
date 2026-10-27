@@ -335,7 +335,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		if (this.trav === "Transform" && kind === "Allows" && node.allowsCtx)
 			return this.allows(node, arg)
 		const reference = this.refToId(node.id, opts)
-		if (kind === "Transform" && node.isTransformedById)
+		if (kind === "Transform" && node.tfsById)
 			return `${this.ref(transformResolution)}(${this.ctx}, "${this.nameOf(node.id)}", ${arg}, ${reference})`
 		return this.needsCtxFor(node, kind) ?
 				`${reference}(${arg}, ${this.ctx})`
@@ -427,7 +427,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	needsCtxFor(node: BaseNode, kind = this.trav): boolean {
 		return (
 			this.trav === "Apply" ||
-			(kind === "Transform" ? node.transformCtx : node.allowsCtx)
+			(kind === "Transform" ? node.tfCtx : node.allowsCtx)
 		)
 	}
 
@@ -442,7 +442,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	// transform after it is compiled with its checks. A build for size
 	// returns false
 	rejection(node: BaseNode): string {
-		return this.trav === "Allows" && !this.shortest && node.transforms ?
+		return this.trav === "Allows" && !this.shortest && node.tfs ?
 				`${this.ref(disallowed)}()`
 			:	"false"
 	}
@@ -485,7 +485,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		if (node.hasMorph || node.hasAlias) return
 		// transforming values are checked by Allows first
 		const checksAllowsFirst =
-			node.transforms ||
+			node.tfs ||
 			((this.loopDepth > 0 || (node.is("union") && !node.discriminant)) &&
 				isDecidedByAllows(node))
 		const condition =
@@ -525,7 +525,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 			).elseIf(`!${apply}`, fails)
 		} else {
 			this.if(
-				node.transforms ?
+				node.tfs ?
 					`!(${this.ref(transformIfAllowed)}(ctx, ${this.ref(node)}, ${value}) || ${apply})`
 				:	`!${apply}`,
 				fails
@@ -537,7 +537,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	/** writes what a transform of `transformedChildren` needs before it starts */
 	initTf(transformedChildren: readonly BaseNode[]): this {
 		this.checksErrs = transformedChildren.some(
-			child => child.hasMorph || child.transformCtx
+			child => child.hasMorph || child.tfCtx
 		)
 		if (!this.checksErrs) return this
 		return this.needsCtx ? this.initErrCount() : this.line("let failed")
@@ -553,7 +553,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		const nodes = steps.map(step => step.node)
 		const keyExpr = opts?.keyExpr
 		const assign = (assignee: string, node: BaseNode, arg: string) => {
-			const pushesKey = keyExpr !== undefined && node.transformCtx
+			const pushesKey = keyExpr !== undefined && node.tfCtx
 			if (pushesKey) this.line(`${this.ctx}.path.push(${keyExpr})`)
 			// a step rejecting an earlier step's output transforms the input instead
 			const transformed =
@@ -567,7 +567,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 			`typeof ${name} === "function" && ${name} instanceof ${this.ref(TransformErrors)}`
 		const assignSteps = () => {
 			const errN = `${name}ErrorCount`
-			if (nodes.slice(0, -1).some(node => node.transformCtx))
+			if (nodes.slice(0, -1).some(node => node.tfCtx))
 				this.const(errN, `${this.ctx}.errN`)
 			for (let i = 0; i < steps.length; i++) {
 				const { node, signature } = steps[i]
@@ -578,7 +578,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 					:	[]
 				if (previous.some(returnsTransformErrors))
 					conditions.push(`!(${isTransformErrors()})`)
-				if (previous.some(node => node.transformCtx))
+				if (previous.some(node => node.tfCtx))
 					conditions.push(`${this.ctx}.errN === ${errN}`)
 				const assignStep = () => assign(name, node, i === 0 ? input : name)
 				if (conditions.length) this.if(conditions.join(" && "), assignStep)
@@ -679,7 +679,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 }
 
 export const returnsTransformErrors = (node: BaseNode): boolean =>
-	node.hasMorph && !node.transformCtx
+	node.hasMorph && !node.tfCtx
 
 const isPredicate = (node: BaseNode): boolean => node.is("predicate")
 

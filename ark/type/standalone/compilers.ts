@@ -198,7 +198,7 @@ const isDecidedByKeywords = (node: BaseNode): boolean =>
 	!node.hasMorph &&
 	!node.hasAlias &&
 	!node.allowsCtx &&
-	Object.values(node.refsById).every(
+	Object.values(node.byId).every(
 		reference => !reference.is("predicate") || isKeyword(reference.predicate)
 	)
 
@@ -300,7 +300,7 @@ const reportsApart = (reference: BaseNode): boolean =>
 // Apply named as its Allows, reporting a failure only to a ctx it's passed
 class UnifiedCompiler extends StandaloneCompiler {
 	override refToId(id: NodeId, opts?: ReferenceOptions): string {
-		const node = this.link.refsById[id]
+		const node = this.link.byId[id]
 		return super.refToId(
 			id,
 			node && (opts?.kind ?? this.trav) === "Apply" && this.unifies(node) ?
@@ -439,7 +439,7 @@ class CombinatorCompiler extends forSize(UnifiedCompiler) {
 		if (source === undefined) return
 		const allows = this.refToId(node.id, { kind: "Allows" })
 		this.link.members.push([allows, source])
-		if (!node.transforms) return [allows, allows]
+		if (!node.tfs) return [allows, allows]
 		const transform = this.refToId(node.id, { kind: "Transform" })
 		this.link.members.push([
 			transform,

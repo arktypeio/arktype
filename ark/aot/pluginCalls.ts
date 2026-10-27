@@ -148,7 +148,7 @@ const entryReadOf = (
 	const entry = entryOf(node)
 	if (entry !== undefined) return [entry, []]
 	if (node.type !== "Identifier") return
-	const binding = module.scopes.refsById.get(node as never)?.binding
+	const binding = module.scopes.byId.get(node as never)?.binding
 	const declaration = binding?.declaration
 	if (
 		declaration?.type === "ImportSpecifier" ||

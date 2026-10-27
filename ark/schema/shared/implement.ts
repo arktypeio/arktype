@@ -276,7 +276,8 @@ export type NodeKeyImplementation<
 	instantiated = Exclude<d["inner"][k], undefined>
 > = requireKeys<
 	{
-		preserveUndefined?: true
+		/** whether an undefined value is kept as the key's value rather than dropped */
+		keepUndef?: true
 		child?: boolean | ((value: instantiated) => BaseNode[])
 		serialize?: (schema: instantiated) => Json
 		// a structural value defers an alias it holds elsewhere to an alias of its own
@@ -300,7 +301,8 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	applyConfig?: (inner: d["inner"], config: ResolvedScopeConfig) => d["inner"]
 	/** whether it reports its own error when data fails it, rather than its children's */
 	ownErr: d["errorCtx"] extends null ? false : true
-	finalizeInnerJson?: (json: {
+	/** rewrites its inner JSON once it's written, e.g. to collapse a key */
+	fixJson?: (json: {
 		[k in keyof d["inner"]]: Json
 	}) => JsonStructure
 	/** the key whose value stands for its whole json when it's all the json holds */

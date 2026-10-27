@@ -73,7 +73,7 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 	implementNode<Intersection.Declaration>({
 		kind: "intersection",
 		ownErr: true,
-		finalizeInnerJson: ({ structure, ...rest }) =>
+		fixJson: ({ structure, ...rest }) =>
 			hasDomain(structure, "object") ? { ...structure, ...rest } : rest,
 		keys: {
 			domain: {
@@ -258,7 +258,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		}
 		if (this.structure) {
 			// transformed only if the predicates allow it
-			if (this.inner.predicate && this.structure.transforms) {
+			if (this.inner.predicate && this.structure.tfs) {
 				if (!allowsInBranch(ctx, this.structure, data)) {
 					this.structure.traverseApply(data as never, ctx)
 					return
@@ -292,7 +292,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		if (
 			structure?.sequence &&
 			!this.inner.predicate &&
-			!this.transforms &&
+			!this.tfs &&
 			!structure.sequence.hasAlias &&
 			Object.keys(structure.inner).length === 1
 		)
@@ -404,11 +404,11 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			return
 		}
 		// read only where a later check follows one that can add issues
-		if ((structure && !structure.transforms) || predicates.length > 1)
+		if ((structure && !structure.tfs) || predicates.length > 1)
 			js.initErrCount()
 		if (structure) {
 			// transformed only if the predicates allow it
-			if (structure.transforms)
+			if (structure.tfs)
 				js.if(`!${js.allows(structure)}`, () => js.return(js.inv(structure)))
 			else {
 				js.if(`!${js.inv(structure)}`, () => js.return(false)).if(

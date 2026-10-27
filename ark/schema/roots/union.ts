@@ -148,15 +148,15 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// every case node discriminate creates, even for a discriminant it abandons
 	readonly caseNodes: BaseRoot[] = []
 
-	private _discriminant: Discriminant | null | undefined
+	private _disc: Discriminant | null | undefined
 	// discriminated when first read
 	get discriminant(): Discriminant | null {
-		if (this._discriminant === undefined) {
+		if (this._disc === undefined) {
 			// null while discriminating, which can read this union's references
-			this._discriminant = null
-			this._discriminant = this.discriminate()
+			this._disc = null
+			this._disc = this.discriminate()
 		}
-		return this._discriminant
+		return this._disc
 	}
 
 	/** `discCases`, once read */
@@ -215,9 +215,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		// an alias branch is replaced by its resolution before the union is used
 		if (this.topAlias) return null
 		const discriminant = $ark.sets?.discriminate(this) ?? null
-		if (this.cache.refsById) {
+		if (this.cache.byId) {
 			for (const node of this.caseNodes)
-				Object.assign(this.cache.refsById, node.refsById)
+				Object.assign(this.cache.byId, node.byId)
 		}
 		// what was read of its references while discriminating lacks its cases
 		forgetReferences(this)
@@ -231,12 +231,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	// an indiscriminable union picks the branch it transforms by its Allows
-	protected override get selectsByCtx(): boolean {
+	protected override get ctxSel(): boolean {
 		const discriminant = this.discriminant
 		if (!discriminant) return true
 		for (const k in discriminant.cases) {
 			const caseNode = discriminant.cases[k]
-			if (caseNode !== true && caseNode.transformCtx) return true
+			if (caseNode !== true && caseNode.tfCtx) return true
 		}
 		return false
 	}
@@ -252,13 +252,16 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return this.distribute(branch => branch.brief, describeBranches)
 	}
 
-	// uncompiled checks don't discriminate
-	private get foundDiscriminant(): Discriminant | null {
-		return this._discriminant === undefined ? null : this.discriminant
+	/**
+	 * whether a discriminant was found, finding it first if it wasn't
+	 * uncompiled checks don't discriminate
+	 */
+	private get foundDisc(): Discriminant | null {
+		return this._disc === undefined ? null : this.discriminant
 	}
 
 	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
-		const discriminant = this.foundDiscriminant
+		const discriminant = this.foundDisc
 		if (!discriminant) {
 			return this.branches.some(b =>
 				b.checksCtx ?
@@ -370,11 +373,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	traverseTransform(data: unknown, ctx: InternalTraversal): unknown {
-		const discriminant = this.foundDiscriminant
+		const discriminant = this.foundDisc
 		if (discriminant) {
 			const k = caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
 			const caseNode = discriminant.cases[k]
-			if (caseNode === true || !caseNode?.transforms) return data
+			if (caseNode === true || !caseNode?.tfs) return data
 			const member = discriminant.members?.[k]
 			return member ?
 					transformResolution(
@@ -390,9 +393,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		for (let i = 0; i < this.branches.length; i++) {
 			const branch = this.branches[i]
 			if (allowsInBranch(ctx, branch, data))
-				return branch.transforms ? transform(ctx, branch, data) : data
+				return branch.tfs ? transform(ctx, branch, data) : data
 		}
-		return this.transformCtx ? data : unset
+		return this.tfCtx ? data : unset
 	}
 
 	compileCondition(js: NodeCompiler, data: string): string | undefined {
@@ -408,7 +411,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 	compile(js: NodeCompiler): void {
 		const discriminant = this.discriminant
-		if (!discriminant) return this.jsIndiscriminable(js)
+		if (!discriminant) return this.jsIndisc(js)
 		// two branches of different domains are checked in turn, a unit first,
 		// which is cheaper than finding data's domain
 		if (
@@ -417,7 +420,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			this.branches.length === 2
 		) {
 			const [a, b] = this.branches
-			return this.jsIndiscriminable(js, b.is("unit") ? [b, a] : [a, b])
+			return this.jsIndisc(js, b.is("unit") ? [b, a] : [a, b])
 		}
 
 		// we need to access the path as optional so we don't throw if it isn't present
@@ -429,7 +432,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			// a case transforming nothing returns data as the switch's end does
 			if (
 				js.trav === "Transform" &&
-				(v === true || !v.transforms) &&
+				(v === true || !v.tfs) &&
 				!("default" in cases)
 			)
 				continue
@@ -441,7 +444,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			const member = discriminant.members?.[k]
 			const caseResult =
 				js.trav === "Transform" ?
-					v !== true && v.transforms ?
+					v !== true && v.tfs ?
 						invokeTransform(js, v, member)
 					:	"data"
 				: v === true ? "true"
@@ -490,7 +493,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	/** writes the check of branches no discriminant tells apart */
-	private jsIndiscriminable(js: NodeCompiler, branches = this.branches): void {
+	private jsIndisc(js: NodeCompiler, branches = this.branches): void {
 		if (js.trav === "Apply" && !this.hasAlias && isDecidedByAllows(this)) {
 			for (const branch of this.branches) {
 				js.if(
@@ -535,12 +538,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				js.if(
 					branch.compileCondition?.(js, "data") ??
 						js.inv(branch, { kind: "Allows" }),
-					() =>
-						js.return(branch.transforms ? invokeTransform(js, branch) : "data")
+					() => js.return(branch.tfs ? invokeTransform(js, branch) : "data")
 				)
 			}
 			// unless it requires ctx, a root checks for unset instead of calling its Allows
-			js.return(this.transformCtx ? "data" : compileSerializedValue(unset))
+			js.return(this.tfCtx ? "data" : compileSerializedValue(unset))
 		}
 	}
 
@@ -673,7 +675,8 @@ export type DiscriminantLocation<
 	kind extends DiscriminantKind = DiscriminantKind
 > = {
 	path: PropertyKey[]
-	chainedPropString: string
+	/** the discriminant's path as optional-chained property accesses */
+	pathStr: string
 	kind: kind
 }
 

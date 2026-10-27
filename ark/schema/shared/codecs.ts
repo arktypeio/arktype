@@ -36,13 +36,13 @@ const encoderOf = (node: BaseRoot): BaseRoot =>
 					...inner,
 					// a branch without morphs encodes a value unchanged
 					branches: [...(inner as Union.Inner).branches].sort(
-						(l, r) => Number(l.transforms) - Number(r.transforms)
+						(l, r) => Number(l.tfs) - Number(r.tfs)
 					),
 					ordered: true
 				}
 			:	inner,
 		{
-			shouldTransform: n => n.transforms || (n.is("optional") && n.hasDefault())
+			shouldTf: n => n.tfs || (n.is("optional") && n.hasDef())
 		}
 	) as never
 

@@ -165,7 +165,7 @@ export const buildPerturbed = (
 			])
 			const passedNames = new Set<string>()
 			const names = new Set<string>()
-			for (const [node, reference] of module.scopes.refsById) {
+			for (const [node, reference] of module.scopes.byId) {
 				const binding = reference.binding
 				if (
 					node.start < site.start ||

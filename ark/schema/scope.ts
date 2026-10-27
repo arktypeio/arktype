@@ -245,13 +245,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 	/** `refsById`, once read */
 	private _refsById: { [id: string]: BaseNode } | undefined
 	// collected when first read
-	get refsById(): { [id: string]: BaseNode } {
+	get byId(): { [id: string]: BaseNode } {
 		if (!this._refsById && this._exported) {
 			this._refsById = {}
 			for (const name in this._exported) {
 				const resolution = this._exported[name]
-				if (isNode(resolution))
-					addReferences(this._refsById, resolution.refsById)
+				if (isNode(resolution)) addReferences(this._refsById, resolution.byId)
 			}
 		}
 		return this._refsById ?? {}
@@ -260,7 +259,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	private _references: readonly BaseNode[] | undefined
 	get references(): readonly BaseNode[] {
 		if (!this._references && this._exported) {
-			const references = Object.values(this.refsById)
+			const references = Object.values(this.byId)
 			this._references =
 				this._lazy ? references : referencesThroughAliases(references)
 		}
@@ -532,7 +531,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			{ reference: ctx.id },
 			{ prereduced: true }
 		)
-		if (!ctx.closesCycle) alias.closesCycle = false
+		if (!ctx.closes) alias.closes = false
 		return alias
 	}
 
@@ -586,7 +585,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			const v = cached
 			if (v.phase === "resolving" || v.phase === "member") {
 				reach(v)
-				if (v.phase === "resolving") v.closesCycle = true
+				if (v.phase === "resolving") v.closes = true
 				return this.aliasOf(v)
 			}
 			if (v.phase === "failed") throw v.error
@@ -1047,8 +1046,8 @@ const maybeResolveExport = (
 }
 
 const addReferences = (
-	base: BaseNode["refsById"],
-	references: BaseNode["refsById"]
+	base: BaseNode["byId"],
+	references: BaseNode["byId"]
 ) => {
 	for (const id in references) base[id] ??= references[id]
 }

@@ -66,22 +66,23 @@ export abstract class BaseProp<
 		return typeof this.key === "string" ? this.key : printable(this.key)
 	}
 
-	protected override initFlatRefs(): void {
+	protected override initFlat(): void {
 		this.cache.flatRefs = flatRefsAt(this.key, this.value)
 		this.cache.flatMorphs = []
 	}
 
-	protected override _transform(
+	protected override _tf(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
 	): BaseNode | null {
 		ctx.path.push(this.key)
-		const result = super._transform(mapper, ctx)
+		const result = super._tf(mapper, ctx)
 		ctx.path.pop()
 		return result
 	}
 
-	hasDefault(): this is Optional.Node.withDefault {
+	/** whether it's an optional prop with a default */
+	hasDef(): this is Optional.Node.withDefault {
 		return "default" in this.inner
 	}
 
@@ -136,8 +137,7 @@ export abstract class BaseProp<
 		// a value no branch of which allows undefined fails a missing key too
 		if (
 			this.is("required") &&
-			(js.trav === "Allows" ||
-				(!this.value.transforms && !this.value.entersAlias)) &&
+			(js.trav === "Allows" || (!this.value.tfs && !this.value.entersAlias)) &&
 			this.value.branches.every(branch => {
 				// Allows checks a morph's input
 				const input = branch.is("morph") ? branch.head : branch

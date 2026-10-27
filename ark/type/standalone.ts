@@ -1484,7 +1484,7 @@ class StandaloneArtifact {
 			this.collectType(value)
 		}
 		for (const node of this.writtenSelected(holdsDefaults)) {
-			if (node.is("optional") && node.defaultMorph) collect(node.value)
+			if (node.is("optional") && node.defMorph) collect(node.value)
 			else if (node.is("sequence"))
 				for (const [value] of node.defaultables ?? []) collect(value)
 		}
@@ -2777,10 +2777,10 @@ ${writeFunction(
 				(strategy === "transform" &&
 					!root.hasMorph &&
 					(checks || !(root.is("union") && !root.discriminant))))
-		const transforms = strategy === "transform" && !checks
+		const tfs = strategy === "transform" && !checks
 		const [flat, traversals] =
 			isArrow && appliesErrors && !root.allowsCtx ?
-				this.compactPartsOf(root, transforms ? [0, 1, 2] : [0, 1], asValidator)
+				this.compactPartsOf(root, tfs ? [0, 1, 2] : [0, 1], asValidator)
 			:	[]
 		if (traversals) {
 			const Ctx =
@@ -2798,17 +2798,16 @@ ${writeFunction(
 				: this.baking.shortest ?
 					`[allows${
 						apply === "apply" ? ", apply"
-						: transforms ? ","
+						: tfs ? ","
 						: ""
-					}${transforms ? ", transform" : ""}]`
-				:	`{ 0: allows${apply === "apply" ? ", 1: apply" : ""}${transforms ? ", 2: transform" : ""} }`
+					}${tfs ? ", transform" : ""}]`
+				:	`{ 0: allows${apply === "apply" ? ", 1: apply" : ""}${tfs ? ", 2: transform" : ""} }`
 			const valid =
 				checks ? "allows.t?.(data) ?? data"
-				: transforms ? "transform(data)"
+				: tfs ? "transform(data)"
 				: "data"
 			const parts = flat ? [...new Set(flat)].join(", ") : traversals
-			const elements =
-				asValidator && !transforms && this.elementTraversalsOf(root)
+			const elements = asValidator && !tfs && this.elementTraversalsOf(root)
 			if (elements) {
 				const args = `[${traversals}[0], ${traversals}[${this.appliedIndexOf(root)}], ${elements}]`
 				return [
@@ -2867,7 +2866,7 @@ ${writeFunction(
 			return [
 				{
 					params: "node",
-					apply: `(data, onFail) => node.allows(data) ? ${transforms ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${Traversal})`,
+					apply: `(data, onFail) => node.allows(data) ? ${tfs ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${Traversal})`,
 					args: shape,
 					local: !Traversal.startsWith("runtime.")
 				},
@@ -2903,7 +2902,7 @@ ${writeFunction(
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const strategy = root.applyMode
 		const invalid = "invalid(data, onFail)"
-		const transforms = root.transforms
+		const tfs = root.tfs
 		// an undiscriminated union transforms what a branch allows, else unset
 		const selects =
 			strategy === "transform" && root.is("union") && !root.discriminant
@@ -2912,7 +2911,7 @@ ${writeFunction(
 		const resolves = strategy === "contextualTransform" && root.hasAlias
 		const [flat, traversals] =
 			!root.allowsCtx && !resolves ?
-				this.compactPartsOf(root, transforms ? [0, 2] : [0], asValidator)
+				this.compactPartsOf(root, tfs ? [0, 2] : [0], asValidator)
 			:	[]
 		const shape = traversals ? undefined : this.shapeOf(root)
 		const allows = traversals ? "allows" : "node.allows"
@@ -2953,20 +2952,17 @@ ${writeFunction(
 		const params =
 			!traversals ? "node"
 			: flat ?
-				[
-					...(selects ? [] : ["allows"]),
-					...(transforms ? ["transform"] : [])
-				].join(", ")
+				[...(selects ? [] : ["allows"]), ...(tfs ? ["transform"] : [])].join(
+					", "
+				)
 			: this.baking.shortest ?
-				`[${selects ? "" : "allows"}${transforms ? ", , transform" : ""}]`
-			:	`{ ${[...(selects ? [] : ["0: allows"]), ...(transforms ? ["2: transform"] : [])].join(", ")} }`
-		const valid = transforms ? `${transform}(data)` : "data"
+				`[${selects ? "" : "allows"}${tfs ? ", , transform" : ""}]`
+			:	`{ ${[...(selects ? [] : ["0: allows"]), ...(tfs ? ["2: transform"] : [])].join(", ")} }`
+		const valid = tfs ? `${transform}(data)` : "data"
 		const parts =
 			!traversals ? undefined
 			: flat ?
-				[...(selects ? [] : [flat[0]]), ...(transforms ? [flat[1]] : [])].join(
-					", "
-				)
+				[...(selects ? [] : [flat[0]]), ...(tfs ? [flat[1]] : [])].join(", ")
 			:	traversals
 		if (asValidator && parts && !body) {
 			return [
@@ -3609,9 +3605,9 @@ const assertBakeableJsonSchema = (root: BaseRoot): void => {
 }
 
 const shapeFlags = [
-	"isTransformedById",
+	"tfsById",
 	"hasAlias",
-	"transforms",
+	"tfs",
 	"allowsCtx",
 	"checksCtx"
 ] as const
@@ -3649,7 +3645,7 @@ const defaultedNodeKeys = [
 	"hasAlias",
 	"allowsCtx",
 	"ctxMorph",
-	"transforms"
+	"tfs"
 ] as const satisfies (keyof DefaultedNode)[]
 
 export const collectDefaults = (
@@ -3657,8 +3653,8 @@ export const collectDefaults = (
 	defaultsByMorph: Map<unknown, CollectedDefault>
 ): void => {
 	if (node.is("optional")) {
-		if (node.defaultMorph) {
-			defaultsByMorph.set(node.defaultMorph, [
+		if (node.defMorph) {
+			defaultsByMorph.set(node.defMorph, [
 				node.key,
 				node.value,
 				node.inner.default
@@ -3666,9 +3662,9 @@ export const collectDefaults = (
 		}
 		return
 	}
-	for (let i = 0; i < node.defaultMorphs.length; i++) {
+	for (let i = 0; i < node.defMorphs.length; i++) {
 		const [value, defaultValue] = node.defaultables![i]
-		defaultsByMorph.set(node.defaultMorphs[i], [
+		defaultsByMorph.set(node.defMorphs[i], [
 			node.preLen + i,
 			value,
 			defaultValue
@@ -3820,7 +3816,7 @@ const holdsObjectMeta = (node: BaseNode): boolean =>
 
 export const holdsDefaults = (node: BaseNode): boolean =>
 	node.is("optional") ?
-		!!node.defaultMorph
+		!!node.defMorph
 	:	node.is("sequence") && !!node.defaultables?.length
 
 export const declares = (

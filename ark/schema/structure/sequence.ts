@@ -180,7 +180,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		this.hasMorph ||= !!this.defaultables?.some(
 			([, defaultValue]) => typeof defaultValue === "function"
 		)
-		this.ctxMorph ||= this.defaultMorphs.some(morph => morph.length === 2)
+		this.ctxMorph ||= this.defMorphs.some(morph => morph.length === 2)
 	}
 
 	implied: BaseRoot = $ark.intrinsic.Array.internal
@@ -214,7 +214,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		this.postfix
 	)
 
-	protected override initFlatRefs(): void {
+	protected override initFlat(): void {
 		this.cache.flatRefs = uniqueFlatRefs([
 			...this.leading.flatMap((element, i) => flatRefsAt(`${i}`, element.node)),
 			...this.trail.flatMap(element =>
@@ -250,7 +250,8 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		: this.maxNode ? [this.maxNode]
 		: []
 
-	defaultMorphs: Morph[] =
+	/** the morphs writing its elements' defaults */
+	defMorphs: Morph[] =
 		this.defaultables?.map(([node, defaultValue], i) =>
 			computeDefaultValueMorph(this.preLen + i, node, defaultValue)
 		) ?? []
@@ -324,18 +325,15 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	}
 
 	traverseTransform(data: array, ctx: InternalTraversal): unknown {
-		return this.transformElements(data, ctx, false)
+		return this.tfElems(data, ctx, false)
 	}
 
-	transformElements(
-		data: array,
-		ctx: InternalTraversal,
-		slices: boolean
-	): array {
+	/** transforms data's elements, copying it before the first change unless it's transformed in place */
+	tfElems(data: array, ctx: InternalTraversal, slices: boolean): array {
 		let out = data as unknown[]
 		for (let i = 0; i < data.length; i++) {
 			const node = this.atIndex(data, i).node
-			if (!node.transforms) continue
+			if (!node.tfs) continue
 			const element = data[i]
 			const transformed = travKey(i, () => transform(ctx, node, element), ctx)
 			if (Object.is(transformed, element)) continue
@@ -350,7 +348,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler): void {
-		if (js.trav === "Transform") return this.jsTransform(js)
+		if (js.trav === "Transform") return this.jsTf(js)
 		// like Structure, bail out of subsequent elements in fail-fast mode
 		// (e.g. inside a union branch) so we don't traverse an element whose
 		// basis has already failed - see
@@ -362,14 +360,14 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		js.return(true)
 	}
 
-	private jsTransform(js: NodeCompiler): void {
+	private jsTf(js: NodeCompiler): void {
 		js.initTf(this.children).let("out", "data")
-		this.jsElementTransforms(js, false)
+		this.jsElemTfs(js, false)
 		js.retIfFailed().return("out")
 	}
 
 	/** writes the transforms of data's elements */
-	jsElementTransforms(js: NodeCompiler, slices: boolean): NodeCompiler {
+	jsElemTfs(js: NodeCompiler, slices: boolean): NodeCompiler {
 		// an array written in place is never copied
 		const copy =
 			js.inPlace && !slices ? undefined
@@ -398,8 +396,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		compileElement: (keyExpr: string, node: BaseRoot) => NodeCompiler
 	): void {
 		// a transform skips each element that would return its input
-		const reaches = (node: BaseRoot) =>
-			js.trav !== "Transform" || node.transforms
+		const reaches = (node: BaseRoot) => js.trav !== "Transform" || node.tfs
 
 		if (this.prefix) {
 			for (const [i, node] of this.prefix.entries())
@@ -409,7 +406,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		for (const [i, node] of this.maybes.entries()) {
 			const dataIndex = `${i + this.preLen}`
 			if (js.trav === "Transform") {
-				if (node.transforms) {
+				if (node.tfs) {
 					js.if(`${dataIndex} < data.length`, () =>
 						compileElement(dataIndex, node)
 					)
@@ -436,12 +433,12 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			if (reaches(node)) compileElement(`firstPostfixIndex + ${i}`, node)
 	}
 
-	protected override _transform(
+	protected override _tf(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
 	): BaseNode | null {
 		ctx.path.push($ark.intrinsic.nonNegativeIntegerString.internal)
-		const result = super._transform(mapper, ctx)
+		const result = super._tf(mapper, ctx)
 		ctx.path.pop()
 		return result
 	}

@@ -65,7 +65,8 @@ export interface AttachedParseContext {
 	isReferencedAsThis?: true
 	index?: number
 	lowlink?: number
-	closesCycle?: true
+	/** whether a reference reached it while it was resolving */
+	closes?: true
 	resolution?: BaseRoot
 	error?: unknown
 }
@@ -142,7 +143,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		if (!keyImpl)
 			return throwParseError(`Key ${k} is not valid on ${ctx.kind} schema`)
 		const v = input[k]
-		if (v === undefined && !keyImpl.preserveUndefined) continue
+		if (v === undefined && !keyImpl.keepUndef) continue
 		// an empty list of children is none, except a union's branches
 		if (keyImpl.child && isArray(v) && !v.length && k !== "branches") continue
 		inner[k] = keyImpl.structural ? deferAliases(v, ctx.$) : v

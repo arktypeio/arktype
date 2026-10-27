@@ -420,7 +420,7 @@ const unrefedOf = (call: CallExpression, module: SourceModule) => {
 	const callee = unwrapChain(call.callee)
 	const declaration =
 		callee.type === "Identifier" ?
-			module.scopes.refsById.get(callee)?.binding?.declaration
+			module.scopes.byId.get(callee)?.binding?.declaration
 		:	undefined
 	const [arg] = call.arguments
 	return (
@@ -919,7 +919,7 @@ export class ModuleGraph {
 		const id =
 			node.type === "MemberExpression" ? unwrapChain(node.object) : node
 		const reference =
-			id.type === "Identifier" ? module.scopes.refsById.get(id) : undefined
+			id.type === "Identifier" ? module.scopes.byId.get(id) : undefined
 		const [name, read] =
 			(reference && this.arkExportOf(reference, module)) ?? []
 		return read === node ? name : undefined
@@ -1723,7 +1723,7 @@ export class ModuleGraph {
 		if (cached !== undefined) return cached
 		switch (node.type) {
 			case "Identifier": {
-				const binding = module.scopes.refsById.get(node)?.binding
+				const binding = module.scopes.byId.get(node)?.binding
 				return binding ? kindOfKey(binding, module) : kinds.data
 			}
 			case "ArrowFunctionExpression":
@@ -1898,7 +1898,7 @@ export class ModuleGraph {
 	): KindBits {
 		let root = unwrapChain(call.callee)
 		while (root.type === "MemberExpression") root = unwrapChain(root.object)
-		if (root.type !== "Identifier" || module.scopes.refsById.get(root)?.binding)
+		if (root.type !== "Identifier" || module.scopes.byId.get(root)?.binding)
 			return 0
 		return lostOf(
 			call.arguments.reduce(
@@ -1938,7 +1938,7 @@ export class ModuleGraph {
 		return (
 			object.type === "Identifier" &&
 			object.name === global &&
-			!module.scopes.refsById.get(object)?.binding
+			!module.scopes.byId.get(object)?.binding
 		)
 	}
 
@@ -2032,7 +2032,7 @@ export class ModuleGraph {
 		const name = memberNameOf(member)
 		const context =
 			object.type === "Identifier" ?
-				module.scopes.refsById.get(object)?.binding
+				module.scopes.byId.get(object)?.binding
 			:	undefined
 		if (
 			context?.kind !== "param" ||
@@ -2066,7 +2066,7 @@ export class ModuleGraph {
 		const object = unwrapChain(member.object)
 		const binding =
 			object.type === "Identifier" ?
-				module.scopes.refsById.get(object)?.binding
+				module.scopes.byId.get(object)?.binding
 			:	undefined
 		if (binding?.kind !== "param" || binding.id.parent?.type === "RestElement")
 			return
@@ -2200,7 +2200,7 @@ export class ModuleGraph {
 				return cls && { node: cls, module, kindOfKey }
 			}
 			case "Identifier": {
-				const binding = module.scopes.refsById.get(node)?.binding
+				const binding = module.scopes.byId.get(node)?.binding
 				return (
 					binding && this.bindingLiteralOf(binding, module, kindOfKey, seen)
 				)
@@ -2406,7 +2406,7 @@ export class ModuleGraph {
 			const target = this.namespaceMemberOf(node, module)
 			return target && this.targetInitOf(target, kindOfKey)
 		}
-		const binding = module.scopes.refsById.get(node)?.binding
+		const binding = module.scopes.byId.get(node)?.binding
 		return binding && this.bindingInitOf(binding, module, kindOfKey)
 	}
 
@@ -2647,7 +2647,7 @@ export class ModuleGraph {
 		object = unwrapChain(object)
 		const binding =
 			object.type === "Identifier" ?
-				module.scopes.refsById.get(object)?.binding
+				module.scopes.byId.get(object)?.binding
 			:	undefined
 		if (binding?.kind !== "import" || typeof name !== "string") return
 		const target = this.importOf(binding, module)
@@ -2773,15 +2773,12 @@ export class ModuleGraph {
 		if (
 			callee.type === "Identifier" &&
 			callee.name === "String" &&
-			!module.scopes.refsById.get(callee)?.binding
+			!module.scopes.byId.get(callee)?.binding
 		)
 			return ["toString", args.slice(0, 1)]
 		if (callee.type !== "MemberExpression") return
 		const global = unwrapChain(callee.object)
-		if (
-			global.type !== "Identifier" ||
-			module.scopes.refsById.get(global)?.binding
-		)
+		if (global.type !== "Identifier" || module.scopes.byId.get(global)?.binding)
 			return
 		const name = memberNameOf(callee)
 		return (
@@ -2833,7 +2830,7 @@ export class ModuleGraph {
 		if (this.arkExportNameOf(node, module)) return true
 		const binding =
 			node.type === "Identifier" ?
-				module.scopes.refsById.get(node)?.binding
+				module.scopes.byId.get(node)?.binding
 			:	undefined
 		if (binding?.kind !== "import") return false
 		const target = this.importOf(binding, module).kind
@@ -2938,7 +2935,7 @@ export class ModuleGraph {
 					operator.left !== operand &&
 					(operator.left.type !== "Identifier" ||
 						this.readsReachUnseen(
-							module.scopes.refsById.get(operator.left)?.binding,
+							module.scopes.byId.get(operator.left)?.binding,
 							module,
 							held,
 							reach
@@ -3119,7 +3116,7 @@ export class ModuleGraph {
 		callee = unwrapChain(callee)
 		if (isFunctionNode(callee)) return [callee, module]
 		if (callee.type === "Identifier") {
-			const binding = module.scopes.refsById.get(callee)?.binding
+			const binding = module.scopes.byId.get(callee)?.binding
 			return binding && this.boundFunctionOf(binding, module)
 		}
 		if (callee.type !== "MemberExpression") return
@@ -3382,7 +3379,7 @@ export const isObjectWrite = (callee: Node, module: SourceModule): boolean => {
 		callee.type === "MemberExpression" &&
 		!callee.computed &&
 		callee.object.type === "Identifier" &&
-		!module.scopes.refsById.get(callee.object)?.binding &&
+		!module.scopes.byId.get(callee.object)?.binding &&
 		!!writersByGlobal[callee.object.name]?.includes(callee.property.name)
 	)
 }
@@ -3622,7 +3619,7 @@ const namedFunctionOf = (node: Node, module: SourceModule): Node => {
 					`${define.name}(${target},"name",{value:${value},configurable:true})` &&
 				defineProperty?.type === "MemberExpression" &&
 				compactTextOf(defineProperty, module) === "Object.defineProperty" &&
-				!module.scopes.refsById.get(defineProperty.object)?.binding
+				!module.scopes.byId.get(defineProperty.object)?.binding
 		) ?
 			unwrapChain(node.arguments[0])
 		:	node
@@ -3636,7 +3633,7 @@ const isNamed = (node: Node, module: SourceModule): boolean =>
 const initOf = (node: Node, module: SourceModule): Node | undefined => {
 	const binding =
 		node.type === "Identifier" ?
-			module.scopes.refsById.get(node)?.binding
+			module.scopes.byId.get(node)?.binding
 		:	undefined
 	return (
 			binding &&
@@ -3854,7 +3851,7 @@ export const readsBindingOf = (
 	walk(node, child => {
 		const scope =
 			child.type === "Identifier" ?
-				module.scopes.refsById.get(child)?.binding?.scope.node
+				module.scopes.byId.get(child)?.binding?.scope.node
 			:	undefined
 		if (scope && contains(outer, scope) && !contains(node, scope)) result = true
 		return !result

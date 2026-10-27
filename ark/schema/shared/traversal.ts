@@ -458,7 +458,7 @@ export const transform = (
 	node: BaseNode,
 	data: unknown
 ): unknown =>
-	node.isTransformedById ?
+	node.tfsById ?
 		transformResolution(ctx, node.id, data, node.traverseTransform!, node)
 	:	transformAcyclic(ctx, node, data)
 
@@ -482,7 +482,7 @@ export const transformed = (
 // the one pipe a node needs
 export const pipeOf = (node: BaseNode): TraversePipe =>
 	node.hasAlias ? pipe
-	: node.transforms ? pipeTransformed
+	: node.tfs ? pipeTransformed
 	: node.allowsCtx ? pipeChecked
 	: pipeApplied
 
@@ -513,7 +513,7 @@ export const pipe: TraversePipe = (ctx, node, data) => {
 		applyPipedResolution(ctx, node, data)
 		return errorsOf(ctx)
 	}
-	if (!node.transforms) return data
+	if (!node.tfs) return data
 	// a morph's output can share objects an earlier pass cached
 	const { tfdById, isTree } = ctx
 	ctx.tfdById = undefined
@@ -950,7 +950,7 @@ export const applyCyclic = <ctx extends InternalTraversal>(
 	ctx: ctx
 ): ctx => {
 	// a rerun would transform each value Apply found valid again
-	if (node.transforms) {
+	if (node.tfs) {
 		applyResolution(node.trackedId, node, data, ctx)
 		return ctx
 	}
@@ -1010,11 +1010,11 @@ export const applyValue = (
 	node: BaseNode,
 	data: unknown,
 	ctx: InternalTraversal,
-	transforms = true
+	tfs = true
 ): void => {
 	if (
-		node.transforms &&
-		(transforms && (node.hasMorph || node.hasAlias) ?
+		node.tfs &&
+		(tfs && (node.hasMorph || node.hasAlias) ?
 			transformIfAllowed(ctx, node, data)
 		:	allowsInBranch(ctx, node, data))
 	)
@@ -1128,7 +1128,7 @@ interface DefaultedValue {
 
 export type DefaultedNode = Pick<
 	BaseNode,
-	"alters" | "hasAlias" | "allowsCtx" | "ctxMorph" | "transforms"
+	"alters" | "hasAlias" | "allowsCtx" | "ctxMorph" | "tfs"
 >
 
 export const computeDefaultValueMorph = (
@@ -1161,7 +1161,7 @@ export const computeDefaultValueMorph = (
 	return (data, ctx) => {
 		// transforming a default through a cyclic value can reach this morph again
 		if (transformingDefault) return data
-		if (!thunk && !node.transforms) {
+		if (!thunk && !node.tfs) {
 			data[key] = defaultInput
 			return data
 		}

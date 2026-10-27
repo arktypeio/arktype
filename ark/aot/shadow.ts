@@ -252,7 +252,7 @@ const typeHandlerOf = (
 ): ProxyHandler<any> => {
 	const membersByKey: Record<PropertyKey, unknown> = Object.create(null)
 	// allows runs no morph, so only a validation that can write the input copies it
-	const isWritten = inArktype(() => pair.original.transforms)
+	const isWritten = inArktype(() => pair.original.tfs)
 	const validator =
 		(...path: string[]) =>
 		(data: unknown) =>

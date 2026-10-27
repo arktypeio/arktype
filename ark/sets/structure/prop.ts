@@ -41,13 +41,13 @@ export const intersectProps = (
 	}
 
 	const defaultIntersection =
-		l.hasDefault() ?
-			r.hasDefault() ?
+		l.hasDef() ?
+			r.hasDef() ?
 				l.default === r.default ?
 					l.default
 				:	throwParseError(writeDefaultIntersectionMessage(l.default, r.default))
 			:	l.default
-		: r.hasDefault() ? r.default
+		: r.hasDef() ? r.default
 		: unset
 
 	// value allows undefined only if both did, whatever ctx.$ configures
