@@ -3,9 +3,9 @@ name: leaderboard
 # Every Monday, reruns the independent suites that measure bundle size (the
 # login form, schemabenchmarks.dev's download and Sury's bundle) with each
 # rival at its newest release and ArkType at main, rewrites the leaderboard
-# from them and checks the site's claims against it. A changed leaderboard
-# opens a pull request, and a claim the new standings don't back fails the run
-# once that request is open. The speed and startup suites count instructions
+# from them and checks the site's claims against it. A changed leaderboard is
+# pushed to bench/leaderboard with an issue linking its pull request, and a
+# claim the new standings don't back fails the run once that issue is open. The speed and startup suites count instructions
 # with perf, which needs hardware counters hosted runners don't expose, so
 # they're rerun by hand (ark/repo/bench/external/README.md, "Reproduce").
 
@@ -29,7 +29,7 @@ jobs:
     timeout-minutes: 90
     permissions:
       contents: write
-      pull-requests: write
+      issues: write
     steps:
       - name: Checkout repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -73,7 +73,7 @@ jobs:
         continue-on-error: true
         run: node ark/docs/lib/bench/headline.ts > "$RUNNER_TEMP/after.md" 2>&1
 
-      - name: Write the pull request's body
+      - name: Write the issue's body
         env:
           CLAIMS: ${{ steps.claims.outcome }}
         run: |
@@ -93,17 +93,35 @@ jobs:
             cat "$RUNNER_TEMP/before.md"
           } > "$RUNNER_TEMP/body.md"
 
-      - name: Open a pull request
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
-        with:
-          branch: bench/leaderboard
-          delete-branch: true
-          add-paths: |
-            ark/docs/lib/bench/leaderboard.json
-            ark/repo/bench/external/results/newest
-          commit-message: "bench: rerun the size suites at each rival's newest release"
-          title: "bench: rerun the size suites at each rival's newest release"
-          body-path: ${{ runner.temp }}/body.md
+      # the organization doesn't let Actions open pull requests, so the
+      # leaderboard goes to a branch and an issue links the request to open
+      - name: Push a changed leaderboard
+        id: push
+        run: |
+          git add ark/docs/lib/bench/leaderboard.json ark/repo/bench/external/results/newest
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -qm "bench: rerun the size suites at each rival's newest release"
+          git push -f origin HEAD:refs/heads/bench/leaderboard
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Open or update its issue
+        if: steps.push.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: "bench: rerun the size suites at each rival's newest release"
+        run: |
+          {
+            echo "[Open the pull request from \`bench/leaderboard\`](https://github.com/$GITHUB_REPOSITORY/compare/main...bench/leaderboard?expand=1)."
+            echo
+            cat "$RUNNER_TEMP/body.md"
+          } > "$RUNNER_TEMP/issue.md"
+          number=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue edit "$number" --body-file "$RUNNER_TEMP/issue.md"
+          else
+            gh issue create --title "$TITLE" --body-file "$RUNNER_TEMP/issue.md"
+          fi
 
       - name: Fail on an unbacked claim
         if: steps.claims.outcome == 'failure'

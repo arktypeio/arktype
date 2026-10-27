@@ -44,14 +44,13 @@ in `results/newest/`, with each suite's commit, date and installed versions
 in `run.json`, and rewrites `ark/docs/lib/bench/leaderboard.json`, where
 each rival keeps its smaller bundle of its pinned, 2026-10-24 and newest
 installs and ArkType's rows are the run's. If the leaderboard changed, it
-opens a pull request listing the site's claims before and after
+pushes it to `bench/leaderboard` and opens or updates an issue linking the
+pull request to open, with the site's claims before and after
 (`ark/docs/lib/bench/headline.ts`), and the run fails if the new standings
 don't back a claim. The speed and startup suites count instructions with
 perf, and hosted runners don't expose hardware counters, so they're rerun by
-hand on a machine that does, with `--newest` keeping them the same way. A
-pull request the workflow opens needs "Allow GitHub Actions to create and
-approve pull requests" in the repository's settings, and doesn't trigger
-`pr.yml`.
+hand on a machine that does, with `--newest` keeping them the same way. Actions can't open pull requests in this
+organization, which is why it goes through an issue.
 
 **Expected variance.** Load doesn't move an instruction count, but a run's
 tiering and garbage collection do. Every suite rerun from a clean clone
