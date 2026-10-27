@@ -81,6 +81,18 @@ To make the loop shorter:
 - Run tests in [shadow mode](/docs/precompile/advanced#shadow-mode), which fails a test wherever a precompiled validator would behave otherwise than arktype.
 - Give your agent the [ArkType skill](/docs/agents) so it writes definitions the build accepts on the first try.
 
+## Build time
+
+Precompiling moves creating your Types from your program's startup to your build, so a build takes longer. <Claim id="buildTimeApp" />
+
+- <Claim id="buildTimeProduction" />
+- <Claim id="buildTimeDev" />
+- <Claim id="buildTimeWatch" />
+
+<Claim id="buildTimeMedium" /> Turbopack runs the loader in a pool of processes,
+once for the client and once for the server, so a Next build precompiles each
+module twice.
+
 ## How a validator differs
 
 A standalone validator validates, asserts and implements Standard Schema as the Type it replaces does. It doesn't compose or introspect: it lacks methods like `.and` and `.extends`, and its error messages say what failed without printing the value. The build fails wherever it sees your program rely on what a validator lacks. See [Validators](/docs/precompile/validators).

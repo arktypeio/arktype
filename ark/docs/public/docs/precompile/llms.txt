@@ -98,6 +98,18 @@ To make the loop shorter:
 - Run tests in [shadow mode](https://arktype.io/docs/precompile/advanced#shadow-mode), which fails a test wherever a precompiled validator would behave otherwise than arktype.
 - Give your agent the [ArkType skill](https://arktype.io/docs/agents) so it writes definitions the build accepts on the first try.
 
+## Build time
+
+Precompiling moves creating your Types from your program's startup to your build, so a build takes longer. We timed an app of 1012 Types: 22 copies of our startup benchmark's SaaS schemas, each Type validating a request in a handler. Each figure is a median, with the plugin rather than without it, on Node 25 with 16 cores.
+
+- A cold production build took 7.3 s rather than 414 ms with Vite 8, 8.2 s rather than 138 ms with esbuild and 20.3 s rather than 5.6 s with Next 16 on Turbopack.
+- Vite's dev server loaded the app in a browser in 7.1 s rather than 1.1 s, and the page showed an edit to the module every Type in its copy imports in 2.6 s rather than 374 ms. Next's took 15.2 s rather than 4.1 s to load and 488 ms rather than 37 ms to show the edit.
+- esbuild's watch rebuild after that edit took 1.7 s rather than 57 ms, and 5.7 s rather than 60 ms for a production bundle, which reads the whole app again to leave out what no read needs.
+
+At 92 Types, the plugin added 1.0 s to Vite's production build, 1.3 s to esbuild's and 2.5 s to Next's, and 256 ms to an edit in Vite's dev server. Turbopack runs the loader in a pool of processes,
+once for the client and once for the server, so a Next build precompiles each
+module twice.
+
 ## How a validator differs
 
 A standalone validator validates, asserts and implements Standard Schema as the Type it replaces does. It doesn't compose or introspect: it lacks methods like `.and` and `.extends`, and its error messages say what failed without printing the value. The build fails wherever it sees your program rely on what a validator lacks. See [Validators](https://arktype.io/docs/precompile/validators).

@@ -1,0 +1,411 @@
+{
+	"commit": "febe60baf",
+	"types": {
+		"small": 11,
+		"medium": 92,
+		"large": 1012
+	},
+	"domains": {
+		"small": 1,
+		"medium": 2,
+		"large": 22
+	},
+	"cells": {
+		"build esbuild small off build": {
+			"median": 119,
+			"min": 108,
+			"max": 130,
+			"n": 7
+		},
+		"build esbuild small after build": {
+			"median": 524,
+			"min": 499,
+			"max": 573,
+			"n": 7
+		},
+		"build vite small off build": {
+			"median": 362,
+			"min": 338,
+			"max": 403,
+			"n": 7
+		},
+		"build vite small after build": {
+			"median": 653,
+			"min": 627,
+			"max": 683,
+			"n": 7
+		},
+		"build next small off build": {
+			"median": 4682,
+			"min": 4571,
+			"max": 4801,
+			"n": 7
+		},
+		"build next small after build": {
+			"median": 5867,
+			"min": 5731,
+			"max": 6052,
+			"n": 7
+		},
+		"build esbuild medium off build": {
+			"median": 125,
+			"min": 120,
+			"max": 156,
+			"n": 7
+		},
+		"build esbuild medium after build": {
+			"median": 1413,
+			"min": 1357,
+			"max": 1618,
+			"n": 7
+		},
+		"build vite medium off build": {
+			"median": 381,
+			"min": 356,
+			"max": 462,
+			"n": 7
+		},
+		"build vite medium after build": {
+			"median": 1385,
+			"min": 1358,
+			"max": 2576,
+			"n": 7
+		},
+		"build next medium off build": {
+			"median": 4756,
+			"min": 4726,
+			"max": 4805,
+			"n": 7
+		},
+		"build next medium after build": {
+			"median": 7221,
+			"min": 7191,
+			"max": 7369,
+			"n": 7
+		},
+		"build esbuild large off build": {
+			"median": 138,
+			"min": 129,
+			"max": 197,
+			"n": 7
+		},
+		"build esbuild large after build": {
+			"median": 8174,
+			"min": 7940,
+			"max": 8352,
+			"n": 7
+		},
+		"build vite large off build": {
+			"median": 414,
+			"min": 397,
+			"max": 449,
+			"n": 7
+		},
+		"build vite large after build": {
+			"median": 7340,
+			"min": 7017,
+			"max": 7547,
+			"n": 7
+		},
+		"build next large off build": {
+			"median": 5631,
+			"min": 5587,
+			"max": 6034,
+			"n": 7
+		},
+		"build next large after build": {
+			"median": 20250,
+			"min": 19984,
+			"max": 22783,
+			"n": 7
+		},
+		"dev vite small off startup": {
+			"median": 509,
+			"min": 389,
+			"max": 570,
+			"n": 5
+		},
+		"dev vite small off hmr": {
+			"median": 61,
+			"min": 56,
+			"max": 68,
+			"n": 30
+		},
+		"dev vite small after startup": {
+			"median": 712,
+			"min": 685,
+			"max": 779,
+			"n": 5
+		},
+		"dev vite small after hmr": {
+			"median": 109,
+			"min": 100,
+			"max": 132,
+			"n": 30
+		},
+		"dev next small off startup": {
+			"median": 3265,
+			"min": 3234,
+			"max": 3342,
+			"n": 5
+		},
+		"dev next small off hmr": {
+			"median": 23,
+			"min": 19,
+			"max": 59,
+			"n": 30
+		},
+		"dev next small after startup": {
+			"median": 4735,
+			"min": 4646,
+			"max": 4907,
+			"n": 5
+		},
+		"dev next small after hmr": {
+			"median": 91,
+			"min": 70,
+			"max": 405,
+			"n": 30
+		},
+		"dev vite medium off startup": {
+			"median": 585,
+			"min": 480,
+			"max": 600,
+			"n": 5
+		},
+		"dev vite medium off hmr": {
+			"median": 100,
+			"min": 96,
+			"max": 116,
+			"n": 30
+		},
+		"dev vite medium after startup": {
+			"median": 1426,
+			"min": 1391,
+			"max": 1620,
+			"n": 5
+		},
+		"dev vite medium after hmr": {
+			"median": 356,
+			"min": 322,
+			"max": 463,
+			"n": 30
+		},
+		"dev next medium off startup": {
+			"median": 3249,
+			"min": 3121,
+			"max": 3538,
+			"n": 5
+		},
+		"dev next medium off hmr": {
+			"median": 26,
+			"min": 24,
+			"max": 65,
+			"n": 30
+		},
+		"dev next medium after startup": {
+			"median": 6049,
+			"min": 5385,
+			"max": 9710,
+			"n": 5
+		},
+		"dev next medium after hmr": {
+			"median": 251,
+			"min": 185,
+			"max": 578,
+			"n": 30
+		},
+		"dev vite large off startup": {
+			"median": 1055,
+			"min": 977,
+			"max": 1202,
+			"n": 5
+		},
+		"dev vite large off hmr": {
+			"median": 374,
+			"min": 301,
+			"max": 745,
+			"n": 30
+		},
+		"dev vite large after startup": {
+			"median": 7104,
+			"min": 6439,
+			"max": 7682,
+			"n": 5
+		},
+		"dev vite large after hmr": {
+			"median": 2637,
+			"min": 2577,
+			"max": 2853,
+			"n": 30
+		},
+		"dev next large off startup": {
+			"median": 4115,
+			"min": 3997,
+			"max": 4353,
+			"n": 5
+		},
+		"dev next large off hmr": {
+			"median": 37,
+			"min": 32,
+			"max": 60,
+			"n": 30
+		},
+		"dev next large after startup": {
+			"median": 15243,
+			"min": 14256,
+			"max": 15915,
+			"n": 5
+		},
+		"dev next large after hmr": {
+			"median": 488,
+			"min": 382,
+			"max": 814,
+			"n": 30
+		},
+		"edit esbuild small development off startup": {
+			"median": 52,
+			"min": 49,
+			"max": 53,
+			"n": 3
+		},
+		"edit esbuild small development off rebuild": {
+			"median": 38,
+			"min": 32,
+			"max": 51,
+			"n": 30
+		},
+		"edit esbuild small development after startup": {
+			"median": 351,
+			"min": 338,
+			"max": 353,
+			"n": 3
+		},
+		"edit esbuild small development after rebuild": {
+			"median": 87,
+			"min": 79,
+			"max": 94,
+			"n": 30
+		},
+		"edit esbuild small production off startup": {
+			"median": 51,
+			"min": 48,
+			"max": 57,
+			"n": 3
+		},
+		"edit esbuild small production off rebuild": {
+			"median": 40,
+			"min": 36,
+			"max": 50,
+			"n": 30
+		},
+		"edit esbuild small production after startup": {
+			"median": 343,
+			"min": 336,
+			"max": 361,
+			"n": 3
+		},
+		"edit esbuild small production after rebuild": {
+			"median": 95,
+			"min": 85,
+			"max": 116,
+			"n": 30
+		},
+		"edit esbuild medium development off startup": {
+			"median": 53,
+			"min": 53,
+			"max": 61,
+			"n": 3
+		},
+		"edit esbuild medium development off rebuild": {
+			"median": 40,
+			"min": 35,
+			"max": 48,
+			"n": 30
+		},
+		"edit esbuild medium development after startup": {
+			"median": 817,
+			"min": 805,
+			"max": 836,
+			"n": 3
+		},
+		"edit esbuild medium development after rebuild": {
+			"median": 287,
+			"min": 254,
+			"max": 340,
+			"n": 30
+		},
+		"edit esbuild medium production off startup": {
+			"median": 52,
+			"min": 51,
+			"max": 54,
+			"n": 3
+		},
+		"edit esbuild medium production off rebuild": {
+			"median": 41,
+			"min": 35,
+			"max": 52,
+			"n": 30
+		},
+		"edit esbuild medium production after startup": {
+			"median": 1106,
+			"min": 1099,
+			"max": 1313,
+			"n": 3
+		},
+		"edit esbuild medium production after rebuild": {
+			"median": 621,
+			"min": 558,
+			"max": 691,
+			"n": 30
+		},
+		"edit esbuild large development off startup": {
+			"median": 72,
+			"min": 70,
+			"max": 75,
+			"n": 3
+		},
+		"edit esbuild large development off rebuild": {
+			"median": 57,
+			"min": 42,
+			"max": 64,
+			"n": 30
+		},
+		"edit esbuild large development after startup": {
+			"median": 4419,
+			"min": 4295,
+			"max": 4497,
+			"n": 3
+		},
+		"edit esbuild large development after rebuild": {
+			"median": 1669,
+			"min": 1575,
+			"max": 1813,
+			"n": 30
+		},
+		"edit esbuild large production off startup": {
+			"median": 71,
+			"min": 67,
+			"max": 85,
+			"n": 3
+		},
+		"edit esbuild large production off rebuild": {
+			"median": 60,
+			"min": 52,
+			"max": 71,
+			"n": 30
+		},
+		"edit esbuild large production after startup": {
+			"median": 7551,
+			"min": 7184,
+			"max": 7613,
+			"n": 3
+		},
+		"edit esbuild large production after rebuild": {
+			"median": 5743,
+			"min": 5308,
+			"max": 11072,
+			"n": 30
+		}
+	}
+}

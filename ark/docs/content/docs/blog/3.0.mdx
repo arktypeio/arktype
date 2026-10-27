@@ -95,7 +95,7 @@ An agent's training always lags a release. The [skill](/docs/agents#skill) teach
 
 ### What it costs
 
-- **A build step**: a plugin in the bundler you already run, set up once, and the time each build takes.
+- **A build step**: a plugin in the bundler you already run, set up once, and [the time each build takes](/docs/precompile#build-time).
 - **Definitions known only at runtime** fail a standalone build. Keep them dynamic, or build with `runtime: "arktype"`.
 - **A standalone validator** validates, asserts and is a Standard Schema, but doesn't compose or introspect at runtime, its messages don't print the value and it has no locales. `runtime: "arktype"` keeps the whole Type API.
 - **Without the plugin**: <Claim id="dynamicSize" />
