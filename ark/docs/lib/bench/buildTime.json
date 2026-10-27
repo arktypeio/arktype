@@ -17,7 +17,7 @@
 			"max": 130,
 			"n": 7
 		},
-		"build esbuild small after build": {
+		"build esbuild small on build": {
 			"median": 524,
 			"min": 499,
 			"max": 573,
@@ -29,7 +29,7 @@
 			"max": 403,
 			"n": 7
 		},
-		"build vite small after build": {
+		"build vite small on build": {
 			"median": 653,
 			"min": 627,
 			"max": 683,
@@ -41,7 +41,7 @@
 			"max": 4801,
 			"n": 7
 		},
-		"build next small after build": {
+		"build next small on build": {
 			"median": 5867,
 			"min": 5731,
 			"max": 6052,
@@ -53,7 +53,7 @@
 			"max": 156,
 			"n": 7
 		},
-		"build esbuild medium after build": {
+		"build esbuild medium on build": {
 			"median": 1413,
 			"min": 1357,
 			"max": 1618,
@@ -65,7 +65,7 @@
 			"max": 462,
 			"n": 7
 		},
-		"build vite medium after build": {
+		"build vite medium on build": {
 			"median": 1385,
 			"min": 1358,
 			"max": 2576,
@@ -77,7 +77,7 @@
 			"max": 4805,
 			"n": 7
 		},
-		"build next medium after build": {
+		"build next medium on build": {
 			"median": 7221,
 			"min": 7191,
 			"max": 7369,
@@ -89,7 +89,7 @@
 			"max": 197,
 			"n": 7
 		},
-		"build esbuild large after build": {
+		"build esbuild large on build": {
 			"median": 8174,
 			"min": 7940,
 			"max": 8352,
@@ -101,7 +101,7 @@
 			"max": 449,
 			"n": 7
 		},
-		"build vite large after build": {
+		"build vite large on build": {
 			"median": 7340,
 			"min": 7017,
 			"max": 7547,
@@ -113,7 +113,7 @@
 			"max": 6034,
 			"n": 7
 		},
-		"build next large after build": {
+		"build next large on build": {
 			"median": 20250,
 			"min": 19984,
 			"max": 22783,
@@ -131,13 +131,13 @@
 			"max": 68,
 			"n": 30
 		},
-		"dev vite small after startup": {
+		"dev vite small on startup": {
 			"median": 712,
 			"min": 685,
 			"max": 779,
 			"n": 5
 		},
-		"dev vite small after hmr": {
+		"dev vite small on hmr": {
 			"median": 109,
 			"min": 100,
 			"max": 132,
@@ -155,13 +155,13 @@
 			"max": 59,
 			"n": 30
 		},
-		"dev next small after startup": {
+		"dev next small on startup": {
 			"median": 4735,
 			"min": 4646,
 			"max": 4907,
 			"n": 5
 		},
-		"dev next small after hmr": {
+		"dev next small on hmr": {
 			"median": 91,
 			"min": 70,
 			"max": 405,
@@ -179,13 +179,13 @@
 			"max": 116,
 			"n": 30
 		},
-		"dev vite medium after startup": {
+		"dev vite medium on startup": {
 			"median": 1426,
 			"min": 1391,
 			"max": 1620,
 			"n": 5
 		},
-		"dev vite medium after hmr": {
+		"dev vite medium on hmr": {
 			"median": 356,
 			"min": 322,
 			"max": 463,
@@ -203,13 +203,13 @@
 			"max": 65,
 			"n": 30
 		},
-		"dev next medium after startup": {
+		"dev next medium on startup": {
 			"median": 6049,
 			"min": 5385,
 			"max": 9710,
 			"n": 5
 		},
-		"dev next medium after hmr": {
+		"dev next medium on hmr": {
 			"median": 251,
 			"min": 185,
 			"max": 578,
@@ -227,13 +227,13 @@
 			"max": 745,
 			"n": 30
 		},
-		"dev vite large after startup": {
+		"dev vite large on startup": {
 			"median": 7104,
 			"min": 6439,
 			"max": 7682,
 			"n": 5
 		},
-		"dev vite large after hmr": {
+		"dev vite large on hmr": {
 			"median": 2637,
 			"min": 2577,
 			"max": 2853,
@@ -251,13 +251,13 @@
 			"max": 60,
 			"n": 30
 		},
-		"dev next large after startup": {
+		"dev next large on startup": {
 			"median": 15243,
 			"min": 14256,
 			"max": 15915,
 			"n": 5
 		},
-		"dev next large after hmr": {
+		"dev next large on hmr": {
 			"median": 488,
 			"min": 382,
 			"max": 814,
@@ -275,13 +275,13 @@
 			"max": 51,
 			"n": 30
 		},
-		"edit esbuild small development after startup": {
+		"edit esbuild small development on startup": {
 			"median": 351,
 			"min": 338,
 			"max": 353,
 			"n": 3
 		},
-		"edit esbuild small development after rebuild": {
+		"edit esbuild small development on rebuild": {
 			"median": 87,
 			"min": 79,
 			"max": 94,
@@ -299,13 +299,13 @@
 			"max": 50,
 			"n": 30
 		},
-		"edit esbuild small production after startup": {
+		"edit esbuild small production on startup": {
 			"median": 343,
 			"min": 336,
 			"max": 361,
 			"n": 3
 		},
-		"edit esbuild small production after rebuild": {
+		"edit esbuild small production on rebuild": {
 			"median": 95,
 			"min": 85,
 			"max": 116,
@@ -323,13 +323,13 @@
 			"max": 48,
 			"n": 30
 		},
-		"edit esbuild medium development after startup": {
+		"edit esbuild medium development on startup": {
 			"median": 817,
 			"min": 805,
 			"max": 836,
 			"n": 3
 		},
-		"edit esbuild medium development after rebuild": {
+		"edit esbuild medium development on rebuild": {
 			"median": 287,
 			"min": 254,
 			"max": 340,
@@ -347,13 +347,13 @@
 			"max": 52,
 			"n": 30
 		},
-		"edit esbuild medium production after startup": {
+		"edit esbuild medium production on startup": {
 			"median": 1106,
 			"min": 1099,
 			"max": 1313,
 			"n": 3
 		},
-		"edit esbuild medium production after rebuild": {
+		"edit esbuild medium production on rebuild": {
 			"median": 621,
 			"min": 558,
 			"max": 691,
@@ -371,13 +371,13 @@
 			"max": 64,
 			"n": 30
 		},
-		"edit esbuild large development after startup": {
+		"edit esbuild large development on startup": {
 			"median": 4419,
 			"min": 4295,
 			"max": 4497,
 			"n": 3
 		},
-		"edit esbuild large development after rebuild": {
+		"edit esbuild large development on rebuild": {
 			"median": 1669,
 			"min": 1575,
 			"max": 1813,
@@ -395,13 +395,13 @@
 			"max": 71,
 			"n": 30
 		},
-		"edit esbuild large production after startup": {
+		"edit esbuild large production on startup": {
 			"median": 7551,
 			"min": 7184,
 			"max": 7613,
 			"n": 3
 		},
-		"edit esbuild large production after rebuild": {
+		"edit esbuild large production on rebuild": {
 			"median": 5743,
 			"min": 5308,
 			"max": 11072,

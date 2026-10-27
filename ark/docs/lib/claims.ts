@@ -442,7 +442,9 @@ const independentResults = `${listOf(
  * run started at a 1-minute load under 4. Medians of 7 cold builds per arm;
  * dev servers timed from spawn until headless Chromium ran every handler, 5
  * starts per arm, and edits from writing the shared module until the page
- * showed it, 30 per arm. No run failed or was dropped.
+ * showed it, 30 per arm. No run failed or was dropped. `pnpm benchBuildTime`
+ * reruns it (ark/repo/bench/buildTime), and `pnpm benchBuildTime summarize
+ * febe60baf` rewrites buildTime.json from this run's rows there.
  */
 const buildTimeOf = (cell: string): number => {
 	const stats = (
@@ -457,10 +459,10 @@ const durationText = (ms: number) =>
 
 // with the plugin, then without, e.g. "7.3 s rather than 414 ms"
 const builtWith = (cell: (arm: string) => string) =>
-	`${durationText(buildTimeOf(cell("after")))} rather than ${durationText(buildTimeOf(cell("off")))}`
+	`${durationText(buildTimeOf(cell("on")))} rather than ${durationText(buildTimeOf(cell("off")))}`
 
 const addedBy = (cell: (arm: string) => string) =>
-	durationText(buildTimeOf(cell("after")) - buildTimeOf(cell("off")))
+	durationText(buildTimeOf(cell("on")) - buildTimeOf(cell("off")))
 
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
