@@ -192,7 +192,7 @@ const Signup = type({
 
 ## Error messages
 
-`.configure({ message })` replaces a Type's whole message, and `.describe()` what follows "must be". Each applies wherever that Type is used, including a precompiled build. A message on a key's value applies when the value is wrong, not when the key is missing, which reads `terms is missing`. To use it then too, configure the `required` code in the config module, where its function receives the missing key's `propString` and the value's `valueMeta`:
+`.configure({ message })` replaces a Type's whole message, and `.describe()` what follows "must be". Each applies wherever that Type is used, including a precompiled build. A message on a key's value applies when the value is wrong, not when the key is missing, which reads `terms is missing`. To use it then too, configure the `required` code in the config module, where its function receives the missing key's `propString` and the `valueMeta` of the key's whole value, so configure that value last, after any `.pipe()` or `.to()`:
 
 ```ts
 import { configure } from "arktype/config"
