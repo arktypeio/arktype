@@ -27,7 +27,7 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you chain two right bounds, like `number < 5 < 6`? [Group them](#a-second-right-bound-throws).
 - Do you embed an async Standard Schema, like a Zod schema with an async refinement? [It throws](#standard-schemas-must-validate-synchronously).
 - Do you store or snapshot `toJsonSchema()`, `.expression` or `.json`, or convert `NaN` or `Infinity` literals to JSON Schema? See [Output](#output).
-- Do you rely on what `.required()`, `.map()` or arkregex infer? See [Inference](#inference) and [ArkRegex](#arkregex).
+- Do you rely on what `.required()`, `.map()` or arkregex infer, or reference a Type allowing `undefined` at a key without `exactOptionalPropertyTypes`? See [Inference](#inference) and [ArkRegex](#arkregex).
 - Do you import from `@ark/schema`, `@ark/util` or a deep path like `arktype/internal/...`? See [@ark/schema](#arkschema), [@ark/util](#arkutil) and [Deep imports](#deep-imports).
 - Do you use `@ark/json-schema`, `@ark/fast-check` or attest, or run attest on TypeScript 7? See their sections below.
 
@@ -92,7 +92,7 @@ Update snapshots of those messages, and read `summary` from the errors calling t
 
 ### Errors are plain objects
 
-The errors in `issues` are plain objects without getters or methods, holding the keys their JSON had. `ArkError` is exported only as a type, which comparing `code` narrows as `hasCode` did, and `messageIn` writes one in a locale:
+The errors in `issues` are plain objects without getters or methods, holding the keys their JSON had plus `propString`, before `expected`, so serialized issues, like the `errors` `@hono/arktype-validator` responds with, include it. `ArkError` is exported only as a type, which comparing `code` narrows as `hasCode` did, and `messageIn` writes one in a locale:
 
 ```ts
 import { messageIn, type } from "arktype"
@@ -647,6 +647,7 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - `.required()` makes a defaulted key required in `inferIn`, as it already did at runtime: `type({ foo: "string = 'bar'" }).required()` infers `{ foo: string }` as input, before: `{ foo?: string }`.
 - `.map()` on a union infers each branch: `type({ kind: "'a'", a: "string" }).or({ kind: "'b'", b: "number" }).map(p => p)` is `Type<{ kind: "a"; a: string } | { kind: "b"; b: number }>`, before: `Type<{ kind: "a" | "b" }>`, and the callback's argument holds each branch's props, not only those every branch shares.
 - A morph that returns `any` infers `any` as its output: `type({ a: ["string", "=>", s => JSON.parse(s)] }).infer` is `{ a: any }`, before: `{ a: (In: string) => Out<any> }`.
+- Without TypeScript's `exactOptionalPropertyTypes`, a key or index signature whose value is a Type allowing `undefined` infers it: `type({ "[string]": Settings.or("undefined") }).infer` is `{ [k: string]: Settings | undefined }`, before: `{ [k: string]: Settings }`, so `settings[k].isHidden` needs a check, as TypeScript's "Object is possibly 'undefined'" says.
 
 ## @ark/schema
 
