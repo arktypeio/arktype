@@ -120,6 +120,9 @@ const leaderboardsOf = (counts: (suite: Suite) => boolean) =>
 		size: leaderboardOf("size", counts)
 	}) satisfies Record<CategoryId, Leaderboard>
 
+/** when the published rows were last measured, as YYYY-MM-DD */
+export const measured: string = data.measured
+
 /** the standings the headline and the board state, over independent suites */
 export const leaderboards = leaderboardsOf(independentSuites)
 

@@ -22,6 +22,7 @@ import {
 	leaderboards,
 	leadDependsOn,
 	leads,
+	measured,
 	resultsOf,
 	rowsOf,
 	suiteRowsOf,
@@ -583,6 +584,17 @@ export const claims = {
 } satisfies Record<string, Claim<string>>
 
 export type ClaimId = keyof typeof claims
+
+/** when the published standings were measured, beside each note citing them */
+export const standingsAsOf = {
+	date: measured,
+	text: `Standings as of ${new Date(measured).toLocaleDateString("en-US", {
+		timeZone: "UTC",
+		year: "numeric",
+		month: "long",
+		day: "numeric"
+	})}.`
+}
 
 /** the README section listing the headline's benchmarks and its rule */
 export const headlineMethod = {

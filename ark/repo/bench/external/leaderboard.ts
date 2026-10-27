@@ -1,7 +1,8 @@
 // gathers every row of the suites the README's "Best average" lists into
 // ark/docs/lib/bench/leaderboard.json, each library under one name and
 // ArkType only as its default production build, with each library's npm
-// downloads (downloads.ts); lib/claims.ts averages them
+// downloads (downloads.ts) and the date its rows were last measured;
+// lib/claims.ts averages them
 // node leaderboard.ts
 // With LEADERBOARD_FRESH, the directory reproduce.ts counts into, each suite
 // it holds results for reads them instead, ArkType's rows included, and the
@@ -516,6 +517,17 @@ const downloads = {
 	)
 }
 
+// when the published rows were last measured: the newest run's latest suite,
+// or today for a fresh run
+const measured =
+	freshDir ?
+		new Date().toISOString().slice(0, 10)
+	:	Object.values(
+			read("results/newest/run.json") as Record<string, { date: string }>
+		)
+			.map(run => run.date)
+			.reduce((l, r) => (l > r ? l : r))
+
 // formatted as the repo's prettier config formats it, so a rewrite passes lint
 const out =
 	freshDir ?
@@ -523,8 +535,11 @@ const out =
 	:	join(docs, "lib", "bench", "leaderboard.json")
 writeFileSync(
 	out,
-	await format(JSON.stringify({ sources, downloads, suites }, null, "\t"), {
-		...(await resolveConfig(out)),
-		filepath: out
-	})
+	await format(
+		JSON.stringify({ measured, sources, downloads, suites }, null, "\t"),
+		{
+			...(await resolveConfig(out)),
+			filepath: out
+		}
+	)
 )
