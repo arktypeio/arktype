@@ -7,6 +7,7 @@ import {
 	presetSizeRows,
 	sizeChart,
 	speedChart,
+	standingsAsOf,
 	type BenchmarkChart,
 	type ClaimId,
 	type Claim as ClaimValue
@@ -36,6 +37,7 @@ export const HeadlineNote = () => (
 	<div id="headline-note">
 		<p>
 			<ClaimText claim={claims.headlineNote} />{" "}
+			<time dateTime={standingsAsOf.date}>{standingsAsOf.text}</time>{" "}
 			<a href={headlineMethod.href} target="_blank" rel="noreferrer">
 				{headlineMethod.label} ↗
 			</a>

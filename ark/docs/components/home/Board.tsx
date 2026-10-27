@@ -10,6 +10,7 @@ import {
 	isPending,
 	leadsEvery,
 	medianOf,
+	standingsAsOf,
 	tieMargin,
 	type BarCategory,
 	type Category,
@@ -459,6 +460,7 @@ export const Board = () => (
 		</div>
 		<p id="board-note" className="board-note">
 			<ClaimText claim={claims.boardNote} />{" "}
+			<time dateTime={standingsAsOf.date}>{standingsAsOf.text}</time>{" "}
 			<a href={headlineMethod.href} target="_blank" rel="noreferrer">
 				{headlineMethod.label} ↗
 			</a>

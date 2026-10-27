@@ -29,6 +29,7 @@ import {
 	presetSizeRows,
 	sizeChart,
 	speedChart,
+	standingsAsOf,
 	type BenchmarkChart,
 	type Claim,
 	type ClaimId
@@ -341,7 +342,10 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 				{
 					type: "paragraph",
 					children: [
-						{ type: "text", value: `${claimMarkdown(claims.headlineNote)} ` },
+						{
+							type: "text",
+							value: `${claimMarkdown(claims.headlineNote)} ${standingsAsOf.text} `
+						},
 						{
 							type: "link",
 							url: headlineMethod.href,

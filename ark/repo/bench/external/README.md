@@ -43,15 +43,18 @@ ArkType at main, each rival at its newest release. `--newest` keeps the run
 in `results/newest/`, with each suite's commit, date and installed versions
 in `run.json`, and rewrites `ark/docs/lib/bench/leaderboard.json`, where
 each rival keeps its smaller bundle of its pinned, 2026-10-24 and newest
-installs and ArkType's rows are the run's. If the leaderboard changed, it
-opens a pull request listing the site's claims before and after
-(`ark/docs/lib/bench/headline.ts`), and the run fails if the new standings
-don't back a claim. The speed and startup suites count instructions with
-perf, and hosted runners don't expose hardware counters, so they're rerun by
-hand on a machine that does, with `--newest` keeping them the same way. A
-pull request the workflow opens needs "Allow GitHub Actions to create and
-approve pull requests" in the repository's settings, and doesn't trigger
-`pr.yml`.
+installs, ArkType's rows are the run's and `measured` is the run's date,
+which the site prints as "Standings as of". The job pushes nothing: it
+checks the site's claims against the new standings
+(`ark/docs/lib/bench/headline.ts`), shows the standings in its summary and
+uploads the run as the `leaderboard` artifact. If a claim isn't backed, such
+as a lead lost by more than the tie band, it opens an issue mentioning
+@ssalbdivad, or updates the open one, with the claims before and after, the
+standings and the run's link, and the run fails. Publishing new standings is
+a rerun by hand and a commit. The speed and startup suites count
+instructions with perf, and hosted runners don't expose hardware counters,
+so they're rerun by hand on a machine that does, with `--newest` keeping
+them the same way.
 
 **Expected variance.** Load doesn't move an instruction count, but a run's
 tiering and garbage collection do. Every suite rerun from a clean clone
