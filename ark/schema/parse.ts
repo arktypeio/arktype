@@ -116,8 +116,9 @@ export const registerNodeId = (prefix: string): NodeId => {
 
 export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[ctx.kind]
-	const input = (impl.applyConfig?.(ctx.def, ctx.$.resolvedConfig) ??
-		ctx.def) as dict & { meta?: ArkEnv.meta | string }
+	const input = (impl.applyConfig?.(ctx.def, ctx.$.cfg) ?? ctx.def) as dict & {
+		meta?: ArkEnv.meta | string
+	}
 
 	const metaInput = input.meta
 	const meta: ArkEnv.meta =
@@ -347,7 +348,7 @@ export const requiredPropOf = (
 export const resolveDescription = <node extends BaseNode>(node: node): node => {
 	if (node.isBasis() || includes(prestructuralKinds, node.kind)) {
 		if (
-			node.$.resolvedConfig[node.kind].description !==
+			node.$.cfg[node.kind].description !==
 			$ark.defaultConfig[node.kind].description
 		)
 			void node.description

@@ -218,7 +218,7 @@ export interface InternalScope {
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	get ambientAttachments(): Ark.boundTypeAttachments<$> | undefined {
 		if (!$arkTypeRegistry.typeAttachments) return
-		return this.cacheGetter(
+		return this.memo(
 			"ambientAttachments",
 			flatMorph(Object.keys($arkTypeRegistry.typeAttachments), (_, k) => [
 				k,
@@ -228,11 +228,11 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	}
 
 	private keywordConfigOf(qualifiedName: string): TypeMeta | undefined {
-		const { keywords } = this.resolvedConfig
+		const { keywords } = this.cfg
 		return hasOwn(keywords, qualifiedName) ? keywords[qualifiedName] : undefined
 	}
 
-	protected preparseOwnAliasEntry(alias: string, def: unknown): AliasDefEntry {
+	protected preparseEntry(alias: string, def: unknown): AliasDefEntry {
 		const firstParamIndex = alias.indexOf("<")
 		if (firstParamIndex === -1) {
 			if (hasArkKind(def, "module") || hasArkKind(def, "generic"))

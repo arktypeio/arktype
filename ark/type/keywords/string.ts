@@ -634,7 +634,7 @@ export const stringNumeric: stringNumeric.module = keywordModule(
 			const root = numericRoot()
 			// so its output is a number as number is configured
 			const input =
-				$ark.resolvedConfig!.numberAllowsInfinity ?
+				$ark.cfg!.numberAllowsInfinity ?
 					root
 				:	node("intersection", {
 						...root.inner,

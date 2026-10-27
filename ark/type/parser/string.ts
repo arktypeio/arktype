@@ -307,7 +307,7 @@ export const fullStringParse = (s: RuntimeState): InnerParseResult => {
 	if (s.finalizer === "=") result = parseDefault(s as RootedRuntimeState)
 	else if (s.finalizer === "?") result = [result, "?"]
 
-	s.scanner.shiftPastWhitespace()
+	s.scanner.skipSpace()
 	if (s.scanner.lookahead) {
 		// throw a parse error if non-whitespace characters made it here without being parsed
 		throwParseError(writeUnexpectedCharacterMessage(s.scanner.lookahead))

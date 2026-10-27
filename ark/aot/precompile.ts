@@ -1851,7 +1851,7 @@ export class Precompiler {
 			evaluated &&
 			(evaluated.problem ??
 				// configure() would throw after the first Type
-				(!applied && $ark.resolvedConfig ?
+				(!applied && $ark.cfg ?
 					"configure() is called after its argument creates a Type"
 				:	undefined))
 		const configuration: Configuration = {
@@ -1883,7 +1883,7 @@ export class Precompiler {
 			if (!problem) configure(evaluated.value as never)
 		}
 		// so a later configure() throws, as after the first Type
-		void ark.internal.resolvedConfig
+		void ark.internal.cfg
 		return configuration
 	}
 
@@ -5369,7 +5369,7 @@ const holdsOtherConfiguration = (files: string | undefined): boolean =>
 	threadConfiguration ?
 		threadConfiguration.files !== files
 	:	Object.keys($ark.config).length > 0 ||
-		(files !== undefined && $ark.resolvedConfig !== undefined)
+		(files !== undefined && $ark.cfg !== undefined)
 
 const ownPackagesByName: Partial<
 	Record<ArkPackage, [root: string, version: string]>

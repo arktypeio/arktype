@@ -815,7 +815,7 @@ const erroringScopeOf = (errors: Errors): BaseScope | undefined => {
 const inPlaceScopesByOnFail = new Map<unknown, Map<Errors, BaseScope>>()
 
 const inPlaceScopeOf = (node: BaseRoot, errors: Errors): BaseScope => {
-	const { onFail } = (erroringScopeOf(testedErrors) ?? node.$).resolvedConfig
+	const { onFail } = (erroringScopeOf(testedErrors) ?? node.$).cfg
 	let scopes = inPlaceScopesByOnFail.get(onFail)
 	if (!scopes) inPlaceScopesByOnFail.set(onFail, (scopes = new Map()))
 	let $ = scopes.get(errors)
@@ -835,7 +835,7 @@ const validatedOf = (
 	if (!$) return node
 	let resolved = node
 	while (resolved.is("alias")) resolved = resolved.resolution
-	const bound = $.bindReference(resolved)
+	const bound = $.bindRef(resolved)
 	return inPlace ? $.finalize(bound) : bound
 }
 

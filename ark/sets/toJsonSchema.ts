@@ -38,7 +38,7 @@ export const rootToJsonSchema = (
 	opts: ToJsonSchema.Options
 ): JsonSchema => {
 	const ctx: JsonSchemaContext = Object.assign(
-		mergeToJsonSchemaConfigs(node.$.resolvedConfig.toJsonSchema, opts),
+		mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, opts),
 		{ path: "", open: [], defNamesById: {}, defs: {} }
 	)
 	// a default handler throws naming where the part it can't convert is

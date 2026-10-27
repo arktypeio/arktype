@@ -345,7 +345,7 @@ const inPlaceRuntimeOf = (runtime: RootApplyRuntime): RootApplyRuntime => {
 }
 
 const writesInPlaceAsConfigured = (root: BaseRoot) =>
-	writesInPlace(root, root.$.resolvedConfig.mutatesInput)
+	writesInPlace(root, root.$.cfg.mutatesInput)
 
 const isWriter = (node: BaseNode): boolean =>
 	(node.is("structure") || node.is("sequence")) && node.transforms

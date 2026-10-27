@@ -1054,10 +1054,7 @@ class StandaloneArtifact {
 		this.comparedRoots = this.roots
 		for (const root of this.roots) {
 			// only a meta may override the configured onFail
-			if (
-				root.meta.onFail === undefined &&
-				root.onFail !== $ark.resolvedConfig!.onFail
-			)
+			if (root.meta.onFail === undefined && root.onFail !== $ark.cfg!.onFail)
 				throwParseError(writeUnprecompilableMessage("onFail"))
 		}
 		// what one root's units write is read once for every artifact writing it
@@ -2494,7 +2491,7 @@ ${writeFunction(
 	writesWithoutFallback(root: BaseRoot): boolean {
 		let fellBack = false
 		const fallback = flatMorph(
-			root.$.resolvedConfig.toJsonSchema.fallback,
+			root.$.cfg.toJsonSchema.fallback,
 			(code, handler: Fn) => [
 				code,
 				(ctx: object) => {

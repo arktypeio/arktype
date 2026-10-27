@@ -1005,7 +1005,9 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `applyStructuralOperation`    | `applyStructural`     |
 | `assertHasKind`               | `assertIs`            |
 | `baseInstantiation`           | `baseInstance`        |
+| `bindReference`               | `bindRef`             |
 | `boundOperandKind`            | `operandKind`         |
+| `cacheGetter`                 | `memo`                |
 | `checksTransformErrors`       | `checksErrs`          |
 | `collapsibleJson`             | `bareJson`            |
 | `collapsibleKey`              | `bareKey`             |
@@ -1080,6 +1082,7 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `isUsedBeforeJit`             | `usedPreJit`          |
 | `keyExpression`               | `keyExpr`             |
 | `lastMorphIfNode`             | `tail`                |
+| `lazyExports`                 | `_lazy`               |
 | `maxLengthNode`               | `maxNode`             |
 | `minLengthNode`               | `minNode`             |
 | `missListsBranches`           | `missLists`           |
@@ -1095,9 +1098,12 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `orderedKeys`                 | `keyOrder`            |
 | `orderedProps`                | `inOrder`             |
 | `outerEarliestAssumed`        | `assumedOuter`        |
+| `parseDefinition`             | `parseDef`            |
+| `parseOpenDefinition`         | `parseOpenDef`        |
 | `parseOwnDefinitionFormat`    | `parseOwn`            |
 | `postfixLength`               | `postLen`             |
 | `prefixLength`                | `preLen`              |
+| `preparseOwnAliasEntry`       | `preparseEntry`       |
 | `preparseOwnDefinitionFormat` | `preparseOwn`         |
 | `prestructurals`              | `preStruct`           |
 | `prevariadic`                 | `leading`             |
@@ -1111,6 +1117,7 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `requiresInfinityCheck`       | `checksInfinity`      |
 | `requiresInvalidDateCheck`    | `checksInvalid`       |
 | `requiresNaNCheck`            | `checksNaN`           |
+| `resolvedConfig`              | `cfg`                 |
 | `returnIfTransformFailed`     | `returnIfFailed`      |
 | `rootApplyStrategy`           | `applyMode`           |
 | `serializedValue`             | `jsUnit`              |
@@ -1118,7 +1125,7 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `shallowReferences`           | `shallowRefs`         |
 | `sharesTransformedKeys`       | `sharesTransforms`    |
 | `shiftUntilLookahead`         | `shiftUntilNext`      |
-| `shiftUntilNonWhitespace`     | `shiftPastWhitespace` |
+| `shiftUntilNonWhitespace`     | `skipSpace`           |
 | `structuralMorph`             | `structMorph`         |
 | `throwInternalOperandError`   | `throwOperandError`   |
 | `tracksTransforms`            | `tracksMorphs`        |

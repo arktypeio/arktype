@@ -233,7 +233,7 @@ export const parseGenericParamName = (
 	result: GenericParamDef[],
 	ctx: BaseParseContext
 ): GenericParamDef[] => {
-	scanner.shiftPastWhitespace()
+	scanner.skipSpace()
 	const name = shiftUntilTerminator(scanner)
 	if (name === "") {
 		// if we've reached the end of the string and have parsed at least one
@@ -242,7 +242,7 @@ export const parseGenericParamName = (
 		return throwParseError(emptyGenericParameterMessage)
 	}
 
-	scanner.shiftPastWhitespace()
+	scanner.skipSpace()
 
 	return _parseOptionalConstraint(scanner, name, result, ctx)
 }
@@ -281,7 +281,7 @@ const _parseOptionalConstraint = (
 	result: GenericParamDef[],
 	ctx: BaseParseContext
 ): GenericParamDef[] => {
-	scanner.shiftPastWhitespace()
+	scanner.skipSpace()
 	if (scanner.unscanned.startsWith(extendsToken))
 		scanner.jumpForward(extendsToken.length)
 	else {

@@ -69,7 +69,7 @@ export const required: setImplementationOf<Required.Declaration> = {
 
 export const optional: setImplementationOf<Optional.Declaration> = {
 	reduce: (inner, $) => {
-		if ($.resolvedConfig.exactOptionalPropertyTypes === false) {
+		if ($.cfg.exactOptionalPropertyTypes === false) {
 			const value = withUndefined(inner.value)
 			if (value !== inner.value)
 				return $.node("optional", { ...inner, value }, { prereduced: true })

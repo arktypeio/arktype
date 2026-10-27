@@ -42,7 +42,7 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	intrinsic: typeof intrinsic
 	config: ArkSchemaConfig
 	defaultConfig: ResolvedConfig
-	resolvedConfig?: ResolvedConfig
+	cfg?: ResolvedConfig
 	nodesById: typeof nodesById
 	sets?: SetEngine
 	encode?: (node: BaseRoot) => BaseRoot
@@ -121,7 +121,7 @@ export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 	const merged = mergeConfigs($ark.config, config)
 	// a config file evaluated again, like after a test runner resets its
 	// modules, can reapply what's already set
-	if ($ark.resolvedConfig && !isSameConfig(merged, $ark.config))
+	if ($ark.cfg && !isSameConfig(merged, $ark.config))
 		return throwParseError(configureAfterTypeMessage)
 	return Object.assign($ark.config, merged)
 }

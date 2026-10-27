@@ -62,7 +62,8 @@ export class Scanner<lookahead extends string = string> {
 			:	this.shiftUntil(s => s.lookahead in charOrSet)
 	}
 
-	shiftPastWhitespace(): string {
+	/** shifts past whitespace, returning what it shifted */
+	skipSpace(): string {
 		return this.shiftUntil(() => !(this.lookahead in whitespaceChars))
 	}
 

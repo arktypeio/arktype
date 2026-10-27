@@ -855,7 +855,7 @@ const fails = (outcome: Outcome) =>
 // the issues errors "all" finds, any of which errors "first" can return
 const allIssuesOf = (original: BaseRoot, data: unknown): KeptIssue[] =>
 	inArktype(() => {
-		const ctx = new ArkTraversal(data, original.$.resolvedConfig)
+		const ctx = new ArkTraversal(data, original.$.cfg)
 		if (original.hasAlias) applyCyclic(original, data, ctx)
 		else original.traverseApply(data, ctx)
 		return ctx._errors ? keptIssuesOf(ctx._errors as never, false) : []

@@ -63,10 +63,7 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 export class OptionalNode extends BaseProp<"optional"> {
 	constructor(...args: ConstructorParameters<typeof BaseProp>) {
 		super(...args)
-		if (
-			!$ark.sets &&
-			this.$.resolvedConfig.exactOptionalPropertyTypes === false
-		)
+		if (!$ark.sets && this.$.cfg.exactOptionalPropertyTypes === false)
 			throwParseError(missingSetEngineMessage)
 		if ("default" in this.inner) {
 			assertDefaultValueAssignability(
@@ -113,8 +110,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 	// without exactOptionalPropertyTypes, undefined is as absent as a missing
 	// key, so a default replaces it too
 	readonly defaultsUndefined: boolean =
-		this.hasDefault() &&
-		this.$.resolvedConfig.exactOptionalPropertyTypes === false
+		this.hasDefault() && this.$.cfg.exactOptionalPropertyTypes === false
 
 	// whether data has a value at this key, which a default leaves alone
 	holdsValue(data: object): boolean {
@@ -184,7 +180,7 @@ export const checkDefault = (
 			throwParseError(`Default ${errors.toLocaleString(en)}`)
 		}
 
-		const atPath = new ArkErrors(node.$.resolvedConfig)
+		const atPath = new ArkErrors(node.$.cfg)
 		atPath._merge(errors, [key])
 
 		// e.g. "Default for bar must be assignable to number (was string)"

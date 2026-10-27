@@ -283,4 +283,4 @@ registerLocaleRenderer({
 })
 
 // arktype may resolve its config before this module loads
-if ($ark.resolvedConfig) configureLocale($ark.config.locale, $ark.defaultConfig)
+if ($ark.cfg) configureLocale($ark.config.locale, $ark.defaultConfig)

@@ -178,7 +178,7 @@ contextualize(() => {
 			domain: "object",
 			required: [{ key: "a", value: "string" }]
 		})
-		const ctx = node.$.resolvedConfig.toJsonSchema
+		const ctx = node.$.cfg.toJsonSchema
 		attest(node.toJsonSchemaRecurse(ctx)).snap({
 			type: "object",
 			properties: { a: { type: "string" } },

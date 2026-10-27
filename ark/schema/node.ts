@@ -419,7 +419,7 @@ export abstract class BaseNode<
 	constructor(attachments: UnknownAttachmentsInput, $: BaseScope) {
 		const cache = new NodeCache()
 		cache.metaJson = attachments.metaJson
-		cache.onFail = attachments.meta.onFail ?? $.resolvedConfig.onFail
+		cache.onFail = attachments.meta.onFail ?? $.cfg.onFail
 		super(
 			(
 				data: any,
@@ -490,8 +490,7 @@ export abstract class BaseNode<
 		this.allows =
 			this.allowsCtx ?
 				data =>
-					allowsUntracked(this, data) ??
-					allowsInContext(this, data, this.$.resolvedConfig)
+					allowsUntracked(this, data) ?? allowsInContext(this, data, this.$.cfg)
 			:	data => (this.traverseAllows as any)(data)
 	}
 
@@ -802,7 +801,7 @@ export abstract class BaseNode<
 		return (this.cache.rootApply =
 			(this.unitFn &&
 				this.isRoot() &&
-				canJit(this.$.resolvedConfig) &&
+				canJit(this.$.cfg) &&
 				tryJit(() =>
 					compileRootApply($ark.inPlace?.applied(this as never) ?? this)
 				)) ||
@@ -810,7 +809,7 @@ export abstract class BaseNode<
 	}
 
 	protected createRootApply(): RootApply {
-		const byErrors = rootApplyRuntimeOf(this.$.resolvedConfig)
+		const byErrors = rootApplyRuntimeOf(this.$.cfg)
 		const runtime = $ark.inPlace?.runtimeOf(this as never, byErrors) ?? byErrors
 		const { Traversal } = runtime
 		switch (this.applyMode) {
@@ -823,7 +822,7 @@ export abstract class BaseNode<
 
 			case "contextual":
 				return (data, onFail = this.onFail) => {
-					if (allowsInContext(this, data, this.$.resolvedConfig)) return data
+					if (allowsInContext(this, data, this.$.cfg)) return data
 
 					return this.rejectRoot(data, onFail, runtime)
 				}
@@ -833,10 +832,9 @@ export abstract class BaseNode<
 				if (this.hasAlias) {
 					return (data, onFail = this.onFail) => {
 						const untracked = allowsAcyclic(this, data)
-						const allowed =
-							untracked ?? allowsInContext(this, data, this.$.resolvedConfig)
+						const allowed = untracked ?? allowsInContext(this, data, this.$.cfg)
 						if (!allowed) return this.rejectRoot(data, onFail, runtime)
-						const ctx = new Traversal(data, this.$.resolvedConfig)
+						const ctx = new Traversal(data, this.$.cfg)
 						ctx.tracksMorphs = untracked === undefined
 						const result = transformResolution(
 							ctx,
@@ -859,7 +857,7 @@ export abstract class BaseNode<
 						return this.optimisticApply(runtime)
 					if (this.is("union") && !this.discriminant) {
 						return (data, onFail = this.onFail) => {
-							const ctx = new Traversal(data, this.$.resolvedConfig)
+							const ctx = new Traversal(data, this.$.cfg)
 							const result = transform(ctx, this, data)
 							if (result === unset)
 								return this.rejectRoot(data, onFail, runtime)
@@ -869,7 +867,7 @@ export abstract class BaseNode<
 				}
 				return (data, onFail = this.onFail) => {
 					if (!this.allows(data)) return this.rejectRoot(data, onFail, runtime)
-					const ctx = new Traversal(data, this.$.resolvedConfig)
+					const ctx = new Traversal(data, this.$.cfg)
 					const result = transform(ctx, this, data)
 					return ctx.hasError() ? ctx.finalize(onFail) : result
 				}
@@ -897,7 +895,7 @@ export abstract class BaseNode<
 					const morph = branch.piped[j] as Morph.ContextFree
 					const morphed = morph(result as never)
 					if (morphed instanceof BaseArkErrors) {
-						const ctx = new Traversal(data, this.$.resolvedConfig)
+						const ctx = new Traversal(data, this.$.cfg)
 						addErrors(ctx, morphed)
 						return ctx.finalize(onFail)
 					}
@@ -915,7 +913,7 @@ export abstract class BaseNode<
 		onFail: FailHandler | null,
 		{ Traversal, applyCyclic, applyRejected }: RootApplyRuntime
 	): unknown {
-		const config = this.$.resolvedConfig
+		const config = this.$.cfg
 		return this.hasAlias ?
 				applyCyclic(this, data, new Traversal(data, config)).finalize(onFail)
 			:	applyRejected(this, data, config, onFail, Traversal)
@@ -945,9 +943,7 @@ export abstract class BaseNode<
 	get description(): string {
 		return (this.cache.description ??=
 			this.meta?.description ??
-			composing(() =>
-				this.$.resolvedConfig[this.kind].description(this as never)
-			))
+			composing(() => this.$.cfg[this.kind].description(this as never)))
 	}
 
 	// we don't cache this currently since it can be updated once a scope finishes
@@ -1122,7 +1118,7 @@ export abstract class BaseNode<
 	}
 
 	equals(r: unknown): boolean {
-		const rNode: BaseNode = isNode(r) ? r : this.$.parseDefinition(r)
+		const rNode: BaseNode = isNode(r) ? r : this.$.parseDef(r)
 		// a hash includes its node's kind, so nodes of different kinds aren't hashed
 		if (
 			this === rNode ||
@@ -2023,11 +2019,7 @@ const compileRootApply = (node: BaseRoot): RootApply =>
 	new DynamicFunction<(...args: unknown[]) => RootApply>(
 		...rootApplyParams,
 		writeRootApply(node, node.id)
-	)(
-		node,
-		node.$.resolvedConfig,
-		...Object.values(rootApplyRuntimeOf(node.$.resolvedConfig))
-	)
+	)(node, node.$.cfg, ...Object.values(rootApplyRuntimeOf(node.$.cfg)))
 
 export const writeInnerJson = (node: BaseNode): JsonObject => {
 	const json: JsonObject = {}

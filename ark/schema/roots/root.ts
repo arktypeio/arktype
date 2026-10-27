@@ -174,7 +174,7 @@ export abstract class BaseRoot<
 	}
 
 	intersect(r: unknown, jit = true): BaseRoot | Disjoint {
-		const rNode = this.$.parseDefinition(r)
+		const rNode = this.$.parseDef(r)
 		const result = this.rawIntersect(rNode)
 		if (result instanceof Disjoint) return result
 		return this.$.finalize(result as BaseRoot, jit)
@@ -199,7 +199,7 @@ export abstract class BaseRoot<
 	}
 
 	or(r: unknown): BaseRoot {
-		const rNode = this.$.parseDefinition(r)
+		const rNode = this.$.parseDef(r)
 		return this.$.finalize(this.rawOr(rNode)) as never
 	}
 
@@ -255,7 +255,7 @@ export abstract class BaseRoot<
 	}
 
 	merge(r: unknown): BaseRoot {
-		const rNode = this.$.parseDefinition(r)
+		const rNode = this.$.parseDef(r)
 		// like a spread, merge only extends object literals
 		for (const branch of [...this.branches, ...rNode.branches]) {
 			const basis = branch.is("intersection") ? branch.basis : branch
@@ -341,14 +341,14 @@ export abstract class BaseRoot<
 	}
 
 	extract(r: unknown): BaseRoot {
-		const rNode = this.$.parseDefinition(r)
+		const rNode = this.$.parseDef(r)
 		return this.$.schema(
 			this.branches.filter(branch => branch.extends(rNode))
 		) as never
 	}
 
 	exclude(r: unknown): BaseRoot {
-		const rNode = this.$.parseDefinition(r)
+		const rNode = this.$.parseDef(r)
 		return this.$.schema(
 			this.branches.filter(branch => !branch.extends(rNode))
 		) as never
@@ -402,7 +402,7 @@ export abstract class BaseRoot<
 	}
 
 	subsumes(r: unknown): boolean {
-		const rNode = this.$.parseDefinition(r)
+		const rNode = this.$.parseDef(r)
 		return rNode.extends(this)
 	}
 
@@ -463,7 +463,7 @@ export abstract class BaseRoot<
 	}
 
 	to(def: unknown): BaseRoot {
-		return this.$.finalize(this.toNode(this.$.parseDefinition(def)))
+		return this.$.finalize(this.toNode(this.$.parseDef(def)))
 	}
 
 	private toNode(root: BaseRoot): BaseRoot {
@@ -710,7 +710,7 @@ const toStandardJsonSchema = (
 	opts: StandardJSONSchemaV1.Options,
 	io?: "in"
 ): Record<string, unknown> => {
-	const ctx = mergeToJsonSchemaConfigs(node.$.resolvedConfig.toJsonSchema, {
+	const ctx = mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, {
 		target: validateStandardJsonSchemaTarget(opts.target),
 		...opts.libraryOptions
 	})
@@ -772,13 +772,13 @@ const structureOf = (branch: Union.ChildNode): Structure.Node | null => {
 		return (
 			branch.inner.structure ??
 			(branch.basis?.domain === "object" ?
-				branch.$.bindReference($ark.intrinsic.emptyStructure)
+				branch.$.bindRef($ark.intrinsic.emptyStructure)
 			:	null)
 		)
 	}
 
 	if (branch.isBasis() && branch.domain === "object")
-		return branch.$.bindReference($ark.intrinsic.emptyStructure)
+		return branch.$.bindRef($ark.intrinsic.emptyStructure)
 
 	return null
 }

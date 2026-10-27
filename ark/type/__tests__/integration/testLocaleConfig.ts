@@ -8,10 +8,10 @@ import { cases } from "./util.ts"
 
 cases({
 	resolvedFromTheConfigWhenATypeIsCreated: () => {
-		strictEqual($ark.resolvedConfig, undefined)
+		strictEqual($ark.cfg, undefined)
 		type("string")
-		strictEqual($ark.resolvedConfig!.locale.tag, locale.tag)
-		strictEqual($ark.resolvedConfig!.locale.cite, en.cite)
+		strictEqual($ark.cfg!.locale.tag, locale.tag)
+		strictEqual($ark.cfg!.locale.cite, en.cite)
 	},
 	rendersInTheLocale: () => {
 		strictEqual(type("string")(5).toString(), "<string>! (5)")

@@ -36,8 +36,7 @@ export class UndetailedErrors extends ArkErrors {
 	override get issues(): readonly ArkError[] {
 		const issues = this._
 		for (let i = 0; i < issues.length; i++) {
-			if (!isArkError(issues[i]))
-				issues[i] = invalidError(issues[i], $ark.resolvedConfig!)
+			if (!isArkError(issues[i])) issues[i] = invalidError(issues[i], $ark.cfg!)
 		}
 		return issues
 	}

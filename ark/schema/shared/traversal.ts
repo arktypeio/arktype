@@ -1020,7 +1020,7 @@ export const allowsUntracked = (
 	const outerConfig = continuationConfig
 	aliasVisits.count = 0
 	continuation = undefined
-	continuationConfig = node.$.resolvedConfig
+	continuationConfig = node.$.cfg
 	let allowed: boolean
 	try {
 		allowed = node.traverseAllows(data as never, 0)
