@@ -33,6 +33,16 @@ contextualize(() => {
 		attest(printable(data)).snap('{"a":1n,"b":2n}')
 	})
 
+	it("undefined in array", () => {
+		const data = [undefined, "undefined"]
+		attest(printable(data)).snap('[undefined,"undefined"]')
+	})
+
+	it("undefined in object", () => {
+		const data = { a: undefined, b: "undefined" }
+		attest(printable(data)).snap('{"a":undefined,"b":"undefined"}')
+	})
+
 	it("nested", () => {
 		const data = { a: [1, { b: "foo" }] }
 		attest(printable(data)).snap('{"a":[1,{"b":"foo"}]}')
