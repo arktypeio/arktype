@@ -406,6 +406,9 @@ export const writeExternalizedMessage = (
 ): string =>
 	`The build's \`${option}\` option leaves ${specifier} to be loaded at runtime rather than bundled with the runtime the program's precompiled validators use, so the program can load a copy of arktype that isn't theirs, e.g. one whose \`type.errors\` isn't the class of their errors. Remove ${packageNameOf(specifier)} from \`${option}\`.`
 
+export const writeBundledExternalMessage = (specifier: string): string =>
+	`The bundle leaves ${specifier} to be loaded at runtime rather than bundled with the runtime the program's precompiled validators use, so the program can load a copy of arktype that isn't theirs, e.g. one whose \`type.errors\` isn't the class of their errors. Bundle arktype: remove it from the bundler's \`external\` option, or, where a tool leaves dependencies external, have it bundle arktype, as tsup does with \`noExternal: ["arktype"]\` and tsdown with \`deps: { alwaysBundle: [/^arktype(\\/|$)/] }\`.`
+
 export const writeUnwrittenModuleMessage = (specifier: string): string =>
 	`${specifier} is imported by a module this build didn't precompile, as one a cache kept from an earlier build is. Keep that cache from storing the modules @ark/aot transforms, or delete it.`
 

@@ -6,6 +6,7 @@ import {
 	withAllowUnsafe,
 	createNodeHost,
 	writeAliasMessage,
+	writeExternalizedMessage,
 	writeFilelessImportMessage,
 	writePrecompiledDependencyMessage,
 	writeTextlessMessage,
@@ -44,6 +45,7 @@ import {
 	hasBun,
 	inFreshProcess,
 	packageFiles,
+	runBundle,
 	runPlain,
 	tempDir,
 	undetailedOutput,
@@ -1099,6 +1101,35 @@ console.log(Value, note, load, await import("#shared/lazy"))
 					writeVariantImportMessage("a module", "@ark/schema", "none")
 				)
 			).equals(true)
+		})
+
+		describe("Bun.build", () => {
+			const bunBuild = (opts: string) =>
+				bun([
+					"--conditions",
+					"ark-ts",
+					"-e",
+					`import { precompile } from "@ark/aot/unplugin"
+const result = await Bun.build({ entrypoints: ["./main.ts"], target: "node", conditions: ["ark-ts"], ...${opts}, plugins: [precompile.bun({ conditions: ["ark-ts"] })] })
+console.log(await result.outputs[0].text())`
+				])
+
+			it("bundles the program precompiled, without a NUL", () => {
+				const bundle = bunBuild("{}").stdout
+				attest(bundle.includes("~arktype/")).equals(true)
+				attest(bundle.includes("\0")).equals(false)
+				attest(runBundle(bundle).stdout).equals(expected)
+			})
+
+			it("fails a build leaving arktype external", () => {
+				const { status, stderr } = bunBuild(`{ external: ["ark*"] }`)
+				attest(status).equals(1)
+				attest(
+					stderr.includes(
+						withAllowUnsafe(writeExternalizedMessage("arktype", "external"))
+					)
+				).equals(true)
+			})
 		})
 
 		it("fails a module with a rejected site", () => {

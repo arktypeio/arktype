@@ -50,6 +50,8 @@ await build({
 
 Put `precompile.esbuild()` ahead of any plugin that loads your TypeScript modules, since esbuild loads a module with the first plugin that returns it.
 
+tsup takes it in `esbuildPlugins`, and leaves your dependencies external unless told to bundle them, so add `noExternal: ["arktype"]`. The build fails without it, as the program would load arktype beside the runtime its validators use.
+
 </Tab>
 <Tab value="Rolldown">
 
@@ -64,6 +66,8 @@ export default defineConfig({
 	plugins: [precompile.rolldown()]
 })
 ```
+
+tsdown takes it in `plugins`, and leaves your dependencies external unless told to bundle them, so add `deps: { alwaysBundle: [/^arktype(\/|$)/] }`. The build fails without it, as the program would load arktype beside the runtime its validators use.
 
 </Tab>
 <Tab value="Rollup">

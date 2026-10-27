@@ -23,7 +23,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | Parcel, Deno and Jest, which have no plugin or driver                                | Bundle with a [supported bundler](/docs/precompile/setup#bundlers), and test with Vitest, `node --test` or `bun test`       |
 | esbuild without `bundle: true`                                                       | Set `bundle: true`                                                                                                          |
-| `arktype` left external, as by `external` or webpack's `externals`                   | Let the bundler bundle it                                                                                                   |
+| `arktype` left external, as by `external`, webpack's `externals`, tsup or tsdown     | Let the bundler bundle it                                                                                                   |
 | Types defined in a Svelte component or another file that isn't JS or TS              | Define them in a `.ts` or `.js` module the component imports                                                                |
 | Types defined in a virtual module, esbuild's `stdin`, a `data:` URL or `node --eval` | Define them in a file                                                                                                       |
 | A definition reading a value known only at runtime                                   | Make it static, or mark it as a [runtime island](/docs/precompile/advanced#runtime-islands)                                 |
@@ -80,6 +80,8 @@ Each of these is reported by the build, or listed here where nothing can report 
 **`arktype resolves to 2.3.0, but @ark/aot runs on 2.2.9`**: validators run only on the arktype they were built with. Where your program imports the other version, as after upgrading arktype alone, the message names the `@ark/aot` released with it, e.g. `npm i -D @ark/aot@<version>`. Where a dependency does, install one version, e.g. with your package manager's dedupe or overrides.
 
 **`precompiledForArktype_<version>` is not exported by `arktype/runtime`** (each bundler words it its own way): every module of validators imports an export of `arktype/runtime` named for the version it was built for, so linking it to another version's runtime fails rather than misbehaving at runtime. It usually means a bundler cache from before an upgrade, or a second copy of arktype. Install one version and clear the bundler's cache.
+
+**`The bundle leaves arktype to be loaded at runtime`** (or `arktype/runtime`): the program would load arktype, or a second copy of its runtime, beside the runtime its validators use, so `out instanceof type.errors` would be false for their errors. A tool that leaves dependencies external does this unless told otherwise: with tsup, add `noExternal: ["arktype"]`, and with tsdown, `deps: { alwaysBundle: [/^arktype(\/|$)/] }`. Where every import of arktype's runtime is left external, as with esbuild's `packages: "external"`, the program loads one copy, and the build allows it.
 
 **`arktype resolves to more than one copy`**: one copy doesn't recognize another's Types and errors. The message names each copy and the file that reached it.
 
