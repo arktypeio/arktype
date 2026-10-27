@@ -19,13 +19,19 @@ Agents read two references the skill links when a task needs them: the [migratio
 
 ## Migrate from Zod
 
-With the skill installed, ask for a migration in one prompt:
+With the skill installed, migrate in one prompt:
 
 ```
 Migrate this project from Zod to ArkType.
 ```
 
-The agent rewrites each schema where it is, keeps Zod's removal of undeclared keys, swaps integrations like `zodResolver` for their Standard Schema versions, removes `zod` with your package manager and runs your typecheck and tests. Where a dependency accepts only Zod, like the MCP SDK before v2, it keeps Zod for that call. Review its summary, which lists what still behaves differently and any test it updated, like a JSON Schema snapshot whose keys are now in canonical order. [Migrating a project](/docs/migrating#migrating-a-project) lists the steps it follows.
+The agent follows [Migrating a project](/docs/migrating#migrating-a-project). It rewrites each schema where it is, keeps Zod's removal of undeclared keys, swaps integrations like `zodResolver` for their Standard Schema versions, compares each schema your tests don't cover with its Zod original on the same inputs, removes `zod` with your package manager and runs your typecheck and tests. Where a dependency accepts only Zod, like the MCP SDK before v2, it keeps Zod for that call. Review its summary, which lists what still behaves differently and any test it updated, like a JSON Schema snapshot whose keys are now in canonical order.
+
+To precompile in the same pass, ask for both:
+
+```
+Migrate this project from Zod to ArkType and precompile it.
+```
 
 ## Docs as Markdown
 

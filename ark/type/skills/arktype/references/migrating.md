@@ -8,7 +8,7 @@ How to convert schemas from Zod (v3, v4 and Zod Mini), Valibot, TypeBox, Yup, Jo
 
 To move a whole project off Zod, or another library below, work through it in this order.
 
-1. **Take stock.** Find every import of the old library (`zod`, `zod/v4`, `zod/mini`) and of packages built on it, like `@hookform/resolvers/zod` or `zod-to-json-schema`, and every use of the schemas, including files that call `.safeParse()` or read `.shape` without importing the library. Run the project's typecheck and test scripts once, so you know what passes before you start.
+1. **Take stock.** Find every import of the old library (`zod`, `zod/v4`, `zod/mini`) and of packages built on it, like `@hookform/resolvers/zod` or `zod-to-json-schema`, and every use of the schemas, including files that call `.safeParse()` or read `.shape` without importing the library. Run the project's `typecheck` and `test` scripts once, so you know what passes before you start. If `package.json` has no `test` script, step 6 is how you'll check behavior.
 2. **Convert each schema in place.** Keep its name, its file and what it takes and returns, so imports and call sites keep working: a `.transform()` stays in the schema as a `.pipe()`, not in its callers. `z.infer<typeof X>` and `z.output` become `typeof X.infer`, and `z.input` becomes `typeof X.inferIn`.
 3. **Keep behavior identical.** The migrated schemas should accept, reject and return what the old ones did. These rules are for Zod, and [Defaults that differ](#defaults-that-differ) has them for the other libraries:
    - `z.object()` removes undeclared keys, and so should the migrated objects, even where the code reads only declared keys, since parsed data often reaches a database or a response whole. Call `configure({ onUndeclaredKey: "delete" })` from `arktype/config` in one file, like `src/arktype.config.ts`, and import it first in every file that creates a Type, so it applies whichever file loads first, tests included. If the project [precompiles](https://arktype.io/docs/precompile), also name that file as the build's `config` in [`ark.json`](https://arktype.io/docs/precompile/setup#ark-json), which the CLI and test drivers read as the bundler does. Then `.passthrough()` and `z.looseObject()` become `"+": "ignore"`, and `.strict()` becomes `"+": "reject"`.
@@ -22,8 +22,20 @@ To move a whole project off Zod, or another library below, work through it in th
 4. **Update call sites.**
    - `X.parse(data)` becomes `X.assert(data)`, which throws.
    - `X.safeParse(data)` becomes `const out = X(data)`, then check `out instanceof type.errors`. `parseAsync` and `safeParseAsync` become the same, since ArkType is synchronous.
-   - `ZodError` becomes `type.errors`. Its `issues` keep their `path` and `message`, and `error.format()` becomes `out.summary`. `error.flatten().fieldErrors` becomes `flatByPath(out)`, which maps each path to its errors; read each error's `message`, which is the custom one where you configured it. `X.assert` throws a `TraversalError`, whose `arkErrors` holds them.
+   - `ZodError` becomes `type.errors`, and `instanceof ZodError` becomes `instanceof type.errors`. Its `issues` keep their `path` and `message`, though a message names its path, like `email must be an email address (was "x")`, where Zod's says `Invalid email address`. `z.prettifyError(error)` becomes `out.summary`. `X.assert` throws a `TraversalError`, whose `arkErrors` holds them.
+   - `error.flatten()` and `z.flattenError(error)` group messages by the first key of their path, so `tags[0]`'s are under `tags`. Group `out.issues` the same way, which also works in a [precompiled](https://arktype.io/docs/precompile) build, where `flatByPath` isn't available:
    - Don't add casts or `any`, not even `as unknown`. A helper typed with `z.ZodTypeAny` or `z.ZodSchema` takes `type.Any`. To keep the output type, use `<T extends type.Any>(schema: T): T["infer"]`, not `type.Any<t>`. A function that builds a schema from another becomes a generic, like `type("<t>", { data: "t" })`.
+
+```ts
+// error.flatten() or z.flattenError(error)
+const formErrors: string[] = []
+const fieldErrors: Record<string, string[]> = {}
+for (const issue of out.issues) {
+	if (issue.path.length === 0) formErrors.push(issue.message)
+	else (fieldErrors[String(issue.path[0])] ??= []).push(issue.message)
+}
+```
+
 5. **Swap integrations.** Most accept an ArkType type directly, through [Standard Schema](https://arktype.io/docs/standard-schema):
 
 | With Zod                                                    | With ArkType                                                                                                                                     |
@@ -60,30 +72,117 @@ const argsSchema = {
 }
 ```
 
-6. **Swap dependencies.** Remove `zod` and the packages that existed only for it, and add their replacements, with the project's package manager, like `pnpm remove zod` or `npm uninstall zod`. Editing `package.json` by hand leaves the lockfile stale, and some package managers then refuse to run scripts. If `arktype` is already a dependency, keep that version. Don't upgrade another dependency to a new major version, like the MCP SDK to v2, so it takes ArkType; keep Zod for it as the table says.
-7. **Verify.** Run the `typecheck` and `test` scripts in `package.json` until both pass; `npx tsc` alone can miss a second tsconfig. Search again for imports of the old library, and check that every file importing `arktype`, `.js` files included, imports the config first if it creates a Type. Change a test only where it asserts the old library itself, like a Zod error message or `instanceof ZodError`. Never delete a test, weaken an assertion or change an expected value to match new output. The exception is a snapshot of generated JSON Schema, which ArkType writes in a canonical order: required keys, then optional ones, each sorted, and enum and union members sorted. Reorder such a snapshot only when order is its only difference.
-8. **Report** what still behaves differently, if anything, such as error message text, and any snapshot you reordered.
+6. **Compare with the originals while Zod is still installed.** The project's tests check the schemas they use. Check the rest directly, and every schema if there's no `test` script: in a scratch file, import each original from a copy of its file (`git show HEAD:src/schemas.ts > scratch/schemas.zod.ts`) and its conversion, call both on the same inputs and compare which they accept and what they return. Use the project's fixtures or sample data where it has them, plus each case [Defaults that differ](#defaults-that-differ) lists: a missing key, a key present as `undefined`, an undeclared key, a wrong type, an empty string and a value at each bound. Fix each difference in the schema, then delete the scratch files. [How to convert](#how-to-convert) shows a check that their types match too.
+7. **Swap dependencies.** Remove `zod` and the packages that existed only for it, and add their replacements, with the project's package manager, like `pnpm remove zod` or `npm uninstall zod`. Editing `package.json` by hand leaves the lockfile stale, and some package managers then refuse to run scripts. If `arktype` is already a dependency, keep that version. Don't upgrade another dependency to a new major version, like the MCP SDK to v2, so it takes ArkType; keep Zod for it as the table says. If a dependency requires `zod` as a peer dependency, keep it installed for that dependency and say so.
+8. **Verify.** Run the `typecheck` and `test` scripts in `package.json` until both pass; `npx tsc` alone can miss a second tsconfig. Run the `build` script too, if there is one. If there's no `test` script, step 6's comparison is the behavior check, so say what it covered. Search again for imports of the old library, and check that every file importing `arktype`, `.js` files included, imports the config first if it creates a Type. Change a test only where it asserts the old library itself, like a Zod error message or `instanceof ZodError`. Never delete a test, weaken an assertion or change an expected value to match new output. The exception is a snapshot of generated JSON Schema, which ArkType writes in a canonical order: required keys, then optional ones, each sorted, and enum and union members sorted. Reorder such a snapshot only when order is its only difference.
+9. **Precompile, if asked.** Set it up as the skill's `references/precompile.md`, or [Precompile setup](https://arktype.io/docs/precompile/setup), says: add `@ark/aot` and the plugin for the bundler, name the config file from step 3 as `config` in `ark.json`, run `npx arktype-precompile --check "src/**/*.ts"` until it accepts every definition, then run the `typecheck`, `test` and `build` scripts again. A precompiled validator's messages don't include the value, like `(was "x")`, so a test asserting ArkType's full message text changes with them.
+10. **Report** what still behaves differently, if anything, such as error message text, any snapshot you reordered, and any dependency you kept Zod for.
 
-## How to convert
+## Zod side by side
 
-1. Write each schema as the TypeScript type it validates. Most constructs become a string or an object definition; the tables below map them library by library.
-2. Check every row of [Defaults that differ](#defaults-that-differ). A translation that looks right can still accept or return different data.
-3. Confirm the types match. While the old schema still exists, a line like this fails to compile until they do:
+A Zod schema and its ArkType equivalent:
 
 ```ts
-type Equals<a, b> =
-	[a] extends [b] ?
-		[b] extends [a] ?
-			true
-		:	false
-	:	false
-const outputMatches: Equals<typeof User.infer, z.output<typeof OldUser>> = true
-const inputMatches: Equals<typeof User.inferIn, z.input<typeof OldUser>> = true
+import { z } from "zod"
+
+const User = z.object({
+	name: z.string().min(1),
+	email: z.email(),
+	age: z.number().int().nonnegative().optional(),
+	role: z.enum(["admin", "member"]).default("member")
+})
+
+type User = z.infer<typeof User>
+
+const result = User.safeParse(data)
+
+if (!result.success) console.error(result.error.issues)
 ```
 
-4. Run both on the same inputs, valid and invalid, and compare which they accept and what they return.
+```ts
+import { type } from "arktype"
 
-You can migrate one schema at a time. A Zod or Valibot schema is a [Standard Schema](https://arktype.io/docs/standard-schema), so it can appear inside an ArkType definition while the rest is converted: `type({ name: "string", address: zodAddress })`. Yup's Standard Schema validates asynchronously, so it can't.
+const User = type({
+	// z.object() removes undeclared keys
+	"+": "delete",
+	name: "string >= 1",
+	email: "string.email",
+	// .optional() accepts undefined too
+	"age?": "number.integer >= 0 | undefined",
+	role: "'admin' | 'member' = 'member'"
+})
+
+type User = typeof User.infer
+
+const out = User(data)
+
+if (out instanceof type.errors) console.error(out.issues)
+```
+
+`.parse(data)` is `User.assert(data)`. The [Zod table](#zod) maps the rest of the API, and [Defaults that differ](#defaults-that-differ) lists what to write where the two libraries' defaults disagree, like `"+": "delete"` above. One the example leaves as is: Zod also applies `role`'s default when the key is present as `undefined`, which ArkType rejects.
+
+## Zod
+
+Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like `z.string().optional()`, and `z.string().check(z.minLength(1))` like `z.string().min(1)`.
+
+| Zod                                                     | ArkType                                                                              |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `z.string()`, `z.number()`, `z.boolean()`, `z.null()`   | `"string"`, `"number"`, `"boolean"`, `"null"`                                        |
+| `z.bigint()`, `z.symbol()`, `z.undefined()`, `z.void()` | `"bigint"`, `"symbol"`, `"undefined"`, `"undefined"`                                 |
+| `z.unknown()`, `z.any()`, `z.never()`                   | `"unknown"`, `"unknown.any"`, `"never"`                                              |
+| `z.literal("a")`, `z.literal(0.5)`                      | `"'a'"`, `"0.5"`                                                                     |
+| `z.enum(["a", "b"])`                                    | `"'a' \| 'b'"` or `type.enumerated("a", "b")`                                        |
+| `z.nativeEnum(E)`, `z.enum(E)`                          | `type.valueOf(E)`                                                                    |
+| `z.object({ ... })`                                     | `type({ ... })`, nested objects as plain objects                                     |
+| `.optional()` on a property                             | `"key?": "T \| undefined"`                                                           |
+| `.optional()` anywhere else                             | `"T \| undefined"` or `T.or("undefined")`                                            |
+| `.nullable()`, `.nullish()`                             | `"T \| null"`, `"key?": "T \| null \| undefined"`                                    |
+| `.default(x)` on a property                             | `key: "number = 0"` or `key: T.default(x)`                                           |
+| `.catch(x)`                                             | a `.pipe()` that returns `x` for invalid input, see [Fallbacks](#semantics-to-check) |
+| `z.array(T)`, `.min(1)`, `.nonempty()`                  | `"T[]"` or `T.array()`, `"string[] >= 1"`                                            |
+| `z.array(T).min(1)`, `T` a Type in a variable           | `T.array().atLeastLength(1)`                                                         |
+| `z.tuple([A, B])`, `.rest(C)`                           | `[A, B]`, `[A, B, "...", "C[]"]`                                                     |
+| `z.union([A, B])`, `A.or(B)`, `z.discriminatedUnion`    | `A.or(B)`, `"A \| B"`                                                                |
+| `z.intersection(A, B)`, `A.and(B)`                      | `A.and(B)`                                                                           |
+| `z.record(z.string(), T)`                               | `"Record<string, T>"` or `{ "[string]": T }`                                         |
+| `z.record(z.enum(["a", "b"]), T)`, `z.partialRecord`    | `{ a: T, b: T }`, `{ "a?": T, "b?": T }`                                             |
+| `z.set(T)`, `z.map(K, V)`                               | `"Set"`, `"Map"`, with a `.narrow()` that checks the entries                         |
+| `.extend({ ... })`, `.merge(B)`                         | `.merge({ ... })`                                                                    |
+| `.pick`, `.omit`, `.partial`, `.required`, `.keyof`     | same names                                                                           |
+| `.array()`, `.readonly()`                               | same names                                                                           |
+| `.strict()`, `z.strictObject`                           | `"+": "reject"`                                                                      |
+| `.passthrough()`, `z.looseObject`                       | the default                                                                          |
+| `.strip()`, the default `z.object`                      | `"+": "delete"`                                                                      |
+| `.catchall(T)`                                          | `"[/^(?!a$\|b$)/]": T`, `a` and `b` the declared keys                                |
+| `z.lazy(() => T)`                                       | a scope or `this`                                                                    |
+| `.min(n)` / `.max(n)` / `.length(n)` on strings         | `"string >= n"`, `"string <= n"`, `"string == n"`                                    |
+| `.nonempty()` on strings                                | `"string > 0"`                                                                       |
+| `.startsWith("a")`, `.endsWith("a")`, `.includes("a")`  | `/^a/`, `/a$/`, `/a/`, escaping regex characters                                     |
+| `.int()`, `.positive()`, `.nonnegative()`, `.gt(n)`     | `"number.integer"`, `"number > 0"`, `"number >= 0"`, `"number > n"`                  |
+| `.min(n)` / `.max(n)` / `.lt(n)` on numbers             | `"number >= n"`, `"number <= n"`, `"number < n"`                                     |
+| `.multipleOf(n)`                                        | `"number % n"`                                                                       |
+| `.email()`, `.url()`, `.uuid()`, `.regex(r)`            | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/`                             |
+| `.ip()` (Zod 3), `z.ipv4()`, `z.ipv6()`                 | `"string.ip"`, `"string.ip.v4"`, `"string.ip.v6"`                                    |
+| `.datetime()`, `z.iso.datetime()`                       | `"string.date.iso"`                                                                  |
+| `.trim()`, `.toLowerCase()`, `.toUpperCase()`           | `"string.trim"`, `"string.lower"`, `"string.upper"`                                  |
+| `z.date()`, `z.instanceof(C)`                           | `"Date"`, `type.instanceOf(C)`                                                       |
+| `.refine(fn, msg)`, `.superRefine(fn)`                  | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message: msg }))`                       |
+| `.transform(fn)`, `.pipe(T)`                            | `.pipe(fn)`, `.to(T)`                                                                |
+| `z.preprocess(fn, T)`                                   | `type("unknown").pipe(fn).to(T)`                                                     |
+| `z.coerce.number()`, `z.coerce.date()`                  | `type("unknown").pipe(Number).to("number")`, see [Coercion](#semantics-to-check)     |
+| `z.coerce.string()`, `z.coerce.boolean()`               | `type("unknown").pipe(String)`, `type("unknown").pipe(Boolean)`                      |
+| `z.custom<T>(fn)`                                       | `type("unknown").narrow((v): v is T => fn(v))`                                       |
+| `.brand<"Id">()`                                        | `.brand("Id")` or `"string#Id"`                                                      |
+| `.describe(text)`, `.meta({ title })`                   | a comment or `.configure({ title: text })`                                           |
+| `{ message }`, `{ error }`, `required_error`            | `.configure({ message })`, or `.describe(...)` for "must be ..."                     |
+| `z.infer`, `z.output`, `z.input`                        | `typeof T.infer`, `typeof T.inferIn`                                                 |
+| `const T: z.ZodType<X> = ...`                           | no annotation: delete `X` and use `typeof T.infer`                                   |
+| `.parse(x)`, `.safeParse(x)`                            | `T.assert(x)`, `T(x)` then `instanceof type.errors`                                  |
+| `.parseAsync(x)`, `.safeParseAsync(x)`                  | the same, since ArkType is synchronous                                               |
+| `ZodError`, `error.issues`                              | `type.errors`, `out.issues`                                                          |
+| `z.prettifyError(error)`                                | `out.summary`                                                                        |
+| `error.flatten()`, `z.flattenError(error)`              | `out.issues` grouped by key, see [Update call sites](#migrating-a-project)           |
+| `z.ZodTypeAny` in a helper's signature                  | `type.Any`                                                                           |
 
 ## Defaults that differ
 
@@ -188,6 +287,22 @@ const Range = type({ start: "number", end: "number" }).narrow(
 )
 ```
 
+**Fallbacks.** ArkType has no `.catch()`. Zod's `.catch(x)` returns `x` for any invalid input, so validate inside a `.pipe()` and return `x` on errors. The default covers a missing key, which `.catch()` also replaces:
+
+```ts
+const Count = type("number")
+
+// z.object({ count: z.number().catch(0) })
+const Settings = type({
+	count: type("unknown")
+		.pipe(v => {
+			const out = Count(v)
+			return out instanceof type.errors ? 0 : out
+		})
+		.default(0)
+})
+```
+
 **Discriminated unions are plain unions.** ArkType finds the discriminant itself, so `z.discriminatedUnion("type", [A, B])`, `v.variant("type", [...])` and `Schema.Union(A, B)` are `A.or(B)`, or `"A | B"` in a scope.
 
 **Recursion needs no annotation.** Replace `z.lazy`, `v.lazy`, `Type.Recursive`, `yup.lazy`, `Joi.link` and `Schema.suspend` with a scope, or `this` for a type that refers to itself:
@@ -206,7 +321,7 @@ Delete the hand-written TypeScript type that `z.lazy` needed; `typeof types.Filt
 
 **Composing objects.** `.merge()` replaces keys like Zod's `.extend()`, `v.object({ ...a.entries })` or `Type.Composite`. `.and()` intersects, and throws when a key's types conflict. `.pick()`, `.omit()`, `.partial()`, `.required()` and `.keyof()` keep their names.
 
-**Records with literal keys.** `Record<"a" | "b", T>` must be written as named keys, `{ a: T, b: T }` (add `?` for Zod v3, whose enum-keyed records are partial). An index signature like `"[string]": "number"` applies to every key, including declared ones, so a catch-all like Zod's `.catchall(z.number())` next to a string key becomes `"[string]": "string | number"`.
+**Records with literal keys.** `Record<"a" | "b", T>` must be written as named keys, `{ a: T, b: T }` (add `?` for Zod v3, whose enum-keyed records are partial). An index signature like `"[string]": "number"` applies to every key, including declared ones. Zod's `.catchall(T)` applies only to undeclared keys, so leave the declared ones out of a regex index signature: `z.object({ name: z.string() }).catchall(z.number())` is `type({ name: "string", "[/^(?!name$)/]": "number" })`.
 
 **Brands.** `.brand("UserId")` or `"string#UserId"` infers `Brand<string, "UserId">`, which is not assignable to or from the old library's brand type. Change code that names the old brand type to `typeof UserId.infer`.
 
@@ -216,53 +331,60 @@ Delete the hand-written TypeScript type that `z.lazy` needed; `typeof types.Filt
 
 **Synchronous only.** ArkType doesn't await. Move an async `refine`, Yup `test` or Joi `external` out of the schema and run it after validation.
 
-## Zod
+## How to convert
 
-Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like `z.string().optional()`, and `z.string().check(z.minLength(1))` like `z.string().min(1)`.
+1. Write each schema as the TypeScript type it validates. Most constructs become a string or an object definition; this page's tables map them library by library.
+2. Check every row of [Defaults that differ](#defaults-that-differ). A translation that looks right can still accept or return different data.
+3. Confirm the types match. While the old schema still exists, a line like this fails to compile until they do:
 
-| Zod                                                   | ArkType                                                             |
-| ----------------------------------------------------- | ------------------------------------------------------------------- |
-| `z.string()`, `z.number()`, `z.boolean()`, `z.null()` | `"string"`, `"number"`, `"boolean"`, `"null"`                       |
-| `z.unknown()`, `z.any()`, `z.never()`                 | `"unknown"`, `"unknown.any"`, `"never"`                             |
-| `z.literal("a")`, `z.literal(0.5)`                    | `"'a'"`, `"0.5"`                                                    |
-| `z.enum(["a", "b"])`                                  | `"'a' \| 'b'"` or `type.enumerated("a", "b")`                       |
-| `z.nativeEnum(E)`, `z.enum(E)`                        | `type.valueOf(E)`                                                   |
-| `z.object({ ... })`                                   | `type({ ... })`, nested objects as plain objects                    |
-| `.optional()` on a property                           | `"key?": "T \| undefined"`                                          |
-| `.nullable()`, `.nullish()`                           | `"string \| null"`; `"key?": "string \| null \| undefined"`         |
-| `.default(x)` on a property                           | `"key": "number = 0"` or `key: T.default(x)`                        |
-| `z.array(T)`, `.min(1)`, `.nonempty()`                | `"T[]"` or `T.array()`, `"string[] >= 1"`                           |
-| `z.array(T).min(1)`, `T` a Type in a variable         | `T.array().atLeastLength(1)`                                        |
-| `z.tuple([A, B])`, `.rest(C)`                         | `[A, B]`, `[A, B, "...", "C[]"]`                                    |
-| `z.union([A, B])`, `A.or(B)`, `z.discriminatedUnion`  | `A.or(B)`, `"A \| B"`                                               |
-| `z.intersection(A, B)`, `A.and(B)`                    | `A.and(B)`                                                          |
-| `z.record(z.string(), T)`                             | `"Record<string, T>"` or `{ "[string]": T }`                        |
-| `.extend({ ... })`, `.merge(B)`                       | `.merge({ ... })`                                                   |
-| `.pick`, `.omit`, `.partial`, `.required`, `.keyof`   | same names                                                          |
-| `.strict()`, `z.strictObject`                         | `"+": "reject"`                                                     |
-| `.passthrough()`, `z.looseObject`                     | the default                                                         |
-| `.strip()`, the default `z.object`                    | `"+": "delete"`                                                     |
-| `z.lazy(() => T)`                                     | a scope or `this`                                                   |
-| `.min(n)` / `.max(n)` / `.length(n)` on strings       | `"string >= n"`, `"string <= n"`, `"string == n"`                   |
-| `.int()`, `.positive()`, `.nonnegative()`, `.gt(n)`   | `"number.integer"`, `"number > 0"`, `"number >= 0"`, `"number > n"` |
-| `.multipleOf(n)`                                      | `"number % n"`                                                      |
-| `.email()`, `.url()`, `.uuid()`, `.regex(r)`          | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/`            |
-| `.ip()` (Zod 3), `z.ipv4()`, `z.ipv6()`               | `"string.ip"`, `"string.ip.v4"`, `"string.ip.v6"`                   |
-| `.datetime()`, `z.iso.datetime()`                     | `"string.date.iso"`                                                 |
-| `.trim()`, `.toLowerCase()`                           | `"string.trim"`, `"string.lower"`                                   |
-| `z.date()`, `z.instanceof(C)`                         | `"Date"`, `type.instanceOf(C)`                                      |
-| `.refine(fn, msg)`, `.superRefine(fn)`                | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message: msg }))`      |
-| `.transform(fn)`, `.pipe(T)`                          | `.pipe(fn)`, `.to(T)`                                               |
-| `z.preprocess(fn, T)`                                 | `type("unknown").pipe(fn).to(T)`                                    |
-| `z.coerce.number()`, `z.coerce.date()`                | `type("unknown").pipe(Number).to("number")`, see above              |
-| `z.custom<T>(fn)`                                     | `type("unknown").narrow((v): v is T => fn(v))`                      |
-| `.brand<"Id">()`                                      | `.brand("Id")` or `"string#Id"`                                     |
-| `.describe(text)`                                     | a comment or `.configure({ title: text })`                          |
-| `{ message }`, `{ error }`, `required_error`          | `.configure({ message })`, or `.describe(...)` for "must be ..."    |
-| `z.infer`, `z.output`, `z.input`                      | `typeof T.infer`, `typeof T.inferIn`                                |
-| `.parse(x)`, `.safeParse(x)`                          | `T.assert(x)`, `T(x)` then `instanceof type.errors`                 |
-| `ZodError`, `.flatten().fieldErrors`                  | `type.errors`, `flatByPath(out)`                                    |
-| `z.ZodTypeAny` in a helper's signature                | `type.Any`                                                          |
+```ts
+type Equals<a, b> =
+	[a] extends [b] ?
+		[b] extends [a] ?
+			true
+		:	false
+	:	false
+const outputMatches: Equals<typeof User.infer, z.output<typeof OldUser>> = true
+const inputMatches: Equals<typeof User.inferIn, z.input<typeof OldUser>> = true
+```
+
+4. Run both on the same inputs, valid and invalid, and compare which they accept and what they return.
+
+## Adopt incrementally
+
+You don't have to convert a project at once. ArkType and Zod both implement [Standard Schema](https://arktype.io/docs/standard-schema), so each can stand in for the other while you convert:
+
+- **A Zod schema works inside an ArkType definition**, so convert the schemas that use it first and the shared one later:
+
+```ts
+import { z } from "zod"
+
+// not converted yet
+const Address = z.object({ street: z.string(), city: z.string() })
+
+const User = type({ name: "string", address: Address })
+```
+
+- **An ArkType Type works wherever a library accepts Standard Schema**, like tRPC, TanStack Form, Hono's `sValidator` or react-hook-form's `standardSchemaResolver`, so call sites can switch one at a time. [Swap integrations](#migrating-a-project) has each.
+
+A Valibot schema embeds the same way. Yup's validates asynchronously, so it can't.
+
+## Precompile
+
+Once your schemas are Types, [add `@ark/aot`](https://arktype.io/docs/intro/setup#add-the-plugin) to your bundler, so each Type ships as a standalone validator with no parser. Your definitions don't change.
+
+A definition that still embeds a Zod or Valibot schema can't be precompiled yet, so the build fails, naming it. Until you've converted it, build with `runtime: "arktype"`, which ships arktype, so what the build can't precompile runs as it did before:
+
+```ts
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+	plugins: [precompile.vite({ runtime: "arktype" })]
+})
+```
+
+To see what's left, run `npx arktype-precompile --check`, which lists each definition the default build would refuse. See [Dynamic vs Precompiled](https://arktype.io/docs/precompile/dynamic-vs-precompiled).
 
 ## Valibot
 

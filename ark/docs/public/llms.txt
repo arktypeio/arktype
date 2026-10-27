@@ -17,7 +17,7 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 - [Cheat sheet](https://arktype.io/docs/cheat-sheet.md): ArkType's most common syntax, patterns and gotchas on one page.
 - [Agents](https://arktype.io/docs/agents.md): Help Claude Code, Codex, Cursor and other coding agents write ArkType.
 - [Editor setup](https://arktype.io/docs/editor.md): Highlighting, inline errors and autocomplete for ArkType definitions in VS Code, JetBrains IDEs and other editors.
-- [Migrating](https://arktype.io/docs/migrating.md): Migrate a project from Zod with one prompt, or convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema and JSON Schema to ArkType, and the defaults that differ between them.
+- [Migrating](https://arktype.io/docs/migrating.md): Migrate a project from Zod with one prompt, or convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema and JSON Schema to ArkType by hand, and the defaults that differ between them.
 - [Upgrading](https://arktype.io/docs/upgrading.md): What to change when upgrading from ArkType 2.2, with each breaking change before and after.
 
 ## ArkType: Definitions

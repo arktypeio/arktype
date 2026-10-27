@@ -9,7 +9,7 @@ ArkType definitions are TypeScript type syntax, written as strings and objects, 
 
 ## Migrating a project
 
-Migrating from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema? Read [references/migrating.md](references/migrating.md) first and follow its steps. It has the workflow, a table for each library and the defaults that differ. In short: rewrite each schema where it is, under the same name; keep what it accepts, rejects and returns identical; keep the code free of casts and `any`; swap packages with the project's package manager; and run the `typecheck` and `test` scripts until both pass, without changing what a test expects.
+Migrating from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema? Read [references/migrating.md](references/migrating.md) first and follow its steps. It has the workflow, a table for each library and the defaults that differ. In short: rewrite each schema where it is, under the same name; keep what it accepts, rejects and returns identical; keep the code free of casts and `any`; before removing Zod, compare the schemas the tests don't cover with their originals on the same inputs, all of them if there's no `test` script; swap packages with the project's package manager; and run the `typecheck` and `test` scripts until both pass, without changing what a test expects. If asked to precompile too, set it up last, as [references/precompile.md](references/precompile.md) says.
 
 ## Precompiling
 
