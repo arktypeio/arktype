@@ -59,10 +59,10 @@ import { node, rootSchema } from "@ark/schema"
 const NonEmpty = node("minLength", { rule: 1 })
 NonEmpty.expression // ">= 1"
 
-const StringOrNumber = node("union", {
-	branches: [rootSchema("string"), rootSchema("number")]
+const NumberOrString = node("union", {
+	branches: [rootSchema("number"), rootSchema("string")]
 })
-StringOrNumber.expression // "number | string"
+NumberOrString.expression // "number | string"
 ```
 
 Use it when you already have nodes, such as when you rebuild part of an existing Type. Otherwise `rootSchema` is simpler.

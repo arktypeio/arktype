@@ -14,7 +14,7 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](#arkerrors-is-no-longer-an-array).
 - Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](#errors-are-plain-objects).
 - Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](#undeclared-keys-have-the-undeclared-code), [discriminant](#union-misses-have-the-discriminant-code) and [notEqual](#excluded-values-have-the-notequal-codes).
-- Do you snapshot or assert error messages, or their order? See [Errors](#errors): objects, dates and union misses print differently, errors follow the order keys are declared, and configured messages apply to more errors.
+- Do you snapshot or assert error messages, or their order? See [Errors](#errors): objects, dates and union misses print differently, errors follow the order keys are declared, configured messages apply to more errors, and described length bounds say "length".
 - Do you show the messages of Standard Schema issues, as a form library does? [They leave out the path](#standard-schema-messages-leave-out-the-path).
 - Do you configure an `expected`, `actual` or `message` writer? [Writers take the error](#error-writers-receive-the-error-and-the-locale).
 - Do you call `configure()` after a Type is created, or pass a global-only option to a Scope? See [Configuration](#configuration).
@@ -248,6 +248,18 @@ Email("")
 ```
 
 `Port.out` keeps its own errors. Constraints described alike are described once, so `type("string.email > 0", "@", "Email is not valid")("")` says `must be Email is not valid (was "")`.
+
+### Described length bounds say "length"
+
+A length bound with its own description or `expected` writes the length it was given as `length 5`, since the text replacing the bound's no longer says it's a length:
+
+```ts
+const Password = type("string >= 8").describe("a password")
+
+// ArkErrors: must be a password (was length 5)
+// before: must be a password (was 5)
+Password("ez123")
+```
 
 ### Error writers receive the error and the locale
 

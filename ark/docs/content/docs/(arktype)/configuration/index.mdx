@@ -112,7 +112,7 @@ const Password = type("string >= 8").configure({
 		ctx.code === "minLength" ? `${ctx.rule} characters or more` : "a password"
 })
 
-// ArkErrors: must be 8 characters or more (was 5)
+// ArkErrors: must be 8 characters or more (was length 5)
 Password("ez123")
 
 // ArkErrors: must be a password (was a number)
@@ -244,8 +244,8 @@ const User = type({
 	email: "string.email"
 })
 
-// ArkErrors: email must be an email address (was definitely fake)
-//            name must be text (was a number)
+// ArkErrors: name must be text (was a number)
+//            email must be an email address (was definitely fake)
 User({ name: 5, email: "449 Canal St" })
 ```
 
