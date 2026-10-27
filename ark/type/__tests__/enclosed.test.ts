@@ -150,6 +150,24 @@ contextualize(() => {
 		attest(T.expression).equals(Expected.expression)
 	})
 
+	it("reads the control character escapes JSON writes", () => {
+		const T = type('"a\\nb\\u0001"')
+		attest<"a\nb\u0001">(T.infer)
+		attest(T.json).equals({ unit: "a\nb\u0001" })
+		attest(T.expression).equals('"a\\nb\\u0001"')
+		attest(type.raw(T.expression).equals(T)).equals(true)
+		attest(T("a\nb\u0001")).equals("a\nb\u0001")
+		attest(T("a\\nb\\u0001").toString()).snap(
+			'must be "a\\nb\\u0001" (was "a\\\\nb\\\\u0001")'
+		)
+	})
+
+	it("reads other escapes as written", () => {
+		const T = type("'\\d\\u0041'")
+		attest<"\\d\\u0041">(T.infer)
+		attest(T.json).equals({ unit: "\\d\\u0041" })
+	})
+
 	it("string literal stress", () => {
 		const s = `"3.
 14159265358979323846264338327950288419716939937510

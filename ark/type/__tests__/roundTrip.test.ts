@@ -93,10 +93,16 @@ const numberDef = intersected(
 	)
 )
 
-// a literal's expression escapes a control character, like JSON, but a string
-// definition reads such an escape as written, so neither literal holds one
+// a control character is written raw, and its expression escapes it as JSON
+// does, which the literal reads back
 const stringLiteral = fc
-	.tuple(fc.string({ maxLength: 4 }), fc.constantFrom("'", '"'))
+	.tuple(
+		fc.oneof(
+			fc.string({ maxLength: 4 }),
+			fc.string({ unit: "binary-ascii", maxLength: 4 })
+		),
+		fc.constantFrom("'", '"')
+	)
 	.map(
 		([s, quote]) =>
 			`${quote}${s.replace(/\\/g, "\\\\").replace(new RegExp(quote, "g"), `\\${quote}`)}${quote}`
