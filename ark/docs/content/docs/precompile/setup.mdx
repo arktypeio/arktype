@@ -166,7 +166,19 @@ Bun's bundler needs Bun 1.2.22 or later. To precompile as Bun runs your code, se
 </Tab>
 <Tab value="Others">
 
-Farm takes `precompile.farm()`. For Next.js, see [Next.js](#next).
+Farm takes `precompile.farm()` among its `plugins`:
+
+```ts title="farm.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "@farmfe/core"
+
+export default defineConfig({
+	plugins: [precompile.farm()]
+})
+```
+
+For Next.js, see [Next.js](#next).
 
 </Tab>
 </Tabs>
