@@ -4,6 +4,7 @@ import {
 	draftOf,
 	headlineMethod,
 	isPending,
+	presetSizeRows,
 	sizeChart,
 	speedChart,
 	type BenchmarkChart,
@@ -11,6 +12,7 @@ import {
 	type Claim as ClaimValue
 } from "../../lib/claims.ts"
 import { GrowOnView } from "./GrowOnView.tsx"
+import { Table } from "./Table.tsx"
 
 export const ClaimText = ({ claim }: { claim: ClaimValue<string> }) =>
 	isPending(claim) ?
@@ -107,4 +109,30 @@ export const ClaimCharts = () => (
 		</p>
 		<GrowOnView />
 	</>
+)
+
+/** "smallest" against the default build and Valibot, from lib/bench/presetScale.json */
+export const PresetSizeTable = () => (
+	<Table>
+		<thead>
+			<tr>
+				<th>App, gzipped production bundle</th>
+				<th>Default</th>
+				<th>
+					<code>"smallest"</code>
+				</th>
+				<th>Valibot</th>
+			</tr>
+		</thead>
+		<tbody>
+			{presetSizeRows.map(row => (
+				<tr key={row.label}>
+					<td>{row.label}</td>
+					<td>{row.default}</td>
+					<td>{row.smallest}</td>
+					<td>{row.valibot}</td>
+				</tr>
+			))}
+		</tbody>
+	</Table>
 )

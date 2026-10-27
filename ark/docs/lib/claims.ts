@@ -631,6 +631,47 @@ if (!presetScaleRows.length || presetScaleLosses.length) {
 	)
 }
 
+const kbText = (bytes: number) =>
+	bytes < 100_000 ?
+		`${(bytes / 1000).toFixed(1)} KB`
+	:	`${Math.round(bytes / 1000)} KB`
+
+const typesText = (types: number) =>
+	`${types.toLocaleString("en-US")} ${types === 1 ? "Type" : "Types"}`
+
+const presetSizeAppNames: Record<string, string> = {
+	login: "a login form",
+	shop: "a shop"
+}
+
+export interface PresetSizeRow {
+	label: string
+	default: string
+	smallest: string
+	valibot: string
+}
+
+/**
+ * The precompile docs' table of "smallest" against the default build and
+ * Valibot: the homepage's login and shop apps, then the first mixed series
+ * of presetScale.json
+ */
+export const presetSizeRows: PresetSizeRow[] = [
+	...presetScale.apps.map(({ app, types, ...sizes }) => ({
+		label: `${presetSizeAppNames[app]}, ${typesText(types)}`,
+		...sizes
+	})),
+	...presetScale.series[0].rows.map(({ types, ...sizes }) => ({
+		label: typesText(types),
+		...sizes
+	}))
+].map(({ label, default: defaultSize, smallest, valibot }) => ({
+	label,
+	default: kbText(defaultSize),
+	smallest: kbText(smallest),
+	valibot: kbText(valibot)
+}))
+
 // the copy that states standings; the blog's frontmatter, which can't read
 // claims, is checked as its social cards are written (lib/writeOgImages.ts)
 const standingClaims = [

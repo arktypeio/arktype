@@ -616,11 +616,12 @@ The default build compiles each validator to the code that checks its Type faste
 
 | App, gzipped production bundle | Default | `"smallest"` | Valibot |
 | - | - | - | - |
-| a login form, 1 Type | 1.3 KB | 1.1 KB | 1.7 KB |
+| a login form, 1 Type | 1.3 KB | 1.2 KB | 1.7 KB |
 | a shop, 23 Types | 6.2 KB | 3.4 KB | 3.6 KB |
-| 50 Types | 13.5 KB | 5.4 KB | 5.5 KB |
-| 200 Types | 37.5 KB | 11.1 KB | 11.3 KB |
-| 1000 Types | 155 KB | 38.4 KB | 39.5 KB |
+| 10 Types | 5.1 KB | 3.1 KB | 3.4 KB |
+| 50 Types | 13.4 KB | 5.4 KB | 5.5 KB |
+| 200 Types | 37.4 KB | 11.2 KB | 11.3 KB |
+| 1,000 Types | 154 KB | 38.4 KB | 39.5 KB |
 
 What it costs is speed. At 200 Types, validating valid data takes about 2.7 times as long as the default build's validators, though still about half as long as Valibot's, and the bundle loads in about twice the default's time, creating every validator as it loads. Choose `"smallest"` where your bundle holds more than a handful of Types and validates input as it arrives, like a frontend's forms and API responses. Keep the default for a server and for validation on a hot path. A program reading only [`.allows`](https://arktype.io/docs/type-api) gets each validator written as the function checking it, as the default writes it, so it's no larger built `"smallest"`.
 
