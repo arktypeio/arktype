@@ -1510,7 +1510,7 @@ Configure its text under `undeclared` instead of `predicate`.
 
 ### Union misses have the discriminant code
 
-A value that matches no branch of a union ArkType checks by its type or by a literal value, like `number | null`, `"a" | "b" | "c"` or objects with a discriminant key, was a `predicate` error. Its code is now `discriminant`, and its `data` is the discriminating value:
+A value that matches no branch of a union ArkType checks by its type or by a literal value, like `number | null`, `"a" | "b" | "c"` or objects with a discriminant key, was a `predicate` error, and one of two literals, like `boolean`, was a `union` error. Its code is now `discriminant`, and its `data` is the discriminating value:
 
 ```ts
 const out = type("number | null")("x")
@@ -5485,7 +5485,7 @@ An error's `code` tells you its other fields:
 
 Each also has `data` and `path`, and `meta` unless `ctx` or `pipe.try` raised it. Built-in keywords with their own text, like `string.email`, set `meta.keyword` to their name.
 
-`discriminant` is a miss of a union ArkType checks by switching on a domain or a literal value: branches with different domains, like `number | null`, three or more literals, like `"a" | "b" | "c"`, or objects with a discriminant key. Its `data` is the discriminant's value, and `cases` lists the values or domains it expected, with `"Array"` in place of `"object"` where every object it expected is an array:
+`discriminant` is a miss of a union ArkType checks by switching on a domain or a literal value: branches with different domains, like `number | null`, two or more literals, like `boolean` or `"a" | "b"`, or objects with a discriminant key. Its `data` is the discriminant's value, and `cases` lists the values or domains it expected, with `"Array"` in place of `"object"` where every object it expected is an array:
 
 ```ts
 const Shape = type({ kind: "'circle'", r: "number" }).or({
@@ -5506,7 +5506,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-A union reports `union` instead where its discriminant can't tell the branches apart: an undiscriminated union, including two literals like `"a" | "b"`; data that can't hold the discriminant, like `5` for a union of objects; and data matching none of the discriminant's values when some branches don't have its key, whose `errors` hold the miss beside those branches' errors.
+A union reports `union` instead where its discriminant can't tell the branches apart: an undiscriminated union; data that can't hold the discriminant, like `5` for a union of objects; and data matching none of the discriminant's values when some branches don't have its key, whose `errors` hold the miss beside those branches' errors.
 
 ## TraversalError
 

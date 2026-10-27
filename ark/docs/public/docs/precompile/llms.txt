@@ -190,6 +190,8 @@ await build({
 
 Put `precompile.esbuild()` ahead of any plugin that loads your TypeScript modules, since esbuild loads a module with the first plugin that returns it.
 
+tsup takes it in `esbuildPlugins`, and leaves your dependencies external unless told to bundle them, so add `noExternal: ["arktype"]`. The build fails without it, as the program would load arktype beside the runtime its validators use.
+
 **Rolldown**
 
 ```ts
@@ -202,6 +204,8 @@ export default defineConfig({
 	plugins: [precompile.rolldown()]
 })
 ```
+
+tsdown takes it in `plugins`, and leaves your dependencies external unless told to bundle them, so add `deps: { alwaysBundle: [/^arktype(\/|$)/] }`. The build fails without it, as the program would load arktype beside the runtime its validators use.
 
 **Rollup**
 
@@ -262,6 +266,17 @@ export default {
 }
 ```
 
+**Rsbuild**
+
+```ts
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "@rsbuild/core"
+
+export default defineConfig({
+	plugins: [precompile.rsbuild()]
+})
+```
+
 **Bun**
 
 ```ts
@@ -278,7 +293,7 @@ Bun's bundler needs Bun 1.2.22 or later. To precompile as Bun runs your code, se
 
 **Others**
 
-Rsbuild takes `precompile.rsbuild()` and Farm `precompile.farm()`. For Next.js, see [Next.js](https://arktype.io/docs/precompile/setup#next).
+Farm takes `precompile.farm()`. For Next.js, see [Next.js](https://arktype.io/docs/precompile/setup#next).
 
 By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`. A dependency that imports `arktype` gets `arktype/runtime` too, where defining a Type throws, so the build fails for each such package unless it [opts in](https://arktype.io/docs/precompile/advanced#libraries).
 
@@ -301,7 +316,7 @@ A validator leaves out its JSON Schema unless the build sets it, so a library th
 
 ## Frameworks
 
-With Vite, list `precompile.vite()` after your framework's plugins. Each line was checked with a production build of a small app, on SvelteKit 3.1, Astro 7.4, Nuxt 4.6, React Router 8.5 and TanStack Router 1.168:
+With Vite, list `precompile.vite()` after your framework's plugins. Each line was checked with a production build of a small app, on SvelteKit 3.1, Astro 7.4, Nuxt 4.6, React Router 8.5, TanStack Router 1.168, Cloudflare's Vite plugin 1.65 with Wrangler 4.153, and Metro 0.87:
 
 | Framework | Setup |
 | - | - |
@@ -311,9 +326,12 @@ With Vite, list `precompile.vite()` after your framework's plugins. Each line wa
 | React Router (Remix) | `plugins: [reactRouter(), precompile.vite()]` in `vite.config.ts` |
 | TanStack Router | `plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), precompile.vite()]` in `vite.config.ts`. Its code splitting moves a route's component into a module of its own after the plugins ahead of it run, so the build fails where arktype's plugin comes first |
 | Next.js | See [Next.js](https://arktype.io/docs/precompile/setup#next) |
+| Cloudflare Workers | With `@cloudflare/vite-plugin`, `plugins: [cloudflare(), precompile.vite()]` in `vite.config.ts`. Wrangler bundles with esbuild but takes no plugins, so without Vite, build the worker with esbuild and `precompile.esbuild()` from Wrangler's `build.command`, and point `main` at its output. Workers don't let arktype compile a validator as it runs, which a precompiled one doesn't need |
 | Monorepos | Nothing extra. A workspace package linked into `node_modules`, as pnpm, npm, Yarn and Bun workspaces link it, resolves to its own directory, so the build precompiles it with the program |
 | Jest | Not supported. It has no driver, so it runs your Types on arktype, unprecompiled. See [Test runners](https://arktype.io/docs/precompile/setup#test-runners) |
 | Deno | A bundler plugin works under Deno, e.g. `deno run -A npm:vite build` with `precompile.vite()`. There's no driver, so `deno run` on your source loads arktype unprecompiled |
+| React Native (Metro) | Not supported. Metro caches each module by its own text, so a module whose validators are written from a Type it imports would keep them after that Type changed. Precompile the modules defining your Types as a package of their own, with `tsc && arktype-precompile --emit` ([Build with tsc](https://arktype.io/docs/precompile/setup#tsc)), and import that package, rather than `arktype`, from the app |
+| Parcel | Not supported. Bundle with a [supported bundler](https://arktype.io/docs/precompile/setup#bundlers) |
 
 Define your Types in `.ts` or `.js` modules. A component another plugin compiles, like a Svelte, Vue or Astro component or an MDX page, can call a validator or read its `.allows` and `.assert`, but the build can't write a validator inside it. So a read there that only a precompiled site could serve, like `.description` or `.omit()`, or that a validator lacks, like `.errors`, fails the build, or the dev server's request for the component, naming the read. Move it into a module the component imports, e.g. as a function the component calls.
 
@@ -619,12 +637,13 @@ In development and tests, validators check at runtime what the build verified, s
 A production build leaves these out, as `freeze: false`, `creationChecks: "none"` and `config: false`, unless an option or `ark.json` sets one. A factory still checks each function another module supplies. What counts as production:
 
 - Vite's `build` command, outside Vitest
-- webpack and Rspack in `production` mode, their default
-- esbuild with `"production"` among its `conditions`
+- webpack, Rspack and Rsbuild in `production` mode, their default
+- Farm in `production` mode, as `farm build` sets it
+- esbuild and `Bun.build` with `"production"` among their `conditions`
 - `arktype-precompile --emit`, unless `NODE_ENV` is set to something else
 - Turbopack, the Node and Bun drivers, `arktype-precompile --check` and the ESLint rule where `NODE_ENV` is `production`, as `next build` sets it
 
-Rollup, Rolldown and Farm builds keep the checks unless set.
+Rollup and Rolldown builds keep the checks unless set.
 
 ## ark.json
 
@@ -845,9 +864,9 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 | What | Instead |
 | - | - |
-| Parcel, Deno and Jest, which have no plugin or driver | Bundle with a [supported bundler](https://arktype.io/docs/precompile/setup#bundlers), and test with Vitest, `node --test` or `bun test` |
+| Parcel, Metro (React Native), Deno and Jest, which have no plugin or driver | Bundle with a [supported bundler](https://arktype.io/docs/precompile/setup#bundlers), and test with Vitest, `node --test` or `bun test`. For React Native, see [Frameworks](https://arktype.io/docs/precompile/setup#frameworks) |
 | esbuild without `bundle: true` | Set `bundle: true` |
-| `arktype` left external, as by `external` or webpack's `externals` | Let the bundler bundle it |
+| `arktype` left external, as by `external`, webpack's `externals`, tsup or tsdown | Let the bundler bundle it |
 | Types defined in a Svelte component or another file that isn't JS or TS | Define them in a `.ts` or `.js` module the component imports |
 | Types defined in a virtual module, esbuild's `stdin`, a `data:` URL or `node --eval` | Define them in a file |
 | A definition reading a value known only at runtime | Make it static, or mark it as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands) |
@@ -904,6 +923,8 @@ Each of these is reported by the build, or listed here where nothing can report 
 **`arktype resolves to 2.3.0, but @ark/aot runs on 2.2.9`**: validators run only on the arktype they were built with. Where your program imports the other version, as after upgrading arktype alone, the message names the `@ark/aot` released with it, e.g. `npm i -D @ark/aot@<version>`. Where a dependency does, install one version, e.g. with your package manager's dedupe or overrides.
 
 **`precompiledForArktype_<version>` is not exported by `arktype/runtime`** (each bundler words it its own way): every module of validators imports an export of `arktype/runtime` named for the version it was built for, so linking it to another version's runtime fails rather than misbehaving at runtime. It usually means a bundler cache from before an upgrade, or a second copy of arktype. Install one version and clear the bundler's cache.
+
+**`The bundle leaves arktype to be loaded at runtime`** (or `arktype/runtime`): the program would load arktype, or a second copy of its runtime, beside the runtime its validators use, so `out instanceof type.errors` would be false for their errors. A tool that leaves dependencies external does this unless told otherwise: with tsup, add `noExternal: ["arktype"]`, and with tsdown, `deps: { alwaysBundle: [/^arktype(\/|$)/] }`. Where every import of arktype's runtime is left external, as with esbuild's `packages: "external"`, the program loads one copy, and the build allows it.
 
 **`arktype resolves to more than one copy`**: one copy doesn't recognize another's Types and errors. The message names each copy and the file that reached it.
 
