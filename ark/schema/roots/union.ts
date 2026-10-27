@@ -312,9 +312,27 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 			return { type: "boolean" }
 
-		const jsonSchemaBranches = this.branchGroups.map(group =>
+		// undefined is not a valid JSON value, so a branch with an undefined
+		// unit can never be satisfied by JSON data and is dropped instead of
+		// triggering the unjsonifiable "unit" fallback
+		// (https://github.com/arktypeio/arktype/issues/1462)
+		const jsonifiableBranchGroups = this.branchGroups.filter(
+			group => !group.hasUnit(undefined)
+		)
+
+		// if every branch was undefined, preserve the original groups so that
+		// conversion still fails loudly via the "unit" fallback
+		const groupsToConvert =
+			jsonifiableBranchGroups.length === 0 ?
+				this.branchGroups
+			:	jsonifiableBranchGroups
+
+		const jsonSchemaBranches = groupsToConvert.map(group =>
 			group.toJsonSchemaRecurse(ctx)
 		)
+
+		// a lone branch, e.g. for string | undefined, needs no union wrapper
+		if (jsonSchemaBranches.length === 1) return jsonSchemaBranches[0]
 
 		if (
 			jsonSchemaBranches.every(

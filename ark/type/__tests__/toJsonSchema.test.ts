@@ -132,6 +132,54 @@ contextualize(() => {
 		})
 	})
 
+	describe("undefined", () => {
+		// https://github.com/arktypeio/arktype/issues/1462
+		it("union including undefined", () => {
+			const T = type("string | undefined")
+			attest(T.toJsonSchema({ dialect: null })).snap({ type: "string" })
+		})
+
+		it("prop with union including undefined", () => {
+			const T = type({
+				maybe: "string | undefined"
+			})
+			attest(T.toJsonSchema({ dialect: null })).snap({
+				type: "object",
+				properties: { maybe: { type: "string" } },
+				required: ["maybe"]
+			})
+		})
+
+		it("optional prop with union including undefined", () => {
+			const T = type({
+				"maybe?": "string | undefined"
+			})
+			attest(T.toJsonSchema({ dialect: null })).snap({
+				type: "object",
+				properties: { maybe: { type: "string" } }
+			})
+		})
+
+		it("undefined alongside literal values", () => {
+			const T = type.enumerated("a", undefined, "b")
+			attest(T.toJsonSchema({ dialect: null })).snap({ enum: ["a", "b"] })
+		})
+
+		it("undefined alongside null", () => {
+			const T = type("null | undefined")
+			attest(T.toJsonSchema({ dialect: null })).snap({ type: "null" })
+		})
+
+		it("standalone undefined", () => {
+			const T = type("undefined")
+			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+    code: "unit",
+    base: {},
+    unit: undefined
+}`)
+		})
+	})
+
 	describe("useRefs", () => {
 		it("union of object and null", () => {
 			const T = type({ a: "string" }).or("null")

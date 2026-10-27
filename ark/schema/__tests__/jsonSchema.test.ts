@@ -272,6 +272,33 @@ contextualize(() => {
 		})
 	})
 
+	it("drops undefined branch from union", () => {
+		const T = rootSchema([{ domain: "string" }, { unit: undefined }])
+
+		attest(toJsonSchema(T)).snap({ type: "string" })
+	})
+
+	it("drops undefined branch from union of literals", () => {
+		const T = rootSchema([{ unit: undefined }, { unit: 0 }, { unit: 1 }])
+
+		attest(toJsonSchema(T)).snap({ enum: [0, 1] })
+	})
+
+	it("drops undefined branch from prop value", () => {
+		const T = rootSchema({
+			domain: "object",
+			required: [
+				{ key: "foo", value: [{ domain: "string" }, { unit: undefined }] }
+			]
+		})
+
+		attest(toJsonSchema(T)).snap({
+			type: "object",
+			properties: { foo: { type: "string" } },
+			required: ["foo"]
+		})
+	})
+
 	it("includes default for primitive prop", () => {
 		const T = rootSchema({
 			domain: "object",

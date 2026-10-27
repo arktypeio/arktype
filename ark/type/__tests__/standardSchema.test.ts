@@ -147,7 +147,7 @@ contextualize(() => {
 					date: {},
 					ends: { type: "array", minItems: 1 },
 					even: { type: "number" },
-					maybe: { anyOf: [{ type: "string" }, {}] },
+					maybe: { type: "string" },
 					count: {}
 				},
 				required: ["big", "date", "ends", "even", "maybe"]
