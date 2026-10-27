@@ -1126,6 +1126,21 @@ console.log(await result.outputs[0].text())`
 				attest(runBundle(bundle).stdout).equals(expected)
 			})
 
+			it("compiles an imported module's JSX with the jsxImportSource tsconfig.json sets", () => {
+				const dir = writeFixture({
+					"tsconfig.json": `{ "compilerOptions": { "jsx": "react-jsx", "jsxImportSource": "jsxlib" } }`,
+					"node_modules/jsxlib/package.json": `{ "name": "jsxlib", "type": "module" }`,
+					"node_modules/jsxlib/jsx-dev-runtime.js": `export const jsxDEV = tag => tag`,
+					"node_modules/jsxlib/jsx-runtime.js": `export const jsx = tag => tag`,
+					"main.ts": `import { b } from "./b.tsx"\n\nconsole.log(b)\n`,
+					"b.tsx": "export const b = <b />\n"
+				})
+				const bundle = bunBuild(
+					`{ entrypoints: [${JSON.stringify(join(dir, "main.ts"))}] }`
+				).stdout
+				attest(runBundle(bundle).stdout).equals("b\n")
+			})
+
 			it("fails a build leaving arktype external", () => {
 				const { status, stderr } = bunBuild(`{ external: ["ark*"] }`)
 				attest(status).equals(1)

@@ -1251,7 +1251,31 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		:	plugin
 })
 
-export const precompile = unplugin as PrecompileUnplugin
+export const precompile = {
+	...(unplugin as PrecompileUnplugin),
+	// Bun.build ignores tsconfig.json's jsxImportSource in each module where
+	// an onResolve hook matches every import, as unplugin's would, so ours
+	// matches only what the plugin resolves
+	bun: options => {
+		const plugin = unplugin.bun(options)
+		return {
+			...plugin,
+			setup: (build: Parameters<typeof plugin.setup>[0]) =>
+				plugin.setup(
+					new Proxy(build, {
+						get: (target, key) =>
+							key === "onResolve" ?
+								(constraints: { filter: RegExp }, callback: never) =>
+									target.onResolve(
+										{ ...constraints, filter: ownSpecifier },
+										callback
+									)
+							:	Reflect.get(target, key)
+					})
+				)
+		}
+	}
+} satisfies PrecompileUnplugin
 
 const esbuildResolution = "arktype"
 
