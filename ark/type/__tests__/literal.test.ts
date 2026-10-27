@@ -59,6 +59,12 @@ contextualize(() => {
 		})
 	})
 
+	it("number String writes with an exponent", () => {
+		const T = type.unit(1e21)
+		attest(T.expression).snap("1000000000000000000000")
+		attest(type.raw(T.expression).json).equals(T.json)
+	})
+
 	it("prints an object unit without calling its code", () => {
 		let calls = 0
 		const o = {

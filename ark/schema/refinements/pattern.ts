@@ -90,6 +90,20 @@ const repeatedAtom =
 const isRepeatedAtom = (rule: string, flags: string | undefined) =>
 	(flags === undefined || /^[disu]*$/.test(flags)) && repeatedAtom.test(rule)
 
+// a string definition's regex literal reads a backslash as an escape only
+// before a /, so its source is written as it is but for each / and, as a
+// RegExp writes them, its line terminators
+const escapesInRegexLiteral: Record<string, string> = {
+	"/": "\\/",
+	"\n": "\\n",
+	"\r": "\\r",
+	"\u2028": "\\u2028",
+	"\u2029": "\\u2029"
+}
+
+const writeRegexLiteral = (rule: string, flags = ""): string =>
+	`/${rule.replace(/\\.|[\n\r/\u2028\u2029]/g, token => escapesInRegexLiteral[token] ?? token)}/${flags}`
+
 export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration> {
 	constructor(
 		...args: ConstructorParameters<typeof InternalPrimitiveConstraint>
@@ -99,9 +113,9 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 	}
 
 	readonly instance: RegExp = new RegExp(this.rule, this.flags)
-	readonly expression: string = `${this.instance}`
+	readonly expression: string = writeRegexLiteral(this.rule, this.flags)
 	readonly test: ((s: string) => boolean) | undefined =
-		testsByExpression[this.expression]
+		testsByExpression[`${this.instance}`]
 	private readonly isRepeated = isRepeatedAtom(this.rule, this.flags)
 	// g and y make test start from lastIndex, which it also advances
 	private readonly resetsLastIndex =

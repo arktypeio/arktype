@@ -291,7 +291,7 @@ contextualize(() => {
 				required: ["a"],
 				patternProperties: { "": { type: "number" } }
 			})
-			assertEmits(T, S, {}, "{ [/(?:)/]: number, a: number }")
+			assertEmits(T, S, {}, "{ [//]: number, a: number }")
 			attest<typeof T.infer>(S).type.toString.snap(
 				"{ [x: string]: number; a: number }"
 			)

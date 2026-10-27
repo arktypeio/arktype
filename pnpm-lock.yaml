@@ -77,6 +77,9 @@ importers:
       eslint-plugin-unicorn:
         specifier: 61.0.2
         version: 61.0.2(eslint@9.37.0(jiti@2.6.1))
+      fast-check:
+        specifier: 3.23.2
+        version: 3.23.2
       knip:
         specifier: 5.65.0
         version: 5.65.0(@types/node@24.7.2)

@@ -32,4 +32,10 @@ contextualize(() => {
 			"ParseError: dateAllowsInvalid may only be specified with constructor Date (was Map)"
 		)
 	})
+
+	it("disallowing invalid Dates like config is the default", () => {
+		const T = rootSchema({ proto: Date, dateAllowsInvalid: false })
+		attest(T.json).snap({ proto: "Date" })
+		attest(T.equals(rootSchema({ proto: Date }))).equals(true)
+	})
 })

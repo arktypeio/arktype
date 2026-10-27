@@ -4,6 +4,7 @@ import {
 	hasDomain,
 	isDate,
 	printable,
+	printDecimal,
 	timeOf,
 	type Domain,
 	type JsonPrimitive
@@ -78,9 +79,9 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	}
 
 	expression: string =
-		isDate(this.unit) ?
-			`d'${this.compiledValue}'`
-		:	printable(this.unit, { ownDataOnly: true })
+		isDate(this.unit) ? `d'${this.compiledValue}'`
+		: typeof this.unit === "number" ? printDecimal(this.unit)
+		: printable(this.unit, { ownDataOnly: true })
 	domain: Domain = domainOf(this.unit)
 
 	get defaultBrief(): string {
