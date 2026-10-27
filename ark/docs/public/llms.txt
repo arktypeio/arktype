@@ -3735,6 +3735,22 @@ const Numeric = type("number | bigint")
 const numerics = [0, "one", 2n].filter(Numeric.allows)
 ```
 
+### assertAsync
+
+validate and resolve output once `narrowAsync` checks settle, or reject
+
+```ts
+const User = type({ name: "string" }).narrowAsync(isRegistered)
+// rejects with TraversalError if the user isn't registered
+const user = await User.assertAsync(data)
+```
+
+### allowsAsync
+
+check input once `narrowAsync` checks settle
+
+⚠️ not a type guard, since a type guard can't be async
+
 ### configure
 
 add metadata to shallow references
@@ -3894,6 +3910,30 @@ const PalindromicEmail = type("string.date.parse").narrow((date, ctx) =>
 )
 // Type<`${string}.tsx`>
 const WithPredicate = type("string").narrow((s): s is `${string}.tsx` => /\.tsx?$/.test(s))
+```
+
+### narrowAsync
+
+apply an async predicate function to output
+
+✅ `predicate` gets the same `ctx` as `.narrow` and resolves what a `.narrow` predicate returns
+
+✅ consecutive `narrowAsync` checks run in parallel, and `.narrow` after them still runs
+
+✅ errors are listed in the order they became known
+
+⚠️ until it settles, data fails with an error whose `isLoading` is `true`
+
+✅ `.configure` sets the messages of that error and of a `false` without an error
+
+🔗 await `errors.settled`, `assertAsync` or `allowsAsync` for the final result
+
+```ts
+const Username = type("string").narrowAsync(async (name, ctx) =>
+    (await isAvailable(name)) || ctx.mustBe("an available username")
+)
+const out = Username("alan") // ArkErrors with isLoading: true
+const final = await out.settled // "alan" or ArkErrors
 ```
 
 ### pipe
@@ -4233,6 +4273,12 @@ configuration for this traversal
 ✅ defaults < global config < scope config
 
 ✅ does not include options configured on individual types
+
+### isLoading
+
+whether a `narrowAsync` check in this traversal hasn't settled
+
+🔗 errors from this traversal expose it as `ArkErrors.isLoading`
 
 ### reject
 

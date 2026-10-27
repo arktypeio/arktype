@@ -55,6 +55,13 @@ export class Traversal {
 	 */
 	config: ResolvedConfig
 
+	/**
+	 * #### whether a `narrowAsync` check in this traversal hasn't settled
+	 *
+	 * 🔗 errors from this traversal expose it as {@link ArkErrors.isLoading}
+	 */
+	isLoading = false
+
 	queuedMorphs: MorphsAtPath[] = []
 	branches: BranchTraversal[] = []
 	seen: { [id in string]?: unknown[] } = {}

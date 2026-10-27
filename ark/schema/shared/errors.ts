@@ -23,6 +23,13 @@ import { arkKind } from "./utils.ts"
 
 export type ArkErrorResult = ArkError | ArkErrors
 
+/** @internal marks the meta of the error added while a `narrowAsync` check hasn't settled */
+export const loadingKey: unique symbol = Symbol("loading")
+
+/** @internal waits for the result of a root whose `narrowAsync` checks hadn't settled */
+export const awaitSettledByErrors: WeakMap<ArkErrors, () => Promise<unknown>> =
+	new WeakMap()
+
 export class ArkError<
 	code extends ArkErrorCode = ArkErrorCode
 > extends CastableBase<ArkErrorContextInput<code>> {
@@ -128,6 +135,14 @@ export class ArkError<
 		return this.hasCode("intersection") ? [...this.errors] : [this as never]
 	}
 
+	/**
+	 * Whether this error only means a `narrowAsync` check hasn't settled.
+	 * A failure already known at this path replaces it.
+	 */
+	get isLoading(): boolean {
+		return this.flat.some(e => (e.meta as any)?.[loadingKey] === true)
+	}
+
 	toJSON(): JsonObject {
 		return {
 			data: this.data,
@@ -159,7 +174,7 @@ export declare namespace ArkErrors {
  * Subsequent errors added at an existing path are merged into an
  * ArkError intersection.
  */
-export class ArkErrors
+export class ArkErrors<output = unknown>
 	extends ReadonlyArray<ArkError>
 	implements StandardSchemaV1.FailureResult
 {
@@ -217,6 +232,24 @@ export class ArkErrors
 	 */
 	throw(): never {
 		throw this.toTraversalError()
+	}
+
+	/**
+	 * Whether a `narrowAsync` check hasn't settled, so the data may still pass
+	 * or fail with more errors. Await {@link settled} for the final result.
+	 */
+	get isLoading(): boolean {
+		return this.ctx.isLoading || this.some(e => e.isLoading)
+	}
+
+	/**
+	 * The result once every `narrowAsync` check has settled: the output, or
+	 * `ArkErrors` with nothing loading. Resolves these errors if nothing is
+	 * loading, and rejects if a check throws.
+	 */
+	get settled(): Promise<output | ArkErrors<output>> {
+		return (awaitSettledByErrors.get(this)?.() ??
+			Promise.resolve(this)) as never
 	}
 
 	/**

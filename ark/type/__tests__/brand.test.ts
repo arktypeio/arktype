@@ -13,7 +13,7 @@ contextualize(() => {
 		attest(T.expression).equals("string")
 
 		const out = T("moo")
-		attest<Brand<string, "foo"> | type.errors>(out)
+		attest<Brand<string, "foo"> | type.errors<Brand<string, "foo">>>(out)
 	})
 
 	it("string", () => {
@@ -25,7 +25,7 @@ contextualize(() => {
 		attest(T.expression).equals("number")
 
 		const out = T(5)
-		attest<Brand<number, "cool"> | type.errors>(out)
+		attest<Brand<number, "cool"> | type.errors<Brand<number, "cool">>>(out)
 	})
 
 	it("in object", () => {

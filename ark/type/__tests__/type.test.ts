@@ -95,7 +95,7 @@ contextualize(() => {
 		attest(() => type("number[]") satisfies Type<string[]>).type.errors(
 			"Type 'Type<number, {}>' is missing the following properties from type 'Type<string, {}>'"
 		)
-		attest.instantiations([248683, "instantiations"])
+		attest.instantiations([248709, "instantiations"])
 	})
 
 	it("args signature obeys assignability rules", () => {
@@ -105,7 +105,7 @@ contextualize(() => {
 		attest(() => type("number", "[]") satisfies Type<string[]>).type.errors(
 			"Type 'Type<number, {}>' is missing the following properties from type 'Type<string, {}>'"
 		)
-		attest.instantiations([249815, "instantiations"])
+		attest.instantiations([249694, "instantiations"])
 	})
 
 	it("type.Any allows arbitrary scope", () => {
