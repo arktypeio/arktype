@@ -125,9 +125,9 @@ for (const [i, def] of definitions.entries()) {
 	t(undefined)
 }
 
-// these Types compile their divisor and pattern nodes inline, binding none
-for (const kind of checkedKinds) {
-	if (kind === "divisor" || kind === "pattern") continue
+// a unit binds only the nodes its code calls, so the rest of these kinds
+// are compiled inline, binding none
+for (const kind of ["intersection", "structure", "union", "morph", "unit"]) {
 	const bound = [...nodesByKind[kind]].filter(node => node.unitFn)
 	if (!bound.length || bound.length === nodesByKind[kind].size)
 		throw new Error(`Expected both bound and unbound ${kind} nodes to compare.`)

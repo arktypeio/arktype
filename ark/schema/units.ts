@@ -84,16 +84,22 @@ const isLeafIn = (node: BaseNode, byId: Record<string, BaseNode>): boolean => {
 export const precompile = (
 	references: readonly BaseNode[],
 	owningScope?: BaseScope,
-	unbound?: UnboundTraversals
+	unbound?: UnboundTraversals,
+	root?: BaseNode
 ): Fn => {
 	const link = createLinkage()
 	const reused = new Set<BaseNode>()
 	link.reused = reused
 	for (const node of references) link.byId[node.id] = node
 	const declared: BaseNode[] = []
+	// a root's unit declares the references its traversals reach, and binds them
+	const pruned = new Set<BaseNode>()
 	for (const node of references) {
 		if (node.c.isReusableLeaf && isLeafIn(node, link.byId)) reused.add(node)
-		else if (
+		else if (root && node !== root && !node.unitFn) {
+			link.unreached.add(node)
+			pruned.add(node)
+		} else if (
 			node.unitFn &&
 			(!owningScope || node.$ !== owningScope) &&
 			// compiling an alias can create nodes, so every unit declares its own
@@ -103,21 +109,23 @@ export const precompile = (
 		else declared.push(node)
 	}
 	const unitFn = precompileReferences(declared, link).compile()
-	bindUnit(
-		declared,
-		unitFn,
-		unitFn(
-			Object.values(link.dependencies).map(([node, kind]) => {
-				const traverse: Fn = node[`t${kind}`]!
-				// an uncompiled node's traversal is its method, which reads the node
-				return hasOwn(node, `t${kind}`) ? traverse : traverse.bind(node)
-			}),
-			[...link.refs.keys()]
-		),
-		link.byId,
-		owningScope,
-		unbound
+	const traversals = unitFn(
+		Object.values(link.dependencies).map(([node, kind]) => {
+			const traverse: Fn = node[`t${kind}`]!
+			// an uncompiled node's traversal is its method, which reads the node
+			return hasOwn(node, `t${kind}`) ? traverse : traverse.bind(node)
+		}),
+		[...link.refs.keys()]
 	)
+	const bound = [...declared]
+	const boundTraversals = traversals.slice(0, declared.length)
+	// the unit declares what it reached after what it was given
+	for (let i = 0; i < link.reached.length; i++) {
+		if (!pruned.has(link.reached[i])) continue
+		bound.push(link.reached[i])
+		boundTraversals.push(traversals[declared.length + i])
+	}
+	bindUnit(bound, unitFn, boundTraversals, link.byId, owningScope, unbound)
 	return unitFn
 }
 
@@ -134,7 +142,7 @@ export const precompileRoot = (
 	// an apply checking data uncompiled to write in place reads no copy
 	for (const node of $ark.inPlace?.checking ?? []) unbound.set(node, undefined)
 	unbound.delete(root)
-	precompile(references, undefined, unbound)
+	precompile(references, undefined, unbound, root)
 	// what an apply writing in place reads rather than compiling again
 	if ($ark.inPlace) root.c.unbound = unbound
 }
@@ -467,7 +475,7 @@ const precompileReferences = (
 ) => {
 	const traversals = references.map(node => declareTraversals(link, node))
 	for (let i = 0; i < link.reached.length; i++)
-		declareTraversals(link, link.reached[i])
+		traversals.push(declareTraversals(link, link.reached[i]))
 	return writeUnit(
 		Object.keys(link.dependencies),
 		[...link.refs.values()],

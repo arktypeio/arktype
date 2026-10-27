@@ -371,29 +371,33 @@ b must be a number (was a string)`)
 	})
 
 	it("errors at more paths than are scanned", () => {
+		const l = Symbol("alike")
+		const r = Symbol("alike")
 		const out = type("unknown").narrow((d, ctx) => {
-			for (let i = 0; i < 10; i++)
-				ctx.reject({ expected: `p${i}`, path: [`k${i}`] })
-			ctx.reject({ expected: "q", path: ["k3"] })
-			ctx.reject({ expected: "r", path: ["k9"] })
+			for (let i = 0; i < 40; i++)
+				ctx.reject({ expected: `p${i}`, path: ["k", i] })
+			ctx.reject({ expected: "q", path: ["k", 3] })
+			ctx.reject({ expected: "r", path: ["k", 39] })
+			ctx.reject({ expected: "s", path: [l] })
+			ctx.reject({ expected: "t", path: [r] })
+			ctx.reject({ expected: "u", path: ["k"] })
+			ctx.reject({ expected: "v", path: [r] })
 			return false
 		})(1) as ArkErrors
 
-		attest(out.issues.map(e => e.propString)).equals(Object.keys(byPath(out)))
-		attest("byPath" in out).equals(false)
-		attest(flatProblemsByPath(out)).snap({
-			k0: ["must be p0 (was 1)"],
-			k1: ["must be p1 (was 1)"],
-			k2: ["must be p2 (was 1)"],
-			k3: ["must be p3 (was 1)", "must be q (was 1)"],
-			k4: ["must be p4 (was 1)"],
-			k5: ["must be p5 (was 1)"],
-			k6: ["must be p6 (was 1)"],
-			k7: ["must be p7 (was 1)"],
-			k8: ["must be p8 (was 1)"],
-			k9: ["must be p9 (was 1)", "must be r (was 1)"]
-		})
-		attest(out.count).equals(12)
+		attest(out.count).equals(46)
+		attest(out.issues.length).equals(43)
+		attest(out.issues.slice(38).map(e => e.message)).snap([
+			"k[38] must be p38 (was 1)",
+			"k[39] (1) must be...\n  ◦ p39\n  ◦ r",
+			"value at [Symbol(alike)] must be s (was 1)",
+			"value at [Symbol(alike)] (1) must be...\n  ◦ t\n  ◦ v",
+			"k must be u (was 1)"
+		])
+		attest(flatProblemsByPath(out)["k[3]"]).snap([
+			"must be p3 (was 1)",
+			"must be q (was 1)"
+		])
 	})
 
 	it("flattens errors by path into plain objects", () => {
