@@ -131,7 +131,7 @@ Never interpolate a type into a string, as in ``type(`${Address}[]`)``. Use `Add
 - `.merge()` adds keys and replaces existing ones. `.and()` intersects, and throws when a key's types conflict.
 - To share keys between types, merge a base Type. To reuse a pattern across Types, define a Generic: `const Page = type("<t>", { items: "t[]", total: "number" })`, called as `Page(Item)`.
 - A helper can compose Types by taking a `Type<t>` and calling its methods, which type-checks without casts: `const withId = <t extends object>(T: Type<t>) => T.and({ id: "string" })`. In a precompiled project, keep its body to one expression, or consts and one `return`, and call it with Types the build knows, like `withId(User)`. A helper that passes a generic definition to `type()` needs casts.
-- A function that accepts any Type takes `type.Any`, not `Type<any>`. To embed the Type it receives in a new definition, take `type.Any<t>`: `const page = <t>(item: type.Any<t>) => type({ items: item.array(), total: "number" })`.
+- A function that accepts any Type takes `type.Any`, not `Type<any>`. To keep the output type, like a form-action wrapper that validates and passes the data on, make it generic: `<T extends type.Any>(schema: T, action: (data: T["infer"]) => void)`. To embed the Type it receives in a new definition, take `type.Any<t>`: `const page = <t>(item: type.Any<t>) => type({ items: item.array(), total: "number" })`.
 - `.as<T>()` is a cast. To infer a narrower type, use `.narrow()` with a type predicate, e.g. `(s): s is \`data-${string}\` => s.startsWith("data-")`.
 
 ## Parsing and transforming
@@ -189,6 +189,25 @@ const Signup = type({
 		})
 )
 ```
+
+## Error messages
+
+`.configure({ message })` replaces a Type's whole message, and `.describe()` what follows "must be". Each applies wherever that Type is used, including a precompiled build. A message on a key's value applies when the value is wrong, not when the key is missing, which reads `terms is missing`. To use it then too, configure the `required` code in the config module, where its function receives the missing key's `propString` and the value's `valueMeta`:
+
+```ts
+import { configure } from "arktype/config"
+
+configure({
+	required: {
+		message: ctx =>
+			typeof ctx.valueMeta.message === "string" ?
+				ctx.valueMeta.message
+			:	`${ctx.propString} is required`
+	}
+})
+```
+
+To show each message beside its field, group `out.issues` by `issue.path.join(".")`, keeping the first message for each key.
 
 ## Recursive and cyclic types
 
