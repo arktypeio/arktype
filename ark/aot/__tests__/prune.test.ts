@@ -121,6 +121,30 @@ contextualize(function (this: Mocha.Suite) {
 			attest(await droppedReading("User.allows({})")).equals(everyMember)
 		})
 
+		it("through a const choosing between validators", async () => {
+			const admin = {
+				"/admin.ts": `import { type } from "arktype"\n\nexport const Admin = type({ name: "string", role: "'admin'" })`
+			}
+			attest(
+				await droppedReading(
+					`import { Admin } from "./admin.ts"\nconst T = import.meta.env.DEV ? Admin : User\n\nT.assert({})`,
+					admin
+				)
+			).snap(["meta", "~standard", "methods"])
+			attest(
+				await droppedReading(
+					`import { Admin } from "./admin.ts"\nconst T = (import.meta.env.DEV && Admin) || User\n\nT({})`,
+					admin
+				)
+			).equals(everyMember)
+			attest(
+				await droppedReading(
+					`import { Admin } from "./admin.ts"\nconst T = import.meta.env.DEV ? Admin : User\n\nconsole.log(T)`,
+					admin
+				)
+			).snap("main.ts:6:13 passes T to a function, which may read any member")
+		})
+
 		it(".assert", async () => {
 			attest(await droppedReading("User.assert({})")).snap([
 				"meta",

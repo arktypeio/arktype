@@ -274,7 +274,7 @@ class UsageAnalysis {
 				runtime
 			)
 		}
-		this.read(operand, parent, runtime.module)
+		this.read(operand, parent, runtime)
 	}
 
 	private readBinding(binding: Binding, runtime: RuntimeModule): void {
@@ -308,7 +308,7 @@ class UsageAnalysis {
 				parent?.type === "ExportDefaultDeclaration"
 			)
 				continue
-			this.read(operand, parent, module)
+			this.read(operand, parent, runtime)
 		}
 		for (const name of binding.exportNames) this.readExport(runtime, name)
 	}
@@ -384,7 +384,7 @@ class UsageAnalysis {
 			}
 			if (read !== name) continue
 			const [member, memberParent] = operatorOf(parent)
-			this.read(member, memberParent, module)
+			this.read(member, memberParent, runtime)
 		}
 	}
 
@@ -392,8 +392,16 @@ class UsageAnalysis {
 	private read(
 		node: Node,
 		parent: Node | null | undefined,
-		module: SourceModule
+		runtime: RuntimeModule
 	): void {
+		const { module } = runtime
+		// a choice between validators, like `import.meta.env.DEV ? DevPost : Post`,
+		// is read as its result is
+		if (
+			(parent?.type === "ConditionalExpression" && parent.test !== node) ||
+			parent?.type === "LogicalExpression"
+		)
+			return this.readValue(parent, runtime)
 		if (parent?.type === "CallExpression" && parent.callee === node) {
 			this.used.add("call")
 			this.readArguments(parent)
