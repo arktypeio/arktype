@@ -250,12 +250,17 @@ const findBases = (node: UnionNode): Bases | null => {
 	// failing them), or each case of its discriminant
 	const collect = (branch: BaseRoot, describes: boolean): boolean => {
 		const checked = branch.is("morph") ? branch.head : branch
+		// a described morph's input fails as the morph, by its description
+		if (
+			branch.is("morph") &&
+			branch.meta.description !== undefined &&
+			branch.meta.keyword === undefined
+		) {
+			if (!checked || !collect(checked, false)) return false
+			if (describes) addExpected(branch.meta.description)
+			return true
+		}
 		if (checked?.is("union")) {
-			if (
-				checked.meta.description !== undefined &&
-				checked.meta.keyword === undefined
-			)
-				return false
 			const { discriminant } = checked
 			const lists =
 				!discriminant || discriminant.path.length !== 0 || checked.missLists

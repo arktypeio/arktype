@@ -149,6 +149,18 @@ contextualize(() => {
 		)
 	})
 
+	it("describes a union's miss by a described morph's description", () => {
+		const T = type({ "x?": "string" }).or([
+			["5n | -0.5", "=>", String],
+			"@",
+			"a thing"
+		])
+		attest(String(T(-0))).snap("must be an object or a thing (was 0)")
+		attest(precompileStandalone({ T }).code).satisfies(
+			/siteOf\("union", "an object or a thing"\)/
+		)
+	})
+
 	it("describes a union's miss by a unit branch and the cases before its default", () => {
 		// the morph is the discriminant's default case, reported after the
 		// cases data missed
