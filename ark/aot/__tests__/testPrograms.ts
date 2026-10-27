@@ -582,7 +582,10 @@ const validatorReads = {
 	toString: (t: string) => `${t}.toString()`,
 	allows: (t: string) => `${t}.allows`,
 	assert: (t: string) => `${t}.assert`,
-	standard: (t: string) => `${t}["~standard"].validate`
+	standard: (t: string) => `${t}["~standard"].validate`,
+	// a pipeline's ends, each morph replaced by what it declares or allows
+	in: (t: string) => `${t}.in`,
+	out: (t: string) => `${t}.out`
 }
 
 // a validator member read off a Type a Scope, Module or Generic returns
@@ -659,7 +662,12 @@ const derivations = {
 	try: (l: string) =>
 		`${l}.pipe.try(${tried.parse.name}, ${tried.refuse.name})`,
 	exec: (l: string) => `${l}.or("x/^(a)b?$/")`,
-	narrow: (l: string) => `${l}.narrow(${predicates.isEven.name})`
+	narrow: (l: string) => `${l}.narrow(${predicates.isEven.name})`,
+	to: (l: string, r: string) => `${l}.to(${r})`,
+	chain: (l: string) =>
+		`${l}.pipe(${morphs.double.name}).to("number").pipe(${morphs.box.name})`,
+	in: (l: string) => `${l}.in`,
+	out: (l: string) => `${l}.out`
 }
 
 type Derivation = keyof typeof derivations
@@ -667,7 +675,9 @@ type Derivation = keyof typeof derivations
 const introspections = {
 	json: (t: string) => `${t}.json`,
 	toJSON: (t: string) => `${t}.toJSON()`,
-	toJsonSchema: (t: string) => `${t}.toJsonSchema()`
+	toJsonSchema: (t: string) => `${t}.toJsonSchema()`,
+	inJson: (t: string) => `${t}.in.json`,
+	outExpression: (t: string) => `${t}.out.expression`
 }
 
 // Types derived inline, from locals or imports, and their introspection

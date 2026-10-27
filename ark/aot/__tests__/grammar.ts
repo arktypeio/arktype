@@ -10,7 +10,8 @@ export type Node =
 	| { kind: "divisor"; divisor: number }
 	| { kind: "regex"; pattern: number }
 	| { kind: "union"; l: Node; r: Node }
-	| { kind: "intersection"; l: Node; r: ObjectNode }
+	| { kind: "intersection"; l: Node; r: Node }
+	| { kind: "pipe"; node: Node; to: Node }
 	| { kind: "array"; element: Node }
 	| { kind: "tuple"; elements: Node[]; optionals: Node[]; variadic?: Node }
 	| ObjectNode
@@ -72,7 +73,10 @@ const keywordData = {
 	"string.trim": fc.constantFrom(" a ", "a", "", " "),
 	"string.email": fc.constantFrom("a@b.co", "a@b", "@", ""),
 	// a keyword's predicate, which a root reporting into ArkErrors can hold
-	"string.url": fc.constantFrom("https://a.b", "a:", "a", "")
+	"string.url": fc.constantFrom("https://a.b", "a:", "a", ""),
+	// morphs declaring an input narrower than the string their head allows
+	"string.date.parse": fc.constantFrom("1970-01-01", "1970", "nope", ""),
+	"string.url.parse": fc.constantFrom("https://a.b", "a:", "a", "")
 }
 
 const keywords = Object.keys(keywordData) as Keyword[]
@@ -161,14 +165,18 @@ const leafOf = (aliases: string[]): fc.Arbitrary<Node> =>
 		...aliases.map(name => fc.constant({ kind: "alias", name } as const))
 	)
 
+// a default is checked against a morph's input and morphed where it's applied
 const defaultOf = (node: Node): Prop["default"] =>
 	node.kind === "array" ? emptyArray
-	: node.kind === "narrow" ? defaultOf(node.node)
+	: node.kind === "narrow" || node.kind === "morph" || node.kind === "pipe" ?
+		defaultOf(node.node)
 	: node.kind === "literal" && typeof node.value !== "bigint" ? node.value
 	: node.kind !== "keyword" ? undefined
 	: node.name === "string" ? ""
 	: node.name === "number" ? 0
 	: node.name === "boolean" ? false
+	: node.name === "string.numeric.parse" ? "1"
+	: node.name === "string.date.parse" ? "1970-01-01"
 	: undefined
 
 const discriminants: (Defaultable | bigint | null)[] = [
@@ -183,21 +191,35 @@ const discriminants: (Defaultable | bigint | null)[] = [
 ]
 
 export const nodeOf = (aliases: string[]): fc.Arbitrary<Node> =>
-	fc.letrec<{ node: Node; object: ObjectNode }>(tie => {
+	fc.letrec<{ node: Node; object: ObjectNode; morphed: Node }>(tie => {
 		const node = tie("node")
 		const object = tie("object")
+		const morphed = tie("morphed")
 		return {
 			node: fc.oneof(
 				{ maxDepth: 3, depthIdentifier: "node" },
 				{ weight: 3, arbitrary: leafOf(aliases) },
 				{ weight: 2, arbitrary: object },
 				fc.record({ kind: fc.constant("union" as const), l: node, r: node }),
-				fc.record({
-					kind: fc.constant("intersection" as const),
-					// an alias intersected with an object can be a cycle reaching a default
-					l: aliases.length ? fc.oneof(object, leafOf(aliases)) : object,
-					r: object
-				}),
+				fc
+					.record({
+						kind: fc.constant("intersection" as const),
+						// an alias intersected with an object can be a cycle reaching a default
+						l:
+							aliases.length ?
+								fc.oneof(object, leafOf(aliases), morphed)
+							:	fc.oneof(object, morphed),
+						// a morph's intersection keeps its input's morphs
+						r: fc.oneof(object, morphed)
+					})
+					// two morphs intersect only where they're equal
+					.map(node =>
+						node.l.kind === "morph" && node.r.kind === "morph" ?
+							{ ...node, r: { ...node.r, morph: node.l.morph } }
+						:	node
+					),
+				// a pipeline whose head's output pipes to a node, which can be another's
+				fc.record({ kind: fc.constant("pipe" as const), node, to: node }),
 				fc.record({ kind: fc.constant("array" as const), element: node }),
 				fc.record(
 					{
@@ -260,6 +282,13 @@ export const nodeOf = (aliases: string[]): fc.Arbitrary<Node> =>
 					)
 				})
 			),
+			// an object a morph was applied to, whose intersection with another
+			// keeps the morph where they're equal
+			morphed: fc.record({
+				kind: fc.constant("morph" as const),
+				node: object,
+				morph: fc.constantFrom<keyof typeof morphs>("box", "size")
+			}),
 			object: fc.record(
 				{
 					kind: fc.constant("object" as const),
@@ -311,6 +340,8 @@ export const defOf = (node: Node): unknown => {
 			return [defOf(node.l), "|", defOf(node.r)]
 		case "intersection":
 			return [defOf(node.l), "&", defOf(node.r)]
+		case "pipe":
+			return [defOf(node.node), "|>", defOf(node.to)]
 		case "array":
 			return [defOf(node.element), "[]"]
 		case "tuple":
@@ -424,6 +455,7 @@ export const dataOf = (
 			case "morph":
 			case "narrow":
 			case "described":
+			case "pipe":
 				return data(node.node)
 			case "keyof":
 				return fc.constantFrom("a", "b", "c", "d", 0, "length")
