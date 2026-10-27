@@ -59,7 +59,7 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 			:	s.ctx.$.node(
 					s.kind,
 					Object.assign(s.baseInner, unflattenConstraints(s.l)) as never,
-					{ prereduced: true }
+					{ reduced: true }
 				)
 		// a root, e.g. an empty array, can only meet the object a structure constrains
 		if (s.roots.length && result.is("structure"))

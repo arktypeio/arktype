@@ -1934,7 +1934,7 @@ console.log(JSON.stringify(User.toJsonSchema()))
 			)
 			const introspected = await bundlers.esbuild({ cwd: root }, root)
 			attest(run(introspected)).equals(runPlain(root))
-			attest(introspected.includes("traverseAllows")).equals(false)
+			attest(introspected.includes("tAllows")).equals(false)
 		}
 	})
 

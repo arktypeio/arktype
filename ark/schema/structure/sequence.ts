@@ -215,7 +215,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	)
 
 	protected override initFlat(): void {
-		this.cache.flatRefs = uniqueFlatRefs([
+		this.c.flatRefs = uniqueFlatRefs([
 			...this.leading.flatMap((element, i) => flatRefsAt(`${i}`, element.node)),
 			...this.trail.flatMap(element =>
 				// a postfix index can't be directly represented as a type
@@ -223,7 +223,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				flatRefsAt($ark.kw.nonNegativeIntegerString.internal, element)
 			)
 		])
-		this.cache.flatMorphs = []
+		this.c.flatMorphs = []
 	}
 
 	isVariadicOnly: boolean = this.leading.length + this.postLen === 0
@@ -294,14 +294,14 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	}
 
 	// minLength/maxLength should be checked by Intersection before either traversal
-	traverseAllows(data: array, ctx: InternalTraversal | AliasDepth): boolean {
+	tAllows(data: array, ctx: InternalTraversal | AliasDepth): boolean {
 		for (let i = 0; i < data.length; i++)
-			if (!this.atIndex(data, i).node.traverseAllows(data[i], ctx)) return false
+			if (!this.atIndex(data, i).node.tAllows(data[i], ctx)) return false
 
 		return true
 	}
 
-	traverseApply(data: array, ctx: InternalTraversal): void {
+	tApply(data: array, ctx: InternalTraversal): void {
 		const errN = ctx.errN
 		let i = 0
 		for (; i < data.length; i++) {
@@ -324,7 +324,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}))
 	}
 
-	traverseTransform(data: array, ctx: InternalTraversal): unknown {
+	tTransform(data: array, ctx: InternalTraversal): unknown {
 		return this.tfElems(data, ctx, false)
 	}
 

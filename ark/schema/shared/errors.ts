@@ -348,7 +348,7 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 		get _(): ArkError[] {
 			if (!this._f) {
 				const ctx = new this._ctor(this._d, this.config)
-				this._node.traverseApply(this._d, ctx)
+				this._node.tApply(this._d, ctx)
 				// data a write or a getter has made valid since fails as a whole
 				if (!ctx.hasError())
 					ctx.reject({ expected: "valid", problem: "is invalid" })
@@ -371,7 +371,7 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 				this.config,
 				!revisitsPaths(node)
 			)
-			node.traverseApply(this._d, ctx)
+			node.tApply(this._d, ctx)
 			if (!ctx.hasError())
 				ctx.reject({ expected: "valid", problem: "is invalid" })
 			const errors = ctx.fin(null) as ArkErrors

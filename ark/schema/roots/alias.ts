@@ -86,7 +86,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseRoot>) {
 		super(...args)
 		// written now, so a later resolution stays a reference
-		this.cache.fullJson = writeInnerJson(this)
+		this.c.fullJson = writeInnerJson(this)
 		this.expression = expressionOf(this)
 		const referenced = nodesById[this.reference as NodeId]
 		if (hasArkKind(referenced, "context")) {
@@ -115,18 +115,18 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			isIoFinal() &&
 			(this.isIo || hasArkKind(nodesById[this.reference as NodeId], "root"))
 		resolvingAliases.push(this)
-		inProgress.resolutions++
+		inProgress.res++
 		if (readsIo) inProgress.ioReads++
 		let resolution: BaseRoot
 		try {
 			resolution = this._resolve()
 			if (resolution.is("alias")) resolution = resolution.resolution
-			if (this.resolve) resolution.cache.isAliasResolution = true
+			if (this.resolve) resolution.c.isAliasResolution = true
 			if (this.resolve ? isFinal : this.$.resolved)
 				this._resolution = resolution
 		} finally {
 			resolvingAliases.pop()
-			inProgress.resolutions--
+			inProgress.res--
 			if (readsIo) inProgress.ioReads--
 		}
 		assertUnchecked()
@@ -220,32 +220,32 @@ Resolution: ${printable(resolution)}`)
 			:	this.expression
 	}
 
-	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
-		if (!this.closes) return this.resolution.traverseAllows(data, ctx)
+	tAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
+		if (!this.closes) return this.resolution.tAllows(data, ctx)
 		if (typeof ctx === "number") {
 			if (ctx < maxAliasDepth && ++aliasVisits.count <= maxAliasVisits)
-				return this.resolution.traverseAllows(data, ctx + 1)
+				return this.resolution.tAllows(data, ctx + 1)
 			const tracked = aliasVisits.exceed(data)
 			if (!tracked) return false
 			ctx = tracked
 		}
 		return (
 			enterResolution(ctx, this.resolution.id, data) ??
-			exitResolution(ctx, this.resolution.traverseAllows(data, ctx))
+			exitResolution(ctx, this.resolution.tAllows(data, ctx))
 		)
 	}
 
-	traverseApply(data: unknown, ctx: InternalTraversal): void {
+	tApply(data: unknown, ctx: InternalTraversal): void {
 		const resolution = this.resolution
 		applyResolution(resolution.id, resolution, data, ctx)
 	}
 
-	traverseTransform(data: unknown, ctx: InternalTraversal): unknown {
+	tTransform(data: unknown, ctx: InternalTraversal): unknown {
 		return transformResolution(
 			ctx,
 			this.resolution.id,
 			data,
-			this.resolution.traverseTransform!,
+			this.resolution.tTransform!,
 			this.resolution
 		)
 	}

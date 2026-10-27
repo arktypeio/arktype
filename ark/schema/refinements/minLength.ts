@@ -54,7 +54,7 @@ const implementation: nodeImplementationOf<MinLength.Declaration> =
 export class MinLengthNode extends BaseRange<MinLength.Declaration> {
 	readonly implied: BaseRoot = $ark.kw.lengthBoundable.internal
 
-	traverseAllows(data: LengthBoundableData): boolean {
+	tAllows(data: LengthBoundableData): boolean {
 		return data.length >= this.rule
 	}
 }

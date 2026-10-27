@@ -67,8 +67,8 @@ export abstract class BaseProp<
 	}
 
 	protected override initFlat(): void {
-		this.cache.flatRefs = flatRefsAt(this.key, this.value)
-		this.cache.flatMorphs = []
+		this.c.flatRefs = flatRefsAt(this.key, this.value)
+		this.c.flatMorphs = []
 	}
 
 	protected override _tf(
@@ -86,19 +86,19 @@ export abstract class BaseProp<
 		return "default" in this.inner
 	}
 
-	traverseAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
+	tAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
 		if (this.key in data) {
 			// ctx will be undefined if this node isn't context-dependent
 			return travKey(
 				this.key,
-				() => this.value.traverseAllows((data as any)[this.key], ctx),
+				() => this.value.tAllows((data as any)[this.key], ctx),
 				ctx
 			)
 		}
 		return this.optional
 	}
 
-	traverseApply(data: object, ctx: InternalTraversal): void {
+	tApply(data: object, ctx: InternalTraversal): void {
 		if (this.key in data) {
 			travKey(
 				this.key,
@@ -151,8 +151,7 @@ export abstract class BaseProp<
 				// a value a condition decides is checked by it before it's applied,
 				// a union by its branches
 				const condition =
-					isDecidedByAllows(this.value) &&
-					this.value.compileCondition?.(js, value)
+					isDecidedByAllows(this.value) && this.value.jsCond?.(js, value)
 				const site = condition && js.failingSiteOf?.(this)
 				const fails =
 					this.value.isBasis() ? `!${js.error(this, key)}`
@@ -163,8 +162,7 @@ export abstract class BaseProp<
 			// a value whose predicates read ctx is checked at its key's path
 			if (this.value.allowsCtx && this.value.checksCtx) return
 			return (
-				this.value.compileCondition?.(js, value) ??
-				js.inv(this.value, { arg: value })
+				this.value.jsCond?.(js, value) ?? js.inv(this.value, { arg: value })
 			)
 		}
 		const fails = js.keyFails(key, value, this.value)

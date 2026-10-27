@@ -62,7 +62,7 @@ export const unionImplementation: setImplementationOf<Union.Declaration> = {
 		if (reducedBranches.length === 1) return reducedBranches[0]
 
 		if (!inner.ordered && isUnknownUnion(reducedBranches))
-			return $.node("intersection", {}, { prereduced: true })
+			return $.node("intersection", {}, { reduced: true })
 
 		if (reducedBranches.length === inner.branches.length) return
 
@@ -72,7 +72,7 @@ export const unionImplementation: setImplementationOf<Union.Declaration> = {
 				...inner,
 				branches: reducedBranches
 			},
-			{ prereduced: true }
+			{ reduced: true }
 		)
 	},
 	intersections: {
@@ -255,7 +255,7 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 		// within defaultPairs
 		const branches = ctx.defaultPairs.map(entry => entry.branch)
 		cases.default = node.$.node("union", unionInner(branches, node.ordered), {
-			prereduced: true
+			reduced: true
 		})
 
 		node.caseNodes.push(cases.default)
@@ -301,7 +301,7 @@ const casesHeldAt = (
 		const prop =
 			typeof k === "number" || !value.is("intersection") ?
 				undefined
-			:	value.structure?.propsByKey[k]
+			:	value.structure?.byKey[k]
 		if (!prop?.required) return []
 		value = prop.value
 	}
@@ -760,7 +760,7 @@ export const reduceBranches = ({
 // found without intersecting the rest of their structures
 const requireDisjointProps = (l: BaseRoot, r: BaseRoot): boolean => {
 	if (!l.is("intersection") || !r.is("intersection")) return false
-	const rProps = r.structure?.propsByKey
+	const rProps = r.structure?.byKey
 	if (!rProps) return false
 	for (const prop of l.structure?.required ?? []) {
 		const match = rProps[prop.key]
@@ -1081,7 +1081,7 @@ const mergePropBranches = (
 	let lProp: Prop.Node | undefined
 	let rProp: Prop.Node | undefined
 	for (const prop of l.structure.props) {
-		const match = r.structure.propsByKey[prop.key]
+		const match = r.structure.byKey[prop.key]
 		if (!match) return
 		if (hashesMatch(prop, match)) continue
 		if (lProp) return

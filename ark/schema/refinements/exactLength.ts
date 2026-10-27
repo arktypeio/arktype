@@ -59,11 +59,11 @@ export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Dec
 		assertLengthRule("exactLength", this.rule)
 	}
 
-	traverseAllows(data: LengthBoundableData): boolean {
+	tAllows(data: LengthBoundableData): boolean {
 		return data.length === this.rule
 	}
 
-	compileCondition(js: NodeCompiler, data: string): string {
+	jsCond(js: NodeCompiler, data: string): string {
 		return `${data}.length === ${this.rule}`
 	}
 

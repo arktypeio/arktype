@@ -67,7 +67,7 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 					postfix,
 					...(minVariadicLength ? { minVariadicLength } : {})
 				},
-				{ prereduced: true }
+				{ reduced: true }
 			)
 		}
 	},

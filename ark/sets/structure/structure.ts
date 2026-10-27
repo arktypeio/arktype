@@ -59,7 +59,7 @@ const intersectPropsAndIndex = <
 				($.node(
 					"optional",
 					{ key: l.key, value: $ark.kw.never.internal },
-					{ prereduced: true }
+					{ reduced: true }
 				) as l)
 				// optional, since an index signature doesn't require the key
 			:	value.withPrefixKey(l.key, "optional")
@@ -172,7 +172,7 @@ const narrowToKeysOf = (
 	}
 	for (const k of other.requiredKeys) {
 		if (keys.allowsUnused(k)) continue
-		const value = other.propsByKey[k]!.value
+		const value = other.byKey[k]!.value
 		const never = $ark.kw.never.internal
 		disjoint.add("presence", isLeft ? never : value, isLeft ? value : never, {
 			path: [k],
@@ -192,7 +192,7 @@ const narrowToKeysOf = (
 			const normalized = normalizeIndex(overlap, n.value, $)
 			// an index's value, which a loose scope doesn't widen
 			for (const prop of normalized.required ?? [])
-				derived.push($.node("optional", prop.inner, { prereduced: true }))
+				derived.push($.node("optional", prop.inner, { reduced: true }))
 			derived.push(...(normalized.optional ?? []))
 			return normalized.index ?? []
 		})
@@ -317,7 +317,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			return $.node(
 				"structure",
 				{ ...inner, optional: newOptionalProps },
-				{ prereduced: true }
+				{ reduced: true }
 			)
 		}
 	}

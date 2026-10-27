@@ -69,7 +69,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 			JSON.stringify(this.unitJson)
 		:	compileSerializedValue(this.unit)
 
-	compileCondition(js: NodeCompiler, data: string): string {
+	jsCond(js: NodeCompiler, data: string): string {
 		return (
 			isDate(this.unit) ?
 				`${data} instanceof Date && ${js.ref(timeOf)}(${data}) === ${(this.unit as Date).getTime()}`
@@ -92,7 +92,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 			:	this.description
 	}
 
-	traverseAllows: TraverseAllows =
+	tAllows: TraverseAllows =
 		isDate(this.unit) ?
 			data =>
 				data instanceof Date && timeOf(data) === (this.unit as Date).getTime()

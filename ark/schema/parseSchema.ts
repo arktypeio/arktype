@@ -269,7 +269,7 @@ const readers: Record<NodeKind, SchemaReader> = {
 	alias: (schema, $, opts) => {
 		const input: AliasSchema =
 			typeof schema === "string" ? { reference: schema } : schema
-		if (opts?.prereduced || !input.reference.startsWith("$")) return input
+		if (opts?.reduced || !input.reference.startsWith("$")) return input
 		const registered =
 			input.reference.startsWith("$ark.") ?
 				nodesById[input.reference.slice(5) as NodeId]

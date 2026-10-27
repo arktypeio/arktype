@@ -375,7 +375,7 @@ const transformsCalledBy = (root: BaseRoot): BaseNode[] => {
 let checking: Set<BaseNode> | undefined
 
 export const inPlaceTransforms: InPlaceTransforms = {
-	checksUncompiled: root => checking?.has(root) || !root.cache.usedPreJit,
+	checksUncompiled: root => checking?.has(root) || !root.c.usedPreJit,
 	checkedUncompiled: (root, apply) => {
 		if (!writesInPlaceAsConfigured(root)) return apply
 		const called = transformsCalledBy(root)
@@ -394,13 +394,13 @@ export const inPlaceTransforms: InPlaceTransforms = {
 		return checking
 	},
 	applied: root => {
-		const { unbound } = root.cache
-		root.cache.unbound = undefined
+		const { unbound } = root.c
+		root.c.unbound = undefined
 		if (!writesInPlaceAsConfigured(root)) return root
-		if (!root.cache.applyInPlace) precompileInPlace(root, unbound)
+		if (!root.c.applyInPlace) precompileInPlace(root, unbound)
 		return Object.assign(Object.create(root), {
-			traverseApply: root.cache.applyInPlace,
-			traverseTransform: root.cache.transformInPlace
+			tApply: root.c.applyInPlace,
+			tTransform: root.c.transformInPlace
 		})
 	},
 	runtimeOf: (root, runtime) =>

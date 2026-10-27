@@ -473,7 +473,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	// what fails a key's value in one expression, if one can
 	keyFails(key: string, value: string, node: BaseNode): string | undefined {
 		if (this.trav !== "Apply") {
-			const condition = node.compileCondition?.(this, value)
+			const condition = node.jsCond?.(this, value)
 			if (condition !== undefined) return `!(${condition})`
 			if (
 				(this.loopDepth > 0 && isRefinedPattern(node)) ||
@@ -491,7 +491,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		const condition =
 			node.is("union") && !checksAllowsFirst ?
 				undefined
-			:	node.compileCondition?.(this, value)
+			:	node.jsCond?.(this, value)
 		if (condition !== undefined && !node.is("union"))
 			return `!(${condition}) && ${this.error(node, key)}`
 		const allows =
@@ -502,7 +502,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 			: `!(${condition}) && `
 		// a refined basis Allows rejected failed its basis or its refinement
 		if (checksAllowsFirst && isRefinedBasis(node))
-			return `${allows}${this.fails("failsAt", `${node.basis!.compileCondition(this, value)} ? ${this.site(node.preStruct[0])} : ${this.site(node.basis!)}, data, ${key}`)}`
+			return `${allows}${this.fails("failsAt", `${node.basis!.jsCond(this, value)} ? ${this.site(node.preStruct[0])} : ${this.site(node.basis!)}, data, ${key}`)}`
 		return `${allows}${this.fails("failsIn", `${this.traversal(node, "Apply")}, ${this.data}, ${key}`)}`
 	}
 
@@ -642,7 +642,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 
 	// what a node's Allows holds for, as an expression
 	condition(node: BaseNode): string {
-		return node.compileCondition?.(this, this.data) ?? this.inv(node)
+		return node.jsCond?.(this, this.data) ?? this.inv(node)
 	}
 
 	// Apply reports a failed condition at its site
@@ -651,7 +651,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		const condition =
 			opts?.kind || (this.trav === "Apply" && node.is("union")) ?
 				undefined
-			:	node.compileCondition?.(this, arg)
+			:	node.jsCond?.(this, arg)
 		const fail = () => (opts?.breaks ? this.line("break") : this.return(false))
 		if (condition === undefined)
 			return this.if(`!${this.inv(node, opts)}`, fail)
@@ -664,7 +664,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	}
 
 	checkLeaf(node: BaseNode): this {
-		const condition = node.compileCondition!(this, this.data)!
+		const condition = node.jsCond!(this, this.data)!
 		return this.return(
 			this.trav === "Allows" ?
 				condition

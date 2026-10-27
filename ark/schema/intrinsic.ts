@@ -101,7 +101,7 @@ const bootstrapIntrinsic = () => {
 
 	// assigned after JSON's keys, so it still enumerates last
 	const result = Object.assign(intrinsic as typeof intrinsic & IntrinsicJson, {
-		emptyStructure: node("structure", {}, { prereduced: true })
+		emptyStructure: node("structure", {}, { reduced: true })
 	})
 
 	$ark.kw = result as never

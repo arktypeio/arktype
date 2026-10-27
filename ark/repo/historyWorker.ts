@@ -260,8 +260,7 @@ const patch = (prototype: object, stopAt: object) => {
 						const rootApply: RootApply = method.call(this)
 						const observed = observeRootApply(this, rootApply)
 						// an apply that checks uncompiled data isn't kept
-						if (this.cache.rootApply === rootApply)
-							this.cache.rootApply = observed
+						if (this.c.rootApply === rootApply) this.c.rootApply = observed
 						return observed
 					}
 				:	observeMethod(name, method)

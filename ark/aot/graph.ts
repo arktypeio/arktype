@@ -136,8 +136,8 @@ export const runtimeMembers: Record<string, 1> = Object.setPrototypeOf(
 		allows: 1,
 		from: 1,
 		traverse: 1,
-		traverseAllows: 1,
-		traverseApply: 1,
+		tAllows: 1,
+		tApply: 1,
 		"~standard": 1
 	},
 	null

@@ -127,7 +127,7 @@ const basesSiteOf = (node: UnionNode): IssueContext | null | undefined => {
 
 // a basis or refinement, checked by its condition
 const checkOf = (node: BaseNode): IssueContext | undefined =>
-	node.compileCondition && plainSiteOf(node)
+	node.jsCond && plainSiteOf(node)
 
 // a keyword's predicate, which reads no ctx
 const predicateSiteOf = (node: BaseNode): IssueContext | undefined =>
@@ -231,7 +231,7 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 					branch => {
 						const prop =
 							branch.is("intersection") ?
-								branch.structure?.propsByKey[key]
+								branch.structure?.byKey[key]
 							:	undefined
 						return (
 							prop?.is("required") === true &&
@@ -421,7 +421,7 @@ const isObjectCheck = (node: BaseNode): boolean => {
 
 const writeCheck = (js: CombinatorCompiler, node: BaseNode): string => {
 	const site = checkOf(node)!
-	const condition = node.compileCondition!(js, "data")!
+	const condition = node.jsCond!(js, "data")!
 	const constant = constantChecks[condition]
 	if (constant) {
 		const check = runtime[constant] as runtime.Check

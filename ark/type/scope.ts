@@ -356,7 +356,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		this.units(values) as never
 
 	instanceOf: InstanceOfTypeParser<$> = ctor =>
-		this.node("proto", { proto: ctor }, { prereduced: true }) as never
+		this.node("proto", { proto: ctor }, { reduced: true }) as never
 
 	or: NaryUnionParser<$> = (...defs: unknown[]) =>
 		this.fin(

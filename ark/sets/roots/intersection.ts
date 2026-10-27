@@ -58,7 +58,7 @@ export const intersection: setImplementationOf<Intersection.Declaration> = {
 				:	l.$.node(
 						"intersection",
 						{ ...lInnerConstraints, [basis.kind]: basis },
-						{ prereduced: true }
+						{ reduced: true }
 					)
 			)
 		})

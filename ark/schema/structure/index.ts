@@ -74,7 +74,7 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 export class IndexNode extends BaseConstraint<Index.Declaration> {
 	implied: BaseRoot = $ark.kw.object.internal
 	get expression(): string {
-		return (this.cache.expression ??= composing(
+		return (this.c.expression ??= composing(
 			() => `[${this.signature.expression}]: ${elided(this.value.expression)}`
 		))
 	}
@@ -106,30 +106,26 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	}
 
 	protected override initFlat(): void {
-		this.cache.flatRefs = flatRefsAt(this.signature, this.value)
-		this.cache.flatMorphs = []
+		this.c.flatRefs = flatRefsAt(this.signature, this.value)
+		this.c.flatMorphs = []
 	}
 
 	// a key the signature rejects is undeclared, so its errors are dropped
 	allowsKey: TraverseAllows<PropertyKey> = (k, ctx) =>
 		this.signature.checksCtx ?
 			allowsInBranch(ctx as InternalTraversal, this.signature, k)
-		:	this.signature.traverseAllows(k, ctx)
+		:	this.signature.tAllows(k, ctx)
 
-	traverseAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
+	tAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
 		return stringAndSymbolicEntriesOf(data).every(entry => {
-			if (this.allowsKey(entry[0], ctx)) {
-				return travKey(
-					entry[0],
-					() => this.value.traverseAllows(entry[1], ctx),
-					ctx
-				)
-			}
+			if (this.allowsKey(entry[0], ctx))
+				return travKey(entry[0], () => this.value.tAllows(entry[1], ctx), ctx)
+
 			return true
 		})
 	}
 
-	traverseApply(data: object, ctx: InternalTraversal): void {
+	tApply(data: object, ctx: InternalTraversal): void {
 		for (const entry of stringAndSymbolicEntriesOf(data)) {
 			if (this.allowsKey(entry[0], ctx))
 				travKey(entry[0], () => applyValue(this.value, entry[1], ctx), ctx)

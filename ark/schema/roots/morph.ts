@@ -210,15 +210,15 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		js.return(result)
 	}
 
-	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
-		return !this.head || this.head.traverseAllows(data, ctx)
+	tAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
+		return !this.head || this.head.tAllows(data, ctx)
 	}
 
-	traverseApply(data: unknown, ctx: InternalTraversal): void {
+	tApply(data: unknown, ctx: InternalTraversal): void {
 		if (this.head) applyMember(this.head, data, ctx)
 	}
 
-	traverseTransform(data: unknown, ctx: InternalTraversal): unknown {
+	tTransform(data: unknown, ctx: InternalTraversal): unknown {
 		const errN = ctx.errN
 		let result = this.head?.tfs ? transform(ctx, this.head, data) : data
 		if (ctx.errN > errN) return data

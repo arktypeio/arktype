@@ -94,15 +94,14 @@ export abstract class BaseConstraint<
 export abstract class InternalPrimitiveConstraint<
 	d extends Constraint.Declaration
 > extends BaseConstraint<d> {
-	abstract traverseAllows(
+	abstract tAllows(
 		data: d["prerequisite"],
 		ctx: InternalTraversal | AliasDepth
 	): boolean
-	abstract override compileCondition(js: NodeCompiler, data: string): string
+	abstract override jsCond(js: NodeCompiler, data: string): string
 
-	traverseApply(data: d["prerequisite"], ctx: InternalTraversal): void {
-		if (!this.traverseAllows(data, ctx))
-			ctx.nodeError(this.errorCtx as never, data)
+	tApply(data: d["prerequisite"], ctx: InternalTraversal): void {
+		if (!this.tAllows(data, ctx)) ctx.nodeError(this.errorCtx as never, data)
 	}
 
 	compile(js: NodeCompiler): void {

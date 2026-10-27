@@ -55,7 +55,7 @@ const implementation: nodeImplementationOf<Before.Declaration> =
 export class BeforeNode extends BaseRange<Before.Declaration> {
 	collapsibleLimitString = describeCollapsibleDate(this.rule)
 
-	traverseAllows(data: Date): boolean {
+	tAllows(data: Date): boolean {
 		return data <= this.rule
 	}
 

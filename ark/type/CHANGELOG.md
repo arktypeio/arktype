@@ -959,13 +959,13 @@ Other keys that first differ at a space, `!`, `"` or a backslash keep their orde
 
 ### Simplify `@ark/schema` nodes
 
-- A scope's `references` and `refsById` are collected when first read rather than as it exports, unless code `@ark/aot` built with `runtime: "arktype"` is registered or it includes an alias.
-- A node's `traverseAllows`, `traverseApply` and `traverseTransform` are methods of its class, so call them on the node, as in `node.traverseAllows(data, ctx)`, rather than detached, as in `[x].every(node.traverseAllows)`, until the JIT compiles it, which replaces them with compiled functions that run detached. A jitless scope's nodes keep the methods, and `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes still create a `traverseAllows` of their own. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
+- A scope's `references` and `byId` are collected when first read rather than as it exports, unless code `@ark/aot` built with `runtime: "arktype"` is registered or it includes an alias.
+- A node's `tAllows`, `tApply` and `tTransform` (before: `traverseAllows`, `traverseApply`, `traverseTransform`) are methods of its class, so call them on the node, as in `node.tAllows(data, ctx)`, rather than detached, as in `[x].every(node.tAllows)`, until the JIT compiles it, which replaces them with compiled functions that run detached. A jitless scope's nodes keep the methods, and `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes still create a `tAllows` of their own. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
 - `$.node(kind, input)` takes a node's inner, with children already nodes, rather than the schema format, so `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
-- `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, prereduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context. A node's id is registered as it's created, from its `alias` or kind unless `id` is passed, so a schema that resolves to a node the scope already holds registers none.
+- `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, reduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context. A node's id is registered as it's created, from its `alias` or kind unless `id` is passed, so a schema that resolves to a node the scope already holds registers none.
 - Members nothing used are gone: an alias's `resolutionId` (read `resolution.id`), a node's `assertHasKindIn`, `isConstraint` and `isRefinement`, a root's `shortDescription`, a morph's `declareIn` and `serializedMorphs`, a structure's `optionalKeys`, a union's `compiledDiscriminant` (read `discriminant`, which a union of two literal values now has too), and `Scanner`'s `jumpToIndex` in `@ark/util`.
-- Fields each node computed whether or not it was compiled are gone: a constraint's `compiledCondition`, a predicate's `compiledNegation`, a morph's `compiledMorphs` and a sequence's `optionalsLength`. A leaf writes its check with `compileCondition(js, data)`. The `PrecompiledReferences` type, which described a precompiled unit nothing builds, is gone too.
-- Derived and memoized keys moved from a node's own enumerable keys to `node.cache`, like the flags `hasAlias` and `hasMorph`, `innerEntries`, a structure's `propsByKey`, a node's `assert` and the `expression` of a union, intersection, structure, required prop or index signature; each reads as before, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
+- Fields each node computed whether or not it was compiled are gone: a constraint's `compiledCondition`, a predicate's `compiledNegation`, a morph's `compiledMorphs` and a sequence's `optionalsLength`. A leaf writes its check with `jsCond(js, data)`. The `PrecompiledReferences` type, which described a precompiled unit nothing builds, is gone too.
+- Derived and memoized keys moved from a node's own enumerable keys to its cache, `node.c`, like the flags `hasAlias` and `hasMorph`, `kv`, a structure's `byKey`, a node's `assert` and the `expression` of a union, intersection, structure, required prop or index signature; each reads as before, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
 
 ### Start a morph's `morphs` with its input
 
@@ -1011,6 +1011,7 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `bindReference`                               | `bindRef`            |
 | `boundOperandKind`                            | `opKind`             |
 | `boundReferences`                             | `boundRefs`          |
+| `cache`                                       | `c`                  |
 | `cacheGetter`                                 | `memo`               |
 | `checksOnly`                                  | `chkOnly`            |
 | `checksTransformErrors`                       | `checksErrs`         |
@@ -1018,6 +1019,7 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `collapsibleJson`                             | `bareJson`           |
 | `collapsibleKey`                              | `bareKey`            |
 | `compareTransformed`                          | `cmpTfd`             |
+| `compileCondition`                            | `jsCond`             |
 | `compileConjunction`                          | `jsConjunction`      |
 | `compileCopiedDeclaredKeys`                   | `jsDeclaredCopy`     |
 | `compileCopy`                                 | `jsCopy`             |
@@ -1094,6 +1096,7 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `initializeErrorCount`                        | `initErrCount`       |
 | `initializeFlatRefs`                          | `initFlat`           |
 | `initializeTransform`                         | `initTf`             |
+| `innerEntries`                                | `kv`                 |
 | `intersectionIsOpen`                          | `stacks`             |
 | `introspectableIn`                            | `head`               |
 | `introspectableOut`                           | `tail._out`          |
@@ -1134,9 +1137,11 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `prefixLength`                                | `preLen`             |
 | `preparseOwnAliasEntry`                       | `preparseEntry`      |
 | `preparseOwnDefinitionFormat`                 | `preparseOwn`        |
+| `prereduced`                                  | `reduced`            |
 | `preserveUndefined`                           | `keepUndef`          |
 | `prestructurals`                              | `preStruct`          |
 | `prevariadic`                                 | `leading`            |
+| `propsByKey`                                  | `byKey`              |
 | `pushBranch`                                  | `pushBr`             |
 | `pushRootToBranch`                            | `pushRootBranch`     |
 | `reachedInvalid`                              | `invalid`            |
@@ -1152,6 +1157,7 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `requiresInfinityCheck`                       | `checksInf`          |
 | `requiresInvalidDateCheck`                    | `checksInvalid`      |
 | `requiresNaNCheck`                            | `checksNaN`          |
+| `resolutions`                                 | `res`                |
 | `resolvedConfig`                              | `cfg`                |
 | `returnedFrom`                                | `retFrom`            |
 | `returnIfTransformFailed`                     | `retIfFailed`        |
@@ -1180,8 +1186,11 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `transformSharedKey`                          | `tfSharedKey`        |
 | `transformsOf`                                | `tfsOf`              |
 | `traversalKind`                               | `trav`               |
+| `traverseAllows`                              | `tAllows`            |
+| `traverseApply`                               | `tApply`             |
 | `traversedMorphs`                             | `travMorphs`         |
 | `traverseKey`                                 | `travKey`            |
+| `traverseTransform`                           | `tTransform`         |
 | `uncollapsedInnerJson`                        | `fullJson`           |
 | `undeclaredKeyHandling`                       | `undeclaredHandling` |
 | `untrackedVisits`                             | `visits`             |
@@ -2202,7 +2211,7 @@ handleRequest({ id: 1 })
 
 A function stays in memory while a cyclic Type, a generic instantiation (always, for builtins like `type.Record`) or the first Type compiling a default's keyword holds it.
 
-The `$ark.x` names that functions get in a type's `json` or `expression` are unique names only and no longer resolve through `$ark`. `ctx.meta` in a compiled union or undeclared-key error is the type's own meta, as in jitless mode, so a value like `NaN` is no longer stringified. In `@ark/schema`, `BaseNode.compiledMeta` is removed, and `BaseScope.resolutions` holds an unresolved alias's parse context instead of its id.
+The `$ark.x` names that functions get in a type's `json` or `expression` are unique names only and no longer resolve through `$ark`. `ctx.meta` in a compiled union or undeclared-key error is the type's own meta, as in jitless mode, so a value like `NaN` is no longer stringified. In `@ark/schema`, `BaseNode.compiledMeta` is removed, and `BaseScope.res` (before: `resolutions`) holds an unresolved alias's parse context instead of its id.
 
 ### Define a matcher whose cases a reordering would separate
 

@@ -207,7 +207,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	structure: Structure.Node | undefined = this.inner.structure
 
 	get expression(): string {
-		return (this.cache.expression ??= composing(() =>
+		return (this.c.expression ??= composing(() =>
 			writeIntersectionExpression(this)
 		))
 	}
@@ -233,54 +233,49 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		return this.basis?.brief ?? "present"
 	}
 
-	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
-		return this.children.every(child =>
-			child.traverseAllows(data as never, ctx)
-		)
+	tAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
+		return this.children.every(child => child.tAllows(data as never, ctx))
 	}
 
-	traverseApply(data: unknown, ctx: InternalTraversal): void {
+	tApply(data: unknown, ctx: InternalTraversal): void {
 		const errN = ctx.errN
 		if (this.basis) {
-			this.basis.traverseApply(data, ctx)
+			this.basis.tApply(data, ctx)
 			if (ctx.errN > errN) return
 		}
 		if (this.preStruct.length) {
 			for (let i = 0; i < this.preStruct.length - 1; i++) {
-				this.preStruct[i].traverseApply(data as never, ctx)
+				this.preStruct[i].tApply(data as never, ctx)
 				if (ctx.failFast && ctx.errN > errN) return
 			}
-			this.preStruct[this.preStruct.length - 1]!.traverseApply(
-				data as never,
-				ctx
-			)
+			this.preStruct[this.preStruct.length - 1]!.tApply(data as never, ctx)
 			if (ctx.errN > errN) return
 		}
 		if (this.structure) {
 			// transformed only if the predicates allow it
 			if (this.inner.predicate && this.structure.tfs) {
 				if (!allowsInBranch(ctx, this.structure, data)) {
-					this.structure.traverseApply(data as never, ctx)
+					this.structure.tApply(data as never, ctx)
 					return
 				}
 			} else {
-				this.structure.traverseApply(data as never, ctx)
+				this.structure.tApply(data as never, ctx)
 				if (ctx.errN > errN) return
 			}
 		}
 		if (this.inner.predicate) {
 			for (let i = 0; i < this.inner.predicate.length - 1; i++) {
-				this.inner.predicate[i].traverseApply(data as never, ctx)
+				this.inner.predicate[i].tApply(data as never, ctx)
 				if (ctx.errN > errN) return
 			}
-			this.inner.predicate[this.inner.predicate.length - 1]!.traverseApply(
+			this.inner.predicate[this.inner.predicate.length - 1]!.tApply(
 				data as never,
 				ctx
 			)
 		}
 	}
 
-	traverseTransform(data: unknown, ctx: InternalTraversal): unknown {
+	tTransform(data: unknown, ctx: InternalTraversal): unknown {
 		return transform(ctx, this.structure!, data)
 	}
 
@@ -355,7 +350,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			else if (
 				!sequence &&
 				rejection === "false" &&
-				this.children.every(child => child.compileCondition !== undefined)
+				this.children.every(child => child.jsCond !== undefined)
 			) {
 				js.return(
 					this.children.map(child => `(${js.condition(child)})`).join(" && ") ||
@@ -373,7 +368,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		const { basis, preStruct, structure } = this
 		const predicates = this.inner.predicate
 		if (basis) {
-			const condition = basis.compileCondition(js, "data")
+			const condition = basis.jsCond(js, "data")
 			if (this.children.length === 1) {
 				js.return(`${condition} || !${js.error(basis)}`)
 				return
@@ -385,7 +380,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			js.return(true)
 			return
 		}
-		const conditions = preStruct.map(node => node.compileCondition(js, "data"))
+		const conditions = preStruct.map(node => node.jsCond(js, "data"))
 		if (conditions.length === 1) {
 			js.if(`!(${conditions[0]})`, () =>
 				js.return(`!${js.error(preStruct[0])}`)

@@ -78,7 +78,7 @@ export const parseEnclosed = (
 				domain: s.ctx.$.node("domain", { domain: "string" }),
 				pattern: [s.ctx.$.node("pattern", { rule: enclosed })]
 			},
-			{ prereduced: true }
+			{ reduced: true }
 		)
 
 		if (enclosing === "x/") {

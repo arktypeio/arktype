@@ -66,11 +66,11 @@ export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration
 			throwParseError(writeNonIntegerDivisorMessage(this.rule))
 	}
 
-	traverseAllows(data: number): boolean {
+	tAllows(data: number): boolean {
 		return data % this.rule === 0
 	}
 
-	compileCondition(js: NodeCompiler, data: string): string {
+	jsCond(js: NodeCompiler, data: string): string {
 		return `${data} % ${this.rule} === 0`
 	}
 

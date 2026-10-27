@@ -61,7 +61,7 @@ export const divisor: setImplementationOf<Divisor.Declaration> = {
 				)
 			}),
 		notEqual: (divisor, notEqual) =>
-			divisor.traverseAllows(notEqual.numRule) ? null : divisor
+			divisor.tAllows(notEqual.numRule) ? null : divisor
 	}
 }
 

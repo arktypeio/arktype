@@ -65,7 +65,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	implied = null
 
 	expression: string = baseNameOf(this.predicate)
-	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
+	tAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
 		// called detached, as compiled code calls it
 		const predicate = this.predicate
 		return predicate(data, ctx as never)
@@ -78,7 +78,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		meta: this.meta
 	}
 
-	traverseApply(data: unknown, ctx: InternalTraversal): void {
+	tApply(data: unknown, ctx: InternalTraversal): void {
 		const errN = ctx.errN
 		const predicate = this.predicate
 		if (!predicate(data, ctx.external) && ctx.errN === errN)

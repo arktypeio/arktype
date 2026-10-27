@@ -629,12 +629,12 @@ export const applyErrors = (
 }
 
 export const applyNodeErrors = (
-	node: { traverseApply: CompactApply },
+	node: { tApply: CompactApply },
 	data: unknown,
 	config: unknown,
 	onFail: ArkErrors.Handler | null,
 	Ctx: new (data: unknown, config: unknown) => ArkErrors | InternalTraversal
-): unknown => applyErrors(node.traverseApply, data, config, onFail, Ctx)
+): unknown => applyErrors(node.tApply, data, config, onFail, Ctx)
 
 // a root array's Apply from i, the first element `allows` rejected
 const elementsFrom =

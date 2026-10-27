@@ -177,7 +177,7 @@ export const parseObjectLiteral = (
 			domain: objectDomainOf(ctx.$),
 			structure: spread?.merge(structureNode) ?? structureNode
 		},
-		{ prereduced: true }
+		{ reduced: true }
 	)
 
 	return meta === undefined ? node : node.configure(meta)

@@ -46,7 +46,7 @@ export const buildArbitrary = (
 			const intersectionArbitrary =
 				excluded.length ?
 					basisArbitrary.filter(data =>
-						excluded.every(node => node.traverseAllows(data as never))
+						excluded.every(node => node.tAllows(data as never))
 					)
 				:	basisArbitrary
 

@@ -349,7 +349,7 @@ export interface UnknownAttachments {
 	readonly id: NodeId
 
 	readonly inner: Record<string, any>
-	readonly innerEntries: readonly Entry<string>[]
+	readonly kv: readonly Entry<string>[]
 
 	readonly meta: ArkEnv.meta
 	readonly metaJson: object
@@ -359,7 +359,7 @@ export interface UnknownAttachments {
 
 // what createNode passes; the rest is computed when read
 export interface UnknownAttachmentsInput
-	extends Omit<UnknownAttachments, "innerEntries" | "metaJson"> {
+	extends Omit<UnknownAttachments, "kv" | "metaJson"> {
 	readonly metaJson: object | undefined
 }
 

@@ -127,11 +127,11 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 		configurable: true,
 		get: () => {
 			const value: readonly BaseNode[] = references.call(this)
-			const resolutions: Record<string, unknown> | undefined = (this as never)[
+			const res: Record<string, unknown> | undefined = (this as never)[
 				"_exported"
 			]
-			if (resolutions && !roots.length) {
-				for (const resolution of Object.values(resolutions)) {
+			if (res && !roots.length) {
+				for (const resolution of Object.values(res)) {
 					if (
 						hasArkKind(resolution, "root") &&
 						!resolution.unitFn &&

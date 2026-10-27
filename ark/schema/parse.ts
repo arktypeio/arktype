@@ -42,9 +42,9 @@ import { composing, hasArkKind, isNode } from "./shared/utils.ts"
 
 export type ContextualArgs = Record<string, BaseRoot | NodeId>
 
-export type BaseParseOptions<prereduced extends boolean = boolean> = {
+export type BaseParseOptions<reduced extends boolean = boolean> = {
 	alias?: string
-	prereduced?: prereduced
+	reduced?: reduced
 	args?: ContextualArgs
 	id?: NodeId
 	// printed for an anonymous cycle's references in place of this
@@ -90,7 +90,7 @@ export interface NodeParseContext<kind extends NodeKind = NodeKind> {
 	// registered only if a node is created
 	id: NodeId | undefined
 	alias: string | undefined
-	prereduced: boolean | undefined
+	reduced: boolean | undefined
 }
 
 export const writeInvalidSchemaMessage = (schema: unknown): string =>
@@ -151,7 +151,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 
 	if ($ark.sets) {
 		$ark.sets.sort(ctx.kind, inner)
-		if (!ctx.prereduced) {
+		if (!ctx.reduced) {
 			const reduced = $ark.sets.reduce(ctx.kind, inner, ctx.$)
 			if (reduced) {
 				if (reduced instanceof Disjoint) return reduced.throw()
@@ -192,7 +192,7 @@ const deferAliases = (v: unknown, $: BaseScope): unknown => {
 	}
 	if (!isNode(v) || !v.topAlias || v.is("alias")) return v
 	nodesById[v.id] = v
-	return $.node("alias", { reference: v.id }, { prereduced: true })
+	return $.node("alias", { reference: v.id }, { reduced: true })
 }
 
 export type CreateNodeInput = {
@@ -330,7 +330,7 @@ export const requiredPropOf = (
 ): nodeOfKind<"required"> => {
 	if (!holdsWeakly || value.topAlias || value.$ !== $)
 		return $.node("required", { key, value })
-	const props = (value.cache.requiredProps ??= new Map())
+	const props = (value.c.requiredProps ??= new Map())
 	let prop = props.get(key)?.deref()
 	if (prop) $ark.reached?.node(prop)
 	else {

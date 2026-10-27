@@ -92,7 +92,7 @@ export const precompile = (
 	for (const node of references) link.byId[node.id] = node
 	const declared: BaseNode[] = []
 	for (const node of references) {
-		if (node.cache.isReusableLeaf && isLeafIn(node, link.byId)) reused.add(node)
+		if (node.c.isReusableLeaf && isLeafIn(node, link.byId)) reused.add(node)
 		else if (
 			node.unitFn &&
 			(!owningScope || node.$ !== owningScope) &&
@@ -108,9 +108,9 @@ export const precompile = (
 		unitFn,
 		unitFn(
 			Object.values(link.dependencies).map(([node, kind]) => {
-				const traverse: Fn = node[`traverse${kind}`]!
+				const traverse: Fn = node[`t${kind}`]!
 				// an uncompiled node's traversal is its method, which reads the node
-				return hasOwn(node, `traverse${kind}`) ? traverse : traverse.bind(node)
+				return hasOwn(node, `t${kind}`) ? traverse : traverse.bind(node)
 			}),
 			[...link.refs.keys()]
 		),
@@ -128,7 +128,7 @@ export const precompileRoot = (
 ): void => {
 	const unbound: UnboundTraversals = new Map()
 	for (const reference of references) {
-		if (reference === root || !reference.cache.preJit) continue
+		if (reference === root || !reference.c.preJit) continue
 		for (const id in reference.byId) unbound.set(reference.byId[id], undefined)
 	}
 	// an apply checking data uncompiled to write in place reads no copy
@@ -136,7 +136,7 @@ export const precompileRoot = (
 	unbound.delete(root)
 	precompile(references, undefined, unbound)
 	// what an apply writing in place reads rather than compiling again
-	if ($ark.inPlace) root.cache.unbound = unbound
+	if ($ark.inPlace) root.c.unbound = unbound
 }
 
 // compiles in-place traversals for what root's writers reach
@@ -150,8 +150,8 @@ export const precompileInPlace = (
 	const shapes = new Map<
 		BaseNode,
 		{
-			traverseApply?: TraverseApply | undefined
-			traverseTransform?: TraverseTransform | undefined
+			tApply?: TraverseApply | undefined
+			tTransform?: TraverseTransform | undefined
 		}
 	>()
 	const include = (node: BaseNode): void => {
@@ -166,12 +166,12 @@ export const precompileInPlace = (
 			const kinds: TraversalKind[] = []
 			const isCompiled = !!reference.unitFn || !!unbound?.get(reference)
 			if (!isCompiled) kinds.push("Allows")
-			if (reference.tfs ? !reference.cache.applyInPlace : !isCompiled)
+			if (reference.tfs ? !reference.c.applyInPlace : !isCompiled)
 				kinds.push("Apply")
 			if (
 				reference.tfs &&
 				includes(transformedKinds, reference.kind) &&
-				!reference.cache.applyInPlace
+				!reference.c.applyInPlace
 			)
 				kinds.push("Transform")
 			if (!kinds.length) continue
@@ -221,24 +221,21 @@ export const precompileInPlace = (
 		Object.values(link.dependencies).map(
 			([node, kind]): Fn =>
 				kind === "Allows" || !node.tfs ?
-					(unbound?.get(node)?.[kind === "Allows" ? 0 : 1] ??
-					node[`traverse${kind}`]!)
-				: kind === "Apply" ? node.cache.applyInPlace!
-				: node.cache.transformInPlace!
+					(unbound?.get(node)?.[kind === "Allows" ? 0 : 1] ?? node[`t${kind}`]!)
+				: kind === "Apply" ? node.c.applyInPlace!
+				: node.c.transformInPlace!
 		),
 		[...link.refs.keys()]
 	)
 	for (let i = 0; i < declared.length; i++) {
 		const [node, kinds] = declared[i]
 		if (!node.tfs) continue
-		node.cache.applyInPlace = traversals[i][kinds.indexOf("Apply")] as never
-		node.cache.transformInPlace = traversals[i][
-			kinds.indexOf("Transform")
-		] as never
+		node.c.applyInPlace = traversals[i][kinds.indexOf("Apply")] as never
+		node.c.transformInPlace = traversals[i][kinds.indexOf("Transform")] as never
 	}
 	for (const [node, shape] of shapes) {
-		shape.traverseApply = node.cache.applyInPlace
-		shape.traverseTransform = node.cache.transformInPlace
+		shape.tApply = node.c.applyInPlace
+		shape.tTransform = node.c.transformInPlace
 	}
 }
 
@@ -258,23 +255,22 @@ const bindUnit = (
 		}
 		// if node has already been bound to another scope or anonymous type, don't rebind it
 		if (node.unitFn && (!owningScope || node.$ !== owningScope)) continue
-		const [traverseAllows, traverseApply, traverseTransform] =
-			compiledTraversals[i]
-		if (node.cache.preJit) {
-			node.allows = node.cache.preJit
-			node.cache.preJit = undefined
+		const [tAllows, tApply, tTransform] = compiledTraversals[i]
+		if (node.c.preJit) {
+			node.allows = node.c.preJit
+			node.c.preJit = undefined
 		}
-		node.traverseAllows = traverseAllows
+		node.tAllows = tAllows
 		if (node.isRoot() && !node.allowsCtx) {
 			// if the reference doesn't require context, we can assign over
 			// it directly to avoid having to initialize it
-			node.allows = traverseAllows as never
+			node.allows = tAllows as never
 		}
-		node.traverseApply = traverseApply
-		if (traverseTransform) node.traverseTransform = traverseTransform
+		node.tApply = tApply
+		if (tTransform) node.tTransform = tTransform
 		node.unitFn = unitFn
-		delete node.cache.rootApply
-		node.cache.isReusableLeaf = isLeafIn(node, byId)
+		delete node.c.rootApply
+		node.c.isReusableLeaf = isLeafIn(node, byId)
 	}
 }
 
@@ -389,7 +385,7 @@ const bindPrecompiled = (
 		const [key, kind] = dependencies[i]
 		const dependency = dependencyNodes[i]
 		if (!dependency.unitFn) bindPrecompiled(dependency, precompiledUnits[key])
-		traversals.push(dependency[`traverse${traversalKinds[kind]}`]!)
+		traversals.push(dependency[`t${traversalKinds[kind]}`]!)
 	}
 	bindUnit(declared, unitFn, unitFn(traversals, refs), root.byId)
 }
@@ -1050,7 +1046,7 @@ const compileContent = (
 // unless an alias, which can replace a node sharing its id, or refsById itself
 // is there
 const referenceOf = (node: BaseNode, id: NodeId): BaseNode | undefined => {
-	if (node.cache.byId) return node.byId[id]
+	if (node.c.byId) return node.byId[id]
 	const queued = new Set<BaseNode>([node])
 	for (const reference of queued) {
 		if (reference.hasAlias) return node.byId[id]
@@ -1181,7 +1177,7 @@ const writePrecompiledUnit = (
 		if (
 			i !== 0 &&
 			nodes[i].isRoot() &&
-			!nodes[i].compileCondition &&
+			!nodes[i].jsCond &&
 			!isRefinedBasis(nodes[i])
 		)
 			continue
@@ -1239,12 +1235,8 @@ const writePrecompiledUnit = (
 			)
 		}
 		// a structure's undeclared keys are checked against the props it indexes
-		if (node.is("structure")) {
-			accessorsByValue.set(
-				node.propsByKey,
-				`${variablesByNode.get(node)}.propsByKey`
-			)
-		}
+		if (node.is("structure"))
+			accessorsByValue.set(node.byKey, `${variablesByNode.get(node)}.byKey`)
 	}
 	const refs = unit.refs.map(value => accessorsByValue.get(value))
 	if (refs.includes(undefined)) return

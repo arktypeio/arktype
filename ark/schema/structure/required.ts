@@ -65,7 +65,7 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 
 export class RequiredNode extends BaseProp<"required"> {
 	get expression(): string {
-		return (this.cache.expression ??= composing(
+		return (this.c.expression ??= composing(
 			() => `${this.keyStr}: ${elided(this.value.expression)}`
 		))
 	}
@@ -83,7 +83,7 @@ export class RequiredNode extends BaseProp<"required"> {
 
 	// a basis value shares the key's site, as a missing key fails it too
 	override get failSite(): FailureSite {
-		return (this.cache.failSite ??=
+		return (this.c.failSite ??=
 			this.value.isBasis() ?
 				{ v: this.value.errorCtx, m: this.errorCtx }
 			:	{ m: this.errorCtx }) as FailureSite

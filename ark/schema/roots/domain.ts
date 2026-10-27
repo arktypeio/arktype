@@ -88,7 +88,7 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 	private readonly checksInf =
 		this.domain === "number" && !this.numberAllowsInfinity
 
-	readonly traverseAllows: TraverseAllows =
+	readonly tAllows: TraverseAllows =
 		this.checksNaN && this.checksInf ? data => Number.isFinite(data)
 		: this.checksNaN ? data => typeof data === "number" && !Number.isNaN(data)
 		: this.checksInf ?
@@ -98,7 +98,7 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 				data !== Number.NEGATIVE_INFINITY
 		:	data => domainOf(data) === this.domain
 
-	compileCondition(js: NodeCompiler, data: string): string {
+	jsCond(js: NodeCompiler, data: string): string {
 		return (
 			this.domain === "object" ?
 				// Apply's check is the one an object's Allows writes, so a bundle

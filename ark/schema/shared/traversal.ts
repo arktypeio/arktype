@@ -69,8 +69,8 @@ export class InternalTraversal implements FailureContext {
 	declare config: ResolvedConfig
 
 	declare branches: BranchTraversal[]
-	// what it tracks of the cyclic nodes it enters, once it enters one
-	declare resolutions: Resolutions | undefined
+	/** what it tracks of the cyclic nodes it enters, once it enters one */
+	declare res: Resolutions | undefined
 	/**
 	 * whether data within its bounds is a tree, so each path is transformed
 	 * data a root allowed within the bounds is a tree, so each path is transformed
@@ -105,7 +105,7 @@ export class InternalTraversal implements FailureContext {
 		this.root = root
 		this.config = config
 		this.branches = []
-		this.resolutions = undefined
+		this.res = undefined
 		this.isTree = true
 		this.tfdById = undefined
 		this.recv = root
@@ -394,7 +394,7 @@ export const applyRejected = (
 	ctor: typeof InternalTraversal
 ): unknown => {
 	const ctx = new ctor(data, config)
-	node.traverseApply(data, ctx)
+	node.tApply(data, ctx)
 	return ctx.fin(onFail)
 }
 
@@ -459,14 +459,14 @@ export const transform = (
 	data: unknown
 ): unknown =>
 	node.tfsById ?
-		transformResolution(ctx, node.id, data, node.traverseTransform!, node)
+		transformResolution(ctx, node.id, data, node.tTransform!, node)
 	:	transformAcyclic(ctx, node, data)
 
 const transformAcyclic = (
 	ctx: InternalTraversal,
 	node: BaseNode,
 	data: unknown
-): unknown => transformed(ctx, node.traverseTransform!(data, ctx), data)
+): unknown => transformed(ctx, node.tTransform!(data, ctx), data)
 
 // a transform that doesn't require ctx returns its errors
 export const transformed = (
@@ -498,7 +498,7 @@ export const pipeChecked: TraversePipe = (ctx, node, data) =>
 // a node reading no pipe state is applied as is
 export const pipeApplied: TraversePipe = (ctx, node, data) => {
 	if (node.allows(data)) return data
-	node.traverseApply(data, ctx)
+	node.tApply(data, ctx)
 	return errorsOf(ctx)
 }
 
@@ -559,7 +559,7 @@ const applyPiped = (
 	const { recv, recvAt, chkOnly } = ctx
 	receive(ctx, data)
 	ctx.chkOnly = true
-	node.traverseApply(data, ctx)
+	node.tApply(data, ctx)
 	ctx.chkOnly = chkOnly
 	ctx.recv = recv
 	ctx.recvAt = recvAt
@@ -622,7 +622,7 @@ export const allowsInBranch = (
 	data: unknown
 ): boolean =>
 	node.checksCtx ?
-		allowsInBranchBy(ctx, node.traverseAllows, data, node)
+		allowsInBranchBy(ctx, node.tAllows, data, node)
 	:	node.allows(data)
 
 // takes Allows, since a precompiled validator has no node
@@ -771,7 +771,7 @@ class Resolutions {
 }
 
 const resolutionsOf = (ctx: InternalTraversal): Resolutions =>
-	(ctx.resolutions ??= new Resolutions())
+	(ctx.res ??= new Resolutions())
 
 // undefined once entered, else whether data is known or assumed valid
 export const enterResolution = (
@@ -779,16 +779,13 @@ export const enterResolution = (
 	id: string,
 	data: unknown
 ): boolean | undefined => {
-	const resolutions = resolutionsOf(ctx)
+	const res = resolutionsOf(ctx)
 	// untracked, every state is a failure, so none is looked up
-	const states =
-		resolutions.tracked || resolutions.hasFailed ?
-			resolutions.seen[id]
-		:	undefined
+	const states = res.tracked || res.hasFailed ? res.seen[id] : undefined
 	const state = states?.get(data)
 	if (state !== undefined) {
 		if (typeof state === "number") {
-			if (state < resolutions.assumedFrom) resolutions.assumedFrom = state
+			if (state < res.assumedFrom) res.assumedFrom = state
 			return true
 		}
 		if (typeof state === "boolean") return state
@@ -797,18 +794,17 @@ export const enterResolution = (
 			return false
 		}
 		if (state.reported) {
-			resolutions.invalid ??= state
+			res.invalid ??= state
 			return false
 		}
 		// its errors were discarded with a branch, so it's traversed again
 	}
 	if (
-		!resolutions.tracked &&
-		(resolutions.depth >= maxAliasDepth ||
-			++resolutions.visits > maxAliasVisits)
+		!res.tracked &&
+		(res.depth >= maxAliasDepth || ++res.visits > maxAliasVisits)
 	)
 		throw untrackedBound
-	const frame = ((resolutions.frames ??= [])[resolutions.depth++] ??= {
+	const frame = ((res.frames ??= [])[res.depth++] ??= {
 		id,
 		data,
 		entered: 0,
@@ -820,17 +816,14 @@ export const enterResolution = (
 	frame.id = id
 	frame.data = data
 	frame.errN = ctx.errN
-	if (!resolutions.tracked) return
-	;(states ?? (resolutions.seen[id] = new Map())).set(
-		data,
-		++resolutions.nEntered
-	)
-	frame.entered = resolutions.nEntered
-	frame.outerInvalid = resolutions.invalid
-	resolutions.invalid = undefined
-	frame.assumedOuter = resolutions.assumedFrom
-	frame.assumedLength = (resolutions.assumed ??= []).length
-	resolutions.assumedFrom = Number.POSITIVE_INFINITY
+	if (!res.tracked) return
+	;(states ?? (res.seen[id] = new Map())).set(data, ++res.nEntered)
+	frame.entered = res.nEntered
+	frame.outerInvalid = res.invalid
+	res.invalid = undefined
+	frame.assumedOuter = res.assumedFrom
+	frame.assumedLength = (res.assumed ??= []).length
+	res.assumedFrom = Number.POSITIVE_INFINITY
 	return
 }
 
@@ -839,29 +832,28 @@ export const exitResolution = (
 	ctx: InternalTraversal,
 	allowed?: boolean
 ): boolean => {
-	const resolutions = ctx.resolutions!
-	const frame = resolutions.frames![--resolutions.depth]
-	if (!resolutions.tracked) return allowed ?? exitUntracked(ctx, frame)
-	const invalid = resolutions.invalid
-	resolutions.invalid = frame.outerInvalid
+	const res = ctx.res!
+	const frame = res.frames![--res.depth]
+	if (!res.tracked) return allowed ?? exitUntracked(ctx, frame)
+	const invalid = res.invalid
+	res.invalid = frame.outerInvalid
 	const valid = allowed ?? (invalid === undefined && ctx.errN === frame.errN)
 	const data = frame.data
-	const states = resolutions.seen[frame.id]!
+	const states = res.seen[frame.id]!
 	// a primitive has no identity, so each place reports its own errors
 	if (typeof data === "object" ? data === null : typeof data !== "function") {
-		resolutions.assumedFrom = frame.assumedOuter
+		res.assumedFrom = frame.assumedOuter
 		states.delete(data)
 		return valid
 	}
 	const state: ResolutionState =
 		valid || allowed === false ? valid : invalidResolution(ctx, invalid?.error)
-	const assumedFrom = resolutions.assumedFrom
-	resolutions.assumedFrom = frame.assumedOuter
-	const assumed = resolutions.assumed!
+	const assumedFrom = res.assumedFrom
+	res.assumedFrom = frame.assumedOuter
+	const assumed = res.assumed!
 	if (valid && assumedFrom < frame.entered) {
 		assumed.push(states, data)
-		if (assumedFrom < resolutions.assumedFrom)
-			resolutions.assumedFrom = assumedFrom
+		if (assumedFrom < res.assumedFrom) res.assumedFrom = assumedFrom
 		return true
 	}
 	// settle each result that assumed this one
@@ -872,7 +864,7 @@ export const exitResolution = (
 	}
 	assumed.length = frame.assumedLength
 	states.set(data, state)
-	if (typeof state === "object" && state.reported) resolutions.invalid ??= state
+	if (typeof state === "object" && state.reported) res.invalid ??= state
 	return valid
 }
 
@@ -883,12 +875,9 @@ const exitUntracked = (
 ): boolean => {
 	if (ctx.errN === frame.errN) return true
 	if (!hasDomain(frame.data, "object")) return false
-	const resolutions = ctx.resolutions!
-	;(resolutions.seen[frame.id] ??= new Map()).set(
-		frame.data,
-		invalidResolution(ctx)
-	)
-	resolutions.hasFailed = true
+	const res = ctx.res!
+	;(res.seen[frame.id] ??= new Map()).set(frame.data, invalidResolution(ctx))
+	res.hasFailed = true
 	return false
 }
 
@@ -957,7 +946,7 @@ export const applyCyclic = <ctx extends InternalTraversal>(
 	resolutionsOf(ctx).tracked = false
 	try {
 		// data reaching its root again is cyclic, exceeding the untracked bounds
-		node.traverseApply(data, ctx)
+		node.tApply(data, ctx)
 	} catch (e) {
 		if (e !== untrackedBound) throw e
 		ctx = traversalOf(ctx, data)
@@ -973,7 +962,7 @@ export const applyResolution = (
 	ctx: InternalTraversal
 ): void => {
 	if (enterResolution(ctx, id, data) !== undefined) return
-	node.traverseApply(data, ctx)
+	node.tApply(data, ctx)
 	exitResolution(ctx)
 }
 
@@ -1003,7 +992,7 @@ export const applyMember = (
 ): void =>
 	member.hasAlias ?
 		applyResolution(member.id, node, data, ctx)
-	:	node.traverseApply(data, ctx)
+	:	node.tApply(data, ctx)
 
 // applies data Allows rejects; transforms what it accepts
 export const applyValue = (
@@ -1020,7 +1009,7 @@ export const applyValue = (
 	)
 		return
 	if (node.entersAlias) applyResolution(node.id, node, data, ctx)
-	else node.traverseApply(data, ctx)
+	else node.tApply(data, ctx)
 }
 
 // within the bounds, data is traversed as a tree; past the visit bound it may
@@ -1029,7 +1018,7 @@ export const allowsUntracked = (
 	node: BaseNode,
 	data: unknown
 ): boolean | undefined => {
-	if (inProgress.definitions || inProgress.resolutions || node.checksCtx) return
+	if (inProgress.definitions || inProgress.res || node.checksCtx) return
 	const outerVisits = aliasVisits.count
 	const outerContinuation = continuation
 	const outerConfig = continuationConfig
@@ -1038,7 +1027,7 @@ export const allowsUntracked = (
 	continuationConfig = node.$.cfg
 	let allowed: boolean
 	try {
-		allowed = node.traverseAllows(data as never, 0)
+		allowed = node.tAllows(data as never, 0)
 	} catch (e) {
 		aliasVisits.count = outerVisits
 		continuation = outerContinuation
@@ -1079,7 +1068,7 @@ const allowsInTraversal = (
 	node: BaseNode,
 	data: unknown,
 	ctx: InternalTraversal
-): boolean => node.traverseAllows(data as never, ctx) && !ctx.hasError()
+): boolean => node.tAllows(data as never, ctx) && !ctx.hasError()
 
 // entered while in progress, then whether it is valid, or why Apply found it invalid
 type ResolutionState = number | boolean | InvalidResolution

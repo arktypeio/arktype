@@ -54,7 +54,7 @@ export abstract class BaseRange<
 		return this.comparator["0"] === "<" ? "upper" : "lower"
 	}
 
-	compileCondition(js: NodeCompiler, data: string): string {
+	jsCond(js: NodeCompiler, data: string): string {
 		const actual =
 			this.opKind === "value" ? data
 			: this.opKind === "length" ? `${data}.length`

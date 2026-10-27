@@ -83,7 +83,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 		return this.$.node(
 			"optional",
 			{ key: this.key, value: this.value._in },
-			{ prereduced: true }
+			{ reduced: true }
 		)
 	}
 
@@ -93,7 +93,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 		const { default: defaultValue, ...requiredInner } = this.inner
 
 		return (this._outProp ??= this.$.node("required", requiredInner, {
-			prereduced: true
+			reduced: true
 		}) as never)
 	}
 

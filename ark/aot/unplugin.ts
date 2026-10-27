@@ -1410,7 +1410,7 @@ const rollupScanOf = async (
 ): Promise<ProgramScan<BundleScan>> => {
 	// each module's resolution, as a plugin may resolve it with options to
 	// load it by
-	const resolutions = new Map<string, RollupResolution>()
+	const res = new Map<string, RollupResolution>()
 	const entries: ScanEntry[] = []
 	for (const input of inputs) {
 		const resolved = await context.resolve(input, undefined, { isEntry: true })
@@ -1421,7 +1421,7 @@ const rollupScanOf = async (
 				)
 			}
 		}
-		resolutions.set(resolved.id, resolved)
+		res.set(resolved.id, resolved)
 		if (!htmlId.test(resolved.id)) {
 			entries.push({ id: resolved.id })
 			continue
@@ -1446,7 +1446,7 @@ const rollupScanOf = async (
 			)
 			if (!resolved) return
 			if (resolved.external) return null
-			resolutions.set(resolved.id, resolved)
+			res.set(resolved.id, resolved)
 			return resolved.id
 		},
 		load: async id => {
@@ -1454,7 +1454,7 @@ const rollupScanOf = async (
 			// transforms is read as it reaches it, after any plugin ahead of it
 			const arrival = isTransformed(id) ? arrivalOf(fileOf(id)) : undefined
 			if (typeof arrival === "string") return arrival
-			const loaded = context.load({ ...resolutions.get(id), id }).then(
+			const loaded = context.load({ ...res.get(id), id }).then(
 				info => info?.code ?? undefined,
 				() => undefined
 			)

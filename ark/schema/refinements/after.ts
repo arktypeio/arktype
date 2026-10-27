@@ -57,7 +57,7 @@ export class AfterNode extends BaseRange<After.Declaration> {
 
 	collapsibleLimitString = describeCollapsibleDate(this.rule)
 
-	traverseAllows(data: Date): boolean {
+	tAllows(data: Date): boolean {
 		return data >= this.rule
 	}
 }

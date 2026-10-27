@@ -56,7 +56,7 @@ export const intersectProps = (
 		defaultIntersection === unset ?
 			{ key, value }
 		:	{ key, value, default: defaultIntersection },
-		{ prereduced: true }
+		{ reduced: true }
 	)
 }
 
@@ -72,7 +72,7 @@ export const optional: setImplementationOf<Optional.Declaration> = {
 		if ($.cfg.exactOptionalPropertyTypes === false) {
 			const value = withUndefined(inner.value)
 			if (value !== inner.value)
-				return $.node("optional", { ...inner, value }, { prereduced: true })
+				return $.node("optional", { ...inner, value }, { reduced: true })
 		}
 	},
 	intersections: {

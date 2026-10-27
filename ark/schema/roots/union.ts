@@ -186,7 +186,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 	// a standalone issue reads only the union's description
 	override get failSite(): UnionSite {
-		return (this.cache.failSite ??= {
+		return (this.c.failSite ??= {
 			meta: this.meta,
 			description: expectedOf(this.meta, this.description)
 		}) as UnionSite
@@ -205,7 +205,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	get expression(): string {
-		return (this.cache.expression ??= composing(() =>
+		return (this.c.expression ??= composing(() =>
 			this.distribute(expressBranch, expressBranches)
 		))
 	}
@@ -215,10 +215,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		// an alias branch is replaced by its resolution before the union is used
 		if (this.topAlias) return null
 		const discriminant = $ark.sets?.discriminate(this) ?? null
-		if (this.cache.byId) {
-			for (const node of this.caseNodes)
-				Object.assign(this.cache.byId, node.byId)
-		}
+		if (this.c.byId)
+			for (const node of this.caseNodes) Object.assign(this.c.byId, node.byId)
+
 		// what was read of its references while discriminating lacks its cases
 		forgetReferences(this)
 		return discriminant
@@ -260,23 +259,23 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return this._disc === undefined ? null : this.discriminant
 	}
 
-	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
+	tAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
 		const discriminant = this.foundDisc
 		if (!discriminant) {
 			return this.branches.some(b =>
 				b.checksCtx ?
 					allowsInBranch(ctx as Traversal, b, data)
-				:	b.traverseAllows(data, ctx)
+				:	b.tAllows(data, ctx)
 			)
 		}
 		const caseNode =
 			discriminant.cases[
 				caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
 			]
-		return caseNode === true || !!caseNode?.traverseAllows(data, ctx)
+		return caseNode === true || !!caseNode?.tAllows(data, ctx)
 	}
 
-	traverseApply(data: unknown, ctx: InternalTraversal): void {
+	tApply(data: unknown, ctx: InternalTraversal): void {
 		const discriminant = this.discriminant
 		if (discriminant) {
 			const value = valueAtPath(discriminant.path, data)
@@ -293,7 +292,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			}
 			const member = discriminant.members?.[k]
 			if (member) applyMember(caseNode, data, ctx, member)
-			else caseNode.traverseApply(data, ctx)
+			else caseNode.tApply(data, ctx)
 			return
 		}
 		this.applyBranches(data, ctx)
@@ -372,7 +371,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		errorFromUnion(ctx, errors, this.meta, data)
 	}
 
-	traverseTransform(data: unknown, ctx: InternalTraversal): unknown {
+	tTransform(data: unknown, ctx: InternalTraversal): unknown {
 		const discriminant = this.foundDisc
 		if (discriminant) {
 			const k = caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
@@ -384,7 +383,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 						ctx,
 						member.id,
 						data,
-						caseNode.traverseTransform!,
+						caseNode.tTransform!,
 						caseNode
 					)
 				:	transform(ctx, caseNode, data)
@@ -398,11 +397,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return this.tfCtx ? data : unset
 	}
 
-	compileCondition(js: NodeCompiler, data: string): string | undefined {
+	jsCond(js: NodeCompiler, data: string): string | undefined {
 		if (this.branches.length > maxInlinedBranches) return
 		const conditions: string[] = []
 		for (const branch of this.branches) {
-			const condition = branch.compileCondition?.(js, data)
+			const condition = branch.jsCond?.(js, data)
 			if (condition === undefined) return
 			conditions.push(condition.includes("&&") ? `(${condition})` : condition)
 		}
@@ -497,8 +496,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		if (js.trav === "Apply" && !this.hasAlias && isDecidedByAllows(this)) {
 			for (const branch of this.branches) {
 				js.if(
-					branch.compileCondition?.(js, "data") ??
-						js.inv(branch, { kind: "Allows" }),
+					branch.jsCond?.(js, "data") ?? js.inv(branch, { kind: "Allows" }),
 					() => js.return(true)
 				)
 			}
@@ -528,7 +526,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				js.if(
 					branch.checksCtx ?
 						`${js.ref(allowsInBranch)}(ctx, ${js.ref(branch)}, data)`
-					:	(branch.compileCondition?.(js, "data") ?? js.inv(branch)),
+					:	(branch.jsCond?.(js, "data") ?? js.inv(branch)),
 					() => js.return(true)
 				)
 			}
@@ -536,8 +534,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		} else {
 			for (const branch of this.branches) {
 				js.if(
-					branch.compileCondition?.(js, "data") ??
-						js.inv(branch, { kind: "Allows" }),
+					branch.jsCond?.(js, "data") ?? js.inv(branch, { kind: "Allows" }),
 					() => js.return(branch.tfs ? invokeTransform(js, branch) : "data")
 				)
 			}

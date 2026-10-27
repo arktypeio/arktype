@@ -173,7 +173,7 @@ export class GenericRoot<
 					operator: this.alias ?? "generic",
 					operands: this.names.map(name => argNodes[name])
 				},
-				{ prereduced: true }
+				{ reduced: true }
 			)
 		}
 		if (instantiation) {

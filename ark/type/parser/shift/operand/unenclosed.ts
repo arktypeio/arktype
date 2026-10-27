@@ -123,7 +123,7 @@ const maybeParseReference = (
 		const arg = s.ctx.args[token]
 		if (typeof arg !== "string") return arg
 
-		return s.ctx.$.node("alias", { reference: arg }, { prereduced: true })
+		return s.ctx.$.node("alias", { reference: arg }, { reduced: true })
 	}
 	const resolution = s.ctx.$.maybeResolve(token)
 	if (hasArkKind(resolution, "root")) return resolution
@@ -230,7 +230,7 @@ type tryResolveSubmodule<
 export type unresolvableState<
 	s extends StaticState,
 	token extends string,
-	resolutions,
+	res,
 	args,
 	submodulePath extends string[]
 > =
@@ -240,12 +240,10 @@ export type unresolvableState<
 		) ?
 			s.error<writePrefixedPrivateReferenceMessage<name>>
 		:	never
-	: validReferenceFromToken<token, resolutions, args, submodulePath> extends (
-		never
-	) ?
+	: validReferenceFromToken<token, res, args, submodulePath> extends never ?
 		s.error<writeUnresolvableMessage<qualifiedReference<token, submodulePath>>>
 	:	s.completion<`${s["scanned"]}${qualifiedReference<
-			validReferenceFromToken<token, resolutions, args, submodulePath>,
+			validReferenceFromToken<token, res, args, submodulePath>,
 			submodulePath
 		>}`>
 

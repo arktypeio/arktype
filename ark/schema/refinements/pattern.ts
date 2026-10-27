@@ -121,7 +121,7 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 	private readonly resetsLastIndex =
 		this.instance.global || this.instance.sticky
 
-	traverseAllows: (string: string) => boolean =
+	tAllows: (string: string) => boolean =
 		this.test ??
 		(this.isRepeated ? string => matchesRepeated(this.instance, string)
 		: this.resetsLastIndex ?
@@ -133,7 +133,7 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 
 	// a ref, so a pattern the engine rejects fails only its definition. A
 	// size build reads the RegExp, smaller than its test with what that calls
-	compileCondition(js: NodeCompiler, data: string): string {
+	jsCond(js: NodeCompiler, data: string): string {
 		if (this.test && !js.shortest) return `${js.ref(this.test)}(${data})`
 		const instance = js.ref(this.instance)
 		if (this.isRepeated)

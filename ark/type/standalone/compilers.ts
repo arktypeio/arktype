@@ -103,7 +103,7 @@ class StandaloneCompiler extends TraversalCompiler {
 		const bases = basesOf(node)
 		if (!bases) return `!${this.error(node)}`
 		const allowed = bases.nodes
-			.map(basis => basis.compileCondition(this, "data"))
+			.map(basis => basis.jsCond(this, "data"))
 			.join(" || ")
 		return `!${this.fails("failsAt", `${allowed} ? ${this.site(node)} : ${this.siteRef(bases.site)}, data`)}`
 	}
@@ -145,7 +145,7 @@ class StandaloneCompiler extends TraversalCompiler {
 	override defaultFails(node: UnionNode, caseNode: BaseRoot): string {
 		const passes =
 			isDecidedByKeywords(caseNode) ?
-				(caseNode.compileCondition?.(this, "data") ??
+				(caseNode.jsCond?.(this, "data") ??
 				this.inv(caseNode, { kind: "Allows" }))
 			:	`(ctx.pushBr(), ${this.applyMember(caseNode)}, ctx.popBr().errN === 0)`
 		return `${passes} || ${this.unionFails(node)}`

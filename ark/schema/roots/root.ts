@@ -370,7 +370,7 @@ export abstract class BaseRoot<
 					sequence: this.$.node("sequence", { variadic: this })
 				})
 			},
-			{ prereduced: true }
+			{ reduced: true }
 		) as never
 	}
 
@@ -458,7 +458,7 @@ export abstract class BaseRoot<
 	get pipe(): ((...morphs: Morph[]) => BaseRoot) & {
 		try: (...morphs: Morph[]) => BaseRoot
 	} {
-		return (this.cache.pipe ??= Object.assign(this._pipe.bind(this), {
+		return (this.c.pipe ??= Object.assign(this._pipe.bind(this), {
 			try: this.tryPipe.bind(this)
 		}))
 	}
@@ -565,7 +565,7 @@ export abstract class BaseRoot<
 		// the node was reduced during parsing
 		inner[constraint.kind] = constraint.impl.stacks ? [constraint] : constraint
 		const partialIntersection = this.$.node("intersection", inner, {
-			prereduced: true
+			reduced: true
 		})
 
 		if (meetsBasis) return partialIntersection

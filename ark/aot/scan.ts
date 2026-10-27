@@ -163,7 +163,7 @@ function* programSteps(
 				else (arkImports[id] ??= []).push(specifier)
 			}
 		}
-		const resolutions =
+		const res =
 			requests.length ? ((yield ["resolve", requests]) as ScanResolution[]) : []
 		let next = 0
 		for (const {
@@ -192,7 +192,7 @@ function* programSteps(
 			if (!isDependency) targets[id] = resolved
 			for (const [specifier, kind, offset] of imports) {
 				if (runtimeSpecifier.test(specifier)) continue
-				const target = resolutions[next++]
+				const target = res[next++]
 				if (target === undefined) {
 					if (isDependency) continue
 					return unreadAt(

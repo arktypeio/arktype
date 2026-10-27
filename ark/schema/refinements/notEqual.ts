@@ -66,12 +66,12 @@ export class NotEqualNode extends InternalPrimitiveConstraint<NotEqual.Declarati
 	private readonly isDate = this.rule instanceof Date
 	readonly numRule: number = this.rule.valueOf()
 
-	traverseAllows: (data: number | Date) => boolean =
+	tAllows: (data: number | Date) => boolean =
 		this.isDate ?
 			data => data.valueOf() !== this.numRule
 		:	data => data !== this.numRule
 
-	compileCondition(js: NodeCompiler, data: string): string {
+	jsCond(js: NodeCompiler, data: string): string {
 		return `${data}${this.isDate ? ".valueOf()" : ""} !== ${this.numRule}`
 	}
 

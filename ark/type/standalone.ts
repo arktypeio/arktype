@@ -944,7 +944,7 @@ const readWritten = (
 	addIssueFeatures(written.issues, units, nodes)
 	for (const node of nodes) {
 		written.metas.add(node.meta)
-		if (node.is("structure")) written.keyLookups.add(node.propsByKey)
+		if (node.is("structure")) written.keyLookups.add(node.byKey)
 		else if (node.is("pattern")) written.patternInstances.add(node.instance)
 		else if (node.is("optional") || node.is("sequence"))
 			collectDefaults(node, written.defaultsByMorph)
@@ -2866,7 +2866,7 @@ ${writeFunction(
 			return [
 				{
 					params: "node",
-					apply: `(data, onFail) => node.allows(data) ? ${tfs ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${Traversal})`,
+					apply: `(data, onFail) => node.allows(data) ? ${tfs ? "node.tTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${Traversal})`,
 					args: shape,
 					local: !Traversal.startsWith("runtime.")
 				},
@@ -2915,7 +2915,7 @@ ${writeFunction(
 			:	[]
 		const shape = traversals ? undefined : this.shapeOf(root)
 		const allows = traversals ? "allows" : "node.allows"
-		const transform = traversals ? "transform" : "node.traverseTransform"
+		const transform = traversals ? "transform" : "node.tTransform"
 		const fails = [
 			...(selects ? [`result === ${JSON.stringify(unset)}`] : []),
 			...(captures ?
@@ -2933,7 +2933,7 @@ ${writeFunction(
 							`if (!(untracked ?? runtime.allowsInContext(node, data, runtime.runtimeConfig))) return ${invalid}`,
 							`const ctx = new runtime.${ctx}(data, runtime.runtimeConfig)`,
 							"ctx.isTree = untracked === undefined",
-							`const result = runtime.transformResolution(ctx, ${JSON.stringify(this.headUnitOf(root).names[root.id])}, data, node.traverseTransform)`
+							`const result = runtime.transformResolution(ctx, ${JSON.stringify(this.headUnitOf(root).names[root.id])}, data, node.tTransform)`
 						]
 					:	[
 							`if (!${allows}(data)) return ${invalid}`,
@@ -3279,15 +3279,14 @@ ${writeFunction(
 		)
 		// read past allows only by a cycle or a ctx-reading predicate
 		const traverses = node.hasAlias || node.allowsCtx || node.checksCtx
-		const transform =
-			traversals[2] ? `\n\ttraverseTransform: ${traversals[2]},` : ""
+		const transform = traversals[2] ? `\n\ttTransform: ${traversals[2]},` : ""
 		const apply =
 			this.baking.detailsErrors ? traversals[1]
 			: node.allowsCtx && !node.hasAlias ?
 				`${this.readFailure("applyBy")}(${traversals[0]})`
 			:	this.readFailure("applyInvalid")
-		return `{${ids}${flags.join("")}${traverses ? `\n\ttraverseAllows: ${traversals[0]},` : ""}
-	traverseApply: ${apply},${transform}
+		return `{${ids}${flags.join("")}${traverses ? `\n\ttAllows: ${traversals[0]},` : ""}
+	tApply: ${apply},${transform}
 	allows: ${node.allowsCtx ? `data => runtime.allowsUntracked(${shape}, data) ?? runtime.allowsInContext(${shape}, data, runtime.runtimeConfig)` : traversals[0]}${traverses ? ",\n\t$: runtime.runtimeScope" : ""}
 }`
 	}

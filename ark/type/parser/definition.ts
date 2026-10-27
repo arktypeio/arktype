@@ -115,7 +115,7 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 						ctx.$.node("pattern", constraintInputOf("pattern", def as RegExp))
 					]
 				},
-				{ prereduced: true }
+				{ reduced: true }
 			)
 		case "Function": {
 			// e.g. Effect's standardSchemaV1, a class that can't be called as a thunk

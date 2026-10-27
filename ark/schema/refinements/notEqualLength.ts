@@ -63,11 +63,11 @@ export class NotEqualLengthNode extends InternalPrimitiveConstraint<NotEqualLeng
 		assertLengthRule("notEqualLength", this.rule)
 	}
 
-	traverseAllows(data: LengthBoundableData): boolean {
+	tAllows(data: LengthBoundableData): boolean {
 		return data.length !== this.rule
 	}
 
-	compileCondition(js: NodeCompiler, data: string): string {
+	jsCond(js: NodeCompiler, data: string): string {
 		return `${data}.length !== ${this.rule}`
 	}
 

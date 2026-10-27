@@ -92,14 +92,14 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	private readonly isArrayProto = this.proto === Array
 
 	// Date.prototype's methods throw on an object only inheriting it
-	traverseAllows: TraverseAllows =
+	tAllows: TraverseAllows =
 		this.checksInvalid ? data => data instanceof Date && isValidDate(data)
 		: this.proto === Date ?
 			data => data instanceof Date && timeOf(data) !== undefined
 		: this.isArrayProto ? data => isArray(data)
 		: data => data instanceof this.proto
 
-	compileCondition(js: NodeCompiler, data: string): string {
+	jsCond(js: NodeCompiler, data: string): string {
 		return (
 			this.checksInvalid ?
 				`${data} instanceof Date && ${js.ref(isValidDate)}(${data})`

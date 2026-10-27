@@ -58,7 +58,7 @@ const implementation: nodeImplementationOf<Min.Declaration> =
 export class MinNode extends BaseRange<Min.Declaration> {
 	readonly implied: BaseRoot = $ark.kw.number.internal
 
-	traverseAllows: TraverseAllows<number> =
+	tAllows: TraverseAllows<number> =
 		this.exclusive ? data => data > this.rule : data => data >= this.rule
 }
 

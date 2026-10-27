@@ -491,7 +491,7 @@ const allKeptOf = (t: BaseRoot, input: unknown): KeptIssue[] => {
 	const ctx = new ArkTraversal(input, t.$.cfg)
 	try {
 		if (t.hasAlias) applyCyclic(t, input, ctx)
-		else t.traverseApply(input, ctx)
+		else t.tApply(input, ctx)
 	} catch {
 		// what it found before the throw stays in ctx
 	}

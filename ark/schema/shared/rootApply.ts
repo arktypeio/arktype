@@ -24,7 +24,7 @@ export const rootApplyRuntime = {
 
 export type RootApplyRuntime = typeof rootApplyRuntime
 
-const nodeMembers = ["allows", "traverseAllows", "traverseTransform"]
+const nodeMembers = ["allows", "tAllows", "tTransform"]
 
 export const rootApplyParams = [
 	"node",
@@ -79,7 +79,7 @@ export const rootApplyParts = (
 		// failure path is its own function
 		fallback(applyFailed)
 		js.const("ctx", newCtx)
-			.if("!traverseAllows(data, ctx) || ctx.hasError()", () =>
+			.if("!tAllows(data, ctx) || ctx.hasError()", () =>
 				js.return("applyFailed(data, onFail)")
 			)
 			.return("data")
@@ -96,24 +96,24 @@ export const rootApplyParts = (
 				.set("ctx.isTree", "untracked === undefined")
 				.const(
 					"result",
-					`${ref("transformResolution")}(ctx, "${name}", data, traverseTransform)`
+					`${ref("transformResolution")}(ctx, "${name}", data, tTransform)`
 				)
 		} else {
 			js.if("!allows(data)", fallback)
 				.const("ctx", newCtx)
-				.const("result", "traverseTransform(data, ctx)")
+				.const("result", "tTransform(data, ctx)")
 		}
 		js.return(`ctx.hasError() ? ctx.fin(${handler}) : result`)
 	} else if (node.is("union") && !node.discriminant) {
-		js.const("result", "traverseTransform(data)").if(
+		js.const("result", "tTransform(data)").if(
 			`result === ${JSON.stringify(unset)}`,
 			fallback
 		)
 		returnResult()
 	} else if (node.hasMorph) {
-		js.if("!allows(data)", fallback).const("result", "traverseTransform(data)")
+		js.if("!allows(data)", fallback).const("result", "tTransform(data)")
 		returnResult()
-	} else js.if("!allows(data)", fallback).return("traverseTransform(data)")
+	} else js.if("!allows(data)", fallback).return("tTransform(data)")
 	const failurePath =
 		applyFailed.body ?
 			`const applyFailed = function ${applyFailed.write(`${name}ApplyFailed`)}\n`
