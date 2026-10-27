@@ -2,6 +2,7 @@ import { hasDomain, type array, type JsonObject } from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
 import type { RangeKind } from "../refinements/kinds.ts"
 import type { LimitKind } from "../refinements/range.ts"
+import type { BaseNode } from "../node.ts"
 import type { PredicateNode } from "../predicate.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
@@ -24,6 +25,7 @@ import {
 	composing,
 	type makeRootAndArrayPropertiesMutable
 } from "../shared/utils.ts"
+import { resolveAmbient } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
@@ -213,10 +215,9 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	}
 
 	get nestedExpr(): string {
-		// an expression written by a single child is already nestable
+		// an expression written by a single child or an alias is already nestable
 		return (
-				this.expression === "unknown" ||
-					this.expression === "[]" ||
+				!this.expression.includes(" ") ||
 					this.children.some(child => child.nestedExpr === this.expression)
 			) ?
 				this.expression
@@ -446,10 +447,16 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 		}
 	}
 
+	// a keyword's predicate has no syntax but its keyword, which is written in
+	// place of the children the keyword holds, like string.creditCard's basis
+	// and pattern, as string.date & string.url >= 6
+	const { keywords, written } = keywordsOf(node)
+	preStruct = preStruct.filter(n => !written.has(n))
+
 	const basisExpression =
-		basis && !node.preStruct.some(n => n.impl.coversExpr) ?
-			basis.nestedExpr
-		:	""
+		keywords.length ? keywords.join(" & ")
+		: basis && !node.preStruct.some(n => n.impl.coversExpr) ? basis.nestedExpr
+		: ""
 
 	// a range is written as it's parsed, e.g. `1 <= number <= 5`
 	const upper = preStruct.find(n => isLimit(n, "upper"))
@@ -460,23 +467,23 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 		.filter(n => !lower || (n !== lower && n !== upper))
 		.map(
 			(n, i) =>
-				(i === 0 ? ""
+				(i === 0 && !basisExpression ? ""
 				: n.kind === "pattern" ? " & "
 				: " ") + n.expression
 		)
 		.join("")
 
 	const fullExpression =
-		basisExpression === "Array" && refinementsExpression === "== 0" ?
+		basisExpression === "Array" && refinementsExpression === " == 0" ?
 			"[]"
-		:	`${basisExpression}${basisExpression && refinementsExpression ? " " : ""}${refinementsExpression}`
+		:	`${basisExpression}${refinementsExpression}`
 
 	let expression =
-		node.structure ?
+		node.structure && !written.has(node.structure) ?
 			fullExpression ?
 				`${node.structure.expression}${basis ? " & " : " "}${fullExpression}`
 			:	node.structure.expression
-		:	fullExpression || "unknown"
+		:	fullExpression
 
 	if (lower) {
 		const limit = lower.expression.slice(lower.comparator.length + 1)
@@ -489,7 +496,41 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 	for (const n of excluded)
 		expression += ` & ${(node.basis ?? n.implied).nestedExpr} ${n.expression}`
 
-	return expression
+	// a predicate of its own is named, so the expression doesn't claim its basis
+	for (const p of node.inner.predicate ?? []) {
+		if (!written.has(p))
+			expression += expression ? ` & ${p.expression}` : p.expression
+	}
+
+	return expression || "unknown"
+}
+
+// a predicate's keyword is written only where its node holds each child the
+// keyword's own does, as string.numeric.parse's input holds its predicate
+// but the keyword is a morph
+const keywordsOf = (node: Intersection.Node) => {
+	const keywords: string[] = []
+	const written = new Set<BaseNode>()
+	for (const p of node.inner.predicate ?? []) {
+		const keyword = p.meta.keyword
+		const resolved = keyword === undefined ? undefined : resolveAmbient(keyword)
+		// a cyclic keyword like object.json is an alias until it's resolved,
+		// so it's written out either way
+		if (!resolved?.is("intersection") || resolved.isCyclic) continue
+		const held = resolved.children.map(
+			c =>
+				node.children.find(
+					own =>
+						own.kind === c.kind &&
+						(own === c ||
+							(own.kind !== "predicate" && own.expression === c.expression))
+				) ?? (p.equals(c) ? p : undefined)
+		)
+		if (held.includes(undefined) || !held.includes(p)) continue
+		keywords.push(keyword!)
+		for (const c of held) written.add(c!)
+	}
+	return { keywords, written }
 }
 
 const isNotEqual = (node: nodeOfKind<PrestructuralKind>) =>

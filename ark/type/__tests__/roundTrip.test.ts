@@ -11,8 +11,8 @@ import fc from "fast-check"
 const [runs = 1000, seed = 1] =
 	process.env.ARK_ROUND_TRIP?.split(":").map(Number) ?? []
 
-// a string definition holds no props, tuples, predicates or morphs, and a
-// predicate is left out of an expression, as string.date's is `string`
+// a string definition holds no props, tuples or morphs, and a predicate only
+// by its keyword, as string.date's
 const expressibleKinds = new Set([
 	"union",
 	"intersection",
@@ -47,7 +47,11 @@ const keywordsOf = (module: object, prefix = ""): string[] =>
 
 const keywords = keywordsOf(ark.export()).filter(name => {
 	const node: BaseRoot = type(name as never).internal
-	return [node, ...node.references].every(n => expressibleKinds.has(n.kind))
+	return [node, ...node.references].every(
+		n =>
+			expressibleKinds.has(n.kind) ||
+			(n.kind === "predicate" && n.meta.keyword !== undefined)
+	)
 })
 
 const keywordsIn = (domain: "number" | "string") =>
@@ -211,9 +215,12 @@ const defOf = fc.letrec<{ def: string; array: string }>(tie => ({
 })).def
 
 // meta, like a keyword's description, has no string syntax. Union branches
-// are ordered by hashes that include it, so it's left out of the order too
+// are ordered by hashes that include it, so it's left out of the order too.
+// A predicate keeps its own, as its keyword is how it's written
 const bare = (t: type.Any): BaseRoot =>
-	t.internal.transform((kind, { meta, ...inner }) => inner as never)
+	t.internal.transform((kind, { meta, ...inner }) =>
+		kind === "predicate" ? { meta, ...inner } : (inner as never)
+	)
 
 // a definition that's unsatisfiable is skipped
 const parsedOrSkipped = (def: string): BaseRoot => {

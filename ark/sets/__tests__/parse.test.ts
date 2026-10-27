@@ -58,7 +58,7 @@ contextualize(() => {
 		}
 		attest(
 			parse(document.components.schemas.Pet, { root: document }).expression
-		).snap("{ owner?: { name: unknown } }")
+		).snap("{ owner?: { name: unknown } & isNonArray } & isNonArray")
 	})
 
 	it("names a cyclic ref by its target", () => {
@@ -73,13 +73,13 @@ contextualize(() => {
 				$ref: "#/$defs/node"
 			}).expression
 		const expression = read()
-		attest(expression).snap("{ child?: synthetic1bpl2ea1nl2i12 }")
+		attest(expression).snap("{ child?: synthetic1bpl2ea1nl2i12 } & isNonArray")
 		attest(read()).equals(expression)
 	})
 
 	it("reads object and array consts as structures", () => {
 		attest(parse({ const: { a: [1, "x"] } }).expression).snap(
-			'{ a: [1, "x"], + (undeclared): reject }'
+			'{ a: [1, "x"], + (undeclared): reject } & isNonArray'
 		)
 	})
 

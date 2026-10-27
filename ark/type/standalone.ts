@@ -3080,7 +3080,7 @@ ${writeFunction(
 	// shared so a factory's check and the validator use one module
 	emitExpression(root: BaseRoot): string {
 		if (root.expression.includes(holeNameMarker))
-			return this.emitString(root.expression)
+			return this.emitString(root.expression, "baseNameOf")
 		const name = this.stringModuleOf(root, "expression")
 		return `${this.read(this.specifierOf(name), name)}()`
 	}
@@ -3128,7 +3128,12 @@ ${writeFunction(
 		return name
 	}
 
-	emitString(s: string): string {
+	// a bare placeholder is a predicate's name, which an expression writes as
+	// baseNameOf does, so an anonymous one is fn
+	emitString(
+		s: string,
+		bareNameAs: "functionNameOf" | "baseNameOf" = "functionNameOf"
+	): string {
 		const parts: string[] = []
 		let start = 0
 		for (const match of s.matchAll(printedHoleNamePattern)) {
@@ -3148,7 +3153,7 @@ ${writeFunction(
 				registered ? `"$ark." + runtime.baseNameOf(${hole})`
 				: predicate ? `runtime.describePredicate({ predicate: ${hole} })`
 				: fn ? `"Function(" + runtime.baseNameOf(${hole}) + ")"`
-				: `runtime.functionNameOf(${hole})`
+				: `runtime.${bareNameAs}(${hole})`
 			)
 			start = match.index + match[0].length
 		}

@@ -21,7 +21,8 @@ const normalizeIds = (schema: unknown): unknown => {
 }
 
 /** asserts at runtime that the pasted schema literal is still what arktype
- * emits, and that jsonSchemaToType reads it back as the same expression */
+ * emits, and that jsonSchemaToType reads it back as the same expression, but
+ * for the arrays an object schema excludes that an object definition doesn't */
 const assertEmits = (
 	t: type.Any,
 	schema: unknown,
@@ -31,7 +32,9 @@ const assertEmits = (
 	const { $schema: _, ...emitted } = t.toJsonSchema(opts) as JsonSchema.Object
 	attest(normalizeIds(emitted)).equals(normalizeIds(schema))
 	attest(
-		normalizeSynthetics(jsonSchemaToType(schema as never).expression)
+		normalizeSynthetics(
+			jsonSchemaToType(schema as never).expression.replace(/ & isNonArray/g, "")
+		)
 	).equals(readExpression)
 }
 

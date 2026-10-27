@@ -64,7 +64,7 @@ A pointer like `#/$defs/a` within a nested `$id` resolves against that resource,
 `jsonSchemaToType` reads a schema as exactly the values a 2020-12 validator like ajv accepts, except that lengths count UTF-16 code units where JSON Schema counts code points, or throws where it can't, and reads draft-07 forms. Schemas that threw now read, and some that read were wrong:
 
 - `prefixItems` and draft-07 `items` arrays make their elements optional, as JSON Schema does: `[string?, number?, ...unknown[]]`.
-- `{ type: "object" }` no longer allows arrays.
+- `{ type: "object" }` no longer allows arrays, which its Type's `expression` says: `{ foo: string } & isNonArray`.
 - A type's keywords constrain only that type, so `{ minimum: 5 }` allows `"foo"`.
 - `minimum` beside `exclusiveMinimum`, `required` without `properties`, and `propertyNames` beside `patternProperties` read rather than throw.
 - Composition keywords apply together, where only the first of `allOf`, `anyOf`, `not` and `oneOf` did, and `oneOf` with disjoint branches is a union.

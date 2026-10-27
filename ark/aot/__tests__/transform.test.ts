@@ -295,15 +295,24 @@ export const required = $ark#6()["required"]`)
 
 		it("folds introspection of a Type a Module the site creates holds", () => {
 			const result = precompile(`import { type } from "arktype"
-const isTruthy = (data: unknown) => !!data
-export const expression = type.module({ a: ["string", ":", isTruthy] }).a.expression`)
+export const expression = type.module({ a: "string > 5" }).a.expression`)
 			attest(result.diagnostics).equals([])
 			// called with nothing, as what its Type holds the site creates
 			attest(foldedCode(result.code)).snap(`import "arktype"
 import $arkfixConfig from "~arktype/#2"
-const isTruthy = (data: unknown) => !!data
 $arkfixConfig()
 export const expression = /* @__PURE__ */ $ark#0()`)
+		})
+
+		it("refuses the expression of a Type narrowed by a function the validator doesn't receive", () => {
+			const result = precompile(`import { type } from "arktype"
+const isTruthy = (data: unknown) => !!data
+export const expression = type.module({ a: ["string", ":", isTruthy] }).a.expression`)
+			attest(result.diagnostics.map(d => d.reasons)).snap([
+				[
+					"the name of isTruthy, which the validator doesn't receive can't be precompiled to a standalone validator"
+				]
+			])
 		})
 
 		it("refuses a JSON Schema calling a thunk", () => {
@@ -367,7 +376,7 @@ export const K = type("string").extends(type("string").in)`,
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				"/main.ts:6:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  Fix the definition, which throws the same ParseError at runtime, or set allowUnsafe: true to build anyway, with a warning.",
-				'/main.ts:7:18  type({ "+": "delete", "[string]": "string", a: type("string… can\'t be precompiled yet\n  structure { [string]: string, a: (In: string) => Out<Date> | (In: number) => Out<unknown>, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.',
+				'/main.ts:7:18  type({ "+": "delete", "[string]": "string", a: type("string… can\'t be precompiled yet\n  structure { [string]: string, a: (In: string.date) => Out<Date> | (In: number) => Out<unknown>, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.',
 				'/main.ts:9:18  type("string").equals("string") can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type("string").equals`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.',
 				'/main.ts:11:18  type({ a: "string" }).props[0].key can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type({ a: "string" }).props`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.',
 				'/main.ts:12:18  type({ a: "string" }).in.extends("object") can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type({ a: "string" }).in.extends`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.',

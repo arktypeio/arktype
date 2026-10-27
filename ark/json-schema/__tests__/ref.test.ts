@@ -15,7 +15,7 @@ contextualize(() => {
 				properties: { name: { $ref: "#/definitions/name" } },
 				definitions: { name: { type: "string" } }
 			}).expression
-		).snap("{ name?: string }")
+		).snap("{ name?: string } & isNonArray")
 	})
 
 	it("recursive", () => {
@@ -66,7 +66,7 @@ contextualize(() => {
 			}
 		})
 		attest(t.expression).snap(
-			"{ percent?: boolean, slash?: string, tilde?: number }"
+			"{ percent?: boolean, slash?: string, tilde?: number } & isNonArray"
 		)
 	})
 
@@ -82,7 +82,7 @@ contextualize(() => {
 			},
 			$defs: { value: { type: "number" } }
 		})
-		attest(t.expression).snap("{ a?: string }")
+		attest(t.expression).snap("{ a?: string } & isNonArray")
 	})
 
 	it("draft-04 id", () => {
@@ -98,7 +98,7 @@ contextualize(() => {
 			},
 			definitions: { value: { type: "number" } }
 		})
-		attest(t.expression).snap("{ a?: string }")
+		attest(t.expression).snap("{ a?: string } & isNonArray")
 	})
 
 	it("anchor in OpenAPI components", () => {
@@ -108,7 +108,7 @@ contextualize(() => {
 				schemas: { Pet: { $anchor: "pet", type: "object", required: ["name"] } }
 			}
 		} as never)
-		attest(t.expression).snap("{ name: unknown }")
+		attest(t.expression).snap("{ name: unknown } & isNonArray")
 	})
 
 	it("anchor", () => {
@@ -167,7 +167,7 @@ contextualize(() => {
 				}
 			}
 		})
-		attest(t.expression).snap("{ a?: string, b?: number }")
+		attest(t.expression).snap("{ a?: string, b?: number } & isNonArray")
 	})
 
 	it("unresolvable", () => {

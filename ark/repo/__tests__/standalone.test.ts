@@ -2770,7 +2770,7 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 			attest(create(isDivisibleBy2)(1).toString()).snap(
 				"must be valid according to isDivisibleBy2"
 			)
-			attest(create(isDivisibleBy2).expression).snap("number")
+			attest(create(isDivisibleBy2).expression).snap("number & isDivisibleBy2")
 			attest(create((n: number) => n % 2 === 0).description).snap(
 				"a number and valid according to an anonymous predicate"
 			)
@@ -2801,7 +2801,7 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 			const Cat = function () {}
 			Object.setPrototypeOf(Cat.prototype, Animal.prototype)
 			attest(create(isEven, Cat, Animal, Symbol("tag")).expression).snap(
-				"{ n: number, owner: Animal, pet: Cat, Symbol(tag): string }"
+				"{ n: number & isEven, owner: Animal, pet: Cat, Symbol(tag): string }"
 			)
 			attest(() =>
 				create((n: number, ctx: unknown) => !!ctx, Dog, Animal, Symbol("tag"))

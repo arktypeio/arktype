@@ -1055,6 +1055,18 @@ const resolutionsToJson = (res: InternalResolutions): JsonStructure =>
 		: throwInternalError(`Unexpected resolution ${printable(v)}`)
 	])
 
+/** the root the builtin keyword named resolves to, if any */
+export const resolveAmbient = (name: string): BaseRoot | undefined => {
+	const ambient: InternalModule = $ark.ambient as never
+	const resolution =
+		hasOwn(ambient, name) ? ambient[name] : maybeResolveSubalias(ambient, name)
+	return (
+		hasArkKind(resolution, "module") ? resolution.root
+		: hasArkKind(resolution, "root") ? resolution
+		: undefined
+	)
+}
+
 const maybeResolveSubalias = (
 	base: Dict,
 	name: string

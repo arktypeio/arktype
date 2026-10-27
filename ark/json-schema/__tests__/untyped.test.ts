@@ -22,7 +22,7 @@ contextualize(() => {
 			properties: { a: { type: "string" } },
 			required: ["a"]
 		})
-		attest(t.expression).snap("{ a: string } | null")
+		attest(t.expression).snap("{ a: string } & isNonArray | null")
 	})
 
 	it("arrays are disjoint from an object branch", () => {
