@@ -88,6 +88,7 @@ Thanks to @jkugsiya for #1692.
 
 A Type a string definition can write has an `expression` that parses back to it:
 
+- An array of `never` is `never[]`, where it was `(never)[]`.
 - A pattern is written as its source with each `/` escaped, where it was its RegExp's `toString()`, which leaves a `/` in a class unescaped and writes an empty pattern `(?:)`. So `type("/[\\/]/").expression` and `string.base64`'s are `/[\/]/` and `/^(?:[\d+\/A-Za-z]{4})*...$/`, where the first `/` in the class ended the literal they printed, and `type("//").expression` is `//`.
 
 ### Leave out a number or Date option config already sets

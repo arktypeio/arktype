@@ -556,9 +556,10 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	get nestedExpression(): string {
-		// avoid adding unnecessary parentheses around boolean since it's
-		// already collapsed to a single keyword
-		return this.isBoolean ? "boolean" : `(${this.expression})`
+		// boolean and never are already single keywords
+		return this.isBoolean || this.isNever() ?
+				this.expression
+			:	`(${this.expression})`
 	}
 }
 
