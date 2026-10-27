@@ -1391,10 +1391,13 @@ class StandaloneArtifact {
 			const covered = new Set<BaseNode>()
 			const cover = (root: BaseRoot) => {
 				if (covered.has(root)) return
-				const reached = reachedFrom(root)
-				for (const node of reached ?? root.references) {
+				const reached = root.selectReferences(isAny)
+				// what reaches an alias is read from refsById, which can hold a
+				// node sharing another root's id
+				const coversRoots = !reached.some(node => node.includesAlias)
+				for (const node of reached) {
 					written.add(node)
-					if (reached && node.isRoot()) covered.add(node)
+					if (coversRoots && node.isRoot()) covered.add(node)
 				}
 				covered.add(root)
 			}
@@ -3791,32 +3794,7 @@ const isSharedUnit = (unit: RootUnit): boolean => {
 	return shared
 }
 
-const reachedByRoot = new WeakMap<BaseRoot, readonly BaseNode[] | null>()
-
-// the nodes a root references, as refsById holds them, read through each
-// node's children and other references, so what reaches a node many others
-// do needn't copy its refsById. Null where an alias can close a cycle or
-// replace a node sharing its id
-const reachedFrom = (root: BaseRoot): readonly BaseNode[] | null => {
-	let reached = reachedByRoot.get(root)
-	if (reached === undefined) {
-		const nodes = new Set<BaseNode>()
-		const stack: BaseNode[] = [root]
-		while (stack.length) {
-			const node = stack.pop()!
-			if (nodes.has(node)) continue
-			if (node.includesAlias) {
-				nodes.clear()
-				break
-			}
-			nodes.add(node)
-			stack.push(...node.children, ...node.otherReferences)
-		}
-		reached = nodes.size ? [...nodes] : null
-		reachedByRoot.set(root, reached)
-	}
-	return reached
-}
+const isAny = (): boolean => true
 
 const selectedByUnits = new WeakMap<
 	readonly RootUnit[],
