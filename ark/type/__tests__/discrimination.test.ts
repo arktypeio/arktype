@@ -812,6 +812,23 @@ contextualize(() => {
 		attest(U.allows({ a: "y", b: 2 })).equals(false)
 	})
 
+	it("prunes a morph's input, not what it pipes to", () => {
+		const T = type(["null", "|>", { a: ["string", "=>", s => s.length] }]).or(
+			"object"
+		)
+		attest(T(null)?.toString()).snap("must be an object (was null)")
+		// the head pruned entirely, the case's input is unknown
+		const Keyed = type([
+			{ k: "'a'" },
+			"|>",
+			{ k: ["string", "=>", s => s.length], z: "number" }
+		]).or({ k: "'b'" })
+		attest(Keyed({ k: "a", z: 1 })).equals({ k: 1, z: 1 })
+		attest(Keyed({ k: "a" })?.toString()).snap(
+			"z must be a number (was missing)"
+		)
+	})
+
 	it("number case includes NaN and Infinity", () => {
 		const $ = scope({})
 		const T = $.type({ a: "number.NaN | number.Infinity | 'x'" })

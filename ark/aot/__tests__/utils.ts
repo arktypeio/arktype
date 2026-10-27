@@ -201,9 +201,15 @@ process.once("exit", code => {
 	else for (const dir of tempDirs) rmSync(dir, { recursive: true, force: true })
 })
 
-export const tempDir = (prefix = "ark-precompile-"): string => {
+export const tempDir = (
+	prefix = "ark-precompile-",
+	parent = tmpdir()
+): string => {
 	// as bundlers write it: through macOS's /var symlink and Windows' 8.3 names
-	const dir = realpathSync.native(mkdtempSync(join(tmpdir(), prefix)))
+	const dir = realpathSync.native(mkdtempSync(join(parent, prefix)))
+	// a project of its own, so nothing reading the nearest package.json walks
+	// above it, e.g. into a package.json left in the temp dir
+	writeFileSync(join(dir, "package.json"), "{}")
 	tempDirs.push(dir)
 	return dir
 }

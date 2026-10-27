@@ -123,6 +123,44 @@ contextualize(() => {
 		attest(write()).equals(written)
 	})
 
+	it("describes a union missed by a morph's input union as arktype does", () => {
+		// the input's cases, where its miss is one error, or its branches'
+		// bases where one of them is described
+		const Cased = type(["string | number", "=>", String]).or([
+			"object",
+			"@",
+			"a box"
+		])
+		const Listed = type([
+			[["string", "@", "a thing"], "|", "number"],
+			"=>",
+			String
+		]).or("object")
+		attest(Cased(null).toString()).snap(
+			"must be a box, a number or a string (was null)"
+		)
+		attest(Listed(null).toString()).snap(
+			"must be an object, a number or a thing (was null)"
+		)
+		const { code } = precompileStandalone({ Cased, Listed })
+		attest(code).satisfies(/siteOf\("union", "a box, a number or a string"\)/)
+		attest(code).satisfies(
+			/siteOf\("union", "an object, a number or a thing"\)/
+		)
+	})
+
+	it("describes a union's miss by a unit branch and the cases before its default", () => {
+		// the morph is the discriminant's default case, reported after the
+		// cases data missed
+		const T = type(["string | number", "=>", String]).or("object").or("null")
+		attest(String(T(true))).snap(
+			"must be an object, null, a number or a string (was boolean)"
+		)
+		attest(precompileStandalone({ T }).code).satisfies(
+			/siteOf\("union", "an object, null, a number or a string"\)/
+		)
+	})
+
 	it("passes symbols and object units to compiled code", () => {
 		const key = Symbol("precompiledKey")
 		const Inner = type({ a: "string" })

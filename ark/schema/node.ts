@@ -101,6 +101,7 @@ import {
 } from "./shared/traversal.ts"
 import {
 	composing,
+	hasArkKind,
 	inProgress,
 	isIoFinal,
 	isNode,
@@ -1343,7 +1344,13 @@ export abstract class BaseNode<
 				if (k === "morphs") {
 					const { head, piped } = this as {} as Morph.Node
 					const transformed = head?._tf(mapper, ctx)
-					return [k, transformed ? [transformed, ...piped] : piped]
+					if (transformed) return [k, [transformed, ...piped]]
+					// a pruned head accepts anything, so the node it piped to isn't
+					// promoted to head
+					return [
+						k,
+						hasArkKind(piped[0], "root") ? [$ark.kw.unknown, ...piped] : piped
+					]
 				}
 				const children = v as listable<BaseNode>
 				if (!isArray(children)) {

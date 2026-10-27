@@ -372,7 +372,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	tTransform(data: unknown, ctx: InternalTraversal): unknown {
-		const discriminant = this.foundDisc
+		// found if it wasn't, as the case it picks can differ from the first
+		// branch allowing data, e.g. a unit a morph's input overlaps
+		const discriminant = this.discriminant
 		if (discriminant) {
 			const k = caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
 			const caseNode = discriminant.cases[k]
