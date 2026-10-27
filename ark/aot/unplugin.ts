@@ -324,6 +324,12 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			})
 		)
 	}
+	// each compiler Rspack or Rsbuild creates, e.g. one for each environment
+	const applyRspack = (compiler: BundlerCompiler) => {
+		setRoot(compiler.context)
+		keepCompiler(compiler)
+		setEnvironment(environmentOf(compiler))
+	}
 	const loadModule = (id: string) => {
 		if (id in modules) return modules[id]
 		const dir = storeDirOf()
@@ -886,10 +892,13 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				parser: { exportsPresence: "error" }
 			})
 		},
-		rspack: compiler => {
-			setRoot(compiler.context)
-			keepCompiler(compiler)
-			setEnvironment(environmentOf(compiler))
+		rspack: applyRspack,
+		// unplugin gives the rspack hook only Rspack's own compiler
+		rsbuild: {
+			setup: (api: RsbuildApi) =>
+				api.modifyRspackConfig(config => {
+					config.plugins.push({ apply: applyRspack })
+				})
 		},
 		rollup: {
 			options: checkInputExternal,
@@ -1681,6 +1690,15 @@ const environmentOf = (compiler: BundlerCompiler): Environment => ({
 	production: (compiler.options.mode ?? "production") === "production",
 	testing: false
 })
+
+// what the plugin reads of Rsbuild's plugin API
+interface RsbuildApi {
+	modifyRspackConfig(
+		modify: (config: {
+			plugins: { apply: (compiler: BundlerCompiler) => void }[]
+		}) => void
+	): void
+}
 
 interface BundlerCompilation {
 	hooks: { finishModules: Tap<Iterable<unknown>> }

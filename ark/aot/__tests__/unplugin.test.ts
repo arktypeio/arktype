@@ -1916,6 +1916,39 @@ console.log(JSON.stringify(User.toJsonSchema()))
 		]).snap(["type/runtimeDevelopment.ts", "type/runtime.ts"])
 	})
 
+	it("resolves the runtime of the mode Rsbuild gives each compiler", async () => {
+		const resolvedIn = async (mode: string) => {
+			const plugin = precompile.raw(
+				{ cwd: app, conditions },
+				{ framework: "rsbuild", versions: {} }
+			) as unknown as RawHooks & {
+				rsbuild: { setup(api: object): void }
+			}
+			const plugins: { apply(compiler: object): void }[] = []
+			plugin.rsbuild.setup({
+				modifyRspackConfig: (modify: (config: object) => void) =>
+					modify({ plugins })
+			})
+			for (const { apply } of plugins) {
+				apply({
+					context: app,
+					options: { cache: false, mode, module: { rules: [] } },
+					hooks: { compilation: { tap: () => {} } }
+				})
+			}
+			const resolved = await plugin.resolveId.handler.call(
+				{ warn: () => {} },
+				"arktype",
+				join(app, "main.ts")
+			)
+			return relative(fromHere("..", ".."), resolved!).replace(/\\/g, "/")
+		}
+		attest([
+			await resolvedIn("development"),
+			await resolvedIn("production")
+		]).snap(["type/runtimeDevelopment.ts", "type/runtime.ts"])
+	})
+
 	it("loads the modules a webpack build's cache kept", async () => {
 		const cache = {
 			type: "filesystem",
