@@ -103,6 +103,13 @@ s must be a string or undefined (was null)`)
 		)
 	})
 
+	it("lists a branch failing at a never key", () => {
+		const T = type({ "[string]": "null", "a?": "string" }).or("null[]")
+		attest(T({ a: "" }).toString()).snap(
+			'a must be never (was "") or must be an array (was an object)'
+		)
+	})
+
 	it("lists each value a missing key allows once", () => {
 		const T = type({ a: "string | number", b: "string" }).or({
 			a: "string",

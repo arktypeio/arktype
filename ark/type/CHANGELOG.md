@@ -1133,6 +1133,17 @@ type({ d: [{ a: "string" }, "number = 2"] }).onDeepUndeclaredKey("delete")({
 })
 ```
 
+### Throw for an empty intersection with a cyclic Type
+
+An intersection a definition writes with a Type still being defined is decided once it resolves, and now throws there if it's empty, as one with a resolved Type already did. Previously, including in 2.2.9 where the other side wasn't a primitive, it became `never`:
+
+```ts
+// previously b accepted only a number, now throws ParseError: Intersection of string and object results in an unsatisfiable type
+scope({ a: { b: "string.trim & a | number" } }).export()
+```
+
+A required key whose value is disjoint from an index signature's once a Type it references resolves, like `b` in `{ b: "a", "[string]": "string" }` where `a` is an array, throws as it did in 2.2.9, where it was accepted and threw from the first validation reaching it.
+
 ### Throw a `ParseError` when `Exclude` or `Extract` filters a type still being defined
 
 `Exclude` and `Extract` over a definition still being defined, like `"Extract<a | string, object>"` inside `a`, throw a `ParseError`:

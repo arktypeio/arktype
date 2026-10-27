@@ -14,6 +14,7 @@ import { parseOperator } from "../shift/operator/operator.ts"
 import type { FinalizingLookahead, InfixToken } from "../shift/tokens.ts"
 import { parseUntilFinalizer } from "../string.ts"
 import {
+	checkWrittenIntersection,
 	type BranchOperator,
 	type Comparator,
 	invertedComparators,
@@ -167,8 +168,9 @@ export class RuntimeState {
 		const root = this.root!
 		this.root = undefined
 
-		this.branches.intersection =
-			this.branches.intersection?.rawAnd(root) ?? root
+		const l = this.branches.intersection
+		this.branches.intersection = l?.rawAnd(root) ?? root
+		if (l) checkWrittenIntersection(this.branches.intersection, l, root)
 
 		if (token === "&") return
 

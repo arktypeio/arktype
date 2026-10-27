@@ -1012,6 +1012,31 @@ contextualize(() => {
 		attest(l.and(r).allows({ kind: "b", p2: null })).equals(false)
 	})
 
+	it("cyclic required key disjoint from index", () => {
+		// a is an array only once it resolves, so b's value meets string there
+		attest(() =>
+			scope({
+				a: [[{ b: "a", "[string]": "string" }, "|", "'x'"], "[]"]
+			}).export()
+		).throws.snap(
+			"ParseError: Intersection at b of object and string results in an unsatisfiable type"
+		)
+	})
+
+	it("written intersection of a cyclic Type and a primitive", () => {
+		attest(() => scope({ a: { b: "a & string" } }).export()).throws.snap(
+			"ParseError: Intersection of object and string results in an unsatisfiable type"
+		)
+		attest(() =>
+			scope({ a: { b: "a | null" }, c: { b: ["a", "&", "string"] } }).export()
+		).throws.snap(
+			"ParseError: Intersection of object and string results in an unsatisfiable type"
+		)
+		// one whose alias resolves to a primitive is what they share
+		const $ = scope({ a: "a[] | string", c: { x: "a & string" } }).export()
+		attest($.c.expression).snap("{ x: string }")
+	})
+
 	it("cyclic union with subsumed branch", () => {
 		const { u } = scope({
 			g: { "p0?": "g" },

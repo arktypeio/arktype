@@ -124,6 +124,14 @@ jobs:
     needs: core
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      matrix:
+        # the default build and size builds, which write checkers, sampled on
+        # data the suites never pass them
+        options:
+          - "{}"
+          - '{"optimize": "size"}'
+          - '{"preset": "smallest"}'
     steps:
       - name: Checkout repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -133,8 +141,11 @@ jobs:
 
       - name: Change what precompiled sites read
         run: pnpm testPerturbation
+        env:
+          ARK_PRECOMPILE_OPTIONS: ${{ matrix.options }}
 
       - name: Run generated programs through the build
+        if: matrix.options == '{}'
         run: pnpm testPrograms
         env:
           ARK_PRECOMPILE_PROGRAMS: 300

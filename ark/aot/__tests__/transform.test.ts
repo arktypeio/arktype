@@ -293,6 +293,19 @@ export const required = $ark#6()["required"]`)
 			])
 		})
 
+		it("folds introspection of a Type a Module the site creates holds", () => {
+			const result = precompile(`import { type } from "arktype"
+const isTruthy = (data: unknown) => !!data
+export const expression = type.module({ a: ["string", ":", isTruthy] }).a.expression`)
+			attest(result.diagnostics).equals([])
+			// called with nothing, as what its Type holds the site creates
+			attest(foldedCode(result.code)).snap(`import "arktype"
+import $arkfixConfig from "~arktype/#2"
+const isTruthy = (data: unknown) => !!data
+$arkfixConfig()
+export const expression = /* @__PURE__ */ $ark#0()`)
+		})
+
 		it("refuses a JSON Schema calling a thunk", () => {
 			const result = precompile(`import { type } from "arktype"
 const T = type({ a: ["number[]", "=", () => []] })

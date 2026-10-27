@@ -1,8 +1,10 @@
 import {
 	$ark,
 	Disjoint,
+	inProgress,
 	normalizeIndex,
 	normalizeOrder,
+	queueUnchecked,
 	writeDuplicateKeyMessage,
 	type BaseRoot,
 	type BaseScope,
@@ -33,10 +35,25 @@ const intersectPropsAndIndex = <
 		return null
 
 	// a key's transforms apply in turn once each value allows its input
-	const value =
-		l.value.hasTransform && r.value.hasTransform ?
-			intersectNodesRoot(l.value.rawIn, r.value.rawIn, $)
-		:	intersectNodesRoot(l.value, r.value, $)
+	const intersectValues = (lValue: BaseRoot, rValue: BaseRoot) =>
+		lValue.hasTransform && rValue.hasTransform ?
+			intersectNodesRoot(lValue.rawIn, rValue.rawIn, $)
+		:	intersectNodesRoot(lValue, rValue, $)
+	const value = intersectValues(l.value, r.value)
+	// a cyclic value a definition's key meets is decided once definitions
+	// close, where a required key's is unsatisfiable as if written out
+	if (
+		kind === "required" &&
+		inProgress.definitions &&
+		!(value instanceof Disjoint) &&
+		value.hasKind("alias")
+	) {
+		queueUnchecked(() => {
+			const resolved = intersectValues(unaliased(l.value), unaliased(r.value))
+			if (resolved instanceof Disjoint)
+				resolved.withPrefixKey(l.key, "optional").throw()
+		}, `${l.id}&${r.id}`)
+	}
 	if (value instanceof Disjoint) {
 		// absent, since one of the disjoint values rejects undefined
 		return kind === "optional" ?
@@ -51,6 +68,9 @@ const intersectPropsAndIndex = <
 
 	return null
 }
+
+const unaliased = (node: BaseRoot): BaseRoot =>
+	node.hasKind("alias") ? node.resolution : node
 
 // a number key names the same property as its string
 const propertyOf = (key: Key): Key =>

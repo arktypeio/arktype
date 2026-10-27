@@ -276,6 +276,18 @@ contextualize(() => {
 			])
 		})
 
+		it("transform an undiscriminated union only where it allows", async () => {
+			const { T } = await load(
+				{ T: type({ a: "string" }).or({ a: "number = 5" }) },
+				{ optimize: "size" }
+			)
+			attest([T({}), String(T({ a: true })), String(T(null))]).snap([
+				{ a: 5 },
+				"must be { a?: a number } or { a: a string }",
+				"must be an object"
+			])
+		})
+
 		it("describe what each checks from its rule", async () => {
 			const { T } = await load(
 				{
