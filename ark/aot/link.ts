@@ -478,7 +478,7 @@ class Linker {
 					binding.exportNames.length ||
 					!creator ||
 					!importSourceOf(creator)?.startsWith("~arktype/") ||
-					init!.type !== "CallExpression" ||
+					init?.type !== "CallExpression" ||
 					init.arguments.length !== 1 ||
 					!this.createsAllowsObject(importedNameOf(creator))
 				)

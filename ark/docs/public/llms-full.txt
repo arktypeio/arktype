@@ -1453,7 +1453,7 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you chain two right bounds, like `number < 5 < 6`? [Group them](https://arktype.io/docs/upgrading#a-second-right-bound-throws).
 - Do you embed an async Standard Schema, like a Zod schema with an async refinement? [It throws](https://arktype.io/docs/upgrading#standard-schemas-must-validate-synchronously).
 - Do you store or snapshot `toJsonSchema()`, `.expression` or `.json`, or convert `NaN` or `Infinity` literals to JSON Schema? See [Output](https://arktype.io/docs/upgrading#output).
-- Do you rely on what `.required()`, `.map()` or arkregex infer? See [Inference](https://arktype.io/docs/upgrading#inference) and [ArkRegex](https://arktype.io/docs/upgrading#arkregex).
+- Do you rely on what `.required()`, `.map()` or arkregex infer, or reference a Type allowing `undefined` at a key without `exactOptionalPropertyTypes`? See [Inference](https://arktype.io/docs/upgrading#inference) and [ArkRegex](https://arktype.io/docs/upgrading#arkregex).
 - Do you use `@ark/schema` without `arktype`? [Import `arksets`](https://arktype.io/docs/upgrading#arkschema).
 - Do you import from `@ark/schema`, `@ark/util` or a deep path like `arktype/internal/...`, or read `.internal`? See [@ark/schema](https://arktype.io/docs/upgrading#arkschema), [@ark/util](https://arktype.io/docs/upgrading#arkutil) and [Deep imports](https://arktype.io/docs/upgrading#deep-imports).
 - Do you use `@ark/json-schema`, `@ark/fast-check` or attest, or run attest on TypeScript 7? See their sections below.
@@ -1519,7 +1519,7 @@ Update snapshots of those messages, and read `summary` from the errors calling t
 
 ### Errors are plain objects
 
-The errors in `issues` are plain objects without getters or methods, holding the keys their JSON had. `ArkError` is exported only as a type, which comparing `code` narrows as `hasCode` did, and `messageIn` writes one in a locale:
+The errors in `issues` are plain objects without getters or methods, holding the keys their JSON had plus `propString`, before `expected`, so serialized issues, like the `errors` `@hono/arktype-validator` responds with, include it. `ArkError` is exported only as a type, which comparing `code` narrows as `hasCode` did, and `messageIn` writes one in a locale:
 
 ```ts
 import { messageIn, type } from "arktype"
@@ -2127,7 +2127,7 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - `.required()` makes a defaulted key required in `inferIn`, as it already did at runtime: `type({ foo: "string = 'bar'" }).required()` infers `{ foo: string }` as input, before: `{ foo?: string }`.
 - `.map()` on a union infers each branch: `type({ kind: "'a'", a: "string" }).or({ kind: "'b'", b: "number" }).map(p => p)` is `Type<{ kind: "a"; a: string } | { kind: "b"; b: number }>`, before: `Type<{ kind: "a" | "b" }>`, and the callback's argument holds each branch's props, not only those every branch shares.
 - A morph that returns `any` infers `any` as its output: `type({ a: ["string", "=>", s => JSON.parse(s)] }).infer` is `{ a: any }`, before: `{ a: (In: string) => Out<any> }`.
-- Without TypeScript's `exactOptionalPropertyTypes`, a key whose value is a Type allowing `undefined` keeps it: `type({ age: type("number | undefined") }).infer` is `{ age: number | undefined }`, before: `{ age: number }`.
+- Without TypeScript's `exactOptionalPropertyTypes`, a key or index signature whose value is a Type allowing `undefined` infers it: `type({ "[string]": Settings.or("undefined") }).infer` is `{ [k: string]: Settings | undefined }`, before: `{ [k: string]: Settings }`, so `settings[k].isHidden` needs a check, as TypeScript's "Object is possibly 'undefined'" says.
 - A defaulted key beside an index signature is optional in `inferIn`: `type({ a: "number = 5", "[string]": "number" })` infers `a?: number` as input, before: `a: number`.
 - `toJsonSchema()`'s `JsonSchema` no longer declares `exclusiveMinimum` and `exclusiveMaximum`, since `target: "openapi-3.0"` writes `true` for them, so they read as `unknown`.
 
@@ -3791,6 +3791,13 @@ These are all the keywords `type` resolves. To define your own, see [scopes](htt
 
 | Alias | Description |
 | - | - |
+| `BigInt64Array` | a BigInt64Array |
+| `BigUint64Array` | a BigUint64Array |
+| `Float32Array` | a Float32Array |
+| `Float64Array` | a Float64Array |
+| `Int16Array` | an Int16Array |
+| `Int32Array` | an Int32Array |
+| `Int8Array` | an Int8Array |
 | `TypedArray.BigInt64` | a BigInt64Array |
 | `TypedArray.BigUint64` | a BigUint64Array |
 | `TypedArray.Float32` | a Float32Array |
@@ -3802,6 +3809,10 @@ These are all the keywords `type` resolves. To define your own, see [scopes](htt
 | `TypedArray.Uint32` | a Uint32Array |
 | `TypedArray.Uint8` | a Uint8Array |
 | `TypedArray.Uint8Clamped` | a Uint8ClampedArray |
+| `Uint16Array` | a Uint16Array |
+| `Uint32Array` | a Uint32Array |
+| `Uint8Array` | a Uint8Array |
+| `Uint8ClampedArray` | a Uint8ClampedArray |
 
 ### instanceof
 
