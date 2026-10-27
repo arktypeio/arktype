@@ -152,7 +152,7 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 }
 
 export const Index = {
-	implementation,
+	impl: implementation,
 	Node: IndexNode
 }
 

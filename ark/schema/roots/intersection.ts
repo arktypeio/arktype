@@ -433,7 +433,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 const objectCondition = "(data instanceof Object || Object(data) === data)"
 
 export const Intersection = {
-	implementation,
+	impl: implementation,
 	Node: IntersectionNode
 }
 

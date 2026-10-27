@@ -128,7 +128,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 }
 
 export const Optional = {
-	implementation,
+	impl: implementation,
 	Node: OptionalNode
 }
 

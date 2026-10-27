@@ -60,6 +60,6 @@ export class MinLengthNode extends BaseRange<MinLength.Declaration> {
 }
 
 export const MinLength = {
-	implementation,
+	impl: implementation,
 	Node: MinLengthNode
 }

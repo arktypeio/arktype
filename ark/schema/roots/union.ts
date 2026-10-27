@@ -555,7 +555,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 }
 
 export const Union = {
-	implementation,
+	impl: implementation,
 	Node: UnionNode
 }
 

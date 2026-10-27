@@ -391,7 +391,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					// which would otherwise lead to invalid keys
 					const mappedPropInner: Prop.Inner = flatMorph(
 						mapped as BaseMappedPropInner,
-						(k, v) => (k in Optional.implementation.keys ? [k, v] : [])
+						(k, v) => (k in Optional.impl.keys ? [k, v] : [])
 					) as never
 
 					structureInner[mappedKind] = append(
@@ -1632,7 +1632,7 @@ export interface OptionalMappedPropInner extends Optional.Inner {
 }
 
 export const Structure = {
-	implementation,
+	impl: implementation,
 	Node: StructureNode
 }
 

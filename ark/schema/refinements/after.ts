@@ -63,6 +63,6 @@ export class AfterNode extends BaseRange<After.Declaration> {
 }
 
 export const After = {
-	implementation,
+	impl: implementation,
 	Node: AfterNode
 }

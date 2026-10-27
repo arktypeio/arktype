@@ -384,6 +384,6 @@ export type writeShallowCycleErrorMessage<
 > = `Alias '${name}' has a shallow resolution cycle: ${join<[...seen, name], "->">}`
 
 export const Alias = {
-	implementation,
+	impl: implementation,
 	Node: AliasNode
 }

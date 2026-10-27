@@ -132,7 +132,7 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 }
 
 export const Domain = {
-	implementation,
+	impl: implementation,
 	Node: DomainNode,
 	writeBadAllowNanMessage: (
 		actual: Exclude<Domain.NonEnumerable, "number">

@@ -78,7 +78,8 @@ export class InternalTraversal implements FailureContext {
 
 	// data is read from what a morph received, since root is the input
 	declare received: unknown
-	declare receivedDepth: number
+	/** how deep in the root's path the data a morph received is */
+	declare recvDepth: number
 	// a piped node is transformed once Apply finds it valid
 	declare checksOnly: boolean
 	// a morph fails by returning any error ctx.error added during its call
@@ -96,7 +97,7 @@ export class InternalTraversal implements FailureContext {
 		this.tracksMorphs = true
 		this.transformedById = undefined
 		this.received = root
-		this.receivedDepth = 0
+		this.recvDepth = 0
 		this.checksOnly = false
 		this.returnedFrom = undefined
 	}
@@ -268,7 +269,7 @@ export class Traversal extends InternalTraversal {
 	 */
 	get data(): unknown {
 		let result: any = this.received
-		for (let i = this.receivedDepth; i < this.path.length; i++)
+		for (let i = this.recvDepth; i < this.path.length; i++)
 			result = result?.[this.path[i]]
 
 		return result
@@ -384,7 +385,7 @@ export const applyRejected = (
 
 const receive = (ctx: InternalTraversal, data: unknown): void => {
 	ctx.received = data
-	ctx.receivedDepth = ctx.path.length
+	ctx.recvDepth = ctx.path.length
 }
 
 // reads predicate, or for pipe.try the morph that threw
@@ -419,12 +420,12 @@ export const callMorph = (
 	morph: Morph,
 	data: unknown
 ): unknown => {
-	const { received, receivedDepth } = ctx
+	const { received, recvDepth } = ctx
 	receive(ctx, data)
 	ctx.returnedFrom = undefined
 	const result = morph(data as never, ctx as never)
 	ctx.received = received
-	ctx.receivedDepth = receivedDepth
+	ctx.recvDepth = recvDepth
 	return ctx.returnedFrom === undefined ? result : returned(ctx, result)
 }
 
@@ -526,11 +527,11 @@ const transformPiped = (
 	data: unknown,
 	transformNode: typeof transform
 ): unknown => {
-	const { received, receivedDepth } = ctx
+	const { received, recvDepth } = ctx
 	const errorCount = ctx.errCount
 	const result = transformNode(ctx, node, data)
 	ctx.received = received
-	ctx.receivedDepth = receivedDepth
+	ctx.recvDepth = recvDepth
 	return ctx.errCount > errorCount ? errorsOf(ctx) : result
 }
 
@@ -540,13 +541,13 @@ const applyPiped = (
 	data: unknown
 ): boolean => {
 	const errorCount = ctx.errCount
-	const { received, receivedDepth, checksOnly } = ctx
+	const { received, recvDepth, checksOnly } = ctx
 	receive(ctx, data)
 	ctx.checksOnly = true
 	node.traverseApply(data, ctx)
 	ctx.checksOnly = checksOnly
 	ctx.received = received
-	ctx.receivedDepth = receivedDepth
+	ctx.recvDepth = recvDepth
 	return ctx.errCount === errorCount
 }
 
@@ -556,7 +557,7 @@ const applyPipedResolution = (
 	node: BaseNode,
 	data: unknown
 ): void => {
-	const { received, receivedDepth, checksOnly } = ctx
+	const { received, recvDepth, checksOnly } = ctx
 	receive(ctx, data)
 	ctx.checksOnly = true
 	const piped = traversalOf(ctx, data)
@@ -565,7 +566,7 @@ const applyPipedResolution = (
 	if (_errors) addErrors(ctx, _errors)
 	ctx.checksOnly = checksOnly
 	ctx.received = received
-	ctx.receivedDepth = receivedDepth
+	ctx.recvDepth = recvDepth
 }
 
 // Apply transforms valid values outside branches and pipes
@@ -686,7 +687,7 @@ export const addMorphErrors = (
 	errors: TransformErrors,
 	key?: PropertyKey
 ): void => {
-	const { path, received, receivedDepth } = ctx
+	const { path, received, recvDepth } = ctx
 	for (const { reversedPath, result, data } of errors.entries) {
 		ctx.path = [...path]
 		if (key !== undefined) ctx.path.push(key)
@@ -697,7 +698,7 @@ export const addMorphErrors = (
 	}
 	ctx.path = path
 	ctx.received = received
-	ctx.receivedDepth = receivedDepth
+	ctx.recvDepth = recvDepth
 }
 
 export const transformResolution = (

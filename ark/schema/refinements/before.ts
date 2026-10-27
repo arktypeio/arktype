@@ -63,6 +63,6 @@ export class BeforeNode extends BaseRange<Before.Declaration> {
 }
 
 export const Before = {
-	implementation,
+	impl: implementation,
 	Node: BeforeNode
 }

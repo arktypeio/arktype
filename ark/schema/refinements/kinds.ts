@@ -46,15 +46,15 @@ export type boundImplementationsByKind = {
 }
 
 export const boundImplementationsByKind: boundImplementationsByKind = {
-	min: Min.implementation,
-	max: Max.implementation,
-	minLength: MinLength.implementation,
-	maxLength: MaxLength.implementation,
-	exactLength: ExactLength.implementation,
-	after: After.implementation,
-	before: Before.implementation,
-	notEqual: NotEqual.implementation,
-	notEqualLength: NotEqualLength.implementation
+	min: Min.impl,
+	max: Max.impl,
+	minLength: MinLength.impl,
+	maxLength: MaxLength.impl,
+	exactLength: ExactLength.impl,
+	after: After.impl,
+	before: Before.impl,
+	notEqual: NotEqual.impl,
+	notEqualLength: NotEqualLength.impl
 }
 
 export const boundClassesByKind: Record<BoundKind, typeof BaseConstraint<any>> =

@@ -72,6 +72,6 @@ export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Dec
 }
 
 export const ExactLength = {
-	implementation,
+	impl: implementation,
 	Node: ExactLengthNode
 }

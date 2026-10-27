@@ -213,29 +213,29 @@ export abstract class BaseRoot<
 	}
 
 	map(flatMapEntry: PropFlatMapper): BaseRoot {
-		return this.$.schema(this.applyStructural("map", [flatMapEntry]))
+		return this.$.schema(this.applyStruct("map", [flatMapEntry]))
 	}
 
 	pick(...keys: KeyOrKeyNode[]): BaseRoot {
-		return this.$.schema(this.applyStructural("pick", keys))
+		return this.$.schema(this.applyStruct("pick", keys))
 	}
 
 	omit(...keys: KeyOrKeyNode[]): BaseRoot {
-		return this.$.schema(this.applyStructural("omit", keys))
+		return this.$.schema(this.applyStruct("omit", keys))
 	}
 
 	required(): BaseRoot {
-		return this.$.schema(this.applyStructural("required", []))
+		return this.$.schema(this.applyStruct("required", []))
 	}
 
 	partial(): BaseRoot {
-		return this.$.schema(this.applyStructural("partial", []))
+		return this.$.schema(this.applyStruct("partial", []))
 	}
 
 	private _keyof?: BaseRoot
 	keyof(): BaseRoot {
 		if (this._keyof) return this._keyof
-		const result = this.applyStructural("keyof", []).reduce(
+		const result = this.applyStruct("keyof", []).reduce(
 			(result, branch) => result.intersect(branch).toNeverIfDisjoint(),
 			$ark.intrinsic.unknown.internal
 		)
@@ -251,7 +251,7 @@ export abstract class BaseRoot<
 	get props(): Prop.Node[] {
 		if (this.branches.length !== 1)
 			return throwParseError(writeLiteralUnionEntriesMessage(this.expression))
-		return [...this.applyStructural("props", [])[0]]
+		return [...this.applyStruct("props", [])[0]]
 	}
 
 	merge(r: unknown): BaseRoot {
@@ -264,7 +264,7 @@ export abstract class BaseRoot<
 		}
 		return this.rootOfBranches(
 			rNode.branches.flatMap(branch => {
-				const merged = this.applyStructural("merge", [
+				const merged = this.applyStruct("merge", [
 					structureOf(branch) ??
 						throwParseError(
 							writeNonStructuralOperandMessage("merge", branch.expression)
@@ -279,7 +279,8 @@ export abstract class BaseRoot<
 		)
 	}
 
-	private applyStructural<operation extends StructuralOperationName>(
+	/** applies a structural operation like pick or omit to each branch's structure */
+	private applyStruct<operation extends StructuralOperationName>(
 		operation: operation,
 		args: BaseRoot[operation] extends Fn<infer args> ? args : []
 	): StructuralOperationBranchResultByName[operation][] {
@@ -337,7 +338,7 @@ export abstract class BaseRoot<
 	get(...path: GettableKeyOrNode[]): BaseRoot {
 		if (path[0] === undefined) return this
 
-		return this.$.schema(this.applyStructural("get", path)) as never
+		return this.$.schema(this.applyStruct("get", path)) as never
 	}
 
 	extract(r: unknown): BaseRoot {

@@ -101,6 +101,6 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 }
 
 export const Unit = {
-	implementation,
+	impl: implementation,
 	Node: UnitNode
 }

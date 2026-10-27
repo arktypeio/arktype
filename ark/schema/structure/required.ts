@@ -91,7 +91,7 @@ export class RequiredNode extends BaseProp<"required"> {
 }
 
 export const Required = {
-	implementation,
+	impl: implementation,
 	Node: RequiredNode
 }
 

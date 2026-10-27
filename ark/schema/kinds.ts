@@ -78,21 +78,21 @@ export const nodeImplementationsByKind: Record<
 	UnknownNodeImplementation
 > = {
 	...boundImplementationsByKind,
-	alias: Alias.implementation,
-	domain: Domain.implementation,
-	unit: Unit.implementation,
-	proto: Proto.implementation,
-	union: Union.implementation,
-	morph: Morph.implementation,
-	intersection: Intersection.implementation,
-	divisor: Divisor.implementation,
-	pattern: Pattern.implementation,
-	predicate: Predicate.implementation,
-	required: Required.implementation,
-	optional: Optional.implementation,
-	index: Index.implementation,
-	sequence: Sequence.implementation,
-	structure: Structure.implementation
+	alias: Alias.impl,
+	domain: Domain.impl,
+	unit: Unit.impl,
+	proto: Proto.impl,
+	union: Union.impl,
+	morph: Morph.impl,
+	intersection: Intersection.impl,
+	divisor: Divisor.impl,
+	pattern: Pattern.impl,
+	predicate: Predicate.impl,
+	required: Required.impl,
+	optional: Optional.impl,
+	index: Index.impl,
+	sequence: Sequence.impl,
+	structure: Structure.impl
 } satisfies Record<NodeKind, unknown> as never
 
 const describeRequired: Locale.ExpectedWriter<"required"> = (e, locale) =>

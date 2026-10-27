@@ -261,6 +261,6 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 }
 
 export const Morph = {
-	implementation,
+	impl: implementation,
 	Node: MorphNode
 }

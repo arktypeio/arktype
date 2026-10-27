@@ -63,6 +63,6 @@ export class MinNode extends BaseRange<Min.Declaration> {
 }
 
 export const Min = {
-	implementation,
+	impl: implementation,
 	Node: MinNode
 }

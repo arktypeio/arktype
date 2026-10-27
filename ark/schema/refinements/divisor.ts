@@ -79,7 +79,7 @@ export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration
 }
 
 export const Divisor = {
-	implementation,
+	impl: implementation,
 	Node: DivisorNode
 }
 

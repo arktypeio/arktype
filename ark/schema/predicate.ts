@@ -107,7 +107,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 }
 
 export const Predicate = {
-	implementation,
+	impl: implementation,
 	Node: PredicateNode
 }
 

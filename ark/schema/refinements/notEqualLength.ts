@@ -76,6 +76,6 @@ export class NotEqualLengthNode extends InternalPrimitiveConstraint<NotEqualLeng
 }
 
 export const NotEqualLength = {
-	implementation,
+	impl: implementation,
 	Node: NotEqualLengthNode
 }

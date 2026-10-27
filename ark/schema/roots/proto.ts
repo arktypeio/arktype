@@ -125,7 +125,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 }
 
 export const Proto = {
-	implementation,
+	impl: implementation,
 	Node: ProtoNode,
 	writeBadInvalidDateMessage: (actual: Constructor): string =>
 		`dateAllowsInvalid may only be specified with constructor Date (was ${functionNameOf(actual)})`,

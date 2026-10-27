@@ -59,6 +59,6 @@ export class MaxLengthNode extends BaseRange<MaxLength.Declaration> {
 }
 
 export const MaxLength = {
-	implementation,
+	impl: implementation,
 	Node: MaxLengthNode
 }

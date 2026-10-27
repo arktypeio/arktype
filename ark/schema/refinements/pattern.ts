@@ -147,6 +147,6 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 }
 
 export const Pattern = {
-	implementation,
+	impl: implementation,
 	Node: PatternNode
 }

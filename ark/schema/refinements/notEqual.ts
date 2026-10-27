@@ -86,6 +86,6 @@ export class NotEqualNode extends InternalPrimitiveConstraint<NotEqual.Declarati
 }
 
 export const NotEqual = {
-	implementation,
+	impl: implementation,
 	Node: NotEqualNode
 }

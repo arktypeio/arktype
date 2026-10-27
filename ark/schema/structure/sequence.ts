@@ -456,7 +456,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 }
 
 export const Sequence = {
-	implementation,
+	impl: implementation,
 	Node: SequenceNode
 }
 
