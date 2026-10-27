@@ -157,10 +157,13 @@ contextualize(() => {
 			path: ["kind"],
 			kind: "unit",
 			cases: [
-				["a", '{ a: unknown, kind: "a" } | { other: unknown }'],
-				["b", '{ kind: "b" } | { other: unknown }']
+				[
+					"a",
+					'{ a: unknown, kind: "a" } & isNonArray | { other: unknown } & isNonArray'
+				],
+				["b", '{ kind: "b" } & isNonArray | { other: unknown } & isNonArray']
 			],
-			default: "{ other: unknown }"
+			default: "{ other: unknown } & isNonArray"
 		})
 	})
 
@@ -174,9 +177,9 @@ contextualize(() => {
 			]
 		})
 		attest(D?.cases.map(c => [c.value, c.branches.expression])).snap([
-			["a", '{ kind: "a" | "b", x: unknown }'],
-			["b", '{ kind: "a" | "b", x: unknown }'],
-			["c", '{ kind: "c", y: unknown }']
+			["a", '{ kind: "a" | "b", x: unknown } & isNonArray'],
+			["b", '{ kind: "a" | "b", x: unknown } & isNonArray'],
+			["c", '{ kind: "c", y: unknown } & isNonArray']
 		])
 	})
 

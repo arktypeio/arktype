@@ -18,7 +18,7 @@ contextualize(() => {
 				properties: { foo: { type: "string" }, bar: { type: "number" } },
 				required: ["foo"]
 			}).expression
-		).snap("{ foo: string, bar?: number }")
+		).snap("{ foo: string, bar?: number } & isNonArray")
 		attest(
 			jsonSchemaToType({
 				type: "object",
@@ -26,7 +26,7 @@ contextualize(() => {
 				// @ts-expect-error
 				required: ["bar"]
 			}).expression
-		).snap("{ bar: unknown, foo?: string }")
+		).snap("{ bar: unknown, foo?: string } & isNonArray")
 		attest(() =>
 			jsonSchemaToType({
 				type: "object",
@@ -43,7 +43,7 @@ contextualize(() => {
 			type: "object",
 			patternProperties: { "^[a-z]+$": { type: "string" } }
 		})
-		attest(T.expression).snap("{ [/^[a-z]+$/]: string }")
+		attest(T.expression).snap("{ [/^[a-z]+$/]: string } & isNonArray")
 		// keys matching no pattern are allowed, since additionalProperties is unset
 		attest(T.allows({ "123": 1 })).equals(true)
 	})
@@ -64,7 +64,7 @@ contextualize(() => {
 			]
 		})
 		attest(T.infer).type.toString.snap("{ foo: string }")
-		attest(T.expression).snap("{ foo: string }")
+		attest(T.expression).snap("{ foo: string } & isNonArray")
 	})
 
 	it("required keys of untyped branches", () => {
@@ -73,7 +73,9 @@ contextualize(() => {
 			anyOf: [{ required: ["foo"] }, { required: ["bar"] }]
 		})
 		attest(T.infer).type.toString.snap("{ bar: unknown } | { foo: unknown }")
-		attest(T.expression).snap("{ bar: unknown } | { foo: unknown }")
+		attest(T.expression).snap(
+			"{ bar: unknown } & isNonArray | { foo: unknown } & isNonArray"
+		)
 		attest(T.allows([])).equals(false)
 	})
 })

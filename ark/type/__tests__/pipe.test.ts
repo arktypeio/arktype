@@ -1211,7 +1211,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 >`)
 
 		attest(T.expression).snap(
-			"{ l: 1, n: (In: /^(?:(?!^-0\\.?0*(?:[Ee][+-]?\\d+)?$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?)(?:[Ee][+-]?\\d+)?)$/) => Out<number> } | { n: (In: /^(?:(?!^-0\\.?0*(?:[Ee][+-]?\\d+)?$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?)(?:[Ee][+-]?\\d+)?)$/) => Out<number>, r: 1 }"
+			"{ l: 1, n: (In: /^(?:(?!^-0\\.?0*(?:[Ee][+-]?\\d+)?$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?)(?:[Ee][+-]?\\d+)?)$/ & parsesFinite) => Out<number> } | { n: (In: /^(?:(?!^-0\\.?0*(?:[Ee][+-]?\\d+)?$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?)(?:[Ee][+-]?\\d+)?)$/ & parsesFinite) => Out<number>, r: 1 }"
 		)
 		attest(T({ l: 1, n: "234" })).snap({ l: 1, n: 234 })
 		attest(T({ r: 1, n: "234" })).snap({ r: 1, n: 234 })
@@ -1230,8 +1230,8 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 
 		attest(indiscriminable).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
-Left: { foo: (In: string) => Out<Date> | false | true }
-Right: { foo: (In: string) => Out<number | string | { [string]: $jsonData } | false | null | true> | false | true }
+Left: { foo: (In: string.date) => Out<Date> | false | true }
+Right: { foo: (In: string) => Out<number | string | { [string]: $jsonData } & isPlainObjectOrArray | false | null | true> | false | true }
 Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
 	})
 

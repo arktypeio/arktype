@@ -4,6 +4,15 @@ export type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
 export type NumberLiteral<n extends number = number> = `${n}`
 
+/** a number written as its TypeScript name, which has no literal type */
+export type NonFiniteNumberLiteral = keyof typeof nonFiniteNumbers
+
+export const nonFiniteNumbers = {
+	NaN: Number.NaN,
+	Infinity: Number.POSITIVE_INFINITY,
+	"-Infinity": Number.NEGATIVE_INFINITY
+}
+
 export type BigintLiteral<n extends bigint = bigint> = `${n}n`
 
 export type IntegerLiteral<n extends bigint = bigint> = `${n}`

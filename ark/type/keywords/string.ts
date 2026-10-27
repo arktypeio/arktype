@@ -298,7 +298,10 @@ const parsableDate = cached(() =>
 
 const epochRoot = cached(() =>
 	stringInteger.root.internal
-		.narrow(isEpochString)
+		.rawConstrain("predicate", {
+			meta: keywordMeta("string.date.epoch"),
+			predicate: isEpochString
+		})
 		.configure(keywordMeta("string.date.epoch"), "self")
 		.assertIs("intersection")
 )

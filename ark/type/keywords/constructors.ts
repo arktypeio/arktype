@@ -3,6 +3,7 @@ import {
 	ecmascriptConstructors,
 	platformConstructors,
 	throwParseError,
+	typedArrayConstructors,
 	type EcmascriptObjects,
 	type KeySet,
 	type PlatformObjects
@@ -21,7 +22,11 @@ const omittedPrototypes = {
 
 const instanceOfDefinitions: Record<string, unknown> = {}
 
-for (const constructors of [ecmascriptConstructors, platformConstructors]) {
+for (const constructors of [
+	ecmascriptConstructors,
+	platformConstructors,
+	typedArrayConstructors
+]) {
 	for (const k in constructors) {
 		if (k in omittedPrototypes) continue
 		instanceOfDefinitions[k] = () => [
@@ -49,7 +54,7 @@ export declare namespace arkPrototypes {
 
 	export type submodule = Submodule<$>
 
-	export interface keywords extends ecmascript, platform {}
+	export interface keywords extends ecmascript, platform, typedArrays {}
 
 	interface $ extends Omit<keywords, keyof wrapped>, wrapped {}
 
@@ -65,6 +70,11 @@ export declare namespace arkPrototypes {
 	>
 
 	export type platform = PlatformObjects
+
+	// each typed array by its TypeScript name, as its proto's expression writes it
+	export type typedArrays = {
+		[k in keyof TypedArray.$ as `${k}Array`]: TypedArray.$[k]
+	}
 
 	export interface instances extends ecmascript, platform {}
 

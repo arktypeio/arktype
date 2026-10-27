@@ -3,6 +3,7 @@ import {
 	keysOf,
 	type BigintLiteral,
 	type ErrorMessage,
+	type NonFiniteNumberLiteral,
 	type NumberLiteral,
 	type Scanner,
 	type trim
@@ -24,6 +25,7 @@ export type UnitLiteral = UnenclosedUnitLiteral | EnclosedUnitLiteral
 export type UnenclosedUnitLiteral =
 	| BigintLiteral
 	| NumberLiteral
+	| NonFiniteNumberLiteral
 	| UnitLiteralKeyword
 
 export type EnclosedUnitLiteral = StringLiteral | DateLiteral

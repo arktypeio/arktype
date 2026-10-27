@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { registeredReference } from "@ark/schema"
 import { printable } from "@ark/util"
 import { scope, type } from "arktype"
+import { writeInvalidLimitMessage } from "arktype/internal/parser/shift/operator/bounds.ts"
 
 contextualize(() => {
 	describe("tuple expression", () => {
@@ -117,6 +118,39 @@ contextualize(() => {
 				{ unit: null },
 				{ unit: true }
 			])
+		})
+	})
+
+	describe("non-finite number", () => {
+		it("NaN", () => {
+			const T = type("NaN")
+			attest<number>(T.infer)
+			attest(T.json).equals(type.keywords.number.NaN.json)
+			attest(T.expression).snap("NaN")
+			attest(T(Number.NaN)).equals(Number.NaN)
+			attest(T(0).toString()).snap("must be NaN (was 0)")
+		})
+
+		it("Infinity and -Infinity", () => {
+			const T = type("Infinity | -Infinity")
+			attest<number>(T.infer)
+			attest(T.expression).snap("-Infinity | Infinity")
+			attest(T(Number.POSITIVE_INFINITY)).equals(Number.POSITIVE_INFINITY)
+			attest(T(Number.NEGATIVE_INFINITY)).equals(Number.NEGATIVE_INFINITY)
+			attest(T(1e308).toString()).snap(
+				"must be -Infinity or Infinity (was 1e+308)"
+			)
+		})
+
+		it("is not a limit", () => {
+			// @ts-expect-error
+			attest(() => type("number>Infinity")).throwsAndHasTypeError(
+				writeInvalidLimitMessage(">", "Infinity", "right")
+			)
+			// @ts-expect-error
+			attest(() => type("Infinity<number")).throwsAndHasTypeError(
+				writeInvalidLimitMessage("<", "number", "right")
+			)
 		})
 	})
 })

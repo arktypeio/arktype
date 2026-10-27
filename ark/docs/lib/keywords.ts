@@ -4,7 +4,8 @@ import {
 	ecmascriptConstructors,
 	entriesOf,
 	flatMorph,
-	platformConstructors
+	platformConstructors,
+	typedArrayConstructors
 } from "@ark/util"
 import { ark, Generic } from "arktype"
 
@@ -55,7 +56,8 @@ for (const [alias, v] of entriesOf(ark.internal.res)
 		: alias.startsWith("FormData") ? "FormData"
 		: alias.startsWith("Array") ? "array"
 		: alias.startsWith("object") ? "object"
-		: alias.startsWith("TypedArray") ? "TypedArray"
+		: alias.startsWith("TypedArray") || alias in typedArrayConstructors ?
+			"TypedArray"
 		: v instanceof Generic ? "generic"
 		: alias in ecmascriptConstructors || alias in platformConstructors ?
 			"instanceof"

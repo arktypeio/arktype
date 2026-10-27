@@ -1844,7 +1844,7 @@ export const E = type(__defProp({ a: "string" }, "name", { value: "o", configura
 					{ "/other.ts": "export const isLong = (s: string) => s.length > 1" }
 				)
 			).snap([
-				"6:18 accepted string",
+				"6:18 accepted string & fn$hole_mf73o516za619",
 				'7:18 rejected\n  `__defProp(target, "name", { value, configurable: true })` defines a property other than the name of a function its module created',
 				'8:18 rejected\n  `__defProp((s: string) => s.length < 3, "name", { value: "sh…` defines a property other than the name of a function its module created',
 				'9:18 rejected\n  `__defProp((s: string) => s.length < 3, "length", { value: 2…` defines a property other than the name of a function its module created',

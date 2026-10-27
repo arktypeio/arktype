@@ -168,6 +168,41 @@ b must be equal to a (was an object)`)
 	it("expression", () => {
 		const T = type("string", ":", (s): s is `f${string}` => s[0] === "f")
 		attest<`f${string}`>(T.infer)
+		attest(T.expression).snap("string & fn")
+	})
+
+	it("is written by its name after what it narrows", () => {
+		const isLong = (s: string) => s.length > 2
+		attest(type("string").narrow(isLong).expression).snap("string & isLong")
+		attest(type("string").narrow(isLong).array().expression).snap(
+			"(string & isLong)[]"
+		)
+		attest(type("number > 5").narrow(n => n % 2 === 0).expression).snap(
+			"number > 5 & fn"
+		)
+		attest(type("unknown").narrow(isLong as never).expression).snap("isLong")
+		attest(type({ a: "string" }).narrow(isLong as never).expression).snap(
+			"{ a: string } & isLong"
+		)
+		attest(type({ a: "string" }).narrow(isLong as never).description).snap(
+			"{ a: a string }"
+		)
+	})
+
+	it("is written by its keyword", () => {
+		attest(type("string.date").expression).snap("string.date")
+		attest(type("string.date[]").expression).snap("string.date[]")
+		attest(type("string.date & string.url > 5").expression).snap(
+			"string.date & string.url >= 6"
+		)
+		attest(type("string.creditCard").expression).snap("string.creditCard")
+		attest(type("string.creditCard | number").expression).snap(
+			"number | string.creditCard"
+		)
+		attest(type("string.creditCard").description).snap("a credit card number")
+		attest(
+			type.raw(type("string.date").expression).equals("string.date")
+		).equals(true)
 	})
 
 	it("can't narrow a morph in a tuple expression", () => {

@@ -91,6 +91,11 @@ A Type a string definition can write has an `expression` that parses back to it:
 - A `!=` past an operand's first comparator is an operand of its own, as in `number > -1 & number != 0` and `0 < number < 10 & number != 5`, which were `number > -1 != 0`, which throws, and `0 < (number != 5) < 10`, which fails its type.
 - A number `String` writes with an exponent, below `1e-6` or from `1e21`, is written in decimal, as `1000000000000000000000` or `number > 0.0000001`, where `1e+21` and `1e-7` didn't parse. Its type, like any number TypeScript writes with an exponent, still fails, so such a definition needs `type.raw`.
 - An array of `never` is `never[]`, where it was `(never)[]`.
+- `[]` parses as the empty tuple, as TypeScript writes it, so the expression of `type([])` or of `string[] & number[]`, which is `[]`, parses back, and `[][]` is an array of empty tuples.
+- `NaN`, `Infinity` and `-Infinity` parse as the units they name, as `number.NaN`, `number.Infinity` and `number.NegativeInfinity` write them, and are inferred as `number`, as those are. They aren't limits, so `number > Infinity` throws as it did.
+- `Int8Array` and each other typed array constructor is a keyword, as `TypedArray.Int8` and the others write them. `TypedArray.Int8` and `Int8Array` are equal.
+- A string literal reads the escapes JSON writes for a control character, `\n`, `\t`, `\r`, `\b`, `\f` and `\u0000` through `\u001f`, as that character, so `type('"a\\nb"')` is the unit `"a\nb"`, where it was `"a\\nb"`, and the expression of a literal holding one, which escapes it as JSON does, parses back. Any other escape is read as written, as before.
+- A predicate is written, where it was left out, so an expression no longer claims the whole of what a narrow rejects some of. A keyword's is written as its keyword, so `string.date` and `string.creditCard` are their own expressions, where they were `string` and the credit card pattern, and parse back. A narrow of your own follows what it narrows by its name, as `string & isLong` for `type("string").narrow(isLong)`, or `fn` for a function without one. Where an intersection with one is unsatisfiable, the error says the same, where it listed the predicate separately.
 - A pattern is written as its source with each `/` escaped, where it was its RegExp's `toString()`, which leaves a `/` in a class unescaped and writes an empty pattern `(?:)`. So `type("/[\\/]/").expression` and `string.base64`'s are `/[\/]/` and `/^(?:[\d+\/A-Za-z]{4})*...$/`, where the first `/` in the class ended the literal they printed, and `type("//").expression` is `//`.
 
 ### Leave out a number or Date option config already sets
@@ -380,7 +385,7 @@ type("object.json").toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
 
 `~standard.jsonSchema` leaves the check out, as it does every predicate.
 
-Its values are its `jsonData` alias, so its `expression` and `description` are `{ [string]: $jsonData }`, where they listed the alias's branches, and a value JSON can't hold is reported against each of them:
+Its values are its `jsonData` alias, so its `description` is `{ [string]: $jsonData }` and its `expression` `{ [string]: $jsonData } & isPlainObjectOrArray`, where they listed the alias's branches, and a value JSON can't hold is reported against each of them:
 
 ```ts
 // was: ArkErrors: a must be an object (was a bigint)

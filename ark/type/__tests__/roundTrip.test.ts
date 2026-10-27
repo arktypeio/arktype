@@ -11,8 +11,8 @@ import fc from "fast-check"
 const [runs = 1000, seed = 1] =
 	process.env.ARK_ROUND_TRIP?.split(":").map(Number) ?? []
 
-// a string definition holds no props, tuples, predicates or morphs, and a
-// predicate is left out of an expression, as string.date's is `string`
+// a string definition holds no props, tuples or morphs, and a predicate only
+// by its keyword, as string.date's
 const expressibleKinds = new Set([
 	"union",
 	"intersection",
@@ -32,11 +32,6 @@ const expressibleKinds = new Set([
 	"notEqualLength"
 ])
 
-// keywords whose expression is their TypeScript name, like Int8Array or NaN,
-// which isn't one in a scope
-const namedForTypeScript =
-	/^(?:TypedArray\.|number\.(?:NaN|Infinity|NegativeInfinity)$)/
-
 const keywordsOf = (module: object, prefix = ""): string[] =>
 	Object.entries(module).flatMap(([k, v]) => {
 		const name =
@@ -52,9 +47,10 @@ const keywordsOf = (module: object, prefix = ""): string[] =>
 
 const keywords = keywordsOf(ark.export()).filter(name => {
 	const node: BaseRoot = type(name as never).internal
-	return (
-		!namedForTypeScript.test(name) &&
-		[node, ...node.references].every(n => expressibleKinds.has(n.kind))
+	return [node, ...node.references].every(
+		n =>
+			expressibleKinds.has(n.kind) ||
+			(n.kind === "predicate" && n.meta.keyword !== undefined)
 	)
 })
 
@@ -69,12 +65,9 @@ const intersected = (def: fc.Arbitrary<string>) =>
 		fc.tuple(def, def).map(([l, r]) => `${grouped(l)} & ${grouped(r)}`)
 	)
 
-// Infinity is a keyword's TypeScript name
+// a non-finite number is a unit, where a limit holding one is skipped
 const numberLiteral = fc
-	.oneof(
-		fc.integer({ min: -12, max: 12 }),
-		fc.double({ noNaN: true, noDefaultInfinity: true })
-	)
+	.oneof(fc.integer({ min: -12, max: 12 }), fc.double())
 	.map(printDecimal)
 
 const comparator = fc.constantFrom("<", "<=", ">", ">=", "==", "!=")
@@ -100,10 +93,16 @@ const numberDef = intersected(
 	)
 )
 
-// a literal's expression escapes a control character, like JSON, but a string
-// definition reads such an escape as written, so neither literal holds one
+// a control character is written raw, and its expression escapes it as JSON
+// does, which the literal reads back
 const stringLiteral = fc
-	.tuple(fc.string({ maxLength: 4 }), fc.constantFrom("'", '"'))
+	.tuple(
+		fc.oneof(
+			fc.string({ maxLength: 4 }),
+			fc.string({ unit: "binary-ascii", maxLength: 4 })
+		),
+		fc.constantFrom("'", '"')
+	)
 	.map(
 		([s, quote]) =>
 			`${quote}${s.replace(/\\/g, "\\\\").replace(new RegExp(quote, "g"), `\\${quote}`)}${quote}`
@@ -222,22 +221,20 @@ const defOf = fc.letrec<{ def: string; array: string }>(tie => ({
 })).def
 
 // meta, like a keyword's description, has no string syntax. Union branches
-// are ordered by hashes that include it, so it's left out of the order too
+// are ordered by hashes that include it, so it's left out of the order too.
+// A predicate keeps its own, as its keyword is how it's written
 const bare = (t: type.Any): BaseRoot =>
-	t.internal.transform((kind, { meta, ...inner }) => inner as never)
+	t.internal.transform((kind, { meta, ...inner }) =>
+		kind === "predicate" ? { meta, ...inner } : (inner as never)
+	)
 
-// a definition that's unsatisfiable is skipped, as is an empty tuple, which,
-// as in TypeScript, is written [], where a string definition can't hold it
+// a definition that's unsatisfiable is skipped
 const parsedOrSkipped = (def: string): BaseRoot => {
-	let t: type.Any
 	try {
-		t = type(def as never)
+		return bare(type(def as never))
 	} catch {
 		return fc.pre(false) as never
 	}
-	const node = bare(t)
-	fc.pre([node, ...node.references].every(n => n.expression !== "[]"))
-	return node
 }
 
 const assertRoundTrip = (check: (def: string, node: BaseRoot) => void) =>
