@@ -4,7 +4,7 @@
 
 ### Precompile to ship less
 
-`arktype` is larger than 2.2.9: bundled and minified with esbuild, `import { type } from "arktype"` is 83.0 kB gzipped (261 kB minified), where it was 47.8 kB (156 kB). The growth is spread across the changes below, mostly copy-on-write transforms, tracking cyclic data, errors and their English text, and the set algebra intersections and unions are reduced with. To ship less, precompile with `@ark/aot`, which replaces each Type with a validator on `arktype/runtime`: the size benchmark's login app bundles to 1.5 kB gzipped, and its shop to 6.7 kB.
+`arktype` bundles larger than 2.2.9. The growth is spread across the changes below, mostly copy-on-write transforms, tracking cyclic data, errors and their English text, and the set algebra intersections and unions are reduced with. To ship less, precompile with `@ark/aot`, which replaces each Type with a validator on `arktype/runtime`. The [size benchmarks](https://arktype.io/docs/precompile#speed-and-size) compare both builds.
 
 ### Return only the first error, or one saying data is invalid, with `errors`
 
@@ -105,7 +105,7 @@ Ranges covering their whole basis reduce to the basis itself, so `number > 0 | n
 
 ### Merge unions of objects alike but for one key
 
-Objects with the same keys, alike but for one key's value, are one object whose value is the union of theirs, as #751 asked: `type({ a: "string" }).or({ a: "number" })` is `{ a: string | number }`, and `{ kind: "a", x: string } | { kind: "b", x: string }` is `{ kind: "a" | "b", x: string }`. The key is optional if it's optional in either, and the merged values reduce like any union, so nested objects merge as well. Objects differing in their undeclared key handling, index signatures, descriptions or messages stay a union, as do ordered unions and a key with a default, whose default applies only to its own branch.
+Objects with the same keys, alike but for one key's value, are one object whose value is the union of theirs, as #751 asked: `type({ a: "string" }).or({ a: "number" })` is `{ a: number | string }`, and `{ kind: "a", x: string } | { kind: "b", x: string }` is `{ kind: "a" | "b", x: string }`. The key is optional if it's optional in either, and the merged values reduce like any union, so nested objects merge as well. Objects differing in their undeclared key handling, index signatures, descriptions or messages stay a union, as do ordered unions and a key with a default, whose default applies only to its own branch.
 
 A merged `kind: "a" | "b"` still discriminates, since each value of a literal union is now a case of its own.
 
@@ -305,7 +305,7 @@ flatProblemsByPath(out)
 
 An error at a `__proto__` path is an own key of the plain objects `flatByPath` and `flatProblemsByPath` return, where previously it set their prototype.
 
-`ArkErrors.message`, added in 2.2.6, is gone: read `summary`. `transform`, `merge`, `add` and `toTraversalError` are gone too: call `throw()`. A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`, and a morph returning another validation's `ArkErrors` adds them at its path. A morph fails by returning an `ArkErrors` or an error `ctx.error` returned during its own call. Any other error it returns, like one an earlier morph added or another validation's, is its output, where it failed the morph before. `@ark/schema`'s `ArkErrorResult` type is gone, since a morph's failure is always an `ArkErrors`.
+`ArkErrors.message`, added in 2.2.6, is gone: read `summary`. `toTraversalError` is gone too: call `throw()`. So are `add`, `addAncestorPaths`, `affectsPath`, `merge`, `transform`, `ctx` and `mutable`. `console.log` prints an `ArkErrors` as its issues. A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`, and a morph returning another validation's `ArkErrors` adds them at its path. A morph fails by returning an `ArkErrors` or an error `ctx.error` returned during its own call. Any other error it returns, like one an earlier morph added or another validation's, is its output, where it failed the morph before. `@ark/schema`'s `ArkErrorResult` type is gone, since a morph's failure is always an `ArkErrors`.
 
 - Errors' text is written when they are first read, through `issues`, `summary`, `toString()`, `toJSON()`, `throw()` or Standard Schema's `issues`, so a configured writer is called once per error, where it was called at each read. A union or intersection whose locale has no `expected` for it is described in en, which writes its errors' `expected`, and a union's errors' `actual`, in en too. A locale function is called once per `ArkErrors`, at that read, where each read called it, so errors read after the language changed were written in the new one.
 - An error has no `toJSON()`, so `JSON.stringify(error)`, or of an `ArkErrors`' or Standard Schema's `issues`, serializes its own keys: a symbol key in its path is `null`, a bigint, like one in a discriminant's `cases`, throws, and `cases`, `cause`, `missing` and `valueMeta`, which `toJSON()` leaves out, are included (`predicate` and `morph` are functions, which `JSON.stringify` drops either way). `out.toJSON()` is the JSON it was, plus each error's `propString`, and its paths are plain arrays holding a symbol key as the string `Symbol(name)`, as a `ReadonlyPath` serialized it.
@@ -379,6 +379,14 @@ type("object.json").toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
 ```
 
 `~standard.jsonSchema` leaves the check out, as it does every predicate.
+
+Its values are its `jsonData` alias, so its `expression` and `description` are `{ [string]: $jsonData }`, where they listed the alias's branches, and a value JSON can't hold is reported against each of them:
+
+```ts
+// was: ArkErrors: a must be an object (was a bigint)
+// now: ArkErrors: a must be a number, a string, an object, boolean or null (was a bigint)
+type("object.json")({ a: 1n })
+```
 
 ### Throw for an optional index signature
 
@@ -474,6 +482,8 @@ sizeOf(true)
 ```
 
 Data whose discriminant matches a value is still reported only against the branches that allow it, and a miss of a key the data could hold is still one `discriminant` error, like `kind must be "circle" or "square" (was "triangle")`.
+
+Given `{ foo: null }`, `{ foo: string } | { foo: number } | { foo: Function }` says `foo must be a number, a string or an object (was null)`, where it said `foo must be an object, a number or a string (was null)`.
 
 ### Write each path a union lists as its own error would be
 
@@ -617,7 +627,7 @@ const Flag = type("'true' | 'false'")
 	.pipe(s => s === "true")
 	.describe("boolean")
 
-// was: ParseError: Default for flag must be boolean (was false)
+// was: TraversalError: must be boolean (was false)
 // now: ParseError: Default for flag must be "false" or "true" (was false)
 type({ flag: [Flag, "=", false] })
 ```
@@ -846,7 +856,7 @@ type("'a' | 'b' | 'c'").configure({ expected: "a letter" })("d")
 const T = type({ v: Shape }).or({ v: { kind: "string >= 9" } })
 
 // previously (was {"kind":"triangle"})
-// now v.kind must be at least length 9, "circle" or "square" (was "triangle")
+// now v.kind must be "circle", "square" or at least length 9 (was "triangle")
 T({ v: { kind: "triangle" } })
 ```
 
@@ -957,27 +967,41 @@ Keys are ordered by code unit, where they were ordered as `JSON.stringify` write
 
 Other keys that first differ at a space, `!`, `"` or a backslash keep their order. That order is the order of keys in a Type's `expression` and `json`, its JSON Schema's `properties` and `required`, and the errors it reports.
 
+### Install the set algebra from `arksets`
+
+The algebra that intersects nodes, reduces unions and writes JSON Schema moved from `@ark/schema` to `arksets`, which `arktype` imports. A program using `@ark/schema` alone must `import "arksets"` before it parses a schema. Without it, intersecting a node or calling `toJsonSchema()` throws `Set algebra is not installed (import "arksets" to install it)`, and a union isn't reduced:
+
+```ts
+import "arksets"
+import { rootSchema } from "@ark/schema"
+
+// { domain: "string" }, without arksets ["string", { domain: "string", minLength: 1 }]
+rootSchema([{ domain: "string" }, { domain: "string", minLength: 1 }]).json
+```
+
+The functions `@ark/schema` exported for it, like `intersectNodesRoot`, `intersectBranches`, `reduceBranches`, `pruneDiscriminant`, `flattenConstraints` and the `write*IntersectionMessage` and `writeIndiscriminableMorphMessage` writers, are exported by `arksets/internal`.
+
 ### Simplify `@ark/schema` nodes
 
 - A scope's `references` and `byId` are collected when first read rather than as it exports, unless code `@ark/aot` built with `runtime: "arktype"` is registered or it includes an alias.
-- A node's `tAllows`, `tApply` and `tTransform` (before: `traverseAllows`, `traverseApply`, `traverseTransform`) are methods of its class, so call them on the node, as in `node.tAllows(data, ctx)`, rather than detached, as in `[x].every(node.tAllows)`, until the JIT compiles it, which replaces them with compiled functions that run detached. A jitless scope's nodes keep the methods, and `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes still create a `tAllows` of their own. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
+- A node's `tAllows` and `tApply` (before: `traverseAllows`, `traverseApply`) and its new `tTransform` are methods of its class, so call them on the node, as in `node.tAllows(data, ctx)`, rather than detached, as in `[x].every(node.tAllows)`, until the JIT compiles it, which replaces them with compiled functions that run detached. A jitless scope's nodes keep the methods, and `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes still create a `tAllows` of their own.
 - `$.node(kind, input)` takes a node's inner, with children already nodes, rather than the schema format, so `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
 - `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, reduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context. A node's id is registered as it's created, from its `alias` or kind unless `id` is passed, so a schema that resolves to a node the scope already holds registers none.
-- Members nothing used are gone: an alias's `resolutionId` (read `resolution.id`), a node's `assertHasKindIn`, `isConstraint` and `isRefinement`, a root's `shortDescription`, a morph's `declareIn` and `serializedMorphs`, a structure's `optionalKeys`, a union's `compiledDiscriminant` (read `discriminant`, which a union of two literal values now has too), and `Scanner`'s `jumpToIndex` in `@ark/util`.
+- Members nothing used are gone: an alias's `resolutionId` (read `resolution.id`), a node's `assertHasKindIn`, `isConstraint` and `isRefinement`, a root's `shortDescription`, a morph's `declareIn` and `serializedMorphs`, a structure's `optionalKeys`, a union's `discriminantJson` (call `discriminantJsonOf(union)` from `arksets/internal`), and `Scanner`'s `jumpToIndex` in `@ark/util`. A union of two literal values now has a `discriminant` too.
 - Fields each node computed whether or not it was compiled are gone: a constraint's `compiledCondition`, a predicate's `compiledNegation`, a morph's `compiledMorphs` and a sequence's `optionalsLength`. A leaf writes its check with `jsCond(js, data)`. The `PrecompiledReferences` type, which described a precompiled unit nothing builds, is gone too.
-- Derived and memoized keys moved from a node's own enumerable keys to its cache, `node.c`, like the flags `hasAlias` and `hasMorph`, `kv`, a structure's `byKey`, a node's `assert` and the `expression` of a union, intersection, structure, required prop or index signature; each reads as before, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
+- Derived and memoized keys moved from a node's own enumerable keys to its cache, `node.c`, like the flags `alters` and `ctxPred`, `kv`, a structure's `byKey`, a node's `assert` and the `expression` of a union, intersection, structure, required prop or index signature; each reads as before, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
 
 ### Start a morph's `morphs` with its input
 
 A morph node's input is the first of its `morphs` rather than its own `in`, so its `json` is `{ morphs: ["string", "$ark.trim"] }` where it was `{ in: "string", morphs: ["$ark.trim"] }`, and a node it pipes to is written by its shorthand too (#1179). A schema or `$.node` input with `in` still parses, as the first of its `morphs`, and `morphs` in a schema can start with a schema. Each part has a name that says which it is:
 
-| Was                          | Now           |                                                                                                         |
-| ---------------------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
-| `inner.in`, `knownIn`        | `head`        | the node data must allow before any morph runs, its own morphs included                                 |
-| `morphs` without `in`        | `piped`       | what the head pipes data to: functions, then nodes                                                      |
-| `lastMorph`, `lastMorphNode` | `tail`        | the node the output is piped to, if `morphs` ends with one besides its head                             |
-| `knownOut`                   | `tail._out`   |                                                                                                         |
-| `rawIn`, `rawOut`            | `_in`, `_out` | any node's input or output with each morph replaced by its own, which `.in` and `.out` return as a Type |
+| Was                                            | Now           |                                                                                                         |
+| ---------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
+| `inner.in`, `introspectableIn`                 | `head`        | the node data must allow before any morph runs, its own morphs included                                 |
+| `morphs` without `in`, ending with `lastMorph` | `piped`       | what the head pipes data to: functions, then nodes                                                      |
+| `lastMorphIfNode`                              | `tail`        | the node the output is piped to, if `morphs` ends with one besides its head                             |
+| `introspectableOut`                            | `tail._out`   |                                                                                                         |
+| `rawIn`, `rawOut`                              | `_in`, `_out` | any node's input or output with each morph replaced by its own, which `.in` and `.out` return as a Type |
 
 Intersecting two morphs intersects their heads, where it intersected their `rawIn`, which dropped the morphs within either input:
 
@@ -999,52 +1023,23 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | Was                                           | Now                  |
 | --------------------------------------------- | -------------------- |
 | `$ark.intrinsic`                              | `$ark.kw`            |
-| `addTransformErrors`                          | `addMorphErrs`       |
-| `allowsBeforeJit`                             | `preJit`             |
 | `allowsRequiresContext`                       | `allowsCtx`          |
-| `allowsRequiresTraversal`                     | `checksCtx`          |
-| `applyStructuralMorph`                        | `applyStructMorph`   |
 | `applyStructuralOperation`                    | `applyStruct`        |
 | `assertHasKind`                               | `assertIs`           |
 | `baseInstantiation`                           | `baseInstance`       |
-| `bindKeyword`                                 | `bindKw`             |
 | `bindReference`                               | `bindRef`            |
 | `boundOperandKind`                            | `opKind`             |
-| `boundReferences`                             | `boundRefs`          |
 | `cache`                                       | `c`                  |
 | `cacheGetter`                                 | `memo`               |
-| `checksOnly`                                  | `chkOnly`            |
-| `checksTransformErrors`                       | `checksErrs`         |
-| `closesCycle`                                 | `closes`             |
 | `collapsibleJson`                             | `bareJson`           |
 | `collapsibleKey`                              | `bareKey`            |
-| `compareTransformed`                          | `cmpTfd`             |
-| `compileCondition`                            | `jsCond`             |
-| `compileConjunction`                          | `jsConjunction`      |
-| `compileCopiedDeclaredKeys`                   | `jsDeclaredCopy`     |
-| `compileCopy`                                 | `jsCopy`             |
-| `compileCopyOnce`                             | `jsCopyOnce`         |
-| `compileCopyProps`                            | `jsCopyProps`        |
 | `_compileDeclaresKey`                         | `_jsDeclaresKey`     |
-| `compileDefaults`                             | `jsDefaults`         |
-| `compileDeleteTransform`                      | `jsDeleteTransform`  |
 | `compiledErrorContext`                        | `jsErrorCtx`         |
 | `compiledKey`                                 | `keyStr`             |
-| `compiledUnit`                                | `unitFn`             |
 | `compiledValue`                               | `unitJson`           |
-| `compileElements`                             | `jsElements`         |
-| `compileElementTransforms`                    | `jsElemTfs`          |
 | `compileExhaustiveEntry`                      | `jsEntry`            |
-| `compileExpression`                           | `jsExpression`       |
-| `compileForOwnKeys`                           | `jsForOwnKeys`       |
-| `compileHoldsValue`                           | `jsHoldsValue`       |
 | `compileIndiscriminable`                      | `jsIndisc`           |
-| `compileKeyCount`                             | `jsKeyCount`         |
-| `compileSequenceDefaults`                     | `jsSequenceDefaults` |
-| `compileShapeCheck`                           | `jsShapeCheck`       |
-| `compileTransform`                            | `jsTf`               |
 | `configureReferences`                         | `configureRefs`      |
-| `createOptimisticRootApply`                   | `optimisticApply`    |
 | `createParseContext`                          | `createParseCtx`     |
 | `_createTransformContext`                     | `_tfContext`         |
 | `currentErrorCount`                           | `errN`               |
@@ -1054,67 +1049,33 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `defaultShortDescription`                     | `brief`              |
 | `defaultValueMorph`                           | `defMorph`           |
 | `defaultValueMorphs`                          | `defMorphs`          |
-| `_discriminant`                               | `_disc`              |
-| `discriminantCases`                           | `discCases`          |
-| `_discriminantCases`                          | `_discCases`         |
-| `discriminantDescription`                     | `discDesc`           |
-| `_discriminantDescription`                    | `_discDesc`          |
-| `discriminantMeta`                            | `discMeta`           |
-| `_discriminantMeta`                           | `_discMeta`          |
-| `earliestAssumed`                             | `assumedFrom`        |
 | `elementAtIndex`                              | `atIndex`            |
-| `enteredCount`                                | `nEntered`           |
-| `entersResolution`                            | `entersAlias`        |
 | `errorContext`                                | `errorCtx`           |
-| `_errorContext`                               | `_errorCtx`          |
 | `errorCount`                                  | `errN`               |
 | `errorFromNodeContext`                        | `nodeError`          |
 | `_exportedResolutions`                        | `_exported`          |
-| `failureSite`                                 | `failSite`           |
 | `finalize`                                    | `fin`                |
 | `finalizeInnerJson`                           | `fixJson`            |
-| `foundDiscriminant`                           | `foundDisc`          |
 | `hasAssociatedError`                          | `ownErr`             |
 | `hasDefault`                                  | `hasDef`             |
 | `hasEqualMorphs`                              | `sameMorphs`         |
 | `hasKind`                                     | `is`                 |
 | `hasOpenIntersection`                         | `canStack`           |
-| `hasReplacedReferences`                       | `replacedRefs`       |
 | `impliedBasis`                                | `implied`            |
 | `impliedSiblings`                             | `impliedBy`          |
-| `includesAlias`                               | `hasAlias`           |
-| `includesContextualMorph`                     | `ctxMorph`           |
 | `includesContextualPredicate`                 | `ctxPred`            |
-| `includesCostly`                              | `costly`             |
-| `includesKeptDescription`                     | `keptDesc`           |
-| `includesMorph`                               | `hasMorph`           |
-| `includesShallowAlias`                        | `topAlias`           |
 | `includesTransform`                           | `alters`             |
-| `includesUserCode`                            | `userCode`           |
-| `indexMatchesSymbols`                         | `indexSyms`          |
-| `inheritableProps`                            | `protoProps`         |
 | `initializeErrorCount`                        | `initErrCount`       |
-| `initializeFlatRefs`                          | `initFlat`           |
-| `initializeTransform`                         | `initTf`             |
 | `innerEntries`                                | `kv`                 |
 | `intersectionIsOpen`                          | `stacks`             |
-| `introspectableIn`                            | `head`               |
-| `introspectableOut`                           | `tail._out`          |
 | `invoke`                                      | `inv`                |
-| `isTransformedById`                           | `tfsById`            |
-| `isUsedBeforeJit`                             | `usedPreJit`         |
 | `keyExpression`                               | `keyExpr`            |
-| `lastMorphIfNode`                             | `tail`               |
-| `lazyExports`                                 | `_lazy`              |
 | `leftBound`                                   | `lBound`             |
-| `linkage`                                     | `link`               |
 | `lookahead`                                   | `peek`               |
 | `lookaheadIs`                                 | `peekIs`             |
 | `lookaheadIsIn`                               | `peekIsIn`           |
 | `maxLengthNode`                               | `maxNode`            |
 | `minLengthNode`                               | `minNode`            |
-| `missListsBranches`                           | `missLists`          |
-| `_missListsBranches`                          | `_missLists`         |
 | `Morph.implementation`, as each kind's module | `Morph.impl`         |
 | `nestableExpression`                          | `nestedExpr`         |
 | `nextLookahead`                               | `peekNext`           |
@@ -1123,14 +1084,8 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `numericLimit`                                | `numRule`            |
 | `obviatesBasisDescription`                    | `coversNoun`         |
 | `obviatesBasisExpression`                     | `coversExpr`         |
-| `openInstantiations`                          | `openInstances`      |
 | `optionallyChainedPropString`                 | `pathStr`            |
-| `orderedKeys`                                 | `keyOrder`           |
-| `orderedProps`                                | `inOrder`            |
-| `outerEarliestAssumed`                        | `assumedOuter`       |
-| `outerReachedInvalid`                         | `outerInvalid`       |
 | `parseDefinition`                             | `parseDef`           |
-| `parseOpenDefinition`                         | `parseOpenDef`       |
 | `parseOwnDefinitionFormat`                    | `parseOwn`           |
 | `popBranch`                                   | `popBr`              |
 | `postfixLength`                               | `postLen`            |
@@ -1144,56 +1099,30 @@ Internal members, read through `.internal`, `@ark/schema` or `@ark/util`, have s
 | `propsByKey`                                  | `byKey`              |
 | `pushBranch`                                  | `pushBr`             |
 | `pushRootToBranch`                            | `pushRootBranch`     |
-| `reachedInvalid`                              | `invalid`            |
-| `received`                                    | `recv`               |
-| `receivedDepth`                               | `recvAt`             |
-| `recordedFailure`                             | `hasFailed`          |
-| `referencedBesidesChildren`                   | `otherRefs`          |
 | `referencesById`                              | `byId`               |
-| `_referencesById`                             | `_refsById`          |
 | `referenceToId`                               | `refToId`            |
 | `requiresContext`                             | `needsCtx`           |
 | `requiresContextFor`                          | `needsCtxFor`        |
-| `requiresInfinityCheck`                       | `checksInf`          |
 | `requiresInvalidDateCheck`                    | `checksInvalid`      |
 | `requiresNaNCheck`                            | `checksNaN`          |
 | `resolutions`                                 | `res`                |
 | `resolvedConfig`                              | `cfg`                |
-| `returnedFrom`                                | `retFrom`            |
-| `returnIfTransformFailed`                     | `retIfFailed`        |
 | `rootApplyStrategy`                           | `applyMode`          |
 | `scanner`                                     | `sc`                 |
 | `serializedValue`                             | `jsUnit`             |
 | `shallowMorphs`                               | `topMorphs`          |
 | `shallowReferences`                           | `shallowRefs`        |
-| `sharesTransformedKeys`                       | `sharesTfs`          |
 | `shiftUntilLookahead`                         | `shiftUntilNext`     |
 | `shiftUntilNonWhitespace`                     | `skipSpace`          |
 | `shouldTransform`                             | `shouldTf`           |
-| `slicesSequence`                              | `slicesSeq`          |
 | `structuralMorph`                             | `structMorph`        |
-| `synthetics`                                  | `synth`              |
 | `throwInternalOperandError`                   | `throwOperandError`  |
-| `tracksTransforms`                            | `isTree`             |
 | `_transform`                                  | `_tf`                |
-| `transformedByResolutionId`                   | `tfdById`            |
-| `transformElements`                           | `tfElems`            |
-| `transformKey`                                | `tfKey`              |
-| `transformRequiresContext`                    | `tfCtx`              |
-| `transforms`                                  | `tfs`                |
-| `_transformsByKey`                            | `_tfsByKey`          |
-| `transformSelectsByContext`                   | `ctxSel`             |
-| `transformSharedKey`                          | `tfSharedKey`        |
-| `transformsOf`                                | `tfsOf`              |
 | `traversalKind`                               | `trav`               |
 | `traverseAllows`                              | `tAllows`            |
 | `traverseApply`                               | `tApply`             |
-| `traversedMorphs`                             | `travMorphs`         |
 | `traverseKey`                                 | `travKey`            |
-| `traverseTransform`                           | `tTransform`         |
-| `uncollapsedInnerJson`                        | `fullJson`           |
 | `undeclaredKeyHandling`                       | `undeclaredHandling` |
-| `untrackedVisits`                             | `visits`             |
 | `variadicOrPostfix`                           | `trail`              |
 
 ### Read an object definition's values as its keys are parsed
@@ -1423,23 +1352,6 @@ $.export()
 type("Date")(Object.create(Date.prototype))
 ```
 
-### Fix `ctx.data` after a morph that reads `ctx`
-
-After a morph taking `ctx` ran, `ctx.data` kept reading from that morph's input, so a narrow picking a later union branch saw the wrong value and valid data could be left untransformed:
-
-```ts
-const Long = type(["string > 5", ":", (s, ctx) => ctx.data === s]).pipe(
-	s => s.length
-)
-const T = type({
-	k: type("string").pipe((s, ctx) => s.trim()),
-	v: Long.or("string < 3")
-})
-
-// previously { k: "k", v: "abcdefg" }, now { k: "k", v: 7 }
-T({ k: " k ", v: "abcdefg" })
-```
-
 ### Fix index signatures whose key narrow reads `ctx`
 
 A key an index signature rejects is undeclared, but an error its narrow added through `ctx` was kept, so valid data failed. It's no longer kept, and `"delete"` no longer throws on such a signature:
@@ -1639,6 +1551,15 @@ const { node } = scope({
 
 // previously ParseError: 'node' is unresolvable, now true
 type.schema(node.json).equals(node)
+```
+
+A cyclic alias's `json` names its resolution as registered, like `"$ark.tree2"`, where it was `"$tree"`. A cyclic Type's `expression` and `description` print another alias of its cycle by name rather than expanding it:
+
+```ts
+const { a } = scope({ a: { b: "b" }, b: { "a?": "a" } }).export()
+
+// previously { b: { a?: $a } }, now { b: $b }
+a.expression
 ```
 
 ### Read `.in` and `.out` through cyclic aliases
@@ -2108,7 +2029,7 @@ A union of literals with meta of its own, like a `title` or a description, was w
 
 ```ts
 // previously { anyOf: [{ const: "a", title: "Letter" }, { const: "b", title: "Letter" }], title: "Letter" }
-// now { enum: ["a", "b"], title: "Letter" }
+// now { type: "string", enum: ["a", "b"], title: "Letter" }
 type("'a' | 'b'").configure({ title: "Letter" }).toJsonSchema()
 ```
 
@@ -2248,16 +2169,6 @@ match
 	.case(["'b'"], () => 1)
 	.case("string | null", () => 2)
 	.default(() => 3)("a")
-```
-
-### Accept `NaN` at a discriminated key where a branch allows it
-
-```ts
-// previously false, now true
-type({ a: "number.NaN | 'x'" })
-	.or({ a: "object" })
-	.or({ a: "3" })
-	.allows({ a: NaN })
 ```
 
 ### Parse a union whose case relates a literal to a refined or nested check
@@ -2528,22 +2439,6 @@ lang = "de"
 T({ a: 5 }).toString()
 ```
 
-### Print a discriminated union's unit cases once with `jitless`
-
-With `jitless` or in a CSP environment, a union discriminated by object units printed those units on every failed validation, calling their `toJSON` each time. Like a compiled type, it now describes its cases once, the first time a value matches none of them:
-
-```ts
-let calls = 0
-const unit = { toJSON: () => (calls++, { tag: "u" }) }
-const $ = scope({}, { jitless: true })
-const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })
-
-// k must be {"tag":"u"} or "b" (was "c")
-T({ k: "c" })
-// previously incremented calls, now leaves it unchanged
-T({ k: "c" })
-```
-
 ### Check defaults without calling `onFail`
 
 A default was checked by calling its type, which applied a configured `onFail`. If `onFail` threw, an invalid default threw its TraversalError instead of a ParseError, and if it returned, the invalid default was accepted:
@@ -2719,7 +2614,7 @@ Converting a Type with a named symbol key threw a `TypeError` while writing the 
 
 ```ts
 // was: TypeError: Cannot convert a Symbol value to a string
-// now: ToJsonSchemaError: { code: "symbolKey", ..., key: Symbol(s), ... }
+// now: ToJsonSchemaError: Can't convert "symbolKey" at [Symbol(s)] to JSON Schema. ...
 type({ [Symbol("s")]: "string" }).toJsonSchema()
 ```
 
@@ -2896,7 +2791,7 @@ type({}).extends(type({ "+": "reject" }))
 `"+": "reject"` rejects an array's indices unless the object declares them, but intersected with an array, the array's elements counted as declared:
 
 ```ts
-// previously number[], now (never)[], which allows only []
+// previously number[], now never[], which allows only []
 type({ "+": "reject" }).and("number[]").expression
 
 // previously allowed [0, 1], now allows at most one element
@@ -3060,8 +2955,8 @@ type({ constructor: "string.email | string.uuid" })({
 
 ```ts
 // previously InternalArktypeError: Unexpected index branch kind morph.
-// now { type: "object", patternProperties: { "^(?:...)$": { type: "string" } } }, keyed by string.numeric's pattern
-type({ "[string.numeric.parse]": "string" }).toJsonSchema({
+// now { type: "object", patternProperties: { "^(?:...)$": { type: "string" } } }, keyed by string.integer's pattern
+type({ "[string.integer.parse]": "string" }).toJsonSchema({
 	fallback: { morph: ctx => ctx.base }
 })
 ```
