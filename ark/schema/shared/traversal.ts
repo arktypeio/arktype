@@ -621,12 +621,12 @@ export const allowsInBranchBy = (
 	return ctx.popBranch()!.errorCount === 0 && allowed
 }
 
-// the last string a loop's Allows rejected, so Apply needn't rematch it
 // what an Allows returns where data fails, through a call V8 has no feedback
 // for until then, so a transform it guards is compiled with its checks and
 // repeats none of their reads
 export const disallowed = (): false => false
 
+// the last string a loop's Allows rejected, so Apply needn't rematch it
 let rejectedBy: unknown
 let rejectedValue: unknown
 
