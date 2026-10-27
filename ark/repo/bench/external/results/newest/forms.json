@@ -1,15 +1,15 @@
 {
 	"ArkType (precompiled, default)": {
-		"min": 2366,
-		"gzip": 1107
+		"min": 2063,
+		"gzip": 1002
 	},
 	"ArkType (precompiled, smallest)": {
-		"min": 1942,
-		"gzip": 1007
+		"min": 1913,
+		"gzip": 995
 	},
 	"ArkType (dynamic)": {
-		"min": 262781,
-		"gzip": 83669
+		"min": 269189,
+		"gzip": 85798
 	},
 	"Valibot": {
 		"min": 3885,
