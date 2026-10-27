@@ -601,12 +601,15 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 							emitWarning: warning => {
 								throw warning
 							},
-							getResolve: () => async (_, request) => {
-								const path = resolve(request)
-								if (path === undefined)
-									throw new Error(`Can't resolve ${request}`)
-								return path
-							},
+							// reads options as Next 16.1's does, throwing where none are passed
+							getResolve:
+								({ alias }) =>
+								async (_, request) => {
+									const path = resolve(request)
+									if (path === undefined)
+										throw new Error(`Can't resolve ${request}`)
+									return path
+								},
 							async: () => (error, result) => settle(error?.message ?? result)
 						},
 						readFileSync(join(dir, "main.ts"), "utf8")
@@ -729,14 +732,16 @@ console.log(Value, note, load, await import("#shared/lazy"))
 							getOptions: () => ({ ...opts, conditions, cwd: app }),
 							addDependency: () => {},
 							emitWarning: () => {},
-							getResolve: () => async (dir, request) => {
-								if (request === "arktype" && !target)
-									throw new Error(`Can't resolve '${request}'`)
-								return host.resolve(
-									request === "arktype" ? target! : request,
-									join(dir, "main.ts")
-								)!
-							},
+							getResolve:
+								({ alias }) =>
+								async (dir, request) => {
+									if (request === "arktype" && !target)
+										throw new Error(`Can't resolve '${request}'`)
+									return host.resolve(
+										request === "arktype" ? target! : request,
+										join(dir, "main.ts")
+									)!
+								},
 							async: () => error => settle(error?.message)
 						},
 						source
