@@ -435,6 +435,14 @@ contextualize(function (this: Mocha.Suite) {
 			).snap("main.ts:4:1 calls require() by a computed specifier")
 		})
 
+		it("but a member named require", async () => {
+			attest(
+				await droppedReading(
+					`const auth = { require: () => true }\nauth.require()\nUser({})`
+				)
+			).equals(everyMember)
+		})
+
 		it("require read as a value", async () => {
 			attest(await droppedReading(`const load = require`)).snap(
 				"main.ts:3:14 reads require other than to call it"

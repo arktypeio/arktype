@@ -344,7 +344,23 @@ const importsOf = (
 		}
 	}
 	if (/\brequire\b/.test(source)) {
-		walk(parsed.program as never, (node: Node) => {
+		const visit = (node: Node): boolean => {
+			// e.g. `auth.require(request)` or `{ require: true }`, which name a
+			// member rather than read require
+			if (node.type === "MemberExpression" && !node.computed) {
+				walk(node.object, visit)
+				return false
+			}
+			if (
+				(node.type === "Property" ||
+					node.type === "MethodDefinition" ||
+					node.type === "PropertyDefinition") &&
+				!node.computed &&
+				!(node.type === "Property" && node.shorthand)
+			) {
+				if (node.value) walk(node.value, visit)
+				return false
+			}
 			if (node.type === "TSImportEqualsDeclaration") {
 				if (node.moduleReference.type === "TSExternalModuleReference") {
 					imports.push([
@@ -369,7 +385,8 @@ const importsOf = (
 			} else if (node.type === "Identifier" && node.name === "require")
 				unnamed ??= unnamedAt(node.start, "reads require other than to call it")
 			return true
-		})
+		}
+		walk(parsed.program as never, visit)
 	}
 	return { imports, unnamed }
 }
