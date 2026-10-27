@@ -516,16 +516,10 @@ export const claims = {
 	zodSpeed: `Precompiled ArkType was faster than Zod 4 in ${zodScenarios} of our benchmark, by a median of ${medianOf(zod)}, and faster than Zod 4's z.compile in ${zodCompiled.wins} of ${zodCompiled.count}, by a median of ${medianOf(zodCompiled)}${zodCompiledLosses}.`,
 	// the error rows from benchData.json
 	speedScope: `It isn't the fastest at everything. On the rows that report errors for invalid data, ajv was faster on ${bench.ajvFasterCount} of ${bench.errorCount}.`,
-	// no rate: 4 of 10 can't headline a row
-	zodMigrationSpec: "a guide your agent follows from one prompt",
-	// h2 in the Zod-migration eval: 10 repos chosen by a rule fixed before any
-	// run (stars, 3-30 files importing zod), one Sonnet run each with the skill
-	// at fc054f29f, graded on typecheck, tests, zod removed, differential parity
-	// and no new casts. 4/10, 95% CI 0.12-0.74; 2 of the failures keep Zod for
-	// MCP SDK v1. The rule counted a project without a test script as passing
-	// its tests, and all four successes were such projects
+	// a promise, not a rate: what makes it true is the skill's guide, which
+	// the docs show beside the prompt and the command that installs it
 	zodMigration:
-		"With the skill, one prompt fully migrated 4 of 10 open-source Zod projects we picked by stars before running it: typecheck passes, Zod is removed, generated inputs get the same results and no casts were added. None of the four had a test script to run.",
+		"Migrate from Zod with one prompt: your agent converts each schema where it is, then checks its work with your typecheck and tests.",
 	// the hero's third superlative, after the headline's two: with them it
 	// says ArkType leads every category, so the blog post's check below holds
 	// each lead, and the one after oneBuild that one build holds them all

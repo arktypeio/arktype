@@ -43,8 +43,10 @@ const steps = [
 	"keep behavior identical",
 	"update call sites",
 	"swap integrations",
+	"compare with Zod",
 	"swap dependencies",
 	"typecheck and test",
+	"precompile, if asked",
 	"report what differs"
 ]
 

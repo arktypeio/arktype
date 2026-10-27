@@ -101,11 +101,18 @@ const writeSkillMigrating = (page: string) => {
 	const prettier = createRequire(join(docsDir, "package.json")).resolve(
 		"prettier/bin/prettier.cjs"
 	)
+	// the page's intro tells people how to install the skill, so this copy
+	// starts at its sections, with the steps an agent follows first
+	const sections = page.slice(page.indexOf("\n## ") + 1).split(/^(?=## )/m)
+	const isSteps = (section: string) =>
+		section.startsWith("## Migrating a project")
 	const markdown = [
 		"# Migrating to ArkType",
 		"<!-- written from ark/docs/content/docs/(arktype)/migrating.mdx when the docs build; edit that instead -->",
 		"How to convert schemas from Zod (v3, v4 and Zod Mini), Valibot, TypeBox, Yup, Joi, Effect Schema and JSON Schema to ArkType.",
-		page.slice(page.indexOf("## Migrating a project"))
+		[...sections.filter(isSteps), ...sections.filter(s => !isSteps(s))]
+			.map(section => section.trimEnd())
+			.join("\n\n")
 	].join("\n\n")
 	writeFileSync(
 		skillMigratingPath,

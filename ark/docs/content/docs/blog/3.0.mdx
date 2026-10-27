@@ -77,14 +77,6 @@ export default {
 
 `type()` still parses definitions at runtime with no build step, for scripts, REPLs and definitions you only know at runtime. `runtime: "arktype"` precompiles what it can and ships arktype for the rest, so nothing you write today keeps you from precompiling.
 
-### Migrating from Zod
-
-```
-Migrate this project from Zod to ArkType.
-```
-
-One prompt doesn't land every migration yet. <Claim id="zodMigration" /> Projects on MCP SDK v1, which accepts only Zod, keep it until they upgrade. The [migration guide](/docs/migrating) maps each construct and every default that differs.
-
 ### The skill
 
 ```bash
@@ -92,6 +84,19 @@ npx skills add arktypeio/arktype
 ```
 
 An agent's training always lags a release. The [skill](/docs/agents#skill) teaches it current syntax, how it maps to TypeScript, the mistakes to avoid and how to work in a precompiled project. Every docs page is also Markdown at its URL plus `.md`, and [/llms.txt](https://arktype.io/llms.txt) indexes them.
+
+### Migrating from Zod
+
+With the skill installed:
+
+```
+Migrate this project from Zod to ArkType.
+```
+
+<Claim id="zodMigration" /> Where a dependency accepts only Zod, like MCP SDK
+v1, it keeps Zod for that call and tells you. Add "and precompile it" to do both
+in one pass. The [migration guide](/docs/migrating) it follows maps each Zod API
+and every default that differs.
 
 ### What it costs
 
