@@ -1,9 +1,9 @@
 import { isAbsolute } from "node:path"
-import { parseSync, type Node } from "oxc-parser"
+import { parseSync, type Program } from "oxc-parser"
 import { dependencyOf, fileOf, printablePathOf, transformedId } from "./host.ts"
 import { langOf } from "./module.ts"
 import type { ScannedModule, ScannedProgram } from "./precompile.ts"
-import { walk } from "./scope.ts"
+import { ModuleScopes, operatorOf, walk } from "./scope.ts"
 
 export type ImportKind = "import-statement" | "dynamic-import" | "require-call"
 
@@ -344,32 +344,39 @@ const importsOf = (
 		}
 	}
 	if (/\brequire\b/.test(source)) {
-		walk(parsed.program as never, (node: Node) => {
-			if (node.type === "TSImportEqualsDeclaration") {
-				if (node.moduleReference.type === "TSExternalModuleReference") {
-					imports.push([
-						node.moduleReference.expression.value,
-						"require-call",
-						node.start
-					])
-				}
-			} else if (node.type === "CallExpression") {
-				if (node.callee.type !== "Identifier" || node.callee.name !== "require")
-					return true
-				const [argument] = node.arguments
-				if (argument?.type === "Literal" && typeof argument.value === "string")
-					imports.push([argument.value, "require-call", node.start])
-				else {
-					unnamed ??= unnamedAt(
-						node.start,
-						"calls require() by a computed specifier"
-					)
-				}
-				return false
-			} else if (node.type === "Identifier" && node.name === "require")
-				unnamed ??= unnamedAt(node.start, "reads require other than to call it")
+		const program = parsed.program as never as Program
+		walk(program, node => {
+			if (
+				node.type === "TSImportEqualsDeclaration" &&
+				node.moduleReference.type === "TSExternalModuleReference"
+			) {
+				imports.push([
+					node.moduleReference.expression.value,
+					"require-call",
+					node.start
+				])
+			}
 			return true
 		})
+		// a reference to require no binding declares, so not `auth.require(...)`,
+		// a key named require or a function of the module's named require
+		for (const { id } of new ModuleScopes(program).root.unresolved) {
+			if (id.name !== "require") continue
+			const [operand, call] = operatorOf(id)
+			if (call?.type !== "CallExpression" || call.callee !== operand) {
+				unnamed ??= unnamedAt(id.start, "reads require other than to call it")
+				continue
+			}
+			const [argument] = call.arguments
+			if (argument?.type === "Literal" && typeof argument.value === "string")
+				imports.push([argument.value, "require-call", call.start])
+			else {
+				unnamed ??= unnamedAt(
+					call.start,
+					"calls require() by a computed specifier"
+				)
+			}
+		}
 	}
 	return { imports, unnamed }
 }

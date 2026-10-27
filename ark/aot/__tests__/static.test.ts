@@ -447,6 +447,97 @@ export const Product = type({ description: "string", items: [{ description: "str
 				)
 			).equals([])
 		})
+
+		it("reads off a parameter annotated with an interface it imports", () => {
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+import type { Options } from "./types.ts"
+export const T = type("string")
+export function readOptions(opts: Options) {
+	return [opts.default, opts.in]
+}`,
+					{
+						"/types.ts": `export interface Options { default: string; in: number }`
+					}
+				)
+			).equals([])
+		})
+
+		it("reads off a type re-exported through relative modules", () => {
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+import type { Schema } from "./index.ts"
+import type * as Json from "./json.ts"
+export const T = type("string")
+export const defaultOf = (schema: Schema) => schema.default
+export const outOf = (schema: Json.Piped) => schema.out`,
+					{
+						"/index.ts": `export type { JsonSchema as Schema } from "./schema.ts"`,
+						"/schema.ts": `export * from "./json.ts"`,
+						"/json.ts": `import type { JSONSchema7 } from "json-schema"
+export type JsonSchema = JSONSchema7
+export type Piped = { in: string; out: string }`
+					}
+				)
+			).equals([])
+		})
+
+		it("reads off a cast declaring the members it reads", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+export const T = type("string")
+export function piped(ctx: any) {
+	const def = ctx.def
+	const pipeDef = def as typeof def & { in: unknown }
+	if (pipeDef.in) return pipeDef
+}`)
+			).equals([])
+		})
+
+		it("reads off what a method declares it returns", () => {
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+import { service } from "./service.ts"
+export const T = type("string")
+export const created = async () => {
+	const result = await service.create()
+	return \`/projects/\${result.id}\`
+}`,
+					{
+						"/service.ts": `import { randomUUID } from "node:crypto"
+export const service = new (class {
+	async create(): Promise<{ id: string }> {
+		return { id: randomUUID() }
+	}
+})()`
+					}
+				)
+			).equals([])
+		})
+
+		it("reads off a member typed as an element of a const array", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+export const T = type("string")
+const metrics = ["LCP", "INP"] as const
+export type Summary = { metric: (typeof metrics)[number]; detail: unknown }
+export const describe = (summary: Summary) => \`\${summary.metric}\``)
+			).equals([])
+		})
+
+		it("reads off a type literal with an unknown member", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+export const T = type("string")
+export type Schema = { default?: unknown; required?: string[] }
+export function defaultOf(schema: Schema): unknown {
+	return schema.default
+}`)
+			).equals([])
+		})
 	})
 
 	describe("helpers", () => {
@@ -664,6 +755,50 @@ export const User = type({ name: text(50) })`).diagnostics.map(renderDiagnostic)
 	})
 
 	describe("rejected", () => {
+		it("a read off a value whose annotation the build can't read", () => {
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+import { navigate } from "./router.ts"
+export const T = type("string")
+type Navigation = Parameters<Parameters<typeof navigate>[0]>[0]
+export function visit(nav: Navigation) {
+	if (nav.to) return nav.to
+}`,
+					{
+						"/router.ts": `export const navigate = (callback: (nav: { to: string }) => void) => callback({ to: "/" })`
+					}
+				)
+			).snap([
+				'/main.ts:6:6  nav.to reads to, which a standalone validator lacks\n  `nav` is a parameter of visit, so it may be a Type, which the standalone runtime replaces with a validator\n  Make visit a Generic, which the build precompiles where it\'s called: `const visit = type("<t>", def)`, with "t" in def where it reads `nav`. If `nav` isn\'t a Type, annotate it with an interface or type literal declaring what it reads, since the build can\'t read `Navigation`.',
+				'/main.ts:6:21  nav.to reads to, which a standalone validator lacks\n  `nav` is a parameter of visit, so it may be a Type, which the standalone runtime replaces with a validator\n  Make visit a Generic, which the build precompiles where it\'s called: `const visit = type("<t>", def)`, with "t" in def where it reads `nav`. If `nav` isn\'t a Type, annotate it with an interface or type literal declaring what it reads, since the build can\'t read `Navigation`.'
+			])
+		})
+
+		it("a read off an annotated type's unknown member or a Type it imports", () => {
+			attest(
+				unhinted(
+					`import { type, type Type } from "arktype"
+import type { Forms } from "./types.ts"
+type Schema = { default?: unknown }
+export const T = type("string")
+export const nullable = (schema: Schema) => (schema.default as any).or("null")
+export const user = (forms: Forms) => forms.user.or("null")
+export function inOf(t: Type & { note: string }) {
+	if (t.in) return t.note
+}`,
+					{
+						"/types.ts": `import type { Type } from "arktype"
+export type Forms = { user: Type }`
+					}
+				)
+			).snap([
+				"/main.ts:5:45  (schema.default as any).or reads or, which a standalone validator lacks\n  the build can't tell where `schema.default as any` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:6:39  forms.user.or reads or, which a standalone validator lacks\n  the build can't tell where `forms.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:8:6  t.in reads in, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
 		it("parameter", () => {
 			attest(
 				diagnosticsOf(`import { scope, type } from "arktype"
@@ -1502,7 +1637,7 @@ console.log(values.map(v => (v as any).from))`,
 					{ members: { methods: false } }
 				)
 			).snap([
-				"/main.ts:3:29  (v as any).from reads from, which a standalone validator lacks\n  the build can't tell where `v as any` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, leave members[\"methods\"] unset."
+				"/main.ts:3:29  (v as any).from reads from, which a standalone validator lacks\n  the build can't tell where `v as any` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with an interface or type literal declaring what it reads, since the build can't read `any`. If it is, leave members[\"methods\"] unset."
 			])
 		})
 

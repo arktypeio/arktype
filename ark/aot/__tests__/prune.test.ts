@@ -30,7 +30,7 @@ import {
 } from "vite"
 import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
-import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join, posix, relative, win32 } from "node:path"
 import { stripVTControlCharacters } from "node:util"
 import {
@@ -457,6 +457,14 @@ contextualize(function (this: Mocha.Suite) {
 			attest(
 				await droppedReading(`const path = "./types.ts"\nrequire(path)`)
 			).snap("main.ts:4:1 calls require() by a computed specifier")
+		})
+
+		it("but a member named require", async () => {
+			attest(
+				await droppedReading(
+					`interface Auth { require(): boolean }\nconst auth: Auth = { require: () => true }\nconst make = () => {\n\tfunction require() { return true }\n\treturn { require }\n}\nauth.require()\nmake()\nUser({})`
+				)
+			).equals(everyMember)
 		})
 
 		it("require read as a value", async () => {
@@ -1428,6 +1436,56 @@ console.log(out instanceof type.errors ? out.summary : out)
 				attest(pruned.includes("~standard")).equals(false)
 			} finally {
 				writeFileSync(main, source)
+			}
+		})
+
+		it("leaves out what no read needs where a module only stripped code imports is refused", async () => {
+			const main = join(root, "main.ts")
+			const source = readFileSync(main, "utf8")
+			const files = {
+				"route.ts": `import { session } from "./context.ts"\nexport const loader = () => session\nexport const view = "view"\n`,
+				"context.ts": `import { db } from "./db.server.ts"\nexport const session = db\n`,
+				"db.server.ts": `export const db = "db"\n`
+			}
+			for (const [name, text] of Object.entries(files))
+				writeFileSync(join(root, name), text)
+			writeFileSync(
+				main,
+				`${source}\nimport { view } from "./route.ts"\nconsole.log(view)\n`
+			)
+			// as React Router refuses a .server module in the client build, and
+			// removes a route's loader after arktype's plugin reads it
+			const refusing: VitePlugin = {
+				name: "refusing",
+				enforce: "pre",
+				resolveId: id => {
+					if (id.endsWith(".server.ts")) throw new Error(`refused ${id}`)
+				}
+			}
+			const stripping: VitePlugin = {
+				name: "stripping",
+				transform: (code, id) =>
+					id.endsWith("route.ts") ?
+						code.replace(/^.*(?:context|loader).*$/gm, "")
+					:	undefined
+			}
+			const warnings: string[] = []
+			try {
+				const pruned = await bundle(
+					{},
+					{
+						plugins: [refusing, stripping],
+						onwarn: warning => {
+							if (warning.plugin === "arktype") warnings.push(warning.message)
+						}
+					}
+				)
+				attest(run(pruned)).snap("name must be a string\nview\n")
+				attest(pruned.includes("~standard")).equals(false)
+				attest(warnings).equals([])
+			} finally {
+				writeFileSync(main, source)
+				for (const name in files) rmSync(join(root, name))
 			}
 		})
 

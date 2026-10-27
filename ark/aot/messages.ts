@@ -53,8 +53,10 @@ export const writeVersionHint = (arktype: string, aot: string): string =>
 export const copiesHint =
 	"Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
 
-export const writeUnsureHint = (fix: string): string =>
-	`If it isn't a Type, annotate it with its type. If it is, ${fix}.`
+export const writeUnsureHint = (fix: string, annotation?: string): string =>
+	annotation === undefined ?
+		`If it isn't a Type, annotate it with its type. If it is, ${fix}.`
+	:	`If it isn't a Type, annotate it with an interface or type literal declaring what it reads, since the build can't read \`${annotation}\`. If it is, ${fix}.`
 
 export const derivedHint = `If it isn't a Type, read it off a value the build can tell from a Type, like a Module defined in a const as \`scope({ ... }).export()\`. If it is, build with runtime: "arktype".`
 
@@ -160,12 +162,14 @@ export const writeGenericHint = (
 	fn: string,
 	param: string,
 	definition: string | undefined,
-	isAnnotated: boolean
+	isAnnotated: boolean,
+	unreadAnnotation?: string
 ): string =>
 	capitalize(writeGenericFix(fn, param, definition)) +
-	(isAnnotated ? "" : (
-		` If \`${param}\` isn't a Type, annotate it with its type.`
-	))
+	(unreadAnnotation !== undefined ?
+		` If \`${param}\` isn't a Type, annotate it with an interface or type literal declaring what it reads, since the build can't read \`${unreadAnnotation}\`.`
+	: isAnnotated ? ""
+	: ` If \`${param}\` isn't a Type, annotate it with its type.`)
 
 export const writeHelperCallHint = (fn: string): string =>
 	`Call ${fn} directly, with arguments the build can read, like literals and consts, so it precompiles each call.`

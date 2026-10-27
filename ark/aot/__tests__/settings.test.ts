@@ -143,6 +143,13 @@ contextualize(() => {
 			)
 		})
 
+		it("names an option set beside precompile", () => {
+			const root = withArkJson({ members: { toJsonSchema: true } })
+			attest(() => withSettingsFile({ cwd: root })).throws(
+				`${join(root, "ark.json")}: members must be set in precompile, as in {"precompile":{"members":{"toJsonSchema":true}}}`
+			)
+		})
+
 		it("configures what the plugin resolves", async () => {
 			const root = withArkJson({ precompile: { preset: "smallest" } })
 			const importer = join(root, "main.ts")

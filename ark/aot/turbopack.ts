@@ -39,8 +39,11 @@ export interface TurbopackLoaderContext {
 	mode?: string
 	addDependency(file: string): void
 	emitWarning(warning: Error): void
-	// absent where a host can't resolve as Turbopack does
-	getResolve?(): (context: string, request: string) => Promise<string>
+	// absent where a host can't resolve as Turbopack does. Next 16.1 reads
+	// options without checking they were given
+	getResolve?(
+		options: Record<string, unknown>
+	): (context: string, request: string) => Promise<string>
 	async?(): (error: Error | null, result?: string) => void
 }
 
@@ -85,7 +88,7 @@ export default function (
 	} catch (e) {
 		return rethrowAsBuildError(e)
 	}
-	const resolve = this.async && this.getResolve?.()
+	const resolve = this.async && this.getResolve?.({})
 	if (!keyed.unresolved.length || !resolve) {
 		const loaded = loadedOf(this, precompiler, keyed, source, opts)
 		if (typeof loaded !== "object") return loaded
@@ -161,7 +164,7 @@ const loadedOf = (
 	}
 	if (!specifiers.length || !context.getResolve || !context.async) return code
 	return checkAliases(
-		context.getResolve(),
+		context.getResolve({}),
 		context.resourcePath,
 		specifiers,
 		opts,

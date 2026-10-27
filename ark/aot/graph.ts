@@ -355,7 +355,10 @@ const kinds = {
 	returnsUnsure: 128,
 	// data the build has no source for, like an exported function's
 	// parameter, which may be a Type
-	opaque: 256
+	opaque: 256,
+	// data whose members the build has no source for, like one a type
+	// annotation declares `unknown`
+	opaqueHolder: 512
 } as const
 
 type KindBits = number
@@ -395,23 +398,25 @@ const unsure: KindBits = kinds.data | kinds.unknown
 
 const opaque: KindBits = kinds.data | kinds.opaque
 
+const opaqueBits: KindBits = kinds.opaque | kinds.opaqueHolder
+
 // what a value holding `held` is, as a literal holding a Type passed to a
 // parameter is a holder
 const holderOf = (held: KindBits): KindBits =>
-	held & ~opaque ? kinds.data | kinds.holder
-	: held & kinds.opaque ? opaque
+	held & ~(kinds.data | opaqueBits) ? kinds.data | kinds.holder
+	: held & opaqueBits ? opaque
 	: kinds.data
 
 // what is read off a value the build lost track of
 const unsureOf = (kind: KindBits): KindBits =>
 	kind & (kinds.unknown | kinds.holder) ? unsure
-	: kind & kinds.opaque ? opaque
+	: kind & opaqueBits ? opaque
 	: 0
 
 // what a value may be once the build loses track of it
 const lostOf = (kind: KindBits): KindBits =>
-	kind & ~opaque ? unsure
-	: kind & kinds.opaque ? opaque
+	kind & ~(kinds.data | opaqueBits) ? unsure
+	: kind & opaqueBits ? opaque
 	: kinds.data
 
 // e.g. `User` in `_unref(User)`, as Vue compiles a script setup binding its
@@ -561,7 +566,7 @@ const functionKindOf = (returned: KindBits): KindBits =>
 	kinds.data |
 	(returned & kinds.type ? kinds.returnsType : 0) |
 	(returned & (anyKind & ~kinds.type & ~kinds.data) ? kinds.returnsArk : 0) |
-	(returned & (kinds.unknown | kinds.holder | kinds.opaque) ?
+	(returned & (kinds.unknown | kinds.holder | opaqueBits) ?
 		kinds.returnsUnsure
 	:	0)
 
@@ -710,7 +715,8 @@ export class ModuleGraph {
 
 	resolve(
 		specifier: string,
-		importer: SourceModule
+		importer: SourceModule,
+		isValueImport?: () => boolean
 	): ImportTarget | SourceModule {
 		if (specifier in arktypeNamespacesBySpecifier) {
 			return {
@@ -719,7 +725,7 @@ export class ModuleGraph {
 				value: arktypeNamespacesBySpecifier[specifier]
 			}
 		}
-		const id = this.host.resolve(specifier, importer.id)
+		const id = this.host.resolve(specifier, importer.id, isValueImport)
 		if (!id) {
 			return {
 				kind: "unresolved",
@@ -1334,6 +1340,36 @@ export class ModuleGraph {
 			:	kinds.data
 	}
 
+	// e.g. `Params` for `p` in `(p: Params) => p.or`, where `Params` is
+	// computed, like `typeof f`, or `any`, which doesn't say `p` isn't a Type
+	unreadAnnotationOf(node: Node, module: SourceModule): Node | undefined {
+		let annotated = castOf(node)
+		if (!annotated) {
+			const id = unwrapChain(node)
+			const binding =
+				id.type === "Identifier" ?
+					module.scopes.refsById.get(id)?.binding
+				:	undefined
+			const declaration = binding?.declaration
+			// e.g. `def as Piped` for `p` in `const p = def as Piped`
+			annotated =
+				(
+					declaration?.type === "VariableDeclarator" &&
+					declaration.id === binding!.id &&
+					declaration.init
+				) ?
+					(castOf(declaration.init) ?? binding!.id)
+				:	binding?.id
+		}
+		const annotation =
+			annotated && "typeAnnotation" in annotated ?
+				annotated.typeAnnotation
+			:	undefined
+		if (!annotation) return
+		const kind = this.annotatedKindOf(annotated!, module, this.finalKindOfKey)
+		return kind === undefined || kind & kinds.opaque ? annotation : undefined
+	}
+
 	// e.g. unsure for `t: Type`, data for `s: JsonSchema`, none for `any`
 	private annotatedKindOf(
 		node: Node,
@@ -1365,12 +1401,7 @@ export class ModuleGraph {
 					:	result | kind
 			}, kinds.data)
 		const signaturesKindOf = (signatures: TSSignature[]) =>
-			union(
-				signatures.map(signature =>
-					"typeAnnotation" in signature ? signature.typeAnnotation : null
-				),
-				depth + 1
-			)
+			this.signaturesKindOf(signatures, context, module, kindOfKey, depth)
 		switch (type.type) {
 			case "TSTypeAnnotation":
 				return this.typeKindOf(
@@ -1387,10 +1418,45 @@ export class ModuleGraph {
 			case "TSObjectKeyword":
 				return depth < 2 ? undefined : kinds.data
 			case "TSUnionType":
-			case "TSIntersectionType":
 				return union(type.types, depth)
+			case "TSIntersectionType": {
+				const parts = type.types.map(t =>
+					this.typeKindOf(t, context, module, kindOfKey, depth)
+				)
+				// e.g. `typeof def & { in: unknown }`, whose declared members say
+				// it isn't a Type where nothing it's intersected with says it is
+				const declared = parts.filter(
+					kind =>
+						kind !== undefined &&
+						!(kind & (kinds.unknown | kinds.opaque | arkBits))
+				)
+				return (
+						declared.length &&
+							parts.every(
+								kind =>
+									kind === undefined || !(kind & (kinds.unknown | arkBits))
+							)
+					) ?
+						declared.reduce<KindBits>((result, kind) => result | kind!, 0)
+					:	union(type.types, depth)
+			}
 			case "TSArrayType":
 				return union([type.elementType], depth + 1)
+			// e.g. data for `(typeof names)[number]` or `Options["mode"]`, given
+			// `names` or `Options` is, but not `Parameters<typeof f>[0]`, which
+			// isn't a member of what it's passed
+			case "TSIndexedAccessType": {
+				const object = type.objectType
+				if (
+					object.type !== "TSTypeQuery" &&
+					(object.type !== "TSTypeReference" || object.typeArguments)
+				)
+					return
+				const kind = this.typeKindOf(object, context, module, kindOfKey, depth)
+				return kind === undefined || isArk(kind) ?
+						undefined
+					:	memberKindOf(kind, undefined)
+			}
 			case "TSTypeLiteral":
 				return signaturesKindOf(type.members)
 			case "TSTypeQuery": {
@@ -1425,7 +1491,28 @@ export class ModuleGraph {
 				const imported = importedNameOf(module, root.name)
 				if (imported) {
 					const [specifier, importedName] = imported
-					if (localSpecifier.test(specifier)) return
+					if (localSpecifier.test(specifier)) {
+						// e.g. `T.Options` for `import type * as T from "./types.ts"`
+						const exportName =
+							name.type === "Identifier" ? importedName
+							: (
+								name.type === "TSQualifiedName" &&
+								importedName === "*" &&
+								name.left === root
+							) ?
+								name.right.name
+							:	undefined
+						return exportName === undefined ? undefined : (
+								(this.exportedTypeKindOf(
+									specifier,
+									exportName,
+									context,
+									module,
+									kindOfKey,
+									depth
+								) ?? undefined)
+							)
+					}
 					const isArkTypeName =
 						name.type === "TSQualifiedName" ?
 							importedName === "*" ?
@@ -1434,30 +1521,13 @@ export class ModuleGraph {
 						:	importedName in arkTypeNames
 					if (!arkTypesSpecifier.test(specifier) || !isArkTypeName)
 						return kinds.data
-					const arkName =
+					return arkTypeKindOf(
 						name.type === "TSQualifiedName" ? name.right.name : importedName
-					// e.g. `Scope`, whose value is one, which only a site may read
-					return arkName === "Scope" || arkName === "Generic" ?
-							unsure | kinds.otherArk
-						:	unsure
+					)
 				}
 				const local = this.localTypeOf(module, root.name)
 				if (!local) return union(type.typeArguments?.params ?? [], depth + 1)
-				if (this.resolving.has(local)) return kinds.data
-				this.resolving.add(local)
-				try {
-					return local.type === "TSInterfaceDeclaration" ?
-							signaturesKindOf(local.body.body)
-						:	this.typeKindOf(
-								local.typeAnnotation,
-								local,
-								module,
-								kindOfKey,
-								depth
-							)
-				} finally {
-					this.resolving.delete(local)
-				}
+				return this.declaredTypeKindOf(local, context, module, kindOfKey, depth)
 			}
 			case "TSLiteralType":
 			case "TSTemplateLiteralType":
@@ -1465,6 +1535,135 @@ export class ModuleGraph {
 			default:
 				return type.type.endsWith("Keyword") ? kinds.data : undefined
 		}
+	}
+
+	// a type literal or interface isn't a Type, though a member typed
+	// `unknown` may hold one, which reads off it are as off a parameter
+	private signaturesKindOf(
+		signatures: TSSignature[],
+		context: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey,
+		depth: number
+	): KindBits {
+		let result: KindBits = kinds.data
+		for (const signature of signatures) {
+			const annotation =
+				"typeAnnotation" in signature ? signature.typeAnnotation : null
+			result |=
+				(annotation &&
+					this.typeKindOf(annotation, context, module, kindOfKey, depth + 1)) ??
+				kinds.opaqueHolder
+		}
+		return result
+	}
+
+	private declaredTypeKindOf(
+		declaration: LocalType,
+		context: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey,
+		depth: number
+	): KindBits | undefined {
+		if (this.resolving.has(declaration)) return kinds.data
+		this.resolving.add(declaration)
+		try {
+			return declaration.type === "TSInterfaceDeclaration" ?
+					this.signaturesKindOf(
+						declaration.body.body,
+						context,
+						module,
+						kindOfKey,
+						depth
+					)
+				:	this.typeKindOf(
+						declaration.typeAnnotation,
+						declaration,
+						module,
+						kindOfKey,
+						depth
+					)
+		} finally {
+			this.resolving.delete(declaration)
+		}
+	}
+
+	// what the type a module exports as `name` says, as its own module reads
+	// it, or null where the module doesn't export one
+	private exportedTypeKindOf(
+		specifier: string,
+		name: string,
+		context: Node,
+		importer: SourceModule,
+		kindOfKey: KindOfKey,
+		depth: number,
+		seen: Set<string> = new Set()
+	): KindBits | undefined | null {
+		if (!localSpecifier.test(specifier)) {
+			return arkTypesSpecifier.test(specifier) && name in arkTypeNames ?
+					arkTypeKindOf(name)
+				:	kinds.data
+		}
+		// a type carries no value, so a host asks no bundler to resolve it
+		const target = this.resolve(specifier, importer, () => false)
+		if (!(target instanceof SourceModule)) return
+		if (seen.has(target.id)) return null
+		seen.add(target.id)
+		const fromTarget = (specifier: string, name: string) =>
+			this.exportedTypeKindOf(
+				specifier,
+				name,
+				context,
+				target,
+				kindOfKey,
+				depth,
+				seen
+			)
+		for (const statement of target.program.body) {
+			if (statement.type === "ExportNamedDeclaration") {
+				const declaration = statement.declaration
+				if (
+					(declaration?.type === "TSInterfaceDeclaration" ||
+						declaration?.type === "TSTypeAliasDeclaration") &&
+					declaration.id.name === name
+				) {
+					return this.declaredTypeKindOf(
+						declaration,
+						context,
+						target,
+						kindOfKey,
+						depth
+					)
+				}
+				for (const exported of statement.specifiers) {
+					if (exportNameOf(exported.exported) !== name) continue
+					const localName = exportNameOf(exported.local)
+					if (statement.source)
+						return fromTarget(statement.source.value, localName)
+					const local = this.localTypeOf(target, localName)
+					if (local) {
+						return this.declaredTypeKindOf(
+							local,
+							context,
+							target,
+							kindOfKey,
+							depth
+						)
+					}
+					const imported = importedNameOf(target, localName)
+					return imported && imported[1] !== "*" ?
+							fromTarget(...imported)
+						:	undefined
+				}
+			} else if (
+				statement.type === "ExportAllDeclaration" &&
+				!statement.exported
+			) {
+				const kind = fromTarget(statement.source.value, name)
+				if (kind !== null) return kind
+			}
+		}
+		return null
 	}
 
 	// e.g. `type Schemas = { user: Type }`, unless the module declares two
@@ -1630,17 +1829,31 @@ export class ModuleGraph {
 		kindOfKey: KindOfKey
 	): KindBits {
 		if (fn.generator || !fn.body) return kinds.data
-		// e.g. a Type from `await load()`, which the build doesn't follow
-		const settled = (kind: KindBits) => (fn.async ? lostOf(kind) : kind)
-		if (fn.body.type !== "BlockStatement")
-			return settled(this.transfer(fn.body, module, kindOfKey))
-		const statements = fn.body.body
+		const returned = this.returnedKindIn(fn.body, module, kindOfKey)
+		return annotate(
+			// e.g. a Type from `await load()`, which the build doesn't follow
+			fn.async ? lostOf(returned) : returned,
+			// e.g. data for `(): Promise<{ id: string }>`, as for a parameter
+			fn.returnType ?
+				this.typeKindOf(fn.returnType, fn, module, kindOfKey)
+			:	undefined
+		)
+	}
+
+	private returnedKindIn(
+		body: NonNullable<FunctionNode["body"]>,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits {
+		if (body.type !== "BlockStatement")
+			return this.transfer(body, module, kindOfKey)
+		const statements = body.body
 		// one that can end without a return statement returns undefined
 		let result =
 			statements[statements.length - 1]?.type === "ReturnStatement" ?
 				0
 			:	kinds.data
-		walk(fn.body, node => {
+		walk(body, node => {
 			if (isFunctionNode(node)) return false
 			if (node.type === "ReturnStatement") {
 				result |=
@@ -1650,7 +1863,7 @@ export class ModuleGraph {
 			}
 			return true
 		})
-		return settled(result)
+		return result
 	}
 
 	private targetKindOf(
@@ -3429,8 +3642,13 @@ const isConstReference = (type: TSType): boolean =>
 
 const arkTypesSpecifier = /^(?:arktype|@ark\/(?:type|schema))(?:\/|$)/
 
-// e.g. `./schemas` or `~/schemas`, whose types the build doesn't read
+// e.g. `./schemas` or `~/schemas`, whose types the build reads where it
+// can resolve them
 const localSpecifier = /^(?:[#./~]|@\/)/
+
+// e.g. `Scope`, whose value is one, which only a site may read
+const arkTypeKindOf = (name: string): KindBits =>
+	name === "Scope" || name === "Generic" ? unsure | kinds.otherArk : unsure
 
 type LocalType = TSInterfaceDeclaration | TSTypeAliasDeclaration
 

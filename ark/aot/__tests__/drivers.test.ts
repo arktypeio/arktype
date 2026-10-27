@@ -601,12 +601,15 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 							emitWarning: warning => {
 								throw warning
 							},
-							getResolve: () => async (_, request) => {
-								const path = resolve(request)
-								if (path === undefined)
-									throw new Error(`Can't resolve ${request}`)
-								return path
-							},
+							// reads options as Next 16.1's does, throwing where none are passed
+							getResolve:
+								({ alias }) =>
+								async (_, request) => {
+									const path = resolve(request)
+									if (path === undefined)
+										throw new Error(`Can't resolve ${request}`)
+									return path
+								},
 							async: () => (error, result) => settle(error?.message ?? result)
 						},
 						readFileSync(join(dir, "main.ts"), "utf8")
@@ -729,14 +732,16 @@ console.log(Value, note, load, await import("#shared/lazy"))
 							getOptions: () => ({ ...opts, conditions, cwd: app }),
 							addDependency: () => {},
 							emitWarning: () => {},
-							getResolve: () => async (dir, request) => {
-								if (request === "arktype" && !target)
-									throw new Error(`Can't resolve '${request}'`)
-								return host.resolve(
-									request === "arktype" ? target! : request,
-									join(dir, "main.ts")
-								)!
-							},
+							getResolve:
+								({ alias }) =>
+								async (dir, request) => {
+									if (request === "arktype" && !target)
+										throw new Error(`Can't resolve '${request}'`)
+									return host.resolve(
+										request === "arktype" ? target! : request,
+										join(dir, "main.ts")
+									)!
+								},
 							async: () => error => settle(error?.message)
 						},
 						source
@@ -1119,6 +1124,21 @@ console.log(await result.outputs[0].text())`
 				attest(bundle.includes("~arktype/")).equals(true)
 				attest(bundle.includes("\0")).equals(false)
 				attest(runBundle(bundle).stdout).equals(expected)
+			})
+
+			it("compiles an imported module's JSX with the jsxImportSource tsconfig.json sets", () => {
+				const dir = writeFixture({
+					"tsconfig.json": `{ "compilerOptions": { "jsx": "react-jsx", "jsxImportSource": "jsxlib" } }`,
+					"node_modules/jsxlib/package.json": `{ "name": "jsxlib", "type": "module" }`,
+					"node_modules/jsxlib/jsx-dev-runtime.js": `export const jsxDEV = tag => tag`,
+					"node_modules/jsxlib/jsx-runtime.js": `export const jsx = tag => tag`,
+					"main.ts": `import { b } from "./b.tsx"\n\nconsole.log(b)\n`,
+					"b.tsx": "export const b = <b />\n"
+				})
+				const bundle = bunBuild(
+					`{ entrypoints: [${JSON.stringify(join(dir, "main.ts"))}] }`
+				).stdout
+				attest(runBundle(bundle).stdout).equals("b\n")
 			})
 
 			it("fails a build leaving arktype external", () => {

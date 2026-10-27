@@ -93,6 +93,17 @@ const validated = (
 	data: unknown,
 	where: string
 ): PrecompilePluginOptions => {
+	// e.g. { "members": {...} }, an option written beside "precompile"
+	for (const key in data as object) {
+		const option = { [key]: (data as Record<string, unknown>)[key] }
+		if (
+			!("issues" in validators.PrecompileOptions()(option, undefined, null))
+		) {
+			throw new Error(
+				`${where}${key} must be set in precompile, as in ${JSON.stringify({ precompile: option })}`
+			)
+		}
+	}
 	validate(getValidator as never, data, where)
 	return (data as { precompile?: PrecompilePluginOptions }).precompile ?? {}
 }
