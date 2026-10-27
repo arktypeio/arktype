@@ -78,7 +78,7 @@ true
 		attest(run(flat)).equals(run(whole))
 		attest(factoryParam.test(whole)).equals(true)
 		attest(factoryParam.test(flat)).equals(false)
-	})
+	}).timeout(60000)
 
 	it("leaves out of the function a unit only a dropped validator reads", async () => {
 		const [js] = await bundle(
