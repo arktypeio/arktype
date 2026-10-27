@@ -38,7 +38,6 @@ import type { ResolvedConfig } from "./config.ts"
 import type {
 	Inner,
 	childKindOf,
-	mutableInnerOfKind,
 	nodeOfKind,
 	reducibleKindOf
 } from "./kinds.ts"
@@ -184,9 +183,9 @@ class NodeCache {
 	usedBeforeJit: boolean | undefined
 	failureSite: FailureSite | UnionSite | undefined
 	finalizedIn: unknown
-	rawIn: BaseNode | undefined
+	_in: BaseNode | undefined
 	finalizedOut: unknown
-	rawOut: BaseNode | undefined
+	_out: BaseNode | undefined
 	assert: ((data: any, pipedFromCtx?: Traversal) => unknown) | undefined
 	pipe: BaseRoot["pipe"] | undefined
 	description: string | undefined
@@ -430,11 +429,7 @@ export abstract class BaseNode<
 		if (attachments.kind !== "intersection") {
 			for (const k in attachments.impl.keys) {
 				// only a prop with a default has the key
-				if (
-					k !== "in" &&
-					k !== "out" &&
-					(k !== "default" || "default" in attachments.inner)
-				)
+				if (k !== "default" || "default" in attachments.inner)
 					(this as {} as dict)[k] = attachments.inner[k]
 			}
 		}
@@ -457,8 +452,11 @@ export abstract class BaseNode<
 		if (this.hasKind("morph")) {
 			bits =
 				flagBits.includesMorph | flagBits.hasTransform | flagBits.hasUserCode
+			// a node first is its input, not one it pipes to
 			if (
-				this.inner.morphs.some(morph => isNode(morph) || arityOf(morph) !== 1)
+				this.inner.morphs.some((morph, i) =>
+					isNode(morph) ? i !== 0 : arityOf(morph) !== 1
+				)
 			)
 				bits |= flagBits.hasCtxMorph
 		} else if (this.hasKind("sequence")) {
@@ -850,7 +848,7 @@ export abstract class BaseNode<
 						(this as {} as BaseRoot).branches.every(
 							branch =>
 								!branch.transforms ||
-								(branch.hasKind("morph") && !branch.knownIn?.transforms)
+								(branch.hasKind("morph") && !branch.head?.transforms)
 						)
 					)
 						return this.createOptimisticRootApply(runtime)
@@ -888,9 +886,9 @@ export abstract class BaseNode<
 				if (!branch.allows(data)) continue
 				if (!branch.hasKind("morph")) return data
 				let result = data
-				for (let j = 0; j < branch.morphs.length; j++) {
+				for (let j = 0; j < branch.piped.length; j++) {
 					// called detached, as compiled code calls it
-					const morph = branch.morphs[j] as Morph.ContextFree
+					const morph = branch.piped[j] as Morph.ContextFree
 					const morphed = morph(result as never)
 					if (morphed instanceof BaseArkErrors) {
 						const ctx = new Traversal(data, this.$.resolvedConfig)
@@ -993,24 +991,26 @@ export abstract class BaseNode<
 		return out
 	}
 
-	/** rawIn should be used internally instead */
+	/** _in should be used internally instead */
 	get in(): unknown {
 		// ensure the node has been finalized if in is being used externally
-		return (this.cache.finalizedIn ??= this.finalized(this.rawIn))
+		return (this.cache.finalizedIn ??= this.finalized(this._in))
 	}
 
-	get rawIn(): BaseNode {
-		return this.cache.rawIn ?? this.cachedIo("in")
+	/** the input it accepts as a node, each morph replaced by its input: what `in` finalizes */
+	get _in(): BaseNode {
+		return this.cache._in ?? this.cachedIo("in")
 	}
 
-	/** rawOut should be used internally instead */
+	/** _out should be used internally instead */
 	get out(): unknown {
 		// ensure the node has been finalized if out is being used externally
-		return (this.cache.finalizedOut ??= this.finalized(this.rawOut))
+		return (this.cache.finalizedOut ??= this.finalized(this._out))
 	}
 
-	get rawOut(): BaseNode {
-		return this.cache.rawOut ?? this.cachedIo("out")
+	/** the output it returns as a node, each morph replaced by its output: what `out` finalizes */
+	get _out(): BaseNode {
+		return this.cache._out ?? this.cachedIo("out")
 	}
 
 	private finalized(io: BaseNode): BaseNode {
@@ -1021,7 +1021,7 @@ export abstract class BaseNode<
 	private cachedIo(ioKind: "in" | "out"): BaseNode {
 		const io = this.getIo(ioKind)
 		if (!this.includesAlias || isIoFinal())
-			this.cache[ioKind === "in" ? "rawIn" : "rawOut"] = io
+			this.cache[ioKind === "in" ? "_in" : "_out"] = io
 		return io
 	}
 
@@ -1319,6 +1319,12 @@ export abstract class BaseNode<
 			this.inner as Dict,
 			(k, v) => {
 				if (!this.impl.keys[k].child) return [k, v]
+				// a morph's only child is the head of its pipeline
+				if (k === "morphs") {
+					const { head, piped } = this as {} as Morph.Node
+					const transformed = head?._transform(mapper, ctx)
+					return [k, transformed ? [transformed, ...piped] : piped]
+				}
 				const children = v as listable<BaseNode>
 				if (!isArray(children)) {
 					const transformed = children._transform(mapper, ctx)
@@ -1382,11 +1388,6 @@ export abstract class BaseNode<
 				...transformedInner,
 				value: $ark.intrinsic.unknown
 			} as never
-		}
-
-		if (this.kind === "morph") {
-			;(transformedInner as mutableInnerOfKind<"morph">).in ??= $ark.intrinsic
-				.unknown as never
 		}
 
 		return (transformedNode = $.node(
@@ -1938,7 +1939,7 @@ export const flatRef = <node extends BaseRoot>(
 export const ioOf = <node extends BaseNode>(
 	node: node,
 	ioKind: "in" | "out"
-): node => (ioKind === "in" ? node.rawIn : node.rawOut) as never
+): node => (ioKind === "in" ? node._in : node._out) as never
 
 export const flatRefsAt = (key: KeyOrKeyNode, node: BaseRoot): FlatRef[] =>
 	append(

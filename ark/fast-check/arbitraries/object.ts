@@ -38,7 +38,7 @@ const hasFiniteMember = (node: BaseNode, resolving: Set<string>): boolean => {
 	if (node.hasKind("union"))
 		return node.children.some(child => hasFiniteMember(child, resolving))
 	if (node.hasKind("morph"))
-		return !node.inner.in || hasFiniteMember(node.inner.in, resolving)
+		return !node.head || hasFiniteMember(node.head, resolving)
 	if (!node.hasKind("intersection") || !node.structure) return true
 	const structure = node.structure
 	return (

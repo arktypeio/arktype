@@ -37,7 +37,7 @@ const intersectPropsAndIndex = <
 	// a key's transforms apply in turn once each value allows its input
 	const intersectValues = (lValue: BaseRoot, rValue: BaseRoot) =>
 		lValue.hasTransform && rValue.hasTransform ?
-			intersectNodesRoot(lValue.rawIn, rValue.rawIn, $)
+			intersectNodesRoot(lValue._in, rValue._in, $)
 		:	intersectNodesRoot(lValue, rValue, $)
 	const value = intersectValues(l.value, r.value)
 	// a cyclic value a definition's key meets is decided once definitions

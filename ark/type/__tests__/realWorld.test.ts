@@ -342,8 +342,8 @@ extra must be a string or null (was missing)`)
 					key: "first_name",
 					value: [
 						{
-							in: "string",
 							morphs: [
+								"string",
 								trimStringReference,
 								{ domain: "string", maxLength: 3, minLength: 1 }
 							]
@@ -687,8 +687,11 @@ extra must be a string or null (was missing)`)
 
 		attest<(In: string | number) => Out<bigint>>(Amount.t)
 		attest(Amount.json).snap({
-			in: ["number", "string"],
-			morphs: [morphReference, { predicate: [predicateReference] }]
+			morphs: [
+				["number", "string"],
+				morphReference,
+				{ predicate: [predicateReference] }
+			]
 		})
 
 		attest(Amount("1000")).equals(1000n)

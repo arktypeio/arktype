@@ -539,8 +539,8 @@ const compiledInputsOf = (
 			arkKindOf(value) !== undefined ? value
 			: "member" in value ? undefined
 			: (value as StandaloneFactory).type
-		if (hasArkKind(type, "root") && type.rawIn !== type && !combines(type))
-			inputs.add(type.rawIn.hash)
+		if (hasArkKind(type, "root") && type._in !== type && !combines(type))
+			inputs.add(type._in.hash)
 	}
 	return inputs
 }

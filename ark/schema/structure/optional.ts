@@ -86,7 +86,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 		if (ioKind === "out" || !this.hasDefault()) return super.getIo(ioKind)
 		return this.$.node(
 			"optional",
-			{ key: this.key, value: this.value.rawIn },
+			{ key: this.key, value: this.value._in },
 			{ prereduced: true }
 		)
 	}
@@ -168,7 +168,7 @@ export const checkDefault = (
 
 	// if the node has a default value, finalize it and apply JIT optimizations
 	// if applicable to ensure behavior + error logging is externally consistent
-	// (using .in here insead of .rawIn triggers finalization)
+	// (using .in here insead of ._in triggers finalization)
 	const out = (node.in as BaseRoot).traverseUnused(value)
 
 	if (out instanceof ArkErrors) {

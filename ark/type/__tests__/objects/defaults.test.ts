@@ -285,8 +285,7 @@ contextualize(() => {
 						default: false,
 						key: "blep",
 						value: {
-							in: [{ unit: false }, { unit: true }],
-							morphs: [toggleRef]
+							morphs: [[{ unit: false }, { unit: true }], toggleRef]
 						}
 					}
 				],
@@ -328,8 +327,11 @@ contextualize(() => {
 						default: false,
 						key: "blep",
 						value: {
-							in: [{ unit: false }, { unit: true }],
-							morphs: [toggleRef, [{ unit: false }, { unit: true }]]
+							morphs: [
+								[{ unit: false }, { unit: true }],
+								toggleRef,
+								[{ unit: false }, { unit: true }]
+							]
 						}
 					}
 				],

@@ -96,8 +96,7 @@ export const stringInteger: stringInteger.module = keywordModule(
 		root: stringIntegerRoot,
 		parse: () =>
 			node("morph", {
-				in: stringIntegerRoot(),
-				morphs: [parseInteger],
+				morphs: [stringIntegerRoot(), parseInteger],
 				declaredOut: intrinsic.integer
 			})
 	},
@@ -158,8 +157,7 @@ export const capitalize: capitalize.module = keywordModule(
 	{
 		root: () =>
 			node("morph", {
-				in: intrinsic.string,
-				morphs: [capitalizeString],
+				morphs: [intrinsic.string, capitalizeString],
 				declaredOut: preformattedCapitalize()
 			}),
 		preformatted: preformattedCapitalize
@@ -310,8 +308,7 @@ const epoch: Module<stringDate.epoch.$> = keywordModule(
 		root: epochRoot,
 		parse: () =>
 			node("morph", {
-				in: epochRoot(),
-				morphs: [parseEpoch],
+				morphs: [epochRoot(), parseEpoch],
 				declaredOut: intrinsic.Date
 			})
 	},
@@ -331,8 +328,7 @@ const iso: Module<stringDate.iso.$> = keywordModule(
 		root: isoRoot,
 		parse: () =>
 			node("morph", {
-				in: isoRoot(),
-				morphs: [parseIsoDate],
+				morphs: [isoRoot(), parseIsoDate],
 				declaredOut: intrinsic.Date
 			})
 	},
@@ -347,8 +343,7 @@ export const stringDate: stringDate.module = keywordModule(
 		parse: () =>
 			node("morph", {
 				declaredIn: parsableDate(),
-				in: intrinsic.string,
-				morphs: [parseDate],
+				morphs: [intrinsic.string, parseDate],
 				declaredOut: intrinsic.Date
 			}),
 		iso,
@@ -439,8 +434,7 @@ export const json: stringJson.module = keywordModule(
 		parse: () =>
 			node("morph", {
 				meta: "safe JSON string parser",
-				in: intrinsic.string,
-				morphs: [parseJson],
+				morphs: [intrinsic.string, parseJson],
 				declaredOut: intrinsic.jsonData
 			})
 	},
@@ -468,8 +462,7 @@ const lower: lower.module = keywordModule(
 	{
 		root: () =>
 			node("morph", {
-				in: intrinsic.string,
-				morphs: [lowercaseString],
+				morphs: [intrinsic.string, lowercaseString],
 				declaredOut: preformattedLower()
 			}),
 		preformatted: preformattedLower
@@ -521,8 +514,7 @@ const normalizeNodes = flatMorph(
 			form,
 			() =>
 				node("morph", {
-					in: intrinsic.string,
-					morphs: [normalizationsByForm[form].morphs],
+					morphs: [intrinsic.string, normalizationsByForm[form].morphs],
 					declaredOut: preformattedNodes[form]()
 				})
 		] as const
@@ -640,25 +632,25 @@ export const stringNumeric: stringNumeric.module = keywordModule(
 		root: numericRoot,
 		parse: () => {
 			const root = numericRoot()
+			// so its output is a number as number is configured
+			const input =
+				$ark.resolvedConfig!.numberAllowsInfinity ?
+					root
+				:	node("intersection", {
+						...root.inner,
+						predicate: [
+							node("predicate", {
+								predicate: parsesFinite,
+								// JSON Schema can't say it, so the pattern stands for it
+								meta: {
+									...keywordMeta("string.numeric.parse"),
+									jsonSchema: {}
+								}
+							})
+						]
+					})
 			return node("morph", {
-				// so its output is a number as number is configured
-				in:
-					$ark.resolvedConfig!.numberAllowsInfinity ?
-						root
-					:	node("intersection", {
-							...root.inner,
-							predicate: [
-								node("predicate", {
-									predicate: parsesFinite,
-									// JSON Schema can't say it, so the pattern stands for it
-									meta: {
-										...keywordMeta("string.numeric.parse"),
-										jsonSchema: {}
-									}
-								})
-							]
-						}),
-				morphs: [parseNumeric],
+				morphs: [input, parseNumeric],
 				declaredOut: intrinsic.number
 			})
 		}
@@ -699,8 +691,7 @@ const trim: trim.module = keywordModule(
 	{
 		root: () =>
 			node("morph", {
-				in: intrinsic.string,
-				morphs: [trimString],
+				morphs: [intrinsic.string, trimString],
 				declaredOut: preformattedTrim()
 			}),
 		preformatted: preformattedTrim
@@ -729,8 +720,7 @@ const upper: upper.module = keywordModule(
 	{
 		root: () =>
 			node("morph", {
-				in: intrinsic.string,
-				morphs: [uppercaseString],
+				morphs: [intrinsic.string, uppercaseString],
 				declaredOut: preformattedUpper()
 			}),
 		preformatted: preformattedUpper
@@ -762,8 +752,7 @@ export const url: url.module = keywordModule(
 		parse: () =>
 			node("morph", {
 				declaredIn: urlRoot(),
-				in: intrinsic.string,
-				morphs: [parseUrl],
+				morphs: [intrinsic.string, parseUrl],
 				declaredOut: node("proto", { proto: URL })
 			})
 	},

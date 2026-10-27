@@ -168,7 +168,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				child: true,
 				reduceIo: (ioKind, inner, nodes) => {
 					if (ioKind === "in") {
-						inner.optional = nodes!.map(node => node.rawIn as OptionalNode)
+						inner.optional = nodes!.map(node => node._in as OptionalNode)
 						return
 					}
 
@@ -182,7 +182,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 					for (const node of nodes!) {
 						inner[node.outProp.kind] = append(
 							inner[node.outProp.kind],
-							node.outProp.rawOut as Prop.Node
+							node.outProp._out as Prop.Node
 						) as never
 					}
 				}

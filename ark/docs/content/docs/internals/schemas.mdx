@@ -10,7 +10,7 @@ A root schema is one of:
 - a domain name: `"string"`
 - a constructor: `Date`
 - an array of schemas, for a union: `["string", { unit: 5 }]`
-- an object keyed by node kinds: `{ domain: "number", min: 0 }`, `{ unit: 5 }`, `{ in: "string", morphs: [...] }`
+- an object keyed by node kinds: `{ domain: "number", min: 0 }`, `{ unit: 5 }`, `{ morphs: ["string", ...] }`
 
 ## type.schema
 

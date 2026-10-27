@@ -1,5 +1,5 @@
 import { Disjoint, type Morph } from "@ark/schema"
-import { omit, throwParseError, type mutable } from "@ark/util"
+import { throwParseError, type mutable } from "@ark/util"
 import {
 	defineRightwardIntersections,
 	type setImplementationOf
@@ -10,15 +10,19 @@ export const morph: setImplementationOf<Morph.Declaration> = {
 	intersections: {
 		morph: (l, r, ctx) => {
 			assertEqualMorphs(l, r)
-			const inTersection = intersectOrPipeNodes(l.rawIn, r.rawIn, ctx)
-			if (inTersection instanceof Disjoint) return inTersection
+			// the heads keep their own morphs, which must be equal, too
+			const headTersection =
+				l.head ?
+					r.head ?
+						intersectOrPipeNodes(l.head, r.head, ctx)
+					:	l.head
+				:	r.head
+			if (headTersection instanceof Disjoint) return headTersection
 
-			const baseInner: Omit<mutable<Morph.Inner>, "in"> = omit(l.inner, {
-				in: 1
-			})
+			const baseInner: mutable<Morph.Inner> = { ...l.inner, morphs: l.piped }
 
 			if (l.declaredIn || r.declaredIn) {
-				const declaredIn = intersectOrPipeNodes(l.rawIn, r.rawIn, ctx)
+				const declaredIn = intersectOrPipeNodes(l._in, r._in, ctx)
 				// we can't treat this as a normal Disjoint since it's just declared
 				// it should only happen if someone's essentially trying to create a broken type
 				if (declaredIn instanceof Disjoint) return declaredIn.throw()
@@ -26,31 +30,32 @@ export const morph: setImplementationOf<Morph.Declaration> = {
 			}
 
 			if (l.declaredOut || r.declaredOut) {
-				const declaredOut = intersectOrPipeNodes(l.rawOut, r.rawOut, ctx)
+				const declaredOut = intersectOrPipeNodes(l._out, r._out, ctx)
 				if (declaredOut instanceof Disjoint) return declaredOut.throw()
 				else baseInner.declaredOut = declaredOut
 			}
 
+			if (!headTersection) return ctx.$.node("morph", baseInner)
+
 			// in case from is a union, we need to distribute the branches
 			// to can be a union as any schema is allowed
-			return inTersection.distribute(
-				inBranch =>
+			return headTersection.distribute(
+				headBranch =>
 					ctx.$.node("morph", {
 						...baseInner,
-						in: inBranch
+						morphs: [headBranch, ...l.piped]
 					}),
 				branches => ctx.$.node("union", { branches })
 			)
 		},
 		...defineRightwardIntersections("morph", (l, r, ctx) => {
-			const inTersection =
-				l.inner.in ? intersectOrPipeNodes(l.inner.in, r, ctx) : r
+			const headTersection = l.head ? intersectOrPipeNodes(l.head, r, ctx) : r
 			return (
-				inTersection instanceof Disjoint ? inTersection
-				: inTersection.equals(l.inner.in) ? l
+				headTersection instanceof Disjoint ? headTersection
+				: headTersection.equals(l.head) ? l
 				: ctx.$.node("morph", {
 						...l.inner,
-						in: inTersection
+						morphs: [headTersection, ...l.piped]
 					})
 			)
 		})

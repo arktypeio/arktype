@@ -83,8 +83,7 @@ export const parseEnclosed = (
 
 		if (enclosing === "x/") {
 			s.root = s.ctx.$.node("morph", {
-				in: s.root,
-				morphs: [makeMorph(execMorph, regex)],
+				morphs: [s.root, makeMorph(execMorph, regex)],
 				declaredOut: regexExecArray()
 			})
 		}

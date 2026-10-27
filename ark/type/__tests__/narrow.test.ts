@@ -150,8 +150,8 @@ b must be equal to a (was an object)`)
 			.narrow(_narrowMorphOutputNarrow)
 
 		attest(T.json).snap({
-			in: "string",
 			morphs: [
+				"string",
 				registeredReference(_narrowMorphOutputMorph),
 				{ predicate: [registeredReference(_narrowMorphOutputNarrow)] }
 			]
@@ -211,8 +211,7 @@ b must be equal to a (was an object)`)
 		attest<string>(A.infer)
 
 		attest(A.json).snap({
-			in: { domain: "bigint", predicate: [predicateId] },
-			morphs: [morphId]
+			morphs: [{ domain: "bigint", predicate: [predicateId] }, morphId]
 		})
 	})
 

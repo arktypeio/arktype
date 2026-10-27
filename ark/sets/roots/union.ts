@@ -127,10 +127,10 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 	if (node.branches.length < 2) return null
 	if (node.unitBranches.length === node.branches.length) {
 		// a union of units lists each of them if any can't be a case
-		if (!node.unitBranches.every(n => isCaseUnit(n.rawIn as Unit.Node)))
+		if (!node.unitBranches.every(n => isCaseUnit(n._in as Unit.Node)))
 			return null
 		const cases = flatMorph(node.unitBranches, (i, n) => [
-			`${(n.rawIn as Unit.Node).serializedUnit}`,
+			`${(n._in as Unit.Node).serializedUnit}`,
 			n.hasKind("morph") ? n : (true as const)
 		])
 
@@ -146,7 +146,7 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 		const l = node.branches[lIndex]
 		for (let rIndex = lIndex + 1; rIndex < node.branches.length; rIndex++) {
 			const r = node.branches[rIndex]
-			const result = intersectNodesRoot(l.rawIn, r.rawIn, l.$)
+			const result = intersectNodesRoot(l._in, r._in, l.$)
 			if (!(result instanceof Disjoint)) continue
 
 			for (const entry of result) {
@@ -297,7 +297,7 @@ const casesHeldAt = (
 	branch: BaseRoot,
 	{ kind, path }: DiscriminantCandidate
 ): [k: string, condition: unknown][] => {
-	let value = branch.rawIn
+	let value = branch._in
 	for (const k of path) {
 		const prop =
 			typeof k === "number" || !value.hasKind("intersection") ?
@@ -454,7 +454,7 @@ const resolveCase = (
 		const entry = ctx.defaultPairs[i]
 		if (!caseCtx.branchIndices.includes(entry.originalIndex)) {
 			const intersection = intersectNodesRoot(
-				entry.branch.rawIn,
+				entry.branch._in,
 				discriminantNode,
 				ctx.node.$
 			)
@@ -465,7 +465,7 @@ const resolveCase = (
 				(intersection.some(
 					disjointEntry => disjointEntry.path.length < ctx.location.path.length
 				) &&
-					entry.branch.rawIn.overlaps(
+					entry.branch._in.overlaps(
 						(primitiveDiscriminantNode ??= discriminantCaseToNode(
 							caseCtx.condition,
 							ctx.location.path,
@@ -510,8 +510,8 @@ const viableOrderedCandidates = (
 					for (const nextIndex of nextGroup) {
 						if (currentIndex > nextIndex) {
 							if (
-								originalBranches[currentIndex].rawIn.overlaps(
-									originalBranches[nextIndex].rawIn
+								originalBranches[currentIndex]._in.overlaps(
+									originalBranches[nextIndex]._in
 								)
 							) {
 								// if the order was not preserved and the branches overlap,
@@ -682,11 +682,14 @@ const mergeMorphBranches = (
 			continue
 		}
 		const matching = merged[matchingIndex] as Morph.Node
-		const mergedIn =
-			matching.inner.in && branch.inner.in ?
-				matching.inner.in.rawOr(branch.inner.in)
-			:	matching.rawIn.rawOr(branch.rawIn)
-		merged[matchingIndex] = $.node("morph", { ...matching.inner, in: mergedIn })
+		const mergedHead =
+			matching.head && branch.head ?
+				matching.head.rawOr(branch.head)
+			:	matching._in.rawOr(branch._in)
+		merged[matchingIndex] = $.node("morph", {
+			...matching.inner,
+			morphs: [mergedHead, ...matching.piped]
+		})
 	}
 	return merged
 }
@@ -736,20 +739,20 @@ export const reduceBranches = ({
 			if (branches[i].hasKind("unit") && branches[j].hasKind("unit")) continue
 			// an alias branch is reduced once the union is rebuilt from its resolution
 			if (branches[i].hasShallowAlias || branches[j].hasShallowAlias) continue
-			if (requireDisjointProps(branches[i].rawIn, branches[j].rawIn)) continue
+			if (requireDisjointProps(branches[i]._in, branches[j]._in)) continue
 			const intersection = intersectNodesRoot(
-				branches[i].rawIn,
-				branches[j].rawIn,
+				branches[i]._in,
+				branches[j]._in,
 				branches[0].$
 			)!
 			if (intersection instanceof Disjoint) continue
 
 			if (!ordered) assertDeterminateOverlap(branches[i], branches[j])
 
-			if (intersection.equals(branches[i].rawIn)) {
+			if (intersection.equals(branches[i]._in)) {
 				// preserve ordered branches that are a subtype of a subsequent branch
 				uniquenessByIndex[i] = !!ordered
-			} else if (intersection.equals(branches[j].rawIn))
+			} else if (intersection.equals(branches[j]._in))
 				uniquenessByIndex[j] = false
 		}
 	}
@@ -1154,7 +1157,7 @@ const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 				if (
 					(l.transforms || r.transforms) &&
 					!l.equals(r) &&
-					!(intersectNodesRoot(l.rawIn, r.rawIn, l.$) instanceof Disjoint)
+					!(intersectNodesRoot(l._in, r._in, l.$) instanceof Disjoint)
 				)
 					assertDeterminateOverlap(l, r)
 			}, `${l.id}|${r.id}`)

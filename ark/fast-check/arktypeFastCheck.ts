@@ -84,10 +84,10 @@ export const buildArbitrary = (
 		case "optional":
 			return buildArbitrary(node.value as never, ctx)
 		case "morph":
-			if (node.inner.in === undefined)
+			if (node.head === undefined)
 				throwInternalError(`Expected the morph to have an 'In' value.`)
 
-			return buildArbitrary(node.inner.in as never, ctx)
+			return buildArbitrary(node.head as never, ctx)
 		case "alias":
 			if (ctx.tieStack.length < 1)
 				throwInternalError("Tie has not been initialized")

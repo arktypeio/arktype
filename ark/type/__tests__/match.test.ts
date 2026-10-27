@@ -18,9 +18,9 @@ const caseReference = (m: { internal: BaseRoot }, name: string) =>
 	registeredReference(
 		m.internal.select({
 			kind: "morph",
-			where: morph => morph.morphs[0].name === name,
+			where: morph => morph.piped[0].name === name,
 			method: "assertFind"
-		}).morphs[0]
+		}).piped[0]
 	)
 
 contextualize(() => {
@@ -259,19 +259,23 @@ contextualize(() => {
 		attest(m.internal.json).snap({
 			branches: [
 				{
-					in: {
-						domain: "number",
-						max: { exclusive: true, rule: 10 },
-						min: { exclusive: true, rule: 0 }
-					},
-					morphs: [caseReference(m, "_matchOverlapping1")]
+					morphs: [
+						{
+							domain: "number",
+							max: { exclusive: true, rule: 10 },
+							min: { exclusive: true, rule: 0 }
+						},
+						caseReference(m, "_matchOverlapping1")
+					]
 				},
 				{
-					in: { domain: "number", min: { exclusive: true, rule: 0 } },
-					morphs: [caseReference(m, "_matchOverlapping2")]
+					morphs: [
+						{ domain: "number", min: { exclusive: true, rule: 0 } },
+						caseReference(m, "_matchOverlapping2")
+					]
 				},
-				{ in: "number", morphs: [caseReference(m, "_matchOverlapping3")] },
-				{ in: {}, morphs: [caseReference(m, "_matchOverlapping4")] }
+				{ morphs: ["number", caseReference(m, "_matchOverlapping3")] },
+				{ morphs: [{}, caseReference(m, "_matchOverlapping4")] }
 			],
 			ordered: true
 		})
@@ -302,15 +306,17 @@ contextualize(() => {
 		attest(m.internal.json).snap({
 			branches: [
 				{
-					in: {
-						domain: "number",
-						max: { exclusive: true, rule: 10 },
-						min: { exclusive: true, rule: 0 }
-					},
-					morphs: [caseReference(m, "_matchPreservedOne")]
+					morphs: [
+						{
+							domain: "number",
+							max: { exclusive: true, rule: 10 },
+							min: { exclusive: true, rule: 0 }
+						},
+						caseReference(m, "_matchPreservedOne")
+					]
 				},
-				{ in: "number", morphs: [caseReference(m, "_matchPreservedTwo")] },
-				{ in: {}, morphs: [caseReference(m, "_matchPreservedDefault")] }
+				{ morphs: ["number", caseReference(m, "_matchPreservedTwo")] },
+				{ morphs: [{}, caseReference(m, "_matchPreservedDefault")] }
 			],
 			ordered: true
 		})
@@ -389,18 +395,22 @@ contextualize(() => {
 			attest(m.internal.json).snap({
 				branches: [
 					{
-						in: {
-							required: [{ key: "foo", value: "string" }],
-							domain: "object"
-						},
-						morphs: [caseReference(m, "_atCasesParam1")]
+						morphs: [
+							{
+								required: [{ key: "foo", value: "string" }],
+								domain: "object"
+							},
+							caseReference(m, "_atCasesParam1")
+						]
 					},
 					{
-						in: {
-							required: [{ key: "foo", value: "number" }],
-							domain: "object"
-						},
-						morphs: [caseReference(m, "_atCasesParam2")]
+						morphs: [
+							{
+								required: [{ key: "foo", value: "number" }],
+								domain: "object"
+							},
+							caseReference(m, "_atCasesParam2")
+						]
 					}
 				],
 				ordered: true,
@@ -433,18 +443,22 @@ contextualize(() => {
 			attest(m.internal.json).snap({
 				branches: [
 					{
-						in: {
-							required: [{ key: "id", value: { unit: 0 } }],
-							domain: "object"
-						},
-						morphs: [caseReference(m, "_atAfterIn1")]
+						morphs: [
+							{
+								required: [{ key: "id", value: { unit: 0 } }],
+								domain: "object"
+							},
+							caseReference(m, "_atAfterIn1")
+						]
 					},
 					{
-						in: {
-							required: [{ key: "id", value: "number" }],
-							domain: "object"
-						},
-						morphs: [caseReference(m, "_atAfterIn2")]
+						morphs: [
+							{
+								required: [{ key: "id", value: "number" }],
+								domain: "object"
+							},
+							caseReference(m, "_atAfterIn2")
+						]
 					}
 				],
 				ordered: true,
@@ -587,7 +601,6 @@ contextualize(() => {
 			path: ["id"],
 			cases: {
 				'"string"': {
-					in: {},
 					morphs: [caseReference(m, "_matchOrderedDiscrimination1")]
 				},
 				'"number"': {
@@ -595,16 +608,16 @@ contextualize(() => {
 					path: ["kind"],
 					cases: {
 						'"string"': {
-							in: {},
 							morphs: [caseReference(m, "_matchOrderedDiscrimination2")]
 						},
 						'"number"': {
-							in: {},
 							morphs: [caseReference(m, "_matchOrderedDiscrimination3")]
 						},
 						default: {
-							in: { required: [{ key: "id", value: "number" }] },
-							morphs: [caseReference(m, "_matchOrderedDiscrimination4")]
+							morphs: [
+								{ required: [{ key: "id", value: "number" }] },
+								caseReference(m, "_matchOrderedDiscrimination4")
+							]
 						}
 					}
 				},
@@ -613,11 +626,9 @@ contextualize(() => {
 					path: ["kind"],
 					cases: {
 						'"string"': {
-							in: {},
 							morphs: [caseReference(m, "_matchOrderedDiscrimination2")]
 						},
 						'"number"': {
-							in: {},
 							morphs: [caseReference(m, "_matchOrderedDiscrimination3")]
 						}
 					}
@@ -671,10 +682,9 @@ contextualize(() => {
 		attest(numeric.json).snap({
 			branches: [
 				{
-					in: { unit: 0 },
-					morphs: [caseReference(numeric, "numericZeroCase")]
+					morphs: [{ unit: 0 }, caseReference(numeric, "numericZeroCase")]
 				},
-				{ in: { unit: 1 }, morphs: [caseReference(numeric, "numericOneCase")] }
+				{ morphs: [{ unit: 1 }, caseReference(numeric, "numericOneCase")] }
 			],
 			ordered: true,
 			meta: { onFail: throwDefaultRef }

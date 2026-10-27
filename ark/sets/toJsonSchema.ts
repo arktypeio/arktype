@@ -296,15 +296,15 @@ const innerToJsonSchemaByKind: {
 	},
 	morph: (node, ctx) =>
 		ctx.io === "in" ?
-			// its input as written, since rawIn drops the defaults it holds
+			// its input as written, since _in drops the defaults it holds
 			toJsonSchemaRecurse(
-				node.declaredIn ?? node.inner.in ?? $ark.intrinsic.unknown.internal,
+				node.declaredIn ?? node.head ?? $ark.intrinsic.unknown.internal,
 				ctx
 			)
 		:	ctx.fallback.morph({
 				code: "morph",
-				base: toJsonSchemaRecurse(node.rawIn, ctx),
-				out: node.knownOut ? toJsonSchemaRecurse(node.knownOut, ctx) : null
+				base: toJsonSchemaRecurse(node._in, ctx),
+				out: node.tail ? toJsonSchemaRecurse(node.tail._out, ctx) : null
 			}),
 	unit: (node, ctx) =>
 		// this is the more standard JSON schema representation, especially for Open API
@@ -423,15 +423,15 @@ const reduceObjectJsonSchema = (
 				let keyIn: BaseRoot = keyBranch
 				let keySchema: JsonSchema.String | undefined
 				if (keyBranch.hasKind("morph")) {
-					keyIn = keyBranch.rawIn
+					keyIn = keyBranch._in
 					// a key's schema can't be a $ref
 					if (ctx.io !== "in") {
 						keySchema = ctx.fallback.morph({
 							code: "morph",
-							base: toResolvedJsonSchema(keyBranch.rawIn, ctx),
+							base: toResolvedJsonSchema(keyBranch._in, ctx),
 							out:
-								keyBranch.knownOut ?
-									toResolvedJsonSchema(keyBranch.knownOut, ctx)
+								keyBranch.tail ?
+									toResolvedJsonSchema(keyBranch.tail._out, ctx)
 								:	null
 						}) as never
 					}

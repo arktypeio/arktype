@@ -208,23 +208,25 @@ contextualize(() => {
 		const [morph] = types.expandUserGroup.select({
 			kind: "morph",
 			method: "assertFind"
-		}).morphs
+		}).piped
 
 		attest($.json).snap({
 			id: { domain: "string" },
 			expandUserGroup: {
 				sequence: {
-					in: [
-						"string",
-						{
-							required: [
-								{ key: "id", value: "string" },
-								{ key: "name", value: "string" }
-							],
-							domain: "object"
-						}
-					],
-					morphs: [registeredReference(morph)]
+					morphs: [
+						[
+							"string",
+							{
+								required: [
+									{ key: "id", value: "string" },
+									{ key: "name", value: "string" }
+								],
+								domain: "object"
+							}
+						],
+						registeredReference(morph)
+					]
 				},
 				proto: "Array",
 				minLength: 2

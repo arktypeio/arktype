@@ -112,7 +112,7 @@ const writesOf = (structure: StructureNode): Writes => {
 const readsOf = (node: BaseRoot): Reads | undefined => {
 	// a function can read any key of what it receives
 	if (node.hasKind("morph"))
-		return canBeObject(node.rawIn) ? everyRead() : undefined
+		return canBeObject(node._in) ? everyRead() : undefined
 	if (!node.hasKind("intersection")) return
 	if (node.inner.predicate) return everyRead()
 	const structure = node.structure
@@ -180,7 +180,7 @@ const placesOf = (root: BaseRoot): Map<string, Place> => {
 			return
 		}
 		if (node.hasKind("morph")) {
-			if (node.inner.in) enter(node.inner.in, count, position, afterFunction)
+			// its head and any node before its first function check data in place
 			let piped = false
 			for (const morph of node.morphs) {
 				if (!hasArkKind(morph, "root")) piped = true
@@ -226,10 +226,7 @@ const transformsKeyTwice = (structure: StructureNode): boolean => {
 // a reader checked after the writer receives what it wrote
 const overlaps = (writer: BaseRoot, reader: BaseRoot): boolean => {
 	try {
-		return (
-			writer.rawIn.overlaps(reader.rawIn) ||
-			writer.rawOut.overlaps(reader.rawIn)
-		)
+		return writer._in.overlaps(reader._in) || writer._out.overlaps(reader._in)
 	} catch {
 		return true
 	}

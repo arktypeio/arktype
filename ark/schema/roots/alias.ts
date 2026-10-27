@@ -342,7 +342,10 @@ export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
 	if (node.hasKind("morph")) {
 		return node.$.node("morph", {
 			...node.inner,
-			in: node.inner.in && resolveShallowAliases(node.inner.in),
+			morphs:
+				node.head ?
+					[resolveShallowAliases(node.head), ...node.piped]
+				:	node.morphs,
 			meta: node.meta
 		} as never)
 	}
@@ -357,8 +360,7 @@ export const identityOf = (node: BaseNode): string =>
 export const isResolvable = (node: BaseRoot): boolean => {
 	if (!node.hasShallowAlias) return true
 	if (node.hasKind("union")) return node.branches.every(isResolvable)
-	if (node.hasKind("morph"))
-		return !node.inner.in || isResolvable(node.inner.in)
+	if (node.hasKind("morph")) return !node.head || isResolvable(node.head)
 	if (!node.hasKind("alias") || resolvingAliases.includes(node)) return false
 	if (node.isIo) return isResolvable(node.operands![0])
 	// a transform's alias resolves to what it transformed once the transform returns

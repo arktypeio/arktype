@@ -1573,8 +1573,8 @@ age is missing`)
 		})
 		Object.defineProperty(length, "name", { value: "introspected" })
 		const validator = create(length)
-		attest(json).snap({ in: "string", morphs: ["$ark.$hole_length"] })
-		attest(validator.json).snap({ in: "string", morphs: ["$ark.introspected"] })
+		attest(json).snap({ morphs: ["string", "$ark.$hole_length"] })
+		attest(validator.json).snap({ morphs: ["string", "$ark.introspected"] })
 		attest(message)
 			.snap(`ToJsonSchemaError: Can't convert "morph" to JSON Schema. Configure fallback.morph to write it:
 {

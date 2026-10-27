@@ -15,8 +15,10 @@ contextualize(() => {
 		attest<(In: string) => Out<number>>(ParseLongNumber.t)
 
 		attest(ParseLongNumber.json).snap({
-			in: { domain: "string", predicate: [registeredReference(stringIsLong)] },
-			morphs: [registeredReference(parseNumber)]
+			morphs: [
+				{ domain: "string", predicate: [registeredReference(stringIsLong)] },
+				registeredReference(parseNumber)
+			]
 		})
 
 		attest(ParseLongNumber("123456")).snap(123456)
@@ -38,11 +40,13 @@ contextualize(() => {
 		attest<(In: `${bigint}`) => Out<number>>(ParseIntegerLike.t)
 
 		attest(ParseIntegerLike.json).snap({
-			in: {
-				domain: "string",
-				predicate: [registeredReference(stringIsIntegerLike)]
-			},
-			morphs: [registeredReference(parseNumber)]
+			morphs: [
+				{
+					domain: "string",
+					predicate: [registeredReference(stringIsIntegerLike)]
+				},
+				registeredReference(parseNumber)
+			]
 		})
 
 		attest(ParseIntegerLike("123456")).snap(123456)

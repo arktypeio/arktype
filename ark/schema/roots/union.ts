@@ -142,7 +142,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		this.branches[1].hasUnit(true)
 
 	unitBranches = this.branches.filter((n): n is Unit.Node | Morph.Node =>
-		n.rawIn.hasKind("unit")
+		n._in.hasKind("unit")
 	)
 
 	// every case node discriminate creates, even for a discriminant it abandons
@@ -646,7 +646,7 @@ const isAuthored = (node: { meta: ArkEnv.meta }): boolean =>
 	node.meta.description !== undefined && node.meta.keyword === undefined
 
 const isArrayCase = (caseNode: BaseRoot | true): boolean =>
-	caseNode !== true && caseNode.rawIn.extends($ark.intrinsic.Array.internal)
+	caseNode !== true && caseNode._in.extends($ark.intrinsic.Array.internal)
 
 const metaAtDiscriminant = (
 	meta: ArkEnv.meta,

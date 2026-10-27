@@ -109,9 +109,9 @@ const missingValueOf = (value: BaseRoot): MissingValue => {
 	if (value.hasKind("intersection"))
 		return value.basis ? missingValueOf(value.basis) : unknownValue
 	if (value.hasKind("morph")) {
-		return value.rawIn.meta.description === undefined ?
-				missingValueOf(value.rawIn)
-			:	Object.freeze({ code: "morph", meta: value.rawIn.meta })
+		return value._in.meta.description === undefined ?
+				missingValueOf(value._in)
+			:	Object.freeze({ code: "morph", meta: value._in.meta })
 	}
 	if (value.hasKind("alias")) {
 		return missingValueOf(

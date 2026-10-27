@@ -12,14 +12,31 @@ contextualize(() => {
 			},
 			morphs: (s: string) => Number.parseFloat(s)
 		})
-		attest(parseNumber.rawIn.json).snap({
+		attest(parseNumber._in.json).snap({
 			domain: "string",
 			pattern: [
 				"^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?)))$"
 			],
 			meta: "a well-formed numeric string"
 		})
-		attest(parseNumber.rawOut.json).snap({})
+		attest(parseNumber._out.json).snap({})
+	})
+
+	it("a pipeline's first node is its input", () => {
+		const trim = (s: string) => s.trim()
+		const piped = rootSchema({ morphs: ["string", trim] }).assertHasKind(
+			"morph"
+		)
+		attest(piped.json).snap({ morphs: ["string", namedReference(trim)] })
+		attest(piped.head?.expression).snap("string")
+		attest(piped.piped).equals([trim])
+		attest(piped(" a ")).equals("a")
+		attest(piped.allows(5)).equals(false)
+		// written with in, it's the same node
+		attest(rootSchema({ in: "string", morphs: trim })).equals(piped)
+		attest(
+			piped.$.node("morph", { in: piped.head, morphs: [trim] } as never)
+		).equals(piped)
 	})
 
 	it("in/out union", () => {
@@ -30,8 +47,8 @@ contextualize(() => {
 			},
 			"number"
 		])
-		attest(n.rawIn.expression).snap("number | string")
-		attest(n.rawOut.expression).snap("number")
+		attest(n._in.expression).snap("number | string")
+		attest(n._out.expression).snap("number")
 	})
 
 	it("unions declared morphs", () => {
@@ -40,7 +57,7 @@ contextualize(() => {
 			{ declaredIn: intrinsic.string, morphs: morph },
 			{ declaredIn: intrinsic.string, morphs: morph }
 		])
-		attest(n.rawIn.expression).snap("string")
+		attest(n._in.expression).snap("string")
 	})
 
 	contextualize.each(
@@ -73,8 +90,8 @@ contextualize(() => {
 				})
 
 				attest(declared.description).snap("declared")
-				attest(declaredMorph.rawIn.description).equals(declared.description)
-				attest(declaredMorph.rawOut.description).equals(declared.description)
+				attest(declaredMorph._in.description).equals(declared.description)
+				attest(declaredMorph._out.description).equals(declared.description)
 
 				// declared validator should not be called
 				attest(declaredMorph("{}")).equals({})
@@ -86,7 +103,7 @@ contextualize(() => {
 					morphs: [(s: string) => s.slice(1), declaredMorph]
 				})
 
-				attest(pipeToNode.rawOut.description).equals(declared.description)
+				attest(pipeToNode._out.description).equals(declared.description)
 
 				attest(pipeToNode("z{}")).equals({})
 			})

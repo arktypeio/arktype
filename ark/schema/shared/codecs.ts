@@ -51,15 +51,17 @@ const invert = (inner: Morph.Inner, $: BaseScope): BaseRoot => {
 	let encoder = inner.declaredOut ?? $ark.intrinsic.unknown.internal
 	// an inverse inverts the one function among its node's morphs
 	let inverse = inner.inverse
-	for (let i = inner.morphs.length - 1; i >= 0; i--) {
+	// a node first is the input, which the encoder ends by piping to
+	const head = hasArkKind(inner.morphs[0], "root") ? inner.morphs[0] : undefined
+	for (let i = inner.morphs.length - 1; i >= (head ? 1 : 0); i--) {
 		const morph = inner.morphs[i]
 		if (hasArkKind(morph, "root")) {
 			encoder = pipeEncoder(encoder, encoderOf(morph))
 			continue
 		}
 		encoder = $.node("morph", {
-			in: encoder,
 			morphs: [
+				encoder,
 				inverse ??
 					inverses.get(morph) ??
 					throwParseError(
@@ -70,7 +72,7 @@ const invert = (inner: Morph.Inner, $: BaseScope): BaseRoot => {
 		})
 		inverse = undefined
 	}
-	const decodedIn = inner.declaredIn ?? inner.in
+	const decodedIn = inner.declaredIn ?? head
 	return decodedIn ? pipeEncoder(encoder, decodedIn) : encoder
 }
 

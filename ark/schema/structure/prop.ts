@@ -144,7 +144,7 @@ export abstract class BaseProp<
 				(!this.value.transforms && !this.value.entersAlias)) &&
 			this.value.branches.every(branch => {
 				// Allows checks a morph's input
-				const input = branch.hasKind("morph") ? branch.inner.in : branch
+				const input = branch.hasKind("morph") ? branch.head : branch
 				const basis = input?.hasKind("intersection") ? input.basis : input
 				return (
 					!!basis?.isBasis() &&

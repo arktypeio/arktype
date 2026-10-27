@@ -967,6 +967,31 @@ Other keys that first differ at a space, `!`, `"` or a backslash keep their orde
 - Fields each node computed whether or not it was compiled are gone: a constraint's `compiledCondition`, a predicate's `compiledNegation`, a morph's `compiledMorphs` and a sequence's `optionalsLength`. A leaf writes its check with `compileCondition(js, data)`. The `PrecompiledReferences` type, which described a precompiled unit nothing builds, is gone too.
 - Derived and memoized keys moved from a node's own enumerable keys to `node.cache`, like the `includes*` flags, `innerEntries`, a structure's `propsByKey`, a node's `assert` and the `expression` of a union, intersection, structure, required prop or index signature; each reads as before, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
 
+### Start a morph's `morphs` with its input
+
+A morph node's input is the first of its `morphs` rather than its own `in`, so its `json` is `{ morphs: ["string", "$ark.trim"] }` where it was `{ in: "string", morphs: ["$ark.trim"] }`, and a node it pipes to is written by its shorthand too (#1179). A schema or `$.node` input with `in` still parses, as the first of its `morphs`, and `morphs` in a schema can start with a schema. Each part has a name that says which it is:
+
+| Was                          | Now           |                                                                                                         |
+| ---------------------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
+| `inner.in`, `knownIn`        | `head`        | the node data must allow before any morph runs, its own morphs included                                 |
+| `morphs` without `in`        | `piped`       | what the head pipes data to: functions, then nodes                                                      |
+| `lastMorph`, `lastMorphNode` | `tail`        | the node the output is piped to, if `morphs` ends with one besides its head                             |
+| `knownOut`                   | `tail._out`   |                                                                                                         |
+| `rawIn`, `rawOut`            | `_in`, `_out` | any node's input or output with each morph replaced by its own, which `.in` and `.out` return as a Type |
+
+Intersecting two morphs intersects their heads, where it intersected their `rawIn`, which dropped the morphs within either input:
+
+```ts
+const keep = (o: object) => o
+const A = type({ a: "string.numeric.parse" }).pipe(keep)
+const B = type({ b: "string" }).pipe(keep)
+
+// { a: 5, b: "x" }, where a stayed "5"
+A.and(B)({ a: "5", b: "x" })
+```
+
+The `out` a JSON Schema `morph` fallback is given for a pipe to a cyclic alias is now that alias's output where it was its input.
+
 ### Shorten long internal names
 
 Internal members with long names, read through `.internal`, `@ark/schema` or `@ark/util`, are shorter, since a minifier keeps property names and the JIT writes some of them into the code it compiles. Each works as before under its new name:

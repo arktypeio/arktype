@@ -236,7 +236,7 @@ const findBases = (node: UnionNode): Bases | null => {
 	const nodes: nodeOfKind<"domain" | "proto">[] = []
 	const expected: string[] = []
 	for (const branch of node.branches) {
-		const checked = branch.hasKind("morph") ? branch.knownIn : branch
+		const checked = branch.hasKind("morph") ? branch.head : branch
 		const basis =
 			checked?.hasKind("intersection") ? checked.basis
 			: checked?.hasKind("domain") || checked?.hasKind("proto") ? checked

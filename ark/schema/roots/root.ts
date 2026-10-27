@@ -95,12 +95,12 @@ export abstract class BaseRoot<
 
 	// doesn't seem possible to override this at a type-level (e.g. via declare)
 	// without TS complaining about getters
-	override get rawIn(): BaseRoot {
-		return super.rawIn as never
+	override get _in(): BaseRoot {
+		return super._in as never
 	}
 
-	override get rawOut(): BaseRoot {
-		return super.rawOut as never
+	override get _out(): BaseRoot {
+		return super._out as never
 	}
 
 	get internal(): this {
@@ -119,9 +119,9 @@ export abstract class BaseRoot<
 				return { value: out }
 			},
 			jsonSchema: {
-				// rawIn has no defaults, so the input is this Type as it's accepted
+				// _in has no defaults, so the input is this Type as it's accepted
 				input: opts => toStandardJsonSchema(this, opts, "in"),
-				output: opts => toStandardJsonSchema(this.rawOut, opts)
+				output: opts => toStandardJsonSchema(this._out, opts)
 			}
 		})
 	}
@@ -482,15 +482,12 @@ export abstract class BaseRoot<
 
 		return this.distribute(
 			branch =>
-				branch.hasKind("morph") ?
-					this.$.node("morph", {
-						in: branch.inner.in as never,
-						morphs: [...branch.morphs, morph]
-					})
-				:	this.$.node("morph", {
-						in: branch,
-						morphs: [morph]
-					}),
+				this.$.node("morph", {
+					morphs:
+						branch.hasKind("morph") ?
+							[...branch.morphs, morph]
+						:	[branch, morph]
+				}),
 			branches => this.$.node("union", { branches })
 		)
 	}
@@ -543,8 +540,8 @@ export abstract class BaseRoot<
 
 		const operand =
 			io === "root" ? this
-			: io === "in" ? this.rawIn
-			: this.rawOut
+			: io === "in" ? this._in
+			: this._out
 		if (
 			operand.hasKind("morph") ||
 			(constraint.impliedBasis && !operand.extends(constraint.impliedBasis))

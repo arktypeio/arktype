@@ -79,8 +79,9 @@ interface UnionSchema extends BaseNormalizedSchema {
 }
 
 interface MorphSchema extends BaseNormalizedSchema {
+	/** the schema its pipeline starts with, as morphs' first element can be */
 	readonly in?: RootSchema
-	readonly morphs: listable<Morph | BaseRoot>
+	readonly morphs: listable<Morph | RootSchema>
 	readonly declaredIn?: BaseRoot
 	readonly declaredOut?: BaseRoot
 }
@@ -299,9 +300,14 @@ const readers: Record<NodeKind, SchemaReader> = {
 	},
 	morph: (schema: MorphSchema, $) => {
 		const { in: inSchema, morphs, ...input } = schema
-		return inSchema === undefined ?
-				{ ...input, morphs: liftArray(morphs) }
-			:	{ ...input, in: parseSchema(inSchema, $), morphs: liftArray(morphs) }
+		const steps = liftArray(morphs).map(step =>
+			typeof step === "function" ? step : parseSchema(step, $)
+		)
+		return {
+			...input,
+			morphs:
+				inSchema === undefined ? steps : [parseSchema(inSchema, $), ...steps]
+		}
 	},
 	intersection: (schema: dict, $) => {
 		const { structure, ...flattened } = schema
