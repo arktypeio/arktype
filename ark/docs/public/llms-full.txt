@@ -1458,7 +1458,7 @@ Go down the list. Each question your code answers yes to links to what to change
 
 ### Unprecompiled arktype is larger
 
-`import { type } from "arktype"` bundles more than it did, mostly for copy-on-write transforms, cyclic data, errors and their English text, and the set algebra that reduces unions and intersections. The [CHANGELOG](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md#precompile-to-ship-less) has the sizes.
+`import { type } from "arktype"` bundles more than it did, mostly for copy-on-write transforms, cyclic data, errors and their English text, and the set algebra that reduces unions and intersections. [Speed and size](https://arktype.io/docs/precompile#speed-and-size) compares the builds.
 
 To ship less than before, [precompile](https://arktype.io/docs/intro/setup#add-the-plugin). Each Type becomes a standalone validator on `arktype/runtime`, so arktype's parser never ships. Your definitions don't change.
 
@@ -1750,6 +1750,7 @@ Each was wrong or unclear, but a snapshot or message assertion may hold it:
 
 - `string.regex`: `must be a regex pattern (SyntaxError: Invalid regular expression: /(/: Unterminated group)`, before: the bare `SyntaxError: ...`.
 - A discriminated union's missing key: `kind must be "circle" or "square" (was missing)`, before: `(was undefined)`.
+- `{ foo: string } | { foo: number } | { foo: Function }` given `{ foo: null }`: `foo must be a number, a string or an object (was null)`, before: `foo must be an object, a number or a string (was null)`.
 - A key that must be `never`: `files must be never (was 1)`, before: `never`.
 - A length bound a description replaces: `must be a strong password (was length 1)`, before: `(was 1)`.
 - A described union: `must be a shape (was an object)`, where it listed its cases or its branches' errors.

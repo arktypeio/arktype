@@ -4,7 +4,7 @@
 
 ### Precompile to ship less
 
-`arktype` is larger than 2.2.9: bundled and minified with esbuild, `import { type } from "arktype"` is 83.0 kB gzipped (261 kB minified), where it was 47.8 kB (156 kB). The growth is spread across the changes below, mostly copy-on-write transforms, tracking cyclic data, errors and their English text, and the set algebra intersections and unions are reduced with. To ship less, precompile with `@ark/aot`, which replaces each Type with a validator on `arktype/runtime`: the size benchmark's login app bundles to 1.5 kB gzipped, and its shop to 6.7 kB.
+`arktype` bundles larger than 2.2.9. The growth is spread across the changes below, mostly copy-on-write transforms, tracking cyclic data, errors and their English text, and the set algebra intersections and unions are reduced with. To ship less, precompile with `@ark/aot`, which replaces each Type with a validator on `arktype/runtime`. The [size benchmarks](https://arktype.io/docs/precompile#speed-and-size) compare both builds.
 
 ### Return only the first error, or one saying data is invalid, with `errors`
 
@@ -482,6 +482,8 @@ sizeOf(true)
 ```
 
 Data whose discriminant matches a value is still reported only against the branches that allow it, and a miss of a key the data could hold is still one `discriminant` error, like `kind must be "circle" or "square" (was "triangle")`.
+
+Given `{ foo: null }`, `{ foo: string } | { foo: number } | { foo: Function }` says `foo must be a number, a string or an object (was null)`, where it said `foo must be an object, a number or a string (was null)`.
 
 ### Write each path a union lists as its own error would be
 
