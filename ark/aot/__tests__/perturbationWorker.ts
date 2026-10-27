@@ -89,16 +89,6 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			if (world === "standalone" && specifier === "arktype")
 				return { url: "perturbation:arktype", shortCircuit: true }
 			const resolved = next(specifier, context)
-			if (
-				world === "standalone" &&
-				!detailsErrors &&
-				resolved.url.endsWith("/ark/schema/shared/issues.ts")
-			) {
-				return {
-					...resolved,
-					url: resolved.url.replace(/issues\.ts$/, "issuesNone.ts")
-				}
-			}
 			const runId =
 				context.parentURL && new URL(context.parentURL).searchParams.get("run")
 			if (
@@ -787,11 +777,18 @@ const observe = (value: unknown, world: World): Observation => {
 // import.meta.main, as a symlinked path differs from this file's URL
 if (import.meta.main) {
 	const [world, manifestPath, outPath] = process.argv.slice(2)
-	// arktype writes in place where the build's validators do
-	if (mutatesInput && world !== "standalone") {
+	if (world !== "standalone") {
 		const { configure } = await import("arktype/config")
-		configure({ mutatesInput })
-		await import("arktype/mutatesInput")
+		// arktype writes in place where the build's validators do
+		if (mutatesInput) {
+			configure({ mutatesInput })
+			await import("arktype/mutatesInput")
+		}
+		// and stops at the first failure where theirs do
+		if (!detailsErrors) {
+			configure({ errors: "none" })
+			await import("arktype/errors")
+		}
 	}
 	await run(
 		world as World,

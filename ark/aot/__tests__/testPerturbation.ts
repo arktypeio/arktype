@@ -37,7 +37,7 @@ import {
 	type World,
 	type WorldResults
 } from "./perturbationWorker.ts"
-import { testedOptions } from "./contract.ts"
+import { detailsErrors, testedOptions } from "./contract.ts"
 import { tempDir } from "./utils.ts"
 
 // a value a folded site reads, changed before the site runs, makes the
@@ -390,6 +390,9 @@ export const runWorld = async (
 			"--conditions",
 			"ark-ts",
 			"--no-warnings",
+			...(world === "standalone" && !detailsErrors ?
+				["--import", fromHere("issuesNone.ts")]
+			:	[]),
 			fromHere("perturbationWorker.ts"),
 			world,
 			manifestPath,
@@ -465,8 +468,8 @@ const exclusions: [
 			)
 	],
 	[
-		"reads .encode without arktype/codecs, which the build installs",
-		original => original.includes(".encode requires import")
+		"reads what an arktype module it doesn't import adds, which the build installs",
+		original => original.includes(" requires import ")
 	]
 ]
 
