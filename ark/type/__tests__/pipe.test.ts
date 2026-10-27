@@ -264,6 +264,16 @@ contextualize(() => {
 		attest(T(3).toString()).snap("must be 0, 1 or 2 (was 3)")
 	})
 
+	it("unit branch a morph's input overlaps, jitless", () => {
+		// discriminated, so the union is determinate though the morph's input
+		// holds "a", which an uncompiled transform must still send to its case
+		const T = scope({}, { jitless: true }).type("string.url.parse | '' | 'a'")
+		attest(T("a")).equals("a")
+		attest(T("")).equals("")
+		attest(T("https://a.b")).instanceOf(URL)
+		attest(T("x").toString()).snap('must be a URL string (was "x")')
+	})
+
 	it("type instance reference", () => {
 		const User = type({
 			name: "string",
