@@ -1348,7 +1348,7 @@ export class ModuleGraph {
 			const id = unwrapChain(node)
 			const binding =
 				id.type === "Identifier" ?
-					module.scopes.refsById.get(id)?.binding
+					module.scopes.byId.get(id)?.binding
 				:	undefined
 			const declaration = binding?.declaration
 			// e.g. `def as Piped` for `p` in `const p = def as Piped`
