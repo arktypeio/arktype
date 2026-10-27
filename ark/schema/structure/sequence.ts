@@ -543,26 +543,13 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		schema: JsonSchema.Array,
 		ctx: ToJsonSchema.Context
 	): JsonSchema.Array {
+		if (ctx.target === "openapi-3.0")
+			return this.reduceOpenApiJsonSchema(schema, ctx)
+
 		const isDraft07 = ctx.target === "draft-07"
 
 		if (this.prevariadic.length) {
-			const prefixSchemas = this.prevariadic.map(el => {
-				const valueSchema = el.node.toJsonSchemaRecurse(ctx)
-				if (el.kind === "defaultables") {
-					const value =
-						typeof el.default === "function" ? el.default() : el.default
-					const jsonDefault =
-						$ark.intrinsic.jsonData.allows(value) ?
-							value
-						:	ctx.fallback.defaultValue({
-								code: "defaultValue",
-								base: valueSchema,
-								value
-							})
-					if (jsonDefault !== undefined) valueSchema.default = jsonDefault
-				}
-				return valueSchema
-			})
+			const prefixSchemas = this.prevariadicToJsonSchemas(ctx)
 
 			// draft-07 uses items as array, draft-2020-12 uses prefixItems
 			if (isDraft07) schema.items = prefixSchemas as JsonSchema.Branch[]
@@ -606,6 +593,57 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}
 
 		return schema
+	}
+
+	// OpenAPI 3.0's items must be a single schema, so a tuple's positional
+	// elements can only be approximated by a union of all of them
+	private reduceOpenApiJsonSchema(
+		schema: JsonSchema.Array,
+		ctx: ToJsonSchema.Context
+	): JsonSchema.Array {
+		const prefix = this.prevariadicToJsonSchemas(ctx)
+		const variadic = this.variadic?.toJsonSchemaRecurse(ctx) ?? null
+		const postfix = this.postfix?.map(el => el.toJsonSchemaRecurse(ctx)) ?? []
+
+		if (this.minLength) schema.minItems = this.minLength
+		if (this.maxLength !== null) schema.maxItems = this.maxLength
+
+		if (!prefix.length && !postfix.length) {
+			schema.items = variadic ?? {}
+			return schema
+		}
+
+		schema.items = {
+			anyOf: variadic ? [...prefix, variadic, ...postfix] : prefix
+		}
+
+		return ctx.fallback.tuple({
+			code: "tuple",
+			base: schema,
+			prefix,
+			variadic,
+			postfix
+		})
+	}
+
+	private prevariadicToJsonSchemas(ctx: ToJsonSchema.Context): JsonSchema[] {
+		return this.prevariadic.map(el => {
+			const valueSchema = el.node.toJsonSchemaRecurse(ctx)
+			if (el.kind === "defaultables") {
+				const value =
+					typeof el.default === "function" ? el.default() : el.default
+				const jsonDefault =
+					$ark.intrinsic.jsonData.allows(value) ?
+						value
+					:	ctx.fallback.defaultValue({
+							code: "defaultValue",
+							base: valueSchema,
+							value
+						})
+				if (jsonDefault !== undefined) valueSchema.default = jsonDefault
+			}
+			return valueSchema
+		})
 	}
 }
 

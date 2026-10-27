@@ -316,6 +316,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			group.toJsonSchemaRecurse(ctx)
 		)
 
+		if (ctx.target === "openapi-3.0")
+			return unionToOpenApiJsonSchema(jsonSchemaBranches)
+
 		if (
 			jsonSchemaBranches.every(
 				(branch): branch is JsonSchema.Const =>
@@ -846,6 +849,37 @@ const discriminantToJson = (discriminant: Discriminant): JsonStructure => ({
 		: node.json
 	])
 })
+
+// OpenAPI 3.0 represents units as enums, including null since it has no
+// "null" type
+const isOpenApiUnitJsonSchema = (
+	schema: JsonSchema
+): schema is JsonSchema.Enum =>
+	Object.keys(schema).length === 1 && hasKey(schema, "enum")
+
+const isOpenApiNullJsonSchema = (schema: JsonSchema): boolean =>
+	isOpenApiUnitJsonSchema(schema) &&
+	schema.enum.length === 1 &&
+	schema.enum[0] === null
+
+const unionToOpenApiJsonSchema = (branches: JsonSchema[]): JsonSchema => {
+	if (branches.every(isOpenApiUnitJsonSchema))
+		return { enum: branches.flatMap(branch => branch.enum) }
+
+	const nonNullBranches = branches.filter(
+		branch => !isOpenApiNullJsonSchema(branch)
+	)
+	// nullable only allows null alongside an explicit type, so other branches
+	// keep null as its own enum
+	if (
+		nonNullBranches.length === 1 &&
+		branches.length === 2 &&
+		hasKey(nonNullBranches[0], "type")
+	)
+		return Object.assign(nonNullBranches[0], { nullable: true })
+
+	return { anyOf: branches }
+}
 
 type DescribeBranchesOptions = {
 	delimiter?: string

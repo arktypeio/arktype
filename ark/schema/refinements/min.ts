@@ -6,6 +6,7 @@ import {
 } from "../shared/implement.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
@@ -70,9 +71,15 @@ export class MinNode extends BaseRange<Min.Declaration> {
 	traverseAllows: TraverseAllows<number> =
 		this.exclusive ? data => data > this.rule : data => data >= this.rule
 
-	reduceJsonSchema(schema: JsonSchema.Numeric): JsonSchema.Numeric {
-		if (this.exclusive) schema.exclusiveMinimum = this.rule
-		else schema.minimum = this.rule
+	reduceJsonSchema(
+		schema: JsonSchema.Numeric,
+		ctx: ToJsonSchema.Context
+	): JsonSchema.Numeric {
+		if (!this.exclusive) schema.minimum = this.rule
+		// OpenAPI 3.0 uses draft-04's boolean exclusiveMinimum
+		else if (ctx.target === "openapi-3.0")
+			Object.assign(schema, { minimum: this.rule, exclusiveMinimum: true })
+		else schema.exclusiveMinimum = this.rule
 		return schema
 	}
 }

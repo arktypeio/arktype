@@ -169,8 +169,8 @@ export abstract class BaseRoot<
 			const defs: Record<string, JsonSchema> = {}
 			// refs added while resolving a definition are visited by this loop
 			for (const [id, ref] of ctx.refs) defs[id] = ref.toResolvedJsonSchema(ctx)
-			// draft-2020-12 uses $defs, draft-07 uses definitions
-			if (ctx.target === "draft-07")
+			// draft-2020-12 uses $defs, draft-07 and openapi-3.0 use definitions
+			if (ctx.target === "draft-07" || ctx.target === "openapi-3.0")
 				Object.assign(schema, { definitions: defs })
 			else schema.$defs = defs
 		}
@@ -180,8 +180,11 @@ export abstract class BaseRoot<
 
 	toJsonSchemaRecurse(ctx: ToJsonSchema.Context): JsonSchema {
 		if (ctx.useRefs && !this.alwaysExpandJsonSchema) {
-			// draft-2020-12 uses $defs, draft-07 uses definitions
-			const defsKey = ctx.target === "draft-07" ? "definitions" : "$defs"
+			// draft-2020-12 uses $defs, draft-07 and openapi-3.0 use definitions
+			const defsKey =
+				ctx.target === "draft-07" || ctx.target === "openapi-3.0" ?
+					"definitions"
+				:	"$defs"
 			ctx.refs?.set(this.id, this)
 			return { $ref: `#/${defsKey}/${this.id}` } as JsonSchema.Ref
 		}
@@ -215,6 +218,12 @@ export abstract class BaseRoot<
 					})
 				:	(this.metaJson as dict)[k]
 			if (jsonValue !== undefined) result[k] = jsonValue
+		}
+
+		// OpenAPI 3.0 has a single example instead of examples
+		if (ctx.target === "openapi-3.0" && result.examples) {
+			if (result.examples.length) result.example = result.examples[0]
+			delete result.examples
 		}
 
 		return result
@@ -712,7 +721,8 @@ export type emptyBrandNameMessage = typeof emptyBrandNameMessage
 
 const supportedJsonSchemaTargets: ToJsonSchema.Target[] = [
 	"draft-2020-12",
-	"draft-07"
+	"draft-07",
+	"openapi-3.0"
 ]
 
 export const writeInvalidJsonSchemaTargetMessage = (target: string): string =>

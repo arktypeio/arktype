@@ -3616,9 +3616,11 @@ This is the full list of configurable reasons `toJsonSchema()` can fail.
 | `domain`              | non-serializable type keyword (always `bigint` or `symbol`) |
 | `morph`               | transformation                                              |
 | `patternIntersection` | multiple regex constraints                                  |
+| `patternKey`          | regex-constrained key on an object (`openapi-3.0` only)     |
 | `predicate`           | custom narrow function                                      |
 | `proto`               | non-serializable `instanceof`                               |
 | `symbolKey`           | symbolic key on an object                                   |
+| `tuple`               | arrays with positional elements (`openapi-3.0` only)        |
 | `unit`                | non-serializable `===` reference (e.g. `undefined`)         |
 | `date`                | a Date instance (supersedes `proto` for Dates)              |
 

@@ -50,6 +50,16 @@ contextualize(() => {
 				required: ["foo"]
 			})
 		})
+
+		it("generates openapi-3.0 schema without $schema when specified", () => {
+			const T = type({ foo: "string" })
+			const schema = T.toJsonSchema({ target: "openapi-3.0" })
+			attest(schema).snap({
+				type: "object",
+				properties: { foo: { type: "string" } },
+				required: ["foo"]
+			})
+		})
 	})
 
 	describe("draft-specific syntax", () => {
@@ -77,6 +87,27 @@ contextualize(() => {
 			})
 		})
 
+		it("openapi-3.0 can't represent tuples", () => {
+			const T = type(["string", "number"])
+			attest(() => T.toJsonSchema({ target: "openapi-3.0" })).throws(
+				'code: "tuple"'
+			)
+		})
+
+		it("openapi-3.0 approximates tuples with a fallback", () => {
+			const T = type(["string", "number"])
+			const schema = T.toJsonSchema({
+				target: "openapi-3.0",
+				fallback: { tuple: ctx => ctx.base }
+			})
+			attest(schema).snap({
+				type: "array",
+				items: { anyOf: [{ type: "string" }, { type: "number" }] },
+				minItems: 2,
+				maxItems: 2
+			})
+		})
+
 		it("draft-2020-12 uses items for variadic tuple elements", () => {
 			const T = type(["string", "...", "number[]"])
 			const schema = T.toJsonSchema({ target: "draft-2020-12" })
@@ -98,6 +129,32 @@ contextualize(() => {
 				items: [{ type: "string" }],
 				additionalItems: { type: "number" },
 				minItems: 1
+			})
+		})
+
+		it("openapi-3.0 approximates variadic tuples with a fallback", () => {
+			const T = type(["string", "...", "number[]", "boolean"])
+			const schema = T.toJsonSchema({
+				target: "openapi-3.0",
+				fallback: { tuple: ctx => ctx.base }
+			})
+			attest(schema).snap({
+				type: "array",
+				items: {
+					anyOf: [{ type: "string" }, { type: "number" }, { type: "boolean" }]
+				},
+				minItems: 2
+			})
+		})
+
+		it("openapi-3.0 uses items for arrays", () => {
+			attest(type("string[]").toJsonSchema({ target: "openapi-3.0" })).snap({
+				type: "array",
+				items: { type: "string" }
+			})
+			attest(type("Array").toJsonSchema({ target: "openapi-3.0" })).snap({
+				type: "array",
+				items: {}
 			})
 		})
 
@@ -129,6 +186,106 @@ contextualize(() => {
 			attest("definitions" in schema).equals(true)
 			attest("$defs" in schema).equals(false)
 			attest(Object.keys(schema.definitions as object).length > 0).equals(true)
+		})
+
+		it("openapi-3.0 uses definitions for references", () => {
+			const types = type.module({
+				user: {
+					name: "string",
+					friend: "user?"
+				}
+			})
+			const schema = types.user.toJsonSchema({
+				target: "openapi-3.0"
+			}) as Record<string, unknown>
+			attest("definitions" in schema).equals(true)
+			attest("$defs" in schema).equals(false)
+			attest(schema.$ref as string).satisfies(/^#\/definitions\//)
+		})
+	})
+
+	describe("openapi-3.0", () => {
+		// JsonSchema doesn't include OpenAPI-only keywords like nullable
+		const toOpenApi = (T: type.Any): unknown =>
+			T.toJsonSchema({ target: "openapi-3.0" })
+
+		it("uses boolean exclusive bounds", () => {
+			attest(toOpenApi(type("0 < number < 10"))).snap({
+				type: "number",
+				maximum: 10,
+				exclusiveMaximum: true,
+				minimum: 0,
+				exclusiveMinimum: true
+			})
+			attest(toOpenApi(type("0 <= number <= 10"))).snap({
+				type: "number",
+				maximum: 10,
+				minimum: 0
+			})
+		})
+
+		it("uses enum for units", () => {
+			attest(toOpenApi(type("'cat'"))).snap({ enum: ["cat"] })
+			attest(toOpenApi(type("'cat' | 'dog'"))).snap({ enum: ["cat", "dog"] })
+		})
+
+		it("uses nullable for a typed branch and null", () => {
+			attest(toOpenApi(type("string | null"))).snap({
+				type: "string",
+				nullable: true
+			})
+			attest(toOpenApi(type("boolean | null"))).snap({
+				type: "boolean",
+				nullable: true
+			})
+			attest(toOpenApi(type({ a: "string" }).or("null"))).snap({
+				type: "object",
+				properties: { a: { type: "string" } },
+				required: ["a"],
+				nullable: true
+			})
+		})
+
+		it("keeps null in an enum otherwise", () => {
+			attest(toOpenApi(type("null"))).snap({ enum: [null] })
+			attest(toOpenApi(type("'cat' | null"))).snap({ enum: ["cat", null] })
+			attest(toOpenApi(type("string | number | null"))).snap({
+				anyOf: [{ type: "number" }, { type: "string" }, { enum: [null] }]
+			})
+		})
+
+		it("uses example instead of examples", () => {
+			const T = type("string").configure({ examples: ["a", "b"] })
+			attest(toOpenApi(T)).snap({ type: "string", example: "a" })
+		})
+
+		it("can't represent pattern keys", () => {
+			const T = type({ "[/^a/]": "string", b: "number" })
+			attest(() => toOpenApi(T)).throws('code: "patternKey"')
+			attest(
+				T.toJsonSchema({
+					target: "openapi-3.0",
+					fallback: { patternKey: ctx => ctx.base }
+				})
+			).snap({
+				type: "object",
+				properties: { b: { type: "number" } },
+				required: ["b"]
+			})
+		})
+
+		it("doesn't reject omitted pattern keys as undeclared", () => {
+			const T = type({ "[/^a/]": "string", b: "number", "+": "reject" })
+			attest(
+				T.toJsonSchema({
+					target: "openapi-3.0",
+					fallback: { patternKey: ctx => ctx.base }
+				})
+			).snap({
+				type: "object",
+				properties: { b: { type: "number" } },
+				required: ["b"]
+			})
 		})
 	})
 
