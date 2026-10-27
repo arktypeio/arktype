@@ -25,13 +25,24 @@ export const PickThree = () => (
 				Each library's best average, as a multiple of the best result. Lower is
 				better. {pickThreeTable.shown}
 			</p>
+			{pickThreeTable.startupNote && (
+				<p className="p3-startup">{pickThreeTable.startupNote}</p>
+			)}
 		</figcaption>
 		<table className="p3-table">
 			<thead>
 				<tr>
 					<th scope="col">library</th>
 					{pickThreeTable.categories.map(category => (
-						<th key={category.id} scope="col" title={category.label}>
+						<th
+							key={category.id}
+							scope="col"
+							title={
+								category.id === "startup" && pickThreeTable.startupNote ?
+									`${category.label}: ${pickThreeTable.startupNote}`
+								:	category.label
+							}
+						>
 							{category.id}
 						</th>
 					))}

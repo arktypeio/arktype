@@ -870,6 +870,8 @@ export const pickThreeTable: {
 	title: Claim<string>
 	/** which libraries it shows */
 	shown: string
+	/** what its startup multiples compare, beside the column: creating a schema, which a precompiled build did at build */
+	startupNote: string
 	categories: { id: CategoryId; label: string }[]
 	rows: PickThreeRow[]
 } = {
@@ -878,6 +880,12 @@ export const pickThreeTable: {
 			"Only ArkType is first in all three."
 		:	{ pending: "Only ArkType is first in all three." },
 	shown: `Libraries with ${wellKnownRule} shown, every library counted.`,
+	// the startup rows time creating a schema (startupBasis), so the column
+	// is the general advantage of building ahead of time, not like for like
+	startupNote:
+		startupIsCreation ?
+			"Startup counts creating a schema: done at build by precompiled validators, at load by the rest."
+		:	"",
 	categories: boardOrder.map(category => ({
 		id: category,
 		label: wording[category].measures
