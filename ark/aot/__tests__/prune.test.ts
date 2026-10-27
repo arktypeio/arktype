@@ -1415,6 +1415,56 @@ console.log(out instanceof type.errors ? out.summary : out)
 			}
 		})
 
+		it("leaves out what no read needs where a module only stripped code imports is refused", async () => {
+			const main = join(root, "main.ts")
+			const source = readFileSync(main, "utf8")
+			const files = {
+				"route.ts": `import { session } from "./context.ts"\nexport const loader = () => session\nexport const view = "view"\n`,
+				"context.ts": `import { db } from "./db.server.ts"\nexport const session = db\n`,
+				"db.server.ts": `export const db = "db"\n`
+			}
+			for (const [name, text] of Object.entries(files))
+				writeFileSync(join(root, name), text)
+			writeFileSync(
+				main,
+				`${source}\nimport { view } from "./route.ts"\nconsole.log(view)\n`
+			)
+			// as React Router refuses a .server module in the client build, and
+			// removes a route's loader after arktype's plugin reads it
+			const refusing: VitePlugin = {
+				name: "refusing",
+				enforce: "pre",
+				resolveId: id => {
+					if (id.endsWith(".server.ts")) throw new Error(`refused ${id}`)
+				}
+			}
+			const stripping: VitePlugin = {
+				name: "stripping",
+				transform: (code, id) =>
+					id.endsWith("route.ts") ?
+						code.replace(/^.*(?:context|loader).*$/gm, "")
+					:	undefined
+			}
+			const warnings: string[] = []
+			try {
+				const pruned = await bundle(
+					{},
+					{
+						plugins: [refusing, stripping],
+						onwarn: warning => {
+							if (warning.plugin === "arktype") warnings.push(warning.message)
+						}
+					}
+				)
+				attest(run(pruned)).snap("name must be a string\nview\n")
+				attest(pruned.includes("~standard")).equals(false)
+				attest(warnings).equals([])
+			} finally {
+				writeFileSync(main, source)
+				for (const name in files) rmSync(join(root, name))
+			}
+		})
+
 		it("reads a page's module scripts", async () => {
 			const pruned = await bundle({}, { lib: false })
 			attest(pruned.includes("~standard")).equals(false)

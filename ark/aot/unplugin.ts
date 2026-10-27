@@ -1437,28 +1437,47 @@ const rollupScanOf = async (
 		}
 		entries.push({ id: resolved.id, source })
 	}
+	// modules read from their files, as they hadn't reached the plugin
+	const unarrived = new Set<string>()
 	const scanned = await scanProgram(program, entries, {
 		resolve: async (specifier, importer) => {
-			const resolved = await context.resolve(
-				specifier,
-				importer,
-				relativeSpecifier.test(specifier) ? asRequired : undefined
-			)
+			// a plugin refusing it, as React Router refuses a .server module
+			// in the client build, where only code its transform removes
+			// imports it, means no bundle the build writes holds it
+			let isRefused = false
+			const resolved = await context
+				.resolve(
+					specifier,
+					importer,
+					relativeSpecifier.test(specifier) ? asRequired : undefined
+				)
+				.catch(() => {
+					isRefused = true
+					return null
+				})
+			if (isRefused) return null
 			if (!resolved) return
 			if (resolved.external) return null
 			resolutions.set(resolved.id, resolved)
 			return resolved.id
 		},
 		load: async id => {
+			if (!isTransformed(id)) {
+				return context.load({ ...resolutions.get(id), id }).then(
+					info => info?.code ?? undefined,
+					() => undefined
+				)
+			}
 			// the plugin's transform waits for the scan, so a module it
-			// transforms is read as it reaches it, after any plugin ahead of it
-			const arrival = isTransformed(id) ? arrivalOf(fileOf(id)) : undefined
+			// transforms is read as it reaches it, after any plugin ahead of it.
+			// One that hasn't is read from its file, since loading it would add
+			// it to the bundle, where a plugin may refuse it, as React Router
+			// does a .server module only a route's loader imports
+			const file = fileOf(id)
+			const arrival = arrivalOf(file)
 			if (typeof arrival === "string") return arrival
-			const loaded = context.load({ ...resolutions.get(id), id }).then(
-				info => info?.code ?? undefined,
-				() => undefined
-			)
-			return arrival ? Promise.race([arrival, loaded]) : loaded
+			unarrived.add(file)
+			return readFile(file)
 		},
 		readFile,
 		isTransformed,
@@ -1468,7 +1487,8 @@ const rollupScanOf = async (
 	if (typeof scanned === "string")
 		return { unpruned: writeUnprunedMessage(scanned) }
 	for (const id in scanned.modules)
-		scanned.modules[id].mappings = mappingsOf(id)
+		if (!unarrived.has(id)) scanned.modules[id].mappings = mappingsOf(id)
+
 	const usage = await scan(scanned)
 	return {
 		read:
