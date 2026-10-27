@@ -1196,7 +1196,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.sequence || this.writesInto(js)) return js
 		const copyKeys = () => {
 			for (const prop of this.inOrder) {
-				if (written?.includes(prop.key) || prop.key in Object.prototype) continue
+				if (written?.includes(prop.key) || prop.key in Object.prototype)
+					continue
 				js.line(`${js.ref(keepOwn)}(out, data, ${js.serialize(prop.key)})`)
 			}
 			// out inherits these, so only an own one is missing
