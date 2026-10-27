@@ -2,12 +2,14 @@ name: leaderboard
 
 # Every Monday, reruns the independent suites that measure bundle size (the
 # login form, schemabenchmarks.dev's download and Sury's bundle) with each
-# rival at its newest release and ArkType at main, rewrites the leaderboard
-# from them and checks the site's claims against it. A changed leaderboard is
-# pushed to bench/leaderboard with an issue linking its pull request, and a
-# claim the new standings don't back fails the run once that issue is open. The speed and startup suites count instructions
-# with perf, which needs hardware counters hosted runners don't expose, so
-# they're rerun by hand (ark/repo/bench/external/README.md, "Reproduce").
+# rival at its newest release and ArkType at main, and checks the site's
+# claims against the standings they give. It pushes nothing: the site keeps
+# the standings it was published with, dated as measured. If a claim no longer
+# holds, such as a lead lost by more than the tie band, it opens an issue, or
+# updates the open one, for a maintainer to rerun and republish. The speed and
+# startup suites count instructions with perf, which needs hardware counters
+# hosted runners don't expose, so they're rerun by hand
+# (ark/repo/bench/external/README.md, "Reproduce").
 
 on:
   schedule:
@@ -28,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
-      contents: write
+      contents: read
       issues: write
     steps:
       - name: Checkout repo
@@ -59,31 +61,53 @@ jobs:
       - name: Rerun the size suites
         run: pnpm benchExternal size --newest || pnpm benchExternal size --newest
 
-      # results/newest/run.json's date and commit change every week, so only a
-      # changed leaderboard is kept for a pull request
-      - name: Keep only a changed leaderboard
-        run: |
-          if git diff --quiet ark/docs/lib/bench/leaderboard.json; then
-            git checkout -- ark/repo/bench/external/results
-            git clean -fdq ark/repo/bench/external/results
-          fi
-
       - name: Check the claims
         id: claims
         continue-on-error: true
         run: node ark/docs/lib/bench/headline.ts > "$RUNNER_TEMP/after.md" 2>&1
 
-      - name: Write the issue's body
+      - name: Standings
+        run: |
+          node ark/repo/bench/external/standings.ts > "$RUNNER_TEMP/standings.txt"
+          {
+            echo "### Claims"
+            echo
+            cat "$RUNNER_TEMP/after.md"
+            echo
+            echo "### Standings"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/standings.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the results
+        if: always()
+        run: |
+          kept="$RUNNER_TEMP/leaderboard"
+          mkdir -p "$kept"
+          cp -r ark/docs/lib/bench/leaderboard.json ark/repo/bench/external/results/newest "$kept"
+          cp "$RUNNER_TEMP"/{before.md,after.md,standings.txt} "$kept" 2> /dev/null || true
+
+      - name: Upload the results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: leaderboard
+          path: ${{ runner.temp }}/leaderboard
+
+      - name: Open or update an issue
+        if: steps.claims.outcome == 'failure'
         env:
-          CLAIMS: ${{ steps.claims.outcome }}
+          GH_TOKEN: ${{ github.token }}
+          TITLE: "bench: a claim isn't backed by the weekly rerun's standings"
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           {
-            echo "The weekly rerun of the size suites, each rival at its newest release and ArkType at ${GITHUB_SHA::9}. \`results/newest/run.json\` lists the installs."
+            echo "@ssalbdivad The weekly rerun of the size suites, each rival at its newest release and ArkType at ${GITHUB_SHA::9}, doesn't back a claim on the site. Change the copy in \`ark/docs/lib/claims.ts\` or rerun and republish."
             echo
-            if [ "$CLAIMS" = failure ]; then
-              echo "**A claim on the site isn't backed by these standings. Change the copy in \`ark/docs/lib/claims.ts\` before merging.**"
-              echo
-            fi
+            echo "[Run]($RUN), with its results as the \`leaderboard\` artifact."
+            echo
             echo "### Claims after"
             echo
             cat "$RUNNER_TEMP/after.md"
@@ -91,30 +115,12 @@ jobs:
             echo "### Claims before"
             echo
             cat "$RUNNER_TEMP/before.md"
-          } > "$RUNNER_TEMP/body.md"
-
-      # the organization doesn't let Actions open pull requests, so the
-      # leaderboard goes to a branch and an issue links the request to open
-      - name: Push a changed leaderboard
-        id: push
-        run: |
-          git add ark/docs/lib/bench/leaderboard.json ark/repo/bench/external/results/newest
-          if git diff --cached --quiet; then exit 0; fi
-          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-            commit -qm "bench: rerun the size suites at each rival's newest release"
-          git push -f origin HEAD:refs/heads/bench/leaderboard
-          echo "pushed=true" >> "$GITHUB_OUTPUT"
-
-      - name: Open or update its issue
-        if: steps.push.outputs.pushed == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TITLE: "bench: rerun the size suites at each rival's newest release"
-        run: |
-          {
-            echo "[Open the pull request from \`bench/leaderboard\`](https://github.com/$GITHUB_REPOSITORY/compare/main...bench/leaderboard?expand=1)."
             echo
-            cat "$RUNNER_TEMP/body.md"
+            echo "### Standings"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/standings.txt"
+            echo '```'
           } > "$RUNNER_TEMP/issue.md"
           number=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number // empty')
           if [ -n "$number" ]; then
