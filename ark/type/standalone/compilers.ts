@@ -7,6 +7,7 @@ import {
 	TraversalCompiler,
 	type BaseNode,
 	type BaseRoot,
+	type DiscriminantCases,
 	type InvokeOptions,
 	type NodeId,
 	type nodeOfKind,
@@ -214,7 +215,7 @@ const compileRead = (parent: string, k: PropertyKey): string =>
 	:	`Object(${parent}) === ${parent}`
 
 export interface Bases {
-	nodes: nodeOfKind<"domain" | "proto">[]
+	nodes: nodeOfKind<"domain" | "proto" | "unit">[]
 	// what arktype's union of their errors expects
 	site: object
 }
@@ -233,10 +234,15 @@ const findBases = (node: UnionNode): Bases | null => {
 	// a description written for it is its text
 	if (node.meta.description !== undefined && node.meta.keyword === undefined)
 		return null
-	const nodes: nodeOfKind<"domain" | "proto">[] = []
+	const nodes: nodeOfKind<"domain" | "proto" | "unit">[] = []
 	const expected: string[] = []
 	const addExpected = (description: string) => {
 		if (!expected.includes(description)) expected.push(description)
+	}
+	// each case of a discriminant, as a locale writes its miss
+	const addCases = ({ discriminantKind, cases }: DiscriminantCases) => {
+		for (const c of cases)
+			addExpected(describeCases({ discriminantKind, cases: [c] } as never))
 	}
 	// the bases a branch's data fails, as arktype's union error lists them:
 	// a morph's input can be a union, whose miss lists its own bases where
@@ -255,17 +261,14 @@ const findBases = (node: UnionNode): Bases | null => {
 				!discriminant || discriminant.path.length !== 0 || checked.missLists
 			if (!checked.branches.every(b => collect(b, describes && lists)))
 				return false
-			if (describes && !lists) {
-				const { discriminantKind, cases } = checked.discCases
-				for (const c of cases)
-					addExpected(describeCases({ discriminantKind, cases: [c] } as never))
-			}
+			if (describes && !lists) addCases(checked.discCases)
 			return true
 		}
 		const basis =
 			checked?.is("intersection") ? checked.basis
-			: checked?.is("domain") || checked?.is("proto") ? checked
-			: null
+			: checked?.is("domain") || checked?.is("proto") || checked?.is("unit") ?
+				checked
+			:	null
 		if (!basis) return false
 		const context = issueContextOf((basis.failSite as { v: TextContext }).v)
 		// an expected written from data can't be known here
@@ -274,7 +277,19 @@ const findBases = (node: UnionNode): Bases | null => {
 		if (describes) addExpected(context.description!)
 		return true
 	}
-	for (const branch of node.branches) if (!collect(branch, true)) return null
+	// data in no case of a discriminant is applied its default case, whose
+	// failure arktype reports beside the cases missed
+	const { discriminant } = node
+	const defaultCase =
+		discriminant && discriminant.path.length === 0 && !node.missLists ?
+			discriminant.cases.default
+		:	undefined
+	if (defaultCase) {
+		addCases(node.discCases)
+		if (!collect(defaultCase as BaseRoot, true)) return null
+	}
+	for (const branch of node.branches)
+		if (!collect(branch, !defaultCase)) return null
 	const site = issueSiteOf({
 		meta: node.meta,
 		description: describeBranches(expected)

@@ -149,6 +149,18 @@ contextualize(() => {
 		)
 	})
 
+	it("describes a union's miss by a unit branch and the cases before its default", () => {
+		// the morph is the discriminant's default case, reported after the
+		// cases data missed
+		const T = type(["string | number", "=>", String]).or("object").or("null")
+		attest(String(T(true))).snap(
+			"must be an object, null, a number or a string (was boolean)"
+		)
+		attest(precompileStandalone({ T }).code).satisfies(
+			/siteOf\("union", "an object, null, a number or a string"\)/
+		)
+	})
+
 	it("passes symbols and object units to compiled code", () => {
 		const key = Symbol("precompiledKey")
 		const Inner = type({ a: "string" })

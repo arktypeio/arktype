@@ -2,6 +2,7 @@ import { fromHere } from "@ark/fs"
 import {
 	ArkErrors,
 	describeBranches,
+	describeCases,
 	hasArkKind,
 	schemaScope,
 	suppliedText,
@@ -530,7 +531,20 @@ const textsOf = (errors: ArkErrors, grouped = true) => {
 
 // a union whose branches each fail at its path by their basis is described
 // by those bases, as a validator's union issue is
-const basisCodes = new Set<string>(["domain", "proto"])
+const basisCodes = new Set<string>(["domain", "proto", "unit"])
+
+// what a union's error lists for one of its errors: a basis it expects, or
+// the cases of a discriminant a morph's input union missed, as a locale
+// writes them
+const alternativesOf = (error: ArkError): string[] | null => {
+	if (basisCodes.has(error.code)) return [error.expected]
+	if (error.code !== "discriminant") return null
+	const { discriminantKind, cases } = error as ArkError<"discriminant">
+	const each = cases.map(c =>
+		describeCases({ discriminantKind, cases: [c] } as never)
+	)
+	return describeBranches(each) === error.expected ? each : [error.expected]
+}
 
 // what each issue expects, at its path and code, where a validator's issue is
 // written alike: not a missing key, an issue a callback raised without an
@@ -564,14 +578,16 @@ const unionExpectedOf = (error: ArkError<"union">): string | null => {
 		meta.expected !== undefined
 	)
 		return error.expected
-	if (
-		!error.errors.length ||
-		!error.errors.every(
-			e => e.propString === error.propString && basisCodes.has(e.code)
-		)
-	)
-		return null
-	return describeBranches([...new Set(error.errors.map(e => e.expected))])
+	if (!error.errors.length) return null
+	const expected: string[] = []
+	for (const e of error.errors) {
+		const alternatives =
+			e.propString === error.propString ? alternativesOf(e) : null
+		if (!alternatives) return null
+		for (const alternative of alternatives)
+			if (!expected.includes(alternative)) expected.push(alternative)
+	}
+	return describeBranches(expected)
 }
 
 // a validator's expected where arktype's is written from what it doesn't hold
