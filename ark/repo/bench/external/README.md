@@ -314,7 +314,7 @@ bundles are larger.
 | size     | valibot.dev's login form                    | 1    | gzipped bytes                    | us, and Valibot's author |
 | size     | the homepage's apps                         | 4    | gzipped bytes                    | us                       |
 | size     | schemabenchmarks.dev's download             | 1    | gzipped bytes                    | Open Circle              |
-| size     | Sury's schema bundle, as a check            | 1    | gzipped bytes                    | Sury's author            |
+| size     | Sury's schema bundled as a check            | 1    | gzipped bytes                    | Sury's author            |
 
 ArkType's instruction-count and size rows are measured at 781130da3, by
 claim-all's finalrun steps: `results/arktype-781130da3.json` and

@@ -134,7 +134,7 @@ Each result below is scoped to a single benchmark, and [Speed and size](/docs/pr
 
 Each Type your program defines becomes a validator that imports only `arktype/runtime` and validates, asserts and implements Standard Schema as the Type did, so code that calls it doesn't change either. Scopes, Modules, Generics, cyclic Types, `match` and `type.fn` precompile too.
 
-Options go in the plugin call or in an [`ark.json`](/docs/precompile/options#arkjson) that the plugin, the drivers, the CLI and the ESLint rule all read. A [preset](/docs/precompile/options#presets) sets several at once: `"smallest"` trades speed for size. <Claim id="buildChoice" /> Development builds also check at runtime what the build verified, like freezing each validator, and production builds leave those checks out. A library opts in with `"ark": { "aot": true }` in its `package.json`, so its consumers' builds precompile it.
+Options go in an [`ark.json`](/docs/precompile/options#arkjson) that the plugin, the drivers, the CLI and the ESLint rule all read, or in the plugin call. A [preset](/docs/precompile/options#presets) sets several at once: `"smallest"` trades speed for size. <Claim id="buildChoice" /> Development builds also check at runtime what the build verified, like freezing each validator, and production builds leave those checks out. A library opts in with `"ark": { "aot": true }` in its `package.json`, so its consumers' builds precompile it.
 
 ### Set theory at build time
 

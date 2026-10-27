@@ -3,7 +3,7 @@ title: Options
 description: Ship less, and configure a precompiled program.
 ---
 
-A standalone build can leave out what your program doesn't need. Every option goes to the plugin, a driver or the CLI, or into [`ark.json`](#arkjson), and a [preset](#presets) sets several for one goal:
+A standalone build can leave out what your program doesn't need. Set options in [`ark.json`](#arkjson), which the plugin, the drivers, the CLI and the ESLint rule all read, so each builds the same way; a plugin, driver or CLI call takes them too, and a [preset](#presets) sets several for one goal:
 
 ```ts
 import { precompile } from "@ark/aot/unplugin"

@@ -343,10 +343,7 @@ type Contact = typeof Contact.infer
 
 > **number excludes NaN and Infinity**
 >
-> `number` rejects `NaN`, `Infinity` and `-Infinity` by default. To allow them,
-> see `number.NaN`, `number.Infinity` and `number.NegativeInfinity` in
-> [Keywords](https://arktype.io/docs/keywords), or the `numberAllowsNaN` and
-> `numberAllowsInfinity` options in [Configuration](https://arktype.io/docs/configuration).
+> `number` rejects `NaN`, `Infinity` and `-Infinity` by default. To allow them, see `number.NaN`, `number.Infinity` and `number.NegativeInfinity` in [Keywords](https://arktype.io/docs/keywords), or the `numberAllowsNaN` and `numberAllowsInfinity` options in [Configuration](https://arktype.io/docs/configuration).
 
 ## Compose
 
@@ -462,8 +459,7 @@ if (out instanceof type.errors) {
 
 > **Morphs receive your data, not a copy**
 >
-> A morph is passed the validated value itself. If it mutates its argument, it
-> mutates the caller's data, so return a new value instead.
+> A morph is passed the validated value itself. If it mutates its argument, it mutates the caller's data, so return a new value instead.
 
 ```ts
 const addTag = type({ tags: "string[]" }).pipe(o => ({
@@ -5828,11 +5824,7 @@ type.number.allows(Number.NaN)
 
 > **Configure before any Type is created**
 >
-> Global config is fixed when the first Type is created, whether by a definition
-> or by referencing a keyword like `type.number`, and calling `configure` after
-> that throws unless it changes nothing, as when a test runner resets its
-> modules and the config file runs again. Importing `"arktype"` first is fine,
-> and `configure` can be imported from either `"arktype"` or `"arktype/config"`.
+> Global config is fixed when the first Type is created, whether by a definition or by referencing a keyword like `type.number`, and calling `configure` after that throws unless it changes nothing, as when a test runner resets its modules and the config file runs again. Importing `"arktype"` first is fine, and `configure` can be imported from either `"arktype"` or `"arktype/config"`.
 
 ### Scope
 
@@ -7288,8 +7280,7 @@ type ParsedNumber = typeof parseNumber.inferOut // number
 
 type of output that can be introspected at runtime (e.g. via [`out`](https://arktype.io/docs/type-api#out))
 
-- warning: If your Type contains morphs, they will be inferred as `unknown` unless
-  they are an ArkType keyword or have an explicitly defined output validator.
+- warning: If your Type contains morphs, they will be inferred as `unknown` unless they are an ArkType keyword or have an explicitly defined output validator.
 - inference-only property that will be `undefined` at runtime
 
 ```ts
@@ -7313,9 +7304,7 @@ type ValidatedMorphOut = typeof Validated.inferIntrospectableOut
 generic parameter representing this Type
 
 - inference-only property that will be `undefined` at runtime
-- warning: May contain types representing morphs or default values that would
-  be inaccurate if used directly for runtime values. In those cases,
-  you should use [`infer`](https://arktype.io/docs/type-api#infer) or [`inferIn`](https://arktype.io/docs/type-api#inferin) on this object instead.
+- warning: May contain types representing morphs or default values that would be inaccurate if used directly for runtime values. In those cases, you should use [`infer`](https://arktype.io/docs/type-api#infer) or [`inferIn`](https://arktype.io/docs/type-api#inferin) on this object instead.
 
 ### `as`
 
@@ -7566,8 +7555,7 @@ const inOut = User.in({ age: "25" })
 deeply extract outputs
 
 - will never include morphs
-- warning: if your type includes morphs, their output will likely be unknown unless they
-  were defined with an explicit output validator via `.to(outputDef)` or `.pipe(morph, outputType)`
+- warning: if your type includes morphs, their output will likely be unknown unless they were defined with an explicit output validator via `.to(outputDef)` or `.pipe(morph, outputType)`
 
 ```ts
 const join = type("string[]").pipe(a => a.join(","))
@@ -7733,9 +7721,7 @@ type({ foo: "string" }).get("foo") // Type<string>
 
 Create a copy of this `Type` with only the specified properties.
 
-- warning: returns a new object built from the properties it extracts, so a root
-  narrow, filter or metadata on this `Type` is not carried over
-  ([docs](https://arktype.io/docs/objects#properties-structural))
+- warning: returns a new object built from the properties it extracts, so a root narrow, filter or metadata on this `Type` is not carried over ([docs](https://arktype.io/docs/objects#properties-structural))
 
 ```ts
 type({ foo: "string", bar: "number" }).pick("foo") // Type<{ foo: string }>
@@ -7745,9 +7731,7 @@ type({ foo: "string", bar: "number" }).pick("foo") // Type<{ foo: string }>
 
 Create a copy of this `Type` with all properties except the specified ones.
 
-- warning: returns a new object built from the properties it extracts, so a root
-  narrow, filter or metadata on this `Type` is not carried over
-  ([docs](https://arktype.io/docs/objects#properties-structural))
+- warning: returns a new object built from the properties it extracts, so a root narrow, filter or metadata on this `Type` is not carried over ([docs](https://arktype.io/docs/objects#properties-structural))
 
 ```ts
 type({ foo: "string", bar: "number" }).omit("foo") // Type<{ bar: number }>
@@ -7757,9 +7741,7 @@ type({ foo: "string", bar: "number" }).omit("foo") // Type<{ bar: number }>
 
 Merge another `Type` definition, overriding properties of this `Type` with the duplicate keys.
 
-- warning: returns a new object built from the properties it extracts, so a root
-  narrow, filter or metadata on this `Type` is not carried over
-  ([docs](https://arktype.io/docs/objects#properties-structural))
+- warning: returns a new object built from the properties it extracts, so a root narrow, filter or metadata on this `Type` is not carried over ([docs](https://arktype.io/docs/objects#properties-structural))
 
 ```ts
 type({ a: "1", b: "2" }).merge({ b: "3", c: "4" }) // Type<{ a: 1; b: 3; c: 4 }>
@@ -7769,11 +7751,8 @@ type({ a: "1", b: "2" }).merge({ b: "3", c: "4" }) // Type<{ a: 1; b: 3; c: 4 }>
 
 Create a copy of this `Type` with all properties required.
 
-- warning: returns a new object built from the properties it extracts, so a root
-  narrow, filter or metadata on this `Type` is not carried over
-  ([docs](https://arktype.io/docs/objects#properties-structural))
-- like TS's `Required`, an array or tuple base is preserved and
-  applied to its elements, e.g. `type(["string", "number"]).required()`
+- warning: returns a new object built from the properties it extracts, so a root narrow, filter or metadata on this `Type` is not carried over ([docs](https://arktype.io/docs/objects#properties-structural))
+- like TS's `Required`, an array or tuple base is preserved and applied to its elements, e.g. `type(["string", "number"]).required()`
 
 ```ts
 const T = type({ "foo?": "string" }).required() // Type<{ foo: string }>
@@ -7783,11 +7762,8 @@ const T = type({ "foo?": "string" }).required() // Type<{ foo: string }>
 
 Create a copy of this `Type` with all properties optional.
 
-- warning: returns a new object built from the properties it extracts, so a root
-  narrow, filter or metadata on this `Type` is not carried over
-  ([docs](https://arktype.io/docs/objects#properties-structural))
-- like TS's `Partial`, an array or tuple base is preserved and
-  applied to its elements, e.g. `type(["string", "number"]).partial()`
+- warning: returns a new object built from the properties it extracts, so a root narrow, filter or metadata on this `Type` is not carried over ([docs](https://arktype.io/docs/objects#properties-structural))
+- like TS's `Partial`, an array or tuple base is preserved and applied to its elements, e.g. `type(["string", "number"]).partial()`
 
 ```ts
 const T = type({ foo: "string" }).partial() // Type<{ foo?: string }>
@@ -7795,12 +7771,9 @@ const T = type({ foo: "string" }).partial() // Type<{ foo?: string }>
 
 ### `map`
 
-Create a copy of this `Type` with each of its properties transformed by
-the provided function. Return `[]` to remove a property.
+Create a copy of this `Type` with each of its properties transformed by the provided function. Return `[]` to remove a property.
 
-- warning: returns a new object built from the properties it extracts, so a root
-  narrow, filter or metadata on this `Type` is not carried over
-  ([docs](https://arktype.io/docs/objects#properties-structural))
+- warning: returns a new object built from the properties it extracts, so a root narrow, filter or metadata on this `Type` is not carried over ([docs](https://arktype.io/docs/objects#properties-structural))
 
 ```ts
 type({ foo: "string" }).map(prop => ({ key: prop.key, value: prop.value.or("null") })) // Type<{ foo: string | null }>

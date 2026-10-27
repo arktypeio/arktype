@@ -488,7 +488,7 @@ const suites = [
 	{
 		category: "size",
 		id: "surySize",
-		label: "Sury's schema bundle, as a check",
+		label: "Sury's schema bundled as a check",
 		unit: "B gzipped",
 		source: sources.surySize,
 		rows: [
