@@ -565,16 +565,16 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	protected _traverse(
-		traversalKind: TraversalKind,
+		trav: TraversalKind,
 		data: object,
 		ctx: InternalTraversal,
 		transformsKeys = true
 	): boolean {
-		const errorCount = ctx?.currentErrorCount ?? 0
-		const props = traversalKind === "Allows" ? this.allowsProps : this.inOrder
+		const errorCount = ctx?.errCount ?? 0
+		const props = trav === "Allows" ? this.allowsProps : this.inOrder
 		for (let i = 0; i < props.length; i++) {
 			const prop = props[i]
-			if (traversalKind === "Allows") {
+			if (trav === "Allows") {
 				if (!prop.traverseAllows(data, ctx)) return false
 			} else {
 				// a prop's Apply would transform before an index signature checks it
@@ -586,22 +586,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 						ctx
 					)
 				} else if (prop.is("required")) {
-					traverseKey(
-						prop.key,
-						() => ctx.errorFromNode(prop.errorCtx, data),
-						ctx
-					)
+					traverseKey(prop.key, () => ctx.nodeError(prop.errorCtx, data), ctx)
 				}
-				if (ctx.failFast && ctx.currentErrorCount > errorCount) return false
+				if (ctx.failFast && ctx.errCount > errorCount) return false
 			}
 		}
 
 		if (this.sequence) {
-			if (traversalKind === "Allows") {
+			if (trav === "Allows") {
 				if (!this.sequence.traverseAllows(data as never, ctx)) return false
 			} else {
 				this.sequence.traverseApply(data as never, ctx)
-				if (ctx.failFast && ctx.currentErrorCount > errorCount) return false
+				if (ctx.failFast && ctx.errCount > errorCount) return false
 			}
 		}
 
@@ -614,7 +610,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (this.index) {
 					for (const node of this.index) {
 						if (node.allowsKey(k, ctx)) {
-							if (traversalKind === "Allows") {
+							if (trav === "Allows") {
 								const result = traverseKey(
 									k,
 									() => node.value.traverseAllows(data[k as never], ctx),
@@ -633,8 +629,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 										),
 									ctx
 								)
-								if (ctx.failFast && ctx.currentErrorCount > errorCount)
-									return false
+								if (ctx.failFast && ctx.errCount > errorCount) return false
 							}
 						}
 					}
@@ -645,7 +640,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					typeof k === "string" &&
 					!this.declaresKey(k)
 				) {
-					if (traversalKind === "Allows") return false
+					if (trav === "Allows") return false
 
 					errorFromContext(ctx, {
 						code: "undeclared",
@@ -663,7 +658,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	traverseTransform(data: object, ctx: InternalTraversal): unknown {
-		const errorCount = ctx.currentErrorCount
+		const errorCount = ctx.errCount
 		const copies = !this.writesInto(ctx)
 		let out: any = data
 		const transformKey = (
@@ -689,11 +684,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				continue
 			}
 			if (!(prop.key in data)) continue
-			const keyErrorCount = ctx.currentErrorCount
+			const keyErrorCount = ctx.errCount
 			const input: unknown = data[prop.key as never]
 			let value = input
 			for (const step of this.transformsOf(prop)) {
-				if (ctx.currentErrorCount > keyErrorCount) break
+				if (ctx.errCount > keyErrorCount) break
 				if (step.signature && !allowsInBranch(ctx, step.signature, prop.key))
 					continue
 				value = transformKey(
@@ -725,9 +720,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					if (!node.value.transforms || !allowsInBranch(ctx, node.signature, k))
 						continue
 					if (keyErrorCount === undefined) {
-						keyErrorCount = ctx.currentErrorCount
+						keyErrorCount = ctx.errCount
 						value = input = data[k as never]
-					} else if (ctx.currentErrorCount > keyErrorCount) break
+					} else if (ctx.errCount > keyErrorCount) break
 					value = transformKey(
 						k,
 						value,
@@ -737,7 +732,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				}
 			}
 		}
-		if (ctx.currentErrorCount > errorCount) return data
+		if (ctx.errCount > errorCount) return data
 		return this.applyStructuralMorph(data, out, ctx)
 	}
 
@@ -754,13 +749,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	// whether traversal continues, as a compiled Apply returns
 	applySharedKeys(data: object, ctx: InternalTraversal): boolean {
-		const errorCount = ctx.currentErrorCount
+		const errorCount = ctx.errCount
 		this._traverse("Apply", data, ctx, false)
 		for (const prop of this.inOrder)
 			if (prop.key in data) this.transformSharedKey(data, prop.key, ctx)
 		for (const k of ownKeysOf(data))
 			if (!(k in this.propsByKey)) this.transformSharedKey(data, k, ctx)
-		return !ctx.failFast || ctx.currentErrorCount === errorCount
+		return !ctx.failFast || ctx.errCount === errorCount
 	}
 
 	private transformSharedKey(
@@ -787,10 +782,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		)
 			return
-		const errorCount = ctx.currentErrorCount
+		const errorCount = ctx.errCount
 		let value = input
 		for (const step of steps) {
-			if (ctx.currentErrorCount > errorCount) break
+			if (ctx.errCount > errorCount) break
 			if (step.signature && !allowsInBranch(ctx, step.signature, k)) continue
 			const stepInput =
 				value === input || step.node.allows(value) ? value : input
@@ -949,7 +944,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			arrayIndexMatcher.test(k) &&
 			+k < maxArrayLength)
 
-	_compileDeclaresKey(js: NodeCompiler): string {
+	/** writes whether `k` is a declared key */
+	_jsDeclaresKey(js: NodeCompiler): string {
 		const parts: string[] = []
 		if (this.index) {
 			for (const index of this.index)
@@ -982,15 +978,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	readonly structMorph: Morph | undefined = getPossibleMorph(this)
 
 	compile(js: NodeCompiler): unknown {
-		if (js.traversalKind === "Transform") return this.compileTransform(js)
-		if (js.traversalKind === "Apply" && this.sharesTransforms) {
+		if (js.trav === "Transform") return this.jsTransform(js)
+		if (js.trav === "Apply" && this.sharesTransforms) {
 			js.if(`${js.ref(transformsValid)}(ctx)`, () =>
 				js.return(`${js.ref(this)}.applySharedKeys(data, ctx)`)
 			)
 		}
 
-		const conjunction =
-			js.traversalKind === "Apply" ? this.compileConjunction(js) : undefined
+		const conjunction = js.trav === "Apply" ? this.jsConjunction(js) : undefined
 		if (conjunction !== undefined) return js.return(conjunction)
 
 		for (const prop of this.propsOf(js)) js.check(prop)
@@ -999,17 +994,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		if (this.index) {
 			js.const("keys", "Object.keys(data)").for("i < keys.length", () =>
-				this.compileEntry(js.const("k", "keys[i]"), "string")
+				this.jsEntry(js.const("k", "keys[i]"), "string")
 			)
 			if (this.indexMatchesSymbols) {
 				js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
-					this.compileEntry(js, "symbol")
+					this.jsEntry(js, "symbol")
 				)
 			}
 		} else if (this.undeclared === "reject") {
-			if (js.traversalKind === "Allows" && js.jsonInput && this.countsKeys)
-				this.compileKeyCount(js, () => js.return(true))
-			js.forIn("data", () => this.compileEntry(js, "string"))
+			if (js.trav === "Allows" && js.jsonInput && this.countsKeys)
+				this.jsKeyCount(js, () => js.return(true))
+			js.forIn("data", () => this.jsEntry(js, "string"))
 		}
 
 		return js.return(true)
@@ -1028,9 +1023,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 	}
 
-	// on a plain object, onCount where its key count is that of the declared
-	// keys it holds
-	private compileKeyCount(js: NodeCompiler, onCount: () => NodeCompiler): void {
+	/** writes `onCount` for a plain object whose key count is that of the declared keys it holds */
+	private jsKeyCount(js: NodeCompiler, onCount: () => NodeCompiler): void {
 		const held = [
 			`${this.required?.length ?? 0}`,
 			...(this.optional ?? []).map(
@@ -1048,18 +1042,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	// an Apply reporting one issue checks props as Allows does, stopping where
 	// it did
 	private propsOf(js: NodeCompiler): array<Prop.Node> {
-		return js.traversalKind === "Allows" || js.reportsFirst ?
+		return js.trav === "Allows" || js.reportsFirst ?
 				this.allowsProps
 			:	this.inOrder
 	}
 
-	// a structure with nothing to loop over holds only while each child does
-	compileConjunction(js: NodeCompiler): string | undefined {
-		if (
-			js.traversalKind === "Transform" ||
-			this.index ||
-			this.undeclared === "reject"
-		)
+	/** writes its check as one condition: with nothing to loop over, it holds while each child does */
+	jsConjunction(js: NodeCompiler): string | undefined {
+		if (js.trav === "Transform" || this.index || this.undeclared === "reject")
 			return
 		const children = [
 			...this.propsOf(js),
@@ -1068,7 +1058,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return children.map(child => js.invoke(child)).join(" && ") || "true"
 	}
 
-	private compileTransform(js: NodeCompiler): void {
+	/** writes its Transform */
+	private jsTransform(js: NodeCompiler): void {
 		const transformedProps = this.inOrder.filter(
 			prop => this.transformsOf(prop).length
 		)
@@ -1081,26 +1072,24 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		for (const index of transformedIndex) transformedChildren.push(index.value)
 		if (this.sequence?.transforms) transformedChildren.push(this.sequence)
 		transformedChildren.push(...this.defaultable)
-		js.initializeTransform(transformedChildren)
+		js.initTransform(transformedChildren)
 		if (
 			transformedChildren.length >= 2 &&
 			transformedChildren.length === this.defaultable.length
 		)
-			this.compileCopyOnce(js)
+			this.jsCopyOnce(js)
 		js.let("out", "data")
 		// a lone site nothing after can fail completes its copy itself
 		const once =
 			transformedChildren.length === 1 &&
 			transformedProps.length === 1 &&
-			!js.requiresContext
+			!js.needsCtx
 		for (let i = 0; i < transformedProps.length; i++) {
 			const { key, optional } = transformedProps[i]
 			const keyExpr = js.serialize(key)
 			const onChange = () => {
-				this.compileCopy(js, i === 0).line(
-					`out${js.prop(key)} = transformed${i}`
-				)
-				if (once) this.compileDeclaredCopy(js, [key])
+				this.jsCopy(js, i === 0).line(`out${js.prop(key)} = transformed${i}`)
+				if (once) this.jsDeclaredCopy(js, [key])
 			}
 			js.const(`value${i}`, `data${js.prop(key)}`).transformKey(
 				`transformed${i}`,
@@ -1113,7 +1102,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				}
 			)
 		}
-		if (this.slicesSequence) this.sequence!.compileElementTransforms(js, true)
+		if (this.slicesSequence) this.sequence!.jsElementTransforms(js, true)
 		else if (this.sequence?.transforms) {
 			js.transformKey(
 				"transformedSequence",
@@ -1121,7 +1110,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				[{ node: this.sequence }],
 				{
 					onChange: () =>
-						this.compileCopyProps(js, "out", "transformedSequence").set(
+						this.jsCopyProps(js, "out", "transformedSequence").set(
 							"out",
 							"transformedSequence"
 						)
@@ -1129,7 +1118,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		}
 		if (transformedIndex.length) {
-			this.compileForOwnKeys(js, "data", () => {
+			this.jsForOwnKeys(js, "data", () => {
 				if (this.hasIndexedProp)
 					js.if(`k in ${js.ref(this.propsByKey)}`, () => js.line("continue"))
 				const transformKey = (steps: TransformStep[]) =>
@@ -1137,7 +1126,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 						.const("value", "data[k]")
 						.transformKey("transformed", "value", steps, {
 							keyExpr: "k",
-							onChange: () => this.compileCopy(js).line("out[k] = transformed")
+							onChange: () => this.jsCopy(js).line("out[k] = transformed")
 						})
 				if (transformedIndex.length === 1) {
 					return js.if(
@@ -1158,72 +1147,71 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 		js.returnIfFailed()
 		if (deletes) {
-			return this.compileDeleteTransform(
+			return this.jsDeleteTransform(
 				js,
 				transformedProps,
 				this.sequence?.transforms || transformedIndex.length !== 0
 			)
 		}
-		this.compileDefaults(
-			js,
-			transformedChildren.length === this.defaultable.length
-		)
-		if (!once) this.compileDeclaredCopy(js)
+		this.jsDefaults(js, transformedChildren.length === this.defaultable.length)
+		if (!once) this.jsDeclaredCopy(js)
 		js.return("out")
 	}
 
-	// a plain object missing every default, its only changes, is copied once
-	private compileCopyOnce(js: NodeCompiler): NodeCompiler {
+	/** writes the copy of a plain object missing every default, its only changes, once */
+	private jsCopyOnce(js: NodeCompiler): NodeCompiler {
 		if (this.hasMorph || this.undeclared === "delete" || js.inPlace) return js
 		const keys = this.defaultable.map(prop => prop.key)
 		return js.if(
-			`${keys.map(k => `!(${js.serialize(k)} in data) && `).join("")}${this.compileShapeCheck(js)}Object.getPrototypeOf(data) === Object.prototype`,
+			`${keys.map(k => `!(${js.serialize(k)} in data) && `).join("")}${this.jsShapeCheck(js)}Object.getPrototypeOf(data) === Object.prototype`,
 			() => {
 				js.const("out", "{ ...data }")
 				for (const prop of this.defaultable) compileDefault(js, prop, "out")
-				return this.compileDeclaredCopy(js, keys).return("out")
+				return this.jsDeclaredCopy(js, keys).return("out")
 			}
 		)
 	}
 
-	private compileDefaults(js: NodeCompiler, first?: boolean): NodeCompiler {
+	/** writes the defaults of its missing keys */
+	private jsDefaults(js: NodeCompiler, first?: boolean): NodeCompiler {
 		// a default can fail, but where none is written, the check before stands
 		if (!this.defaultable.length && !this.sequence?.defaultables) return js
 		for (const node of this.defaultable) {
-			js.if(`!(${node.compileHoldsValue(js, "data")})`, () =>
-				compileDefault(this.compileCopy(js, first), node, "out")
+			js.if(`!(${node.jsHoldsValue(js, "data")})`, () =>
+				compileDefault(this.jsCopy(js, first), node, "out")
 			)
 			first = false
 		}
-		this.compileSequenceDefaults(js)
+		this.jsSequenceDefaults(js)
 		return js.returnIfFailed()
 	}
 
-	// out is data at the first site and where a transform writes in place
-	private compileCopy(js: NodeCompiler, first?: boolean): NodeCompiler {
+	/** writes `out`, which a transform writes into: data at the first site and where it writes in place */
+	private jsCopy(js: NodeCompiler, first?: boolean): NodeCompiler {
 		if (this.writesInto(js)) return js
 		const copy = () =>
 			this.sequence ?
-				this.compileCopyProps(
+				this.jsCopyProps(
 					js.set("out", `${js.ref(copyOf)}(data)`),
 					"data",
 					"out"
 				)
 			:	js.set(
 					"out",
-					`${this.compileShapeCheck(js)}Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
+					`${this.jsShapeCheck(js)}Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
 				)
 		return first ? copy() : js.if("out === data", copy)
 	}
 
-	// read a required key first; copyOf handles data without it
-	compileShapeCheck(js: NodeCompiler): string {
+	/** writes the check of data's shape, reading a required key first; copyOf handles data without it */
+	jsShapeCheck(js: NodeCompiler): string {
 		return this.required ?
 				`${js.serialize(this.required[0].key)} in data && `
 			:	""
 	}
 
-	compileDeclaredCopy(js: NodeCompiler, written?: Key[]): NodeCompiler {
+	/** writes the copy of data's declared keys, those in `written` aside */
+	jsDeclaredCopy(js: NodeCompiler, written?: Key[]): NodeCompiler {
 		if (this.sequence || this.writesInto(js)) return js
 		const copyKeys = () => {
 			for (const prop of this.inOrder) {
@@ -1247,8 +1235,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return written === undefined ? js.if("out !== data", copyKeys) : copyKeys()
 	}
 
-	// an array's copy has only the enumerable props of data
-	private compileCopyProps(
+	/** writes the copy of data's props: an array's copy has only its enumerable props */
+	private jsCopyProps(
 		js: NodeCompiler,
 		from: string,
 		to: string
@@ -1261,12 +1249,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return js
 	}
 
-	private compileSequenceDefaults(js: NodeCompiler): void {
+	/** writes the defaults of a sequence's missing elements */
+	private jsSequenceDefaults(js: NodeCompiler): void {
 		const sequence = this.sequence
 		if (!sequence?.defaultables) return
 		const defaultables = sequence.defaultables
 		js.if(`data.length < ${sequence.preLen + sequence.defLen}`, () => {
-			this.compileCopy(js)
+			this.jsCopy(js)
 			for (let i = 0; i < defaultables.length; i++) {
 				const [node, defaultValue] = defaultables[i]
 				const index = sequence.preLen + i
@@ -1286,7 +1275,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		})
 	}
 
-	private compileDeleteTransform(
+	/** writes the deletion of undeclared keys */
+	private jsDeleteTransform(
 		js: NodeCompiler,
 		transformedProps: Prop.Node[],
 		outMayBeCopied: boolean
@@ -1301,21 +1291,21 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					`value${i}`
 				)
 				js.if(changed, () =>
-					this.compileCopy(js).line(`out${js.prop(prop.key)} = transformed${i}`)
+					this.jsCopy(js).line(`out${js.prop(prop.key)} = transformed${i}`)
 				)
 			}
-			this.compileDefaults(js)
+			this.jsDefaults(js)
 			// out can differ from data only after a transform or a default
 			if (outMayBeCopied || transformedProps.length || this.defaultable.length)
-				this.compileDeclaredCopy(js)
+				this.jsDeclaredCopy(js)
 			const deletes = () =>
-				this.compileForOwnKeys(
+				this.jsForOwnKeys(
 					js,
 					"data",
 					() =>
 						js.if(
-							`!(k in ${js.ref(this.propsByKey)}) && !(${this._compileDeclaresKey(js)})`,
-							() => this.compileCopy(js).line("delete out[k]")
+							`!(k in ${js.ref(this.propsByKey)}) && !(${this._jsDeclaresKey(js)})`,
+							() => this.jsCopy(js).line("delete out[k]")
 						),
 					"dataKeys",
 					"dataSymbols",
@@ -1344,7 +1334,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				)
 			}
 			for (const node of this.defaultable)
-				unchanged.push(node.compileHoldsValue(js, "data"))
+				unchanged.push(node.jsHoldsValue(js, "data"))
 			if (this.sequence.defaultables) {
 				unchanged.push(
 					`data.length >= ${this.sequence.preLen + this.sequence.defLen}`
@@ -1395,7 +1385,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				js.line(`result${js.prop(prop.key)} = ${outputOf(prop)}`)
 			if (prop.is("required")) store()
 			else {
-				js.if(prop.compileHoldsValue(js, "data"), store)
+				js.if(prop.jsHoldsValue(js, "data"), store)
 				if (prop.hasDefault()) js.else(() => compileDefault(js, prop, "result"))
 			}
 		}
@@ -1407,12 +1397,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		}
 		if (this.index) {
-			this.compileForOwnKeys(
+			this.jsForOwnKeys(
 				js,
 				"out",
 				() =>
 					js.if(
-						`!(k in ${js.ref(this.propsByKey)}) && (${this._compileDeclaresKey(js)})`,
+						`!(k in ${js.ref(this.propsByKey)}) && (${this._jsDeclaresKey(js)})`,
 						() => js.line("result[k] = out[k]")
 					),
 				"outKeys",
@@ -1429,8 +1419,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 	}
 
-	// loops k over the own keys of object
-	private compileForOwnKeys(
+	/** writes a loop of `k` over the own keys of `object` */
+	private jsForOwnKeys(
 		js: NodeCompiler,
 		object: string,
 		body: () => NodeCompiler,
@@ -1451,7 +1441,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		})
 	}
 
-	protected compileEntry(
+	/** writes the check of one of data's entries */
+	protected jsEntry(
 		js: NodeCompiler,
 		keyDomain: "string" | "symbol"
 	): NodeCompiler {
@@ -1467,17 +1458,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			// for...in also reaches inherited keys, which aren't undeclared
 			const isOwn = "Object.prototype.hasOwnProperty.call(data, k)"
 			const skipsInherited =
-				!this.index && !this.sequence && js.traversalKind === "Allows"
+				!this.index && !this.sequence && js.trav === "Allows"
 			if (skipsInherited) js.line(`if (!${isOwn}) continue`)
 			const props = this.props.filter(prop => typeof prop.key === keyDomain)
 			if (props.length) compileDeclaredKeySwitch(js, props)
 			const reject = () =>
-				js.traversalKind === "Allows" ?
+				js.trav === "Allows" ?
 					js.return(false)
 				:	js.if(js.undeclaredFails?.(this) ?? js.error(this, "k"), () =>
 						js.return(false)
 					)
-			const declaresKey = this._compileDeclaresKey(js)
+			const declaresKey = this._jsDeclaresKey(js)
 			const conditions = declaresKey === "false" ? [] : [`!(${declaresKey})`]
 			if (!this.index && !skipsInherited) conditions.push(isOwn)
 			if (conditions.length) js.if(conditions.join(" && "), reject)

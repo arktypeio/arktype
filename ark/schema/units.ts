@@ -191,16 +191,16 @@ export const precompileInPlace = (
 			include(node)
 		}
 
-		override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
+		override refToId(id: NodeId, opts?: ReferenceOptions): string {
 			const reference = this.linkage.refsById[id]
-			const kind = opts?.kind ?? this.traversalKind
+			const kind = opts?.kind ?? this.trav
 			if (reference && !kindsByNode.get(reference)?.includes(kind)) {
 				this.linkage.dependencies[`${this.nameOf(id)}${kind}`] = [
 					reference,
 					kind
 				]
 			}
-			return super.referenceToId(id, opts)
+			return super.refToId(id, opts)
 		}
 
 		override ref(value: object | symbol): string {
@@ -563,14 +563,10 @@ const createLinkage = (
 export class TraversalCompiler extends NodeCompiler {
 	readonly linkage: UnitLinkage
 
-	constructor(
-		kind: TraversalKind,
-		linkage: UnitLinkage,
-		requiresContext: boolean
-	) {
+	constructor(kind: TraversalKind, linkage: UnitLinkage, needsCtx: boolean) {
 		super({
 			kind,
-			requiresContext,
+			needsCtx,
 			refs: linkage.refs
 		})
 		this.linkage = linkage
@@ -584,16 +580,16 @@ export class TraversalCompiler extends NodeCompiler {
 		this.reach(node)
 		const expression =
 			(
-				(opts?.kind ?? this.traversalKind) !== this.traversalKind ||
+				(opts?.kind ?? this.trav) !== this.trav ||
 				(opts?.arg ?? this.data) !== this.data
 			) ?
 				undefined
 			: node.is("structure") ?
 				// a structure sharing transformed keys applies them in a call of its own
-				this.traversalKind === "Apply" && node.sharesTransforms ?
+				this.trav === "Apply" && node.sharesTransforms ?
 					undefined
-				:	node.compileConjunction(this)
-			:	node.compileExpression?.(this)
+				:	node.jsConjunction(this)
+			:	node.jsExpression?.(this)
 		return expression === undefined ?
 				super.invoke(node, opts)
 			:	`(${expression})`
@@ -612,15 +608,15 @@ export class TraversalCompiler extends NodeCompiler {
 	}
 
 	// a node can be named without being invoked, e.g. an Allows passed
-	override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
+	override refToId(id: NodeId, opts?: ReferenceOptions): string {
 		const reference = this.linkage.refsById[id]
 		if (reference && this.linkage.unreached.delete(reference))
 			this.linkage.reached.push(reference)
 		if (reference && this.linkage.reused.has(reference)) {
-			const kind = opts?.kind ?? this.traversalKind
+			const kind = opts?.kind ?? this.trav
 			this.linkage.dependencies[`${this.nameOf(id)}${kind}`] = [reference, kind]
 		}
-		return super.referenceToId(id, opts)
+		return super.refToId(id, opts)
 	}
 
 	override nameOf(id: NodeId): string {
@@ -633,16 +629,15 @@ export class TraversalCompiler extends NodeCompiler {
 		body: (js: NodeCompiler) => unknown
 	): this {
 		const js = new (this.linkage.opts.compiler ?? TraversalCompiler)(
-			this.traversalKind,
+			this.trav,
 			this.linkage,
-			this.requiresContext
+			this.needsCtx
 		).indent()
-		js.checksMorphErrors = this.checksMorphErrors
+		js.checksErrs = this.checksErrs
 		body(js)
 		const params = [this.data, this.ctx, ...args]
 		// the variable initializeTransform declares
-		if (this.checksMorphErrors)
-			params.push(this.requiresContext ? "errorCount" : "failed")
+		if (this.checksErrs) params.push(this.needsCtx ? "errorCount" : "failed")
 		const list = params.join(", ")
 		this.linkage.members.push([name, `function(${list}) { ${js.body} }`])
 		return this.return(`${name}(${list})`)
@@ -669,7 +664,7 @@ const declareTraversal = (
 		kind !== "Transform" || node.transformCtx
 	).indent()
 	node.compile(js)
-	const name = js.referenceToId(node.id, { kind })
+	const name = js.refToId(node.id, { kind })
 	linkage.members.push([name, js.write("function")])
 	return name
 }

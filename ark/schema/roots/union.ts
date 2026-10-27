@@ -408,16 +408,16 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 	compile(js: NodeCompiler): void {
 		const discriminant = this.discriminant
-		if (!discriminant) return this.compileIndiscriminable(js)
+		if (!discriminant) return this.jsIndiscriminable(js)
 		// two branches of different domains are checked in turn, a unit first,
 		// which is cheaper than finding data's domain
 		if (
-			js.traversalKind === "Allows" &&
+			js.trav === "Allows" &&
 			discriminant.kind === "domain" &&
 			this.branches.length === 2
 		) {
 			const [a, b] = this.branches
-			return this.compileIndiscriminable(js, b.is("unit") ? [b, a] : [a, b])
+			return this.jsIndiscriminable(js, b.is("unit") ? [b, a] : [a, b])
 		}
 
 		// we need to access the path as optional so we don't throw if it isn't present
@@ -428,7 +428,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			const v = cases[k]
 			// a case transforming nothing returns data as the switch's end does
 			if (
-				js.traversalKind === "Transform" &&
+				js.trav === "Transform" &&
 				(v === true || !v.transforms) &&
 				!("default" in cases)
 			)
@@ -440,12 +440,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				:	`case ${k}`
 			const member = discriminant.members?.[k]
 			const caseResult =
-				js.traversalKind === "Transform" ?
+				js.trav === "Transform" ?
 					v !== true && v.transforms ?
 						invokeTransform(js, v, member)
 					:	"data"
 				: v === true ? "true"
-				: js.traversalKind !== "Apply" ? js.invoke(v)
+				: js.trav !== "Apply" ? js.invoke(v)
 				: k === "default" ?
 					(js.defaultFails?.(this, v) ??
 					`${js.ref(this)}.applyDefault(data, ctx, ${value})`)
@@ -454,12 +454,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			written.push([caseCondition, caseResult])
 		}
 		const otherwise =
-			js.traversalKind === "Allows" ? "false"
-			: js.traversalKind === "Transform" ? "data"
+			js.trav === "Allows" ? "false"
+			: js.trav === "Transform" ? "data"
 			: (js.missFails?.(this) ??
 				`${js.ref(this)}.applyMiss(data, ctx, ${value})`)
 		// an Apply of one domain or a unit it allows, as `T | null`, needn't switch
-		if (js.traversalKind === "Apply" && written.length === 2) {
+		if (js.trav === "Apply" && written.length === 2) {
 			const unitIndex = written.findIndex(
 				([label, result]) =>
 					result === "true" &&
@@ -489,15 +489,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	private compileIndiscriminable(
-		js: NodeCompiler,
-		branches = this.branches
-	): void {
-		if (
-			js.traversalKind === "Apply" &&
-			!this.hasAlias &&
-			isDecidedByAllows(this)
-		) {
+	/** writes the check of branches no discriminant tells apart */
+	private jsIndiscriminable(js: NodeCompiler, branches = this.branches): void {
+		if (js.trav === "Apply" && !this.hasAlias && isDecidedByAllows(this)) {
 			for (const branch of this.branches) {
 				js.if(
 					branch.compileCondition?.(js, "data") ??
@@ -509,7 +503,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				js.unionFails?.(this) ??
 					`!ctx.failsUnion([${this.branches.map(branch => js.traversal(branch, "Apply")).join(", ")}], ${js.site(this)}, data)`
 			)
-		} else if (js.traversalKind === "Apply") {
+		} else if (js.trav === "Apply") {
 			// each branch is applied once, as Allows can't enter its resolution
 			// a compiler writing unionFails needs no branch errors
 			const collects = !js.unionFails
@@ -527,7 +521,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					`${js.ref(errorFromUnion)}(ctx, errors, ${js.ref(this.meta)}, data)`
 				).return("!ctx.failFast")
 			} else js.return(js.unionFails!(this))
-		} else if (js.traversalKind === "Allows") {
+		} else if (js.trav === "Allows") {
 			for (const branch of branches) {
 				// an error a branch's predicate adds through ctx fails only that branch
 				js.if(
@@ -669,8 +663,8 @@ const invokeTransform = (
 	member?: BaseRoot
 ): string =>
 	member ?
-		`${js.ref(transformResolution)}(ctx, "${js.nameOf(member.id)}", data, ${js.referenceToId(branch.id, { kind: "Transform" })})`
-	: js.requiresContext && returnsTransformErrors(branch) ?
+		`${js.ref(transformResolution)}(ctx, "${js.nameOf(member.id)}", data, ${js.refToId(branch.id, { kind: "Transform" })})`
+	: js.needsCtx && returnsTransformErrors(branch) ?
 		`${js.ref(transformed)}(ctx, ${js.invoke(branch)}, data)`
 	:	js.invoke(branch)
 

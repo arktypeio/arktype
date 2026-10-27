@@ -253,13 +253,13 @@ Resolution: ${printable(resolution)}`)
 	compile(js: NodeCompiler): void {
 		const resolution = this.resolution
 		const id = resolution.id
-		if (js.traversalKind === "Transform") {
+		if (js.trav === "Transform") {
 			js.return(
-				`${js.ref(transformResolution)}(ctx, "${js.nameOf(id)}", data, ${js.referenceToId(id, { kind: "Transform" })})`
+				`${js.ref(transformResolution)}(ctx, "${js.nameOf(id)}", data, ${js.refToId(id, { kind: "Transform" })})`
 			)
 			return
 		}
-		if (js.traversalKind === "Apply") {
+		if (js.trav === "Apply") {
 			js.return(js.resolution(resolution, id))
 			return
 		}
@@ -268,7 +268,7 @@ Resolution: ${printable(resolution)}`)
 			js.return(traverse)
 			return
 		}
-		const allows = js.referenceToId(id, { kind: "Allows" })
+		const allows = js.refToId(id, { kind: "Allows" })
 		const visits = js.ref(aliasVisits)
 		js.if(`typeof ctx === "number"`, () =>
 			js

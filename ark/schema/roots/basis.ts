@@ -11,7 +11,7 @@ export abstract class InternalBasis<
 
 	traverseApply(data: d["prerequisite"], ctx: InternalTraversal): void {
 		if (!this.traverseAllows(data, ctx))
-			ctx.errorFromNode(this.errorCtx as never, data)
+			ctx.nodeError(this.errorCtx as never, data)
 	}
 
 	private _errorCtx: d["errorCtx"] | undefined

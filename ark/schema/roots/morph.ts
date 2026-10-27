@@ -167,18 +167,18 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	}
 
 	compile(js: NodeCompiler): void {
-		if (js.traversalKind === "Allows") {
+		if (js.trav === "Allows") {
 			js.return(this.head ? js.invoke(this.head) : true)
 			return
 		}
-		if (js.traversalKind === "Transform") return this.compileTransform(js)
+		if (js.trav === "Transform") return this.jsTransform(js)
 		js.return(this.head ? js.applyMember(this.head) : true)
 	}
 
-	private compileTransform(js: NodeCompiler): void {
+	private jsTransform(js: NodeCompiler): void {
 		let result = "data"
 		if (this.head?.transforms) {
-			js.initializeTransform([this.head])
+			js.initTransform([this.head])
 				.transformKey("transformedIn", "data", [{ node: this.head }])
 				.returnIfFailed()
 			result = "transformedIn"
@@ -202,7 +202,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 				js.const(morphed, call).if(
 					`${morphed} instanceof ${js.ref(ArkErrors)}`,
 					() =>
-						js.requiresContext ?
+						js.needsCtx ?
 							js.line(`${js.ref(addErrors)}(ctx, ${morphed})`).return("data")
 						:	js.return(`new ${js.ref(TransformErrors)}(${morphed}, ${result})`)
 				)
@@ -221,9 +221,9 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	}
 
 	traverseTransform(data: unknown, ctx: InternalTraversal): unknown {
-		const errorCount = ctx.currentErrorCount
+		const errorCount = ctx.errCount
 		let result = this.head?.transforms ? transform(ctx, this.head, data) : data
-		if (ctx.currentErrorCount > errorCount) return data
+		if (ctx.errCount > errorCount) return data
 		const morphs = this.traversedMorphs
 		for (let i = this.head ? 1 : 0; i < morphs.length; i++) {
 			const morph = morphs[i]

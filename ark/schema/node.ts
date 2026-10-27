@@ -932,8 +932,8 @@ export abstract class BaseNode<
 	abstract compile(js: NodeCompiler): void
 	// one expression checking data, if any
 	compileCondition?(js: NodeCompiler, data: string): string | undefined
-	// one expression computing the traversal's result, if any
-	compileExpression?(js: NodeCompiler): string | undefined
+	/** writes one expression computing its traversal's result, if it can */
+	jsExpression?(js: NodeCompiler): string | undefined
 
 	/** what compiled code reports when data fails it, holding its `errorCtx` as `v` */
 	get failSite(): FailureSite | UnionSite {

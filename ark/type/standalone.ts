@@ -2740,9 +2740,7 @@ ${writeFunction(
 			) &&
 			// errors count their issues, not a branch's
 			!this.unitsOf(root).some(unit =>
-				unit.members.some(([, source]) =>
-					source.includes("ctx.currentErrorCount")
-				)
+				unit.members.some(([, source]) => source.includes("ctx.errCount"))
 			)
 		if (reportsIssues) assertReportsIssues(this.unitsOf(root))
 		const ctx =

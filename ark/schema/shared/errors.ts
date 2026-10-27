@@ -525,14 +525,11 @@ export class ArkTraversal extends Traversal {
 		return new ArkErrors(this.config)
 	}
 
-	override errorFromNode<input extends NodeErrorContextInput>(
+	override nodeError<input extends NodeErrorContextInput>(
 		input: input,
 		data: unknown
 	): ArkError<input["code"]>
-	override errorFromNode(
-		input: NodeErrorContextInput,
-		data: unknown
-	): ArkError {
+	override nodeError(input: NodeErrorContextInput, data: unknown): ArkError {
 		return this.addError(
 			errorOfNodeContext(input, pathAt(this.path), data, this.config)
 		)

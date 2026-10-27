@@ -260,7 +260,8 @@ export const expectedOf = <description extends string | undefined>(
 export declare namespace NodeCompiler {
 	export interface Context {
 		kind: TraversalKind
-		requiresContext?: boolean
+		/** whether the traversal it compiles takes `ctx` */
+		needsCtx?: boolean
 		refs?: Refs
 	}
 
@@ -271,8 +272,10 @@ export abstract class NodeCompiler extends CompiledFunction<
 	Fn,
 	["data", "ctx"]
 > {
-	traversalKind: TraversalKind
-	requiresContext: boolean
+	/** which traversal it compiles: "Allows", "Apply" or "Transform" */
+	trav: TraversalKind
+	/** whether the traversal it compiles takes `ctx` */
+	needsCtx: boolean
 	readonly refs: NodeCompiler.Refs | undefined
 	// whether a transform writes into the object it receives
 	declare readonly inPlace?: boolean
@@ -291,12 +294,13 @@ export abstract class NodeCompiler extends CompiledFunction<
 	// JSON.parse's output does, so a count of its keys can stand for a check
 	// of each
 	declare readonly jsonInput?: boolean
-	checksMorphErrors = false
+	/** whether the transform it compiles checks for errors a transformed child added */
+	checksErrs = false
 
 	constructor(ctx: NodeCompiler.Context) {
 		super("data", "ctx")
-		this.traversalKind = ctx.kind
-		this.requiresContext = ctx.requiresContext ?? true
+		this.trav = ctx.kind
+		this.needsCtx = ctx.needsCtx ?? true
 		this.refs = ctx.refs
 	}
 
@@ -325,18 +329,14 @@ export abstract class NodeCompiler extends CompiledFunction<
 	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
 		const arg = opts?.arg ?? this.data
 		if (typeof node === "string")
-			return `${this.referenceToId(node, opts)}(${arg}, ${this.ctx})`
-		const kind = opts?.kind ?? this.traversalKind
-		if (
-			this.traversalKind === "Transform" &&
-			kind === "Allows" &&
-			node.allowsCtx
-		)
+			return `${this.refToId(node, opts)}(${arg}, ${this.ctx})`
+		const kind = opts?.kind ?? this.trav
+		if (this.trav === "Transform" && kind === "Allows" && node.allowsCtx)
 			return this.allows(node, arg)
-		const reference = this.referenceToId(node.id, opts)
+		const reference = this.refToId(node.id, opts)
 		if (kind === "Transform" && node.isTransformedById)
 			return `${this.ref(transformResolution)}(${this.ctx}, "${this.nameOf(node.id)}", ${arg}, ${reference})`
-		return this.requiresContextFor(node, kind) ?
+		return this.needsCtxFor(node, kind) ?
 				`${reference}(${arg}, ${this.ctx})`
 			:	`${reference}(${arg})`
 	}
@@ -345,7 +345,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	allows(node: BaseNode, arg: string = this.data): string {
 		if (!node.allowsCtx) return this.invoke(node, { arg, kind: "Allows" })
 		return node.checksCtx ?
-				`${this.ref(allowsInBranchBy)}(${this.ctx}, ${this.referenceToId(node.id, { kind: "Allows" })}, ${arg})`
+				`${this.ref(allowsInBranchBy)}(${this.ctx}, ${this.refToId(node.id, { kind: "Allows" })}, ${arg})`
 			:	`${this.ref(node)}.allows(${arg})`
 	}
 
@@ -361,8 +361,9 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return `${this.ref(enterApplied)}(ctx, "${this.nameOf(id)}", ${arg}) ?? ${this.ref(exitApplied)}(ctx, ${apply}(${arg}, ctx))`
 	}
 
-	referenceToId(id: NodeId, opts?: ReferenceOptions): string {
-		const invokedKind = opts?.kind ?? this.traversalKind
+	/** the expression a compiled traversal calls a node's traversal by */
+	refToId(id: NodeId, opts?: ReferenceOptions): string {
+		const invokedKind = opts?.kind ?? this.trav
 		const base = `${this.nameOf(id)}${invokedKind}`
 		return opts?.bind ? `${base}.bind(${opts?.bind})` : base
 	}
@@ -423,9 +424,10 @@ export abstract class NodeCompiler extends CompiledFunction<
 		}).return(otherwise)
 	}
 
-	requiresContextFor(node: BaseNode, kind = this.traversalKind): boolean {
+	/** whether `node`'s traversal of `kind` takes `ctx` */
+	needsCtxFor(node: BaseNode, kind = this.trav): boolean {
 		return (
-			this.traversalKind === "Apply" ||
+			this.trav === "Apply" ||
 			(kind === "Transform" ? node.transformCtx : node.allowsCtx)
 		)
 	}
@@ -441,21 +443,20 @@ export abstract class NodeCompiler extends CompiledFunction<
 	// transform after it is compiled with its checks. A build for size
 	// returns false
 	rejection(node: BaseNode): string {
-		return (
-				this.traversalKind === "Allows" && !this.shortest && node.transforms
-			) ?
+		return this.trav === "Allows" && !this.shortest && node.transforms ?
 				`${this.ref(disallowed)}()`
 			:	"false"
 	}
 
-	initializeErrorCount(): this {
-		return this.const("errorCount", "ctx.currentErrorCount")
+	/** writes a const holding the error count, to tell whether a child added errors */
+	initErrCount(): this {
+		return this.const("errorCount", "ctx.errCount")
 	}
 
 	traverseKey(keyExpr: string, accessExpression: string, node: BaseNode): this {
 		const fails = this.keyFails(keyExpr, accessExpression, node)
 		if (fails !== undefined) return this.if(fails, () => this.return(false))
-		if (this.traversalKind === "Apply")
+		if (this.trav === "Apply")
 			return this.applyKey(keyExpr, accessExpression, node)
 		// read once, so the string remembered is the one its pattern rejected
 		if (this.loopDepth > 0 && isRefinedPattern(node)) {
@@ -472,7 +473,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 
 	// what fails a key's value in one expression, if one can
 	keyFails(key: string, value: string, node: BaseNode): string | undefined {
-		if (this.traversalKind !== "Apply") {
+		if (this.trav !== "Apply") {
 			const condition = node.compileCondition?.(this, value)
 			if (condition !== undefined) return `!(${condition})`
 			if (
@@ -534,14 +535,13 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return this.line("ctx.path.pop()")
 	}
 
-	initializeTransform(transformedChildren: readonly BaseNode[]): this {
-		this.checksMorphErrors = transformedChildren.some(
+	/** writes what a transform of `transformedChildren` needs before it starts */
+	initTransform(transformedChildren: readonly BaseNode[]): this {
+		this.checksErrs = transformedChildren.some(
 			child => child.hasMorph || child.transformCtx
 		)
-		if (!this.checksMorphErrors) return this
-		return this.requiresContext ?
-				this.initializeErrorCount()
-			:	this.line("let failed")
+		if (!this.checksErrs) return this
+		return this.needsCtx ? this.initErrCount() : this.line("let failed")
 	}
 
 	transformKey(
@@ -568,7 +568,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		const assignSteps = () => {
 			const errorCount = `${name}ErrorCount`
 			if (nodes.slice(0, -1).some(node => node.transformCtx))
-				this.const(errorCount, `${this.ctx}.currentErrorCount`)
+				this.const(errorCount, `${this.ctx}.errCount`)
 			for (let i = 0; i < steps.length; i++) {
 				const { node, signature } = steps[i]
 				const previous = nodes.slice(0, i)
@@ -579,7 +579,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 				if (previous.some(returnsTransformErrors))
 					conditions.push(`!(${isTransformErrors()})`)
 				if (previous.some(node => node.transformCtx))
-					conditions.push(`${this.ctx}.currentErrorCount === ${errorCount}`)
+					conditions.push(`${this.ctx}.errCount === ${errorCount}`)
 				const assignStep = () => assign(name, node, i === 0 ? input : name)
 				if (conditions.length) this.if(conditions.join(" && "), assignStep)
 				else assignStep()
@@ -609,7 +609,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	addMorphErrors(errors: string, keyExpr?: string): this {
 		const key = keyExpr === undefined ? "" : `, ${keyExpr}`
 		return this.line(
-			this.requiresContext ?
+			this.needsCtx ?
 				`${this.ref(addMorphErrors)}(${this.ctx}, ${errors}${key})`
 			:	`failed = ${errors}.addTo(failed${key})`
 		)
@@ -631,9 +631,9 @@ export abstract class NodeCompiler extends CompiledFunction<
 	}
 
 	returnIfFailed(): this {
-		if (!this.checksMorphErrors) return this
-		return this.requiresContext ?
-				this.if("ctx.currentErrorCount > errorCount", () => this.return("data"))
+		if (!this.checksErrs) return this
+		return this.needsCtx ?
+				this.if("ctx.errCount > errorCount", () => this.return("data"))
 			:	this.if("failed", () => this.return("failed"))
 	}
 
@@ -646,14 +646,14 @@ export abstract class NodeCompiler extends CompiledFunction<
 	check(node: BaseNode, opts?: CheckOptions): this {
 		const arg = opts?.arg ?? this.data
 		const condition =
-			opts?.kind || (this.traversalKind === "Apply" && node.is("union")) ?
+			opts?.kind || (this.trav === "Apply" && node.is("union")) ?
 				undefined
 			:	node.compileCondition?.(this, arg)
 		const fail = () => (opts?.breaks ? this.line("break") : this.return(false))
 		if (condition === undefined)
 			return this.if(`!${this.invoke(node, opts)}`, fail)
 		return this.if(
-			this.traversalKind === "Allows" ?
+			this.trav === "Allows" ?
 				`!(${condition})`
 			:	`!(${condition}) && ${this.error(node, undefined, arg)}`,
 			fail
@@ -663,7 +663,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	checkLeaf(node: BaseNode): this {
 		const condition = node.compileCondition!(this, this.data)!
 		return this.return(
-			this.traversalKind === "Allows" ?
+			this.trav === "Allows" ?
 				condition
 			:	`${condition} || !${this.error(node)}`
 		)
@@ -671,7 +671,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 
 	// a traversal passed as a value rather than called
 	traversal(node: BaseNode, kind: TraversalKind): string {
-		return this.referenceToId(node.id, { kind })
+		return this.refToId(node.id, { kind })
 	}
 }
 

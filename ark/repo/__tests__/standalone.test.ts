@@ -534,7 +534,7 @@ nick must be a string or null`)
 			Looped: type({
 				"for (;;) {": type.enumerated("${", "`", '"', "\\\\"),
 				"         break": "string.url",
-				"const errorCount = ctx.currentErrorCount\n": "number",
+				"const errorCount = ctx.errCount\n": "number",
 				"    return false  }": "string"
 			})
 		}
@@ -545,7 +545,7 @@ nick must be a string or null`)
 		) => ({
 			"for (;;) {": first,
 			[key]: url,
-			"const errorCount = ctx.currentErrorCount\n": 0,
+			"const errorCount = ctx.errCount\n": 0,
 			"    return false\u2028 }": ""
 		})
 		// each input fails with at most one issue, so a first-issue build keeps

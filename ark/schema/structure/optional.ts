@@ -123,7 +123,8 @@ export class OptionalNode extends BaseProp<"optional"> {
 			:	this.key in data
 	}
 
-	compileHoldsValue(js: NodeCompiler, data: string): string {
+	/** writes whether `data` holds its key with a value */
+	jsHoldsValue(js: NodeCompiler, data: string): string {
 		return this.defaultsUndefined ?
 				`${data}${js.prop(this.key)} !== undefined`
 			:	`${js.serialize(this.key)} in ${data}`

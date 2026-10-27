@@ -105,12 +105,12 @@ export abstract class BaseProp<
 				ctx
 			)
 		} else if (this.is("required")) {
-			traverseKey(this.key, () => ctx.errorFromNode(this.errorCtx, data), ctx)
+			traverseKey(this.key, () => ctx.nodeError(this.errorCtx, data), ctx)
 		}
 	}
 
 	compile(js: NodeCompiler): void {
-		const expression = this.compileExpression(js)
+		const expression = this.jsExpression(js)
 		if (expression !== undefined) {
 			js.return(expression)
 			return
@@ -122,7 +122,7 @@ export abstract class BaseProp<
 
 		if (this.is("required")) {
 			js.else(() =>
-				js.traversalKind === "Apply" ?
+				js.trav === "Apply" ?
 					js.if(js.error(this, key), () => js.return(false))
 				:	js.return(false)
 			)
@@ -131,13 +131,13 @@ export abstract class BaseProp<
 		js.return(true)
 	}
 
-	compileExpression(js: NodeCompiler): string | undefined {
+	jsExpression(js: NodeCompiler): string | undefined {
 		const key = js.serialize(this.key)
 		const value = `data${js.prop(this.key)}`
 		// a value no branch of which allows undefined fails a missing key too
 		if (
 			this.is("required") &&
-			(js.traversalKind === "Allows" ||
+			(js.trav === "Allows" ||
 				(!this.value.transforms && !this.value.entersAlias)) &&
 			this.value.branches.every(branch => {
 				// Allows checks a morph's input
@@ -148,7 +148,7 @@ export abstract class BaseProp<
 				)
 			})
 		) {
-			if (js.traversalKind === "Apply") {
+			if (js.trav === "Apply") {
 				// a value a condition decides is checked by it before it's applied,
 				// a union by its branches
 				const condition =
@@ -172,7 +172,7 @@ export abstract class BaseProp<
 		if (fails === undefined) return
 		return (
 			this.is("optional") ? `!(${key} in data) || !(${fails})`
-			: js.traversalKind === "Apply" ?
+			: js.trav === "Apply" ?
 				`${key} in data ? !(${fails}) : !${js.error(this, key)}`
 			:	`${key} in data && !(${fails})`
 		)

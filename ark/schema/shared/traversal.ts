@@ -105,7 +105,7 @@ export class InternalTraversal implements FailureContext {
 	 * #### whether {@link currentBranch} (or the traversal root, outside a union) has one or more errors
 	 */
 	hasError(): boolean {
-		return this.currentErrorCount !== 0
+		return this.errCount !== 0
 	}
 
 	get currentBranch(): BranchTraversal | undefined {
@@ -121,7 +121,8 @@ export class InternalTraversal implements FailureContext {
 		return this.root
 	}
 
-	get currentErrorCount(): number {
+	/** how many errors the current union branch has, or the traversal has outside a union */
+	get errCount(): number {
 		const branches = this.branches
 		return branches.length === 0 ?
 				(this._errors?.count ?? 0)
@@ -154,14 +155,16 @@ export class InternalTraversal implements FailureContext {
 	}
 
 	/**
+	 * an error from a node's context and the data it rejected
+	 *
 	 * @internal a node's error, which arktype's traversal writes from its
 	 * context, and this one, checking Allows for arktype, adds as an issue
 	 */
-	errorFromNode<input extends NodeErrorContextInput>(
+	nodeError<input extends NodeErrorContextInput>(
 		input: input,
 		data: unknown
 	): ArkError<input["code"]>
-	errorFromNode(input: NodeErrorContextInput, data: unknown): ArkError {
+	nodeError(input: NodeErrorContextInput, data: unknown): ArkError {
 		return this.addError({
 			code: input.code,
 			path: this.path.slice(),
@@ -524,11 +527,11 @@ const transformPiped = (
 	transformNode: typeof transform
 ): unknown => {
 	const { received, receivedDepth } = ctx
-	const errorCount = ctx.currentErrorCount
+	const errorCount = ctx.errCount
 	const result = transformNode(ctx, node, data)
 	ctx.received = received
 	ctx.receivedDepth = receivedDepth
-	return ctx.currentErrorCount > errorCount ? errorsOf(ctx) : result
+	return ctx.errCount > errorCount ? errorsOf(ctx) : result
 }
 
 const applyPiped = (
@@ -536,7 +539,7 @@ const applyPiped = (
 	node: BaseNode,
 	data: unknown
 ): boolean => {
-	const errorCount = ctx.currentErrorCount
+	const errorCount = ctx.errCount
 	const { received, receivedDepth, checksOnly } = ctx
 	receive(ctx, data)
 	ctx.checksOnly = true
@@ -544,7 +547,7 @@ const applyPiped = (
 	ctx.checksOnly = checksOnly
 	ctx.received = received
 	ctx.receivedDepth = receivedDepth
-	return ctx.currentErrorCount === errorCount
+	return ctx.errCount === errorCount
 }
 
 // a morph's output is new data, tracked from the cyclic node's root
@@ -796,7 +799,7 @@ export const enterResolution = (
 	})
 	frame.id = id
 	frame.data = data
-	frame.errorCount = ctx.currentErrorCount
+	frame.errorCount = ctx.errCount
 	if (!resolutions.tracked) return
 	;(states ?? (resolutions.seen[id] = new Map())).set(
 		data,
@@ -823,7 +826,7 @@ export const exitResolution = (
 	resolutions.reachedInvalid = frame.outerReachedInvalid
 	const valid =
 		allowed ??
-		(reachedInvalid === undefined && ctx.currentErrorCount === frame.errorCount)
+		(reachedInvalid === undefined && ctx.errCount === frame.errorCount)
 	const data = frame.data
 	const states = resolutions.seen[frame.id]!
 	// a primitive has no identity, so each place reports its own errors
@@ -863,7 +866,7 @@ const exitUntracked = (
 	ctx: InternalTraversal,
 	frame: ResolvingFrame
 ): boolean => {
-	if (ctx.currentErrorCount === frame.errorCount) return true
+	if (ctx.errCount === frame.errorCount) return true
 	if (!hasDomain(frame.data, "object")) return false
 	const resolutions = ctx.resolutions!
 	;(resolutions.seen[frame.id] ??= new Map()).set(

@@ -369,7 +369,7 @@ const missesAsRequired = (prop: Prop.Node): boolean => {
 export interface CombinatorCompiler extends NodeCompiler {
 	// whether it writes intersections a shape checks as that shape
 	readonly shapes: boolean
-	referenceToId(id: NodeId, opts?: { kind: "Allows" }): string
+	refToId(id: NodeId, opts?: { kind: "Allows" }): string
 }
 
 const writeArgs = (...args: (string | undefined)[]): string => {
@@ -618,7 +618,7 @@ const writeShape = (
 const readChecker = (js: CombinatorCompiler, node: BaseNode): string =>
 	isInlined(node) ?
 		writeCombinator(js, node)!
-	:	js.referenceToId(node.id, { kind: "Allows" })
+	:	js.refToId(node.id, { kind: "Allows" })
 
 /** a node's checker, if it combines */
 export const writeCombinator = (

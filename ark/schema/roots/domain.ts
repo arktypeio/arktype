@@ -102,7 +102,7 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 			this.domain === "object" ?
 				// Apply's check is the one an object's Allows writes, so a bundle
 				// holding both compresses it away
-				js.traversalKind === "Apply" ?
+				js.trav === "Apply" ?
 					`(${data} instanceof Object || Object(${data}) === ${data})`
 				:	`${data} !== null && (typeof ${data} === "object" || typeof ${data} === "function")`
 			: this.checksNaN && this.checksInfinity ? `Number.isFinite(${data})`

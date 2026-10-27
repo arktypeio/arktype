@@ -240,21 +240,21 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	}
 
 	traverseApply(data: unknown, ctx: InternalTraversal): void {
-		const errorCount = ctx.currentErrorCount
+		const errorCount = ctx.errCount
 		if (this.basis) {
 			this.basis.traverseApply(data, ctx)
-			if (ctx.currentErrorCount > errorCount) return
+			if (ctx.errCount > errorCount) return
 		}
 		if (this.preStruct.length) {
 			for (let i = 0; i < this.preStruct.length - 1; i++) {
 				this.preStruct[i].traverseApply(data as never, ctx)
-				if (ctx.failFast && ctx.currentErrorCount > errorCount) return
+				if (ctx.failFast && ctx.errCount > errorCount) return
 			}
 			this.preStruct[this.preStruct.length - 1]!.traverseApply(
 				data as never,
 				ctx
 			)
-			if (ctx.currentErrorCount > errorCount) return
+			if (ctx.errCount > errorCount) return
 		}
 		if (this.structure) {
 			// transformed only if the predicates allow it
@@ -265,13 +265,13 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 				}
 			} else {
 				this.structure.traverseApply(data as never, ctx)
-				if (ctx.currentErrorCount > errorCount) return
+				if (ctx.errCount > errorCount) return
 			}
 		}
 		if (this.inner.predicate) {
 			for (let i = 0; i < this.inner.predicate.length - 1; i++) {
 				this.inner.predicate[i].traverseApply(data as never, ctx)
-				if (ctx.currentErrorCount > errorCount) return
+				if (ctx.errCount > errorCount) return
 			}
 			this.inner.predicate[this.inner.predicate.length - 1]!.traverseApply(
 				data as never,
@@ -301,7 +301,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 
 	// a failed basis or prestructural stops this node's Apply
 	compile(js: NodeCompiler): void {
-		if (js.traversalKind === "Allows") {
+		if (js.trav === "Allows") {
 			const read =
 				this.inner.domain?.domain === "object" && !this.preStruct.length ?
 					this.structure?.allowsProps[0]
@@ -365,7 +365,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			return
 		}
 		// only a structure can transform an intersection's data
-		if (js.traversalKind === "Transform") {
+		if (js.trav === "Transform") {
 			js.return(js.invoke(this.structure!))
 			return
 		}
@@ -405,14 +405,14 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		}
 		// read only where a later check follows one that can add issues
 		if ((structure && !structure.transforms) || predicates.length > 1)
-			js.initializeErrorCount()
+			js.initErrCount()
 		if (structure) {
 			// transformed only if the predicates allow it
 			if (structure.transforms)
 				js.if(`!${js.allows(structure)}`, () => js.return(js.invoke(structure)))
 			else {
 				js.if(`!${js.invoke(structure)}`, () => js.return(false)).if(
-					"ctx.currentErrorCount > errorCount",
+					"ctx.errCount > errorCount",
 					() => js.return(true)
 				)
 			}
@@ -420,7 +420,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		// since predicates can be chained, the first to fail stops this node
 		for (const predicate of predicates.slice(0, -1)) {
 			js.if(`!${js.invoke(predicate)}`, () => js.return(false)).if(
-				"ctx.currentErrorCount > errorCount",
+				"ctx.errCount > errorCount",
 				() => js.return(true)
 			)
 		}

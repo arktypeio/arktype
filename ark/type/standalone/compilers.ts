@@ -55,7 +55,7 @@ class StandaloneCompiler extends TraversalCompiler {
 		return (
 				this.shortest ||
 					this.naming ||
-					(opts?.kind ?? this.traversalKind) === "Apply" ||
+					(opts?.kind ?? this.trav) === "Apply" ||
 					!/^[\w$]+\(/.test(call)
 			) ?
 				call
@@ -299,27 +299,23 @@ const reportsApart = (reference: BaseNode): boolean =>
 // a detailed size build's traversals: a node that unifies has one, its
 // Apply named as its Allows, reporting a failure only to a ctx it's passed
 class UnifiedCompiler extends StandaloneCompiler {
-	override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
+	override refToId(id: NodeId, opts?: ReferenceOptions): string {
 		const node = this.linkage.refsById[id]
-		return super.referenceToId(
+		return super.refToId(
 			id,
-			(
-				node &&
-					(opts?.kind ?? this.traversalKind) === "Apply" &&
-					this.unifies(node)
-			) ?
+			node && (opts?.kind ?? this.trav) === "Apply" && this.unifies(node) ?
 				{ ...opts, kind: "Allows" }
 			:	opts
 		)
 	}
 
-	override requiresContextFor(
+	override needsCtxFor(
 		node: BaseNode,
-		kind: TraversalKind = this.traversalKind
+		kind: TraversalKind = this.trav
 	): boolean {
 		return (
 			(kind !== "Allows" || !this.unifies(node)) &&
-			super.requiresContextFor(node, kind)
+			super.needsCtxFor(node, kind)
 		)
 	}
 
@@ -441,10 +437,10 @@ class CombinatorCompiler extends forSize(UnifiedCompiler) {
 	override declareTraversals(node: BaseNode): string[] | undefined {
 		const source = writeCombinator(this, node)
 		if (source === undefined) return
-		const allows = this.referenceToId(node.id, { kind: "Allows" })
+		const allows = this.refToId(node.id, { kind: "Allows" })
 		this.linkage.members.push([allows, source])
 		if (!node.transforms) return [allows, allows]
-		const transform = this.referenceToId(node.id, { kind: "Transform" })
+		const transform = this.refToId(node.id, { kind: "Transform" })
 		this.linkage.members.push([
 			transform,
 			`/* @__PURE__ */ runtime.transformOf(${allows})`

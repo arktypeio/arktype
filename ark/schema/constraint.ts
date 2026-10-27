@@ -102,7 +102,7 @@ export abstract class InternalPrimitiveConstraint<
 
 	traverseApply(data: d["prerequisite"], ctx: InternalTraversal): void {
 		if (!this.traverseAllows(data, ctx))
-			ctx.errorFromNode(this.errorCtx as never, data)
+			ctx.nodeError(this.errorCtx as never, data)
 	}
 
 	compile(js: NodeCompiler): void {

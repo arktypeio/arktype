@@ -302,7 +302,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	}
 
 	traverseApply(data: array, ctx: InternalTraversal): void {
-		const errorCount = ctx.currentErrorCount
+		const errorCount = ctx.errCount
 		let i = 0
 		for (; i < data.length; i++) {
 			traverseKey(
@@ -313,7 +313,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			// bail out of subsequent elements in fail-fast mode (e.g. inside a
 			// union branch) so we don't traverse an element whose basis has
 			// already failed - see https://github.com/arktypeio/arktype/issues/1458
-			if (ctx.failFast && ctx.currentErrorCount > errorCount) return
+			if (ctx.failFast && ctx.errCount > errorCount) return
 		}
 	}
 
@@ -355,32 +355,33 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler): void {
-		if (js.traversalKind === "Transform") return this.compileTransform(js)
+		if (js.trav === "Transform") return this.jsTransform(js)
 		// like Structure, bail out of subsequent elements in fail-fast mode
 		// (e.g. inside a union branch) so we don't traverse an element whose
 		// basis has already failed - see
 		// https://github.com/arktypeio/arktype/issues/1458
-		this.compileElements(js, (keyExpr, node) =>
+		this.jsElements(js, (keyExpr, node) =>
 			js.traverseKey(keyExpr, `data[${keyExpr}]`, node)
 		)
 
 		js.return(true)
 	}
 
-	private compileTransform(js: NodeCompiler): void {
-		js.initializeTransform(this.children).let("out", "data")
-		this.compileElementTransforms(js, false)
+	private jsTransform(js: NodeCompiler): void {
+		js.initTransform(this.children).let("out", "data")
+		this.jsElementTransforms(js, false)
 		js.returnIfFailed().return("out")
 	}
 
-	compileElementTransforms(js: NodeCompiler, slices: boolean): NodeCompiler {
+	/** writes the transforms of data's elements */
+	jsElementTransforms(js: NodeCompiler, slices: boolean): NodeCompiler {
 		// an array written in place is never copied
 		const copy =
 			js.inPlace && !slices ? undefined
 			: slices ? "Array.prototype.slice.call(data)"
 			: `${js.ref(copyOf)}(data)`
 		let i = 0
-		this.compileElements(js, (keyExpr, node) => {
+		this.jsElements(js, (keyExpr, node) => {
 			const element = `element${i}`
 			const transformed = `transformed${i++}`
 			return js
@@ -396,13 +397,14 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		return js
 	}
 
-	private compileElements(
+	/** writes the checks of data's elements */
+	private jsElements(
 		js: NodeCompiler,
 		compileElement: (keyExpr: string, node: BaseRoot) => NodeCompiler
 	): void {
 		// a transform skips each element that would return its input
 		const reaches = (node: BaseRoot) =>
-			js.traversalKind !== "Transform" || node.transforms
+			js.trav !== "Transform" || node.transforms
 
 		if (this.prefix) {
 			for (const [i, node] of this.prefix.entries())
@@ -411,7 +413,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 		for (const [i, node] of this.maybes.entries()) {
 			const dataIndex = `${i + this.preLen}`
-			if (js.traversalKind === "Transform") {
+			if (js.trav === "Transform") {
 				if (node.transforms) {
 					js.if(`${dataIndex} < data.length`, () =>
 						compileElement(dataIndex, node)
