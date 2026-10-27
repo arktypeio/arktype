@@ -11,7 +11,9 @@ export const buildStringArbitrary = (
 	if ("pattern" in stringConstraints) {
 		if (stringConstraints.minLength || stringConstraints.maxLength)
 			throwInternalError("Bounded regex is not supported.")
-		return fc.stringMatching(new RegExp(stringConstraints.pattern))
+		return fc.stringMatching(
+			new RegExp(stringConstraints.pattern, stringConstraints.flags)
+		)
 	}
 
 	return fc.string(stringConstraints)
@@ -22,6 +24,7 @@ const getFastCheckStringConstraints = (
 ) => {
 	const stringConstraints: fc.StringConstraints & {
 		pattern?: string
+		flags?: string
 	} = {}
 	for (const refinement of refinements) {
 		if (refinement.hasKind("pattern")) {
@@ -31,6 +34,10 @@ const getFastCheckStringConstraints = (
 				)
 			}
 			stringConstraints["pattern"] = refinement.rule
+			// fast-check doesn't support i, and dropping it only narrows what
+			// gets generated, so every generated string still matches
+			if (refinement.flags)
+				stringConstraints["flags"] = refinement.flags.replace("i", "")
 		} else if (refinement.hasKind("exactLength")) {
 			stringConstraints["minLength"] = refinement.rule
 			stringConstraints["maxLength"] = refinement.rule
