@@ -1044,6 +1044,20 @@ contextualize(() => {
 		)
 	})
 
+	it("undiscriminated morph shared through a deep DAG", () => {
+		// each level doubles the paths to the morph, so comparing their refs
+		// pairwise outlasts the timeout
+		let Trimmed: type.Any = type(["string", "=>", (s: string) => s.trim()])
+		let Unmorphed: type.Any = type("string")
+		for (let i = 0; i < 13; i++) {
+			Trimmed = type({ "l?": Trimmed, "r?": Trimmed.array() })
+			Unmorphed = type({ "l?": Unmorphed, "r?": Unmorphed.array() })
+		}
+		attest(() => Trimmed.or(Unmorphed)).throws(
+			writeIndiscriminableMorphMessage(Unmorphed.expression, Trimmed.expression)
+		)
+	})
+
 	it("undiscriminated morph at an element", () => {
 		const Trimmed = ["string", "=>", (s: string) => s.trim()] as const
 		const Measured = ["string", "=>", (s: string) => s.length] as const

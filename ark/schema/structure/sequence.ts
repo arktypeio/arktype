@@ -11,13 +11,12 @@ import {
 import { BaseConstraint } from "../constraint.ts"
 
 import {
-	appendUniqueFlatRefs,
 	flatRefsAt,
 	ioOf,
+	uniqueFlatRefs,
 	type BaseNode,
 	type DeepNodeTransformContext,
-	type DeepNodeTransformation,
-	type FlatRef
+	type DeepNodeTransformation
 } from "../node.ts"
 import type { ExactLengthNode } from "../refinements/exactLength.ts"
 import type { MaxLengthNode } from "../refinements/maxLength.ts"
@@ -211,23 +210,16 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	)
 
 	protected override initFlatRefs(): void {
-		const flatRefs: FlatRef[] = []
-
-		appendUniqueFlatRefs(
-			flatRefs,
-			this.prevariadic.flatMap((element, i) => flatRefsAt(`${i}`, element.node))
-		)
-
-		appendUniqueFlatRefs(
-			flatRefs,
-			this.variadicOrPostfix.flatMap(element =>
+		this.cache.flatRefs = uniqueFlatRefs([
+			...this.prevariadic.flatMap((element, i) =>
+				flatRefsAt(`${i}`, element.node)
+			),
+			...this.variadicOrPostfix.flatMap(element =>
 				// a postfix index can't be directly represented as a type
 				// key, so we just use the same matcher for variadic
 				flatRefsAt($ark.intrinsic.nonNegativeIntegerString.internal, element)
 			)
-		)
-
-		this.cache.flatRefs = flatRefs
+		])
 		this.cache.flatMorphs = []
 	}
 
