@@ -64,7 +64,7 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 - [Validators](https://arktype.io/docs/precompile/validators.md): What a precompiled Type is, and how it differs from one arktype creates.
 - [Options](https://arktype.io/docs/precompile/options.md): Ship less, and configure a precompiled program.
 - [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting.md): What the build reports, and how to fix it.
-- [Advanced](https://arktype.io/docs/precompile/advanced.md): Shadow mode, libraries, runtime islands and declarations.
+- [Advanced](https://arktype.io/docs/precompile/advanced.md): Shadow mode, libraries, runtime islands, declarations and optimizations.
 
 ## ArkRegex
 
