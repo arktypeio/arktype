@@ -12,6 +12,7 @@ import {
 } from "@ark/aot/internal/issues.ts"
 import type { PrecompileMode } from "@ark/aot/internal/precompile.ts"
 import {
+	comparesFailedWrites,
 	freezes,
 	hasMember,
 	lackedMembers,
@@ -717,7 +718,7 @@ const observeValidation = (
 			const outcome = outcomeOf(() => traverse(t, input), input, anyOf(i))
 			return {
 				...outcome,
-				...(((detailsErrors && !firstIssue) || !outcome.errors) && {
+				...((comparesFailedWrites || !outcome.errors) && {
 					mutated: serialize(input)
 				})
 			}

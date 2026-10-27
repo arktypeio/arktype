@@ -46,6 +46,7 @@ import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { inspect, types } from "node:util"
 import {
+	comparesFailedWrites,
 	jsonInput,
 	detailsErrors,
 	firstIssue,
@@ -764,9 +765,7 @@ const observeCall = (t: Validator, input: unknown) => {
 	const traversal = observe(() => traverse(t, traversed), traversed)
 	return {
 		traverse: traversal,
-		...(((detailsErrors && !firstIssue) || !fails(traversal)) && {
-			mutated: traversed
-		}),
+		...((comparesFailedWrites || !fails(traversal)) && { mutated: traversed }),
 		allows: observe(() => t.allows(cloneInput(input)), undefined),
 		...(!lacks("assert") && {
 			assert: observe(() => t.assert(cloneInput(input)), undefined)

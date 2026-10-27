@@ -37,3 +37,8 @@ export const leanErrors: boolean = testedOptions.optimizeErrors === "size"
 
 // a first-issue build returns one of arktype's issues
 export const firstIssue: boolean = testedOptions.errors === "first"
+
+// a failed validation can leave writes in the objects it found valid, which
+// errors "first" stops short of and "always" writes as each is reached
+export const comparesFailedWrites: boolean =
+	detailsErrors && !firstIssue && mutatesInput !== "always"
