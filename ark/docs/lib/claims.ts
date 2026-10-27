@@ -33,6 +33,7 @@ import {
 	type CategoryId,
 	type Standing
 } from "./bench/leaderboard.ts"
+import buildTime from "./bench/buildTime.json" with { type: "json" }
 
 export type Pending<t> = { pending: t }
 
@@ -432,6 +433,35 @@ const independentResults = `${listOf(
 	)
 )}${startupIsCreation ? `; the ${leaderboards.startup.rows} for startup time creating a schema` : ""}`
 
+/**
+ * Measured at febe60baf by a procedure registered before the run: a
+ * generated app of 11, 92 and 1012 Types (copies of the startup benchmark's
+ * SaaS schemas, each copy's bounds offset so no Type repeats, each Type called
+ * by a request handler) built with and without the plugin on esbuild 0.25,
+ * Vite 8 and Next 16 (Turbopack), on Node 25 under WSL2 with 16 cores, each
+ * run started at a 1-minute load under 4. Medians of 7 cold builds per arm;
+ * dev servers timed from spawn until headless Chromium ran every handler, 5
+ * starts per arm, and edits from writing the shared module until the page
+ * showed it, 30 per arm. No run failed or was dropped.
+ */
+const buildTimeOf = (cell: string): number => {
+	const stats = (
+		buildTime.cells as Record<string, { median: number } | undefined>
+	)[cell]
+	if (!stats) throw new Error(`buildTime.json has no ${cell}`)
+	return stats.median
+}
+
+const durationText = (ms: number) =>
+	ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`
+
+// with the plugin, then without, e.g. "7.3 s rather than 414 ms"
+const builtWith = (cell: (arm: string) => string) =>
+	`${durationText(buildTimeOf(cell("after")))} rather than ${durationText(buildTimeOf(cell("off")))}`
+
+const addedBy = (cell: (arm: string) => string) =>
+	durationText(buildTimeOf(cell("after")) - buildTimeOf(cell("off")))
+
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
 	// each superlative names a category ArkType must claim
@@ -541,7 +571,13 @@ export const claims = {
 	// which benchmarks are ours, and that the averages leave them out
 	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory} on the full board; the averages above leave those out.${writtenSuites ? ` They keep ${writtenSuites}, Valibot's code, which we wrote in each library and size with our own script.` : ""}`,
 	// the claims that depend on a single benchmark, and which
-	leaveOneOut: leadsWithoutEach()
+	leaveOneOut: leadsWithoutEach(),
+	// the rest from lib/bench/buildTime.json, measured as buildTimeOf says
+	buildTimeApp: `We timed an app of ${buildTime.types.large} Types: ${buildTime.domains.large} copies of our startup benchmark's SaaS schemas, each Type validating a request in a handler. Each figure is a median, with the plugin rather than without it, on Node 25 with 16 cores.`,
+	buildTimeProduction: `A cold production build took ${builtWith(arm => `build vite large ${arm} build`)} with Vite 8, ${builtWith(arm => `build esbuild large ${arm} build`)} with esbuild and ${builtWith(arm => `build next large ${arm} build`)} with Next 16 on Turbopack.`,
+	buildTimeDev: `Vite's dev server loaded the app in a browser in ${builtWith(arm => `dev vite large ${arm} startup`)}, and the page showed an edit to the module every Type in its copy imports in ${builtWith(arm => `dev vite large ${arm} hmr`)}. Next's took ${builtWith(arm => `dev next large ${arm} startup`)} to load and ${builtWith(arm => `dev next large ${arm} hmr`)} to show the edit.`,
+	buildTimeWatch: `esbuild's watch rebuild after that edit took ${builtWith(arm => `edit esbuild large development ${arm} rebuild`)}, and ${builtWith(arm => `edit esbuild large production ${arm} rebuild`)} for a production bundle, which reads the whole app again to leave out what no read needs.`,
+	buildTimeMedium: `At ${buildTime.types.medium} Types, the plugin added ${addedBy(arm => `build vite medium ${arm} build`)} to Vite's production build, ${addedBy(arm => `build esbuild medium ${arm} build`)} to esbuild's and ${addedBy(arm => `build next medium ${arm} build`)} to Next's, and ${addedBy(arm => `dev vite medium ${arm} hmr`)} to an edit in Vite's dev server.`
 } satisfies Record<string, Claim<string>>
 
 export type ClaimId = keyof typeof claims
