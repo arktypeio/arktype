@@ -226,18 +226,13 @@ const defOf = fc.letrec<{ def: string; array: string }>(tie => ({
 const bare = (t: type.Any): BaseRoot =>
 	t.internal.transform((kind, { meta, ...inner }) => inner as never)
 
-// a definition that's unsatisfiable is skipped, as is an empty tuple, which,
-// as in TypeScript, is written [], where a string definition can't hold it
+// a definition that's unsatisfiable is skipped
 const parsedOrSkipped = (def: string): BaseRoot => {
-	let t: type.Any
 	try {
-		t = type(def as never)
+		return bare(type(def as never))
 	} catch {
 		return fc.pre(false) as never
 	}
-	const node = bare(t)
-	fc.pre([node, ...node.references].every(n => n.expression !== "[]"))
-	return node
 }
 
 const assertRoundTrip = (check: (def: string, node: BaseRoot) => void) =>
