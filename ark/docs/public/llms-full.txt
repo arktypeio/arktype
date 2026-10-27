@@ -55,7 +55,11 @@ export default {
 	turbopack: {
 		rules: {
 			"*.ts": { loaders: ["@ark/aot/turbopack"] },
-			"*.tsx": { loaders: ["@ark/aot/turbopack"] }
+			"*.tsx": { loaders: ["@ark/aot/turbopack"] },
+			"*.{js,mjs}": {
+				condition: { content: /arktype/ },
+				loaders: ["@ark/aot/turbopack"]
+			}
 		},
 		resolveAlias: {
 			arktype: "arktype/runtime",
@@ -1436,7 +1440,7 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](https://arktype.io/docs/upgrading#arkerrors-is-no-longer-an-array).
 - Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](https://arktype.io/docs/upgrading#errors-are-plain-objects).
 - Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](https://arktype.io/docs/upgrading#undeclared-keys-have-the-undeclared-code), [discriminant](https://arktype.io/docs/upgrading#union-misses-have-the-discriminant-code) and [notEqual](https://arktype.io/docs/upgrading#excluded-values-have-the-notequal-codes).
-- Do you snapshot or assert error messages, or their order? See [Errors](https://arktype.io/docs/upgrading#errors): objects, dates and union misses print differently, errors follow the order keys are declared, and configured messages apply to more errors.
+- Do you snapshot or assert error messages, or their order? See [Errors](https://arktype.io/docs/upgrading#errors): objects, dates and union misses print differently, errors follow the order keys are declared, configured messages apply to more errors, and described length bounds say "length".
 - Do you show the messages of Standard Schema issues, as a form library does? [They leave out the path](https://arktype.io/docs/upgrading#standard-schema-messages-leave-out-the-path).
 - Do you configure an `expected`, `actual` or `message` writer? [Writers take the error](https://arktype.io/docs/upgrading#error-writers-receive-the-error-and-the-locale).
 - Do you call `configure()` after a Type is created, or pass a global-only option to a Scope? See [Configuration](https://arktype.io/docs/upgrading#configuration).
@@ -1670,6 +1674,18 @@ Email("")
 ```
 
 `Port.out` keeps its own errors. Constraints described alike are described once, so `type("string.email > 0", "@", "Email is not valid")("")` says `must be Email is not valid (was "")`.
+
+### Described length bounds say "length"
+
+A length bound with its own description or `expected` writes the length it was given as `length 5`, since the text replacing the bound's no longer says it's a length:
+
+```ts
+const Password = type("string >= 8").describe("a password")
+
+// ArkErrors: must be a password (was length 5)
+// before: must be a password (was 5)
+Password("ez123")
+```
 
 ### Error writers receive the error and the locale
 
@@ -5848,7 +5864,7 @@ const Password = type("string >= 8").configure({
 		ctx.code === "minLength" ? `${ctx.rule} characters or more` : "a password"
 })
 
-// ArkErrors: must be 8 characters or more (was 5)
+// ArkErrors: must be 8 characters or more (was length 5)
 Password("ez123")
 
 // ArkErrors: must be a password (was a number)
@@ -5980,8 +5996,8 @@ const User = type({
 	email: "string.email"
 })
 
-// ArkErrors: email must be an email address (was definitely fake)
-//            name must be text (was a number)
+// ArkErrors: name must be text (was a number)
+//            email must be an email address (was definitely fake)
 User({ name: 5, email: "449 Canal St" })
 ```
 
