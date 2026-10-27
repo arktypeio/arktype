@@ -840,6 +840,33 @@ export const addB = () => {
 			])
 		})
 
+		it("holes read through an object written before the site", () => {
+			const diagnostics = precompile(
+				`import { type } from "arktype"
+const isX = (v: string) => v !== "x"
+const Password = type("string > 0").narrow(isX)
+const message = (ctx: { expected: string }) => \`must \${ctx.expected}\`
+const written = { current: Password }
+written.current = type("string")
+let assigned = { message }
+const byKey: Record<string, unknown> = {}
+for (const k of ["current", "confirm"]) byKey[k] = Password
+class Entity {}
+const classes = { entity: ["instanceof", Entity] }
+export const A = type(written)
+export const B = type("string").configure(assigned)
+export const C = type(byKey)
+export const D = type(classes)
+assigned = { message: () => "no" }`
+			).diagnostics.map(renderDiagnostic)
+			attest(diagnostics).snap([
+				"/main.ts:12:18  type(written) cannot be precompiled\n  `written` is written at /main.ts:6:1, so its value at the site is not known\n  Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime.",
+				'/main.ts:13:18  type("string").configure(assigned) cannot be precompiled\n  `assigned` is assigned at /main.ts:16:1, so its value at the site is not known\n  Replace `assigned` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.',
+				"/main.ts:14:18  type(byKey) cannot be precompiled\n  `byKey` is written at /main.ts:9:41, so its value at the site is not known\n  Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime.",
+				"/main.ts:15:18  type(classes) can't be precompiled yet\n  the site's value holds `class Entity {}` (/main.ts:10:1), which it reads outside its own source\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
+			])
+		})
+
 		it("names declared more than once", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
