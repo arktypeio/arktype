@@ -30,7 +30,7 @@ import {
 } from "vite"
 import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
-import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join, posix, relative, win32 } from "node:path"
 import { stripVTControlCharacters } from "node:util"
 import {
@@ -438,7 +438,7 @@ contextualize(function (this: Mocha.Suite) {
 		it("but a member named require", async () => {
 			attest(
 				await droppedReading(
-					`const auth = { require: () => true }\nauth.require()\nUser({})`
+					`interface Auth { require(): boolean }\nconst auth: Auth = { require: () => true }\nconst make = () => {\n\tfunction require() { return true }\n\treturn { require }\n}\nauth.require()\nmake()\nUser({})`
 				)
 			).equals(everyMember)
 		})
