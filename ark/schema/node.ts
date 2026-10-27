@@ -717,28 +717,22 @@ export abstract class BaseNode<
 	}
 
 	protected initFlatRefs(): void {
-		const flatRefs: FlatRef[] = []
+		const flatRefs = uniqueFlatRefs(
+			this.children.flatMap(child => child.flatRefs)
+		)
 		const flatMorphs: FlatRef<Morph.Node | Intersection.Node>[] = []
-
-		for (let i = 0; i < this.children.length; i++) {
-			const childFlatRefs = this.children[i].flatRefs
-			for (let j = 0; j < childFlatRefs.length; j++) {
-				const childRef = childFlatRefs[j]
-				if (!flatRefs.some(existing => flatRefsAreEqual(existing, childRef))) {
-					flatRefs.push(childRef)
-					for (const branch of childRef.node.branches) {
-						if (
-							branch.hasKind("morph") ||
-							(branch.hasKind("intersection") &&
-								branch.structure?.structuralMorph !== undefined)
-						) {
-							flatMorphs.push({
-								path: childRef.path,
-								propString: childRef.propString,
-								node: branch
-							})
-						}
-					}
+		for (const ref of flatRefs) {
+			for (const branch of ref.node.branches) {
+				if (
+					branch.hasKind("morph") ||
+					(branch.hasKind("intersection") &&
+						branch.structure?.structuralMorph !== undefined)
+				) {
+					flatMorphs.push({
+						path: ref.path,
+						propString: ref.propString,
+						node: branch
+					})
 				}
 			}
 		}
@@ -1966,13 +1960,19 @@ export const flatMorphsAreEqual = (
 		l.node.structure?.structuralMorph === r.node.structure?.structuralMorph
 	:	false)
 
-export const appendUniqueFlatRefs = <node extends BaseRoot>(
-	existing: FlatRef<node>[] | undefined,
-	refs: listable<FlatRef<node>>
-): FlatRef<node>[] =>
-	appendUnique(existing, refs, {
-		isEqual: flatRefsAreEqual
+// refs are equal only at the same path, so a DAG's refs, one per path, are
+// deduplicated in linear time
+export const uniqueFlatRefs = (refs: FlatRef[]): FlatRef[] => {
+	const refsByPath = new Map<string, FlatRef[]>()
+	return refs.filter(ref => {
+		const atPath = refsByPath.get(ref.propString)
+		if (!atPath) refsByPath.set(ref.propString, [ref])
+		else if (atPath.some(existing => existing.node.equals(ref.node)))
+			return false
+		else atPath.push(ref)
+		return true
 	})
+}
 
 export const appendUniqueNodes = <node extends BaseNode>(
 	existing: node[] | undefined,
