@@ -131,10 +131,6 @@ export const resultsOf = (suiteId: string, rowId: string) =>
 	suites.find(s => s.id === suiteId)!.rows.find(row => row.id === rowId)!
 		.results
 
-/** a suite's rows' results, none if it isn't on the board */
-export const suiteRowsOf = (suiteId: string) =>
-	suites.find(s => s.id === suiteId)?.rows.map(row => row.results) ?? []
-
 /** each row's results across a category's independent suites */
 export const rowsOf = (category: CategoryId) =>
 	suites

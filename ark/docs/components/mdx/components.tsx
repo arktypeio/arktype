@@ -16,7 +16,13 @@ import { ApiMember, ApiMembers } from "./ApiMembers.tsx"
 import { BenchmarkChart } from "./BenchmarkChart.tsx"
 import { Callout } from "./Callout.tsx"
 import { Card, Cards, LinkCard } from "./Cards.tsx"
-import { Claim, ClaimCharts, Headline, HeadlineNote } from "./Claim.tsx"
+import {
+	Claim,
+	ClaimCharts,
+	Headline,
+	HeadlineNote,
+	PresetSizeTable
+} from "./Claim.tsx"
 import { Pre } from "./CodeFrame.tsx"
 import { Heading } from "./Heading.tsx"
 import { Link } from "./Link.tsx"
@@ -54,6 +60,7 @@ export const mdxComponents: MDXComponents = {
 	// the demo itself is small; the playground behind it loads only when opened
 	MainAutoplayDemo,
 	NumberKeywordTable,
+	PresetSizeTable,
 	// the 2.0 post's chart; new content uses BenchmarkChart
 	RuntimeBenchmarksGraph,
 	Step,

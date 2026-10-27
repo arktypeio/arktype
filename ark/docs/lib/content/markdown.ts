@@ -26,6 +26,7 @@ import {
 	draftOf,
 	headlineMethod,
 	isPending,
+	presetSizeRows,
 	sizeChart,
 	speedChart,
 	type BenchmarkChart,
@@ -161,7 +162,10 @@ const linkItem = (title: string, href: string, description?: string): List => ({
 	]
 })
 
-const table = (header: string[], rows: (string | RootContent)[][]): Table => ({
+const table = (
+	header: (string | RootContent)[],
+	rows: (string | RootContent)[][]
+): Table => ({
 	type: "table",
 	align: header.map(() => null),
 	children: [header, ...rows].map(cells => ({
@@ -345,6 +349,23 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 						}
 					]
 				} satisfies Paragraph
+			]
+		case "PresetSizeTable":
+			return [
+				table(
+					[
+						"App, gzipped production bundle",
+						"Default",
+						{ type: "inlineCode", value: '"smallest"' },
+						"Valibot"
+					],
+					presetSizeRows.map(row => [
+						row.label,
+						row.default,
+						row.smallest,
+						row.valibot
+					])
+				)
 			]
 		case "ClaimCharts":
 			return [
