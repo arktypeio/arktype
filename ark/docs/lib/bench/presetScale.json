@@ -1,0 +1,109 @@
+{
+	"commit": "8ae3a5a0c",
+	"series": [
+		{
+			"apps": "mixed",
+			"seed": 1,
+			"rows": [
+				{
+					"types": 10,
+					"smallest": 3138,
+					"valibot": 3415
+				},
+				{
+					"types": 50,
+					"smallest": 5398,
+					"valibot": 5509
+				},
+				{
+					"types": 200,
+					"smallest": 11153,
+					"valibot": 11283
+				},
+				{
+					"types": 1000,
+					"smallest": 38440,
+					"valibot": 39481
+				}
+			]
+		},
+		{
+			"apps": "mixed",
+			"seed": 2,
+			"rows": [
+				{
+					"types": 10,
+					"smallest": 3277,
+					"valibot": 3536
+				},
+				{
+					"types": 50,
+					"smallest": 5313,
+					"valibot": 5449
+				},
+				{
+					"types": 200,
+					"smallest": 10942,
+					"valibot": 11057
+				},
+				{
+					"types": 1000,
+					"smallest": 38401,
+					"valibot": 39354
+				}
+			]
+		},
+		{
+			"apps": "mixed",
+			"seed": 3,
+			"rows": [
+				{
+					"types": 10,
+					"smallest": 3223,
+					"valibot": 3471
+				},
+				{
+					"types": 50,
+					"smallest": 5347,
+					"valibot": 5539
+				},
+				{
+					"types": 200,
+					"smallest": 11063,
+					"valibot": 11263
+				},
+				{
+					"types": 1000,
+					"smallest": 38971,
+					"valibot": 40096
+				}
+			]
+		},
+		{
+			"apps": "references",
+			"seed": 1,
+			"rows": [
+				{
+					"types": 10,
+					"smallest": 1768,
+					"valibot": 2056
+				},
+				{
+					"types": 50,
+					"smallest": 3111,
+					"valibot": 3293
+				},
+				{
+					"types": 200,
+					"smallest": 6945,
+					"valibot": 7216
+				},
+				{
+					"types": 1000,
+					"smallest": 28400,
+					"valibot": 29014
+				}
+			]
+		}
+	]
+}

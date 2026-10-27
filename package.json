@@ -61,6 +61,7 @@
 		"benchRuntimeUp": "ATTEST_updateSnapshots=1 pnpm benchRuntime",
 		"benchImport": "node ./ark/repo/bench/import.ts",
 		"benchSize": "node ./ark/repo/bench/size.ts",
+		"benchScale": "node ./ark/repo/bench/scale/measure.ts",
 		"benchUsage": "node ./ark/repo/bench/usage.ts",
 		"benchTypia": "node ./ark/repo/bench/generateTypia.ts",
 		"benchValidate": "ts ./ark/repo/bench/validate.ts",

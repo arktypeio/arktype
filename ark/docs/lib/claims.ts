@@ -24,7 +24,6 @@ import {
 	leads,
 	resultsOf,
 	rowsOf,
-	suiteRowsOf,
 	tieBand,
 	ties,
 	unnamed,
@@ -34,6 +33,7 @@ import {
 	type Standing
 } from "./bench/leaderboard.ts"
 import buildTime from "./bench/buildTime.json" with { type: "json" }
+import presetScale from "./bench/presetScale.json" with { type: "json" }
 
 export type Pending<t> = { pending: t }
 
@@ -464,6 +464,21 @@ const builtWith = (cell: (arm: string) => string) =>
 const addedBy = (cell: (arm: string) => string) =>
 	durationText(buildTimeOf(cell("on")) - buildTimeOf(cell("off")))
 
+/**
+ * Gzip bytes of synthetic apps of 10 or more Types, written alike in ArkType,
+ * precompiled with the "smallest" preset, and Valibot, at three seeds and as
+ * a graph of references, measured by `pnpm benchScale`
+ * (ark/repo/bench/scale)
+ */
+const presetScaleRows = presetScale.series.flatMap(({ apps, seed, rows }) =>
+	rows.map(row => ({
+		...row,
+		label: `${apps} seed ${seed} at ${row.types} Types`
+	}))
+)
+
+const presetScaleTypes = presetScaleRows.map(row => row.types)
+
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
 	// each superlative names a category ArkType must claim
@@ -561,15 +576,10 @@ export const claims = {
 		leads("size") && !ties("size") ?
 			`Size is the close one: ArkType's average is ${standingOf("size").by} below ${sizeRivalName}'s, and ${sizeRivalName} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`
 		:	`Size is the close one: ${sizeRivalName} has the best average, ${averageText(sizeRival.score)} to ArkType's ${averageText(placeOf("size").score)}${ties("size") ? `, ArkType's within ${tieMargin} of it` : ""}, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
-	// the "size" preset for schema-heavy frontends, where the default build's
-	// lead at form scale (sizeAverage) doesn't carry. Pending until
-	// leaderboard.json has a presetSize suite with the preset under Valibot on
-	// every row, which the check below the claims holds; while it's pending,
-	// nothing renders it
-	sizePreset: {
-		pending:
-			'Big frontend? optimize: "size" is smaller than Valibot at any scale.'
-	},
+	// the "smallest" preset for schema-heavy frontends, where the default
+	// build's lead at form scale (sizeAverage) doesn't carry: gzip bytes from
+	// lib/bench/presetScale.json, which the check below the claims holds
+	sizePreset: `Big frontend? The "smallest" preset gzips smaller than Valibot at every scale we measured, ${Math.min(...presetScaleTypes)} to ${Math.max(...presetScaleTypes).toLocaleString("en-US")} Types.`,
 	// which benchmarks are ours, and that the averages leave them out
 	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory} on the full board; the averages above leave those out.${writtenSuites ? ` They keep ${writtenSuites}, Valibot's code, which we wrote in each library and size with our own script.` : ""}`,
 	// the claims that depend on a single benchmark, and which
@@ -611,18 +621,13 @@ export const assertStandings = (copy: string, by: string) => {
 		for (const category of boardOrder) assertLeads(category, by)
 }
 
-/** whether every row of the presetSize suite has ArkType's "size" preset under Valibot */
-const presetBeatsValibot = () => {
-	const rows = suiteRowsOf("presetSize")
-	return (
-		rows.length > 0 &&
-		rows.every(results => results["ArkType (size)"] < results.Valibot)
-	)
-}
+const presetScaleLosses = presetScaleRows.filter(
+	row => row.smallest >= row.valibot
+)
 
-if (!isPending(claims.sizePreset) && !presetBeatsValibot()) {
+if (!presetScaleRows.length || presetScaleLosses.length) {
 	throw new Error(
-		`sizePreset claims the "size" preset is smaller than Valibot at any scale, but leaderboard.json has no presetSize suite with it under Valibot on every row`
+		`sizePreset claims the "smallest" preset is smaller than Valibot at any scale, but presetScale.json ${presetScaleRows.length ? `has it at or above Valibot on ${presetScaleLosses.map(row => row.label).join(", ")}` : "has no results"}`
 	)
 }
 

@@ -59,7 +59,7 @@ const isStandalone = (library: SizedLibrary) =>
 // errors' .summary (summarize). Their schemas have ~standard, as validators
 // do. An entry the library has no function for (zod/mini has no `is` or
 // summary) adds nothing.
-const usageEntries: Partial<Record<SizedLibrary, string>> = {
+export const usageEntries: Partial<Record<SizedLibrary, string>> = {
 	valibot: `export { is, safeParse, parse, summarize } from "valibot"`,
 	zodMini: `export { safeParse, parse } from "zod/mini"`
 }
