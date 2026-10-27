@@ -577,11 +577,9 @@ export const claims = {
 	sizeAverage: averagesOf("size"),
 	// ArkType 1.176 to Typia's 1.256, Typia on 2 of the 3 suites; at
 	// 624a5d716's rows ArkType led by 1.3%, and at 808927feb's Typia had it,
-	// 1.256 to 1.297
-	sizeClose:
-		leads("size") && !ties("size") ?
-			`Size is the close one: ArkType's average is ${standingOf("size").by} below ${sizeRivalName}'s, and ${sizeRivalName} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`
-		:	`Size is the close one: ${sizeRivalName} has the best average, ${averageText(sizeRival.score)} to ArkType's ${averageText(placeOf("size").score)}${ties("size") ? `, ArkType's within ${tieMargin} of it` : ""}, and ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
+	// 1.256 to 1.297. The blog states it right after sizeAverage, which has
+	// the averages and the margin, so this adds only the results themselves
+	sizeClose: `Size is the close one: ${sizeRivalName} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
 	// the "smallest" preset for schema-heavy frontends, where the default
 	// build's lead at form scale (sizeAverage) doesn't carry: gzip bytes from
 	// lib/bench/presetScale.json, which the check below the claims holds

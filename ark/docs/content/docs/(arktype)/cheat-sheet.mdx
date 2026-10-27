@@ -254,15 +254,15 @@ export default {
 
 ## Common gotchas
 
-| Mistake                                        | Fix                                                                           |
-| ---------------------------------------------- | ----------------------------------------------------------------------------- |
-| `name: "string \| undefined"` for optional     | Use `"name?": "string"`: `?` goes on the **key**                              |
-| `type([Schema])` for arrays                    | Use `Schema.array()`: brackets create tuples                                  |
-| ``type(`${Schema}[]`)``                        | Use `Schema.array()` or `[Schema, "[]"]`, never interpolate a Type            |
-| `"Record<string, T>"` with `T` a variable      | Use `type.Record("string", T)` or `{ "[string]": T }`                         |
-| `type("number = 0")`                           | Defaults only work as object values or tuple elements                         |
-| `out[0]` or `out.map(...)` on errors           | Use `out.issues[0]` or `out.issues.map(...)`                                  |
-| Mutating the argument in `.pipe`               | Return a new value; a morph receives the caller's data, not a copy            |
-| `type User = typeof Schema.t`                  | Use `typeof Schema.infer` for the output type                                 |
-| Precompiled: `User.and(...)` called at runtime | Compose inside a definition: `const Admin = User.and(...)`                    |
-| Precompiled: `type()` from a runtime value     | Make it static, mark it `// @ark-runtime`, or build with `runtime: "arktype"` |
+| Mistake                                                             | Fix                                                                                         |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `name: "string \| undefined"` for optional                          | Use `"name?": "string"`: `?` goes on the **key**                                            |
+| `type([Schema])` for arrays                                         | Use `Schema.array()`: brackets create tuples                                                |
+| ``type(`${Schema}[]`)``                                             | Use `Schema.array()` or `[Schema, "[]"]`, never interpolate a Type                          |
+| `"Record<string, T>"` with `T` a variable                           | Use `type.Record("string", T)` or `{ "[string]": T }`                                       |
+| `type("number = 0")`                                                | Defaults only work as object values or tuple elements                                       |
+| `out[0]` or `out.map(...)` on errors                                | Use `out.issues[0]` or `out.issues.map(...)`                                                |
+| Mutating the argument in `.pipe`                                    | Return a new value; a morph receives the caller's data, not a copy                          |
+| `type User = typeof Schema.t`                                       | Use `typeof Schema.infer` for the output type                                               |
+| Precompiled: `User.pick(...keys)` with `keys` known only at runtime | A Type per case, composed from static values: `const Admin = User.and({ role: "'admin'" })` |
+| Precompiled: `type()` from a runtime value                          | Make it static, mark it `// @ark-runtime`, or build with `runtime: "arktype"`               |
