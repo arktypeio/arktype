@@ -230,8 +230,13 @@ export const precompileInPlace = (
 	for (let i = 0; i < declared.length; i++) {
 		const [node, kinds] = declared[i]
 		if (!node.tfs) continue
-		node.c.applyInPlace = traversals[i][kinds.indexOf("Apply")] as never
-		node.c.transformInPlace = traversals[i][kinds.indexOf("Transform")] as never
+		// a node another root already compiled in place keeps those traversals,
+		// as this unit declared only what it lacked
+		const apply = kinds.indexOf("Apply")
+		if (apply !== -1) node.c.applyInPlace = traversals[i][apply] as never
+		const transform = kinds.indexOf("Transform")
+		if (transform !== -1)
+			node.c.transformInPlace = traversals[i][transform] as never
 	}
 	for (const [node, shape] of shapes) {
 		shape.tApply = node.c.applyInPlace

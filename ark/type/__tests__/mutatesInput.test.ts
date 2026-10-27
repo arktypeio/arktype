@@ -136,6 +136,20 @@ contextualize(() => {
 		attest(inner as object).snap({ n: 3 })
 	})
 
+	it("pipes through a Type another root compiled in place", () => {
+		const Parsed = always.type({ n: "string.numeric.parse" })
+		const Piped = Parsed.pipe(o => o)
+		Piped({ n: "1" })
+		Piped({ n: "2" })
+		// Parsed is reached only through the pipeline, so its in-place
+		// traversals are read from Piped's unit rather than compiled again
+		const T = always.type([["object", "|>", Parsed], "=>", o => o])
+		const input = { n: "3" }
+		attest(T(input) as object).is(input)
+		attest(input as object).snap({ n: 3 })
+		attest(T("x").toString()).snap("must be an object (was a string)")
+	})
+
 	it("checks its first data before it has compiled code, as a Type copying does", () => {
 		const Item = always.type({ id: "string.numeric.parse" })
 		const Pair = always.type({ kind: "'pair'", items: [Item, Item] })
