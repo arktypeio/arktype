@@ -255,10 +255,7 @@ type DefaultMethod<ctx extends MatchParserContext> = <
 ) => finalizeMatchParser<ctx, def>
 
 type validateCases<cases, ctx extends MatchParserContext> = {
-	[def in
-		| keyof cases
-		| BaseCompletions<ctx["$"], {}, "default">]?: def extends "default" ?
-		DefaultCase<ctx>
+	[def in keyof cases]?: def extends "default" ? DefaultCase<ctx>
 	: def extends number ? (In: inferCaseArg<`${def}`, ctx, "out">) => unknown
 	: def extends type.validate<def, ctx["$"]> ?
 		(In: inferCaseArg<def, ctx, "out">) => unknown
