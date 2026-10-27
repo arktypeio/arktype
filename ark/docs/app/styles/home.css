@@ -1710,6 +1710,11 @@
 			font-size: 14px;
 			color: var(--ink-2);
 		}
+		.p3-startup {
+			margin-top: 6px;
+			font: 400 12px / 1.5 var(--mono);
+			color: var(--ink-3);
+		}
 	}
 	.p3-table {
 		width: 100%;

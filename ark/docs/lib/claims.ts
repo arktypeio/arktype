@@ -81,7 +81,8 @@ export interface BenchmarkChart {
  * without errors. The headline's superlatives and the board's standings
  * instead follow the README's "Best average" rule over the independent suites
  * (lib/bench/leaderboard.ts), with ArkType as its default production build
- * throughout, each of its rows measured at 90d510484.
+ * throughout, its instruction-count and startup rows measured at 781130da3
+ * and its size rows at 2c1a6a86e, whose runtime is 781130da3's.
  */
 
 // moltar's typescript-runtime-type-benchmarks, perf instruction counts in
@@ -144,12 +145,14 @@ export const sizeChart: BenchmarkChart = {
 // after its first validation of valid data, less a bundle that validates
 // nothing (ark/repo/bench/external/startup.ts). Planned before any count: 20
 // rounds, a two-sided sign test per library paired by round. Node 24 medians
-// at 90d510484 (results/startup-90d510484-node24.json): the default build had
-// the fewest against all seven in 20 of 20 (p 1.9e-6), as it had in 19-20 of
-// 20 on Node 24 and 25 at 4fd880692. On valibot.dev's login form it was 1.04M
-// to Valibot's 2.37M, on shop 10.47M to Valibot's 12.26M, 20 of 20, and on the
-// moltar app 1.05M to Typia's 1.16M, 19 of 20. No wall-clock run yet, so
-// nothing says it starts faster.
+// at 781130da3 (results/startup-781130da3-node24.json): the default build had
+// the fewest on every app against every library run, 20 of 20 (p 1.9e-6), as
+// it had in 19-20 of 20 at 90d510484 and on Node 24 and 25 at 4fd880692. On
+// valibot.dev's login form it was 0.91M to Valibot's 2.37M, on shop 9.95M to
+// Valibot's 12.26M, and on the moltar app 0.95M to ajv's 1.43M. Typia wasn't
+// run at 781130da3 (its generated validators weren't built first), so the
+// rows there lack it; at 90d510484 it was the closest on moltar, 1.16M to
+// 1.05M, 19 of 20. No wall-clock run yet, so nothing says it starts faster.
 export const startupChart: BenchmarkChart = {
 	title: "Cold start",
 	detail:
@@ -426,13 +429,20 @@ const sizeRivalName = nameOr(
 	leads("size") && !ties("size") ? "the next best" : "another library"
 )
 
+/** the startup chart's rivals, each on the login row of the run it cites: "ajv, Valibot, Zod Mini, Zod, Zod (compiled) and TypeBox" */
+const startupRivals = listOf(
+	startupChart.bars
+		.filter(bar => bar.kind !== "precompiled")
+		.map(bar => bar.name)
+)
+
 /** each category's results on the independent suites, for the headline's notes, and what startup's measure */
 const independentResults = `${listOf(
 	boardOrder.map(
 		(category, i) =>
 			`${leaderboards[category].rows}${i ? "" : " results"} for ${wording[category].measures}`
 	)
-)}${startupIsCreation ? `; the ${leaderboards.startup.rows} for startup time creating a schema` : ""}`
+)}${startupIsCreation ? `; the ${leaderboards.startup.rows} startup results time creating a schema` : ""}`
 
 /**
  * Measured at febe60baf by a procedure registered before the run: a
@@ -484,8 +494,8 @@ const presetScaleTypes = presetScaleRows.map(row => row.types)
 export const claims = {
 	// each superlative names a category ArkType must claim
 	// (lib/bench/leaderboard.ts), as the check of the copy below holds. Size
-	// is the close one: ArkType 1.240 to Typia's 1.256 on results/newest/'s
-	// size rows (624a5d716), and tieBand keeps the claim within 5% of the best
+	// is the close one: ArkType 1.176 to Typia's 1.256 on results/newest/'s
+	// size rows (2c1a6a86e), and tieBand keeps the claim within 5% of the best
 	headline:
 		leads("size") ?
 			"TypeScript's smallest, fastest validator."
@@ -552,9 +562,9 @@ export const claims = {
 		:	led.map(category => wording[category].phrase).join(" "),
 	// what the board's superlatives average
 	boardNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote} ${namingNote}`,
-	// startupChart; the form is 1.04M vs Valibot's 2.37M, 20 of 20
-	startupLogin:
-		"On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than ajv, Valibot, Typia, Zod Mini, Zod, compiled Zod or TypeBox, in all 20 paired runs on Node 24.",
+	// startupChart's rivals, every one on the login row of the run it cites,
+	// 20 of 20 each; the form is 0.91M vs Valibot's 2.37M, 20 of 20
+	startupLogin: `On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than each of ${startupRivals}, in all 20 paired runs on Node 24.`,
 	// speedChart and H1
 	parseSafe:
 		"On moltar's parseSafe benchmark, precompiled ArkType takes the fewest instructions per call, and by wall clock it was faster than each of the six libraries closest to it, Typia among them, in at least 28 of 30 paired runs.",
@@ -565,8 +575,9 @@ export const claims = {
 	// default build skips; the full board adds our cold starts of whole apps
 	startupBasis: `${startupIsCreation ? `Each of the ${leaderboards.startup.rows} independent startup results times creating a schema, which a precompiled build does when it builds. ` : ""}Our own startup benchmarks time importing an app through its first validation (${fullLeaderboards.startup.rows - leaderboards.startup.rows} results), and with them ArkType is ${ordinal(placeOf("startup", fullLeaderboards).place)} for startup.`,
 	sizeAverage: averagesOf("size"),
-	// ArkType 1.240 to Typia's 1.256, Typia on 2 of the 3 suites; at
-	// 808927feb's rows Typia had it, 1.256 to 1.297
+	// ArkType 1.176 to Typia's 1.256, Typia on 2 of the 3 suites; at
+	// 624a5d716's rows ArkType led by 1.3%, and at 808927feb's Typia had it,
+	// 1.256 to 1.297
 	sizeClose:
 		leads("size") && !ties("size") ?
 			`Size is the close one: ArkType's average is ${standingOf("size").by} below ${sizeRivalName}'s, and ${sizeRivalName} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`
@@ -859,6 +870,8 @@ export const pickThreeTable: {
 	title: Claim<string>
 	/** which libraries it shows */
 	shown: string
+	/** what its startup multiples compare, beside the column: creating a schema, which a precompiled build did at build */
+	startupNote: string
 	categories: { id: CategoryId; label: string }[]
 	rows: PickThreeRow[]
 } = {
@@ -867,6 +880,12 @@ export const pickThreeTable: {
 			"Only ArkType is first in all three."
 		:	{ pending: "Only ArkType is first in all three." },
 	shown: `Libraries with ${wellKnownRule} shown, every library counted.`,
+	// the startup rows time creating a schema (startupBasis), so the column
+	// is the general advantage of building ahead of time, not like for like
+	startupNote:
+		startupIsCreation ?
+			"Startup counts creating a schema: done at build by precompiled validators, at load by the rest."
+		:	"",
 	categories: boardOrder.map(category => ({
 		id: category,
 		label: wording[category].measures

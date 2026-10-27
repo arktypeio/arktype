@@ -267,6 +267,16 @@ Typia 2.43M (gross 4.95M against ajv's 5.52M). On moltar Typia adds fewer
 (1.16M against `oe`'s 1.39M), and on shop Valibot does (12.26M against
 14.29M), except against `"smallest"` (9.09M). No wall-clock run yet.
 
+The published rows are the default build's at 781130da3
+(`results/startup-781130da3-node24.json`): the fewest instructions on every
+app against every library run, 20 of 20 each. Net of the baseline, the form
+is 0.91M against Valibot's 2.37M, the login app 0.89M against ajv's 1.86M,
+moltar 0.95M against ajv's 1.43M and shop 9.95M against Valibot's 12.26M.
+Typia wasn't run there, since its generated validators
+(`bench/generateTypia.ts`) weren't built first, so that run's rows and the
+board's `startup.ts` rows lack it; at 90d510484 it was the closest library on
+moltar, 1.16M to 1.05M, 19 of 20.
+
 ## Best average
 
 The headline's superlatives come from a rule, written before any average was
@@ -571,9 +581,11 @@ How each new suite is run, at the commits measured (schema-benchmarks
 
 Two startup rows time no build for a library that compiles ahead of time:
 schemabenchmarks.dev's initialization and Sury's build-and-parse-once.
-ArkType's default build creates a validator once and reuses it (42 and 106
-instructions; typia's createIs 381), so on those rows it wins by what the
-rows don't measure. They're the suites' rows, so they stay.
+ArkType's default build creates a validator once and reuses it (16 and 102
+instructions, at the harness's floor beside zod-compiler's 16 and TypeBox's
+ahead-of-time 153; typia's createIs 381; "Versions and modes" below), so on
+those rows it wins by what the rows don't measure. They're the suites' rows,
+so they stay.
 
 ### Versions and modes
 
