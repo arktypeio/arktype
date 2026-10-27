@@ -72,9 +72,7 @@ const checkedKinds = [
 
 // a default is a key only of the optional nodes that have one
 const groupOf = node =>
-	node.is("optional") && node.hasDef() ?
-		"defaulted optional"
-	:	node.kind
+	node.is("optional") && node.hasDef() ? "defaulted optional" : node.kind
 
 const nodesByKind = {}
 for (const def of definitions) {
@@ -138,9 +136,7 @@ for (const kind of checkedKinds) {
 assertOneMapPerKind("after binding some of them")
 
 const uncalledCaches = Object.values(nodesByKind).flatMap(nodes =>
-	[...nodes]
-		.filter(node => !("rootApply" in node.c))
-		.map(node => node.c)
+	[...nodes].filter(node => !("rootApply" in node.c)).map(node => node.c)
 )
 for (const cache of uncalledCaches) {
 	if (!eval("%HaveSameMap(uncalledCaches[0], cache)"))
