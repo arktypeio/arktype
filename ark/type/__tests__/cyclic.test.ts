@@ -1585,4 +1585,18 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest(types.t(data)).equals(data)
 		attest(types.f.allows({ ...data, right: { kind: "or" } })).equals(false)
 	})
+
+	// an alias names the functions its compiled code declares and calls, so
+	// one that isn't an identifier must be written as one rather than as code
+	it("compiles an alias that isn't an identifier", () => {
+		const alias = "[]=[globalThis.pwned=1],1-a"
+		const types = scope({ [alias]: { v: "string", "next?": alias } }).export()
+		const t = types[alias as never] as Type<{ v: string; next?: unknown }>
+
+		attest(t({ v: "a", next: { v: "b" } })).equals({ v: "a", next: { v: "b" } })
+		attest(t({ v: "a", next: { v: 1 } }).toString()).snap(
+			"next.v must be a string (was a number)"
+		)
+		attest("pwned" in globalThis).equals(false)
+	})
 })
