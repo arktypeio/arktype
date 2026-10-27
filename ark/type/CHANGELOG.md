@@ -92,6 +92,8 @@ A Type a string definition can write has an `expression` that parses back to it:
 - A number `String` writes with an exponent, below `1e-6` or from `1e21`, is written in decimal, as `1000000000000000000000` or `number > 0.0000001`, where `1e+21` and `1e-7` didn't parse. Its type, like any number TypeScript writes with an exponent, still fails, so such a definition needs `type.raw`.
 - An array of `never` is `never[]`, where it was `(never)[]`.
 - `[]` parses as the empty tuple, as TypeScript writes it, so the expression of `type([])` or of `string[] & number[]`, which is `[]`, parses back, and `[][]` is an array of empty tuples.
+- `NaN`, `Infinity` and `-Infinity` parse as the units they name, as `number.NaN`, `number.Infinity` and `number.NegativeInfinity` write them, and are inferred as `number`, as those are. They aren't limits, so `number > Infinity` throws as it did.
+- `Int8Array` and each other typed array constructor is a keyword, as `TypedArray.Int8` and the others write them. `TypedArray.Int8` and `Int8Array` are equal.
 - A pattern is written as its source with each `/` escaped, where it was its RegExp's `toString()`, which leaves a `/` in a class unescaped and writes an empty pattern `(?:)`. So `type("/[\\/]/").expression` and `string.base64`'s are `/[\/]/` and `/^(?:[\d+\/A-Za-z]{4})*...$/`, where the first `/` in the class ended the literal they printed, and `type("//").expression` is `//`.
 
 ### Leave out a number or Date option config already sets

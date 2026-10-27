@@ -32,11 +32,6 @@ const expressibleKinds = new Set([
 	"notEqualLength"
 ])
 
-// keywords whose expression is their TypeScript name, like Int8Array or NaN,
-// which isn't one in a scope
-const namedForTypeScript =
-	/^(?:TypedArray\.|number\.(?:NaN|Infinity|NegativeInfinity)$)/
-
 const keywordsOf = (module: object, prefix = ""): string[] =>
 	Object.entries(module).flatMap(([k, v]) => {
 		const name =
@@ -52,10 +47,7 @@ const keywordsOf = (module: object, prefix = ""): string[] =>
 
 const keywords = keywordsOf(ark.export()).filter(name => {
 	const node: BaseRoot = type(name as never).internal
-	return (
-		!namedForTypeScript.test(name) &&
-		[node, ...node.references].every(n => expressibleKinds.has(n.kind))
-	)
+	return [node, ...node.references].every(n => expressibleKinds.has(n.kind))
 })
 
 const keywordsIn = (domain: "number" | "string") =>
@@ -69,12 +61,9 @@ const intersected = (def: fc.Arbitrary<string>) =>
 		fc.tuple(def, def).map(([l, r]) => `${grouped(l)} & ${grouped(r)}`)
 	)
 
-// Infinity is a keyword's TypeScript name
+// a non-finite number is a unit, where a limit holding one is skipped
 const numberLiteral = fc
-	.oneof(
-		fc.integer({ min: -12, max: 12 }),
-		fc.double({ noNaN: true, noDefaultInfinity: true })
-	)
+	.oneof(fc.integer({ min: -12, max: 12 }), fc.double())
 	.map(printDecimal)
 
 const comparator = fc.constantFrom("<", "<=", ">", ">=", "==", "!=")

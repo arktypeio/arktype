@@ -11,11 +11,13 @@ import {
 } from "@ark/schema"
 import {
 	hasOwn,
+	nonFiniteNumbers,
 	printable,
 	throwParseError,
 	tryParseWellFormedBigint,
 	tryParseWellFormedNumber,
 	type BigintLiteral,
+	type NonFiniteNumberLiteral,
 	type NumberLiteral,
 	type Scanner,
 	type join,
@@ -138,7 +140,10 @@ const maybeParseUnenclosedLiteral = (
 	s: RuntimeState,
 	token: string
 ): BaseRoot | undefined => {
-	const maybeNumber = tryParseWellFormedNumber(token)
+	const maybeNumber =
+		hasOwn(nonFiniteNumbers, token) ?
+			nonFiniteNumbers[token as NonFiniteNumberLiteral]
+		:	tryParseWellFormedNumber(token)
 	if (maybeNumber !== undefined)
 		return s.ctx.$.node("unit", { unit: maybeNumber })
 
@@ -165,6 +170,8 @@ type tryResolve<
 		parseResolution<s, unscanned, token, $[`#${token}`], $, args>
 	: token extends NumberLiteral<infer n> ?
 		s.setRoot<s, InferredAst<n, token>, unscanned>
+	: token extends NonFiniteNumberLiteral ?
+		s.setRoot<s, InferredAst<number, token>, unscanned>
 	: token extends (
 		`${infer submodule extends keyof $ & string}.${infer reference}`
 	) ?

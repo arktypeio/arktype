@@ -11,6 +11,18 @@ contextualize(() => {
 		attest(T(new Map()).toString()).snap("must be a Date (was Map)")
 	})
 
+	it("typed array keywords", () => {
+		const T = type("Int8Array | BigUint64Array")
+		attest<Int8Array | BigUint64Array>(T.infer)
+		attest(T.expression).snap("BigUint64Array | Int8Array")
+		attest(type("Int8Array").equals("TypedArray.Int8")).equals(true)
+		const data = new Int8Array(1)
+		attest(T(data)).equals(data)
+		attest(T(new Uint8Array(1)).toString()).snap(
+			"must be a BigUint64Array or an Int8Array (was Uint8Array)"
+		)
+	})
+
 	describe("tuple expression", () => {
 		it("base", () => {
 			const T = type(["instanceof", Error])

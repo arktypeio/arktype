@@ -32,7 +32,7 @@ export const parseBound = (
 ): void => {
 	const comparator = shiftComparator(s, start)
 	if (s.root.is("unit")) {
-		if (typeof s.root.unit === "number") {
+		if (typeof s.root.unit === "number" && Number.isFinite(s.root.unit)) {
 			s.reduceLeftBound(s.root.unit, comparator)
 			s.unsetRoot()
 			return
@@ -183,7 +183,8 @@ export const parseRightBound = (
 	s.root = previousRoot
 	if (
 		!limitNode.is("unit") ||
-		(typeof limitNode.unit !== "number" && !(limitNode.unit instanceof Date))
+		(typeof limitNode.unit !== "number" && !(limitNode.unit instanceof Date)) ||
+		(typeof limitNode.unit === "number" && !Number.isFinite(limitNode.unit))
 	)
 		return s.error(writeInvalidLimitMessage(comparator, limitToken, "right"))
 
