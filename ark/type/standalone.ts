@@ -2773,14 +2773,16 @@ ${writeFunction(
 				:	"runtime.applyRejected"
 			:	this.emit(rootApplyRuntime[param])
 		const strategy = root.applyStrategy
+		// a checker transforms by its t, so each is created alike
+		const checks = isChecker(root, this.variantOf(root))
+		// an undiscriminated union's Transform finds the branch data allows,
+		// where a checker's t transforms only what its Allows passed
 		const isArrow =
 			!root.includesAlias &&
 			(strategy === "allows" ||
 				(strategy === "transform" &&
 					!root.includesMorph &&
-					!(root.hasKind("union") && !root.discriminant)))
-		// a checker transforms by its t, so each is created alike
-		const checks = isChecker(root, this.variantOf(root))
+					(checks || !(root.hasKind("union") && !root.discriminant))))
 		const transforms = strategy === "transform" && !checks
 		const [flat, traversals] =
 			isArrow && appliesErrors && !root.allowsNeedsCtx ?
