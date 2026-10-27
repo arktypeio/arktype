@@ -188,7 +188,7 @@ Actual: {"a":"string"}`)
 		// @ts-expect-error
 		attest(() => attest([type.string.internal]).equals([undefined])).throws
 			.snap(`AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
-Expected: ["undefined"]
+Expected: [undefined]
 Actual: ["string"]`)
 	})
 
