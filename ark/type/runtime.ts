@@ -86,6 +86,7 @@ export {
 	foundErrors,
 	fixConfigured,
 	holdsOnlyIndices,
+	keepOwn,
 	InternalTraversal,
 	matchesRepeated,
 	mergeTransformed,

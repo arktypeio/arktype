@@ -1,4 +1,4 @@
-import { defineValue, hasDomain, hasOwn, isArray } from "@ark/util"
+import { defineValue, hasDomain, hasOwn, isArray, type Key } from "@ark/util"
 import type { BaseNode, RootApply } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import { arrayIndexMatcher } from "../structure/shared.ts"
@@ -88,6 +88,13 @@ export const copyOf = (data: object): object => {
 	return Object.prototype.toString.call(data) === "[object Object]" ?
 			Object.setPrototypeOf({ ...data }, prototype)
 		:	data
+}
+
+// keeps data's own key on its copy where the spread skipped it, as a
+// non-enumerable one. A key data inherits is reachable through the copy's
+// prototype, which copyOf keeps, so `in` rejects the usual key at once
+export const keepOwn = (out: object, data: object, k: Key): void => {
+	if (!(k in out) && hasOwn(data, k)) out[k as never] = data[k as never]
 }
 
 // the later output wins a key both changed
