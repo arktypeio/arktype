@@ -72,7 +72,7 @@ const checkedKinds = [
 
 // a default is a key only of the optional nodes that have one
 const groupOf = node =>
-	node.hasKind("optional") && node.hasDefault() ?
+	node.is("optional") && node.hasDef() ?
 		"defaulted optional"
 	:	node.kind
 
@@ -112,8 +112,8 @@ for (const nodes of Object.values(nodesByKind)) {
 		node.description
 		node.in
 		node.out
-		if (node.hasKind("sequence")) node.element
-		if (node.hasKind("optional")) node.outProp
+		if (node.is("sequence")) node.element
+		if (node.is("optional")) node.outProp
 	}
 }
 
@@ -130,7 +130,7 @@ for (const [i, def] of definitions.entries()) {
 // these Types compile their divisor and pattern nodes inline, binding none
 for (const kind of checkedKinds) {
 	if (kind === "divisor" || kind === "pattern") continue
-	const bound = [...nodesByKind[kind]].filter(node => node.compiledUnit)
+	const bound = [...nodesByKind[kind]].filter(node => node.unitFn)
 	if (!bound.length || bound.length === nodesByKind[kind].size)
 		throw new Error(`Expected both bound and unbound ${kind} nodes to compare.`)
 }
@@ -139,8 +139,8 @@ assertOneMapPerKind("after binding some of them")
 
 const uncalledCaches = Object.values(nodesByKind).flatMap(nodes =>
 	[...nodes]
-		.filter(node => !("rootApply" in node.cache))
-		.map(node => node.cache)
+		.filter(node => !("rootApply" in node.c))
+		.map(node => node.c)
 )
 for (const cache of uncalledCaches) {
 	if (!eval("%HaveSameMap(uncalledCaches[0], cache)"))
@@ -199,10 +199,10 @@ console.log(
 )
 
 const configs = {
-	"the default scope": type("string").internal.$.resolvedConfig,
+	"the default scope": type("string").internal.$.cfg,
 	"a configured scope": scope({}, { exactOptionalPropertyTypes: false }).type(
 		"string"
-	).internal.$.resolvedConfig
+	).internal.$.cfg
 }
 
 for (const [name, config] of Object.entries(configs)) {
