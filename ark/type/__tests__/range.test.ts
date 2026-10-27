@@ -466,6 +466,7 @@ contextualize(() => {
 
 		it("union of overlapping bounds", () => {
 			attest(type("number > 0 | number < 5").json).equals(type("number").json)
+			attest(type("number > 0 | number < 5").equals(type.number)).equals(true)
 		})
 
 		it("union of adjacent length bounds", () => {

@@ -101,6 +101,8 @@ A `domain` schema's `numberAllowsNaN` or `numberAllowsInfinity`, or a `Date` `pr
 
 Branches alike but for their range are one range when the ranges overlap or meet, as #751 asked: `1 < number < 10 | 10 <= number < 100` is `1 < number < 100`, `2 <= string <= 4 | 5 <= string <= 8` is `2 <= string <= 8`, and a unit at a bound joins it, so `number < 5 | number == 5` is `number <= 5`. Bounds covering every value are the basis alone: `number > 0 | number < 5` is `number` and `string >= 3 | string <= 2` is `string`. Ranges one value apart are their union excluding it, like `0 < number < 5 | 5 < number < 10`, which is `0 < number < 10 & number != 5`, and wider gaps stay a union, as do branches with different descriptions or messages. A basis allowing `NaN` or invalid Dates, which every bound rejects, keeps the union.
 
+Ranges covering their whole basis reduce to the basis itself, so `number > 0 | number < 5` equals `type.number`, where it was an intersection holding only `number`, which `.json` and `.expression` matched but `.equals()` didn't.
+
 ### Merge unions of objects alike but for one key
 
 Objects with the same keys, alike but for one key's value, are one object whose value is the union of theirs, as #751 asked: `type({ a: "string" }).or({ a: "number" })` is `{ a: string | number }`, and `{ kind: "a", x: string } | { kind: "b", x: string }` is `{ kind: "a" | "b", x: string }`. The key is optional if it's optional in either, and the merged values reduce like any union, so nested objects merge as well. Objects differing in their undeclared key handling, index signatures, descriptions or messages stay a union, as do ordered unions and a key with a default, whose default applies only to its own branch.

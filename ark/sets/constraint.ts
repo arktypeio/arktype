@@ -24,6 +24,9 @@ import {
 } from "@ark/util"
 import { intersectOrPipeNodes } from "./intersections.ts"
 
+const basisOf = (inner: Intersection.Inner): BaseRoot | undefined =>
+	inner.proto ?? inner.domain
+
 type ConstraintGroupKind = satisfy<NodeKind, "intersection" | "structure">
 
 interface ConstraintIntersectionState<
@@ -50,6 +53,9 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 				(!s.baseInner.undeclared || s.baseInner.undeclared === "ignore")
 			) ?
 				$ark.intrinsic.unknown.internal
+				// an intersection of a basis alone is the basis
+			: s.l.length === 0 && s.kind === "intersection" && basisOf(s.baseInner) ?
+				basisOf(s.baseInner)!
 			:	s.ctx.$.node(
 					s.kind,
 					Object.assign(s.baseInner, unflattenConstraints(s.l)) as never,
