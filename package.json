@@ -65,6 +65,7 @@
 		"benchTypia": "node ./ark/repo/bench/generateTypia.ts",
 		"benchValidate": "ts ./ark/repo/bench/validate.ts",
 		"benchCount": "ts ./ark/repo/bench/count.ts",
+		"benchBuildTime": "node ./ark/repo/bench/buildTime/registered.ts",
 		"benchExternal": "node ./ark/repo/bench/external/reproduce.ts",
 		"benchScoreboard": "pnpm benchTypia && pnpm benchSize && pnpm benchImport && pnpm benchValidate",
 		"benchRegex": "ts ./ark/regex/__tests__/regex.bench.ts",
