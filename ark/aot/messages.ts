@@ -3,7 +3,7 @@ import { capitalize, printable } from "@ark/util"
 import type { Rule } from "./precompile.ts"
 
 export const writeUnreadableConfigMessage = (path: string): string =>
-	`the config module ${path} can't be read. Name a module that exists as the build's config.`
+	`The config module ${path} can't be read. Name a module that exists as the build's config.`
 
 export const writeUnansweredResolveMessage = (
 	specifier: string,

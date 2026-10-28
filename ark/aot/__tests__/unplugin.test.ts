@@ -2195,7 +2195,7 @@ console.log(JSON.stringify(User.toJsonSchema()))
 		])
 		// thrown by the precompiler's worker rather than reported for a module
 		attest(await thrownBy({ config: "missing.ts" })).snap([
-			"the config module missing.ts can't be read. Name a module that exists as the build's config.",
+			"The config module missing.ts can't be read. Name a module that exists as the build's config.",
 			""
 		])
 	})

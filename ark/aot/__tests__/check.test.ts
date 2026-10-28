@@ -430,7 +430,7 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 			"2 --fail-under must be a percentage (was most)",
 			"2 --members must be JSON (was assert)",
 			'2 mutatesInput must be "always", false or true (was "yes")',
-			"1 the config module missing.ts can't be read. Name a module that exists as the build's config.",
+			"1 The config module missing.ts can't be read. Name a module that exists as the build's config.",
 			'2 creationChecks must be "helpers", "none" or "types" (was "bogus")',
 			'2 creationChecks chooses what a standalone build writes, which runtime: "arktype" doesn\'t. Remove runtime: "arktype" to precompile, or remove creationChecks.'
 		])
