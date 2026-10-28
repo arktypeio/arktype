@@ -1228,7 +1228,10 @@ const elidedAlike = (l: string, r: string): boolean =>
 		([a, b]) =>
 			a.includes("...") &&
 			new RegExp(
-				`^${a.replace(/[$()*+.?[\\\]^{|}]/g, "\\$&").replaceAll("\\.\\.\\.", ".*")}$`
+				`^${a
+					.replace(/[$()*+.?[\\\]^{|}]/g, "\\$&")
+					.split("\\.\\.\\.")
+					.join(".*")}$`
 			).test(b)
 	)
 
