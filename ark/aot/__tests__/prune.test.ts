@@ -238,6 +238,15 @@ contextualize(function (this: Mocha.Suite) {
 			).equals(everyMember)
 		})
 
+		it("through a default export of a binding", async () => {
+			attest(
+				await droppedFrom({
+					"/types.ts": `import { type } from "arktype"\n\nconst User = type({ name: "string" })\n\nexport default User`,
+					"/main.ts": `import User from "./types.ts"\n\nUser.assert({})`
+				})
+			).equals(["meta", "~standard", "methods"])
+		})
+
 		it("an entry's own validator, which it doesn't export", async () => {
 			attest(
 				await droppedFrom({
