@@ -106,8 +106,7 @@ import {
 	type ValueOfTypeParser
 } from "./type.ts"
 
-// installed where keyword modules build scopes, since a bundler
-// trusting sideEffects drops a bare import
+// a bundler trusting sideEffects drops a bare import
 $ark.sets ??= setEngine
 
 /** The convenience properties attached to `scope` */
@@ -438,9 +437,7 @@ export declare namespace scope {
 		: parseScopeKey<k, def>["params"] extends infer params ?
 			params extends array<GenericParamAst> ?
 				params["length"] extends 0 ?
-					// passing a Type through here keeps some cyclic tests from breaking, but
-					// checking it against Type reads ArkEnv.meta, which a meta inferred
-					// from a scope importing Types references (#1644)
+					// checking against Type reads ArkEnv.meta, which a meta inferred from a scope importing Types references (#1644)
 					def[k] extends InferredDefinition | PreparsedResolution ? def[k]
 					: k extends (
 						PrivateDeclaration<infer name extends keyof def & string>

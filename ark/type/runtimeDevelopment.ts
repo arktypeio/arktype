@@ -1,6 +1,4 @@
-// arktype/runtime under the "development" condition, where Node prints errors
-// as their issues and a member the build didn't bake throws where it's read,
-// so a production build ships nothing for either
+// arktype/runtime under the "development" condition: Node prints issues, and an unbaked member throws where read
 import { ArkErrors, Validator } from "./runtime.ts"
 
 Object.defineProperty(

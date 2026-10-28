@@ -197,9 +197,7 @@ export class Validator {
 	}
 }
 
-// a Standard Schema consumer prefixes each issue's message with its path.
-// arktype's errors write their messages as they're read. Others write an
-// issue's message only where it's the Standard one, so a pathed one needs none
+// a Standard Schema consumer prefixes each message with its path, so a pathed issue needs none
 export const standardResultOf = (
 	out: unknown
 ): StandardSchemaV1.Result<unknown> =>
@@ -216,9 +214,7 @@ export const standardResultOf = (
 		}
 	:	{ value: out }
 
-// shorter at each site than a literal. A configured message is one
-// parameter of it rather than a helper of its own, as a program configuring
-// one also has sites that don't
+// shorter at each site than a literal
 export const siteOf = ((
 	code: ArkErrorCode,
 	description?: string,
@@ -237,9 +233,7 @@ export const keySiteOf = ((
 	m: requiredSite.m!
 })) satisfies Fn
 
-// where the build checks what it built, a library reading a JSON Schema it
-// left out fails saying how to keep it, rather than reading undefined as it
-// does in production. "jsonSchema" in it stays false, as a library may test
+// a library reading a JSON Schema the build left out fails saying how to keep it; "jsonSchema" in it stays false
 export const withoutJsonSchema = <standard extends object>(
 	standard: standard
 ): standard =>
@@ -499,9 +493,7 @@ type Writer = string | Fn | undefined
 
 const defineProperty = Object.defineProperty
 
-// writes an issue's text from writers once it's first read, as arktype writes
-// an error from its context; keeps is 1 if the issue takes expected, 2 if
-// problem, and text the context supplies is kept as arktype keeps it
+// written once first read; keeps is 1 if the issue takes expected, 2 if problem
 const writeIssue = (
 	issue: ArkIssue,
 	context: Record<string, unknown>,
@@ -576,8 +568,7 @@ export const raisingTraversalOf = (
 		}
 	}
 
-// a unified traversal reports to a ctx it's passed, and passed none (or
-// filter's index), stops at its first failure
+// passed no ctx (or filter's index), stops at its first failure
 export const failsAt = ((
 	ctx: FailureContext | undefined,
 	site: FailureSite,
@@ -585,9 +576,7 @@ export const failsAt = ((
 	key?: PropertyKey
 ): boolean | undefined => !ctx?._at || ctx._at(site, data, key)) satisfies Fn
 
-// fails a site at a path below data, as a discriminant deeper than one key
-// misses, entering each key but the last as an Apply would. Like failsAt, it
-// stops where there's no ctx to report to, as an Allows of a size build has
+// a discriminant deeper than one key misses below data, entering each key but the last
 export const failsAtPath = ((
 	ctx: FailureContext | undefined,
 	site: FailureSite,
@@ -681,14 +670,11 @@ export const applyCallErrors = (
 
 type UnreadErrors = new (apply: CompactApply, data: unknown) => ArkErrors
 
-// errors whose issues their Apply finds in data once they're read, a class
-// defined at a build's first failure, as one defined as it loads costs its
-// startup more than the rest of its errors runtime
+// defined at a build's first failure, as defining it at load costs startup
 type UnreadErrorsOf = () => UnreadErrors
 
 const unreadOf = (Ctx: new () => ArkErrors): UnreadErrors => {
 	class Unread {
-		// its Apply, the data it reads and, once read, the issues found, each
 		// named short, as every bundle reading errors writes them
 		declare _a: CompactApply
 		declare _d: unknown

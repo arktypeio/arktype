@@ -37,8 +37,7 @@ export const parseInteger = (s: string, ctx: Traversal): number | ArkError => {
 
 export const parseNumeric = (s: string): number => Number(s)
 
-// a numeric string past Number.MAX_VALUE parses to Infinity, which takes at
-// least five characters ("1e309"), so a shorter one is finite unparsed
+// Infinity takes at least five characters ("1e309"), so a shorter numeric string is finite
 export const parsesFinite = (s: string): boolean =>
 	s.length < 5 || Number.isFinite(Number(s))
 
@@ -87,8 +86,7 @@ const isoDateParseError = /* @__PURE__ */ keywordError(
 	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
 )
 
-// the parts of a string.date.iso: a calendar, week or ordinal date, then a time
-// whose last unit can have a fraction, then an offset
+// a calendar, week or ordinal date, then a time whose last unit can have a fraction, then an offset
 const isoDateParts =
 	/^([+-]?\d{4})(?:-?(?:(\d{2})(?:-?(\d{2}))?|W(\d{2})(?:-?([1-7]))?|(\d{3})))?(?:T(\d{2})(?::?(\d{2})(?::?(\d{2}))?)?(?:[,.](\d+))?(?:[Zz]|([+-])(\d{2}):?(\d{2})?)?)?$/
 
@@ -146,9 +144,7 @@ const isoDateOf = (parts: RegExpExecArray): Date | undefined => {
 	return date
 }
 
-// an ISO date is read as string.date.iso.parse reads it, so it's one instant
-// on every machine and a date that doesn't exist is invalid. Other forms are
-// read by the host's Date
+// an ISO date is read as string.date.iso.parse reads it, other forms by the host's Date
 const readDate = (s: string): Date | undefined => {
 	if (iso8601Matcher.test(s)) {
 		const parts = isoDateParts.exec(s)
@@ -246,9 +242,7 @@ const jsonParseError = /* @__PURE__ */ keywordError(
 	jsonString
 )
 
-// a number in JSON past Number.MAX_VALUE parses to Infinity, which number
-// rejects. It has a positive exponent or 309 digits in a row, and any 309 in
-// a row include one of every 309th index, so only those are read
+// Infinity has a positive exponent or 309 digits in a row, so only every 309th index is read
 const mayOverflow = (s: string): boolean => {
 	if (positiveExponent.test(s)) return true
 	for (let i = 308; i < s.length; i += 309) {
