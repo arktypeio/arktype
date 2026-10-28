@@ -882,11 +882,17 @@ const vitePluginsOf = (dir: string, rewrite: Rewrite): VitePlugin[] => {
 		]
 	}
 	const rewriter = rewrites[rewrite]!
+	// reformatting touches every module of the app, as a Babel plugin would,
+	// the types modules among them
+	const rewrites_ = (id: string) =>
+		rewrite === "reformat" ?
+			id.startsWith(dir) && !id.includes("node_modules") && id.endsWith(".ts")
+		:	isReaderId(id)
 	return [
 		{
 			name: rewrite,
 			enforce: "pre",
-			transform: (code, id) => (isReaderId(id) ? rewriter(code) : undefined)
+			transform: (code, id) => (rewrites_(id) ? rewriter(code) : undefined)
 		}
 	]
 }
