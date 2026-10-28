@@ -7,25 +7,18 @@ import { ModuleScopes, operatorOf, walk } from "./scope.ts"
 
 export type ImportKind = "import-statement" | "dynamic-import" | "require-call"
 
-// a specifier's module as the bundler resolves it: its file, null where the
-// bundle doesn't hold it, or undefined where the build can't read what it is
+// the module's file, null where the bundle doesn't hold it, undefined where the build can't tell
 export type ScanResolution = string | null | undefined
 
 export interface ScanHost<resolution = Promise<ScanResolution>> {
 	resolve: (specifier: string, importer: string, kind: ImportKind) => resolution
-	// a module's code as its file holds it, where the bundler can't load it
-	// or it's a dependency's script, which the scan reads for its imports alone
+	// the file's code, where the bundler can't load it or it's a dependency read for its imports alone
 	readFile?: (id: string) => string | undefined
-	// a module's code as the bundler loads it, through the plugins ahead of
-	// this one, or each plugin where it doesn't transform it, like a Svelte
-	// component's
+	// the code as the bundler loads it through the plugins ahead, like a Svelte component's
 	load?: (id: string) => Promise<string | undefined>
-	// whether the plugin precompiles a module the bundler loads
 	isTransformed: (id: string) => boolean
-	// the precompiler's name for a module, which a bundler may write otherwise,
-	// as Vite writes / on Windows
+	// the precompiler's name for a bundler's id, as Vite writes / on Windows
 	idOf: (id: string) => string
-	// what messages print paths from
 	cwd: string
 }
 
@@ -35,8 +28,7 @@ export interface ScanEntry {
 	source?: string
 }
 
-// the modules a bundle's entries reach, or why one may reach a validator
-// through code the build can't read
+// the modules a bundle's entries reach, or why one may reach a validator unseen
 export const scanProgram = async (
 	key: string,
 	entries: ScanEntry[],
@@ -65,7 +57,6 @@ export const scanProgramSync = (
 ): ScannedProgram | string => {
 	const steps = programSteps(key, entries, host)
 	let step = steps.next()
-	// with no load, it reads each module's file itself
 	while (!step.done) {
 		const [kind, requests] = step.value
 		step = steps.next(
@@ -77,12 +68,9 @@ export const scanProgramSync = (
 
 type ImportRequest = [specifier: string, importer: string, kind: ImportKind]
 
-// what the scan asks its host for at once: the modules to load, or the imports
-// to resolve, each of every module it read last
 type ScanStep = ["load", ids: string[]] | ["resolve", requests: ImportRequest[]]
 
-// yields what to load or resolve, and is passed what each holds or resolves
-// to, reading the modules its entries reach a layer at a time
+// reads the modules its entries reach a layer at a time, yielding what to load or resolve
 function* programSteps(
 	key: string,
 	entries: ScanEntry[],
@@ -112,8 +100,7 @@ function* programSteps(
 	// a module imported dynamically is a chunk of its own where a bundler splits
 	const dynamicImports = new Set<string>()
 	const exposed = new Set<string>()
-	// whether a dependency imports a module of the program, which it may
-	// write into a chunk of its own
+	// a dependency importing a module of the program may write it into a chunk of its own
 	let isImportedByDependency = false
 	while (layer.length) {
 		const read = layer.map(id => {
@@ -123,8 +110,7 @@ function* programSteps(
 				id,
 				hostId,
 				isDependency,
-				// a dependency's script is read as its file holds it, for its
-				// imports alone
+				// a dependency's script is read from its file, for its imports alone
 				isLoaded:
 					given.get(id) === undefined &&
 					!!host.load &&
@@ -234,11 +220,7 @@ function* programSteps(
 	}
 }
 
-// what loads no module from import.meta: a value the bundler defines, like
-// env, or a flag Nuxt defines, a path, a URL, which a module loads only
-// through an import() the scan can't read, or hot or webpackHot, which a
-// production build defines as undefined or leaves unimplemented, so no update
-// it accepts runs where a bundle prunes
+// import.meta members that load no module; hot and webpackHot are undefined or inert in a production build
 export const isInertMetaProperty = (name: unknown): boolean =>
 	inertMetaProperties.has(name as never)
 
@@ -264,10 +246,7 @@ const inertMetaProperties = new Set([
 const runtimeSpecifier =
 	/^(?:arktype|@ark\/(?:schema|util))(?:\/|$)|^~arktype\//
 
-// a dependency the plugin leaves, read only for the modules of the program it
-// imports, as a framework's runtime imports the app's routes, which it may
-// read any way. Where it loads a module the scan can't name, it's assumed to
-// be another dependency, and where it isn't, the build fails its check
+// a dependency the plugin leaves, read only for the program's modules it imports
 const isLeftDependency = (id: string, host: Pick<ScanHost, "isTransformed">) =>
 	dependencyOf(id) !== undefined && !host.isTransformed(id)
 
@@ -298,8 +277,6 @@ const importsOf = (
 	id: string,
 	source: string
 ): { imports: Import[]; unnamed: UnnamedImport | undefined } => {
-	// whose program is read only where it may call require, as reading it
-	// copies the whole tree into JavaScript
 	const parsed = parseSync(id, source, {
 		lang: langOf(id),
 		sourceType: /\.c[jt]s$/.test(id) ? "commonjs" : "module"
@@ -343,6 +320,7 @@ const importsOf = (
 			)
 		}
 	}
+	// reading .program copies the tree into JavaScript, so only where it may call require
 	if (/\brequire\b/.test(source)) {
 		const program = parsed.program as never as Program
 		walk(program, node => {
@@ -358,8 +336,7 @@ const importsOf = (
 			}
 			return true
 		})
-		// a reference to require no binding declares, so not `auth.require(...)`,
-		// a key named require or a function of the module's named require
+		// require no binding declares, so not auth.require(...) or a key named require
 		for (const { id } of new ModuleScopes(program).root.unresolved) {
 			if (id.name !== "require") continue
 			const [operand, call] = operatorOf(id)
@@ -387,23 +364,19 @@ const positionIn = (path: string, source: string, offset: number) => {
 	return `${path}:${before.split("\n").length}:${offset - before.lastIndexOf("\n")}`
 }
 
-// a plain string, or a template holding no expression: a `$` not opening one,
-// as in a TanStack Router splat route's `$.tsx`, is a character of the name
+// a `$` not opening an expression, as in TanStack Router's `$.tsx`, is part of the name
 const literalIn = (text: string): string | undefined =>
 	/^(["'`])((?:[^"$'\\`]|\$(?!{))*)\1$/.exec(text.trim())?.[2]
 
-// the modules a bundle holds, and each import of one, from what it bundled,
-// each as the precompiler names it
+// what the bundle holds, each as the precompiler names it
 export interface Imports {
 	// undefined where the build can't read it
 	entries: (string | undefined)[]
-	// each the plugin may have loaded
 	modules: (string | undefined)[]
 	edges: [importer: string | undefined, target: string][]
 }
 
-// each module's source as the plugin loaded it, by the precompiler's name for
-// it, null where the bundle loads its file under two ids unalike
+// by the precompiler's name, null where the bundle loads a file under two ids unalike
 export type LoadedSources = Map<string, string | null>
 
 export const addLoaded = (
@@ -421,13 +394,11 @@ export const unseenProblemOf = (
 	loaded: LoadedSources,
 	// each module creating a validator
 	holders: ReadonlySet<string>,
-	// what messages name paths from
 	cwd: string
 ): string | undefined => {
 	const pathOf = (id: string) =>
 		isAbsolute(id) ? printablePathOf(cwd, id) : id
-	// what any code may import, as their exports are read whole: entries,
-	// what import() loads, and modules with no file
+	// what any code may import whole: entries, import() targets and modules with no file
 	const whole = new Set([
 		...scanned.entries,
 		...scanned.dynamicImports,
@@ -444,10 +415,7 @@ export const unseenProblemOf = (
 		// e.g. esbuild's stdin, which the bundler reads as the scan did
 		if (id === undefined || !scanned.modules[id]?.transformed) continue
 		if (loaded.get(id) !== scanned.modules[id].source) {
-			// it read the module from its file, as it hadn't reached the plugin,
-			// and a plugin ahead then rewrote it, as TanStack Router's code
-			// splitting does a route and a Babel plugin like the React Compiler's
-			// does any module
+			// a plugin ahead rewrote it after the scan read its file, as TanStack Router's code splitting does
 			return loaded.has(id) ?
 					writeUnseenMessage(
 						`it built ${pathOf(id)} from other code than it read, as a plugin ahead of arktype's rewrote it after it read its file`,
@@ -471,8 +439,6 @@ export const unseenProblemOf = (
 	}
 }
 
-// each module a validator may be imported through: one creating it, or one
-// importing a module it may be imported through
 const reachingOf = (
 	scanned: ScannedProgram,
 	holders: ReadonlySet<string>
@@ -493,16 +459,12 @@ const reachingOf = (
 	return reaching
 }
 
-// e.g. "src/routes.ts:3:1 reads import.meta.glob, ...", where the build
-// can't read the bundle, so it writes it as prune: false would
 export const writeUnprunedMessage = (
 	reason: string,
 	fix = "Set prune: false to build them whole without this warning."
 ): string =>
 	`prune: off, because ${reason}, so the build keeps every member of its validators. ${fix}`
 
-// where the build reads the bundle but not what a read of its validators
-// needs, so it keeps each member members leaves to it
 export const writeKeptMembersMessage = (
 	reason: string,
 	kept: readonly string[]
@@ -514,13 +476,11 @@ export const writeKeptMembersMessage = (
 	return `prune: keeping ${list}, because ${reason}. Set ${list} in members, ${kept.length === 1 ? "" : "each "}false where no code reads it, to build without this warning.`
 }
 
-// a call to a helper whose calls the build folds runs only where the plugin
-// transforms it, so neither code it leaves nor code outside the bundle can call it
+// a folded helper's call runs only where the plugin transforms it
 export const unfoldedCallProblemOf = (
 	foldedHelpersById: ReadonlyMap<string, string[]>,
 	imports: Imports,
 	isTransformed: (id: string) => boolean,
-	// what messages name paths from
 	cwd: string
 ): string | undefined => {
 	const pathOf = (id: string) =>
