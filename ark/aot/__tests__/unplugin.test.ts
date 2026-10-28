@@ -415,6 +415,19 @@ contextualize(function (this: Mocha.Suite) {
 		attest(standalone.includes(parserMessage)).equals(false)
 	})
 
+	// a package the build precompiles imports the runtime as it transforms it,
+	// which isn't a package shipping what another build precompiled
+	it("packages that opt in, inline", async () => {
+		const standalone = await bundlers.esbuild(
+			{ cwd: library, inline: true },
+			library
+		)
+		attest(run(standalone)).equals(runPlain(library))
+		attest(
+			run(await bundlers.vite({ cwd: library, inline: true }, library))
+		).equals(runPlain(library))
+	})
+
 	it("esbuild static introspection", async () => {
 		const introspected = fromHere("introspected")
 		const standalone = await bundlers.esbuild(
