@@ -1677,16 +1677,24 @@ const elidedAlike = (l: string, r: string): boolean =>
 	[
 		[l, r],
 		[r, l]
-	].some(
-		([a, b]) =>
-			a.includes("...") &&
-			new RegExp(
-				`^${a
-					.replace(/[$()*+.?[\\\]^{|}]/g, "\\$&")
-					.split("\\.\\.\\.")
-					.join(".*")}$`
-			).test(b)
-	)
+	].some(([a, b]) => a.includes("...") && matchesElided(a.split("..."), b))
+
+// whether `text` is `segments` with anything between them. Each is found where
+// it first fits, which decides the match where only gaps vary; a RegExp of
+// `.*` gaps backtracks for exponential time on a deeply nested expression
+const matchesElided = (segments: string[], text: string): boolean => {
+	const first = segments[0]
+	const last = segments[segments.length - 1]
+	if (!text.startsWith(first) || !text.endsWith(last)) return false
+	const end = text.length - last.length
+	let from = first.length
+	for (const segment of segments.slice(1, -1)) {
+		const at = text.indexOf(segment, from)
+		if (at === -1 || at + segment.length > end) return false
+		from = at + segment.length
+	}
+	return from <= end
+}
 
 // a disagreement precompiling doesn't promise to avoid
 const exclusions: Allowance[] = [
@@ -1842,6 +1850,27 @@ contextualize(() => {
 				"{ l?: ..., r?: { l?: ..., r?: ...[] } }"
 			)
 		).equals(undefined)
+	})
+
+	it("matches elisions of a deeply nested description without backtracking", () => {
+		const program = programOf([
+			() => ({ containers: [], exports: [], main: ["const D = type({})"] })
+		])
+		// a level of the generated dags, which doubles the text per level
+		const nested = (depth: number, leaf: string): string =>
+			depth === 0 ? leaf : (
+				`[${nested(depth - 1, leaf)}[], ${nested(depth - 1, leaf)}?]`
+			)
+		const disagreement = (precompiled: string) =>
+			allowanceOf(exclusions, program, {
+				perturbation: "none",
+				site: "main.ts:1:1",
+				original: { description: nested(6, "{ a: number }") },
+				precompiled: { description: precompiled }
+			})
+		attest(disagreement(nested(6, "..."))).equals(exclusions[0])
+		// a mismatch after 64 gaps, which a RegExp of `.*` gaps never finishes
+		attest(disagreement(`${nested(6, "...")}x`)).equals(undefined)
 	})
 
 	it("agree through the build", async () => {
