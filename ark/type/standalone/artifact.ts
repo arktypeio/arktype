@@ -48,11 +48,9 @@ import type { InternalTypedFn } from "../fn.ts"
 import type { HoleKind, IntrospectionMember } from "../runtime.ts"
 import * as runtime from "../runtimeExports.ts"
 import {
-	appliedSignature,
 	defaultMembers,
 	failureSources,
 	holdsOnlyMeta,
-	introspectionMembers,
 	invalidErrorsOf,
 	isCreatedByRuntime,
 	wholeReads,
@@ -68,10 +66,16 @@ import {
 	type Foldable,
 	type IssueFeatures,
 	type StandaloneFactory,
-	type StandaloneIntrospection,
-	type ValidatorMember,
-	type ValidatorReads
+	type StandaloneIntrospection
 } from "./baking.ts"
+import {
+	canPipe,
+	creatorSourceOf,
+	frozen,
+	preciseFormOf,
+	type CreatorOptions,
+	type RootApplier
+} from "./creators.ts"
 import {
 	assertReportsIssues,
 	compiledForSize,
@@ -157,15 +161,6 @@ type DeclarationRole =
 
 // constraints sorted by hash, which can include a function's name
 const sortedConstraintKeys = ["pattern", "index"] as const
-
-interface RootApplier {
-	params: string
-	apply: string
-	args: string
-	failure?: keyof typeof failureSources
-	// reads a name its module declares, so it can't be shared
-	local?: boolean
-}
 
 interface RootApplyOptions {
 	// whether the build writes the validator itself, which calls the apply
@@ -1401,12 +1396,12 @@ ${writeFunction(
 			!isTemplate && !this.baking.shortest && members.has("methods")
 		// only a config or meta sets the onFail a validator is created with
 		const unconfigured = !this.baking.readsConfig && !root.meta.onFail
-		const pipes = this.pipes(members, unconfigured)
+		const pipes = canPipe(this.baking, members, unconfigured)
 		// a validator nothing calls fails only by its assert
 		const throws =
 			!isTemplate &&
 			!ownsValidator &&
-			this.preciseFormOf(members, unconfigured, reads) === "object"
+			preciseFormOf(this.baking, members, unconfigured, reads) === "object"
 		const [applied, allows, isCompact] = this.emitRootApply(root, {
 			asValidator: ownsValidator,
 			unconfigured,
@@ -1448,7 +1443,8 @@ ${writeFunction(
 					// a validator written as what's read of it reads no other Allows
 				:	!applied.local &&
 					!reads.readsAllows &&
-					this.preciseFormOf(members, unconfigured, reads) !== undefined)
+					preciseFormOf(this.baking, members, unconfigured, reads) !==
+						undefined)
 			) ?
 				applied
 			:	undefined
@@ -1457,7 +1453,7 @@ ${writeFunction(
 			(
 				fusedApplier?.params === "allows, apply" &&
 				!members.has("assert") &&
-				this.preciseFormOf(members, unconfigured, reads) === "object"
+				preciseFormOf(this.baking, members, unconfigured, reads) === "object"
 			) ?
 				{
 					...fusedApplier,
@@ -1527,7 +1523,7 @@ ${writeFunction(
 		const created = `${
 			isTemplate ? "["
 			: !isCreatedByRuntime(members, this.baking) ?
-				`${this.creatorOf(members, ownsValidator, fused, !!made, unconfigured, reads)}(`
+				`${this.creatorOf({ members, ownsValidator, applier: fused, makes: !!made, unconfigured, reads })}(`
 			: createsWith ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
 		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
@@ -1536,169 +1532,18 @@ ${writeFunction(
 			:	created
 	}
 
-	creatorOf(
-		members: ReadonlySet<ValidatorMember>,
-		ownsValidator: boolean,
-		applier?: RootApplier,
-		makes = false,
-		unconfigured = false,
-		reads: ValidatorReads = this.baking
-	): string {
-		const keepsMeta = members.has("meta")
-		// a meta reads no onFail a build without config knows it lacks
-		const configured = !unconfigured
-		const hasAttributes =
-			keepsMeta || introspectionMembers.some(member => members.has(member))
-		const metaOf = holdsOnlyMeta(members) ? "meta" : "attributes.meta"
-		// where no call passes a traversal, a validator fails only by its onFail
-		const pipes = reads.piped && this.pipes(members, unconfigured)
-		const signature = `(data, ${pipes ? "pipedFromCtx" : "_"}, onFail${configured ? " = configuredOnFail" : ""})`
-		// what the root apply is passed to fail with
-		const failing =
-			!pipes ? "onFail"
-			: this.baking.detailsErrors ?
-				"(pipedFromCtx ? errors => pipedFromCtx.piped(errors) : onFail)"
-			:	undefined
-		// a root apply failing by one onFail, or throwing, is written into the validator
-		const inlined =
-			(
-				failing &&
-				applier?.apply.startsWith(appliedSignature) &&
-				applier.apply.split(/\bonFail\b/).length <= 3
-			) ?
-				applier.apply
-					.slice(appliedSignature.length)
-					.replace(/\bonFail\b/, failing)
-			:	undefined
-		const precise =
-			ownsValidator ? undefined : (
-				this.preciseFormOf(members, unconfigured, reads)
-			)
-		const isCalled = precise !== "object"
-		const isApply = precise === "apply"
-		const assertion =
-			!isCalled ?
-				`data => ${
-					inlined ?
-						inlined.replace(/\bonFail\b/, "runtime.throwOnDefault")
-					:	"rootApply(data, runtime.throwOnDefault)"
-				}`
-			: pipes ?
-				"(data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault)"
-			:	"data => validator(data, undefined, runtime.throwOnDefault)"
-		const allowsOf = this.frozen(ownsValidator || makes ? "parts[0]" : "allows")
-		const standard = this.frozen(`{
-		vendor: "arktype",
-		version: 1,
-		validate: ${this.frozen("input => runtime.standardResultOf(validator(input))")}${members.has("~standard.jsonSchema") ? `,\n\t\t...attributes["~standard"]` : ""}
-	}`)
-		const call =
-			ownsValidator ? `make(parts${configured ? ", configuredOnFail" : ""})`
-			: isApply ?
-				applier ? applier.apply
-				: makes ? "make(parts)"
-				: "rootApply"
-			: !isCalled ?
-				// an object nothing calls is a literal of its members
-				`{ ${[
-					members.has("assert") && `assert: ${this.frozen(assertion)}`,
-					hasAttributes && (holdsOnlyMeta(members) ? "meta" : "...attributes"),
-					reads.readsAllows && `allows: ${allowsOf}`
-				]
-					.filter(member => member)
-					.join(", ")} }`
-			: inlined ? `${signature} => ${inlined}`
-			: failing ? `${signature} => rootApply(data, ${failing})`
-			: `${signature} => pipedFromCtx ? runtime.pipedIntoUndetailed(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)`
-		const body = [
-			inlined || isApply ? ""
-			: applier ? `const rootApply = ${applier.apply}`
-			: makes ? "const rootApply = make(parts)"
-			: "",
-			!keepsMeta || !configured || !isCalled ? ""
-			: this.baking.readsConfig ?
-				`const configuredOnFail = ${metaOf}.onFail ?? runtime.runtimeConfig.onFail`
-			:	`const configuredOnFail = ${metaOf}.onFail`,
-			`const validator = ${members.has("methods") ? `runtime.setPrototypeOf(${call}, runtime.freeze(runtime.Validator.prototype))` : call}`,
-			members.has("assert") && isCalled ?
-				`validator.assert = ${this.frozen(assertion)}`
-			:	"",
-			!hasAttributes || !isCalled ? ""
-			: holdsOnlyMeta(members) ? "validator.meta = meta"
-			: "runtime.assign(validator, attributes)",
-			reads.readsAllows && isCalled ? `validator.allows = ${allowsOf}` : "",
-			members.has("~standard") ?
-				`validator["~standard"] = ${
-					// a checked build throws reading a JSON Schema it left out, saying how to keep it
-					this.baking.checksTypes && !members.has("~standard.jsonSchema") ?
-						`runtime.withoutJsonSchema(${standard})`
-					:	standard
-				}`
-			:	"",
-			this.baking.checksTypes ?
-				`return runtime.holdHoles(${this.frozen("validator")}, id, holes)`
-			:	`return ${this.frozen("validator")}`
-		]
-			.filter(statement => statement)
-			.map(statement => `\t${statement}`)
-			.join("\n")
-		const params = [
-			...(ownsValidator || makes ? ["make", "parts"]
-			: applier ? [applier.params]
-			: ["rootApply", "allows"]),
-			...(!hasAttributes ? []
-			: holdsOnlyMeta(members) ? ["meta = runtime.emptyMeta"]
-			: keepsMeta ? ["attributes = { meta: runtime.emptyMeta }"]
-			: ["attributes"]),
-			...(this.baking.checksTypes ? ["id", "holes = []"] : []),
-			...(!configured || keepsMeta ? []
-			: this.baking.readsConfig ?
-				["configuredOnFail = runtime.runtimeConfig.onFail"]
-			:	["configuredOnFail"])
-		]
-		const name = `create${hashOf(`${params.join(", ")}\n${body}`)}`
+	creatorOf(opts: CreatorOptions): string {
+		const [params, body] = creatorSourceOf(this.baking, opts)
+		const name = `create${hashOf(`${params}\n${body}`)}`
 		this.importName(
 			this.share(
 				name,
-				writeFunction(this.baking, name, params.join(", "), body),
-				this.failureImports(applier?.failure)
+				writeFunction(this.baking, name, params, body),
+				this.failureImports(opts.applier?.failure)
 			),
 			name
 		)
 		return name
-	}
-
-	// a validator nothing passes on as a value is written as what's read of it
-	preciseFormOf(
-		members: ReadonlySet<ValidatorMember>,
-		unconfigured: boolean,
-		reads: ValidatorReads
-	): "object" | "apply" | undefined {
-		if (
-			members.has("methods") ||
-			members.has("~standard") ||
-			(reads.piped && this.pipes(members, unconfigured))
-		)
-			return
-		if (!reads.called) return "object"
-		if (
-			unconfigured &&
-			!reads.piped &&
-			!reads.readsAllows &&
-			!members.has("assert") &&
-			!members.has("meta") &&
-			!introspectionMembers.some(member => members.has(member))
-		)
-			return "apply"
-	}
-
-	// undetailed, a validator pipes its issue only where assert or onFail would end the traversal
-	pipes(members: ReadonlySet<ValidatorMember>, unconfigured: boolean): boolean {
-		return this.baking.detailsErrors || !unconfigured || members.has("assert")
-	}
-
-	frozen(expression: string): string {
-		return this.baking.freezes ? `runtime.freeze(${expression})` : expression
 	}
 
 	emitIntrospection(root: BaseRoot): string[] {
@@ -1715,7 +1560,7 @@ ${writeFunction(
 			const json = this.readJson(root)
 			if (bakes("json")) members.push(`json: ${json}`)
 			if (bakes("toJSON"))
-				members.push(`toJSON: ${this.frozen(`() => ${json}`)}`)
+				members.push(`toJSON: ${frozen(this.baking, `() => ${json}`)}`)
 		}
 		const standard =
 			bakes("~standard.jsonSchema") &&
