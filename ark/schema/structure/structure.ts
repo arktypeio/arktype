@@ -1242,46 +1242,54 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		})
 	}
 
-	/** writes the deletion of undeclared keys */
+	/** writes the deletion of undeclared keys from a copy of data, after its transforms and defaults */
+	private jsDeleteFromCopy(
+		js: NodeCompiler,
+		transformedProps: Prop.Node[],
+		outMayBeCopied: boolean
+	): NodeCompiler {
+		for (let i = 0; i < transformedProps.length; i++) {
+			const prop = transformedProps[i]
+			const changed = js.cmpTfd(
+				this.tfsOf(prop),
+				`transformed${i}`,
+				"!==",
+				`value${i}`
+			)
+			js.if(changed, () =>
+				this.jsCopy(js).line(`out${js.prop(prop.key)} = transformed${i}`)
+			)
+		}
+		this.jsDefaults(js)
+		// out can differ from data only after a transform or a default
+		if (outMayBeCopied || transformedProps.length || this.defaultable.length)
+			this.jsDeclaredCopy(js)
+		const deletes = () =>
+			this.jsForOwnKeys(
+				js,
+				"data",
+				() =>
+					js.if(
+						`!(k in ${js.ref(this.byKey)}) && !(${this._jsDeclaresKey(js)})`,
+						() => this.jsCopy(js).line("delete out[k]")
+					),
+				"dataKeys",
+				"dataSymbols",
+				true
+			)
+		if (this.sequence) js.if("!indexed", deletes)
+		else deletes()
+		return js.return("out")
+	}
+
+	/** writes the deletion of undeclared keys: from a copy where data has them, else into a literal of the declared ones */
 	private jsDeleteTransform(
 		js: NodeCompiler,
 		transformedProps: Prop.Node[],
 		outMayBeCopied: boolean
 	): void {
-		const deleteFromCopy = (js: NodeCompiler) => {
-			for (let i = 0; i < transformedProps.length; i++) {
-				const prop = transformedProps[i]
-				const changed = js.cmpTfd(
-					this.tfsOf(prop),
-					`transformed${i}`,
-					"!==",
-					`value${i}`
-				)
-				js.if(changed, () =>
-					this.jsCopy(js).line(`out${js.prop(prop.key)} = transformed${i}`)
-				)
-			}
-			this.jsDefaults(js)
-			// out can differ from data only after a transform or a default
-			if (outMayBeCopied || transformedProps.length || this.defaultable.length)
-				this.jsDeclaredCopy(js)
-			const deletes = () =>
-				this.jsForOwnKeys(
-					js,
-					"data",
-					() =>
-						js.if(
-							`!(k in ${js.ref(this.byKey)}) && !(${this._jsDeclaresKey(js)})`,
-							() => this.jsCopy(js).line("delete out[k]")
-						),
-					"dataKeys",
-					"dataSymbols",
-					true
-				)
-			if (this.sequence) js.if("!indexed", deletes)
-			else deletes()
-			return js.return("out")
-		}
+		const deleteFromCopy = (js: NodeCompiler) =>
+			this.jsDeleteFromCopy(js, transformedProps, outMayBeCopied)
 		if (this.sequence) {
 			// only an array with non-index keys is scanned for undeclared ones
 			js.const(
