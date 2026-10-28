@@ -739,7 +739,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 	}
 
-	// whether traversal continues, as a compiled Apply returns
 	applySharedKeys(data: object, ctx: InternalTraversal): boolean {
 		const errN = ctx.errN
 		this._traverse("Apply", data, ctx, false)
@@ -1533,7 +1532,6 @@ export const compileDefault = (
 const serializeDefault = (js: NodeCompiler, value: unknown): string =>
 	Object.is(value, -0) ? "-0" : js.serialize(value)
 
-// a morph or a transform reading ctx can add errors
 const canFailTransforming = (node: BaseNode): boolean =>
 	node.hasMorph || node.tfCtx
 

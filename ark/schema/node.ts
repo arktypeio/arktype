@@ -59,6 +59,7 @@ import { Disjoint } from "./shared/disjoint.ts"
 import type { ArkErrors } from "./shared/errors.ts"
 import {
 	ArkErrors as BaseArkErrors,
+	throwOnDefault,
 	type FailureSite,
 	type SiteContext,
 	type UnionSite
@@ -122,7 +123,6 @@ interface Selections {
 
 const selectionsByPredicate = new Map<Fn, Selections>()
 
-// drops what was selected from a node's references once they grow
 export const forgetReferences = (node: BaseNode): void => {
 	for (const { byNode, byRefs } of selectionsByPredicate.values()) {
 		byNode.delete(node)
@@ -160,7 +160,6 @@ const selectedFrom = (
 	return selected
 }
 
-// derived values and bound traversals, stored apart from the node
 class NodeCache {
 	expression: string | undefined
 	requiredProps: Map<Key, { deref(): BaseNode | undefined }> | undefined
@@ -204,14 +203,12 @@ class NodeCache {
 	declare unbound?: UnboundTraversals | undefined
 }
 
-const throwOnFail: ArkErrors.Handler = errors => errors.throw()
-
 // outside the getter, which would otherwise allocate a context for `this` on
 // every read, even once the arrow is cached
 const assertOf =
 	(node: BaseNode) =>
 	(data: unknown, pipedFromCtx?: Traversal): unknown =>
-		node(data, pipedFromCtx, throwOnFail)
+		node(data, pipedFromCtx, throwOnDefault)
 
 // a hash repeats the JSON of every node below its own, so a long one, written
 // mostly to sort and compare nodes as they're parsed, is dropped when the job
@@ -374,7 +371,6 @@ export abstract class BaseNode<
 	attachmentsOf<d>
 > {
 	declare $: BaseScope
-	// flags, read through flagBits' accessors
 	declare bits: number
 	/** whether it or a node it holds alters data, with a morph or a default */
 	declare alters: boolean
@@ -913,7 +909,6 @@ export abstract class BaseNode<
 		}
 	}
 
-	// reports data allows rejected
 	private rejectRoot(
 		data: unknown,
 		onFail: FailHandler | null,
@@ -1954,12 +1949,12 @@ export const flatRef = <node extends BaseRoot>(
 	propString: typePathToPropString(path)
 })
 
-// a child's refs, each reached through key
 export const ioOf = <node extends BaseNode>(
 	node: node,
 	ioKind: "in" | "out"
 ): node => (ioKind === "in" ? node._in : node._out) as never
 
+// a child's refs, each reached through key
 export const flatRefsAt = (key: KeyOrKeyNode, node: BaseRoot): FlatRef[] =>
 	append(
 		node.flatRefs.map(ref => flatRef([key, ...ref.path], ref.node)),
@@ -2034,11 +2029,9 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 	ctx: DeepNodeTransformContext
 ) => (Inner<kind> & BaseNodeInput) | null
 
-// what a root apply reads, by what its errors hold
 export const rootApplyRuntimeOf = (config: ResolvedConfig): RootApplyRuntime =>
 	config.errors === "all" ? rootApplyRuntime : $ark.errorModes![config.errors]
 
-// createRootApply's statements, compiled per root
 const compileRootApply = (node: BaseRoot): RootApply =>
 	new DynamicFunction<(...args: unknown[]) => RootApply>(
 		...rootApplyParams,

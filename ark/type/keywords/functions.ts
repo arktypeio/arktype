@@ -2,6 +2,7 @@ import type { ArkError, Locale, Traversal } from "@ark/schema"
 import {
 	FileConstructor,
 	hasOwn,
+	isDigitCode,
 	iso8601Matcher,
 	printable,
 	type Fn,
@@ -183,8 +184,6 @@ export const epochDescriptions = {
 const epochMeta = { keyword: "number.epoch" } as const
 
 export const isEpochString = (s: string, ctx: Traversal): boolean => {
-	// this is safe since it has already
-	// been validated as an integer string
 	const n = Number.parseInt(s)
 	return (
 		!Number.isFinite(n) ?
@@ -247,22 +246,17 @@ const jsonParseError = /* @__PURE__ */ keywordError(
 	jsonString
 )
 
-const isDigitAt = (s: string, i: number) => {
-	const code = s.charCodeAt(i)
-	return code >= 48 && code <= 57
-}
-
 // a number in JSON past Number.MAX_VALUE parses to Infinity, which number
 // rejects. It has a positive exponent or 309 digits in a row, and any 309 in
 // a row include one of every 309th index, so only those are read
 const mayOverflow = (s: string): boolean => {
 	if (positiveExponent.test(s)) return true
 	for (let i = 308; i < s.length; i += 309) {
-		if (!isDigitAt(s, i)) continue
+		if (!isDigitCode(s.charCodeAt(i))) continue
 		let start = i
-		while (isDigitAt(s, start - 1)) start--
+		while (isDigitCode(s.charCodeAt(start - 1))) start--
 		let end = i
-		while (isDigitAt(s, end + 1)) end++
+		while (isDigitCode(s.charCodeAt(end + 1))) end++
 		if (end - start >= 308) return true
 	}
 	return false

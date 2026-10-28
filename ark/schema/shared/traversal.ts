@@ -358,7 +358,6 @@ export class Traversal extends InternalTraversal {
 	}
 }
 
-// stops at the first issue, dropping any added after it
 export class FirstIssueTraversal extends Traversal {
 	override get failFast(): boolean {
 		return true
@@ -479,7 +478,6 @@ export const transformed = (
 	return data
 }
 
-// the one pipe a node needs
 export const pipeOf = (node: BaseNode): TraversePipe =>
 	node.hasAlias ? pipe
 	: node.tfs ? pipeTransformed
@@ -827,7 +825,6 @@ export const enterResolution = (
 	return
 }
 
-// whether data is valid
 export const exitResolution = (
 	ctx: InternalTraversal,
 	allowed?: boolean
