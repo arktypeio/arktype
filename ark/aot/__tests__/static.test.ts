@@ -970,6 +970,40 @@ export type Forms = { user: Type }`
 			])
 		})
 
+		it("a read off a parameter annotated with a global container type", () => {
+			attest(
+				unhinted(
+					`import { type, type Type } from "arktype"
+export const T = type("string")
+const cost = (raw: unknown) => raw
+export function stage(record: Record<string, unknown> | null | undefined) {
+	return cost(record?.merge)
+}
+export function awaited(t: Awaited<unknown> | null) {
+	return cost(t?.merge)
+}
+export function held(record: Record<string, unknown>) {
+	return cost(record.merge.or)
+}
+export function typed(forms: Record<string, Type>) {
+	return cost(forms.user.or)
+}
+export function first(ts: Array<unknown>) {
+	return cost(ts[0].or)
+}
+export function usage(record: unknown) {
+	const rec = record as Record<string, unknown>
+	return [stage(rec), awaited(rec), held(rec), typed(rec as never), first(rec as never)]
+}`
+				)
+			).snap([
+				"/main.ts:11:14  record.merge.or reads or, which a standalone validator lacks\n  the build can't tell where `record.merge` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:14:14  forms.user.or reads or, which a standalone validator lacks\n  the build can't tell where `forms.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:17:14  ts[0].or reads or, which a standalone validator lacks\n  the build can't tell where `ts[0]` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:21:22  `awaited` is read outside a call the build precompiles\n  t?.merge (/main.ts:8:14) reads `t`, a parameter of awaited, so the build precompiles it at each call to awaited"
+			])
+		})
+
 		it("parameter", () => {
 			attest(
 				diagnosticsOf(`import { scope, type } from "arktype"

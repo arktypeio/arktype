@@ -1562,8 +1562,28 @@ export class ModuleGraph {
 					)
 				}
 				const local = this.localTypeOf(module, root.name)
-				if (!local) return union(type.typeArguments?.params ?? [], depth + 1)
-				return this.declaredTypeKindOf(local, context, module, kindOfKey, depth)
+				if (local) {
+					return this.declaredTypeKindOf(
+						local,
+						context,
+						module,
+						kindOfKey,
+						depth
+					)
+				}
+				const args = type.typeArguments?.params ?? []
+				// e.g. `Awaited<unknown>`, which is what its argument is
+				if (name.type !== "Identifier" || !(root.name in containerTypes))
+					return union(args, depth + 1)
+				// e.g. `Record<string, unknown>`, holding what its arguments say,
+				// as a type literal holds its members
+				let held: KindBits = kinds.data
+				for (const arg of args) {
+					held |=
+						this.typeKindOf(arg, context, module, kindOfKey, depth + 1) ??
+						kinds.opaqueHolder
+				}
+				return held
 			}
 			case "TSLiteralType":
 			case "TSTemplateLiteralType":
@@ -3860,6 +3880,26 @@ const arkTypeKindOf = (name: string): KindBits =>
 	name === "Scope" || name === "Generic" ? unsure | kinds.otherArk : unsure
 
 type LocalType = TSInterfaceDeclaration | TSTypeAliasDeclaration
+
+// globals holding what their arguments describe, rather than being it
+const containerTypes: Record<string, 1> = Object.setPrototypeOf(
+	{
+		Record: 1,
+		Array: 1,
+		ReadonlyArray: 1,
+		ArrayLike: 1,
+		Iterable: 1,
+		Map: 1,
+		ReadonlyMap: 1,
+		WeakMap: 1,
+		Set: 1,
+		ReadonlySet: 1,
+		WeakSet: 1,
+		Promise: 1,
+		PromiseLike: 1
+	},
+	null
+)
 
 const arkTypeNames: Record<string, 1> = Object.setPrototypeOf(
 	{
