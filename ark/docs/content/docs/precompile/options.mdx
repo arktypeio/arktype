@@ -183,7 +183,15 @@ A [production](#production-builds) bundle reads every module its entries reach b
 
 A bundle written as one chunk, an esbuild build with one entry and neither `splitting` nor `inject`, or a Rollup, Rolldown or Vite build with one entry that imports nothing dynamically, also declares the units its validators share in one function wherever that's smaller, which V8 inlines as it does a factory's parameters. Built for size, it declares them in one module instead, each validator among them. A module the build didn't read as the bundle holds it, like a file changed after the build read it or precompiled code another plugin loads, fails the build where it reads one of those units.
 
-The build leaves a member wherever it can't prove no code reads it: when an entry, or a module a dependency imports, exports a validator or a module holding one, a validator is passed to a function, stored, or read by a member it doesn't know, a module is imported dynamically, through `require` or `import.meta.glob()`, reads an `import.meta` property other than `env`, `hot`, `webpackHot`, `url`, `resolve`, `dirname`, `filename` and the flags Nuxt defines, like `client` and `dev`, or holds a Scope, and when an esbuild bundle holds a module it can't read, like a Vue component. A Vite, Rollup or Rolldown build reads each module as the bundler loads it, so it reads a component as its framework's plugin compiles it, like a Svelte, Vue or Astro component or an MDX page, and a virtual module as the plugin writing it does. A member set true is always kept.
+The build leaves a member wherever it can't prove no code reads it:
+
+- an entry, or a module a dependency imports, exports a validator or a module holding one
+- a validator is passed to a function, stored, or read by a member it doesn't know
+- a module is imported dynamically, through `require` or `import.meta.glob()`, or holds a Scope
+- a module reads an `import.meta` property other than `env`, `hot`, `webpackHot`, `url`, `resolve`, `dirname`, `filename` and the flags Nuxt defines, like `client` and `dev`
+- an esbuild bundle holds a module it can't read, like a Vue component
+
+A Vite, Rollup or Rolldown build reads each module as the bundler loads it, so it reads a component as its framework's plugin compiles it, like a Svelte, Vue or Astro component or an MDX page, and a virtual module as the plugin writing it does. A member set true is always kept.
 
 Where it can't prune, the build warns once, in the bundler's own warnings, naming the first module that kept it from pruning and how, and the fix. Where it can't read every module the bundle holds, it builds as `prune: false` does:
 
