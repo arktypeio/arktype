@@ -1232,7 +1232,7 @@ console.log(
 		attest(await build([rewrite, arktype]))
 			.snap(`config.ts:3:1  configure() is given other values than arktype in this thread already applied
   a module the configuration reads was given anew, as when it's edited while the build runs or a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set
-  Restart the build to apply an edit to config.ts. If it wasn't edited, put arktype's plugin ahead of rewrite-config, which transforms it.`)
+  Restart the build to apply an edit to config.ts. If it wasn't edited, exclude it from rewrite-config, which transforms it, since the build configures arktype from the module as written and the program must configure it the same.`)
 		attest(
 			await build([
 				precompile.vite({ config: "config.ts", conditions }),

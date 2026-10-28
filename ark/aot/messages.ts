@@ -26,8 +26,11 @@ export const configurationConflictReason =
 // a bundler that knows its plugins names those ahead of arktype's in its place
 export const conflictingPluginPhrase = "the plugin transforming it"
 
+// a plugin's rewrite of the config module can't take effect in either order:
+// ahead of arktype's, it conflicts with the module as read; behind it, the
+// program configures arktype with other values than its build's and throws
 export const writeConflictHint = (config: string): string =>
-	`Restart the build to apply an edit to ${config}. If it wasn't edited, put arktype's plugin ahead of ${conflictingPluginPhrase}.`
+	`Restart the build to apply an edit to ${config}. If it wasn't edited, exclude it from ${conflictingPluginPhrase}, since the build configures arktype from the module as written and the program must configure it the same.`
 
 export const writeConflictingPlugins = (names: string[]): string =>
 	`${names.join(", ")}, ${names.length > 1 ? "one of which transforms" : "which transforms"} it`
