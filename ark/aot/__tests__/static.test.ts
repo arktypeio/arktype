@@ -1931,14 +1931,20 @@ const G = type("<t>", { t: "t" })
 const getG = () => G
 export const params = getG().params
 export const names = (flag: boolean) => (flag ? G : type("<u>", { u: "u" })).names
-export const viaGeneric = (g: Generic) => g.params`)
+export const viaGeneric = (g: Generic) => g.params
+export const Instance = getG()("string")
+export const either = (flag: boolean) => (flag ? G : type("<u>", { u: "u" }))("string")`)
 			).snap([
+				'/main.ts:2:25  scope({ ocean: { color: "\'blue\'" } }) is left to arktype\n  getPlaces().type("ocean") (/main.ts:5:22) reads `getPlaces` but isn\'t precompiled, so arktype must define `getPlaces` for it',
 				'/main.ts:5:22  getPlaces().type("ocean") can\'t be precompiled yet\n  `getPlaces()` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".',
 				'/main.ts:7:49  s.type("a") can\'t be precompiled yet\n  `s` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".',
 				'/main.ts:8:39  s.export() can\'t be precompiled yet\n  `s` may be a Scope, which a standalone build replaces with an object that lacks `export`\n  Assign it to a const and read `export` off that, which the build precompiles, or build with runtime: "arktype".',
+				'/main.ts:9:11  type("<t>", { t: "t" }) is left to arktype\n  getG().params (/main.ts:11:23) reads `getG` but isn\'t precompiled, so arktype must define `getG` for it',
 				'/main.ts:11:23  getG().params can\'t be precompiled yet\n  `getG()` may be a Generic, which a standalone build replaces with an object that lacks `params`\n  Assign it to a const and read `params` off that, which the build precompiles, or build with runtime: "arktype".',
 				'/main.ts:12:41  (flag ? G : type("<u>", { u: "u" })).names can\'t be precompiled yet\n  `flag ? G : type("<u>", { u: "u" })` may be a Generic, which a standalone build replaces with an object that lacks `names`\n  Assign it to a const and read `names` off that, which the build precompiles, or build with runtime: "arktype".',
-				'/main.ts:13:43  g.params can\'t be precompiled yet\n  `g` may be a Generic, which a standalone build replaces with an object that lacks `params`\n  Assign it to a const and read `params` off that, which the build precompiles, or build with runtime: "arktype".'
+				'/main.ts:13:43  g.params can\'t be precompiled yet\n  `g` may be a Generic, which a standalone build replaces with an object that lacks `params`\n  Assign it to a const and read `params` off that, which the build precompiles, or build with runtime: "arktype".',
+				'/main.ts:14:25  getG()("string") can\'t be precompiled yet\n  `getG()` may be a Generic, which a standalone build replaces with an object that can\'t be called\n  Assign it to a const and instantiate that, which the build precompiles, or build with runtime: "arktype".',
+				'/main.ts:15:42  (flag ? G : type("<u>", { u: "u" }))("string") can\'t be precompiled yet\n  `flag ? G : type("<u>", { u: "u" })` may be a Generic, which a standalone build replaces with an object that can\'t be called\n  Assign it to a const and instantiate that, which the build precompiles, or build with runtime: "arktype".'
 			])
 		})
 
