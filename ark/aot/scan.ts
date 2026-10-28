@@ -442,11 +442,16 @@ export const unseenProblemOf = (
 		// e.g. esbuild's stdin, which the bundler reads as the scan did
 		if (id === undefined || !scanned.modules[id]?.transformed) continue
 		if (loaded.get(id) !== scanned.modules[id].source) {
-			return writeUnseenMessage(
-				loaded.has(id) ?
-					`it built ${pathOf(id)} from other code than it read`
-				:	`another plugin loaded ${pathOf(id)}`
-			)
+			// it read the module from its file, as it hadn't reached the plugin,
+			// and a plugin ahead then rewrote it, as TanStack Router's code
+			// splitting does a route and a Babel plugin like the React Compiler's
+			// does any module
+			return loaded.has(id) ?
+					writeUnseenMessage(
+						`it built ${pathOf(id)} from other code than it read, as a plugin ahead of arktype's rewrote it after it read its file`,
+						"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
+					)
+				:	writeUnseenMessage(`another plugin loaded ${pathOf(id)}`)
 		}
 	}
 	const reaching = reachingOf(scanned, holders)
@@ -548,8 +553,11 @@ export const writeEntryHelperMessage = (
 ): string =>
 	`${entry} exports ${helper}, a helper the build precompiles at each call, but it's an entry, so code outside the bundle may call ${helper}, which would throw at runtime. Export what ${helper} returns instead.`
 
-export const writeUnseenMessage = (reason: string): string =>
-	`A production build leaves out of its validators what no read of them needs, as it found reading the bundle's modules, but ${reason}, so a read it didn't see may need what it left out. Set prune: false to build them whole.`
+export const writeUnseenMessage = (
+	reason: string,
+	fix = "Set prune: false to build them whole"
+): string =>
+	`A production build leaves out of its validators what no read of them needs, as it found reading the bundle's modules, but ${reason}, so a read it didn't see may need what it left out. ${fix}.`
 
 export const writeUnscannedFlatMessage = (path: string): string =>
 	`A production build declares the units its validators read in one function, as it found reading the bundle's modules first, but it built ${path} from code it didn't read, whose validators would read copies of them. Build again, or set prune: false to build each unit as a module of its own.`

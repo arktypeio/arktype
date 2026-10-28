@@ -610,7 +610,10 @@ contextualize(function (this: Mocha.Suite) {
 					"/app"
 				)
 			).equals(
-				writeUnseenMessage("it built main.ts from other code than it read")
+				writeUnseenMessage(
+					"it built main.ts from other code than it read, as a plugin ahead of arktype's rewrote it after it read its file",
+					"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
+				)
 			)
 		})
 	})
