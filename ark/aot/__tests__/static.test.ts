@@ -1495,8 +1495,8 @@ export const readers = [ark.flatByPath]
 export const translated = (out: ArkErrors) => out.issues.map(issue => ark.messageIn(issue, {} as never))`)
 			).snap([
 				'/main.ts:4:46  flatProblemsByPath(errors) calls flatProblemsByPath, which arktype/runtime doesn\'t export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: "arktype".',
-				'/main.ts:7:38  ark.byPath(out) calls byPath, which arktype/runtime doesn\'t export\n  Read `out.issues`, each with its path and message, as in `for (const { path, message } of out.issues)`, or build with runtime: "arktype".',
-				"/main.ts:9:25  `ark.flatByPath` is arktype's, which arktype/runtime doesn't export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: \"arktype\".",
+				'/main.ts:7:38  ark.byPath(out) calls byPath, which arktype/runtime doesn\'t export\n  Write it as `Object.fromEntries(out.issues.map(issue => [issue.path.join("."), issue]))`, whose keys join each path with ".", where arktype writes an index as [0], or build with runtime: "arktype".',
+				'/main.ts:9:25  `ark.flatByPath` is arktype\'s, which arktype/runtime doesn\'t export\n  Write it as `Object.groupBy(errors.issues, issue => issue.path.join("."))`, whose keys join each path with ".", where arktype writes an index as [0], or build with runtime: "arktype".',
 				'/main.ts:10:71  ark.messageIn(issue, {} as never) calls messageIn, which arktype/runtime doesn\'t export\n  Read `issue.message`, which a standalone validator writes in English, or build with runtime: "arktype" to write it in a locale.'
 			])
 		})

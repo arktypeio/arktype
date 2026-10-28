@@ -5101,7 +5101,7 @@ export class Precompiler {
 			[],
 			name === "messageIn" ?
 				writeMessageInHint(errors)
-			:	writeErrorReaderHint(errors)
+			:	writeErrorReaderHint(name, errors)
 		)
 	}
 
