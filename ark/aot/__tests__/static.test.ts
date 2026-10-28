@@ -158,6 +158,17 @@ export const Admin = User.and({ role: "'admin'" })`
 				'2:22 accepted { name: string, role: "admin" }'
 			])
 			attest(statusesOf(source, plain)).snap([])
+			// a definition reading its Types is refused with the same fix
+			attest(
+				new Precompiler(memoryHost({ ...plain, "/main.ts": "" }))
+					.analyze(
+						`import { User } from "lib"\nimport { type } from "arktype"\nexport const Admin = type({ user: User })`,
+						"/main.ts"
+					)
+					.diagnostics.map(d => renderDiagnostic(d))
+			).snap([
+				'/main.ts:3:22  type({ user: User }) can\'t be precompiled yet\n  `User` (/main.ts:3:35) is not static, so the site holds it as a Standard Schema, which a standalone validator can\'t receive yet\n  `lib` is a package the build does not read, though it imports arktype\n  Precompile lib with the program: in ark.json (or package.json\'s "ark" key), set "precompile": { "dependencies": { "lib": "aot" } }, or "arktype" in place of "aot" where it defines Types from values known only at runtime.'
+			])
 			attest(
 				[optedIn, plain].map(files =>
 					new Precompiler(memoryHost(files)).readDependency(

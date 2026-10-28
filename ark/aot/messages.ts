@@ -26,8 +26,11 @@ export const configurationConflictReason =
 // a bundler that knows its plugins names those ahead of arktype's in its place
 export const conflictingPluginPhrase = "the plugin transforming it"
 
+// a plugin's rewrite of the config module can't take effect in either order:
+// ahead of arktype's, it conflicts with the module as read; behind it, the
+// program configures arktype with other values than its build's and throws
 export const writeConflictHint = (config: string): string =>
-	`Restart the build to apply an edit to ${config}. If it wasn't edited, put arktype's plugin ahead of ${conflictingPluginPhrase}.`
+	`Restart the build to apply an edit to ${config}. If it wasn't edited, exclude it from ${conflictingPluginPhrase}, since the build configures arktype from the module as written and the program must configure it the same.`
 
 export const writeConflictingPlugins = (names: string[]): string =>
 	`${names.join(", ")}, ${names.length > 1 ? "one of which transforms" : "which transforms"} it`
@@ -230,6 +233,11 @@ const textHints: [
 	[
 		/^`.+` is written at .+, so its value at the site is not known$/,
 		"Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime."
+	],
+	[
+		/^`(.+)` is a package the build does not read, though (?:it|(.+)) imports arktype$/,
+		(specifier, name = specifier) =>
+			`Precompile ${name} with the program: in ark.json (or package.json's "ark" key), set "precompile": { "dependencies": { "${name}": "aot" } }, or "arktype" in place of "aot" where it defines Types from values known only at runtime.`
 	],
 	[
 		/^it's passed to code the build can't see/,
