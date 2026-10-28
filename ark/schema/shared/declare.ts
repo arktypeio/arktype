@@ -21,8 +21,7 @@ interface NodeMeta extends JsonSchema.UniversalMeta, UnknownErrorConfigs {
 	/**
 	 * serialized as the `pattern` keyword of the generated JSON Schema
 	 *
-	 * ⚠️ does not affect validation (for that, use a regex definition like
-	 * `type("/^$/")`)
+	 * ⚠️ does not affect validation (for that, use a regex definition like `type("/^$/")`)
 	 */
 	pattern?: string
 }

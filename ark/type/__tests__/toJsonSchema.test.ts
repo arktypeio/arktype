@@ -160,11 +160,8 @@ contextualize(() => {
 
 	describe("meta", () => {
 		it("configured pattern", () => {
-			// pattern should be accepted by configure and preserved by
-			// toJsonSchema (https://github.com/arktypeio/arktype/issues/1469)
-			attest(() => type("string").configure({ pattern: "^$" })).type.errors.is(
-				""
-			)
+			// https://github.com/arktypeio/arktype/issues/1469
+			attest(() => type("string").configure({ pattern: "^$" })).type.errors("")
 
 			const T = type("string").configure({ pattern: "^$" })
 
