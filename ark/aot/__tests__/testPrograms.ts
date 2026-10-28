@@ -1710,11 +1710,48 @@ const matchesElided = (segments: string[], text: string): boolean => {
 	return from <= end
 }
 
-// an introspection whose every leaf is elided, which says nothing of the Type:
-// a union prints each branch once by its text, so where the build elides a
-// branch a level apart from arktype, arktype merges branches it tells apart
+// a union's branches at the top level of a comparable expression, description
+// or string
+const branchesOf = (text: string): string[] => {
+	const inner =
+		text.startsWith('"Type<') ? text.slice(6, -2) : text.slice(1, -1)
+	const branches: string[] = []
+	let depth = 0
+	let start = 0
+	for (let i = 0; i < inner.length; i++) {
+		const char = inner[i]
+		if (char === "{" || char === "[" || char === "(") depth++
+		else if (char === "}" || char === "]" || char === ")") depth--
+		else if (depth === 0) {
+			const separator = [" | ", " or "].find(s => inner.startsWith(s, i))
+			if (separator) {
+				branches.push(inner.slice(start, i))
+				start = i + separator.length
+				i = start - 1
+			}
+		}
+	}
+	branches.push(inner.slice(start))
+	return branches
+}
+
+// an introspection whose every leaf is elided, which says nothing of the Type
 const isLeafless = (text: string): boolean =>
 	/^"(?:Type<)?(?:[\s(),.?[\]|]|\bor\b)*>?"$/.test(text)
+
+// a union prints each branch once by its text, so where the build elides a
+// branch a level apart from arktype, one world merges branches the other
+// tells apart
+const branchesAlike = (l: string, r: string): boolean => {
+	const lefts = branchesOf(l)
+	const rights = branchesOf(r)
+	if (lefts.length < 2 && rights.length < 2) return false
+	const alike = (a: string, b: string) => a === b || elidedAlike(a, b)
+	return (
+		lefts.every(left => rights.some(right => alike(left, right))) &&
+		rights.every(right => lefts.some(left => alike(left, right)))
+	)
+}
 
 // a disagreement precompiling doesn't promise to avoid
 const exclusions: Allowance[] = [
@@ -1731,6 +1768,7 @@ const exclusions: Allowance[] = [
 					isUnbakedRead(k, precompiled) ||
 					(elidableKeys.has(k) &&
 						(elidedAlike(read, baked) ||
+							branchesAlike(read, baked) ||
 							(isLeafless(read) && isLeafless(baked))))
 				)
 			})
@@ -1948,6 +1986,38 @@ contextualize(() => {
 		attest(
 			disagreement(nested(3, "..."), `${nested(3, "...")} | [number[], ...?]`)
 		).equals(undefined)
+	})
+
+	it("excludes a union whose branches one world merges by their elided text", () => {
+		const program = programOf([
+			() => ({ containers: [], exports: [], main: ["const D = type({})"] })
+		])
+		// the generated dags with keys, so no introspection is leafless
+		const keyed = (depth: number): string =>
+			depth === 0 ? "..." : (
+				`{ id: string, left: ${keyed(depth - 1)}[], right: ${keyed(depth - 1)}[] }`
+			)
+		const disagreement = (original: string, precompiled: string) =>
+			allowanceOf(exclusions, program, {
+				perturbation: "none",
+				site: "main.ts:1:1",
+				original: { expression: original, string: `Type<${original}>` },
+				precompiled: {
+					expression: precompiled,
+					string: `Type<${precompiled}>`
+				}
+			})
+		// arktype elides the second branch a level earlier and so tells it apart
+		attest(disagreement(`${keyed(4)} | ${keyed(3)}`, keyed(4))).equals(
+			exclusions[0]
+		)
+		attest(disagreement(keyed(4), `${keyed(4)} | ${keyed(3)}`)).equals(
+			exclusions[0]
+		)
+		attest(
+			disagreement(`${keyed(4)} | ${keyed(3)}`, `${keyed(4)} | number`)
+		).equals(undefined)
+		attest(disagreement(`${keyed(4)} | null`, keyed(4))).equals(undefined)
 	})
 
 	it("excludes a description elided a level apart whose schema isn't baked", () => {
