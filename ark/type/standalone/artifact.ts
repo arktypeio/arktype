@@ -874,7 +874,7 @@ export class StandaloneArtifact {
 						if (thrown) throw thrown
 						return data
 					},
-					true
+					{ isRead: true }
 				)
 			: member === "expression" ? this.emitExpression(type)
 			: member === "description" ? this.emitDescription(type)
@@ -1725,15 +1725,17 @@ ${writeFunction(
 		write: () => unknown,
 		values?: unknown[]
 	): string {
-		return `() => ${this.writeJsonSchema(root, write, false, values)}`
+		return `() => ${this.writeJsonSchema(root, write, { values })}`
 	}
 
 	// a schema read only via a validator throws where it's read
 	writeJsonSchema(
 		root: BaseRoot,
 		write: () => unknown,
-		isRead: boolean,
-		values: unknown[] = []
+		{
+			isRead = false,
+			values = []
+		}: { isRead?: boolean; values?: unknown[] | undefined }
 	): string {
 		try {
 			assertBakeableJsonSchema(root)

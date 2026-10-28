@@ -190,7 +190,7 @@ const shadowOf = (
 				apply: (target, self, args) =>
 					arktypeDepth ?
 						Reflect.apply(target as Function, self, args)
-					:	validateBoth(pair, "call", args, true, (fn, args) =>
+					:	validateBoth(pair, "call", args, { isWritten: true }, (fn, args) =>
 							Reflect.apply(fn, self, args as unknown[])
 						)
 			}
@@ -260,7 +260,7 @@ const typeHandlerOf = (
 				pair,
 				path.join(".") || "call",
 				data,
-				path[0] !== "allows" && isWritten,
+				{ isWritten: path[0] !== "allows" && isWritten },
 				(t, data) =>
 					path[0] === "~standard" ? asErrors(readAt(t, path, [data]))
 					: path.length ? readAt(t, path, [data])
@@ -560,7 +560,10 @@ const record = (
 	// e.g. a key set to a new object that prints alike, which assignment repeats too
 	const originalByCopy = new Map([...copied].map(([o, c]) => [c as object, o]))
 	const written = (copies ?? []).flatMap((copy, i) =>
-		copy !== uncopyable && !isAlike(copy, args[i], originalByCopy, true) ?
+		(
+			copy !== uncopyable &&
+			!isAlike(copy, args[i], { counterparts: originalByCopy, isCopy: true })
+		) ?
 			[copyOf(args[i], copiedAfter)]
 		:	[]
 	)
@@ -602,7 +605,10 @@ const isReplayable = (call: Writes & Pick<Call, "copies">) => {
 		writeAll(call, counterparts)
 		return states.map(state => copyOf(state, counterparts))
 	})
-	return "value" in replayed && isAlike(states, replayed.value, new Map(), true)
+	return (
+		"value" in replayed &&
+		isAlike(states, replayed.value, { counterparts: new Map(), isCopy: true })
+	)
 }
 
 // e.g. an in-place morph's, through its arguments or what it returned
@@ -644,14 +650,12 @@ const replay = (
 		isAlike(
 			copy === undefined || copy === uncopyable ? original : copy,
 			counterpart,
-			counterparts,
-			true,
-			originals
+			{ counterparts, isCopy: true, originals }
 		)
 	if (
 		!call ||
 		call.callee !== callee ||
-		!isAlike(call.receiver, receiver, counterparts, false) ||
+		!isAlike(call.receiver, receiver, { counterparts }) ||
 		call.args.length !== args.length ||
 		isOtherRoot ||
 		!corresponds(call.ctx, ctxState) ||
@@ -679,7 +683,12 @@ const replay = (
 			"value" in call.outcome && call.result !== uncopyable ?
 				{ value: call.result }
 			:	call.outcome
-		if (!isAlike(observe(recorded), observe(outcome), new Map(), true)) {
+		if (
+			!isAlike(observe(recorded), observe(outcome), {
+				counterparts: new Map(),
+				isCopy: true
+			})
+		) {
 			current.mismatch ??= [
 				`${describeCall(call)}, which gives ${printable(observe(recorded))}`,
 				`${describeCall({ callee, args })}, which gives ${printable(observe(outcome))}`
@@ -753,7 +762,7 @@ const validateBoth = (
 	pair: Pair,
 	member: string,
 	data: unknown,
-	isWritten: boolean,
+	{ isWritten }: { isWritten: boolean },
 	run: (t: any, data: unknown) => unknown
 ): unknown => {
 	const counterparts = new Map<object, unknown>()
@@ -799,8 +808,8 @@ const validateBoth = (
 		:	undefined
 	if (current.mismatch) fail(pair, observation(), ...current.mismatch, reason)
 	const writesInput = !!pair.contract.mutatesInput
-	const arktypeObserved = inArktype(() => observe(arktype, writesInput))
-	const precompiledObserved = observe(precompiled, writesInput)
+	const arktypeObserved = inArktype(() => observe(arktype, { writesInput }))
+	const precompiledObserved = observe(precompiled, { writesInput })
 	// errors "none" fails with one root issue, compared without its data
 	if (current.skipsApply) {
 		arktypeObserved.issues = [{ code: "predicate", path: [] }]
@@ -815,7 +824,7 @@ const validateBoth = (
 	if (stopsEarly) {
 		const { issues } = precompiledObserved
 		const { issues: all } = inArktype(() =>
-			observe(arktype, writesInput, false)
+			observe(arktype, { writesInput, grouped: false })
 		)
 		const found =
 			issues &&
@@ -871,7 +880,7 @@ const firstIssueOf = (
 		const i = unmatched.findIndex(
 			candidate =>
 				pathKeyOf(candidate.path) === pathKeyOf(found[0].path) &&
-				isAlike(candidate, issue, new Map(counterparts), false)
+				isAlike(candidate, issue, { counterparts: new Map(counterparts) })
 		)
 		if (i === -1) return
 		matched.push(...unmatched.splice(i, 1))
@@ -890,8 +899,10 @@ interface Observation {
 
 const observe = (
 	outcome: Outcome,
-	writesInput = false,
-	grouped = true
+	{
+		writesInput = false,
+		grouped = true
+	}: { writesInput?: boolean; grouped?: boolean } = {}
 ): Observation => {
 	if ("thrown" in outcome) {
 		const issues = thrownIssuesOf(outcome.thrown, grouped)
@@ -922,7 +933,7 @@ const compare = (
 	reason?: string,
 	counterparts = new Map<object, unknown>()
 ): void => {
-	if (!isAlike(arktype, precompiled, counterparts, false, new Map())) {
+	if (!isAlike(arktype, precompiled, { counterparts, originals: new Map() })) {
 		fail(
 			pair,
 			typeof observation === "string" ? observation : observation(),
@@ -1029,17 +1040,22 @@ const comparedProtos: unknown[] = [
 	Error.prototype
 ]
 
+interface Likeness {
+	counterparts: Map<object, unknown>
+	/** e.g. an argument's copy, which keeps its source's attributes */
+	isCopy?: boolean
+	/** arktype's object by each validator object, which no two of arktype's share */
+	originals?: Map<object, unknown>
+}
+
 // functions are alike, as the runtime holds its own copies
 const isAlike = (
 	l: unknown,
 	r: unknown,
-	counterparts: Map<object, unknown>,
-	// e.g. an argument's copy, which keeps its source's attributes
-	isCopy: boolean,
-	// arktype's object by each validator object, which no two of arktype's share
-	originals?: Map<object, unknown>,
+	likeness: Likeness,
 	compared = new Set<object>()
 ): boolean => {
+	const { counterparts, isCopy, originals } = likeness
 	if (typeof l === "function" || typeof r === "function")
 		return typeof l === typeof r
 	if (!hasDomain(l, "object") || !hasDomain(r, "object")) return Object.is(l, r)
@@ -1055,7 +1071,7 @@ const isAlike = (
 	if (compared.has(l)) return true
 	compared.add(l)
 	const alike = (left: unknown, right: unknown) =>
-		isAlike(left, right, counterparts, isCopy, originals, compared)
+		isAlike(left, right, likeness, compared)
 	const proto = Object.getPrototypeOf(l)
 	if (
 		proto !== Object.getPrototypeOf(r) ||

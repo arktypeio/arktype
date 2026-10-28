@@ -109,13 +109,13 @@ export const flattenBundle = (
 	]
 	if (
 		whereSmaller &&
-		minifiedLengthOf(flat.write([...read], false)) >=
+		minifiedLengthOf(flat.write([...read])) >=
 			minifiedLengthOf(unflattened.join("\n"))
 	)
 		return
 	const codes: Record<string, string> = { ...modules }
 	for (const key of flattened) delete codes[key]
-	codes[specifier] = flat.write([...read], true)
+	codes[specifier] = flat.writeModule([...read])
 	const edit = (
 		key: string,
 		rename: (specifier: string) => string
@@ -801,7 +801,10 @@ interface Flat {
 	// each creation that is its validator's one member
 	unwrapped: Set<string>
 	code: string
-	write: (read: string[], asModule: boolean) => string
+	/** the declaration of the names read */
+	write: (read: string[]) => string
+	/** that declaration as the flat module, importing the runtime and exporting them */
+	writeModule: (read: string[]) => string
 }
 
 const writeFlat = (
@@ -1096,11 +1099,11 @@ const writeFlat = (
 		exported.add(`${specifier}\0${name}`)
 	// as measured for size, then written
 	const writtenByReturned = new Map<string, WrittenUnits>()
-	return {
+	const flat: Flat = {
 		exported,
 		unwrapped,
 		code: body,
-		write: (read, asModule) => {
+		write: read => {
 			const values = read.map(name =>
 				membersOf.has(name) ? wholeOf(name) : name
 			)
@@ -1119,20 +1122,19 @@ const writeFlat = (
 			}
 			// swc would inline the IIFE, making its constants module variables
 			// V8 doesn't inline calls through
-			const declaration = `const ${read.length === 1 ? read[0] : `[${read.join(", ")}]`} = /* @__NOINLINE__ */ (() => {
+			return `const ${read.length === 1 ? read[0] : `[${read.join(", ")}]`} = /* @__NOINLINE__ */ (() => {
 ${written.body}
 return ${written.returned}
 })()`
-			return asModule ?
-					`import * as runtime from "arktype/runtime"
+		},
+		writeModule: read => `import * as runtime from "arktype/runtime"
 
-${declaration}
+${flat.write(read)}
 
 export { ${read.join(", ")} }
 `
-				:	declaration
-		}
 	}
+	return flat
 }
 
 // a validator created as an object of the one member each read reads is that member

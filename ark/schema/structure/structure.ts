@@ -254,6 +254,14 @@ const orderedForAllows = (props: array<Prop.Node>): array<Prop.Node> => {
 	return ordered
 }
 
+interface CopyOptions {
+	/** whether the site is the first that can change out, so out is still data */
+	first?: boolean
+}
+
+// an array declaring only indices is copied by slice
+const sliceOf = (data: array): unknown[] => Array.prototype.slice.call(data)
+
 export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
 		super(...args)
@@ -689,7 +697,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				)
 			}
 		}
-		if (this.slicesSeq) out = this.sequence!.tfElems(data as array, ctx, true)
+		if (this.slicesSeq)
+			out = this.sequence!.tfElems(data as array, ctx, sliceOf)
 		else if (this.sequence?.tfs) {
 			const transformedSequence = transform(ctx, this.sequence, data)
 			if (transformedSequence !== data)
@@ -1066,7 +1075,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			const { key, optional } = transformedProps[i]
 			const keyExpr = js.serialize(key)
 			const onChange = () => {
-				this.jsCopy(js, i === 0).line(`out${js.prop(key)} = transformed${i}`)
+				this.jsCopy(js, { first: i === 0 }).line(
+					`out${js.prop(key)} = transformed${i}`
+				)
 				if (once) this.jsDeclaredCopy(js, [key])
 			}
 			js.const(`value${i}`, `data${js.prop(key)}`).tfKey(
@@ -1080,7 +1091,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				}
 			)
 		}
-		if (this.slicesSeq) this.sequence!.jsElemTfs(js, true)
+		if (this.slicesSeq)
+			this.sequence!.jsElemTfs(js, "Array.prototype.slice.call(data)")
 		else if (this.sequence?.tfs) {
 			js.tfKey("transformedSequence", "data", [{ node: this.sequence }], {
 				onChange: () =>
@@ -1124,7 +1136,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				this.sequence?.tfs || transformedIndex.length !== 0
 			)
 		}
-		this.jsDefaults(js, transformedChildren.length === this.defaultable.length)
+		this.jsDefaults(js, {
+			first: transformedChildren.length === this.defaultable.length
+		})
 		if (!once) this.jsDeclaredCopy(js)
 		js.return("out")
 	}
@@ -1144,12 +1158,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	/** writes the defaults of its missing keys */
-	private jsDefaults(js: NodeCompiler, first?: boolean): NodeCompiler {
+	private jsDefaults(js: NodeCompiler, options?: CopyOptions): NodeCompiler {
 		// a default can fail, but where none is written, the check before stands
 		if (!this.defaultable.length && !this.sequence?.defaultables) return js
+		let first = options?.first === true
 		for (const node of this.defaultable) {
 			js.if(`!(${node.jsHoldsValue(js, "data")})`, () =>
-				compileDefault(this.jsCopy(js, first), node, "out")
+				compileDefault(this.jsCopy(js, { first }), node, "out")
 			)
 			first = false
 		}
@@ -1158,7 +1173,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	/** writes `out`, which a transform writes into: data at the first site and where it writes in place */
-	private jsCopy(js: NodeCompiler, first?: boolean): NodeCompiler {
+	private jsCopy(js: NodeCompiler, options?: CopyOptions): NodeCompiler {
 		if (this.writesInto(js)) return js
 		const copy = () =>
 			this.sequence ?
@@ -1171,7 +1186,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					"out",
 					`${this.jsShapeCheck(js)}Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
 				)
-		return first ? copy() : js.if("out === data", copy)
+		return options?.first ? copy() : js.if("out === data", copy)
 	}
 
 	/** writes the check of data's shape, reading a required key first; copyOf handles data without it */

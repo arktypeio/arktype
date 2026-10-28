@@ -324,11 +324,15 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	}
 
 	tTransform(data: array, ctx: InternalTraversal): unknown {
-		return this.tfElems(data, ctx, false)
+		return this.tfElems(data, ctx, ctx.inPlace ? undefined : copyOf)
 	}
 
-	/** transforms data's elements, copying it before the first change unless it's transformed in place */
-	tfElems(data: array, ctx: InternalTraversal, slices: boolean): array {
+	/** transforms data's elements, into the copy before the first change or, without one, in place */
+	tfElems(
+		data: array,
+		ctx: InternalTraversal,
+		copy: ((data: array) => object) | undefined
+	): array {
 		let out = data as unknown[]
 		for (let i = 0; i < data.length; i++) {
 			const node = this.atIndex(data, i).node
@@ -336,10 +340,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			const element = data[i]
 			const transformed = travKey(i, () => transform(ctx, node, element), ctx)
 			if (Object.is(transformed, element)) continue
-			if (out === data && (slices || !ctx.inPlace)) {
-				out =
-					slices ? Array.prototype.slice.call(data) : (copyOf(data) as never)
-			}
+			if (out === data && copy) out = copy(data) as unknown[]
 			out[i] = transformed
 		}
 		return out
@@ -361,17 +362,13 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	private jsTf(js: NodeCompiler): void {
 		js.initTf(this.children).let("out", "data")
-		this.jsElemTfs(js, false)
+		// an array written in place is never copied
+		this.jsElemTfs(js, js.inPlace ? undefined : `${js.ref(copyOf)}(data)`)
 		js.retIfFailed().return("out")
 	}
 
-	/** writes the transforms of data's elements */
-	jsElemTfs(js: NodeCompiler, slices: boolean): NodeCompiler {
-		// an array written in place is never copied
-		const copy =
-			js.inPlace && !slices ? undefined
-			: slices ? "Array.prototype.slice.call(data)"
-			: `${js.ref(copyOf)}(data)`
+	/** writes the transforms of data's elements, into `copy` before the first change or, without one, in place */
+	jsElemTfs(js: NodeCompiler, copy: string | undefined): NodeCompiler {
 		let i = 0
 		this.jsElements(js, (keyExpr, node) => {
 			const element = `element${i}`

@@ -230,7 +230,10 @@ const findBases = (node: UnionNode): Bases | null => {
 			addExpected(describeCases({ discriminantKind, cases: [c] } as never))
 	}
 	// as arktype's union error lists them: a morph input union's own bases, or each case
-	const collect = (branch: BaseRoot, describes: boolean): boolean => {
+	const collect = (
+		branch: BaseRoot,
+		{ describes }: { describes: boolean }
+	): boolean => {
 		const checked = branch.is("morph") ? branch.head : branch
 		// a described morph's input fails as the morph, by its description
 		if (
@@ -238,7 +241,7 @@ const findBases = (node: UnionNode): Bases | null => {
 			branch.meta.description !== undefined &&
 			branch.meta.keyword === undefined
 		) {
-			if (!checked || !collect(checked, false)) return false
+			if (!checked || !collect(checked, { describes: false })) return false
 			if (describes) addExpected(branch.meta.description)
 			return true
 		}
@@ -246,7 +249,11 @@ const findBases = (node: UnionNode): Bases | null => {
 			const { discriminant } = checked
 			const lists =
 				!discriminant || discriminant.path.length !== 0 || checked.missLists
-			if (!checked.branches.every(b => collect(b, describes && lists)))
+			if (
+				!checked.branches.every(b =>
+					collect(b, { describes: describes && lists })
+				)
+			)
 				return false
 			if (describes && !lists) addCases(checked.discCases)
 			return true
@@ -272,10 +279,10 @@ const findBases = (node: UnionNode): Bases | null => {
 		:	undefined
 	if (defaultCase) {
 		addCases(node.discCases)
-		if (!collect(defaultCase as BaseRoot, true)) return null
+		if (!collect(defaultCase as BaseRoot, { describes: true })) return null
 	}
 	for (const branch of node.branches)
-		if (!collect(branch, !defaultCase)) return null
+		if (!collect(branch, { describes: !defaultCase })) return null
 	const site = issueSiteOf({
 		meta: node.meta,
 		description: describeBranches(expected)
