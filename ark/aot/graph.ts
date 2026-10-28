@@ -3200,6 +3200,22 @@ export class ModuleGraph {
 			:	undefined
 	}
 
+	// e.g. `getG()("string")` or `(flag ? G : G2)("string")`, instantiating what
+	// may be a Generic outside a site, which no member read refuses; a callee
+	// that may be a Type or any arktype value is a validation or judged as a site
+	genericCallOf(node: Node, module: SourceModule): boolean {
+		if (node.type !== "CallExpression") return false
+		const callee = unwrapChain(node.callee)
+		if (callee.type === "MemberExpression") return false
+		const kind = this.kindOf(callee, module)
+		return (
+			mayBeOtherArk(kind) &&
+			(kind & kinds.returnsType) !== 0 &&
+			(kind & (kinds.type | kinds.returnsArk)) === 0 &&
+			!this.isArktypeImport(callee, module)
+		)
+	}
+
 	private isArktypeImport(node: Node, module: SourceModule): boolean {
 		if (this.arkExportNameOf(node, module)) return true
 		const binding =

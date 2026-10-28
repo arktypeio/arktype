@@ -622,10 +622,14 @@ export class Precompiler {
 	// module leaves to arktype when it's written
 	private dynamicStandIns = new Map<
 		unknown,
-		[reader: Site, module: SourceModule, name: string]
+		[reader: Span, module: SourceModule, name: string]
 	>()
 	// each replaced by a stand-in a module already written holds
 	private writtenStandIns = new Map<unknown, [Site, SourceModule]>()
+	// each module's reads off what may be a Scope or Generic, refused without a site
+	private scopeReadsByModule = new WeakMap<SourceModule, ScopeRead[]>()
+	// modules being analyzed, which a refused site reaching their functions doesn't reenter
+	private analyzing = new Set<SourceModule>()
 	// each warning that a site accepts a value as a Standard Schema, by the
 	// site's span, which writing it may still refuse
 	private schemaWarningSpans = new WeakMap<Diagnostic, Span>()
@@ -3198,8 +3202,14 @@ export class Precompiler {
 			this.analyzedProblem = problem
 		}
 		let analysis = this.analysesByModule.get(module)
-		if (!analysis)
-			this.analysesByModule.set(module, (analysis = this._analyze(module)))
+		if (!analysis) {
+			this.analyzing.add(module)
+			try {
+				this.analysesByModule.set(module, (analysis = this._analyze(module)))
+			} finally {
+				this.analyzing.delete(module)
+			}
+		}
 		return {
 			sites: analysis.sites.map(site => ({ ...site })),
 			diagnostics: [...analysis.diagnostics],
@@ -3325,8 +3335,13 @@ export class Precompiler {
 				diagnostics.push(this.refuseThrown(module, site, e))
 			}
 		}
-		if (this.mode === "standalone")
+		if (this.mode === "standalone") {
+			this.scopeReadsByModule.set(
+				module,
+				scopeReadsOf(module, candidates, this.graph)
+			)
 			this.refuseStandInsRead(module, sites, diagnostics)
+		}
 		diagnostics.push(...this.checkConfiguration(module))
 		let quiet: FunctionNode[] = []
 		if (this.mode === "standalone") {
@@ -3371,7 +3386,7 @@ export class Precompiler {
 		const refused: Site[] = []
 		const leave = (
 			read: Site,
-			reader: Site,
+			reader: Span,
 			from: SourceModule,
 			name: string
 		) => {
@@ -3394,19 +3409,27 @@ export class Precompiler {
 			const reader = this.dynamicStandIns.get(value)
 			if (reader) leave(read, ...reader)
 		}
-		for (const site of sites) {
-			if (site.status !== "rejected") continue
-			for (const { binding, id } of module.scopes.references) {
-				if (!binding || id.start < site.start || id.end > site.end) continue
-				const value = this.interpreter.valueOfBinding(binding, module)
+		const readers: Span[] = [
+			...sites.filter(site => site.status === "rejected"),
+			...(this.scopeReadsByModule.get(module) ?? []).map(([node]) =>
+				spanOfScopeRead(node)
+			)
+		]
+		for (const site of readers) {
+			for (const [binding, value, isHeld] of this.standInsReachedBy(
+				site,
+				module,
+				sites
+			)) {
 				const read = standIns.get(value)
 				if (read) {
 					if (read.status !== "rejected")
 						leave(read, site, module, binding.name)
 					continue
 				}
-				const kind = standInKindOf(value)
-				if (!kind || binding.kind !== "import") continue
+				// a Scope this module's refused site defines is arktype's already,
+				// so recording it refuses nothing
+				const kind = standInKindOf(value)!
 				const written = this.writtenStandIns.get(value)
 				if (!written) {
 					this.dynamicStandIns.set(value, [site, module, binding.name])
@@ -3426,7 +3449,7 @@ export class Precompiler {
 						"unsupported",
 						message,
 						[
-							`\`${binding.name}\` is ${origin.snippetOf(source)} (${origin.positionOf(source)}), a ${kind} precompiled before ${module.snippetOf(site)} was refused`
+							`\`${binding.name}\` ${isHeld ? "holds" : "is"} ${origin.snippetOf(source)} (${origin.positionOf(source)}), a ${kind} precompiled before ${module.snippetOf(site)} was refused`
 						],
 						`Put // @ark-runtime on the line before ${origin.snippetOf(source)}, so arktype defines it at runtime, or build with runtime: "arktype".`,
 						"error"
@@ -3435,6 +3458,94 @@ export class Precompiler {
 			}
 		}
 		return refused
+	}
+
+	// each Scope or Generic a refused site may read, with the binding the site
+	// names: the value of each binding referenced inside it, whatever a
+	// container it holds holds, and the same through the declarations of the
+	// local bindings those read, as `chosen` in `const chosen = flag ? H.alt :
+	// H.$` reads `H`, whose value holds both
+	private standInsReachedBy(
+		site: Span,
+		module: SourceModule,
+		sites: Site[]
+	): [named: Binding, value: unknown, isHeld: boolean][] {
+		const result: [Binding, unknown, boolean][] = []
+		const bindings = new Set<Binding>()
+		const values = new Set<unknown>()
+		// the span of a function reached, whose sites a call creates
+		const spans: [Span, SourceModule, named?: Binding][] = [[site, module]]
+		const visit = (value: unknown, named: Binding, isHeld: boolean) => {
+			if (values.has(value)) return
+			values.add(value)
+			if (standInKindOf(value)) result.push([named, value, isHeld])
+			else if (isPlainContainer(value)) {
+				for (const key of Reflect.ownKeys(value))
+					visit(Reflect.get(value, key), named, true)
+			} else if (typeof value === "function") {
+				const source = this.interpreter.sourceOf(value)
+				if (source) spans.push([source[0], source[1], named])
+			}
+		}
+		// e.g. `ns.held.s` for `import * as ns`, whose exports the binding's value doesn't hold
+		const modules = new Set<SourceModule>()
+		const visitExports = (exporting: SourceModule, named: Binding) => {
+			if (modules.has(exporting)) return
+			modules.add(exporting)
+			for (const name in exporting.scopes.exportsByName) {
+				const target = this.graph.exportOf(exporting, name)
+				if (target.kind === "binding" || target.kind === "expression")
+					visit(this.interpreter.exportValue(target).value, named, true)
+				else if (target.kind === "namespace") visitExports(target.module, named)
+			}
+			for (const specifier of exporting.scopes.starExports) {
+				const target = this.graph.resolve(specifier, exporting)
+				if (target instanceof SourceModule) visitExports(target, named)
+			}
+		}
+		while (spans.length) {
+			const [span, from, through] = spans.pop()!
+			// e.g. `scope(...)` in `const make = () => scope(...)`, for `make().type(...)`
+			const sitesWithin =
+				from === module ? sites : (
+					(this.analysesByModule.get(from)?.sites ??
+					(this.analyzing.has(from) ?
+						[]
+					:	this.analyzeSites(from.source, from.id).sites))
+				)
+			for (const inner of sitesWithin) {
+				if (
+					inner.status === "accepted" &&
+					inner.start >= span.start &&
+					inner.end <= span.end &&
+					through
+				)
+					visit(inner.value, through, true)
+			}
+			if (from !== module) continue
+			for (const { binding, id } of module.scopes.references) {
+				if (
+					!binding ||
+					id.start < span.start ||
+					id.end > span.end ||
+					bindings.has(binding)
+				)
+					continue
+				bindings.add(binding)
+				const named = through ?? binding
+				visit(
+					this.interpreter.valueOfBinding(binding, module),
+					named,
+					named !== binding
+				)
+				if (binding.kind === "import") {
+					const target = this.graph.importOf(binding, module)
+					if (target.kind === "namespace") visitExports(target.module, named)
+				} else if (binding.kind !== "param")
+					spans.push([binding.declaration, module, named])
+			}
+		}
+		return result
 	}
 
 	// a helper whose calls the build folds, and each function the program
@@ -4819,11 +4930,6 @@ export class Precompiler {
 				candidate.state.value
 			])
 		)
-		const scopeReads: [
-			node: MemberExpression,
-			read: string,
-			kind: StandInKind
-		][] = []
 		const unavailable: [
 			node: Node,
 			read: string | undefined,
@@ -4844,20 +4950,15 @@ export class Precompiler {
 				this.graph.unavailableReadOf(node, module, this.unsureLackedMembers)
 			if (read && !this.isDeclaredInIsland(read[1], module))
 				unavailable.push([node, ...read])
-			const scopeRead =
-				!isWithin(node, candidateRanges) && this.graph.scopeReadOf(node, module)
-			if (scopeRead) scopeReads.push([node as MemberExpression, ...scopeRead])
 			return true
 		})
 		// arktype's own packages are the runtime a standalone build ships
 		const isArkPackage = arkPackageName.test(
 			this.graph.packageNameOf(module.id) ?? ""
 		)
-		for (const [node, read, kind] of scopeReads) {
-			// e.g. `getPlaces().type(...)`, reported as the call
-			const [callee, call] = operatorOf(node)
-			const span =
-				call?.type === "CallExpression" && call.callee === callee ? call : node
+		for (const [node, read, kind] of this.scopeReadsByModule.get(module) ??
+			scopeReadsOf(module, candidates, this.graph)) {
+			const span = spanOfScopeRead(node)
 			result.push(
 				this.diagnostic(
 					module,
@@ -4865,9 +4966,13 @@ export class Precompiler {
 					"unsupported",
 					`${module.snippetOf(span)} can't be precompiled yet`,
 					[
-						`\`${module.snippetOf(node.object)}\` may be a ${kind}, which a standalone build replaces with an object that lacks \`${read}\``
+						node.type === "CallExpression" ?
+							`\`${module.snippetOf(node.callee)}\` may be a ${kind}, which a standalone build replaces with an object that can't be called`
+						:	`\`${module.snippetOf(node.object)}\` may be a ${kind}, which a standalone build replaces with an object that lacks \`${read}\``
 					],
-					`Assign it to a const and read \`${read}\` off that, which the build precompiles, or build with runtime: "arktype".`
+					node.type === "CallExpression" ?
+						`Assign it to a const and instantiate that, which the build precompiles, or build with runtime: "arktype".`
+					:	`Assign it to a const and read \`${read}\` off that, which the build precompiles, or build with runtime: "arktype".`
 				)
 			)
 		}
@@ -5716,6 +5821,46 @@ const declaredBindingKinds = {
 	function: 1,
 	class: 1
 } satisfies Partial<Record<BindingKind, 1>>
+
+// a member read off what may be a Scope or Generic, or a call of what may be a Generic
+type ScopeRead = [
+	node: MemberExpression | CallExpression,
+	read: string | undefined,
+	kind: StandInKind
+]
+
+// e.g. `chosen.type(...)` for `const chosen = flag ? H.alt : H.$`, outside any site
+const scopeReadsOf = (
+	module: SourceModule,
+	candidates: SiteCandidate[],
+	graph: ModuleGraph
+): ScopeRead[] => {
+	const candidateRanges = new Set(
+		candidates.map(candidate => rangeOf(candidate.state.node))
+	)
+	const reads: ScopeRead[] = []
+	walk(module.program, node => {
+		if (
+			isInIsland(node, module) ||
+			(node.type.startsWith("TS") && !isTransparent(node))
+		)
+			return false
+		if (isWithin(node, candidateRanges)) return true
+		const read = graph.scopeReadOf(node, module)
+		if (read) reads.push([node as MemberExpression, ...read])
+		else if (graph.genericCallOf(node, module))
+			reads.push([node as CallExpression, undefined, "Generic"])
+		return true
+	})
+	return reads
+}
+
+// e.g. `getPlaces().type(...)`, reported as the call
+const spanOfScopeRead = (node: MemberExpression | CallExpression): Span => {
+	if (node.type === "CallExpression") return node
+	const [callee, call] = operatorOf(node)
+	return call?.type === "CallExpression" && call.callee === callee ? call : node
+}
 
 const standInKindOf = (value: unknown): StandInKind | undefined =>
 	hasArkKind(value, "scope") ? "Scope"

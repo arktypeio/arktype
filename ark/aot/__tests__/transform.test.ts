@@ -384,6 +384,82 @@ export const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })`
 			])
 		})
 
+		it("leaves a Scope to arktype that a refused site reads through a holder or alias", () => {
+			const files = {
+				"/holders.ts": `import { scope } from "arktype"
+export const H = { $: scope({ a: "string" }), alt: scope({ a: "number" }) }
+export const $ = scope({ b: "string" })`,
+				"/main.ts": `import { H, $ } from "./holders.ts"
+declare const flag: boolean
+const chosen = flag ? H.alt : H.$
+const direct = $
+export const A = H.$.type("a | null")
+export const B = chosen.type("a")
+export const C = direct.type(flag ? "b" : "b | null")`
+			}
+			let precompiler = new Precompiler(memoryHost(files))
+			const reader = precompiler.precompile(files["/main.ts"], "/main.ts")
+			// `chosen.type("a")` is refused as a read off what may be a Scope, without a site
+			attest(reader.sites.map(site => site.status)).equals([
+				"accepted",
+				"rejected"
+			])
+			const left = precompiler.precompile(files["/holders.ts"], "/holders.ts")
+			attest(left.diagnostics.map(renderDiagnostic)).snap([
+				'/holders.ts:2:23  scope({ a: "string" }) is left to arktype\n  chosen.type("a") (/main.ts:6:18) reads `chosen` but isn\'t precompiled, so arktype must define `chosen` for it',
+				'/holders.ts:2:52  scope({ a: "number" }) is left to arktype\n  chosen.type("a") (/main.ts:6:18) reads `chosen` but isn\'t precompiled, so arktype must define `chosen` for it',
+				'/holders.ts:3:18  scope({ b: "string" }) is left to arktype\n  direct.type(flag ? "b" : "b | null") (/main.ts:7:18) reads `direct` but isn\'t precompiled, so arktype must define `direct` for it'
+			])
+			attest(left.code).equals(files["/holders.ts"])
+			precompiler = new Precompiler(memoryHost(files))
+			precompiler.precompile(files["/holders.ts"], "/holders.ts")
+			const failed = precompiler.precompile(files["/main.ts"], "/main.ts")
+			// reported once per refused read, whichever stand-in it finds first
+			attest(failed.diagnostics.map(renderDiagnostic)).snap([
+				'/main.ts:6:18  chosen.type("a") reads `chosen`, which the build replaced with an object that lacks its members\n  `chosen` holds scope({ a: "string" }) (/holders.ts:2:23), a Scope precompiled before chosen.type("a") was refused\n  Put // @ark-runtime on the line before scope({ a: "string" }), so arktype defines it at runtime, or build with runtime: "arktype".',
+				'/main.ts:6:18  chosen.type("a") can\'t be precompiled yet\n  `chosen` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".',
+				'/main.ts:7:18  direct.type(flag ? "b" : "b | null") cannot be precompiled\n  `flag` is declared without a value\n  Replace `flag` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.',
+				'/main.ts:7:18  direct.type(flag ? "b" : "b | null") reads `direct`, which the build replaced with an object that lacks its members\n  `direct` is scope({ b: "string" }) (/holders.ts:3:18), a Scope precompiled before direct.type(flag ? "b" : "b | null") was refused\n  Put // @ark-runtime on the line before scope({ b: "string" }), so arktype defines it at runtime, or build with runtime: "arktype".'
+			])
+			// read off a namespace import, whose binding's value holds no export
+			const namespaced = {
+				"/holders.ts": `import { scope } from "arktype"
+export const $ = scope({ a: "string" })
+export const held = { s: scope({ a: "number" }) }
+export default $`,
+				"/main.ts": `import * as ns from "./holders.ts"
+declare const flag: boolean
+export const A = ns.default.type(flag ? "a" : "a | null")
+export const B = ns.held.s.type(flag ? "a" : "a | null")`
+			}
+			precompiler = new Precompiler(memoryHost(namespaced))
+			precompiler.precompile(namespaced["/main.ts"], "/main.ts")
+			attest(
+				precompiler
+					.precompile(namespaced["/holders.ts"], "/holders.ts")
+					.diagnostics.map(d => d.message)
+			).snap([
+				'scope({ a: "string" }) is left to arktype',
+				'scope({ a: "number" }) is left to arktype'
+			])
+			// held by a const of the reader's own module
+			const result = precompile(`import { scope } from "arktype"
+declare const flag: boolean
+const H = { $: scope({ a: "string" }) }
+export const A = H.$.type("a | null")
+export const B = H.$.type(flag ? "a" : "a | null")`)
+			attest(result.sites.map(site => site.status)).equals([
+				"rejected",
+				"accepted",
+				"rejected"
+			])
+			attest(foldedCode(result.code)).snap(`import { scope } from "arktype"
+declare const flag: boolean
+const H = { $: scope({ a: "string" }) }
+export const A = $ark#0(H)
+export const B = H.$.type(flag ? "a" : "a | null")`)
+		})
+
 		it("loads arktype where it was imported", () => {
 			attest(
 				normalized(
