@@ -200,7 +200,8 @@ export const writeDependencies = (
 	return [params, args]
 }
 
-// swc would inline a speed build's traversals as variables V8 can't; first, as terser reads only the nearest annotation
+// swc would inline a speed build's traversals as variables V8 can't; first, as
+// terser reads only the nearest annotation
 export const noInlineOf = (shortest: boolean): string =>
 	shortest ? "" : "/* @__NOINLINE__ */ "
 

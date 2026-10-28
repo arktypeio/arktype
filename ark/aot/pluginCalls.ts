@@ -3,7 +3,7 @@ import { dirname, join, resolve } from "node:path"
 import type { Node, ObjectExpression } from "oxc-parser"
 import type { PrecompilePluginOptions } from "./driver.ts"
 import { memberNameOf } from "./graph.ts"
-import { printablePathOf, throwBuildError } from "./host.ts"
+import { printablePathOf, projectOf, throwBuildError } from "./host.ts"
 import { SourceModule } from "./module.ts"
 import {
 	exportNameOf,
@@ -13,7 +13,8 @@ import {
 } from "./scope.ts"
 import { cliOptions } from "./settingsValidators.ts"
 
-// e.g. `precompile.vite({ ... })` in vite.config.ts, which --check reads to check what the build does
+// e.g. `precompile.vite({ ... })` in vite.config.ts, which --check reads to
+// check what the build does
 export interface PluginCall {
 	position: string
 	label: string
@@ -39,10 +40,9 @@ const scriptFile = /(?<!\.d)\.[cm]?[jt]sx?$/
 
 // what reads options is a file at the project's root, like a bundler's config
 export const pluginCallsIn = (cwd: string): PluginCall[] => {
-	let root = resolve(cwd)
-	while (!existsSync(join(root, "package.json")) && dirname(root) !== root)
-		root = dirname(root)
-	if (!existsSync(join(root, "package.json"))) root = resolve(cwd)
+	const project = projectOf(resolve(cwd))
+	const root =
+		existsSync(join(project, "package.json")) ? project : resolve(cwd)
 	const result: PluginCall[] = []
 	for (const entry of readdirSync(root, { withFileTypes: true })) {
 		if (!entry.isFile() || !scriptFile.test(entry.name)) continue
@@ -126,7 +126,8 @@ const entryOf = (node: Node): string | undefined => {
 		:	undefined
 }
 
-// e.g. ["precompile", "vite"] for `precompile.vite`, `aot.precompile.vite` or `require("@ark/aot/unplugin").precompile.vite`
+// e.g. ["precompile", "vite"] for `precompile.vite`, `aot.precompile.vite` or
+// `require("@ark/aot/unplugin").precompile.vite`
 const entryReadOf = (
 	expression: Node,
 	module: SourceModule
@@ -339,21 +340,17 @@ const isGiven = (given: PrecompilePluginOptions, key: string) =>
 	(given as Record<string, unknown>)[key] !== undefined
 
 const writeUnreadMessage = (call: PluginCall, keys: string[]): string => {
+	const [key] = keys
+	const isOne = keys.length === 1 && key !== "*"
 	const read =
-		keys[0] === "*" ? "the options"
-		: keys.length === 1 ? `the \`${keys[0]}\``
-		: `the ${keys.map(key => `\`${key}\``).join(", ")}`
+		key === "*" ? "options" : keys.map(key => `\`${key}\``).join(", ")
 	const fix =
-		keys[0] === "*" ?
-			'Set the options in ark.json (or package.json\'s "ark" key), as { "precompile": { ... } }'
-		: keys.length === 1 ?
-			`Set ${keys[0]} in ark.json (or package.json's "ark" key), as { "precompile": { "${keys[0]}": ... } }`
-		:	'Set them in ark.json (or package.json\'s "ark" key), as { "precompile": { ... } }'
+		isOne ?
+			`Set ${key} in ark.json (or package.json's "ark" key), as { "precompile": { "${key}": ... } }`
+		:	`Set ${key === "*" ? "the options" : "them"} in ark.json (or package.json's "ark" key), as { "precompile": { ... } }`
 	const flag =
-		keys[0] === "*" ? "each to --check as a flag"
-		: keys.length === 1 ? `it to --check as ${flagOf(keys[0])}`
-		: "each to --check as a flag"
-	return `${call.position}  --check can't read ${read} ${call.label} is passed, so it can't check what the build does\n  ${fix}, which ${call.label} reads too, or pass ${flag}.`
+		isOne ? `it to --check as ${flagOf(key)}` : "each to --check as a flag"
+	return `${call.position}  --check can't read the ${read} ${call.label} is passed, so it can't check what the build does\n  ${fix}, which ${call.label} reads too, or pass ${flag}.`
 }
 
 // e.g. "vite.config.ts:5:22  precompile.vite() sets config, so --check does too"

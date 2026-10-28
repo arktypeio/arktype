@@ -242,26 +242,20 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 				: alias === "root" ? this.name
 				: `${this.name}.${alias}`
 
-			// a thunk reads its config when called, so ark doesn't fix it
-			if (isThunk(def)) {
-				const thunk = def
-				return [
-					alias,
-					() => {
-						const resolution = thunk()
-						if (hasArkKind(resolution, "generic")) return resolution
-						const config = this.keywordConfigOf(qualifiedName)
-						return config ?
-								([resolution, "@", config] satisfies TupleExpression)
-							:	resolution
-					}
-				]
+			const configured = (def: unknown) => {
+				const config = this.keywordConfigOf(qualifiedName)
+				return config ? ([def, "@", config] satisfies TupleExpression) : def
 			}
 
-			const config = this.keywordConfigOf(qualifiedName)
+			if (!isThunk(def)) return [alias, configured(def)]
+			// a thunk reads its config when called, so ark doesn't fix it
 			return [
 				alias,
-				config ? ([def, "@", config] satisfies TupleExpression) : def
+				() => {
+					const resolution = def()
+					if (hasArkKind(resolution, "generic")) return resolution
+					return configured(resolution)
+				}
 			]
 		}
 

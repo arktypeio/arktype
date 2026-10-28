@@ -123,9 +123,12 @@ export const runsOnArktype = (
 	importer: string | undefined,
 	dependencies: DependencyModes | undefined
 ): boolean => {
-	const [, name] = (importer && dependencyOf(importer.split("?")[0])) || []
+	const name = dependencyNameOf(importer)
 	return !!name && dependencies?.[name] === "arktype"
 }
+
+const dependencyNameOf = (importer: string | undefined): string | undefined =>
+	importer && dependencyOf(importer.split("?")[0])?.[1]
 
 // from the innermost node_modules the file names a package in
 export const dependencyOf = (
@@ -150,7 +153,8 @@ const nodeModulesSegment = /[/\\]node_modules(?=[/\\])/g
 const packageInNodeModules =
 	/[/\\]node_modules[/\\]((?:@[^/\\]+[/\\])?[^/\\]+)/y
 
-// Vite writes / on Windows, and an entry keeps a symlink or 8.3 name like RUNNER~1 where its imports don't
+// Vite writes / on Windows, and an entry keeps a symlink or 8.3 name like
+// RUNNER~1 where its imports don't
 export const fileOf = (id: string): string =>
 	isAbsolute(id) ? realPathOf(id) : id
 
@@ -312,12 +316,18 @@ export const narrowsIssues = (issues: IssueFeatures | undefined): boolean =>
 export const writeVariantOption = (variant: RuntimeVariant): string =>
 	variant === "lean" ? 'optimizeErrors: "size"' : 'errors: "none"'
 
+// how to build without the runtime copy a variant loads
+export const writeWithoutVariant = (variant: RuntimeVariant): string =>
+	variant === "lean" ?
+		'with optimizeErrors: "speed"'
+	:	`without ${writeVariantOption(variant)}`
+
 export const writeVariantImportMessage = (
 	importer: string,
 	specifier: string,
 	variant: RuntimeVariant
 ): string =>
-	`${importer} imports ${specifier}, which a build with ${writeVariantOption(variant)} can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build ${variant === "lean" ? 'with optimizeErrors: "speed"' : `without ${writeVariantOption(variant)}`}.`
+	`${importer} imports ${specifier}, which a build with ${writeVariantOption(variant)} can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build ${writeWithoutVariant(variant)}.`
 
 // not a virtual module like Rolldown's `\0rolldown/runtime.js`
 export const transformedId = /^[^\0].*\.(?:[cm]?[jt]s|[jt]sx)$/
@@ -381,14 +391,17 @@ export const writeUncachedModuleMessage = (
 export const packageNameOf = (specifier: string): string =>
 	specifier.split("/", specifier.startsWith("@") ? 2 : 1).join("/")
 
+const loadedAtRuntime =
+	"to be loaded at runtime rather than bundled with the runtime the program's precompiled validators use, so the program can load a copy of arktype that isn't theirs, e.g. one whose `type.errors` isn't the class of their errors"
+
 export const writeExternalizedMessage = (
 	specifier: string,
 	option: string
 ): string =>
-	`The build's \`${option}\` option leaves ${specifier} to be loaded at runtime rather than bundled with the runtime the program's precompiled validators use, so the program can load a copy of arktype that isn't theirs, e.g. one whose \`type.errors\` isn't the class of their errors. Remove ${packageNameOf(specifier)} from \`${option}\`.`
+	`The build's \`${option}\` option leaves ${specifier} ${loadedAtRuntime}. Remove ${packageNameOf(specifier)} from \`${option}\`.`
 
 export const writeBundledExternalMessage = (specifier: string): string =>
-	`The bundle leaves ${specifier} to be loaded at runtime rather than bundled with the runtime the program's precompiled validators use, so the program can load a copy of arktype that isn't theirs, e.g. one whose \`type.errors\` isn't the class of their errors. Bundle arktype: remove it from the bundler's \`external\` option, or, where a tool leaves dependencies external, have it bundle arktype, as tsup does with \`noExternal: ["arktype"]\` and tsdown with \`deps: { alwaysBundle: [/^arktype(\\/|$)/] }\`.`
+	`The bundle leaves ${specifier} ${loadedAtRuntime}. Bundle arktype: remove it from the bundler's \`external\` option, or, where a tool leaves dependencies external, have it bundle arktype, as tsup does with \`noExternal: ["arktype"]\` and tsdown with \`deps: { alwaysBundle: [/^arktype(\\/|$)/] }\`.`
 
 export const writeUnwrittenModuleMessage = (specifier: string): string =>
 	`${specifier} is imported by a module this build didn't precompile, as one a cache kept from an earlier build is. Keep that cache from storing the modules @ark/aot transforms, or delete it.`
@@ -436,7 +449,7 @@ export const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
 
 // e.g. @ark/json-schema, which reads arktype's nodes, so imports arktype rather than its runtime
 export const readsNodes = (importer: string | undefined): boolean => {
-	const [, name] = (importer && dependencyOf(importer.split("?")[0])) || []
+	const name = dependencyNameOf(importer)
 	return !!name && /^(?:arksets|@ark\/(?:json-schema|fast-check))$/.test(name)
 }
 

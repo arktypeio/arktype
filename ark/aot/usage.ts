@@ -10,7 +10,8 @@ import {
 	type Binding
 } from "./scope.ts"
 
-// a member, "call" where it may return errors no one reads, or "piped" where a call may pass a second argument
+// a member, "call" where it may return errors no one reads, or "piped" where a
+// call may pass a second argument
 export type UsedMember =
 	| "assert"
 	| "~standard"

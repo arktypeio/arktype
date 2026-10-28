@@ -264,6 +264,11 @@ const readConstraint =
 	schema =>
 		constraintInputOf(kind, schema)
 
+const readProp = (schema: PropSchema, $: BaseScope) => ({
+	...schema,
+	value: parseSchema(schema.value, $)
+})
+
 const readers: Record<NodeKind, SchemaReader> = {
 	alias: (schema, $, opts) => {
 		const input: AliasSchema =
@@ -347,14 +352,8 @@ const readers: Record<NodeKind, SchemaReader> = {
 		}
 		return input
 	},
-	required: (schema: PropSchema, $) => ({
-		...schema,
-		value: parseSchema(schema.value, $)
-	}),
-	optional: (schema: OptionalSchema, $) => ({
-		...schema,
-		value: parseSchema(schema.value, $)
-	}),
+	required: readProp,
+	optional: readProp,
 	index: (schema: IndexSchema, $) => ({
 		...schema,
 		signature: parseSchema(schema.signature, $),
