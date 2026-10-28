@@ -34,6 +34,7 @@ import type {
 	ObjectPropertyKind,
 	TSInterfaceDeclaration,
 	TSSignature,
+	TSTupleElement,
 	TSType,
 	TSTypeAnnotation,
 	TSTypeParameter,
@@ -528,6 +529,12 @@ const typeMemberKinds: Record<string, KindBits> = Object.setPrototypeOf(
 		$: anyKind,
 		precompilation: kinds.data
 	} satisfies Record<UnavailableMember, KindBits>,
+	null
+)
+
+// a Type's members that exist only as types, so `typeof User.infer` is data
+const inferenceMembers: Record<string, 1> = Object.setPrototypeOf(
+	{ t: 1, infer: 1, inferIn: 1, inferOut: 1, inferIntrospectableOut: 1 },
 	null
 )
 
@@ -1459,21 +1466,66 @@ export class ModuleGraph {
 			}
 			case "TSTypeLiteral":
 				return signaturesKindOf(type.members)
+			// e.g. `typeof names`, or `typeof User.infer`, data whatever `User` is
 			case "TSTypeQuery": {
-				const binding =
-					type.exprName.type === "Identifier" &&
-					module.scopes.root.bindings[type.exprName.name]
-				if (!binding) return
-				const kind = kindOfKey(binding, module)
+				const names: string[] = []
+				let root = type.exprName
+				while (root.type === "TSQualifiedName") {
+					names.unshift(root.right.name)
+					root = root.left
+				}
+				if (root.type !== "Identifier") return
+				const queried = this.queriedOf(root.name, module, kindOfKey)
+				if (!queried) return
+				let [kind, value] = queried
+				for (const [i, name] of names.entries()) {
+					if (i === names.length - 1 && isArk(kind) && name in inferenceMembers)
+						return kinds.data
+					// e.g. the Type `schemas.User` for `typeof schemas.User.infer`
+					const literal =
+						value && this.literalOf(value.node, value.module, value.kindOfKey)
+					const member = literal && this.valueIn(literal, name)
+					if (member) {
+						value = member
+						kind = this.transfer(member.node, member.module, member.kindOfKey)
+					} else {
+						value = undefined
+						kind = memberKindOf(kind, name)
+					}
+				}
 				// e.g. `typeof $`, whose value may be a Scope, as `$`'s may be
 				return (
 					(kind & ~arkBits) |
 					(isArk(kind) ? unsure | (kind & kinds.otherArk) : 0)
 				)
 			}
+			case "TSTupleType":
+				return union(type.elementTypes.map(tupleElementTypeOf), depth + 1)
+			// e.g. data for `() => void`, a function returning a Type for
+			// `() => Type`. A member or element declaring one whose call may
+			// return a Type is read as an unknown member, so `codec.era` for
+			// `codec: { era: string; parse: () => unknown }` is still opaque
+			case "TSFunctionType":
+			case "TSConstructorType": {
+				const returned = this.typeKindOf(
+					type.returnType,
+					context,
+					module,
+					kindOfKey,
+					depth + 1
+				)
+				if (returned === undefined) return
+				const fn = functionKindOf(returned)
+				return (
+					depth === 0 ? fn
+					: fn & ~kinds.data ? kinds.data | kinds.opaqueHolder
+					: kinds.data
+				)
+			}
 			case "TSTypeReference": {
 				const name = type.typeName
-				const root = name.type === "TSQualifiedName" ? name.left : name
+				let root = name
+				while (root.type === "TSQualifiedName") root = root.left
 				if (root.type !== "Identifier") return
 				// e.g. `T` in `<T extends Type>(t: T) => ...`
 				const parameter = typeParameterOf(context, root.name)
@@ -1535,6 +1587,57 @@ export class ModuleGraph {
 			default:
 				return type.type.endsWith("Keyword") ? kinds.data : undefined
 		}
+	}
+
+	// what a `typeof` names, with its value where a const or an export
+	// declares one: a binding, or what a type-only import names, which the
+	// module's scopes don't bind
+	private queriedOf(
+		name: string,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): [kind: KindBits, value: Located | undefined] | undefined {
+		const binding = module.scopes.root.bindings[name]
+		const target =
+			binding ?
+				binding.kind === "import" ?
+					this.importOf(binding, module)
+				:	{ kind: "binding" as const, module, binding, name }
+			:	this.typeImportTargetOf(name, module)
+		if (!target) return
+		const declaration =
+			target.kind === "binding" ? target.binding.declaration : undefined
+		const value: Located | undefined =
+			target.kind === "expression" ?
+				{ node: target.node, module: target.module, kindOfKey }
+			: (
+				target.kind === "binding" &&
+				declaration?.type === "VariableDeclarator" &&
+				declaration.id === target.binding.id &&
+				declaration.init
+			) ?
+				{ node: declaration.init, module: target.module, kindOfKey }
+			:	undefined
+		return [this.targetKindOf(target, kindOfKey), value]
+	}
+
+	// e.g. the `User` of "./types.ts" for `import type { User } from "./types.ts"`
+	private typeImportTargetOf(
+		name: string,
+		module: SourceModule
+	): ImportTarget | undefined {
+		const imported = importedNameOf(module, name)
+		if (!imported) return
+		const [specifier, importedName] = imported
+		// a type carries no value, so a host asks no bundler to resolve it
+		const target = this.resolve(specifier, module, () => false)
+		if (target instanceof SourceModule) {
+			return importedName === "*" ?
+					{ kind: "namespace", module: target }
+				:	this.exportOf(target, importedName)
+		}
+		if (target.kind !== "arktypeNamespace") return
+		return importedName === "*" ? target : arktypeExportOf(target, importedName)
 	}
 
 	// a type literal or interface isn't a Type, though a member typed
@@ -3433,16 +3536,24 @@ const keyIn = (owner: Node, node: Node): unknown =>
 	: undefined
 
 // e.g. `type(A, "|", B)`, as only `type("<t>", def)` makes a Generic
+// e.g. `type({ a: "string" })` or `type(User, "[]")`, but not `type("<t>", def)`
 const definesType = (call: CallExpression): boolean => {
 	if (call.arguments.some(arg => arg.type === "SpreadElement")) return false
 	const [first, ...rest] = call.arguments
 	return (
 		rest.length !== 1 ||
-		first.type === "ObjectExpression" ||
-		first.type === "ArrayExpression" ||
-		(first.type === "Literal" && !/^<.*>$/.test(String(first.value)))
+		first.type !== "Literal" ||
+		!/^<.*>$/.test(String(first.value))
 	)
 }
+
+// the type a tuple element declares, e.g. `string` for `rest?: string`
+const tupleElementTypeOf = (element: TSTupleElement): TSType =>
+	element.type === "TSOptionalType" || element.type === "TSRestType" ?
+		tupleElementTypeOf(element.typeAnnotation)
+	: element.type === "TSNamedTupleMember" ?
+		tupleElementTypeOf(element.elementType)
+	:	element
 
 // e.g. `t.or` where `t` may be a Type, but not `list.map`. Off a value the
 // build has no source for, like `res.json`, only what composes a Type or a
