@@ -21,7 +21,8 @@ export const comparators = {
 	">=": true,
 	"<": true,
 	"<=": true,
-	"==": true
+	"==": true,
+	"!=": true
 }
 
 export type Comparator = keyof typeof comparators
@@ -31,7 +32,8 @@ export const invertedComparators: InvertedComparators = {
 	">": "<",
 	"<=": ">=",
 	">=": "<=",
-	"==": "=="
+	"==": "==",
+	"!=": "!="
 }
 
 export type InvertedComparators = {
@@ -40,6 +42,7 @@ export type InvertedComparators = {
 	"<=": ">="
 	">=": "<="
 	"==": "=="
+	"!=": "!="
 }
 
 export type BranchOperator = "&" | "|" | "|>"

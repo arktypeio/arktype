@@ -28,6 +28,18 @@ contextualize(() => {
 		attest<Brand<number, "cool"> | type.errors>(out)
 	})
 
+	it("name with !", () => {
+		const T = type("string#a!b")
+		attest<Brand<string, "a!b">>(T.infer)
+		attest(T.expression).equals("string")
+	})
+
+	it("followed by !=", () => {
+		const T = type("number#id!=0")
+		attest<Brand<number, "id">>(T.infer)
+		attest(T.json).equals(type("number<0|number>0").json)
+	})
+
 	it("in object", () => {
 		const T = type({
 			foo: "string#foo",

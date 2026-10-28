@@ -52,7 +52,7 @@ Strings use TypeScript's operators. Write string literals in single quotes insid
 | union                  | `"string \| number"`, `"'a' \| 'b'"`                      |
 | array                  | `"string[]"`, `"(string \| number)[]"`                    |
 | tuple                  | `["string", "number"]`                                    |
-| number range           | `"number > 0"`, `"0 <= number < 1"`                       |
+| number range           | `"number > 0"`, `"0 <= number < 1"`, `"number != 0"`      |
 | string or array length | `"string > 0"`, `"1 <= string <= 255"`, `"string[] >= 1"` |
 | divisibility           | `"number % 2"`                                            |
 | regex                  | `"/^[a-z]+$/"`                                            |
