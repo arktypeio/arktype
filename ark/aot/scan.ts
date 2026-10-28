@@ -12,7 +12,8 @@ export type ScanResolution = string | null | undefined
 
 export interface ScanHost<resolution = Promise<ScanResolution>> {
 	resolve: (specifier: string, importer: string, kind: ImportKind) => resolution
-	// the file's code, where the bundler can't load it or it's a dependency read for its imports alone
+	// the file's code, where the bundler can't load it or it's a dependency
+	// read for its imports alone
 	readFile?: (id: string) => string | undefined
 	// the code as the bundler loads it through the plugins ahead, like a Svelte component's
 	load?: (id: string) => Promise<string | undefined>
@@ -149,7 +150,7 @@ function* programSteps(
 				else (arkImports[id] ??= []).push(specifier)
 			}
 		}
-		const res =
+		const resolutions =
 			requests.length ? ((yield ["resolve", requests]) as ScanResolution[]) : []
 		let next = 0
 		for (const {
@@ -178,7 +179,7 @@ function* programSteps(
 			if (!isDependency) targets[id] = resolved
 			for (const [specifier, kind, offset] of imports) {
 				if (runtimeSpecifier.test(specifier)) continue
-				const target = res[next++]
+				const target = resolutions[next++]
 				if (target === undefined) {
 					if (isDependency) continue
 					return unreadAt(
@@ -220,7 +221,8 @@ function* programSteps(
 	}
 }
 
-// import.meta members that load no module; hot and webpackHot are undefined or inert in a production build
+// import.meta members that load no module; hot and webpackHot are undefined or
+// inert in a production build
 export const isInertMetaProperty = (name: unknown): boolean =>
 	inertMetaProperties.has(name as never)
 
@@ -415,7 +417,8 @@ export const unseenProblemOf = (
 		// e.g. esbuild's stdin, which the bundler reads as the scan did
 		if (id === undefined || !scanned.modules[id]?.transformed) continue
 		if (loaded.get(id) !== scanned.modules[id].source) {
-			// a plugin ahead rewrote it after the scan read its file, as TanStack Router's code splitting does
+			// a plugin ahead rewrote it after the scan read its file, as
+			// TanStack Router's code splitting does
 			return loaded.has(id) ?
 					writeUnseenMessage(
 						`it built ${pathOf(id)} from other code than it read, as a plugin ahead of arktype's rewrote it after it read its file`,
