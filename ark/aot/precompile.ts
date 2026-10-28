@@ -778,9 +778,9 @@ export class Precompiler {
 			!!program.isOneChunk &&
 			!this.inline &&
 			this.standalone.optimize === "speed"
-		// a lazy validator reads its checkers where it's created, unlinkable
-		const changesOnlyIfFlat = isWhole && (this.inline || this.standalone.lazy)
-		if (changesOnlyIfFlat && !flattens) return { ...unwritten, unpruned }
+		// a program read whole, like one an entry exports, is written all the
+		// same, as its transform takes what the scan wrote and its issues may
+		// hold less than any
 		const usage: ProgramUsage = {
 			members: {
 				...this.members,
@@ -909,10 +909,6 @@ export class Precompiler {
 			flattens ?
 				this.flattenWritten(written, sources, program, runtimes)
 			:	undefined
-		if (changesOnlyIfFlat && !replaced) {
-			this.usagesByProgram.delete(program.key)
-			return { ...unwritten, unpruned }
-		}
 		usage.written = written
 		if (replaced) usage.replaced = new Set(replaced)
 		return {

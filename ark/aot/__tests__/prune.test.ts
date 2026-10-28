@@ -47,10 +47,9 @@ const types = `import { type } from "arktype"
 export const User = type({ name: "string" })
 `
 
-// the members a production build for size leaves out of the program's
-// validators, why it leaves none where it can't, or the errors failing its
-// build
-const droppedFrom = async (
+// what a production build for size reads of a program from /main.ts, or the
+// errors failing its build
+const usageFrom = async (
 	files: Record<string, string>,
 	opts?: PrecompileOptions
 ) => {
@@ -82,7 +81,18 @@ const droppedFrom = async (
 			.diagnostics.filter(diagnostic => diagnostic.severity === "error")
 		if (errors.length) return errors.map(error => error.message)
 	}
-	const usage = precompiler.scan(scanned)
+	return precompiler.scan(scanned)
+}
+
+// the members a production build for size leaves out of the program's
+// validators, why it leaves none where it can't, or the errors failing its
+// build
+const droppedFrom = async (
+	files: Record<string, string>,
+	opts?: PrecompileOptions
+) => {
+	const usage = await usageFrom(files, opts)
+	if (typeof usage === "string" || Array.isArray(usage)) return usage
 	if (!usage.unpruned) return usage.dropped
 	// the reason alone, where it keeps every member
 	const [before, after] = writeKeptMembersMessage("\0", everyMember).split("\0")
@@ -432,6 +442,38 @@ contextualize(function (this: Mocha.Suite) {
 		})
 	})
 
+	describe("what issues may hold", () => {
+		const issuesOf = async (main: string) => {
+			const usage = await usageFrom({ "/main.ts": main })
+			return typeof usage === "string" || Array.isArray(usage) ?
+					usage
+				:	usage.issues
+		}
+
+		it("of a program read whole, like one an entry exports", async () => {
+			attest(
+				await issuesOf(
+					`import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n`
+				)
+			).snap({
+				reportsIndices: false,
+				writesText: false,
+				readsKeySites: true,
+				runsArktype: false
+			})
+			attest(
+				await issuesOf(
+					`import { type } from "arktype"\n\nexport const Tagged = type({ tags: "string[]" })\n`
+				)
+			).snap({
+				reportsIndices: true,
+				writesText: false,
+				readsKeySites: false,
+				runsArktype: false
+			})
+		})
+	})
+
 	describe("programs it can't read", () => {
 		it("a specifier it can't resolve", async () => {
 			attest(await droppedReading(`import "./unresolved.ts"\nUser({})`)).snap(
@@ -735,6 +777,12 @@ try {
 } catch (e) {
 	console.log((e as Error).message)
 }
+`,
+					"exported.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+
+console.log(User({ name: 5 }).toString())
 `
 				},
 				fromHere("temp", "prunedIssues")
@@ -766,6 +814,17 @@ age must be a number
   • age must be a number (was a string)
 `)
 			attest(island.includes("._t")).equals(true)
+			// an entry's export is read whole, in a bundle flattening nothing
+			const exported = await bundle(
+				{ preset: undefined },
+				{
+					entryPoints: [join(files, "exported.ts")],
+					splitting: true,
+					outdir: join(files, "out")
+				}
+			)
+			attest(run(exported)).snap("name must be a string\n")
+			attest(exported.includes(".text?.(")).equals(false)
 		})
 
 		it("allows as a boolean where a narrow returns otherwise", async () => {
