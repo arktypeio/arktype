@@ -1213,8 +1213,39 @@ interface Allowance {
 // how a world observes a keyword's meta
 const keywordMetaObservations = new Set([...keywordMetas()].map(serialize))
 
+// the introspection a build composes from a nested node's text, elided past
+// a length
+const elidableKeys = new Set(["description", "expression", "string"])
+
+// the strings differ only in what one elides as "...": the build measures a
+// function's name as its placeholder, so near the length elided it can elide
+// a level arktype doesn't, or write one arktype elides
+const elidedAlike = (l: string, r: string): boolean =>
+	[
+		[l, r],
+		[r, l]
+	].some(
+		([a, b]) =>
+			a.includes("...") &&
+			new RegExp(
+				`^${a.replace(/[$()*+.?[\\\]^{|}]/g, "\\$&").replaceAll("\\.\\.\\.", ".*")}$`
+			).test(b)
+	)
+
 // a disagreement precompiling doesn't promise to avoid
 const exclusions: Allowance[] = [
+	{
+		reason:
+			"a description elided a level apart from arktype's, around a function's name the build reads as a placeholder",
+		matches: ({ original, precompiled }) =>
+			Object.keys({ ...original, ...precompiled }).every(k => {
+				const read = comparable(original[k])
+				const baked = comparable(precompiled[k])
+				return (
+					read === baked || (elidableKeys.has(k) && elidedAlike(read, baked))
+				)
+			})
+	},
 	{
 		reason:
 			"which evaluation of a definition throws where a narrow checking its default answers differently between calls",
@@ -1329,7 +1360,32 @@ contextualize(() => {
 				},
 				precompiled: {}
 			})
+		).equals(exclusions[1])
+	})
+
+	it("excludes a description elided a level apart", () => {
+		const program = programOf([
+			() => ({ containers: [], exports: [], main: ["const D = type({})"] })
+		])
+		const disagreement = (description: string, precompiled: string) =>
+			allowanceOf(exclusions, program, {
+				perturbation: "none",
+				site: "main.ts:1:1",
+				original: { description },
+				precompiled: { description: precompiled }
+			})
+		attest(
+			disagreement(
+				"{ l?: { l?: ..., r?: ...[] }, r?: { l?: ..., r?: ...[] }[] }",
+				"{ l?: ..., r?: { l?: ..., r?: ...[] }[] }"
+			)
 		).equals(exclusions[0])
+		attest(
+			disagreement(
+				"{ l?: { l?: ..., r?: ...[] }, r?: { l?: ..., r?: ...[] }[] }",
+				"{ l?: ..., r?: { l?: ..., r?: ...[] } }"
+			)
+		).equals(undefined)
 	})
 
 	it("agree through the build", async () => {
