@@ -3381,29 +3381,18 @@ export class Precompiler {
 	}
 
 	private _analyze(module: SourceModule): ModuleAnalysis {
-		if (module.parseErrors.length) {
-			return {
-				sites: [],
-				diagnostics: module.parseErrors.map(message =>
-					this.diagnostic(
-						module,
-						module.program,
-						"syntax",
-						`${module.path} cannot be parsed: ${message}`
-					)
-				),
-				dependencies: [module.id]
-			}
-		}
+		if (module.parseErrors.length) return this.unparsedAnalysisOf(module)
 		const candidates = this.candidatesOf(module)
 		const settled: SiteCandidate[] = []
 		const settledRangesByFn = new Map<FunctionNode | undefined, Set<string>>()
-		const sites: Site[] = []
 		const candidatesBySite = new Map<Site, SiteCandidate>()
-		const diagnostics: Diagnostic[] = []
-		const configureStart = this.configureStartOf(module)
-		// where the module first reports a configuration it can't apply
-		let unappliedAt: string | undefined
+		const analyzing: Analyzing = {
+			module,
+			sites: [],
+			diagnostics: [],
+			configureStart: this.configureStartOf(module)
+		}
+		const { sites, diagnostics } = analyzing
 		for (const candidate of candidates) {
 			let settledRanges = settledRangesByFn.get(candidate.fn)
 			if (!settledRanges)
@@ -3424,60 +3413,9 @@ export class Precompiler {
 				)
 					this.refusedContainers.set(candidate.state.value, [node, module])
 				if (this.mode === "standalone") this.assertKeyable(site)
-				const unseen =
-					this.mode === "standalone" &&
-					site.status === "accepted" &&
-					standInKindOf(candidate.state.value)
-				if (
-					unseen &&
-					this.graph.reachesUnseen(node, module, this.isReadableExport)
-				) {
-					const reasons = [
-						`it's passed to code the build can't see, which may read what a precompiled ${unseen} lacks`
-					]
-					diagnostics.push(this.refusal(module, site, "unsupported", reasons))
-					sites.push(refuse(site, reasons))
-					continue
-				}
-				if (
-					site.status !== "rejected" &&
-					!candidate.fn &&
-					site.start < configureStart
-				) {
-					const message = `${module.snippetOf(node)} is created while the config module loads, before configure() runs`
-					diagnostics.push(this.diagnostic(module, node, "R3", message))
-					// cache mode leaves it to arktype, which creates it as the program does
-					if (this.mode === "standalone") {
-						sites.push(refuse(site, [message]))
-						continue
-					}
-				}
-				const configuration = this.configuration
-				if (
-					configuration?.problem &&
-					this.mode === "standalone" &&
-					site.status === "accepted"
-				) {
-					const message = `${module.snippetOf(node)} is created under a configuration the build can't apply`
-					const refusal = [
-						`${configuration.problem} (${this.graph.pathOf(this.config!)})`,
-						...configuration.reasons
-					]
-					// the module's first such site says why, and the rest point to it
-					diagnostics.push(
-						this.diagnostic(
-							module,
-							node,
-							"R3",
-							message,
-							unappliedAt ?
-								[`for the reasons given at ${unappliedAt}`]
-							:	refusal,
-							unappliedAt ? false : configuration.hint
-						)
-					)
-					unappliedAt ??= module.positionOf(node)
-					sites.push(refuse(site, [message, ...refusal]))
+				const refused = this.refuseAnalyzed(site, candidate, analyzing)
+				if (refused) {
+					sites.push(refused)
 					continue
 				}
 				sites.push(site)
@@ -3528,6 +3466,84 @@ export class Precompiler {
 				)
 				.sort((l, r) => l.start - r.start),
 			dependencies: this.graph.dependenciesOf(module.id)
+		}
+	}
+
+	private unparsedAnalysisOf(module: SourceModule): ModuleAnalysis {
+		return {
+			sites: [],
+			diagnostics: module.parseErrors.map(message =>
+				this.diagnostic(
+					module,
+					module.program,
+					"syntax",
+					`${module.path} cannot be parsed: ${message}`
+				)
+			),
+			dependencies: [module.id]
+		}
+	}
+
+	// a finalized site the build still refuses: a stand-in passed to code it
+	// can't see, or a Type created before configure() runs or under a
+	// configuration it can't apply
+	private refuseAnalyzed(
+		site: Site,
+		candidate: SiteCandidate,
+		analyzing: Analyzing
+	): Site | undefined {
+		const { module, diagnostics } = analyzing
+		const node = candidate.state.node
+		const unseen =
+			this.mode === "standalone" &&
+			site.status === "accepted" &&
+			standInKindOf(candidate.state.value)
+		if (
+			unseen &&
+			this.graph.reachesUnseen(node, module, this.isReadableExport)
+		) {
+			const reasons = [
+				`it's passed to code the build can't see, which may read what a precompiled ${unseen} lacks`
+			]
+			diagnostics.push(this.refusal(module, site, "unsupported", reasons))
+			return refuse(site, reasons)
+		}
+		if (
+			site.status !== "rejected" &&
+			!candidate.fn &&
+			site.start < analyzing.configureStart
+		) {
+			const message = `${module.snippetOf(node)} is created while the config module loads, before configure() runs`
+			diagnostics.push(this.diagnostic(module, node, "R3", message))
+			// cache mode leaves it to arktype, which creates it as the program does
+			if (this.mode === "standalone") return refuse(site, [message])
+		}
+		const configuration = this.configuration
+		if (
+			configuration?.problem &&
+			this.mode === "standalone" &&
+			site.status === "accepted"
+		) {
+			const message = `${module.snippetOf(node)} is created under a configuration the build can't apply`
+			const refusal = [
+				`${configuration.problem} (${this.graph.pathOf(this.config!)})`,
+				...configuration.reasons
+			]
+			// the module's first such site says why, and the rest point to it
+			diagnostics.push(
+				this.diagnostic(
+					module,
+					node,
+					"R3",
+					message,
+					analyzing.unappliedAt ?
+						[`for the reasons given at ${analyzing.unappliedAt}`]
+					:	refusal,
+					analyzing.unappliedAt ? false : configuration.hint
+				)
+			)
+			analyzing.unappliedAt ??= module.positionOf(node)
+			return refuse(site, [message, ...refusal])
 		}
 	}
 
@@ -6094,6 +6110,16 @@ type UnavailableRead = [
 	object: Node,
 	isUnsureRead?: true
 ]
+
+// a module's sites and diagnostics as they're analyzed
+interface Analyzing {
+	module: SourceModule
+	sites: Site[]
+	diagnostics: Diagnostic[]
+	configureStart: number
+	// where the module first reports a configuration it can't apply
+	unappliedAt?: string
+}
 
 // the islands of one module being checked, and whether the one being visited reaches arktype
 interface IslandVisit {
