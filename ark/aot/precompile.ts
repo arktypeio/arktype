@@ -151,7 +151,8 @@ import { flattenBundle, importedNamesOf } from "./flat.ts"
 import {
 	writeKeptMembersMessage,
 	writeUnprunedMessage,
-	writeUnscannedFlatMessage
+	writeUnscannedFlatMessage,
+	writeUnseenMessage
 } from "./scan.ts"
 import {
 	linkBundle,
@@ -926,6 +927,66 @@ export class Precompiler {
 			unpruned,
 			issues: this.issuesOf(program, written)
 		}
+	}
+
+	// why a bundle, read as it was built, may read what its scan left out of
+	// its validators, if it may: each module as the bundle holds it is read as
+	// the scan read it, against what the scan had written. A module a plugin
+	// ahead of the host's rewrote after the scan read its file, like a route
+	// TanStack Router's code splitting rewrites or a module a Babel plugin
+	// reformats, reads the same, so it passes; one that reads more fails
+	unseenIn(program: ScannedProgram): string | undefined {
+		const usage = this.usagesByProgram.get(program.key)
+		if (!usage) return
+		const runtimes = new Map<string, RuntimeModule>()
+		for (const id in program.modules) {
+			const { source, transformed, mappings } = program.modules[id]
+			// as the host emitted it, whether as the scan wrote it or whole
+			const emitted = this.runtimesById[id]
+			if (emitted?.module.source === source) {
+				runtimes.set(id, emitted)
+				continue
+			}
+			if (
+				transformed &&
+				this.isTransformed(id) &&
+				this.importsArk(source, id)
+			) {
+				const runtime = this.plannedRuntimeOf(source, id, mappings)
+				if (!runtime) {
+					return writeUnseenMessage(
+						`${this.graph.pathOf(id)}, as it built it, fails to precompile`
+					)
+				}
+				runtimes.set(id, runtime)
+			} else runtimes.set(id, unprecompiled(this.graph.add(id, source)))
+		}
+		const used = this.usedIn(program, runtimes)
+		const unseen = (read: string) =>
+			writeUnseenMessage(
+				`the bundle it built reads more than the modules it read: ${read}. Another plugin wrote or rewrote a module after it read it`,
+				"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
+			)
+		const dropped = defaultMembers.filter(
+			member =>
+				usage.members[member] === false && this.members[member] === undefined
+		)
+		// a read it can't follow may need any member, where it left one out
+		if (typeof used === "string") {
+			return (
+					dropped.length || !usage.called || !usage.readsAllows || !usage.piped
+				) ?
+					unseen(used)
+				:	undefined
+		}
+		const read = dropped.find(member => used.has(member))
+		if (read) return unseen(`a module reads ${read} of a validator`)
+		if (!usage.called && used.has("call"))
+			return unseen("a module calls a validator")
+		if (!usage.readsAllows && used.has("allows"))
+			return unseen("a module reads a validator's allows")
+		if (!usage.piped && used.has("piped"))
+			return unseen("a module passes a validator a traversal")
 	}
 
 	// a member members sets is the same whatever the program reads

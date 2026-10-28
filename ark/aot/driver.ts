@@ -88,6 +88,7 @@ export type PrecompileRequest =
 			program?: string | undefined
 	  ]
 	| [kind: "scan", program: ScannedProgram]
+	| [kind: "unseen", program: ScannedProgram]
 	| [kind: "check", source: string, id: string]
 	| [
 			kind: "checkUnwritten",
@@ -196,6 +197,7 @@ const answerRequests = (
 			return transformed
 		}
 		if (request[0] === "scan") return precompiler.scan(request[1])
+		if (request[0] === "unseen") return precompiler.unseenIn(request[1])
 		if (request[0] === "check")
 			return checkedModuleOf(precompiler, request[1], request[2])
 		if (request[0] === "checkUnwritten") {

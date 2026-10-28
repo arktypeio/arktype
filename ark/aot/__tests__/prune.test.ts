@@ -453,6 +453,14 @@ contextualize(function (this: Mocha.Suite) {
 			).snap("main.ts:4:7 imports a module by a computed specifier")
 		})
 
+		it("but a specifier holding a dollar sign, like a TanStack Router splat route's", async () => {
+			attest(
+				await droppedReading('await import("./$.ts")\nUser({})', {
+					"/$.ts": "export const splat = true"
+				})
+			).equals(everyMember)
+		})
+
 		it("a computed require", async () => {
 			attest(
 				await droppedReading(`const path = "./types.ts"\nrequire(path)`)
@@ -1568,6 +1576,36 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(pruned.includes("~standard")).equals(false)
 		})
 
+		it("reads a component's script a plugin serves as a .ts module with no file, as Vue's does", async () => {
+			const script = `import { User } from ${JSON.stringify(join(root, "types.ts"))}\nexport default User.assert({ name: "Ada" }).name\n`
+			const vue: VitePlugin = {
+				name: "vue",
+				enforce: "pre",
+				resolveId: id =>
+					id.endsWith(".vue?vue&type=script&setup=true&lang.ts") ? id : (
+						undefined
+					),
+				load: id =>
+					id.endsWith(".vue?vue&type=script&setup=true&lang.ts") ? script : (
+						undefined
+					),
+				transform: (_, id) =>
+					id.endsWith(".vue") ?
+						`import script from ${JSON.stringify(`${id}?vue&type=script&setup=true&lang.ts`)}\nexport default script\n`
+					:	undefined
+			}
+			writeFileSync(
+				join(root, "App.vue"),
+				'<script setup lang="ts"></script>\n'
+			)
+			const pruned = await importing(
+				'import read from "./App.vue"\nconsole.log(read)',
+				() => bundle({}, { plugins: [vue] })
+			)
+			attest(run(pruned)).snap("Ada\nname must be a string\n")
+			attest(pruned.includes("~standard")).equals(false)
+		})
+
 		it("reads a virtual module another plugin writes", async () => {
 			const pruned = await importing(
 				'import read from "$app/routes"\nconsole.log(read)',
@@ -1650,7 +1688,8 @@ console.log(out instanceof type.errors ? out.summary : out)
 				)
 			)
 			const expected = writeUnseenMessage(
-				"node_modules/fw/index.js imports types.ts"
+				"the bundle it built reads more than the modules it read: types.ts exports User, which a dependency may read. Another plugin wrote or rewrote a module after it read it",
+				"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
 			)
 			attest(message.slice(-expected.length)).equals(expected)
 		})
@@ -1668,8 +1707,17 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(pruned.includes("~standard")).equals(false)
 		})
 
-		it("resolves a relative import as a require, which Rollup's CommonJS plugin answers without loading it", async () => {
-			// loads a module of the program an import resolves to, as
+		it("resolves each import as a require, which Rollup's CommonJS plugin answers without loading it", async () => {
+			// resolves an alias, as Nuxt's ~/ is
+			const aliasing: VitePlugin = {
+				name: "aliasing",
+				enforce: "pre",
+				resolveId: specifier =>
+					specifier.startsWith("~/") ?
+						join(root, specifier.slice(2))
+					:	undefined
+			}
+			// loads the module of the program an import resolves to, as
 			// @rollup/plugin-commonjs does a .js file to tell whether it's
 			// CommonJS, which waits on arktype's transform
 			const loading: VitePlugin = {
@@ -1688,12 +1736,25 @@ console.log(out instanceof type.errors ? out.summary : out)
 					return resolved
 				}
 			}
-			const pruned = await bundle({}, { plugins: [loading] })
-			attest(run(pruned)).snap("name must be a string\n")
-			attest(pruned.includes("~standard")).equals(false)
+			// removed after, as tsc can't resolve its alias
+			const aliased = join(root, "aliased.ts")
+			writeFileSync(
+				aliased,
+				'import { User } from "~/types.ts"\nexport const name = User.assert({ name: "Ada" }).name\n'
+			)
+			try {
+				const pruned = await importing(
+					'import { name } from "~/aliased.ts"\nconsole.log(name)',
+					() => bundle({}, { plugins: [aliasing, loading] })
+				)
+				attest(run(pruned)).snap("Ada\nname must be a string\n")
+				attest(pruned.includes("~standard")).equals(false)
+			} finally {
+				rmSync(aliased)
+			}
 		})
 
-		it("reads a module as a plugin ahead of it transformed it", async () => {
+		it("fails a bundle where a plugin ahead of it adds a read of a member it left out", async () => {
 			const asserting: VitePlugin = {
 				name: "asserting",
 				enforce: "pre",
@@ -1702,11 +1763,58 @@ console.log(out instanceof type.errors ? out.summary : out)
 						code.replace("User({ name: 5 })", "User.assert({ name: 5 })")
 					:	undefined
 			}
-			const pruned = await bundle({}, { plugins: [asserting] })
-			const { stderr } = runBundle(pruned)
-			attest(stderr.includes("[TraversalError]: name must be a string")).equals(
-				true
+			const message = await bundle({}, { plugins: [asserting] }).then(
+				() => "",
+				(e: Error) => stripVTControlCharacters(e.message)
 			)
+			const expected = writeUnseenMessage(
+				"the bundle it built reads more than the modules it read: a module reads assert of a validator. Another plugin wrote or rewrote a module after it read it",
+				"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
+			)
+			attest(message.slice(-expected.length)).equals(expected)
+		})
+
+		it("prunes a module a plugin ahead of it rewrites, reading it as it was built", async () => {
+			// as a Babel plugin like the React Compiler's reformats every module
+			const reformatting: VitePlugin = {
+				name: "reformatting",
+				enforce: "pre",
+				transform: (code, id) =>
+					id.endsWith("/main.ts") ?
+						`${code.split("\n").join("\n\n")}\n// built`
+					:	undefined
+			}
+			const pruned = await bundle({}, { plugins: [reformatting] })
+			attest(run(pruned)).snap("name must be a string\n")
+			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("prunes a module a plugin ahead of it splits, as TanStack Router does a route", async () => {
+			writeFileSync(
+				join(root, "route.ts"),
+				'import { User } from "./types.ts"\nexport const name = User.assert({ name: "Ada" }).name\n'
+			)
+			const splitting: VitePlugin = {
+				name: "splitting",
+				enforce: "pre",
+				resolveId: (id, importer) =>
+					id === "./route.ts?split" && importer ?
+						join(root, "route.ts?split")
+					:	undefined,
+				load: id =>
+					id.endsWith("/route.ts?split") ?
+						'import { User } from "./types.ts"\nexport const name = User.assert({ name: "Ada" }).name\n'
+					:	undefined,
+				transform: (_, id) =>
+					id.endsWith("/route.ts") ?
+						'export { name } from "./route.ts?split"\n'
+					:	undefined
+			}
+			const pruned = await importing(
+				'import { name } from "./route.ts"\nconsole.log(name)',
+				() => bundle({}, { plugins: [splitting] })
+			)
+			attest(run(pruned)).snap("Ada\nname must be a string\n")
 			attest(pruned.includes("~standard")).equals(false)
 		})
 	})

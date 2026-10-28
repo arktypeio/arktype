@@ -387,8 +387,10 @@ const positionIn = (path: string, source: string, offset: number) => {
 	return `${path}:${before.split("\n").length}:${offset - before.lastIndexOf("\n")}`
 }
 
+// a plain string, or a template holding no expression: a `$` not opening one,
+// as in a TanStack Router splat route's `$.tsx`, is a character of the name
 const literalIn = (text: string): string | undefined =>
-	/^(["'`])([^"$'\\`]*)\1$/.exec(text.trim())?.[2]
+	/^(["'`])((?:[^"$'\\`]|\$(?!{))*)\1$/.exec(text.trim())?.[2]
 
 // the modules a bundle holds, and each import of one, from what it bundled,
 // each as the precompiler names it

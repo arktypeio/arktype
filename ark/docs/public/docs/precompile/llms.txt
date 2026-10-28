@@ -323,7 +323,7 @@ A validator leaves out its JSON Schema unless the build sets it, so a library th
 
 ## Frameworks
 
-With Vite, list `precompile.vite()` after your framework's plugins. Each line was checked with a production build of a small app, on SvelteKit 3.1, Astro 7.4, Nuxt 4.6, React Router 8.5, TanStack Router 1.168, Cloudflare's Vite plugin 1.65 with Wrangler 4.153, and Metro 0.87:
+With Vite, list `precompile.vite()` right after your framework's plugin, and ahead of `react()`, a Babel plugin like the React Compiler's or another that rewrites modules: a production build that [prunes](https://arktype.io/docs/precompile/options#prune) reads a module it hasn't reached yet from its file, and fails where a plugin ahead of arktype's then rewrites it. Each line was checked with a production build of a small app, on SvelteKit 3.1, Astro 7.4, Nuxt 4.6, React Router 8.5, TanStack Router 1.168, Cloudflare's Vite plugin 1.65 with Wrangler 4.153, and Metro 0.87:
 
 | Framework | Setup |
 | - | - |
@@ -331,7 +331,7 @@ With Vite, list `precompile.vite()` after your framework's plugins. Each line wa
 | Astro | `vite: { plugins: [precompile.vite()] }` in `astro.config.ts` |
 | Nuxt | `vite: { plugins: [precompile.vite()] }` and `nitro: { rollupConfig: { plugins: [precompile.rollup({ prune: process.env.NODE_ENV === "production" })] } }` in `nuxt.config.ts`. Nitro bundles server routes and `shared/` itself, with Rollup, so without the second it ships arktype whole, and as Rollup has no production mode, `prune` has `nuxt build` [prune](https://arktype.io/docs/precompile/options#prune) them but not `nuxt dev` |
 | React Router (Remix) | `plugins: [reactRouter(), precompile.vite()]` in `vite.config.ts` |
-| TanStack Router | `plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), precompile.vite()]` in `vite.config.ts`. Its code splitting moves a route's component into a module of its own after the plugins ahead of it run, so the build fails where arktype's plugin comes first |
+| TanStack Router | `plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), precompile.vite(), react()]` in `vite.config.ts`. Its code splitting moves a route's component into a module of its own after the plugins ahead of it run, so the build fails where arktype's plugin comes first, and a production build that read a route from its file before the splitter rewrote it refuses to prune, naming the route: set `prune: false` there |
 | Next.js | See [Next.js](https://arktype.io/docs/precompile/setup#next) |
 | Cloudflare Workers | With `@cloudflare/vite-plugin`, `plugins: [cloudflare(), precompile.vite()]` in `vite.config.ts`. Wrangler bundles with esbuild but takes no plugins, so without Vite, build the worker with esbuild and `precompile.esbuild()` from Wrangler's `build.command`, and point `main` at its output. Workers don't let arktype compile a validator as it runs, which a precompiled one doesn't need |
 | Monorepos | Nothing extra. A workspace package linked into `node_modules`, as pnpm, npm, Yarn and Bun workspaces link it, resolves to its own directory, so the build precompiles it with the program |
@@ -991,6 +991,8 @@ Where it creates them from values it reads as it runs, like `drizzle-arktype` fr
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
 
 **`prune: keeping assert, meta, ~standard and methods, because src/server.ts:12:30 passes User to a function, which may read any member`**: a production build couldn't prove what its validators are read for, so it kept each member [`members`](https://arktype.io/docs/precompile/options#members) leaves to it. The warning names the first read or module that stopped it, as [prune](https://arktype.io/docs/precompile/options#prune) lists them. Set each member it names in `members`, false where no code reads it, like `assert` where nothing asserts, and true where a library may, like `~standard` for one taking a Standard Schema. The build then writes what you set without the warning, and still prunes what else it can. `prune: false` would build each unit as a module of its own as well, which is larger.
+
+**`it built src/routes/index.tsx from other code than it read, as a plugin ahead of arktype's rewrote it after it read its file`**: a production build reads a module it hasn't reached yet from its file, to prune, and a plugin ahead of arktype's then rewrote it, as TanStack Router's code splitting does a route and a Babel plugin like the React Compiler's does any module, so a read it didn't see may need what it left out. List `precompile.vite()` right after your framework's plugin and ahead of `react()` and any Babel plugin, as [Frameworks](https://arktype.io/docs/precompile/setup#frameworks) shows. Where TanStack Router's splitting rewrote a route, set `prune: false`.
 
 **`prune: off, because src/routes.ts:3:1 reads import.meta.glob, which may load modules it can't name`**: a production build couldn't read every module the bundle holds, so it built its validators as `prune: false` does. Set `prune: false` to build them the same without the warning.
 
