@@ -23,7 +23,8 @@ const driverUrl = new URL(
 	import.meta.url
 )
 
-// only the flags that resolve and read modules: a preload like the config module would run before the build configures arktype
+// only the flags that resolve and read modules: a preload like the config
+// module would run before the build configures arktype
 const driverFlag =
 	/^(?:--conditions|-C|--preserve-symlinks|--experimental-strip-types|--no-experimental-strip-types|--experimental-transform-types)(?:=|$)/
 const driverFlagWithValue = /^(?:--conditions|-C)$/
@@ -135,7 +136,8 @@ interface PendingRequest {
 	resolve: BundlerResolve | undefined
 }
 
-// a question names its request and is numbered, as the thread drops an answer it stopped waiting for
+// a question names its request and is numbered, as the thread drops an answer
+// it stopped waiting for
 const resolvingChannelOf = (
 	pending: PendingRequest[]
 ): { resolver: MessagePort; resolved: Int32Array } | undefined => {

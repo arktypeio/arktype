@@ -7,6 +7,7 @@ import {
 	projectOf,
 	resolvedVariantOf,
 	writeVariantOption,
+	writeWithoutVariant,
 	type DependencyModes,
 	type RuntimeVariant
 } from "./host.ts"
@@ -153,11 +154,7 @@ export const resolvePrecompileOptions = <opts extends PrecompileOptions>(
 	if (members["~standard.jsonSchema"] && members["~standard"] === false)
 		throw new Error(standardJsonSchemaWithoutStandardMessage)
 	const variant = resolvedVariantOf(resolved)
-	const onArktype =
-		variant &&
-		Object.keys(resolved.dependencies ?? {}).find(
-			name => resolved.dependencies![name] === "arktype"
-		)
+	const onArktype = variant && onArktypeOf(resolved.dependencies)
 	if (onArktype)
 		throw new Error(writeVariantDependencyMessage(onArktype, variant))
 	if (resolved.runtime === "arktype") {
@@ -170,6 +167,14 @@ export const resolvePrecompileOptions = <opts extends PrecompileOptions>(
 	}
 	return resolved
 }
+
+// a dependency the build leaves running on arktype
+const onArktypeOf = (
+	dependencies: DependencyModes | undefined
+): string | undefined =>
+	Object.keys(dependencies ?? {}).find(
+		name => dependencies![name] === "arktype"
+	)
 
 // options runtime: "arktype" doesn't take
 const standaloneOptions = [
@@ -207,9 +212,7 @@ export const refuseArktypeDependencies = (
 	opts: Pick<PrecompileOptions, "dependencies"> | undefined,
 	host: string
 ): void => {
-	const name = Object.keys(opts?.dependencies ?? {}).find(
-		name => opts!.dependencies![name] === "arktype"
-	)
+	const name = onArktypeOf(opts?.dependencies)
 	if (name) throwError(writeArktypeDependencyHostMessage(name, host))
 }
 
@@ -248,7 +251,5 @@ export const writeUnresolvedDependencyMessage = (
 export const writeVariantDependencyMessage = (
 	name: string,
 	variant: RuntimeVariant
-): string => {
-	const option = writeVariantOption(variant)
-	return `${name} runs on arktype, whose errors aren't instances of type.errors under ${option}. Precompile it with "aot" if its Types are static, or build ${variant === "lean" ? 'with optimizeErrors: "speed"' : `without ${option}`}.`
-}
+): string =>
+	`${name} runs on arktype, whose errors aren't instances of type.errors under ${writeVariantOption(variant)}. Precompile it with "aot" if its Types are static, or build ${writeWithoutVariant(variant)}.`

@@ -316,12 +316,18 @@ export const narrowsIssues = (issues: IssueFeatures | undefined): boolean =>
 export const writeVariantOption = (variant: RuntimeVariant): string =>
 	variant === "lean" ? 'optimizeErrors: "size"' : 'errors: "none"'
 
+// how to build without the runtime copy a variant loads
+export const writeWithoutVariant = (variant: RuntimeVariant): string =>
+	variant === "lean" ?
+		'with optimizeErrors: "speed"'
+	:	`without ${writeVariantOption(variant)}`
+
 export const writeVariantImportMessage = (
 	importer: string,
 	specifier: string,
 	variant: RuntimeVariant
 ): string =>
-	`${importer} imports ${specifier}, which a build with ${writeVariantOption(variant)} can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build ${variant === "lean" ? 'with optimizeErrors: "speed"' : `without ${writeVariantOption(variant)}`}.`
+	`${importer} imports ${specifier}, which a build with ${writeVariantOption(variant)} can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build ${writeWithoutVariant(variant)}.`
 
 // not a virtual module like Rolldown's `\0rolldown/runtime.js`
 export const transformedId = /^[^\0].*\.(?:[cm]?[jt]s|[jt]sx)$/

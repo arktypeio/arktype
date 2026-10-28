@@ -138,14 +138,11 @@ const loadedOf = (
 	source: string,
 	opts: PrecompilePluginOptions
 ): string | Promise<string> => {
+	const warn = (warning: string) => context.emitWarning(new Error(warning))
 	// before any error, so a fix to one of them reruns the loader
 	for (const file of keyed.files)
 		if (file !== context.resourcePath) context.addDependency(file)
-	reportDiagnostics(
-		keyed,
-		warning => context.emitWarning(new Error(warning)),
-		throwBuildError
-	)
+	reportDiagnostics(keyed, warn, throwBuildError)
 	const code = keyed.code ?? source
 	const specifiers =
 		source.includes("arktype") ?
@@ -155,7 +152,7 @@ const loadedOf = (
 	if (specifiers.length && dependencyOf(context.resourcePath)) {
 		reportDiagnostics(
 			precompiler.readDependency(context.resourcePath),
-			warning => context.emitWarning(new Error(warning)),
+			warn,
 			throwBuildError
 		)
 	}
@@ -165,7 +162,7 @@ const loadedOf = (
 		context.resourcePath,
 		specifiers,
 		opts,
-		warning => context.emitWarning(new Error(warning))
+		warn
 	).then(() => code)
 }
 
