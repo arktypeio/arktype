@@ -50,7 +50,6 @@ import * as runtime from "../runtimeExports.ts"
 import {
 	defaultMembers,
 	failureSources,
-	holdsOnlyMeta,
 	invalidErrorsOf,
 	isCreatedByRuntime,
 	wholeReads,
@@ -72,9 +71,13 @@ import {
 	canPipe,
 	creatorSourceOf,
 	frozen,
+	fusedApplierOf,
+	madeApplierOf,
 	preciseFormOf,
-	type CreatorOptions,
-	type RootApplier
+	writtenAttributesOf,
+	type RootApplier,
+	type ValidatorAttributes,
+	type ValidatorForm
 } from "./creators.ts"
 import {
 	assertReportsIssues,
@@ -1383,122 +1386,39 @@ ${writeFunction(
 	}
 
 	writeValidator(root: BaseRoot): string {
-		const isTemplate = this.templates.has(root)
-		const isRuntimeRead = this.runtimeReadRoots.has(root)
-		const members =
-			isRuntimeRead ?
-				new Set([...this.baking.members, ...defaultMembers])
-			:	this.baking.members
-		const reads = isRuntimeRead ? wholeReads : this.baking
-		const keepsMeta = members.has("meta")
-		// unless shortest, the build writes the validator itself
-		const ownsValidator =
-			!isTemplate && !this.baking.shortest && members.has("methods")
-		// only a config or meta sets the onFail a validator is created with
-		const unconfigured = !this.baking.readsConfig && !root.meta.onFail
-		const pipes = canPipe(this.baking, members, unconfigured)
-		// a validator nothing calls fails only by its assert
-		const throws =
-			!isTemplate &&
-			!ownsValidator &&
-			preciseFormOf(this.baking, members, unconfigured, reads) === "object"
+		const form = this.validatorFormOf(root)
+		const { members, reads, isTemplate, ownsValidator, unconfigured } = form
 		const [applied, allows, isCompact] = this.emitRootApply(root, {
 			asValidator: ownsValidator,
 			unconfigured,
-			pipes,
-			throws
+			pipes: form.pipes,
+			// a validator nothing calls fails only by its assert
+			throws:
+				!isTemplate &&
+				!ownsValidator &&
+				preciseFormOf(this.baking, members, unconfigured, reads) === "object"
 		})
-		// emit meta before keying so an unemittable value is named
-		const meta =
-			!keepsMeta ? undefined
-			: keywordMetas().has(root.meta) ? "runtime.emptyMeta"
-			: this.emit(root.meta)
-		const [id, holes] = (this.checkedRoots.has(root) ? traversalKeyOf : keyOf)(
-			root
+		const { id, held, meta, attributes, onFail } = this.attributesOf(root, form)
+		const fused = fusedApplierOf(this.baking, form, applied)
+		const made = fused ? undefined : madeApplierOf(form, applied, allows)
+		const written = writtenAttributesOf(
+			this.baking,
+			form,
+			attributes,
+			meta,
+			onFail
 		)
-		assertDescribed(root)
-		const held =
-			holes.length && !isTemplate ?
-				`[${holes.map(hole => this.emit(hole)).join(", ")}]`
-			:	undefined
-		const attributes = [
-			...(keepsMeta ? [`meta: ${meta}`] : []),
-			...this.emitIntrospection(root)
-		]
-		// without its meta, a validator still fails as the meta's onFail does
-		const onFail =
-			!keepsMeta && root.meta.onFail ? this.emit(root.meta.onFail) : undefined
+		const createsWith = !isTemplate && ownsValidator && form.byRuntime
 		const rootApply = () =>
 			typeof applied === "string" ? applied : (
 				`${this.emitApplier(applied)}(${applied.args})`
 			)
-		// a creator per applier: V8 can't inline a shared root apply's Allows call
-		const fusedApplier =
-			(
-				typeof applied === "object" &&
-				!isTemplate &&
-				!isCreatedByRuntime(members, this.baking) &&
-				(/^(?:\[|{ 0: )?allows\b/.test(applied.params) ?
-					this.baking.shortest || (!ownsValidator && !applied.local)
-					// a validator written as what's read of it reads no other Allows
-				:	!applied.local &&
-					!reads.readsAllows &&
-					preciseFormOf(this.baking, members, unconfigured, reads) !==
-						undefined)
-			) ?
-				applied
-			:	undefined
-		// read only for allows, a validator is created from its Allows, dropping its Apply
-		const fused =
-			(
-				fusedApplier?.params === "allows, apply" &&
-				!members.has("assert") &&
-				preciseFormOf(this.baking, members, unconfigured, reads) === "object"
-			) ?
-				{
-					...fusedApplier,
-					params: "allows",
-					args: fusedApplier.args.slice(0, fusedApplier.args.indexOf(","))
-				}
-			:	fusedApplier
-		const made =
-			(
-				!fused &&
-				!ownsValidator &&
-				!isTemplate &&
-				typeof applied === "object" &&
-				allows === `${applied.args}[0]` &&
-				!isCreatedByRuntime(members, this.baking)
-			) ?
-				applied
-			:	undefined
-		const written =
-			// a creator defaults an empty-meta validator's attributes, so a site needs only imports
-			(
-				!isTemplate &&
-				!this.baking.checksTypes &&
-				!onFail &&
-				!isCreatedByRuntime(members, this.baking) &&
-				attributes.length === 1 &&
-				attributes[0] === "meta: runtime.emptyMeta"
-			) ?
-				[]
-			: (
-				!isTemplate &&
-				!isCreatedByRuntime(members, this.baking) &&
-				holdsOnlyMeta(members)
-			) ?
-				[meta!]
-			: attributes.length ? [`{ ${attributes.join(", ")} }`]
-			: []
-		const createsWith =
-			!isTemplate && ownsValidator && isCreatedByRuntime(members, this.baking)
 		const args = [
 			...(fused ? [fused.args]
 			: made ? [this.emitApplier(made), made.args]
 			: ownsValidator && !isCompact ?
 				[
-					pipes ?
+					form.pipes ?
 						"runtime.callingRootApply"
 					:	"([, rootApply]) => (data, _, onFail) => rootApply(data, onFail)",
 					`[${allows}, ${rootApply()}]`
@@ -1522,8 +1442,7 @@ ${writeFunction(
 		]
 		const created = `${
 			isTemplate ? "["
-			: !isCreatedByRuntime(members, this.baking) ?
-				`${this.creatorOf({ members, ownsValidator, applier: fused, makes: !!made, unconfigured, reads })}(`
+			: !form.byRuntime ? `${this.creatorOf(form, fused, made !== undefined)}(`
 			: createsWith ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
 		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
@@ -1532,14 +1451,66 @@ ${writeFunction(
 			:	created
 	}
 
-	creatorOf(opts: CreatorOptions): string {
-		const [params, body] = creatorSourceOf(this.baking, opts)
+	validatorFormOf(root: BaseRoot): ValidatorForm {
+		const isTemplate = this.templates.has(root)
+		const isRuntimeRead = this.runtimeReadRoots.has(root)
+		const members =
+			isRuntimeRead ?
+				new Set([...this.baking.members, ...defaultMembers])
+			:	this.baking.members
+		const ownsValidator =
+			!isTemplate && !this.baking.shortest && members.has("methods")
+		const unconfigured = !this.baking.readsConfig && !root.meta.onFail
+		return {
+			members,
+			reads: isRuntimeRead ? wholeReads : this.baking,
+			isTemplate,
+			ownsValidator,
+			unconfigured,
+			pipes: canPipe(this.baking, members, unconfigured),
+			byRuntime: isCreatedByRuntime(members, this.baking)
+		}
+	}
+
+	attributesOf(root: BaseRoot, form: ValidatorForm): ValidatorAttributes {
+		const keepsMeta = form.members.has("meta")
+		// emit meta before keying so an unemittable value is named
+		const meta =
+			!keepsMeta ? undefined
+			: keywordMetas().has(root.meta) ? "runtime.emptyMeta"
+			: this.emit(root.meta)
+		const [id, holes] = (this.checkedRoots.has(root) ? traversalKeyOf : keyOf)(
+			root
+		)
+		assertDescribed(root)
+		return {
+			id,
+			held:
+				holes.length && !form.isTemplate ?
+					`[${holes.map(hole => this.emit(hole)).join(", ")}]`
+				:	undefined,
+			meta,
+			attributes: [
+				...(keepsMeta ? [`meta: ${meta}`] : []),
+				...this.emitIntrospection(root)
+			],
+			// without its meta, a validator still fails as the meta's onFail does
+			onFail:
+				!keepsMeta && root.meta.onFail ? this.emit(root.meta.onFail) : undefined
+		}
+	}
+	creatorOf(
+		form: ValidatorForm,
+		applier: RootApplier | undefined,
+		makes: boolean
+	): string {
+		const [params, body] = creatorSourceOf(this.baking, form, applier, makes)
 		const name = `create${hashOf(`${params}\n${body}`)}`
 		this.importName(
 			this.share(
 				name,
 				writeFunction(this.baking, name, params, body),
-				this.failureImports(opts.applier?.failure)
+				this.failureImports(applier?.failure)
 			),
 			name
 		)

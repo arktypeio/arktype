@@ -18,16 +18,100 @@ export interface RootApplier {
 	local?: boolean
 }
 
-export interface CreatorOptions {
+/** how a validator is written: what's read of it, and what it's created from */
+export interface ValidatorForm {
 	members: ReadonlySet<ValidatorMember>
-	ownsValidator: boolean
-	applier: RootApplier | undefined
-	// whether the creator is passed a make and the parts it creates its root apply from
-	makes: boolean
-	// whether nothing but the call sets onFail
-	unconfigured: boolean
 	reads: ValidatorReads
+	// written without holes; each factory call rekeys it
+	isTemplate: boolean
+	// unless shortest, the build writes the validator itself
+	ownsValidator: boolean
+	// only a config or meta sets the onFail a validator is created with
+	unconfigured: boolean
+	// whether the validator can be piped into, so its apply takes a traversal
+	pipes: boolean
+	// created by runtime.createValidator rather than a creator of its own
+	byRuntime: boolean
 }
+
+/** what a validator is created with besides its root apply */
+export interface ValidatorAttributes {
+	id: string
+	// the holes it's keyed by, where it isn't a template
+	held: string | undefined
+	meta: string | undefined
+	attributes: string[]
+	// without its meta, a validator still fails as the meta's onFail does
+	onFail: string | undefined
+}
+
+// a creator per applier: V8 can't inline a shared root apply's Allows call
+export const fusedApplierOf = (
+	baking: Baking,
+	form: ValidatorForm,
+	applied: string | RootApplier
+): RootApplier | undefined => {
+	const { members, reads, ownsValidator, unconfigured } = form
+	if (typeof applied !== "object" || form.isTemplate || form.byRuntime) return
+	const fuses =
+		/^(?:\[|{ 0: )?allows\b/.test(applied.params) ?
+			baking.shortest || (!ownsValidator && !applied.local)
+			// a validator written as what's read of it reads no other Allows
+		:	!applied.local &&
+			!reads.readsAllows &&
+			preciseFormOf(baking, members, unconfigured, reads) !== undefined
+	if (!fuses) return
+	// read only for allows, a validator is created from its Allows, dropping its Apply
+	return (
+			applied.params === "allows, apply" &&
+				!members.has("assert") &&
+				preciseFormOf(baking, members, unconfigured, reads) === "object"
+		) ?
+			{
+				...applied,
+				params: "allows",
+				args: applied.args.slice(0, applied.args.indexOf(","))
+			}
+		:	applied
+}
+
+// a validator created from its parts, the first of which is its Allows
+export const madeApplierOf = (
+	form: ValidatorForm,
+	applied: string | RootApplier,
+	allows: string
+): RootApplier | undefined =>
+	(
+		!form.ownsValidator &&
+		!form.isTemplate &&
+		typeof applied === "object" &&
+		allows === `${applied.args}[0]` &&
+		!form.byRuntime
+	) ?
+		applied
+	:	undefined
+
+// the attributes a validator is created with, as its creator takes them
+export const writtenAttributesOf = (
+	baking: Baking,
+	form: ValidatorForm,
+	attributes: string[],
+	meta: string | undefined,
+	onFail: string | undefined
+): string[] =>
+	// a creator defaults an empty-meta validator's attributes, so a site needs only imports
+	(
+		!form.isTemplate &&
+		!baking.checksTypes &&
+		!onFail &&
+		!form.byRuntime &&
+		attributes.length === 1 &&
+		attributes[0] === "meta: runtime.emptyMeta"
+	) ?
+		[]
+	: !form.isTemplate && !form.byRuntime && holdsOnlyMeta(form.members) ? [meta!]
+	: attributes.length ? [`{ ${attributes.join(", ")} }`]
+	: []
 
 // undetailed, a validator pipes its issue only where assert or onFail would end the traversal
 export const canPipe = (
@@ -64,14 +148,17 @@ export const preciseFormOf = (
 export const frozen = (baking: Baking, expression: string): string =>
 	baking.freezes ? `runtime.freeze(${expression})` : expression
 
-// what a creator's source is decided by, beyond its options
-interface CreatorForm extends CreatorOptions {
+// what a creator's source is decided by, beyond the validator's form
+interface CreatorForm extends ValidatorForm {
+	applier: RootApplier | undefined
+	// whether the creator is passed a make and the parts it creates its root apply from
+	makes: boolean
 	keepsMeta: boolean
 	// a meta reads no onFail a build without config knows it lacks
 	configured: boolean
 	hasAttributes: boolean
 	// where no call passes a traversal, a validator fails only by its onFail
-	pipes: boolean
+	piped: boolean
 	// what the root apply is passed to fail with
 	failing: string | undefined
 	// a root apply failing by one onFail, or throwing, is written into the validator
@@ -82,9 +169,14 @@ interface CreatorForm extends CreatorOptions {
 	allowsOf: string
 }
 
-const creatorFormOf = (baking: Baking, opts: CreatorOptions): CreatorForm => {
-	const { members, ownsValidator, applier, makes, unconfigured, reads } = opts
-	const piped = reads.piped && canPipe(baking, members, unconfigured)
+const creatorFormOf = (
+	baking: Baking,
+	form: ValidatorForm,
+	applier: RootApplier | undefined,
+	makes: boolean
+): CreatorForm => {
+	const { members, ownsValidator, unconfigured, reads } = form
+	const piped = reads.piped && form.pipes
 	const failing =
 		!piped ? "onFail"
 		: baking.detailsErrors ?
@@ -116,13 +208,15 @@ const creatorFormOf = (baking: Baking, opts: CreatorOptions): CreatorForm => {
 			"(data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault)"
 		:	"data => validator(data, undefined, runtime.throwOnDefault)"
 	return {
-		...opts,
+		...form,
+		applier,
+		makes,
 		keepsMeta: members.has("meta"),
 		configured: !unconfigured,
 		hasAttributes:
 			members.has("meta") ||
 			introspectionMembers.some(member => members.has(member)),
-		pipes: piped,
+		piped,
 		failing,
 		inlined,
 		isCalled,
@@ -154,7 +248,7 @@ const creatorCallOf = (baking: Baking, form: CreatorForm): string => {
 			.filter(member => member)
 			.join(", ")} }`
 	}
-	const signature = `(data, ${form.pipes ? "pipedFromCtx" : "_"}, onFail${form.configured ? " = configuredOnFail" : ""})`
+	const signature = `(data, ${form.piped ? "pipedFromCtx" : "_"}, onFail${form.configured ? " = configuredOnFail" : ""})`
 	return (
 		form.inlined ? `${signature} => ${form.inlined}`
 		: form.failing ? `${signature} => rootApply(data, ${form.failing})`
@@ -228,8 +322,13 @@ const creatorParamsOf = (baking: Baking, form: CreatorForm): string[] => {
 /** the params and body of the function creating a validator from its root apply */
 export const creatorSourceOf = (
 	baking: Baking,
-	opts: CreatorOptions
+	form: ValidatorForm,
+	applier: RootApplier | undefined,
+	makes: boolean
 ): [params: string, body: string] => {
-	const form = creatorFormOf(baking, opts)
-	return [creatorParamsOf(baking, form).join(", "), creatorBodyOf(baking, form)]
+	const creator = creatorFormOf(baking, form, applier, makes)
+	return [
+		creatorParamsOf(baking, creator).join(", "),
+		creatorBodyOf(baking, creator)
+	]
 }
