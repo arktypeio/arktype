@@ -67,9 +67,25 @@ const $posts = scope({
 // annotated, as its inferred type is cyclic
 export const Post: (data: unknown) => unknown = $posts.export().Post
 `,
+		"held.ts": `import { type } from "arktype"
+import { config } from "./config.ts"
+
+const Password = type("string > 0").narrow(s => s !== "x")
+const fields = { current: Password, next: Password }
+const labels = { message: config.message }
+
+export const Change = type(fields)
+export const Named = type({ ...fields, name: "string" }).configure(config)
+export const Id = type("string.uuid").configure({ ...labels, expected: "an id" })
+`,
+		"config.ts": `export const message = (ctx: { propString: string; expected: string }) =>
+	\`\${ctx.propString || "it"} must \${ctx.expected}\`
+export const config = { message }
+`,
 		"main.ts": `import { type } from "arktype"
 import { Either, Parsed, Payload, Refused, Reported, Version, Versioned } from "./types.ts"
 import { Pair, Post } from "./scoped.ts"
+import { Change, Id, Named } from "./held.ts"
 
 ${observe}
 
@@ -82,6 +98,9 @@ observe("Version", Version, "v12", "x")
 observe("Versioned", Versioned, { v: "v3" }, { v: "3" }, 2)
 observe("Pair", Pair, { first: 2, rest: [] }, { first: 1, rest: [3] })
 observe("Post", Post, { body: "a", replies: [{ body: "b" }] }, { body: "a", replies: [{ body: 1 }] })
+observe("Change", Change, { current: "a", next: "b" }, { current: "x", next: "" })
+observe("Named", Named, { current: "a", next: "b", name: "n" }, { current: "x", next: "", name: 1 })
+observe("Id", Id, "123e4567-e89b-12d3-a456-426614174000", "nope")
 console.log(JSON.stringify(observed))
 `
 	},
@@ -274,6 +293,52 @@ contextualize(() => {
 					}
 				],
 				"replies[0].body must be a string"
+			]
+		])
+	})
+
+	it("holes read through an object const", () => {
+		observed("Change").snap([
+			{ current: "a", next: "b" },
+			[
+				[
+					{
+						code: "predicate",
+						path: ["current"],
+						data: "x",
+						expected: "valid according to an anonymous predicate"
+					},
+					{ code: "minLength", path: ["next"], data: "", expected: "non-empty" }
+				],
+				"current must be valid according to an anonymous predicate\nnext must be non-empty"
+			]
+		])
+		observed("Named").snap([
+			{ current: "a", next: "b", name: "n" },
+			[
+				[
+					{
+						code: "predicate",
+						path: ["current"],
+						data: "x",
+						expected: "valid according to an anonymous predicate"
+					},
+					{
+						code: "minLength",
+						path: ["next"],
+						data: "",
+						expected: "non-empty"
+					},
+					{ code: "domain", path: ["name"], data: 1, expected: "a string" }
+				],
+				"current must be valid according to an anonymous predicate\nnext must be non-empty\nname must be a string"
+			]
+		])
+		observed("Id").snap([
+			"123e4567-e89b-12d3-a456-426614174000",
+			[
+				[{ code: "pattern", path: [], data: "nope", expected: "an id" }],
+				"it must an id"
 			]
 		])
 	})

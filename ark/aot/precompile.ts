@@ -36,6 +36,7 @@ import {
 	defaultMembers,
 	holeNamePattern,
 	introspectionMembers,
+	isPlainLiteral,
 	isTypedFn,
 	keyOf,
 	kindNameOf,
@@ -2606,8 +2607,14 @@ export class Precompiler {
 				:	{ kind: "input", label: text, reads: [[[], reference.value]] }
 			)
 		}
+		const supplied = new Set<unknown>()
+		for (const input of site.inputs) {
+			if (input.path.length || !passed.has(input.value))
+				this.suppliedHolesOf(input.value, supplied)
+		}
 		for (const value of held) {
-			if (read.has(value) || unchecked.has(value)) continue
+			if (read.has(value) || unchecked.has(value) || supplied.has(value))
+				continue
 			// arktype's own value, which the emitter handles
 			const source = this.interpreter.sourceOf(value)
 			if (!source) continue
@@ -2735,6 +2742,31 @@ export class Precompiler {
 		return hasDomain(value, "object") ?
 				this.interpreter.standIns.get(value)
 			:	undefined
+	}
+
+	// the holes a factory reads from an input it's passed, as compareInput
+	// does: those of a Type it holds, and the functions a plain literal holds
+	private suppliedHolesOf(
+		value: unknown,
+		holes: Set<unknown>,
+		seen = new Set<unknown>()
+	): Set<unknown> {
+		if (!hasDomain(value, "object") || seen.has(value)) return holes
+		seen.add(value)
+		if (
+			hasArkKind(value, "root") ||
+			hasArkKind(value, "module") ||
+			hasArkKind(value, "scope") ||
+			hasArkKind(value, "generic")
+		)
+			for (const hole of keyOf(value)[1]) holes.add(hole)
+		else if (typeof value === "function") {
+			if (this.standInOf(value)?.kind === "function") holes.add(value)
+		} else if (isPlainLiteral(value)) {
+			for (const k of Reflect.ownKeys(value))
+				this.suppliedHolesOf(Reflect.get(value, k), holes, seen)
+		}
+		return holes
 	}
 
 	// a hole the site's text lacks is named by its declaration

@@ -1085,7 +1085,7 @@ class StandaloneArtifact {
 			const param = params[i]
 			if (param.kind === "input") {
 				for (const [path, value] of param.reads)
-					this.compareInput(`p${i}`, path, value, param.label)
+					this.compareInput(`p${i}`, path, value, param.label, checked)
 			} else if (param.kind === "helper") {
 				this.checks.push(
 					`runtime.checkHelper(p${i}, ${JSON.stringify(param.file)}, ${JSON.stringify(param.name)}, ${JSON.stringify(param.label)})`
@@ -1232,7 +1232,8 @@ class StandaloneArtifact {
 		param: string,
 		path: PropertyKey[],
 		value: unknown,
-		root: string
+		root: string,
+		checked: [hole: unknown, kind: HoleKind, expression: string][]
 	): void {
 		let expression = param
 		let label = root
@@ -1279,6 +1280,15 @@ class StandaloneArtifact {
 			)
 			return
 		}
+		// e.g. a config's message, read through an object the site is passed
+		if (
+			typeof value === "function" &&
+			functionNameOf(value).includes(holeNameMarker)
+		) {
+			if (this.receiveHole(value, expression, label))
+				checked.push([value, "function", expression])
+			return
+		}
 		if (!hasDomain(value, "object")) {
 			if (typeof value === "symbol") {
 				throwParseError(
@@ -1309,10 +1319,23 @@ class StandaloneArtifact {
 		)
 		if (!isPlainLiteral(value)) return
 		for (const k of Reflect.ownKeys(value)) {
-			if (!isArray(value))
-				this.compareInput(param, [...path, k], Reflect.get(value, k), root)
-			else if (k !== "length")
-				this.compareInput(param, [...path, Number(k)], value[Number(k)], root)
+			if (!isArray(value)) {
+				this.compareInput(
+					param,
+					[...path, k],
+					Reflect.get(value, k),
+					root,
+					checked
+				)
+			} else if (k !== "length") {
+				this.compareInput(
+					param,
+					[...path, Number(k)],
+					value[Number(k)],
+					root,
+					checked
+				)
+			}
 		}
 	}
 

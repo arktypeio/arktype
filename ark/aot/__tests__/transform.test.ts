@@ -652,6 +652,66 @@ const longer = (n: number) => (s: string) => s.length > n
 export const T = $ark#0(longer(3), longer(1))`)
 		})
 
+		it("reads holes through an object const", () => {
+			const source = `import { type } from "arktype"
+import { config } from "./config.ts"
+import { fields } from "./fields.ts"
+const isX = (v: string) => v !== "x"
+const Password = type("string > 0").narrow(isX)
+const local = { current: Password, confirm: Password }
+const labels = { message: config.message }
+export const Change = type(local)
+export const Spread = type({ ...local, note: "string" })
+export const Checked = type(local).narrow(isX as never)
+export const Imported = type(fields).configure(config)
+export const Labeled = type("string.uuid").configure({ ...labels, expected: "an id" })`
+			const result = precompileModule(
+				source,
+				"/main.ts",
+				memoryHost({
+					"/main.ts": source,
+					"/config.ts":
+						"export const message = (ctx: { expected: string }) => `must ${ctx.expected}`\nexport const config = { message }",
+					"/fields.ts":
+						'import { type } from "arktype"\nexport const Name = type("string").narrow(s => s.length > 1)\nexport const fields = { name: Name }'
+				})
+			)
+			attest(result.diagnostics).equals([])
+			attest(foldedCode(result.code)).snap(`import "arktype"
+import $arkfixConfig from "~arktype/#7"
+import { config } from "./config.ts"
+import { fields } from "./fields.ts"
+const isX = (v: string) => v !== "x"
+$arkfixConfig()
+const Password = /* @__PURE__ */ $ark#0(isX)
+const local = { current: Password, confirm: Password }
+const labels = { message: config.message }
+export const Change = $ark#2(local)
+export const Spread = $ark#3(local)
+export const Checked = $ark#4(isX as never, local)
+export const Imported = $ark#5(fields, config)
+export const Labeled = $ark#6(labels)`)
+			// each factory checks the object it's passed, then reads its holes
+			const artifact = Object.values(result.modules)
+				.join("\n")
+				.split("\n")
+				.filter(line => line.startsWith("runtime.check"))
+			attest(normalized(artifact)).snap([
+				'runtime.checkFacts(runtime.describeShape(p0), "an object with keys current, confirm", "`local`")',
+				'runtime.checkIdentity(holes2[0], holes1[0], "`local.confirm`\'s hole 0", "`local.current`\'s hole 0")',
+				'runtime.checkFacts(runtime.describeShape(p0), "an object with keys current, confirm", "`local`")',
+				'runtime.checkIdentity(holes2[0], holes1[0], "`local.confirm`\'s hole 0", "`local.current`\'s hole 0")',
+				'runtime.checkFacts(runtime.describeShape(p1), "an object with keys current, confirm", "`local`")',
+				'runtime.checkIdentity(holes1[0], p0, "`local.current`\'s hole 0", "`isX as never` (/main.ts:10:43)")',
+				'runtime.checkIdentity(holes3[0], p0, "`local.confirm`\'s hole 0", "`isX as never` (/main.ts:10:43)")',
+				'runtime.checkFacts(runtime.describeShape(p0), "an object with keys name", "`fields`")',
+				'runtime.checkFacts(runtime.describeShape(p1), "an object with keys message", "`config`")',
+				'runtime.checkFacts(runtime.factOfHole(p1["message"]), 1, "`config.message`")',
+				'runtime.checkFacts(runtime.describeShape(p0), "an object with keys message", "`labels`")',
+				'runtime.checkFacts(runtime.factOfHole(p0["message"]), 1, "`labels.message`")'
+			])
+		})
+
 		it("shares tables between factories", () => {
 			const result = precompile(`import { scope, type } from "arktype"
 const isLong = (s: string) => s.length > 1
