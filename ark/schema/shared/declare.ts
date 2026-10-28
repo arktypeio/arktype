@@ -18,6 +18,12 @@ export interface DefaultArkEnv {
 interface NodeMeta extends JsonSchema.UniversalMeta, UnknownErrorConfigs {
 	alias?: string
 	onFail?: ArkErrors.Handler
+	/**
+	 * serialized as the `pattern` keyword of the generated JSON Schema
+	 *
+	 * ⚠️ does not affect validation (for that, use a regex definition like `type("/^$/")`)
+	 */
+	pattern?: string
 }
 
 declare global {
