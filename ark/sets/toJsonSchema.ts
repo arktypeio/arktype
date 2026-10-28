@@ -449,8 +449,8 @@ const writeProps = (
 	return schema
 }
 
-// a string key is written as a pattern, and any other collected for the
-// fallbacks once the schema's own keys are known
+// a string key with a pattern is written as patternProperties, and one
+// without is collected for the fallbacks once the schema's own keys are known
 const writeIndex = (
 	index: nodeOfKind<"index">,
 	node: Structure.Node,
