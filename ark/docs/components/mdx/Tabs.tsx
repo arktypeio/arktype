@@ -31,7 +31,7 @@ export const Tab = ({ children }: TabProps) => <>{children}</>
  * A panel's code block without its frame, when the panel is nothing else,
  * so a group of code blocks shares one frame with the tabs in its header.
  */
-export const bareCodeOf = (content: ReactNode): ReactElement | undefined => {
+const bareCodeOf = (content: ReactNode): ReactElement | undefined => {
 	const nodes = Children.toArray(content).filter(
 		node => typeof node !== "string" || node.trim()
 	)

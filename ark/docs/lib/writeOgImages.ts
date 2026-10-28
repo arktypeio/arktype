@@ -8,7 +8,8 @@ import {
 	assertNamesWellKnown,
 	assertStandings,
 	claims,
-	draftOf
+	draftOf,
+	ordinal
 } from "./claims.ts"
 import { getPageTree } from "./content/docs.ts"
 import { docsDir, publicDir } from "./content/paths.ts"
@@ -262,15 +263,6 @@ const card = (
 ${body}
 </svg>`
 
-const ordinal = (n: number) =>
-	`${n}${
-		n % 100 >= 11 && n % 100 <= 13 ? "th"
-		: n % 10 === 1 ? "st"
-		: n % 10 === 2 ? "nd"
-		: n % 10 === 3 ? "rd"
-		: "th"
-	}`
-
 const categoryLabels: Record<CategoryId, string> = {
 	speed: "validation speed",
 	startup: "startup",
@@ -336,10 +328,7 @@ const homeCard = () => {
 	return card(header("arktype.io") + h1.svg + title.svg + cards.join(""))
 }
 
-/**
- * A blog post's card: its title, with an "Announcing" title's version in
- * gold, and its description.
- */
+/** a post's card: its title, an "Announcing" title's version in gold, and its description */
 const postCard = (title: string, description: string) => {
 	const announced = /^Announcing (.+?)(?: (\d\S*))?$/.exec(title)
 	const kicker = block(

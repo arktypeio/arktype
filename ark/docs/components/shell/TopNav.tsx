@@ -8,7 +8,7 @@ import { SearchButton, SearchIconButton } from "./SearchTrigger.tsx"
 import { ThemeToggle } from "./ThemeToggle.tsx"
 import { docsSectionsOf } from "./sections.ts"
 
-export const githubUrl = "https://github.com/arktypeio/arktype"
+const githubUrl = "https://github.com/arktypeio/arktype"
 
 export const externalLinks = [
 	{ title: "GitHub", href: githubUrl },

@@ -10,6 +10,7 @@
 import {
 	benchFacts,
 	formatRatio,
+	list,
 	versusLibrary,
 	type LibraryVersus
 } from "./bench/bench.ts"
@@ -153,7 +154,7 @@ export const sizeChart: BenchmarkChart = {
 // run at 781130da3 (its generated validators weren't built first), so the
 // rows there lack it; at 90d510484 it was the closest on moltar, 1.16M to
 // 1.05M, 19 of 20. No wall-clock run yet, so nothing says it starts faster.
-export const startupChart: BenchmarkChart = {
+const startupChart: BenchmarkChart = {
 	title: "Cold start",
 	detail:
 		"the homepage's login app, each library bundled with esbuild as a production build: instructions from importing the bundle to its first validation, beyond what loading an empty module costs, on Node 24. ArkType is precompiled with the default options",
@@ -203,7 +204,7 @@ export const medianOf = ({ rows }: LibraryVersus) => {
 	)
 }
 
-const ordinal = (n: number) =>
+export const ordinal = (n: number) =>
 	n % 10 === 1 && n % 100 !== 11 ? `${n}st`
 	: n % 10 === 2 && n % 100 !== 12 ? `${n}nd`
 	: n % 10 === 3 && n % 100 !== 13 ? `${n}rd`
@@ -258,20 +259,15 @@ const averageOf = (category: CategoryId) => {
 	}
 }
 
-/** a library's name where the site may state it, otherwise how the copy refers to it: "the best" */
 const nameOr = (library: string, otherwise: string) =>
 	isWellKnown(library) ? library : otherwise
 
-/** which libraries the site names */
 const namingNote = `We name only libraries with ${wellKnownRule}; every place, average and tie counts all of them.`
 
-/** how far above a category's best average still counts as first: "5%" */
 export const tieMargin = `${Math.round(tieBand * 100)}%`
 
-/** an average as the board prints it, to three decimals: "1.252" */
 export const averageText = (score: number) => score.toFixed(3)
 
-/** how far below the next best's ArkType's average is: "15.0%", or "less than 0.1%" */
 const leadText = (score: number, next: number) => {
 	const percent = (1 - score / next) * 100
 	return percent < 0.1 ? "less than 0.1%" : `${percent.toFixed(1)}%`
@@ -283,7 +279,7 @@ const standingOf = (category: CategoryId) => {
 	const written = suites.filter(isWrittenByUs)
 	const across =
 		written.length ?
-			`across ${suites.length - written.length} independent benchmarks and ${listOf(written)}`
+			`across ${suites.length - written.length} independent benchmarks and ${list(written)}`
 		:	`across ${suites.length} independent benchmarks`
 	const { place, ranked } = placeOf(category)
 	const [first] = leaderboards[category].standings
@@ -295,7 +291,6 @@ const standingOf = (category: CategoryId) => {
 		place: leads(category) ? "1st" : ordinal(place),
 		ranked,
 		average,
-		/** how far ArkType's average is below the next best's, where it's the best: "15.0%" */
 		by,
 		standing:
 			ties(category) ?
@@ -305,11 +300,6 @@ const standingOf = (category: CategoryId) => {
 			:	`${ordinal(place)} of ${ranked} on average ${across}`
 	}
 }
-
-const listOf = (items: string[]) =>
-	items.length < 2 ?
-		items.join("")
-	:	`${items.slice(0, -1).join(", ")} and ${items.at(-1)}`
 
 /**
  * A category's standing and best average, beside the next best's and by how
@@ -328,7 +318,7 @@ const averagesOf = (category: CategoryId) => {
 }
 
 /** the headline's suites whose code for each library we wrote: "valibot.dev's login form" */
-const writtenSuites = listOf([
+const writtenSuites = list([
 	...new Set(
 		boardOrder.flatMap(category =>
 			leaderboards[category].suites.filter(isWrittenByUs)
@@ -340,7 +330,7 @@ const writtenSuites = listOf([
 const rankedBy = `Ranked by best average across other projects' public benchmarks${writtenSuites ? ` and ${writtenSuites}, which we wrote in each library from Valibot's code` : ""}`
 
 /** how many of each category's benchmarks on the full board are ours */
-const ownedPerCategory = listOf(
+const ownedPerCategory = list(
 	boardOrder.map(category => {
 		const { suites } = fullLeaderboards[category]
 		return `${suites.filter(isOwnSuite).length} of the ${suites.length} for ${wording[category].measures}`
@@ -348,7 +338,7 @@ const ownedPerCategory = listOf(
 )
 
 /** ArkType's place in each category on the full board, beside the leader where it isn't first */
-const fullBoardPlaces = listOf(
+const fullBoardPlaces = list(
 	boardOrder.map(category => {
 		const { place, ranked, score } = placeOf(category, fullLeaderboards)
 		const [first] = fullLeaderboards[category].standings
@@ -373,17 +363,16 @@ const startupIsCreation = leaderboards.startup.suites.every(label =>
 	creationOnly.includes(label)
 )
 
-/** a claim's kind: "lead", or "tie" where another library has the best average */
 const claimOf = (category: CategoryId) => (ties(category) ? "tie" : "lead")
 
 /** the claims, "the startup lead" or "the speed and startup leads and the size tie" */
 const claimsOf = (categories: CategoryId[]) =>
-	listOf(
+	list(
 		(["lead", "tie"] as const).flatMap(kind => {
 			const of = categories.filter(category => claimOf(category) === kind)
 			return of.length ?
 					[
-						`the ${listOf(of.map(category => wording[category].measures))} ${kind}${of.length > 1 ? "s" : ""}`
+						`the ${list(of.map(category => wording[category].measures))} ${kind}${of.length > 1 ? "s" : ""}`
 					]
 				:	[]
 		})
@@ -396,7 +385,7 @@ const leadsWithoutEach = () => {
 		.filter(category => leadDependsOn(category).length)
 		.map(
 			category =>
-				`The ${wording[category].measures} ${claimOf(category)} doesn't survive leaving out ${leadDependsOn(category).length > 1 ? "any one of " : ""}${listOf(leadDependsOn(category))}.`
+				`The ${wording[category].measures} ${claimOf(category)} doesn't survive leaving out ${leadDependsOn(category).length > 1 ? "any one of " : ""}${list(leadDependsOn(category))}.`
 		)
 	if (robust.length) {
 		const claims = claimsOf(robust)
@@ -423,21 +412,20 @@ const sizeResultsBeating = (library: string) => {
 
 const sizeRival = averageOf("size").other
 
-/** how sizeClose refers to the library closest to ArkType */
 const sizeRivalName = nameOr(
 	sizeRival.library,
 	leads("size") && !ties("size") ? "the next best" : "another library"
 )
 
 /** the startup chart's rivals, each on the login row of the run it cites: "ajv, Valibot, Zod Mini, Zod, Zod (compiled) and TypeBox" */
-const startupRivals = listOf(
+const startupRivals = list(
 	startupChart.bars
 		.filter(bar => bar.kind !== "precompiled")
 		.map(bar => bar.name)
 )
 
 /** each category's results on the independent suites, for the headline's notes, and what startup's measure */
-const independentResults = `${listOf(
+const independentResults = `${list(
 	boardOrder.map(
 		(category, i) =>
 			`${leaderboards[category].rows}${i ? "" : " results"} for ${wording[category].measures}`
@@ -598,7 +586,6 @@ export const claims = {
 
 export type ClaimId = keyof typeof claims
 
-/** when the published standings were measured, beside each note citing them */
 export const standingsAsOf = {
 	date: measured,
 	text: `Standings as of ${new Date(measured).toLocaleDateString("en-US", {
@@ -609,7 +596,6 @@ export const standingsAsOf = {
 	})}.`
 }
 
-/** the README section listing the headline's benchmarks and its rule */
 export const headlineMethod = {
 	label: "Method",
 	href: "https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md#best-average"
@@ -704,23 +690,18 @@ for (const id of standingClaims) {
 const isRival = (bar: BenchmarkBar) => /^(Valibot|Zod)\b/.test(bar.name)
 
 type CategoryBase = {
-	/** what it measures */
 	label: string
 	/** the options ArkType's numbers were built with */
 	build: string
-	/** ArkType's place by best average, "1st" wherever it counts as first */
+	/** "1st" wherever ArkType counts as first */
 	place: string
-	/** how many libraries the category ranks */
 	ranked: number
-	/** where ArkType's best average places it */
 	standing: string
-	/** whether ArkType counts as first: the best average, or one within tieBand of it, checked on the board */
 	leads: boolean
-	/** whether that's a tie, another library having the best average */
 	ties: boolean
 	/** ArkType's best average, the next best's or the leader's, and the best named library's */
 	average: { score: number; other: Standing; named: Standing }
-	/** how far ArkType's average is below the next best's, where it's the best: "15.0%" */
+	/** how far ArkType's average is below the next best's, where it leads: "15.0%" */
 	by: string
 	source: BenchmarkChart["source"]
 }
@@ -728,10 +709,8 @@ type CategoryBase = {
 /** a category measured once per library, drawn as bars */
 export type BarCategory = CategoryBase & {
 	id: "startup"
-	/** ArkType's bar, then each rival's */
 	bars: BenchmarkBar[]
 	unit: string
-	/** a bar's value, without its unit */
 	format: (value: number) => string
 	/** what ArkType's multiple of Zod is: "smaller than" */
 	margin: string
@@ -819,18 +798,18 @@ export const categories: Category[] = [
 ]
 
 /** whether one build holds every category, as "Pick 3" implies without saying */
-export const oneBuild = new Set(categories.map(c => c.build)).size === 1
+const oneBuild = new Set(categories.map(c => c.build)).size === 1
 
 // the blog post's assert above already holds every category's lead
 if (!isPending(claims.pickThree) && !oneBuild) {
 	throw new Error(
-		`The hero claims one build leads every category, but the board's categories come from ${listOf([...new Set(categories.map(c => c.build))])}`
+		`The hero claims one build leads every category, but the board's categories come from ${list([...new Set(categories.map(c => c.build))])}`
 	)
 }
 
-/** a library's averages in the Pick 3 table, each null where it isn't ranked */
 export type PickThreeRow = {
 	library: string
+	/** null where it isn't ranked */
 	cells: Record<CategoryId, { score: number; first: boolean } | null>
 }
 
@@ -866,9 +845,8 @@ const firstInAll = [
  */
 export const pickThreeTable: {
 	title: Claim<string>
-	/** which libraries it shows */
 	shown: string
-	/** what its startup multiples compare, beside the column: creating a schema, which a precompiled build did at build */
+	/** beside the startup column, what its rows time */
 	startupNote: string
 	categories: { id: CategoryId; label: string }[]
 	rows: PickThreeRow[]
@@ -909,7 +887,6 @@ export const pickThreeTable: {
 const escapeRegex = (text: string) =>
 	text.replace(/[$()*+./?[\\\]^{|}]/g, "\\$&")
 
-/** every suite's label, which may name the library whose benchmark it is */
 const suiteLabels = boardOrder.flatMap(
 	category => fullLeaderboards[category].suites
 )
@@ -927,7 +904,7 @@ export const assertNamesWellKnown = (copy: string, by: string) => {
 	)
 	if (named.length) {
 		throw new Error(
-			`${by} names ${listOf(named)}, which the site may not: each has under ${wellKnownDownloads} npm downloads a week`
+			`${by} names ${list(named)}, which the site may not: each has under ${wellKnownDownloads} npm downloads a week`
 		)
 	}
 }

@@ -326,7 +326,6 @@ pre.shiki .line.error-line.compile span,
 	outline-offset: 2px;
 }
 
-.twoslash-query-presisted,
 .twoslash-query-persisted {
 	text-decoration: none;
 }

@@ -279,7 +279,7 @@ const labelParagraph = (node: RootContent | undefined, label: string) => {
 const siteUrlPattern = /^https:\/\/arktype\.io(?=\/)/
 
 /** the Markdown a JSDoc comment stands for, as it reads in the API docs */
-export const jsDocMarkdown = (
+const jsDocMarkdown = (
 	parts: readonly ParsedJsDocPart[],
 	apiNames: ReadonlySet<string> = new Set()
 ): string =>
