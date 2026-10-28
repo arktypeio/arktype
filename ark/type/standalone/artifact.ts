@@ -202,8 +202,13 @@ const createDeclarations = (): Declarations => ({
 	}
 })
 
+// a shared unit as it's written: what it returns and reads, and what it's passed
 interface SharedUnit {
 	unit: RootUnit
+	returned: string[]
+	read: ReadonlySet<string>
+	// cyclic roots, created with their own traversals
+	own: BaseRoot[]
 	params: string[]
 	args: string[]
 	imports: Record<string, string[]>
@@ -945,8 +950,16 @@ ${writeFunction(
 		const specifier = this.specifierOf(unit.name)
 		if (this.sharedModules[specifier]) return
 		const declarations = this.declarations
+		const returned = returnedOf(unit, this.baking)
 		const writing: SharedUnit = (this.writing = {
 			unit,
+			returned,
+			read: namesReadBy(unit, returned),
+			own: unit.roots.filter(root =>
+				unit.refs.some(
+					ref => isNode(ref) && unit.names[ref.id] === unit.names[root.id]
+				)
+			),
 			params: [],
 			args: [],
 			imports: {},
@@ -954,22 +967,57 @@ ${writeFunction(
 		})
 		this.declarations = createDeclarations()
 		this.unit = unit
-		const returned = returnedOf(unit, this.baking)
-		const read = namesReadBy(unit, returned)
-		// a cyclic root is created with its own traversals
-		const ownRoots = unit.roots.filter(root =>
-			unit.refs.some(
-				ref => isNode(ref) && unit.names[ref.id] === unit.names[root.id]
-			)
-		)
-		for (const root of ownRoots) {
+		for (const root of writing.own) {
 			writing.shapesByName[unit.names[root.id]] = this.declareConst(
 				root,
 				"shape",
 				"{}"
 			)
 		}
-		const refs = unit.refs.flatMap((value, i) => {
+		const refs = this.writeSharedRefs(writing)
+		const links = writing.own.map(root => {
+			const shape = writing.shapesByName[unit.names[root.id]]
+			returned.push(shape)
+			return `runtime.freeze(runtime.assign(${shape}, ${this.writeShape(root, shape, unit, this.traversalsOf(root, unit))}))`
+		})
+		const [moduleDeclarations, scope] =
+			this.baking.flattens ?
+				[this.writeFlatUnit(writing, refs, links)]
+			:	this.writeScopedUnit(writing, refs, links)
+		moduleDeclarations.push(...this.writeUnitNodes(writing))
+		if (scope) {
+			for (const root of unit.roots) {
+				const name = unit.names[root.id]
+				scope.nodes[name] = `runtime.freeze(${this.writeShape(
+					root,
+					name,
+					unit,
+					this.traversalsOf(root, unit)
+				)})`
+			}
+		}
+		this.declarations = declarations
+		this.unit = undefined
+		this.writing = undefined
+		this.sharedModules[specifier] = {
+			readsRuntime: true,
+			imports: writing.imports,
+			declarations: moduleDeclarations,
+			scope,
+			exports: [
+				unit.name,
+				...unit.roots.map(root => `${unit.names[root.id]}Node`),
+				...(this.baking.flattens ?
+					returnedOf(unit, this.baking).filter(name => name)
+				:	[])
+			]
+		}
+	}
+
+	// the refs a unit's members read, declared unless received or imported
+	writeSharedRefs(writing: SharedUnit): string[] {
+		const { unit, read } = writing
+		return unit.refs.flatMap((value, i) => {
 			const name = refNameOf(unit.name, i)
 			if (!read.has(name)) return []
 			const { statements } = this.declarations
@@ -1005,68 +1053,79 @@ ${writeFunction(
 			}
 			return [`const ${name} = ${emitted}`]
 		})
-		const links = ownRoots.map(root => {
-			const shape = writing.shapesByName[unit.names[root.id]]
-			returned.push(shape)
-			return `runtime.freeze(runtime.assign(${shape}, ${this.writeShape(root, shape, unit, this.traversalsOf(root, unit))}))`
-		})
-		const moduleDeclarations: string[] = []
-		let scope: UnitScope | undefined
-		if (this.baking.flattens) {
-			for (const name in unit.dependencies) {
-				if (!read.has(name)) continue
-				const dependency = unitOf(unit.dependencies[name][0], unit)
-				this.importName(this.specifierOf(dependency.name), name)
-			}
-			moduleDeclarations.push(
-				...writing.params.map(
-					(param, i) => `const ${param} = ${writing.args[i]}`
-				),
+	}
+
+	// a flat module declares its traversals at the top level, importing what it reads
+	writeFlatUnit(
+		writing: SharedUnit,
+		refs: string[],
+		links: string[]
+	): string[] {
+		const { unit, returned, read } = writing
+		for (const name in unit.dependencies) {
+			if (!read.has(name)) continue
+			const dependency = unitOf(unit.dependencies[name][0], unit)
+			this.importName(this.specifierOf(dependency.name), name)
+		}
+		return [
+			...writing.params.map(
+				(param, i) => `const ${param} = ${writing.args[i]}`
+			),
+			...this.declarations.statements,
+			...refs,
+			...this.declareMembers(unit, [
 				...this.declarations.statements,
 				...refs,
-				...this.declareMembers(unit, [
-					...this.declarations.statements,
-					...refs,
-					...links,
-					...returned
-				]),
 				...links,
-				`const ${unit.name} = [${returned.join(", ")}]`
-			)
-		} else {
-			const dependencies = this.dependenciesOf(unit, read)
-			const [dependencyParams, dependencyArgs] = writeDependencies(
-				dependencies,
-				this.baking.shortest
-			)
-			const params = [...dependencyParams, ...writing.params]
-			const prologue = [...this.declarations.statements, ...refs]
-			const statements = [
-				...prologue,
-				...this.declareMembers(unit, [...prologue, ...links, ...returned]),
-				...links
-			]
-			const array =
-				params.length || prologue.length || links.length ?
-					undefined
-				:	this.writeUnitArray(unit, returned)
-			const template =
-				!array &&
-				!params.length &&
-				!links.length &&
-				!Object.keys(writing.imports).length &&
-				this.writeTemplateCall(unit, prologue, returned)
-			const built =
-				array ??
-				(template ||
-					`(${writeScope(
-						// a minifier dissolves a call with no parameters into its caller
-						params.length || this.baking.shortest ? params : ["...$"],
-						statements,
-						returned
-					)})(${[...dependencyArgs, ...writing.args].join(", ")})`)
-			if (!this.baking.hoisted && !links.length && !template) {
-				scope = {
+				...returned
+			]),
+			...links,
+			`const ${unit.name} = [${returned.join(", ")}]`
+		]
+	}
+
+	// a scoped unit's traversals are returned by one call, passed what they read
+	writeScopedUnit(
+		writing: SharedUnit,
+		refs: string[],
+		links: string[]
+	): [declarations: string[], scope: UnitScope | undefined] {
+		const { unit, returned, read } = writing
+		const dependencies = this.dependenciesOf(unit, read)
+		const [dependencyParams, dependencyArgs] = writeDependencies(
+			dependencies,
+			this.baking.shortest
+		)
+		const params = [...dependencyParams, ...writing.params]
+		const prologue = [...this.declarations.statements, ...refs]
+		const statements = [
+			...prologue,
+			...this.declareMembers(unit, [...prologue, ...links, ...returned]),
+			...links
+		]
+		const array =
+			params.length || prologue.length || links.length ?
+				undefined
+			:	this.writeUnitArray(unit, returned)
+		const template =
+			!array &&
+			!params.length &&
+			!links.length &&
+			!Object.keys(writing.imports).length &&
+			this.writeTemplateCall(unit, prologue, returned)
+		const built =
+			array ??
+			(template ||
+				`(${writeScope(
+					// a minifier dissolves a call with no parameters into its caller
+					params.length || this.baking.shortest ? params : ["...$"],
+					statements,
+					returned
+				)})(${[...dependencyArgs, ...writing.args].join(", ")})`)
+		const scope: UnitScope | undefined =
+			this.baking.hoisted || links.length || template ?
+				undefined
+			:	{
 					name: unit.name,
 					dependencies,
 					params: writing.params,
@@ -1076,68 +1135,42 @@ ${writeFunction(
 					nodes: {},
 					declaresOnlyRefs: !this.declarations.statements.length
 				}
-			}
-			moduleDeclarations.push(
-				...(this.baking.hoisted ?
-					[
-						`var ${unit.name}Unit`,
-						`function ${unit.name}() {\n\treturn ${writeLazyRead(`${unit.name}Unit`, built)}\n}`
-					]
-				:	[
-						`const ${unit.name} = ${array ? "" : `${template ? "" : noInlineOf(this.baking.shortest)}/* @__PURE__ */ `}${built}`
-					])
-			)
-		}
-		for (const root of unit.roots) {
-			const name = unit.names[root.id]
-			const shape = writing.shapesByName[name]
-			moduleDeclarations.push(
-				writeValue(
-					this.baking.hoisted,
-					`${name}Node`,
-					shape ?
-						`${this.readValue(unit.name)}[${returned.indexOf(shape)}]`
-					:	`runtime.freeze(${this.writeShape(
-							root,
-							this.readValue(`${name}Node`),
-							unit,
-							this.traversalsOf(root, unit).map(
-								traversal =>
-									`${this.readValue(unit.name)}[${returned.indexOf(traversal)}]`
-							)
-						)})`
-				)
-			)
-		}
-		if (scope) {
-			for (const root of unit.roots) {
-				const name = unit.names[root.id]
-				scope.nodes[name] = `runtime.freeze(${this.writeShape(
-					root,
-					name,
-					unit,
-					this.traversalsOf(root, unit)
-				)})`
-			}
-		}
-		this.declarations = declarations
-		this.unit = undefined
-		this.writing = undefined
-		this.sharedModules[specifier] = {
-			readsRuntime: true,
-			imports: writing.imports,
-			declarations: moduleDeclarations,
-			scope,
-			exports: [
-				unit.name,
-				...unit.roots.map(root => `${unit.names[root.id]}Node`),
-				...(this.baking.flattens ?
-					returnedOf(unit, this.baking).filter(name => name)
-				:	[])
-			]
-		}
+		return [
+			this.baking.hoisted ?
+				[
+					`var ${unit.name}Unit`,
+					`function ${unit.name}() {\n\treturn ${writeLazyRead(`${unit.name}Unit`, built)}\n}`
+				]
+			:	[
+					`const ${unit.name} = ${array ? "" : `${template ? "" : noInlineOf(this.baking.shortest)}/* @__PURE__ */ `}${built}`
+				],
+			scope
+		]
 	}
 
+	// each root's node: a cyclic root's shape, or one built from its traversals
+	writeUnitNodes(writing: SharedUnit): string[] {
+		const { unit, returned } = writing
+		return unit.roots.map(root => {
+			const name = unit.names[root.id]
+			const shape = writing.shapesByName[name]
+			return writeValue(
+				this.baking.hoisted,
+				`${name}Node`,
+				shape ?
+					`${this.readValue(unit.name)}[${returned.indexOf(shape)}]`
+				:	`runtime.freeze(${this.writeShape(
+						root,
+						this.readValue(`${name}Node`),
+						unit,
+						this.traversalsOf(root, unit).map(
+							traversal =>
+								`${this.readValue(unit.name)}[${returned.indexOf(traversal)}]`
+						)
+					)})`
+			)
+		})
+	}
 	// units differing only by their patterns share a template they pass them to
 	writeTemplateCall(
 		unit: RootUnit,
