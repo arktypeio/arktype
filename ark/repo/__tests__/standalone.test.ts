@@ -252,8 +252,8 @@ contextualize(() => {
 			[0, {}, () => {}, true, Symbol()].map(data => String(domains(data)))
 		).snap([
 			"must be positive",
-			"a is missing",
-			"a is missing",
+			"a must be a string",
+			"a must be a string",
 			"must be a bigint, a string, a number, an object, undefined or null",
 			"must be a bigint, a string, a number, an object, undefined or null"
 		])
@@ -314,7 +314,7 @@ id must be a string or null`)
 				{ optimize: "size" }
 			)
 			attest(T({ b: 0, c: "" }).summary).snap(`b must be a string
-a is missing
+a must be a string
 c must be a number`)
 			attest(T({ a: "" })).equals({ a: "", c: 1 })
 		})
@@ -670,8 +670,8 @@ nick must be a string or null`)
 				code: "required",
 				path: ["a"],
 				data: { b: { c: 0 } },
-				expected: undefined,
-				message: "a is missing"
+				expected: "a string",
+				message: "a must be a string"
 			},
 			{
 				code: "min",
@@ -700,7 +700,7 @@ nick must be a string or null`)
 		}
 		const expected = await issuesOf({})
 		attest(expected).snap([
-			[["a"], "is missing"],
+			[["a"], "must be a string"],
 			[["b", "c"], "must be positive"]
 		])
 		// a build writing a create of its own
@@ -838,13 +838,13 @@ nick must be a string or null`)
 			})
 		)
 		attest(outputs).snap([
-			`true 2 [{"code":"required","path":["a"],"data":{"b":{"c":[1,"x"]}},"message":"a is missing"},{"code":"domain","path":["b","c",1],"data":"x","expected":"a number","message":"b.c[1] must be a number"}]
-a is missing
+			`true 2 [{"code":"required","path":["a"],"data":{"b":{"c":[1,"x"]}},"expected":"a string","message":"a must be a string"},{"code":"domain","path":["b","c",1],"data":"x","expected":"a number","message":"b.c[1] must be a number"}]
+a must be a string
 b.c[1] must be a number
 true true true
-TraversalError: a is missing
-b is missing true
-TraversalError: a is missing
+TraversalError: a must be a string
+b must be an object true
+TraversalError: a must be a string
 b.c[1] must be a number true
 `,
 			`true 1 [{"code":"predicate","path":[],"data":{"b":{"c":[1,"x"]}},"message":"is invalid"}]
@@ -921,10 +921,10 @@ TypeError: out.throw is not a function false
 			all({}).summary,
 			String(piped(data))
 		]).snap([
-			"[1].x must be a number\n[3].x is missing",
+			"[1].x must be a number\n[3].x must be a number",
 			"[1].x must be a number",
 			"must be an array",
-			"value at [1].x must be a number\nvalue at [3].x is missing"
+			"value at [1].x must be a number\nvalue at [3].x must be a number"
 		])
 	})
 
@@ -964,7 +964,7 @@ TypeError: out.throw is not a function false
 			n: 5
 		})
 		attest(out instanceof type.errors).equals(true)
-		attest(String(out)).snap(`a is missing
+		attest(String(out)).snap(`a must be a string
 flag must be boolean
 n must be a string or null`)
 	})
@@ -1116,7 +1116,7 @@ n must be a string or null`)
 		attest(Object.isFrozen(validator)).equals(true)
 		attest(validator({ name: "a" })).equals({ name: "a" })
 		attest(validator.allows({ name: "a", tags: [1] })).equals(false)
-		attest(validator({ tags: [1] }).summary).snap(`name is missing
+		attest(validator({ tags: [1] }).summary).snap(`name must be a string
 tags[0] must be a string`)
 	})
 
@@ -1303,8 +1303,8 @@ export const piping = validator => type("unknown").pipe(validator)`)
 		attest(String(validator)).equals("Type<{ age: number, name: string }>")
 		attest(validator.from({ name: "n", age: 1 })).equals({ name: "n", age: 1 })
 		attest(() => validator.assert({})).throws
-			.snap(`TraversalError: name is missing
-age is missing`)
+			.snap(`TraversalError: name must be a string
+age must be a number`)
 		attest(validator["~standard"].validate({ name: "n", age: 1 })).equals({
 			value: { name: "n", age: 1 }
 		})

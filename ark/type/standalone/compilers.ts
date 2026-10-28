@@ -30,7 +30,7 @@ import {
 	issueContextOf,
 	issueSite,
 	issueSiteOf,
-	requiredIssue,
+	missingDescriptionOf,
 	unionKeySiteOf,
 	withoutStrings,
 	writeSiteOf,
@@ -83,14 +83,12 @@ class StandaloneCompiler extends TraversalCompiler {
 	siteRef(site: object): string {
 		const ref = this.ref(site)
 		if (isInlineSite(site)) return writeSiteOf(site, JSON.stringify)
-		const { v: value, m: missing } = site as { v?: object; m?: object }
-		return (
-				missing === requiredIssue &&
-					value &&
-					isInlineSite(value) &&
-					isDescribed(value)
-			) ?
-				writeSiteOf(value, JSON.stringify, "keySiteOf")
+		const { v: value } = site as { v?: object }
+		const missing = missingDescriptionOf(site)
+		if (missing === undefined) return ref
+		if (!value) return `runtime.requiredSiteOf(${JSON.stringify(missing)})`
+		return isInlineSite(value) && isDescribed(value) ?
+				writeSiteOf(value, JSON.stringify, "keySiteOf", missing)
 			:	ref
 	}
 

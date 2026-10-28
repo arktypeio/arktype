@@ -225,16 +225,21 @@ export const siteOf = ((
 	message?: string
 ): SiteContext => ({ code, description, x: message })) satisfies Fn
 
-// a literal, as an annotated call's annotation is kept by oxc's minifier
-export const requiredSite: FailureSite = { m: { code: "required" } }
+// a key's site where its value isn't a basis, reporting "required" expecting
+// the value's brief where the key is missing, as arktype does
+export const requiredSiteOf = ((description?: string): FailureSite => ({
+	m: { code: "required", description }
+})) satisfies Fn
 
-// a key's site, reporting "required" where the key is missing
+// a key's site, reporting "required" where the key is missing, expecting what
+// its basis does unless the basis is described apart from its brief
 export const keySiteOf = ((
 	code: ArkErrorCode,
-	description?: string
+	description?: string,
+	missing = description
 ): FailureSite => ({
 	v: siteOf(code, description),
-	m: requiredSite.m!
+	m: { code: "required", description: missing }
 })) satisfies Fn
 
 // where the build checks what it built, a library reading a JSON Schema it

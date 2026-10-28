@@ -72,7 +72,7 @@ contextualize(() => {
 lead.name must be non-empty
 lead.email must be an email address
 members[0].name must be a string
-members[0].email is missing
+members[0].email must be a string
 true
 `)
 		attest(run(flat)).equals(run(whole))
@@ -125,8 +125,8 @@ true
 			{ prune: false },
 			{ stdin: { contents, resolveDir: root, loader: "ts" } }
 		)
-		attest(run(js)).snap(`lead.name is missing
-lead.email is missing
+		attest(run(js)).snap(`lead.name must be a string
+lead.email must be a string
 `)
 		attest(run(js)).equals(run(whole))
 		attest(js.includes("{ 0: allows")).equals(false)
@@ -158,8 +158,8 @@ lead.email is missing
 			fromHere("temp", "flatAsserted")
 		)
 		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
-		attest(run(js)).snap(`lead.name is missing
-lead.email is missing
+		attest(run(js)).snap(`lead.name must be a string
+lead.email must be a string
 `)
 		attest(js.includes("var Team =")).equals(false)
 	})
@@ -258,7 +258,7 @@ for (const data of [{ name: "Ada" }, {}]) {
 		const [js] = await bundle({}, options)
 		const [whole] = await bundle({ prune: false }, options)
 		attest(run(js)).snap(`{ name: 'Ada' }
-name is missing
+name must be a string
 `)
 		attest(run(js)).equals(run(whole))
 		attest(/\.assert\b|\bassert:/.test(js)).equals(false)

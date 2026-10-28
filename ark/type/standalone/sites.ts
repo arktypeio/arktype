@@ -156,6 +156,7 @@ const siteWords = new Set([
 	"siteOf",
 	"problemSiteOf",
 	"keySiteOf",
+	"requiredSiteOf",
 	"v",
 	"p",
 	"m"
@@ -174,18 +175,39 @@ export const isLiteralSite = (value: unknown, emitted: string): boolean =>
 export const withoutStrings = (code: string): string =>
 	code.replace(/"(?:[^"\\]|\\.)*"/g, '""')
 
+// a key's site (keySiteOf) expects its value's brief where the key is missing,
+// passed only where that isn't its basis's own description
 export const writeSiteOf = (
 	{ code, description, message, problem }: IssueContext,
 	emit: (s: string) => string,
-	writer = "siteOf"
+	writer = "siteOf",
+	missing?: string
 ): string => {
-	const args = [code, description, message, problem]
+	const args =
+		writer === "keySiteOf" ?
+			[code, description, missing === description ? undefined : missing]
+		:	[code, description, message, problem]
 	while (args[args.length - 1] === undefined) args.pop()
 	return `runtime.${
-		args.length > 3 ? "problemSiteOf"
-		: args.length > 2 ? "siteOf"
-		: writer
+		writer === "keySiteOf" ? writer
+		: args.length > 3 ? "problemSiteOf"
+		: "siteOf"
 	}(${args.map(arg => (arg === undefined ? "void 0" : emit(arg))).join(", ")})`
+}
+
+// what a key's site expects where the key is missing, if its issue is
+// required's alone: its value's brief, as arktype's is, unless the program
+// configures required's expected
+export const missingDescriptionOf = (site: object): string | undefined => {
+	const { m: missing } = site as { m?: IssueContext }
+	return (
+			missing &&
+				missing.code === "required" &&
+				isInlineSite(missing) &&
+				isDescribed(missing)
+		) ?
+			missing.description
+		:	undefined
 }
 
 const issueSitesByContext = new WeakMap<
@@ -193,11 +215,11 @@ const issueSitesByContext = new WeakMap<
 	{ alone?: object; required?: object }
 >()
 
-export const requiredIssue = { code: "required" } as const
-
 export interface TextContext {
 	code: ArkErrorCode
 	description?: string | undefined
+	/** a required key's: its value's brief, which the missing key expects */
+	missingValueDescription?: string | undefined
 	meta?: ArkEnv.meta | undefined
 }
 
@@ -250,9 +272,9 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 	const issueContext: IssueContext = {
 		code,
 		description:
-			typeof custom.expected === "string" ?
-				custom.expected
-			:	context.description
+			typeof custom.expected === "string" ? custom.expected
+			: context.description !== undefined ? context.description
+			: context.missingValueDescription
 	}
 	if (
 		!unwritableCodes.has(code) &&
@@ -380,12 +402,7 @@ export const issueSiteOf = (site: FailureSite | UnionSite): object => {
 		: issueContextOf({ ...(site as UnionSite), code: "union" })
 	return (variants[variant] = issueSite(
 		!missingContext ? valueContext!
-		: valueContext ?
-			{
-				v: valueContext,
-				m: isDescribed(missingContext) ? requiredIssue : missingContext
-			}
-		: isDescribed(missingContext) ? runtime.requiredSite
+		: valueContext ? { v: valueContext, m: missingContext }
 		: { m: missingContext }
 	))
 }
