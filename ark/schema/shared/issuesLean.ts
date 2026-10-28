@@ -101,7 +101,6 @@ export interface ArkErrors {
 	_merge?(merged: ArkErrors, prefix: array<PropertyKey>): void
 }
 
-// stops at the first issue
 export class FirstIssues extends ArkErrors {
 	override get failFast(): true {
 		return true

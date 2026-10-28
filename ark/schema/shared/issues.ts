@@ -170,7 +170,6 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	}
 }
 
-// stops at the first issue
 export class FirstIssues extends ArkIssues {
 	// read from the prototype, so no errors object lists it among its own keys
 	override get failFast(): true {

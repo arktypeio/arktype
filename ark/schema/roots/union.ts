@@ -149,7 +149,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	readonly caseNodes: BaseRoot[] = []
 
 	private _disc: Discriminant | null | undefined
-	// discriminated when first read
 	get discriminant(): Discriminant | null {
 		if (this._disc === undefined) {
 			// null while discriminating, which can read this union's references
