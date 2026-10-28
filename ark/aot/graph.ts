@@ -1316,6 +1316,13 @@ export class ModuleGraph {
 			(call?.type === "Property" && call.value === operand)
 		)
 			[operand, call] = operatorOf(call)
+		// e.g. `e` in `<input onFocus={e => e.target.select()} />`, which the
+		// renderer calls with an event or element, unlike a component's prop
+		if (
+			call?.type === "JSXExpressionContainer" &&
+			isIntrinsicElementAttribute(call.parent)
+		)
+			return kinds.data
 		// e.g. an exported function or a method, called where the build can't see
 		if (call?.type !== "CallExpression" || call.callee === operand)
 			return opaque
@@ -1562,8 +1569,28 @@ export class ModuleGraph {
 					)
 				}
 				const local = this.localTypeOf(module, root.name)
-				if (!local) return union(type.typeArguments?.params ?? [], depth + 1)
-				return this.declaredTypeKindOf(local, context, module, kindOfKey, depth)
+				if (local) {
+					return this.declaredTypeKindOf(
+						local,
+						context,
+						module,
+						kindOfKey,
+						depth
+					)
+				}
+				const args = type.typeArguments?.params ?? []
+				// e.g. `Awaited<unknown>`, which is what its argument is
+				if (name.type !== "Identifier" || !(root.name in containerTypes))
+					return union(args, depth + 1)
+				// e.g. `Record<string, unknown>`, holding what its arguments say,
+				// as a type literal holds its members
+				let held: KindBits = kinds.data
+				for (const arg of args) {
+					held |=
+						this.typeKindOf(arg, context, module, kindOfKey, depth + 1) ??
+						kinds.opaqueHolder
+				}
+				return held
 			}
 			case "TSLiteralType":
 			case "TSTemplateLiteralType":
@@ -3712,6 +3739,14 @@ const isContainerMethod = (name: unknown): boolean =>
 	typeof name === "string" && (name in Array.prototype || name in Map.prototype)
 
 // an annotation narrows only what the build lost track of
+// e.g. `onFocus={...}` on `<input>`, whose attributes the renderer reads,
+// rather than on `<Field>`, a component that may pass a prop anything
+const isIntrinsicElementAttribute = (node: Node | undefined): boolean =>
+	node?.type === "JSXAttribute" &&
+	node.parent?.type === "JSXOpeningElement" &&
+	node.parent.name.type === "JSXIdentifier" &&
+	/^[a-z]/.test(node.parent.name.name)
+
 const annotate = (kind: KindBits, annotated: KindBits | undefined): KindBits =>
 	annotated === undefined ? kind : (
 		(kind & arkBits) | (kind & ~arkBits ? annotated : 0)
@@ -3876,6 +3911,26 @@ const arkTypeKindOf = (name: string): KindBits =>
 	name === "Scope" || name === "Generic" ? unsure | kinds.otherArk : unsure
 
 type LocalType = TSInterfaceDeclaration | TSTypeAliasDeclaration
+
+// globals holding what their arguments describe, rather than being it
+const containerTypes: Record<string, 1> = Object.setPrototypeOf(
+	{
+		Record: 1,
+		Array: 1,
+		ReadonlyArray: 1,
+		ArrayLike: 1,
+		Iterable: 1,
+		Map: 1,
+		ReadonlyMap: 1,
+		WeakMap: 1,
+		Set: 1,
+		ReadonlySet: 1,
+		WeakSet: 1,
+		Promise: 1,
+		PromiseLike: 1
+	},
+	null
+)
 
 const arkTypeNames: Record<string, 1> = Object.setPrototypeOf(
 	{

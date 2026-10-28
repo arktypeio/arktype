@@ -28,6 +28,21 @@ const escapesOf = (...args: Parameters<typeof analyze>) =>
 
 contextualize(() => {
 	describe("allowed", () => {
+		it("web platform classes Node has, but not the DOM's", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+export const Key = type.instanceOf(CryptoKey).or("null")
+export const Upload = type({ body: type.instanceOf(ReadableStream), signal: type.instanceOf(AbortSignal), query: type.instanceOf(URLSearchParams) })
+export const Socket = type.instanceOf(WebSocket)
+export const Element = type.instanceOf(HTMLElement)`)
+			).snap([
+				"2:20 accepted CryptoKey | null",
+				"3:23 accepted { body: ReadableStream, query: URLSearchParams, signal: AbortSignal }",
+				"4:23 accepted WebSocket",
+				"5:24 rejected\n  `HTMLElement` is a global the build does not read"
+			])
+		})
+
 		it("static expressions", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
@@ -970,6 +985,63 @@ export type Forms = { user: Type }`
 			])
 		})
 
+		it("a read off a parameter annotated with a global container type", () => {
+			attest(
+				unhinted(
+					`import { type, type Type } from "arktype"
+export const T = type("string")
+const cost = (raw: unknown) => raw
+export function stage(record: Record<string, unknown> | null | undefined) {
+	return cost(record?.merge)
+}
+export function awaited(t: Awaited<unknown> | null) {
+	return cost(t?.merge)
+}
+export function held(record: Record<string, unknown>) {
+	return cost(record.merge.or)
+}
+export function typed(forms: Record<string, Type>) {
+	return cost(forms.user.or)
+}
+export function first(ts: Array<unknown>) {
+	return cost(ts[0].or)
+}
+export function usage(record: unknown) {
+	const rec = record as Record<string, unknown>
+	return [stage(rec), awaited(rec), held(rec), typed(rec as never), first(rec as never)]
+}`
+				)
+			).snap([
+				"/main.ts:11:14  record.merge.or reads or, which a standalone validator lacks\n  the build can't tell where `record.merge` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:14:14  forms.user.or reads or, which a standalone validator lacks\n  the build can't tell where `forms.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:17:14  ts[0].or reads or, which a standalone validator lacks\n  the build can't tell where `ts[0]` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:21:22  `awaited` is read outside a call the build precompiles\n  t?.merge (/main.ts:8:14) reads `t`, a parameter of awaited, so the build precompiles it at each call to awaited"
+			])
+		})
+
+		it("a handler of an intrinsic JSX element, but not of a component", () => {
+			const source = `import { type } from "arktype"
+export const Name = type("string")
+export const Field = (props: { Picker: any; onPick: (t: unknown) => void }) => (
+	<label>
+		<input onFocus={e => e.target.select()} ref={el => el?.focus()} />
+		<my-element onchange={e => e.target.or} />
+		<Picker onPick={t => t.or("null")} />
+		<props.Picker onPick={t => props.onPick(t.or("null"))} />
+	</label>
+)
+declare const Picker: any`
+			attest(
+				new Precompiler(memoryHost({ "/main.tsx": source }))
+					.analyzeSites(source, "/main.tsx")
+					.diagnostics.map(renderDiagnostic)
+					.map(d => d.slice(0, d.lastIndexOf("\n")))
+			).snap([
+				"/main.tsx:7:24  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.tsx:8:43  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
 		it("parameter", () => {
 			attest(
 				diagnosticsOf(`import { scope, type } from "arktype"
@@ -1461,8 +1533,8 @@ export const readers = [ark.flatByPath]
 export const translated = (out: ArkErrors) => out.issues.map(issue => ark.messageIn(issue, {} as never))`)
 			).snap([
 				'/main.ts:4:46  flatProblemsByPath(errors) calls flatProblemsByPath, which arktype/runtime doesn\'t export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: "arktype".',
-				'/main.ts:7:38  ark.byPath(out) calls byPath, which arktype/runtime doesn\'t export\n  Read `out.issues`, each with its path and message, as in `for (const { path, message } of out.issues)`, or build with runtime: "arktype".',
-				"/main.ts:9:25  `ark.flatByPath` is arktype's, which arktype/runtime doesn't export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: \"arktype\".",
+				'/main.ts:7:38  ark.byPath(out) calls byPath, which arktype/runtime doesn\'t export\n  Write it as `Object.fromEntries(out.issues.map(issue => [issue.path.join("."), issue]))`, whose keys join each path with ".", where arktype writes an index as [0], or build with runtime: "arktype".',
+				'/main.ts:9:25  `ark.flatByPath` is arktype\'s, which arktype/runtime doesn\'t export\n  Write it as `Object.groupBy(errors.issues, issue => issue.path.join("."))`, whose keys join each path with ".", where arktype writes an index as [0], or build with runtime: "arktype".',
 				'/main.ts:10:71  ark.messageIn(issue, {} as never) calls messageIn, which arktype/runtime doesn\'t export\n  Read `issue.message`, which a standalone validator writes in English, or build with runtime: "arktype" to write it in a locale.'
 			])
 		})
