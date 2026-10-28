@@ -234,10 +234,14 @@ const introspectedMembers = ["toJSON", "toJsonSchema", "toString"] as const
 
 // e.g. json off a validator whose build doesn't bake it, which reads
 // undefined, though the development runtime throws for it
+// a member the validator lacks reads undefined, though outside production
+// its runtime throws naming the fix where it's read
 const isUnbaked = (counterpart: unknown, k: PropertyKey): boolean =>
 	typeof counterpart === "function" &&
-	includes(introspectionMembers, k) &&
-	!Object.getOwnPropertyDescriptor(counterpart, k)
+	!Object.getOwnPropertyDescriptor(counterpart, k) &&
+	(includes(introspectionMembers, k) ||
+		!!Object.getOwnPropertyDescriptor(Object.getPrototypeOf(counterpart), k)
+			?.get)
 
 const droppableMembers = [
 	"assert",
