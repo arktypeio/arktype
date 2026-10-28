@@ -136,7 +136,6 @@ export const issueAt = (
 	return issue
 }
 
-// the issues an Apply finds in data it rejected
 export const issuesOf = (
 	apply: CompactApply,
 	data: unknown,
@@ -165,8 +164,7 @@ export const throwIssues = (apply: CompactApply, data: unknown): never => {
 	return errors.throw()
 }
 
-// a root reporting into ArkErrors, as a size build applies it; they hold
-// no path to release
+// the errors hold no path to release
 export const applyIssues = (
 	apply: CompactApply,
 	data: unknown,

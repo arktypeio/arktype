@@ -109,8 +109,7 @@ export const nodesById: Record<
 
 $ark.nodesById = nodesById
 
-// an id names the functions compiled code declares and calls, so an alias
-// it starts with is written as an identifier, never as the alias is
+// compiled code declares functions by id, so an alias prefix is written as an identifier
 export const registerNodeId = (prefix: string): NodeId => {
 	prefix = prefix.replace(/[^\w$]/g, "_")
 	if (/^\d/.test(prefix)) prefix = `_${prefix}`
@@ -177,8 +176,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	})
 }
 
-// keys are ordered so equal inners share a key and json, with children
-// after other values in order of precedence
+// children after other values, in order of precedence
 export const compareInnerKeys = (l: string, r: string): number =>
 	isNodeKind(l) ?
 		isNodeKind(r) ? precedenceOfKind(l) - precedenceOfKind(r)
@@ -187,8 +185,7 @@ export const compareInnerKeys = (l: string, r: string): number =>
 	: l < r ? -1
 	: 1
 
-// an alias belongs in a structural value, so a value holding one elsewhere is
-// deferred to an alias of its own
+// a value holding an alias outside a structure is deferred to an alias of its own
 const deferAliases = (v: unknown, $: BaseScope): unknown => {
 	if (isArray(v)) {
 		const deferred = v.map(element => deferAliases(element, $))
@@ -266,8 +263,7 @@ export const createNode = ({
 	return key ? $.nodesByKey.set(key, node) : node
 }
 
-// a node's children are cached before it, so their ids can stand in for
-// their content
+// children are cached before their parent, so their ids stand in for their content
 const nodeKeyOf = (
 	kind: NodeKind,
 	impl: UnknownNodeImplementation,
@@ -347,9 +343,7 @@ export const requiredPropOf = (
 	return prop as nodeOfKind<"required">
 }
 
-// a basis or primitive constraint's error context includes its description,
-// so a configured writer runs on construction whether or not the node is
-// compiled, while a built-in one, which reads only the node, runs when read
+// a configured writer runs on construction, as a basis's error context includes its description
 export const resolveDescription = <node extends BaseNode>(node: node): node => {
 	if (node.isBasis() || includes(prestructuralKinds, node.kind)) {
 		if (

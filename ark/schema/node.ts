@@ -130,7 +130,6 @@ export const forgetReferences = (node: BaseNode): void => {
 	}
 }
 
-// refsById lists a node, then what each node it references does, each once
 const selectedFrom = (
 	node: BaseNode,
 	selects: (node: BaseNode) => boolean,
@@ -203,16 +202,13 @@ class NodeCache {
 	declare unbound?: UnboundTraversals | undefined
 }
 
-// outside the getter, which would otherwise allocate a context for `this` on
-// every read, even once the arrow is cached
+// outside the getter, so reading it allocates no context for `this`
 const assertOf =
 	(node: BaseNode) =>
 	(data: unknown, pipedFromCtx?: Traversal): unknown =>
 		node(data, pipedFromCtx, throwOnDefault)
 
-// a hash repeats the JSON of every node below its own, so a long one, written
-// mostly to sort and compare nodes as they're parsed, is dropped when the job
-// that wrote it ends rather than kept for as long as its node
+// long hashes mostly serve parsing, so they're dropped once the job that wrote them ends
 let hashedInJob: NodeCache[] = []
 
 const keptForJob = (cache: NodeCache, hash: string): string => {
@@ -225,16 +221,12 @@ const keptForJob = (cache: NodeCache, hash: string): string => {
 	return hash
 }
 
-// a node referenced from several others repeats in each one's JSON, so past
-// this length, a hash is the start of its JSON, by which siblings still sort,
-// and a digest of all of it
+// past this length, a hash is a prefix of the JSON, by which siblings still sort, and a digest
 const maxPlainHashLength = 65_536
 export const hashedPrefixLength = 1024
 // a digest reads an object nested past this length as that object's digest
 const maxInlinedLength = 256
 
-// JSON, or past maxPlainHashLength, the start of it and a digest, which,
-// following an unclosed object, can't be read as JSON
 const hashJsonOf = (json: object): string =>
 	jsonLengthOf(json) <= maxPlainHashLength ?
 		JSON.stringify(json)
@@ -242,8 +234,7 @@ const hashJsonOf = (json: object): string =>
 
 const jsonLengths = new WeakMap<object, number>()
 
-// about the length of a value's JSON, read once per object, so a node's is
-// the sum of its children's
+// approximate, memoized per object
 export const jsonLengthOf = (json: unknown): number => {
 	if (typeof json !== "object" || json === null)
 		return typeof json === "string" ? json.length + 2 : 5
@@ -256,7 +247,6 @@ export const jsonLengthOf = (json: unknown): number => {
 		if (typeof v === "object" && v !== null) nests = true
 		length += k.length + 4 + jsonLengthOf(v)
 	}
-	// one holding only primitives is read again as quickly
 	if (nests) jsonLengths.set(json, length)
 	return length
 }
@@ -283,8 +273,7 @@ const jsonPrefixOf = (json: unknown, max: number): string => {
 
 const digests = new WeakMap<object, string>()
 
-// of JSON writing each long object nested in it as "#", which starts no JSON
-// value, and that object's digest
+// a nested object past maxInlinedLength is written as "#" and its digest
 const digestOf = (json: object): string => {
 	let digest = digests.get(json)
 	if (digest === undefined) {
@@ -310,8 +299,7 @@ const digestOf = (json: object): string => {
 	return digest
 }
 
-// a hash past maxPlainHashLength ends in a digest rather than "}", so two that
-// match are confirmed by their JSON, as digests of different JSON can collide
+// digests can collide, so hashes ending in one are confirmed by their JSON
 export const hashesMatch = (l: BaseNode, r: BaseNode): boolean =>
 	l.hash === r.hash && (l.hash.endsWith("}") || isJsonEqual(l.json, r.json))
 
@@ -321,8 +309,6 @@ export const innerHashesMatch = (l: BaseNode, r: BaseNode): boolean =>
 
 const equalJson = new WeakMap<object, WeakSet<object>>()
 
-// whether two values write the same JSON, comparing each pair of objects once,
-// so objects a node's JSON shares with its children's are compared once
 const isJsonEqual = (l: unknown, r: unknown): boolean => {
 	if (l === r) return true
 	const isObject = typeof l === "object" && l !== null
@@ -505,8 +491,7 @@ export abstract class BaseNode<
 			:	entersAlias
 	}
 
-	// a root no alias references is tracked under an equal resolution, so an
-	// object reached again through its aliases isn't traversed twice
+	// a root no alias references is tracked as an equal resolution
 	get trackedId(): string {
 		if (this.c.trackedId) return this.c.trackedId
 		if (!isResolutionFinal()) return this.id
@@ -556,8 +541,7 @@ export abstract class BaseNode<
 				// an intersection can drop what its operands reach, so only resolving it decides
 				if (reference[flag]) return !reachesOperands || this.reaches(flag, true)
 				if (!reference.is("alias")) continue
-				// an intersection reaches nothing its operands don't, and resolving one can
-				// create others or reenter an operand still resolving
+				// resolving an intersection can create others or reenter an operand still resolving
 				if (
 					reference.operator === "&" &&
 					!(resolvesIntersections && reference.hasResolvableOperands)
@@ -617,8 +601,6 @@ export abstract class BaseNode<
 		return (this.c.byId ??= this.collectReferences())
 	}
 
-	// the references a predicate selects, in refsById's order, each node's
-	// read from those it references, so nodes many others reach are read once
 	selectReferences(selects: (node: BaseNode) => boolean): readonly BaseNode[] {
 		let selections = selectionsByPredicate.get(selects)
 		if (!selections) {
@@ -636,8 +618,7 @@ export abstract class BaseNode<
 				stack.pop()
 				continue
 			}
-			// an alias can close a cycle or replace a node sharing its id, so
-			// what reaches one reads its refsById
+			// an alias can close a cycle or replace a node sharing its id
 			if (node.hasAlias) {
 				byNode.set(node, null)
 				stack.pop()
@@ -768,8 +749,7 @@ export abstract class BaseNode<
 	deferJit(): void {
 		if (this.c.preJit) return
 		const allows = (this.c.preJit = this.allows)
-		// a detached reference can call this after compiling, so it keeps what
-		// compiled rather than reading the Type's each call
+		// keeps what compiled, as a detached reference can call this after
 		let compiled: BaseNode["allows"] | undefined
 		this.allows = data => {
 			if (compiled !== undefined) return compiled(data)
@@ -971,8 +951,7 @@ export abstract class BaseNode<
 		return this.unitFn?.toString()
 	}
 
-	// an arrow function, created when first read, since it is often detached,
-	// e.g. when passing to tRPC
+	// an arrow, since it is often detached, e.g. when passed to tRPC
 	get assert(): (data: d["prerequisite"], pipedFromCtx?: Traversal) => unknown {
 		return (this.c.assert ??= assertOf(this))
 	}
@@ -992,8 +971,7 @@ export abstract class BaseNode<
 		return out
 	}
 
-	// allows data without marking the Type used, e.g. a unit or key an
-	// intersection checks
+	// allows data without marking the Type used, e.g. a key an intersection checks
 	allowsUnused(data: d["prerequisite"]): boolean {
 		const usedPreJit = this.c.usedPreJit
 		const out = this.allows(data)
@@ -1056,8 +1034,7 @@ export abstract class BaseNode<
 			} else ioInner[k] = v
 		}
 
-		// an alias read while definitions are open stands for its input and output
-		// alike, so a union of them is reduced once final
+		// an open alias stands for its input and output alike, so the union reduces once final
 		return this.$.node(this.kind, ioInner as never, {
 			reduced: this.is("union") && this.hasAlias && !isIoFinal()
 		})
@@ -1236,8 +1213,7 @@ export abstract class BaseNode<
 		| Extract<ReturnType<mapper>, null> {
 		const ctx = this._tfContext(opts)
 		if (!ctx.throughAliases) return this._tf(mapper, ctx) as never
-		// an alias to a resolution still being transformed resolves once the
-		// transform returns
+		// an alias to a resolution still transforming resolves once the transform returns
 		inProgress.res++
 		let transformed: BaseNode | null
 		try {
@@ -1340,8 +1316,7 @@ export abstract class BaseNode<
 					const { head, piped } = this as {} as Morph.Node
 					const transformed = head?._tf(mapper, ctx)
 					if (transformed) return [k, [transformed, ...piped]]
-					// a pruned head accepts anything, so the node it piped to isn't
-					// promoted to head
+					// a pruned head accepts anything, so what it piped to isn't promoted
 					return [
 						k,
 						hasArkKind(piped[0], "root") ? [$ark.kw.unknown, ...piped] : piped
@@ -1358,7 +1333,6 @@ export abstract class BaseNode<
 				const transformed = (
 					children as array<BaseNode | Sequence.DefaultableElement>
 				).flatMap<BaseNode | Sequence.DefaultableElement>(n => {
-					// a defaultable element pairs its node with its default value
 					if (isArray(n)) {
 						const transformedElement = n[0]._tf(mapper, ctx)
 						return transformedElement ?
@@ -1527,8 +1501,7 @@ interface SimulatedPair {
 	assumedBy: Record<string, true>
 }
 
-// a cyclic node is within another if its unfolding is, so a pair of aliases
-// is assumed related until its unfoldings are compared
+// a pair of aliases is assumed related until their unfoldings are compared
 const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 	if (innerHashesMatch(l, r)) return true
 	if (l.is("alias") || r.is("alias")) {
@@ -1540,8 +1513,7 @@ const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 		}
 		return isAssumed(l, r, s, false)
 	}
-	// branches of an unreduced union may subsume each other, so each need only be
-	// within one on the other side or another branch that is
+	// branches of an unreduced union may subsume each other
 	if (l.is("union") && !l.inner.ordered) {
 		return l.branches.every(
 			branch =>
@@ -1704,8 +1676,7 @@ const _isMutuallySimulated = (
 	}
 	const simulates = () => isSimulated(l, r, s) && isSimulated(r, l, s)
 	if (!simulates()) return false
-	// a pair whose unfoldings aren't related fails each comparison that assumed
-	// it, so each is compared again
+	// a pair whose unfoldings aren't related fails each comparison that assumed it
 	while (s.pending.length) {
 		const pair = s.pending.pop()!
 		if (s.failed[pair]) continue
@@ -1731,8 +1702,7 @@ const _isMutuallySimulated = (
 	return true
 }
 
-// a description written over a keyword's phrase is authored text, so the
-// node no longer has the keyword's identity
+// a description written over a keyword's phrase drops the keyword's identity
 const withoutReplacedKeyword = (
 	existing: ArkEnv.meta | undefined,
 	meta: ArkEnv.meta
@@ -1747,8 +1717,7 @@ const withoutReplacedKeyword = (
 	return rest
 }
 
-// a traversal reads whether an alias resolves to it, so every alias a node
-// reaches resolves before it's compiled
+// every alias a node reaches resolves before it's compiled
 export const referencesThroughAliases = (
 	references: readonly BaseNode[]
 ): BaseNode[] => {
@@ -1831,15 +1800,13 @@ const writeSelectAssertionMessage = (from: BaseNode, selector: NodeSelector) =>
 	`${from} had no references matching ${printable(selector)}.`
 
 export declare namespace NodeSelector {
-	// not generic, since TS defers a generic call returning a function, like a
-	// Type, while inferring the call it's an argument of, e.g. a scope (#1510)
+	// not generic: TS defers a generic call returning a function while inferring its enclosing call (#1510)
 	export interface SelectableFn<
 		input,
 		returns,
 		kind extends NodeKind = NodeKind
 	> {
-		// first for object key completions. a required selector lets a
-		// missing kind or boundary narrow which where it's checked against
+		// first for object key completions
 		(input: input, selector: NodeSelector.CompositeOf<kind>): returns
 		(input: input, selector?: NodeSelector.Single): returns
 	}
@@ -1954,7 +1921,6 @@ export const ioOf = <node extends BaseNode>(
 	ioKind: "in" | "out"
 ): node => (ioKind === "in" ? node._in : node._out) as never
 
-// a child's refs, each reached through key
 export const flatRefsAt = (key: KeyOrKeyNode, node: BaseRoot): FlatRef[] =>
 	append(
 		node.flatRefs.map(ref => flatRef([key, ...ref.path], ref.node)),
@@ -1974,8 +1940,7 @@ export const flatMorphsAreEqual = (
 		l.node.structure?.structMorph === r.node.structure?.structMorph
 	:	false)
 
-// refs are equal only at the same path, so a DAG's refs, one per path, are
-// deduplicated in linear time
+// refs are equal only at the same path
 export const uniqueFlatRefs = (refs: FlatRef[]): FlatRef[] => {
 	const refsByPath = new Map<string, FlatRef[]>()
 	return refs.filter(ref => {

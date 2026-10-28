@@ -108,8 +108,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 			computeDefaultValueMorph(this.key, this.value, this.default)
 		:	undefined
 
-	// without exactOptionalPropertyTypes, undefined is as absent as a missing
-	// key, so a default replaces it too
+	// without exactOptionalPropertyTypes, a default replaces undefined too
 	readonly defaultsUndefined: boolean =
 		this.hasDef() && this.$.cfg.exactOptionalPropertyTypes === false
 
@@ -192,8 +191,7 @@ export const checkDefault = (
 	return value
 }
 
-// a morph's description also describes its input, but a default is easily
-// mistaken for its output, so a rejected default reports what its input checks
+// a default is easily mistaken for a morph's output, so a rejected one reports what its input checks
 const inputErrors = (node: BaseRoot, value: unknown): ArkErrors =>
 	(node.in as BaseRoot)
 		.configure(meta =>

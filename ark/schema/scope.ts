@@ -244,7 +244,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	/** `refsById`, once read */
 	private _refsById: { [id: string]: BaseNode } | undefined
-	// collected when first read
 	get byId(): { [id: string]: BaseNode } {
 		if (!this._refsById && this._exported) {
 			this._refsById = {}
@@ -448,7 +447,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 	): reference {
 		if (reference.$ === this || (isNode(reference) && reference.is("alias")))
 			return reference
-		// bound once per scope
 		let bound = this.boundRefs.get(reference)
 		if (!bound) {
 			bound =
@@ -475,8 +473,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return bound as never
 	}
 
-	// a keyword resolved by name is described by this scope all the way down,
-	// except through a cycle, which would be printed unrolled
+	// a keyword resolved by name is described by this scope, except through a cycle
 	bindKw<reference extends BaseNode | GenericRoot>(
 		reference: reference
 	): reference {
@@ -648,8 +645,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (!def) return this.maybeResolveSubalias(name)
 
-		// a reference to a thunk's alias while it's called is a cycle, but a
-		// generic's declaration is called again
+		// referencing a thunk's alias while it's called is a cycle, but a generic's body is called again
 		if (isScopeAlias && isThunk(def) && !(def instanceof LazyGenericRoot)) {
 			const preparsed = this.preparseOwn(def, { alias: name })
 			const ctx = registerParseContext(
@@ -660,8 +656,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			try {
 				def = defining(() => this.normValue(ctx.def))
 			} finally {
-				// if the call throws, its context stays registered so an alias parsed
-				// during it resolves by name
+				// registered while the call runs, so an alias parsed during it resolves by name
 				delete this.res[name]
 			}
 			if (!hasArkKind(def, "generic") && !hasArkKind(def, "module")) {
@@ -855,7 +850,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 					(branch as {} as Union.Node).branches
 				:	branch
 			)
-			// a union of one branch is that branch
 			if (branches.length === 1) return this.bindRef(branches[0]) as never
 			// a set engine rejects overlapping branches that transform differently
 			if (
@@ -934,8 +928,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	fin<node extends BaseRoot>(node: node, jit = true): node {
-		// an alias may reference a definition that is still being parsed,
-		// e.g. Record<string, this>, so the outermost parse finalizes it
+		// an alias may reference a definition still parsing, e.g. Record<string, this>
 		if ((inProgress.definitions || inProgress.res) && node.hasAlias) return node
 
 		// resolving aliases can throw, so they compile on definition

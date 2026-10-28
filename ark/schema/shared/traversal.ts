@@ -33,7 +33,6 @@ import {
 import { TransformErrors } from "./transform.ts"
 import { inProgress } from "./utils.ts"
 
-// receives arktype's errors, which extend a validator's
 export type FailHandler = (errors: never) => unknown
 
 export type BranchTraversal = {
@@ -402,7 +401,6 @@ const receive = (ctx: InternalTraversal, data: unknown): void => {
 	ctx.recvAt = ctx.path.length
 }
 
-// reads predicate, or for pipe.try the morph that threw
 export const describePredicate = (ctx: {
 	predicate?: Predicate
 	morph?: Morph
@@ -411,7 +409,6 @@ export const describePredicate = (ctx: {
 	return `valid according to ${(fn && functionNameOf(fn)) || "an anonymous predicate"}`
 }
 
-// pipe.try's morph, failing with what the one it wraps throws
 export const tryMorph =
 	(morph: Morph): Morph =>
 	(In, ctx) => {
@@ -422,13 +419,11 @@ export const tryMorph =
 		}
 	}
 
-// an `x/.../` literal's morph
 export const execMorph =
 	(regex: RegExp): Morph =>
 	(s: string) =>
 		regex.exec(s)
 
-// a morph reads data from its input until it returns
 export const callMorph = (
 	ctx: InternalTraversal,
 	morph: Morph,
@@ -467,7 +462,6 @@ const transformAcyclic = (
 	data: unknown
 ): unknown => transformed(ctx, node.tTransform!(data, ctx), data)
 
-// a transform that doesn't require ctx returns its errors
 export const transformed = (
 	ctx: InternalTraversal,
 	result: unknown,
@@ -582,11 +576,9 @@ const applyPipedResolution = (
 	ctx.recvAt = recvAt
 }
 
-// Apply transforms valid values outside branches and pipes
 export const transformsValid = (ctx: InternalTraversal): boolean =>
 	ctx.branches.length === 0 && !ctx.chkOnly
 
-// a transform Apply runs returns or adds its errors
 export const transformedInApply = (
 	ctx: InternalTraversal,
 	result: unknown
@@ -594,7 +586,6 @@ export const transformedInApply = (
 	if (result instanceof TransformErrors) addMorphErrs(ctx, result)
 }
 
-// whether data was allowed and transformed instead of applied
 export const transformIfAllowed = (
 	ctx: InternalTraversal,
 	node: BaseNode,
@@ -638,9 +629,7 @@ export const allowsInBranchBy = (
 	return ctx.popBr()!.errN === 0 && allowed
 }
 
-// what an Allows returns where data fails, through a call V8 has no feedback
-// for until then, so a transform it guards is compiled with its checks and
-// repeats none of their reads
+// a call V8 can't inline until data fails, so a guarded transform compiles with its checks
 export const disallowed = (): false => false
 
 // the last string a loop's Allows rejected, so Apply needn't rematch it
@@ -672,7 +661,6 @@ const minStickyLength = 16
 
 const stickyCopies = /* @__PURE__ */ new WeakMap<RegExp, RegExp>()
 
-// matches /^atom+$/ by a sticky copy of its atom
 export const matchesRepeated = (pattern: RegExp, data: string): boolean => {
 	if (data.length < minStickyLength) return pattern.test(data)
 	let sticky = stickyCopies.get(pattern)
@@ -911,11 +899,9 @@ let continuationConfig: ResolvedConfig
 export const aliasVisits = {
 	count: 0,
 	tracked: false,
-	// data past the depth bound may be cyclic, so every path past it continues
-	// one tracked traversal
+	// data past the depth bound may be cyclic, so every path past it continues one tracked traversal
 	exceed: (data: unknown): InternalTraversal | false => {
-		// a path past the bound costs the visits it took to reach it, so cyclic
-		// data reruns tracked from its root
+		// a path past the bound costs the visits it took to reach it
 		aliasVisits.count += maxAliasDepth
 		if (aliasVisits.count > maxAliasVisits) {
 			aliasVisits.count = Number.POSITIVE_INFINITY
@@ -928,8 +914,7 @@ export const aliasVisits = {
 
 const untrackedBound = /* @__PURE__ */ noSuggest("untrackedBound")
 
-// once tracked, a cyclic root is entered as its own resolution, so data
-// reaching it again isn't traversed twice
+// once tracked, a cyclic root is entered as its own resolution
 export const applyCyclic = <ctx extends InternalTraversal>(
 	node: BaseNode,
 	data: unknown,
@@ -991,7 +976,6 @@ export const applyMember = (
 		applyResolution(member.id, node, data, ctx)
 	:	node.tApply(data, ctx)
 
-// applies data Allows rejects; transforms what it accepts
 export const applyValue = (
 	node: BaseNode,
 	data: unknown,
@@ -1009,8 +993,7 @@ export const applyValue = (
 	else node.tApply(data, ctx)
 }
 
-// within the bounds, data is traversed as a tree; past the visit bound it may
-// be cyclic, so only a tracked traversal can tell
+// past the visit bound data may be cyclic, which only a tracked traversal can tell
 export const allowsUntracked = (
 	node: BaseNode,
 	data: unknown
@@ -1038,8 +1021,7 @@ export const allowsUntracked = (
 	return exceeded ? undefined : allowed
 }
 
-// a transform relies on data being acyclic, which data tracked past the
-// depth bound isn't shown to be
+// a transform relies on data being acyclic, which past the depth bound it isn't shown to be
 export const allowsAcyclic = (
 	node: BaseNode,
 	data: unknown

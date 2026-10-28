@@ -46,19 +46,16 @@ export const writeMessage: MessageWriter = ctx => {
 		:	`${propString} ${ctx.problem}`
 }
 
-// whether a path's string starts with "[", read from its first key, as
-// indexing the string, written by concatenation, would flatten it
+// read from the first key: indexing the string, written by concatenation, would flatten it
 const startsWithBracket = (path: readonly PropertyKey[]): boolean =>
 	typeof path[0] !== "string" || !isDotAccessible(path[0])
 
-// constraints described alike, like those under one configured message,
-// are written once
+// constraints described alike, as under one configured message, are written once
 const distinctExpectedOf = (errors: readonly ArkError[]): string[] => [
 	...new Set(errors.map(e => e.expected))
 ]
 
-// one writer per slot for each kind that doesn't write its own, so en can tell
-// which are its kind's
+// one writer per slot for each kind that doesn't write its own
 export const errorWriters: {
 	actual: ActualWriter
 	problem: ProblemWriter
@@ -96,9 +93,7 @@ export const errorWritersByCode: {
 	notEqual: { actual: writeNotEqualActual },
 	notEqualLength: { actual: writeLengthActual },
 	pattern: {},
-	// a keyword's nodes describe their errors through meta, so its phrase writes
-	// only errors it raises through ctx: their actual, and the problem of one that
-	// carries what the keyword caught
+	// a keyword's phrase writes only the errors it raises through ctx
 	predicate: {
 		// error contexts from ctx.reject have neither a description nor a predicate
 		expected: ctx => ctx.description ?? describePredicate(ctx),

@@ -57,8 +57,7 @@ registerBuilderCompiler(context =>
 	)
 )
 
-// a host can allow code generation as arktype loads and refuse it later, as
-// workerd does within a request, so the first refusal leaves later nodes jitless
+// a host can allow codegen as arktype loads and refuse it later, as workerd does in a request
 let refusesJit = false
 
 export const canJit = (config: ResolvedConfig): boolean =>
@@ -277,16 +276,9 @@ export abstract class NodeCompiler extends CompiledFunction<
 	declare readonly reportsFirst?: boolean
 	// whether a build writes for size, so Allows returns where it fails
 	declare readonly shortest?: boolean
-	// whether a copy is a literal of the values it holds rather than one of
-	// nulls it fills. V8 gives a field the kind of value first written to it,
-	// and one first written a fraction holds it in a box each object
-	// allocates, so a copy filling nulls holds data's numbers as they are
-	// where data's fields hold any value, as a definition of the same keys in
-	// the same order makes them
+	// V8 boxes a field first written a fraction, so a copy filling nulls holds data's numbers as they are
 	declare readonly copiesValues?: boolean
-	// whether data is trusted to hold only own, enumerable keys, as
-	// JSON.parse's output does, so a count of its keys can stand for a check
-	// of each
+	// trusted to hold only own, enumerable keys, as JSON.parse's output does
 	declare readonly jsonInput?: boolean
 	/** whether the transform it compiles checks for errors a transformed child added */
 	checksErrs = false
@@ -303,8 +295,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	missFails?(node: UnionNode): string
 	defaultFails?(node: UnionNode, caseNode: BaseRoot): string
 	undeclaredFails?(node: StructureNode): string
-	// the site a required key whose value's condition failed is reported at,
-	// as a basis's key is, rather than by applying its value
+	// the site a required key whose value's condition failed is reported at
 	failingSiteOf?(prop: BaseNode): string | undefined
 	// what a key's value whose condition failed is applied by, if not its Apply
 	failingApplyOf?(value: BaseNode): string | undefined
@@ -426,9 +417,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		)
 	}
 
-	// a transforming object's Allows rejects through disallowed, so the
-	// transform after it is compiled with its checks. A build for size
-	// returns false
+	// a transforming object's Allows rejects through disallowed; a build for size returns false
 	rejection(node: BaseNode): string {
 		return this.trav === "Allows" && !this.shortest && node.tfs ?
 				`${this.ref(disallowed)}()`

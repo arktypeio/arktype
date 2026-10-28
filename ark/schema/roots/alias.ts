@@ -96,8 +96,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		}
 	}
 	readonly structure = undefined
-	// a cycle passes an alias referencing its definition while it's parsed, so
-	// Allows bounds only those
+	// Allows bounds only aliases referencing their definition while it's parsed
 	closes = true
 	private _resolution: BaseRoot | undefined
 

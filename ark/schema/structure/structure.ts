@@ -94,8 +94,7 @@ export declare namespace Structure {
 		readonly required?: readonly Required.Node[]
 		readonly index?: readonly Index.Node[]
 		readonly sequence?: Sequence.Node
-		// "ignore" only where a scope's onUndeclaredKey is another, so a node
-		// built from this one's inner doesn't take the scope's
+		// "ignore" only where a scope's onUndeclaredKey is another
 		readonly undeclared?: UndeclaredKeyBehavior
 		/**
 		 * the order an object built as output lists its declared keys in.
@@ -217,8 +216,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 
 const noSiblings: array<BaseConstraint> = []
 
-// whether checking a node can call a function a program supplied,
-// which a keyword's predicate isn't
+// a keyword's predicate isn't user code
 const callsUserCode = (node: BaseNode): boolean =>
 	node.userCode ||
 	(node.hasAlias &&
@@ -226,8 +224,7 @@ const callsUserCode = (node: BaseNode): boolean =>
 			reference => reference.userCode
 		))
 
-// what checking a branch costs: 0 compares data itself, 1 reads a
-// primitive it points to and 2 walks an object
+// 0 compares data itself, 1 reads a primitive it points to, 2 walks an object
 const branchCost = (branch: BaseRoot): number => {
 	const basis = branch.is("intersection") ? branch.basis : branch
 	if (basis?.is("unit"))
@@ -239,8 +236,7 @@ const branchCost = (branch: BaseRoot): number => {
 const allowsRank = (prop: Prop.Node): number =>
 	prop.value.costly ? 3 : Math.max(...prop.value.branches.map(branchCost))
 
-// Allows checks cheaper values first, so failing data is rejected sooner,
-// though never across a prop calling user code
+// cheaper props first, though never across one calling user code
 const orderedForAllows = (props: array<Prop.Node>): array<Prop.Node> => {
 	const ordered: Prop.Node[] = []
 	let run: Prop.Node[] = []
@@ -307,8 +303,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return this.inOrder.map(prop => prop.key)
 	}
 
-	// a result deleting undeclared keys is a literal of the required props its
-	// order starts with, and the others are stored after it in order
+	// a literal of the required props its order starts with, then the rest in order
 	get resultLayout(): [literal: array<Prop.Node>, added: array<Prop.Node>] {
 		const props = this.inOrder
 		let i = 0
@@ -488,8 +483,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return this.$.node("structure", this.filterKeys("omit", keys))
 	}
 
-	// a prop changing kind would move to its kind's canonical place, so these
-	// keep the order explicit
+	// a prop changing kind would move to its kind's canonical place
 	optionalize(): StructureNode {
 		const { required, ...inner } = this.inner
 		return this.$.node("structure", {
@@ -997,9 +991,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return js.return(true)
 	}
 
-	// whether data of only own, enumerable keys holds none it doesn't declare
-	// where for...in finds as many keys as it holds declared ones: not where it
-	// declares a key Object.prototype has, which in finds even unheld
+	// not where it declares a key Object.prototype has, which `in` finds even unheld
 	get countsKeys(): boolean {
 		return (
 			!this.index &&
@@ -1026,8 +1018,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 	}
 
-	// an Apply reporting one issue checks props as Allows does, stopping where
-	// it did
+	// an Apply reporting one issue checks props as Allows does
 	private propsOf(js: NodeCompiler): array<Prop.Node> {
 		return js.trav === "Allows" || js.reportsFirst ?
 				this.allowsProps
@@ -1558,7 +1549,6 @@ const compileDeclaredKeySwitch = (
 		)
 	)
 
-// the props order lists, as it lists them, then the rest as they were
 const orderProps = (
 	props: array<Prop.Node>,
 	order: readonly Key[]
@@ -1573,8 +1563,7 @@ const orderProps = (
 	return ordered
 }
 
-// an order listing the props as they're sorted is dropped, so a structure
-// declared that way is the one built without an order
+// an order listing the props as they're sorted is dropped
 export const normalizeOrder = (inner: mutable<Structure.Inner>): void => {
 	const required = inner.required ?? []
 	const optional = inner.optional ?? []

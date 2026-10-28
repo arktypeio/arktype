@@ -126,8 +126,7 @@ export abstract class InternalPrimitiveConstraint<
 	}
 }
 
-// the inner of a constraint from what constrain takes, a rule alone or with
-// its options, e.g. 5 or { rule: 5, exclusive: true }
+// from a rule alone or with its options, e.g. 5 or { rule: 5, exclusive: true }
 export const constraintInputOf = <kind extends Constraint.PrimitiveKind>(
 	kind: kind,
 	schema: Constraint.Schema<kind>

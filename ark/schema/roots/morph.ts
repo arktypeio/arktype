@@ -107,8 +107,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	private _traversedMorphs: array<Morph | BaseRoot> | undefined
 
-	// a configured message is its output's errors' too, though the output's
-	// description and JSON Schema stay its own
+	// a configured message is its output's errors' too
 	get travMorphs(): array<Morph | BaseRoot> {
 		const { message } = this.meta
 		return (this._traversedMorphs ??=

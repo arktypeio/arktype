@@ -48,8 +48,7 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 			numberAllowsNaN: {},
 			numberAllowsInfinity: {}
 		},
-		// an option is false unless set, which it need not be where config agrees,
-		// so equal domains share an inner
+		// unset where config agrees, so equal domains share an inner
 		applyConfig: (inner, config) => {
 			if (inner.domain !== "number") return inner
 			const { numberAllowsNaN, numberAllowsInfinity, ...rest } = inner
@@ -101,8 +100,7 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 	jsCond(js: NodeCompiler, data: string): string {
 		return (
 			this.domain === "object" ?
-				// Apply's check is the one an object's Allows writes, so a bundle
-				// holding both compresses it away
+				// the check an object's Allows writes, so a bundle holding both compresses it away
 				js.trav === "Apply" ?
 					`(${data} instanceof Object || Object(${data}) === ${data})`
 				:	`${data} !== null && (typeof ${data} === "object" || typeof ${data} === "function")`

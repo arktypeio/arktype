@@ -10,7 +10,6 @@ import type { RootApplyRuntime } from "./rootApply.ts"
 import type { InPlaceTransforms } from "./transform.ts"
 import { hasArkKind } from "./utils.ts"
 
-// the keys of an object a place reads or a transform writes
 interface Keys {
 	every: boolean
 	// an array's indices and length
@@ -58,8 +57,7 @@ const meet = (l: Keys, r: Keys): boolean => {
 const canBeObject = (node: BaseRoot): boolean =>
 	node.overlaps($ark.kw.object.internal)
 
-// a structure that writes what it transforms, as one deleting undeclared
-// keys copies all but the elements a sequence it doesn't slice transforms
+// a structure deleting undeclared keys copies rather than writes
 const writerOf = (node: BaseNode): StructureNode | undefined => {
 	const structure = node.is("intersection") ? node.structure : undefined
 	if (!structure?.tfs) return
@@ -137,7 +135,6 @@ const everyRead = (): Reads => ({
 	everyPresence: true
 })
 
-// the places holding each node a valid input's transform reaches, by id
 const placesOf = (root: BaseRoot): Map<string, Place> => {
 	const places = new Map<string, Place>()
 	let positions = 0
@@ -231,13 +228,11 @@ const overlaps = (writer: BaseRoot, reader: BaseRoot): boolean => {
 	}
 }
 
-// whether a structure could write in place, without which nothing would
 const holdsWriter = (places: Map<string, Place>): boolean => {
 	for (const { node } of places.values()) if (writerOf(node)) return true
 	return false
 }
 
-// whether writing in place returns what copying would
 const writesSoundly = (places: Map<string, Place>): boolean => {
 	for (const { node } of places.values()) {
 		const structure = node.is("intersection") ? node.structure : undefined
@@ -246,7 +241,6 @@ const writesSoundly = (places: Map<string, Place>): boolean => {
 	return true
 }
 
-// whether no place can read what another wrote
 const writesUnread = (places: Map<string, Place>): boolean => {
 	const readers: [Place, Reads][] = []
 	for (const place of places.values()) {
@@ -330,7 +324,6 @@ export const writesInPlace = (
 	return writes
 }
 
-// in-place runtimes, by the runtime they extend
 const inPlaceRuntimes = new WeakMap<RootApplyRuntime, RootApplyRuntime>()
 
 const inPlaceRuntimeOf = (runtime: RootApplyRuntime): RootApplyRuntime => {
@@ -356,7 +349,7 @@ const copiesCompiled = (node: BaseNode): boolean =>
 	node.unitFn !== undefined &&
 	(node.hasAlias || isWriter(node) || node.references.some(isWriter))
 
-// the transforms a root's traversal can call, ignoring discrimination
+// ignoring discrimination
 const transformsCalledBy = (root: BaseRoot): BaseNode[] => {
 	const called: BaseNode[] = []
 	const call = (node: BaseNode) => {
