@@ -640,9 +640,17 @@ const filesOf = (app: App): Record<string, string> => {
 			`import { ${[...helpers].join(", ")} } from "./helpers.ts"`,
 			...(access.imports?.(v, j) ?? []),
 			...(access.setup?.(v, j) ?? []),
-			...(read.setup?.(ref, j) ?? []),
+			// a ref the function gets, like an awaited one, is set up inside it
+			...(access.before || r.access === "awaited" ?
+				[]
+			:	(read.setup?.(ref, j) ?? [])),
 			`export const run${j} = async () => {`,
-			...(access.before?.(v, j) ?? []).map(line => `\t${line}`),
+			...[
+				...(access.before?.(v, j) ?? []),
+				...(access.before || r.access === "awaited" ?
+					(read.setup?.(ref, j) ?? [])
+				:	[])
+			].map(line => `\t${line}`),
 			`\tconst inputs = [${r.inputs.map(sourceOf).join(", ")}]`,
 			r.access === "awaited" ?
 				`\treturn Promise.all(inputs.map(async d => { try { return { ok: ${read.expr(ref, j)} } } catch (e) { return { threw: String(e) } } }))`
@@ -870,8 +878,11 @@ const buildWith = async (
 }
 
 // a predicate's description reads its function's name as the build minified
-// it, which differs between two bundles of the same program
+// it, and a TypeError names the binding, which differ between two bundles of
+// the same program, as do chunk names
 const minifiedNames = /valid according to [\w$]+/g
+const typeErrorNames = /[\w$.]+ (is not a (?:function|constructor))/g
+const chunkNames = /(?:chunk|types\d+)-[\w-]+\.js/g
 
 const runOut = (out: string) => {
 	const { stdout, stderr, status } = spawnSync(
@@ -881,9 +892,12 @@ const runOut = (out: string) => {
 	)
 	const result =
 		status === 0 ? stdout : (
-			`exit ${status}\n${stdout}\n${stderr.split("\n").find(line => /Error|error/.test(line)) ?? stderr.slice(0, 500)}`
+			`exit ${status}\n${stdout}\n${stderr.split("\n").find(line => /^\w*Error\b/.test(line.trim())) ?? stderr.slice(0, 500)}`
 		)
-	return result.replace(minifiedNames, "valid according to fn")
+	return result
+		.replace(minifiedNames, "valid according to fn")
+		.replace(typeErrorNames, "x $1")
+		.replace(chunkNames, "chunk.js")
 }
 
 // a message's first line saying something, past a bundler's "Build failed"
