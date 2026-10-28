@@ -1197,4 +1197,4 @@ export const unrenderedLocaleMessage =
 	'import "arktype/i18n" to write errors in locales other than en'
 
 export const copiedErrorMessage =
-	"only errors validation returned can be written again, not copies"
+	"Only errors validation returned can be written again, not copies"

@@ -1524,7 +1524,7 @@ age must be a number`)
 			T.toJsonSchema({ target: "draft-2020-12" })
 		)
 		attest(() => validator.toJsonSchema({ target: "draft-07" })).throws(
-			'a standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where its schema needs none; configure({ toJsonSchema }) or build with runtime: "arktype"'
+			'A standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where its schema needs none; configure({ toJsonSchema }) or build with runtime: "arktype"'
 		)
 		attest([
 			validator.json,

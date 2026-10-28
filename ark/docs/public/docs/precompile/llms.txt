@@ -994,7 +994,7 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 
 **`toJsonSchema isn't baked into this validator`** or, in production, **`toJsonSchema is not a function`** at runtime, from hono-openapi or oRPC's `@orpc/arktype` converter: they call `toJsonSchema()`, which a validator has only where the build sets it. Add `"members": { "toJsonSchema": true }` to `"precompile"` in `ark.json`.
 
-**`a standalone validator's JSON Schema takes only a target it was built with, and a fallback only where its schema needs none`**: a library passed options to `toJsonSchema()` that a baked schema can't apply. hono-openapi and oRPC pass a fallback, which changes a Type holding a morph or a Date, as arktype falls back on those. Build with `runtime: "arktype"`, or keep the morph or Date out of the Types you document.
+**`A standalone validator's JSON Schema takes only a target it was built with, and a fallback only where its schema needs none`**: a library passed options to `toJsonSchema()` that a baked schema can't apply. hono-openapi and oRPC pass a fallback, which changes a Type holding a morph or a Date, as arktype falls back on those. Build with `runtime: "arktype"`, or keep the morph or Date out of the Types you document.
 
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
 

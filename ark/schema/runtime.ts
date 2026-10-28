@@ -163,7 +163,7 @@ export const writtenConfigMessage =
 	"configure()'s argument was modified after it was called"
 
 export const configMismatchMessage =
-	"an artifact must run under the configuration it was built with"
+	"An artifact must run under the configuration it was built with"
 
 export const writeCreatedBeforeConfigureMessage = <
 	path extends string,
