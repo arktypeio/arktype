@@ -501,7 +501,10 @@ export abstract class BaseNode<
 			reference =>
 				reference.is("alias") &&
 				reference.resolution.kind === this.kind &&
-				_isMutuallySimulated(this, reference.resolution, true, false)
+				_isMutuallySimulated(this, reference.resolution, {
+					unfoldsAliases: true,
+					subsumes: false
+				})
 		) as AliasNode | undefined
 		return (this.c.trackedId = alias ? alias.resolution.id : this.id)
 	}
@@ -1214,12 +1217,12 @@ export abstract class BaseNode<
 		const ctx = this._tfContext(opts)
 		if (!ctx.throughAliases) return this._tf(mapper, ctx) as never
 		// an alias to a resolution still transforming resolves once the transform returns
-		inProgress.res++
+		inProgress.resolutions++
 		let transformed: BaseNode | null
 		try {
 			transformed = this._tf(mapper, ctx)
 		} finally {
-			inProgress.res--
+			inProgress.resolutions--
 			for (const id in ctx.synth) delete $ark.nodesById[ctx.synth[id].id]
 		}
 		if (!transformed || opts?.names) return transformed as never
@@ -1499,10 +1502,13 @@ interface SimulationState {
 	subsumes: boolean
 }
 
+// what a pair of aliases is assumed to be until their unfoldings are compared
+type AssumedRelation = "simulated" | "within"
+
 interface SimulatedPair {
 	l: BaseNode
 	r: BaseNode
-	within: boolean
+	relation: AssumedRelation
 	assumedBy: Record<string, true>
 }
 
@@ -1514,9 +1520,9 @@ const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 		if (s.subsumes) {
 			if (l.is("alias") && l.operandsBesides(r)) return true
 			const others = r.is("alias") && r.operandsBesides(l)
-			if (others) return others.every(other => isAssumed(l, other, s, true))
+			if (others) return others.every(other => isAssumed(l, other, s, "within"))
 		}
-		return isAssumed(l, r, s, false)
+		return isAssumed(l, r, s, "simulated")
 	}
 	// branches of an unreduced union may subsume each other
 	if (l.is("union") && !l.inner.ordered) {
@@ -1581,13 +1587,13 @@ const isAssumed = (
 	l: BaseNode,
 	r: BaseNode,
 	s: SimulationState,
-	within: boolean
+	relation: AssumedRelation
 ): boolean => {
-	const pair = `${l.id}${within ? "<" : "|"}${r.id}`
+	const pair = `${l.id}${relation === "within" ? "<" : "|"}${r.id}`
 	if (s.failed[pair]) return false
 	if (s.pairs[pair]) s.pairs[pair].assumedBy[s.comparing] = true
 	else {
-		s.pairs[pair] = { l, r, within, assumedBy: { [s.comparing]: true } }
+		s.pairs[pair] = { l, r, relation, assumedBy: { [s.comparing]: true } }
 		s.pending.push(pair)
 	}
 	return true
@@ -1661,23 +1667,23 @@ export const isMutuallySimulated = (
 	r: BaseNode,
 	unfoldsAliases = true
 ): boolean =>
-	_isMutuallySimulated(l, r, unfoldsAliases, false) ||
+	_isMutuallySimulated(l, r, { unfoldsAliases, subsumes: false }) ||
 	// relating a branch by extension is costly, so it's tried only once unfolding alone fails
-	(unfoldsAliases && !isSubsuming && _isMutuallySimulated(l, r, true, true))
+	(unfoldsAliases &&
+		!isSubsuming &&
+		_isMutuallySimulated(l, r, { unfoldsAliases: true, subsumes: true }))
 
 const _isMutuallySimulated = (
 	l: BaseNode,
 	r: BaseNode,
-	unfoldsAliases: boolean,
-	subsumes: boolean
+	how: Pick<SimulationState, "unfoldsAliases" | "subsumes">
 ): boolean => {
 	const s: SimulationState = {
 		pairs: {},
 		pending: [],
 		failed: {},
 		comparing: "",
-		unfoldsAliases,
-		subsumes
+		...how
 	}
 	const simulates = () => isSimulated(l, r, s) && isSimulated(r, l, s)
 	if (!simulates()) return false
@@ -1690,7 +1696,7 @@ const _isMutuallySimulated = (
 		const l = compared.l.is("alias") ? compared.l.resolution : compared.l
 		const r = compared.r.is("alias") ? compared.r.resolution : compared.r
 		if (
-			compared.within ?
+			compared.relation === "within" ?
 				isWithin(l as BaseRoot, r as BaseRoot, s)
 			:	isSimulated(l, r, s)
 		)

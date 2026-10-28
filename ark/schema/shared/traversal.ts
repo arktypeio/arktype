@@ -1003,7 +1003,7 @@ export const allowsUntracked = (
 	node: BaseNode,
 	data: unknown
 ): boolean | undefined => {
-	if (inProgress.definitions || inProgress.res || node.checksCtx) return
+	if (inProgress.definitions || inProgress.resolutions || node.checksCtx) return
 	const outerVisits = aliasVisits.count
 	const outerContinuation = continuation
 	const outerConfig = continuationConfig
