@@ -350,6 +350,17 @@ interface RootApplier {
 	local?: boolean
 }
 
+interface RootApplyOptions {
+	// whether the build writes the validator itself, which calls the apply
+	asValidator: boolean
+	// whether nothing but the call sets onFail
+	unconfigured: boolean
+	// whether the validator can be piped into, so its apply takes a traversal
+	pipes: boolean
+	// whether the validator fails only by its assert, so its apply throws
+	throws?: boolean
+}
+
 const writeFunction = (
 	baking: Baking,
 	name: string,
@@ -532,23 +543,14 @@ const compiledInputsOf = (
 	return inputs
 }
 
-const writeArtifact = (
+// what a build writes, decided by its options
+const bakingOf = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions,
 	isModular: boolean
-) => {
-	const shared: Record<string, SharedModule> = {}
-	const imports: Record<string, string[]> = {}
-	const folds: StandaloneModules["folds"] = {}
-	const checking: string[] = []
-	const { configured } = opts
-	// a lazy or hoisted creation must be called, so isn't exported as a value
-	const values: string[] | undefined =
-		isModular && opts.values && opts.lazy === false && !opts.hoisted ?
-			[]
-		:	undefined
+): Baking => {
 	const members = opts.members ?? {}
-	const baking: Baking = {
+	return {
 		members: new Set([
 			...defaultMembers.filter(member => members[member] !== false),
 			...introspectionMembers.filter(member => members[member])
@@ -557,7 +559,7 @@ const writeArtifact = (
 		firstIssue: opts.errors === "first",
 		detailsErrors: opts.errors !== "none",
 		freezes: opts.freeze !== false,
-		readsConfig: configured !== false,
+		readsConfig: opts.configured !== false,
 		createsLazily: opts.lazy !== false || opts.hoisted === true,
 		compilesValidators: Object.keys(exports).length === 1,
 		checksTypes: opts.checks !== "none",
@@ -576,6 +578,24 @@ const writeArtifact = (
 		piped: opts.piped !== false,
 		issues: { ...noIssueFeatures }
 	}
+}
+
+const writeArtifact = (
+	exports: Record<string, StandaloneExport>,
+	opts: StandaloneOptions,
+	isModular: boolean
+) => {
+	const shared: Record<string, SharedModule> = {}
+	const imports: Record<string, string[]> = {}
+	const folds: StandaloneModules["folds"] = {}
+	const checking: string[] = []
+	const { configured } = opts
+	// a lazy or hoisted creation must be called, so isn't exported as a value
+	const values: string[] | undefined =
+		isModular && opts.values && opts.lazy === false && !opts.hoisted ?
+			[]
+		:	undefined
+	const baking = bakingOf(exports, opts, isModular)
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<unknown>()
 	const folded = new Map<
@@ -2138,13 +2158,12 @@ ${writeFunction(
 			!isTemplate &&
 			!ownsValidator &&
 			this.preciseFormOf(members, unconfigured, reads) === "object"
-		const [applied, allows, isCompact] = this.emitRootApply(
-			root,
-			ownsValidator,
+		const [applied, allows, isCompact] = this.emitRootApply(root, {
+			asValidator: ownsValidator,
 			unconfigured,
 			pipes,
 			throws
-		)
+		})
 		// emit meta before keying so an unemittable value is named
 		const meta =
 			!keepsMeta ? undefined
@@ -2697,11 +2716,9 @@ ${writeFunction(
 
 	emitRootApply(
 		root: BaseRoot,
-		asValidator: boolean,
-		unconfigured: boolean,
-		pipes: boolean,
-		throws = false
+		opts: RootApplyOptions
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
+		const { asValidator, unconfigured, throws } = opts
 		const callbacks = declares(
 			root,
 			node =>
@@ -2711,9 +2728,7 @@ ${writeFunction(
 			return this.emitUndetailedApply(
 				root,
 				callbacks ? "Traversal" : "InternalTraversal",
-				asValidator,
-				unconfigured,
-				pipes
+				opts
 			)
 		}
 		// callbacks only into runtime keywords report into ArkErrors
@@ -2886,9 +2901,7 @@ ${writeFunction(
 	emitUndetailedApply(
 		root: BaseRoot,
 		ctx: string,
-		asValidator: boolean,
-		unconfigured: boolean,
-		pipes: boolean
+		{ asValidator, unconfigured, pipes }: RootApplyOptions
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const strategy = root.applyMode
 		const invalid = "invalid(data, onFail)"

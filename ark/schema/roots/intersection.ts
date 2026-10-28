@@ -290,72 +290,74 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			return structure.sequence
 	}
 
-	// a failed basis or prestructural stops this node's Apply
 	compile(js: NodeCompiler): void {
-		if (js.trav === "Allows") {
-			const read =
-				this.inner.domain?.domain === "object" && !this.preStruct.length ?
-					this.structure?.allowsProps[0]
-				:	undefined
-			// a key is read before data is checked to be an object, in a switch rejecting what none can be read from
-			if (read && !js.shortest) {
-				js.block("switch (data)", () =>
-					js
-						.line("case null: case undefined: break")
-						.line("default:")
-						.line(`data${js.prop(read.key)}`)
-						.if(
-							this.children
-								.map(child =>
-									child === this.basis ?
-										objectCondition
-									:	`(${js.condition(child)})`
-								)
-								.join(" && "),
-							() => js.return(true)
-						)
-				).return(js.rejection(this))
-				return
-			}
-			const sequence = this.inlinedSequence
-			const checks = () => {
-				for (const child of this.children) {
-					// the last child, returning true once each element is allowed
-					if (child === this.structure && sequence) {
-						sequence.compile(js)
-						return js
-					}
-					if (child !== this.basis || !read)
-						js.check(child, { breaks: !js.shortest })
-					else {
-						js.rejectNullish(this)
-							.line(`data${js.prop(read.key)}`)
-							.if(`!${objectCondition}`, () => js.return(false))
-					}
-				}
-				return js.return(true)
-			}
-			const rejection = js.rejection(this)
-			// a loop keeps a minifier from joining the checks into one expression, which a build for size allows
-			if (js.shortest) checks()
-			else if (
-				!sequence &&
-				rejection === "false" &&
-				this.children.every(child => child.jsCond !== undefined)
-			) {
-				js.return(
-					this.children.map(child => `(${js.condition(child)})`).join(" && ") ||
-						"true"
-				)
-			} else js.block("for (;;)", checks).return(rejection)
-			return
-		}
+		if (js.trav === "Allows") this.jsAllows(js)
 		// only a structure can transform an intersection's data
-		if (js.trav === "Transform") {
-			js.return(js.inv(this.structure!))
+		else if (js.trav === "Transform") js.return(js.inv(this.structure!))
+		else this.jsApply(js)
+	}
+
+	/** writes its Allows: each child's check, a basis's folded into the first key read */
+	private jsAllows(js: NodeCompiler): void {
+		const read =
+			this.inner.domain?.domain === "object" && !this.preStruct.length ?
+				this.structure?.allowsProps[0]
+			:	undefined
+		// a key is read before data is checked to be an object, in a switch rejecting what none can be read from
+		if (read && !js.shortest) {
+			js.block("switch (data)", () =>
+				js
+					.line("case null: case undefined: break")
+					.line("default:")
+					.line(`data${js.prop(read.key)}`)
+					.if(
+						this.children
+							.map(child =>
+								child === this.basis ?
+									objectCondition
+								:	`(${js.condition(child)})`
+							)
+							.join(" && "),
+						() => js.return(true)
+					)
+			).return(js.rejection(this))
 			return
 		}
+		const sequence = this.inlinedSequence
+		const checks = () => {
+			for (const child of this.children) {
+				// the last child, returning true once each element is allowed
+				if (child === this.structure && sequence) {
+					sequence.compile(js)
+					return js
+				}
+				if (child !== this.basis || !read)
+					js.check(child, { breaks: !js.shortest })
+				else {
+					js.rejectNullish(this)
+						.line(`data${js.prop(read.key)}`)
+						.if(`!${objectCondition}`, () => js.return(false))
+				}
+			}
+			return js.return(true)
+		}
+		const rejection = js.rejection(this)
+		// a loop keeps a minifier from joining the checks into one expression, which a build for size allows
+		if (js.shortest) checks()
+		else if (
+			!sequence &&
+			rejection === "false" &&
+			this.children.every(child => child.jsCond !== undefined)
+		) {
+			js.return(
+				this.children.map(child => `(${js.condition(child)})`).join(" && ") ||
+					"true"
+			)
+		} else js.block("for (;;)", checks).return(rejection)
+	}
 
+	/** writes its Apply: a failed basis or prestructural stops it, then its structure and predicates run in turn */
+	private jsApply(js: NodeCompiler): void {
 		const { basis, preStruct, structure } = this
 		const predicates = this.inner.predicate
 		if (basis) {
