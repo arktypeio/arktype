@@ -17,7 +17,8 @@ export const buildCyclicArbitrary = (
 			...ctx.arbitrariesByIntersectionId
 		}
 		ctx.tieStack.pop()
-		// an intersection still being built encloses the root, so an alias to it, e.g. from a type parsed as its own alias, ties to the root
+		// an intersection still being built encloses the root, so an alias to
+		// it, e.g. from a type parsed as its own alias, ties to the root
 		for (const id in ctx.seenIntersectionIds)
 			arbitraries[id] ??= arbitraries.root
 		return arbitraries
