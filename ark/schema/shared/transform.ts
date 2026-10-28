@@ -1,13 +1,6 @@
-import {
-	defineValue,
-	hasDomain,
-	hasOwn,
-	isArray,
-	objectKindOf
-} from "@ark/util"
+import { defineValue, hasDomain, hasOwn, isArray, type Key } from "@ark/util"
 import type { BaseNode, RootApply } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
-import { arrayIndexMatcher } from "../structure/shared.ts"
 import type { ArkErrors } from "./issues.ts"
 import type { RootApplyRuntime } from "./rootApply.ts"
 
@@ -66,20 +59,19 @@ export const holdsOnlyIndices = (data: unknown[]): boolean => {
 
 export const copyOf = (data: object): object => {
 	if (isArray(data)) {
-		const keys = Object.keys(data)
-		let i = keys.length
-		// an array's named keys follow its indices, which are below its length
-		if (keys[data.length - 1] === `${data.length - 1}`) i = data.length
-		else {
-			while (
-				i > 0 &&
-				!(arrayIndexMatcher.test(keys[i - 1]) && +keys[i - 1] < data.length)
-			)
-				i--
-		}
 		const copy: unknown[] = Array.prototype.slice.call(data)
-		for (; i < keys.length; i++)
-			defineValue(copy, keys[i], data[keys[i] as never])
+		const keys = Object.keys(data)
+		// an array's own keys list its indices first, which slice copies
+		if (
+			keys.length !== copy.length ||
+			keys[copy.length - 1] !== `${copy.length - 1}`
+		) {
+			for (const k of keys) {
+				const index = +k >>> 0
+				if (`${index}` !== k || index >= copy.length)
+					defineValue(copy, k, data[k as never])
+			}
+		}
 		for (const k of Object.getOwnPropertySymbols(data)) {
 			if (Object.prototype.propertyIsEnumerable.call(data, k))
 				defineValue(copy, k, data[k as never])
@@ -88,10 +80,19 @@ export const copyOf = (data: object): object => {
 	}
 	const prototype = Object.getPrototypeOf(data)
 	if (prototype === Object.prototype) return { ...data }
-	// a builtin keeps state in internal slots, so it's written in place
-	return objectKindOf(data) === undefined ?
+	// a builtin keeps state in internal slots, so it's written in place. Each
+	// has its own toString tag, as does a host object, where a class instance
+	// is tagged Object
+	return Object.prototype.toString.call(data) === "[object Object]" ?
 			Object.setPrototypeOf({ ...data }, prototype)
 		:	data
+}
+
+// keeps data's own key on its copy where the spread skipped it, as a
+// non-enumerable one. A key data inherits is reachable through the copy's
+// prototype, which copyOf keeps, so `in` rejects the usual key at once
+export const keepOwn = (out: object, data: object, k: Key): void => {
+	if (!(k in out) && hasOwn(data, k)) out[k as never] = data[k as never]
 }
 
 // the later output wins a key both changed

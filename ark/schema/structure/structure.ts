@@ -42,6 +42,7 @@ import {
 import { $ark } from "../shared/registry.ts"
 import {
 	copyOf,
+	keepOwn,
 	holdsOnlyIndices,
 	mergeTransformed,
 	TransformErrors
@@ -1195,15 +1196,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.sequence || this.writesInto(js)) return js
 		const copyKeys = () => {
 			for (const prop of this.inOrder) {
-				if (written?.includes(prop.key)) continue
-				const missing = `!(${js.serialize(prop.key)} in out)`
-				js.if(
-					prop.required ? missing : (
-						`${missing} && ${js.serialize(prop.key)} in data`
-					),
-					() => js.line(`out${js.prop(prop.key)} = data${js.prop(prop.key)}`)
-				)
+				if (written?.includes(prop.key) || prop.key in Object.prototype)
+					continue
+				js.line(`${js.ref(keepOwn)}(out, data, ${js.serialize(prop.key)})`)
 			}
+			// out inherits these, so only an own one is missing
 			for (const prop of this.protoProps) {
 				js.if(
 					`!Object.prototype.hasOwnProperty.call(out, ${js.serialize(prop.key)}) && Object.prototype.hasOwnProperty.call(data, ${js.serialize(prop.key)})`,

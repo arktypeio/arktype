@@ -299,4 +299,43 @@ if (
 	)
 }
 
+// a precompiled program imports a few runtime exports, which bundlers
+// tree-shake from the build's chunks. A statement the minifier can't prove
+// free of side effects (a template over a module binding, `new RegExp`, a
+// member read of a global) keeps all it reaches in every program importing
+// anything from its chunk, which the source build (ark-ts, where a const
+// folds) never shows. Each export is bundled alone both ways, with the
+// build allowed the `var` declarations a chunk lowers consts to
+const runtimeExports = await importBuilt("arktype/runtime")
+
+const bundledLengthOf = async (name: string, conditions: string[]) => {
+	const { outputFiles } = await build({
+		stdin: {
+			contents: `export { ${name} } from "arktype/runtime"`,
+			resolveDir: fileURLToPath(fromPackage("repo")),
+			loader: "ts"
+		},
+		bundle: true,
+		minify: true,
+		format: "esm",
+		platform: "neutral",
+		conditions,
+		write: false,
+		logLevel: "error"
+	})
+	return outputFiles[0].text.length
+}
+
+for (const name of Object.keys(runtimeExports)) {
+	const [built, source] = await Promise.all([
+		bundledLengthOf(name, ["production"]),
+		bundledLengthOf(name, ["ark-ts", "production"])
+	])
+	if (built > source * 1.25 + 32) {
+		throw new Error(
+			`⚠️  arktype/runtime's ${name} bundles to ${built} B from the build and ${source} B from source, so a statement in its chunk reads as a side effect.`
+		)
+	}
+}
+
 console.log("🧩 Every entry shares its package's modules and registry!")

@@ -155,17 +155,18 @@ const stringifyUnquoted = (
 export const printSymbol = (symbol: symbol): string =>
 	`Symbol(${baseNameOfSymbol(symbol)})`
 
-// private use character that JSON.stringify leaves unescaped
-const unquotedMarker = "\uE000"
-
+// bigints and undefined are prefixed with U+E000, a private use character
+// JSON.stringify leaves unescaped, so printable can strip the quotes it adds,
+// e.g. [1n, undefined] not ["1n", "undefined"]. The marker is written as a
+// literal each time: a template over a shared binding is a possible side
+// effect to a bundler, which then keeps these options (and all they reach)
+// in every build importing anything from @ark/util
 const printableOpts = {
 	onCycle: () => "(cycle)",
 	onSymbol: printSymbol,
 	onFunction: v => `Function(${baseNameOf(v)})`,
-	// prefix bigints and undefined with a marker so printable can strip the
-	// quotes JSON.stringify adds, e.g. [1n, undefined] not ["1n", "undefined"]
-	onBigInt: n => `${unquotedMarker}${n}n`,
-	onUndefined: `${unquotedMarker}undefined`
+	onBigInt: n => `\uE000${n}n`,
+	onUndefined: "\uE000undefined"
 } satisfies SerializationOptions
 
 const ownDataPrintableOpts = /* @__PURE__ */ Object.assign({}, printableOpts, {
@@ -173,10 +174,7 @@ const ownDataPrintableOpts = /* @__PURE__ */ Object.assign({}, printableOpts, {
 		descriptor.get ? "(getter)" : "(setter)"
 }) satisfies SerializationOptions
 
-const quotedMarkedValue = new RegExp(
-	`"${unquotedMarker}(-?\\d+n|undefined)"`,
-	"g"
-)
+const quotedMarkedValue = /"\uE000(-?\d+n|undefined)"/g
 
 const _serialize = (
 	data: unknown,

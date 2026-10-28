@@ -8,9 +8,9 @@ export type NumberLiteral<n extends number = number> = `${n}`
 export type NonFiniteNumberLiteral = keyof typeof nonFiniteNumbers
 
 export const nonFiniteNumbers = {
-	NaN: Number.NaN,
-	Infinity: Number.POSITIVE_INFINITY,
-	"-Infinity": Number.NEGATIVE_INFINITY
+	NaN,
+	Infinity,
+	"-Infinity": -Infinity
 }
 
 export type BigintLiteral<n extends bigint = bigint> = `${n}n`

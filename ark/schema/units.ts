@@ -39,6 +39,7 @@ import { $ark } from "./shared/registry.ts"
 import {
 	copyOf,
 	holdsOnlyIndices,
+	keepOwn,
 	mergeTransformed,
 	TransformErrors
 } from "./shared/transform.ts"
@@ -321,6 +322,7 @@ const unitConstants = {
 	isValidDate,
 	isWellFormedInteger,
 	jsTypeOfDescriptions,
+	keepOwn,
 	matchesRepeated,
 	mergeTransformed,
 	pipeApplied,
