@@ -97,7 +97,8 @@ class UsageAnalysis {
 	used = new Set<UsedMember>()
 	private program: UsageProgram
 	private edgesByTarget = new Map<string, ImportEdge[]>()
-	private readBindings = new Set<Binding>()
+	// each binding read, by the path of keys the validator is held at in it
+	private readBindings = new Map<Binding, Set<string>>()
 	private readExports = new Set<string>()
 
 	constructor(program: UsageProgram) {
@@ -244,7 +245,12 @@ class UsageAnalysis {
 		})
 	}
 
-	private readValue(node: Node, runtime: RuntimeModule): void {
+	// a validator, or an object literal holding one at path, as a value
+	private readValue(
+		node: Node,
+		runtime: RuntimeModule,
+		path: readonly string[] = []
+	): void {
 		const [operand, parent] = operatorOf(node)
 		const declaration = parent?.parent
 		if (
@@ -265,15 +271,23 @@ class UsageAnalysis {
 			}
 			return this.readBinding(
 				runtime.module.scopes.bindingsById.get(parent.id)!,
-				runtime
+				runtime,
+				path
 			)
 		}
-		this.read(operand, parent, runtime)
+		this.read(operand, parent, runtime, path)
 	}
 
-	private readBinding(binding: Binding, runtime: RuntimeModule): void {
-		if (this.readBindings.has(binding)) return
-		this.readBindings.add(binding)
+	private readBinding(
+		binding: Binding,
+		runtime: RuntimeModule,
+		path: readonly string[] = []
+	): void {
+		const paths = this.readBindings.get(binding)
+		const key = path.join(".")
+		if (paths?.has(key)) return
+		if (paths) paths.add(key)
+		else this.readBindings.set(binding, new Set([key]))
 		const { module } = runtime
 		const write =
 			binding.writes[0] ??
@@ -302,14 +316,18 @@ class UsageAnalysis {
 				parent?.type === "ExportDefaultDeclaration"
 			)
 				continue
-			this.read(operand, parent, runtime)
+			this.read(operand, parent, runtime, path)
 		}
-		for (const name of binding.exportNames) this.readExport(runtime, name)
+		for (const name of binding.exportNames) this.readExport(runtime, name, path)
 	}
 
-	private readExport(runtime: RuntimeModule, name: string): void {
+	private readExport(
+		runtime: RuntimeModule,
+		name: string,
+		path: readonly string[] = []
+	): void {
 		const id = runtime.module.id
-		const key = `${id}\0${name}`
+		const key = `${id}\0${name}\0${path.join(".")}`
 		if (this.readExports.has(key)) return
 		this.readExports.add(key)
 		if (this.program.entries.has(id)) {
@@ -325,16 +343,17 @@ class UsageAnalysis {
 		for (const edge of this.edgesByTarget.get(id) ?? []) {
 			switch (edge.kind) {
 				case "named":
-					if (edge.name === name) this.readBinding(edge.binding, edge.importer)
+					if (edge.name === name)
+						this.readBinding(edge.binding, edge.importer, path)
 					break
 				case "namespace":
-					this.readNamespace(edge.binding, edge.importer, name)
+					this.readNamespace(edge.binding, edge.importer, name, path)
 					break
 				case "reexport":
-					if (edge.name === name) this.readExport(edge.importer, edge.as)
+					if (edge.name === name) this.readExport(edge.importer, edge.as, path)
 					break
 				case "star":
-					if (name !== "default") this.readExport(edge.importer, name)
+					if (name !== "default") this.readExport(edge.importer, name, path)
 					break
 				case "whole":
 					escape(
@@ -355,7 +374,8 @@ class UsageAnalysis {
 	private readNamespace(
 		binding: Binding,
 		runtime: RuntimeModule,
-		name: string
+		name: string,
+		path: readonly string[]
 	): void {
 		const { module } = runtime
 		const wholeRead = `reads the namespace ${binding.name}, which holds ${name}, whole`
@@ -378,14 +398,17 @@ class UsageAnalysis {
 			}
 			if (read !== name) continue
 			const [member, memberParent] = operatorOf(parent)
-			this.read(member, memberParent, runtime)
+			this.read(member, memberParent, runtime, path)
 		}
 	}
 
+	// a read of a validator, or of an object holding one at path, e.g.
+	// `schemas.user(data)` where `const schemas = { user: User }`
 	private read(
 		node: Node,
 		parent: Node | null | undefined,
-		runtime: RuntimeModule
+		runtime: RuntimeModule,
+		path: readonly string[] = []
 	): void {
 		const { module } = runtime
 		// e.g. `import.meta.env.DEV ? DevPost : Post`, read as its result is
@@ -393,7 +416,48 @@ class UsageAnalysis {
 			(parent?.type === "ConditionalExpression" && parent.test !== node) ||
 			parent?.type === "LogicalExpression"
 		)
-			return this.readValue(parent, runtime)
+			return this.readValue(parent, runtime, path)
+		// held in an object literal at a key, read off the object
+		if (
+			parent?.type === "Property" &&
+			parent.value === node &&
+			parent.kind === "init" &&
+			!parent.method &&
+			parent.parent?.type === "ObjectExpression"
+		) {
+			const key = propertyKeyOf(parent)
+			if (key !== undefined)
+				return this.readValue(parent.parent, runtime, [key, ...path])
+		}
+		if (path.length) {
+			// the member at the path's next key is read on, as is one at a
+			// computed key, which may be it
+			if (
+				parent?.type === "MemberExpression" &&
+				parent.object === node &&
+				!isWriteTarget(parent)
+			) {
+				const name = memberNameOf(parent)
+				if (
+					(typeof name === "string" || typeof name === "number") &&
+					String(name) !== path[0]
+				)
+					return
+				const [member, memberParent] = operatorOf(parent)
+				return this.read(member, memberParent, runtime, path.slice(1))
+			}
+			const holder = `${module.snippetOf(node)}, which holds a validator at ${path.join(".")},`
+			return escape(
+				`${module.positionOf(node)} ${
+					(
+						parent?.type === "CallExpression" ||
+						parent?.type === "NewExpression"
+					) ?
+						`passes ${holder} to a function, which may read any member`
+					:	`reads ${holder} other than to read a member`
+				}`
+			)
+		}
 		if (parent?.type === "CallExpression" && parent.callee === node) {
 			this.used.add("call")
 			this.readArguments(parent)
@@ -436,6 +500,21 @@ class UsageAnalysis {
 			this.used.add("piped")
 	}
 }
+
+// an object literal property's key, where it's a name
+const propertyKeyOf = (property: {
+	key: Node
+	computed: boolean
+}): string | undefined =>
+	property.key.type === "Literal" ?
+		(
+			typeof property.key.value === "string" ||
+			typeof property.key.value === "number"
+		) ?
+			String(property.key.value)
+		:	undefined
+	: property.computed || property.key.type !== "Identifier" ? undefined
+	: property.key.name
 
 const literalOf = (node: Node | undefined): string | undefined =>
 	node?.type === "Literal" && typeof node.value === "string" ? node.value

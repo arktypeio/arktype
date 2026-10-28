@@ -1604,13 +1604,17 @@ const disagreementsOf = async (
 			foldedBuild === standalone ? dir : foldedDir
 		)
 	])
-	const unknownOf = (run: Program, disagreements: Disagreement[]) =>
+	const unknownOf = (
+		run: Program,
+		errors: Diagnostic[],
+		disagreements: Disagreement[]
+	) =>
 		disagreements.filter(disagreement => {
 			if (isUnbaked(disagreement)) {
 				counts.unbaked++
 				return false
 			}
-			const excluded = allowanceOf(exclusions, run, disagreement)
+			const excluded = allowanceOf(exclusions, run, disagreement, errors)
 			if (excluded) {
 				counts.excluded[excluded.reason] =
 					(counts.excluded[excluded.reason] ?? 0) + 1
@@ -1623,12 +1627,17 @@ const disagreementsOf = async (
 			.map(error => `standalone refuses ${error.message}`),
 		...reportOf(
 			"cache",
-			unknownOf(program, compareWorlds(cache, original, cached).disagreements)
+			unknownOf(
+				program,
+				cache.errors,
+				compareWorlds(cache, original, cached).disagreements
+			)
 		),
 		...reportOf(
 			"standalone",
 			unknownOf(
 				folded,
+				foldedBuild.errors,
 				compareWorlds(foldedBuild, foldedOriginal ?? original, precompiled)
 					.disagreements
 			)
@@ -1656,13 +1665,15 @@ const isUnbaked = ({ original, precompiled }: Disagreement) =>
 			isUnbakedRead(k, precompiled)
 	)
 
-// a disagreement counted, not failed, matched by the site's main.ts line
+// a disagreement counted, not failed, matched by the site's main.ts line and
+// the errors left after folding, which fail the build it ran as
 interface Allowance {
 	reason: string
 	matches: (
 		disagreement: Disagreement,
 		line: string,
-		program: Program
+		program: Program,
+		errors: Diagnostic[]
 	) => boolean
 }
 
@@ -1762,6 +1773,30 @@ const exclusions: Allowance[] = [
 					).test(read)
 				)
 			})
+	},
+	{
+		reason:
+			"a site the build refused as an error, whose own call the standalone world ran",
+		matches: ({ original, precompiled }, _, __, errors) => {
+			const callee = /^"TypeError: (.+) is not a function"$/.exec(
+				comparable(precompiled.threw)
+			)?.[1]
+			// nothing ships from a build with an error, and marking the site
+			// // @ark-runtime has the build refuse it for the validator it reads;
+			// a Scope or Generic a refused site reads is promised to arktype
+			return (
+				callee !== undefined &&
+				Object.keys({ ...original, ...precompiled }).every(
+					k =>
+						k === "threw" ||
+						comparable(original[k]) === comparable(precompiled[k])
+				) &&
+				errors.some(error => error.message.startsWith(`${callee}(`)) &&
+				!errors.some(error =>
+					error.message.includes("which the build replaced with an object")
+				)
+			)
+		}
 	}
 ]
 
@@ -1769,7 +1804,8 @@ const exclusions: Allowance[] = [
 const allowanceOf = (
 	allowances: Allowance[],
 	program: Program,
-	disagreement: Disagreement
+	disagreement: Disagreement,
+	errors: Diagnostic[] = []
 ): Allowance | undefined => {
 	const lineNumber = /:(\d+):\d+$/.exec(disagreement.site)?.[1]
 	const line =
@@ -1780,7 +1816,7 @@ const allowanceOf = (
 			)
 	return line === undefined ? undefined : (
 			allowances.find(allowance =>
-				allowance.matches(disagreement, line, program)
+				allowance.matches(disagreement, line, program, errors)
 			)
 		)
 }
@@ -1937,6 +1973,50 @@ contextualize(() => {
 			})
 		attest(disagreement(unbaked)).equals(exclusions[0])
 		attest(disagreement({ threw: "Error: boom" })).equals(undefined)
+	})
+
+	it("excludes a refused site's own call failing in the standalone world", () => {
+		const program = programOf([
+			() => ({
+				containers: [],
+				exports: [],
+				main: [observed("0", `cycled0()`, ["a"])]
+			})
+		])
+		const refused = (message: string): Diagnostic =>
+			({ severity: "error", file: "containers.ts", message }) as Diagnostic
+		const disagreement = (errors: Diagnostic[]) =>
+			allowanceOf(
+				exclusions,
+				program,
+				{
+					perturbation: "none",
+					site: "0",
+					original: {
+						threw:
+							"ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate"
+					},
+					precompiled: { threw: "TypeError: Cycled0.or is not a function" }
+				},
+				errors
+			)
+		attest(
+			disagreement([refused(`Cycled0.or("null") can't be precompiled yet`)])
+		).equals(exclusions[4])
+		// the call isn't the refused site's
+		attest(
+			disagreement([refused(`type({ a: Cycled0 }) can't be precompiled yet`)])
+		).equals(undefined)
+		attest(disagreement([])).equals(undefined)
+		// a stand-in the build promises to leave to arktype
+		attest(
+			disagreement([
+				refused(`Cycled0.or("null") can't be precompiled yet`),
+				refused(
+					'Cycled0.or("null") reads `Cycled0`, which the build replaced with an object that lacks its members'
+				)
+			])
+		).equals(undefined)
 	})
 
 	it("agree through the build", async () => {

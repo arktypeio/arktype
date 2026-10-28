@@ -20,7 +20,6 @@ import {
 } from "@ark/schema"
 import type { setImplementationOf } from "./implement.ts"
 
-// of two bounds of a kind, the one that rules out more
 const stricter = (l: BaseRange<any>, r: BaseRange<any>): never =>
 	(l.isStricterThan(r as never) ? l : r) as never
 

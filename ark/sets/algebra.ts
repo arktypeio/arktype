@@ -57,7 +57,7 @@ export const discriminate = (schema: Schema): Discriminant | null => {
 				:	root.$.node("domain", { domain: value as never }),
 				path,
 				root.$,
-				true
+				{ includesPrimitives: true }
 			)
 			return {
 				value,

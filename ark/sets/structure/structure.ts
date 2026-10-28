@@ -39,8 +39,7 @@ const intersectPropsAndIndex = <
 			intersectNodesRoot(lValue._in, rValue._in, $)
 		:	intersectNodesRoot(lValue, rValue, $)
 	const value = intersectValues(l.value, r.value)
-	// a cyclic value a definition's key meets is decided once definitions
-	// close, where a required key's is unsatisfiable as if written out
+	// a cyclic value a definition's key meets is decided once definitions close
 	if (
 		kind === "required" &&
 		inProgress.definitions &&
@@ -75,8 +74,7 @@ const unaliased = (node: BaseRoot): BaseRoot =>
 const propertyOf = (key: Key): Key =>
 	typeof key === "symbol" ? key : String(key)
 
-// a sequence declares its indices, and "reject" checks string keys only, so
-// it allows any symbol key
+// a sequence declares its indices, and "reject" checks only string keys
 const allowedKeysOf = (node: Structure.Node): BaseRoot => {
 	let keys = node.keyof()
 	if (node.sequence)
@@ -87,11 +85,10 @@ const allowedKeysOf = (node: Structure.Node): BaseRoot => {
 }
 
 // a structure allowing more leading indices bounds an array here, narrower
-// than it is, rather than counting on
+// than it is
 const maxCountedIndices = 1024
 
-// how many leading indices keys allow, or null if every index a sequence can
-// have
+// how many leading indices keys allow, or null if every index a sequence can have
 const allowedIndexCountOf = (
 	keys: BaseRoot,
 	sequence: nodeOfKind<"sequence">
@@ -120,8 +117,8 @@ const requiredElementAt = (
 }
 
 // narrows other's optional props, index signatures and sequence to the keys a
-// structure with undeclared keys allows, adding a disjoint for each required
-// key or element it doesn't
+// structure with undeclared keys allows, with node on the left of a disjoint
+// for each required key or element it doesn't
 const narrowToKeysOf = (
 	node: Structure.Node,
 	other: Structure.Node,
@@ -132,10 +129,9 @@ const narrowToKeysOf = (
 	},
 	derived: OptionalNode[],
 	roots: BaseRoot[],
-	disjoint: Disjoint,
-	$: BaseScope,
-	isLeft: boolean
-): void => {
+	$: BaseScope
+): Disjoint => {
+	const disjoint = new Disjoint()
 	const keys = allowedKeysOf(node)
 	const count =
 		node.undeclared === "reject" && other.sequence ?
@@ -145,12 +141,11 @@ const narrowToKeysOf = (
 		const sequence = other.sequence!
 		if (sequence.minLength > count) {
 			const value = requiredElementAt(sequence, count)
-			const never = $ark.kw.never.internal
 			disjoint.push(
 				...Disjoint.init(
 					"presence",
-					isLeft ? never : value,
-					isLeft ? value : never
+					$ark.kw.never.internal,
+					value
 				).withPrefixKey(count, "required")
 			)
 		}
@@ -172,9 +167,7 @@ const narrowToKeysOf = (
 	}
 	for (const k of other.requiredKeys) {
 		if (keys.allowsUnused(k)) continue
-		const value = other.byKey[k]!.value
-		const never = $ark.kw.never.internal
-		disjoint.add("presence", isLeft ? never : value, isLeft ? value : never, {
+		disjoint.add("presence", $ark.kw.never.internal, other.byKey[k]!.value, {
 			path: [k],
 			undeclared: node.handlesUndeclared
 		})
@@ -197,6 +190,7 @@ const narrowToKeysOf = (
 			return normalized.index ?? []
 		})
 	}
+	return disjoint
 }
 
 export const structure: setImplementationOf<Structure.Declaration> = {
@@ -219,27 +213,13 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			// length bounds on an array a closed structure narrows
 			const roots: BaseRoot[] = []
 			if (l.handlesUndeclared) {
-				narrowToKeysOf(
-					l,
-					r,
-					rInner,
-					rDerived,
-					roots,
-					disjointResult,
-					ctx.$,
-					true
+				disjointResult.push(
+					...narrowToKeysOf(l, r, rInner, rDerived, roots, ctx.$)
 				)
 			}
 			if (r.handlesUndeclared) {
-				narrowToKeysOf(
-					r,
-					l,
-					lInner,
-					lDerived,
-					roots,
-					disjointResult,
-					ctx.$,
-					false
+				disjointResult.push(
+					...narrowToKeysOf(r, l, lInner, lDerived, roots, ctx.$).invert()
 				)
 			}
 
@@ -292,8 +272,8 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 		const newOptionalProps: OptionalNode[] =
 			inner.optional ? [...inner.optional] : []
 
-		// required keys precede optional ones, each checked for duplicates
-		// and against index signatures
+		// required keys precede optional ones, each checked for duplicates and
+		// against index signatures
 		const required = inner.required ?? []
 		const props = inner.optional ? [...required, ...inner.optional] : required
 		for (let i = 0; i < props.length; i++) {

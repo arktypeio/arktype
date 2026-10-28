@@ -277,14 +277,11 @@ type inferKeyedObjectLiteral<def extends object, $, args> = {
 export type validateObjectLiteral<def, $, args> = {
 	[k in keyof def]: k extends PreparsedKeyPattern ?
 		validatePreparsedEntry<k, def[k], $, args>
-	: k extends `${infer indexKey extends IndexKey}?` ?
-		ErrorMessage<writeOptionalIndexKeyMessage<indexKey>>
-	:	validateProperty<
-			def[k],
-			k extends OptionalPropertyString ? "optional" : "required",
-			$,
-			args
-		>
+	: k extends OptionalPropertyString ?
+		k extends `${infer indexKey extends IndexKey}?` ?
+			ErrorMessage<writeOptionalIndexKeyMessage<indexKey>>
+		:	validateProperty<def[k], "optional", $, args>
+	:	validateProperty<def[k], "required", $, args>
 }
 
 type validatePreparsedEntry<k, v, $, args> =
@@ -416,18 +413,24 @@ export type preparseKey<k> =
 			normalized: k
 		}>
 	: k extends `${infer inner}?` ?
-		inner extends `${infer baseName}${Backslash}` ?
-			PreparsedKey.from<{
-				kind: "required"
-				normalized: `${baseName}?`
-			}>
+		inner extends `${string}${Backslash}${string}` ?
+			inner extends `${infer baseName}${Backslash}` ?
+				PreparsedKey.from<{
+					kind: "required"
+					normalized: `${baseName}?`
+				}>
+			: inner extends `${Backslash}${infer escapedIndexKey extends IndexKey}` ?
+				PreparsedKey.from<{
+					kind: "optional"
+					normalized: escapedIndexKey
+				}>
+			:	PreparsedKey.from<{
+					kind: "optional"
+					normalized: inner
+				}>
 		:	PreparsedKey.from<{
 				kind: "optional"
-				normalized: inner extends (
-					`${Backslash}${infer escapedIndexKey extends IndexKey}`
-				) ?
-					escapedIndexKey
-				:	inner
+				normalized: inner
 			}>
 	: k extends `${"+" | "." | "@" | Backslash | "["}${string}` ?
 		preparseSpecialKey<k>

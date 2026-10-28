@@ -215,6 +215,43 @@ const accesses: Record<string, Access> = {
 	awaited: {
 		imports: v => [`import { ${v.name} } from "${typesOf(v)}"`],
 		ref: v => `(await Promise.resolve(${v.name}))`
+	},
+	// an object literal map, read at a key, a computed key or through a nest
+	objectMap: {
+		imports: v => [`import { ${v.name}, OTHER } from "${typesOf(v)}"`],
+		setup: (v, j) => [`const schemas${j} = { v: ${v.name}, w: OTHER }`],
+		ref: (_, j) => `schemas${j}.v`
+	},
+	objectMapComputed: {
+		imports: v => [`import { ${v.name}, OTHER } from "${typesOf(v)}"`],
+		setup: (v, j) => [
+			`const schemas${j} = { v: ${v.name}, w: OTHER }`,
+			`const key${j}m = ["v", "w"][${j % 2}]`
+		],
+		ref: (_, j) => `schemas${j}[key${j}m]`
+	},
+	objectMapNested: {
+		imports: v => [`import { ${v.name} } from "${typesOf(v)}"`],
+		setup: (v, j) => [`const api${j} = { v1: { v: ${v.name} }, v2: {} }`],
+		ref: (_, j) => `api${j}.v1.v`
+	},
+	objectMapOther: {
+		imports: v => [`import { ${v.name}, OTHER } from "${typesOf(v)}"`],
+		setup: (v, j) => [
+			`const schemas${j} = { v: ${v.name}, w: OTHER }`,
+			`export const other${j} = schemas${j}.w.allows(1)`
+		],
+		ref: (_, j) => `schemas${j}.v`
+	},
+	// a map the types module exports
+	exportedMap: {
+		imports: v => [`import { map } from "${typesOf(v)}"`],
+		ref: v => `map.${v.name}`
+	},
+	exportedMapComputed: {
+		imports: v => [`import { map } from "${typesOf(v)}"`],
+		setup: (v, j) => [`const key${j}e = "${v.name}"`],
+		ref: (_, j) => `map[key${j}e]`
 	}
 }
 
@@ -413,6 +450,14 @@ interface App {
 	readers: Reader[]
 	rewrite: Rewrite
 	preset: PrecompileUnpluginOptions
+	// a one-chunk esbuild bundle declares its units in one function
+	splits: boolean
+	// a second entry, which runs the last reader itself
+	entries: 1 | 2
+	// a config module ark.json names, which main imports first
+	configured: boolean
+	// a types module reading its own validator as it loads
+	selfRead: boolean
 }
 
 const presets: PrecompileUnpluginOptions[] = [
@@ -438,7 +483,12 @@ const followedAccesses: AccessName[] = [
 	"namespace",
 	"default",
 	"conditional",
-	"dynamic"
+	"dynamic",
+	"objectMap",
+	"objectMapComputed",
+	"objectMapNested",
+	"exportedMap",
+	"exportedMapComputed"
 ]
 
 const followedReads: ReadName[] = [
@@ -537,7 +587,11 @@ const apps: fc.Arbitrary<App> = validators
 				{ minLength: 1, maxLength: 4 }
 			),
 			rewrite: fc.constantFrom(...(Object.keys(rewrites) as Rewrite[])),
-			preset: fc.constantFrom(...presets)
+			preset: fc.constantFrom(...presets),
+			splits: fc.boolean(),
+			entries: fc.constantFrom<1 | 2>(1, 1, 2),
+			configured: fc.boolean(),
+			selfRead: fc.boolean()
 		})
 	)
 	.map(app =>
@@ -589,6 +643,9 @@ const filesOf = (app: App): Record<string, string> => {
 	for (const m of modules) {
 		const own = app.validators.filter(v => v.module === m)
 		files[`types${m}.ts`] = [
+			// a bundler splitting chunks may run a types module before main's
+			// imports, so each imports the config module itself
+			...(app.configured ? [`import "./config.ts"`] : []),
 			`import { scope, type } from "arktype"`,
 			...functions,
 			...own.map(
@@ -597,6 +654,10 @@ const filesOf = (app: App): Record<string, string> => {
 			),
 			// a second validator a conditional chooses between
 			`export const OTHER = type("string")`,
+			`export const map = { ${own.map(v => v.name).join(", ")}, OTHER }`,
+			...(app.selfRead ?
+				[`export const firstAllows = ${own[0].name}.allows(0)`]
+			:	[]),
 			...own.filter(v => v.isDefault).map(v => `export default ${v.name}`),
 			""
 		].join("\n")
@@ -640,9 +701,17 @@ const filesOf = (app: App): Record<string, string> => {
 			`import { ${[...helpers].join(", ")} } from "./helpers.ts"`,
 			...(access.imports?.(v, j) ?? []),
 			...(access.setup?.(v, j) ?? []),
-			...(read.setup?.(ref, j) ?? []),
+			// a ref the function gets, like an awaited one, is set up inside it
+			...(access.before || r.access === "awaited" ?
+				[]
+			:	(read.setup?.(ref, j) ?? [])),
 			`export const run${j} = async () => {`,
-			...(access.before?.(v, j) ?? []).map(line => `\t${line}`),
+			...[
+				...(access.before?.(v, j) ?? []),
+				...(access.before || r.access === "awaited" ?
+					(read.setup?.(ref, j) ?? [])
+				:	[])
+			].map(line => `\t${line}`),
 			`\tconst inputs = [${r.inputs.map(sourceOf).join(", ")}]`,
 			r.access === "awaited" ?
 				`\treturn Promise.all(inputs.map(async d => { try { return { ok: ${read.expr(ref, j)} } } catch (e) { return { threw: String(e) } } }))`
@@ -651,7 +720,25 @@ const filesOf = (app: App): Record<string, string> => {
 			""
 		].join("\n")
 	}
+	if (app.configured) {
+		files["ark.json"] = JSON.stringify({
+			precompile: { config: "./config.ts" }
+		})
+		files["config.ts"] =
+			'import { configure } from "arktype"\n\nconfigure({ onUndeclaredKey: "reject" })\n'
+	}
+	const last = app.readers.length - 1
+	if (app.entries === 2) {
+		files["other.ts"] = [
+			...(app.configured ? [`import "./config.ts"`] : []),
+			`import { show } from "./helpers.ts"`,
+			`import { run${last} } from "./reader${last}.ts"`,
+			`console.log(show(await run${last}()))`,
+			""
+		].join("\n")
+	}
 	files["main.ts"] = [
+		...(app.configured ? [`import "./config.ts"`] : []),
 		`import { show } from "./helpers.ts"`,
 		...app.readers.map((_, j) => `import { run${j} } from "./reader${j}.ts"`),
 		`const runs = { ${app.readers.map((_, j) => `run${j}`).join(", ")} }`,
@@ -677,7 +764,7 @@ const filesOf = (app: App): Record<string, string> => {
 const sourceOfApp = (app: App) => {
 	const files = filesOf(app)
 	return [
-		`// rewrite: ${app.rewrite}, preset: ${JSON.stringify(app.preset)}`,
+		`// rewrite: ${app.rewrite}, preset: ${JSON.stringify(app.preset)}, splits: ${app.splits}, entries: ${app.entries}, configured: ${app.configured}, selfRead: ${app.selfRead}`,
 		...Object.entries(files)
 			.filter(([name]) => name !== "helpers.ts" && name !== "package.json")
 			.map(([name, text]) => `// ${name}\n${text}`)
@@ -752,10 +839,11 @@ const vitePluginsOf = (dir: string, rewrite: Rewrite): VitePlugin[] => {
 // arktype's loads reader modules unlike their files, which the build must
 // refuse, and one after arktype's keeps the bundle whole with a warning
 const esbuildPluginsOf = (
+	dir: string,
 	rewrite: Rewrite,
 	opts: PrecompileUnpluginOptions
 ): EsbuildPlugin[] => {
-	const arktype = precompile.esbuild({ conditions, ...opts })
+	const arktype = precompile.esbuild({ conditions, cwd: dir, ...opts })
 	const rewriter = rewrites[rewrite]
 	if (!rewriter) return [arktype]
 	const rewriting: EsbuildPlugin = {
@@ -773,6 +861,11 @@ const esbuildPluginsOf = (
 		: [arktype]
 	)
 }
+
+const entriesOf = (dir: string, app: App) => [
+	join(dir, "main.ts"),
+	...(app.entries === 2 ? [join(dir, "other.ts")] : [])
+]
 
 const outputOf = (outDir: string): string => {
 	if (!existsSync(outDir)) return ""
@@ -796,10 +889,10 @@ const buildWith = async (
 	try {
 		if (bundler === "esbuild") {
 			const result = await esbuild({
-				entryPoints: [join(dir, "main.ts")],
+				entryPoints: entriesOf(dir, app),
 				absWorkingDir: dir,
 				bundle: true,
-				splitting: true,
+				splitting: app.splits || app.entries === 2,
 				format: "esm",
 				target: "esnext",
 				platform: "node",
@@ -807,7 +900,7 @@ const buildWith = async (
 				minify: true,
 				conditions,
 				logLevel: "silent",
-				plugins: esbuildPluginsOf(app.rewrite, opts)
+				plugins: esbuildPluginsOf(dir, app.rewrite, opts)
 			})
 			warnings.push(...result.warnings.map(w => w.text))
 		} else {
@@ -820,7 +913,7 @@ const buildWith = async (
 					logLevel: "silent",
 					plugins: [
 						...vitePluginsOf(dir, app.rewrite),
-						precompile.vite({ conditions: ["ark-ts"], ...opts })
+						precompile.vite({ conditions: ["ark-ts"], cwd: dir, ...opts })
 					],
 					resolve: { conditions: ["ark-ts", ...defaultClientConditions] },
 					build: {
@@ -830,9 +923,9 @@ const buildWith = async (
 						minify: true,
 						target: "esnext",
 						lib: {
-							entry: join(dir, "main.ts"),
+							entry: entriesOf(dir, app),
 							formats: ["es"],
-							fileName: () => "main.js"
+							fileName: (_, name) => `${name}.js`
 						},
 						rollupOptions: {
 							onwarn: warning => warnings.push(warning.message)
@@ -870,20 +963,32 @@ const buildWith = async (
 }
 
 // a predicate's description reads its function's name as the build minified
-// it, which differs between two bundles of the same program
+// it, and a TypeError names the binding, which differ between two bundles of
+// the same program, as do chunk names
 const minifiedNames = /valid according to [\w$]+/g
+const typeErrorNames = /[\w$.]+ (is not a (?:function|constructor))/g
+const chunkNames = /(?:chunk|types\d+)-[\w-]+\.js/g
+const outDirs = /out-(?:esbuild|vite)-(?:whole|pruned)/g
 
-const runOut = (out: string) => {
-	const { stdout, stderr, status } = spawnSync(
-		process.execPath,
-		[join(out, "main.js")],
-		{ encoding: "utf8", timeout: 60_000 }
-	)
+const runOut = (out: string, app: App) =>
+	["main", ...(app.entries === 2 ? ["other"] : [])]
+		.map(entry => runEntry(join(out, `${entry}.js`)))
+		.join("\n")
+
+const runEntry = (file: string) => {
+	const { stdout, stderr, status } = spawnSync(process.execPath, [file], {
+		encoding: "utf8",
+		timeout: 60_000
+	})
 	const result =
 		status === 0 ? stdout : (
-			`exit ${status}\n${stdout}\n${stderr.split("\n").find(line => /Error|error/.test(line)) ?? stderr.slice(0, 500)}`
+			`exit ${status}\n${stdout}\n${stderr.split("\n").find(line => /^\w*Error\b/.test(line.trim())) ?? stderr.slice(0, 500)}`
 		)
-	return result.replace(minifiedNames, "valid according to fn")
+	return result
+		.replace(minifiedNames, "valid according to fn")
+		.replace(typeErrorNames, "x $1")
+		.replace(chunkNames, "chunk.js")
+		.replace(outDirs, "out")
 }
 
 // a message's first line saying something, past a bundler's "Build failed"
@@ -981,8 +1086,8 @@ const check = async (app: App): Promise<boolean> => {
 		if (pruned.warnings.some(w => w.startsWith("prune:"))) tally.kept++
 		else tally.pruned++
 		tally.bytesSaved += saved
-		const wholeOut = runOut(whole.out)
-		const prunedOut = runOut(pruned.out)
+		const wholeOut = runOut(whole.out, app)
+		const prunedOut = runOut(pruned.out, app)
 		if (wholeOut !== prunedOut) {
 			tally.unsound++
 			sound = false

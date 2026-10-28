@@ -198,8 +198,7 @@ const _intersectSequences = (
 					// ideally we could handle disjoint paths more precisely here,
 					// but not trivial to serialize postfix elements as keys
 					kind === "prefix" ? s.result.length : `-${lTail.length + 1}`,
-					// a discriminant must be at an index both elements are at,
-					// whatever the tuple's length
+					// a discriminant must be at an index both elements have at any length
 					(
 						kind === "prefix" &&
 							!s.realigned &&
@@ -217,9 +216,8 @@ const _intersectSequences = (
 			// ends before the disjoint element would occur
 			return s
 		} else {
-			// if the element is variadic and unsatisfiable, the variadic elements
-			// can't overlap, so the shorter postfix is preceded by its own
-			// variadic elements to align with the longer one
+			// disjoint variadic elements can't overlap, so the shorter postfix is
+			// preceded by its own variadic elements to align with the longer one
 			return _intersectSequences({
 				...s,
 				l: alignPostfix(lHead, lTail, rTail.length),

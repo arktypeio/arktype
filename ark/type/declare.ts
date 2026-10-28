@@ -86,19 +86,50 @@ type validateObjectInference<
 	args,
 	ctx extends DeclareContext
 > = show<
-	{
-		[k in requiredKeyOf<declared> as declaredKey<k>]: declaredKey<k> extends (
-			keyof def
-		) ?
-			validateInference<def[declaredKey<k>], declared[k], $, args, ctx>
-		:	declared[k]
-	} & {
-		[k in optionalKeyOf<declared> & string as declaredOptionalKeySuggestion<
-			k,
-			def
-		>]: declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
-	} & DeclaredObjectSettings
+	([keyof declared & MetaKey] extends [never] ?
+		validateDeclaredKeys<def, declared, $, args, ctx>
+	:	validateEscapedDeclaredKeys<def, declared, $, args, ctx>) &
+		DeclaredObjectSettings
 >
+
+type validateDeclaredKeys<
+	def extends object,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> = {
+	[k in requiredKeyOf<declared>]: k extends keyof def ?
+		validateInference<def[k], declared[k], $, args, ctx>
+	:	declared[k]
+} & {
+	[k in optionalKeyOf<declared> & string as declaredOptionalKeySuggestion<
+		k,
+		def
+	>]: declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
+}
+
+// a declared key that is also a special key has to be escaped to be a prop.
+// checking each key for that costs enough that only a declaration with one pays it
+type validateEscapedDeclaredKeys<
+	def extends object,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> = {
+	[k in requiredKeyOf<declared> as declaredKey<k>]: declaredKey<k> extends (
+		keyof def
+	) ?
+		validateInference<def[declaredKey<k>], declared[k], $, args, ctx>
+	:	declared[k]
+} & {
+	// an escaped key can only be optional through its value
+	[k in optionalKeyOf<declared> & string as k extends MetaKey ? declaredKey<k>
+	:	declaredOptionalKeySuggestion<k, def>]: k extends MetaKey ?
+		declaredEscapedOptionalValueSuggestion<def, k, declared, $, args, ctx>
+	:	declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
+}
 
 // settings that don't affect inference, so any declared object can have them
 type DeclaredObjectSettings = {
@@ -106,17 +137,32 @@ type DeclaredObjectSettings = {
 	"+"?: UndeclaredKeyBehavior
 }
 
-// a declared key that is also a special key has to be escaped to be a prop
 type declaredKey<k> = k extends MetaKey ? `${Backslash}${k}` : k
 
 type declaredOptionalKeySuggestion<k extends string, def> =
-	// an escaped key can only be optional through its value
-	k extends MetaKey ? declaredKey<k>
-	: k extends keyof def ?
+	k extends keyof def ?
 		def[k] extends OptionalPropertyDefinition ?
 			k
 		:	`${k}?`
 	:	`${k}?`
+
+type declaredEscapedOptionalValueSuggestion<
+	def,
+	k extends keyof declared & MetaKey,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> =
+	def[declaredKey<k> & keyof def] extends OptionalPropertyDefinition ?
+		validateInference<
+			def[declaredKey<k> & keyof def],
+			Required<declared>[k],
+			$,
+			args,
+			ctx
+		>
+	:	OptionalPropertyDefinition
 
 type declaredOptionalValueSuggestion<
 	def,
@@ -126,17 +172,7 @@ type declaredOptionalValueSuggestion<
 	args,
 	ctx extends DeclareContext
 > =
-	k extends MetaKey ?
-		def[declaredKey<k> & keyof def] extends OptionalPropertyDefinition ?
-			validateInference<
-				def[declaredKey<k> & keyof def],
-				Required<declared>[k],
-				$,
-				args,
-				ctx
-			>
-		:	OptionalPropertyDefinition
-	: k extends keyof def ?
+	k extends keyof def ?
 		def[k] extends OptionalPropertyDefinition ?
 			// Required<declared>[k] ensures that we can distinguish { foo?: true } from { foo?: true | undefined }
 			validateInference<def[k], Required<declared>[k], $, args, ctx>

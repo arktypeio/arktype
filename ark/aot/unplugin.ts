@@ -370,7 +370,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	const reportUnsafe = (
 		problem: string | undefined,
 		diagnostics: RenderedDiagnostics,
-		offersAllowUnsafe = true
+		{ offersAllowUnsafe = true }: { offersAllowUnsafe?: boolean } = {}
 	) => {
 		if (!problem) return
 		if (opts?.allowUnsafe) return void diagnostics.warnings.push(problem)
@@ -613,6 +613,277 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				:	variant
 			)
 	}
+	const esbuildResolverOf =
+		(build: EsbuildPluginBuild): BundlerResolve =>
+		async (specifier, importer) => {
+			if (ownSpecifier.test(specifier)) return
+			const resolved = await build.resolve(specifier, {
+				importer,
+				namespace: "file",
+				resolveDir: dirname(importer),
+				kind: "import-statement"
+			})
+			return (
+					resolved.errors.length ||
+						resolved.external ||
+						resolved.namespace !== "file"
+				) ?
+					undefined
+				:	resolved.path
+		}
+	// a problem fails the build, removing what it wrote
+	const rejectEsbuild = (
+		build: EsbuildPluginBuild,
+		cwd: string,
+		metafile: Metafile,
+		problem: string
+	) => {
+		if (build.initialOptions.write !== false) {
+			for (const path in metafile.outputs)
+				rmSync(resolve(cwd, path), { force: true })
+		}
+		return { errors: [{ text: problem }] }
+	}
+	// a standalone bundle's externals, and the calls its folded helpers left, checked once it's written
+	const checkEsbuildBundle = (build: EsbuildPluginBuild, cwd: string) => {
+		build.initialOptions.metafile = true
+		build.onEnd(result => {
+			if (!result.metafile || result.errors.length) return
+			const warnings: { text: string }[] = []
+			try {
+				checkBundledExternals(esbuildBundleOf(result.metafile, cwd), warning =>
+					warnings.push({ text: warning })
+				)
+			} catch (e) {
+				return rejectEsbuild(build, cwd, result.metafile, (e as Error).message)
+			}
+			const problem =
+				foldedHelpersById.size &&
+				unfoldedCallProblemOf(
+					foldedHelpersById,
+					esbuildImportsOf(result.metafile, cwd),
+					isTransformedId,
+					realCwd()
+				)
+			// it wrote calls that throw at runtime
+			if (problem) return rejectEsbuild(build, cwd, result.metafile, problem)
+			return { warnings }
+		})
+	}
+	// the scan's facts hold only while the bundle is what it read
+	const scanEsbuildBundle = (
+		build: EsbuildPluginBuild,
+		program: string,
+		scan: EsbuildScanState,
+		esbuildResolve: BundlerResolve,
+		cwd: string
+	) => {
+		build.initialOptions.metafile = true
+		build.onStart(async () => {
+			scan.scanned = undefined
+			scan.verifies = false
+			esbuildScan = undefined
+			scan.loaded.clear()
+			const result = await esbuildScanOf(
+				build,
+				program,
+				path =>
+					transformedFilter.include.test(path) &&
+					!transformedFilter.exclude.test(path),
+				async scanned =>
+					(await requestResolving(
+						esbuildResolve,
+						"scan",
+						scanned
+					)) as ScannedUsage,
+				realCwd()
+			).catch(
+				(e: unknown): ProgramScan<[ScannedProgram, ScannedUsage]> => ({
+					unpruned: unreadMessageOf(e)
+				})
+			)
+			const warnings = result.unpruned ? [{ text: result.unpruned }] : []
+			if (!result.read) return { warnings }
+			const [scanned, usage] = result.read
+			scan.scanned = scanned
+			// only what it dropped can fail a read the scan didn't see
+			scan.verifies = !!usage.dropped.length || narrowsIssues(usage.issues)
+			scan.holders = new Set(usage.holders)
+			esbuildScan = {
+				scanned,
+				verifies: scan.verifies,
+				loaded: scan.loaded,
+				replaced: new Set(usage.replaced),
+				holders: scan.holders,
+				issues: usage.issues
+			}
+			return { warnings }
+		})
+		build.onEnd(result => {
+			if (
+				!scan.scanned ||
+				!scan.verifies ||
+				!result.metafile ||
+				result.errors.length
+			)
+				return
+			const problem = unseenProblemOf(
+				scan.scanned,
+				esbuildImportsOf(result.metafile, cwd, scan.scanned),
+				scan.loaded,
+				scan.holders,
+				realCwd()
+			)
+			// what it wrote may lack what a module it couldn't see reads
+			if (problem) return rejectEsbuild(build, cwd, result.metafile, problem)
+		})
+	}
+	// each module watches what it read, which esbuild takes only from onLoad
+	const loadEsbuildModules = (
+		build: EsbuildPluginBuild,
+		scan: EsbuildScanState,
+		esbuildResolve: BundlerResolve
+	) => {
+		build.onLoad({ filter: issueFeaturesFile }, () => {
+			const issues = esbuildScan?.issues
+			if (issues) return { contents: writeIssueFeatures(issues), loader: "js" }
+		})
+		build.onLoad({ filter: esbuildTransformed }, async args => {
+			if (args.namespace !== "file") return
+			const isTransformed =
+				transformedFilter.include.test(args.path) &&
+				!transformedFilter.exclude.test(args.path)
+			if (!isTransformed && !scan.scanned) return
+			if (isTransformed) loadedFiles.add(args.path)
+			const code = readFileSync(args.path, "utf8")
+			if (scan.scanned) addLoaded(scan.loaded, fileOf(args.path), code)
+			if (!isTransformed) return
+			const transformed = await transform(
+				code,
+				args.path,
+				undefined,
+				scan.scanned?.key,
+				esbuildResolve
+			)
+			if (!transformed?.code && !transformed?.errors.length) return
+			return {
+				contents: appendSourceMap(transformed.code ?? code, transformed.map),
+				loader: esbuildLoaderOf(args.path),
+				watchFiles: transformed.dependencies.filter(
+					dependency => dependency !== args.path
+				),
+				// together, as other hosts throw them
+				errors:
+					transformed.errors.length ?
+						[{ text: transformed.errors.join("\n") }]
+					:	[],
+				warnings: transformed.warnings.map(text => ({ text }))
+			}
+		})
+	}
+	const resolveEsbuildVariant = (
+		build: EsbuildPluginBuild,
+		buildVariant: NonNullable<typeof variant>
+	) => {
+		build.onResolve({ filter: schemaSpecifier }, args => {
+			if (args.pluginData === esbuildResolution) return
+			const specifier = variantSpecifierOf(args.path, buildVariant)
+			return specifier ?
+					build.resolve(specifier, {
+						kind: args.kind,
+						importer: args.importer,
+						resolveDir: args.resolveDir,
+						pluginData: esbuildResolution
+					})
+				:	{
+						errors: [
+							{
+								text: writeVariantImportMessage(
+									fileOf(args.importer),
+									args.path,
+									buildVariant
+								)
+							}
+						]
+					}
+		})
+	}
+	const resolveEsbuildRuntime = (build: EsbuildPluginBuild) => {
+		// esbuild loads stdin as written, which the runtime runs only where it defines no Type
+		const stdinProblemOf = async (specifier: string) => {
+			if (!resolvesToRuntime(specifier, opts)) return
+			const stdin = stdinEntryOf(build.initialOptions)!
+			const transformed = (await request(
+				"transform",
+				stdin.source,
+				stdin.id
+			)) as TransformedModule | undefined
+			if (transformed?.code || transformed?.errors.length)
+				return untransformedProblemOf(specifier, "<stdin>", "")
+		}
+		build.onResolve(
+			{
+				filter:
+					isStandalone ?
+						specifiersOf(
+							...runtimeSpecifiers,
+							"arktype/runtime",
+							"arktype/internal"
+						)
+					:	specifiersOf("arktype/runtime", ...internalSpecifiers)
+			},
+			async args => {
+				if (args.pluginData === esbuildResolution) return
+				const isRuntime = runtimeSpecifiers.includes(args.path)
+				const result = await build.resolve(
+					(
+						!isRuntime ||
+							!resolvesToRuntime(args.path, opts) ||
+							readsNodes(args.importer)
+					) ?
+						args.path
+					: runsOnArktype(args.importer, opts?.dependencies) ?
+						islandDependencySpecifier
+					:	"arktype/runtime",
+					{
+						kind: args.kind,
+						importer: args.importer,
+						// a virtual module has no directory of its own
+						resolveDir:
+							args.importer in importersById ?
+								dirname(importersById[args.importer])
+							:	args.resolveDir,
+						pluginData: esbuildResolution
+					}
+				)
+				const { errors, warnings } =
+					isRuntime ? await readDependency(args.importer) : noDiagnostics()
+				reportUnsafe(precompiledProblemOf(args.path, args.importer), {
+					errors,
+					warnings
+				})
+				if (isRuntime) {
+					reportUnsafe(
+						isStdinOf(build.initialOptions, args) ?
+							await stdinProblemOf(args.path)
+						:	untransformedProblemOf(
+								args.path,
+								args.importer,
+								// as a plugin's build.resolve may name none for a file
+								args.namespace || "file"
+							),
+						{ errors, warnings },
+						{ offersAllowUnsafe: false }
+					)
+				}
+				return {
+					...result,
+					errors: [...result.errors, ...errors.map(text => ({ text }))],
+					warnings: [...result.warnings, ...warnings.map(text => ({ text }))]
+				}
+			}
+		)
+	}
 	const plugin: UnpluginOptions = {
 		name: "arktype",
 		enforce: "pre",
@@ -659,8 +930,11 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					isRuntime ? await readDependency(importer) : noDiagnostics()
 				reportUnsafe(precompiledProblemOf(id, importer), diagnostics)
 				// a Type it defines would throw, so the fix is moving it, not allowUnsafe
-				if (isRuntime)
-					reportUnsafe(untransformedProblemOf(id, importer), diagnostics, false)
+				if (isRuntime) {
+					reportUnsafe(untransformedProblemOf(id, importer), diagnostics, {
+						offersAllowUnsafe: false
+					})
+				}
 				for (const warning of diagnostics.warnings) this.warn(warning)
 				if (diagnostics.errors.length)
 					return refuse(diagnostics.errors.join("\n"))
@@ -943,22 +1217,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					!!build.initialOptions.conditions?.includes("production")
 				setEnvironment({ production, testing: false })
 				build.onDispose(restart)
-				const esbuildResolve: BundlerResolve = async (specifier, importer) => {
-					if (ownSpecifier.test(specifier)) return
-					const resolved = await build.resolve(specifier, {
-						importer,
-						namespace: "file",
-						resolveDir: dirname(importer),
-						kind: "import-statement"
-					})
-					return (
-							resolved.errors.length ||
-								resolved.external ||
-								resolved.namespace !== "file"
-						) ?
-							undefined
-						:	resolved.path
-				}
+				const esbuildResolve = esbuildResolverOf(build)
 				const plugins = build.initialOptions.plugins ?? []
 				// a plugin after this one may load a module it leaves, unlike it was read
 				const isLast = plugins[plugins.length - 1]?.name === "arktype"
@@ -972,250 +1231,19 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					}))
 				}
 				const cwd = build.initialOptions.absWorkingDir ?? process.cwd()
-				// a problem fails the build, removing what it wrote
-				const rejected = (metafile: Metafile, problem: string) => {
-					if (build.initialOptions.write !== false) {
-						for (const path in metafile.outputs)
-							rmSync(resolve(cwd, path), { force: true })
-					}
-					return { errors: [{ text: problem }] }
-				}
-				if (isStandalone) {
-					build.initialOptions.metafile = true
-					build.onEnd(result => {
-						if (!result.metafile || result.errors.length) return
-						const warnings: { text: string }[] = []
-						try {
-							checkBundledExternals(
-								esbuildBundleOf(result.metafile, cwd),
-								warning => warnings.push({ text: warning })
-							)
-						} catch (e) {
-							return rejected(result.metafile, (e as Error).message)
-						}
-						const problem =
-							foldedHelpersById.size &&
-							unfoldedCallProblemOf(
-								foldedHelpersById,
-								esbuildImportsOf(result.metafile, cwd),
-								isTransformedId,
-								realCwd()
-							)
-						// it wrote calls that throw at runtime
-						if (problem) return rejected(result.metafile, problem)
-						return { warnings }
-					})
-				}
-				// the scan's facts hold only while the bundle is what it read
-				let scanned: ScannedProgram | undefined
-				let verifies = false
-				let holders: ReadonlySet<string> = new Set()
-				const loaded: LoadedSources = new Map()
+				if (isStandalone) checkEsbuildBundle(build, cwd)
 				esbuildScan = undefined
-				if (program) {
-					build.initialOptions.metafile = true
-					build.onStart(async () => {
-						scanned = undefined
-						verifies = false
-						esbuildScan = undefined
-						loaded.clear()
-						const scan = await esbuildScanOf(
-							build,
-							program,
-							path =>
-								transformedFilter.include.test(path) &&
-								!transformedFilter.exclude.test(path),
-							async scanned =>
-								(await requestResolving(
-									esbuildResolve,
-									"scan",
-									scanned
-								)) as ScannedUsage,
-							realCwd()
-						).catch(
-							(e: unknown): ProgramScan<[ScannedProgram, ScannedUsage]> => ({
-								unpruned: unreadMessageOf(e)
-							})
-						)
-						const warnings = scan.unpruned ? [{ text: scan.unpruned }] : []
-						if (!scan.read) return { warnings }
-						const [read, usage] = scan.read
-						scanned = read
-						// only what it dropped can fail a read the scan didn't see
-						verifies = !!usage.dropped.length || narrowsIssues(usage.issues)
-						holders = new Set(usage.holders)
-						esbuildScan = {
-							scanned,
-							verifies,
-							loaded,
-							replaced: new Set(usage.replaced),
-							holders,
-							issues: usage.issues
-						}
-						return { warnings }
-					})
-					build.onEnd(result => {
-						if (
-							!scanned ||
-							!verifies ||
-							!result.metafile ||
-							result.errors.length
-						)
-							return
-						const problem = unseenProblemOf(
-							scanned,
-							esbuildImportsOf(result.metafile, cwd, scanned),
-							loaded,
-							holders,
-							realCwd()
-						)
-						// what it wrote may lack what a module it couldn't see reads
-						if (problem) return rejected(result.metafile, problem)
-					})
+				const scan: EsbuildScanState = {
+					scanned: undefined,
+					verifies: false,
+					holders: new Set(),
+					loaded: new Map()
 				}
-				// esbuild loads stdin as written, which the runtime runs only where it defines no Type
-				const stdinProblemOf = async (specifier: string) => {
-					if (!resolvesToRuntime(specifier, opts)) return
-					const stdin = stdinEntryOf(build.initialOptions)!
-					const transformed = (await request(
-						"transform",
-						stdin.source,
-						stdin.id
-					)) as TransformedModule | undefined
-					if (transformed?.code || transformed?.errors.length)
-						return untransformedProblemOf(specifier, "<stdin>", "")
-				}
-				build.onLoad({ filter: issueFeaturesFile }, () => {
-					const issues = esbuildScan?.issues
-					if (issues)
-						return { contents: writeIssueFeatures(issues), loader: "js" }
-				})
-				// each module watches what it read, which esbuild takes only from onLoad
-				build.onLoad({ filter: esbuildTransformed }, async args => {
-					if (args.namespace !== "file") return
-					const isTransformed =
-						transformedFilter.include.test(args.path) &&
-						!transformedFilter.exclude.test(args.path)
-					if (!isTransformed && !scanned) return
-					if (isTransformed) loadedFiles.add(args.path)
-					const code = readFileSync(args.path, "utf8")
-					if (scanned) addLoaded(loaded, fileOf(args.path), code)
-					if (!isTransformed) return
-					const transformed = await transform(
-						code,
-						args.path,
-						undefined,
-						scanned?.key,
-						esbuildResolve
-					)
-					if (!transformed?.code && !transformed?.errors.length) return
-					return {
-						contents: appendSourceMap(
-							transformed.code ?? code,
-							transformed.map
-						),
-						loader: esbuildLoaderOf(args.path),
-						watchFiles: transformed.dependencies.filter(
-							dependency => dependency !== args.path
-						),
-						// together, as other hosts throw them
-						errors:
-							transformed.errors.length ?
-								[{ text: transformed.errors.join("\n") }]
-							:	[],
-						warnings: transformed.warnings.map(text => ({ text }))
-					}
-				})
-				const buildVariant = variant
-				if (buildVariant) {
-					build.onResolve({ filter: schemaSpecifier }, args => {
-						if (args.pluginData === esbuildResolution) return
-						const specifier = variantSpecifierOf(args.path, buildVariant)
-						return specifier ?
-								build.resolve(specifier, {
-									kind: args.kind,
-									importer: args.importer,
-									resolveDir: args.resolveDir,
-									pluginData: esbuildResolution
-								})
-							:	{
-									errors: [
-										{
-											text: writeVariantImportMessage(
-												fileOf(args.importer),
-												args.path,
-												buildVariant
-											)
-										}
-									]
-								}
-					})
-				}
-				build.onResolve(
-					{
-						filter:
-							isStandalone ?
-								specifiersOf(
-									...runtimeSpecifiers,
-									"arktype/runtime",
-									"arktype/internal"
-								)
-							:	specifiersOf("arktype/runtime", ...internalSpecifiers)
-					},
-					async args => {
-						if (args.pluginData === esbuildResolution) return
-						const isRuntime = runtimeSpecifiers.includes(args.path)
-						const result = await build.resolve(
-							(
-								!isRuntime ||
-									!resolvesToRuntime(args.path, opts) ||
-									readsNodes(args.importer)
-							) ?
-								args.path
-							: runsOnArktype(args.importer, opts?.dependencies) ?
-								islandDependencySpecifier
-							:	"arktype/runtime",
-							{
-								kind: args.kind,
-								importer: args.importer,
-								// a virtual module has no directory of its own
-								resolveDir:
-									args.importer in importersById ?
-										dirname(importersById[args.importer])
-									:	args.resolveDir,
-								pluginData: esbuildResolution
-							}
-						)
-						const { errors, warnings } =
-							isRuntime ? await readDependency(args.importer) : noDiagnostics()
-						reportUnsafe(precompiledProblemOf(args.path, args.importer), {
-							errors,
-							warnings
-						})
-						if (isRuntime) {
-							reportUnsafe(
-								isStdinOf(build.initialOptions, args) ?
-									await stdinProblemOf(args.path)
-								:	untransformedProblemOf(
-										args.path,
-										args.importer,
-										// as a plugin's build.resolve may name none for a file
-										args.namespace || "file"
-									),
-								{ errors, warnings },
-								false
-							)
-						}
-						return {
-							...result,
-							errors: [...result.errors, ...errors.map(text => ({ text }))],
-							warnings: [
-								...result.warnings,
-								...warnings.map(text => ({ text }))
-							]
-						}
-					}
-				)
+				if (program)
+					scanEsbuildBundle(build, program, scan, esbuildResolve, cwd)
+				loadEsbuildModules(build, scan, esbuildResolve)
+				if (variant) resolveEsbuildVariant(build, variant)
+				resolveEsbuildRuntime(build)
 			}
 		}
 	}
@@ -1267,6 +1295,14 @@ interface BundleScan {
 }
 
 // a production build's scan, from its first transformed module on
+// what an esbuild build's scan read, which its loads add to and its end checks
+interface EsbuildScanState {
+	scanned: ScannedProgram | undefined
+	verifies: boolean
+	holders: ReadonlySet<string>
+	loaded: LoadedSources
+}
+
 interface PendingScan {
 	inputs: string[]
 	scanned?: Promise<BundleScan | undefined>
@@ -1406,32 +1442,9 @@ const rollupScanOf = async (
 ): Promise<ProgramScan<BundleScan>> => {
 	// each module's resolution, as a plugin may resolve it with options to load it by
 	const res = new Map<string, RollupResolution>()
-	const entries: ScanEntry[] = []
-	for (const input of inputs) {
-		const resolved = await context.resolve(input, undefined, { isEntry: true })
-		if (!resolved || resolved.external) {
-			return {
-				unpruned: writeUnprunedMessage(
-					`the entry "${input}" doesn't resolve to a module`
-				)
-			}
-		}
-		res.set(resolved.id, resolved)
-		if (!htmlId.test(resolved.id)) {
-			entries.push({ id: resolved.id })
-			continue
-		}
-		// a page's module scripts, as Vite builds them
-		const source = scriptsOf(readFileSync(resolved.id, "utf8"))
-		if (source === undefined) {
-			return {
-				unpruned: writeUnprunedMessage(
-					`${printablePathOf(cwd, resolved.id)} holds an inline module script, which it can't read before the build writes it as a module`
-				)
-			}
-		}
-		entries.push({ id: resolved.id, source })
-	}
+	const entries = await rollupEntriesOf(context, inputs, res, cwd)
+	if (typeof entries === "string")
+		return { unpruned: writeUnprunedMessage(entries) }
 	// modules read as they reached the plugin, having no file
 	const arrived = new Set<string>()
 	const scanned = await scanProgram(program, entries, {
@@ -1493,6 +1506,32 @@ const rollupScanOf = async (
 			:	undefined,
 		unpruned: usage.unpruned
 	}
+}
+
+// the bundle's entries as modules, reading a page's module scripts as Vite
+// builds them, or why one can't be scanned
+const rollupEntriesOf = async (
+	context: RollupContext,
+	inputs: string[],
+	res: Map<string, RollupResolution>,
+	cwd: string
+): Promise<ScanEntry[] | string> => {
+	const entries: ScanEntry[] = []
+	for (const input of inputs) {
+		const resolved = await context.resolve(input, undefined, { isEntry: true })
+		if (!resolved || resolved.external)
+			return `the entry "${input}" doesn't resolve to a module`
+		res.set(resolved.id, resolved)
+		if (!htmlId.test(resolved.id)) {
+			entries.push({ id: resolved.id })
+			continue
+		}
+		const source = scriptsOf(readFileSync(resolved.id, "utf8"))
+		if (source === undefined)
+			return `${printablePathOf(cwd, resolved.id)} holds an inline module script, which it can't read before the build writes it as a module`
+		entries.push({ id: resolved.id, source })
+	}
+	return entries
 }
 
 const htmlId = /\.html$/
@@ -1627,6 +1666,11 @@ const cachedFileOf = (): ((id: string) => string) => {
 		return file
 	}
 }
+
+// esbuild's own PluginBuild, as unplugin types setup's
+type EsbuildPluginBuild = Parameters<
+	NonNullable<NonNullable<UnpluginOptions["esbuild"]>["setup"]>
+>[0]
 
 interface EsbuildBuild {
 	initialOptions: {

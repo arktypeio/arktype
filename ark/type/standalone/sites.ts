@@ -105,9 +105,11 @@ export const addIssueFeatures = (
 	for (const node of written) {
 		if (node.is("sequence")) features.reportsIndices = true
 		else if (node.is("structure")) {
-			// an index signature's keys come from data
+			// an index signature's keys come from data, as do the undeclared
+			// keys a structure rejects
 			if (
 				node.index ||
+				node.undeclared === "reject" ||
 				node.props.some(
 					prop => typeof prop.key === "symbol" || !isDotAccessible(prop.key)
 				)

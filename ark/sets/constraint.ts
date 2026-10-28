@@ -132,10 +132,9 @@ export const sortSiblings = <node extends BaseNode>(
 	return nodes
 }
 
-// props are ordered by key, so equal structures list them alike without
-// writing their values, and since a sibling's hash starts with its kind (a
-// union's own doesn't, but unions are never siblings), nodes of different
-// kinds order by kind without writing theirs
+// props order by key, so equal structures list them alike without writing
+// their values; other siblings' hashes start with their kind, so kinds order
+// without writing theirs
 const compareSiblings = (l: BaseNode, r: BaseNode): number =>
 	l.is("required") || l.is("optional") ?
 		compareKeys(l.key, (r as BaseProp).key) || compareHashes(l.hash, r.hash)
@@ -143,8 +142,7 @@ const compareSiblings = (l: BaseNode, r: BaseNode): number =>
 	: l.kind < r.kind ? -1
 	: 1
 
-// a registered name's counter compares as a number, so names order as they
-// were registered however many came before
+// a registered name's counter compares as a number, so names order as registered
 const compareHashes = (l: string, r: string): number => {
 	if (l.includes("$ark")) {
 		let i = 0
@@ -159,8 +157,7 @@ const compareHashes = (l: string, r: string): number => {
 	return l < r ? -1 : 1
 }
 
-// a registered name and its counter's digits so far, like `"$ark.fn$1`, its
-// quote unescaped
+// a registered name and its counter's digits so far, like `"$ark.fn$1`
 const countedName = /[^\\]"\$ark\d*\.[\w$]*\$(\d*)$/
 
 const nonDigit = /\D|$/
