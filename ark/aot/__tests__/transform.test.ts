@@ -460,6 +460,38 @@ export const A = $ark#0(H)
 export const B = H.$.type(flag ? "a" : "a | null")`)
 		})
 
+		it("keeps a keyword's expression after walking a Generic's scope", () => {
+			// the build walks an exported Generic for holes, reaching arktype's
+			// scope; read through its aliases, a keyword module resolved each
+			// keyword in its own scope, after which a definition referencing
+			// `string.numeric.parse` printed an alias in place of its expression
+			const [boxed, parsed] = inFreshProcess(
+				async (generic: string, main: string) => {
+					const { createNodeHost, Precompiler } = await import("@ark/aot")
+					const { readFileSync } = await import("node:fs")
+					const precompiler = new Precompiler(
+						createNodeHost({ conditions: ["ark-ts"] })
+					)
+					precompiler.precompile(readFileSync(generic, "utf8"), generic)
+					const { sites } = precompiler.precompile(
+						readFileSync(main, "utf8"),
+						main
+					)
+					return sites.map(
+						site => (site.value as { expression: string }).expression
+					)
+				},
+				[fromHere("walked", "generic.ts"), fromHere("walked", "main.ts")]
+			)
+			// what arktype prints in a process that never walked its scope
+			const expected = inFreshProcess(async () => {
+				const { type } = await import("arktype")
+				return type(["string.numeric.parse", "[]"]).expression
+			})
+			attest(boxed).equals("{ box: string }")
+			attest(parsed).equals(expected)
+		})
+
 		it("loads arktype where it was imported", () => {
 			attest(
 				normalized(
