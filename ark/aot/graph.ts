@@ -34,10 +34,15 @@ import type {
 	ObjectPropertyKind,
 	ParamPattern,
 	TSInterfaceDeclaration,
+	TaggedTemplateExpression,
+	ThisExpression,
+	TSIntersectionType,
 	TSSignature,
 	TSTupleElement,
 	TSType,
 	TSTypeAnnotation,
+	TSTypeQuery,
+	TSTypeReference,
 	TSTypeParameter,
 	TSTypeAliasDeclaration,
 	Span,
@@ -1393,16 +1398,7 @@ export class ModuleGraph {
 		const union = (
 			types: (TSType | TSTypeAnnotation | null)[],
 			depth: number
-		) =>
-			types.reduce<KindBits | undefined>((result, t) => {
-				const kind =
-					t ? this.typeKindOf(t, context, module, kindOfKey, depth) : kinds.data
-				return result === undefined || kind === undefined ?
-						undefined
-					:	result | kind
-			}, kinds.data)
-		const signaturesKindOf = (signatures: TSSignature[]) =>
-			this.signaturesKindOf(signatures, context, module, kindOfKey, depth)
+		) => this.unionKindOf(types, context, module, kindOfKey, depth)
 		switch (type.type) {
 			case "TSTypeAnnotation":
 				return this.typeKindOf(
@@ -1420,26 +1416,8 @@ export class ModuleGraph {
 				return depth < 2 ? undefined : kinds.data
 			case "TSUnionType":
 				return union(type.types, depth)
-			case "TSIntersectionType": {
-				const parts = type.types.map(t =>
-					this.typeKindOf(t, context, module, kindOfKey, depth)
-				)
-				// e.g. `typeof def & { in: unknown }`, a Type only if some part says so
-				const declared = parts.filter(
-					kind =>
-						kind !== undefined &&
-						!(kind & (kinds.unknown | kinds.opaque | arkBits))
-				)
-				return (
-						declared.length &&
-							parts.every(
-								kind =>
-									kind === undefined || !(kind & (kinds.unknown | arkBits))
-							)
-					) ?
-						declared.reduce<KindBits>((result, kind) => result | kind!, 0)
-					:	union(type.types, depth)
-			}
+			case "TSIntersectionType":
+				return this.intersectionKindOf(type, context, module, kindOfKey, depth)
 			case "TSArrayType":
 				return union([type.elementType], depth + 1)
 			// e.g. data for `(typeof names)[number]`, but not `Parameters<typeof f>[0]`
@@ -1456,40 +1434,15 @@ export class ModuleGraph {
 					:	memberKindOf(kind, undefined)
 			}
 			case "TSTypeLiteral":
-				return signaturesKindOf(type.members)
-			// e.g. `typeof names`, or `typeof User.infer`, data whatever `User` is
-			case "TSTypeQuery": {
-				const names: string[] = []
-				let root = type.exprName
-				while (root.type === "TSQualifiedName") {
-					names.unshift(root.right.name)
-					root = root.left
-				}
-				if (root.type !== "Identifier") return
-				const queried = this.queriedOf(root.name, module, kindOfKey)
-				if (!queried) return
-				let [kind, value] = queried
-				for (const [i, name] of names.entries()) {
-					if (i === names.length - 1 && isArk(kind) && name in inferenceMembers)
-						return kinds.data
-					// e.g. the Type `schemas.User` for `typeof schemas.User.infer`
-					const literal =
-						value && this.literalOf(value.node, value.module, value.kindOfKey)
-					const member = literal && this.valueIn(literal, name)
-					if (member) {
-						value = member
-						kind = this.transfer(member.node, member.module, member.kindOfKey)
-					} else {
-						value = undefined
-						kind = memberKindOf(kind, name)
-					}
-				}
-				// e.g. `typeof $`, whose value may be a Scope, as `$`'s may be
-				return (
-					(kind & ~arkBits) |
-					(isArk(kind) ? unsure | (kind & kinds.otherArk) : 0)
+				return this.signaturesKindOf(
+					type.members,
+					context,
+					module,
+					kindOfKey,
+					depth
 				)
-			}
+			case "TSTypeQuery":
+				return this.queryKindOf(type, module, kindOfKey)
 			case "TSTupleType":
 				return union(type.elementTypes.map(tupleElementTypeOf), depth + 1)
 			// e.g. data for `() => void`, a function returning a Type for
@@ -1513,91 +1466,173 @@ export class ModuleGraph {
 					: kinds.data
 				)
 			}
-			case "TSTypeReference": {
-				const name = type.typeName
-				let root = name
-				while (root.type === "TSQualifiedName") root = root.left
-				if (root.type !== "Identifier") return
-				// e.g. `T` in `<T extends Type>(t: T) => ...`
-				const parameter = typeParameterOf(context, root.name)
-				if (parameter) {
-					return parameter.constraint ?
-							this.typeKindOf(
-								parameter.constraint,
-								context,
-								module,
-								kindOfKey,
-								depth
-							)
-						:	undefined
-				}
-				const imported = importedNameOf(module, root.name)
-				if (imported) {
-					const [specifier, importedName] = imported
-					if (localSpecifier.test(specifier)) {
-						// e.g. `T.Options` for `import type * as T from "./types.ts"`
-						const exportName =
-							name.type === "Identifier" ? importedName
-							: (
-								name.type === "TSQualifiedName" &&
-								importedName === "*" &&
-								name.left === root
-							) ?
-								name.right.name
-							:	undefined
-						return exportName === undefined ? undefined : (
-								(this.exportedTypeKindOf(
-									specifier,
-									exportName,
-									context,
-									module,
-									kindOfKey,
-									depth
-								) ?? undefined)
-							)
-					}
-					const isArkTypeName =
-						name.type === "TSQualifiedName" ?
-							importedName === "*" ?
-								name.right.name in arkTypeNames
-							:	importedName === "type" && name.right.name === "Any"
-						:	importedName in arkTypeNames
-					if (!arkTypesSpecifier.test(specifier) || !isArkTypeName)
-						return kinds.data
-					return arkTypeKindOf(
-						name.type === "TSQualifiedName" ? name.right.name : importedName
-					)
-				}
-				const local = this.localTypeOf(module, root.name)
-				if (local) {
-					return this.declaredTypeKindOf(
-						local,
-						context,
-						module,
-						kindOfKey,
-						depth
-					)
-				}
-				const args = type.typeArguments?.params ?? []
-				// e.g. `Awaited<unknown>`, which is what its argument is
-				if (name.type !== "Identifier" || !(root.name in containerTypes))
-					return union(args, depth + 1)
-				// e.g. `Record<string, unknown>`, holding what its arguments say,
-				// as a type literal holds its members
-				let held: KindBits = kinds.data
-				for (const arg of args) {
-					held |=
-						this.typeKindOf(arg, context, module, kindOfKey, depth + 1) ??
-						kinds.opaqueHolder
-				}
-				return held
-			}
+			case "TSTypeReference":
+				return this.referenceKindOf(type, context, module, kindOfKey, depth)
 			case "TSLiteralType":
 			case "TSTemplateLiteralType":
 				return kinds.data
 			default:
 				return type.type.endsWith("Keyword") ? kinds.data : undefined
 		}
+	}
+
+	private unionKindOf(
+		types: (TSType | TSTypeAnnotation | null)[],
+		context: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey,
+		depth: number
+	): KindBits | undefined {
+		return types.reduce<KindBits | undefined>((result, t) => {
+			const kind =
+				t ? this.typeKindOf(t, context, module, kindOfKey, depth) : kinds.data
+			return result === undefined || kind === undefined ?
+					undefined
+				:	result | kind
+		}, kinds.data)
+	}
+
+	// e.g. `typeof def & { in: unknown }`, a Type only if some part says so
+	private intersectionKindOf(
+		type: TSIntersectionType,
+		context: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey,
+		depth: number
+	): KindBits | undefined {
+		const parts = type.types.map(t =>
+			this.typeKindOf(t, context, module, kindOfKey, depth)
+		)
+		const declared = parts.filter(
+			kind =>
+				kind !== undefined && !(kind & (kinds.unknown | kinds.opaque | arkBits))
+		)
+		return (
+				declared.length &&
+					parts.every(
+						kind => kind === undefined || !(kind & (kinds.unknown | arkBits))
+					)
+			) ?
+				declared.reduce<KindBits>((result, kind) => result | kind!, 0)
+			:	this.unionKindOf(type.types, context, module, kindOfKey, depth)
+	}
+
+	// e.g. `typeof names`, or `typeof User.infer`, data whatever `User` is
+	private queryKindOf(
+		type: TSTypeQuery,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits | undefined {
+		const names: string[] = []
+		let root = type.exprName
+		while (root.type === "TSQualifiedName") {
+			names.unshift(root.right.name)
+			root = root.left
+		}
+		if (root.type !== "Identifier") return
+		const queried = this.queriedOf(root.name, module, kindOfKey)
+		if (!queried) return
+		let [kind, value] = queried
+		for (const [i, name] of names.entries()) {
+			if (i === names.length - 1 && isArk(kind) && name in inferenceMembers)
+				return kinds.data
+			// e.g. the Type `schemas.User` for `typeof schemas.User.infer`
+			const literal =
+				value && this.literalOf(value.node, value.module, value.kindOfKey)
+			const member = literal && this.valueIn(literal, name)
+			if (member) {
+				value = member
+				kind = this.transfer(member.node, member.module, member.kindOfKey)
+			} else {
+				value = undefined
+				kind = memberKindOf(kind, name)
+			}
+		}
+		// e.g. `typeof $`, whose value may be a Scope, as `$`'s may be
+		return (
+			(kind & ~arkBits) | (isArk(kind) ? unsure | (kind & kinds.otherArk) : 0)
+		)
+	}
+
+	// what a named type is: a parameter's constraint, arktype's own Type, a
+	// local or imported alias, or a container holding what its arguments say
+	private referenceKindOf(
+		type: TSTypeReference,
+		context: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey,
+		depth: number
+	): KindBits | undefined {
+		const name = type.typeName
+		let root = name
+		while (root.type === "TSQualifiedName") root = root.left
+		if (root.type !== "Identifier") return
+		// e.g. `T` in `<T extends Type>(t: T) => ...`
+		const parameter = typeParameterOf(context, root.name)
+		if (parameter) {
+			return parameter.constraint ?
+					this.typeKindOf(
+						parameter.constraint,
+						context,
+						module,
+						kindOfKey,
+						depth
+					)
+				:	undefined
+		}
+		const imported = importedNameOf(module, root.name)
+		if (imported) {
+			const [specifier, importedName] = imported
+			if (localSpecifier.test(specifier)) {
+				// e.g. `T.Options` for `import type * as T from "./types.ts"`
+				const exportName =
+					name.type === "Identifier" ? importedName
+					: (
+						name.type === "TSQualifiedName" &&
+						importedName === "*" &&
+						name.left === root
+					) ?
+						name.right.name
+					:	undefined
+				return exportName === undefined ? undefined : (
+						(this.exportedTypeKindOf(
+							specifier,
+							exportName,
+							context,
+							module,
+							kindOfKey,
+							depth
+						) ?? undefined)
+					)
+			}
+			const isArkTypeName =
+				name.type === "TSQualifiedName" ?
+					importedName === "*" ?
+						name.right.name in arkTypeNames
+					:	importedName === "type" && name.right.name === "Any"
+				:	importedName in arkTypeNames
+			if (!arkTypesSpecifier.test(specifier) || !isArkTypeName)
+				return kinds.data
+			return arkTypeKindOf(
+				name.type === "TSQualifiedName" ? name.right.name : importedName
+			)
+		}
+		const local = this.localTypeOf(module, root.name)
+		if (local)
+			return this.declaredTypeKindOf(local, context, module, kindOfKey, depth)
+		const args = type.typeArguments?.params ?? []
+		// e.g. `Awaited<unknown>`, which is what its argument is
+		if (name.type !== "Identifier" || !(root.name in containerTypes))
+			return this.unionKindOf(args, context, module, kindOfKey, depth + 1)
+		// e.g. `Record<string, unknown>`, holding what its arguments say,
+		// as a type literal holds its members
+		let held: KindBits = kinds.data
+		for (const arg of args) {
+			held |=
+				this.typeKindOf(arg, context, module, kindOfKey, depth + 1) ??
+				kinds.opaqueHolder
+		}
+		return held
 	}
 
 	// what a `typeof` names, with its value where a const or an export
@@ -2104,59 +2139,8 @@ export class ModuleGraph {
 				)
 			}
 			case "CallExpression":
-			case "TaggedTemplateExpression": {
-				const callee = unwrapChain(
-					node.type === "CallExpression" ? node.callee : node.tag
-				)
-				// e.g. `type({ a: "string" })`, as only parameters make a Generic
-				if (
-					node.type === "CallExpression" &&
-					definesType(node) &&
-					this.arkExportNameOf(callee, module) === "type"
-				)
-					return kinds.type
-				if (
-					callee.type === "MemberExpression" &&
-					(memberNameOf(callee) as never) in typeParserTypes &&
-					this.arkExportNameOf(callee.object, module) === "type"
-				)
-					return kinds.type
-				// e.g. `$.type("User")`, with `$` a Scope
-				if (
-					node.type === "CallExpression" &&
-					definesType(node) &&
-					callee.type === "MemberExpression" &&
-					memberNameOf(callee) === "type" &&
-					this.scopeCallOf(callee.object, module, kindOfKey)
-				)
-					return kinds.type
-				if (
-					node.type === "CallExpression" &&
-					this.definesGeneric(node, module, kindOfKey)
-				)
-					return genericKind
-				const fn =
-					this.functionOf(callee, module) ??
-					this.methodOf(callee, module, kindOfKey)
-				if (!fn) {
-					const unrefed =
-						node.type === "CallExpression" && unrefedOf(node, module)
-					if (unrefed) return this.transfer(unrefed, module, kindOfKey)
-					return (
-						callKindOf(this.transfer(callee, module, kindOfKey)) |
-						(node.type === "CallExpression" ?
-							this.builtinPassedOf(node, module, kindOfKey)
-						:	0)
-					)
-				}
-				if (node.type !== "CallExpression" || !runtimeParamsOf(fn[0]).length)
-					return kindOfKey(...fn)
-				// e.g. `withId(A)` with `withId = t => t.and({ id: "string" })`
-				return kindOfKey(
-					this.applicationOf(node, fn[0], module, kindOfKey),
-					fn[1]
-				)
-			}
+			case "TaggedTemplateExpression":
+				return this.calledKindOf(node, module, kindOfKey)
 			case "ConditionalExpression":
 				return (
 					this.transfer(node.consequent, module, kindOfKey) |
@@ -2178,47 +2162,106 @@ export class ModuleGraph {
 						this.transfer(node.right, module, kindOfKey)
 					:	kinds.data
 			case "ObjectExpression":
-			case "ArrayExpression": {
-				// e.g. `{ a: o.a }`, which holds nothing until it holds something else
-				if (this.resolving.has(node)) return kinds.data
-				this.resolving.add(node)
-				try {
-					return holderOf(this.heldKindOf({ node, module, kindOfKey }))
-				} finally {
-					this.resolving.delete(node)
-				}
-			}
+			case "ArrayExpression":
+				return this.holderKindOf(node, { node, module, kindOfKey })
 			case "ThisExpression":
-			case "NewExpression": {
-				const owner = node.type === "ThisExpression" && ownerOf(node)
-				if (owner && owner.type === "ObjectExpression")
-					return this.transfer(owner, module, kindOfKey)
-				const statics = node.type === "ThisExpression" && staticOwnerOf(node)
-				// e.g. `static self = this`, which holds nothing until it holds something else
-				if (statics) {
-					if (this.resolving.has(node)) return kinds.data
-					this.resolving.add(node)
-					try {
-						return holderOf(
-							this.heldKindOf({ node: statics, module, kindOfKey })
-						)
-					} finally {
-						this.resolving.delete(node)
-					}
-				}
-				const cls = this.classOf(node, module, kindOfKey)
-				return (
-					cls ? this.instanceKindOf(cls, kindOfKey)
-					: node.type === "NewExpression" ?
-						this.builtinPassedOf(node, module, kindOfKey)
-					:	kinds.data
-				)
-			}
+			case "NewExpression":
+				return this.thisKindOf(node, module, kindOfKey)
 			case "AwaitExpression":
 				return this.transfer(node.argument, module, kindOfKey)
 			default:
 				return kinds.data
 		}
+	}
+
+	// what a call returns: a Type from arktype's parsers or a Scope's, a
+	// Generic from a definition with parameters, or what its callee returns
+	private calledKindOf(
+		node: CallExpression | TaggedTemplateExpression,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits {
+		const callee = unwrapChain(
+			node.type === "CallExpression" ? node.callee : node.tag
+		)
+		// e.g. `type({ a: "string" })`, as only parameters make a Generic
+		if (
+			node.type === "CallExpression" &&
+			definesType(node) &&
+			this.arkExportNameOf(callee, module) === "type"
+		)
+			return kinds.type
+		if (
+			callee.type === "MemberExpression" &&
+			(memberNameOf(callee) as never) in typeParserTypes &&
+			this.arkExportNameOf(callee.object, module) === "type"
+		)
+			return kinds.type
+		// e.g. `$.type("User")`, with `$` a Scope
+		if (
+			node.type === "CallExpression" &&
+			definesType(node) &&
+			callee.type === "MemberExpression" &&
+			memberNameOf(callee) === "type" &&
+			this.scopeCallOf(callee.object, module, kindOfKey)
+		)
+			return kinds.type
+		if (
+			node.type === "CallExpression" &&
+			this.definesGeneric(node, module, kindOfKey)
+		)
+			return genericKind
+		const fn =
+			this.functionOf(callee, module) ??
+			this.methodOf(callee, module, kindOfKey)
+		if (!fn) {
+			const unrefed = node.type === "CallExpression" && unrefedOf(node, module)
+			if (unrefed) return this.transfer(unrefed, module, kindOfKey)
+			return (
+				callKindOf(this.transfer(callee, module, kindOfKey)) |
+				(node.type === "CallExpression" ?
+					this.builtinPassedOf(node, module, kindOfKey)
+				:	0)
+			)
+		}
+		if (node.type !== "CallExpression" || !runtimeParamsOf(fn[0]).length)
+			return kindOfKey(...fn)
+		// e.g. `withId(A)` with `withId = t => t.and({ id: "string" })`
+		return kindOfKey(this.applicationOf(node, fn[0], module, kindOfKey), fn[1])
+	}
+
+	// what a literal holds, or data while it's being resolved: e.g. `{ a: o.a }`
+	// holds nothing until it holds something else
+	private holderKindOf(node: Node, literal: Located): KindBits {
+		if (this.resolving.has(node)) return kinds.data
+		this.resolving.add(node)
+		try {
+			return holderOf(this.heldKindOf(literal))
+		} finally {
+			this.resolving.delete(node)
+		}
+	}
+
+	// `this`, or what `new` creates: the object or class that owns it
+	private thisKindOf(
+		node: ThisExpression | NewExpression,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits {
+		const owner = node.type === "ThisExpression" && ownerOf(node)
+		if (owner && owner.type === "ObjectExpression")
+			return this.transfer(owner, module, kindOfKey)
+		// e.g. `static self = this`, which holds nothing until it holds something else
+		const statics = node.type === "ThisExpression" && staticOwnerOf(node)
+		if (statics)
+			return this.holderKindOf(node, { node: statics, module, kindOfKey })
+		const cls = this.classOf(node, module, kindOfKey)
+		return (
+			cls ? this.instanceKindOf(cls, kindOfKey)
+			: node.type === "NewExpression" ?
+				this.builtinPassedOf(node, module, kindOfKey)
+			:	kinds.data
+		)
 	}
 
 	// what `node` reads off `object`, where its name decides the read as the
