@@ -42,7 +42,10 @@ import {
 } from "./grammar.ts"
 import { tempDir } from "./utils.ts"
 
-const [countArg, seedArg] = (process.env.ARK_PRUNE_FUZZ ?? "20").split(":")
+// <count>[:<seed>[:<path>]], the path replaying one of a seed's runs
+const [countArg, seedArg, path] = (process.env.ARK_PRUNE_FUZZ ?? "20").split(
+	":"
+)
 const count = Number(countArg)
 const initialSeed =
 	seedArg === undefined ? Date.now() % 1_000_000 : Number(seedArg)
@@ -106,7 +109,11 @@ const functions = [
 		([name, fn]) =>
 			`const ${name} = ${unnamedHoles.has(name) ? `[${fn.toString()}][0]` : fn.toString()}`
 	),
-	`const emptyArray = () => []`
+	`const emptyArray = () => []`,
+	// names a minifier would change, which descriptions and expressions print
+	...Object.keys({ ...morphs, ...tried, ...predicates }).map(
+		name => `Object.defineProperty(${name}, "name", { value: "${name}" })`
+	)
 ]
 
 const typesOf = (v: Validator) => `./types${v.module}.ts`
@@ -424,7 +431,7 @@ const rewrites = {
 			.map(line =>
 				line.startsWith("import {") ?
 					line.replace(/\b(V\d+)\b(?! as)/g, "$1 as $1$$r")
-				:	line.replace(/(?<![\w$.])(V\d+)\b/g, "$1$$r")
+				:	line.replace(/(?<![\w"$'.])(V\d+)\b(?!["'])/g, "$1$$r")
 			)
 			.join("\n"),
 	// reads a member the module didn't
@@ -962,11 +969,9 @@ const buildWith = async (
 	return { warnings, js: outputOf(out), out }
 }
 
-// a predicate's description reads its function's name as the build minified
-// it, and a TypeError names the binding, which differ between two bundles of
-// the same program, as do chunk names
-const minifiedNames = /valid according to [\w$]+/g
-const typeErrorNames = /[\w$.]+ (is not a (?:function|constructor))/g
+// a TypeError names a binding as the build minified it, which differs
+// between two bundles of the same program, as do chunk names
+const typeErrorNames = /TypeError: .* (is not a (?:function|constructor))/g
 const chunkNames = /(?:chunk|types\d+)-[\w-]+\.js/g
 const outDirs = /out-(?:esbuild|vite)-(?:whole|pruned)/g
 
@@ -985,8 +990,7 @@ const runEntry = (file: string) => {
 			`exit ${status}\n${stdout}\n${stderr.split("\n").find(line => /^\w*Error\b/.test(line.trim())) ?? stderr.slice(0, 500)}`
 		)
 	return result
-		.replace(minifiedNames, "valid according to fn")
-		.replace(typeErrorNames, "x $1")
+		.replace(typeErrorNames, "TypeError: x $1")
 		.replace(chunkNames, "chunk.js")
 		.replace(outDirs, "out")
 }
@@ -1114,12 +1118,14 @@ while (remaining > 0) {
 	const runs = remaining
 	const result = await fc.check(
 		fc.asyncProperty(apps, app => check(app)),
-		{ numRuns: runs, seed, endOnFailure: true }
+		{ numRuns: runs, seed, endOnFailure: true, ...(path && { path }) }
 	)
 	if (!result.failed) break
 	console.error(
 		`seed ${seed} run ${result.numRuns}: counterexample\n${sourceOfApp(result.counterexample![0])}`
 	)
+	// a check that threw, rather than finding a difference
+	if (result.error) console.error(result.errorInstance ?? result.error)
 	remaining -= result.numRuns
 	seed++
 }
