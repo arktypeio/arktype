@@ -141,6 +141,13 @@ export class ModuleScopes {
 					binding ?
 						{ kind: "binding", binding }
 					:	{ kind: "expression", node: node.declaration }
+				// `export default T` exports the binding T names, once it resolves
+				if (node.declaration.type === "Identifier") {
+					this.pendingExports.push([
+						"default",
+						this.byId.get(node.declaration)!
+					])
+				}
 				return
 			}
 			case "ExportAllDeclaration":
