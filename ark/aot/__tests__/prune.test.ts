@@ -456,6 +456,7 @@ contextualize(function (this: Mocha.Suite) {
 					`import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n`
 				)
 			).snap({
+				bracketsKeys: false,
 				reportsIndices: false,
 				writesText: false,
 				readsKeySites: true,
@@ -466,6 +467,7 @@ contextualize(function (this: Mocha.Suite) {
 					`import { type } from "arktype"\n\nexport const Tagged = type({ tags: "string[]" })\n`
 				)
 			).snap({
+				bracketsKeys: false,
 				reportsIndices: true,
 				writesText: false,
 				readsKeySites: false,
