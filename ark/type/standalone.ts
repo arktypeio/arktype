@@ -442,6 +442,7 @@ const failureSources = {
 /** what the issues of a program's validators may hold */
 export interface IssueFeatures {
 	reportsIndices: boolean
+	bracketsKeys: boolean
 	writesText: boolean
 	readsKeySites: boolean
 	runsArktype: boolean
@@ -449,6 +450,7 @@ export interface IssueFeatures {
 
 export const noIssueFeatures: IssueFeatures = {
 	reportsIndices: false,
+	bracketsKeys: false,
 	writesText: false,
 	readsKeySites: false,
 	runsArktype: false

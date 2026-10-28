@@ -13,7 +13,7 @@ import {
 	type SiteContext,
 	type UnionSite
 } from "@ark/schema/internal"
-import { type Fn, hasDomain, throwParseError } from "@ark/util"
+import { type Fn, hasDomain, isDotAccessible, throwParseError } from "@ark/util"
 import * as runtime from "../runtimeExports.ts"
 import {
 	declares,
@@ -106,11 +106,21 @@ export const addIssueFeatures = (
 ): void => {
 	for (const node of written) {
 		if (node.is("sequence")) features.reportsIndices = true
-		else if (
+		else if (node.is("structure")) {
+			// an index signature's keys come from data
+			if (
+				node.index ||
+				node.props.some(
+					prop => typeof prop.key === "symbol" || !isDotAccessible(prop.key)
+				)
+			)
+				features.bracketsKeys = true
+		} else if (
 			node.is("morph") ||
 			(node.is("predicate") && !isKeyword(node.predicate))
 		) {
 			features.reportsIndices = true
+			features.bracketsKeys = true
 			features.writesText = true
 		}
 	}

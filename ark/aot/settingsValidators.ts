@@ -3,6 +3,7 @@
 // written by __tests__/writeSettings.ts from __tests__/settingsSchema.ts
 // ark/schema/shared/issueFeatures.ts
 var reportsIndices = true
+var bracketsKeys = true
 var writesText = true
 var readsKeySites = true
 var runsArktype = true
@@ -91,9 +92,10 @@ var messageOf = issue => {
 	let path = ""
 	for (const k of issue.path) {
 		path +=
-			reportsIndices && typeof k === "number" ?
-				`[${k}]`
-			:	(path && ".") + String(k)
+			bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
+				`[${JSON.stringify(k) ?? String(k)}]`
+			: reportsIndices && typeof k === "number" ? `[${k}]`
+			: (path && ".") + String(k)
 	}
 	return (path && path + " ") + problemOf(issue)
 }
