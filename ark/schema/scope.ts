@@ -570,73 +570,79 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return resolution
 	}
 
+	// resolves the context of an alias's definition, by the phase a reference finds it in
+	private resolveDefinition(
+		name: string,
+		ctx: BaseParseContext,
+		mark: number | undefined
+	): BaseRoot {
+		if (ctx.phase === "resolving" || ctx.phase === "member") {
+			reach(ctx)
+			if (ctx.phase === "resolving") ctx.closes = true
+			return this.aliasOf(ctx)
+		}
+		if (ctx.phase === "failed") throw ctx.error
+		if (ctx.phase === "resolved") {
+			return throwInternalError(
+				`Unexpected resolved context for was uncached by its scope: ${printable(ctx)}`
+			)
+		}
+		registerParseContext(ctx).phase = "resolving"
+		ctx.index = ctx.lowlink = openDefinitions.push(ctx) - 1
+		const membersStart = openMembers.length
+		let node: BaseRoot
+		try {
+			node = this.parseOpenDef(ctx.def, ctx)
+		} catch (e) {
+			// reset so the next reference reparses it and throws the same error
+			ctx.phase = "unresolved"
+			throw e
+		} finally {
+			openDefinitions.pop()
+		}
+		reach(ctx)
+		if (ctx.lowlink < ctx.index && !node.topAlias) {
+			ctx.phase = "member"
+			ctx.resolution = node
+			openMembers.push(ctx)
+			return this.aliasOf(ctx)
+		}
+		ctx.phase = "resolved"
+		const component = [ctx]
+		try {
+			return resolving(() => {
+				// it reaches no definition still open, so its component closes with it
+				if (ctx.lowlink === ctx.index) {
+					for (const member of openMembers.splice(membersStart)) {
+						component.push(member)
+						member.phase = "resolved"
+						member.$.resolveContext(member.alias!, member, member.resolution!)
+						$ark.reached?.store(mark, member.$.res, member.alias)
+						delete member.resolution
+					}
+				}
+				return node.topAlias ?
+						this.resolvePending(name, (this.res[name] = withId(node, ctx.id)))
+					:	this.resolveContext(name, ctx, node)
+			})
+		} catch (e) {
+			// a deferred check failed; reparsing would reuse checked nodes
+			for (const failed of component) {
+				failed.phase = "failed"
+				failed.error = e
+				failed.$.res[failed.alias!] = failed
+			}
+			throw e
+		}
+	}
+
 	private resolveUncached(
 		name: string,
 		cached: BaseParseContext | undefined,
 		mark: number | undefined
 	): Exclude<CachedResolution, BaseParseContext> | undefined {
 		if (hasOwn(this.aliases, name)) $ark.reached?.alias(this, name)
-		if (cached) {
-			const v = cached
-			if (v.phase === "resolving" || v.phase === "member") {
-				reach(v)
-				if (v.phase === "resolving") v.closes = true
-				return this.aliasOf(v)
-			}
-			if (v.phase === "failed") throw v.error
-			if (v.phase === "resolved") {
-				return throwInternalError(
-					`Unexpected resolved context for was uncached by its scope: ${printable(v)}`
-				)
-			}
-			registerParseContext(v).phase = "resolving"
-			v.index = v.lowlink = openDefinitions.push(v) - 1
-			const membersStart = openMembers.length
-			let node: BaseRoot
-			try {
-				node = this.parseOpenDef(v.def, v)
-			} catch (e) {
-				// reset so the next reference reparses it and throws the same error
-				v.phase = "unresolved"
-				throw e
-			} finally {
-				openDefinitions.pop()
-			}
-			reach(v)
-			if (v.lowlink < v.index && !node.topAlias) {
-				v.phase = "member"
-				v.resolution = node
-				openMembers.push(v)
-				return this.aliasOf(v)
-			}
-			v.phase = "resolved"
-			const component = [v]
-			try {
-				return resolving(() => {
-					// it reaches no definition still open, so its component closes with it
-					if (v.lowlink === v.index) {
-						for (const member of openMembers.splice(membersStart)) {
-							component.push(member)
-							member.phase = "resolved"
-							member.$.resolveContext(member.alias!, member, member.resolution!)
-							$ark.reached?.store(mark, member.$.res, member.alias)
-							delete member.resolution
-						}
-					}
-					return node.topAlias ?
-							this.resolvePending(name, (this.res[name] = withId(node, v.id)))
-						:	this.resolveContext(name, v, node)
-				})
-			} catch (e) {
-				// a deferred check failed; reparsing would reuse checked nodes
-				for (const ctx of component) {
-					ctx.phase = "failed"
-					ctx.error = e
-					ctx.$.res[ctx.alias!] = ctx
-				}
-				throw e
-			}
-		}
+		if (cached) return this.resolveDefinition(name, cached, mark)
 		const isScopeAlias = hasOwn(this.aliases, name)
 		let def: unknown =
 			isScopeAlias ? this.aliases[name]
