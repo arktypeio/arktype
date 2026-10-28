@@ -1307,44 +1307,7 @@ export abstract class BaseNode<
 			}
 		}
 
-		const innerWithTransformedChildren = flatMorph(
-			this.inner as Dict,
-			(k, v) => {
-				if (!this.impl.keys[k].child) return [k, v]
-				// a morph's only child is the head of its pipeline
-				if (k === "morphs") {
-					const { head, piped } = this as {} as Morph.Node
-					const transformed = head?._tf(mapper, ctx)
-					if (transformed) return [k, [transformed, ...piped]]
-					// a pruned head accepts anything, so what it piped to isn't promoted
-					return [
-						k,
-						hasArkKind(piped[0], "root") ? [$ark.kw.unknown, ...piped] : piped
-					]
-				}
-				const children = v as listable<BaseNode>
-				if (!isArray(children)) {
-					const transformed = children._tf(mapper, ctx)
-					return transformed ? [k, transformed] : []
-				}
-				// if the value was previously explicitly set to an empty list,
-				// (e.g. branches for `never`), ensure it is not pruned
-				if (children.length === 0) return [k, v]
-				const transformed = (
-					children as array<BaseNode | Sequence.DefaultableElement>
-				).flatMap<BaseNode | Sequence.DefaultableElement>(n => {
-					if (isArray(n)) {
-						const transformedElement = n[0]._tf(mapper, ctx)
-						return transformedElement ?
-								[[transformedElement as BaseRoot, n[1]]]
-							:	[]
-					}
-					const transformedChild = n._tf(mapper, ctx)
-					return transformedChild ?? []
-				})
-				return transformed.length ? [k, transformed] : []
-			}
-		)
+		const innerWithTransformedChildren = this._tfChildren(mapper, ctx)
 
 		if (seen) ctx.seen[this.id] = seen
 		else delete ctx.seen[this.id]
@@ -1391,6 +1354,48 @@ export abstract class BaseNode<
 			transformedInner as never,
 			ctx.parseOptions
 		) as never)
+	}
+
+	/** its inner with each child transformed, a child the mapper removed left out */
+	private _tfChildren(
+		mapper: DeepNodeTransformation,
+		ctx: DeepNodeTransformContext
+	): Dict {
+		return flatMorph(this.inner as Dict, (k, v) => {
+			if (!this.impl.keys[k].child) return [k, v]
+			// a morph's only child is the head of its pipeline
+			if (k === "morphs") {
+				const { head, piped } = this as {} as Morph.Node
+				const transformed = head?._tf(mapper, ctx)
+				if (transformed) return [k, [transformed, ...piped]]
+				// a pruned head accepts anything, so what it piped to isn't promoted
+				return [
+					k,
+					hasArkKind(piped[0], "root") ? [$ark.kw.unknown, ...piped] : piped
+				]
+			}
+			const children = v as listable<BaseNode>
+			if (!isArray(children)) {
+				const transformed = children._tf(mapper, ctx)
+				return transformed ? [k, transformed] : []
+			}
+			// if the value was previously explicitly set to an empty list,
+			// (e.g. branches for `never`), ensure it is not pruned
+			if (children.length === 0) return [k, v]
+			const transformed = (
+				children as array<BaseNode | Sequence.DefaultableElement>
+			).flatMap<BaseNode | Sequence.DefaultableElement>(n => {
+				if (isArray(n)) {
+					const transformedElement = n[0]._tf(mapper, ctx)
+					return transformedElement ?
+							[[transformedElement as BaseRoot, n[1]]]
+						:	[]
+				}
+				const transformedChild = n._tf(mapper, ctx)
+				return transformedChild ?? []
+			})
+			return transformed.length ? [k, transformed] : []
+		})
 	}
 
 	/** a copy with meta applied to the references a selector picks */
