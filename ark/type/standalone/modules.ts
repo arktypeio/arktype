@@ -1,4 +1,6 @@
-import { runtimeImport, type StandaloneOptions } from "../standalone.ts"
+import type { StandaloneOptions } from "./baking.ts"
+
+export const runtimeImport = `import * as runtime from "arktype/runtime"`
 
 export interface SharedModule {
 	readsRuntime: boolean

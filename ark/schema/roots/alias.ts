@@ -114,7 +114,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			isIoFinal() &&
 			(this.isIo || hasArkKind(nodesById[this.reference as NodeId], "root"))
 		resolvingAliases.push(this)
-		inProgress.res++
+		inProgress.resolutions++
 		if (readsIo) inProgress.ioReads++
 		let resolution: BaseRoot
 		try {
@@ -125,7 +125,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 				this._resolution = resolution
 		} finally {
 			resolvingAliases.pop()
-			inProgress.res--
+			inProgress.resolutions--
 			if (readsIo) inProgress.ioReads--
 		}
 		assertUnchecked()

@@ -21,7 +21,6 @@ import {
 } from "@ark/schema"
 import { throwInternalError } from "@ark/util"
 import { failsAtPath, FirstIssues } from "../runtime.ts"
-import { runtimeKeyOf } from "../standalone.ts"
 import { combines, writeCombinator } from "./combinators.ts"
 import {
 	isDescribed,
@@ -37,6 +36,7 @@ import {
 	type IssueContext,
 	type TextContext
 } from "./sites.ts"
+import { runtimeKeyOf } from "./values.ts"
 
 class StandaloneCompiler extends TraversalCompiler {
 	override readonly reportsFirst: boolean = false

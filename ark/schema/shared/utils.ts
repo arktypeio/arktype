@@ -69,21 +69,21 @@ export const isNode = (value: unknown): value is BaseNode => {
 
 export const inProgress: {
 	definitions: number
-	res: number
+	resolutions: number
 	ioReads: number
 	compositions: number
 } = {
 	definitions: 0,
-	res: 0,
+	resolutions: 0,
 	ioReads: 0,
 	compositions: 0
 }
 
 export const isResolutionFinal = (): boolean =>
-	!inProgress.definitions && !inProgress.res
+	!inProgress.definitions && !inProgress.resolutions
 
 export const isIoFinal = (): boolean =>
-	!inProgress.definitions && inProgress.res === inProgress.ioReads
+	!inProgress.definitions && inProgress.resolutions === inProgress.ioReads
 
 const uncheckedAssertions: (() => void)[] = []
 
@@ -119,12 +119,12 @@ const discardUnchecked = (): void => {
 }
 
 export const resolving = <t>(resolve: () => t): t => {
-	inProgress.res++
+	inProgress.resolutions++
 	let result: t
 	try {
 		result = resolve()
 	} finally {
-		inProgress.res--
+		inProgress.resolutions--
 	}
 	assertUnchecked()
 	return result
