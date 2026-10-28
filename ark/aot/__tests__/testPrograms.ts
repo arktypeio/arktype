@@ -39,6 +39,12 @@ interface Fragment {
 	containers: string[]
 	exports: string[]
 	main: string[]
+	// mutate.ts, a third module writing what containers.ts exports before main runs
+	mutate?: string[]
+	// reexport.ts, re-exporting containers.ts, and the names main imports from it
+	reexport?: string[]
+	reexports?: string[]
+	readsNamespace?: boolean
 }
 
 type FragmentOf = (id: string) => Fragment
@@ -69,6 +75,9 @@ const isDefinable = (def: unknown) => {
 		return false
 	}
 }
+
+// a Type a module declares must be definable for the module to load
+const definable = nodeOf([]).filter(node => isDefinable(defOf(node)))
 
 const definitions: fc.Arbitrary<FragmentOf> = nodeOf([]).chain(node =>
 	inputsOf(dataOf(node, noAliases)).map(
@@ -971,6 +980,410 @@ const codecs: fc.Arbitrary<FragmentOf> = fc
 			)
 	)
 
+// where a write to a held object runs
+const writePlaces = [
+	"none",
+	"containers",
+	"mutate",
+	"mainBefore",
+	"mainMid",
+	"fnCalledBefore",
+	"fnCalledMid",
+	"fnUncalled"
+] as const
+
+// how a held object is written, given its name and a replacement Type's
+const writes = {
+	member: (h: string, t: string) => `${h}.a = ${t}`,
+	nested: (h: string, t: string) => `${h}.nested.c = ${t}`,
+	element: (h: string, t: string) => `${h}.list[0] = ${t}`,
+	push: (h: string, t: string) => `${h}.list.push(${t})`,
+	assign: (h: string, t: string) => `Object.assign(${h}, { a: ${t} })`,
+	assignNested: (h: string, t: string) =>
+		`Object.assign(${h}.nested, { c: ${t} })`,
+	max: (h: string) => `${h}.max = 1`,
+	description: (h: string) => `${h}.cfg.description = "changed"`,
+	key: (h: string) => `${h}.key = "b"`,
+	alias: (h: string, t: string) =>
+		`const alias_${h} = ${h}\nalias_${h}.a = ${t}`,
+	destructured: (h: string, t: string) =>
+		`const { nested: nested_${h} } = ${h}\nnested_${h}.c = ${t}`,
+	wrapped: (h: string, t: string) => `;[${h}][0].a = ${t}`,
+	held: (h: string, t: string) => `;({ h: ${h} }).h.a = ${t}`,
+	looped: (h: string, t: string) => `for (const v of [${h}]) v.a = ${t}`,
+	computed: (h: string, t: string) => `${h}["a"] = ${t}`,
+	keyed: (h: string, t: string) => `const k_${h} = "a"\n${h}[k_${h}] = ${t}`,
+	reflect: (h: string, t: string) => `Reflect.set(${h}, "a", ${t})`,
+	defined: (h: string, t: string) =>
+		`Object.defineProperty(${h}, "a", { value: ${t} })`,
+	entries: (h: string, t: string) =>
+		`Object.entries(${h}).forEach(([k, v]) => { if (k === "nested") v.c = ${t} })`
+}
+
+// a held object's shape, each holding the same members
+const heldShapes = {
+	literal: (members: string) => `{ ${members} }`,
+	spread: (members: string, id: string) => `{ ...base${id}, ${members} }`,
+	assign: (members: string, id: string) =>
+		`Object.assign({}, base${id}, { ${members} })`,
+	ternary: (members: string, id: string, swapped: string) =>
+		`flag${id} ? { ${members} } : { ${swapped} }`,
+	cached: (members: string, id: string) => `cache${id}.h || { ${members} }`,
+	global: (members: string, id: string) =>
+		`(globalThis as any).__h${id} ?? { ${members} }`,
+	frozen: (members: string) => `Object.freeze({ ${members} })`,
+	asConst: (members: string) => `({ ${members} }) as const`,
+	made: (members: string, id: string) => `make${id}()`,
+	instance: (members: string, id: string) => `new C${id}()`
+}
+
+type HeldShape = keyof typeof heldShapes
+
+// what main reads off a held object, as an arktype value
+const heldReads = {
+	member: (h: string) => `${h}.a`,
+	or: (h: string) => `${h}.a.or("null")`,
+	nestedArray: (h: string) => `${h}.nested.c.array()`,
+	element: (h: string) => `${h}.list[1]`,
+	elementOr: (h: string) => `${h}.list[0].or(${h}.b)`,
+	prop: (h: string) => `type({ x: ${h}.a })`,
+	union: (h: string) => `type([${h}.a, "|", ${h}.b])`,
+	described: (h: string) => `${h}.a.describe(${h}.cfg.description)`,
+	bounded: (h: string) => `type(\`string <= \${${h}.max}\`)`,
+	configured: (h: string) => `type("string").configure(${h}.cfg)`,
+	keyed: (h: string) => `type({ [${h}.key]: ${h}.b })`,
+	dynamic: (h: string) => `${h}[${h}.key].or("null")`,
+	rest: (h: string, id: string) => `rest${id}.b.or("null")`,
+	others: (h: string, id: string) => `others${id}[0].array()`,
+	deep: (h: string, id: string) => `C${id}.or("null")`,
+	alias: (h: string, id: string) => `h${id}.a.or("null")`,
+	closure: (h: string, id: string) => `get${id}().or("null")`,
+	picked: (h: string, id: string) => `pick${id}("b").or("null")`,
+	method: (h: string) => `${h}.get().or("null")`,
+	made: (h: string, id: string) => `make${id}().a.or("null")`,
+	reexported: (h: string, id: string) => `R${id}.a.or("null")`,
+	namespaced: (h: string, id: string) => `ns.H${id}.b.array()`,
+	fallback: (h: string) => `(${h}.missing ?? ${h}.a).or("null")`,
+	chosen: (h: string, id: string) => `(flag${id} ? ${h}.a : ${h}.b).or("null")`,
+	unknowable: (h: string) => `(Math.random() > 2 ? ${h}.a : ${h}.b).or("null")`
+}
+
+type HeldRead = keyof typeof heldReads
+
+// the main.ts declaration a read needs
+const heldDeclarations: Partial<
+	Record<HeldRead, (h: string, id: string) => string>
+> = {
+	rest: (h, id) => `const { a: A${id}, ...rest${id} } = ${h}`,
+	others: (h, id) => `const [f${id}, ...others${id}] = ${h}.list`,
+	deep: (h, id) => `const { nested: { c: C${id} } } = ${h}`,
+	alias: (h, id) => `const h${id} = ${h}`,
+	closure: (h, id) => `const get${id} = () => ${h}.a`,
+	picked: (h, id) => `const pick${id} = k => ${h}[k]`,
+	chosen: (h, id) => `const flag${id} = ${id.length % 2 ? "true" : "false"}`
+}
+
+const indented = (lines: string) =>
+	lines
+		.split("\n")
+		.map(line => `\t${line}`)
+		.join("\n")
+
+// Types, a config and data held in an exported object of one of several
+// shapes, read through members, destructuring, aliases, closures and
+// re-exports, and written after its declaration from its module, a third
+// module or main
+const heldTypes: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		a: definable,
+		b: definable,
+		shape: fc.constantFrom(...(Object.keys(heldShapes) as HeldShape[])),
+		flag: fc.boolean(),
+		max: fc.integer({ min: 0, max: 3 }),
+		write: fc.constantFrom(...(Object.keys(writes) as (keyof typeof writes)[])),
+		place: fc.constantFrom(...writePlaces),
+		writesBack: fc.boolean(),
+		reads: fc.uniqueArray(
+			fc.constantFrom(...(Object.keys(heldReads) as HeldRead[])),
+			{ minLength: 1, maxLength: 4 }
+		)
+	})
+	.chain(({ a, b, shape, flag, max, write, place, writesBack, reads }) =>
+		inputsOf(
+			fc.oneof(
+				dataOf(a, noAliases),
+				dataOf(b, noAliases),
+				fc.string({ maxLength: 4 }),
+				fc.record({ a: noise, b: noise, x: noise }, { requiredKeys: [] })
+			)
+		).map(
+			(inputs): FragmentOf =>
+				id => {
+					const h = `H${id}`
+					const ta = `Ta${id}`
+					const tb = `Tb${id}`
+					const members = (first: string, second: string) =>
+						`a: ${first}, b: ${second}, nested: { c: ${first} }, list: [${first}, ${second}], max: ${max}, key: "a", cfg: { description: "held" }`
+					const containers = [
+						`export const ${ta} = type(${sourceOf(defOf(a))})`,
+						`export const ${tb} = type(${sourceOf(defOf(b))})`
+					]
+					if (shape === "spread" || shape === "assign")
+						containers.push(`const base${id} = { ${members(ta, tb)} }`)
+					if (shape === "ternary") containers.push(`const flag${id} = ${flag}`)
+					if (shape === "cached")
+						containers.push(`const cache${id}: { h?: any } = {}`)
+					if (shape === "made") {
+						containers.push(
+							`export const make${id} = () => ({ ${members(ta, tb)} })`
+						)
+					}
+					if (shape === "instance") {
+						containers.push(
+							`class C${id} {\n\ta = ${ta}\n\tb = ${tb}\n\tnested = { c: ${ta} }\n\tlist = [${ta}, ${tb}]\n\tmax = ${max}\n\tkey = "a"\n\tcfg = { description: "held" }\n\tget() {\n\t\treturn this.a\n\t}\n}`
+						)
+					}
+					containers.push(
+						`export const ${h} = ${heldShapes[shape](members(ta, tb), id, members(tb, ta))}`
+					)
+					if (writesBack)
+						containers.push(`;(globalThis as any).__held${id} = ${h}`)
+					// a frozen object throws on write, in both worlds alike
+					const written =
+						shape === "frozen" || shape === "asConst" || place === "none" ?
+							undefined
+						:	writes[write](h, tb)
+					const fn = `bump${id}`
+					if (written && place === "containers") containers.push(written)
+					if (written && place.startsWith("fn")) {
+						containers.push(
+							`export const ${fn} = () => {\n${indented(written)}\n}`
+						)
+					}
+					const call =
+						place === "fnCalledBefore" || place === "fnCalledMid" ?
+							`${fn}()`
+						:	undefined
+					const main: string[] = []
+					if (written && place === "mainBefore") main.push(written)
+					if (call && place === "fnCalledBefore") main.push(call)
+					const usable = reads.filter(
+						read =>
+							(read !== "method" || shape === "instance") &&
+							(read !== "made" || shape === "made")
+					)
+					const sites = (usable.length ? usable : ["or" as const]).map(
+						(read, i) => {
+							const declaration = heldDeclarations[read]?.(h, id)
+							return [
+								...(declaration ? [declaration] : []),
+								observed(`${id}.${i}`, heldReads[read](h, id), inputs)
+							]
+						}
+					)
+					const mid = Math.floor(sites.length / 2)
+					for (const [i, lines] of sites.entries()) {
+						if (i === mid) {
+							if (written && place === "mainMid") main.push(written)
+							if (call && place === "fnCalledMid") main.push(call)
+						}
+						main.push(...lines)
+					}
+					return {
+						containers,
+						exports: [
+							h,
+							ta,
+							tb,
+							...(shape === "made" ? [`make${id}`] : []),
+							...(written && place.startsWith("fn") ? [fn] : [])
+						],
+						main,
+						mutate: written && place === "mutate" ? [written] : [],
+						reexport: [`export { ${h} as R${id} } from "./containers.ts"`],
+						reexports: [`R${id}`],
+						readsNamespace: usable.includes("namespaced")
+					}
+				}
+		)
+	)
+
+// Scopes, Modules and Generics held in an object, read where the build
+// precompiles the read and where it refuses it, which leaves them to arktype
+const heldScopeReads = {
+	type: (h: string) => `${h}.$.type("a | null")`,
+	module: (h: string) => `${h}.m.a.or("null")`,
+	generic: (h: string) => `${h}.g("string")`,
+	refusedType: (h: string) => `${h}.$.type(Math.random() > 2 ? "a" : "b")`,
+	chosenScope: (h: string) => `(Math.random() > 2 ? ${h}.$ : ${h}.$).type("a")`,
+	chosenGeneric: (h: string) =>
+		`(Math.random() > 2 ? ${h}.g : ${h}.g)("string")`,
+	madeScope: (h: string, id: string) => `makeScope${id}().type("a")`,
+	madeGeneric: (h: string, id: string) => `getG${id}()("string")`,
+	aliased: (h: string, id: string) => `s${id}.type("b")`,
+	exported: (h: string) => `${h}.$.export().b`,
+	keyof: (h: string) => `${h}.$.type("keyof a")`
+}
+
+const heldScopes: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		a: definable,
+		b: definable,
+		reads: fc.uniqueArray(
+			fc.constantFrom(
+				...(Object.keys(heldScopeReads) as (keyof typeof heldScopeReads)[])
+			),
+			{ minLength: 1, maxLength: 4 }
+		),
+		viaReexport: fc.boolean()
+	})
+	.chain(({ a, b, reads, viaReexport }) =>
+		inputsOf(
+			fc.oneof(
+				dataOf(a, noAliases),
+				dataOf(b, noAliases),
+				fc.record({ a: dataOf(a, noAliases) }),
+				fc.constantFrom("a", "b", "c")
+			)
+		).map(
+			(inputs): FragmentOf =>
+				id => {
+					const h = `S${id}`
+					const defA = sourceOf(defOf(a))
+					const defB = sourceOf(defOf(b))
+					const read = viaReexport ? `R${id}` : h
+					return {
+						containers: [
+							`export const makeScope${id} = () => scope({ a: ${defA} })`,
+							`export const G${id} = type("<t>", { box: "t" })`,
+							`export const getG${id} = () => G${id}`,
+							`export const ${h} = { $: scope({ a: ${defA}, b: ${defB} }), m: scope({ a: ${defA} }).export(), g: G${id} }`
+						],
+						exports: [h, `makeScope${id}`, `getG${id}`],
+						main: [
+							`const s${id} = ${read}.$`,
+							...reads.map((kind, i) =>
+								observed(`${id}.${i}`, heldScopeReads[kind](read, id), inputs)
+							)
+						],
+						reexport: [`export { ${h} as R${id} } from "./containers.ts"`],
+						reexports: [`R${id}`]
+					}
+				}
+		)
+	)
+
+// Types reached through what the build may not follow: builtins over the
+// object, callbacks, casts, optional chains, let bindings, hoisted functions
+const lostReads = {
+	values: (h: string) => `Object.values(${h}.nested)[0].or("null")`,
+	entries: (h: string) => `Object.entries(${h}.nested)[0][1].or("null")`,
+	reflectGet: (h: string) => `Reflect.get(${h}, "a").or("null")`,
+	descriptor: (h: string) =>
+		`Object.getOwnPropertyDescriptor(${h}, "a").value.or("null")`,
+	assigned: (h: string) => `Object.assign({}, ${h}).a.or("null")`,
+	spreadRead: (h: string) => `({ ...${h} }).a.or("null")`,
+	arraySpread: (h: string) => `[...${h}.list][1].or("null")`,
+	at: (h: string) => `${h}.list.at(-1).or("null")`,
+	find: (h: string) => `${h}.list.find(Boolean).or("null")`,
+	slice: (h: string) => `${h}.list.slice(1)[0].or("null")`,
+	from: (h: string) => `Array.from(${h}.list)[0].or("null")`,
+	mapped: (h: string) => `${h}.list.map(t => t.or("null"))[0]`,
+	mappedArray: (h: string) => `${h}.list.map(t => t.array())[1]`,
+	filtered: (h: string) => `${h}.list.filter(t => t !== ${h}.a)[0].or("null")`,
+	iife: (h: string) => `((x) => x.a)(${h}).or("null")`,
+	optional: (h: string) => `${h}?.a?.or("null")`,
+	nonNull: (h: string) => `${h}!.a!.or("null")`,
+	castAny: (h: string) => `(${h} as any).a.or("null")`,
+	castSelf: (h: string) => `(${h} as typeof ${h}).a.or("null")`,
+	computedMember: (h: string) => `${h}.a["or"]("null")`,
+	letBound: (h: string, id: string) => `x${id}.or("null")`,
+	hoisted: (h: string, id: string) => `hoisted${id}().or("null")`,
+	defaulted: (h: string, id: string) => `missing${id}.or("null")`,
+	defaultedPresent: (h: string, id: string) => `present${id}.or("null")`,
+	mapGet: (h: string, id: string) => `map${id}.get("a").or("null")`,
+	setValue: (h: string, id: string) => `[...set${id}][0].or("null")`,
+	staticField: (h: string, id: string) => `K${id}.a.or("null")`,
+	getter: (h: string, id: string) => `K${id}.b.or("null")`,
+	comma: (h: string) => `(0, ${h}.a).or("null")`,
+	ternaryConst: (h: string, id: string) =>
+		`(ok${id} ? ${h}.a : ${h}.b).or("null")`,
+	nullish: (h: string) => `(null ?? ${h}.a).or("null")`,
+	logicalAnd: (h: string) => `(${h} && ${h}.a).or("null")`,
+	jsonKey: (h: string) => `${h}[JSON.parse('"a"')].or("null")`,
+	template: (h: string) => `${h}[\`\${"a"}\`].or("null")`,
+	indexOf: (h: string) => `${h}.list[${h}.list.indexOf(${h}.b)].or("null")`,
+	lengthIndex: (h: string) => `${h}.list[${h}.list.length - 1].or("null")`,
+	pipeThen: (h: string) => `${h}.a.pipe(${morphs.size.name}).or("null")`,
+	inPlace: (h: string, id: string) => `held${id}[0].or("null")`,
+	pushed: (h: string, id: string) => `pushed${id}[0].or("null")`
+}
+
+type LostRead = keyof typeof lostReads
+
+const staticHolderOf = (h: string, id: string) =>
+	`class K${id} {\n\tstatic a = ${h}.a\n\tstatic get b() {\n\t\treturn ${h}.b\n\t}\n}`
+
+const lostDeclarations: Partial<
+	Record<LostRead, (h: string, id: string) => string>
+> = {
+	letBound: (h, id) => `let x${id} = ${h}.a`,
+	hoisted: (h, id) => `function hoisted${id}() {\n\treturn ${h}.a\n}`,
+	defaulted: (h, id) => `const { missing${id} = ${h}.b } = ${h}`,
+	defaultedPresent: (h, id) => `const { a: present${id} = ${h}.b } = ${h}`,
+	mapGet: (h, id) => `const map${id} = new Map([["a", ${h}.a]])`,
+	setValue: (h, id) => `const set${id} = new Set([${h}.a])`,
+	staticField: staticHolderOf,
+	getter: staticHolderOf,
+	ternaryConst: (h, id) =>
+		`const ok${id} = ${id.length % 2 ? "true" : "false"}`,
+	inPlace: (h, id) => `const held${id} = [${h}.a]`,
+	pushed: (h, id) => `const pushed${id} = []\npushed${id}.push(${h}.b)`
+}
+
+const lostTypes: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		a: definable,
+		b: definable,
+		isLocal: fc.boolean(),
+		reads: fc.uniqueArray(
+			fc.constantFrom(...(Object.keys(lostReads) as LostRead[])),
+			{ minLength: 1, maxLength: 4 }
+		)
+	})
+	.chain(({ a, b, isLocal, reads }) =>
+		inputsOf(fc.oneof(dataOf(a, noAliases), dataOf(b, noAliases))).map(
+			(inputs): FragmentOf =>
+				id => {
+					const h = `L${id}`
+					const declaration = `const ${h} = { a: Ta${id}, b: Tb${id}, nested: { c: Ta${id} }, list: [Ta${id}, Tb${id}] }`
+					// one class where both of its reads are picked
+					const declared = new Set<string>()
+					return {
+						containers: [
+							`export const Ta${id} = type(${sourceOf(defOf(a))})`,
+							`export const Tb${id} = type(${sourceOf(defOf(b))})`,
+							...(isLocal ? [] : [`export ${declaration}`])
+						],
+						exports: [`Ta${id}`, `Tb${id}`, ...(isLocal ? [] : [h])],
+						main: [
+							...(isLocal ? [declaration] : []),
+							...reads.flatMap((read, i) => {
+								const declaration = lostDeclarations[read]?.(h, id)
+								const lines =
+									declaration && !declared.has(declaration) ? [declaration] : []
+								if (declaration) declared.add(declaration)
+								return [
+									...lines,
+									observed(`${id}.${i}`, lostReads[read](h, id), inputs)
+								]
+							})
+						]
+					}
+				}
+		)
+	)
+
 const holes: Record<string, Function> = {
 	...morphs,
 	...tried,
@@ -982,6 +1395,8 @@ interface Program {
 	containers: string
 	// main.ts's lines, so a site is found and dropped by its line
 	main: string[]
+	mutate?: string
+	reexport?: string
 }
 
 const programOf = (fragmentsOf: FragmentOf[]): Program => {
@@ -992,6 +1407,9 @@ const programOf = (fragmentsOf: FragmentOf[]): Program => {
 		new RegExp(`\\b${name}\\b`).test([...containers, ...main].join("\n"))
 	)
 	const exported = [...used, ...fragments.flatMap(fragment => fragment.exports)]
+	const mutate = fragments.flatMap(fragment => fragment.mutate ?? [])
+	const reexport = fragments.flatMap(fragment => fragment.reexport ?? [])
+	const reexports = fragments.flatMap(fragment => fragment.reexports ?? [])
 	return {
 		containers: [
 			`import { generic, scope, type } from "arktype"`,
@@ -1005,13 +1423,35 @@ const programOf = (fragmentsOf: FragmentOf[]): Program => {
 			`import { generic, match, scope, type } from "arktype"`,
 			`import { codec } from "arktype/codecs"`,
 			`import { ${exported.join(", ")} } from "./containers.ts"`,
+			...(mutate.length ? [`import "./mutate.ts"`] : []),
+			...(reexports.length ?
+				[`import { ${reexports.join(", ")} } from "./reexport.ts"`]
+			:	[]),
+			...(fragments.some(fragment => fragment.readsNamespace) ?
+				[`import * as ns from "./reexport.ts"`]
+			:	[]),
 			...main
-		].flatMap(entry => entry.split("\n"))
+		].flatMap(entry => entry.split("\n")),
+		...(mutate.length && {
+			mutate: [
+				`import { type } from "arktype"`,
+				`import { ${fragments.flatMap(fragment => fragment.exports).join(", ")} } from "./containers.ts"`,
+				...mutate
+			].join("\n")
+		}),
+		...(reexport.length && {
+			reexport: [`export * from "./containers.ts"`, ...reexport].join("\n")
+		})
 	}
 }
 
 const sourceOfProgram = (program: Program) =>
-	`// containers.ts\n${program.containers}\n\n// main.ts\n${program.main.join("\n")}`
+	[
+		`// containers.ts\n${program.containers}`,
+		...(program.mutate ? [`// mutate.ts\n${program.mutate}`] : []),
+		...(program.reexport ? [`// reexport.ts\n${program.reexport}`] : []),
+		`// main.ts\n${program.main.join("\n")}`
+	].join("\n\n")
 
 const programs = fc
 	.oneof(
@@ -1033,7 +1473,10 @@ const programs = fc
 					throughCycle,
 					codecs,
 					dags,
-					allowsOnly
+					allowsOnly,
+					heldTypes,
+					heldScopes,
+					lostTypes
 				),
 				{
 					minLength: 1,
@@ -1055,7 +1498,9 @@ const programs = fc
 const isObserved = (line: string | undefined) =>
 	!!line?.startsWith("$arkObserve(")
 
-// the program without refused sites, or undefined if another is refused
+// the program without main.ts's refused sites, or undefined if none is
+// refused there; a refusal elsewhere stays, as its module keeps importing
+// arktype for it and compareWorlds reads the build errors it leaves
 const foldedProgramOf = (
 	program: Program,
 	errors: Diagnostic[]
@@ -1063,12 +1508,12 @@ const foldedProgramOf = (
 	const refusedLines = new Set<number>()
 	for (const error of errors) {
 		if (
-			!error.file.endsWith("main.ts") ||
-			!isObserved(program.main[error.line - 1])
+			error.file.endsWith("main.ts") &&
+			isObserved(program.main[error.line - 1])
 		)
-			return
-		refusedLines.add(error.line - 1)
+			refusedLines.add(error.line - 1)
 	}
+	if (!refusedLines.size) return
 	return {
 		...program,
 		main: program.main.filter((_, i) => !refusedLines.has(i))
@@ -1093,9 +1538,15 @@ const buildOptions: BuildOptions = {
 	runsUnfolded: true
 }
 
+// a project of its own: under ark/aot the build would read a program as
+// arktype's own package, where a read off what may be a Type is allowed
 const write = (program: Program, dir: string) => {
 	mkdirSync(dir, { recursive: true })
+	writeFileSync(join(dir, "package.json"), `{ "name": "generated" }`)
 	writeFileSync(join(dir, "containers.ts"), program.containers)
+	if (program.mutate) writeFileSync(join(dir, "mutate.ts"), program.mutate)
+	if (program.reexport)
+		writeFileSync(join(dir, "reexport.ts"), program.reexport)
 	writeFileSync(join(dir, "main.ts"), program.main.join("\n"))
 	return [join(dir, "main.ts")]
 }
@@ -1106,7 +1557,8 @@ interface Counts {
 	programs: number
 	sites: number
 	precompiledSites: number
-	refusedPrograms: number
+	// built with an error outside main.ts's sites, compared all the same
+	erroredPrograms: number
 	refusals: Record<string, number>
 }
 
@@ -1127,31 +1579,30 @@ const disagreementsOf = async (
 		counts.refusals[reason] = (counts.refusals[reason] ?? 0) + 1
 	}
 	const foldedDir = join(dir, "folded")
-	let folded: Program | undefined = program
+	let folded = program
 	let foldedBuild = standalone
 	// a site can be refused once another reading the same definition is dropped
-	while (folded && foldedBuild.errors.length) {
-		folded = foldedProgramOf(folded, foldedBuild.errors)
-		if (folded)
-			foldedBuild = buildPerturbed(write(folded, foldedDir), buildOptions)
+	for (;;) {
+		const next = foldedProgramOf(folded, foldedBuild.errors)
+		if (!next) break
+		folded = next
+		foldedBuild = buildPerturbed(write(folded, foldedDir), buildOptions)
 	}
 	counts.programs++
 	counts.sites += program.main.filter(isObserved).length
-	counts.precompiledSites += folded?.main.filter(isObserved).length ?? 0
-	if (!folded) counts.refusedPrograms++
+	counts.precompiledSites += folded.main.filter(isObserved).length
+	if (foldedBuild.errors.length) counts.erroredPrograms++
 	const [original, cached, foldedOriginal, precompiled] = await Promise.all([
 		runWorld("original", cache.manifest, dir),
 		runWorld("cache", cache.manifest, dir),
-		folded &&
-			(foldedBuild === standalone ? undefined : (
-				runWorld("original", foldedBuild.manifest, foldedDir)
-			)),
-		folded &&
-			runWorld(
-				"standalone",
-				foldedBuild.manifest,
-				foldedBuild === standalone ? dir : foldedDir
-			)
+		foldedBuild === standalone ? undefined : (
+			runWorld("original", foldedBuild.manifest, foldedDir)
+		),
+		runWorld(
+			"standalone",
+			foldedBuild.manifest,
+			foldedBuild === standalone ? dir : foldedDir
+		)
 	])
 	const unknownOf = (run: Program, disagreements: Disagreement[]) =>
 		disagreements.filter(disagreement => {
@@ -1174,16 +1625,14 @@ const disagreementsOf = async (
 			"cache",
 			unknownOf(program, compareWorlds(cache, original, cached).disagreements)
 		),
-		...(folded && precompiled ?
-			reportOf(
-				"standalone",
-				unknownOf(
-					folded,
-					compareWorlds(foldedBuild, foldedOriginal ?? original, precompiled)
-						.disagreements
-				)
+		...reportOf(
+			"standalone",
+			unknownOf(
+				folded,
+				compareWorlds(foldedBuild, foldedOriginal ?? original, precompiled)
+					.disagreements
 			)
-		:	[])
+		)
 	]
 }
 
@@ -1403,7 +1852,7 @@ contextualize(() => {
 			programs: 0,
 			sites: 0,
 			precompiledSites: 0,
-			refusedPrograms: 0,
+			erroredPrograms: 0,
 			refusals: {}
 		}
 		await fc.assert(

@@ -509,9 +509,14 @@ const textsOf = (errors: ArkErrors, grouped = true) => {
 				const isMessaged =
 					(meta.message !== undefined && meta.message !== writeMessage) ||
 					suppliedTextOf(error, "message") !== undefined
+				// a keyword's phrase writes the SyntaxError it caught, as a validator does
+				const writesCause =
+					meta.keyword !== undefined &&
+					(error as { cause?: unknown }).cause !== undefined
 				if (
 					(meta.problem !== undefined && !isMerged) ||
 					suppliedTextOf(error, "problem") !== undefined ||
+					writesCause ||
 					(!isMessaged &&
 						meta.problem === undefined &&
 						(typeof meta.actual === "function" ||
@@ -549,18 +554,31 @@ const alternativesOf = (error: ArkError): string[] | null => {
 // what each issue expects, at its path and code, where a validator's issue is
 // written alike: not an issue a callback raised without an expected, nor a
 // union described by its branches' errors, as a validator's issue holds
-// neither the callback nor the errors; a missing key expects its value's brief
+// neither the callback nor the errors; a missing key expects its value's
+// brief. Its message is compared too, without what a validator's never says:
+// what the value was, and "value at" before an index path
 const expectedsOf = (errors: ArkErrors) =>
 	keptOf(errors)
-		.map(issue => ({
-			at: `${pathKeyOf(issue.path)}\0${issue.code}`,
-			expected:
+		.map(issue => {
+			const expected =
 				!(errors instanceof ArkErrors) ? (issue.expected ?? null)
 				: raisesUnexpected(issue as ArkError) ? null
 				: issue.code === "union" ? unionExpectedOf(issue as ArkError<"union">)
 				: issue.expected
-		}))
+			return {
+				at: `${pathKeyOf(issue.path)}\0${issue.code}`,
+				expected,
+				message: expected === null ? null : messageWithoutActual(issue.message!)
+			}
+		})
 		.sort((l, r) => (l.at < r.at ? -1 : 1))
+
+// arktype writes a symbol's description only where it's an identifier
+const messageWithoutActual = (message: string): string =>
+	message
+		.replace(/ \(was [^]*\)$/, "")
+		.replace(/^value at /, "")
+		.replace(/\[Symbol\([^)]*\)]/g, "[Symbol]")
 
 // a check's error holds its description, which a raised one doesn't unless
 // pipe.try raised it, describing it by its morph
@@ -589,7 +607,8 @@ const unionExpectedOf = (error: ArkError<"union">): string | null => {
 	return describeBranches(expected)
 }
 
-// a validator's expected where arktype's is written from what it doesn't hold
+// a validator's expected and message where arktype's are written from what
+// it doesn't hold
 const maskExpecteds = (arktype: unknown, precompiled: unknown): unknown => {
 	if (!hasDomain(arktype, "object") || !hasDomain(precompiled, "object"))
 		return precompiled
@@ -602,7 +621,9 @@ const maskExpecteds = (arktype: unknown, precompiled: unknown): unknown => {
 	return {
 		...precompiled,
 		expecteds: compared.map((entry, i) =>
-			expecteds[i].expected === null ? { ...entry, expected: null } : entry
+			expecteds[i].expected === null ?
+				{ ...entry, expected: null, message: null }
+			:	entry
 		)
 	}
 }

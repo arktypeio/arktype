@@ -37,9 +37,7 @@ for (const member of [
 	})
 }
 
-// a Type's members a validator never has, which a library handed the
-// validator may read, e.g. `schema.in.toJsonSchema()`, where production
-// reads undefined and throws something that doesn't name the fix
+// a Type's members a validator never has, which a library may read, e.g. `schema.in.toJsonSchema()`
 for (const member of [
 	"in",
 	"out",

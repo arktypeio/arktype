@@ -47,10 +47,9 @@ const types = `import { type } from "arktype"
 export const User = type({ name: "string" })
 `
 
-// the members a production build for size leaves out of the program's
-// validators, why it leaves none where it can't, or the errors failing its
-// build
-const droppedFrom = async (
+// what a production build for size reads of a program from /main.ts, or the
+// errors failing its build
+const usageFrom = async (
 	files: Record<string, string>,
 	opts?: PrecompileOptions
 ) => {
@@ -82,7 +81,18 @@ const droppedFrom = async (
 			.diagnostics.filter(diagnostic => diagnostic.severity === "error")
 		if (errors.length) return errors.map(error => error.message)
 	}
-	const usage = precompiler.scan(scanned)
+	return precompiler.scan(scanned)
+}
+
+// the members a production build for size leaves out of the program's
+// validators, why it leaves none where it can't, or the errors failing its
+// build
+const droppedFrom = async (
+	files: Record<string, string>,
+	opts?: PrecompileOptions
+) => {
+	const usage = await usageFrom(files, opts)
+	if (typeof usage === "string" || Array.isArray(usage)) return usage
 	if (!usage.unpruned) return usage.dropped
 	// the reason alone, where it keeps every member
 	const [before, after] = writeKeptMembersMessage("\0", everyMember).split("\0")
@@ -448,6 +458,40 @@ contextualize(function (this: Mocha.Suite) {
 		})
 	})
 
+	describe("what issues may hold", () => {
+		const issuesOf = async (main: string) => {
+			const usage = await usageFrom({ "/main.ts": main })
+			return typeof usage === "string" || Array.isArray(usage) ?
+					usage
+				:	usage.issues
+		}
+
+		it("of a program read whole, like one an entry exports", async () => {
+			attest(
+				await issuesOf(
+					`import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n`
+				)
+			).snap({
+				bracketsKeys: false,
+				reportsIndices: false,
+				writesText: false,
+				readsKeySites: true,
+				runsArktype: false
+			})
+			attest(
+				await issuesOf(
+					`import { type } from "arktype"\n\nexport const Tagged = type({ tags: "string[]" })\n`
+				)
+			).snap({
+				bracketsKeys: false,
+				reportsIndices: true,
+				writesText: false,
+				readsKeySites: false,
+				runsArktype: false
+			})
+		})
+	})
+
 	describe("programs it can't read", () => {
 		it("a specifier it can't resolve", async () => {
 			attest(await droppedReading(`import "./unresolved.ts"\nUser({})`)).snap(
@@ -557,32 +601,26 @@ contextualize(function (this: Mocha.Suite) {
 				...files
 			})
 
-		it("reads the program a dependency imports, as Nuxt's runtime imports its pages", async () => {
-			attest(
-				await droppedThrough(
-					`export const routes = [() => import("../../page.ts")]\n`,
-					{
-						"/page.ts": `import { User } from "./types.ts"\n\nUser.assert({})\n`
-					}
-				)
-			).equals(["meta", "~standard", "methods"])
+		it("reads the program a dependency imports, as Nuxt's runtime imports its pages, past what it loads unnamed", async () => {
+			const page = {
+				"/page.ts": `import { User } from "./types.ts"\n\nUser.assert({})\n`
+			}
+			for (const fw of [
+				`export const routes = [() => import("../../page.ts")]\n`,
+				`import.meta.glob("./*.js")\nrequire(process.env.PLUGIN)\nimport "../../page.ts"\n`
+			]) {
+				attest(await droppedThrough(fw, page)).equals([
+					"meta",
+					"~standard",
+					"methods"
+				])
+			}
 		})
 
 		it("keeps what a dependency may read of a module it imports", async () => {
 			attest(await droppedThrough(`import "../../types.ts"\n`)).snap(
 				"types.ts exports User, which a dependency may read"
 			)
-		})
-
-		it("reads past what a dependency loads unnamed", async () => {
-			attest(
-				await droppedThrough(
-					`import.meta.glob("./*.js")\nrequire(process.env.PLUGIN)\nimport "../../page.ts"\n`,
-					{
-						"/page.ts": `import { User } from "./types.ts"\n\nUser.assert({})\n`
-					}
-				)
-			).equals(["meta", "~standard", "methods"])
 		})
 	})
 
@@ -702,24 +740,15 @@ console.log(User.allows({ name: 5 }), User.allows({ name: "Ada" }))
 				})
 			).warnings
 
-		it("leaves out of a production build for size what no read needs", async () => {
-			const pruned = await bundle()
+		it("leaves out of a production build what no read needs", async () => {
 			const whole = await bundle({ prune: false })
-			attest(run(pruned)).snap("name must be a string\n")
-			attest(run(whole)).equals(run(pruned))
+			attest(run(whole)).snap("name must be a string\n")
 			attest(whole.includes("~standard")).equals(true)
-			attest(pruned.includes("~standard")).equals(false)
-		})
-
-		it("leaves out of a default production build what no read needs", async () => {
-			const pruned = await bundle({ preset: undefined })
-			attest(run(pruned)).snap("name must be a string\n")
-			attest(pruned.includes("~standard")).equals(false)
-			attest(
-				(await bundle({ preset: undefined, prune: false })).includes(
-					"~standard"
-				)
-			).equals(true)
+			for (const preset of ["smallest", undefined] as const) {
+				const pruned = await bundle({ preset })
+				attest(run(pruned)).equals(run(whole))
+				attest(pruned.includes("~standard")).equals(false)
+			}
 		})
 
 		it("drops what reads what no validator's issues hold", async () => {
@@ -727,6 +756,7 @@ console.log(User.allows({ name: 5 }), User.allows({ name: "Ada" }))
 				{
 					"user.ts": `import { type } from "arktype"\n\nconsole.log(type({ name: "string" })({ name: 5 }).toString())\n`,
 					"tagged.ts": `import { type } from "arktype"\n\nconsole.log(type({ tags: "string[]" })({ tags: ["a", 5] }).toString())\n`,
+					"keyed.ts": `import { type } from "arktype"\n\nconsole.log(type({ "first-name": "string" })({ "first-name": 5 }).toString())\n`,
 					"flagged.ts": `import { type } from "arktype"
 
 const Flagged = type({ name: "string" }).narrow((_, ctx) =>
@@ -751,6 +781,12 @@ try {
 } catch (e) {
 	console.log((e as Error).message)
 }
+`,
+					"exported.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+
+console.log(User({ name: 5 }).toString())
 `
 				},
 				fromHere("temp", "prunedIssues")
@@ -760,11 +796,17 @@ try {
 			const user = await bundleOf("user.ts")
 			attest(run(user)).snap("name must be a string\n")
 			attest(user.includes("`[${")).equals(false)
+			attest(user.includes("JSON.stringify(")).equals(false)
 			attest(user.includes(".text?.(")).equals(false)
 			const tagged = await bundleOf("tagged.ts")
 			attest(run(tagged)).snap("tags[1] must be a string\n")
 			attest(tagged.includes("`[${")).equals(true)
+			attest(tagged.includes("JSON.stringify(")).equals(false)
 			attest(tagged.includes(".text?.(")).equals(false)
+			// a key that isn't an identifier is bracketed, as arktype writes it
+			const keyed = await bundleOf("keyed.ts")
+			attest(run(keyed)).snap('["first-name"] must be a string\n')
+			attest(keyed.includes("JSON.stringify(")).equals(true)
 			// a callback may raise an issue at any path, with any text
 			const flagged = await bundleOf("flagged.ts")
 			attest(run(flagged)).snap("flags[0] is unset\n")
@@ -782,6 +824,17 @@ age must be a number
   • age must be a number (was a string)
 `)
 			attest(island.includes("._t")).equals(true)
+			// an entry's export is read whole, in a bundle flattening nothing
+			const exported = await bundle(
+				{ preset: undefined },
+				{
+					entryPoints: [join(files, "exported.ts")],
+					splitting: true,
+					outdir: join(files, "out")
+				}
+			)
+			attest(run(exported)).snap("name must be a string\n")
+			attest(exported.includes(".text?.(")).equals(false)
 		})
 
 		it("allows as a boolean where a narrow returns otherwise", async () => {
@@ -906,15 +959,11 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			}
 		})
 
-		it("keeps a build other than for production whole", async () => {
+		it("keeps a build other than for production whole, unless prune: true", async () => {
 			const development = { conditions: ["ark-ts"] }
 			attest(await bundle({}, development)).equals(
 				await bundle({ prune: false }, development)
 			)
-		})
-
-		it("prunes a build other than for production with prune: true", async () => {
-			const development = { conditions: ["ark-ts"] }
 			attest(
 				(await bundle({ prune: true }, development)).includes("~standard")
 			).equals(false)
@@ -941,6 +990,11 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			})
 			attest(last.warnings).equals([])
 			attest(last.outputFiles[0].text.includes("~standard")).equals(false)
+			const error = await bundle({ prune: true }, { plugins }).then(
+				() => undefined,
+				(e: Error) => e
+			)
+			attest(error?.message.includes(pruneBeforePluginMessage)).equals(true)
 		})
 
 		it("warns where it keeps each member members leaves to it", async () => {
@@ -965,15 +1019,6 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			} finally {
 				writeFileSync(main, source)
 			}
-		})
-
-		it("fails prune: true where a plugin after it may load a module", async () => {
-			const plugins = [{ name: "after", setup: () => {} }]
-			const error = await bundle({ prune: true }, { plugins }).then(
-				() => undefined,
-				(e: Error) => e
-			)
-			attest(error?.message.includes(pruneBeforePluginMessage)).equals(true)
 		})
 
 		it("fails a bundle holding a module another plugin loaded, writing nothing", async () => {
@@ -1077,31 +1122,20 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			).equals(false)
 		})
 
-		it("reads an entry from stdin", async () => {
-			const js = await bundle(
-				{},
-				{
-					stdin: {
-						contents: readFileSync(join(root, "main.ts"), "utf8"),
-						resolveDir: root,
-						loader: "ts"
-					}
-				}
-			)
-			attest(run(js)).snap("name must be a string\n")
-			attest(js.includes("~standard")).equals(false)
-		})
-
-		it("reads an entry named from its working directory without ./", async () => {
-			for (const entryPoints of [
-				["main.ts"],
-				[{ in: "main.ts", out: "main" }],
-				{ main: "main.ts" }
-			]) {
-				const js = await bundle(
-					{},
-					{ entryPoints, absWorkingDir: root, outdir: "out" }
-				)
+		it("reads an entry from stdin or named from its working directory without ./", async () => {
+			const stdin = {
+				contents: readFileSync(join(root, "main.ts"), "utf8"),
+				resolveDir: root,
+				loader: "ts"
+			} as const
+			const cwd = { absWorkingDir: root, outdir: "out" }
+			for (const options of [
+				{ stdin },
+				{ entryPoints: ["main.ts"], ...cwd },
+				{ entryPoints: [{ in: "main.ts", out: "main" }], ...cwd },
+				{ entryPoints: { main: "main.ts" }, ...cwd }
+			] as BuildOptions[]) {
+				const js = await bundle({}, options)
 				attest(run(js)).snap("name must be a string\n")
 				attest(js.includes("~standard")).equals(false)
 			}
@@ -1600,17 +1634,19 @@ console.log(out instanceof type.errors ? out.summary : out)
 			}
 		}
 
-		it("reads a module another plugin compiles, like a Svelte component", async () => {
-			const pruned = await importing(
-				'import read from "./Form.svelte"\nconsole.log(read)',
-				() =>
-					bundle(
-						{},
-						{ plugins: [framework('User.assert({ name: "Ada" }).name')] }
-					)
-			)
-			attest(run(pruned)).snap("Ada\nname must be a string\n")
-			attest(pruned.includes("~standard")).equals(false)
+		it("reads a module another plugin compiles, like a Svelte component, or writes", async () => {
+			for (const specifier of ["./Form.svelte", "$app/routes"]) {
+				const pruned = await importing(
+					`import read from "${specifier}"\nconsole.log(read)`,
+					() =>
+						bundle(
+							{},
+							{ plugins: [framework('User.assert({ name: "Ada" }).name')] }
+						)
+				)
+				attest(run(pruned)).snap("Ada\nname must be a string\n")
+				attest(pruned.includes("~standard")).equals(false)
+			}
 		})
 
 		it("reads a component's script a plugin serves as a .ts module with no file, as Vue's does", async () => {
@@ -1638,19 +1674,6 @@ console.log(out instanceof type.errors ? out.summary : out)
 			const pruned = await importing(
 				'import read from "./App.vue"\nconsole.log(read)',
 				() => bundle({}, { plugins: [vue] })
-			)
-			attest(run(pruned)).snap("Ada\nname must be a string\n")
-			attest(pruned.includes("~standard")).equals(false)
-		})
-
-		it("reads a virtual module another plugin writes", async () => {
-			const pruned = await importing(
-				'import read from "$app/routes"\nconsole.log(read)',
-				() =>
-					bundle(
-						{},
-						{ plugins: [framework('User.assert({ name: "Ada" }).name')] }
-					)
 			)
 			attest(run(pruned)).snap("Ada\nname must be a string\n")
 			attest(pruned.includes("~standard")).equals(false)

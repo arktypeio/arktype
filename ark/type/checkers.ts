@@ -9,8 +9,6 @@ import type {
 import type { Fn } from "@ark/util"
 import { failsAt, failsIn, requiredSiteOf } from "./runtime.ts"
 
-// a size build's validators are composed of these; passed a ctx, each reports to it as an Apply does
-
 /** a node a size build composes, reporting to a ctx it's passed */
 export interface Checker {
 	(data: unknown, ctx?: FailureContext | number): boolean
@@ -233,8 +231,7 @@ export const optional = ((checker: Checker, ...value: [unknown?]): Checker => {
 	return wrapped
 }) satisfies Fn
 
-// a required key's checker whose own description isn't what the key expects
-// where it's missing, e.g. one compiled rather than composed
+// a required key's checker whose description isn't what the key expects where missing
 export const required = ((checker: Checker, description: string): Checker => {
 	const wrapped: Checker = (data, ctx) => checker(data, ctx)
 	wrapped.description = description
@@ -244,8 +241,7 @@ export const required = ((checker: Checker, description: string): Checker => {
 
 type Props = Record<string, Checker>
 
-// an object's keys, each checked in the order declared; a missing key expects
-// its checker's description
+// keys checked in declared order; a missing key expects its checker's description
 export const props = ((declared: Props): Checker => {
 	const checker: Checker = (data: any, ctx) => {
 		if (!objectCheck.test(data))

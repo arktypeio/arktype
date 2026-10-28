@@ -25,7 +25,7 @@ With the skill installed, migrate in one prompt:
 Migrate this project from Zod to ArkType.
 ```
 
-The agent follows [Migrating a project](/docs/migrating#migrating-a-project). It rewrites each schema where it is, keeps Zod's removal of undeclared keys, swaps integrations like `zodResolver` for their Standard Schema versions, compares each schema your tests don't cover with its Zod original on the same inputs, removes `zod` with your package manager and runs your typecheck and tests. Where a dependency accepts only Zod, like the MCP SDK before v2, it keeps Zod for that call. Review its summary, which lists what still behaves differently and any test it updated, like a JSON Schema snapshot whose keys are now in canonical order.
+The agent follows [Migrating a project](/docs/migrating#migrating-a-project): it rewrites each schema where it is, keeping what it accepts, rejects and returns, swaps integrations like `zodResolver` for their Standard Schema versions, and keeps Zod where a dependency accepts only it, like the MCP SDK before v2. Review its summary, which lists what still behaves differently and any test it updated, like a JSON Schema snapshot whose keys are now in canonical order.
 
 To precompile in the same pass, ask for both:
 
@@ -41,7 +41,7 @@ Every page of these docs is available as Markdown by adding `.md` to its URL, e.
 
 ## Precompile
 
-Precompiling used to cost a build step and its errors. An agent runs the build, reads the error and fixes it, so your users get the speed and size and you don't pay for them. A [precompiled](/docs/precompile) build reports each definition it can't precompile with its file, line and column, the reason and the fix. [With agents](/docs/precompile#with-agents) shows one and the tools that shorten the loop: `arktype-precompile --check`, the ESLint rule and shadow mode. [Troubleshooting](/docs/precompile/troubleshooting) lists the fix for each report.
+A [precompiled](/docs/precompile) build reports each definition it can't precompile with its file, line and column, the reason and the fix. [With agents](/docs/precompile#with-agents) shows one and the tools that shorten the loop: `arktype-precompile --check`, the ESLint rule and shadow mode. [Troubleshooting](/docs/precompile/troubleshooting) lists the fix for each report.
 
 ## AGENTS.md
 

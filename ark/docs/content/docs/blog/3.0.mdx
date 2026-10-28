@@ -61,7 +61,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 
 [Troubleshooting](/docs/precompile/troubleshooting) quotes each message the build can report.
 
-Setup is one plugin in the bundler you already run, or [`arktype-precompile --emit`](/docs/precompile/setup#tsc) after `tsc` without one. Your definitions don't change, only where they run:
+Setup is the plugin, or [`arktype-precompile --emit`](/docs/precompile/setup#tsc) after `tsc` where there's no bundler:
 
 ```ts title="vite.config.ts"
 import { precompile } from "@ark/aot/unplugin"
@@ -100,7 +100,7 @@ and every default that differs.
 
 ### What it costs
 
-- **A build step**: a plugin in the bundler you already run, set up once, and [the time each build takes](/docs/precompile#build-time).
+- **A build step**: the plugin, set up once, and [the time each build takes](/docs/precompile#build-time).
 - **Definitions known only at runtime** fail a standalone build. Keep them dynamic as [runtime islands](/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`.
 - **A standalone validator** validates, asserts and is a Standard Schema, but doesn't compose or introspect at runtime, its messages don't print the value and it has no locales. `runtime: "arktype"` keeps the whole Type API.
 - **Without the plugin**: <Claim id="dynamicSize" />
@@ -132,9 +132,9 @@ Each result below is scoped to a single benchmark, and [Speed and size](/docs/pr
 
 [`@ark/aot`](/docs/precompile) is a plugin for Vite, Rollup, Rolldown, webpack, Rspack, esbuild, Bun and Farm, and Vitest runs tests through it. Drivers cover Node, Bun's runtime and Next's Turbopack. [Setup](/docs/precompile/setup) has a config for each.
 
-Each Type your program defines becomes a validator that imports only `arktype/runtime` and validates, asserts and implements Standard Schema as the Type did, so code that calls it doesn't change either. Scopes, Modules, Generics, cyclic Types, `match` and `type.fn` precompile too.
+Each Type your program defines becomes a validator that imports only `arktype/runtime`, and code that calls it doesn't change. Scopes, Modules, Generics, cyclic Types, `match` and `type.fn` precompile too.
 
-Options go in an [`ark.json`](/docs/precompile/options#arkjson) that the plugin, the drivers, the CLI and the ESLint rule all read, or in the plugin call. A [preset](/docs/precompile/options#presets) sets several at once: `"smallest"` trades speed for size. <Claim id="buildChoice" /> Development builds also check at runtime what the build verified, like freezing each validator, and production builds leave those checks out. A library opts in with `"ark": { "aot": true }` in its `package.json`, so its consumers' builds precompile it.
+Options go in an [`ark.json`](/docs/precompile/options#arkjson) that the plugin, the drivers, the CLI and the ESLint rule all read, or in the plugin call. A [preset](/docs/precompile/options#presets) sets several at once: `"smallest"` trades speed for size. <Claim id="buildChoice" /> Development builds check at runtime what the build verified, like freezing each validator, and production builds leave those checks out. A library opts in with `"ark": { "aot": true }` in its `package.json`, so its consumers' builds precompile it.
 
 ### Set theory at build time
 

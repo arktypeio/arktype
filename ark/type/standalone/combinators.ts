@@ -24,9 +24,7 @@ import {
 	type IssueContext
 } from "./sites.ts"
 
-// a size build writes each node it can as a call composing runtime checkers,
-// which describe what they check from its rule, so text is written only where
-// a site's differs
+// a size build writes each node it can as a call composing runtime checkers
 
 const combinableByNode = new WeakMap<BaseNode, boolean>()
 
@@ -48,8 +46,7 @@ export const combines = (node: BaseNode): boolean => {
 	return combinable
 }
 
-// a root a checker calls: another checker, or one compiled with a unified
-// Allows, which reports to a ctx it's passed and transforms nothing
+// a root a checker calls: another checker, or one with a unified Allows
 const isCallable = (node: BaseRoot): boolean => combines(node) || unifies(node)
 
 // the roots a node's checker calls, if it can be written
@@ -58,8 +55,7 @@ const calleesOf = (node: BaseNode): BaseRoot[] | undefined => {
 	if (node.is("unit")) return unitSiteOf(node) && []
 	if (node.is("intersection")) {
 		const predicates = node.inner.predicate ?? []
-		// a structure's issues stop its predicates, which Allows can't count,
-		// and the first of several predicates failing stops the rest
+		// a structure's issues stop its predicates, and the first failing predicate the rest
 		if (
 			predicates.length > (node.structure ? 0 : 1) ||
 			!predicates.every(predicateSiteOf) ||
@@ -100,7 +96,6 @@ const calleesOf = (node: BaseNode): BaseRoot[] | undefined => {
 const plainContextOf = (context: object): IssueContext | undefined =>
 	isInlineSite(context) && isDescribed(context) ? context : undefined
 
-// a node's own site, if it holds only a code and a description
 const plainSiteOf = (node: BaseNode): IssueContext | undefined =>
 	plainContextOf(issueSiteOf(node.failSite))
 
@@ -116,8 +111,7 @@ const discriminantSiteOf = (node: UnionNode): IssueContext | undefined =>
 		})
 	)
 
-// what a union data fails every branch's basis of expects, undefined if it
-// has no bases or null if they can't be checked
+// what data failing every branch's basis fails, null if the bases can't be checked
 const basesSiteOf = (node: UnionNode): IssueContext | null | undefined => {
 	const bases = basesOf(node)
 	if (!bases) return
@@ -126,7 +120,6 @@ const basesSiteOf = (node: UnionNode): IssueContext | null | undefined => {
 		:	null
 }
 
-// a basis or refinement, checked by its condition
 const checkOf = (node: BaseNode): IssueContext | undefined =>
 	node.jsCond && plainSiteOf(node)
 
@@ -201,7 +194,6 @@ interface Cases {
 	missed: IssueContext
 }
 
-// a union told apart by a string at one key
 const discriminatedOf = (node: UnionNode): Cases | undefined => {
 	const discriminant = node.discriminant
 	if (
@@ -302,8 +294,7 @@ const domainOfBranch = (branch: BaseRoot): string | undefined =>
 		:	"object"
 	:	undefined
 
-// a case is checked by the one branch it was pruned from, which checks again
-// what told it apart, so it shares that branch's checker
+// a case shares the checker of the branch it was pruned from, which rechecks the key
 const unprunedOf = (
 	node: UnionNode,
 	isCase: (branch: BaseRoot) => boolean,
@@ -359,9 +350,7 @@ const structureCalleesOf = (
 const missesAsRequired = (prop: Prop.Node): boolean =>
 	missingDescriptionOf(issueSiteOf(prop.failSite)) !== undefined
 
-// the description a node's checker holds, which props reports where a key
-// it's the value of is missing, as writeCombinator writes it; undefined
-// where the checker is compiled
+// what props reports where a checked value's key is missing; undefined where compiled
 const checkerDescriptionOf = (node: BaseNode): string | undefined => {
 	if (!combines(node)) return
 	if (node.is("domain") || node.is("proto")) return checkOf(node)!.description
@@ -383,7 +372,6 @@ const checkerDescriptionOf = (node: BaseNode): string | undefined => {
 	}
 }
 
-// what a combinator's compiler reads, ref names and serializes
 export interface CombinatorCompiler extends NodeCompiler {
 	// whether it writes intersections a shape checks as that shape
 	readonly shapes: boolean
@@ -505,9 +493,7 @@ const writeStructure = (
 			ref(element)
 		)
 	}
-	// checked and written in the order arktype checks and writes them; a
-	// required key expects its value's brief, which its checker holds unless
-	// it's compiled or described apart
+	// in arktype's order; a required key expects its value's brief, which its checker holds
 	const entries = structure.inOrder.map(prop => {
 		const checker = ref(prop.value)
 		const missing = missingDescriptionOf(issueSiteOf(prop.failSite))
@@ -545,8 +531,7 @@ const maxInlinedObjectNodes = 24
 
 const inlinedByNode = new WeakMap<BaseNode, boolean>()
 
-// a small checker declaring nothing is written where it's read, as gzip
-// shrinks its repeats to less than a shared name
+// a small checker declaring nothing is inlined, as gzip shrinks its repeats below a name
 const isInlined = (node: BaseNode): boolean => {
 	let inlined = inlinedByNode.get(node)
 	if (inlined === undefined) {
@@ -572,8 +557,7 @@ const isInlined = (node: BaseNode): boolean => {
 
 type RuleKind = (typeof ruleFactories)[number]
 
-// each refinement's rule, in the order kinds lists them, if each is an
-// inclusive bound or divisor whose site its factory derives
+// each refinement's rule in kinds order, if each is an inclusive bound or divisor
 const rulesOf = (
 	refinements: readonly BaseNode[],
 	kinds: readonly RuleKind[]

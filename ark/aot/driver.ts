@@ -51,7 +51,6 @@ export interface RenderedDiagnostics {
 	warnings: string[]
 }
 
-// a host that shows one error for a module throws a module's errors together
 const renderDiagnostics = (
 	diagnostics: Diagnostic[],
 	pathOf: (id: string) => string
@@ -159,7 +158,6 @@ const answerRequests = (
 			return precompiler.readDependency(request[1])
 		if (request[0] === "transform") {
 			const [, source, id, mappings, program] = request
-			// a bundle's scan decides what its modules leave out
 			if (program !== undefined) {
 				return transformedModuleOf(
 					precompiler,
@@ -246,7 +244,7 @@ type BundlerResolver = (
 	importer: string
 ) => string | undefined
 
-// the precompiler is synchronous, so its thread waits for the answer, failing the request where none comes
+// the precompiler is synchronous, so its thread blocks on the answer
 const bundlerResolverOf = (
 	{
 		resolver,
@@ -350,7 +348,6 @@ const createTrackedPrecompiler = (
 	opts: PrecompilePluginOptions,
 	resolveInBundler?: BundlerResolver
 ): TrackedPrecompiler => {
-	// as the plugin, a driver, the CLI or the ESLint rule read it
 	opts = withSettingsFile(opts)
 	const readTimes: Record<string, number> = {}
 	const targetsByImporter: TrackedPrecompiler["targetsByImporter"] =
@@ -445,7 +442,6 @@ export const createKeyedPrecompiler = (
 ): KeyedPrecompiler => {
 	// what Turbopack resolves where the precompiler can't; a miss is asked again
 	const res: Record<string, Record<string, string>> = {}
-	// what it hasn't been asked yet
 	const unresolved = new Map<string, [specifier: string, importer: string]>()
 	const resolveLearned: BundlerResolver = (specifier, importer) => {
 		const learned = res[importer]?.[specifier]

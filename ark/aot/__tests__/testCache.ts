@@ -180,14 +180,19 @@ const expectedMisses = [
 	"{ Symbol(tag): 0, a?: 1 } | { Symbol(tag): 1 }",
 	"{ a: { Symbol(tag): 0, a?: 1 } | { Symbol(tag): 1 } }",
 	"{ Symbol(lobmyS): 0, a?: string } | { Symbol(lobmyS): 1 }",
-	'{ k: {"toJSON":"Function(toJSON)"} } | { k: "b", v: number }',
+	/^{ k: {"toJSON":"Function\(toJSON(\$hole_\w+)?\)"} } \| { k: "b", v: number }$/,
 	"{ at: Function(later$hole_b) } | { at: Function(now$hole_a) }"
 ]
 
 export const mochaHooks = {
 	afterAll(): void {
 		const misses = unbound.filter(
-			expression => !expectedMisses.includes(expression)
+			expression =>
+				!expectedMisses.some(expected =>
+					typeof expected === "string" ?
+						expected === expression
+					:	expected.test(expression)
+				)
 		)
 		console.log(collisions.slice(0, 5).join("\n\n=====\n\n"))
 		console.log(

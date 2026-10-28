@@ -63,7 +63,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`` `type` is used outside a precompiled site ``**: a standalone build doesn't ship arktype, so a call that creates a Type must be a definition the build precompiles. Move it into one, or build with `runtime: "arktype"`.
 
-**`flatProblemsByPath(out) calls flatProblemsByPath, which arktype/runtime doesn't export`**: so do `byPath`, `flatByPath` and `byAncestorPath`. Read `out.issues`, each with its `path` and `message`, as in `for (const { path, message } of out.issues)`, or build with `runtime: "arktype"`. For `messageIn(issue, locale)`, read `issue.message`, which a standalone validator writes in English.
+**`flatProblemsByPath(out) calls flatProblemsByPath, which arktype/runtime doesn't export`**: so do `byPath`, `flatByPath` and `byAncestorPath`. Read `out.issues`, each with its `path` and `message`, as in `for (const { path, message } of out.issues)`, or build with `runtime: "arktype"`. `byPath(out)` is `Object.fromEntries(out.issues.map(issue => [issue.path.join("."), issue]))` and `flatByPath(out)` is `Object.groupBy(out.issues, issue => issue.path.join("."))`, keyed by each path joined with `.` where arktype writes an index as `[0]`; the message names the rewrite. For `messageIn(issue, locale)`, read `issue.message`, which a standalone validator writes in English.
 
 **`import("arktype") loads arktype, which a standalone build replaces with arktype/runtime`**: the build precompiles definitions it sees through an `import` declaration, and resolves every other load of arktype to its runtime, which can't create a Type. Import it with an `import` declaration, or build with `runtime: "arktype"`.
 

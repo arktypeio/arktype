@@ -51,6 +51,8 @@ export const Versioned = type({ v: "x/^v([0-9]+)$/" }).or("number")
 // declared without a name, which a nested expression prints as fn
 const isPositive = [(n: number) => n > 0][0]
 export const Nested = type({ values: type("number").narrow(isPositive).array() })
+export const Json = type("string.json")
+export const Keyed = type({ "first-name": "string", 0: "number" })
 `,
 		"scoped.ts": `import { scope } from "arktype"
 
@@ -86,7 +88,7 @@ export const Id = type("string.uuid").configure({ ...labels, expected: "an id" }
 export const config = { message }
 `,
 		"main.ts": `import { type } from "arktype"
-import { Either, Nested, Parsed, Payload, Refused, Reported, Version, Versioned } from "./types.ts"
+import { Either, Json, Keyed, Nested, Parsed, Payload, Refused, Reported, Version, Versioned } from "./types.ts"
 import { Pair, Post } from "./scoped.ts"
 import { Change, Id, Named } from "./held.ts"
 
@@ -105,6 +107,8 @@ observe("Change", Change, { current: "a", next: "b" }, { current: "x", next: "" 
 observe("Named", Named, { current: "a", next: "b", name: "n" }, { current: "x", next: "", name: 1 })
 observe("Id", Id, "123e4567-e89b-12d3-a456-426614174000", "nope")
 observed.Nested = [Nested.expression, Nested.description]
+observe("Json", Json, "{", "[]")
+observe("Keyed", Keyed, { "first-name": 1, 0: 0 })
 console.log(JSON.stringify(observed))
 `
 	},
@@ -234,6 +238,25 @@ contextualize(() => {
 				],
 				"payload must be a string"
 			]
+		])
+	})
+
+	it("a keyword's issue writes the SyntaxError it caught", () => {
+		attest(standalone.Json).equals(arktype.Json)
+		attest(standalone.Json[0]).snap([
+			[{ code: "predicate", path: [], data: "{", expected: "a JSON string" }],
+			"must be a JSON string (SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2))"
+		])
+	})
+
+	// arktype's message starts with "value at", as any does whose path starts
+	// with a bracket
+	it("a key that isn't an identifier is bracketed", () => {
+		const issuesOf = (observed: Observed) => (observed.Keyed[0] as unknown[])[0]
+		attest(issuesOf(standalone)).equals(issuesOf(arktype))
+		attest(standalone.Keyed[0]).snap([
+			[{ code: "domain", path: ["first-name"], data: 1, expected: "a string" }],
+			'["first-name"] must be a string'
 		])
 	})
 

@@ -759,7 +759,7 @@ With the skill installed, migrate in one prompt:
 Migrate this project from Zod to ArkType.
 ```
 
-The agent follows [Migrating a project](https://arktype.io/docs/migrating#migrating-a-project). It rewrites each schema where it is, keeps Zod's removal of undeclared keys, swaps integrations like `zodResolver` for their Standard Schema versions, compares each schema your tests don't cover with its Zod original on the same inputs, removes `zod` with your package manager and runs your typecheck and tests. Where a dependency accepts only Zod, like the MCP SDK before v2, it keeps Zod for that call. Review its summary, which lists what still behaves differently and any test it updated, like a JSON Schema snapshot whose keys are now in canonical order.
+The agent follows [Migrating a project](https://arktype.io/docs/migrating#migrating-a-project): it rewrites each schema where it is, keeping what it accepts, rejects and returns, swaps integrations like `zodResolver` for their Standard Schema versions, and keeps Zod where a dependency accepts only it, like the MCP SDK before v2. Review its summary, which lists what still behaves differently and any test it updated, like a JSON Schema snapshot whose keys are now in canonical order.
 
 To precompile in the same pass, ask for both:
 
@@ -775,7 +775,7 @@ Every page of these docs is available as Markdown by adding `.md` to its URL, e.
 
 ## Precompile
 
-Precompiling used to cost a build step and its errors. An agent runs the build, reads the error and fixes it, so your users get the speed and size and you don't pay for them. A [precompiled](https://arktype.io/docs/precompile) build reports each definition it can't precompile with its file, line and column, the reason and the fix. [With agents](https://arktype.io/docs/precompile#with-agents) shows one and the tools that shorten the loop: `arktype-precompile --check`, the ESLint rule and shadow mode. [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) lists the fix for each report.
+A [precompiled](https://arktype.io/docs/precompile) build reports each definition it can't precompile with its file, line and column, the reason and the fix. [With agents](https://arktype.io/docs/precompile#with-agents) shows one and the tools that shorten the loop: `arktype-precompile --check`, the ESLint rule and shadow mode. [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) lists the fix for each report.
 
 ## AGENTS.md
 
@@ -5430,7 +5430,7 @@ AtLeast6("3")
 
 ## Standard Schema
 
-Every Type implements [Standard Schema](https://arktype.io/docs/standard-schema), so libraries that accept one can validate with it through `~standard.validate`. ArkType validates synchronously, and a failure result is the `ArkErrors` itself, whose `issues` is an array of `ArkError`:
+Every Type implements [Standard Schema](https://arktype.io/docs/standard-schema), so libraries that accept one can validate with it through `~standard.validate`. ArkType validates synchronously, and a failure result is `{ issues }`, a copy of each error in the `ArkErrors` whose `message` [leaves out its path](https://arktype.io/docs/standard-schema#validation):
 
 ```ts
 const User = type({ name: "string", age: "number" })
@@ -5438,7 +5438,7 @@ const User = type({ name: "string", age: "number" })
 const result = await User["~standard"].validate({ name: "David", age: "34" })
 
 if (result.issues) {
-	// age must be a number (was a string)
+	// must be a number (was a string)
 	console.log(result.issues[0].message)
 } else {
 	// { name: string; age: number }

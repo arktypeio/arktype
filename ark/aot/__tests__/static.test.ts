@@ -28,6 +28,21 @@ const escapesOf = (...args: Parameters<typeof analyze>) =>
 
 contextualize(() => {
 	describe("allowed", () => {
+		it("web platform classes Node has, but not the DOM's", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+export const Key = type.instanceOf(CryptoKey).or("null")
+export const Upload = type({ body: type.instanceOf(ReadableStream), signal: type.instanceOf(AbortSignal), query: type.instanceOf(URLSearchParams) })
+export const Socket = type.instanceOf(WebSocket)
+export const Element = type.instanceOf(HTMLElement)`)
+			).snap([
+				"2:20 accepted CryptoKey | null",
+				"3:23 accepted { body: ReadableStream, query: URLSearchParams, signal: AbortSignal }",
+				"4:23 accepted WebSocket",
+				"5:24 rejected\n  `HTMLElement` is a global the build does not read"
+			])
+		})
+
 		it("static expressions", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
@@ -448,29 +463,22 @@ export const Product = type({ description: "string", items: [{ description: "str
 			).equals([])
 		})
 
-		it("reads off a parameter annotated with an interface it imports", () => {
-			attest(
-				diagnosticsOf(
-					`import { type } from "arktype"
-import type { Options } from "./types.ts"
-export const T = type("string")
+		it("reads off what an annotation the build follows declares", () => {
+			const annotated: [main: string, files?: Record<string, string>][] = [
+				// an interface it imports
+				[
+					`import type { Options } from "./types.ts"
 export function readOptions(opts: Options) {
 	return [opts.default, opts.in]
 }`,
 					{
 						"/types.ts": `export interface Options { default: string; in: number }`
 					}
-				)
-			).equals([])
-		})
-
-		it("reads off a type re-exported through relative modules", () => {
-			attest(
-				diagnosticsOf(
-					`import { type } from "arktype"
-import type { Schema } from "./index.ts"
+				],
+				// a type re-exported through relative modules
+				[
+					`import type { Schema } from "./index.ts"
 import type * as Json from "./json.ts"
-export const T = type("string")
 export const defaultOf = (schema: Schema) => schema.default
 export const outOf = (schema: Json.Piped) => schema.out`,
 					{
@@ -480,8 +488,53 @@ export const outOf = (schema: Json.Piped) => schema.out`,
 export type JsonSchema = JSONSchema7
 export type Piped = { in: string; out: string }`
 					}
-				)
-			).equals([])
+				],
+				// a cast declaring the members it reads
+				[
+					`export function piped(ctx: any) {
+	const def = ctx.def
+	const pipeDef = def as typeof def & { in: unknown }
+	if (pipeDef.in) return pipeDef
+}`
+				],
+				// what a method declares it returns
+				[
+					`import { service } from "./service.ts"
+export const created = async () => {
+	const result = await service.create()
+	return \`/projects/\${result.id}\`
+}`,
+					{
+						"/service.ts": `import { randomUUID } from "node:crypto"
+export const service = new (class {
+	async create(): Promise<{ id: string }> {
+		return { id: randomUUID() }
+	}
+})()`
+					}
+				],
+				// a member typed as an element of a const array
+				[
+					`const metrics = ["LCP", "INP"] as const
+export type Summary = { metric: (typeof metrics)[number]; detail: unknown }
+export const describe = (summary: Summary) => \`\${summary.metric}\``
+				],
+				// a type literal with an unknown member
+				[
+					`export type Schema = { default?: unknown; required?: string[] }
+export function defaultOf(schema: Schema): unknown {
+	return schema.default
+}`
+				]
+			]
+			for (const [main, files] of annotated) {
+				attest(
+					diagnosticsOf(
+						`import { type } from "arktype"\nexport const T = type("string")\n${main}`,
+						files
+					)
+				).equals([])
+			}
 		})
 
 		it("reads off a type-only import's inferred type", () => {
@@ -619,40 +672,6 @@ export declare const presetOf: (preset: Preset) => string`
 			).equals([])
 		})
 
-		it("reads off a cast declaring the members it reads", () => {
-			attest(
-				diagnosticsOf(`import { type } from "arktype"
-export const T = type("string")
-export function piped(ctx: any) {
-	const def = ctx.def
-	const pipeDef = def as typeof def & { in: unknown }
-	if (pipeDef.in) return pipeDef
-}`)
-			).equals([])
-		})
-
-		it("reads off what a method declares it returns", () => {
-			attest(
-				diagnosticsOf(
-					`import { type } from "arktype"
-import { service } from "./service.ts"
-export const T = type("string")
-export const created = async () => {
-	const result = await service.create()
-	return \`/projects/\${result.id}\`
-}`,
-					{
-						"/service.ts": `import { randomUUID } from "node:crypto"
-export const service = new (class {
-	async create(): Promise<{ id: string }> {
-		return { id: randomUUID() }
-	}
-})()`
-					}
-				)
-			).equals([])
-		})
-
 		it("calls a declared method off an instance held beside another", () => {
 			attest(
 				diagnosticsOf(
@@ -686,27 +705,6 @@ if (process.env.NODE_ENV !== "production") globalForClient.client = steam`,
 export const db = {} as Db`
 					}
 				)
-			).equals([])
-		})
-
-		it("reads off a member typed as an element of a const array", () => {
-			attest(
-				diagnosticsOf(`import { type } from "arktype"
-export const T = type("string")
-const metrics = ["LCP", "INP"] as const
-export type Summary = { metric: (typeof metrics)[number]; detail: unknown }
-export const describe = (summary: Summary) => \`\${summary.metric}\``)
-			).equals([])
-		})
-
-		it("reads off a type literal with an unknown member", () => {
-			attest(
-				diagnosticsOf(`import { type } from "arktype"
-export const T = type("string")
-export type Schema = { default?: unknown; required?: string[] }
-export function defaultOf(schema: Schema): unknown {
-	return schema.default
-}`)
 			).equals([])
 		})
 	})
@@ -967,6 +965,63 @@ export type Forms = { user: Type }`
 				"/main.ts:5:45  (schema.default as any).or reads or, which a standalone validator lacks\n  the build can't tell where `schema.default as any` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
 				"/main.ts:6:39  forms.user.or reads or, which a standalone validator lacks\n  the build can't tell where `forms.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
 				"/main.ts:8:6  t.in reads in, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("a read off a parameter annotated with a global container type", () => {
+			attest(
+				unhinted(
+					`import { type, type Type } from "arktype"
+export const T = type("string")
+const cost = (raw: unknown) => raw
+export function stage(record: Record<string, unknown> | null | undefined) {
+	return cost(record?.merge)
+}
+export function awaited(t: Awaited<unknown> | null) {
+	return cost(t?.merge)
+}
+export function held(record: Record<string, unknown>) {
+	return cost(record.merge.or)
+}
+export function typed(forms: Record<string, Type>) {
+	return cost(forms.user.or)
+}
+export function first(ts: Array<unknown>) {
+	return cost(ts[0].or)
+}
+export function usage(record: unknown) {
+	const rec = record as Record<string, unknown>
+	return [stage(rec), awaited(rec), held(rec), typed(rec as never), first(rec as never)]
+}`
+				)
+			).snap([
+				"/main.ts:11:14  record.merge.or reads or, which a standalone validator lacks\n  the build can't tell where `record.merge` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:14:14  forms.user.or reads or, which a standalone validator lacks\n  the build can't tell where `forms.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:17:14  ts[0].or reads or, which a standalone validator lacks\n  the build can't tell where `ts[0]` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:21:22  `awaited` is read outside a call the build precompiles\n  t?.merge (/main.ts:8:14) reads `t`, a parameter of awaited, so the build precompiles it at each call to awaited"
+			])
+		})
+
+		it("a handler of an intrinsic JSX element, but not of a component", () => {
+			const source = `import { type } from "arktype"
+export const Name = type("string")
+export const Field = (props: { Picker: any; onPick: (t: unknown) => void }) => (
+	<label>
+		<input onFocus={e => e.target.select()} ref={el => el?.focus()} />
+		<my-element onchange={e => e.target.or} />
+		<Picker onPick={t => t.or("null")} />
+		<props.Picker onPick={t => props.onPick(t.or("null"))} />
+	</label>
+)
+declare const Picker: any`
+			attest(
+				new Precompiler(memoryHost({ "/main.tsx": source }))
+					.analyzeSites(source, "/main.tsx")
+					.diagnostics.map(renderDiagnostic)
+					.map(d => d.slice(0, d.lastIndexOf("\n")))
+			).snap([
+				"/main.tsx:7:24  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.tsx:8:43  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
@@ -1461,8 +1516,8 @@ export const readers = [ark.flatByPath]
 export const translated = (out: ArkErrors) => out.issues.map(issue => ark.messageIn(issue, {} as never))`)
 			).snap([
 				'/main.ts:4:46  flatProblemsByPath(errors) calls flatProblemsByPath, which arktype/runtime doesn\'t export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: "arktype".',
-				'/main.ts:7:38  ark.byPath(out) calls byPath, which arktype/runtime doesn\'t export\n  Read `out.issues`, each with its path and message, as in `for (const { path, message } of out.issues)`, or build with runtime: "arktype".',
-				"/main.ts:9:25  `ark.flatByPath` is arktype's, which arktype/runtime doesn't export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: \"arktype\".",
+				'/main.ts:7:38  ark.byPath(out) calls byPath, which arktype/runtime doesn\'t export\n  Write it as `Object.fromEntries(out.issues.map(issue => [issue.path.join("."), issue]))`, whose keys join each path with ".", where arktype writes an index as [0], or build with runtime: "arktype".',
+				'/main.ts:9:25  `ark.flatByPath` is arktype\'s, which arktype/runtime doesn\'t export\n  Write it as `Object.groupBy(errors.issues, issue => issue.path.join("."))`, whose keys join each path with ".", where arktype writes an index as [0], or build with runtime: "arktype".',
 				'/main.ts:10:71  ark.messageIn(issue, {} as never) calls messageIn, which arktype/runtime doesn\'t export\n  Read `issue.message`, which a standalone validator writes in English, or build with runtime: "arktype" to write it in a locale.'
 			])
 		})
@@ -1931,14 +1986,20 @@ const G = type("<t>", { t: "t" })
 const getG = () => G
 export const params = getG().params
 export const names = (flag: boolean) => (flag ? G : type("<u>", { u: "u" })).names
-export const viaGeneric = (g: Generic) => g.params`)
+export const viaGeneric = (g: Generic) => g.params
+export const Instance = getG()("string")
+export const either = (flag: boolean) => (flag ? G : type("<u>", { u: "u" }))("string")`)
 			).snap([
+				'/main.ts:2:25  scope({ ocean: { color: "\'blue\'" } }) is left to arktype\n  getPlaces().type("ocean") (/main.ts:5:22) reads `getPlaces` but isn\'t precompiled, so arktype must define `getPlaces` for it',
 				'/main.ts:5:22  getPlaces().type("ocean") can\'t be precompiled yet\n  `getPlaces()` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".',
 				'/main.ts:7:49  s.type("a") can\'t be precompiled yet\n  `s` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".',
 				'/main.ts:8:39  s.export() can\'t be precompiled yet\n  `s` may be a Scope, which a standalone build replaces with an object that lacks `export`\n  Assign it to a const and read `export` off that, which the build precompiles, or build with runtime: "arktype".',
+				'/main.ts:9:11  type("<t>", { t: "t" }) is left to arktype\n  getG().params (/main.ts:11:23) reads `getG` but isn\'t precompiled, so arktype must define `getG` for it',
 				'/main.ts:11:23  getG().params can\'t be precompiled yet\n  `getG()` may be a Generic, which a standalone build replaces with an object that lacks `params`\n  Assign it to a const and read `params` off that, which the build precompiles, or build with runtime: "arktype".',
 				'/main.ts:12:41  (flag ? G : type("<u>", { u: "u" })).names can\'t be precompiled yet\n  `flag ? G : type("<u>", { u: "u" })` may be a Generic, which a standalone build replaces with an object that lacks `names`\n  Assign it to a const and read `names` off that, which the build precompiles, or build with runtime: "arktype".',
-				'/main.ts:13:43  g.params can\'t be precompiled yet\n  `g` may be a Generic, which a standalone build replaces with an object that lacks `params`\n  Assign it to a const and read `params` off that, which the build precompiles, or build with runtime: "arktype".'
+				'/main.ts:13:43  g.params can\'t be precompiled yet\n  `g` may be a Generic, which a standalone build replaces with an object that lacks `params`\n  Assign it to a const and read `params` off that, which the build precompiles, or build with runtime: "arktype".',
+				'/main.ts:14:25  getG()("string") can\'t be precompiled yet\n  `getG()` may be a Generic, which a standalone build replaces with an object that can\'t be called\n  Assign it to a const and instantiate that, which the build precompiles, or build with runtime: "arktype".',
+				'/main.ts:15:42  (flag ? G : type("<u>", { u: "u" }))("string") can\'t be precompiled yet\n  `flag ? G : type("<u>", { u: "u" })` may be a Generic, which a standalone build replaces with an object that can\'t be called\n  Assign it to a const and instantiate that, which the build precompiles, or build with runtime: "arktype".'
 			])
 		})
 
