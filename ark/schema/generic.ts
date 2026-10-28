@@ -180,28 +180,7 @@ export class GenericRoot<
 			$ark.reached?.cached(this.instantiations, key)
 			return instantiation
 		}
-		for (let i = 0; i < this.names.length; i++) {
-			const constraint = this.constraints[i]
-			if (constraint.isUnknown()) continue
-			const name = this.names[i]
-			const arg = argNodes[name]
-			const resolvedArg = (argNodes[name] = resolveShallowAliases(arg))
-			const resolvedConstraint = resolveShallowAliases(constraint)
-			if (resolvedArg.extends(resolvedConstraint)) continue
-			const unsatisfied = () =>
-				throwParseError(
-					writeUnsatisfiedParameterConstraintMessage(
-						name,
-						constraint.expression,
-						arg.expression
-					)
-				)
-			if (isResolutionFinal() || !mayExtend(resolvedArg, resolvedConstraint))
-				unsatisfied()
-			queueUnchecked(
-				() => resolvedArg.extends(resolvedConstraint) || unsatisfied()
-			)
-		}
+		this.checkArgs(argNodes)
 		const open = this.openInstances
 		if (
 			Math.max(open, depth) === maxOpenInstantiations ||
@@ -236,6 +215,32 @@ export class GenericRoot<
 			throw e
 		} finally {
 			this.openInstances = open
+		}
+	}
+
+	// throws for an arg outside its parameter's constraint, once aliases still open can be compared
+	private checkArgs(argNodes: GenericArgResolutions<any>): void {
+		for (let i = 0; i < this.names.length; i++) {
+			const constraint = this.constraints[i]
+			if (constraint.isUnknown()) continue
+			const name = this.names[i]
+			const arg = argNodes[name]
+			const resolvedArg = (argNodes[name] = resolveShallowAliases(arg))
+			const resolvedConstraint = resolveShallowAliases(constraint)
+			if (resolvedArg.extends(resolvedConstraint)) continue
+			const unsatisfied = () =>
+				throwParseError(
+					writeUnsatisfiedParameterConstraintMessage(
+						name,
+						constraint.expression,
+						arg.expression
+					)
+				)
+			if (isResolutionFinal() || !mayExtend(resolvedArg, resolvedConstraint))
+				unsatisfied()
+			queueUnchecked(
+				() => resolvedArg.extends(resolvedConstraint) || unsatisfied()
+			)
 		}
 	}
 
