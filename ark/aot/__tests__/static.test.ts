@@ -28,6 +28,21 @@ const escapesOf = (...args: Parameters<typeof analyze>) =>
 
 contextualize(() => {
 	describe("allowed", () => {
+		it("web platform classes Node has, but not the DOM's", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+export const Key = type.instanceOf(CryptoKey).or("null")
+export const Upload = type({ body: type.instanceOf(ReadableStream), signal: type.instanceOf(AbortSignal), query: type.instanceOf(URLSearchParams) })
+export const Socket = type.instanceOf(WebSocket)
+export const Element = type.instanceOf(HTMLElement)`)
+			).snap([
+				"2:20 accepted CryptoKey | null",
+				"3:23 accepted { body: ReadableStream, query: URLSearchParams, signal: AbortSignal }",
+				"4:23 accepted WebSocket",
+				"5:24 rejected\n  `HTMLElement` is a global the build does not read"
+			])
+		})
+
 		it("static expressions", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

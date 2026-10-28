@@ -14,6 +14,41 @@ export interface PureBuiltin {
 	writes?: true
 }
 
+// web platform classes Node has, so `type.instanceOf(CryptoKey)` precompiles
+// to a check of the global by name; one this Node lacks stays unread
+const webClassNames = [
+	"AbortController",
+	"AbortSignal",
+	"BroadcastChannel",
+	"CompressionStream",
+	"Crypto",
+	"CryptoKey",
+	"CustomEvent",
+	"DecompressionStream",
+	"DOMException",
+	"Event",
+	"EventTarget",
+	"MessageChannel",
+	"MessagePort",
+	"ReadableStream",
+	"SubtleCrypto",
+	"TextDecoder",
+	"TextEncoder",
+	"TransformStream",
+	"URLSearchParams",
+	"WebSocket",
+	"WritableStream"
+] as const
+
+const webClassesOf = (): Record<string, unknown> => {
+	const result: Record<string, unknown> = {}
+	for (const name of webClassNames) {
+		const value = Reflect.get(globalThis, name)
+		if (typeof value === "function") result[name] = value
+	}
+	return result
+}
+
 export const globalsByName: Record<string, unknown> = Object.assign(
 	Object.create(null),
 	{
@@ -30,7 +65,8 @@ export const globalsByName: Record<string, unknown> = Object.assign(
 		isNaN,
 		isFinite
 	},
-	builtinConstructors
+	builtinConstructors,
+	webClassesOf()
 )
 
 export const conversionProblem =
