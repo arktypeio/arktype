@@ -7,7 +7,7 @@ description: Add precompilation to your bundler, framework, test runner or Node 
 
 <InstallationTabs pkg="@ark/aot" dev />
 
-`@ark/aot` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, `precompiledForArktype_<major>_<minor>_<patch>`, so a bundle or Node fails to link it to another version's runtime, e.g. one a stale cache kept. That import adds nothing to the bundle.
+`@ark/aot` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, so a bundle or Node [fails to link](/docs/precompile/troubleshooting#setup) it to another version's runtime, like one a stale cache kept. That import adds nothing to the bundle.
 
 ## Bundlers
 
@@ -198,9 +198,9 @@ Set [options](/docs/precompile/options) in `ark.json` beside your `package.json`
 }
 ```
 
-The same settings can go under an `"ark"` key in `package.json` instead. Keep one: the build fails if both are set. See [ark.json](/docs/precompile/options#arkjson).
+The same settings can go under an `"ark"` key in `package.json` instead; see [ark.json](/docs/precompile/options#arkjson).
 
-A validator leaves out its JSON Schema unless the build sets it, so a library that reads it through Standard Schema, like the MCP SDK's `inputSchema`, an AI SDK tool or Elysia's OpenAPI plugin, finds `undefined` there in production. Outside production, reading it throws, naming the fix. Add `"members": { "~standard.jsonSchema": true }` to `precompile` for it, or `"toJsonSchema": true` for one that calls `toJsonSchema()`, like hono-openapi or oRPC's ArkType converter. See [integrations](/docs/integrations#precompiled-validators) and [members](/docs/precompile/options#members).
+A validator ships its JSON Schema only where the build sets it, so a library that reads it, like the MCP SDK, the AI SDK or hono-openapi, finds `undefined` in production and throws outside it, naming the fix. [Integrations](/docs/integrations#precompiled-validators) lists what to set for each, under [`members`](/docs/precompile/options#members).
 
 ## Frameworks [#frameworks]
 
