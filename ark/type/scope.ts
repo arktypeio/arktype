@@ -29,7 +29,8 @@ import {
 	type reducibleKindOf,
 	type toInternalScope,
 	type writeDuplicateAliasError,
-	type writeShallowCycleErrorMessage
+	type writeShallowCycleErrorMessage,
+	isFinalResolution
 } from "@ark/schema"
 import {
 	Scanner,
@@ -411,7 +412,7 @@ export const keywordModule = (
 			name as never
 		]
 	for (const name in def)
-		if (name[0] !== "#") defineLazily(module, name, resolve)
+		if (name[0] !== "#") defineLazily(module, name, resolve, isFinalResolution)
 	return module
 }
 

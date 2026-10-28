@@ -582,11 +582,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return this.aliasOf(ctx)
 		}
 		if (ctx.phase === "failed") throw ctx.error
-		if (ctx.phase === "resolved") {
-			return throwInternalError(
-				`Unexpected resolved context for was uncached by its scope: ${printable(ctx)}`
-			)
-		}
+		// read as its resolution is cached, e.g. by the expression of a node
+		// its id is written to, which a reference reaches once it is
+		if (ctx.phase === "resolved") return this.aliasOf(ctx)
 		registerParseContext(ctx).phase = "resolving"
 		ctx.index = ctx.lowlink = openDefinitions.push(ctx) - 1
 		const membersStart = openMembers.length
@@ -830,7 +828,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 					:	finalizeExport(this, this.maybeResolve(name)!)
 			}
 			for (const name of this.exportedNames)
-				defineLazily(exports, name, resolve)
+				defineLazily(exports, name, resolve, isFinalResolution)
 			this._lazy = exports as never
 			this.resolved = true
 		}
@@ -1006,9 +1004,17 @@ const bindModuleLazily = (
 				bindModuleLazily(resolution, $)
 			:	finalizeExport($, $.bindRef(resolution as BaseRoot | GenericRoot))
 	}
-	for (const k in module) defineLazily(bound, k, resolve)
+	for (const k in module) defineLazily(bound, k, resolve, isFinalResolution)
 	return bound as never
 }
+
+/**
+ * whether a module's member can hold `resolution`: an alias referencing a
+ * definition still resolving is a placeholder, read while that definition's
+ * expression is written, which the member would otherwise hold for good
+ */
+export const isFinalResolution = (resolution: unknown): boolean =>
+	!hasArkKind(resolution, "root") || isResolvable(resolution)
 
 export const finalizeExport = (
 	$: BaseScope,
@@ -1055,16 +1061,27 @@ const resolutionsToJson = (res: InternalResolutions): JsonStructure =>
 		: throwInternalError(`Unexpected resolution ${printable(v)}`)
 	])
 
+const resolvingAmbient = new Set<string>()
+
 /** the root the builtin keyword named resolves to, if any */
 export const resolveAmbient = (name: string): BaseRoot | undefined => {
-	const ambient: InternalModule = $ark.ambient as never
-	const resolution =
-		hasOwn(ambient, name) ? ambient[name] : maybeResolveSubalias(ambient, name)
-	return (
-		hasArkKind(resolution, "module") ? resolution.root
-		: hasArkKind(resolution, "root") ? resolution
-		: undefined
-	)
+	// writing the keyword's own expression asks for it while this resolves it
+	if (resolvingAmbient.has(name)) return
+	resolvingAmbient.add(name)
+	try {
+		const ambient: InternalModule = $ark.ambient as never
+		const resolution =
+			hasOwn(ambient, name) ?
+				ambient[name]
+			:	maybeResolveSubalias(ambient, name)
+		return (
+			hasArkKind(resolution, "module") ? resolution.root
+			: hasArkKind(resolution, "root") ? resolution
+			: undefined
+		)
+	} finally {
+		resolvingAmbient.delete(name)
+	}
 }
 
 const maybeResolveSubalias = (
