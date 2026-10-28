@@ -71,7 +71,6 @@ const rootKeyOf = (root: BaseRoot, isScoped = true): Key => {
 			collectDefaults(node, defaultsByMorph)
 		else if (node.is("morph") && node.inverse) inverses.push(node.inverse)
 	}
-	// add each function or object's kind and repeat positions
 	return encodeKey(
 		{
 			name: units[0].names[root.id],

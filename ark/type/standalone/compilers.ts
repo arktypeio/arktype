@@ -40,18 +40,14 @@ import {
 
 class StandaloneCompiler extends TraversalCompiler {
 	override readonly reportsFirst: boolean = false
-	// a unit is named for its content as compiled without the size forms that
-	// follow from it
+	// named for its content as compiled, before the size forms that follow from it
 	readonly naming: boolean = this.link.unit === undefined
 
-	// whether a node's Apply is its Allows, as a unified build writes it
 	unifies(node: BaseNode): boolean {
 		return unifies(node)
 	}
 
-	// terser and swc write a function called once where it's called, as a
-	// closure created at each call, which slows the Allows or Transform
-	// calling it; minifiers drop the annotation
+	// terser and swc inline a function called once as a closure per call, slowing its caller
 	override inv(node: BaseNode, opts?: InvokeOptions): string {
 		const call = super.inv(node, opts)
 		return (
@@ -78,8 +74,7 @@ class StandaloneCompiler extends TraversalCompiler {
 		return this.siteRef(issueSiteOf(node.failSite))
 	}
 
-	// a site of literals, or a key's site of them, is built where it fails, and
-	// stays a ref the unit keys
+	// a site of literals, or a key's, is built where it fails and stays a ref the unit keys
 	siteRef(site: object): string {
 		const ref = this.ref(site)
 		if (isInlineSite(site)) return writeSiteOf(site, JSON.stringify)
@@ -97,8 +92,7 @@ class StandaloneCompiler extends TraversalCompiler {
 		return isKeyword(predicate)
 	}
 
-	// a union no branch allows reports its description, unless data fails
-	// each branch's basis, which arktype then describes it by
+	// a union no branch allows reports its description, unless data fails each basis
 	override unionFails(node: UnionNode): string {
 		const bases = basesOf(node)
 		if (!bases) return `!${this.error(node)}`
@@ -108,8 +102,7 @@ class StandaloneCompiler extends TraversalCompiler {
 		return `!${this.fails("failsAt", `${allowed} ? ${this.site(node)} : ${this.siteRef(bases.site)}, data`)}`
 	}
 
-	// reported at the discriminant so branches don't rerun, unless data can't
-	// be read there, when it fails each branch
+	// reported at the discriminant so branches don't rerun, unless data can't be read there
 	override missFails(node: UnionNode): string {
 		if (node.missLists) return this.unionFails(node)
 		const path = node.missPath
@@ -139,9 +132,7 @@ class StandaloneCompiler extends TraversalCompiler {
 		return `${compileRead("data", k)} ? ${readable} : ${this.unreadableFails(node, k)}`
 	}
 
-	// as an indiscriminable union applies its branches, in a branch only
-	// arktype's traversal has, which a root holding a morph, alias or callback
-	// reports into
+	// an indiscriminable union applies its branches in a branch only arktype's traversal has
 	override defaultFails(node: UnionNode, caseNode: BaseRoot): string {
 		const passes =
 			isDecidedByKeywords(caseNode) ?
@@ -151,8 +142,7 @@ class StandaloneCompiler extends TraversalCompiler {
 		return `${passes} || ${this.unionFails(node)}`
 	}
 
-	// data its first key can't be read from fails each branch at its basis,
-	// if each requires what the read does
+	// data its first key can't be read from fails each branch at its basis
 	private unreadableFails(node: UnionNode, k: PropertyKey): string {
 		const bases = basesOf(node)
 		return (
@@ -192,8 +182,7 @@ class StandaloneCompiler extends TraversalCompiler {
 	}
 }
 
-// whether Allows decides a node, as it does one whose predicates are all
-// keywords, which add no issues of their own
+// a node whose predicates are all keywords, which add no issues, is decided by Allows
 const isDecidedByKeywords = (node: BaseNode): boolean =>
 	!node.hasMorph &&
 	!node.hasAlias &&
@@ -205,8 +194,7 @@ const isDecidedByKeywords = (node: BaseNode): boolean =>
 const reportsItself = (value: BaseNode): value is UnionNode =>
 	value.is("union") && !value.discriminant && !value.hasAlias
 
-// whether a key is read from an object, or an index from an array, as
-// arktype reads a discriminant
+// as arktype reads a discriminant
 const compileRead = (parent: string, k: PropertyKey): string =>
 	typeof k === "number" ?
 		`Array.isArray(${parent})`
@@ -220,8 +208,7 @@ export interface Bases {
 
 const basesByUnion = new WeakMap<UnionNode, Bases | null>()
 
-// the basis each branch checks first, where data failing them all fails
-// each branch there, so arktype describes the union by them
+// data failing every branch's basis fails each there, so arktype describes the union by them
 export const basesOf = (node: UnionNode): Bases | undefined => {
 	let bases = basesByUnion.get(node)
 	if (bases === undefined) basesByUnion.set(node, (bases = findBases(node)))
@@ -242,10 +229,7 @@ const findBases = (node: UnionNode): Bases | null => {
 		for (const c of cases)
 			addExpected(describeCases({ discriminantKind, cases: [c] } as never))
 	}
-	// the bases a branch's data fails, as arktype's union error lists them:
-	// a morph's input can be a union, whose miss lists its own bases where
-	// arktype lists its branches (a key discriminant can't be read from data
-	// failing them), or each case of its discriminant
+	// as arktype's union error lists them: a morph input union's own bases, or each case
 	const collect = (branch: BaseRoot, describes: boolean): boolean => {
 		const checked = branch.is("morph") ? branch.head : branch
 		// a described morph's input fails as the morph, by its description
@@ -280,8 +264,7 @@ const findBases = (node: UnionNode): Bases | null => {
 		if (describes) addExpected(context.description!)
 		return true
 	}
-	// data in no case of a discriminant is applied its default case, whose
-	// failure arktype reports beside the cases missed
+	// data in no case is applied the default case, whose failure arktype reports beside the misses
 	const { discriminant } = node
 	const defaultCase =
 		discriminant && discriminant.path.length === 0 && !node.missLists ?
@@ -341,8 +324,7 @@ const reportsApart = (reference: BaseNode): boolean =>
 		(reference.inner.predicate?.length ?? 0) + +!!reference.structure >= 2
 	:	reference.is("morph")
 
-// a detailed size build's traversals: a node that unifies has one, its
-// Apply named as its Allows, reporting a failure only to a ctx it's passed
+// a detailed size build's traversals: a unifying node's Apply is its Allows, reporting only to a ctx
 class UnifiedCompiler extends StandaloneCompiler {
 	override refToId(id: NodeId, opts?: ReferenceOptions): string {
 		const node = this.link.byId[id]
@@ -400,8 +382,7 @@ const unitsReportingIssues = new WeakSet<RootUnit>()
 
 const ctxReads = /(?<![\w$.])ctx\.([\w$]+)/g
 
-// a root reporting into ArkErrors reads only their members off ctx, since
-// one only arktype's traversal has would throw where data first fails
+// a root reporting into ArkErrors reads only their members off ctx; others would throw
 export const assertReportsIssues = (units: readonly RootUnit[]): void => {
 	for (const unit of units) {
 		if (unitsReportingIssues.has(unit)) continue
@@ -434,8 +415,7 @@ const domainChecks = new Map<string, string>([
 	]
 ])
 
-// a build for size writes Allows' checks as the returns they stand for, and a
-// switch over data's domain as the checks its cases do
+// writes Allows' checks as the returns they stand for, and a domain switch as its cases' checks
 const forSize = (compiler: typeof StandaloneCompiler) =>
 	class extends compiler {
 		override readonly shortest: boolean = !this.naming
@@ -470,8 +450,7 @@ const forSize = (compiler: typeof StandaloneCompiler) =>
 		}
 	}
 
-// a detailed size build writes each node it can as a checker, whose Apply
-// is its Allows, transforming by its t
+// a detailed size build writes each node it can as a checker, whose Apply is its Allows
 class CombinatorCompiler extends forSize(UnifiedCompiler) {
 	readonly shapes: boolean = false
 
@@ -494,8 +473,7 @@ class CombinatorCompiler extends forSize(UnifiedCompiler) {
 	}
 }
 
-// by variant: standalone, in place or unified, plus 3 for errors "first" and
-// 6 for size
+// by variant: standalone, in place or unified, +3 for errors "first", +6 for size
 const compilers = [false, true].flatMap(shortest =>
 	[
 		StandaloneCompiler,
@@ -511,8 +489,7 @@ const compilers = [false, true].flatMap(shortest =>
 	)
 )
 
-// a size build with detailed errors that compiles each node, as a program
-// too small to amortize the checkers' runtime is
+// a detailed size build compiling each node, as one too small to amortize checkers is
 export const compiledForSize: number =
 	compilers.push(forSize(UnifiedCompiler)) - 1
 
@@ -524,8 +501,7 @@ export const shapedForSize: number =
 		}
 	) - 1
 
-// a jsonInput build's compilers follow the others in the same order, each
-// trusting data to be plain, as JSON.parse returns
+// jsonInput variants follow in the same order, each trusting data to be plain
 const jsonOffset = compilers.length
 
 compilers.push(
@@ -542,7 +518,6 @@ export const jsonVariantOf = (variant: number): number => variant + jsonOffset
 // the variant a jsonInput build's variant otherwise matches
 const baseVariantOf = (variant: number) => variant % jsonOffset
 
-// each variant's roots have their own units
 const unitsByRoot = compilers.map(() => new WeakMap<BaseRoot, RootUnit[]>())
 
 export const rootUnitsOf = (root: BaseRoot, variant = 0): RootUnit[] => {
@@ -563,7 +538,6 @@ export const rootUnitsOf = (root: BaseRoot, variant = 0): RootUnit[] => {
 	return units
 }
 
-// whether a root's validator is created from its checker
 export const isChecker = (root: BaseRoot, variant: number): boolean =>
 	(compilers[baseVariantOf(variant)] === CombinatorCompiler ||
 		baseVariantOf(variant) === shapedForSize) &&

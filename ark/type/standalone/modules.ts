@@ -198,10 +198,7 @@ export const writeDependencies = (
 	return [params, args]
 }
 
-// swc writes a function called where it's declared into its caller, so a
-// speed build's traversals would become module variables, whose calls V8
-// doesn't inline. Minifiers drop the annotation, written before any other as
-// terser reads only the nearest
+// swc would inline a speed build's traversals as variables V8 can't; first, as terser reads only the nearest annotation
 export const noInlineOf = (shortest: boolean): string =>
 	shortest ? "" : "/* @__NOINLINE__ */ "
 
