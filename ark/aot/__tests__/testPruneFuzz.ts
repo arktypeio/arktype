@@ -26,7 +26,7 @@ import {
 	writeFileSync
 } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { gzipSync } from "node:zlib"
 import {
 	dataOf,
@@ -87,6 +87,8 @@ interface Validator {
 	node: Node
 	wrap: Wrap
 	isDefault: boolean
+	// where readers import it from: a types module, or a dependency package
+	specifier: string
 }
 
 // how a reader module gets at a validator, as an expression naming it
@@ -116,7 +118,11 @@ const functions = [
 	)
 ]
 
-const typesOf = (v: Validator) => `./types${v.module}.ts`
+const typesOf = (v: Validator) => v.specifier
+
+// the first types module as a shared schemas package, opting in by its
+// manifest or named by the plugin's dependencies option
+const dependencyPackage = "schemas-lib"
 
 const accesses: Record<string, Access> = {
 	named: {
@@ -465,6 +471,8 @@ interface App {
 	configured: boolean
 	// a types module reading its own validator as it loads
 	selfRead: boolean
+	// the first types module is a package under node_modules
+	dependency: "none" | "optIn" | "option"
 }
 
 const presets: PrecompileUnpluginOptions[] = [
@@ -553,7 +561,8 @@ const validators: fc.Arbitrary<Validator[]> = fc
 						module: m,
 						node,
 						wrap,
-						isDefault: hasDefault && k === 0
+						isDefault: hasDefault && k === 0,
+						specifier: `./types${m}.ts`
 					})
 				)
 			)
@@ -598,14 +607,30 @@ const apps: fc.Arbitrary<App> = validators
 			splits: fc.boolean(),
 			entries: fc.constantFrom<1 | 2>(1, 1, 2),
 			configured: fc.boolean(),
-			selfRead: fc.boolean()
+			selfRead: fc.boolean(),
+			dependency: fc.constantFrom<App["dependency"]>(
+				"none",
+				"none",
+				"optIn",
+				"option"
+			)
 		})
 	)
-	.map(app =>
-		Object.assign(app, {
-			[fc.toStringMethod]: () => sourceOfApp(app)
+	.map(app => {
+		// a package can't import the app's config module
+		const configured = app.configured && app.dependency === "none"
+		const validators = app.validators.map(v => ({
+			...v,
+			specifier:
+				app.dependency !== "none" && v.module === 0 ?
+					dependencyPackage
+				:	`./types${v.module}.ts`
+		}))
+		const result: App = { ...app, configured, validators }
+		return Object.assign(result, {
+			[fc.toStringMethod]: () => sourceOfApp(result)
 		})
-	)
+	})
 
 const helperSources: Record<string, string> = {
 	tell: `export const tell = o => o instanceof type.errors ? { summary: o.summary } : { value: o }`,
@@ -644,12 +669,27 @@ const helperSources: Record<string, string> = {
 	)`
 }
 
+const specifierOfModule = (app: App, m: number) =>
+	app.validators.find(v => v.module === m)!.specifier
+
 const filesOf = (app: App): Record<string, string> => {
 	const files: Record<string, string> = {}
 	const modules = new Set(app.validators.map(v => v.module))
 	for (const m of modules) {
 		const own = app.validators.filter(v => v.module === m)
-		files[`types${m}.ts`] = [
+		const isPackage = own[0].specifier === dependencyPackage
+		if (isPackage) {
+			files[`node_modules/${dependencyPackage}/package.json`] = JSON.stringify({
+				name: dependencyPackage,
+				version: "1.0.0",
+				type: "module",
+				exports: "./index.js",
+				...(app.dependency === "optIn" && { ark: { aot: true } })
+			})
+		}
+		files[
+			isPackage ? `node_modules/${dependencyPackage}/index.js` : `types${m}.ts`
+		] = [
 			// a bundler splitting chunks may run a types module before main's
 			// imports, so each imports the config module itself
 			...(app.configured ? [`import "./config.ts"`] : []),
@@ -672,12 +712,12 @@ const filesOf = (app: App): Record<string, string> => {
 	const needs = new Set(app.readers.map(r => accesses[r.access].needs))
 	if (needs.has("barrel")) {
 		files["barrel.ts"] = [...modules]
-			.map(m => `export * from "./types${m}.ts"`)
+			.map(m => `export * from "${specifierOfModule(app, m)}"`)
 			.join("\n")
 	}
 	if (needs.has("nsexport")) {
 		files["nsexport.ts"] = [...modules]
-			.map(m => `export * as ns${m} from "./types${m}.ts"`)
+			.map(m => `export * as ns${m} from "${specifierOfModule(app, m)}"`)
 			.join("\n")
 	}
 	if (needs.has("reexport")) {
@@ -763,7 +803,11 @@ const filesOf = (app: App): Record<string, string> => {
 	files["package.json"] = JSON.stringify({
 		name: "prune-fuzz-app",
 		type: "module",
-		private: true
+		private: true,
+		dependencies: {
+			arktype: "*",
+			...(app.dependency !== "none" && { [dependencyPackage]: "*" })
+		}
 	})
 	return files
 }
@@ -771,7 +815,7 @@ const filesOf = (app: App): Record<string, string> => {
 const sourceOfApp = (app: App) => {
 	const files = filesOf(app)
 	return [
-		`// rewrite: ${app.rewrite}, preset: ${JSON.stringify(app.preset)}, splits: ${app.splits}, entries: ${app.entries}, configured: ${app.configured}, selfRead: ${app.selfRead}`,
+		`// rewrite: ${app.rewrite}, preset: ${JSON.stringify(app.preset)}, splits: ${app.splits}, entries: ${app.entries}, configured: ${app.configured}, selfRead: ${app.selfRead}, dependency: ${app.dependency}`,
 		...Object.entries(files)
 			.filter(([name]) => name !== "helpers.ts" && name !== "package.json")
 			.map(([name, text]) => `// ${name}\n${text}`)
@@ -793,7 +837,10 @@ const writeApp = (app: App): string => {
 		join(dir, "node_modules", "arktype")
 	)
 	const files = filesOf(app)
-	for (const name in files) writeFileSync(join(dir, name), files[name])
+	for (const name in files) {
+		mkdirSync(dirname(join(dir, name)), { recursive: true })
+		writeFileSync(join(dir, name), files[name])
+	}
 	return dir
 }
 
@@ -1070,18 +1117,24 @@ const check = async (app: App): Promise<boolean> => {
 	let sound = true
 	for (const bundler of bundlers) {
 		const tally = tallies[bundler]
+		const opts: PrecompileUnpluginOptions = {
+			...app.preset,
+			...(app.dependency === "option" && {
+				dependencies: { [dependencyPackage]: "aot" }
+			})
+		}
 		const whole = await buildWith(
 			bundler,
 			dir,
 			app,
-			{ ...app.preset, prune: false },
+			{ ...opts, prune: false },
 			"whole"
 		)
 		if (whole.refused) {
 			bump(tally.invalid, headOf(whole.refused))
 			continue
 		}
-		const pruned = await buildWith(bundler, dir, app, app.preset, "pruned")
+		const pruned = await buildWith(bundler, dir, app, opts, "pruned")
 		if (pruned.refused) {
 			bump(tally.refused, headOf(pruned.refused))
 			continue
