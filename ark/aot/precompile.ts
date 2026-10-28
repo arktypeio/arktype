@@ -5778,6 +5778,7 @@ const chainOf = (dynamic: DynamicValue): string[] => {
 // what arktype's own errors, like an island's, may hold
 const anyIssues: IssueFeatures = {
 	reportsIndices: true,
+	bracketsKeys: true,
 	writesText: true,
 	readsKeySites: true,
 	runsArktype: true

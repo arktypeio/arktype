@@ -5,6 +5,9 @@
 /** an array's index in an issue's path */
 export const reportsIndices: boolean = true
 
+/** a key in an issue's path that isn't an identifier, like a record's */
+export const bracketsKeys: boolean = true
+
 /** text a site writes from the program's config, like a problem */
 export const writesText: boolean = true
 

@@ -128,7 +128,7 @@ contextualize(() => {
 		attest(errors.summary).snap(`must be a string
 [0] must be a string
 a[0].b must be a string
-Symbol(s) must be a string`)
+[Symbol(s)] must be a string`)
 	})
 
 	it("adds through a traversal as through errors", () => {

@@ -700,6 +700,7 @@ console.log(User.allows({ name: 5 }), User.allows({ name: "Ada" }))
 				{
 					"user.ts": `import { type } from "arktype"\n\nconsole.log(type({ name: "string" })({ name: 5 }).toString())\n`,
 					"tagged.ts": `import { type } from "arktype"\n\nconsole.log(type({ tags: "string[]" })({ tags: ["a", 5] }).toString())\n`,
+					"keyed.ts": `import { type } from "arktype"\n\nconsole.log(type({ "first-name": "string" })({ "first-name": 5 }).toString())\n`,
 					"flagged.ts": `import { type } from "arktype"
 
 const Flagged = type({ name: "string" }).narrow((_, ctx) =>
@@ -733,11 +734,17 @@ try {
 			const user = await bundleOf("user.ts")
 			attest(run(user)).snap("name must be a string\n")
 			attest(user.includes("`[${")).equals(false)
+			attest(user.includes("JSON.stringify(")).equals(false)
 			attest(user.includes(".text?.(")).equals(false)
 			const tagged = await bundleOf("tagged.ts")
 			attest(run(tagged)).snap("tags[1] must be a string\n")
 			attest(tagged.includes("`[${")).equals(true)
+			attest(tagged.includes("JSON.stringify(")).equals(false)
 			attest(tagged.includes(".text?.(")).equals(false)
+			// a key that isn't an identifier is bracketed, as arktype writes it
+			const keyed = await bundleOf("keyed.ts")
+			attest(run(keyed)).snap('["first-name"] must be a string\n')
+			attest(keyed.includes("JSON.stringify(")).equals(true)
 			// a callback may raise an issue at any path, with any text
 			const flagged = await bundleOf("flagged.ts")
 			attest(run(flagged)).snap("flags[0] is unset\n")

@@ -79,7 +79,9 @@ const run = async () => {
 		`\n${disagreements.length ? "❌" : "✅"} ${precompiledRoots} of ${roots.length} roots precompiled, ${introspected} with their introspection baked (${unbaked} throwing why a schema can't be) and ${folded} folded where a site reads it, ${calls} calls, each in the ${layouts.join(", ")} layouts (${flattened} flattened): ${disagreements.length} disagreeing, ${harnessLimited} beyond the harness`
 	)
 	if (!disagreements.length) return
-	const report = join(await outDir(), "differential.json")
+	const report =
+		process.env.ARK_DIFFERENTIAL_REPORT ??
+		join(await outDir(), "differential.json")
 	writeFileSync(
 		report,
 		JSON.stringify(
