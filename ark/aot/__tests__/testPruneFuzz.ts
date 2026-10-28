@@ -215,6 +215,43 @@ const accesses: Record<string, Access> = {
 	awaited: {
 		imports: v => [`import { ${v.name} } from "${typesOf(v)}"`],
 		ref: v => `(await Promise.resolve(${v.name}))`
+	},
+	// an object literal map, read at a key, a computed key or through a nest
+	objectMap: {
+		imports: v => [`import { ${v.name}, OTHER } from "${typesOf(v)}"`],
+		setup: (v, j) => [`const schemas${j} = { v: ${v.name}, w: OTHER }`],
+		ref: (_, j) => `schemas${j}.v`
+	},
+	objectMapComputed: {
+		imports: v => [`import { ${v.name}, OTHER } from "${typesOf(v)}"`],
+		setup: (v, j) => [
+			`const schemas${j} = { v: ${v.name}, w: OTHER }`,
+			`const key${j}m = ["v", "w"][${j % 2}]`
+		],
+		ref: (_, j) => `schemas${j}[key${j}m]`
+	},
+	objectMapNested: {
+		imports: v => [`import { ${v.name} } from "${typesOf(v)}"`],
+		setup: (v, j) => [`const api${j} = { v1: { v: ${v.name} }, v2: {} }`],
+		ref: (_, j) => `api${j}.v1.v`
+	},
+	objectMapOther: {
+		imports: v => [`import { ${v.name}, OTHER } from "${typesOf(v)}"`],
+		setup: (v, j) => [
+			`const schemas${j} = { v: ${v.name}, w: OTHER }`,
+			`export const other${j} = schemas${j}.w.allows(1)`
+		],
+		ref: (_, j) => `schemas${j}.v`
+	},
+	// a map the types module exports
+	exportedMap: {
+		imports: v => [`import { map } from "${typesOf(v)}"`],
+		ref: v => `map.${v.name}`
+	},
+	exportedMapComputed: {
+		imports: v => [`import { map } from "${typesOf(v)}"`],
+		setup: (v, j) => [`const key${j}e = "${v.name}"`],
+		ref: (_, j) => `map[key${j}e]`
 	}
 }
 
@@ -446,7 +483,12 @@ const followedAccesses: AccessName[] = [
 	"namespace",
 	"default",
 	"conditional",
-	"dynamic"
+	"dynamic",
+	"objectMap",
+	"objectMapComputed",
+	"objectMapNested",
+	"exportedMap",
+	"exportedMapComputed"
 ]
 
 const followedReads: ReadName[] = [
@@ -612,6 +654,7 @@ const filesOf = (app: App): Record<string, string> => {
 			),
 			// a second validator a conditional chooses between
 			`export const OTHER = type("string")`,
+			`export const map = { ${own.map(v => v.name).join(", ")}, OTHER }`,
 			...(app.selfRead ?
 				[`export const firstAllows = ${own[0].name}.allows(0)`]
 			:	[]),
