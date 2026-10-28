@@ -30,7 +30,7 @@ A library ships its definitions unprecompiled, as its source or what `tsc` emits
 }
 ```
 
-Its definitions are then precompiled like the program's. A program can do the same for a package that doesn't opt in, with `"precompile": { "dependencies": { "my-schemas": "aot" } }` in its settings; see [`dependencies`](/docs/precompile/options#dependencies). The plugin and drivers find such packages among those the nearest `package.json` to `cwd` depends on, directly or through other packages, and the plugin keeps Vite and Vitest from prebundling or externalizing them.
+A program can do the same for a package that doesn't opt in, with `"precompile": { "dependencies": { "my-schemas": "aot" } }` in its settings; see [`dependencies`](/docs/precompile/options#dependencies). The plugin and drivers find such packages among those the nearest `package.json` to `cwd` depends on, directly or through other packages, and the plugin keeps Vite and Vitest from prebundling or externalizing them.
 
 A library shouldn't ship what its own build precompiled, which runs only on the arktype it was built with, so the build fails for each dependency that imports `arktype/runtime`.
 
@@ -93,7 +93,7 @@ npm i -D typescript-6@npm:typescript@6
 
 ## Optimizations
 
-What a build writes, for those squeezing it further. Each [option](/docs/precompile/options) changes one part of it.
+What a build writes, and the [options](/docs/precompile/options) that change it.
 
 ### Valid and invalid data
 

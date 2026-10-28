@@ -3,7 +3,7 @@ title: Options
 description: Ship less, and configure a precompiled program.
 ---
 
-A standalone build can leave out what your program doesn't need. Set options in [`ark.json`](#arkjson), which the plugin, the drivers, the CLI and the ESLint rule all read, so each builds the same way; a plugin, driver or CLI call takes them too, and a [preset](#presets) sets several for one goal:
+A standalone build can leave out what your program doesn't need. Set options in [`ark.json`](#arkjson), which the plugin, the drivers, the CLI and the ESLint rule all read, or in a plugin, driver or CLI call:
 
 ```ts
 import { precompile } from "@ark/aot/unplugin"
@@ -42,7 +42,7 @@ The default build compiles each validator to the code that checks its Type faste
 
 <PresetSizeTable />
 
-What it costs is speed. Each validator checks its input through the shared checkers rather than code compiled for its Type, so it validates more slowly than the default build's, and with [`lazy: false`](#lazy) the bundle creates every validator as it loads, so it starts more slowly too. The [benchmarks](/#run) measure the default build. Choose `"smallest"` where your bundle holds more than a handful of Types and validates input as it arrives, like a frontend's forms and API responses. Keep the default for a server and for validation on a hot path. A program reading only [`.allows`](/docs/type-api) gets each validator written as the function checking it, as the default writes it, so it's no larger built `"smallest"`.
+What it costs is speed: the shared checkers validate more slowly than code compiled for each Type, and with [`lazy: false`](#lazy) the bundle creates every validator as it loads, so it starts more slowly too. The [benchmarks](/#run) measure the default build. Choose `"smallest"` where your bundle holds more than a handful of Types and validates input as it arrives, like a frontend's forms and API responses. Keep the default for a server and for validation on a hot path. A program reading only [`.allows`](/docs/type-api) gets each validator written as the function checking it, as the default writes it, so it's no larger built `"smallest"`.
 
 A [production bundle](#prune) built as one chunk by `"smallest"` also decides, from the Types it holds, how to write them smallest: checkers or compiled code, each validator declared once among the checkers others read, and common Types like `1 <= string <= 50`, `number.integer >= 0`, `string[] <= 10` and `string | null` as checkers of their own where enough of them repay that runtime.
 
@@ -50,9 +50,9 @@ A [production bundle](#prune) built as one chunk by `"smallest"` also decides, f
 
 In development and tests, validators check at runtime what the build verified, so a program the build couldn't fully see fails where it would otherwise misbehave:
 
-- `freeze`: validators and their members are frozen, so writing to one throws in strict mode code.
-- `creationChecks: "types"`: a factory checks at creation that each Type, Module, Scope and Generic it receives is the one the build read, as a module mock or hot reload could replace it, and that what it reads through an import cycle is already set. Under Vitest, `node --test` and `bun test` it's `"helpers"`, checking each static helper too.
-- `config`: the first validator created fixes the configuration, so a `configure()` the build didn't find throws.
+- [`freeze`](#freeze): writing to a validator or its members throws in strict mode code.
+- [`creationChecks`](#creationchecks): a factory checks at creation that each Type, Module, Scope and Generic it receives is the one the build read, as a module mock or hot reload could replace it, and that what it reads through an import cycle is already set.
+- [`config`](#configuration): the first validator created fixes the configuration, so a `configure()` the build didn't find throws.
 
 A production build leaves these out, as `freeze: false`, `creationChecks: "none"` and `config: false`, unless an option or `ark.json` sets one. A factory still checks each function another module supplies. What counts as production:
 
@@ -140,7 +140,7 @@ precompile.vite({
 
 ### optimize and optimizeErrors
 
-`optimize: "size"` writes validators for size rather than speed. With detailed errors, each node becomes a call to one of a few small runtime checkers, like `props({ name: ... })`, each describing what it checks from its rule, so the build writes a description only where yours differs, and each site creates its validator in place. A module whose Types are too few to pay for the checkers' runtime has its nodes compiled instead. Validators are then slower, most where one calls several others in turn, so prefer it where bundle size matters more than validation speed. Writing a default copies data as other builds do, except that an instance of any native class, not only those arktype lists, is written in place.
+`optimize: "size"` writes validators for size rather than speed. With detailed errors, each node becomes a call to one of a few small runtime checkers, like `props({ name: ... })`, each describing what it checks from its rule, so the build writes a description only where yours differs, and each site creates its validator in place. A module whose Types are too few to pay for the checkers' runtime has its nodes compiled instead. Validators are then slower, most where one calls several others in turn. Writing a default copies data as other builds do, except that an instance of any native class, not only those arktype lists, is written in place.
 
 `optimizeErrors` writes errors the same way, and is `optimize` unless set. Errors written for size are the smallest a build can return, and reading their issues is slower, but they have the same `count`, `issues`, `summary`, `throw()`, `toJSON()` and `toString()` as other errors, and `instanceof type.errors` recognizes them.
 

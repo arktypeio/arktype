@@ -19,9 +19,9 @@ export default {
 }
 ```
 
-Your definitions stay as you wrote them. [Setup](https://arktype.io/docs/precompile/setup) covers every bundler, test runner and Next.
+[Setup](https://arktype.io/docs/precompile/setup) covers every bundler, test runner and Next.
 
-Precompiled validators have always been faster and smaller. What they cost was a build step: setup, new errors and a second model of what runs where. If an agent runs your local dev, that's one more loop it's already good at, and every error names its fix, so you get the speed and size [without the cost](https://arktype.io/docs/precompile#with-agents). Where a program needs arktype at runtime, `runtime: "arktype"` ships it for what can't be precompiled.
+Precompiled validators have always been faster and smaller. What they cost was a build step: setup, new errors and a second model of what runs where. If an agent runs your local dev, that's one more loop it's already good at, and every error names its fix, so you get the speed and size [without the cost](https://arktype.io/docs/precompile#with-agents).
 
 ## Speed and size
 
@@ -45,7 +45,7 @@ A validator that compiles at runtime ships its compiler, and one that interprets
 
 In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled with its defaults, it reports an error for every invalid field of Valibot's own login form, with the form's messages, in a smaller bundle than Valibot. Each chart names its benchmark and the options ArkType was built with.
 
-Because every Type is built when you build, a precompiled validator has no initialization cost, and because nothing is generated at runtime, it runs under a Content-Security-Policy that blocks `eval`.
+A precompiled validator has no initialization cost, and since nothing is generated at runtime, it runs under a Content-Security-Policy that blocks `eval`.
 
 ## Optimized by set theory
 
@@ -116,7 +116,7 @@ If you need the whole Type API at runtime, build with `runtime: "arktype"`: arkt
 
 > The same definitions, run two ways.
 
-Every ArkType definition can run dynamically, created by `type()` at runtime, or [precompiled](https://arktype.io/docs/precompile), constructed when you build. Your definitions and their inferred types are identical either way, so you can switch at any time.
+Every ArkType definition can run dynamically, created by `type()` at runtime, or [precompiled](https://arktype.io/docs/precompile), constructed when you build. It infers the same type either way, so you can switch at any time.
 
 In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType. What precompiling removes is everything around a Type's checks: the parser, the time it takes to create each Type, and the code it generates.
 
@@ -165,7 +165,7 @@ export default defineConfig({
 })
 ```
 
-Vitest runs tests through the same plugin. With a framework's plugins, list it after them, as [Frameworks](https://arktype.io/docs/precompile/setup#frameworks) shows.
+Vitest runs tests through the same plugin. With a framework, list it right after the framework's plugin, as [Frameworks](https://arktype.io/docs/precompile/setup#frameworks) shows.
 
 **esbuild**
 
@@ -333,7 +333,7 @@ With Vite, list `precompile.vite()` right after your framework's plugin, and ahe
 | Next.js | See [Next.js](https://arktype.io/docs/precompile/setup#next) |
 | Cloudflare Workers | With `@cloudflare/vite-plugin`, `plugins: [cloudflare(), precompile.vite()]` in `vite.config.ts`. Wrangler bundles with esbuild but takes no plugins, so without Vite, build the worker with esbuild and `precompile.esbuild()` from Wrangler's `build.command`, and point `main` at its output. Workers don't let arktype compile a validator as it runs, which a precompiled one doesn't need |
 | Monorepos | Nothing extra. A workspace package linked into `node_modules`, as pnpm, npm, Yarn and Bun workspaces link it, resolves to its own directory, so the build precompiles it with the program |
-| Jest | Not supported. It has no driver, so it runs your Types on arktype, unprecompiled. See [Test runners](https://arktype.io/docs/precompile/setup#test-runners) |
+| Jest | Not supported. See [Test runners](https://arktype.io/docs/precompile/setup#test-runners) |
 | Deno | A bundler plugin works under Deno, e.g. `deno run -A npm:vite build` with `precompile.vite()`. There's no driver, so `deno run` on your source loads arktype unprecompiled |
 | React Native (Metro) | Not supported. Metro caches each module by its own text, so a module whose validators are written from a Type it imports would keep them after that Type changed. Precompile the modules defining your Types as a package of their own, with `tsc && arktype-precompile --emit` ([Build with tsc](https://arktype.io/docs/precompile/setup#tsc)), and import that package, rather than `arktype`, from the app |
 | Parcel | Not supported. Bundle with a [supported bundler](https://arktype.io/docs/precompile/setup#bundlers) |
@@ -535,7 +535,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 
 The build resolves an import as TypeScript does, and where that fails, a bundler's plugin or loader asks the bundler, so an import only an alias in the bundler's config names, like Nuxt's `#shared` without its `tsconfig.json`, is checked like any other. `--check`, the ESLint rule, Bun and the Node driver resolve as TypeScript does alone.
 
-Composing inside a definition is fine, since the build evaluates it: `export const Admin = User.and({ role: "'admin'" })` is precompiled to a validator of its own. So is [`.encode`](https://arktype.io/docs/codecs) wherever the build sees it read, like `const encode = (event: unknown) => Event.encode(event)`: the encoder is precompiled like any other Type, and receives each codec's `encode` function from the validator holding it. The build installs encoding itself, so a precompiled `.encode` works even where the program never imports `arktype/codecs`.
+Composing inside a definition is fine, since the build evaluates it: `export const Admin = User.and({ role: "'admin'" })` is precompiled to a validator of its own. So is [`.encode`](https://arktype.io/docs/codecs#precompiling) wherever the build sees it read, like `const encode = (event: unknown) => Event.encode(event)`, even where the program never imports `arktype/codecs`.
 
 A validator and its members are frozen, except a Date or RegExp it holds, unless the build sets [`freeze: false`](https://arktype.io/docs/precompile/options#freeze), as a [production build](https://arktype.io/docs/precompile/options#production-builds) does by default.
 
@@ -588,7 +588,7 @@ To leave only some definitions to arktype in a standalone build, mark them as [r
 
 > Ship less, and configure a precompiled program.
 
-A standalone build can leave out what your program doesn't need. Set options in [`ark.json`](https://arktype.io/docs/precompile/options#arkjson), which the plugin, the drivers, the CLI and the ESLint rule all read, so each builds the same way; a plugin, driver or CLI call takes them too, and a [preset](https://arktype.io/docs/precompile/options#presets) sets several for one goal:
+A standalone build can leave out what your program doesn't need. Set options in [`ark.json`](https://arktype.io/docs/precompile/options#arkjson), which the plugin, the drivers, the CLI and the ESLint rule all read, or in a plugin, driver or CLI call:
 
 ```ts
 precompile.vite({
@@ -630,7 +630,7 @@ The default build compiles each validator to the code that checks its Type faste
 | 200 Types | 37.4 KB | 11.2 KB | 11.3 KB |
 | 1,000 Types | 154 KB | 38.4 KB | 39.5 KB |
 
-What it costs is speed. Each validator checks its input through the shared checkers rather than code compiled for its Type, so it validates more slowly than the default build's, and with [`lazy: false`](https://arktype.io/docs/precompile/options#lazy) the bundle creates every validator as it loads, so it starts more slowly too. The [benchmarks](https://arktype.io/#run) measure the default build. Choose `"smallest"` where your bundle holds more than a handful of Types and validates input as it arrives, like a frontend's forms and API responses. Keep the default for a server and for validation on a hot path. A program reading only [`.allows`](https://arktype.io/docs/type-api) gets each validator written as the function checking it, as the default writes it, so it's no larger built `"smallest"`.
+What it costs is speed: the shared checkers validate more slowly than code compiled for each Type, and with [`lazy: false`](https://arktype.io/docs/precompile/options#lazy) the bundle creates every validator as it loads, so it starts more slowly too. The [benchmarks](https://arktype.io/#run) measure the default build. Choose `"smallest"` where your bundle holds more than a handful of Types and validates input as it arrives, like a frontend's forms and API responses. Keep the default for a server and for validation on a hot path. A program reading only [`.allows`](https://arktype.io/docs/type-api) gets each validator written as the function checking it, as the default writes it, so it's no larger built `"smallest"`.
 
 A [production bundle](https://arktype.io/docs/precompile/options#prune) built as one chunk by `"smallest"` also decides, from the Types it holds, how to write them smallest: checkers or compiled code, each validator declared once among the checkers others read, and common Types like `1 <= string <= 50`, `number.integer >= 0`, `string[] <= 10` and `string | null` as checkers of their own where enough of them repay that runtime.
 
@@ -638,9 +638,9 @@ A [production bundle](https://arktype.io/docs/precompile/options#prune) built as
 
 In development and tests, validators check at runtime what the build verified, so a program the build couldn't fully see fails where it would otherwise misbehave:
 
-- `freeze`: validators and their members are frozen, so writing to one throws in strict mode code.
-- `creationChecks: "types"`: a factory checks at creation that each Type, Module, Scope and Generic it receives is the one the build read, as a module mock or hot reload could replace it, and that what it reads through an import cycle is already set. Under Vitest, `node --test` and `bun test` it's `"helpers"`, checking each static helper too.
-- `config`: the first validator created fixes the configuration, so a `configure()` the build didn't find throws.
+- [`freeze`](https://arktype.io/docs/precompile/options#freeze): writing to a validator or its members throws in strict mode code.
+- [`creationChecks`](https://arktype.io/docs/precompile/options#creationchecks): a factory checks at creation that each Type, Module, Scope and Generic it receives is the one the build read, as a module mock or hot reload could replace it, and that what it reads through an import cycle is already set.
+- [`config`](https://arktype.io/docs/precompile/options#configuration): the first validator created fixes the configuration, so a `configure()` the build didn't find throws.
 
 A production build leaves these out, as `freeze: false`, `creationChecks: "none"` and `config: false`, unless an option or `ark.json` sets one. A factory still checks each function another module supplies. What counts as production:
 
@@ -726,7 +726,7 @@ precompile.vite({
 
 ### optimize and optimizeErrors
 
-`optimize: "size"` writes validators for size rather than speed. With detailed errors, each node becomes a call to one of a few small runtime checkers, like `props({ name: ... })`, each describing what it checks from its rule, so the build writes a description only where yours differs, and each site creates its validator in place. A module whose Types are too few to pay for the checkers' runtime has its nodes compiled instead. Validators are then slower, most where one calls several others in turn, so prefer it where bundle size matters more than validation speed. Writing a default copies data as other builds do, except that an instance of any native class, not only those arktype lists, is written in place.
+`optimize: "size"` writes validators for size rather than speed. With detailed errors, each node becomes a call to one of a few small runtime checkers, like `props({ name: ... })`, each describing what it checks from its rule, so the build writes a description only where yours differs, and each site creates its validator in place. A module whose Types are too few to pay for the checkers' runtime has its nodes compiled instead. Validators are then slower, most where one calls several others in turn. Writing a default copies data as other builds do, except that an instance of any native class, not only those arktype lists, is written in place.
 
 `optimizeErrors` writes errors the same way, and is `optimize` unless set. Errors written for size are the smallest a build can return, and reading their issues is slower, but they have the same `count`, `issues`, `summary`, `throw()`, `toJSON()` and `toString()` as other errors, and `instanceof type.errors` recognizes them.
 
@@ -876,7 +876,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 
 Positions are your source's, even where another plugin transpiled it first. Run [`arktype-precompile --check`](https://arktype.io/docs/precompile/setup#check-an-existing-project) to see every report at once.
 
-Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency shipping precompiled validators, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `or set allowUnsafe: true to build anyway, with a warning.` [`allowUnsafe`](https://arktype.io/docs/precompile/options#allowunsafe) reports those as warnings instead, and what they report may then throw at runtime. What a build with `runtime: "arktype"` leaves to arktype is always reported as a warning, since nothing fails at runtime.
+Where the fix is clear and the problem could throw at runtime, the build fails. Where it could still write output, as for a dependency shipping precompiled validators, a read off an import it can't resolve or a definition that throws a ParseError, the hint ends `or set allowUnsafe: true to build anyway, with a warning.` What [`allowUnsafe`](https://arktype.io/docs/precompile/options#allowunsafe) builds past may then throw at runtime. What a build with `runtime: "arktype"` leaves to arktype is always reported as a warning, since nothing fails at runtime.
 
 ## Not supported
 
@@ -902,7 +902,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`... cannot be precompiled`**: the definition reads a value known only at runtime, like a parameter or the result of a call the build can't evaluate. The hint names the value, as in ``Replace `process.env.MAX` with a value the build can read``: make it a literal or a const holding one, mark the definition as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`. A helper whose body is one expression, or consts and one `return`, like ``(max: number) => type(`0 < string <= ${max}`)``, precompiles at each call passing it values the build can read, like literals, consts and Types. For a parameter of another function, write the definition or the call where that function is called, with the value it passes.
 
-**`` `text` (...) is not a static helper: it runs `if (max > 1000) ...` ``**: the build evaluates a helper's body at each call only when it's one expression, or consts and one `return`. Any other statement, like an `if`, a `let` or a loop, keeps it from evaluating the call, which then can't be precompiled. Write the helper in that shape, as the hint says, e.g. a check moved into a conditional expression or the definition itself.
+**`` `text` (...) is not a static helper: it runs `if (max > 1000) ...` ``**: the build evaluates a helper's body at each call only when it's one expression, or consts and one `return`, so any other statement, like an `if`, a `let` or a loop, keeps its calls from being precompiled. Write the helper in that shape, e.g. with a check moved into a conditional expression or the definition itself.
 
 **`the function at ... is created by each call to a static helper, so the precompiled site cannot reach it`**: a helper returning a function, like `labeled(labels)` returning `{ message: ctx => ... }`, creates a new one at each call, which a precompiled validator can't refer to. Declare the function in the module and pass it, as in `const message = (ctx: ArkError) => messageOf(labels, ctx)` and `.configure({ message })`.
 
@@ -920,7 +920,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`... throws a ParseError`**: the definition is invalid, like an intersection that can never be satisfied, so the build fails, with `runtime: "arktype"` too. Fix the definition. Under `allowUnsafe` it's a warning, and the definition throws the same ParseError at runtime, as a test expecting one means it to.
 
-**`` `// @ark-runtime` marks nothing ``**, **`` `const x = 1` is marked // @ark-runtime but doesn't use arktype ``** or **`... is marked // @ark-runtime inside a definition the build precompiles`**: a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands) marker that leaves nothing to arktype, since nothing follows it, what follows doesn't use arktype, or it's inside a definition the build precompiles. Put `// @ark-runtime` right before a definition arktype should run, or remove it. `allowUnsafe` doesn't change this.
+**`` `// @ark-runtime` marks nothing ``**, **`` `const x = 1` is marked // @ark-runtime but doesn't use arktype ``** or **`... is marked // @ark-runtime inside a definition the build precompiles`**: a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands) marker leaves nothing to arktype. Put `// @ark-runtime` right before a definition arktype should run, or remove it. `allowUnsafe` doesn't change this.
 
 ## Reads
 
@@ -1004,7 +1004,7 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 
 **`prune: keeping assert, meta, ~standard and methods, because src/server.ts:12:30 passes User to a function, which may read any member`**: a production build couldn't prove what its validators are read for, so it kept each member [`members`](https://arktype.io/docs/precompile/options#members) leaves to it. The warning names the first read or module that stopped it, as [prune](https://arktype.io/docs/precompile/options#prune) lists them. Set each member it names in `members`, false where no code reads it, like `assert` where nothing asserts, and true where a library may, like `~standard` for one taking a Standard Schema. The build then writes what you set without the warning, and still prunes what else it can. `prune: false` would build each unit as a module of its own as well, which is larger.
 
-**`the bundle it built reads more than the modules it read: a module reads assert of a validator. Another plugin wrote or rewrote a module after it read it`**: a production build reads each module from its file to [prune](https://arktype.io/docs/precompile/options#prune), then reads the bundle again as it was built, and a module another plugin wrote or rewrote reads a member no module it read does, which it left out of its validators. A plugin ahead of arktype's that adds a read, like a macro, has to come after it: list `precompile.vite()` right after your framework's plugin and ahead of `react()` and any Babel plugin, as [Frameworks](https://arktype.io/docs/precompile/setup#frameworks) shows. Where a plugin after it adds the read, set `prune: false`.
+**`the bundle it built reads more than the modules it read: a module reads assert of a validator. Another plugin wrote or rewrote a module after it read it`**: a production build reads each module from its file to [prune](https://arktype.io/docs/precompile/options#prune), so a module another plugin wrote or rewrote can read a member the build left out. A plugin ahead of arktype's that adds a read, like a macro, has to come after it: list `precompile.vite()` right after your framework's plugin and ahead of `react()` and any Babel plugin, as [Frameworks](https://arktype.io/docs/precompile/setup#frameworks) shows. Where a plugin after it adds the read, set `prune: false`.
 
 **`prune: off, because src/routes.ts:3:1 reads import.meta.glob, which may load modules it can't name`**: a production build couldn't read every module the bundle holds, so it built its validators as `prune: false` does. Set `prune: false` to build them the same without the warning.
 
@@ -1044,7 +1044,7 @@ A library ships its definitions unprecompiled, as its source or what `tsc` emits
 }
 ```
 
-Its definitions are then precompiled like the program's. A program can do the same for a package that doesn't opt in, with `"precompile": { "dependencies": { "my-schemas": "aot" } }` in its settings; see [`dependencies`](https://arktype.io/docs/precompile/options#dependencies). The plugin and drivers find such packages among those the nearest `package.json` to `cwd` depends on, directly or through other packages, and the plugin keeps Vite and Vitest from prebundling or externalizing them.
+A program can do the same for a package that doesn't opt in, with `"precompile": { "dependencies": { "my-schemas": "aot" } }` in its settings; see [`dependencies`](https://arktype.io/docs/precompile/options#dependencies). The plugin and drivers find such packages among those the nearest `package.json` to `cwd` depends on, directly or through other packages, and the plugin keeps Vite and Vitest from prebundling or externalizing them.
 
 A library shouldn't ship what its own build precompiled, which runs only on the arktype it was built with, so the build fails for each dependency that imports `arktype/runtime`.
 
@@ -1101,7 +1101,7 @@ npm i -D typescript-6@npm:typescript@6
 
 ## Optimizations
 
-What a build writes, for those squeezing it further. Each [option](https://arktype.io/docs/precompile/options) changes one part of it.
+What a build writes, and the [options](https://arktype.io/docs/precompile/options) that change it.
 
 ### Valid and invalid data
 

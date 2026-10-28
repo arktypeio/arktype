@@ -16,9 +16,9 @@ export default {
 }
 ```
 
-Your definitions stay as you wrote them. [Setup](/docs/precompile/setup) covers every bundler, test runner and Next.
+[Setup](/docs/precompile/setup) covers every bundler, test runner and Next.
 
-Precompiled validators have always been faster and smaller. What they cost was a build step: setup, new errors and a second model of what runs where. If an agent runs your local dev, that's one more loop it's already good at, and every error names its fix, so you get the speed and size [without the cost](#with-agents). Where a program needs arktype at runtime, `runtime: "arktype"` ships it for what can't be precompiled.
+Precompiled validators have always been faster and smaller. What they cost was a build step: setup, new errors and a second model of what runs where. If an agent runs your local dev, that's one more loop it's already good at, and every error names its fix, so you get the speed and size [without the cost](#with-agents).
 
 ## Speed and size
 
@@ -26,7 +26,7 @@ A validator that compiles at runtime ships its compiler, and one that interprets
 
 <ClaimCharts />
 
-Because every Type is built when you build, a precompiled validator has no initialization cost, and because nothing is generated at runtime, it runs under a Content-Security-Policy that blocks `eval`.
+A precompiled validator has no initialization cost, and since nothing is generated at runtime, it runs under a Content-Security-Policy that blocks `eval`.
 
 ## Optimized by set theory
 
