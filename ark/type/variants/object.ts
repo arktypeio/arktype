@@ -253,8 +253,7 @@ type mappedBranches<branch, prop, entry, key, $> =
 		constructMapped<branch, branchPropsOf<branch, prop, entry, key, $>>
 	:	never
 
-// the branch's own props returned as they were, other props at its keys,
-// and props at keys no branch has
+// the branch's own props as they were, other props at its keys, and props at keys no branch has
 type branchPropsOf<branch, prop, entry, key, $> =
 	| Extract<prop, typePropOf<branch, $>>
 	| (Exclude<prop, entry> extends infer p ?

@@ -270,8 +270,7 @@ export abstract class BaseRoot<
 							writeNonStructuralOperandMessage("merge", branch.expression)
 						)
 				])
-				// the merged-in object's settings are the result's, as a spread's
-				// are, and its meta, like "@", is one
+				// the merged-in object's settings and meta are the result's, as a spread's are
 				return isEmptyObject(branch.meta) ? merged : (
 						merged.map(result => result.configure(branch.meta))
 					)
@@ -554,8 +553,7 @@ export abstract class BaseRoot<
 			)
 		}
 
-		// a basis has no constraint for this one to meet, so their intersection
-		// is the result, and a constraint alone has nothing to reduce
+		// a basis has no constraint to meet, and a constraint alone has nothing to reduce
 		const meetsBasis =
 			io === "root" && this.hasKindIn("domain", "proto") && kind !== "predicate"
 

@@ -28,13 +28,11 @@ import {
 import { createSyncPrecompiler } from "./worker.ts"
 
 export interface EmittedModules {
-	// each output's text by its path, for the modules the build changes
 	files: Record<string, string>
 	errors: string[]
 	warnings: string[]
 }
 
-// rewrites the JavaScript tsc emits for each module that imports arktype
 export const emitPrecompiled = (
 	opts?: PrecompilePluginOptions
 ): EmittedModules => {
@@ -51,7 +49,6 @@ export const emitPrecompiled = (
 	const request = createSyncPrecompiler({
 		precompilerOptions: {
 			...withEnvironment(set, {
-				// a build, unless NODE_ENV says otherwise
 				production: (process.env.NODE_ENV ?? "production") === "production",
 				testing: false
 			}),
@@ -210,8 +207,7 @@ const emitProject = (
 	}
 }
 
-// a precompiled module reads what it imports before its first statement, which
-// ESM imports first but tsc's CommonJS requires where the import was
+// tsc's CommonJS requires where the import was, but a precompiled module reads its imports first
 const hoistImportsOf =
 	(ts: TypeScript): ts.TransformerFactory<ts.SourceFile> =>
 	context =>
@@ -231,7 +227,6 @@ const hoistImportsOf =
 		])
 	}
 
-// arktype's entries become the runtime in import, export, import() and require()
 const rewriterOf =
 	(
 		ts: TypeScript,

@@ -662,7 +662,6 @@ const forEachChild = (node: Node, f: (child: Node) => void) => {
 	}
 }
 
-// e.g. "./a.ts" in `import("./a.ts")` or `require("./a.ts")`
 export const loadedSourceOf = (node: Node): Node | undefined =>
 	node.type === "ImportExpression" ? node.source
 	: (

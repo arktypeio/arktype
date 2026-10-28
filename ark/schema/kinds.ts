@@ -98,9 +98,7 @@ export const nodeImplementationsByKind: Record<
 const describeRequired: Locale.ExpectedWriter<"required"> = (e, locale) =>
 	describeMissing(e.missing, locale)
 
-// a leaf error carries its node's inner fields, so the node's description
-// writer describes it, while union and intersection have their own and
-// required describes what is missing
+// a leaf error carries its node's inner fields, so the node's description writer describes it
 const enWritersOf = (
 	kind: NodeKind,
 	defaults: ResolvedUnknownNodeConfig
@@ -148,8 +146,7 @@ export const en: Locale.Complete = {
 	},
 	...enInfo,
 	cite: text => text,
-	// a domain is named by its noun whatever its meta, as DomainNode's
-	// brief does
+	// a domain is named by its noun whatever its meta, as DomainNode's brief does
 	basis: (basis, locale) =>
 		basis.code === "domain" ? locale.nouns[basis.domain]
 		: basis.meta.description === undefined ?

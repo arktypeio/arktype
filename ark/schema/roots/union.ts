@@ -149,7 +149,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	readonly caseNodes: BaseRoot[] = []
 
 	private _disc: Discriminant | null | undefined
-	// discriminated when first read
 	get discriminant(): Discriminant | null {
 		if (this._disc === undefined) {
 			// null while discriminating, which can read this union's references
@@ -298,8 +297,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		this.applyBranches(data, ctx)
 	}
 
-	// data matching no case fails each branch at the discriminant, unless the
-	// discriminant can't be read from it, which then tells no branch apart
+	// a discriminant that can't be read from data tells no branch apart
 	applyMiss(data: unknown, ctx: InternalTraversal, value: unknown): boolean {
 		if (this.missLists || !readsPath(this.discriminant!.path, data))
 			this.applyBranches(data, ctx)
@@ -307,8 +305,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return !ctx.failFast
 	}
 
-	// data in the default case was matched by no case, so the branches without
-	// the discriminant fail beside its miss
+	// the branches without the discriminant fail beside its miss
 	applyDefault(data: unknown, ctx: InternalTraversal, value: unknown): boolean {
 		ctx.pushBr()
 		applyMember(this.discriminant!.cases.default as BaseRoot, data, ctx)
@@ -341,8 +338,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	private _missContexts: omit<DiscriminantErrorContext, "data">[] | undefined
-	// a miss's contexts, present and absent, built once as a node's is so its
-	// errors share a builder
+	// built once, as a node's is, so its errors share a builder
 	private get missContexts(): omit<DiscriminantErrorContext, "data">[] {
 		return (this._missContexts ??= [false, true].map(
 			(absent): omit<DiscriminantErrorContext, "data"> => ({
@@ -372,8 +368,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	tTransform(data: unknown, ctx: InternalTraversal): unknown {
-		// found if it wasn't, as the case it picks can differ from the first
-		// branch allowing data, e.g. a unit a morph's input overlaps
+		// the case it picks can differ from the first branch allowing data
 		const discriminant = this.discriminant
 		if (discriminant) {
 			const k = caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
@@ -413,8 +408,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	compile(js: NodeCompiler): void {
 		const discriminant = this.discriminant
 		if (!discriminant) return this.jsIndisc(js)
-		// two branches of different domains are checked in turn, a unit first,
-		// which is cheaper than finding data's domain
+		// two branches of different domains are checked in turn, a unit first
 		if (
 			js.trav === "Allows" &&
 			discriminant.kind === "domain" &&
@@ -507,7 +501,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					`!ctx.failsUnion([${this.branches.map(branch => js.traversal(branch, "Apply")).join(", ")}], ${js.site(this)}, data)`
 			)
 		} else if (js.trav === "Apply") {
-			// each branch is applied once, as Allows can't enter its resolution
 			// a compiler writing unionFails needs no branch errors
 			const collects = !js.unionFails
 			if (collects) js.const("errors", "[]")
@@ -560,9 +553,7 @@ export const Union = {
 
 const maxInlinedBranches = 4
 
-// the name of a value's domain a switch with these case labels reads: a
-// function's is "object", and without an object case, any but null's is its
-// typeof
+// a function's is "object"; without an object case, any but null's is its typeof
 export const compileDomainOf = (
 	value: string,
 	labels: readonly string[]
@@ -577,7 +568,6 @@ export const compileDomainOf = (
 const expressBranch = (branch: Union.ChildNode): string =>
 	branch.is("intersection") ? branch.expression : branch.nestedExpr
 
-// whether each key on a path is read from an object, or an array at an index
 const readsPath = (path: array<PropertyKey>, data: unknown): boolean => {
 	let parent: any = data
 	for (const k of path) {
@@ -647,7 +637,6 @@ const metaAtDiscriminant = (
 	return rest
 }
 
-// the inverse of unitKeyOf
 const unitOf = (k: string): unknown =>
 	k.startsWith(registeredPrefix) ? $ark[k.slice(registeredPrefix.length)]
 	: k.endsWith("n") ? BigInt(k.slice(0, -1))

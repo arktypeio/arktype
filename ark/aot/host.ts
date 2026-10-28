@@ -22,9 +22,7 @@ import type { PrecompileOptions } from "./precompile.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
 
 export interface PrecompileHost {
-	// isValueImport, where given, says whether the import may carry a value,
-	// as a Type is, which a host asking the bundler what it can't resolve
-	// asks only for one that may
+	// a host asks the bundler only for an import isValueImport says may carry a value
 	resolve(
 		specifier: string,
 		importer: string,
@@ -36,7 +34,6 @@ export interface PrecompileHost {
 }
 
 export interface NodeHostOptions {
-	// export conditions to resolve with, in priority order
 	conditions?: string[] | undefined
 	// whose `paths` to follow, else found from each importer
 	tsconfig?: string | undefined
@@ -119,11 +116,9 @@ export type DependencyMode = "aot" | "arktype"
 
 export type DependencyModes = Record<string, DependencyMode>
 
-// what a dependency's imports of arktype resolve to where it runs on
-// arktype, as a runtime island's do
+// what a dependency's imports of arktype resolve to where it runs on arktype
 export const islandDependencySpecifier = "arktype/internal/islandDependency.js"
 
-// a dependency the program's settings run on arktype
 export const runsOnArktype = (
 	importer: string | undefined,
 	dependencies: DependencyModes | undefined
@@ -132,8 +127,7 @@ export const runsOnArktype = (
 	return !!name && dependencies?.[name] === "arktype"
 }
 
-// the package in node_modules a file belongs to, if any, from the innermost
-// node_modules it names one in
+// from the innermost node_modules the file names a package in
 export const dependencyOf = (
 	file: string
 ): [root: string, name: string] | undefined => {
@@ -150,20 +144,16 @@ export const dependencyOf = (
 	}
 }
 
-// read from each start rather than through a leading .*, which backtracks
-// across a long path once for every character
+// a leading .* would backtrack across a long path once per character
 const nodeModulesSegment = /[/\\]node_modules(?=[/\\])/g
 
 const packageInNodeModules =
 	/[/\\]node_modules[/\\]((?:@[^/\\]+[/\\])?[^/\\]+)/y
 
-// a module's file as the resolver writes it. Vite writes / on Windows, and
-// an entry under a root given through a symlink or an 8.3 name like RUNNER~1
-// keeps that form, where the modules it imports don't
+// Vite writes / on Windows, and an entry keeps a symlink or 8.3 name like RUNNER~1 where its imports don't
 export const fileOf = (id: string): string =>
 	isAbsolute(id) ? realPathOf(id) : id
 
-// a path as the resolver writes it, through symlinks and 8.3 names
 export const realPathOf = (path: string): string => {
 	try {
 		return realpathSync.native(path)
@@ -172,11 +162,9 @@ export const realPathOf = (path: string): string => {
 	}
 }
 
-// a path as messages print it, with / on every platform
 export const printablePathOf = (from: string, to: string): string =>
 	relative(from, to).split(sep).join("/")
 
-// the directory of the nearest package.json
 export const projectOf = (cwd: string): string => {
 	let project = cwd
 	while (
@@ -227,7 +215,6 @@ export const optedInPackagesOf = (
 	return result
 }
 
-// where Node finds a package imported from a directory
 export const packageRootOf = (
 	name: string,
 	from: string
@@ -252,7 +239,6 @@ export const appendSourceMap = (
 		`${code}\n//# sourceMappingURL=data:application/json;base64,${Buffer.from(JSON.stringify(map)).toString("base64")}`
 	:	code
 
-// arktype's entries
 export const runtimeSpecifiers = [
 	"arktype",
 	"arktype/codecs",
@@ -277,10 +263,8 @@ export const resolvesToRuntime = (
 	opts?.runtime !== "arktype" &&
 	!(opts?.shadow && specifier !== "arktype/config")
 
-// a copy of @ark/schema's runtime with errors of its own
 export type RuntimeVariant = "none" | "lean" | "none-lean"
 
-// errors "none", or errors written for size
 export const runtimeVariantOf = (
 	opts: PrecompileOptions | undefined
 ): RuntimeVariant | undefined =>
@@ -313,8 +297,7 @@ export const variantSpecifierOf = (
 		`@ark/schema/runtime/${variant}`
 	:	undefined
 
-// @ark/schema's constants for what a program's issues may hold, which a build
-// reading each of its validators writes again
+// @ark/schema's constants for what a program's issues may hold, written again per build
 export const issueFeaturesFile =
 	/[/\\]@?ark[/\\]schema(?:[/\\]out)?[/\\]shared[/\\]issueFeatures\.[jt]s$/
 
@@ -323,7 +306,6 @@ export const writeIssueFeatures = (issues: IssueFeatures): string =>
 		.map(([name, holds]) => `export const ${name} = ${holds}\n`)
 		.join("")
 
-// whether a build drops what reads a feature none of its issues hold
 export const narrowsIssues = (issues: IssueFeatures | undefined): boolean =>
 	!!issues && Object.values(issues).includes(false)
 
@@ -396,7 +378,6 @@ export const writeUncachedModuleMessage = (
 ): string =>
 	`${specifier} was written by a build whose cache kept it in ${dir}, where it no longer is. Delete the bundler's cache to rebuild it.`
 
-// e.g. "@ark/schema" for "@ark/schema/runtime"
 export const packageNameOf = (specifier: string): string =>
 	specifier.split("/", specifier.startsWith("@") ? 2 : 1).join("/")
 
@@ -453,8 +434,7 @@ export const unbundledMessage =
 // arktype's own packages, which read their nodes and import the runtime by design
 export const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
 
-// e.g. @ark/json-schema, which reads arktype's nodes where a runtime island
-// calls it, so it imports arktype itself rather than its runtime
+// e.g. @ark/json-schema, which reads arktype's nodes, so imports arktype rather than its runtime
 export const readsNodes = (importer: string | undefined): boolean => {
 	const [, name] = (importer && dependencyOf(importer.split("?")[0])) || []
 	return !!name && /^(?:arksets|@ark\/(?:json-schema|fast-check))$/.test(name)
@@ -523,7 +503,6 @@ export interface EmittedMap {
 	sourcesContent?: (string | null)[]
 }
 
-// a map to the precompiled module, as tsc's or the linker's, traced to the source
 export const mapToSource = (
 	emitted: EmittedMap,
 	precompiled: EmittedMap | undefined,

@@ -93,7 +93,6 @@ export const precompile = (
 	link.reused = reused
 	for (const node of references) link.byId[node.id] = node
 	const declared: BaseNode[] = []
-	// a root's unit declares the references its traversals reach, and binds them
 	const pruned = new Set<BaseNode>()
 	for (const node of references) {
 		if (node.c.isReusableLeaf && isLeafIn(node, link.byId)) reused.add(node)
@@ -120,7 +119,6 @@ export const precompile = (
 	)
 	const bound = [...declared]
 	const boundTraversals = traversals.slice(0, declared.length)
-	// the unit declares what it reached after what it was given
 	for (let i = 0; i < link.reached.length; i++) {
 		if (!pruned.has(link.reached[i])) continue
 		bound.push(link.reached[i])
@@ -148,7 +146,6 @@ export const precompileRoot = (
 	if ($ark.inPlace) root.c.unbound = unbound
 }
 
-// compiles in-place traversals for what root's writers reach
 export const precompileInPlace = (
 	root: BaseRoot,
 	unbound: UnboundTraversals | undefined
@@ -164,7 +161,6 @@ export const precompileInPlace = (
 		}
 	>()
 	const include = (node: BaseNode): void => {
-		// a node included is included with what it references
 		if (link.byId[node.id]) return
 		for (const reference of referencesThroughAliases([
 			node,
@@ -239,8 +235,7 @@ export const precompileInPlace = (
 	for (let i = 0; i < declared.length; i++) {
 		const [node, kinds] = declared[i]
 		if (!node.tfs) continue
-		// a node another root already compiled in place keeps those traversals,
-		// as this unit declared only what it lacked
+		// a node another root compiled in place keeps those traversals
 		const apply = kinds.indexOf("Apply")
 		if (apply !== -1) node.c.applyInPlace = traversals[i][apply] as never
 		const transform = kinds.indexOf("Transform")
@@ -420,8 +415,7 @@ let constantNames: Map<unknown, string> | undefined
 
 const sizeOf = (root: BaseRoot): number => Object.keys(root.byId).length
 
-// arity, the set engine, a scope's exactOptionalPropertyTypes and the order
-// keys are declared in affect compiling but not the hash
+// arity, the set engine, exactOptionalPropertyTypes and key order affect compiling but not the hash
 const precompiledKeyOf = (root: BaseRoot): string => {
 	let childCounts = ""
 	for (const id in root.byId) {
@@ -440,7 +434,6 @@ const keyRegisteredNames = (root: BaseRoot): string => {
 	constantNames ??= new Map(
 		Object.entries(unitConstants).map(([name, value]) => [value, name])
 	)
-	// a constant is keyed as the constant
 	const kindsByName: Record<string, string> = Object.create(null)
 	for (const id in root.byId) {
 		const node = root.byId[id]
@@ -691,7 +684,6 @@ export interface RootUnit {
 	unitsById: Record<NodeId, RootUnit>
 }
 
-// a root's unit holds what it reaches before another root
 export const precompileRootUnits = (
 	root: BaseRoot,
 	opts: UnitOptions = {}
@@ -733,8 +725,7 @@ const unitsOf = (s: ContentNamingState, opts: UnitOptions): RootUnit[] => {
 	return units
 }
 
-// a component's unit as written in one pass, which another pass reaching it
-// shares if it reads the same names and reaches the same nodes by id
+// shared by a later pass reaching the component with the same names and nodes by id
 interface WrittenUnit {
 	component: readonly BaseNode[]
 	namesRead: Map<NodeId, string | undefined>
@@ -857,8 +848,7 @@ const writtenOf = (opts: UnitOptions): WrittenByCompiler => {
 	return written
 }
 
-// a node's content holding no value by identity, and nameComponent's input
-// for it alone, by the names of its callees
+// a node's content holding no value by identity
 interface WrittenContent {
 	content: string
 	callees: BaseNode[]
@@ -1057,9 +1047,7 @@ const compileContent = (
 	}
 }
 
-// node.refsById[id], searched for nearest first through what node references
-// unless an alias, which can replace a node sharing its id, or refsById itself
-// is there
+// nearest first through what node references, as an alias can replace a node sharing its id
 const referenceOf = (node: BaseNode, id: NodeId): BaseNode | undefined => {
 	if (node.c.byId) return node.byId[id]
 	const queued = new Set<BaseNode>([node])
@@ -1125,8 +1113,7 @@ const nameComponent = (
 	}
 }
 
-// a component of one node, named as nameComponent would, its input reused
-// while its callees' names are
+// a one-node component, named as nameComponent would
 const nameAlone = (
 	s: ContentNamingState,
 	node: BaseNode,
@@ -1187,7 +1174,6 @@ const writePrecompiledUnit = (
 	const variablesById: Record<string, string> = { [root.id]: "n0" }
 	// each node after the root, by the index of the node it's read from
 	const statements: [from: number, statement: string][] = []
-	// each node is read through the edges refsById follows
 	for (let i = 0; i < nodes.length; i++) {
 		if (
 			i !== 0 &&

@@ -173,10 +173,7 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 				}
 
 				for (const p of node.inner.predicate ?? []) {
-					// a keyword can constrain its basis twice with one phrase, like
-					// string.creditCard's pattern and predicate. A narrow's phrase
-					// names its function, which a precompiled build reads at runtime,
-					// so two narrows are always both described
+					// a keyword can constrain its basis twice with one phrase, like string.creditCard
 					if (
 						p.meta.description === undefined ||
 						!childDescriptions.includes(p.description)
@@ -280,9 +277,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		return transform(ctx, this.structure!, data)
 	}
 
-	// a structure checking only elements, as an array's does, is written into
-	// this node's traversals as its sequence's loop rather than called, unless
-	// the elements recurse through an alias, which V8 runs faster as a call
+	// an array's sequence is written as this node's loop, unless it recurses through an alias
 	private get inlinedSequence(): nodeOfKind<"sequence"> | undefined {
 		const structure = this.structure
 		if (
@@ -302,9 +297,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 				this.inner.domain?.domain === "object" && !this.preStruct.length ?
 					this.structure?.allowsProps[0]
 				:	undefined
-			// a key is read before data is checked to be an object, in a switch
-			// rejecting what none can be read from. The checks are one condition
-			// in its block, where a minifier keeps them apart from the returns
+			// a key is read before data is checked to be an object, in a switch rejecting what none can be read from
 			if (read && !js.shortest) {
 				js.block("switch (data)", () =>
 					js
@@ -343,10 +336,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 				return js.return(true)
 			}
 			const rejection = js.rejection(this)
-			// a loop keeps a minifier from joining its checks into one expression,
-			// which a build for size lets it do, as does a node of leaf checks
-			// reading no key, whose caller tests what it returns. A check calling
-			// another node keeps the loop, which V8 runs faster
+			// a loop keeps a minifier from joining the checks into one expression, which a build for size allows
 			if (js.shortest) checks()
 			else if (
 				!sequence &&
@@ -424,8 +414,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	}
 }
 
-// whether data is an object, which V8 folds once a read of its key has
-// checked its map
+// V8 folds this once a read of data's key has checked its map
 const objectCondition = "(data instanceof Object || Object(data) === data)"
 
 export const Intersection = {
@@ -435,8 +424,7 @@ export const Intersection = {
 
 const writeIntersectionExpression = (node: Intersection.Node) => {
 	const basis = writtenBasisOf(node)
-	// an operand has at most one right comparator, so a != past the first is
-	// written as an operand of its own, as in `number > 0 & number != 5`
+	// an operand has at most one right comparator, so a second != is an operand of its own
 	let preStruct = writtenPrestructuralsOf(node)
 	let excluded = preStruct.filter(isNotEqual)
 	if (excluded.length) {
@@ -447,9 +435,7 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 		}
 	}
 
-	// a keyword's predicate has no syntax but its keyword, which is written in
-	// place of the children the keyword holds, like string.creditCard's basis
-	// and pattern, as string.date & string.url >= 6
+	// a keyword's predicate has no syntax but its keyword, written in place of the children it holds
 	const { keywords, written } = keywordsOf(node)
 	preStruct = preStruct.filter(n => !written.has(n))
 
@@ -505,17 +491,14 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 	return expression || "unknown"
 }
 
-// a predicate's keyword is written only where its node holds each child the
-// keyword's own does, as string.numeric.parse's input holds its predicate
-// but the keyword is a morph
+// written only where the node holds each child the keyword's own does
 const keywordsOf = (node: Intersection.Node) => {
 	const keywords: string[] = []
 	const written = new Set<BaseNode>()
 	for (const p of node.inner.predicate ?? []) {
 		const keyword = p.meta.keyword
 		const resolved = keyword === undefined ? undefined : resolveAmbient(keyword)
-		// a cyclic keyword like object.json is an alias until it's resolved,
-		// so it's written out either way
+		// a cyclic keyword like object.json is an alias until resolved
 		if (!resolved?.is("intersection") || resolved.isCyclic) continue
 		const held = resolved.children.map(
 			c =>

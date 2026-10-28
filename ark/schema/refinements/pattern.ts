@@ -85,14 +85,11 @@ const testsByExpression: { [expression: string]: (s: string) => boolean } = {
 const repeatedAtom =
 	/^\^(?:\[(?:[^\\\]]|\\.)*]|\\[DSWdsw]|\\[^\dA-Za-z]|[^$()*+?[\\\]^{|}])(?:[*+]|{\d+,})\$$/
 
-// m changes what ^ and $ match, v what a class holds and g or y where it
-// starts matching
+// m changes what ^ and $ match, v what a class holds, g or y where matching starts
 const isRepeatedAtom = (rule: string, flags: string | undefined) =>
 	(flags === undefined || /^[disu]*$/.test(flags)) && repeatedAtom.test(rule)
 
-// a string definition's regex literal reads a backslash as an escape only
-// before a /, so its source is written as it is but for each / and, as a
-// RegExp writes them, its line terminators
+// a string definition's literal escapes only /, so the source is written as is but for / and line terminators
 const escapesInRegexLiteral: Record<string, string> = {
 	"/": "\\/",
 	"\n": "\\n",
@@ -131,8 +128,7 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 			}
 		:	this.instance.test.bind(this.instance))
 
-	// a ref, so a pattern the engine rejects fails only its definition. A
-	// size build reads the RegExp, smaller than its test with what that calls
+	// a ref, so a pattern the engine rejects fails only its definition
 	jsCond(js: NodeCompiler, data: string): string {
 		if (this.test && !js.shortest) return `${js.ref(this.test)}(${data})`
 		const instance = js.ref(this.instance)

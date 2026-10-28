@@ -11,7 +11,6 @@ import {
 } from "./scope.ts"
 
 export interface LinkedSite {
-	// the module's source, which names its own locals
 	source: string
 	code: string
 }
@@ -19,28 +18,22 @@ export interface LinkedSite {
 export interface LinkedBundle {
 	sites: Record<string, LinkedCode>
 	modules: Record<string, string>
-	// the units that would be declared as the validator a site creates from
-	// them, were validators to expose allows
+	// units that would be declared as their site's validator, were validators to expose allows
 	unexposed: number
 }
 
 export interface LinkedCode {
 	code: string
-	// to the code it was given, for a site module it changed
 	map: SourceMap | undefined
 }
 
 export interface LinkOptions {
-	// each validator exposes what it's created from as allows
 	exposesAllows?: boolean
 	// the bundle is one chunk, so its units may be one module
 	isOneChunk?: boolean
 }
 
-// a bundle's precompiled modules with each checker the bundle reads once
-// written where it's read, as a unit of its own costs its name twice. Each
-// module it changes is renamed for what it holds, and the original is kept,
-// so a module the bundle loads unlinked reads what it always did
+// writes each checker read once where it's read; changed modules are renamed and the originals kept
 export const linkBundle = (
 	sites: Record<string, LinkedSite>,
 	modules: Record<string, string>,
@@ -83,28 +76,21 @@ const maxPasses = 8
 interface OneModule {
 	specifier: string
 	code: string
-	// each module a site imports, as the one module
 	renamed: Record<string, string>
 }
 
 interface Declared {
 	text: string
-	// what it reads of what the units declare or import, and whether it reads
-	// it as it's declared rather than in a function
+	// what it reads of the units, and whether eagerly rather than in a function
 	reads: [name: string, isEager: boolean][]
 }
 
-// a one-chunk bundle's units in one module, declaring what its sites read in
-// the order they read it, each after what it reads, so a bundler writes them
-// as one declaration in the program's order and names them as one module's,
-// without what no site reads. Each unit must declare or import what it reads
-// by the name it's exported as, as a unit module does
+// one module of what the sites read, each after what it reads; a unit must declare or import what it reads by its export name
 const oneModuleOf = (
 	codes: Record<string, string>,
 	siteTexts: string[]
 ): OneModule | undefined => {
 	const declared = new Map<string, Declared>()
-	// the statement importing each name from beyond the units
 	const imported = new Map<string, string>()
 	const statements = new Set<string>()
 	for (const key in codes) {
@@ -184,8 +170,7 @@ const oneModuleOf = (
 	for (const name of declared.keys()) if (imported.has(name)) return
 	const order: string[] = []
 	const states = new Map<string, "visiting" | "done">()
-	// each declaration after what it reads, unless it reads it in a function
-	// it doesn't call where the two read each other
+	// each declaration after what it reads eagerly
 	const visit = (name: string): "done" | "cycle" | undefined => {
 		const declaration = declared.get(name)
 		if (!declaration) return imported.has(name) ? "done" : undefined
@@ -248,7 +233,6 @@ const isDeferred = (id: Node, statement: Node): boolean => {
 
 export const virtualSource = /"(~arktype\/[^"]+)"/g
 
-// each changed module, by what it holds, then each importing it, in order
 export const renamedOf = (
 	codes: Record<string, string>,
 	original: Record<string, string>
@@ -279,7 +263,6 @@ export const renamedOf = (
 	return renamed
 }
 
-// each import of a renamed module renamed
 const withRenamed = (code: string, renamed: Record<string, string>) =>
 	code.replace(virtualSource, (match, specifier: string) =>
 		specifier in renamed ? `"${renamed[specifier]}"` : match
@@ -289,11 +272,9 @@ interface Unit {
 	key: string
 	module: SourceModule
 	isSite: boolean
-	// what names the unit's own locals, for a site module
 	prefix: string
 	edits: MagicString
 	added: string[]
-	// each import added, by the local it declares
 	importsByLocal: Map<string, string>
 }
 
@@ -302,12 +283,10 @@ interface Read {
 	reference: Reference
 }
 
-// a site's export of the validator a call creates from a checker
 interface Creation {
 	site: Unit
 	statement: Node
 	name: string
-	// what creates it, e.g. a module's create function
 	creator: Binding
 	checker: Reference
 }
@@ -317,9 +296,7 @@ class Linker {
 	private unitsByKey = new Map<string, Unit>()
 	private readsByBinding = new Map<Binding, Read[]>()
 	private ownerByBinding = new Map<Binding, Unit>()
-	// units declared as the validator a site creates from them
 	private declaresCreated = new Set<Binding>()
-	// checkers read as the validators created from them
 	private readAsCreated = new Set<Binding>()
 	unexposed = 0
 
@@ -366,7 +343,6 @@ class Linker {
 		return result
 	}
 
-	// each site module, with what it imports renamed
 	sites(renamed: Record<string, string>): [id: string, LinkedCode][] {
 		return this.units.flatMap((unit): [string, LinkedCode][] => {
 			if (!unit.isSite) return []
@@ -404,15 +380,13 @@ class Linker {
 		return this.units.filter(unit => unit.isSite).map(unit => this.textOf(unit))
 	}
 
-	// whether it wrote any checker where it's read, in sites or other units
 	link(
 		intoSites: boolean,
 		exposesAllows = false,
 		// declares each validator its units can, not only those they read
 		declaresEach = false
 	): boolean {
-		// what runs reads what it references, e.g. a statement writing a checker
-		// read once, which a copy of it wouldn't have
+		// e.g. a statement writing a checker read once, which a copy of it wouldn't have
 		for (const unit of this.units) {
 			const unread = unit.isSite ? unreadCreationsOf(unit) : undefined
 			for (const reference of unit.module.scopes.references) {
@@ -452,8 +426,7 @@ class Linker {
 		return linked
 	}
 
-	// a validator every read reads `.allows` of, created as an object of that
-	// alone, is read as the checker it's created from
+	// a validator read only as `.allows` is read as the checker it's created from
 	private readAllowsAsCreated(): void {
 		for (const site of this.units) {
 			if (!site.isSite) continue
@@ -492,8 +465,7 @@ class Linker {
 					:	undefined
 				const declared = imported && this.declarationOf(site, imported)
 				if (declared) {
-					// each read reads the checker, which stays declared, as an alias
-					// of it would be kept
+					// the checker stays declared, as an alias of it would be kept
 					this.readAsCreated.add(declared[1])
 					edits.remove(statement.start, statement.end)
 					for (const read of reads)
@@ -508,8 +480,7 @@ class Linker {
 		}
 	}
 
-	// whether a create function the units declare makes an object of the
-	// allows it's passed alone
+	// whether a create function makes an object of the allows it's passed alone
 	private createsAllowsObject(name: string): boolean {
 		const declaration = new RegExp(
 			`\\bconst ${name} = \\(?allows\\)? => \\{\\s*const validator = \\{ allows: allows \\}\\s*return validator\\s*\\}`
@@ -519,12 +490,7 @@ class Linker {
 		)
 	}
 
-	// a checker a single site creates its validator from, declared as that
-	// validator for the site to export. Where other units read the checker,
-	// which they then read as the validator's allows, it saves the site's
-	// declaration its name; where none do and the units are one module, it
-	// places the validator among them in the order the program reads them,
-	// which compresses better than after them
+	// declares a checker one site creates its validator from as that validator, among the units where they're one module
 	private declareCreated(exposesAllows: boolean, declaresEach: boolean): void {
 		const creationsByBinding = new Map<Binding, Creation | undefined>()
 		for (const unit of this.units) {
@@ -542,7 +508,6 @@ class Linker {
 				)
 			}
 		}
-		// what each unit reads of another, each read of a validator's checker
 		const readsOf = new Map<Binding, [Unit, Reference][]>()
 		for (const unit of this.units) {
 			if (unit.isSite) continue
@@ -591,8 +556,7 @@ class Linker {
 		for (const [unit, imports] of importsByUnit) addImports(unit, imports)
 	}
 
-	// the checker a validator is created from, read as a call, as a bundler
-	// keeps any property read of a declaration it otherwise drops
+	// read as a call: a bundler keeps any property read of a declaration it otherwise drops
 	private allowsReadOf(
 		reader: Unit,
 		validator: string,
@@ -625,8 +589,7 @@ class Linker {
 		const { source } = owner.module
 		if (!pureAnnotation.test(source.slice(declarator.id.end, init.start)))
 			return false
-		// e.g. a statement writing the checker's transform, which would write
-		// the validator's
+		// e.g. a statement writing the checker's transform, which would write the validator's
 		for (const reference of binding.references)
 			if (runs(statementOf(reference.id), source)) return false
 		const declared = this.declarationOf(site, creator)
@@ -657,7 +620,6 @@ class Linker {
 		return true
 	}
 
-	// a reference to what a unit declares, read where the reference is
 	private read(unit: Unit, reference: Reference): void {
 		const binding = reference.binding
 		if (!binding || binding.scope !== unit.module.scopes.root) return
@@ -684,7 +646,6 @@ class Linker {
 		}
 	}
 
-	// what a module-level binding names: its declaration and the module holding it
 	private declarationOf(
 		unit: Unit,
 		binding: Binding
@@ -708,7 +669,6 @@ class Linker {
 		}
 	}
 
-	// writes a checker read once in place of its read
 	private inline(owner: Unit, binding: Binding, read: Read): boolean {
 		const declarator = binding.declaration
 		if (
@@ -722,7 +682,6 @@ class Linker {
 			return false
 		const init = declarator.init
 		const text = new MagicString(owner.module.source)
-		// each import the reader lacks, by the local it declares
 		const imports = new Map<string, string>()
 		const exports: string[] = []
 		for (const reference of owner.module.scopes.references) {
@@ -792,14 +751,12 @@ class Linker {
 		return true
 	}
 
-	// the name a reader reads an import by, adding the import where it lacks it
 	private localOf(
 		reader: Unit,
 		name: string,
 		imported: string,
 		source: string,
 		imports: Map<string, string>,
-		// what the import names, which the reader may import from another module
 		declared?: Binding
 	): string | undefined {
 		const local = reader.isSite ? `${reader.prefix}_${name}` : name
@@ -838,8 +795,7 @@ const readsAllows = (read: Node | null | undefined): read is MemberExpression =>
 	read.property.name === "allows" &&
 	!isWriteTarget(read)
 
-// a site's export declaring a validator a call creates from the checker a
-// reference reads alone, which nothing else in the module reads
+// a site's export creating a validator from a checker nothing else in the module reads
 const creationOf = (site: Unit, checker: Reference): Creation | undefined => {
 	const call = checker.id.parent
 	if (
@@ -883,7 +839,6 @@ const creationOf = (site: Unit, checker: Reference): Creation | undefined => {
 	}
 }
 
-// what a unit reads by the imports localOf staged for it
 const addImports = (unit: Unit, imports: Map<string, string>): void => {
 	for (const [local, statement] of imports) {
 		unit.importsByLocal.set(local, statement)
@@ -934,8 +889,7 @@ const unreadCreationsOf = (unit: Unit): Set<Node> => {
 
 const pureAnnotation = /\/\*\s*[#@]__PURE__\s*\*\//
 
-// whether a statement of a unit's module runs other than declaring what
-// another reads, as a declaration creating a checker doesn't
+// a declaration creating a checker doesn't run
 const runs = (statement: Node, source: string): boolean => {
 	const declaration =
 		statement.type === "ExportNamedDeclaration" ?
@@ -958,8 +912,7 @@ const runs = (statement: Node, source: string): boolean => {
 	)
 }
 
-// whether evaluating an expression may write, as only a call the precompiler
-// marks pure, which writes nothing, doesn't
+// only a call the precompiler marks pure is known not to write
 const writesIn = (expression: Node, source: string): boolean => {
 	let writes = false
 	walk(expression, node => {
@@ -985,7 +938,6 @@ const writesIn = (expression: Node, source: string): boolean => {
 
 const pureAnnotated = /\/\*\s*[#@]__PURE__\s*\*\/\s*$/
 
-// the annotation marking a call pure, if one ends where it starts
 export const pureAnnotationOf = (
 	source: string,
 	call: Span
@@ -1028,9 +980,7 @@ const importedNameOf = (binding: Binding): string =>
 		exportNameOf(binding.declaration.imported)
 	:	"default"
 
-// as the precompiler names a module's locals, by what its source lacks.
-// Svelte compiles a module like cart.svelte.ts after it, refusing a name
-// that begins with $
+// Svelte compiles a module like cart.svelte.ts after the build, refusing a name that begins with $
 export const prefixOf = (source: string, id: string): string => {
 	let prefix = /\.svelte\.\w+$/.test(id) ? "ark$" : "$ark"
 	while (source.includes(prefix)) prefix += "$"

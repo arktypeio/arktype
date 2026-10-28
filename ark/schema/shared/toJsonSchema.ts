@@ -86,8 +86,7 @@ const appendAnnotation = <schema extends JsonSchema>(
 		value
 	])
 
-// writes what JSON Schema can't express as x-arktype-* keywords, referring
-// to a value that isn't JSON as a node's json would
+// writes what JSON Schema can't express as x-arktype-* keywords
 export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 	arrayObject: ctx => annotate(ctx.base, "object", ctx.object),
 	arrayPostfix: ctx => annotate(ctx.base, "postfix", ctx.elements),
@@ -149,8 +148,7 @@ export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 
 const keepBase = (ctx: { base: JsonSchema }): never => ctx.base as never
 
-// Standard JSON Schema converters only throw for unsupported options, so
-// these keep the part of a type JSON Schema can represent, or {} if none
+// Standard JSON Schema converters only throw for unsupported options, so these keep what's representable
 const standardFallback: ToJsonSchema.HandlerByCode = {
 	arrayObject: keepBase,
 	// draft-07 tuples keep their prefix in items

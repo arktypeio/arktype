@@ -49,8 +49,7 @@ export class RuntimeState {
 	}
 	finalizer: FinalizingLookahead | undefined
 	groups: BranchState[] = []
-	// the root a right bound produced and the operand it bounded, until the
-	// next operand
+	// a right bound's root and the operand it bounded, until the next operand
 	rightBounded: { root: BaseRoot; operand: BaseRoot } | undefined
 
 	/** what it's parsing, scanned up to its next token */

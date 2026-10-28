@@ -186,7 +186,6 @@ export type conditionalRootOf<t> = {
 	[k in conditionalIntersectionKeyOf<t>]?: conditionalSchemaValueOfKey<k>
 }
 
-// reads the schema format into nodes, building each from its children
 export const parseSchema = (
 	schema: unknown,
 	$: BaseScope,
@@ -414,8 +413,7 @@ const parseConstraint = (
 		return schema.map(s => parseNodeSchema(kind, s, $))
 	}
 	const constraint: BaseNode = parseNodeSchema(kind, schema, $)
-	// a constraint that reduces to a root (like unknown for minLength: 0) is
-	// trivially satisfied
+	// a constraint reducing to a root, like unknown for minLength: 0, is trivially satisfied
 	if (constraint.isRoot()) return
 	return constraint.canStack() ? [constraint] : constraint
 }
@@ -437,8 +435,7 @@ const isExpandedSequenceSchema = (
 const keysInParseOrder = (schema: dict): string[] =>
 	Object.keys(schema).sort(compareInnerKeys)
 
-// meta. prefixed keys are moved to meta, overwriting a nested key of the same
-// name
+// meta. prefixed keys are moved to meta, overwriting a nested key of the same name
 const withPrefixedMeta = (input: dict): dict => {
 	let meta: dict | undefined
 	let rest: dict | undefined

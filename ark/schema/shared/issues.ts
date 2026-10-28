@@ -49,7 +49,7 @@ export interface UnionSite {
 	description: string
 }
 
-// reports what fails to ctx, returning false only once traversal stops
+// returns false only once traversal stops
 export type CompactApply = (data: unknown, ctx: FailureContext) => boolean
 
 /**
@@ -170,7 +170,6 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	}
 }
 
-// stops at the first issue
 export class FirstIssues extends ArkIssues {
 	// read from the prototype, so no errors object lists it among its own keys
 	override get failFast(): true {
@@ -183,7 +182,6 @@ export class FirstIssues extends ArkIssues {
 	}
 }
 
-// a root reporting into ArkErrors, as a size build applies it
 export const applyIssues = (
 	apply: CompactApply,
 	data: unknown,
@@ -199,7 +197,6 @@ export const applyIssues = (
 	)
 }
 
-// the issues an Apply finds in data it rejected
 export const issuesOf = (
 	apply: CompactApply,
 	data: unknown,
@@ -211,8 +208,7 @@ export const issuesOf = (
 	return errors._
 }
 
-// where every failure's issues are read as it returns, as by assert or
-// ~standard, waiting buys nothing
+// for callers reading every failure's issues as it returns, like assert
 export const foundErrors = (
 	apply: CompactApply,
 	data: unknown,
@@ -239,7 +235,6 @@ interface ArkIssues {
 
 type Keyed = Record<PropertyKey, unknown>
 
-// a traversal's issue, as ArkErrors' _at writes it
 export const issueAt = (
 	path: PropertyKey[],
 	site: FailureSite,
@@ -262,7 +257,6 @@ export const issueAt = (
 	return issue
 }
 
-// a default's onFail, read from a standalone runtime
 export const throwOnDefault: ArkIssues.Handler = errors => errors.throw()
 
 // a merged issue's message is rewritten at its path unless supplied
@@ -315,7 +309,6 @@ export class TraversalError extends Error {
 	}
 }
 
-// as foundErrors where each failure throws, as where a program only asserts
 export const throwIssues = (apply: CompactApply, data: unknown): never => {
 	const errors = new ArkIssues()
 	apply(data, errors)

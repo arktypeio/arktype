@@ -199,7 +199,6 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	leading: array<PrevariadicSequenceElement> = this.tuple.filter(
 		(el): el is PrevariadicSequenceElement => {
 			if (el.kind === "defaultables" || el.kind === "optionals") {
-				// populate maybes while filtering leading
 				this.maybes.push(el.node)
 				return true
 			}

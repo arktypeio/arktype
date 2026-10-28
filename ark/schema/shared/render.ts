@@ -21,10 +21,8 @@ type SlotConfig = string | ((...args: never[]) => string)
 /** defaultConfig's locale */
 let defaultLocale: Locale.Complete
 
-// a configured function, which selects the locale errors are written in
 let selector: LocaleSelector | undefined
 
-// the configured locale if it isn't a function
 let configured: Locale
 
 /**
@@ -46,8 +44,7 @@ const configureLocale = (
 	return configured
 }
 
-// a standalone runtime's config holds only en's info as its locale, so its
-// errors are written in en even beside arktype
+// a standalone runtime's locale is en's info alone, so it writes en even beside arktype
 const isStandalone = (config: ResolvedConfig): boolean =>
 	!("cite" in config.locale)
 
@@ -73,8 +70,7 @@ const write = (error: ArkError, config: ResolvedConfig, locale: Locale) => {
 	const supplied = suppliedText(error, "expected")
 	const expected = supplied ?? configOf(error, "expected", config)
 	const cited = citesDescription(error) ? error.description : undefined
-	// text supplied for expected is cited like any other, so it's written
-	// unless it's no longer what was supplied
+	// supplied text is cited like any other, unless it's no longer what was supplied
 	if (error.expected === supplied) {
 		error.expected =
 			expected === defaultConfig[error.code].expected ?
@@ -86,7 +82,6 @@ const write = (error: ArkError, config: ResolvedConfig, locale: Locale) => {
 	error.message ??= render(error, "message", expected, cited, config, locale)
 }
 
-// a slot's text in a locale other than en
 const render = (
 	error: ArkError,
 	slot: Exclude<ErrorSlot, "expected">,
@@ -115,8 +110,7 @@ const configOf = (
 	config[error.code][slot] ??
 	defaultConfig[error.code][slot]
 
-// a discriminant's description lists cases unless its union's own value was
-// described; at a key, its meta is the union's around it
+// a discriminant's description lists cases unless its union's own value was described
 const citesDescription = (error: ArkError): boolean =>
 	(error.code !== "discriminant" ||
 		(!error.onKey &&
@@ -139,7 +133,6 @@ const writeSlot = (
 		config(error.data as never, error as never, locale as never)
 	:	config(error as never, locale as never)
 
-// a locale's writer for a slot other than expected
 const localeWriter = (
 	error: ArkError,
 	slot: Exclude<ErrorSlot, "expected">,
@@ -153,12 +146,10 @@ const localeWriter = (
 	}
 	const writer = locale[error.code][slot]
 	if (writer === undefined) return locale[slot]
-	// union and intersection frame their children's text, unless they cite
-	// their own description
+	// union and intersection frame their children's text, unless they cite their own description
 	if (error.code === "union" || error.code === "intersection")
 		return cited === undefined || slot === "actual" ? writer : locale[slot]
-	// a code's own problem frames the text of its locale's expected writer,
-	// not a keyword's phrase or authored text
+	// a code's own problem frames its locale's expected, not a keyword's phrase or authored text
 	if (slot !== "problem") return writer
 	return (
 			cited !== undefined || expected !== defaultConfig[error.code].expected
@@ -255,8 +246,7 @@ const completeFrom = (en: Locale, locale: Locale): Locale => {
 		const entry = locale[k] as any
 		if (entry === undefined) {
 			const fallback = en[k]
-			// a keyword without a phrase renders its English description, and a
-			// code without writers reads its expected text whole in en
+			// a keyword without a phrase renders its English description
 			fill(
 				k,
 				k === "keywordPhrases" ? {}

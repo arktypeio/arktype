@@ -84,8 +84,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	const importersByUrl: Record<string, string> = {}
 	// modules whose text these hooks were given
 	const givenUrls = new Set<string>()
-	// what may throw at runtime fails unless allowUnsafe is set, which a
-	// message offers only where building anyway may be what's wanted
+	// allowUnsafe is offered only where building anyway may be what's wanted
 	const reportUnsafe = (problem: string, offersAllowUnsafe = true) => {
 		if (opts?.allowUnsafe) process.emitWarning(problem)
 		else throwError(offersAllowUnsafe ? withAllowUnsafe(problem) : problem)
@@ -97,8 +96,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 		reportedPrecompiled.add(name)
 		reportUnsafe(writePrecompiledDependencyMessage(name))
 	}
-	// e.g. a module another hook loads from a URL of its own, code given to
-	// node --eval, or a file without an extension, as a package's bin may be
+	// e.g. a module another hook loads, code given to node --eval, or a file without an extension
 	const untransformedProblemOf = (specifier: string, importer: string) => {
 		if (!importer.startsWith("file:"))
 			return writeFilelessImportMessage(importer, specifier)

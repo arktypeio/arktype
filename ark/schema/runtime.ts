@@ -24,13 +24,11 @@ export const runtimeConfig: ResolvedConfig = {
 	onFail: null
 } as never
 
-// the $ a node shape reads its config from
 export const runtimeScope: { cfg: ResolvedConfig } =
 	/* @__PURE__ */ Object.freeze({
 		cfg: runtimeConfig
 	})
 
-// set by configure()
 let checkConfigured: ((built?: string) => void) | undefined
 let programConfig: ArkSchemaConfig | undefined
 let configureIslands: ((config: ArkSchemaConfig) => unknown) | undefined
@@ -70,13 +68,12 @@ export const configure = (
 	return config
 }
 
-// a writer the program configured for a code, read once configure() runs
 export const configuredWriterOf =
 	(code: string, k: string) =>
 	(...args: unknown[]): unknown =>
 		(programConfig as Record<string, Record<string, Fn>>)[code][k](...args)
 
-// hashes the config's static values; functions can't be compared
+// functions can't be compared
 export const fingerprintOf = (config: object): string => {
 	const text = staticTextOf(config, [])
 	let a = 1
@@ -168,7 +165,6 @@ export const writtenConfigMessage =
 export const configMismatchMessage =
 	"an artifact must run under the configuration it was built with"
 
-// config is the config module's specifier from path
 export const writeCreatedBeforeConfigureMessage = <
 	path extends string,
 	config extends string

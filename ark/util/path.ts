@@ -63,8 +63,7 @@ export const stringifyPath: StringifyPathFn = ((
 	return s
 }) as never
 
-// a copy of path, with key below it, copying one or two keys as a literal,
-// which TurboFan allocates inline where slice() calls a builtin
+// one or two keys are copied as a literal, which TurboFan allocates inline
 export const pathAt = (
 	path: PropertyKey[],
 	key?: PropertyKey

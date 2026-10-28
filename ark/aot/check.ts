@@ -27,7 +27,6 @@ export interface CheckReport {
 	rate: number
 	// what fails a build whatever the rate, like a configure() it can't place
 	errorsOutsideSites: number
-	// each fails a build
 	errors: number
 	files: number
 }
@@ -42,8 +41,7 @@ const isExcluded = (path: string) =>
 
 const scriptFile = /\.(?:[cm]?[jt]s|[jt]sx)$/
 
-// what each pattern matches, with a directory, as `src` or each of `src/**`,
-// standing for the scripts it holds
+// a directory, as `src` or each of `src/**`, stands for the scripts it holds
 const sourcesOf = (patterns: string[], cwd: string): string[] => {
 	const files = new Set<string>()
 	const dirs: string[] = []
@@ -66,8 +64,7 @@ const sourcesOf = (patterns: string[], cwd: string): string[] => {
 	return [...files].sort()
 }
 
-// each component importing a module, which may read a validator as only its
-// framework's compiled code shows
+// a component may read a validator as only its framework's compiled code shows
 const componentsOf = (cwd: string): string[] =>
 	globSync("**/*.{svelte,vue,astro,mdx}", { cwd, exclude: isExcluded })
 		.map(match => resolve(cwd, match))
@@ -90,7 +87,6 @@ export const check = (
 			testing: false
 		}
 	)
-	// a worker applies the configuration to arktype as the build does
 	const request = createSyncPrecompiler({ precompilerOptions })
 	const report: CheckReport = {
 		lines: pluginCallLinesOf(calls, given),
@@ -185,10 +181,7 @@ export const check = (
 const unbundledFile =
 	/(?:^|[/\\])__(?:tests|mocks)__[/\\]|\.(?:test|spec|bench|stories|config)\.[cm]?[jt]sx?$/
 
-// the warning a production bundle of the checked files would print where it
-// can't prune, as far as --check can tell: it follows relative imports of
-// scripts alone and reads no file as an entry, so it misses a read reached
-// through an alias, a virtual module, a component or an entry's exports
+// as far as --check can tell: it follows relative imports of scripts alone and reads no entry
 const unprunedMessageOf = (
 	files: string[],
 	cwd: string,
@@ -214,7 +207,6 @@ const unprunedMessageOf = (
 	return (request("scan", { ...scanned, entries: [] }) as ScannedUsage).unpruned
 }
 
-// the file a relative specifier names, as TypeScript resolves it
 const scriptOf = (path: string): string | undefined =>
 	[
 		path,

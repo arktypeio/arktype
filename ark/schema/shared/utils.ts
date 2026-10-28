@@ -89,8 +89,7 @@ const uncheckedAssertions: (() => void)[] = []
 
 let uncheckedKeys: Record<string, true> = {}
 
-// a check can resolve the alias whose union queued it, so a keyed check is
-// queued once until the queue drains
+// a check can resolve the alias whose union queued it, so a keyed check is queued once
 export const queueUnchecked = (assert: () => void, key?: string): void => {
 	if (key !== undefined) {
 		if (uncheckedKeys[key]) return
@@ -102,8 +101,7 @@ export const queueUnchecked = (assert: () => void, key?: string): void => {
 let assertingUnchecked = false
 
 export const assertUnchecked = (): void => {
-	// an assertion can resolve an alias, which asserts again, so what it queues
-	// runs in the outer loop
+	// an assertion can resolve an alias, which asserts again, so what it queues runs in the outer loop
 	if (!isResolutionFinal() || assertingUnchecked) return
 	assertingUnchecked = true
 	try {
@@ -153,9 +151,7 @@ export const composing = <t>(compose: () => t): t => {
 	}
 }
 
-// a node nested in another's expression or description prints as "..." past
-// this length, so a type reused at each level of another can't double its
-// length with each level
+// a nested node prints as "..." past this length, so reuse at each level can't double it
 const maxNestedLength = 1000
 
 export const elided = (nested: string): string =>

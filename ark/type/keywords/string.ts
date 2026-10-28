@@ -48,8 +48,7 @@ export { isLuhnValid } from "./functions.ts"
 
 // non-trivial expressions should have an explanation or attribution
 
-// annotations name the keyword's strings in JSON Schema. Its pattern carries
-// them too, so they're written wherever it's constrained further
+// the pattern carries the annotations, so they're written wherever it's constrained further
 export const regexStringNode = (
 	regex: RegExp,
 	alias: KeywordPhraseAlias,
@@ -781,8 +780,7 @@ const uuidVersions = [1, 2, 3, 4, 5, 6, 7, 8] as const
 export const uuid: uuid.module = keywordModule(
 	{
 		root: [
-			// one pattern rather than a union with the nil and max literals, which
-			// as an index signature's key would make them required keys
+			// one pattern: a union with the literals would make them required keys of an index signature
 			uuidMatcher,
 			"@",
 			{ ...keywordMeta("string.uuid"), format: "uuid" }

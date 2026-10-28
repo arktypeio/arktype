@@ -57,14 +57,12 @@ registerBuilderCompiler(context =>
 	)
 )
 
-// a host can allow code generation as arktype loads and refuse it later, as
-// workerd does within a request, so the first refusal leaves later nodes jitless
+// a host can allow codegen as arktype loads and refuse it later, as workerd does in a request
 let refusesJit = false
 
 export const canJit = (config: ResolvedConfig): boolean =>
 	!config.jitless && !refusesJit
 
-// what jit returns, or undefined once the host refuses to generate code
 export const tryJit = <result>(jit: () => result): result | undefined => {
 	if (refusesJit) return
 	try {
@@ -250,7 +248,6 @@ export interface TransformStep {
 	signature?: BaseNode
 }
 
-// a node's expected, as en writes it unconfigured
 export const expectedOf = <description extends string | undefined>(
 	meta: ArkEnv.meta,
 	description: description
@@ -260,7 +257,6 @@ export const expectedOf = <description extends string | undefined>(
 export declare namespace NodeCompiler {
 	export interface Context {
 		kind: TraversalKind
-		/** whether the traversal it compiles takes `ctx` */
 		needsCtx?: boolean
 		refs?: Refs
 	}
@@ -272,27 +268,17 @@ export abstract class NodeCompiler extends CompiledFunction<
 	Fn,
 	["data", "ctx"]
 > {
-	/** which traversal it compiles: "Allows", "Apply" or "Transform" */
 	trav: TraversalKind
 	/** whether the traversal it compiles takes `ctx` */
 	needsCtx: boolean
 	readonly refs: NodeCompiler.Refs | undefined
-	// whether a transform writes into the object it receives
 	declare readonly inPlace?: boolean
-	// whether Apply reports only the first issue it finds, as a build can
 	declare readonly reportsFirst?: boolean
 	// whether a build writes for size, so Allows returns where it fails
 	declare readonly shortest?: boolean
-	// whether a copy is a literal of the values it holds rather than one of
-	// nulls it fills. V8 gives a field the kind of value first written to it,
-	// and one first written a fraction holds it in a box each object
-	// allocates, so a copy filling nulls holds data's numbers as they are
-	// where data's fields hold any value, as a definition of the same keys in
-	// the same order makes them
+	// V8 boxes a field first written a fraction, so a copy filling nulls holds data's numbers as they are
 	declare readonly copiesValues?: boolean
-	// whether data is trusted to hold only own, enumerable keys, as
-	// JSON.parse's output does, so a count of its keys can stand for a check
-	// of each
+	// trusted to hold only own, enumerable keys, as JSON.parse's output does
 	declare readonly jsonInput?: boolean
 	/** whether the transform it compiles checks for errors a transformed child added */
 	checksErrs = false
@@ -306,17 +292,13 @@ export abstract class NodeCompiler extends CompiledFunction<
 
 	// written by standalone builds, whose issues hold no node contexts
 	unionFails?(node: UnionNode): string
-	// a discriminated union's failure of data matching none of its cases
 	missFails?(node: UnionNode): string
-	// a discriminated union's Apply of data in its default case
 	defaultFails?(node: UnionNode, caseNode: BaseRoot): string
 	undeclaredFails?(node: StructureNode): string
-	// the site a required key whose value's condition failed is reported at,
-	// as a basis's key is, rather than by applying its value
+	// the site a required key whose value's condition failed is reported at
 	failingSiteOf?(prop: BaseNode): string | undefined
 	// what a key's value whose condition failed is applied by, if not its Apply
 	failingApplyOf?(value: BaseNode): string | undefined
-	// whether a predicate can't add issues itself, so Apply needn't count them
 	addsNoIssues?(predicate: Predicate): boolean
 
 	// returns the call of a function its unit declares for a rare path
@@ -360,7 +342,6 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return `${this.ref(enterApplied)}(ctx, "${this.nameOf(id)}", ${arg}) ?? ${this.ref(exitApplied)}(ctx, ${apply}(${arg}, ctx))`
 	}
 
-	/** the expression a compiled traversal calls a node's traversal by */
 	refToId(id: NodeId, opts?: ReferenceOptions): string {
 		const invokedKind = opts?.kind ?? this.trav
 		const base = `${this.nameOf(id)}${invokedKind}`
@@ -407,8 +388,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return `ctx.${method === "failsAt" ? "_at" : "_in"}(${args})`
 	}
 
-	// returns what the case on matches returns, or otherwise. A case returning
-	// what the next one does falls through to it
+	// a case returning what the next one does falls through to it
 	switch(on: string, cases: readonly SwitchCase[], otherwise: string): this {
 		return this.block(`switch(${on})`, () => {
 			for (const [i, [label, returned]] of cases.entries()) {
@@ -423,7 +403,6 @@ export abstract class NodeCompiler extends CompiledFunction<
 		}).return(otherwise)
 	}
 
-	/** whether `node`'s traversal of `kind` takes `ctx` */
 	needsCtxFor(node: BaseNode, kind = this.trav): boolean {
 		return (
 			this.trav === "Apply" ||
@@ -438,16 +417,13 @@ export abstract class NodeCompiler extends CompiledFunction<
 		)
 	}
 
-	// a transforming object's Allows rejects through disallowed, so the
-	// transform after it is compiled with its checks. A build for size
-	// returns false
+	// a transforming object's Allows rejects through disallowed; a build for size returns false
 	rejection(node: BaseNode): string {
 		return this.trav === "Allows" && !this.shortest && node.tfs ?
 				`${this.ref(disallowed)}()`
 			:	"false"
 	}
 
-	/** writes a const holding the error count, to tell whether a child added errors */
 	initErrCount(): this {
 		return this.const("errN", "ctx.errN")
 	}
@@ -470,7 +446,6 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return this.line(`${this.ctx}.path.pop()`)
 	}
 
-	// what fails a key's value in one expression, if one can
 	keyFails(key: string, value: string, node: BaseNode): string | undefined {
 		if (this.trav !== "Apply") {
 			const condition = node.jsCond?.(this, value)
@@ -534,7 +509,6 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return this.line("ctx.path.pop()")
 	}
 
-	/** writes what a transform of `transformedChildren` needs before it starts */
 	initTf(transformedChildren: readonly BaseNode[]): this {
 		this.checksErrs = transformedChildren.some(
 			child => child.hasMorph || child.tfCtx
@@ -543,7 +517,6 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return this.needsCtx ? this.initErrCount() : this.line("let failed")
 	}
 
-	/** writes transforming a key's value through its steps into `name` */
 	tfKey(
 		name: string,
 		input: string,
@@ -606,7 +579,6 @@ export abstract class NodeCompiler extends CompiledFunction<
 		})
 	}
 
-	/** writes adding the errors a morph returned */
 	addMorphErrs(errors: string, keyExpr?: string): this {
 		const key = keyExpr === undefined ? "" : `, ${keyExpr}`
 		return this.line(
@@ -616,7 +588,6 @@ export abstract class NodeCompiler extends CompiledFunction<
 		)
 	}
 
-	/** an expression comparing what steps transformed with their input */
 	cmpTfd(
 		steps: readonly TransformStep[],
 		transformed: string,
@@ -632,7 +603,6 @@ export abstract class NodeCompiler extends CompiledFunction<
 			:	`${transformed} ${operator} ${input}`
 	}
 
-	/** writes returning `data` if a morph added errors */
 	retIfFailed(): this {
 		if (!this.checksErrs) return this
 		return this.needsCtx ?
@@ -640,12 +610,10 @@ export abstract class NodeCompiler extends CompiledFunction<
 			:	this.if("failed", () => this.return("failed"))
 	}
 
-	// what a node's Allows holds for, as an expression
 	condition(node: BaseNode): string {
 		return node.jsCond?.(this, this.data) ?? this.inv(node)
 	}
 
-	// Apply reports a failed condition at its site
 	check(node: BaseNode, opts?: CheckOptions): this {
 		const arg = opts?.arg ?? this.data
 		const condition =
@@ -688,7 +656,6 @@ export const isDecidedByAllows = (node: BaseNode): boolean =>
 	!node.allowsCtx &&
 	!node.selectReferences(isPredicate).length
 
-// a basis with one refinement
 export const isRefinedBasis = (node: BaseNode): node is IntersectionNode =>
 	node.is("intersection") &&
 	node.basis !== null &&

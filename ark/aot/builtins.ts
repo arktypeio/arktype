@@ -9,7 +9,6 @@ export interface PureBuiltin {
 	objects?: readonly (ObjectArg | undefined)[]
 	// the receiver's elements may be objects, as the method doesn't convert them
 	objectElements?: true
-	// returns a problem with the arguments
 	check?: (args: unknown[], self: unknown) => string | undefined
 	// writes its first argument
 	writes?: true
@@ -37,7 +36,6 @@ export const globalsByName: Record<string, unknown> = Object.assign(
 export const conversionProblem =
 	"converts an object to a primitive, which runs its methods"
 
-// each entry's key is converted to a property key
 const withPrimitiveKeys = (args: unknown[]) =>
 	(
 		Array.isArray(args[0]) &&

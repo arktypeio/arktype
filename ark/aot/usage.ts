@@ -10,8 +10,7 @@ import {
 	type Binding
 } from "./scope.ts"
 
-// what a read of a validator needs: a member, "call" where it may return
-// errors no one reads, or "piped" where a call may pass a second argument
+// a member, "call" where it may return errors no one reads, or "piped" where a call may pass a second argument
 export type UsedMember =
 	| "assert"
 	| "~standard"
@@ -38,15 +37,12 @@ const usedMembersByName: Record<string, UsedMember | null> =
 // a module of a bundle as its precompiled code runs
 export interface RuntimeModule {
 	module: SourceModule
-	// the sites it folds, replacing their text
 	folded: Span[]
 	// text inside them a site's call keeps
 	kept: Span[]
-	// bindings a factory reads at runtime
 	passed: Binding[]
 	// what factories import from other modules, by specifier
 	inputs: Record<string, string[]>
-	// each site creating a validator
 	validators: Span[]
 	// a site creating a Module, Scope or Generic, which holds validators
 	holdsOther: boolean
@@ -61,8 +57,7 @@ export interface UsageProgram {
 	resolve: (specifier: string, importer: string) => string | undefined
 }
 
-// the members some read of a validator needs, or why one reaches code that
-// may read anything
+// the members some read needs, or why one reaches code that may read anything
 export const usedMembersOf = (
 	program: UsageProgram
 ): Set<UsedMember> | string => {
@@ -122,7 +117,6 @@ class UsageAnalysis {
 		}
 	}
 
-	// what each module imports, by the module it resolves to
 	private link(runtime: RuntimeModule): void {
 		const { module } = runtime
 		const add = (specifier: string, edge: ImportEdge) => {
@@ -388,15 +382,13 @@ class UsageAnalysis {
 		}
 	}
 
-	// a validator read at `node`, as its parent reads it
 	private read(
 		node: Node,
 		parent: Node | null | undefined,
 		runtime: RuntimeModule
 	): void {
 		const { module } = runtime
-		// a choice between validators, like `import.meta.env.DEV ? DevPost : Post`,
-		// is read as its result is
+		// e.g. `import.meta.env.DEV ? DevPost : Post`, read as its result is
 		if (
 			(parent?.type === "ConditionalExpression" && parent.test !== node) ||
 			parent?.type === "LogicalExpression"
@@ -453,7 +445,6 @@ const literalOf = (node: Node | undefined): string | undefined =>
 		node.quasis[0].value.cooked
 	:	undefined
 
-// how a read the analysis doesn't follow reads a validator
 const unfollowedReadOf = (
 	node: Node,
 	parent: Node | null | undefined,
@@ -497,7 +488,6 @@ const isDead = (node: Span, runtime: RuntimeModule): boolean =>
 const isIn = (node: Span, span: Span) =>
 	span.start <= node.start && node.end <= span.end
 
-// the innermost node at each span
 const nodesAt = (module: SourceModule, spans: Span[]): Node[] => {
 	if (!spans.length) return []
 	const nodesByRange = new Map(
@@ -517,7 +507,6 @@ const nodesAt = (module: SourceModule, spans: Span[]): Node[] => {
 	)
 }
 
-// a module no site of which the host folds
 export const unprecompiled = (module: SourceModule): RuntimeModule => ({
 	module,
 	folded: [],
@@ -528,9 +517,7 @@ export const unprecompiled = (module: SourceModule): RuntimeModule => ({
 	holdsOther: false
 })
 
-// whether each factory a module of validators exports reads what a call
-// passes it, other than the index a shared factory takes first, e.g. not a
-// production build's, which checks no Type it's passed
+// e.g. not a production build's factories, which check no Type they're passed
 export const passedReaderOf = (
 	code: string
 ): ((exported: string) => boolean) => {

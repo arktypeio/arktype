@@ -62,7 +62,7 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	errorModes?: Record<"first" | "none", RootApplyRuntime>
 }
 
-// what a definition reaches through a cache, read by standalone builds
+// read by standalone builds
 export interface CacheReach {
 	// a node returned from the node cache
 	node: (node: BaseNode) => void
@@ -120,8 +120,7 @@ export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 	if (config.locale !== undefined && !hasDomain(config.locale, "object"))
 		throwParseError(writeInvalidLocaleMessage(config.locale))
 	const merged = mergeConfigs($ark.config, config)
-	// a config file evaluated again, like after a test runner resets its
-	// modules, can reapply what's already set
+	// a config file evaluated again, as after a test runner resets modules, can reapply what's set
 	if ($ark.cfg && !isSameConfig(merged, $ark.config))
 		return throwParseError(configureAfterTypeMessage)
 	return Object.assign($ark.config, merged)
@@ -264,7 +263,6 @@ const normalizeFallback = (
 ): ToJsonSchema.FallbackObject =>
 	typeof fallback === "function" ? { default: fallback } : (fallback ?? {})
 
-// which issues a failure reports
 export type ErrorDetail = "all" | "first" | "none"
 
 /**

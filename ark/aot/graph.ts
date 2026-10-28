@@ -67,7 +67,6 @@ import {
 
 export type FunctionNode = Function | ArrowFunctionExpression
 
-// what reachesUnseen has followed, and whether importers can read an export
 interface Reach {
 	exact: Set<Node>
 	held: Set<Node>
@@ -126,7 +125,6 @@ const arkExports = new Set(
 	)
 )
 
-// what the standalone runtime freezes
 export const isArkObject = (value: unknown): boolean =>
 	isArkValue(value) || value instanceof Callable || arkExports.has(value)
 
@@ -353,11 +351,9 @@ const kinds = {
 	holder: 64,
 	// a function whose call may return what the build lost track of
 	returnsUnsure: 128,
-	// data the build has no source for, like an exported function's
-	// parameter, which may be a Type
+	// data the build has no source for, like an exported function's parameter
 	opaque: 256,
-	// data whose members the build has no source for, like one a type
-	// annotation declares `unknown`
+	// data whose members the build has no source for, like one annotated `unknown`
 	opaqueHolder: 512
 } as const
 
@@ -375,7 +371,6 @@ const typeMethod: KindBits = kinds.otherArk | kinds.returnsType
 // a Generic, which an instantiation reads as a Type
 const genericKind: KindBits = kinds.otherArk | kinds.returnsType
 
-// what `type` holds that creates a Type, e.g. `type.or`
 const typeParserTypes: Record<string, 1> = Object.setPrototypeOf(
 	{
 		raw: 1,
@@ -400,27 +395,23 @@ const opaque: KindBits = kinds.data | kinds.opaque
 
 const opaqueBits: KindBits = kinds.opaque | kinds.opaqueHolder
 
-// what a value holding `held` is, as a literal holding a Type passed to a
-// parameter is a holder
+// a literal holding a Type passed to a parameter is a holder
 const holderOf = (held: KindBits): KindBits =>
 	held & ~(kinds.data | opaqueBits) ? kinds.data | kinds.holder
 	: held & opaqueBits ? opaque
 	: kinds.data
 
-// what is read off a value the build lost track of
 const unsureOf = (kind: KindBits): KindBits =>
 	kind & (kinds.unknown | kinds.holder) ? unsure
 	: kind & opaqueBits ? opaque
 	: 0
 
-// what a value may be once the build loses track of it
 const lostOf = (kind: KindBits): KindBits =>
 	kind & ~(kinds.data | opaqueBits) ? unsure
 	: kind & opaqueBits ? opaque
 	: kinds.data
 
-// e.g. `User` in `_unref(User)`, as Vue compiles a script setup binding its
-// template reads, which returns what isn't a ref
+// e.g. `User` in `_unref(User)`, as Vue compiles a script setup binding its template reads
 const unrefedOf = (call: CallExpression, module: SourceModule) => {
 	const callee = unwrapChain(call.callee)
 	const declaration =
@@ -446,13 +437,11 @@ const componentContexts: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
-// methods by which an array, Map or Set holds what it's passed
 const storingMethods: Record<string, 1> = Object.setPrototypeOf(
 	{ push: 1, unshift: 1, splice: 1, fill: 1, set: 1, add: 1 },
 	null
 )
 
-// methods by which an array, Map or Set changes what it holds
 const mutatingMethods: Record<string, 1> = Object.setPrototypeOf(
 	{
 		...storingMethods,
@@ -467,7 +456,6 @@ const mutatingMethods: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
-// the kind of each member of a Type a standalone validator lacks
 const typeMemberKinds: Record<string, KindBits> = Object.setPrototypeOf(
 	{
 		in: kinds.type,
@@ -573,11 +561,9 @@ const functionKindOf = (returned: KindBits): KindBits =>
 export const isArk = (kind: KindBits): boolean =>
 	(kind & (kinds.type | kinds.otherArk)) !== 0
 
-// e.g. what a call off a Module returns, as it may be any arktype value
 export const mayBeOtherArk = (kind: KindBits): boolean =>
 	(kind & kinds.otherArk) !== 0
 
-// e.g. a literal holding a Scope, or what the build lost track of
 export const mayHoldArk = (kind: KindBits): boolean =>
 	(kind & (kinds.holder | kinds.unknown)) !== 0
 
@@ -587,7 +573,6 @@ export const isOnlyType = (kind: KindBits): boolean =>
 const isFactory = (kind: KindBits): boolean =>
 	(kind & (kinds.returnsType | kinds.returnsArk)) !== 0
 
-// e.g. `T => T.or("null")`, whose call returns a Type when passed one
 export const mayReturnArk = (kind: KindBits): boolean =>
 	isFactory(kind) || (kind & kinds.returnsUnsure) !== 0
 
@@ -606,7 +591,6 @@ type Key = Binding | FunctionNode | Application | Member
 
 type KindOfKey = (key: Key, module: SourceModule) => KindBits
 
-// where a key is declared, e.g. a binding's id
 const anchorOf = (key: Key): Span =>
 	"kind" in key ? key.id
 	: "args" in key ? key.fn
@@ -631,7 +615,6 @@ export type ImportTarget =
 	| { kind: "expression"; module: SourceModule; node: Node }
 	| { kind: "json"; id: string; value: unknown }
 	| { kind: "unresolved"; message: string }
-	// a package the build does not follow
 	| { kind: "package"; message: string }
 
 export class ModuleGraph {
@@ -654,7 +637,6 @@ export class ModuleGraph {
 	private writesByBinding = new WeakMap<Binding, Node[]>()
 	private importsById: Record<string, string[]> = Object.create(null)
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
-	// how the program's settings build packages that don't opt in
 	dependencies: DependencyModes
 	private packageNamesByDir: Record<string, string | undefined> =
 		Object.create(null)
@@ -744,8 +726,7 @@ export class ModuleGraph {
 		return this.modulesById[id]
 	}
 
-	// a module outside node_modules, or in a package that opts in or the
-	// program's settings precompile
+	// outside node_modules, or in a package that opts in or the settings precompile
 	isFollowed(id: string): boolean {
 		const [root, name] = dependencyOf(id) ?? []
 		return (
@@ -898,7 +879,6 @@ export class ModuleGraph {
 		}
 	}
 
-	// e.g. `type` imported from arktype, or `ark.type` with `ark` its namespace
 	arkExportOf(
 		reference: Reference,
 		module: SourceModule
@@ -919,7 +899,6 @@ export class ModuleGraph {
 		return exported.kind === "arktype" ? [exported.name, member] : undefined
 	}
 
-	// the export a node reads, e.g. `type` for `type` or `ark.type`
 	arkExportNameOf(node: Node, module: SourceModule): ArkExportName | undefined {
 		node = unwrapChain(node)
 		const id =
@@ -1065,7 +1044,6 @@ export class ModuleGraph {
 		return annotate(result, this.annotatedKindOf(binding.id, module, kindOfKey))
 	}
 
-	// e.g. `User` for `x` given `x = User`
 	private writtenKindOf(
 		binding: Binding,
 		module: SourceModule,
@@ -1088,8 +1066,7 @@ export class ModuleGraph {
 		return result
 	}
 
-	// e.g. `N` given `namespace N { export const User = type(...) }`, where
-	// each declaration merged under its name adds its exports
+	// e.g. `N` given `namespace N { export const User = type(...) }`, merged across declarations
 	private namespaceKindOf(
 		binding: Binding,
 		module: SourceModule,
@@ -1156,7 +1133,6 @@ export class ModuleGraph {
 		return holderOf(stored) & ~kinds.data
 	}
 
-	// e.g. what `assigned` may be after `({ assigned } = { assigned: A })`
 	private destructuredWriteOf(
 		write: Node,
 		module: SourceModule,
@@ -1170,7 +1146,6 @@ export class ModuleGraph {
 			:	kinds.data
 	}
 
-	// e.g. `A | B` for `t` in `for (const t of [A, B])`
 	private iteratedKindOf(
 		declarator: Node,
 		binding: Binding,
@@ -1275,8 +1250,7 @@ export class ModuleGraph {
 		return result
 	}
 
-	// what a call passes the parameter at index, e.g. what `[A]` holds for
-	// `t` given `f(...[A])`, or an array of it for `...ts`
+	// e.g. what `[A]` holds for `t` given `f(...[A])`, or an array of it for `...ts`
 	private argKindOf(
 		call: CallExpression | NewExpression,
 		params: readonly Node[],
@@ -1307,7 +1281,6 @@ export class ModuleGraph {
 		return isRest ? holderOf(held) : held | kinds.data
 	}
 
-	// e.g. `t` in `list.map(t => t.or(B))`
 	private passedKindOf(
 		fn: FunctionNode,
 		module: SourceModule,
@@ -1340,8 +1313,7 @@ export class ModuleGraph {
 			:	kinds.data
 	}
 
-	// e.g. `Params` for `p` in `(p: Params) => p.or`, where `Params` is
-	// computed, like `typeof f`, or `any`, which doesn't say `p` isn't a Type
+	// e.g. `Params` for `p` in `(p: Params) => p.or`, where `Params` is computed or `any`
 	unreadAnnotationOf(node: Node, module: SourceModule): Node | undefined {
 		let annotated = castOf(node)
 		if (!annotated) {
@@ -1381,7 +1353,6 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// e.g. unsure for `Type<T>` or `{ user: Type }[]`, data for `string`
 	private typeKindOf(
 		type: TSType | TSTypeAnnotation,
 		context: Node,
@@ -1423,8 +1394,7 @@ export class ModuleGraph {
 				const parts = type.types.map(t =>
 					this.typeKindOf(t, context, module, kindOfKey, depth)
 				)
-				// e.g. `typeof def & { in: unknown }`, whose declared members say
-				// it isn't a Type where nothing it's intersected with says it is
+				// e.g. `typeof def & { in: unknown }`, a Type only if some part says so
 				const declared = parts.filter(
 					kind =>
 						kind !== undefined &&
@@ -1442,9 +1412,7 @@ export class ModuleGraph {
 			}
 			case "TSArrayType":
 				return union([type.elementType], depth + 1)
-			// e.g. data for `(typeof names)[number]` or `Options["mode"]`, given
-			// `names` or `Options` is, but not `Parameters<typeof f>[0]`, which
-			// isn't a member of what it's passed
+			// e.g. data for `(typeof names)[number]`, but not `Parameters<typeof f>[0]`
 			case "TSIndexedAccessType": {
 				const object = type.objectType
 				if (
@@ -1537,8 +1505,7 @@ export class ModuleGraph {
 		}
 	}
 
-	// a type literal or interface isn't a Type, though a member typed
-	// `unknown` may hold one, which reads off it are as off a parameter
+	// a type literal or interface isn't a Type, though a member typed `unknown` may hold one
 	private signaturesKindOf(
 		signatures: TSSignature[],
 		context: Node,
@@ -1588,8 +1555,7 @@ export class ModuleGraph {
 		}
 	}
 
-	// what the type a module exports as `name` says, as its own module reads
-	// it, or null where the module doesn't export one
+	// null where the module exports no type by the name
 	private exportedTypeKindOf(
 		specifier: string,
 		name: string,
@@ -1687,8 +1653,7 @@ export class ModuleGraph {
 		return types[name] ?? undefined
 	}
 
-	// e.g. `f(A)`, `(t => t)(A)` or `new C(A)` for C's constructor, or
-	// undefined if `f` escapes
+	// e.g. `f(A)`, `(t => t)(A)` or `new C(A)` for C's constructor; undefined if `f` escapes
 	callsOf(
 		fn: FunctionNode,
 		module: SourceModule
@@ -1718,7 +1683,6 @@ export class ModuleGraph {
 		return result
 	}
 
-	// e.g. `M.User` for `User` in `const { User } = M`
 	private patternKindOf(
 		node: Node,
 		pattern: Node,
@@ -1802,7 +1766,6 @@ export class ModuleGraph {
 		}
 	}
 
-	// e.g. `user` in `const { a: { user } } = { a: { user: type(...) } }`
 	private destructuredValueOf(
 		node: Node,
 		pattern: Node,
@@ -2030,9 +1993,7 @@ export class ModuleGraph {
 				}
 				if (node.type !== "CallExpression" || !runtimeParamsOf(fn[0]).length)
 					return kindOfKey(...fn)
-				// e.g. `withId(A)` with `withId = t => t.and({ id: "string" })`, whose
-				// parameters hold what this call passes, where callers the build
-				// can't see may pass others
+				// e.g. `withId(A)` with `withId = t => t.and({ id: "string" })`
 				return kindOfKey(
 					this.applicationOf(node, fn[0], module, kindOfKey),
 					fn[1]
@@ -2102,8 +2063,7 @@ export class ModuleGraph {
 		}
 	}
 
-	// e.g. `Object.freeze(A)` or `new Proxy(A, {})`, as a builtin may return
-	// what it's passed
+	// e.g. `Object.freeze(A)` or `new Proxy(A, {})`, returning what they're passed
 	private builtinPassedOf(
 		call: CallExpression | NewExpression,
 		module: SourceModule,
@@ -2121,7 +2081,6 @@ export class ModuleGraph {
 		)
 	}
 
-	// e.g. an instance of `class { user = type(...) }`
 	private instanceKindOf(cls: Located, kindOfKey: KindOfKey): KindBits {
 		let held = 0
 		for (const name in fieldValuesOf(cls.node))
@@ -2155,7 +2114,6 @@ export class ModuleGraph {
 		)
 	}
 
-	// e.g. the class of `this` in a method, of `new C()` or `extends C`
 	private classOf(
 		node: Node,
 		module: SourceModule,
@@ -2181,7 +2139,6 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// e.g. unsure for `this.user` given `user = type(...)`
 	private fieldKindIn(
 		cls: Node,
 		name: unknown,
@@ -2211,13 +2168,11 @@ export class ModuleGraph {
 			this.classOf(cls.superClass, module, kindOfKey)
 		if (parent && this.mayDeclare(parent, name))
 			held |= kindOfKey(this.memberOf(parent.node, name), parent.module)
-		// e.g. a field a decorator, a subclass or a superclass the build can't
-		// read sets
+		// e.g. a field a decorator or a subclass the build can't read sets
 		else if (!values) held |= opaque
 		return lostOf(held)
 	}
 
-	// whether a class or one it extends may set a field
 	private mayDeclare(
 		cls: Located,
 		name: unknown,
@@ -2232,10 +2187,7 @@ export class ModuleGraph {
 		return !parent || this.mayDeclare(parent, name, seen)
 	}
 
-	// e.g. data for `opts.db` given `route({ db, input: type(...) })`
-	// e.g. `$setup.User` in a render function Vue compiles, which reads what
-	// the component's script exposes by that name: one of the module's
-	// bindings for script setup, or what its `setup()` or `data()` returns
+	// e.g. data for `opts.db` given `route({ db, input: type(...) })`, or `$setup.User` in a Vue render function
 	private exposedKindOf(
 		member: MemberExpression,
 		module: SourceModule,
@@ -2358,9 +2310,7 @@ export class ModuleGraph {
 				"kind" in key && key.kind === "param" && key.declaration === fn ?
 					params.findIndex(param => contains(param, key.id))
 				:	undefined
-			// what fn declares, e.g. `N` in `{ const N = T.or("null"); return N }`
-			// or the closure `() => T`, for the `T` passed, but not a call to fn
-			// itself, applied with what that call passes
+			// what fn declares, e.g. `N` in `{ const N = T.or("null"); return N }`, for the `T` passed
 			const anchor = anchorOf(key)
 			if (
 				index === undefined &&
@@ -2369,8 +2319,7 @@ export class ModuleGraph {
 				return kindOfKey(key, keyModule)
 			let kind = derived.get(key)
 			if (kind !== undefined) return kind
-			// what it holds where it's read while it's derived: a parameter what
-			// the call passes, else what any call gives it
+			// read while derived: a parameter holds what the call passes, else what any call gives it
 			kind =
 				index === undefined ? kindOfKey(key, keyModule)
 				: index === -1 ? kinds.data
@@ -2393,7 +2342,6 @@ export class ModuleGraph {
 		return result
 	}
 
-	// e.g. `{ User }` for `schemas`, `make()` or `forms.create`
 	private literalOf(
 		node: Node,
 		module: SourceModule,
@@ -2446,7 +2394,6 @@ export class ModuleGraph {
 		}
 	}
 
-	// e.g. a Type for `M.User` with `M = scope({ User: { ... } }).export()`
 	private aliasKindOf(
 		object: Node,
 		name: unknown,
@@ -2476,7 +2423,6 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// the aliases of a Module whose definition the build can read whole
 	private moduleDefinitionOf(
 		node: Node,
 		module: SourceModule,
@@ -2544,9 +2490,7 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// e.g. `scope({ ... })` for `$` with `const $ = scope({ ... })`
-	// e.g. `generic("t")({ ... })` or `type("<t>", { ... })`, which only an
-	// instantiation reads as a Type
+	// e.g. `scope({ ... })`, `generic("t")({ ... })` or `type("<t>", { ... })`
 	private definesGeneric(
 		call: CallExpression,
 		module: SourceModule,
@@ -2568,7 +2512,6 @@ export class ModuleGraph {
 		)
 	}
 
-	// e.g. `type`, `type.generic` or `$.generic`, with `$` a Scope
 	private isParser(
 		node: Node,
 		name: "type" | "generic",
@@ -2608,7 +2551,6 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// what a const binding is declared as, as one never written holds it,
 	// e.g. `shop` or `defs.shop`, imported from where it's declared
 	private constInitOf(
 		node: Node,
@@ -2813,7 +2755,6 @@ export class ModuleGraph {
 		return null
 	}
 
-	// e.g. what `schemas[key]` or `schemas[key].User` may read
 	private heldKindOf(literal: Located, seen = new Set<Node>()): KindBits {
 		const { node, module, kindOfKey } = literal
 		const isCached =
@@ -2844,7 +2785,6 @@ export class ModuleGraph {
 		return result
 	}
 
-	// e.g. `schemas.User` with `schemas` a namespace import
 	namespaceMemberOf(
 		member: MemberExpression,
 		module: SourceModule
@@ -3016,8 +2956,7 @@ export class ModuleGraph {
 		}
 	}
 
-	// e.g. `getPlaces().type`, which a precompiled Scope lacks, or `.params`,
-	// which a precompiled Generic lacks
+	// e.g. `getPlaces().type` or `.params`, which a precompiled Scope or Generic lacks
 	scopeReadOf(
 		node: Node,
 		module: SourceModule
@@ -3038,7 +2977,6 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// e.g. `type` or `ark` in `import * as ark from "arktype"`
 	private isArktypeImport(node: Node, module: SourceModule): boolean {
 		if (this.arkExportNameOf(node, module)) return true
 		const binding =
@@ -3050,10 +2988,7 @@ export class ModuleGraph {
 		return target === "arktype" || target === "arktypeNamespace"
 	}
 
-	// e.g. `() => scope(...)` passed to a function the build doesn't analyze,
-	// so it can't see what's read off the value. A held value, like `[$]`,
-	// holds it, so what's read off one may be it. Importers check an export
-	// whose value they can read.
+	// e.g. `() => scope(...)` passed to a function the build doesn't analyze; a held value like `[$]` counts
 	reachesUnseen(
 		node: Node,
 		module: SourceModule,
@@ -3159,8 +3094,7 @@ export class ModuleGraph {
 				return operator.value === operand && follow(operator.parent!, true)
 			case "ArrayExpression":
 				return follow(operator, true)
-			// e.g. `[...list]`, holding what `list` holds, or `{ ...$ }`, which
-			// copies what a precompiled Scope lacks
+			// e.g. `[...list]`, or `{ ...$ }`, which copies what a precompiled Scope lacks
 			case "SpreadElement":
 				return (
 					!held ||
@@ -3226,8 +3160,7 @@ export class ModuleGraph {
 		return !calls || calls.some(call => this.reaches(call, module, held, reach))
 	}
 
-	// e.g. `o.a = 1`, `list.push(x)`, `Object.assign(o, x)` or a helper doing
-	// so for `o` or `list`, changing what a binding holds without assigning it
+	// e.g. `o.a = 1`, `list.push(x)` or `Object.assign(o, x)`, changing what a binding holds without assigning it
 	writesThrough(binding: Binding, module: SourceModule): Node[] {
 		let result = this.writesByBinding.get(binding)
 		if (!result) {
@@ -3255,7 +3188,6 @@ export class ModuleGraph {
 		return result
 	}
 
-	// the write a read of an object starts through its members or aliases
 	private writeFrom(node: Node, module: SourceModule): Node | undefined {
 		for (;;) {
 			const [operand, parent] = operatorOf(node)
@@ -3321,7 +3253,6 @@ export class ModuleGraph {
 		}
 	}
 
-	// e.g. `text` for `text(50)`, imported or read off a namespace
 	functionOf(
 		callee: Node,
 		module: SourceModule
@@ -3339,7 +3270,6 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// e.g. `forms.create` with `forms = { create() { ... } }`
 	private methodOf(
 		callee: Node,
 		module: SourceModule,
@@ -3420,13 +3350,11 @@ export const memberNameOf = (member: MemberExpression): unknown =>
 		:	undefined
 	:	member.property.name
 
-// e.g. `a` for `{ a: x }`, `{ "a": x }` or `{ ["a"]: x }`
 const keyNameOf = (property: { key: Node; computed: boolean }): unknown =>
 	property.key.type === "Literal" ? property.key.value
 	: property.computed || property.key.type !== "Identifier" ? undefined
 	: property.key.name
 
-// e.g. `a` for `x` in `{ a: x }`, or 1 in `[, x]`
 const keyIn = (owner: Node, node: Node): unknown =>
 	owner.type === "Property" ? keyNameOf(owner)
 	: owner.type === "ArrayPattern" ? owner.elements.indexOf(node as never)
@@ -3444,9 +3372,7 @@ const definesType = (call: CallExpression): boolean => {
 	)
 }
 
-// e.g. `t.or` where `t` may be a Type, but not `list.map`. Off a value the
-// build has no source for, like `res.json`, only what composes a Type or a
-// build drops is read
+// e.g. `t.or` where `t` may be a Type, but not `list.map`
 const isUnsureRead = (
 	read: unknown,
 	kind: KindBits,
@@ -3484,7 +3410,6 @@ const annotate = (kind: KindBits, annotated: KindBits | undefined): KindBits =>
 		(kind & arkBits) | (kind & ~arkBits ? annotated : 0)
 	)
 
-// the class `this` refers to in its static method, field or block
 const staticOwnerOf = (node: Node): Node | undefined => {
 	const owner = ownerOf(node)
 	if (!owner || owner.type === "ObjectExpression") return
@@ -3497,7 +3422,6 @@ const staticOwnerOf = (node: Node): Node | undefined => {
 		:	undefined
 }
 
-// the class or object literal `this` refers to
 const ownerOf = (node: Node): Node | undefined => {
 	for (let owner = node.parent; owner; owner = owner.parent) {
 		if (owner.type === "ClassBody") return owner.parent!
@@ -3512,7 +3436,6 @@ const ownerOf = (node: Node): Node | undefined => {
 
 const fieldValuesByClass = new WeakMap<Node, Record<string, Node[]>>()
 
-// what each field of a class's instances may hold
 const fieldValuesOf = (cls: Node): Record<string, Node[]> => {
 	const cached = fieldValuesByClass.get(cls)
 	if (cached) return cached
@@ -3585,7 +3508,6 @@ const writersByGlobal: Record<string, string[]> = {
 	Reflect: ["set", "defineProperty", "deleteProperty", "setPrototypeOf"]
 }
 
-// e.g. `Object.assign`, when `Object` is the global
 export const isObjectWrite = (callee: Node, module: SourceModule): boolean => {
 	callee = unwrapExpression(callee)
 	return (
@@ -3597,7 +3519,6 @@ export const isObjectWrite = (callee: Node, module: SourceModule): boolean => {
 	)
 }
 
-// the assignment, update or `delete` a target is part of
 export const writeOf = (target: Node): Node => {
 	const parent = target.parent!
 	switch (parent.type) {
@@ -3612,7 +3533,6 @@ export const writeOf = (target: Node): Node => {
 	return writeOf(parent)
 }
 
-// e.g. `T extends Type` for `T` in `<T extends Type>(t: T) => t`
 const typeParameterOf = (
 	node: Node | null | undefined,
 	name: string
@@ -3623,7 +3543,6 @@ const typeParameterOf = (
 		typeParameterOf(node.parent, name)
 	)
 
-// e.g. the cast in `(o as Schemas).user`
 const castOf = (node: Node): Node | undefined => {
 	for (; isTransparent(node); node = node.expression) {
 		if (
@@ -3642,8 +3561,7 @@ const isConstReference = (type: TSType): boolean =>
 
 const arkTypesSpecifier = /^(?:arktype|@ark\/(?:type|schema))(?:\/|$)/
 
-// e.g. `./schemas` or `~/schemas`, whose types the build reads where it
-// can resolve them
+// e.g. `./schemas` or `~/schemas`
 const localSpecifier = /^(?:[#./~]|@\/)/
 
 // e.g. `Scope`, whose value is one, which only a site may read
@@ -3652,7 +3570,6 @@ const arkTypeKindOf = (name: string): KindBits =>
 
 type LocalType = TSInterfaceDeclaration | TSTypeAliasDeclaration
 
-// the types a standalone runtime replaces with a validator or refuses
 const arkTypeNames: Record<string, 1> = Object.setPrototypeOf(
 	{
 		Type: 1,
@@ -3667,7 +3584,6 @@ const arkTypeNames: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
-// e.g. `["arktype", "Type"]` for `import type { Type } from "arktype"`
 const importedNameOf = (
 	module: SourceModule,
 	name: string
@@ -3721,7 +3637,6 @@ export const unstaticStatementOf = (fn: FunctionNode): Node | undefined => {
 	)
 }
 
-// what a call to a static helper evaluates before its `return`
 export const staticConstsOf = (fn: FunctionNode): VariableDeclarator[] =>
 	fn.body?.type === "BlockStatement" ?
 		fn.body.body.flatMap(statement =>
@@ -3740,18 +3655,15 @@ const isDeclaredBeforeReturn = (statement: Node): boolean =>
 	:	statement.type === "TSTypeAliasDeclaration" ||
 		statement.type === "TSInterfaceDeclaration"
 
-// e.g. `{ User }` for `() => ({ User })`
 const returnedOf = (fn: FunctionNode): Node | undefined =>
 	isStatic(fn) ? staticBodyOf(fn) : onlyReturnOf(fn)
 
-// e.g. `a` and `get b() {}` in `{ a, get b() {} }`, or a class's statics
 const membersOf = (literal: Node): (ObjectPropertyKind | ClassElement)[] =>
 	literal.type === "ObjectExpression" ? literal.properties
 	: literal.type === "ClassDeclaration" || literal.type === "ClassExpression" ?
 		literal.body.body.filter(element => "static" in element && element.static)
 	:	[]
 
-// e.g. `x` in `{ a: x }` or `static a = x`, or a getter's function
 const memberValueOf = (member: Node): Node | null =>
 	(
 		member.type === "Property" ||
@@ -3843,7 +3755,6 @@ const namedFunctionOf = (node: Node, module: SourceModule): Node => {
 		:	node
 }
 
-// e.g. the statement `__name(f, "f")`
 const isNamed = (node: Node, module: SourceModule): boolean =>
 	node.parent?.parent?.type === "ExpressionStatement" &&
 	namedFunctionOf(node.parent, module) === node
@@ -3901,8 +3812,7 @@ export const isTypeOnly = (statement: Node): boolean =>
 
 const constructsByModule = new WeakMap<SourceModule, boolean>()
 
-// e.g. `new this(A)` or `new t.constructor(A)`, calling a constructor
-// where its class isn't named
+// e.g. `new this(A)` or `new t.constructor(A)`
 const constructsReflectively = (module: SourceModule): boolean => {
 	let result = constructsByModule.get(module)
 	if (result === undefined) {
@@ -4025,7 +3935,6 @@ export const isSetLast = (binding: Binding): boolean => {
 	return true
 }
 
-// the variable a site initializes, which a bundler may drop with it
 export const initializedOf = (node: Node): VariableDeclarator | undefined => {
 	// e.g. `type({ ... }) satisfies Type<Data>`, which runs as its expression
 	while (
@@ -4059,7 +3968,6 @@ export const declarationStartOf = (node: Node): number | undefined => {
 export const contains = (outer: Span, inner: Span): boolean =>
 	outer.start <= inner.start && inner.end <= outer.end
 
-// e.g. `id` in `(id: string) => type({ id: "string" }).pipe(...)`
 export const readsBindingOf = (
 	outer: Node,
 	node: Node,

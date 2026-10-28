@@ -108,7 +108,6 @@ export interface Read {
 
 export interface Trace {
 	reads: Read[]
-	// each function the build interprets a call to
 	helpers: [FunctionNode, SourceModule][]
 	// each function read from another module's export, which a mock can replace
 	exportedFunctions: Read[]
@@ -173,13 +172,11 @@ export interface SiteState {
 	unavailableReads: Node[]
 	holes: unknown[]
 	interpreted: Set<Node>
-	// each call into arktype's API
 	requests: [Node, SourceModule][]
 	// each value passed to arktype, whose holes a ParseError can print
 	arktypeArguments: unknown[]
 	// default checks and Scope aliases reached, in order
 	reached: Reached[]
-	// each Type a request returned
 	roots: BaseRoot[]
 	// e.g. `User` and "json" for `User.json`, which a standalone build folds
 	introspection:
@@ -188,8 +185,7 @@ export interface SiteState {
 	value: unknown
 	error: DynamicValue | ParseError | undefined
 	isEvaluated: boolean
-	// e.g. finding which object a write targets, where an object the program
-	// writes still reads as its literal
+	// e.g. finding which object a write targets, which still reads as its literal
 	readsLiterals: boolean
 }
 
@@ -221,7 +217,6 @@ export interface Context {
 	env: Environment | undefined
 	trace: Trace
 	site: SiteState | undefined
-	// the site or declaration being evaluated
 	origin: { module: SourceModule; node: Node } | undefined
 	depth: number
 }
@@ -231,7 +226,6 @@ interface Lookup {
 	read?: Read
 }
 
-// a value read whole off its root
 const lookupOf = (root: InputRoot, value: unknown): Lookup => ({
 	value,
 	read: { root, path: [], value }
@@ -314,7 +308,6 @@ export class Interpreter {
 	// what computing each cache entry reached, by cache and key
 	private reachedByEntry = new WeakMap<object, Map<unknown, Set<Reached>>>()
 	private aliasesByScope = new WeakMap<object, Map<string, ScopeAlias>>()
-	// the definitions each Scope was created from
 	definitionsByScope = new WeakMap<object, unknown>()
 	sourcesBySymbol = new Map<symbol, [Node, SourceModule]>()
 	// values reused by every evaluation of the expression creating them
@@ -356,7 +349,6 @@ export class Interpreter {
 		this.registerSites = registerSites
 	}
 
-	// each hole arktype could print from a value
 	holesIn(
 		value: unknown,
 		holes = new Set<unknown>(),
@@ -388,7 +380,6 @@ export class Interpreter {
 		return holes
 	}
 
-	// the expression that creates a hole and its module
 	sourceOf(hole: unknown): [Node, SourceModule] | undefined {
 		if (typeof hole === "symbol") return this.sourcesBySymbol.get(hole)
 		const standIn = hasDomain(hole, "object") && this.standIns.get(hole)
@@ -1127,8 +1118,7 @@ export class Interpreter {
 			:	this.bindingValue(target.binding, target.module)
 	}
 
-	// e.g. `shape[f] = "string"` before `type(shape)`, changing an object the
-	// build reads as its literal. A write inside the read is evaluated with it
+	// e.g. `shape[f] = "string"` before `type(shape)`; a write inside the read is evaluated with it
 	private writtenBefore(
 		binding: Binding,
 		module: SourceModule,
@@ -1772,7 +1762,6 @@ export class Interpreter {
 		)
 	}
 
-	// what configure() returns: its configuration merged with what it receives
 	configurationOf(call: Node, received: unknown, ctx?: Context): unknown {
 		const cached = !ctx?.env && this.configurationsByNode.get(call)
 		if (cached) return cached
@@ -2035,7 +2024,6 @@ export class Interpreter {
 		)
 	}
 
-	// the opaque value an argument holds, or that arktype built a value from
 	private opaqueStandInOf(
 		value: unknown,
 		seen = new Set<unknown>()
@@ -2121,8 +2109,7 @@ export class Interpreter {
 		}
 		const result = this.evaluate(staticBodyOf(closure.node)!, callCtx)
 		if (isDynamic(result) && !result.isOpaque) return result
-		// e.g. `note()` in `(max, tag = note()) => ...`, which the program runs
-		// for its effect, though the precompiled call drops it
+		// e.g. `note()` in `(max, tag = note()) => ...`, run for its effect though the precompiled call drops it
 		const env = callCtx.env!
 		const unread = [...env.valuesByBinding].flatMap(([binding, value]) =>
 			env.read.has(binding) ? [] : [value]
@@ -2132,8 +2119,7 @@ export class Interpreter {
 		return this.dynamicIn(unread)?.asOperand() ?? result
 	}
 
-	// as findDynamic, remembering containers that hold none, as a callback
-	// over a long array is passed it at each call
+	// as findDynamic, remembering containers that hold none
 	private dynamicIn(value: unknown): DynamicValue | undefined {
 		const walked: object[] = []
 		const find = (value: unknown): DynamicValue | undefined => {
@@ -2714,7 +2700,6 @@ const throwsUnset = (node: Node): boolean => {
 	)
 }
 
-// where a declarator sets a binding, once its pattern element has run
 const setAt = (binding: Binding): number => {
 	if (binding.declaration.type !== "VariableDeclarator")
 		return binding.declaration.end
@@ -2798,7 +2783,6 @@ const parameterCount = (fn: FunctionNode): number => {
 	return count
 }
 
-// the name JS infers for a function or class from its position, if any
 export const inferredNameOf = (fn: FunctionNode): string => {
 	const parent = fn.parent
 	return (

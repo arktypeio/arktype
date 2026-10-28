@@ -111,8 +111,7 @@ export class ArkErrors extends BaseArkErrors {
 		this.config = config
 	}
 
-	// arkKind's value, since a computed key keeps the class in a bundle
-	// that never reads it
+	// a computed key would keep the class in a bundle that never reads it
 	get " arkKind"(): "errors" {
 		return "errors"
 	}
@@ -139,8 +138,7 @@ export class ArkErrors extends BaseArkErrors {
 	_firstGrouped(): ArkError | undefined {
 		const added = this._
 		const first = added[0]
-		// the first added is the first grouped, unless another shares its path,
-		// so the rest are grouped only then
+		// the rest are grouped only once another shares the first's path
 		if (this.groupedCount === 0 && first && isFirstAloneAtPath(added)) {
 			writeError(first, this.config, this.selectedLocale)
 			return first
@@ -254,7 +252,6 @@ export class ArkErrors extends BaseArkErrors {
 	}
 }
 
-// a path's string is its error's propString, written once
 const pathKeyOf = (error: ArkError): string =>
 	(error.propString ??= stringifyPath(error.path))
 
@@ -325,8 +322,7 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 	class Unread {
 		declare config: ResolvedConfig
 		declare _node: BaseNode
-		// the data, and once read, the issues found, named as a standalone
-		// Unread's are
+		// the data, then the issues found, named as a standalone Unread's are
 		declare _d: unknown
 		declare _ctor: typeof Traversal
 		declare _f?: ArkError[]
@@ -353,15 +349,13 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 				if (!ctx.hasError())
 					ctx.reject({ expected: "valid", problem: "is invalid" })
 				const errors = this as {} as ArkErrors
-				// an ArkErrors holding what its traversal found
 				errors._init(this.config)
 				this._f = (ctx.fin(null) as ArkErrors)._
 			}
 			return this._f
 		}
 
-		// found by a traversal adding only the errors at its path, unless the
-		// rest were found first
+		// a traversal adds only the errors at its path, unless the rest were found first
 		get _first(): ArkError | undefined {
 			if (this._1 || this._f)
 				return this._1 ?? (this as {} as ArkErrors)._firstGrouped()
@@ -398,11 +392,7 @@ const skipped = {} as ArkError
 
 const firstPathTraversals = new WeakMap<typeof Traversal, FirstPathTraversal>()
 
-// a traversal keeping only the errors at the path of its first, as firstIssue
-// groups them, so it builds no others. One elsewhere is counted as added, so
-// every check stops where it would have. Where no node revisits a path, it
-// stops once it fails elsewhere or leaves the first's path, as every error
-// there is then behind it
+// keeps only the errors at its first's path, counting one elsewhere so each check stops where it would have
 const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
 	let FirstPath = firstPathTraversals.get(Base)
 	if (FirstPath) return FirstPath
@@ -422,8 +412,7 @@ const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
 			this.left = false
 		}
 
-		// whether an error at this path, or a key below it, is elsewhere than
-		// the first, outside a union's branches, which build its error
+		// outside the first's path, not counting a union's branches
 		private isElsewhere(key?: PropertyKey): boolean {
 			const first = this.firstPath
 			if (first === undefined || this.branches.length !== 0) return false
@@ -502,8 +491,7 @@ const revisitsPaths = (node: BaseNode): boolean => {
 	return revisits
 }
 
-// a root calling no user code and transforming nothing finds its issues once
-// they're read
+// a root calling no user code and transforming nothing finds its issues once read
 export const applyUnread = (
 	node: BaseNode,
 	data: unknown,
@@ -519,7 +507,6 @@ export const applyUnread = (
 
 type Keyed = Record<PropertyKey, unknown>
 
-// arktype's traversal, writing errors from node contexts
 export class ArkTraversal extends Traversal {
 	override createErrors(): ArkErrors {
 		return new ArkErrors(this.config)
@@ -565,8 +552,7 @@ export class ArkTraversal extends Traversal {
 	}
 
 	protected override raise(input: ArkErrorInput): ArkError {
-		// an error's supplied text is read from its input, so a caller's
-		// later change to an object it passed must not reach it
+		// read now, so a caller's later change to its input doesn't reach the error
 		const errCtx: ArkErrorContextInput =
 			typeof input === "object" ?
 				input.code ?
@@ -759,7 +745,6 @@ const errorOfNodeContext = (
 	)
 }
 
-// builders by context, shared by a node's errors
 const buildersByContext = new WeakMap<object, ErrorBuilder>()
 
 let compileBuilder:

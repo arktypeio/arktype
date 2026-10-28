@@ -142,8 +142,7 @@ const lengthActual: Locale.ActualWriter<LengthCode> = (data, e, locale) =>
 	: e.code === "minLength" ? ""
 	: "leer"
 
-// a value that must be nonempty is negated, and a nonempty array is counted
-// by what it contains unless another writer wrote its actual
+// a value that must be nonempty is negated, and a nonempty array is counted by what it contains
 const lengthProblem: Locale.ProblemWriter<LengthCode> = (e, locale) => {
 	if (e.code === "minLength" && e.rule === 1)
 		return `darf nicht leer sein${was(e.actual)}`
@@ -164,8 +163,7 @@ const lengthWriters = {
 	problem: lengthProblem
 }
 
-// a path like [0] or ["a b"] needs a noun to be a subject, and a title shared
-// by a list's items needs the path through an index beside it
+// a path like [0] or ["a b"] needs a noun to be a subject
 const subjectOf = (
 	propString: string,
 	label: string | undefined,

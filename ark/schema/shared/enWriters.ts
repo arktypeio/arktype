@@ -12,8 +12,7 @@ import {
 import type { ActualWriter, ProblemWriter } from "./errors.ts"
 import type { Locale } from "./locale.ts"
 
-// en's writers that read data, which a standalone validator imports apart from
-// arktype's errors
+// en's writers that read data, imported by standalone validators apart from arktype's errors
 
 export const writeProblem: ProblemWriter = ({ expected, actual }) =>
 	`must be ${expected}${actual ? ` (was ${actual})` : ""}`

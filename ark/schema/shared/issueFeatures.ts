@@ -1,6 +1,4 @@
-// what a program's issues may hold, each set false by a build finding no
-// validator of the program that writes it, so its bundler drops what reads it.
-// Only constants, as a bundler inlines one only where no statement precedes it
+// each set false by a build finding no validator that writes it; only constants, as a bundler inlines one only where no statement precedes it
 
 /** an array's index in an issue's path */
 export const reportsIndices: boolean = true

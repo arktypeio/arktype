@@ -130,7 +130,6 @@ const reachedBy = (
 	return reached
 }
 
-// a top-level declaration of one of the runtime's or a program's modules
 interface Declared {
 	binding: Binding
 	module: SourceModule
@@ -183,7 +182,6 @@ const fileOf = (specifier: string, importer: string): string | undefined => {
 	}
 }
 
-// the declaration of a module's export, through imports and re-exports
 const exportedBy = (
 	file: string | undefined,
 	name: string
@@ -219,7 +217,6 @@ const declaredAs = (binding: Binding): Declared | undefined => {
 	)
 }
 
-// the top-level declarations a declaration reads
 const readsOf = (declared: Declared): Declared[] => {
 	if (declared.reads) return declared.reads
 	const { binding, module } = declared
@@ -241,8 +238,7 @@ const readsOf = (declared: Declared): Declared[] => {
 	return reads
 }
 
-// a declaration's code without its types, as a runtime read from source (as
-// in this repo) is minified once they're stripped
+// a runtime read from source, as in this repo, is minified once its types are stripped
 const javaScriptOf = (module: SourceModule, declaration: Node): string => {
 	const code = module.textOf(declaration)
 	if (!/\.[cm]?tsx?$/.test(module.id)) return code

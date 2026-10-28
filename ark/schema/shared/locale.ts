@@ -193,8 +193,7 @@ const describeEachMissing = (
 	return branches
 }
 
-// a unit or proto's description is authored, by its meta or a scope's
-// writer, unless it is what arktype writes for it
+// a unit or proto's description is authored unless it is what arktype writes for it
 const describeBasis = (basis: MissingBasis, locale: Locale): string =>
 	(
 		(basis.code === "unit" || basis.code === "proto") &&

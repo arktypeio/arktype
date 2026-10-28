@@ -9,8 +9,7 @@ import type {
 import type { Fn } from "@ark/util"
 import { failsAt, failsIn } from "./runtime.ts"
 
-// a size build's validators are composed of these, each a node: it allows
-// data passed none, and passed one, reports to its ctx as an Apply does
+// a size build's validators are composed of these; passed a ctx, each reports to it as an Apply does
 
 /** a node a size build composes, reporting to a ctx it's passed */
 export interface Checker {
@@ -132,8 +131,7 @@ export const pattern = ((
 ): Check =>
 	check("pattern", description, data => instance.test(data))) satisfies Fn
 
-// shapes of the intersections most nodes are, each checking its refinements in
-// the order intersection does, with a bound left undefined never failing
+// the intersections most nodes are; a bound left undefined never fails
 
 // a string whose length is at most max and at least min
 export const stringRange = ((max?: number, min?: number): Checker => {
@@ -158,8 +156,7 @@ export const integerRange = ((least?: number, most?: number): Checker => {
 		:	!failsAt(ctx as never, numberCheck, data)
 }) satisfies Fn
 
-// an array of element, which transforms nothing, its length at most max and
-// at least min
+// an array of element, which transforms nothing
 export const arrayOf = ((
 	element: Checker,
 	max?: number,
@@ -196,8 +193,7 @@ export const booleanChecker: Checker = /* @__PURE__ */ check(
 	data => typeof data === "boolean"
 )
 
-// a basis failing stops the node, as do refinements failing together, before
-// what it checks within, e.g. its structure
+// a failed basis or refinement stops the node before its structure
 export const intersection = ((
 	basis: Check | 0,
 	refinements: readonly Check[],
@@ -218,8 +214,7 @@ export const intersection = ((
 	return checker
 }) satisfies Fn
 
-// a key's checker where the key may be absent, written as value where value
-// is passed, even undefined
+// written as value where value is passed, even undefined
 export const optional = ((checker: Checker, ...value: [unknown?]): Checker => {
 	const wrapped: Checker = (data, ctx) => checker(data, ctx)
 	wrapped.o = 1
@@ -252,9 +247,7 @@ export const props = ((declared: Props): Checker =>
 		return true
 	}) satisfies Fn
 
-// whether data's prototypes include a builtin's, so it keeps state in
-// internal slots: one its native constructor creates, other than a realm's
-// Object.prototype
+// data inheriting a builtin's prototype keeps state in internal slots
 const isBuiltin = (data: object): boolean => {
 	for (
 		let prototype = Object.getPrototypeOf(data);
@@ -272,8 +265,7 @@ const isBuiltin = (data: object): boolean => {
 	return false
 }
 
-// a copy of data to write to, keeping its prototype and enumerable keys,
-// unless it's a builtin, which is written in place
+// keeps data's prototype and enumerable keys; a builtin is written in place
 const copyForWriting = (data: any): any => {
 	const prototype = Object.getPrototypeOf(data)
 	return (
@@ -284,8 +276,7 @@ const copyForWriting = (data: any): any => {
 	)
 }
 
-// props whose values transform or default, copied where one is written and
-// keeping each declared key data holds
+// props whose values transform or default
 export const transformingProps = ((declared: Props): Checker => {
 	const checker = props(declared)
 	checker.t = data => {
@@ -335,8 +326,7 @@ export const transformingElementsOf = ((element: Checker): Checker => {
 // read as a node's Transform, unless it's unread
 export const transformOf = ((checker: Checker) => checker.t!) satisfies Fn
 
-// a union of values, each compared by identity, which a discriminant tells
-// apart unless it's two
+// a union of values compared by identity
 export const units = ((
 	values: readonly unknown[],
 	code: ArkErrorCode = "discriminant",
@@ -377,8 +367,7 @@ export const nullable = ((checker: Checker | 1, domain = "string"): Checker =>
 		nullableDescriptionOf(domain)
 	)) satisfies Fn
 
-// a union of objects told apart by the string at one key; data that isn't an
-// object, or holds no case at the key, fails the union or that key
+// a union of objects told apart by the string at one key
 export const discriminate = ((
 	key: string,
 	cases: Record<string, Checker | 1>,
@@ -404,8 +393,7 @@ export const discriminate = ((
 	return checker
 }) satisfies Fn
 
-// a discriminated union with branches lacking the key, which check data
-// holding no case: data they don't allow fails the union as described
+// the branches lacking the key check data holding no case
 export const discriminateOr = ((
 	otherwise: Checker,
 	key: string,
@@ -429,8 +417,7 @@ export const discriminateOr = ((
 	return checker
 }) satisfies Fn
 
-// branches told apart by trying each, which fail as one issue: data failing
-// each branch's basis fails them, as bases describes them
+// branches tried in turn, failing as one issue described by bases
 export const union = ((
 	branches: readonly Checker[],
 	description: string,
