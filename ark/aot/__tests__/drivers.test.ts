@@ -358,6 +358,9 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 
 		it("packages that opt in", () => {
 			attest(node(["main.ts"], {}, library).stdout).equals(runPlain(library))
+			attest(node(["main.ts"], { inline: true }, library).stdout).equals(
+				runPlain(library)
+			)
 		})
 
 		it("undetailed programs", () => {

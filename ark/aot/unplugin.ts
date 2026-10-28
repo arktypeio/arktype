@@ -383,7 +383,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		)
 	}
 	const reportedPrecompiled = new Set<string>()
+	// a package this plugin precompiles imports the runtime as it transforms
+	// it, inline
 	const precompiledProblemOf = (id: string, importer: string) => {
+		if (isTransformedId(fileOf(importer))) return
 		const name = precompiledDependencyOf(id, importer)
 		if (!name || reportedPrecompiled.has(name)) return
 		reportedPrecompiled.add(name)
