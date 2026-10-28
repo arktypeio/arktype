@@ -81,7 +81,6 @@ export const optional: setImplementationOf<Optional.Declaration> = {
 }
 
 // a value allowing undefined, shared by every optional prop of the value
-// rather than reduced again for each
 const valuesWithUndefined = new WeakMap<BaseRoot, BaseRoot>()
 
 const withUndefined = (value: BaseRoot): BaseRoot => {

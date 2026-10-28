@@ -24,7 +24,8 @@ const intersectedOperandsOf = (node: BaseRoot): readonly BaseRoot[] =>
 		node.operands
 	:	[node]
 
-// an operation's alias is referenced by its operands' identities, so an equivalent operation reuses it
+// an operation's alias is referenced by its operands' identities, so an
+// equivalent operation reuses it
 const operate = (
 	l: Alias.Node,
 	r: BaseRoot,
@@ -72,7 +73,8 @@ export const alias: setImplementationOf<Alias.Declaration> = {
 		...defineRightwardIntersections("alias", (l, r, ctx) => {
 			if (r.isUnknown()) return l
 			if (r.isNever()) return r
-			// a primitive is often disjoint from a cyclic type, which discrimination and morph unions need to know
+			// a primitive is often disjoint from a cyclic type, which discrimination
+			// and morph unions need to know
 			if (!r.overlaps($ark.kw.object) && isResolvable(l))
 				return intersectOrPipeNodes(l.resolution, r, ctx)
 			return operate(l, r, ctx)
