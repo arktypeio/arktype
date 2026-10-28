@@ -177,6 +177,7 @@ const standaloneOptions = [
 	"freeze",
 	"lazy",
 	"jsonInput",
+	"bakedLimit",
 	"shadow",
 	"creationChecks",
 	"errors",

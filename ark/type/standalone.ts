@@ -5,7 +5,6 @@ import {
 	isDecidedByAllows,
 	isNode,
 	isRefinedPattern,
-	jsonLengthOf,
 	madeMorphs,
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
@@ -133,18 +132,25 @@ type DeclarationRole =
 	| "jsonSchema"
 	| "traversal"
 
-// json repeats a Type at each reference, so a reused Type's text doubles per level
-const maxWrittenJsonLength = 1 << 22
+// json and a JSON Schema repeat a Type at each reference, so a reused Type's
+// text doubles per level; past this many chars a site's introspection fails
+const defaultBakedLimit = 1 << 20
 
-const assertWritableJson = (root: BaseRoot): void => {
-	const length = jsonLengthOf(root.json)
-	if (length > maxWrittenJsonLength) {
-		throwParseError(
-			writeUnprecompilableMessage(
-				`introspection writing out about ${Math.round(length / 1e6)} MB of JSON, as it repeats each Type it references`
-			)
-		)
-	}
+const sizeOf = (chars: number): string =>
+	chars >= 1e6 ? `${(chars / 1e6).toFixed(1)} MB`
+	: chars >= 1e4 ? `${Math.round(chars / 1e3)} KB`
+	: chars >= 1e3 ? `${(chars / 1e3).toFixed(1)} KB`
+	: `${chars} chars`
+
+export const writeBakedLimitMessage = (
+	lengths: Partial<Record<IntrospectionMember, number>>,
+	limit: number
+): string => {
+	const members = Object.entries(lengths)
+		.map(([member, length]) => `${member} ${sizeOf(length!)}`)
+		.join(", ")
+	const total = Object.values(lengths).reduce((sum, length) => sum + length!, 0)
+	return `its introspection bakes ${sizeOf(total)} of text (${members}), over the ${sizeOf(limit)} a site may, as json and a JSON Schema repeat each Type they reference. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: "arktype"`
 }
 
 // constraints sorted by hash, which can include a function's name
@@ -298,6 +304,8 @@ export interface StandaloneOptions {
 	shapes?: boolean | undefined
 	// false where nothing calls a validator, so each failure's errors are read
 	called?: boolean | undefined
+	/** @internal the chars a site's baked introspection may total */
+	bakedLimit?: number | undefined
 	// false where nothing reads a validator's .allows
 	readsAllows?: boolean | undefined
 	// false where no call passes a second argument, a traversal to pipe into
@@ -338,6 +346,7 @@ interface Baking extends ValidatorReads {
 	compiledInputs: ReadonlySet<string>
 	// errors find their issues once read, for a call that may never read them
 	defersIssues: boolean
+	bakedLimit: number
 	issues: IssueFeatures
 }
 
@@ -573,6 +582,7 @@ const bakingOf = (
 		compiledInputs:
 			opts.optimize === "size" ? compiledInputsOf(exports) : new Set(),
 		defersIssues: opts.optimize !== "size" && opts.called !== false,
+		bakedLimit: opts.bakedLimit ?? defaultBakedLimit,
 		called: opts.called !== false,
 		readsAllows: opts.readsAllows !== false,
 		piped: opts.piped !== false,
@@ -1614,7 +1624,7 @@ class StandaloneArtifact {
 	): string {
 		this.receive(params)
 		this.writeSharedUnits()
-		const value =
+		const value = this.baked(member, () =>
 			member === "toJsonSchema" ?
 				this.writeJsonSchema(
 					type,
@@ -1627,6 +1637,8 @@ class StandaloneArtifact {
 			: member === "expression" ? this.emitExpression(type)
 			: member === "description" ? this.emitDescription(type)
 			: this.readJson(type)
+		)
+		this.assertBakedWithin()
 		const defaults = this.writeDefaultChecks(this.defaultChecks)
 		return this.writeFactoryFunction(index, params, configured, [
 			...(defaults.length ?
@@ -2456,26 +2468,30 @@ ${writeFunction(
 		const members: string[] = []
 		const bakes = (member: IntrospectionMember) =>
 			this.baking.members.has(member)
-		if (bakes("toJsonSchema") || bakes("~standard.jsonSchema"))
-			assertWritableJson(root)
 		if (bakes("expression"))
 			members.push(`expression: ${this.emitExpression(root)}`)
 		if (bakes("description"))
 			members.push(`description: ${this.emitDescription(root)}`)
 		if (bakes("json") || bakes("toJSON")) {
-			const json = this.readJson(root)
+			const json = this.baked(bakes("json") ? "json" : "toJSON", () =>
+				this.readJson(root)
+			)
 			if (bakes("json")) members.push(`json: ${json}`)
 			if (bakes("toJSON"))
 				members.push(`toJSON: ${this.frozen(`() => ${json}`)}`)
 		}
 		const standard =
 			bakes("~standard.jsonSchema") &&
-			(["input", "output"] as const).map(
-				io =>
-					`[${supportedJsonSchemaTargets.map(target => this.emitJsonSchema(root, () => root["~standard"].jsonSchema[io]({ target }))).join(", ")}]`
+			this.baked("~standard.jsonSchema", () =>
+				(["input", "output"] as const).map(
+					io =>
+						`[${supportedJsonSchemaTargets.map(target => this.emitJsonSchema(root, () => root["~standard"].jsonSchema[io]({ target }))).join(", ")}]`
+				)
 			)
 		if (bakes("toJsonSchema")) {
-			const written = this.emitJsonSchema(root, () => root.toJsonSchema())
+			const written = this.baked("toJsonSchema", () =>
+				this.emitJsonSchema(root, () => root.toJsonSchema())
+			)
 			// only targets whose text is already baked
 			const byTarget = supportedJsonSchemaTargets.map(
 				target =>
@@ -2494,7 +2510,39 @@ ${writeFunction(
 				`"~standard": { jsonSchema: runtime.bakedStandardJsonSchema(${standard.join(", ")}) }`
 			)
 		}
+		this.assertBakedWithin()
 		return members
+	}
+
+	// the chars each introspection member of the Type being written bakes
+	private bakedLengths: Partial<Record<IntrospectionMember, number>> = {}
+	private bakingMember: IntrospectionMember | undefined
+
+	private baked<t>(member: IntrospectionMember, write: () => t): t {
+		const outer = this.bakingMember
+		this.bakingMember = member
+		try {
+			return write()
+		} finally {
+			this.bakingMember = outer
+		}
+	}
+
+	private countBaked(text: string): void {
+		if (this.bakingMember === undefined) return
+		this.bakedLengths[this.bakingMember] =
+			(this.bakedLengths[this.bakingMember] ?? 0) + text.length
+	}
+
+	private assertBakedWithin(): void {
+		const lengths = this.bakedLengths
+		this.bakedLengths = {}
+		const total = Object.values(lengths).reduce(
+			(sum, length) => sum + length!,
+			0
+		)
+		if (total > this.baking.bakedLimit)
+			throwParseError(writeBakedLimitMessage(lengths, this.baking.bakedLimit))
 	}
 
 	// a fallback a call passes, as hono-openapi does, changes nothing where none writes
@@ -2524,8 +2572,8 @@ ${writeFunction(
 
 	// nodes share json unless it prints a hole
 	readJson(root: BaseRoot): string {
-		assertWritableJson(root)
 		const value = `runtime.deepFreeze(${this.writeData(root.json)})`
+		this.countBaked(value)
 		if (holdsLocal(root.json)) {
 			return (
 				this.declarations.namesByValue.get(root.json) ??
@@ -2603,6 +2651,7 @@ ${writeFunction(
 	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
 		const values: unknown[] = []
 		const writer = this.writeJsonSchemaWriter(root, write, values)
+		this.countBaked(writer)
 		const declared = this.jsonSchemaNameOf(writer)
 		if (declared) return declared
 		// only a Date needs a declaration beside the validator

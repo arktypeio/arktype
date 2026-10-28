@@ -26,6 +26,9 @@ const settings = {
 	"optimize?": optimization,
 	"optimizeErrors?": optimization,
 	"jsonInput?": flag,
+	"bakedLimit?": type("number.integer > 0").describe(
+		"the characters a site's baked introspection may total"
+	),
 	"freeze?": flag,
 	"lazy?": flag,
 	"creationChecks?": "'types' | 'helpers' | 'none'",

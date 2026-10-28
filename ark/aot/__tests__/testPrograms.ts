@@ -1572,10 +1572,11 @@ const disagreementsOf = async (
 	const cache = buildPerturbed(corpus, { ...buildOptions, mode: "cache" })
 	const standalone = buildPerturbed(corpus, buildOptions)
 	for (const error of standalone.errors) {
-		// a reason is counted without the names and positions it quotes
+		// a reason is counted without the names, positions and sizes it quotes
 		const reason = (error.reasons[0] ?? error.message)
 			.replace(/`[^`]*`/g, "`…`")
 			.replace(/ \(\S+:\d+:\d+\)| from \S+$/g, "")
+			.replace(/\d+(?:\.\d+)? (?:chars|KB|MB)/g, "…")
 		counts.refusals[reason] = (counts.refusals[reason] ?? 0) + 1
 	}
 	const foldedDir = join(dir, "folded")

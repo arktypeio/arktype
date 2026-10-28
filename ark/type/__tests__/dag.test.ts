@@ -84,9 +84,7 @@ contextualize(() => {
 		attest(() =>
 			precompileStandalone({ T: levels(8) }, { members: { json: true } })
 		).throws(
-			writeUnprecompilableMessage(
-				"introspection writing out about 11 MB of JSON, as it repeats each Type it references"
-			)
+			'its introspection bakes 11.8 MB of text (json 11.8 MB), over the 1.0 MB a site may, as json and a JSON Schema repeat each Type they reference. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: "arktype"'
 		)
 	})
 })

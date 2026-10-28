@@ -257,6 +257,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	optimizeErrors?: Optimization | undefined
 	/** trusts data to hold only own, enumerable keys, as JSON.parse's output does */
 	jsonInput?: boolean | undefined
+	/** @internal the chars a site's baked introspection may total */
+	bakedLimit?: number | undefined
 	/** also create each site with arktype and throw where they diverge */
 	shadow?: boolean | undefined
 	/** false keeps what no read in a production bundle needs */
@@ -654,7 +656,8 @@ export class Precompiler {
 			checks,
 			mutatesInput: this.mutatesInput,
 			optimize: opts.optimize ?? "speed",
-			jsonInput: opts.jsonInput
+			jsonInput: opts.jsonInput,
+			bakedLimit: opts.bakedLimit
 		}
 		this.lackedMembers = new Set(
 			defaultMembers.flatMap(member =>
