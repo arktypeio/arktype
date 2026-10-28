@@ -417,9 +417,15 @@ interface App {
 
 const presets: PrecompileUnpluginOptions[] = [
 	{},
+	{},
 	{ preset: "smallest" },
 	{ errors: "none" },
-	{ lazy: false }
+	{ lazy: false },
+	{ optimize: "size" },
+	{ inline: true },
+	{ freeze: false },
+	{ members: { meta: false } },
+	{ creationChecks: "helpers" }
 ]
 
 // accesses the scan follows to a validator's reads, and reads a standalone
@@ -760,7 +766,12 @@ const esbuildPluginsOf = (
 				loader: "ts"
 			}))
 	}
-	return rewrite === "reformat" ? [arktype, rewriting] : [rewriting, arktype]
+	// one shape of each suffices, as esbuild prunes nothing under either
+	return (
+		rewrite === "reformat" ? [arktype, rewriting]
+		: rewrite === "rename" ? [rewriting, arktype]
+		: [arktype]
+	)
 }
 
 const outputOf = (outDir: string): string => {
@@ -878,7 +889,9 @@ const runOut = (out: string) => {
 // a message's first line saying something, past a bundler's "Build failed"
 const headOf = (message: string) => {
 	const lines = message.split("\n").filter(line => line.trim())
-	const line = lines.find(l => !/^(threw )?Error: Build failed/.test(l.trim()))
+	const line = lines.find(
+		l => !/^(threw )?Error: Build failed|^\[plugin /.test(l.trim())
+	)
 	return (line ?? lines[0] ?? "").replace(/\s+/g, " ").slice(0, 160)
 }
 
