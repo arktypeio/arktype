@@ -618,6 +618,14 @@ export class Precompiler {
 	private bindingsByInput = new WeakMap<Input, Binding>()
 	// e.g. a Scope configured by a parameter
 	private refusedContainers = new Map<unknown, [Node, SourceModule]>()
+	// a Scope or Generic another module's refused site reads, which its own
+	// module leaves to arktype when it's written
+	private dynamicStandIns = new Map<
+		unknown,
+		[reader: Site, module: SourceModule, name: string]
+	>()
+	// each replaced by a stand-in a module already written holds
+	private writtenStandIns = new Map<unknown, [Site, SourceModule]>()
 	// each warning that a site accepts a value as a Standard Schema, by the
 	// site's span, which writing it may still refuse
 	private schemaWarningSpans = new WeakMap<Diagnostic, Span>()
@@ -2188,6 +2196,10 @@ export class Precompiler {
 			if (!refused.length) break
 			for (const site of refused) unplan(site)
 		}
+		for (const site of namesBySite.keys()) {
+			if (standInKindOf(site.value))
+				this.writtenStandIns.set(site.value, [site, module])
+		}
 		const checking = new Set(validators.checking)
 		// modules writing the same code share it
 		const specifier = `~arktype/${hashOf(validators.code)}`
@@ -3343,7 +3355,9 @@ export class Precompiler {
 
 	// a Scope or Generic a site precompiles is replaced by an object lacking its
 	// members, so one a rejected site reads, as `$.type(...)` left to arktype
-	// reads `$`, is left to arktype with it; returns the sites it refuses
+	// reads `$`, is left to arktype with it, in another module too unless that
+	// module is written already, which fails the build; returns the sites it
+	// refuses
 	private refuseStandInsRead(
 		module: SourceModule,
 		sites: Site[],
@@ -3355,29 +3369,69 @@ export class Precompiler {
 				standIns.set(site.value, site)
 		}
 		const refused: Site[] = []
-		if (!standIns.size) return refused
+		const leave = (
+			read: Site,
+			reader: Site,
+			from: SourceModule,
+			name: string
+		) => {
+			const reasons = [
+				`${from.snippetOf(reader)} (${from.positionOf(reader)}) reads \`${name}\` but isn't precompiled, so arktype must define \`${name}\` for it`
+			]
+			diagnostics.push(
+				this.diagnostic(
+					module,
+					read,
+					"unsupported",
+					`${module.snippetOf(read)} is left to arktype`,
+					reasons,
+					false
+				)
+			)
+			refused.push(refuse(read, reasons))
+		}
+		for (const [value, read] of standIns) {
+			const reader = this.dynamicStandIns.get(value)
+			if (reader) leave(read, ...reader)
+		}
 		for (const site of sites) {
 			if (site.status !== "rejected") continue
 			for (const { binding, id } of module.scopes.references) {
 				if (!binding || id.start < site.start || id.end > site.end) continue
-				const read = standIns.get(
-					this.interpreter.valueOfBinding(binding, module)
+				const value = this.interpreter.valueOfBinding(binding, module)
+				const read = standIns.get(value)
+				if (read) {
+					if (read.status !== "rejected")
+						leave(read, site, module, binding.name)
+					continue
+				}
+				const kind = standInKindOf(value)
+				if (!kind || binding.kind !== "import") continue
+				const written = this.writtenStandIns.get(value)
+				if (!written) {
+					this.dynamicStandIns.set(value, [site, module, binding.name])
+					continue
+				}
+				const [source, origin] = written
+				const message = `${module.snippetOf(site)} reads \`${binding.name}\`, which the build replaced with an object that lacks its members`
+				// reported once, as each pass over the module's sites finds it
+				if (
+					diagnostics.some(d => d.start === site.start && d.message === message)
 				)
-				if (!read || read.status === "rejected") continue
-				const reasons = [
-					`${module.snippetOf(site)} (${module.positionOf(site)}) reads \`${binding.name}\` but isn't precompiled, so arktype must define \`${binding.name}\` for it`
-				]
+					continue
 				diagnostics.push(
 					this.diagnostic(
 						module,
-						read,
+						site,
 						"unsupported",
-						`${module.snippetOf(read)} is left to arktype`,
-						reasons,
-						false
+						message,
+						[
+							`\`${binding.name}\` is ${origin.snippetOf(source)} (${origin.positionOf(source)}), a ${kind} precompiled before ${module.snippetOf(site)} was refused`
+						],
+						`Put // @ark-runtime on the line before ${origin.snippetOf(source)}, so arktype defines it at runtime, or build with runtime: "arktype".`,
+						"error"
 					)
 				)
-				refused.push(refuse(read, reasons))
 			}
 		}
 		return refused

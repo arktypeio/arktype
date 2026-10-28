@@ -346,6 +346,44 @@ const $ = scope({})
 export const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })`)
 		})
 
+		it("leaves a Scope to arktype with another module's refused site reading it", () => {
+			const files = {
+				"/scope.ts": `import { scope } from "arktype"
+export const $ = scope({})`,
+				"/main.ts": `import { $ } from "./scope.ts"
+const unit = { toJSON: () => ({ tag: "u" }) }
+export const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })`
+			}
+			// the reader first, so the Scope's module is written without a stand-in
+			let precompiler = new Precompiler(memoryHost(files))
+			const reader = precompiler.precompile(files["/main.ts"], "/main.ts")
+			attest(reader.diagnostics.map(renderDiagnostic)).snap([
+				'/main.ts:3:18  $.type({ k: $.type.unit(unit) }).or({ k: "\'b\'", v: "number"… can\'t be precompiled yet\n  the unit {"tag":"u"} can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.'
+			])
+			const left = precompiler.precompile(files["/scope.ts"], "/scope.ts")
+			attest(left.diagnostics.map(renderDiagnostic)).snap([
+				'/scope.ts:2:18  scope({}) is left to arktype\n  $.type({ k: $.type.unit(unit) }).or({ k: "\'b\'", v: "number"… (/main.ts:3:18) reads `$` but isn\'t precompiled, so arktype must define `$` for it'
+			])
+			attest(left.code).equals(files["/scope.ts"])
+			// the Scope's module first, so the reader's module fails the build
+			precompiler = new Precompiler(memoryHost(files))
+			const written = precompiler.precompile(files["/scope.ts"], "/scope.ts")
+			attest(written.diagnostics).equals([])
+			const failed = precompiler.precompile(files["/main.ts"], "/main.ts")
+			attest(
+				failed.diagnostics.map(d => [d.severity, renderDiagnostic(d)])
+			).snap([
+				[
+					"error",
+					'/main.ts:3:18  $.type({ k: $.type.unit(unit) }).or({ k: "\'b\'", v: "number"… can\'t be precompiled yet\n  the unit {"tag":"u"} can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.'
+				],
+				[
+					"error",
+					'/main.ts:3:18  $.type({ k: $.type.unit(unit) }).or({ k: "\'b\'", v: "number"… reads `$`, which the build replaced with an object that lacks its members\n  `$` is scope({}) (/scope.ts:2:18), a Scope precompiled before $.type({ k: $.type.unit(unit) }).or({ k: "\'b\'", v: "number"… was refused\n  Put // @ark-runtime on the line before scope({}), so arktype defines it at runtime, or build with runtime: "arktype".'
+				]
+			])
+		})
+
 		it("loads arktype where it was imported", () => {
 			attest(
 				normalized(
