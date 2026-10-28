@@ -4849,9 +4849,45 @@ export class Precompiler {
 		candidates: SiteCandidate[],
 		settled: SiteCandidate[]
 	): Diagnostic[] {
-		const result: Diagnostic[] = []
 		const written = new Set<Node>()
 		const writes = new Set<Node>()
+		const result = this.frozenWriteDiagnosticsOf(module, written, writes)
+		result.push(...this.strayImportDiagnosticsOf(module, candidates, written))
+		const settledValues = new Map(
+			settled.map(candidate => [
+				rangeOf(candidate.state.node),
+				candidate.state.value
+			])
+		)
+		const unavailable = this.unavailableReadsIn(module, settledValues, writes)
+		// arktype's own packages are the runtime a standalone build ships
+		const isArkPackage = arkPackageName.test(
+			this.graph.packageNameOf(module.id) ?? ""
+		)
+		result.push(...this.scopeReadDiagnosticsOf(module, candidates))
+		for (const read of unavailable) {
+			const diagnostic = this.unavailableReadDiagnosticOf(
+				read,
+				unavailable,
+				settledValues,
+				isArkPackage,
+				module
+			)
+			if (diagnostic) result.push(diagnostic)
+		}
+		result.push(...this.unresolvedReadsOf(module))
+		result.push(...this.importedEscapesOf(module))
+		if (!isArkPackage) result.push(...this.nodePackageDiagnosticsOf(module))
+		return result
+	}
+
+	// a write into an arktype value, which the standalone runtime freezes
+	private frozenWriteDiagnosticsOf(
+		module: SourceModule,
+		written: Set<Node>,
+		writes: Set<Node>
+	): Diagnostic[] {
+		const result: Diagnostic[] = []
 		for (const reference of module.scopes.references) {
 			if (
 				!reference.binding ||
@@ -4877,6 +4913,16 @@ export class Precompiler {
 				)
 			)
 		}
+		return result
+	}
+
+	// an arktype import used outside a precompiled site
+	private strayImportDiagnosticsOf(
+		module: SourceModule,
+		candidates: SiteCandidate[],
+		written: Set<Node>
+	): Diagnostic[] {
+		const result: Diagnostic[] = []
 		const candidateRanges = new Set(
 			candidates.map(candidate => rangeOf(candidate.state.node))
 		)
@@ -4919,18 +4965,15 @@ export class Precompiler {
 					)
 			)
 		}
-		const settledValues = new Map(
-			settled.map(candidate => [
-				rangeOf(candidate.state.node),
-				candidate.state.value
-			])
-		)
-		const unavailable: [
-			node: Node,
-			read: string | undefined,
-			object: Node,
-			isUnsureRead?: true
-		][] = []
+		return result
+	}
+
+	private unavailableReadsIn(
+		module: SourceModule,
+		settledValues: Map<string, unknown>,
+		writes: Set<Node>
+	): UnavailableRead[] {
+		const unavailable: UnavailableRead[] = []
 		walk(module.program, node => {
 			if (
 				settledValues.has(rangeOf(node)) ||
@@ -4947,10 +4990,14 @@ export class Precompiler {
 				unavailable.push([node, ...read])
 			return true
 		})
-		// arktype's own packages are the runtime a standalone build ships
-		const isArkPackage = arkPackageName.test(
-			this.graph.packageNameOf(module.id) ?? ""
-		)
+		return unavailable
+	}
+
+	private scopeReadDiagnosticsOf(
+		module: SourceModule,
+		candidates: SiteCandidate[]
+	): Diagnostic[] {
+		const result: Diagnostic[] = []
 		for (const [node, read, kind] of this.scopeReadsByModule.get(module) ??
 			scopeReadsOf(module, candidates, this.graph)) {
 			const span = spanOfScopeRead(node)
@@ -4971,99 +5018,106 @@ export class Precompiler {
 				)
 			)
 		}
-		for (const [node, read, object, isUnsureRead] of unavailable) {
-			const objectRange = rangeOf(unwrapChain(object))
-			const settledValue = settledValues.get(objectRange)
-			// a computed site is sure, so a member the options drop is read off a Type
-			const isUnsure =
-				isUnsureRead &&
-				!(
-					hasArkKind(settledValue, "root") &&
-					read !== undefined &&
-					this.lackedMembers.has(read)
-				)
-			// a chain is reported where it first reads one
-			if (
-				(isUnsure && (isArkPackage || settledValues.has(objectRange))) ||
-				unavailable.some(
-					([inner]) => inner !== node && contains(node, inner)
-				) ||
-				this.members[read as ValidatorMember] === true
+		return result
+	}
+
+	private unavailableReadDiagnosticOf(
+		[node, read, object, isUnsureRead]: UnavailableRead,
+		unavailable: UnavailableRead[],
+		settledValues: Map<string, unknown>,
+		isArkPackage: boolean,
+		module: SourceModule
+	): Diagnostic | undefined {
+		const objectRange = rangeOf(unwrapChain(object))
+		const settledValue = settledValues.get(objectRange)
+		// a computed site is sure, so a member the options drop is read off a Type
+		const isUnsure =
+			isUnsureRead &&
+			!(
+				hasArkKind(settledValue, "root") &&
+				read !== undefined &&
+				this.lackedMembers.has(read)
 			)
-				continue
-			const dropped =
-				read === undefined || !this.lackedMembers.has(read) ? undefined
-				: includes(methodMembers, read) ? "methods"
-				: read
-			// derived from a Scope, Module or Generic, which an annotation doesn't narrow
-			const isDerived =
-				isUnsure && !dropped && mayBeOtherArk(this.graph.kindOf(object, module))
-			// e.g. `T.or("null")` in `<t>(T: Type<t>) => ...`, which a Generic writes
-			const param =
-				(
-					!isDerived &&
-					!dropped &&
-					typeof read === "string" &&
-					isComposingMember(read)
-				) ?
-					parameterOf(object, module)
-				:	undefined
-			// a callback, like `map`'s, isn't one a Generic can replace
-			const generic = param?.fn ? param : undefined
-			result.push(
-				this.diagnostic(
-					module,
-					node,
-					"R4",
-					read === undefined ?
-						`${module.snippetOf(node)} reflects on a Type, whose properties a standalone validator doesn't share`
-					:	`${module.snippetOf(node)} reads ${read}, which a standalone validator lacks`,
-					[
-						isDerived ?
-							`\`${module.snippetOf(object)}\` is read off what may be an arktype value, so it may be a Type, which the standalone runtime replaces with a validator`
-						: generic && isUnsure ?
-							`\`${generic.binding.name}\` is a parameter of ${generic.fn}, so it may be a Type, which the standalone runtime replaces with a validator`
-						: isUnsure ?
-							`the build can't tell where \`${module.snippetOf(object)}\` comes from, so it may be a Type, which the standalone runtime replaces with a validator`
-						: dropped ?
-							`the build's \`members\` option sets ${JSON.stringify(dropped)} false, so no validator has ${read}`
-						:	`\`${module.snippetOf(object)}\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read`
-					],
-					isDerived ? derivedHint
-					: generic ?
-						writeGenericHint(
-							generic.fn,
-							generic.binding.name,
-							genericDefinitionOf(node, module),
-							!isUnsure || generic.isAnnotated,
-							isUnsure ?
-								annotationSnippetOf(
-									this.graph.unreadAnnotationOf(object, module),
-									module
-								)
-							:	undefined
+		// a chain is reported where it first reads one
+		if (
+			(isUnsure && (isArkPackage || settledValues.has(objectRange))) ||
+			unavailable.some(([inner]) => inner !== node && contains(node, inner)) ||
+			this.members[read as ValidatorMember] === true
+		)
+			return
+		const dropped =
+			read === undefined || !this.lackedMembers.has(read) ? undefined
+			: includes(methodMembers, read) ? "methods"
+			: read
+		// derived from a Scope, Module or Generic, which an annotation doesn't narrow
+		const isDerived =
+			isUnsure && !dropped && mayBeOtherArk(this.graph.kindOf(object, module))
+		// e.g. `T.or("null")` in `<t>(T: Type<t>) => ...`, which a Generic writes
+		const param =
+			(
+				!isDerived &&
+				!dropped &&
+				typeof read === "string" &&
+				isComposingMember(read)
+			) ?
+				parameterOf(object, module)
+			:	undefined
+		// a callback, like `map`'s, isn't one a Generic can replace
+		const generic = param?.fn ? param : undefined
+		return this.diagnostic(
+			module,
+			node,
+			"R4",
+			read === undefined ?
+				`${module.snippetOf(node)} reflects on a Type, whose properties a standalone validator doesn't share`
+			:	`${module.snippetOf(node)} reads ${read}, which a standalone validator lacks`,
+			[
+				isDerived ?
+					`\`${module.snippetOf(object)}\` is read off what may be an arktype value, so it may be a Type, which the standalone runtime replaces with a validator`
+				: generic && isUnsure ?
+					`\`${generic.binding.name}\` is a parameter of ${generic.fn}, so it may be a Type, which the standalone runtime replaces with a validator`
+				: isUnsure ?
+					`the build can't tell where \`${module.snippetOf(object)}\` comes from, so it may be a Type, which the standalone runtime replaces with a validator`
+				: dropped ?
+					`the build's \`members\` option sets ${JSON.stringify(dropped)} false, so no validator has ${read}`
+				:	`\`${module.snippetOf(object)}\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read`
+			],
+			isDerived ? derivedHint
+			: generic ?
+				writeGenericHint(
+					generic.fn,
+					generic.binding.name,
+					genericDefinitionOf(node, module),
+					!isUnsure || generic.isAnnotated,
+					isUnsure ?
+						annotationSnippetOf(
+							this.graph.unreadAnnotationOf(object, module),
+							module
 						)
-					: isUnsure ?
-						writeUnsureHint(
-							dropped ? `leave members[${JSON.stringify(dropped)}] unset`
-							: includes(introspectionMembers, read) ?
-								`set members[${JSON.stringify(read)}] true, or build with runtime: "arktype"`
-							:	'build with runtime: "arktype"',
-							annotationSnippetOf(
-								this.graph.unreadAnnotationOf(object, module),
-								module
-							)
-						)
-					: dropped ?
-						`Leave members[${JSON.stringify(dropped)}] unset if the program reads it.`
 					:	undefined
 				)
-			)
-		}
-		result.push(...this.unresolvedReadsOf(module))
-		result.push(...this.importedEscapesOf(module))
+			: isUnsure ?
+				writeUnsureHint(
+					dropped ? `leave members[${JSON.stringify(dropped)}] unset`
+					: includes(introspectionMembers, read) ?
+						`set members[${JSON.stringify(read)}] true, or build with runtime: "arktype"`
+					:	'build with runtime: "arktype"',
+					annotationSnippetOf(
+						this.graph.unreadAnnotationOf(object, module),
+						module
+					)
+				)
+			: dropped ?
+				`Leave members[${JSON.stringify(dropped)}] unset if the program reads it.`
+			:	undefined
+		)
+	}
+
+	// an import of @ark/schema or a locale, which only a runtime island can read
+	private nodePackageDiagnosticsOf(module: SourceModule): Diagnostic[] {
+		const result: Diagnostic[] = []
 		for (const statement of module.program.body) {
-			if (statement.type !== "ImportDeclaration" || isArkPackage) continue
+			if (statement.type !== "ImportDeclaration") continue
 			const source = statement.source.value
 			const isLocale = localeSpecifier.test(source)
 			if (!isLocale && !nodePackageSpecifier.test(source)) continue
@@ -5810,6 +5864,14 @@ const declaredBindingKinds = {
 	function: 1,
 	class: 1
 } satisfies Partial<Record<BindingKind, 1>>
+
+// a member read off a Type a standalone validator lacks, or off what may be one
+type UnavailableRead = [
+	node: Node,
+	read: string | undefined,
+	object: Node,
+	isUnsureRead?: true
+]
 
 // a member read off what may be a Scope or Generic, or a call of what may be a Generic
 type ScopeRead = [
