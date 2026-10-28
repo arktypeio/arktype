@@ -1486,12 +1486,12 @@ const rollupScanOf = async (
 			return resolved.id
 		},
 		load: async id => {
-			if (!isTransformed(id)) {
-				return context.load({ ...res.get(id), id }).then(
+			const loaded = () =>
+				context.load({ ...res.get(id), id }).then(
 					info => info?.code ?? undefined,
 					() => undefined
 				)
-			}
+			if (!isTransformed(id)) return loaded()
 			// the plugin's transform waits for the scan, so a module it
 			// transforms is read as it reaches it, after any plugin ahead of it.
 			// One that hasn't is read from its file, since loading it would add
@@ -1500,8 +1500,14 @@ const rollupScanOf = async (
 			const file = fileOf(id)
 			const arrival = arrivalOf(file)
 			if (typeof arrival === "string") return arrival
+			const source = readFile(file)
+			// a virtual module written as a script, like Nuxt's
+			// virtual:nuxt:...paths.mjs, has no file, so only its plugin can
+			// read it, raced against its arrival since loading it runs the
+			// transform that waits for this scan
+			if (source === undefined) return Promise.race([arrival, loaded()])
 			unarrived.add(file)
-			return readFile(file)
+			return source
 		},
 		readFile,
 		isTransformed,

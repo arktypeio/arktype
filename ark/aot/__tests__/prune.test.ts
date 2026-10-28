@@ -1578,6 +1578,37 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(pruned.includes("~standard")).equals(false)
 		})
 
+		it("reads a virtual module written as a script, like Nuxt's", async () => {
+			// as Nuxt resolves virtual:nuxt:...paths.mjs, an id the plugin
+			// transforms, with no file to read it from
+			const nuxt: VitePlugin = {
+				name: "nuxt",
+				enforce: "pre",
+				resolveId: id => (id === "virtual:nuxt:paths.mjs" ? id : undefined),
+				load: id =>
+					id === "virtual:nuxt:paths.mjs" ?
+						`import { User } from ${JSON.stringify(join(root, "types.ts"))}\nexport default User.assert({ name: "Ada" }).name\n`
+					:	undefined
+			}
+			const warnings: string[] = []
+			const pruned = await importing(
+				'import read from "virtual:nuxt:paths.mjs"\nconsole.log(read)',
+				() =>
+					bundle(
+						{},
+						{
+							plugins: [nuxt],
+							onwarn: warning => {
+								if (warning.plugin === "arktype") warnings.push(warning.message)
+							}
+						}
+					)
+			)
+			attest(run(pruned)).snap("Ada\nname must be a string\n")
+			attest(pruned.includes("~standard")).equals(false)
+			attest(warnings).equals([])
+		})
+
 		it("leaves out what no read needs where a dependency imports a module holding no validator", async () => {
 			const pruned = await importing(
 				'import "fw"\nimport { debug } from "./config.ts"\nconsole.log(debug)',
