@@ -316,6 +316,18 @@ interface ProgramUsage {
 	shapes?: boolean
 }
 
+interface ProgramPlan {
+	sources: Record<string, string>
+	// what each module would read, before any writes a validator
+	planned: Map<string, RuntimeModule>
+	precompiled: string[]
+}
+
+interface WrittenProgram {
+	written: Record<string, PrecompiledModule>
+	runtimes: Map<string, RuntimeModule>
+}
+
 export interface ScannedUsage {
 	dropped: ValidatorMember[]
 	// whether a checker the bundle reads once is written where it's read
@@ -824,32 +836,9 @@ export class Precompiler {
 			holders: []
 		}
 		if (this.mode !== "standalone") return unwritten
-		const sources: Record<string, string> = {}
-		// what each module would read, before any writes a validator
-		const planned = new Map<string, RuntimeModule>()
-		const precompiled: string[] = []
-		for (const id in program.modules) {
-			const { source, transformed, mappings } = program.modules[id]
-			sources[id] = source
-			if (
-				transformed &&
-				this.isTransformed(id) &&
-				this.importsArk(source, id)
-			) {
-				const runtime = this.plannedRuntimeOf(source, id, mappings)
-				// a bundle building the module as read fails, reporting why
-				if (!runtime) {
-					return {
-						...unwritten,
-						unpruned: writeUnprunedMessage(
-							`${this.graph.pathOf(id)} fails to precompile`
-						)
-					}
-				}
-				planned.set(id, runtime)
-				precompiled.push(id)
-			} else planned.set(id, unprecompiled(this.graph.add(id, source)))
-		}
+		const plan = this.planProgram(program)
+		if (typeof plan === "string") return { ...unwritten, unpruned: plan }
+		const { planned, precompiled } = plan
 		const used = this.usedIn(program, planned)
 		const unpruned =
 			typeof used === "string" ? this.keptMembersMessageOf(used) : undefined
@@ -881,51 +870,18 @@ export class Precompiler {
 			called,
 			readsAllows,
 			piped,
-			sources,
+			sources: plan.sources,
 			written: {},
 			replaced: new Set()
 		}
 		this.usagesByProgram.set(program.key, usage)
-		const writeProgram = () => {
-			const written: Record<string, PrecompiledModule> = {}
-			const runtimes = new Map(planned)
-			for (const id of precompiled) {
-				written[id] = this.precompile(
-					sources[id],
-					id,
-					program.modules[id].mappings,
-					program.key
-				)
-				runtimes.set(id, this.runtimesById[id])
-				if (written[id].diagnostics.some(d => d.severity === "error")) return
-			}
-			return { written, runtimes }
-		}
-		// checkers or compiled nodes, whichever the program is smaller written as
-		const decides = combinesChecks(this.standalone)
-		if (decides) usage.combines = true
-		let wrote = writeProgram()
-		if (wrote && decides) {
-			usage.combines = false
-			const compiled = writeProgram()
-			if (
-				compiled &&
-				programSizeOf(compiled.written) < programSizeOf(wrote.written)
-			)
-				wrote = compiled
-			else {
-				usage.combines = true
-				for (const [id, runtime] of wrote.runtimes)
-					if (precompiled.includes(id)) this.runtimesById[id] = runtime
-			}
-		}
+		const wrote = this.writeSmaller(program, plan, usage)
 		if (!wrote) {
 			this.usagesByProgram.delete(program.key)
 			return unwritten
 		}
-		let { written, runtimes } = wrote
 		// as written, a validator may be read in a way the plan didn't see, as where a factory checks a Type it's passed
-		const usedAsWritten = isWhole ? used : this.usedIn(program, runtimes)
+		const usedAsWritten = isWhole ? used : this.usedIn(program, wrote.runtimes)
 		const isReadAsWritten = (read: UsedMember) =>
 			typeof usedAsWritten === "string" || usedAsWritten.has(read)
 		if (
@@ -945,55 +901,14 @@ export class Precompiler {
 						)
 			}
 		}
-		let linked = false
-		if (!this.inline && !this.standalone.lazy) {
-			// a size build's units, where the bundle is one chunk, are one module
-			const isOneChunk =
-				!!program.isOneChunk && this.standalone.optimize === "size"
-			let link = this.linkWritten(written, sources, {
-				exposesAllows: readsAllows,
-				isOneChunk
-			})
-			// a unit a site creates its validator from is declared as that validator where validators expose allows
-			if (link.unexposed >= unitsExposingAllowsPays && usage.combines) {
-				usage.readsAllows = true
-				const exposed = writeProgram()
-				if (exposed) {
-					;({ written, runtimes } = exposed)
-					link = this.linkWritten(written, sources, {
-						exposesAllows: true,
-						isOneChunk
-					})
-				} else {
-					usage.readsAllows = false
-					for (const [id, runtime] of runtimes)
-						if (precompiled.includes(id)) this.runtimesById[id] = runtime
-				}
-			}
-			// checkers write common intersections as shapes where enough do to repay the runtime they read
-			if (isOneChunk && usage.combines) {
-				usage.shapes = true
-				const shaped = writeProgram()
-				const shapedLink =
-					shaped &&
-					this.linkWritten(shaped.written, sources, {
-						exposesAllows: usage.readsAllows,
-						isOneChunk
-					})
-				if (shaped && shapedLink && shapesPayIn(shaped.written)) {
-					;({ written, runtimes } = shaped)
-					link = shapedLink
-				} else {
-					usage.shapes = false
-					for (const [id, runtime] of runtimes)
-						if (precompiled.includes(id)) this.runtimesById[id] = runtime
-				}
-			}
-			linked = link.changed
-		}
+		const linked =
+			this.inline || this.standalone.lazy ?
+				false
+			:	this.linkProgram(program, plan, usage, wrote)
+		const { written, runtimes } = wrote
 		const replaced =
 			flattens ?
-				this.flattenWritten(written, sources, program, runtimes)
+				this.flattenWritten(written, plan.sources, program, runtimes)
 			:	undefined
 		usage.written = written
 		if (replaced) usage.replaced = new Set(replaced)
@@ -1009,6 +924,137 @@ export class Precompiler {
 			unpruned,
 			issues: this.issuesOf(program, written)
 		}
+	}
+
+	// what each module would read, before any writes a validator, or why one fails to precompile
+	private planProgram(program: ScannedProgram): ProgramPlan | string {
+		const plan: ProgramPlan = {
+			sources: {},
+			planned: new Map(),
+			precompiled: []
+		}
+		for (const id in program.modules) {
+			const { source, transformed, mappings } = program.modules[id]
+			plan.sources[id] = source
+			if (
+				transformed &&
+				this.isTransformed(id) &&
+				this.importsArk(source, id)
+			) {
+				const runtime = this.plannedRuntimeOf(source, id, mappings)
+				// a bundle building the module as read fails, reporting why
+				if (!runtime) {
+					return writeUnprunedMessage(
+						`${this.graph.pathOf(id)} fails to precompile`
+					)
+				}
+				plan.planned.set(id, runtime)
+				plan.precompiled.push(id)
+			} else plan.planned.set(id, unprecompiled(this.graph.add(id, source)))
+		}
+		return plan
+	}
+
+	private writeProgram(
+		program: ScannedProgram,
+		{ sources, planned, precompiled }: ProgramPlan
+	): WrittenProgram | undefined {
+		const written: Record<string, PrecompiledModule> = {}
+		const runtimes = new Map(planned)
+		for (const id of precompiled) {
+			written[id] = this.precompile(
+				sources[id],
+				id,
+				program.modules[id].mappings,
+				program.key
+			)
+			runtimes.set(id, this.runtimesById[id])
+			if (written[id].diagnostics.some(d => d.severity === "error")) return
+		}
+		return { written, runtimes }
+	}
+
+	// a write the program doesn't keep leaves the runtimes of the one it does
+	private restoreRuntimes(
+		{ runtimes }: WrittenProgram,
+		{ precompiled }: ProgramPlan
+	): void {
+		for (const [id, runtime] of runtimes)
+			if (precompiled.includes(id)) this.runtimesById[id] = runtime
+	}
+
+	// checkers or compiled nodes, whichever the program is smaller written as
+	private writeSmaller(
+		program: ScannedProgram,
+		plan: ProgramPlan,
+		usage: ProgramUsage
+	): WrittenProgram | undefined {
+		const decides = combinesChecks(this.standalone)
+		if (decides) usage.combines = true
+		const wrote = this.writeProgram(program, plan)
+		if (!wrote || !decides) return wrote
+		usage.combines = false
+		const compiled = this.writeProgram(program, plan)
+		if (
+			compiled &&
+			programSizeOf(compiled.written) < programSizeOf(wrote.written)
+		)
+			return compiled
+		usage.combines = true
+		this.restoreRuntimes(wrote, plan)
+		return wrote
+	}
+
+	// links the program's units across its modules, writing it again where
+	// exposing allows or writing shapes repays the runtime it reads
+	private linkProgram(
+		program: ScannedProgram,
+		plan: ProgramPlan,
+		usage: ProgramUsage,
+		wrote: WrittenProgram
+	): boolean {
+		const { sources } = plan
+		// a size build's units, where the bundle is one chunk, are one module
+		const isOneChunk =
+			!!program.isOneChunk && this.standalone.optimize === "size"
+		let link = this.linkWritten(wrote.written, sources, {
+			exposesAllows: usage.readsAllows,
+			isOneChunk
+		})
+		// a unit a site creates its validator from is declared as that validator where validators expose allows
+		if (link.unexposed >= unitsExposingAllowsPays && usage.combines) {
+			usage.readsAllows = true
+			const exposed = this.writeProgram(program, plan)
+			if (exposed) {
+				Object.assign(wrote, exposed)
+				link = this.linkWritten(wrote.written, sources, {
+					exposesAllows: true,
+					isOneChunk
+				})
+			} else {
+				usage.readsAllows = false
+				this.restoreRuntimes(wrote, plan)
+			}
+		}
+		// checkers write common intersections as shapes where enough do to repay the runtime they read
+		if (isOneChunk && usage.combines) {
+			usage.shapes = true
+			const shaped = this.writeProgram(program, plan)
+			const shapedLink =
+				shaped &&
+				this.linkWritten(shaped.written, sources, {
+					exposesAllows: usage.readsAllows,
+					isOneChunk
+				})
+			if (shaped && shapedLink && shapesPayIn(shaped.written)) {
+				Object.assign(wrote, shaped)
+				link = shapedLink
+			} else {
+				usage.shapes = false
+				this.restoreRuntimes(wrote, plan)
+			}
+		}
+		return link.changed
 	}
 
 	// why a bundle, read as built, may read what its scan left out: a module a plugin ahead rewrote passes if it reads the same
