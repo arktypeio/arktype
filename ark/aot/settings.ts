@@ -6,11 +6,10 @@ import {
 	packageRootOf,
 	projectOf,
 	resolvedVariantOf,
-	writeVariantOption,
-	writeWithoutVariant,
 	type DependencyModes,
 	type RuntimeVariant
 } from "./host.ts"
+import { writeVariantOption, writeWithoutVariant } from "./messages.ts"
 import type { PrecompileOptions } from "./precompile.ts"
 import { definedOf, withPreset } from "./presets.ts"
 import * as validators from "./settingsValidators.ts"

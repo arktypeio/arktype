@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { check } from "@ark/aot/internal/check.ts"
-import { writeVariantImportMessage } from "@ark/aot/internal/host.ts"
+import { writeVariantImportMessage } from "@ark/aot/internal/messages.ts"
 import { withEnvironment } from "@ark/aot/internal/presets.ts"
 import {
 	refuseArktypeDependencies,

@@ -3,7 +3,8 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { dirname, relative } from "node:path"
 import { parseArgs } from "node:util"
 import { emitDeclarations, sharedDeclarationFile } from "./declare.ts"
-import { isBuildError, writeNodeVersionMessage } from "./host.ts"
+import { isBuildError } from "./host.ts"
+import { writeNodeVersionMessage } from "./messages.ts"
 import type { PrecompilePluginOptions } from "./driver.ts"
 import {
 	refusePrune,

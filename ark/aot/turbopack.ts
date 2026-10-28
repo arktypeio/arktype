@@ -26,11 +26,13 @@ import {
 	resolvesToRuntime,
 	rethrowAsBuildError,
 	runtimeSpecifiers,
-	throwBuildError,
+	throwBuildError
+} from "./host.ts"
+import {
 	writeAliasMessage,
 	writeRuntimeAliasMessage,
 	withAllowUnsafe
-} from "./host.ts"
+} from "./messages.ts"
 
 export interface TurbopackLoaderContext {
 	resourcePath: string

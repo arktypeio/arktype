@@ -113,11 +113,9 @@ import {
 	runtimeSpecifiers,
 	runtimeVariantOf,
 	transformedId,
-	writeVariantOption,
 	type DependencyModes,
 	type PrecompileHost,
-	type RuntimeVariant,
-	withAllowUnsafe
+	type RuntimeVariant
 } from "./host.ts"
 import {
 	createSiteState,
@@ -211,7 +209,9 @@ import {
 	writeStandaloneDependencyMessage,
 	writeTurbopackDependencyMessage,
 	writeUnreadableConfigMessage,
-	writeUnsureHint
+	writeUnsureHint,
+	writeVariantOption,
+	withAllowUnsafe
 } from "./messages.ts"
 import {
 	commaAfter,

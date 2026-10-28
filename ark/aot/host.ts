@@ -313,22 +313,6 @@ export const writeIssueFeatures = (issues: IssueFeatures): string =>
 export const narrowsIssues = (issues: IssueFeatures | undefined): boolean =>
 	!!issues && Object.values(issues).includes(false)
 
-export const writeVariantOption = (variant: RuntimeVariant): string =>
-	variant === "lean" ? 'optimizeErrors: "size"' : 'errors: "none"'
-
-// how to build without the runtime copy a variant loads
-export const writeWithoutVariant = (variant: RuntimeVariant): string =>
-	variant === "lean" ?
-		'with optimizeErrors: "speed"'
-	:	`without ${writeVariantOption(variant)}`
-
-export const writeVariantImportMessage = (
-	importer: string,
-	specifier: string,
-	variant: RuntimeVariant
-): string =>
-	`${importer} imports ${specifier}, which a build with ${writeVariantOption(variant)} can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build ${writeWithoutVariant(variant)}.`
-
 // not a virtual module like Rolldown's `\0rolldown/runtime.js`
 export const transformedId = /^[^\0].*\.(?:[cm]?[jt]s|[jt]sx)$/
 
@@ -344,9 +328,6 @@ export const transformedFilterOf = (
 			)
 		:	/[/\\]node_modules[/\\]/
 })
-
-export const writeTextlessMessage = (path: string): string =>
-	`${path} imports arktype but was loaded without @ark/aot/node's hooks, before register() ran or by a loader that compiles it itself, as tsx does in a CommonJS package, so a standalone build can't precompile it. Register them first, as with \`node --import ./register.ts\`, and let Node run the TypeScript rather than a loader like tsx.`
 
 export const driverOptionsOf = (
 	opts: PrecompilePluginOptions,
@@ -382,67 +363,8 @@ export const rethrowAsBuildError = (e: unknown): never => {
 export const throwBuildError = (message: string): never =>
 	rethrowAsBuildError(new Error(message))
 
-export const writeUncachedModuleMessage = (
-	specifier: string,
-	dir: string
-): string =>
-	`${specifier} was written by a build whose cache kept it in ${dir}, where it no longer is. Delete the bundler's cache to rebuild it.`
-
 export const packageNameOf = (specifier: string): string =>
 	specifier.split("/", specifier.startsWith("@") ? 2 : 1).join("/")
-
-const loadedAtRuntime =
-	"to be loaded at runtime rather than bundled with the runtime the program's precompiled validators use, so the program can load a copy of arktype that isn't theirs, e.g. one whose `type.errors` isn't the class of their errors"
-
-export const writeExternalizedMessage = (
-	specifier: string,
-	option: string
-): string =>
-	`The build's \`${option}\` option leaves ${specifier} ${loadedAtRuntime}. Remove ${packageNameOf(specifier)} from \`${option}\`.`
-
-export const writeBundledExternalMessage = (specifier: string): string =>
-	`The bundle leaves ${specifier} ${loadedAtRuntime}. Bundle arktype: remove it from the bundler's \`external\` option, or, where a tool leaves dependencies external, have it bundle arktype, as tsup does with \`noExternal: ["arktype"]\` and tsdown with \`deps: { alwaysBundle: [/^arktype(\\/|$)/] }\`.`
-
-export const writeUnwrittenModuleMessage = (specifier: string): string =>
-	`${specifier} is imported by a module this build didn't precompile, as one a cache kept from an earlier build is. Keep that cache from storing the modules @ark/aot transforms, or delete it.`
-
-// `resolved` is where it resolves other than to arktype/runtime
-export const writeAliasMessage = (
-	specifier: string,
-	resolved: string | undefined,
-	opts: PrecompilePluginOptions | undefined
-): string =>
-	resolved === undefined ?
-		`${specifier} resolves to arktype/runtime, where defining a Type throws. Remove its turbopack.resolveAlias, which ${opts?.shadow ? "shadow mode" : 'runtime: "arktype"'} doesn't use.`
-	:	`${specifier} resolves to ${resolved} rather than arktype/runtime, where a standalone build's validators run. Add to turbopack.resolveAlias: ${JSON.stringify(
-			Object.fromEntries(
-				runtimeSpecifiers
-					.filter(
-						s =>
-							packageNameOf(s) === packageNameOf(specifier) &&
-							resolvesToRuntime(s, opts)
-					)
-					.map(s => [s, "arktype/runtime"])
-			)
-		)}`
-
-// `resolved` is where @ark/schema/runtime resolves other than to the build's copy
-export const writeRuntimeAliasMessage = (
-	resolved: string,
-	variant: RuntimeVariant | undefined
-): string =>
-	variant ?
-		`@ark/schema/runtime resolves to ${resolved} rather than @ark/schema/runtime/${variant}, which a build with ${writeVariantOption(variant)} loads in its place. Add to turbopack.resolveAlias: ${JSON.stringify({ "@ark/schema/runtime": `@ark/schema/runtime/${variant}` })}, and install @ark/schema if your package manager doesn't hoist it, as pnpm doesn't.`
-	:	`@ark/schema/runtime resolves to ${resolved}, a copy for a build with errors: "none" or optimizeErrors: "size". Remove its turbopack.resolveAlias.`
-
-export const writeNodeVersionMessage = (
-	name: string,
-	version: string
-): string =>
-	`${name} needs Node ${version} or later (this is ${process.versions.node})`
-
-export const unbundledMessage =
-	"precompile.esbuild() needs bundle: true, as a precompiled module imports the validators the bundle includes"
 
 // arktype's own packages, which read their nodes and import the runtime by design
 export const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
@@ -453,10 +375,6 @@ export const readsNodes = (importer: string | undefined): boolean => {
 	return !!name && /^(?:arksets|@ark\/(?:json-schema|fast-check))$/.test(name)
 }
 
-// the fix, then the escape hatch, as in "Remove it, or set allowUnsafe: ..."
-export const withAllowUnsafe = (fix: string): string =>
-	`${fix.replace(/\.$/, "")}, or set allowUnsafe: true to build anyway, with a warning.`
-
 // a dependency importing the runtime ships what another build precompiled
 export const precompiledDependencyOf = (
 	specifier: string,
@@ -466,50 +384,6 @@ export const precompiledDependencyOf = (
 		(specifier === "arktype/runtime" && dependencyOf(importer)) || []
 	return name && !arkPackageName.test(name) ? name : undefined
 }
-
-export const writePrecompiledDependencyMessage = (name: string): string =>
-	`${name} imports arktype/runtime, so it ships validators precompiled for one version of arktype, which may not be this build's. Have it publish its source with "ark": { "aot": true } in its package.json, so this build precompiles it.`
-
-export const writeUntransformedImportMessage = (
-	file: string,
-	specifier: string,
-	cwd: string
-): string =>
-	writeUnprecompiledMessage(
-		printablePathOf(cwd, file),
-		specifier,
-		"it can't precompile a module that isn't JavaScript or TypeScript. Move what it reads off arktype into a .ts module it imports: define its Types there, and check for errors with a function exported from there, like `export const isInvalid = (out: unknown) => out instanceof type.errors`."
-	)
-
-// e.g. esbuild's stdin, or a module a plugin loads from a virtual id
-export const writeFilelessImportMessage = (
-	id: string,
-	specifier: string
-): string =>
-	writeUnprecompiledMessage(
-		id.replace(/^\0/, ""),
-		specifier,
-		"it can't precompile a module with no file of its own. Define the Types it uses in a file it imports."
-	)
-
-// esbuild loads a module with the first plugin that returns its contents
-export const writeLoadedFirstMessage = (
-	file: string,
-	specifier: string,
-	cwd: string
-): string =>
-	writeUnprecompiledMessage(
-		printablePathOf(cwd, file),
-		specifier,
-		"another plugin loaded it before precompile.esbuild() could. Put precompile.esbuild() ahead of that plugin."
-	)
-
-const writeUnprecompiledMessage = (
-	name: string,
-	specifier: string,
-	reason: string
-) =>
-	`${name} imports ${specifier}, which a standalone build resolves to arktype/runtime, where defining a Type throws, as ${reason}`
 
 export interface EmittedMap {
 	mappings: string

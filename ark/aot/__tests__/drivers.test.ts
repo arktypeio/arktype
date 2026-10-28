@@ -2,17 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { precompile as bunPlugin } from "@ark/aot/bun"
 import { writeDeclareFrameworkMessage } from "@ark/aot/internal/declare.ts"
-import {
-	withAllowUnsafe,
-	createNodeHost,
-	writeAliasMessage,
-	writeExternalizedMessage,
-	writeFilelessImportMessage,
-	writePrecompiledDependencyMessage,
-	writeTextlessMessage,
-	writeUntransformedImportMessage,
-	writeVariantImportMessage
-} from "@ark/aot/internal/host.ts"
+import { createNodeHost } from "@ark/aot/internal/host.ts"
 import {
 	createKeyedPrecompiler,
 	type TransformedModule
@@ -20,7 +10,15 @@ import {
 import {
 	configuredThreadMessage,
 	writeTurbopackDependencyMessage,
-	writeUnansweredResolveMessage
+	writeUnansweredResolveMessage,
+	withAllowUnsafe,
+	writeAliasMessage,
+	writeExternalizedMessage,
+	writeFilelessImportMessage,
+	writePrecompiledDependencyMessage,
+	writeTextlessMessage,
+	writeUntransformedImportMessage,
+	writeVariantImportMessage
 } from "@ark/aot/internal/messages.ts"
 import {
 	createAsyncPrecompiler,

@@ -11,9 +11,9 @@ import {
 	resolvesToRuntime,
 	resolvedVariantOf,
 	runtimeSpecifiers,
-	transformedFilterOf,
-	writeVariantImportMessage
+	transformedFilterOf
 } from "./host.ts"
+import { writeVariantImportMessage } from "./messages.ts"
 import { refuseDeclare } from "./declare.ts"
 import { isProductionEnv } from "./presets.ts"
 import {

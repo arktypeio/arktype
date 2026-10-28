@@ -51,22 +51,25 @@ import {
 	schemaSpecifier,
 	throwBuildError,
 	transformedFilterOf,
-	unbundledMessage,
 	variantSpecifierOf,
+	writeIssueFeatures,
+	type PrecompileHost
+} from "./host.ts"
+import {
+	conflictingPluginPhrase,
+	writeConflictingPlugins,
+	unbundledMessage,
 	writePrecompiledDependencyMessage,
 	writeBundledExternalMessage,
 	writeExternalizedMessage,
 	writeFilelessImportMessage,
-	writeIssueFeatures,
 	writeLoadedFirstMessage,
 	writeUncachedModuleMessage,
 	writeUnwrittenModuleMessage,
 	writeVariantImportMessage,
 	writeUntransformedImportMessage,
-	type PrecompileHost,
 	withAllowUnsafe
-} from "./host.ts"
-import { conflictingPluginPhrase, writeConflictingPlugins } from "./messages.ts"
+} from "./messages.ts"
 import type { IssueFeatures } from "arktype/internal/standalone.ts"
 import type { ScannedProgram, ScannedUsage } from "./precompile.ts"
 import { withEnvironment, type Environment } from "./presets.ts"
