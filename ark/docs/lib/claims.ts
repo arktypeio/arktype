@@ -113,7 +113,8 @@ export const speedChart: BenchmarkChart = {
 // reporting an error for every invalid field with the form's messages (a blank
 // password gets ArkType's one, where Valibot also says it's empty), in a
 // production build (esbuild's "production" condition), which prunes a
-// precompiled validator to what the form uses. Every bar is from results/login-5acd85130.json: the default build
+// precompiled validator to what the form uses. Every bar is from
+// results/login-5acd85130.json: the default build
 // is 2494 / 1140 B min / gz, the "smallest" preset 1037. forms/, the size
 // suite in the README's "Best average", bundles the same form with the same
 // settings, but exporting a function that asserts rather than asserting once,

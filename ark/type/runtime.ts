@@ -237,7 +237,8 @@ export const keySiteOf = ((
 	m: { code: "required", description: missing }
 })) satisfies Fn
 
-// a library reading a JSON Schema the build left out fails saying how to keep it; "jsonSchema" in it stays false
+// a library reading a JSON Schema the build left out fails saying how to keep
+// it; "jsonSchema" in it stays false
 export const withoutJsonSchema = <standard extends object>(
 	standard: standard
 ): standard =>
@@ -1102,7 +1103,7 @@ export type writeIdentityMismatchMessage<
 > = `${label} is not ${expectedLabel}, which it was at build`
 
 export const bakedJsonSchemaOptionsMessage =
-	'a standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where its schema needs none; configure({ toJsonSchema }) or build with runtime: "arktype"'
+	'A standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where its schema needs none; configure({ toJsonSchema }) or build with runtime: "arktype"'
 
 export type bakedJsonSchemaOptionsMessage = typeof bakedJsonSchemaOptionsMessage
 

@@ -33,6 +33,14 @@ export interface LinkOptions {
 	isOneChunk?: boolean
 }
 
+interface LinkPass {
+	// the last pass, which links units into the sites reading them
+	intoSites: boolean
+	exposesAllows?: boolean
+	// declares each validator its units can, not only those they read
+	declaresEach?: boolean
+}
+
 // writes each checker read once where it's read; changed modules are renamed and the originals kept
 export const linkBundle = (
 	sites: Record<string, LinkedSite>,
@@ -46,11 +54,11 @@ export const linkBundle = (
 	// units into units until none is read once by another, then into sites
 	for (let pass = 0; pass < maxPasses; pass++) {
 		const linker = new Linker(codes, siteCodes, sites)
-		if (!linker.link(false)) break
+		if (!linker.link({ intoSites: false })) break
 		codes = linker.codes()
 	}
 	const linker = new Linker(codes, siteCodes, sites)
-	linker.link(true, exposesAllows, isOneChunk)
+	linker.link({ intoSites: true, exposesAllows, declaresEach: isOneChunk })
 	codes = linker.codes()
 	const one = isOneChunk ? oneModuleOf(codes, linker.siteTexts()) : undefined
 	const renamed = one?.renamed ?? renamedOf(codes, modules)
@@ -85,7 +93,8 @@ interface Declared {
 	reads: [name: string, isEager: boolean][]
 }
 
-// one module of what the sites read, each after what it reads; a unit must declare or import what it reads by its export name
+// one module of what the sites read, each after what it reads; a unit must
+// declare or import what it reads by its export name
 const oneModuleOf = (
 	codes: Record<string, string>,
 	siteTexts: string[]
@@ -380,12 +389,11 @@ class Linker {
 		return this.units.filter(unit => unit.isSite).map(unit => this.textOf(unit))
 	}
 
-	link(
-		intoSites: boolean,
+	link({
+		intoSites,
 		exposesAllows = false,
-		// declares each validator its units can, not only those they read
 		declaresEach = false
-	): boolean {
+	}: LinkPass): boolean {
 		// e.g. a statement writing a checker read once, which a copy of it wouldn't have
 		for (const unit of this.units) {
 			const unread = unit.isSite ? unreadCreationsOf(unit) : undefined
@@ -490,7 +498,8 @@ class Linker {
 		)
 	}
 
-	// declares a checker one site creates its validator from as that validator, among the units where they're one module
+	// declares a checker one site creates its validator from as that validator,
+	// among the units where they're one module
 	private declareCreated(exposesAllows: boolean, declaresEach: boolean): void {
 		const creationsByBinding = new Map<Binding, Creation | undefined>()
 		for (const unit of this.units) {

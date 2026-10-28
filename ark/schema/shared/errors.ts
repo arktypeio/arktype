@@ -392,7 +392,8 @@ const skipped = {} as ArkError
 
 const firstPathTraversals = new WeakMap<typeof Traversal, FirstPathTraversal>()
 
-// keeps only the errors at its first's path, counting one elsewhere so each check stops where it would have
+// keeps only the errors at its first's path, counting one elsewhere so each
+// check stops where it would have
 const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
 	let FirstPath = firstPathTraversals.get(Base)
 	if (FirstPath) return FirstPath
@@ -1196,4 +1197,4 @@ export const unrenderedLocaleMessage =
 	'import "arktype/i18n" to write errors in locales other than en'
 
 export const copiedErrorMessage =
-	"only errors validation returned can be written again, not copies"
+	"Only errors validation returned can be written again, not copies"

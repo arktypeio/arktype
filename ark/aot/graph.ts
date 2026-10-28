@@ -2557,7 +2557,8 @@ export class ModuleGraph {
 		return !parent || this.mayDeclare(parent, name, seen)
 	}
 
-	// e.g. data for `opts.db` given `route({ db, input: type(...) })`, or `$setup.User` in a Vue render function
+	// e.g. data for `opts.db` given `route({ db, input: type(...) })`, or
+	// `$setup.User` in a Vue render function
 	private exposedKindOf(
 		member: MemberExpression,
 		module: SourceModule,
@@ -2680,7 +2681,8 @@ export class ModuleGraph {
 				"kind" in key && key.kind === "param" && key.declaration === fn ?
 					params.findIndex(param => contains(param, key.id))
 				:	undefined
-			// what fn declares, e.g. `N` in `{ const N = T.or("null"); return N }`, for the `T` passed
+			// what fn declares, for the `T` passed, e.g. `N` in
+			// `{ const N = T.or("null"); return N }`
 			const anchor = anchorOf(key)
 			if (
 				index === undefined &&
@@ -2689,7 +2691,8 @@ export class ModuleGraph {
 				return kindOfKey(key, keyModule)
 			let kind = derived.get(key)
 			if (kind !== undefined) return kind
-			// read while derived: a parameter holds what the call passes, else what any call gives it
+			// read while derived: a parameter holds what the call passes, else
+			// what any call gives it
 			kind =
 				index === undefined ? kindOfKey(key, keyModule)
 				: index === -1 ? kinds.data
@@ -3374,7 +3377,8 @@ export class ModuleGraph {
 		return target === "arktype" || target === "arktypeNamespace"
 	}
 
-	// e.g. `() => scope(...)` passed to a function the build doesn't analyze; a held value like `[$]` counts
+	// e.g. `() => scope(...)` passed to a function the build doesn't analyze; a
+	// held value like `[$]` counts
 	reachesUnseen(
 		node: Node,
 		module: SourceModule,
@@ -3547,7 +3551,8 @@ export class ModuleGraph {
 		return !calls || calls.some(call => this.reaches(call, module, held, reach))
 	}
 
-	// e.g. `o.a = 1`, `list.push(x)` or `Object.assign(o, x)`, changing what a binding holds without assigning it
+	// e.g. `o.a = 1`, `list.push(x)` or `Object.assign(o, x)`, changing what a
+	// binding holds without assigning it
 	writesThrough(binding: Binding, module: SourceModule): Node[] {
 		let result = this.writesByBinding.get(binding)
 		if (!result) {

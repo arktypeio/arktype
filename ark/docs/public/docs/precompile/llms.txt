@@ -770,7 +770,7 @@ A bundle written as one chunk, an esbuild build with one entry and neither `spli
 The build leaves a member wherever it can't prove no code reads it:
 
 - an entry, or a module a dependency imports, exports a validator or a module holding one
-- a validator is passed to a function, stored, or read by a member it doesn't know
+- a validator is passed to a function, read by a member it doesn't know, or stored other than in an object literal a const holds and reads at a key, like `schemas.user(data)` where `schemas = { user: User }`; a computed key, like `schemas[name]`, reads each validator the object holds
 - a module is imported dynamically, through `require` or `import.meta.glob()`, or holds a Scope
 - a module reads an `import.meta` property other than `env`, `hot`, `webpackHot`, `url`, `resolve`, `dirname`, `filename` and the flags Nuxt defines, like `client` and `dev`
 - an esbuild bundle holds a module it can't read, like a Vue component
@@ -994,7 +994,7 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 
 **`toJsonSchema isn't baked into this validator`** or, in production, **`toJsonSchema is not a function`** at runtime, from hono-openapi or oRPC's `@orpc/arktype` converter: they call `toJsonSchema()`, which a validator has only where the build sets it. Add `"members": { "toJsonSchema": true }` to `"precompile"` in `ark.json`.
 
-**`a standalone validator's JSON Schema takes only a target it was built with, and a fallback only where its schema needs none`**: a library passed options to `toJsonSchema()` that a baked schema can't apply. hono-openapi and oRPC pass a fallback, which changes a Type holding a morph or a Date, as arktype falls back on those. Build with `runtime: "arktype"`, or keep the morph or Date out of the Types you document.
+**`A standalone validator's JSON Schema takes only a target it was built with, and a fallback only where its schema needs none`**: a library passed options to `toJsonSchema()` that a baked schema can't apply. hono-openapi and oRPC pass a fallback, which changes a Type holding a morph or a Date, as arktype falls back on those. Build with `runtime: "arktype"`, or keep the morph or Date out of the Types you document.
 
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
 
