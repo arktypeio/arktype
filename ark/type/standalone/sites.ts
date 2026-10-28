@@ -29,8 +29,7 @@ import {
 // the text a site's issue carries in place of what the runtime writes
 const describingKeys = ["expected", "actual", "problem", "message"] as const
 
-// a site's text is written from the program's config, so a scope's own
-// isn't, nor is predicate text a callback raises
+// a site's text is written from the program's config, so a scope's own isn't, nor a callback's
 export const assertDescribed = (root: BaseRoot): void => {
 	const config = root.$.cfg
 	const raisable = raisableCodesOf(root)
@@ -137,8 +136,7 @@ export const addIssueFeatures = (
 
 const isUnion = (node: BaseNode): boolean => node.is("union")
 
-// a problem, or text written from the program's config, each set by a call
-// on its issue
+// a problem, or text written from the program's config, each set by a call on its issue
 const writesText = (context: IssueContext | undefined) =>
 	context?.problem !== undefined || !!context?.written
 
@@ -180,13 +178,11 @@ export const isLiteralSite = (value: unknown, emitted: string): boolean =>
 		siteWords.has(word)
 	)
 
-// emitted code with each string's contents dropped, as every string it holds
-// is JSON, and it holds no other literal that could contain a quote
+// every string the code holds is JSON, and no other literal can contain a quote
 export const withoutStrings = (code: string): string =>
 	code.replace(/"(?:[^"\\]|\\.)*"/g, '""')
 
-// a key's site (keySiteOf) expects its value's brief where the key is missing,
-// passed only where that isn't its basis's own description
+// a key's site expects its value's brief where the key is missing, unless that's its basis's
 export const writeSiteOf = (
 	{ code, description, message, problem }: IssueContext,
 	emit: (s: string) => string,
@@ -205,9 +201,7 @@ export const writeSiteOf = (
 	}(${args.map(arg => (arg === undefined ? "void 0" : emit(arg))).join(", ")})`
 }
 
-// what a key's site expects where the key is missing, if its issue is
-// required's alone: its value's brief, as arktype's is, unless the program
-// configures required's expected
+// its value's brief, as arktype's is, unless the program configures required's expected
 export const missingDescriptionOf = (site: object): string | undefined => {
 	const { m: missing } = site as { m?: IssueContext }
 	return (
@@ -342,8 +336,7 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 
 export const raisingKeys = { Traversal: {}, FirstIssueTraversal: {} }
 
-// the writers of text configure() sets for each code a callback can raise but
-// predicate, whose text a callback raising it can't take
+// configure()'s writers for each code a callback can raise but predicate, whose text it can't take
 export const raisedWritersByCode = (): [
 	code: ArkErrorCode,
 	writers: Writer[],
@@ -419,8 +412,7 @@ export const issueSiteOf = (site: FailureSite | UnionSite): object => {
 
 const unionContexts = new WeakMap<UnionSite, TextContext>()
 
-// a required key whose union value fails is reported at the key's site, as
-// one whose value is a basis is, alike for each key the union is the value of
+// a required key whose union value fails is reported at the key's site, as a basis value is
 export const unionKeySiteOf = (
 	union: UnionSite,
 	missing: TextContext
