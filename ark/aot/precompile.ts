@@ -867,9 +867,7 @@ export class Precompiler {
 			!!program.isOneChunk &&
 			!this.inline &&
 			this.standalone.optimize === "speed"
-		// a program read whole, like one an entry exports, is written all the
-		// same, as its transform takes what the scan wrote and its issues may
-		// hold less than any
+		// a program read whole is written too, as its issues may hold less than any
 		const usage: ProgramUsage = {
 			members: {
 				...this.members,
@@ -3637,39 +3635,52 @@ export class Precompiler {
 				if (read) {
 					if (read.status !== "rejected")
 						leave(read, site, module, binding.name)
-					continue
-				}
-				// a Scope this module's refused site defines is arktype's already,
-				// so recording it refuses nothing
-				const kind = standInKindOf(value)!
-				const written = this.writtenStandIns.get(value)
-				if (!written) {
+				} else if (!this.writtenStandIns.has(value)) {
+					// a Scope this module's refused site defines is arktype's
+					// already, so recording it refuses nothing
 					this.dynamicStandIns.set(value, [site, module, binding.name])
-					continue
-				}
-				const [source, origin] = written
-				const message = `${module.snippetOf(site)} reads \`${binding.name}\`, which the build replaced with an object that lacks its members`
-				// reported once, as each pass over the module's sites finds it
-				if (
-					diagnostics.some(d => d.start === site.start && d.message === message)
-				)
-					continue
-				diagnostics.push(
-					this.diagnostic(
-						module,
+				} else {
+					this.reportWrittenStandInRead(
 						site,
-						"unsupported",
-						message,
-						[
-							`\`${binding.name}\` ${isHeld ? "holds" : "is"} ${origin.snippetOf(source)} (${origin.positionOf(source)}), a ${kind} precompiled before ${module.snippetOf(site)} was refused`
-						],
-						`Put // @ark-runtime on the line before ${origin.snippetOf(source)}, so arktype defines it at runtime, or build with runtime: "arktype".`,
-						"error"
+						module,
+						binding.name,
+						value,
+						isHeld,
+						diagnostics
 					)
-				)
+				}
 			}
 		}
 		return refused
+	}
+
+	// a refused site reads a Scope or Generic a module already precompiled
+	private reportWrittenStandInRead(
+		site: Span,
+		module: SourceModule,
+		name: string,
+		value: unknown,
+		isHeld: boolean,
+		diagnostics: Diagnostic[]
+	): void {
+		const [source, origin] = this.writtenStandIns.get(value)!
+		const message = `${module.snippetOf(site)} reads \`${name}\`, which the build replaced with an object that lacks its members`
+		// reported once, as each pass over the module's sites finds it
+		if (diagnostics.some(d => d.start === site.start && d.message === message))
+			return
+		diagnostics.push(
+			this.diagnostic(
+				module,
+				site,
+				"unsupported",
+				message,
+				[
+					`\`${name}\` ${isHeld ? "holds" : "is"} ${origin.snippetOf(source)} (${origin.positionOf(source)}), a ${standInKindOf(value)} precompiled before ${module.snippetOf(site)} was refused`
+				],
+				`Put // @ark-runtime on the line before ${origin.snippetOf(source)}, so arktype defines it at runtime, or build with runtime: "arktype".`,
+				"error"
+			)
+		)
 	}
 
 	// each Scope or Generic a refused site may read, with the binding the site

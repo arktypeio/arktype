@@ -367,12 +367,10 @@ export class Interpreter {
 					holes.add(hole)
 			}
 		} else {
+			// arktype's own scope holds no hole, and resolving its keywords
+			// through its aliases would print what references them as aliases
 			const held =
 				hasArkKind(value, "module") ? Object.values(value)
-					// arktype's own scope holds no hole, and reading its keyword
-					// modules through its aliases resolves each keyword in the
-					// module's scope before arktype's, which then prints what
-					// references it as an alias
 				: hasArkKind(value, "scope") ?
 					value.isBuiltin ?
 						[]

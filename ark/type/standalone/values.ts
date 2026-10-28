@@ -28,15 +28,19 @@ const sizeOf = (chars: number): string =>
 	: chars >= 1e3 ? `${(chars / 1e3).toFixed(1)} KB`
 	: `${chars} chars`
 
+export type BakedLengths = Partial<Record<IntrospectionMember, number>>
+
+export const totalBaked = (lengths: BakedLengths): number =>
+	Object.values(lengths).reduce((sum, length) => sum + length!, 0)
+
 export const writeBakedLimitMessage = (
-	lengths: Partial<Record<IntrospectionMember, number>>,
+	lengths: BakedLengths,
 	limit: number
 ): string => {
 	const members = Object.entries(lengths)
 		.map(([member, length]) => `${member} ${sizeOf(length!)}`)
 		.join(", ")
-	const total = Object.values(lengths).reduce((sum, length) => sum + length!, 0)
-	return `its introspection bakes ${sizeOf(total)} of text (${members}), over the ${sizeOf(limit)} a site may, as json and a JSON Schema repeat each Type they reference. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: "arktype"`
+	return `its introspection bakes ${sizeOf(totalBaked(lengths))} of text (${members}), over the ${sizeOf(limit)} a site may, as json and a JSON Schema repeat each Type they reference. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: "arktype"`
 }
 
 export const runtimePathsByValue = new Map<unknown, string>()

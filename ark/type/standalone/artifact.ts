@@ -149,8 +149,10 @@ import {
 	isPlainLiteral,
 	keywordMetas,
 	runtimePathsByValue,
+	totalBaked,
 	writeBakedLimitMessage,
-	writeUnprecompilableMessage
+	writeUnprecompilableMessage,
+	type BakedLengths
 } from "./values.ts"
 type DeclarationRole =
 	| "shape"
@@ -1603,7 +1605,7 @@ ${writeFunction(
 	}
 
 	// the chars each introspection member of the Type being written bakes
-	private bakedLengths: Partial<Record<IntrospectionMember, number>> = {}
+	private bakedLengths: BakedLengths = {}
 	private bakingMember: IntrospectionMember | undefined
 
 	private baked<t>(member: IntrospectionMember, write: () => t): t {
@@ -1625,11 +1627,7 @@ ${writeFunction(
 	private assertBakedWithin(): void {
 		const lengths = this.bakedLengths
 		this.bakedLengths = {}
-		const total = Object.values(lengths).reduce(
-			(sum, length) => sum + length!,
-			0
-		)
-		if (total > this.baking.bakedLimit)
+		if (totalBaked(lengths) > this.baking.bakedLimit)
 			throwParseError(writeBakedLimitMessage(lengths, this.baking.bakedLimit))
 	}
 

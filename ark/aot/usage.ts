@@ -429,35 +429,7 @@ class UsageAnalysis {
 			if (key !== undefined)
 				return this.readValue(parent.parent, runtime, [key, ...path])
 		}
-		if (path.length) {
-			// the member at the path's next key is read on, as is one at a
-			// computed key, which may be it
-			if (
-				parent?.type === "MemberExpression" &&
-				parent.object === node &&
-				!isWriteTarget(parent)
-			) {
-				const name = memberNameOf(parent)
-				if (
-					(typeof name === "string" || typeof name === "number") &&
-					String(name) !== path[0]
-				)
-					return
-				const [member, memberParent] = operatorOf(parent)
-				return this.read(member, memberParent, runtime, path.slice(1))
-			}
-			const holder = `${module.snippetOf(node)}, which holds a validator at ${path.join(".")},`
-			return escape(
-				`${module.positionOf(node)} ${
-					(
-						parent?.type === "CallExpression" ||
-						parent?.type === "NewExpression"
-					) ?
-						`passes ${holder} to a function, which may read any member`
-					:	`reads ${holder} other than to read a member`
-				}`
-			)
-		}
+		if (path.length) return this.readHolder(node, parent, runtime, path)
 		if (parent?.type === "CallExpression" && parent.callee === node) {
 			this.used.add("call")
 			this.readArguments(parent)
@@ -488,6 +460,41 @@ class UsageAnalysis {
 		}
 		escape(
 			`${module.positionOf(node)} ${unfollowedReadOf(node, parent, module)}`
+		)
+	}
+
+	// a read of an object holding a validator at path: on to the member at its
+	// next key, or one at a computed key, which may be it
+	private readHolder(
+		node: Node,
+		parent: Node | null | undefined,
+		runtime: RuntimeModule,
+		path: readonly string[]
+	): void {
+		const { module } = runtime
+		if (
+			parent?.type === "MemberExpression" &&
+			parent.object === node &&
+			!isWriteTarget(parent)
+		) {
+			const name = memberNameOf(parent)
+			if (
+				(typeof name === "string" || typeof name === "number") &&
+				String(name) !== path[0]
+			)
+				return
+			const [member, memberParent] = operatorOf(parent)
+			return this.read(member, memberParent, runtime, path.slice(1))
+		}
+		const holder = `${module.snippetOf(node)}, which holds a validator at ${path.join(".")},`
+		const passed =
+			parent?.type === "CallExpression" || parent?.type === "NewExpression"
+		return escape(
+			`${module.positionOf(node)} ${
+				passed ?
+					`passes ${holder} to a function, which may read any member`
+				:	`reads ${holder} other than to read a member`
+			}`
 		)
 	}
 
