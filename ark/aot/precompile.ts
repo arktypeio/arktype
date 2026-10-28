@@ -56,7 +56,8 @@ import {
 	type StandaloneIntrospection,
 	type StandaloneModules,
 	type StandaloneOptions,
-	type ScopeAlias
+	type ScopeAlias,
+	type Configured
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join, relative } from "node:path"
@@ -450,6 +451,114 @@ const emptyFactory = (): SiteFactory => ({
 	imports: []
 })
 
+// what folding a module's sites has written so far
+interface Folding {
+	module: SourceModule
+	s: MagicString
+	prefix: string
+	validators: StandaloneModules
+	// modules writing the same code share it
+	specifier: string
+	configured: Configured
+	modules: Record<string, string>
+	imports: Record<string, Record<string, string>>
+	inputImports: Record<string, Record<string, string>>
+	imported: Set<string>
+	checking: Set<string>
+	// the source a site's call keeps, which still reads the bindings it holds
+	kept: Span[]
+	passed: Binding[]
+	// those a call reads at runtime
+	read: Binding[]
+	readsPassedBy?: (exported: string) => boolean
+	// the first droppable site, where the config is fixed
+	fixedAt: number
+}
+
+const unplan = (plan: PlannedSites, site: Site): void => {
+	delete plan.exportsByName[plan.namesBySite.get(site)!]
+	plan.namesBySite.delete(site)
+	plan.factoriesBySite.delete(site)
+}
+
+const planFactory = (
+	plan: PlannedSites,
+	site: Site,
+	factory: SiteFactory,
+	tablesByValue: Map<unknown, number>
+): void => {
+	const name = `f${nameOf(site)}`
+	plan.factoriesBySite.set(site, factory)
+	plan.namesBySite.set(site, name)
+	if (site.introspection) {
+		plan.exportsByName[name] = {
+			...site.introspection,
+			data: site.value,
+			params: factory.params,
+			defaultChecks: site.defaultChecks
+		}
+		return
+	}
+	let table = tablesByValue.get(site.value)
+	if (table === undefined)
+		tablesByValue.set(site.value, (table = tablesByValue.size))
+	plan.exportsByName[name] = {
+		type: site.value as never,
+		params: factory.params,
+		internedBy: table,
+		defaultChecks: site.defaultChecks
+	} satisfies StandaloneFactory
+}
+
+// a site's validator, or where its definition throws a ParseError, its thrower
+const importFolded = (
+	site: Site,
+	exported: string,
+	local: string,
+	created: readonly string[] | undefined,
+	{ validators, specifier, configured, modules, imports, prefix }: Folding
+): void => {
+	if (site.parseError) {
+		const thrower = writeParseErrorThrower(
+			site.parseError.message,
+			configured,
+			site.progress
+		)
+		const throwerSpecifier = `~arktype/${hashOf(thrower)}`
+		modules[throwerSpecifier] = thrower
+		imports[throwerSpecifier] = { default: local }
+		return
+	}
+	if (!(specifier in modules)) {
+		modules[specifier] = validators.code
+		Object.assign(modules, validators.modules)
+	}
+	const locals = (imports[specifier] ??= {})
+	if (created) for (const read of created) locals[read] = `${prefix}_${read}`
+	else locals[exported] = local
+}
+
+// parameters stay in place, so they evaluate in order, even for a value
+const spliceSite = (
+	s: MagicString,
+	site: Span,
+	spans: readonly Span[],
+	inputs: string[],
+	opener: string,
+	closer: string
+): void => {
+	const replace = (start: number, end: number, text: string) =>
+		start === end ? s.appendLeft(start, text) : s.overwrite(start, end, text)
+	let start = site.start
+	let separator = opener
+	for (const span of spans) {
+		replace(start, span.start, separator)
+		start = span.end
+		separator = ", "
+	}
+	const read = inputs.map((input, i) => (i ? ", " : separator) + input)
+	replace(start, site.end, `${read.join("")}${closer}`)
+}
 const receive = (
 	factory: SiteFactory,
 	passedAs: PassedInput,
@@ -2041,14 +2150,16 @@ export class Precompiler {
 		prefix: string,
 		diagnostics: Diagnostic[]
 	): PlannedSites {
-		const namesBySite = new Map<Site, string>()
-		const factoriesBySite = new Map<Site, SiteFactory>()
-		const exportsByName: Record<string, StandaloneExport> = {}
+		const plan: PlannedSites = {
+			namesBySite: new Map(),
+			factoriesBySite: new Map(),
+			exportsByName: {},
+			folded: []
+		}
 		// sites arktype returned one Type for share a table
 		const tablesByValue = new Map<unknown, number>()
 		// e.g. a site in a Scope thunk, inside text a call replaces
 		const replaced: [site: Site, spans: readonly Span[]][] = []
-		const folded: Site[] = []
 		for (const site of sites) {
 			if (
 				site.status !== "accepted" ||
@@ -2062,7 +2173,7 @@ export class Precompiler {
 				const call = site.definition.parent!
 				s.overwrite(call.start, site.definition.start, "(")
 				s.overwrite(site.definition.end, call.end, ")")
-				folded.push(site)
+				plan.folded.push(site)
 				continue
 			}
 			let reasons: string[]
@@ -2075,28 +2186,16 @@ export class Precompiler {
 				reasons = reasonsOf(e)
 			}
 			if (reasons.length) {
-				// its ParseError fails the build already, unless allowUnsafe
-				if (
-					this.allowUnsafe ||
-					!site.parseError ||
-					!isEncodingError(site.parseError)
-				)
-					diagnostics.push(this.refuseWritten(module, site, reasons))
-				// a site it refuses accepts nothing as a Standard Schema
-				for (let i = diagnostics.length - 1; i >= 0; i--) {
-					const span = this.schemaWarningSpans.get(diagnostics[i])
-					if (span?.start === site.start && span.end === site.end)
-						diagnostics.splice(i, 1)
-				}
+				this.refusePlanned(module, site, reasons, diagnostics)
 				continue
 			}
 			// checked at each call, as a factory is
 			if (site.introspection) factory ??= emptyFactory()
 			else if (site.parseError) {
-				namesBySite.set(site, nameOf(site))
+				plan.namesBySite.set(site, nameOf(site))
 				// checks progress before throwing, as a factory does
 				if (site.progress) {
-					factoriesBySite.set(site, {
+					plan.factoriesBySite.set(site, {
 						...emptyFactory(),
 						inputs: [`${prefix}m`]
 					})
@@ -2105,42 +2204,40 @@ export class Precompiler {
 				continue
 			}
 			if (factory) {
-				const name = `f${nameOf(site)}`
-				factoriesBySite.set(site, factory)
-				namesBySite.set(site, name)
+				planFactory(plan, site, factory, tablesByValue)
 				replaced.push([site, factory.spans])
-				if (site.introspection) {
-					exportsByName[name] = {
-						...site.introspection,
-						data: site.value,
-						params: factory.params,
-						defaultChecks: site.defaultChecks
-					}
-					continue
-				}
-				let table = tablesByValue.get(site.value)
-				if (table === undefined)
-					tablesByValue.set(site.value, (table = tablesByValue.size))
-				exportsByName[name] = {
-					type: site.value as never,
-					params: factory.params,
-					internedBy: table,
-					defaultChecks: site.defaultChecks
-				} satisfies StandaloneFactory
 			} else {
 				const name = `v${nameOf(site)}`
-				namesBySite.set(site, name)
-				exportsByName[name] = site.value as never
+				plan.namesBySite.set(site, name)
+				plan.exportsByName[name] = site.value as never
 				replaced.push([site, []])
 			}
 		}
 		// a stand-in a site refused here reads is left to arktype with it
-		for (const site of this.refuseStandInsRead(module, sites, diagnostics)) {
-			delete exportsByName[namesBySite.get(site)!]
-			namesBySite.delete(site)
-			factoriesBySite.delete(site)
+		for (const site of this.refuseStandInsRead(module, sites, diagnostics))
+			unplan(plan, site)
+		return plan
+	}
+
+	private refusePlanned(
+		module: SourceModule,
+		site: Site,
+		reasons: string[],
+		diagnostics: Diagnostic[]
+	): void {
+		// its ParseError fails the build already, unless allowUnsafe
+		if (
+			this.allowUnsafe ||
+			!site.parseError ||
+			!isEncodingError(site.parseError)
+		)
+			diagnostics.push(this.refuseWritten(module, site, reasons))
+		// a site it refuses accepts nothing as a Standard Schema
+		for (let i = diagnostics.length - 1; i >= 0; i--) {
+			const span = this.schemaWarningSpans.get(diagnostics[i])
+			if (span?.start === site.start && span.end === site.end)
+				diagnostics.splice(i, 1)
 		}
-		return { namesBySite, factoriesBySite, exportsByName, folded }
 	}
 
 	private foldSites(
@@ -2151,16 +2248,79 @@ export class Precompiler {
 		modules: Record<string, string>,
 		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[],
-		{ members, called, readsAllows, piped, combines, shapes }: ProgramReads
+		reads: ProgramReads
 	): [
 		inputImports: Record<string, Record<string, string>>,
 		issues: IssueFeatures
 	] {
-		const inputImports: Record<string, Record<string, string>> = {}
-		const { namesBySite, factoriesBySite, exportsByName, folded } =
-			this.planSites(module, sites, s, prefix, diagnostics)
+		const plan = this.planSites(module, sites, s, prefix, diagnostics)
+		const { namesBySite, factoriesBySite, folded } = plan
+		const configured = this.configuredOf(module)
+		const validators = this.writePlanned(
+			module,
+			sites,
+			plan,
+			configured,
+			reads,
+			diagnostics
+		)
+		for (const site of namesBySite.keys()) {
+			if (standInKindOf(site.value))
+				this.writtenStandIns.set(site.value, [site, module])
+		}
+		const folding: Folding = {
+			module,
+			s,
+			prefix,
+			validators,
+			specifier: `~arktype/${hashOf(validators.code)}`,
+			configured,
+			modules,
+			imports,
+			inputImports: {},
+			imported: new Set(),
+			checking: new Set(validators.checking),
+			kept: [],
+			passed: [],
+			read: [],
+			fixedAt: Infinity
+		}
+		for (const [site, name] of namesBySite) {
+			this.foldSite(site, name, factoriesBySite.get(site), folding)
+			folded.push(site)
+		}
+		const { inputImports, kept, passed, read, fixedAt } = folding
+		// fixed at the first droppable site, as arktype does at its first Type
+		if (fixedAt !== Infinity && configured !== false) {
+			const fixer = writeConfigFixer(configured)
+			const fixerSpecifier = `~arktype/${hashOf(fixer)}`
+			modules[fixerSpecifier] = fixer
+			imports[fixerSpecifier] = { default: `${prefix}fixConfig` }
+			s.appendLeft(fixedAt, `${prefix}fixConfig()\n`)
+		}
+		this.replaceArktypeImports(module, s, prefix, folded)
+		keepImportedModules(module, folded, kept, passed, s)
+		this.runtimesById[module.id] = runtimeModuleOf(
+			module,
+			folded,
+			kept,
+			read,
+			Object.fromEntries(
+				Object.entries(inputImports).map(([specifier, locals]) => [
+					specifier,
+					Object.keys(locals)
+				])
+			)
+		)
+		this.checkRuntimeImports(module, sites, diagnostics)
+		diagnostics.sort((l, r) => l.start - r.start)
+		return [inputImports, validators.issues]
+	}
+
+	// the config a module's validators are stamped with, where the build configures one
+	private configuredOf(module: SourceModule): Configured {
 		const { fingerprint, problem } = this.configuration!
-		const configured =
+		return (
 			!this.configures ? false
 			: fingerprint === undefined || problem ? undefined
 			: {
@@ -2168,16 +2328,22 @@ export class Precompiler {
 					path: module.path,
 					config: specifierOf(module.id, this.config!)
 				}
-		const unplan = (site: Site) => {
-			delete exportsByName[namesBySite.get(site)!]
-			namesBySite.delete(site)
-			factoriesBySite.delete(site)
-		}
-		// written again without a stand-in a site the writer refuses reads
-		let validators: StandaloneModules
+		)
+	}
+
+	// written again without a stand-in a site the writer refuses reads
+	private writePlanned(
+		module: SourceModule,
+		sites: Site[],
+		plan: PlannedSites,
+		configured: Configured,
+		{ members, called, readsAllows, piped, combines, shapes }: ProgramReads,
+		diagnostics: Diagnostic[]
+	): StandaloneModules {
+		const { namesBySite, exportsByName } = plan
 		for (;;) {
 			const refusalsByName: Record<string, string[]> = {}
-			validators =
+			const validators =
 				Object.keys(exportsByName).length ?
 					writeValidators(
 						exportsByName,
@@ -2205,136 +2371,97 @@ export class Precompiler {
 			for (const [site, name] of namesBySite) {
 				if (!refusalsByName[name]) continue
 				diagnostics.push(this.refuseWritten(module, site, refusalsByName[name]))
-				unplan(site)
+				unplan(plan, site)
 			}
 			const refused = this.refuseStandInsRead(module, sites, diagnostics)
-			if (!refused.length) break
-			for (const site of refused) unplan(site)
+			if (!refused.length) return validators
+			for (const site of refused) unplan(plan, site)
 		}
-		for (const site of namesBySite.keys()) {
-			if (standInKindOf(site.value))
-				this.writtenStandIns.set(site.value, [site, module])
+	}
+
+	private foldSite(
+		site: Site,
+		name: string,
+		factory: SiteFactory | undefined,
+		folding: Folding
+	): void {
+		const { module, s, prefix, validators, configured } = folding
+		// a folded factory may call a function it shares, passing its index
+		const [exported, index] = validators.folds[name] ?? [name]
+		// e.g. a size build's validator, created where it's read
+		const created = validators.calls[name]
+		const local =
+			created ?
+				`/* @__PURE__ */ ${prefix}_${created[0]}(${created
+					.slice(1)
+					.map(read => `${prefix}_${read}`)
+					.join(", ")})`
+			:	prefix + exported
+		if (!folding.imported.has(exported)) {
+			folding.imported.add(exported)
+			importFolded(site, exported, local, created, folding)
 		}
-		const checking = new Set(validators.checking)
-		// modules writing the same code share it
-		const specifier = `~arktype/${hashOf(validators.code)}`
-		const imported = new Set<string>()
-		// the source a site's call keeps, which still reads the bindings it holds
-		const kept: Span[] = []
-		const passed: Binding[] = []
-		// those a call reads at runtime
-		const read: Binding[] = []
-		let readsPassedBy: ((exported: string) => boolean) | undefined
-		let fixedAt = Infinity
-		for (const [site, name] of namesBySite) {
-			// a folded factory may call a function it shares, passing its index
-			const [exported, index] = validators.folds[name] ?? [name]
-			// e.g. a size build's validator, created where it's read
-			const created = validators.calls[name]
-			const local =
-				created ?
-					`/* @__PURE__ */ ${prefix}_${created[0]}(${created
-						.slice(1)
-						.map(read => `${prefix}_${read}`)
-						.join(", ")})`
-				:	prefix + exported
-			if (!imported.has(exported)) {
-				imported.add(exported)
-				if (site.parseError) {
-					const thrower = writeParseErrorThrower(
-						site.parseError.message,
-						configured,
-						site.progress
-					)
-					const throwerSpecifier = `~arktype/${hashOf(thrower)}`
-					modules[throwerSpecifier] = thrower
-					imports[throwerSpecifier] = { default: local }
-				} else {
-					if (!(specifier in modules)) {
-						modules[specifier] = validators.code
-						Object.assign(modules, validators.modules)
-					}
-					const locals = (imports[specifier] ??= {})
-					if (created)
-						for (const read of created) locals[read] = `${prefix}_${read}`
-					else locals[exported] = local
-				}
-			}
-			const factory = factoriesBySite.get(site)
-			const isValue = !!created || validators.values.includes(name)
-			// a value's site reads only the inputs arktype's could throw reading
-			const inputs =
-				factory?.inputs.filter(
-					input => !isValue || !factory.inert.includes(input)
-				) ?? []
-			for (const [specifier, name, local] of factory?.imports ?? []) {
-				if (inputs.includes(local))
-					(inputImports[specifier] ??= {})[name] = local
-			}
-			kept.push(...(factory?.spans ?? []))
-			// a value's inputs evaluate in place, and a factory may ignore its own
-			const readsPassed =
-				!isValue &&
-				!!factory?.bindings.length &&
-				(readsPassedBy ??= passedReaderOf(validators.code))(exported)
-			for (const [input, binding] of factory?.bindings ?? []) {
-				passed.push(binding)
-				if (readsPassed && inputs.includes(input)) read.push(binding)
-			}
-			// droppable with its variable unless it throws or checks; a function's only where it fixes no config and reads nothing
-			const isPure =
-				!site.parseError &&
-				!site.introspection?.thrown &&
-				!checking.has(name) &&
-				(site.declarationStart !== undefined ||
-					(site.initializes &&
-						configured === false &&
-						!factory?.spans.length &&
-						!inputs.length))
-			if (isPure && site.declarationStart !== undefined)
-				fixedAt = Math.min(fixedAt, site.declarationStart)
-			const call = `${isPure ? "/* @__PURE__ */ " : ""}${
-				this.shadow ?
-					this.shadowCallOf(site, module, factory, local, index, prefix)
-				:	`${local}(${index ?? ""}`
-			}`
-			if (!factory?.spans.length && !inputs.length)
-				s.overwrite(site.start, site.end, isValue ? local : `${call})`)
-			else {
-				// parameters stay in place, so they evaluate in order, even for a value
-				const replace = (start: number, end: number, text: string) =>
-					start === end ?
-						s.appendLeft(start, text)
-					:	s.overwrite(start, end, text)
-				let start = site.start
-				let separator =
-					isValue ? "("
-					: index === undefined && !this.shadow ? call
-					: `${call}, `
-				for (const span of factory?.spans ?? []) {
-					replace(start, span.start, separator)
-					start = span.end
-					separator = ", "
-				}
-				const read = inputs.map((input, i) => (i ? ", " : separator) + input)
-				replace(
-					start,
-					site.end,
-					`${read.join("")}${isValue ? `, ${local}` : ""})`
-				)
-			}
-			folded.push(site)
+		const isValue = !!created || validators.values.includes(name)
+		// a value's site reads only the inputs arktype's could throw reading
+		const inputs =
+			factory?.inputs.filter(
+				input => !isValue || !factory.inert.includes(input)
+			) ?? []
+		for (const [specifier, name, local] of factory?.imports ?? []) {
+			if (inputs.includes(local))
+				(folding.inputImports[specifier] ??= {})[name] = local
 		}
-		// fixed at the first droppable site, as arktype does at its first Type
-		if (fixedAt !== Infinity && configured !== false) {
-			const fixer = writeConfigFixer(configured)
-			const fixerSpecifier = `~arktype/${hashOf(fixer)}`
-			modules[fixerSpecifier] = fixer
-			imports[fixerSpecifier] = { default: `${prefix}fixConfig` }
-			s.appendLeft(fixedAt, `${prefix}fixConfig()\n`)
+		folding.kept.push(...(factory?.spans ?? []))
+		// a value's inputs evaluate in place, and a factory may ignore its own
+		const readsPassed =
+			!isValue &&
+			!!factory?.bindings.length &&
+			(folding.readsPassedBy ??= passedReaderOf(validators.code))(exported)
+		for (const [input, binding] of factory?.bindings ?? []) {
+			folding.passed.push(binding)
+			if (readsPassed && inputs.includes(input)) folding.read.push(binding)
 		}
+		// droppable with its variable unless it throws or checks; a function's only where it fixes no config and reads nothing
+		const isPure =
+			!site.parseError &&
+			!site.introspection?.thrown &&
+			!folding.checking.has(name) &&
+			(site.declarationStart !== undefined ||
+				(site.initializes &&
+					configured === false &&
+					!factory?.spans.length &&
+					!inputs.length))
+		if (isPure && site.declarationStart !== undefined)
+			folding.fixedAt = Math.min(folding.fixedAt, site.declarationStart)
+		const call = `${isPure ? "/* @__PURE__ */ " : ""}${
+			this.shadow ?
+				this.shadowCallOf(site, module, factory, local, index, prefix)
+			:	`${local}(${index ?? ""}`
+		}`
+		if (!factory?.spans.length && !inputs.length)
+			s.overwrite(site.start, site.end, isValue ? local : `${call})`)
+		else {
+			spliceSite(
+				s,
+				site,
+				factory?.spans ?? [],
+				inputs,
+				isValue ? "("
+				: index === undefined && !this.shadow ? call
+				: `${call}, `,
+				isValue ? `, ${local})` : ")"
+			)
+		}
+	}
+
+	// a shadow build loads its comparer first, beside whichever runtime is imported
+	private replaceArktypeImports(
+		module: SourceModule,
+		s: MagicString,
+		prefix: string,
+		folded: Site[]
+	): void {
 		if (this.shadow) {
-			// first, so it loads beside whichever runtime is imported
 			if (folded.length) {
 				s.prependLeft(
 					firstStatementOf(module.program).start,
@@ -2343,30 +2470,14 @@ export class Precompiler {
 					:	`import { shadow as ${prefix}shadow } from "@ark/aot/shadow"\n`
 				)
 			}
-		} else {
-			// linkIslands leaves configure()'s import to the runtime
-			const linked = module.islands.filter(
-				island =>
-					!this.configureCallsOf(module).some(call => contains(island, call))
-			)
-			pruneArktypeImports(module, [...folded, ...linked], s)
+			return
 		}
-		keepImportedModules(module, folded, kept, passed, s)
-		this.runtimesById[module.id] = runtimeModuleOf(
-			module,
-			folded,
-			kept,
-			read,
-			Object.fromEntries(
-				Object.entries(inputImports).map(([specifier, locals]) => [
-					specifier,
-					Object.keys(locals)
-				])
-			)
+		// linkIslands leaves configure()'s import to the runtime
+		const linked = module.islands.filter(
+			island =>
+				!this.configureCallsOf(module).some(call => contains(island, call))
 		)
-		this.checkRuntimeImports(module, sites, diagnostics)
-		diagnostics.sort((l, r) => l.start - r.start)
-		return [inputImports, validators.issues]
+		pruneArktypeImports(module, [...folded, ...linked], s)
 	}
 
 	// arktype receives each span through a parameter, evaluated once
