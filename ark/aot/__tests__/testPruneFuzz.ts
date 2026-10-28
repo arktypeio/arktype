@@ -56,6 +56,8 @@ const bundlers = (process.env.ARK_PRUNE_FUZZ_BUNDLERS ?? "esbuild,vite").split(
 const failureDir =
 	process.env.ARK_PRUNE_FUZZ_FAILURES ??
 	join(tmpdir(), "ark-prune-fuzz-failures")
+// keeps an app whose whole build's refusal matches, to look into a refusal
+const keptInvalid = process.env.ARK_PRUNE_FUZZ_KEEP_INVALID
 
 type Bundler = "esbuild" | "vite"
 
@@ -1132,6 +1134,18 @@ const check = async (app: App): Promise<boolean> => {
 		)
 		if (whole.refused) {
 			bump(tally.invalid, headOf(whole.refused))
+			if (keptInvalid && whole.refused.includes(keptInvalid)) {
+				sound = false
+				const kept = join(failureDir, `${Date.now()}-${bundler}-invalid`)
+				mkdirSync(kept, { recursive: true })
+				const files = filesOf(app)
+				for (const name in files) {
+					mkdirSync(dirname(join(kept, name)), { recursive: true })
+					writeFileSync(join(kept, name), files[name])
+				}
+				writeFileSync(join(kept, "refusal.txt"), whole.refused)
+				console.error(`\nINVALID (${bundler}): kept in ${kept}`)
+			}
 			continue
 		}
 		const pruned = await buildWith(bundler, dir, app, opts, "pruned")
