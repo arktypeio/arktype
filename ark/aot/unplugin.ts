@@ -370,7 +370,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	const reportUnsafe = (
 		problem: string | undefined,
 		diagnostics: RenderedDiagnostics,
-		offersAllowUnsafe = true
+		{ offersAllowUnsafe = true }: { offersAllowUnsafe?: boolean } = {}
 	) => {
 		if (!problem) return
 		if (opts?.allowUnsafe) return void diagnostics.warnings.push(problem)
@@ -659,8 +659,11 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					isRuntime ? await readDependency(importer) : noDiagnostics()
 				reportUnsafe(precompiledProblemOf(id, importer), diagnostics)
 				// a Type it defines would throw, so the fix is moving it, not allowUnsafe
-				if (isRuntime)
-					reportUnsafe(untransformedProblemOf(id, importer), diagnostics, false)
+				if (isRuntime) {
+					reportUnsafe(untransformedProblemOf(id, importer), diagnostics, {
+						offersAllowUnsafe: false
+					})
+				}
 				for (const warning of diagnostics.warnings) this.warn(warning)
 				if (diagnostics.errors.length)
 					return refuse(diagnostics.errors.join("\n"))
@@ -1203,7 +1206,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 										args.namespace || "file"
 									),
 								{ errors, warnings },
-								false
+								{ offersAllowUnsafe: false }
 							)
 						}
 						return {

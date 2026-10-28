@@ -1713,30 +1713,7 @@ export class Precompiler {
 		this.configuration ??= this.applyConfiguration()
 		const { sites, diagnostics } = this.analysisOf(module)
 		diagnostics.push(...this.checkConfigOrder(module))
-		for (const node of module.program.body) {
-			const specifier =
-				(
-					node.type === "ImportDeclaration" ||
-					node.type === "ExportAllDeclaration" ||
-					node.type === "ExportNamedDeclaration"
-				) ?
-					node.source
-				:	null
-			const name = specifier && arkPackageSpecifier.exec(specifier.value)?.[1]
-			if (!name || !(name in this.copiesByPackage)) continue
-			for (const report of this.readCopies(name as ArkPackage, id)) {
-				diagnostics.push(
-					this.diagnostic(
-						module,
-						specifier,
-						"copies",
-						report.message,
-						report.reasons,
-						report.hint
-					)
-				)
-			}
-		}
+		diagnostics.push(...this.copyDiagnosticsOf(module))
 		const s = new MagicString(source)
 		const prefix = prefixOf(source, id)
 		const modules: Record<string, string> = {}
@@ -1744,7 +1721,7 @@ export class Precompiler {
 		const imports: Record<string, Record<string, string>> = {}
 		let issues: IssueFeatures | undefined
 		if (this.mode === "standalone") {
-			const [inputImports, written] = this.foldSites(
+			issues = this.writeStandalone(
 				module,
 				sites,
 				s,
@@ -1754,86 +1731,8 @@ export class Precompiler {
 				diagnostics,
 				this.usageIn(program, id, source)
 			)
-			// an island's errors are arktype's, which may hold anything
-			issues = module.islands.length ? anyIssues : written
-			this.linkIslands(module, sites, s, prefix)
-			this.markProgress(module, sites, s, prefix)
-			// registered so factories can check against module mocks
-			if (this.checkHelpers) {
-				const registered = Object.entries(this.registeredHelpersOf(module))
-				if (registered.length) {
-					// leads with an identifier: stripping a type alias drops a ";"
-					s.append(
-						`\nObject.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { ${JSON.stringify(module.path)}: { __proto__: null, ${registered
-							.map(([name, local]) => `${JSON.stringify(name)}: ${local}`)
-							.join(", ")} } })`
-					)
-				}
-			}
-			for (const specifier in inputImports) {
-				const locals = inputImports[specifier]
-				s.append(
-					`\nimport { ${Object.keys(locals)
-						.map(name => `${name} as ${locals[name]}`)
-						.join(", ")} } from ${JSON.stringify(specifier)}`
-				)
-			}
-			if (id === this.config) this.stampConfiguration(module, s)
-		} else {
-			const roots = sites.flatMap(site => [
-				...site.roots,
-				...exportedRootsOf(site.value)
-			])
-			if (roots.length) {
-				// arktype's builtin scopes, exported with the first Type
-				const intrinsicUnits = (this.intrinsicUnits ??= writePrecompiledUnits(
-					Object.values($ark.kw).filter(value => hasArkKind(value, "root"))
-				))
-				const intrinsicTable = writeUnitTable(intrinsicUnits)
-				const intrinsicSpecifier = `~arktype/units/${hashOf(intrinsicTable)}`
-				modules[intrinsicSpecifier] = intrinsicTable
-				imports[intrinsicSpecifier] = {}
-				// one module per unit, which Types share
-				const units = writePrecompiledUnits(roots)
-				for (const key in units) {
-					if (key in intrinsicUnits) continue
-					const specifier = `~arktype/units/${key}`
-					modules[specifier] = writeUnitTable({ [key]: units[key] })
-					imports[specifier] = {}
-				}
-			}
-		}
-		let inserted = ""
-		if (this.inline)
-			inserted = inlineModules(module, s, prefix, modules, imports)
-		else {
-			for (const specifier in imports) {
-				const locals = imports[specifier]
-				if (!Object.keys(locals).length) inserted += `\nimport "${specifier}"`
-				for (const name in locals) {
-					inserted +=
-						name === "default" ?
-							`\nimport ${locals[name]} from "${specifier}"`
-						:	`\nimport { ${name} as ${locals[name]} } from "${specifier}"`
-				}
-			}
-		}
-		// imported beside arktype, so they run where it does
-		const arktypeImport = this.arktypeImportOf(module)
-		if (inserted) {
-			if (arktypeImport) {
-				const lineEnd = source.indexOf("\n", arktypeImport.end)
-				const rest = source.slice(
-					arktypeImport.end,
-					lineEnd === -1 ? undefined : lineEnd
-				)
-				// minified code can continue the import's line
-				s.prependLeft(
-					arktypeImport.end,
-					rest.trim() ? `${inserted}\n` : inserted
-				)
-			} else s.append(inserted)
-		}
+		} else this.writeCachedUnits(sites, modules, imports)
+		this.insertImports(module, s, prefix, modules, imports)
 		return {
 			code: s.toString(),
 			map:
@@ -1850,6 +1749,149 @@ export class Precompiler {
 					this.foldedHelpersOf(module).map(([name]) => name)
 				:	[]
 		}
+	}
+
+	// each import of an arktype package the build found more than one copy of
+	private copyDiagnosticsOf(module: SourceModule): Diagnostic[] {
+		const result: Diagnostic[] = []
+		for (const node of module.program.body) {
+			const specifier =
+				(
+					node.type === "ImportDeclaration" ||
+					node.type === "ExportAllDeclaration" ||
+					node.type === "ExportNamedDeclaration"
+				) ?
+					node.source
+				:	null
+			const name = specifier && arkPackageSpecifier.exec(specifier.value)?.[1]
+			if (!name || !(name in this.copiesByPackage)) continue
+			for (const report of this.readCopies(name as ArkPackage, module.id)) {
+				result.push(
+					this.diagnostic(
+						module,
+						specifier,
+						"copies",
+						report.message,
+						report.reasons,
+						report.hint
+					)
+				)
+			}
+		}
+		return result
+	}
+
+	// folds the module's sites into validators, then links its islands and
+	// marks its progress; returns the issue features its errors can hold
+	private writeStandalone(
+		module: SourceModule,
+		sites: Site[],
+		s: MagicString,
+		prefix: string,
+		modules: Record<string, string>,
+		imports: Record<string, Record<string, string>>,
+		diagnostics: Diagnostic[],
+		reads: ProgramReads
+	): IssueFeatures {
+		const [inputImports, written] = this.foldSites(
+			module,
+			sites,
+			s,
+			prefix,
+			modules,
+			imports,
+			diagnostics,
+			reads
+		)
+		this.linkIslands(module, sites, s, prefix)
+		this.markProgress(module, sites, s, prefix)
+		// registered so factories can check against module mocks
+		if (this.checkHelpers) {
+			const registered = Object.entries(this.registeredHelpersOf(module))
+			if (registered.length) {
+				// leads with an identifier: stripping a type alias drops a ";"
+				s.append(
+					`\nObject.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { ${JSON.stringify(module.path)}: { __proto__: null, ${registered
+						.map(([name, local]) => `${JSON.stringify(name)}: ${local}`)
+						.join(", ")} } })`
+				)
+			}
+		}
+		for (const specifier in inputImports) {
+			const locals = inputImports[specifier]
+			s.append(
+				`\nimport { ${Object.keys(locals)
+					.map(name => `${name} as ${locals[name]}`)
+					.join(", ")} } from ${JSON.stringify(specifier)}`
+			)
+		}
+		if (module.id === this.config) this.stampConfiguration(module, s)
+		// an island's errors are arktype's, which may hold anything
+		return module.islands.length ? anyIssues : written
+	}
+
+	// cache mode's units: one module per unit, which Types share, beside
+	// arktype's builtin scopes
+	private writeCachedUnits(
+		sites: Site[],
+		modules: Record<string, string>,
+		imports: Record<string, Record<string, string>>
+	): void {
+		const roots = sites.flatMap(site => [
+			...site.roots,
+			...exportedRootsOf(site.value)
+		])
+		if (!roots.length) return
+		// arktype's builtin scopes, exported with the first Type
+		const intrinsicUnits = (this.intrinsicUnits ??= writePrecompiledUnits(
+			Object.values($ark.kw).filter(value => hasArkKind(value, "root"))
+		))
+		const intrinsicTable = writeUnitTable(intrinsicUnits)
+		const intrinsicSpecifier = `~arktype/units/${hashOf(intrinsicTable)}`
+		modules[intrinsicSpecifier] = intrinsicTable
+		imports[intrinsicSpecifier] = {}
+		const units = writePrecompiledUnits(roots)
+		for (const key in units) {
+			if (key in intrinsicUnits) continue
+			const specifier = `~arktype/units/${key}`
+			modules[specifier] = writeUnitTable({ [key]: units[key] })
+			imports[specifier] = {}
+		}
+	}
+
+	// the virtual modules' imports, inlined or imported beside arktype so they run where it does
+	private insertImports(
+		module: SourceModule,
+		s: MagicString,
+		prefix: string,
+		modules: Record<string, string>,
+		imports: Record<string, Record<string, string>>
+	): void {
+		let inserted = ""
+		if (this.inline)
+			inserted = inlineModules(module, s, prefix, modules, imports)
+		else {
+			for (const specifier in imports) {
+				const locals = imports[specifier]
+				if (!Object.keys(locals).length) inserted += `\nimport "${specifier}"`
+				for (const name in locals) {
+					inserted +=
+						name === "default" ?
+							`\nimport ${locals[name]} from "${specifier}"`
+						:	`\nimport { ${name} as ${locals[name]} } from "${specifier}"`
+				}
+			}
+		}
+		if (!inserted) return
+		const arktypeImport = this.arktypeImportOf(module)
+		if (!arktypeImport) return void s.append(inserted)
+		const lineEnd = module.source.indexOf("\n", arktypeImport.end)
+		const rest = module.source.slice(
+			arktypeImport.end,
+			lineEnd === -1 ? undefined : lineEnd
+		)
+		// minified code can continue the import's line
+		s.prependLeft(arktypeImport.end, rest.trim() ? `${inserted}\n` : inserted)
 	}
 
 	// e.g. a site in `f` reading `Base`, which a cycle can reach first
@@ -5535,7 +5577,7 @@ export class Precompiler {
 			if (write) {
 				for (let i = objects.length - 1; i >= 0; i--) {
 					const state = this.interpreter.evaluateSite(
-						createSiteState(objects[i], module, true)
+						createSiteState(objects[i], module, { readsLiterals: true })
 					)
 					if (isWritten(state.value))
 						return [write, objects[i], i === objects.length - 1]

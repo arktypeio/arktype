@@ -192,7 +192,7 @@ export interface SiteState {
 export const createSiteState = (
 	node: Node,
 	module: SourceModule,
-	readsLiterals = false
+	{ readsLiterals = false }: { readsLiterals?: boolean } = {}
 ): SiteState => ({
 	node,
 	module,
@@ -1784,7 +1784,7 @@ export class Interpreter {
 		receiver: unknown,
 		node: Node,
 		ctx: Context,
-		isNew = false
+		{ isNew = false }: { isNew?: boolean } = {}
 	): unknown {
 		const dynamic = findDynamic([receiver, ...args])
 		if (dynamic) return dynamic
@@ -2178,7 +2178,9 @@ export class Interpreter {
 			if (arg.type === "SpreadElement") args.push(...(value as unknown[]))
 			else args.push(value)
 		}
-		return this.callNative(callee as Function, args, undefined, node, ctx, true)
+		return this.callNative(callee as Function, args, undefined, node, ctx, {
+			isNew: true
+		})
 	}
 
 	private holeNameOf(node: Node, module: SourceModule, name?: string): string {

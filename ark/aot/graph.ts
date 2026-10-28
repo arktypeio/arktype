@@ -3320,8 +3320,9 @@ export class ModuleGraph {
 		const seen = held ? reach.held : reach.exact
 		if (seen.has(node)) return false
 		seen.add(node)
-		const follow = (next: Node, nextHeld = held) =>
-			this.reaches(next, module, nextHeld, reach)
+		const follow = (next: Node) => this.reaches(next, module, held, reach)
+		const followExact = (next: Node) => this.reaches(next, module, false, reach)
+		const followHeld = (next: Node) => this.reaches(next, module, true, reach)
 		const [operand, operator] = operatorOf(node)
 		switch (operator?.type) {
 			case "MemberExpression": {
@@ -3330,7 +3331,7 @@ export class ModuleGraph {
 				if (!held) return !mayBeOtherArk(this.kindOf(operand, module))
 				const kind = this.kindOf(operator, module)
 				return (
-					(mayBeOtherArk(kind) && follow(operator, false)) ||
+					(mayBeOtherArk(kind) && followExact(operator)) ||
 					(mayHoldArk(kind) && follow(operator))
 				)
 			}
@@ -3400,9 +3401,9 @@ export class ModuleGraph {
 						follow(operator))
 				)
 			case "Property":
-				return operator.value === operand && follow(operator.parent!, true)
+				return operator.value === operand && followHeld(operator.parent!)
 			case "ArrayExpression":
-				return follow(operator, true)
+				return followHeld(operator)
 			// e.g. `[...list]`, or `{ ...$ }`, which copies what a precompiled Scope lacks
 			case "SpreadElement":
 				return (
