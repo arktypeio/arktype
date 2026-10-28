@@ -384,6 +384,61 @@ export const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })`
 			])
 		})
 
+		it("passes the import binding a site names where its module imports the holder twice", () => {
+			const files = {
+				"/holders.ts": `import { type } from "arktype"
+export const Ta = type("string")
+export const Tb = type("number")
+export const H = { a: Ta, b: Tb }`,
+				"/reexport.ts": `export { H as R } from "./holders.ts"`,
+				"/main.ts": `import { type } from "arktype"
+import { H, Tb } from "./holders.ts"
+import { R } from "./reexport.ts"
+H.a = Tb
+export const A = type({ a: R.a })`
+			}
+			const precompiler = new Precompiler(memoryHost(files))
+			const { code, sites } = precompiler.precompile(
+				files["/main.ts"],
+				"/main.ts"
+			)
+			attest(sites.map(site => site.status)).equals(["accepted"])
+			// a mock of reexport.ts, as a test's, reaches the site only through `R`
+			attest(/\$ark\w+\(R\)/.test(code)).equals(true)
+			attest(code.includes("(H)")).equals(false)
+		})
+
+		it("refuses a site whose baked introspection is over the limit", () => {
+			// a dag's json and JSON Schema repeat each Type they reference
+			const files = {
+				"/main.ts": `import { type } from "arktype"
+const Leaf = type({ name: "string" })
+const Pair = type({ a: Leaf.array(), b: Leaf.array() })
+export const Deep = type({ a: Pair.array(), b: Pair.array() })
+export const Shallow = type({ a: Leaf.array() })`
+			}
+			const precompiler = new Precompiler(memoryHost(files), {
+				members: { json: true, toJsonSchema: true },
+				bakedLimit: 1500
+			})
+			const { diagnostics, sites } = precompiler.precompile(
+				files["/main.ts"],
+				"/main.ts"
+			)
+			attest(sites.map(site => site.status)).equals([
+				"accepted",
+				"accepted",
+				"rejected",
+				"accepted"
+			])
+			attest(diagnostics.map(d => [d.severity, renderDiagnostic(d)])).snap([
+				[
+					"error",
+					"/main.ts:4:21  type({ a: Pair.array(), b: Pair.array() }) can't be precompiled yet\n  its introspection bakes 1.6 KB of text (json 790 chars, toJsonSchema 835 chars), over the 1.5 KB a site may, as json and a JSON Schema repeat each Type they reference. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: \"arktype\"\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
+				]
+			])
+		})
+
 		it("leaves a Scope to arktype that a refused site reads through a holder or alias", () => {
 			const files = {
 				"/holders.ts": `import { scope } from "arktype"

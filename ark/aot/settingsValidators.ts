@@ -125,13 +125,35 @@ var stringCheck = /* @__PURE__ */ check(
 	"a string",
 	data => typeof data === "string"
 )
+var numberCheck = /* @__PURE__ */ check("domain", "a number", data =>
+	Number.isFinite(data)
+)
 var arrayCheck = /* @__PURE__ */ check("proto", "an array", data =>
 	Array.isArray(data)
 )
+var min = (
+	rule,
+	exclusive,
+	description = rule === 0 ?
+		exclusive ? "positive"
+		:	"non-negative"
+	:	`${exclusive ? "more than" : "at least"} ${rule}`
+) =>
+	check(
+		"min",
+		description,
+		exclusive ? data => data > rule : data => data >= rule
+	)
 var minLength = (
 	rule,
 	description = rule === 1 ? "non-empty" : `at least length ${rule}`
 ) => check("minLength", description, data => data.length >= rule)
+var divisor = (
+	rule,
+	description = rule === 1 ? "an integer"
+	: rule === 2 ? "even"
+	: `a multiple of ${rule}`
+) => check("divisor", description, data => data % rule === 0)
 var printValue = value =>
 	typeof value === "string" ? JSON.stringify(value) : `${value}`
 var describeValues = values => {
@@ -205,6 +227,26 @@ var holdHoles = (value, id, holes = []) => {
 }
 
 // <stdin>
+var intersectiono7wbyf0ild808 = [
+	/* @__PURE__ */ intersection(
+		/* @__PURE__ */ check(
+			"domain",
+			"the characters a site's baked introspection may total",
+			numberCheck.test
+		),
+		[
+			/* @__PURE__ */ divisor(
+				1,
+				"the characters a site's baked introspection may total"
+			),
+			/* @__PURE__ */ min(
+				0,
+				1,
+				"the characters a site's baked introspection may total"
+			)
+		]
+	)
+]
 var uniontxb0ck1na4t1c = [
 	/* @__PURE__ */ domains(
 		{
@@ -382,7 +424,8 @@ var union1y9gxj7031g78p = [/* @__PURE__ */ units(["all", "first", "none"])]
 var unionjwbmn509wm1l0 = [/* @__PURE__ */ units(["always", false, true])]
 var union4aw8e70iusaxh = [/* @__PURE__ */ units(["size", "speed"])]
 var union13fa4p20868rbd = [/* @__PURE__ */ units(["helpers", "none", "types"])]
-var intersectionoahi0r11w3u37 = /* @__PURE__ */ ((
+var intersection1ise2k907o2mee = /* @__PURE__ */ ((
+	[intersectiono7wbyf0ild808Allows],
 	[uniontxb0ck1na4t1cAllows],
 	[intersection1saekmc1myv528Allows],
 	[intersection1ugq8wr1c5kol0Allows],
@@ -395,13 +438,13 @@ var intersectionoahi0r11w3u37 = /* @__PURE__ */ ((
 	[union14x0uzw08oe5zuAllows],
 	[union13fa4p20868rbdAllows]
 ) => {
-	const intersectionoahi0r11w3u37Allows = (data, ctx) => {
+	const intersection1ise2k907o2meeAllows = (data, ctx) => {
 		if (!(data instanceof Object || Object(data) === data)) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structurecllg2k15khjp3Allows(data, ctx)
+		return structure1ta9jm20zuf7krAllows(data, ctx)
 	}
-	const structurecllg2k15khjp3Allows = (data, ctx) => {
+	const structure1ta9jm20zuf7krAllows = (data, ctx) => {
 		if (
 			!(
 				!("preset" in data) ||
@@ -473,6 +516,14 @@ var intersectionoahi0r11w3u37 = /* @__PURE__ */ ((
 			!(
 				!("jsonInput" in data) ||
 				!failsIn(ctx, union14x0uzw08oe5zuAllows, data, "jsonInput")
+			)
+		) {
+			return false
+		}
+		if (
+			!(
+				!("bakedLimit" in data) ||
+				!failsIn(ctx, intersectiono7wbyf0ild808Allows, data, "bakedLimit")
 			)
 		) {
 			return false
@@ -576,6 +627,7 @@ var intersectionoahi0r11w3u37 = /* @__PURE__ */ ((
 		for (const k in data) {
 			switch (k) {
 				case "allowUnsafe":
+				case "bakedLimit":
 				case "conditions":
 				case "config":
 				case "creationChecks":
@@ -606,8 +658,9 @@ var intersectionoahi0r11w3u37 = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	return [intersectionoahi0r11w3u37Allows]
+	return [intersection1ise2k907o2meeAllows]
 })(
+	intersectiono7wbyf0ild808,
 	uniontxb0ck1na4t1c,
 	intersection1saekmc1myv528,
 	intersection1ugq8wr1c5kol0,
@@ -632,7 +685,8 @@ var create10n7yuw0bfhpvo = ([allows], id, holes = []) => {
 	validator.allows = freeze(allows)
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersection9q4hji1slqkz6 = /* @__PURE__ */ ((
+var intersectionorzjsh1jd41l2 = /* @__PURE__ */ ((
+	[intersectiono7wbyf0ild808Allows],
 	[uniontxb0ck1na4t1cAllows],
 	[intersection1saekmc1myv528Allows],
 	[intersection1ugq8wr1c5kol0Allows],
@@ -645,13 +699,13 @@ var intersection9q4hji1slqkz6 = /* @__PURE__ */ ((
 	[union14x0uzw08oe5zuAllows],
 	[union13fa4p20868rbdAllows]
 ) => {
-	const intersection9q4hji1slqkz6Allows = (data, ctx) => {
+	const intersectionorzjsh1jd41l2Allows = (data, ctx) => {
 		if (!(data instanceof Object || Object(data) === data)) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structuress07h119r9m68Allows(data, ctx)
+		return structure1m0vgho04k5ar1Allows(data, ctx)
 	}
-	const structuress07h119r9m68Allows = (data, ctx) => {
+	const structure1m0vgho04k5ar1Allows = (data, ctx) => {
 		if (
 			!(
 				!("preset" in data) ||
@@ -723,6 +777,14 @@ var intersection9q4hji1slqkz6 = /* @__PURE__ */ ((
 			!(
 				!("jsonInput" in data) ||
 				!failsIn(ctx, union14x0uzw08oe5zuAllows, data, "jsonInput")
+			)
+		) {
+			return false
+		}
+		if (
+			!(
+				!("bakedLimit" in data) ||
+				!failsIn(ctx, intersectiono7wbyf0ild808Allows, data, "bakedLimit")
 			)
 		) {
 			return false
@@ -802,6 +864,7 @@ var intersection9q4hji1slqkz6 = /* @__PURE__ */ ((
 		for (const k in data) {
 			switch (k) {
 				case "allowUnsafe":
+				case "bakedLimit":
 				case "conditions":
 				case "config":
 				case "creationChecks":
@@ -829,8 +892,9 @@ var intersection9q4hji1slqkz6 = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	return [intersection9q4hji1slqkz6Allows]
+	return [intersectionorzjsh1jd41l2Allows]
 })(
+	intersectiono7wbyf0ild808,
 	uniontxb0ck1na4t1c,
 	intersection1saekmc1myv528,
 	intersection1ugq8wr1c5kol0,
@@ -843,16 +907,16 @@ var intersection9q4hji1slqkz6 = /* @__PURE__ */ ((
 	union14x0uzw08oe5zu,
 	union13fa4p20868rbd
 )
-var intersectionl3lldl13e04zo = /* @__PURE__ */ (([
-	intersection9q4hji1slqkz6Allows
+var intersection1v9g2o91n5rnuw = /* @__PURE__ */ (([
+	intersectionorzjsh1jd41l2Allows
 ]) => {
-	const intersectionl3lldl13e04zoAllows = (data, ctx) => {
+	const intersection1v9g2o91n5rnuwAllows = (data, ctx) => {
 		if (!(data instanceof Object || Object(data) === data)) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structure1l4rrgc0hhi4jgAllows(data, ctx)
+		return structure1rs9aib1i3n8xgAllows(data, ctx)
 	}
-	const structure1l4rrgc0hhi4jgAllows = (data, ctx) => {
+	const structure1rs9aib1i3n8xgAllows = (data, ctx) => {
 		if (
 			!(
 				!("$schema" in data) ||
@@ -867,7 +931,7 @@ var intersectionl3lldl13e04zo = /* @__PURE__ */ (([
 		if (
 			!(
 				!("precompile" in data) ||
-				!failsIn(ctx, intersection9q4hji1slqkz6Allows, data, "precompile")
+				!failsIn(ctx, intersectionorzjsh1jd41l2Allows, data, "precompile")
 			)
 		) {
 			return false
@@ -886,22 +950,22 @@ var intersectionl3lldl13e04zo = /* @__PURE__ */ (([
 		}
 		return true
 	}
-	return [intersectionl3lldl13e04zoAllows]
-})(intersection9q4hji1slqkz6)
-var intersection1sg3zud0lsdgwq = /* @__PURE__ */ (([
-	intersection9q4hji1slqkz6Allows
+	return [intersection1v9g2o91n5rnuwAllows]
+})(intersectionorzjsh1jd41l2)
+var intersectionl3pgjb0uvpl4m = /* @__PURE__ */ (([
+	intersectionorzjsh1jd41l2Allows
 ]) => {
-	const intersection1sg3zud0lsdgwqAllows = (data, ctx) => {
+	const intersectionl3pgjb0uvpl4mAllows = (data, ctx) => {
 		if (!(data instanceof Object || Object(data) === data)) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structure1ysxv270l5ltapAllows(data, ctx)
+		return structurecksl1v1o9pofxAllows(data, ctx)
 	}
-	const structure1ysxv270l5ltapAllows = (data, ctx) => {
+	const structurecksl1v1o9pofxAllows = (data, ctx) => {
 		if (
 			!(
 				!("precompile" in data) ||
-				!failsIn(ctx, intersection9q4hji1slqkz6Allows, data, "precompile")
+				!failsIn(ctx, intersectionorzjsh1jd41l2Allows, data, "precompile")
 			)
 		) {
 			return false
@@ -931,8 +995,8 @@ var intersection1sg3zud0lsdgwq = /* @__PURE__ */ (([
 		}
 		return true
 	}
-	return [intersection1sg3zud0lsdgwqAllows]
-})(intersection9q4hji1slqkz6)
+	return [intersectionl3pgjb0uvpl4mAllows]
+})(intersectionorzjsh1jd41l2)
 var created0
 var created1
 var created2
@@ -940,8 +1004,8 @@ var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
 				const validator0 = create10n7yuw0bfhpvo(
-					intersectionoahi0r11w3u37,
-					"1m4kqtc1"
+					intersection1ise2k907o2mee,
+					"1memd7b1"
 				)
 				return validator0
 			})())
@@ -951,8 +1015,8 @@ var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
 				const validator0 = create10n7yuw0bfhpvo(
-					intersectionl3lldl13e04zo,
-					"1egtc5a1"
+					intersection1v9g2o91n5rnuw,
+					"1cl1eak0"
 				)
 				return validator0
 			})())
@@ -962,8 +1026,8 @@ var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
 				const validator0 = create10n7yuw0bfhpvo(
-					intersection1sg3zud0lsdgwq,
-					"6w8a9801"
+					intersectionl3pgjb0uvpl4m,
+					"1i9mlhj1"
 				)
 				return validator0
 			})())
@@ -973,6 +1037,7 @@ export { get1 as ArkJson, get2 as PackageArk, get0 as PrecompileOptions }
 
 export const cliOptions = {
 	allowUnsafe: { type: "boolean", values: "true|false" },
+	bakedLimit: { type: "string", values: "path" },
 	conditions: { type: "array", values: "a,b" },
 	config: { type: "string", values: "path|false" },
 	creationChecks: { type: "string", values: "helpers|none|types" },

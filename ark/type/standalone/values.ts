@@ -1,7 +1,6 @@
 import {
 	hasArkKind,
 	isNode,
-	jsonLengthOf,
 	madeMorphs,
 	type BaseNode,
 	type BaseRoot
@@ -15,21 +14,29 @@ import {
 	throwParseError
 } from "@ark/util"
 import { keywords } from "../keywords/keywords.ts"
+import type { IntrospectionMember } from "../runtime.ts"
 import * as runtime from "../runtimeExports.ts"
 import { holeNameMarker, holeNamePattern } from "./keys.ts"
 
-// json repeats a Type at each reference, so a reused Type's text doubles per level
-const maxWrittenJsonLength = 1 << 22
+// json and a JSON Schema repeat a Type at each reference, so a reused Type's
+// text doubles per level; past this many chars a site's introspection fails
+export const defaultBakedLimit = 1 << 20
 
-export const assertWritableJson = (root: BaseRoot): void => {
-	const length = jsonLengthOf(root.json)
-	if (length > maxWrittenJsonLength) {
-		throwParseError(
-			writeUnprecompilableMessage(
-				`introspection writing out about ${Math.round(length / 1e6)} MB of JSON, as it repeats each Type it references`
-			)
-		)
-	}
+const sizeOf = (chars: number): string =>
+	chars >= 1e6 ? `${(chars / 1e6).toFixed(1)} MB`
+	: chars >= 1e4 ? `${Math.round(chars / 1e3)} KB`
+	: chars >= 1e3 ? `${(chars / 1e3).toFixed(1)} KB`
+	: `${chars} chars`
+
+export const writeBakedLimitMessage = (
+	lengths: Partial<Record<IntrospectionMember, number>>,
+	limit: number
+): string => {
+	const members = Object.entries(lengths)
+		.map(([member, length]) => `${member} ${sizeOf(length!)}`)
+		.join(", ")
+	const total = Object.values(lengths).reduce((sum, length) => sum + length!, 0)
+	return `its introspection bakes ${sizeOf(total)} of text (${members}), over the ${sizeOf(limit)} a site may, as json and a JSON Schema repeat each Type they reference. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: "arktype"`
 }
 
 export const runtimePathsByValue = new Map<unknown, string>()

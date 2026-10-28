@@ -257,6 +257,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	optimizeErrors?: Optimization | undefined
 	/** trusts data to hold only own, enumerable keys, as JSON.parse's output does */
 	jsonInput?: boolean | undefined
+	/** @internal the chars a site's baked introspection may total */
+	bakedLimit?: number | undefined
 	/** also create each site with arktype and throw where they diverge */
 	shadow?: boolean | undefined
 	/** false keeps what no read in a production bundle needs */
@@ -780,7 +782,8 @@ export class Precompiler {
 			checks,
 			mutatesInput: this.mutatesInput,
 			optimize: opts.optimize ?? "speed",
-			jsonInput: opts.jsonInput
+			jsonInput: opts.jsonInput,
+			bakedLimit: opts.bakedLimit
 		}
 		this.lackedMembers = new Set(
 			defaultMembers.flatMap(member =>
@@ -3072,6 +3075,7 @@ export class Precompiler {
 				:	`\`${binding.name}\` (${module.positionOf(binding.id)}) is shadowed where the site is written, so its factory can't receive it`
 		}
 		let namespace: PassedInput | undefined
+		const importing: PassedInput[] = []
 		for (const binding of module.scopes.bindingsById.values()) {
 			if (
 				binding.kind !== "import" ||
@@ -3087,8 +3091,22 @@ export class Precompiler {
 				(target.kind === "binding" || target.kind === "expression") &&
 				target.module.id === input.file &&
 				(target.kind === "binding" ? target.name : "default") === input.name
+			) {
+				importing.push({
+					expression: binding.name,
+					label: binding.name,
+					binding
+				})
+			}
+		}
+		// the binding the site names, where another imports the value too, as
+		// through a re-export, so a mock of what the site reads reaches it
+		if (importing.length) {
+			return (
+				importing.find(({ binding }) =>
+					binding!.references.some(({ id }) => contains(site, id))
+				) ?? importing[0]
 			)
-				return { expression: binding.name, label: binding.name, binding }
 		}
 		if (namespace) return namespace
 		// e.g. `h` imported where a cycle can run this before h.ts

@@ -86,6 +86,7 @@ const reporterOf = (
 					optimize: { enum: ["speed", "size"] },
 					optimizeErrors: { enum: ["speed", "size"] },
 					jsonInput: { type: "boolean" },
+					bakedLimit: { type: "integer", minimum: 1 },
 					shadow: { type: "boolean" },
 					prune: { type: "boolean" },
 					allowUnsafe: { type: "boolean" }

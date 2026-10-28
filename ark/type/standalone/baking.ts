@@ -14,6 +14,7 @@ import type { Module } from "../module.ts"
 import type { HoleKind, IntrospectionMember } from "../runtime.ts"
 import type { Scope } from "../scope.ts"
 import { combines } from "./combinators.ts"
+import { defaultBakedLimit } from "./values.ts"
 
 export type ExportedValue = type.Any | Module | Scope<any> | Generic | TypedFn
 
@@ -137,6 +138,8 @@ export interface StandaloneOptions {
 	shapes?: boolean | undefined
 	// false where nothing calls a validator, so each failure's errors are read
 	called?: boolean | undefined
+	/** @internal the chars a site's baked introspection may total */
+	bakedLimit?: number | undefined
 	// false where nothing reads a validator's .allows
 	readsAllows?: boolean | undefined
 	// false where no call passes a second argument, a traversal to pipe into
@@ -177,6 +180,7 @@ export interface Baking extends ValidatorReads {
 	compiledInputs: ReadonlySet<string>
 	// errors find their issues once read, for a call that may never read them
 	defersIssues: boolean
+	bakedLimit: number
 	issues: IssueFeatures
 }
 
@@ -339,6 +343,7 @@ export const bakingOf = (
 		compiledInputs:
 			opts.optimize === "size" ? compiledInputsOf(exports) : new Set(),
 		defersIssues: opts.optimize !== "size" && opts.called !== false,
+		bakedLimit: opts.bakedLimit ?? defaultBakedLimit,
 		called: opts.called !== false,
 		readsAllows: opts.readsAllows !== false,
 		piped: opts.piped !== false,

@@ -144,12 +144,12 @@ import {
 } from "./units.ts"
 import {
 	assertBakeableJsonSchema,
-	assertWritableJson,
 	holdsLocal,
 	holeNameIn,
 	isPlainLiteral,
 	keywordMetas,
 	runtimePathsByValue,
+	writeBakedLimitMessage,
 	writeUnprecompilableMessage
 } from "./values.ts"
 type DeclarationRole =
@@ -866,7 +866,7 @@ export class StandaloneArtifact {
 	): string {
 		this.receive(params)
 		this.writeSharedUnits()
-		const value =
+		const value = this.baked(member, () =>
 			member === "toJsonSchema" ?
 				this.writeJsonSchema(
 					type,
@@ -879,6 +879,8 @@ export class StandaloneArtifact {
 			: member === "expression" ? this.emitExpression(type)
 			: member === "description" ? this.emitDescription(type)
 			: this.readJson(type)
+		)
+		this.assertBakedWithin()
 		const defaults = this.writeDefaultChecks(this.defaultChecks)
 		return this.writeFactoryFunction(index, params, configured, [
 			...(defaults.length ?
@@ -1554,26 +1556,30 @@ ${writeFunction(
 		const members: string[] = []
 		const bakes = (member: IntrospectionMember) =>
 			this.baking.members.has(member)
-		if (bakes("toJsonSchema") || bakes("~standard.jsonSchema"))
-			assertWritableJson(root)
 		if (bakes("expression"))
 			members.push(`expression: ${this.emitExpression(root)}`)
 		if (bakes("description"))
 			members.push(`description: ${this.emitDescription(root)}`)
 		if (bakes("json") || bakes("toJSON")) {
-			const json = this.readJson(root)
+			const json = this.baked(bakes("json") ? "json" : "toJSON", () =>
+				this.readJson(root)
+			)
 			if (bakes("json")) members.push(`json: ${json}`)
 			if (bakes("toJSON"))
 				members.push(`toJSON: ${frozen(this.baking, `() => ${json}`)}`)
 		}
 		const standard =
 			bakes("~standard.jsonSchema") &&
-			(["input", "output"] as const).map(
-				io =>
-					`[${supportedJsonSchemaTargets.map(target => this.emitJsonSchema(root, () => root["~standard"].jsonSchema[io]({ target }))).join(", ")}]`
+			this.baked("~standard.jsonSchema", () =>
+				(["input", "output"] as const).map(
+					io =>
+						`[${supportedJsonSchemaTargets.map(target => this.emitJsonSchema(root, () => root["~standard"].jsonSchema[io]({ target }))).join(", ")}]`
+				)
 			)
 		if (bakes("toJsonSchema")) {
-			const written = this.emitJsonSchema(root, () => root.toJsonSchema())
+			const written = this.baked("toJsonSchema", () =>
+				this.emitJsonSchema(root, () => root.toJsonSchema())
+			)
 			// only targets whose text is already baked
 			const byTarget = supportedJsonSchemaTargets.map(
 				target =>
@@ -1592,7 +1598,39 @@ ${writeFunction(
 				`"~standard": { jsonSchema: runtime.bakedStandardJsonSchema(${standard.join(", ")}) }`
 			)
 		}
+		this.assertBakedWithin()
 		return members
+	}
+
+	// the chars each introspection member of the Type being written bakes
+	private bakedLengths: Partial<Record<IntrospectionMember, number>> = {}
+	private bakingMember: IntrospectionMember | undefined
+
+	private baked<t>(member: IntrospectionMember, write: () => t): t {
+		const outer = this.bakingMember
+		this.bakingMember = member
+		try {
+			return write()
+		} finally {
+			this.bakingMember = outer
+		}
+	}
+
+	private countBaked(text: string): void {
+		if (this.bakingMember === undefined) return
+		this.bakedLengths[this.bakingMember] =
+			(this.bakedLengths[this.bakingMember] ?? 0) + text.length
+	}
+
+	private assertBakedWithin(): void {
+		const lengths = this.bakedLengths
+		this.bakedLengths = {}
+		const total = Object.values(lengths).reduce(
+			(sum, length) => sum + length!,
+			0
+		)
+		if (total > this.baking.bakedLimit)
+			throwParseError(writeBakedLimitMessage(lengths, this.baking.bakedLimit))
 	}
 
 	// a fallback a call passes, as hono-openapi does, changes nothing where none writes
@@ -1622,8 +1660,8 @@ ${writeFunction(
 
 	// nodes share json unless it prints a hole
 	readJson(root: BaseRoot): string {
-		assertWritableJson(root)
 		const value = `runtime.deepFreeze(${this.writeData(root.json)})`
+		this.countBaked(value)
 		if (holdsLocal(root.json)) {
 			return (
 				this.declarations.namesByValue.get(root.json) ??
@@ -1701,6 +1739,7 @@ ${writeFunction(
 	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
 		const values: unknown[] = []
 		const writer = this.writeJsonSchemaWriter(root, write, values)
+		this.countBaked(writer)
 		const declared = this.jsonSchemaNameOf(writer)
 		if (declared) return declared
 		// only a Date needs a declaration beside the validator
