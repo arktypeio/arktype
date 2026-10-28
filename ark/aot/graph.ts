@@ -32,6 +32,7 @@ import type {
 	NewExpression,
 	Node,
 	ObjectPropertyKind,
+	ParamPattern,
 	TSInterfaceDeclaration,
 	TSSignature,
 	TSTupleElement,
@@ -653,6 +654,10 @@ export class ModuleGraph {
 		Record<string, LocalType | null>
 	>()
 	// a helper's parameters as one call passes them
+	// the .d.ts beside each JS module, or null where its build wrote none
+	private declarationsById: Record<string, SourceModule | null> =
+		Object.create(null)
+
 	private bindingKindOfKeys = new WeakSet<KindOfKey>()
 	private applicationsByFn = new Map<FunctionNode, Map<string, Application>>()
 	private membersByOwner = new Map<Node | Binding, Map<unknown, Member>>()
@@ -1259,11 +1264,12 @@ export class ModuleGraph {
 				kindOfKey
 			)
 		}
-		const annotated = this.annotatedKindOf(
-			param.type === "AssignmentPattern" ? param.left : param,
-			module,
-			kindOfKey
-		)
+		const annotated =
+			this.annotatedKindOf(
+				param.type === "AssignmentPattern" ? param.left : param,
+				module,
+				kindOfKey
+			) ?? this.declaredParamKindOf(fn, index, module, kindOfKey)
 		let result = 0
 		for (const call of calls ?? [undefined]) {
 			result |= this.patternKindOf(
@@ -1640,6 +1646,43 @@ export class ModuleGraph {
 		return importedName === "*" ? target : arktypeExportOf(target, importedName)
 	}
 
+	// e.g. `opts: EnvOptions` in index.d.ts for `createEnv(opts)` in index.js,
+	// which tsc or a bundler wrote beside it, so a package's built output is
+	// read as its declarations annotate it
+	private declaredParamKindOf(
+		fn: FunctionNode,
+		index: number,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits | undefined {
+		const declarations = this.declarationsOf(module)
+		if (!declarations) return
+		const name = exportedFunctionNameOf(fn, module)
+		if (name === undefined) return
+		const param = declaredParamsOf(declarations, name)?.[index]
+		if (!param) return
+		return this.annotatedKindOf(
+			param.type === "AssignmentPattern" ? param.left : param,
+			declarations,
+			kindOfKey
+		)
+	}
+
+	// the .d.ts beside a JS module, where its build wrote one
+	private declarationsOf(module: SourceModule): SourceModule | undefined {
+		if (!/\.[cm]?jsx?$/.test(module.id)) return
+		const id = module.id.replace(/\.([cm]?)jsx?$/, ".d.$1ts")
+		let declarations = this.declarationsById[id]
+		if (declarations === undefined) {
+			const source = this.host.readFile(id)
+			declarations = this.declarationsById[id] =
+				source === undefined ? null : (
+					new SourceModule(id, source, this.pathOf(id))
+				)
+		}
+		return declarations ?? undefined
+	}
+
 	// a type literal or interface isn't a Type, though a member typed
 	// `unknown` may hold one, which reads off it are as off a parameter
 	private signaturesKindOf(
@@ -1708,7 +1751,12 @@ export class ModuleGraph {
 				:	kinds.data
 		}
 		// a type carries no value, so a host asks no bundler to resolve it
-		const target = this.resolve(specifier, importer, () => false)
+		const resolved = this.resolve(specifier, importer, () => false)
+		// a JS module's types are in the .d.ts beside it
+		const target =
+			resolved instanceof SourceModule ?
+				(this.declarationsOf(resolved) ?? resolved)
+			:	resolved
 		if (!(target instanceof SourceModule)) return
 		if (seen.has(target.id)) return null
 		seen.add(target.id)
@@ -3545,6 +3593,64 @@ const definesType = (call: CallExpression): boolean => {
 		first.type !== "Literal" ||
 		!/^<.*>$/.test(String(first.value))
 	)
+}
+
+// the name a module exports a function as, e.g. `createEnv` for
+// `export { createEnv }` or `export const createEnv = opts => ...`
+const exportedFunctionNameOf = (
+	fn: FunctionNode,
+	module: SourceModule
+): string | undefined => {
+	for (const name in module.scopes.exportsByName) {
+		const entry = module.scopes.exportsByName[name]
+		const exported =
+			entry.kind === "expression" ? unwrapExpression(entry.node)
+			: entry.kind === "binding" ? functionOfBinding(entry.binding, module)
+			: undefined
+		if (exported === fn) return name
+	}
+}
+
+// what a declaration module declares a function's parameters as, e.g. for
+// `declare function f(opts: Options): void`, `declare const f: (opts:
+// Options) => void` or `export default function f(opts: Options): void`
+const declaredParamsOf = (
+	declarations: SourceModule,
+	name: string
+): ParamPattern[] | undefined => {
+	for (const statement of declarations.program.body) {
+		const declaration =
+			(
+				statement.type === "ExportNamedDeclaration" ||
+				statement.type === "ExportDefaultDeclaration"
+			) ?
+				statement.declaration
+			:	statement
+		if (!declaration) continue
+		// e.g. `export default _default` for `declare const _default: (opts: Options) => number`
+		if (
+			name === "default" &&
+			statement.type === "ExportDefaultDeclaration" &&
+			declaration.type === "Identifier"
+		)
+			return declaredParamsOf(declarations, declaration.name)
+		if (
+			(declaration.type === "TSDeclareFunction" ||
+				declaration.type === "FunctionDeclaration") &&
+			(declaration.id?.name === name ||
+				(name === "default" && statement.type === "ExportDefaultDeclaration"))
+		)
+			return runtimeParamsOf(declaration)
+		if (declaration.type !== "VariableDeclaration") continue
+		for (const declarator of declaration.declarations) {
+			const { id } = declarator
+			if (id.type !== "Identifier" || id.name !== name) continue
+			const annotation = id.typeAnnotation?.typeAnnotation
+			return annotation?.type === "TSFunctionType" ?
+					runtimeParamsOf(annotation)
+				:	undefined
+		}
+	}
 }
 
 // the type a tuple element declares, e.g. `string` for `rest?: string`

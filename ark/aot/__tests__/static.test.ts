@@ -582,6 +582,43 @@ export function namesOf(data: unknown) {
 			).equals([])
 		})
 
+		it("reads a JS module's parameters as the .d.ts beside it annotates them", () => {
+			// under creationChecks "helpers", as Vitest runs, every module is checked
+			const helperDiagnosticsOf = (files: Record<string, string>) =>
+				new Precompiler(memoryHost(files), { creationChecks: "helpers" })
+					.analyzeSites(files["/env/index.js"], "/env/index.js")
+					.diagnostics.map(d => renderDiagnostic(d).split("\n")[0])
+			const js = {
+				"/env/index.js": `import { presetOf } from "./presets.js"
+export function createEnv(opts) {
+	const extended = opts.extends ? opts.extends.map(presetOf) : []
+	return { ...extended, server: opts.server }
+}
+export const describe = (opts) => opts.extends.length
+export default (opts) => opts.extends.length`,
+				"/env/presets.js": `export const presetOf = preset => preset.id`
+			}
+			attest(helperDiagnosticsOf(js)).snap([
+				"/env/index.js:3:19  opts.extends reads extends, which a standalone validator lacks",
+				"/env/index.js:3:34  opts.extends reads extends, which a standalone validator lacks",
+				"/env/index.js:6:35  opts.extends reads extends, which a standalone validator lacks",
+				"/env/index.js:7:26  opts.extends reads extends, which a standalone validator lacks"
+			])
+			attest(
+				helperDiagnosticsOf({
+					...js,
+					"/env/index.d.ts": `import type { Preset } from "./presets.js"
+export interface Options { extends?: Preset[]; server: Record<string, unknown> }
+export declare function createEnv(opts: Options): object
+export declare const describe: (opts: Options) => number
+declare const _default: (opts: Options) => number
+export default _default`,
+					"/env/presets.d.ts": `export interface Preset { id: string }
+export declare const presetOf: (preset: Preset) => string`
+				})
+			).equals([])
+		})
+
 		it("reads off a cast declaring the members it reads", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"
