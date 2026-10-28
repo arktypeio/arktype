@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { HomeNav } from "../../components/home/HomeNav.tsx"
+import "../styles/home.css"
 
 // runs before first paint, when motion is welcome: html[data-motion] holds
 // what the board and the proof animate at their start, and html[data-ghost]

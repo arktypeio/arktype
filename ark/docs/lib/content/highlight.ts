@@ -4,6 +4,7 @@ import { toString } from "hast-util-to-string"
 import {
 	createHighlighter,
 	createJavaScriptRegexEngine,
+	hastToHtml,
 	type Highlighter,
 	type ShikiTransformer
 } from "shiki"
@@ -117,7 +118,8 @@ const titlePattern = /\btitle=(?:"([^"]*)"|'([^']*)')/
  * Highlights code with ArkDark and ArkLight, running twoslash on ts and js.
  *
  * Returns the `pre` element, with a `data-title` property when the meta
- * string has a `title="..."`.
+ * string has a `title="..."`. Its tokens are in its `tokens` property as one
+ * HTML string rather than as children (see `inlineTokens`).
  */
 export const highlight = async (
 	code: string,
@@ -147,7 +149,20 @@ export const highlight = async (
 	const title = titlePattern.exec(meta)
 	if (title) pre.properties["data-title"] = title[1] ?? title[2]
 	pre.properties["data-lang"] = lang
+	inlineTokens(pre)
 	return pre
+}
+
+/**
+ * Moves a `pre`'s children into its `tokens` property as one HTML string,
+ * which the `pre` components render with `dangerouslySetInnerHTML`. A code
+ * block is static and a few hundred spans, each popup more, so as React
+ * children they would be sent again in the page's payload and hydrated one
+ * by one; as a string they're only the HTML.
+ */
+const inlineTokens = (pre: Element) => {
+	pre.properties.tokens = hastToHtml(pre.children)
+	pre.children = []
 }
 
 /** shiki writes classes as a `class` string, mdast-util-to-hast as `className` */

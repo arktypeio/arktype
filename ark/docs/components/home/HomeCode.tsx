@@ -1,9 +1,8 @@
 import type { Element } from "hast"
-import { toJsxRuntime } from "hast-util-to-jsx-runtime"
-import { Fragment, jsx, jsxs } from "react/jsx-runtime"
 import {
 	createHighlighter,
 	createJavaScriptRegexEngine,
+	hastToHtml,
 	type Highlighter
 } from "shiki"
 import { highlight } from "../../lib/content/highlight.ts"
@@ -13,12 +12,11 @@ import {
 	arkThemes,
 	arkTypeScript
 } from "../../lib/shiki.ts"
-
-const render = (pre: Element) => toJsxRuntime(pre, { Fragment, jsx, jsxs })
+import { preToJsx } from "../CodeBlock.tsx"
 
 /** a snippet through the docs' pipeline: ArkDark, twoslash hovers, errors and `^?` results */
 export const HomeCode = async ({ code }: { code: string }) =>
-	render(await highlight(code))
+	preToJsx(await highlight(code))
 
 let plain: Promise<Highlighter> | undefined
 
@@ -33,5 +31,8 @@ export const PlainCode = async ({ code }: { code: string }) => {
 		engine: createJavaScriptRegexEngine({ forgiving: true })
 	}))
 	const root = shiki.codeToHast(code, { lang: "ts", ...arkThemes })
-	return render(root.children[0] as Element)
+	const pre = root.children[0] as Element
+	pre.properties.tokens = hastToHtml(pre.children)
+	pre.children = []
+	return preToJsx(pre)
 }

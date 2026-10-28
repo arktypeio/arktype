@@ -67,7 +67,7 @@ export const PickThree = () => (
 									{cell ?
 										<span className="p3-cell">
 											{cell.first && (
-												<span className="p3-mark" aria-label="first">
+												<span className="p3-mark" role="img" aria-label="first">
 													<CheckIcon />
 												</span>
 											)}

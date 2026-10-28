@@ -1,11 +1,12 @@
 import { throwInternalError, type propwiseXor } from "@ark/util"
 import { cx } from "class-variance-authority"
+import type { Element } from "hast"
 import { toJsxRuntime } from "hast-util-to-jsx-runtime"
 import { Fragment, jsx, jsxs } from "react/jsx-runtime"
 import { highlight } from "../lib/content/highlight.ts"
 import type { HighlightLang } from "../lib/shiki.ts"
 import type { SnippetId } from "../lib/writeSnippetsEntrypoint.ts"
-import { CodeFrame } from "./mdx/CodeFrame.tsx"
+import { CodeFrame, TokensPre } from "./mdx/CodeFrame.tsx"
 import snippetContentsById from "./snippets/contentsById.ts"
 
 export type CodeBlockProps = {
@@ -57,4 +58,8 @@ export const CodeBlock = async ({
 
 /** highlighted code as a bare `pre`, for frames that hold more than one */
 export const highlightToJsx = async (code: string, lang: HighlightLang) =>
-	toJsxRuntime(await highlight(code, { lang }), { Fragment, jsx, jsxs })
+	preToJsx(await highlight(code, { lang }))
+
+/** a highlighted `pre` as JSX, its tokens set as HTML */
+export const preToJsx = (pre: Element) =>
+	toJsxRuntime(pre, { Fragment, jsx, jsxs, components: { pre: TokensPre } })

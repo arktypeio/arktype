@@ -33,13 +33,12 @@ export const cascadia = localFont({
 	fallback: ["Cascadia Fallback", "ui-monospace", "monospace"]
 })
 
-/** ArkDark's cursive, for declared names */
+/** ArkDark's cursive, for declared names: the hero's lede and most code blocks */
 export const cascadiaCursive = localFont({
 	src: "./fonts/cascadia-code-italic.woff2",
 	weight: "400",
 	style: "italic",
 	variable: "--font-cursive",
 	display: "swap",
-	adjustFontFallback: false,
-	preload: false
+	adjustFontFallback: false
 })

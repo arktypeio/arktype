@@ -33,11 +33,18 @@ export const CodeFrame = ({
 export type PreProps = ComponentProps<"pre"> & {
 	"data-title"?: string
 	"data-lang"?: string
+	/** the highlighted tokens as HTML, from lib/content/highlight.ts */
+	tokens?: string
 }
+
+/** a highlighted `pre`: its tokens are HTML, not children */
+export const TokensPre = ({ tokens, ...props }: PreProps) => (
+	<pre {...props} dangerouslySetInnerHTML={{ __html: tokens ?? "" }} />
+)
 
 /**
  * MDX's `pre`, already highlighted by lib/content/highlight.ts. Only code
- * blocks get a frame; the `pre`s inside twoslash popups have no data-lang.
+ * blocks get a frame; a `pre` written in MDX has no data-lang.
  */
 export const Pre = ({
 	"data-title": title,
@@ -46,6 +53,6 @@ export const Pre = ({
 }: PreProps) =>
 	lang ?
 		<CodeFrame title={title}>
-			<pre data-lang={lang} {...props} />
+			<TokensPre data-lang={lang} {...props} />
 		</CodeFrame>
 	:	<pre {...props} />
