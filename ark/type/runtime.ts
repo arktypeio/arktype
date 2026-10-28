@@ -222,14 +222,12 @@ export const siteOf = ((
 	message?: string
 ): SiteContext => ({ code, description, x: message })) satisfies Fn
 
-// a key's site where its value isn't a basis, reporting "required" expecting
-// the value's brief where the key is missing, as arktype does
+// a key's site where its value isn't a basis, expecting the value's brief where missing
 export const requiredSiteOf = ((description?: string): FailureSite => ({
 	m: { code: "required", description }
 })) satisfies Fn
 
-// a key's site, reporting "required" where the key is missing, expecting what
-// its basis does unless the basis is described apart from its brief
+// a key's site, expecting what its basis does unless the basis is described apart
 export const keySiteOf = ((
 	code: ArkErrorCode,
 	description?: string,
