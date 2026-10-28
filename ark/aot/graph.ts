@@ -1041,7 +1041,17 @@ export class ModuleGraph {
 			:	this.iteratedKindOf(declaration, binding, module, kindOfKey)) |
 			this.storedKindOf(binding, module, kindOfKey) |
 			this.writtenKindOf(binding, module, kindOfKey)
-		return annotate(result, this.annotatedKindOf(binding.id, module, kindOfKey))
+		// e.g. `global as unknown as { steam: SteamClient }`, which types the
+		// const as an annotation would, so declares what's stored in it too
+		const annotated =
+			(
+				declaration.type === "VariableDeclarator" &&
+				declaration.id === binding.id &&
+				declaration.init
+			) ?
+				(castOf(declaration.init) ?? binding.id)
+			:	binding.id
+		return annotate(result, this.annotatedKindOf(annotated, module, kindOfKey))
 	}
 
 	private writtenKindOf(
@@ -1908,41 +1918,10 @@ export class ModuleGraph {
 			case "MemberExpression": {
 				const exported = this.namespaceMemberOf(node, module)
 				if (exported) return this.targetKindOf(exported, kindOfKey)
-				const name = memberNameOf(node)
-				const alias = this.aliasKindOf(node.object, name, module, kindOfKey)
-				if (alias !== undefined) return alias
-				const literal = this.literalOf(node.object, module, kindOfKey)
-				if (literal) {
-					// e.g. `o.a` in `const o = { a: o.a }`
-					if (this.resolving.has(node)) return 0
-					this.resolving.add(node)
-					try {
-						const value = this.valueIn(literal, name)
-						// e.g. `list.at` or `schemas[key]`, which may read what a holder holds
-						return value ?
-								this.transfer(value.node, value.module, value.kindOfKey)
-							:	kinds.data |
-									(value === null ? 0 : this.heldKindOf(literal)) |
-									unsureOf(this.transfer(node.object, module, kindOfKey))
-					} finally {
-						this.resolving.delete(node)
-					}
-				}
-				if (typeof name === "string") {
-					const cls = this.classOf(node.object, module, kindOfKey)
-					if (cls) return kindOfKey(this.memberOf(cls.node, name), cls.module)
-				}
-				const passed = this.passedMemberKindOf(node, module, kindOfKey)
-				if (passed !== undefined) return passed
-				// the class of what a Type returns when validation fails
-				if (
-					name === "errors" &&
-					this.arkExportNameOf(node.object, module) === "type"
-				)
-					return kinds.data
-				return (
-					memberKindOf(this.transfer(node.object, module, kindOfKey), name) |
-					this.exposedKindOf(node, module, kindOfKey)
+				return this.memberKindIn(
+					node,
+					{ node: node.object, module, kindOfKey },
+					new Set()
 				)
 			}
 			case "CallExpression":
@@ -2063,7 +2042,99 @@ export class ModuleGraph {
 		}
 	}
 
-	// e.g. `Object.freeze(A)` or `new Proxy(A, {})`, returning what they're passed
+	// what `node` reads off `object`, where its name decides the read as the
+	// member's own kind: e.g. a method's declared return, off whichever of
+	// `globalForSteam.steam || new SteamClient(key)` holds the instance
+	private memberKindIn(
+		node: MemberExpression,
+		object: Located,
+		distributed: Set<Node>
+	): KindBits {
+		const alternatives = this.alternativesOf(object, distributed)
+		if (alternatives) {
+			return alternatives.reduce(
+				(kind, alternative) =>
+					kind | this.memberKindIn(node, alternative, distributed),
+				0
+			)
+		}
+		const { module, kindOfKey } = object
+		const name = memberNameOf(node)
+		const alias = this.aliasKindOf(object.node, name, module, kindOfKey)
+		if (alias !== undefined) return alias
+		const literal = this.literalOf(object.node, module, kindOfKey)
+		if (literal) {
+			// e.g. `o.a` in `const o = { a: o.a }`
+			if (this.resolving.has(node)) return 0
+			this.resolving.add(node)
+			try {
+				const value = this.valueIn(literal, name)
+				// e.g. `list.at` or `schemas[key]`, which may read what a holder holds
+				return value ?
+						this.transfer(value.node, value.module, value.kindOfKey)
+					:	kinds.data |
+							(value === null ? 0 : this.heldKindOf(literal)) |
+							unsureOf(this.transfer(object.node, module, kindOfKey))
+			} finally {
+				this.resolving.delete(node)
+			}
+		}
+		if (typeof name === "string") {
+			const cls = this.classOf(object.node, module, kindOfKey)
+			if (cls) return kindOfKey(this.memberOf(cls.node, name), cls.module)
+		}
+		const passed = this.passedMemberKindOf(node, module, kindOfKey)
+		if (passed !== undefined) return passed
+		// the class of what a Type returns when validation fails
+		if (
+			name === "errors" &&
+			this.arkExportNameOf(object.node, module) === "type"
+		)
+			return kinds.data
+		return (
+			memberKindOf(this.transfer(object.node, module, kindOfKey), name) |
+			this.exposedKindOf(node, module, kindOfKey)
+		)
+	}
+
+	// the values one of which a logical or conditional expression yields, as
+	// a const or import holds it, e.g. `globalForSteam.steam` and
+	// `new SteamClient(key)` for `steam = globalForSteam.steam || new SteamClient(key)`
+	private alternativesOf(
+		{ node, module, kindOfKey }: Located,
+		distributed: Set<Node>
+	): Located[] | undefined {
+		node = unwrapChain(node)
+		if (node.type === "Identifier") {
+			const init = this.constInitOf(node, module, kindOfKey)
+			if (!init) return
+			;({ module, kindOfKey } = init)
+			node = unwrapChain(init.node)
+		}
+		if (
+			(node.type !== "LogicalExpression" &&
+				node.type !== "ConditionalExpression") ||
+			distributed.has(node)
+		)
+			return
+		distributed.add(node)
+		const result: Located[] = []
+		const collect = (node: Node) => {
+			node = unwrapChain(node)
+			if (node.type === "LogicalExpression") {
+				collect(node.left)
+				collect(node.right)
+			} else if (node.type === "ConditionalExpression") {
+				collect(node.consequent)
+				collect(node.alternate)
+			} else result.push({ node, module, kindOfKey })
+		}
+		collect(node)
+		return result
+	}
+
+	// e.g. `Object.freeze(A)` or `new Proxy(A, {})`, as a builtin may return
+	// what it's passed
 	private builtinPassedOf(
 		call: CallExpression | NewExpression,
 		module: SourceModule,

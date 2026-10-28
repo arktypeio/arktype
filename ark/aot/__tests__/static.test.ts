@@ -518,6 +518,42 @@ export const service = new (class {
 			).equals([])
 		})
 
+		it("calls a declared method off an instance held beside another", () => {
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+import { steam } from "./steam.ts"
+export const T = type("string")
+export const resolve = async (input: string, cached: boolean) => {
+	const id = cached ? await steam.cachedId(input) : await steam.resolveId(input)
+	return \`/profiles/\${id}\`
+}`,
+					{
+						"/steam.ts": `import { db } from "./db.ts"
+class Client {
+	private async store(profile: { id: string }) {
+		let stored
+		if (profile.id) stored = await db.profile.update(profile)
+		else stored = await db.profile.create(profile)
+		return stored
+	}
+	async resolveId(input: string): Promise<string | null> {
+		return input || null
+	}
+	cachedId(input: string): string {
+		return input
+	}
+}
+const globalForClient = global as unknown as { client: Client }
+export const steam = globalForClient.client || new Client()
+if (process.env.NODE_ENV !== "production") globalForClient.client = steam`,
+						"/db.ts": `export type Db = { profile: unknown }
+export const db = {} as Db`
+					}
+				)
+			).equals([])
+		})
+
 		it("reads off a member typed as an element of a const array", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"
@@ -1424,6 +1460,27 @@ export const d = new Proxy(User, {}).or("null")`)
 				"/main.ts:22:18  new Holder().get().or reads or, which a standalone validator lacks\n  the build can't tell where `new Holder().get()` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
 				"/main.ts:23:18  Static.T.or reads or, which a standalone validator lacks\n  the build can't tell where `Static.T` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
 				"/main.ts:24:18  new Proxy(User, {}).or reads or, which a standalone validator lacks\n  the build can't tell where `new Proxy(User, {})` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("a Type one alternative holds or a cast's unknown member stores", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+const User = type({ name: "string" })
+class Repo {
+	schema(): string {
+		return "string"
+	}
+}
+const cached = { schema: () => User }
+const repo = Math.random() > 0.5 ? cached : new Repo()
+const globalForSchema = global as unknown as { schema: unknown }
+globalForSchema.schema = User
+export const a = repo.schema().or("null")
+export const b = (globalForSchema.schema as any).or("null")`)
+			).snap([
+				"/main.ts:12:18  repo.schema().or reads or, which a standalone validator lacks\n  the build can't tell where `repo.schema()` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:13:18  (globalForSchema.schema as any).or reads or, which a standalone validator lacks\n  the build can't tell where `globalForSchema.schema as any` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
