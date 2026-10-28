@@ -76,6 +76,7 @@ import {
 	scanProgram,
 	unfoldedCallProblemOf,
 	unseenProblemOf,
+	writeUnseenMessage,
 	writeUnprunedMessage,
 	writeUnscannedFlatMessage,
 	type ImportKind,
@@ -473,6 +474,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	// a production build's scan, begun as the plugin transforms a module, as
 	// only then can it load what another plugin writes, like a Svelte component
 	const pendingScans = new WeakMap<object, PendingScan>()
+	// each module a pruned build holds that the plugin doesn't transform, as
+	// the plugins ahead of its checker built it, by the precompiler's name
+	const othersByBuild = new WeakMap<object, Map<string, string>>()
 	const warnedUnpruned = new Set<string>()
 	let esbuildScan: BundleScan | undefined
 	// a module the scan didn't write reading a unit it declares in one
@@ -525,7 +529,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		const build = buildOf(this)
 		scansByBuild.delete(build)
 		pendingScans.delete(build)
+		othersByBuild.delete(build)
 		if (isServing || !prunesIn(!!environment?.production)) return
+		othersByBuild.set(build, new Map())
 		pendingScans.set(build, {
 			inputs: Object.values(options.input),
 			arrivals: new Map(),
@@ -555,7 +561,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			id => pending.mappings.get(id),
 			async scanned =>
 				(await requestResolving(
-					bundlerResolveOf(context),
+					bundlerResolveOf(context, isTransformedId),
 					"scan",
 					scanned
 				)) as ScannedUsage,
@@ -592,20 +598,19 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				code: /\bimport\b/
 			},
 			async handler(code, id) {
-				if (
-					!isStandalone ||
-					opts?.shadow ||
-					(transformedFilter.include.test(id) &&
-						!transformedFilter.exclude.test(id)) ||
-					isAsset(id)
-				)
-					return
+				const isOwn =
+					transformedFilter.include.test(id) &&
+					!transformedFilter.exclude.test(id)
+				// read once the bundle is built, against what its scan wrote
+				if (!isOwn && !isAsset(id))
+					othersByBuild.get(buildOf(this))?.set(fileOf(id), code)
+				if (!isStandalone || opts?.shadow || isOwn || isAsset(id)) return
 				const map = (
 					this as { getCombinedSourcemap?: () => { mappings: string } }
 				).getCombinedSourcemap?.()
 				reportDiagnostics(
 					(await requestResolving(
-						bundlerResolveOf(this),
+						bundlerResolveOf(this, isTransformedId),
 						"checkUnwritten",
 						code,
 						fileOf(id),
@@ -748,7 +753,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 							id,
 							map?.mappings,
 							scan?.scanned.key,
-							bundlerResolveOf(this)
+							bundlerResolveOf(this, isTransformedId)
 						)
 						if (!transformed) return
 						for (const dependency of transformed.dependencies) {
@@ -847,7 +852,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		// loading the precompiler overlaps the bundler's own startup
 		buildStart: reset,
 		// a build that won't rerun releases its worker
-		buildEnd(error?: Error) {
+		async buildEnd(error?: Error) {
 			if (!error && !isServing && "getModuleIds" in this)
 				checkBundledExternals(rollupBundleOf(this as never))
 			if (
@@ -872,11 +877,17 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			}
 			const scan = scansByBuild.get(buildOf(this))
 			if (scan?.verifies && !error) {
-				const problem = unseenProblemOf(
-					scan.scanned,
-					rollupImportsOf(this as never),
-					scan.loaded,
-					scan.holders,
+				const problem = await rollupUnseenOf(
+					this as never,
+					scan,
+					othersByBuild.get(buildOf(this)),
+					isTransformedId,
+					program =>
+						requestResolving(
+							bundlerResolveOf(this, isTransformedId),
+							"unseen",
+							program
+						) as Promise<string | undefined>,
 					realCwd()
 				)
 				// fails before the bundle is written
@@ -1379,14 +1390,21 @@ interface RollupResolution {
 
 // how a hook's bundler resolves an import, which the precompiler asks for one
 // it can't resolve itself, like an alias only the bundler's config names
-const bundlerResolveOf = (context: unknown): BundlerResolve | undefined => {
+const bundlerResolveOf = (
+	context: unknown,
+	isTransformed: (id: string) => boolean
+): BundlerResolve | undefined => {
 	const rollup = context as Partial<RollupContext>
 	if (rollup.resolve) {
 		return async (specifier, importer) => {
 			if (ownSpecifier.test(specifier)) return
-			const resolved = await rollup.resolve!(specifier, importer, {
-				skipSelf: true
-			})
+			const resolved = await resolveUnloaded(
+				rollup as RollupContext,
+				specifier,
+				importer,
+				isTransformed,
+				{ skipSelf: true }
+			)
 			return (
 					resolved &&
 						!resolved.external &&
@@ -1461,24 +1479,23 @@ const rollupScanOf = async (
 		}
 		entries.push({ id: resolved.id, source })
 	}
-	// modules read from their files, as they hadn't reached the plugin
-	const unarrived = new Set<string>()
+	// modules read as they reached the plugin, having no file
+	const arrived = new Set<string>()
 	const scanned = await scanProgram(program, entries, {
 		resolve: async (specifier, importer) => {
 			// a plugin refusing it, as React Router refuses a .server module
 			// in the client build, where only code its transform removes
 			// imports it, means no bundle the build writes holds it
 			let isRefused = false
-			const resolved = await context
-				.resolve(
-					specifier,
-					importer,
-					relativeSpecifier.test(specifier) ? asRequired : undefined
-				)
-				.catch(() => {
-					isRefused = true
-					return null
-				})
+			const resolved = await resolveUnloaded(
+				context,
+				specifier,
+				importer,
+				isTransformed
+			).catch(() => {
+				isRefused = true
+				return null
+			})
 			if (isRefused) return null
 			if (!resolved) return
 			if (resolved.external) return null
@@ -1486,22 +1503,28 @@ const rollupScanOf = async (
 			return resolved.id
 		},
 		load: async id => {
-			if (!isTransformed(id)) {
-				return context.load({ ...res.get(id), id }).then(
+			const loaded = () =>
+				context.load({ ...res.get(id), id }).then(
 					info => info?.code ?? undefined,
 					() => undefined
 				)
-			}
-			// the plugin's transform waits for the scan, so a module it
-			// transforms is read as it reaches it, after any plugin ahead of it.
-			// One that hasn't is read from its file, since loading it would add
-			// it to the bundle, where a plugin may refuse it, as React Router
-			// does a .server module only a route's loader imports
+			if (!isTransformed(id)) return loaded()
+			// a module the plugin transforms is read from its file, whether or
+			// not it has reached the plugin, so what the scan reads doesn't
+			// depend on the order the bundler transforms modules in, and so
+			// loading it never adds it to the bundle, where a plugin may refuse
+			// it, as React Router does a .server module only a route's loader
+			// imports. Once the bundle is built, each module is read as it was
+			// built, against what the scan wrote
 			const file = fileOf(id)
-			const arrival = arrivalOf(file)
-			if (typeof arrival === "string") return arrival
-			unarrived.add(file)
-			return readFile(file)
+			const source = readFile(file)
+			if (source !== undefined) return source
+			// a virtual module written as a script, like Nuxt's
+			// virtual:nuxt:...paths.mjs, has no file, so only its plugin can
+			// read it, raced against its arrival since loading it runs the
+			// transform that waits for this scan
+			arrived.add(file)
+			return Promise.race([arrivalOf(file), loaded()])
 		},
 		readFile,
 		isTransformed,
@@ -1510,8 +1533,8 @@ const rollupScanOf = async (
 	})
 	if (typeof scanned === "string")
 		return { unpruned: writeUnprunedMessage(scanned) }
-	for (const id in scanned.modules)
-		if (!unarrived.has(id)) scanned.modules[id].mappings = mappingsOf(id)
+	for (const id of arrived)
+		if (scanned.modules[id]) scanned.modules[id].mappings = mappingsOf(id)
 
 	const usage = await scan(scanned)
 	return {
@@ -1532,9 +1555,105 @@ const rollupScanOf = async (
 
 const htmlId = /\.html$/
 
-// Rollup's CommonJS plugin loads the module an import resolves to, whose
-// transform here waits on the scan, but not one a require resolves to, as a
-// relative import resolves alike
+// why a Rollup, Rolldown or Vite bundle, read as it was built, may read what
+// its scan left out, if it may: the modules its entries hold, each as the
+// plugin transformed it or as the plugins ahead of its checker built it
+const rollupUnseenOf = async (
+	context: RollupContext,
+	scan: BundleScan,
+	others: ReadonlyMap<string, string> | undefined,
+	isTransformed: (id: string) => boolean,
+	unseen: (program: ScannedProgram) => Promise<string | undefined>,
+	cwd: string
+): Promise<string | undefined> => {
+	const built = (reason: string) =>
+		writeUnseenMessage(`as it built the bundle, ${reason}`)
+	const entries: ScanEntry[] = []
+	for (const id of context.getModuleIds()) {
+		if (!context.getModuleInfo(id)?.isEntry || isAsset(id)) continue
+		if (!htmlId.test(id)) {
+			entries.push({ id })
+			continue
+		}
+		const source = scriptsOf(readFileSync(id, "utf8"))
+		if (source === undefined) {
+			return built(
+				`${printablePathOf(cwd, id)} holds an inline module script, which it can't read`
+			)
+		}
+		entries.push({ id, source })
+	}
+	// a module the bundle holds, as it built it
+	const builtCode = (id: string) => context.getModuleInfo(id)?.code ?? undefined
+	const program = await scanProgram(scan.scanned.key, entries, {
+		resolve: async (specifier, importer) => {
+			// a plugin refusing it means no bundle the build writes holds it
+			let isRefused = false
+			const resolved = await resolveUnloaded(
+				context,
+				specifier,
+				importer,
+				isTransformed
+			).catch(() => {
+				isRefused = true
+				return null
+			})
+			if (isRefused) return null
+			if (!resolved) return
+			return resolved.external ? null : resolved.id
+		},
+		load: async id => {
+			if (!isTransformed(id)) {
+				return (
+					others?.get(fileOf(id)) ??
+					scan.scanned.modules[fileOf(id)]?.source ??
+					builtCode(id)
+				)
+			}
+			const file = fileOf(id)
+			const loaded = scan.loaded.get(file)
+			// null where the bundle loaded its file under two ids unalike
+			if (loaded === null) return
+			if (loaded !== undefined) return loaded
+			// one the bundle doesn't hold, as only code a plugin after this one
+			// strips imported it, like a route's loader, reads nothing
+			if (!context.getModuleInfo(id)) return ""
+			return scan.scanned.modules[file]?.source ?? readFile(file)
+		},
+		// a dependency as it built it, as a plugin after this one may add an
+		// import to it
+		readFile: path => builtCode(path) ?? readFile(path),
+		isTransformed,
+		idOf: fileOf,
+		cwd
+	})
+	if (typeof program === "string") return built(program)
+	return unseen(program)
+}
+
+// resolves a specifier without a plugin loading the module it names, as
+// Rollup's CommonJS plugin loads the .js module an import resolves to, to tell
+// whether it's CommonJS, which runs arktype's transform of it, which waits on
+// the scan or the precompiler asking. Resolved as a require, which that plugin
+// leaves to the others, an alias like Nuxt's ~/ or a workspace package names
+// the module as an import would, but a package may export another to a
+// require, so a dependency, whose load waits on neither, is resolved again
+const resolveUnloaded = async (
+	context: RollupContext,
+	specifier: string,
+	importer: string | undefined,
+	isTransformed: (id: string) => boolean,
+	options?: { skipSelf?: boolean }
+): Promise<RollupResolution | null> => {
+	const required = await context.resolve(specifier, importer, {
+		...options,
+		...asRequired
+	})
+	return !required || required.external || isTransformed(required.id) ?
+			required
+		:	context.resolve(specifier, importer, options)
+}
+
 const asRequired = { custom: { "node-resolve": { isRequire: true } } }
 
 const relativeSpecifier = /^\.\.?(?:\/|$)/
