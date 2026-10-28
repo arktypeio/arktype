@@ -16,6 +16,7 @@ import {
 	predicates,
 	sourceOf,
 	tried,
+	unnamedHoles,
 	type Node
 } from "./grammar.ts"
 import { lacks, testedOptions } from "./contract.ts"
@@ -994,7 +995,10 @@ const programOf = (fragmentsOf: FragmentOf[]): Program => {
 	return {
 		containers: [
 			`import { generic, scope, type } from "arktype"`,
-			...used.map(name => `export const ${name} = ${holes[name]}`),
+			...used.map(
+				name =>
+					`export const ${name} = ${unnamedHoles.has(name) ? `[${holes[name]}][0]` : holes[name]}`
+			),
 			...containers
 		].join("\n"),
 		main: [

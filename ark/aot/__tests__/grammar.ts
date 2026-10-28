@@ -113,8 +113,13 @@ export const predicates = {
 	isEven: data => {
 		const remainder = Number(data) % 2
 		return remainder === 0
-	}
+	},
+	// declared without a name, so an expression nesting it prints fn
+	unnamed: data => data !== null
 } satisfies Record<string, (data: unknown, ctx: Traversal) => boolean>
+
+// holes a program declares without a name, as an array's element gets none
+export const unnamedHoles: ReadonlySet<string> = new Set(["unnamed"])
 
 export const emptyArray: () => never[] = () => []
 

@@ -48,6 +48,9 @@ export const Payload = type({
 export const Either = type("number").or(type("string").pipe.try(readJson))
 export const Version = type("x/^v([0-9]+)$/")
 export const Versioned = type({ v: "x/^v([0-9]+)$/" }).or("number")
+// declared without a name, which a nested expression prints as fn
+const isPositive = [(n: number) => n > 0][0]
+export const Nested = type({ values: type("number").narrow(isPositive).array() })
 `,
 		"scoped.ts": `import { scope } from "arktype"
 
@@ -68,7 +71,7 @@ const $posts = scope({
 export const Post: (data: unknown) => unknown = $posts.export().Post
 `,
 		"main.ts": `import { type } from "arktype"
-import { Either, Parsed, Payload, Refused, Reported, Version, Versioned } from "./types.ts"
+import { Either, Nested, Parsed, Payload, Refused, Reported, Version, Versioned } from "./types.ts"
 import { Pair, Post } from "./scoped.ts"
 
 ${observe}
@@ -82,6 +85,7 @@ observe("Version", Version, "v12", "x")
 observe("Versioned", Versioned, { v: "v3" }, { v: "3" }, 2)
 observe("Pair", Pair, { first: 2, rest: [] }, { first: 1, rest: [3] })
 observe("Post", Post, { body: "a", replies: [{ body: "b" }] }, { body: "a", replies: [{ body: 1 }] })
+observed.Nested = [Nested.expression, Nested.description]
 console.log(JSON.stringify(observed))
 `
 	},
@@ -218,6 +222,13 @@ contextualize(() => {
 				],
 				"must be valid according to readJson"
 			]
+		])
+	})
+
+	it("an anonymous predicate nested in an expression", () => {
+		observed("Nested").snap([
+			"{ values: (number & fn)[] }",
+			"{ values: (number & fn)[] }"
 		])
 	})
 
