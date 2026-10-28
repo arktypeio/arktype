@@ -287,8 +287,7 @@ export const nearestFloat = (n: number, direction: "+" | "-" = "+"): number => {
 	return f64[0]
 }
 
-// a number in the decimal notation a string definition parses, where String
-// writes one below 1e-6 or from 1e21 with an exponent
+// String writes a number below 1e-6 or from 1e21 with an exponent
 export const printDecimal = (n: number): string => {
 	const [mantissa, exponent] = `${n}`.split("e")
 	if (exponent === undefined) return mantissa

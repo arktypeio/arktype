@@ -1,6 +1,4 @@
-// string formats read by char code, which decides them faster than their
-// RegExps do. Each test accepts its RegExp's language. TurboFan's charCodeAt
-// is slow past the end, so common strings are read within it
+// formats read by char code, faster than their RegExps; each accepts its RegExp's language
 import { isDigitCode } from "./numbers.ts"
 
 // unsigned, so codes below each range wrap above it
@@ -17,8 +15,7 @@ const isTwoDigitsAtMost = (s: string, i: number, max: number) => {
 export const uuidMatcher: RegExp =
 	/^(?:[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-[1-8][\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}|0{8}-(?:0{4}-){3}0{12}|f{8}-(?:f{4}-){3}f{12})$/
 
-// its length rejects most strings before the RegExp, which costs ~210
-// instructions to enter. A reader of its chars was no faster on valid ones
+// its length rejects most strings before the RegExp
 export const isUuid = (s: string): boolean =>
 	s.length === 36 && uuidMatcher.test(s)
 
@@ -52,10 +49,7 @@ const ipv4AddressEnd = (s: string, i: number, length: number) => {
 export const isIpv4 = (s: string): boolean =>
 	ipv4AddressEnd(s, 0, s.length) === s.length
 
-// an address ends in two segments or an IPv4 address unless "::" ends it or
-// precedes its last segment. Before those, a full address has 6 segments and
-// a compressed one at most 5 around its "::". V8 compiles a copy of a
-// non-capturing group per repetition when there are few, so those capture
+// V8 compiles a copy of a non-capturing group per repetition when there are few, so those capture
 export const ipv6Matcher: RegExp =
 	/^(?:(?:(?:[\dA-Fa-f]{1,4}:){6}|::(?:[\dA-Fa-f]{1,4}:){0,5}|[\dA-Fa-f]{1,4}::(?:[\dA-Fa-f]{1,4}:){0,4}|([\dA-Fa-f]{1,4}:){2}:([\dA-Fa-f]{1,4}:){0,3}|([\dA-Fa-f]{1,4}:){3}:([\dA-Fa-f]{1,4}:){0,2}|(?:[\dA-Fa-f]{1,4}:){4}:([\dA-Fa-f]{1,4}:)?|(?:[\dA-Fa-f]{1,4}:){5}:)(?:[\dA-Fa-f]{1,4}:[\dA-Fa-f]{1,4}|((?:(?:[1-9]|1\d|2[0-4])?\d|25[0-5])\.){3}(?:(?:[1-9]|1\d|2[0-4])?\d|25[0-5]))|(?:([\dA-Fa-f]{1,4}:){1,6}|:):[\dA-Fa-f]{0,4}|(?:[\dA-Fa-f]{1,4}:){7}:)(%[\d.A-Za-z]+)?$/
 
@@ -164,10 +158,7 @@ const isTimeAfterDate = (s: string, length: number) => {
 	)
 }
 
-// YYYY-MM-DD, maybe with a time, as toISOString and most dates are written,
-// is read by char code, and other forms by the RegExp. terser and swc would
-// write each function it calls once where it's called, as a closure created
-// at each call
+// toISOString's form is read by char code, others by the RegExp; inlined, terser and swc would allocate a closure per call
 export const isIso8601 = (s: string): boolean => {
 	const length = s.length
 	const code = s.charCodeAt(0)

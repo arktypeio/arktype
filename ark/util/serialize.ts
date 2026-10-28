@@ -162,8 +162,7 @@ const printableOpts = {
 	onCycle: () => "(cycle)",
 	onSymbol: printSymbol,
 	onFunction: v => `Function(${baseNameOf(v)})`,
-	// prefix bigints and undefined with a marker so printable can strip the
-	// quotes JSON.stringify adds, e.g. [1n, undefined] not ["1n", "undefined"]
+	// marked so printable can strip the quotes JSON.stringify adds
 	onBigInt: n => `${unquotedMarker}${n}n`,
 	onUndefined: `${unquotedMarker}undefined`
 } satisfies SerializationOptions
@@ -232,8 +231,7 @@ export const describeCollapsibleDate = (date: Date): string => {
 	const seconds = date.getUTCSeconds()
 	const milliseconds = date.getUTCMilliseconds()
 
-	// a bare year would read as the whole year, so it's never collapsed past
-	// its day
+	// a bare year would read as the whole year, so it's never collapsed past its day
 	if (hours === 0 && minutes === 0 && seconds === 0 && milliseconds === 0)
 		return `${months[month]} ${dayOfMonth}, ${year}`
 

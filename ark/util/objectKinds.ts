@@ -95,8 +95,7 @@ const platformConstructorsOf = (): platformConstructors => ({
 export const platformConstructors: platformConstructors =
 	/* @__PURE__ */ platformConstructorsOf()
 
-// a platform constructor's prototype is its instance type, and unlike
-// InstanceType, reading it doesn't resolve its signatures' parameters
+// unlike InstanceType, reading a prototype doesn't resolve its signatures' parameters
 export type PlatformObjects = {
 	// unavailable constructors are never as in instantiateConstructors
 	[k in keyof platformConstructors]: [platformConstructors[k]] extends (
