@@ -935,7 +935,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	fin<node extends BaseRoot>(node: node, jit = true): node {
 		// an alias may reference a definition still parsing, e.g. Record<string, this>
-		if ((inProgress.definitions || inProgress.res) && node.hasAlias) return node
+		if ((inProgress.definitions || inProgress.resolutions) && node.hasAlias)
+			return node
 
 		// resolving aliases can throw, so they compile on definition
 		const references =
