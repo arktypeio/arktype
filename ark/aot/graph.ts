@@ -32,8 +32,10 @@ import type {
 	NewExpression,
 	Node,
 	ObjectPropertyKind,
+	ParamPattern,
 	TSInterfaceDeclaration,
 	TSSignature,
+	TSTupleElement,
 	TSType,
 	TSTypeAnnotation,
 	TSTypeParameter,
@@ -519,6 +521,12 @@ const typeMemberKinds: Record<string, KindBits> = Object.setPrototypeOf(
 	null
 )
 
+// a Type's members that exist only as types, so `typeof User.infer` is data
+const inferenceMembers: Record<string, 1> = Object.setPrototypeOf(
+	{ t: 1, infer: 1, inferIn: 1, inferOut: 1, inferIntrospectableOut: 1 },
+	null
+)
+
 const exportKindOf = (name: ArkExportName): KindBits =>
 	isRuntimeExport(name) || name in errorReaders ? kinds.data
 	: name === "type" ? kinds.otherArk | kinds.returnsType | kinds.returnsArk
@@ -629,6 +637,10 @@ export class ModuleGraph {
 		Record<string, LocalType | null>
 	>()
 	// a helper's parameters as one call passes them
+	// the .d.ts beside each JS module, or null where its build wrote none
+	private declarationsById: Record<string, SourceModule | null> =
+		Object.create(null)
+
 	private bindingKindOfKeys = new WeakSet<KindOfKey>()
 	private applicationsByFn = new Map<FunctionNode, Map<string, Application>>()
 	private membersByOwner = new Map<Node | Binding, Map<unknown, Member>>()
@@ -1237,11 +1249,12 @@ export class ModuleGraph {
 				kindOfKey
 			)
 		}
-		const annotated = this.annotatedKindOf(
-			param.type === "AssignmentPattern" ? param.left : param,
-			module,
-			kindOfKey
-		)
+		const annotated =
+			this.annotatedKindOf(
+				param.type === "AssignmentPattern" ? param.left : param,
+				module,
+				kindOfKey
+			) ?? this.declaredParamKindOf(fn, index, module, kindOfKey)
 		let result = 0
 		for (const call of calls ?? [undefined]) {
 			result |= this.patternKindOf(
@@ -1437,21 +1450,66 @@ export class ModuleGraph {
 			}
 			case "TSTypeLiteral":
 				return signaturesKindOf(type.members)
+			// e.g. `typeof names`, or `typeof User.infer`, data whatever `User` is
 			case "TSTypeQuery": {
-				const binding =
-					type.exprName.type === "Identifier" &&
-					module.scopes.root.bindings[type.exprName.name]
-				if (!binding) return
-				const kind = kindOfKey(binding, module)
+				const names: string[] = []
+				let root = type.exprName
+				while (root.type === "TSQualifiedName") {
+					names.unshift(root.right.name)
+					root = root.left
+				}
+				if (root.type !== "Identifier") return
+				const queried = this.queriedOf(root.name, module, kindOfKey)
+				if (!queried) return
+				let [kind, value] = queried
+				for (const [i, name] of names.entries()) {
+					if (i === names.length - 1 && isArk(kind) && name in inferenceMembers)
+						return kinds.data
+					// e.g. the Type `schemas.User` for `typeof schemas.User.infer`
+					const literal =
+						value && this.literalOf(value.node, value.module, value.kindOfKey)
+					const member = literal && this.valueIn(literal, name)
+					if (member) {
+						value = member
+						kind = this.transfer(member.node, member.module, member.kindOfKey)
+					} else {
+						value = undefined
+						kind = memberKindOf(kind, name)
+					}
+				}
 				// e.g. `typeof $`, whose value may be a Scope, as `$`'s may be
 				return (
 					(kind & ~arkBits) |
 					(isArk(kind) ? unsure | (kind & kinds.otherArk) : 0)
 				)
 			}
+			case "TSTupleType":
+				return union(type.elementTypes.map(tupleElementTypeOf), depth + 1)
+			// e.g. data for `() => void`, a function returning a Type for
+			// `() => Type`. A member or element declaring one whose call may
+			// return a Type is read as an unknown member, so `codec.era` for
+			// `codec: { era: string; parse: () => unknown }` is still opaque
+			case "TSFunctionType":
+			case "TSConstructorType": {
+				const returned = this.typeKindOf(
+					type.returnType,
+					context,
+					module,
+					kindOfKey,
+					depth + 1
+				)
+				if (returned === undefined) return
+				const fn = functionKindOf(returned)
+				return (
+					depth === 0 ? fn
+					: fn & ~kinds.data ? kinds.data | kinds.opaqueHolder
+					: kinds.data
+				)
+			}
 			case "TSTypeReference": {
 				const name = type.typeName
-				const root = name.type === "TSQualifiedName" ? name.left : name
+				let root = name
+				while (root.type === "TSQualifiedName") root = root.left
 				if (root.type !== "Identifier") return
 				// e.g. `T` in `<T extends Type>(t: T) => ...`
 				const parameter = typeParameterOf(context, root.name)
@@ -1515,7 +1573,96 @@ export class ModuleGraph {
 		}
 	}
 
-	// a type literal or interface isn't a Type, though a member typed `unknown` may hold one
+	// what a `typeof` names, with its value where a const or an export
+	// declares one: a binding, or what a type-only import names, which the
+	// module's scopes don't bind
+	private queriedOf(
+		name: string,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): [kind: KindBits, value: Located | undefined] | undefined {
+		const binding = module.scopes.root.bindings[name]
+		const target =
+			binding ?
+				binding.kind === "import" ?
+					this.importOf(binding, module)
+				:	{ kind: "binding" as const, module, binding, name }
+			:	this.typeImportTargetOf(name, module)
+		if (!target) return
+		const declaration =
+			target.kind === "binding" ? target.binding.declaration : undefined
+		const value: Located | undefined =
+			target.kind === "expression" ?
+				{ node: target.node, module: target.module, kindOfKey }
+			: (
+				target.kind === "binding" &&
+				declaration?.type === "VariableDeclarator" &&
+				declaration.id === target.binding.id &&
+				declaration.init
+			) ?
+				{ node: declaration.init, module: target.module, kindOfKey }
+			:	undefined
+		return [this.targetKindOf(target, kindOfKey), value]
+	}
+
+	// e.g. the `User` of "./types.ts" for `import type { User } from "./types.ts"`
+	private typeImportTargetOf(
+		name: string,
+		module: SourceModule
+	): ImportTarget | undefined {
+		const imported = importedNameOf(module, name)
+		if (!imported) return
+		const [specifier, importedName] = imported
+		// a type carries no value, so a host asks no bundler to resolve it
+		const target = this.resolve(specifier, module, () => false)
+		if (target instanceof SourceModule) {
+			return importedName === "*" ?
+					{ kind: "namespace", module: target }
+				:	this.exportOf(target, importedName)
+		}
+		if (target.kind !== "arktypeNamespace") return
+		return importedName === "*" ? target : arktypeExportOf(target, importedName)
+	}
+
+	// e.g. `opts: EnvOptions` in index.d.ts for `createEnv(opts)` in index.js,
+	// which tsc or a bundler wrote beside it, so a package's built output is
+	// read as its declarations annotate it
+	private declaredParamKindOf(
+		fn: FunctionNode,
+		index: number,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits | undefined {
+		const declarations = this.declarationsOf(module)
+		if (!declarations) return
+		const name = exportedFunctionNameOf(fn, module)
+		if (name === undefined) return
+		const param = declaredParamsOf(declarations, name)?.[index]
+		if (!param) return
+		return this.annotatedKindOf(
+			param.type === "AssignmentPattern" ? param.left : param,
+			declarations,
+			kindOfKey
+		)
+	}
+
+	// the .d.ts beside a JS module, where its build wrote one
+	private declarationsOf(module: SourceModule): SourceModule | undefined {
+		if (!/\.[cm]?jsx?$/.test(module.id)) return
+		const id = module.id.replace(/\.([cm]?)jsx?$/, ".d.$1ts")
+		let declarations = this.declarationsById[id]
+		if (declarations === undefined) {
+			const source = this.host.readFile(id)
+			declarations = this.declarationsById[id] =
+				source === undefined ? null : (
+					new SourceModule(id, source, this.pathOf(id))
+				)
+		}
+		return declarations ?? undefined
+	}
+
+	// a type literal or interface isn't a Type, though a member typed
+	// `unknown` may hold one, which reads off it are as off a parameter
 	private signaturesKindOf(
 		signatures: TSSignature[],
 		context: Node,
@@ -1581,7 +1728,12 @@ export class ModuleGraph {
 				:	kinds.data
 		}
 		// a type carries no value, so a host asks no bundler to resolve it
-		const target = this.resolve(specifier, importer, () => false)
+		const resolved = this.resolve(specifier, importer, () => false)
+		// a JS module's types are in the .d.ts beside it
+		const target =
+			resolved instanceof SourceModule ?
+				(this.declarationsOf(resolved) ?? resolved)
+			:	resolved
 		if (!(target instanceof SourceModule)) return
 		if (seen.has(target.id)) return null
 		seen.add(target.id)
@@ -3432,18 +3584,86 @@ const keyIn = (owner: Node, node: Node): unknown =>
 	: undefined
 
 // e.g. `type(A, "|", B)`, as only `type("<t>", def)` makes a Generic
+// e.g. `type({ a: "string" })` or `type(User, "[]")`, but not `type("<t>", def)`
 const definesType = (call: CallExpression): boolean => {
 	if (call.arguments.some(arg => arg.type === "SpreadElement")) return false
 	const [first, ...rest] = call.arguments
 	return (
 		rest.length !== 1 ||
-		first.type === "ObjectExpression" ||
-		first.type === "ArrayExpression" ||
-		(first.type === "Literal" && !/^<.*>$/.test(String(first.value)))
+		first.type !== "Literal" ||
+		!/^<.*>$/.test(String(first.value))
 	)
 }
 
-// e.g. `t.or` where `t` may be a Type, but not `list.map`
+// the name a module exports a function as, e.g. `createEnv` for
+// `export { createEnv }` or `export const createEnv = opts => ...`
+const exportedFunctionNameOf = (
+	fn: FunctionNode,
+	module: SourceModule
+): string | undefined => {
+	for (const name in module.scopes.exportsByName) {
+		const entry = module.scopes.exportsByName[name]
+		const exported =
+			entry.kind === "expression" ? unwrapExpression(entry.node)
+			: entry.kind === "binding" ? functionOfBinding(entry.binding, module)
+			: undefined
+		if (exported === fn) return name
+	}
+}
+
+// what a declaration module declares a function's parameters as, e.g. for
+// `declare function f(opts: Options): void`, `declare const f: (opts:
+// Options) => void` or `export default function f(opts: Options): void`
+const declaredParamsOf = (
+	declarations: SourceModule,
+	name: string
+): ParamPattern[] | undefined => {
+	for (const statement of declarations.program.body) {
+		const declaration =
+			(
+				statement.type === "ExportNamedDeclaration" ||
+				statement.type === "ExportDefaultDeclaration"
+			) ?
+				statement.declaration
+			:	statement
+		if (!declaration) continue
+		// e.g. `export default _default` for `declare const _default: (opts: Options) => number`
+		if (
+			name === "default" &&
+			statement.type === "ExportDefaultDeclaration" &&
+			declaration.type === "Identifier"
+		)
+			return declaredParamsOf(declarations, declaration.name)
+		if (
+			(declaration.type === "TSDeclareFunction" ||
+				declaration.type === "FunctionDeclaration") &&
+			(declaration.id?.name === name ||
+				(name === "default" && statement.type === "ExportDefaultDeclaration"))
+		)
+			return runtimeParamsOf(declaration)
+		if (declaration.type !== "VariableDeclaration") continue
+		for (const declarator of declaration.declarations) {
+			const { id } = declarator
+			if (id.type !== "Identifier" || id.name !== name) continue
+			const annotation = id.typeAnnotation?.typeAnnotation
+			return annotation?.type === "TSFunctionType" ?
+					runtimeParamsOf(annotation)
+				:	undefined
+		}
+	}
+}
+
+// the type a tuple element declares, e.g. `string` for `rest?: string`
+const tupleElementTypeOf = (element: TSTupleElement): TSType =>
+	element.type === "TSOptionalType" || element.type === "TSRestType" ?
+		tupleElementTypeOf(element.typeAnnotation)
+	: element.type === "TSNamedTupleMember" ?
+		tupleElementTypeOf(element.elementType)
+	:	element
+
+// e.g. `t.or` where `t` may be a Type, but not `list.map`. Off a value the
+// build has no source for, like `res.json`, only what composes a Type or a
+// build drops is read
 const isUnsureRead = (
 	read: unknown,
 	kind: KindBits,

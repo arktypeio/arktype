@@ -231,11 +231,13 @@ const validatedMembers = ["allows", "assert", "traverse", "from"] as const
 
 const introspectedMembers = ["toJSON", "toJsonSchema", "toString"] as const
 
-// e.g. json off a validator whose build doesn't bake it
+// e.g. json off a validator whose build doesn't bake it, which the development runtime throws for
 const isUnbaked = (counterpart: unknown, k: PropertyKey): boolean =>
 	typeof counterpart === "function" &&
-	includes(introspectionMembers, k) &&
-	!Object.getOwnPropertyDescriptor(counterpart, k)
+	!Object.getOwnPropertyDescriptor(counterpart, k) &&
+	(includes(introspectionMembers, k) ||
+		!!Object.getOwnPropertyDescriptor(Object.getPrototypeOf(counterpart), k)
+			?.get)
 
 const droppableMembers = [
 	"assert",

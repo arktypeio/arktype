@@ -484,6 +484,141 @@ export type Piped = { in: string; out: string }`
 			).equals([])
 		})
 
+		it("reads off a type-only import's inferred type", () => {
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+import { sync } from "./sync.ts"
+export const T = type("string")
+export const run = (raw: string) => (JSON.parse(raw) as any[]).map(sync)`,
+					{
+						"/types.ts": `import { type } from "arktype"
+export const Email = type({ to: "string", subject: "string" })`,
+						"/sync.ts": `import type { Email } from "./types.ts"
+import type * as Types from "./types.ts"
+type Message = typeof Email.infer
+export const sync = (email: Message) => email.to
+export const subjectOf = (email: typeof Types.Email.inferIn) => email.subject`
+					}
+				)
+			).equals([])
+		})
+
+		it("reads off the inferred type of a Type held in a const", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+export const schemas = { status: { mutation: type({ messageId: "string" }) } }
+export function update(payload: typeof schemas.status.mutation.infer) {
+	const { messageId, ...rest } = payload
+	return [\`/messages/\${messageId}/status\`, rest]
+}`)
+			).equals([])
+		})
+
+		it("reads off a destructured parameter's tuple annotation", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+import type { JSONSchema7 } from "json-schema"
+export const T = type("string")
+export const addOption = ([key, value]: [name: string, JSONSchema7?]) => [
+	key,
+	value?.default
+]`)
+			).equals([])
+		})
+
+		it("reads off an annotated interface with a function member", () => {
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+import { parse, type Parsed } from "./parse.ts"
+export const T = type("string")
+export function requiredOf(derive: () => Parsed) {
+	let parsed: Parsed
+	parsed = derive()
+	return parsed.schema.required
+}
+export const dataOf = (input: unknown) => parse(input).data?.required`,
+					{
+						"/parse.ts": `import type { JSONSchema7 } from "json-schema"
+import type * as z from "zod"
+export interface Parsed {
+	schema: JSONSchema7
+	read: (path: string[]) => unknown
+}
+export function parse(
+	data: unknown
+): { success: true; data: JSONSchema7 } | { success: false; error: z.core.$ZodError } {
+	return { success: true, data: data as JSONSchema7 }
+}`
+					}
+				)
+			).equals([])
+		})
+
+		it("a call to a function-typed member that returns a Type", () => {
+			attest(
+				unhinted(`import { type, type Type } from "arktype"
+export const T = type("string")
+export const nullable = (factory: { make: () => Type }) =>
+	factory.make().or("null")
+export const orNull = (make: () => Type) => make().or("null")`)
+			).snap([
+				"/main.ts:4:2  factory.make().or reads or, which a standalone validator lacks\n  the build can't tell where `factory.make()` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:5:45  make().or reads or, which a standalone validator lacks\n  the build can't tell where `make()` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("a tuple expression with a Type as its first element", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+const Exam = type({ name: "string" })
+const Exams = type(Exam, "[]")
+export function namesOf(data: unknown) {
+	const exams = Exams(data)
+	if (exams instanceof type.errors) return exams.summary
+	return exams.map(exam => exam.name)
+}`)
+			).equals([])
+		})
+
+		it("reads a JS module's parameters as the .d.ts beside it annotates them", () => {
+			// under creationChecks "helpers", as Vitest runs, every module is checked
+			const helperDiagnosticsOf = (files: Record<string, string>) =>
+				new Precompiler(memoryHost(files), { creationChecks: "helpers" })
+					.analyzeSites(files["/env/index.js"], "/env/index.js")
+					.diagnostics.map(d => renderDiagnostic(d).split("\n")[0])
+			const js = {
+				"/env/index.js": `import { presetOf } from "./presets.js"
+export function createEnv(opts) {
+	const extended = opts.extends ? opts.extends.map(presetOf) : []
+	return { ...extended, server: opts.server }
+}
+export const describe = (opts) => opts.extends.length
+export default (opts) => opts.extends.length`,
+				"/env/presets.js": `export const presetOf = preset => preset.id`
+			}
+			attest(helperDiagnosticsOf(js)).snap([
+				"/env/index.js:3:19  opts.extends reads extends, which a standalone validator lacks",
+				"/env/index.js:3:34  opts.extends reads extends, which a standalone validator lacks",
+				"/env/index.js:6:35  opts.extends reads extends, which a standalone validator lacks",
+				"/env/index.js:7:26  opts.extends reads extends, which a standalone validator lacks"
+			])
+			attest(
+				helperDiagnosticsOf({
+					...js,
+					"/env/index.d.ts": `import type { Preset } from "./presets.js"
+export interface Options { extends?: Preset[]; server: Record<string, unknown> }
+export declare function createEnv(opts: Options): object
+export declare const describe: (opts: Options) => number
+declare const _default: (opts: Options) => number
+export default _default`,
+					"/env/presets.d.ts": `export interface Preset { id: string }
+export declare const presetOf: (preset: Preset) => string`
+				})
+			).equals([])
+		})
+
 		it("reads off a cast declaring the members it reads", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"

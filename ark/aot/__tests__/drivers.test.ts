@@ -228,6 +228,33 @@ contextualize(function (this: Mocha.Suite) {
 			).satisfies(/^ArkIssues {/)
 		})
 
+		it("a Type's member a library reads off a validator, outside production", () => {
+			const dir = writeFixture(
+				{
+					"main.ts": `import { type } from "arktype"
+import { inputSchemaOf } from "reader"
+
+try {
+	console.log(JSON.stringify(inputSchemaOf(type({ a: "string" }))))
+} catch (e) {
+	console.log((e as Error).message)
+}
+`,
+					// a dependency the build doesn't read, which reads the Type it's handed
+					"node_modules/reader/package.json": `{ "name": "reader", "type": "module", "main": "index.js" }`,
+					"node_modules/reader/index.js": `export const inputSchemaOf = schema => schema.in.toJsonSchema()`,
+					"node_modules/reader/index.d.ts": `export declare const inputSchemaOf: (schema: any) => unknown`
+				},
+				fromHere("temp", "lackedTypeMember")
+			)
+			attest(node(["main.ts"], {}, dir).stdout)
+				.snap(`in is a Type's, which this standalone validator lacks. Put // @ark-runtime before the definition it's read off, so arktype defines it, or build with runtime: "arktype".
+`)
+			attest(node(["main.ts"], {}, dir, { NODE_ENV: "production" }).stdout)
+				.snap(`Cannot read properties of undefined (reading 'toJsonSchema')
+`)
+		})
+
 		it("a ~standard.jsonSchema the build left out, read outside production", () => {
 			const dir = writeFixture(
 				{
