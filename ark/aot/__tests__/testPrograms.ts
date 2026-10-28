@@ -1643,14 +1643,17 @@ const unfoldableValue =
 const introspectionKeys = ["json", "toJsonSchema", "standardJsonSchema"]
 
 // a JSON Schema the build can't bake throws where it's read
+const isUnbakedRead = (k: string, precompiled: Record<string, unknown>) =>
+	introspectionKeys.includes(k) &&
+	comparable(precompiled[k]).includes(
+		"can't be precompiled to a standalone validator"
+	)
+
 const isUnbaked = ({ original, precompiled }: Disagreement) =>
 	Object.keys({ ...original, ...precompiled }).every(
 		k =>
 			comparable(original[k]) === comparable(precompiled[k]) ||
-			(introspectionKeys.includes(k) &&
-				comparable(precompiled[k]).includes(
-					"can't be precompiled to a standalone validator"
-				))
+			isUnbakedRead(k, precompiled)
 	)
 
 // a disagreement counted, not failed, matched by the site's main.ts line
@@ -1711,8 +1714,10 @@ const exclusions: Allowance[] = [
 			Object.keys({ ...original, ...precompiled }).every(k => {
 				const read = comparable(original[k])
 				const baked = comparable(precompiled[k])
+				// a deep Type with a default's thunk is elided apart and unbaked at once
 				return (
 					read === baked ||
+					isUnbakedRead(k, precompiled) ||
 					(elidableKeys.has(k) &&
 						(elidedAlike(read, baked) ||
 							(isLeafless(read) && isLeafless(baked))))
@@ -1907,6 +1912,31 @@ contextualize(() => {
 		attest(
 			disagreement(nested(3, "..."), `${nested(3, "...")} | [number[], ...?]`)
 		).equals(undefined)
+	})
+
+	it("excludes a description elided a level apart whose schema isn't baked", () => {
+		const program = programOf([
+			() => ({ containers: [], exports: [], main: ["const D = type({})"] })
+		])
+		const unbaked = {
+			threw:
+				"Error: a JSON Schema calling a default's thunk can't be precompiled to a standalone validator."
+		}
+		const disagreement = (toJsonSchema: object) =>
+			allowanceOf(exclusions, program, {
+				perturbation: "none",
+				site: "main.ts:1:1",
+				original: {
+					expression: "[[...[], ...?][], [...[], ...?]?]",
+					toJsonSchema: { out: "{ type: 'array' }" }
+				},
+				precompiled: {
+					expression: "[[[...[], ...?][], [...[], ...?]?][], ...?]",
+					toJsonSchema
+				}
+			})
+		attest(disagreement(unbaked)).equals(exclusions[0])
+		attest(disagreement({ threw: "Error: boom" })).equals(undefined)
 	})
 
 	it("agree through the build", async () => {
