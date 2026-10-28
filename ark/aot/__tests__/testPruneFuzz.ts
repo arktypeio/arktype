@@ -1014,9 +1014,15 @@ const buildWith = async (
 	} catch (e) {
 		// a build's error, with its stack, where a message says too little
 		if (process.env.ARK_PRUNE_FUZZ_DEBUG) console.error(e)
+		// esbuild's errors say their text, Rolldown's their message
 		const message =
 			e && typeof e === "object" && "errors" in e && Array.isArray(e.errors) ?
-				e.errors.map((error: { text: string }) => error.text).join("\n")
+				e.errors
+					.map(
+						(error: { text?: string; message?: string }) =>
+							error.text ?? error.message
+					)
+					.join("\n")
 			:	String((e as Error).message ?? e)
 		// an error without a message still refused
 		return { refused: message || `threw ${String(e)}`, warnings, js: "", out }
@@ -1056,7 +1062,10 @@ const headOf = (message: string) => {
 	const line = lines.find(
 		l => !/^(threw )?Error: Build failed|^\[plugin /.test(l.trim())
 	)
-	return (line ?? lines[0] ?? "").replace(/\s+/g, " ").slice(0, 160)
+	// a message saying nothing shows as it is, so the tally can't hide it
+	return (line ?? lines[0] ?? JSON.stringify(message))
+		.replace(/\s+/g, " ")
+		.slice(0, 160)
 }
 
 interface Tally {
