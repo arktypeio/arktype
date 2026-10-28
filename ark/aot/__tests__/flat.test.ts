@@ -64,7 +64,9 @@ const bundle = async (
 // a factory's parameter destructuring a unit it reads
 const factoryParam = /{ 0: \w+Allows/
 
-contextualize(() => {
+contextualize(function (this: Mocha.Suite) {
+	// each case bundles with esbuild, which a loaded machine slows past mocha's default
+	this.timeout(60_000)
 	it("declares the units of a one-chunk production bundle in one function", async () => {
 		const [flat] = await bundle()
 		const [whole] = await bundle({ prune: false })
@@ -78,7 +80,7 @@ true
 		attest(run(flat)).equals(run(whole))
 		attest(factoryParam.test(whole)).equals(true)
 		attest(factoryParam.test(flat)).equals(false)
-	}).timeout(60000)
+	})
 
 	it("leaves out of the function a unit only a dropped validator reads", async () => {
 		const [js] = await bundle(
@@ -191,7 +193,7 @@ valid
 		// case has nothing left to check, in Allows as in Apply
 		attest(js.match(/case "number": {/g)?.length).equals(1)
 		attest(js.match(/case "null":\s+return true/g)?.length).equals(2)
-	}).timeout(60000)
+	})
 
 	it("writes a primitive its one call passes where its parameter is read", async () => {
 		const files = writeFixture(
@@ -361,7 +363,7 @@ console.log(User.allows({ name: "Ada" }), User.assert({ name: "Ada" }))
 		attest(run(flat)).equals(run(whole))
 		attest(factoryParam.test(whole)).equals(true)
 		attest(factoryParam.test(flat)).equals(false)
-	}).timeout(60000)
+	})
 
 	it("declares a unit however its array is written", () => {
 		// errors "none" writes a unit without its Apply, e.g. [allows, ]
