@@ -5,8 +5,10 @@ import { Before } from "./before.ts"
 import { ExactLength } from "./exactLength.ts"
 import { Max } from "./max.ts"
 import { MaxLength } from "./maxLength.ts"
+import { MaxSize } from "./maxSize.ts"
 import { Min } from "./min.ts"
 import { MinLength } from "./minLength.ts"
+import { MinSize } from "./minSize.ts"
 
 export interface BoundDeclarations {
 	min: Min.Declaration
@@ -16,6 +18,8 @@ export interface BoundDeclarations {
 	exactLength: ExactLength.Declaration
 	after: After.Declaration
 	before: Before.Declaration
+	minSize: MinSize.Declaration
+	maxSize: MaxSize.Declaration
 }
 
 export interface BoundNodesByKind {
@@ -26,6 +30,8 @@ export interface BoundNodesByKind {
 	exactLength: ExactLength.Node
 	after: After.Node
 	before: Before.Node
+	minSize: MinSize.Node
+	maxSize: MaxSize.Node
 }
 
 export type BoundKind = keyof BoundDeclarations
@@ -43,7 +49,9 @@ export const boundImplementationsByKind: boundImplementationsByKind = {
 	maxLength: MaxLength.implementation,
 	exactLength: ExactLength.implementation,
 	after: After.implementation,
-	before: Before.implementation
+	before: Before.implementation,
+	minSize: MinSize.implementation,
+	maxSize: MaxSize.implementation
 }
 
 export const boundClassesByKind: Record<BoundKind, typeof BaseConstraint<any>> =
@@ -54,5 +62,7 @@ export const boundClassesByKind: Record<BoundKind, typeof BaseConstraint<any>> =
 		maxLength: MaxLength.Node,
 		exactLength: ExactLength.Node,
 		after: After.Node,
-		before: Before.Node
+		before: Before.Node,
+		minSize: MinSize.Node,
+		maxSize: MaxSize.Node
 	}

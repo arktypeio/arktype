@@ -12,6 +12,7 @@ import {
 import {
 	printable,
 	throwParseError,
+	tryParseSizeLiteral,
 	tryParseWellFormedBigint,
 	tryParseWellFormedNumber,
 	type BigintLiteral,
@@ -20,6 +21,7 @@ import {
 	type join,
 	type lastOf
 } from "@ark/util"
+import type { SizeLiteral } from "../../../attributes.ts"
 import type { ArkAmbient } from "../../../config.ts"
 import type { resolutionToAst } from "../../../scope.ts"
 import type { GenericInstantiationAst } from "../../ast/generic.ts"
@@ -144,6 +146,9 @@ const maybeParseUnenclosedLiteral = (
 	const maybeBigint = tryParseWellFormedBigint(token)
 	if (maybeBigint !== undefined)
 		return s.ctx.$.node("unit", { unit: maybeBigint })
+
+	const maybeSize = tryParseSizeLiteral(token)
+	if (maybeSize !== undefined) return s.ctx.$.node("unit", { unit: maybeSize })
 }
 
 type tryResolve<
@@ -192,6 +197,8 @@ type tryResolve<
 		>
 	: token extends BigintLiteral<infer b> ?
 		s.setRoot<s, InferredAst<b, token>, unscanned>
+	: token extends SizeLiteral ?
+		s.setRoot<s, InferredAst<number, token>, unscanned>
 	: token extends "keyof" ? s.addPrefix<s, "keyof", unscanned>
 	: unresolvableState<s, token, $, args, []>
 
