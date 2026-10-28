@@ -48,7 +48,6 @@ import {
 	type anyOrNever,
 	type array,
 	type inferred,
-	type noInfer,
 	type noSuggest
 } from "@ark/util"
 import { setEngine } from "arksets/internal"
@@ -443,8 +442,7 @@ export declare namespace scope {
 						PrivateDeclaration<infer name extends keyof def & string>
 					) ?
 						ErrorType<writeDuplicateAliasError<name>>
-					:	// inferring def through the shallow cycle check would expand it for every key
-						noInfer<validateAlias<k, def[k], bootstrapAliases<def>>>
+					:	validateAlias<k, def[k], bootstrapAliases<def>>
 				: def[k] extends Generic ?
 					ErrorType<
 						writeParameterizedGenericKeyMessage<
