@@ -229,10 +229,10 @@ export const buildPerturbed = (
 			return code
 		}
 		marked.append(heldImports.map(statement => `\n${statement}`).join(""))
-		const precompiled = perturbingPrecompiler(opts).precompile(
-			marked.toString(),
-			path
-		)
+		// one writer for the file and its imports, as a build's is, so a Scope a
+		// refused site reads is left to arktype in the module holding it
+		const writer = perturbingPrecompiler(opts)
+		const precompiled = writer.precompile(marked.toString(), path)
 		errors.push(...errorsOf(precompiled))
 		errorsByPath[path] = errorsOf(precompiled)
 		collectHelpers(precompiled)
@@ -251,8 +251,7 @@ export const buildPerturbed = (
 				if (!isPerturbable(target) || reached.includes(target)) continue
 				reached.push(target)
 				if (target in precompiledByPath) continue
-				const targetPrecompiler = perturbingPrecompiler(opts)
-				const targetPrecompiled = targetPrecompiler.precompile(
+				const targetPrecompiled = writer.precompile(
 					readFileSync(target, "utf8"),
 					target
 				)
@@ -260,10 +259,10 @@ export const buildPerturbed = (
 				importedErrorsByPath[target] = errorsOf(targetPrecompiled)
 				collectHelpers(targetPrecompiled)
 				precompiledByPath[target] = targetPrecompiled.code
-				const graph = targetPrecompiler.graph
+				const graph = writer.graph
 				const targetModule = graph.moduleOf(target) as SourceModule
 				swapsByPath[target] =
-					checks === "none" ? {} : swapsOf(targetPrecompiler, targetModule)
+					checks === "none" ? {} : swapsOf(writer, targetModule)
 				// arktype's own exports and Types are trusted, so a mock leaves them
 				exportNamesByPath[target] = Object.keys(
 					targetModule.scopes.exportsByName
