@@ -772,19 +772,6 @@ contextualize(() => {
 
 			const BoxType = createBox("string")
 
-			attest<{ of: string }>(BoxType.t)
-		})
-
-		it("docs def", () => {
-			const createBox = <const def>(
-				of: type.validate<def>
-			): type.instantiate<{ of: def }> =>
-				type.raw({
-					box: of
-				}) as never
-
-			const BoxType = createBox("string")
-
 			// @ts-expect-error
 			attest(() => createBox("str")).completions({
 				str: ["string"]

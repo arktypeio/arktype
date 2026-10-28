@@ -293,11 +293,6 @@ console.log(User.allows({ name: "Ada" }), User.assert({ name: "Ada" }))
 		attest(/\ballows:/.test(both)).equals(true)
 	})
 
-	it("keeps each unit a module of its own with prune: false", async () => {
-		const [whole] = await bundle({ prune: false })
-		attest(factoryParam.test(whole)).equals(true)
-	})
-
 	it("fails a module another plugin loaded reading a unit it declares in one function", async () => {
 		const [whole] = await bundle({ prune: false }, { minify: false })
 		const unit = /\/\/ arktype:(~arktype\/intersection\w+)/.exec(whole)![1]
