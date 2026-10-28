@@ -947,45 +947,14 @@ export class Interpreter {
 			readsFirst(readAt, binding, module)
 		const result = this.bindingValue(binding, module)
 		if (result.error !== undefined) throw result.error
-		// `V ?? x` reads an unset `var` without throwing
-		if (
-			isReadFirst &&
-			binding.kind === "var" &&
-			!(isArkValue(result.value) && throwsUnset(node))
-		) {
-			return {
-				value: new DynamicValue(
-					module,
-					node,
-					`\`${binding.name}\` can be read before its declaration (${module.positionOf(binding.id)})`
-				)
-			}
-		}
-		if (
-			result.value instanceof InternalChainedMatchParser &&
-			(binding.references.length > 1 || binding.exportNames.length)
-		) {
-			return {
-				value: new DynamicValue(
-					module,
-					node,
-					`\`${binding.name}\` is a match parser, which each \`.case\` mutates, and is read in more than one place`
-				)
-			}
-		}
-		if (isDynamic(result.value)) {
-			const declaration = binding.declaration
-			const init =
-				declaration.type === "VariableDeclarator" ? declaration.init : null
-			return {
-				value: new DynamicValue(
-					module,
-					node,
-					`\`${binding.name}\` is ${init ? `\`${module.snippetOf(init)}\`` : "declared"} (${module.positionOf(binding.id)})`,
-					result.value
-				)
-			}
-		}
+		const unreadable = this.unreadableBindingOf(
+			binding,
+			node,
+			module,
+			result.value,
+			isReadFirst
+		)
+		if (unreadable) return { value: unreadable }
 		const written =
 			isChangeable(result.value) &&
 			this.writtenBefore(binding, module, readAt ?? node, ctx)
@@ -1016,6 +985,50 @@ export class Interpreter {
 		return isReceived || (isReadFirst && !isChecked) ?
 				lookupOf({ kind: "binding", module, binding }, result.value)
 			:	{ value: result.value }
+	}
+
+	// why a binding's value can't be read at the site: an unset var, a match
+	// parser read in more than one place, or a value the build couldn't evaluate
+	private unreadableBindingOf(
+		binding: Binding,
+		node: Node,
+		module: SourceModule,
+		value: unknown,
+		isReadFirst: boolean
+	): DynamicValue | undefined {
+		// `V ?? x` reads an unset `var` without throwing
+		if (
+			isReadFirst &&
+			binding.kind === "var" &&
+			!(isArkValue(value) && throwsUnset(node))
+		) {
+			return new DynamicValue(
+				module,
+				node,
+				`\`${binding.name}\` can be read before its declaration (${module.positionOf(binding.id)})`
+			)
+		}
+		if (
+			value instanceof InternalChainedMatchParser &&
+			(binding.references.length > 1 || binding.exportNames.length)
+		) {
+			return new DynamicValue(
+				module,
+				node,
+				`\`${binding.name}\` is a match parser, which each \`.case\` mutates, and is read in more than one place`
+			)
+		}
+		if (isDynamic(value)) {
+			const declaration = binding.declaration
+			const init =
+				declaration.type === "VariableDeclarator" ? declaration.init : null
+			return new DynamicValue(
+				module,
+				node,
+				`\`${binding.name}\` is ${init ? `\`${module.snippetOf(init)}\`` : "declared"} (${module.positionOf(binding.id)})`,
+				value
+			)
+		}
 	}
 
 	valueOfBinding(binding: Binding, module: SourceModule): unknown {
@@ -1539,6 +1552,16 @@ export class Interpreter {
 		}
 		if (object instanceof Date || object instanceof RegExp)
 			return this.notOwnData(node, ctx)
+		return this.readArkMember(object, key, node, ctx)
+	}
+
+	// a member of a value arktype created, read as a call into arktype
+	private readArkMember(
+		object: object,
+		key: PropertyKey,
+		node: Node,
+		ctx: Context
+	): unknown {
 		// a member the validator lacks makes the site its own
 		if (
 			ctx.site &&
