@@ -1202,6 +1202,33 @@ const writePrecompiledUnit = (
 		[...unit.declared, ...dependencyNodes].some(node => !variablesById[node.id])
 	)
 		return
+	const accessorsByValue = accessorsOf(nodes, variablesByNode)
+	const refs = unit.refs.map(value => accessorsByValue.get(value))
+	if (refs.includes(undefined)) return
+	const source = writeUnit(
+		Object.keys(unit.dependencies),
+		unit.refs.map((_, i) => `r${i}`),
+		unit.members,
+		unit.declaredTraversals
+	).write("function")
+	const variablesOf = (nodes: BaseNode[]) =>
+		nodes.map(node => variablesById[node.id]).join(", ")
+	const returned = `return [[${variablesOf(unit.declared)}], [${refs.join(", ")}], [${variablesOf(dependencyNodes)}]]`
+	// a node is declared only if something the unit returns is read from it
+	const read = nodes.map(() => false)
+	for (const [, i] of returned.matchAll(/\bn(\d+)\b/g)) read[+i] = true
+	for (let i = statements.length; i > 0; i--)
+		if (read[i]) read[statements[i - 1][0]] = true
+	return `[(n0, $) => {
+${statements.map(([, statement], i) => (read[i + 1] ? `\t${statement}\n` : "")).join("")}\t${returned}
+}, ${source}, ${JSON.stringify(dependencies)}, ${sizeOf(root)}]`
+}
+
+// the expression reading each value a keyed root's nodes hold, undefined where none can
+const accessorsOf = (
+	nodes: readonly BaseNode[],
+	variablesByNode: ReadonlyMap<BaseNode, string>
+): Map<unknown, string | undefined> => {
 	const accessorsByValue = new Map<unknown, string | undefined>(variablesByNode)
 	for (const k in unitConstants) {
 		accessorsByValue.set(
@@ -1239,25 +1266,7 @@ const writePrecompiledUnit = (
 		if (node.is("structure"))
 			accessorsByValue.set(node.byKey, `${variablesByNode.get(node)}.byKey`)
 	}
-	const refs = unit.refs.map(value => accessorsByValue.get(value))
-	if (refs.includes(undefined)) return
-	const source = writeUnit(
-		Object.keys(unit.dependencies),
-		unit.refs.map((_, i) => `r${i}`),
-		unit.members,
-		unit.declaredTraversals
-	).write("function")
-	const variablesOf = (nodes: BaseNode[]) =>
-		nodes.map(node => variablesById[node.id]).join(", ")
-	const returned = `return [[${variablesOf(unit.declared)}], [${refs.join(", ")}], [${variablesOf(dependencyNodes)}]]`
-	// a node is declared only if something the unit returns is read from it
-	const read = nodes.map(() => false)
-	for (const [, i] of returned.matchAll(/\bn(\d+)\b/g)) read[+i] = true
-	for (let i = statements.length; i > 0; i--)
-		if (read[i]) read[statements[i - 1][0]] = true
-	return `[(n0, $) => {
-${statements.map(([, statement], i) => (read[i + 1] ? `\t${statement}\n` : "")).join("")}\t${returned}
-}, ${source}, ${JSON.stringify(dependencies)}, ${sizeOf(root)}]`
+	return accessorsByValue
 }
 
 const forEachValue = (
