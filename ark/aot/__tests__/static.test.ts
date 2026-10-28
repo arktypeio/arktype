@@ -448,29 +448,22 @@ export const Product = type({ description: "string", items: [{ description: "str
 			).equals([])
 		})
 
-		it("reads off a parameter annotated with an interface it imports", () => {
-			attest(
-				diagnosticsOf(
-					`import { type } from "arktype"
-import type { Options } from "./types.ts"
-export const T = type("string")
+		it("reads off what an annotation the build follows declares", () => {
+			const annotated: [main: string, files?: Record<string, string>][] = [
+				// an interface it imports
+				[
+					`import type { Options } from "./types.ts"
 export function readOptions(opts: Options) {
 	return [opts.default, opts.in]
 }`,
 					{
 						"/types.ts": `export interface Options { default: string; in: number }`
 					}
-				)
-			).equals([])
-		})
-
-		it("reads off a type re-exported through relative modules", () => {
-			attest(
-				diagnosticsOf(
-					`import { type } from "arktype"
-import type { Schema } from "./index.ts"
+				],
+				// a type re-exported through relative modules
+				[
+					`import type { Schema } from "./index.ts"
 import type * as Json from "./json.ts"
-export const T = type("string")
 export const defaultOf = (schema: Schema) => schema.default
 export const outOf = (schema: Json.Piped) => schema.out`,
 					{
@@ -480,8 +473,53 @@ export const outOf = (schema: Json.Piped) => schema.out`,
 export type JsonSchema = JSONSchema7
 export type Piped = { in: string; out: string }`
 					}
-				)
-			).equals([])
+				],
+				// a cast declaring the members it reads
+				[
+					`export function piped(ctx: any) {
+	const def = ctx.def
+	const pipeDef = def as typeof def & { in: unknown }
+	if (pipeDef.in) return pipeDef
+}`
+				],
+				// what a method declares it returns
+				[
+					`import { service } from "./service.ts"
+export const created = async () => {
+	const result = await service.create()
+	return \`/projects/\${result.id}\`
+}`,
+					{
+						"/service.ts": `import { randomUUID } from "node:crypto"
+export const service = new (class {
+	async create(): Promise<{ id: string }> {
+		return { id: randomUUID() }
+	}
+})()`
+					}
+				],
+				// a member typed as an element of a const array
+				[
+					`const metrics = ["LCP", "INP"] as const
+export type Summary = { metric: (typeof metrics)[number]; detail: unknown }
+export const describe = (summary: Summary) => \`\${summary.metric}\``
+				],
+				// a type literal with an unknown member
+				[
+					`export type Schema = { default?: unknown; required?: string[] }
+export function defaultOf(schema: Schema): unknown {
+	return schema.default
+}`
+				]
+			]
+			for (const [main, files] of annotated) {
+				attest(
+					diagnosticsOf(
+						`import { type } from "arktype"\nexport const T = type("string")\n${main}`,
+						files
+					)
+				).equals([])
+			}
 		})
 
 		it("reads off a type-only import's inferred type", () => {
@@ -619,40 +657,6 @@ export declare const presetOf: (preset: Preset) => string`
 			).equals([])
 		})
 
-		it("reads off a cast declaring the members it reads", () => {
-			attest(
-				diagnosticsOf(`import { type } from "arktype"
-export const T = type("string")
-export function piped(ctx: any) {
-	const def = ctx.def
-	const pipeDef = def as typeof def & { in: unknown }
-	if (pipeDef.in) return pipeDef
-}`)
-			).equals([])
-		})
-
-		it("reads off what a method declares it returns", () => {
-			attest(
-				diagnosticsOf(
-					`import { type } from "arktype"
-import { service } from "./service.ts"
-export const T = type("string")
-export const created = async () => {
-	const result = await service.create()
-	return \`/projects/\${result.id}\`
-}`,
-					{
-						"/service.ts": `import { randomUUID } from "node:crypto"
-export const service = new (class {
-	async create(): Promise<{ id: string }> {
-		return { id: randomUUID() }
-	}
-})()`
-					}
-				)
-			).equals([])
-		})
-
 		it("calls a declared method off an instance held beside another", () => {
 			attest(
 				diagnosticsOf(
@@ -686,27 +690,6 @@ if (process.env.NODE_ENV !== "production") globalForClient.client = steam`,
 export const db = {} as Db`
 					}
 				)
-			).equals([])
-		})
-
-		it("reads off a member typed as an element of a const array", () => {
-			attest(
-				diagnosticsOf(`import { type } from "arktype"
-export const T = type("string")
-const metrics = ["LCP", "INP"] as const
-export type Summary = { metric: (typeof metrics)[number]; detail: unknown }
-export const describe = (summary: Summary) => \`\${summary.metric}\``)
-			).equals([])
-		})
-
-		it("reads off a type literal with an unknown member", () => {
-			attest(
-				diagnosticsOf(`import { type } from "arktype"
-export const T = type("string")
-export type Schema = { default?: unknown; required?: string[] }
-export function defaultOf(schema: Schema): unknown {
-	return schema.default
-}`)
 			).equals([])
 		})
 	})
