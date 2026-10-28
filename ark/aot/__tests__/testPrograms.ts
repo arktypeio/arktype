@@ -1696,6 +1696,12 @@ const matchesElided = (segments: string[], text: string): boolean => {
 	return from <= end
 }
 
+// an introspection whose every leaf is elided, which says nothing of the Type:
+// a union prints each branch once by its text, so where the build elides a
+// branch a level apart from arktype, arktype merges branches it tells apart
+const isLeafless = (text: string): boolean =>
+	/^"(?:Type<)?(?:[\s(),.?[\]|]|\bor\b)*>?"$/.test(text)
+
 // a disagreement precompiling doesn't promise to avoid
 const exclusions: Allowance[] = [
 	{
@@ -1706,7 +1712,10 @@ const exclusions: Allowance[] = [
 				const read = comparable(original[k])
 				const baked = comparable(precompiled[k])
 				return (
-					read === baked || (elidableKeys.has(k) && elidedAlike(read, baked))
+					read === baked ||
+					(elidableKeys.has(k) &&
+						(elidedAlike(read, baked) ||
+							(isLeafless(read) && isLeafless(baked))))
 				)
 			})
 	},
@@ -1871,6 +1880,33 @@ contextualize(() => {
 		attest(disagreement(nested(6, "..."))).equals(exclusions[0])
 		// a mismatch after 64 gaps, which a RegExp of `.*` gaps never finishes
 		attest(disagreement(`${nested(6, "...")}x`)).equals(undefined)
+	})
+
+	it("excludes an introspection elided whole", () => {
+		const program = programOf([
+			() => ({ containers: [], exports: [], main: ["const D = type({})"] })
+		])
+		const nested = (depth: number, leaf: string): string =>
+			depth === 0 ? leaf : (
+				`[${nested(depth - 1, leaf)}[], ${nested(depth - 1, leaf)}?]`
+			)
+		const disagreement = (original: string, precompiled: string) =>
+			allowanceOf(exclusions, program, {
+				perturbation: "none",
+				site: "main.ts:1:1",
+				original: { expression: original, string: `Type<${original}>` },
+				precompiled: {
+					expression: precompiled,
+					string: `Type<${precompiled}>`
+				}
+			})
+		// arktype prints a union's branches once by their text, elided alike
+		attest(
+			disagreement(nested(3, "..."), `${nested(3, "...")} | [...[], ...?]`)
+		).equals(exclusions[0])
+		attest(
+			disagreement(nested(3, "..."), `${nested(3, "...")} | [number[], ...?]`)
+		).equals(undefined)
 	})
 
 	it("agree through the build", async () => {
