@@ -179,9 +179,16 @@ contextualize(function (this: Mocha.Suite) {
 			])
 		})
 
-		it("traverse() and from()", async () => {
-			for (const read of ["User.traverse({})", "User.from({})"])
-				attest(await droppedReading(read)).snap(["assert", "meta", "~standard"])
+		it("traverse()", async () => {
+			attest(await droppedReading("User.traverse({})")).snap([
+				"assert",
+				"meta",
+				"~standard"
+			])
+		})
+
+		it("from(), which calls assert", async () => {
+			attest(await droppedReading("User.from({})")).snap(["meta", "~standard"])
 		})
 
 		it("toString()", async () => {
@@ -890,6 +897,27 @@ for (const data of [{ name: 5 }, flipping]) {
 			attest((await bundle({ preset: undefined })).includes("._d=")).equals(
 				true
 			)
+		})
+
+		it("throws from from() where no read asserts", async () => {
+			const js = await bundle(
+				{ preset: undefined },
+				{
+					stdin: {
+						contents: `import { User } from "./types.ts"
+
+try {
+	User.from({ name: 5 })
+} catch (e) {
+	console.log((e as Error).message)
+}
+`,
+						resolveDir: root,
+						loader: "ts"
+					}
+				}
+			)
+			attest(run(js)).snap("name must be a string\n")
 		})
 
 		it("bundles a program reading only .allows as its checkers", async () => {

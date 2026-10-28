@@ -410,6 +410,8 @@ class UsageAnalysis {
 				if (used) this.used.add(used)
 				// a call by another name
 				if (name === "traverse") this.used.add("call")
+				// from(input) returns this.assert(input)
+				if (name === "from") this.used.add("assert")
 				if (name === "assert" || name === "traverse") {
 					const [method, call] = operatorOf(parent)
 					if (call?.type === "CallExpression" && call.callee === method)

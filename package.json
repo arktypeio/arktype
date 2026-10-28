@@ -41,6 +41,7 @@
 		"writePrecompileSettings": "node --conditions ark-ts ./ark/aot/__tests__/writeSettings.ts",
 		"testPerturbation": "node --conditions ark-ts ./ark/aot/__tests__/testPerturbation.ts",
 		"testPruneParity": "node --conditions ark-ts ./ark/aot/__tests__/testPruneParity.ts",
+		"testPruneFuzz": "node --conditions ark-ts ./ark/aot/__tests__/testPruneFuzz.ts",
 		"testAlgebra": "node --conditions ark-ts ./ark/type/__tests__/algebra/testAlgebra.ts",
 		"testDifferential": "pnpm test --exclude ark/type/__tests__/gc.test.ts --require ./ark/aot/__tests__/testDifferential.ts",
 		"testJitless": "pnpm test --exclude \"ark/aot/**\" --exclude \"ark/docs/components/playground/__tests__/precompile.test.ts\" --grep \"jit by default|has jit|compiled code|deep invalid data through an undiscriminated union\" --invert --require ./ark/repo/testJitless.ts",
