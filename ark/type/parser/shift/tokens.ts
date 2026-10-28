@@ -27,8 +27,11 @@ export const shiftUntilTerminator = (sc: Scanner): string => {
 	return token.slice(0, -1)
 }
 
+// only a definition containing != anywhere can have a token end at one
 export type shiftUntilTerminator<unscanned extends string> =
-	shiftComparatorBang<Scanner.shiftUntil<unscanned, TerminatingChar>>
+	unscanned extends `${string}!=${string}` ?
+		shiftComparatorBang<Scanner.shiftUntil<unscanned, TerminatingChar>>
+	:	Scanner.shiftUntil<unscanned, TerminatingChar>
 
 // a ! ending a token before = starts a != comparator
 type shiftComparatorBang<result extends [string, string]> =
