@@ -19,17 +19,15 @@ import {
 	printable
 } from "@ark/util"
 import { InternalTypedFn } from "../fn.ts"
+import type { Foldable } from "./baking.ts"
+import { rootUnitsOf } from "./compilers.ts"
 import {
 	collectDefaults,
-	isHole,
-	isPlainLiteral,
 	holdsDefaults,
-	runtimeKeyOf,
 	writtenSelectedOf,
-	type CollectedDefault,
-	type Foldable
-} from "../standalone.ts"
-import { rootUnitsOf } from "./compilers.ts"
+	type CollectedDefault
+} from "./units.ts"
+import { isHole, isPlainLiteral, runtimeKeyOf } from "./values.ts"
 
 // an alias defined by a thunk; a site resolving it is refused
 export type ScopeAlias = [scope: BaseScope, alias: string]

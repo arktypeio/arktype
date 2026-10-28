@@ -15,16 +15,15 @@ import {
 } from "@ark/schema/internal"
 import { type Fn, hasDomain, isDotAccessible, throwParseError } from "@ark/util"
 import * as runtime from "../runtimeExports.ts"
+import type { IssueFeatures } from "./baking.ts"
+import { rootUnitsOf } from "./compilers.ts"
+import { printedHoleNamePattern } from "./keys.ts"
+import { declares, writtenSelectedOf } from "./units.ts"
 import {
-	declares,
-	printedHoleNamePattern,
-	rootUnitsOf,
 	runtimeKeyOf,
 	runtimePathsByValue,
-	writeUnprecompilableMessage,
-	writtenSelectedOf,
-	type IssueFeatures
-} from "../standalone.ts"
+	writeUnprecompilableMessage
+} from "./values.ts"
 
 // the text a site's issue carries in place of what the runtime writes
 const describingKeys = ["expected", "actual", "problem", "message"] as const
