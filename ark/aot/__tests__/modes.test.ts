@@ -219,10 +219,10 @@ configure({ exactOptionalPropertyTypes: false })`,
 				[],
 				[],
 				[
-					"/config.ts:2:1  configure() is given other values than arktype in this thread already applied\n  a module the configuration reads was given anew, as when it's edited while the build runs or a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  Restart the build to apply an edit to /config.ts. If it wasn't edited, put arktype's plugin ahead of the plugin transforming it."
+					"/config.ts:2:1  configure() is given other values than arktype in this thread already applied\n  a module the configuration reads was given anew, as when it's edited while the build runs or a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  Restart the build to apply an edit to /config.ts. If it wasn't edited, exclude it from the plugin transforming it, since the build configures arktype from the module as written and the program must configure it the same."
 				],
 				[
-					"/main.ts:2:18  type({ a: \"string\" }) is created under a configuration the build can't apply\n  configure() is given other values than arktype in this thread already applied (/config.ts)\n  a module the configuration reads was given anew, as when it's edited while the build runs or a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  Restart the build to apply an edit to /config.ts. If it wasn't edited, put arktype's plugin ahead of the plugin transforming it."
+					"/main.ts:2:18  type({ a: \"string\" }) is created under a configuration the build can't apply\n  configure() is given other values than arktype in this thread already applied (/config.ts)\n  a module the configuration reads was given anew, as when it's edited while the build runs or a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  Restart the build to apply an edit to /config.ts. If it wasn't edited, exclude it from the plugin transforming it, since the build configures arktype from the module as written and the program must configure it the same."
 				]
 			])
 		})

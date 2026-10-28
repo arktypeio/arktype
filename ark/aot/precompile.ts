@@ -64,7 +64,6 @@ import { fileURLToPath } from "node:url"
 import type {
 	CallExpression,
 	ImportDeclaration,
-	ImportSpecifier,
 	MemberExpression,
 	Node,
 	Span
@@ -1402,7 +1401,7 @@ export class Precompiler {
 			!readsNodes(importer) &&
 			!runsOnArktype(importer, this.graph.dependencies) &&
 			!this.reportedDependencies.has(dependency) &&
-			!this.readsOnlyRuntime(importer)
+			!this.graph.readsOnlyRuntime(importer)
 		) {
 			this.reportedDependencies.add(dependency)
 			const message =
@@ -1414,45 +1413,6 @@ export class Precompiler {
 			else errors.push(message)
 		}
 		return { errors, warnings }
-	}
-
-	// e.g. @hono/arktype-validator, reading only `type.errors`
-	private readsOnlyRuntime(file: string): boolean {
-		const source = this.graph.host.readFile(file)
-		if (source === undefined) return false
-		const module = new SourceModule(file, source, file)
-		if (module.parseErrors.length) return false
-		let readsOnlyRuntime = true
-		walk(module.program, node => {
-			if (!readsOnlyRuntime) return false
-			const specifier =
-				(
-					node.type === "ImportDeclaration" ||
-					node.type === "ExportNamedDeclaration" ||
-					node.type === "ExportAllDeclaration"
-				) ?
-					node.source
-				:	loadedSourceOf(node)
-			if (!specifier) return true
-			if (
-				specifier.type !== "Literal" ||
-				typeof specifier.value !== "string" ||
-				!/^arktype(?:\/|$)/.test(specifier.value)
-			)
-				return true
-			readsOnlyRuntime =
-				node.type === "ImportDeclaration" &&
-				(node.importKind === "type" ||
-					(specifier.value === "arktype" &&
-						node.specifiers.every(
-							imported =>
-								imported.type === "ImportSpecifier" &&
-								(imported.importKind === "type" ||
-									readsRuntimeExport(module, imported))
-						)))
-			return false
-		})
-		return readsOnlyRuntime
 	}
 
 	private packageOf(
@@ -5698,27 +5658,6 @@ const reachedModulesOf = (
 		}
 	}
 	return reached
-}
-
-// arktype/runtime's `type` holds only `errors`
-const readsRuntimeExport = (
-	module: SourceModule,
-	specifier: ImportSpecifier
-): boolean => {
-	const name = exportNameOf(specifier.imported)
-	if (name in runtimeExports) return true
-	const binding = module.scopes.bindingsById.get(specifier.local)
-	return (
-		name === "type" &&
-		!!binding?.references.every(
-			({ id, isWrite }) =>
-				!isWrite &&
-				id.parent?.type === "MemberExpression" &&
-				id.parent.object === id &&
-				!id.parent.computed &&
-				id.parent.property.name === "errors"
-		)
-	)
 }
 
 const createsValidator = (site: Site) =>

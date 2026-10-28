@@ -235,6 +235,11 @@ const textHints: [
 		"Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime."
 	],
 	[
+		/^`(.+)` is a package the build does not read, though (?:it|(.+)) imports arktype$/,
+		(specifier, name = specifier) =>
+			`Precompile ${name} with the program: in ark.json (or package.json's "ark" key), set "precompile": { "dependencies": { "${name}": "aot" } }, or "arktype" in place of "aot" where it defines Types from values known only at runtime.`
+	],
+	[
 		/^it's passed to code the build can't see/,
 		`Define it in a const that the program reads directly, so the build precompiles each read, or build with runtime: "arktype".`
 	],

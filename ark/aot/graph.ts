@@ -58,6 +58,7 @@ import {
 	exportNameOf,
 	isTransparent,
 	isWriteTarget,
+	loadedSourceOf,
 	unwrapChain,
 	operatorOf,
 	runtimeParamsOf,
@@ -625,6 +626,27 @@ export type ImportTarget =
 	| { kind: "unresolved"; message: string }
 	| { kind: "package"; message: string }
 
+// arktype/runtime's `type` holds only `errors`
+const readsRuntimeExport = (
+	module: SourceModule,
+	specifier: ImportSpecifier
+): boolean => {
+	const name = exportNameOf(specifier.imported)
+	if (name in runtimeExports) return true
+	const binding = module.scopes.bindingsById.get(specifier.local)
+	return (
+		name === "type" &&
+		!!binding?.references.every(
+			({ id, isWrite }) =>
+				!isWrite &&
+				id.parent?.type === "MemberExpression" &&
+				id.parent.object === id &&
+				!id.parent.computed &&
+				id.parent.property.name === "errors"
+		)
+	)
+}
+
 export class ModuleGraph {
 	host: PrecompileHost
 	cwd: string | undefined
@@ -727,15 +749,70 @@ export class ModuleGraph {
 			}
 		}
 		if (!this.isFollowed(id)) {
+			// one defining Types, so the fix is to precompile it with the program
+			const [, name] = dependencyOf(id) ?? []
 			return {
 				kind: "package",
-				message: `\`${specifier}\` is a package the build does not read`
+				message:
+					name && this.importsArktype(id) && !this.readsOnlyRuntime(id) ?
+						`\`${specifier}\` is a package the build does not read, though ${specifier === name ? "it" : name} imports arktype`
+					:	`\`${specifier}\` is a package the build does not read`
 			}
 		}
 		const imports = (this.importsById[importer.id] ??= [])
 		if (!imports.includes(id)) imports.push(id)
 		this.modulesById[id] ??= this.load(id, specifier)
 		return this.modulesById[id]
+	}
+
+	// e.g. @hono/arktype-validator, reading only `type.errors`
+	readsOnlyRuntime(file: string): boolean {
+		const source = this.host.readFile(file)
+		if (source === undefined) return false
+		const module = new SourceModule(file, source, file)
+		if (module.parseErrors.length) return false
+		let readsOnlyRuntime = true
+		walk(module.program, node => {
+			if (!readsOnlyRuntime) return false
+			const specifier =
+				(
+					node.type === "ImportDeclaration" ||
+					node.type === "ExportNamedDeclaration" ||
+					node.type === "ExportAllDeclaration"
+				) ?
+					node.source
+				:	loadedSourceOf(node)
+			if (!specifier) return true
+			if (
+				specifier.type !== "Literal" ||
+				typeof specifier.value !== "string" ||
+				!/^arktype(?:\/|$)/.test(specifier.value)
+			)
+				return true
+			readsOnlyRuntime =
+				node.type === "ImportDeclaration" &&
+				(node.importKind === "type" ||
+					(specifier.value === "arktype" &&
+						node.specifiers.every(
+							imported =>
+								imported.type === "ImportSpecifier" &&
+								(imported.importKind === "type" ||
+									readsRuntimeExport(module, imported))
+						)))
+			return false
+		})
+		return readsOnlyRuntime
+	}
+
+	// an arktype entry other than its runtime, imported or required
+	importsArktype(id: string): boolean {
+		const source = this.host.readFile(id)
+		return (
+			source !== undefined &&
+			/(?:from|import|require\()\s*["']arktype(?:\/(?!runtime)[^"']*)?["']/.test(
+				source
+			)
+		)
 	}
 
 	// outside node_modules, or in a package that opts in or the settings precompile
