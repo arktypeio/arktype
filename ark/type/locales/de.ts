@@ -3,6 +3,7 @@ import {
 	actualAtPathOf,
 	describeCause,
 	describeMissing,
+	distinctExpectedOf,
 	groupByPath,
 	labelOf,
 	writeKeywordExpected
@@ -18,11 +19,6 @@ import {
 	type ListType
 } from "@ark/util"
 import type { Locale } from "../locale.ts"
-
-// constraints described alike are written once
-const distinctExpectedOf = (e: { errors: readonly { expected: string }[] }) => [
-	...new Set(e.errors.map(error => error.expected))
-]
 
 const listSeparatedBy = (middle: string) =>
 	listPattern(
@@ -439,11 +435,11 @@ export const de: Locale.Complete = {
 	},
 	intersection: {
 		expected: e =>
-			distinctExpectedOf(e).length > 1 ?
-				`  ◦ ${distinctExpectedOf(e).join("\n  ◦ ")}`
+			distinctExpectedOf(e.errors).length > 1 ?
+				`  ◦ ${distinctExpectedOf(e.errors).join("\n  ◦ ")}`
 			:	e.errors[0].expected,
 		problem: e =>
-			distinctExpectedOf(e).length > 1 ?
+			distinctExpectedOf(e.errors).length > 1 ?
 				`(${e.actual}) muss alles Folgende sein:\n${e.expected}`
 			:	mustBe(e.expected, e.actual)
 	},

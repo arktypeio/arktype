@@ -291,6 +291,11 @@ export const alternativesOf = (
 	return error.expected === locale.list(cases, "or") ? cases : [error.expected]
 }
 
+/** what an intersection's errors expect, constraints described alike written once */
+export const distinctExpectedOf = (errors: readonly ArkError[]): string[] => [
+	...new Set(errors.map(e => e.expected))
+]
+
 /** the actual a union's errors agree on, if each is at the union's own path */
 export const actualAtPathOf = (union: {
 	readonly propString: string

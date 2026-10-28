@@ -966,7 +966,7 @@ const rangeOf = (node: Intersection.Node, family: RangeFamily): Range => {
 	}
 }
 
-const includes = (range: Range, value: number) =>
+const rangeIncludes = (range: Range, value: number) =>
 	(!range.lower ||
 		value > range.lower.value ||
 		(value === range.lower.value && !range.lower.exclusive)) &&
@@ -1003,8 +1003,8 @@ const mergeRange = (
 		else if (distance > (family.integral ? 1 : 0)) return
 	}
 	excluded.push(
-		...first.excluded.filter(value => !includes(second, value)),
-		...second.excluded.filter(value => !includes(first, value))
+		...first.excluded.filter(value => !rangeIncludes(second, value)),
+		...second.excluded.filter(value => !rangeIncludes(first, value))
 	)
 	return {
 		lower: first.lower,

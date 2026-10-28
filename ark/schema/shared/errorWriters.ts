@@ -31,6 +31,7 @@ import {
 	actualAtPathOf,
 	alternativesOf,
 	describeCause,
+	distinctExpectedOf,
 	keywordWriterOf,
 	type Locale
 } from "./locale.ts"
@@ -49,11 +50,6 @@ export const writeMessage: MessageWriter = ctx => {
 // read from the first key: indexing the string, written by concatenation, would flatten it
 const startsWithBracket = (path: readonly PropertyKey[]): boolean =>
 	typeof path[0] !== "string" || !isDotAccessible(path[0])
-
-// constraints described alike, as under one configured message, are written once
-const distinctExpectedOf = (errors: readonly ArkError[]): string[] => [
-	...new Set(errors.map(e => e.expected))
-]
 
 // one writer per slot for each kind that doesn't write its own
 export const errorWriters: {

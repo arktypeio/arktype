@@ -500,7 +500,7 @@ const planFactory = (
 	factory: SiteFactory,
 	tablesByValue: Map<unknown, number>
 ): void => {
-	const name = `f${nameOf(site)}`
+	const name = `f${siteNameOf(site)}`
 	plan.factoriesBySite.set(site, factory)
 	plan.namesBySite.set(site, name)
 	if (site.introspection) {
@@ -2253,7 +2253,7 @@ export class Precompiler {
 			// checked at each call, as a factory is
 			if (site.introspection) factory ??= emptyFactory()
 			else if (site.parseError) {
-				plan.namesBySite.set(site, nameOf(site))
+				plan.namesBySite.set(site, siteNameOf(site))
 				// checks progress before throwing, as a factory does
 				if (site.progress) {
 					plan.factoriesBySite.set(site, {
@@ -2268,7 +2268,7 @@ export class Precompiler {
 				planFactory(plan, site, factory, tablesByValue)
 				replaced.push([site, factory.spans])
 			} else {
-				const name = `v${nameOf(site)}`
+				const name = `v${siteNameOf(site)}`
 				plan.namesBySite.set(site, name)
 				plan.exportsByName[name] = site.value as never
 				replaced.push([site, []])
@@ -6087,7 +6087,7 @@ const arkObjectsIn = (value: unknown, result = new Set<unknown>()) => {
 }
 
 // a cyclic Type's hash holds registry counters, so name by position
-const nameOf = (site: Site) =>
+const siteNameOf = (site: Site) =>
 	hashOf(
 		site.parseError ?
 			[site.parseError.message, ...(site.progress ?? [])].join("\n")
