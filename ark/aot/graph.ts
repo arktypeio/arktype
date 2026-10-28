@@ -1316,6 +1316,13 @@ export class ModuleGraph {
 			(call?.type === "Property" && call.value === operand)
 		)
 			[operand, call] = operatorOf(call)
+		// e.g. `e` in `<input onFocus={e => e.target.select()} />`, which the
+		// renderer calls with an event or element, unlike a component's prop
+		if (
+			call?.type === "JSXExpressionContainer" &&
+			isIntrinsicElementAttribute(call.parent)
+		)
+			return kinds.data
 		// e.g. an exported function or a method, called where the build can't see
 		if (call?.type !== "CallExpression" || call.callee === operand)
 			return opaque
@@ -3716,6 +3723,14 @@ const isContainerMethod = (name: unknown): boolean =>
 	typeof name === "string" && (name in Array.prototype || name in Map.prototype)
 
 // an annotation narrows only what the build lost track of
+// e.g. `onFocus={...}` on `<input>`, whose attributes the renderer reads,
+// rather than on `<Field>`, a component that may pass a prop anything
+const isIntrinsicElementAttribute = (node: Node | undefined): boolean =>
+	node?.type === "JSXAttribute" &&
+	node.parent?.type === "JSXOpeningElement" &&
+	node.parent.name.type === "JSXIdentifier" &&
+	/^[a-z]/.test(node.parent.name.name)
+
 const annotate = (kind: KindBits, annotated: KindBits | undefined): KindBits =>
 	annotated === undefined ? kind : (
 		(kind & arkBits) | (kind & ~arkBits ? annotated : 0)

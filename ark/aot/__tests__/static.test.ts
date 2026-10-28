@@ -1019,6 +1019,29 @@ export function usage(record: unknown) {
 			])
 		})
 
+		it("a handler of an intrinsic JSX element, but not of a component", () => {
+			const source = `import { type } from "arktype"
+export const Name = type("string")
+export const Field = (props: { Picker: any; onPick: (t: unknown) => void }) => (
+	<label>
+		<input onFocus={e => e.target.select()} ref={el => el?.focus()} />
+		<my-element onchange={e => e.target.or} />
+		<Picker onPick={t => t.or("null")} />
+		<props.Picker onPick={t => props.onPick(t.or("null"))} />
+	</label>
+)
+declare const Picker: any`
+			attest(
+				new Precompiler(memoryHost({ "/main.tsx": source }))
+					.analyzeSites(source, "/main.tsx")
+					.diagnostics.map(renderDiagnostic)
+					.map(d => d.slice(0, d.lastIndexOf("\n")))
+			).snap([
+				"/main.tsx:7:24  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.tsx:8:43  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
 		it("parameter", () => {
 			attest(
 				diagnosticsOf(`import { scope, type } from "arktype"
