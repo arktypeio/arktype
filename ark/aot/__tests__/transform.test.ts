@@ -384,6 +384,30 @@ export const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })`
 			])
 		})
 
+		it("passes the import binding a site names where its module imports the holder twice", () => {
+			const files = {
+				"/holders.ts": `import { type } from "arktype"
+export const Ta = type("string")
+export const Tb = type("number")
+export const H = { a: Ta, b: Tb }`,
+				"/reexport.ts": `export { H as R } from "./holders.ts"`,
+				"/main.ts": `import { type } from "arktype"
+import { H, Tb } from "./holders.ts"
+import { R } from "./reexport.ts"
+H.a = Tb
+export const A = type({ a: R.a })`
+			}
+			const precompiler = new Precompiler(memoryHost(files))
+			const { code, sites } = precompiler.precompile(
+				files["/main.ts"],
+				"/main.ts"
+			)
+			attest(sites.map(site => site.status)).equals(["accepted"])
+			// a mock of reexport.ts, as a test's, reaches the site only through `R`
+			attest(/\$ark\w+\(R\)/.test(code)).equals(true)
+			attest(code.includes("(H)")).equals(false)
+		})
+
 		it("leaves a Scope to arktype that a refused site reads through a holder or alias", () => {
 			const files = {
 				"/holders.ts": `import { scope } from "arktype"
