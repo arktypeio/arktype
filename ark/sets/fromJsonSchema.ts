@@ -228,8 +228,7 @@ const uriOf = (id: string, base: string): string | undefined => {
 	}
 }
 
-// every resource by its URI, and every anchored schema by its resource's URI
-// and its anchor
+// every resource by its URI, and every anchored schema by its resource's URI and anchor
 const indexResources = (ctx: ReadContext): Record<string, Resource> => {
 	const resourcesByUri: Record<string, Resource> = {
 		[ctx.documentResource.uri]: ctx.documentResource
@@ -543,9 +542,28 @@ const readObject = (
 			)
 		}
 	}
+	structure.predicate.push(...readKeyPredicates(o, pointer, ctx))
+	return (
+			structure.required.length ||
+				structure.optional.length ||
+				structure.index.length ||
+				structure.predicate.length ||
+				structure.undeclared
+		) ?
+			[structure as never]
+		:	[]
+}
+
+// the keywords constraining an object's keys as a whole
+const readKeyPredicates = (
+	o: dict,
+	pointer: string,
+	ctx: ReadContext
+): NodeSchema<"predicate">[] => {
+	const predicates: NodeSchema<"predicate">[] = []
 	if (o.propertyNames !== undefined) {
 		const names = read(o.propertyNames, `${pointer}/propertyNames`, ctx)
-		structure.predicate.push(
+		predicates.push(
 			opaque(
 				["propertyNames", names.id],
 				`an object whose keys are ${names.description}`,
@@ -556,7 +574,7 @@ const readObject = (
 	if (o.minProperties !== undefined || o.maxProperties !== undefined) {
 		const min = (o.minProperties ?? 0) as number
 		const max = (o.maxProperties ?? Number.POSITIVE_INFINITY) as number
-		structure.predicate.push(
+		predicates.push(
 			opaque(
 				["properties", min, max],
 				`an object with ${describeCount(min, max, "property", "properties")}`,
@@ -576,7 +594,7 @@ const readObject = (
 		for (const key in dependencies) {
 			const dependency = dependencies[key]
 			if (isArray(dependency)) {
-				structure.predicate.push(
+				predicates.push(
 					opaque(
 						["dependentRequired", key, dependency],
 						`an object with ${dependency.join(", ")} if it has ${key}`,
@@ -591,7 +609,7 @@ const readObject = (
 					`${pointer}/${keyword}/${escapePointer(key)}`,
 					ctx
 				)
-				structure.predicate.push(
+				predicates.push(
 					opaque(
 						["dependentSchemas", key, dependent.id],
 						`${dependent.description} if it has ${key}`,
@@ -601,15 +619,7 @@ const readObject = (
 			}
 		}
 	}
-	return (
-			structure.required.length ||
-				structure.optional.length ||
-				structure.index.length ||
-				structure.predicate.length ||
-				structure.undeclared
-		) ?
-			[structure as never]
-		:	[]
+	return predicates
 }
 
 type ConstrainedType = "number" | "string" | "array" | "object"
@@ -715,8 +725,7 @@ const constRoot = (value: unknown): BaseRoot =>
 		})
 	:	rootSchema({ unit: value })
 
-// one predicate per keyword and subschemas, so equal reads relate, kept only
-// while a node holds it
+// one predicate per keyword and subschemas, so equal reads relate
 const predicatesByKey = /* @__PURE__ */ new WeakCache<Predicate>()
 
 const opaque = (

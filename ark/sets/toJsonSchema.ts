@@ -85,8 +85,7 @@ export const toJsonSchemaRecurse = (
 		return toJsonSchemaRecurse(node.resolution, ctx)
 	}
 	const i = ctx.open.lastIndexOf(node.id)
-	// a cycle through no def would be converted forever, so it's named by its
-	// id, like useRefs' parts
+	// a cycle through no def is named by its id, like useRefs' parts
 	if (
 		(i !== -1 && ctx.open.slice(i).every(id => !(id in ctx.defNamesById))) ||
 		(ctx.useRefs && !node.alwaysExpandJsonSchema)
@@ -111,8 +110,8 @@ const refTo = (name: string, ctx: JsonSchemaContext): JsonSchema.Ref =>
 // the alias a cyclic definition's id starts with, without the count after it
 const nameOfId = (id: string): string => id.replace(/(?<=\d)_\d+$|\d+$/, "")
 
-// an input or output is named by the alias it was read from, and an alias of
-// an anonymous value, like a union holding an alias, names nothing
+// an input or output is named by the alias it was read from; an alias of an
+// anonymous value, like a union holding an alias, names nothing
 const aliasNameOf = (node: Alias.Node): string | undefined =>
 	node.isIo ? aliasNameOf(node.operands![0] as Alias.Node)
 	: node.reference === node.resolution.id ? nameOfId(node.reference)
@@ -181,13 +180,11 @@ const branchGroupsToJsonSchema = (
 	// what's left of a union without its null
 	if (jsonSchemaBranches.length === 1) return jsonSchemaBranches[0]
 
-	// openapi-3.0 writes a unit as an enum
 	const unitKey = ctx.target === "openapi-3.0" ? "enum" : "const"
 	if (
 		jsonSchemaBranches.every(
 			(branch): branch is UnitJsonSchema =>
-				// iff all branches are pure unit values with no metadata other than
-				// the union's own, we can simplify the representation to an enum
+				// units with no meta but the union's own are an enum
 				Object.entries(branch).every(
 					([k, v]) =>
 						k === unitKey ||
@@ -364,96 +361,13 @@ const reduceObjectJsonSchema = (
 	schema: JsonSchema.Object,
 	ctx: JsonSchemaContext
 ): JsonSchema.Object => {
-	const path = ctx.path
 	// keys an index declares are written as its patterns instead
 	if (node.index && !node.props.length) delete schema.properties
-	if (node.props.length) {
-		schema.properties = {}
-		for (const prop of node.props) {
-			ctx.path = appendStringifiedKey(path, prop.key)
-			const valueSchema = toJsonSchemaRecurse(jsonValueOf(prop), ctx)
-
-			if (typeof prop.key === "symbol") {
-				schema = ctx.fallback.symbolKey({
-					code: "symbolKey",
-					base: schema,
-					key: prop.key,
-					value: valueSchema,
-					optional: prop.optional
-				})
-				continue
-			}
-
-			if (prop.hasDef()) writeDefault(valueSchema, prop.default, ctx)
-
-			schema.properties![prop.key] = valueSchema
-		}
-		ctx.path = path
-		if (node.requiredKeys.length && schema.properties) {
-			schema.required = node.requiredKeys.filter(
-				(k): k is string => typeof k === "string" && k in schema.properties!
-			)
-		}
-	}
+	if (node.props.length) schema = writeProps(node, schema, ctx)
 
 	const indexKeys: IndexKey[] = []
-
-	if (node.index) {
-		for (const index of node.index) {
-			ctx.path = `${path}[${index.signature.expression}]`
-			const valueJsonSchema = toJsonSchemaRecurse(index.value, ctx)
-			ctx.path = path
-
-			for (const keyBranch of index.signature.branches) {
-				if (!keyBranch.extends($ark.kw.string)) {
-					schema = ctx.fallback.symbolKey({
-						code: "symbolKey",
-						base: schema,
-						key: null,
-						value: valueJsonSchema,
-						optional: false
-					})
-
-					continue
-				}
-
-				let keyIn: BaseRoot = keyBranch
-				let keySchema: JsonSchema.String | undefined
-				if (keyBranch.is("morph")) {
-					keyIn = keyBranch._in
-					// a key's schema can't be a $ref
-					if (ctx.io !== "in") {
-						keySchema = ctx.fallback.morph({
-							code: "morph",
-							base: toResolvedJsonSchema(keyBranch._in, ctx),
-							out:
-								keyBranch.tail ?
-									toResolvedJsonSchema(keyBranch.tail._out, ctx)
-								:	null
-						}) as never
-					}
-				}
-
-				const pattern = keyPatternOf(keyIn, ctx)
-				if (
-					pattern !== undefined &&
-					// OpenAPI 3.0 has no patternProperties, so only a string key
-					// that will be written as additionalProperties
-					(ctx.target !== "openapi-3.0" ||
-						(pattern === "" && !node.props.length))
-				) {
-					;(schema.patternProperties ??= {})[pattern] = valueJsonSchema
-					continue
-				}
-
-				indexKeys.push({
-					node: keyIn,
-					key: keySchema ?? (toResolvedJsonSchema(keyIn, ctx) as never),
-					value: valueJsonSchema
-				})
-			}
-		}
-	}
+	for (const index of node.index ?? [])
+		schema = writeIndex(index, node, schema, ctx, indexKeys)
 
 	// an input may have the keys "delete" would remove
 	const rejectsUndeclared =
@@ -469,8 +383,7 @@ const reduceObjectJsonSchema = (
 			prop => typeof prop.key === "symbol" || indexKeys[0].node.allows(prop.key)
 		)
 	) {
-		// every key must match the index, so its value applies to each one
-		// that isn't declared
+		// every key must match the index, so its value applies to each undeclared one
 		schema.propertyNames = indexKeys[0].key
 		schema.additionalProperties = indexKeys[0].value
 		return schema
@@ -501,6 +414,104 @@ const reduceObjectJsonSchema = (
 	return schema
 }
 
+const writeProps = (
+	node: Structure.Node,
+	schema: JsonSchema.Object,
+	ctx: JsonSchemaContext
+): JsonSchema.Object => {
+	const path = ctx.path
+	schema.properties = {}
+	for (const prop of node.props) {
+		ctx.path = appendStringifiedKey(path, prop.key)
+		const valueSchema = toJsonSchemaRecurse(jsonValueOf(prop), ctx)
+
+		if (typeof prop.key === "symbol") {
+			schema = ctx.fallback.symbolKey({
+				code: "symbolKey",
+				base: schema,
+				key: prop.key,
+				value: valueSchema,
+				optional: prop.optional
+			})
+			continue
+		}
+
+		if (prop.hasDef()) writeDefault(valueSchema, prop.default, ctx)
+
+		schema.properties![prop.key] = valueSchema
+	}
+	ctx.path = path
+	if (node.requiredKeys.length && schema.properties) {
+		schema.required = node.requiredKeys.filter(
+			(k): k is string => typeof k === "string" && k in schema.properties!
+		)
+	}
+	return schema
+}
+
+// a string key with a pattern is written as patternProperties, and one
+// without is collected for the fallbacks once the schema's own keys are known
+const writeIndex = (
+	index: nodeOfKind<"index">,
+	node: Structure.Node,
+	schema: JsonSchema.Object,
+	ctx: JsonSchemaContext,
+	indexKeys: IndexKey[]
+): JsonSchema.Object => {
+	const path = ctx.path
+	ctx.path = `${path}[${index.signature.expression}]`
+	const valueJsonSchema = toJsonSchemaRecurse(index.value, ctx)
+	ctx.path = path
+
+	for (const keyBranch of index.signature.branches) {
+		if (!keyBranch.extends($ark.kw.string)) {
+			schema = ctx.fallback.symbolKey({
+				code: "symbolKey",
+				base: schema,
+				key: null,
+				value: valueJsonSchema,
+				optional: false
+			})
+
+			continue
+		}
+
+		let keyIn: BaseRoot = keyBranch
+		let keySchema: JsonSchema.String | undefined
+		if (keyBranch.is("morph")) {
+			keyIn = keyBranch._in
+			// a key's schema can't be a $ref
+			if (ctx.io !== "in") {
+				keySchema = ctx.fallback.morph({
+					code: "morph",
+					base: toResolvedJsonSchema(keyBranch._in, ctx),
+					out:
+						keyBranch.tail ?
+							toResolvedJsonSchema(keyBranch.tail._out, ctx)
+						:	null
+				}) as never
+			}
+		}
+
+		const pattern = keyPatternOf(keyIn, ctx)
+		if (
+			pattern !== undefined &&
+			// OpenAPI 3.0 has no patternProperties, only additionalProperties
+			(ctx.target !== "openapi-3.0" || (pattern === "" && !node.props.length))
+		) {
+			;(schema.patternProperties ??= {})[pattern] = valueJsonSchema
+			continue
+		}
+
+		indexKeys.push({
+			node: keyIn,
+			key: keySchema ?? (toResolvedJsonSchema(keyIn, ctx) as never),
+			value: valueJsonSchema
+		})
+	}
+	return schema
+}
+
 // JSON has no undefined, so an optional key holds it only by being absent
 const jsonValueOf = (prop: Prop.Node): BaseRoot =>
 	(
@@ -524,7 +535,7 @@ const keyPatternOf = (
 	ctx: JsonSchemaContext
 ): string | undefined => {
 	// declared keys are checked against an index signature too, which
-	// additionalProperties would skip
+	// additionalProperties skips
 	if (key.is("domain")) return ""
 	if (!key.is("intersection") || key.refinements.length !== 1) return
 	const [refinement] = key.refinements
@@ -533,8 +544,7 @@ const keyPatternOf = (
 		:	undefined
 }
 
-// d and g don't change what a pattern matches, and draft-2020-12 patterns
-// should be built with u
+// d and g don't change what a pattern matches, and draft-2020-12 patterns use u
 const isJsonSchemaPattern = (
 	node: nodeOfKind<"pattern">,
 	ctx: JsonSchemaContext
@@ -547,7 +557,6 @@ const isJsonSchemaPattern = (
 			(flag === "u" && ctx.target === "draft-2020-12")
 	)
 
-// a thunk's default is the value it returns
 const writeDefault = (
 	schema: JsonSchema,
 	defaultInput: unknown,
@@ -630,8 +639,7 @@ const reduceSequenceJsonSchema = (
 		delete schema.maxItems
 	}
 
-	// OpenAPI 3.0's items is one schema for every element, so it can't
-	// express a prefix
+	// OpenAPI 3.0's items is one schema for every element, so it has no prefix
 	if (isOpenApi && prefixSchemas) {
 		schema = ctx.fallback.arrayPrefix({
 			code: "arrayPrefix",

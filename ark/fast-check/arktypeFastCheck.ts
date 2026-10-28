@@ -96,10 +96,7 @@ export const buildArbitrary = (
 
 			const id = node.resolution.id
 
-			/**
-			 * Synthetic aliases cause the original structure to not contain the resolved alias node when
-			 * iterating through children so we explicitly build the resolved node
-			 */
+			// a synthetic alias's resolution isn't among the children, so it's built here
 			if (!(id in ctx.seenIntersectionIds)) {
 				ctx.seenIntersectionIds[id] = true
 				ctx.arbitrariesByIntersectionId[id] = buildArbitrary(

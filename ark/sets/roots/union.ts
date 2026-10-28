@@ -197,8 +197,8 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 		}
 	}
 
-	// a pair's disjoint is only its first differing key, so a branch told apart
-	// from every other at another key may hold a case none recorded
+	// a pair's disjoint is its first differing key, so a branch may hold a case
+	// at a key no pair recorded
 	for (const candidate of candidates) {
 		const cases = Object.values(candidate.cases) as CaseContext[]
 		for (let i = 0; i < node.branches.length; i++) {
@@ -265,7 +265,7 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 }
 
 // each unit of literal unions disjoint at a path is its own case, so data
-// matching none of them misses every branch rather than defaulting to one
+// matching none misses every branch
 const addUnitCases = (
 	candidates: DiscriminantCandidate[],
 	entry: DisjointEntry<"union">,
@@ -290,8 +290,8 @@ const addUnitCases = (
 		addCase(candidate.cases, unit.jsUnit, rIndex, unit)
 }
 
-// the cases a branch holds at a candidate's path, each key to it required,
-// as a disjoint at the path finds them
+// the cases a branch holds at a candidate's path, each key to it required, as
+// a disjoint there finds them
 const casesHeldAt = (
 	branch: BaseRoot,
 	{ kind, path }: DiscriminantCandidate
@@ -331,7 +331,6 @@ const casesHeldAt = (
 	]
 }
 
-// the domain a domain discriminant reads a node as, if it has one
 const domainCaseOf = (node: BaseRoot): Domain | undefined => {
 	if (node.is("unit")) return node.domain
 	if (node.is("domain")) return node.domain
@@ -355,7 +354,6 @@ const addCase = (
 		cases[k] = { branchIndices: [branchIndex], condition: condition as never }
 }
 
-// New context object to carry discrimination state between functions.
 type CaseResolutionContext = {
 	best: DiscriminantCandidate
 	location: DiscriminantLocation
@@ -375,8 +373,8 @@ const createCaseResolutionContext = (
 	const covering = new Set(
 		viableCandidates.filter(c => holdsEveryBranch(c, node.branches.length))
 	)
-	// prefer shorter paths, then keys every branch holds, which leave no
-	// default case, then the most cases
+	// shorter paths first, then keys every branch holds (no default case), then
+	// the most cases
 	const ordered = viableCandidates.sort(
 		(l, r) =>
 			l.path.length - r.path.length ||
@@ -407,7 +405,6 @@ const createCaseResolutionContext = (
 	}
 }
 
-// whether each branch holds one of a candidate's cases
 const holdsEveryBranch = (
 	candidate: DiscriminantCandidate,
 	branchCount: number
@@ -426,16 +423,14 @@ const resolveCase = (
 	const discriminantNode = discriminantCaseToNode(
 		caseCtx.condition,
 		ctx.location.path,
-		ctx.node.$,
-		false
+		ctx.node.$
 	)
 	let primitiveDiscriminantNode: BaseRoot | undefined
 
 	let resolvedEntries: BranchEntry[] | null = []
 	const nextDefaults: BranchEntry[] = []
 
-	// read from every branch, since one with several units at the path, like
-	// "'a' | 'b'", is a case of each
+	// a branch with several units at the path, like "'a' | 'b'", is a case of each
 	for (const originalIndex of caseCtx.branchIndices) {
 		const pruned = pruneDiscriminant(
 			ctx.node.branches[originalIndex],
@@ -459,8 +454,8 @@ const resolveCase = (
 			)
 			if (
 				!(intersection instanceof Disjoint) ||
-				// a branch disjoint above the case may reach it through
-				// a primitive's keys, e.g. a string's characters
+				// a branch disjoint above the case may reach it through a primitive's
+				// keys, e.g. a string's characters
 				(intersection.some(
 					disjointEntry => disjointEntry.path.length < ctx.location.path.length
 				) &&
@@ -469,7 +464,7 @@ const resolveCase = (
 							caseCtx.condition,
 							ctx.location.path,
 							ctx.node.$,
-							true
+							{ includesPrimitives: true }
 						))
 					))
 			) {
@@ -534,7 +529,7 @@ export const discriminantCaseToNode = (
 	caseDiscriminant: CaseDiscriminant,
 	path: PropertyKey[],
 	$: BaseScope,
-	includesPrimitives: boolean
+	{ includesPrimitives }: { includesPrimitives?: boolean } = {}
 ): BaseRoot => {
 	let node: BaseRoot =
 		caseDiscriminant === "undefined" ? $.node("unit", { unit: undefined })
@@ -756,8 +751,8 @@ export const reduceBranches = ({
 	return ordered ? uniqueBranches : mergeAlike(uniqueBranches)
 }
 
-// objects requiring a key whose values can't meet are disjoint, which is
-// found without intersecting the rest of their structures
+// objects requiring a key whose values can't meet are disjoint, without
+// intersecting the rest of their structures
 const requireDisjointProps = (l: BaseRoot, r: BaseRoot): boolean => {
 	if (!l.is("intersection") || !r.is("intersection")) return false
 	const rProps = r.structure?.byKey
@@ -796,9 +791,9 @@ const mergeAlike = (
 	return branches
 }
 
-// the later branches each one could merge with, found by what a pair must
-// share: everything but a range, or everything but one prop. a unit could
-// extend any intersection's range
+// the later branches each could merge with: those sharing everything but a
+// range or one prop, and for a unit, which could extend any range, every
+// intersection
 const mergeCandidates = (branches: readonly Union.ChildNode[]): number[][] => {
 	const ids = new Map<unknown, number>()
 	const signatureId = (hashOrKey: unknown) => {
@@ -846,9 +841,9 @@ const mergeCandidates = (branches: readonly Union.ChildNode[]): number[][] => {
 	return candidates.map(set => [...set].sort((l, r) => l - r))
 }
 
-// branches alike but for their range, like 0 < number < 5 and 3 <= number
-// < 10, are one if their ranges are connected, or meet at a value neither
-// includes, which the one excludes. a unit is a range of one value
+// branches alike but for their range, like 0 < number < 5 and 3 <= number < 10,
+// are one if their ranges connect, or meet at a value neither includes, which
+// the one excludes. a unit is a range of one value
 const mergeRangeBranches = (
 	a: Union.ChildNode,
 	b: Union.ChildNode
@@ -1056,9 +1051,9 @@ const rangeInner = (
 	}
 }
 
-// branches alike but for one key's value, like { a: string } and
-// { a: number }, are one whose value is either. the key is optional if
-// either has it optional, and a default is kept to its own branch
+// branches alike but for one key's value, like { a: string } and { a: number },
+// are one whose value is either, optional if either has it optional. a default
+// is kept to its own branch
 const mergePropBranches = (
 	l: Union.ChildNode,
 	r: Union.ChildNode
@@ -1136,7 +1131,7 @@ const sequencesMatch = (
 	r: Sequence.Node | undefined
 ) => (l && r ? hashesMatch(l, r) : l === r)
 
-// and replaces nodes only if they agree on the meta their replacement keeps
+// a merge replaces nodes only if they agree on the meta their replacement keeps
 const sameMeta = (nodes: readonly BaseNode[]) =>
 	nodes.every(
 		node => JSON.stringify(node.metaJson) === JSON.stringify(nodes[0].metaJson)
