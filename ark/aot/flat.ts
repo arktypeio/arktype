@@ -31,19 +31,13 @@ export interface FlatBundle {
 
 export interface FlatSite {
 	code: string
-	// to the code it was given, for a site module it changed
 	map: SourceMap | undefined
 }
 
 // the names some module of a bundle may import of each module, true for any
 export type ImportedNames = Map<string, Set<string> | true>
 
-// A bundle written as one chunk declares the units its kept validators read
-// in one function, so that a traversal calls another through a constant of
-// that function, which V8 inlines, as it does a factory's parameter, rather
-// than through a module variable, which it doesn't once a bundler writes a
-// constant as a var. It saves each unit its factory. Every other module is
-// kept, so code the bundle reads other than as its scan saw links as before.
+// declares a one-chunk bundle's units in one function: V8 inlines a call through its constant, not through a module variable a bundler writes as a var
 export const flattenBundle = (
 	sites: Record<string, string>,
 	modules: Record<string, string>,
@@ -74,8 +68,7 @@ export const flattenBundle = (
 	if (!flat) return
 	const specifier = `~arktype/${hashOf(flat.code)}`
 	const flattened = new Set(units.map(unit => unit.specifier))
-	// what reads a flattened unit reads it from the function's module, except
-	// what only a creation the function makes in its place read
+	// a flattened unit is read from the function's module
 	const read = new Set(creations.map(creation => creation.name))
 	const readKept =
 		creations.length ?
@@ -185,8 +178,7 @@ export const flattenBundle = (
 		for (const { start, end, name, declared } of created) {
 			s ??= new MagicString(sites[id])
 			const source = JSON.stringify(rename(specifier))
-			// a declaration of it alone is an import, which a bundler doesn't
-			// write as a variable holding another
+			// an import, which a bundler doesn't write as a variable holding another
 			if (declared) {
 				s.overwrite(
 					declared.start,
@@ -214,19 +206,12 @@ export const flattenBundle = (
 
 const unrenamed = (specifier: string) => specifier
 
-// a validator a site creates in place by calling a creator with units the
-// function declares, which the function creates in its place: through the
-// creator's body, reading them as its constants, if nothing else calls it,
-// else through one constant of it. A function passed it that nothing else
-// reads, e.g. a validator's applier, is written as its argument, still one
-// function for each validator
+// a validator a site creates from units the function declares, which the function creates in its place
 interface Creation {
 	// the call's span, with its annotation
 	start: number
 	end: number
-	// what the function returns it as
 	name: string
-	// the creator's function, which the function calls
 	creator: string
 	// the name the function declares the creator as, if others call it
 	shared: string | undefined
@@ -253,7 +238,6 @@ const creationsIn = (
 ): Map<string, Creation[]> => {
 	const result = new Map<string, Creation[]>()
 	const declaredIn = new Map(units.map(unit => [unit.specifier, unit]))
-	// the module declaring what an import reads, and its name there
 	const originOf = (
 		binding: Binding | undefined
 	): [specifier: string, name: string] | undefined => {
@@ -357,7 +341,6 @@ const creationsIn = (
 	return result
 }
 
-// each call initializing a declaration of a site module that kept code reads
 const keptCallsIn = (module: SourceModule, kept: KeptCode) => {
 	const result: {
 		statement: Node
@@ -383,8 +366,7 @@ const keptCallsIn = (module: SourceModule, kept: KeptCode) => {
 	return result
 }
 
-// a creator's function, if it reads only units and runtime members that
-// don't change after its module loads, as configuration may
+// if it reads only units and runtime members that don't change after load, as configuration may
 const creatorFnOf = (module: SourceModule): string | undefined => {
 	if (!isUnitModule(module)) return
 	const declarations = module.program.body.filter(
@@ -410,12 +392,10 @@ const creatorFnOf = (module: SourceModule): string | undefined => {
 
 interface MemberReads {
 	name: string
-	// each read's `.name`
 	spans: [start: number, end: number][]
 }
 
-// the member each read of a binding reads, if every read reads the same one,
-// as `.assert` or `.allows`
+// the member every read of a binding reads, as `.assert` or `.allows`
 const memberReadsOf = (binding: Binding): MemberReads | undefined => {
 	let name: string | undefined
 	const spans: [number, number][] = []
@@ -437,8 +417,7 @@ const memberReadsOf = (binding: Binding): MemberReads | undefined => {
 	return name === undefined ? undefined : { name, spans }
 }
 
-// the annotations of the creations a site declares that kept code reads, which
-// a bundler keeps anyway, as oxc's minifier keeps their annotations
+// oxc's minifier keeps the annotations of creations kept code reads
 const keptAnnotationsIn = (
 	module: SourceModule,
 	kept: KeptCode
@@ -448,8 +427,7 @@ const keptAnnotationsIn = (
 		return annotation ? [[call.start - annotation.length, call.start]] : []
 	})
 
-// an import of units rewritten, each name read from the function's module
-// if it's there, else from the unit's own
+// an import of units, each name read from the function's module if it's there
 interface Repointed {
 	start: number
 	end: number
@@ -479,9 +457,7 @@ const repointedIn = (
 			const name = exportNameOf(imported.imported)
 			const local = imported.local.name
 			const named = name === local ? name : `${name} as ${local}`
-			// an import nothing kept reads, e.g. of a validator the bundle
-			// drops, links to the unit's own module, so the function needn't
-			// return it
+			// an import nothing kept reads links to the unit's own module
 			if (
 				exported.has(`${source}\0${name}`) &&
 				keptCode.reads(module.scopes.root.bindings[local])
@@ -514,7 +490,6 @@ const writeImports = (
 		)
 		.join("\n")
 
-// a module a bundle keeps of its units, and the declarations it keeps
 interface UnitModule {
 	specifier: string
 	module: SourceModule
@@ -538,7 +513,6 @@ class KeptCode {
 		this.skipped = skipped
 	}
 
-	// what runs as it loads, and each export another module may import
 	keepRead(module: SourceModule, imported?: Set<string> | true): void {
 		for (const statement of module.program.body) {
 			if (
@@ -628,7 +602,6 @@ const declaredNameOf = (declaration: Node): string =>
 			.declarations[0].id as { name: string }
 	).name
 
-// whether a bundler may drop a statement no kept code reads
 const isPure = (statement: Node, source: string): boolean => {
 	switch (statement.type) {
 		case "FunctionDeclaration":
@@ -664,8 +637,7 @@ const isPureExpression = (node: Node, source: string): boolean => {
 	return false
 }
 
-// the modules of units a bundle keeps, each after those it reads, or
-// undefined where one can't be written into a function
+// each after those it reads, or undefined where one can't be written into a function
 const unitsOf = (
 	modules: Record<string, string>,
 	parsed: Map<string, SourceModule>,
@@ -682,8 +654,7 @@ const unitsOf = (
 		if (declarations.length && isUnitModule(module))
 			units.set(specifier, { specifier, module, declarations })
 	}
-	// a module of values, e.g. a template or a creator, gains nothing in the
-	// function unless a unit there reads it
+	// a module of values, e.g. a template, gains nothing in the function unless a unit there reads it
 	const read = new Set(
 		[...units.values()]
 			.filter(unit => unit.declarations.some(declaresUnit))
@@ -737,7 +708,6 @@ const unitsOf = (
 	return ordered
 }
 
-// whether it declares a unit's functions, rather than a value
 const declaresUnit = (declaration: Node): boolean => {
 	const init = (declaration as Extract<Node, { type: "VariableDeclaration" }>)
 		.declarations[0].init!
@@ -757,8 +727,7 @@ const importsOf = (module: SourceModule): string[] =>
 		statement.type === "ImportDeclaration" ? [statement.source.value] : []
 	)
 
-// a module the standalone build writes of a unit: the runtime, units it
-// reads by the names they declare, its declarations and their export
+// the runtime, units it reads by the names they declare, its declarations and their export
 const isUnitModule = (module: SourceModule): boolean =>
 	module.program.body.every(statement => {
 		switch (statement.type) {
@@ -800,7 +769,6 @@ type Block = Extract<Node, { type: "BlockStatement" }>
 type Return = Extract<Node, { type: "ReturnStatement" }>
 type Member = { key: { value: number }; value: Node }
 
-// a unit's declaration, as the function declares it
 type Declaration =
 	// a function of the units it reads, called with them
 	| {
@@ -826,16 +794,13 @@ type Factory = Extract<Declaration, { kind: "factory" }>
 const roles = ["Allows", "Apply", "Transform"]
 
 interface Flat {
-	// each unit's declaration a module outside the function may read
 	exported: Set<string>
-	// each creation that is its validator's one member, as a site reads only
-	// that
+	// each creation that is its validator's one member
 	unwrapped: Set<string>
 	code: string
 	write: (read: string[], asModule: boolean) => string
 }
 
-// the units' declarations in one function, returning what's read outside it
 const writeFlat = (
 	units: UnitModule[],
 	creations: Creation[]
@@ -893,9 +858,7 @@ const writeFlat = (
 		names.add(reference.id.name)
 		globals.add(reference.id.name)
 	}
-	// what each name the function declares holds
 	const values = new Map<string, string>()
-	// the name the function declares holding each value
 	const holders = new Map<string, string>()
 	const fresh = (base: string) => {
 		let name = base
@@ -904,7 +867,6 @@ const writeFlat = (
 		names.add(name)
 		return name
 	}
-	// a name that wouldn't hide what the function's code reads
 	const isFree = (name: string) =>
 		!values.has(name) && !(name in top) && !globals.has(name)
 	// what a factory's parameter reads of the unit it's passed
@@ -957,8 +919,7 @@ const writeFlat = (
 		// a parameter reads what the function already holds, if no local hides it
 		const alias = (binding: Binding, value: string) => {
 			if (binding.name === value) return
-			// a primitive is written where it's read, as a template called once
-			// is passed its descriptions
+			// a primitive is written where it's read
 			if (
 				primitive.test(value) &&
 				!binding.writes.length &&
@@ -999,8 +960,7 @@ const writeFlat = (
 						wholeOf(arg.name)
 					:	code.slice(arg.start, arg.end)
 				const binding = scopes.bindingsById.get(param)!
-				// a runtime value the code only passes on, e.g. a failure site, is
-				// read where it's passed, as no call through it needs a constant
+				// a runtime value only passed on, e.g. a failure site, needs no constant
 				if (
 					runtimeMember.test(value) &&
 					binding.references.every(
@@ -1022,12 +982,10 @@ const writeFlat = (
 			}
 		}
 		const returned = body.body[body.body.length - 1] as Return
-		// a creation is the local its creator returns, if it returns one
 		const returnedLocal =
 			d.returnsValue && returned.argument?.type === "Identifier" ?
 				scopes.byId.get(returned.argument)?.binding
 			:	undefined
-		// what a destructured call returns is named as it's destructured
 		const destructured = new Map<Binding | undefined, string>(
 			d.names?.map((name, i) => [
 				scopes.byId.get(
@@ -1054,8 +1012,7 @@ const writeFlat = (
 			])
 			for (const id of ids) {
 				if (id.start <= body.start) continue
-				// a function it was passed is now called by its name, so terser
-				// and swc would write one called once where it's called
+				// terser and swc would inline a function called once
 				const isCalled =
 					binding.kind === "param" &&
 					id.parent?.type === "CallExpression" &&
@@ -1103,8 +1060,7 @@ const writeFlat = (
 				)!
 				s.overwrite(comma, comma + 1, `, ${members[i]} =`)
 			}
-			// a trailing comma, e.g. where errors "none" leaves no Apply, would
-			// continue the declaration into the next statement
+			// a trailing comma, as where errors "none" leaves no Apply, would continue the declaration
 			const trailing = commaBetween(
 				code,
 				elements[elements.length - 1].end,
@@ -1153,13 +1109,11 @@ const writeFlat = (
 				written = { body, returned }
 				for (const pass of [skipAliases, inlineCalls, dropUnread])
 					written = untilUnchanged(written, parse, pass)
-				// kept code reads what it returns, so a bundler keeps its call, and
-				// annotations saying it could drop it are bytes oxc's minifier keeps
+				// a bundler keeps the call anyway, and oxc's minifier keeps the annotations' bytes
 				written.body = withoutAnnotations(inGzipOrder(written.body))
 				writtenByReturned.set(returned, written)
 			}
-			// swc writes a function called where it's declared into its caller, its
-			// constants then module variables, whose calls V8 doesn't inline
+			// swc would inline the IIFE, making its constants module variables V8 doesn't inline calls through
 			const declaration = `const ${read.length === 1 ? read[0] : `[${read.join(", ")}]`} = /* @__NOINLINE__ */ (() => {
 ${written.body}
 return ${written.returned}
@@ -1176,8 +1130,7 @@ export { ${read.join(", ")} }
 	}
 }
 
-// a validator created as an object of the one member each read reads is that
-// member
+// a validator created as an object of the one member each read reads is that member
 const withMembersUnwrapped = (
 	code: string,
 	readMembers: Record<string, string>
@@ -1215,7 +1168,6 @@ const withMembersUnwrapped = (
 	return { body: s.toString(), unwrapped }
 }
 
-// the units' code, parsed as it's written, without parentheses
 const parseUnits = (code: string) =>
 	parseSync("units.js", code, { sourceType: "module", preserveParens: false })
 
@@ -1227,8 +1179,7 @@ interface ParsedUnits {
 
 type UnitsParser = (code: string) => ParsedUnits
 
-// each pass parses what the one before wrote, which that one parsed already
-// where it changed nothing
+// a pass reuses the parse before it where that one changed nothing
 const unitsParser = (): UnitsParser => {
 	let last: ParsedUnits | undefined
 	return code => {
@@ -1240,7 +1191,6 @@ const unitsParser = (): UnitsParser => {
 	}
 }
 
-// the units' statements and the expression their function returns
 interface WrittenUnits {
 	body: string
 	returned: string
@@ -1249,7 +1199,6 @@ interface WrittenUnits {
 // an edit of the units' body, parsed with what it returns after a `;`
 type UnitsPass = (units: ParsedUnits, s: MagicString, body: string) => void
 
-// the units as a pass leaves them once it changes nothing more
 const untilUnchanged = (
 	{ body, returned }: WrittenUnits,
 	parse: UnitsParser,
@@ -1265,10 +1214,7 @@ const untilUnchanged = (
 	}
 }
 
-// a constant the units declare as another of theirs, e.g. an intersection's
-// Transform that is its structure's, is read as that one, as is, where it's
-// called, a function that only calls another with its own parameters, e.g. a
-// predicate's Allows, so a call reaches it directly
+// a constant declared as another, or a function only forwarding its parameters, is read as that one
 const skipAliases: UnitsPass = ({ program, scopes }, s) => {
 	for (const statement of program.body as Node[]) {
 		if (statement.type !== "VariableDeclaration") continue
@@ -1305,7 +1251,6 @@ const skipAliases: UnitsPass = ({ program, scopes }, s) => {
 	}
 }
 
-// what a function calls with its own parameters, in order, if that's all it does
 const forwardedOf = (fn: Node, scopes: ModuleScopes): Binding | undefined => {
 	if (fn.type !== "ArrowFunctionExpression" || fn.async) return
 	const [only] = fn.body.type === "BlockStatement" ? fn.body.body : []
@@ -1323,11 +1268,7 @@ const forwardedOf = (fn: Node, scopes: ModuleScopes): Binding | undefined => {
 	return scopes.byId.get(call.callee)?.binding
 }
 
-// a function the units declare whose one read is a call passing its own
-// parameters, e.g. a union branch's Apply, is its body where it's called:
-// its expression, or its statements where the call is returned and they end
-// in a return. Each other name it reads is one declared once, so the same
-// where it's called
+// a function read once, as a call passing its own parameters, is its body where it's called
 const inlineCalls: UnitsPass = ({ code, program, scopes }, s, body) => {
 	const declared = new Map<string, number>()
 	for (const { name } of scopes.bindingsById.values())
@@ -1342,8 +1283,7 @@ const inlineCalls: UnitsPass = ({ code, program, scopes }, s, body) => {
 					binding.kind !== "var"
 				:	(declared.get(id.name) ?? 0) <= 1)
 		)
-	// what each inline this pass replaces or removes, which no other may
-	// touch, as each reads the code as parsed
+	// each inline reads the code as parsed, so no other may touch its span
 	const edited: [start: number, end: number][] = []
 	const isEdited = (start: number, end: number) =>
 		edited.some(span => start < span[1] && span[0] < end)
@@ -1390,8 +1330,7 @@ const inlineCalls: UnitsPass = ({ code, program, scopes }, s, body) => {
 	}
 }
 
-// a statement's end in a body a pass parses with what it returns after a `;`,
-// which the last statement's span takes in
+// the last statement's span takes in the `;` and return the pass appends
 const statementEndIn = (body: string, statement: Node): number =>
 	Math.min(statement.end, body.length)
 
@@ -1407,8 +1346,7 @@ const passesParams = (
 			(call.arguments[i] as { name: string }).name === param.name
 	)
 
-// what a function declares that nothing reads, which a bundler keeps as it
-// drops only a module's declarations, left out, as is what only it read
+// a bundler drops only a module's unread declarations, not a function's
 const dropUnread: UnitsPass = ({ code, program, scopes }, s, body) => {
 	for (const statement of program.body as Node[]) {
 		if (statement.type !== "VariableDeclaration") continue
@@ -1447,10 +1385,7 @@ const withoutAnnotations = (body: string): string => {
 
 const pureAnnotation = /^\s*[#@]__PURE__\s*$/
 
-// each function the units declare, which reads nothing as it's declared, first
-// and beside those like it, so gzip finds their repeats, then the rest in
-// order, where there are enough for the order to pay rather than move gzip
-// either way
+// functions first and beside those like them, so gzip finds their repeats, where there are enough to pay
 const inGzipOrder = (body: string): string => {
 	const { program } = parseUnits(body)
 	const functions: [key: string, text: string][] = []
@@ -1490,7 +1425,6 @@ const runtimeMember = /^runtime\.\w+$/
 const primitive =
 	/^(?:\d[\d+.e]*|"(?:[^\n"\\]|\\.)*"|true|false|null|undefined)$/
 
-// a name the build derives from a unit's, e.g. its Allows
 const unitName = /\b\w+?(?:R\d+|Allows|Apply|Transform)\b/g
 
 const declarationOf = (
@@ -1553,8 +1487,7 @@ const declarationOf = (
 	return { kind: "value", name, node }
 }
 
-// a template called once as its call's function, which the function then
-// flattens as a factory, so what it's called with is the function's constant
+// a template called once becomes its call's function, flattened as a factory
 const withTemplatesInlined = (
 	code: string
 ): { code: string; names: string[] } | undefined => {
@@ -1594,7 +1527,6 @@ const withTemplatesInlined = (
 	return { code: s.toString(), names }
 }
 
-// whether a function returns as many distinct locals as names destructure it
 const namesReturnedLocals = (
 	names: string[],
 	fn: Arrow,
@@ -1613,7 +1545,6 @@ const namesReturnedLocals = (
 	)
 }
 
-// how many functions a template or factory returns, by name
 const returnedLengthOf = (fn: Node): number | undefined => {
 	if (
 		(fn.type !== "ArrowFunctionExpression" &&
@@ -1679,8 +1610,7 @@ const isFunction = (node: Node) =>
 	node.type === "ClassExpression" ||
 	node.type === "ClassDeclaration"
 
-// whether a token is within any of the spans, from their union, as a token
-// can't run across the text between two spans
+// a token can't run across the text between two spans
 const spansContaining = (
 	spans: readonly Span[]
 ): ((token: Span) => boolean) => {
@@ -1722,8 +1652,7 @@ const commaBetween = (
 	}
 }
 
-// the names each module of a bundle may have read of it by another, from its
-// imports, as every export of an entry is read
+// every export of an entry is read
 export const importedNamesOf = (
 	modules: Iterable<SourceModule>,
 	entries: Iterable<string>,

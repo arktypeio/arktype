@@ -13,8 +13,7 @@ import {
 } from "./scope.ts"
 import { cliOptions } from "./settingsValidators.ts"
 
-// a call passing the build its options, as `precompile.vite({ ... })` in
-// vite.config.ts, which the CLI reads so it checks what the build does
+// e.g. `precompile.vite({ ... })` in vite.config.ts, which --check reads to check what the build does
 export interface PluginCall {
 	position: string
 	label: string
@@ -23,7 +22,6 @@ export interface PluginCall {
 	unread: string[]
 }
 
-// what each entry exports that a build's options are passed to
 const entries: Record<string, string> = Object.setPrototypeOf(
 	{
 		"@ark/aot/unplugin": "precompile",
@@ -120,7 +118,6 @@ const callsIn = (module: SourceModule): PluginCall[] => {
 	return result
 }
 
-// the entry `require(entry)` or `import(entry)` loads
 const entryOf = (node: Node): string | undefined => {
 	const source = loadedSourceOf(node)
 	const specifier = source && literalOf(source)
@@ -129,9 +126,7 @@ const entryOf = (node: Node): string | undefined => {
 		:	undefined
 }
 
-// the entry an expression reads and the path of what it reads off it, e.g.
-// ["precompile", "vite"] for `precompile.vite`, `aot.precompile.vite` or
-// `require("@ark/aot/unplugin").precompile.vite`
+// e.g. ["precompile", "vite"] for `precompile.vite`, `aot.precompile.vite` or `require("@ark/aot/unplugin").precompile.vite`
 const entryReadOf = (
 	expression: Node,
 	module: SourceModule
@@ -198,8 +193,7 @@ const turbopackOptionsOf = (node: ObjectExpression): Node | undefined => {
 	return isLoader ? options : undefined
 }
 
-// a loader's name, or the one `require.resolve()` or `import.meta.resolve()`
-// is passed
+// a loader's name, or the one `require.resolve()` or `import.meta.resolve()` is passed
 const loaderOf = (value: Node): unknown => {
 	const node = unwrapExpression(value)
 	if (node.type !== "CallExpression" || node.callee.type !== "MemberExpression")
@@ -236,8 +230,7 @@ const optionsOf = (
 		if (!(key in readOptions)) continue
 		const value = literalOf(property.value)
 		if (value === unread) {
-			// prune changes only a warning, which --check then writes as a build
-			// pruning by default would, in production
+			// prune changes only a warning
 			if (key !== "prune") unreadKeys.push(key)
 			continue
 		}
@@ -249,7 +242,6 @@ const optionsOf = (
 	return { options, unread: unreadKeys }
 }
 
-// a value written as JSON would be, or `unread`
 const literalOf = (arg: Node): unknown => {
 	const node = unwrapExpression(arg)
 	switch (node.type) {
@@ -303,8 +295,7 @@ const readOptions: Record<string, unknown> = Object.fromEntries(
 const flagOf = (name: string) =>
 	`--${name.replace(/[A-Z]/g, char => `-${char.toLowerCase()}`)}`
 
-// the options the build's calls pass, under those given, or a build error
-// saying what --check can't know
+// the options the build's calls pass, under those given
 export const withPluginCalls = (
 	calls: PluginCall[],
 	given: PrecompilePluginOptions

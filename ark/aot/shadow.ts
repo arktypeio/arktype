@@ -209,8 +209,7 @@ const bakedMetaOf = (t: unknown) => {
 	return meta && keywordMetas().has(meta) ? {} : meta
 }
 
-// arktype's errors and a validator's, which extend the runtime's, or those
-// of a runtime written for errors "none", known by their arkKind
+// known by arkKind, as an errors "none" runtime's don't extend the runtime's
 const isErrors = (value: unknown): value is ArkErrors =>
 	value instanceof ArkErrors || hasArkKind(value, "errors")
 
@@ -232,8 +231,7 @@ const validatedMembers = ["allows", "assert", "traverse", "from"] as const
 
 const introspectedMembers = ["toJSON", "toJsonSchema", "toString"] as const
 
-// e.g. json off a validator whose build doesn't bake it, which reads
-// undefined, though the development runtime throws for it
+// e.g. json off a validator whose build doesn't bake it
 const isUnbaked = (counterpart: unknown, k: PropertyKey): boolean =>
 	typeof counterpart === "function" &&
 	includes(introspectionMembers, k) &&
@@ -373,7 +371,6 @@ const hasOf =
 		return Reflect.has(target, k)
 	}
 
-// e.g. `~standard.jsonSchema.input`, called on its holder given args
 const readAt = (t: any, path: string[], args?: unknown[]) => {
 	const holder = path.slice(0, -1).reduce((o, k) => o[k], t)
 	const k = path[path.length - 1]
@@ -514,7 +511,6 @@ const callbackOf = (value: unknown): unknown => {
 	return wrapper
 }
 
-// runs the program's code outside the current validation
 const outcomeOfCall = (
 	callee: Function,
 	receiver: unknown,
@@ -964,7 +960,6 @@ const copiedProtos: unknown[] = [
 	Set.prototype
 ]
 
-// a copy of what can be copied whole, else uncopyable
 const copyOf = (value: unknown, seen: Map<object, unknown>): unknown => {
 	const size = seen.size
 	try {
@@ -1015,7 +1010,6 @@ const copyOrThrow = (value: unknown, seen: Map<object, unknown>): any => {
 	return copy
 }
 
-// a dense array with no other keys
 const isIndexed = (value: object): value is unknown[] => {
 	if (
 		!Array.isArray(value) ||

@@ -6,7 +6,6 @@ import type * as ts from "typescript"
 
 export interface DeclareOptions {
 	cwd?: string | undefined
-	// the tsconfig to emit with, found from cwd when omitted
 	tsconfig?: string | undefined
 }
 

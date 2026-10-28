@@ -50,8 +50,7 @@ const readJson = (path: string): unknown => {
 	}
 }
 
-// ark.json, or the package.json whose "ark" key holds the same settings,
-// beside the nearest package.json, as the build finds its dependencies
+// ark.json, or the package.json whose "ark" key holds the same settings
 export const settingsFileOf = (cwd: string): string | undefined => {
 	for (let dir = resolve(cwd); ; dir = dirname(dir)) {
 		const manifest = join(dir, "package.json")
@@ -145,7 +144,6 @@ const checkDependencies = (
 	}
 }
 
-// the options a build runs with: valid, with its preset applied
 export const resolvePrecompileOptions = <opts extends PrecompileOptions>(
 	opts: opts = {} as opts
 ): opts & PrecompileOptions => {

@@ -39,8 +39,7 @@ export interface TurbopackLoaderContext {
 	mode?: string
 	addDependency(file: string): void
 	emitWarning(warning: Error): void
-	// absent where a host can't resolve as Turbopack does. Next 16.1 reads
-	// options without checking they were given
+	// absent where a host can't resolve as Turbopack does
 	getResolve?(
 		options: Record<string, unknown>
 	): (context: string, request: string) => Promise<string>
@@ -102,8 +101,7 @@ export default function (
 		.then(code => done(null, code), done)
 }
 
-// precompiles a module again once Turbopack resolves imports the precompiler
-// couldn't, like one only resolveAlias names, so reads through them are checked
+// once Turbopack resolves imports the precompiler couldn't, like one only resolveAlias names
 const resolvedAgain = async (
 	precompiler: KeyedPrecompiler,
 	keyed: PrecompiledKeyedModule,
@@ -153,8 +151,7 @@ const loadedOf = (
 		source.includes("arktype") ?
 			runtimeImportsOf(source, context.resourcePath)
 		:	[]
-	// resolveAlias gives a dependency the runtime too, so a rule for its
-	// extension has the loader fail one that would define a Type there
+	// resolveAlias gives a dependency the runtime too, so one defining a Type fails here
 	if (specifiers.length && dependencyOf(context.resourcePath)) {
 		reportDiagnostics(
 			precompiler.readDependency(context.resourcePath),

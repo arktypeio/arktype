@@ -23,10 +23,7 @@ const driverUrl = new URL(
 	import.meta.url
 )
 
-// the precompiler loads only its own modules and arktype's, so its thread
-// takes only the flags that resolve and read them. Others would run a module
-// the program preloads, like its config module, before the build configures
-// arktype there, or fail the worker, as --input-type does
+// only the flags that resolve and read modules: a preload like the config module would run before the build configures arktype
 const driverFlag =
 	/^(?:--conditions|-C|--preserve-symlinks|--experimental-strip-types|--no-experimental-strip-types|--experimental-transform-types)(?:=|$)/
 const driverFlagWithValue = /^(?:--conditions|-C)$/
@@ -56,8 +53,7 @@ const waiting = 0
 const answered = 1
 const stopped = 2
 
-// a host blocked on an answer can't hear the driver's thread stop, so a
-// thread started without the host's flags hears it and wakes the host
+// a host blocked on an answer can't hear the driver's thread stop, so this thread wakes it
 const watcher = `
 const { lifeline, state } = require("node:worker_threads").workerData
 lifeline.on("message", () => {})
@@ -134,17 +130,12 @@ export type BundlerResolve = (
 ) => Promise<string | undefined>
 
 interface PendingRequest {
-	// its place among the requests its worker was sent
 	index: number
 	settle: (answer: PrecompileAnswer) => void
 	resolve: BundlerResolve | undefined
 }
 
-// carries what the driver asks the bundler to resolve, which its thread waits
-// for. A question names the request it's answered for, as the answer to the
-// one before may not have arrived, and is numbered, as its thread drops an
-// answer it stopped waiting for. Bun doesn't deliver it while the thread
-// asking waits
+// a question names its request and is numbered, as the thread drops an answer it stopped waiting for
 const resolvingChannelOf = (
 	pending: PendingRequest[]
 ): { resolver: MessagePort; resolved: Int32Array } | undefined => {

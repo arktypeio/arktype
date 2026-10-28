@@ -76,7 +76,6 @@ export interface PrecompilerWorkerData {
 	// asks the bundler what the precompiler can't resolve, waiting on resolved
 	resolver?: MessagePort | undefined
 	resolved?: Int32Array | undefined
-	// how long it waits for an answer, in milliseconds
 	resolveTimeout?: number | undefined
 }
 
@@ -129,7 +128,6 @@ const answerRequests = (
 	let conflictsWithThread = false
 	// the request it's answering, by its place among those it was sent
 	let answering = -1
-	// whether it couldn't ask the bundler for that request
 	let unasked = false
 	const resolveInBundler = bundlerResolverOf(
 		data,
@@ -150,8 +148,7 @@ const answerRequests = (
 			tracked = track()
 			const needsNewThread =
 				conflictsWithThread || tracked.precompiler.needsNewThread
-			// the next request asks the bundler what reading the configuration
-			// couldn't, like an import through an alias only the bundler names
+			// the next request asks the bundler what reading the configuration couldn't
 			if (unasked) tracked = undefined
 			return needsNewThread
 		}
@@ -183,8 +180,7 @@ const answerRequests = (
 			const result = precompiledOf(precompiler, source, id, undefined, mappings)
 			if (!result) return unprecompiledOf(precompiler, source, id)
 			const transformed = transformedOf(precompiler, result)
-			// e.g. an import that can't resolve until a file is written, which
-			// no mtime here would show
+			// e.g. an import that can't resolve until a file is written, which no mtime shows
 			if (transformed.errors.length || transformed.warnings.length)
 				return transformed
 			transformedById[id] = {
@@ -242,16 +238,13 @@ const answerRequests = (
 	})
 }
 
-// what the bundler resolves where the precompiler can't, like an alias only
-// the bundler's config names, as Nuxt's #shared
+// resolves what the precompiler can't, like Nuxt's #shared alias
 type BundlerResolver = (
 	specifier: string,
 	importer: string
 ) => string | undefined
 
-// the precompiler is synchronous, so its thread waits for the bundler's
-// answer, failing the request where none comes, as where resolving waits on
-// the precompiler in turn
+// the precompiler is synchronous, so its thread waits for the answer, failing the request where none comes
 const bundlerResolverOf = (
 	{
 		resolver,
@@ -331,7 +324,6 @@ const checkedModuleOf = (
 }
 
 export interface KeyedModule extends InlineModule {
-	// the module's local import closure, the files its precompilation may read
 	files: string[]
 }
 
@@ -345,7 +337,6 @@ const mtimeOf = (file: string) =>
 
 interface TrackedPrecompiler {
 	precompiler: Precompiler
-	// each file the precompiler read, with its mtime when it was first read
 	readTimes: Record<string, number>
 	targetsByImporter: Record<string, Record<string, string | undefined>>
 	opts: PrecompilePluginOptions
@@ -370,8 +361,7 @@ const createTrackedPrecompiler = (
 			const targets = (targetsByImporter[importer] ??= Object.create(null))
 			if (specifier in targets) return targets[specifier]
 			const target = host.resolve(specifier, importer)
-			// the bundler isn't asked for an import that can't carry a Type, nor
-			// is the miss kept, so a value import of it still asks
+			// an import that can't carry a Type isn't asked, nor is the miss kept
 			if (
 				target === undefined &&
 				resolveInBundler &&
@@ -397,7 +387,6 @@ const createTrackedPrecompiler = (
 	}
 }
 
-// a kept precompiler's imports must resolve as they did
 const resolvesAsRecorded = (
 	{ precompiler, targetsByImporter, opts }: TrackedPrecompiler,
 	id: string,
@@ -442,8 +431,7 @@ export interface KeyedPrecompiler {
 	precompile(source: string, id: string): PrecompiledKeyedModule
 	// a dependency the build doesn't precompile, as a bundler checks one importing arktype
 	readDependency(importer: string): RenderedDiagnostics
-	// what the bundler resolved each unresolved import to, true where one
-	// resolved, so a module precompiled before may read it otherwise
+	// what the bundler resolved each unresolved import to, true where one resolved
 	learn(
 		resolved: [specifier: string, importer: string, path: string | undefined][]
 	): boolean
@@ -453,11 +441,9 @@ export interface KeyedPrecompiler {
 export const createKeyedPrecompiler = (
 	opts: PrecompilePluginOptions
 ): KeyedPrecompiler => {
-	// what Turbopack resolves where the precompiler can't. What it can't
-	// either is asked again, as a module written since may resolve it
+	// what Turbopack resolves where the precompiler can't; a miss is asked again
 	const res: Record<string, Record<string, string>> = {}
-	// what it hasn't been asked yet, which a module precompiled meanwhile may
-	// read too
+	// what it hasn't been asked yet
 	const unresolved = new Map<string, [specifier: string, importer: string]>()
 	const resolveLearned: BundlerResolver = (specifier, importer) => {
 		const learned = res[importer]?.[specifier]
@@ -596,7 +582,6 @@ const unprecompiledOf = (
 	warnings: []
 })
 
-// a module's precompiled code, with the mtime of each file it was read from
 interface KeptModule {
 	source: string
 	mappings: string | undefined

@@ -52,8 +52,7 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 		setup: build => {
 			const cwd = opts?.cwd ?? process.cwd()
 			if (opts?.runtime !== "arktype") {
-				// a runtime plugin replaces a package for every importer, with the
-				// runtime a development build resolves, so Bun prints errors as issues
+				// the development runtime, so Bun prints errors as issues
 				const host =
 					isProductionEnv() ? createNodeHost(opts) : createDevelopmentHost(opts)
 				const runtime = host.resolve(

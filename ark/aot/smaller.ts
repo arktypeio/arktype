@@ -2,8 +2,7 @@ import type { StandaloneOptions } from "arktype/internal/standalone.ts"
 
 // reads no files, so the docs playground chooses as a build does
 
-// about the length a minifier leaves of code: no comments, spaces or names
-// longer than two characters
+// about what a minifier leaves: no comments, spaces or names longer than two characters
 export const minifiedLengthOf = (code: string): number =>
 	code
 		.replace(/\/\*[\S\s]*?\*\/|\/\/[^\n]*/g, "")
@@ -20,8 +19,7 @@ export const combinesChecks = (opts: StandaloneOptions): boolean =>
 	opts.errors !== "first" &&
 	opts.combines !== false
 
-// checkers, unless an artifact too small to amortize their runtime is
-// smaller compiled, counting that runtime as if no other artifact read it
+// checkers, unless an artifact too small to amortize their runtime is smaller compiled
 export const smallerOf = <written>(
 	checkers: written,
 	writeCompiled: () => written,

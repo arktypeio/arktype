@@ -153,7 +153,6 @@ const rootOf = (
 		return ["reference", callee, fn]
 }
 
-// e.g. `schemas.users.User` with `schemas` a namespace or object literal
 const arkMemberOf = (
 	node: Node,
 	module: SourceModule,

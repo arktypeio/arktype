@@ -204,7 +204,6 @@ interface InlinedImport {
 
 type StaticMember = Extract<MemberExpression, { computed: false }>
 
-// a namespace only read as `ns.name`, or undefined
 const membersReadOf = (
 	module: SourceModule,
 	local: string

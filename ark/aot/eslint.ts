@@ -46,7 +46,6 @@ const checkOnce = (context: Rule.RuleContext): CheckedModule => {
 	return (checked[key] ??= check(opts, sourceCode.text, context.filename))
 }
 
-// reports the build's diagnostics of one severity
 const reporterOf = (
 	severity: Diagnostic["severity"],
 	description: string

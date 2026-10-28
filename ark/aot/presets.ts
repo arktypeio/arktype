@@ -29,8 +29,7 @@ export interface Environment {
 	testing: boolean
 }
 
-// a production build leaves out runtime checks, and a test checks helpers too,
-// unless an option or ark.json sets them
+// a production build leaves out runtime checks, and a test checks helpers too
 export const withEnvironment = <opts extends PrecompileOptions>(
 	opts: opts,
 	{ production, testing }: Environment
