@@ -4180,6 +4180,32 @@ export class Precompiler {
 			site.status = "island"
 			return site
 		}
+		const dynamic = this.receiveValue(site, state, module)
+		if (dynamic) return refuseDynamic(site, dynamic)
+		const runsFirst = runsBeforeBody(state.node, module)
+		const unreadable = this.receiveReads(site, candidate, module, runsFirst)
+		if (unreadable) return refuseDynamic(site, unreadable)
+		this.receiveHelpers(site, state, module, runsFirst)
+		for (const [binding, declaring, reader] of state.trace.readFirst) {
+			if (declaring === module) continue
+			const unchecked = this.receiveReadFirst(site, binding, declaring, reader)
+			if (unchecked) {
+				return refuseDynamic(
+					site,
+					new DynamicValue(module, state.node, unchecked)
+				)
+			}
+		}
+		this.collectReferences(site, state, module, runsFirst)
+		return site
+	}
+
+	// what the site evaluated to, or why the build refuses it
+	private receiveValue(
+		site: Site,
+		state: SiteState,
+		module: SourceModule
+	): DynamicValue | undefined {
 		const checks = new Set<DefaultCheck>()
 		// a thunk alias is a pair, and a check a triple
 		for (const reached of state.reached) {
@@ -4187,17 +4213,14 @@ export class Precompiler {
 			else checks.add(reached)
 		}
 		const dynamic = rejectionOf(state)
-		if (dynamic) return refuseDynamic(site, dynamic)
+		if (dynamic) return dynamic
 		if (state.error instanceof ParseError) {
 			// e.g. an island's, whose thrower couldn't check what it reads
 			if (this.interpreter.parseErrorSites.get(state.error) !== state) {
-				return refuseDynamic(
-					site,
-					new DynamicValue(
-						module,
-						state.node,
-						`\`${module.snippetOf(state.node)}\` reads a definition that throws a ParseError`
-					)
+				return new DynamicValue(
+					module,
+					state.node,
+					`\`${module.snippetOf(state.node)}\` reads a definition that throws a ParseError`
 				)
 			}
 			site.parseError = state.error
@@ -4220,13 +4243,10 @@ export class Precompiler {
 		for (const [value, [read]] of state.readsByValue) {
 			const refused = this.refusedContainers.get(value)
 			if (!refused) continue
-			return refuseDynamic(
-				site,
-				new DynamicValue(
-					module,
-					read,
-					`\`${module.snippetOf(read)}\` is the ${kindNameOf(value)} at ${refused[1].positionOf(refused[0])}, which the build refuses`
-				)
+			return new DynamicValue(
+				module,
+				read,
+				`\`${module.snippetOf(read)}\` is the ${kindNameOf(value)} at ${refused[1].positionOf(refused[0])}, which the build refuses`
 			)
 		}
 		for (const [binding, declaring] of state.trace.readFirst) {
@@ -4234,11 +4254,26 @@ export class Precompiler {
 			const at = progressOf(binding, module)
 			if (at > (site.progress?.[0] ?? 0)) site.progress = [at, binding.name]
 		}
-		const runsFirst = runsBeforeBody(state.node, module)
-		const importerOf = (root: Read["root"]) =>
-			root.kind === "export" && root.importer === module ?
+	}
+
+	// the module a read's root is imported from, where the site's module imports it
+	private importerOf(
+		root: Read["root"],
+		module: SourceModule
+	): SourceModule | undefined {
+		return root.kind === "export" && root.importer === module ?
 				(this.graph.moduleOf(root.file) as SourceModule)
 			:	undefined
+	}
+
+	// the site's inputs and holes, or the read that keeps it from having them
+	private receiveReads(
+		site: Site,
+		candidate: SiteCandidate,
+		module: SourceModule,
+		runsFirst: boolean
+	): DynamicValue | undefined {
+		const { state } = candidate
 		const introspected = site.introspection?.type
 		for (const read of state.trace.reads) {
 			// introspection needs the Type only where a mock can replace it
@@ -4247,11 +4282,16 @@ export class Precompiler {
 				!read.path.length &&
 				!this.checkHelpers &&
 				!this.interpreter.isCheckedAtCreation(introspected) &&
-				this.isInertRead(introspected, importerOf(read.root), module, runsFirst)
+				this.isInertRead(
+					introspected,
+					this.importerOf(read.root, module),
+					module,
+					runsFirst
+				)
 			)
 				continue
 			const input = this.inputOf(read, candidate, module)
-			if (input instanceof DynamicValue) return refuseDynamic(site, input)
+			if (input instanceof DynamicValue) return input
 			if (!site.inputs.some(existing => isCoveredBy(input, existing)))
 				site.inputs.push(input)
 		}
@@ -4259,12 +4299,21 @@ export class Precompiler {
 			const isCalled = !site.parseError && !isHeld(value, this.interpreter)
 			const hole = this.holeOf(value, candidate, module)
 			if (!isCalled) {
-				if (hole instanceof DynamicValue) return refuseDynamic(site, hole)
+				if (hole instanceof DynamicValue) return hole
 				site.holes.push(hole)
 			} else if (!(hole instanceof DynamicValue) && hole.kind === "function")
 				site.called.push(hole)
 		}
 		site.holes.sort((l, r) => l.start - r.start)
+	}
+
+	// each exported function the site read, which a mock can replace
+	private receiveHelpers(
+		site: Site,
+		state: SiteState,
+		module: SourceModule,
+		runsFirst: boolean
+	): void {
 		for (const { root, value } of state.trace.exportedFunctions) {
 			const node = this.interpreter.standIns.get(value as object)?.closure?.node
 			if (
@@ -4291,7 +4340,12 @@ export class Precompiler {
 			// a bundler can drop the helper's module, or a cycle run the site first
 			if (
 				!this.checkHelpers &&
-				!this.isInertRead(value, importerOf(root), module, runsFirst)
+				!this.isInertRead(
+					value,
+					this.importerOf(root, module),
+					module,
+					runsFirst
+				)
 			) {
 				site.inputs.push({
 					kind: "import",
@@ -4302,16 +4356,15 @@ export class Precompiler {
 				})
 			}
 		}
-		for (const [binding, declaring, reader] of state.trace.readFirst) {
-			if (declaring === module) continue
-			const unchecked = this.receiveReadFirst(site, binding, declaring, reader)
-			if (unchecked) {
-				return refuseDynamic(
-					site,
-					new DynamicValue(module, state.node, unchecked)
-				)
-			}
-		}
+	}
+
+	// each read of a value the site's call must still see
+	private collectReferences(
+		site: Site,
+		state: SiteState,
+		module: SourceModule,
+		runsFirst: boolean
+	): void {
 		for (const [value, reads] of state.readsByValue) {
 			if (
 				isDynamic(value) ||
@@ -4345,7 +4398,6 @@ export class Precompiler {
 			}
 		}
 		site.references.sort((l, r) => l.start - r.start)
-		return site
 	}
 
 	// e.g. `$` in `const $ = scope(…)`
@@ -5512,142 +5564,15 @@ export class Precompiler {
 			)
 		)
 		if (this.variant) {
-			const option = writeVariantOption(this.variant)
-			result.push(
-				...module.islands.map(island =>
-					this.diagnostic(
-						module,
-						island,
-						"R4",
-						`a runtime island returns arktype's errors, which aren't instances of type.errors under ${option}`,
-						[
-							this.variant === "lean" ?
-								"a build writing its errors for size gives its validators a runtime of their own"
-							:	"a build whose errors say only that data is invalid gives its validators a runtime of their own"
-						],
-						this.variant === "lean" ?
-							'Precompile the definition, or build with optimizeErrors: "speed".'
-						:	`Precompile the definition, or build without ${option}.`
-					)
-				)
-			)
+			result.push(...this.variantIslandDiagnosticsOf(module))
 			return result
 		}
-		const visited = new Set<Node>()
-		// whether the island being visited reaches arktype
-		let reaches = false
-		const visit = (node: Node, origin: SourceModule, reasons: string[]) =>
-			walk(node, child => {
-				const reference =
-					child.type === "Identifier" ?
-						origin.scopes.byId.get(child)
-					:	undefined
-				const binding = reference?.binding
-				if (
-					!binding ||
-					reference.isWrite ||
-					contains(node, binding.declaration)
-				)
-					return true
-				const [name, arkRead] = this.graph.arkExportOf(reference, origin) ?? []
-				if (arkRead) {
-					reaches = true
-					if (
-						!isInIsland(arkRead, origin) &&
-						!isRuntimeExport(name!) &&
-						!this.graph.leavesArk(child, origin)
-					) {
-						result.push(
-							this.diagnostic(
-								origin,
-								arkRead,
-								"R4",
-								`\`${origin.snippetOf(arkRead)}\` is arktype/runtime's outside a runtime island`,
-								reasons,
-								islandHint
-							)
-						)
-					}
-					return true
-				}
-				let read: Node = child
-				let target: ImportTarget =
-					binding.kind === "import" ?
-						this.graph.importOf(binding, origin)
-					:	{ kind: "binding", module: origin, binding, name: binding.name }
-				// e.g. `schemas.User`, `schemas` a namespace import
-				const [operand, member] = operatorOf(child)
-				const exported =
-					target.kind === "namespace" &&
-					member?.type === "MemberExpression" &&
-					member.object === operand &&
-					this.graph.namespaceMemberOf(member, origin)
-				if (exported) {
-					read = member
-					target = exported
-				}
-				if (target.kind !== "binding" && target.kind !== "expression") {
-					if (target.kind !== "json") reaches = true
-					return true
-				}
-				const declaration =
-					target.kind === "binding" ? target.binding.declaration : target.node
-				if (isInIsland(declaration, target.module)) {
-					reaches = true
-					return true
-				}
-				if (
-					isArk(
-						target.kind === "binding" ?
-							this.graph.bindingKindOf(target.binding, target.module)
-						:	this.graph.kindOf(target.node, target.module)
-					)
-				) {
-					reaches = true
-					// e.g. `User(data)` or `User.assert(data)`, which a validator runs
-					if (
-						!(
-							read.parent?.type === "CallExpression" &&
-							read.parent.callee === read
-						) &&
-						!this.graph.leavesArk(child, origin)
-					) {
-						result.push(
-							this.diagnostic(
-								origin,
-								read,
-								"R4",
-								`\`${origin.snippetOf(read)}\` is a precompiled validator, which a runtime island can only validate with`,
-								reasons,
-								islandHint
-							)
-						)
-					}
-					return true
-				}
-				if (
-					target.kind === "binding" &&
-					!(target.binding.kind in declaredBindingKinds)
-				)
-					return true
-				// what an earlier island visited reported what it reaches
-				if (visited.has(declaration)) {
-					reaches = true
-					return true
-				}
-				visited.add(declaration)
-				const step = `\`${origin.snippetOf(read)}\` (${target.module.positionOf(target.kind === "binding" ? target.binding.id : declaration)})`
-				visit(
-					declaration,
-					target.module,
-					reasons.length ?
-						[`${reasons[0]}, ${step}`]
-					:	[
-							`the runtime island at ${module.positionOf(node)} reaches it through ${step}`
-						]
-				)
-				return true
-			})
+		const islands: IslandVisit = {
+			module,
+			result,
+			visited: new Set(),
+			reaches: false
+		}
 		for (const island of module.islands) {
 			if (
 				sites.some(site => site.status === "accepted" && contains(site, island))
@@ -5664,11 +5589,11 @@ export class Precompiler {
 				)
 				continue
 			}
-			reaches = sites.some(
+			islands.reaches = sites.some(
 				site => site.status === "island" && contains(island, site)
 			)
-			visit(island, module, [])
-			if (!reaches) {
+			this.visitIsland(island, module, [], islands)
+			if (!islands.reaches) {
 				result.push(
 					this.diagnostic(
 						module,
@@ -5682,6 +5607,146 @@ export class Precompiler {
 			}
 		}
 		return result
+	}
+
+	// a build writing its errors for size or as none gives its validators a runtime of their own, which an island's errors aren't from
+	private variantIslandDiagnosticsOf(module: SourceModule): Diagnostic[] {
+		const option = writeVariantOption(this.variant!)
+		return module.islands.map(island =>
+			this.diagnostic(
+				module,
+				island,
+				"R4",
+				`a runtime island returns arktype's errors, which aren't instances of type.errors under ${option}`,
+				[
+					this.variant === "lean" ?
+						"a build writing its errors for size gives its validators a runtime of their own"
+					:	"a build whose errors say only that data is invalid gives its validators a runtime of their own"
+				],
+				this.variant === "lean" ?
+					'Precompile the definition, or build with optimizeErrors: "speed".'
+				:	`Precompile the definition, or build without ${option}.`
+			)
+		)
+	}
+
+	// what an island reads, through each binding it reaches, reporting arktype's values read outside one
+	private visitIsland(
+		node: Node,
+		origin: SourceModule,
+		reasons: string[],
+		islands: IslandVisit
+	): void {
+		walk(node, child => {
+			const reference =
+				child.type === "Identifier" ? origin.scopes.byId.get(child) : undefined
+			const binding = reference?.binding
+			if (!binding || reference.isWrite || contains(node, binding.declaration))
+				return true
+			const [name, arkRead] = this.graph.arkExportOf(reference, origin) ?? []
+			if (arkRead) {
+				islands.reaches = true
+				if (
+					!isInIsland(arkRead, origin) &&
+					!isRuntimeExport(name!) &&
+					!this.graph.leavesArk(child, origin)
+				) {
+					islands.result.push(
+						this.diagnostic(
+							origin,
+							arkRead,
+							"R4",
+							`\`${origin.snippetOf(arkRead)}\` is arktype/runtime's outside a runtime island`,
+							reasons,
+							islandHint
+						)
+					)
+				}
+				return true
+			}
+			const [read, target] = this.islandReadOf(child, binding, origin)
+			if (target.kind !== "binding" && target.kind !== "expression") {
+				if (target.kind !== "json") islands.reaches = true
+				return true
+			}
+			const declaration =
+				target.kind === "binding" ? target.binding.declaration : target.node
+			if (isInIsland(declaration, target.module)) {
+				islands.reaches = true
+				return true
+			}
+			if (
+				isArk(
+					target.kind === "binding" ?
+						this.graph.bindingKindOf(target.binding, target.module)
+					:	this.graph.kindOf(target.node, target.module)
+				)
+			) {
+				islands.reaches = true
+				// e.g. `User(data)` or `User.assert(data)`, which a validator runs
+				if (
+					!(
+						read.parent?.type === "CallExpression" &&
+						read.parent.callee === read
+					) &&
+					!this.graph.leavesArk(child, origin)
+				) {
+					islands.result.push(
+						this.diagnostic(
+							origin,
+							read,
+							"R4",
+							`\`${origin.snippetOf(read)}\` is a precompiled validator, which a runtime island can only validate with`,
+							reasons,
+							islandHint
+						)
+					)
+				}
+				return true
+			}
+			if (
+				target.kind === "binding" &&
+				!(target.binding.kind in declaredBindingKinds)
+			)
+				return true
+			// what an earlier island visited reported what it reaches
+			if (islands.visited.has(declaration)) {
+				islands.reaches = true
+				return true
+			}
+			islands.visited.add(declaration)
+			const step = `\`${origin.snippetOf(read)}\` (${target.module.positionOf(target.kind === "binding" ? target.binding.id : declaration)})`
+			this.visitIsland(
+				declaration,
+				target.module,
+				reasons.length ?
+					[`${reasons[0]}, ${step}`]
+				:	[
+						`the runtime island at ${islands.module.positionOf(node)} reaches it through ${step}`
+					],
+				islands
+			)
+			return true
+		})
+	}
+
+	// what an island's reference reads: its binding, or e.g. `schemas.User` for `schemas` a namespace import
+	private islandReadOf(
+		child: Node,
+		binding: Binding,
+		origin: SourceModule
+	): [read: Node, target: ImportTarget] {
+		const target: ImportTarget =
+			binding.kind === "import" ?
+				this.graph.importOf(binding, origin)
+			:	{ kind: "binding", module: origin, binding, name: binding.name }
+		const [operand, member] = operatorOf(child)
+		const exported =
+			target.kind === "namespace" &&
+			member?.type === "MemberExpression" &&
+			member.object === operand &&
+			this.graph.namespaceMemberOf(member, origin)
+		return exported ? [member, exported] : [child, target]
 	}
 
 	// islands read arktype's exports from arktype itself
@@ -6029,6 +6094,14 @@ type UnavailableRead = [
 	object: Node,
 	isUnsureRead?: true
 ]
+
+// the islands of one module being checked, and whether the one being visited reaches arktype
+interface IslandVisit {
+	module: SourceModule
+	result: Diagnostic[]
+	visited: Set<Node>
+	reaches: boolean
+}
 
 // a member read off what may be a Scope or Generic, or a call of what may be a Generic
 type ScopeRead = [
