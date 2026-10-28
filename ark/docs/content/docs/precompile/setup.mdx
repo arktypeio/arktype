@@ -7,7 +7,7 @@ description: Add precompilation to your bundler, framework, test runner or Node 
 
 <InstallationTabs pkg="@ark/aot" dev />
 
-`@ark/aot` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, `precompiledForArktype_<major>_<minor>_<patch>`, so a bundle or Node fails to link it to another version's runtime, e.g. one a stale cache kept. It adds nothing to the bundle.
+`@ark/aot` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, `precompiledForArktype_<major>_<minor>_<patch>`, so a bundle or Node fails to link it to another version's runtime, e.g. one a stale cache kept. That import adds nothing to the bundle.
 
 ## Bundlers
 
@@ -273,7 +273,7 @@ export default {
 
 ### Run a program
 
-Node 22.15 or later precompiles each module as it loads, for `node --test` or any program:
+The Node driver, on Node 22.15 or later, precompiles each module as it loads, for `node --test` or any program:
 
 ```ts title="register.ts"
 import { register } from "@ark/aot/node"

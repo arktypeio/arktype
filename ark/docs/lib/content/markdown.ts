@@ -78,6 +78,9 @@ const warned = new Set<string>()
 const transform = (tree: Root) => {
 	visit(tree, (node, i, parent) => {
 		if (!parent || i === undefined) return
+		// prettier wraps a paragraph holding a component at 80 columns, which
+		// Markdown reads as soft breaks, so join them back into the sentence
+		if (node.type === "text") node.value = node.value.replace(/\s*\n\s*/g, " ")
 		if (node.type === "link" && node.url.startsWith("/"))
 			node.url = siteUrl + node.url
 		if (node.type === "code") {

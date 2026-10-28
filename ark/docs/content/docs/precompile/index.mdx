@@ -66,7 +66,7 @@ data => {
 
 A build step adds a loop: build, read the error, fix, rebuild. That loop was the cost of precompiling, and it's one an agent is already good at, so with an agent running your local dev, the cost is close to nothing.
 
-Precompiling stays quiet when everything builds, helpers included: ``const text = (max: number) => type(`0 < string <= ${max}`)`` precompiles at each call passing it values the build can read, like `text(50)`. Where something would fail at runtime and the fix is clear, the build fails instead, with the file, line and column, what it couldn't do, why, and how to fix it:
+Precompiling stays quiet when everything builds, helpers included: ``const text = (max: number) => type(`0 < string <= ${max}`)`` precompiles at each call passing it values the build can read, like `text(50)`. Where it can't precompile a definition and the fix is clear, the build fails, with the file, line and column, what it couldn't do, why, and how to fix it:
 
 ```
 src/forms.ts:8:16  text(limit) cannot be precompiled

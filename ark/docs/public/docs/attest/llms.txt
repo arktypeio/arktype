@@ -20,8 +20,7 @@ npm install -D @ark/attest
 
 > **Note**
 >
-> attest is still in alpha, so its API can change between minor versions. Your
-> feedback will help us iterate toward a stable 1.0.
+> attest is still in alpha, so its API can change between minor versions. Your feedback will help us iterate toward a stable 1.0.
 
 If you're upgrading, [Upgrading](https://arktype.io/docs/upgrading#attest) lists the changes to benches.
 
@@ -162,10 +161,7 @@ attest(() => type({ "[object]": "string" })).type.errors(
 
 > **Strings match as substrings**
 >
-> `.type.toString`, `.type.errors`, `.throws` and `.jsdoc` pass if the string
-> you give appears anywhere in the actual one, so
-> `attest([1]).type.toString("number")` passes although the type is `number[]`.
-> They also accept a `RegExp`. Chain `.snap` for an exact match.
+> `.type.toString`, `.type.errors`, `.throws` and `.jsdoc` pass if the string you give appears anywhere in the actual one, so `attest([1]).type.toString("number")` passes although the type is `number[]`. They also accept a `RegExp`. Chain `.snap` for an exact match.
 
 ## Values
 
@@ -419,9 +415,7 @@ On TypeScript 6.0.3, these benches count 13484 and 13408 without the baseline.
 
 > **Warning**
 >
-> Don't bench an expression identical to your baseline expression. The bench
-> would reuse the baseline's cached types and count fewer instantiations, or
-> none.
+> Don't bench an expression identical to your baseline expression. The bench would reuse the baseline's cached types and count fewer instantiations, or none.
 
 ## Runtime benches
 

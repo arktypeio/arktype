@@ -83,7 +83,7 @@ data => {
 
 A build step adds a loop: build, read the error, fix, rebuild. That loop was the cost of precompiling, and it's one an agent is already good at, so with an agent running your local dev, the cost is close to nothing.
 
-Precompiling stays quiet when everything builds, helpers included: ``const text = (max: number) => type(`0 < string <= ${max}`)`` precompiles at each call passing it values the build can read, like `text(50)`. Where something would fail at runtime and the fix is clear, the build fails instead, with the file, line and column, what it couldn't do, why, and how to fix it:
+Precompiling stays quiet when everything builds, helpers included: ``const text = (max: number) => type(`0 < string <= ${max}`)`` precompiles at each call passing it values the build can read, like `text(50)`. Where it can't precompile a definition and the fix is clear, the build fails, with the file, line and column, what it couldn't do, why, and how to fix it:
 
 ```
 src/forms.ts:8:16  text(limit) cannot be precompiled
@@ -106,9 +106,7 @@ Precompiling moves creating your Types from your program's startup to your build
 - Vite's dev server loaded the app in a browser in 7.1 s rather than 1.1 s, and the page showed an edit to the module every Type in its copy imports in 2.6 s rather than 374 ms. Next's took 15.2 s rather than 4.1 s to load and 488 ms rather than 37 ms to show the edit.
 - esbuild's watch rebuild after that edit took 1.7 s rather than 57 ms, and 5.7 s rather than 60 ms for a production bundle, which reads the whole app again to leave out what no read needs.
 
-At 92 Types, the plugin added 1.0 s to Vite's production build, 1.3 s to esbuild's and 2.5 s to Next's, and 256 ms to an edit in Vite's dev server. Turbopack runs the loader in a pool of processes,
-once for the client and once for the server, so a Next build precompiles each
-module twice.
+At 92 Types, the plugin added 1.0 s to Vite's production build, 1.3 s to esbuild's and 2.5 s to Next's, and 256 ms to an edit in Vite's dev server. Turbopack runs the loader in a pool of processes, once for the client and once for the server, so a Next build precompiles each module twice.
 
 ## How a validator differs
 
@@ -122,9 +120,7 @@ If you need the whole Type API at runtime, build with `runtime: "arktype"`: arkt
 
 Every ArkType definition can run dynamically, created by `type()` at runtime, or [precompiled](https://arktype.io/docs/precompile), constructed when you build. Your definitions and their inferred types are identical either way, so you can switch at any time.
 
-In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType. What precompiling removes is everything around a
-Type's checks: the parser, the time it takes to create each Type, and the code
-it generates.
+In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType. What precompiling removes is everything around a Type's checks: the parser, the time it takes to create each Type, and the code it generates.
 
 | | Dynamic | Precompiled | Precompiled with `runtime: "arktype"` |
 | - | - | - | - |
@@ -154,7 +150,7 @@ Build with `runtime: "arktype"` while you migrate, or where a program composes o
 npm install -D @ark/aot
 ```
 
-`@ark/aot` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, `precompiledForArktype_<major>_<minor>_<patch>`, so a bundle or Node fails to link it to another version's runtime, e.g. one a stale cache kept. It adds nothing to the bundle.
+`@ark/aot` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, `precompiledForArktype_<major>_<minor>_<patch>`, so a bundle or Node fails to link it to another version's runtime, e.g. one a stale cache kept. That import adds nothing to the bundle.
 
 ## Bundlers
 
@@ -395,7 +391,7 @@ export default {
 
 ### Run a program
 
-Node 22.15 or later precompiles each module as it loads, for `node --test` or any program:
+The Node driver, on Node 22.15 or later, precompiles each module as it loads, for `node --test` or any program:
 
 ```ts
 import { register } from "@ark/aot/node"
@@ -592,7 +588,7 @@ To leave only some definitions to arktype in a standalone build, mark them as [r
 
 > Ship less, and configure a precompiled program.
 
-A standalone build can leave out what your program doesn't need. Every option goes to the plugin, a driver or the CLI, or into [`ark.json`](https://arktype.io/docs/precompile/options#arkjson), and a [preset](https://arktype.io/docs/precompile/options#presets) sets several for one goal:
+A standalone build can leave out what your program doesn't need. Set options in [`ark.json`](https://arktype.io/docs/precompile/options#arkjson), which the plugin, the drivers, the CLI and the ESLint rule all read, so each builds the same way; a plugin, driver or CLI call takes them too, and a [preset](https://arktype.io/docs/precompile/options#presets) sets several for one goal:
 
 ```ts
 precompile.vite({

@@ -36,7 +36,7 @@ type User = typeof User.infer
 
 When 2.0 launched, we bragged that it needed no build step. At the time, that was the right call. Precompiled validators were always faster and smaller, but they cost you a plugin to set up, errors you'd never seen and a second model of what runs where.
 
-For most projects, it wasn't worth it- until agents started doing the setup. An agent adds the plugin, reads the errors and fixes what they point to, and [shadow mode](/docs/precompile/advanced#shadow-mode) runs your tests against both models, failing wherever they disagree. What's left is a plugin in the bundler you already run and the time it takes to build. Meanwhile, your users still download everything you ship, our parser included.
+For most projects, it wasn't worth it. Then agents started doing the setup. An agent adds the plugin, reads the errors and fixes what they point to, and [shadow mode](/docs/precompile/advanced#shadow-mode) runs your tests against both models, failing wherever they disagree. What's left is a plugin in the bundler you already run and the time it takes to build. Meanwhile, your users still download everything you ship, our parser included.
 
 So ArkType precompiles, and we made sure every message along the way names the fix.
 
@@ -61,7 +61,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 
 [Troubleshooting](/docs/precompile/troubleshooting) quotes each message the build can report.
 
-Setup is one plugin in the bundler you already run, or [`arktype-precompile --emit`](/docs/precompile/setup#tsc) after `tsc` without one. Your definitions don't change- just where they run:
+Setup is one plugin in the bundler you already run, or [`arktype-precompile --emit`](/docs/precompile/setup#tsc) after `tsc` without one. Your definitions don't change, only where they run:
 
 ```ts title="vite.config.ts"
 import { precompile } from "@ark/aot/unplugin"
@@ -75,7 +75,7 @@ export default {
 
 ### Dynamic, like always
 
-`type()` still parses definitions at runtime with no build step, for scripts, REPLs and definitions you only know at runtime. `runtime: "arktype"` precompiles what it can and ships arktype for the rest, so nothing you write today keeps you from precompiling.
+`type()` still parses definitions at runtime with no build step, for scripts, REPLs and definitions you only know at runtime. In a precompiled build, a [runtime island](/docs/precompile/advanced#runtime-islands) leaves one definition to arktype, and `runtime: "arktype"` ships arktype whole, skipping the compile step for every Type the build could read, so nothing you write today keeps you from precompiling.
 
 ### The skill
 
@@ -101,7 +101,7 @@ and every default that differs.
 ### What it costs
 
 - **A build step**: a plugin in the bundler you already run, set up once, and [the time each build takes](/docs/precompile#build-time).
-- **Definitions known only at runtime** fail a standalone build. Keep them dynamic, or build with `runtime: "arktype"`.
+- **Definitions known only at runtime** fail a standalone build. Keep them dynamic as [runtime islands](/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`.
 - **A standalone validator** validates, asserts and is a Standard Schema, but doesn't compose or introspect at runtime, its messages don't print the value and it has no locales. `runtime: "arktype"` keeps the whole Type API.
 - **Without the plugin**: <Claim id="dynamicSize" />
 
@@ -134,7 +134,7 @@ Each result below is scoped to a single benchmark, and [Speed and size](/docs/pr
 
 Each Type your program defines becomes a validator that imports only `arktype/runtime` and validates, asserts and implements Standard Schema as the Type did, so code that calls it doesn't change either. Scopes, Modules, Generics, cyclic Types, `match` and `type.fn` precompile too.
 
-Options go in the plugin call or in an [`ark.json`](/docs/precompile/options#arkjson) that the plugin, the drivers, the CLI and the ESLint rule all read. A [preset](/docs/precompile/options#presets) sets several at once: `"smallest"` trades speed for size. <Claim id="buildChoice" /> Development builds also check at runtime what the build verified, like freezing each validator, and production builds leave those checks out. A library opts in with `"ark": { "aot": true }` in its `package.json`, so its consumers' builds precompile it.
+Options go in an [`ark.json`](/docs/precompile/options#arkjson) that the plugin, the drivers, the CLI and the ESLint rule all read, or in the plugin call. A [preset](/docs/precompile/options#presets) sets several at once: `"smallest"` trades speed for size. <Claim id="buildChoice" /> Development builds also check at runtime what the build verified, like freezing each validator, and production builds leave those checks out. A library opts in with `"ark": { "aot": true }` in its `package.json`, so its consumers' builds precompile it.
 
 ### Set theory at build time
 
