@@ -2139,7 +2139,8 @@ export class Interpreter {
 		}
 		const result = this.evaluate(staticBodyOf(closure.node)!, callCtx)
 		if (isDynamic(result) && !result.isOpaque) return result
-		// e.g. `note()` in `(max, tag = note()) => ...`, run for its effect though the precompiled call drops it
+		// e.g. `note()` in `(max, tag = note()) => ...`, run for its effect
+		// though the precompiled call drops it
 		const env = callCtx.env!
 		const unread = [...env.valuesByBinding].flatMap(([binding, value]) =>
 			env.read.has(binding) ? [] : [value]

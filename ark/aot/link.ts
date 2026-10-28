@@ -85,7 +85,8 @@ interface Declared {
 	reads: [name: string, isEager: boolean][]
 }
 
-// one module of what the sites read, each after what it reads; a unit must declare or import what it reads by its export name
+// one module of what the sites read, each after what it reads; a unit must
+// declare or import what it reads by its export name
 const oneModuleOf = (
 	codes: Record<string, string>,
 	siteTexts: string[]
@@ -490,7 +491,8 @@ class Linker {
 		)
 	}
 
-	// declares a checker one site creates its validator from as that validator, among the units where they're one module
+	// declares a checker one site creates its validator from as that validator,
+	// among the units where they're one module
 	private declareCreated(exposesAllows: boolean, declaresEach: boolean): void {
 		const creationsByBinding = new Map<Binding, Creation | undefined>()
 		for (const unit of this.units) {

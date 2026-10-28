@@ -510,9 +510,8 @@ export abstract class BaseNode<
 	}
 
 	/**
-	 * whether it alters data, counting what it reaches through aliases
-	 * alters doesn't see an alias's resolution, final once nothing
-	 * but inputs and outputs is open
+	 * whether it alters data, counting what it reaches through aliases, which
+	 * `alters` doesn't see; final once nothing but inputs and outputs is open
 	 */
 	get tfs(): boolean {
 		if (this.c.tfs !== undefined) return this.c.tfs
@@ -863,8 +862,8 @@ export abstract class BaseNode<
 	}
 
 	/**
-	 * a root apply that transforms the first branch data is allowed by, with no `ctx`
-	 * a root whose transform doesn't require ctx has only context-free morphs
+	 * a root apply transforming by the first branch allowing data, with no
+	 * `ctx`, since a transform that doesn't need one has only context-free morphs
 	 */
 	private optimisticApply(runtime: RootApplyRuntime): RootApply {
 		const { Traversal } = runtime
@@ -915,10 +914,7 @@ export abstract class BaseNode<
 
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
-	/**
-	 * writes an expression for whether `data` satisfies it, for a leaf checked inline
-	 * one expression checking data, if any
-	 */
+	/** writes one expression for whether `data` satisfies it, for a leaf checked inline, if it can */
 	jsCond?(js: NodeCompiler, data: string): string | undefined
 	/** writes one expression computing its traversal's result, if it can */
 	jsExpression?(js: NodeCompiler): string | undefined
@@ -1811,7 +1807,8 @@ const writeSelectAssertionMessage = (from: BaseNode, selector: NodeSelector) =>
 	`${from} had no references matching ${printable(selector)}.`
 
 export declare namespace NodeSelector {
-	// not generic: TS defers a generic call returning a function while inferring its enclosing call (#1510)
+	// not generic: TS defers a generic call returning a function while
+	// inferring its enclosing call (#1510)
 	export interface SelectableFn<
 		input,
 		returns,

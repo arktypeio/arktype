@@ -392,7 +392,8 @@ const skipped = {} as ArkError
 
 const firstPathTraversals = new WeakMap<typeof Traversal, FirstPathTraversal>()
 
-// keeps only the errors at its first's path, counting one elsewhere so each check stops where it would have
+// keeps only the errors at its first's path, counting one elsewhere so each
+// check stops where it would have
 const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
 	let FirstPath = firstPathTraversals.get(Base)
 	if (FirstPath) return FirstPath

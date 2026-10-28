@@ -237,7 +237,8 @@ export const keySiteOf = ((
 	m: { code: "required", description: missing }
 })) satisfies Fn
 
-// a library reading a JSON Schema the build left out fails saying how to keep it; "jsonSchema" in it stays false
+// a library reading a JSON Schema the build left out fails saying how to keep
+// it; "jsonSchema" in it stays false
 export const withoutJsonSchema = <standard extends object>(
 	standard: standard
 ): standard =>

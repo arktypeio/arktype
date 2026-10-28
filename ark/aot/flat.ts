@@ -37,7 +37,8 @@ export interface FlatSite {
 // the names some module of a bundle may import of each module, true for any
 export type ImportedNames = Map<string, Set<string> | true>
 
-// declares a one-chunk bundle's units in one function: V8 inlines a call through its constant, not through a module variable a bundler writes as a var
+// declares a one-chunk bundle's units in one function: V8 inlines a call
+// through its constant, not through a module variable a bundler writes as a var
 export const flattenBundle = (
 	sites: Record<string, string>,
 	modules: Record<string, string>,
@@ -206,7 +207,8 @@ export const flattenBundle = (
 
 const unrenamed = (specifier: string) => specifier
 
-// a validator a site creates from units the function declares, which the function creates in its place
+// a validator a site creates from units the function declares, which the
+// function creates in its place
 interface Creation {
 	// the call's span, with its annotation
 	start: number
@@ -654,7 +656,8 @@ const unitsOf = (
 		if (declarations.length && isUnitModule(module))
 			units.set(specifier, { specifier, module, declarations })
 	}
-	// a module of values, e.g. a template, gains nothing in the function unless a unit there reads it
+	// a module of values, e.g. a template, gains nothing in the function unless
+	// a unit there reads it
 	const read = new Set(
 		[...units.values()]
 			.filter(unit => unit.declarations.some(declaresUnit))
@@ -1060,7 +1063,8 @@ const writeFlat = (
 				)!
 				s.overwrite(comma, comma + 1, `, ${members[i]} =`)
 			}
-			// a trailing comma, as where errors "none" leaves no Apply, would continue the declaration
+			// a trailing comma, as where errors "none" leaves no Apply, would
+			// continue the declaration
 			const trailing = commaBetween(
 				code,
 				elements[elements.length - 1].end,
@@ -1113,7 +1117,8 @@ const writeFlat = (
 				written.body = withoutAnnotations(inGzipOrder(written.body))
 				writtenByReturned.set(returned, written)
 			}
-			// swc would inline the IIFE, making its constants module variables V8 doesn't inline calls through
+			// swc would inline the IIFE, making its constants module variables
+			// V8 doesn't inline calls through
 			const declaration = `const ${read.length === 1 ? read[0] : `[${read.join(", ")}]`} = /* @__NOINLINE__ */ (() => {
 ${written.body}
 return ${written.returned}
@@ -1385,7 +1390,8 @@ const withoutAnnotations = (body: string): string => {
 
 const pureAnnotation = /^\s*[#@]__PURE__\s*$/
 
-// functions first and beside those like them, so gzip finds their repeats, where there are enough to pay
+// functions first and beside those like them, so gzip finds their repeats,
+// where there are enough to pay
 const inGzipOrder = (body: string): string => {
 	const { program } = parseUnits(body)
 	const functions: [key: string, text: string][] = []

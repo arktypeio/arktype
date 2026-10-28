@@ -278,7 +278,8 @@ export interface ScannedProgram {
 	arkImports: Record<string, string[]>
 	// each module import() loads, which a bundler that splits builds as an entry
 	dynamicImports: string[]
-	// each module with no file, like a framework's virtual module, which its runtime may import unseen
+	// each module with no file, like a framework's virtual module, which its
+	// runtime may import unseen
 	exposed: string[]
 	isOneChunk?: boolean
 }
@@ -309,7 +310,8 @@ interface ProgramUsage {
 	written: Record<string, PrecompiledModule>
 	// modules it no longer reads as their units are declared in one function
 	replaced: ReadonlySet<string>
-	// whether a size build writes the program's nodes as checkers, as is smaller for the program as a whole
+	// whether a size build writes the program's nodes as checkers, as is
+	// smaller for the program as a whole
 	combines?: boolean
 	// whether its checkers write common intersections as shapes
 	shapes?: boolean
@@ -651,7 +653,8 @@ export const precompileModule = (
 	opts?: PrecompileOptions
 ): PrecompiledModule => new Precompiler(host, opts).precompile(source, id)
 
-// each shape's runtime and what each call of it saves, gzipped bytes measured on bundles of 10 to 1000 schemas
+// each shape's runtime and what each call of it saves, gzipped bytes measured
+// on bundles of 10 to 1000 schemas
 const shapeCosts = {
 	stringRange: [48, 0.37],
 	integerRange: [64, 0.76],
@@ -692,7 +695,8 @@ export class Precompiler {
 	private members: ValidatorMembers
 	// e.g. traverse, from and toString where members.methods is false
 	private lackedMembers: ReadonlySet<string>
-	// those and the introspection members it doesn't bake, which a read off what may be a Type can't fold
+	// those and the introspection members it doesn't bake, which a read off
+	// what may be a Type can't fold
 	private unsureLackedMembers: ReadonlySet<string>
 	private errors: ErrorDetail | undefined
 	private variant: RuntimeVariant | undefined
@@ -723,7 +727,8 @@ export class Precompiler {
 	private bindingsByInput = new WeakMap<Input, Binding>()
 	// e.g. a Scope configured by a parameter
 	private refusedContainers = new Map<unknown, [Node, SourceModule]>()
-	// a Scope or Generic another module's refused site reads, left to arktype as its module is written
+	// a Scope or Generic another module's refused site reads, left to arktype
+	// as its module is written
 	private dynamicStandIns = new Map<
 		unknown,
 		[reader: Span, module: SourceModule, name: string]
@@ -734,7 +739,8 @@ export class Precompiler {
 	private scopeReadsByModule = new WeakMap<SourceModule, ScopeRead[]>()
 	// modules being analyzed, which a refused site reaching their functions doesn't reenter
 	private analyzing = new Set<SourceModule>()
-	// each warning that a site accepts a Standard Schema, by span, which writing it may still refuse
+	// each warning that a site accepts a Standard Schema, by span, which
+	// writing it may still refuse
 	private schemaWarningSpans = new WeakMap<Diagnostic, Span>()
 	private packagesByEntry: Record<string, [root: string, version: string]> =
 		Object.create(null)
@@ -879,7 +885,8 @@ export class Precompiler {
 			this.usagesByProgram.delete(program.key)
 			return unwritten
 		}
-		// as written, a validator may be read in a way the plan didn't see, as where a factory checks a Type it's passed
+		// as written, a validator may be read in a way the plan didn't see, as
+		// where a factory checks a Type it's passed
 		const usedAsWritten = isWhole ? used : this.usedIn(program, wrote.runtimes)
 		const isReadAsWritten = (read: UsedMember) =>
 			typeof usedAsWritten === "string" || usedAsWritten.has(read)
@@ -1020,7 +1027,8 @@ export class Precompiler {
 			exposesAllows: usage.readsAllows,
 			isOneChunk
 		})
-		// a unit a site creates its validator from is declared as that validator where validators expose allows
+		// a unit a site creates its validator from is declared as that
+		// validator where validators expose allows
 		if (link.unexposed >= unitsExposingAllowsPays && usage.combines) {
 			usage.readsAllows = true
 			const exposed = this.writeProgram(program, plan)
@@ -1035,7 +1043,8 @@ export class Precompiler {
 				this.restoreRuntimes(wrote, plan)
 			}
 		}
-		// checkers write common intersections as shapes where enough do to repay the runtime they read
+		// checkers write common intersections as shapes where enough do to
+		// repay the runtime they read
 		if (isOneChunk && usage.combines) {
 			usage.shapes = true
 			const shaped = this.writeProgram(program, plan)
@@ -1056,7 +1065,8 @@ export class Precompiler {
 		return link.changed
 	}
 
-	// why a bundle, read as built, may read what its scan left out: a module a plugin ahead rewrote passes if it reads the same
+	// why a bundle, read as built, may read what its scan left out: a module a
+	// plugin ahead rewrote passes if it reads the same
 	unseenIn(program: ScannedProgram): string | undefined {
 		const usage = this.usagesByProgram.get(program.key)
 		if (!usage) return
@@ -1366,7 +1376,8 @@ export class Precompiler {
 		return result
 	}
 
-	// what a module's text may import a value from, unlike an `import type`, or undefined where it doesn't parse
+	// what a module's text may import a value from, unlike an `import type`, or
+	// undefined where it doesn't parse
 	private valueSpecifiersOf(
 		source: string,
 		id: string
@@ -1587,7 +1598,8 @@ export class Precompiler {
 		return [dirname(entry), "unknown"]
 	}
 
-	// each package.json naming a version the output depends on, so a cache keyed by reads drops it after an upgrade
+	// each package.json naming a version the output depends on, so a cache
+	// keyed by reads drops it after an upgrade
 	get ownManifests(): string[] {
 		return [
 			...(["arktype", "@ark/schema", "@ark/util"] as const).map(
@@ -1640,7 +1652,8 @@ export class Precompiler {
 		const precompiled = this.precompileUnscanned(source, id, mappings, program)
 		const usage =
 			program === undefined ? undefined : this.usagesByProgram.get(program)
-		// its units would be copies of those the bundle reads from one function, which another validator could tell apart
+		// its units would be copies of those the bundle reads from one
+		// function, which another validator could tell apart
 		if (
 			usage &&
 			Object.keys(precompiled.modules).some(specifier =>
@@ -2469,7 +2482,8 @@ export class Precompiler {
 			folding.passed.push(binding)
 			if (readsPassed && inputs.includes(input)) folding.read.push(binding)
 		}
-		// droppable with its variable unless it throws or checks; a function's only where it fixes no config and reads nothing
+		// droppable with its variable unless it throws or checks; a function's
+		// only where it fixes no config and reads nothing
 		const isPure =
 			!site.parseError &&
 			!site.introspection?.thrown &&
@@ -2701,7 +2715,8 @@ export class Precompiler {
 		return factory
 	}
 
-	// what a Scope's definitions hold for arktype to call as an alias resolves, so not yet known as called
+	// what a Scope's definitions hold for arktype to call as an alias resolves,
+	// so not yet known as called
 	private thunksOf(site: Site): unknown[] {
 		if (!hasArkKind(site.value, "scope")) return []
 		return thunksIn(this.interpreter.definitionsByScope.get(site.value))
@@ -2947,7 +2962,8 @@ export class Precompiler {
 			:	undefined
 	}
 
-	// the holes a factory reads from an input, as compareInput does: a Type's, and a literal's functions
+	// the holes a factory reads from an input, as compareInput does: a Type's,
+	// and a literal's functions
 	private suppliedHolesOf(
 		value: unknown,
 		holes: Set<unknown>,
@@ -3549,7 +3565,8 @@ export class Precompiler {
 		}
 	}
 
-	// a precompiled Scope or Generic lacks its members, so a rejected site reading it is left to arktype with it
+	// a precompiled Scope or Generic lacks its members, so a rejected site
+	// reading it is left to arktype with it
 	private refuseStandInsRead(
 		module: SourceModule,
 		sites: Site[],
@@ -3828,7 +3845,8 @@ export class Precompiler {
 		return result
 	}
 
-	// e.g. `text` for `export const text = (max: number) => type(...)`, which an unprecompiled module can't call
+	// e.g. `text` for `export const text = (max: number) => type(...)`, which
+	// an unprecompiled module can't call
 	private foldedHelpersOf(
 		module: SourceModule,
 		seen = new Set<SourceModule>()
@@ -3899,7 +3917,8 @@ export class Precompiler {
 		return true
 	}
 
-	// e.g. `max` in `const text = (max: number) => type(`string <= ${max}`)`, known only at each call, so each is folded
+	// e.g. `max` in `const text = (max: number) => type(`string <= ${max}`)`,
+	// known only at each call, so each is folded
 	private calledParamOf(
 		fn: FunctionNode,
 		module: SourceModule
@@ -4996,7 +5015,8 @@ export class Precompiler {
 		return [...result]
 	}
 
-	// a Type member read off an import the build can't follow, like a bundler's alias, once per import
+	// a Type member read off an import the build can't follow, like a bundler's
+	// alias, once per import
 	private unresolvedReadsOf(module: SourceModule): Diagnostic[] {
 		const result: Diagnostic[] = []
 		const warned = new Set<string>()
@@ -5548,7 +5568,8 @@ export class Precompiler {
 		}
 	}
 
-	// e.g. `(await import("arktype")).type`, loading arktype/runtime with no definition to precompile
+	// e.g. `(await import("arktype")).type`, loading arktype/runtime with no
+	// definition to precompile
 	private checkDynamicImports(module: SourceModule): Diagnostic[] {
 		const result: Diagnostic[] = []
 		walk(module.program, node => {
@@ -5627,7 +5648,8 @@ export class Precompiler {
 		return result
 	}
 
-	// a build writing its errors for size or as none gives its validators a runtime of their own, which an island's errors aren't from
+	// a build writing its errors for size or as none gives its validators a
+	// runtime of their own, which an island's errors aren't from
 	private variantIslandDiagnosticsOf(module: SourceModule): Diagnostic[] {
 		const option = writeVariantOption(this.variant!)
 		return module.islands.map(island =>
@@ -5648,7 +5670,8 @@ export class Precompiler {
 		)
 	}
 
-	// what an island reads, through each binding it reaches, reporting arktype's values read outside one
+	// what an island reads, through each binding it reaches, reporting
+	// arktype's values read outside one
 	private visitIsland(
 		node: Node,
 		origin: SourceModule,
@@ -5748,7 +5771,8 @@ export class Precompiler {
 		})
 	}
 
-	// what an island's reference reads: its binding, or e.g. `schemas.User` for `schemas` a namespace import
+	// what an island's reference reads: its binding, or e.g. `schemas.User` for
+	// `schemas` a namespace import
 	private islandReadOf(
 		child: Node,
 		binding: Binding,
@@ -6320,7 +6344,8 @@ const genericSiteDefinitionOf = (
 	return text.includes("\n") || text.length > 60 ? undefined : text
 }
 
-// e.g. `Math.random()` for `type({ a: Math.random() > 0.5 ? "string" : "number" })`, or its binding where too long
+// e.g. `Math.random()` for `type({ a: Math.random() > 0.5 ? "string" : "number" })`,
+// or its binding where too long
 const innermostSnippetOf = (
 	dynamic: DynamicValue,
 	site: Span,

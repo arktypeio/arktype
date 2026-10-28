@@ -70,29 +70,23 @@ export class InternalTraversal implements FailureContext {
 	declare branches: BranchTraversal[]
 	/** what it tracks of the cyclic nodes it enters, once it enters one */
 	declare res: Resolutions | undefined
-	/**
-	 * whether data within its bounds is a tree, so each path is transformed
-	 * data a root allowed within the bounds is a tree, so each path is transformed
-	 */
+	/** whether data a root allowed within the bounds is a tree, so each path is transformed */
 	declare isTree: boolean
 	/** each cyclic node's transformed data, keyed by the input it transformed */
 	declare tfdById: { [id in string]?: Map<unknown, unknown> } | undefined
 
 	/**
-	 * the data the innermost running morph received
-	 * data is read from what a morph received, since root is the input
+	 * the data the innermost running morph received, which `data` reads
+	 * from, since root is the input
 	 */
 	declare recv: unknown
 	/** how deep in the root's path the data a morph received is */
 	declare recvAt: number
-	/**
-	 * whether a piped node is only checked, to be transformed once Apply finds it valid
-	 * a piped node is transformed once Apply finds it valid
-	 */
+	/** whether a piped node is only checked, to be transformed once Apply finds it valid */
 	declare chkOnly: boolean
 	/**
-	 * the error count a running morph started from, since it fails by returning any error added after
-	 * a morph fails by returning any error ctx.error added during its call
+	 * the error count a running morph started from, since it fails by
+	 * returning any error ctx.error adds after
 	 */
 	declare retFrom: number | undefined
 	// a valid input's transforms write into it
