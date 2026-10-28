@@ -84,9 +84,9 @@ import {
 	isDescribed,
 	isKeyword,
 	isLiteralSite,
+	missingDescriptionOf,
 	raisedWritersByCode,
 	raisingKeys,
-	requiredIssue,
 	writeSiteOf,
 	type IssueContext,
 	type Writer
@@ -1928,7 +1928,7 @@ ${writeFunction(
 		// a site's description is passed, so units differing by theirs share it
 		const descriptions: string[] = []
 		const shared = body.replace(
-			/(runtime\.(?:siteOf|keySiteOf)\("(?:[^"\\]|\\.)*", )("(?:[^"\\]|\\.)*")\)/g,
+			/(runtime\.(?:siteOf|keySiteOf)\("(?:[^"\\]|\\.)*", |runtime\.requiredSiteOf\()("(?:[^"\\]|\\.)*")\)/g,
 			(_, call: string, description: string) => {
 				if (!descriptions.includes(description)) descriptions.push(description)
 				return `${call}d${descriptions.indexOf(description)})`
@@ -3509,15 +3509,18 @@ ${writeFunction(
 				return writeSiteOf(site as IssueContext, s => this.emitString(s))
 			return `runtime.writtenSiteOf(${this.emit(code)}, ${description === undefined ? "void 0" : this.emitString(description)}, ${this.emit(written.context)}, ${this.emitWriters(written.writers)}${written.keeps ? `, ${written.keeps}` : ""})`
 		}
-		if (
-			(site as FailureSite).m === requiredIssue &&
-			isDescribed((site as FailureSite).v as IssueContext)
-		) {
-			return writeSiteOf(
-				(site as FailureSite).v!,
-				s => this.emitString(s),
-				"keySiteOf"
-			)
+		const missing = missingDescriptionOf(site)
+		if (missing !== undefined) {
+			const { v: value } = site as FailureSite
+			if (!value) return `runtime.requiredSiteOf(${this.emitString(missing)})`
+			if (isDescribed(value as IssueContext)) {
+				return writeSiteOf(
+					value as IssueContext,
+					s => this.emitString(s),
+					"keySiteOf",
+					missing
+				)
+			}
 		}
 		return `{ ${Object.entries(site)
 			.map(

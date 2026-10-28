@@ -547,17 +547,16 @@ const alternativesOf = (error: ArkError): string[] | null => {
 }
 
 // what each issue expects, at its path and code, where a validator's issue is
-// written alike: not a missing key, an issue a callback raised without an
-// expected, nor a union described by its branches' errors, as a validator's
-// issue holds neither the callback nor the errors
+// written alike: not an issue a callback raised without an expected, nor a
+// union described by its branches' errors, as a validator's issue holds
+// neither the callback nor the errors; a missing key expects its value's brief
 const expectedsOf = (errors: ArkErrors) =>
 	keptOf(errors)
 		.map(issue => ({
 			at: `${pathKeyOf(issue.path)}\0${issue.code}`,
 			expected:
 				!(errors instanceof ArkErrors) ? (issue.expected ?? null)
-				: issue.code === "required" || raisesUnexpected(issue as ArkError) ?
-					null
+				: raisesUnexpected(issue as ArkError) ? null
 				: issue.code === "union" ? unionExpectedOf(issue as ArkError<"union">)
 				: issue.expected
 		}))

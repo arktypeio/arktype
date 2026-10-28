@@ -7,13 +7,15 @@ import type {
 	SiteContext
 } from "@ark/schema/runtime"
 import type { Fn } from "@ark/util"
-import { failsAt, failsIn } from "./runtime.ts"
+import { failsAt, failsIn, requiredSiteOf } from "./runtime.ts"
 
 // a size build's validators are composed of these; passed a ctx, each reports to it as an Apply does
 
 /** a node a size build composes, reporting to a ctx it's passed */
 export interface Checker {
 	(data: unknown, ctx?: FailureContext | number): boolean
+	/** what a key it's the value of expects where the key is missing */
+	description?: string | undefined
 	/** where it transforms, e.g. by writing a default, data it allows */
 	t?: ((data: any) => unknown) | undefined
 	/** where it checks a key that may be absent */
@@ -137,10 +139,12 @@ export const pattern = ((
 export const stringRange = ((max?: number, min?: number): Checker => {
 	const tooLong = max === undefined ? stringCheck : maxLength(max)
 	const tooShort = min === undefined ? stringCheck : minLength(min)
-	return (data: any, ctx) =>
+	const checker: Checker = (data: any, ctx) =>
 		typeof data !== "string" ? !failsAt(ctx as never, stringCheck, data)
 		: data.length > max! ? !failsAt(ctx as never, tooLong, data)
 		: !(data.length < min!) || !failsAt(ctx as never, tooShort, data)
+	checker.description = stringCheck.description
+	return checker
 }) satisfies Fn
 
 // an integer at least least and at most most
@@ -148,12 +152,14 @@ export const integerRange = ((least?: number, most?: number): Checker => {
 	const integer = divisor(1)
 	const tooSmall = least === undefined ? numberCheck : min(least)
 	const tooLarge = most === undefined ? numberCheck : max(most)
-	return (data: any, ctx) =>
+	const checker: Checker = (data: any, ctx) =>
 		Number.isFinite(data) ?
 			(data % 1 === 0 || !failsAt(ctx as never, integer, data)) &&
 			(!(data > most!) || !failsAt(ctx as never, tooLarge, data)) &&
 			(!(data < least!) || !failsAt(ctx as never, tooSmall, data))
 		:	!failsAt(ctx as never, numberCheck, data)
+	checker.description = numberCheck.description
+	return checker
 }) satisfies Fn
 
 // an array of element, which transforms nothing
@@ -165,11 +171,13 @@ export const arrayOf = ((
 	const tooLong = max === undefined ? arrayCheck : maxLength(max)
 	const tooShort = min === undefined ? arrayCheck : minLength(min)
 	const within = elementsOf(element)
-	return (data: any, ctx) =>
+	const checker: Checker = (data: any, ctx) =>
 		!Array.isArray(data) ? !failsAt(ctx as never, arrayCheck, data)
 		: data.length > max! ? !failsAt(ctx as never, tooLong, data)
 		: data.length < min! ? !failsAt(ctx as never, tooShort, data)
 		: within(data, ctx)
+	checker.description = arrayCheck.description
+	return checker
 }) satisfies Fn
 
 const printValue = (value: unknown): string =>
@@ -210,6 +218,8 @@ export const intersection = ((
 		}
 		return !passed || !within || within(data, ctx)
 	}
+	// its brief: its basis's description, or "present" without one
+	checker.description = basis ? basis.description : "present"
 	checker.t = within?.t
 	return checker
 }) satisfies Fn
@@ -223,14 +233,21 @@ export const optional = ((checker: Checker, ...value: [unknown?]): Checker => {
 	return wrapped
 }) satisfies Fn
 
+// a required key's checker whose own description isn't what the key expects
+// where it's missing, e.g. one compiled rather than composed
+export const required = ((checker: Checker, description: string): Checker => {
+	const wrapped: Checker = (data, ctx) => checker(data, ctx)
+	wrapped.description = description
+	wrapped.t = checker.t
+	return wrapped
+}) satisfies Fn
+
 type Props = Record<string, Checker>
 
-// a missing key, as runtime's requiredSite without siteOf
-const requiredSite: FailureSite = { m: { code: "required" } }
-
-// an object's keys, each checked in the order declared
-export const props = ((declared: Props): Checker =>
-	(data: any, ctx) => {
+// an object's keys, each checked in the order declared; a missing key expects
+// its checker's description
+export const props = ((declared: Props): Checker => {
+	const checker: Checker = (data: any, ctx) => {
 		if (!objectCheck.test(data))
 			return !failsAt(ctx as never, objectCheck, data)
 		for (const k in declared) {
@@ -238,14 +255,23 @@ export const props = ((declared: Props): Checker =>
 			// only a failed value is read again, as failsIn reports it
 			if (
 				value === undefined && !(k in data) ?
-					!declared[k].o && failsAt(ctx as never, requiredSite, data, k)
+					!declared[k].o &&
+					failsAt(
+						ctx as never,
+						requiredSiteOf(declared[k].description),
+						data,
+						k
+					)
 				:	!declared[k](value) &&
 					failsIn(ctx as never, declared[k] as CompactApply, data, k)
 			)
 				return false
 		}
 		return true
-	}) satisfies Fn
+	}
+	checker.description = objectCheck.description
+	return checker
+}) satisfies Fn
 
 // data inheriting a builtin's prototype keeps state in internal slots
 const isBuiltin = (data: object): boolean => {
@@ -352,6 +378,7 @@ export const domains = ((
 				branch === 1 || branch(data, ctx)
 			:	!failsAt(ctx as never, site, data)
 	}
+	checker.description = description
 	if (Object.values(cases).some(branch => (branch as Checker).t))
 		checker.t = data => (caseOf(data) as Checker).t?.(data) ?? data
 	return checker
@@ -388,6 +415,7 @@ export const discriminate = ((
 			:	!failsAt(ctx as never, missed, data)
 		)
 	}
+	checker.description = missed.description
 	if (Object.values(cases).some(branch => (branch as Checker).t))
 		checker.t = data => (byValue.get(data[key]) as Checker).t?.(data) ?? data
 	return checker
@@ -410,6 +438,7 @@ export const discriminateOr = ((
 			:	otherwise(data) ||
 					!failsAt(ctx as never, objectCheck.test(data) ? site : missed, data)
 	}
+	checker.description = missed.description
 	if ([...byValue.values(), otherwise].some(branch => (branch as Checker).t)) {
 		checker.t = data =>
 			((byValue.get(data[key]) ?? otherwise) as Checker).t?.(data) ?? data
@@ -436,6 +465,7 @@ export const union = ((
 			bases && !bases.some(basis => basis.test(data)) ? basesSite : site,
 			data
 		)
+	checker.description = basesDescription ?? description
 	if (branches.some(branch => branch.t))
 		checker.t = data => branches.find(branch => branch(data))!.t?.(data) ?? data
 	return checker

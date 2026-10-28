@@ -156,6 +156,7 @@ var intersection = (basis, refinements, within) => {
 		}
 		return !passed || !within || within(data, ctx)
 	}
+	checker.description = basis ? basis.description : "present"
 	checker.t = within?.t
 	return checker
 }
@@ -183,6 +184,7 @@ var domains = (cases, description) => {
 				branch === 1 || branch(data, ctx)
 			:	!failsAt(ctx, site, data)
 	}
+	checker.description = description
 	if (Object.values(cases).some(branch => branch.t))
 		checker.t = data => caseOf(data).t?.(data) ?? data
 	return checker

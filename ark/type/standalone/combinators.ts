@@ -20,6 +20,7 @@ import {
 	isKeyword,
 	issueContextOf,
 	issueSiteOf,
+	missingDescriptionOf,
 	type IssueContext
 } from "./sites.ts"
 
@@ -354,15 +355,32 @@ const structureCalleesOf = (
 	return structure.props.map(prop => prop.value)
 }
 
-// a missing key whose issue is required's alone
-const missesAsRequired = (prop: Prop.Node): boolean => {
-	const { m: missing } = issueSiteOf(prop.failSite) as { m?: object }
-	return (
-		missing === runtime.requiredSite.m ||
-		(missing !== undefined &&
-			plainContextOf(missing)?.code === "required" &&
-			(missing as IssueContext).description === undefined)
-	)
+// a missing key whose issue is required's alone, which props reports
+const missesAsRequired = (prop: Prop.Node): boolean =>
+	missingDescriptionOf(issueSiteOf(prop.failSite)) !== undefined
+
+// the description a node's checker holds, which props reports where a key
+// it's the value of is missing, as writeCombinator writes it; undefined
+// where the checker is compiled
+const checkerDescriptionOf = (node: BaseNode): string | undefined => {
+	if (!combines(node)) return
+	if (node.is("domain") || node.is("proto")) return checkOf(node)!.description
+	if (node.is("unit")) return unitSiteOf(node)!.description
+	if (node.is("intersection")) {
+		if (node.basis) return checkOf(node.basis)!.description
+		const predicate = node.inner.predicate?.[0]
+		return predicate && !node.preStruct.length ?
+				predicateSiteOf(predicate)!.description
+			:	"present"
+	}
+	if (node.is("union")) {
+		const units = unitListOf(node)
+		if (units) return units.site.description
+		if (domainCasesOf(node)) return discriminantSiteOf(node)!.description
+		const discriminated = discriminatedOf(node)
+		if (discriminated) return discriminated.missed.description
+		return (basesSiteOf(node) ?? unionSiteOf(node))!.description
+	}
 }
 
 // what a combinator's compiler reads, ref names and serializes
@@ -487,14 +505,19 @@ const writeStructure = (
 			ref(element)
 		)
 	}
-	// checked and written in the order arktype checks and writes them
+	// checked and written in the order arktype checks and writes them; a
+	// required key expects its value's brief, which its checker holds unless
+	// it's compiled or described apart
 	const entries = structure.inOrder.map(prop => {
 		const checker = ref(prop.value)
+		const missing = missingDescriptionOf(issueSiteOf(prop.failSite))
 		return `${writeKey(prop.key as string)}: ${
-			!prop.is("optional") ? checker
-			: prop.hasDef() ?
-				writeCall("optional", checker, writeLiteral(js, prop.default))
-			:	writeCall("optional", checker)
+			prop.is("optional") ?
+				prop.hasDef() ?
+					writeCall("optional", checker, writeLiteral(js, prop.default))
+				:	writeCall("optional", checker)
+			: checkerDescriptionOf(prop.value) === missing ? checker
+			: writeCall("required", checker, JSON.stringify(missing))
 		}`
 	})
 	return writeCall(

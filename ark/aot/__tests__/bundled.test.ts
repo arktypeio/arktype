@@ -95,7 +95,7 @@ ${observe}
 observe("Parsed", Parsed, '{"a":1}', "{", 5)
 observe("Refused", Refused, "ok", "no")
 observe("Reported", Reported, "a", "")
-observe("Payload", Payload, { payload: "YQ==", json: "1" }, { payload: "", json: "{" }, { payload: "!" })
+observe("Payload", Payload, { payload: "YQ==", json: "1" }, { payload: "", json: "{" }, { payload: "!" }, {})
 observe("Either", Either, 1, "[1]", "{")
 observe("Version", Version, "v12", "x")
 observe("Versioned", Versioned, { v: "v3" }, { v: "3" }, 2)
@@ -222,7 +222,26 @@ contextualize(() => {
 					}
 				],
 				"payload must be base64-encoded"
+			],
+			[
+				[
+					{
+						code: "required",
+						path: ["payload"],
+						data: {},
+						expected: "a string"
+					}
+				],
+				"payload must be a string"
 			]
+		])
+	})
+
+	it("a missing key expects its value's brief", () => {
+		attest(standalone.Payload[3]).equals(arktype.Payload[3])
+		attest(standalone.Payload[3]).snap([
+			[{ code: "required", path: ["payload"], data: {}, expected: "a string" }],
+			"payload must be a string"
 		])
 	})
 
