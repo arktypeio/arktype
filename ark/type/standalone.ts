@@ -133,8 +133,7 @@ type DeclarationRole =
 	| "jsonSchema"
 	| "traversal"
 
-// json and JSON Schema repeat a Type each place it's referenced, so written
-// out, a Type reused at each level of another doubles with each level
+// json repeats a Type at each reference, so a reused Type's text doubles per level
 const maxWrittenJsonLength = 1 << 22
 
 const assertWritableJson = (root: BaseRoot): void => {
@@ -197,7 +196,6 @@ export const introspectionMembers = [
 
 export type FoldedMember = Exclude<IntrospectionMember, "~standard.jsonSchema">
 
-// traverse(), from() and toString()
 export const defaultMembers = [
 	"assert",
 	"meta",
@@ -271,7 +269,6 @@ export type Optimization = "speed" | "size"
 interface ConfiguredModule {
 	fingerprint: string
 	path: string
-	// the config module's specifier from path
 	config: string
 }
 
@@ -293,17 +290,13 @@ export interface StandaloneOptions {
 	hoisted?: boolean | undefined
 	// export as values what a site would call a function only to read
 	values?: boolean | undefined
-	// exports whose site its module runs once as it loads, where a lazy build
-	// creates the validator in place, as a getter called there would
+	// exports a site reads as its module loads, which a lazy build creates in place
 	readOnLoad?: readonly string[] | undefined
-	// false where a size build with detailed errors compiles each node rather
-	// than writing it as a checker
+	// false where a detailed size build compiles nodes rather than writing checkers
 	combines?: boolean | undefined
-	// where a size build writes checkers, write common intersections, e.g. a
-	// string's length bounds, as one call each, as pays where many are
+	// where a size build writes checkers, write common intersections as one call each
 	shapes?: boolean | undefined
-	// false where nothing calls a validator, so every failure's errors are
-	// read as it returns, as by assert or ~standard
+	// false where nothing calls a validator, so each failure's errors are read
 	called?: boolean | undefined
 	// false where nothing reads a validator's .allows
 	readsAllows?: boolean | undefined
@@ -311,14 +304,12 @@ export interface StandaloneOptions {
 	piped?: boolean | undefined
 }
 
-// how a program reads its validators besides their members
 interface ValidatorReads {
 	called: boolean
 	readsAllows: boolean
 	piped: boolean
 }
 
-// how a validator the runtime reads may be read
 const wholeReads: ValidatorReads = {
 	called: true,
 	readsAllows: true,
@@ -347,7 +338,6 @@ interface Baking extends ValidatorReads {
 	compiledInputs: ReadonlySet<string>
 	// errors find their issues once read, for a call that may never read them
 	defersIssues: boolean
-	// what the issues of each validator written so far may hold
 	issues: IssueFeatures
 }
 
@@ -365,7 +355,6 @@ const writeFunction = (
 	name: string,
 	params: string,
 	body: string,
-	// whether the module calls it as it loads
 	isCalledOnLoad = true
 ) =>
 	baking.hoisted ? `function ${name}(${params}) {\n${body}\n}`
@@ -389,8 +378,7 @@ const isCreatedByRuntime = (
 	baking.checksTypes &&
 	defaultMembers.every(member => members.has(member))
 
-// a lazy variable's read: V8 compiles a strict check against undefined to one
-// comparison, where `??=` and `== null` test the value's map
+// V8 compiles `=== undefined` to one comparison, where `??=` and `== null` test the map
 export const writeLazyRead = (name: string, initial: string): string =>
 	`(${name} === undefined ? (${name} = ${initial}) : ${name})`
 
@@ -509,8 +497,7 @@ export const precompileStandaloneModules = (
 ): StandaloneModules => {
 	const { sections, shared, imports, folds, checking, values, calls, issues } =
 		writeArtifact(exports, opts, true)
-	// each module is shared by every artifact that reads it, so none merges
-	// another's units into its own
+	// a module is shared by every artifact reading it, so none merges another's units
 	const modules: Record<string, string> = {}
 	for (const specifier in shared)
 		modules[specifier] = writeModule(shared[specifier])
@@ -528,9 +515,7 @@ export const precompileStandaloneModules = (
 	}
 }
 
-// the input of each Type that can't be checkers, compiled too rather than
-// checked by checkers of its own beside the Type's compiled Allows, by hash,
-// as the input may be a node alike to the exported Type but not that node
+// an input alike to an exported Type but not that node is compiled too, by hash
 const compiledInputsOf = (
 	exports: Record<string, StandaloneExport>
 ): Set<string> => {
@@ -681,8 +666,7 @@ const writeArtifact = (
 			!rekeying || (rekeying.length === 1 && rekeying[0] === "return created")
 		)
 	}
-	// a size build's sites create their validators where they can, as does a
-	// lazy build's site its module runs once as it loads
+	// a size build's sites create validators where they can, as a lazy build's on load
 	const createsInPlace = (name: string) =>
 		isModular &&
 		!!opts.values &&
@@ -919,7 +903,6 @@ interface SharedUnit {
 	shapesByName: Record<string, string>
 }
 
-// what a StandaloneArtifact's units write that it reads as it emits values
 interface Written {
 	issues: IssueFeatures
 	metas: Set<object>
@@ -1017,7 +1000,6 @@ class StandaloneArtifact {
 		sharedModules: Record<string, SharedModule>,
 		imports: Record<string, string[]>,
 		baking: Baking,
-		// the factory or introspection a site calls
 		called?: StandaloneFactory | StandaloneIntrospection
 	) {
 		this.exports = exports
@@ -1376,7 +1358,6 @@ class StandaloneArtifact {
 		)
 	}
 
-	// indexes the compilers writing a root's units
 	variantOf(root: BaseRoot): number {
 		const variant =
 			(writesInPlace(root, this.baking.mutatesInput) ? 1
@@ -1413,8 +1394,7 @@ class StandaloneArtifact {
 			const cover = (root: BaseRoot) => {
 				if (covered.has(root)) return
 				const reached = root.selectReferences(isAny)
-				// what reaches an alias is read from refsById, which can hold a
-				// node sharing another root's id
+				// refsById can hold a node sharing another root's id
 				const coversRoots = !reached.some(node => node.hasAlias)
 				for (const node of reached) {
 					written.add(node)
@@ -1433,7 +1413,6 @@ class StandaloneArtifact {
 		return this.writtenRead[1]
 	}
 
-	// writtenSelectedOf each root's units, as this.units lists them
 	writtenSelected(selects: (node: BaseNode) => boolean): BaseNode[] {
 		return [...this.unitRoots].flatMap(root =>
 			writtenSelectedOf(this.unitsOf(root), selects)
@@ -1532,8 +1511,7 @@ class StandaloneArtifact {
 		return statements.filter(statement => statement).join("\n\n")
 	}
 
-	// each export's validator as [callee, ...args], where it's created by a
-	// call reading only what the artifact imports, so a site can create it
+	// each export's validator as [callee, ...args], creatable from the imports alone
 	writeCalls(configured: Configured): string[][] | undefined {
 		if (writeFixConfig(configured) || !this.roots.length) return
 		this.writeSharedUnits()
@@ -1994,8 +1972,7 @@ ${writeFunction(
 	declareMembers(unit: RootUnit, readers: string[]): string[] {
 		const called = calledMembersOf(unit.members, readers)
 		const forwarded = forwardedOf(called)
-		// an Allows shares its params' text with an Apply, unless a program
-		// only reads .allows, so no Apply is kept
+		// an Allows shares its params' text with an Apply, unless only .allows is read
 		const dropsCtx =
 			this.baking.shortest ||
 			(!this.baking.called &&
@@ -2192,10 +2169,7 @@ ${writeFunction(
 			typeof applied === "string" ? applied : (
 				`${this.emitApplier(applied)}(${applied.args})`
 			)
-		// a creator per applier calls each validator's Allows itself, where one
-		// creator calling a shared root apply would call it through a closure
-		// every validator of the shape shares, whose call V8 can't inline once
-		// it has seen several
+		// a creator per applier: V8 can't inline a shared root apply's Allows call
 		const fusedApplier =
 			(
 				typeof applied === "object" &&
@@ -2210,8 +2184,7 @@ ${writeFunction(
 			) ?
 				applied
 			:	undefined
-		// a validator read only for allows is created from its Allows alone,
-		// so a bundle drops its Apply
+		// read only for allows, a validator is created from its Allows, dropping its Apply
 		const fused =
 			(
 				fusedApplier?.params === "allows, apply" &&
@@ -2236,8 +2209,7 @@ ${writeFunction(
 				applied
 			:	undefined
 		const written =
-			// a creator defaults the attributes of a validator with only an
-			// empty meta, so a site can create it from imports alone
+			// a creator defaults an empty-meta validator's attributes, so a site needs only imports
 			(
 				!isTemplate &&
 				!this.baking.checksTypes &&
@@ -2319,8 +2291,7 @@ ${writeFunction(
 			: this.baking.detailsErrors ?
 				"(pipedFromCtx ? errors => pipedFromCtx.piped(errors) : onFail)"
 			:	undefined
-		// a root apply failing by its one onFail, or throwing, is written into
-		// the validator
+		// a root apply failing by one onFail, or throwing, is written into the validator
 		const inlined =
 			(
 				failing &&
@@ -2390,8 +2361,7 @@ ${writeFunction(
 			reads.readsAllows && isCalled ? `validator.allows = ${allowsOf}` : "",
 			members.has("~standard") ?
 				`validator["~standard"] = ${
-					// where the build checks what it built, reading a JSON Schema it
-					// left out throws, saying how to keep it
+					// a checked build throws reading a JSON Schema it left out, saying how to keep it
 					this.baking.checksTypes && !members.has("~standard.jsonSchema") ?
 						`runtime.withoutJsonSchema(${standard})`
 					:	standard
@@ -2430,9 +2400,7 @@ ${writeFunction(
 		return name
 	}
 
-	// a validator nothing passes on as a value is written as what's read of
-	// it: an object of its members where nothing calls it, or its root apply
-	// where calls passing data alone are all that read it
+	// a validator nothing passes on as a value is written as what's read of it
 	preciseFormOf(
 		members: ReadonlySet<ValidatorMember>,
 		unconfigured: boolean,
@@ -2456,8 +2424,7 @@ ${writeFunction(
 			return "apply"
 	}
 
-	// an undetailed validator adds its issue to a traversal it's passed only
-	// where assert or a configured onFail would otherwise end the traversal
+	// undetailed, a validator pipes its issue only where assert or onFail would end the traversal
 	pipes(members: ReadonlySet<ValidatorMember>, unconfigured: boolean): boolean {
 		return this.baking.detailsErrors || !unconfigured || members.has("assert")
 	}
@@ -2511,8 +2478,7 @@ ${writeFunction(
 		return members
 	}
 
-	// whether no fallback writes any schema it bakes, so one a call passes,
-	// as libraries like hono-openapi do, changes nothing
+	// a fallback a call passes, as hono-openapi does, changes nothing where none writes
 	writesWithoutFallback(root: BaseRoot): boolean {
 		let fellBack = false
 		const fallback = flatMorph(
@@ -2794,8 +2760,7 @@ ${writeFunction(
 		const strategy = root.applyMode
 		// a checker transforms by its t, so each is created alike
 		const checks = isChecker(root, this.variantOf(root))
-		// an undiscriminated union's Transform finds the branch data allows,
-		// where a checker's t transforms only what its Allows passed
+		// an undiscriminated union's Transform finds its branch; a checker's t trusts its Allows
 		const isArrow =
 			!root.hasAlias &&
 			(strategy === "allows" ||
@@ -3023,11 +2988,7 @@ ${writeFunction(
 		]
 	}
 
-	// what applies a root or makes its validator from its traversals, written
-	// once for every root alike in a size build, as each function a module
-	// writes costs its load. A speed build writes one for each root's args, as
-	// V8 keeps one call feedback for every closure of a function, so one shared
-	// by several roots calls their Allows through a call it can't inline
+	// hashed with its args unless shortest: V8 can't inline an Allows call several roots share
 	emitApplier({
 		params,
 		apply,
@@ -3153,9 +3114,7 @@ ${writeFunction(
 		return name
 	}
 
-	// a bare placeholder is a class's name, written as functionNameOf writes
-	// it, or a predicate's, which an expression writes as baseNameOf does, so
-	// an anonymous one is fn wherever the expression is nested
+	// a bare placeholder is a class's or predicate's name, fn where anonymous
 	emitString(s: string): string {
 		const parts: string[] = []
 		let start = 0
@@ -3782,14 +3741,12 @@ export const keywordMetas: () => Set<object> = cached(() => {
 const isWriting = (member: string): boolean =>
 	member.endsWith("Transform") || member.endsWith("Copy")
 
-// units this one reads: called traversals and referenced shapes
 const readUnitsOf = (unit: RootUnit): RootUnit[] =>
 	[
 		...Object.values(unit.dependencies).map(([node]) => node),
 		...unit.refs.filter(ref => isNode(ref) && ref.isRoot())
 	].map(node => unitOf(node as BaseNode, unit))
 
-// an array of only a variadic element
 const isVariadicArray = (root: BaseRoot): root is IntersectionNode =>
 	root.is("intersection") &&
 	root.basis?.is("proto") === true &&
@@ -3821,8 +3778,7 @@ const selectedByUnits = new WeakMap<
 	Map<(node: BaseNode) => boolean, BaseNode[]>
 >()
 
-// what a root's units write that a predicate selects, in order: each unit's
-// declared nodes, then its roots' references, which a parent checks inline
+// each unit's declared nodes, then its roots' references, which a parent checks inline
 export const writtenSelectedOf = (
 	units: readonly RootUnit[],
 	selects: (node: BaseNode) => boolean
