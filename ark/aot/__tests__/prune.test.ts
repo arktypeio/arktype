@@ -335,7 +335,7 @@ contextualize(function (this: Mocha.Suite) {
 
 		it("a property", async () => {
 			attest(await droppedReading(`export const types = { User }`)).snap(
-				"main.ts:3:24 reads User other than to call it or read a member it knows"
+				"main.ts exports types, which code outside the bundle may read"
 			)
 		})
 
@@ -431,7 +431,7 @@ contextualize(function (this: Mocha.Suite) {
 					{ preset: undefined, creationChecks: "none" }
 				)
 			).snap(
-				"admin.ts:4:35 reads Trimmed other than to call it or read a member it knows"
+				"admin.ts:4:27 passes { name: Trimmed }, which holds a validator at name, to a function, which may read any member"
 			)
 		})
 
@@ -503,6 +503,76 @@ contextualize(function (this: Mocha.Suite) {
 				readsKeySites: true,
 				runsArktype: false
 			})
+		})
+	})
+
+	describe("held in an object literal", () => {
+		const schemas = `import { type } from "arktype"
+
+export const schemas = { user: type({ name: "string" }), post: type({ title: "string" }) }
+`
+
+		it("read at its key", async () => {
+			attest(
+				await droppedFrom({
+					"/types.ts": schemas,
+					"/main.ts": `import { schemas } from "./types.ts"\n\nschemas.user({})\nschemas.post.allows({})\n`
+				})
+			).equals(everyMember)
+			attest(
+				await droppedFrom({
+					"/types.ts": schemas,
+					"/main.ts": `import { schemas } from "./types.ts"\n\nschemas.user.assert({})\n`
+				})
+			).snap(["meta", "~standard", "methods"])
+		})
+
+		it("read at a computed key, which may be any held", async () => {
+			attest(
+				await droppedFrom({
+					"/types.ts": schemas,
+					"/main.ts": `import { schemas } from "./types.ts"\n\nconst k = process.argv[2] as "user" | "post"\nschemas[k].assert({})\n`
+				})
+			).snap(["meta", "~standard", "methods"])
+		})
+
+		it("held by a const the module reads", async () => {
+			attest(
+				await droppedReading(
+					"const all = { user: User } as const\nconsole.log(all.user({}))"
+				)
+			).equals(everyMember)
+		})
+
+		it("nested", async () => {
+			attest(
+				await droppedReading(
+					"const api = { v1: { user: User } }\napi.v1.user.allows({})\napi.v1.other?.assert({})"
+				)
+			).snap(["assert", "meta", "~standard", "methods"])
+		})
+
+		it("but not where the object is read whole", async () => {
+			attest(
+				await droppedReading(
+					"const all = { user: User }\nconsole.log(Object.values(all))"
+				)
+			).snap(
+				"main.ts:4:27 passes all, which holds a validator at user, to a function, which may read any member"
+			)
+			attest(await droppedReading("console.log({ user: User })")).snap(
+				"main.ts:3:13 passes { user: User }, which holds a validator at user, to a function, which may read any member"
+			)
+		})
+
+		it("nor where its key is computed", async () => {
+			attest(
+				await droppedReading(
+					'const k = "user"\nconst all = { [k]: User }\nall.user({})'
+				)
+			).snap(
+				"main.ts:4:20 reads User other than to call it or read a member it knows"
+			)
 		})
 	})
 
@@ -739,18 +809,19 @@ console.log(User.allows({ name: 5 }), User.allows({ name: "Ada" }))
 
 		const warningsOf = async (
 			opts: PrecompileUnpluginOptions,
-			{ plugins = [] }: BuildOptions = {}
+			{ plugins = [], ...options }: BuildOptions = {}
 		) =>
 			(
 				await build({
-					entryPoints: [join(root, "main.ts")],
+					...(!options.stdin && { entryPoints: [join(root, "main.ts")] }),
 					absWorkingDir: root,
 					bundle: true,
 					write: false,
 					format: "esm",
 					conditions,
 					logLevel: "silent",
-					plugins: [precompile.esbuild({ conditions, ...opts }), ...plugins]
+					plugins: [precompile.esbuild({ conditions, ...opts }), ...plugins],
+					...options
 				})
 			).warnings
 
@@ -934,6 +1005,24 @@ console.log(Strict({ name: "Ada", 0: 1, "a-b": 2 }).toString())
 			).equals(run(pruned))
 		})
 
+		it("leaves out what no read of a map holding validators needs", async () => {
+			const warnings = await warningsOf(
+				{ preset: undefined },
+				{
+					stdin: {
+						contents: `import { User } from "./types.ts"
+
+const schemas = { user: User }
+console.log(String(schemas.user({ name: 5 })))
+`,
+						resolveDir: root,
+						loader: "ts"
+					}
+				}
+			)
+			attest(warnings.map(warning => warning.text)).equals([])
+		})
+
 		it("throws from from() where no read asserts", async () => {
 			const js = await bundle(
 				{ preset: undefined },
@@ -1043,10 +1132,10 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			)
 			try {
 				attest(await textsOf({ preset: undefined })).snap([
-					"prune: keeping assert, meta, ~standard and methods, because main.ts:6:15 reads User other than to call it or read a member it knows. Set assert, meta, ~standard and methods in members, each false where no code reads it, to build without this warning."
+					"prune: keeping assert, meta, ~standard and methods, because main.ts:6:13 passes { User }, which holds a validator at User, to a function, which may read any member. Set assert, meta, ~standard and methods in members, each false where no code reads it, to build without this warning."
 				])
 				attest(await textsOf({ members: { assert: true } })).snap([
-					"prune: keeping meta, ~standard and methods, because main.ts:6:15 reads User other than to call it or read a member it knows. Set meta, ~standard and methods in members, each false where no code reads it, to build without this warning."
+					"prune: keeping meta, ~standard and methods, because main.ts:6:13 passes { User }, which holds a validator at User, to a function, which may read any member. Set meta, ~standard and methods in members, each false where no code reads it, to build without this warning."
 				])
 				attest(await textsOf({ members })).equals([])
 				// setting what it kept changes nothing it writes
