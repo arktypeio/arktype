@@ -326,6 +326,26 @@ export const schema = T.toJsonSchema()`)
 			attest([refused.status, refused.value]).equals(["rejected", undefined])
 		})
 
+		it("leaves a Scope to arktype with a site the writer refuses reading it", () => {
+			const result = precompile(`import { scope } from "arktype"
+const unit = { toJSON: () => ({ tag: "u" }) }
+const $ = scope({})
+export const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })`)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				'/main.ts:3:11  scope({}) is left to arktype\n  $.type({ k: $.type.unit(unit) }).or({ k: "\'b\'", v: "number"… (/main.ts:4:18) reads `$` but isn\'t precompiled, so arktype must define `$` for it',
+				'/main.ts:4:18  $.type({ k: $.type.unit(unit) }).or({ k: "\'b\'", v: "number"… can\'t be precompiled yet\n  the unit {"tag":"u"} can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.'
+			])
+			attest(result.sites.map(site => site.status)).equals([
+				"rejected",
+				"rejected"
+			])
+			// the stand-in that replaced the Scope would lack `type`
+			attest(foldedCode(result.code)).snap(`import { scope } from "arktype"
+const unit = { toJSON: () => ({ tag: "u" }) }
+const $ = scope({})
+export const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })`)
+		})
+
 		it("loads arktype where it was imported", () => {
 			attest(
 				normalized(
@@ -421,6 +441,8 @@ const $ = scope({ a: "string" })
 const G = type("<t>", { x: "t" })
 export const json = [$.json, G.json, scope({ "b<t>": { x: "t" } }).export().b.json]`)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				'/main.ts:2:11  scope({ a: "string" }) is left to arktype\n  $.json (/main.ts:4:22) reads `$` but isn\'t precompiled, so arktype must define `$` for it',
+				'/main.ts:3:11  type("<t>", { x: "t" }) is left to arktype\n  G.json (/main.ts:4:30) reads `G` but isn\'t precompiled, so arktype must define `G` for it',
 				"/main.ts:4:22  $.json cannot be precompiled\n  `$.json` is not a documented member its content alone decides, so it can depend on registry names or node ids\n  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.",
 				"/main.ts:4:30  G.json cannot be precompiled\n  `G.json` is not a documented member its content alone decides, so it can depend on registry names or node ids\n  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.",
 				'/main.ts:4:38  scope({ "b<t>": { x: "t" } }).export().b.json cannot be precompiled\n  `scope({ "b<t>": { x: "t" } }).export().b.json` is not a documented member its content alone decides, so it can depend on registry names or node ids\n  Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.'

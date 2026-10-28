@@ -119,6 +119,7 @@ ${mark}export const types = $.export()`
 		const diagnosticsOfMarked = (mark: string) =>
 			precompile(writeSource(mark)).diagnostics.map(renderDiagnostic)
 		attest(diagnosticsOfMarked("")).snap([
+			'/main.ts:3:11  scope({ zero: () => $.type("number").narrow(isZero) }) is left to arktype\n  $.export() (/main.ts:4:22) reads `$` but isn\'t precompiled, so arktype must define `$` for it',
 			"/main.ts:4:22  $.export() can't be precompiled yet\n  the site's value holds `(n: number) => n === 0` (/main.ts:2:16), which it reads outside its own source\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
 		])
 		attest(diagnosticsOfMarked("// @ark-runtime\n")).equals([])

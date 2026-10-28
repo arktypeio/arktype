@@ -2138,7 +2138,7 @@ const N = type(Gen.names.length === 1 ? "string" : "number")`)
 				"4:11 rejected\n  `User.json` is not a documented member its content alone decides, so it can depend on registry names or node ids",
 				"5:11 rejected\n  `JSON.stringify(User)` stringifies a function or arktype value",
 				"6:11 accepted string",
-				"7:11 accepted",
+				"7:11 rejected\n  type(`'${$.name}'`) (/main.ts:10:11) reads `$` but isn't precompiled, so arktype must define `$` for it",
 				"8:13 accepted",
 				"9:14 accepted { a: string, b?: this }",
 				"10:11 rejected\n  `$.name` is not a documented member its content alone decides, so it can depend on registry names or node ids",

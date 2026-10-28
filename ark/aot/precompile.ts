@@ -54,6 +54,7 @@ import {
 	type StandaloneExport,
 	type StandaloneFactory,
 	type StandaloneIntrospection,
+	type StandaloneModules,
 	type StandaloneOptions,
 	type ScopeAlias
 } from "arktype/internal/standalone.ts"
@@ -2110,6 +2111,12 @@ export class Precompiler {
 				replaced.push([site, []])
 			}
 		}
+		// a stand-in a site refused here reads is left to arktype with it
+		for (const site of this.refuseStandInsRead(module, sites, diagnostics)) {
+			delete exportsByName[namesBySite.get(site)!]
+			namesBySite.delete(site)
+			factoriesBySite.delete(site)
+		}
 		return { namesBySite, factoriesBySite, exportsByName, folded }
 	}
 
@@ -2129,7 +2136,6 @@ export class Precompiler {
 		const inputImports: Record<string, Record<string, string>> = {}
 		const { namesBySite, factoriesBySite, exportsByName, folded } =
 			this.planSites(module, sites, s, prefix, diagnostics)
-		const refusalsByName: Record<string, string[]> = {}
 		const { fingerprint, problem } = this.configuration!
 		const configured =
 			!this.configures ? false
@@ -2139,31 +2145,49 @@ export class Precompiler {
 					path: module.path,
 					config: specifierOf(module.id, this.config!)
 				}
-		const validators =
-			Object.keys(exportsByName).length ?
-				writeValidators(
-					exportsByName,
-					{
-						...this.standalone,
-						members,
-						called,
-						readsAllows,
-						piped,
-						combines,
-						shapes,
-						configured,
-						bake: write => this.bake(write),
-						hoisted: this.isReachedEarly(module),
-						// shadow mode calls what it compares
-						values: !this.shadow,
-						readOnLoad: [...namesBySite]
-							.filter(([site]) => site.declarationStart !== undefined)
-							.map(([, name]) => name)
-					},
-					refusalsByName,
-					this.inline
-				)
-			:	noValidators
+		const unplan = (site: Site) => {
+			delete exportsByName[namesBySite.get(site)!]
+			namesBySite.delete(site)
+			factoriesBySite.delete(site)
+		}
+		// written again without a stand-in a site the writer refuses reads
+		let validators: StandaloneModules
+		for (;;) {
+			const refusalsByName: Record<string, string[]> = {}
+			validators =
+				Object.keys(exportsByName).length ?
+					writeValidators(
+						exportsByName,
+						{
+							...this.standalone,
+							members,
+							called,
+							readsAllows,
+							piped,
+							combines,
+							shapes,
+							configured,
+							bake: write => this.bake(write),
+							hoisted: this.isReachedEarly(module),
+							// shadow mode calls what it compares
+							values: !this.shadow,
+							readOnLoad: [...namesBySite]
+								.filter(([site]) => site.declarationStart !== undefined)
+								.map(([, name]) => name)
+						},
+						refusalsByName,
+						this.inline
+					)
+				:	noValidators
+			for (const [site, name] of namesBySite) {
+				if (!refusalsByName[name]) continue
+				diagnostics.push(this.refuseWritten(module, site, refusalsByName[name]))
+				unplan(site)
+			}
+			const refused = this.refuseStandInsRead(module, sites, diagnostics)
+			if (!refused.length) break
+			for (const site of refused) unplan(site)
+		}
 		const checking = new Set(validators.checking)
 		// modules writing the same code share it
 		const specifier = `~arktype/${hashOf(validators.code)}`
@@ -2176,10 +2200,6 @@ export class Precompiler {
 		let readsPassedBy: ((exported: string) => boolean) | undefined
 		let fixedAt = Infinity
 		for (const [site, name] of namesBySite) {
-			if (refusalsByName[name]) {
-				diagnostics.push(this.refuseWritten(module, site, refusalsByName[name]))
-				continue
-			}
 			// a folded factory may call a function it shares, passing its index
 			const [exported, index] = validators.folds[name] ?? [name]
 			// e.g. a size build's validator, created where it's read
@@ -3293,6 +3313,8 @@ export class Precompiler {
 				diagnostics.push(this.refuseThrown(module, site, e))
 			}
 		}
+		if (this.mode === "standalone")
+			this.refuseStandInsRead(module, sites, diagnostics)
 		diagnostics.push(...this.checkConfiguration(module))
 		let quiet: FunctionNode[] = []
 		if (this.mode === "standalone") {
@@ -3317,6 +3339,48 @@ export class Precompiler {
 				.sort((l, r) => l.start - r.start),
 			dependencies: this.graph.dependenciesOf(module.id)
 		}
+	}
+
+	// a Scope or Generic a site precompiles is replaced by an object lacking its
+	// members, so one a rejected site reads, as `$.type(...)` left to arktype
+	// reads `$`, is left to arktype with it; returns the sites it refuses
+	private refuseStandInsRead(
+		module: SourceModule,
+		sites: Site[],
+		diagnostics: Diagnostic[]
+	): Site[] {
+		const standIns = new Map<unknown, Site>()
+		for (const site of sites) {
+			if (site.status === "accepted" && standInKindOf(site.value))
+				standIns.set(site.value, site)
+		}
+		const refused: Site[] = []
+		if (!standIns.size) return refused
+		for (const site of sites) {
+			if (site.status !== "rejected") continue
+			for (const { binding, id } of module.scopes.references) {
+				if (!binding || id.start < site.start || id.end > site.end) continue
+				const read = standIns.get(
+					this.interpreter.valueOfBinding(binding, module)
+				)
+				if (!read || read.status === "rejected") continue
+				const reasons = [
+					`${module.snippetOf(site)} (${module.positionOf(site)}) reads \`${binding.name}\` but isn't precompiled, so arktype must define \`${binding.name}\` for it`
+				]
+				diagnostics.push(
+					this.diagnostic(
+						module,
+						read,
+						"unsupported",
+						`${module.snippetOf(read)} is left to arktype`,
+						reasons,
+						false
+					)
+				)
+				refused.push(refuse(read, reasons))
+			}
+		}
+		return refused
 	}
 
 	// a helper whose calls the build folds, and each function the program
