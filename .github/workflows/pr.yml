@@ -145,9 +145,9 @@ jobs:
           ARK_PRECOMPILE_OPTIONS: ${{ matrix.options }}
 
       - name: Run generated programs through the build
-        if: matrix.options == '{}'
         run: pnpm testPrograms
         env:
+          ARK_PRECOMPILE_OPTIONS: ${{ matrix.options }}
           ARK_PRECOMPILE_PROGRAMS: 300
 
   environments:

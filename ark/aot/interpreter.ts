@@ -369,7 +369,14 @@ export class Interpreter {
 		} else {
 			const held =
 				hasArkKind(value, "module") ? Object.values(value)
-				: hasArkKind(value, "scope") ? Object.values(value.aliases)
+					// arktype's own scope holds no hole, and reading its keyword
+					// modules through its aliases resolves each keyword in the
+					// module's scope before arktype's, which then prints what
+					// references it as an alias
+				: hasArkKind(value, "scope") ?
+					value.isBuiltin ?
+						[]
+					:	Object.values(value.aliases)
 				: hasArkKind(value, "generic") ?
 					[value.paramDefs, value.bodyDef, value.$]
 				: isPlainContainer(value) ?
