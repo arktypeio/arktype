@@ -187,10 +187,7 @@ const writeInEn = (
 	}
 	error.propString ??= stringifyPath(error.path)
 	const expected = configOf(error, "expected", config)
-	error.expected ??=
-		typeof expected === "string" ? expected : (
-			expected(error as never, defaultLocale as never)
-		)
+	error.expected ??= writeExpected(error, expected as never, defaultLocale)
 	if (last === "expected") return
 	const actual = configOf(error, "actual", config)
 	error.actual ??=

@@ -49,8 +49,11 @@ export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
 ): StandaloneModules => {
-	const { sections, shared, imports, folds, checking, values, calls, issues } =
-		writeArtifact(exports, opts, false)
+	const { sections, shared, imports, ...written } = writeArtifact(
+		exports,
+		opts,
+		false
+	)
 	// nothing outside the artifact reads its units
 	mergeUnits(shared, imports, opts)
 	return {
@@ -60,11 +63,7 @@ export const precompileStandalone = (
 			...sections
 		]),
 		modules: {},
-		folds,
-		checking,
-		values,
-		calls,
-		issues
+		...written
 	}
 }
 
@@ -72,8 +71,11 @@ export const precompileStandaloneModules = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
 ): StandaloneModules => {
-	const { sections, shared, imports, folds, checking, values, calls, issues } =
-		writeArtifact(exports, opts, true)
+	const { sections, shared, imports, ...written } = writeArtifact(
+		exports,
+		opts,
+		true
+	)
 	// a module is shared by every artifact reading it, so none merges another's units
 	const modules: Record<string, string> = {}
 	for (const specifier in shared)
@@ -84,11 +86,7 @@ export const precompileStandaloneModules = (
 			...sections
 		]),
 		modules,
-		folds,
-		checking,
-		values,
-		calls,
-		issues
+		...written
 	}
 }
 

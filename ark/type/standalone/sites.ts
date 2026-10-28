@@ -150,14 +150,16 @@ export const issueSite = <site extends object>(site: site): site => {
 }
 
 // a site of a code and description naming nothing the validator receives
-export const isInlineSite = (site: object): site is IssueContext =>
-	"code" in site &&
-	!(site as IssueContext).written &&
-	![
-		(site as IssueContext).description,
-		(site as IssueContext).message,
-		(site as IssueContext).problem
-	].some(text => text?.match(printedHoleNamePattern))
+export const isInlineSite = (site: object): site is IssueContext => {
+	const { written, description, message, problem } = site as IssueContext
+	return (
+		"code" in site &&
+		!written &&
+		![description, message, problem].some(text =>
+			text?.match(printedHoleNamePattern)
+		)
+	)
+}
 
 const siteWords = new Set([
 	"runtime",
@@ -255,6 +257,10 @@ export interface IssueContext extends SiteContext {
 	}
 }
 
+const keepsOf = (isCustom: (k: DescribingKey) => boolean): number =>
+	+isCustom("expected") |
+	(+(isCustom("problem") || (isCustom("actual") && !isCustom("message"))) << 1)
+
 // arktype writes these from each branch's errors, which issues don't keep
 const unwritableCodes = new Set<ArkErrorCode>([
 	"union",
@@ -308,13 +314,7 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 				writerOf("problem"),
 				custom.message === undefined ? undefined : writerOf("message")
 			],
-			keeps:
-				+(custom.expected !== undefined) |
-				(+(
-					custom.problem !== undefined ||
-					(custom.actual !== undefined && custom.message === undefined)
-				) <<
-					1)
+			keeps: keepsOf(k => custom[k] !== undefined)
 		}
 		return issueContext
 	}
@@ -367,16 +367,7 @@ export const raisedWritersByCode = (): [
 			// e.g. a missing key's
 			return (writer as Fn)(undefined, { code }, locale) as string
 		}
-		written.push([
-			code,
-			describingKeys.map(writerOf),
-			+isCustom("expected") |
-				(+(
-					isCustom("problem") ||
-					(isCustom("actual") && !isCustom("message"))
-				) <<
-					1)
-		])
+		written.push([code, describingKeys.map(writerOf), keepsOf(isCustom)])
 	}
 	return written
 }

@@ -35,7 +35,7 @@ export type ScopeAlias = [scope: BaseScope, alias: string]
 export type Key = [
 	id: string,
 	holes: unknown[],
-	// [path, reason] of what can't be compared
+	// what can't be compared
 	refusal: [path: string, reason: string] | undefined,
 	thunks: readonly [...ScopeAlias, path: string][]
 ]
