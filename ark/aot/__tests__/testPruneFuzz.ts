@@ -601,6 +601,9 @@ const filesOf = (app: App): Record<string, string> => {
 	for (const m of modules) {
 		const own = app.validators.filter(v => v.module === m)
 		files[`types${m}.ts`] = [
+			// a bundler splitting chunks may run a types module before main's
+			// imports, so each imports the config module itself
+			...(app.configured ? [`import "./config.ts"`] : []),
 			`import { scope, type } from "arktype"`,
 			...functions,
 			...own.map(
@@ -922,6 +925,7 @@ const buildWith = async (
 const minifiedNames = /valid according to [\w$]+/g
 const typeErrorNames = /[\w$.]+ (is not a (?:function|constructor))/g
 const chunkNames = /(?:chunk|types\d+)-[\w-]+\.js/g
+const outDirs = /out-(?:esbuild|vite)-(?:whole|pruned)/g
 
 const runOut = (out: string, app: App) =>
 	["main", ...(app.entries === 2 ? ["other"] : [])]
@@ -941,6 +945,7 @@ const runEntry = (file: string) => {
 		.replace(minifiedNames, "valid according to fn")
 		.replace(typeErrorNames, "x $1")
 		.replace(chunkNames, "chunk.js")
+		.replace(outDirs, "out")
 }
 
 // a message's first line saying something, past a bundler's "Build failed"
