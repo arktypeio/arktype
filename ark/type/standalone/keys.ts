@@ -86,11 +86,15 @@ const rootKeyOf = (root: BaseRoot, isScoped = true): Key => {
 const isKeyedBehavior = (node: BaseNode): boolean =>
 	holdsDefaults(node) || (node.is("morph") && !!node.inverse)
 
+// what a key's value is read as: a definition arktype parses, a value it holds
+// or a config, whose functions it calls as it creates each Type
+type KeyMode = "definition" | "value" | "config"
+
 // equal keys differ only in which functions they hold
 export const encodeKey = (
 	start: unknown,
 	defaultsByMorph?: ReadonlyMap<unknown, CollectedDefault>,
-	isDefinition = !defaultsByMorph
+	mode: KeyMode = defaultsByMorph ? "value" : "definition"
 ): Key => {
 	const values: string[] = []
 	const holes: unknown[] = []
@@ -110,12 +114,7 @@ export const encodeKey = (
 			thunks.push([scope, alias, appendPath(path, at)])
 	}
 	const at = (path: string) => (path ? ` at \`${path}\`` : "")
-	const write = (
-		value: unknown,
-		path: string,
-		isDefinition: boolean,
-		isConfig = false
-	): void => {
+	const write = (value: unknown, path: string, mode: KeyMode): void => {
 		if (hasDomain(value, "object")) {
 			const index = seen.get(value)
 			if (index !== undefined) return void values.push(`seen ${index}`)
@@ -125,7 +124,7 @@ export const encodeKey = (
 		const runtimeKey = hasDomain(value, "object") && runtimeKeyOf(value)
 		if (defaulted) {
 			values.push("default")
-			write(defaulted[2], path, false)
+			write(defaulted[2], path, "value")
 		} else if (runtimeKey) values.push(`runtime ${runtimeKey}`)
 		else if (isNode(value)) {
 			if (defaultsByMorph || !value.isRoot()) values.push("node")
@@ -135,7 +134,7 @@ export const encodeKey = (
 			values.push(`Module ${entries.length}`)
 			for (const [k, entry] of entries) {
 				values.push(JSON.stringify(k))
-				write(entry, appendStringifiedKey(path, k), true)
+				write(entry, appendStringifiedKey(path, k), "definition")
 			}
 		} else if (hasArkKind(value, "scope")) {
 			// a builtin scope holds only arktype's own functions, named stably
@@ -147,46 +146,46 @@ export const encodeKey = (
 				values.push(
 					`Scope ${JSON.stringify(value.exportedNames)} ${aliases.length}`
 				)
-				write(value.scopeConfig, "", false, true)
+				write(value.scopeConfig, "", "config")
 				// the definition, as resolving it would run default checks early
 				for (const [k, def] of aliases) {
 					values.push(JSON.stringify(k))
 					if (isThunkAlias(def)) {
 						values.push("thunk")
 						thunks.push([value, k, ""])
-					} else write(def, appendStringifiedKey(path, k), true)
+					} else write(def, appendStringifiedKey(path, k), "definition")
 				}
 			}
 		} else if (hasArkKind(value, "generic")) {
 			values.push("Generic")
-			write(value.paramDefs, path, true)
+			write(value.paramDefs, path, "definition")
 			// an hkt body is a function only identity tells apart
 			if (value.hkt) {
 				refuse(
 					`has an hkt body${at(path)}, whose results decide what it creates`
 				)
-			} else write(value.bodyDef, path, true)
-			write(value.$, appendStringifiedKey(path, "$"), true)
+			} else write(value.bodyDef, path, "definition")
+			write(value.$, appendStringifiedKey(path, "$"), "definition")
 			// a Generic bound into another Scope parses its arguments there
-			write(value.arg$, appendStringifiedKey(path, "arg$"), true)
+			write(value.arg$, appendStringifiedKey(path, "arg$"), "definition")
 		} else if (isTypedFn(value)) {
 			values.push("TypedFn")
-			write(value.params, path, false)
-			write(value.returns, path, false)
-			write(value.raw, path, false)
+			write(value.params, path, "value")
+			write(value.returns, path, "value")
+			write(value.raw, path, "value")
 		} else if (value instanceof LazyGenericRoot) {
 			values.push(`Generic ${JSON.stringify(value.paramsDef)}`)
-			write(value.bodyDef, path, true)
-		} else if (isDefinition && isThunk(value))
+			write(value.bodyDef, path, "definition")
+		} else if (mode === "definition" && isThunk(value))
 			refuse(`holds a thunk${at(path)}, whose result decides what it creates`)
 		else if (madeMorphs.has(value as never)) {
 			// e.g. pipe.try's, holding the morph it wraps
 			const [make, args] = madeMorphs.get(value as never)!
 			values.push(`made ${runtimeKeyOf(make)}`)
-			write(args, path, false)
+			write(args, path, "value")
 		}
 		// e.g. a description writer, which arktype calls as it creates each Type
-		else if (isConfig && isHole(value)) {
+		else if (mode === "config" && isHole(value)) {
 			refuse(
 				`configures \`${path}\` with a function, whose results decide what it creates`
 			)
@@ -205,26 +204,24 @@ export const encodeKey = (
 				write(
 					value[i],
 					appendStringifiedKey(path, i),
-					isDefinition && i < definitions,
-					isConfig
+					mode === "definition" && i >= definitions ? "value" : mode
 				)
 			}
 		} else if (isPlainLiteral(value)) {
 			const keys = Reflect.ownKeys(value)
 			values.push(`{${keys.length}`)
 			for (const k of keys) {
-				write(k, path, false)
+				write(k, path, "value")
 				write(
 					Reflect.get(value, k),
 					typeof k === "symbol" ? path : appendStringifiedKey(path, k),
-					isDefinition,
-					isConfig
+					mode
 				)
 			}
 		} else
 			refuse(`holds ${printable(value)}${at(path)}, which its key can't encode`)
 	}
-	write(start, "", isDefinition)
+	write(start, "", mode)
 	return [hashOf(values.join("\n")), holes, refusal, thunks]
 }
 

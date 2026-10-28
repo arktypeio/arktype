@@ -920,7 +920,7 @@ ${writeFunction(
 			const input = node.in as BaseRoot
 			// keyed by traversal, value and their holes
 			const [inputId, inputHoles] = traversalKeyOf(input)
-			const [valueId, valueHoles] = encodeKey(defaultValue, undefined, false)
+			const [valueId, valueHoles] = encodeKey(defaultValue, undefined, "value")
 			const defaultKey = `[${JSON.stringify(hashOf(`${inputId} ${valueId}`))}, [${[...inputHoles, ...valueHoles].map(hole => this.emit(hole)).join(", ")}]]`
 			return {
 				check: `runtime.checkDefault(${this.readByRuntime(input)}, ${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)}, ${defaultKey})`,
