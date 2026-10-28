@@ -352,6 +352,9 @@ export class Traversal extends InternalTraversal {
 				(supplied.morph && describePredicate(supplied))
 		}
 		if (supplied.problem !== undefined) issue.problem = supplied.problem
+		// a keyword's phrase writes the SyntaxError it caught, as string.json's
+		else if (supplied.cause !== undefined && supplied.meta?.keyword)
+			issue.problem = `must be ${issue.expected} (${supplied.cause})`
 		if (supplied.message !== undefined) issue.message = supplied.message
 		return this.addError(issue) as never
 	}
@@ -379,6 +382,8 @@ type SuppliedIssue = {
 	problem?: string
 	message?: string
 	morph?: Morph
+	cause?: unknown
+	meta?: { keyword?: string }
 }
 
 export const errorsOf = (ctx: InternalTraversal): BaseArkErrors =>

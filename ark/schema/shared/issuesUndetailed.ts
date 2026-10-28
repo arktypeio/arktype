@@ -2,6 +2,7 @@
 import { throwInternalError, type array } from "@ark/util"
 import type { ArkErrors } from "./issuesNone.ts"
 import type { ArkIssue } from "./issues.ts"
+import { bracketsKeys } from "./issueFeatures.ts"
 
 // a size build's root apply, which errors "none" never writes
 export const applyIssues = (): never =>
@@ -52,10 +53,12 @@ export const mergeIssues = (
 const messageAt = (path: PropertyKey[]): string => {
 	let at = ""
 	for (const k of path) {
+		// as issues.ts writes a path
 		at +=
-			typeof k === "number" ? `[${k}]`
-			: at ? `.${String(k)}`
-			: String(k)
+			bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
+				`[${JSON.stringify(k) ?? String(k)}]`
+			: typeof k === "number" ? `[${k}]`
+			: (at && ".") + String(k)
 	}
 	return at ? `${at} is invalid` : "is invalid"
 }

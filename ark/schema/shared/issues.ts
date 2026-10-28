@@ -1,6 +1,7 @@
 import { pathAt, type array } from "@ark/util"
 import type { ArkErrorCode } from "./errors.ts"
 import {
+	bracketsKeys,
 	readsKeySites,
 	reportsIndices,
 	runsArktype,
@@ -277,13 +278,17 @@ export const mergeIssues = (
 	}
 }
 
+// the path as arktype's stringifyPath writes it: a key that isn't an
+// identifier is bracketed and quoted, as an index or a symbol (which has no
+// JSON) is bracketed
 export const messageOf = (issue: ArkIssue): string => {
 	let path = ""
 	for (const k of issue.path) {
 		path +=
-			reportsIndices && typeof k === "number" ?
-				`[${k}]`
-			:	(path && ".") + String(k)
+			bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
+				`[${JSON.stringify(k) ?? String(k)}]`
+			: reportsIndices && typeof k === "number" ? `[${k}]`
+			: (path && ".") + String(k)
 	}
 	return (path && path + " ") + problemOf(issue)
 }
