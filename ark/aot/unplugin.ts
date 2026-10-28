@@ -1442,32 +1442,9 @@ const rollupScanOf = async (
 ): Promise<ProgramScan<BundleScan>> => {
 	// each module's resolution, as a plugin may resolve it with options to load it by
 	const res = new Map<string, RollupResolution>()
-	const entries: ScanEntry[] = []
-	for (const input of inputs) {
-		const resolved = await context.resolve(input, undefined, { isEntry: true })
-		if (!resolved || resolved.external) {
-			return {
-				unpruned: writeUnprunedMessage(
-					`the entry "${input}" doesn't resolve to a module`
-				)
-			}
-		}
-		res.set(resolved.id, resolved)
-		if (!htmlId.test(resolved.id)) {
-			entries.push({ id: resolved.id })
-			continue
-		}
-		// a page's module scripts, as Vite builds them
-		const source = scriptsOf(readFileSync(resolved.id, "utf8"))
-		if (source === undefined) {
-			return {
-				unpruned: writeUnprunedMessage(
-					`${printablePathOf(cwd, resolved.id)} holds an inline module script, which it can't read before the build writes it as a module`
-				)
-			}
-		}
-		entries.push({ id: resolved.id, source })
-	}
+	const entries = await rollupEntriesOf(context, inputs, res, cwd)
+	if (typeof entries === "string")
+		return { unpruned: writeUnprunedMessage(entries) }
 	// modules read as they reached the plugin, having no file
 	const arrived = new Set<string>()
 	const scanned = await scanProgram(program, entries, {
@@ -1529,6 +1506,32 @@ const rollupScanOf = async (
 			:	undefined,
 		unpruned: usage.unpruned
 	}
+}
+
+// the bundle's entries as modules, reading a page's module scripts as Vite
+// builds them, or why one can't be scanned
+const rollupEntriesOf = async (
+	context: RollupContext,
+	inputs: string[],
+	res: Map<string, RollupResolution>,
+	cwd: string
+): Promise<ScanEntry[] | string> => {
+	const entries: ScanEntry[] = []
+	for (const input of inputs) {
+		const resolved = await context.resolve(input, undefined, { isEntry: true })
+		if (!resolved || resolved.external)
+			return `the entry "${input}" doesn't resolve to a module`
+		res.set(resolved.id, resolved)
+		if (!htmlId.test(resolved.id)) {
+			entries.push({ id: resolved.id })
+			continue
+		}
+		const source = scriptsOf(readFileSync(resolved.id, "utf8"))
+		if (source === undefined)
+			return `${printablePathOf(cwd, resolved.id)} holds an inline module script, which it can't read before the build writes it as a module`
+		entries.push({ id: resolved.id, source })
+	}
+	return entries
 }
 
 const htmlId = /\.html$/
