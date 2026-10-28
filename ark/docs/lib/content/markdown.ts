@@ -511,7 +511,7 @@ const trimBlankLines = (lines: string[]) => {
 }
 
 /** removes hidden lines and compiler directives that only twoslash reads */
-export const stripTwoslash = (code: string): string => {
+const stripTwoslash = (code: string): string => {
 	const lines = code.split("\n")
 	const cutIndex = lines.findIndex(line => line.trim() === "// ---cut---")
 	const visible: string[] = []

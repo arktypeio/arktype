@@ -2,6 +2,7 @@
 // and prints every pass's ratios
 // node stats.ts <wall.json>
 import { readFileSync } from "node:fs"
+import { median } from "../stats.ts"
 
 const { passes } = JSON.parse(readFileSync(process.argv[2], "utf8")) as {
 	passes: { load: [number, number]; ns: Record<string, number> }[]
@@ -23,12 +24,6 @@ const upper = (k: number, n: number) => {
 /** k of n passes favor a: two-sided, and 1 if a isn't favored */
 const twoSided = (k: number, n: number) =>
 	k * 2 <= n ? 1 : Math.min(1, 2 * upper(k, n))
-
-const median = (xs: number[]) => {
-	const s = [...xs].sort((a, b) => a - b)
-	const mid = s.length >> 1
-	return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2
-}
 
 const ratios = (a: string, b: string) => passes.map(p => p.ns[a] / p.ns[b])
 

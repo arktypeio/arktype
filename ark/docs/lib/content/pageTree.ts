@@ -71,7 +71,7 @@ type MetaJson = {
 const separatorPattern = /^---(.*)---$/
 const linkPattern = /^(?:external:)?\[(.+)]\((.+)\)$/
 
-export const pageUrl = (contentDir: string, path: string): string => {
+const pageUrl = (contentDir: string, path: string): string => {
 	const segments = relative(contentDir, path)
 		.replace(/\.mdx$/, "")
 		.split(sep)

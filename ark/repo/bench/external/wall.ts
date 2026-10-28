@@ -8,6 +8,7 @@ import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { loadavg } from "node:os"
 import { join } from "node:path"
+import { median } from "../stats.ts"
 import type { Arm } from "./arms.ts"
 
 const [outPath, passes] = process.argv.slice(2)
@@ -26,12 +27,6 @@ const out: { passes: Pass[] } =
 	existsSync(outPath) ?
 		JSON.parse(readFileSync(outPath, "utf8"))
 	:	{ passes: [] }
-
-const median = (xs: number[]) => {
-	const s = [...xs].sort((a, b) => a - b)
-	const mid = s.length >> 1
-	return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2
-}
 
 while (out.passes.length < Number(passes)) {
 	while (loadavg()[0] >= 4) {
