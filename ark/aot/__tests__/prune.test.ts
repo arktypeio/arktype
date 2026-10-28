@@ -490,6 +490,20 @@ contextualize(function (this: Mocha.Suite) {
 				runsArktype: false
 			})
 		})
+
+		it("brackets the undeclared keys a structure rejects, which come from data", async () => {
+			attest(
+				await issuesOf(
+					`import { type } from "arktype"\n\nexport const Strict = type({ name: "string" }).onUndeclaredKey("reject")\n`
+				)
+			).snap({
+				bracketsKeys: true,
+				reportsIndices: false,
+				writesText: false,
+				readsKeySites: true,
+				runsArktype: false
+			})
+		})
 	})
 
 	describe("programs it can't read", () => {
@@ -897,6 +911,27 @@ for (const data of [{ name: 5 }, flipping]) {
 			attest((await bundle({ preset: undefined })).includes("._d=")).equals(
 				true
 			)
+		})
+
+		it("names an undeclared key as the whole build does", async () => {
+			const files = writeFixture(
+				{
+					"main.ts": `import { type } from "arktype"
+
+const Strict = type({ name: "string" }).onUndeclaredKey("reject")
+console.log(Strict({ name: "Ada", 0: 1, "a-b": 2 }).toString())
+`
+				},
+				fromHere("temp", "prunedUndeclared")
+			)
+			const options = { entryPoints: [join(files, "main.ts")] }
+			const pruned = await bundle({ preset: undefined }, options)
+			attest(run(pruned)).snap(
+				'["0"] must be removed\n["a-b"] must be removed\n'
+			)
+			attest(
+				run(await bundle({ preset: undefined, prune: false }, options))
+			).equals(run(pruned))
 		})
 
 		it("throws from from() where no read asserts", async () => {
