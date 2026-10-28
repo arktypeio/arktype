@@ -42,7 +42,10 @@ import {
 } from "./grammar.ts"
 import { tempDir } from "./utils.ts"
 
-const [countArg, seedArg] = (process.env.ARK_PRUNE_FUZZ ?? "20").split(":")
+// <count>[:<seed>[:<path>]], the path replaying one of a seed's runs
+const [countArg, seedArg, path] = (process.env.ARK_PRUNE_FUZZ ?? "20").split(
+	":"
+)
 const count = Number(countArg)
 const initialSeed =
 	seedArg === undefined ? Date.now() % 1_000_000 : Number(seedArg)
@@ -1115,12 +1118,14 @@ while (remaining > 0) {
 	const runs = remaining
 	const result = await fc.check(
 		fc.asyncProperty(apps, app => check(app)),
-		{ numRuns: runs, seed, endOnFailure: true }
+		{ numRuns: runs, seed, endOnFailure: true, ...(path && { path }) }
 	)
 	if (!result.failed) break
 	console.error(
 		`seed ${seed} run ${result.numRuns}: counterexample\n${sourceOfApp(result.counterexample![0])}`
 	)
+	// a check that threw, rather than finding a difference
+	if (result.error) console.error(result.errorInstance ?? result.error)
 	remaining -= result.numRuns
 	seed++
 }
