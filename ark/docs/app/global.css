@@ -4,7 +4,7 @@
 @import "./styles/prose.css";
 @import "./styles/code.css";
 @import "./styles/components.css";
-@import "./styles/home.css";
+@import "./styles/bench.css";
 
 /* lets the homepage and playground's utility classes read the tokens */
 @theme {

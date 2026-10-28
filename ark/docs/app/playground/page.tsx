@@ -1,6 +1,7 @@
 import { TopNav } from "../../components/shell/TopNav.tsx"
 import { PlaygroundLoader } from "../../components/playground/PlaygroundLoader.tsx"
 import { defineMetadata } from "../metadata.ts"
+import "../styles/playground.css"
 
 export const metadata = defineMetadata({
 	title: "Playground",
