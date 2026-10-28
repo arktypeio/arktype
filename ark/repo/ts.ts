@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-// @ts-check
+// runs a script against the repo's sources: ts <file> [args]
 import { execSync } from "node:child_process"
-import { addNodeDevOptions } from "./nodeOptions.js"
+import { addNodeDevOptions } from "./nodeOptions.ts"
 
 addNodeDevOptions()
 
