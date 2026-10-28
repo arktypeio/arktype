@@ -7,7 +7,7 @@
 import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { type } from "arktype"
-import { build as esbuild } from "esbuild"
+import { build as esbuild, type Plugin as EsbuildPlugin } from "esbuild"
 import fc from "fast-check"
 import {
 	build as viteBuild,
@@ -67,8 +67,13 @@ const wraps = {
 	describe: (def: string) => `type(${def}).describe("a thing")`,
 	narrowCtx: (def: string) => `type(${def}).narrow(isPositive)`,
 	pipeTry: (def: string) => `type(${def}).pipe.try(parse, refuse)`,
-	toTuple: (def: string) => `type(${def}).to(["unknown", "?"])`,
-	scoped: (def: string) => `scope({ T: ${def} }).export().T`
+	toUnion: (def: string) => `type(${def}).to("unknown | null")`,
+	scoped: (def: string) => `scope({ T: ${def} }).export().T`,
+	scopedType: (def: string) => `scope({ T: ${def} }).type("T | null")`,
+	generic: (def: string) => `type("<t>", { a: "t" })(${def})`,
+	configured: (def: string) =>
+		`type(${def}).configure({ description: "a thing" }).describe("another")`,
+	anded: (def: string) => `type(${def}).and("unknown")`
 }
 
 type Wrap = keyof typeof wraps
@@ -91,7 +96,18 @@ interface Access {
 	ref: (v: Validator, j: number, other: Validator) => string
 	// modules the app writes besides the types modules
 	needs?: "barrel" | "reexport" | "nsexport"
+	// what it imports from arktype
+	ark?: string[]
 }
+
+// the functions a types module's sites name, declared as grammar.ts prints them
+const functions = [
+	...Object.entries({ ...morphs, ...tried, ...predicates }).map(
+		([name, fn]) =>
+			`const ${name} = ${unnamedHoles.has(name) ? `[${fn.toString()}][0]` : fn.toString()}`
+	),
+	`const emptyArray = () => []`
+]
 
 const typesOf = (v: Validator) => `./types${v.module}.ts`
 
@@ -181,6 +197,24 @@ const accesses: Record<string, Access> = {
 		imports: v => [`import { ${v.name} } from "${typesOf(v)}"`],
 		setup: (v, j) => [`const { v: Z${j} } = { v: ${v.name} }`],
 		ref: (_, j) => `Z${j}`
+	},
+	assigned: {
+		imports: v => [`import { ${v.name} } from "${typesOf(v)}"`],
+		setup: (v, j) => [`const bag${j} = {}`, `bag${j}.v = ${v.name}`],
+		ref: (_, j) => `bag${j}.v`
+	},
+	// a validator the reader creates itself, which it doesn't export
+	own: {
+		setup: (v, j) => [
+			...functions,
+			`const Own${j} = ${wraps[v.wrap](sourceOf(defOf(v.node)))}`
+		],
+		ref: (_, j) => `Own${j}`,
+		ark: ["scope", "type"]
+	},
+	awaited: {
+		imports: v => [`import { ${v.name} } from "${typesOf(v)}"`],
+		ref: v => `(await Promise.resolve(${v.name}))`
 	}
 }
 
@@ -286,6 +320,57 @@ const reads: Record<string, Read> = {
 		expr: (_, j) => `CompA${j}.allows({ a: d })`,
 		setup: (ref, j) => [`const CompA${j} = type({ a: ${ref} })`],
 		ark: ["type"]
+	},
+	optionalCall: { expr: ref => `tell(${ref}?.(d))`, helpers: ["tell"] },
+	optionalAllows: { expr: ref => `${ref}?.allows?.(d)` },
+	sequence: { expr: ref => `tell((0, ${ref})(d))`, helpers: ["tell"] },
+	nullish: { expr: ref => `tell((${ref} ?? null)(d))`, helpers: ["tell"] },
+	destructuredAllows: {
+		expr: (_, j) => `allows${j}(d)`,
+		setup: (ref, j) => [`const { allows: allows${j} } = ${ref}`]
+	},
+	bound: {
+		expr: ref => `thrown(() => ${ref}.assert.bind(null)(d))`,
+		helpers: ["thrown"]
+	},
+	constructed: {
+		expr: ref => `thrown(() => new ${ref}(d))`,
+		helpers: ["thrown"]
+	},
+	branching: {
+		expr: ref => `d === null ? ${ref}.allows(d) : tell(${ref}(d))`,
+		helpers: ["tell"]
+	},
+	entries: {
+		expr: ref => `Object.entries(${ref}).map(([k, v]) => [k, typeof v]).sort()`
+	},
+	spreadInto: { expr: ref => `Object.keys({ ...${ref} }).sort()` },
+	runtimeAnd: {
+		expr: ref => `thrown(() => tell(${ref}.and("unknown")(d)))`,
+		helpers: ["thrown", "tell"]
+	},
+	runtimeDescribe: {
+		expr: ref => `thrown(() => tell(${ref}.describe("a thing")(d)))`,
+		helpers: ["thrown", "tell"]
+	},
+	runtimeConfigure: {
+		expr: ref =>
+			`thrown(() => tell(${ref}.configure({ description: "a thing" })(d)))`,
+		helpers: ["thrown", "tell"]
+	},
+	runtimeArray: {
+		expr: ref => `thrown(() => tell(${ref}.array()([d])))`,
+		helpers: ["thrown", "tell"]
+	},
+	destructuredAll: {
+		expr: (_, j) => `[assert${j}(d), allows${j}b(d)]`,
+		setup: (ref, j) => [
+			`const { assert: assert${j}, allows: allows${j}b } = ${ref}`
+		]
+	},
+	standardIssues: {
+		expr: ref =>
+			`(r => "issues" in r ? r.issues.map(i => [i.message, i.path]) : r.value)(${ref}["~standard"].validate(d))`
 	}
 }
 
@@ -455,15 +540,6 @@ const apps: fc.Arbitrary<App> = validators
 		})
 	)
 
-// the functions a types module's sites name, declared as grammar.ts prints them
-const functions = [
-	...Object.entries({ ...morphs, ...tried, ...predicates }).map(
-		([name, fn]) =>
-			`const ${name} = ${unnamedHoles.has(name) ? `[${fn.toString()}][0]` : fn.toString()}`
-	),
-	`const emptyArray = () => []`
-]
-
 const helperSources: Record<string, string> = {
 	tell: `export const tell = o => o instanceof type.errors ? { summary: o.summary } : { value: o }`,
 	issuesOf: `export const issuesOf = o => o instanceof type.errors ? o.issues.map(i => ({ code: i.code, path: i.path, expected: i.expected, problem: i.problem, message: i.message, data: i.data })) : { value: o }`,
@@ -551,7 +627,7 @@ const filesOf = (app: App): Record<string, string> => {
 		const read = reads[r.read]
 		const other = app.validators.find(o => o !== v) ?? v
 		const ref = access.ref(v, j, other)
-		const ark = new Set(read.ark ?? [])
+		const ark = new Set([...(access.ark ?? []), ...(read.ark ?? [])])
 		const helpers = new Set(["obs", ...(read.helpers ?? [])])
 		files[`reader${j}.ts`] = [
 			...(ark.size ? [`import { ${[...ark].join(", ")} } from "arktype"`] : []),
@@ -562,7 +638,9 @@ const filesOf = (app: App): Record<string, string> => {
 			`export const run${j} = async () => {`,
 			...(access.before?.(v, j) ?? []).map(line => `\t${line}`),
 			`\tconst inputs = [${r.inputs.map(sourceOf).join(", ")}]`,
-			`\treturn inputs.map(d => obs(() => ${read.expr(ref, j)}))`,
+			r.access === "awaited" ?
+				`\treturn Promise.all(inputs.map(async d => { try { return { ok: ${read.expr(ref, j)} } } catch (e) { return { threw: String(e) } } }))`
+			:	`\treturn inputs.map(d => obs(() => ${read.expr(ref, j)}))`,
 			`}`,
 			""
 		].join("\n")
@@ -664,6 +742,27 @@ const vitePluginsOf = (dir: string, rewrite: Rewrite): VitePlugin[] => {
 	]
 }
 
+// esbuild's onLoad is won by the first plugin answering it, so one ahead of
+// arktype's loads reader modules unlike their files, which the build must
+// refuse, and one after arktype's keeps the bundle whole with a warning
+const esbuildPluginsOf = (
+	rewrite: Rewrite,
+	opts: PrecompileUnpluginOptions
+): EsbuildPlugin[] => {
+	const arktype = precompile.esbuild({ conditions, ...opts })
+	const rewriter = rewrites[rewrite]
+	if (!rewriter) return [arktype]
+	const rewriting: EsbuildPlugin = {
+		name: rewrite,
+		setup: build =>
+			build.onLoad({ filter: /[/\\]reader\d+\.ts$/ }, args => ({
+				contents: rewriter(readFileSync(args.path, "utf8")),
+				loader: "ts"
+			}))
+	}
+	return rewrite === "reformat" ? [arktype, rewriting] : [rewriting, arktype]
+}
+
 const outputOf = (outDir: string): string => {
 	if (!existsSync(outDir)) return ""
 	return readdirSync(outDir)
@@ -697,7 +796,7 @@ const buildWith = async (
 				minify: true,
 				conditions,
 				logLevel: "silent",
-				plugins: [precompile.esbuild({ conditions, ...opts })]
+				plugins: esbuildPluginsOf(app.rewrite, opts)
 			})
 			warnings.push(...result.warnings.map(w => w.text))
 		} else {
@@ -776,8 +875,12 @@ const runOut = (out: string) => {
 	return result.replace(minifiedNames, "valid according to fn")
 }
 
-const headOf = (message: string) =>
-	message.split("\n")[0].replace(/\s+/g, " ").slice(0, 160)
+// a message's first line saying something, past a bundler's "Build failed"
+const headOf = (message: string) => {
+	const lines = message.split("\n").filter(line => line.trim())
+	const line = lines.find(l => !/^(threw )?Error: Build failed/.test(l.trim()))
+	return (line ?? lines[0] ?? "").replace(/\s+/g, " ").slice(0, 160)
+}
 
 interface Tally {
 	invalid: Record<string, number>
