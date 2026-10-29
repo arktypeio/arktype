@@ -240,7 +240,7 @@ const completeFrom = (en: Locale, locale: Locale): Locale => {
 	}
 	let k: keyof Locale
 	for (k in en) {
-		const entry = locale[k] as any
+		const entry = locale[k] as Record<string, unknown> | undefined
 		if (entry === undefined) {
 			const fallback = en[k]
 			// a keyword without a phrase renders its English description

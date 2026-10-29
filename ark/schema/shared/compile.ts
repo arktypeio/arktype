@@ -276,7 +276,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 	declare readonly reportsFirst?: boolean
 	// whether a build writes for size, so Allows returns where it fails
 	declare readonly shortest?: boolean
-	// V8 boxes a field first written a fraction, so a copy filling nulls holds data's numbers as they are
+	// V8 boxes a field first written a fraction, so a copy filling nulls holds
+	// data's numbers as they are
 	declare readonly copiesValues?: boolean
 	// trusted to hold only own, enumerable keys, as JSON.parse's output does
 	declare readonly jsonInput?: boolean

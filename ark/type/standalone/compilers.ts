@@ -331,7 +331,8 @@ const reportsApart = (reference: BaseNode): boolean =>
 		(reference.inner.predicate?.length ?? 0) + +!!reference.structure >= 2
 	:	reference.is("morph")
 
-// a detailed size build's traversals: a unifying node's Apply is its Allows, reporting only to a ctx
+// a detailed size build's traversals: a unifying node's Apply is its Allows,
+// reporting only to a ctx
 class UnifiedCompiler extends StandaloneCompiler {
 	override refToId(id: NodeId, opts?: ReferenceOptions): string {
 		const node = this.link.byId[id]

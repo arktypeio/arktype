@@ -145,7 +145,7 @@ export const stringRange = ((max?: number, min?: number): Checker => {
 	return checker
 }) satisfies Fn
 
-// an integer at least least and at most most
+// an integer from least to most, inclusive
 export const integerRange = ((least?: number, most?: number): Checker => {
 	const integer = divisor(1)
 	const tooSmall = least === undefined ? numberCheck : min(least)

@@ -14,7 +14,8 @@ export const dtsGen = () => {
 
 	console.log(`✍️ Generating DTS bundle for ${pkg.name}...`)
 
-	// tsup drops arkregex's `s` namespace unless it is exported, since a type parameter shadows each use
+	// tsup drops arkregex's `s` namespace unless it is exported, since a type
+	// parameter shadows each use
 	// https://github.com/arktypeio/arktype/issues/1529
 	const entry = pkgScope === "regex" ? "internal" : "index"
 

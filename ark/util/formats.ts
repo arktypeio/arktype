@@ -5,7 +5,7 @@ import { isDigitCode } from "./numbers.ts"
 const isHexCode = (code: number) =>
 	(code - 48) >>> 0 < 10 || ((code | 32) - 97) >>> 0 < 6
 
-// 2 digits at i writing at most max
+// whether the two digits at i are a number at most max
 const isTwoDigitsAtMost = (s: string, i: number, max: number) => {
 	const tens = s.charCodeAt(i) - 48
 	const ones = s.charCodeAt(i + 1) - 48
@@ -158,7 +158,8 @@ const isTimeAfterDate = (s: string, length: number) => {
 	)
 }
 
-// toISOString's form is read by char code, others by the RegExp; inlined, terser and swc would allocate a closure per call
+// toISOString's form is read by char code, others by the RegExp; inlined,
+// terser and swc would allocate a closure per call
 export const isIso8601 = (s: string): boolean => {
 	const length = s.length
 	const code = s.charCodeAt(0)
