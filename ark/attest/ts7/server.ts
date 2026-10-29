@@ -9,29 +9,83 @@ import type * as tsgoAst from "typescript/ast"
 import type * as tsgoFs from "typescript/fs"
 import type * as tsgoApi from "typescript/sync"
 import type { LinePositionRange } from "../cache/getCachedAssertions.ts"
-import { getConfig } from "../config.ts"
+import { getConfig, type Checker } from "../config.ts"
 import { isTs7, narrowToNamedTestFiles } from "../utils.ts"
 
 // resolved relative to attest so the API matches the installed typescript
 const requireTypeScript = createRequire(import.meta.url)
 
-// only loaded for TS 7+ so this module can be imported unconditionally
-export const ast: typeof tsgoAst =
-	isTs7 ? requireTypeScript("typescript/ast") : (undefined as never)
+const isResolvable = (require: NodeJS.Require, specifier: string) => {
+	try {
+		require.resolve(specifier)
+		return true
+	} catch {
+		return false
+	}
+}
 
-const { API, TypeFormatFlags }: typeof tsgoApi =
-	isTs7 ? requireTypeScript("typescript/sync") : ({} as never)
+// tsrs's binary ships in a per-platform optional dependency, so it installs
+// without one on unsupported platforms like Windows
+const hasTsrsBinary = () => {
+	if (!isResolvable(requireTypeScript, "tsrs/package.json")) return false
+	if (process.env.TSRS_BINARY) return true
+	const packagePath = requireTypeScript.resolve("tsrs/package.json")
+	const requireTsrs = createRequire(packagePath)
+	const { optionalDependencies = {} } = requireTsrs(packagePath)
+	return Object.keys(optionalDependencies).some(name =>
+		isResolvable(requireTsrs, `${name}/package.json`)
+	)
+}
 
-const { createFileSystemLayer }: typeof tsgoFs =
-	isTs7 ? requireTypeScript("typescript/fs") : ({} as never)
+/** the checker from attest's config, or the best one installed */
+export const getChecker = (): Checker => {
+	const { checker } = getConfig()
+	if (checker === undefined) {
+		return (
+			!isTs7 ? "tsjs"
+			: hasTsrsBinary() ? "tsrs"
+			: "tsgo"
+		)
+	}
+	if (checker !== "tsjs" && checker !== "tsgo" && checker !== "tsrs")
+		throwError(`checker must be "tsjs", "tsgo" or "tsrs" (was "${checker}")`)
+	if ((checker === "tsjs") === isTs7) {
+		throwError(
+			`checker "${checker}" requires TypeScript ${checker === "tsjs" ? "<7" : "7+"} (found ${ts.version})`
+		)
+	}
+	return checker
+}
 
-export const noTruncation: number = isTs7 ? TypeFormatFlags.NoTruncation : 0
+type Compiler = typeof tsgoApi & typeof tsgoFs & { tscPath: string }
 
-export const tscPath: string = join(
-	dirname(requireTypeScript.resolve("typescript/package.json")),
-	"bin",
-	"tsc"
-)
+let compiler: Compiler | undefined
+
+/** populated on first use, after setup() has written attest's config */
+export const ast = {} as typeof tsgoAst
+
+// tsrs serves the same API as tsgo, so it only changes where it's loaded from
+const loadCompiler = (): Compiler => {
+	if (compiler) return compiler
+	const name = getChecker() === "tsrs" ? "tsrs" : "typescript"
+	// tsrs still exports the API from tsgo's previous unstable/ subpaths
+	const entry = name === "tsrs" ? "tsrs/unstable" : "typescript"
+	Object.assign(ast, requireTypeScript(`${entry}/ast`))
+	return (compiler = {
+		...requireTypeScript(`${entry}/sync`),
+		...requireTypeScript(`${entry}/fs`),
+		tscPath: join(
+			dirname(requireTypeScript.resolve(`${name}/package.json`)),
+			"bin",
+			name === "tsrs" ? "tsrs" : "tsc"
+		)
+	})
+}
+
+export const getNoTruncation = (): number =>
+	loadCompiler().TypeFormatFlags.NoTruncation
+
+export const getTscPath = (): string => loadCompiler().tscPath
 
 // unique to this thread, since worker threads share a pid
 export const tempId = `${process.pid}-${threadId}`
@@ -60,9 +114,9 @@ export class TsgoServer {
 	}
 
 	private constructor() {
-		if (ts.version.startsWith("7.0."))
+		if (getChecker() === "tsgo" && ts.version.startsWith("7.0."))
 			throwError(`@ark/attest requires TypeScript 7.1+ (found ${ts.version})`)
-		this.api = new API({ cwd: fromCwd() })
+		this.api = new (loadCompiler().API)({ cwd: fromCwd() })
 		this.projectConfig = getProjectConfig()
 		// only exists in tsgo's view of the filesystem, so nothing is written
 		this.configPath = join(this.projectConfig.dir, ".attest.tsconfig.json")
@@ -132,7 +186,7 @@ export class TsgoServer {
 	private openProject(files: [path: string, contents: string][] = []): Project {
 		const snapshot = this.api.createSnapshot({
 			openProjects: [this.configPath],
-			fileSystem: createFileSystemLayer([
+			fileSystem: loadCompiler().createFileSystemLayer([
 				[this.configPath, this.config],
 				...files
 			])

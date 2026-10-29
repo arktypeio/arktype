@@ -4,6 +4,9 @@ import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import type * as prettier from "prettier"
 
+/** tsjs is TypeScript's JS API, tsgo its native port and tsrs a Rust port */
+export type Checker = "tsjs" | "tsgo" | "tsrs"
+
 export type BenchErrorConfig = "runtime" | "types" | boolean
 
 type BaseAttestConfig = {
@@ -14,6 +17,12 @@ type BaseAttestConfig = {
 	failOnMissingSnapshots: boolean
 	skipTypes: boolean
 	skipInlineInstantiations: boolean
+	/**
+	 * the type checker to analyze assertions with, defaulting to tsrs if its
+	 * binary is installed alongside TypeScript 7, else tsgo for TypeScript 7,
+	 * else tsjs
+	 */
+	checker: Checker | undefined
 	/** analyze only the test files named on the command line */
 	onlyNamedTestFiles: boolean
 	attestAliases: string[]
@@ -47,6 +56,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	updateSnapshots: false,
 	skipTypes: false,
 	skipInlineInstantiations: false,
+	checker: undefined,
 	onlyNamedTestFiles: false,
 	benchPercentThreshold: 20,
 	benchErrorOnThresholdExceeded: true,

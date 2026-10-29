@@ -15,7 +15,7 @@ import {
 	getCallLocation,
 	getFirstFunctionDescendant,
 	tempId,
-	tscPath,
+	getTscPath,
 	type Node,
 	type SourceFile
 } from "./server.ts"
@@ -91,7 +91,7 @@ export const getInstantiationsContributedByNodes = (
 	})
 
 	const [baseline, ...counts]: number[] = JSON.parse(
-		execFileSync(process.execPath, [countInstantiationsScript, tscPath], {
+		execFileSync(process.execPath, [countInstantiationsScript, getTscPath()], {
 			input: JSON.stringify({ files, configPaths }),
 			encoding: "utf8",
 			maxBuffer: 1e8

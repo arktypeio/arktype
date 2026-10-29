@@ -1,6 +1,10 @@
 packages:
   - "ark/*"
 
+# skip versions published in the last day (in minutes), so a hijacked release
+# is usually caught and pulled before it can resolve into the lockfile
+minimumReleaseAge: 1440
+
 # lets tools that need TypeScript's JS API, which TS 7 doesn't have, use TS 6
 pnpmfile: pnpmfile.ts
 

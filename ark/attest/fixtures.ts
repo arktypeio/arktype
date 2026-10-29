@@ -4,7 +4,7 @@ import { writeSnapshotUpdatesOnExit } from "./cache/snapshots.ts"
 import { analyzeProjectAssertions } from "./cache/writeAssertionCache.ts"
 import { ensureCacheDirs, getConfig, type AttestConfig } from "./config.ts"
 import { analyzeProjectAssertions as analyzeProjectAssertionsTs7 } from "./ts7/analyze.ts"
-import { isTs7 } from "./utils.ts"
+import { getChecker } from "./ts7/server.ts"
 
 export const setup = (options?: Partial<AttestConfig>): typeof teardown => {
 	const { ...config } = getConfig()
@@ -24,7 +24,9 @@ export const writeAssertionData = (toPath: string): void => {
 	)
 	writeJson(
 		toPath,
-		isTs7 ? analyzeProjectAssertionsTs7() : analyzeProjectAssertions()
+		getChecker() === "tsjs" ?
+			analyzeProjectAssertions()
+		:	analyzeProjectAssertionsTs7()
 	)
 }
 
