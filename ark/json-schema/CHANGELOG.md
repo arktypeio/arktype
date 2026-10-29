@@ -61,7 +61,7 @@ A pointer like `#/$defs/a` within a nested `$id` resolves against that resource,
 
 ### Read JSON Schema as exactly the values a validator accepts
 
-`jsonSchemaToType` reads a schema as exactly the values a 2020-12 validator like ajv accepts, except that lengths count UTF-16 code units where JSON Schema counts code points, or throws where it can't, and reads draft-07 forms. Schemas that threw now read, and some that read were wrong:
+`jsonSchemaToType` reads a schema as exactly the values a 2020-12 validator like ajv accepts, or throws where it can't, and reads draft-07 forms. Lengths count UTF-16 code units, where JSON Schema counts code points. Schemas that threw now read, and some that read were wrong:
 
 - `prefixItems` and draft-07 `items` arrays make their elements optional, as JSON Schema does: `[string?, number?, ...unknown[]]`.
 - `{ type: "object" }` no longer allows arrays, which its Type's `expression` says: `{ foo: string } & isNonArray`.

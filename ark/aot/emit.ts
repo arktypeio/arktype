@@ -16,9 +16,9 @@ import {
 	resolvedVariantOf,
 	resolvesToRuntime,
 	runtimeSpecifiers,
-	writeVariantOption,
 	type RuntimeVariant
 } from "./host.ts"
+import { writeVariantOption } from "./messages.ts"
 import { withEnvironment } from "./presets.ts"
 import {
 	refusePrune,

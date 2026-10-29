@@ -10,7 +10,7 @@ import { minifiedLengthOf, runtimeReadsOf } from "./smaller.ts"
 let runtimeFile: string | undefined
 
 const runtimeFileOf = () =>
-	(runtimeFile ??= fileOf("arktype/runtime", import.meta.url))
+	(runtimeFile ??= resolvedFileOf("arktype/runtime", import.meta.url))
 
 /** about the length a minifier leaves of modules and the runtime they read */
 export const minifiedSizeOf = ({
@@ -167,7 +167,10 @@ const moduleAt = (file: string, source?: string): SourceModule => {
 	return module
 }
 
-const fileOf = (specifier: string, importer: string): string | undefined => {
+const resolvedFileOf = (
+	specifier: string,
+	importer: string
+): string | undefined => {
 	// a program's module, as its code imports it
 	if (importer.startsWith("\0")) {
 		const program = importer.slice(0, importer.indexOf(":") + 1)
@@ -191,10 +194,10 @@ const exportedBy = (
 	const entry = scopes.exportsByName[name]
 	if (entry?.kind === "binding") return declaredAs(entry.binding)
 	if (entry?.kind === "reexport")
-		return exportedBy(fileOf(entry.specifier, file), entry.name)
+		return exportedBy(resolvedFileOf(entry.specifier, file), entry.name)
 	if (entry) return
 	for (const specifier of scopes.starExports) {
-		const declared = exportedBy(fileOf(specifier, file), name)
+		const declared = exportedBy(resolvedFileOf(specifier, file), name)
 		if (declared) return declared
 	}
 }
@@ -210,7 +213,7 @@ const declaredAs = (binding: Binding): Declared | undefined => {
 	)
 		return
 	return exportedBy(
-		fileOf(specifier.parent.source.value, declared.module.id),
+		resolvedFileOf(specifier.parent.source.value, declared.module.id),
 		specifier.imported.type === "Identifier" ?
 			specifier.imported.name
 		:	specifier.imported.value

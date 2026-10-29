@@ -24,7 +24,9 @@ import {
 	runtimeSpecifiers,
 	schemaSpecifier,
 	transformedFilterOf,
-	variantSpecifierOf,
+	variantSpecifierOf
+} from "./host.ts"
+import {
 	writeFilelessImportMessage,
 	writeNodeVersionMessage,
 	writePrecompiledDependencyMessage,
@@ -32,7 +34,7 @@ import {
 	writeUntransformedImportMessage,
 	writeVariantImportMessage,
 	withAllowUnsafe
-} from "./host.ts"
+} from "./messages.ts"
 import { refuseDeclare } from "./declare.ts"
 import { isProductionEnv } from "./presets.ts"
 import {

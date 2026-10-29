@@ -57,7 +57,7 @@ const input = { name: " Ada " }
 Object.is(User(input), input)
 ```
 
-- `true` writes in place only where no place the Type checks can read what another wrote, so it returns what copying would, and otherwise copies, as for `{ a: { n: "string.numeric.parse" }, b: { n: "string" } }`, whose `a` and `b` could be one object.
+- `true` writes in place only where no place the Type checks can read what another wrote, so it returns what copying would. Otherwise it copies, as for `{ a: { n: "string.numeric.parse" }, b: { n: "string" } }`, whose `a` and `b` could be one object.
 - `"always"` always writes in place, so the input must hold no object at two places a transform reaches, and a function a Type holds must reach the input's objects only through the value it's passed, not `ctx.root`.
 - The result is the input, so it keeps its key order, accessors and inherited keys, and an undeclared key holds what another place wrote where the input holds one object at both. Writing an input that can't be written, like a frozen object, throws a TypeError. An object stripped of undeclared keys, and a key two constraints transform, are still copied.
 
@@ -88,6 +88,7 @@ Thanks to @jkugsiya for #1692.
 
 A Type a string definition can write has an `expression` that parses back to it:
 
+- A Type with both bounds, or a bound after a divisor or pattern, is written as it's parsed: `1 <= number <= 5`, `number % 2 >= 1` and `1 <= number[] <= 5`, where they were `number <= 5 & >= 1` and `number % 2 & >= 1`, which throw, and `number[]`.
 - A `!=` past an operand's first comparator is an operand of its own, as in `number > -1 & number != 0` and `0 < number < 10 & number != 5`, which were `number > -1 != 0`, which throws, and `0 < (number != 5) < 10`, which fails its type.
 - A number `String` writes with an exponent, below `1e-6` or from `1e21`, is written in decimal, as `1000000000000000000000` or `number > 0.0000001`, where `1e+21` and `1e-7` didn't parse. Its type, like any number TypeScript writes with an exponent, still fails, so such a definition needs `type.raw`.
 - An array of `never` is `never[]`, where it was `(never)[]`.
@@ -951,7 +952,7 @@ precompile.vite({ errors: "first" })
 
 ### Copy objects without boxing their numbers
 
-A Type deleting undeclared keys writes its copy as a literal of nulls it then fills, as a build does unless it's built for size, so V8 lets the copy's fields hold any value and stores the numbers it takes from data as data holds them, rather than allocating a box for each fraction. Parsing moltar's benchmark object with `onDeepUndeclaredKey("delete")` allocates 128 bytes per call where it allocated 144, in 0.88x the cycles.
+A Type deleting undeclared keys starts its copy as an object literal of nulls, as a precompiled build does unless it's built for size, so V8 stores each fraction it copies in place rather than allocating a box for it. Parsing moltar's benchmark object with `onDeepUndeclaredKey("delete")` allocates 128 bytes per call where it allocated 144, in 0.88x the cycles.
 
 ### Compile and discriminate a Type when it's first used
 
@@ -963,7 +964,7 @@ A host that refuses code generation once it has loaded, as Cloudflare Workers do
 
 ### Order keys by code unit
 
-Keys are ordered by code unit, where they were ordered as `JSON.stringify` writes them, so only keys that first differ where JSON escapes a character, or where one ends and the other continues, can change places. Keys now order differently when they first differ:
+Keys are ordered by code unit, where they were ordered as `JSON.stringify` writes them. Keys now order differently only when they first differ:
 
 - where one key ends and the other continues with a space or `!`: `"a"` now precedes `"a b"` and `"a!"`
 - at a control character, against a space, `!`, `"`, a backslash, a character from `#` to `[`, or some other control characters
@@ -1136,14 +1137,14 @@ An object definition's values are read as each key is parsed rather than all bef
 
 ### Read data in a different order
 
-A getter or `Proxy` trap on validated data can run a different number of times, and in a different order, than before, and a value that reads differently each time can be allowed if any read is. In detail:
+A getter or `Proxy` trap on validated data can run a different number of times, and in a different order, than before, and a value that reads differently each time can be allowed if any read is. In detail, where the first pass is `allows` or the check a call runs before it looks for errors:
 
-- `allows`, and the check a call runs before it looks for errors, read the first key they check before checking that data is an object, and again as they check its value, so a getter or `get` trap for that key can run twice, and one on a primitive's prototype, such as `String.prototype` or `Object.prototype`, runs before the primitive is rejected. They then look for `Object.prototype` in the object's prototype chain, so the `getPrototypeOf` trap of any `Proxy` on it runs, and an error from that trap propagates, as one from a getter does.
-- `allows`, and the check a call runs before it looks for errors, read a required key whose value can't be `undefined`, a morph's input included, without first asking whether data has it, so a `has` trap doesn't run for it.
-- `allows`, and the check a call runs before it looks for errors, may read a value checked against a union, `boolean` included, once for each branch, so its getter or trap can run more than once, and a value that reads differently each time is allowed if any of those reads is.
+- The first pass reads the first key it checks before checking that data is an object, and again as it checks its value, so a getter or `get` trap for that key can run twice, and one on a primitive's prototype, such as `String.prototype` or `Object.prototype`, runs before the primitive is rejected. It then looks for `Object.prototype` in the object's prototype chain, so the `getPrototypeOf` trap of any `Proxy` on it runs, and an error from that trap propagates, as one from a getter does.
+- The first pass reads a required key whose value can't be `undefined`, a morph's input included, without first asking whether data has it, so a `has` trap doesn't run for it.
+- The first pass may read a value checked against a union, `boolean` included, once for each branch, so its getter or trap can run more than once, and a value that reads differently each time is allowed if any of those reads is.
 - Checking that a `Date` is valid reads its `getTime` and calls it as a method when it's `Date.prototype.getTime`, so a getter or trap for `getTime` runs as it's checked.
 - A call that reports errors may read a failing prop's value more than once, so its getter or trap can run again, and a value that reads differently each time is allowed if any of those reads is.
-- `allows`, and the check a call runs before it looks for errors, read a key whose value is a number, or a unit other than a string, before the other keys, one whose value is an object after the other primitives and one whose value holds an array or a regex last, though never past one whose value runs a narrow or a morph, so each runs for the same data as before and errors list keys in the same order.
+- The first pass reads a key whose value is a number, or a unit other than a string, before the other keys, one whose value is an object after the other primitives and one whose value holds an array or a regex last, though never past one whose value runs a narrow or a morph, so each runs for the same data as before and errors list keys in the same order.
 - A transform that copies an object asks whether it has its first required key first, so a `has` trap runs once more.
 - Checking that data is valid asks whether each key it walks is the object's own before whether it's declared, so a `getOwnPropertyDescriptor` trap runs for each enumerable key, where it ran only for an undeclared one.
 - `"+": "delete"` reads an array's keys once to tell whether it holds any besides its indices, and looks for undeclared keys only when it does, so a `Proxy` whose `ownKeys` trap lists a named key before an array's indices can keep that key.
@@ -1153,17 +1154,15 @@ A getter or `Proxy` trap on validated data can run a different number of times, 
 
 `string.date.iso`'s pattern captures only the groups its backreferences read. It accepts the same strings, but its source changes, and with it the `expression`, `json` and JSON Schema `pattern` of `string.date.iso` and `string.date.iso.parse`'s input.
 
-### Check numeric strings by their characters
+### Check numeric strings, IP addresses and ISO dates by their characters
 
-`string.numeric` and `string.integer`, and the inputs of their `parse` morphs, check a string by reading its characters rather than testing their patterns, as do `@ark/util`'s `isNumericString` and `isWellFormedInteger`, which now read only strings. They accept the same strings, and their `expression`, `json` and JSON Schema are unchanged. A pattern node with either source, like `numericStringMatcher` from `@ark/util`, holds the check as `test`.
+`string.numeric`, `string.integer`, `string.ip.v4`, `string.ip.v6` and `string.date.iso`, and the inputs of their `parse` morphs, check a string by reading its characters rather than testing it against their patterns, and `string.uuid` tests its pattern only against a string of a UUID's length. They accept the same strings, and their patterns, `expression`, `json` and JSON Schema are unchanged. A valid IPv4 address takes about half the instructions, an IPv6 address up to 6x fewer, and a string that can't start one is rejected in a fifth of the instructions or less. `string.date.iso` reads `YYYY-MM-DD` and `YYYY-MM-DDTHH:mm:ss` with a fraction and `Z` or an offset itself, and other forms with its pattern.
+
+A pattern node with one of their sources, like `numericStringMatcher` from `@ark/util`, is checked the same way, holding the check as `test`. `@ark/util` exports `uuidMatcher`, `ipv4Matcher`, `ipv6Matcher` and `iso8601Matcher` and their tests, `isUuid`, `isIpv4`, `isIpv6` and `isIso8601`, and its `isNumericString` and `isWellFormedInteger` now read only strings. A build with `optimize: "size"` checks them all by their patterns, which are smaller.
 
 ### Read `File` from `platformConstructors` when it's used
 
 `@ark/util`'s `platformConstructors.File` and `builtinConstructors.File` are getters, as `FormData`, `Headers`, `Request` and `Response` are, returning `globalThis.File`, or `Blob` where it's missing, each time they're read. A `File` installed after import is the one they return. In a bundle that never reads `builtinConstructors`, `objectKindOf` builds its own table at its first call, capturing `Blob`, `URL` and the other constructors then rather than at import.
-
-### Check IP addresses and ISO dates by their characters, and UUIDs by their length first
-
-`string.ip.v4`, `string.ip.v6` and `string.date.iso` (and its `parse` morph's input) check a string by reading its characters rather than testing it against their patterns, and accept the same strings, and `string.uuid` tests its pattern only against a string of a UUID's length. A valid IPv4 address takes about half the instructions, an IPv6 address up to 6x fewer, and a string that can't start one is rejected in a fifth of the instructions or less. `string.date.iso` reads `YYYY-MM-DD` and `YYYY-MM-DDTHH:mm:ss` with a fraction and `Z` or an offset itself, and other forms with its pattern. Their patterns are unchanged, as are their `expression`, `json` and JSON Schema, and as with `string.numeric`, any pattern with the same source is checked the same way. `uuidMatcher`, `ipv4Matcher`, `ipv6Matcher` and `iso8601Matcher` and their tests (`isUuid`, `isIpv4`, `isIpv6`, `isIso8601`) are exported by `@ark/util`. A build with `optimize: "size"` still checks them by their patterns, which are smaller, as it now does `string.numeric` and `string.integer`.
 
 ### Call narrows and morphs without a receiver when jitless
 
@@ -1370,9 +1369,7 @@ const K = type("string").narrow(
 type.Record(K, "number")({ ab: 1, x: 2 })
 ```
 
-### Call an index signature's key narrow that reads `ctx` only while validating
-
-Such a narrow was called on each declared key as its Type was parsed, outside any validation, so one reading `ctx.root` threw. It now decides whether its signature checks a declared key only while validating, as it does for other keys:
+Such a narrow was also called on each declared key as its Type was parsed, outside any validation, so one reading `ctx.root` threw. It now decides whether its signature checks a declared key only while validating, as it does for other keys:
 
 ```ts
 const types = scope({
@@ -2078,7 +2075,7 @@ const $ = scope({
 })
 ```
 
-Their signatures are no longer generic, which is what TypeScript deferred. They accept the same selectors, and a `where` predicate's parameter is still the kind its selector names. `where` is now among the keys a selector object completes.
+`.describe()` and `.configure()` are no longer generic, since TypeScript defers a generic call like theirs inside a scope's definition. They accept the same selectors, and a `where` predicate's parameter is still the kind its selector names. `where` is now among the keys a selector object completes.
 
 ### Throw a scope alias's parse error on every reference
 
@@ -2825,21 +2822,6 @@ A Date literal, or a range allowing one Date, threw a RangeError for an invalid 
 ```ts
 // previously RangeError: Invalid time value, now false
 type("d'2000-01-01'").allows(new Date(NaN))
-```
-
-### Write a bounded Type's expression so it parses back
-
-A Type with both bounds, or a bound after a divisor or pattern, wrote an `expression` that threw when parsed. Each is now written as it's parsed:
-
-```ts
-// previously number <= 5 & >= 1, now 1 <= number <= 5
-type("1 <= number <= 5").expression
-
-// previously number % 2 & >= 1, now number % 2 >= 1
-type("number % 2 >= 1").expression
-
-// previously number[], now 1 <= number[] <= 5
-type("1 <= number[] <= 5").expression
 ```
 
 ### Say a missing discriminant key "was missing"

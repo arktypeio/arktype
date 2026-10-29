@@ -6,6 +6,7 @@ import {
 	writeDeclaredOutsideMessage
 } from "@ark/aot/internal/declare.ts"
 import {
+	writeStandaloneDependencyMessage,
 	withAllowUnsafe,
 	unbundledMessage,
 	writeBundledExternalMessage,
@@ -16,8 +17,7 @@ import {
 	writeUncachedModuleMessage,
 	writeUntransformedImportMessage,
 	writeUnwrittenModuleMessage
-} from "@ark/aot/internal/host.ts"
-import { writeStandaloneDependencyMessage } from "@ark/aot/internal/messages.ts"
+} from "@ark/aot/internal/messages.ts"
 import {
 	writeEntryHelperMessage,
 	writeUntransformedHelperMessage
