@@ -82,7 +82,7 @@ A capture inside a lookaround wasn't counted, so later captures were inferred at
 regex("^(?=(a))a(b)$")
 ```
 
-### Install `arkregex`, not `@ark/regex`
+### install `arkregex`, not `@ark/regex`
 
 arkregex publishes under one name. `@ark/regex`, the same package under another name, is deprecated at its last version, and `@arktype/regex` is no longer published. Replace each `@ark/regex` import with `arkregex`.
 
