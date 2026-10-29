@@ -863,6 +863,32 @@ export default (def: string) => def
 Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { "/helpers.ts": { __proto__: null, "list": list, "optional": optional } })`)
 		})
 
+		it("checks a module that can't reach arktype only by registering its helpers", () => {
+			const reads = `export const describe = (schema: any) => \`\${schema.in} \${schema.default}\`
+export class Registry {
+	tools: string[] = []
+	count() {
+		return this.tools.length + this.tools.length
+	}
+}`
+			const files = {
+				"/registry.ts": reads,
+				"/schemas.ts": `import { type } from "arktype"\nexport const T = type("string")\n${reads}`
+			}
+			const build = (id: keyof typeof files) =>
+				precompileModule(files[id], id, memoryHost(files), {
+					creationChecks: "helpers"
+				})
+			const registry = build("/registry.ts")
+			attest(registry.diagnostics).equals([])
+			attest(registry.code).equals(`${reads}
+Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { "/registry.ts": { __proto__: null, "describe": describe } })`)
+			attest(build("/schemas.ts").diagnostics.map(d => d.message)).snap([
+				"schema.in reads in, which a standalone validator lacks",
+				"schema.default reads default, which a standalone validator lacks"
+			])
+		})
+
 		it("passes each created function", () => {
 			const result = precompile(
 				`import { type } from "arktype"

@@ -1402,10 +1402,24 @@ export class Precompiler {
 	): PrecompiledModule {
 		const module = this.add(id, source, mappings)
 		this.configuration ??= this.applyConfiguration()
+		const s = new MagicString(source)
+		// a test driver transforms it only to register its helpers, so it's
+		// checked as any other build checks it: not at all
+		if (this.checkHelpers && !this.importsArk(source, id)) {
+			this.registerHelpers(module, s)
+			return {
+				code: s.toString(),
+				map: mapOf(s, id),
+				sites: [],
+				dependencies: this.dependenciesOfArtifact(module),
+				diagnostics: [],
+				modules: {},
+				foldedHelpers: []
+			}
+		}
 		const { sites, diagnostics } = this.analysisOf(module)
 		diagnostics.push(...this.checkConfigOrder(module))
 		diagnostics.push(...this.copyDiagnosticsOf(module))
-		const s = new MagicString(source)
 		const prefix = prefixOf(source, id)
 		const modules: Record<string, string> = {}
 		// locals for virtual modules' exports, by specifier
@@ -1426,10 +1440,7 @@ export class Precompiler {
 		this.insertImports(module, s, prefix, modules, imports)
 		return {
 			code: s.toString(),
-			map:
-				s.hasChanged() ?
-					s.generateMap({ source: id, includeContent: true, hires: "boundary" })
-				:	undefined,
+			map: mapOf(s, id),
 			sites,
 			dependencies: this.dependenciesOfArtifact(module),
 			diagnostics,
@@ -1496,18 +1507,7 @@ export class Precompiler {
 		)
 		this.linkIslands(module, sites, s, prefix)
 		this.markProgress(module, sites, s, prefix)
-		// registered so factories can check against module mocks
-		if (this.checkHelpers) {
-			const registered = Object.entries(this.registeredHelpersOf(module))
-			if (registered.length) {
-				// leads with an identifier: stripping a type alias drops a ";"
-				s.append(
-					`\nObject.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { ${JSON.stringify(module.path)}: { __proto__: null, ${registered
-						.map(([name, local]) => `${JSON.stringify(name)}: ${local}`)
-						.join(", ")} } })`
-				)
-			}
-		}
+		if (this.checkHelpers) this.registerHelpers(module, s)
 		for (const specifier in inputImports) {
 			const locals = inputImports[specifier]
 			s.append(
@@ -2656,6 +2656,18 @@ export class Precompiler {
 			file: exporter.path,
 			name: helper.name
 		})
+	}
+
+	// registered so factories can check against module mocks
+	private registerHelpers(module: SourceModule, s: MagicString): void {
+		const registered = Object.entries(this.registeredHelpersOf(module))
+		if (!registered.length) return
+		// leads with an identifier: stripping a type alias drops a ";"
+		s.append(
+			`\nObject.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { ${JSON.stringify(module.path)}: { __proto__: null, ${registered
+				.map(([name, local]) => `${JSON.stringify(name)}: ${local}`)
+				.join(", ")} } })`
+		)
 	}
 
 	private registeredHelpersOf(module: SourceModule): Record<string, string> {
@@ -5664,6 +5676,12 @@ interface Configuration {
 let threadConfiguration: Configuration | undefined
 
 // arktype can't change its configuration once set
+// undefined where nothing changed
+const mapOf = (s: MagicString, id: string): SourceMap | undefined =>
+	s.hasChanged() ?
+		s.generateMap({ source: id, includeContent: true, hires: "boundary" })
+	:	undefined
+
 const holdsOtherConfiguration = (files: string | undefined): boolean =>
 	threadConfiguration ?
 		threadConfiguration.files !== files
