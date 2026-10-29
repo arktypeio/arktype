@@ -961,6 +961,26 @@ export const Labeled = $ark#6(labels)`)
 			])
 		})
 
+		it("reads a function a helper call created through the const holding it", () => {
+			const result = precompile(`import { type } from "arktype"
+const labeled = (label: string) => ({
+	message: (ctx: { expected: string }) => \`\${label} must be \${ctx.expected}\`
+})
+const config = labeled("Name")
+export const Held = type("string > 0").configure(config)
+export const Inline = type("string > 0").configure(labeled("Id"))`)
+			attest(result.diagnostics.map(d => d.reasons[0])).snap([
+				"the function at /main.ts:3:11 is created by each call to a static helper, so the precompiled site cannot reach it"
+			])
+			attest(foldedCode(result.code)).snap(`import { type } from "arktype"
+const labeled = (label: string) => ({
+	message: (ctx: { expected: string }) => \`\${label} must be \${ctx.expected}\`
+})
+const config = labeled("Name")
+export const Held = $ark#0(config)
+export const Inline = type("string > 0").configure(labeled("Id"))`)
+		})
+
 		it("shares tables between factories", () => {
 			const result = precompile(`import { scope, type } from "arktype"
 const isLong = (s: string) => s.length > 1

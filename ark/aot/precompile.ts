@@ -4090,9 +4090,11 @@ export class Precompiler {
 			if (!site.inputs.some(existing => isCoveredBy(input, existing)))
 				site.inputs.push(input)
 		}
+		const supplied = new Set<unknown>()
+		for (const input of site.inputs) this.suppliedHolesOf(input.value, supplied)
 		for (const value of state.holes) {
 			const isCalled = !site.parseError && !isHeld(value, this.interpreter)
-			const hole = this.holeOf(value, candidate, module)
+			const hole = this.holeOf(value, candidate, module, supplied)
 			if (!isCalled) {
 				if (hole instanceof DynamicValue) return hole
 				site.holes.push(hole)
@@ -4291,7 +4293,8 @@ export class Precompiler {
 	private holeOf(
 		value: unknown,
 		candidate: SiteCandidate,
-		module: SourceModule
+		module: SourceModule,
+		supplied: Set<unknown>
 	): Hole | DynamicValue {
 		const standIn =
 			typeof value === "symbol" ? undefined : (
@@ -4301,7 +4304,8 @@ export class Precompiler {
 		const source =
 			readsByValue.get(value)?.[0] ??
 			(standIn?.dynamic && readsByValue.get(standIn.dynamic)?.[0])
-		if (!source && standIn?.closure?.env) {
+		// a function a call created is reached through what holds it
+		if (!source && standIn?.closure?.env && !supplied.has(value)) {
 			return new DynamicValue(
 				standIn.module,
 				standIn.node,
