@@ -845,7 +845,6 @@ m must be a bigint (was 5)`)
 		})
 
 		it("a spread of en lists a missing true, false and more as given", () => {
-			// en's required text names any branches starting with true and false boolean
 			const T = type({
 				a: match
 					.case("true", () => 1)
@@ -854,7 +853,7 @@ m must be a bigint (was 5)`)
 					.default("reject")
 			})
 			const errors = T({}) as ArkErrors
-			attest(errors.summary).snap("a must be boolean (was missing)")
+			attest(errors.summary).snap('a must be true, false or "x" (was missing)')
 			attest(errors.toLocaleString({ ...en })).snap(
 				'a must be true, false or "x" (was missing)'
 			)
