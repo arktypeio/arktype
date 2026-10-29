@@ -9,6 +9,31 @@ description: Add precompilation to your bundler, framework, test runner or Node 
 
 `@ark/aot` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, so a bundle or Node [fails to link](/docs/precompile/troubleshooting#setup) it to another version's runtime, like one a stale cache kept. That import adds nothing to the bundle.
 
+`@ark/aot` peers on the exact `arktype` it was released with, so upgrade the two together. Renovate and Dependabot open a pull request for each unless you group them:
+
+```json title="renovate.json"
+{
+	"packageRules": [
+		{
+			"matchPackageNames": ["arktype", "@ark/*"],
+			"groupName": "arktype"
+		}
+	]
+}
+```
+
+```yaml title=".github/dependabot.yml"
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      arktype:
+        patterns: ["arktype", "@ark/*"]
+```
+
 ## Bundlers
 
 `@ark/aot/unplugin` precompiles a program as your bundler builds it.

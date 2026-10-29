@@ -51,6 +51,8 @@ for (const issue of out.issues) {
 | `drizzle-zod`                                               | `drizzle-arktype`                                                                                                                                |
 | a library that accepts only Zod                             | keep Zod for that call, and say so                                                                                                               |
 
+With npm, `@hookform/resolvers`, `@t3-oss/env-core` and other packages that peer on `arktype@^2` make installs fail with `ERESOLVE` until they widen their range. For each package the error names, add an [override](https://arktype.io/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2) rather than passing `--force` or `--legacy-peer-deps`.
+
 Without casts:
 
 - `toJsonSchema()` returns a `JsonSchema`, the type to give the document's Schema Objects (`import type { JsonSchema } from "arktype"`). Build path and query parameters from an object type's `.props`, which lists each key, whether it's required, and its Type.

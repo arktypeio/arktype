@@ -1184,6 +1184,8 @@ for (const issue of out.issues) {
 | `drizzle-zod` | `drizzle-arktype` |
 | a library that accepts only Zod | keep Zod for that call, and say so |
 
+With npm, `@hookform/resolvers`, `@t3-oss/env-core` and other packages that peer on `arktype@^2` make installs fail with `ERESOLVE` until they widen their range. For each package the error names, add an [override](https://arktype.io/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2) rather than passing `--force` or `--legacy-peer-deps`.
+
 Without casts:
 
 - `toJsonSchema()` returns a `JsonSchema`, the type to give the document's Schema Objects (`import type { JsonSchema } from "arktype"`). Build path and query parameters from an object type's `.props`, which lists each key, whether it's required, and its Type.
@@ -1431,6 +1433,7 @@ Each section is one change since 2.2.9, with code that behaves differently befor
 
 Go down the list. Each question your code answers yes to links to what to change.
 
+- Do you install with npm, beside a package that peers on `arktype@^2`, like `@hookform/resolvers` or `@t3-oss/env-core`? [Override its peer](https://arktype.io/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2).
 - Do you ship arktype to a browser without a build step that precompiles? [It's larger](https://arktype.io/docs/upgrading#unprecompiled-arktype-is-larger).
 - Do you install `@ark/type`, `@ark/regex` or an `@arktype/*` package? [Rename it](https://arktype.io/docs/upgrading#package-names).
 - Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](https://arktype.io/docs/upgrading#arkerrors-is-no-longer-an-array).
@@ -1453,6 +1456,31 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you use `@ark/schema` without `arktype`? [Import `arksets`](https://arktype.io/docs/upgrading#arkschema).
 - Do you import from `@ark/schema`, `@ark/util` or a deep path like `arktype/internal/...`, or read `.internal`? See [@ark/schema](https://arktype.io/docs/upgrading#arkschema), [@ark/util](https://arktype.io/docs/upgrading#arkutil) and [Deep imports](https://arktype.io/docs/upgrading#deep-imports).
 - Do you use `@ark/json-schema`, `@ark/fast-check` or attest, or run attest on TypeScript 7? See their sections below.
+
+## Installing
+
+### npm refuses packages that peer on arktype 2
+
+Some packages list `arktype@^2` as a peer dependency, like `@hookform/resolvers`, `@t3-oss/env-core`, `@standard-community/standard-json`, `xsschema`, `@regle/schemas`, `@typeschema/arktype`, `@hono/arktype-validator` and `@arkenv/core`. npm won't install one beside a later major version of `arktype`, even where its peer is optional: `npm install arktype@latest` only warns, but each install after it, `npm ci` included, fails with `ERESOLVE`. Until a package widens its range, point its peer at your `arktype` in `package.json`, one entry for each package the error names:
+
+```json
+{
+	"overrides": {
+		"@hookform/resolvers": { "arktype": "$arktype" },
+		"@t3-oss/env-core": { "arktype": "$arktype" }
+	}
+}
+```
+
+`$arktype` is the version your `dependencies` list, so update `arktype` there, then run `npm install`. An override of `arktype` alone, `{ "arktype": "$arktype" }`, would also hand your version to packages that depend on arktype 2 itself rather than peering on it.
+
+pnpm installs with an `unmet peer` warning, which `peerDependencyRules` in `pnpm-workspace.yaml` silences, and bun doesn't warn:
+
+```yaml
+peerDependencyRules:
+  allowedVersions:
+    arktype: "3"
+```
 
 ## Bundle size
 
@@ -6899,7 +6927,7 @@ export const useUserForm = () =>
 
 The form's field values are typed from the Type's input, and `handleSubmit` receives its output. If you pass type arguments to `useForm` yourself, pass all three: `useForm<typeof User.inferIn, unknown, typeof User.infer>`.
 
-The same package exports `arktypeResolver` from `@hookform/resolvers/arktype`, which behaves the same. `@hookform/resolvers` lists `arktype@^2` as an optional peer dependency, so your package manager may warn about it with a later major version of ArkType, whichever resolver you import.
+The same package exports `arktypeResolver` from `@hookform/resolvers/arktype`, which behaves the same. `@hookform/resolvers` lists `arktype@^2` as an optional peer dependency, so npm refuses to install it beside a later major version of ArkType, whichever resolver you import, until you [override the peer](https://arktype.io/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2). pnpm warns, and bun installs it as is.
 
 ## Hono
 
@@ -6923,7 +6951,7 @@ app.post("/users", sValidator("json", User), c => {
 })
 ```
 
-Invalid requests get a 400 response with the issues as JSON. [`@hono/arktype-validator`](https://github.com/honojs/middleware/tree/main/packages/arktype-validator) provides an equivalent `arktypeValidator`, with a required peer dependency on `arktype@^2`.
+Invalid requests get a 400 response with the issues as JSON. [`@hono/arktype-validator`](https://github.com/honojs/middleware/tree/main/packages/arktype-validator) provides an equivalent `arktypeValidator`, with a required peer dependency on `arktype@^2`, so npm needs the same [override](https://arktype.io/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2) to install it.
 
 To generate an OpenAPI document from your routes, [`hono-openapi`](https://github.com/rhinobase/hono-openapi) has a `validator` that accepts a Type, and a `resolver` for describing responses with one.
 
