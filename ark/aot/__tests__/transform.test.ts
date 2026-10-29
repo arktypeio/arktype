@@ -863,6 +863,28 @@ export default (def: string) => def
 Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { "/helpers.ts": { __proto__: null, "list": list, "optional": optional } })`)
 		})
 
+		it("checks a helper arktype called for an earlier site", () => {
+			const files = {
+				"/checked.ts": `import { type } from "arktype"
+import { isPositive } from "./positive.ts"
+export const Positive = type(["0 | 1", ":", isPositive])
+export const expression = type(["0 | 1", ":", isPositive]).expression`,
+				"/positive.ts": "export const isPositive = (n: number) => n > 0"
+			}
+			// arktype reuses what it called isPositive for, so only the first
+			// site's definition calls it
+			const { code } = precompileModule(
+				files["/checked.ts"],
+				"/checked.ts",
+				memoryHost(files),
+				{ creationChecks: "helpers" }
+			)
+			attest(foldedCode(code)).snap(`import "arktype"
+import { isPositive } from "./positive.ts"
+export const Positive = $ark#0(isPositive, isPositive)
+export const expression = $ark#2(isPositive, isPositive)`)
+		})
+
 		it("passes each created function", () => {
 			const result = precompile(
 				`import { type } from "arktype"

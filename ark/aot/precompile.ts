@@ -4112,11 +4112,18 @@ export class Precompiler {
 		runsFirst: boolean
 	): void {
 		for (const { root, value } of state.trace.exportedFunctions) {
-			const node = this.interpreter.standIns.get(value as object)?.closure?.node
+			const standIn = this.interpreter.standIns.get(value as object)
+			const node = standIn?.closure?.node
 			if (
 				root.kind !== "export" ||
 				!node ||
-				!state.trace.helpers.some(([helper]) => helper === node) ||
+				// arktype caches what it called a helper for, so another site's
+				// call can decide this one's value
+				!(
+					standIn.isCalled ||
+					standIn.isCalledIndirectly ||
+					state.trace.helpers.some(([helper]) => helper === node)
+				) ||
 				site.helpers.some(
 					helper => helper.file === root.file && helper.name === root.name
 				)
