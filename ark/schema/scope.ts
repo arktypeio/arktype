@@ -1064,12 +1064,21 @@ const resolutionsToJson = (res: InternalResolutions): JsonStructure =>
 
 const resolvingAmbient = new Set<string>()
 
+/** calls `fn` with `resolveAmbient(name)` resolving nothing */
+export const whileResolvingAmbient = <t>(name: string, fn: () => t): t => {
+	resolvingAmbient.add(name)
+	try {
+		return fn()
+	} finally {
+		resolvingAmbient.delete(name)
+	}
+}
+
 /** the root the builtin keyword named resolves to, if any */
 export const resolveAmbient = (name: string): BaseRoot | undefined => {
 	// writing the keyword's own expression asks for it while this resolves it
 	if (resolvingAmbient.has(name)) return
-	resolvingAmbient.add(name)
-	try {
+	return whileResolvingAmbient(name, () => {
 		const ambient: InternalModule = $ark.ambient as never
 		const resolution =
 			hasOwn(ambient, name) ?
@@ -1080,9 +1089,7 @@ export const resolveAmbient = (name: string): BaseRoot | undefined => {
 			: hasArkKind(resolution, "root") ? resolution
 			: undefined
 		)
-	} finally {
-		resolvingAmbient.delete(name)
-	}
+	})
 }
 
 const maybeResolveSubalias = (

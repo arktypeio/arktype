@@ -226,25 +226,8 @@ contextualize(() => {
 		}
 		eachType(keywords, collect)
 		eachType($ark.kw, collect)
-		// a set engine installed after the intrinsics bootstrapped regenerates
-		// them under the same names, and a keyword created before keeps the
-		// earlier generation's nodes, so only the live generation is compared
-		// (in loops, as the history runner counts the calls a test makes)
-		const live = [
-			$ark.kw.string,
-			$ark.kw.integer,
-			$ark.kw.jsonPrimitive,
-			$ark.kw.emptyStructure
-		].map(node => node.$)
-		const current: BaseScope[] = []
-		for (const $ of scopes) {
-			let isStale = false
-			for (const l of live)
-				if ($ !== l && $.isBuiltin && $.name === l.name) isStale = true
-			if (!isStale) current.push($)
-		}
-		const names = current.map($ => $.isBuiltin && $.name)
-		attest(new Set(names).size).equals(current.length)
+		const names = [...scopes].map($ => $.isBuiltin && $.name)
+		attest(new Set(names).size).equals(scopes.size)
 		attest(names.sort()).snap([
 			"ark",
 			"intrinsic",

@@ -7,6 +7,7 @@ import {
 import {
 	bootstrapRootScope,
 	node,
+	whileResolvingAmbient,
 	SchemaScope,
 	type SchemaScopeParser
 } from "./scope.ts"
@@ -63,8 +64,7 @@ const bootstrapIntrinsic = () => {
 
 	const intrinsic = { ...intrinsicBases, ...intrinsicRoots }
 
-	// only JSON keywords read these, so most programs never parse them
-	const exportJson = cached(() =>
+	const exportJsonScope = () =>
 		builtinScope(
 			{
 				jsonPrimitive: [
@@ -95,6 +95,12 @@ const bootstrapIntrinsic = () => {
 			},
 			{ prereducedAliases: true, name: "intrinsic.json" }
 		).export()
+
+	// only JSON keywords read these, so most programs never parse them.
+	// jsonObject's expression asks for object.json, which is this scope's
+	// jsonObject, so resolving it here would build the scope a second time
+	const exportJson = cached(() =>
+		whileResolvingAmbient("object.json", exportJsonScope)
 	)
 	for (const k of jsonIntrinsicNames)
 		defineLazily(intrinsic, k, () => exportJson()[k])
