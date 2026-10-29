@@ -1107,7 +1107,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				const testing = !!process.env.VITEST && config.mode === "test"
 				setEnvironment({
 					production: config.command === "build" && !testing,
-					testing
+					testing,
+					serving: isServing
 				})
 			}
 		},
