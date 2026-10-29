@@ -677,6 +677,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				}
 				// a bundler can write another path to the same file, like Vite's 8.3 name on Windows, loading a second arktype
 				if (isRuntime && opts?.shadow) return resolveFile(id, importer)
+				// as a module's import of arktype resolves, so one a precompiled dependency writes inline loads the same runtime
+				if (id === "arktype/runtime" && isStandalone)
+					return resolveFile(id, importer)
 			}
 		},
 		load: {
