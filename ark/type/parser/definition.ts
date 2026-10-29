@@ -1,10 +1,12 @@
 import {
 	$ark,
+	BaseRoot,
 	constraintInputOf,
 	hasArkKind,
+	foreignTypesByMorph,
 	inProgress,
 	type BaseParseContext,
-	type BaseRoot,
+	type Traversal,
 	type BaseScope,
 	type StandardSchemaV1
 } from "@ark/schema"
@@ -12,6 +14,7 @@ import {
 	domainOf,
 	hasDomain,
 	isArray,
+	isInstanceOf,
 	isStandardSchema,
 	isThunk,
 	objectKindOf,
@@ -101,7 +104,11 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:
-			if (hasArkKind(def, "root")) return def
+			if (hasArkKind(def, "root")) {
+				return isInstanceOf(def, BaseRoot) ? def : (
+						parseStandardSchema(def as never, ctx, true)
+					)
+			}
 			if (isStandardSchema(def)) return parseStandardSchema(def as never, ctx)
 			return parseObjectLiteral(def as Dict, ctx)
 		case "Array":
@@ -121,7 +128,7 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 			// e.g. Effect's standardSchemaV1, a class that can't be called as a thunk
 			if (isStandardSchema(def)) return parseStandardSchema(def as never, ctx)
 			const resolvedDef = isThunk(def) ? def() : def
-			if (hasArkKind(resolvedDef, "root")) return resolvedDef
+			if (hasArkKind(resolvedDef, "root")) return parseObject(resolvedDef, ctx)
 			return throwParseError(writeBadDefinitionTypeMessage("Function"))
 		}
 		default:
@@ -131,11 +138,14 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 	}
 }
 
+// a Type from another copy of arktype, like 2.x, is foreign: it has its
+// arkKind but not its methods, so it validates through its Standard Schema
 const parseStandardSchema = (
 	def: StandardSchemaV1,
-	ctx: BaseParseContext
-): BaseRoot =>
-	ctx.$.intrinsic.unknown.pipe((v, ctx) => {
+	ctx: BaseParseContext,
+	isForeign?: true
+): BaseRoot => {
+	const validate = (v: unknown, ctx: Traversal) => {
 		const result = def["~standard"].validate(v)
 
 		if (result instanceof Promise) {
@@ -150,14 +160,22 @@ const parseStandardSchema = (
 		if (result.issues.length === 0) return ctx.error({ problem: "is invalid" })
 
 		for (const issue of result.issues) {
+			const { problem } = issue as { problem?: unknown }
 			ctx.error({
-				problem: uncapitalize(issue.message),
+				// an arktype 2 message starts with the path its issue already has
+				problem:
+					isForeign && typeof problem === "string" ?
+						problem
+					:	uncapitalize(issue.message),
 				relativePath: (issue.path ?? []).map(k =>
 					typeof k === "object" ? k.key : k
 				)
 			})
 		}
-	})
+	}
+	if (isForeign) foreignTypesByMorph.set(validate, def)
+	return ctx.$.intrinsic.unknown.pipe(validate)
+}
 
 export const writeAsyncStandardSchemaMessage = (vendor: string): string =>
 	`Standard Schema definitions must validate synchronously (${vendor} returned a Promise)`

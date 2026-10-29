@@ -1,7 +1,9 @@
 import {
 	$ark,
+	foreignTypesByMorph,
 	mergeToJsonSchemaConfigs,
 	ToJsonSchema,
+	writeForeignArkMessage,
 	type Alias,
 	type BaseRoot,
 	type JsonSchema,
@@ -9,6 +11,8 @@ import {
 	type RefinementKind,
 	type RootKind,
 	type Sequence,
+	type StandardJSONSchemaV1,
+	type StandardSchemaV1,
 	type Structure,
 	type Union,
 	type nodeOfKind
@@ -288,18 +292,22 @@ const innerToJsonSchemaByKind: {
 			]
 		}
 	},
-	morph: (node, ctx) =>
-		ctx.io === "in" ?
-			// its input as written, since _in drops the defaults it holds
-			toJsonSchemaRecurse(
-				node.declaredIn ?? node.head ?? $ark.kw.unknown.internal,
-				ctx
-			)
-		:	ctx.fallback.morph({
-				code: "morph",
-				base: toJsonSchemaRecurse(node._in, ctx),
-				out: node.tail ? toJsonSchemaRecurse(node.tail._out, ctx) : null
-			}),
+	morph: (node, ctx) => {
+		const foreign = foreignTypesByMorph.get(node.piped[0] as never)
+		if (foreign && (ctx.io === "in" || node.piped.length === 1))
+			return foreignToJsonSchema(foreign, ctx)
+		return ctx.io === "in" ?
+				// its input as written, since _in drops the defaults it holds
+				toJsonSchemaRecurse(
+					node.declaredIn ?? node.head ?? $ark.kw.unknown.internal,
+					ctx
+				)
+			:	ctx.fallback.morph({
+					code: "morph",
+					base: toJsonSchemaRecurse(node._in, ctx),
+					out: node.tail ? toJsonSchemaRecurse(node.tail._out, ctx) : null
+				})
+	},
 	unit: (node, ctx) =>
 		// this is the more standard JSON schema representation, especially for Open API
 		node.unit === null ?
@@ -353,6 +361,35 @@ const innerToJsonSchemaByKind: {
 		return node.domain === "object" ?
 				{ type: "object", properties: {} }
 			:	{ type: node.domain }
+	}
+}
+
+// a Type from another copy of arktype, like 2.x, writes its own
+const foreignToJsonSchema = (
+	t: StandardSchemaV1,
+	ctx: JsonSchemaContext
+): JsonSchema => {
+	const { jsonSchema } = t["~standard"] as Partial<StandardJSONSchemaV1.Props>
+	try {
+		if (jsonSchema) {
+			const { $schema, ...schema } = jsonSchema[
+				ctx.io === "in" ? "input" : "output"
+			]({ target: ctx.target })
+			return schema
+		}
+	} catch {
+		// e.g. 2.x writes no "openapi-3.0"
+	}
+	try {
+		return ctx.fallback.morph({ code: "morph", base: {}, out: null })
+	} catch (e) {
+		if (!(e instanceof ToJsonSchema.Error) || !e.hasCode("morph")) throw e
+		return ToJsonSchema.throw(
+			"morph",
+			e.context,
+			ctx.path,
+			`Can't convert the Type${ctx.path && ` at ${ctx.path}`} to ${ctx.target} JSON Schema. ${writeForeignArkMessage("It")}`
+		)
 	}
 }
 

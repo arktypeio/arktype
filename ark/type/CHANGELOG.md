@@ -2486,6 +2486,17 @@ A function definition was called as a thunk, so a Standard Schema that's a class
 type({ age: Schema.standardSchemaV1(Schema.Number) })
 ```
 
+### Accept a Type from arktype 2 as a Standard Schema
+
+A Type from another copy of arktype, like the ones `@ark/json-schema@0.0.13`'s `jsonSchemaToType` returns from its own arktype 2, was taken for one of this version's, so defining or validating with it threw a `TypeError`. It's now validated through its Standard Schema wherever a definition is, including `.pipe()` and `.to()`:
+
+```ts
+// previously TypeError: reference.is is not a function
+type({ user: UserFromArktype2 })
+```
+
+Its errors keep their messages without repeating their path, and `toJsonSchema()` writes the JSON Schema its Standard JSON Schema converter does. Where it has none for the target, like arktype 2's for OpenAPI, the error names the Type as the cause. A module or generic from another copy used as a Scope's alias, or a Type from one passed to `type.schema()`, throws a `ParseError` saying to upgrade the package that brought it in or add an override.
+
 ### Infer `.merge()` of a definition holding a described Type
 
 A definition passed to `.merge()` that called a method like `.describe()` or `.configure()` inline failed to type check:
