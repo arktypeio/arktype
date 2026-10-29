@@ -303,7 +303,8 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			this.inner.domain?.domain === "object" && !this.preStruct.length ?
 				this.structure?.allowsProps[0]
 			:	undefined
-		// a key is read before data is checked to be an object, in a switch rejecting what none can be read from
+		// a key is read before data is checked to be an object, in a switch
+		// rejecting what none can be read from
 		if (read && !js.shortest) {
 			js.block("switch (data)", () =>
 				js
@@ -342,7 +343,8 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			return js.return(true)
 		}
 		const rejection = js.rejection(this)
-		// a loop keeps a minifier from joining the checks into one expression, which a build for size allows
+		// a loop keeps a minifier from joining the checks into one expression,
+		// which a build for size allows
 		if (js.shortest) checks()
 		else if (
 			!sequence &&

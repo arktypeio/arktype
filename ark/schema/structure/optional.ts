@@ -164,7 +164,7 @@ export const checkDefault = (
 
 	// if the node has a default value, finalize it and apply JIT optimizations
 	// if applicable to ensure behavior + error logging is externally consistent
-	// (using .in here insead of ._in triggers finalization)
+	// (using .in here instead of ._in triggers finalization)
 	const out = (node.in as BaseRoot).traverseUnused(value)
 
 	if (out instanceof ArkErrors) {

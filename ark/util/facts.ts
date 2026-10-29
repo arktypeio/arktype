@@ -70,7 +70,7 @@ export const ownEntriesOf = (
 			k,
 			"value" in descriptor ? descriptor.value
 			: opts.onAccessor ? opts.onAccessor(descriptor)
-			: (o as any)[k]
+			: (o as Record<Key, unknown>)[k]
 		])
 	}
 	return result

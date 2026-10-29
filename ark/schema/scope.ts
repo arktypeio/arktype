@@ -649,7 +649,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (!def) return this.maybeResolveSubalias(name)
 
-		// referencing a thunk's alias while it's called is a cycle, but a generic's body is called again
+		// referencing a thunk's alias while it's called is a cycle, but a
+		// generic's body is called again
 		if (isScopeAlias && isThunk(def) && !(def instanceof LazyGenericRoot)) {
 			const preparsed = this.preparseOwn(def, { alias: name })
 			const ctx = registerParseContext(
