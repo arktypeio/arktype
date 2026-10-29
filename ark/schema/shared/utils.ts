@@ -215,10 +215,9 @@ export const describeBranches = (
 
 	if (descriptions.length === 1) return descriptions[0]
 	if (
-		(descriptions.length === 2 &&
-			descriptions[0] === "false" &&
-			descriptions[1] === "true") ||
-		(descriptions[0] === "true" && descriptions[1] === "false")
+		descriptions.length === 2 &&
+		((descriptions[0] === "false" && descriptions[1] === "true") ||
+			(descriptions[0] === "true" && descriptions[1] === "false"))
 	)
 		return "boolean"
 

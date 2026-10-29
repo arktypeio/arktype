@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { Disjoint, node, rootSchema } from "@ark/schema"
+import { describeBranches, Disjoint, node, rootSchema } from "@ark/schema"
 import { writeOrderedIntersectionMessage } from "arksets/internal"
 
 contextualize(() => {
@@ -130,6 +130,13 @@ contextualize(() => {
 			node("union", { branches: [branch("a"), branch("b")] }, { reduced: true })
 		).throws(
 			"Intersection at x of number and string results in an unsatisfiable type"
+		)
+	})
+
+	it("describes true and false as boolean only when they are the only branches", () => {
+		attest(describeBranches(["true", "false"])).equals("boolean")
+		attest(describeBranches(["true", "false", "string"])).equals(
+			"true, false or string"
 		)
 	})
 })
