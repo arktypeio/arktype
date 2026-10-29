@@ -428,6 +428,21 @@ contextualize(function (this: Mocha.Suite) {
 		).equals(runPlain(library))
 	})
 
+	// the package's inline import of arktype/runtime resolves as main.ts's import of arktype does, where Vite keeps a path the plugin's resolver expands, as it does an 8.3 name on Windows
+	it("vite packages that opt in, inline, through a symlink", async () => {
+		const config = viteConfig({ cwd: library, inline: true }, library)
+		const [{ output }] = (await viteBuild({
+			...config,
+			resolve: { ...config.resolve, preserveSymlinks: true },
+			build: {
+				write: false,
+				minify: true,
+				lib: { entry: "main.ts", formats: ["es"] }
+			}
+		})) as Rolldown.RolldownOutput[]
+		attest(run(output[0].code)).equals(runPlain(library))
+	})
+
 	it("esbuild static introspection", async () => {
 		const introspected = fromHere("introspected")
 		const standalone = await bundlers.esbuild(
