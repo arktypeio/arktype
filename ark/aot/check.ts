@@ -7,14 +7,14 @@ import {
 	pluginCallsIn,
 	withPluginCalls
 } from "./pluginCalls.ts"
+import { renderDiagnostic, type Diagnostic } from "./diagnostics.ts"
+import { isProductionEnv, withEnvironment } from "./presets.ts"
 import {
-	renderDiagnostic,
-	type Diagnostic,
+	scanProgramSync,
+	writeUnprunedMessage,
 	type ScannedProgram,
 	type ScannedUsage
-} from "./precompile.ts"
-import { isProductionEnv, withEnvironment } from "./presets.ts"
-import { scanProgramSync, writeUnprunedMessage } from "./scan.ts"
+} from "./scan.ts"
 import { withSettingsFile } from "./settings.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 

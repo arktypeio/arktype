@@ -1,3 +1,4 @@
+export { renderDiagnostic, type Diagnostic } from "./diagnostics.ts"
 export {
 	createNodeHost,
 	type NodeHostOptions,
@@ -6,8 +7,6 @@ export {
 export {
 	precompileModule,
 	Precompiler,
-	renderDiagnostic,
-	type Diagnostic,
 	type ModuleAnalysis,
 	type PrecompiledModule,
 	type PrecompileOptions

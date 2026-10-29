@@ -1,6 +1,6 @@
 import type { ESLint, Linter, Rule, SourceCode } from "eslint"
+import type { Diagnostic } from "./diagnostics.ts"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
-import type { Diagnostic } from "./precompile.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
 import { withSettingsFile } from "./settings.ts"
 import { createSyncPrecompiler } from "./worker.ts"
