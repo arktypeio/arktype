@@ -119,13 +119,13 @@ export class Scanner<peek extends string = string> {
 		const peek = this.peek
 		if (peek in namedControlEscapes) {
 			this.shift()
-			return namedControlEscapes[peek as keyof typeof namedControlEscapes]
+			return namedControlEscapes[peek as keyof NamedControlEscapes]
 		}
 		if (peek === "u") {
 			const code = this.chars.slice(this.i + 1, this.i + 5).join("")
 			if (code.toLowerCase() in controlEscapes) {
 				this.jumpForward(5)
-				return controlEscapes[code.toLowerCase() as keyof typeof controlEscapes]
+				return controlEscapes[code.toLowerCase() as keyof ControlEscapes]
 			}
 		}
 		return `${Backslash}${this.shift()}`

@@ -1,4 +1,5 @@
 import type { Traversal } from "@ark/schema"
+import { type } from "arktype"
 import fc from "fast-check"
 
 // arktype's grammar, data near each definition's boundary, and their source
@@ -470,3 +471,20 @@ export const dataOf = (
 	}
 	return fc.oneof({ weight: 4, arbitrary: data(node) }, noise)
 }
+
+export const isDefinable = (node: Node): boolean => {
+	try {
+		type(defOf(node) as never)
+		return true
+	} catch {
+		return false
+	}
+}
+
+export const inputsOf = (
+	data: fc.Arbitrary<unknown>
+): fc.Arbitrary<unknown[]> =>
+	fc.array(fc.oneof({ weight: 4, arbitrary: data }, noise), {
+		minLength: 1,
+		maxLength: 4
+	})

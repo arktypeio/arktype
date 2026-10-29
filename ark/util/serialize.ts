@@ -155,12 +155,10 @@ const stringifyUnquoted = (
 export const printSymbol = (symbol: symbol): string =>
 	`Symbol(${baseNameOfSymbol(symbol)})`
 
-// bigints and undefined are prefixed with U+E000, a private use character
-// JSON.stringify leaves unescaped, so printable can strip the quotes it adds,
-// e.g. [1n, undefined] not ["1n", "undefined"]. The marker is written as a
-// literal each time: a template over a shared binding is a possible side
-// effect to a bundler, which then keeps these options (and all they reach)
-// in every build importing anything from @ark/util
+// bigints and undefined are prefixed with U+E000, which JSON.stringify leaves
+// unescaped, so printable can strip the quotes it adds: [1n] not ["1n"]. A
+// literal, since a bundler would keep a template over a shared binding, and
+// all it reaches, in every build importing @ark/util
 const printableOpts = {
 	onCycle: () => "(cycle)",
 	onSymbol: printSymbol,

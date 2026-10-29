@@ -31,8 +31,9 @@ import { gzipSync } from "node:zlib"
 import {
 	dataOf,
 	defOf,
+	inputsOf,
+	isDefinable,
 	morphs,
-	noise,
 	nodeOf,
 	predicates,
 	sourceOf,
@@ -523,15 +524,6 @@ const followedReads: ReadName[] = [
 	"composedAllows"
 ]
 
-const isDefinable = (node: Node) => {
-	try {
-		type(defOf(node) as never)
-		return true
-	} catch {
-		return false
-	}
-}
-
 const validators: fc.Arbitrary<Validator[]> = fc
 	.array(
 		fc.array(
@@ -560,15 +552,6 @@ const validators: fc.Arbitrary<Validator[]> = fc
 		})
 	)
 
-const inputsOf = (node: Node) =>
-	fc.array(
-		fc.oneof(
-			{ weight: 4, arbitrary: dataOf(node, () => fc.constant(undefined)) },
-			noise
-		),
-		{ minLength: 1, maxLength: 4 }
-	)
-
 const apps: fc.Arbitrary<App> = validators
 	.chain(validators =>
 		fc.record({
@@ -587,9 +570,11 @@ const apps: fc.Arbitrary<App> = validators
 						)
 					})
 					.chain(reader =>
-						inputsOf(validators[reader.target].node).map(
-							(inputs): Reader => ({ ...reader, inputs })
-						)
+						inputsOf(
+							dataOf(validators[reader.target].node, () =>
+								fc.constant(undefined)
+							)
+						).map((inputs): Reader => ({ ...reader, inputs }))
 					),
 				{ minLength: 1, maxLength: 4 }
 			),

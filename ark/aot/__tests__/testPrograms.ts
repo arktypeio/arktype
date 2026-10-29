@@ -10,6 +10,8 @@ import {
 	dataOf,
 	defOf,
 	emptyArray,
+	inputsOf,
+	isDefinable,
 	morphs,
 	noise,
 	nodeOf,
@@ -58,26 +60,11 @@ const observed = (
 ) =>
 	`$arkObserve(${JSON.stringify(key)}, () => ${site}, () => [${[...inputs.map(sourceOf), ...sources].join(", ")}])`
 
-const inputsOf = (data: fc.Arbitrary<unknown>) =>
-	fc.array(fc.oneof({ weight: 4, arbitrary: data }, noise), {
-		minLength: 1,
-		maxLength: 4
-	})
-
 const noAliases = (name: string) =>
 	fc.constant(`no alias ${name}`) as fc.Arbitrary<unknown>
 
-const isDefinable = (def: unknown) => {
-	try {
-		type(def as never)
-		return true
-	} catch {
-		return false
-	}
-}
-
 // a Type a module declares must be definable for the module to load
-const definable = nodeOf([]).filter(node => isDefinable(defOf(node)))
+const definable = nodeOf([]).filter(isDefinable)
 
 const definitions: fc.Arbitrary<FragmentOf> = nodeOf([]).chain(node =>
 	inputsOf(dataOf(node, noAliases)).map(
@@ -214,8 +201,7 @@ const dags: fc.Arbitrary<FragmentOf> = fc
 	})
 	// a Type the module declares must be definable for the module to load
 	.filter(
-		({ bottom, other }) =>
-			isDefinable(defOf(bottom)) && (!other || isDefinable(defOf(other)))
+		({ bottom, other }) => isDefinable(bottom) && (!other || isDefinable(other))
 	)
 	.chain(({ bottom, other, shape, depth }) =>
 		inputsOf(
@@ -271,7 +257,7 @@ const allowsOnly: fc.Arbitrary<FragmentOf> = fc
 		),
 		isImported: fc.boolean()
 	})
-	.filter(({ node, read }) => read === "inline" || isDefinable(defOf(node)))
+	.filter(({ node, read }) => read === "inline" || isDefinable(node))
 	.chain(({ node, read, isImported }) =>
 		inputsOf(dataOf(node, noAliases)).map(
 			(inputs): FragmentOf =>
@@ -635,7 +621,7 @@ const throughCalls: fc.Arbitrary<FragmentOf> = fc
 // a Type folded by a function an import cycle calls before it's declared
 const throughCycle: fc.Arbitrary<FragmentOf> = nodeOf([])
 	// a Type the module declares must be definable for the module to load
-	.filter(node => isDefinable(defOf(node)))
+	.filter(isDefinable)
 	.chain(node =>
 		inputsOf(dataOf(node, noAliases)).map(
 			(inputs): FragmentOf =>
@@ -710,7 +696,7 @@ const derived: fc.Arbitrary<FragmentOf> = fc
 	// a Type the module declares must be definable for the module to load
 	.filter(
 		({ l, r, placement }) =>
-			placement === "inline" || (isDefinable(defOf(l)) && isDefinable(defOf(r)))
+			placement === "inline" || (isDefinable(l) && isDefinable(r))
 	)
 	.chain(({ l, r, placement, derivations: applied, introspection }) =>
 		inputsOf(fc.oneof(dataOf(l, noAliases), dataOf(r, noAliases))).map(
