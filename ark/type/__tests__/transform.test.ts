@@ -961,9 +961,8 @@ k must be a number (was a string)`)
 			attest(Object.keys(out)).equals(["0", "b", "a"])
 		})
 
-		// process.env is an exotic object- ensure it is correctly copied
 		// https://discord.com/channels/957797212103016458/1116551844710330458
-		it("deletes them from process.env", () => {
+		it("deletes them from a copy of process.env, an exotic object", () => {
 			const Env = type({
 				"+": "delete",
 				TZ: "'America/New_York'"
@@ -974,8 +973,7 @@ k must be a number (was a string)`)
 			const vars = Env(process.env)
 
 			attest(vars).snap({ TZ: "America/New_York" })
-			// if process.env is not spread here, the assertion fails apparently
-			// because it's an exotic object? seems like a Node bug
+			// equals can't compare process.env itself, so it's spread
 			attest({ ...process.env }).equals(originalEnv)
 		})
 	})
