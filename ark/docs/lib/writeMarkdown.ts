@@ -2,11 +2,11 @@ import { execFileSync } from "node:child_process"
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { dirname, join } from "node:path"
-import { tagline } from "../app/metadata.ts"
+import { siteUrl, tagline } from "../app/metadata.ts"
 import { getPageTree } from "./content/docs.ts"
 import { parseMdx } from "./content/frontmatter.ts"
 import { claims, draftOf, headlineMethod, standingsAsOf } from "./claims.ts"
-import { mdxToMarkdown, siteUrl } from "./content/markdown.ts"
+import { mdxToMarkdown } from "./content/markdown.ts"
 import type { NavItem, Page, Section } from "./content/pageTree.ts"
 import { docsDir, publicDir, repoArkDir } from "./content/paths.ts"
 import { redirects } from "./content/redirects.ts"
@@ -152,25 +152,21 @@ const sectionLists = (section: Section): string[] => {
 		)
 }
 
-const llmsIndex = (sections: Section[]) => {
-	const [arktype, ...others] = sections
-	return (
+const llmsIndex = (sections: Section[]) =>
+	[
+		"# ArkType",
+		`> ${tagline}.`,
+		`${draftOf(claims.headlineNote)} ${standingsAsOf.text} [${headlineMethod.label}](${headlineMethod.href})`,
+		"ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. @ark/aot precompiles them when a project builds, so its validators ship without arktype's parser. ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.",
+		`Each link below is a docs page as Markdown. [llms-full.txt](${siteUrl}/llms-full.txt) has every ArkType page in one file. Coding agents can also install the ArkType skill, which covers writing, precompiling and migrating to ArkType, with \`npx skills add arktypeio/arktype\`; see [Agents](${siteUrl}/docs/agents.md).`,
+		...sections.flatMap(sectionLists),
 		[
-			"# ArkType",
-			`> ${tagline}.`,
-			`${draftOf(claims.headlineNote)} ${standingsAsOf.text} [${headlineMethod.label}](${headlineMethod.href})`,
-			"ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. @ark/aot precompiles them when a project builds, so its validators ship without arktype's parser. ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.",
-			`Each link below is a docs page as Markdown. [llms-full.txt](${siteUrl}/llms-full.txt) has every ArkType page in one file. Coding agents can also install the ArkType skill, which covers writing, precompiling and migrating to ArkType, with \`npx skills add arktypeio/arktype\`; see [Agents](${siteUrl}/docs/agents.md).`,
-			...sections.flatMap(sectionLists),
-			[
-				"## Optional",
-				[arktype, ...others]
-					.map(
-						section =>
-							`- [${section.title}, every page](${siteUrl}/${fullFiles[section.id]}): ${section.description}`
-					)
-					.join("\n")
-			].join("\n\n")
-		].join("\n\n") + "\n"
-	)
-}
+			"## Optional",
+			sections
+				.map(
+					section =>
+						`- [${section.title}, every page](${siteUrl}/${fullFiles[section.id]}): ${section.description}`
+				)
+				.join("\n")
+		].join("\n\n")
+	].join("\n\n") + "\n"

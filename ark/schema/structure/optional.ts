@@ -191,7 +191,8 @@ export const checkDefault = (
 	return value
 }
 
-// a default is easily mistaken for a morph's output, so a rejected one reports what its input checks
+// a default is easily mistaken for a morph's output, so a rejected one reports
+// what its input checks
 const inputErrors = (node: BaseRoot, value: unknown): ArkErrors =>
 	(node.in as BaseRoot)
 		.configure(meta =>

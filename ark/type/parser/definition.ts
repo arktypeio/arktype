@@ -165,7 +165,8 @@ export const writeAsyncStandardSchemaMessage = (vendor: string): string =>
 export type inferDefinition<def, $, args> =
 	[def] extends [anyOrNever] ? def
 	: def extends type.cast<infer t> ?
-		// type.cast's [inferred] is optional, so inferring through it drops undefined without exactOptionalPropertyTypes
+		// type.cast's [inferred] is optional, so inferring through it drops
+		// undefined without exactOptionalPropertyTypes
 		def extends { [inferred]: infer t } ? t
 		: // {} as a def is handled here since according to TS it extends { " arkInferred"?: t  }.
 		// Unlike in TS however, ArkType object literals are constrained to object

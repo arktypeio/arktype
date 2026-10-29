@@ -2,6 +2,7 @@
 
 import { MoonIcon, SunIcon } from "lucide-react"
 import { useEffect, useSyncExternalStore } from "react"
+import { reducedMotion } from "../motion.ts"
 import { lightQuery, themeColors, themeKey, type Theme } from "./theme.ts"
 
 const root = () => document.documentElement
@@ -38,9 +39,6 @@ const persist = (theme: Theme) => {
 	}
 }
 
-const prefersReducedMotion = () =>
-	matchMedia("(prefers-reduced-motion: reduce)").matches
-
 /** a circular reveal from where it was pressed, where view transitions run */
 const switchTheme = (next: Theme, origin: { x: number; y: number }) => {
 	const html = root()
@@ -52,7 +50,7 @@ const switchTheme = (next: Theme, origin: { x: number; y: number }) => {
 	// colors snap rather than fade, so the snapshot is the final frame
 	html.dataset.switching = ""
 	const done = () => delete html.dataset.switching
-	if (!document.startViewTransition || prefersReducedMotion()) {
+	if (!document.startViewTransition || reducedMotion()) {
 		apply()
 		requestAnimationFrame(() => requestAnimationFrame(done))
 		return

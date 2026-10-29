@@ -21,13 +21,10 @@ export type SearchSection = {
 	text: string
 }
 
-/** an entry other plugins attach to a node's data so it becomes searchable */
-export type SearchEntry = { heading: string; id: string; text: string }
-
 declare module "mdast" {
 	interface Data {
 		/** sections to index for search beside this node, e.g. table rows */
-		searchEntries?: SearchEntry[]
+		searchEntries?: SearchSection[]
 	}
 }
 

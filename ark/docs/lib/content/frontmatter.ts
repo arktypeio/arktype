@@ -1,4 +1,9 @@
 import { type } from "arktype"
+import type { Root } from "mdast"
+import remarkGfm from "remark-gfm"
+import remarkMdx from "remark-mdx"
+import remarkParse from "remark-parse"
+import { unified } from "unified"
 import { parse } from "yaml"
 
 export const Frontmatter = type({
@@ -53,3 +58,9 @@ export const parseMdx = (source: string): ParsedMdx => {
 		problem: frontmatter.summary
 	}
 }
+
+const parser = unified().use(remarkParse).use(remarkMdx).use(remarkGfm)
+
+/** an MDX body's syntax tree, with GFM tables and its JSX */
+export const parseMdxTree = (body: string): Root =>
+	parser.runSync(parser.parse(body)) as Root

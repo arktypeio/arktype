@@ -155,12 +155,10 @@ const SidebarItem = ({ item, page }: { item: NavItem; page: Page }) => {
 				<ul className="sn-subs">
 					{subs.map((sub, i) => {
 						const subPage = sub.kind === "page" ? sub.page : sub.index
-						const subHref = pageUrlOf(sub)
-						if (!subHref) return null
 						return (
 							<li key={i}>
 								<Link
-									href={subHref}
+									href={pageUrlOf(sub)!}
 									prefetch={false}
 									className="sub"
 									aria-current={subPage === page ? "page" : undefined}

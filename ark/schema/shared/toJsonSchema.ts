@@ -148,7 +148,8 @@ export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 
 const keepBase = (ctx: { base: JsonSchema }): never => ctx.base as never
 
-// Standard JSON Schema converters only throw for unsupported options, so these keep what's representable
+// Standard JSON Schema converters only throw for unsupported options, so these
+// keep what's representable
 const standardFallback: ToJsonSchema.HandlerByCode = {
 	arrayObject: keepBase,
 	// draft-07 tuples keep their prefix in items
