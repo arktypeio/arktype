@@ -82,6 +82,17 @@ const labels = { message: config.message }
 export const Change = type(fields)
 export const Named = type({ ...fields, name: "string" }).configure(config)
 export const Id = type("string.uuid").configure({ ...labels, expected: "an id" })
+
+const labeled = (label: string) => ({
+	message: (ctx: { expected: string }) => \`\${label} must be \${ctx.expected}\`
+})
+const trimmed = (message: string) =>
+	type("string")
+		.pipe(s => s.trim())
+		.narrow((s, ctx) => s.length > 1 || ctx.reject(message))
+
+export const Labeled = type("string > 0").configure(labeled("Id"))
+export const Trimmed = type({ first: trimmed("a first name"), last: trimmed("a last name") })
 `,
 		"config.ts": `export const message = (ctx: { propString: string; expected: string }) =>
 	\`\${ctx.propString || "it"} must \${ctx.expected}\`
@@ -90,7 +101,7 @@ export const config = { message }
 		"main.ts": `import { type } from "arktype"
 import { Either, Json, Keyed, Nested, Parsed, Payload, Refused, Reported, Version, Versioned } from "./types.ts"
 import { Pair, Post } from "./scoped.ts"
-import { Change, Id, Named } from "./held.ts"
+import { Change, Id, Labeled, Named, Trimmed } from "./held.ts"
 
 ${observe}
 
@@ -106,6 +117,8 @@ observe("Post", Post, { body: "a", replies: [{ body: "b" }] }, { body: "a", repl
 observe("Change", Change, { current: "a", next: "b" }, { current: "x", next: "" })
 observe("Named", Named, { current: "a", next: "b", name: "n" }, { current: "x", next: "", name: 1 })
 observe("Id", Id, "123e4567-e89b-12d3-a456-426614174000", "nope")
+observe("Labeled", Labeled, "a", "")
+observe("Trimmed", Trimmed, { first: " al ", last: "bo" }, { first: "a", last: " b " })
 observed.Nested = [Nested.expression, Nested.description]
 observe("Json", Json, "{", "[]")
 observe("Keyed", Keyed, { "first-name": 1, 0: 0 })
@@ -392,6 +405,36 @@ contextualize(() => {
 			[
 				[{ code: "pattern", path: [], data: "nope", expected: "an id" }],
 				"it must an id"
+			]
+		])
+	})
+
+	it("holes each helper call creates, read off what the call returns", () => {
+		observed("Labeled").snap([
+			"a",
+			[
+				[{ code: "minLength", path: [], data: "", expected: "non-empty" }],
+				"Id must be non-empty"
+			]
+		])
+		observed("Trimmed").snap([
+			{ first: "al", last: "bo" },
+			[
+				[
+					{
+						code: "predicate",
+						path: ["first"],
+						data: "a",
+						expected: "a first name"
+					},
+					{
+						code: "predicate",
+						path: ["last"],
+						data: "b",
+						expected: "a last name"
+					}
+				],
+				"first must be a first name\nlast must be a last name"
 			]
 		])
 	})

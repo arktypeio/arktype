@@ -961,24 +961,43 @@ export const Labeled = $ark#6(labels)`)
 			])
 		})
 
-		it("reads a function a helper call created through the const holding it", () => {
+		it("reads a function a helper call created through what holds it", () => {
 			const result = precompile(`import { type } from "arktype"
 const labeled = (label: string) => ({
 	message: (ctx: { expected: string }) => \`\${label} must be \${ctx.expected}\`
 })
+const longer = (min: number) =>
+	type("string").narrow(s => s.length > min)
 const config = labeled("Name")
 export const Held = type("string > 0").configure(config)
-export const Inline = type("string > 0").configure(labeled("Id"))`)
-			attest(result.diagnostics.map(d => d.reasons[0])).snap([
-				"the function at /main.ts:3:11 is created by each call to a static helper, so the precompiled site cannot reach it"
-			])
-			attest(foldedCode(result.code)).snap(`import { type } from "arktype"
+export const Inline = type("string > 0").configure(labeled("Id"))
+export const Returned = type({ a: longer(1), b: longer(2).array() })`)
+			attest(result.diagnostics).equals([])
+			attest(foldedCode(result.code)).snap(`import "arktype"
 const labeled = (label: string) => ({
 	message: (ctx: { expected: string }) => \`\${label} must be \${ctx.expected}\`
 })
+const longer = (min: number) =>
+	$ark#0(s => s.length > min)
 const config = labeled("Name")
-export const Held = $ark#0(config)
-export const Inline = type("string > 0").configure(labeled("Id"))`)
+export const Held = $ark#2(config)
+export const Inline = $ark#3(labeled("Id"))
+export const Returned = $ark#4(longer(1), longer(2))`)
+		})
+
+		it("refuses a function created by a call whose Type arktype defines", () => {
+			const result = precompile(`import { type } from "arktype"
+const islanded = (min: number) =>
+	// @ark-runtime
+	type("string").narrow(s => s.length > min)
+const longer = (min: number) => (s: string) => s.length > min
+const atLeast = (min: number) => type("string").narrow(longer(min))
+export const Island = type({ a: islanded(1) })
+export const Folded = type({ a: atLeast(1) })`)
+			attest(result.diagnostics.map(d => d.reasons[0])).snap([
+				"the function at /main.ts:4:24 is created by each call to a static helper, so the precompiled site cannot reach it",
+				"the function at /main.ts:5:33 is created by each call to a static helper, so the precompiled site cannot reach it"
+			])
 		})
 
 		it("shares tables between factories", () => {

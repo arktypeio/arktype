@@ -4092,6 +4092,7 @@ export class Precompiler {
 		}
 		const supplied = new Set<unknown>()
 		for (const input of site.inputs) this.suppliedHolesOf(input.value, supplied)
+		this.receiveCalls(state, supplied)
 		for (const value of state.holes) {
 			const isCalled = !site.parseError && !isHeld(value, this.interpreter)
 			const hole = this.holeOf(value, candidate, module, supplied)
@@ -4102,6 +4103,37 @@ export class Precompiler {
 				site.called.push(hole)
 		}
 		site.holes.sort((l, r) => l.start - r.start)
+	}
+
+	// e.g. `labeled("Id")` in `.configure(labeled("Id"))`, read in place of the
+	// functions each call creates
+	private receiveCalls(state: SiteState, supplied: Set<unknown>): void {
+		for (const value of state.holes) {
+			if (
+				supplied.has(value) ||
+				state.readsByValue.has(value) ||
+				!this.standInOf(value)?.closure?.env
+			)
+				continue
+			let supplier: SiteState["calls"][number] | undefined
+			for (const call of state.calls) {
+				const [node, result, helper, declaring] = call
+				if (
+					(!supplier || contains(supplier[0], node)) &&
+					this.suppliedHolesOf(result, new Set()).has(value) &&
+					// only a Type its helper's own site creates holds holes to receive
+					this.isTransformed(declaring.id) &&
+					!declaring.islands.some(
+						island => contains(helper, island) || contains(island, helper)
+					) &&
+					!this.calledParamOf(helper, declaring)
+				)
+					supplier = call
+			}
+			if (!supplier) continue
+			state.readsByValue.set(supplier[1], [supplier[0]])
+			this.suppliedHolesOf(supplier[1], supplied)
+		}
 	}
 
 	// each exported function the site read, which a mock can replace
@@ -4167,7 +4199,8 @@ export class Precompiler {
 				isDynamic(value) ||
 				(!hasArkKind(value, "root") &&
 					![...site.holes, ...site.called].some(hole => hole.value === value) &&
-					!(isFoldable(value) && keyOf(value)[1].length))
+					!(isFoldable(value) && keyOf(value)[1].length) &&
+					!state.calls.some(([, result]) => result === value))
 			)
 				continue
 			const isImportInput = site.inputs.some(

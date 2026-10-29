@@ -168,6 +168,14 @@ export interface SiteState {
 	trace: Trace
 	// each outermost expression evaluating to a hole or a Type the site reads
 	readsByValue: Map<unknown, Node[]>
+	// each static helper call in the site's text, whose result can hold
+	// functions the call creates
+	calls: [
+		node: Node,
+		value: unknown,
+		helper: FunctionNode,
+		declaring: SourceModule
+	][]
 	// reads of members a standalone validator lacks
 	unavailableReads: Node[]
 	holes: unknown[]
@@ -198,6 +206,7 @@ export const createSiteState = (
 	module,
 	trace: emptyTrace(),
 	readsByValue: new Map(),
+	calls: [],
 	unavailableReads: [],
 	holes: [],
 	interpreted: new Set(),
@@ -1753,8 +1762,25 @@ export class Interpreter {
 			case "standIn": {
 				const standIn = this.standIns.get(fn as object)!
 				if (this.activeCall?.isDefining) standIn.isCalledIndirectly = true
-				if (standIn.closure && staticBodyOf(standIn.closure.node))
-					return this.interpretCall(standIn.closure, args, node, ctx)
+				if (standIn.closure && staticBodyOf(standIn.closure.node)) {
+					const result = this.interpretCall(standIn.closure, args, node, ctx)
+					if (
+						!ctx.env &&
+						ctx.site?.module === ctx.module &&
+						node !== ctx.site.node &&
+						contains(ctx.site.node, node) &&
+						!isDynamic(result) &&
+						this.isPassable(node, ctx.site)
+					) {
+						ctx.site.calls.push([
+							node,
+							result,
+							standIn.closure.node,
+							standIn.closure.module
+						])
+					}
+					return result
+				}
 				return this.reject(
 					node,
 					ctx,
