@@ -15,16 +15,15 @@ import {
 	realPathOf,
 	type NodeHostOptions
 } from "./host.ts"
+import { renderDiagnostic, type Diagnostic } from "./diagnostics.ts"
 import { writeUnansweredResolveMessage } from "./messages.ts"
 import {
 	Precompiler,
-	renderDiagnostic,
-	type Diagnostic,
 	type PrecompiledModule,
-	type PrecompileOptions,
-	type ScannedProgram,
-	type Site
+	type PrecompileOptions
 } from "./precompile.ts"
+import type { ScannedProgram } from "./scan.ts"
+import type { Site } from "./sites.ts"
 import { withSettingsFile } from "./settings.ts"
 import { isPrecompilerWorker } from "./worker.ts"
 

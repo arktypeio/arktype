@@ -432,3 +432,8 @@ const segmentAt = (
 	}
 	return mapped?.length === 1 ? undefined : (mapped as never)
 }
+
+export const specifierOf = (importer: string, file: string): string => {
+	const path = relative(dirname(importer), file).split("\\").join("/")
+	return path.startsWith(".") ? path : `./${path}`
+}

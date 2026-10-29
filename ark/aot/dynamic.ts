@@ -54,3 +54,10 @@ export class DynamicValue {
 			:	this
 	}
 }
+
+export const chainOf = (dynamic: DynamicValue): string[] => {
+	const result: string[] = []
+	for (let link: DynamicValue | undefined = dynamic; link; link = link.cause)
+		result.push(link.message)
+	return result
+}

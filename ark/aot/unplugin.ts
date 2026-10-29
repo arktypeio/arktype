@@ -71,7 +71,6 @@ import {
 	withAllowUnsafe
 } from "./messages.ts"
 import type { IssueFeatures } from "arktype/internal/standalone.ts"
-import type { ScannedProgram, ScannedUsage } from "./precompile.ts"
 import { withEnvironment, type Environment } from "./presets.ts"
 import {
 	addLoaded,
@@ -85,7 +84,9 @@ import {
 	type ImportKind,
 	type Imports,
 	type LoadedSources,
-	type ScanEntry
+	type ScanEntry,
+	type ScannedProgram,
+	type ScannedUsage
 } from "./scan.ts"
 import {
 	pruneBeforePluginMessage,

@@ -11,11 +11,9 @@ import { errorWritersByCode } from "@ark/schema/internal"
 import { arkKindOf } from "@ark/util"
 import { isTypedFn, keyOf, type Foldable } from "arktype/internal/standalone.ts"
 import { bindingOfFunction, isArk } from "@ark/aot/internal/graph.ts"
+import { specifierOf } from "@ark/aot/internal/host.ts"
 import { SourceModule } from "@ark/aot/internal/module.ts"
-import {
-	specifierOf,
-	type PrecompileMode
-} from "@ark/aot/internal/precompile.ts"
+import type { PrecompileMode } from "@ark/aot/internal/precompile.ts"
 import MagicString from "magic-string"
 import { execFile, spawnSync } from "node:child_process"
 import {

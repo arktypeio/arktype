@@ -8,7 +8,7 @@ import {
 	runtimeSpecifiers,
 	type RuntimeVariant
 } from "./host.ts"
-import type { Rule } from "./precompile.ts"
+import type { Rule } from "./diagnostics.ts"
 
 export const writeUnreadableConfigMessage = (path: string): string =>
 	`The config module ${path} can't be read. Name a module that exists as the build's config.`
@@ -429,3 +429,6 @@ export const configuredHintOf = (reasons: string[]): string | undefined => {
 
 export const islandValueMessage = (text: string): string =>
 	`\`${text}\` is a runtime island's Type, which a precompiled site can't receive`
+
+export const unwrittenHint =
+	'Move it into a .ts or .js module of its own that this one imports, which the build precompiles, or build with runtime: "arktype".'
