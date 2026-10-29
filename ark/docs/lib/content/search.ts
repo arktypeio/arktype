@@ -14,7 +14,7 @@ import type { PageTree } from "./pageTree.ts"
 /**
  * The search index served at /search.json. Pages and their sections are
  * stored as parallel arrays to keep the download small; the client builds
- * a MiniSearch index over `sections` when search first opens.
+ * a MiniSearch index over `entries` when search first opens.
  */
 export type SearchIndex = {
 	/** one entry per section of the navigation, e.g. "ArkType" */

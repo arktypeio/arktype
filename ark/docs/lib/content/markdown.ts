@@ -186,6 +186,14 @@ const table = (
 const claimMarkdown = (claim: Claim<string>) =>
 	`${draftOf(claim)}${isPending(claim) ? " (pending)" : ""}`
 
+/** a claim as text where its component is inline, else as a paragraph */
+const claimContent = (node: Jsx, claim: Claim<string>): RootContent[] => {
+	const text = claimMarkdown(claim)
+	return node.type === "mdxJsxTextElement" ?
+			[{ type: "text", value: text }]
+		:	[paragraph(text)]
+}
+
 /** a chart's caption, then its bars as a list */
 const claimChartMarkdown = (chart: BenchmarkChart): RootContent[] => [
 	{
@@ -329,17 +337,10 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 		case "Claim": {
 			const claim = claims[attr(node, "id") as ClaimId]
 			if (attr(node, "ifBacked") && isPending(claim)) return []
-			const text = claimMarkdown(claim)
-			return node.type === "mdxJsxTextElement" ?
-					[{ type: "text", value: text }]
-				:	[paragraph(text)]
+			return claimContent(node, claim)
 		}
-		case "Headline": {
-			const text = claimMarkdown(claims.headline)
-			return node.type === "mdxJsxTextElement" ?
-					[{ type: "text", value: text }]
-				:	[paragraph(text)]
-		}
+		case "Headline":
+			return claimContent(node, claims.headline)
 		case "HeadlineNote":
 			return [
 				{

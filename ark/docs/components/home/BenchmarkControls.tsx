@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react"
+import { reducedMotion } from "../reducedMotion.ts"
 
 const sets = [
 	{ set: "valid", label: "valid data" },
@@ -15,9 +16,6 @@ const sets = [
 ] as const
 
 type BenchSet = (typeof sets)[number]["set"]
-
-const reducedMotion = () =>
-	matchMedia("(prefers-reduced-motion: reduce)").matches
 
 /** restarts the bar animation on a set's grid */
 const grow = (grid: HTMLElement | null) => {

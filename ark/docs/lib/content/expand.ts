@@ -55,24 +55,23 @@ export const expandComponents = (tree: Root): void => {
 		if (node.type === "heading") depth = node.depth
 		if (node.type !== "mdxJsxFlowElement" || !parent || i === undefined) return
 
+		const childDepth = Math.min(depth + 1, 4) as Heading["depth"]
 		let replacement: RootContent[] | undefined
 		if (node.name === "ApiTable") {
-			const memberDepth = Math.min(depth + 1, 4) as Heading["depth"]
 			replacement = [
 				element(
 					"ApiMembers",
 					{},
 					apiDocsByGroup[apiGroupOf(node)].map(block =>
-						apiMember(block, memberDepth, apiNames)
+						apiMember(block, childDepth, apiNames)
 					)
 				)
 			]
 		} else if (node.name === "AllKeywordTables") {
-			const groupDepth = Math.min(depth + 1, 4) as Heading["depth"]
 			replacement = keywordTableNames.flatMap(name => [
 				{
 					type: "heading",
-					depth: groupDepth,
+					depth: childDepth,
 					children: [{ type: "text", value: name }]
 				} satisfies Heading,
 				keywordTable(name)
@@ -281,7 +280,7 @@ const siteUrlPattern = /^https:\/\/arktype\.io(?=\/)/
 /** the Markdown a JSDoc comment stands for, as it reads in the API docs */
 const jsDocMarkdown = (
 	parts: readonly ParsedJsDocPart[],
-	apiNames: ReadonlySet<string> = new Set()
+	apiNames: ReadonlySet<string>
 ): string =>
 	parts
 		.map(part =>

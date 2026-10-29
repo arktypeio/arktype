@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import { reducedMotion } from "../reducedMotion.ts"
 
 /**
  * Charts marked `data-grow` that start below the fold grow their bars once
@@ -9,7 +10,7 @@ import { useEffect } from "react"
  */
 export const GrowOnView = () => {
 	useEffect(() => {
-		if (matchMedia("(prefers-reduced-motion: reduce)").matches) return
+		if (reducedMotion()) return
 		const charts = [...document.querySelectorAll<HTMLElement>("[data-grow]")]
 		// every read, then every write, so no write forces a layout for the next read
 		const tops = charts.map(chart => chart.getBoundingClientRect().top)

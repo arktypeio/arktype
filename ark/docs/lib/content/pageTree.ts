@@ -258,9 +258,7 @@ export type Neighbors = { previous?: Page; next?: Page }
 
 /** the pages before and after a listed page in its section's navigation order */
 export const neighborsOf = (tree: PageTree, page: Page): Neighbors => {
-	const pages = tree.sections.find(
-		section => section.id === page.section
-	)?.pages
+	const pages = sectionOf(tree, page)?.pages
 	const i = pages?.indexOf(page) ?? -1
 	if (!pages || i === -1) return {}
 	return { previous: pages[i - 1], next: pages[i + 1] }

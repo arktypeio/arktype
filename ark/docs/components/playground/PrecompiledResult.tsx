@@ -5,6 +5,7 @@ import prettierPluginEstree from "prettier/plugins/estree"
 import prettierPluginTypeScript from "prettier/plugins/typescript"
 import prettier from "prettier/standalone"
 import { useEffect, useRef, useState, type KeyboardEvent } from "react"
+import { reducedMotion } from "../reducedMotion.ts"
 import { ColorizedCode } from "./ColorizedCode.tsx"
 import { writePrecompiled } from "./precompile.ts"
 import {
@@ -61,9 +62,6 @@ const format = async (code: string) => {
 }
 
 const kB = (bytes: number) => `${(bytes / 1000).toFixed(1)} kB`
-
-const reducedMotion = () =>
-	matchMedia("(prefers-reduced-motion: reduce)").matches
 
 /** eases from the last value shown to the next, unless motion is reduced */
 const useEased = (value: number | undefined): number | undefined => {
