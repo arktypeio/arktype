@@ -97,6 +97,26 @@ true
 		attest(js.includes("zebra")).equals(false)
 	})
 
+	it("keeps annotated a validator only an unread object literal holds", async () => {
+		const holding = writeFixture(
+			{
+				"types.ts": `${types}export const schemas = { team: Team, unread: Unread } as const\n`
+			},
+			fromHere("temp", "flatHolding")
+		)
+		const [js] = await bundle(
+			{},
+			{
+				stdin: {
+					contents: `import { Team } from "./types.ts"\n\nconsole.log(Team({}))\n`,
+					resolveDir: holding,
+					loader: "ts"
+				}
+			}
+		)
+		attest(js.includes("zebra")).equals(false)
+	})
+
 	it("returns what kept code reads, annotating nothing a bundler keeps", async () => {
 		const [js] = await bundle(
 			{},
