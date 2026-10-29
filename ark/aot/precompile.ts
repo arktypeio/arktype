@@ -17,11 +17,8 @@ import {
 	hashOf,
 	hasDomain,
 	includes,
-	InternalArktypeError,
-	isThunk,
 	ParseError,
 	printable,
-	registeredNameOf,
 	throwError,
 	throwParseError
 } from "@ark/util"
@@ -37,7 +34,6 @@ import {
 	holeNamePattern,
 	introspectionMembers,
 	isPlainLiteral,
-	isTypedFn,
 	keyOf,
 	kindNameOf,
 	noIssueFeatures,
@@ -48,19 +44,14 @@ import {
 	type ValidatorMember,
 	type ValidatorMembers,
 	type DefaultCheck,
-	type FactoryParam,
 	type Foldable,
 	type IssueFeatures,
-	type StandaloneExport,
-	type StandaloneFactory,
-	type StandaloneIntrospection,
 	type StandaloneModules,
 	type StandaloneOptions,
-	type ScopeAlias,
 	type Configured
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
-import { dirname, join, relative } from "node:path"
+import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import type {
 	CallExpression,
@@ -70,7 +61,33 @@ import type {
 	Span
 } from "oxc-parser"
 import { isPlainContainer } from "./builtins.ts"
-import { DynamicValue } from "./dynamic.ts"
+import {
+	labelOf,
+	paramOf,
+	parameterOf,
+	annotationSnippetOf,
+	genericDefinitionOf,
+	genericSiteDefinitionOf,
+	innermostSnippetOf,
+	reasonsOf,
+	type Diagnostic,
+	type Rule
+} from "./diagnostics.ts"
+import { chainOf, DynamicValue } from "./dynamic.ts"
+import {
+	emptyFactory,
+	importFolded,
+	planFactory,
+	reachedModulesOf,
+	receive,
+	runtimeModuleOf,
+	spliceSite,
+	unplan,
+	type Folding,
+	type PassedInput,
+	type PlannedSites,
+	type SiteFactory
+} from "./fold.ts"
 import {
 	arkPackageSpecifier,
 	bindingOfFunction,
@@ -99,7 +116,6 @@ import {
 	runtimeExports,
 	staticBodyOf,
 	stepsOf,
-	type ArkExportName,
 	type FunctionNode,
 	type ImportTarget,
 	type StandInKind
@@ -108,6 +124,7 @@ import {
 	arkPackageName,
 	dependencyOf,
 	mapToSource,
+	specifierOf,
 	readsNodes,
 	runsOnArktype,
 	runtimeSpecifiers,
@@ -135,10 +152,13 @@ import { resolvePrecompileOptions } from "./settings.ts"
 import {
 	exportNameOf,
 	isTransparent,
-	loadedSourceOf,
+	isDiscarded,
+	isMemberRead,
 	isWriteTarget,
-	unwrapChain,
+	loadedSpecifierOf,
 	operatorOf,
+	runsOnceAtLoad,
+	unwrapChain,
 	unwrapExpression,
 	walk,
 	type Binding,
@@ -150,7 +170,9 @@ import {
 	writeKeptMembersMessage,
 	writeUnprunedMessage,
 	writeUnscannedFlatMessage,
-	writeUnseenMessage
+	writeUnseenMessage,
+	type ScannedProgram,
+	type ScannedUsage
 } from "./scan.ts"
 import {
 	linkBundle,
@@ -166,8 +188,34 @@ import {
 	type UsedMember
 } from "./usage.ts"
 import {
+	createdBy,
+	exportedRootsOf,
 	filterSites,
 	findSites,
+	heldStandInOf,
+	holdsValidate,
+	isCoveredBy,
+	isFoldable,
+	isFolded,
+	isHeld,
+	isWithin,
+	keyedMethodOf,
+	methodMembers,
+	rangeOf,
+	rangesOf,
+	refuse,
+	refuseDynamic,
+	rejectionOf,
+	rootsIn,
+	siteNameOf,
+	standInKindOf,
+	textOfInput,
+	thunksIn,
+	type Helper,
+	type Hole,
+	type Input,
+	type Reference,
+	type Site,
 	type SiteCandidate,
 	type SiteRead
 } from "./sites.ts"
@@ -211,7 +259,8 @@ import {
 	writeUnreadableConfigMessage,
 	writeUnsureHint,
 	writeVariantOption,
-	withAllowUnsafe
+	withAllowUnsafe,
+	unwrittenHint
 } from "./messages.ts"
 import {
 	commaAfter,
@@ -221,12 +270,15 @@ import {
 	noValidators,
 	pruneArktypeImports,
 	writeConfigFixer,
-	writeParseErrorThrower,
 	writeUnitTable,
 	writeValidators
 } from "./output.ts"
 import { programSizeOf } from "./runtimeSize.ts"
-import { combinesChecks } from "./smaller.ts"
+import {
+	combinesChecks,
+	shapesPayIn,
+	unitsExposingAllowsPays
+} from "./smaller.ts"
 export * from "./messages.ts"
 export * from "./presets.ts"
 export * from "./settings.ts"
@@ -269,31 +321,6 @@ export interface PrecompileOptions extends InterpreterOptions {
 	dependencies?: DependencyModes | undefined
 }
 
-export interface ScannedProgram {
-	// names the bundle, so only its transforms apply what was read
-	key: string
-	entries: string[]
-	modules: Record<string, ScannedModule>
-	// what each module's specifiers resolve to, where the bundle holds it
-	targets: Record<string, Record<string, string>>
-	// what each module, a dependency's too, imports of arktype's packages
-	arkImports: Record<string, string[]>
-	// each module import() loads, which a bundler that splits builds as an entry
-	dynamicImports: string[]
-	// each module with no file, like a framework's virtual module, which its
-	// runtime may import unseen
-	exposed: string[]
-	isOneChunk?: boolean
-}
-
-export interface ScannedModule {
-	source: string
-	// whether the host precompiles it, as it may not an entry it's given
-	transformed: boolean
-	// how its lines map to its file's, where a plugin ahead of the host's transformed it
-	mappings?: string | undefined
-}
-
 type ProgramReads = Pick<
 	ProgramUsage,
 	"members" | "called" | "readsAllows" | "piped" | "combines" | "shapes"
@@ -331,22 +358,6 @@ interface WrittenProgram {
 	runtimes: Map<string, RuntimeModule>
 }
 
-export interface ScannedUsage {
-	dropped: ValidatorMember[]
-	// whether a checker the bundle reads once is written where it's read
-	linked: boolean
-	// modules it no longer reads, as their units are declared in one function
-	replaced: string[]
-	// whether it wrote each module, for a transform naming the bundle to read
-	written: boolean
-	// each module creating a validator, which only a module reaching it may read
-	holders: string[]
-	// the warning where it left out no member members leaves to it
-	unpruned?: string | undefined
-	// what its issues may hold, unless they may hold anything
-	issues?: IssueFeatures | undefined
-}
-
 export interface ModuleAnalysis {
 	sites: Site[]
 	diagnostics: Diagnostic[]
@@ -363,274 +374,6 @@ export interface PrecompiledModule extends ModuleAnalysis {
 	issues?: IssueFeatures | undefined
 	// the helpers it exports whose calls the build folds, which only a precompiled module can call
 	foldedHelpers: string[]
-}
-
-// an arktype export, or "reference" for the program's own Type
-export type SiteKind = ArkExportName | "reference"
-
-export interface Site {
-	kind: SiteKind
-	start: number
-	end: number
-	line: number
-	column: number
-	status: "accepted" | "rejected" | "island"
-	reasons: string[]
-	// what a factory reproduces
-	value: unknown
-	// the Types cache mode precompiles
-	roots: BaseRoot[]
-	// thrown by its factory at creation
-	parseError: ParseError | undefined
-	arktypeArguments: unknown[]
-	holes: Hole[]
-	// functions arktype calls while defining it, e.g. a literal's narrow
-	called: Hole[]
-	inputs: Input[]
-	helpers: Helper[]
-	references: Reference[]
-	// the argument of a `define` call, evaluated in its place
-	definition: Node | undefined
-	// defaults its factory checks at creation
-	defaultChecks: DefaultCheck[]
-	// Scope aliases resolved while defining it
-	aliases: ScopeAlias[]
-	// the statement count and binding its module must have run
-	progress: [at: number, name: string] | undefined
-	// start of its declaring statement, which a bundler may drop
-	declarationStart: number | undefined
-	// whether it initializes a variable, e.g. one a function declares
-	initializes: boolean
-	// e.g. `User` and "json" for `User.json`
-	introspection:
-		| Pick<StandaloneIntrospection, "member" | "type" | "thrown">
-		| undefined
-	// e.g. `User.extends` in `User.extends(T.in)`
-	unavailableRead: string | undefined
-}
-
-export interface Hole {
-	file: string
-	// the expression evaluated in place at runtime
-	start: number
-	end: number
-	value: unknown
-	kind: "function" | "class" | "symbol" | "opaque"
-	isCalledAtDefinition: boolean
-}
-
-export interface Reference {
-	start: number
-	end: number
-	value: unknown
-	// the unwritten binding a site initialized that it reads
-	fixedBy: Binding | undefined
-	// a function or symbol its own module creates
-	isOwnHole: boolean
-	// imported from a module that only declares and has run
-	isInert: boolean
-	// created by a call to arktype the site makes, which its factory replaces
-	isCreated: boolean
-}
-
-type FactoryImport = [specifier: string, name: string, local: string]
-
-interface PlannedSites {
-	namesBySite: Map<Site, string>
-	factoriesBySite: Map<Site, SiteFactory>
-	exportsByName: Record<string, StandaloneExport>
-	// so far, the sites whose definitions it keeps in place
-	folded: Site[]
-}
-
-interface SiteFactory {
-	params: FactoryParam[]
-	spans: Span[]
-	// e.g. the second `f` in `{ a: narrow(f), b: narrow(f) }`
-	repeats: [span: Span, spanIndex: number][]
-	inputs: string[]
-	// inputs set before the site runs, so reading them can't throw
-	inert: string[]
-	// whose imports the call keeps, by the input passing each
-	bindings: [input: string, binding: Binding][]
-	imports: FactoryImport[]
-}
-
-const emptyFactory = (): SiteFactory => ({
-	params: [],
-	spans: [],
-	repeats: [],
-	inputs: [],
-	inert: [],
-	bindings: [],
-	imports: []
-})
-
-// what folding a module's sites has written so far
-interface Folding {
-	module: SourceModule
-	s: MagicString
-	prefix: string
-	validators: StandaloneModules
-	// modules writing the same code share it
-	specifier: string
-	configured: Configured
-	modules: Record<string, string>
-	imports: Record<string, Record<string, string>>
-	inputImports: Record<string, Record<string, string>>
-	imported: Set<string>
-	checking: Set<string>
-	// the source a site's call keeps, which still reads the bindings it holds
-	kept: Span[]
-	passed: Binding[]
-	// those a call reads at runtime
-	read: Binding[]
-	readsPassedBy?: (exported: string) => boolean
-	// the first droppable site, where the config is fixed
-	fixedAt: number
-}
-
-const unplan = (plan: PlannedSites, site: Site): void => {
-	delete plan.exportsByName[plan.namesBySite.get(site)!]
-	plan.namesBySite.delete(site)
-	plan.factoriesBySite.delete(site)
-}
-
-const planFactory = (
-	plan: PlannedSites,
-	site: Site,
-	factory: SiteFactory,
-	tablesByValue: Map<unknown, number>
-): void => {
-	const name = `f${siteNameOf(site)}`
-	plan.factoriesBySite.set(site, factory)
-	plan.namesBySite.set(site, name)
-	if (site.introspection) {
-		plan.exportsByName[name] = {
-			...site.introspection,
-			data: site.value,
-			params: factory.params,
-			defaultChecks: site.defaultChecks
-		}
-		return
-	}
-	let table = tablesByValue.get(site.value)
-	if (table === undefined)
-		tablesByValue.set(site.value, (table = tablesByValue.size))
-	plan.exportsByName[name] = {
-		type: site.value as never,
-		params: factory.params,
-		internedBy: table,
-		defaultChecks: site.defaultChecks
-	} satisfies StandaloneFactory
-}
-
-// a site's validator, or where its definition throws a ParseError, its thrower
-const importFolded = (
-	site: Site,
-	exported: string,
-	local: string,
-	created: readonly string[] | undefined,
-	{ validators, specifier, configured, modules, imports, prefix }: Folding
-): void => {
-	if (site.parseError) {
-		const thrower = writeParseErrorThrower(
-			site.parseError.message,
-			configured,
-			site.progress
-		)
-		const throwerSpecifier = `~arktype/${hashOf(thrower)}`
-		modules[throwerSpecifier] = thrower
-		imports[throwerSpecifier] = { default: local }
-		return
-	}
-	if (!(specifier in modules)) {
-		modules[specifier] = validators.code
-		Object.assign(modules, validators.modules)
-	}
-	const locals = (imports[specifier] ??= {})
-	if (created) for (const read of created) locals[read] = `${prefix}_${read}`
-	else locals[exported] = local
-}
-
-// parameters stay in place, so they evaluate in order, even for a value
-const spliceSite = (
-	s: MagicString,
-	site: Span,
-	spans: readonly Span[],
-	inputs: string[],
-	opener: string,
-	closer: string
-): void => {
-	const replace = (start: number, end: number, text: string) =>
-		start === end ? s.appendLeft(start, text) : s.overwrite(start, end, text)
-	let start = site.start
-	let separator = opener
-	for (const span of spans) {
-		replace(start, span.start, separator)
-		start = span.end
-		separator = ", "
-	}
-	const read = inputs.map((input, i) => (i ? ", " : separator) + input)
-	replace(start, site.end, `${read.join("")}${closer}`)
-}
-const receive = (
-	factory: SiteFactory,
-	passedAs: PassedInput,
-	param: FactoryParam
-) => {
-	factory.inputs.push(passedAs.expression)
-	if (passedAs.imported) factory.imports.push(passedAs.imported)
-	if (passedAs.binding)
-		factory.bindings.push([passedAs.expression, passedAs.binding])
-	factory.params.push(param)
-}
-
-interface PassedInput {
-	expression: string
-	label: string
-	binding?: Binding
-	// where no binding the site sees holds the input
-	imported?: FactoryImport
-}
-
-export interface Input {
-	kind: "import" | "local"
-	// for an import, the module that exports it
-	file: string | undefined
-	name: string
-	path: PropertyKey[]
-	value: unknown
-}
-
-export interface Helper {
-	file: string
-	name: string
-	start: number
-	end: number
-}
-
-export type Rule =
-	| "R1"
-	| "R2"
-	| "R3"
-	| "R4"
-	| "parse"
-	| "syntax"
-	| "unsupported"
-	| "copies"
-
-export interface Diagnostic {
-	severity: "error" | "warning"
-	rule: Rule
-	file: string
-	start: number
-	end: number
-	line: number
-	column: number
-	message: string
-	reasons: string[]
-	hint: string | undefined
 }
 
 // a package arktype runs on, which must load once
@@ -654,32 +397,6 @@ export const precompileModule = (
 	host: PrecompileHost,
 	opts?: PrecompileOptions
 ): PrecompiledModule => new Precompiler(host, opts).precompile(source, id)
-
-// each shape's runtime and what each call of it saves, gzipped bytes measured
-// on bundles of 10 to 1000 schemas
-const shapeCosts = {
-	stringRange: [48, 0.37],
-	integerRange: [64, 0.76],
-	arrayOf: [56, 0.47],
-	nullable: [25, 1.76]
-}
-
-const shapesPayIn = (
-	written: Record<string, Pick<PrecompiledModule, "modules">>
-): boolean => {
-	const modules: Record<string, string> = {}
-	for (const id in written) Object.assign(modules, written[id].modules)
-	const text = Object.values(modules).join("\n")
-	let saved = 0
-	for (const [shape, [runtime, call]] of Object.entries(shapeCosts)) {
-		const calls = text.split(`runtime.${shape}(`).length - 1
-		if (calls) saved += calls * call - runtime
-	}
-	return saved > 0
-}
-
-// declaring about this many units as validators repays a validator exposing allows, gzipped
-const unitsExposingAllowsPays = 6
 
 export class Precompiler {
 	graph: ModuleGraph
@@ -5943,24 +5660,6 @@ export class Precompiler {
 	}
 }
 
-// e.g. "default" for `T.default("free")`, a key's definition a validator lacks
-const keyedMethodOf = (site: Site): string | undefined =>
-	Array.isArray(site.value) ?
-		/\.(default|optional)$/.exec(site.unavailableRead ?? "")?.[1]
-	:	undefined
-
-const methodMembers = ["traverse", "from", "toString"] as const
-
-const unwrittenHint =
-	'Move it into a .ts or .js module of its own that this one imports, which the build precompiles, or build with runtime: "arktype".'
-
-export const renderDiagnostic = (diagnostic: Diagnostic): string =>
-	[
-		`${diagnostic.file}:${diagnostic.line}:${diagnostic.column}  ${diagnostic.message}`,
-		...diagnostic.reasons.map(reason => `  ${reason}`),
-		...(diagnostic.hint ? [`  ${diagnostic.hint}`] : [])
-	].join("\n")
-
 interface Configuration {
 	modules: string[]
 	// hash of its modules' paths and text, if configure() is called
@@ -6006,139 +5705,11 @@ const sharedSchemaExports = Object.keys(runtimeExports).filter(
 const isEncodingError = (e: Error) =>
 	e.message.startsWith(writeMissingInverseMessage(""))
 
-// e.g. "./a.ts" for `import("./a.ts")`, `require("./a.ts")` or `import a = require("./a.ts")`
-const loadedSpecifierOf = (node: Node): unknown => {
-	// a require() may be one createRequire() returns
-	const source =
-		loadedSourceOf(node) ??
-		((
-			node.type === "TSImportEqualsDeclaration" &&
-			node.importKind !== "type" &&
-			node.moduleReference.type === "TSExternalModuleReference"
-		) ?
-			node.moduleReference.expression
-		:	undefined)
-	return source?.type === "Literal" ? source.value : undefined
-}
-
-// e.g. `await import("arktype")` as a statement, loading a module only to run it
-const isDiscarded = (node: Node): boolean => {
-	let [, parent] = operatorOf(node)
-	while (
-		parent?.type === "AwaitExpression" ||
-		(parent?.type === "UnaryExpression" && parent.operator === "void")
-	)
-		[, parent] = operatorOf(parent)
-	return parent?.type === "ExpressionStatement"
-}
-
 // e.g. `from "arktype"`, `import("arktype")` or `require("arktype")`
 const arktypeSpecifier =
 	/\b(?:from|import\s*\(?|require\s*\()\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
 
 const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
-
-export const specifierOf = (importer: string, file: string): string => {
-	const path = relative(dirname(importer), file).split("\\").join("/")
-	return path.startsWith(".") ? path : `./${path}`
-}
-
-const virtualSpecifier = /"(~arktype\/[^"]+)"/g
-
-const reachedModulesOf = (
-	code: string,
-	modules: Record<string, string>
-): Record<string, string> => {
-	const reached: Record<string, string> = {}
-	const pending = [code]
-	for (const read of pending) {
-		for (const [, specifier] of read.matchAll(virtualSpecifier)) {
-			if (specifier in reached || !(specifier in modules)) continue
-			reached[specifier] = modules[specifier]
-			pending.push(reached[specifier])
-		}
-	}
-	return reached
-}
-
-const createsValidator = (site: Site) =>
-	!site.introspection && !site.parseError && hasArkKind(site.value, "root")
-
-const runtimeModuleOf = (
-	module: SourceModule,
-	folded: Site[],
-	kept: Span[],
-	read: Binding[],
-	inputs: Record<string, string[]>
-): RuntimeModule => ({
-	module,
-	folded,
-	kept: [
-		...kept,
-		...folded.flatMap(site => (site.definition ? [site.definition] : []))
-	],
-	passed: read,
-	inputs,
-	validators: folded.filter(site => createsValidator(site)),
-	holdsOther: folded.some(
-		site =>
-			!createsValidator(site) &&
-			!site.introspection &&
-			!site.parseError &&
-			isFoldable(site.value)
-	)
-})
-
-const isFoldable = (value: unknown): value is Foldable =>
-	hasArkKind(value, "root") ||
-	hasArkKind(value, "module") ||
-	hasArkKind(value, "scope") ||
-	hasArkKind(value, "generic") ||
-	isTypedFn(value)
-
-// the Type, for a site reading its introspection
-const createdBy = (site: Site): Foldable | undefined =>
-	isFoldable(site.value) ? site.value : site.introspection?.type
-
-const exportedRootsOf = (value: unknown): BaseRoot[] => {
-	let module = value
-	if (hasArkKind(value, "scope")) {
-		try {
-			module = value.export()
-		} catch {
-			// a scope whose export throws defines no Type
-			return []
-		}
-	}
-	return hasArkKind(module, "module") ? rootsIn(module) : []
-}
-
-const rootsIn = (value: unknown): BaseRoot[] =>
-	[...arkObjectsIn(value)].filter(member => hasArkKind(member, "root"))
-
-// e.g. a Module and each Type it holds
-const arkObjectsIn = (value: unknown, result = new Set<unknown>()) => {
-	if (!isFoldable(value) || result.has(value)) return result
-	result.add(value)
-	if (hasArkKind(value, "module"))
-		for (const member of Object.values(value)) arkObjectsIn(member, result)
-	if (isTypedFn(value)) {
-		arkObjectsIn(value.params, result)
-		arkObjectsIn(value.returns, result)
-	}
-	return result
-}
-
-// a cyclic Type's hash holds registry counters, so name by position
-const siteNameOf = (site: Site) =>
-	hashOf(
-		site.parseError ?
-			[site.parseError.message, ...(site.progress ?? [])].join("\n")
-		:	`${site.start}`
-	)
-
-const rangesOf = (sites: Site[]) =>
-	new Map(sites.map(site => [rangeOf(site), site]))
 
 const isInIsland = (node: Node, module: SourceModule) =>
 	module.islands.some(island => contains(island, node))
@@ -6217,70 +5788,11 @@ const spanOfScopeRead = (node: MemberExpression | CallExpression): Span => {
 	return call?.type === "CallExpression" && call.callee === callee ? call : node
 }
 
-const standInKindOf = (value: unknown): StandInKind | undefined =>
-	hasArkKind(value, "scope") ? "Scope"
-	: hasArkKind(value, "generic") ? "Generic"
-	: undefined
-
-// e.g. `{ s: $ }`
-const heldStandInOf = (
-	value: unknown,
-	seen = new Set<unknown>()
-): StandInKind | undefined => {
-	if (!isPlainContainer(value) || seen.has(value)) return
-	seen.add(value)
-	for (const key of Reflect.ownKeys(value)) {
-		const held = Reflect.get(value, key)
-		const kind = standInKindOf(held) ?? heldStandInOf(held, seen)
-		if (kind) return kind
-	}
-}
-
-const refuse = (site: Site, reasons: string[]): Site => {
-	site.status = "rejected"
-	site.reasons = reasons
-	site.value = undefined
-	site.roots = []
-	site.holes = []
-	site.called = []
-	site.inputs = []
-	site.references = []
-	return site
-}
-
-const refuseDynamic = (site: Site, dynamic: DynamicValue): Site =>
-	refuse(site, chainOf(dynamic))
-
-// e.g. `export default configure(...)`
-const runsOnceAtLoad = (call: Node): boolean => {
-	let statement = operatorOf(call)[1]
-	if (statement?.type === "UnaryExpression" && statement.operator === "void")
-		statement = operatorOf(statement)[1]
-	if (statement?.type === "VariableDeclarator") statement = statement.parent
-	if (statement?.parent?.type === "ExportNamedDeclaration")
-		statement = statement.parent
-	return (
-		statement?.parent?.type === "Program" &&
-		(statement.type === "ExpressionStatement" ||
-			statement.type === "VariableDeclaration" ||
-			statement.type === "ExportNamedDeclaration" ||
-			statement.type === "ExportDefaultDeclaration")
-	)
-}
-
 // a parameter a helper reads where the build refuses it, as each call passes it
 interface CalledParam {
 	module: SourceModule
 	read: Node
 	param: Binding
-}
-
-// e.g. `max` for "`max` is a parameter of text ..."
-const paramOf = (rejection: DynamicValue | undefined): Binding | undefined => {
-	for (let link = rejection; link; link = link.cause) {
-		if (link.code === "parameter")
-			return link.module.scopes.byId.get(link.node)?.binding
-	}
 }
 
 // a read the output keeps runs only if the build folds it or reports it
@@ -6299,130 +5811,6 @@ const isReachedOnlyAtBuild = (
 					!(site.definition && contains(site.definition, node))))
 	)
 
-const rejectionOf = (state: SiteState): DynamicValue | undefined =>
-	state.error instanceof DynamicValue ? state.error
-	: state.error === undefined ? findDynamic(state.value)
-	: undefined
-
-// e.g. `T` in `<t>(T: Type<t>) => T.or("null")`, with the function's name
-const parameterOf = (
-	node: Node,
-	module: SourceModule
-): { binding: Binding; fn: string; isAnnotated: boolean } | undefined => {
-	const id = unwrapChain(node)
-	const binding =
-		id.type === "Identifier" ? module.scopes.byId.get(id)?.binding : undefined
-	if (binding?.kind !== "param") return
-	return {
-		binding,
-		fn: inferredNameOf(binding.declaration as FunctionNode),
-		isAnnotated: !!(binding.id as { typeAnnotation?: unknown }).typeAnnotation
-	}
-}
-
-// e.g. "BeforeNavigate" for `nav: BeforeNavigate`
-const annotationSnippetOf = (
-	annotation: Node | undefined,
-	module: SourceModule
-): string | undefined =>
-	annotation &&
-	module.snippetOf(
-		annotation.type === "TSTypeAnnotation" ?
-			annotation.typeAnnotation
-		:	annotation
-	)
-
-// e.g. "t | null" for `T.or("null")`, if the call is that simple
-const genericDefinitionOf = (
-	read: Node,
-	module: SourceModule
-): string | undefined => {
-	if (read.type !== "MemberExpression") return
-	const [callee, call] = operatorOf(read)
-	if (call?.type !== "CallExpression" || call.callee !== callee) return
-	const name = memberNameOf(read)
-	const [arg, ...rest] = call.arguments
-	if (name === "array") return arg ? undefined : '"t[]"'
-	const operator =
-		name === "or" ? "|"
-		: name === "and" ? "&"
-		: undefined
-	if (!operator || !arg || rest.length || arg.type === "SpreadElement") return
-	if (arg.type === "Literal" && typeof arg.value === "string") {
-		const operand =
-			operator === "&" && arg.value.includes("|") ? `(${arg.value})` : arg.value
-		return JSON.stringify(`t ${operator} ${operand}`)
-	}
-	const text = module.snippetOf(arg)
-	return text.endsWith("…") ? undefined : `["t", "${operator}", ${text}]`
-}
-
-// e.g. `{ value: "t" }` for `type({ value: T })`, if each read is a whole definition
-const genericSiteDefinitionOf = (
-	site: Node,
-	param: Binding,
-	module: SourceModule
-): string | undefined => {
-	if (
-		site.type !== "CallExpression" ||
-		site.arguments.length !== 1 ||
-		!/(?:^|\.)type$/.test(module.textOf(site.callee))
-	)
-		return
-	const [arg] = site.arguments
-	let text = module.textOf(arg)
-	const reads = param.references
-		.map(reference => reference.id)
-		.filter(id => contains(arg, id))
-		.sort((l, r) => r.start - l.start)
-	for (const id of reads) {
-		const parent = id.parent
-		const isDefinition =
-			id === arg ||
-			parent?.type === "ArrayExpression" ||
-			(parent?.type === "Property" && parent.value === id && !parent.shorthand)
-		if (!isDefinition) return
-		text = `${text.slice(0, id.start - arg.start)}"t"${text.slice(id.end - arg.start)}`
-	}
-	return text.includes("\n") || text.length > 60 ? undefined : text
-}
-
-// e.g. `Math.random()` for `type({ a: Math.random() > 0.5 ? "string" : "number" })`,
-// or its binding where too long
-const innermostSnippetOf = (
-	dynamic: DynamicValue,
-	site: Span,
-	module: SourceModule
-): string | undefined => {
-	const snippets: string[] = []
-	for (let link: DynamicValue | undefined = dynamic; link; link = link.cause) {
-		// e.g. `process.env.MAX` for `process`, or `Math.random()` for its callee
-		let node = link.node
-		for (;;) {
-			const [operand, operator] = operatorOf(node)
-			if (
-				(operator?.type === "MemberExpression" &&
-					operator.object === operand &&
-					!operator.computed) ||
-				(operator?.type === "CallExpression" && operator.callee === operand)
-			)
-				node = operator
-			else break
-		}
-		// the site itself, as where it throws, is no value to replace
-		if (link.module === module && contains(node, site)) continue
-		snippets.unshift(link.module.snippetOf(node))
-	}
-	return snippets.find(snippet => !snippet.endsWith("…")) ?? snippets[0]
-}
-
-const chainOf = (dynamic: DynamicValue): string[] => {
-	const result: string[] = []
-	for (let link: DynamicValue | undefined = dynamic; link; link = link.cause)
-		result.push(link.message)
-	return result
-}
-
 // what arktype's own errors, like an island's, may hold
 const anyIssues: IssueFeatures = {
 	reportsIndices: true,
@@ -6431,97 +5819,3 @@ const anyIssues: IssueFeatures = {
 	readsKeySites: true,
 	runsArktype: true
 }
-
-// e.g. a configured writer calling a function in a site's meta
-export const reasonsOf = (e: unknown): string[] =>
-	e instanceof DynamicValue ? chainOf(e)
-	: e instanceof InternalArktypeError ?
-		[
-			`${e.message}, which is a bug in the build: please report it at https://github.com/arktypeio/arktype/issues`
-		]
-	: e instanceof Error ? [e.message]
-	: [String(e)]
-
-const isMemberRead = (node: Node, root: Node): boolean => {
-	node = unwrapExpression(node)
-	while (node !== root) {
-		if (node.type !== "MemberExpression") return false
-		node = unwrapExpression(node.object)
-	}
-	return true
-}
-
-const rangeOf = (span: Span) => `${span.start}:${span.end}`
-
-// AST nodes nest, so an ancestor's range suffices
-const isWithin = (node: Node, ranges: Set<string>): boolean => {
-	for (let n: Node | null | undefined = node; n; n = n.parent)
-		if (ranges.has(rangeOf(n))) return true
-	return false
-}
-
-const textOfInput = (input: Input) =>
-	[input.name, ...input.path.map(String)].join(".")
-
-const labelOf = (module: SourceModule, span: Span) =>
-	`\`${module.snippetOf(span)}\` (${module.positionOf(span)})`
-
-const thunksIn = (
-	value: unknown,
-	thunks: unknown[] = [],
-	seen = new Set<unknown>()
-): unknown[] => {
-	if (isThunk(value)) thunks.push(value)
-	else if (isPlainContainer(value) && !seen.has(value)) {
-		seen.add(value)
-		for (const v of Object.values(value)) thunksIn(v, thunks, seen)
-	}
-	return thunks
-}
-
-const holdsValidate = (
-	value: unknown,
-	fn: unknown,
-	seen = new Set<unknown>()
-): boolean => {
-	if (!isPlainContainer(value) || seen.has(value)) return false
-	seen.add(value)
-	const standard = Reflect.get(value, "~standard")
-	return (
-		(isPlainContainer(standard) && Reflect.get(standard, "validate") === fn) ||
-		Object.values(value).some(v => holdsValidate(v, fn, seen))
-	)
-}
-
-const isCoveredBy = (input: Input, existing: Input) =>
-	input.kind === existing.kind &&
-	input.file === existing.file &&
-	input.name === existing.name &&
-	existing.path.length <= input.path.length &&
-	existing.path.every((k, i) => input.path[i] === k)
-
-// a site in a function an enclosing site calls at build is folded
-const isFolded = (
-	candidate: SiteCandidate,
-	candidates: SiteCandidate[],
-	interpreter: Interpreter
-) =>
-	!!candidate.fn &&
-	candidates.some(
-		outer =>
-			outer !== candidate &&
-			outer.state.interpreted.has(candidate.fn!) &&
-			contains(outer.state.node, candidate.fn!) &&
-			!outer.state.holes.some(
-				hole =>
-					hasDomain(hole, "object") &&
-					interpreter.standIns.get(hole)?.node === candidate.fn &&
-					isHeld(hole, interpreter)
-			)
-	)
-
-// a function arktype only calls while defining a type isn't part of it
-const isHeld = (hole: unknown, interpreter: Interpreter) =>
-	!hasDomain(hole, "object") ||
-	!interpreter.standIns.get(hole)!.isCalled ||
-	registeredNameOf(hole) !== undefined

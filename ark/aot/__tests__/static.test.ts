@@ -2354,6 +2354,23 @@ const H = type({ ["abc".toUpperCase()]: "string" })`)
 			])
 		})
 
+		it("exponentiation that is exact on every engine", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const A = type.unit(2n ** 64n)
+const B = type(\`number < \${2 ** 10}\`)
+const C = type(\`number < \${2 ** 53}\`)
+const D = type.unit((-2n) ** 3n)
+const E = type.unit(2n ** -1n)`)
+			).snap([
+				"2:11 accepted 18446744073709551616n",
+				"3:11 accepted number < 1024",
+				"4:11 rejected\n  `2 ** 53` is approximated by each engine unless its operands are integers with a safe integer result",
+				"5:11 accepted -8n",
+				"6:11 rejected\n  `2n ** -1n` throws RangeError: Exponent must be positive at build"
+			])
+		})
+
 		it("reads that run code or aren't own data", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

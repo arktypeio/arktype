@@ -1,8 +1,11 @@
+import type {
+	IssueFeatures,
+	ValidatorMember
+} from "arktype/internal/standalone.ts"
 import { isAbsolute } from "node:path"
 import { parseSync, type Program } from "oxc-parser"
 import { dependencyOf, fileOf, printablePathOf, transformedId } from "./host.ts"
 import { langOf } from "./module.ts"
-import type { ScannedModule, ScannedProgram } from "./precompile.ts"
 import { ModuleScopes, operatorOf, walk } from "./scope.ts"
 
 export type ImportKind = "import-statement" | "dynamic-import" | "require-call"
@@ -526,3 +529,44 @@ export const writeUnseenMessage = (
 
 export const writeUnscannedFlatMessage = (path: string): string =>
 	`A production build declares the units its validators read in one function, as it found reading the bundle's modules first, but it built ${path} from code it didn't read, whose validators would read copies of them. Build again, or set prune: false to build each unit as a module of its own.`
+
+export interface ScannedProgram {
+	// names the bundle, so only its transforms apply what was read
+	key: string
+	entries: string[]
+	modules: Record<string, ScannedModule>
+	// what each module's specifiers resolve to, where the bundle holds it
+	targets: Record<string, Record<string, string>>
+	// what each module, a dependency's too, imports of arktype's packages
+	arkImports: Record<string, string[]>
+	// each module import() loads, which a bundler that splits builds as an entry
+	dynamicImports: string[]
+	// each module with no file, like a framework's virtual module, which its
+	// runtime may import unseen
+	exposed: string[]
+	isOneChunk?: boolean
+}
+
+export interface ScannedModule {
+	source: string
+	// whether the host precompiles it, as it may not an entry it's given
+	transformed: boolean
+	// how its lines map to its file's, where a plugin ahead of the host's transformed it
+	mappings?: string | undefined
+}
+
+export interface ScannedUsage {
+	dropped: ValidatorMember[]
+	// whether a checker the bundle reads once is written where it's read
+	linked: boolean
+	// modules it no longer reads, as their units are declared in one function
+	replaced: string[]
+	// whether it wrote each module, for a transform naming the bundle to read
+	written: boolean
+	// each module creating a validator, which only a module reaching it may read
+	holders: string[]
+	// the warning where it left out no member members leaves to it
+	unpruned?: string | undefined
+	// what its issues may hold, unless they may hold anything
+	issues?: IssueFeatures | undefined
+}

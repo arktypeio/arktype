@@ -770,8 +770,10 @@ export class Interpreter {
 		} catch (e) {
 			throw this.thrown(e, node, ctx)
 		}
+		// bigint exponentiation is exact (TypeError on a mixed pair was thrown above)
 		return (
 				node.operator === "**" &&
+					typeof left !== "bigint" &&
 					!(
 						Number.isInteger(left) &&
 						Number.isInteger(right) &&

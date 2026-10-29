@@ -713,3 +713,55 @@ const idsOf = (pattern: Node): Node[] => {
 			return []
 	}
 }
+
+export const isMemberRead = (node: Node, root: Node): boolean => {
+	node = unwrapExpression(node)
+	while (node !== root) {
+		if (node.type !== "MemberExpression") return false
+		node = unwrapExpression(node.object)
+	}
+	return true
+}
+
+// e.g. `export default configure(...)`
+export const runsOnceAtLoad = (call: Node): boolean => {
+	let statement = operatorOf(call)[1]
+	if (statement?.type === "UnaryExpression" && statement.operator === "void")
+		statement = operatorOf(statement)[1]
+	if (statement?.type === "VariableDeclarator") statement = statement.parent
+	if (statement?.parent?.type === "ExportNamedDeclaration")
+		statement = statement.parent
+	return (
+		statement?.parent?.type === "Program" &&
+		(statement.type === "ExpressionStatement" ||
+			statement.type === "VariableDeclaration" ||
+			statement.type === "ExportNamedDeclaration" ||
+			statement.type === "ExportDefaultDeclaration")
+	)
+}
+
+// e.g. "./a.ts" for `import("./a.ts")`, `require("./a.ts")` or `import a = require("./a.ts")`
+export const loadedSpecifierOf = (node: Node): unknown => {
+	// a require() may be one createRequire() returns
+	const source =
+		loadedSourceOf(node) ??
+		((
+			node.type === "TSImportEqualsDeclaration" &&
+			node.importKind !== "type" &&
+			node.moduleReference.type === "TSExternalModuleReference"
+		) ?
+			node.moduleReference.expression
+		:	undefined)
+	return source?.type === "Literal" ? source.value : undefined
+}
+
+// e.g. `await import("arktype")` as a statement, loading a module only to run it
+export const isDiscarded = (node: Node): boolean => {
+	let [, parent] = operatorOf(node)
+	while (
+		parent?.type === "AwaitExpression" ||
+		(parent?.type === "UnaryExpression" && parent.operator === "void")
+	)
+		[, parent] = operatorOf(parent)
+	return parent?.type === "ExpressionStatement"
+}

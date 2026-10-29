@@ -16,9 +16,10 @@ import type {
 	Program,
 	Span
 } from "oxc-parser"
+import { reasonsOf } from "./diagnostics.ts"
 import { contains } from "./graph.ts"
 import { SourceModule } from "./module.ts"
-import { reasonsOf, type Site } from "./precompile.ts"
+import type { Site } from "./sites.ts"
 import { minifiedSizeOf } from "./runtimeSize.ts"
 import { exportNameOf, type Binding } from "./scope.ts"
 import { combinesChecks, smallerOf } from "./smaller.ts"
