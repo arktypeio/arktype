@@ -1,12 +1,8 @@
-import type { Paragraph, Root, TableRow } from "mdast"
+import type { Paragraph, TableRow } from "mdast"
 import { toString } from "mdast-util-to-string"
 import { readFileSync } from "node:fs"
-import remarkGfm from "remark-gfm"
-import remarkMdx from "remark-mdx"
-import remarkParse from "remark-parse"
-import { unified } from "unified"
 import { SKIP, visit } from "unist-util-visit"
-import { parseMdx } from "./frontmatter.ts"
+import { parseMdx, parseMdxTree } from "./frontmatter.ts"
 import { expandComponents } from "./expand.ts"
 import { collectHeadings, type SearchSection } from "./headings.ts"
 import type { PageTree } from "./pageTree.ts"
@@ -40,11 +36,9 @@ export type SearchIndexEntry = {
 	text: string
 }
 
-const parser = unified().use(remarkParse).use(remarkMdx).use(remarkGfm)
-
 /** splits an MDX body into search sections without compiling or highlighting it */
 export const searchSectionsOf = (body: string): SearchSection[] => {
-	const tree = parser.runSync(parser.parse(body)) as Root
+	const tree = parseMdxTree(body)
 	expandComponents(tree)
 	visit(tree, "table", (table, i, parent) => {
 		const rows = table.children.flatMap(rowAsParagraph)

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, type CSSProperties } from "react"
+import { sleep } from "../motion.ts"
 import { startLiveEngine, type LiveEngine } from "./liveEngine.ts"
 import type { LiveState } from "./liveState.ts"
 import { tokenizeDefinition } from "./liveSyntax.ts"
@@ -15,8 +16,6 @@ const chips = [
 
 /** warm the parser once the pointer comes this close to the card */
 const intentDistance = 600
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 /** html[data-ghost] (see the home layout) hides what the ghost animates */
 const revealGhosted = () => delete document.documentElement.dataset.ghost

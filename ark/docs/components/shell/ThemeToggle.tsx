@@ -2,7 +2,7 @@
 
 import { MoonIcon, SunIcon } from "lucide-react"
 import { useEffect, useSyncExternalStore } from "react"
-import { reducedMotion } from "../reducedMotion.ts"
+import { reducedMotion } from "../motion.ts"
 import { lightQuery, themeColors, themeKey, type Theme } from "./theme.ts"
 
 const root = () => document.documentElement

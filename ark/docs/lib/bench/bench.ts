@@ -610,7 +610,8 @@ export const benchFacts = () => {
 		.filter(s => invalidInput(s) && !reportsErrors(s))
 		.map(versusFastest)
 	const faster = fasterLibraries(verdicts.map(x => x.s))
-	// the copy counts wins, ties and each library's rows as disjoint, which holds only while every row a library won is a row lost to the fastest
+	// the copy counts wins, ties and each library's rows as disjoint, which holds
+	// only while every row a library won is a row lost to the fastest
 	if (new Set(faster.flatMap(x => x.rows)).size !== losses.length) {
 		throw new Error(
 			"A valid-data row lost to a library other than its fastest; the copy would double count it"

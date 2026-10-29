@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react"
-import { reducedMotion } from "../reducedMotion.ts"
+import { reducedMotion } from "../motion.ts"
 
 const sets = [
 	{ set: "valid", label: "valid data" },

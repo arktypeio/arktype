@@ -89,7 +89,8 @@ const repeatedAtom =
 const isRepeatedAtom = (rule: string, flags: string | undefined) =>
 	(flags === undefined || /^[disu]*$/.test(flags)) && repeatedAtom.test(rule)
 
-// a string definition's literal escapes only /, so the source is written as is but for / and line terminators
+// a string definition's literal escapes only /, so the source is written as is
+// but for / and line terminators
 const escapesInRegexLiteral: Record<string, string> = {
 	"/": "\\/",
 	"\n": "\\n",

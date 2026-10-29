@@ -1,9 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { reducedMotion } from "../reducedMotion.ts"
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+import { reducedMotion, sleep } from "../motion.ts"
 
 /** buttons with `data-copy` copy it and swap to their "copied" face for 1.6s */
 const wireCopy = () => {

@@ -128,7 +128,8 @@ export declare namespace JsonSchema {
 		contentMediaType?: string
 	}
 
-	// exclusiveMinimum and exclusiveMaximum are left to the index signature: openapi-3.0 writes them as booleans
+	// exclusiveMinimum and exclusiveMaximum are left to the index signature:
+	// openapi-3.0 writes them as booleans
 	export interface Numeric extends Meta<number> {
 		type: "number" | "integer"
 		// NB: JSON Schema allows decimal multipleOf, but ArkType only supports integer.

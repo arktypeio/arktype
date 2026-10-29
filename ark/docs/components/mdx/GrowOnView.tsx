@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { reducedMotion } from "../reducedMotion.ts"
+import { reducedMotion } from "../motion.ts"
 
 /**
  * Charts marked `data-grow` that start below the fold grow their bars once

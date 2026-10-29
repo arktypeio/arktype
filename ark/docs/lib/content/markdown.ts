@@ -13,11 +13,8 @@ import type {
 import { gfmToMarkdown } from "mdast-util-gfm"
 import type { MdxJsxFlowElement, MdxJsxTextElement } from "mdast-util-mdx-jsx"
 import { toMarkdown } from "mdast-util-to-markdown"
-import remarkGfm from "remark-gfm"
-import remarkMdx from "remark-mdx"
-import remarkParse from "remark-parse"
-import { unified } from "unified"
 import { visit } from "unist-util-visit"
+import { siteUrl } from "../../app/metadata.ts"
 import { installCommand } from "../../components/installCommand.ts"
 import { benchNotes, benchTable, harness } from "../bench/bench.ts"
 import snippetContentsById from "../../components/snippets/contentsById.ts"
@@ -37,13 +34,9 @@ import {
 import { keywordRowsByTable, type KeywordTableName } from "../keywords.ts"
 import { twoslashLangs, twoslashOptions } from "../shiki.ts"
 import { expandComponents } from "./expand.ts"
-import type { Frontmatter } from "./frontmatter.ts"
+import { parseMdxTree, type Frontmatter } from "./frontmatter.ts"
 import { collectHeadings } from "./headings.ts"
 import { twoslasher } from "./twoslash.ts"
-
-export const siteUrl = "https://arktype.io"
-
-const parser = unified().use(remarkParse).use(remarkMdx).use(remarkGfm)
 
 /**
  * A page as Markdown that reads like the rendered page: components become
@@ -54,7 +47,7 @@ export const mdxToMarkdown = (
 	frontmatter: Frontmatter,
 	body: string
 ): string => {
-	const tree = parser.runSync(parser.parse(body)) as Root
+	const tree = parseMdxTree(body)
 	expandComponents(tree)
 	// strips [#custom-id] from headings
 	collectHeadings(tree)

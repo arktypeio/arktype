@@ -1,4 +1,5 @@
-// arktype/runtime under the "development" condition: Node prints issues, and an unbaked member throws where read
+// arktype/runtime under the "development" condition: Node prints issues, and an
+// unbaked member throws where read
 import { ArkErrors, Validator, type UnavailableMember } from "./runtime.ts"
 
 Object.defineProperty(

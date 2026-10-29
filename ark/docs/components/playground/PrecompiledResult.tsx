@@ -5,7 +5,7 @@ import prettierPluginEstree from "prettier/plugins/estree"
 import prettierPluginTypeScript from "prettier/plugins/typescript"
 import prettier from "prettier/standalone"
 import { useEffect, useRef, useState, type KeyboardEvent } from "react"
-import { reducedMotion } from "../reducedMotion.ts"
+import { reducedMotion } from "../motion.ts"
 import { ColorizedCode } from "./ColorizedCode.tsx"
 import { writePrecompiled } from "./precompile.ts"
 import {
