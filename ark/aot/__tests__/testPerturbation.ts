@@ -416,7 +416,7 @@ export const runWorld = async (
 export const comparable = (observation: unknown): string =>
 	(JSON.stringify(observation) ?? "undefined")
 		.replace(/\btype\d+\b/g, "type")
-		.replace(/\$ark\.[\w$&|]+/g, "$ark")
+		.replace(/\$ark\.[^\s"',\\\]}]+/g, "$ark")
 
 // under errors "first", the original world lists the issues errors "all"
 // finds, any one of which a precompiled validator agrees reporting

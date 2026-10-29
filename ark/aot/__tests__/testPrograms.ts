@@ -2032,6 +2032,19 @@ contextualize(() => {
 		attest(disagreement({ threw: "Error: boom" })).equals(undefined)
 	})
 
+	it("compares a registered reference apart from the process's count in it", () => {
+		const json = (reference: string) =>
+			comparable({
+				out: `[ { index: [ { signature: 'string', value: '${reference}' } ] }, { morphs: [ 'string', '$ark.double' ] } ]`
+			})
+		attest(json("$ark.b1=>unit4")).equals(json("$ark.b1203=>unit2150"))
+		attest(json("$ark.double")).equals(json("$ark.double$2"))
+		attest(
+			json("$ark.b1=>unit4") ===
+				json("$ark.b1=>unit4").replace("'string'", "'number'")
+		).equals(false)
+	})
+
 	it("excludes a refused site's own call failing in the standalone world", () => {
 		const program = programOf([
 			() => ({
