@@ -1,6 +1,6 @@
-import { parseSync, type Node, type Span } from "oxc-parser"
+import type { Node, Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
-import type { SourceModule } from "./module.ts"
+import { parseCode, type SourceModule } from "./module.ts"
 import { isInertMetaProperty } from "./scan.ts"
 import {
 	exportNameOf,
@@ -635,7 +635,7 @@ export const passedReaderOf = (
 }
 
 const exportedFunctionsOf = (code: string): Map<string, Node | undefined> => {
-	const { program } = parseSync("validators.js", code)
+	const { program } = parseCode("validators.js", code, {})
 	const declared = new Map<string, Node>()
 	const result = new Map<string, Node | undefined>()
 	for (const statement of program.body) {

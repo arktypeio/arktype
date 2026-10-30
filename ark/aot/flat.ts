@@ -1,6 +1,6 @@
 import { hashOf } from "@ark/util"
 import MagicString, { type SourceMap } from "magic-string"
-import { parseSync, type Node, type Program, type Span } from "oxc-parser"
+import type { Node, Program, Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
 import {
 	prefixOf,
@@ -9,7 +9,7 @@ import {
 	statementOf,
 	virtualSource
 } from "./link.ts"
-import { SourceModule } from "./module.ts"
+import { parseCode, SourceModule } from "./module.ts"
 import {
 	exportNameOf,
 	isWriteTarget,
@@ -1176,7 +1176,7 @@ const withMembersUnwrapped = (
 }
 
 const parseUnits = (code: string) =>
-	parseSync("units.js", code, { sourceType: "module", preserveParens: false })
+	parseCode("units.js", code, { sourceType: "module", preserveParens: false })
 
 interface ParsedUnits {
 	code: string
