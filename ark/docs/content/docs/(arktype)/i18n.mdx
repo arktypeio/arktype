@@ -1,0 +1,353 @@
+---
+title: i18n
+description: Write ArkType's error messages in another language, per app or per request.
+icon: New
+---
+
+ArkType's error messages can be written in any language. A locale supplies their text, and ArkType ships two: `en`, the default, and `de`.
+
+## Configuring a locale
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import { de } from "arktype/locales/de"
+
+configure({ locale: de })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+const User = type({
+	name: "string >= 2",
+	email: "string.email"
+})
+
+const out = User({ name: "A", email: "x" })
+
+if (out instanceof type.errors) {
+	// email muss eine E-Mail-Adresse sein, ist aber "x"
+	// name muss mindestens 2 Zeichen lang sein, ist aber 1 Zeichen lang
+	console.log(out.summary)
+}
+```
+
+Like other [global config](/docs/configuration#global), a locale is configured before any Type is created. It can't be set for a scope or a Type. To choose one per request, configure a [function](#switching-locales).
+
+Shipped locales like `arktype/locales/de` work when imported. A locale you write, or a locale function, also needs `import "arktype/i18n"` unless a shipped locale is imported. Without it, creating a Type, `toLocaleString` or `messageIn` with that locale throws. This keeps other locales out of bundles that only use `en`.
+
+Only an error's message and its parts, `expected`, `actual` and `problem`, are localized. A Type's `description` and `expression`, JSON Schema, an error's `description` and `ParseError`s stay in English.
+
+## Labels
+
+A locale may name a value by its `title`. `en` ignores titles, while `de` makes them the subject of the sentence:
+
+```ts
+const Signup = type({
+	name: type("string >= 2").configure({ title: "Name" })
+})
+
+// with de: „Name“ muss mindestens 2 Zeichen lang sein, ist aber 1 Zeichen lang
+const out = Signup({ name: "A" })
+```
+
+## Switching locales
+
+`locale` can also be a function, called when an `ArkErrors`' messages are first read rather than when validation fails, so errors follow your app's language even if it changed after they were created:
+
+```ts title="config.ts"
+import type { Locale } from "arktype"
+import { configure } from "arktype/config"
+import { de } from "arktype/locales/de"
+import { en } from "arktype/locales/en"
+
+const locales: Record<string, Locale> = { de, en }
+
+let language = "en"
+
+export const setLanguage = (next: string) => {
+	language = next
+}
+
+configure({ locale: () => locales[language] })
+```
+
+On a server, the function can read the locale of the current request:
+
+```ts title="config.ts"
+/// <reference types="node" />
+// ---cut---
+import type { Locale } from "arktype"
+import { configure } from "arktype/config"
+import "arktype/i18n"
+import { AsyncLocalStorage } from "node:async_hooks"
+
+export const requestLocale = new AsyncLocalStorage<Locale>()
+
+configure({ locale: () => requestLocale.getStore() })
+```
+
+```ts title="app.ts"
+// @noEmit
+// @allowImportingTsExtensions
+// @filename: config.ts
+/// <reference types="node" />
+import type { Locale } from "arktype"
+import { AsyncLocalStorage } from "node:async_hooks"
+export const requestLocale = new AsyncLocalStorage<Locale>()
+// @filename: app.ts
+// ---cut---
+import { requestLocale } from "./config.ts"
+import { type } from "arktype"
+import { de } from "arktype/locales/de"
+
+const User = type({ name: "string" })
+
+const handle = (body: unknown) =>
+	requestLocale.run(de, () => {
+		const out = User(body)
+		// name muss eine Zeichenkette sein, ist aber eine Zahl
+		if (out instanceof type.errors) return { status: 400, error: out.summary }
+		return { status: 200, user: out }
+	})
+```
+
+The function is called once for an `ArkErrors`, whose messages keep the locale it returned, so they never mix languages. If it returns `undefined` or throws, they're written in English.
+
+Since messages are written when they're first read, read `summary` or `issues` inside the request. Errors returned from `requestLocale.run` and read later, like by a framework's error handler, are written in English. There, call [`toLocaleString`](#rendering-in-a-locale) instead.
+
+## Rendering in a locale
+
+An `ArkErrors`' `toLocaleString` writes its summary in a locale of your choice, whatever locale is configured, and `messageIn` writes one error's message:
+
+```ts
+import { messageIn, type } from "arktype"
+import { de } from "arktype/locales/de"
+
+const out = type({ name: "string" })({ name: 5 })
+
+if (out instanceof type.errors) {
+	// name muss eine Zeichenkette sein, ist aber eine Zahl
+	out.toLocaleString(de)
+	messageIn(out.issues[0], de)
+	// name must be a string (was a number)
+	out.issues[0].message
+}
+```
+
+Called without a locale, `toLocaleString` returns the summary as configured.
+
+## Your own messages
+
+Any message you configure outranks the locale, which only writes what you leave out. That includes `.describe()`, `.configure()`, descriptions configured for [keywords](/docs/configuration#keywords) and [errors configured by code](/docs/configuration#by-code) in a scope or globally.
+
+A string is shown as written in every locale. Since it may be in any language, `de` cites it rather than placing it bare in a German sentence:
+
+```ts
+const Password = type("string >= 8").describe("a secure password")
+
+// with de: muss ein Wert gemäß der Beschreibung „a secure password“ sein, ist aber 2 Zeichen lang
+const out = Password("ez")
+```
+
+If your descriptions are already German, `{ ...de, cite: text => text }` places them as written. To translate them, look each one up in `cite`, returning what follows the locale's "must be", as `de.cite` does:
+
+```ts title="config.ts"
+import type { Locale } from "arktype"
+import { configure } from "arktype/config"
+import { de } from "arktype/locales/de"
+
+const translations: Record<string, string> = {
+	"a secure password": "ein sicheres Passwort"
+}
+
+const deTranslated = {
+	...de,
+	cite: text => translations[text] ?? de.cite(text)
+} satisfies Locale.Complete
+
+// Password("ez"): muss ein sicheres Passwort sein, ist aber 2 Zeichen lang
+configure({ locale: deTranslated })
+```
+
+You can also translate your own text by writing it as a function. Every error writer you configure receives the active locale's `tag`, `list`, `plural`, `number`, `date` and `verbatim` as its last argument:
+
+```ts
+const Password = type("string >= 8").configure({
+	expected: (ctx, locale) =>
+		locale.tag === "de" ? "ein sicheres Passwort" : "a secure password"
+})
+
+// with de: muss ein sicheres Passwort sein, ist aber 2 Zeichen lang
+const out = Password("ez")
+```
+
+A writer's text isn't cited, so it should read as what follows the locale's "must be", like `de`'s `muss … sein`. The writer can also call an [i18n library](#using-an-i18n-library).
+
+## Changing part of a locale
+
+A locale is an object, so you can spread it and replace what you'd like to change:
+
+```ts title="config.ts"
+import type { Locale } from "arktype"
+import { configure } from "arktype/config"
+import { de } from "arktype/locales/de"
+
+const deCompact = {
+	...de,
+	minLength: {
+		...de.minLength,
+		problem: ctx => `ist zu kurz (mindestens ${ctx.rule})`
+	}
+} satisfies Locale.Complete
+
+configure({ locale: deCompact })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+// ArkErrors: ist zu kurz (mindestens 3)
+const out = type("string >= 3")("ab")
+```
+
+Spreading `de.minLength` keeps its `expected`, the fragment that unions and intersections list, like `mindestens 3 Zeichen lang`.
+
+## Writing a locale
+
+For a language ArkType doesn't ship, start from `en` and replace each part:
+
+| part                             | writes                                                                                                                       |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `tag`                            | the locale's BCP 47 language tag                                                                                             |
+| `list`                           | a list of items joined by "or" or "and"                                                                                      |
+| `plural`                         | the plural category of a number, like `"one"` or `"other"`                                                                   |
+| `number`, `date`                 | a number or a `Date`                                                                                                         |
+| `verbatim`                       | text shown as written, like paths and printed values                                                                         |
+| `cite`                           | expected text you wrote yourself, like a description                                                                         |
+| `nouns`                          | the name of each type, like "a string"                                                                                       |
+| `basis`                          | one alternative of a missing key's value                                                                                     |
+| `keywordPhrases`                 | the expected text of each keyword, like `"string.email"`, keyed by its name                                                  |
+| `actual`, `message`              | each part of a message, for every code that doesn't write it                                                                 |
+| `problem`                        | the sentence for a keyword's phrase or for expected text you wrote                                                           |
+| `domain`, `min`, `required`, ... | one entry per [error code](/docs/errors#error-codes) with its `problem` and optionally its `expected`, `actual` or `message` |
+
+Each code's `problem` is a whole sentence without a subject, and `message` places the path or label before it. A code's `expected` is a fragment that unions and intersections list. A fragment reads as what follows the locale's "must be", like `fr`'s `doit être`:
+
+```ts
+import type { Locale } from "arktype"
+import { listPattern } from "arktype/i18n"
+import { en } from "arktype/locales/en"
+
+const was = (actual: string) => actual && ` (reçu ${actual})`
+
+const atLeast: Locale.ExpectedWriter<"min"> = (ctx, locale) =>
+	`${ctx.exclusive ? "supérieur à" : "au moins"} ${locale.number(ctx.rule)}`
+
+export const fr: Locale = {
+	...en,
+	tag: "fr",
+	list: listPattern(
+		{ two: " ou ", middle: ", ", end: " ou " },
+		{ two: " et ", middle: ", ", end: " et " }
+	),
+	cite: text => `une valeur conforme à la description « ${text} »`,
+	// for keyword phrases and text you wrote
+	problem: ctx => `doit être ${ctx.expected}${was(ctx.actual)}`,
+	// every subject is masculine, so "supérieur" agrees with it
+	message: ctx =>
+		ctx.path.length ? `le champ ${ctx.propString} ${ctx.problem}` : ctx.problem,
+	min: {
+		expected: atLeast,
+		problem: (ctx, locale) =>
+			`doit être ${atLeast(ctx, locale)}${was(ctx.actual)}`
+	}
+	// ...
+}
+```
+
+- Until you replace them, the parts you spread from `en` write English. Most of its writers don't read `nouns`, `list` or `date`: only its `discriminant`, `required` and `union` writers and `basis` read `nouns`, and `required` and `union` also read `list`.
+- Where a locale has no `expected` for a code, an error's `expected`, and so its `toJSON()`, is English. If your unions list their branches' fragments, annotate the locale with `Locale.Complete` to check that it has a fragment for every code and a phrase for every keyword. A locale without fragments can write its unions from `ctx.errors`, each with its own `problem`.
+- A locale's writers receive the error and the locale. An error's `description` is English, so `expected` writers can't use it.
+- `arktype/i18n` exports the helpers `de` is written with: `listPattern`, `isolate`, `groupByPath` (a union's errors by path), `labelOf` (the title of the value an error is about), `describeMissing`, `describeCause` and `writeKeywordExpected`.
+
+Languages unlike English need a few more rules:
+
+- `problem` has no subject, so where a predicate agrees with its subject, as in Russian, Polish or Arabic, `message` should give every subject one gender and number, like ru `Поле`/`Значение`, pl `Pole` or ar `الحقل`/`العنصر`. Particles go there too, like ja `nameは`.
+- `cite`, `nouns`, `basis`, keyword phrases and fragments all read as what follows "must be", so they take its case, like the instrumental `строкой` after ru `должно быть`. Where an actual takes another case, like the nominative after ru `получено:`, write `actual` with its own forms.
+- A title reaches `message` as written. Translate it there, in the form a subject takes.
+- A right-to-left locale sets `verbatim: isolate`, so each path, value and name keeps its direction, in lists too.
+
+## Using an i18n library
+
+ArkType doesn't depend on an i18n library, but a locale's writers can call one, so you can keep ArkType's sentences in your own catalog under your own keys:
+
+```ts
+// @noEmit
+// @filename: i18next.d.ts
+declare module "i18next" {
+	const i18next: { t: (key: string, options?: object) => string }
+	export default i18next
+}
+// @filename: paraglide/messages.ts
+export const required = (inputs: {}, options?: { locale?: "en" | "fr" }) =>
+	"est requis"
+// @filename: fr.ts
+// ---cut---
+import type { Locale } from "arktype"
+import { listPattern } from "arktype/i18n"
+import { en } from "arktype/locales/en"
+import i18next from "i18next"
+import * as m from "./paraglide/messages.js"
+
+// a namespace for ArkType's keys; escapeValue false, since messages aren't HTML
+const t = (key: string, params?: object) =>
+	i18next.t(key, {
+		ns: "validation",
+		lng: "fr",
+		interpolation: { escapeValue: false },
+		...params
+	})
+
+// a sentence, then the actual unless it's been suppressed
+const was = (problem: string, actual: string) =>
+	actual ? t("was", { problem, actual }) : problem
+
+export const fr: Locale = {
+	...en,
+	tag: "fr",
+	list: listPattern(
+		{ two: " ou ", middle: ", ", end: " ou " },
+		{ two: " et ", middle: ", ", end: " et " }
+	),
+	problem: ctx => was(t("mustBe", { expected: ctx.expected }), ctx.actual),
+	min: {
+		...en.min,
+		// through locale.number, the rule is printed like the actual
+		problem: (ctx, locale) =>
+			was(
+				t(ctx.exclusive ? "moreThan" : "min", {
+					rule: locale.number(ctx.rule)
+				}),
+				ctx.actual
+			)
+	},
+	// Paraglide: each message is a typed function
+	required: { ...en.required, problem: () => m.required({}, { locale: "fr" }) }
+}
+```
+
+With `"min": "doit être au moins {{rule}}"`, `"moreThan": "doit être supérieur à {{rule}}"` and `"was": "{{problem}} (reçu {{actual}})"` in the `validation` namespace, `type({ n: "number >= 2.5" })` reads `n doit être au moins 2.5 (reçu 1.5)` for `{ n: 1.5 }` and `n est requis` for `{}`.
+
+- Build one locale per language and [choose one per read](#switching-locales) with `configure({ locale: () => ... })`.
+- If your library types its keys, cast ArkType's (`as never`).
+- Pass numbers through `locale.number`, so a rule is printed like the actual it is compared with.
+- A key your catalog lacks renders whatever the library returns for it, which for i18next is the key itself, so keep the catalog complete.
+
+## Error codes
+
+Writers can narrow their `ctx` by its `code`, which tells them its other fields. See [Errors](/docs/errors#error-codes) for every code and its fields.

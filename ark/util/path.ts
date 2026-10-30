@@ -1,8 +1,8 @@
 import { ReadonlyArray, type array } from "./arrays.ts"
 import { throwParseError } from "./errors.ts"
+import type { noInfer } from "./generics.ts"
 import type { requireKeys } from "./records.ts"
-import { isDotAccessible } from "./registry.ts"
-import { printable, type JsonArray } from "./serialize.ts"
+import { isDotAccessible, printSymbol, type JsonArray } from "./serialize.ts"
 
 export type StringifyPathOptions<stringifiable = PropertyKey> = requireKeys<
 	{
@@ -16,7 +16,7 @@ export type StringifyPathFn = <stringifiable>(
 	path: array<stringifiable>,
 	...[opts]: [stringifiable] extends [PropertyKey] ?
 		[opts?: StringifyPathOptions]
-	:	NoInfer<[opts: StringifyPathOptions<stringifiable>]>
+	:	noInfer<[opts: StringifyPathOptions<stringifiable>], stringifiable>
 ) => string
 
 export type AppendStringifiedKeyFn = <stringifiable>(
@@ -24,61 +24,70 @@ export type AppendStringifiedKeyFn = <stringifiable>(
 	prop: stringifiable,
 	...[opts]: [stringifiable] extends [PropertyKey] ?
 		[opts?: StringifyPathOptions]
-	:	NoInfer<[opts: StringifyPathOptions<stringifiable>]>
+	:	noInfer<[opts: StringifyPathOptions<stringifiable>], stringifiable>
 ) => string
 
-export const appendStringifiedKey: AppendStringifiedKeyFn = (
-	path,
-	prop,
-	...[opts]
+export const appendStringifiedKey: AppendStringifiedKeyFn = ((
+	path: string,
+	prop: unknown,
+	opts?: StringifyPathOptions<unknown>
 ) => {
-	const stringifySymbol = opts?.stringifySymbol ?? printable
-	let propAccessChain: string = path
 	switch (typeof prop) {
 		case "string":
-			propAccessChain =
+			return (
 				isDotAccessible(prop) ?
 					path === "" ?
 						prop
 					:	`${path}.${prop}`
 				:	`${path}[${JSON.stringify(prop)}]`
-			break
+			)
 		case "number":
-			propAccessChain = `${path}[${prop}]`
-			break
+			return `${path}[${prop}]`
 		case "symbol":
-			propAccessChain = `${path}[${stringifySymbol(prop)}]`
-			break
-		default:
-			if (opts?.stringifyNonKey)
-				propAccessChain = `${path}[${opts.stringifyNonKey(prop as never)}]`
-			else {
-				throwParseError(
-					`${printable(prop)} must be a PropertyKey or stringifyNonKey must be passed to options`
-				)
-			}
+			return `${path}[${(opts?.stringifySymbol ?? printSymbol)(prop)}]`
 	}
-	return propAccessChain
-}
+	// printed by its type, so stringifying a path needs no printer
+	return opts?.stringifyNonKey ?
+			`${path}[${opts.stringifyNonKey(prop)}]`
+		:	throwParseError(
+				`${typeof prop} must be a PropertyKey or stringifyNonKey must be passed to options`
+			)
+}) as never
 
-export const stringifyPath: StringifyPathFn = (path, ...opts) =>
-	path.reduce<string>(
-		(s, k) => appendStringifiedKey(s, k, ...(opts as any)),
-		""
-	)
+export const stringifyPath: StringifyPathFn = ((
+	path: array<unknown>,
+	opts?: StringifyPathOptions<unknown>
+) => {
+	let s = ""
+	for (const k of path) s = appendStringifiedKey(s, k, opts as never)
+	return s
+}) as never
+
+// one or two keys are copied as a literal, which TurboFan allocates inline
+export const pathAt = (
+	path: PropertyKey[],
+	key?: PropertyKey
+): PropertyKey[] => {
+	if (key !== undefined) path.push(key)
+	const copy =
+		path.length === 1 ? [path[0]]
+		: path.length === 2 ? [path[0], path[1]]
+		: path.slice()
+	if (key !== undefined) path.pop()
+	return copy
+}
 
 export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 	// alternate strategy for caching since the base object is frozen
 	private cache: {
-		stringify?: string
 		stringifyAncestors?: readonly string[]
 		json?: JsonArray
 	} = {}
 
 	constructor(...items: array<PropertyKey>) {
 		super()
-		// avoid case where a single number will create empty slots
-		;(this as any).push(...items)
+		// a single number would create empty slots
+		for (let i = 0; i < items.length; i++) (this as any)[i] = items[i]
 	}
 
 	toJSON(): JsonArray {
@@ -86,7 +95,9 @@ export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 		this.cache.json = []
 		for (let i = 0; i < this.length; i++) {
 			this.cache.json.push(
-				typeof this[i] === "symbol" ? printable(this[i]) : (this[i] as never)
+				typeof this[i] === "symbol" ?
+					printSymbol(this[i] as symbol)
+				:	(this[i] as never)
 			)
 		}
 
@@ -94,16 +105,15 @@ export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 	}
 
 	stringify(): string {
-		if (this.cache.stringify) return this.cache.stringify
-		return (this.cache.stringify = stringifyPath(this))
+		return this.stringifyAncestors()[this.length]
 	}
 
 	stringifyAncestors(): readonly string[] {
 		if (this.cache.stringifyAncestors) return this.cache.stringifyAncestors
 		let propString = ""
 		const result: string[] = [propString]
-		for (const path of this) {
-			propString = appendStringifiedKey(propString, path)
+		for (let i = 0; i < this.length; i++) {
+			propString = appendStringifiedKey(propString, this[i])
 			result.push(propString)
 		}
 		return (this.cache.stringifyAncestors = result)

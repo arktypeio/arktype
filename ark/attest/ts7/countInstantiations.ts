@@ -1,11 +1,13 @@
 import { execFile } from "node:child_process"
 import { readFileSync, rmSync, writeFileSync } from "node:fs"
 import { availableParallelism } from "node:os"
+import { basename } from "node:path"
 
 // run as a script so tsc processes can run in parallel from sync callers:
 // node countInstantiations.ts <tscPath>
 // reads { files: Record<path, contents>, configPaths: string[] } from stdin,
-// writes the files and then a JSON array of counts, one per tsconfig
+// writes the files and then a JSON array with one { count, errorLines } per
+// tsconfig, where errorLines are the lines of errors reported in its root file
 
 type Input = {
 	files: Record<string, string>
@@ -26,8 +28,10 @@ for (const signal of ["SIGINT", "SIGTERM"] as const)
 for (const [path, contents] of Object.entries(files))
 	writeFileSync(path, contents)
 
+type Result = { count: number; errorLines: number[] }
+
 const countInstantiations = (configPath: string) =>
-	new Promise<number>((resolve, reject) =>
+	new Promise<Result>((resolve, reject) =>
 		execFile(
 			process.execPath,
 			[
@@ -51,12 +55,28 @@ const countInstantiations = (configPath: string) =>
 							`Unable to read instantiations for ${configPath}:\n${stdout}${stderr}`
 						)
 					)
-				} else resolve(Number(count))
+				} else {
+					resolve({
+						count: Number(count),
+						errorLines: getErrorLines(stdout, configPath)
+					})
+				}
 			}
 		)
 	)
 
-const counts: number[] = Array.from({ length: configPaths.length })
+const getErrorLines = (stdout: string, configPath: string): number[] => {
+	const rootFile = basename(JSON.parse(files[configPath]).files[0])
+	const lines: number[] = []
+	for (const line of stdout.split("\n")) {
+		const location = /^(.+)\((\d+),\d+\): error TS/.exec(line)
+		if (location && basename(location[1]) === rootFile)
+			lines.push(Number(location[2]))
+	}
+	return lines
+}
+
+const counts: Result[] = Array.from({ length: configPaths.length })
 let next = 0
 const worker = async () => {
 	while (next < configPaths.length) {

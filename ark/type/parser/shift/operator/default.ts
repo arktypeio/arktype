@@ -3,12 +3,14 @@ import {
 	keysOf,
 	type BigintLiteral,
 	type ErrorMessage,
+	type NonFiniteNumberLiteral,
 	type NumberLiteral,
 	type Scanner,
 	type trim
 } from "@ark/util"
 import type { type } from "../../../keywords/keywords.ts"
 import type { DateLiteral } from "../../../attributes.ts"
+import { emptyCollectionDefaults } from "../../../keywords/functions.ts"
 import type { RootedRuntimeState } from "../../reduce/dynamic.ts"
 import type {
 	EnclosingLiteralStartToken,
@@ -23,6 +25,7 @@ export type UnitLiteral = UnenclosedUnitLiteral | EnclosedUnitLiteral
 export type UnenclosedUnitLiteral =
 	| BigintLiteral
 	| NumberLiteral
+	| NonFiniteNumberLiteral
 	| UnitLiteralKeyword
 
 export type EnclosedUnitLiteral = StringLiteral | DateLiteral
@@ -35,13 +38,6 @@ export type EnclosedUnitLiteral = StringLiteral | DateLiteral
 export type EmptyCollectionLiteral = "[]" | "{}"
 
 export type DefaultLiteral = UnitLiteral | EmptyCollectionLiteral
-
-const emptyCollectionDefaults = {
-	"[]": () => [],
-	"{}": () => ({})
-} as const satisfies {
-	[literal in EmptyCollectionLiteral]: () => inferDefaultLiteral<literal>
-}
 
 const emptyCollectionLiterals = keysOf(emptyCollectionDefaults)
 
@@ -63,19 +59,19 @@ export const parseDefault = (
 	const baseNode = s.unsetRoot()
 	// an empty collection is not a unit literal, so it must be short-circuited
 	// here and represented as a thunk to keep each traversal's default distinct
-	s.scanner.shiftUntilNonWhitespace()
+	s.sc.skipSpace()
 	const emptyCollection = emptyCollectionLiterals.find(literal =>
-		s.scanner.unscanned.startsWith(literal)
+		s.sc.unscanned.startsWith(literal)
 	)
 	if (emptyCollection !== undefined) {
-		s.scanner.jumpForward(emptyCollection.length)
+		s.sc.jumpForward(emptyCollection.length)
 		return [baseNode, "=", emptyCollectionDefaults[emptyCollection]]
 	}
 	s.parseOperand()
 	const defaultNode = s.unsetRoot()
 	// after parsing the next operand, use the locations to get the
 	// token from which it was parsed
-	if (!defaultNode.hasKind("unit"))
+	if (!defaultNode.is("unit"))
 		return s.error(writeNonLiteralDefaultMessage(defaultNode.expression))
 	const defaultValue =
 		defaultNode.unit instanceof Date ?

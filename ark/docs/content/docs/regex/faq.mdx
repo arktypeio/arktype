@@ -1,0 +1,68 @@
+---
+title: FAQ
+description: Why some expressions infer string or fail to infer, and the cases ArkRegex currently gets wrong.
+---
+
+## Why is a range like `[a-z]` inferred as `string`?
+
+A range of letters would need a union with a member for every combination of characters, which grows too fast for TypeScript to handle. Digit ranges like `[0-9]` become `` `${number}` `` instead, and small sets like `[abc]` become a union:
+
+```ts
+import { regex } from "arkregex"
+
+const lower = regex("^[a-z]{3}$")
+//    ^? Regex<string>
+
+const abc = regex("^[abc]$")
+//    ^? Regex<"a" | "b" | "c">
+```
+
+## Which patterns infer the wrong type? [#known-gaps]
+
+An inferred type is meant to include every string the expression matches. These currently don't:
+
+- `\d` next to an unanchored start or end of a pattern, or followed by `.` or `\w` at the end of a group, infers only `` `${number}` ``. `regex("\\d")` and ArkType's `type("/\\d/")` both infer `` `${number}` ``, but match `"abc1"`.
+- A bounded run of more than 308 digits, like `\d{309}`, infers `` `${number}` ``, which can't hold a number that large. An unbounded run like `\d+` infers `string`.
+- The `i` flag isn't applied to character sets, and a backreference repeats its group's exact case: `regex("^[ab]$", "i")` infers `"a" | "b"` but matches `"A"`, and `regex("^(a)\\1$", "i")` infers `"aa" | "AA"` but matches `"aA"`.
+- The `v` flag's nested classes and set operations, like `[[a-z]--[aeiou]]`, aren't parsed.
+
+`.test()` narrows its input in both branches, so the `false` branch removes strings that didn't match whenever the inferred type was widened:
+
+```ts
+import { regex } from "arkregex"
+
+const digit = regex("^\\d$")
+
+declare const input: "1" | "12"
+
+if (!digit.test(input)) {
+	const rest = input
+	//    ^? never
+}
+```
+
+`"12"` doesn't match, but `"12"` is a `` `${number}` ``, so it's removed. The same happens with the `g` and `y` flags, where `.test()` starts from `lastIndex` and can return `false` for a string that matches.
+
+## Why is my flags string an error? [#why-is-my-flags-string-an-error]
+
+Flags must be in alphabetical order, the order `RegExp#flags` returns them in. Write `"gi"`, not `"ig"`.
+
+## Why can't it infer my long RegExp? [#why-doesnt-it-work-with-my-massive-regexp]
+
+If your expression is especially long or complex, TypeScript won't be able to infer it. Bounded quantifiers expand into every allowed repetition, so `[ab]{20}` alone produces `Expression produces a union type that is too complex to represent`.
+
+If your types start to slow down or you see an error like that or `Type instantiation is excessively deep and possibly infinite`, type the expression yourself with [`regex.as`](/docs/regex/types#regexas).
+
+## Why does `regex` take a string instead of a `/…/` literal?
+
+TypeScript gives a `/…/` literal the type `RegExp`, with no record of its source, so there's nothing to infer from. A string literal keeps its exact text.
+
+## Are `match`, `replace` and `matchAll` typed?
+
+No. `.test()` and `.exec()` are typed, but string methods like `"abc".match(re)` use TypeScript's standard `RegExp` types.
+
+## How is it tested? [#is-it-robust]
+
+ArkRegex's types are [tested](https://github.com/arktypeio/arktype/blob/main/ark/regex/__tests__/regex.test.ts) and [benchmarked](https://github.com/arktypeio/arktype/blob/main/ark/regex/__tests__/regex.bench.ts) with [Attest](/docs/attest).
+
+If anything doesn't behave how you'd expect, please [create an issue](https://github.com/arktypeio/arktype/issues/new).

@@ -1,0 +1,6 @@
+{
+	"title": "ArkSets",
+	"description": "Set algebra for schemas in any format",
+	"root": true,
+	"pages": ["index", "relations", "discriminate"]
+}

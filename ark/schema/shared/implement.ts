@@ -1,9 +1,12 @@
 import {
 	flatMorph,
+	hasDomain,
 	printable,
+	serializePrimitive,
 	throwParseError,
 	type Entry,
 	type Json,
+	type JsonObject,
 	type JsonStructure,
 	type KeySet,
 	type arrayIndexOf,
@@ -14,9 +17,9 @@ import {
 	type show
 } from "@ark/util"
 import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.ts"
-import type { Declaration, Inner, errorContext, nodeOfKind } from "../kinds.ts"
+import type { Declaration, nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
-import type { NodeId, NodeParseContext } from "../parse.ts"
+import type { NodeId } from "../parse.ts"
 import type {
 	BaseRoot,
 	schemaKindOrRightOf,
@@ -25,12 +28,10 @@ import type {
 import type { BaseScope, ResolvedScopeConfig } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
-import type {
-	BaseErrorContext,
-	BaseNodeDeclaration,
-	BaseNormalizedSchema
-} from "./declare.ts"
+import type { BaseNodeDeclaration } from "./declare.ts"
 import type { Disjoint } from "./disjoint.ts"
+import { errorWriters, errorWritersByCode } from "./errorWriters.ts"
+import { namedReference } from "./registry.ts"
 import { isNode, type makeRootAndArrayPropertiesMutable } from "./utils.ts"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -55,7 +56,9 @@ export const prestructuralKinds = [
 	"maxLength",
 	"minLength",
 	"before",
-	"after"
+	"after",
+	"notEqual",
+	"notEqualLength"
 ] as const
 
 export type PrestructuralKind = (typeof prestructuralKinds)[number]
@@ -91,7 +94,7 @@ type orderedNodeKinds = [...typeof rootKinds, ...typeof constraintKinds]
 export const nodeKinds: orderedNodeKinds = [...rootKinds, ...constraintKinds]
 
 export type OpenNodeKind = {
-	[k in NodeKind]: Declaration<k>["intersectionIsOpen"] extends true ? k : never
+	[k in NodeKind]: Declaration<k>["stacks"] extends true ? k : never
 }[NodeKind]
 
 export type ClosedNodeKind = Exclude<NodeKind, OpenNodeKind>
@@ -108,7 +111,7 @@ export const constraintKeys: KeySet<ConstraintKind> = flatMorph(
 )
 
 export const structureKeys: keySetOf<Structure.Inner> = flatMorph(
-	[...structuralKinds, "undeclared"],
+	[...structuralKinds, "undeclared", "order"],
 	(i, k) => [k, 1] as const
 )
 
@@ -222,96 +225,99 @@ export const schemaKindsRightOf = <kind extends RootKind>(
 ): schemaKindRightOf<kind>[] =>
 	rootKinds.slice(precedenceOfKind(kind) + 1) as never
 
-export const unionChildKinds = [
-	...schemaKindsRightOf("union"),
-	"alias"
-] as const
+export const unionChildKinds = /* @__PURE__ */ (() =>
+	[...schemaKindsRightOf("union"), "alias"] as const)()
 
 export type UnionChildKind = (typeof unionChildKinds)[number]
 
-export const morphChildKinds = [
-	...schemaKindsRightOf("morph"),
-	"alias"
-] as const
+export const morphChildKinds = /* @__PURE__ */ (() =>
+	[...schemaKindsRightOf("morph"), "alias"] as const)()
 
 export type MorphChildKind = (typeof morphChildKinds)[number]
 
-export type keySchemaDefinitions<d extends BaseNodeDeclaration> = {
-	[k in keyRequiringSchemaDefinition<d>]: NodeKeyImplementation<d, k>
+export type keyImplementationsOf<d extends BaseNodeDeclaration> = {
+	[k in keyof d["inner"]]-?: NodeKeyImplementation<d, k>
 }
 
-type keyRequiringSchemaDefinition<d extends BaseNodeDeclaration> = Exclude<
-	keyof d["normalizedSchema"],
-	keyof BaseNormalizedSchema
->
+// a string that reads like another value's serialization is quoted
+const ambiguousStringPattern =
+	/^(?:"|\$ark\d*\.|(?:NaN|-?Infinity|-0|-?\d+n|undefined|[+-]?\d{4,6}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z)$)/
 
 export const defaultValueSerializer = (v: unknown): Json => {
-	if (typeof v === "string" || typeof v === "boolean" || v === null) return v
+	if (typeof v === "string")
+		return ambiguousStringPattern.test(v) ? JSON.stringify(v) : v
+	if (typeof v === "boolean" || v === null) return v
 
 	if (typeof v === "number") {
 		if (Number.isNaN(v)) return "NaN"
 		if (v === Number.POSITIVE_INFINITY) return "Infinity"
 		if (v === Number.NEGATIVE_INFINITY) return "-Infinity"
+		if (Object.is(v, -0)) return "-0"
 		return v
 	}
 
-	return compileSerializedValue(v)
+	// registering would keep the value alive, so only values compiled code reads are registered
+	return hasDomain(v, "object") || typeof v === "symbol" ?
+			namedReference(v)
+		:	serializePrimitive(v as never)
 }
+
+export const metaJsonOf = (meta: ArkEnv.meta): JsonObject =>
+	flatMorph(meta, (k, v) => [
+		k,
+		k === "examples" ?
+			(v as unknown[]).map(defaultValueSerializer)
+		:	defaultValueSerializer(v)
+	])
 
 export type NodeKeyImplementation<
 	d extends BaseNodeDeclaration,
-	k extends keyof d["normalizedSchema"],
-	instantiated = k extends keyof d["inner"] ? Exclude<d["inner"][k], undefined>
-	:	never
+	k extends keyof d["inner"],
+	instantiated = Exclude<d["inner"][k], undefined>
 > = requireKeys<
 	{
-		preserveUndefined?: true
+		/** whether an undefined value is kept as the key's value rather than dropped */
+		keepUndef?: true
 		child?: boolean | ((value: instantiated) => BaseNode[])
 		serialize?: (schema: instantiated) => Json
+		// a structural value defers an alias it holds elsewhere to an alias of its own
+		structural?: true
+		// written to no json, so nodes it alone tells apart are equal
+		unserialized?: true
 		reduceIo?: (
 			ioKind: "in" | "out",
 			inner: makeRootAndArrayPropertiesMutable<d["inner"]>,
 			value: d["inner"][k]
 		) => void
-		parse?: (
-			schema: Exclude<d["normalizedSchema"][k], undefined>,
-			ctx: NodeParseContext<d["kind"]>
-		) => instantiated | undefined
 	},
-	// require parse if we can't guarantee the schema value will be valid on inner
-	| (d["normalizedSchema"][k] extends instantiated | undefined ? never
-	  :	"parse")
 	// require keys containing children specify it, although it can be false in cases like
 	// declaredOut where we don't want to treat the node as a child
-	| ([instantiated] extends [listable<BaseNode>] ? "child" : never)
+	[instantiated] extends [listable<BaseNode>] ? "child" : never
 >
 
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
-	keys: keySchemaDefinitions<d>
-	normalize: (schema: d["schema"], $: BaseScope) => d["normalizedSchema"]
-	applyConfig?: (
-		schema: d["normalizedSchema"],
-		config: ResolvedScopeConfig
-	) => d["normalizedSchema"]
-	hasAssociatedError: d["errorContext"] extends null ? false : true
-	finalizeInnerJson?: (json: {
+	keys: keyImplementationsOf<d>
+	applyConfig?: (inner: d["inner"], config: ResolvedScopeConfig) => d["inner"]
+	/** whether it reports its own error when data fails it, rather than its children's */
+	ownErr: d["errorCtx"] extends null ? false : true
+	/** rewrites its inner JSON once it's written, e.g. to collapse a key */
+	fixJson?: (json: {
 		[k in keyof d["inner"]]: Json
 	}) => JsonStructure
-	collapsibleKey?: keyof d["inner"]
-	reduce?: (
-		inner: d["inner"],
-		$: BaseScope
-	) => nodeOfKind<d["reducibleTo"]> | Disjoint | undefined
-	obviatesBasisDescription?: d["kind"] extends RefinementKind ? true : never
-	obviatesBasisExpression?: d["kind"] extends RefinementKind ? true : never
+	/** the key whose value stands for its whole json when it's all the json holds */
+	bareKey?: keyof d["inner"]
+	/** whether its description says what its basis would, so the basis isn't described */
+	coversNoun?: d["kind"] extends RefinementKind ? true : never
+	/** whether its expression says what its basis would, so the basis isn't written */
+	coversExpr?: d["kind"] extends RefinementKind ? true : never
 }
 
 export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	defaults: ResolvedUnknownNodeConfig
-	intersectionIsOpen: boolean
-	intersections: UnknownIntersectionMap
+	/** whether one intersection can hold several of its kind, as narrows and `!=` can */
+	stacks: boolean
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
 
@@ -324,33 +330,14 @@ export const compileObjectLiteral = (ctx: object): string => {
 
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
-		intersections: IntersectionMap<d["kind"]>
-		intersectionIsOpen: d["intersectionIsOpen"]
+		stacks: d["stacks"]
 		defaults: Required<NodeConfig<d["kind"]>>
 	}
 
 export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
-		intersections: IntersectionMap<d["kind"]>
-		defaults: nodeSchemaaultsImplementationInputFor<d["kind"]>
-	} & (d["intersectionIsOpen"] extends true ? { intersectionIsOpen: true }
-		:	{}) &
-		// if the node is declared as reducible to a kind other than its own,
-		// there must be a reduce implementation
-		(d["reducibleTo"] extends d["kind"] ? {} : { reduce: {} })
-
-type nodeSchemaaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
-	NodeConfig<kind>,
-	| "description"
-	// if the node's error context is distinct from its inner definition, ensure it is implemented.
-	// this occurs for nodes like `union` where the error that occurs is not 1:1 with the existing node,
-	// but rather a single failed condition for each branch.
-	| (Inner<kind> extends (
-			Omit<errorContext<kind>, keyof BaseErrorContext | "description">
-	  ) ?
-			never
-	  :	"expected" & keyof NodeConfig<kind>)
->
+		defaults: { description: DescriptionWriter<d["kind"]> }
+	} & (d["stacks"] extends true ? { stacks: true } : {})
 
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 	node: nodeOfKind<kind>
@@ -362,26 +349,24 @@ export interface UnknownAttachments {
 	readonly id: NodeId
 
 	readonly inner: Record<string, any>
-	readonly innerEntries: readonly Entry<string>[]
-	readonly innerJson: object
-	readonly innerHash: string
+	readonly kv: readonly Entry<string>[]
 
 	readonly meta: ArkEnv.meta
 	readonly metaJson: object
 
-	readonly json: object
-	readonly hash: string
-	readonly collapsibleJson: Json
 	readonly children: BaseNode[]
+}
+
+// what createNode passes; the rest is computed when read
+export interface UnknownAttachmentsInput
+	extends Omit<UnknownAttachments, "kv" | "metaJson"> {
+	readonly metaJson: object | undefined
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	extends UnknownAttachments {
 	kind: d["kind"]
 	inner: d["inner"]
-	json: JsonStructure
-	innerJson: JsonStructure
-	collapsibleJson: Json
 	children: nodeOfKind<d["childKind"]>[]
 }
 
@@ -389,23 +374,16 @@ export const implementNode = <d extends BaseNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>
 ): nodeImplementationOf<d> => {
 	const implementation: UnknownNodeImplementation = _ as never
-	if (implementation.hasAssociatedError) {
+	if (implementation.ownErr) {
+		Object.assign(
+			implementation.defaults,
+			errorWriters,
+			errorWritersByCode[implementation.kind as never]
+		)
 		implementation.defaults.expected ??= ctx =>
 			"description" in ctx ?
 				(ctx.description as string)
 			:	implementation.defaults.description(ctx as never)
-		implementation.defaults.actual ??= data => printable(data)
-		implementation.defaults.problem ??= ctx =>
-			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
-		implementation.defaults.message ??= ctx => {
-			if (ctx.path.length === 0) return ctx.problem
-			const problemWithLocation = `${ctx.propString} ${ctx.problem}`
-			if (problemWithLocation[0] === "[") {
-				// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-				return `value at ${problemWithLocation}`
-			}
-			return problemWithLocation
-		}
 	}
 	return implementation as never
 }

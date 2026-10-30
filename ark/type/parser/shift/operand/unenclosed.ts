@@ -10,11 +10,14 @@ import {
 	type writeNonSubmoduleDotMessage
 } from "@ark/schema"
 import {
+	hasOwn,
+	nonFiniteNumbers,
 	printable,
 	throwParseError,
 	tryParseWellFormedBigint,
 	tryParseWellFormedNumber,
 	type BigintLiteral,
+	type NonFiniteNumberLiteral,
 	type NumberLiteral,
 	type Scanner,
 	type join,
@@ -28,7 +31,7 @@ import { writePrefixedPrivateReferenceMessage } from "../../ast/validate.ts"
 import type { RuntimeState } from "../../reduce/dynamic.ts"
 import type { StaticState, s } from "../../reduce/static.ts"
 import type { BaseCompletions } from "../../string.ts"
-import { terminatingChars, type TerminatingChar } from "../tokens.ts"
+import { shiftUntilTerminator } from "../tokens.ts"
 import {
 	parseGenericArgs,
 	writeInvalidGenericArgCountMessage,
@@ -36,13 +39,13 @@ import {
 } from "./genericArgs.ts"
 
 export const parseUnenclosed = (s: RuntimeState): void => {
-	const token = s.scanner.shiftUntilLookahead(terminatingChars)
+	const token = shiftUntilTerminator(s.sc)
 	if (token === "keyof") s.addPrefix("keyof")
 	else s.root = unenclosedToNode(s, token)
 }
 
 export type parseUnenclosed<s extends StaticState, $, args> =
-	Scanner.shiftUntil<s["unscanned"], TerminatingChar> extends (
+	shiftUntilTerminator<s["unscanned"]> extends (
 		Scanner.shiftResult<infer token, infer unscanned>
 	) ?
 		tryResolve<s, unscanned, token, $, args> extends s.from<infer s> ?
@@ -69,9 +72,9 @@ export const parseGenericInstantiation = (
 	g: GenericRoot,
 	s: RuntimeState
 ): BaseRoot => {
-	s.scanner.shiftUntilNonWhitespace()
-	const lookahead = s.scanner.shift()
-	if (lookahead !== "<")
+	s.sc.skipSpace()
+	const peek = s.sc.shift()
+	if (peek !== "<")
 		return s.error(writeInvalidGenericArgCountMessage(name, g.names, []))
 
 	const parsedArgs = parseGenericArgs(name, g, s)
@@ -106,9 +109,9 @@ const unenclosedToNode = (s: RuntimeState, token: string): BaseRoot =>
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
 		token === "" ?
-			s.scanner.lookahead === "#" ?
+			s.sc.peek === "#" ?
 				writePrefixedPrivateReferenceMessage(
-					s.shiftedBy(1).scanner.shiftUntilLookahead(terminatingChars)
+					shiftUntilTerminator(s.shiftedBy(1).sc)
 				)
 			:	writeMissingOperandMessage(s)
 		:	writeUnresolvableMessage(token)
@@ -118,11 +121,11 @@ const maybeParseReference = (
 	s: RuntimeState,
 	token: string
 ): BaseRoot | undefined => {
-	if (s.ctx.args?.[token]) {
+	if (s.ctx.args && hasOwn(s.ctx.args, token)) {
 		const arg = s.ctx.args[token]
 		if (typeof arg !== "string") return arg
 
-		return s.ctx.$.node("alias", { reference: arg }, { prereduced: true })
+		return s.ctx.$.node("alias", { reference: arg }, { reduced: true })
 	}
 	const resolution = s.ctx.$.maybeResolve(token)
 	if (hasArkKind(resolution, "root")) return resolution
@@ -137,7 +140,10 @@ const maybeParseUnenclosedLiteral = (
 	s: RuntimeState,
 	token: string
 ): BaseRoot | undefined => {
-	const maybeNumber = tryParseWellFormedNumber(token)
+	const maybeNumber =
+		hasOwn(nonFiniteNumbers, token) ?
+			nonFiniteNumbers[token as NonFiniteNumberLiteral]
+		:	tryParseWellFormedNumber(token)
 	if (maybeNumber !== undefined)
 		return s.ctx.$.node("unit", { unit: maybeNumber })
 
@@ -164,6 +170,8 @@ type tryResolve<
 		parseResolution<s, unscanned, token, $[`#${token}`], $, args>
 	: token extends NumberLiteral<infer n> ?
 		s.setRoot<s, InferredAst<n, token>, unscanned>
+	: token extends NonFiniteNumberLiteral ?
+		s.setRoot<s, InferredAst<number, token>, unscanned>
 	: token extends (
 		`${infer submodule extends keyof $ & string}.${infer reference}`
 	) ?
@@ -229,22 +237,20 @@ type tryResolveSubmodule<
 export type unresolvableState<
 	s extends StaticState,
 	token extends string,
-	resolutions,
+	res,
 	args,
 	submodulePath extends string[]
 > =
 	[token, s["unscanned"]] extends ["", Scanner.shift<"#", infer unscanned>] ?
-		Scanner.shiftUntil<unscanned, TerminatingChar> extends (
+		shiftUntilTerminator<unscanned> extends (
 			Scanner.shiftResult<infer name, string>
 		) ?
 			s.error<writePrefixedPrivateReferenceMessage<name>>
 		:	never
-	: validReferenceFromToken<token, resolutions, args, submodulePath> extends (
-		never
-	) ?
+	: validReferenceFromToken<token, res, args, submodulePath> extends never ?
 		s.error<writeUnresolvableMessage<qualifiedReference<token, submodulePath>>>
 	:	s.completion<`${s["scanned"]}${qualifiedReference<
-			validReferenceFromToken<token, resolutions, args, submodulePath>,
+			validReferenceFromToken<token, res, args, submodulePath>,
 			submodulePath
 		>}`>
 
@@ -267,8 +273,8 @@ type validReferenceFromToken<
 export const writeMissingOperandMessage = (s: RuntimeState): string => {
 	const operator = s.previousOperator()
 	return operator ?
-			writeMissingRightOperandMessage(operator, s.scanner.unscanned)
-		:	writeExpressionExpectedMessage(s.scanner.unscanned)
+			writeMissingRightOperandMessage(operator, s.sc.unscanned)
+		:	writeExpressionExpectedMessage(s.sc.unscanned)
 }
 
 export type writeMissingRightOperandMessage<

@@ -1,5 +1,6 @@
 import type { arkKind, TypeMeta } from "@ark/schema"
 import type { Ark } from "./keywords/keywords.ts"
+import type { Locale } from "./locale.ts"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { configureSchema, type ArkSchemaConfig } from "@ark/schema/config"
 import type { anyOrNever } from "@ark/util"
@@ -19,6 +20,7 @@ type parseConfigurableFlatAlias<k extends string, v> =
 
 export interface ArkConfig extends ArkSchemaConfig {
 	keywords?: KeywordConfig
+	locale?: Locale | (() => Locale | undefined)
 }
 
 export const configure: <config extends ArkConfig>(config: config) => config =

@@ -1,5 +1,4 @@
 import { attest, contextualize } from "@ark/attest"
-import { Traversal } from "@ark/schema"
 import { type } from "arktype"
 import { defaultablePostOptionalMessage } from "arktype/internal/parser/tupleLiteral.ts"
 
@@ -140,15 +139,7 @@ contextualize(() => {
 
 	it("compiled defaults use correct values", () => {
 		const T = type(["string = 'foo'"])
-		const internal = T.internal
 
-		// Call traverseApply directly with a Traversal context
-		// This exercises the JIT-compiled code path
-		const data: string[] = []
-		const ctx = new Traversal(data, internal.$.resolvedConfig)
-		internal.traverseApply(data, ctx)
-		const result = ctx.finalize(null)
-
-		attest(result).equals(["foo"])
+		attest(T([])).equals(["foo"])
 	})
 })

@@ -233,6 +233,10 @@ contextualize(() => {
 		)
 	})
 
+	it("is unbound", () => {
+		attest(type("string").name).equals("")
+	})
+
 	it("toString()", () => {
 		// represent a variety of structures to ensure it is correctly composed
 		const T = type({
@@ -249,7 +253,7 @@ contextualize(() => {
 			]
 		})
 		attest(T.expression).snap(
-			"{ [string]: number | Array, a: 1, c: [string <= 4 & >= 1, boolean?, ...number[]], d: [(In: string) => Out<unknown>, number % 2 & < 100 & > 0, ...bigint[], (In: /^a.*z$/) => Out</^[a-z]*$/>[]], b?: 2 }"
+			"{ [string]: number | Array, a: 1, c: [1 <= string <= 4, boolean?, ...number[]], d: [(In: string) => Out<unknown>, 0 < number % 2 < 100, ...bigint[], (In: /^a.*z$/) => Out</^[^A-Z]*$/>[]], b?: 2 }"
 		)
 		attest(`${T}`).equals(`Type<${T.expression}>`)
 	})

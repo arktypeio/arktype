@@ -1,0 +1,150 @@
+---
+title: Standard Schema
+description: Pass a Type to any library that accepts a Standard Schema, and use other validators inside an ArkType definition.
+---
+
+[Standard Schema](https://standardschema.dev) is a small interface for TypeScript validators, written by the authors of ArkType, Zod and Valibot. A library that accepts a Standard Schema works with every validator that implements it, so it doesn't need an adapter for each one.
+
+Every Type implements Standard Schema and its JSON Schema extension, [Standard JSON Schema](https://standardschema.dev/json-schema). Wherever a library asks for either, pass the Type itself. [Integrations](/docs/integrations) shows the common ones.
+
+[Precompiled](/docs/precompile) validators implement Standard Schema too, and Standard JSON Schema where their build sees code read `~standard.jsonSchema` or its [`members`](/docs/precompile/options#members) option sets it.
+
+## Validation
+
+A library validates through `T["~standard"].validate`. On success, the result's `value` is the Type's output, so morphs have already run:
+
+```ts
+const Form = type({
+	name: "string",
+	age: "string.integer.parse"
+})
+
+Form["~standard"].validate({ name: "Ada", age: "36" })
+// { value: { name: "Ada", age: 36 } }
+```
+
+On failure, the result is `{ issues }`, one for each error in the [`ArkErrors`](/docs/errors) you get from calling the Type. A library printing Standard Schema issues writes each issue's `path` before its `message`, so an issue at a path is a copy of its error whose message leaves the path out:
+
+```ts
+const Form = type({
+	name: "string",
+	age: "string.integer.parse"
+})
+// ---cut---
+const result = Form["~standard"].validate({ name: "Ada", age: "old" })
+// { issues: [{ path: ["age"], message: 'must be a well-formed integer string (was "old")', ... }] }
+```
+
+A union's message lists each branch's path from the union's, like `b must be a string (was missing) or c must be a number (was missing)`. The issues are written as `validate` returns, so unlike an `ArkErrors` read later, they describe the data as it was validated.
+
+ArkType always validates synchronously. The spec allows a `Promise`, which is why the return type includes one.
+
+The spec's type helpers map to a Type's input and output:
+
+```ts
+import type { StandardSchemaV1 } from "@standard-schema/spec"
+
+const Form = type({
+	name: "string",
+	age: "string.integer.parse"
+})
+
+type FormInput = StandardSchemaV1.InferInput<typeof Form>
+// { name: string; age: string }, same as typeof Form.inferIn
+
+type FormOutput = StandardSchemaV1.InferOutput<typeof Form>
+// { name: string; age: number }, same as typeof Form.infer
+```
+
+## Accepting any validator
+
+If your library validates data your users describe, accept a Standard Schema instead of depending on ArkType. Your users can then bring ArkType, Zod, Valibot or any other implementation. `@standard-schema/spec` contains only types, and validators can be async, so always `await` the result:
+
+```ts
+import type { StandardSchemaV1 } from "@standard-schema/spec"
+
+export const parse = async <schema extends StandardSchemaV1>(
+	schema: schema,
+	data: unknown
+): Promise<StandardSchemaV1.InferOutput<schema>> => {
+	const result = await schema["~standard"].validate(data)
+	if (result.issues) {
+		throw new Error(result.issues.map(issue => issue.message).join("\n"))
+	}
+	return result.value
+}
+
+const user = await parse(type({ name: "string" }), { name: "Ada" })
+// { name: string }
+```
+
+## Standard JSON Schema
+
+Libraries that need a JSON Schema, for example to describe an API or a tool for an LLM, call `T["~standard"].jsonSchema.input` or `.output`:
+
+```ts
+const User = type({
+	name: "string",
+	"age?": "number.integer >= 0"
+})
+
+const schema = User["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"name": { "type": "string" },
+		"age": { "type": "integer", "minimum": 0 }
+	},
+	"required": ["name"]
+}
+```
+
+- `target` is `"draft-2020-12"`, `"draft-07"` or `"openapi-3.0"`. Any other target throws.
+- `libraryOptions` is passed to [`toJsonSchema`](/docs/json-schema/to-json-schema) as its options, so a caller can set a `fallback` there.
+- `input` and `output` differ when the Type has morphs or defaults. For `string.integer.parse`, `input` describes a string and `output` describes an integer, and a key with a default is optional with a `default` in `input` but required in `output`.
+
+Unlike `toJsonSchema()`, these methods don't throw when part of a Type has no JSON Schema equivalent. The library calling them can't know which fallbacks your Type needs, so each such part becomes the closest schema JSON Schema can express, or `{}` if there is none:
+
+```ts
+const Event = type({
+	name: "string",
+	at: "Date"
+})
+
+Event.toJsonSchema() // throws ToJsonSchemaError (code "date")
+
+const schema = Event["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+// { ..., properties: { at: {}, name: { type: "string" } }, required: ["at", "name"] }
+```
+
+`{}` accepts anything, so the JSON Schema is looser than the Type. Data you validate with the Type itself is still checked in full. See [Standard JSON Schema](/docs/json-schema/to-json-schema#standard-json-schema) for which parts fall back and how to write something more specific.
+
+## Other validators in a definition
+
+Any Standard Schema can appear in a definition, at the top level or nested. Its output is inferred and its validation runs as part of the Type:
+
+```ts
+import { type } from "arktype"
+import * as v from "valibot"
+import { z } from "zod"
+
+const User = type({
+	name: "string",
+	age: v.number(),
+	address: z.object({ street: z.string(), city: z.string() })
+})
+
+type User = typeof User.infer
+// { name: string; age: number; address: { street: string; city: string } }
+```
+
+ArkType can't see inside another library's schema, so it treats one as a morph from `unknown` to that schema's output. That has consequences:
+
+- `User.expression` shows `(In: unknown) => Out<unknown>` for it.
+- `toJsonSchema()` throws on it, and `~standard.jsonSchema` writes `{}`.
+- It can't be a branch of a union, because its input overlaps every other branch.
+- Only synchronous validators work. ArkType doesn't await the result, so a schema that returns a `Promise`, like a Zod `refine` with an async callback, throws `Standard Schema definitions must validate synchronously (zod returned a Promise)` when validation reaches it.

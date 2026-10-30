@@ -1,6 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import type { Brand, Json } from "@ark/util"
-import { type } from "arktype"
+import { type, type Brand, type Json } from "arktype"
 
 contextualize(() => {
 	it("fluent", () => {
@@ -26,6 +25,18 @@ contextualize(() => {
 
 		const out = T(5)
 		attest<Brand<number, "cool"> | type.errors>(out)
+	})
+
+	it("name with !", () => {
+		const T = type("string#a!b")
+		attest<Brand<string, "a!b">>(T.infer)
+		attest(T.expression).equals("string")
+	})
+
+	it("followed by !=", () => {
+		const T = type("number#id!=0")
+		attest<Brand<number, "id">>(T.infer)
+		attest(T.json).equals(type("number<0|number>0").json)
 	})
 
 	it("in object", () => {

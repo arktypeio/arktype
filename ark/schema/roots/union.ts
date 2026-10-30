@@ -1,83 +1,85 @@
 import {
 	appendUnique,
-	arrayEquals,
-	domainDescriptions,
-	flatMorph,
-	groupBy,
-	hasKey,
-	isArray,
-	jsTypeOfDescriptions,
-	printable,
-	range,
-	throwParseError,
+	domainOf,
+	hasDomain,
+	registeredNameOf,
+	serializePrimitive,
 	unset,
-	type JsTypeOf,
-	type JsonStructure,
+	type SerializablePrimitive,
 	type SerializedPrimitive,
 	type array,
+	type omit,
 	type show
 } from "@ark/util"
-import type { NodeSchema, RootSchema, nodeOfKind } from "../kinds.ts"
-import type { BaseNode } from "../node.ts"
-import type { BaseScope } from "../scope.ts"
+import type { nodeOfKind } from "../kinds.ts"
+import { forgetReferences, type BaseNode } from "../node.ts"
 import {
-	compileLiteralPropAccess,
 	compileSerializedValue,
-	type NodeCompiler
+	expectedOf,
+	isDecidedByAllows,
+	returnsTransformErrors,
+	type NodeCompiler,
+	type SwitchCase
 } from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
-	BaseNormalizedSchema,
+	BaseNodeInput,
 	declareNode
 } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
-import type { ArkError } from "../shared/errors.ts"
+import {
+	errorFromNodeAt,
+	errorFromUnion,
+	type ArkError
+} from "../shared/errors.ts"
+import type { UnionSite } from "../shared/issues.ts"
 import {
 	implementNode,
-	type IntersectionContext,
 	type RootKind,
 	type UnionChildKind,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import {
-	intersectNodesRoot,
-	intersectOrPipeNodes
-} from "../shared/intersections.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
-import {
 	$ark,
-	registeredReference,
+	reference,
+	registryName,
 	type RegisteredReference
 } from "../shared/registry.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import {
-	Traversal,
-	type TraverseAllows,
-	type TraverseApply
+	allowsInBranch,
+	applyMember,
+	transform,
+	transformed,
+	transformResolution,
+	type AliasDepth,
+	type InternalTraversal,
+	type Traversal
 } from "../shared/traversal.ts"
-import { hasArkKind } from "../shared/utils.ts"
+import {
+	composing,
+	describeBranches,
+	describeCases,
+	expressBranches,
+	isAbsent,
+	valueAtPath
+} from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
 import { BaseRoot } from "./root.ts"
 import type { Unit } from "./unit.ts"
-import { defineRightwardIntersections } from "./utils.ts"
 
 export declare namespace Union {
 	export type ChildKind = UnionChildKind
 
-	export type ChildSchema = NodeSchema<ChildKind>
-
 	export type ChildNode = nodeOfKind<ChildKind>
-
-	export type Schema = NormalizedSchema | readonly RootSchema[]
-
-	export interface NormalizedSchema extends BaseNormalizedSchema {
-		readonly branches: array<RootSchema>
-		readonly ordered?: true
-	}
 
 	export interface Inner {
 		readonly branches: readonly ChildNode[]
+		readonly ordered?: true
+	}
+
+	// a union's branches are flattened when it's created, so any root can be one
+	export interface Input extends BaseNodeInput {
+		readonly branches: readonly BaseRoot[]
 		readonly ordered?: true
 	}
 
@@ -88,10 +90,8 @@ export declare namespace Union {
 	export interface Declaration
 		extends declareNode<{
 			kind: "union"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 			reducibleTo: RootKind
 			childKind: UnionChildKind
 		}> {}
@@ -99,146 +99,39 @@ export declare namespace Union {
 	export type Node = UnionNode
 }
 
+export type DiscriminantErrorContext = {
+	[kind in DiscriminantKind]: DiscriminantErrorContextOf<kind>
+}[DiscriminantKind]
+
+interface DiscriminantErrorContextOf<kind extends DiscriminantKind>
+	extends BaseErrorContext<"discriminant"> {
+	readonly discriminantKind: kind
+	/**
+	 * the domains or unit values the discriminant expected, with Array for
+	 * an object case only arrays reach
+	 */
+	readonly cases: readonly (kind extends "domain" ? DomainCase : unknown)[]
+	/** the discriminant is at a key, so meta describes the value around it */
+	readonly onKey: boolean
+	/** the discriminant key is not in its parent; false unless onKey */
+	readonly absent: boolean
+	readonly data: unknown
+}
+
 const implementation: nodeImplementationOf<Union.Declaration> =
 	implementNode<Union.Declaration>({
 		kind: "union",
-		hasAssociatedError: true,
-		collapsibleKey: "branches",
+		ownErr: true,
+		bareKey: "branches",
 		keys: {
 			ordered: {},
 			branches: {
-				child: true,
-				parse: (schema, ctx) => {
-					const branches: Union.ChildNode[] = []
-					for (const branchSchema of schema) {
-						const branchNodes =
-							hasArkKind(branchSchema, "root") ?
-								branchSchema.branches
-							:	ctx.$.parseSchema(branchSchema).branches
-						for (const node of branchNodes) {
-							if (node.hasKind("morph")) {
-								const matchingMorphIndex = branches.findIndex(
-									matching =>
-										matching.hasKind("morph") && matching.hasEqualMorphs(node)
-								)
-								if (matchingMorphIndex === -1) branches.push(node)
-								else {
-									const matchingMorph = branches[
-										matchingMorphIndex
-									] as Morph.Node
-									const mergedIn =
-										matchingMorph.inner.in && node.inner.in ?
-											matchingMorph.inner.in.rawOr(node.inner.in)
-										:	matchingMorph.rawIn.rawOr(node.rawIn)
-									branches[matchingMorphIndex] = ctx.$.node("morph", {
-										...matchingMorph.inner,
-										in: mergedIn
-									})
-								}
-							} else branches.push(node)
-						}
-					}
-
-					if (!ctx.def.ordered)
-						branches.sort((l, r) => (l.hash < r.hash ? -1 : 1))
-
-					return branches
-				}
+				child: true
 			}
-		},
-		normalize: schema => (isArray(schema) ? { branches: schema } : schema),
-		reduce: (inner, $) => {
-			const reducedBranches = reduceBranches(inner)
-			if (reducedBranches.length === 1) return reducedBranches[0]
-
-			if (reducedBranches.length === inner.branches.length) return
-
-			return $.node(
-				"union",
-				{
-					...inner,
-					branches: reducedBranches
-				},
-				{ prereduced: true }
-			)
 		},
 		defaults: {
 			description: node =>
-				node.distribute(branch => branch.description, describeBranches),
-			expected: ctx => {
-				const byPath = groupBy(ctx.errors, "propString") as Record<
-					string,
-					ArkError[]
-				>
-				const pathDescriptions = Object.entries(byPath).map(
-					([path, errors]) => {
-						const branchesAtPath: string[] = []
-						for (const errorAtPath of errors)
-							appendUnique(branchesAtPath, errorAtPath.expected)
-
-						const expected = describeBranches(branchesAtPath)
-						// if there are multiple actual descriptions that differ,
-						// just fall back to printable, which is the most specific
-						const actual =
-							errors.every(e => e.actual === errors[0].actual) ?
-								errors[0].actual
-							:	printable(errors[0].data)
-						return `${path && `${path} `}must be ${expected}${
-							actual && ` (was ${actual})`
-						}`
-					}
-				)
-				return describeBranches(pathDescriptions)
-			},
-			problem: ctx => ctx.expected,
-			message: ctx => {
-				if (ctx.problem[0] === "[") {
-					// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-					return `value at ${ctx.problem}`
-				}
-
-				return ctx.problem
-			}
-		},
-		intersections: {
-			union: (l, r, ctx) => {
-				if (l.isNever !== r.isNever) {
-					// if exactly one operand is never, we can use it to discriminate based on presence
-					return Disjoint.init("presence", l, r)
-				}
-				let resultBranches: readonly Union.ChildNode[] | Disjoint
-				if (l.ordered) {
-					if (r.ordered) {
-						throwParseError(
-							writeOrderedIntersectionMessage(l.expression, r.expression)
-						)
-					}
-
-					resultBranches = intersectBranches(r.branches, l.branches, ctx)
-					if (resultBranches instanceof Disjoint) resultBranches.invert()
-				} else resultBranches = intersectBranches(l.branches, r.branches, ctx)
-
-				if (resultBranches instanceof Disjoint) return resultBranches
-
-				return ctx.$.parseSchema(
-					l.ordered || r.ordered ?
-						{
-							branches: resultBranches,
-							ordered: true as const
-						}
-					:	{ branches: resultBranches }
-				)
-			},
-			...defineRightwardIntersections("union", (l, r, ctx) => {
-				const branches = intersectBranches(l.branches, [r], ctx)
-				if (branches instanceof Disjoint) return branches
-
-				if (branches.length === 1) return branches[0]
-
-				return ctx.$.parseSchema(
-					l.ordered ? { branches, ordered: true } : { branches }
-				)
-			})
+				node.distribute(branch => branch.description, describeBranches)
 		}
 	})
 
@@ -248,798 +141,538 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		this.branches[0].hasUnit(false) &&
 		this.branches[1].hasUnit(true)
 
-	get branchGroups(): BaseRoot[] {
-		const branchGroups: BaseRoot[] = []
-		let firstBooleanIndex = -1
-		for (const branch of this.branches) {
-			if (branch.hasKind("unit") && branch.domain === "boolean") {
-				if (firstBooleanIndex === -1) {
-					firstBooleanIndex = branchGroups.length
-					branchGroups.push(branch)
-				} else branchGroups[firstBooleanIndex] = $ark.intrinsic.boolean
-				continue
-			}
-			branchGroups.push(branch)
-		}
-
-		return branchGroups as never
-	}
-
 	unitBranches = this.branches.filter((n): n is Unit.Node | Morph.Node =>
-		n.rawIn.hasKind("unit")
+		n._in.is("unit")
 	)
 
-	discriminant = this.discriminate()
-	discriminantJson =
-		this.discriminant ? discriminantToJson(this.discriminant) : null
+	// every case node discriminate creates, even for a discriminant it abandons
+	readonly caseNodes: BaseRoot[] = []
 
-	expression: string = this.distribute(
-		n => n.nestableExpression,
-		expressBranches
-	)
-
-	createBranchedOptimisticRootApply(): BaseNode["rootApply"] {
-		return (data, onFail) => {
-			const optimisticResult = this.traverseOptimistic(data)
-			if (optimisticResult !== unset) return optimisticResult
-
-			const ctx = new Traversal(data, this.$.resolvedConfig)
-			this.traverseApply(data, ctx)
-			return ctx.finalize(onFail)
+	private _disc: Discriminant | null | undefined
+	get discriminant(): Discriminant | null {
+		if (this._disc === undefined) {
+			// null while discriminating, which can read this union's references
+			this._disc = null
+			this._disc = this.discriminate()
 		}
+		return this._disc
 	}
 
-	get shallowMorphs(): array<Morph> {
+	/** `discCases`, once read */
+	private _discCases: DiscriminantCases | undefined
+	/** the cases of its discriminant, by the serialized value each branch is discriminated by */
+	get discCases(): DiscriminantCases {
+		return (this._discCases ??= casesOf(this.discriminant!))
+	}
+
+	/** `missLists`, once read */
+	private _missLists: boolean | undefined
+	/** whether a miss of its own value lists its branches: if one is described, as an indiscriminable union's does */
+	get missLists(): boolean {
+		return (this._missLists ??=
+			!isAuthored(this) &&
+			this.discriminant!.path.length === 0 &&
+			this.branches.some(isAuthored))
+	}
+
+	/** `discDesc`, once read */
+	private _discDesc: string | undefined
+	/** the description of what its discriminant expects */
+	get discDesc(): string {
+		return (this._discDesc ??=
+			isAuthored(this) ? this.meta.description! : describeCases(this.discCases))
+	}
+
+	// a standalone issue reads only the union's description
+	override get failSite(): UnionSite {
+		return (this.c.failSite ??= {
+			meta: this.meta,
+			description: expectedOf(this.meta, this.description)
+		}) as UnionSite
+	}
+
+	// a described union's miss is reported at its own path
+	get missPath(): array<PropertyKey> {
+		return isAuthored(this) ? [] : this.discriminant!.path
+	}
+
+	/** `discMeta`, once read */
+	private _discMeta: ArkEnv.meta | undefined
+	/** the meta its discriminant's errors are written with: at a key, expected and actual describe the object around it */
+	get discMeta(): ArkEnv.meta {
+		return (this._discMeta ??= metaAtDiscriminant(this.meta, this.missPath))
+	}
+
+	get expression(): string {
+		return (this.c.expression ??= composing(() =>
+			this.distribute(expressBranch, expressBranches)
+		))
+	}
+
+	discriminate(): Discriminant | null {
+		this.caseNodes.length = 0
+		// an alias branch is replaced by its resolution before the union is used
+		if (this.topAlias) return null
+		const discriminant = $ark.sets?.discriminate(this) ?? null
+		if (this.c.byId)
+			for (const node of this.caseNodes) Object.assign(this.c.byId, node.byId)
+
+		// what was read of its references while discriminating lacks its cases
+		forgetReferences(this)
+		return discriminant
+	}
+
+	override get otherRefs(): readonly BaseNode[] {
+		// discriminating creates the case nodes
+		void this.discriminant
+		return this.caseNodes
+	}
+
+	// an indiscriminable union picks the branch it transforms by its Allows
+	protected override get ctxSel(): boolean {
+		const discriminant = this.discriminant
+		if (!discriminant) return true
+		for (const k in discriminant.cases) {
+			const caseNode = discriminant.cases[k]
+			if (caseNode !== true && caseNode.tfCtx) return true
+		}
+		return false
+	}
+
+	get topMorphs(): array<Morph> {
 		return this.branches.reduce(
-			(morphs, branch) => appendUnique(morphs, branch.shallowMorphs),
+			(morphs, branch) => appendUnique(morphs, branch.topMorphs),
 			[] as Morph[]
 		)
 	}
 
-	get defaultShortDescription(): string {
-		return this.distribute(
-			branch => branch.defaultShortDescription,
-			describeBranches
-		)
+	get brief(): string {
+		return this.distribute(branch => branch.brief, describeBranches)
 	}
 
-	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		// special case to simplify { const: true } | { const: false }
-		// to the canonical JSON Schema representation { type: "boolean" }
-		if (
-			this.branchGroups.length === 1 &&
-			this.branchGroups[0].equals($ark.intrinsic.boolean)
-		)
-			return { type: "boolean" }
+	/**
+	 * whether a discriminant was found, finding it first if it wasn't
+	 * uncompiled checks don't discriminate
+	 */
+	private get foundDisc(): Discriminant | null {
+		return this._disc === undefined ? null : this.discriminant
+	}
 
-		const jsonSchemaBranches = this.branchGroups.map(group =>
-			group.toJsonSchemaRecurse(ctx)
-		)
-
-		if (
-			jsonSchemaBranches.every(
-				(branch): branch is JsonSchema.Const =>
-					// iff all branches are pure unit values with no metadata,
-					// we can simplify the representation to an enum
-					Object.keys(branch).length === 1 && hasKey(branch, "const")
+	tAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
+		const discriminant = this.foundDisc
+		if (!discriminant) {
+			return this.branches.some(b =>
+				b.checksCtx ?
+					allowsInBranch(ctx as Traversal, b, data)
+				:	b.tAllows(data, ctx)
 			)
-		) {
-			return {
-				enum: jsonSchemaBranches.map(branch => branch.const)
-			}
 		}
-
-		return {
-			anyOf: jsonSchemaBranches
-		}
+		const caseNode =
+			discriminant.cases[
+				caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
+			]
+		return caseNode === true || !!caseNode?.tAllows(data, ctx)
 	}
 
-	traverseAllows: TraverseAllows = (data, ctx) =>
-		this.branches.some(b => b.traverseAllows(data, ctx))
+	tApply(data: unknown, ctx: InternalTraversal): void {
+		const discriminant = this.discriminant
+		if (discriminant) {
+			const value = valueAtPath(discriminant.path, data)
+			const k = caseKeyOf(discriminant, value)
+			const caseNode = discriminant.cases[k]
+			if (caseNode === true) return
+			if (caseNode === undefined) {
+				this.applyMiss(data, ctx, value)
+				return
+			}
+			if (k === "default") {
+				this.applyDefault(data, ctx, value)
+				return
+			}
+			const member = discriminant.members?.[k]
+			if (member) applyMember(caseNode, data, ctx, member)
+			else caseNode.tApply(data, ctx)
+			return
+		}
+		this.applyBranches(data, ctx)
+	}
 
-	traverseApply: TraverseApply = (data, ctx) => {
+	// a discriminant that can't be read from data tells no branch apart
+	applyMiss(data: unknown, ctx: InternalTraversal, value: unknown): boolean {
+		if (this.missLists || !readsPath(this.discriminant!.path, data))
+			this.applyBranches(data, ctx)
+		else this.errorFromMiss(ctx, data, value)
+		return !ctx.failFast
+	}
+
+	// the branches without the discriminant fail beside its miss
+	applyDefault(data: unknown, ctx: InternalTraversal, value: unknown): boolean {
+		ctx.pushBr()
+		applyMember(this.discriminant!.cases.default as BaseRoot, data, ctx)
+		const failed = ctx.popBr()!.error as ArkError | undefined
+		if (!failed) return true
+		if (this.missLists || !readsPath(this.discriminant!.path, data))
+			this.applyBranches(data, ctx)
+		else {
+			ctx.pushBr()
+			this.errorFromMiss(ctx, data, value)
+			const miss = ctx.popBr()!.error as ArkError
+			errorFromUnion(ctx, [miss, failed], this.meta, data)
+		}
+		return !ctx.failFast
+	}
+
+	private errorFromMiss(
+		ctx: InternalTraversal,
+		data: unknown,
+		value: unknown
+	): ArkError {
+		const path = this.missPath
+		const absent = value === undefined && isAbsent(path, data)
+		return errorFromNodeAt(
+			ctx,
+			this.missContexts[absent ? 1 : 0],
+			path,
+			path.length ? value : data
+		)
+	}
+
+	private _missContexts: omit<DiscriminantErrorContext, "data">[] | undefined
+	// built once, as a node's is, so its errors share a builder
+	private get missContexts(): omit<DiscriminantErrorContext, "data">[] {
+		return (this._missContexts ??= [false, true].map(
+			(absent): omit<DiscriminantErrorContext, "data"> => ({
+				code: "discriminant",
+				...this.discCases,
+				onKey: this.missPath.length !== 0,
+				absent,
+				description: this.discDesc,
+				meta: this.discMeta
+			})
+		))
+	}
+
+	applyBranches(data: unknown, ctx: InternalTraversal): void {
 		const errors: ArkError[] = []
 		for (let i = 0; i < this.branches.length; i++) {
-			ctx.pushBranch()
-			this.branches[i].traverseApply(data, ctx)
+			const branch = this.branches[i]
+			ctx.pushBr()
+			applyMember(branch, data, ctx)
 			if (!ctx.hasError()) {
-				if (this.branches[i].includesTransform)
-					return ctx.queuedMorphs.push(...ctx.popBranch()!.queuedMorphs)
-				return ctx.popBranch()
+				ctx.popBr()
+				return
 			}
-			errors.push(ctx.popBranch()!.error!)
+			errors.push(ctx.popBr()!.error as ArkError)
 		}
-		ctx.errorFromNodeContext({ code: "union", errors, meta: this.meta })
+		errorFromUnion(ctx, errors, this.meta, data)
 	}
 
-	traverseOptimistic = (data: unknown): unknown => {
+	tTransform(data: unknown, ctx: InternalTraversal): unknown {
+		// the case it picks can differ from the first branch allowing data
+		const discriminant = this.discriminant
+		if (discriminant) {
+			const k = caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
+			const caseNode = discriminant.cases[k]
+			if (caseNode === true || !caseNode?.tfs) return data
+			const member = discriminant.members?.[k]
+			return member ?
+					transformResolution(
+						ctx,
+						member.id,
+						data,
+						caseNode.tTransform!,
+						caseNode
+					)
+				:	transform(ctx, caseNode, data)
+		}
+		// Apply also takes the first valid branch
 		for (let i = 0; i < this.branches.length; i++) {
 			const branch = this.branches[i]
-			if ((branch.traverseAllows as any)(data)) {
-				if (branch.contextFreeMorph) return branch.contextFreeMorph(data)
-				// if we're calling this function and the matching branch didn't have
-				// a context-free morph, it shouldn't have morphs at all
-				return data
-			}
+			if (allowsInBranch(ctx, branch, data))
+				return branch.tfs ? transform(ctx, branch, data) : data
 		}
-		return unset
+		return this.tfCtx ? data : unset
+	}
+
+	jsCond(js: NodeCompiler, data: string): string | undefined {
+		if (this.branches.length > maxInlinedBranches) return
+		const conditions: string[] = []
+		for (const branch of this.branches) {
+			const condition = branch.jsCond?.(js, data)
+			if (condition === undefined) return
+			conditions.push(condition.includes("&&") ? `(${condition})` : condition)
+		}
+		return conditions.join(" || ") || "false"
 	}
 
 	compile(js: NodeCompiler): void {
+		const discriminant = this.discriminant
+		if (!discriminant) return this.jsIndisc(js)
+		// two branches of different domains are checked in turn, a unit first
 		if (
-			!this.discriminant ||
-			// if we have a union of two units like `boolean`, the
-			// undiscriminated compilation will be just as fast
-			(this.unitBranches.length === this.branches.length &&
-				this.branches.length === 2)
-		)
-			return this.compileIndiscriminable(js)
+			js.trav === "Allows" &&
+			discriminant.kind === "domain" &&
+			this.branches.length === 2
+		) {
+			const [a, b] = this.branches
+			return this.jsIndisc(js, b.is("unit") ? [b, a] : [a, b])
+		}
 
 		// we need to access the path as optional so we don't throw if it isn't present
-		let condition = this.discriminant.optionallyChainedPropString
-
-		if (this.discriminant.kind === "domain")
-			condition = `typeof ${condition} === "object" ? ${condition} === null ? "null" : "object" : typeof ${condition} === "function" ? "object" : typeof ${condition}`
-
-		const cases = this.discriminant.cases
-
-		const caseKeys = Object.keys(cases)
-
-		const { optimistic } = js
-		// only the first layer can be optimistic
-		js.optimistic = false
-
-		js.block(`switch(${condition})`, () => {
-			for (const k in cases) {
-				const v = cases[k]
-				const caseCondition = k === "default" ? k : `case ${k}`
-
-				let caseResult: string
-				if (v === true) caseResult = optimistic ? "data" : "true"
-				else if (optimistic) {
-					if (v.rootApplyStrategy === "branchedOptimistic")
-						caseResult = js.invoke(v, { kind: "Optimistic" })
-					else if (v.contextFreeMorph)
-						caseResult = `${js.invoke(v)} ? ${registeredReference(v.contextFreeMorph)}(data) : "${unset}"`
-					else caseResult = `${js.invoke(v)} ? data : "${unset}"`
-				} else caseResult = js.invoke(v)
-
-				js.line(`${caseCondition}: return ${caseResult}`)
-			}
-			return js
-		})
-
-		if (js.traversalKind === "Allows") {
-			js.return(optimistic ? `"${unset}"` : false)
-			return
+		const value = `data${discriminant.path.map(k => js.prop(k, true)).join("")}`
+		const cases = discriminant.cases
+		const written: SwitchCase[] = []
+		for (const k in cases) {
+			const v = cases[k]
+			// a case transforming nothing returns data as the switch's end does
+			if (
+				js.trav === "Transform" &&
+				(v === true || !v.tfs) &&
+				!("default" in cases)
+			)
+				continue
+			const caseCondition =
+				k === "default" ? k
+				: k.startsWith(registeredPrefix) ?
+					`case ${js.ref($ark[k.slice(registeredPrefix.length)] as never)}`
+				:	`case ${k}`
+			const member = discriminant.members?.[k]
+			const caseResult =
+				js.trav === "Transform" ?
+					v !== true && v.tfs ?
+						invokeTransform(js, v, member)
+					:	"data"
+				: v === true ? "true"
+				: js.trav !== "Apply" ? js.inv(v)
+				: k === "default" ?
+					(js.defaultFails?.(this, v) ??
+					`${js.ref(this)}.applyDefault(data, ctx, ${value})`)
+				: member ? js.applyMember(v, member)
+				: js.inv(v)
+			written.push([caseCondition, caseResult])
 		}
-
-		const expected = describeBranches(
-			this.discriminant.kind === "domain" ?
-				caseKeys.map(k => {
-					const jsTypeOf = k.slice(1, -1) as JsTypeOf
-					return jsTypeOf === "function" ?
-							domainDescriptions.object
-						:	domainDescriptions[jsTypeOf]
-				})
-			:	caseKeys
+		const otherwise =
+			js.trav === "Allows" ? "false"
+			: js.trav === "Transform" ? "data"
+			: (js.missFails?.(this) ??
+				`${js.ref(this)}.applyMiss(data, ctx, ${value})`)
+		// an Apply of one domain or a unit it allows, as `T | null`, needn't switch
+		if (js.trav === "Apply" && written.length === 2) {
+			const unitIndex = written.findIndex(
+				([label, result]) =>
+					result === "true" &&
+					(label === `case "null"` || label === `case "undefined"`)
+			)
+			const [label, result] = written[1 - unitIndex] ?? []
+			if (
+				unitIndex !== -1 &&
+				label !== `case "object"` &&
+				label !== "default"
+			) {
+				js.return(
+					`${value} === ${written[unitIndex][0].slice(6, -1)} || (typeof ${value} === ${label!.slice(5)} ? ${result} : ${otherwise})`
+				)
+				return
+			}
+		}
+		js.switch(
+			discriminant.kind === "domain" ?
+				compileDomainOf(
+					value,
+					written.map(([label]) => label)
+				)
+			:	value,
+			written,
+			otherwise
 		)
-
-		const serializedPathSegments = this.discriminant.path.map(k =>
-			typeof k === "symbol" ? registeredReference(k) : JSON.stringify(k)
-		)
-
-		const serializedExpected = JSON.stringify(expected)
-		const serializedActual =
-			this.discriminant.kind === "domain" ?
-				`${serializedTypeOfDescriptions}[${condition}]`
-			:	`${serializedPrintable}(${condition})`
-
-		js.line(`ctx.errorFromNodeContext({
-	code: "predicate",
-	expected: ${serializedExpected},
-	actual: ${serializedActual},
-	relativePath: [${serializedPathSegments}],
-	meta: ${this.compiledMeta}
-})`)
 	}
 
-	private compileIndiscriminable(js: NodeCompiler): void {
-		if (js.traversalKind === "Apply") {
-			js.const("errors", "[]")
+	/** writes the check of branches no discriminant tells apart */
+	private jsIndisc(js: NodeCompiler, branches = this.branches): void {
+		if (js.trav === "Apply" && !this.hasAlias && isDecidedByAllows(this)) {
 			for (const branch of this.branches) {
-				js.line("ctx.pushBranch()")
-					.line(js.invoke(branch))
-					.if("!ctx.hasError()", () =>
-						js.return(
-							branch.includesTransform ?
-								"ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)"
-							:	"ctx.popBranch()"
-						)
-					)
-					.line("errors.push(ctx.popBranch().error)")
-			}
-
-			js.line(
-				`ctx.errorFromNodeContext({ code: "union", errors, meta: ${this.compiledMeta} })`
-			)
-		} else {
-			const { optimistic } = js
-			// only the first layer can be optimistic
-			js.optimistic = false
-			for (const branch of this.branches) {
-				js.if(`${js.invoke(branch)}`, () =>
-					js.return(
-						optimistic ?
-							branch.contextFreeMorph ?
-								`${registeredReference(branch.contextFreeMorph)}(data)`
-							:	"data"
-						:	true
-					)
+				js.if(
+					branch.jsCond?.(js, "data") ?? js.inv(branch, { kind: "Allows" }),
+					() => js.return(true)
 				)
 			}
-
-			js.return(optimistic ? `"${unset}"` : false)
-		}
-	}
-
-	get nestableExpression(): string {
-		// avoid adding unnecessary parentheses around boolean since it's
-		// already collapsed to a single keyword
-		return this.isBoolean ? "boolean" : `(${this.expression})`
-	}
-
-	discriminate(): Discriminant | null {
-		if (this.branches.length < 2) return null
-		if (this.unitBranches.length === this.branches.length) {
-			const cases = flatMorph(this.unitBranches, (i, n) => [
-				`${(n.rawIn as Unit.Node).serializedValue}`,
-				n.hasKind("morph") ? n : (true as const)
-			])
-
-			return {
-				kind: "unit",
-				path: [],
-				optionallyChainedPropString: "data",
-				cases
-			}
-		}
-		const candidates: DiscriminantCandidate[] = []
-		for (let lIndex = 0; lIndex < this.branches.length - 1; lIndex++) {
-			const l = this.branches[lIndex]
-			for (let rIndex = lIndex + 1; rIndex < this.branches.length; rIndex++) {
-				const r = this.branches[rIndex]
-				const result = intersectNodesRoot(l.rawIn, r.rawIn, l.$)
-				if (!(result instanceof Disjoint)) continue
-
-				for (const entry of result) {
-					if (!entry.kind || entry.optional) continue
-
-					let lSerialized: string
-					let rSerialized: string
-
-					if (entry.kind === "domain") {
-						const lValue = entry.l as Domain.Node | Domain.Enumerable
-						const rValue = entry.r as Domain.Node | Domain.Enumerable
-						lSerialized = `"${typeof lValue === "string" ? lValue : lValue.domain}"`
-						rSerialized = `"${typeof rValue === "string" ? rValue : rValue.domain}"`
-					} else if (entry.kind === "unit") {
-						lSerialized = (entry.l as Unit.Node).serializedValue
-						rSerialized = (entry.r as Unit.Node).serializedValue
-					} else continue
-
-					const matching = candidates.find(
-						d => arrayEquals(d.path, entry.path) && d.kind === entry.kind
-					)
-
-					if (!matching) {
-						candidates.push({
-							kind: entry.kind,
-							cases: {
-								[lSerialized]: {
-									branchIndices: [lIndex],
-									condition: entry.l as never
-								},
-								[rSerialized]: {
-									branchIndices: [rIndex],
-									condition: entry.r as never
-								}
-							},
-							path: entry.path
-						})
-					} else {
-						if (matching.cases[lSerialized]) {
-							matching.cases[lSerialized].branchIndices = appendUnique(
-								matching.cases[lSerialized].branchIndices,
-								lIndex
-							)
-						} else {
-							matching.cases[lSerialized] ??= {
-								branchIndices: [lIndex],
-								condition: entry.l as never
-							}
-						}
-
-						if (matching.cases[rSerialized]) {
-							matching.cases[rSerialized].branchIndices = appendUnique(
-								matching.cases[rSerialized].branchIndices,
-								rIndex
-							)
-						} else {
-							matching.cases[rSerialized] ??= {
-								branchIndices: [rIndex],
-								condition: entry.r as never
-							}
-						}
-					}
-				}
-			}
-		}
-
-		const viableCandidates =
-			this.ordered ?
-				viableOrderedCandidates(candidates, this.branches)
-			:	candidates
-
-		if (!viableCandidates.length) return null
-
-		const ctx = createCaseResolutionContext(viableCandidates, this)
-
-		const cases: DiscriminatedCases = {}
-
-		for (const k in ctx.best.cases) {
-			const resolution = resolveCase(ctx, k)
-
-			if (resolution === null) {
-				cases[k] = true
-				continue
-			}
-
-			// if all the branches ended up back in pruned, we'd loop if we continued
-			// so just bail out- nothing left to discriminate
-			if (resolution.length === this.branches.length) return null
-
-			if (this.ordered) {
-				// ensure the original order of the pruned branches is preserved
-				resolution.sort((l, r) => l.originalIndex - r.originalIndex)
-			}
-
-			const branches = resolution.map(entry => entry.branch)
-
-			const caseNode =
-				branches.length === 1 ?
-					branches[0]
-				:	this.$.node(
-						"union",
-						this.ordered ? { branches, ordered: true } : branches
-					)
-
-			Object.assign(this.referencesById, caseNode.referencesById)
-			cases[k] = caseNode
-		}
-
-		if (ctx.defaultEntries.length) {
-			// we don't have to worry about order here as it is always preserved
-			// within defaultEntries
-			const branches = ctx.defaultEntries.map(entry => entry.branch)
-			cases.default = this.$.node(
-				"union",
-				this.ordered ? { branches, ordered: true } : branches,
-				{
-					prereduced: true
-				}
+			js.return(
+				js.unionFails?.(this) ??
+					`!ctx.failsUnion([${this.branches.map(branch => js.traversal(branch, "Apply")).join(", ")}], ${js.site(this)}, data)`
 			)
-
-			Object.assign(this.referencesById, cases.default.referencesById)
-		}
-
-		return Object.assign(ctx.location, {
-			cases
-		})
-	}
-}
-// New context object to carry discrimination state between functions.
-type CaseResolutionContext = {
-	best: DiscriminantCandidate
-	location: DiscriminantLocation
-	defaultEntries: BranchEntry[]
-	node: Union.Node
-}
-
-type BranchEntry = {
-	originalIndex: number
-	branch: BaseRoot
-}
-
-const createCaseResolutionContext = (
-	viableCandidates: DiscriminantCandidate[],
-	node: Union.Node
-): CaseResolutionContext => {
-	const ordered = viableCandidates.sort((l, r) =>
-		l.path.length === r.path.length ?
-			Object.keys(r.cases).length - Object.keys(l.cases).length
-			// prefer shorter paths first
-		:	l.path.length - r.path.length
-	)
-
-	const best = ordered[0]
-
-	const location: DiscriminantLocation = {
-		kind: best.kind,
-		path: best.path,
-		optionallyChainedPropString: optionallyChainPropString(best.path)
-	}
-
-	const defaultEntries = node.branches.map(
-		(branch, originalIndex): BranchEntry => ({
-			originalIndex,
-			branch
-		})
-	)
-
-	return {
-		best,
-		location,
-		defaultEntries,
-		node
-	}
-}
-
-const resolveCase = (
-	ctx: CaseResolutionContext,
-	key: CaseKey
-): BranchEntry[] | null => {
-	const caseCtx = ctx.best.cases[key]
-	const discriminantNode = discriminantCaseToNode(
-		caseCtx.condition,
-		ctx.location.path,
-		ctx.node.$
-	)
-
-	let resolvedEntries: BranchEntry[] | null = []
-	const nextDefaults: BranchEntry[] = []
-
-	for (let i = 0; i < ctx.defaultEntries.length; i++) {
-		const entry = ctx.defaultEntries[i]
-		if (caseCtx.branchIndices.includes(entry.originalIndex)) {
-			const pruned = pruneDiscriminant(
-				ctx.node.branches[entry.originalIndex],
-				ctx.location
-			)
-			if (pruned === null) {
-				// if any branch of the union has no constraints (i.e. is
-				// unknown), the others won't affect the resolution type, but could still
-				// remove additional cases from defaultEntries
-				resolvedEntries = null
-			} else {
-				resolvedEntries?.push({
-					originalIndex: entry.originalIndex,
-					branch: pruned
-				})
+		} else if (js.trav === "Apply") {
+			// a compiler writing unionFails needs no branch errors
+			const collects = !js.unionFails
+			if (collects) js.const("errors", "[]")
+			for (const branch of this.branches) {
+				js.line("ctx.pushBr()")
+					.line(js.applyMember(branch))
+					.if("!ctx.hasError()", () => js.line("ctx.popBr()").return(true))
+					.line(collects ? "errors.push(ctx.popBr().error)" : "ctx.popBr()")
 			}
-		} else if (
-			// we shouldn't need a special case for alias to avoid the below
-			// once alias resolution issues are improved:
-			// https://github.com/arktypeio/arktype/issues/1026
-			entry.branch.hasKind("alias") &&
-			discriminantNode.hasKind("domain") &&
-			discriminantNode.domain === "object"
-		)
-			resolvedEntries?.push(entry)
-		else {
-			if (entry.branch.rawIn.overlaps(discriminantNode)) {
-				// include cases where an object not including the
-				// discriminant path might have that value present as an undeclared key
-				const overlapping = pruneDiscriminant(entry.branch, ctx.location)!
-				resolvedEntries?.push({
-					originalIndex: entry.originalIndex,
-					branch: overlapping
-				})
+			if (collects) {
+				js.line(
+					`${js.ref(errorFromUnion)}(ctx, errors, ${js.ref(this.meta)}, data)`
+				).return("!ctx.failFast")
+			} else js.return(js.unionFails!(this))
+		} else if (js.trav === "Allows") {
+			for (const branch of branches) {
+				// an error a branch's predicate adds through ctx fails only that branch
+				js.if(
+					branch.checksCtx ?
+						`${js.ref(allowsInBranch)}(ctx, ${js.ref(branch)}, data)`
+					:	(branch.jsCond?.(js, "data") ?? js.inv(branch)),
+					() => js.return(true)
+				)
 			}
-			nextDefaults.push(entry)
+			js.return(false)
+		} else {
+			for (const branch of this.branches) {
+				js.if(
+					branch.jsCond?.(js, "data") ?? js.inv(branch, { kind: "Allows" }),
+					() => js.return(branch.tfs ? invokeTransform(js, branch) : "data")
+				)
+			}
+			// unless it requires ctx, a root checks for unset instead of calling its Allows
+			js.return(this.tfCtx ? "data" : compileSerializedValue(unset))
 		}
 	}
 
-	ctx.defaultEntries = nextDefaults
-	return resolvedEntries
-}
-
-const viableOrderedCandidates = (
-	candidates: DiscriminantCandidate[],
-	originalBranches: readonly Union.ChildNode[]
-): DiscriminantCandidate[] => {
-	const viableCandidates = candidates.filter(candidate => {
-		const caseGroups = Object.values(candidate.cases).map(
-			caseCtx => caseCtx.branchIndices
-		)
-
-		// compare each group against all subsequent groups.
-		for (let i = 0; i < caseGroups.length - 1; i++) {
-			const currentGroup = caseGroups[i]
-			for (let j = i + 1; j < caseGroups.length; j++) {
-				const nextGroup = caseGroups[j]
-
-				// for each group pair, check for branches whose order was reversed
-				for (const currentIndex of currentGroup) {
-					for (const nextIndex of nextGroup) {
-						if (currentIndex > nextIndex) {
-							if (
-								originalBranches[currentIndex].overlaps(
-									originalBranches[nextIndex]
-								)
-							) {
-								// if the order was not preserved and the branches overlap,
-								// this is not a viable discriminant as it cannot guarantee the same behavior
-								return false
-							}
-						}
-					}
-				}
-			}
-		}
-
-		// branch groups preserved order for non-disjoint pairs and is viable
-		return true
-	})
-
-	return viableCandidates
-}
-
-const discriminantCaseToNode = (
-	caseDiscriminant: CaseDiscriminant,
-	path: PropertyKey[],
-	$: BaseScope
-): BaseRoot => {
-	let node: BaseRoot =
-		caseDiscriminant === "undefined" ? $.node("unit", { unit: undefined })
-		: caseDiscriminant === "null" ? $.node("unit", { unit: null })
-		: caseDiscriminant === "boolean" ? $.units([true, false])
-		: (
-			caseDiscriminant.hasKind("domain") && caseDiscriminant.domain === "number"
-		) ?
-			// a typeof check doesn't exclude NaN
-			$.node("domain", { domain: "number", numberAllowsNaN: true })
-		:	caseDiscriminant
-	for (let i = path.length - 1; i >= 0; i--) {
-		const key = path[i]
-		node = $.node(
-			"intersection",
-			typeof key === "number" ?
-				{
-					proto: "Array",
-					// create unknown for preceding elements (could be optimized with safe imports)
-					sequence: [...range(key).map(_ => ({})), node]
-				}
-			:	{
-					domain: "object",
-					required: [{ key, value: node }]
-				}
-		)
+	get nestedExpr(): string {
+		// boolean and never are already single keywords
+		return this.isBoolean || this.isNever() ?
+				this.expression
+			:	`(${this.expression})`
 	}
-	return node
 }
-
-const optionallyChainPropString = (path: PropertyKey[]): string =>
-	path.reduce<string>(
-		(acc, k) => acc + compileLiteralPropAccess(k, true),
-		"data"
-	)
-
-const serializedTypeOfDescriptions = registeredReference(jsTypeOfDescriptions)
-
-const serializedPrintable = registeredReference(printable)
 
 export const Union = {
-	implementation,
+	impl: implementation,
 	Node: UnionNode
 }
 
-const discriminantToJson = (discriminant: Discriminant): JsonStructure => ({
-	kind: discriminant.kind,
-	path: discriminant.path.map(k =>
-		typeof k === "string" ? k : compileSerializedValue(k)
-	),
-	cases: flatMorph(discriminant.cases, (k, node) => [
-		k,
-		node === true ? node
-		: node.hasKind("union") && node.discriminantJson ? node.discriminantJson
-		: node.json
-	])
-})
+const maxInlinedBranches = 4
 
-type DescribeBranchesOptions = {
-	delimiter?: string
-	finalDelimiter?: string
-}
+// a function's is "object"; without an object case, any but null's is its typeof
+export const compileDomainOf = (
+	value: string,
+	labels: readonly string[]
+): string =>
+	labels.includes(`case "object"`) ?
+		`typeof ${value} === "object" ? ${value} === null ? "null" : "object" : typeof ${value} === "function" ? "object" : typeof ${value}`
+	: labels.includes(`case "null"`) ?
+		`${value} === null ? "null" : typeof ${value}`
+	:	`typeof ${value}`
 
-const describeExpressionOptions: DescribeBranchesOptions = {
-	delimiter: " | ",
-	finalDelimiter: " | "
-}
+// an intersection binds more tightly than a union, so it never needs parens
+const expressBranch = (branch: Union.ChildNode): string =>
+	branch.is("intersection") ? branch.expression : branch.nestedExpr
 
-const expressBranches = (expressions: string[]) =>
-	describeBranches(expressions, describeExpressionOptions)
-
-export const describeBranches = (
-	descriptions: string[],
-	opts?: DescribeBranchesOptions
-): string => {
-	const delimiter = opts?.delimiter ?? ", "
-	const finalDelimiter = opts?.finalDelimiter ?? " or "
-
-	if (descriptions.length === 0) return "never"
-
-	if (descriptions.length === 1) return descriptions[0]
-	if (
-		(descriptions.length === 2 &&
-			descriptions[0] === "false" &&
-			descriptions[1] === "true") ||
-		(descriptions[0] === "true" && descriptions[1] === "false")
-	)
-		return "boolean"
-
-	// keep track of seen descriptions to avoid duplication
-	const seen: Record<string, true | undefined> = {}
-	const unique = descriptions.filter(s => (seen[s] ? false : (seen[s] = true)))
-	const last = unique.pop()!
-
-	return `${unique.join(delimiter)}${unique.length ? finalDelimiter : ""}${last}`
-}
-
-export const intersectBranches = (
-	l: readonly Union.ChildNode[],
-	r: readonly Union.ChildNode[],
-	ctx: IntersectionContext
-): readonly Union.ChildNode[] | Disjoint => {
-	// If the corresponding r branch is identified as a subtype of an l branch, the
-	// value at rIndex is set to null so we can avoid including previous/future
-	// intersections in the reduced result.
-	const batchesByR: (BaseRoot[] | null)[] = r.map(() => [])
-	for (let lIndex = 0; lIndex < l.length; lIndex++) {
-		let candidatesByR: { [rIndex: number]: BaseRoot } = {}
-		for (let rIndex = 0; rIndex < r.length; rIndex++) {
-			if (batchesByR[rIndex] === null) {
-				// rBranch is a subtype of an lBranch and
-				// will not yield any distinct intersection
-				continue
-			}
-			if (l[lIndex].equals(r[rIndex])) {
-				// Combination of subtype and supertype cases
-				batchesByR[rIndex] = null
-				candidatesByR = {}
-				break
-			}
-			const branchIntersection = intersectOrPipeNodes(l[lIndex], r[rIndex], ctx)
-			if (branchIntersection instanceof Disjoint) {
-				// Doesn't tell us anything useful about their relationships
-				// with other branches
-				continue
-			}
-			if (branchIntersection.equals(l[lIndex])) {
-				// If the current l branch is a subtype of r, intersections
-				// with previous and remaining branches of r won't lead to
-				// distinct intersections.
-				batchesByR[rIndex]!.push(l[lIndex])
-				candidatesByR = {}
-				break
-			}
-			if (branchIntersection.equals(r[rIndex])) {
-				// If the current r branch is a subtype of l, set its batch to
-				// null, removing any previous intersections and preventing any
-				// of its remaining intersections from being computed.
-				batchesByR[rIndex] = null
-			} else {
-				// If neither l nor r is a subtype of the other, add their
-				// intersection as a candidate (could still be removed if it is
-				// determined l or r is a subtype of a remaining branch).
-				candidatesByR[rIndex] = branchIntersection
-			}
-		}
-		for (const rIndex in candidatesByR) {
-			// batchesByR at rIndex should never be null if it is in candidatesByR
-			batchesByR[rIndex]![lIndex] = candidatesByR[rIndex]
-		}
-	}
-	// Compile the reduced intersection result, including:
-	// 		1. Remaining candidates resulting from distinct intersections or strict subtypes of r
-	// 		2. Original r branches corresponding to indices with a null batch (subtypes of l)
-	const resultBranches = batchesByR.flatMap(
-		// ensure unions returned from branchable intersections like sequence are flattened
-		(batch, i) => batch?.flatMap(branch => branch.branches) ?? r[i]
-	)
-	return resultBranches.length === 0 ?
-			Disjoint.init("union", l, r)
-		:	resultBranches
-}
-
-export const reduceBranches = ({
-	branches,
-	ordered
-}: Union.Inner): readonly Union.ChildNode[] => {
-	if (branches.length < 2) return branches
-
-	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
-	for (let i = 0; i < branches.length; i++) {
-		for (
-			let j = i + 1;
-			j < branches.length && uniquenessByIndex[i] && uniquenessByIndex[j];
-			j++
-		) {
-			if (branches[i].equals(branches[j])) {
-				// if the two branches are equal, only "j" is marked as
-				// redundant so at least one copy could still be included in
-				// the final set of branches.
-				uniquenessByIndex[j] = false
-				continue
-			}
-			const intersection = intersectNodesRoot(
-				branches[i].rawIn,
-				branches[j].rawIn,
-				branches[0].$
-			)!
-			if (intersection instanceof Disjoint) continue
-
-			if (!ordered) assertDeterminateOverlap(branches[i], branches[j])
-
-			if (intersection.equals(branches[i].rawIn)) {
-				// preserve ordered branches that are a subtype of a subsequent branch
-				uniquenessByIndex[i] = !!ordered
-			} else if (intersection.equals(branches[j].rawIn))
-				uniquenessByIndex[j] = false
-		}
-	}
-	return branches.filter((_, i) => uniquenessByIndex[i])
-}
-
-const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
-	if (!l.includesTransform && !r.includesTransform) return
-
-	if (!arrayEquals(l.shallowMorphs as Morph[], r.shallowMorphs as Morph[])) {
-		throwParseError(
-			writeIndiscriminableMorphMessage(l.expression, r.expression)
+const readsPath = (path: array<PropertyKey>, data: unknown): boolean => {
+	let parent: any = data
+	for (const k of path) {
+		if (
+			typeof k === "number" ? !Array.isArray(parent) : Object(parent) !== parent
 		)
+			return false
+		parent = parent[k]
 	}
-
-	if (
-		!arrayEquals(l.flatMorphs, r.flatMorphs, {
-			isEqual: (l, r) =>
-				l.propString === r.propString &&
-				(l.node.hasKind("morph") && r.node.hasKind("morph") ?
-					l.node.hasEqualMorphs(r.node)
-				: l.node.hasKind("intersection") && r.node.hasKind("intersection") ?
-					l.node.structure?.structuralMorphRef ===
-					r.node.structure?.structuralMorphRef
-				:	false)
-		})
-	) {
-		throwParseError(
-			writeIndiscriminableMorphMessage(l.expression, r.expression)
-		)
-	}
+	return true
 }
+
+const caseKeyOf = (discriminant: Discriminant, value: unknown): string => {
+	const k =
+		discriminant.kind === "domain" ? `"${domainOf(value)}"` : unitKeyOf(value)
+	return k !== undefined && discriminant.cases[k] !== undefined ? k : "default"
+}
+
+// object and symbol units are registered, so an unregistered value matches none
+const unitKeyOf = (value: unknown): string | undefined => {
+	if (!hasDomain(value, "object") && typeof value !== "symbol")
+		return serializePrimitive(value as SerializablePrimitive)
+	const name = registeredNameOf(value)
+	return name && reference(name)
+}
+
+const registeredPrefix = `${registryName}.`
+
+export type DiscriminantCases = {
+	[kind in DiscriminantKind]: Pick<
+		DiscriminantErrorContextOf<kind>,
+		"discriminantKind" | "cases"
+	>
+}[DiscriminantKind]
+
+export type DomainCase = Domain | "Array"
+
+const casesOf = (discriminant: Discriminant): DiscriminantCases => {
+	const keys = Object.keys(discriminant.cases).filter(k => k !== "default")
+	return discriminant.kind === "domain" ?
+			{
+				discriminantKind: "domain",
+				cases: Object.freeze(
+					keys.map(k =>
+						k === '"object"' && isArrayCase(discriminant.cases[k]) ?
+							"Array"
+						:	(k.slice(1, -1) as Domain)
+					)
+				)
+			}
+		:	{ discriminantKind: "unit", cases: Object.freeze(keys.map(unitOf)) }
+}
+
+// a description someone wrote, not a keyword's phrase or a default
+const isAuthored = (node: { meta: ArkEnv.meta }): boolean =>
+	node.meta.description !== undefined && node.meta.keyword === undefined
+
+const isArrayCase = (caseNode: BaseRoot | true): boolean =>
+	caseNode !== true && caseNode._in.extends($ark.kw.Array.internal)
+
+const metaAtDiscriminant = (
+	meta: ArkEnv.meta,
+	path: array<PropertyKey>
+): ArkEnv.meta => {
+	if (path.length === 0) return meta
+	const { expected, actual, ...rest } = meta
+	return rest
+}
+
+const unitOf = (k: string): unknown =>
+	k.startsWith(registeredPrefix) ? $ark[k.slice(registeredPrefix.length)]
+	: k.endsWith("n") ? BigInt(k.slice(0, -1))
+	: k === "undefined" ? undefined
+	: k.endsWith("Infinity") ? Number(k)
+	: JSON.parse(k)
+
+// a branch whose transform doesn't require ctx returns its errors rather than adding them
+const invokeTransform = (
+	js: NodeCompiler,
+	branch: BaseRoot,
+	member?: BaseRoot
+): string =>
+	member ?
+		`${js.ref(transformResolution)}(ctx, "${js.nameOf(member.id)}", data, ${js.refToId(branch.id, { kind: "Transform" })})`
+	: js.needsCtx && returnsTransformErrors(branch) ?
+		`${js.ref(transformed)}(ctx, ${js.inv(branch)}, data)`
+	:	js.inv(branch)
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-type DiscriminantLocation<kind extends DiscriminantKind = DiscriminantKind> = {
+export type DiscriminantLocation<
+	kind extends DiscriminantKind = DiscriminantKind
+> = {
 	path: PropertyKey[]
-	optionallyChainedPropString: string
+	/** the discriminant's path as optional-chained property accesses */
+	pathStr: string
 	kind: kind
 }
 
 export interface Discriminant<kind extends DiscriminantKind = DiscriminantKind>
 	extends DiscriminantLocation<kind> {
 	cases: DiscriminatedCases<kind>
-}
-
-type DiscriminantCandidate<kind extends DiscriminantKind = DiscriminantKind> = {
-	path: PropertyKey[]
-	kind: kind
-	cases: CandidateCases<kind>
-}
-
-type CandidateCases<kind extends DiscriminantKind = DiscriminantKind> = {
-	[caseKey in CaseKey<kind>]: CaseContext
+	// the cyclic branch a case was pruned from, entered in its place
+	members?: { [caseKey in CaseKey<kind>]?: BaseRoot }
 }
 
 export type CaseContext = {
@@ -1061,61 +694,3 @@ export type DiscriminantKinds = {
 }
 
 export type DiscriminantKind = show<keyof DiscriminantKinds>
-
-export const pruneDiscriminant = (
-	discriminantBranch: BaseRoot,
-	discriminantCtx: DiscriminantLocation
-): BaseRoot | null =>
-	discriminantBranch.transform(
-		(nodeKind, inner) => {
-			if (nodeKind === "domain" || nodeKind === "unit") return null
-
-			return inner
-		},
-		{
-			shouldTransform: (node, ctx) => {
-				// safe to cast here as index nodes are never discriminants
-				const propString = optionallyChainPropString(ctx.path as PropertyKey[])
-
-				if (!discriminantCtx.optionallyChainedPropString.startsWith(propString))
-					return false
-
-				if (node.hasKind("domain") && node.domain === "object")
-					// if we've already checked a path at least as long as the current one,
-					// we don't need to revalidate that we're in an object
-					return true
-
-				if (
-					(node.hasKind("domain") || discriminantCtx.kind === "unit") &&
-					propString === discriminantCtx.optionallyChainedPropString
-				) {
-					// if the discriminant has already checked the domain at the current path
-					// (or a unit literal, implying a domain), we don't need to recheck it,
-					// unless it is a number domain excluding NaN, which typeof doesn't
-					return (
-						discriminantCtx.kind === "unit" ||
-						!(node.hasKind("domain") && node.requiresNaNCheck)
-					)
-				}
-
-				// we don't need to recurse into index nodes as they will never
-				// have a required path therefore can't be used to discriminate
-				return node.children.length !== 0 && node.kind !== "index"
-			}
-		}
-	)
-
-export const writeIndiscriminableMorphMessage = (
-	lDescription: string,
-	rDescription: string
-): string =>
-	`An unordered union of a type including a morph and a type with overlapping input is indeterminate:
-Left: ${lDescription}
-Right: ${rDescription}`
-
-export const writeOrderedIntersectionMessage = (
-	lDescription: string,
-	rDescription: string
-): string => `The intersection of two ordered unions is indeterminate:
-Left: ${lDescription}
-Right: ${rDescription}`

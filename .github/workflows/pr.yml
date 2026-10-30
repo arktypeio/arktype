@@ -14,7 +14,7 @@ defaults:
 jobs:
   core:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -26,6 +26,9 @@ jobs:
 
       - name: prChecks
         run: pnpm prChecks
+
+      - name: Test jitless
+        run: pnpm testJitless
 
   compatibility:
     needs: core
@@ -57,6 +60,119 @@ jobs:
       # so just check runtime behavior
       - name: Test
         run: pnpm testRepo
+
+  history:
+    needs: core
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Test history independence
+        run: pnpm testHistory --jobs 4
+
+  differential:
+    needs: core
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        # the build's options: mutatesInput with each errors mode, size builds,
+        # and errors written for size apart from validators
+        options:
+          - "{}"
+          - '{"mutatesInput": true, "errors": "first"}'
+          - '{"mutatesInput": true, "errors": "none"}'
+          - '{"mutatesInput": "always", "errors": "first"}'
+          - '{"mutatesInput": "always", "errors": "none", "jsonInput": true}'
+          - '{"optimize": "size"}'
+          - '{"optimize": "size", "errors": "first"}'
+          - '{"optimizeErrors": "size"}'
+          - '{"optimize": "size", "optimizeErrors": "speed"}'
+          - '{"optimizeErrors": "size", "errors": "none"}'
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Compare the suites' roots with their precompiled validators
+        run: pnpm testDifferential
+        env:
+          ARK_PRECOMPILE_OPTIONS: ${{ matrix.options }}
+
+  cache:
+    needs: core
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Run the suites on units precompiled for other roots
+        run: pnpm testCache
+
+  perturbation:
+    needs: core
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        # the default build and size builds, which write checkers, sampled on
+        # data the suites never pass them
+        options:
+          - "{}"
+          - '{"optimize": "size"}'
+          - '{"preset": "smallest"}'
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Change what precompiled sites read
+        run: pnpm testPerturbation
+        env:
+          ARK_PRECOMPILE_OPTIONS: ${{ matrix.options }}
+
+      - name: Run generated programs through the build
+        run: pnpm testPrograms
+        env:
+          ARK_PRECOMPILE_OPTIONS: ${{ matrix.options }}
+          ARK_PRECOMPILE_PROGRAMS: 300
+
+  environments:
+    needs: core
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2
+
+      # the runner's Chrome is used as installed
+      - name: Setup Firefox
+        id: firefox
+        uses: browser-actions/setup-firefox@0bc507ddf224827e3b1af68e014d5e42ab93e795 # v1
+
+      - name: Run a precompiled program across environments
+        run: pnpm testEnvironments
+        env:
+          FIREFOX_BIN: ${{ steps.firefox.outputs.firefox-path }}
 
   tsVersionTasks:
     needs: core
@@ -94,7 +210,14 @@ jobs:
         run: pnpm testTsVersions ${{ matrix.task }}
 
   prChecks:
-    needs: [compatibility, typescript]
+    needs:
+      - compatibility
+      - typescript
+      - differential
+      - perturbation
+      - cache
+      - environments
+      - history
     timeout-minutes: 1
     runs-on: ubuntu-latest
     steps:

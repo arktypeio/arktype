@@ -31,27 +31,28 @@ const yupBarStyles = {
 export const RuntimeBenchmarksGraph: React.FC<{ className?: string }> = ({
 	className
 }) => (
-	<div
+	<figure
 		style={{
 			fontSize: 16.8,
 			fontWeight: 500,
 			display: "flex",
 			flexDirection: "column",
-			flexGrow: 1
+			flexGrow: 1,
+			color: "var(--ink)"
 		}}
-		className={cx("font-semibold text-white", className)}
+		className={cx("font-semibold", className)}
 	>
-		<div style={{ display: "flex", flexDirection: "row" }}>
-			<h6 className="text-xl mb-2">Object Validation, Node v23.6.1</h6>{" "}
+		<figcaption style={{ display: "flex", flexDirection: "row" }}>
+			<span className="text-xl mb-2">Object Validation, Node v23.6.1</span>{" "}
 			<a
 				className="underline ml-2"
 				target="_blank"
 				href="https://moltar.github.io/typescript-runtime-type-benchmarks/"
-				style={{ textDecoration: "underline", color: "#1e90ff" }}
+				style={{ textDecoration: "underline", color: "var(--sky)" }}
 			>
 				(source)
 			</a>
-		</div>
+		</figcaption>
 		<div style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
 			<div style={{ display: "flex", alignItems: "center" }}>
 				<div style={{ ...arkBarStyles, width: "2%" }}></div>
@@ -67,5 +68,5 @@ export const RuntimeBenchmarksGraph: React.FC<{ className?: string }> = ({
 				*scaling generously logarithmized
 			</div>
 		</div>
-	</div>
+	</figure>
 )

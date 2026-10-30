@@ -1,65 +1,48 @@
-import { flatMorph } from "@ark/util"
-import type { JSX } from "react"
-import {
-	keywordRowsByTable,
-	keywordTableNames,
-	type KeywordRow
-} from "../lib/keywords.ts"
+import { keywordRowsByTable, type KeywordTableName } from "../lib/keywords.ts"
+import { Table } from "./mdx/Table.tsx"
 
-const formatDescription = (description: string): JSX.Element => {
-	if (!description.includes("`")) return <>{description}</>
+const withInlineCode = (text: string) =>
+	text
+		.split(/`([^`]+)`/)
+		.map((part, i) => (i % 2 ? <code key={i}>{part}</code> : part))
 
-	const segments = description.split(/(`[^`]+`)/)
+/** `string.email` as ArkDark shows it: the subtype path in teal */
+const KeywordName = ({ alias }: { alias: string }) => {
+	const dot = alias.indexOf(".")
 	return (
-		<>
-			{segments.map((segment, i) => {
-				if (segment.startsWith("`") && segment.endsWith("`")) {
-					const code = segment.substring(1, segment.length - 1)
-					return <code key={i}>{code}</code>
-				}
-				return <span key={i}>{segment}</span>
-			})}
-		</>
+		<code className="kw-name">
+			{dot === -1 ?
+				alias
+			:	<>
+					{alias.slice(0, dot)}
+					<span className="kw-path">{alias.slice(dot)}</span>
+				</>
+			}
+		</code>
 	)
 }
 
-type KeywordTableProps = {
-	rows: readonly KeywordRow[]
-}
-
-const KeywordTable = ({ rows }: KeywordTableProps) => (
-	<table>
+/**
+ * A group's keywords. Each row's id is its alias, so `#string.email` links
+ * to it, except a group's own root, whose id belongs to the group's heading.
+ */
+export const KeywordTable = ({ name }: { name: KeywordTableName }) => (
+	<Table className="keyword-table">
 		<thead>
 			<tr>
-				<th className="font-bold">Alias</th>
-				<th className="font-bold">Description</th>
+				<th scope="col">keyword</th>
+				<th scope="col">description</th>
 			</tr>
 		</thead>
 		<tbody>
-			{rows.map(({ alias, description }) => (
-				<tr key={alias}>
-					<td>{alias}</td>
-					<td>{formatDescription(description)}</td>
+			{keywordRowsByTable[name].map(({ alias, description }) => (
+				<tr key={alias} id={alias === name ? undefined : alias}>
+					<td>
+						<KeywordName alias={alias} />
+					</td>
+					<td>{withInlineCode(description)}</td>
 				</tr>
 			))}
 		</tbody>
-	</table>
+	</Table>
 )
-
-const KeywordTables = flatMorph(keywordTableNames, (i, name) => [
-	name,
-	() => <KeywordTable rows={keywordRowsByTable[name]} />
-])
-
-export const StringKeywordTable = KeywordTables.string
-
-export const NumberKeywordTable = KeywordTables.number
-
-export const GenericKeywordTable = KeywordTables.generic
-
-export const AllKeywordTables = () =>
-	keywordTableNames.map(name => (
-		<>
-			<h2>{name}</h2> <KeywordTable rows={keywordRowsByTable[name]} />
-		</>
-	))

@@ -3,10 +3,12 @@
 	"pages": [
 		"[intersection](/docs/expressions#intersection)",
 		"[union](/docs/expressions#union)",
+		"[extract / exclude](/docs/expressions#extract-exclude)",
 		"[brand](/docs/expressions#brand)",
 		"[narrow](/docs/expressions#narrow)",
 		"[filter](/docs/expressions#filter)",
 		"[pipe](/docs/expressions#pipe)",
+		"[to](/docs/expressions#to)",
 		"[unit](/docs/expressions#unit)",
 		"[enumerated](/docs/expressions#enumerated)",
 		"[valueOf](/docs/expressions#valueof)",

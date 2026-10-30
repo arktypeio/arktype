@@ -1,6 +1,13 @@
-import { append, entriesOf, flatMorph } from "@ark/util"
+import { hasArkKind } from "@ark/schema"
+import {
+	append,
+	ecmascriptConstructors,
+	entriesOf,
+	flatMorph,
+	platformConstructors,
+	typedArrayConstructors
+} from "@ark/util"
 import { ark, Generic } from "arktype"
-import { arkPrototypes } from "arktype/internal/keywords/constructors.ts"
 
 export const keywordTableNames = [
 	"string",
@@ -26,14 +33,22 @@ export const keywordRowsByTable = flatMorph(keywordTableNames, (i, name) => [
 	[] as KeywordRow[]
 ])
 
-for (const [alias, v] of entriesOf(ark.internal.resolutions)
+// keywords resolve on first reference, so resolve them all
+ark.export()
+
+const seen = new Set<string>()
+
+for (const [alias, v] of entriesOf(ark.internal.res)
 	.map(
 		([alias, v]) =>
 			[alias.endsWith(".root") ? alias.slice(0, -5) : alias, v] as const
 	)
 	.sort((l, r) => (l[0] < r[0] ? -1 : 1))) {
 	// should not occur, only for temporary resolutions of cyclic definition
-	if (typeof v === "string") continue
+	if (hasArkKind(v, "context")) continue
+	// a module's root resolves both as "string" and "string.root"
+	if (seen.has(alias)) continue
+	seen.add(alias)
 
 	const name: KeywordTableName =
 		alias.startsWith("string") ? "string"
@@ -41,10 +56,12 @@ for (const [alias, v] of entriesOf(ark.internal.resolutions)
 		: alias.startsWith("FormData") ? "FormData"
 		: alias.startsWith("Array") ? "array"
 		: alias.startsWith("object") ? "object"
-		: alias.startsWith("TypedArray") ? "TypedArray"
+		: alias.startsWith("TypedArray") || alias in typedArrayConstructors ?
+			"TypedArray"
 		: v instanceof Generic ? "generic"
-		: alias in arkPrototypes ? "instanceof"
-		: "other"
+		: alias in ecmascriptConstructors || alias in platformConstructors ?
+			"instanceof"
+		:	"other"
 
 	keywordRowsByTable[name] = append(keywordRowsByTable[name], {
 		alias,

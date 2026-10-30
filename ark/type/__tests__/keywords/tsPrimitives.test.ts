@@ -47,6 +47,11 @@ contextualize(() => {
 		attest(Never.json).equals(Expected.json)
 	})
 
+	it("never error at a path", () => {
+		const T = type({ "files?": "never" })
+		attest(T({ files: 1 }).toString()).snap("files must be never (was 1)")
+	})
+
 	it("never in union", () => {
 		const T = type("string|never")
 		attest<string>(T.infer)

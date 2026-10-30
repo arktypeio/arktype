@@ -112,12 +112,13 @@ const getParamValue = (param: keyof AttestConfig) => {
 export const attestEnvPrefix = "ATTEST_"
 
 const addEnvConfig = (config: BaseAttestConfig) => {
-	for (const [k, v] of Object.entries(process.env as Record<string, string>)) {
-		if (k.startsWith(attestEnvPrefix)) {
-			const optionName = k.slice(attestEnvPrefix.length)
-			if (optionName === "CONFIG") Object.assign(config, JSON.parse(v))
-			else (config as any)[optionName] = JSON.parse(v)
-		}
+	// the config setup() passes to child processes comes first, so an option
+	// set on its own overrides it wherever the platform orders the environment
+	const { ATTEST_CONFIG, ...env } = process.env as Record<string, string>
+	if (ATTEST_CONFIG) Object.assign(config, JSON.parse(ATTEST_CONFIG))
+	for (const [k, v] of Object.entries(env)) {
+		if (k.startsWith(attestEnvPrefix))
+			(config as any)[k.slice(attestEnvPrefix.length)] = JSON.parse(v)
 	}
 	let k: keyof BaseAttestConfig
 	for (k in config) {

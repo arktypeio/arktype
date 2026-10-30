@@ -43,20 +43,85 @@ export const getInstantiationsContributedByNodes = (
 	if (!blocks.length) return []
 
 	const baselineText = getBaselineText(file)
-	const variants = [
-		baselineText,
-		...blocks.map(
-			block =>
-				`${baselineText}\nconst $attestIsolatedBench = ${block.getFullText()}`
-		)
-	]
+	const unforced = blocks.map(
+		block =>
+			`${baselineText}\nconst $attestIsolatedBench = ${block.getFullText()}`
+	)
+	// the forcing syntax isn't valid JS, and a generic block's result would be
+	// inferred from constraints it's never called with
+	const canForce = /\.[cm]?tsx?$/.test(file.fileName)
+	const [baseline, ...results] = countVariants(file, [
+		{ text: baselineText, noErrorTruncation: true },
+		...blocks.map((block, i) => ({
+			text:
+				canForce && !(block as FunctionLikeNode).typeParameters?.length ?
+					unforced[i] + forceResult
+				:	unforced[i],
+			noErrorTruncation: true
+		}))
+	])
+	const counts = results.map(result => result.count - baseline.count)
 
+	// noErrorTruncation also writes out a block's own errors in full, so a block
+	// with errors is counted without it, plus what forcing its result adds
+	const blockStart = baselineText.split("\n").length + 1
+	const withErrors = blocks.flatMap((block, i) => {
+		const blockText = block.getFullText()
+		const blockEnd = blockStart + blockText.split("\n").length - 1
+		const hasErrors =
+			// suppressed errors are still written out but not reported
+			/@ts-(expect-error|ignore)/.test(blockText) ||
+			results[i].errorLines.some(line => line >= blockStart && line <= blockEnd)
+		return hasErrors ? [i] : []
+	})
+	if (!withErrors.length) return counts
+
+	const [truncatedBaseline, ...unforcedResults] = countVariants(file, [
+		{ text: baselineText, noErrorTruncation: false },
+		...withErrors.flatMap(i => [
+			{ text: unforced[i], noErrorTruncation: false },
+			{ text: unforced[i], noErrorTruncation: true }
+		])
+	])
+	for (const [j, i] of withErrors.entries()) {
+		const truncated = unforcedResults[2 * j].count - truncatedBaseline.count
+		const untruncated = unforcedResults[2 * j + 1].count - baseline.count
+		counts[i] = truncated + counts[i] - untruncated
+	}
+	return counts
+}
+
+/**
+ * TS only evaluates the members of many types, e.g. mapped types, once
+ * something reads them. Passing a block's result type where `never` is
+ * required makes tsc write it into an error in full (given
+ * `noErrorTruncation`), so it's counted as if it were displayed without
+ * adding anything for types that were already evaluated.
+ *
+ * Assigning the result to `never` would also check whether a callable
+ * result's return type fits, counting work that displaying it wouldn't do.
+ */
+const forceResult = `
+const $attestIsolatedResult = $attestIsolatedBench()
+declare function $attestIsolate<t extends never>(): void
+$attestIsolate<typeof $attestIsolatedResult>()`
+
+type FunctionLikeNode = Node & { typeParameters?: readonly Node[] }
+
+type Variant = { text: string; noErrorTruncation: boolean }
+
+type VariantResult = { count: number; errorLines: number[] }
+
+const countVariants = (
+	file: SourceFile,
+	variants: Variant[]
+): VariantResult[] => {
 	const { projectConfig } = TsgoServer.instance
 	const fileDir = dirname(file.fileName)
 	const fileBase = basename(file.fileName)
 
 	const files: Record<string, string> = {}
-	const configPaths = variants.map((text, i) => {
+	const configPaths = variants.map(({ text, noErrorTruncation }, i) => {
 		// dot-prefixed so test runner globs don't pick it up
 		const sourcePath = join(fileDir, `.attest-${tempId}-${i}-${fileBase}`)
 		const configPath = join(
@@ -82,7 +147,9 @@ export const getInstantiationsContributedByNodes = (
 				// a bench excluded from the project may be outside its rootDir
 				rootDir: null,
 				// otherwise counts depend on whether declarations are checked
-				skipLibCheck: true
+				skipLibCheck: true,
+				// see forceResult
+				noErrorTruncation
 			},
 			files: [sourcePath],
 			include: []
@@ -90,14 +157,13 @@ export const getInstantiationsContributedByNodes = (
 		return configPath
 	})
 
-	const [baseline, ...counts]: number[] = JSON.parse(
+	return JSON.parse(
 		execFileSync(process.execPath, [countInstantiationsScript, getTscPath()], {
 			input: JSON.stringify({ files, configPaths }),
 			encoding: "utf8",
 			maxBuffer: 1e8
 		})
 	)
-	return counts.map(count => count - baseline)
 }
 
 const getBaselineText = (file: SourceFile): string => {

@@ -37,14 +37,17 @@
 		"test": "node ../repo/testPackage.ts"
 	},
 	"dependencies": {
-		"arktype": "workspace:*",
 		"@ark/schema": "workspace:*",
 		"@ark/util": "workspace:*"
+	},
+	"devDependencies": {
+		"arktype": "workspace:*"
 	},
 	"publishConfig": {
 		"access": "public"
 	},
 	"peerDependencies": {
-		"fast-check": "3"
+		"arktype": "workspace:*",
+		"fast-check": "3 || 4"
 	}
 }

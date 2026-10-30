@@ -2,15 +2,15 @@
 
 > Type assertions and benchmarks
 
-# Setup
+# Getting started
 
-Attest is a testing library that makes your TypeScript types available at runtime, giving you access to precise type-level assertions and performance benchmarks.
+> Install attest and run its setup and teardown around your tests.
 
-Assertions are framework agnostic and can be seamlessly integrated with your existing Vitest, Jest, or Mocha tests.
+Attest is a testing library that makes your TypeScript types available at runtime. A test can assert on a value's type, the type errors and completions of an expression, and the type instantiations a block costs, next to ordinary value assertions. Assertions work from Vitest, Mocha, Jest or any runner with global setup and teardown hooks.
 
-Benchmarks can run from anywhere and will deterministically report the number of type instantiations contributed by the contents of the `bench` call.
+Benches run as plain scripts. They report how many type instantiations a block contributes, which is deterministic for a given TypeScript version, and how long a call takes.
 
-If you've ever wondered how ArkType can guarantee identical behavior between its runtime and static parser implementations and highly optimized editor performance, Attest is your answer⚡
+ArkType uses attest to check that its runtime parser and its types agree, and to keep its editor performance from regressing.
 
 ## Installation
 
@@ -20,21 +20,21 @@ npm install -D @ark/attest
 
 > **Note**
 >
-> This package is still in alpha! Your feedback will help us iterate toward a
-> stable 1.0.
+> attest is still in alpha, so its API can change between minor versions. Your feedback will help us iterate toward a stable 1.0.
+
+If you're upgrading, [Upgrading](https://arktype.io/docs/upgrading#attest) lists the changes to benches.
 
 ## Global setup
 
-To use attest's type assertions, you'll need to call its setup and cleanup methods before your first test and after your last test, respectively. This usually involves some kind of globalSetup/globalTeardown config.
+Type assertions need `setup` to run once before your tests and `teardown` once after them.
 
-> **Warning**
->
-> If you run your tests in watch mode or otherwise iteratively during dev, you
-> will want to enable [`skipTypes`](https://arktype.io/docs/attest/options#skiptypes).
+`setup` type-checks your project once and writes what each `attest` call needs, like its argument's type and the type errors in it, to `.attest/assertions.json`. Assertions read that file rather than starting TypeScript in every test worker. `teardown` (also exported as `cleanup`) writes the snapshots your tests populated or updated back into your source files when the run exits.
+
+Add `.attest` to your `.gitignore`.
 
 ### Vitest
 
-```ts title="vitest.config.ts"
+```ts
 import { defineConfig } from "vitest/config"
 
 export default defineConfig({
@@ -44,99 +44,224 @@ export default defineConfig({
 })
 ```
 
-```ts title="setupVitest.ts"
+```ts
 import { setup } from "@ark/attest"
 
-// config options can be passed here
+// setup returns teardown, which Vitest calls after the last test
 export default () => setup({})
 ```
 
+Vitest rejects command-line flags it doesn't know, so pass attest [options](https://arktype.io/docs/attest/options) to it as `ATTEST_` environment variables. Its own `-u` flag works, and updates attest's snapshots along with Vitest's.
+
 ### Mocha
 
-```json title="package.json"
+```json
 "mocha": {
 	"require": "./setupMocha.ts"
 }
 ```
 
-```ts title="setupMocha.ts"
+```ts
 import { setup, teardown } from "@ark/attest"
 
-// config options can be passed here
 export const mochaGlobalSetup = () => setup({})
 
 export const mochaGlobalTeardown = teardown
 ```
 
-You should also add `.attest` to your repository's `.gitignore` file.
+### Jest
 
-Bun support is currently pending [them supporting @prettier/sync for type formatting](https://github.com/oven-sh/bun/issues/10768). If this is a problem for you, please 👍 that issue so they prioritize it!
+```js
+export default {
+	globalSetup: "./setupJest.ts",
+	globalTeardown: "./teardownJest.ts"
+}
+```
 
+```ts
+import { setup } from "@ark/attest"
+
+export default () => setup({})
+```
+
+```ts
+import { teardown } from "@ark/attest"
+
+export default teardown
+```
+
+`@ark/attest` is an ES module, so Jest has to run with ES module support, e.g. ts-jest with `useESM` and `NODE_OPTIONS=--experimental-vm-modules`.
+
+### Bun
+
+```ts
+import { setup } from "@ark/attest"
+
+setup({})
+```
+
+```bash
+bun test --preload ./setupBun.ts
+```
+
+You can also list the file under `preload` in the `[test]` section of `bunfig.toml`.
+
+Under `bun test`, assertions compare against existing snapshots, but new or updated snapshots aren't written: attest writes them when the process exits, and `bun test` doesn't emit Node's `exit` event.
+
+## Iterating quickly
+
+Type-checking the project is the slow part of `setup`. Two options cut it down:
+
+- [`skipTypes`](https://arktype.io/docs/attest/options#skiptypes) skips the check along with every type assertion, for when you're only changing runtime code.
+- [`onlyNamedTestFiles`](https://arktype.io/docs/attest/options#onlynamedtestfiles) checks only the test files you name on the command line.
+
+## TypeScript versions
+
+Attest analyzes your project with whichever `typescript` it resolves, which is normally your own install since it's a peer dependency. To test several versions, run your suite once per version, e.g. in a CI matrix that installs each one.
+
+TypeScript 7.1+ is supported through its native API. 7.0.x throws an error asking you to upgrade. Under TypeScript 7:
+
+- Instantiation counts come from running `tsc --extendedDiagnostics --singleThreaded` per bench. `tsc` fully checks a bench's dependencies before measuring it, so work the bench shares with them isn't counted, and counts can run lower than on TypeScript 5 or 6. Re-record bench baselines when you switch.
+- Type strings, union ordering and error elaboration can differ, so some snapshots need updating when you switch.
+- Benches write temporary `.attest-*` copies beside their source files while measuring, so the source directory has to be writable.
 
 # Assertions
 
-Assertions can be made from any unit test framework with a [global setup](https://arktype.io/docs/attest#global-setup).
+> Assert on types, values, errors, completions, JSDoc and type instantiations from any test runner.
 
-### Types and values
+Assertions work from any test runner once [setup](https://arktype.io/docs/attest#global-setup) has run.
+
+## Types
 
 ```ts
 import { attest } from "@ark/attest"
 import { type } from "arktype"
 
 const Even = type("number%2")
-// asserts Even.infer is exactly number
+
+// passes if Even.infer and number are assignable to each other
 attest<number>(Even.infer)
-// make assertions about types and values seamlessly
+// compares two types without a value
+attest<number, typeof Even.infer>()
+// snapshots the type as TypeScript displays it
 attest(Even.infer).type.toString.snap("number")
-// including object literals- no more long inline strings!
-attest(Even.json).snap({
-	domain: "number",
-	divisor: 2
-})
 ```
 
-### Errors
+`.type.errors` checks the type errors TypeScript reports for the expression passed to `attest`:
 
 ```ts
 import { attest } from "@ark/attest"
 import { type } from "arktype"
 
-// Check type errors, runtime errors, or both at the same time!
-// @ts-expect-error
-attest(() => type("number%0")).throwsAndHasTypeError(
-	"% operator must be followed by a non-zero integer literal (was 0)"
-)
 // @ts-expect-error
 attest(() => type({ "[object]": "string" })).type.errors(
 	"Indexed key definition 'object' must be a string or symbol"
 )
 ```
 
-### Completions
+> **Strings match as substrings**
+>
+> `.type.toString`, `.type.errors`, `.throws` and `.jsdoc` pass if the string you give appears anywhere in the actual one, so `attest([1]).type.toString("number")` passes although the type is `number[]`. They also accept a `RegExp`. Chain `.snap` for an exact match.
+
+## Values
 
 ```ts
 import { attest } from "@ark/attest"
-import { type } from "arktype"
 
-// snapshot expected completions for any string literal!
-// @ts-expect-error (if your expression would throw, prepend () =>)
-attest(() => type({ b: "b" })).completions({
-	b: ["bigint", "boolean"]
-})
+const user = { name: "Alan Turing", born: 1912 }
 
-type Legends = { faker?: "🐐"; [others: string]: unknown }
-// works for keys or index access as well (may need prettier-ignore to avoid removing quotes)
-// prettier-ignore
-attest({ "f": "🐐" } as Legends).completions({ "f": ["faker"] })
+// deep equality
+attest(user).equals({ name: "Alan Turing", born: 1912 })
+// Object.is equality
+attest(user.born).is(1912)
+// validates the value against an ArkType definition
+attest(user).satisfies({ name: "string", born: "number.integer" })
+attest(new Date(0)).instanceOf(Date)
+// written into the call on the first run, compared after that
+attest(user).snap({ name: "Alan Turing", born: 1912 })
 ```
 
-### JSDoc
+The expected value of `.equals`, `.is` and `.snap` has to match the type of the value under test. Chain `.unknown` first, as in `attest(user).unknown.equals(...)`, to compare against anything.
+
+`.unwrap()` returns what an assertion would compare rather than asserting on it, e.g. `attest(user).type.toString.unwrap()` returns `"{ name: string; born: number }"`.
+
+## Errors
+
+`.throws` calls the function passed to `attest` and checks what it threw. The thrown value is converted with `String()`, so it starts with the error's name.
+
+```ts
+import { attest } from "@ark/attest"
+
+const divide = (a: number, b: number) => {
+	if (b === 0) throw new RangeError("Cannot divide by zero")
+	return a / b
+}
+
+attest(() => divide(1, 0)).throws("divide by zero")
+attest(() => divide(1, 0)).throws(/^RangeError/)
+attest(() => divide(1, 0)).throws.snap("RangeError: Cannot divide by zero")
+```
+
+Chain `.type.errors` to check the type error of the same call:
+
+```ts
+import { attest } from "@ark/attest"
+
+const assertFalse = (value: false) => {
+	if (value) throw new Error(`${value} is not false`)
+}
+
+// @ts-expect-error
+attest(() => assertFalse(true))
+	.throws("true is not false")
+	.type.errors("Argument of type 'true' is not assignable")
+```
+
+When the runtime error and the type error share a message, `throwsAndHasTypeError` checks both:
 
 ```ts
 import { attest } from "@ark/attest"
 import { type } from "arktype"
 
-// match or snapshot expected jsdoc associated with the value passed to attest
+// @ts-expect-error
+attest(() => type("number%0")).throwsAndHasTypeError(
+	"% operator must be followed by a non-zero integer literal (was 0)"
+)
+```
+
+## Completions
+
+`.completions` snapshots the completions TypeScript offers for each string literal in the expression passed to `attest`. A partial literal is usually a type error, and if it would also throw at runtime, wrap it in a function:
+
+```ts
+import { attest } from "@ark/attest"
+import { type } from "arktype"
+
+// @ts-expect-error
+attest(() => type({ b: "b" })).completions({ b: ["bigint", "boolean"] })
+```
+
+Quoted keys get completions too. Prettier removes quotes it doesn't need, which would leave nothing to complete, so keep it from formatting the line:
+
+```ts
+import { attest } from "@ark/attest"
+
+type Legends = { faker?: "🐐"; [others: string]: unknown }
+
+// prettier-ignore
+attest({ "f": "🐐" } as Legends).completions({ f: ["faker"] })
+```
+
+Completions are keyed by the literal's text, so two identical literals in one `attest` call throw "Encountered multiple completion candidates". Split them into separate calls.
+
+## JSDoc
+
+`.jsdoc` reads the JSDoc of the value passed to `attest` when it's a variable or a property access:
+
+```ts
+import { attest } from "@ark/attest"
+import { type } from "arktype"
+
 const T = type({
 	/** FOO */
 	foo: "string"
@@ -147,27 +272,25 @@ const out = T.assert({ foo: "foo" })
 attest(out.foo).jsdoc.snap("FOO")
 ```
 
-### Runtime logic
+## Conditional assertions
 
-Flexibly combine runtime logic with type assertions to customize your tests beyond what is possible from pure static-analysis based type testing tools.
+Assertions are ordinary function calls, so runtime logic can decide which ones run:
 
 ```ts
 import { attest } from "@ark/attest"
-import { type } from "arktype"
 import ts from "typescript"
 
-const arrayOf = type("<t>", "t[]")
-const numericArray = arrayOf("number | bigint")
+const value = Math.random() > 0.5 ? "a" : 1
 
-if (ts.version.startsWith("5")) {
-	// this assertion will only occur when testing TypeScript 5+!
-	attest<(number | bigint)[]>(numericArray.infer)
-}
+// TypeScript 7 orders this union differently
+if (Number.parseInt(ts.version) >= 7)
+	attest(value).type.toString.snap('"a" | 1')
+else attest(value).type.toString.snap('1 | "a"')
 ```
 
-### Instantiations
+## Instantiations
 
-Snapshot the number of type instantiations contributed by the enclosing test.
+`attest.instantiations` snapshots the number of type instantiations contributed by the test that calls it, counted like a [bench](https://arktype.io/docs/attest/benches#type-benches) counts its block:
 
 ```ts
 import { attest } from "@ark/attest"
@@ -186,144 +309,274 @@ it("discriminated union", () => {
 			kind: "'pleb'"
 		})
 
-	attest.instantiations([7574, "instantiations"])
+	// measured with TypeScript 6.0.3
+	attest.instantiations([17010, "instantiations"])
 })
 ```
 
+Unlike a bench, it throws inside the test when the count exceeds its baseline by more than [`benchPercentThreshold`](https://arktype.io/docs/attest/options). Counts differ between TypeScript versions, so record them with the version you test against.
+
+## Snapshots
+
+A `.snap()` or `.completions()` with no argument is populated on the first run: [teardown](https://arktype.io/docs/attest#global-setup) writes the value into the call in your source file, then formats the file with [`formatCmd`](https://arktype.io/docs/attest/options), Prettier by default.
+
+To rewrite every snapshot with the current values, pass `--updateSnapshots` to your test command or set `ATTEST_updateSnapshots=true`. `-u` and `--update` work too, unless your runner claims them: Mocha's `-u` is its `--ui` flag.
+
+If a `CI` environment variable is set, a snapshot with no value throws rather than being populated, so a test can't pass in CI without its expected value. Set [`failOnMissingSnapshots`](https://arktype.io/docs/attest/options) to change that.
+
+`.snap.toFile(name)` stores the snapshot in `assert.snapshots.json` beside the test file rather than inline, keyed by the test file's name and then `name`. Pass `{ path }` to use another file, relative to the test's directory or absolute.
+
+```ts
+import { attest } from "@ark/attest"
+
+attest({ name: "Alan Turing" }).snap.toFile("user")
+```
+
+## contextualize
+
+`contextualize` wraps a test file's tests in a `describe` named after the file, e.g. `divisor` for `__tests__/divisor.test.ts`. It needs global `describe` and `it` functions, as in Mocha, or Vitest with `globals: true`.
+
+```ts
+import { attest, contextualize } from "@ark/attest"
+
+contextualize(() => {
+	it("adds", () => {
+		attest(1 + 1).equals(2)
+	})
+})
+```
+
+Pass a function before the tests to create a fresh context for each one:
+
+```ts
+import { attest, contextualize } from "@ark/attest"
+
+contextualize(
+	() => new Map<string, number>(),
+	it => {
+		it("starts empty", map => {
+			attest(map.size).equals(0)
+		})
+	}
+)
+```
+
+`contextualize.each(name, createContext, tests)` does the same for a named `describe` within the file.
 
 # Benches
 
-Benches are run separately from tests and don't require any special setup. If the below file was `benches.ts`, you could run it using something like `node benches.ts` or `tsx benches.ts`:
+> Measure the type instantiations and runtime of a block of code against a baseline stored inline.
 
-```ts title="benches.ts"
+A bench file is a plain script that needs no `setup`. Run it with `node benches.ts`, which strips the types on Node 22.18+, or any TypeScript runner. The first run writes each result into its call as the baseline, and later runs compare against it.
+
+## Type benches
+
+`.types()` counts the type instantiations of checking a bench's function and of evaluating the type it returns as fully as displaying it would. TypeScript defers the members of types like mapped types until something reads them, so return the result you want measured.
+
+```ts
 import { bench } from "@ark/attest"
 
-// Combinatorial template literals often result in expensive types- let's benchmark this one!
+// combinatorial template literals are often expensive
 type makeComplexType<s extends string> =
 	s extends `${infer head}${infer tail}` ? head | tail | makeComplexType<tail>
 	:	s
 
-bench("bench type", () => {
+bench("short string", () => {
 	return {} as makeComplexType<"defenestration">
-	// This is an inline snapshot that will be populated or compared when you run the file
-}).types([169, "instantiations"])
+}).types([163, "instantiations"])
 
-bench("bench runtime and type", () => {
+// about twice the count for twice the length, so the type is O(n)
+bench("long string", () => {
 	return {} as makeComplexType<"antidisestablishmentarianism">
-})
-	// Average time it takes the function execute
-	.mean([2, "ms"])
-	// Seems like our type is O(n) with respect to the length of the input- not bad!
-	.types([337, "instantiations"])
+}).types([317, "instantiations"])
 ```
+
+A count is deterministic for a given TypeScript version and code. These were measured with TypeScript 6.0.3.
 
 ## Baseline expressions
 
-If you're benchmarking an API, you'll need to include a "baseline expression" so that instantiations created when your API is initially invoked don't add noise to the individual tests.
-
-Here's an example of what that looks like:
+A bench's count is what its block adds to checking the rest of the file with every bench removed. The first call to an API instantiates types that later calls reuse, so without a baseline, each bench pays for that work. Put it in `bench.baseline`, which does nothing at runtime but stays in the file attest checks.
 
 ```ts
 import { bench } from "@ark/attest"
 import { type } from "arktype"
 
-// baseline expression
-type("boolean")
+bench.baseline(() => type("never"))
 
-bench("single-quoted", () => {
-	const _ = type("'nineteen characters'")
-	// would be 2697 without baseline
-}).types([610, "instantiations"])
+bench("single-quoted", () => type("'nineteen characters'")).types([
+	731,
+	"instantiations"
+])
 
-bench("keyword", () => {
-	const _ = type("string")
-	// would be 2507 without baseline
-}).types([356, "instantiations"])
+bench("keyword", () => type("string")).types([511, "instantiations"])
 ```
+
+On TypeScript 6.0.3, these benches count 13484 and 13408 without the baseline.
 
 > **Warning**
 >
-> Be sure your baseline expression is not identical to an expression you are
-> using in any of your benchmarks. If it is, the individual benchmarks will
-> reuse its cached types, leading to reduced (or 0) instantiations.
+> Don't bench an expression identical to your baseline expression. The bench would reuse the baseline's cached types and count fewer instantiations, or none.
+
+## Runtime benches
+
+`.median()` records the median time of a call, picking `ns`, `us`, `ms` or `s` on the first run.
+
+```ts
+import { bench } from "@ark/attest"
+import { type } from "arktype"
+
+// an export, so V8 can't treat the input as a constant
+export const data = { name: "Alan Turing", age: 41 }
+
+const User = type({ name: "string", age: "number.integer" })
+
+// the first run writes a result like [4.22, "ns"]
+bench("validate user", () => User(data)).median()
+```
+
+To measure what you mean to:
+
+- Return the result the bench computes. Each bench runs in a loop compiled for it alone, so V8 can inline it and drop any work whose result is unused. attest warns if a bench returns `undefined`.
+- Read inputs from an export rather than a literal or a local `const`, so V8 can't fold work on constant inputs. This matters most for small functions like a primitive check.
+- Prefer `.median()`, which is robust to the GC pauses and preemption that skew `.mean()`. `.mark()` records both.
+- Benches in a process share the code of the library they call, so a bench can read faster or slower depending on which benches ran before it. Only compare results between runs of the same file in the same order.
+
+Timings depend on the machine, so treat a runtime baseline as specific to the machine that recorded it.
+
+A runtime assertion can chain `.types()` to check the same bench's instantiations, as in `bench(...).median().types()`.
+
+### Options
+
+```ts
+import { bench } from "@ark/attest"
+
+export const items: number[] = []
+
+bench("push", () => items.push(1), {
+	// stop sampling after 1 second or 10,000 samples, whichever comes first
+	until: { ms: 1000, count: 10_000 },
+	// runs outside the timed section, after each sample
+	hooks: { afterCall: () => (items.length = 0) }
+}).median()
+```
+
+After a warmup of 500ms (or `until.ms`, if shorter), attest samples for 5 seconds or 100,000 samples, whichever comes first. A sample times as many calls as fit in about 0.2ms, so `hooks` run once per sample, not once per call.
+
+### Async benches
+
+A bench that returns a promise is awaited on every call, and its runtime assertion returns a promise:
+
+```ts
+import { bench } from "@ark/attest"
+
+export const bytes = new TextEncoder().encode("Alan Turing")
+
+await bench("sha-256", () => crypto.subtle.digest("SHA-256", bytes)).median()
+```
+
+## Running one bench
+
+`--filter` runs only the bench with that exact name:
+
+```bash
+node benches.ts --filter keyword
+```
+
+## Updating baselines
+
+Pass `--updateSnapshots` (or `-u`) to rewrite every baseline in the file with the new results. A result more than `benchPercentThreshold` under its baseline prints 📉 as a reminder to record a new one.
 
 ## Thresholds
 
-If you'd like to fail in CI above a threshold, you can add flags like the following (default value is 20%, but it will not throw unless `--benchErrorOnThresholdExceeded` is set):
+A result fails if it exceeds its baseline by more than `benchPercentThreshold` (20% by default). The bench prints 📈 when it runs, and the file prints ❌ for each failure when it exits, with exit code 1. [`attest.instantiations`](https://arktype.io/docs/attest/assertions#instantiations) throws inside its test instead.
+
+`benchErrorOnThresholdExceeded` decides which results fail. It's `true` (all) by default and can be `false`, `"types"` or `"runtime"`. Timings vary between runs and counts don't, so to fail only type benches:
 
 ```bash
-tsx ./p99/within-limit/p99-tall-simple.bench.ts --benchErrorOnThresholdExceeded --benchPercentThreshold 10
+node benches.ts --benchErrorOnThresholdExceeded types --benchPercentThreshold 10
 ```
-
 
 # Options
 
-Options can be specified in one of 3 ways:
+> Every attest option, its default, and how to set it from setup, a flag or an environment variable.
 
-- An argument passed to your test process, e.g. `--skipTypes` or `--benchPercentThreshold 10`
-- An environment variable with an `ATTEST_` prefix, e.g. `ATTEST_skipTypes=1` or `ATTEST_benchPercentThreshold=10`
-- Passed as an option to attest's `setup` function, e.g.:
+Set an option in one of three ways:
 
-```ts title="setupVitest.ts"
-import * as attest from "@ark/attest"
+- Pass it to `setup`, e.g. `setup({ skipTypes: true })`.
+- Pass it as a flag to the process that runs your tests or benches, e.g. `--skipTypes` or `--benchPercentThreshold 10`. A boolean option is turned on by its flag alone.
+- Set it as an environment variable prefixed with `ATTEST_`, e.g. `ATTEST_skipTypes=true` or `ATTEST_benchPercentThreshold=10`. Values are parsed as JSON, so a string needs quotes: `ATTEST_filter='"keyword"'`.
 
-export const setup = () =>
-	attest.setup({
-		skipTypes: true,
-		benchPercentThreshold: 10
-	})
-```
+Flags and options passed to `setup` both override environment variables. Avoid setting an option both in `setup` and as a flag: `setup` uses its own value, but your tests use the flag's. Benches don't call `setup`, so they read only flags and environment variables.
 
-Here are the current defaults for all available options. Please note, some of these are experimental and subject to change:
+## Options
 
-```ts
-export const getDefaultAttestConfig = (): BaseAttestConfig => ({
-	tsconfig:
-		existsSync(fromCwd("tsconfig.json")) ? fromCwd("tsconfig.json") : undefined,
-	compilerOptions: {},
-	attestAliases: ["attest", "attestInternal"],
-	failOnMissingSnapshots: "CI" in process.env,
-	updateSnapshots: false,
-	skipTypes: false,
-	skipInlineInstantiations: false,
-	benchPercentThreshold: 20,
-	benchErrorOnThresholdExceeded: true,
-	filter: undefined,
-	testDeclarationAliases: ["bench", "it", "test"],
-	formatCmd: `npm exec --no -- prettier --write`,
-	shouldFormat: true,
-	typeToStringFormat: {}
-})
-```
+| Option | Default | Effect |
+| - | - | - |
+| `skipTypes` | `false` | Skip type-checking in `setup` and every type assertion. See [below](https://arktype.io/docs/attest/options#skiptypes). |
+| `onlyNamedTestFiles` | `false` | Type-check only the test files named on the command line. See [below](https://arktype.io/docs/attest/options#onlynamedtestfiles). |
+| `checker` | see [below](https://arktype.io/docs/attest/options#checker) | The type checker to analyze with: `"tsjs"`, `"tsgo"` or `"tsrs"`. |
+| `updateSnapshots` | `false` | Rewrite every snapshot and bench baseline with the current value. Also `-u` or `--update`. |
+| `failOnMissingSnapshots` | `true` if `CI` is set | Throw on a `.snap()` with no value rather than populating it. |
+| `tsconfig` | nearest `tsconfig.json` | Path of the tsconfig to analyze. By default, attest looks in the working directory, then its parents. `null` ignores tsconfig files and uses only `compilerOptions`. |
+| `compilerOptions` | `{}` | Compiler options, as written in a tsconfig, merged over the tsconfig's. As a flag, pass JSON. |
+| `attestAliases` | `["attest", "attestInternal"]` | Names of the functions whose calls `setup` analyzes. Replaces the default. As a flag, separate names with commas. See [Custom assertions](https://arktype.io/docs/attest/integration). |
+| `skipInlineInstantiations` | `false` | Skip measuring and checking [`attest.instantiations`](https://arktype.io/docs/attest/assertions#instantiations). |
+| `testDeclarationAliases` | `["bench", "it", "test"]` | Names of the calls whose blocks count as a bench or test when counting instantiations. |
+| `benchPercentThreshold` | `20` | How far a result can exceed its baseline, in percent, before it fails. See [Thresholds](https://arktype.io/docs/attest/benches#thresholds). |
+| `benchErrorOnThresholdExceeded` | `true` | Which results over the threshold fail: `true` (all), `false`, `"types"` or `"runtime"`. |
+| `filter` | none | Run only the bench with this name. |
+| `formatCmd` | `npm exec --no -- prettier --write` | Command run on each file attest writes snapshots into. |
+| `shouldFormat` | `true` | Whether to run `formatCmd`. |
+| `typeToStringFormat` | `{}` | Prettier options for type strings. See [below](https://arktype.io/docs/attest/options#typetostringformat). |
+
+`getDefaultAttestConfig()` returns the defaults, and the `AttestConfig` type describes what `setup` accepts. `setup` analyzes only files under the working directory.
 
 ### skipTypes
 
-`skipTypes` is extremely useful for iterating quickly during development without having to typecheck your project to test runtime logic.
+`skipTypes` makes `setup` skip type-checking your project and skips every assertion that needs type information. Use it to iterate quickly when you're only changing runtime code.
 
-When this setting is enabled, setup will skip type checking and all assertions requiring type information will be skipped.
+You likely want two scripts:
 
-You likely want two scripts, one for running tests with types and one for tests without:
-
-```json title="package.json"
-"test": "ATTEST_skipTypes=1 vitest run",
-"testWithTypes": "vitest run",
+```json
+"test": "ATTEST_skipTypes=true vitest run",
+"testWithTypes": "vitest run"
 ```
 
-Our recommendation is to use `test` when:
+Use `test` when:
 
-- Only wanting to test runtime logic during development
-- Running tests in watch mode or via VSCode's Test Explorer
+- You're only changing runtime logic
+- You're running tests in watch mode or from your editor's test explorer
 
 Use `testWithTypes` when:
 
-- You've made changes to your types and want to recheck your type-level assertions
-- You're running your tests in CI
+- You've changed types and want to recheck your type-level assertions
+- You're running tests in CI
+
+### onlyNamedTestFiles
+
+With `onlyNamedTestFiles`, `setup` type-checks only the test files named on the command line, e.g. `vitest run src/user.test.ts`. One file checks in seconds where a large project takes minutes. With no test file named, it checks every file as before.
+
+A named file has to be a path to a file that exists, ends in `.test.ts` (or `.test.js`, `.test.mts`, `.test.tsx` and the like), and is part of your tsconfig. A test in a file that wasn't checked fails with "Found no assertion data", so a missed file can't pass silently.
+
+Your runner must also run only the named files. Mocha runs files named on the command line in addition to the `spec` in its config, so leave the config out (`--no-package` if it's in `package.json`) and pass the options you need as flags. Vitest rejects flags it doesn't know, so set the environment variable instead:
+
+```bash
+ATTEST_onlyNamedTestFiles=true vitest run src/user.test.ts
+```
+
+### checker
+
+The type checker attest analyzes type assertions with:
+
+- `"tsjs"`: TypeScript's JS API, for TypeScript 6 and earlier
+- `"tsgo"`: TypeScript 7's native compiler
+- `"tsrs"`: [tsrs](https://github.com/oxc-project/tsrs), a faster Rust port of TypeScript 7 that serves the same API
+
+By default, attest uses tsrs if it's installed alongside TypeScript 7 on a platform it ships a binary for, otherwise the checker matching your TypeScript version. Setting a checker that doesn't match your installed TypeScript throws.
 
 ### typeToStringFormat
 
-A set of [`prettier.Options`](https://prettier.io/docs/en/options.html) overrides that apply specifically `type.toString` formatting.
-
-Any options you provide will override the defaults, which are as follows:
+[Prettier options](https://prettier.io/docs/en/options.html) for the type strings of `.type.toString` and `.jsdoc`. Yours override these defaults:
 
 ```json
 {
@@ -335,83 +588,78 @@ Any options you provide will override the defaults, which are as follows:
 }
 ```
 
-The easiest way to provide overrides is to the `setup` function, but they can also be provided as a JSON serialized string either passed to a `--typeToStringFormat` CLI flag or set as the value of `ATTEST_typeToStringFormat` on `process.env`.
-
+As a flag or environment variable, pass them as JSON, e.g. `--typeToStringFormat '{ "useTabs": true }'`.
 
 # CLI
 
-Attest also includes a built-in `attest` CLI including the following commands:
+> Summarize, trace and precache your project's type performance from the attest command.
 
-### stats
+`@ark/attest` installs an `attest` command, which you can run with `npx attest` or from a `package.json` script. `stats` and `trace` run `tsc` through `npm exec`, and both work for projects with `composite: true`.
 
-```bash
-npm run attest stats packages/*
-```
-
-Summarizes key type performance metrics for each package (check time, instantiations, and type count).
-
-Expects any number of args representing package directories to check, optionally specified using glob patterns like `packages/*`.
-
-If no directories are provided, defaults to CWD.
-
-### trace
+## stats
 
 ```bash
-npm run attest trace .
+npx attest stats packages/*
 ```
 
-Creates a trace.json file in `.attest/trace` that can be viewed as a type performance heat map via a tool like [Perfetto](https://ui.perfetto.dev/). Also summarizes any hot spots as identified by `@typescript/analyze-trace`.
+Type-checks each directory you pass with its own tsconfig, then prints its check time, type count and instantiation count, and the totals across all of them. With no arguments, it checks the current directory.
 
-Trace expects a single argument representing the root directory of the root package for which to gather type information.
+attest doesn't expand globs itself, so `packages/*` relies on your shell. Shells like Windows `cmd` don't expand it.
 
+## trace
 
-# Integration
+```bash
+npx attest trace
+```
 
-### Setup
+Runs `tsc --generateTrace` on the `tsconfig.json` in the current directory and writes the results to `.attest/trace`:
 
-If you're a library author wanting to integrate type into your own assertions instead of using the `attest` API, you'll need to call `setup` with a list of `attestAliases` to ensure type data is collected from your own functions:
+- `trace.json`, which you can open in [Perfetto](https://ui.perfetto.dev/) as a type performance heat map
+- `summary.txt`, with the slowest individual calls and the functions ranked by self time, which it also prints
+- `ranges.csv` and `names.csv`, the same data per call and per function name
+
+It has to run from a directory with a `tsconfig.json`. An optional argument sets the directory `tsc` runs in, which defaults to the current one.
+
+## precache
+
+```bash
+npx attest precache
+```
+
+Writes the type data `setup` would, to `.attest/assertions.json` or the path you pass. Assertions read it from `.attest/assertions.json`, but `setup` deletes and rewrites that file, so a precached file is only used by tests that run without `setup`, e.g. CI jobs that share the output of one type-checking step.
+
+# Custom assertions
+
+> Read the type data attest collects from your own assertion functions.
+
+If you're a library author who wants type data in your own assertions rather than through `attest`, tell `setup` which function names to analyze with `attestAliases`.
+
+## Setup
 
 ```ts
 import { setup } from "@ark/attest"
 
-// attest will only collect type data from functions with names listed in `attestAliases`
-setup({ attestAliases: ["yourCustomAssert"] })
-
-// There are many other config options, but some are primarily internal- use others at your own risk!
+// replaces the default ["attest", "attestInternal"], so keep "attest" if you use it
+setup({ attestAliases: ["attest", "yourCustomAssert"] })
 ```
 
-You'll need to make sure that setup with whatever aliases you need before the first test runs. As part of the setup process, attest will search for the specified assertion calls and cache their types in a temporary file that will be referenced during test execution.
+`setup` has to run with these aliases before the first test. It finds every call to them in your project and writes their types to `.attest/assertions.json`, so assertions in any test process can read them without starting TypeScript.
 
-This ensures that type assertions can be made across processes without creating a new TSServer instance for each.
+## Type data
 
-### TS Versions
-
-Attest analyzes your project with whichever version of `typescript` is installed. To test multiple versions, run your suite once per version, e.g. via a CI matrix that installs each version before running tests.
-
-TypeScript 7.1+ is supported via its native API. Type assertions, completions, JSDoc, benches and the CLI work the same way, with a few differences:
-
-- Instantiation counts are measured by running `tsc --extendedDiagnostics --singleThreaded` per bench. Since `tsc` fully checks the bench's dependencies before measuring it, work a bench shares with them isn't attributed to the bench, so counts run lower than with TypeScript 5/6, by as much as most of the count for a bench whose cost is mostly shared with its dependencies, and baselines should be recorded separately.
-- Type strings, union ordering and error elaboration can differ from earlier versions, so snapshots may need to be updated when switching.
-- Benches write temporary copies beside their source files while measuring, so they need a writable source directory.
-
-### APIs
-
-The most flexible attest APIs are `getTypeAssertionAtPosition` and `caller`.
-
-Here's an example of how you might use them in your own API:
+`caller` returns the position your function was called from, and `getTypeAssertionAtPosition` returns the data `setup` recorded for the call there:
 
 ```ts
 import { caller, getTypeAssertionAtPosition } from "@ark/attest"
 
 export const yourCustomAssert = <expectedType>(actualValue: expectedType) => {
-	const position = caller()
-	const assertion = getTypeAssertionAtPosition(position)
+	const assertion = getTypeAssertionAtPosition(caller())
 	const actual = assertion.args[0]
-	// relationship of the actual value's type to the expected type arg
+	// how the value's type relates to the expected type argument
 	const relationship = actual.relationships.typeArgs[0]
 	if (relationship === undefined) {
 		throw new Error(
-			`yourCustomAssert requires a type arg representing the expected type, e.g. 'yourCustomAssert<"foo">("foo")'`
+			`yourCustomAssert requires an expected type, e.g. yourCustomAssert<"foo">("foo")`
 		)
 	}
 	if (relationship !== "equality") {
@@ -422,17 +670,45 @@ export const yourCustomAssert = <expectedType>(actualValue: expectedType) => {
 }
 ```
 
-A user might then use `yourCustomAssert` like this:
+A user might then call it like this:
 
 ```ts
 import { yourCustomAssert } from "your-package"
 
-// Ok
+// passes
 yourCustomAssert<"foo">(`${"f"}oo` as const)
-// Error: `Expected boolean, got true with relationship subtype`
+// throws "Expected boolean, got true with relationship subtype"
 yourCustomAssert<boolean>(true)
-// Error: `Expected 5, got number with relationship supertype`
+// throws "Expected 5, got number with relationship supertype"
+// @ts-expect-error
 yourCustomAssert<5>(2 + 3)
 ```
 
-Please don't hesitate to open a GitHub [issue](https://github.com/arktypeio/arktype/issues/new/choose) or [discussion](https://github.com/arktypeio/arktype/discussions/new/choose) or reach out on [ArkType's Discord](https://arktype.io/discord) if you have any questions or feedback- we'd love to hear from you! ⛵
+The data for each call (`TypeAssertionData`) has:
+
+- `args` and `typeArgs`: for each argument and type argument, its `type` as TypeScript displays it, and `relationships.args` and `relationships.typeArgs`, how it relates to each argument and type argument: `"subtype"`, `"supertype"`, `"equality"` or `"none"`
+- `errors`: the messages of the type errors reported for the call
+- `completions`: the completions of each string literal in the first argument
+- `jsdoc`: the JSDoc of the first argument, if any
+- `location`: the call's start and end `{ line, char }`
+
+If your assertion is called through a helper of yours, `caller()` returns the position of the call in the helper. Pass `caller({ upStackBy: 4 })` to look one call further up the stack, or a `skip` function that returns `true` for each position to move past, e.g. `caller({ skip: position => position.method === "yourHelper" })`.
+
+## Instantiations
+
+A call to `.instantiations` on an alias, e.g. `yourCustomAssert.instantiations()`, records the instantiations contributed by the test it's in. `getBenchAssertionAtPosition` returns that count:
+
+```ts
+import { caller, getBenchAssertionAtPosition } from "@ark/attest"
+
+yourCustomAssert.instantiations = (max: number) => {
+	const { count } = getBenchAssertionAtPosition(caller())
+	if (count > max) throw new Error(`${count} instantiations exceeds ${max}`)
+}
+```
+
+## Without setup
+
+`writeAssertionData(path)` type-checks your project and writes the type data to `path`, as `setup` does without deleting `.attest` or recording config. Assertions read it from `.attest/assertions.json`.
+
+For questions or feedback, open an [issue](https://github.com/arktypeio/arktype/issues/new/choose) or [discussion](https://github.com/arktypeio/arktype/discussions/new/choose) on GitHub, or ask on [ArkType's Discord](https://arktype.io/discord).

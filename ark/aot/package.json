@@ -1,0 +1,143 @@
+{
+	"name": "@ark/aot",
+	"description": "Precompiles arktype definitions at build time",
+	"version": "0.0.1",
+	"license": "MIT",
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/aot"
+	},
+	"type": "module",
+	"main": "./out/index.js",
+	"types": "./out/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"eslint": [
+				"./out/eslint.d.ts"
+			],
+			"unplugin": [
+				"./out/unplugin.d.ts"
+			],
+			"bun": [
+				"./out/bun.d.ts"
+			],
+			"node": [
+				"./out/node.d.ts"
+			],
+			"shadow": [
+				"./out/shadow.d.ts"
+			],
+			"turbopack": [
+				"./out/turbopack.d.ts"
+			],
+			"internal/*": [
+				"./out/*"
+			]
+		}
+	},
+	"exports": {
+		".": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
+		"./eslint": {
+			"ark-ts": "./eslint.ts",
+			"default": "./out/eslint.js"
+		},
+		"./unplugin": {
+			"ark-ts": "./unplugin.ts",
+			"default": "./out/unplugin.js"
+		},
+		"./bun": {
+			"ark-ts": "./bun.ts",
+			"default": "./out/bun.js"
+		},
+		"./node": {
+			"ark-ts": "./node.ts",
+			"default": "./out/node.js"
+		},
+		"./shadow": {
+			"ark-ts": "./shadow.ts",
+			"default": "./out/shadow.js"
+		},
+		"./turbopack": {
+			"ark-ts": "./turbopack.ts",
+			"default": "./out/turbopack.js"
+		},
+		"./internal/*.ts": {
+			"ark-ts": "./*.ts",
+			"default": "./out/*.js"
+		},
+		"./internal/*.js": {
+			"ark-ts": "./*.ts",
+			"default": "./out/*.js"
+		}
+	},
+	"files": [
+		"out",
+		"ark.schema.json"
+	],
+	"engines": {
+		"node": ">=22.12.0"
+	},
+	"bin": {
+		"arktype-precompile": "out/cli.js"
+	},
+	"scripts": {
+		"build": "ts ../repo/build.ts",
+		"test": "ts ../repo/testPackage.ts",
+		"tnt": "ts ../repo/testPackage.ts --skipTypes"
+	},
+	"dependencies": {
+		"@ark/schema": "workspace:*",
+		"@ark/util": "workspace:*",
+		"@jridgewell/sourcemap-codec": "1.5.5",
+		"arkregex": "workspace:*",
+		"magic-string": "0.30.19",
+		"oxc-parser": "0.153.0",
+		"oxc-resolver": "11.24.2",
+		"unplugin": "3.4.0"
+	},
+	"peerDependencies": {
+		"arktype": "workspace:*",
+		"eslint": ">=9",
+		"typescript": ">=5.5"
+	},
+	"peerDependenciesMeta": {
+		"eslint": {
+			"optional": true
+		},
+		"typescript": {
+			"optional": true
+		}
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"devDependencies": {
+		"@elysiajs/openapi": "1.4.16",
+		"@modelcontextprotocol/client": "2.3.1",
+		"@modelcontextprotocol/server": "2.3.1",
+		"@orpc/arktype": "1.15.7",
+		"@orpc/openapi": "1.15.7",
+		"@orpc/server": "1.15.7",
+		"@rspack/core": "2.2.9",
+		"@typescript-eslint/scope-manager": "8.46.1",
+		"ai": "7.0.140",
+		"arktype": "workspace:*",
+		"elysia": "1.4.30",
+		"esbuild": "0.25.10",
+		"fast-check": "3.23.2",
+		"rollup": "4.52.4",
+		"typescript-6": "npm:typescript@6.0.3",
+		"vite": "8.3.4",
+		"vitest": "5.0.3",
+		"webpack": "5.112.0"
+	}
+}

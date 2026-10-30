@@ -1,8 +1,11 @@
-import { rootSchema } from "@ark/schema"
+import { execMorph, makeMorph, node } from "@ark/schema"
 import {
 	Backslash,
+	cached,
 	isKeyOf,
 	throwParseError,
+	tryParseDate,
+	writeInvalidDateMessage,
 	type ErrorMessage,
 	type Scanner
 } from "@ark/util"
@@ -11,7 +14,6 @@ import type { Out } from "../../../attributes.ts"
 import type { InferredAst } from "../../ast/infer.ts"
 import type { RuntimeState } from "../../reduce/dynamic.ts"
 import type { StaticState, s } from "../../reduce/static.ts"
-import { tryParseDate, writeInvalidDateMessage } from "./date.ts"
 
 export type StringLiteral<contents extends string = string> =
 	| DoubleQuotedStringLiteral<contents>
@@ -23,31 +25,44 @@ export type DoubleQuotedStringLiteral<contents extends string = string> =
 export type SingleQuotedStringLiteral<contents extends string = string> =
 	`'${contents}'`
 
-const regexExecArray = rootSchema({
-	proto: "Array",
-	sequence: "string",
-	required: {
-		key: "groups",
-		value: ["object", { unit: undefined }]
-	}
-})
+const regexExecArray = cached(() =>
+	node("intersection", {
+		proto: node("proto", { proto: Array }),
+		structure: node("structure", {
+			sequence: node("sequence", {
+				variadic: node("domain", { domain: "string" })
+			}),
+			required: [
+				node("required", {
+					key: "groups",
+					value: node("union", {
+						branches: [
+							node("domain", { domain: "object" }),
+							node("unit", { unit: undefined })
+						]
+					})
+				})
+			]
+		})
+	})
+)
 
 export const parseEnclosed = (
 	s: RuntimeState,
 	enclosing: EnclosingStartToken
 ): void => {
-	const enclosed = s.scanner.shiftUntilEscapable(
+	const enclosed = s.sc.shiftUntilEscapable(
 		untilLookaheadIsClosing[enclosingTokens[enclosing]],
 		// within a regex literal, `\\` is a literal backslash and must be
 		// preserved verbatim in the pattern source; collapsing it to a single
 		// backslash would corrupt the regex (e.g. `\\d` -> `\d` digit class)
 		enclosing in enclosingRegexTokens ? Backslash : ""
 	)
-	if (s.scanner.lookahead === "")
+	if (s.sc.peek === "")
 		return s.error(writeUnterminatedEnclosedMessage(enclosed, enclosing))
 
 	// Shift the scanner one additional time for the second enclosing token
-	s.scanner.shift()
+	s.sc.shift()
 	if (enclosing in enclosingRegexTokens) {
 		let regex: RegExp
 
@@ -60,17 +75,16 @@ export const parseEnclosed = (
 		s.root = s.ctx.$.node(
 			"intersection",
 			{
-				domain: "string",
-				pattern: enclosed
+				domain: s.ctx.$.node("domain", { domain: "string" }),
+				pattern: [s.ctx.$.node("pattern", { rule: enclosed })]
 			},
-			{ prereduced: true }
+			{ reduced: true }
 		)
 
 		if (enclosing === "x/") {
 			s.root = s.ctx.$.node("morph", {
-				in: s.root,
-				morphs: (s: string) => regex.exec(s),
-				declaredOut: regexExecArray
+				morphs: [s.root, makeMorph(execMorph, regex)],
+				declaredOut: regexExecArray()
 			})
 		}
 	} else if (isKeyOf(enclosing, enclosingQuote))
@@ -181,9 +195,9 @@ export const untilLookaheadIsClosing: Record<
 	EnclosingEndToken,
 	Scanner.UntilCondition
 > = {
-	"'": scanner => scanner.lookahead === `'`,
-	'"': scanner => scanner.lookahead === `"`,
-	"/": scanner => scanner.lookahead === `/`
+	"'": sc => sc.peek === `'`,
+	'"': sc => sc.peek === `"`,
+	"/": sc => sc.peek === `/`
 }
 
 const enclosingCharDescriptions = {

@@ -1,0 +1,122 @@
+---
+title: Validation
+description: Check data against a Type by calling it, asserting it or testing it with allows.
+---
+
+## Calling a Type
+
+A Type is a function. Call it with any data and it returns either the validated output or `ArkErrors`:
+
+```ts
+const User = type({
+	name: "string",
+	age: "number.integer >= 0"
+})
+
+const out = User({ name: "Alan", age: 41.5 })
+
+if (out instanceof type.errors) {
+	// age must be an integer (was 41.5)
+	console.error(out.summary)
+} else {
+	// out is { name: string; age: number }
+	console.log(out.name)
+}
+```
+
+`type.errors` is the `ArkErrors` class, so `instanceof` narrows the result. Invalid data never throws unless you configure [`onFail`](/docs/configuration#onfail). See [Errors](/docs/errors) for what `ArkErrors` contains.
+
+The output is the data after [morphs](/docs/intro/morphs-and-more) and defaults have run, so it can differ from the input:
+
+```ts
+const Form = type({ age: "string.numeric.parse" })
+
+// { age: 41 }
+Form({ age: "41" })
+
+// ArkErrors: age must be a well-formed numeric string (was "forty")
+Form({ age: "forty" })
+```
+
+## assert
+
+`.assert` returns the output or throws a [`TraversalError`](/docs/errors#traversalerror), for when invalid data is a bug rather than something to handle:
+
+```ts
+const Form = type({ age: "string.numeric.parse" })
+
+// { age: 41 }
+const form = Form.assert({ age: "41" })
+
+// TraversalError: age must be a well-formed numeric string (was "forty")
+Form.assert({ age: "forty" })
+```
+
+## from
+
+`.from` is `.assert` with its argument typed as the Type's input, so TypeScript checks data you write by hand:
+
+```ts
+// @errors: 2322
+const User = type({ name: "string", age: "number" })
+
+// { name: "David", age: 34 }
+const david = User.from({ name: "David", age: 34 })
+
+// TypeScript: Type 'string' is not assignable to type 'number'
+const typo = User.from({ name: "David", age: "34" })
+```
+
+## allows
+
+`.allows` returns a boolean and narrows its argument, without building errors or running morphs:
+
+```ts
+const User = type({ name: "string", age: "number" })
+
+const data: unknown = { name: "David", age: 34 }
+
+if (User.allows(data)) {
+	// data is { name: string; age: number }
+	console.log(data.name)
+}
+
+const Numeric = type("number | bigint")
+
+// [0, 2n]
+const numerics = [0, "one", 2n].filter(Numeric.allows)
+```
+
+On a Type with a morph, `.allows` checks only the input, so data can be allowed and still fail when the Type is called:
+
+```ts
+const AtLeast6 = type("string.numeric.parse").to("number >= 6")
+
+// true, since "3" is a numeric string
+AtLeast6.allows("3")
+
+// ArkErrors: must be at least 6 (was 3)
+AtLeast6("3")
+```
+
+## Standard Schema
+
+Every Type implements [Standard Schema](/docs/standard-schema), so libraries that accept one can validate with it through `~standard.validate`. ArkType validates synchronously, and a failure result is `{ issues }`, a copy of each error in the `ArkErrors` whose `message` [leaves out its path](/docs/standard-schema#validation):
+
+```ts
+const User = type({ name: "string", age: "number" })
+
+const result = await User["~standard"].validate({ name: "David", age: "34" })
+
+if (result.issues) {
+	// must be a number (was a string)
+	console.log(result.issues[0].message)
+} else {
+	// { name: string; age: number }
+	console.log(result.value)
+}
+```
+
+## Custom checks
+
+To add your own check, use [`.narrow`](/docs/expressions#narrow). To transform data, use [`.pipe`](/docs/expressions#pipe). Both receive a [`ctx`](/docs/traversal-api) for reporting errors.

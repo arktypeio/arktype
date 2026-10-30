@@ -1,0 +1,150 @@
+---
+title: Nodes
+description: The node kinds every Type is built from, and how to read them with .internal, .json and select.
+---
+
+Every Type is a tree of nodes from `@ark/schema`. Each node has a `kind`, and its `.json` shows the tree in the [schema format](/docs/internals/schemas):
+
+```ts
+const User = type({ name: "string", "age?": "number" })
+
+User.json
+// {
+// 	required: [{ key: "name", value: "string" }],
+// 	optional: [{ key: "age", value: "number" }],
+// 	domain: "object"
+// }
+```
+
+`.json` uses shorthand where it can, like `"string"` for a nested `{ domain: "string" }` and `divisor: 5` for `divisor: { rule: 5 }`. Functions and cyclic references become registered names like `"$ark.fn"`.
+
+## .internal
+
+A Type and its root node are the same object. `.internal` returns it typed as a node, which adds the node API that Type leaves out:
+
+```ts
+const User = type({ name: "string", "age?": "number" })
+
+User.internal.kind // "intersection"
+User.internal.children.map(child => child.kind) // ["domain", "structure"]
+```
+
+## Node kinds
+
+### Roots
+
+The node at the root of a Type always has one of these kinds.
+
+#### Bases
+
+A basis is the base set of values a node's constraints narrow. An intersection has at most one. From widest to narrowest:
+
+| kind     | allows                                                                                       | schema                 |
+| -------- | -------------------------------------------------------------------------------------------- | ---------------------- |
+| `domain` | One of the value sets that can't be listed: `string`, `number`, `bigint`, `object`, `symbol` | `{ domain: "string" }` |
+| `proto`  | Instances of a constructor, checked with `instanceof`. Implies the `object` domain.          | `{ proto: Date }`      |
+| `unit`   | One exact value, compared with `===`                                                         | `{ unit: true }`       |
+
+`{ domain: "number" }` rejects `NaN`, `Infinity` and `-Infinity`. Add `numberAllowsNaN: true` or `numberAllowsInfinity: true` to allow them.
+
+`undefined`, `null`, `true` and `false` are `unit` nodes. `boolean` is a union of two of them.
+
+#### Composites
+
+Composite kinds are built from other nodes:
+
+| kind           | allows                                                                                    | schema                                  |
+| -------------- | ----------------------------------------------------------------------------------------- | --------------------------------------- |
+| `alias`        | Whatever the node it references allows. Aliases are how cyclic types refer to themselves. | `{ reference: "$node" }`                |
+| `union`        | Data any branch allows. `ordered: true` keeps branches in the order given.                | `["string", "number"]`                  |
+| `morph`        | Data the first of its `morphs` allows if it's a node, which the rest then transform       | `{ morphs: ["string", s => s.trim()] }` |
+| `intersection` | Data its basis and every constraint allow                                                 | `{ domain: "number", divisor: 5 }`      |
+
+`unknown` is an intersection with no constraints (`{}`), and `never` is a union with no branches (`[]`).
+
+### Constraints
+
+Constraint nodes sit on an intersection and narrow what its [basis](#bases) allows. Each needs the basis listed under **requires**. Methods like `.divisibleBy()` throw when a Type's basis doesn't match. In a schema, pair each constraint with its basis yourself.
+
+#### Refinements
+
+Refinements apply to the intersection itself:
+
+| kind             | requires          | allows                                                                        | schema                             |
+| ---------------- | ----------------- | ----------------------------------------------------------------------------- | ---------------------------------- |
+| `pattern`        | `string`          | Strings matching a regex                                                      | `{ rule: "^[a-z]+$", flags: "i" }` |
+| `divisor`        | `number`          | Multiples of an integer                                                       | `{ rule: 2 }`                      |
+| `min`            | `number`          | Numbers at or above `rule`, or above it if `exclusive`                        | `{ rule: 0, exclusive: true }`     |
+| `max`            | `number`          | Numbers at or below `rule`, or below it if `exclusive`                        | `{ rule: 100 }`                    |
+| `minLength`      | `string \| Array` | At least `rule` characters or elements                                        | `{ rule: 1 }`                      |
+| `maxLength`      | `string \| Array` | At most `rule` characters or elements                                         | `{ rule: 255 }`                    |
+| `exactLength`    | `string \| Array` | Exactly `rule` characters or elements                                         | `{ rule: 10 }`                     |
+| `after`          | `Date`            | Dates at or after `rule`                                                      | `{ rule: new Date("2000-01-01") }` |
+| `before`         | `Date`            | Dates at or before `rule`                                                     | `{ rule: new Date("2030-01-01") }` |
+| `notEqual`       | `number \| Date`  | Numbers or Dates other than `rule`                                            | `{ rule: 0 }`                      |
+| `notEqualLength` | `string \| Array` | Other than `rule` characters or elements                                      | `{ rule: 3 }`                      |
+| `structure`      | `object`          | Objects whose props and elements match its [structural](#structural) children | `{ required: [...] }`              |
+| `predicate`      |                   | Data a custom `narrow` function accepts                                       | `{ predicate: n => n % 2 === 1 }`  |
+
+In an intersection's schema, the constraint's kind is its key and a bare rule is shorthand, so `{ domain: "number", divisor: 2 }` is `{ domain: "number", divisor: { rule: 2 } }`. A `structure`'s keys sit directly on the intersection: `{ domain: "object", required: [...], undeclared: "reject" }`.
+
+#### Structural
+
+Structural constraints are the children of a `structure` node:
+
+| kind       | describes                                                                                      | schema                                       |
+| ---------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `required` | A property that must be present                                                                | `{ key: "id", value: "number" }`             |
+| `optional` | A property that may be missing, with an optional `default`                                     | `{ key: "name", value: "string" }`           |
+| `index`    | Values of every key matching `signature`                                                       | `{ signature: "string", value: "boolean" }`  |
+| `sequence` | Array elements: `prefix`, `defaultables`, `optionals`, a `variadic` rest element and `postfix` | `{ prefix: ["string"], variadic: "number" }` |
+
+## select
+
+`select` returns the nodes a Type references that match a selector:
+
+```ts
+const T = type({
+	name: "string > 5",
+	flag: "0 | 1"
+})
+	.array()
+	.atLeastLength(1)
+
+// every literal value
+T.select("unit").map(u => u.unit) // [0, 1]
+
+// literal values that are positive numbers
+T.select({
+	kind: "unit",
+	where: u => typeof u.unit === "number" && u.unit > 0
+}).map(u => u.unit) // [1]
+
+// minLength at the root, excluding the one on name
+T.select({ kind: "minLength", boundary: "shallow" }).map(n => n.rule) // [1]
+
+// the first divisor, or undefined
+T.select({ kind: "divisor", method: "find" }) // undefined
+```
+
+A selector is a node kind, a boundary, a predicate, or an object combining them:
+
+| key        | values                                                                                                                                                                       | default        |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `kind`     | Any node kind                                                                                                                                                                | every kind     |
+| `where`    | A predicate on the node, typed by `kind`                                                                                                                                     | every node     |
+| `boundary` | `"self"` (only the node), `"child"` (its direct children), `"shallow"` (references down to its props and sequence, but not their values) or `"references"` (every reference) | `"references"` |
+| `method`   | `"filter"` returns an array and `"find"` the first match or `undefined`. `"assertFilter"` and `"assertFind"` throw if nothing matches.                                       | `"filter"`     |
+
+`configure` and `describe` accept the same selector as a second argument, to change metadata only on the nodes it matches. Their default is `"shallow"`:
+
+```ts
+const User = type({ name: "string" }).configure(
+	{ description: "a name" },
+	{ kind: "domain", where: d => d.domain === "string" }
+)
+
+User({ name: 5 }).toString() // "name must be a name (was a number)"
+```
+
+See [metadata](/docs/expressions#meta) for more on `configure`.

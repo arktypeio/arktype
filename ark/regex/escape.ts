@@ -1,4 +1,4 @@
-import type { ErrorMessage, Scanner, WhitespaceChar } from "@ark/util"
+import type { ErrorMessage, Scanner } from "@ark/util"
 import type { Control, ReferenceNode, s, State } from "./state.ts"
 
 export type parseEscape<s extends State, unscanned extends string> =
@@ -47,9 +47,9 @@ type parseSingleEscapedCharacter<
 	:	never
 
 export type parseEscapedChar<char extends string> =
-	char extends RegexClassChar ? string
+	// \s matches \r, \f, \v and Unicode spaces, too many to infer as a union
+	char extends RegexClassChar | "s" ? string
 	: char extends "d" ? `${number}`
-	: char extends "s" ? WhitespaceChar
 	: // does not consume tokens
 	char extends BoundaryChar ? ""
 	: char extends Control ? char

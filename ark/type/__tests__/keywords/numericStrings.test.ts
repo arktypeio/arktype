@@ -20,6 +20,33 @@ contextualize(() => {
 		)
 	})
 
+	it("string.numeric exponent", () => {
+		attest(type("string.numeric")("5.7e-10")).equals("5.7e-10")
+		attest(type("string.numeric.parse")("-1E+3")).equals(-1000)
+		attest(type("string.numeric")("1e").toString()).snap(
+			'must be a well-formed numeric string (was "1e")'
+		)
+	})
+
+	it("string.numeric.parse rejects a string parsing to Infinity", () => {
+		const parseNum = type("string.numeric.parse")
+		attest(parseNum("-1e400").toString()).snap('must be finite (was "-1e400")')
+		attest(parseNum("1e308")).equals(1e308)
+		// the shortest string parsing to Infinity, and the longest too short to
+		attest(parseNum("1e309").toString()).snap('must be finite (was "1e309")')
+		attest(parseNum("9e99")).equals(9e99)
+		attest(parseNum.in.toJsonSchema()).equals(
+			type("string.numeric").toJsonSchema()
+		)
+	})
+
+	// string.integer.parse reads digits, so an exponent isn't an integer string
+	it("string.integer rejects exponents", () => {
+		attest(type("string.integer")("1e3").toString()).snap(
+			'must be a well-formed integer string (was "1e3")'
+		)
+	})
+
 	it("string.integer", () => {
 		const IntegerString = type("string.integer")
 		attest(IntegerString("5")).equals("5")

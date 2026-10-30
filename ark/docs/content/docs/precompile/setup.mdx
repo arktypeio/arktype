@@ -1,0 +1,413 @@
+---
+title: Setup
+description: Add precompilation to your bundler, framework, test runner or Node program.
+---
+
+## Installation
+
+<InstallationTabs pkg="@ark/aot" dev />
+
+`@ark/aot` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, so a bundle or Node [fails to link](/docs/precompile/troubleshooting#setup) it to another version's runtime, like one a stale cache kept. That import adds nothing to the bundle.
+
+`@ark/aot` peers on the exact `arktype` it was released with, so upgrade the two together. Renovate and Dependabot open a pull request for each unless you group them:
+
+```json title="renovate.json"
+{
+	"packageRules": [
+		{
+			"matchPackageNames": ["arktype", "@ark/*"],
+			"groupName": "arktype"
+		}
+	]
+}
+```
+
+```yaml title=".github/dependabot.yml"
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      arktype:
+        patterns: ["arktype", "@ark/*"]
+```
+
+## Bundlers
+
+`@ark/aot/unplugin` precompiles a program as your bundler builds it.
+
+<Tabs
+	items={["Vite", "esbuild", "Rolldown", "Rollup", "webpack", "Rspack", "Rsbuild", "Bun", "Others"]}
+	groupId="bundler"
+	persist
+>
+<Tab value="Vite">
+
+```ts title="vite.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+	plugins: [precompile.vite()]
+})
+```
+
+Vitest runs tests through the same plugin. With a framework, list it right after the framework's plugin, as [Frameworks](#frameworks) shows.
+
+</Tab>
+<Tab value="esbuild">
+
+```ts title="build.ts"
+import { precompile } from "@ark/aot/unplugin"
+import { build } from "esbuild"
+
+await build({
+	entryPoints: ["src/main.ts"],
+	// required, as precompiled modules import validators the bundle includes
+	bundle: true,
+	outfile: "dist/main.js",
+	plugins: [precompile.esbuild()]
+})
+```
+
+Put `precompile.esbuild()` ahead of any plugin that loads your TypeScript modules, since esbuild loads a module with the first plugin that returns it.
+
+tsup takes it in `esbuildPlugins`, and leaves your dependencies external unless told to bundle them, so add `noExternal: ["arktype"]`. The build fails without it, as the program would load arktype beside the runtime its validators use.
+
+</Tab>
+<Tab value="Rolldown">
+
+```ts title="rolldown.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "rolldown"
+
+export default defineConfig({
+	input: "src/main.ts",
+	output: { file: "dist/main.js" },
+	plugins: [precompile.rolldown()]
+})
+```
+
+tsdown takes it in `plugins`, and leaves your dependencies external unless told to bundle them, so add `deps: { alwaysBundle: [/^arktype(\/|$)/] }`. The build fails without it, as the program would load arktype beside the runtime its validators use.
+
+</Tab>
+<Tab value="Rollup">
+
+```js title="rollup.config.js"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { nodeResolve } from "@rollup/plugin-node-resolve"
+import typescript from "@rollup/plugin-typescript"
+
+export default {
+	input: "src/main.ts",
+	output: { file: "dist/main.js", format: "es" },
+	plugins: [
+		precompile.rollup(),
+		nodeResolve({ extensions: [".ts", ".js"] }),
+		typescript()
+	]
+}
+```
+
+</Tab>
+<Tab value="webpack">
+
+```js title="webpack.config.js"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+
+export default {
+	entry: "./src/main.ts",
+	resolve: { extensions: [".ts", ".js"] },
+	module: {
+		rules: [
+			{ test: /\.ts$/, loader: "ts-loader", options: { transpileOnly: true } }
+		]
+	},
+	plugins: [precompile.webpack()]
+}
+```
+
+ts-loader is handed modules the plugin already precompiled, which import validators TypeScript can't see, so it only transpiles them. Check types with `tsc --noEmit`, or `fork-ts-checker-webpack-plugin`, which reads your sources.
+
+</Tab>
+<Tab value="Rspack">
+
+```js title="rspack.config.js"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+
+export default {
+	entry: "./src/main.ts",
+	resolve: { extensions: [".ts", ".js"] },
+	module: {
+		rules: [
+			{
+				test: /\.ts$/,
+				loader: "builtin:swc-loader",
+				options: { jsc: { parser: { syntax: "typescript" } } },
+				type: "javascript/auto"
+			}
+		]
+	},
+	plugins: [precompile.rspack()]
+}
+```
+
+</Tab>
+<Tab value="Rsbuild">
+
+```ts title="rsbuild.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "@rsbuild/core"
+
+export default defineConfig({
+	plugins: [precompile.rsbuild()]
+})
+```
+
+</Tab>
+<Tab value="Bun">
+
+```ts title="build.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+
+await Bun.build({
+	entrypoints: ["src/main.ts"],
+	outdir: "dist",
+	target: "bun",
+	plugins: [precompile.bun()]
+})
+```
+
+`target: "bun"` builds a program Bun runs. Leave it out to bundle for a browser. Bun's bundler needs Bun 1.2.22 or later. To precompile as Bun runs your code, see [Bun](#bun).
+
+</Tab>
+<Tab value="Others">
+
+Farm takes `precompile.farm()` among its `plugins`:
+
+```ts title="farm.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "@farmfe/core"
+
+export default defineConfig({
+	plugins: [precompile.farm()]
+})
+```
+
+For Next.js, see [Next.js](#next).
+
+</Tab>
+</Tabs>
+
+By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`. A dependency that imports `arktype` gets `arktype/runtime` too, where defining a Type throws, so the build fails for each such package unless it [opts in](/docs/precompile/advanced#libraries).
+
+## Options in ark.json [#ark-json]
+
+Set [options](/docs/precompile/options) in `ark.json` beside your `package.json` rather than in the plugin call, so `arktype-precompile --check`, the Node and Bun drivers and the ESLint rule build as your bundler does. A program that calls `configure()` names its config module there:
+
+```json title="ark.json"
+{
+	"$schema": "./node_modules/@ark/aot/ark.schema.json",
+	"precompile": {
+		"config": "./src/arktype.config.ts"
+	}
+}
+```
+
+The same settings can go under an `"ark"` key in `package.json` instead; see [ark.json](/docs/precompile/options#arkjson).
+
+A validator ships its JSON Schema where the build sees code read it, so a library that converts it, like the MCP SDK, the AI SDK or hono-openapi, needs nothing set. [`members`](/docs/precompile/options#members) describes how the build decides, and only overrides it.
+
+## Frameworks [#frameworks]
+
+With Vite, list `precompile.vite()` right after your framework's plugin, and ahead of `react()`, a Babel plugin like the React Compiler's or another that rewrites modules, so the build reads your modules as you wrote them. Each line was checked with a production build of a small app, on SvelteKit 3.1, Astro 7.4, Nuxt 4.6, React Router 8.5, TanStack Router 1.168, Cloudflare's Vite plugin 1.65 with Wrangler 4.153, and Metro 0.87:
+
+| Framework            | Setup                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SvelteKit            | `plugins: [sveltekit(), precompile.vite()]` in `vite.config.ts`                                                                                                                                                                                                                                                                                                                                                             |
+| Astro                | `vite: { plugins: [precompile.vite()] }` in `astro.config.ts`                                                                                                                                                                                                                                                                                                                                                               |
+| Nuxt                 | `vite: { plugins: [precompile.vite()] }` and `nitro: { rollupConfig: { plugins: [precompile.rollup({ prune: process.env.NODE_ENV === "production" })] } }` in `nuxt.config.ts`. Nitro bundles server routes and `shared/` itself, with Rollup, so without the second it ships arktype whole, and as Rollup has no production mode, `prune` has `nuxt build` [prune](/docs/precompile/options#prune) them but not `nuxt dev` |
+| React Router (Remix) | `plugins: [reactRouter(), precompile.vite()]` in `vite.config.ts`                                                                                                                                                                                                                                                                                                                                                           |
+| TanStack Router      | `plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), precompile.vite(), react()]` in `vite.config.ts`. Its code splitting moves a route's component into a module of its own after the plugins ahead of it run, so the build fails where arktype's plugin comes first                                                                                                                                   |
+| Next.js              | See [Next.js](#next)                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Cloudflare Workers   | With `@cloudflare/vite-plugin`, `plugins: [cloudflare(), precompile.vite()]` in `vite.config.ts`. Wrangler bundles with esbuild but takes no plugins, so without Vite, build the worker with esbuild and `precompile.esbuild()` from Wrangler's `build.command`, and point `main` at its output. Workers don't let arktype compile a validator as it runs, which a precompiled one doesn't need                             |
+| Monorepos            | Nothing extra. A workspace package linked into `node_modules`, as pnpm, npm, Yarn and Bun workspaces link it, resolves to its own directory, so the build precompiles it with the program                                                                                                                                                                                                                                   |
+| Jest                 | Not supported. See [Test runners](#test-runners)                                                                                                                                                                                                                                                                                                                                                                            |
+| Deno                 | A bundler plugin works under Deno, e.g. `deno run -A npm:vite build` with `precompile.vite()`. There's no driver, so `deno run` on your source loads arktype unprecompiled                                                                                                                                                                                                                                                  |
+| React Native (Metro) | Not supported. Metro caches each module by its own text, so a module whose validators are written from a Type it imports would keep them after that Type changed. Precompile the modules defining your Types as a package of their own, with `tsc && arktype-precompile --emit` ([Build with tsc](#tsc)), and import that package, rather than `arktype`, from the app                                                      |
+| Parcel               | Not supported. Bundle with a [supported bundler](#bundlers)                                                                                                                                                                                                                                                                                                                                                                 |
+
+Define your Types in `.ts` or `.js` modules. A component another plugin compiles, like a Svelte, Vue or Astro component or an MDX page, can call a validator or read its `.allows` and `.assert`, but the build can't write a validator inside it. So a read there that only a precompiled site could serve, like `.description` or `.omit()`, or that a validator lacks, like `.errors`, fails the build, or the dev server's request for the component, naming the read. Move it into a module the component imports, e.g. as a function the component calls.
+
+A production build reads each component as its framework compiles it, and each virtual module, like SvelteKit's `$env/static/private`, so it [prunes](/docs/precompile/options#prune) through them. Where something still keeps it from pruning, like `import.meta.glob()` or a validator passed to a form library's adapter, it warns once, saying why.
+
+## Next.js [#next]
+
+With Turbopack, the default, add the loader as a rule for each extension your definitions and config module are in, and for JavaScript that mentions arktype, which checks your dependencies, then alias arktype's entries to the runtime:
+
+```js title="next.config.js"
+export default {
+	turbopack: {
+		rules: {
+			"*.ts": { loaders: ["@ark/aot/turbopack"] },
+			"*.tsx": { loaders: ["@ark/aot/turbopack"] },
+			"*.{js,mjs}": {
+				condition: { content: /arktype/ },
+				loaders: ["@ark/aot/turbopack"]
+			}
+		},
+		resolveAlias: {
+			arktype: "arktype/runtime",
+			"arktype/codecs": "arktype/runtime",
+			"arktype/config": "arktype/runtime",
+			"arktype/errors": "arktype/runtime",
+			"arktype/mutatesInput": "arktype/runtime"
+		}
+	}
+}
+```
+
+The loader fails a module whose `arktype` imports resolve otherwise, naming the aliases to add. With `runtime: "arktype"` or `shadow: true`, leave the aliases out, since the loader fails a module they resolve to the runtime. It reruns when a module's local imports change, and applies a changed configuration once the dev server restarts.
+
+The aliases also point a dependency's `arktype` imports at the runtime, so the `*.{js,mjs}` rule has the loader fail the build for a dependency that defines Types but doesn't [opt in](/docs/precompile/advanced#libraries), and precompile one that does or that [`dependencies`](/docs/precompile/options#dependencies) sets to `"aot"`. Turbopack can't run one dependency on arktype, so for one that creates Types from values it reads as it runs, like `drizzle-arktype`, build with webpack or with `runtime: "arktype"`. The loader reads only `import` and `export` declarations, so a CommonJS dependency that `require`s arktype throws `type is not a function` when it loads instead.
+
+With webpack (`next build --webpack`), add the plugin:
+
+```js title="next.config.js"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+
+export default {
+	webpack: config => {
+		config.plugins.push(precompile.webpack())
+		return config
+	}
+}
+```
+
+## Node [#node]
+
+### Run a program
+
+The Node driver, on Node 22.15 or later, precompiles each module as it loads, for `node --test` or any program:
+
+```ts title="register.ts"
+import { register } from "@ark/aot/node"
+
+register()
+```
+
+```sh
+node --import ./register.ts src/main.ts
+node --import ./register.ts --test
+```
+
+Pass `--enable-source-maps` for original lines in stack traces.
+
+### Build with tsc [#tsc]
+
+A program `tsc` compiles to run from its `outDir` precompiles what it emits with `--emit`, run after `tsc`:
+
+```json title="package.json"
+{
+	"scripts": {
+		"build": "tsc && arktype-precompile --emit"
+	}
+}
+```
+
+It reads the nearest `tsconfig.json`, or the one `--tsconfig` names, and the tsconfigs it references. Each module reading arktype, directly or through a Type it imports, is precompiled from its source as a bundler would and emitted again over what `tsc` wrote, in the module format, target and source maps the tsconfig sets, with `arktype` and its other entries imported or required as `arktype/runtime`. Other modules and declarations stay as `tsc` emitted them. It takes the options `--check` does, reads `ark.json`, and fails on what a build would, writing nothing. Since it emits from source, run anything that rewrites `tsc`'s output, like `tsc-alias`, after it.
+
+Dependencies are left to Node, so one that imports `arktype` loads it beside the runtime rather than failing the build. `errors: "none"` and `optimizeErrors: "size"`, which `preset: "smallest"` sets, need a copy of `@ark/schema`'s runtime that only a bundler or the Node driver can load in place of the one `arktype/runtime` imports, so `--emit` refuses them. A library publishes what `tsc` emits without `--emit`, and [opts in](/docs/precompile/advanced#libraries) so its consumers' builds precompile it.
+
+`--emit --declare` also writes [declarations](/docs/precompile/advanced#declarations) as `--declare` does.
+
+## Bun [#bun]
+
+To precompile as Bun loads your code, for `bun test` or any program, register the plugin from a file `bunfig.toml` preloads. `bun test` reads only the `preload` in its `[test]` section, so list the file in both:
+
+```ts title="preload.ts"
+// @noErrors
+import { precompile } from "@ark/aot/bun"
+
+Bun.plugin(precompile())
+```
+
+```toml title="bunfig.toml"
+preload = ["./preload.ts"]
+
+[test]
+preload = ["./preload.ts"]
+```
+
+Bun doesn't ask a runtime plugin to resolve packages, so `arktype` resolves to the runtime `cwd` resolves for every importer, and dependencies aren't checked for copies of arktype. To bundle with Bun, use `precompile.bun()` from [`@ark/aot/unplugin`](#bundlers).
+
+## Test runners
+
+Each driver takes the plugin's options, fails on the same errors, except that Bun's doesn't check dependencies, and resolves `arktype` to `arktype/runtime` where its host allows. The precompiler runs in a worker thread, sharing no module state with your program.
+
+- **Vitest** uses the Vite plugin from your `vite.config.ts` or `vitest.config.ts`.
+- **`node --test`** uses the [Node driver](#node).
+- **`bun test`** uses the [Bun driver](#bun).
+- **Jest** has no driver, so it runs your Types with arktype, unprecompiled. Your definitions behave the same either way, but to test the validators you ship, run tests with one of the above.
+
+A test file is an entry of its own, so in a program with a [config module](/docs/precompile/options#configuration), the first validator a test file loads throws that it was created before `configure()` ran, unless the config module loads first. List it in Vitest's `test.setupFiles`, after the plugin in the `[test]` preload of `bunfig.toml`, or after the Node driver: `node --import ./register.ts --import ./src/arktype.config.ts --test`.
+
+To test that your precompiled validators behave as arktype does, run tests in [shadow mode](/docs/precompile/advanced#shadow-mode).
+
+## Not supported
+
+Some tools and modules can't be precompiled. [Troubleshooting](/docs/precompile/troubleshooting#not-supported) lists each, with the error the build reports and what to do instead.
+
+## Check an existing project
+
+`--check` lists the definitions that can't be precompiled, and why, without bundling:
+
+```sh
+npx arktype-precompile --check src
+```
+
+```
+src/forms.ts:5:21  accepted
+src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
+  `limit` is a parameter of makeField (src/forms.ts:12:22); its value is known only at runtime
+  Write the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call.
+```
+
+A directory, like `src`, stands for each JavaScript and TypeScript file it holds. Without a pattern, it checks every JavaScript and TypeScript file under the current directory outside `node_modules`, `dist`, `out` and `build`. Where `NODE_ENV` is `production`, it also prints the warning a production bundle of those files would give where it [can't prune](/docs/precompile/options#prune). It reads no Svelte, Vue or Astro component or MDX page, whose reads of a validator only its framework's compiled code shows, so it names those under the current directory that import a module, which only the build checks.
+
+It reads [`ark.json`](/docs/precompile/options#arkjson) as a build does, and the options a plugin call passes in a file at the project's root, like `precompile.vite({ config: "src/config.ts" })` in `vite.config.ts`, saying where it found them. An option that isn't a literal there, or a plugin loaded in a way it can't follow, fails it, asking for the option in `ark.json` or as a flag. Each [option](/docs/precompile/options) is a flag that overrides both, like `--preset smallest`, `--optimize-errors size`, `--no-freeze` or `--members '{"assert":false}'`.
+
+It exits with 1 where the build would fail. `--fail-under <percent>` exits with 1 only if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
+
+The same analysis is available as `new Precompiler(host, options).analyze(source, id)` from `@ark/aot`, which, as a build does, applies the program's configuration to arktype in its thread.
+
+## ESLint
+
+The ESLint rules report what the build would, as you edit:
+
+```js title="eslint.config.js"
+// @noErrors
+import { configs } from "@ark/aot/eslint"
+import tseslint from "typescript-eslint"
+
+export default [
+	{
+		files: ["**/*.{ts,mts,cts,tsx}"],
+		languageOptions: { parser: tseslint.parser }
+	},
+	configs.recommended
+]
+```
+
+`configs.recommended` lints JavaScript and TypeScript files. It reports what fails the build as an error, through `@ark/aot/precompilable`, and what the build warns about, like a problem [`allowUnsafe`](/docs/precompile/options#allowunsafe) builds past, as a warning, through `@ark/aot/warnings`. Each takes the build's options, which `ark.json` gives both. ESLint parses TypeScript only through a parser like typescript-eslint's, which a project already linting TypeScript configures.

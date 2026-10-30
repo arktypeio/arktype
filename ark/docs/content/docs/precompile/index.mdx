@@ -1,0 +1,98 @@
+---
+title: Overview
+description: Compile your Types when you build, and ship only the checks they need.
+---
+
+ArkType runs in two modes. Both take the same definitions and infer the same types.
+
+- **Dynamic**: `type()` parses each definition at runtime and compiles it the first time your program uses it. No build step.
+- **Precompiled**: [`@ark/aot`](https://github.com/arktypeio/arktype/tree/main/ark/aot) constructs your Types when you build. Each becomes a standalone validator that imports only `arktype/runtime`, so arktype's parser never ships and no code is generated at runtime.
+
+```ts title="vite.config.ts"
+import { precompile } from "@ark/aot/unplugin"
+
+export default {
+	plugins: [precompile.vite()]
+}
+```
+
+[Setup](/docs/precompile/setup) covers every bundler, test runner and Next.
+
+Precompiled validators have always been faster and smaller. What they cost was a build step: setup, new errors and a second model of what runs where. If an agent runs your local dev, that's one more loop it's already good at, and every error names its fix, so you get the speed and size [without the cost](#with-agents).
+
+## Speed and size
+
+A validator that compiles at runtime ships its compiler, and one that interprets ships its interpreter. A precompiled build ships neither: only the checks your Types need, and the runtime that reports their errors. <Claim id="buildChoice" /> The [options](/docs/precompile/options) decide which: [`optimize: "size"`](/docs/precompile/options#optimize-and-optimizeerrors) and dropping [`members`](/docs/precompile/options#members) make a build smaller and its validators slower.
+
+<ClaimCharts />
+
+A precompiled validator has no initialization cost, and since nothing is generated at runtime, it runs under a Content-Security-Policy that blocks `eval`.
+
+## Optimized by set theory
+
+ArkType reduces every Type to a normalized set of constraints, so it knows which Types are subtypes of others, which overlap and which can't both be satisfied. Precompiling applies that knowledge in your build:
+
+- **Unions discriminate themselves.** ArkType finds the key that tells a union's branches apart and switches on it, so data is checked against one branch rather than each in turn.
+- **Redundant checks disappear.** `number > 0` intersected with `number >= 10` is `number >= 10`, one check, and a branch never rechecks the key it was chosen by.
+- **Contradictions never ship.** A definition that intersects to nothing, like `{ id: string }` and `{ id: number }`, throws a ParseError, which fails the build rather than shipping a validator that rejects everything.
+
+```ts
+const Shape = type({
+	kind: "'circle'",
+	radius: "number > 0"
+}).or({
+	kind: "'square'",
+	side: "number > 0"
+})
+```
+
+Precompiled, `Shape` checks data like this, its helpers inlined:
+
+```ts
+// @noErrors
+// ---cut---
+data => {
+	switch (data?.kind) {
+		case "circle":
+			return Number.isFinite(data.radius) && data.radius > 0
+		case "square":
+			return Number.isFinite(data.side) && data.side > 0
+	}
+	return false
+}
+```
+
+## With agents
+
+The build is quiet when everything precompiles, helpers included: ``const text = (max: number) => type(`0 < string <= ${max}`)`` precompiles at each call passing it values the build can read, like `text(50)`. Where it can't precompile a definition and the fix is clear, the build fails, with the file, line and column, what it couldn't do, why, and how to fix it:
+
+```
+src/forms.ts:8:16  text(limit) cannot be precompiled
+  `limit` is a parameter of makeField (src/forms.ts:7:27); its value is known only at runtime
+  Write the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call.
+```
+
+To shorten the build-fix loop:
+
+- Run [`arktype-precompile --check`](/docs/precompile/setup#check-an-existing-project) to list every definition the build would refuse, without bundling.
+- Add the [ESLint rule](/docs/precompile/setup#eslint) so the same errors show in the editor and in lint runs.
+- Run tests in [shadow mode](/docs/precompile/advanced#shadow-mode), which fails a test wherever a precompiled validator would behave otherwise than arktype.
+- Give your agent the [ArkType skill](/docs/agents) so it writes definitions the build accepts on the first try.
+
+## Build time
+
+Precompiling moves creating your Types from your program's startup to your build, so a build takes longer. <Claim id="buildTimeApp" />
+
+- <Claim id="buildTimeProduction" />
+- <Claim id="buildTimeDev" />
+- <Claim id="buildTimeWatch" />
+
+<Claim id="buildTimeMedium" /> Turbopack runs the loader in a pool of processes,
+once for the client and once for the server, so a Next build precompiles each
+module twice.
+
+## How a validator differs
+
+A standalone validator validates, asserts and implements Standard Schema as the Type it replaces does. It doesn't compose or introspect: it lacks methods like `.and` and `.extends`, and its error messages say what failed without printing the value. The build fails wherever it sees your program rely on what a validator lacks. See [Validators](/docs/precompile/validators).
+
+If you need the whole Type API at runtime, build with `runtime: "arktype"`: arktype ships, and each Type the build could precompile skips compiling at runtime. [Dynamic vs Precompiled](/docs/precompile/dynamic-vs-precompiled) compares the three side by side.

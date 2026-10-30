@@ -1,0 +1,10 @@
+{
+	// mirrors @cloudflare/workers-types, which declares platform globals as
+	// classes and is used without the DOM lib
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"lib": ["ES2022"],
+		"types": []
+	},
+	"files": ["index.ts", "workers.d.ts"]
+}

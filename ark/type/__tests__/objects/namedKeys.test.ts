@@ -1,7 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
 import { registeredReference, writeUnresolvableMessage } from "@ark/schema"
-import { type, type Type } from "arktype"
+import { scope, type, type Type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
+
+const loose = scope({}, { exactOptionalPropertyTypes: false })
 
 contextualize(() => {
 	it("empty", () => {
@@ -136,11 +138,9 @@ contextualize(() => {
 		})
 	})
 
-	it("serializes to same value but not reference equal", () => {
+	it("prints an object equal to the unit by its kind", () => {
 		const T = type("===", {})
-		attest(T({}).toString()).snap(
-			"must be reference equal to {} (serialized to the same value)"
-		)
+		attest(T({}).toString()).snap("must be {} (was an object)")
 	})
 
 	it("error in obj that has tuple that writes error at proper path", () => {
@@ -170,6 +170,35 @@ contextualize(() => {
 		// Should be simplified from {a: number} & {b: boolean} to {a: number, b: boolean}
 		attest(T.infer).type.toString.snap("{ a: number; b: boolean }")
 		attest(T.json).equals(type({ a: "number", b: "boolean" }).json)
+	})
+
+	it("optional allowing undefined only on one side", () => {
+		const Loose = loose.type({ "a?": "string" })
+		const Exact = type({ "a?": "string" })
+		attest([Exact.extends(Loose), Loose.extends(Exact)]).equals([true, false])
+		attest([Loose.and(Exact), Exact.and(Loose)].map(t => t.expression)).equals([
+			"{ a?: string }",
+			"{ a?: string }"
+		])
+		attest([Loose.or(Exact), Exact.or(Loose)].map(t => t.expression)).equals([
+			"{ a?: string | undefined }",
+			"{ a?: string | undefined }"
+		])
+	})
+
+	it("disjoint optional allowing undefined", () => {
+		const T = loose.type({ "a?": "string" }).and(type({ "a?": "number" }))
+		attest(T.expression).snap("{ a?: never }")
+		attest(T.allows({ a: undefined })).equals(false)
+	})
+
+	it("optional allowing undefined and an index", () => {
+		const Indexed = loose
+			.type({ "+": "reject", "a?": "string" })
+			.and(type({ "[string]": "string" }))
+		attest(Indexed.expression).snap("{ a?: string, + (undeclared): reject }")
+		const T = loose.type({ "a?": "string" }).and(type({ "[string]": "number" }))
+		attest(T.expression).snap("{ [string]: number, a?: never }")
 	})
 
 	it("escaped optional token", () => {

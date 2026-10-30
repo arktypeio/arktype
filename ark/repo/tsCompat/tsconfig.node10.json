@@ -1,0 +1,11 @@
+{
+	// a consumer on TypeScript's node10 resolution, which ignores exports
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"module": "ESNext",
+		"moduleResolution": "Node10",
+		"skipLibCheck": false,
+		"types": ["node"]
+	},
+	"files": ["node10.ts"]
+}

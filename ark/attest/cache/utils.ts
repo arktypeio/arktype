@@ -131,10 +131,37 @@ export const getInstantiationsContributedByNode = (
 
 	const instantiationsWithNode = getInstantiationsWithFile(
 		baselineFileWithBenchBlock,
-		fakePath
+		fakePath,
+		// a generic block's result would be inferred from constraints it's
+		// never called with
+		!benchBlock.typeParameters?.length
 	)
 
 	return instantiationsWithNode - instantiationsByPath[fakePath]
+}
+
+/**
+ * TS only evaluates the members of many types, e.g. mapped types, once
+ * something reads them, so the result of the block appended last is
+ * displayed to count it as if it were used.
+ */
+const displayBenchResult = (program: ts.Program, file: ts.SourceFile) => {
+	const checker = program.getTypeChecker()
+	const bench = file.statements[file.statements.length - 1]
+	if (!ts.isVariableStatement(bench))
+		throwInternalError(`Expected a bench declaration, got ${bench.getText()}`)
+	const benchType = checker.getTypeAtLocation(
+		bench.declarationList.declarations[0].name
+	)
+	for (const signature of benchType.getCallSignatures()) {
+		checker.typeToString(
+			signature.getReturnType(),
+			undefined,
+			ts.TypeFormatFlags.NoTruncation |
+				ts.TypeFormatFlags.AllowUniqueESSymbolType |
+				ts.TypeFormatFlags.UseAliasDefinedOutsideCurrentScope
+		)
+	}
 }
 
 export const createOrUpdateFile = (
@@ -160,7 +187,11 @@ declare module "typescript" {
 	}
 }
 
-const getInstantiationsWithFile = (fileText: string, fileName: string) => {
+const getInstantiationsWithFile = (
+	fileText: string,
+	fileName: string,
+	displayResult = false
+) => {
 	const env = getIsolatedEnv()
 	const file = createOrUpdateFile(env, fileName, fileText)
 	const program = getProgram(env)
@@ -173,6 +204,7 @@ const getInstantiationsWithFile = (fileText: string, fileName: string) => {
 	// this may lead to additional type checking per Jake Bailey from the TS
 	// team, although it doesn't currently affect any of our internal benchmarks
 	program.getDeclarationDiagnostics(file)
+	if (displayResult && file) displayBenchResult(program, file)
 	const count = program.getInstantiationCount()
 	return count
 }

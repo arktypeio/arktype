@@ -1,0 +1,238 @@
+{
+	"measured": "lane/claim-final-d 90d510484 (run on fee0e86db, the same tree), every ArkType row by claim-all-work/finalrun.ts; moltar's are the medians moltar.log prints",
+	"moltar": {
+		"assertLoose arktype-b1": [66],
+		"assertStrict arktype-b1": [332],
+		"parseSafe arktype-b1": [184.6],
+		"parseStrict arktype-b1": [339]
+	},
+	"homepage": {
+		"parse moltar": {
+			"standalone": [99.97638932008692, 99.5049436601713, 100.07524152163194]
+		},
+		"parse moltar strict": {
+			"standalone": [373.1324880837153, 372.91416257282174, 373.01481819676025]
+		},
+		"parse rotating": {
+			"standalone": [108.405023625, 108.414363375, 108.409840125]
+		},
+		"parse discriminated": {
+			"standalone": [97.4835595, 97.407333625, 97.4755465]
+		},
+		"parse product": {
+			"standalone": [6240.332399273516, 6239.154762485506, 6242.242753922301]
+		},
+		"parse items": {
+			"standalone": [3109.323365941819, 3111.0910827848875, 3110.271317555901]
+		},
+		"parse morph": {
+			"standalone": [366.974095375, 366.984014875, 366.919815]
+		},
+		"parse constraints": {
+			"standalone": [1123.992529625, 1123.991831625, 1123.994464625]
+		},
+		"parse defaults": {
+			"standalone": [94.6451055, 94.81451625, 94.70707]
+		},
+		"parse moltar morph": {
+			"standalone": [366.2862286870578, 366.8238913429702, 365.8137618948779]
+		},
+		"strip moltar": {
+			"standalone": [143.08243978092537, 144.42960124962758, 142.87992660386973]
+		},
+		"parse items morph": {
+			"standalone": [30160.7469064379, 30119.062173820428, 30126.13316356665]
+		},
+		"parse items defaults": {
+			"standalone": [12867.545041852656, 12876.859011841436, 12834.275465545215]
+		},
+		"issues moltar": {
+			"standalone": [713.0483430150424, 713.6620908285428, 714.710367094198]
+		},
+		"issues moltar strict": {
+			"standalone": [1641.665821144731, 1640.6977208032738, 1641.0349866025147]
+		},
+		"parse tree": {
+			"standalone": [3435.3566252402893, 3448.637191581216, 3435.9765640709666]
+		},
+		"issues patterns": {
+			"standalone": [82448.82806395873, 82449.10649979966, 82449.14844610839]
+		},
+		"strip product": {
+			"standalone": [9843.851583446127, 9954.969809479255, 9830.111253817284]
+		},
+		"errors moltar": {
+			"standalone": [1199.8049573764017, 1198.9805128364558, 1200.388189747477]
+		},
+		"errors moltar strict": {
+			"standalone": [2449.952810409108, 2448.6231394572883, 2448.5881695610246]
+		},
+		"issues items": {
+			"standalone": [5523.633188565436, 5543.351579297602, 5570.698366887053]
+		},
+		"issues product": {
+			"standalone": [15827.588334640002, 15952.80378431708, 15900.032632669443]
+		},
+		"errors patterns": {
+			"standalone": [83052.88721451467, 83051.57396949815, 83048.07375037564]
+		},
+		"first moltar": {
+			"standalone": [1154.3017867805124, 1153.8987018615765, 1154.3634376117252]
+		},
+		"first moltar strict": {
+			"standalone": [1475.2178745750348, 1475.607818896812, 1473.6223050728531]
+		},
+		"errors items": {
+			"standalone": [6513.370325185833, 6473.715015615272, 6466.855185051685]
+		},
+		"first patterns": {
+			"standalone": [83000.78097766203, 83002.20618175899, 83007.01732319944]
+		},
+		"allows moltar": {
+			"standalone": [81.95770951659149, 82.01457804481619, 82.14926767353946]
+		},
+		"errors product": {
+			"standalone": [30253.28182589724, 30195.504777640726, 30379.644500967446]
+		},
+		"first items": {
+			"standalone": [3006.186135554172, 2982.733327956, 2986.6771054150586]
+		},
+		"first product": {
+			"standalone": [1941.976996670761, 1603.9629246567122, 1709.489558141653]
+		},
+		"allows moltar invalid": {
+			"standalone": [102.20715260830089, 101.88637699870982, 102.01666357303068]
+		}
+	},
+	"form": {
+		"ArkType (precompiled, default)": {
+			"min": 2568,
+			"gzip": 1172
+		}
+	},
+	"homepageSize": {
+		"login": {
+			"standalone": {
+				"min": 3194,
+				"gzip": 1489
+			}
+		},
+		"moltar": {
+			"standalone": {
+				"min": 3684,
+				"gzip": 1517
+			}
+		},
+		"shop": {
+			"standalone": {
+				"min": 25314,
+				"gzip": 6718
+			}
+		},
+		"saas": {
+			"standalone": {
+				"min": 56228,
+				"gzip": 11794
+			}
+		}
+	},
+	"sbCounts": {
+		"sb initialization|||arktype (precompiled)": [
+			42.447755, 42.460055, 42.45976
+		],
+		"sb validation|valid||arktype (precompiled)": [
+			6056.973345, 6056.991765, 6057.05996
+		],
+		"sb standard|valid|allErrors|arktype (precompiled)": [
+			6227.48186, 6224.524975, 6224.35053
+		],
+		"sb parsing|valid|allErrors|arktype (precompiled)": [
+			6093.8048, 6090.673645, 6090.682565
+		],
+		"sb validation|invalid||arktype (precompiled)": [
+			33.473335, 33.465855, 33.43528
+		],
+		"sb parsing|invalid|allErrors|arktype (precompiled)": [
+			151.366535, 148.15982, 151.459635
+		],
+		"sb string|valid|date-time|arktype (precompiled)": [
+			484.93142, 484.85926, 484.923
+		],
+		"sb standard|invalid|allErrors|arktype (precompiled)": [
+			20098.358334763947, 20105.751648535566, 20109.185
+		],
+		"sb string|valid|email|arktype (precompiled)": [
+			653.379005, 653.424305, 653.418075
+		],
+		"sb string|valid|url|arktype (precompiled)": [
+			755.388925, 755.43527, 755.430785
+		],
+		"sb string|valid|uuid|arktype (precompiled)": [
+			1144.418855, 1144.505585, 1144.33231
+		],
+		"sb string|valid|ipv4|arktype (precompiled)": [
+			227.455015, 227.54226, 227.471865
+		],
+		"sb string|valid|ipv6|arktype (precompiled)": [
+			814.42884, 814.481045, 814.562955
+		],
+		"sb string|invalid|email|arktype (precompiled)": [
+			380.461825, 380.510275, 380.47611
+		],
+		"sb string|invalid|date-time|arktype (precompiled)": [
+			41.471005, 41.44452, 41.53542
+		],
+		"sb string|invalid|url|arktype (precompiled)": [
+			374.540525, 374.490765, 374.507125
+		],
+		"sb string|invalid|uuid|arktype (precompiled)": [
+			23.40222, 23.46, 23.464215
+		],
+		"sb string|invalid|ipv4|arktype (precompiled)": [
+			43.470135, 43.4814, 43.49227
+		],
+		"sb string|invalid|ipv6|arktype (precompiled)": [
+			47.506095, 47.492065, 47.49539
+		]
+	},
+	"sbDownload": {
+		"bytes": 7144,
+		"gzipBytes": 2095
+	},
+	"suryCounts": {
+		"sury build ArkType": [104.04769, 104.01809, 103.952015],
+		"sury parse ArkType": [85.007625, 84.94514, 85.030835]
+	},
+	"surySize": {
+		"ArkType schema": {
+			"min": 2846,
+			"gzip": 1124
+		}
+	},
+	"ataCounts": {
+		"ata verdict-valid|order|arktype": [
+			6857.38923161968, 6860.488264705882, 6860.523644688645
+		],
+		"ata verdict-valid|user|arktype": [
+			930.297312113909, 930.3006748971194, 930.2979791744607
+		],
+		"ata verdict-invalid|user|arktype": [
+			742.1179194385745, 755.6213313413015, 748.0058634653632
+		],
+		"ata verdict-invalid|order|arktype": [
+			2363.4692558183183, 2353.838978215295, 2362.8709122988207
+		],
+		"ata errors-invalid|user|arktype": [
+			3749.475787269682, 3751.512180795976, 3742.072986478542
+		],
+		"ata errors-invalid|order|arktype": [
+			11599.383391534391, 11598.621840277778, 11597.982106615285
+		],
+		"ata blocked-verdict-valid|user|arktype": [
+			930.2928510394265, 930.2978642767969, 930.3000678880588
+		],
+		"ata blocked-verdict-valid|order|arktype": [
+			6860.464910025707, 6859.868745026018, 6862.769921259843
+		]
+	}
+}

@@ -29,7 +29,7 @@ contextualize(() => {
 		// serializes to string for JSON
 		attest(T.json).snap({ unit: "7n" })
 		// preserves the bigint for context
-		attest(T.internal.assertHasKind("unit").errorContext).equals({
+		attest(T.internal.assertIs("unit").errorCtx).equals({
 			code: "unit",
 			description: "7n",
 			unit: 7n,
@@ -43,7 +43,7 @@ contextualize(() => {
 	it("undefined", () => {
 		const T = rootSchema({ unit: undefined })
 		attest(T.json).snap({ unit: "undefined" })
-		attest(T.internal.assertHasKind("unit").errorContext).equals({
+		attest(T.internal.assertIs("unit").errorCtx).equals({
 			code: "unit",
 			description: "undefined",
 			unit: undefined,
@@ -59,9 +59,9 @@ contextualize(() => {
 		const status = Symbol("status")
 		const T = rootSchema({ unit: status })
 		// serializes to string for JSON
-		attest(T.json).snap({ unit: "$ark.status" })
+		attest(T.json).snap({ unit: registeredReference(status) })
 		// preserves the symbol for context
-		attest(T.internal.assertHasKind("unit").errorContext).equals({
+		attest(T.internal.assertIs("unit").errorCtx).equals({
 			code: "unit",
 			description: "Symbol(status)",
 			unit: status,
@@ -76,7 +76,7 @@ contextualize(() => {
 		const ref = registeredReference(o)
 		const T = rootSchema({ unit: o })
 		attest(T.json).snap({ unit: ref })
-		attest(T.internal.assertHasKind("unit").errorContext).equals({
+		attest(T.internal.assertIs("unit").errorCtx).equals({
 			code: "unit",
 			description: "{}",
 			unit: o,

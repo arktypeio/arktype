@@ -11,6 +11,26 @@ contextualize(() => {
 		attest(T([1]).toString()).snap("must be exactly length 0 (was 1)")
 	})
 
+	it("empty string syntax", () => {
+		const T = type("[]")
+		attest<[]>(T.infer)
+		attest(T.expression).snap("[]")
+		attest(T.equals(type([]))).equals(true)
+		attest(T([1]).toString()).snap("must be exactly length 0 (was 1)")
+	})
+
+	it("empty in an expression", () => {
+		const T = type("[][] | 'a'")
+		attest<[][] | "a">(T.infer)
+		attest(T.expression).snap('[][] | "a"')
+		attest(T([[]])).equals([[]])
+		attest(T([[1]]).toString()).snap(
+			"value at [0] must be exactly length 0 (was 1)"
+		)
+		// @ts-expect-error
+		attest(() => type("[1]")).throws("Expected an expression before '[1]'")
+	})
+
 	it("shallow", () => {
 		const T = type(["string", "number"])
 		attest<[string, number]>(T.infer)
@@ -44,7 +64,7 @@ value at [1] must be a number (was boolean)`)
 				0: "",
 				1: 0
 			}).toString()
-		).snap("must be an array (was object)")
+		).snap("must be an array (was an object)")
 	})
 
 	it("nested", () => {

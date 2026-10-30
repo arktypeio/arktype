@@ -1,5 +1,6 @@
 import {
 	intrinsic,
+	throwOnDefault,
 	type ArkErrors,
 	type BaseRoot,
 	type Morph,
@@ -238,7 +239,6 @@ interface ChainableMatchParser<ctx extends MatchParserContext> {
 	match: CaseMatchParser<ctx>
 	default: DefaultMethod<ctx>
 	at: AtParser<ctx>
-	/** @experimental */
 	strings: StringsParser<ctx>
 }
 
@@ -255,10 +255,7 @@ type DefaultMethod<ctx extends MatchParserContext> = <
 ) => finalizeMatchParser<ctx, def>
 
 type validateCases<cases, ctx extends MatchParserContext> = {
-	[def in
-		| keyof cases
-		| BaseCompletions<ctx["$"], {}, "default">]?: def extends "default" ?
-		DefaultCase<ctx>
+	[def in keyof cases]?: def extends "default" ? DefaultCase<ctx>
 	: def extends number ? (In: inferCaseArg<`${def}`, ctx, "out">) => unknown
 	: def extends type.validate<def, ctx["$"]> ?
 		(In: inferCaseArg<def, ctx, "out">) => unknown
@@ -293,7 +290,7 @@ type finalizeMatchParser<
 		Match<ctx["input"], ctx["cases"]>
 	:	never
 
-export interface Match<In = any, cases extends Morph[] = Morph[]>
+export interface Match<in out In = any, in out cases extends Morph[] = Morph[]>
 	extends Inferred<
 		(In: Morph.In<cases[number]>) => Out<ReturnType<cases[number]>>
 	> {
@@ -425,7 +422,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		if (typeof defaultCase === "function")
 			this.case(intrinsic.unknown, defaultCase)
 
-		const schema: mutable<Union.Schema> = {
+		const schema: mutable<Union.Input> = {
 			branches: this.branches,
 			ordered: true
 		}
@@ -435,12 +432,12 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 
 		const cases = this.$.node("union", schema)
 
-		if (!this.in) return this.$.finalize(cases) as never
+		if (!this.in) return this.$.fin(cases) as never
 
 		let inputValidatedCases = this.in.pipe(cases)
 
 		if (defaultCase === "never" || defaultCase === "assert") {
-			inputValidatedCases = inputValidatedCases.configureReferences(
+			inputValidatedCases = inputValidatedCases.configureRefs(
 				{
 					onFail: throwOnDefault
 				},
@@ -448,11 +445,9 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 			)
 		}
 
-		return this.$.finalize(inputValidatedCases) as never
+		return this.$.fin(inputValidatedCases) as never
 	}
 }
-
-export const throwOnDefault: ArkErrors.Handler = errors => errors.throw()
 
 export const chainedAtMessage = `A key matcher must be specified before the first case i.e. match.at('foo') or match.in<object>().at('bar')`
 export type chainedAtMessage = typeof chainedAtMessage

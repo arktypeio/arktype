@@ -1,0 +1,88 @@
+---
+title: Validators
+description: What a precompiled Type is, and how it differs from one arktype creates.
+---
+
+## Standalone validators
+
+In a standalone build, each Type your program defines becomes a validator running on `arktype/runtime`. Call it, `.assert()` with it or pass it as a [Standard Schema](/docs/standard-schema), as you would the Type:
+
+```ts
+declare const data: unknown
+// ---cut---
+// bundled as a validator
+export const User = type({ name: "string > 0" })
+
+const out = User(data)
+
+if (out instanceof type.errors) console.error(out.summary)
+```
+
+Scopes, Modules, Generics, cyclic Types, `match`, `type.fn` and [codecs](/docs/codecs) are precompiled too. A Module becomes a plain object of its validators, and a Scope or Generic an empty object, since resolving an alias or instantiating a Generic needs arktype. A call to `define`, which returns its argument, is replaced by the argument.
+
+A definition holding functions, like a narrow, a morph or a class, becomes a call to a factory passing each one where the definition was written. The factory checks at creation that each class, and each function another module supplies, is what its code was compiled for, and throws if not.
+
+## What a validator has
+
+Besides being called, a validator has `allows()`, and by default `assert()`, `meta`, `~standard`, `traverse()`, `from()` and `toString()`. `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` are baked as arktype returns them, each into the validators the build sees code read it off, its dependencies' included, so the MCP SDK, the AI SDK, Elysia's OpenAPI plugin, hono-openapi and oRPC's converter get a JSON Schema with nothing to set. The [`members`](/docs/precompile/options#members) option bakes one into every validator or none instead, and says how the build decides. A read the build sees in the program, like `User.expression`, is replaced by its value either way. Reading one a validator lacks throws, naming the member and the setting.
+
+It lacks the methods that compose or relate a Type, like `.and`, `.or`, `.in` or `.extends`. The build fails where it sees one read outside a definition it precompiles, including off a value it lost track of after a Type reached it, and, once for each import, off an import it can't resolve:
+
+```
+main.ts:8:29  Long.description reads description, which a standalone validator lacks
+  `Long` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read
+  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".
+```
+
+The build resolves an import as TypeScript does, and where that fails, a bundler's plugin or loader asks the bundler, so an import only an alias in the bundler's config names, like Nuxt's `#shared` without its `tsconfig.json`, is checked like any other. `--check`, the ESLint rule, Bun and the Node driver resolve as TypeScript does alone.
+
+Composing inside a definition is fine, since the build evaluates it: `export const Admin = User.and({ role: "'admin'" })` is precompiled to a validator of its own. So is [`.encode`](/docs/codecs#precompiling) wherever the build sees it read, like `const encode = (event: unknown) => Event.encode(event)`, even where the program never imports `arktype/codecs`.
+
+A validator and its members are frozen, except a Date or RegExp it holds, unless the build sets [`freeze: false`](/docs/precompile/options#freeze), as a [production build](/docs/precompile/options#production-builds) does by default.
+
+## Errors
+
+A validator returns errors of its own, instances of `type.errors` and of `arktype`'s `ArkErrors`. Each issue holds the failed check's `code`, `path`, `data` and `expected`, with a message like `name must be a string`:
+
+- A message doesn't say what the value was unless text configured for it does, and the errors arktype groups at one path stay apart. A union no branch allows is one issue, expecting the union's description unless the value is of no branch's type, as in `must be an object`.
+- A missing key's issue has the code `required` and expects what its value's basis describes, as arktype's does: `name must be a string`.
+- `assert` throws a `TraversalError` whose message is the errors' `summary`, one line per issue, rather than arktype's bulleted list.
+- A path starting with a bracket, an index's or a quoted key's, reads `[0] must be a string`, without arktype's `value at`, even where a problem is configured. A symbol key is written as `String` writes it, `[Symbol(id)]`, where arktype writes `[Symbol(symbol)]` unless its description is an identifier.
+- Text a narrow or morph puts in `ctx.reject({ meta })` isn't written, so pass it as `expected`, `problem` or `message` instead. An issue a narrow raises without one reads `is invalid` rather than naming the function. One a `pipe.try` morph raises by throwing expects what arktype's does, like `valid according to parse`, but has no `morph` or `cause`.
+- A validator a morph calls with its `ctx` adds its issues to that validation.
+- `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`.
+- [`firstIssue(out)`](/docs/errors#finding-only-the-first) finds only the first issue of errors that haven't found theirs, stopping where the data first fails.
+- A `message`, `problem`, `expected` or `actual` configured for a code or on a Type is written as arktype writes it. A build configured with what a validator can't write, like a locale, [fails with its fix](/docs/precompile/options#configuration).
+- They aren't instances of `@ark/schema`'s `ArkErrors`, so the build fails where a module imports that one.
+- `console.log` prints them as their issues where `arktype/runtime` resolves under the `"development"` condition: Vite's dev server, Vitest, webpack's development mode, and Node or esbuild given `--conditions=development`. A production build ships nothing for it.
+
+The [`errors`](/docs/precompile/options#errors) option ships less: one issue, or one saying the data is invalid.
+
+## Shipping arktype instead
+
+`runtime: "arktype"` ships arktype, leaving definitions as written: each stays a Type with its whole API, and the build registers the code arktype would compile for it, so it skips compiling at runtime. A definition the build can't precompile is compiled at runtime as usual. Use it while you migrate, or where a program relies on composing Types at runtime.
+
+```ts
+import { precompile } from "@ark/aot/unplugin"
+// ---cut---
+precompile.vite({ runtime: "arktype" })
+```
+
+To leave only some definitions to arktype in a standalone build, mark them as [runtime islands](/docs/precompile/advanced#runtime-islands).
+
+## Limits
+
+- `require("arktype")` or `import("arktype")` fails the build, since it would load arktype/runtime where the build precompiles no definition, but one whose specifier isn't a string literal isn't seen.
+- The build fails for a definition reading an object or array the program writes before it, but doesn't see a write by a module other than the object's and the definition's, or through a call it can't follow. If one changed the object, the definition throws as it's created, naming the object and what the build read.
+- The build doesn't see a Type reach a value through `arguments`, a generator, `Reflect.get`, `import()` or a namespace read at a runtime key, nor a direct `eval` or `with` changing a binding a definition reads. A Type it never sees reach a value is missed: calling a member it lacks throws, and reading one reads `undefined`.
+- A module importing neither arktype nor a module exporting a Type isn't checked, so a member one of its functions reads off a Type passed to it is missed. Annotating the parameter with arktype's `Type` has the build check it.
+- Inside a function the build can't see every call to, like an exported function, a method or a callback, reading `expression`, `description`, `json`, `toJSON()` or `toJsonSchema()` off a parameter isn't checked, since it's usually some other object's. Passed a Type, such a read reads the member the build bakes where it follows the Type there, and throws where it doesn't. Annotate the parameter with arktype's `Type` so the build checks it, or mark the Type's definition as a [runtime island](/docs/precompile/advanced#runtime-islands). The same goes for a field an exported class's constructor sets from a parameter, read off an instance, and for a Vue template reading a Type that `setup()` or `data()` exposes from a `<script lang="ts">` block; script setup and a plain `<script>` are checked.
+- A definition whose branches arktype orders by the names of the functions they hold, like `type.instanceOf(Cat).or(type.instanceOf(Dog))`, is reported, since a minifier can rename them.
+- A definition holding a function a parameter holds, or resolving a Scope alias a thunk defines whose Type holds one, is reported. Mark it as a [runtime island](/docs/precompile/advanced#runtime-islands).
+- A definition holding a Standard Schema that isn't a Type, like a Zod schema, is reported. Define the schema with ArkType, or mark the definition as a [runtime island](/docs/precompile/advanced#runtime-islands).
+- A union whose branches print alike once their functions are named prints as `X or X` where arktype prints `X`.
+- A Date or RegExp a Type holds is one object for every Type and validation holding it.
+- A builtin class a Type holds, like `Uint8Array`, is read as the validator's module loads, so a later polyfill isn't seen.
+- When a validator rejects an array, it may look for errors only from the first element it rejects, so a getter or `Proxy` trap reading an element before that one runs once rather than twice.
+- The `ctx.config` a narrow or morph receives holds only `jitless` and `onFail`.
+- A module of validators fails to link to an `arktype/runtime` of another version, but nothing checks at runtime that `arktype` loads only for runtime islands.

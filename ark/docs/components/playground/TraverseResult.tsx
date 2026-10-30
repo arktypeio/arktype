@@ -23,10 +23,12 @@ export const TraverseResult = ({ traversed }: TraverseResult.Props) => {
 				backgroundColor: backgroundsByResultKind[resultKind]
 			}}
 			className="glass-container h-full p-4 rounded-2xl overflow-auto"
+			// a long result scrolls, so the keyboard needs to reach it
+			tabIndex={0}
 		>
-			<h3 className="text-3xl text-fd-foreground font-semibold mb-2">
+			<h2 className="text-3xl text-ink font-semibold mb-2">
 				{resultKind === "failure" ? "ArkErrors" : "Out"}
-			</h3>
+			</h2>
 			{
 				<pre className="m-0 whitespace-pre-wrap">
 					<code>

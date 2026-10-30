@@ -1,25 +1,28 @@
 ---
 title: Primitives
+description: Define strings, numbers, bigints, symbols, booleans, null and undefined, with literals, patterns, lengths, ranges and divisors.
 ---
 
 ## string
 
-### keywords
+### keywords [#string-keywords]
 
-The following keywords can be referenced in any definition, e.g.:
+Reference a keyword anywhere a definition is expected:
 
 ```ts
-const Email = type("string.email")
-
 const User = type({
-	data: "string.json.parse",
+	email: "string.email",
 	ids: "string.uuid.v4[]"
 })
 ```
 
 <StringKeywordTable />
 
+Every keyword, including those for other types, is listed on the [keywords](/docs/keywords) page.
+
 ### literals [#string-literals]
+
+Quote a string inside a definition to allow exactly that string. Single and double quotes are equivalent:
 
 ```ts
 const Literals = type({
@@ -30,30 +33,48 @@ const Literals = type({
 
 ### patterns [#string-patterns]
 
-Regex literals specify an unanchored regular expression that an input string must match.
+A regex literal requires the string to match it. Like a `RegExp`, it is unanchored unless you anchor it with `^` and `$`.
 
-They can either be string-embedded or refer directly to a `RegExp` instance.
+<SyntaxTabs>
+	<SyntaxTab string>
 
 ```ts
-const Literals = type({
-	stringEmbedded: "/^a.*z$/",
-	regexLiteral: /^a.*z$/
-})
+const AToZ = type("/^a.*z$/")
+
+// ArkErrors: must be matched by ^a.*z$ (was "abc")
+AToZ("abc")
 ```
 
-Regex literals now carry full type inference via [arkregex](/docs/blog/arkregex):
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
 
 ```ts
-const Hex = type("/^[0-9a-fA-F]+$/")
-//    Type<string>
+const AToZ = type.string.matching(/^a.*z$/)
 
+// ArkErrors: must be matched by ^a.*z$ (was "abc")
+AToZ("abc")
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+A `RegExp` works as a definition too, e.g. `type({ code: /^a.*z$/ })`.
+
+Regex literals are typed with [ArkRegex](/docs/regex), so a pattern that constrains the string's shape narrows the inferred type:
+
+```ts
+// Type<string>
+const Hex = type("/^[0-9a-fA-F]+$/")
+
+// Type<`${number}.${number}.${number}`>
 const Semver = type("/^(\\d+)\\.(\\d+)\\.(\\d+)$/")
-//    Type<`${number}.${number}.${number}`>
 ```
 
 #### e(x)ec mode
 
-Prefix a regex literal with `x` to parse capture groups at runtime, fully typed:
+Prefix a regex literal with `x` to transform the string into the result of `RegExp.prototype.exec`. The output is the match, not the string, and its capture groups are typed:
 
 ```ts
 const User = type({
@@ -62,17 +83,13 @@ const User = type({
 
 const data = User.assert({ birthday: "05-21-1993" })
 
-// fully type-safe
 data.birthday.groups.month // "05"
-data.birthday.groups.day // "21"
 data.birthday.groups.year // "1993"
 ```
 
-For the standalone package (no ArkType required), see the full [arkregex announcement](/docs/blog/arkregex).
-
 ### lengths [#string-lengths]
 
-Constrain a string with an inclusive or exclusive min or max length.
+Constrain a string's length with `>`, `>=`, `<`, `<=`, `==` or `!=`:
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -80,9 +97,8 @@ Constrain a string with an inclusive or exclusive min or max length.
 ```ts
 const Bounded = type({
 	nonEmpty: "string > 0",
-	atLeastLength3: "string.alphanumeric >= 3",
-	lessThanLength10: "string < 10",
-	atMostLength5: "string <= 5"
+	atMost10: "string <= 10",
+	exactly5: "string == 5"
 })
 ```
 
@@ -93,9 +109,8 @@ const Bounded = type({
 ```ts
 const Bounded = type({
 	nonEmpty: type.string.moreThanLength(0),
-	atLeastLength3: type.keywords.string.alphanumeric.atLeastLength(3),
-	lessThanLength10: type.string.lessThanLength(10),
-	atMostLength5: type.string.atMostLength(5)
+	atMost10: type.string.atMostLength(10),
+	exactly5: type.string.exactlyLength(5)
 })
 ```
 
@@ -103,16 +118,17 @@ const Bounded = type({
 
 </SyntaxTabs>
 
-Range expressions allow you to specify both a min and max length and use the same syntax for exclusivity.
+A range sets both bounds at once, each inclusive or exclusive:
 
 <SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
-const Range = type({
-	nonEmptyAtMostLength10: "0 < string <= 10",
-	integerStringWith2To5Digits: "2 <= string.integer < 6"
-})
+// 4 to 6 digits
+const Pin = type("4 <= string.digits <= 6")
+
+// ArkErrors: must be at least length 4 (was 3)
+Pin("123")
 ```
 
     </SyntaxTab>
@@ -120,12 +136,11 @@ const Range = type({
     <SyntaxTab fluent>
 
 ```ts
-const Range = type({
-	nonEmptyAtMostLength10: type.string.moreThanLength(0).atMostLength(10),
-	integerStringWith2To5Digits: type.keywords.string.integer.root
-		.atLeastLength(2)
-		.lessThanLength(6)
-})
+// 4 to 6 digits
+const Pin = type.keywords.string.digits.atLeastLength(4).atMostLength(6)
+
+// ArkErrors: must be at least length 4 (was 3)
+Pin("123")
 ```
 
     </SyntaxTab>
@@ -134,9 +149,15 @@ const Range = type({
 
 ## number
 
-### keywords [#number-keywords]
+`number` rejects `NaN`, `Infinity` and `-Infinity`. Allow them in one type with the `number.NaN`, `number.Infinity` and `number.NegativeInfinity` keywords:
 
-The following keywords can be referenced in any definition, e.g.:
+```ts
+const MaybeInfinite = type("number | number.Infinity | number.NegativeInfinity")
+```
+
+To allow them everywhere, configure [`numberAllowsNaN`](/docs/configuration#numberallowsnan) or [`numberAllowsInfinity`](/docs/configuration#numberallowsinfinity).
+
+### keywords [#number-keywords]
 
 ```ts
 const User = type({
@@ -149,6 +170,8 @@ const User = type({
 
 ### literals [#number-literals]
 
+A number in a definition allows exactly that number:
+
 ```ts
 const Literals = type({
 	number: "1337"
@@ -157,7 +180,7 @@ const Literals = type({
 
 ### ranges [#number-ranges]
 
-Constrain a number with an inclusive or exclusive min or max.
+Constrain a number with `>`, `>=`, `<` or `<=`:
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -165,8 +188,6 @@ Constrain a number with an inclusive or exclusive min or max.
 ```ts
 const Bounded = type({
 	positive: "number > 0",
-	atLeast3: "number.integer >= 3",
-	lessThanPi: "number < 3.14159",
 	atMost5: "number <= 5"
 })
 ```
@@ -178,8 +199,6 @@ const Bounded = type({
 ```ts
 const Bounded = type({
 	positive: type.number.moreThan(0),
-	atLeast3: type.keywords.number.integer.atLeast(3),
-	lessThanPi: type.number.lessThan(3.14159),
 	atMost5: type.number.atMost(5)
 })
 ```
@@ -188,16 +207,16 @@ const Bounded = type({
 
 </SyntaxTabs>
 
-Range expressions allow you to specify both a min and max and use the same syntax for exclusivity.
+A range sets both bounds at once, each inclusive or exclusive:
 
 <SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
-const Range = type({
-	positiveAtMostE: "0 < number <= 2.71828",
-	evenNumberAbsoluteValueLessThan50: "-50 < (number % 2) < 50"
-})
+const Percentage = type("0 <= number <= 100")
+
+// ArkErrors: must be at most 100 (was 101)
+Percentage(101)
 ```
 
     </SyntaxTab>
@@ -205,30 +224,37 @@ const Range = type({
     <SyntaxTab fluent>
 
 ```ts
-const Range = type({
-	positiveAtMostE: type.number.moreThan(0).atMost(2.71828),
-	evenNumberAbsoluteValueLessThan50: type.number
-		.divisibleBy(2)
-		.moreThan(-50)
-		.lessThan(50)
-})
+const Percentage = type.number.atLeast(0).atMost(100)
+
+// ArkErrors: must be at most 100 (was 101)
+Percentage(101)
 ```
 
     </SyntaxTab>
 
 </SyntaxTabs>
 
+`!=` excludes one value:
+
+```ts
+const NonZero = type("number != 0")
+
+// ArkErrors: must be other than 0 (was 0)
+NonZero(0)
+```
+
 ### divisors [#number-divisors]
 
-Constrain a `number` to a multiple of the specified integer.
+Constrain a number to a multiple of an integer with `%`:
 
 <SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
-const Evens = type({
-	key: "number % 2"
-})
+const Even = type("number % 2")
+
+// ArkErrors: must be even (was 3)
+Even(3)
 ```
 
     </SyntaxTab>
@@ -236,9 +262,10 @@ const Evens = type({
     <SyntaxTab fluent>
 
 ```ts
-const Evens = type({
-	key: type.number.divisibleBy(2)
-})
+const Even = type.number.divisibleBy(2)
+
+// ArkErrors: must be even (was 3)
+Even(3)
 ```
 
     </SyntaxTab>
@@ -246,8 +273,6 @@ const Evens = type({
 </SyntaxTabs>
 
 ## bigint
-
-To allow any `bigint` value, use the `"bigint"` keyword.
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -263,7 +288,7 @@ const Bigints = type({
     <SyntaxTab fluent>
 
 ```ts
-const Symbols = type({
+const Bigints = type({
 	foo: type.bigint
 })
 ```
@@ -274,7 +299,7 @@ const Symbols = type({
 
 ### literals [#bigint-literals]
 
-To require an exact `bigint` value in your type, you can use add the suffix `n` to a string-embedded [number literal](/docs/primitives#number-literals) to make it a `bigint`.
+Add the suffix `n` to a [number literal](/docs/primitives#number-literals) to allow exactly that `bigint`:
 
 ```ts
 const Literals = type({
@@ -282,11 +307,9 @@ const Literals = type({
 })
 ```
 
-You may also use a [unit expression](/docs/expressions#unit) to define `bigint` literals.
+A [unit expression](/docs/expressions#unit) like `type.unit(1337n)` does the same.
 
 ## symbol
-
-To allow any `symbol` value, use the `"symbol"` keyword.
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -311,13 +334,11 @@ const Symbols = type({
 
 </SyntaxTabs>
 
-To reference a specific symbol in your definition, use a [unit expression](/docs/expressions#unit).
+To allow one specific symbol, use a [unit expression](/docs/expressions#unit).
 
-No special syntax is required to define symbolic properties like `{ [mySymbol]: "string" }`. For more information and examples of how to combine symbolic keys with other syntax like optionality, see [properties](/docs/objects#properties).
+Symbol keys need no special syntax, e.g. `{ [mySymbol]: "string" }`. See [properties](/docs/objects#properties) to make them optional or defaultable.
 
 ## boolean
-
-To allow `true` or `false`, use the `"boolean"` keyword.
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -344,8 +365,6 @@ const Booleans = type({
 
 ### literals [#boolean-literals]
 
-To require a specific boolean value, use the corresponding literal.
-
 <SyntaxTabs>
 	<SyntaxTab string>
 
@@ -353,7 +372,7 @@ To require a specific boolean value, use the corresponding literal.
 const Booleans = type({
 	a: "true",
 	b: "false",
-	// equivalent to the "boolean" keyword
+	// equivalent to "boolean"
 	c: "true | false"
 })
 ```
@@ -364,10 +383,10 @@ const Booleans = type({
 
 ```ts
 const Booleans = type({
-	a: type.keywords.true,
-	b: type.keywords.false,
-	// equivalent to the "boolean" keyword
-	c: type.keywords.true.or(type.keywords.false)
+	a: type.true,
+	b: type.false,
+	// equivalent to type.boolean
+	c: type.true.or(type.false)
 })
 ```
 
@@ -377,7 +396,7 @@ const Booleans = type({
 
 ## null
 
-The `"null"` keyword can be used to allow the exact value `null`, generally as part of a [union](/docs/expressions#union).
+`"null"` allows exactly `null`, usually in a [union](/docs/expressions#union):
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -404,7 +423,7 @@ const MyObj = type({
 
 ## undefined
 
-The `"undefined"` keyword can be used to allow the exact value `undefined`, generally as part of a [union](/docs/expressions#union).
+`"undefined"` allows exactly `undefined`, usually in a [union](/docs/expressions#union):
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -431,27 +450,20 @@ const MyObj = type({
 
 </SyntaxTabs>
 
-<Callout type="warn" title="Allowing undefined as a value does not make the key optional!">
+<Callout type="warn" title="Allowing undefined does not make a key optional">
 
-    In TypeScript, a required property that allows `undefined` must still be present for the type to be satisfied.
+Like in TypeScript, a required key that allows `undefined` must still be present:
 
-    The same is true in ArkType.
+```ts
+const MyObj = type({
+	key: "number | undefined"
+})
 
-    <details>
-    	<summary>See an example</summary>
+// { key: undefined }
+MyObj({ key: undefined })
 
-    ```ts
-    const MyObj = type({
-    	key: "number | undefined"
-    })
-
-    // valid data
-    const validResult = MyObj({ key: undefined })
-
-    // Error: name must be a number or undefined (was missing)
-    const errorResult = MyObj({})
-    ```
-
-    </details>
+// ArkErrors: key must be a number or undefined (was missing)
+MyObj({})
+```
 
 </Callout>

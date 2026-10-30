@@ -1,0 +1,221 @@
+---
+title: Errors
+description: Read, serialize and throw the errors a Type returns for invalid data.
+---
+
+## ArkErrors
+
+A Type called with invalid data returns `ArkErrors`, which holds one error for each path that failed:
+
+```ts
+import { flatProblemsByPath, type } from "arktype"
+
+const User = type({
+	name: "string",
+	age: "number >= 0"
+})
+
+const out = User({ name: 5, age: -1 })
+
+if (out instanceof type.errors) {
+	// age must be non-negative (was -1)
+	// name must be a string (was a number)
+	console.error(out.summary)
+
+	// ["age must be non-negative (was -1)",
+	//  "name must be a string (was a number)"]
+	out.issues.map(error => error.message)
+
+	// { age: ["must be non-negative (was -1)"],
+	//   name: ["must be a string (was a number)"] }
+	flatProblemsByPath(out)
+}
+```
+
+`ArkErrors` isn't an array. Its errors are in `issues`, so index them, iterate them or call array methods there.
+
+| member                    | what it is                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------- |
+| `issues`                  | an array with one error per path, in the order each path first failed                 |
+| `summary`, `toString()`   | every error's message, one per line                                                   |
+| `count`                   | how many errors were added, more than `issues.length` when several failed at one path |
+| `toJSON()`                | an array of each error's JSON, with its `propString`                                  |
+| `toLocaleString(locale?)` | the summary in a [locale](/docs/i18n#rendering-in-a-locale)                           |
+| `throw()`                 | throws a [`TraversalError`](#traversalerror)                                          |
+
+`arktype` exports functions that read an `ArkErrors`, most grouping it by path:
+
+| function                   | what it returns                                                                                  |
+| -------------------------- | ------------------------------------------------------------------------------------------------ |
+| `firstIssue(out)`          | the first error in `issues`, found [without the rest](#finding-only-the-first) where it can be   |
+| `byPath(out)`              | an object mapping each path's `propString` to its error                                          |
+| `flatByPath(out)`          | like `byPath`, but each value is an array, with an `intersection` split into its errors          |
+| `flatProblemsByPath(out)`  | like `flatByPath`, but with each error's `problem`                                               |
+| `byAncestorPath(out)`      | each failed path and its ancestors, with `""` for the root, mapped to every error at or below it |
+| `messageIn(error, locale)` | one error's message in a [locale](/docs/i18n#rendering-in-a-locale)                              |
+
+A Type that calls no narrow or morph may find its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. The issues describe the data as it is at that read, not as it was validated: a write to it in between can change them, and data that no longer fails holds one root issue, `is invalid`. Read `summary` or `issues` before the data you validated can change, as it can when it's reactive form state or an Immer draft, or when an `await` comes before you report the errors:
+
+```ts
+const User = type({ name: "string" })
+const form: Record<string, unknown> = { name: 5 }
+
+const out = User(form)
+// read now: name must be a string (was a number)
+const summary = out instanceof type.errors ? out.summary : ""
+
+form.name = "Ada"
+// read only now, out.summary would be "is invalid"
+```
+
+A getter or `Proxy` trap the check reads runs again at that read, and what it throws is thrown there. Each error's text is written at that first read too.
+
+### Finding only the first
+
+Where a form shows one error at a time, read it with `firstIssue`. Errors that haven't found their issues yet, like those of a Type that calls no narrow or morph or of a [precompiled](/docs/precompile) validator, find only that one, reading the data until it fails, so the rest cost nothing until `issues` or `summary` is read:
+
+```ts
+import { firstIssue, type } from "arktype"
+
+const User = type({ name: "string", age: "number >= 0" })
+
+const out = User({ name: 5, age: -1 })
+
+// age must be non-negative (was -1)
+if (out instanceof type.errors) console.error(firstIssue(out).message)
+```
+
+It's the error `issues[0]` holds. Unlike [`errors: "first"`](/docs/configuration#errors), it leaves the rest to be found, and it's the first a full validation finds, not whichever is cheapest.
+
+## ArkError
+
+Each error in `issues` is a plain object, typed as `ArkError`, describing what failed at one path:
+
+```ts
+const out = type({ age: "number >= 0" })({ age: -1 })
+
+if (out instanceof type.errors) {
+	const error = out.issues[0]
+
+	error.code // "min"
+	error.path // ["age"]
+	error.propString // "age"
+	error.data // -1
+	error.expected // "non-negative"
+	error.actual // "-1"
+	error.problem // "must be non-negative (was -1)"
+	error.message // "age must be non-negative (was -1)"
+
+	// narrow by code to read its own fields
+	if (error.code === "min") error.rule // 0
+}
+```
+
+Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected` (was `actual`)". You can [configure each part](/docs/configuration#error-messages).
+
+An error also has `meta`, the metadata of the Type that failed, and usually a `description`. It has no methods, so `JSON.stringify(error)` serializes its own keys, and `messageIn(error, locale)` writes its message in another locale.
+
+When several checks fail at one path, they are merged into one error with the code `intersection`. `flatByPath` splits it back up:
+
+```ts
+import { flatProblemsByPath, type } from "arktype"
+
+const out = type({ n: "number % 2 >= 2" })({ n: 1 })
+
+if (out instanceof type.errors) {
+	// n (1) must be...
+	//   ◦ even
+	//   ◦ at least 2
+	console.error(out.summary)
+
+	// { n: ["must be even (was 1)", "must be at least 2 (was 1)"] }
+	flatProblemsByPath(out)
+}
+```
+
+## Error codes
+
+An error's `code` tells you its other fields:
+
+| code                                    | fields                                                                                                                                                     |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain`                                | `domain`, like `"string"`                                                                                                                                  |
+| `unit`                                  | `unit`, the expected value                                                                                                                                 |
+| `proto`                                 | `proto`, the expected constructor                                                                                                                          |
+| `min`, `max`                            | `rule`, and `exclusive` when the bound is exclusive                                                                                                        |
+| `minLength`, `maxLength`, `exactLength` | `rule`                                                                                                                                                     |
+| `divisor`                               | `rule`                                                                                                                                                     |
+| `pattern`                               | `rule` (the regex source) and `flags`                                                                                                                      |
+| `before`, `after`                       | `rule`, a `Date`                                                                                                                                           |
+| `notEqual`                              | `rule`, a number or `Date`                                                                                                                                 |
+| `notEqualLength`                        | `rule`                                                                                                                                                     |
+| `predicate`                             | `predicate` when a narrow returns `false`; `morph` and what it threw as `cause` for `pipe.try`; `meta.keyword` and sometimes `cause` for a keyword's parse |
+| `required`                              | `missing`, the missing value's type; `valueMeta`, its meta; and `missingValueDescription`, its English description                                         |
+| `undeclared`                            | none; its `data` is the value of a key `"+": "reject"` disallows                                                                                           |
+| `discriminant`                          | `discriminantKind`, `cases`, `onKey` and `absent`                                                                                                          |
+| `union`                                 | `errors`, one per branch                                                                                                                                   |
+| `intersection`                          | `errors`, one per check that failed at the path                                                                                                            |
+
+Each also has `data` and `path`, and `meta` unless `ctx` or `pipe.try` raised it. Built-in keywords with their own text, like `string.email`, set `meta.keyword` to their name.
+
+`discriminant` is a miss of a union ArkType checks by switching on a domain or a literal value: branches with different domains, like `number | null`, two or more literals, like `boolean` or `"a" | "b"`, or objects with a discriminant key. Its `data` is the discriminant's value, and `cases` lists the values or domains it expected, with `"Array"` in place of `"object"` where every object it expected is an array:
+
+```ts
+const Shape = type({ kind: "'circle'", r: "number" }).or({
+	kind: "'square'",
+	side: "number"
+})
+
+const out = Shape({ kind: "triangle" })
+
+if (out instanceof type.errors) {
+	const error = out.issues[0]
+
+	// kind must be "circle" or "square" (was "triangle")
+	error.message
+
+	// ["circle", "square"]
+	if (error.code === "discriminant") error.cases
+}
+```
+
+A union reports `union` instead where its discriminant can't tell the branches apart: an undiscriminated union; data that can't hold the discriminant, like `5` for a union of objects; and data matching none of the discriminant's values when some branches don't have its key, whose `errors` hold the miss beside those branches' errors.
+
+## TraversalError
+
+`.assert`, `.from` and `ArkErrors`' `throw()` throw a `TraversalError`, which extends `Error`. A single error's message is its summary. Several are listed on their own lines after a leading newline:
+
+```ts
+import { flatProblemsByPath, type, TraversalError } from "arktype"
+
+try {
+	type({ a: "string", b: "number" }).assert({ a: 1, b: "x" })
+} catch (e) {
+	if (e instanceof TraversalError) {
+		// "\n  • a must be a string (was a number)\n  • b must be a number (was a string)"
+		e.message
+
+		// the ArkErrors, for structured access
+		flatProblemsByPath(e.arkErrors)
+	}
+}
+```
+
+`arkErrors` is non-enumerable, so loggers that print an error's own properties skip it.
+
+## ParseError
+
+A `ParseError` is thrown when a definition is invalid, as the Type is created rather than when it validates. TypeScript reports the same mistakes in your editor, so you'll usually see one only for definitions TypeScript can't check, like strings built at runtime:
+
+```ts
+import { ParseError, type } from "arktype"
+
+const def: string = "string | numbr"
+
+try {
+	type.raw(def)
+} catch (e) {
+	// ParseError: 'numbr' is unresolvable
+	if (e instanceof ParseError) console.error(e.message)
+}
+```

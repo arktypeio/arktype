@@ -1,0 +1,393 @@
+---
+title: To JSON Schema
+description: Generate a JSON Schema from any Type, pick a draft, and decide what to write for what JSON Schema can't express.
+---
+
+Every Type has a `toJsonSchema()` method:
+
+```ts
+const User = type({
+	name: "string",
+	"age?": "number.integer >= 0"
+})
+
+const schema = User.toJsonSchema()
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"name": { "type": "string" },
+		"age": { "type": "integer", "minimum": 0 }
+	},
+	"required": ["name"]
+}
+```
+
+A [precompiled](/docs/precompile) validator has `toJsonSchema()`, its schema baked at build time, where its build sees code call it or its [`members`](/docs/precompile/options#members) option sets it.
+
+## Options
+
+| option     | default           | effect                                                                                                     |
+| ---------- | ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| `target`   | `"draft-2020-12"` | what to write, `"draft-2020-12"`, `"draft-07"` or [`"openapi-3.0"`](#openapi-30)                           |
+| `dialect`  | the target's URL  | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL                                 |
+| `useRefs`  | `false`           | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref` |
+| `fallback` | throws            | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks)                            |
+
+### target
+
+The drafts differ in how they write tuples and where they put definitions:
+
+```ts
+const Pair = type(["string", "number"])
+
+Pair.toJsonSchema()
+// {
+// 	$schema: "https://json-schema.org/draft/2020-12/schema",
+// 	type: "array",
+// 	minItems: 2,
+// 	prefixItems: [{ type: "string" }, { type: "number" }],
+// 	items: false
+// }
+
+Pair.toJsonSchema({ target: "draft-07" })
+// {
+// 	$schema: "http://json-schema.org/draft-07/schema#",
+// 	type: "array",
+// 	minItems: 2,
+// 	items: [{ type: "string" }, { type: "number" }],
+// 	additionalItems: false
+// }
+```
+
+`draft-07` writes `definitions` where `draft-2020-12` writes `$defs`.
+
+### OpenAPI 3.0
+
+`"openapi-3.0"` writes an [OpenAPI 3.0 Schema Object](https://spec.openapis.org/oas/v3.0.3#schema-object), which has no `$schema` and words some keywords differently:
+
+| draft 2020-12                                   | `"openapi-3.0"`                                    |
+| ----------------------------------------------- | -------------------------------------------------- |
+| `exclusiveMinimum: 0`                           | `minimum: 0`, `exclusiveMinimum: true`             |
+| `type: "string"`, `const: "cat"`                | `type: "string"`, `enum: ["cat"]`                  |
+| `not: { const: 5 }`                             | `not: { enum: [5] }`                               |
+| `anyOf: [{ type: "string" }, { type: "null" }]` | `type: "string"`, `nullable: true`                 |
+| `type: "null"`                                  | `type: "string"`, `nullable: true`, `enum: [null]` |
+| `examples: ["a", "b"]`                          | `example: "a"`                                     |
+| `contentEncoding: "base64"`                     | `format: "byte"`                                   |
+| `type: "array"`                                 | `type: "array"`, `items: {}`                       |
+
+`nullable` adds `null` only to the `type` beside it, and an `enum` there must list `null` too. A union whose other branches share no `type`, like `string | number | null`, keeps `null` as a branch of its `anyOf`. OpenAPI 3.0 has no `null` type, so `null` alone is written as zod writes it: a `nullable` string whose `enum` allows only `null`.
+
+What OpenAPI 3.0 can't express goes to a [fallback](#fallbacks), so `toJsonSchema()` throws for it by default:
+
+- A tuple's elements, since `items` is one schema for every element, go to `arrayPrefix`.
+- `patternProperties` and `propertyNames` go to `indexKey`. A `string` index signature with no declared keys is still `additionalProperties`.
+- Definitions go to `defs`. A `$ref` points into the document's `#/components/schemas`, which a Schema Object can't hold, so the handler receives them to put there:
+
+```ts
+import { scope, type JsonSchema } from "arktype"
+
+const types = scope({ Node: { value: "number", "next?": "Node" } }).export()
+
+const components: Record<string, JsonSchema> = {}
+
+// { $ref: "#/components/schemas/Node" }
+const schema = types.Node.toJsonSchema({
+	target: "openapi-3.0",
+	fallback: {
+		defs: ctx => {
+			// { Node: { type: "object", properties: { ... } } }
+			Object.assign(components, ctx.defs)
+			return ctx.base
+		}
+	}
+})
+```
+
+zod, valibot and sury write a tuple as an array whose elements may each be any of its elements, which accepts `[1, "a"]` for `["string", "number"]`. To write it that way:
+
+```ts
+const Pair = type(["string", "number"])
+
+// {
+// 	type: "array",
+// 	items: { anyOf: [{ type: "string" }, { type: "number" }] },
+// 	minItems: 2,
+// 	maxItems: 2
+// }
+Pair.toJsonSchema({
+	target: "openapi-3.0",
+	fallback: {
+		arrayPrefix: ({ base, elements, items }) => ({
+			...base,
+			items: { anyOf: items ? [...elements, items] : elements }
+		})
+	}
+})
+```
+
+[`jsonSchema` meta](#your-own-schema) is written as configured, so `string.json`'s `contentMediaType`, which OpenAPI 3.0 lacks, is too.
+
+### dialect
+
+```ts
+type("string").toJsonSchema({ dialect: null }) // { type: "string" }
+```
+
+### Cyclic types
+
+A cyclic alias is written once under `$defs`, named by its alias, and each reference to it is a `$ref`. Everything else, including an alias that isn't cyclic, is written inline:
+
+```ts
+const types = scope({ Node: { value: "number", "next?": "Node" } }).export()
+
+const schema = types.Node.toJsonSchema()
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$ref": "#/$defs/Node",
+	"$defs": {
+		"Node": {
+			"type": "object",
+			"properties": {
+				"value": { "type": "number" },
+				"next": { "$ref": "#/$defs/Node" }
+			},
+			"required": ["value"]
+		}
+	}
+}
+```
+
+- A generic's instantiations are named by the generic, like `Box` for `Box<string>`, and a submodule's alias by its own name, like `B` for `A.B`.
+- A name another definition already has is numbered from 2, like `Node2`, in the order the definitions are reached.
+- A cycle with no alias, like a `this` reference, is named by what ArkType calls it, like `type`.
+- `.in`, `.out` and `~standard.jsonSchema` name definitions the same way.
+
+## How Types map
+
+| ArkType                                               | JSON Schema                                         |
+| ----------------------------------------------------- | --------------------------------------------------- |
+| `"string"`, `"number"`, `"boolean"`, `"null"`         | `type`                                              |
+| `"number.integer"`, `"number % 2"`                    | `type: "integer"`, plus `multipleOf: 2`             |
+| `"0 < number <= 1"`                                   | `exclusiveMinimum: 0`, `maximum: 1`                 |
+| `"string >= 1"`, `"string == 2"`                      | `minLength`, or `minLength` and `maxLength`         |
+| `"string[] > 0"`                                      | `items`, `minItems: 1`                              |
+| `["string", "number?"]`                               | `prefixItems`, `minItems: 1`, `items: false`        |
+| `/^a/`                                                | `pattern: "^a"`                                     |
+| `"string.email"`, `"string.uuid"`                     | `pattern`, `format: "email"`, `"uuid"`              |
+| `"string.ip.v4"`, `"string.ip.v6"`                    | `pattern`, `format: "ipv4"`, `"ipv6"`               |
+| `"string.date.iso"`                                   | `pattern`, `format: "date-time"`                    |
+| `"string.base64"`                                     | `pattern`, `contentEncoding: "base64"`              |
+| `"string.base64.url"`                                 | `pattern`, `contentEncoding: "base64url"`           |
+| `"string.date"`, `"string.url"`, `"string.regex"`     | `format: "date-time"`, `"uri"`, `"regex"`           |
+| `"string.json"`                                       | `contentMediaType: "application/json"`              |
+| `"'a' \| 'b'"`                                        | `type: "string"`, `enum: ["a", "b"]`                |
+| `"string \| null"`                                    | `anyOf`                                             |
+| `{ "name?": "string" }`                               | `properties`, with only required keys in `required` |
+| `{ "+": "reject", ... }`                              | `additionalProperties: false`                       |
+| `"Record<string, number>"`                            | `additionalProperties: {...}`                       |
+| `{ id: "string", "[string]": "string" }`              | `patternProperties: { "": {...} }`                  |
+| `{ "[/^x-/]": "string" }`                             | `patternProperties: { "^x-": {...} }`               |
+| `{ "[string <= 3]": "number", "+": "reject" }`        | `propertyNames`, `additionalProperties: {...}`      |
+| `{ role: "string = 'user'" }`                         | `default: "user"` on `role`                         |
+| `.describe("...")`, `.configure({ title, examples })` | `description`, `title`, `examples`                  |
+
+JSON Schema's `pattern` has no flags. `d` and `g` don't change what a regex matches, so they're left out, as is `u` for draft 2020-12, whose patterns are read with it. Any other flag, like `i` in `/^a/i`, goes to the [`patternFlags`](#fallback-codes) fallback.
+
+An index signature applies to every key, including declared ones. JSON Schema skips declared keys in `additionalProperties`, so an index signature next to declared keys is written as `patternProperties` with a pattern every key matches.
+
+A keyword's `format`, `contentEncoding` or `contentMediaType` names what its strings are. JSON Schema reads each as an annotation, which a validator doesn't check unless it's configured to, so it's written whether or not arktype's check matches the standard's definition exactly. A keyword checked by a regex is written with that `pattern` too, so a validator that ignores formats still checks what arktype does. One checked by a function is written as its format alone: `string.date` accepts whatever `Date` parses, and `string.url` whatever `URL.canParse` does, so their schemas accept strings the Type rejects. A validator that asserts formats, like Ajv with `ajv-formats`, can also reject strings arktype accepts, where a format's RFC differs from arktype's check: `date-time` requires a time that `string.date` and `string.date.iso` don't, and `uri` rejects the space in a path that `string.url` accepts. Keywords no format names, like `string.date.epoch` or `string.creditCard`, go to the [`predicate`](#fallback-codes) fallback.
+
+A key that isn't `string` or a single regex, like `[string <= 3]`, needs `propertyNames`, which checks every key of the object. That's only the same thing when every key must match it: undeclared keys are rejected, it's the only index signature, and every declared key matches it. Any other such key goes to the [`indexKey`](#fallback-codes) fallback.
+
+## Your own schema
+
+Configure `jsonSchema` meta to write a Type's schema yourself. It replaces the schema the Type's constraints imply, so a `narrow` it covers needs no fallback:
+
+```ts
+const Even = type("number")
+	.narrow(n => n % 2 === 0)
+	.configure({ jsonSchema: { type: "integer", multipleOf: 2 } })
+
+Even.toJsonSchema() // { $schema: "...", type: "integer", multipleOf: 2 }
+```
+
+The Type's other meta, like a description, is still written beside it. Unlike other meta, `jsonSchema` is configured on the Type alone, not on the Types it references, since it describes the whole Type.
+
+## Fallbacks
+
+Some things a Type checks have no JSON Schema equivalent: a `Date`, a `bigint`, a morph, a `narrow`. By default, `toJsonSchema()` throws a `ToJsonSchemaError` for them, naming where it is and which fallback to configure:
+
+```ts
+type({ at: "Date" }).toJsonSchema() // throws ToJsonSchemaError (code "date")
+```
+
+Pass a handler for its [code](#fallback-codes) to write something instead. The handler receives the schema written so far as `ctx.base`, plus fields for its code, and returns the schema to use:
+
+```ts
+const Event = type({ name: "string", at: "Date" })
+
+const schema = Event.toJsonSchema({
+	fallback: {
+		date: ctx => ({ ...ctx.base, type: "string", format: "date-time" })
+	}
+})
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"at": { "type": "string", "format": "date-time" },
+		"name": { "type": "string" }
+	},
+	"required": ["at", "name"]
+}
+```
+
+A `default` handler covers every code you don't list. Passing a function instead of an object is the same as passing it as `default`. Return `ctx.base` to leave out what JSON Schema can't express:
+
+```ts
+const Event = type({ name: "string", at: "Date" })
+// ---cut---
+// properties.at is now {}
+Event.toJsonSchema({ fallback: ctx => ctx.base })
+```
+
+Leaving something out makes the schema accept values the Type rejects.
+
+For `defaultValue`, `base` is the property's own schema, so returning it makes the schema contain itself. Return `undefined` to drop the default instead, e.g. `{ defaultValue: () => undefined, default: ctx => ctx.base }`.
+
+### Morphs
+
+A morph has a different input and output, so there is no single schema for it. Convert one side with `.in` or `.out`:
+
+```ts
+const Tags = type("string")
+	.pipe(s => s.split(","))
+	.to("string[]")
+
+Tags.in.toJsonSchema() // { $schema: "...", type: "string" }
+Tags.out.toJsonSchema() // { $schema: "...", type: "array", items: { type: "string" } }
+```
+
+### annotatingFallback
+
+To keep what JSON Schema can't express rather than drop it, pass `annotatingFallback`. It writes each such constraint as an `x-arktype-*` keyword, naming a function, class or symbol by its `$ark` name as a Type's `.json` does:
+
+```ts
+import { annotatingFallback, type } from "arktype"
+
+const schema = type({
+	id: "bigint",
+	createdAt: "Date"
+}).toJsonSchema({ fallback: annotatingFallback })
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"createdAt": { "x-arktype-proto": "Date" },
+		"id": { "x-arktype-domain": "bigint" }
+	},
+	"required": ["createdAt", "id"]
+}
+```
+
+Validators ignore those keywords, so the schema still accepts values the Type rejects.
+
+### Fallback codes
+
+Every reason `toJsonSchema()` can throw, with the fields its handler receives besides `code` and `base`:
+
+| code                  | raised for                                                                            | example                                      | fields                                           |
+| --------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------ |
+| `arrayObject`         | an array with named properties                                                        | `type("string[]").and({ n: "number" })`      | `object`                                         |
+| `arrayPostfix`        | elements after a variadic element                                                     | `type(["...", "string[]", "number"])`        | `elements`                                       |
+| `arrayPrefix`         | for `openapi-3.0`, elements before any variadic element                               | `type(["string", "number"])`                 | `elements`, and `items` for the rest, if any     |
+| `date`                | a `Date`, with its bounds                                                             | `type("Date")`                               | `before`, `after`                                |
+| `defaultValue`        | a default that isn't JSON. Return `undefined` to omit it                              | `type({ n: "bigint = 5n" })`, after `domain` | `value`                                          |
+| `defs`                | for `openapi-3.0`, the definitions `$ref`s point to                                   | a cyclic Type                                | `defs`, by name                                  |
+| `domain`              | `bigint` or `symbol`                                                                  | `type("bigint")`                             | `domain`                                         |
+| `indexKey`            | a key `propertyNames` can't express, or for `openapi-3.0` any key but a lone `string` | `type({ "[string <= 3]": "number" })`        | `key` and `value`, as schemas                    |
+| `morph`               | a morph                                                                               | `type("string.trim")`                        | `out`, the output schema or `null`               |
+| `patternFlags`        | a regex flag other than `d`, `g` or, for draft 2020-12, `u`                           | `type(/^a/i)`                                | `pattern`, `flags`                               |
+| `patternIntersection` | a second regex on the same string                                                     | `type(/^a/).and(/b$/)`                       | `pattern`                                        |
+| `predicate`           | a `narrow`, or `object.json`'s plain-object check                                     | `type("number").narrow(n => n > 0)`          | `predicate`                                      |
+| `proto`               | an `instanceof` other than `Array` or `Date`                                          | `type("Map")`                                | `proto`                                          |
+| `symbolKey`           | a symbol key or index signature                                                       | `type({ "[symbol]": "string" })`             | `key` (`null` for an index), `value`, `optional` |
+| `unit`                | a literal that isn't JSON                                                             | `type("undefined")`                          | `unit`                                           |
+
+A `Date` is reported as `date`, never `proto`.
+
+`object.json` accepts only arrays and objects whose prototype is `Object.prototype` or `null`, which JSON Schema can't require, so its check is reported as `predicate`. Return `ctx.base` to accept any JSON object in its place:
+
+```ts
+// { type: "object", additionalProperties: { $ref: "#/$defs/jsonData" }, $defs: { jsonData: { anyOf: [...] } } }
+type("object.json").toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
+```
+
+## Configuration
+
+`toJsonSchema` options can also be set [globally or on a scope](/docs/configuration#levels). Options passed to `toJsonSchema()` are merged over them:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({
+	toJsonSchema: {
+		target: "draft-07",
+		fallback: {
+			date: ctx => ({ ...ctx.base, type: "string", format: "date-time" })
+		}
+	}
+})
+```
+
+```ts title="app.ts"
+// import your config file before arktype
+import "./config.ts"
+import { type } from "arktype"
+
+// $schema is draft-07's, and at is { type: "string", format: "date-time" }
+type({ at: "Date" }).toJsonSchema()
+```
+
+A handler passed to `toJsonSchema()` replaces the configured one for its code. A `default` passed there replaces every configured handler.
+
+## Standard JSON Schema
+
+Libraries that accept any [Standard JSON Schema](https://standardschema.dev/json-schema) read a Type's schema from `~standard.jsonSchema`. `input` describes what the Type accepts, `output` what it returns after its morphs:
+
+```ts
+const Form = type({
+	tags: type("string")
+		.pipe(s => s.split(","))
+		.to("string[]"),
+	"id?": "bigint"
+})
+
+// properties: { tags: { type: "string" }, id: {} }
+Form["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+
+// properties: { tags: { type: "array", items: { type: "string" } }, id: {} }
+Form["~standard"].jsonSchema.output({ target: "draft-2020-12" })
+```
+
+Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express. They write as much of it as JSON Schema can describe, or `{}` if nothing, so `id` above accepts any value. A regex with flags is left out too, and so is an index signature `propertyNames` can't express, along with the `additionalProperties: false` that would reject the keys it allows.
+
+- `target` must be `"draft-2020-12"`, `"draft-07"` or `"openapi-3.0"`. Anything else throws.
+- For `"openapi-3.0"`, a tuple is an array of its length, and definitions are written beside the `$ref` as `definitions`, for you to move into `#/components/schemas`, where the `$ref`s point.
+- `libraryOptions` are passed to `toJsonSchema()` as options, e.g. `{ dialect: null }`.
+- Fallback handlers you configure or pass in `libraryOptions` still apply. Only the default throwing handlers are replaced.
+- `input` writes each morph's input, so it never calls a `morph` handler. It keeps defaults, and allows keys `"+": "delete"` would remove.

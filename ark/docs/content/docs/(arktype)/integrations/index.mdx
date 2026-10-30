@@ -1,175 +1,231 @@
 ---
 title: Integrations
+description: Use a Type directly with tRPC, oRPC, Drizzle, React Hook Form, Hono, the MCP SDK and the AI SDK.
 ---
 
-### Standard Schema
+Most libraries on this page accept a [Standard Schema](/docs/standard-schema), so you pass a Type as-is with no adapter. Where a library also publishes an ArkType-specific adapter, its section shows the Standard Schema route first.
 
-ArkType is proud to support and co-author the new [Standard Schema](https://github.com/standard-schema/standard-schema) API with [Valibot](https://github.com/fabian-hiller/valibot) and [Zod](https://github.com/colinhacks/zod).
+Any other library that accepts a Standard Schema works the same way. [standardschema.dev](https://standardschema.dev/schema#what-tools-frameworks-accept-speccompliant-schemas) keeps a list.
 
-Standard Schema allows you and your dependencies to integrate library-agnostic validation logic. If you're building or maintaining a library with a peer dependency on ArkType and/or other validation libraries, we'd recommend consuming it through Standard Schema's API if possible so that your users can choose the solution that best suits their needs!
+## tRPC
 
-#### As definitions
-
-Any Standard Schema compliant validator can also be passed directly to `type`, either at the top level or nested inside a structural definition, and will be fully inferred and validated:
+[tRPC](https://trpc.io/docs/server/validators) 11 accepts a Type as a procedure's input or output:
 
 ```ts
-// @noErrors
+import { initTRPC } from "@trpc/server"
 import { type } from "arktype"
-const v = { number: () => "number" as const }
-const z = {
-	string: () => "string" as const,
-	object: <shape extends Record<string, unknown>>(shape: shape) => shape
-}
 
-const ZodAddress = z.object({
-	street: z.string(),
-	city: z.string()
-})
+const t = initTRPC.create()
 
 const User = type({
 	name: "string",
-	age: v.number(),
-	address: ZodAddress
+	"age?": "number.integer >= 0"
+})
+
+export const appRouter = t.router({
+	createUser: t.procedure.input(User).mutation(({ input }) => input)
 })
 ```
 
-This makes ArkType a universal composition layer- mix and match validators from any ecosystem in a single definition.
+Invalid input is rejected with a `BAD_REQUEST` error before the resolver runs.
 
-### JSON Schema
+## oRPC
 
-ArkType supports bidirectional conversion with JSON Schema.
-
-#### Type to JSON Schema
-
-Every Type instance has a [`toJsonSchema()` method](/docs/type-api#tojsonschema) that generates a corresponding JSON Schema. See the [configuration docs](/docs/configuration#tojsonschema) for options including draft targets, fallback handlers, and cyclic type support.
-
-#### JSON Schema to Type
-
-The `@ark/json-schema` package converts JSON Schema directly into ArkType Types:
+[oRPC](https://orpc.dev) accepts a Type the same way:
 
 ```ts
-// @noErrors
-declare const jsonSchemaToType: (schema: unknown) => unknown
+import { os } from "@orpc/server"
+import { type } from "arktype"
 
-const User = jsonSchemaToType({
-	type: "object",
-	properties: {
-		name: { type: "string" },
-		age: { type: "integer", minimum: 0 }
-	},
-	required: ["name"]
+const User = type({
+	name: "string",
+	"age?": "number.integer >= 0"
 })
-// Type<{ name: string; age?: number }>
+
+export const createUser = os.input(User).handler(({ input }) => input)
 ```
 
-See the [`@ark/json-schema` README](https://github.com/arktypeio/arktype/tree/main/ark/json-schema) for more details and limitations.
-
-### tRPC
-
-ArkType can easily be used with tRPC:
+To generate an OpenAPI document, give oRPC's `OpenAPIGenerator` the converter from `@orpc/arktype`:
 
 ```ts
-// @noErrors
-// trpc >= 11 accepts a Type directly
-t.procedure.input(
-	type({
-		name: "string",
-		"age?": "number"
-	})
-)
+import { os } from "@orpc/server"
+import { type } from "arktype"
 
-// tRPC < 11 accepts the `.assert` prop
-t.procedure.input(
-	type({
-		name: "string",
-		"age?": "number"
-	}).assert
-)
+const User = type({
+	name: "string",
+	"age?": "number.integer >= 0"
+})
+
+export const createUser = os.input(User).handler(({ input }) => input)
+// ---cut---
+import { experimental_ArkTypeToJsonSchemaConverter } from "@orpc/arktype"
+import { OpenAPIGenerator } from "@orpc/openapi"
+
+const generator = new OpenAPIGenerator({
+	schemaConverters: [new experimental_ArkTypeToJsonSchemaConverter()]
+})
+
+const spec = await generator.generate({ createUser })
 ```
 
-### drizzle
+## Drizzle
 
-Drizzle maintains an official [`drizzle-arktype` package](https://orm.drizzle.team/docs/arktype) that can be used to create Types for your Drizzle schemas.
+Drizzle maintains [`drizzle-arktype`](https://orm.drizzle.team/docs/arktype), which creates Types from your tables:
 
 ```ts
-// @noErrors
-import { pgTable, text, integer } from "drizzle-orm/pg-core"
-import { createSelectSchema } from "drizzle-arktype"
+import { createInsertSchema, createSelectSchema } from "drizzle-arktype"
+import { integer, pgTable, serial, text } from "drizzle-orm/pg-core"
 
 const users = pgTable("users", {
-	id: integer().generatedAlwaysAsIdentity().primaryKey(),
+	id: serial().primaryKey(),
 	name: text().notNull(),
-	age: integer().notNull()
+	age: integer()
 })
 
-// Type<{ id: number; name: string; age: number }>
 const User = createSelectSchema(users)
+// Type<{ id: number; name: string; age: number | null }>
+
+const NewUser = createInsertSchema(users)
+// Type<{ name: string; id?: number; age?: number | null }>
 ```
 
-### react-hook-form
+`createUpdateSchema` is like `createInsertSchema` with every column optional. Integer columns also get their range, so `age` above must be a 32-bit integer.
 
-react-hook-form has built-in support for ArkType via [`@hookform/resolvers`](https://github.com/react-hook-form/resolvers/tree/master):
+## React Hook Form
+
+[`@hookform/resolvers`](https://github.com/react-hook-form/resolvers) includes `standardSchemaResolver`:
 
 ```ts
-// @noErrors
-import { useForm } from "react-hook-form"
-import { arktypeResolver } from "@hookform/resolvers/arktype"
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
 import { type } from "arktype"
+import { useForm } from "react-hook-form"
 
 const User = type({
-	firstName: "string",
-	age: "number.integer > 0"
+	name: "string > 0",
+	age: "number.integer >= 0"
 })
 
-// in your component
-const {
-	register,
-	handleSubmit,
-	formState: { errors }
-} = useForm({
-	resolver: arktypeResolver(User)
-})
+export const useUserForm = () =>
+	useForm({ resolver: standardSchemaResolver(User) })
 ```
 
-For a custom controlled input, you can pass the inferred type into the hook itself:
+The form's field values are typed from the Type's input, and `handleSubmit` receives its output. If you pass type arguments to `useForm` yourself, pass all three: `useForm<typeof User.inferIn, unknown, typeof User.infer>`.
+
+The same package exports `arktypeResolver` from `@hookform/resolvers/arktype`, which behaves the same. `@hookform/resolvers` lists `arktype@^2` as an optional peer dependency, so npm refuses to install it beside a later major version of ArkType, whichever resolver you import, until you [override the peer](/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2). pnpm warns, and bun installs it as is.
+
+## Hono
+
+[`@hono/standard-validator`](https://github.com/honojs/middleware/tree/main/packages/standard-validator) validates a request's `json`, `form`, `query`, `param`, `header` or `cookie`:
 
 ```ts
-// @noErrors
-useForm<typeof User.infer>(/*...*/)
-```
+import { sValidator } from "@hono/standard-validator"
+import { type } from "arktype"
+import { Hono } from "hono"
 
-### hono
-
-Hono has built-in support for ArkType via [`@hono/arktype-validator`](https://github.com/honojs/middleware/tree/main/packages/arktype-validator):
-
-```ts
-// @noErrors
 const User = type({
 	name: "string",
-	age: "number"
+	age: "number.integer >= 0"
 })
 
-app.post("/author", arktypeValidator("json", User), c => {
-	const data = c.req.valid("json")
-	return c.json({
-		success: true,
-		message: `${data.name} is ${data.age}`
-	})
+const app = new Hono()
+
+app.post("/users", sValidator("json", User), c => {
+	const user = c.req.valid("json")
+	return c.json({ message: `${user.name} is ${user.age}` })
 })
 ```
 
-[`hono-openapi`](https://github.com/rhinobase/hono-openapi) also offers experimental support for OpenAPI docgen.
+Invalid requests get a 400 response with the issues as JSON. [`@hono/arktype-validator`](https://github.com/honojs/middleware/tree/main/packages/arktype-validator) provides an equivalent `arktypeValidator`, with a required peer dependency on `arktype@^2`, so npm needs the same [override](/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2) to install it.
 
-### oRPC
+To generate an OpenAPI document from your routes, [`hono-openapi`](https://github.com/rhinobase/hono-openapi) has a `validator` that accepts a Type, and a `resolver` for describing responses with one.
 
-[oRPC](https://orpc.unnoq.com/) has built-in support for Standard Schema, so ArkType works seamlessly right out of the box:
+## MCP SDK
+
+The [MCP TypeScript SDK](https://ts.sdk.modelcontextprotocol.io/v2/advanced/schema-libraries) accepts a Type as a tool's `inputSchema` or `outputSchema`:
 
 ```ts
-// @noErrors
-os.input(
-	type({
-		name: "string",
-		"age?": "number"
+import { McpServer } from "@modelcontextprotocol/server"
+import { type } from "arktype"
+
+const server = new McpServer({ name: "greeter", version: "1.0.0" })
+
+server.registerTool(
+	"greet",
+	{
+		description: "Greet someone by name",
+		inputSchema: type({
+			name: "string",
+			"times?": "1 <= number.integer <= 5"
+		})
+	},
+	async ({ name, times = 1 }) => ({
+		content: [{ type: "text", text: `Hello, ${name}! `.repeat(times) }]
 	})
 )
+```
+
+The SDK sends clients the JSON Schema from [`~standard.jsonSchema`](/docs/standard-schema#standard-json-schema) and validates arguments with the Type before your handler runs. A call with `times: 9` returns an error result, and the handler doesn't run.
+
+This needs `@modelcontextprotocol/server`, the SDK's second major version. The first, `@modelcontextprotocol/sdk`, accepts only Zod schemas.
+
+## AI SDK
+
+The [AI SDK](https://ai-sdk.dev/docs/ai-sdk-core/generating-structured-data) accepts a Type wherever it takes a schema. For structured output:
+
+```ts
+import { generateText, Output } from "ai"
+import { type } from "arktype"
+
+const Recipe = type({
+	name: "string",
+	ingredients: type({ name: "string", amount: "string" }).array(),
+	steps: "string[]"
+})
+
+const { output } = await generateText({
+	model: "anthropic/claude-sonnet-5.5",
+	output: Output.object({ schema: Recipe }),
+	prompt: "Write a recipe for toast."
+})
+```
+
+For a tool's input:
+
+```ts
+import { tool } from "ai"
+import { type } from "arktype"
+
+const weather = tool({
+	description: "Get the weather in a city",
+	inputSchema: type({ city: "string" }),
+	execute: async ({ city }) => ({ city, celsius: 21 })
+})
+```
+
+The model sees the JSON Schema from [`~standard.jsonSchema`](/docs/standard-schema#standard-json-schema), and the AI SDK validates its response with the Type. Parts of a Type with no JSON Schema equivalent, like a `narrow`, aren't described to the model, but its response is still checked against them. Structured output arrives as JSON, so use `string.date.iso.parse` rather than `Date` for a date.
+
+## Precompiled validators
+
+A [precompiled](/docs/precompile) validator validates through Standard Schema as a Type does, so tRPC, oRPC, Hono's validators, React Hook Form, TanStack Form and Router, Elysia, t3-env and Next.js server actions take one with nothing to set. The build bakes a JSON Schema into each validator it sees a library convert, so the MCP SDK, the AI SDK, Elysia's `@elysiajs/openapi`, hono-openapi and oRPC's `OpenAPIGenerator` with `@orpc/arktype` need nothing set either, as [`members`](/docs/precompile/options#members) describes. A library that defines Types itself needs [`dependencies`](/docs/precompile/options#dependencies) set:
+
+| Library                                                       | Set in `ark.json` (or `package.json`'s `"ark"` key)                  |
+| ------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `drizzle-arktype`, which creates Types from tables as it runs | `"precompile": { "dependencies": { "drizzle-arktype": "arktype" } }` |
+| t3-env's `presets-arktype`, which defines static Types        | `"precompile": { "dependencies": { "@t3-oss/env-core": "aot" } }`    |
+
+Without it, a build importing `drizzle-arktype` or `presets-arktype` fails, naming the setting. [Troubleshooting](/docs/precompile/troubleshooting) has each message.
+
+The MCP SDK and the AI SDK also validate through `~standard`. A [production build](/docs/precompile/options#prune) can't see what a library reads of a validator passed to it, so it warns that it keeps `assert`, `meta`, `~standard` and `methods`. To build without the warning, set each:
+
+```json title="ark.json"
+{
+	"precompile": {
+		"members": {
+			"~standard": true,
+			"assert": false,
+			"meta": false,
+			"methods": false
+		}
+	}
+}
 ```

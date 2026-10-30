@@ -3,7 +3,7 @@ import {
 	writeInvalidKeysMessage,
 	writeNonStructuralOperandMessage
 } from "@ark/schema"
-import { scope, type } from "arktype"
+import { keywords, scope, type } from "arktype"
 
 contextualize(() => {
 	it("parsed", () => {
@@ -42,6 +42,13 @@ contextualize(() => {
 		attest<typeof Expected.t>(BasicUser.t)
 
 		attest(BasicUser.expression).equals(Expected.expression)
+	})
+
+	it("invoked", () => {
+		const T = keywords.Pick({ a: "string", b: "number" }, "'a'").or("string[]")
+
+		attest<{ a: string } | string[]>(T.t)
+		attest(T.expression).snap("{ a: string } | string[]")
 	})
 
 	it("invalid key", () => {

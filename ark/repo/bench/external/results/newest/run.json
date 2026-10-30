@@ -1,0 +1,37 @@
+{
+	"form": {
+		"commit": "2c1a6a86e",
+		"date": "2026-10-27",
+		"installed": {
+			"@sinclair/typebox": "0.34.52",
+			"ajv": "8.20.0",
+			"ajv-errors": "3.0.0",
+			"ajv-formats": "3.0.1",
+			"effect": "4.0.6",
+			"joi": "18.3.0",
+			"runtypes": "7.0.5",
+			"superstruct": "2.0.2",
+			"valibot": "1.5.0",
+			"yup": "1.7.1",
+			"zod": "4.6.7",
+			"typia": "15.2.1",
+			"ttsc": "0.34.2"
+		}
+	},
+	"sb": {
+		"commit": "2c1a6a86e",
+		"date": "2026-10-27",
+		"installed": {
+			"ata-validator": "1.60.0",
+			"typia": "15.2.1"
+		}
+	},
+	"sury": {
+		"commit": "2c1a6a86e",
+		"date": "2026-10-27",
+		"installed": {
+			"zod": "4.6.7",
+			"valibot": "1.5.0"
+		}
+	}
+}

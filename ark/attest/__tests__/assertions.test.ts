@@ -1,7 +1,6 @@
 import { attest } from "@ark/attest"
 import { MissingSnapshotError } from "@ark/attest/internal/assert/assertions.ts"
 import { attestInternal } from "@ark/attest/internal/assert/attest.ts"
-import { register } from "@ark/util"
 import { type } from "arktype"
 import * as assert from "node:assert/strict"
 
@@ -169,14 +168,41 @@ describe("type assertions", () => {
 	})
 
 	it("does not boom on Type comparison", () => {
-		const expectedRef = register(type.number)
-		const actualRef = register(type.string)
-
 		// @ts-expect-error
 		attest(() => attest(type.string).equals(type.number)).throws
 			.equals(`AssertionError [ERR_ASSERTION]: Assertion including at least one function or object was not between reference equal items
-Expected: Function(${expectedRef})
-Actual: Function(${actualRef})`)
+Expected: number
+Actual: string`)
+	})
+
+	// node:assert's diff of these exhausted memory (#1287)
+	it("does not boom on nested Types", () => {
+		// @ts-expect-error
+		attest(() => attest({ a: type.string }).equals({ a: type.boolean })).throws
+			.snap(`AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+Expected: {"a":"boolean"}
+Actual: {"a":"string"}`)
+	})
+
+	it("does not boom on a schema node", () => {
+		// @ts-expect-error
+		attest(() => attest([type.string.internal]).equals([undefined])).throws
+			.snap(`AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+Expected: [undefined]
+Actual: ["string"]`)
+	})
+
+	it("does not boom on a schema node that isn't the one expected", () => {
+		attest(() => attest(type.string.internal).is(type.number.internal)).throws
+			.snap(`AssertionError [ERR_ASSERTION]: Expected values to be reference-equal:
+Expected: number
+Actual: string`)
+	})
+
+	it("diffs plain data as node:assert does", () => {
+		attest(() =>
+			attest(new Map([["a", [1]]])).equals(new Map([["a", [2]]]))
+		).throws("+ actual - expected")
 	})
 
 	it("doesn't boom on ArkErrors vs plain object", () => {
@@ -184,7 +210,7 @@ Actual: Function(${actualRef})`)
 			.throws
 			.snap(`AssertionError [ERR_ASSERTION]: Objects did not have the same constructor:
 Expected: {"a":"five"}
-Actual: [ArkError]`)
+Actual: ArkErrors`)
 	})
 
 	it("jsdoc ", () => {

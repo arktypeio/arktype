@@ -4,9 +4,12 @@ import { flatMorph } from "@ark/util"
 import { ark } from "arktype"
 import type { ArkConfig } from "arktype/config"
 
+// keywords resolve on first reference
+ark.export()
+
 const config: ArkConfig = {
-	keywords: flatMorph(ark.internal.resolutions, (qualifiedName, resolution) => {
-		if (!resolution || typeof resolution === "string") return []
+	keywords: flatMorph(ark.internal.res, (qualifiedName, resolution) => {
+		if (!resolution || hasArkKind(resolution, "context")) return []
 		if (hasArkKind(resolution, "generic")) return []
 		if (qualifiedName.endsWith(".root")) return []
 		return [qualifiedName, { description: "configured" }]

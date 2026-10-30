@@ -42,12 +42,21 @@
 	"scripts": {
 		"build": "ts ../repo/build.ts",
 		"test": "ts ../repo/testPackage.ts",
-		"tnt": "ts ../repo/testPackage.ts --skipTypes"
+		"tnt": "ts ../repo/testPackage.ts --skipTypes",
+		"bench": "ts ./__tests__/infer.bench.ts"
 	},
 	"dependencies": {
-		"arktype": "workspace:*",
+		"arksets": "workspace:*",
 		"@ark/schema": "workspace:*",
 		"@ark/util": "workspace:*"
+	},
+	"peerDependencies": {
+		"arktype": "workspace:*"
+	},
+	"devDependencies": {
+		"@ark/fast-check": "workspace:*",
+		"arktype": "workspace:*",
+		"fast-check": "3.23.2"
 	},
 	"publishConfig": {
 		"access": "public"

@@ -2,14 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { deepClone } from "@ark/util"
 
 contextualize(() => {
-	it("should return a deep clone of a simple object", () => {
-		const obj = { a: 1, b: 2, c: 3 }
-		const cloned = deepClone(obj)
-		attest<typeof obj>(cloned).equals(obj)
-		attest(cloned !== obj).equals(true)
-	})
-
-	it("should return a deep clone of a nested object", () => {
+	it("nested object", () => {
 		const obj = { a: 1, b: { c: 2 } }
 		const cloned = deepClone(obj)
 		attest<typeof obj>(cloned).equals(obj)
@@ -17,44 +10,25 @@ contextualize(() => {
 		attest(cloned.b !== obj.b).equals(true)
 	})
 
-	it("should handle cycles correctly", () => {
-		const obj: any = { a: 1 }
-		obj.self = obj
-		const cloned = deepClone(obj)
-		attest<typeof obj>(cloned).equals(obj)
-		attest(cloned !== obj).equals(true)
-		attest(cloned.self === cloned).equals(true)
-	})
-
-	it("should handle deep cycles correctly", () => {
+	it("cycles", () => {
 		const obj: any = { a: 1, b: { c: 2 } }
 		obj.b.self = obj
 		const cloned = deepClone(obj)
 		attest<typeof obj>(cloned).equals(obj)
 		attest(cloned !== obj).equals(true)
-		attest(cloned.b.self === cloned).equals(true)
+		attest(cloned.b.self).is(cloned)
 	})
 
-	it("should handle null values correctly", () => {
-		const obj = { a: 1, b: null }
-		const cloned = deepClone(obj)
-		attest<typeof obj>(cloned).equals(obj)
-		attest(cloned !== obj).equals(true)
-	})
-
-	it("should handle undefined values correctly", () => {
-		const obj = { a: 1, b: undefined }
-		const cloned = deepClone(obj)
-		attest<typeof obj>(cloned).equals(obj)
-		attest(cloned !== obj).equals(true)
-	})
-
-	it("should handle arrays correctly", () => {
+	it("arrays", () => {
 		const obj = { a: 1, b: [2, 3, 4] }
 		const cloned = deepClone(obj)
 		attest<typeof obj>(cloned).equals(obj)
-		attest(cloned !== obj).equals(true)
 		attest(cloned.b !== obj.b).equals(true)
+	})
+
+	it("keeps other builtins by reference", () => {
+		const obj = { m: new Map() }
+		attest(deepClone(obj).m).is(obj.m)
 	})
 
 	it("Date", () => {

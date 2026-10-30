@@ -1,7 +1,10 @@
 import {
+	arkKindOf,
+	domainDescriptions,
 	flatMorph,
 	isArray,
-	noSuggest,
+	objectKindDescriptions,
+	printable,
 	type array,
 	type mutable,
 	type show,
@@ -13,8 +16,9 @@ import type { InternalModule } from "../module.ts"
 import type { BaseNode } from "../node.ts"
 import type { BaseParseContext } from "../parse.ts"
 import type { BaseRoot } from "../roots/root.ts"
+import type { DiscriminantCases } from "../roots/union.ts"
 import type { BaseScope } from "../scope.ts"
-import type { ArkError, ArkErrors } from "./errors.ts"
+import type { ArkErrors } from "./errors.ts"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
 	o: o
@@ -41,17 +45,12 @@ export type internalImplementationOf<
 	:	unknown
 }
 
-export type arkKind = typeof arkKind
-
-export const arkKind = noSuggest("arkKind")
-
 export interface ArkKinds {
 	constraint: BaseConstraint
 	root: BaseRoot
 	scope: BaseScope
 	generic: GenericRoot
 	module: InternalModule
-	error: ArkError
 	errors: ArkErrors
 	context: BaseParseContext
 }
@@ -61,10 +60,193 @@ export type ArkKind = show<keyof ArkKinds>
 export const hasArkKind = <kind extends ArkKind>(
 	value: unknown,
 	kind: kind
-): value is ArkKinds[kind] => (value as any)?.[arkKind] === kind
+): value is ArkKinds[kind] => arkKindOf(value) === kind
 
-export const isNode = (value: unknown): value is BaseNode =>
-	hasArkKind(value, "root") || hasArkKind(value, "constraint")
+export const isNode = (value: unknown): value is BaseNode => {
+	const kind = arkKindOf(value)
+	return kind === "root" || kind === "constraint"
+}
+
+export const inProgress: {
+	definitions: number
+	resolutions: number
+	ioReads: number
+	compositions: number
+} = {
+	definitions: 0,
+	resolutions: 0,
+	ioReads: 0,
+	compositions: 0
+}
+
+export const isResolutionFinal = (): boolean =>
+	!inProgress.definitions && !inProgress.resolutions
+
+export const isIoFinal = (): boolean =>
+	!inProgress.definitions && inProgress.resolutions === inProgress.ioReads
+
+const uncheckedAssertions: (() => void)[] = []
+
+let uncheckedKeys: Record<string, true> = {}
+
+// a check can resolve the alias whose union queued it, so a keyed check is queued once
+export const queueUnchecked = (assert: () => void, key?: string): void => {
+	if (key !== undefined) {
+		if (uncheckedKeys[key]) return
+		uncheckedKeys[key] = true
+	}
+	uncheckedAssertions.push(assert)
+}
+
+let assertingUnchecked = false
+
+export const assertUnchecked = (): void => {
+	// an assertion can resolve an alias, which asserts again, so what it queues
+	// runs in the outer loop
+	if (!isResolutionFinal() || assertingUnchecked) return
+	assertingUnchecked = true
+	try {
+		for (let i = 0; i < uncheckedAssertions.length; i++)
+			uncheckedAssertions[i]()
+	} finally {
+		assertingUnchecked = false
+		discardUnchecked()
+	}
+}
+
+const discardUnchecked = (): void => {
+	uncheckedAssertions.length = 0
+	uncheckedKeys = {}
+}
+
+export const resolving = <t>(resolve: () => t): t => {
+	inProgress.resolutions++
+	let result: t
+	try {
+		result = resolve()
+	} finally {
+		inProgress.resolutions--
+	}
+	assertUnchecked()
+	return result
+}
+
+// a check left from a parse that threw would read its unresolved aliases
+export const defining = <t>(define: () => t): t => {
+	if (isResolutionFinal()) discardUnchecked()
+	inProgress.definitions++
+	try {
+		return define()
+	} finally {
+		inProgress.definitions--
+	}
+}
+
+// a Type read while another node is built or described is nested in it
+export const composing = <t>(compose: () => t): t => {
+	inProgress.compositions++
+	try {
+		return compose()
+	} finally {
+		inProgress.compositions--
+	}
+}
+
+// a nested node prints as "..." past this length, so reuse at each level can't double it
+const maxNestedLength = 1000
+
+export const elided = (nested: string): string =>
+	nested.length > maxNestedLength ? "..." : nested
+
+// prints as printedWithThis unless read while composing another node
+export const printSelfAsThis = <node extends BaseRoot>(
+	node: node,
+	printedWithThis: BaseRoot
+): node => {
+	const { expression } = node
+	return Object.defineProperties(node, {
+		expression: {
+			get: () =>
+				inProgress.compositions ? expression : printedWithThis.expression
+		},
+		description: {
+			get: () =>
+				inProgress.compositions ?
+					Reflect.get(Object.getPrototypeOf(node), "description", node)
+				:	printedWithThis.description
+		}
+	})
+}
 
 export type unwrapDefault<thunkableValue> =
 	thunkableValue extends Thunk<infer returnValue> ? returnValue : thunkableValue
+
+export const valueAtPath = (
+	path: array<PropertyKey>,
+	data: unknown,
+	end = path.length
+): unknown => {
+	let value: any = data
+	for (let i = 0; i < end; i++) value = value?.[path[i]]
+	return value
+}
+
+// whether data whose path is read from objects lacks the path's last key
+export const isAbsent = (path: array<PropertyKey>, data: unknown): boolean =>
+	path.length !== 0 &&
+	!(
+		path[path.length - 1] in
+		(valueAtPath(path, data, path.length - 1) as object)
+	)
+
+export type DescribeBranchesOptions = {
+	delimiter?: string
+	finalDelimiter?: string
+}
+
+export const describeBranches = (
+	descriptions: readonly string[],
+	opts?: DescribeBranchesOptions
+): string => {
+	const delimiter = opts?.delimiter ?? ", "
+	const finalDelimiter = opts?.finalDelimiter ?? " or "
+
+	if (descriptions.length === 0) return "never"
+
+	if (descriptions.length === 1) return descriptions[0]
+	if (
+		descriptions.length === 2 &&
+		((descriptions[0] === "false" && descriptions[1] === "true") ||
+			(descriptions[0] === "true" && descriptions[1] === "false"))
+	)
+		return "boolean"
+
+	// keep track of seen descriptions to avoid duplication
+	const seen: Record<string, true | undefined> = Object.create(null)
+	const unique = descriptions.filter(s => (seen[s] ? false : (seen[s] = true)))
+	const last = unique.pop()!
+
+	return `${unique.join(delimiter)}${unique.length ? finalDelimiter : ""}${last}`
+}
+
+const describeExpressionOptions: DescribeBranchesOptions = {
+	delimiter: " | ",
+	finalDelimiter: " | "
+}
+
+export const expressBranches = (expressions: readonly string[]): string =>
+	describeBranches(expressions, describeExpressionOptions)
+
+export const describeCases = ({
+	discriminantKind,
+	cases
+}: DiscriminantCases): string =>
+	describeBranches(
+		discriminantKind === "domain" ?
+			cases.map(domain =>
+				domain === "Array" ?
+					objectKindDescriptions.Array
+				:	domainDescriptions[domain]
+			)
+		:	cases.map(unit => printable(unit, { ownDataOnly: true }))
+	)

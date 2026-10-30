@@ -1,0 +1,62 @@
+---
+title: Overview
+description: Install ArkRegex and see what it infers from the strings you already pass to new RegExp().
+---
+
+`regex` takes the same arguments as `new RegExp()` and returns a `RegExp` typed with the strings it matches, its captures and its flags:
+
+```ts
+import { regex } from "arkregex"
+
+const ok = regex("^ok$", "i")
+//    ^? Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i" }>
+
+const date = regex("^(\\d{4})-(\\d{2})-(\\d{2})$")
+//    ^? Regex<`${number}-${number}-${number}`, { captures: [`${number}`, `${number}`, `${number}`] }>
+```
+
+`.exec()` returns typed captures:
+
+```ts
+import { regex } from "arkregex"
+
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})$")
+
+const match = date.exec("2026-10")
+
+if (match) {
+	const month = match.groups.month
+	//    ^? `${number}`
+}
+```
+
+At runtime, `regex(src, flags)` is `new RegExp(src, flags)`. The result is a plain `RegExp`, and `Regex` exists only in your types, so the package adds one function to your bundle.
+
+## Installation
+
+<InstallationTabs pkg="arkregex" />
+
+Performs best with TypeScript 5.9 or later, including TypeScript 7.
+
+If you're upgrading, [Upgrading](/docs/upgrading#arkregex) lists what changed in inference.
+
+## Features
+
+- **Types**: infers the strings an expression matches, its positional and named captures and its flags. See [Inference](/docs/regex/inference).
+- **Syntax**: parses the syntax `new RegExp()` accepts, including named groups, lookarounds, backreferences, modifiers and Unicode properties. A few valid patterns are rejected and a few invalid ones aren't caught; see [what isn't checked](/docs/regex/errors#what-isnt-checked).
+- **Errors**: mistakes like an unclosed group or a reference to a group that doesn't exist are [type errors](/docs/regex/errors).
+- **No runtime cost**: the only code that runs is `new RegExp()`.
+
+## Syntax highlighting
+
+The [ArkType extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) highlights the expression inside `regex` calls.
+
+## ArkType
+
+`arktype` re-exports `regex` and the `Regex` type, so if you use ArkType you don't need to install `arkregex` separately:
+
+```ts
+import { regex, type Regex } from "arktype"
+```
+
+ArkType also uses ArkRegex to infer its own regex literals, so `type("/^\\d{5}$/")` infers ``Type<`${number}`>``. See [ArkType](/docs/regex/arktype).

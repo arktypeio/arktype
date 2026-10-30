@@ -6,6 +6,7 @@ export * from "./kinds.ts"
 export * from "./module.ts"
 export * from "./node.ts"
 export * from "./parse.ts"
+export * from "./parseSchema.ts"
 export * from "./predicate.ts"
 export * from "./refinements/after.ts"
 export * from "./refinements/before.ts"
@@ -16,8 +17,11 @@ export * from "./refinements/max.ts"
 export * from "./refinements/maxLength.ts"
 export * from "./refinements/min.ts"
 export * from "./refinements/minLength.ts"
+export * from "./refinements/notEqual.ts"
+export * from "./refinements/notEqualLength.ts"
 export * from "./refinements/pattern.ts"
 export * from "./refinements/range.ts"
+export * from "./roots/alias.ts"
 export * from "./roots/domain.ts"
 export * from "./roots/intersection.ts"
 export * from "./roots/morph.ts"
@@ -31,11 +35,13 @@ export * from "./shared/declare.ts"
 export * from "./shared/disjoint.ts"
 export * from "./shared/errors.ts"
 export * from "./shared/implement.ts"
-export * from "./shared/intersections.ts"
 export * from "./shared/jsonSchema.ts"
+export * from "./shared/locale.ts"
 export * from "./shared/registry.ts"
+export * from "./shared/sets.ts"
 export * from "./shared/standardSchema.ts"
 export * from "./shared/toJsonSchema.ts"
+export * from "./shared/transform.ts"
 export * from "./shared/traversal.ts"
 export * from "./shared/utils.ts"
 export * from "./structure/index.ts"
@@ -44,5 +50,16 @@ export * from "./structure/prop.ts"
 export * from "./structure/required.ts"
 export * from "./structure/sequence.ts"
 export * from "./structure/structure.ts"
+export {
+	precompileInPlace,
+	precompileRootUnits,
+	registerPrecompiledUnits,
+	TraversalCompiler,
+	writePrecompiledUnits,
+	type PrecompiledUnit,
+	type RootUnit,
+	type UnboundTraversals,
+	type UnitMember
+} from "./units.ts"
 
-export { ParseError } from "@ark/util"
+export { arkKind, ParseError } from "@ark/util"

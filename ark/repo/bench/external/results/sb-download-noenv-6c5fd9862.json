@@ -1,0 +1,550 @@
+{
+	"minified": [
+		{
+			"fileName": "@railway-ts/pipelines/download/index.ts",
+			"libraryName": "@railway-ts/pipelines",
+			"version": "0.1.29",
+			"bytes": 4146,
+			"gzipBytes": 1568
+		},
+		{
+			"fileName": "superstruct/download/index.ts",
+			"libraryName": "superstruct",
+			"version": "2.0.2",
+			"bytes": 4880,
+			"gzipBytes": 1935
+		},
+		{
+			"fileName": "@remix-run/data-schema/download/index.ts",
+			"libraryName": "@remix-run/data-schema",
+			"version": "1.0.0",
+			"bytes": 5464,
+			"gzipBytes": 1923
+		},
+		{
+			"fileName": "typia/download/index.ts",
+			"libraryName": "typia",
+			"version": "15.1.0",
+			"bytes": 6997,
+			"gzipBytes": 1846
+		},
+		{
+			"fileName": "valibot/download/index.ts",
+			"libraryName": "valibot",
+			"version": "1.5.0",
+			"bytes": 7773,
+			"gzipBytes": 2058
+		},
+		{
+			"fileName": "arktype/precompiled/download/index.ts",
+			"libraryName": "arktype/precompiled",
+			"version": "2.2.9",
+			"bytes": 9278,
+			"gzipBytes": 2954
+		},
+		{
+			"fileName": "decoders/download/index.ts",
+			"libraryName": "decoders",
+			"version": "2.13.0",
+			"bytes": 10494,
+			"gzipBytes": 3506
+		},
+		{
+			"fileName": "io-ts/download/index.ts",
+			"libraryName": "io-ts",
+			"version": "2.2.22",
+			"bytes": 12541,
+			"gzipBytes": 3617
+		},
+		{
+			"fileName": "@paseri/compiler/download/index.ts",
+			"libraryName": "@paseri/compiler",
+			"version": "0.7.7",
+			"bytes": 15170,
+			"gzipBytes": 3633
+		},
+		{
+			"fileName": "runtypes/download/index.ts",
+			"libraryName": "runtypes",
+			"version": "7.0.5",
+			"bytes": 15633,
+			"gzipBytes": 4828
+		},
+		{
+			"fileName": "zod/mini/download/index.ts",
+			"libraryName": "zod/mini",
+			"version": "4.6.7",
+			"bytes": 22582,
+			"gzipBytes": 6816
+		},
+		{
+			"fileName": "@paseri/paseri/download/index.ts",
+			"libraryName": "@paseri/paseri",
+			"version": "1.9.7",
+			"bytes": 30569,
+			"gzipBytes": 6449
+		},
+		{
+			"fileName": "sury/download/index.ts",
+			"libraryName": "sury",
+			"version": "11.0.0",
+			"bytes": 40970,
+			"gzipBytes": 15790
+		},
+		{
+			"fileName": "yup/download/index.ts",
+			"libraryName": "yup",
+			"version": "1.7.1",
+			"bytes": 42205,
+			"gzipBytes": 13076
+		},
+		{
+			"fileName": "typebox/download/schema.ts",
+			"libraryName": "typebox",
+			"version": "1.4.3",
+			"note": "schema",
+			"bytes": 49009,
+			"gzipBytes": 13634
+		},
+		{
+			"fileName": "zod/mini/download/compile.ts",
+			"libraryName": "zod/mini",
+			"version": "4.6.7",
+			"note": "compile",
+			"bytes": 56968,
+			"gzipBytes": 15561
+		},
+		{
+			"fileName": "zod/v3/download/index.ts",
+			"libraryName": "zod/v3",
+			"version": "4.6.7",
+			"bytes": 57179,
+			"gzipBytes": 13052
+		},
+		{
+			"fileName": "zod/v3/download/default.ts",
+			"libraryName": "zod/v3",
+			"version": "4.6.7",
+			"note": "default",
+			"bytes": 60193,
+			"gzipBytes": 14155
+		},
+		{
+			"fileName": "typebox/download/schema + compile.ts",
+			"libraryName": "typebox",
+			"version": "1.4.3",
+			"note": "schema + compile",
+			"bytes": 67016,
+			"gzipBytes": 18529
+		},
+		{
+			"fileName": "effect/download/index.ts",
+			"libraryName": "effect",
+			"version": "4.0.5",
+			"bytes": 76025,
+			"gzipBytes": 23949
+		},
+		{
+			"fileName": "zod/download/default.ts",
+			"libraryName": "zod",
+			"version": "4.6.7",
+			"note": "default",
+			"bytes": 89900,
+			"gzipBytes": 24272
+		},
+		{
+			"fileName": "zod/download/index.ts",
+			"libraryName": "zod",
+			"version": "4.6.7",
+			"bytes": 89900,
+			"gzipBytes": 24272
+		},
+		{
+			"fileName": "zod/download/named.ts",
+			"libraryName": "zod",
+			"version": "4.6.7",
+			"note": "named",
+			"bytes": 89900,
+			"gzipBytes": 24272
+		},
+		{
+			"fileName": "zod-compiler/download/compact.ts",
+			"libraryName": "zod-compiler",
+			"version": "2.0.7",
+			"note": "compact",
+			"bytes": 94910,
+			"gzipBytes": 25995
+		},
+		{
+			"fileName": "typebox/download/namespace.ts",
+			"libraryName": "typebox",
+			"version": "1.4.3",
+			"note": "namespace",
+			"bytes": 98699,
+			"gzipBytes": 27093
+		},
+		{
+			"fileName": "@sapphire/shapeshift/download/index.ts",
+			"libraryName": "@sapphire/shapeshift",
+			"version": "5.0.0",
+			"bytes": 100037,
+			"gzipBytes": 25288
+		},
+		{
+			"fileName": "zod-compiler/download/bag.ts",
+			"libraryName": "zod-compiler",
+			"version": "2.0.7",
+			"note": "bag",
+			"bytes": 102524,
+			"gzipBytes": 27577
+		},
+		{
+			"fileName": "zod-compiler/download/index.ts",
+			"libraryName": "zod-compiler",
+			"version": "2.0.7",
+			"bytes": 102525,
+			"gzipBytes": 27581
+		},
+		{
+			"fileName": "typebox/download/script.ts",
+			"libraryName": "typebox",
+			"version": "1.4.3",
+			"note": "script",
+			"bytes": 110214,
+			"gzipBytes": 28323
+		},
+		{
+			"fileName": "zod/download/compile.ts",
+			"libraryName": "zod",
+			"version": "4.6.7",
+			"note": "compile",
+			"bytes": 119944,
+			"gzipBytes": 31342
+		},
+		{
+			"fileName": "typebox/download/namespace + compile.ts",
+			"libraryName": "typebox",
+			"version": "1.4.3",
+			"note": "namespace + compile",
+			"bytes": 122309,
+			"gzipBytes": 33215
+		},
+		{
+			"fileName": "typebox/download/index.ts",
+			"libraryName": "typebox",
+			"version": "1.4.3",
+			"bytes": 126222,
+			"gzipBytes": 32851
+		},
+		{
+			"fileName": "ajv/download/index.ts",
+			"libraryName": "ajv",
+			"version": "8.20.0",
+			"bytes": 147911,
+			"gzipBytes": 41477
+		},
+		{
+			"fileName": "typebox/download/compile.ts",
+			"libraryName": "typebox",
+			"version": "1.4.3",
+			"note": "compile",
+			"bytes": 149746,
+			"gzipBytes": 38921
+		},
+		{
+			"fileName": "arktype/download/index.ts",
+			"libraryName": "arktype",
+			"version": "2.2.9",
+			"bytes": 155502,
+			"gzipBytes": 46491
+		},
+		{
+			"fileName": "joi/download/index.ts",
+			"libraryName": "joi",
+			"version": "18.3.0",
+			"bytes": 171627,
+			"gzipBytes": 52943
+		},
+		{
+			"fileName": "ata-validator/download/index.ts",
+			"libraryName": "ata-validator",
+			"version": "1.58.0",
+			"bytes": 490548,
+			"gzipBytes": 131004
+		}
+	],
+	"unminified": [
+		{
+			"fileName": "@railway-ts/pipelines/download/index.ts",
+			"libraryName": "@railway-ts/pipelines",
+			"version": "0.1.29",
+			"bytes": 8924,
+			"gzipBytes": 2181
+		},
+		{
+			"fileName": "superstruct/download/index.ts",
+			"libraryName": "superstruct",
+			"version": "2.0.2",
+			"bytes": 12687,
+			"gzipBytes": 3882
+		},
+		{
+			"fileName": "@remix-run/data-schema/download/index.ts",
+			"libraryName": "@remix-run/data-schema",
+			"version": "1.0.0",
+			"bytes": 14593,
+			"gzipBytes": 3589
+		},
+		{
+			"fileName": "valibot/download/index.ts",
+			"libraryName": "valibot",
+			"version": "1.5.0",
+			"bytes": 15372,
+			"gzipBytes": 3227
+		},
+		{
+			"fileName": "typia/download/index.ts",
+			"libraryName": "typia",
+			"version": "15.1.0",
+			"bytes": 17070,
+			"gzipBytes": 3692
+		},
+		{
+			"fileName": "decoders/download/index.ts",
+			"libraryName": "decoders",
+			"version": "2.13.0",
+			"bytes": 21306,
+			"gzipBytes": 6095
+		},
+		{
+			"fileName": "arktype/precompiled/download/index.ts",
+			"libraryName": "arktype/precompiled",
+			"version": "2.2.9",
+			"bytes": 24446,
+			"gzipBytes": 4751
+		},
+		{
+			"fileName": "io-ts/download/index.ts",
+			"libraryName": "io-ts",
+			"version": "2.2.22",
+			"bytes": 27070,
+			"gzipBytes": 5746
+		},
+		{
+			"fileName": "@paseri/compiler/download/index.ts",
+			"libraryName": "@paseri/compiler",
+			"version": "0.7.7",
+			"bytes": 30314,
+			"gzipBytes": 5524
+		},
+		{
+			"fileName": "runtypes/download/index.ts",
+			"libraryName": "runtypes",
+			"version": "7.0.5",
+			"bytes": 37590,
+			"gzipBytes": 8435
+		},
+		{
+			"fileName": "zod/mini/download/index.ts",
+			"libraryName": "zod/mini",
+			"version": "4.6.7",
+			"bytes": 43089,
+			"gzipBytes": 10324
+		},
+		{
+			"fileName": "@paseri/paseri/download/index.ts",
+			"libraryName": "@paseri/paseri",
+			"version": "1.9.7",
+			"bytes": 54624,
+			"gzipBytes": 10302
+		},
+		{
+			"fileName": "yup/download/index.ts",
+			"libraryName": "yup",
+			"version": "1.7.1",
+			"bytes": 74977,
+			"gzipBytes": 18570
+		},
+		{
+			"fileName": "sury/download/index.ts",
+			"libraryName": "sury",
+			"version": "11.0.0",
+			"bytes": 97521,
+			"gzipBytes": 24484
+		},
+		{
+			"fileName": "zod/v3/download/index.ts",
+			"libraryName": "zod/v3",
+			"version": "4.6.7",
+			"bytes": 101667,
+			"gzipBytes": 17598
+		},
+		{
+			"fileName": "zod/v3/download/default.ts",
+			"libraryName": "zod/v3",
+			"version": "4.6.7",
+			"note": "default",
+			"bytes": 107715,
+			"gzipBytes": 19219
+		},
+		{
+			"fileName": "zod/mini/download/compile.ts",
+			"libraryName": "zod/mini",
+			"version": "4.6.7",
+			"note": "compile",
+			"bytes": 113150,
+			"gzipBytes": 25477
+		},
+		{
+			"fileName": "typebox/download/schema.ts",
+			"libraryName": "typebox",
+			"version": "1.4.3",
+			"note": "schema",
+			"bytes": 131776,
+			"gzipBytes": 22192
+		},
+		{
+			"fileName": "zod/download/index.ts",
+			"libraryName": "zod",
+			"version": "4.6.7",
+			"bytes": 169749,
+			"gzipBytes": 37648
+		},
+		{
+			"fileName": "zod/download/named.ts",
+			"libraryName": "zod",
+			"version": "4.6.7",
+			"note": "named",
+			"bytes": 169749,
+			"gzipBytes": 37647
+		},
+		{
+			"fileName": "zod/download/default.ts",
+			"libraryName": "zod",
+			"version": "4.6.7",
+			"note": "default",
+			"bytes": 169751,
+			"gzipBytes": 37646
+		},
+		{
+			"fileName": "typebox/download/schema + compile.ts",
+			"libraryName": "typebox",
+			"version": "1.4.3",
+			"note": "schema + compile",
+			"bytes": 176855,
+			"gzipBytes": 29826
+		},
+		{
+			"fileName": "zod-compiler/download/compact.ts",
+			"libraryName": "zod-compiler",
+			"version": "2.0.7",
+			"note": "compact",
+			"bytes": 179500,
+			"gzipBytes": 40146
+		},
+		{
+			"fileName": "zod-compiler/download/bag.ts",
+			"libraryName": "zod-compiler",
+			"version": "2.0.7",
+			"note": "bag",
+			"bytes": 193914,
+			"gzipBytes": 42382
+		},
+		{
+			"fileName": "zod-compiler/download/index.ts",
+			"libraryName": "zod-compiler",
+			"version": "2.0.7",
+			"bytes": 193943,
+			"gzipBytes": 42383
+		},
+		{
+			"fileName": "@sapphire/shapeshift/download/index.ts",
+			"libraryName": "@sapphire/shapeshift",
+			"version": "5.0.0",
+			"bytes": 210809,
+			"gzipBytes": 38163
+		},
+		{
+			"fileName": "zod/download/compile.ts",
+			"libraryName": "zod",
+			"version": "4.6.7",
+			"note": "compile",
+			"bytes": 230431,
+			"gzipBytes": 49793
+		},
+		{
+			"fileName": "joi/download/index.ts",
+			"libraryName": "joi",
+			"version": "18.3.0",
+			"bytes": 251266,
+			"gzipBytes": 60859
+		},
+		{
+			"fileName": "arktype/download/index.ts",
+			"libraryName": "arktype",
+			"version": "2.2.9",
+			"bytes": 285734,
+			"gzipBytes": 68009
+		},
+		{
+			"fileName": "ajv/download/index.ts",
+			"libraryName": "ajv",
+			"version": "8.20.0",
+			"bytes": 288053,
+			"gzipBytes": 58842
+		},
+		{
+			"fileName": "effect/download/index.ts",
+			"libraryName": "effect",
+			"version": "4.0.5",
+			"bytes": 288268,
+			"gzipBytes": 68726
+		},
+		{
+			"fileName": "typebox/download/namespace.ts",
+			"libraryName": "typebox",
+			"version": "1.4.3",
+			"note": "namespace",
+			"bytes": 301187,
+			"gzipBytes": 47251
+		},
+		{
+			"fileName": "typebox/download/script.ts",
+			"libraryName": "typebox",
+			"version": "1.4.3",
+			"note": "script",
+			"bytes": 319122,
+			"gzipBytes": 47895
+		},
+		{
+			"fileName": "typebox/download/namespace + compile.ts",
+			"libraryName": "typebox",
+			"version": "1.4.3",
+			"note": "namespace + compile",
+			"bytes": 364484,
+			"gzipBytes": 56499
+		},
+		{
+			"fileName": "typebox/download/index.ts",
+			"libraryName": "typebox",
+			"version": "1.4.3",
+			"bytes": 369438,
+			"gzipBytes": 56269
+		},
+		{
+			"fileName": "typebox/download/compile.ts",
+			"libraryName": "typebox",
+			"version": "1.4.3",
+			"note": "compile",
+			"bytes": 432630,
+			"gzipBytes": 65495
+		},
+		{
+			"fileName": "ata-validator/download/index.ts",
+			"libraryName": "ata-validator",
+			"version": "1.58.0",
+			"bytes": 851447,
+			"gzipBytes": 180284
+		}
+	]
+}

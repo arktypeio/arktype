@@ -30,9 +30,7 @@ const TReject = type({
 	}
 }).onDeepUndeclaredKey("reject")
 
-bench("moltar reject", () => {
-	TReject(validData)
-}).median([5.97, "us"])
+bench("moltar reject", () => TReject(validData)).median()
 
 export const T = type({
 	number: "number",
@@ -48,36 +46,27 @@ export const T = type({
 	}
 })
 
-bench("moltar allows", () => {
-	T.allows(validData)
-}).median([13.72, "ns"])
+bench("moltar allows", () => T.allows(validData)).median()
 
-bench("moltar apply", () => {
-	T(validData)
-}).median([21.31, "ns"])
+bench("moltar apply", () => T(validData)).median()
 
-const tDelete = type
-	.scope({}, { clone: false })
-	.type({
-		number: "number",
-		negNumber: "number",
-		maxNumber: "number",
-		string: "string",
-		longString: "string",
-		boolean: "boolean",
-		deeplyNested: {
-			foo: "string",
-			num: "number",
-			bool: "boolean"
-		}
-	})
-	.onDeepUndeclaredKey("delete")
+const tDelete = type({
+	number: "number",
+	negNumber: "number",
+	maxNumber: "number",
+	string: "string",
+	longString: "string",
+	boolean: "boolean",
+	deeplyNested: {
+		foo: "string",
+		num: "number",
+		bool: "boolean"
+	}
+}).onDeepUndeclaredKey("delete")
 
-bench("moltar delete", () => {
-	tDelete(validData)
-}).median([3.54, "us"])
+bench("moltar delete", () => tDelete(validData)).median()
 
-const tShallowDelete = type.scope({}, { clone: false }).type({
+const tShallowDelete = type({
 	"+": "delete",
 	number: "number",
 	negNumber: "number",
@@ -87,23 +76,19 @@ const tShallowDelete = type.scope({}, { clone: false }).type({
 	boolean: "boolean"
 })
 
-bench("shallow delete", () => {
-	tShallowDelete(validData)
-}).median([370, "ns"])
+bench("shallow delete", () => tShallowDelete(validData)).median()
 
-bench("shallow primitive allows", () => {
-	type.string.allows("foo")
-}).median([10.01, "ns"])
+export const primitiveData = "foo"
 
-bench("shallow primitive apply", () => {
-	type.string("foo")
-}).median([25.01, "ns"])
+bench("shallow primitive allows", () =>
+	type.string.allows(primitiveData)
+).median()
+
+bench("shallow primitive apply", () => type.string(primitiveData)).median()
 
 const stringToLength = type.string.pipe(s => s.length)
 
-bench("shallow primitive morph", () => {
-	stringToLength("foo")
-}).median([9.02, "ns"])
+bench("shallow primitive morph", () => stringToLength(primitiveData)).median()
 
 const invokedCases3 = match
 	.case("31", n => `${n}` as const)
@@ -114,8 +99,8 @@ const invokedCases3 = match
 bench("case(3, invoke)", () => {
 	invokedCases3(31)
 	invokedCases3(32)
-	invokedCases3(33)
-}).median([55.72, "ns"])
+	return invokedCases3(33)
+}).median()
 
 const invokedCases10 = match
 	.case("0n", n => `${n}` as const)
@@ -133,14 +118,14 @@ const invokedCases10 = match
 bench("case(10, invoke first)", () => {
 	invokedCases10(0n)
 	invokedCases10(1n)
-	invokedCases10(2n)
-}).median([151.45, "ns"])
+	return invokedCases10(2n)
+}).median()
 
 bench("case(10, invoke last)", () => {
 	invokedCases10(7n)
 	invokedCases10(8n)
-	invokedCases10(9n)
-}).median([198.78, "ns"])
+	return invokedCases10(9n)
+}).median()
 
 type Data =
 	| {
@@ -163,5 +148,5 @@ const discriminateValue = match
 
 bench("discriminate", () => {
 	discriminateValue({ id: 1, oneValue: 1 })
-	discriminateValue({ id: 2, twoValue: "two" })
-}).median([68.36, "ns"])
+	return discriminateValue({ id: 2, twoValue: "two" })
+}).median()

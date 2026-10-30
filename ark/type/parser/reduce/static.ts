@@ -31,7 +31,7 @@ export type StaticState = {
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	leftBound: OpenLeftBound | undefined
+	lBound: OpenLeftBound | undefined
 	intersection: unknown
 	pipe: unknown
 	union: unknown
@@ -69,7 +69,7 @@ export declare namespace s {
 
 	type initialBranches = branchesFrom<{
 		prefixes: []
-		leftBound: undefined
+		lBound: undefined
 		intersection: undefined
 		pipe: undefined
 		union: undefined
@@ -105,7 +105,7 @@ export declare namespace s {
 		root: s["root"]
 		branches: {
 			prefixes: [...s["branches"]["prefixes"], prefix]
-			leftBound: s["branches"]["leftBound"]
+			lBound: s["branches"]["lBound"]
 			intersection: s["branches"]["intersection"]
 			pipe: s["branches"]["pipe"]
 			union: s["branches"]["union"]
@@ -121,13 +121,12 @@ export declare namespace s {
 		token extends BranchOperator,
 		unscanned extends string
 	> =
-		s["branches"]["leftBound"] extends {} ?
-			openRangeError<s["branches"]["leftBound"]>
+		s["branches"]["lBound"] extends {} ? openRangeError<s["branches"]["lBound"]>
 		:	from<{
 				root: undefined
 				branches: {
 					prefixes: []
-					leftBound: undefined
+					lBound: undefined
 					intersection: token extends "&" ? mergeToIntersection<s> : undefined
 					union: token extends "|" ? mergeToUnion<s>
 					: token extends "|>" ? undefined
@@ -147,11 +146,11 @@ export declare namespace s {
 		unscanned extends string
 	> =
 		comparator extends "<" | "<=" ?
-			s["branches"]["leftBound"] extends {} ?
+			s["branches"]["lBound"] extends {} ?
 				s.error<
 					writeMultipleLeftBoundsMessage<
-						s["branches"]["leftBound"]["limit"],
-						s["branches"]["leftBound"]["comparator"],
+						s["branches"]["lBound"]["limit"],
+						s["branches"]["lBound"]["comparator"],
 						limit,
 						InvertedComparators[comparator]
 					>
@@ -160,7 +159,7 @@ export declare namespace s {
 					root: undefined
 					branches: {
 						prefixes: s["branches"]["prefixes"]
-						leftBound: {
+						lBound: {
 							limit: limit
 							comparator: InvertedComparators[comparator]
 						}
@@ -186,7 +185,7 @@ export declare namespace s {
 		root: [minLimit, minComparator, [s["root"], maxComparator, maxLimit]]
 		branches: {
 			prefixes: s["branches"]["prefixes"]
-			leftBound: undefined
+			lBound: undefined
 			intersection: s["branches"]["intersection"]
 			pipe: s["branches"]["pipe"]
 			union: s["branches"]["union"]
@@ -206,7 +205,7 @@ export declare namespace s {
 		root: [s["root"], comparator, limit]
 		branches: {
 			prefixes: s["branches"]["prefixes"]
-			leftBound: undefined
+			lBound: undefined
 			intersection: s["branches"]["intersection"]
 			pipe: s["branches"]["pipe"]
 			union: s["branches"]["union"]
@@ -243,8 +242,7 @@ export declare namespace s {
 	]
 
 	export type finalizeGroup<s extends StaticState, unscanned extends string> =
-		s["branches"]["leftBound"] extends {} ?
-			openRangeError<s["branches"]["leftBound"]>
+		s["branches"]["lBound"] extends {} ? openRangeError<s["branches"]["lBound"]>
 		: s["groups"] extends popGroup<infer stack, infer top> ?
 			from<{
 				groups: stack
@@ -273,8 +271,8 @@ export declare namespace s {
 		finalizer extends FinalizingLookahead
 	> =
 		s["groups"] extends [] ?
-			s["branches"]["leftBound"] extends {} ?
-				openRangeError<s["branches"]["leftBound"]>
+			s["branches"]["lBound"] extends {} ?
+				openRangeError<s["branches"]["lBound"]>
 			:	from<{
 					root: mergeToPipe<s>
 					groups: s["groups"]
@@ -285,12 +283,13 @@ export declare namespace s {
 				}>
 		:	s.error<writeUnclosedGroupMessage<")">>
 
-	type openRangeError<range extends defined<BranchState["leftBound"]>> =
-		s.error<writeOpenRangeMessage<range["limit"], range["comparator"]>>
+	type openRangeError<range extends defined<BranchState["lBound"]>> = s.error<
+		writeOpenRangeMessage<range["limit"], range["comparator"]>
+	>
 
 	export type previousOperator<s extends StaticState> =
-		s["branches"]["leftBound"] extends {} ?
-			s["branches"]["leftBound"]["comparator"]
+		s["branches"]["lBound"] extends {} ?
+			InvertedComparators[s["branches"]["lBound"]["comparator"]]
 		: s["branches"]["prefixes"] extends (
 			[...unknown[], infer tail extends string]
 		) ?

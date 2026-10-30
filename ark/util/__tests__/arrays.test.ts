@@ -1,5 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
-import { getDuplicatesOf, groupBy, spliterate, type setIndex } from "@ark/util"
+import {
+	getDuplicatesOf,
+	groupBy,
+	spliterate,
+	type array,
+	type setIndex
+} from "@ark/util"
 
 type PinkLady = { group: "apple"; kind: "Pink Lady" }
 type Gala = { group: "apple"; kind: "Gala" }
@@ -26,12 +32,15 @@ const fruits: Fruit[] = [pinkLady, visionPro, bengal]
 
 contextualize(() => {
 	it("getDuplicatesOf", () => {
-		const duplicates = getDuplicatesOf(["foo", 55, 31, "bar", {}, [], true], {
-			isEqual: (l, r) => typeof l === typeof r
-		})
+		const duplicates = getDuplicatesOf(
+			["foo", 55, 31, "bar", {}, [], true, "baz"],
+			{
+				isEqual: (l, r) => typeof l === typeof r
+			}
+		)
 		attest(duplicates).equals([
 			{ element: 55, indices: [1, 2] },
-			{ element: "foo", indices: [0, 3] },
+			{ element: "foo", indices: [0, 3, 7] },
 			{ element: {}, indices: [4, 5] }
 		])
 	})
@@ -71,5 +80,13 @@ contextualize(() => {
 		type T = setIndex<readonly [1, 2], 1, 1>
 
 		attest<readonly [1, 1], T>()
+	})
+
+	it("array.repeat", () => {
+		attest<[], array.repeat<"a", 0>>()
+		attest<["a", "a", "a"], array.repeat<"a", 3>>()
+		// at and past a power of two
+		attest<512, array.repeat<1, 512>["length"]>()
+		attest<513, array.repeat<1, 513>["length"]>()
 	})
 })

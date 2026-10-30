@@ -1,7 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
 import { registeredReference } from "@ark/schema"
 import { printable } from "@ark/util"
-import { type } from "arktype"
+import { scope, type } from "arktype"
+import { writeInvalidLimitMessage } from "arktype/internal/parser/shift/operator/bounds.ts"
 
 contextualize(() => {
 	describe("tuple expression", () => {
@@ -59,6 +60,38 @@ contextualize(() => {
 		})
 	})
 
+	it("number String writes with an exponent", () => {
+		const T = type.unit(1e21)
+		attest(T.expression).snap("1000000000000000000000")
+		attest(type.raw(T.expression).json).equals(T.json)
+	})
+
+	it("prints an object unit without calling its code", () => {
+		let calls = 0
+		const o = {
+			a: 1,
+			get b() {
+				return ++calls
+			},
+			toJSON: () => ++calls
+		}
+		const T = type.unit(o)
+		attest(T.expression).snap(
+			'{"a":1,"b":"(getter)","toJSON":"Function(toJSON)"}'
+		)
+		attest(T({}).toString()).snap(
+			'must be {"a":1,"b":"(getter)","toJSON":"Function(toJSON)"} (was an object)'
+		)
+		const { U } = scope(
+			{ U: [{ k: ["===", o] }, "|", { k: "'b'", v: "number" }] },
+			{ jitless: true }
+		).export()
+		attest(U({ k: "c" }).toString()).snap(
+			'k must be {"a":1,"b":"(getter)","toJSON":"Function(toJSON)"} or "b" (was "c")'
+		)
+		attest(calls).equals(0)
+	})
+
 	describe("root expression", () => {
 		it("single", () => {
 			const T = type("===", true)
@@ -85,6 +118,39 @@ contextualize(() => {
 				{ unit: null },
 				{ unit: true }
 			])
+		})
+	})
+
+	describe("non-finite number", () => {
+		it("NaN", () => {
+			const T = type("NaN")
+			attest<number>(T.infer)
+			attest(T.json).equals(type.keywords.number.NaN.json)
+			attest(T.expression).snap("NaN")
+			attest(T(Number.NaN)).equals(Number.NaN)
+			attest(T(0).toString()).snap("must be NaN (was 0)")
+		})
+
+		it("Infinity and -Infinity", () => {
+			const T = type("Infinity | -Infinity")
+			attest<number>(T.infer)
+			attest(T.expression).snap("-Infinity | Infinity")
+			attest(T(Number.POSITIVE_INFINITY)).equals(Number.POSITIVE_INFINITY)
+			attest(T(Number.NEGATIVE_INFINITY)).equals(Number.NEGATIVE_INFINITY)
+			attest(T(1e308).toString()).snap(
+				"must be -Infinity or Infinity (was 1e+308)"
+			)
+		})
+
+		it("is not a limit", () => {
+			// @ts-expect-error
+			attest(() => type("number>Infinity")).throwsAndHasTypeError(
+				writeInvalidLimitMessage(">", "Infinity", "right")
+			)
+			// @ts-expect-error
+			attest(() => type("Infinity<number")).throwsAndHasTypeError(
+				writeInvalidLimitMessage("<", "number", "right")
+			)
 		})
 	})
 })

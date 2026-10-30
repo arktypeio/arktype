@@ -16,50 +16,48 @@ import { parseBrand } from "./brand.ts"
 import { parseDivisor } from "./divisor.ts"
 
 export const parseOperator = (s: RootedRuntimeState): void => {
-	const lookahead = s.scanner.shift()
+	const peek = s.sc.shift()
 	return (
-		lookahead === "" ? s.finalize("")
-		: lookahead === "[" ?
-			s.scanner.shift() === "]" ?
+		peek === "" ? s.finalize("")
+		: peek === "[" ?
+			s.sc.shift() === "]" ?
 				s.setRoot(s.root.rawArray())
 			:	s.error(incompleteArrayTokenMessage)
-		: lookahead === "|" ?
-			s.scanner.lookahead === ">" ?
-				s.shiftedBy(1).pushRootToBranch("|>")
-			:	s.pushRootToBranch(lookahead)
-		: lookahead === "&" ? s.pushRootToBranch(lookahead)
-		: lookahead === ")" ? s.finalizeGroup()
-		: lookaheadIsFinalizing(lookahead, s.scanner.unscanned) ?
-			s.finalize(lookahead)
-		: isKeyOf(lookahead, comparatorStartChars) ? parseBound(s, lookahead)
-		: lookahead === "%" ? parseDivisor(s)
-		: lookahead === "#" ? parseBrand(s)
-		: lookahead in whitespaceChars ? parseOperator(s)
-		: s.error(writeUnexpectedCharacterMessage(lookahead))
+		: peek === "|" ?
+			s.sc.peek === ">" ?
+				s.shiftedBy(1).pushRootBranch("|>")
+			:	s.pushRootBranch(peek)
+		: peek === "&" ? s.pushRootBranch(peek)
+		: peek === ")" ? s.finalizeGroup()
+		: lookaheadIsFinalizing(peek, s.sc.unscanned) ? s.finalize(peek)
+		: isKeyOf(peek, comparatorStartChars) ? parseBound(s, peek)
+		: peek === "%" ? parseDivisor(s)
+		: peek === "#" ? parseBrand(s)
+		: peek in whitespaceChars ? parseOperator(s)
+		: s.error(writeUnexpectedCharacterMessage(peek))
 	)
 }
 
 export type parseOperator<s extends StaticState, $, args> =
-	s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned> ?
-		lookahead extends "[" ?
+	s["unscanned"] extends Scanner.shift<infer peek, infer unscanned> ?
+		peek extends "[" ?
 			unscanned extends Scanner.shift<"]", infer nextUnscanned> ?
 				s.setRoot<s, [s["root"], "[]"], nextUnscanned>
 			:	s.error<incompleteArrayTokenMessage>
-		: lookahead extends "|" ?
+		: peek extends "|" ?
 			unscanned extends Scanner.shift<">", infer nextUnscanned> ?
 				s.reduceBranch<s, "|>", nextUnscanned>
-			:	s.reduceBranch<s, lookahead, unscanned>
-		: lookahead extends "&" ? s.reduceBranch<s, lookahead, unscanned>
-		: lookahead extends ")" ? s.finalizeGroup<s, unscanned>
-		: lookaheadIsFinalizing<lookahead, unscanned> extends true ?
-			s.finalize<s.scanTo<s, unscanned>, lookahead & FinalizingLookahead>
-		: lookahead extends ComparatorStartChar ?
-			parseBound<s, lookahead, unscanned, $, args>
-		: lookahead extends "%" ? parseDivisor<s, unscanned>
-		: lookahead extends "#" ? parseBrand<s, unscanned>
-		: lookahead extends WhitespaceChar ?
+			:	s.reduceBranch<s, peek, unscanned>
+		: peek extends "&" ? s.reduceBranch<s, peek, unscanned>
+		: peek extends ")" ? s.finalizeGroup<s, unscanned>
+		: lookaheadIsFinalizing<peek, unscanned> extends true ?
+			s.finalize<s.scanTo<s, unscanned>, peek & FinalizingLookahead>
+		: peek extends ComparatorStartChar ? parseBound<s, peek, unscanned, $, args>
+		: peek extends "%" ? parseDivisor<s, unscanned>
+		: peek extends "#" ? parseBrand<s, unscanned>
+		: peek extends WhitespaceChar ?
 			parseOperator<s.scanTo<s, unscanned>, $, args>
-		:	s.error<writeUnexpectedCharacterMessage<lookahead>>
+		:	s.error<writeUnexpectedCharacterMessage<peek>>
 	:	s.finalize<s, "">
 
 export const writeUnexpectedCharacterMessage = <

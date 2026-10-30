@@ -1,20 +1,34 @@
+import {
+	ipv4Matcher,
+	ipv6Matcher,
+	isIpv4,
+	isIpv6,
+	isIso8601,
+	isNumericString,
+	iso8601Matcher,
+	isUuid,
+	isWellFormedInteger,
+	numericStringMatcher,
+	uuidMatcher,
+	wellFormedIntegerMatcher
+} from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.ts"
 import type { BaseRoot } from "../roots/root.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
-	BaseNormalizedSchema,
+	BaseNodeInput,
 	declareNode
 } from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
+import { matchesRepeated } from "../shared/traversal.ts"
 
 export declare namespace Pattern {
-	export interface NormalizedSchema extends BaseNormalizedSchema {
+	export interface ExpandedSchema extends BaseNodeInput {
 		readonly rule: string
 		readonly flags?: string
 	}
@@ -24,19 +38,17 @@ export declare namespace Pattern {
 		readonly flags?: string
 	}
 
-	export type Schema = NormalizedSchema | string | RegExp
+	export type Schema = ExpandedSchema | string | RegExp
 
 	export interface ErrorContext extends BaseErrorContext<"pattern">, Inner {}
 
 	export interface Declaration
 		extends declareNode<{
 			kind: "pattern"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
-			intersectionIsOpen: true
+			stacks: true
 			prerequisite: string
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = PatternNode
@@ -45,60 +57,93 @@ export declare namespace Pattern {
 const implementation: nodeImplementationOf<Pattern.Declaration> =
 	implementNode<Pattern.Declaration>({
 		kind: "pattern",
-		collapsibleKey: "rule",
+		bareKey: "rule",
 		keys: {
 			rule: {},
 			flags: {}
 		},
-		normalize: schema =>
-			typeof schema === "string" ? { rule: schema }
-			: schema instanceof RegExp ?
-				schema.flags ?
-					{ rule: schema.source, flags: schema.flags }
-				:	{ rule: schema.source }
-			:	schema,
-		obviatesBasisDescription: true,
-		obviatesBasisExpression: true,
-		hasAssociatedError: true,
-		intersectionIsOpen: true,
+		coversNoun: true,
+		coversExpr: true,
+		ownErr: true,
+		stacks: true,
 		defaults: {
 			description: node => `matched by ${node.rule}`
-		},
-		intersections: {
-			// for now, non-equal regex are naively intersected:
-			// https://github.com/arktypeio/arktype/issues/853
-			pattern: () => null
 		}
 	})
 
+// a function testing the strings a RegExp matches, by its expression
+const testsByExpression: { [expression: string]: (s: string) => boolean } = {
+	[`${numericStringMatcher}`]: isNumericString,
+	[`${wellFormedIntegerMatcher}`]: isWellFormedInteger,
+	[`${uuidMatcher}`]: isUuid,
+	[`${ipv4Matcher}`]: isIpv4,
+	[`${ipv6Matcher}`]: isIpv6,
+	[`${iso8601Matcher}`]: isIso8601
+}
+
+// a whole string of one atom repeated without bound, e.g. /^[ab]+$/
+const repeatedAtom =
+	/^\^(?:\[(?:[^\\\]]|\\.)*]|\\[DSWdsw]|\\[^\dA-Za-z]|[^$()*+?[\\\]^{|}])(?:[*+]|{\d+,})\$$/
+
+// m changes what ^ and $ match, v what a class holds, g or y where matching starts
+const isRepeatedAtom = (rule: string, flags: string | undefined) =>
+	(flags === undefined || /^[disu]*$/.test(flags)) && repeatedAtom.test(rule)
+
+// a string definition's literal escapes only /, so the source is written as is
+// but for / and line terminators
+const escapesInRegexLiteral: Record<string, string> = {
+	"/": "\\/",
+	"\n": "\\n",
+	"\r": "\\r",
+	"\u2028": "\\u2028",
+	"\u2029": "\\u2029"
+}
+
+const writeRegexLiteral = (rule: string, flags = ""): string =>
+	`/${rule.replace(/\\.|[\n\r/\u2028\u2029]/g, token => escapesInRegexLiteral[token] ?? token)}/${flags}`
+
 export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration> {
-	readonly instance: RegExp = new RegExp(this.rule, this.flags)
-	readonly expression: string = `${this.instance}`
-	traverseAllows: (string: string) => boolean = this.instance.test.bind(
-		this.instance
-	)
-
-	readonly compiledCondition: string = `${this.expression}.test(data)`
-	readonly compiledNegation: string = `!${this.compiledCondition}`
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal
-
-	reduceJsonSchema(
-		base: JsonSchema.String,
-		ctx: ToJsonSchema.Context
-	): JsonSchema.String {
-		if (base.pattern) {
-			return ctx.fallback.patternIntersection({
-				code: "patternIntersection",
-				base: base as ToJsonSchema.StringSchemaWithPattern,
-				pattern: this.rule
-			})
-		}
-		base.pattern = this.rule
-		return base
+	constructor(
+		...args: ConstructorParameters<typeof InternalPrimitiveConstraint>
+	) {
+		super(...args)
+		this.costly = true
 	}
+
+	readonly instance: RegExp = new RegExp(this.rule, this.flags)
+	readonly expression: string = writeRegexLiteral(this.rule, this.flags)
+	readonly test: ((s: string) => boolean) | undefined =
+		testsByExpression[`${this.instance}`]
+	private readonly isRepeated = isRepeatedAtom(this.rule, this.flags)
+	// g and y make test start from lastIndex, which it also advances
+	private readonly resetsLastIndex =
+		this.instance.global || this.instance.sticky
+
+	tAllows: (string: string) => boolean =
+		this.test ??
+		(this.isRepeated ? string => matchesRepeated(this.instance, string)
+		: this.resetsLastIndex ?
+			string => {
+				this.instance.lastIndex = 0
+				return this.instance.test(string)
+			}
+		:	this.instance.test.bind(this.instance))
+
+	// a ref, so a pattern the engine rejects fails only its definition
+	jsCond(js: NodeCompiler, data: string): string {
+		if (this.test && !js.shortest) return `${js.ref(this.test)}(${data})`
+		const instance = js.ref(this.instance)
+		if (this.isRepeated)
+			return `${js.ref(matchesRepeated)}(${instance}, ${data})`
+		return this.resetsLastIndex ?
+				`(${instance}.lastIndex = 0, ${instance}.test(${data}))`
+			:	`${instance}.test(${data})`
+	}
+
+	readonly implied: BaseRoot = $ark.kw.string.internal
 }
 
 export const Pattern = {
-	implementation,
+	impl: implementation,
 	Node: PatternNode
 }

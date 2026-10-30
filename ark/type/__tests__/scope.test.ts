@@ -1,13 +1,16 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	intrinsic,
 	rootSchema,
 	writeUnboundableMessage,
+	writeGlobalOnlyConfigMessage,
 	writeUnresolvableMessage,
 	type ArkErrors
 } from "@ark/schema"
-import { scope, type, type Module, type Scope } from "arktype"
+import { generic, scope, type, type Module, type Scope } from "arktype"
 import type { distill } from "arktype/internal/attributes.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
+import { keywordModule } from "arktype/internal/scope.ts"
 
 contextualize(() => {
 	it("base definition", () => {
@@ -23,6 +26,16 @@ contextualize(() => {
 			// @ts-expect-error
 			scope({ a: "strong" }).export()
 		).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
+	})
+
+	it("a bound keyword's id is the same whether its scope parsed its schema first", () => {
+		// an intersection with an alias serializes as its operands' ids
+		const prefixOf = (id: string) => id.replace(/\d+$/, "")
+		const parsedFirst = scope({})
+		parsedFirst.schema({ domain: "object" })
+		attest(prefixOf(parsedFirst.internal.bindRef(intrinsic.object).id)).equals(
+			prefixOf(scope({}).internal.bindRef(intrinsic.object).id)
+		)
 	})
 
 	it("define", () => {
@@ -221,6 +234,47 @@ contextualize(() => {
 		).throwsAndHasTypeError(writeUnexpectedCharacterMessage("c"))
 	})
 
+	it("errors on each reference to an invalid alias", () => {
+		const $ = scope({
+			a: { b: "b" },
+			// @ts-expect-error
+			b: { a: "a", c: "bad" }
+		})
+		attest(() => $.type("a")).throws(writeUnresolvableMessage("bad"))
+		attest(() => $.type("a | string")).throws(writeUnresolvableMessage("bad"))
+		attest(() => $.type("b")).throws(writeUnresolvableMessage("bad"))
+	})
+
+	it("errors on each export after a default in a cycle fails", () => {
+		const $ = scope({
+			// @ts-expect-error
+			a: { b: "c = 1" },
+			c: { x: "a" }
+		})
+		const message = "Default for b must be an object (was a number)"
+		attest(() => $.export()).throws(message)
+		attest(() => $.export()).throws(message)
+	})
+
+	it("exports from an alias's thunk what's exported before it", () => {
+		const $ = scope({ b: "string", a: () => $.export().b })
+		attest($.export().a("x")).equals("x")
+	})
+
+	it("errors on each export after an alias fails", () => {
+		const $ = scope({
+			even: ["number", ":", n => n % 2 === 0],
+			a: { b: "even = 1" },
+			c: { d: "even" }
+		})
+		const message =
+			"Default for b must be valid according to an anonymous predicate (was 1)"
+		attest(() => $.export()).throws(message)
+		attest(() => $.export()).throws(message)
+		attest(() => $.export("c")).throws(message)
+		attest(() => $.import()).throws(message)
+	})
+
 	it("autocompletion", () => {
 		attest(() => {
 			scope({
@@ -247,6 +301,32 @@ contextualize(() => {
 
 		const out = X({ pear: { tasty: true } })
 		attest(out).snap({ pear: { tasty: true } })
+	})
+
+	it("throws for a global-only option", () => {
+		// @ts-expect-error
+		attest(() => scope({}, { numberAllowsInfinity: true })).type.errors(
+			"'numberAllowsInfinity' does not exist in type"
+		)
+		attest(() => scope({}, { onUndeclaredKey: "delete" } as never)).throws(
+			writeGlobalOnlyConfigMessage("onUndeclaredKey")
+		)
+	})
+
+	it("cross-scope intersection", () => {
+		const configured = scope({}, { required: { message: () => "configured" } })
+		configured.type({ x: "string" }).and({ y: "number" })
+		const T = scope({}).type({ x: "string" }).and({ y: "number" })
+		attest(T({}).toString()).snap(
+			"x must be a string (was missing)\ny must be a number (was missing)"
+		)
+		// operands shared with the configured scope
+		const L = type({ x: "string" })
+		const R = type({ y: "number" })
+		configured.type([L, "&", R])
+		attest(L.and(R)({}).toString()).snap(
+			"x must be a string (was missing)\ny must be a number (was missing)"
+		)
 	})
 
 	describe("cyclic", () => {
@@ -343,11 +423,10 @@ contextualize(() => {
 			const types = getCyclicScope().export()
 			const data = getCyclicData()
 			data.contributors[0].email = "ssalbdivad"
-			// ideally would only include one error, see:
 			// https://github.com/arktypeio/arktype/issues/924
-			attest(types.package(data).toString())
-				.snap(`contributors[0].email must be an email address (was "ssalbdivad")
-dependencies[1].contributors[0].email must be an email address (was "ssalbdivad")`)
+			attest(types.package(data).toString()).snap(
+				'contributors[0].email must be an email address (was "ssalbdivad")'
+			)
 		})
 
 		it("can include cyclic data in message", () => {
@@ -358,7 +437,7 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 				p => !p.dependencies?.some(d => d.name === p.name)
 			])
 			attest(nonSelfDependent(data).toString()).snap(
-				'must be valid according to an anonymous predicate (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
+				"must be valid according to an anonymous predicate (was an object)"
 			)
 		})
 
@@ -378,27 +457,9 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 				"{ c: { b: cyclic; c: cyclic } }"
 			)
 
-			const expectedCyclicJson = types.arf.internal.select({
-				kind: "alias",
-				method: "assertFind"
-			}).json
-
-			attest(types.arf.json).snap({
+			attest(types.arf.json).equals({
 				domain: "object",
-				required: [
-					{
-						key: "b",
-						value: {
-							domain: "object",
-							required: [
-								{
-									key: "c",
-									value: expectedCyclicJson
-								}
-							]
-						}
-					}
-				]
+				required: [{ key: "b", value: `$ark.${types.bork.internal.id}` }]
 			})
 			const a = {} as typeof types.arf.infer
 			const b = { c: {} } as typeof types.bork.infer
@@ -406,7 +467,7 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 			b.c.b = b
 			b.c.c = b.c
 
-			attest(types.arf.expression).snap("{ b: { c: $arf&$bork } }")
+			attest(types.arf.expression).snap("{ b: $bork }")
 			attest(types.bork.expression).snap("{ c: $arf&$bork }")
 
 			attest(types.arf(a)).equals(a)
@@ -414,12 +475,12 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 				.snap(`b.c.b must be an object (was missing)
 b.c.c must be an object (was missing)`)
 
-			attest(types.bork.json).snap({
+			attest(types.bork.json).equals({
 				domain: "object",
 				required: [
 					{
 						key: "c",
-						value: expectedCyclicJson
+						value: `$ark.${types.arf.internal.id}&${types.bork.internal.id}`
 					}
 				]
 			})
@@ -436,17 +497,9 @@ b.c.c must be an object (was missing)`)
 			}).export()
 			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | cyclic } }")
 
-			attest(types.a.json).snap({
+			attest(types.a.json).equals({
 				domain: "object",
-				required: [
-					{
-						key: "b",
-						value: {
-							domain: "object",
-							required: [{ key: "a", value: ["$a", { unit: 3 }] }]
-						}
-					}
-				]
+				required: [{ key: "b", value: `$ark.${types.b.internal.id}` }]
 			})
 
 			const valid: typeof types.a.infer = { b: { a: 3 } }
@@ -459,14 +512,29 @@ b.c.c must be an object (was missing)`)
 			attest(types.a(valid)).equals(valid)
 
 			attest(types.a({ b: { a: { b: { a: 4 } } } }).toString()).snap(
-				'b.a.b.a must be an object or 3 (was 4) or b.a must be 3 (was {"b":{"a":4}})'
+				"b.a.b.a must be 3 (was 4)"
 			)
 
 			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: cyclic } }")
-			attest(types.b.json).snap({
+			attest(types.b.json).equals({
 				domain: "object",
-				required: [{ key: "a", value: ["$a", { unit: 3 }] }]
+				required: [
+					{ key: "a", value: [`$ark.${types.a.internal.id}`, { unit: 3 }] }
+				]
 			})
+		})
+
+		it("disjoint intersection with a cyclic reference", () => {
+			// throws once a resolves, as string.trim & object throws as it's parsed
+			attest(() =>
+				scope({
+					a: {
+						b: "string.trim & a | number"
+					}
+				}).export()
+			).throws.snap(
+				"ParseError: Intersection of string and object results in an unsatisfiable type"
+			)
 		})
 
 		// https://github.com/arktypeio/arktype/issues/1138
@@ -485,7 +553,7 @@ b.c.c must be an object (was missing)`)
 			// TS type display blows up but it's equivalent to Value
 			const out = types.value(5)
 			// casting to Value also works
-			const castOut = types.value(5)
+			const castOut = types.castValue(5)
 
 			attest<Value | ArkErrors>(out).equals(5)
 			attest<Value | ArkErrors>(castOut).equals(5)
@@ -539,5 +607,91 @@ b.c.c must be an object (was missing)`)
 		const t2 = s2.type("a")
 		attest(t1.expression).equals("string")
 		attest(t2.expression).equals("number")
+	})
+
+	it("aliases named like Object.prototype members", () => {
+		const types = scope({
+			toString: "string",
+			valueOf: "toString[]",
+			"#constructor": "number",
+			toLocaleString: "constructor",
+			sub: type.module({ a: "string" })
+		}).export()
+		attest(types.valueOf(["a"])).equals(["a"])
+		attest(types.toLocaleString(1)).equals(1)
+		attest(types.valueOf([1]).toString()).snap(
+			"value at [0] must be a string (was a number)"
+		)
+		attest(() =>
+			// @ts-expect-error
+			scope({ a: "constructor" }).export()
+		).throwsAndHasTypeError(writeUnresolvableMessage("constructor"))
+		attest(() =>
+			// @ts-expect-error
+			scope({ sub: types.sub, a: "sub.toString" }).export()
+		).throwsAndHasTypeError(writeUnresolvableMessage("sub.toString"))
+		attest(() =>
+			// @ts-expect-error
+			scope({ sub: types.sub, a: "sub.toString.a" }).export()
+		).throwsAndHasTypeError(writeUnresolvableMessage("sub.toString.a"))
+	})
+
+	it("generic params named like Object.prototype members", () => {
+		const types = scope({
+			"box<valueOf>": { v: "valueOf" },
+			x: "box<string>"
+		}).export()
+		attest(types.x({ v: 1 }).toString()).snap(
+			"v must be a string (was a number)"
+		)
+		const Box = generic("toString")({ v: "toString" })
+		attest(Box("number")({ v: "a" }).toString()).snap(
+			"v must be a number (was a string)"
+		)
+	})
+
+	it("keywords and aliases keep Object.prototype", () => {
+		attest(String(type.keywords)).equals("[object Object]")
+		attest(String(scope({ a: "string" }).aliases)).equals("[object Object]")
+	})
+
+	it("cyclic aliases named like Object.prototype members in separate scopes", () => {
+		const L = scope({ toString: { a: "string", "b?": "toString" } }).export()
+		const R = scope({ toString: { a: "number", "b?": "toString" } }).export()
+		const T = type({ l: L.toString, r: R.toString })
+		const data = { l: { a: "x", b: { a: "y" } }, r: { a: 1, b: { a: 2 } } }
+		attest(T(data)).equals(data)
+	})
+
+	it("root of a scope named like an Object.prototype member", () => {
+		const types = scope({ root: "string" }, { name: "toString" }).export()
+		attest(types.root.description).snap("a string")
+	})
+
+	it("scope frozen before its first parse", () => {
+		const $ = Object.freeze(scope({}))
+		attest($.type("string")(5).toString()).snap(
+			"must be a string (was a number)"
+		)
+		attest($.type.and({ a: "string" }, { b: "number" }).expression).snap(
+			"{ a: string, b: number }"
+		)
+		attest($.type.pipe((s: string) => s.length)("abc")).equals(3)
+	})
+
+	it("frozen modules and parsers", () => {
+		const Frozen: Module<{ root: string }> = Object.freeze(
+			keywordModule(
+				{ root: () => ["string", "@", "a frozen root"] },
+				{ name: "frozen" }
+			)
+		) as never
+		attest(Frozen.root(5).toString()).snap(
+			"must be a frozen root (was a number)"
+		)
+		const parser = Object.freeze(scope({}).type)
+		attest(parser.number("x").toString()).snap(
+			"must be a number (was a string)"
+		)
 	})
 })

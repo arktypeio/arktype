@@ -1,0 +1,80 @@
+---
+title: Errors
+description: Which mistakes in an expression are type errors, and which aren't checked.
+---
+
+If `regex` can't parse an expression, the argument is a type error with a message saying why:
+
+```ts
+// @errors: 2345
+import { regex } from "arkregex"
+
+regex("a(b") // Missing )
+
+regex("+a") // Quantifier + requires a preceding token
+
+regex("(?<a>x)\\k<b>") // Group b does not exist
+```
+
+Most of these would also throw from `new RegExp()`. The rest are valid at runtime but rejected, usually because they're likely a mistake, like an anchor in the middle of a pattern. The others are listed under [what isn't checked](#what-isnt-checked).
+
+| Message                                                                | Example           | `new RegExp()`                                                |
+| ---------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------- |
+| `Missing )`, `Missing ]`, `Missing >`                                  | `"a(b"`           | throws                                                        |
+| `Unmatched ) before b`                                                 | `"a)b"`           | throws                                                        |
+| `Quantifier + requires a preceding token`                              | `"+a"`            | throws                                                        |
+| `A regex cannot end with \`                                            | `"a\\"`           | throws                                                        |
+| `Capture group <> requires a name`                                     | `"(?<>a)"`        | throws                                                        |
+| `literal ? must be escaped at the start of a group`                    | `"(?i)"`          | throws                                                        |
+| `Modifier flag x must be 'i', 'm' or 's'`                              | `"(?x:a)"`        | throws                                                        |
+| `Modifier i cannot appear multiple times in a single group`            | `"(?ii:a)"`       | throws                                                        |
+| `Modifiers can include at most one '-' to negate subsequent flags`     | `"(?i-m-s:a)"`    | throws                                                        |
+| `- must be followed by the modifier flag to negate ('i', 'm' or 's')`  | `"(?-:a)"`        | throws                                                        |
+| `Group b does not exist`                                               | `"(?<a>x)\\k<b>"` | throws                                                        |
+| `Group 2 does not exist`                                               | `"(a)\\2"`        | throws with `u` or `v`; otherwise `\2` is an octal escape     |
+| `\k must be followed by a named reference like <name>`                 | `"\\ka"`          | throws with `u`, `v` or a named group; otherwise matches `ka` |
+| `\p must be followed by a property like \p{Emoji_Presentation}`        | `"\\p"`           | throws with `u` or `v`; otherwise matches `p`                 |
+| `Quantifier {1.5} must use natural numbers`                            | `"a{1.5}"`        | throws with `u` or `v`; otherwise matches the text `a{1.5}`   |
+| `Escape preceding q is unnecessary and should be removed.`             | `"\\q"`           | throws with `u` or `v`; otherwise matches `q`                 |
+| `Reference to incomplete group '1' has no effect`                      | `"(a\\1)"`        | valid; the reference matches `""`                             |
+| `Anchor ^ may not appear mid-pattern`                                  | `"a^b"`           | valid                                                         |
+| `Empty character set [] is unsatisfiable`                              | `"[]"`            | valid; never matches                                          |
+| `\n should be specified with a single backslash like regex('\n')`      | `"\\n"`           | valid                                                         |
+| `\cX notation is not supported. Use hex (\x) or unicode (\u) instead.` | `"\\cJ"`          | valid                                                         |
+
+## Escapes
+
+Escaping a character with no special meaning is an error, as is writing a character a JS string can represent itself with a regex escape. Write `"\n"`, `"\t"`, `"\x41"` or `"\u00e9"` with one backslash:
+
+```ts
+// @errors: 2345
+import { regex } from "arkregex"
+
+regex("\\q") // Escape preceding q is unnecessary and should be removed.
+
+regex("\\n") // \n should be specified with a single backslash like regex('\n')
+```
+
+## What isn't checked [#what-isnt-checked]
+
+Some valid patterns are rejected:
+
+- `\cX` control escapes, and `\/`, which a string doesn't need (write `/`).
+- `\}`, which the `u` and `v` flags require outside a character class. Write `[}]` instead.
+- `^` or `$` in the middle of a pattern, even with the `m` flag.
+- A reference to a group defined later, like `"\\k<a>(?<a>x)"`.
+- Flags out of alphabetical order, like `"ig"`. Write `"gi"`.
+
+Some patterns that `new RegExp()` throws on aren't caught:
+
+- Ranges out of order, like `"[z-a]"`.
+- Duplicate group names in the same branch, like `"(?<a>x)(?<a>y)"`.
+- Syntax that only throws with the `u` or `v` flag, like `"\\-"`, `"\\p{Foo}"` or `"a{1,b}"`.
+
+Quantifier bounds out of order, like `"a{2,1}"`, are an error, but only `Type instantiation is excessively deep and possibly infinite`.
+
+The `v` flag's nested classes and set operations, like `[[a-z]--[aeiou]]`, aren't parsed. They aren't errors, but see [known gaps](/docs/regex/faq#known-gaps).
+
+## Escape hatch
+
+To use a pattern ArkRegex rejects or can't infer, type it yourself with [`regex.as`](/docs/regex/types#regexas).

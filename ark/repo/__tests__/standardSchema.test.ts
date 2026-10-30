@@ -1,5 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
+import type { StandardSchemaV1 } from "@ark/schema"
 import { type, type Out, type Type } from "arktype"
+import { writeAsyncStandardSchemaMessage } from "arktype/internal/parser/definition.ts"
+import * as v from "valibot"
 import z from "zod"
 
 contextualize(() => {
@@ -48,8 +51,8 @@ contextualize(() => {
 		})
 
 		attest(invalid).instanceOf(type.errors)
-		attest(invalid.toString()).snap(`age must be a number (was a string)
-name must be a string (was a number)
+		attest(invalid.toString()).snap(`name must be a string (was a number)
+age must be a number (was a string)
 address.streetNumber invalid input: expected number, received string
 address.streetName invalid input: expected string, received undefined`)
 	})
@@ -154,5 +157,41 @@ isActive invalid input: expected boolean, received string`)
 		attest(invalid.toString())
 			.snap(`name invalid input: expected string, received number
 category invalid option: expected one of "electronics"|"books"|"clothing"`)
+	})
+
+	it("prefixes issues without a path with the path of the schema", () => {
+		const T = type({ age: z.number(), nickname: v.string() })
+
+		attest(T({ age: "5", nickname: 5 }).toString())
+			.snap(`age invalid input: expected number, received string
+nickname invalid type: Expected string but received 5`)
+	})
+
+	// like Effect's Schema.standardSchemaV1
+	it("accepts a class as a standard schema", () => {
+		class NumberSchema {
+			static "~standard": StandardSchemaV1.Props<number> = {
+				version: 1,
+				vendor: "effect",
+				validate: value =>
+					typeof value === "number" ?
+						{ value }
+					:	{ issues: [{ message: "Expected number" }] }
+			}
+		}
+
+		const T = type({ age: NumberSchema })
+
+		attest<{ age: number }>(T.infer)
+		attest(T({ age: 5 })).equals({ age: 5 })
+		attest(T({ age: "5" }).toString()).snap("age expected number")
+	})
+
+	it("throws if validation is async", () => {
+		const T = type({ name: z.string().refine(async s => s.length > 1) })
+
+		attest(() => T({ name: "x" })).throws(
+			writeAsyncStandardSchemaMessage("zod")
+		)
 	})
 })

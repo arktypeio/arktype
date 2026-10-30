@@ -11,5 +11,10 @@ export {
 	type TypeAssertionData,
 	type TypeRelationship
 } from "./cache/getCachedAssertions.ts"
-export { getDefaultAttestConfig, type AttestConfig } from "./config.ts"
+export {
+	getDefaultAttestConfig,
+	type AttestConfig,
+	type Checker
+} from "./config.ts"
+export { getChecker } from "./ts7/server.ts"
 export { contextualize } from "./utils.ts"

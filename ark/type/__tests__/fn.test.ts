@@ -43,7 +43,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => len(1)).throws.snap(
-			"TraversalError: value at [0] must be a string or an object (was a number)"
+			"TraversalError: value at [0] must be a string or an array (was a number)"
 		)
 	})
 
@@ -58,7 +58,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => len(1)).throws.snap(
-			"TraversalError: value at [0] must be a string or an object (was a number)"
+			"TraversalError: value at [0] must be a string or an array (was a number)"
 		)
 	})
 
@@ -323,7 +323,7 @@ contextualize(() => {
 
 		attest(len("foo")).equals(3)
 		attest(() => len(1)).throws.snap(
-			"TraversalError: value at [0] must be a string or an object (was a number)"
+			"TraversalError: value at [0] must be a string or an array (was a number)"
 		)
 	})
 

@@ -2,6 +2,12 @@ import { bench } from "@ark/attest"
 import { scope, type } from "arktype"
 import { z } from "zod"
 
+// each bench assigns its output here to make its library resolve the whole type
+type Derived = {
+	id: string
+	authenticatorAttachment?: "cross-platform" | "platform" | undefined
+}
+
 bench.baseline(() => {
 	type({ foo: "string" }).or({ bar: "number" }).array()
 	z.array(
@@ -9,7 +15,6 @@ bench.baseline(() => {
 	)
 })
 
-// checkDeferredNode: 9ms
 bench("arktype", () => {
 	const authenticatorTransportFutureSchema = type
 		.enumerated("ble", "internal", "nfc", "usb", "cable", "hybrid")
@@ -64,9 +69,9 @@ bench("arktype", () => {
 		"clientExtensionResults",
 		"authenticatorAttachment"
 	).omit("clientExtensionResults")
-}).types([5769, "instantiations"])
+	const out: Derived = {} as typeof derived.infer
+}).types([7390, "instantiations"])
 
-// checkDeferredNode: 19ms
 bench("arktype scope", () => {
 	const types = scope({
 		authenticatorTransportFutureSchema:
@@ -114,9 +119,9 @@ bench("arktype scope", () => {
 	const derived = types.verifyRegistrationResponseOptsSchema
 		.pick("id", "clientExtensionResults", "authenticatorAttachment")
 		.omit("clientExtensionResults")
-}).types([11380, "instantiations"])
+	const out: Derived = {} as typeof derived.infer
+}).types([12727, "instantiations"])
 
-// checkDeferredNode: 82ms
 bench("zod", () => {
 	const authenticatorTransportFutureSchema = z.array(
 		z.union([
@@ -178,8 +183,9 @@ bench("zod", () => {
 	const derived = verifyRegistrationResponseOptsSchema
 		.pick({
 			id: true,
-			response: true,
-			clientExtensionResults: true
+			clientExtensionResults: true,
+			authenticatorAttachment: true
 		})
 		.omit({ clientExtensionResults: true })
-}).types([16922, "instantiations"])
+	const out: Derived = {} as z.output<typeof derived>
+}).types([1265, "instantiations"])

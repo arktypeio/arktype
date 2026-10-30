@@ -1,6 +1,6 @@
 import type { array } from "./arrays.ts"
 import type { Primitive } from "./domain.ts"
-import { noSuggest, ZeroWidthSpace } from "./errors.ts"
+import { noSuggest } from "./errors.ts"
 import { flatMorph } from "./flatMorph.ts"
 import type { Fn } from "./functions.ts"
 import type { defined, show } from "./generics.ts"
@@ -135,6 +135,9 @@ export type extractKeyed<o extends object, k extends unionKeyOf<o>> = Extract<
 	o,
 	{ [_ in k]?: unknown }
 >
+
+export const hasOwn = (o: object, k: PropertyKey): boolean =>
+	Object.prototype.hasOwnProperty.call(o, k)
 
 export const hasKey = <o extends object, k extends unionKeyOf<o>>(
 	o: o,
@@ -294,12 +297,24 @@ export const stringAndSymbolicEntriesOf = (o: object): Entry<Key>[] => [
 export const defineProperties: <base extends object, merged extends object>(
 	base: base,
 	merged: merged
-) => merge<base, merged> = (base, merged) =>
+) => merge<base, merged> = ((base: object, merged: object) =>
 	// declared like this to avoid https://github.com/microsoft/TypeScript/issues/55049
 	Object.defineProperties(
 		base,
 		Object.getOwnPropertyDescriptors(merged)
-	) as never
+	) as never) satisfies Fn
+
+export const defineValue = (
+	o: object,
+	k: PropertyKey,
+	value: unknown
+): object =>
+	Object.defineProperty(o, k, {
+		value,
+		writable: true,
+		enumerable: true,
+		configurable: true
+	})
 
 /** Copies enumerable keys of o to a new object in alphabetical order */
 export const withAlphabetizedKeys: <o extends object>(o: o) => o = (o: any) => {
@@ -321,7 +336,7 @@ export const invert = <t extends Record<PropertyKey, PropertyKey>>(
 	t: t
 ): invert<t> => flatMorph(t as any, (k, v) => [v, k]) as never
 
-export const unset = noSuggest(`unset${ZeroWidthSpace}`)
+export const unset = /* @__PURE__ */ noSuggest("unset\u{200B}")
 
 export type unset = typeof unset
 

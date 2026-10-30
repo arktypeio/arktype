@@ -1,11 +1,11 @@
-import { DynamicBase, flatMorph, type anyOrNever } from "@ark/util"
+import { arkKind, DynamicBase, flatMorph, type anyOrNever } from "@ark/util"
 import type { BaseRoot } from "./roots/root.ts"
 import type {
 	BaseScope,
 	InternalResolution,
 	InternalResolutions
 } from "./scope.ts"
-import { arkKind, hasArkKind } from "./shared/utils.ts"
+import { hasArkKind } from "./shared/utils.ts"
 
 export type PreparsedNodeResolution = {
 	[arkKind]: "generic" | "module"
@@ -31,9 +31,7 @@ export const bindModule = (
 	new RootModule(
 		flatMorph(module, (alias, value) => [
 			alias,
-			hasArkKind(value, "module") ?
-				bindModule(value, $)
-			:	$.bindReference(value)
+			hasArkKind(value, "module") ? bindModule(value, $) : $.bindRef(value)
 		])
 	) as never
 

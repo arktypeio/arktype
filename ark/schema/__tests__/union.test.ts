@@ -1,9 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	Disjoint,
-	rootSchema,
-	writeOrderedIntersectionMessage
-} from "@ark/schema"
+import { describeBranches, Disjoint, node, rootSchema } from "@ark/schema"
+import { writeOrderedIntersectionMessage } from "arksets/internal"
 
 contextualize(() => {
 	it("binary", () => {
@@ -114,5 +111,32 @@ contextualize(() => {
 		} finally {
 			delete (Disjoint as any)[Symbol.species]
 		}
+	})
+
+	it("disjoint branches on construction", () => {
+		const index = rootSchema({
+			domain: "object",
+			index: { signature: "string", value: "string" }
+		})
+		const branch = (kind: string) =>
+			rootSchema({
+				domain: "object",
+				required: [
+					{ key: "kind", value: { unit: kind } },
+					{ key: "x", value: "number" }
+				]
+			}).and(index)
+		attest(() =>
+			node("union", { branches: [branch("a"), branch("b")] }, { reduced: true })
+		).throws(
+			"Intersection at x of number and string results in an unsatisfiable type"
+		)
+	})
+
+	it("describes true and false as boolean only when they are the only branches", () => {
+		attest(describeBranches(["true", "false"])).equals("boolean")
+		attest(describeBranches(["true", "false", "string"])).equals(
+			"true, false or string"
+		)
 	})
 })

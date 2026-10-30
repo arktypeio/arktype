@@ -1,60 +1,70 @@
 ---
 title: Match
+description: Branch on the type of a value with ArkType definitions, like a type-safe switch statement.
 ---
 
-The `match` function provides a powerful way to handle different types of input and return corresponding outputs based on the input type, like a type-safe `switch` statement.
+`match` pairs ArkType definitions with handlers. It returns a function that runs the handler of the first case its input satisfies.
 
-## Case Record API
+## Case record API
 
-The simplest way to define a matcher is with ArkType definition strings as keys with corresponding handlers as values:
+Each key is a definition and each value is a handler. The handler's parameter is inferred from its key:
 
 ```ts
 import { match } from "arktype"
 
-const sizeOf = match({
-	"string | Array": v => v.length,
-	number: v => v,
-	bigint: v => v,
+const toLabel = match({
+	string: s => s,
+	number: n => n.toFixed(2),
+	bigint: b => `${b}n`,
 	default: "assert"
 })
 
-// a match definition is complete once a `default` has been specified,
-// either as a case or via the .default() method
-
-sizeOf("abc") // 3
-sizeOf([1, 2, 3, 4]) // 4
-sizeOf(5n) // 5n
-// TraversalError: must be a string or an object (was boolean)
-sizeOf(true)
+toLabel("abc") // "abc"
+toLabel(5) // "5.00"
+toLabel(5n) // "5n"
+// TraversalError: must be a string, a number or a bigint (was boolean)
+toLabel(true)
 ```
 
-In this example, `sizeOf` is a matcher that takes a string, array, number, or bigint as input. It returns the length of strings and arrays, and the value of numbers and bigints.
+Cases are checked in the order they are defined. A matcher is complete once it has a `default`.
 
-`default` accepts one of 4 values:
+## Default
 
-- `"assert"`: accept `unknown`, throw if none of the cases match
-- `"never"`: accept an input based on inferred cases, throw if none match
-- `"reject"`: accept `unknown`, return `ArkErrors` if none of the cases match
-- `(data: In) => unknown`: handle data not matching other cases directly
+`default` decides what happens to input that matches no case:
 
-Cases will be checked in the order they are specified, either as object literal keys or via chained methods.
-
-## Fluent API
-
-The `match` function also provides a fluent API. This can be convenient for non-string-embeddable definitions:
+| `default`  | Accepts                     | When no case matches          |
+| ---------- | --------------------------- | ----------------------------- |
+| `"assert"` | `unknown`                   | throws a `TraversalError`     |
+| `"never"`  | only input the cases accept | throws a `TraversalError`     |
+| `"reject"` | `unknown`                   | returns `ArkErrors`           |
+| a function | `unknown`                   | returns the function's result |
 
 ```ts
 import { match } from "arktype"
 
-// the Case Record and Fluent APIs can be easily combined
 const sizeOf = match({
-	string: v => v.length,
-	number: v => v,
-	bigint: v => v
+	string: s => s.length,
+	number: n => n,
+	default: "reject"
 })
-	// match any object with a numeric length property and extract it
+
+// ArkErrors: must be a string or a number (was boolean)
+sizeOf(true)
+```
+
+## Fluent API
+
+`.case(definition, handler)` adds one case at a time, which is convenient for definitions that can't be written as a key. It can follow a case record or start a chain as `match.case(...)`. `.default(...)` completes the matcher:
+
+```ts
+import { match } from "arktype"
+
+const sizeOf = match({
+	string: s => s.length,
+	number: n => n
+})
+	// any object with a numeric length
 	.case({ length: "number" }, o => o.length)
-	// return 0 for all other data
 	.default(() => 0)
 
 sizeOf("abc") // 3
@@ -62,34 +72,88 @@ sizeOf({ name: "David", length: 5 }) // 5
 sizeOf(null) // 0
 ```
 
-## Narrowing input with `in`, property matching with `at`
+## Input with `in`
+
+`.in<T>()` sets the input type of a matcher: calling it with anything else is a type error, and each handler's parameter is narrowed from `T`. It does not validate at runtime.
+
+`.in(definition)` takes a definition instead and validates input against it before any case runs:
 
 ```ts
 // @errors: 2345
 import { match } from "arktype"
 
-type Data =
-	| {
-			id: 1
-			oneValue: number
-	  }
-	| {
-			id: 2
-			twoValue: string
-	  }
+const half = match.in("number | string").match({
+	number: n => n / 2,
+	default: s => s
+})
 
-const discriminateValue = match
-	// .in allows you to specify the input TypeScript allows for your matcher
+half(4) // 2
+// ArkErrors: must be a number or a string (was boolean)
+half(true)
+```
+
+## Properties with `at`
+
+`.at(key)` matches cases against the value of one property. Each handler receives the whole object:
+
+```ts
+// @errors: 2345
+import { match } from "arktype"
+
+type Data = { id: 1; count: number } | { id: 2; label: string }
+
+const describe = match
 	.in<Data>()
-	// .at allows you to specify a key at which your input will be matched
 	.at("id")
 	.match({
-		1: o => `${o.oneValue}!`,
-		2: o => o.twoValue.length,
+		1: o => `${o.count} items`,
+		2: o => o.label,
 		default: "assert"
 	})
 
-discriminateValue({ id: 1, oneValue: 1 }) // "1!"
-discriminateValue({ id: 2, twoValue: "two" }) // 3
-discriminateValue({ oneValue: 3 })
+describe({ id: 1, count: 3 }) // "3 items"
+describe({ id: 2, label: "two" }) // "two"
+// TraversalError: id must be 1 or 2 (was missing)
+describe({ count: 3 })
+```
+
+`match.at(key, cases)` does the same in one call.
+
+## String values with `strings`
+
+`.strings(cases)` treats each key as a string value rather than a definition, so a key needs no quotes and `number` matches the string `"number"`. It follows `.in(...)` or `.at(key)`, and a key that isn't a possible value of the input is a type error. Its types are much cheaper to check than `.match` with quoted string literals:
+
+```ts
+import { match } from "arktype"
+
+type Shape = { kind: "circle"; r: number } | { kind: "square"; side: number }
+
+const area = match
+	.in<Shape>()
+	.at("kind")
+	.strings({
+		circle: c => Math.PI * c.r ** 2,
+		square: s => s.side ** 2,
+		default: "assert"
+	})
+
+area({ kind: "square", side: 2 }) // 4
+```
+
+## Scoped aliases
+
+`match` resolves the same keywords as `type`. To match on your own aliases, use the `match` method of your [scope](/docs/scopes):
+
+```ts
+import { scope } from "arktype"
+
+const $ = scope({ Id: "string", Count: "number" })
+
+const describe = $.match({
+	Id: id => `user ${id}`,
+	Count: n => `${n} users`,
+	default: "assert"
+})
+
+describe("42") // "user 42"
 ```

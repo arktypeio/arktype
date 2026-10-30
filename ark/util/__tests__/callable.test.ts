@@ -32,13 +32,6 @@ contextualize(() => {
 	})
 
 	it("can attach properties", () => {
-		const s = new Callable(() => 1, { attach: { a: 2 } })
-
-		attest(s()).equals(1)
-		attest(s.a).equals(2)
-	})
-
-	it("can attach properties", () => {
 		// inferred directly from constructor
 		const s = new Callable(() => 1 as const, { attach: { a: 2 } } as const)
 
@@ -104,5 +97,11 @@ contextualize(() => {
 		const f = new Callable(function originalName() {})
 
 		attest(f.name).snap("bound originalName")
+	})
+
+	it("can skip binding", () => {
+		const f = new Callable(function originalName() {}, { bind: null })
+
+		attest(f.name).snap("originalName")
 	})
 })

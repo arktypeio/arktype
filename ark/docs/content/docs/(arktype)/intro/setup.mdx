@@ -1,51 +1,234 @@
 ---
 title: Setup
+description: Install ArkType, define a Type and precompile it in your bundler.
 ---
 
-## Installation
+## Install
 
 <InstallationTabs />
 
-You'll also need...
+<InstallationTabs pkg="@ark/aot" dev />
 
-- TypeScript version `>=5.1`.
-- A `package.json` with `"type": "module"` (or an environment that supports ESM imports)
-- A `tsconfig.json` with...
-  - [`strict`](https://www.typescriptlang.org/tsconfig#strict) or [`strictNullChecks`](https://www.typescriptlang.org/tsconfig#strictNullChecks) (**required**)
-  - [`skipLibCheck`](https://www.typescriptlang.org/tsconfig#skipLibCheck) (strongly recommended, see [FAQ](/docs/faq#why-do-i-see-type-errors-in-an-arktype-package-in-node_modules))
-  - [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig#exactOptionalPropertyTypes) (recommended)
+`arktype` is a dependency and `@ark/aot` a dev dependency. `arktype` defines and validates Types. [`@ark/aot`](/docs/precompile) precompiles them when you build, so arktype's parser never ships and nothing compiles at runtime. Skip it for a script or REPL with no build step: every Type works without it.
 
-## VSCode
+## Define a Type
 
-### Settings
+```ts title="src/user.ts"
+import { type } from "arktype"
 
-To take advantage of all of ArkType's autocomplete capabilities, you'll need to add the following to your workspace settings at `.vscode/settings.json`:
+export const User = type({
+	name: "string",
+	"age?": "number.integer >= 0"
+})
 
-```json
-// allow autocomplete for ArkType expressions like "string | num"
-"editor.quickSuggestions": {
-	"strings": "on"
-},
-// prioritize ArkType's "type" for autoimports
-"typescript.preferences.autoImportSpecifierExcludeRegexes": [
-	"^(node:)?os$"
-],
+const out = User({ name: "Alan", age: -1 })
+
+if (out instanceof type.errors) console.error(out.summary)
 ```
 
-### Extension (optional)
+## Add the plugin
 
-[ArkDark](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) provides the embedded syntax highlighting you'll see throughout the docs.
+<Tabs
+	items={["Vite", "Next.js", "esbuild", "Rolldown", "Rollup", "webpack", "Bun", "Node"]}
+	groupId="bundler"
+	persist
+>
+<Tab value="Vite">
 
-Without it, your definitions can still feel like a natural extension of the language.
+```ts title="vite.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "vite"
 
-With it, you'll forget there was ever a boundary in the first place.
+export default defineConfig({
+	plugins: [precompile.vite()]
+})
+```
 
-## JetBrains IDEs
+Vitest runs your tests through the same plugin.
 
-### Extension (optional)
+</Tab>
+<Tab value="Next.js">
 
-[ArkType](https://plugins.jetbrains.com/plugin/27099-arktype) provides the embedded syntax highlighting you are familiar with for typescript types.
+```js title="next.config.js"
+export default {
+	turbopack: {
+		rules: {
+			"*.ts": { loaders: ["@ark/aot/turbopack"] },
+			"*.tsx": { loaders: ["@ark/aot/turbopack"] },
+			"*.{js,mjs}": {
+				condition: { content: /arktype/ },
+				loaders: ["@ark/aot/turbopack"]
+			}
+		},
+		resolveAlias: {
+			arktype: "arktype/runtime",
+			"arktype/codecs": "arktype/runtime",
+			"arktype/config": "arktype/runtime",
+			"arktype/errors": "arktype/runtime",
+			"arktype/mutatesInput": "arktype/runtime"
+		}
+	}
+}
+```
 
-## Other editors
+For `next build --webpack`, see [Next.js](/docs/precompile/setup#next).
 
-If you're using a different editor, we'd love [help adding support](https://github.com/arktypeio/arktype/issues/989). In the meantime, don't worry- ArkType still offers best-in-class DX anywhere TypeScript is supported.
+</Tab>
+<Tab value="esbuild">
+
+```ts title="build.ts"
+import { precompile } from "@ark/aot/unplugin"
+import { build } from "esbuild"
+
+await build({
+	entryPoints: ["src/main.ts"],
+	bundle: true,
+	outfile: "dist/main.js",
+	plugins: [precompile.esbuild()]
+})
+```
+
+</Tab>
+<Tab value="Rolldown">
+
+```ts title="rolldown.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "rolldown"
+
+export default defineConfig({
+	input: "src/main.ts",
+	output: { file: "dist/main.js" },
+	plugins: [precompile.rolldown()]
+})
+```
+
+</Tab>
+<Tab value="Rollup">
+
+```js title="rollup.config.js"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { nodeResolve } from "@rollup/plugin-node-resolve"
+import typescript from "@rollup/plugin-typescript"
+
+export default {
+	input: "src/main.ts",
+	output: { file: "dist/main.js", format: "es" },
+	plugins: [
+		precompile.rollup(),
+		nodeResolve({ extensions: [".ts", ".js"] }),
+		typescript()
+	]
+}
+```
+
+</Tab>
+<Tab value="webpack">
+
+```js title="webpack.config.js"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+
+export default {
+	entry: "./src/main.ts",
+	resolve: { extensions: [".ts", ".js"] },
+	module: {
+		rules: [
+			{ test: /\.ts$/, loader: "ts-loader", options: { transpileOnly: true } }
+		]
+	},
+	plugins: [precompile.webpack()]
+}
+```
+
+</Tab>
+<Tab value="Bun">
+
+```ts title="build.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+
+await Bun.build({
+	entrypoints: ["src/main.ts"],
+	outdir: "dist",
+	plugins: [precompile.bun()]
+})
+```
+
+Bun's bundler needs Bun 1.2.22 or later. To precompile as `bun test` or `bun run` loads your code, see [Bun](/docs/precompile/setup#bun).
+
+</Tab>
+<Tab value="Node">
+
+```ts title="register.ts"
+import { register } from "@ark/aot/node"
+
+register()
+```
+
+```sh
+node --import ./register.ts src/main.ts
+```
+
+Node 22.15 or later. A program `tsc` compiles for production precompiles with [`arktype-precompile --emit`](/docs/precompile/setup#tsc).
+
+</Tab>
+</Tabs>
+
+Rspack, Rsbuild, Farm and the rest are in [Setup](/docs/precompile/setup).
+
+## Run it
+
+Build or start your dev server as you already do. `User` is now a standalone validator, and the program prints:
+
+```
+age must be non-negative
+```
+
+A precompiled error says what failed without printing the value, which arktype at runtime adds as `(was -1)`.
+
+To see what the build makes of each definition without bundling, run:
+
+```sh
+npx arktype-precompile --check
+```
+
+```
+src/user.ts:3:21  accepted
+1 site in 2 files: 1 accepted (100.0%)
+```
+
+A definition the build can't precompile fails it, naming the file, the line and the fix. See [Troubleshooting](/docs/precompile/troubleshooting).
+
+## Configure TypeScript
+
+TypeScript `>=5.1`, including TypeScript 7, with:
+
+```json title="tsconfig.json"
+{
+	"compilerOptions": {
+		"strict": true,
+		"skipLibCheck": true,
+		"exactOptionalPropertyTypes": true
+	}
+}
+```
+
+- [`strict`](https://www.typescriptlang.org/tsconfig#strict), or at least [`strictNullChecks`](https://www.typescriptlang.org/tsconfig#strictNullChecks), is required for inference to work.
+- [`skipLibCheck`](https://www.typescriptlang.org/tsconfig#skipLibCheck) is recommended. It avoids harmless errors from differences between your config and ours (see [FAQ](/docs/faq#why-do-i-see-type-errors-in-an-arktype-package-in-node_modules)) and speeds up your editor.
+- [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig#exactOptionalPropertyTypes) is recommended. It makes your inferred types match runtime behavior. ArkType rejects `undefined` for an optional key unless its value allows it, so without this flag, `typeof User.infer` accepts `{ age: undefined }` while `User` rejects it.
+
+ArkType is ESM-only, but a CommonJS project can `require` it on runtimes that support `require(esm)`, like Node `>=20.19` or `>=22.12`. TypeScript allows that `require` under `"module": "nodenext"` from 5.8, where `node16` reports TS1479. `@ark/aot` runs on Node 22.12 or later.
+
+## Runtimes
+
+ArkType runs in Node, Deno, Bun, browsers and edge runtimes like Cloudflare Workers. A precompiled validator never generates code, so it runs under a Content-Security-Policy that blocks `eval`. Without precompiling, ArkType validates without compiling where `new Function` is blocked; under a strict policy, enable [`jitless`](/docs/configuration#jitless) so it never tries `new Function`, which the policy would report.
+
+## Next
+
+- Set up [your editor](/docs/editor), and give your agent the [ArkType skill](/docs/agents).
+- Learn the syntax, starting with [your first type](/docs/intro/your-first-type).
+- Configure ArkType globally in a module that loads before anything creates a Type. See [Configuration](/docs/configuration).
+- Coming from Zod or another validator? See [Migrating](/docs/migrating). From an earlier ArkType? See [Upgrading](/docs/upgrading).

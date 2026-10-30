@@ -1,69 +1,146 @@
 ---
 title: Assertions
+description: Assert on types, values, errors, completions, JSDoc and type instantiations from any test runner.
 ---
 
-Assertions can be made from any unit test framework with a [global setup](/docs/attest#global-setup).
+Assertions work from any test runner once [setup](/docs/attest#global-setup) has run.
 
-### Types and values
+## Types
+
+<AnchorAliases types-and-values />
 
 ```ts
 import { attest } from "@ark/attest"
 import { type } from "arktype"
 
 const Even = type("number%2")
-// asserts Even.infer is exactly number
+
+// passes if Even.infer and number are assignable to each other
 attest<number>(Even.infer)
-// make assertions about types and values seamlessly
+// compares two types without a value
+attest<number, typeof Even.infer>()
+// snapshots the type as TypeScript displays it
 attest(Even.infer).type.toString.snap("number")
-// including object literals- no more long inline strings!
-attest(Even.json).snap({
-	domain: "number",
-	divisor: 2
-})
 ```
 
-### Errors
+`.type.errors` checks the type errors TypeScript reports for the expression passed to `attest`:
 
 ```ts
 import { attest } from "@ark/attest"
 import { type } from "arktype"
 
-// Check type errors, runtime errors, or both at the same time!
-// @ts-expect-error
-attest(() => type("number%0")).throwsAndHasTypeError(
-	"% operator must be followed by a non-zero integer literal (was 0)"
-)
 // @ts-expect-error
 attest(() => type({ "[object]": "string" })).type.errors(
 	"Indexed key definition 'object' must be a string or symbol"
 )
 ```
 
-### Completions
+<Callout type="warn" title="Strings match as substrings">
+	`.type.toString`, `.type.errors`, `.throws` and `.jsdoc` pass if the string
+	you give appears anywhere in the actual one, so
+	`attest([1]).type.toString("number")` passes although the type is `number[]`.
+	They also accept a `RegExp`. Chain `.snap` for an exact match.
+</Callout>
+
+## Values
 
 ```ts
 import { attest } from "@ark/attest"
-import { type } from "arktype"
 
-// snapshot expected completions for any string literal!
-// @ts-expect-error (if your expression would throw, prepend () =>)
-attest(() => type({ b: "b" })).completions({
-	b: ["bigint", "boolean"]
-})
+const user = { name: "Alan Turing", born: 1912 }
 
-type Legends = { faker?: "🐐"; [others: string]: unknown }
-// works for keys or index access as well (may need prettier-ignore to avoid removing quotes)
-// prettier-ignore
-attest({ "f": "🐐" } as Legends).completions({ "f": ["faker"] })
+// deep equality
+attest(user).equals({ name: "Alan Turing", born: 1912 })
+// Object.is equality
+attest(user.born).is(1912)
+// validates the value against an ArkType definition
+attest(user).satisfies({ name: "string", born: "number.integer" })
+attest(new Date(0)).instanceOf(Date)
+// written into the call on the first run, compared after that
+attest(user).snap({ name: "Alan Turing", born: 1912 })
 ```
 
-### JSDoc
+The expected value of `.equals`, `.is` and `.snap` has to match the type of the value under test. Chain `.unknown` first, as in `attest(user).unknown.equals(...)`, to compare against anything.
+
+`.unwrap()` returns what an assertion would compare rather than asserting on it, e.g. `attest(user).type.toString.unwrap()` returns `"{ name: string; born: number }"`.
+
+## Errors
+
+`.throws` calls the function passed to `attest` and checks what it threw. The thrown value is converted with `String()`, so it starts with the error's name.
+
+```ts
+import { attest } from "@ark/attest"
+
+const divide = (a: number, b: number) => {
+	if (b === 0) throw new RangeError("Cannot divide by zero")
+	return a / b
+}
+
+attest(() => divide(1, 0)).throws("divide by zero")
+attest(() => divide(1, 0)).throws(/^RangeError/)
+attest(() => divide(1, 0)).throws.snap("RangeError: Cannot divide by zero")
+```
+
+Chain `.type.errors` to check the type error of the same call:
+
+```ts
+import { attest } from "@ark/attest"
+
+const assertFalse = (value: false) => {
+	if (value) throw new Error(`${value} is not false`)
+}
+
+// @ts-expect-error
+attest(() => assertFalse(true))
+	.throws("true is not false")
+	.type.errors("Argument of type 'true' is not assignable")
+```
+
+When the runtime error and the type error share a message, `throwsAndHasTypeError` checks both:
 
 ```ts
 import { attest } from "@ark/attest"
 import { type } from "arktype"
 
-// match or snapshot expected jsdoc associated with the value passed to attest
+// @ts-expect-error
+attest(() => type("number%0")).throwsAndHasTypeError(
+	"% operator must be followed by a non-zero integer literal (was 0)"
+)
+```
+
+## Completions
+
+`.completions` snapshots the completions TypeScript offers for each string literal in the expression passed to `attest`. A partial literal is usually a type error, and if it would also throw at runtime, wrap it in a function:
+
+```ts
+import { attest } from "@ark/attest"
+import { type } from "arktype"
+
+// @ts-expect-error
+attest(() => type({ b: "b" })).completions({ b: ["bigint", "boolean"] })
+```
+
+Quoted keys get completions too. Prettier removes quotes it doesn't need, which would leave nothing to complete, so keep it from formatting the line:
+
+```ts
+import { attest } from "@ark/attest"
+
+type Legends = { faker?: "🐐"; [others: string]: unknown }
+
+// prettier-ignore
+attest({ "f": "🐐" } as Legends).completions({ f: ["faker"] })
+```
+
+Completions are keyed by the literal's text, so two identical literals in one `attest` call throw "Encountered multiple completion candidates". Split them into separate calls.
+
+## JSDoc
+
+`.jsdoc` reads the JSDoc of the value passed to `attest` when it's a variable or a property access:
+
+```ts
+import { attest } from "@ark/attest"
+import { type } from "arktype"
+
 const T = type({
 	/** FOO */
 	foo: "string"
@@ -74,27 +151,27 @@ const out = T.assert({ foo: "foo" })
 attest(out.foo).jsdoc.snap("FOO")
 ```
 
-### Runtime logic
+## Conditional assertions
 
-Flexibly combine runtime logic with type assertions to customize your tests beyond what is possible from pure static-analysis based type testing tools.
+<AnchorAliases runtime-logic />
+
+Assertions are ordinary function calls, so runtime logic can decide which ones run:
 
 ```ts
 import { attest } from "@ark/attest"
-import { type } from "arktype"
 import ts from "typescript"
 
-const arrayOf = type("<t>", "t[]")
-const numericArray = arrayOf("number | bigint")
+const value = Math.random() > 0.5 ? "a" : 1
 
-if (ts.version.startsWith("5")) {
-	// this assertion will only occur when testing TypeScript 5+!
-	attest<(number | bigint)[]>(numericArray.infer)
-}
+// TypeScript 7 orders this union differently
+if (Number.parseInt(ts.version) >= 7)
+	attest(value).type.toString.snap('"a" | 1')
+else attest(value).type.toString.snap('1 | "a"')
 ```
 
-### Instantiations
+## Instantiations
 
-Snapshot the number of type instantiations contributed by the enclosing test.
+`attest.instantiations` snapshots the number of type instantiations contributed by the test that calls it, counted like a [bench](/docs/attest/benches#type-benches) counts its block:
 
 ```ts
 declare const it: (name: string, fn: () => void) => void
@@ -115,6 +192,66 @@ it("discriminated union", () => {
 			kind: "'pleb'"
 		})
 
-	attest.instantiations([7574, "instantiations"])
+	// measured with TypeScript 6.0.3
+	attest.instantiations([17010, "instantiations"])
 })
 ```
+
+Unlike a bench, it throws inside the test when the count exceeds its baseline by more than [`benchPercentThreshold`](/docs/attest/options). Counts differ between TypeScript versions, so record them with the version you test against.
+
+## Snapshots
+
+A `.snap()` or `.completions()` with no argument is populated on the first run: [teardown](/docs/attest#global-setup) writes the value into the call in your source file, then formats the file with [`formatCmd`](/docs/attest/options), Prettier by default.
+
+To rewrite every snapshot with the current values, pass `--updateSnapshots` to your test command or set `ATTEST_updateSnapshots=true`. `-u` and `--update` work too, unless your runner claims them: Mocha's `-u` is its `--ui` flag.
+
+If a `CI` environment variable is set, a snapshot with no value throws rather than being populated, so a test can't pass in CI without its expected value. Set [`failOnMissingSnapshots`](/docs/attest/options) to change that.
+
+`.snap.toFile(name)` stores the snapshot in `assert.snapshots.json` beside the test file rather than inline, keyed by the test file's name and then `name`. Pass `{ path }` to use another file, relative to the test's directory or absolute.
+
+```ts
+import { attest } from "@ark/attest"
+
+attest({ name: "Alan Turing" }).snap.toFile("user")
+```
+
+## contextualize
+
+`contextualize` wraps a test file's tests in a `describe` named after the file, e.g. `divisor` for `__tests__/divisor.test.ts`. It needs global `describe` and `it` functions, as in Mocha, or Vitest with `globals: true`.
+
+```ts
+declare global {
+	const describe: (name: string, fn: () => void) => void
+	const it: (name: string, fn: () => void) => void
+}
+// ---cut---
+import { attest, contextualize } from "@ark/attest"
+
+contextualize(() => {
+	it("adds", () => {
+		attest(1 + 1).equals(2)
+	})
+})
+```
+
+Pass a function before the tests to create a fresh context for each one:
+
+```ts
+declare global {
+	const describe: (name: string, fn: () => void) => void
+	const it: (name: string, fn: () => void) => void
+}
+// ---cut---
+import { attest, contextualize } from "@ark/attest"
+
+contextualize(
+	() => new Map<string, number>(),
+	it => {
+		it("starts empty", map => {
+			attest(map.size).equals(0)
+		})
+	}
+)
+```
+
+`contextualize.each(name, createContext, tests)` does the same for a named `describe` within the file.

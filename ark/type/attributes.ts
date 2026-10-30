@@ -1,10 +1,10 @@
-import type { ArkError, ArkErrors, Morph } from "@ark/schema"
+import type { ArkError, ArkErrors, arkKind, Morph } from "@ark/schema"
 import {
 	noSuggest,
 	type anyOrNever,
 	type array,
 	type Brand,
-	type equals,
+	type brand,
 	type Hkt,
 	type intersectArrays,
 	type isSafelyMappable,
@@ -20,7 +20,7 @@ import type { type } from "./keywords/keywords.ts"
 import type { Type } from "./type.ts"
 export type { arkPrototypes as object } from "./keywords/constructors.ts"
 
-export type Comparator = "<" | "<=" | ">" | ">=" | "=="
+export type Comparator = "<" | "<=" | ">" | ">=" | "==" | "!="
 
 export type RegexLiteral<source extends string = string> = `/${source}/`
 
@@ -35,32 +35,64 @@ export type normalizeLimit<limit> =
 	: limit extends number | string ? limit
 	: never
 
-export type distill<t, side extends distill.Side> = finalizeDistillation<
-	t,
-	_distill<t, side>
->
+export type distill<t, side extends distill.Side> =
+	// returning t as is when nothing changes preserves names like interfaces
+	[distilledSidesOf<t>] extends [undistilledOn<side>] ? t : _distill<t, side>
 
 export declare namespace distill {
-	export type Side = "in" | "out" | "introspectableOut"
+	export type Side = "in" | "out" | "knownOut"
 
 	export type In<t> = distill<t, "in">
 
 	export type Out<t> = distill<t, "out">
 
 	export namespace introspectable {
-		export type Out<t> = distill<t, "introspectableOut">
+		export type Out<t> = distill<t, "knownOut">
 	}
 }
 
-type finalizeDistillation<t, distilled> =
-	equals<t, distilled> extends true ? t : distilled
+// keep in sync with _distill: each part it changes maps to the sides it changes on
+type distilledSidesOf<t> =
+	t extends undefined ? never
+	: [t] extends [anyOrNever] ? never
+	: unknown extends t ? never
+	: t extends Brand ? "in"
+	: t extends TerminallyInferredObject | Primitive ? never
+	: t extends Function ?
+		t extends (...args: never) => anyOrNever ? never
+		: t extends InferredMorph ? distill.Side
+		: never
+	: t extends Default ? distill.Side
+	: t extends array ?
+		// an index signature rather than an array defers recursive arrays like JSON
+		keyof t extends ArrayKey ?
+			{ [i: number]: distilledSidesOf<t[number]> }
+		:	{ [k in number | Exclude<keyof t, ArrayKey>]: distilledSidesOf<t[k]> }
+	: isSafelyMappable<t> extends true ?
+		string extends keyof t ? indexedSidesOf<t>
+		: symbol extends keyof t ? indexedSidesOf<t>
+		: { [k in keyof t]-?: distilledSidesOf<t[k]> }
+	:	never
+
+// map index signatures to "" so their value types are related
+type indexedSidesOf<t> = {
+	[k in keyof t as string extends k ? ""
+	: symbol extends k ? ""
+	: k]-?: distilledSidesOf<t[k]>
+}
+
+type ArrayKey = keyof unknown[] | `${number}`
+
+type undistilledOn<side extends distill.Side> =
+	| Exclude<distill.Side, side>
+	| { readonly [k: PropertyKey]: undistilledOn<side> }
 
 type _distill<t, side extends distill.Side> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
 	: unknown extends t ? unknown
-	: t extends Brand<infer base> ?
+	: t extends { readonly [brand]: [infer base, unknown] } ?
 		side extends "in" ?
 			base
 		:	t
@@ -105,15 +137,27 @@ type unwrapInput<t> =
 	:	t
 
 type inferredDefaultKeyOf<o> =
-	keyof o extends infer k ?
+	string extends keyof o ? keyof indexedDefaults<o>
+	: symbol extends keyof o ? keyof indexedDefaults<o>
+	: keyof o extends infer k ?
 		k extends keyof o ?
-			unwrapInput<o[k]> extends Default<infer t> ?
-				[t] extends [anyOrNever] ?
-					never
-				:	k
+			isInferredDefault<o[k]> extends true ?
+				k
 			:	never
 		:	never
 	:	never
+
+// mapped over o's keys, since keyof o absorbs the keys an index signature covers
+type indexedDefaults<o> = {
+	[k in keyof o as isInferredDefault<o[k]> extends true ? k : never]: 0
+}
+
+type isInferredDefault<v> =
+	unwrapInput<v> extends Default<infer t> ?
+		[t] extends [anyOrNever] ?
+			false
+		:	true
+	:	false
 
 type distillArray<t extends array, side extends distill.Side> =
 	// fast path for non-tuple arrays with no extra props
@@ -167,15 +211,14 @@ type distillArrayFromPostfix<
 		distillArrayFromPostfix<init, side, [_distill<last, side>, ...postfix]>
 	:	[...{ [i in keyof t]: _distill<t[i], side> }, ...postfix]
 
-type BuiltinTerminalObjectKind = Exclude<
-	arkPrototypes.NonDegenerateName,
-	"Array" | "Function"
->
-
 /** Objects we don't want to expand during inference like Date or Promise */
-type TerminallyInferredObject =
-	| arkPrototypes.instanceOf<BuiltinTerminalObjectKind>
-	| ArkEnv.prototypes
+export type TerminallyInferredObject = BuiltinTerminalObject | ArkEnv.prototypes
+
+type BuiltinTerminalObject = {
+	[k in keyof arkPrototypes.instances]: k extends "Array" | "Function" ? never
+	: {} extends arkPrototypes.instances[k] ? never
+	: arkPrototypes.instances[k]
+}[keyof arkPrototypes.instances]
 
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
@@ -248,10 +291,17 @@ type _inferNaryMerge<remaining extends readonly unknown[], result> =
 		_inferNaryMerge<tail, merge<result, head>>
 	:	result
 
-export type inferMorphOut<morph extends Morph> = Exclude<
-	ReturnType<morph>,
-	ArkError | ArkErrors
+export type inferMorphOut<morph extends Morph> = excludeErrors<
+	ReturnType<morph>
 >
+
+// check path or arkKind first; most outputs match neither
+type excludeErrors<out> =
+	out extends { path: unknown } | { [arkKind]: "errors" } ?
+		out extends ArkError | ArkErrors ?
+			never
+		:	out
+	:	out
 
 const isMorphOutKey = noSuggest("isMorphOut")
 
@@ -277,6 +327,16 @@ export type Default<t = unknown, v = unknown> = { [defaultsToKey]: [t, v] }
 export type withDefault<t, v, undistributed = t> =
 	t extends InferredMorph ? addDefaultToMorph<t, v>
 	:	Default<Exclude<undistributed, InferredMorph>, v>
+
+export type required<t> = { [k in keyof t]-?: withoutDefault<t[k]> }
+
+type withoutDefault<t> =
+	t extends Default<infer constraint> ? constraint
+	: t extends InferredMorph<infer i, infer o> ?
+		[i] extends [anyOrNever] ? t
+		: [i] extends [Default<infer constraint>] ? (In: constraint) => o
+		: t
+	:	t
 
 type addDefaultToMorph<t extends InferredMorph, v> =
 	[normalizeMorphDistribution<t>] extends [InferredMorph<infer i, infer o>] ?

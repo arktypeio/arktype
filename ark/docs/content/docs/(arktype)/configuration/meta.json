@@ -2,14 +2,21 @@
 	"title": "Configuration",
 	"pages": [
 		"[levels](/docs/configuration#levels)",
-		"[errors](/docs/configuration#errors)",
+		"[options](/docs/configuration#options)",
+		"[error messages](/docs/configuration#error-messages)",
+		"[locale](/docs/configuration#locale)",
 		"[keywords](/docs/configuration#keywords)",
-		"[clone](/docs/configuration#clone)",
 		"[onUndeclaredKey](/docs/configuration#onundeclaredkey)",
+		"[exactOptionalPropertyTypes](/docs/configuration#exactoptionalpropertytypes)",
+		"[numberAllowsNaN](/docs/configuration#numberallowsnan)",
+		"[numberAllowsInfinity](/docs/configuration#numberallowsinfinity)",
+		"[dateAllowsInvalid](/docs/configuration#dateallowsinvalid)",
 		"[jitless](/docs/configuration#jitless)",
+		"[errors](/docs/configuration#errors)",
+		"[mutatesInput](/docs/configuration#mutatesinput)",
 		"[onFail](/docs/configuration#onfail)",
-		"[metadata](/docs/configuration#metadata)",
 		"[toJsonSchema](/docs/configuration#tojsonschema)",
+		"[metadata](/docs/configuration#metadata)",
 		"[prototypes](/docs/configuration#prototypes)"
 	]
 }

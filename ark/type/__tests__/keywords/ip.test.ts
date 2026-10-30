@@ -39,6 +39,35 @@ contextualize(() => {
 		)
 	})
 
+	it("v6 at the edges of its grammar", () => {
+		const accepted = [
+			"::",
+			"::1",
+			"1::",
+			"1::2:3:4:5:6:7",
+			"1:2:3:4:5:6:7::",
+			"::ffff:192.0.2.1",
+			"::2:3:4:5:6:192.0.2.1",
+			"1:2:3:4:5::192.0.2.1",
+			"1:2:3:4:5:6:192.0.2.1",
+			"fe80::1%eth0"
+		]
+		const rejected = [
+			"1:2:3:4:5:6:7:8:9",
+			"1::2:3:4:5:6:7:8",
+			"1:2:3:4:5:6:7::8",
+			"1:2:3:4:5:6::192.0.2.1",
+			"1:2:3:4:5:6:7:192.0.2.1",
+			"1::2::3",
+			":::",
+			"::01.0.0.1",
+			"::256.0.0.1",
+			"::1%"
+		]
+		attest(accepted.filter(s => !keywords.string.ip.v6.allows(s))).equals([])
+		attest(rejected.filter(s => keywords.string.ip.v6.allows(s))).equals([])
+	})
+
 	it("invalid ipv6 with empty segments", () => {
 		const out = type.keywords.string.ip.v6("::%8:.-:.:")
 		attest(out.toString()).snap('must be an IPv6 address (was "::%8:.-:.:")')

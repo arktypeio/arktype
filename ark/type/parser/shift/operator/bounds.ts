@@ -3,10 +3,11 @@ import {
 	writeUnboundableMessage,
 	type BaseRoot,
 	type BoundKind,
-	type NodeSchema
+	type Constraint
 } from "@ark/schema"
 import { isKeyOf, throwParseError, type KeySet, type Scanner } from "@ark/util"
 import type { DateLiteral } from "../../../attributes.ts"
+import { writeDoubleRightBoundMessage } from "../../ast/bounds.ts"
 import type { InferredAst } from "../../ast/infer.ts"
 import type { astToString } from "../../ast/utils.ts"
 import type { RootedRuntimeState, RuntimeState } from "../../reduce/dynamic.ts"
@@ -22,21 +23,23 @@ import {
 import type { s, StaticState } from "../../reduce/static.ts"
 import { extractDateLiteralSource, isDateLiteral } from "../operand/date.ts"
 import type { parseOperand } from "../operand/operand.ts"
+import { writeMissingRightOperandMessage } from "../operand/unenclosed.ts"
+import { writeUnexpectedCharacterMessage } from "./operator.ts"
 
 export const parseBound = (
 	s: RootedRuntimeState,
 	start: ComparatorStartChar
 ): void => {
 	const comparator = shiftComparator(s, start)
-	if (s.root.hasKind("unit")) {
-		if (typeof s.root.unit === "number") {
+	if (s.root.is("unit")) {
+		if (typeof s.root.unit === "number" && Number.isFinite(s.root.unit)) {
 			s.reduceLeftBound(s.root.unit, comparator)
 			s.unsetRoot()
 			return
 		}
 		if (s.root.unit instanceof Date) {
 			const literal =
-				`d'${s.root.description ?? s.root.unit.toISOString()}'` as const
+				`d'${s.root.meta.description ?? s.root.unit.toISOString()}'` as const
 			s.unsetRoot()
 			s.reduceLeftBound(literal, comparator)
 			return
@@ -78,23 +81,25 @@ export type ComparatorStartChar =
 export const comparatorStartChars: KeySet<ComparatorStartChar> = {
 	"<": 1,
 	">": 1,
-	"=": 1
+	"=": 1,
+	"!": 1
 }
 
 const shiftComparator = (
 	s: RuntimeState,
 	start: ComparatorStartChar
 ): Comparator =>
-	s.scanner.lookaheadIs("=") ?
-		`${start}${s.scanner.shift()}`
-	:	(start as OneCharComparator)
+	s.sc.peekIs("=") ? `${start}${s.sc.shift()}`
+	: start === "!" ? s.error(writeUnexpectedCharacterMessage(start))
+	: (start as OneCharComparator)
 
 type shiftComparator<
 	start extends ComparatorStartChar,
 	unscanned extends string
 > =
 	unscanned extends `=${infer nextUnscanned}` ? [`${start}=`, nextUnscanned]
-	:	[start & OneCharComparator, unscanned]
+	: start extends OneCharComparator ? [start, unscanned]
+	: s.error<writeUnexpectedCharacterMessage<start>>
 
 export const writeIncompatibleRangeMessage = (
 	l: BoundKind,
@@ -107,7 +112,7 @@ export const getBoundKinds = (
 	root: BaseRoot,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
-	if (root.extends($ark.intrinsic.number)) {
+	if (root.extends($ark.kw.number)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
 				writeInvalidLimitMessage(comparator, limit, boundKind)
@@ -115,12 +120,13 @@ export const getBoundKinds = (
 		}
 		return (
 			comparator === "==" ? ["min", "max"]
+			: comparator === "!=" ? ["notEqual"]
 			: comparator[0] === ">" ? ["min"]
 			: ["max"]
 		)
 	}
 
-	if (root.extends($ark.intrinsic.lengthBoundable)) {
+	if (root.extends($ark.kw.lengthBoundable)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
 				writeInvalidLimitMessage(comparator, limit, boundKind)
@@ -128,14 +134,16 @@ export const getBoundKinds = (
 		}
 		return (
 			comparator === "==" ? ["exactLength"]
+			: comparator === "!=" ? ["notEqualLength"]
 			: comparator[0] === ">" ? ["minLength"]
 			: ["maxLength"]
 		)
 	}
-	if (root.extends($ark.intrinsic.Date)) {
+	if (root.extends($ark.kw.Date)) {
 		// allow either numeric or date limits
 		return (
 			comparator === "==" ? ["after", "before"]
+			: comparator === "!=" ? ["notEqual"]
 			: comparator[0] === ">" ? ["after"]
 			: ["before"]
 		)
@@ -144,34 +152,39 @@ export const getBoundKinds = (
 }
 
 const openLeftBoundToRoot = (
-	leftBound: OpenLeftBound
-): NodeSchema<BoundKind> => ({
+	lBound: OpenLeftBound
+): Constraint.Schema<BoundKind> => ({
 	rule:
-		isDateLiteral(leftBound.limit) ?
-			extractDateLiteralSource(leftBound.limit)
-		:	leftBound.limit,
-	exclusive: leftBound.comparator.length === 1
+		isDateLiteral(lBound.limit) ?
+			extractDateLiteralSource(lBound.limit)
+		:	lBound.limit,
+	exclusive: lBound.comparator.length === 1
 })
 
 export const parseRightBound = (
 	s: RootedRuntimeState,
 	comparator: Comparator
 ): void => {
+	if (s.sc.unscanned.trimStart() === "")
+		return s.error(writeMissingRightOperandMessage(comparator))
 	// store the node that will be bounded
 	const previousRoot = s.unsetRoot()
-	const previousScannerIndex = s.scanner.location
+	if (s.rightBounded?.root === previousRoot) {
+		return s.error(
+			writeDoubleRightBoundMessage(s.rightBounded.operand.expression)
+		)
+	}
+	const previousScannerIndex = s.sc.location
 	s.parseOperand()
 	const limitNode = s.unsetRoot()
 	// after parsing the next operand, use the locations to get the
 	// token from which it was parsed
-	const limitToken = s.scanner.sliceChars(
-		previousScannerIndex,
-		s.scanner.location
-	)
+	const limitToken = s.sc.sliceChars(previousScannerIndex, s.sc.location)
 	s.root = previousRoot
 	if (
-		!limitNode.hasKind("unit") ||
-		(typeof limitNode.unit !== "number" && !(limitNode.unit instanceof Date))
+		!limitNode.is("unit") ||
+		(typeof limitNode.unit !== "number" && !(limitNode.unit instanceof Date)) ||
+		(typeof limitNode.unit === "number" && !Number.isFinite(limitNode.unit))
 	)
 		return s.error(writeInvalidLimitMessage(comparator, limitToken, "right"))
 
@@ -186,27 +199,37 @@ export const parseRightBound = (
 		"right"
 	)
 
-	for (const kind of boundKinds) {
-		s.constrainRoot(
-			kind,
-			comparator === "==" ? { rule: limit } : { rule: limit, exclusive }
-		)
-	}
+	// a Date's limit may be numeric, as it is for its bounds
+	const rule =
+		(
+			comparator === "!=" &&
+			typeof limit === "number" &&
+			previousRoot.extends($ark.kw.Date)
+		) ?
+			new Date(limit)
+		:	limit
 
-	if (!s.branches.leftBound) return
+	for (const kind of boundKinds)
+		s.constrainRoot(kind, comparator === "==" ? { rule } : { rule, exclusive })
+
+	if (!s.branches.lBound) {
+		s.rightBounded = { root: s.root, operand: previousRoot }
+		return
+	}
 
 	// if there's an open left bound, perform additional validation and apply it
 	if (!isKeyOf(comparator, maxComparators))
 		return s.error(writeUnpairableComparatorMessage(comparator))
 
 	const lowerBoundKind = getBoundKinds(
-		s.branches.leftBound.comparator,
-		s.branches.leftBound.limit,
+		s.branches.lBound.comparator,
+		s.branches.lBound.limit,
 		previousRoot,
 		"left"
 	)
-	s.constrainRoot(lowerBoundKind[0], openLeftBoundToRoot(s.branches.leftBound))
-	s.branches.leftBound = null
+	s.constrainRoot(lowerBoundKind[0], openLeftBoundToRoot(s.branches.lBound))
+	s.branches.lBound = null
+	s.rightBounded = { root: s.root, operand: previousRoot }
 }
 
 export type parseRightBound<
@@ -215,16 +238,18 @@ export type parseRightBound<
 	$,
 	args
 > =
-	parseOperand<s, $, args> extends infer nextState extends StaticState ?
+	Scanner.skipWhitespace<s["unscanned"]> extends "" ?
+		s.error<writeMissingRightOperandMessage<comparator>>
+	: parseOperand<s, $, args> extends infer nextState extends StaticState ?
 		nextState["root"] extends (
 			InferredAst<unknown, `${infer limit extends number | DateLiteral}`>
 		) ?
-			s["branches"]["leftBound"] extends {} ?
+			s["branches"]["lBound"] extends {} ?
 				comparator extends MaxComparator ?
 					s.reduceRange<
 						s,
-						s["branches"]["leftBound"]["limit"],
-						s["branches"]["leftBound"]["comparator"],
+						s["branches"]["lBound"]["limit"],
+						s["branches"]["lBound"]["comparator"],
 						comparator,
 						limit,
 						nextState["unscanned"]

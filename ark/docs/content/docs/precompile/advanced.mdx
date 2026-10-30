@@ -1,0 +1,146 @@
+---
+title: Advanced
+description: Shadow mode, libraries, runtime islands, declarations and optimizations.
+---
+
+## Shadow mode
+
+`shadow: true` makes a test suite tell where a standalone build would behave otherwise than arktype. Each definition is precompiled and also created by arktype from the same values, and the program runs on arktype, only `arktype/config` resolving to the runtime:
+
+```ts title="vitest.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "vitest/config"
+
+export default defineConfig({ plugins: [precompile.vite({ shadow: true })] })
+```
+
+Each Type, Module and `type.fn` compares its validator with arktype's as it's created, as it validates (by result, the input it leaves and each call to a function the program passed) and as its members are read. Where they agree, it returns arktype's result. Where they don't, it throws an error naming the definition, what was observed and both results, and raises it again where a fallback or `expect(...).toThrow()` can't catch it.
+
+During a validation, each function a definition holds runs once, its calls and plain writes to its arguments replayed for the validator. A call that adds an error to `ctx` or writes otherwise, like setting a `Date`'s time, runs again for the validator, which must answer alike.
+
+## Libraries
+
+A library ships its definitions unprecompiled, as its source or what `tsc` emits from it, and the build precompiles them with the program if its `package.json` opts in:
+
+```json title="package.json"
+{
+	"name": "my-schemas",
+	"ark": { "aot": true }
+}
+```
+
+A program can do the same for a package that doesn't opt in, with `"precompile": { "dependencies": { "my-schemas": "aot" } }` in its settings; see [`dependencies`](/docs/precompile/options#dependencies). The plugin and drivers find such packages among those the nearest `package.json` to `cwd` depends on, directly or through other packages, and the plugin keeps Vite and Vitest from prebundling or externalizing them.
+
+A library shouldn't ship what its own build precompiled, which runs only on the arktype it was built with, so the build fails for each dependency that imports `arktype/runtime`.
+
+## Runtime islands
+
+In a standalone build, a definition can be left to arktype by marking it:
+
+```ts
+// @noErrors
+// ---cut---
+// @ark-runtime
+export const Shaped = type(await loadShape())
+```
+
+The marker applies to the statement or expression after it. arktype then ships beside `arktype/runtime` for the modules with islands alone. The build fails if an island reads a precompiled validator other than to validate with it, or reaches arktype outside an island, e.g. through a helper in another module. It fails too for a marker that leaves nothing to arktype: one nothing follows, one on code that doesn't use arktype, or one inside a definition the build precompiles. `--check` leaves islands out of its rate.
+
+`@ark/json-schema`, `@ark/fast-check` and `arksets` read arktype's nodes, so the build requires an island to call them, and resolves their own `arktype` imports to arktype rather than its runtime. Bun and Turbopack replace `arktype` for every importer, so with them, build a program calling one with `runtime: "arktype"`.
+
+## Declarations
+
+A package whose types others read can declare its Types once, so its consumers don't infer arktype definitions:
+
+```sh
+npx arktype-precompile --declare
+```
+
+This writes what `tsc --emitDeclarationOnly` would for the nearest `tsconfig.json`, or the one `--tsconfig` names, except that each Type, Scope and Module is declared through its shape in one `~arktype.d.ts` at the declarations' root, named once and referenced wherever another shape holds it:
+
+```ts
+// @noErrors
+// ---cut---
+// users.d.ts
+export declare const User: import("arktype").Type<import("./~arktype.js").User>
+
+// ~arktype.d.ts
+export type User = {
+	id: string
+	role: import("arktype").Default<Role, "member">
+	address?: Address | undefined
+}
+```
+
+A consumer's type-check then reads each Type's shape rather than inferring its definition. A shape TypeScript can't name where a consumer resolves it, like a class its module doesn't export, is left to TypeScript's own declaration. The CLI exits with 1 where TypeScript reports an error, after writing what it emitted.
+
+The bundler plugin emits the same files with a Rollup, Rolldown, Vite, webpack, Rspack or Rsbuild build that neither watches nor serves:
+
+```ts
+import { precompile } from "@ark/aot/unplugin"
+// ---cut---
+precompile.vite({ declare: true })
+```
+
+esbuild, Bun, Farm and the Node and Turbopack drivers can't tell whether a build watches, so `declare: true` throws there; run `arktype-precompile --declare` after the build instead.
+
+Declarations read the compiler API of TypeScript 5.5 to 6 from the optional `typescript` peer. A TypeScript 7 project installs TypeScript 6 beside it:
+
+```sh
+npm i -D typescript-6@npm:typescript@6
+```
+
+## Optimizations
+
+What a build writes, and the [options](/docs/precompile/options) that change it.
+
+### Valid and invalid data
+
+The default build writes two functions for each Type: a check returning whether data is valid, and a pass finding its issues, which a validator runs only for data the check rejects. Valid data costs only the check. For most Types without a narrow or morph, the pass runs once the errors' `issues` or `summary` is [first read](/docs/errors#arkerrors), so invalid data costs little more than its check until then. A build for size finds them as it validates.
+
+| Option                                                                           | Saves                                                                   | Costs                                                   |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------- |
+| [`preset: "smallest"`](/docs/precompile/options#choosing-smallest)               | bytes, more the more Types a bundle holds                               | validation speed, and startup, creating every validator |
+| [`optimizeErrors: "size"`](/docs/precompile/options#optimize-and-optimizeerrors) | bytes of the issue-finding pass                                         | time reading issues                                     |
+| [`errors: "first"`](/docs/precompile/options#errors)                             | time on invalid data, stopping at its first issue                       | the other issues                                        |
+| [`errors: "none"`](/docs/precompile/options#errors)                              | the issue-finding pass and every message                                | every issue but one root issue, `is invalid`            |
+| [`members`](/docs/precompile/options#members)                                    | each member set false                                                   | reading it                                              |
+| [`jsonInput: true`](/docs/precompile/options#jsoninput)                          | time checking objects that reject undeclared keys, by counting the keys | an undeclared key can pass on data that isn't plain     |
+
+### What nothing reads
+
+Each Type's creation is annotated `/* @__PURE__ */`, so your bundler drops a Type nothing reads, without `sideEffects: false` in your `package.json`, unless creating it could throw.
+
+A [production bundle](/docs/precompile/options#prune) that reads every module it holds leaves out the members no read needs, and the parts of the error runtime no validator in it writes: formatting an array index in a path, writing text configured for a code and, where no [runtime island](#runtime-islands) runs, the message a TraversalError writes for errors arktype returns. Written as one chunk, it also declares the units its validators share in one function.
+
+### Unions
+
+A union of objects is checked by one key where a key tells its branches apart. Among keys at the shallowest path, ArkType prefers one every branch holds, then the one with the most values. A branch without the key is checked in every case, and data matching no case reports through it as well as the key, so give each branch the key:
+
+```ts
+// one switch on kind: { kind: "c" } fails with kind must be "a" or "b" (was "c")
+const Event = type({ kind: "'a'", x: "number" }).or({
+	kind: "'b'",
+	y: "string"
+})
+```
+
+[`discriminate`](/docs/sets/discriminate) shows the discriminant ArkType finds for any union.
+
+### Minifiers
+
+A default build writes each Type's checks as small functions calling each other, which V8 inlines as it runs them. terser, webpack's default minifier, and swc, Next.js's, write a function called once into its caller, as a closure created at each call or a module variable, either of which runs slower. So the build annotates each such call `/* @__NOINLINE__ */`, which both honor and every minifier drops from its output. Minified by either, validators run as fast as unminified, and the functions they keep cost some bytes, most in a large app minified by swc. esbuild and oxc don't inline them. A build for size calls the runtime's checkers instead, and writes no annotation.
+
+Rolldown, which Vite 8 bundles with, keeps only `@__PURE__`, `@__NO_SIDE_EFFECTS__` and `@vite-ignore` comments, so a terser pass after it never sees the annotations. A Vite build with `build.minify: "terser"` inlines the functions, so its validators run slower. Keep Vite's default minifier, oxc, or use esbuild:
+
+```ts title="vite.config.ts"
+// @noErrors
+import { precompile } from "@ark/aot/unplugin"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+	plugins: [precompile.vite()],
+	build: { minify: "oxc" }
+})
+```

@@ -1,208 +1,81 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	jsonSchemaToType,
-	writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage,
-	writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage
-} from "@ark/json-schema"
-import { writeDuplicateKeyMessage } from "@ark/schema"
+import { jsonSchemaToType } from "@ark/json-schema"
 
 contextualize(() => {
-	it("type object", () => {
-		const t = jsonSchemaToType({ type: "object" })
-		attest(t.expression).snap("{}")
-		attest(t.allows({ foo: 3 }))
-	})
-
-	it("maxProperties", () => {
-		const tMaxProperties = jsonSchemaToType({
+	it("lists properties in output as the schema does", () => {
+		const T = jsonSchemaToType({
 			type: "object",
-			maxProperties: 1
-		})
-		attest(tMaxProperties.json).snap({
-			domain: "object",
-			predicate: ["$ark.jsonSchemaObjectMaxPropertiesValidator"]
-		})
-		attest(tMaxProperties.allows({})).equals(true)
-		attest(tMaxProperties.allows({ foo: 1 })).equals(true)
-		attest(tMaxProperties.allows({ foo: 1, bar: 2 })).equals(false)
-		attest(tMaxProperties.allows({ foo: 1, bar: 2, baz: 3 })).equals(false)
-	})
-
-	it("minProperties", () => {
-		const tMinProperties = jsonSchemaToType({
-			type: "object",
-			minProperties: 2
-		})
-		attest(tMinProperties.json).snap({
-			domain: "object",
-			predicate: ["$ark.jsonSchemaObjectMinPropertiesValidator"]
-		})
-		attest(tMinProperties.allows({})).equals(false)
-		attest(tMinProperties.allows({ foo: 1 })).equals(false)
-		attest(tMinProperties.allows({ foo: 1, bar: 2 })).equals(true)
-		attest(tMinProperties.allows({ foo: 1, bar: 2, baz: 3 })).equals(true)
+			properties: { b: { type: "string" }, a: { type: "string" } },
+			required: ["a"]
+		}).onUndeclaredKey("delete")
+		attest(Object.keys(T({ a: "a", b: "b", c: "c" }))).snap(["b", "a"])
 	})
 
 	it("properties & required", () => {
-		const tRequired = jsonSchemaToType({
-			type: "object",
-			properties: {
-				foo: { type: "string" },
-				bar: { type: "number" }
-			},
-			required: ["foo"]
-		})
-		attest(tRequired.expression).snap("{ foo: string, bar?: number }")
-
-		attest(() =>
-			jsonSchemaToType({ type: "object", required: ["foo"] })
-		).throws(
-			"TraversalError: must be a valid object JSON Schema (was an object JSON Schema with 'required' array but no 'properties' object)"
-		)
-		attest(() =>
+		attest(
+			jsonSchemaToType({
+				type: "object",
+				properties: { foo: { type: "string" }, bar: { type: "number" } },
+				required: ["foo"]
+			}).expression
+		).snap("{ foo: string, bar?: number } & isNonArray")
+		attest(
 			jsonSchemaToType({
 				type: "object",
 				properties: { foo: { type: "string" } },
+				// @ts-expect-error
 				required: ["bar"]
-			})
-		).throws(
-			`TraversalError: required must be a key from the 'properties' object, i.e. foo (was bar)`
-		)
+			}).expression
+		).snap("{ bar: unknown, foo?: string } & isNonArray")
 		attest(() =>
 			jsonSchemaToType({
 				type: "object",
 				properties: { foo: { type: "string" } },
 				required: ["foo", "foo"]
 			})
-		).throws(writeDuplicateKeyMessage("foo"))
-	})
-
-	it("additionalProperties", () => {
-		const tAdditionalProperties = jsonSchemaToType({
-			type: "object",
-			additionalProperties: { type: "number" },
-			properties: { bar: { type: "string" } }
-		})
-		attest(tAdditionalProperties.json).snap({
-			domain: "object",
-			optional: [{ key: "bar", value: "string" }],
-			predicate: ["$ark.jsonSchemaObjectAdditionalPropertiesValidator"]
-		})
-		attest(tAdditionalProperties.allows({})).equals(true)
-		attest(tAdditionalProperties.allows({ foo: 1 })).equals(true)
-		attest(tAdditionalProperties.allows({ foo: 1, bar: "2" })).equals(true)
-		attest(tAdditionalProperties.allows({ foo: 1, baz: "2" })).equals(false)
+		).throws.snap(
+			'ParseError: #/required must be an array of unique strings (was ["foo","foo"])'
+		)
 	})
 
 	it("patternProperties", () => {
-		const tPatternProperties = jsonSchemaToType({
+		const T = jsonSchemaToType({
 			type: "object",
-			patternProperties: {
-				"^[a-z]+$": { type: "string" }
-			}
+			patternProperties: { "^[a-z]+$": { type: "string" } }
 		})
-		attest(tPatternProperties.expression).snap("{ [/^[a-z]+$/]: string }")
-		attest(tPatternProperties.allows({})).equals(true)
-		attest(tPatternProperties.allows({ foo: "bar" })).equals(true)
-		attest(tPatternProperties.allows({ foo: 1 })).equals(false)
-		attest(tPatternProperties.allows({ "123": "bar" })).equals(true) // true since by default JSON Schema allows additional properties
+		attest(T.expression).snap("{ [/^[a-z]+$/]: string } & isNonArray")
+		// keys matching no pattern are allowed, since additionalProperties is unset
+		attest(T.allows({ "123": 1 })).equals(true)
 	})
 
-	it("propertyNames", () => {
-		const tPropertyNames = jsonSchemaToType({
-			type: "object",
-			propertyNames: { type: "string", minLength: 5 }
-		})
-		attest(tPropertyNames.expression).snap(
-			"{ [string >= 5]: unknown, + (undeclared): reject }"
-		)
-
-		attest(() =>
-			// @ts-expect-error
-			jsonSchemaToType({
-				type: "object",
-				propertyNames: { type: "number" }
-			})
-		).type.errors.snap(
-			`Argument of type '{ type: "object"; propertyNames: { type: "number"; }; }' is not assignable to parameter of type 'JsonSchemaOrBoolean'.` +
-				`The types of 'propertyNames.type' are incompatible between these types.` +
-				`Type '"number"' is not assignable to type '"string"'.`
+	it("minProperties of 1 message", () => {
+		const T = jsonSchemaToType({ type: "object", minProperties: 1 })
+		attest(() => T.assert({})).throws.snap(
+			"TraversalError: must be an object with at least 1 property (was an object)"
 		)
 	})
 
-	it("propertyNames & additionalProperties", () => {
-		const tPropertyNamesAndAdditionalProperties = jsonSchemaToType({
+	it("required key declared by another branch", () => {
+		const T = jsonSchemaToType({
 			type: "object",
-			propertyNames: { type: "string", minLength: 3 },
-			additionalProperties: true
+			allOf: [
+				{ properties: { foo: { type: "string" } } },
+				{ required: ["foo"] }
+			]
 		})
-		attest(tPropertyNamesAndAdditionalProperties.expression).snap(
-			"{ [string >= 3]: unknown, + (undeclared): reject }"
-		)
+		attest(T.infer).type.toString.snap("{ foo: string }")
+		attest(T.expression).snap("{ foo: string } & isNonArray")
 	})
 
-	it("propertyNames & patternProperties", () => {
-		const tPropertyNamesAndPatternPropertiesValid = jsonSchemaToType({
+	it("required keys of untyped branches", () => {
+		const T = jsonSchemaToType({
 			type: "object",
-			patternProperties: { foo: { type: "number" } },
-			propertyNames: { type: "string", pattern: "foo" }
+			anyOf: [{ required: ["foo"] }, { required: ["bar"] }]
 		})
-		attest(tPropertyNamesAndPatternPropertiesValid.expression).snap(
-			"{ [/foo/]: number, [/foo/]: unknown, + (undeclared): reject }"
+		attest(T.infer).type.toString.snap("{ bar: unknown } | { foo: unknown }")
+		attest(T.expression).snap(
+			"{ bar: unknown } & isNonArray | { foo: unknown } & isNonArray"
 		)
-
-		attest(() => {
-			jsonSchemaToType({
-				type: "object",
-				propertyNames: { type: "string", minLength: 3 },
-				patternProperties: { "^abcd": { type: "number" } }
-			})
-		}).throws(
-			writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage(
-				"/^abcd/",
-				"string >= 3"
-			)
-		)
-	})
-
-	it("propertyNames & properties", () => {
-		const tPropertyNamesAndProperties = jsonSchemaToType({
-			type: "object",
-			propertyNames: { type: "string", minLength: 3 },
-			properties: {
-				a: { type: "boolean" },
-				abc: { type: "number" }
-			}
-		})
-
-		attest(tPropertyNamesAndProperties.expression).snap(
-			"{ [string >= 3]: unknown, a?: never, abc?: number, + (undeclared): reject }"
-		)
-	})
-
-	it("propertyNames & properties & required", () => {
-		const tPropertyNamesAndRequiredValid = jsonSchemaToType({
-			type: "object",
-			propertyNames: { type: "string", minLength: 3 },
-			properties: { abc: { type: "number" } },
-			required: ["abc"]
-		})
-		attest(tPropertyNamesAndRequiredValid.expression).snap(
-			"{ [string >= 3]: unknown, abc: number, + (undeclared): reject }"
-		)
-
-		attest(() =>
-			jsonSchemaToType({
-				type: "object",
-				propertyNames: { type: "string", minLength: 3 },
-				properties: { a: { type: "boolean" } },
-				required: ["a"]
-			})
-		).throws(
-			writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage(
-				"a",
-				"string >= 3"
-			)
-		)
+		attest(T.allows([])).equals(false)
 	})
 })

@@ -1,40 +1,25 @@
-import { HomeLayout } from "fumadocs-ui/layouts/home"
-import type { ReactNode } from "react"
-import { FloatYourBoat } from "../../components/FloatYourBoat.tsx"
-import { Playground } from "../../components/playground/Playground.tsx"
-import { baseOptions } from "../layout.config.tsx"
+import { TopNav } from "../../components/shell/TopNav.tsx"
+import { PlaygroundLoader } from "../../components/playground/PlaygroundLoader.tsx"
 import { defineMetadata } from "../metadata.ts"
+import "../styles/playground.css"
 
 export const metadata = defineMetadata({
-	title: "ArkType Playground",
-	ogImage: "ogPlayground.png"
+	title: "Playground",
+	ogImage: "ogPlayground.png",
+	url: "/playground",
+	sharedTitle: "Playground · ArkType"
 })
-
-export type LayoutProps = {
-	children: ReactNode
-}
 
 export default function PlaygroundPage() {
 	return (
-		<HomeLayout
-			{...baseOptions}
-			style={{
-				paddingLeft: "1rem",
-				paddingRight: "1rem",
-				display: "flex",
-				flexDirection: "column",
-				height: "100vh"
-			}}
-			nav={{
-				...baseOptions.nav,
-				children: <FloatYourBoat />
-			}}
-		>
-			<div className="flex-1 flex flex-col items-center justify-center py-8">
-				<div className="w-[90vw] h-[80vh]">
-					<Playground withResults={true} />
+		<>
+			<TopNav active="playground" />
+			<main id="main" className="playground-page">
+				<h1 className="visually-hidden">Playground</h1>
+				<div className="playground-frame">
+					<PlaygroundLoader />
 				</div>
-			</div>
-		</HomeLayout>
+			</main>
+		</>
 	)
 }

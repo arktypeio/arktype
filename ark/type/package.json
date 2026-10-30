@@ -2,6 +2,7 @@
 	"name": "arktype",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
 	"version": "2.2.9",
+	"arkAotVersion": "0.0.1",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
@@ -16,22 +17,126 @@
 	"type": "module",
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"codecs": [
+				"./out/codecs.d.ts"
+			],
+			"config": [
+				"./out/config.d.ts"
+			],
+			"errors": [
+				"./out/errors.d.ts"
+			],
+			"i18n": [
+				"./out/i18n.d.ts"
+			],
+			"locales/*": [
+				"./out/locales/*.d.ts"
+			],
+			"mutatesInput": [
+				"./out/mutatesInput.d.ts"
+			],
+			"runtime": [
+				"./out/runtime.d.ts"
+			],
+			"internal": [
+				"./out/internal.d.ts"
+			],
+			"internal/arktype.js": [
+				"./out/index.d.ts"
+			],
+			"internal/*": [
+				"./out/*"
+			]
+		}
+	},
 	"exports": {
 		".": {
 			"ark-ts": "./index.ts",
 			"default": "./out/index.js"
 		},
+		"./codecs": {
+			"ark-ts": "./codecs.ts",
+			"default": "./out/codecs.js"
+		},
 		"./config": {
 			"ark-ts": "./config.ts",
 			"default": "./out/config.js"
 		},
+		"./errors": {
+			"ark-ts": "./errors.ts",
+			"default": "./out/errors.js"
+		},
+		"./i18n": {
+			"ark-ts": "./i18n.ts",
+			"default": "./out/i18n.js"
+		},
+		"./locales/de": {
+			"ark-ts": "./locales/de.ts",
+			"default": "./out/locales/de.js"
+		},
+		"./locales/en": {
+			"ark-ts": "./locales/en.ts",
+			"default": "./out/locales/en.js"
+		},
+		"./mutatesInput": {
+			"ark-ts": "./mutatesInput.ts",
+			"default": "./out/mutatesInput.js"
+		},
+		"./runtime": {
+			"ark-ts": {
+				"development": "./runtimeDevelopment.ts",
+				"default": "./runtime.ts"
+			},
+			"development": "./out/runtimeDevelopment.js",
+			"default": "./out/runtime.js"
+		},
+		"./internal": {
+			"ark-ts": "./internal.ts",
+			"default": "./out/internal.js"
+		},
+		"./internal/config.ts": {
+			"ark-ts": "./config.ts",
+			"default": "./out/config.js"
+		},
+		"./internal/config.js": {
+			"ark-ts": "./config.ts",
+			"default": "./out/config.js"
+		},
+		"./internal/keywords/ts.ts": {
+			"ark-ts": "./keywords/ts.ts",
+			"default": "./out/keywords/ts.js"
+		},
+		"./internal/keywords/ts.js": {
+			"ark-ts": "./keywords/ts.ts",
+			"default": "./out/keywords/ts.js"
+		},
+		"./internal/precompiled.js": {
+			"ark-ts": "./precompiled.ts",
+			"default": "./out/precompiled.js"
+		},
+		"./internal/island.js": {
+			"ark-ts": "./island.ts",
+			"default": "./out/island.js"
+		},
+		"./internal/islandDependency.js": {
+			"ark-ts": "./islandDependency.ts",
+			"default": "./out/islandDependency.js"
+		},
+		"./internal/arktype.js": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
-			"default": "./out/*.js"
+			"types": "./out/*.d.ts",
+			"default": "./out/internal.js"
 		},
 		"./internal/*.js": {
 			"ark-ts": "./*.ts",
-			"default": "./out/*.js"
+			"types": "./out/*.d.ts",
+			"default": "./out/internal.js"
 		}
 	},
 	"files": [
@@ -41,16 +146,29 @@
 	"scripts": {
 		"build": "ts ../repo/build.ts",
 		"test": "ts ../repo/testPackage.ts; pnpm testIntegration",
-		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig",
+		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig && pnpm testJitlessConfig && pnpm testCsp && pnpm testCspConfiguredAfterImport && pnpm testCspAfterLoad && pnpm testPrecompiled && pnpm testSchemaFirst && pnpm testConfigAfterImport && pnpm testMissingGlobals && pnpm testLocaleConfig && pnpm testLocaleWithoutIntl && pnpm testLocaleWithoutI18n && pnpm testLocaleImportedAfter",
 		"testSimpleConfig": "ts ./__tests__/integration/testSimpleConfig.ts",
 		"testAllConfig": "ts ./__tests__/integration/testAllConfig.ts",
 		"testOnFailConfig": "ts ./__tests__/integration/testOnFailConfig.ts",
-		"testEoptConfig": "ts ./__tests__/integration/testEoptConfig.ts"
+		"testEoptConfig": "ts ./__tests__/integration/testEoptConfig.ts",
+		"testJitlessConfig": "ts ./__tests__/integration/testJitlessConfig.ts",
+		"testCsp": "ts ./__tests__/integration/testCsp.ts",
+		"testCspConfiguredAfterImport": "ts ./__tests__/integration/testCspConfiguredAfterImport.ts",
+		"testCspAfterLoad": "ts ./__tests__/integration/testCspAfterLoad.ts",
+		"testPrecompiled": "ts ./__tests__/integration/testPrecompiled.ts",
+		"testSchemaFirst": "ts ./__tests__/integration/testSchemaFirst.ts",
+		"testConfigAfterImport": "ts ./__tests__/integration/testConfigAfterImport.ts",
+		"testMissingGlobals": "ts ./__tests__/integration/testMissingGlobals.ts",
+		"testLocaleConfig": "ts ./__tests__/integration/testLocaleConfig.ts",
+		"testLocaleWithoutIntl": "ts ./__tests__/integration/testLocaleWithoutIntl.ts",
+		"testLocaleWithoutI18n": "ts ./__tests__/integration/testLocaleWithoutI18n.ts",
+		"testLocaleImportedAfter": "ts ./__tests__/integration/testLocaleImportedAfter.ts"
 	},
 	"dependencies": {
 		"@ark/util": "workspace:*",
 		"@ark/schema": "workspace:*",
-		"arkregex": "workspace:*"
+		"arkregex": "workspace:*",
+		"arksets": "workspace:*"
 	},
 	"publishConfig": {
 		"access": "public"

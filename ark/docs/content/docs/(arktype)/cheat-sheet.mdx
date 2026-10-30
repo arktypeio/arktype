@@ -1,34 +1,35 @@
 ---
-title: Cheat Sheet
+title: Cheat sheet
+description: ArkType's most common syntax, patterns and gotchas on one page.
 ---
 
-A quick reference for ArkType's most common patterns. For full docs, explore the sidebar.
+A quick reference for ArkType's most common patterns. The [skill for agents](/docs/agents) covers the same ground.
 
-## Syntax Kinds
+## Syntax kinds
 
-ArkType offers three ways to define the same type. Use whichever fits your context.
+ArkType offers several ways to define the same type. Use whichever fits your context.
 
 ```ts
 import { type } from "arktype"
 
-// string expression — most concise
+// string expression, the most concise
 const StringSyntax = type("string | number")
 
-// tuple expression — embed non-string operands
+// tuple expression, for operands that aren't strings
 const TupleSyntax = type(["string", "|", "number"])
 
-// chained — compose existing types
+// chained, to compose existing types
 const Chained = type("string").or("number")
 ```
 
 ## Keywords
 
-Keywords follow a `typescriptType.constraint.subconstraint` pattern:
+Keywords follow a `typescriptType.constraint.subconstraint` pattern. See [Keywords](/docs/keywords) for the full list.
 
 ```ts
 // string keywords
-type("string.email") // email format
-type("string.uuid") // UUID format
+type("string.email") // email address
+type("string.uuid") // UUID
 type("string.url") // parsable URL
 type("string.trim") // morph: trims whitespace
 type("string.json.parse") // morph: string → parsed JSON
@@ -36,21 +37,22 @@ type("string.date.parse") // morph: string → Date
 
 // number keywords
 type("number.integer") // whole numbers
-type("number.safe") // within safe integer range
-type("number.epoch") // valid Unix timestamp
+type("number.safe") // between MIN_SAFE_INTEGER and MAX_SAFE_INTEGER, not necessarily an integer
+type("number.epoch") // integer ms timestamp a Date can hold
 ```
+
+`number` rejects `NaN`, `Infinity` and `-Infinity`. Add `number.NaN`, `number.Infinity` or `number.NegativeInfinity` to allow them.
 
 ## Operators
 
 ```ts
 type("string | number") // union
-type("string & /@foo/") // intersection
+type("string.email & /@arktype\\.io$/") // intersection
 type("number > 0") // exclusive min
 type("number >= 0") // inclusive min
 type("string <= 255") // max length
-
-// defaults — valid inside objects (key becomes implicitly optional)
-type({ email: "string.email = 'n/a'" })
+type("number != 0") // excludes 0
+type("number % 2") // divisible by 2
 ```
 
 ## Objects
@@ -58,8 +60,8 @@ type({ email: "string.email = 'n/a'" })
 ```ts
 const User = type({
 	name: "string",
-	"email?": "string.email", // optional key — use '?' suffix in the key
-	age: "number >= 0 = 0" // default value — implicitly optional
+	"email?": "string.email", // optional: '?' goes on the key
+	age: "number >= 0 = 0" // defaultable, so optional in the input
 })
 
 // index signatures (Record types)
@@ -67,26 +69,40 @@ const Env = type({
 	"[string]": "string" // Record<string, string>
 })
 
-// strip undeclared keys
-const Strict = User.onUndeclaredKey("delete")
+// undeclared keys are allowed by default; reject or remove them
+const Strict = type({ "+": "reject", name: "string" })
+const Stripped = type({ "+": "delete", name: "string" })
 ```
 
-## Arrays and Tuples
+## Arrays and tuples
 
 ```ts
 const Strings = type("string[]") // string expression
 const Numbers = type.number.array() // chained
 
-// tuples — fixed length and positional types
+// tuples: fixed length, a type per position
 const Pair = type(["string", "number"])
 
-// GOTCHA: type([X]) is a 1-element tuple, NOT an array
+// type([X]) is a 1-element tuple, not an array
 const Item = type({ id: "string" })
 const Wrong = type([Item]) // tuple of exactly [Item]
 const Right = Item.array() // Item[]
 
 // readonly
 const Ids = type("string[]").readonly() // readonly string[]
+```
+
+## Enumerations
+
+```ts
+const Role = type("'admin' | 'member'") // literals need their own quotes
+const Size = type.enumerated(1, 2, 3)
+
+enum Color {
+	Red = "red",
+	Blue = "blue"
+}
+const ColorValue = type.valueOf(Color)
 ```
 
 ## Composition
@@ -97,7 +113,7 @@ const Device = type({
 	"version?": "string"
 })
 
-// reference in another type — just pass it directly
+// reference in another type by passing it directly
 const User = type({
 	name: "string",
 	device: Device
@@ -106,24 +122,72 @@ const User = type({
 // fluent composition
 const Admin = User.and({ role: "'admin'" })
 const Guest = type({ name: "string" }).or({ token: "string" })
+const Draft = User.partial()
+const Name = User.pick("name")
 ```
 
-## Morphs and Pipes
+## Recursive types
 
 ```ts
-// .to() — validated input → validated output
-const ParsedInt = type("string").to("number.integer")
+import { scope } from "arktype"
 
-// .pipe() — validated input → transform function
-const ToUpper = type("string").pipe(s => s.toUpperCase())
+const types = scope({
+	TreeNode: {
+		value: "number",
+		children: "TreeNode[]"
+	}
+}).export()
 
-// built-in parse morphs
-const ParseDate = type("string.date.parse") // string → Date
-const ParseJson = type("string.json.parse") // string → object
-const Trimmed = type("string.trim") // string → trimmed string
+const tree = types.TreeNode({ value: 1, children: [] })
 ```
 
-## Type Inference
+## Morphs and pipes
+
+```ts
+// .to(): parse, then validate the output
+const parsePort = type("string.integer.parse").to("0 < number <= 65535")
+
+// .pipe(): validate, then transform
+const toUpper = type("string").pipe(s => s.toUpperCase())
+
+// built-in parse morphs
+const parseDate = type("string.date.parse") // string → Date
+const parseJson = type("string.json.parse") // string → parsed JSON
+const trim = type("string.trim") // string → trimmed string
+```
+
+## Custom rules
+
+```ts
+const Signup = type({
+	password: "string >= 8",
+	confirmPassword: "string"
+}).narrow(
+	(data, ctx) =>
+		data.password === data.confirmPassword ||
+		ctx.reject({
+			expected: "identical to password",
+			actual: "",
+			path: ["confirmPassword"]
+		})
+)
+```
+
+## Matching
+
+```ts
+import { match } from "arktype"
+
+const sizeOf = match({
+	string: s => s.length,
+	number: n => n,
+	default: "assert"
+})
+
+sizeOf("abc") // 3
+```
+
+## Type inference
 
 ```ts
 const User = type({
@@ -136,7 +200,7 @@ type User = typeof User.infer
 // { name: string; age?: number }
 ```
 
-## Error Handling
+## Error handling
 
 ```ts
 const User = type({
@@ -147,20 +211,58 @@ const User = type({
 const out = User({ name: "Alan", age: "not a number" })
 
 if (out instanceof type.errors) {
-	// ArkErrors — array-like with .summary
+	// ArkErrors: age must be a number (was a string)
 	console.error(out.summary)
+	// plain objects, each with its path, code and message
+	out.issues[0].path
 } else {
 	// out is typed as { name: string; age?: number }
 	console.log(out.name)
 }
+
+// returns the validated data or throws
+const user = User.assert({ name: "Alan" })
 ```
 
-## Common Gotchas
+## Interop
 
-| Mistake                                    | Fix                                                         |
-| ------------------------------------------ | ----------------------------------------------------------- |
-| `name: "string \| undefined"` for optional | Use `"name?": "string"` — append `?` to the **key**         |
-| `type([Schema])` for arrays                | Use `Schema.array()` — brackets create tuples               |
-| `"Record<string, T>"` with `T` a variable  | Use `type.Record("string", T)` or `{ "[string]": T }`       |
-| Manually re-validating after `type()`      | Trust ArkType's output — it already validated the structure |
-| `type User = typeof Schema.t`              | Use `typeof Schema.infer` for the output type               |
+```ts
+const User = type({
+	name: "string",
+	"age?": "number"
+})
+// ---cut---
+// a Standard Schema, accepted by tRPC, Hono, oRPC, the MCP SDK and others
+User["~standard"]
+
+// { $schema: "...", type: "object", properties: { ... }, required: ["name"] }
+User.toJsonSchema()
+```
+
+Global configuration goes through `configure` from `arktype/config`, in a file imported before anything creates a Type. See [Configuration](/docs/configuration).
+
+## Precompile
+
+```ts
+import { precompile } from "@ark/aot/unplugin"
+// ---cut---
+// vite.config.ts: every Type becomes a standalone validator at build time
+export default {
+	plugins: [precompile.vite()]
+}
+```
+
+## Common gotchas
+
+| Mistake                                                             | Fix                                                                                         |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `name: "string \| undefined"` for optional                          | Use `"name?": "string"`: `?` goes on the **key**                                            |
+| `type([Schema])` for arrays                                         | Use `Schema.array()`: brackets create tuples                                                |
+| ``type(`${Schema}[]`)``                                             | Use `Schema.array()` or `[Schema, "[]"]`, never interpolate a Type                          |
+| `"Record<string, T>"` with `T` a variable                           | Use `type.Record("string", T)` or `{ "[string]": T }`                                       |
+| `type("number = 0")`                                                | Defaults only work as object values or tuple elements                                       |
+| `out[0]` or `out.map(...)` on errors                                | Use `out.issues[0]` or `out.issues.map(...)`                                                |
+| Mutating the argument in `.pipe`                                    | Return a new value; a morph receives the caller's data, not a copy                          |
+| `type User = typeof Schema.t`                                       | Use `typeof Schema.infer` for the output type                                               |
+| Precompiled: `User.pick(...keys)` with `keys` known only at runtime | A Type per case, composed from static values: `const Admin = User.and({ role: "'admin'" })` |
+| Precompiled: `type()` from a runtime value                          | Make it static, mark it `// @ark-runtime`, or build with `runtime: "arktype"`               |

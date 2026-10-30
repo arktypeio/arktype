@@ -14,11 +14,16 @@ export const dtsGen = () => {
 
 	console.log(`✍️ Generating DTS bundle for ${pkg.name}...`)
 
+	// tsup drops arkregex's `s` namespace unless it is exported, since a type
+	// parameter shadows each use
+	// https://github.com/arktypeio/arktype/issues/1529
+	const entry = pkgScope === "regex" ? "internal" : "index"
+
 	shell(
-		"pnpm tsup index.ts --dts-only --dts-resolve --format esm --out-dir . --tsconfig ../repo/tsconfig.tsup.json"
+		`pnpm tsup ${entry}.ts --dts-only --dts-resolve --format esm --out-dir . --tsconfig ../repo/tsconfig.tsup.json`
 	)
 
-	const expectedDtsBundlePath = join(pkg.path, "index.d.ts")
+	const expectedDtsBundlePath = join(pkg.path, `${entry}.d.ts`)
 
 	const rawDts = readFile(expectedDtsBundlePath)
 	rmSync(expectedDtsBundlePath)
@@ -40,7 +45,7 @@ export const ${pkg.scope}Dts = ${JSON.stringify(rawDtsModule)}\n`
 
 	// fix some tsup confusion
 	const fileContents = rawFileContents.replace(
-		/(Omit|Exclude|Extract|Record)\$1/g,
+		/\b(Omit|Exclude|Extract|Record|Required)\$1\b/g,
 		"$1"
 	)
 

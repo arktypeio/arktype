@@ -1,4 +1,5 @@
 import { throwInternalError } from "./errors.ts"
+import { arityOf } from "./facts.ts"
 import { unset } from "./records.ts"
 
 export type Fn<
@@ -14,7 +15,7 @@ export const cached = <t>(thunk: () => t): (() => t) => {
 export const isThunk = <value>(
 	value: value
 ): value is Extract<value, Thunk> extends never ? value & Thunk
-:	Extract<value, Thunk> => typeof value === "function" && value.length === 0
+:	Extract<value, Thunk> => typeof value === "function" && arityOf(value) === 0
 
 export type Thunk<ret = unknown> = () => ret
 
@@ -38,6 +39,8 @@ export const DynamicFunction = class extends Function {
 		try {
 			super(...params, body)
 		} catch (e) {
+			// a host refusing to generate code, which callers can recover from
+			if (e instanceof EvalError) throw e
 			return throwInternalError(
 				`Encountered an unexpected error while compiling your definition:
                 Message: ${e} 
@@ -59,7 +62,7 @@ export type DynamicFunction = new <fn extends Fn>(
 
 export type CallableOptions<attachments extends object> = {
 	attach?: attachments
-	bind?: object
+	bind?: object | null
 }
 
 /** @ts-ignore required to cast function type */
@@ -75,7 +78,7 @@ export class Callable<fn extends Fn, attachments extends object = {}> {
 	) {
 		return Object.assign(
 			Object.setPrototypeOf(
-				fn.bind(opts?.bind ?? this),
+				opts?.bind === null ? fn : fn.bind(opts?.bind ?? this),
 				this.constructor.prototype
 			),
 			opts?.attach
@@ -101,7 +104,7 @@ export type TypeGuard<input = unknown, narrowed extends input = input> = (
  *
  * The result is cached for subsequent invocations.
  */
-export const envHasCsp = cached((): boolean => {
+export const envHasCsp = /* @__PURE__ */ cached((): boolean => {
 	try {
 		return new Function("return false")()
 	} catch {

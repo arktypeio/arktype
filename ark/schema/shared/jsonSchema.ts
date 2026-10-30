@@ -1,10 +1,14 @@
-import type {
-	array,
-	autocomplete,
-	JsonArray,
-	JsonObject,
-	listable
+import {
+	includes,
+	throwParseError,
+	type autocomplete,
+	type Json,
+	type JsonArray,
+	type JsonObject,
+	type listable
 } from "@ark/util"
+import type { StandardJSONSchemaV1 } from "./standardSchema.ts"
+import type { ToJsonSchema } from "./toJsonSchema.ts"
 
 export type JsonSchema = JsonSchema.NonBooleanBranch
 export type ListableJsonSchema = listable<JsonSchema>
@@ -24,9 +28,12 @@ export declare namespace JsonSchema {
 	 *  a subset of JSON Schema's annotations, see:
 	 *  https://json-schema.org/understanding-json-schema/reference/annotations
 	 **/
-	export interface Meta<t = unknown> extends UniversalMeta<t> {
+	export interface Meta<t = Json> extends UniversalMeta<t> {
+		// any other keyword, e.g. an extension like x-internal
+		[k: string]: unknown
 		$schema?: string
 		$defs?: Record<string, JsonSchema>
+		examples?: t[]
 	}
 
 	export type Format = autocomplete<
@@ -48,6 +55,7 @@ export declare namespace JsonSchema {
 		title?: string
 		description?: string
 		format?: Format
+		contentEncoding?: string
 		deprecated?: true
 		default?: t
 		examples?: readonly t[]
@@ -68,7 +76,11 @@ export declare namespace JsonSchema {
 
 	export type Branch = boolean | JsonSchema
 
-	export type RefString = `#/$defs/${string}`
+	// any JSON Schema document, typed loosely to fit other libraries'
+	export type Input = Branch | object
+
+	export type RefString =
+		`#/${"$defs" | "definitions" | "components/schemas"}/${string}`
 
 	// extending Meta and including "type" as an optional prop are important for
 	// interacting with JsonSchema as a union, although generally $ref should be
@@ -79,11 +91,11 @@ export declare namespace JsonSchema {
 	}
 
 	export interface Constrainable extends Meta {
-		type?: listable<TypeName>
+		type?: TypeName | TypeName[]
 	}
 
 	export interface Intersection extends Meta {
-		allOf: readonly JsonSchema[]
+		allOf: JsonSchema[]
 	}
 
 	export interface Not extends Meta {
@@ -91,19 +103,19 @@ export declare namespace JsonSchema {
 	}
 
 	export interface OneOf extends Meta {
-		oneOf: readonly JsonSchema[]
+		oneOf: JsonSchema[]
 	}
 
 	export interface Union extends Meta {
-		anyOf: readonly JsonSchema[]
+		anyOf: JsonSchema[]
 	}
 
 	export interface Const extends Meta {
-		const: unknown
+		const: Json
 	}
 
 	export interface Enum extends Meta {
-		enum: array
+		enum: Json[]
 	}
 
 	export interface String extends Meta<string> {
@@ -112,18 +124,19 @@ export declare namespace JsonSchema {
 		maxLength?: number
 		pattern?: string
 		format?: string
+		not?: JsonSchema
+		contentMediaType?: string
 	}
 
-	// NB: Technically 'exclusiveMaximum' and 'exclusiveMinimum' are mutually exclusive with 'maximum' and 'minimum', respectively,
-	// which is reflected at runtime but it's not worth the performance cost to validate this statically.
+	// exclusiveMinimum and exclusiveMaximum are left to the index signature:
+	// openapi-3.0 writes them as booleans
 	export interface Numeric extends Meta<number> {
 		type: "number" | "integer"
 		// NB: JSON Schema allows decimal multipleOf, but ArkType only supports integer.
 		multipleOf?: number
 		minimum?: number
-		exclusiveMinimum?: number
 		maximum?: number
-		exclusiveMaximum?: number
+		not?: Const | Enum
 	}
 
 	// NB: Technically 'properties' is required when 'required' is present,
@@ -133,7 +146,7 @@ export declare namespace JsonSchema {
 		properties?: Record<string, JsonSchema>
 		required?: string[]
 		patternProperties?: Record<string, JsonSchema>
-		additionalProperties?: JsonSchemaOrBoolean
+		additionalProperties?: Branch
 		maxProperties?: number
 		minProperties?: number
 		propertyNames?: String
@@ -141,16 +154,38 @@ export declare namespace JsonSchema {
 
 	export interface Array extends Meta<JsonArray> {
 		type: "array"
-		additionalItems?: JsonSchemaOrBoolean
-		contains?: JsonSchemaOrBoolean
+		additionalItems?: Branch
+		contains?: Branch
 		uniqueItems?: boolean
 		minItems?: number
 		maxItems?: number
-		items?: JsonSchemaOrBoolean
-		prefixItems?: readonly Branch[]
+		// draft-07 writes a tuple's elements as an array
+		items?: Branch | Branch[]
+		prefixItems?: Branch[]
+		not?: JsonSchema
 	}
 
 	export type LengthBoundable = String | Array
 
 	export type Structure = Object | Array
+}
+
+export const supportedJsonSchemaTargets: readonly ToJsonSchema.Target[] = [
+	"draft-2020-12",
+	"draft-07",
+	"openapi-3.0"
+]
+
+export const writeInvalidJsonSchemaTargetMessage = (target: string): string => {
+	const quoted = supportedJsonSchemaTargets.map(t => `"${t}"`)
+	return `JSONSchema target '${target}' is not supported (must be ${quoted.slice(0, -1).join(", ")} or ${quoted[quoted.length - 1]})`
+}
+
+export const validateStandardJsonSchemaTarget = (
+	target: StandardJSONSchemaV1.Target
+): ToJsonSchema.Target => {
+	if (!includes(supportedJsonSchemaTargets, target))
+		throwParseError(writeInvalidJsonSchemaTargetMessage(target))
+
+	return target
 }

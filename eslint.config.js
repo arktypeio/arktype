@@ -24,10 +24,13 @@ export default tseslint.config(
 			"**/*js",
 			"**/*.astro",
 			"**/.next/**/*",
-			"**/.source/**/*",
 			"**/*scratch.ts",
 			"**/scratch/**/*",
-			"**/examples/**/*"
+			"**/examples/**/*",
+			// generated programs
+			"ark/aot/__tests__/temp/programs/**/*",
+			// schemabenchmarks.dev's files, linted by its clone
+			"ark/repo/bench/external/sb/precompiled/**/*"
 		]
 	},
 	eslint.configs.recommended,
@@ -114,6 +117,7 @@ export default tseslint.config(
 								"**/fs/**",
 								"**/attest/**",
 								"**/schema/**",
+								"**/sets/**",
 								"**/type/**",
 								"**/util/**"
 							],
@@ -153,7 +157,12 @@ export default tseslint.config(
 		}
 	},
 	{
-		files: ["**/ark/type/**", "**/ark/schema/**", "**/ark/util/**"],
+		files: [
+			"**/ark/type/**",
+			"**/ark/schema/**",
+			"**/ark/sets/**",
+			"**/ark/util/**"
+		],
 		rules: {
 			"import/no-nodejs-modules": "warn",
 			"import/no-extraneous-dependencies": "warn"
@@ -171,6 +180,7 @@ export default tseslint.config(
 								"**/fs/**",
 								"**/attest/**",
 								"**/schema/**",
+								"**/sets/**",
 								"**/type/**",
 								"**/util/**",
 								"arktype/internal/**"

@@ -1,0 +1,139 @@
+---
+title: Codecs
+description: Pair a morph with its inverse to encode output back into input.
+---
+
+A Type with morphs decodes input into output. A codec is a morph with an inverse, so its output can also be encoded back into input.
+
+## Defining a codec
+
+`codec` takes an input definition, an output definition and a function for each direction. It comes from `arktype/codecs`, which installs encoding when imported, so an app that doesn't encode doesn't ship it. Without that import, reading `.encode` throws a `ParseError`:
+
+```ts
+import { codec } from "arktype/codecs"
+
+const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+
+// Date
+const date = EpochMs(0)
+// 0
+const ms = EpochMs.encode(date)
+```
+
+A codec is a Type. `.encode` is a Type too, from output to input, so it validates what it receives like any other Type:
+
+```ts
+import { codec } from "arktype/codecs"
+
+const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+// ---cut---
+// ArkErrors: must be a Date (was a string)
+const out = EpochMs.encode("0")
+```
+
+What `encode` returns is validated against the input definition, so encoding always produces something the codec can decode.
+
+## Composition
+
+Every Type has `.encode`, which inverts each of its morphs, so a codec encodes wherever it is nested: in objects, arrays and tuples, unions, intersections, pipes and cyclic scopes.
+
+```ts
+import { codec } from "arktype/codecs"
+
+const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+// ---cut---
+const Event = type({
+	name: "string",
+	at: EpochMs,
+	"reminders?": EpochMs.array()
+})
+
+// { name: "launch", at: 0, reminders: [60000] }
+const encoded = Event.encode({
+	name: "launch",
+	at: new Date(0),
+	reminders: [new Date(60000)]
+})
+```
+
+A Type without morphs encodes as itself.
+
+## Defaults and unions
+
+A defaulted key is always present in decoded output, so it is required when encoding:
+
+```ts
+import { codec } from "arktype/codecs"
+
+const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+// ---cut---
+const Settings = type({ since: EpochMs.default(0) })
+
+// ArkErrors: since must be a Date (was missing)
+const out = Settings.encode({})
+```
+
+A union encodes a value with a branch that accepts it, trying the branches without morphs first, so a value a branch would decode unchanged is encoded unchanged.
+
+## Keywords
+
+The parse keywords encode back to the string they parse: `string.date.parse`, `string.date.iso.parse` and `string.date.epoch.parse`, `string.numeric.parse`, `string.integer.parse`, `string.json.parse` and `string.url.parse`.
+
+```ts
+import "arktype/codecs"
+
+const Event = type({
+	at: "string.date.iso.parse",
+	count: "string.integer.parse"
+})
+
+// { at: "1970-01-01T00:00:00.000Z", count: "5" }
+const encoded = Event.encode({ at: new Date(0), count: 5 })
+```
+
+`string.trim`, `string.lower`, `string.upper`, `string.capitalize` and `string.normalize` encode a string already in their format as itself, and `object.json.stringify` encodes by parsing.
+
+## Precompiling
+
+[Precompiled](/docs/precompile) Types encode too. The build precompiles each `codec` like any other Type, passing its `decode` and `encode` functions where you wrote them, and each `.encode` it sees read becomes an encoder of its own:
+
+```ts
+import { codec } from "arktype/codecs"
+
+const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+
+export const Event = type({ at: EpochMs })
+
+// precompiled to an encoder
+export const encode = (event: unknown) => Event.encode(event)
+```
+
+A standalone build installs encoding itself, so `.encode` works there even if the program never imports `arktype/codecs`. A Type with a morph that has no inverse fails the build where its `.encode` is read, since arktype would throw there.
+
+## Morphs without an inverse
+
+Encoding is only possible if every morph has an inverse. Otherwise, accessing `.encode` throws a `ParseError`:
+
+```ts
+import "arktype/codecs"
+
+const Length = type({ length: type("string").pipe(s => s.length) })
+
+// ParseError: A morph must have an inverse to be encoded: (In: string) => Out<unknown>
+Length.encode
+```

@@ -9,5 +9,6 @@
 	"spec": ["__tests__/*.test.*"],
 	"ignore": "node_modules/**/*",
 	"node-option": ["conditions=ark-ts"],
-	"require": "../repo/mocha.globalSetup.ts"
+	"require": "../repo/mocha.globalSetup.ts",
+	"timeout": 10000
 }

@@ -43,7 +43,7 @@ contextualize(() => {
 		attest(T.expression).snap("[string?, number?]")
 		attest(T([])).equals([])
 		attest(T(["foo"])).equals(["foo"])
-		attest(T({}).toString()).snap("must be an array (was object)")
+		attest(T({}).toString()).snap("must be an array (was an object)")
 	})
 
 	it("array is unaffected", () => {

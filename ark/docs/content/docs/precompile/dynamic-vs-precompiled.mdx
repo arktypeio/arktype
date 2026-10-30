@@ -1,0 +1,28 @@
+---
+title: Dynamic vs Precompiled
+description: The same definitions, run two ways.
+---
+
+Every ArkType definition can run dynamically, created by `type()` at runtime, or [precompiled](/docs/precompile), constructed when you build. It infers the same type either way, so you can switch at any time.
+
+<Claim id="dynamicSpeed" /> What precompiling removes is everything around a
+Type's checks: the parser, the time it takes to create each Type, and the code
+it generates.
+
+|                           | Dynamic                                              | Precompiled                                                                      | Precompiled with `runtime: "arktype"`        |
+| ------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------- |
+| Build step                | none                                                 | a bundler plugin or driver                                                       | a bundler plugin or driver                   |
+| Ships arktype's parser    | yes                                                  | no, only `arktype/runtime`                                                       | yes                                          |
+| Generates code at runtime | yes, unless [`jitless`](/docs/configuration#jitless) | never                                                                            | only for Types the build couldn't precompile |
+| Composing at runtime      | the whole Type API                                   | inside definitions, which the build evaluates                                    | the whole Type API                           |
+| Introspection members     | all                                                  | those the build sees read, or [`members`](/docs/precompile/options#members) sets | all                                          |
+| Error messages            | say what was expected and what the value was         | say what was expected, and any text configured for them                          | say what was expected and what the value was |
+| [Locales](/docs/i18n)     | yes                                                  | no                                                                               | yes                                          |
+
+## Which to use
+
+Precompile an app you bundle. Its validators ship without a parser or a JIT, and the build reports anything it can't precompile with the fix. See [Setup](/docs/precompile/setup), and [Speed and size](/docs/precompile#speed-and-size) for the numbers.
+
+Stay dynamic where there's no build, like a script or a REPL, or where definitions are only known at runtime. A standalone build can also leave those to arktype as [runtime islands](/docs/precompile/advanced#runtime-islands).
+
+Build with `runtime: "arktype"` while you migrate, or where a program composes or introspects Types at runtime but still benefits from skipping the compile step.

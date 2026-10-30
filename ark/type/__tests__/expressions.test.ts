@@ -18,15 +18,22 @@ contextualize(() => {
 					"===",
 					"Array",
 					"ArrayBuffer",
+					"BigInt64Array",
+					"BigUint64Array",
 					"Blob",
 					"Date",
 					"Error",
 					"Exclude",
 					"Extract",
 					"File",
+					"Float32Array",
+					"Float64Array",
 					"FormData",
 					"Function",
 					"Headers",
+					"Int16Array",
+					"Int32Array",
+					"Int8Array",
 					"Key",
 					"Map",
 					"Merge",
@@ -42,6 +49,10 @@ contextualize(() => {
 					"Set",
 					"TypedArray",
 					"URL",
+					"Uint16Array",
+					"Uint32Array",
+					"Uint8Array",
+					"Uint8ClampedArray",
 					"WeakMap",
 					"WeakSet",
 					"bigint",
@@ -73,15 +84,22 @@ contextualize(() => {
 					"@",
 					"Array",
 					"ArrayBuffer",
+					"BigInt64Array",
+					"BigUint64Array",
 					"Blob",
 					"Date",
 					"Error",
 					"Exclude",
 					"Extract",
 					"File",
+					"Float32Array",
+					"Float64Array",
 					"FormData",
 					"Function",
 					"Headers",
+					"Int16Array",
+					"Int32Array",
+					"Int8Array",
 					"Key",
 					"Map",
 					"Merge",
@@ -97,6 +115,10 @@ contextualize(() => {
 					"Set",
 					"TypedArray",
 					"URL",
+					"Uint16Array",
+					"Uint32Array",
+					"Uint8Array",
+					"Uint8ClampedArray",
 					"WeakMap",
 					"WeakSet",
 					"[]",
@@ -147,6 +169,26 @@ contextualize(() => {
 				// @ts-expect-error
 				type([{ s: "strng" }, "|", "number"])
 			}).throwsAndHasTypeError(writeUnresolvableMessage("strng"))
+		})
+
+		it("doesn't coerce non-string elements to operators", () => {
+			let coercions = 0
+			class Opaque {
+				toString() {
+					coercions++
+					return "|"
+				}
+			}
+			const T = type(["string", new Opaque(), "number"] as never)
+			attest(T.expression).snap("[string, {}, number]")
+			attest(coercions).equals(0)
+		})
+
+		it("prototype keys are not operators", () => {
+			attest(() => {
+				// @ts-expect-error
+				type(["string", "toString"])
+			}).throwsAndHasTypeError(writeUnresolvableMessage("toString"))
 		})
 	})
 

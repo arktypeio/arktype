@@ -1,0 +1,329 @@
+# Internals
+
+> The schema layer under ArkType
+
+# Architecture
+
+> How ArkType is split into @ark/util, @ark/schema, arksets and arktype, and what each package owns.
+
+> **Not semver-stable**
+>
+> `@ark/schema` and `arksets/internal` change whenever `arktype` needs them to, so anything on these pages can break in a minor or patch release. That includes `.internal`, `select` and the schema format. If you import either directly, install the exact versions your `arktype` depends on. `arksets`' own functions are documented in [ArkSets](https://arktype.io/docs/sets).
+
+ArkType is four packages, each built on the one before it:
+
+| package | owns | depends on |
+| - | - | - |
+| `@ark/util` | Utilities every package shares, like `ParseError`, `Json` and the registry that lets compiled validators reference functions | |
+| `@ark/schema` | Nodes: the schema format, node kinds, scopes, validation and the compiler behind it, `ArkErrors`, config and locales | `@ark/util` |
+| `arksets` | Set algebra over nodes: intersecting them, reducing them as they're created, discriminating unions and generating JSON Schema | `@ark/schema` |
+| `arktype` | The definition syntax (`"string > 5"`, object literals, tuple expressions), its type inference, `type`, `scope` and the keywords | all three, plus `arkregex` |
+
+When you call `type("string > 5")`, `arktype` parses the string into an `@ark/schema` node, `arksets` reduces it as it's created, and the node compiles itself into a validator. The Type you get back is that node:
+
+```ts
+const T = type("string > 5")
+
+T.json // { domain: "string", minLength: 6 }
+T.internal.kind // "intersection"
+```
+
+`arktype` imports `arksets` itself, so you never install or import `@ark/schema` or `arksets` to use ArkType. They're documented here for three cases:
+
+- **Inspecting a Type.** Read its node kinds, its `.json` and its references with [`select`](https://arktype.io/docs/internals/nodes#select).
+- **Building a Type from data instead of syntax**, such as a converter from another schema format. Pass a schema to [`type.schema` or `rootSchema`](https://arktype.io/docs/internals/schemas).
+- **Using `@ark/schema` without `arktype`.** Import `arksets` yourself, or see [what works without it](https://arktype.io/docs/internals/sets).
+
+# Nodes
+
+> The node kinds every Type is built from, and how to read them with .internal, .json and select.
+
+Every Type is a tree of nodes from `@ark/schema`. Each node has a `kind`, and its `.json` shows the tree in the [schema format](https://arktype.io/docs/internals/schemas):
+
+```ts
+const User = type({ name: "string", "age?": "number" })
+
+User.json
+// {
+// 	required: [{ key: "name", value: "string" }],
+// 	optional: [{ key: "age", value: "number" }],
+// 	domain: "object"
+// }
+```
+
+`.json` uses shorthand where it can, like `"string"` for a nested `{ domain: "string" }` and `divisor: 5` for `divisor: { rule: 5 }`. Functions and cyclic references become registered names like `"$ark.fn"`.
+
+## .internal
+
+A Type and its root node are the same object. `.internal` returns it typed as a node, which adds the node API that Type leaves out:
+
+```ts
+const User = type({ name: "string", "age?": "number" })
+
+User.internal.kind // "intersection"
+User.internal.children.map(child => child.kind) // ["domain", "structure"]
+```
+
+## Node kinds
+
+### Roots
+
+The node at the root of a Type always has one of these kinds.
+
+#### Bases
+
+A basis is the base set of values a node's constraints narrow. An intersection has at most one. From widest to narrowest:
+
+| kind | allows | schema |
+| - | - | - |
+| `domain` | One of the value sets that can't be listed: `string`, `number`, `bigint`, `object`, `symbol` | `{ domain: "string" }` |
+| `proto` | Instances of a constructor, checked with `instanceof`. Implies the `object` domain. | `{ proto: Date }` |
+| `unit` | One exact value, compared with `===` | `{ unit: true }` |
+
+`{ domain: "number" }` rejects `NaN`, `Infinity` and `-Infinity`. Add `numberAllowsNaN: true` or `numberAllowsInfinity: true` to allow them.
+
+`undefined`, `null`, `true` and `false` are `unit` nodes. `boolean` is a union of two of them.
+
+#### Composites
+
+Composite kinds are built from other nodes:
+
+| kind | allows | schema |
+| - | - | - |
+| `alias` | Whatever the node it references allows. Aliases are how cyclic types refer to themselves. | `{ reference: "$node" }` |
+| `union` | Data any branch allows. `ordered: true` keeps branches in the order given. | `["string", "number"]` |
+| `morph` | Data the first of its `morphs` allows if it's a node, which the rest then transform | `{ morphs: ["string", s => s.trim()] }` |
+| `intersection` | Data its basis and every constraint allow | `{ domain: "number", divisor: 5 }` |
+
+`unknown` is an intersection with no constraints (`{}`), and `never` is a union with no branches (`[]`).
+
+### Constraints
+
+Constraint nodes sit on an intersection and narrow what its [basis](https://arktype.io/docs/internals/nodes#bases) allows. Each needs the basis listed under **requires**. Methods like `.divisibleBy()` throw when a Type's basis doesn't match. In a schema, pair each constraint with its basis yourself.
+
+#### Refinements
+
+Refinements apply to the intersection itself:
+
+| kind | requires | allows | schema |
+| - | - | - | - |
+| `pattern` | `string` | Strings matching a regex | `{ rule: "^[a-z]+$", flags: "i" }` |
+| `divisor` | `number` | Multiples of an integer | `{ rule: 2 }` |
+| `min` | `number` | Numbers at or above `rule`, or above it if `exclusive` | `{ rule: 0, exclusive: true }` |
+| `max` | `number` | Numbers at or below `rule`, or below it if `exclusive` | `{ rule: 100 }` |
+| `minLength` | `string \| Array` | At least `rule` characters or elements | `{ rule: 1 }` |
+| `maxLength` | `string \| Array` | At most `rule` characters or elements | `{ rule: 255 }` |
+| `exactLength` | `string \| Array` | Exactly `rule` characters or elements | `{ rule: 10 }` |
+| `after` | `Date` | Dates at or after `rule` | `{ rule: new Date("2000-01-01") }` |
+| `before` | `Date` | Dates at or before `rule` | `{ rule: new Date("2030-01-01") }` |
+| `notEqual` | `number \| Date` | Numbers or Dates other than `rule` | `{ rule: 0 }` |
+| `notEqualLength` | `string \| Array` | Other than `rule` characters or elements | `{ rule: 3 }` |
+| `structure` | `object` | Objects whose props and elements match its [structural](https://arktype.io/docs/internals/nodes#structural) children | `{ required: [...] }` |
+| `predicate` | | Data a custom `narrow` function accepts | `{ predicate: n => n % 2 === 1 }` |
+
+In an intersection's schema, the constraint's kind is its key and a bare rule is shorthand, so `{ domain: "number", divisor: 2 }` is `{ domain: "number", divisor: { rule: 2 } }`. A `structure`'s keys sit directly on the intersection: `{ domain: "object", required: [...], undeclared: "reject" }`.
+
+#### Structural
+
+Structural constraints are the children of a `structure` node:
+
+| kind | describes | schema |
+| - | - | - |
+| `required` | A property that must be present | `{ key: "id", value: "number" }` |
+| `optional` | A property that may be missing, with an optional `default` | `{ key: "name", value: "string" }` |
+| `index` | Values of every key matching `signature` | `{ signature: "string", value: "boolean" }` |
+| `sequence` | Array elements: `prefix`, `defaultables`, `optionals`, a `variadic` rest element and `postfix` | `{ prefix: ["string"], variadic: "number" }` |
+
+## select
+
+`select` returns the nodes a Type references that match a selector:
+
+```ts
+const T = type({
+	name: "string > 5",
+	flag: "0 | 1"
+})
+	.array()
+	.atLeastLength(1)
+
+// every literal value
+T.select("unit").map(u => u.unit) // [0, 1]
+
+// literal values that are positive numbers
+T.select({
+	kind: "unit",
+	where: u => typeof u.unit === "number" && u.unit > 0
+}).map(u => u.unit) // [1]
+
+// minLength at the root, excluding the one on name
+T.select({ kind: "minLength", boundary: "shallow" }).map(n => n.rule) // [1]
+
+// the first divisor, or undefined
+T.select({ kind: "divisor", method: "find" }) // undefined
+```
+
+A selector is a node kind, a boundary, a predicate, or an object combining them:
+
+| key | values | default |
+| - | - | - |
+| `kind` | Any node kind | every kind |
+| `where` | A predicate on the node, typed by `kind` | every node |
+| `boundary` | `"self"` (only the node), `"child"` (its direct children), `"shallow"` (references down to its props and sequence, but not their values) or `"references"` (every reference) | `"references"` |
+| `method` | `"filter"` returns an array and `"find"` the first match or `undefined`. `"assertFilter"` and `"assertFind"` throw if nothing matches. | `"filter"` |
+
+`configure` and `describe` accept the same selector as a second argument, to change metadata only on the nodes it matches. Their default is `"shallow"`:
+
+```ts
+const User = type({ name: "string" }).configure(
+	{ description: "a name" },
+	{ kind: "domain", where: d => d.domain === "string" }
+)
+
+User({ name: 5 }).toString() // "name must be a name (was a number)"
+```
+
+See [metadata](https://arktype.io/docs/expressions#meta) for more on `configure`.
+
+# Schemas
+
+> Build Types from @ark/schema's object format with type.schema, rootSchema, node and schemaScope.
+
+ArkType's syntax parses to a schema format made of [node kinds](https://arktype.io/docs/internals/nodes#node-kinds), and you can write that format directly. It's useful when you generate types from data, like a converter from another schema language, since there's no string to assemble. A Type built this way validates like any other but infers `unknown`.
+
+A root schema is one of:
+
+- a domain name: `"string"`
+- a constructor: `Date`
+- an array of schemas, for a union: `["string", { unit: 5 }]`
+- an object keyed by node kinds: `{ domain: "number", min: 0 }`, `{ unit: 5 }`, `{ morphs: ["string", ...] }`
+
+## type.schema
+
+`type.schema` parses a schema into a Type with ArkType's full API:
+
+```ts
+const NonEmpty = type.schema({ domain: "string", minLength: 1 })
+
+NonEmpty.expression // "string >= 1"
+// ArkErrors: must be non-empty
+NonEmpty("")
+
+// cast it if you know the shape
+const Typed = NonEmpty.as<string>()
+```
+
+## rootSchema
+
+`rootSchema` is `@ark/schema`'s version of `type.schema`. Its result is typed as a node instead of a Type, so it's what you use without `arktype`:
+
+```ts
+import "arksets"
+import { rootSchema } from "@ark/schema"
+
+const User = rootSchema({
+	domain: "object",
+	required: [
+		{ key: "name", value: "string" },
+		{ key: "age", value: { domain: "number", min: 0 } }
+	]
+})
+
+// ArkErrors: age must be non-negative (was -1)
+User({ name: "Ada", age: -1 })
+```
+
+`import "arksets"` installs the [set algebra](https://arktype.io/docs/internals/sets). `arktype` imports it for you.
+
+## node
+
+`node` creates a single node of a given kind from its inner value. Unlike a schema, the inner value's children must already be nodes:
+
+```ts
+import { node, rootSchema } from "@ark/schema"
+
+const NonEmpty = node("minLength", { rule: 1 })
+NonEmpty.expression // ">= 1"
+
+const NumberOrString = node("union", {
+	branches: [rootSchema("number"), rootSchema("string")]
+})
+NumberOrString.expression // "number | string"
+```
+
+Use it when you already have nodes, such as when you rebuild part of an existing Type. Otherwise `rootSchema` is simpler.
+
+## schemaScope
+
+`schemaScope` defines schemas that reference each other by name with `$`, the way [`scope`](https://arktype.io/docs/scopes) does for definitions:
+
+```ts
+import { schemaScope } from "@ark/schema"
+
+const $ = schemaScope({
+	user: {
+		domain: "object",
+		required: [{ key: "id", value: "$id" }]
+	},
+	id: { domain: "string", minLength: 1 }
+})
+
+const { user } = $.export()
+
+// ArkErrors: id must be non-empty
+user({ id: "" })
+```
+
+# Set algebra
+
+> What importing arksets installs into @ark/schema, and what @ark/schema does without it.
+
+`arktype` imports the engine from `arksets/internal`, so if you use `arktype`, set algebra is always installed. This page is for using `@ark/schema` on its own.
+
+```ts
+import "arksets"
+```
+
+Importing `arksets` installs the engine `@ark/schema` uses to:
+
+- intersect and pipe nodes, which `.and()`, `.narrow()`, `.filter()`, `.constrain()`, `.to()`, `.extends()`, `.overlaps()`, `.extract()`, `.exclude()` and `.keyof()` rely on
+- reduce nodes as they're created, so an unsatisfiable intersection throws and redundant union branches merge
+- discriminate unions, so a union of objects checks a shared key instead of trying each branch
+- generate JSON Schema for `.toJsonSchema()` and `~standard.jsonSchema`
+
+Import it before you parse anything: nodes are reduced when they're created, so a node parsed earlier stays unreduced. `arksets` installs into the copy of `@ark/schema` it resolves, so keep one copy of each package.
+
+`arksets/internal` exports the functions the engine is built from. They change with `@ark/schema`, so they aren't documented. The functions `arksets` itself exports, like `isSubset` and `intersect`, are in [ArkSets](https://arktype.io/docs/sets).
+
+## Without arksets
+
+Without it, a node still parses and validates, but intersecting it throws:
+
+```ts
+import { rootSchema } from "@ark/schema"
+
+const Positive = rootSchema({ domain: "number", min: 0 })
+
+Positive(5) // 5
+// ArkErrors: must be non-negative (was -1)
+Positive(-1)
+
+Positive.and(rootSchema({ domain: "number", max: 10 }))
+// ParseError: Set algebra is not installed (import "arksets" to install it)
+```
+
+These work without it:
+
+- parsing with `rootSchema`, `node` and `schemaScope`, except for the schemas listed below
+- validating: calling a node, `.allows()`, `.assert()` and `~standard.validate`
+- `.expression`, `.description`, `.json`, `.select()` and `.configure()`
+- `.or()`, `.array()`, `.pipe()` with functions and `.equals()`
+
+These throw the `ParseError` above:
+
+- `.and()`, `.narrow()`, `.filter()`, `.constrain()`, `.to()`, `.extends()`, `.overlaps()`, `.extract()`, `.exclude()`, `.keyof()`, `.toJsonSchema()` and `~standard.jsonSchema`
+- parsing a tuple whose length is bounded: a `sequence` with `prefix` or `postfix` elements or a `minVariadicLength`, or without a `variadic` element. Arrays like `{ proto: Array, sequence: "string" }` parse.
+- parsing a union that isn't `ordered` and has a branch that transforms
+- parsing an optional prop in a scope configured with `exactOptionalPropertyTypes: false`
+- parsing an index signature keyed by anything but `string`, `symbol` or `string | symbol`
+
+Nodes that parse aren't reduced. `rootSchema({ domain: "number", min: 5, max: 3 })` throws with `arksets` installed, since no number satisfies it. Without it, it parses and rejects every number. Union branches aren't merged or discriminated either, so a union checks each branch in turn.
