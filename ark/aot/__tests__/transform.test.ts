@@ -885,6 +885,41 @@ export const Positive = $ark#0(isPositive, isPositive)
 export const expression = $ark#2(isPositive, isPositive)`)
 		})
 
+		it("passes a module's member by the holes the site names", () => {
+			const files = {
+				"/positive.ts": "export const isPositive = (n: number) => n > 0"
+			}
+			const build = (source: string) => {
+				const { code, diagnostics } = precompileModule(
+					source,
+					"/main.ts",
+					memoryHost({ ...files, "/main.ts": source })
+				)
+				return [
+					...diagnostics.map(d => renderDiagnostic(d).split("\n")[0]),
+					foldedCode(code)
+				]
+			}
+			const elements = `type.module({ a: ["number", ":", isPositive] }).a.array()`
+			attest(
+				build(`import { type } from "arktype"
+import { isPositive } from "./positive.ts"
+export const Elements = ${elements}`)
+			).snap([
+				'import "arktype"\nimport { isPositive } from "./positive.ts"\nexport const Elements = $ark#0(isPositive)'
+			])
+			// arktype has called isPositive, so the site can't pass it as a hole
+			attest(
+				build(`import { type } from "arktype"
+import { isPositive } from "./positive.ts"
+export const Positive = type(["0 | 1", ":", isPositive])
+export const Elements = ${elements}`)
+			).snap([
+				'/main.ts:4:25  type.module({ a: ["number", ":", isPositive] }).a.array() can\'t be precompiled yet',
+				'import { type } from "arktype"\nimport { isPositive } from "./positive.ts"\nexport const Positive = $ark#0(isPositive)\nexport const Elements = type.module({ a: ["number", ":", isPositive] }).a.array()'
+			])
+		})
+
 		it("passes each created function", () => {
 			const result = precompile(
 				`import { type } from "arktype"

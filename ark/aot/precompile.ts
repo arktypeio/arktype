@@ -2511,6 +2511,9 @@ export class Precompiler {
 				for (const value of holes) unchecked.add(value)
 				continue
 			}
+			// passing what arktype creates in the site would run arktype; its
+			// holes are passed where the site names them
+			if (!hole && reference.isCreated) continue
 			// a Type without holes is written into the site
 			if (
 				holes.length &&
