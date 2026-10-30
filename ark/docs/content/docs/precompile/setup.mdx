@@ -348,7 +348,7 @@ Some tools and modules can't be precompiled. [Troubleshooting](/docs/precompile/
 `--check` lists the definitions that can't be precompiled, and why, without bundling:
 
 ```sh
-npx arktype-precompile --check "src/**/*.ts"
+npx arktype-precompile --check src
 ```
 
 ```
@@ -358,7 +358,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
   Write the definition where makeField is called, with the value it passes for `limit`, so the build precompiles each call.
 ```
 
-Without a pattern, it checks every JavaScript and TypeScript file under the current directory outside `node_modules`, `dist`, `out` and `build`. Where `NODE_ENV` is `production`, it also prints the warning a production bundle of those files would give where it [can't prune](/docs/precompile/options#prune). It reads no Svelte, Vue or Astro component or MDX page, whose reads of a validator only its framework's compiled code shows, so it names those under the current directory that import a module, which only the build checks.
+A directory, like `src`, stands for each JavaScript and TypeScript file it holds. Without a pattern, it checks every JavaScript and TypeScript file under the current directory outside `node_modules`, `dist`, `out` and `build`. Where `NODE_ENV` is `production`, it also prints the warning a production bundle of those files would give where it [can't prune](/docs/precompile/options#prune). It reads no Svelte, Vue or Astro component or MDX page, whose reads of a validator only its framework's compiled code shows, so it names those under the current directory that import a module, which only the build checks.
 
 It reads [`ark.json`](/docs/precompile/options#arkjson) as a build does, and the options a plugin call passes in a file at the project's root, like `precompile.vite({ config: "src/config.ts" })` in `vite.config.ts`, saying where it found them. An option that isn't a literal there, or a plugin loaded in a way it can't follow, fails it, asking for the option in `ark.json` or as a flag. Each [option](/docs/precompile/options) is a flag that overrides both, like `--preset smallest`, `--optimize-errors size`, `--no-freeze` or `--members '{"assert":false}'`.
 

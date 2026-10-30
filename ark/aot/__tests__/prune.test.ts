@@ -1135,10 +1135,10 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			)
 			try {
 				attest(await textsOf({ preset: undefined })).snap([
-					"prune: keeping assert, meta, ~standard and methods, because main.ts:6:13 passes { User }, which holds a validator at User, to a function, which may read any member. Set assert, meta, ~standard and methods in members, each false where no code reads it, to build without this warning."
+					"prune: keeping assert, meta, ~standard and methods, because main.ts:6:13 passes { User }, which holds a validator at User, to a function, which may read any member. Set assert, meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
 				])
 				attest(await textsOf({ members: { assert: true } })).snap([
-					"prune: keeping meta, ~standard and methods, because main.ts:6:13 passes { User }, which holds a validator at User, to a function, which may read any member. Set meta, ~standard and methods in members, each false where no code reads it, to build without this warning."
+					"prune: keeping meta, ~standard and methods, because main.ts:6:13 passes { User }, which holds a validator at User, to a function, which may read any member. Set meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
 				])
 				attest(await textsOf({ members })).equals([])
 				// setting what it kept changes nothing it writes
