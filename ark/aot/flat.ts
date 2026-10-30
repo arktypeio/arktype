@@ -637,6 +637,7 @@ const isPure = (statement: Node, source: string): boolean => {
 }
 
 const isPureExpression = (node: Node, source: string): boolean => {
+	node = unwrapExpression(node)
 	switch (node.type) {
 		case "Literal":
 		case "Identifier":
@@ -648,6 +649,15 @@ const isPureExpression = (node: Node, source: string): boolean => {
 		case "ArrayExpression":
 			return node.elements.every(
 				e => !e || (e.type !== "SpreadElement" && isPureExpression(e, source))
+			)
+		// e.g. `schemas = { user: User }`, which a bundler drops with the
+		// validators only it reads. A computed key other than a literal may call toString
+		case "ObjectExpression":
+			return node.properties.every(
+				p =>
+					p.type === "Property" &&
+					(!p.computed || p.key.type === "Literal") &&
+					isPureExpression(p.value, source)
 			)
 		case "CallExpression":
 		case "NewExpression":

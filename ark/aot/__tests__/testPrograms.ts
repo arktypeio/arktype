@@ -22,7 +22,7 @@ import {
 	type Node
 } from "./grammar.ts"
 import { lacks, testedOptions } from "./contract.ts"
-import { serialize, type World } from "./perturbationWorker.ts"
+import { serialize, type Manifest, type World } from "./perturbationWorker.ts"
 import {
 	buildPerturbed,
 	comparable,
@@ -1548,6 +1548,10 @@ interface Counts {
 	refusals: Record<string, number>
 }
 
+const mocksAlike = (a: Manifest, b: Manifest) =>
+	JSON.stringify([a.exportNamesByPath, a.swapsByPath]) ===
+	JSON.stringify([b.exportNamesByPath, b.swapsByPath])
+
 // how a program's precompiled worlds disagree with the one as written
 const disagreementsOf = async (
 	program: Program,
@@ -1579,17 +1583,21 @@ const disagreementsOf = async (
 	counts.sites += program.main.filter(isObserved).length
 	counts.precompiledSites += folded.main.filter(isObserved).length
 	if (foldedBuild.errors.length) counts.erroredPrograms++
-	const [original, cached, foldedOriginal, precompiled] = await Promise.all([
+	const standaloneDir = foldedBuild === standalone ? dir : foldedDir
+	// the original world as the standalone one mocks it, where the cache's mocks
+	// differ, as a creationChecks other than "helpers" leaves helpers unmocked
+	const originalDir =
+		foldedBuild !== standalone ? foldedDir
+		: mocksAlike(foldedBuild.manifest, cache.manifest) ? undefined
+		: join(dir, "unmocked")
+	if (originalDir) mkdirSync(originalDir, { recursive: true })
+	const [original, cached, ownOriginal, precompiled] = await Promise.all([
 		runWorld("original", cache.manifest, dir),
 		runWorld("cache", cache.manifest, dir),
-		foldedBuild === standalone ? undefined : (
-			runWorld("original", foldedBuild.manifest, foldedDir)
-		),
-		runWorld(
-			"standalone",
-			foldedBuild.manifest,
-			foldedBuild === standalone ? dir : foldedDir
-		)
+		originalDir ?
+			runWorld("original", foldedBuild.manifest, originalDir)
+		:	undefined,
+		runWorld("standalone", foldedBuild.manifest, standaloneDir)
 	])
 	const unknownOf = (
 		run: Program,
@@ -1625,7 +1633,7 @@ const disagreementsOf = async (
 			unknownOf(
 				folded,
 				foldedBuild.errors,
-				compareWorlds(foldedBuild, foldedOriginal ?? original, precompiled)
+				compareWorlds(foldedBuild, ownOriginal ?? original, precompiled)
 					.disagreements
 			)
 		)
