@@ -122,15 +122,15 @@
 
 /* ===== lists ===== */
 
-.prose :is(ul, ol):not(.steps) {
+.prose :is(ul, ol) {
 	padding-left: 1.4rem;
 }
 
-.prose ul:not(.steps) {
+.prose ul {
 	list-style: disc;
 }
 
-.prose ol:not(.steps) {
+.prose ol {
 	list-style: decimal;
 }
 
