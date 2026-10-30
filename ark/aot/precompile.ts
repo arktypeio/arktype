@@ -4789,11 +4789,7 @@ export class Precompiler {
 		)
 			return result
 		walk(module.program, node => {
-			if (
-				isInIsland(node, module) ||
-				(node.type.startsWith("TS") && !isTransparent(node))
-			)
-				return false
+			if (isSkipped(node, module)) return false
 			if (node.type !== "MemberExpression" || isWriteTarget(node)) return true
 			const read = memberNameOf(node)
 			if (
@@ -4981,12 +4977,7 @@ export class Precompiler {
 	): UnavailableRead[] {
 		const unavailable: UnavailableRead[] = []
 		walk(module.program, node => {
-			if (
-				settledValues.has(rangeOf(node)) ||
-				isInIsland(node, module) ||
-				// e.g. `interface A extends B.C {}`, which only types
-				(node.type.startsWith("TS") && !isTransparent(node))
-			)
+			if (settledValues.has(rangeOf(node)) || isSkipped(node, module))
 				return false
 			const read =
 				!(node.type === "MemberExpression" && isWriteTarget(node)) &&
@@ -5713,6 +5704,12 @@ const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
 const isInIsland = (node: Node, module: SourceModule) =>
 	module.islands.some(island => contains(island, node))
 
+// a walk for what a module reads skips an island, which runs on arktype, and
+// what only types, e.g. `interface A extends B.C {}`
+const isSkipped = (node: Node, module: SourceModule) =>
+	isInIsland(node, module) ||
+	(node.type.startsWith("TS") && !isTransparent(node))
+
 const declaredBindingKinds = {
 	const: 1,
 	let: 1,
@@ -5765,11 +5762,7 @@ const scopeReadsOf = (
 	)
 	const reads: ScopeRead[] = []
 	walk(module.program, node => {
-		if (
-			isInIsland(node, module) ||
-			(node.type.startsWith("TS") && !isTransparent(node))
-		)
-			return false
+		if (isSkipped(node, module)) return false
 		if (isWithin(node, candidateRanges)) return true
 		const read = graph.scopeReadOf(node, module)
 		if (read) reads.push([node as MemberExpression, ...read])
