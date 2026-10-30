@@ -1112,15 +1112,21 @@ const A = type({ name: z.string() })`
 
 		it("static Standard Schemas", () => {
 			attest(
-				precompile(`import { type } from "arktype"
+				precompile(
+					`import { type } from "arktype"
 const schema = { "~standard": { version: 1, vendor: "x", validate: (value: unknown) => ({ value }) } }
 export const A = type({ a: schema })
-export const B = type({ b: { "~standard": { version: 1, vendor: "x", validate: (value: unknown) => ({ value }) } } })`).diagnostics.map(
-					renderDiagnostic
-				)
+export const B = type({ b: { "~standard": { version: 1, vendor: "x", validate: (value: unknown) => ({ value }) } } })
+export const C = type({ c: A })
+console.log(A.expression)`,
+					{},
+					{ members: { expression: true } }
+				).diagnostics.map(renderDiagnostic)
 			).snap([
 				"/main.ts:3:18  type({ a: schema }) can't be precompiled yet\n  the Standard Schema `schema` can't be precompiled to a standalone validator\n  Define the schema with ArkType, which the build precompiles, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime.",
-				'/main.ts:4:18  type({ b: { "~standard": { version: 1, vendor: "x", validat… can\'t be precompiled yet\n  the Standard Schema holding `(value: unknown) => ({ value })` (/main.ts:4:80) can\'t be precompiled to a standalone validator\n  Define the schema with ArkType, which the build precompiles, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime.'
+				'/main.ts:4:18  type({ b: { "~standard": { version: 1, vendor: "x", validat… can\'t be precompiled yet\n  the Standard Schema holding `(value: unknown) => ({ value })` (/main.ts:4:80) can\'t be precompiled to a standalone validator\n  Define the schema with ArkType, which the build precompiles, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime.',
+				"/main.ts:5:18  type({ c: A }) can't be precompiled yet\n  the Standard Schema `A` holds can't be precompiled to a standalone validator\n  Define the schema with ArkType, which the build precompiles, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime.",
+				"/main.ts:6:13  A.expression can't be precompiled yet\n  the Standard Schema `A` holds can't be precompiled to a standalone validator\n  Define the schema with ArkType, which the build precompiles, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime."
 			])
 		})
 

@@ -18,7 +18,7 @@ A project whose bundler config uses `@ark/aot` (e.g. `precompile.vite()` from `@
 - Define Types from static values, and compose them inside definitions, like `const Admin = User.and({ role: "'admin'" })`. A definition reading a parameter, or a function calling `.or`, `.pick` or another composing method at runtime, fails the build. To reuse a pattern, define a Generic.
 - Define Types in JavaScript or TypeScript modules. A Svelte component's script isn't precompiled, so one importing arktype fails the build: put the Types, and any code checking a result against `type.errors`, in a `.ts` module the component imports.
 - If the project calls `configure()`, name its module as `config` under `precompile` in an `ark.json` beside `package.json`, which the plugin, the test drivers, the CLI and the ESLint rule all read.
-- A build error names the file, line and column, then why, then the fix on its last line. Apply that fix. Don't set `allowUnsafe` or switch to `runtime: "arktype"` to get past one. `npx arktype-precompile --check "src/**/*.ts"` lists every one without bundling.
+- A build error names the file, line and column, then why, then the fix on its last line. Apply that fix. Don't set `allowUnsafe` or switch to `runtime: "arktype"` to get past one. `npx arktype-precompile --check src` lists every one without bundling.
 - A validator's error messages say what failed but not what the value was, like `name must be a string`.
 - A validator has a JSON Schema, `expression` or another introspection member only where the build sees code read it, its dependencies' included, so the MCP SDK, the AI SDK and OpenAPI generators get one with nothing to set. Code the build can't see, like code outside the bundle reading an entry's export, throws naming the member to set true under `members`.
 
@@ -192,7 +192,7 @@ const Signup = type({
 
 ## Error messages
 
-`.configure({ message })` replaces a Type's whole message, and `.describe()` what follows "must be". Each applies wherever that Type is used, including a precompiled build. A message on a key's value applies when the value is wrong, not when the key is missing, which reads `terms is missing`. To use it then too, configure the `required` code in the config module, where its function receives the missing key's `propString` and the `valueMeta` of the key's whole value, so configure that value last, after any `.pipe()` or `.to()`:
+`.configure({ message })` replaces a Type's whole message, and `.describe()` what follows "must be". Each applies wherever that Type is used, including a precompiled build. A message on a key's value applies when the value is wrong, not when the key is missing, which reads `terms must be "on" (was missing)`, or `terms must be "on"` precompiled. To use it then too, configure the `required` code in the config module, where its function receives the missing key's `propString` and the `valueMeta` of the key's whole value, so configure that value last, after any `.pipe()` or `.to()`:
 
 ```ts
 import { configure } from "arktype/config"

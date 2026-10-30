@@ -214,3 +214,18 @@ A [precompiled](/docs/precompile) validator validates through Standard Schema as
 | t3-env's `presets-arktype`, which defines static Types        | `"precompile": { "dependencies": { "@t3-oss/env-core": "aot" } }`    |
 
 Without it, a build importing `drizzle-arktype` or `presets-arktype` fails, naming the setting. [Troubleshooting](/docs/precompile/troubleshooting) has each message.
+
+The MCP SDK and the AI SDK also validate through `~standard`. A [production build](/docs/precompile/options#prune) can't see what a library reads of a validator passed to it, so it warns that it keeps `assert`, `meta`, `~standard` and `methods`. To build without the warning, set each:
+
+```json title="ark.json"
+{
+	"precompile": {
+		"members": {
+			"~standard": true,
+			"assert": false,
+			"meta": false,
+			"methods": false
+		}
+	}
+}
+```

@@ -604,7 +604,6 @@ export class Precompiler {
 		const called = isRead("call")
 		const readsAllows = isRead("allows")
 		const piped = isRead("piped")
-		const isWhole = !dropped.length && called && readsAllows && piped
 		// a size build's units are already module constants
 		const flattens =
 			!!program.isOneChunk &&
@@ -630,27 +629,15 @@ export class Precompiler {
 			this.usagesByProgram.delete(program.key)
 			return unwritten
 		}
-		// as written, a validator may be read in a way the plan didn't see, as
-		// where a factory checks a Type it's passed
-		const usedAsWritten = isWhole ? used : this.usedIn(program, wrote.runtimes)
-		const isReadAsWritten = (read: UsedMember) =>
-			typeof usedAsWritten === "string" || usedAsWritten.has(read)
-		if (
-			dropped.some(isReadAsWritten) ||
-			(!called && isReadAsWritten("call")) ||
-			(!readsAllows && isReadAsWritten("allows")) ||
-			(!piped && isReadAsWritten("piped"))
-		) {
+		const unprunedAsWritten = this.unprunedAsWrittenOf(
+			program,
+			wrote.runtimes,
+			usage,
+			dropped
+		)
+		if (unprunedAsWritten) {
 			this.usagesByProgram.delete(program.key)
-			return {
-				...unwritten,
-				unpruned:
-					typeof usedAsWritten === "string" ?
-						this.keptMembersMessageOf(usedAsWritten)
-					:	writeUnprunedMessage(
-							"its precompiled code reads more of a validator than the program does"
-						)
-			}
+			return { ...unwritten, unpruned: unprunedAsWritten }
 		}
 		const linked =
 			this.inline || this.standalone.lazy ?
@@ -676,6 +663,32 @@ export class Precompiler {
 			lost: readings.lost.length ? writeLostMessage(readings.lost) : undefined,
 			baked: readings.decisions,
 			issues: this.issuesOf(program, written)
+		}
+	}
+
+	// as written, a validator may be read in a way the plan didn't see, as
+	// where a factory checks a Type it's passed
+	private unprunedAsWrittenOf(
+		program: ScannedProgram,
+		runtimes: ReadonlyMap<string, RuntimeModule>,
+		{ called, readsAllows, piped }: ProgramUsage,
+		dropped: UsedMember[]
+	): string | undefined {
+		if (!dropped.length && called && readsAllows && piped) return
+		const used = this.usedIn(program, runtimes)
+		const isRead = (read: UsedMember) =>
+			typeof used === "string" || used.has(read)
+		if (
+			dropped.some(isRead) ||
+			(!called && isRead("call")) ||
+			(!readsAllows && isRead("allows")) ||
+			(!piped && isRead("piped"))
+		) {
+			return typeof used === "string" ?
+					this.keptMembersMessageOf(used)
+				:	writeUnprunedMessage(
+						"its precompiled code reads more of a validator than the program does"
+					)
 		}
 	}
 
@@ -2605,6 +2618,20 @@ export class Precompiler {
 				continue
 			}
 			const holes = hole ? [hole.value] : keyOf(reference.value as Foldable)[1]
+			// a Type holding a Standard Schema holds the morph arktype wrapped its
+			// validate in, which no site received, so it can't be passed or baked
+			if (
+				!hole &&
+				holes.some(
+					value =>
+						typeof value === "function" && !this.interpreter.standIns.has(value)
+				)
+			) {
+				reasons.push(
+					writeUnprecompilableMessage(`the Standard Schema \`${text}\` holds`)
+				)
+				continue
+			}
 			if (
 				(site.introspection || (hole && dropped.has(hole.value))) &&
 				!holes.some(value => calledByChecks.has(value)) &&

@@ -479,7 +479,11 @@ export const writeKeptMembersMessage = (
 		kept.length === 1 ?
 			kept[0]
 		:	`${kept.slice(0, -1).join(", ")} and ${kept[kept.length - 1]}`
-	return `prune: keeping ${list}, because ${reason}. Set ${list} in members, ${kept.length === 1 ? "" : "each "}false where no code reads it, to build without this warning.`
+	const example =
+		kept.includes("~standard") ?
+			", like ~standard where a library validates with it,"
+		:	""
+	return `prune: keeping ${list}, because ${reason}. Set ${list} in members, ${kept.length === 1 ? "" : "each "}true where code reads it${example} else false, to build without this warning.`
 }
 
 // each of lost is a validator's position and why the build lost track of it

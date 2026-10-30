@@ -222,7 +222,7 @@ prune: off, because src/routes.ts:3:1 reads import.meta.glob, which may load mod
 Where it reads them all but not what a read of its validators needs, it keeps each member `members` leaves to it, and still writes what else pruning does:
 
 ```
-prune: keeping assert, meta, ~standard and methods, because src/index.ts exports User, which code outside the bundle may read. Set assert, meta, ~standard and methods in members, each false where no code reads it, to build without this warning.
+prune: keeping assert, meta, ~standard and methods, because src/index.ts exports User, which code outside the bundle may read. Set assert, meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning.
 ```
 
 Setting each in `members` clears it, as the build then has no member left to decide. Where `NODE_ENV` is `production`, `arktype-precompile --check` prints the same warning for a bundle of the files it checks, but tests, stories and configs. It follows relative imports of scripts alone and reads no file as an entry, so it misses what an alias, a virtual module, a component or an entry's exports lead to.
