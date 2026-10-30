@@ -162,25 +162,32 @@ console.log(JSON.stringify(spec.paths["/users"].post.requestBody.content["applic
 				"schemas.ts": `import { type } from "arktype"
 
 export const User = type({ name: "string" })
+
+// what it holds only this module has, so it's baked here
+export const Even = type("number").narrow(function even(n) {
+	return n % 2 === 0
+})
 `,
 				"schema.ts": `import { User } from "./schemas.ts"
 
 export const schema = User.toJsonSchema()
 `,
 				"described.ts": `import { read } from "reader"
-import { User } from "./schemas.ts"
+import { Even, User } from "./schemas.ts"
 
 export const described = read(User, "description")
+export const even = read(Even, "expression")
 `,
 				"node_modules/reader/package.json":
 					'{ "name": "reader", "type": "module", "exports": "./index.js" }',
 				"node_modules/reader/index.js":
 					"export const read = (schema, key) => schema[key]\n",
-				"main.ts": `import { described } from "./described.ts"
+				"main.ts": `import { described, even } from "./described.ts"
 import { schema } from "./schema.ts"
 
 console.log(JSON.stringify(schema))
 console.log(described)
+console.log(even)
 `
 			},
 			"out/main.js",
@@ -189,6 +196,7 @@ console.log(described)
 		attest(out)
 			.snap(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"name":{"type":"string"}},"required":["name"]}
 { name: a string }
+number & even
 `)
 	})
 

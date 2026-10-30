@@ -946,7 +946,7 @@ export class StandaloneArtifact {
 	// of a module namespace's
 	writeBake({ bakes, members }: StandaloneBake, index: number): string {
 		const bake = (root: BaseRoot, read: string) =>
-			`runtime.bake(${read}, { ${this.emitIntrospection(root, new Set(members)).join(", ")} })`
+			`runtime.bakeInto(${read}, { ${this.emitIntrospection(root, new Set(members)).join(", ")} })`
 		const [param, baked] =
 			hasArkKind(bakes, "root") ?
 				["validator", `return ${bake(bakes, "validator")}`]

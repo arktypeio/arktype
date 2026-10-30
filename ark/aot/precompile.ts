@@ -1011,7 +1011,7 @@ export class Precompiler {
 					target.kind === "binding" || target.kind === "expression" ?
 						this.interpreter.exportValue(target).value
 					:	undefined
-				if (target.kind !== "namespace" && !hasArkKind(value, "root")) continue
+				if (target.kind !== "namespace" && !isBakeable(value)) continue
 				for (const reference of binding.references) {
 					// an export is read by the modules importing it
 					const [operand, parent] = operatorOf(reference.id)
@@ -1041,7 +1041,7 @@ export class Precompiler {
 						continue
 					}
 					const read = this.exportedValueOf(target.module, name)
-					if (!hasArkKind(read, "root")) continue
+					if (!isBakeable(read)) continue
 					seeds.push({
 						runtime,
 						node: parent!,
@@ -1120,7 +1120,7 @@ export class Precompiler {
 		}
 		for (const name in module.scopes.exportsByName) {
 			const value = this.exportedValueOf(module, name)
-			if (hasArkKind(value, "root")) result[name] = value
+			if (isBakeable(value)) result[name] = value
 		}
 		return result
 	}
@@ -2443,7 +2443,7 @@ export class Precompiler {
 					this.standalone.freeze ?
 						undefined
 					:	(exporter, name, value) =>
-							value !== undefined &&
+							isBakeable(value) &&
 							this.exportedValueOf(exporter, name) === value
 			}
 			baked = this.readingsIn(
@@ -6242,6 +6242,11 @@ const anyIssues: IssueFeatures = {
 	readsKeySites: true,
 	runsArktype: true
 }
+
+// a Type whose members a module importing it can bake, as it holds no value
+// only its own module has, like a narrow's function
+const isBakeable = (value: unknown): value is BaseRoot =>
+	hasArkKind(value, "root") && !keyOf(value)[1].length
 
 // a function a module bakes an imported validator's members with, and the
 // reads it wraps in it

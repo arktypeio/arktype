@@ -229,7 +229,7 @@ export const own = <t extends object>(validator: t, attributes: object): t =>
 
 // what a module reads of a validator it imports, which a build reading one
 // module at a time bakes there, as the validator's own module can't see it
-export const bake = <t>(
+export const bakeInto = <t>(
 	validator: t,
 	{ "~standard": standard, ...attributes }: Omit<ValidatorAttributes, "meta">
 ): t => {
