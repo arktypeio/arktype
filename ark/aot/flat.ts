@@ -1202,8 +1202,13 @@ interface WrittenUnits {
 	returned: string
 }
 
-// an edit of the units' body, parsed with what it returns after a `;`
-type UnitsPass = (units: ParsedUnits, s: MagicString, body: string) => void
+// an edit of the units' body, parsed with what it returns after a `;`, true
+// where it knows running again would change nothing
+type UnitsPass = (
+	units: ParsedUnits,
+	s: MagicString,
+	body: string
+) => boolean | void
 
 const untilUnchanged = (
 	{ body, returned }: WrittenUnits,
@@ -1213,10 +1218,11 @@ const untilUnchanged = (
 	for (;;) {
 		const code = `${body}\n;${returned}`
 		const s = new MagicString(code)
-		pass(parse(code), s, body)
+		const isSettled = pass(parse(code), s, body)
 		if (!s.hasChanged()) return { body, returned }
 		returned = s.slice(body.length + 2, code.length)
 		body = s.slice(0, body.length)
+		if (isSettled) return { body, returned }
 	}
 }
 
@@ -1369,6 +1375,9 @@ const passesParams = (
 
 // a bundler drops only a module's unread declarations, not a function's
 const dropUnread: UnitsPass = ({ code, program, scopes }, s, body) => {
+	const dropped: Node[] = []
+	// dropped once nothing reads them
+	const droppable: Binding[] = []
 	for (const statement of program.body as Node[]) {
 		if (statement.type !== "VariableDeclaration") continue
 		const { declarations } = statement
@@ -1377,11 +1386,19 @@ const dropUnread: UnitsPass = ({ code, program, scopes }, s, body) => {
 				declarator.id.type === "Identifier" ?
 					scopes.bindingsById.get(declarator.id)
 				:	undefined
-			return (
-				!!binding &&
-				!binding.references.length &&
-				(!declarator.init || isPureExpression(declarator.init, code))
+			if (
+				!binding ||
+				(declarator.init && !isPureExpression(declarator.init, code))
 			)
+				return false
+			if (binding.references.length) {
+				droppable.push(binding)
+				return false
+			}
+			// a name declared again is bound by its next declaration
+			if (binding.writes.length) droppable.push(binding)
+			dropped.push(declarator)
+			return true
 		})
 		if (unread.every(Boolean))
 			s.remove(statement.start, statementEndIn(body, statement))
@@ -1394,6 +1411,11 @@ const dropUnread: UnitsPass = ({ code, program, scopes }, s, body) => {
 			)
 		}
 	}
+	// settled unless a declaration was read only by those dropped
+	const isDropped = spansContaining(dropped)
+	return !droppable.some(binding =>
+		binding.references.every(({ id }) => isDropped(id))
+	)
 }
 
 const pureAnnotation = /^\s*[#@]__PURE__\s*$/
