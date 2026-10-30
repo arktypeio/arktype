@@ -165,44 +165,61 @@ export const flattenBundle = (
 		)
 	}
 	for (const id in sites) {
-		let s = edit(id, rename)
-		const created = creationsBySite.get(id) ?? []
-		for (const [start, end] of keptAnnotationsIn(parsed.get(id)!, kept)) {
-			if (
-				created.some(creation => creation.start <= start && end <= creation.end)
-			)
-				continue
-			s ??= new MagicString(sites[id])
-			s.remove(start, end)
-		}
-		const prefix = prefixOf(sites[id], id)
-		for (const { start, end, name, declared } of created) {
-			s ??= new MagicString(sites[id])
-			const source = JSON.stringify(rename(specifier))
-			// an import, which a bundler doesn't write as a variable holding another
-			if (declared) {
-				s.overwrite(
-					declared.start,
-					declared.end,
-					`import { ${name} as ${declared.name} } from ${source}\n${declared.exported ? `export { ${declared.name} }\n` : ""}`
-				)
-				// a read of its one member reads the validator it is
-				if (flat.unwrapped.has(name)) {
-					for (const [start, end] of declared.memberReads!.spans)
-						s.remove(start, end)
-				}
-			} else {
-				const local = `${prefix}_${name}`
-				s.overwrite(start, end, local)
-				s.prepend(`import { ${name} as ${local} } from ${source}\n`)
-			}
-		}
-		bundle.sites[id] =
-			s ?
-				{ code: s.toString(), map: s.generateMap({ hires: "boundary" }) }
-			:	{ code: sites[id], map: undefined }
+		bundle.sites[id] = flatSiteOf(
+			parsed.get(id)!,
+			edit(id, rename),
+			creationsBySite.get(id) ?? [],
+			kept,
+			rename(specifier),
+			flat.unwrapped
+		)
 	}
 	return bundle
+}
+
+// a site importing what it creates from the flat module, without the
+// annotations on what it kept
+const flatSiteOf = (
+	site: SourceModule,
+	s: MagicString | undefined,
+	created: Creation[],
+	kept: KeptCode,
+	specifier: string,
+	unwrapped: Set<string>
+): FlatSite => {
+	const source = JSON.stringify(specifier)
+	for (const [start, end] of keptAnnotationsIn(site, kept)) {
+		if (
+			created.some(creation => creation.start <= start && end <= creation.end)
+		)
+			continue
+		s ??= new MagicString(site.source)
+		s.remove(start, end)
+	}
+	const prefix = prefixOf(site.source, site.id)
+	for (const { start, end, name, declared } of created) {
+		s ??= new MagicString(site.source)
+		// an import, which a bundler doesn't write as a variable holding another
+		if (declared) {
+			s.overwrite(
+				declared.start,
+				declared.end,
+				`import { ${name} as ${declared.name} } from ${source}\n${declared.exported ? `export { ${declared.name} }\n` : ""}`
+			)
+			// a read of its one member reads the validator it is
+			if (unwrapped.has(name)) {
+				for (const [start, end] of declared.memberReads!.spans)
+					s.remove(start, end)
+			}
+		} else {
+			const local = `${prefix}_${name}`
+			s.overwrite(start, end, local)
+			s.prepend(`import { ${name} as ${local} } from ${source}\n`)
+		}
+	}
+	return s ?
+			{ code: s.toString(), map: s.generateMap({ hires: "boundary" }) }
+		:	{ code: site.source, map: undefined }
 }
 
 const unrenamed = (specifier: string) => specifier
