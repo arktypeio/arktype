@@ -2495,7 +2495,7 @@ A Type from another copy of arktype, like the ones `@ark/json-schema@0.0.13`'s `
 type({ user: UserFromArktype2 })
 ```
 
-Its errors keep their messages without repeating their path, and `toJsonSchema()` writes the JSON Schema its Standard JSON Schema converter does. Where it has none for the target, like arktype 2's for OpenAPI, the error names the Type as the cause. A module or generic from another copy used as a Scope's alias, or a Type from one passed to `type.schema()`, throws a `ParseError` saying to upgrade the package that brought it in or add an override.
+Its errors keep their messages without repeating their path, and `toJsonSchema()` writes the JSON Schema its Standard JSON Schema converter does. It throws, naming the Type as the cause, where that JSON Schema can't stand for it: the converter has none for the target, like arktype 2's for OpenAPI; its input and output differ, where only `~standard.jsonSchema.input` writes it; it holds refs, like a cyclic Type's, which would resolve against the wrong document; or the Type is intersected with another, which only its input is written with, as `allOf`. A module or generic from another copy used as a Scope's alias, or a Type from one passed to `type.schema()`, throws a `ParseError` saying to upgrade the package that brought it in or add an override.
 
 ### Infer `.merge()` of a definition holding a described Type
 

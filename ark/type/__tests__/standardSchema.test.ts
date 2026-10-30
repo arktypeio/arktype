@@ -145,33 +145,104 @@ contextualize(() => {
 			attest(Node.equals(Foreign)).equals(false)
 		})
 
+		const ownJsonSchema = (
+			write: (target: string) => Record<string, unknown>,
+			writeOut = write
+		): StandardJSONSchemaV1.Converter => ({
+			input: ({ target }) => ({ $schema: target, ...write(target) }),
+			output: ({ target }) => {
+				if (target === "openapi-3.0") throw new Error("unsupported")
+				return { $schema: target, ...writeOut(target) }
+			}
+		})
+		const writeForeignJsonSchemaMessage = (target: string, reason?: string) =>
+			`Can't convert the Type at u to ${target} JSON Schema${reason ? `, since ${reason}` : ""}. ${writeForeignArkMessage("It")}`
+
 		it("writes a Type's own JSON Schema", () => {
 			const T = type({
-				u: foreignType({
-					input: ({ target }) => ({ $schema: target, title: `in ${target}` }),
-					output: ({ target }) => {
-						if (target === "openapi-3.0") throw new Error("unsupported")
-						return { $schema: target, title: `out ${target}` }
-					}
-				})
+				u: foreignType(ownJsonSchema(target => ({ title: target })))
 			})
 			attest(T.toJsonSchema({ target: "draft-07" })).snap({
 				$schema: "http://json-schema.org/draft-07/schema#",
 				type: "object",
-				properties: { u: { title: "out draft-07" } },
+				properties: { u: { title: "draft-07" } },
 				required: ["u"]
+			})
+			attest(() => T.toJsonSchema({ target: "openapi-3.0" })).throws(
+				writeForeignJsonSchemaMessage("openapi-3.0")
+			)
+			attest(() => type({ u: Foreign }).toJsonSchema()).throws(
+				writeForeignJsonSchemaMessage("draft-2020-12")
+			)
+		})
+
+		it("writes only the input of a Type whose input and output differ", () => {
+			const T = type({
+				u: foreignType(
+					ownJsonSchema(
+						() => ({ type: "string" }),
+						() => ({ type: "number" })
+					)
+				)
 			})
 			attest(T["~standard"].jsonSchema.input({ target: "draft-07" })).snap({
 				$schema: "http://json-schema.org/draft-07/schema#",
 				type: "object",
-				properties: { u: { title: "in draft-07" } },
+				properties: { u: { type: "string" } },
 				required: ["u"]
 			})
-			attest(() => T.toJsonSchema({ target: "openapi-3.0" })).throws(
-				`Can't convert the Type at u to openapi-3.0 JSON Schema. ${writeForeignArkMessage("It")}`
+			attest(() => T.toJsonSchema()).throws(
+				writeForeignJsonSchemaMessage(
+					"draft-2020-12",
+					"its input and output differ, so only ~standard.jsonSchema.input can write it"
+				)
 			)
-			attest(() => type({ u: Foreign }).toJsonSchema()).throws(
-				`Can't convert the Type at u to draft-2020-12 JSON Schema. ${writeForeignArkMessage("It")}`
+		})
+
+		it("throws for a Type's JSON Schema with refs", () => {
+			// like a cyclic 2.x Type's, whose refs resolve against its own document
+			const T = type({
+				u: foreignType(
+					ownJsonSchema(() => ({
+						$ref: "#/$defs/node",
+						$defs: { node: { type: "string" } }
+					}))
+				)
+			})
+			attest(() => T.toJsonSchema()).throws(
+				writeForeignJsonSchemaMessage(
+					"draft-2020-12",
+					"it references its own definitions"
+				)
+			)
+		})
+
+		it("intersects a Type's input JSON Schema with what it's intersected with", () => {
+			const T = type({
+				u: foreignType(ownJsonSchema(() => ({ title: "own" })))
+			}).and({ u: { n: "number" } })
+			attest(T["~standard"].jsonSchema.input({ target: "draft-07" })).snap({
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "object",
+				properties: {
+					u: {
+						allOf: [
+							{
+								type: "object",
+								properties: { n: { type: "number" } },
+								required: ["n"]
+							},
+							{ title: "own" }
+						]
+					}
+				},
+				required: ["u"]
+			})
+			attest(() => T.toJsonSchema()).throws(
+				writeForeignJsonSchemaMessage(
+					"draft-2020-12",
+					"it's intersected with another Type"
+				)
 			)
 		})
 
