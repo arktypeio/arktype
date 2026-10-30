@@ -807,10 +807,17 @@ interface Flat {
 	writeModule: (read: string[]) => string
 }
 
-const writeFlat = (
+interface UnitTexts {
+	texts: string[]
+	specifiersByName: Map<string, string>
+	created: Set<string>
+}
+
+// each unit's declaration, then each creation's, unless a name is declared twice
+const unitTextsOf = (
 	units: UnitModule[],
 	creations: Creation[]
-): Flat | undefined => {
+): UnitTexts | undefined => {
 	const specifiersByName = new Map<string, string>()
 	const texts: string[] = []
 	for (const unit of units) {
@@ -833,6 +840,16 @@ const writeFlat = (
 			`const ${name} = ${shared ?? `(${creator})`}(${args.join(", ")})`
 		)
 	}
+	return { texts, specifiersByName, created }
+}
+
+const writeFlat = (
+	units: UnitModule[],
+	creations: Creation[]
+): Flat | undefined => {
+	const unitTexts = unitTextsOf(units, creations)
+	if (!unitTexts) return
+	const { texts, specifiersByName, created } = unitTexts
 	const inlined = withTemplatesInlined(texts.join("\n"))
 	if (!inlined) return
 	const { code } = inlined
@@ -1112,12 +1129,7 @@ const writeFlat = (
 				values.length === 1 ? values[0] : `[${values.join(", ")}]`
 			let written = writtenByReturned.get(returned)
 			if (written === undefined) {
-				const parse = unitsParser()
-				written = { body, returned }
-				for (const pass of [skipAliases, inlineCalls, dropUnread])
-					written = untilUnchanged(written, parse, pass)
-				// a bundler keeps the call anyway, and oxc's minifier keeps the annotations' bytes
-				written.body = withoutAnnotations(inGzipOrder(written.body))
+				written = writtenUnitsOf(body, returned)
 				writtenByReturned.set(returned, written)
 			}
 			// swc would inline the IIFE, making its constants module variables
@@ -1201,6 +1213,16 @@ const unitsParser = (): UnitsParser => {
 interface WrittenUnits {
 	body: string
 	returned: string
+}
+
+const writtenUnitsOf = (body: string, returned: string): WrittenUnits => {
+	const parse = unitsParser()
+	let written: WrittenUnits = { body, returned }
+	for (const pass of [skipAliases, inlineCalls, dropUnread])
+		written = untilUnchanged(written, parse, pass)
+	// a bundler keeps the call anyway, and oxc's minifier keeps the annotations' bytes
+	written.body = withoutAnnotations(inGzipOrder(written.body))
+	return written
 }
 
 // an edit of the units' body, parsed with what it returns after a `;`
