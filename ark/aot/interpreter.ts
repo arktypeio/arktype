@@ -925,12 +925,12 @@ export class Interpreter {
 	private readBinding(binding: Binding, node: Node, ctx: Context): Lookup {
 		const module = ctx.module
 		if (binding.kind === "param") {
-			const ownerName = inferredNameOf(binding.declaration as FunctionNode)
+			const fn = binding.declaration as FunctionNode
 			return {
 				value: new DynamicValue(
 					module,
 					node,
-					`\`${binding.name}\` is a parameter of ${ownerName || "a function"} (${module.positionOf(binding.id)}); its value is known only at runtime`,
+					`\`${binding.name}\` is a parameter of ${inferredNameOf(fn) || "a function"} (${module.positionOf(binding.id)})${callersOf(fn, module)}; its value is known only at runtime`,
 					undefined,
 					"parameter"
 				)
@@ -2840,6 +2840,31 @@ const parameterCount = (fn: FunctionNode): number => {
 		count++
 	}
 	return count
+}
+
+// e.g. a callback passed to a library, which only arktype can define with
+// what it's passed
+const callersOf = (fn: FunctionNode, module: SourceModule): string => {
+	const binding = bindingOfFunction(fn, module)
+	if (!binding) {
+		const passed = fn.parent?.type === "Property" ? fn.parent.parent! : fn
+		return (
+				passed.parent?.type === "CallExpression" &&
+					passed.parent.callee !== passed
+			) ?
+				", which nothing calls by name"
+			:	""
+	}
+	// another module may call an export
+	return (
+			binding.exportNames.length ||
+				binding.references.some(
+					({ id }) =>
+						id.parent?.type === "CallExpression" && id.parent.callee === id
+				)
+		) ?
+			""
+		:	", which nothing calls by name"
 }
 
 export const inferredNameOf = (fn: FunctionNode): string => {

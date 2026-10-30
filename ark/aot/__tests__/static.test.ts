@@ -1481,6 +1481,9 @@ export function bounded(max: number) {
 	let Bounded = type(\`string <= \${max}\`)
 	return Bounded
 }
+const schemaOf = (def: Record<string, string>) => type(def).toJsonSchema()
+export const schemas = [{ a: "string" }].map(schemaOf)
+export const inline = [{ a: "string" }].map(def => type(def).toJsonSchema())
 const shape: Record<string, string> = { title: "string" }
 if (import.meta.env.DEV) shape["debugNote?"] = "string"
 export const Post = type(shape)
@@ -1490,6 +1493,8 @@ export const Holder = type({ bad: Bad })`).map(d =>
 				)
 			).snap([
 				"Write the definition where bounded is called, with the value it passes for `max`, so the build precompiles each call.",
+				"Put // @ark-runtime on the line before the definition, so arktype defines it at runtime.",
+				"Put // @ark-runtime on the line before the definition, so arktype defines it at runtime.",
 				"Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime.",
 				"Fix the definition, which throws the same ParseError at runtime, or set allowUnsafe: true to build anyway, with a warning.",
 				"Fix the definition it reads, which throws the same ParseError at runtime."
