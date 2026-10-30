@@ -814,11 +814,7 @@ server.registerTool(
 
 Calling `greet` with `times: 99` returns an error result to the model with ArkType's message, `times must be at most 5 (was 99)`, so it knows what to fix.
 
-A [precompiled](https://arktype.io/docs/precompile) validator ships `~standard.jsonSchema`, which the SDK reads to describe the tool, only when you ask for it, so set it in `ark.json`:
-
-```json
-{ "precompile": { "members": { "~standard.jsonSchema": true } } }
-```
+A [precompiled](https://arktype.io/docs/precompile) validator ships `~standard.jsonSchema`, which the SDK reads to describe the tool, as the build sees the SDK read it.
 
 # Editor setup
 
@@ -6690,7 +6686,7 @@ Writers can narrow their `ctx` by its `code`, which tells them its other fields.
 
 Every Type implements Standard Schema and its JSON Schema extension, [Standard JSON Schema](https://standardschema.dev/json-schema). Wherever a library asks for either, pass the Type itself. [Integrations](https://arktype.io/docs/integrations) shows the common ones.
 
-[Precompiled](https://arktype.io/docs/precompile) validators implement Standard Schema too, and Standard JSON Schema where their build's [`members`](https://arktype.io/docs/precompile/options#members) option sets `~standard.jsonSchema`.
+[Precompiled](https://arktype.io/docs/precompile) validators implement Standard Schema too, and Standard JSON Schema where their build sees code read `~standard.jsonSchema` or its [`members`](https://arktype.io/docs/precompile/options#members) option sets it.
 
 ## Validation
 
@@ -7024,16 +7020,14 @@ The model sees the JSON Schema from [`~standard.jsonSchema`](https://arktype.io/
 
 ## Precompiled validators
 
-A [precompiled](https://arktype.io/docs/precompile) validator validates through Standard Schema as a Type does, so tRPC, oRPC, Hono's validators, React Hook Form, TanStack Form and Router, Elysia, t3-env and Next.js server actions take one with nothing to set. A library that converts it to JSON Schema reads a member the build leaves out unless [`members`](https://arktype.io/docs/precompile/options#members) sets it, and a library that defines Types itself needs [`dependencies`](https://arktype.io/docs/precompile/options#dependencies) set:
+A [precompiled](https://arktype.io/docs/precompile) validator validates through Standard Schema as a Type does, so tRPC, oRPC, Hono's validators, React Hook Form, TanStack Form and Router, Elysia, t3-env and Next.js server actions take one with nothing to set. The build bakes a JSON Schema into each validator it sees a library convert, so the MCP SDK, the AI SDK, Elysia's `@elysiajs/openapi`, hono-openapi and oRPC's `OpenAPIGenerator` with `@orpc/arktype` need nothing set either, as [`members`](https://arktype.io/docs/precompile/options#members) describes. A library that defines Types itself needs [`dependencies`](https://arktype.io/docs/precompile/options#dependencies) set:
 
 | Library | Set in `ark.json` (or `package.json`'s `"ark"` key) |
 | - | - |
-| MCP SDK, AI SDK, Elysia's `@elysiajs/openapi` | `"precompile": { "members": { "~standard.jsonSchema": true } }` |
-| hono-openapi, oRPC's `OpenAPIGenerator` with `@orpc/arktype` | `"precompile": { "members": { "toJsonSchema": true } }` |
 | `drizzle-arktype`, which creates Types from tables as it runs | `"precompile": { "dependencies": { "drizzle-arktype": "arktype" } }` |
 | t3-env's `presets-arktype`, which defines static Types | `"precompile": { "dependencies": { "@t3-oss/env-core": "aot" } }` |
 
-Without it, the MCP SDK and AI SDK throw when they convert a tool's schema, hono-openapi and oRPC fail to generate a document, Elysia leaves the schema out of its document, and a build importing `drizzle-arktype` or `presets-arktype` fails, naming the setting. [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) has each message.
+Without it, a build importing `drizzle-arktype` or `presets-arktype` fails, naming the setting. [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) has each message.
 
 The MCP SDK and the AI SDK also validate through `~standard`. A [production build](https://arktype.io/docs/precompile/options#prune) can't see what a library reads of a validator passed to it, so it warns that it keeps `assert`, `meta`, `~standard` and `methods`. To build without the warning, set each:
 
@@ -7042,7 +7036,6 @@ The MCP SDK and the AI SDK also validate through `~standard`. A [production buil
 	"precompile": {
 		"members": {
 			"~standard": true,
-			"~standard.jsonSchema": true,
 			"assert": false,
 			"meta": false,
 			"methods": false

@@ -96,7 +96,7 @@ const schema = User.toJsonSchema()
 }
 ```
 
-A [precompiled](https://arktype.io/docs/precompile) validator has `toJsonSchema()` only where its build's [`members`](https://arktype.io/docs/precompile/options#members) option sets it, which bakes the schema at build time.
+A [precompiled](https://arktype.io/docs/precompile) validator has `toJsonSchema()`, its schema baked at build time, where its build sees code call it or its [`members`](https://arktype.io/docs/precompile/options#members) option sets it.
 
 ## Options
 
