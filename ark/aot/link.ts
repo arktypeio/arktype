@@ -93,12 +93,74 @@ interface Declared {
 	reads: [name: string, isEager: boolean][]
 }
 
+interface Declarations {
+	declared: Map<string, Declared>
+	// each import of another package by its local name
+	imported: Map<string, string>
+	// statements run for their effect, like one reading the runtime's version
+	statements: Set<string>
+}
+
 // one module of what the sites read, each after what it reads; a unit must
 // declare or import what it reads by its export name
 const oneModuleOf = (
 	codes: Record<string, string>,
 	siteTexts: string[]
 ): OneModule | undefined => {
+	const declarations = declarationsOf(codes)
+	if (!declarations) return
+	const { declared, imported, statements } = declarations
+	const order: string[] = []
+	const states = new Map<string, "visiting" | "done">()
+	// each declaration after what it reads eagerly
+	const visit = (name: string): "done" | "cycle" | undefined => {
+		const declaration = declared.get(name)
+		if (!declaration) return imported.has(name) ? "done" : undefined
+		const state = states.get(name)
+		if (state) return state === "done" ? "done" : "cycle"
+		states.set(name, "visiting")
+		for (const [read, isEager] of declaration.reads) {
+			const visited = visit(read)
+			if (!visited || (visited === "cycle" && isEager)) return
+		}
+		states.set(name, "done")
+		order.push(name)
+		return "done"
+	}
+	const renamed: Record<string, string> = {}
+	const exported: string[] = []
+	for (const text of siteTexts) {
+		for (const match of text.matchAll(siteImport)) {
+			const [, names, specifier] = match
+			if (!(specifier in codes)) continue
+			renamed[specifier] = ""
+			for (const name of names.split(",")) {
+				const [read] = name.trim().split(/\s+as\s+/)
+				if (!declared.has(read) || visit(read) !== "done") return
+				if (!exported.includes(read)) exported.push(read)
+			}
+		}
+	}
+	// a site reading a unit other than by a named import would read nothing
+	for (const text of siteTexts) {
+		for (const [, specifier] of text.matchAll(virtualSource))
+			if (specifier in codes && !(specifier in renamed)) return
+	}
+	const code = [
+		...imported.values(),
+		...statements,
+		...order.map(name => declared.get(name)!.text),
+		`export { ${exported.join(", ")} }`
+	].join("\n")
+	const specifier = `~arktype/${hashOf(code)}`
+	for (const imported in renamed) renamed[imported] = specifier
+	return { specifier, code, renamed }
+}
+
+// what each unit declares, imports and runs, where every unit is linkable
+const declarationsOf = (
+	codes: Record<string, string>
+): Declarations | undefined => {
 	const declared = new Map<string, Declared>()
 	const imported = new Map<string, string>()
 	const statements = new Set<string>()
@@ -177,51 +239,7 @@ const oneModuleOf = (
 		}
 	}
 	for (const name of declared.keys()) if (imported.has(name)) return
-	const order: string[] = []
-	const states = new Map<string, "visiting" | "done">()
-	// each declaration after what it reads eagerly
-	const visit = (name: string): "done" | "cycle" | undefined => {
-		const declaration = declared.get(name)
-		if (!declaration) return imported.has(name) ? "done" : undefined
-		const state = states.get(name)
-		if (state) return state === "done" ? "done" : "cycle"
-		states.set(name, "visiting")
-		for (const [read, isEager] of declaration.reads) {
-			const visited = visit(read)
-			if (!visited || (visited === "cycle" && isEager)) return
-		}
-		states.set(name, "done")
-		order.push(name)
-		return "done"
-	}
-	const renamed: Record<string, string> = {}
-	const exported: string[] = []
-	for (const text of siteTexts) {
-		for (const match of text.matchAll(siteImport)) {
-			const [, names, specifier] = match
-			if (!(specifier in codes)) continue
-			renamed[specifier] = ""
-			for (const name of names.split(",")) {
-				const [read] = name.trim().split(/\s+as\s+/)
-				if (!declared.has(read) || visit(read) !== "done") return
-				if (!exported.includes(read)) exported.push(read)
-			}
-		}
-	}
-	// a site reading a unit other than by a named import would read nothing
-	for (const text of siteTexts) {
-		for (const [, specifier] of text.matchAll(virtualSource))
-			if (specifier in codes && !(specifier in renamed)) return
-	}
-	const code = [
-		...imported.values(),
-		...statements,
-		...order.map(name => declared.get(name)!.text),
-		`export { ${exported.join(", ")} }`
-	].join("\n")
-	const specifier = `~arktype/${hashOf(code)}`
-	for (const imported in renamed) renamed[imported] = specifier
-	return { specifier, code, renamed }
+	return { declared, imported, statements }
 }
 
 // each named import of a site, which the precompiler writes on one line

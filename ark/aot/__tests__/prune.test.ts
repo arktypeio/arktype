@@ -290,6 +290,24 @@ contextualize(function (this: Mocha.Suite) {
 			).equals(everyMember)
 		})
 
+		it("nothing in a validator a factory finds its functions by", async () => {
+			attest(
+				await droppedFrom(
+					{
+						"/types.ts": `import { type } from "arktype"\n\nexport const Trimmed = type("string").pipe(s => s.trim())`,
+						"/admin.ts": `import { type } from "arktype"\nimport { Trimmed } from "./types.ts"\n\nexport const Admin = type({ name: Trimmed })`,
+						"/main.ts": `import { Admin } from "./admin.ts"\n\nAdmin({})`
+					},
+					{ preset: undefined, creationChecks: "none" }
+				)
+			).equals(everyMember)
+			attest(
+				await droppedFrom({
+					"/main.ts": `import { type } from "arktype"\n\nconst Trimmed = type("string").pipe(s => s.trim())\nconst Admin = type({ name: Trimmed, "alias?": Trimmed.or("undefined") })\n\nAdmin({})`
+				})
+			).equals(everyMember)
+		})
+
 		it("nothing in a type-only import", async () => {
 			attest(
 				await droppedReading(
@@ -417,21 +435,6 @@ contextualize(function (this: Mocha.Suite) {
 				})
 			).snap(
 				"admin.ts:2:10 passes User to a factory that checks it, which may read any member"
-			)
-		})
-
-		it("an import whose function a factory reads", async () => {
-			attest(
-				await droppedFrom(
-					{
-						"/types.ts": `import { type } from "arktype"\n\nexport const Trimmed = type("string").pipe(s => s.trim())`,
-						"/admin.ts": `import { type } from "arktype"\nimport { Trimmed } from "./types.ts"\n\nexport const Admin = type({ name: Trimmed })`,
-						"/main.ts": `import { Admin } from "./admin.ts"\n\nAdmin({})`
-					},
-					{ preset: undefined, creationChecks: "none" }
-				)
-			).snap(
-				"admin.ts:4:27 passes { name: Trimmed }, which holds a validator at name, to a function, which may read any member"
 			)
 		})
 
@@ -1132,10 +1135,10 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			)
 			try {
 				attest(await textsOf({ preset: undefined })).snap([
-					"prune: keeping assert, meta, ~standard and methods, because main.ts:6:13 passes { User }, which holds a validator at User, to a function, which may read any member. Set assert, meta, ~standard and methods in members, each false where no code reads it, to build without this warning."
+					"prune: keeping assert, meta, ~standard and methods, because main.ts:6:13 passes { User }, which holds a validator at User, to a function, which may read any member. Set assert, meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
 				])
 				attest(await textsOf({ members: { assert: true } })).snap([
-					"prune: keeping meta, ~standard and methods, because main.ts:6:13 passes { User }, which holds a validator at User, to a function, which may read any member. Set meta, ~standard and methods in members, each false where no code reads it, to build without this warning."
+					"prune: keeping meta, ~standard and methods, because main.ts:6:13 passes { User }, which holds a validator at User, to a function, which may read any member. Set meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
 				])
 				attest(await textsOf({ members })).equals([])
 				// setting what it kept changes nothing it writes
