@@ -294,8 +294,13 @@ const innerToJsonSchemaByKind: {
 	},
 	morph: (node, ctx) => {
 		const foreign = foreignTypesByMorph.get(node.piped[0] as never)
-		if (foreign && (ctx.io === "in" || node.piped.length === 1))
-			return foreignToJsonSchema(foreign, ctx)
+		if (foreign && (ctx.io === "in" || node.piped.length === 1)) {
+			return foreignToJsonSchema(
+				foreign,
+				node.head?.isUnknown() === false ? node.head : undefined,
+				ctx
+			)
+		}
 		return ctx.io === "in" ?
 				// its input as written, since _in drops the defaults it holds
 				toJsonSchemaRecurse(
@@ -367,28 +372,62 @@ const innerToJsonSchemaByKind: {
 // a Type from another copy of arktype, like 2.x, writes its own
 const foreignToJsonSchema = (
 	t: StandardSchemaV1,
+	head: BaseRoot | undefined,
 	ctx: JsonSchemaContext
 ): JsonSchema => {
 	const { jsonSchema } = t["~standard"] as Partial<StandardJSONSchemaV1.Props>
+	let input: JsonSchema | undefined
+	let output: JsonSchema | undefined
 	try {
 		if (jsonSchema) {
-			const { $schema, ...schema } = jsonSchema[
-				ctx.io === "in" ? "input" : "output"
-			]({ target: ctx.target })
-			return schema
+			input = writeOwn(jsonSchema.input, ctx)
+			output = ctx.io === "in" ? input : writeOwn(jsonSchema.output, ctx)
 		}
 	} catch {
 		// e.g. 2.x writes no "openapi-3.0"
 	}
+	if (!input || !output) return foreignFallback(ctx)
+	const json = JSON.stringify(input)
+	if (json !== JSON.stringify(output)) {
+		return foreignFallback(
+			ctx,
+			"its input and output differ, so only ~standard.jsonSchema.input can write it",
+			{ base: input, out: output }
+		)
+	}
+	// its refs resolve against its own document, not the one it's written into
+	if (/"\$(ref|dynamicRef|recursiveRef)"/.test(json))
+		return foreignFallback(ctx, "it references its own definitions")
+	if (head && ctx.io !== "in")
+		return foreignFallback(ctx, "it's intersected with another Type")
+	return head ? { allOf: [toJsonSchemaRecurse(head, ctx), input] } : input
+}
+
+const writeOwn = (
+	write: StandardJSONSchemaV1.Converter["input"],
+	ctx: JsonSchemaContext
+): JsonSchema => {
+	const { $schema, ...schema } = write({ target: ctx.target })
+	return schema
+}
+
+const foreignFallback = (
+	ctx: JsonSchemaContext,
+	reason?: string,
+	sides: Pick<ToJsonSchema.MorphContext, "base" | "out"> = {
+		base: {},
+		out: null
+	}
+): JsonSchema => {
 	try {
-		return ctx.fallback.morph({ code: "morph", base: {}, out: null })
+		return ctx.fallback.morph({ code: "morph", ...sides })
 	} catch (e) {
 		if (!(e instanceof ToJsonSchema.Error) || !e.hasCode("morph")) throw e
 		return ToJsonSchema.throw(
 			"morph",
 			e.context,
 			ctx.path,
-			`Can't convert the Type${ctx.path && ` at ${ctx.path}`} to ${ctx.target} JSON Schema. ${writeForeignArkMessage("It")}`
+			`Can't convert the Type${ctx.path && ` at ${ctx.path}`} to ${ctx.target} JSON Schema${reason ? `, since ${reason}` : ""}. ${writeForeignArkMessage("It")}`
 		)
 	}
 }
