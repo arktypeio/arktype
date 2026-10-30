@@ -100,19 +100,7 @@ const emitProject = (
 	const { options } = config
 	if (options.noEmit || options.emitDeclarationOnly)
 		throwError(writeUnemittedMessage(resolve(configPathOf(config))))
-	const emitOptions: ts.CompilerOptions = {
-		...options,
-		// tsc checks the program and emits its declarations
-		noCheck: true,
-		noEmitOnError: false,
-		declaration: false,
-		declarationMap: false,
-		composite: false,
-		incremental: false,
-		// each map is written once it maps to the module's source
-		sourceMap: !!(options.sourceMap || options.inlineSourceMap),
-		inlineSourceMap: false
-	}
+	const emitOptions = emitOptionsOf(options)
 	const host = ts.createCompilerHost(emitOptions)
 	const { getSourceFile } = host
 	const precompiled: Record<string, TransformedModule> = {}
@@ -183,26 +171,52 @@ const emitProject = (
 			}
 		)
 		if (!changed) continue
-		for (const fileName in outputs) {
-			if (fileName.endsWith(".map")) continue
-			const code = outputs[fileName]
-			const tscMap = outputs[`${fileName}.map`]
-			const map =
-				tscMap &&
-				mapToSource(
-					JSON.parse(tscMap),
-					precompiled[file.fileName]?.map,
-					file.text
-				)
-			if (map && options.inlineSourceMap) {
-				result.files[fileName] = appendSourceMap(
-					code.replace(/\n\/\/# sourceMappingURL=.*$/, ""),
-					map
-				)
-			} else {
-				result.files[fileName] = code
-				if (map) result.files[`${fileName}.map`] = JSON.stringify(map)
-			}
+		writeOutputs(
+			result.files,
+			outputs,
+			file,
+			precompiled[file.fileName],
+			options
+		)
+	}
+}
+
+const emitOptionsOf = (options: ts.CompilerOptions): ts.CompilerOptions => ({
+	...options,
+	// tsc checks the program and emits its declarations
+	noCheck: true,
+	noEmitOnError: false,
+	declaration: false,
+	declarationMap: false,
+	composite: false,
+	incremental: false,
+	// each map is written once it maps to the module's source
+	sourceMap: !!(options.sourceMap || options.inlineSourceMap),
+	inlineSourceMap: false
+})
+
+// each map tsc emits for a module is mapped through the precompiled one's to its source
+const writeOutputs = (
+	files: Record<string, string>,
+	outputs: Record<string, string>,
+	file: ts.SourceFile,
+	precompiled: TransformedModule | undefined,
+	options: ts.CompilerOptions
+) => {
+	for (const fileName in outputs) {
+		if (fileName.endsWith(".map")) continue
+		const code = outputs[fileName]
+		const tscMap = outputs[`${fileName}.map`]
+		const map =
+			tscMap && mapToSource(JSON.parse(tscMap), precompiled?.map, file.text)
+		if (map && options.inlineSourceMap) {
+			files[fileName] = appendSourceMap(
+				code.replace(/\n\/\/# sourceMappingURL=.*$/, ""),
+				map
+			)
+		} else {
+			files[fileName] = code
+			if (map) files[`${fileName}.map`] = JSON.stringify(map)
 		}
 	}
 }

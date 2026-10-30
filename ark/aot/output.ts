@@ -109,64 +109,9 @@ export const inlineModules = (
 	let loaders = 0
 	for (const specifier in imports) {
 		const inlined = moduleOf(specifier, modules[specifier])
-		const body = new MagicString(inlined.source)
-		const params: string[] = []
-		const args: string[] = []
-		const localsByName: Record<string, string> = {}
-		for (const statement of inlined.program.body) {
-			if (statement.type === "ImportDeclaration") {
-				const imported = (importsBySource[statement.source.value] ??= {
-					namespace: `${prefix}$${Object.keys(importsBySource).length}`,
-					isPassed: false,
-					locals: {}
-				})
-				// imported by name, so a bundler can drop the exports none read
-				const localOf = (name: string) =>
-					(imported.locals[name] ??= `${imported.namespace}$${name}`)
-				for (const binding of statement.specifiers) {
-					if (binding.type !== "ImportNamespaceSpecifier") {
-						params.push(binding.local.name)
-						args.push(
-							localOf(
-								binding.type === "ImportSpecifier" ?
-									exportNameOf(binding.imported)
-								:	"default"
-							)
-						)
-						continue
-					}
-					const members = membersReadOf(inlined, binding.local.name)
-					if (members) {
-						for (const { start, end, property } of members)
-							body.overwrite(start, end, localOf(property.name))
-						continue
-					}
-					imported.isPassed = true
-					params.push(binding.local.name)
-					args.push(imported.namespace)
-				}
-			} else if (statement.type === "ExportNamedDeclaration") {
-				for (const binding of statement.specifiers) {
-					localsByName[exportNameOf(binding.exported)] = exportNameOf(
-						binding.local
-					)
-				}
-			} else continue
-			body.remove(statement.start, statement.end)
-		}
-		for (const { id, binding } of inlined.scopes.root.unresolved) {
-			if (
-				binding ||
-				!(id.name in module.scopes.root.bindings) ||
-				params.includes(id.name)
-			)
-				continue
-			params.push(id.name)
-			args.push(`globalThis.${id.name}`)
-		}
 		const locals = imports[specifier]
 		const names = Object.keys(locals)
-		const call = `((${params.join(", ")}) => {\n${body.toString().trim()}\n${names.length ? `return { ${names.map(name => `${JSON.stringify(name)}: ${localsByName[name]}`).join(", ")} }\n` : ""}})(${args.join(", ")})`
+		const call = inlinedCallOf(inlined, names, module, prefix, importsBySource)
 		if (!names.length) {
 			declarations += `;${call};\n`
 			continue
@@ -202,6 +147,73 @@ interface InlinedImport {
 	// whether a module reads the namespace other than by its members
 	isPassed: boolean
 	locals: Record<string, string>
+}
+
+// a module's body as a call passing what it imports, returning what it exports
+// by the names given; a global the inlining module declares is passed as itself
+const inlinedCallOf = (
+	inlined: SourceModule,
+	names: string[],
+	module: SourceModule,
+	prefix: string,
+	importsBySource: Record<string, InlinedImport>
+): string => {
+	const body = new MagicString(inlined.source)
+	const params: string[] = []
+	const args: string[] = []
+	const localsByName: Record<string, string> = {}
+	for (const statement of inlined.program.body) {
+		if (statement.type === "ImportDeclaration") {
+			const imported = (importsBySource[statement.source.value] ??= {
+				namespace: `${prefix}$${Object.keys(importsBySource).length}`,
+				isPassed: false,
+				locals: {}
+			})
+			// imported by name, so a bundler can drop the exports none read
+			const localOf = (name: string) =>
+				(imported.locals[name] ??= `${imported.namespace}$${name}`)
+			for (const binding of statement.specifiers) {
+				if (binding.type !== "ImportNamespaceSpecifier") {
+					params.push(binding.local.name)
+					args.push(
+						localOf(
+							binding.type === "ImportSpecifier" ?
+								exportNameOf(binding.imported)
+							:	"default"
+						)
+					)
+					continue
+				}
+				const members = membersReadOf(inlined, binding.local.name)
+				if (members) {
+					for (const { start, end, property } of members)
+						body.overwrite(start, end, localOf(property.name))
+					continue
+				}
+				imported.isPassed = true
+				params.push(binding.local.name)
+				args.push(imported.namespace)
+			}
+		} else if (statement.type === "ExportNamedDeclaration") {
+			for (const binding of statement.specifiers) {
+				localsByName[exportNameOf(binding.exported)] = exportNameOf(
+					binding.local
+				)
+			}
+		} else continue
+		body.remove(statement.start, statement.end)
+	}
+	for (const { id, binding } of inlined.scopes.root.unresolved) {
+		if (
+			binding ||
+			!(id.name in module.scopes.root.bindings) ||
+			params.includes(id.name)
+		)
+			continue
+		params.push(id.name)
+		args.push(`globalThis.${id.name}`)
+	}
+	return `((${params.join(", ")}) => {\n${body.toString().trim()}\n${names.length ? `return { ${names.map(name => `${JSON.stringify(name)}: ${localsByName[name]}`).join(", ")} }\n` : ""}})(${args.join(", ")})`
 }
 
 type StaticMember = Extract<MemberExpression, { computed: false }>

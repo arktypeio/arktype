@@ -1281,7 +1281,7 @@ export const precompile = {
 	...(unplugin as PrecompileUnplugin),
 	// Bun.build ignores tsconfig's jsxImportSource where an onResolve hook
 	// matches every import, so ours doesn't
-	bun: options => {
+	bun: (options?: Options) => {
 		const plugin = unplugin.bun(options)
 		return {
 			...plugin,
