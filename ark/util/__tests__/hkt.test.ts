@@ -2,8 +2,9 @@ import { attest, contextualize } from "@ark/attest"
 import type { Hkt } from "@ark/util"
 
 contextualize(() => {
-	interface AppendKind<element = unknown>
-		extends Hkt<[element: element, to: readonly element[]]> {
+	interface AppendKind<element = unknown> extends Hkt<
+		[element: element, to: readonly element[]]
+	> {
 		body: [...this[1], this[0]]
 	}
 

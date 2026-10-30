@@ -27,8 +27,9 @@ export declare namespace Predicate {
 		| NormalizedSchema<predicate>
 		| predicate
 
-	export interface NormalizedSchema<predicate extends Predicate = Predicate>
-		extends BaseNormalizedSchema {
+	export interface NormalizedSchema<
+		predicate extends Predicate = Predicate
+	> extends BaseNormalizedSchema {
 		readonly predicate: predicate
 	}
 
@@ -40,15 +41,14 @@ export declare namespace Predicate {
 		readonly predicate?: Predicate
 	}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "predicate"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
-			inner: Inner
-			intersectionIsOpen: true
-			errorContext: ErrorContext
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "predicate"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		intersectionIsOpen: true
+		errorContext: ErrorContext
+	}> {}
 
 	export type Node = PredicateNode
 }

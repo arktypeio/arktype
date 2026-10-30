@@ -452,7 +452,8 @@ export interface Inferred<out t = unknown, $ = {}> {
 
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
-	extends Callable<(data: unknown) => distill.Out<t> | ArkEnv.onFail>,
+	extends
+		Callable<(data: unknown) => distill.Out<t> | ArkEnv.onFail>,
 		Inferred<t, $> {
 	/**
 	 * #### cast the way this is inferred

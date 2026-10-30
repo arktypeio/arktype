@@ -104,10 +104,9 @@ export type overlaps<l, r> =
 	: [l, r] extends [object, object] ?
 		false extends (
 			propValueOf<{
-				[k in Extract<
-					keyof l & keyof r,
-					requiredKeyOf<l> | requiredKeyOf<r>
-				>]: overlaps<l[k], r[k]>
+				[
+					k in Extract<keyof l & keyof r, requiredKeyOf<l> | requiredKeyOf<r>>
+				]: overlaps<l[k], r[k]>
 			}>
 		) ?
 			false

@@ -59,20 +59,19 @@ export interface AttachedParseContext {
 }
 
 export interface BaseParseContext
-	extends BaseParseContextInput,
-		AttachedParseContext {
+	extends BaseParseContextInput, AttachedParseContext {
 	id: NodeId
 }
 
-export interface NodeParseContextInput<kind extends NodeKind = NodeKind>
-	extends BaseParseContextInput {
+export interface NodeParseContextInput<
+	kind extends NodeKind = NodeKind
+> extends BaseParseContextInput {
 	kind: kind
 	def: NormalizedSchema<kind>
 }
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
-	extends NodeParseContextInput<kind>,
-		AttachedParseContext {
+	extends NodeParseContextInput<kind>, AttachedParseContext {
 	id: NodeId
 }
 

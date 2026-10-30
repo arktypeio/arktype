@@ -19,8 +19,9 @@ export const BoundModule: new <exports extends {}, $ extends {}>(
 	$: $
 ) => BoundModule<exports, $> = RootModule as never
 
-export interface BoundModule<exports extends {}, $>
-	extends RootModule<bindExportsToScope<exports, $>> {}
+export interface BoundModule<exports extends {}, $> extends RootModule<
+	bindExportsToScope<exports, $>
+> {}
 
 export type bindExportsToScope<exports, $> = {
 	[k in keyof exports]: instantiateExport<exports[k], $>

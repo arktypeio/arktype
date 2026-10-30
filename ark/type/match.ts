@@ -255,10 +255,9 @@ type DefaultMethod<ctx extends MatchParserContext> = <
 ) => finalizeMatchParser<ctx, def>
 
 type validateCases<cases, ctx extends MatchParserContext> = {
-	[def in
-		| keyof cases
-		| BaseCompletions<ctx["$"], {}, "default">]?: def extends "default" ?
-		DefaultCase<ctx>
+	[
+		def in keyof cases | BaseCompletions<ctx["$"], {}, "default">
+	]?: def extends "default" ? DefaultCase<ctx>
 	: def extends number ? (In: inferCaseArg<`${def}`, ctx, "out">) => unknown
 	: def extends type.validate<def, ctx["$"]> ?
 		(In: inferCaseArg<def, ctx, "out">) => unknown
@@ -293,10 +292,12 @@ type finalizeMatchParser<
 		Match<ctx["input"], ctx["cases"]>
 	:	never
 
-export interface Match<In = any, cases extends Morph[] = Morph[]>
-	extends Inferred<
-		(In: Morph.In<cases[number]>) => Out<ReturnType<cases[number]>>
-	> {
+export interface Match<
+	In = any,
+	cases extends Morph[] = Morph[]
+> extends Inferred<
+	(In: Morph.In<cases[number]>) => Out<ReturnType<cases[number]>>
+> {
 	<const data extends In>(
 		data: data
 	): {
@@ -344,7 +345,7 @@ type InternalCaseParserFn = (
 type CaseEntry = [BaseRoot, Morph] | ["default", DefaultCase]
 
 export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
-	$: InternalScope;
+	$: InternalScope
 	in: BaseRoot | undefined
 	protected key: Key | undefined
 	protected branches: BaseRoot[] = []

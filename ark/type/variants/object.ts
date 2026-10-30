@@ -240,23 +240,26 @@ type constructMapped<t, transformed extends listable<MappedTypeProp>> = show<
 
 type fromTypeProps<t, props extends array<MappedTypeProp>> = show<
 	{
-		[prop in props[number] as Extract<
-			applyHomomorphicOptionality<t, prop>,
-			{ kind: "required" }
-		>["key"]]: prop["value"][inferred]
+		[
+			prop in props[number] as Extract<
+				applyHomomorphicOptionality<t, prop>,
+				{ kind: "required" }
+			>["key"]
+		]: prop["value"][inferred]
 	} & {
-		[prop in props[number] as Extract<
-			applyHomomorphicOptionality<t, prop>,
-			{ kind: "optional"; default?: never }
-		>["key"]]?: prop["value"][inferred]
+		[
+			prop in props[number] as Extract<
+				applyHomomorphicOptionality<t, prop>,
+				{ kind: "optional"; default?: never }
+			>["key"]
+		]?: prop["value"][inferred]
 	} & {
-		[prop in props[number] as Extract<
-			applyHomomorphicOptionality<t, prop>,
-			{ kind: "optional"; default: unknown }
-		>["key"]]: withDefault<
-			prop["value"][inferred],
-			prop["default" & keyof prop]
-		>
+		[
+			prop in props[number] as Extract<
+				applyHomomorphicOptionality<t, prop>,
+				{ kind: "optional"; default: unknown }
+			>["key"]
+		]: withDefault<prop["value"][inferred], prop["default" & keyof prop]>
 	}
 >
 

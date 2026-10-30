@@ -34,8 +34,8 @@ export declare namespace Domain {
 
 	export interface NormalizedSchema<
 		domain extends NonEnumerable = NonEnumerable
-	> extends BaseNormalizedSchema,
-			Inner<domain> {}
+	>
+		extends BaseNormalizedSchema, Inner<domain> {}
 
 	export type Schema<
 		// only domains with an infinite number of values are allowed as bases
@@ -44,14 +44,13 @@ export declare namespace Domain {
 
 	export interface ErrorContext extends BaseErrorContext<"domain">, Inner {}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "domain"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
-			inner: Inner
-			errorContext: ErrorContext
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "domain"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		errorContext: ErrorContext
+	}> {}
 
 	export type Node = DomainNode
 }

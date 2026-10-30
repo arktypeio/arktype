@@ -85,16 +85,15 @@ export declare namespace Union {
 		errors: readonly ArkError[]
 	}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "union"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
-			inner: Inner
-			errorContext: ErrorContext
-			reducibleTo: RootKind
-			childKind: UnionChildKind
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "union"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		errorContext: ErrorContext
+		reducibleTo: RootKind
+		childKind: UnionChildKind
+	}> {}
 
 	export type Node = UnionNode
 }
@@ -1027,8 +1026,9 @@ type DiscriminantLocation<kind extends DiscriminantKind = DiscriminantKind> = {
 	kind: kind
 }
 
-export interface Discriminant<kind extends DiscriminantKind = DiscriminantKind>
-	extends DiscriminantLocation<kind> {
+export interface Discriminant<
+	kind extends DiscriminantKind = DiscriminantKind
+> extends DiscriminantLocation<kind> {
 	cases: DiscriminatedCases<kind>
 }
 

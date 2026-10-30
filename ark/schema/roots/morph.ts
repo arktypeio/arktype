@@ -43,14 +43,13 @@ export declare namespace Morph {
 		readonly declaredOut?: BaseRoot
 	}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "morph"
-			schema: Schema
-			normalizedSchema: Schema
-			inner: Inner
-			childKind: RootKind
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "morph"
+		schema: Schema
+		normalizedSchema: Schema
+		inner: Inner
+		childKind: RootKind
+	}> {}
 
 	export type Node = MorphNode
 

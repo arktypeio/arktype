@@ -37,8 +37,9 @@ export declare namespace Proto {
 		| proto
 		| ExpandedSchema<proto>
 
-	export interface NormalizedSchema<proto extends Constructor = Constructor>
-		extends BaseNormalizedSchema {
+	export interface NormalizedSchema<
+		proto extends Constructor = Constructor
+	> extends BaseNormalizedSchema {
 		readonly proto: proto
 		readonly dateAllowsInvalid?: boolean
 	}
@@ -55,14 +56,13 @@ export declare namespace Proto {
 
 	export interface ErrorContext extends BaseErrorContext<"proto">, Inner {}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "proto"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
-			inner: Inner
-			errorContext: ErrorContext
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "proto"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		errorContext: ErrorContext
+	}> {}
 
 	export type Node = ProtoNode
 }

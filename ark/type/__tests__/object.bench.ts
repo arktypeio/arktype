@@ -15,8 +15,7 @@ bench("object literal", () =>
 		a: "string[]",
 		b: "number[]",
 		c: { nested: "boolean[]" }
-	})
-).types([2149, "instantiations"])
+	})).types([2149, "instantiations"])
 
 bench("declared object literal", () => {
 	type
@@ -39,8 +38,7 @@ bench("object literal with optional keys", () =>
 		"a?": "string[]",
 		"b?": "number[]",
 		"c?": { "nested?": "boolean[]" }
-	})
-).types([2009, "instantiations"])
+	})).types([2009, "instantiations"])
 
 bench("tuple", () => type(["string[]", "number[]", ["boolean[]"]])).types([
 	2594,
@@ -50,8 +48,7 @@ bench("tuple", () => type(["string[]", "number[]", ["boolean[]"]])).types([
 bench("inline definition", () =>
 	type({
 		a: "string"
-	})
-).types([685, "instantiations"])
+	})).types([685, "instantiations"])
 
 bench("referenced type", () => {
 	const A = type("string")
@@ -64,8 +61,7 @@ bench("referenced type", () => {
 bench("inline reference", () =>
 	type({
 		a: type("string")
-	})
-).types([804, "instantiations"])
+	})).types([804, "instantiations"])
 
 bench("nested type invocations", () =>
 	type({
@@ -86,5 +82,4 @@ bench("nested type invocations", () =>
 				quux: "1 | 2 | 3"
 			})
 			.array()
-	})
-).types([8429, "instantiations"])
+	})).types([8429, "instantiations"])

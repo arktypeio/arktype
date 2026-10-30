@@ -26,12 +26,12 @@ import { string } from "./string.ts"
 import { arkTsGenerics, arkTsKeywords, object, unknown } from "./ts.ts"
 
 export interface Ark
-	extends Omit<Ark.keywords, keyof Ark.wrapped>,
-		Ark.wrapped {}
+	extends Omit<Ark.keywords, keyof Ark.wrapped>, Ark.wrapped {}
 
 export declare namespace Ark {
 	export interface keywords
-		extends arkTsKeywords.$,
+		extends
+			arkTsKeywords.$,
 			arkTsGenerics.$,
 			// don't include TypedArray since it is only a Module
 			arkPrototypes.keywords,
@@ -54,8 +54,10 @@ export declare namespace Ark {
 		Array: arkPrototypes.$["Array"]["root"]
 	}
 
-	export interface boundTypeAttachments<$>
-		extends Omit<BoundModule<typeAttachments, $>, arkKind> {}
+	export interface boundTypeAttachments<$> extends Omit<
+		BoundModule<typeAttachments, $>,
+		arkKind
+	> {}
 }
 
 export const ark: Scope<Ark> = scope(

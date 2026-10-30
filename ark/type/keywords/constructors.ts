@@ -19,9 +19,8 @@ const omittedPrototypes = {
 } satisfies KeySet<keyof EcmascriptObjects>
 
 export const arkPrototypes: arkPrototypes.module = Scope.module({
-	...flatMorph(
-		{ ...ecmascriptConstructors, ...platformConstructors },
-		(k, v) => (k in omittedPrototypes ? [] : ([k, ["instanceof", v]] as const))
+	...flatMorph({ ...ecmascriptConstructors, ...platformConstructors }, (k, v) =>
+		k in omittedPrototypes ? [] : ([k, ["instanceof", v]] as const)
 	),
 	Array: arkArray,
 	TypedArray,

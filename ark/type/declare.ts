@@ -88,10 +88,12 @@ type validateObjectInference<
 			validateInference<def[k], declared[k], $, args, ctx>
 		:	declared[k]
 	} & {
-		[k in optionalKeyOf<declared> & string as declaredOptionalKeySuggestion<
-			k,
-			def
-		>]: declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
+		[
+			k in optionalKeyOf<declared> & string as declaredOptionalKeySuggestion<
+				k,
+				def
+			>
+		]: declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
 	}
 >
 

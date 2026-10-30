@@ -4,6 +4,9 @@ packages:
 # skip versions published in the last day (in minutes), so a hijacked release
 # is usually caught and pulled before it can resolve into the lockfile
 minimumReleaseAge: 1440
+# our own fork of oxfmt with experimentalTernaries, see oxc-project/oxc#14914
+minimumReleaseAgeExclude:
+  - "@ark/oxfmt"
 
 # lets tools that need TypeScript's JS API, which TS 7 doesn't have, use TS 6
 pnpmfile: pnpmfile.ts

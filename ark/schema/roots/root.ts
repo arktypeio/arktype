@@ -69,9 +69,9 @@ export interface InternalRootDeclaration extends BaseNodeDeclaration {
 }
 
 export abstract class BaseRoot<
-		/** @ts-ignore cast variance */
-		out d extends InternalRootDeclaration = InternalRootDeclaration
-	>
+	/** @ts-ignore cast variance */
+	out d extends InternalRootDeclaration = InternalRootDeclaration
+>
 	extends BaseNode<d>
 	implements StandardSchemaV1, StandardJSONSchemaV1
 {

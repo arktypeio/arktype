@@ -65,11 +65,13 @@ contextualize(() => {
 	it("infer method output", () => {
 		type ExpectedKey<t = type<object>> =
 			| propValueOf<{
-					[k in keyof t as t[k] extends Fn<never, type.Any> ?
-						[t[k]] extends [Fn<never, anyOrNever>] ?
-							never
-						:	k
-					:	never]: k
+					[
+						k in keyof t as t[k] extends Fn<never, type.Any> ?
+							[t[k]] extends [Fn<never, anyOrNever>] ?
+								never
+							:	k
+						:	never
+					]: k
 			  }>
 			| "to"
 			| "get"

@@ -36,15 +36,14 @@ export declare namespace After {
 
 	export interface ErrorContext extends BaseErrorContext<"after">, Inner {}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "after"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
-			inner: Inner
-			prerequisite: Date
-			errorContext: ErrorContext
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "after"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		prerequisite: Date
+		errorContext: ErrorContext
+	}> {}
 
 	export type Node = AfterNode
 }

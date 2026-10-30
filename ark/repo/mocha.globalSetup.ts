@@ -4,6 +4,7 @@ process.env.TZ = "America/New_York"
 
 export const mochaGlobalSetup = (): typeof cleanup =>
 	setup({
+		formatCmd: "npm exec --no -- oxfmt",
 		typeToStringFormat: {
 			useTabs: true
 		}

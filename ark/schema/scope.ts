@@ -106,8 +106,9 @@ type resolutionsOfReference<k extends string, v> =
 		[v] extends [anyOrNever] ?
 			{ [_ in k]: v }
 		:	prefixKeys<flatResolutionsOf<v>, k> & {
-				[innerKey in keyof v as innerKey extends "root" ? k
-				:	never]: v[innerKey]
+				[
+					innerKey in keyof v as innerKey extends "root" ? k : never
+				]: v[innerKey]
 			}
 	:	{ [_ in k]: v }
 
@@ -165,12 +166,12 @@ export interface ScopeOnlyConfigOptions {
 }
 
 export interface ArkSchemaScopeConfig
-	extends Omit<ArkSchemaConfig, GlobalOnlyConfigOptionName>,
+	extends
+		Omit<ArkSchemaConfig, GlobalOnlyConfigOptionName>,
 		ScopeOnlyConfigOptions {}
 
 export interface ResolvedScopeConfig
-	extends ResolvedConfig,
-		ScopeOnlyConfigOptions {}
+	extends ResolvedConfig, ScopeOnlyConfigOptions {}
 
 $ark.ambient ??= {} as never
 

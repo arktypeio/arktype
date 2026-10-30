@@ -31,10 +31,8 @@ type makeComplexType<S extends string> =
 
 bench("bench type", () => ({}) as makeComplexType<"defenestration">).types()
 
-bench(
-	"bench type from external module",
-	() => ({}) as externalmakeComplexType<"defenestration">
-).types()
+bench("bench type from external module", () =>
+	({}) as externalmakeComplexType<"defenestration">).types()
 
 bench(
 	"bench call and type",

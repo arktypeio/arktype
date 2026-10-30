@@ -28,16 +28,15 @@ export declare namespace Pattern {
 
 	export interface ErrorContext extends BaseErrorContext<"pattern">, Inner {}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "pattern"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
-			inner: Inner
-			intersectionIsOpen: true
-			prerequisite: string
-			errorContext: ErrorContext
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "pattern"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		intersectionIsOpen: true
+		prerequisite: string
+		errorContext: ErrorContext
+	}> {}
 
 	export type Node = PatternNode
 }

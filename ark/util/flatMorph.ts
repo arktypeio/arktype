@@ -8,9 +8,10 @@ type objectFromListableEntries<transformed extends readonly GroupableEntry[]> =
 	show<intersectUnion<fromGroupableEntries<transformed>>>
 
 type fromGroupableEntries<entries extends readonly GroupableEntry[]> = {
-	[entry in entries[number] as entry extends GroupedEntry ? entry[0]["group"]
-	:	conform<entry[0], PropertyKey>]: entry extends GroupedEntry ? entry[1][]
-	:	entry[1]
+	[
+		entry in entries[number] as entry extends GroupedEntry ? entry[0]["group"]
+		:	conform<entry[0], PropertyKey>
+	]: entry extends GroupedEntry ? entry[1][] : entry[1]
 }
 
 type arrayFromListableEntries<transformed extends Entry> =

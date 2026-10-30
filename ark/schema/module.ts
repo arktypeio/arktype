@@ -52,5 +52,6 @@ export const SchemaModule: new <$ = {}>(
 	types: exportSchemaScope<$>
 ) => SchemaModule<$> = RootModule
 
-export interface SchemaModule<$ = {}>
-	extends RootModule<exportSchemaScope<$>> {}
+export interface SchemaModule<$ = {}> extends RootModule<
+	exportSchemaScope<$>
+> {}

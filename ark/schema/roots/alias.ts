@@ -27,8 +27,9 @@ export declare namespace Alias {
 		| `$${alias}`
 		| NormalizedSchema<alias>
 
-	export interface NormalizedSchema<alias extends string = string>
-		extends BaseNormalizedSchema {
+	export interface NormalizedSchema<
+		alias extends string = string
+	> extends BaseNormalizedSchema {
 		readonly reference: alias
 		readonly resolve?: () => BaseRoot
 	}
@@ -38,13 +39,12 @@ export declare namespace Alias {
 		readonly resolve?: () => BaseRoot
 	}
 
-	export interface Declaration
-		extends declareNode<{
-			kind: "alias"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
-			inner: Inner
-		}> {}
+	export interface Declaration extends declareNode<{
+		kind: "alias"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+	}> {}
 
 	export type Node = AliasNode
 }
