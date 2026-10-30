@@ -1116,8 +1116,7 @@ const writeFlat = (
 				written = { body, returned }
 				for (const pass of [skipAliases, inlineCalls, dropUnread])
 					written = untilUnchanged(written, parse, pass)
-				// a bundler keeps the call anyway, and oxc's minifier keeps the annotations' bytes
-				written.body = withoutAnnotations(inGzipOrder(written.body))
+				written.body = inGzipOrder(written.body)
 				writtenByReturned.set(returned, written)
 			}
 			// swc would inline the IIFE, making its constants module variables
@@ -1280,10 +1279,25 @@ const inlineCalls: UnitsPass = ({ code, program, scopes }, s, body) => {
 	const declared = new Map<string, number>()
 	for (const { name } of scopes.bindingsById.values())
 		declared.set(name, (declared.get(name) ?? 0) + 1)
+	// by position, so those within a function are found by search
+	let sorted: Reference[] | undefined
+	const referencesIn = (fn: Node) => {
+		sorted ??= [...scopes.references].sort((l, r) => l.id.start - r.id.start)
+		let low = 0
+		let high = sorted.length
+		while (low < high) {
+			const mid = (low + high) >> 1
+			if (sorted[mid].id.start < fn.start) low = mid + 1
+			else high = mid
+		}
+		const result: Reference[] = []
+		for (let i = low; i < sorted.length && sorted[i].id.start < fn.end; i++)
+			result.push(sorted[i])
+		return result
+	}
 	const readsAlike = (fn: Node) =>
-		scopes.references.every(
+		referencesIn(fn).every(
 			({ id, binding }) =>
-				id.start < fn.start ||
 				id.end > fn.end ||
 				(binding?.declaration === fn ? !binding.writes.length
 				: binding && binding.id.start > fn.start && binding.id.end < fn.end ?
@@ -1382,29 +1396,36 @@ const dropUnread: UnitsPass = ({ code, program, scopes }, s, body) => {
 	}
 }
 
-const withoutAnnotations = (body: string): string => {
-	const { comments } = parseUnits(body)
-	const s = new MagicString(body)
-	for (const comment of comments)
-		if (pureAnnotation.test(comment.value)) s.remove(comment.start, comment.end)
-	return s.toString()
-}
-
 const pureAnnotation = /^\s*[#@]__PURE__\s*$/
 
 // functions first and beside those like them, so gzip finds their repeats,
-// where there are enough to pay
+// where there are enough to pay; without annotations, as a bundler keeps the
+// call anyway, and oxc's minifier keeps their bytes
 const inGzipOrder = (body: string): string => {
-	const { program } = parseUnits(body)
+	const { program, comments } = parseUnits(body)
+	const annotations = comments.filter(comment =>
+		pureAnnotation.test(comment.value)
+	)
+	let next = 0
+	// read in order, each span after the last
+	const textOf = (start: number, end: number) => {
+		while (next < annotations.length && annotations[next].start < start) next++
+		let text = ""
+		for (; next < annotations.length && annotations[next].end <= end; next++) {
+			text += body.slice(start, annotations[next].start)
+			start = annotations[next].end
+		}
+		return text + body.slice(start, end)
+	}
 	const functions: [key: string, text: string][] = []
 	const rest: string[] = []
 	for (const statement of program.body as Node[]) {
 		if (statement.type !== "VariableDeclaration") {
-			rest.push(body.slice(statement.start, statement.end))
+			rest.push(textOf(statement.start, statement.end))
 			continue
 		}
 		for (const declarator of statement.declarations) {
-			const text = `${statement.kind} ${body.slice(declarator.start, declarator.end)}`
+			const text = `${statement.kind} ${textOf(declarator.start, declarator.end)}`
 			const { init } = declarator
 			if (
 				init?.type === "ArrowFunctionExpression" ||
@@ -1417,7 +1438,10 @@ const inGzipOrder = (body: string): string => {
 			} else rest.push(text)
 		}
 	}
-	if (functions.length < minSortedFunctions) return body
+	if (functions.length < minSortedFunctions) {
+		next = 0
+		return textOf(0, body.length)
+	}
 	functions.sort(([l], [r]) =>
 		l < r ? -1
 		: l > r ? 1
