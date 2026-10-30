@@ -244,6 +244,8 @@ const sharedWritesOf = (baking: Baking): Map<string, SharedWrite> => {
 
 const printedHolesByUnit = new WeakMap<RootUnit, string | null>()
 
+const firstHoleName = new RegExp(holeNamePattern.source)
+
 // the first hole name a unit's code prints, read once for each artifact writing it
 const printedHoleOf = (unit: RootUnit): string | null => {
 	let printed = printedHolesByUnit.get(unit)
@@ -251,7 +253,7 @@ const printedHoleOf = (unit: RootUnit): string | null => {
 		printed = null
 		for (const [, source] of unit.members) {
 			const match =
-				source.includes(holeNameMarker) && source.match(holeNamePattern)
+				source.includes(holeNameMarker) && source.match(firstHoleName)
 			if (match) {
 				printed = match[0]
 				break
