@@ -66,6 +66,131 @@
 	translate: none;
 }
 
+/* ===== release banner =====
+   in the flow above the nav, so it scrolls away and nothing sticky makes room
+   for it; ReleaseBanner's script hides it before first paint once closed */
+
+.banner {
+	position: relative;
+	isolation: isolate;
+	flex: none;
+	height: 44px;
+	overflow: hidden;
+	background: var(--sunk);
+	border-bottom: 1px solid var(--rule-soft);
+	font: 650 15.5px / 1 var(--sans);
+}
+
+:root[data-banner="closed"] .banner {
+	display: none;
+}
+
+/* two bands of light drifting past each other */
+.banner::before,
+.banner::after {
+	content: "";
+	position: absolute;
+	inset: 0 0 0 -25%;
+	z-index: -1;
+	background: repeating-linear-gradient(
+			60deg,
+			transparent,
+			var(--banner-ray) 12%,
+			transparent 26%,
+			transparent 40%
+		)
+		0 0 / 200% 100%;
+	mask-image: radial-gradient(ellipse at top, #000, transparent 80%);
+	animation: banner-drift 16s linear infinite alternate-reverse;
+}
+
+.banner::after {
+	background-image: repeating-linear-gradient(
+		45deg,
+		transparent,
+		var(--banner-ray) 12%,
+		transparent 26%,
+		transparent 40%
+	);
+	animation-duration: 20s;
+	animation-direction: alternate;
+}
+
+@keyframes banner-drift {
+	to {
+		translate: 25% 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.banner::before,
+	.banner::after {
+		animation: none;
+	}
+}
+
+.banner a {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	padding: 0 48px;
+	color: var(--gold);
+	white-space: nowrap;
+	transition: color var(--t-micro);
+}
+
+.banner a:hover {
+	color: var(--gold-hi);
+}
+
+.banner a:focus-visible {
+	outline-offset: -4px;
+}
+
+/* closing needs the script, which marks html[data-banner] */
+.banner button {
+	position: absolute;
+	top: 50%;
+	right: 8px;
+	display: none;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	translate: 0 -50%;
+	border-radius: var(--r-md);
+	color: var(--ink-3);
+	cursor: pointer;
+	transition:
+		color var(--t-micro),
+		background-color var(--t-micro);
+}
+
+:root[data-banner] .banner button {
+	display: grid;
+}
+
+.banner button:hover {
+	color: var(--ink);
+	background: color-mix(in oklab, var(--ink) 6%, transparent);
+}
+
+.banner svg {
+	width: 17px;
+	height: 17px;
+}
+
+@media (max-width: 900px) {
+	.banner {
+		height: 40px;
+		font-size: 14.5px;
+	}
+
+	.banner button {
+		right: 4px;
+	}
+}
+
 /* ===== top bar ===== */
 
 .topbar {

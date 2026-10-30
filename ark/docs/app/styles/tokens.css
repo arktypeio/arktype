@@ -87,6 +87,9 @@
 	--grain: 0.05;
 	--scrim: rgb(3 6 12 / 0.62);
 
+	/* the release banner's drifting bands */
+	--banner-ray: rgb(64 143 222 / 0.3);
+
 	/* type */
 	--sans: var(--font-atkinson), system-ui, sans-serif;
 	--mono: var(--font-cascadia), "Cascadia Fallback", ui-monospace, monospace;
@@ -201,6 +204,8 @@
 	--glow-b: rgb(202 132 46 / 0.1);
 	--grain: 0;
 	--scrim: rgb(52 38 14 / 0.24);
+
+	--banner-ray: rgb(236 189 111 / 0.4);
 }
 
 @media (max-width: 900px) {
