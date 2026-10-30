@@ -187,13 +187,6 @@
 
 /* ===== cards ===== */
 
-.cards {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
-	gap: 14px;
-	margin: 1.3rem 0 1.6rem;
-}
-
 .card {
 	display: flex;
 	flex-direction: column;
@@ -227,17 +220,6 @@
 	color: var(--ink);
 }
 
-.card-icon {
-	display: inline-grid;
-	align-self: center;
-	color: var(--gold);
-}
-
-.card-icon svg {
-	width: 1.1rem;
-	height: 1.1rem;
-}
-
 .card-arrow {
 	margin-left: auto;
 	font-weight: 400;
@@ -258,70 +240,10 @@
 	margin-top: 14px;
 }
 
-@media (max-width: 900px) {
-	.cards {
-		grid-template-columns: 1fr;
-	}
-}
-
 @media (prefers-reduced-motion: reduce) {
 	.card[data-link]:hover .card-arrow {
 		translate: none;
 	}
-}
-
-/* ===== steps ===== */
-
-.prose .steps {
-	position: relative;
-	counter-reset: step;
-	margin: 1.6rem 0;
-	padding: 0;
-	list-style: none;
-}
-
-.prose .steps::before {
-	content: "";
-	position: absolute;
-	top: 11px;
-	bottom: 11px;
-	left: 11px;
-	width: 1px;
-	background: var(--rule);
-}
-
-.prose .step {
-	position: relative;
-	counter-increment: step;
-	padding-left: 40px;
-}
-
-.prose .step + .step {
-	margin-top: 2rem;
-}
-
-.prose .step::before {
-	content: counter(step);
-	position: absolute;
-	top: 0.15rem;
-	left: 0;
-	display: grid;
-	place-items: center;
-	width: 22px;
-	height: 22px;
-	border: 1px solid var(--rule);
-	border-radius: 50%;
-	background: var(--bg);
-	font: 400 12px / 1 var(--mono);
-	color: var(--copper);
-}
-
-.prose .step > :first-child {
-	margin-top: 0;
-}
-
-.prose .step > :is(h2, h3, h4):first-child {
-	font-size: var(--fs-h3-docs);
 }
 
 /* ===== API reference rows (from <ApiTable />) ===== */

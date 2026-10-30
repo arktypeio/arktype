@@ -1,5 +1,4 @@
 import { throwInternalError, type propwiseXor } from "@ark/util"
-import { cx } from "class-variance-authority"
 import type { Element } from "hast"
 import { toJsxRuntime } from "hast-util-to-jsx-runtime"
 import { Fragment, jsx, jsxs } from "react/jsx-runtime"
@@ -13,13 +12,8 @@ export type CodeBlockProps = {
 	/** @default "ts" */
 	lang?: HighlightLang
 	title?: string
-	style?: React.CSSProperties
-	className?: string
 	includesCompletions?: boolean
-	decorators?: CodeBlockDecorator[]
 } & propwiseXor<{ children: string }, { fromFile: SnippetId }>
-
-export type CodeBlockDecorator = "@noErrors"
 
 /** highlights code from a string or a snippet file, for use outside Markdown code fences */
 export const CodeBlock = async ({
@@ -27,12 +21,9 @@ export const CodeBlock = async ({
 	title,
 	children,
 	fromFile,
-	style,
-	className,
-	includesCompletions,
-	decorators
+	includesCompletions
 }: CodeBlockProps) => {
-	let src = children ?? snippetContentsById[fromFile!]
+	const src = children ?? snippetContentsById[fromFile!]
 
 	if (!src) {
 		throwInternalError(
@@ -42,14 +33,10 @@ export const CodeBlock = async ({
 		)
 	}
 
-	if (decorators)
-		for (const d of decorators) if (!src.includes(d)) src = `// ${d}\n${src}`
-
 	return (
 		<CodeFrame
 			title={title}
-			className={cx(className, includesCompletions && "completions-block")}
-			style={style}
+			className={includesCompletions ? "completions-block" : undefined}
 		>
 			{await highlightToJsx(src, lang)}
 		</CodeFrame>

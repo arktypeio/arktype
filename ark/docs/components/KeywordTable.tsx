@@ -1,8 +1,4 @@
-import {
-	keywordRowsByTable,
-	keywordTableNames,
-	type KeywordTableName
-} from "../lib/keywords.ts"
+import { keywordRowsByTable, type KeywordTableName } from "../lib/keywords.ts"
 import { Table } from "./mdx/Table.tsx"
 
 const withInlineCode = (text: string) =>
@@ -50,18 +46,3 @@ export const KeywordTable = ({ name }: { name: KeywordTableName }) => (
 		</tbody>
 	</Table>
 )
-
-export const StringKeywordTable = () => <KeywordTable name="string" />
-
-export const NumberKeywordTable = () => <KeywordTable name="number" />
-
-export const GenericKeywordTable = () => <KeywordTable name="generic" />
-
-/** only reached outside docs content, which expands it into headings and tables */
-export const AllKeywordTables = () =>
-	keywordTableNames.map(name => (
-		<section key={name}>
-			<h3 id={name.toLowerCase()}>{name}</h3>
-			<KeywordTable name={name} />
-		</section>
-	))

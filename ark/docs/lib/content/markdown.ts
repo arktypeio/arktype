@@ -16,7 +16,6 @@ import { toMarkdown } from "mdast-util-to-markdown"
 import { visit } from "unist-util-visit"
 import { siteUrl } from "../../app/metadata.ts"
 import { installCommand } from "../../components/installCommand.ts"
-import { benchNotes, benchTable, harness } from "../bench/bench.ts"
 import snippetContentsById from "../../components/snippets/contentsById.ts"
 import {
 	claims,
@@ -280,12 +279,13 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 			return [code]
 		}
 		case "LinkCard":
-		case "Card": {
-			const href = attr(node, "href")
-			const title = attr(node, "title") ?? ""
-			if (!href) return [paragraph(title, true), ...children]
-			return [linkItem(title, href, attr(node, "description"))]
-		}
+			return [
+				linkItem(
+					attr(node, "title")!,
+					attr(node, "href")!,
+					attr(node, "description")
+				)
+			]
 		case "KeywordTable": {
 			const name = attr(node, "name") as KeywordTableName
 			return [
@@ -296,35 +296,6 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 						description
 					])
 				)
-			]
-		}
-		case "BenchmarkChart": {
-			const bench = benchTable()
-			return [
-				table(
-					bench.head,
-					bench.rows.map(row => [
-						row.firstError ?
-							`${row.scenario} (first-error build)`
-						:	row.scenario,
-						...row.cells,
-						row.fastestOther,
-						row.versus
-					])
-				),
-				...benchNotes().map(note => paragraph(note)),
-				{
-					type: "paragraph",
-					children: [
-						{ type: "text", value: harness.lead },
-						{
-							type: "link",
-							url: harness.url,
-							children: [{ type: "text", value: harness.link }]
-						},
-						{ type: "text", value: "." }
-					]
-				} satisfies Paragraph
 			]
 		}
 		case "Claim": {
@@ -389,9 +360,6 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 		// containers whose content reads fine on its own
 		case "ApiMembers":
 		case "ApiMember":
-		case "Cards":
-		case "Steps":
-		case "Step":
 		case "SyntaxTabs":
 			return children
 		default:

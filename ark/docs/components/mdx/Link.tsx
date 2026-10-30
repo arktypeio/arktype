@@ -1,6 +1,9 @@
 import NextLink from "next/link"
 import type { ComponentProps } from "react"
 
+export const isExternal = (href: string) =>
+	/^https?:\/\//.test(href) && !href.startsWith("https://arktype.io/")
+
 /**
  * MDX's `a`: site links navigate client-side, others open in a new tab.
  * Links to the generated Markdown and llms.txt files are plain, since they
@@ -27,12 +30,10 @@ export const Link = ({
 		)
 	}
 
-	const external =
-		/^https?:\/\//.test(href) && !href.startsWith("https://arktype.io/")
 	return (
 		<a
 			href={href}
-			{...(external && {
+			{...(isExternal(href) && {
 				target: "_blank",
 				rel: "noreferrer",
 				"data-external": ""

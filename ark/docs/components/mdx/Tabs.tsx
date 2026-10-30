@@ -14,7 +14,6 @@ export type TabsProps = {
 	groupId?: string
 	/** remember the group's choice across pages and visits (needs groupId) */
 	persist?: boolean
-	defaultIndex?: number
 	children: ReactNode
 }
 
@@ -50,13 +49,7 @@ export const tabPanelsOf = (contents: readonly ReactNode[]) => {
 		:	{ code: false, panels: contents }
 }
 
-export const Tabs = ({
-	items,
-	groupId,
-	persist,
-	defaultIndex,
-	children
-}: TabsProps) => {
+export const Tabs = ({ items, groupId, persist, children }: TabsProps) => {
 	const tabs = Children.toArray(children).filter(
 		(child): child is ReactElement<TabProps> => isValidElement(child)
 	)
@@ -70,7 +63,6 @@ export const Tabs = ({
 			labels={items}
 			groupId={groupId}
 			persist={persist}
-			defaultIndex={defaultIndex}
 			code={code}
 			panels={panels}
 		/>
