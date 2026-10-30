@@ -388,7 +388,7 @@ value at [1] must be matched by ^a+$ (was "b")`)
 		// Don't use .equals on the array itself — foreign-realm arrays have a
 		// different constructor, which attest treats as unequal.
 		const result = T(foreign)
-		attest(result === foreign).equals(true)
+		attest(result).is(foreign)
 		attest([...(result as number[])]).equals([1, 2, 3])
 	})
 })

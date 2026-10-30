@@ -873,7 +873,11 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 			})
 			await builder.buildApp()
 		})
-		attest(warnings.length).equals(1)
+		attest(warnings).snap([
+			[
+				"tsconfig.broken.json(3,23): error TS5023: Unknown compiler option 'notAnOption'.\n"
+			]
+		])
 	})
 
 	it("vite refuses declarations outside the bundle", async () => {

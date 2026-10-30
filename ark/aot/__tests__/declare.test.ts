@@ -426,14 +426,15 @@ export type Elements = [string, number?];
 		const help = runCli(layouts, "--help")
 		const watch = runCli(layouts, "--watch")
 		// the first line is node:util's parseArgs message
-		attest([
-			help.status,
-			help.stdout.startsWith("Usage: arktype-precompile --check"),
-			help.stderr,
-			watch.status,
-			watch.stderr.startsWith("Unknown option '--watch'"),
-			watch.stderr.includes("\nUsage: arktype-precompile --check")
-		]).equals([0, true, "", 2, true, true])
+		const [unknown, ...usage] = watch.stderr.split("\n")
+		attest([help.status, help.stderr, watch.status, usage.join("\n")]).equals([
+			0,
+			"",
+			2,
+			help.stdout
+		])
+		attest(unknown).satisfies(/^Unknown option '--watch'/)
+		attest(help.stdout).satisfies(/^Usage: arktype-precompile --check /)
 	})
 
 	it("CLI declarations read as their sources", () => {

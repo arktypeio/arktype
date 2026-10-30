@@ -561,17 +561,14 @@ export { unit }
 
 		it("fails where its validators would read a copy of a unit", async () => {
 			const result = await bundleSwapping("copying.ts")
-			attest(
-				"errors" in result &&
-					result.errors.some(error =>
-						error.text.includes(writeUnscannedFlatMessage("copying.ts"))
-					)
-			).equals(true)
+			attest(result.errors.map(error => error.text)).equals([
+				`copying.ts:1:1  ${writeUnscannedFlatMessage("copying.ts")}`
+			])
 		})
 
 		it("builds where they read none", async () => {
 			const result = await bundleSwapping("other.ts")
-			attest("outputFiles" in result && result.outputFiles!.length).equals(1)
+			attest(result.errors).equals([])
 		})
 	})
 })

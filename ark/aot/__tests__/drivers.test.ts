@@ -196,11 +196,9 @@ contextualize(function (this: Mocha.Suite) {
 			],
 			{ cwd: app, encoding: "utf8" }
 		)
-		attest(
-			stderr.includes(
-				"Error: @ark/aot/node needs Node 22.15 or later (this is 22.14.0)"
-			)
-		).equals(true)
+		attest(thrownMessage(stderr, app)).snap(
+			"@ark/aot/node needs Node 22.15 or later (this is 22.14.0)"
+		)
 	})
 
 	describe("node", () => {
@@ -370,17 +368,17 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				{ errors: "none" },
 				join(undetailed, "reads")
 			)
-			attest(status).equals(1)
-			attest(
-				stderr.includes(
+			attest([status, thrownMessage(stderr, join(undetailed, "reads"))]).equals(
+				[
+					1,
 					writeVariantImportMessage(
 						pathToFileURL(join(undetailed, "node_modules", "reads", "index.js"))
 							.href,
 						"@ark/schema",
 						"none"
 					)
-				)
-			).equals(true)
+				]
+			)
 		})
 
 		it("fails on a dependency shipping precompiled validators", () => {
@@ -475,12 +473,10 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				["--conditions", "ark-ts", "start.ts"],
 				{ cwd: transpiled, encoding: "utf8" }
 			)
-			attest(status).equals(1)
-			attest(
-				stderr.includes(
-					`${join(transpiled, "start.ts")} imports arktype but was loaded without @ark/aot/node's hooks, before register() ran or by a loader that compiles it itself, as tsx does in a CommonJS package, so a standalone build can't precompile it. Register them first, as with \`node --import ./register.ts\`, and let Node run the TypeScript rather than a loader like tsx.`
-				)
-			).equals(true)
+			attest([status, thrownMessage(stderr, transpiled)]).snap([
+				1,
+				"start.ts imports arktype but was loaded without @ark/aot/node's hooks, before register() ran or by a loader that compiles it itself, as tsx does in a CommonJS package, so a standalone build can't precompile it. Register them first, as with `node --import ./register.ts`, and let Node run the TypeScript rather than a loader like tsx."
+			])
 		})
 
 		it("refuses a module it can't precompile importing arktype", () => {
@@ -553,7 +549,9 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 						encoding: "utf8"
 					}
 				)
-				attest(plain.stderr.includes(configureAfterTypeMessage)).equals(true)
+				attest(thrownMessage(plain.stderr, configured, "ParseError: ")).equals(
+					configureAfterTypeMessage
+				)
 				const { stderr } = node(
 					[entry],
 					{ config: "config.ts", allowUnsafe: true },
@@ -1128,12 +1126,10 @@ console.log(Value, note, load, await import("#shared/lazy"))
 				cwd: join(undetailed, "reads"),
 				errors: "none"
 			})
-			attest(status).equals(1)
-			attest(
-				stderr.includes(
-					writeVariantImportMessage("a module", "@ark/schema", "none")
-				)
-			).equals(true)
+			attest([status, thrownMessage(stderr, undetailed, "error: ")]).equals([
+				1,
+				writeVariantImportMessage("a module", "@ark/schema", "none")
+			])
 		})
 
 		describe("Bun.build", () => {
@@ -1171,12 +1167,10 @@ console.log(await result.outputs[0].text())`
 
 			it("fails a build leaving arktype external", () => {
 				const { status, stderr } = bunBuild(`{ external: ["ark*"] }`)
-				attest(status).equals(1)
-				attest(
-					stderr.includes(
-						withAllowUnsafe(writeExternalizedMessage("arktype", "external"))
-					)
-				).equals(true)
+				attest([status, thrownMessage(stderr, app, "error: ")]).equals([
+					1,
+					withAllowUnsafe(writeExternalizedMessage("arktype", "external"))
+				])
 			})
 		})
 

@@ -414,7 +414,7 @@ b must be equal to a (was an object)`)
 			})
 		})
 		const data = { a: "a", b: "b" }
-		attest(T(data) === data).equals(true)
+		attest(T(data)).is(data)
 		attest(calls.splice(0)).equals(["b"])
 		attest(T({ a: "a", b: "long" }).toString()).snap(
 			'b must be short (was "long")'

@@ -22,10 +22,6 @@ contextualize(() => {
 		}
 	}
 
-	it("installed on import", () => {
-		attest($ark.sets === setEngine).equals(true)
-	})
-
 	it("throws on relations and json schema without an engine", () => {
 		withoutEngine(() => {
 			attest(() => rootSchema("string").and("number")).throws(

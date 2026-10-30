@@ -1406,7 +1406,7 @@ export class Precompiler {
 				start: 0,
 				end: 0,
 				line: 1,
-				column: 0,
+				column: 1,
 				message: writeUnscannedFlatMessage(this.graph.pathOf(id)),
 				reasons: [],
 				hint: undefined

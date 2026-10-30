@@ -910,11 +910,11 @@ k must be a number (was a string)`)
 		it("deletes an array's keys past its indices", () => {
 			const T = type("(string | undefined)[]").onUndeclaredKey("delete")
 			const indexed = ["a"]
-			attest(T(indexed) === indexed).equals(true)
+			attest(T(indexed)).is(indexed)
 			const holey = new Array(2).fill("a", 1)
-			attest(T(holey) === holey).equals(true)
+			attest(T(holey)).is(holey)
 			const hidden = Object.defineProperty(["a"], "hidden", { value: 1 })
-			attest(T(hidden) === hidden).equals(true)
+			attest(T(hidden)).is(hidden)
 			const extra = Object.assign(new Array(2).fill("a", 1), {
 				extra: 1,
 				[Symbol("s")]: 2

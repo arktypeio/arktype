@@ -404,8 +404,9 @@ export const A = type({ a: R.a })`
 			)
 			attest(sites.map(site => site.status)).equals(["accepted"])
 			// a mock of reexport.ts, as a test's, reaches the site only through `R`
-			attest(/\$ark\w+\(R\)/.test(code)).equals(true)
-			attest(code.includes("(H)")).equals(false)
+			attest(normalized(code).split("\n").slice(-1)).snap([
+				"export const A = $ark#0(R)"
+			])
 		})
 
 		it("refuses a site whose baked introspection is over the limit", () => {

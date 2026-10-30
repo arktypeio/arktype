@@ -20,7 +20,13 @@ import { register } from "@ark/aot/node"
 import turbopack from "@ark/aot/turbopack"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { rspack } from "@rspack/core"
-import { build, context, type BuildOptions, type Plugin } from "esbuild"
+import {
+	build,
+	context,
+	type BuildFailure,
+	type BuildOptions,
+	type Plugin
+} from "esbuild"
 import {
 	build as viteBuild,
 	defaultClientConditions,
@@ -1117,11 +1123,11 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			})
 			attest(last.warnings).equals([])
 			attest(last.outputFiles[0].text.includes("~standard")).equals(false)
-			const error = await bundle({ prune: true }, { plugins }).then(
-				() => undefined,
-				(e: Error) => e
+			const errors = await bundle({ prune: true }, { plugins }).then(
+				() => [],
+				(e: BuildFailure) => e.errors.map(error => error.text)
 			)
-			attest(error?.message.includes(pruneBeforePluginMessage)).equals(true)
+			attest(errors).equals([pruneBeforePluginMessage])
 		})
 
 		it("warns where it keeps each member members leaves to it", async () => {
@@ -1409,9 +1415,16 @@ import * as $ark_runtime from "arktype/runtime"`)
 			it("counts where validators don't", () => {
 				const linked = linkedWith(code, false)
 				attest(linked.unexposed).equals(1)
-				attest(linked.sites["/main.ts"].code.includes("export const A")).equals(
-					true
-				)
+				attest(normalized(linked.sites["/main.ts"].code))
+					.snap(`import { aAllows as $ark_aAllows } from "~arktype/a"
+import { create as $ark_create } from "~arktype/create"
+
+export const A = /* @__PURE__ */ $ark_create($ark_aAllows)
+import { bAllows as $ark_bAllows } from "~arktype/b"
+
+export const B = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props({ a: $ark_aAllows }))
+
+import * as $ark_runtime from "arktype/runtime"`)
 			})
 
 			it("keeps one two sites create validators from, each its own", () => {

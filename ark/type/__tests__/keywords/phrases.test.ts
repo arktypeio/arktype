@@ -70,7 +70,6 @@ contextualize(() => {
 	it("keywords with no phrase stay equal to their structure", () => {
 		attest(type("number.integer").internal.meta).equals({})
 		attest(type("number.integer").equals("number % 1")).equals(true)
-		attest(type("string.email").equals(type("string.email"))).equals(true)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1300

@@ -32,7 +32,7 @@ contextualize(() => {
 
 	it("caches a Standard Schema's read per io", () => {
 		const Zod = standardSchema({ type: "string" })
-		attest(parse(Zod) === parse(Zod)).equals(true)
+		attest(parse(Zod)).is(parse(Zod))
 		parse(Zod, { io: "out" })
 		attest(Zod.targets).snap(["draft-2020-12", "draft-2020-12"])
 	})
@@ -159,7 +159,7 @@ contextualize(() => {
 		} catch (e) {
 			thrown = e
 		}
-		attest((thrown as { cause?: unknown }).cause === cause).equals(true)
+		attest((thrown as { cause?: unknown }).cause).is(cause)
 	})
 
 	it("throws a ParseError on a primitive", () => {
