@@ -65,6 +65,7 @@ import {
 	type FactoryParam,
 	type Foldable,
 	type IssueFeatures,
+	type StandaloneBake,
 	type StandaloneFactory,
 	type StandaloneIntrospection,
 	type ValidatorMember
@@ -894,6 +895,40 @@ export class StandaloneArtifact {
 		])
 	}
 
+	// a function baking members into the validator it's passed, or into each
+	// of a module namespace's
+	writeBake({ bakes, members }: StandaloneBake, index: number): string {
+		const bake = (root: BaseRoot, read: string) =>
+			`runtime.bake(${read}, { ${this.emitIntrospection(root, new Set(members)).join(", ")} })`
+		const [param, baked] =
+			hasArkKind(bakes, "root") ?
+				["validator", `return ${bake(bakes, "validator")}`]
+			:	[
+					"namespace",
+					`// a cycle may load it before the module exporting them
+try {
+${Object.entries(bakes)
+	.map(([name, root]) => bake(root, `namespace[${JSON.stringify(name)}]`))
+	.join("\n")}
+} catch {}
+return namespace`
+				]
+		return writeFunction(
+			this.baking,
+			`factory${index}`,
+			param,
+			[
+				this.declarations.statements.join("\n"),
+				[...this.sharedWriters]
+					.map(([writer, name]) => `const ${name} = ${writer}`)
+					.join("\n"),
+				baked
+			]
+				.filter(statement => statement)
+				.join("\n\n")
+		)
+	}
+
 	writeFactoryFunction(
 		index: number,
 		params: FactoryParam[],
@@ -1536,7 +1571,7 @@ ${writeFunction(
 			meta,
 			attributes: [
 				...(keepsMeta ? [`meta: ${meta}`] : []),
-				...this.emitIntrospection(root, form)
+				...this.emitIntrospection(root, form.members as Set<ValidatorMember>)
 			],
 			// without its meta, a validator still fails as the meta's onFail does
 			onFail:
@@ -1561,10 +1596,10 @@ ${writeFunction(
 		return name
 	}
 
-	emitIntrospection(root: BaseRoot, form: ValidatorForm): string[] {
-		const members = this.bakedMembersOf(root, form.members)
+	emitIntrospection(root: BaseRoot, baked: Set<ValidatorMember>): string[] {
+		const members = this.bakedMembersOf(root, baked)
 		const decided = introspectionMembers.filter(
-			member => form.members.has(member) && !this.baking.members.has(member)
+			member => baked.has(member) && !this.baking.members.has(member)
 		)
 		if (
 			totalBaked(this.bakedLengths) > this.baking.bakedLimit &&
@@ -1574,9 +1609,8 @@ ${writeFunction(
 			// what it bakes having lost track of what reads it is left out
 			// rather than fail the build, so reading it throws
 			this.bakedLengths = {}
-			for (const member of decided)
-				(form.members as Set<ValidatorMember>).delete(member)
-			return this.emitIntrospection(root, form)
+			for (const member of decided) baked.delete(member)
+			return this.emitIntrospection(root, baked)
 		}
 		this.assertBakedWithin()
 		return members

@@ -24,6 +24,7 @@ export type StandaloneExport =
 	| ExportedValue
 	| StandaloneFactory
 	| StandaloneIntrospection
+	| StandaloneBake
 
 export const introspectionMembers = [
 	"expression",
@@ -56,6 +57,12 @@ export interface StandaloneIntrospection {
 	params: FactoryParam[]
 	defaultChecks?: readonly DefaultCheck[]
 	thrown?: unknown
+}
+
+// a function baking members into the validator of a Type another module
+// creates, or into each of a module namespace's, by export name
+export interface StandaloneBake extends BakedMembers {
+	bakes: BaseRoot | Record<string, BaseRoot>
 }
 
 export interface StandaloneFactory {
@@ -315,7 +322,7 @@ export const compiledInputsOf = (
 		// as unknown: narrowing to BaseRoot is too deep for TypeScript
 		const type: unknown =
 			arkKindOf(value) !== undefined ? value
-			: "member" in value ? undefined
+			: "member" in value || "bakes" in value ? undefined
 			: (value as StandaloneFactory).type
 		if (hasArkKind(type, "root") && type._in !== type && !combines(type))
 			inputs.add(type._in.hash)
@@ -342,6 +349,12 @@ const bakedByRootOf = (
 				}
 			:	members
 		)
+	}
+	for (const value of Object.values(exports)) {
+		if (arkKindOf(value) !== undefined || !("bakes" in value)) continue
+		const { bakes } = value
+		const roots = hasArkKind(bakes, "root") ? [bakes] : Object.values(bakes)
+		for (const root of roots) add(root, value)
 	}
 	for (const name in baked) {
 		const value = exports[name]

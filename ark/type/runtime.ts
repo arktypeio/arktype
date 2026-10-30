@@ -227,6 +227,20 @@ const getOwnPropertyDescriptors = Object.getOwnPropertyDescriptors
 export const own = <t extends object>(validator: t, attributes: object): t =>
 	Object.defineProperties(validator, getOwnPropertyDescriptors(attributes))
 
+// what a module reads of a validator it imports, which a build reading one
+// module at a time bakes there, as the validator's own module can't see it
+export const bake = <t>(
+	validator: t,
+	{ "~standard": standard, ...attributes }: Omit<ValidatorAttributes, "meta">
+): t => {
+	// a Type arktype created, as where a site is left to it, has each member
+	if (validator instanceof Validator) {
+		own(validator, attributes)
+		if (standard) own(validator["~standard"], standard)
+	}
+	return validator
+}
+
 // a Standard Schema consumer prefixes each message with its path, so a pathed issue needs none
 export const standardResultOf = (
 	out: unknown

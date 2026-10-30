@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import { precompile } from "@ark/aot/unplugin"
+import { precompile, type PrecompilePluginOptions } from "@ark/aot/unplugin"
 import { build } from "esbuild"
 import { spawnSync } from "node:child_process"
 import { join } from "node:path"
@@ -13,7 +13,8 @@ const conditions = ["ark-ts", "production"]
 const logged = async (
 	name: string,
 	files: Record<string, string>,
-	file = "out/main.js"
+	file = "out/main.js",
+	opts?: PrecompilePluginOptions
 ): Promise<string> => {
 	const dir = writeFixture(
 		{ "package.json": '{ "type": "module" }', ...files },
@@ -31,7 +32,7 @@ const logged = async (
 		},
 		conditions,
 		logLevel: "silent",
-		plugins: [precompile.esbuild({ conditions, cwd: dir })]
+		plugins: [precompile.esbuild({ conditions, cwd: dir, ...opts })]
 	})
 	const { stdout, stderr } = spawnSync(process.execPath, [join(dir, file)], {
 		encoding: "utf8"
@@ -39,11 +40,23 @@ const logged = async (
 	return stdout || stderr
 }
 
+// the same, whether the build reads the bundle whole or a module at a time
+const loggedEither = async (
+	name: string,
+	files: Record<string, string>
+): Promise<string> => {
+	const whole = await logged(name, files)
+	attest(
+		await logged(`${name}-unscanned`, files, undefined, { prune: false })
+	).equals(whole)
+	return whole
+}
+
 contextualize(function (this: Mocha.Suite) {
 	this.timeout(120_000)
 
 	it("MCP's tools/list has a tool's input JSON Schema", async () => {
-		const out = await logged("mcp", {
+		const out = await loggedEither("mcp", {
 			"main.ts": `import { Client } from "@modelcontextprotocol/client"
 import { InMemoryTransport, McpServer } from "@modelcontextprotocol/server"
 import { type } from "arktype"
@@ -69,7 +82,7 @@ await client.close()
 	})
 
 	it("Elysia's OpenAPI document has a route's body JSON Schema", async () => {
-		const out = await logged("elysia", {
+		const out = await loggedEither("elysia", {
 			"main.ts": `import { openapi } from "@elysiajs/openapi"
 import { type } from "arktype"
 import { Elysia } from "elysia"
@@ -88,7 +101,7 @@ console.log(JSON.stringify(spec.paths["/users"].post.requestBody.content["applic
 	})
 
 	it("the AI SDK passes a tool's input JSON Schema to the model", async () => {
-		const out = await logged("ai", {
+		const out = await loggedEither("ai", {
 			"main.ts": `import { generateText, tool } from "ai"
 import { MockLanguageModelV4 } from "ai/test"
 import { type } from "arktype"
@@ -120,7 +133,7 @@ await generateText({ model, tools: { weather }, prompt: "weather?" })
 	})
 
 	it("oRPC's OpenAPI document has a procedure's input JSON Schema", async () => {
-		const out = await logged("orpc", {
+		const out = await loggedEither("orpc", {
 			"main.ts": `import { experimental_ArkTypeToJsonSchemaConverter } from "@orpc/arktype"
 import { OpenAPIGenerator } from "@orpc/openapi"
 import { os } from "@orpc/server"
@@ -139,6 +152,74 @@ console.log(JSON.stringify(spec.paths["/users"].post.requestBody.content["applic
 		})
 		attest(out)
 			.snap(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"name":{"type":"string"}},"required":["name"]}
+`)
+	})
+
+	it("a module bakes what it reads of a validator it imports, in a build reading one module at a time", async () => {
+		const out = await logged(
+			"importers",
+			{
+				"schemas.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`,
+				"schema.ts": `import { User } from "./schemas.ts"
+
+export const schema = User.toJsonSchema()
+`,
+				"described.ts": `import { read } from "reader"
+import { User } from "./schemas.ts"
+
+export const described = read(User, "description")
+`,
+				"node_modules/reader/package.json":
+					'{ "name": "reader", "type": "module", "exports": "./index.js" }',
+				"node_modules/reader/index.js":
+					"export const read = (schema, key) => schema[key]\n",
+				"main.ts": `import { described } from "./described.ts"
+import { schema } from "./schema.ts"
+
+console.log(JSON.stringify(schema))
+console.log(described)
+`
+			},
+			"out/main.js",
+			{ prune: false }
+		)
+		attest(out)
+			.snap(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"name":{"type":"string"}},"required":["name"]}
+{ name: a string }
+`)
+	})
+
+	it("a module loading another whole bakes each member into each validator it exports", async () => {
+		const out = await logged(
+			"wholes",
+			{
+				"schemas.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`,
+				"lazy.ts": `import { type } from "arktype"
+
+export const Item = type({ id: "number" })
+`,
+				"node_modules/reader/package.json":
+					'{ "name": "reader", "type": "module", "exports": "./index.js" }',
+				"node_modules/reader/index.js":
+					"export const read = (schemas, name, key) => schemas[name][key]\n",
+				"main.ts": `import { read } from "reader"
+import * as schemas from "./schemas.ts"
+
+console.log(read(schemas, "User", "description"))
+console.log(read(await import("./lazy.ts"), "Item", "expression"))
+`
+			},
+			"out/main.js",
+			{ prune: false }
+		)
+		attest(out).snap(`{ name: a string }
+{ id: number }
 `)
 	})
 

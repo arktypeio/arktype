@@ -26,7 +26,7 @@ import { ark, configure } from "arktype"
 // for configured errors and mutatesInput
 import "arktype/errors"
 import "arktype/mutatesInput"
-import type { HoleKind } from "arktype/internal/runtime.ts"
+import type { HoleKind, IntrospectionMember } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	appendPath,
@@ -47,6 +47,7 @@ import {
 	type DefaultCheck,
 	type Foldable,
 	type IssueFeatures,
+	type StandaloneBake,
 	type StandaloneModules,
 	type StandaloneOptions,
 	type Configured
@@ -76,6 +77,7 @@ import {
 } from "./diagnostics.ts"
 import { chainOf, DynamicValue } from "./dynamic.ts"
 import {
+	bakeAt,
 	emptyFactory,
 	importFolded,
 	planFactory,
@@ -156,6 +158,7 @@ import {
 	isDiscarded,
 	isMemberRead,
 	isWriteTarget,
+	loadedSourceOf,
 	loadedSpecifierOf,
 	operatorOf,
 	runsOnceAtLoad,
@@ -191,6 +194,7 @@ import {
 	type ReaderSeed
 } from "./readers.ts"
 import {
+	isDead,
 	passedReaderOf,
 	unprecompiled,
 	usedMembersOf,
@@ -910,16 +914,15 @@ export class Precompiler {
 
 	// the introspection members members leaves each site's validator, as code
 	// reading it reads them, and where it lost track of that code
-	private readingsIn(program: ReaderProgram): ProgramReadings {
+	private readingsIn(
+		program: ReaderProgram,
+		// each site's Type, which a module importing it may bake into it
+		valuesByKey?: ReadonlyMap<string, unknown>
+	): ProgramReadings {
 		const baked = new Map<string, BakedMembers>()
 		const lost: string[] = []
 		const decisions: string[] = []
-		const decided = introspectionMembers.filter(
-			member =>
-				this.members[member] === undefined &&
-				(member !== "~standard.jsonSchema" ||
-					this.members["~standard"] !== false)
-		)
+		const { decided } = this
 		if (!decided.length) return { baked, lost, decisions }
 		const keys: string[] = []
 		const seeds: ReaderSeed[] = []
@@ -932,8 +935,9 @@ export class Precompiler {
 				for (const site of sites) {
 					const node = nodeAt(module, site)
 					if (!node) continue
-					keys.push(siteKeyOf(module.id, site))
-					seeds.push({ runtime, node, held })
+					const key = siteKeyOf(module.id, site)
+					keys.push(key)
+					seeds.push({ runtime, node, held, value: valuesByKey?.get(key) })
 				}
 			}
 		}
@@ -950,6 +954,169 @@ export class Precompiler {
 			)
 		}
 		return { baked, lost, decisions }
+	}
+
+	// the introspection members no setting decides, which the build bakes
+	// where it sees code read them
+	private get decided(): IntrospectionMember[] {
+		return introspectionMembers.filter(
+			member =>
+				this.members[member] === undefined &&
+				(member !== "~standard.jsonSchema" ||
+					this.members["~standard"] !== false)
+		)
+	}
+
+	// what a module reads of each validator it imports, baked where it reads
+	// it, as a build reading one module at a time can't see those reads from
+	// the module creating it
+	private importedBakesOf(
+		module: SourceModule,
+		program: ReaderProgram
+	): ImportedBake[] {
+		const { decided } = this
+		if (!decided.length) return []
+		const runtime = program.modules.get(module.id)!
+		const seeds: ReaderSeed[] = []
+		// reads of a whole module, which may read any validator it exports
+		const wholes = new Map<SourceModule, Node[]>()
+		const addWhole = (read: Node, target: SourceModule) => {
+			const reads = wholes.get(target)
+			if (reads) reads.push(read)
+			else wholes.set(target, [read])
+		}
+		for (const statement of module.program.body) {
+			if (
+				statement.type !== "ImportDeclaration" ||
+				statement.importKind === "type"
+			)
+				continue
+			for (const specifier of statement.specifiers) {
+				if (
+					specifier.type === "ImportSpecifier" &&
+					specifier.importKind === "type"
+				)
+					continue
+				const binding = module.scopes.bindingsById.get(specifier.local)!
+				const kind = this.graph.bindingKindOf(binding, module)
+				if (!isArk(kind) && !mayHoldArk(kind)) continue
+				const target = this.graph.importOf(binding, module)
+				const value =
+					target.kind === "binding" || target.kind === "expression" ?
+						this.interpreter.exportValue(target).value
+					:	undefined
+				if (target.kind !== "namespace" && !hasArkKind(value, "root")) continue
+				for (const reference of binding.references) {
+					// an export is read by the modules importing it
+					const [operand, parent] = operatorOf(reference.id)
+					if (
+						reference.isWrite ||
+						reference.id.type !== "Identifier" ||
+						isDead(reference.id, runtime) ||
+						parent?.type === "ExportSpecifier" ||
+						parent?.type === "ExportDefaultDeclaration"
+					)
+						continue
+					if (target.kind !== "namespace") {
+						seeds.push({
+							runtime,
+							node: reference.id,
+							held: validatorHeld,
+							value
+						})
+						continue
+					}
+					const name =
+						parent?.type === "MemberExpression" && parent.object === operand ?
+							memberNameOf(parent)
+						:	undefined
+					if (typeof name !== "string") {
+						addWhole(reference.id, target.module)
+						continue
+					}
+					const read = this.exportedValueOf(target.module, name)
+					if (!hasArkKind(read, "root")) continue
+					seeds.push({
+						runtime,
+						node: parent!,
+						held: validatorHeld,
+						value: read
+					})
+				}
+			}
+		}
+		walk(module.program, node => {
+			if (isDead(node, runtime)) return false
+			const source = loadedSourceOf(node)
+			const target =
+				source?.type === "Literal" &&
+				typeof source.value === "string" &&
+				this.graph.resolve(source.value, module)
+			if (target instanceof SourceModule) addWhole(node, target)
+			return true
+		})
+		const readsByRoot = new Map<BaseRoot, [BakedMembers, Node[]]>()
+		const readings = readingsOf(program, this.graph, this.readModules, seeds)
+		for (const [i, reading] of readings.entries()) {
+			const read = reading.members.filter(member => decided.includes(member))
+			if (!read.length) continue
+			const root = seeds[i].value as BaseRoot
+			const [prior, reads] = readsByRoot.get(root) ?? [undefined, []]
+			const members = new Set([...(prior?.members ?? []), ...read])
+			readsByRoot.set(root, [
+				{
+					members: decided.filter(member => members.has(member)),
+					lost: !!prior?.lost || reading.step === "lost"
+				},
+				[...reads, seeds[i].node]
+			])
+		}
+		const bakes = [...readsByRoot].map(
+			([root, [members, reads]], i): ImportedBake => ({
+				name: `bake${i}`,
+				baked: { bakes: root, ...members },
+				reads
+			})
+		)
+		for (const [target, reads] of wholes) {
+			const roots = this.validatorExportsOf(target)
+			if (!Object.keys(roots).length) continue
+			bakes.push({
+				name: `bake${bakes.length}`,
+				baked: { bakes: roots, members: decided, lost: true },
+				reads
+			})
+		}
+		return bakes
+	}
+
+	// an export's value, where its own module can't change it
+	private exportedValueOf(module: SourceModule, name: string): unknown {
+		const target = this.graph.exportOf(module, name)
+		return target.kind === "binding" || target.kind === "expression" ?
+				this.interpreter.exportValue(target).value
+			:	undefined
+	}
+
+	// the Types a module exports, by name, as an import of it whole reads them
+	private validatorExportsOf(
+		module: SourceModule,
+		seen = new Set([module])
+	): Record<string, BaseRoot> {
+		const result: Record<string, BaseRoot> = {}
+		for (const specifier of module.scopes.starExports) {
+			const target = this.graph.resolve(specifier, module)
+			if (!(target instanceof SourceModule) || seen.has(target)) continue
+			seen.add(target)
+			const roots = this.validatorExportsOf(target, seen)
+			delete roots.default
+			Object.assign(result, roots)
+		}
+		for (const name in module.scopes.exportsByName) {
+			const value = this.exportedValueOf(module, name)
+			if (hasArkKind(value, "root")) result[name] = value
+		}
+		return result
 	}
 
 	// what a module's precompiled code would read at runtime, or undefined where it fails
@@ -2139,7 +2306,7 @@ export class Precompiler {
 		const plan = this.planSites(module, sites, s, prefix, diagnostics)
 		const { namesBySite, factoriesBySite, folded } = plan
 		const configured = this.configuredOf(module)
-		const validators = this.writePlanned(
+		const [validators, bakes] = this.writePlanned(
 			module,
 			sites,
 			plan,
@@ -2171,6 +2338,10 @@ export class Precompiler {
 		for (const [site, name] of namesBySite) {
 			this.foldSite(site, name, factoriesBySite.get(site), folding)
 			folded.push(site)
+		}
+		for (const { name, reads } of bakes) {
+			importFolded(undefined, name, prefix + name, undefined, folding)
+			for (const read of reads) bakeAt(s, module, read, prefix + name)
 		}
 		const { inputImports, kept, passed, read, fixedAt } = folding
 		// fixed at the first droppable site, as arktype does at its first Type
@@ -2230,21 +2401,42 @@ export class Precompiler {
 			baked
 		}: ProgramReads,
 		diagnostics: Diagnostic[]
-	): StandaloneModules {
+	): [validators: StandaloneModules, bakes: ImportedBake[]] {
 		const { namesBySite, exportsByName } = plan
-		// a build reading no whole bundle follows each module's validators alone
-		baked ??= this.readingsIn({
-			entries: new Set(),
-			exposed: new Set(),
-			modules: new Map([
-				[
-					module.id,
-					this.runtimeOfPlan(module, { ...plan, folded: [...plan.folded] })
-				]
-			]),
-			resolve: () => undefined,
-			whole: false
-		}).baked
+		let bakes: ImportedBake[] = []
+		if (!baked) {
+			// a build reading no whole bundle follows each module's validators alone
+			const program: ReaderProgram = {
+				entries: new Set(),
+				exposed: new Set(),
+				modules: new Map([
+					[
+						module.id,
+						this.runtimeOfPlan(module, { ...plan, folded: [...plan.folded] })
+					]
+				]),
+				resolve: () => undefined,
+				whole: false,
+				// a frozen validator takes no member its importer bakes
+				importersBake:
+					this.standalone.freeze ?
+						undefined
+					:	(exporter, name, value) =>
+							value !== undefined &&
+							this.exportedValueOf(exporter, name) === value
+			}
+			baked = this.readingsIn(
+				program,
+				new Map(
+					[...namesBySite.keys()].map(site => [
+						siteKeyOf(module.id, site),
+						site.value
+					])
+				)
+			).baked
+			if (program.importersBake) bakes = this.importedBakesOf(module, program)
+			for (const bake of bakes) exportsByName[bake.name] = bake.baked
+		}
 		const bakedByName: Record<string, BakedMembers> = {}
 		for (const [site, name] of namesBySite) {
 			const members = baked.get(siteKeyOf(module.id, site))
@@ -2283,8 +2475,24 @@ export class Precompiler {
 				diagnostics.push(this.refuseWritten(module, site, refusalsByName[name]))
 				unplan(plan, site)
 			}
+			// what a read off an import bakes past bakedLimit fails at that read
+			for (const bake of bakes) {
+				if (!refusalsByName[bake.name]) continue
+				diagnostics.push(
+					this.diagnostic(
+						module,
+						bake.reads[0],
+						"unsupported",
+						refusalsByName[bake.name][0],
+						refusalsByName[bake.name].slice(1),
+						undefined
+					)
+				)
+				delete exportsByName[bake.name]
+			}
+			bakes = bakes.filter(bake => !refusalsByName[bake.name])
 			const refused = this.refuseStandInsRead(module, sites, diagnostics)
-			if (!refused.length) return validators
+			if (!refused.length) return [validators, bakes]
 			for (const site of refused) unplan(plan, site)
 		}
 	}
@@ -5949,6 +6157,14 @@ const anyIssues: IssueFeatures = {
 	writesText: true,
 	readsKeySites: true,
 	runsArktype: true
+}
+
+// a function a module bakes an imported validator's members with, and the
+// reads it wraps in it
+interface ImportedBake {
+	name: string
+	baked: StandaloneBake
+	reads: Node[]
 }
 
 interface ProgramReadings {

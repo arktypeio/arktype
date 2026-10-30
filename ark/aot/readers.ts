@@ -39,6 +39,8 @@ export interface ReaderSeed {
 	runtime: RuntimeModule
 	node: Node
 	held: Held
+	// the Type it holds, which a module importing it may bake into it
+	value?: unknown
 }
 
 // how the introspection members a validator bakes were decided
@@ -58,6 +60,11 @@ export interface Reading {
 export interface ReaderProgram extends UsageProgram {
 	// false where the build doesn't read the whole program, so no field read is followed
 	whole: boolean
+	// where the build doesn't, whether each module importing a module's export
+	// bakes what it reads of it, as where the export is the validator itself
+	importersBake?:
+		| ((module: SourceModule, name: string, value: unknown) => boolean)
+		| undefined
 }
 
 // what each validator's readers read of it, followed into its dependencies
@@ -70,7 +77,7 @@ export const readingsOf = (
 ): Reading[] => {
 	const readers = new Readers(program, graph, read)
 	return seeds.map(seed => {
-		const follow = new Follow(readers)
+		const follow = new Follow(readers, seed.value)
 		follow.push(seed.node, seed.runtime.module, seed.held)
 		follow.run()
 		return follow.reading()
@@ -326,6 +333,7 @@ type ImportEdge =
 // one validator's reads, followed until each is decided
 class Follow {
 	private readers: Readers
+	private value: unknown
 	private read = new Map<IntrospectionMember, string>()
 	private lost: Lost[] = []
 	private unseen: string[] = []
@@ -340,8 +348,9 @@ class Follow {
 	// what each binding is bound to, which a guard reading it tests
 	private heldsByBinding = new Map<Binding, Set<string>>()
 
-	constructor(readers: Readers) {
+	constructor(readers: Readers, value: unknown) {
 		this.readers = readers
+		this.value = value
 	}
 
 	push(node: Node, module: SourceModule, held: Held): void {
@@ -1249,6 +1258,12 @@ class Follow {
 			return
 		}
 		if (!program.whole) {
+			if (
+				!held.path.length &&
+				held.of === "type" &&
+				program.importersBake?.(module, name, this.value)
+			)
+				return
 			return this.lose(
 				at,
 				module,
