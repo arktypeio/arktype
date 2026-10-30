@@ -64,6 +64,7 @@ import {
 	type FactoryParam,
 	type Foldable,
 	type IssueFeatures,
+	type SharedWrite,
 	type StandaloneFactory,
 	type StandaloneIntrospection
 } from "./baking.ts"
@@ -217,6 +218,30 @@ interface SharedUnit {
 	shapesByName: Record<string, string>
 }
 
+const writesByBaking = new WeakMap<Baking, Map<string, SharedWrite>>()
+
+// keyed by the options writing a shared unit reads: not those writing an
+// artifact's own validators, nor compiledInputs, which picks the unit itself
+const sharedWritesOf = (baking: Baking): Map<string, SharedWrite> => {
+	let writes = writesByBaking.get(baking)
+	if (!writes) {
+		const {
+			write,
+			issues,
+			sharedWrites,
+			compilesValidators,
+			compiledInputs,
+			members,
+			...rest
+		} = baking
+		const key = JSON.stringify([rest, [...members].sort()])
+		writes = sharedWrites.get(key)
+		if (!writes) sharedWrites.set(key, (writes = new Map()))
+		writesByBaking.set(baking, writes)
+	}
+	return writes
+}
+
 export class StandaloneArtifact {
 	exports: Record<string, ExportedValue>
 	sharedModules: Record<string, SharedModule>
@@ -237,6 +262,7 @@ export class StandaloneArtifact {
 	localNamesByUnit = new Map<RootUnit, string>()
 	unit: RootUnit | undefined
 	writing: SharedUnit | undefined
+	sharing: SharedWrite | undefined
 	// read only with `in`
 	keyLookups: ReadonlySet<object>
 	patternInstances: ReadonlySet<RegExp>
@@ -953,6 +979,20 @@ ${writeFunction(
 	writeShared(unit: RootUnit): void {
 		const specifier = this.specifierOf(unit.name)
 		if (this.sharedModules[specifier]) return
+		const writes = sharedWritesOf(this.baking)
+		// content-equal units share a name, though not always a unit
+		let write = writes.get(unit.name)
+		if (!write) {
+			this.sharing = write = []
+			this.writeSharedModule(unit, specifier)
+			this.sharing = undefined
+			writes.set(unit.name, write)
+		}
+		for (const [written, module] of write)
+			this.sharedModules[written] ??= module
+	}
+
+	writeSharedModule(unit: RootUnit, specifier: string): void {
 		const declarations = this.declarations
 		const returned = returnedOf(unit, this.baking)
 		const writing: SharedUnit = (this.writing = {
@@ -1003,19 +1043,22 @@ ${writeFunction(
 		this.declarations = declarations
 		this.unit = undefined
 		this.writing = undefined
-		this.sharedModules[specifier] = {
-			readsRuntime: true,
-			imports: writing.imports,
-			declarations: moduleDeclarations,
-			scope,
-			exports: [
-				unit.name,
-				...unit.roots.map(root => `${unit.names[root.id]}Node`),
-				...(this.baking.flattens ?
-					returnedOf(unit, this.baking).filter(name => name)
-				:	[])
-			]
-		}
+		this.sharing!.push([
+			specifier,
+			{
+				readsRuntime: true,
+				imports: writing.imports,
+				declarations: moduleDeclarations,
+				scope,
+				exports: [
+					unit.name,
+					...unit.roots.map(root => `${unit.names[root.id]}Node`),
+					...(this.baking.flattens ?
+						returnedOf(unit, this.baking).filter(name => name)
+					:	[])
+				]
+			}
+		])
 	}
 
 	// the refs a unit's members read, declared unless received or imported
@@ -1676,12 +1719,14 @@ ${writeFunction(
 		readsRuntime = true
 	): string {
 		const specifier = this.specifierOf(name)
-		this.sharedModules[specifier] ??= {
+		const module: SharedModule = {
 			readsRuntime,
 			imports,
 			declarations: [declaration],
 			exports: [name]
 		}
+		this.sharing?.push([specifier, module])
+		this.sharedModules[specifier] ??= module
 		return specifier
 	}
 

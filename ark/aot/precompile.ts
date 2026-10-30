@@ -46,6 +46,7 @@ import {
 	type DefaultCheck,
 	type Foldable,
 	type IssueFeatures,
+	type SharedWrites,
 	type StandaloneModules,
 	type StandaloneOptions,
 	type Configured
@@ -441,6 +442,8 @@ export class Precompiler {
 	private componentsById: Record<string, number> = Object.create(null)
 	private exportsArkByModule = new WeakMap<SourceModule, boolean>()
 	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
+	// each shared unit's modules, written once for every module reading it
+	private sharedWrites: SharedWrites = new Map()
 	// why the analyses' configuration can't be applied
 	private analyzedProblem: string | undefined
 	private bindingsByInput = new WeakMap<Input, Binding>()
@@ -2136,6 +2139,7 @@ export class Precompiler {
 							shapes,
 							configured,
 							bake: write => this.bake(write),
+							sharedWrites: this.sharedWrites,
 							hoisted: this.isReachedEarly(module),
 							// shadow mode calls what it compares
 							values: !this.shadow,

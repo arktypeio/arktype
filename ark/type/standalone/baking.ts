@@ -14,6 +14,7 @@ import type { Module } from "../module.ts"
 import type { HoleKind, IntrospectionMember } from "../runtime.ts"
 import type { Scope } from "../scope.ts"
 import { combines } from "./combinators.ts"
+import type { SharedModule } from "./modules.ts"
 import { defaultBakedLimit } from "./values.ts"
 
 export type ExportedValue = type.Any | Module | Scope<any> | Generic | TypedFn
@@ -144,7 +145,16 @@ export interface StandaloneOptions {
 	readsAllows?: boolean | undefined
 	// false where no call passes a second argument, a traversal to pipe into
 	piped?: boolean | undefined
+	// what each shared unit was written as, kept across a build's artifacts
+	sharedWrites?: SharedWrites | undefined
 }
+
+// the modules writing a shared unit adds, in order, which are the same for
+// every artifact writing it with the same options
+export type SharedWrite = [specifier: string, module: SharedModule][]
+
+// by the options a unit's write reads, then by its name
+export type SharedWrites = Map<string, Map<string, SharedWrite>>
 
 export interface ValidatorReads {
 	called: boolean
@@ -182,6 +192,7 @@ export interface Baking extends ValidatorReads {
 	defersIssues: boolean
 	bakedLimit: number
 	issues: IssueFeatures
+	sharedWrites: SharedWrites
 }
 
 export const writeFunction = (
@@ -347,7 +358,8 @@ export const bakingOf = (
 		called: opts.called !== false,
 		readsAllows: opts.readsAllows !== false,
 		piped: opts.piped !== false,
-		issues: { ...noIssueFeatures }
+		issues: { ...noIssueFeatures },
+		sharedWrites: opts.sharedWrites ?? new Map()
 	}
 }
 
