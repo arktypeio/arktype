@@ -145,15 +145,21 @@ const writeMerged = (
 	}
 	const rootScope = shared[root].scope!
 	// a merged unit's exports are gone, though a node it shares is declared
-	const removed = scopes
-		.flatMap(scope =>
-			scope === rootScope ?
-				[]
-			:	[scope.name, ...Object.keys(scope.nodes).map(name => `${name}Node`)]
+	const removed = new Set(
+		scopes
+			.flatMap(scope =>
+				scope === rootScope ?
+					[]
+				:	[scope.name, ...Object.keys(scope.nodes).map(name => `${name}Node`)]
+			)
+			.filter(name => !nodesRead.has(name))
+	)
+	// a unit's names are words, read where a word is one
+	if (
+		[...statements, ...args.values()].some(text =>
+			text.match(/\w+/g)?.some(word => removed.has(word))
 		)
-		.filter(name => !nodesRead.has(name))
-	const removedName = new RegExp(`\\b(?:${removed.join("|")})\\b`)
-	if ([...statements, ...args.values()].some(text => removedName.test(text)))
+	)
 		return
 	const shortest = opts.optimize === "size"
 	const [dependencyParams, dependencyArgs] = writeDependencies(
