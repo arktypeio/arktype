@@ -79,7 +79,7 @@ import {
 	emptyFactory,
 	importFolded,
 	planFactory,
-	reachedModulesOf,
+	reacherOf,
 	receive,
 	runtimeModuleOf,
 	spliceSite,
@@ -926,8 +926,9 @@ export class Precompiler {
 				} as never
 			}
 		}
+		const reach = reacherOf(linked.modules)
 		for (const id in written) {
-			const reached = reachedModulesOf(written[id].code, linked.modules)
+			const reached = reach(written[id].code)
 			if (
 				Object.keys(reached).some(
 					specifier => reached[specifier] !== written[id].modules[specifier]
@@ -962,6 +963,7 @@ export class Precompiler {
 			)
 		)
 		if (!flat) return
+		const reach = reacherOf(flat.modules)
 		for (const id in written) {
 			const { code, map } = flat.sites[id]
 			const precompiled = written[id].map
@@ -975,7 +977,7 @@ export class Precompiler {
 							mappings: mapToSource(map, precompiled, sources[id]).mappings
 						} as never)
 					:	precompiled,
-				modules: reachedModulesOf(code, flat.modules)
+				modules: reach(code)
 			}
 		}
 		return flat.replaced

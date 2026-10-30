@@ -242,6 +242,26 @@ const sharedWritesOf = (baking: Baking): Map<string, SharedWrite> => {
 	return writes
 }
 
+const printedHolesByUnit = new WeakMap<RootUnit, string | null>()
+
+// the first hole name a unit's code prints, read once for each artifact writing it
+const printedHoleOf = (unit: RootUnit): string | null => {
+	let printed = printedHolesByUnit.get(unit)
+	if (printed === undefined) {
+		printed = null
+		for (const [, source] of unit.members) {
+			const match =
+				source.includes(holeNameMarker) && source.match(holeNamePattern)
+			if (match) {
+				printed = match[0]
+				break
+			}
+		}
+		printedHolesByUnit.set(unit, printed)
+	}
+	return printed
+}
+
 export class StandaloneArtifact {
 	exports: Record<string, ExportedValue>
 	sharedModules: Record<string, SharedModule>
@@ -443,16 +463,15 @@ export class StandaloneArtifact {
 				)
 			}
 		}
-		const printed = this.units
-			.flatMap(unit => unit.members.map(([, source]) => source))
-			.join("\n")
-			.match(holeNamePattern)
-		if (printed) {
-			throwParseError(
-				writeUnprecompilableMessage(
-					`compiled code printing the name of ${this.holeLabels.get(this.holeNamed(printed[0])) ?? printed[0]}`
+		for (const unit of this.units) {
+			const printed = printedHoleOf(unit)
+			if (printed) {
+				throwParseError(
+					writeUnprecompilableMessage(
+						`compiled code printing the name of ${this.holeLabels.get(this.holeNamed(printed)) ?? printed}`
+					)
 				)
-			)
+			}
 		}
 		for (const node of this.declared) {
 			const lists =
