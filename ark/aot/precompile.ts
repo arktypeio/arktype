@@ -2524,6 +2524,9 @@ export class Precompiler {
 				for (const value of holes) unchecked.add(value)
 				continue
 			}
+			// passing what arktype creates in the site would run arktype; its
+			// holes are passed where the site names them
+			if (!hole && reference.isCreated) continue
 			// a Type without holes is written into the site
 			if (
 				holes.length &&
@@ -4125,11 +4128,18 @@ export class Precompiler {
 		runsFirst: boolean
 	): void {
 		for (const { root, value } of state.trace.exportedFunctions) {
-			const node = this.interpreter.standIns.get(value as object)?.closure?.node
+			const standIn = this.interpreter.standIns.get(value as object)
+			const node = standIn?.closure?.node
 			if (
 				root.kind !== "export" ||
 				!node ||
-				!state.trace.helpers.some(([helper]) => helper === node) ||
+				// arktype caches what it called a helper for, so another site's
+				// call can decide this one's value
+				!(
+					standIn.isCalled ||
+					standIn.isCalledIndirectly ||
+					state.trace.helpers.some(([helper]) => helper === node)
+				) ||
 				site.helpers.some(
 					helper => helper.file === root.file && helper.name === root.name
 				)
