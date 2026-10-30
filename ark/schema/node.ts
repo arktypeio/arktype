@@ -11,6 +11,7 @@ import {
 	includes,
 	isArray,
 	isEmptyObject,
+	isInstanceOf,
 	isKeyOf,
 	liftArray,
 	nameOf,
@@ -1102,7 +1103,8 @@ export abstract class BaseNode<
 	}
 
 	equals(r: unknown): boolean {
-		const rNode: BaseNode = isNode(r) ? r : this.$.parseDef(r)
+		const rNode: BaseNode =
+			isNode(r) && isInstanceOf(r, BaseNode) ? r : this.$.parseDef(r)
 		// a hash includes its node's kind, so nodes of different kinds aren't hashed
 		if (
 			this === rNode ||

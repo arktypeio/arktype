@@ -111,7 +111,7 @@ export const useUserForm = () =>
 
 The form's field values are typed from the Type's input, and `handleSubmit` receives its output. If you pass type arguments to `useForm` yourself, pass all three: `useForm<typeof User.inferIn, unknown, typeof User.infer>`.
 
-The same package exports `arktypeResolver` from `@hookform/resolvers/arktype`, which behaves the same. `@hookform/resolvers` lists `arktype@^2` as an optional peer dependency, so your package manager may warn about it with a later major version of ArkType, whichever resolver you import.
+The same package exports `arktypeResolver` from `@hookform/resolvers/arktype`, which behaves the same. `@hookform/resolvers` lists `arktype@^2` as an optional peer dependency, so npm refuses to install it beside a later major version of ArkType, whichever resolver you import, until you [override the peer](/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2). pnpm warns, and bun installs it as is.
 
 ## Hono
 
@@ -135,7 +135,7 @@ app.post("/users", sValidator("json", User), c => {
 })
 ```
 
-Invalid requests get a 400 response with the issues as JSON. [`@hono/arktype-validator`](https://github.com/honojs/middleware/tree/main/packages/arktype-validator) provides an equivalent `arktypeValidator`, with a required peer dependency on `arktype@^2`.
+Invalid requests get a 400 response with the issues as JSON. [`@hono/arktype-validator`](https://github.com/honojs/middleware/tree/main/packages/arktype-validator) provides an equivalent `arktypeValidator`, with a required peer dependency on `arktype@^2`, so npm needs the same [override](/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2) to install it.
 
 To generate an OpenAPI document from your routes, [`hono-openapi`](https://github.com/rhinobase/hono-openapi) has a `validator` that accepts a Type, and a `resolver` for describing responses with one.
 

@@ -1,11 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	writeForeignArkMessage,
 	writeInvalidJsonSchemaTargetMessage,
 	type StandardJSONSchemaV1,
 	type StandardSchemaV1
 } from "@ark/schema"
 import type { promisable } from "@ark/util"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 
 contextualize(() => {
 	it("validation conforms to spec", () => {
@@ -91,6 +92,113 @@ contextualize(() => {
 			}
 		})
 		attest(T({ a: 1 }).toString()).snap("a is invalid")
+	})
+
+	describe("from another copy of arktype", () => {
+		// like a 2.x Type: callable, with arkKind "root" but none of this version's
+		// methods, and messages that start with their path
+		const foreignType = (jsonSchema?: StandardJSONSchemaV1.Converter) =>
+			Object.setPrototypeOf(
+				Object.assign((data: unknown) => data, {
+					"~standard": {
+						version: 1,
+						vendor: "arktype",
+						validate: (data: unknown) =>
+							typeof (data as { id?: unknown }).id === "string" ?
+								{ value: data }
+							:	{
+									issues: [
+										{
+											message: "id must be a string",
+											problem: "must be a string",
+											path: ["id"]
+										}
+									]
+								},
+						jsonSchema
+					}
+				}),
+				{ " arkKind": "root" }
+			) as type.cast<{ id: string }> & ((data: unknown) => { id: string })
+		const Foreign = foreignType()
+
+		it("parses a Type as a Standard Schema", () => {
+			const T = type({ user: Foreign, thunk: () => Foreign })
+			attest<{ user: { id: string }; thunk: { id: string } }>(T.infer)
+			attest(T({ user: { id: "a" }, thunk: { id: "b" } })).equals({
+				user: { id: "a" },
+				thunk: { id: "b" }
+			})
+			attest(T({ user: {}, thunk: { id: 1 } }).toString()).snap(
+				"user.id must be a string\nthunk.id must be a string"
+			)
+		})
+
+		it("methods parse a Type as a Standard Schema", () => {
+			const T = type("string").pipe(id => ({ id: id.length }), Foreign)
+			attest(T("abc").toString()).snap("id must be a string")
+			attest(type("unknown").to(Foreign)({}).toString()).snap(
+				"id must be a string"
+			)
+			const Node = scope({ node: { id: "string", "next?": "node" } }).export()
+				.node
+			attest(Node.equals(Foreign)).equals(false)
+		})
+
+		it("writes a Type's own JSON Schema", () => {
+			const T = type({
+				u: foreignType({
+					input: ({ target }) => ({ $schema: target, title: `in ${target}` }),
+					output: ({ target }) => {
+						if (target === "openapi-3.0") throw new Error("unsupported")
+						return { $schema: target, title: `out ${target}` }
+					}
+				})
+			})
+			attest(T.toJsonSchema({ target: "draft-07" })).snap({
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "object",
+				properties: { u: { title: "out draft-07" } },
+				required: ["u"]
+			})
+			attest(T["~standard"].jsonSchema.input({ target: "draft-07" })).snap({
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "object",
+				properties: { u: { title: "in draft-07" } },
+				required: ["u"]
+			})
+			attest(() => T.toJsonSchema({ target: "openapi-3.0" })).throws(
+				`Can't convert the Type at u to openapi-3.0 JSON Schema. ${writeForeignArkMessage("It")}`
+			)
+			attest(() => type({ u: Foreign }).toJsonSchema()).throws(
+				`Can't convert the Type at u to draft-2020-12 JSON Schema. ${writeForeignArkMessage("It")}`
+			)
+		})
+
+		it("throws for a Type as a schema", () => {
+			attest(() => type.schema(Foreign as never)).throws(
+				writeForeignArkMessage("A Type passed as a schema")
+			)
+		})
+
+		it("throws for a module or generic in a scope", () => {
+			class ForeignModule {
+				get " arkKind"() {
+					return "module"
+				}
+			}
+			class ForeignGeneric {
+				get " arkKind"() {
+					return "generic"
+				}
+			}
+			attest(() => scope({ m: new ForeignModule() as never })).throws(
+				writeForeignArkMessage("m")
+			)
+			attest(() => scope({ g: new ForeignGeneric() as never })).throws(
+				writeForeignArkMessage("g")
+			)
+		})
 	})
 
 	it("can infer generic parameter from standard schema", () => {

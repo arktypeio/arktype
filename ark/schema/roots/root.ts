@@ -5,6 +5,7 @@ import {
 	includes,
 	inferred,
 	isEmptyObject,
+	isInstanceOf,
 	throwInternalError,
 	throwParseError,
 	type Fn,
@@ -479,7 +480,11 @@ export abstract class BaseRoot<
 	}
 
 	rawPipeOnce(morph: Morph): BaseRoot {
-		if (hasArkKind(morph, "root")) return this.toNode(morph)
+		if (hasArkKind(morph, "root")) {
+			return this.toNode(
+				isInstanceOf(morph, BaseRoot) ? morph : this.$.parseDef(morph)
+			)
+		}
 
 		return this.distribute(
 			branch =>

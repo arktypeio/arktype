@@ -18,6 +18,10 @@ export const isStandardSchema = (o: object): boolean => "~standard" in o
 
 export const isDate = (value: unknown): value is Date => value instanceof Date
 
+// a node from another copy of arktype, like 2.x, has its arkKind but not its class
+export const isInstanceOf = (o: object, ctor: Function): boolean =>
+	o instanceof ctor
+
 export const prototypeOf = (o: object): object | null =>
 	Object.getPrototypeOf(o)
 

@@ -4,6 +4,7 @@ import {
 	flatMorph,
 	hashOf,
 	hasOwn,
+	isInstanceOf,
 	isThunk,
 	ParseError,
 	printable,
@@ -66,7 +67,7 @@ import {
 	resolveShallowAliases,
 	type Alias
 } from "./roots/alias.ts"
-import type { BaseRoot } from "./roots/root.ts"
+import { BaseRoot } from "./roots/root.ts"
 import type { Union } from "./roots/union.ts"
 import type { Unit } from "./roots/unit.ts"
 import { canJit, tryJit } from "./shared/compile.ts"
@@ -161,6 +162,9 @@ export const writeDuplicateAliasError = <alias extends string>(
 
 export type writeDuplicateAliasError<alias extends string> =
 	`#${alias} duplicates public alias ${alias}`
+
+export const writeForeignArkMessage = (subject: string): string =>
+	`${subject} is from another version or copy of arktype, like 2.x. Upgrade the package that brought it in, or add an override so it uses this arktype`
 
 export type AliasDefEntry = [name: string, defValue: unknown]
 
@@ -301,6 +305,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 		)
 
 		for (const [k, v] of aliasEntries) {
+			if (
+				(hasArkKind(v, "module") && !isInstanceOf(v, RootModule)) ||
+				(hasArkKind(v, "generic") && !isInstanceOf(v, GenericRoot))
+			)
+				throwParseError(writeForeignArkMessage(k))
 			let name = k
 			if (k[0] === "#") {
 				name = k.slice(1)
@@ -889,7 +898,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	/** parses a definition in this scope to a node */
 	parseDef(def: unknown, opts: BaseParseOptions = {}): BaseRoot {
-		if (hasArkKind(def, "root")) return this.bindRef(def)
+		if (hasArkKind(def, "root") && isInstanceOf(def, BaseRoot))
+			return this.bindRef(def)
 
 		const ctxInputOrNode = this.preparseOwn(def, opts)
 		if (hasArkKind(ctxInputOrNode, "root")) return this.bindRef(ctxInputOrNode)

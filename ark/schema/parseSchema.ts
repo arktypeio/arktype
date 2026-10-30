@@ -4,6 +4,7 @@ import {
 	hasDomain,
 	isArray,
 	isEmptyObject,
+	isInstanceOf,
 	liftArray,
 	throwParseError,
 	type array,
@@ -28,8 +29,8 @@ import type { Predicate } from "./predicate.ts"
 import type { Domain } from "./roots/domain.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
-import type { BaseRoot } from "./roots/root.ts"
-import type { BaseScope } from "./scope.ts"
+import { BaseRoot } from "./roots/root.ts"
+import { writeForeignArkMessage, type BaseScope } from "./scope.ts"
 import type { TypeMeta } from "./shared/declare.ts"
 import {
 	constraintKeys,
@@ -221,7 +222,11 @@ export const schemaKindOf = <kind extends RootKind = RootKind>(
 }
 
 const discriminateRootKind = (schema: unknown): RootKind => {
-	if (hasArkKind(schema, "root")) return schema.kind
+	if (hasArkKind(schema, "root")) {
+		return isInstanceOf(schema, BaseRoot) ?
+				schema.kind
+			:	throwParseError(writeForeignArkMessage("A Type passed as a schema"))
+	}
 	if (typeof schema === "string") {
 		return (
 			schema[0] === "$" ? "alias"
