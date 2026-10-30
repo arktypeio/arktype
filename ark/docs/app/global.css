@@ -8,18 +8,7 @@
 
 /* lets the homepage and playground's utility classes read the tokens */
 @theme {
-	--color-bg: var(--bg);
-	--color-surface: var(--surface);
-	--color-raised: var(--raised);
 	--color-ink: var(--ink);
-	--color-ink-2: var(--ink-2);
-	--color-ink-3: var(--ink-3);
-	--color-gold: var(--gold);
-	--color-copper: var(--copper);
-	--color-sky: var(--sky);
-	--color-blue: var(--blue);
-	--color-teal: var(--teal);
-	--color-rule: var(--rule);
 	--font-sans: var(--sans);
 	--font-mono: var(--mono);
 }
