@@ -182,6 +182,7 @@ import {
 	type LinkOptions
 } from "./link.ts"
 import {
+	parseValidators,
 	passedReaderOf,
 	unprecompiled,
 	usedMembersOf,
@@ -444,6 +445,8 @@ export class Precompiler {
 	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
 	// each shared unit's modules, written once for every module reading it
 	private sharedWrites: SharedWrites = new Map()
+	// the validators a site's factory last read, which inlining reads again
+	private inlined: SourceModule | undefined
 	// why the analyses' configuration can't be applied
 	private analyzedProblem: string | undefined
 	private bindingsByInput = new WeakMap<Input, Binding>()
@@ -1555,6 +1558,12 @@ export class Precompiler {
 		}
 	}
 
+	private inlinedModuleOf(specifier: string, source: string): SourceModule {
+		if (this.inlined?.id !== specifier || this.inlined.source !== source)
+			this.inlined = new SourceModule(specifier, source, specifier)
+		return this.inlined
+	}
+
 	// the virtual modules' imports, inlined or imported beside arktype so they run where it does
 	private insertImports(
 		module: SourceModule,
@@ -1564,9 +1573,16 @@ export class Precompiler {
 		imports: Record<string, Record<string, string>>
 	): void {
 		let inserted = ""
-		if (this.inline)
-			inserted = inlineModules(module, s, prefix, modules, imports)
-		else {
+		if (this.inline) {
+			inserted = inlineModules(
+				module,
+				s,
+				prefix,
+				modules,
+				imports,
+				(id, source) => this.inlinedModuleOf(id, source)
+			)
+		} else {
 			for (const specifier in imports) {
 				const locals = imports[specifier]
 				if (!Object.keys(locals).length) inserted += `\nimport "${specifier}"`
@@ -2201,7 +2217,11 @@ export class Precompiler {
 		const readsPassed =
 			!isValue &&
 			!!factory?.bindings.length &&
-			(folding.readsPassedBy ??= passedReaderOf(validators.code))(exported)
+			(folding.readsPassedBy ??= passedReaderOf(() =>
+				this.inline ?
+					this.inlinedModuleOf(folding.specifier, validators.code).program
+				:	parseValidators(validators.code)
+			))(exported)
 		for (const [input, binding] of factory?.bindings ?? []) {
 			folding.passed.push(binding)
 			if (readsPassed && inputs.includes(input)) folding.read.push(binding)

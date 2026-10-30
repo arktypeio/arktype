@@ -18,7 +18,7 @@ import type {
 } from "oxc-parser"
 import { reasonsOf } from "./diagnostics.ts"
 import { contains } from "./graph.ts"
-import { SourceModule } from "./module.ts"
+import type { SourceModule } from "./module.ts"
 import type { Site } from "./sites.ts"
 import { minifiedSizeOf } from "./runtimeSize.ts"
 import { exportNameOf, type Binding } from "./scope.ts"
@@ -101,13 +101,14 @@ export const inlineModules = (
 	s: MagicString,
 	prefix: string,
 	modules: Record<string, string>,
-	imports: Record<string, Record<string, string>>
+	imports: Record<string, Record<string, string>>,
+	moduleOf: (specifier: string, source: string) => SourceModule
 ): string => {
 	const importsBySource: Record<string, InlinedImport> = {}
 	let declarations = ""
 	let loaders = 0
 	for (const specifier in imports) {
-		const inlined = new SourceModule(specifier, modules[specifier], specifier)
+		const inlined = moduleOf(specifier, modules[specifier])
 		const body = new MagicString(inlined.source)
 		const params: string[] = []
 		const args: string[] = []

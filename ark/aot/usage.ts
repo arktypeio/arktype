@@ -1,4 +1,4 @@
-import type { Node, Span } from "oxc-parser"
+import type { Node, Program, Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
 import { parseCode, type SourceModule } from "./module.ts"
 import { isInertMetaProperty } from "./scan.ts"
@@ -608,11 +608,11 @@ export const unprecompiled = (module: SourceModule): RuntimeModule => ({
 
 // e.g. not a production build's factories, which check no Type they're passed
 export const passedReaderOf = (
-	code: string
+	parse: () => Program
 ): ((exported: string) => boolean) => {
 	let functionsByExport: Map<string, Node | undefined> | undefined
 	return exported => {
-		functionsByExport ??= exportedFunctionsOf(code)
+		functionsByExport ??= exportedFunctionsOf(parse())
 		const fn = functionsByExport.get(exported)
 		if (
 			fn?.type !== "ArrowFunctionExpression" &&
@@ -634,8 +634,12 @@ export const passedReaderOf = (
 	}
 }
 
-const exportedFunctionsOf = (code: string): Map<string, Node | undefined> => {
-	const { program } = parseCode("validators.js", code, {})
+export const parseValidators = (code: string): Program =>
+	parseCode("validators.js", code, {}).program
+
+const exportedFunctionsOf = (
+	program: Program
+): Map<string, Node | undefined> => {
 	const declared = new Map<string, Node>()
 	const result = new Map<string, Node | undefined>()
 	for (const statement of program.body) {
