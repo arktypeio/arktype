@@ -691,7 +691,7 @@ export const declaredIds = (declaration: Node): Node[] =>
 		[declaration.id]
 	:	[]
 
-const idsOf = (pattern: Node): Node[] => {
+export const idsOf = (pattern: Node): Node[] => {
 	switch (pattern.type) {
 		case "Identifier":
 			return [pattern]

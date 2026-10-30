@@ -1218,6 +1218,54 @@ export const addB = () => {
 			])
 		})
 
+		it("values written through what holds them", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const o0 = { a: "string" }
+;[o0][0].a = "number"
+const o1 = { a: "string" }
+;({ h: o1 }).h.a = "number"
+const o2 = { a: "string" }
+for (const v of [o2]) v.a = "number"
+const o3 = { a: "string" }
+const list = [o3]
+list[0].a = "number"
+const o4 = { a: "string" }
+;({ ...{ h: o4 } }).h.a = "number"
+const o5 = { a: "string" }
+const { h } = { h: o5 }
+h.a = "number"
+const o6 = { a: "string" }
+new Map([["h", o6]]).get("h")!.a = "number"
+const o7 = { a: "string" }
+let alias: any
+alias = o7
+alias.a = "number"
+const read = { a: "string", list: [type("string")] }
+console.log(read, JSON.stringify(read.list), \`\${read.a}\`)
+export const A0 = type(o0)
+export const A1 = type(o1)
+export const A2 = type(o2)
+export const A3 = type(o3)
+export const A4 = type(o4)
+export const A5 = type(o5)
+export const A6 = type(o6)
+export const A7 = type(o7)
+export const R = type({ a: read.a, b: read.list[0].or("null") })`)
+			).snap([
+				"22:36 accepted string",
+				"24:19 rejected\n  `o0` is written at /main.ts:3:2, so its value at the site is not known",
+				"25:19 rejected\n  `o1` is written at /main.ts:5:2, so its value at the site is not known",
+				"26:19 rejected\n  `o2` is written at /main.ts:7:23, so its value at the site is not known",
+				"27:19 rejected\n  `o3` is written at /main.ts:10:1, so its value at the site is not known",
+				"28:19 rejected\n  `o4` is written at /main.ts:12:2, so its value at the site is not known",
+				"29:19 rejected\n  `o5` is written at /main.ts:15:1, so its value at the site is not known",
+				"30:19 rejected\n  `o6` reaches code the build doesn't follow at /main.ts:17:1, so its value at the site is not known",
+				"31:19 rejected\n  `o7` is written at /main.ts:21:1, so its value at the site is not known",
+				"32:18 accepted { a: string, b: string | null }"
+			])
+		})
+
 		it("holes read through an object written before the site", () => {
 			const diagnostics = precompile(
 				`import { type } from "arktype"
