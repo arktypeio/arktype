@@ -45,7 +45,7 @@ contextualize(() => {
 		const d = new Date().toISOString()
 		attest(IsoDate(d)).equals(d)
 		attest(IsoDate("05-21-1993").toString()).snap(
-			'must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "05-21-1993")'
+			'must be an ISO 8601 date or date-time (was "05-21-1993")'
 		)
 	})
 
@@ -71,13 +71,13 @@ contextualize(() => {
 	it("string.date.iso.parse rejects a date that doesn't exist", () => {
 		const ParseIso = type("string.date.iso.parse")
 		attest(ParseIso("2025-02-29").toString()).snap(
-			'must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "2025-02-29")'
+			'must be an ISO 8601 date or date-time (was "2025-02-29")'
 		)
 		attest(ParseIso("2025-W53-1").toString()).snap(
-			'must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "2025-W53-1")'
+			'must be an ISO 8601 date or date-time (was "2025-W53-1")'
 		)
 		attest(ParseIso("2025-366").toString()).snap(
-			'must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "2025-366")'
+			'must be an ISO 8601 date or date-time (was "2025-366")'
 		)
 	})
 

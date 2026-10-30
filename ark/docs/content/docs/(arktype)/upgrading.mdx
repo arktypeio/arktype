@@ -394,7 +394,7 @@ const parse = type("string.date.iso.parse")
 // before, in New York: 2025-01-01T17:00:00.000Z
 parse("2025-01-01T12:00")
 
-// ArkErrors: must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "2025-02-29")
+// ArkErrors: must be an ISO 8601 date or date-time (was "2025-02-29")
 // before: 2025-03-01T00:00:00.000Z
 parse("2025-02-29")
 ```

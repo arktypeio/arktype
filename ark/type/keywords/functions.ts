@@ -83,7 +83,7 @@ export const parseDate = (s: string, ctx: Traversal): Date | ArkError =>
 // a date that doesn't exist, like 2025-02-29, isn't an ISO 8601 date either
 const isoDateParseError = /* @__PURE__ */ keywordError(
 	"string.date.iso",
-	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
+	"an ISO 8601 date or date-time"
 )
 
 // a calendar, week or ordinal date, then a time whose last unit can have a fraction, then an offset

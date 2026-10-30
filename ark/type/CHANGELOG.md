@@ -2853,9 +2853,11 @@ parse("2025-01-01T12:00")
 parse("20250101")
 
 // previously 2025-03-01T00:00:00.000Z
-// now ArkErrors: must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "2025-02-29")
+// now ArkErrors: must be an ISO 8601 date or date-time (was "2025-02-29")
 parse("2025-02-29")
 ```
+
+Its description, and `string.date.iso`'s, is "an ISO 8601 date or date-time", where it named only the form `YYYY-MM-DDTHH:mm:ss.sssZ`, though the pattern accepts the others above.
 
 `string.date.parse` and `string.date` read a string `string.date.iso` accepts the same way, falling back to `new Date(s)` for other forms, like `"5/21/1993"`, which are still read by the host. So `string.date.parse` gives an ISO string the same instant on every machine, and `string.date` rejects an ISO date that doesn't exist:
 
