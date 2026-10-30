@@ -227,7 +227,6 @@ contextualize(() => {
 		eachType(keywords, collect)
 		eachType($ark.kw, collect)
 		const names = [...scopes].map($ => $.isBuiltin && $.name)
-		attest(new Set(names).size).equals(scopes.size)
 		attest(names.sort()).snap([
 			"ark",
 			"intrinsic",

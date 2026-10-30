@@ -155,9 +155,19 @@ contextualize(() => {
 			[types.node, self],
 			[types.transformed, { v: "root", e: [{ v: "a", e: [invalid] }, invalid] }]
 		]
-		attest(
-			cases.map(([t, data]) => [t.allows(data), t(data) instanceof type.errors])
-		).equals(cases.map(() => [false, true]))
+		attest(cases.map(([t, data]) => [t.allows(data), String(t(data))])).snap([
+			[
+				false,
+				'dependencies[0].dependencies[0].contributors[0].email must be an email address (was "david@sharktypeio")'
+			],
+			[
+				false,
+				"e0[0].e0[0].e0[0].e0[0].e0[1].v must be a number (was a string)"
+			],
+			[false, "e0[0].v must be a number (was a string)"],
+			[false, "v must be a number (was a string)"],
+			[false, "e[0].e[0].e[0].n must be a number (was a string)"]
+		])
 	})
 
 	it("depth and width bounds", () => {
@@ -210,7 +220,7 @@ contextualize(() => {
 		let last = types.parsed.assert(deep)
 		for (let i = 1; i < 100; i++) last = last.next!
 
-		attest(last.next === last).equals(true)
+		attest(last.next).is(last)
 	})
 
 	it("traverses cyclic data with fan-out in linear work", () => {
@@ -263,13 +273,13 @@ contextualize(() => {
 		while (!last.right) last = last.left!
 
 		attest(last.right).equals({ v: 1 })
-		attest(last.left === last.right).equals(true)
+		attest(last.left).is(last.right)
 
 		const ring: typeof node.inferIn = { v: "0" }
 		ring.left = ring
 		const out = node.assert(ring)
 
-		attest(out.left === out).equals(true)
+		attest(out.left).is(out)
 	})
 
 	it("cyclic output to cyclic type", () => {
@@ -510,7 +520,7 @@ contextualize(() => {
 		const out: { q: object; p: { p: object } } = types.b(data) as never
 
 		attest(out.q).equals({})
-		attest(out.p.p === out.p).equals(true)
+		attest(out.p.p).is(out.p)
 	})
 
 	it("cyclic output closes at entry", () => {
@@ -533,9 +543,9 @@ contextualize(() => {
 			.assert(data)
 		const member = types.tree.assert(data)
 
-		attest(prop.x.next === prop.x).equals(true)
-		attest(element[0].next === element[0]).equals(true)
-		attest(piped.next === piped).equals(true)
+		attest(prop.x.next).is(prop.x)
+		attest(element[0].next).is(element[0])
+		attest(piped.next).is(piped)
 		attest(member.kind === "n" && member.next === member).equals(true)
 		attest(prop.x.v).equals("a")
 	})
@@ -668,7 +678,7 @@ contextualize(() => {
 		const out = types.User.assert(self)
 
 		attest(out.lastUpdate).equals(new Date("3"))
-		attest(out.supervisor === out).equals(true)
+		attest(out.supervisor).is(out)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/944
@@ -1271,7 +1281,7 @@ contextualize(() => {
 				.strings({ value: "a", next: { value: "b", next: { value: 1 } } })
 				.toString()
 		).snap("next.next.value must be a string (was a number)")
-		attest(types.alternate("'off'", "'on'") === alternate).equals(true)
+		attest(types.alternate("'off'", "'on'")).is(alternate)
 		attest(alternate.expression).snap(
 			'{ order: ["off", "on"], swap?: { order: ["on", "off"], swap?: alternate<"off", "on"> } }'
 		)

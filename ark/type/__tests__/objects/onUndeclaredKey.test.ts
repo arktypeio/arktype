@@ -429,7 +429,7 @@ b must be removed`)
 			})
 			const out = T.assert(JSON.parse('{"__proto__":{"x":1},"z":2}'))
 			attest(Object.keys(out)).equals(["__proto__"])
-			attest(Object.getPrototypeOf(out) === Object.prototype).equals(true)
+			attest(Object.getPrototypeOf(out)).is(Object.prototype)
 		})
 
 		it("reject key from union", () => {

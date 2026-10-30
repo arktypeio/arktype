@@ -2621,11 +2621,11 @@ config.onUndeclaredKey = "reject"`
 		} as never)
 		const U = type("string | number").configure({ schema: N } as never)
 		const { T: validator, U: union, N: n } = await load({ T, U, N })
-		attest(validator.meta.schema === n).equals(true)
+		attest(validator.meta.schema).is(n)
 		attest(validator.meta.list[0].expression).equals("boolean")
 		attest(validator.meta.list[0](true)).equals(true)
 		attest(Object.isFrozen(validator.meta.list)).equals(true)
-		attest(union.meta.schema === n).equals(true)
+		attest(union.meta.schema).is(n)
 	})
 
 	it("freezes what a program reads", async () => {

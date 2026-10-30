@@ -16,7 +16,7 @@ contextualize(() => {
 		const cloned = deepClone(obj)
 		attest<typeof obj>(cloned).equals(obj)
 		attest(cloned !== obj).equals(true)
-		attest(cloned.b.self === cloned).equals(true)
+		attest(cloned.b.self).is(cloned)
 	})
 
 	it("arrays", () => {

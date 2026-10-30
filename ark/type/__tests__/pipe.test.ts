@@ -488,7 +488,7 @@ contextualize(() => {
 			}
 		)
 		attest(T("x").toString()).snap('must be a letter (was "x")')
-		attest(received === added).equals(true)
+		attest(received).is(added)
 	})
 
 	it("returns a type's output when called with a morph's ctx", () => {

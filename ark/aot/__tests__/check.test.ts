@@ -245,11 +245,10 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 			"src/Form.svelte and 1 other component aren't checked here, as the build checks a component once its framework compiles it",
 			"1 site in 1 file: 1 accepted (100.0%)"
 		])
-		attest(
-			check([], { cwd: root, runtime: "arktype" }).lines.some(line =>
-				line.includes("component")
-			)
-		).equals(false)
+		attest(check([], { cwd: root, runtime: "arktype" }).lines).snap([
+			"src/types.ts:2:21  accepted",
+			"1 site in 1 file: 1 accepted (100.0%)"
+		])
 	})
 
 	it("fails on an error outside every site", () => {
