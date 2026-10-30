@@ -650,9 +650,9 @@ export function namesOf(data: unknown) {
 		})
 
 		it("reads a JS module's parameters as the .d.ts beside it annotates them", () => {
-			// under creationChecks "helpers", as Vitest runs, every module is checked
-			const helperDiagnosticsOf = (files: Record<string, string>) =>
-				new Precompiler(memoryHost(files), { creationChecks: "helpers" })
+			// analyzed as a module importing arktype would be
+			const jsDiagnosticsOf = (files: Record<string, string>) =>
+				new Precompiler(memoryHost(files))
 					.analyzeSites(files["/env/index.js"], "/env/index.js")
 					.diagnostics.map(d => renderDiagnostic(d).split("\n")[0])
 			const js = {
@@ -665,14 +665,14 @@ export const describe = (opts) => opts.extends.length
 export default (opts) => opts.extends.length`,
 				"/env/presets.js": `export const presetOf = preset => preset.id`
 			}
-			attest(helperDiagnosticsOf(js)).snap([
+			attest(jsDiagnosticsOf(js)).snap([
 				"/env/index.js:3:19  opts.extends reads extends, which a standalone validator lacks",
 				"/env/index.js:3:34  opts.extends reads extends, which a standalone validator lacks",
 				"/env/index.js:6:35  opts.extends reads extends, which a standalone validator lacks",
 				"/env/index.js:7:26  opts.extends reads extends, which a standalone validator lacks"
 			])
 			attest(
-				helperDiagnosticsOf({
+				jsDiagnosticsOf({
 					...js,
 					"/env/index.d.ts": `import type { Preset } from "./presets.js"
 export interface Options { extends?: Preset[]; server: Record<string, unknown> }
@@ -1490,6 +1490,9 @@ export function bounded(max: number) {
 	let Bounded = type(\`string <= \${max}\`)
 	return Bounded
 }
+const schemaOf = (def: Record<string, string>) => type(def).toJsonSchema()
+export const schemas = [{ a: "string" }].map(schemaOf)
+export const inline = [{ a: "string" }].map(def => type(def).toJsonSchema())
 const shape: Record<string, string> = { title: "string" }
 if (import.meta.env.DEV) shape["debugNote?"] = "string"
 export const Post = type(shape)
@@ -1499,6 +1502,8 @@ export const Holder = type({ bad: Bad })`).map(d =>
 				)
 			).snap([
 				"Write the definition where bounded is called, with the value it passes for `max`, so the build precompiles each call.",
+				"Put // @ark-runtime on the line before the definition, so arktype defines it at runtime.",
+				"Put // @ark-runtime on the line before the definition, so arktype defines it at runtime.",
 				"Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime.",
 				"Fix the definition, which throws the same ParseError at runtime, or set allowUnsafe: true to build anyway, with a warning.",
 				"Fix the definition it reads, which throws the same ParseError at runtime."

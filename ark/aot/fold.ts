@@ -224,18 +224,27 @@ export const runtimeModuleOf = (
 
 const virtualSpecifier = /"(~arktype\/[^"]+)"/g
 
-export const reachedModulesOf = (
-	code: string,
+// the modules each code reaches, reading each module's imports once
+export const reacherOf = (
 	modules: Record<string, string>
-): Record<string, string> => {
-	const reached: Record<string, string> = {}
-	const pending = [code]
-	for (const read of pending) {
-		for (const [, specifier] of read.matchAll(virtualSpecifier)) {
-			if (specifier in reached || !(specifier in modules)) continue
-			reached[specifier] = modules[specifier]
-			pending.push(reached[specifier])
+): ((code: string) => Record<string, string>) => {
+	const importsBySpecifier: Record<string, string[]> = {}
+	const importsOf = (code: string) =>
+		[...code.matchAll(virtualSpecifier)]
+			.map(([, specifier]) => specifier)
+			.filter(specifier => specifier in modules)
+	return code => {
+		const reached: Record<string, string> = {}
+		const pending = [importsOf(code)]
+		for (const imports of pending) {
+			for (const specifier of imports) {
+				if (specifier in reached) continue
+				reached[specifier] = modules[specifier]
+				pending.push(
+					(importsBySpecifier[specifier] ??= importsOf(modules[specifier]))
+				)
+			}
 		}
+		return reached
 	}
-	return reached
 }

@@ -1312,17 +1312,8 @@ export class ModuleGraph {
 		// e.g. `ts` in `(...ts) => ts[0].or("null")`, holding what it's passed
 		if (param.type === "RestElement") {
 			let held = calls ? 0 : this.passedKindOf(fn, module, kindOfKey)
-			for (const call of calls ?? []) {
-				for (const arg of call.arguments.slice(index)) {
-					held |=
-						arg.type === "SpreadElement" ?
-							memberKindOf(
-								this.transfer(arg.argument, module, kindOfKey),
-								undefined
-							)
-						:	this.transfer(arg, module, kindOfKey)
-				}
-			}
+			for (const call of calls ?? [])
+				held |= this.argsKindOf(call.arguments.slice(index), module, kindOfKey)
 			return this.patternKindOf(
 				binding.id,
 				param.argument,
@@ -1371,10 +1362,22 @@ export class ModuleGraph {
 					this.transfer(args[index], module, kindOfKey)
 				:	kinds.data
 		}
+		const held = this.argsKindOf(
+			args.slice(spread === -1 ? index : Math.min(spread, index)),
+			module,
+			kindOfKey
+		)
+		return isRest ? holderOf(held) : held | kinds.data
+	}
+
+	// what any of args holds, a spread's members as its own
+	private argsKindOf(
+		args: CallExpression["arguments"],
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits {
 		let held = 0
-		for (const arg of args.slice(
-			spread === -1 ? index : Math.min(spread, index)
-		)) {
+		for (const arg of args) {
 			held |=
 				arg.type === "SpreadElement" ?
 					memberKindOf(
@@ -1383,7 +1386,7 @@ export class ModuleGraph {
 					)
 				:	this.transfer(arg, module, kindOfKey)
 		}
-		return isRest ? holderOf(held) : held | kinds.data
+		return held
 	}
 
 	private passedKindOf(

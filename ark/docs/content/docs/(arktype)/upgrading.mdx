@@ -9,6 +9,7 @@ Each section is one change since 2.2.9, with code that behaves differently befor
 
 Go down the list. Each question your code answers yes to links to what to change.
 
+- Do you install with npm, beside a package that peers on `arktype@^2`, like `@hookform/resolvers` or `@t3-oss/env-core`? [Override its peer](#npm-refuses-packages-that-peer-on-arktype-2).
 - Do you ship arktype to a browser without a build step that precompiles? [It's larger](#unprecompiled-arktype-is-larger).
 - Do you install `@ark/type`, `@ark/regex` or an `@arktype/*` package? [Rename it](#package-names).
 - Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](#arkerrors-is-no-longer-an-array).
@@ -31,6 +32,31 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you use `@ark/schema` without `arktype`? [Import `arksets`](#arkschema).
 - Do you import from `@ark/schema`, `@ark/util` or a deep path like `arktype/internal/...`, or read `.internal`? See [@ark/schema](#arkschema), [@ark/util](#arkutil) and [Deep imports](#deep-imports).
 - Do you use `@ark/json-schema`, `@ark/fast-check` or attest, or run attest on TypeScript 7? See their sections below.
+
+## Installing
+
+### npm refuses packages that peer on arktype 2
+
+Some packages list `arktype@^2` as a peer dependency, like `@hookform/resolvers`, `@t3-oss/env-core`, `@standard-community/standard-json`, `xsschema`, `@regle/schemas`, `@typeschema/arktype`, `@hono/arktype-validator` and `@arkenv/core`. npm won't install one beside a later major version of `arktype`, even where its peer is optional: `npm install arktype@latest` only warns, but each install after it, `npm ci` included, fails with `ERESOLVE`. Until a package widens its range, point its peer at your `arktype` in `package.json`, one entry for each package the error names:
+
+```json title="package.json"
+{
+	"overrides": {
+		"@hookform/resolvers": { "arktype": "$arktype" },
+		"@t3-oss/env-core": { "arktype": "$arktype" }
+	}
+}
+```
+
+`$arktype` is the version your `dependencies` list, so update `arktype` there, then run `npm install`. An override of `arktype` alone, `{ "arktype": "$arktype" }`, would also hand your version to packages that depend on arktype 2 itself rather than peering on it.
+
+pnpm installs with an `unmet peer` warning, which `peerDependencyRules` in `pnpm-workspace.yaml` silences, and bun doesn't warn:
+
+```yaml title="pnpm-workspace.yaml"
+peerDependencyRules:
+  allowedVersions:
+    arktype: "3"
+```
 
 ## Bundle size
 
@@ -394,7 +420,7 @@ const parse = type("string.date.iso.parse")
 // before, in New York: 2025-01-01T17:00:00.000Z
 parse("2025-01-01T12:00")
 
-// ArkErrors: must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "2025-02-29")
+// ArkErrors: must be an ISO 8601 date or date-time (was "2025-02-29")
 // before: 2025-03-01T00:00:00.000Z
 parse("2025-02-29")
 ```

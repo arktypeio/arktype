@@ -13,7 +13,10 @@ import type { Predicate } from "../predicate.ts"
 import { defaultValueSerializer, type ConstraintKind } from "./implement.ts"
 import type { JsonSchema } from "./jsonSchema.ts"
 import { namedReference, registeredReference } from "./registry.ts"
-import type { StandardJSONSchemaV1 } from "./standardSchema.ts"
+import type {
+	StandardJSONSchemaV1,
+	StandardSchemaV1
+} from "./standardSchema.ts"
 
 class ToJsonSchemaError<
 	code extends ToJsonSchema.Code = ToJsonSchema.Code
@@ -25,11 +28,10 @@ class ToJsonSchemaError<
 	constructor(
 		code: code,
 		context: ToJsonSchema.ContextByCode[code],
-		path = ""
+		path = "",
+		message = `Can't convert "${code}"${path && ` at ${path}`} to JSON Schema. Configure fallback.${code} to write it:\n${printable(context, { quoteKeys: false, indent: 4 })}`
 	) {
-		super(
-			`Can't convert "${code}"${path && ` at ${path}`} to JSON Schema. Configure fallback.${code} to write it:\n${printable(context, { quoteKeys: false, indent: 4 })}`
-		)
+		super(message)
 		this.code = code
 		this.context = context
 	}
@@ -40,6 +42,10 @@ class ToJsonSchemaError<
 		return this.code === (code as never)
 	}
 }
+
+/** the Types from another copy of arktype, like 2.x, by the morph that validates with each */
+export const foreignTypesByMorph: WeakMap<Function, StandardSchemaV1> =
+	new WeakMap()
 
 const throwFallback = <code extends ToJsonSchema.Code>(
 	ctx: ToJsonSchema.ContextByCode[code]

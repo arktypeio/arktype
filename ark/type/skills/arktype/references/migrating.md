@@ -16,7 +16,8 @@ To move a whole project off Zod, or another library below, work through it in th
    - A union of such objects throws a `ParseError` saying it's indeterminate unless a key tells them apart. Follow [Defaults that differ](#defaults-that-differ) for it, and keep the global setting: `"+": "ignore"` belongs only on the union's branches.
    - `.optional()` also accepts `undefined`, so write `"key?": "T | undefined"`. Before Zod 4.4, any key whose schema accepts `undefined` may be missing, so a `z.unknown()` key is `"key?": "unknown"`; from 4.4, only `.optional()` and defaults let a key be missing, so it stays `key: "unknown"`. Check the version the project installs. In Zod 4, `.default(x).optional()` still fills in `x`, so it's `key: T.default(x)`.
    - `z.any()` is `"unknown.any"`, or `"key?": "unknown.any"` as a key before Zod 4.4. It infers `any` as Zod's did, so refinements that read its properties type-check without casts.
-   - Translate coercions and refinements literally, as in [Coercion is a parse](#semantics-to-check). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema.
+   - Translate coercions and refinements literally, as in [Coercion is a parse](#semantics-to-check). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema. Zod 4 runs it even when a key fails a check like `.min()` or `.regex()`, though not when one is missing or of the wrong type, so its issue joins theirs; a narrow runs only once every key is valid.
+   - Zod 4.6's `.url()` trims its input, accepts what `URL.canParse` accepts and returns the trimmed string without tabs or line breaks; Zod 4.1's returned it as given. `string.url` checks with `URL.canParse` too but doesn't trim, so where the output is kept, write `type("string").pipe(s => s.trim().replace(/[\t\n\r]/g, "")).to("string.url")`.
    - `string.email` and Zod 4's `z.email()` disagree on some addresses: Zod rejects `a..b@x.co` and `.a@x.co` and accepts `a'b@x.co`, and ArkType does the opposite. Where that matters, keep Zod's pattern as a regex.
    - Keep custom messages. `.min(1, "Name is required")` becomes `type("string >= 1").configure({ message: "Name is required" })`.
 4. **Update call sites.**
@@ -38,18 +39,20 @@ for (const issue of out.issues) {
 
 5. **Swap integrations.** Most accept an ArkType type directly, through [Standard Schema](https://arktype.io/docs/standard-schema):
 
-| With Zod                                                    | With ArkType                                                                                                                                     |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `zodResolver(schema)` (react-hook-form)                     | `standardSchemaResolver(schema)` from `@hookform/resolvers/standard-schema`                                                                      |
-| tRPC `.input(schema)`, `@t3-oss/env-*`, TanStack Form       | the same call, given the ArkType type                                                                                                            |
-| AI SDK 6 `tool({ inputSchema })`, MCP SDK v2 `registerTool` | the same call, given the ArkType type, which also supplies the JSON Schema                                                                       |
-| AI SDK 5 `tool({ inputSchema })`                            | `jsonSchema<typeof T.infer>(T.toJsonSchema(), { validate })`, where `validate` returns `{ success: true, value }` or `{ success: false, error }` |
-| `zValidator` from `@hono/zod-validator`                     | `sValidator` from `@hono/standard-validator`                                                                                                     |
-| `@hono/zod-openapi`                                         | `hono-openapi`: `describeRoute`, `validator` and `resolver`                                                                                      |
-| `zod-to-json-schema`, `z.toJSONSchema(schema)`              | `schema.toJsonSchema()`                                                                                                                          |
-| `@asteasolutions/zod-to-openapi`                            | `schema.toJsonSchema({ target: "openapi-3.0" })` for each Schema Object in your OpenAPI document; see below                                      |
-| `drizzle-zod`                                               | `drizzle-arktype`                                                                                                                                |
-| a library that accepts only Zod                             | keep Zod for that call, and say so                                                                                                               |
+| With Zod                                                    | With ArkType                                                                                                                                        |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `zodResolver(schema)` (react-hook-form)                     | `standardSchemaResolver(schema)` from `@hookform/resolvers/standard-schema`                                                                         |
+| tRPC `.input(schema)`, `@t3-oss/env-*`, TanStack Form       | the same call, given the ArkType type                                                                                                               |
+| AI SDK 6 `tool({ inputSchema })`, MCP SDK v2 `registerTool` | the same call, given the ArkType type, which also supplies the JSON Schema                                                                          |
+| AI SDK 5 `tool({ inputSchema })`                            | `jsonSchema<typeof T.infer>(T.toJsonSchema(), { validate })`, where `validate` returns `{ success: true, value }` or `{ success: false, error }`    |
+| `zValidator` from `@hono/zod-validator`                     | `sValidator` from `@hono/standard-validator`, whose hook's `result.error` is the issue array, not `{ issues }`, and a path segment may be `{ key }` |
+| `@hono/zod-openapi`                                         | `hono-openapi`: `describeRoute`, `validator` and `resolver`                                                                                         |
+| `zod-to-json-schema`, `z.toJSONSchema(schema)`              | `schema.toJsonSchema()`                                                                                                                             |
+| `@asteasolutions/zod-to-openapi`                            | `schema.toJsonSchema({ target: "openapi-3.0" })` for each Schema Object in your OpenAPI document; see below                                         |
+| `drizzle-zod`                                               | `drizzle-arktype`                                                                                                                                   |
+| a library that accepts only Zod                             | keep Zod for that call, and say so                                                                                                                  |
+
+With npm, `@hookform/resolvers`, `@t3-oss/env-core` and other packages that peer on `arktype@^2` make installs fail with `ERESOLVE` until they widen their range. For each package the error names, add an [override](https://arktype.io/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2) rather than passing `--force` or `--legacy-peer-deps`.
 
 Without casts:
 
@@ -158,7 +161,8 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `.min(n)` / `.max(n)` / `.length(n)` on strings         | `"string >= n"`, `"string <= n"`, `"string == n"`                                    |
 | `.nonempty()` on strings                                | `"string > 0"`                                                                       |
 | `.startsWith("a")`, `.endsWith("a")`, `.includes("a")`  | `/^a/`, `/a$/`, `/a/`, escaping regex characters                                     |
-| `.int()`, `.positive()`, `.nonnegative()`, `.gt(n)`     | `"number.integer"`, `"number > 0"`, `"number >= 0"`, `"number > n"`                  |
+| `.int()`                                                | `"number.integer & number.safe"`, or `"number.integer"` in Zod 3                     |
+| `.positive()`, `.nonnegative()`, `.gt(n)`               | `"number > 0"`, `"number >= 0"`, `"number > n"`                                      |
 | `.min(n)` / `.max(n)` / `.lt(n)` on numbers             | `"number >= n"`, `"number <= n"`, `"number < n"`                                     |
 | `.multipleOf(n)`                                        | `"number % n"`                                                                       |
 | `.email()`, `.url()`, `.uuid()`, `.regex(r)`            | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/`                             |

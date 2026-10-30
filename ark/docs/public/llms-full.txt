@@ -964,7 +964,8 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `.min(n)` / `.max(n)` / `.length(n)` on strings | `"string >= n"`, `"string <= n"`, `"string == n"` |
 | `.nonempty()` on strings | `"string > 0"` |
 | `.startsWith("a")`, `.endsWith("a")`, `.includes("a")` | `/^a/`, `/a$/`, `/a/`, escaping regex characters |
-| `.int()`, `.positive()`, `.nonnegative()`, `.gt(n)` | `"number.integer"`, `"number > 0"`, `"number >= 0"`, `"number > n"` |
+| `.int()` | `"number.integer & number.safe"`, or `"number.integer"` in Zod 3 |
+| `.positive()`, `.nonnegative()`, `.gt(n)` | `"number > 0"`, `"number >= 0"`, `"number > n"` |
 | `.min(n)` / `.max(n)` / `.lt(n)` on numbers | `"number >= n"`, `"number <= n"`, `"number < n"` |
 | `.multipleOf(n)` | `"number % n"` |
 | `.email()`, `.url()`, `.uuid()`, `.regex(r)` | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/` |
@@ -1149,7 +1150,8 @@ To move a whole project off Zod, or another library below, work through it in th
    - A union of such objects throws a `ParseError` saying it's indeterminate unless a key tells them apart. Follow [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ) for it, and keep the global setting: `"+": "ignore"` belongs only on the union's branches.
    - `.optional()` also accepts `undefined`, so write `"key?": "T | undefined"`. Before Zod 4.4, any key whose schema accepts `undefined` may be missing, so a `z.unknown()` key is `"key?": "unknown"`; from 4.4, only `.optional()` and defaults let a key be missing, so it stays `key: "unknown"`. Check the version the project installs. In Zod 4, `.default(x).optional()` still fills in `x`, so it's `key: T.default(x)`.
    - `z.any()` is `"unknown.any"`, or `"key?": "unknown.any"` as a key before Zod 4.4. It infers `any` as Zod's did, so refinements that read its properties type-check without casts.
-   - Translate coercions and refinements literally, as in [Coercion is a parse](https://arktype.io/docs/migrating#semantics-to-check). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema.
+   - Translate coercions and refinements literally, as in [Coercion is a parse](https://arktype.io/docs/migrating#semantics-to-check). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema. Zod 4 runs it even when a key fails a check like `.min()` or `.regex()`, though not when one is missing or of the wrong type, so its issue joins theirs; a narrow runs only once every key is valid.
+   - Zod 4.6's `.url()` trims its input, accepts what `URL.canParse` accepts and returns the trimmed string without tabs or line breaks; Zod 4.1's returned it as given. `string.url` checks with `URL.canParse` too but doesn't trim, so where the output is kept, write `type("string").pipe(s => s.trim().replace(/[\t\n\r]/g, "")).to("string.url")`.
    - `string.email` and Zod 4's `z.email()` disagree on some addresses: Zod rejects `a..b@x.co` and `.a@x.co` and accepts `a'b@x.co`, and ArkType does the opposite. Where that matters, keep Zod's pattern as a regex.
    - Keep custom messages. `.min(1, "Name is required")` becomes `type("string >= 1").configure({ message: "Name is required" })`.
 4. **Update call sites.**
@@ -1177,12 +1179,14 @@ for (const issue of out.issues) {
 | tRPC `.input(schema)`, `@t3-oss/env-*`, TanStack Form | the same call, given the ArkType type |
 | AI SDK 6 `tool({ inputSchema })`, MCP SDK v2 `registerTool` | the same call, given the ArkType type, which also supplies the JSON Schema |
 | AI SDK 5 `tool({ inputSchema })` | `jsonSchema<typeof T.infer>(T.toJsonSchema(), { validate })`, where `validate` returns `{ success: true, value }` or `{ success: false, error }` |
-| `zValidator` from `@hono/zod-validator` | `sValidator` from `@hono/standard-validator` |
+| `zValidator` from `@hono/zod-validator` | `sValidator` from `@hono/standard-validator`, whose hook's `result.error` is the issue array, not `{ issues }`, and a path segment may be `{ key }` |
 | `@hono/zod-openapi` | `hono-openapi`: `describeRoute`, `validator` and `resolver` |
 | `zod-to-json-schema`, `z.toJSONSchema(schema)` | `schema.toJsonSchema()` |
 | `@asteasolutions/zod-to-openapi` | `schema.toJsonSchema({ target: "openapi-3.0" })` for each Schema Object in your OpenAPI document; see below |
 | `drizzle-zod` | `drizzle-arktype` |
 | a library that accepts only Zod | keep Zod for that call, and say so |
+
+With npm, `@hookform/resolvers`, `@t3-oss/env-core` and other packages that peer on `arktype@^2` make installs fail with `ERESOLVE` until they widen their range. For each package the error names, add an [override](https://arktype.io/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2) rather than passing `--force` or `--legacy-peer-deps`.
 
 Without casts:
 
@@ -1431,6 +1435,7 @@ Each section is one change since 2.2.9, with code that behaves differently befor
 
 Go down the list. Each question your code answers yes to links to what to change.
 
+- Do you install with npm, beside a package that peers on `arktype@^2`, like `@hookform/resolvers` or `@t3-oss/env-core`? [Override its peer](https://arktype.io/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2).
 - Do you ship arktype to a browser without a build step that precompiles? [It's larger](https://arktype.io/docs/upgrading#unprecompiled-arktype-is-larger).
 - Do you install `@ark/type`, `@ark/regex` or an `@arktype/*` package? [Rename it](https://arktype.io/docs/upgrading#package-names).
 - Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](https://arktype.io/docs/upgrading#arkerrors-is-no-longer-an-array).
@@ -1453,6 +1458,31 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you use `@ark/schema` without `arktype`? [Import `arksets`](https://arktype.io/docs/upgrading#arkschema).
 - Do you import from `@ark/schema`, `@ark/util` or a deep path like `arktype/internal/...`, or read `.internal`? See [@ark/schema](https://arktype.io/docs/upgrading#arkschema), [@ark/util](https://arktype.io/docs/upgrading#arkutil) and [Deep imports](https://arktype.io/docs/upgrading#deep-imports).
 - Do you use `@ark/json-schema`, `@ark/fast-check` or attest, or run attest on TypeScript 7? See their sections below.
+
+## Installing
+
+### npm refuses packages that peer on arktype 2
+
+Some packages list `arktype@^2` as a peer dependency, like `@hookform/resolvers`, `@t3-oss/env-core`, `@standard-community/standard-json`, `xsschema`, `@regle/schemas`, `@typeschema/arktype`, `@hono/arktype-validator` and `@arkenv/core`. npm won't install one beside a later major version of `arktype`, even where its peer is optional: `npm install arktype@latest` only warns, but each install after it, `npm ci` included, fails with `ERESOLVE`. Until a package widens its range, point its peer at your `arktype` in `package.json`, one entry for each package the error names:
+
+```json
+{
+	"overrides": {
+		"@hookform/resolvers": { "arktype": "$arktype" },
+		"@t3-oss/env-core": { "arktype": "$arktype" }
+	}
+}
+```
+
+`$arktype` is the version your `dependencies` list, so update `arktype` there, then run `npm install`. An override of `arktype` alone, `{ "arktype": "$arktype" }`, would also hand your version to packages that depend on arktype 2 itself rather than peering on it.
+
+pnpm installs with an `unmet peer` warning, which `peerDependencyRules` in `pnpm-workspace.yaml` silences, and bun doesn't warn:
+
+```yaml
+peerDependencyRules:
+  allowedVersions:
+    arktype: "3"
+```
 
 ## Bundle size
 
@@ -1815,7 +1845,7 @@ const parse = type("string.date.iso.parse")
 // before, in New York: 2025-01-01T17:00:00.000Z
 parse("2025-01-01T12:00")
 
-// ArkErrors: must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "2025-02-29")
+// ArkErrors: must be an ISO 8601 date or date-time (was "2025-02-29")
 // before: 2025-03-01T00:00:00.000Z
 parse("2025-02-29")
 ```
@@ -2234,8 +2264,8 @@ const User = type({
 | `string.date` | a parsable date |
 | `string.date.epoch` | an integer string representing a safe Unix timestamp |
 | `string.date.epoch.parse` | a morph from an integer string representing a safe Unix timestamp to a Date |
-| `string.date.iso` | an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date |
-| `string.date.iso.parse` | a morph from an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date to a Date |
+| `string.date.iso` | an ISO 8601 date or date-time |
+| `string.date.iso.parse` | a morph from an ISO 8601 date or date-time to a Date |
 | `string.date.parse` | a morph from a parsable date to a Date |
 | `string.digits` | only digits 0-9 |
 | `string.email` | an email address |
@@ -3684,8 +3714,8 @@ These are all the keywords `type` resolves. To define your own, see [scopes](htt
 | `string.date` | a parsable date |
 | `string.date.epoch` | an integer string representing a safe Unix timestamp |
 | `string.date.epoch.parse` | a morph from an integer string representing a safe Unix timestamp to a Date |
-| `string.date.iso` | an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date |
-| `string.date.iso.parse` | a morph from an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date to a Date |
+| `string.date.iso` | an ISO 8601 date or date-time |
+| `string.date.iso.parse` | a morph from an ISO 8601 date or date-time to a Date |
 | `string.date.parse` | a morph from a parsable date to a Date |
 | `string.digits` | only digits 0-9 |
 | `string.email` | an email address |
@@ -6899,7 +6929,7 @@ export const useUserForm = () =>
 
 The form's field values are typed from the Type's input, and `handleSubmit` receives its output. If you pass type arguments to `useForm` yourself, pass all three: `useForm<typeof User.inferIn, unknown, typeof User.infer>`.
 
-The same package exports `arktypeResolver` from `@hookform/resolvers/arktype`, which behaves the same. `@hookform/resolvers` lists `arktype@^2` as an optional peer dependency, so your package manager may warn about it with a later major version of ArkType, whichever resolver you import.
+The same package exports `arktypeResolver` from `@hookform/resolvers/arktype`, which behaves the same. `@hookform/resolvers` lists `arktype@^2` as an optional peer dependency, so npm refuses to install it beside a later major version of ArkType, whichever resolver you import, until you [override the peer](https://arktype.io/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2). pnpm warns, and bun installs it as is.
 
 ## Hono
 
@@ -6923,7 +6953,7 @@ app.post("/users", sValidator("json", User), c => {
 })
 ```
 
-Invalid requests get a 400 response with the issues as JSON. [`@hono/arktype-validator`](https://github.com/honojs/middleware/tree/main/packages/arktype-validator) provides an equivalent `arktypeValidator`, with a required peer dependency on `arktype@^2`.
+Invalid requests get a 400 response with the issues as JSON. [`@hono/arktype-validator`](https://github.com/honojs/middleware/tree/main/packages/arktype-validator) provides an equivalent `arktypeValidator`, with a required peer dependency on `arktype@^2`, so npm needs the same [override](https://arktype.io/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2) to install it.
 
 To generate an OpenAPI document from your routes, [`hono-openapi`](https://github.com/rhinobase/hono-openapi) has a `validator` that accepts a Type, and a `resolver` for describing responses with one.
 

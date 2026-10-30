@@ -2486,6 +2486,17 @@ A function definition was called as a thunk, so a Standard Schema that's a class
 type({ age: Schema.standardSchemaV1(Schema.Number) })
 ```
 
+### Accept a Type from arktype 2 as a Standard Schema
+
+A Type from another copy of arktype, like the ones `@ark/json-schema@0.0.13`'s `jsonSchemaToType` returns from its own arktype 2, was taken for one of this version's, so defining or validating with it threw a `TypeError`. It's now validated through its Standard Schema wherever a definition is, including `.pipe()` and `.to()`:
+
+```ts
+// previously TypeError: reference.is is not a function
+type({ user: UserFromArktype2 })
+```
+
+Its errors keep their messages without repeating their path, and `toJsonSchema()` writes the JSON Schema its Standard JSON Schema converter does. Where it has none for the target, like arktype 2's for OpenAPI, the error names the Type as the cause. A module or generic from another copy used as a Scope's alias, or a Type from one passed to `type.schema()`, throws a `ParseError` saying to upgrade the package that brought it in or add an override.
+
 ### Infer `.merge()` of a definition holding a described Type
 
 A definition passed to `.merge()` that called a method like `.describe()` or `.configure()` inline failed to type check:
@@ -2853,9 +2864,11 @@ parse("2025-01-01T12:00")
 parse("20250101")
 
 // previously 2025-03-01T00:00:00.000Z
-// now ArkErrors: must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "2025-02-29")
+// now ArkErrors: must be an ISO 8601 date or date-time (was "2025-02-29")
 parse("2025-02-29")
 ```
+
+Its description, and `string.date.iso`'s, is "an ISO 8601 date or date-time", where it named only the form `YYYY-MM-DDTHH:mm:ss.sssZ`, though the pattern accepts the others above.
 
 `string.date.parse` and `string.date` read a string `string.date.iso` accepts the same way, falling back to `new Date(s)` for other forms, like `"5/21/1993"`, which are still read by the host. So `string.date.parse` gives an ISO string the same instant on every machine, and `string.date` rejects an ISO date that doesn't exist:
 

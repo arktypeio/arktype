@@ -47,6 +47,7 @@ import {
 	type DefaultCheck,
 	type Foldable,
 	type IssueFeatures,
+	type SharedWrites,
 	type StandaloneBake,
 	type StandaloneModules,
 	type StandaloneOptions,
@@ -81,7 +82,7 @@ import {
 	emptyFactory,
 	importFolded,
 	planFactory,
-	reachedModulesOf,
+	reacherOf,
 	receive,
 	runtimeModuleOf,
 	spliceSite,
@@ -195,6 +196,7 @@ import {
 } from "./readers.ts"
 import {
 	isDead,
+	parseValidators,
 	passedReaderOf,
 	unprecompiled,
 	usedMembersOf,
@@ -465,6 +467,10 @@ export class Precompiler {
 	private componentsById: Record<string, number> = Object.create(null)
 	private exportsArkByModule = new WeakMap<SourceModule, boolean>()
 	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
+	// each shared unit's modules, written once for every module reading it
+	private sharedWrites: SharedWrites = new Map()
+	// the validators a site's factory last read, which inlining reads again
+	private inlined: SourceModule | undefined
 	// why the analyses' configuration can't be applied
 	private analyzedProblem: string | undefined
 	private bindingsByInput = new WeakMap<Input, Binding>()
@@ -1194,8 +1200,9 @@ export class Precompiler {
 				} as never
 			}
 		}
+		const reach = reacherOf(linked.modules)
 		for (const id in written) {
-			const reached = reachedModulesOf(written[id].code, linked.modules)
+			const reached = reach(written[id].code)
 			if (
 				Object.keys(reached).some(
 					specifier => reached[specifier] !== written[id].modules[specifier]
@@ -1230,6 +1237,7 @@ export class Precompiler {
 			)
 		)
 		if (!flat) return
+		const reach = reacherOf(flat.modules)
 		for (const id in written) {
 			const { code, map } = flat.sites[id]
 			const precompiled = written[id].map
@@ -1243,7 +1251,7 @@ export class Precompiler {
 							mappings: mapToSource(map, precompiled, sources[id]).mappings
 						} as never)
 					:	precompiled,
-				modules: reachedModulesOf(code, flat.modules)
+				modules: reach(code)
 			}
 		}
 		return flat.replaced
@@ -1673,10 +1681,24 @@ export class Precompiler {
 	): PrecompiledModule {
 		const module = this.add(id, source, mappings)
 		this.configuration ??= this.applyConfiguration()
+		const s = new MagicString(source)
+		// a test driver transforms it only to register its helpers, so it's
+		// checked as any other build checks it: not at all
+		if (this.checkHelpers && !this.importsArk(source, id)) {
+			this.registerHelpers(module, s)
+			return {
+				code: s.toString(),
+				map: mapOf(s, id),
+				sites: [],
+				dependencies: this.dependenciesOfArtifact(module),
+				diagnostics: [],
+				modules: {},
+				foldedHelpers: []
+			}
+		}
 		const { sites, diagnostics } = this.analysisOf(module)
 		diagnostics.push(...this.checkConfigOrder(module))
 		diagnostics.push(...this.copyDiagnosticsOf(module))
-		const s = new MagicString(source)
 		const prefix = prefixOf(source, id)
 		const modules: Record<string, string> = {}
 		// locals for virtual modules' exports, by specifier
@@ -1697,10 +1719,7 @@ export class Precompiler {
 		this.insertImports(module, s, prefix, modules, imports)
 		return {
 			code: s.toString(),
-			map:
-				s.hasChanged() ?
-					s.generateMap({ source: id, includeContent: true, hires: "boundary" })
-				:	undefined,
+			map: mapOf(s, id),
 			sites,
 			dependencies: this.dependenciesOfArtifact(module),
 			diagnostics,
@@ -1767,18 +1786,7 @@ export class Precompiler {
 		)
 		this.linkIslands(module, sites, s, prefix)
 		this.markProgress(module, sites, s, prefix)
-		// registered so factories can check against module mocks
-		if (this.checkHelpers) {
-			const registered = Object.entries(this.registeredHelpersOf(module))
-			if (registered.length) {
-				// leads with an identifier: stripping a type alias drops a ";"
-				s.append(
-					`\nObject.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { ${JSON.stringify(module.path)}: { __proto__: null, ${registered
-						.map(([name, local]) => `${JSON.stringify(name)}: ${local}`)
-						.join(", ")} } })`
-				)
-			}
-		}
+		if (this.checkHelpers) this.registerHelpers(module, s)
 		for (const specifier in inputImports) {
 			const locals = inputImports[specifier]
 			s.append(
@@ -1821,6 +1829,12 @@ export class Precompiler {
 		}
 	}
 
+	private inlinedModuleOf(specifier: string, source: string): SourceModule {
+		if (this.inlined?.id !== specifier || this.inlined.source !== source)
+			this.inlined = new SourceModule(specifier, source, specifier)
+		return this.inlined
+	}
+
 	// the virtual modules' imports, inlined or imported beside arktype so they run where it does
 	private insertImports(
 		module: SourceModule,
@@ -1830,9 +1844,16 @@ export class Precompiler {
 		imports: Record<string, Record<string, string>>
 	): void {
 		let inserted = ""
-		if (this.inline)
-			inserted = inlineModules(module, s, prefix, modules, imports)
-		else {
+		if (this.inline) {
+			inserted = inlineModules(
+				module,
+				s,
+				prefix,
+				modules,
+				imports,
+				(id, source) => this.inlinedModuleOf(id, source)
+			)
+		} else {
 			for (const specifier in imports) {
 				const locals = imports[specifier]
 				if (!Object.keys(locals).length) inserted += `\nimport "${specifier}"`
@@ -2459,6 +2480,7 @@ export class Precompiler {
 							baked: bakedByName,
 							configured,
 							bake: write => this.bake(write),
+							sharedWrites: this.sharedWrites,
 							hoisted: this.isReachedEarly(module),
 							// shadow mode calls what it compares
 							values: !this.shadow,
@@ -2534,7 +2556,11 @@ export class Precompiler {
 		const readsPassed =
 			!isValue &&
 			!!factory?.bindings.length &&
-			(folding.readsPassedBy ??= passedReaderOf(validators.code))(exported)
+			(folding.readsPassedBy ??= passedReaderOf(() =>
+				this.inline ?
+					this.inlinedModuleOf(folding.specifier, validators.code).program
+				:	parseValidators(validators.code)
+			))(exported)
 		for (const [input, binding] of factory?.bindings ?? []) {
 			folding.passed.push(binding)
 			if (readsPassed && inputs.includes(input)) folding.read.push(binding)
@@ -2850,6 +2876,9 @@ export class Precompiler {
 				for (const value of holes) unchecked.add(value)
 				continue
 			}
+			// passing what arktype creates in the site would run arktype; its
+			// holes are passed where the site names them
+			if (!hole && reference.isCreated) continue
 			// a Type without holes is written into the site
 			if (
 				holes.length &&
@@ -3009,6 +3038,18 @@ export class Precompiler {
 			file: exporter.path,
 			name: helper.name
 		})
+	}
+
+	// registered so factories can check against module mocks
+	private registerHelpers(module: SourceModule, s: MagicString): void {
+		const registered = Object.entries(this.registeredHelpersOf(module))
+		if (!registered.length) return
+		// leads with an identifier: stripping a type alias drops a ";"
+		s.append(
+			`\nObject.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { ${JSON.stringify(module.path)}: { __proto__: null, ${registered
+				.map(([name, local]) => `${JSON.stringify(name)}: ${local}`)
+				.join(", ")} } })`
+		)
 	}
 
 	private registeredHelpersOf(module: SourceModule): Record<string, string> {
@@ -4431,9 +4472,12 @@ export class Precompiler {
 			if (!site.inputs.some(existing => isCoveredBy(input, existing)))
 				site.inputs.push(input)
 		}
+		const supplied = new Set<unknown>()
+		for (const input of site.inputs) this.suppliedHolesOf(input.value, supplied)
+		this.receiveCalls(state, supplied)
 		for (const value of state.holes) {
 			const isCalled = !site.parseError && !isHeld(value, this.interpreter)
-			const hole = this.holeOf(value, candidate, module)
+			const hole = this.holeOf(value, candidate, module, supplied)
 			if (!isCalled) {
 				if (hole instanceof DynamicValue) return hole
 				site.holes.push(hole)
@@ -4441,6 +4485,37 @@ export class Precompiler {
 				site.called.push(hole)
 		}
 		site.holes.sort((l, r) => l.start - r.start)
+	}
+
+	// e.g. `labeled("Id")` in `.configure(labeled("Id"))`, read in place of the
+	// functions each call creates
+	private receiveCalls(state: SiteState, supplied: Set<unknown>): void {
+		for (const value of state.holes) {
+			if (
+				supplied.has(value) ||
+				state.readsByValue.has(value) ||
+				!this.standInOf(value)?.closure?.env
+			)
+				continue
+			let supplier: SiteState["calls"][number] | undefined
+			for (const call of state.calls) {
+				const [node, result, helper, declaring] = call
+				if (
+					(!supplier || contains(supplier[0], node)) &&
+					this.suppliedHolesOf(result, new Set()).has(value) &&
+					// only a Type its helper's own site creates holds holes to receive
+					this.isTransformed(declaring.id) &&
+					!declaring.islands.some(
+						island => contains(helper, island) || contains(island, helper)
+					) &&
+					!this.calledParamOf(helper, declaring)
+				)
+					supplier = call
+			}
+			if (!supplier) continue
+			state.readsByValue.set(supplier[1], [supplier[0]])
+			this.suppliedHolesOf(supplier[1], supplied)
+		}
 	}
 
 	// each exported function the site read, which a mock can replace
@@ -4451,11 +4526,18 @@ export class Precompiler {
 		runsFirst: boolean
 	): void {
 		for (const { root, value } of state.trace.exportedFunctions) {
-			const node = this.interpreter.standIns.get(value as object)?.closure?.node
+			const standIn = this.interpreter.standIns.get(value as object)
+			const node = standIn?.closure?.node
 			if (
 				root.kind !== "export" ||
 				!node ||
-				!state.trace.helpers.some(([helper]) => helper === node) ||
+				// arktype caches what it called a helper for, so another site's
+				// call can decide this one's value
+				!(
+					standIn.isCalled ||
+					standIn.isCalledIndirectly ||
+					state.trace.helpers.some(([helper]) => helper === node)
+				) ||
 				site.helpers.some(
 					helper => helper.file === root.file && helper.name === root.name
 				)
@@ -4506,7 +4588,8 @@ export class Precompiler {
 				isDynamic(value) ||
 				(!hasArkKind(value, "root") &&
 					![...site.holes, ...site.called].some(hole => hole.value === value) &&
-					!(isFoldable(value) && keyOf(value)[1].length))
+					!(isFoldable(value) && keyOf(value)[1].length) &&
+					!state.calls.some(([, result]) => result === value))
 			)
 				continue
 			const isImportInput = site.inputs.some(
@@ -4632,7 +4715,8 @@ export class Precompiler {
 	private holeOf(
 		value: unknown,
 		candidate: SiteCandidate,
-		module: SourceModule
+		module: SourceModule,
+		supplied: Set<unknown>
 	): Hole | DynamicValue {
 		const standIn =
 			typeof value === "symbol" ? undefined : (
@@ -4642,7 +4726,8 @@ export class Precompiler {
 		const source =
 			readsByValue.get(value)?.[0] ??
 			(standIn?.dynamic && readsByValue.get(standIn.dynamic)?.[0])
-		if (!source && standIn?.closure?.env) {
+		// a function a call created is reached through what holds it
+		if (!source && standIn?.closure?.env && !supplied.has(value)) {
 			return new DynamicValue(
 				standIn.module,
 				standIn.node,
@@ -5129,11 +5214,7 @@ export class Precompiler {
 		)
 			return result
 		walk(module.program, node => {
-			if (
-				isInIsland(node, module) ||
-				(node.type.startsWith("TS") && !isTransparent(node))
-			)
-				return false
+			if (isSkipped(node, module)) return false
 			if (node.type !== "MemberExpression" || isWriteTarget(node)) return true
 			const read = memberNameOf(node)
 			if (
@@ -5321,12 +5402,7 @@ export class Precompiler {
 	): UnavailableRead[] {
 		const unavailable: UnavailableRead[] = []
 		walk(module.program, node => {
-			if (
-				settledValues.has(rangeOf(node)) ||
-				isInIsland(node, module) ||
-				// e.g. `interface A extends B.C {}`, which only types
-				(node.type.startsWith("TS") && !isTransparent(node))
-			)
+			if (settledValues.has(rangeOf(node)) || isSkipped(node, module))
 				return false
 			const read =
 				!(node.type === "MemberExpression" && isWriteTarget(node)) &&
@@ -6017,6 +6093,12 @@ interface Configuration {
 let threadConfiguration: Configuration | undefined
 
 // arktype can't change its configuration once set
+// undefined where nothing changed
+const mapOf = (s: MagicString, id: string): SourceMap | undefined =>
+	s.hasChanged() ?
+		s.generateMap({ source: id, includeContent: true, hires: "boundary" })
+	:	undefined
+
 const holdsOtherConfiguration = (files: string | undefined): boolean =>
 	threadConfiguration ?
 		threadConfiguration.files !== files
@@ -6052,6 +6134,12 @@ const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
 
 const isInIsland = (node: Node, module: SourceModule) =>
 	module.islands.some(island => contains(island, node))
+
+// a walk for what a module reads skips an island, which runs on arktype, and
+// what only types, e.g. `interface A extends B.C {}`
+const isSkipped = (node: Node, module: SourceModule) =>
+	isInIsland(node, module) ||
+	(node.type.startsWith("TS") && !isTransparent(node))
 
 const declaredBindingKinds = {
 	const: 1,
@@ -6105,11 +6193,7 @@ const scopeReadsOf = (
 	)
 	const reads: ScopeRead[] = []
 	walk(module.program, node => {
-		if (
-			isInIsland(node, module) ||
-			(node.type.startsWith("TS") && !isTransparent(node))
-		)
-			return false
+		if (isSkipped(node, module)) return false
 		if (isWithin(node, candidateRanges)) return true
 		const read = graph.scopeReadOf(node, module)
 		if (read) reads.push([node as MemberExpression, ...read])

@@ -22,7 +22,6 @@ export type TabGroupProps = {
 	groupId?: string | undefined
 	/** remember the group's choice across pages and visits (needs groupId) */
 	persist?: boolean | undefined
-	defaultIndex?: number | undefined
 	/** every panel is one code block, so the tabs go in its header */
 	code?: boolean | undefined
 	/** names the tab list for screen readers */
@@ -45,14 +44,13 @@ export const TabGroup = ({
 	labels,
 	groupId,
 	persist,
-	defaultIndex = 0,
 	code,
 	label,
 	panels
 }: TabGroupProps) => {
 	const id = useId()
 	const values = labels.map(tabValue)
-	const [selected, setSelected] = useState(values[defaultIndex] ?? values[0])
+	const [selected, setSelected] = useState(values[0])
 	const [ready, setReady] = useState(false)
 	const root = useRef<HTMLDivElement>(null)
 	const list = useRef<HTMLDivElement>(null)

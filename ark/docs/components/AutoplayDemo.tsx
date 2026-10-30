@@ -95,7 +95,6 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 			</div>
 			<div className="absolute top-2.5 right-5 flex gap-2 z-60">
 				<Button
-					variant="outline"
 					wiggle={!showPlayground}
 					className="hidden md:flex"
 					onClick={() => setShowPlayground(!showPlayground)}
@@ -117,7 +116,6 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 
 				{showPlayground && (
 					<Button
-						variant="outline"
 						size="sm"
 						href="/playground"
 						aria-label="Open Full Playground"

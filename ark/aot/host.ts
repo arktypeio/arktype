@@ -41,20 +41,21 @@ export interface NodeHostOptions {
 
 const nodeConditions = ["import", "node", "default"]
 
+export const scriptExtensions = [
+	".ts",
+	".tsx",
+	".mts",
+	".cts",
+	".js",
+	".jsx",
+	".mjs",
+	".cjs"
+]
+
 export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 	const resolveOptions: NapiResolveOptions = {
 		conditionNames: opts?.conditions ?? nodeConditions,
-		extensions: [
-			".ts",
-			".tsx",
-			".mts",
-			".cts",
-			".js",
-			".jsx",
-			".mjs",
-			".cjs",
-			".json"
-		],
+		extensions: [...scriptExtensions, ".json"],
 		extensionAlias: {
 			".js": [".ts", ".tsx", ".js"],
 			".jsx": [".tsx", ".jsx"],

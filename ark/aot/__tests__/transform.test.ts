@@ -883,6 +883,89 @@ export default (def: string) => def
 Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { "/helpers.ts": { __proto__: null, "list": list, "optional": optional } })`)
 		})
 
+		it("checks a helper arktype called for an earlier site", () => {
+			const files = {
+				"/checked.ts": `import { type } from "arktype"
+import { isPositive } from "./positive.ts"
+export const Positive = type(["0 | 1", ":", isPositive])
+export const expression = type(["0 | 1", ":", isPositive]).expression`,
+				"/positive.ts": "export const isPositive = (n: number) => n > 0"
+			}
+			// arktype reuses what it called isPositive for, so only the first
+			// site's definition calls it
+			const { code } = precompileModule(
+				files["/checked.ts"],
+				"/checked.ts",
+				memoryHost(files),
+				{ creationChecks: "helpers" }
+			)
+			attest(foldedCode(code)).snap(`import "arktype"
+import { isPositive } from "./positive.ts"
+export const Positive = $ark#0(isPositive, isPositive)
+export const expression = $ark#2(isPositive, isPositive)`)
+		})
+
+		it("passes a module's member by the holes the site names", () => {
+			const files = {
+				"/positive.ts": "export const isPositive = (n: number) => n > 0"
+			}
+			const build = (source: string) => {
+				const { code, diagnostics } = precompileModule(
+					source,
+					"/main.ts",
+					memoryHost({ ...files, "/main.ts": source })
+				)
+				return [
+					...diagnostics.map(d => renderDiagnostic(d).split("\n")[0]),
+					foldedCode(code)
+				]
+			}
+			const elements = `type.module({ a: ["number", ":", isPositive] }).a.array()`
+			attest(
+				build(`import { type } from "arktype"
+import { isPositive } from "./positive.ts"
+export const Elements = ${elements}`)
+			).snap([
+				'import "arktype"\nimport { isPositive } from "./positive.ts"\nexport const Elements = $ark#0(isPositive)'
+			])
+			// arktype has called isPositive, so the site can't pass it as a hole
+			attest(
+				build(`import { type } from "arktype"
+import { isPositive } from "./positive.ts"
+export const Positive = type(["0 | 1", ":", isPositive])
+export const Elements = ${elements}`)
+			).snap([
+				'/main.ts:4:25  type.module({ a: ["number", ":", isPositive] }).a.array() can\'t be precompiled yet',
+				'import { type } from "arktype"\nimport { isPositive } from "./positive.ts"\nexport const Positive = $ark#0(isPositive)\nexport const Elements = type.module({ a: ["number", ":", isPositive] }).a.array()'
+			])
+		})
+
+		it("checks a module that can't reach arktype only by registering its helpers", () => {
+			const reads = `export const describe = (schema: any) => \`\${schema.in} \${schema.default}\`
+export class Registry {
+	tools: string[] = []
+	count() {
+		return this.tools.length + this.tools.length
+	}
+}`
+			const files = {
+				"/registry.ts": reads,
+				"/schemas.ts": `import { type } from "arktype"\nexport const T = type("string")\n${reads}`
+			}
+			const build = (id: keyof typeof files) =>
+				precompileModule(files[id], id, memoryHost(files), {
+					creationChecks: "helpers"
+				})
+			const registry = build("/registry.ts")
+			attest(registry.diagnostics).equals([])
+			attest(registry.code).equals(`${reads}
+Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { "/registry.ts": { __proto__: null, "describe": describe } })`)
+			attest(build("/schemas.ts").diagnostics.map(d => d.message)).snap([
+				"schema.in reads in, which a standalone validator lacks",
+				"schema.default reads default, which a standalone validator lacks"
+			])
+		})
+
 		it("passes each created function", () => {
 			const result = precompile(
 				`import { type } from "arktype"
@@ -952,6 +1035,45 @@ export const Labeled = $ark#6(labels)`)
 				'runtime.checkFacts(runtime.factOfHole(p1["message"]), 1, "`config.message`")',
 				'runtime.checkFacts(runtime.describeShape(p0), "an object with keys message", "`labels`")',
 				'runtime.checkFacts(runtime.factOfHole(p0["message"]), 1, "`labels.message`")'
+			])
+		})
+
+		it("reads a function a helper call created through what holds it", () => {
+			const result = precompile(`import { type } from "arktype"
+const labeled = (label: string) => ({
+	message: (ctx: { expected: string }) => \`\${label} must be \${ctx.expected}\`
+})
+const longer = (min: number) =>
+	type("string").narrow(s => s.length > min)
+const config = labeled("Name")
+export const Held = type("string > 0").configure(config)
+export const Inline = type("string > 0").configure(labeled("Id"))
+export const Returned = type({ a: longer(1), b: longer(2).array() })`)
+			attest(result.diagnostics).equals([])
+			attest(foldedCode(result.code)).snap(`import "arktype"
+const labeled = (label: string) => ({
+	message: (ctx: { expected: string }) => \`\${label} must be \${ctx.expected}\`
+})
+const longer = (min: number) =>
+	$ark#0(s => s.length > min)
+const config = labeled("Name")
+export const Held = $ark#2(config)
+export const Inline = $ark#3(labeled("Id"))
+export const Returned = $ark#4(longer(1), longer(2))`)
+		})
+
+		it("refuses a function created by a call whose Type arktype defines", () => {
+			const result = precompile(`import { type } from "arktype"
+const islanded = (min: number) =>
+	// @ark-runtime
+	type("string").narrow(s => s.length > min)
+const longer = (min: number) => (s: string) => s.length > min
+const atLeast = (min: number) => type("string").narrow(longer(min))
+export const Island = type({ a: islanded(1) })
+export const Folded = type({ a: atLeast(1) })`)
+			attest(result.diagnostics.map(d => d.reasons[0])).snap([
+				"the function at /main.ts:4:24 is created by each call to a static helper, so the precompiled site cannot reach it",
+				"the function at /main.ts:5:33 is created by each call to a static helper, so the precompiled site cannot reach it"
 			])
 		})
 

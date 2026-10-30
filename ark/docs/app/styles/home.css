@@ -1620,7 +1620,7 @@
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 0 16px;
-		margin-top: 44px;
+		margin: 44px 0 1.6rem;
 	}
 	.card {
 		position: relative;

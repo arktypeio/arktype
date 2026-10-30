@@ -97,6 +97,26 @@ true
 		attest(js.includes("zebra")).equals(false)
 	})
 
+	it("keeps annotated a validator only an unread object literal holds", async () => {
+		const holding = writeFixture(
+			{
+				"types.ts": `${types}export const schemas = { team: Team, unread: Unread } as const\n`
+			},
+			fromHere("temp", "flatHolding")
+		)
+		const [js] = await bundle(
+			{},
+			{
+				stdin: {
+					contents: `import { Team } from "./types.ts"\n\nconsole.log(Team({}))\n`,
+					resolveDir: holding,
+					loader: "ts"
+				}
+			}
+		)
+		attest(js.includes("zebra")).equals(false)
+	})
+
 	it("returns what kept code reads, annotating nothing a bundler keeps", async () => {
 		const [js] = await bundle(
 			{},
@@ -459,6 +479,42 @@ const unitApply = (data, ctx) => {
 }
 
 return [unitAllows, unitApply]
+})()
+
+export { unit }
+`)
+	})
+
+	it("drops a declaration read only by one it drops", () => {
+		const unit = `import * as runtime from "arktype/runtime"
+
+const unit = /* @__PURE__ */ ((unitR0) => {
+const unitAllows = (data => unitR0(data))
+const unitChecked = (data => unitR0(data) && data.getTime() > 0)
+const unitUnread = (data => unitChecked(data.value))
+return [unitAllows]
+})(runtime.isValidDate)
+
+export { unit }`
+		const flat = flattenBundle(
+			{
+				"site.js": `import { unit } from "~arktype/unit"\n\nexport const read = unit`
+			},
+			{ "~arktype/unit": unit },
+			new Map([["site.js", true]]),
+			false
+		)!
+		const [code] = Object.entries(flat.modules).flatMap(([specifier, code]) =>
+			specifier === "~arktype/unit" ? [] : [code]
+		)
+		attest(code).snap(`import * as runtime from "arktype/runtime"
+
+const unit = /* @__NOINLINE__ */ (() => {
+const unitR0 = runtime.isValidDate
+
+const unitAllows = (data => unitR0(data))
+
+return [unitAllows]
 })()
 
 export { unit }
