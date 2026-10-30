@@ -46,6 +46,7 @@ import {
 	type DefaultCheck,
 	type Foldable,
 	type IssueFeatures,
+	type SharedWrites,
 	type StandaloneModules,
 	type StandaloneOptions,
 	type Configured
@@ -78,7 +79,7 @@ import {
 	emptyFactory,
 	importFolded,
 	planFactory,
-	reachedModulesOf,
+	reacherOf,
 	receive,
 	runtimeModuleOf,
 	spliceSite,
@@ -181,6 +182,7 @@ import {
 	type LinkOptions
 } from "./link.ts"
 import {
+	parseValidators,
 	passedReaderOf,
 	unprecompiled,
 	usedMembersOf,
@@ -441,6 +443,10 @@ export class Precompiler {
 	private componentsById: Record<string, number> = Object.create(null)
 	private exportsArkByModule = new WeakMap<SourceModule, boolean>()
 	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
+	// each shared unit's modules, written once for every module reading it
+	private sharedWrites: SharedWrites = new Map()
+	// the validators a site's factory last read, which inlining reads again
+	private inlined: SourceModule | undefined
 	// why the analyses' configuration can't be applied
 	private analyzedProblem: string | undefined
 	private bindingsByInput = new WeakMap<Input, Binding>()
@@ -936,8 +942,9 @@ export class Precompiler {
 				} as never
 			}
 		}
+		const reach = reacherOf(linked.modules)
 		for (const id in written) {
-			const reached = reachedModulesOf(written[id].code, linked.modules)
+			const reached = reach(written[id].code)
 			if (
 				Object.keys(reached).some(
 					specifier => reached[specifier] !== written[id].modules[specifier]
@@ -972,6 +979,7 @@ export class Precompiler {
 			)
 		)
 		if (!flat) return
+		const reach = reacherOf(flat.modules)
 		for (const id in written) {
 			const { code, map } = flat.sites[id]
 			const precompiled = written[id].map
@@ -985,7 +993,7 @@ export class Precompiler {
 							mappings: mapToSource(map, precompiled, sources[id]).mappings
 						} as never)
 					:	precompiled,
-				modules: reachedModulesOf(code, flat.modules)
+				modules: reach(code)
 			}
 		}
 		return flat.replaced
@@ -1563,6 +1571,12 @@ export class Precompiler {
 		}
 	}
 
+	private inlinedModuleOf(specifier: string, source: string): SourceModule {
+		if (this.inlined?.id !== specifier || this.inlined.source !== source)
+			this.inlined = new SourceModule(specifier, source, specifier)
+		return this.inlined
+	}
+
 	// the virtual modules' imports, inlined or imported beside arktype so they run where it does
 	private insertImports(
 		module: SourceModule,
@@ -1572,9 +1586,16 @@ export class Precompiler {
 		imports: Record<string, Record<string, string>>
 	): void {
 		let inserted = ""
-		if (this.inline)
-			inserted = inlineModules(module, s, prefix, modules, imports)
-		else {
+		if (this.inline) {
+			inserted = inlineModules(
+				module,
+				s,
+				prefix,
+				modules,
+				imports,
+				(id, source) => this.inlinedModuleOf(id, source)
+			)
+		} else {
 			for (const specifier in imports) {
 				const locals = imports[specifier]
 				if (!Object.keys(locals).length) inserted += `\nimport "${specifier}"`
@@ -2149,6 +2170,7 @@ export class Precompiler {
 							shapes,
 							configured,
 							bake: write => this.bake(write),
+							sharedWrites: this.sharedWrites,
 							hoisted: this.isReachedEarly(module),
 							// shadow mode calls what it compares
 							values: !this.shadow,
@@ -2208,7 +2230,11 @@ export class Precompiler {
 		const readsPassed =
 			!isValue &&
 			!!factory?.bindings.length &&
-			(folding.readsPassedBy ??= passedReaderOf(validators.code))(exported)
+			(folding.readsPassedBy ??= passedReaderOf(() =>
+				this.inline ?
+					this.inlinedModuleOf(folding.specifier, validators.code).program
+				:	parseValidators(validators.code)
+			))(exported)
 		for (const [input, binding] of factory?.bindings ?? []) {
 			folding.passed.push(binding)
 			if (readsPassed && inputs.includes(input)) folding.read.push(binding)

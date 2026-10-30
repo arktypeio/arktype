@@ -1,7 +1,10 @@
 import {
 	parseSync,
+	rawTransferSupported,
 	type Comment,
 	type Node,
+	type ParseResult,
+	type ParserOptions,
 	type Program,
 	type Span
 } from "oxc-parser"
@@ -85,11 +88,35 @@ export class SourceModule {
 }
 
 const parse = (id: string, source: string, lang: Lang) =>
-	parseSync(id, source, {
+	parseCode(id, source, {
 		lang,
 		sourceType: /\.c[jt]s$/.test(id) ? "commonjs" : "module",
 		preserveParens: false
 	})
+
+// oxc's raw transfer reads a tree several times faster than its JSON, through
+// a buffer reserving 6 GiB of address space, which Windows commits
+let readsRaw = process.platform !== "win32" && rawTransferSupported()
+
+export const parseCode = (
+	id: string,
+	source: string,
+	options: ParserOptions
+): ParseResult => {
+	if (readsRaw) {
+		try {
+			return parseSync(id, source, {
+				...options,
+				experimentalRawTransfer: true
+			} as ParserOptions)
+		} catch (e) {
+			// a process that can't reserve the buffer reads JSON
+			if (!(e instanceof RangeError)) throw e
+			readsRaw = false
+		}
+	}
+	return parseSync(id, source, options)
+}
 
 type Lang = "js" | "jsx" | "ts" | "tsx"
 

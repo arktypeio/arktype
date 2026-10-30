@@ -27,18 +27,23 @@ export interface Environment {
 	production: boolean
 	// a test runner, whose mocks a factory checks its helpers against
 	testing: boolean
+	// a dev server, which loads each module a page imports on its own
+	serving?: boolean
 }
 
-// a production build leaves out runtime checks, and a test checks helpers too
+// a production build leaves out runtime checks, a test checks helpers too, and
+// a dev server writes validators into the modules reading them, as a module of
+// its own per unit would be a request of its own
 export const withEnvironment = <opts extends PrecompileOptions>(
 	opts: opts,
-	{ production, testing }: Environment
+	{ production, testing, serving }: Environment
 ): opts =>
 	opts.runtime === "arktype" ?
 		opts
 	:	{
 			...(production && productionDefaults),
 			...(testing && { creationChecks: "helpers" }),
+			...(serving && { inline: true }),
 			...opts
 		}
 

@@ -1,6 +1,6 @@
 import { hashOf } from "@ark/util"
 import MagicString, { type SourceMap } from "magic-string"
-import { parseSync, type Node, type Program, type Span } from "oxc-parser"
+import type { Node, Program, Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
 import {
 	prefixOf,
@@ -9,7 +9,7 @@ import {
 	statementOf,
 	virtualSource
 } from "./link.ts"
-import { SourceModule } from "./module.ts"
+import { parseCode, SourceModule } from "./module.ts"
 import {
 	exportNameOf,
 	isWriteTarget,
@@ -1215,7 +1215,7 @@ const withMembersUnwrapped = (
 }
 
 const parseUnits = (code: string) =>
-	parseSync("units.js", code, { sourceType: "module", preserveParens: false })
+	parseCode("units.js", code, { sourceType: "module", preserveParens: false })
 
 interface ParsedUnits {
 	code: string
@@ -1247,13 +1247,17 @@ const writtenUnitsOf = (body: string, returned: string): WrittenUnits => {
 	let written: WrittenUnits = { body, returned }
 	for (const pass of [skipAliases, inlineCalls, dropUnread])
 		written = untilUnchanged(written, parse, pass)
-	// a bundler keeps the call anyway, and oxc's minifier keeps the annotations' bytes
-	written.body = withoutAnnotations(inGzipOrder(written.body))
+	written.body = inGzipOrder(written.body)
 	return written
 }
 
-// an edit of the units' body, parsed with what it returns after a `;`
-type UnitsPass = (units: ParsedUnits, s: MagicString, body: string) => void
+// an edit of the units' body, parsed with what it returns after a `;`, true
+// where it knows running again would change nothing
+type UnitsPass = (
+	units: ParsedUnits,
+	s: MagicString,
+	body: string
+) => boolean | void
 
 const untilUnchanged = (
 	{ body, returned }: WrittenUnits,
@@ -1263,10 +1267,11 @@ const untilUnchanged = (
 	for (;;) {
 		const code = `${body}\n;${returned}`
 		const s = new MagicString(code)
-		pass(parse(code), s, body)
+		const isSettled = pass(parse(code), s, body)
 		if (!s.hasChanged()) return { body, returned }
 		returned = s.slice(body.length + 2, code.length)
 		body = s.slice(0, body.length)
+		if (isSettled) return { body, returned }
 	}
 }
 
@@ -1329,10 +1334,25 @@ const inlineCalls: UnitsPass = ({ code, program, scopes }, s, body) => {
 	const declared = new Map<string, number>()
 	for (const { name } of scopes.bindingsById.values())
 		declared.set(name, (declared.get(name) ?? 0) + 1)
+	// by position, so those within a function are found by search
+	let sorted: Reference[] | undefined
+	const referencesIn = (fn: Node) => {
+		sorted ??= [...scopes.references].sort((l, r) => l.id.start - r.id.start)
+		let low = 0
+		let high = sorted.length
+		while (low < high) {
+			const mid = (low + high) >> 1
+			if (sorted[mid].id.start < fn.start) low = mid + 1
+			else high = mid
+		}
+		const result: Reference[] = []
+		for (let i = low; i < sorted.length && sorted[i].id.start < fn.end; i++)
+			result.push(sorted[i])
+		return result
+	}
 	const readsAlike = (fn: Node) =>
-		scopes.references.every(
+		referencesIn(fn).every(
 			({ id, binding }) =>
-				id.start < fn.start ||
 				id.end > fn.end ||
 				(binding?.declaration === fn ? !binding.writes.length
 				: binding && binding.id.start > fn.start && binding.id.end < fn.end ?
@@ -1404,6 +1424,9 @@ const passesParams = (
 
 // a bundler drops only a module's unread declarations, not a function's
 const dropUnread: UnitsPass = ({ code, program, scopes }, s, body) => {
+	const dropped: Node[] = []
+	// dropped once nothing reads them
+	const droppable: Binding[] = []
 	for (const statement of program.body as Node[]) {
 		if (statement.type !== "VariableDeclaration") continue
 		const { declarations } = statement
@@ -1412,11 +1435,19 @@ const dropUnread: UnitsPass = ({ code, program, scopes }, s, body) => {
 				declarator.id.type === "Identifier" ?
 					scopes.bindingsById.get(declarator.id)
 				:	undefined
-			return (
-				!!binding &&
-				!binding.references.length &&
-				(!declarator.init || isPureExpression(declarator.init, code))
+			if (
+				!binding ||
+				(declarator.init && !isPureExpression(declarator.init, code))
 			)
+				return false
+			if (binding.references.length) {
+				droppable.push(binding)
+				return false
+			}
+			// a name declared again is bound by its next declaration
+			if (binding.writes.length) droppable.push(binding)
+			dropped.push(declarator)
+			return true
 		})
 		if (unread.every(Boolean))
 			s.remove(statement.start, statementEndIn(body, statement))
@@ -1429,31 +1460,43 @@ const dropUnread: UnitsPass = ({ code, program, scopes }, s, body) => {
 			)
 		}
 	}
-}
-
-const withoutAnnotations = (body: string): string => {
-	const { comments } = parseUnits(body)
-	const s = new MagicString(body)
-	for (const comment of comments)
-		if (pureAnnotation.test(comment.value)) s.remove(comment.start, comment.end)
-	return s.toString()
+	// settled unless a declaration was read only by those dropped
+	const isDropped = spansContaining(dropped)
+	return !droppable.some(binding =>
+		binding.references.every(({ id }) => isDropped(id))
+	)
 }
 
 const pureAnnotation = /^\s*[#@]__PURE__\s*$/
 
 // functions first and beside those like them, so gzip finds their repeats,
-// where there are enough to pay
+// where there are enough to pay; without annotations, as a bundler keeps the
+// call anyway, and oxc's minifier keeps their bytes
 const inGzipOrder = (body: string): string => {
-	const { program } = parseUnits(body)
+	const { program, comments } = parseUnits(body)
+	const annotations = comments.filter(comment =>
+		pureAnnotation.test(comment.value)
+	)
+	let next = 0
+	// read in order, each span after the last
+	const textOf = (start: number, end: number) => {
+		while (next < annotations.length && annotations[next].start < start) next++
+		let text = ""
+		for (; next < annotations.length && annotations[next].end <= end; next++) {
+			text += body.slice(start, annotations[next].start)
+			start = annotations[next].end
+		}
+		return text + body.slice(start, end)
+	}
 	const functions: [key: string, text: string][] = []
 	const rest: string[] = []
 	for (const statement of program.body as Node[]) {
 		if (statement.type !== "VariableDeclaration") {
-			rest.push(body.slice(statement.start, statement.end))
+			rest.push(textOf(statement.start, statement.end))
 			continue
 		}
 		for (const declarator of statement.declarations) {
-			const text = `${statement.kind} ${body.slice(declarator.start, declarator.end)}`
+			const text = `${statement.kind} ${textOf(declarator.start, declarator.end)}`
 			const { init } = declarator
 			if (
 				init?.type === "ArrowFunctionExpression" ||
@@ -1466,7 +1509,10 @@ const inGzipOrder = (body: string): string => {
 			} else rest.push(text)
 		}
 	}
-	if (functions.length < minSortedFunctions) return body
+	if (functions.length < minSortedFunctions) {
+		next = 0
+		return textOf(0, body.length)
+	}
 	functions.sort(([l], [r]) =>
 		l < r ? -1
 		: l > r ? 1

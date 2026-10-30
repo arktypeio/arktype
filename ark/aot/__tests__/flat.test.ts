@@ -485,6 +485,42 @@ export { unit }
 `)
 	})
 
+	it("drops a declaration read only by one it drops", () => {
+		const unit = `import * as runtime from "arktype/runtime"
+
+const unit = /* @__PURE__ */ ((unitR0) => {
+const unitAllows = (data => unitR0(data))
+const unitChecked = (data => unitR0(data) && data.getTime() > 0)
+const unitUnread = (data => unitChecked(data.value))
+return [unitAllows]
+})(runtime.isValidDate)
+
+export { unit }`
+		const flat = flattenBundle(
+			{
+				"site.js": `import { unit } from "~arktype/unit"\n\nexport const read = unit`
+			},
+			{ "~arktype/unit": unit },
+			new Map([["site.js", true]]),
+			false
+		)!
+		const [code] = Object.entries(flat.modules).flatMap(([specifier, code]) =>
+			specifier === "~arktype/unit" ? [] : [code]
+		)
+		attest(code).snap(`import * as runtime from "arktype/runtime"
+
+const unit = /* @__NOINLINE__ */ (() => {
+const unitR0 = runtime.isValidDate
+
+const unitAllows = (data => unitR0(data))
+
+return [unitAllows]
+})()
+
+export { unit }
+`)
+	})
+
 	describe("a module built from code its scan didn't read", () => {
 		// resolves reader.ts as the scan reads it, then as another module
 		const swapping = (to: string): Plugin => {
