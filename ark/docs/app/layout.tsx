@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from "next"
 import type { ReactNode } from "react"
+import {
+	bannerScript,
+	ReleaseBanner
+} from "../components/shell/ReleaseBanner.tsx"
 import { SearchDialog } from "../components/shell/SearchDialog.tsx"
 import { themeColors, themeScript } from "../components/shell/theme.ts"
 import { TwoslashPopups } from "../components/TwoslashPopups.tsx"
@@ -41,10 +45,11 @@ export const viewport: Viewport = {
 	viewportFit: "cover"
 }
 
-// runs before first paint: marks the theme, follows a link to a section that
-// moved before the old page shows, and marks persisted tab choices and the
-// platform so CSS picks them and nothing shifts when the page hydrates
-const prepaint = `${themeScript}try{var t=location.hash&&${JSON.stringify(hashRedirects)}[location.pathname.replace(/(.)\\/$/,"$1")+location.hash.toLowerCase()];if(t)location.replace(t);var d=document.documentElement;if(/Mac|iPhone|iPad/.test(navigator.platform))d.dataset.mac="";var s=new URLSearchParams(location.search).get("syntax")||localStorage.getItem("ark-syntax");if(s)d.dataset.syntax=s;for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf("ark-tabs:")===0)d.setAttribute("data-tab-"+k.slice(9),localStorage.getItem(k))}}catch(e){}`
+// runs before first paint: marks the theme and whether the banner was closed,
+// follows a link to a section that moved before the old page shows, and marks
+// persisted tab choices and the platform so CSS picks them and nothing shifts
+// when the page hydrates
+const prepaint = `${themeScript}${bannerScript}try{var t=location.hash&&${JSON.stringify(hashRedirects)}[location.pathname.replace(/(.)\\/$/,"$1")+location.hash.toLowerCase()];if(t)location.replace(t);var d=document.documentElement;if(/Mac|iPhone|iPad/.test(navigator.platform))d.dataset.mac="";var s=new URLSearchParams(location.search).get("syntax")||localStorage.getItem("ark-syntax");if(s)d.dataset.syntax=s;for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf("ark-tabs:")===0)d.setAttribute("data-tab-"+k.slice(9),localStorage.getItem(k))}}catch(e){}`
 
 export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
@@ -62,6 +67,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 				<a href="#main" className="skip">
 					Skip to content
 				</a>
+				<ReleaseBanner />
 				{children}
 				<SearchDialog />
 				<TwoslashPopups />
