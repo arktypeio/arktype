@@ -7,8 +7,15 @@ import {
 	renderDiagnostic
 } from "@ark/aot"
 import { scope, type } from "arktype"
+import { introspectionMembers } from "arktype/internal/standalone.ts"
 import { readFileSync } from "node:fs"
 import { inFreshProcess, memoryHost, normalized, precompile } from "./utils.ts"
+
+// a module building alone bakes each into its exports, which a test of how it
+// creates them doesn't read
+const unintrospected = Object.fromEntries(
+	introspectionMembers.map(member => [member, false])
+)
 
 // each module's code and modules, built in the order given
 const builtInOrder = (files: Record<string, string>, order: string[]) =>
@@ -16,7 +23,11 @@ const builtInOrder = (files: Record<string, string>, order: string[]) =>
 		async (files: Record<string, string>, order: string[]) => {
 			const { memoryHost } = await import("./utils.ts")
 			const { Precompiler } = await import("@ark/aot")
-			const precompiler = new Precompiler(memoryHost(files))
+			// json and toJSON name a Type's references in the order arktype
+			// registered them, as arktype's own do
+			const precompiler = new Precompiler(memoryHost(files), {
+				members: { json: false, toJSON: false }
+			})
 			const results: Record<string, unknown> = {}
 			for (const id of order) {
 				const { code, modules } = precompiler.precompile(files[id], id)
@@ -64,7 +75,11 @@ export const isError = (data: unknown) => data instanceof ArkErrors`)
 				"~arktype/#3",
 				"~arktype/#4",
 				"~arktype/#5",
-				"~arktype/#6"
+				"~arktype/#6",
+				"~arktype/#7",
+				"~arktype/#8",
+				"~arktype/#9",
+				"~arktype/#10"
 			])
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
@@ -168,7 +183,12 @@ export const Team = type({ lead: User, members: User.array() })`,
 					"/user.ts": `import { type } from "arktype"
 export const User = type({ name: "string" })`
 				},
-				{ preset: "smallest", creationChecks: "none", config: false }
+				{
+					preset: "smallest",
+					creationChecks: "none",
+					config: false,
+					members: unintrospected
+				}
 			)
 			attest(normalized(result.code)).snap(`import "arktype"
 import { #0 as $ark_#0 } from "~arktype/#1"
@@ -186,7 +206,7 @@ export const Name = type("string > 0")
 export const Id = type("string > 2") satisfies Type<string>
 export const nameOf = () => type("string > 1")`,
 				{},
-				{ creationChecks: "none", config: false }
+				{ creationChecks: "none", config: false, members: unintrospected }
 			)
 			attest(normalized(result.code)).snap(`import "arktype"
 import { #0 as $ark_#0 } from "~arktype/#1"
@@ -1023,7 +1043,7 @@ export const E = type("strng")`,
 				"}",
 				"$ark$load2();",
 				'import "arktype"',
-				'import { siteOf as $ark$0$siteOf, freeze as $ark$0$freeze, unreadCallErrors as $ark$0$unreadCallErrors, UnreadArkErrors as $ark$0$UnreadArkErrors, fixConfig as $ark$0$fixConfig, createValidatorWith as $ark$0$createValidatorWith, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
+				'import { siteOf as $ark$0$siteOf, freeze as $ark$0$freeze, unreadCallErrors as $ark$0$unreadCallErrors, UnreadArkErrors as $ark$0$UnreadArkErrors, deepFreeze as $ark$0$deepFreeze, fixConfig as $ark$0$fixConfig, createValidatorWith as $ark$0$createValidatorWith, emptyMeta as $ark$0$emptyMeta, bakedJsonSchema as $ark$0$bakedJsonSchema, bakedStandardJsonSchema as $ark$0$bakedStandardJsonSchema, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
 				'const Array = "shadowed"',
 				"$arkfixConfig()",
 				"export const T = /* @__PURE__ */ $ark#0()",
@@ -1107,7 +1127,8 @@ export const Default = scope({}).type({ x: "string" })`)
 		const build = (order: string[], runtime?: "arktype") => {
 			const precompiler = new Precompiler(
 				createNodeHost({ conditions: ["ark-ts"] }),
-				{ runtime }
+				// as builtInOrder does
+				runtime ? { runtime } : { members: { json: false, toJSON: false } }
 			)
 			const results = Object.fromEntries(
 				order.map(id => [

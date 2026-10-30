@@ -144,6 +144,15 @@ export interface StandaloneOptions {
 	readsAllows?: boolean | undefined
 	// false where no call passes a second argument, a traversal to pipe into
 	piped?: boolean | undefined
+	// introspection members an export bakes besides those members sets, as
+	// code the build read reads them off it
+	baked?: Record<string, BakedMembers> | undefined
+}
+
+export interface BakedMembers {
+	members: readonly IntrospectionMember[]
+	// true where the build lost track of what reads it, so may read any
+	lost: boolean
 }
 
 export interface ValidatorReads {
@@ -160,6 +169,7 @@ export const wholeReads: ValidatorReads = {
 
 export interface Baking extends ValidatorReads {
 	members: ReadonlySet<ValidatorMember>
+	bakedByRoot: ReadonlyMap<unknown, BakedMembers>
 	write: <t>(write: () => t) => t
 	firstIssue: boolean
 	detailsErrors: boolean
@@ -313,6 +323,40 @@ export const compiledInputsOf = (
 	return inputs
 }
 
+const bakedByRootOf = (
+	exports: Record<string, StandaloneExport>,
+	baked: Record<string, BakedMembers> = {}
+): Map<unknown, BakedMembers> => {
+	const result = new Map<unknown, BakedMembers>()
+	const add = (value: unknown, members: BakedMembers) => {
+		if (hasArkKind(value, "module"))
+			for (const entry of Object.values(value)) add(entry, members)
+		if (!hasArkKind(value, "root")) return
+		const prior = result.get(value)
+		result.set(
+			value,
+			prior ?
+				{
+					members: [...prior.members, ...members.members],
+					lost: prior.lost || members.lost
+				}
+			:	members
+		)
+	}
+	for (const name in baked) {
+		const value = exports[name]
+		// as unknown: narrowing to BaseRoot is too deep for TypeScript
+		const exported: unknown = value
+		add(
+			arkKindOf(exported) !== undefined ? exported
+			: value && "type" in value ? value.type
+			: undefined,
+			baked[name]
+		)
+	}
+	return result
+}
+
 // what a build writes, decided by its options
 export const bakingOf = (
 	exports: Record<string, StandaloneExport>,
@@ -325,6 +369,7 @@ export const bakingOf = (
 			...defaultMembers.filter(member => members[member] !== false),
 			...introspectionMembers.filter(member => members[member])
 		]),
+		bakedByRoot: bakedByRootOf(exports, opts.baked),
 		write: opts.bake ?? (write => write()),
 		firstIssue: opts.errors === "first",
 		detailsErrors: opts.errors !== "none",

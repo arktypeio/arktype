@@ -339,11 +339,14 @@ export const Post = $.export().Post`
 				"/scoped.ts": scoped,
 				"/main.ts": 'import { Post } from "./scoped.ts"\nPost({ body: "a" })'
 			}
-			const alone = new Precompiler(memoryHost(files)).precompile(
+			// json and toJSON name a cyclic Type's references in the order
+			// arktype registered them, as arktype's own do
+			const opts = { members: { json: false, toJSON: false } }
+			const alone = new Precompiler(memoryHost(files), opts).precompile(
 				scoped,
 				"/scoped.ts"
 			)
-			const afterImporter = new Precompiler(memoryHost(files))
+			const afterImporter = new Precompiler(memoryHost(files), opts)
 			afterImporter.analyzeSites(files["/main.ts"], "/main.ts")
 			attest(alone.diagnostics).equals([])
 			attest(afterImporter.precompile(scoped, "/scoped.ts").modules).equals(

@@ -39,6 +39,7 @@ import {
 	noIssueFeatures,
 	traversalKeyOf,
 	writeUnprecompilableMessage,
+	type BakedMembers,
 	type Checks,
 	type Optimization,
 	type ValidatorMember,
@@ -168,6 +169,7 @@ import type { ShadowContract } from "./shadow.ts"
 import { flattenBundle, importedNamesOf } from "./flat.ts"
 import {
 	writeKeptMembersMessage,
+	writeLostMessage,
 	writeUnprunedMessage,
 	writeUnscannedFlatMessage,
 	writeUnseenMessage,
@@ -181,10 +183,19 @@ import {
 	type LinkOptions
 } from "./link.ts"
 import {
+	anyKey,
+	nodeAt,
+	readingsOf,
+	validatorHeld,
+	type ReaderProgram,
+	type ReaderSeed
+} from "./readers.ts"
+import {
 	passedReaderOf,
 	unprecompiled,
 	usedMembersOf,
 	type RuntimeModule,
+	type UsageProgram,
 	type UsedMember
 } from "./usage.ts"
 import {
@@ -323,11 +334,20 @@ export interface PrecompileOptions extends InterpreterOptions {
 
 type ProgramReads = Pick<
 	ProgramUsage,
-	"members" | "called" | "readsAllows" | "piped" | "combines" | "shapes"
+	| "members"
+	| "called"
+	| "readsAllows"
+	| "piped"
+	| "combines"
+	| "shapes"
+	| "baked"
 >
 
 interface ProgramUsage {
 	members: ValidatorMembers
+	// the introspection members each site's validator bakes, as its readers
+	// read it, by the site's key
+	baked?: ReadonlyMap<string, BakedMembers>
 	// false where no read may leave a failure's errors unread
 	called: boolean
 	// false where no read takes a validator's .allows
@@ -471,6 +491,8 @@ export class Precompiler {
 	private reportedDependencies = new Set<string>()
 	private intrinsicUnits: Record<string, string> | undefined
 	private runtimesById: Record<string, RuntimeModule> = Object.create(null)
+	// dependencies' modules, read to follow a validator passed to them
+	private readModules = new Map<string, SourceModule | null>()
 	private usagesByProgram = new Map<string, ProgramUsage>()
 
 	constructor(host: PrecompileHost, opts: PrecompileOptions = {}) {
@@ -565,6 +587,10 @@ export class Precompiler {
 		if (typeof plan === "string") return { ...unwritten, unpruned: plan }
 		const { planned, precompiled } = plan
 		const used = this.usedIn(program, planned)
+		const readings = this.readingsIn({
+			...this.usageProgramOf(program, planned),
+			whole: true
+		})
 		const unpruned =
 			typeof used === "string" ? this.keptMembersMessageOf(used) : undefined
 		const dropped =
@@ -590,6 +616,7 @@ export class Precompiler {
 				...this.members,
 				...Object.fromEntries(dropped.map(member => [member, false]))
 			},
+			baked: readings.baked,
 			called,
 			readsAllows,
 			piped,
@@ -646,6 +673,8 @@ export class Precompiler {
 				return runtime.validators.length > 0 || runtime.holdsOther
 			}),
 			unpruned,
+			lost: readings.lost.length ? writeLostMessage(readings.lost) : undefined,
+			baked: readings.decisions,
 			issues: this.issuesOf(program, written)
 		}
 	}
@@ -851,12 +880,63 @@ export class Precompiler {
 		program: ScannedProgram,
 		modules: ReadonlyMap<string, RuntimeModule>
 	): Set<UsedMember> | string {
-		return usedMembersOf({
+		return usedMembersOf(this.usageProgramOf(program, modules))
+	}
+
+	private usageProgramOf(
+		program: ScannedProgram,
+		modules: ReadonlyMap<string, RuntimeModule>
+	): UsageProgram {
+		return {
 			entries: new Set(program.entries),
 			exposed: new Set(program.exposed),
 			modules,
 			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
-		})
+		}
+	}
+
+	// the introspection members members leaves each site's validator, as code
+	// reading it reads them, and where it lost track of that code
+	private readingsIn(program: ReaderProgram): ProgramReadings {
+		const baked = new Map<string, BakedMembers>()
+		const lost: string[] = []
+		const decisions: string[] = []
+		const decided = introspectionMembers.filter(
+			member =>
+				this.members[member] === undefined &&
+				(member !== "~standard.jsonSchema" ||
+					this.members["~standard"] !== false)
+		)
+		if (!decided.length) return { baked, lost, decisions }
+		const keys: string[] = []
+		const seeds: ReaderSeed[] = []
+		for (const runtime of program.modules.values()) {
+			const { module } = runtime
+			for (const [sites, held] of [
+				[runtime.validators, validatorHeld],
+				[runtime.modules, { path: [anyKey], of: "type" }]
+			] as const) {
+				for (const site of sites) {
+					const node = nodeAt(module, site)
+					if (!node) continue
+					keys.push(siteKeyOf(module.id, site))
+					seeds.push({ runtime, node, held })
+				}
+			}
+		}
+		const readings = readingsOf(program, this.graph, this.readModules, seeds)
+		for (const [i, reading] of readings.entries()) {
+			const members = reading.members.filter(member => decided.includes(member))
+			if (members.length)
+				baked.set(keys[i], { members, lost: reading.step === "lost" })
+			const at = seeds[i].runtime.module.positionOf(seeds[i].node)
+			const lostAt = reading.lost[0]
+			if (lostAt) lost.push(`${at}, because ${lostAt}`)
+			decisions.push(
+				`${at} bakes ${members.length ? members.join(", ") : "nothing"} (${reading.step}${reading.unseen.length ? `; ${reading.unseen[0]}` : ""})`
+			)
+		}
+		return { baked, lost, decisions }
 	}
 
 	// what a module's precompiled code would read at runtime, or undefined where it fails
@@ -877,6 +957,17 @@ export class Precompiler {
 			diagnostics
 		)
 		if (diagnostics.some(d => d.severity === "error")) return
+		return this.runtimeOfPlan(module, { namesBySite, factoriesBySite, folded })
+	}
+
+	private runtimeOfPlan(
+		module: SourceModule,
+		{
+			namesBySite,
+			factoriesBySite,
+			folded
+		}: Pick<PlannedSites, "namesBySite" | "factoriesBySite" | "folded">
+	): RuntimeModule {
 		const kept: Span[] = []
 		const read: Binding[] = []
 		const inputs: Record<string, string[]> = {}
@@ -2116,10 +2207,36 @@ export class Precompiler {
 		sites: Site[],
 		plan: PlannedSites,
 		configured: Configured,
-		{ members, called, readsAllows, piped, combines, shapes }: ProgramReads,
+		{
+			members,
+			called,
+			readsAllows,
+			piped,
+			combines,
+			shapes,
+			baked
+		}: ProgramReads,
 		diagnostics: Diagnostic[]
 	): StandaloneModules {
 		const { namesBySite, exportsByName } = plan
+		// a build reading no whole bundle follows each module's validators alone
+		baked ??= this.readingsIn({
+			entries: new Set(),
+			exposed: new Set(),
+			modules: new Map([
+				[
+					module.id,
+					this.runtimeOfPlan(module, { ...plan, folded: [...plan.folded] })
+				]
+			]),
+			resolve: () => undefined,
+			whole: false
+		}).baked
+		const bakedByName: Record<string, BakedMembers> = {}
+		for (const [site, name] of namesBySite) {
+			const members = baked.get(siteKeyOf(module.id, site))
+			if (members) bakedByName[name] = members
+		}
 		for (;;) {
 			const refusalsByName: Record<string, string[]> = {}
 			const validators =
@@ -2134,6 +2251,7 @@ export class Precompiler {
 							piped,
 							combines,
 							shapes,
+							baked: bakedByName,
 							configured,
 							bake: write => this.bake(write),
 							hoisted: this.isReachedEarly(module),
@@ -5805,3 +5923,13 @@ const anyIssues: IssueFeatures = {
 	readsKeySites: true,
 	runsArktype: true
 }
+
+interface ProgramReadings {
+	baked: Map<string, BakedMembers>
+	// each validator it bakes every introspection member into, and why
+	lost: string[]
+	// what each validator bakes, and how it decided
+	decisions: string[]
+}
+
+const siteKeyOf = (id: string, site: Span) => `${id}\0${site.start}:${site.end}`

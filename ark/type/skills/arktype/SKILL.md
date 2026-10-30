@@ -20,7 +20,7 @@ A project whose bundler config uses `@ark/aot` (e.g. `precompile.vite()` from `@
 - If the project calls `configure()`, name its module as `config` under `precompile` in an `ark.json` beside `package.json`, which the plugin, the test drivers, the CLI and the ESLint rule all read.
 - A build error names the file, line and column, then why, then the fix on its last line. Apply that fix. Don't set `allowUnsafe` or switch to `runtime: "arktype"` to get past one. `npx arktype-precompile --check "src/**/*.ts"` lists every one without bundling.
 - A validator's error messages say what failed but not what the value was, like `name must be a string`.
-- A validator has no JSON Schema unless the `members` option asks for it. Where a library derives one from a Type itself, like the MCP SDK or the AI SDK, set `"members": { "~standard.jsonSchema": true }` under `precompile` in `ark.json`, or the library reads `undefined` in production.
+- A validator has a JSON Schema, `expression` or another introspection member only where the build sees code read it, its dependencies' included, so the MCP SDK, the AI SDK and OpenAPI generators get one with nothing to set. Code the build can't see, like code outside the bundle reading an entry's export, throws naming the member to set true under `members`.
 
 Docs index: https://arktype.io/llms.txt, which links each page's Markdown. Any docs page is available as Markdown by adding `.md` to its URL, e.g. https://arktype.io/docs/objects.md. Every page in one file: https://arktype.io/llms-full.txt.
 

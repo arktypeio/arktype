@@ -195,6 +195,7 @@ export const runtimeModuleOf = (
 	passed: read,
 	inputs,
 	validators: folded.filter(site => createsValidator(site)),
+	modules: folded.filter(site => hasArkKind(site.value, "module")),
 	holdsOther: folded.some(
 		site =>
 			!createsValidator(site) &&

@@ -469,7 +469,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	// each module a pruned build holds that the plugin doesn't transform, as
 	// the plugins ahead built it
 	const othersByBuild = new WeakMap<object, Map<string, string>>()
-	const warnedUnpruned = new Set<string>()
+	const warnedOfScans = new Set<string>()
 	let esbuildScan: BundleScan | undefined
 	// a module the scan didn't write would read a copy of a unit declared in one function
 	const copiedProblemOf = (
@@ -558,11 +558,11 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		)
 			.catch(
 				(e: unknown): ProgramScan<BundleScan> => ({
-					unpruned: unreadMessageOf(e)
+					warnings: [unreadMessageOf(e)]
 				})
 			)
 			.then(scan => {
-				pending.unpruned = scan.unpruned
+				pending.warnings = scan.warnings
 				if (scan.read) scansByBuild.set(build, scan.read)
 				return scan.read
 			})
@@ -713,10 +713,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				realCwd()
 			).catch(
 				(e: unknown): ProgramScan<[ScannedProgram, ScannedUsage]> => ({
-					unpruned: unreadMessageOf(e)
+					warnings: [unreadMessageOf(e)]
 				})
 			)
-			const warnings = result.unpruned ? [{ text: result.unpruned }] : []
+			const warnings = (result.warnings ?? []).map(text => ({ text }))
 			if (!result.read) return { warnings }
 			const [scanned, usage] = result.read
 			scan.scanned = scanned
@@ -1131,11 +1131,11 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				)
 				if (problem) throwBuildError(problem)
 			}
-			const unpruned = pendingScans.get(buildOf(this))?.unpruned
 			// once, though each of an app's environments may find it
-			if (unpruned && !error && !warnedUnpruned.has(unpruned)) {
-				warnedUnpruned.add(unpruned)
-				;(this as never as RollupContext).warn(unpruned)
+			for (const warning of pendingScans.get(buildOf(this))?.warnings ?? []) {
+				if (error || warnedOfScans.has(warning)) continue
+				warnedOfScans.add(warning)
+				;(this as never as RollupContext).warn(warning)
 			}
 			const scan = scansByBuild.get(buildOf(this))
 			if (scan?.verifies && !error) {
@@ -1336,7 +1336,7 @@ interface PendingScan {
 	arrivals: Map<string, string | Arrival>
 	// how each one's lines map to its file's, where a plugin ahead transformed it
 	mappings: Map<string, string>
-	unpruned?: string | undefined
+	warnings?: string[] | undefined
 }
 
 interface Arrival {
@@ -1388,8 +1388,11 @@ interface RollupContext {
 // what a production bundle's scan read, if it changes what the plugin writes
 interface ProgramScan<read> {
 	read?: read | undefined
-	unpruned?: string | undefined
+	warnings?: string[] | undefined
 }
+
+const warningsOf = (usage: ScannedUsage): string[] =>
+	[usage.unpruned, usage.lost].filter(warning => warning !== undefined)
 
 const unreadMessageOf = (e: unknown): string =>
 	writeUnprunedMessage(`reading the bundle's modules threw ${String(e)}`)
@@ -1471,7 +1474,7 @@ const rollupScanOf = async (
 	const res = new Map<string, RollupResolution>()
 	const entries = await rollupEntriesOf(context, inputs, res, cwd)
 	if (typeof entries === "string")
-		return { unpruned: writeUnprunedMessage(entries) }
+		return { warnings: [writeUnprunedMessage(entries)] }
 	// modules read as they reached the plugin, having no file
 	const arrived = new Set<string>()
 	const scanned = await scanProgram(program, entries, {
@@ -1517,7 +1520,7 @@ const rollupScanOf = async (
 		cwd
 	})
 	if (typeof scanned === "string")
-		return { unpruned: writeUnprunedMessage(scanned) }
+		return { warnings: [writeUnprunedMessage(scanned)] }
 	for (const id of arrived)
 		if (scanned.modules[id]) scanned.modules[id].mappings = mappingsOf(id)
 
@@ -1534,7 +1537,7 @@ const rollupScanOf = async (
 					issues: usage.issues
 				}
 			:	undefined,
-		unpruned: usage.unpruned
+		warnings: warningsOf(usage)
 	}
 }
 
@@ -1810,7 +1813,7 @@ const esbuildScanOf = async (
 ): Promise<ProgramScan<[ScannedProgram, ScannedUsage]>> => {
 	const entries = await esbuildEntriesOf(build)
 	if (typeof entries === "string")
-		return { unpruned: writeUnprunedMessage(entries) }
+		return { warnings: [writeUnprunedMessage(entries)] }
 	const scanned = await scanProgram(program, entries, {
 		resolve: async (specifier, importer, kind) => {
 			const result = await build.resolve(specifier, {
@@ -1832,7 +1835,7 @@ const esbuildScanOf = async (
 		cwd
 	})
 	if (typeof scanned === "string")
-		return { unpruned: writeUnprunedMessage(scanned) }
+		return { warnings: [writeUnprunedMessage(scanned)] }
 	// each entry is its own bundle unless it splits what they share; an
 	// injected module is unscanned
 	scanned.isOneChunk =
@@ -1842,7 +1845,7 @@ const esbuildScanOf = async (
 	const usage = await scan(scanned)
 	return {
 		read: usage.written ? [scanned, usage] : undefined,
-		unpruned: usage.unpruned
+		warnings: warningsOf(usage)
 	}
 }
 

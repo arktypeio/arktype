@@ -34,6 +34,7 @@ import {
 	dateGetTime,
 	getBuiltinNameOfConstructor,
 	hasDomain,
+	hasOwn,
 	prototypeOf,
 	stringifyPath,
 	throwError,
@@ -174,8 +175,6 @@ export interface Validator {
 }
 
 export class Validator {
-	declare expression: string
-	declare description: string
 	declare meta: ArkEnv.meta
 	declare allows: (data: unknown) => boolean
 	declare assert: (data: unknown, pipedFromCtx?: Traversal) => unknown
@@ -194,9 +193,39 @@ export class Validator {
 
 	// a build without the expression member has none to print
 	toString(): string {
-		return this.expression ? `Type<${this.expression}>` : "Type"
+		return hasOwn(this, "expression") ? `Type<${this.expression}>` : "Type"
+	}
+
+	// a member the build bakes is the validator's own, so reading one it
+	// doesn't throws with the fix
+	get expression(): string {
+		return lacks("expression")
+	}
+	get description(): string {
+		return lacks("description")
+	}
+	get json(): JsonStructure {
+		return lacks("json")
+	}
+	get toJSON(): () => JsonStructure {
+		return lacks("toJSON")
+	}
+	get toJsonSchema(): () => JsonSchema {
+		return lacks("toJsonSchema")
 	}
 }
+
+export const lacks = (member: IntrospectionMember): never => {
+	throw new Error(
+		`${member} isn't baked into this validator, as the build saw no code read it. Set members["${member}"] true in the precompile options.`
+	)
+}
+
+const getOwnPropertyDescriptors = Object.getOwnPropertyDescriptors
+
+// as its own, where the class has only a getter
+export const own = <t extends object>(validator: t, attributes: object): t =>
+	Object.defineProperties(validator, getOwnPropertyDescriptors(attributes))
 
 // a Standard Schema consumer prefixes each message with its path, so a pathed issue needs none
 export const standardResultOf = (
@@ -237,18 +266,18 @@ export const keySiteOf = ((
 	m: { code: "required", description: missing }
 })) satisfies Fn
 
-// a library reading a JSON Schema the build left out fails saying how to keep
-// it; "jsonSchema" in it stays false
-export const withoutJsonSchema = <standard extends object>(
-	standard: standard
-): standard =>
-	new Proxy(standard, {
-		get: (target, k) =>
-			k === "jsonSchema" ?
-				throwError(
-					'~standard.jsonSchema isn\'t baked into this validator, which a library converting it to JSON Schema reads. Set "members": { "~standard.jsonSchema": true } under "precompile" in ark.json (or package.json\'s "ark" key).'
-				)
-			:	Reflect.get(target, k)
+const standardOf = (
+	validator: Validator,
+	attributes: ValidatorAttributes
+): StandardSchemaV1.Props =>
+	freeze({
+		vendor: "arktype",
+		version: 1,
+		validate: freeze((input: unknown) => standardResultOf(validator(input))),
+		get jsonSchema() {
+			return lacks("~standard.jsonSchema")
+		},
+		...attributes["~standard"]
 	})
 
 // parenthesized (kept by `satisfies`) to compile as the module loads
@@ -276,16 +305,9 @@ export const createValidator = ((
 	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
 		validator(data, pipedFromCtx, throwOnDefault)
 	)
-	assign(validator, attributes)
+	own(validator, attributes)
 	validator.allows = freeze(allows)
-	const standard = freeze({
-		vendor: "arktype",
-		version: 1,
-		validate: freeze((input: unknown) => standardResultOf(validator(input))),
-		...attributes["~standard"]
-	})
-	validator["~standard"] =
-		attributes["~standard"] ? standard : withoutJsonSchema(standard)
+	validator["~standard"] = standardOf(validator, attributes)
 	return holdHoles(freeze(validator), id, holes)
 }) satisfies Fn
 
@@ -304,16 +326,9 @@ export const createValidatorWith = ((
 	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
 		validator(data, pipedFromCtx, throwOnDefault)
 	)
-	assign(validator, attributes)
+	own(validator, attributes)
 	validator.allows = freeze(parts[0] as never)
-	const standard = freeze({
-		vendor: "arktype",
-		version: 1,
-		validate: freeze((input: unknown) => standardResultOf(validator(input))),
-		...attributes["~standard"]
-	})
-	validator["~standard"] =
-		attributes["~standard"] ? standard : withoutJsonSchema(standard)
+	validator["~standard"] = standardOf(validator, attributes)
 	return holdHoles(freeze(validator), id, holes)
 }) satisfies Fn
 

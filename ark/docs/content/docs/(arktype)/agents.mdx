@@ -89,8 +89,4 @@ server.registerTool(
 
 Calling `greet` with `times: 99` returns an error result to the model with ArkType's message, `times must be at most 5 (was 99)`, so it knows what to fix.
 
-A [precompiled](/docs/precompile) validator ships `~standard.jsonSchema`, which the SDK reads to describe the tool, only when you ask for it, so set it in `ark.json`:
-
-```json title="ark.json"
-{ "precompile": { "members": { "~standard.jsonSchema": true } } }
-```
+A [precompiled](/docs/precompile) validator ships `~standard.jsonSchema`, which the SDK reads to describe the tool, as the build sees the SDK read it.

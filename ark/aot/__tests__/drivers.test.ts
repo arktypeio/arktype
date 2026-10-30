@@ -253,36 +253,33 @@ try {
 `)
 		})
 
-		it("a ~standard.jsonSchema the build left out, read outside production", () => {
+		it("a ~standard.jsonSchema read in its module and another, in and outside production", () => {
 			const dir = writeFixture(
 				{
 					"main.ts": `import { type } from "arktype"
+import { Exported } from "./exported.ts"
 
-const jsonSchemaOf = (schema: any) => {
-	try {
-		return JSON.stringify(schema["~standard"].jsonSchema?.input({ target: "draft-2020-12" }))
-	} catch (e) {
-		return (e as Error).message
-	}
-}
+const jsonSchemaOf = (schema: any) =>
+	JSON.stringify(schema["~standard"].jsonSchema.input({ target: "draft-2020-12" }))
 
 console.log(jsonSchemaOf(type({ a: "string" })))
+console.log(jsonSchemaOf(Exported))
+`,
+					// a build reading one module at a time bakes each member into its exports
+					"exported.ts": `import { type } from "arktype"
+
+export const Exported = type({ b: "number" })
 `
 				},
-				fromHere("temp", "lackedJsonSchema")
+				fromHere("temp", "readJsonSchema")
 			)
-			attest(node(["main.ts"], {}, dir).stdout)
-				.snap(`~standard.jsonSchema isn't baked into this validator, which a library converting it to JSON Schema reads. Set "members": { "~standard.jsonSchema": true } under "precompile" in ark.json (or package.json's "ark" key).
-`)
-			attest(node(["main.ts"], {}, dir, { NODE_ENV: "production" }).stdout)
-				.snap(`undefined
-`)
+			const expected = `{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"a":{"type":"string"}},"required":["a"]}
+{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"b":{"type":"number"}},"required":["b"]}
+`
+			attest(node(["main.ts"], {}, dir).stdout).equals(expected)
 			attest(
-				node(["main.ts"], { members: { "~standard.jsonSchema": true } }, dir)
-					.stdout
-			)
-				.snap(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"a":{"type":"string"}},"required":["a"]}
-`)
+				node(["main.ts"], {}, dir, { NODE_ENV: "production" }).stdout
+			).equals(expected)
 		})
 
 		it("import cycle", () => {

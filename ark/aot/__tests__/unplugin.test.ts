@@ -566,13 +566,14 @@ export const describe = (t: { description: string }) => t.description
 				true,
 				"[\n  {\n    code: 'domain',\n    path: [ 'a' ],\n    data: 1,\n    expected: 'a string',\n    message: 'a must be a string'\n  }\n]",
 				"TraversalError: a must be a string",
-				'description isn\'t baked into this validator. Set members.description true, or build with runtime: "arktype".'
+				// a build reading one module at a time bakes each member into its exports
+				""
 			],
 			[
 				true,
 				"[\n  {\n    code: 'predicate',\n    path: [],\n    data: { a: 1 },\n    message: 'is invalid'\n  }\n]",
 				"Error: is invalid",
-				'description isn\'t baked into this validator. Set members.description true, or build with runtime: "arktype".'
+				""
 			]
 		])
 	})

@@ -45,6 +45,8 @@ export interface RuntimeModule {
 	// what factories import from other modules, by specifier
 	inputs: Record<string, string[]>
 	validators: Span[]
+	// sites creating a Module, which holds validators at its keys
+	modules: Span[]
 	// a site creating a Module, Scope or Generic, which holds validators
 	holdsOther: boolean
 }
@@ -570,7 +572,7 @@ const isInertMetaRead = (node: Node): boolean => {
 }
 
 // inside a folded site, outside what its call keeps
-const isDead = (node: Span, runtime: RuntimeModule): boolean =>
+export const isDead = (node: Span, runtime: RuntimeModule): boolean =>
 	runtime.folded.some(span => isIn(node, span)) &&
 	!runtime.kept.some(span => isIn(node, span))
 
@@ -603,6 +605,7 @@ export const unprecompiled = (module: SourceModule): RuntimeModule => ({
 	passed: [],
 	inputs: {},
 	validators: [],
+	modules: [],
 	holdsOther: false
 })
 
