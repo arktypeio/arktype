@@ -61,6 +61,7 @@ import { SourceModule } from "./module.ts"
 import {
 	declaredIds,
 	exportNameOf,
+	idsOf,
 	isTransparent,
 	isWriteTarget,
 	loadedSourceOf,
@@ -450,6 +451,30 @@ const storingMethods: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
+const readingGlobals: Record<string, 1> = Object.setPrototypeOf(
+	{
+		String: 1,
+		Number: 1,
+		Boolean: 1,
+		isNaN: 1,
+		isFinite: 1,
+		parseInt: 1,
+		parseFloat: 1
+	},
+	null
+)
+
+const readingMembersByGlobal: Record<string, string[]> = Object.setPrototypeOf(
+	{
+		console: ["log", "info", "warn", "error", "debug", "dir", "table"],
+		JSON: ["stringify"],
+		Number: ["parseInt", "parseFloat", "isInteger", "isSafeInteger"],
+		Object: ["keys", "is", "isFrozen", "isSealed", "getOwnPropertyNames"],
+		Array: ["isArray"]
+	},
+	null
+)
+
 const mutatingMethods: Record<string, 1> = Object.setPrototypeOf(
 	{
 		...storingMethods,
@@ -581,6 +606,30 @@ export const mayBeOtherArk = (kind: KindBits): boolean =>
 export const mayHoldArk = (kind: KindBits): boolean =>
 	(kind & (kinds.holder | kinds.unknown)) !== 0
 
+const isPrimitiveNode = (node: Node): boolean =>
+	(node.type === "Literal" && !("regex" in node && node.regex)) ||
+	node.type === "TemplateLiteral" ||
+	node.type === "UnaryExpression"
+
+// e.g. `{ o, toString() { ... } }`, whose conversion calls a method with what it holds
+const isMethodHolder = (node: Node): boolean =>
+	node.type === "ObjectExpression" &&
+	node.properties.some(
+		property =>
+			property.type === "Property" &&
+			(property.method ||
+				property.kind !== "init" ||
+				isFunctionNode(unwrapExpression(property.value)))
+	)
+
+// a value arktype made, which holds nothing the program writes
+const isOnlyArk = (kind: KindBits): boolean =>
+	isArk(kind) && (kind & ~arkBits) === 0
+
+// e.g. `"a"` or a Type, which a method can't call back with what it holds
+const isReadOnlyArg = (arg: Node, kind: KindBits): boolean =>
+	arg.type === "Literal" || arg.type === "TemplateLiteral" || isOnlyArk(kind)
+
 export const isOnlyType = (kind: KindBits): boolean =>
 	(kind & (kinds.type | kinds.otherArk | kinds.data)) === kinds.type
 
@@ -674,6 +723,9 @@ export class ModuleGraph {
 	private resolving = new Set<Node>()
 	private heldKindsByNode = new Map<Node, KindBits>()
 	private writesByBinding = new WeakMap<Binding, Node[]>()
+	private mayWritesByBinding = new WeakMap<Binding, Node[]>()
+	// where a value reaches code the build doesn't follow, which may write it
+	private escapes = new WeakSet<Node>()
 	private importsById: Record<string, string[]> = Object.create(null)
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
 	dependencies: DependencyModes
@@ -3644,6 +3696,249 @@ export class ModuleGraph {
 					continue
 				default:
 					return
+			}
+		}
+	}
+
+	// what may write a binding's value: writesThrough's, and where it reaches
+	// code the build doesn't follow, like `[o][0].a = 1` or `new Map([["o", o]])`
+	mayWritesOf(binding: Binding, module: SourceModule): Node[] {
+		let result = this.mayWritesByBinding.get(binding)
+		if (!result) {
+			result = []
+			this.mayWritesByBinding.set(binding, result)
+			for (const reference of binding.references) {
+				if (reference.isWrite) continue
+				const write = this.mayWriteFrom(reference.id, module)
+				if (write) result.push(write)
+			}
+			result.push(...this.writesThrough(binding, module))
+		}
+		return result
+	}
+
+	// e.g. `type.valueOf(o)` or `User.and(o)`, which arktype reads
+	private isArkCallee(callee: Node, module: SourceModule): boolean {
+		callee = unwrapChain(callee)
+		return (
+			this.isArktypeImport(callee, module) ||
+			(callee.type === "MemberExpression" &&
+				(this.isArktypeImport(unwrapChain(callee.object), module) ||
+					isOnlyArk(this.kindOf(callee.object, module))))
+		)
+	}
+
+	// e.g. `o.max` given `o = { max: 5 }`
+	private readsPrimitive(
+		member: MemberExpression,
+		module: SourceModule
+	): boolean {
+		const literal = this.literalOf(member.object, module, this.finalKindOfKey)
+		const value = literal && this.valueIn(literal, memberNameOf(member))
+		return !!value && isPrimitiveNode(unwrapExpression(value.node))
+	}
+
+	// a global reading what it's passed, holding none of it after
+	private readsOnly(callee: Node, module: SourceModule): boolean {
+		callee = unwrapChain(callee)
+		if (callee.type === "Identifier") {
+			return (
+				!module.scopes.byId.get(callee)?.binding &&
+				callee.name in readingGlobals
+			)
+		}
+		if (
+			callee.type !== "MemberExpression" ||
+			callee.object.type !== "Identifier" ||
+			module.scopes.byId.get(callee.object)?.binding
+		)
+			return false
+		const name = memberNameOf(callee)
+		return (
+			typeof name === "string" &&
+			!!readingMembersByGlobal[callee.object.name]?.includes(name)
+		)
+	}
+
+	isEscape(write: Node): boolean {
+		return this.escapes.has(write)
+	}
+
+	private escape(node: Node): Node {
+		this.escapes.add(node)
+		return node
+	}
+
+	private mayWriteThrough(ids: Node[], module: SourceModule): Node | undefined {
+		for (const id of ids) {
+			const binding = module.scopes.bindingsById.get(id)
+			const write = binding && this.mayWritesOf(binding, module)[0]
+			if (write) return write
+		}
+	}
+
+	// each use of a value is followed to what holds it next, and any the build
+	// doesn't know leaves its value unknown, as code it can't see may write it
+	private mayWriteFrom(node: Node, module: SourceModule): Node | undefined {
+		for (;;) {
+			const [operand, parent] = operatorOf(node)
+			switch (parent?.type) {
+				case "MemberExpression": {
+					// e.g. `o[k]`, reading `k` as a key
+					if (parent.object !== operand) return
+					if (isWriteTarget(parent)) return writeOf(parent)
+					const [callee, call] = operatorOf(parent)
+					if (call?.type === "CallExpression" && call.callee === callee) {
+						if ((memberNameOf(parent) as never) in mutatingMethods) return call
+						if (isOnlyArk(this.kindOf(operand, module))) return
+						// e.g. `list.forEach(v => { v.a = 1 })`, passing what it holds to
+						// a callback, which is unknown unless the build reads it
+						for (const arg of call.arguments) {
+							if (arg.type === "SpreadElement") return this.escape(call)
+							const fn = this.functionOf(arg, module)
+							if (fn) {
+								const write = this.mayWriteThrough(
+									runtimeParamsOf(fn[0]).flatMap(idsOf),
+									fn[1]
+								)
+								if (write) return write
+							} else if (!isReadOnlyArg(arg, this.kindOf(arg, module)))
+								return this.escape(call)
+						}
+						// e.g. `list.at(0)`, holding what it does
+						node = call
+						continue
+					}
+					// a Type or primitive holds nothing the program writes
+					if (
+						isOnlyArk(this.kindOf(parent, module)) ||
+						this.readsPrimitive(parent, module)
+					)
+						return
+					node = parent
+					continue
+				}
+				case "CallExpression":
+				case "NewExpression": {
+					if (parent.callee === operand) return
+					if (this.isArkCallee(parent.callee, module)) {
+						// e.g. `type.define(o)`, returning what it's passed
+						const callee = unwrapChain(parent.callee)
+						if (
+							callee.type !== "MemberExpression" ||
+							memberNameOf(callee) !== "define"
+						)
+							return
+						node = parent
+						continue
+					}
+					const index = parent.arguments.indexOf(operand as never)
+					if (index === 0 && isObjectWrite(parent.callee, module)) return parent
+					if (index === -1) return this.escape(parent)
+					// e.g. `Object.assign({}, o)` or `Object.freeze(o)`, holding what `o` does
+					if (
+						(this.isGlobalMember(parent.callee, module, "Object", "assign") &&
+							parent.arguments[0].type === "ObjectExpression") ||
+						(index === 0 &&
+							this.isGlobalMember(parent.callee, module, "Object", "freeze"))
+					) {
+						node = parent
+						continue
+					}
+					if (this.readsOnly(parent.callee, module))
+						return isMethodHolder(node) ? this.escape(parent) : undefined
+					const fn = this.functionOf(parent.callee, module)
+					const param = fn && runtimeParamsOf(fn[0])[index]
+					if (!param || param.type === "RestElement" || readsArguments(fn[0]))
+						return this.escape(parent)
+					return this.mayWriteThrough(idsOf(param), fn[1]) && parent
+				}
+				// e.g. `const alias = o`, through which the program writes `o`
+				case "VariableDeclarator":
+					return this.mayWriteThrough(idsOf(parent.id), module)
+				case "AssignmentExpression": {
+					const assigned =
+						parent.left.type === "Identifier" ?
+							module.scopes.byId.get(parent.left)?.binding
+						:	undefined
+					if (!assigned) return this.escape(parent)
+					const [write] = this.mayWritesOf(assigned, module)
+					if (write) return write
+					node = parent
+					continue
+				}
+				// e.g. `for (const field of fields) field.x = 1`
+				case "ForOfStatement":
+					return parent.left.type === "VariableDeclaration" ?
+							this.mayWriteThrough(declaredIds(parent.left), module)
+						:	this.escape(parent)
+				case "ConditionalExpression":
+					if (parent.test === operand) return
+					node = parent
+					continue
+				case "SequenceExpression":
+					if (parent.expressions[parent.expressions.length - 1] !== operand)
+						return
+					node = parent
+					continue
+				// e.g. `[o]`, `{ o }` or `{ ...o }`, each holding what `o` does
+				case "Property":
+					if (parent.value !== operand) return
+					node = parent.parent!
+					continue
+				case "SpreadElement":
+					if (
+						parent.parent!.type !== "ArrayExpression" &&
+						parent.parent!.type !== "ObjectExpression"
+					)
+						return this.escape(parent.parent!)
+					node = parent.parent!
+					continue
+				case "LogicalExpression":
+				case "ArrayExpression":
+				case "AwaitExpression":
+					node = parent
+					continue
+				case "ArrowFunctionExpression":
+				case "ReturnStatement": {
+					const fn =
+						parent.type === "ReturnStatement" ?
+							enclosingFunctionOf(parent)
+						:	parent
+					const calls = fn && this.callsOf(fn, module)
+					if (!calls) return this.escape(parent)
+					for (const call of calls) {
+						const write = this.mayWriteFrom(call, module)
+						if (write) return write
+					}
+					return
+				}
+				// e.g. `${o}`, which calls a method it holds
+				case "TemplateLiteral":
+				case "BinaryExpression":
+				case "UnaryExpression":
+					if (
+						parent.type === "TemplateLiteral" &&
+						parent.parent?.type === "TaggedTemplateExpression"
+					)
+						return this.escape(parent.parent!)
+					return isMethodHolder(node) ? this.escape(parent) : undefined
+				case "ExpressionStatement":
+				case "IfStatement":
+				case "SwitchStatement":
+				case "SwitchCase":
+				case "WhileStatement":
+				case "DoWhileStatement":
+				case "ForStatement":
+				case "ForInStatement":
+				case "TSTypeQuery":
+				case "ExportSpecifier":
+				case "ExportDefaultDeclaration":
+				case undefined:
+					return
+				// e.g. thrown, yielded or held by a class field
+				default:
+					return this.escape(parent!)
 			}
 		}
 	}

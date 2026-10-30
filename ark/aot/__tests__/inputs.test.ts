@@ -16,7 +16,7 @@ export const C = type({ ...o.b, l: o.l })`)
 		])
 	})
 
-	it("writes the build does not follow", () => {
+	it("writes through what the build does not follow", () => {
 		const uses = [
 			`;\`\${{ o, toString() { (this as any).o.a = "number"; return "" } }}\``,
 			`function f(x: unknown) { return (arguments[0].a = "number") }
@@ -36,11 +36,26 @@ ${use}
 export const T = type(o.a)`).pop()
 			)
 		).snap([
-			["4:18 accepted", "local o.a"],
-			["5:18 accepted", "local o.a"],
-			["4:18 accepted", "local o.a"],
-			["5:18 accepted", "local o.a"],
-			["6:18 accepted", "local o.a"]
+			[
+				"4:18 rejected",
+				"`o` reaches code the build doesn't follow at /main.ts:3:2, so its value at the site is not known"
+			],
+			[
+				"5:18 rejected",
+				"`o` reaches code the build doesn't follow at /main.ts:4:1, so its value at the site is not known"
+			],
+			[
+				"4:18 rejected",
+				"`o` is written at /main.ts:3:23, so its value at the site is not known"
+			],
+			[
+				"5:18 rejected",
+				"`o` is written at /main.ts:4:1, so its value at the site is not known"
+			],
+			[
+				"6:18 rejected",
+				"`o` reaches code the build doesn't follow at /main.ts:5:1, so its value at the site is not known"
+			]
 		])
 	})
 

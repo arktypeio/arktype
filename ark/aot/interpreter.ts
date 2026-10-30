@@ -1158,11 +1158,11 @@ export class Interpreter {
 		const scope = binding.scope.node
 		const isReadOnce = runsOnceIn(readAt, scope)
 		const write = this.graph
-			.writesThrough(binding, module)
+			.mayWritesOf(binding, module)
 			.find(
 				write => !isReadOnce || runPointOf(write, scope, module) < readAt.start
 			)
-		return write && writtenProblemOf(binding, write, module)
+		return write && this.writtenProblemOf(binding, write, module)
 	}
 
 	// an export its module writes, which it has by the time an importer reads it
@@ -1172,8 +1172,16 @@ export class Interpreter {
 		ctx: Context
 	): string | undefined {
 		if (ctx.site?.readsLiterals) return
-		const [write] = this.graph.writesThrough(binding, module)
-		return write && writtenProblemOf(binding, write, module)
+		const [write] = this.graph.mayWritesOf(binding, module)
+		return write && this.writtenProblemOf(binding, write, module)
+	}
+
+	private writtenProblemOf(
+		binding: Binding,
+		write: Node,
+		module: SourceModule
+	): string {
+		return `\`${binding.name}\` ${this.graph.isEscape(write) ? "reaches code the build doesn't follow" : "is written"} at ${module.positionOf(write)}, so its value at the site is not known`
 	}
 
 	private bindingValue(binding: Binding, module: SourceModule): Evaluated {
@@ -2789,13 +2797,6 @@ const staticProblemOf = (
 	: binding.kind === "var" && !isDeclaredInBody(binding) ?
 		"is a `var` declared in a nested statement, which may not run"
 	:	undefined
-
-const writtenProblemOf = (
-	binding: Binding,
-	write: Node,
-	module: SourceModule
-): string =>
-	`\`${binding.name}\` is written at ${module.positionOf(write)}, so its value at the site is not known`
 
 // e.g. not in a function or loop, which may run it again after a later write
 const runsOnceIn = (node: Node, scope: Node): boolean => {
