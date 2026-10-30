@@ -276,7 +276,7 @@ contextualize(() => {
 				'muss eine Kreditkartennummer sein, ist aber "x"',
 			'string.date ← "x"': 'muss ein parsbares Datum sein, ist aber "x"',
 			'string.date.iso ← "x"':
-				'muss ein Datum nach ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) sein, ist aber "x"',
+				'muss ein Datum oder Zeitpunkt nach ISO 8601 sein, ist aber "x"',
 			'string.date.parse ← "x"': 'muss ein parsbares Datum sein, ist aber "x"',
 			'string.digits ← "x"': 'muss eine Ziffernfolge (0-9) sein, ist aber "x"',
 			'string.email ← "x"': 'muss eine E-Mail-Adresse sein, ist aber "x"',

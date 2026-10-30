@@ -279,11 +279,12 @@ import { precompile } from "@ark/aot/unplugin"
 await Bun.build({
 	entrypoints: ["src/main.ts"],
 	outdir: "dist",
+	target: "bun",
 	plugins: [precompile.bun()]
 })
 ```
 
-Bun's bundler needs Bun 1.2.22 or later. To precompile as Bun runs your code, see [Bun](https://arktype.io/docs/precompile/setup#bun).
+`target: "bun"` builds a program Bun runs. Leave it out to bundle for a browser. Bun's bundler needs Bun 1.2.22 or later. To precompile as Bun runs your code, see [Bun](https://arktype.io/docs/precompile/setup#bun).
 
 **Others**
 

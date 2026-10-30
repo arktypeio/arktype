@@ -26,7 +26,7 @@ export const keywordPhrases = {
 	"string.creditCard": "a credit card number",
 	"string.date": "a parsable date",
 	"string.date.epoch": "an integer string representing a safe Unix timestamp",
-	"string.date.iso": "an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date",
+	"string.date.iso": "an ISO 8601 date or date-time",
 	"string.date.parse": "a parsable date",
 	"string.digits": "only digits 0-9",
 	"string.email": "an email address",
