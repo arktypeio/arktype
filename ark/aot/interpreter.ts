@@ -168,6 +168,14 @@ export interface SiteState {
 	trace: Trace
 	// each outermost expression evaluating to a hole or a Type the site reads
 	readsByValue: Map<unknown, Node[]>
+	// each static helper call in the site's text, whose result can hold
+	// functions the call creates
+	calls: [
+		node: Node,
+		value: unknown,
+		helper: FunctionNode,
+		declaring: SourceModule
+	][]
 	// reads of members a standalone validator lacks
 	unavailableReads: Node[]
 	holes: unknown[]
@@ -198,6 +206,7 @@ export const createSiteState = (
 	module,
 	trace: emptyTrace(),
 	readsByValue: new Map(),
+	calls: [],
 	unavailableReads: [],
 	holes: [],
 	interpreted: new Set(),
@@ -916,12 +925,12 @@ export class Interpreter {
 	private readBinding(binding: Binding, node: Node, ctx: Context): Lookup {
 		const module = ctx.module
 		if (binding.kind === "param") {
-			const ownerName = inferredNameOf(binding.declaration as FunctionNode)
+			const fn = binding.declaration as FunctionNode
 			return {
 				value: new DynamicValue(
 					module,
 					node,
-					`\`${binding.name}\` is a parameter of ${ownerName || "a function"} (${module.positionOf(binding.id)}); its value is known only at runtime`,
+					`\`${binding.name}\` is a parameter of ${inferredNameOf(fn) || "a function"} (${module.positionOf(binding.id)})${callersOf(fn, module)}; its value is known only at runtime`,
 					undefined,
 					"parameter"
 				)
@@ -1753,8 +1762,25 @@ export class Interpreter {
 			case "standIn": {
 				const standIn = this.standIns.get(fn as object)!
 				if (this.activeCall?.isDefining) standIn.isCalledIndirectly = true
-				if (standIn.closure && staticBodyOf(standIn.closure.node))
-					return this.interpretCall(standIn.closure, args, node, ctx)
+				if (standIn.closure && staticBodyOf(standIn.closure.node)) {
+					const result = this.interpretCall(standIn.closure, args, node, ctx)
+					if (
+						!ctx.env &&
+						ctx.site?.module === ctx.module &&
+						node !== ctx.site.node &&
+						contains(ctx.site.node, node) &&
+						!isDynamic(result) &&
+						this.isPassable(node, ctx.site)
+					) {
+						ctx.site.calls.push([
+							node,
+							result,
+							standIn.closure.node,
+							standIn.closure.module
+						])
+					}
+					return result
+				}
 				return this.reject(
 					node,
 					ctx,
@@ -2814,6 +2840,31 @@ const parameterCount = (fn: FunctionNode): number => {
 		count++
 	}
 	return count
+}
+
+// e.g. a callback passed to a library, which only arktype can define with
+// what it's passed
+const callersOf = (fn: FunctionNode, module: SourceModule): string => {
+	const binding = bindingOfFunction(fn, module)
+	if (!binding) {
+		const passed = fn.parent?.type === "Property" ? fn.parent.parent! : fn
+		return (
+				passed.parent?.type === "CallExpression" &&
+					passed.parent.callee !== passed
+			) ?
+				", which nothing calls by name"
+			:	""
+	}
+	// another module may call an export
+	return (
+			binding.exportNames.length ||
+				binding.references.some(
+					({ id }) =>
+						id.parent?.type === "CallExpression" && id.parent.callee === id
+				)
+		) ?
+			""
+		:	", which nothing calls by name"
 }
 
 export const inferredNameOf = (fn: FunctionNode): string => {

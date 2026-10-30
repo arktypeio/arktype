@@ -1415,10 +1415,24 @@ export class Precompiler {
 	): PrecompiledModule {
 		const module = this.add(id, source, mappings)
 		this.configuration ??= this.applyConfiguration()
+		const s = new MagicString(source)
+		// a test driver transforms it only to register its helpers, so it's
+		// checked as any other build checks it: not at all
+		if (this.checkHelpers && !this.importsArk(source, id)) {
+			this.registerHelpers(module, s)
+			return {
+				code: s.toString(),
+				map: mapOf(s, id),
+				sites: [],
+				dependencies: this.dependenciesOfArtifact(module),
+				diagnostics: [],
+				modules: {},
+				foldedHelpers: []
+			}
+		}
 		const { sites, diagnostics } = this.analysisOf(module)
 		diagnostics.push(...this.checkConfigOrder(module))
 		diagnostics.push(...this.copyDiagnosticsOf(module))
-		const s = new MagicString(source)
 		const prefix = prefixOf(source, id)
 		const modules: Record<string, string> = {}
 		// locals for virtual modules' exports, by specifier
@@ -1439,10 +1453,7 @@ export class Precompiler {
 		this.insertImports(module, s, prefix, modules, imports)
 		return {
 			code: s.toString(),
-			map:
-				s.hasChanged() ?
-					s.generateMap({ source: id, includeContent: true, hires: "boundary" })
-				:	undefined,
+			map: mapOf(s, id),
 			sites,
 			dependencies: this.dependenciesOfArtifact(module),
 			diagnostics,
@@ -1509,18 +1520,7 @@ export class Precompiler {
 		)
 		this.linkIslands(module, sites, s, prefix)
 		this.markProgress(module, sites, s, prefix)
-		// registered so factories can check against module mocks
-		if (this.checkHelpers) {
-			const registered = Object.entries(this.registeredHelpersOf(module))
-			if (registered.length) {
-				// leads with an identifier: stripping a type alias drops a ";"
-				s.append(
-					`\nObject.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { ${JSON.stringify(module.path)}: { __proto__: null, ${registered
-						.map(([name, local]) => `${JSON.stringify(name)}: ${local}`)
-						.join(", ")} } })`
-				)
-			}
-		}
+		if (this.checkHelpers) this.registerHelpers(module, s)
 		for (const specifier in inputImports) {
 			const locals = inputImports[specifier]
 			s.append(
@@ -2686,6 +2686,18 @@ export class Precompiler {
 			file: exporter.path,
 			name: helper.name
 		})
+	}
+
+	// registered so factories can check against module mocks
+	private registerHelpers(module: SourceModule, s: MagicString): void {
+		const registered = Object.entries(this.registeredHelpersOf(module))
+		if (!registered.length) return
+		// leads with an identifier: stripping a type alias drops a ";"
+		s.append(
+			`\nObject.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { ${JSON.stringify(module.path)}: { __proto__: null, ${registered
+				.map(([name, local]) => `${JSON.stringify(name)}: ${local}`)
+				.join(", ")} } })`
+		)
 	}
 
 	private registeredHelpersOf(module: SourceModule): Record<string, string> {
@@ -4108,9 +4120,12 @@ export class Precompiler {
 			if (!site.inputs.some(existing => isCoveredBy(input, existing)))
 				site.inputs.push(input)
 		}
+		const supplied = new Set<unknown>()
+		for (const input of site.inputs) this.suppliedHolesOf(input.value, supplied)
+		this.receiveCalls(state, supplied)
 		for (const value of state.holes) {
 			const isCalled = !site.parseError && !isHeld(value, this.interpreter)
-			const hole = this.holeOf(value, candidate, module)
+			const hole = this.holeOf(value, candidate, module, supplied)
 			if (!isCalled) {
 				if (hole instanceof DynamicValue) return hole
 				site.holes.push(hole)
@@ -4118,6 +4133,37 @@ export class Precompiler {
 				site.called.push(hole)
 		}
 		site.holes.sort((l, r) => l.start - r.start)
+	}
+
+	// e.g. `labeled("Id")` in `.configure(labeled("Id"))`, read in place of the
+	// functions each call creates
+	private receiveCalls(state: SiteState, supplied: Set<unknown>): void {
+		for (const value of state.holes) {
+			if (
+				supplied.has(value) ||
+				state.readsByValue.has(value) ||
+				!this.standInOf(value)?.closure?.env
+			)
+				continue
+			let supplier: SiteState["calls"][number] | undefined
+			for (const call of state.calls) {
+				const [node, result, helper, declaring] = call
+				if (
+					(!supplier || contains(supplier[0], node)) &&
+					this.suppliedHolesOf(result, new Set()).has(value) &&
+					// only a Type its helper's own site creates holds holes to receive
+					this.isTransformed(declaring.id) &&
+					!declaring.islands.some(
+						island => contains(helper, island) || contains(island, helper)
+					) &&
+					!this.calledParamOf(helper, declaring)
+				)
+					supplier = call
+			}
+			if (!supplier) continue
+			state.readsByValue.set(supplier[1], [supplier[0]])
+			this.suppliedHolesOf(supplier[1], supplied)
+		}
 	}
 
 	// each exported function the site read, which a mock can replace
@@ -4190,7 +4236,8 @@ export class Precompiler {
 				isDynamic(value) ||
 				(!hasArkKind(value, "root") &&
 					![...site.holes, ...site.called].some(hole => hole.value === value) &&
-					!(isFoldable(value) && keyOf(value)[1].length))
+					!(isFoldable(value) && keyOf(value)[1].length) &&
+					!state.calls.some(([, result]) => result === value))
 			)
 				continue
 			const isImportInput = site.inputs.some(
@@ -4316,7 +4363,8 @@ export class Precompiler {
 	private holeOf(
 		value: unknown,
 		candidate: SiteCandidate,
-		module: SourceModule
+		module: SourceModule,
+		supplied: Set<unknown>
 	): Hole | DynamicValue {
 		const standIn =
 			typeof value === "symbol" ? undefined : (
@@ -4326,7 +4374,8 @@ export class Precompiler {
 		const source =
 			readsByValue.get(value)?.[0] ??
 			(standIn?.dynamic && readsByValue.get(standIn.dynamic)?.[0])
-		if (!source && standIn?.closure?.env) {
+		// a function a call created is reached through what holds it
+		if (!source && standIn?.closure?.env && !supplied.has(value)) {
 			return new DynamicValue(
 				standIn.module,
 				standIn.node,
@@ -5701,6 +5750,12 @@ interface Configuration {
 let threadConfiguration: Configuration | undefined
 
 // arktype can't change its configuration once set
+// undefined where nothing changed
+const mapOf = (s: MagicString, id: string): SourceMap | undefined =>
+	s.hasChanged() ?
+		s.generateMap({ source: id, includeContent: true, hires: "boundary" })
+	:	undefined
+
 const holdsOtherConfiguration = (files: string | undefined): boolean =>
 	threadConfiguration ?
 		threadConfiguration.files !== files

@@ -119,26 +119,30 @@ const withNodeEnv = async <t>(env: string, run: () => Promise<t>) => {
 	}
 }
 
-const runVitest = async (
+// Vitest sets NODE_ENV only where nothing has, as a build earlier in the file does
+const runVitest = (
 	root: string,
 	opts: PrecompileUnpluginOptions,
-	env: Record<string, string> = {}
-) => {
-	const vitest = await startVitest(
-		[],
-		{
-			root,
-			config: false,
-			watch: false,
-			reporters: [],
-			testTimeout: 60_000,
-			env
-		},
-		viteConfig(opts, root)
-	)
-	await vitest.close()
-	return vitest.state
-}
+	env: Record<string, string> = {},
+	fsModuleCachePath?: string
+) =>
+	withNodeEnv("test", async () => {
+		const vitest = await startVitest(
+			[],
+			{
+				root,
+				config: false,
+				watch: false,
+				reporters: [],
+				testTimeout: 60_000,
+				env,
+				...(fsModuleCachePath && { fsModuleCache: true, fsModuleCachePath })
+			},
+			viteConfig(opts, root)
+		)
+		await vitest.close()
+		return vitest.state
+	})
 
 // how many of a run's tests failed and passed
 const outcomesOf = (state: Awaited<ReturnType<typeof runVitest>>) => ({
@@ -2433,22 +2437,8 @@ try {
 	it("vitest reruns with its module cache", async () => {
 		const fsModuleCachePath = tempDir()
 		const runs: object[] = []
-		for (let run = 0; run < 2; run++) {
-			const vitest = await startVitest(
-				[],
-				{
-					root: app,
-					config: false,
-					watch: false,
-					reporters: [],
-					fsModuleCache: true,
-					fsModuleCachePath
-				},
-				viteConfig({}, app)
-			)
-			await vitest.close()
-			runs.push(outcomesOf(vitest.state))
-		}
+		for (let run = 0; run < 2; run++)
+			runs.push(outcomesOf(await runVitest(app, {}, {}, fsModuleCachePath)))
 		attest(runs).equals([
 			{ failed: 0, passed: 2 },
 			{ failed: 0, passed: 2 }

@@ -347,9 +347,11 @@ const textHints: [
 	hint: string | ((...groups: string[]) => string)
 ][] = [
 	[
-		/^`(.+)` is a parameter of (.+) \(.+\); its value is known only at runtime$/,
-		(param, fn) =>
-			`Write the definition where ${fn === "a function" ? "that function" : fn} is called, with the value it passes for \`${param}\`, so the build precompiles each call.`
+		/^`(.+)` is a parameter of (.+) \(.+\)(, which nothing calls by name)?; its value is known only at runtime$/,
+		(param, fn, uncalled) =>
+			uncalled ?
+				"Put // @ark-runtime on the line before the definition, so arktype defines it at runtime."
+			:	`Write the definition where ${fn === "a function" ? "that function" : fn} is called, with the value it passes for \`${param}\`, so the build precompiles each call.`
 	],
 	[unstaticHelperPattern, fn => `${capitalize(writeHelperBodyFix(fn))}.`],
 	[
