@@ -91,7 +91,7 @@ const app = new Elysia()
 	.use(openapi())
 	.post("/users", ({ body }) => body, { body: type({ name: "string" }) })
 const res = await app.handle(new Request("http://localhost/openapi/json"))
-const spec = await res.json()
+const spec: any = await res.json()
 console.log(JSON.stringify(spec.paths["/users"].post.requestBody.content["application/json"].schema))
 `
 		})
@@ -182,6 +182,8 @@ export const even = read(Even, "expression")
 					'{ "name": "reader", "type": "module", "exports": "./index.js" }',
 				"node_modules/reader/index.js":
 					"export const read = (schema, key) => schema[key]\n",
+				"node_modules/reader/index.d.ts":
+					"export declare const read: (schema: object, key: string) => unknown\n",
 				"main.ts": `import { described, even } from "./described.ts"
 import { schema } from "./schema.ts"
 
@@ -216,6 +218,8 @@ export const Item = type({ id: "number" })
 					'{ "name": "reader", "type": "module", "exports": "./index.js" }',
 				"node_modules/reader/index.js":
 					"export const read = (schemas, name, key) => schemas[name][key]\n",
+				"node_modules/reader/index.d.ts":
+					"export declare const read: (schemas: object, name: string, key: string) => unknown\n",
 				"main.ts": `import { read } from "reader"
 import * as schemas from "./schemas.ts"
 
