@@ -2487,6 +2487,20 @@ export class Precompiler {
 				continue
 			}
 			const holes = hole ? [hole.value] : keyOf(reference.value as Foldable)[1]
+			// a Type holding a Standard Schema holds the morph arktype wrapped its
+			// validate in, which no site received, so it can't be passed or baked
+			if (
+				!hole &&
+				holes.some(
+					value =>
+						typeof value === "function" && !this.interpreter.standIns.has(value)
+				)
+			) {
+				reasons.push(
+					writeUnprecompilableMessage(`the Standard Schema \`${text}\` holds`)
+				)
+				continue
+			}
 			if (
 				(site.introspection || (hole && dropped.has(hole.value))) &&
 				!holes.some(value => calledByChecks.has(value)) &&
