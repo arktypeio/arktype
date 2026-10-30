@@ -34,7 +34,6 @@ import {
 	dateGetTime,
 	getBuiltinNameOfConstructor,
 	hasDomain,
-	hasOwn,
 	prototypeOf,
 	stringifyPath,
 	throwError,
@@ -193,33 +192,36 @@ export class Validator {
 
 	// a build without the expression member has none to print
 	toString(): string {
-		return hasOwn(this, "expression") ? `Type<${this.expression}>` : "Type"
+		try {
+			return `Type<${this.expression}>`
+		} catch {
+			return "Type"
+		}
 	}
 
 	// a member the build bakes is the validator's own, so reading one it
 	// doesn't throws with the fix
 	get expression(): string {
-		return lacks("expression")
+		throw lacks("expression")
 	}
 	get description(): string {
-		return lacks("description")
+		throw lacks("description")
 	}
 	get json(): JsonStructure {
-		return lacks("json")
+		throw lacks("json")
 	}
 	get toJSON(): () => JsonStructure {
-		return lacks("toJSON")
+		throw lacks("toJSON")
 	}
 	get toJsonSchema(): () => JsonSchema {
-		return lacks("toJsonSchema")
+		throw lacks("toJsonSchema")
 	}
 }
 
-export const lacks = (member: IntrospectionMember): never => {
-	throw new Error(
+export const lacks = (member: IntrospectionMember): Error =>
+	new Error(
 		`${member} isn't baked into this validator, as the build saw no code read it. Set members["${member}"] true in the precompile options.`
 	)
-}
 
 const getOwnPropertyDescriptors = Object.getOwnPropertyDescriptors
 
@@ -289,7 +291,7 @@ const standardOf = (
 		version: 1,
 		validate: freeze((input: unknown) => standardResultOf(validator(input))),
 		get jsonSchema() {
-			return lacks("~standard.jsonSchema")
+			throw lacks("~standard.jsonSchema")
 		},
 		...attributes["~standard"]
 	})

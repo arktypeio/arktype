@@ -265,7 +265,7 @@ const creatorBodyOf = (baking: Baking, form: CreatorForm): string => {
 		vendor: "arktype",
 		version: 1,
 		validate: ${frozen(baking, "input => runtime.standardResultOf(validator(input))")},
-		${members.has("~standard.jsonSchema") ? `...attributes["~standard"]` : `get jsonSchema() { return runtime.lacks("~standard.jsonSchema") }`}
+		${members.has("~standard.jsonSchema") ? `...attributes["~standard"]` : `get jsonSchema() { throw runtime.lacks("~standard.jsonSchema") }`}
 	}`
 	)
 	const call = creatorCallOf(baking, form)
