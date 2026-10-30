@@ -278,7 +278,7 @@ const unnamedAt = (offset: number, reason: string): UnnamedImport => ({
 })
 
 // each specifier a module loads, and where and why it first loads one unnamed
-const importsOf = (
+export const importsOf = (
 	id: string,
 	source: string
 ): { imports: Import[]; unnamed: UnnamedImport | undefined } => {
@@ -486,6 +486,10 @@ export const writeKeptMembersMessage = (
 	return `prune: keeping ${list}, because ${reason}. Set ${list} in members, ${kept.length === 1 ? "" : "each "}true where code reads it${example} else false, to build without this warning.`
 }
 
+// each of lost is a validator's position and why the build lost track of it
+export const writeLostMessage = (lost: readonly string[]): string =>
+	`precompile: baking each introspection member into ${lost.length === 1 ? "the validator" : `${lost.length} validators, like the one`} at ${lost[0]}. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning.`
+
 // a folded helper's call runs only where the plugin transforms it
 export const unfoldedCallProblemOf = (
 	foldedHelpersById: ReadonlyMap<string, string[]>,
@@ -571,6 +575,11 @@ export interface ScannedUsage {
 	holders: string[]
 	// the warning where it left out no member members leaves to it
 	unpruned?: string | undefined
+	// the warning where it baked every introspection member, having lost track of a read
+	lost?: string | undefined
+	// what each validator bakes of the introspection members members leaves to
+	// it, as code reading it reads them
+	baked?: string[]
 	// what its issues may hold, unless they may hold anything
 	issues?: IssueFeatures | undefined
 }

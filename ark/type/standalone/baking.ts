@@ -25,6 +25,7 @@ export type StandaloneExport =
 	| ExportedValue
 	| StandaloneFactory
 	| StandaloneIntrospection
+	| StandaloneBake
 
 export const introspectionMembers = [
 	"expression",
@@ -57,6 +58,12 @@ export interface StandaloneIntrospection {
 	params: FactoryParam[]
 	defaultChecks?: readonly DefaultCheck[]
 	thrown?: unknown
+}
+
+// a function baking members into the validator of a Type another module
+// creates, or into each of a module namespace's, by export name
+export interface StandaloneBake extends BakedMembers {
+	bakes: BaseRoot | Record<string, BaseRoot>
 }
 
 export interface StandaloneFactory {
@@ -147,6 +154,15 @@ export interface StandaloneOptions {
 	piped?: boolean | undefined
 	// what each shared unit was written as, kept across a build's artifacts
 	sharedWrites?: SharedWrites | undefined
+	// introspection members an export bakes besides those members sets, as
+	// code the build read reads them off it
+	baked?: Record<string, BakedMembers> | undefined
+}
+
+export interface BakedMembers {
+	members: readonly IntrospectionMember[]
+	// true where the build lost track of what reads it, so may read any
+	lost: boolean
 }
 
 // the modules writing a shared unit adds, in order, which are the same for
@@ -170,6 +186,7 @@ export const wholeReads: ValidatorReads = {
 
 export interface Baking extends ValidatorReads {
 	members: ReadonlySet<ValidatorMember>
+	bakedByRoot: ReadonlyMap<unknown, BakedMembers>
 	write: <t>(write: () => t) => t
 	firstIssue: boolean
 	detailsErrors: boolean
@@ -316,12 +333,52 @@ export const compiledInputsOf = (
 		// as unknown: narrowing to BaseRoot is too deep for TypeScript
 		const type: unknown =
 			arkKindOf(value) !== undefined ? value
-			: "member" in value ? undefined
+			: "member" in value || "bakes" in value ? undefined
 			: (value as StandaloneFactory).type
 		if (hasArkKind(type, "root") && type._in !== type && !combines(type))
 			inputs.add(type._in.hash)
 	}
 	return inputs
+}
+
+const bakedByRootOf = (
+	exports: Record<string, StandaloneExport>,
+	baked: Record<string, BakedMembers> = {}
+): Map<unknown, BakedMembers> => {
+	const result = new Map<unknown, BakedMembers>()
+	const add = (value: unknown, members: BakedMembers) => {
+		if (hasArkKind(value, "module"))
+			for (const entry of Object.values(value)) add(entry, members)
+		if (!hasArkKind(value, "root")) return
+		const prior = result.get(value)
+		result.set(
+			value,
+			prior ?
+				{
+					members: [...prior.members, ...members.members],
+					lost: prior.lost || members.lost
+				}
+			:	members
+		)
+	}
+	for (const value of Object.values(exports)) {
+		if (arkKindOf(value) !== undefined || !("bakes" in value)) continue
+		const { bakes } = value
+		const roots = hasArkKind(bakes, "root") ? [bakes] : Object.values(bakes)
+		for (const root of roots) add(root, value)
+	}
+	for (const name in baked) {
+		const value = exports[name]
+		// as unknown: narrowing to BaseRoot is too deep for TypeScript
+		const exported: unknown = value
+		add(
+			arkKindOf(exported) !== undefined ? exported
+			: value && "type" in value ? value.type
+			: undefined,
+			baked[name]
+		)
+	}
+	return result
 }
 
 // what a build writes, decided by its options
@@ -336,6 +393,7 @@ export const bakingOf = (
 			...defaultMembers.filter(member => members[member] !== false),
 			...introspectionMembers.filter(member => members[member])
 		]),
+		bakedByRoot: bakedByRootOf(exports, opts.baked),
 		write: opts.bake ?? (write => write()),
 		firstIssue: opts.errors === "first",
 		detailsErrors: opts.errors !== "none",

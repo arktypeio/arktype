@@ -264,7 +264,8 @@ const creatorBodyOf = (baking: Baking, form: CreatorForm): string => {
 		`{
 		vendor: "arktype",
 		version: 1,
-		validate: ${frozen(baking, "input => runtime.standardResultOf(validator(input))")}${members.has("~standard.jsonSchema") ? `,\n\t\t...attributes["~standard"]` : ""}
+		validate: ${frozen(baking, "input => runtime.standardResultOf(validator(input))")},
+		${members.has("~standard.jsonSchema") ? `...attributes["~standard"]` : `get jsonSchema() { throw runtime.lacks("~standard.jsonSchema") }`}
 	}`
 	)
 	const call = creatorCallOf(baking, form)
@@ -283,16 +284,9 @@ const creatorBodyOf = (baking: Baking, form: CreatorForm): string => {
 		:	"",
 		!form.hasAttributes || !isCalled ? ""
 		: holdsOnlyMeta(members) ? "validator.meta = meta"
-		: "runtime.assign(validator, attributes)",
+		: "runtime.own(validator, attributes)",
 		reads.readsAllows && isCalled ? `validator.allows = ${form.allowsOf}` : "",
-		members.has("~standard") ?
-			`validator["~standard"] = ${
-				// a checked build throws reading a JSON Schema it left out, saying how to keep it
-				baking.checksTypes && !members.has("~standard.jsonSchema") ?
-					`runtime.withoutJsonSchema(${standard})`
-				:	standard
-			}`
-		:	"",
+		members.has("~standard") ? `validator["~standard"] = ${standard}` : "",
 		baking.checksTypes ?
 			`return runtime.holdHoles(${frozen(baking, "validator")}, id, holes)`
 		:	`return ${frozen(baking, "validator")}`

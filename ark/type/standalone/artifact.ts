@@ -50,6 +50,7 @@ import * as runtime from "../runtimeExports.ts"
 import {
 	defaultMembers,
 	failureSources,
+	introspectionMembers,
 	invalidErrorsOf,
 	isCreatedByRuntime,
 	wholeReads,
@@ -65,8 +66,10 @@ import {
 	type Foldable,
 	type IssueFeatures,
 	type SharedWrite,
+	type StandaloneBake,
 	type StandaloneFactory,
-	type StandaloneIntrospection
+	type StandaloneIntrospection,
+	type ValidatorMember
 } from "./baking.ts"
 import {
 	canPipe,
@@ -939,6 +942,40 @@ export class StandaloneArtifact {
 		])
 	}
 
+	// a function baking members into the validator it's passed, or into each
+	// of a module namespace's
+	writeBake({ bakes, members }: StandaloneBake, index: number): string {
+		const bake = (root: BaseRoot, read: string) =>
+			`runtime.bakeInto(${read}, { ${this.emitIntrospection(root, new Set(members)).join(", ")} })`
+		const [param, baked] =
+			hasArkKind(bakes, "root") ?
+				["validator", `return ${bake(bakes, "validator")}`]
+			:	[
+					"namespace",
+					`// a cycle may load it before the module exporting them
+try {
+${Object.entries(bakes)
+	.map(([name, root]) => bake(root, `namespace[${JSON.stringify(name)}]`))
+	.join("\n")}
+} catch {}
+return namespace`
+				]
+		return writeFunction(
+			this.baking,
+			`factory${index}`,
+			param,
+			[
+				this.declarations.statements.join("\n"),
+				[...this.sharedWriters]
+					.map(([writer, name]) => `const ${name} = ${writer}`)
+					.join("\n"),
+				baked
+			]
+				.filter(statement => statement)
+				.join("\n\n")
+		)
+	}
+
 	writeFactoryFunction(
 		index: number,
 		params: FactoryParam[],
@@ -1555,9 +1592,14 @@ ${writeFunction(
 	validatorFormOf(root: BaseRoot): ValidatorForm {
 		const isTemplate = this.templates.has(root)
 		const isRuntimeRead = this.runtimeReadRoots.has(root)
+		const baked = this.baking.bakedByRoot.get(root)?.members ?? []
 		const members =
-			isRuntimeRead ?
-				new Set([...this.baking.members, ...defaultMembers])
+			isRuntimeRead || baked.length ?
+				new Set([
+					...this.baking.members,
+					...baked,
+					...(isRuntimeRead ? defaultMembers : [])
+				])
 			:	this.baking.members
 		const ownsValidator =
 			!isTemplate && !this.baking.shortest && members.has("methods")
@@ -1593,7 +1635,7 @@ ${writeFunction(
 			meta,
 			attributes: [
 				...(keepsMeta ? [`meta: ${meta}`] : []),
-				...this.emitIntrospection(root)
+				...this.emitIntrospection(root, form.members as Set<ValidatorMember>)
 			],
 			// without its meta, a validator still fails as the meta's onFail does
 			onFail:
@@ -1618,10 +1660,32 @@ ${writeFunction(
 		return name
 	}
 
-	emitIntrospection(root: BaseRoot): string[] {
+	emitIntrospection(root: BaseRoot, baked: Set<ValidatorMember>): string[] {
+		const members = this.bakedMembersOf(root, baked)
+		const decided = introspectionMembers.filter(
+			member => baked.has(member) && !this.baking.members.has(member)
+		)
+		if (
+			totalBaked(this.bakedLengths) > this.baking.bakedLimit &&
+			decided.length &&
+			this.baking.bakedByRoot.get(root)?.lost
+		) {
+			// what it bakes having lost track of what reads it is left out
+			// rather than fail the build, so reading it throws
+			this.bakedLengths = {}
+			for (const member of decided) baked.delete(member)
+			return this.emitIntrospection(root, baked)
+		}
+		this.assertBakedWithin()
+		return members
+	}
+
+	private bakedMembersOf(
+		root: BaseRoot,
+		baked: ReadonlySet<ValidatorMember>
+	): string[] {
 		const members: string[] = []
-		const bakes = (member: IntrospectionMember) =>
-			this.baking.members.has(member)
+		const bakes = (member: IntrospectionMember) => baked.has(member)
 		if (bakes("expression"))
 			members.push(`expression: ${this.emitExpression(root)}`)
 		if (bakes("description"))
@@ -1664,7 +1728,6 @@ ${writeFunction(
 				`"~standard": { jsonSchema: runtime.bakedStandardJsonSchema(${standard.join(", ")}) }`
 			)
 		}
-		this.assertBakedWithin()
 		return members
 	}
 
@@ -1682,17 +1745,17 @@ ${writeFunction(
 		}
 	}
 
-	private countBaked(text: string): void {
-		if (this.bakingMember === undefined) return
-		this.bakedLengths[this.bakingMember] =
-			(this.bakedLengths[this.bakingMember] ?? 0) + text.length
-	}
-
 	private assertBakedWithin(): void {
 		const lengths = this.bakedLengths
 		this.bakedLengths = {}
 		if (totalBaked(lengths) > this.baking.bakedLimit)
 			throwParseError(writeBakedLimitMessage(lengths, this.baking.bakedLimit))
+	}
+
+	private countBaked(text: string): void {
+		if (this.bakingMember === undefined) return
+		this.bakedLengths[this.bakingMember] =
+			(this.bakedLengths[this.bakingMember] ?? 0) + text.length
 	}
 
 	// a fallback a call passes, as hono-openapi does, changes nothing where none writes

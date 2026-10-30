@@ -8,10 +8,10 @@ import type {
 	StandaloneModules
 } from "arktype/internal/standalone.ts"
 import type MagicString from "magic-string"
-import type { Span } from "oxc-parser"
+import type { Node, Span } from "oxc-parser"
 import type { SourceModule } from "./module.ts"
 import { writeParseErrorThrower } from "./output.ts"
-import type { Binding } from "./scope.ts"
+import { operatorOf, type Binding } from "./scope.ts"
 import { isFoldable, siteNameOf, type Site } from "./sites.ts"
 import type { RuntimeModule } from "./usage.ts"
 type FactoryImport = [specifier: string, name: string, local: string]
@@ -108,13 +108,13 @@ export const planFactory = (
 
 // a site's validator, or where its definition throws a ParseError, its thrower
 export const importFolded = (
-	site: Site,
+	site: Site | undefined,
 	exported: string,
 	local: string,
 	created: readonly string[] | undefined,
 	{ validators, specifier, configured, modules, imports, prefix }: Folding
 ): void => {
-	if (site.parseError) {
+	if (site?.parseError) {
 		const thrower = writeParseErrorThrower(
 			site.parseError.message,
 			configured,
@@ -132,6 +132,23 @@ export const importFolded = (
 	const locals = (imports[specifier] ??= {})
 	if (created) for (const read of created) locals[read] = `${prefix}_${read}`
 	else locals[exported] = local
+}
+
+// a read of an imported validator, passed through what bakes its members
+// first, or a dynamic import's namespace once it loads
+export const bakeAt = (
+	s: MagicString,
+	module: SourceModule,
+	read: Node,
+	bake: string
+): void => {
+	if (read.type === "ImportExpression")
+		return void s.appendLeft(read.end, `.then(${bake})`)
+	const [, parent] = operatorOf(read)
+	if (parent?.type === "Property" && parent.shorthand)
+		return void s.appendLeft(read.end, `: ${bake}(${module.textOf(read)})`)
+	s.prependRight(read.start, `${bake}(`)
+	s.appendLeft(read.end, ")")
 }
 
 // parameters stay in place, so they evaluate in order, even for a value
@@ -195,6 +212,7 @@ export const runtimeModuleOf = (
 	passed: read,
 	inputs,
 	validators: folded.filter(site => createsValidator(site)),
+	modules: folded.filter(site => hasArkKind(site.value, "module")),
 	holdsOther: folded.some(
 		site =>
 			!createsValidator(site) &&

@@ -1308,7 +1308,9 @@ age must be a number`)
 		attest(validator["~standard"].validate({ name: "n", age: 1 })).equals({
 			value: { name: "n", age: 1 }
 		})
-		attest("jsonSchema" in validator["~standard"]).equals(false)
+		attest(() => validator["~standard"].jsonSchema).throws(
+			'~standard.jsonSchema isn\'t baked into this validator, as the build saw no code read it. Set members["~standard.jsonSchema"] true in the precompile options.'
+		)
 		// configured meta only, not a keyword's
 		attest(Id.meta).equals({})
 		attest(Described.meta).equals({ description: "an id", format: "uuid" })
@@ -1526,14 +1528,15 @@ age must be a number`)
 		attest(() => validator.toJsonSchema({ target: "draft-07" })).throws(
 			'A standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where its schema needs none; configure({ toJsonSchema }) or build with runtime: "arktype"'
 		)
-		attest([
-			validator.json,
-			validator.description,
-			validator.expression,
-			validator.toJSON
-		]).equals([undefined, undefined, undefined, undefined])
-		attest(JSON.stringify({ validator })).equals("{}")
-		attest("jsonSchema" in validator["~standard"]).equals(false)
+		const unbaked = ["json", "description", "expression", "toJSON"] as const
+		for (const member of unbaked) {
+			attest(() => validator[member]).throws(
+				`${member} isn't baked into this validator, as the build saw no code read it. Set members["${member}"] true in the precompile options.`
+			)
+		}
+		// as it reads toJSON
+		attest(() => JSON.stringify({ validator })).throws("toJSON isn't baked")
+		attest(String(validator)).equals("Type")
 	})
 
 	it("ignores a fallback a call passes where no fallback writes the schema", async () => {
@@ -3234,7 +3237,9 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 				[["function", "`length`", length]],
 				{}
 			)
-			attest(unlisted(count.raw).expression).equals(undefined)
+			attest(() => unlisted(count.raw).expression).throws(
+				"expression isn't baked"
+			)
 		})
 
 		it("hole received twice", async () => {

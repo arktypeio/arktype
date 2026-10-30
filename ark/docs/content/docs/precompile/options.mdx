@@ -124,11 +124,27 @@ The values are [arktype's `errors`](/docs/configuration#errors) option's, and a 
 
 ### members
 
-`members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true; `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema` default to false. A dropped member reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`. Where it can't see one, `String(User)` without `expression` is `"Type"`, and reading another introspection member throws under the `"development"` condition rather than reading `undefined`. So does reading `~standard.jsonSchema` off a validator outside a [production build](#production-builds), as a library converting it to JSON Schema does.
+`members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true. A dropped one reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`.
+
+`expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema`, the introspection members, are each baked into the validators the build sees code read it off, and set true or false, into every validator or none. Where it can't see one, `String(User)` without `expression` is `"Type"`, and reading another throws, naming the member and the setting:
+
+```
+toJsonSchema isn't baked into this validator, as the build saw no code read it. Set members["toJsonSchema"] true in the precompile options.
+```
+
+The build follows each validator from its definition to the code reading it: through bindings, calls, returns, callbacks, `await` and the objects and arrays holding it, into its dependencies' functions, like the MCP SDK's `registerTool`. A validator stored at an object's key, as a library registering one does, is followed to each read of that key by name in the package storing it, the packages depending on that one and the program. A branch a check of what the validator is rules out, like `schema["~standard"].vendor === "zod"`, isn't followed. So a validator only validated bakes none, one an MCP tool's `inputSchema` holds bakes `~standard.jsonSchema`, and one hono-openapi converts bakes each, as it loses track in hono-openapi's converter.
+
+Where it loses track of a validator, it bakes each introspection member into it: where it's passed to a function the build can't resolve, like a method of an object a dependency returns, read at a computed key or as a whole, by a spread or `Object.assign`, held by a `Map` or the global object, or followed along more paths than the build follows. A [production bundle](#prune) warns once, naming the first validator, where it lost track and the fix:
+
+```
+precompile: baking each introspection member into the validator at src/router.ts:9:14, because src/router.ts:24:10 passes it to t.procedure.input, which the build can't follow. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning.
+```
+
+A production bundle reads every module, so it follows a validator a module exports to its importers. One an entry, or a module a dependency imports, exports may be read by code outside the bundle, so the build bakes nothing for that code. A build reading one module at a time, like webpack, Rspack, Turbopack, the Node and Bun drivers and `arktype-precompile --emit`, follows a validator through its module and into its dependencies. Each module importing one follows what it does with it the same way, and bakes what that reads into it where it's read, each introspection member where it loses track, as where it passes it to `registerTool`. One a module stores at a key, or exports inside an object, bakes each where it's created, as code in another module may read it. A [frozen](#freeze) validator takes nothing from its importers, so in development, as on a dev server, one a module exports bakes each where it's created. So a validator has at least what a production bundle bakes it in development, and a production build reading one module at a time bakes what a module reads of it there. A read the build doesn't transform, like one outside the bundle reading an entry's export, throws in production alone.
 
 Keep `assert` or `~standard` on validators you pass to a library. tRPC, for one, calls a validator that has neither as a plain parse function, so it passes on the errors the validator returns as if they were the parsed input.
 
-Each introspection member set true is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`, and a `fallback` only where no fallback writes the schema, so a library passing its own, as hono-openapi and oRPC do, gets what arktype returns. A JSON Schema the build can't bake throws where it's read.
+Each introspection member is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`, and a `fallback` only where no fallback writes the schema, so a library passing its own, as hono-openapi and oRPC do, gets what arktype returns. A JSON Schema the build can't bake throws where it's read.
 
 ```ts
 import { precompile } from "@ark/aot/unplugin"

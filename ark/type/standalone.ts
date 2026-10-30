@@ -148,7 +148,15 @@ const writeArtifact = (
 			types[name] = value as never
 			continue
 		}
-		if ("member" in value) {
+		if ("bakes" in value) {
+			factories.push(
+				new StandaloneArtifact({}, shared, imports, baking).writeBake(
+					value,
+					index
+				),
+				writeExport(name, index)
+			)
+		} else if ("member" in value) {
 			const artifact = new StandaloneArtifact(
 				{},
 				shared,

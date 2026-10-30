@@ -121,9 +121,17 @@
 		"access": "public"
 	},
 	"devDependencies": {
+		"@elysiajs/openapi": "1.4.16",
+		"@modelcontextprotocol/client": "2.3.1",
+		"@modelcontextprotocol/server": "2.3.1",
+		"@orpc/arktype": "1.15.7",
+		"@orpc/openapi": "1.15.7",
+		"@orpc/server": "1.15.7",
 		"@rspack/core": "2.2.9",
 		"@typescript-eslint/scope-manager": "8.46.1",
+		"ai": "7.0.140",
 		"arktype": "workspace:*",
+		"elysia": "1.4.30",
 		"esbuild": "0.25.10",
 		"fast-check": "3.23.2",
 		"rollup": "4.52.4",

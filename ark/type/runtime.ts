@@ -174,8 +174,6 @@ export interface Validator {
 }
 
 export class Validator {
-	declare expression: string
-	declare description: string
 	declare meta: ArkEnv.meta
 	declare allows: (data: unknown) => boolean
 	declare assert: (data: unknown, pipedFromCtx?: Traversal) => unknown
@@ -194,8 +192,55 @@ export class Validator {
 
 	// a build without the expression member has none to print
 	toString(): string {
-		return this.expression ? `Type<${this.expression}>` : "Type"
+		try {
+			return `Type<${this.expression}>`
+		} catch {
+			return "Type"
+		}
 	}
+
+	// a member the build bakes is the validator's own, so reading one it
+	// doesn't throws with the fix
+	get expression(): string {
+		throw lacks("expression")
+	}
+	get description(): string {
+		throw lacks("description")
+	}
+	get json(): JsonStructure {
+		throw lacks("json")
+	}
+	get toJSON(): () => JsonStructure {
+		throw lacks("toJSON")
+	}
+	get toJsonSchema(): () => JsonSchema {
+		throw lacks("toJsonSchema")
+	}
+}
+
+export const lacks = (member: IntrospectionMember): Error =>
+	new Error(
+		`${member} isn't baked into this validator, as the build saw no code read it. Set members["${member}"] true in the precompile options.`
+	)
+
+const getOwnPropertyDescriptors = Object.getOwnPropertyDescriptors
+
+// as its own, where the class has only a getter
+export const own = <t extends object>(validator: t, attributes: object): t =>
+	Object.defineProperties(validator, getOwnPropertyDescriptors(attributes))
+
+// what a module reads of a validator it imports, which a build reading one
+// module at a time bakes there, as the validator's own module can't see it
+export const bakeInto = <t>(
+	validator: t,
+	{ "~standard": standard, ...attributes }: Omit<ValidatorAttributes, "meta">
+): t => {
+	// a Type arktype created, as where a site is left to it, has each member
+	if (validator instanceof Validator) {
+		own(validator, attributes)
+		if (standard) own(validator["~standard"], standard)
+	}
+	return validator
 }
 
 // a Standard Schema consumer prefixes each message with its path, so a pathed issue needs none
@@ -237,18 +282,18 @@ export const keySiteOf = ((
 	m: { code: "required", description: missing }
 })) satisfies Fn
 
-// a library reading a JSON Schema the build left out fails saying how to keep
-// it; "jsonSchema" in it stays false
-export const withoutJsonSchema = <standard extends object>(
-	standard: standard
-): standard =>
-	new Proxy(standard, {
-		get: (target, k) =>
-			k === "jsonSchema" ?
-				throwError(
-					'~standard.jsonSchema isn\'t baked into this validator, which a library converting it to JSON Schema reads. Set "members": { "~standard.jsonSchema": true } under "precompile" in ark.json (or package.json\'s "ark" key).'
-				)
-			:	Reflect.get(target, k)
+const standardOf = (
+	validator: Validator,
+	attributes: ValidatorAttributes
+): StandardSchemaV1.Props =>
+	freeze({
+		vendor: "arktype",
+		version: 1,
+		validate: freeze((input: unknown) => standardResultOf(validator(input))),
+		get jsonSchema() {
+			throw lacks("~standard.jsonSchema")
+		},
+		...attributes["~standard"]
 	})
 
 // parenthesized (kept by `satisfies`) to compile as the module loads
@@ -276,16 +321,9 @@ export const createValidator = ((
 	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
 		validator(data, pipedFromCtx, throwOnDefault)
 	)
-	assign(validator, attributes)
+	own(validator, attributes)
 	validator.allows = freeze(allows)
-	const standard = freeze({
-		vendor: "arktype",
-		version: 1,
-		validate: freeze((input: unknown) => standardResultOf(validator(input))),
-		...attributes["~standard"]
-	})
-	validator["~standard"] =
-		attributes["~standard"] ? standard : withoutJsonSchema(standard)
+	validator["~standard"] = standardOf(validator, attributes)
 	return holdHoles(freeze(validator), id, holes)
 }) satisfies Fn
 
@@ -304,16 +342,9 @@ export const createValidatorWith = ((
 	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
 		validator(data, pipedFromCtx, throwOnDefault)
 	)
-	assign(validator, attributes)
+	own(validator, attributes)
 	validator.allows = freeze(parts[0] as never)
-	const standard = freeze({
-		vendor: "arktype",
-		version: 1,
-		validate: freeze((input: unknown) => standardResultOf(validator(input))),
-		...attributes["~standard"]
-	})
-	validator["~standard"] =
-		attributes["~standard"] ? standard : withoutJsonSchema(standard)
+	validator["~standard"] = standardOf(validator, attributes)
 	return holdHoles(freeze(validator), id, holes)
 }) satisfies Fn
 
