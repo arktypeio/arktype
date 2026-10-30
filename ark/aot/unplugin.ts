@@ -1477,23 +1477,14 @@ const rollupScanOf = async (
 	const arrived = new Set<string>()
 	const scanned = await scanProgram(program, entries, {
 		resolve: async (specifier, importer) => {
-			// a plugin refusing it, as React Router refuses a .server module in
-			// the client build, means no bundle holds it
-			let isRefused = false
-			const resolved = await resolveUnloaded(
+			const resolved = await bundledResolutionOf(
 				context,
 				specifier,
 				importer,
 				isTransformed
-			).catch(() => {
-				isRefused = true
-				return null
-			})
-			if (isRefused) return null
-			if (!resolved) return
-			if (resolved.external) return null
-			res.set(resolved.id, resolved)
-			return resolved.id
+			)
+			if (resolved) res.set(resolved.id, resolved)
+			return resolved && resolved.id
 		},
 		load: async id => {
 			const loaded = () =>
@@ -1597,20 +1588,13 @@ const rollupUnseenOf = async (
 	const builtCode = (id: string) => context.getModuleInfo(id)?.code ?? undefined
 	const program = await scanProgram(scan.scanned.key, entries, {
 		resolve: async (specifier, importer) => {
-			// a plugin refusing it means no bundle the build writes holds it
-			let isRefused = false
-			const resolved = await resolveUnloaded(
+			const resolved = await bundledResolutionOf(
 				context,
 				specifier,
 				importer,
 				isTransformed
-			).catch(() => {
-				isRefused = true
-				return null
-			})
-			if (isRefused) return null
-			if (!resolved) return
-			return resolved.external ? null : resolved.id
+			)
+			return resolved && resolved.id
 		},
 		load: async id => {
 			if (!isTransformed(id)) {
@@ -1657,6 +1641,29 @@ const resolveUnloaded = async (
 	return !required || required.external || isTransformed(required.id) ?
 			required
 		:	context.resolve(specifier, importer, options)
+}
+
+// null where no bundle holds it: it's external, or a plugin refuses it, as
+// React Router refuses a .server module in the client build
+const bundledResolutionOf = async (
+	context: RollupContext,
+	specifier: string,
+	importer: string | undefined,
+	isTransformed: (id: string) => boolean
+): Promise<RollupResolution | null | undefined> => {
+	let resolved: RollupResolution | null
+	try {
+		resolved = await resolveUnloaded(
+			context,
+			specifier,
+			importer,
+			isTransformed
+		)
+	} catch {
+		return null
+	}
+	if (!resolved) return
+	return resolved.external ? null : resolved
 }
 
 const asRequired = { custom: { "node-resolve": { isRequire: true } } }

@@ -1,7 +1,7 @@
 import { globSync, readFileSync, statSync } from "node:fs"
 import { dirname, resolve, sep } from "node:path"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
-import { printablePathOf, transformedId } from "./host.ts"
+import { printablePathOf, scriptExtensions, transformedId } from "./host.ts"
 import {
 	pluginCallLinesOf,
 	pluginCallsIn,
@@ -228,17 +228,6 @@ const scriptOf = (path: string): string | undefined =>
 			resolve(path, `index${extension}`)
 		])
 	].find(candidate => statSync(candidate, { throwIfNoEntry: false })?.isFile())
-
-const scriptExtensions = [
-	".ts",
-	".tsx",
-	".mts",
-	".cts",
-	".js",
-	".jsx",
-	".mjs",
-	".cjs"
-]
 
 export const countOf = (n: number, noun: string): string =>
 	`${n} ${noun}${n === 1 ? "" : "s"}`
