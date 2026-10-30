@@ -105,42 +105,7 @@ export const check = (
 				readFileSync(file, "utf8"),
 				file
 			) as CheckedModule
-			const path = printablePathOf(cwd, file)
-			const entries: [number, string][] = result.diagnostics.map(diagnostic => [
-				diagnostic.start,
-				renderDiagnostic({
-					...diagnostic,
-					file: printablePathOf(cwd, diagnostic.file)
-				})
-			])
-			const errors = result.diagnostics.filter(
-				diagnostic => diagnostic.severity === "error"
-			)
-			const isAt = (error: Diagnostic, site: CheckedModule["sites"][number]) =>
-				error.file === file &&
-				error.start === site.start &&
-				error.end === site.end
-			// an accepted site can fail too, like one that throws a ParseError
-			const failed = result.sites.filter(
-				site =>
-					site.status === "rejected" || errors.some(error => isAt(error, site))
-			)
-			report.errors += errors.length
-			report.errorsOutsideSites += errors.filter(
-				error => !failed.some(site => isAt(error, site))
-			).length
-			for (const site of result.sites) {
-				report.sites++
-				if (failed.includes(site)) continue
-				if (site.status === "island") report.islands++
-				else report.accepted++
-				entries.push([
-					site.start,
-					`${path}:${site.line}:${site.column}  ${site.status}`
-				])
-			}
-			entries.sort((l, r) => l[0] - r[0])
-			for (const [, line] of entries) report.lines.push(line)
+			reportModule(report, result, file, cwd)
 		}
 		// as a production build prunes
 		const unpruned =
@@ -164,6 +129,54 @@ export const check = (
 	}
 	const precompiled = report.sites - report.islands
 	if (precompiled) report.rate = (100 * report.accepted) / precompiled
+	report.lines.push(summaryOf(report))
+	return report
+}
+
+// a module's diagnostics and sites as lines in source order, tallied into the report
+const reportModule = (
+	report: CheckReport,
+	result: CheckedModule,
+	file: string,
+	cwd: string
+): void => {
+	const path = printablePathOf(cwd, file)
+	const entries: [number, string][] = result.diagnostics.map(diagnostic => [
+		diagnostic.start,
+		renderDiagnostic({
+			...diagnostic,
+			file: printablePathOf(cwd, diagnostic.file)
+		})
+	])
+	const errors = result.diagnostics.filter(
+		diagnostic => diagnostic.severity === "error"
+	)
+	const isAt = (error: Diagnostic, site: CheckedModule["sites"][number]) =>
+		error.file === file && error.start === site.start && error.end === site.end
+	// an accepted site can fail too, like one that throws a ParseError
+	const failed = result.sites.filter(
+		site =>
+			site.status === "rejected" || errors.some(error => isAt(error, site))
+	)
+	report.errors += errors.length
+	report.errorsOutsideSites += errors.filter(
+		error => !failed.some(site => isAt(error, site))
+	).length
+	for (const site of result.sites) {
+		report.sites++
+		if (failed.includes(site)) continue
+		if (site.status === "island") report.islands++
+		else report.accepted++
+		entries.push([
+			site.start,
+			`${path}:${site.line}:${site.column}  ${site.status}`
+		])
+	}
+	entries.sort((l, r) => l[0] - r[0])
+	for (const [, line] of entries) report.lines.push(line)
+}
+
+const summaryOf = (report: CheckReport): string => {
 	const summary = [
 		`${countOf(report.sites, "site")} in ${countOf(report.files, "file")}: ${report.accepted} accepted (${report.rate.toFixed(1)}%)`
 	]
@@ -173,8 +186,7 @@ export const check = (
 			`${countOf(report.errorsOutsideSites, "error")} outside a site`
 		)
 	}
-	report.lines.push(summary.join(", "))
-	return report
+	return summary.join(", ")
 }
 
 // a file a bundle doesn't hold, like a test, a story or a config

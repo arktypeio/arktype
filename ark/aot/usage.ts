@@ -414,6 +414,9 @@ class UsageAnalysis {
 		path: readonly string[] = []
 	): void {
 		const { module } = runtime
+		// passed to its site's factory, which finds the holes it holds by the
+		// validator itself, reading no member
+		if (runtime.kept.some(span => isSpan(node, span))) return
 		// e.g. `import.meta.env.DEV ? DevPost : Post`, read as its result is
 		if (
 			(parent?.type === "ConditionalExpression" && parent.test !== node) ||
@@ -578,6 +581,9 @@ export const isDead = (node: Span, runtime: RuntimeModule): boolean =>
 
 const isIn = (node: Span, span: Span) =>
 	span.start <= node.start && node.end <= span.end
+
+const isSpan = (node: Span, span: Span) =>
+	node.start === span.start && node.end === span.end
 
 const nodesAt = (module: SourceModule, spans: Span[]): Node[] => {
 	if (!spans.length) return []
