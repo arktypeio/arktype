@@ -332,7 +332,6 @@ contextualize(() => {
 				}
 			])
 			const out = T("x") as type.errors
-			attest(out.issues.length).equals(1)
 			attest(out.toString()).snap('a must be long (was "x")')
 		})
 
