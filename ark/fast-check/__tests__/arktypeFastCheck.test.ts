@@ -89,6 +89,11 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("regex with flags", () => {
+			const T = type(/^\u{1F600}[a-z]$/iu)
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
 		it("multiple regexes", () => {
 			const T = type("string.email").and("string.alpha")
 			attest(() => arkToArbitrary(T)).throws(
