@@ -74,6 +74,34 @@ console.log(server.list())
 		).snap(["main.ts:5:45 bakes ~standard.jsonSchema (fields)"])
 	})
 
+	it("follows a field to reads at a key they don't name", async () => {
+		attest(
+			await bakedFrom({
+				"/node_modules/store/index.js": `const state = {}
+export const keep = holder => {
+	state.held = holder
+}
+export const show = () => {
+	const held = state.held
+	for (const key in held) console.log(\`\${held[key]}\`)
+	console.log(Reflect.get(held, "w").description, Object.values(held)[2].json)
+	console.log(JSON.stringify({ ...held }))
+}
+`,
+				"/main.ts": `import { type } from "arktype"
+import { keep, show } from "store"
+
+keep({ v: type("string"), w: type("number"), x: type("boolean") })
+show()
+`
+			})
+		).snap([
+			"main.ts:4:11 bakes expression, json, toJSON (fields)",
+			"main.ts:4:30 bakes expression, description, json, toJSON (fields)",
+			"main.ts:4:49 bakes expression, json, toJSON (fields)"
+		])
+	})
+
 	it("bakes nothing where its readers only validate", async () => {
 		attest(
 			await bakedFrom({

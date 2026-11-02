@@ -121,7 +121,7 @@ class Readers {
 	private modulesById = new Map<string, SourceModule>()
 	private runtimesByModule = new Map<SourceModule, RuntimeModule>()
 	private importersById: Map<string, ImportEdge[]> | undefined
-	private fieldReads: Map<string, Located[]> | undefined
+	private fieldReads: Map<Key, Located[]> | undefined
 	private dependenciesByRoot = new Map<string, ReadonlySet<string>>()
 
 	constructor(
@@ -196,8 +196,9 @@ class Readers {
 		return this.importersById.get(id) ?? []
 	}
 
-	// each read of a property by name, anywhere the program reaches
-	fieldReadsOf(name: string): Located[] {
+	// each read of a property by name, anywhere the program reaches, or at
+	// anyKey each that may read any, like `o[k]` or `Object.values(o)`
+	fieldReadsOf(name: Key): Located[] {
 		this.fieldReads ??= this.indexFields()
 		return this.fieldReads.get(name) ?? []
 	}
@@ -280,11 +281,13 @@ class Readers {
 	}
 
 	// every module the program's own reach through their imports, read from disk
-	private indexFields(): Map<string, Located[]> {
-		const result = new Map<string, Located[]>()
+	private indexFields(): Map<Key, Located[]> {
+		const result = new Map<Key, Located[]>()
 		const add = (name: unknown, located: Located) => {
-			if (typeof name !== "string" && typeof name !== "number") return
-			const key = String(name)
+			const key =
+				typeof name === "string" || typeof name === "number" ?
+					String(name)
+				:	anyKey
 			const reads = result.get(key)
 			if (reads) reads.push(located)
 			else result.set(key, [located])
@@ -304,8 +307,18 @@ class Readers {
 					for (const property of node.properties) {
 						if (property.type === "Property")
 							add(propertyKeyOf(property), { node: property.value, module })
+						else add(anyKey, { node: property, module })
 					}
-				}
+				} else if (
+					node.type === "SpreadElement" &&
+					node.parent?.type === "ObjectExpression"
+				)
+					add(anyKey, { node, module })
+				else if (
+					node.type === "CallExpression" &&
+					keyedBuiltins.has(globalNameOf(node.callee, module))
+				)
+					add(anyKey, { node, module })
 				return true
 			})
 			for (const [specifier] of importsOf(module.id, module.source).imports) {
@@ -882,6 +895,21 @@ class Follow {
 				this.bindPattern(read.node, read.module, fieldHeld)
 			else this.push(read.node, read.module, fieldHeld)
 		}
+		for (const { node, module } of this.readers.fieldReadsOf(anyKey)) {
+			if (owner !== undefined && !this.readers.mayRead(module, owner)) continue
+			const atKey: Held = { ...fieldHeld, path: [key] }
+			if (node.type === "RestElement")
+				this.bindPattern(node.argument, module, atKey)
+			else if (isPatternTarget(node)) this.bindPattern(node, module, fieldHeld)
+			else if (node.type === "MemberExpression")
+				this.push(node, module, fieldHeld)
+			else if (node.type === "SpreadElement")
+				this.push(node.parent!, module, atKey)
+			else if (node.type === "CallExpression") {
+				for (const i of node.arguments.keys())
+					this.builtin(node, unwrapExpression(node.callee), i, module, atKey)
+			}
+		}
 	}
 
 	private spread(
@@ -1323,7 +1351,7 @@ class Follow {
 		}
 	}
 
-	// a call to a global the build knows, or undefined
+	// whether it's a call to a global the build knows, which it follows here
 	private builtin(
 		call: Extract<Node, { type: "CallExpression" | "NewExpression" }>,
 		callee: Node,
@@ -1346,6 +1374,21 @@ class Follow {
 				if (isValue && held.of === "type")
 					this.record("expression", call, module)
 				return true
+			case "Reflect.get": {
+				if (index !== 0) return true
+				const [, key] = call.arguments
+				const constant = key && constantOf(key, module)
+				if (!held.path.length) {
+					const read = this.readMember(constant, held, call, module)
+					if (read) this.push(call, module, read)
+				} else if (
+					constant === undefined ||
+					held.path[0] === anyKey ||
+					held.path[0] === constant
+				)
+					this.push(call, module, { ...held, path: held.path.slice(1) })
+				return true
+			}
 			case "Object.freeze":
 			case "Object.seal":
 			case "Promise.resolve":
@@ -1761,6 +1804,15 @@ const propertyKeyOf = (property: {
 		:	undefined
 	: property.computed || property.key.type !== "Identifier" ? undefined
 	: property.key.name
+
+// globals reading an object at keys a call may not name
+const keyedBuiltins: ReadonlySet<string | undefined> = new Set([
+	"Reflect.get",
+	"Object.values",
+	"Object.entries",
+	"Object.assign",
+	"JSON.stringify"
+])
 
 // a key a const holds, like `const io = "input"`
 const constantOf = (node: Node, module: SourceModule): string | undefined => {
