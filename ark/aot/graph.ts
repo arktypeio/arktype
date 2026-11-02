@@ -3258,7 +3258,7 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// e.g. `json` and `T` for `T.json`, or `assert` where members drops it
+	// e.g. `or` and `T` for `T.or`, or `json` or `assert` where members drops it
 	unavailableReadOf(
 		node: Node,
 		module: SourceModule,
@@ -3311,7 +3311,9 @@ export class ModuleGraph {
 				object &&
 					(read === undefined ||
 						(typeof read === "string" &&
-							(!isValidatorMember(read) || lacked.has(read))))
+							((!isValidatorMember(read) &&
+								!includes(introspectionMembers, read)) ||
+								lacked.has(read))))
 			) ?
 				[read, object]
 			:	undefined

@@ -166,6 +166,23 @@ globalThis.T = type("string")
 		])
 	})
 
+	it("bakes every member where a TypeScript namespace exports it", async () => {
+		attest(
+			await bakedFrom({
+				"/main.ts": `import { type } from "arktype"
+
+namespace Schemas {
+	export const User = type({ name: "string" })
+}
+console.log(Schemas.User.expression)
+`
+			})
+		).snap([
+			"main.ts:4:22 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)",
+			"precompile: baking each introspection member into the validator at main.ts:4:22, because main.ts:4:15 exports it from a namespace. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning."
+		])
+	})
+
 	it("an entry's export bakes nothing, as code outside the bundle reads it", async () => {
 		attest(
 			await bakedFrom({

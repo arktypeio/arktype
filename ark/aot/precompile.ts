@@ -543,7 +543,7 @@ export class Precompiler {
 		)
 		this.unsureLackedMembers = new Set([
 			...this.lackedMembers,
-			...introspectionMembers.filter(member => !this.members[member])
+			...introspectionMembers.filter(member => this.members[member] === false)
 		])
 		const contract: ShadowContract = {}
 		if (this.members.meta === false) contract.members = { meta: false }

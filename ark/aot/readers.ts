@@ -320,6 +320,16 @@ class Readers {
 	}
 }
 
+// e.g. `namespace Schemas { export const User = type(...) }`, read off the namespace
+const isNamespaceExport = ({ declaration }: Binding): boolean => {
+	const statement =
+		declaration.type === "VariableDeclarator" ? declaration.parent : declaration
+	return (
+		statement?.parent?.type === "ExportNamedDeclaration" &&
+		statement.parent.parent?.type !== "Program"
+	)
+}
+
 // arktype's own, which read nothing of a program's validators
 const runtimeSpecifier = /^(?:arktype|@ark\/(?:schema|util))(?:\/|$)/
 
@@ -1221,6 +1231,8 @@ class Follow {
 		module: SourceModule,
 		held: Held
 	): void {
+		if (isNamespaceExport(binding))
+			return this.lose(binding.id, module, "exports it from a namespace")
 		const runtime = this.readers.runtimeOf(module)
 		for (const reference of binding.references) {
 			if (reference.isWrite || (runtime && isDead(reference.id, runtime)))
