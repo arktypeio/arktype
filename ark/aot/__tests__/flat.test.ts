@@ -142,6 +142,34 @@ export const greet = () => "hi"
 		attest(js.includes("zebra")).equals(false)
 	})
 
+	it("keeps annotated a validator only an unread default export names", async () => {
+		const holding = writeFixture(
+			{
+				"types.ts": types,
+				"unread.ts": `import { type } from "arktype"
+import { Team } from "./types.ts"
+
+const Unread = type({ zebra: Team })
+
+export const greet = () => "hi"
+export default Unread
+`
+			},
+			fromHere("temp", "flatDefault")
+		)
+		const [js] = await bundle(
+			{},
+			{
+				stdin: {
+					contents: `import { Team } from "./types.ts"\nimport { greet } from "./unread.ts"\n\nconsole.log(Team({}), greet())\n`,
+					resolveDir: holding,
+					loader: "ts"
+				}
+			}
+		)
+		attest(js.includes("zebra")).equals(false)
+	})
+
 	it("returns what kept code reads, annotating nothing a bundler keeps", async () => {
 		const [js] = await bundle(
 			{},

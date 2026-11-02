@@ -563,6 +563,13 @@ class KeptCode {
 					this.keep(module, statement)
 				continue
 			}
+			// kept where "default" is read
+			if (
+				statement.type === "ExportDefaultDeclaration" &&
+				(statement.declaration.type === "FunctionDeclaration" ||
+					isPureExpression(statement.declaration, module.source))
+			)
+				continue
 			if (
 				statement.type === "TSImportEqualsDeclaration" &&
 				statement.moduleReference.type === "TSExternalModuleReference"
@@ -624,7 +631,8 @@ class KeptCode {
 					this.keepExport(target, entry.name)
 				:	this.keepExports(target)
 		}
-		// an expression's statement is never pure
+		if (entry?.kind === "expression")
+			return this.keep(module, statementOf(entry.node))
 		if (entry || name === "default") return
 		for (const specifier of module.scopes.starExports) {
 			const target = this.targetOf(specifier, module)
