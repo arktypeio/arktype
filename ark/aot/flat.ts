@@ -34,15 +34,20 @@ export interface FlatSite {
 	map: SourceMap | undefined
 }
 
-// the names some module of a bundle may import of each module, true for any
-export type ImportedNames = Map<string, Set<string> | true>
+// a bundle's modules other than its sites and generated modules, as the bundler resolves them
+export interface FlatProgram {
+	modules: Iterable<SourceModule>
+	// modules code outside the bundle may read any export of
+	entries: Iterable<string>
+	resolve: (specifier: string, importer: string) => string | undefined
+}
 
 // declares a one-chunk bundle's units in one function: V8 inlines a call
 // through its constant, not through a module variable a bundler writes as a var
 export const flattenBundle = (
 	sites: Record<string, string>,
 	modules: Record<string, string>,
-	imported: ImportedNames,
+	program: FlatProgram,
 	whereSmaller = true
 ): FlatBundle | undefined => {
 	const parsed = new Map<string, SourceModule>()
@@ -54,10 +59,17 @@ export const flattenBundle = (
 	}
 	for (const id in sites) parsed.set(id, new SourceModule(id, sites[id], id))
 	if ([...parsed.values()].some(module => module.parseErrors.length)) return
+	// a site as written, the rest as the scan read them
+	const bundled = new Map(parsed)
+	for (const module of program.modules)
+		if (!bundled.has(module.id)) bundled.set(module.id, module)
 	const keptIn = (skipped?: ReadonlyMap<SourceModule, Creation[]>) => {
-		const kept = new KeptCode(parsed, skipped)
-		for (const id in sites) kept.keepRead(parsed.get(id)!, imported.get(id))
-		for (const specifier in modules) kept.keepRead(parsed.get(specifier)!)
+		const kept = new KeptCode(bundled, program.resolve, skipped)
+		for (const module of bundled.values()) kept.keepRead(module)
+		for (const id of program.entries) {
+			const entry = bundled.get(id)
+			if (entry) kept.keepExports(entry)
+		}
 		return kept
 	}
 	const kept = keptIn()
@@ -519,20 +531,24 @@ interface UnitModule {
 class KeptCode {
 	statements = new Set<Node>()
 	private imports = new Set<Binding>()
-	private modules: Map<string, SourceModule>
+	private exports = new Set<string>()
+	private modules: ReadonlyMap<string, SourceModule>
+	private resolve: FlatProgram["resolve"]
 	private referencesIn = new Map<SourceModule, Map<Node, Reference[]>>()
 	// spans whose references keep nothing, as the function makes them
 	private skipped: ReadonlyMap<SourceModule, readonly Creation[]>
 
 	constructor(
-		modules: Map<string, SourceModule>,
+		modules: ReadonlyMap<string, SourceModule>,
+		resolve: FlatProgram["resolve"],
 		skipped: ReadonlyMap<SourceModule, readonly Creation[]> = new Map()
 	) {
 		this.modules = modules
+		this.resolve = resolve
 		this.skipped = skipped
 	}
 
-	keepRead(module: SourceModule, imported?: Set<string> | true): void {
+	keepRead(module: SourceModule): void {
 		for (const statement of module.program.body) {
 			if (
 				statement.type === "ImportDeclaration" ||
@@ -547,11 +563,27 @@ class KeptCode {
 					this.keep(module, statement)
 				continue
 			}
+			if (
+				statement.type === "TSImportEqualsDeclaration" &&
+				statement.moduleReference.type === "TSExternalModuleReference"
+			)
+				this.keepLoaded(statement.moduleReference.expression, module)
 			if (!isPure(statement, module.source)) this.keep(module, statement)
 		}
-		for (const binding of Object.values(module.scopes.root.bindings)) {
-			if (binding.exportNames.some(name => isImported(imported, name)))
-				this.keepBinding(module, binding)
+		// e.g. import() or require(), reading every export
+		walk(module.program, node => {
+			const loaded = loadedSourceOf(node)
+			if (loaded) this.keepLoaded(loaded, module)
+			return true
+		})
+	}
+
+	keepExports(module: SourceModule): void {
+		for (const name in module.scopes.exportsByName)
+			this.keepExport(module, name)
+		for (const specifier of module.scopes.starExports) {
+			const target = this.targetOf(specifier, module)
+			if (target) this.keepExports(target)
 		}
 	}
 
@@ -570,6 +602,36 @@ class KeptCode {
 		return !!binding && this.imports.has(binding)
 	}
 
+	// a module loaded by a specifier it can't read may be any
+	private keepLoaded(specifier: Node, module: SourceModule): void {
+		if (specifier.type === "Literal" && typeof specifier.value === "string") {
+			const target = this.targetOf(specifier.value, module)
+			if (target) this.keepExports(target)
+		} else for (const loaded of this.modules.values()) this.keepExports(loaded)
+	}
+
+	private keepExport(module: SourceModule, name: string): void {
+		const key = `${module.id}\0${name}`
+		if (this.exports.has(key)) return
+		this.exports.add(key)
+		const entry = module.scopes.exportsByName[name]
+		if (entry?.kind === "binding")
+			return this.keepBinding(module, entry.binding)
+		if (entry?.kind === "reexport" || entry?.kind === "namespace") {
+			const target = this.targetOf(entry.specifier, module)
+			if (!target) return
+			return entry.kind === "reexport" ?
+					this.keepExport(target, entry.name)
+				:	this.keepExports(target)
+		}
+		// an expression's statement is never pure
+		if (entry || name === "default") return
+		for (const specifier of module.scopes.starExports) {
+			const target = this.targetOf(specifier, module)
+			if (target) this.keepExport(target, name)
+		}
+	}
+
 	private keepBinding(module: SourceModule, binding: Binding | undefined) {
 		if (!binding || binding.scope !== module.scopes.root) return
 		if (binding.kind !== "import") {
@@ -579,21 +641,26 @@ class KeptCode {
 		if (this.imports.has(binding)) return
 		this.imports.add(binding)
 		const specifier = binding.declaration
-		const source =
-			specifier.parent?.type === "ImportDeclaration" ?
-				specifier.parent.source.value
-			:	undefined
-		const target = source === undefined ? undefined : this.modules.get(source)
+		if (specifier.parent?.type !== "ImportDeclaration") return
+		const target = this.targetOf(specifier.parent.source.value, module)
 		if (!target) return
-		const exported =
-			specifier.type === "ImportSpecifier" ? exportNameOf(specifier.imported)
-			: specifier.type === "ImportDefaultSpecifier" ? "default"
-			: undefined
-		const entry =
-			exported === undefined ? undefined : target.scopes.exportsByName[exported]
-		if (entry?.kind === "binding") this.keepBinding(target, entry.binding)
-		else
-			for (const statement of target.program.body) this.keep(target, statement)
+		if (specifier.type === "ImportSpecifier")
+			this.keepExport(target, exportNameOf(specifier.imported))
+		else if (specifier.type === "ImportDefaultSpecifier")
+			this.keepExport(target, "default")
+		else this.keepExports(target)
+	}
+
+	// a generated module by its specifier, another as the bundler resolves it
+	private targetOf(
+		specifier: string,
+		importer: SourceModule
+	): SourceModule | undefined {
+		const id =
+			this.modules.has(specifier) ?
+				specifier
+			:	this.resolve(specifier, importer.id)
+		return id === undefined ? undefined : this.modules.get(id)
 	}
 
 	private referencesOf(module: SourceModule): Map<Node, Reference[]> {
@@ -610,9 +677,6 @@ class KeptCode {
 		return result
 	}
 }
-
-const isImported = (imported: Set<string> | true | undefined, name: string) =>
-	imported === true || !!imported?.has(name)
 
 // a unit module declares each value as one const, as isUnitModule checks
 const declaredNameOf = (declaration: Node): string =>
@@ -1753,58 +1817,4 @@ const commaBetween = (
 		if (code.startsWith("/*", i)) i = code.indexOf("*/", i + 2) + 1
 		else if (code.startsWith("//", i)) i = code.indexOf("\n", i)
 	}
-}
-
-// every export of an entry is read
-export const importedNamesOf = (
-	modules: Iterable<SourceModule>,
-	entries: Iterable<string>,
-	resolve: (specifier: string, importer: string) => string | undefined
-): ImportedNames => {
-	const result: ImportedNames = new Map()
-	const add = (target: string | undefined, name: string | true) => {
-		if (target === undefined) return
-		const names = result.get(target)
-		if (names === true) return
-		if (name === true) result.set(target, true)
-		else if (names) names.add(name)
-		else result.set(target, new Set([name]))
-	}
-	for (const entry of entries) add(entry, true)
-	for (const module of modules) {
-		const targetOf = (specifier: string) => resolve(specifier, module.id)
-		for (const statement of module.program.body) {
-			if (statement.type === "ImportDeclaration") {
-				const target = targetOf(statement.source.value)
-				for (const specifier of statement.specifiers) {
-					add(
-						target,
-						specifier.type === "ImportSpecifier" ?
-							exportNameOf(specifier.imported)
-						: specifier.type === "ImportDefaultSpecifier" ? "default"
-						: true
-					)
-				}
-			} else if (statement.type === "ExportNamedDeclaration") {
-				if (!statement.source) continue
-				const target = targetOf(statement.source.value)
-				for (const specifier of statement.specifiers)
-					add(target, exportNameOf(specifier.local))
-			} else if (statement.type === "ExportAllDeclaration")
-				add(targetOf(statement.source.value), true)
-			else if (
-				statement.type === "TSImportEqualsDeclaration" &&
-				statement.moduleReference.type === "TSExternalModuleReference"
-			)
-				add(targetOf(statement.moduleReference.expression.value), true)
-		}
-		// e.g. import() or require(), reading every export
-		walk(module.program, node => {
-			const read = loadedSourceOf(node)
-			if (read?.type === "Literal" && typeof read.value === "string")
-				add(targetOf(read.value), true)
-			return true
-		})
-	}
-	return result
 }

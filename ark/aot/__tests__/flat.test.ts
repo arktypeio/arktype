@@ -117,6 +117,31 @@ true
 		attest(js.includes("zebra")).equals(false)
 	})
 
+	it("keeps annotated a validator only an unread holder in another module imports", async () => {
+		const holding = writeFixture(
+			{
+				"types.ts": types,
+				"schemas.ts": `import { Team, Unread } from "./types.ts"
+
+export const schemas = { team: Team, unread: Unread }
+export const greet = () => "hi"
+`
+			},
+			fromHere("temp", "flatImportedHolder")
+		)
+		const [js] = await bundle(
+			{},
+			{
+				stdin: {
+					contents: `import { Team } from "./types.ts"\nimport { greet } from "./schemas.ts"\n\nconsole.log(Team({}), greet())\n`,
+					resolveDir: holding,
+					loader: "ts"
+				}
+			}
+		)
+		attest(js.includes("zebra")).equals(false)
+	})
+
 	it("returns what kept code reads, annotating nothing a bundler keeps", async () => {
 		const [js] = await bundle(
 			{},
@@ -409,7 +434,7 @@ export const read = [${names.join(", ")}]`
 		const flat = flattenBundle(
 			{ "site.js": site },
 			modules,
-			new Map([["site.js", true]]),
+			{ modules: [], entries: ["site.js"], resolve: () => undefined },
 			false
 		)!
 		const written = Object.keys(flat.modules).filter(
@@ -459,7 +484,7 @@ export { unit }`
 				"site.js": `import { unit } from "~arktype/unit"\n\nexport const read = unit`
 			},
 			{ "~arktype/unit": unit },
-			new Map([["site.js", true]]),
+			{ modules: [], entries: ["site.js"], resolve: () => undefined },
 			false
 		)!
 		const [code] = Object.entries(flat.modules).flatMap(([specifier, code]) =>
@@ -501,7 +526,7 @@ export { unit }`
 				"site.js": `import { unit } from "~arktype/unit"\n\nexport const read = unit`
 			},
 			{ "~arktype/unit": unit },
-			new Map([["site.js", true]]),
+			{ modules: [], entries: ["site.js"], resolve: () => undefined },
 			false
 		)!
 		const [code] = Object.entries(flat.modules).flatMap(([specifier, code]) =>

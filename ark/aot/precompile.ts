@@ -170,7 +170,7 @@ import {
 	type BindingKind
 } from "./scope.ts"
 import type { ShadowContract } from "./shadow.ts"
-import { flattenBundle, importedNamesOf } from "./flat.ts"
+import { flattenBundle } from "./flat.ts"
 import {
 	writeKeptMembersMessage,
 	writeLostMessage,
@@ -1227,15 +1227,11 @@ export class Precompiler {
 			sites[id] = written[id].code
 			Object.assign(modules, written[id].modules)
 		}
-		const flat = flattenBundle(
-			sites,
-			modules,
-			importedNamesOf(
-				[...runtimes.values()].map(runtime => runtime.module),
-				[...program.entries, ...program.exposed],
-				(specifier, importer) => program.targets[importer]?.[specifier]
-			)
-		)
+		const flat = flattenBundle(sites, modules, {
+			modules: [...runtimes.values()].map(runtime => runtime.module),
+			entries: [...program.entries, ...program.exposed],
+			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
+		})
 		if (!flat) return
 		const reach = reacherOf(flat.modules)
 		for (const id in written) {
