@@ -930,6 +930,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				// a virtual module resolves from the module it was written for
 				if (importer.startsWith(`${virtual}~arktype/`))
 					return resolveFile(id, importersById[importer])
+				if (importer.startsWith(moduleScheme))
+					return resolveFile(id, importersById[idOfResource(importer)])
 				// resolved as arktype is in shadow mode, below
 				if (id === shadowSpecifier)
 					return opts?.shadow ? resolveFile(id, importer) : undefined
@@ -1187,6 +1189,32 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				test: /~arktype/,
 				parser: { exportsPresence: "error" }
 			})
+			// read through a scheme, as each of unplugin's virtual modules
+			// rewrites every other when webpack's watcher purges a file
+			compiler.hooks.compilation.tap(
+				"arktype",
+				(compilation, { normalModuleFactory }) => {
+					normalModuleFactory.hooks.beforeResolve.tap("arktype", data => {
+						if (data.request.startsWith("~arktype/"))
+							data.request = moduleScheme + data.request
+					})
+					normalModuleFactory.hooks.resolveForScheme
+						.for("arktype")
+						.tap("arktype", data => {
+							const id = idOfResource(data.resource)
+							loadModule(id)
+							data.path = data.resource
+							// a virtual module resolves from the module it was written for
+							data.context = dirname(fileOf(importersById[id]))
+							return true
+						})
+					compiler.webpack.NormalModule.getCompilationHooks(compilation)
+						.readResource.for("arktype")
+						.tap("arktype", context =>
+							loadModule(idOfResource(context.resource))
+						)
+				}
+			)
 		},
 		rspack: applyRspack,
 		// unplugin gives the rspack hook only Rspack's own compiler
@@ -1277,7 +1305,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		:	plugin
 })
 
-export const precompile = {
+export const precompile: PrecompileUnplugin = {
 	...(unplugin as PrecompileUnplugin),
 	// Bun.build ignores tsconfig's jsxImportSource where an onResolve hook
 	// matches every import, so ours doesn't
@@ -1300,7 +1328,7 @@ export const precompile = {
 				)
 		}
 	}
-} satisfies PrecompileUnplugin
+}
 
 const esbuildResolution = "arktype"
 
@@ -2102,6 +2130,12 @@ const storeDirIn = (cache: unknown): string => {
 		: undefined
 	return dir ? join(dir, "arktype") : ""
 }
+
+// webpack's resource for a virtual module, e.g. `arktype:~arktype/<hash>`
+const moduleScheme = "arktype:"
+
+const idOfResource = (resource: string) =>
+	`\0${resource.slice(moduleScheme.length)}`
 
 // a module is named for what it holds, so one an earlier build stored holds the same
 const storedNameOf = (id: string) =>
