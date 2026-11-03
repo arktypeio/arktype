@@ -623,7 +623,7 @@ export class TraversalCompiler extends NodeCompiler {
 		args: readonly string[],
 		body: (js: NodeCompiler) => unknown
 	): this {
-		const js = new (this.link.opts.compiler ?? TraversalCompiler)(
+		const js = new (compilerOf(this.link))(
 			this.trav,
 			this.link,
 			this.needsCtx
@@ -648,12 +648,15 @@ const transformedKinds = [
 	"union"
 ] as const satisfies NodeKind[]
 
+const compilerOf = (link: UnitLinkage): typeof TraversalCompiler =>
+	link.opts.compiler ?? TraversalCompiler
+
 const declareTraversal = (
 	link: UnitLinkage,
 	node: BaseNode,
 	kind: TraversalKind
 ): string => {
-	const js = new (link.opts.compiler ?? TraversalCompiler)(
+	const js = new (compilerOf(link))(
 		kind,
 		link,
 		kind !== "Transform" || node.tfCtx
@@ -782,7 +785,8 @@ const writeComponent = (
 		for (const callee of s.byId[node.id].callees)
 			if (!callee.isRoot() || roots.includes(callee)) reached.push(callee)
 	}
-	const link = createLinkage(readName, opts, readName(roots[0].id))
+	const name = readName(roots[0].id)
+	const link = createLinkage(readName, opts, name)
 	// reads through to what the pass reached
 	link.byId = Object.create(
 		new Proxy({}, { get: (_, id) => reachedAt(id as NodeId) })
@@ -800,7 +804,7 @@ const writeComponent = (
 		component,
 		namesRead,
 		reachedRead,
-		name: readName(roots[0].id),
+		name,
 		roots: roots as BaseRoot[],
 		declared,
 		declaredTraversals,

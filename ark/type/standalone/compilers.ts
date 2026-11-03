@@ -106,12 +106,7 @@ class StandaloneCompiler extends TraversalCompiler {
 	override missFails(node: UnionNode): string {
 		if (node.missLists) return this.unionFails(node)
 		const path = node.missPath
-		const context = issueContextOf({
-			code: "discriminant",
-			description: node.discDesc,
-			meta: node.discMeta
-		})
-		const site = this.siteRef(issueSite(context))
+		const site = this.siteRef(issueSite(discriminantContextOf(node)))
 		// a key below data is read as a key site reads it
 		const fails =
 			path.length > 1 ?
@@ -190,6 +185,13 @@ const isDecidedByKeywords = (node: BaseNode): boolean =>
 	Object.values(node.byId).every(
 		reference => !reference.is("predicate") || isKeyword(reference.predicate)
 	)
+
+export const discriminantContextOf = (node: UnionNode): IssueContext =>
+	issueContextOf({
+		code: "discriminant",
+		description: node.discDesc,
+		meta: node.discMeta
+	})
 
 const reportsItself = (value: BaseNode): value is UnionNode =>
 	value.is("union") && !value.discriminant && !value.hasAlias
