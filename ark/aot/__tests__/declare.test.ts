@@ -278,6 +278,36 @@ export type Buffered = {
 };`)
 	})
 
+	it("escapes a module name in a shape's import", () => {
+		const quoted = fromHere("temp", "quoted")
+		try {
+			mkdirSync(join(quoted, "src"), { recursive: true })
+			writeFileSync(
+				join(quoted, "tsconfig.json"),
+				readFileSync(join(declared, "tsconfig.json"))
+			)
+			writeFileSync(
+				join(quoted, "src", "ambient.d.ts"),
+				"declare module 'a\"b\\\\c' {\n\texport class Quoted {\n\t\ta: string\n\t}\n}\n"
+			)
+			writeFileSync(
+				join(quoted, "src", "index.ts"),
+				'import { type } from "arktype"\nimport { Quoted } from \'a"b\\\\c\'\n\nexport const Q = type({ q: type.instanceOf(Quoted) })\n'
+			)
+			attest(
+				emitDeclarations({ cwd: quoted }).files[
+					tsPath(join(quoted, "out", "~arktype.d.ts"))
+				]
+			).snap(`// the shapes of this build's Types, Scopes and Modules
+export type Q = {
+    q: import("a\\"b\\\\c").Quoted;
+};
+`)
+		} finally {
+			rmSync(quoted, { recursive: true, force: true })
+		}
+	}).timeout(60000)
+
 	it("skips an unreadable TypeScript", () => {
 		const loader = fromHere("temp", "loader")
 		const stub = join(loader, "node_modules", "typescript")

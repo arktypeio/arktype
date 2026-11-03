@@ -80,6 +80,8 @@ const renderDiagnostics = (
 
 export interface PrecompilerWorkerData {
 	precompilerOptions: PrecompilePluginOptions
+	// where Node runs each dependency as published, as for --emit
+	leavesDependencies?: boolean | undefined
 	// for a host that waits synchronously
 	port?: MessagePort | undefined
 	answered?: Int32Array | undefined
@@ -152,7 +154,11 @@ const answerRequests = (
 		() => (tracked = undefined)
 	)
 	const track = () =>
-		createTrackedPrecompiler(data.precompilerOptions, resolveInBundler)
+		createTrackedPrecompiler(
+			data.precompilerOptions,
+			resolveInBundler,
+			!!data.leavesDependencies
+		)
 	// kept across the resets that keep the precompiler, as a rebuild asks again
 	// for modules nothing changed
 	let transformedById: Record<string, KeptModule> = {}
@@ -584,9 +590,10 @@ interface TrackedPrecompiler {
 	snapshot: string | undefined
 	// whether the answers a cache stored still hold, judged for files as they are
 	holds: SnapshotCheck | undefined
-	// what besides a request decides its answer: the options, and whether the
+	// what besides a request decides its answer: the options, whether the
 	// bundler resolves what the precompiler can't, which one stored without
-	// it would have asked
+	// it would have asked, and whether Node runs each dependency as published,
+	// as for --emit, which refuses a site reading one that opts in
 	context: string
 	// whether it asked the bundler, which a reset can't ask again
 	asked: boolean
@@ -616,10 +623,12 @@ let precompilersInThread = 0
 
 const createTrackedPrecompiler = (
 	opts: PrecompilePluginOptions,
-	resolveInBundler?: BundlerResolver
+	resolveInBundler?: BundlerResolver,
+	leavesDependencies = false
 ): TrackedPrecompiler => {
 	opts = withSettingsFile(opts)
 	const precompiler = createPrecompiler(opts)
+	precompiler.graph.leavesDependencies = leavesDependencies
 	const tracked: TrackedPrecompiler = {
 		precompiler,
 		host: precompiler.graph.host,
@@ -632,7 +641,7 @@ const createTrackedPrecompiler = (
 		unsnapshotted: emptySnapshot(undefined),
 		snapshot: undefined,
 		holds: undefined,
-		context: keyOf(opts, !!resolveInBundler),
+		context: keyOf(opts, !!resolveInBundler, leavesDependencies),
 		asked: false,
 		resolveInBundler,
 		storable: ++precompilersInThread === 1,

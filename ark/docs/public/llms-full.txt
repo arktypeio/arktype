@@ -7063,7 +7063,7 @@ A [precompiled](https://arktype.io/docs/precompile) validator validates through 
 
 Without it, a build importing `drizzle-arktype` or `presets-arktype` fails, naming the setting. [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) has each message.
 
-A [production build](https://arktype.io/docs/precompile/options#prune) keeps `~standard` in a validator a library like the MCP SDK validates with, and leaves out what nothing reads.
+A [production build](https://arktype.io/docs/precompile/options#prune) keeps `~standard` in a validator a library like Hono's `sValidator` validates with, and leaves out what nothing reads.
 
 # fast-check
 

@@ -55,7 +55,8 @@ export const emitPrecompiled = (
 			}),
 			// no host serves the modules a precompiled module would import
 			inline: true
-		}
+		},
+		leavesDependencies: true
 	})
 	const rewrites = (specifier: string) =>
 		runtimeSpecifiers.includes(specifier) &&

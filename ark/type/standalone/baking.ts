@@ -63,8 +63,18 @@ export interface StandaloneIntrospection {
 // a function baking members into the validator of a Type another module
 // creates, or into each of a module namespace's, by export name
 export interface StandaloneBake extends BakedMembers {
-	bakes: BaseRoot | Record<string, BaseRoot>
+	bakes: BaseRoot | BakedNamespace
 }
+
+// e.g. { User: T, inner: { Admin: T2 } } for a module exporting `* as inner`
+export interface BakedNamespace {
+	[name: string]: BaseRoot | BakedNamespace
+}
+
+export const bakedRootsOf = (bakes: BaseRoot | BakedNamespace): BaseRoot[] =>
+	hasArkKind(bakes, "root") ?
+		[bakes]
+	:	Object.values(bakes).flatMap(value => bakedRootsOf(value))
 
 export interface StandaloneFactory {
 	type: ExportedValue
@@ -370,9 +380,7 @@ const bakedByRootOf = (
 	}
 	for (const value of Object.values(exports)) {
 		if (arkKindOf(value) !== undefined || !("bakes" in value)) continue
-		const { bakes } = value
-		const roots = hasArkKind(bakes, "root") ? [bakes] : Object.values(bakes)
-		for (const root of roots) add(root, value)
+		for (const root of bakedRootsOf(value.bakes)) add(root, value)
 	}
 	for (const name in baked) {
 		const value = exports[name]

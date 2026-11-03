@@ -59,6 +59,7 @@ import {
 	writeFunction,
 	writeLazyRead,
 	writeValue,
+	type BakedNamespace,
 	type Baking,
 	type Configured,
 	type DefaultCheck,
@@ -948,6 +949,13 @@ export class StandaloneArtifact {
 	writeBake({ bakes, members }: StandaloneBake, index: number): string {
 		const bake = (root: BaseRoot, read: string) =>
 			`runtime.bakeInto(${read}, { ${this.emitIntrospection(root, new Set(members)).join(", ")} })`
+		const bakeEach = (namespace: BakedNamespace, read: string): string[] =>
+			Object.entries(namespace).flatMap(([name, value]) => {
+				const at = `${read}[${JSON.stringify(name)}]`
+				return hasArkKind(value, "root") ?
+						[bake(value, at)]
+					:	bakeEach(value, at)
+			})
 		const [param, baked] =
 			hasArkKind(bakes, "root") ?
 				["validator", `return ${bake(bakes, "validator")}`]
@@ -955,9 +963,7 @@ export class StandaloneArtifact {
 					"namespace",
 					`// a cycle may load it before the module exporting them
 try {
-${Object.entries(bakes)
-	.map(([name, root]) => bake(root, `namespace[${JSON.stringify(name)}]`))
-	.join("\n")}
+${bakeEach(bakes, "namespace").join("\n")}
 } catch {}
 return namespace`
 				]

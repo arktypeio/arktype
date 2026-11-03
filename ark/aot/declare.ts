@@ -454,7 +454,7 @@ class ShapePrinter {
 			reference.args.map(arg => {
 				const shape = this.shapeNames.get(arg)
 				return (
-					shape ? `import("${shared}").${shape}`
+					shape ? `import(${JSON.stringify(shared)}).${shape}`
 					: arg.flags & this.shapeFlags ? undefined
 					: this.print(arg, 0)
 				)
@@ -757,7 +757,7 @@ class ShapePrinter {
 						(s.flags & ts.SymbolFlags.Alias &&
 							checker.getAliasedSymbol(s) === symbol)
 				)
-		return exported && `import("${specifier}").${exported.name}`
+		return exported && `import(${JSON.stringify(specifier)}).${exported.name}`
 	}
 
 	isReadonly(property: ts.Symbol): boolean {

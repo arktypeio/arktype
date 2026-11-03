@@ -43,6 +43,10 @@ export const emptySnapshot = (parent: string | undefined): Snapshot => ({
 export const hashOf = (text: string): string =>
 	createHash("sha256").update(text).digest("base64url")
 
+// what hashOf writes, so a name read from the cache, as an entry's snapshot
+// is, names a file in its directory and no key every object has
+const isHash = (name: string): boolean => /^[\w-]{43}$/.test(name)
+
 // the code writing an answer: arktype's packages by content, as a linked
 // workspace or a repacked tarball changes it without a version, the
 // precompiler's other dependencies by version, and the runtime
@@ -115,7 +119,8 @@ export const mtimeOf = (file: string): number =>
 
 // a cache's answers outlive the build: one in node_modules/.cache/ark where
 // the build runs, as Vite keeps its own, for each version of the code, which
-// replaces those of others
+// replaces those of others. Like Vite's, whoever writes it writes the bundle,
+// so it's restored only from a build as trusted as the one reading it
 export class AnswerCache {
 	dir: string
 
@@ -128,7 +133,7 @@ export class AnswerCache {
 		this.dir = join(root, fingerprint)
 		if (existsSync(root)) {
 			for (const name of readdirSync(root)) {
-				if (name !== fingerprint)
+				if (name !== fingerprint && isHash(name))
 					rmSync(join(root, name), { recursive: true, force: true })
 			}
 		}
@@ -153,7 +158,8 @@ export class AnswerCache {
 		const stored = this.read(`a-${key}`) as
 			| { snapshot: string; answer: unknown }
 			| undefined
-		if (stored && holds(stored.snapshot)) return stored.answer
+		if (stored && isHash(stored.snapshot) && holds(stored.snapshot))
+			return stored.answer
 	}
 
 	set(key: string, answer: unknown, snapshot: string): void {
@@ -168,6 +174,7 @@ export class AnswerCache {
 	private snapshots: Record<string, Snapshot | undefined> = {}
 
 	snapshot(id: string): Snapshot | undefined {
+		if (!isHash(id)) return
 		return (this.snapshots[id] ??= this.read(`s-${id}`) as Snapshot | undefined)
 	}
 
@@ -195,12 +202,13 @@ export class AnswerCache {
 	}
 
 	// with its hash, and renamed into place once written, so a concurrent build
-	// reads all of it or none, and the last of two writing it wins
+	// reads all of it or none, and the last of two writing it wins. Its temp
+	// file is new, as one already there may link to a file outside the cache
 	private write(name: string, body: string): void {
 		const path = join(this.dir, `${name}.json`)
 		const temp = `${path}.${process.pid}-${threadId}.tmp`
 		try {
-			writeFileSync(temp, `${hashOf(body)}\n${body}`)
+			writeFileSync(temp, `${hashOf(body)}\n${body}`, { flag: "wx" })
 			renameSync(temp, path)
 		} catch {
 			rmSync(temp, { force: true })
@@ -239,7 +247,8 @@ export const createSnapshotCheck = (
 	const holdsFrom = (id: string): Snapshot["given"] | false => {
 		const stated = new Set<string>()
 		const asked: Snapshot["asked"] = []
-		const given: Record<string, string> = {}
+		// read from the cache, so no record's module is a key every object has
+		const given: Record<string, string> = Object.create(null)
 		for (let next: string | undefined = id; next !== undefined; ) {
 			const snapshot = cache.snapshot(next)
 			if (!snapshot) return false

@@ -41,6 +41,7 @@ import {
 	traversalKeyOf,
 	writeUnprecompilableMessage,
 	type BakedMembers,
+	type BakedNamespace,
 	type Checks,
 	type Optimization,
 	type ValidatorMember,
@@ -574,7 +575,7 @@ export class Precompiler {
 		)
 		this.unsureLackedMembers = new Set([
 			...this.lackedMembers,
-			...introspectionMembers.filter(member => !this.members[member])
+			...introspectionMembers.filter(member => this.members[member] === false)
 		])
 		const contract: ShadowContract = {}
 		if (this.members.meta === false) contract.members = { meta: false }
@@ -1222,7 +1223,7 @@ export class Precompiler {
 				if (target.kind !== "namespace" && !isBakeable(value)) continue
 				for (const reference of binding.references) {
 					// an export is read by the modules importing it
-					const [operand, parent] = operatorOf(reference.id)
+					const [, parent] = operatorOf(reference.id)
 					if (
 						reference.isWrite ||
 						reference.id.type !== "Identifier" ||
@@ -1240,22 +1241,33 @@ export class Precompiler {
 						})
 						continue
 					}
-					const name =
-						parent?.type === "MemberExpression" && parent.object === operand ?
-							memberNameOf(parent)
-						:	undefined
-					if (typeof name !== "string") {
-						addWhole(reference.id, target.module)
-						continue
+					// e.g. `ns.inner.T`, through a namespace it exports
+					let read: Node = reference.id
+					let namespace = target.module
+					for (;;) {
+						const [operand, parent] = operatorOf(read)
+						const name =
+							parent?.type === "MemberExpression" && parent.object === operand ?
+								memberNameOf(parent)
+							:	undefined
+						if (typeof name !== "string") {
+							addWhole(read, namespace)
+							break
+						}
+						const exported = this.graph.exportOf(namespace, name)
+						if (exported.kind === "namespace") {
+							read = parent!
+							namespace = exported.module
+							continue
+						}
+						const value =
+							exported.kind === "binding" || exported.kind === "expression" ?
+								this.interpreter.exportValue(exported).value
+							:	undefined
+						if (isBakeable(value))
+							seeds.push({ runtime, node: parent!, held: validatorHeld, value })
+						break
 					}
-					const read = this.exportedValueOf(target.module, name)
-					if (!isBakeable(read)) continue
-					seeds.push({
-						runtime,
-						node: parent!,
-						held: validatorHeld,
-						value: read
-					})
 				}
 			}
 		}
@@ -1316,8 +1328,8 @@ export class Precompiler {
 	private validatorExportsOf(
 		module: SourceModule,
 		seen = new Set([module])
-	): Record<string, BaseRoot> {
-		const result: Record<string, BaseRoot> = {}
+	): BakedNamespace {
+		const result: BakedNamespace = {}
 		for (const specifier of module.scopes.starExports) {
 			const target = this.graph.resolve(specifier, module)
 			if (!(target instanceof SourceModule) || seen.has(target)) continue
@@ -1327,6 +1339,15 @@ export class Precompiler {
 			Object.assign(result, roots)
 		}
 		for (const name in module.scopes.exportsByName) {
+			const exported = this.graph.exportOf(module, name)
+			// e.g. `export * as schemas from "./schemas.ts"`
+			if (exported.kind === "namespace") {
+				if (seen.has(exported.module)) continue
+				seen.add(exported.module)
+				const inner = this.validatorExportsOf(exported.module, seen)
+				if (Object.keys(inner).length) result[name] = inner
+				continue
+			}
 			const value = this.exportedValueOf(module, name)
 			if (isBakeable(value)) result[name] = value
 		}
@@ -2193,12 +2214,13 @@ export class Precompiler {
 		} else {
 			for (const specifier in imports) {
 				const locals = imports[specifier]
-				if (!Object.keys(locals).length) inserted += `\nimport "${specifier}"`
+				const from = JSON.stringify(specifier)
+				if (!Object.keys(locals).length) inserted += `\nimport ${from}`
 				for (const name in locals) {
 					inserted +=
 						name === "default" ?
-							`\nimport ${locals[name]} from "${specifier}"`
-						:	`\nimport { ${name} as ${locals[name]} } from "${specifier}"`
+							`\nimport ${locals[name]} from ${from}`
+						:	`\nimport { ${name} as ${locals[name]} } from ${from}`
 				}
 			}
 		}
@@ -5888,18 +5910,32 @@ export class Precompiler {
 		module: SourceModule
 	): Diagnostic | undefined {
 		const objectRange = rangeOf(unwrapChain(object))
-		const settledValue = settledValues.get(objectRange)
-		// a computed site is sure, so a member the options drop is read off a Type
+		let settledValue = settledValues.get(objectRange)
+		let isSettled = settledValues.has(objectRange)
+		// a reflection on what the build can evaluate, like a Module, reflects
+		// on a Type only where it's one
+		if (isUnsureRead && read === undefined && !isSettled) {
+			const { value } = this.interpreter.exportValue({
+				kind: "expression",
+				module,
+				node: object
+			})
+			if (!findDynamic(value)) {
+				settledValue = value
+				isSettled = true
+			}
+		}
+		// a computed site is sure, so a reflection or a member the options drop
+		// is read off a Type
 		const isUnsure =
 			isUnsureRead &&
 			!(
 				hasArkKind(settledValue, "root") &&
-				read !== undefined &&
-				this.lackedMembers.has(read)
+				(read === undefined || this.lackedMembers.has(read))
 			)
 		// a chain is reported where it first reads one
 		if (
-			(isUnsure && (isArkPackage || settledValues.has(objectRange))) ||
+			(isUnsure && (isArkPackage || isSettled)) ||
 			unavailable.some(([inner]) => inner !== node && contains(node, inner)) ||
 			this.members[read as ValidatorMember] === true
 		)
@@ -6586,7 +6622,8 @@ const isEncodingError = (e: Error) =>
 const arktypeSpecifier =
 	/\b(?:from|import\s*\(?|require\s*\()\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
 
-const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
+// e.g. `from "./a.ts"`, `import "./a.ts"` or `import("./a.ts")`
+const importSpecifier = /\b(?:from|import\s*\(?)\s*["']([^"']+)["']/g
 
 // a .d.ts beside a JavaScript module, which the graph reads for its types
 const declarationFile = /\.d\.[cm]?ts$/
