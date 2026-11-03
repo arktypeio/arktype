@@ -1211,7 +1211,10 @@ console.log(type({ n: Max })({ n: 2 }) instanceof type.errors)
 					)
 				}
 			}
-			const onEvent = (event: { code: string; error?: Error }) => {
+			const onEvent = (event: {
+				code: string
+				error?: { message: string }
+			}) => {
 				if (event.code === "ERROR")
 					errors.push(stripVTControlCharacters(event.error!.message))
 			}
@@ -1265,7 +1268,7 @@ console.log(type({ n: Max })({ n: 2 }) instanceof type.errors)
 		it("vite rebuilds each module under them, or fails where they change its config", async () => {
 			const root = settingsApp()
 			const { bundles, errors, collecting, onEvent, settled } = watched()
-			const built = (watch?: object) =>
+			const built = (watch: object | null = null) =>
 				withNodeEnv("production", async () => {
 					const config = viteConfig({ cwd: root }, root)
 					return viteBuild({
@@ -1331,7 +1334,7 @@ console.log(type({ n: Max })({ n: 2 }) instanceof type.errors)
 				}
 				const fresh = await served()
 				try {
-					attest(restarted).equals(await fresh.code())
+					attest<string | undefined>(restarted).equals(await fresh.code())
 				} finally {
 					await fresh.server.close()
 				}
@@ -1362,7 +1365,7 @@ console.log(type({ n: Max })({ n: 2 }) instanceof type.errors)
 			})
 			for (let waited = 0; errors.length < 2 && waited < 20_000; waited += 50)
 				await new Promise(resolve => setTimeout(resolve, 50))
-			await new Promise(resolve => watching.close(resolve))
+			await new Promise(resolve => watching!.close(resolve))
 			attest(errors).equals([
 				[],
 				[writeWatchedSettingsMessage("ark.json", "webpack")]
