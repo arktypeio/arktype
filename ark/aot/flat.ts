@@ -171,8 +171,7 @@ export const flattenBundle = (
 			...Object.keys(renamed).filter(key => key in modules)
 		],
 		rewrite: (id, code, written) => {
-			const scannedSite = bundled.get(id)
-			if (!scannedSite) return
+			if (!bundled.has(id)) return
 			const site = new SourceModule(id, code, id)
 			const added = new Map<string, SourceModule>()
 			for (const key in written) {
@@ -182,10 +181,6 @@ export const flattenBundle = (
 			if ([site, ...added.values()].some(module => module.parseErrors.length))
 				return
 			const rewrittenParsed = new Map([...parsed, ...added]).set(id, site)
-			// an import its scan didn't resolve may read anything
-			const resolved = specifiersOf(scannedSite)
-			for (const source of specifiersOf(site))
-				if (!resolved.has(source) && !rewrittenParsed.has(source)) return
 			const rewritten = new Map([...bundled, ...added]).set(id, site)
 			const keptAsRewritten = keptIn(rewritten)
 			const scanned = creationsBySite.get(id) ?? []
@@ -598,30 +593,6 @@ const keptAnnotationsIn = (
 		const annotation = pureAnnotationOf(module.source, call)
 		return annotation ? [[call.start - annotation.length, call.start]] : []
 	})
-
-// what a module imports, exports from or loads by its literal specifier
-const specifiersOf = (module: SourceModule): Set<string> => {
-	const result = new Set<string>()
-	walk(module.program, node => {
-		const source =
-			(
-				node.type === "ImportDeclaration" ||
-				node.type === "ExportNamedDeclaration" ||
-				node.type === "ExportAllDeclaration"
-			) ?
-				node.source
-			: (
-				node.type === "TSImportEqualsDeclaration" &&
-				node.moduleReference.type === "TSExternalModuleReference"
-			) ?
-				node.moduleReference.expression
-			:	loadedSourceOf(node)
-		if (source?.type === "Literal" && typeof source.value === "string")
-			result.add(source.value)
-		return true
-	})
-	return result
-}
 
 // whether a rewritten site's creation is one its scan found, which the function makes
 const createsSame = (

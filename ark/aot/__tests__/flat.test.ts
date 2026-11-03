@@ -43,7 +43,9 @@ for (const data of [
 	console.log(out instanceof type.errors ? out.summary : "valid")
 }
 console.log(User.allows({ name: "Ada", email: "ada@arktype.io" }))
-`
+`,
+		// what a rewrite may import, as the React Compiler imports its runtime
+		"memo.ts": "export const memo = <t>(value: t): t => value\n"
 	},
 	fromHere("temp", "flat")
 )
@@ -464,6 +466,19 @@ console.log(User.allows({ name: "Ada" }), User.assert({ name: "Ada" }))
 			// its helpers are written for its source, so they're modules the scan didn't write
 			const rewritten = await viteBundle(opts, [
 				rewriting("types.ts", code => code.split("\n").join("\n\n"))
+			])
+			attest(run(rewritten)).equals(run(flat))
+			attest(declaredUnits(rewritten)).equals(declaredUnits(flat))
+		})
+
+		it("reads the units from the function where the rewrite imports a module the scan didn't", async () => {
+			const flat = await viteBundle({})
+			const rewritten = await viteBundle({}, [
+				rewriting(
+					"types.ts",
+					code =>
+						`import { memo } from "./memo.ts"\n${code}export const cached = memo(0)\n`
+				)
 			])
 			attest(run(rewritten)).equals(run(flat))
 			attest(declaredUnits(rewritten)).equals(declaredUnits(flat))
