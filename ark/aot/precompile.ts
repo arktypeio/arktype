@@ -904,7 +904,36 @@ export class Precompiler {
 		program: ScannedProgram,
 		modules: ReadonlyMap<string, RuntimeModule>
 	): Set<UsedMember> | string {
-		return usedMembersOf(this.usageProgramOf(program, modules))
+		const usageProgram = this.usageProgramOf(program, modules)
+		const use = usedMembersOf(usageProgram)
+		if (typeof use === "string") return use
+		if (!use.handedOff) return use.used
+		// code the plan doesn't follow is followed for each validator, keeping
+		// every member where that loses track of one too
+		const readerProgram = { ...usageProgram, whole: true }
+		const { seeds } = seedsOf(readerProgram)
+		const readings = readingsOf(
+			readerProgram,
+			this.graph,
+			this.readModules,
+			seeds
+		)
+		for (const [i, reading] of readings.entries()) {
+			const lost = reading.lost[0] ?? reading.unfollowed[0]
+			if (lost) {
+				const { runtime, node } = seeds[i]
+				return `the validator at ${runtime.module.positionOf(node)} is lost where ${lost}`
+			}
+			if (reading.unseen.length) return reading.unseen[0]
+		}
+		return new Set<UsedMember>([
+			...use.used,
+			...readings.flatMap(reading => reading.pruned),
+			// what it's passed to may call it or read allows, with any arguments
+			"call",
+			"allows",
+			"piped"
+		])
 	}
 
 	private usageProgramOf(
@@ -931,23 +960,7 @@ export class Precompiler {
 		const decisions: string[] = []
 		const { decided } = this
 		if (!decided.length) return { baked, lost, decisions }
-		const keys: string[] = []
-		const seeds: ReaderSeed[] = []
-		for (const runtime of program.modules.values()) {
-			const { module } = runtime
-			for (const [sites, held] of [
-				[runtime.validators, validatorHeld],
-				[runtime.modules, { path: [anyKey], of: "type" }]
-			] as const) {
-				for (const site of sites) {
-					const node = nodeAt(module, site)
-					if (!node) continue
-					const key = siteKeyOf(module.id, site)
-					keys.push(key)
-					seeds.push({ runtime, node, held, value: valuesByKey?.get(key) })
-				}
-			}
-		}
+		const { keys, seeds } = seedsOf(program, valuesByKey)
 		const readings = readingsOf(program, this.graph, this.readModules, seeds)
 		for (const [i, reading] of readings.entries()) {
 			const members = reading.members.filter(member => decided.includes(member))
@@ -6301,3 +6314,28 @@ interface ProgramReadings {
 }
 
 const siteKeyOf = (id: string, site: Span) => `${id}\0${site.start}:${site.end}`
+
+// each validator and Module a program's sites create, keyed by site
+const seedsOf = (
+	program: ReaderProgram,
+	valuesByKey?: ReadonlyMap<string, unknown>
+): { keys: string[]; seeds: ReaderSeed[] } => {
+	const keys: string[] = []
+	const seeds: ReaderSeed[] = []
+	for (const runtime of program.modules.values()) {
+		const { module } = runtime
+		for (const [sites, held] of [
+			[runtime.validators, validatorHeld],
+			[runtime.modules, { path: [anyKey], of: "type" }]
+		] as const) {
+			for (const site of sites) {
+				const node = nodeAt(module, site)
+				if (!node) continue
+				const key = siteKeyOf(module.id, site)
+				keys.push(key)
+				seeds.push({ runtime, node, held, value: valuesByKey?.get(key) })
+			}
+		}
+	}
+	return { keys, seeds }
+}
