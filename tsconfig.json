@@ -32,8 +32,8 @@
 		"**/node_modules",
 		"./ark/docs",
 		"**/*.scratch.ts",
-		// generated programs, untyped by design
-		"./ark/aot/__tests__/temp/programs",
+		// programs and fixtures the tests write, untyped by design
+		"./ark/aot/__tests__/temp",
 		// its cyclic scopes have inferred types TypeScript 7 can't declare
 		"./ark/aot/__tests__/declared",
 		// its global classes would conflict with those of @types/node
