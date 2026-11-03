@@ -971,12 +971,9 @@ export abstract class BaseNode<
 		return out
 	}
 
-	// allows data without marking the Type used, e.g. a key an intersection checks
+	// allows data without using the Type, e.g. a key an intersection checks
 	allowsUnused(data: d["prerequisite"]): boolean {
-		const usedPreJit = this.c.usedPreJit
-		const out = this.allows(data)
-		this.c.usedPreJit = usedPreJit
-		return out
+		return (this.c.preJit ?? this.allows)(data)
 	}
 
 	/** _in should be used internally instead */

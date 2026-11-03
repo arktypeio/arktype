@@ -485,6 +485,37 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		attest(types.inner.foo.precompilation).satisfies("string")
 	})
 
+	it("a Type including an alias has compiled code once it's used", () => {
+		const Node = type({ name: "string", "next?": "this" })
+		attest(Node.internal.unitFn).equals(undefined)
+		const nested = { name: "a", next: { name: "b" } }
+		attest(Node(nested) as object).equals(nested)
+		attest(Node.internal.unitFn).equals(undefined)
+		attest(Node({ name: "a", next: { name: 1 } }).toString()).snap(
+			"next.name must be a string (was a number)"
+		)
+		attest(typeof Node.internal.unitFn).equals("function")
+		attest(Node(nested) as object).equals(nested)
+	})
+
+	it("a definition checking a Type compiles nothing", () => {
+		const $ = scope({}, { exactOptionalPropertyTypes: false })
+		const Named = $.type("string").narrow(
+			(s, ctx) => s.length > 0 || ctx.mustBe("named")
+		)
+		const $internal = Named.internal.$
+		const { jit } = $internal
+		let compiled = 0
+		$internal.jit = node => {
+			compiled++
+			jit.call($internal, node)
+		}
+		const T = $.type({ "a?": Named })
+		attest(compiled).equals(0)
+		attest(T({ a: undefined }) as object).equals({ a: undefined })
+		attest(T({ a: "" }).toString()).snap('a must be named (was "")')
+	})
+
 	it("allows read before a Type is used checks once it compiles", () => {
 		const T = type({ a: "string" })
 		const allows = T.allows
