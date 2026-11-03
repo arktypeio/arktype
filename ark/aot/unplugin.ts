@@ -31,6 +31,7 @@ import {
 	createDevelopmentHost,
 	createNodeHost,
 	dependencyOf,
+	dependsOnArktype,
 	fileOf,
 	islandDependencySpecifier,
 	issueFeaturesFile,
@@ -259,10 +260,11 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	const checkExternal = (
 		isExternal: (specifier: string) => boolean,
 		problemOf: (specifier: string) => string,
-		warn: (message: string) => void
+		warn: (message: string) => void,
+		specifiers = externalizableSpecifiers
 	) => {
 		if (!isStandalone || opts?.shadow) return
-		const specifier = externalizableSpecifiers.find(isExternal)
+		const specifier = specifiers.find(isExternal)
 		if (!specifier) return
 		const problem = problemOf(specifier)
 		if (opts?.allowUnsafe) warn(problem)
@@ -291,6 +293,13 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		if (opts?.allowUnsafe) warn(problem)
 		else throwBuildError(withAllowUnsafe(problem))
 	}
+	// read once each, as each rebuild leaves the same dependencies external
+	const dependsOnArktypeByExternal: Record<string, boolean> = {}
+	const externalDependsOnArktype = (specifier: string, from: string) =>
+		(dependsOnArktypeByExternal[`${from}\0${specifier}`] ??= dependsOnArktype(
+			packageNameOf(specifier),
+			from
+		))
 	const keepCompiler = (bundler: BundlerCompiler) => {
 		compiler = bundler
 		resolveIn(bundler.options.mode === "development")
@@ -313,14 +322,26 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					)
 				if (problem)
 					compilation.errors.push(new bundler.webpack.WebpackError(problem))
-				const requests = new Set<string>()
+				// as each importer sees it, where a package manager doesn't hoist it
+				const requests = new Map<string, string>()
 				for (const module of modules) {
-					if (module instanceof bundler.webpack.ExternalModule)
-						requests.add(module.userRequest)
+					if (module instanceof bundler.webpack.ExternalModule) {
+						requests.set(
+							module.userRequest,
+							(
+								compilation.moduleGraph.getIssuer(module as never) as {
+									context?: string
+								} | null
+							)?.context ?? bundler.context
+						)
+					}
 				}
 				try {
 					checkExternal(
-						specifier => requests.has(specifier),
+						specifier =>
+							requests.has(specifier) &&
+							(externalizableSpecifiers.includes(specifier) ||
+								externalDependsOnArktype(specifier, requests.get(specifier)!)),
 						specifier =>
 							dependsOnNext(bundler.context) ?
 								writeNextExternalMessage(specifier)
@@ -328,7 +349,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 						message =>
 							compilation.warnings.push(
 								new bundler.webpack.WebpackError(message)
-							)
+							),
+						[...externalizableSpecifiers, ...requests.keys()]
 					)
 				} catch (e) {
 					compilation.errors.push(
@@ -1991,6 +2013,7 @@ interface BundlerCompilation {
 
 interface BundlerModuleGraph {
 	getIncomingConnections: (module: never) => Iterable<{ originModule: unknown }>
+	getIssuer: (module: never) => unknown
 }
 
 const bundlerImportsOf = (
@@ -2109,6 +2132,7 @@ const externalizableSpecifiers = [
 ]
 
 // Next.js leaves the pages router's dependencies external on the server
+// where bundlePagesRouterDependencies isn't set
 const dependsOnNext = (root: string): boolean => {
 	const manifest = join(root, "package.json")
 	if (!existsSync(manifest)) return false

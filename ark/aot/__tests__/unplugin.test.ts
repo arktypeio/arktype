@@ -710,6 +710,103 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 		])
 	})
 
+	describe("fails a build whose externals take a package reaching arktype", () => {
+		const errorsOf = async (
+			build: typeof webpack | typeof rspack,
+			plugin: (opts: { cwd: string }) => unknown,
+			name: string,
+			externals: string[],
+			main = `import { failed } from ${JSON.stringify(externals[0])}\n\nconsole.log(failed)\n`
+		) => {
+			const root = writeFixture(
+				{
+					"package.json": JSON.stringify({ type: "module" }),
+					"main.js": main,
+					"node_modules/reads-errors/package.json": JSON.stringify({
+						name: "reads-errors",
+						peerDependencies: { arktype: "*" }
+					}),
+					"node_modules/wraps-errors/package.json": JSON.stringify({
+						name: "wraps-errors",
+						dependencies: { "reads-errors": "*" }
+					}),
+					"node_modules/native/package.json": JSON.stringify({
+						name: "native"
+					}),
+					// as a package manager that doesn't hoist installs it
+					"node_modules/bundled/package.json": JSON.stringify({
+						name: "bundled",
+						type: "module",
+						exports: "./index.js",
+						dependencies: { nested: "*" }
+					}),
+					"node_modules/bundled/index.js": 'export { failed } from "nested"\n',
+					"node_modules/bundled/node_modules/nested/package.json":
+						JSON.stringify({
+							name: "nested",
+							peerDependencies: { arktype: "*" }
+						})
+				},
+				fromHere("temp", "webpackReachingExternals", name)
+			)
+			const compiler = (build as typeof webpack)({
+				mode: "production",
+				context: root,
+				entry: "./main.js",
+				target: "node",
+				output: { path: join(root, "out") },
+				externals,
+				plugins: [plugin({ cwd: root }) as never]
+			})
+			const stats = await new Promise<Stats | undefined>((resolve, reject) =>
+				compiler.run((error, stats) =>
+					compiler.close(() => (error ? reject(error) : resolve(stats)))
+				)
+			)
+			// Rspack marks each error with a × and ends it with a newline
+			return stats
+				?.toJson()
+				.errors?.map(error => error.message.replace(/^\s*× /, "").trimEnd())
+		}
+
+		it("directly or through what it depends on", async () => {
+			const leaves = (name: string) => [
+				withAllowUnsafe(writeExternalizedMessage(name, "externals"))
+			]
+			attest(
+				await errorsOf(webpack, precompile.webpack, "direct", ["reads-errors"])
+			).equals(leaves("reads-errors"))
+			attest(
+				await errorsOf(webpack, precompile.webpack, "through", ["wraps-errors"])
+			).equals(leaves("wraps-errors"))
+			attest(
+				await errorsOf(rspack as never, precompile.rspack, "rspack", [
+					"wraps-errors"
+				])
+			).equals(leaves("wraps-errors"))
+		})
+
+		it("as the module importing it resolves it", async () => {
+			attest(
+				await errorsOf(
+					webpack,
+					precompile.webpack,
+					"nested",
+					["nested"],
+					'import { failed } from "bundled"\n\nconsole.log(failed)\n'
+				)
+			).equals([
+				withAllowUnsafe(writeExternalizedMessage("nested", "externals"))
+			])
+		})
+
+		it("allows one that doesn't", async () => {
+			attest(
+				await errorsOf(webpack, precompile.webpack, "native", ["native"])
+			).equals([])
+		})
+	})
+
 	describe("fails a bundle another plugin leaves arktype external in, as tsup and tsdown do", () => {
 		// where `pattern` matches, as a tool externalizing dependencies would
 		const externalizing = (pattern: RegExp) => ({

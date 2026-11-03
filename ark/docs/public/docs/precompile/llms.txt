@@ -378,6 +378,8 @@ With Turbopack, the default, add the loader as a rule for each extension your de
 
 ```js
 export default {
+	// for the pages router
+	bundlePagesRouterDependencies: true,
 	turbopack: {
 		rules: {
 			"*.ts": { loaders: ["@ark/aot/turbopack"] },
@@ -402,14 +404,16 @@ The loader fails a module whose `arktype` imports resolve otherwise, naming the 
 
 The aliases also point a dependency's `arktype` imports at the runtime, so the `*.{js,mjs}` rule has the loader fail the build for a dependency that defines Types but doesn't [opt in](https://arktype.io/docs/precompile/advanced#libraries), and precompile one that does or that [`dependencies`](https://arktype.io/docs/precompile/options#dependencies) sets to `"aot"`. Turbopack can't run one dependency on arktype, so for one that creates Types from values it reads as it runs, like `drizzle-arktype`, build with webpack or with `runtime: "arktype"`. The loader reads only `import` and `export` declarations, so a CommonJS dependency that `require`s arktype throws `type is not a function` when it loads instead.
 
-With webpack, which Next 15 builds with, as does `next build --webpack`, add the plugin. The pages router leaves dependencies external on the server, so with it, also have Next bundle arktype:
+On the pages router's server, Next otherwise leaves dependencies external, where the aliases don't reach, so Node would load arktype, for your code and for any dependency importing it, beside the runtime your validators use, and `out instanceof type.errors` would be false for their errors. `bundlePagesRouterDependencies` has Next bundle them, as it does the app router's, and the loader fails a module there without it. `transpilePackages: ["arktype"]` isn't enough, as a dependency left external still loads its own copy. Either router leaves external a package `serverExternalPackages` names, so the loader fails the build for one that depends on arktype, reading the list from `next.config` without running it: name its packages as string literals.
+
+With webpack, which Next 15 builds with, as does `next build --webpack`, add the plugin, which fails the build where Next would leave arktype, or a package depending on it, external:
 
 ```js
 import { precompile } from "@ark/aot/unplugin"
 
 export default {
 	// for the pages router
-	transpilePackages: ["arktype"],
+	bundlePagesRouterDependencies: true,
 	webpack: config => {
 		config.plugins.push(precompile.webpack())
 		return config
@@ -871,7 +875,7 @@ A package precompiled with `"aot"` is read as the program is, so a value it retu
 
 ### allowUnsafe
 
-`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `@ark/schema/runtime` that doesn't match `errors` and `optimizeErrors`, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
+`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `@ark/schema/runtime` that doesn't match `errors` and `optimizeErrors`, a package the build leaves external that loads arktype beside the runtime, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
 
 ### conditions and tsconfig
 
@@ -1001,7 +1005,11 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`The bundle leaves arktype to be loaded at runtime`** (or `arktype/runtime`): the program would load arktype, or a second copy of its runtime, beside the runtime its validators use, so `out instanceof type.errors` would be false for their errors. A tool that leaves dependencies external does this unless told otherwise: with tsup, add `noExternal: ["arktype"]`, and with tsdown, `deps: { alwaysBundle: [/^arktype(\/|$)/] }`. Where every import of arktype's runtime is left external, as with esbuild's `packages: "external"`, the program loads one copy, and the build allows it.
 
-**`Next.js leaves the pages router's dependencies external on the server when it builds with webpack`**: the server would then load arktype beside the runtime its validators use. Add `transpilePackages: ["arktype"]` to the Next config, as [Next.js](https://arktype.io/docs/precompile/setup#next) shows.
+**`Next.js leaves the pages router's dependencies external on the server`**: the server would then load arktype beside the runtime its validators use, so `out instanceof type.errors` would be false for their errors. Add `bundlePagesRouterDependencies: true` to the Next config, as [Next.js](https://arktype.io/docs/precompile/setup#next) shows. `transpilePackages: ["arktype"]` isn't enough, as a dependency left external still loads its own copy.
+
+**The build's `serverExternalPackages` option leaves a package** (Turbopack): the package depends on arktype, and either router's server would load it, and arktype with it, beside the runtime your validators use. Remove it from `serverExternalPackages`.
+
+**The @ark/aot/turbopack loader reads `serverExternalPackages` from `next.config`**: the loader reads the list from `next.config` without running it, as running it again could start a server or write files. Write it in that file as an array of string literals.
 
 **`arktype resolves to more than one copy`**: one copy doesn't recognize another's Types and errors. The message names each copy and the file that reached it.
 

@@ -1,4 +1,4 @@
-import { realpathSync } from "node:fs"
+import { existsSync, readFileSync, realpathSync } from "node:fs"
 import { createRequire } from "node:module"
 import { dirname, extname, join } from "node:path"
 import { parseSync } from "oxc-parser"
@@ -21,6 +21,8 @@ import {
 	createNodeHost,
 	createDevelopmentHost,
 	dependencyOf,
+	dependsOnArktype,
+	packageRootOf,
 	printablePathOf,
 	reportDiagnostics,
 	resolvedVariantOf,
@@ -32,13 +34,19 @@ import {
 import {
 	writeAliasMessage,
 	writeChangedSettingsMessage,
+	writeExternalizedMessage,
+	writeNextExternalMessage,
 	writeRuntimeAliasMessage,
+	writeUnreadServerExternalsMessage,
 	withAllowUnsafe
 } from "./messages.ts"
+import { walk } from "./scope.ts"
 import { checkArktypeVersion } from "./version.ts"
 
 export interface TurbopackLoaderContext {
 	resourcePath: string
+	// the Next.js project, which may not be the process's directory
+	rootContext?: string
 	getOptions(): PrecompilePluginOptions
 	// webpack's, where Turbopack's loader context has it
 	mode?: string
@@ -190,14 +198,94 @@ const loadedOf = (
 		)
 	}
 	if (!specifiers.length || !context.getResolve || !context.async) return code
-	return checkAliases(
-		context.getResolve({}),
-		context.resourcePath,
-		specifiers,
-		opts,
-		warn
-	).then(() => code)
+	const resolve = context.getResolve({})
+	return checkAliases(resolve, context.resourcePath, specifiers, opts, warn)
+		.then(() => checkNextExternals(context, resolve, opts, warn))
+		.then(() => code)
 }
+
+// Next.js decides what it leaves external after the resolver the loader has,
+// and resolveAlias doesn't reach what it does
+const checkNextExternals = async (
+	context: TurbopackLoaderContext,
+	resolve: (context: string, request: string) => Promise<string>,
+	opts: PrecompilePluginOptions,
+	warn: (warning: string) => void
+) => {
+	if (opts.runtime === "arktype" || opts.shadow) return
+	const root = context.rootContext ?? opts.cwd ?? process.cwd()
+	if (!packageRootOf("next", root)) return
+	const problem =
+		(serverExternalProblems[root] ??= serverExternalProblemOf(root)) ||
+		// Next's own React is external just where this module's dependencies are,
+		// however next.config comes to set bundlePagesRouterDependencies
+		(await resolve(
+			dirname(context.resourcePath),
+			"next/dist/compiled/react"
+		).then(
+			() => "",
+			() => writeNextExternalMessage("arktype")
+		))
+	if (!problem) return
+	if (opts.allowUnsafe) warn(problem)
+	else throwBuildError(withAllowUnsafe(problem))
+}
+
+const serverExternalProblems: Record<string, string> = {}
+
+// read rather than run, as Next's own process alone expects to run next.config,
+// which may start a server or write files
+const serverExternalProblemOf = (root: string): string => {
+	const name = nextConfigFiles.find(name => existsSync(join(root, name)))
+	if (!name) return ""
+	const source = readFileSync(join(root, name), "utf8")
+	if (!source.includes("serverExternalPackages")) return ""
+	const lists = serverExternalListsIn(name, source)
+	if (!lists.length || lists.some(list => !list))
+		return writeUnreadServerExternalsMessage(name)
+	const external = (lists as string[][])
+		.flat()
+		.find(name => dependsOnArktype(name, root))
+	return external ?
+			writeExternalizedMessage(external, "serverExternalPackages")
+		:	""
+}
+
+// each serverExternalPackages property's names, null where they aren't literal
+const serverExternalListsIn = (name: string, source: string) => {
+	const lists: (string[] | null)[] = []
+	walk(parseSync(name, source).program, node => {
+		if (
+			node.type === "Property" &&
+			!node.computed &&
+			(node.key.type === "Identifier" ?
+				node.key.name
+			:	(node.key as { value?: unknown }).value) === "serverExternalPackages"
+		) {
+			const { value } = node
+			lists.push(
+				(
+					value.type === "ArrayExpression" &&
+						value.elements.every(element => element?.type === "Literal")
+				) ?
+					value.elements.map(element =>
+						String((element as { value?: unknown }).value)
+					)
+				:	null
+			)
+		}
+		return true
+	})
+	return lists
+}
+
+// those next.config can be, which Next.js reads the first of
+const nextConfigFiles = [
+	"next.config.js",
+	"next.config.mjs",
+	"next.config.ts",
+	"next.config.mts"
+]
 
 // Turbopack resolves arktype as `resolveAlias` says, which the loader can't change
 const checkAliases = async (
