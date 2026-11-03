@@ -5462,18 +5462,32 @@ export class Precompiler {
 		module: SourceModule
 	): Diagnostic | undefined {
 		const objectRange = rangeOf(unwrapChain(object))
-		const settledValue = settledValues.get(objectRange)
-		// a computed site is sure, so a member the options drop is read off a Type
+		let settledValue = settledValues.get(objectRange)
+		let isSettled = settledValues.has(objectRange)
+		// a reflection on what the build can evaluate, like a Module, reflects
+		// on a Type only where it's one
+		if (isUnsureRead && read === undefined && !isSettled) {
+			const { value } = this.interpreter.exportValue({
+				kind: "expression",
+				module,
+				node: object
+			})
+			if (!findDynamic(value)) {
+				settledValue = value
+				isSettled = true
+			}
+		}
+		// a computed site is sure, so a reflection or a member the options drop
+		// is read off a Type
 		const isUnsure =
 			isUnsureRead &&
 			!(
 				hasArkKind(settledValue, "root") &&
-				read !== undefined &&
-				this.lackedMembers.has(read)
+				(read === undefined || this.lackedMembers.has(read))
 			)
 		// a chain is reported where it first reads one
 		if (
-			(isUnsure && (isArkPackage || settledValues.has(objectRange))) ||
+			(isUnsure && (isArkPackage || isSettled)) ||
 			unavailable.some(([inner]) => inner !== node && contains(node, inner)) ||
 			this.members[read as ValidatorMember] === true
 		)

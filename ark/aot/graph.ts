@@ -3306,11 +3306,12 @@ export class ModuleGraph {
 		// a validator prints its expression as its string
 		if (read === "toString" && !lacked.has(read)) read = "expression"
 		const object = objects.find(object => isOnlyType(kindOf(object)))
-		// e.g. `t.or` or `${t}`, where `t` may be a Type
+		// e.g. `t.or`, `${t}` or `Object.keys(t)`, where `t` may be a Type
 		const unsure =
 			!object &&
-			(node.type === "MemberExpression" || typeof read === "string") &&
-			objects.find(object => isUnsureRead(read, kindOf(object), lacked))
+			(node.type === "MemberExpression" || typeof read === "string" ?
+				objects.find(object => isUnsureRead(read, kindOf(object), lacked))
+			:	objects.find(object => kindOf(object) & kinds.type))
 		if (unsure) return [read as string, unsure, true]
 		return (
 				object &&

@@ -1465,6 +1465,27 @@ console.log(Object.keys(T), String(T), JSON.stringify(T))`,
 			])
 		})
 
+		it("reflects on what may be a Type", () => {
+			attest(
+				unhinted(`import { scope, type } from "arktype"
+const Parsed = type("string.json.parse")
+const Name = type("string")
+const schemas = { Parsed, Name }
+const key = process.argv[2]
+const d: unknown = process.argv[3]
+const $ = scope({ a: "string" }).export()
+console.log(Object.entries(schemas[key]), Object.keys($))
+console.log(Object.keys(Parsed))
+console.log(Object.keys(typeof d === "string" ? Parsed : Name), Object.keys(d || Name), Object.keys(d ?? Name))`)
+			).snap([
+				"/main.ts:8:13  Object.entries(schemas[key]) reflects on a Type, whose properties a standalone validator doesn't share\n  the build can't tell where `schemas[key]` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:9:13  Object.keys(Parsed) reflects on a Type, whose properties a standalone validator doesn't share\n  `Parsed` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				'/main.ts:10:13  Object.keys(typeof d === "string" ? Parsed : Name) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `typeof d === "string" ? Parsed : Name` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read',
+				"/main.ts:10:65  Object.keys(d || Name) reflects on a Type, whose properties a standalone validator doesn't share\n  the build can't tell where `d || Name` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:10:89  Object.keys(d ?? Name) reflects on a Type, whose properties a standalone validator doesn't share\n  the build can't tell where `d ?? Name` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
 		it("a Type a getter returns or this reads in a static member", () => {
 			attest(
 				unhinted(`import { type } from "arktype"
