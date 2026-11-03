@@ -20,7 +20,12 @@ import {
 	type Binding
 } from "./scope.ts"
 import { importsOf } from "./scan.ts"
-import { isDead, type RuntimeModule, type UsageProgram } from "./usage.ts"
+import {
+	isDead,
+	isSpan,
+	type RuntimeModule,
+	type UsageProgram
+} from "./usage.ts"
 
 // a key the build can't name, like an array's index
 export const anyKey: unique symbol = Symbol("any key")
@@ -43,11 +48,36 @@ export interface ReaderSeed {
 	value?: unknown
 }
 
+// what a production bundle leaves out of a validator where no read needs it
+export type PrunedMember = "assert" | "meta" | "~standard" | "methods"
+
+export const prunedMembers: readonly PrunedMember[] = [
+	"assert",
+	"meta",
+	"~standard",
+	"methods"
+]
+
+const prunedMembersByName: Record<string, PrunedMember[]> = Object.assign(
+	Object.create(null),
+	{
+		assert: ["assert"],
+		meta: ["meta"],
+		"~standard": ["~standard"],
+		traverse: ["methods"],
+		toString: ["methods"],
+		// from(input) returns this.assert(input)
+		from: ["methods", "assert"]
+	}
+)
+
 // how the introspection members a validator bakes were decided
 export type ReadStep = "dataflow" | "fields" | "lost"
 
 export interface Reading {
 	members: IntrospectionMember[]
+	// each it may read, or every one where code the build can't see may
+	pruned: PrunedMember[]
 	step: ReadStep
 	// e.g. "node_modules/x/index.js:3:5 reads ~standard.jsonSchema"
 	reads: string[]
@@ -55,6 +85,9 @@ export interface Reading {
 	lost: string[]
 	// where code the build can't see may read it, which the runtime fails loudly
 	unseen: string[]
+	// where code the build can't see may read what holds it, which only finds
+	// introspection members by name
+	unfollowed: string[]
 }
 
 export interface ReaderProgram extends UsageProgram {
@@ -335,8 +368,10 @@ class Follow {
 	private readers: Readers
 	private value: unknown
 	private read = new Map<IntrospectionMember, string>()
+	private pruned = new Set<PrunedMember>()
 	private lost: Lost[] = []
 	private unseen: string[] = []
+	private unfollowed: string[] = []
 	private followsFields = false
 	private seen = new Map<Node, Set<string>>()
 	private facts = 0
@@ -676,10 +711,15 @@ class Follow {
 			for (const member of introspectionMembers) members.add(member)
 		return {
 			members: introspectionMembers.filter(member => members.has(member)),
+			pruned:
+				this.lost.length || this.unseen.length || this.unfollowed.length ?
+					[...prunedMembers]
+				:	prunedMembers.filter(member => this.pruned.has(member)),
 			step,
 			reads: [...this.read].map(([member, at]) => `${at} reads ${member}`),
 			lost: this.lost.map(lost => `${lost.at} ${lost.why}`),
-			unseen: this.unseen
+			unseen: this.unseen,
+			unfollowed: this.unfollowed
 		}
 	}
 
@@ -689,6 +729,14 @@ class Follow {
 		module: SourceModule
 	) {
 		if (!this.read.has(member)) this.read.set(member, module.positionOf(node))
+	}
+
+	// converting a validator to a primitive calls its toString, which reads its
+	// expression
+	private convert(held: Held, at: Node, module: SourceModule): void {
+		if (held.path.length || held.of !== "type") return
+		this.record("expression", at, module)
+		this.pruned.add("methods")
 	}
 
 	private lose(node: Node, module: SourceModule, why: string): void {
@@ -726,9 +774,7 @@ class Follow {
 			case "Property":
 				if (parent.key === operand) {
 					// a computed key converts it to a string
-					if (isValue && held.of === "type")
-						this.record("expression", parent, module)
-					return
+					return this.convert(held, parent, module)
 				}
 				if (
 					parent.value !== operand ||
@@ -753,9 +799,7 @@ class Follow {
 			case "MemberExpression":
 				if (parent.object !== operand) {
 					// a computed key converts it to a string
-					if (isValue && held.of === "type")
-						this.record("expression", parent, module)
-					return
+					return this.convert(held, parent, module)
 				}
 				return this.member(parent, module, held)
 			case "CallExpression":
@@ -766,18 +810,20 @@ class Follow {
 				if (parent.tag !== operand) return
 				return
 			case "TemplateLiteral":
-				if (isValue && held.of === "type")
-					this.record("expression", parent, module)
-				return
+				return this.convert(held, parent, module)
 			case "BinaryExpression":
-				// `+`, `in` and arithmetic convert it to a primitive
-				if (
-					isValue &&
-					held.of === "type" &&
-					!/^(?:[!=]==?|instanceof)$/.test(parent.operator) &&
-					!(parent.operator === "in" && parent.right === operand)
-				)
-					this.record("expression", parent, module)
+				// `k in T` reads whether it has k
+				if (parent.operator === "in" && parent.right === operand) {
+					if (!isValue) return
+					const key = constantOf(parent.left, module)
+					if (key === undefined)
+						return lose("tests it for a key the build can't name")
+					this.readMember(key, held, parent, module)
+					return
+				}
+				// `+` and arithmetic convert it to a primitive
+				if (!/^(?:[!=]==?|instanceof)$/.test(parent.operator))
+					this.convert(held, parent, module)
 				return
 			case "ReturnStatement":
 				return this.returnFrom(
@@ -945,6 +991,7 @@ class Follow {
 				this.record("~standard.jsonSchema", member, module)
 			return
 		}
+		for (const read of prunedMembersByName[key] ?? []) this.pruned.add(read)
 		if (key === "~standard")
 			return this.push(member, module, { path: [], of: "standard" })
 		if (key === "toString") return this.record("expression", member, module)
@@ -1010,8 +1057,12 @@ class Follow {
 		const value = this.calleeOf(call, module)
 		if (!value) {
 			// what holds it is stored where any read of its key may find it
-			if (held.path.length)
+			if (held.path.length) {
+				this.unfollowed.push(
+					`${module.positionOf(arg)} passes it to ${module.snippetOf(callee)}, which the build can't follow`
+				)
 				return this.followField(undefined, arg, module, held)
+			}
 			return this.lose(
 				arg,
 				module,
@@ -1071,7 +1122,12 @@ class Follow {
 		}
 		if (!entries) {
 			// what holds it is read where any read of its key may find it
-			if (held.path.length) return this.followField(undefined, at, module, held)
+			if (held.path.length) {
+				this.unfollowed.push(
+					`${module.positionOf(at)} returns it from a function whose calls the build can't follow`
+				)
+				return this.followField(undefined, at, module, held)
+			}
 			return this.lose(
 				at,
 				module,
@@ -1203,6 +1259,7 @@ class Follow {
 			if (key === "jsonSchema") this.record("~standard.jsonSchema", at, module)
 			return
 		}
+		for (const read of prunedMembersByName[key] ?? []) this.pruned.add(read)
 		if (key === "~standard") return { path: [], of: "standard" }
 		if (key === "toString") this.record("expression", at, module)
 		else if (introspectionMembers.includes(key as never))
@@ -1223,7 +1280,14 @@ class Follow {
 	): void {
 		const runtime = this.readers.runtimeOf(module)
 		for (const reference of binding.references) {
-			if (reference.isWrite || (runtime && isDead(reference.id, runtime)))
+			if (
+				reference.isWrite ||
+				(runtime &&
+					(isDead(reference.id, runtime) ||
+						// passed to its site's factory, which finds the holes it
+						// holds by the validator itself, reading no member
+						runtime.kept.some(span => isSpan(reference.id, span))))
+			)
 				continue
 			const [operand, parent] = operatorOf(reference.id)
 			// read by importers through the export
@@ -1331,8 +1395,7 @@ class Follow {
 				}
 				return true
 			case "String":
-				if (isValue && held.of === "type")
-					this.record("expression", call, module)
+				this.convert(held, call, module)
 				return true
 			case "Object.freeze":
 			case "Object.seal":
@@ -1363,6 +1426,10 @@ class Follow {
 				return true
 			case "Object.keys":
 			case "Object.getOwnPropertyNames":
+				// which keys it has depends on each member it may lack
+				if (index === 0 && held.path.length === 0 && held.of === "type")
+					for (const member of prunedMembers) this.pruned.add(member)
+				return true
 			case "Object.is":
 			case "Array.isArray":
 			case "Boolean":

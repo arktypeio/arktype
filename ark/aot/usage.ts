@@ -60,10 +60,15 @@ export interface UsageProgram {
 	resolve: (specifier: string, importer: string) => string | undefined
 }
 
-// the members some read needs, or why one reaches code that may read anything
-export const usedMembersOf = (
-	program: UsageProgram
-): Set<UsedMember> | string => {
+export interface ProgramUse {
+	used: Set<UsedMember>
+	// where a validator first reaches code this doesn't follow, which
+	// readers.ts follows instead
+	handedOff: string | undefined
+}
+
+// the members some read needs, or why the program may read anything
+export const usedMembersOf = (program: UsageProgram): ProgramUse | string => {
 	const analysis = new UsageAnalysis(program)
 	try {
 		analysis.analyze()
@@ -71,7 +76,7 @@ export const usedMembersOf = (
 		if (e instanceof Escape) return e.reason
 		throw e
 	}
-	return analysis.used
+	return { used: analysis.used, handedOff: analysis.handedOff }
 }
 
 class Escape {
@@ -98,6 +103,7 @@ type ImportEdge =
 
 class UsageAnalysis {
 	used = new Set<UsedMember>()
+	handedOff: string | undefined
 	private program: UsageProgram
 	private edgesByTarget = new Map<string, ImportEdge[]>()
 	// each binding read, by the path of keys the validator is held at in it
@@ -464,9 +470,7 @@ class UsageAnalysis {
 				return
 			}
 		}
-		escape(
-			`${module.positionOf(node)} ${unfollowedReadOf(node, parent, module)}`
-		)
+		this.handedOff ??= `${module.positionOf(node)} ${unfollowedReadOf(node, parent, module)}`
 	}
 
 	// a read of an object holding a validator at path: on to the member at its
@@ -495,13 +499,11 @@ class UsageAnalysis {
 		const holder = `${module.snippetOf(node)}, which holds a validator at ${path.join(".")},`
 		const passed =
 			parent?.type === "CallExpression" || parent?.type === "NewExpression"
-		return escape(
-			`${module.positionOf(node)} ${
-				passed ?
-					`passes ${holder} to a function, which may read any member`
-				:	`reads ${holder} other than to read a member`
-			}`
-		)
+		this.handedOff ??= `${module.positionOf(node)} ${
+			passed ?
+				`passes ${holder} to a function, which may read any member`
+			:	`reads ${holder} other than to read a member`
+		}`
 	}
 
 	// a call's second argument is where its failure may pipe
@@ -582,7 +584,7 @@ export const isDead = (node: Span, runtime: RuntimeModule): boolean =>
 const isIn = (node: Span, span: Span) =>
 	span.start <= node.start && node.end <= span.end
 
-const isSpan = (node: Span, span: Span) =>
+export const isSpan = (node: Span, span: Span): boolean =>
 	node.start === span.start && node.end === span.end
 
 const nodesAt = (module: SourceModule, spans: Span[]): Node[] => {
