@@ -556,14 +556,21 @@ const readerArb = fc.record({
 	read: nameArb(reads)
 })
 
-const apps: fc.Arbitrary<App> = fc.record({
-	definitions: fc.array(fc.nat({ max: definitions.length - 1 }), {
-		minLength: 3,
-		maxLength: 3
-	}),
-	packaged: fc.nat({ max: 3 }).map(n => n === 0),
-	readers: fc.array(readerArb, { minLength: 1, maxLength: 4 })
-})
+const apps: fc.Arbitrary<App> = fc
+	.record({
+		definitions: fc.array(fc.nat({ max: definitions.length - 1 }), {
+			minLength: 3,
+			maxLength: 3
+		}),
+		packaged: fc.nat({ max: 3 }).map(n => n === 0),
+		readers: fc.array(readerArb, { minLength: 1, maxLength: 4 })
+	})
+	.filter(
+		// Node can't require() a module another reader is loading by import()
+		({ readers }) =>
+			!readers.some(reader => reader.hops.includes("dynamicImport")) ||
+			!readers.some(reader => reader.hops.includes("required"))
+	)
 
 const packageName = "schemas"
 
@@ -973,14 +980,18 @@ type Verdict =
 const mismatchOf = (
 	reader: Reader,
 	host: Host,
-	observed: unknown
+	observed: unknown,
+	expected: unknown
 ): Exclude<Verdict, "sound"> => {
 	const threw = (observed as { threw?: string } | undefined)?.threw ?? ""
 	const read = reads[reader.read]
 	if (
 		moduleAtATime.has(host) &&
 		hopsOf(reader).includes("required") &&
-		unbakedMessage.test(threw)
+		(unbakedMessage.test(threw) ||
+			// toString's backstop, as converting it reads expression
+			JSON.stringify(observed) ===
+				JSON.stringify(expected)?.replace(/Type<[^"]*>/g, "Type"))
 	)
 		return "unbakedThroughCommonJs"
 	if (read.fallback && fallbackMessage.test(threw)) return "fallbackUnbaked"
@@ -1138,7 +1149,7 @@ const check = async (app: App): Promise<boolean> => {
 				app.readers.map((reader, j) =>
 					normalized(observations[j]) === normalized(expectedObservations[j]) ?
 						"sound"
-					:	mismatchOf(reader, host, observations[j])
+					:	mismatchOf(reader, host, observations[j], expectedObservations[j])
 				)
 			:	["unsound"]
 		// what the bundler alone builds otherwise than Node runs it isn't the plugin's
