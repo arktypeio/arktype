@@ -261,6 +261,8 @@ With Turbopack, the default, add the loader as a rule for each extension your de
 
 ```js title="next.config.js"
 export default {
+	// for the pages router
+	bundlePagesRouterDependencies: true,
 	turbopack: {
 		rules: {
 			"*.ts": { loaders: ["@ark/aot/turbopack"] },
@@ -285,7 +287,9 @@ The loader fails a module whose `arktype` imports resolve otherwise, naming the 
 
 The aliases also point a dependency's `arktype` imports at the runtime, so the `*.{js,mjs}` rule has the loader fail the build for a dependency that defines Types but doesn't [opt in](/docs/precompile/advanced#libraries), and precompile one that does or that [`dependencies`](/docs/precompile/options#dependencies) sets to `"aot"`. Turbopack can't run one dependency on arktype, so for one that creates Types from values it reads as it runs, like `drizzle-arktype`, build with webpack or with `runtime: "arktype"`. The loader reads only `import` and `export` declarations, so a CommonJS dependency that `require`s arktype throws `type is not a function` when it loads instead.
 
-With webpack, which Next 15 builds with, as does `next build --webpack`, add the plugin. The pages router leaves dependencies external on the server, so with it, also have Next bundle arktype:
+On the pages router's server, Next otherwise leaves dependencies external, where the aliases don't reach, so Node would load arktype, for your code and for any dependency importing it, beside the runtime your validators use, and `out instanceof type.errors` would be false for their errors. `bundlePagesRouterDependencies` has Next bundle them, as it does the app router's, and the loader fails a module there without it. `transpilePackages: ["arktype"]` isn't enough, as a dependency left external still loads its own copy. Either router leaves external a package `serverExternalPackages` names, so the loader fails the build for one that depends on arktype, reading the list from `next.config` without running it: name its packages as string literals.
+
+With webpack, which Next 15 builds with, as does `next build --webpack`, add the plugin, which fails the build where Next would leave arktype, or a package depending on it, external:
 
 ```js title="next.config.js"
 // @noErrors
@@ -293,7 +297,7 @@ import { precompile } from "@ark/aot/unplugin"
 
 export default {
 	// for the pages router
-	transpilePackages: ["arktype"],
+	bundlePagesRouterDependencies: true,
 	webpack: config => {
 		config.plugins.push(precompile.webpack())
 		return config

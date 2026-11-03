@@ -180,23 +180,19 @@ export const projectOf = (cwd: string): string => {
 	return project
 }
 
-// for a host that must be told before the build which packages it transforms
-export const optedInPackagesOf = (
-	cwd: string,
-	dependencies?: DependencyModes
-): string[] => {
-	const result = Object.keys(dependencies ?? {}).filter(
-		name => dependencies![name] === "aot"
-	)
-	const project = projectOf(cwd)
-	// every package the project reaches, as one that doesn't opt in may depend on one that does
-	const packages: [root: string, name: string][] = [[project, ""]]
-	const visited = new Set([realPathOf(project)])
+// each package a root reaches through what it declares, with its manifest
+const reachedFrom = function* (
+	start: string,
+	name: string,
+	readsDevDependencies: boolean
+): Generator<[root: string, name: string, manifest: string]> {
+	const packages: [root: string, name: string][] = [[start, name]]
+	const visited = new Set([realPathOf(start)])
 	for (let i = 0; i < packages.length; i++) {
 		const [root, name] = packages[i]
 		const manifest = readFile(join(root, "package.json"))
 		if (manifest === undefined) continue
-		if (i && optsIn(manifest) && !result.includes(name)) result.push(name)
+		yield [root, name, manifest]
 		const {
 			dependencies,
 			devDependencies,
@@ -206,7 +202,7 @@ export const optedInPackagesOf = (
 		for (const dependency in {
 			...dependencies,
 			// a dependency's devDependencies aren't installed
-			...(!i && devDependencies),
+			...(!i && readsDevDependencies && devDependencies),
 			...optionalDependencies,
 			...peerDependencies
 		}) {
@@ -217,7 +213,29 @@ export const optedInPackagesOf = (
 			}
 		}
 	}
+}
+
+// for a host that must be told before the build which packages it transforms
+export const optedInPackagesOf = (
+	cwd: string,
+	dependencies?: DependencyModes
+): string[] => {
+	const result = Object.keys(dependencies ?? {}).filter(
+		name => dependencies![name] === "aot"
+	)
+	// every package the project reaches, as one that doesn't opt in may depend on one that does
+	for (const [, name, manifest] of reachedFrom(projectOf(cwd), "", true))
+		if (name && optsIn(manifest) && !result.includes(name)) result.push(name)
 	return result
+}
+
+// a package left to Node loads what it declares from Node, so it may load arktype
+export const dependsOnArktype = (name: string, from: string): boolean => {
+	const root = packageRootOf(name, from)
+	if (!root) return false
+	for (const [, dependency] of reachedFrom(root, name, false))
+		if (dependency === "arktype" || dependency === "@ark/schema") return true
+	return false
 }
 
 export const packageRootOf = (

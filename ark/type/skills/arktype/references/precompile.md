@@ -67,6 +67,8 @@ Next 16 builds with Turbopack. Add a loader rule for each extension holding a de
 ```js
 // next.config.js (or the same object in next.config.ts)
 export default {
+	// for the pages router
+	bundlePagesRouterDependencies: true,
 	turbopack: {
 		rules: {
 			"*.ts": { loaders: ["@ark/aot/turbopack"] },
@@ -87,7 +89,9 @@ export default {
 }
 ```
 
-Next 15 builds with webpack, as does `next build --webpack`: push `precompile.webpack()` onto `config.plugins` in the `webpack` function instead. With the pages router, Next leaves dependencies external on the server, so also add `transpilePackages: ["arktype"]`, or the build fails with `Next.js leaves the pages router's dependencies external on the server ...`.
+Next 15 builds with webpack, as does `next build --webpack`: push `precompile.webpack()` onto `config.plugins` in the `webpack` function instead.
+
+On the pages router's server, Next otherwise leaves dependencies external, where the aliases don't reach, so a precompiled validator's errors fail `instanceof type.errors`. With either bundler, without `bundlePagesRouterDependencies: true` the build fails with `Next.js leaves the pages router's dependencies external on the server ...`. `transpilePackages: ["arktype"]` isn't enough: a dependency left external still loads its own copy of arktype. A package `serverExternalPackages` names that depends on arktype fails the build too.
 
 ### Without a bundler
 
@@ -166,7 +170,8 @@ Each build error names the file, line and column, then why, then the fix on its 
 | `my-lib imports arktype, which a standalone build resolves to arktype/runtime`                                       | set `"precompile": { "dependencies": { "my-lib": "aot" } }`, or `"arktype"` in place of `"aot"` if it creates Types from runtime values |
 | `src/Form.svelte imports arktype, which a standalone build resolves to arktype/runtime`                              | move the Types, and any code reading `type`, into a `.ts` module the component imports; don't set `allowUnsafe`                         |
 | `precompile.esbuild() needs bundle: true`                                                                            | set `bundle: true`                                                                                                                      |
-| `Next.js leaves the pages router's dependencies external on the server ...`                                          | add `transpilePackages: ["arktype"]` to the Next config                                                                                 |
+| `Next.js leaves the pages router's dependencies external on the server ...`                                          | add `bundlePagesRouterDependencies: true` to the Next config                                                                            |
+| `The build's serverExternalPackages option leaves my-lib ...` (Turbopack)                                            | remove the package from `serverExternalPackages`                                                                                        |
 | `arktype resolves to ... rather than arktype/runtime` (Turbopack)                                                    | add the `resolveAlias` entries it lists                                                                                                 |
 | `type is not a function` at runtime                                                                                  | a module defining Types wasn't precompiled, e.g. no Turbopack rule matches its extension; add one                                       |
 

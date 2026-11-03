@@ -96,7 +96,10 @@ export const writeExternalizedMessage = (
 	`The build's \`${option}\` option leaves ${specifier} ${loadedAtRuntime}. Remove ${packageNameOf(specifier)} from \`${option}\`.`
 
 export const writeNextExternalMessage = (specifier: string): string =>
-	`Next.js leaves the pages router's dependencies external on the server when it builds with webpack, so it leaves ${specifier} ${loadedAtRuntime}. Add \`transpilePackages: ["${packageNameOf(specifier)}"]\` to next.config.js, so Next.js bundles it.`
+	`Next.js leaves the pages router's dependencies external on the server, so it leaves ${specifier} ${loadedAtRuntime}. Add \`bundlePagesRouterDependencies: true\` to next.config.js, so Next.js bundles them as it does the app router's, and leave ${packageNameOf(specifier)} out of \`serverExternalPackages\`.`
+
+export const writeUnreadServerExternalsMessage = (config: string): string =>
+	`The @ark/aot/turbopack loader reads \`serverExternalPackages\` from ${config} without running it, for a package depending on arktype that Next.js would load past \`resolveAlias\`, and can't read one other than an array of string literals. Write it as one.`
 
 export const writeBundledExternalMessage = (specifier: string): string =>
 	`The bundle leaves ${specifier} ${loadedAtRuntime}. Bundle arktype: remove it from the bundler's \`external\` option, or, where a tool leaves dependencies external, have it bundle arktype, as tsup does with \`noExternal: ["arktype"]\` and tsdown with \`deps: { alwaysBundle: [/^arktype(\\/|$)/] }\`.`

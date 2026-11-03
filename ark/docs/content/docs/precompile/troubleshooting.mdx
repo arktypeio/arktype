@@ -87,7 +87,11 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`The bundle leaves arktype to be loaded at runtime`** (or `arktype/runtime`): the program would load arktype, or a second copy of its runtime, beside the runtime its validators use, so `out instanceof type.errors` would be false for their errors. A tool that leaves dependencies external does this unless told otherwise: with tsup, add `noExternal: ["arktype"]`, and with tsdown, `deps: { alwaysBundle: [/^arktype(\/|$)/] }`. Where every import of arktype's runtime is left external, as with esbuild's `packages: "external"`, the program loads one copy, and the build allows it.
 
-**`Next.js leaves the pages router's dependencies external on the server when it builds with webpack`**: the server would then load arktype beside the runtime its validators use. Add `transpilePackages: ["arktype"]` to the Next config, as [Next.js](/docs/precompile/setup#next) shows.
+**`Next.js leaves the pages router's dependencies external on the server`**: the server would then load arktype beside the runtime its validators use, so `out instanceof type.errors` would be false for their errors. Add `bundlePagesRouterDependencies: true` to the Next config, as [Next.js](/docs/precompile/setup#next) shows. `transpilePackages: ["arktype"]` isn't enough, as a dependency left external still loads its own copy.
+
+**The build's `serverExternalPackages` option leaves a package** (Turbopack): the package depends on arktype, and either router's server would load it, and arktype with it, beside the runtime your validators use. Remove it from `serverExternalPackages`.
+
+**The @ark/aot/turbopack loader reads `serverExternalPackages` from `next.config`**: the loader reads the list from `next.config` without running it, as running it again could start a server or write files. Write it in that file as an array of string literals.
 
 **`arktype resolves to more than one copy`**: one copy doesn't recognize another's Types and errors. The message names each copy and the file that reached it.
 

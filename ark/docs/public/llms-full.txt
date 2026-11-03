@@ -52,6 +52,8 @@ Vitest runs your tests through the same plugin.
 
 ```js
 export default {
+	// for the pages router
+	bundlePagesRouterDependencies: true,
 	turbopack: {
 		rules: {
 			"*.ts": { loaders: ["@ark/aot/turbopack"] },
