@@ -1,3 +1,4 @@
+import { receiverPrefix } from "arktype/internal/standalone.ts"
 import type { Node, Program, Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
 import { parseCode, type SourceModule } from "./module.ts"
@@ -617,33 +618,82 @@ export const unprecompiled = (module: SourceModule): RuntimeModule => ({
 	holdsOther: false
 })
 
-// e.g. not a production build's factories, which check no Type they're passed
+// how a factory a module of validators reads a parameter: not at all, or as
+// `receive1hche201(p0)`, which finds a Type's holes by its identity, reading
+// none of its members; receiving what it holds at a path; or any way
+export type PassedRead = "none" | "off" | "any"
+
+// how each factory a module of validators exports reads a parameter, other
+// than the index a shared factory takes first
 export const passedReaderOf = (
 	parse: () => Program
-): ((exported: string) => boolean) => {
+): ((exported: string, position: number) => PassedRead) => {
 	let functionsByExport: Map<string, Node | undefined> | undefined
-	return exported => {
+	const readsByExport = new Map<string, PassedReads | undefined>()
+	return (exported, position) => {
 		functionsByExport ??= exportedFunctionsOf(parse())
-		const fn = functionsByExport.get(exported)
-		if (
-			fn?.type !== "ArrowFunctionExpression" &&
-			fn?.type !== "FunctionExpression" &&
-			fn?.type !== "FunctionDeclaration"
-		)
-			return true
-		const names = new Set<string>(["arguments"])
-		for (const [i, param] of fn.params.entries()) {
-			if (param.type !== "Identifier") return true
-			if (i || param.name !== "index") names.add(param.name)
-		}
-		let reads = false
-		walk(fn.body!, node => {
-			reads ||= node.type === "Identifier" && names.has(node.name)
-			return !reads
-		})
-		return reads
+		if (!readsByExport.has(exported))
+			readsByExport.set(exported, readsOf(functionsByExport.get(exported)))
+		const reads = readsByExport.get(exported)
+		return reads ? (reads.get(position) ?? "none") : "any"
 	}
 }
+
+type PassedReads = Map<number, PassedRead>
+
+const readsOf = (fn: Node | undefined): PassedReads | undefined => {
+	if (
+		fn?.type !== "ArrowFunctionExpression" &&
+		fn?.type !== "FunctionExpression" &&
+		fn?.type !== "FunctionDeclaration"
+	)
+		return
+	const positions = new Map<string, number>()
+	for (const [i, param] of fn.params.entries()) {
+		if (param.type !== "Identifier") return
+		if (i || param.name !== "index") positions.set(param.name, positions.size)
+	}
+	const reads: PassedReads = new Map()
+	let readsArguments = false
+	const add = (name: string, read: PassedRead) => {
+		const at = positions.get(name)
+		if (at !== undefined && reads.get(at) !== "any") reads.set(at, read)
+	}
+	walk(fn.body!, node => {
+		const received = receivedOf(node)
+		if (received) {
+			if (received.type === "Identifier") return false
+			const name = rootNameOf(received)
+			if (name) {
+				add(name, "off")
+				return false
+			}
+		}
+		if (node.type === "Identifier") {
+			readsArguments ||= node.name === "arguments"
+			add(node.name, "any")
+		}
+		return true
+	})
+	return readsArguments ? undefined : reads
+}
+
+const receivedOf = (node: Node): Node | undefined =>
+	(
+		node.type === "CallExpression" &&
+		node.callee.type === "Identifier" &&
+		node.callee.name.startsWith(receiverPrefix) &&
+		node.arguments.length === 1
+	) ?
+		node.arguments[0]
+	:	undefined
+
+// e.g. p0 for `p0["user"]["name"]`
+const rootNameOf = (node: Node): string | undefined =>
+	node.type === "Identifier" ? node.name
+	: node.type === "MemberExpression" && node.property.type === "Literal" ?
+		rootNameOf(node.object)
+	:	undefined
 
 export const parseValidators = (code: string): Program =>
 	parseCode("validators.js", code, {}).program
