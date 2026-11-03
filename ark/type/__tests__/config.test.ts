@@ -485,7 +485,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		attest(types.inner.foo.precompilation).satisfies("string")
 	})
 
-	it("a Type including an alias compiles once it's used", () => {
+	it("a Type including an alias has compiled code once it's used", () => {
 		const Node = type({ name: "string", "next?": "this" })
 		attest(Node.internal.unitFn).equals(undefined)
 		const nested = { name: "a", next: { name: "b" } }
