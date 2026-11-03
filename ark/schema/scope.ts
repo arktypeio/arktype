@@ -171,6 +171,7 @@ export type AliasDefEntry = [name: string, defValue: unknown]
 // Fallback counter for anonymous scopes; scopes are identified by instance
 // identity rather than names to support HMR and multi-bundle environments.
 let anonymousScopeCount = 0
+let scopeCount = 0
 
 // options whose non-default values need an arktype import
 export type InstalledOption = "errors" | "mutatesInput"
@@ -239,6 +240,8 @@ const registerParseContext = <ctx extends BaseParseContext>(ctx: ctx): ctx =>
 
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly name: string
+	/** where it was created among scopes, which tells it apart where its name may not */
+	readonly index: number = scopeCount++
 	readonly isBuiltin: boolean
 	readonly scopeConfig: ArkSchemaScopeConfig | undefined
 
