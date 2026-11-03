@@ -1175,8 +1175,17 @@ class Follow {
 	private bindPattern(pattern: Node, module: SourceModule, held: Held): void {
 		switch (pattern.type) {
 			case "Identifier": {
-				const binding = module.scopes.bindingsById.get(pattern)
-				if (!binding) return
+				// a declaration, or a binding an assignment writes
+				const binding =
+					module.scopes.bindingsById.get(pattern) ??
+					module.scopes.byId.get(pattern)?.binding
+				if (!binding) {
+					return this.lose(
+						pattern,
+						module,
+						"stores it on the global object, which code outside the bundle may read"
+					)
+				}
 				const helds = this.heldsByBinding.get(binding)
 				if (helds) helds.add(shapeKeyOf(held))
 				else this.heldsByBinding.set(binding, new Set([shapeKeyOf(held)]))

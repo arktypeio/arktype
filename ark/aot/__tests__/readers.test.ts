@@ -124,6 +124,25 @@ show()
 		).snap(["main.ts:4:6 bakes description (fields)"])
 	})
 
+	it("follows a validator assigned to a declared binding", async () => {
+		attest(
+			await bakedFrom({
+				"/main.ts": `import { type } from "arktype"
+
+let json
+json = type("string")
+console.log(JSON.stringify(json))
+let described
+for (const key in { a: 1 }) described = { a: type("number") }[key]
+console.log(described.description)
+`
+			})
+		).snap([
+			"main.ts:4:8 bakes toJSON (dataflow)",
+			"main.ts:7:46 bakes description (dataflow)"
+		])
+	})
+
 	it("a dependency's read at a key it doesn't name loses track without a warning", async () => {
 		attest(
 			await bakedFrom({
