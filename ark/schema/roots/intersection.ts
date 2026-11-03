@@ -2,7 +2,7 @@ import { hasDomain, type array, type JsonObject } from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
 import type { RangeKind } from "../refinements/kinds.ts"
 import type { LimitKind } from "../refinements/range.ts"
-import type { BaseNode } from "../node.ts"
+import { holdsSameChildren, type BaseNode } from "../node.ts"
 import type { PredicateNode } from "../predicate.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
@@ -209,6 +209,29 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		return (this.c.expression ??= composing(() =>
 			writeIntersectionExpression(this)
 		))
+	}
+
+	// a structure's JSON is written into its, so each is compared by what's in it
+	override sameInner(r: IntersectionNode): boolean | undefined {
+		const lBasis = this.basis
+		const rBasis = r.basis
+		if (lBasis?.kind !== rBasis?.kind) return false
+		if (
+			lBasis &&
+			lBasis !== rBasis &&
+			lBasis.sameInner(rBasis as never) === false
+		)
+			return false
+		const lStructure = this.structure
+		const rStructure = r.structure
+		if (
+			lStructure &&
+			rStructure &&
+			lStructure !== rStructure &&
+			lStructure.sameInner(rStructure) === false
+		)
+			return false
+		return holdsSameChildren(this, r) ? true : undefined
 	}
 
 	get nestedExpr(): string {

@@ -81,6 +81,18 @@ export abstract class BaseProp<
 		return result
 	}
 
+	override sameInner(r: BaseProp): boolean | undefined {
+		if (this.key !== r.key) return false
+		return (
+				this.value === r.value &&
+					(this.inner as Optional.Inner).default ===
+						(r.inner as Optional.Inner).default &&
+					this.hasDef() === r.hasDef()
+			) ?
+				true
+			:	undefined
+	}
+
 	/** whether it's an optional prop with a default */
 	hasDef(): this is Optional.Node.withDefault {
 		return "default" in this.inner

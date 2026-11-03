@@ -80,6 +80,12 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 			throwParseError(Proto.writeBadInvalidDateMessage(this.proto))
 	}
 
+	override sameInner(r: ProtoNode): boolean {
+		return (
+			this.proto === r.proto && this.dateAllowsInvalid === r.dateAllowsInvalid
+		)
+	}
+
 	builtinName: BuiltinObjectKind | null = getBuiltinNameOfConstructor(
 		this.proto
 	)

@@ -254,6 +254,13 @@ export const jsonLengthOf = (json: unknown): number => {
 	return length
 }
 
+export const holdsSameChildren = (l: BaseNode, r: BaseNode): boolean => {
+	if (l.children.length !== r.children.length) return false
+	for (let i = 0; i < l.children.length; i++)
+		if (l.children[i] !== r.children[i]) return false
+	return true
+}
+
 const isUnwritten = (v: unknown) =>
 	v === undefined || typeof v === "function" || typeof v === "symbol"
 
@@ -307,8 +314,9 @@ export const hashesMatch = (l: BaseNode, r: BaseNode): boolean =>
 	l.hash === r.hash && (l.hash.endsWith("}") || isJsonEqual(l.json, r.json))
 
 export const innerHashesMatch = (l: BaseNode, r: BaseNode): boolean =>
-	l.innerHash === r.innerHash &&
-	(l.innerHash.endsWith("}") || isJsonEqual(l.innerJson, r.innerJson))
+	(l.kind === r.kind ? l.sameInner(r) : undefined) ??
+	(l.innerHash === r.innerHash &&
+		(l.innerHash.endsWith("}") || isJsonEqual(l.innerJson, r.innerJson)))
 
 const equalJson = new WeakMap<object, WeakSet<object>>()
 
@@ -1122,6 +1130,14 @@ export abstract class BaseNode<
 
 	ifEquals(r: unknown): BaseNode | undefined {
 		return this.equals(r) ? this : undefined
+	}
+
+	/**
+	 * whether its inner JSON is that of r, a node of its kind, where that's
+	 * decided without writing either, as most comparisons of nodes are
+	 */
+	sameInner(r: BaseNode): boolean | undefined {
+		return this === r || undefined
 	}
 
 	/** whether it's a node of `kind`, narrowing it to that kind's node */

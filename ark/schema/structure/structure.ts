@@ -18,6 +18,7 @@ import {
 import { BaseConstraint } from "../constraint.ts"
 import { intrinsic } from "../intrinsic.ts"
 import {
+	holdsSameChildren,
 	ioOf,
 	referencesThroughAliases,
 	type BaseNode,
@@ -275,6 +276,23 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 		this.alters ||= this.structMorph !== undefined
+	}
+
+	// JSON lists each kind of constraint and each prop's key in order
+	override sameInner(r: StructureNode): boolean | undefined {
+		if (
+			this.undeclared !== r.undeclared ||
+			!this.sequence !== !r.sequence ||
+			this.index?.length !== r.index?.length ||
+			this.required?.length !== r.required?.length ||
+			this.optional?.length !== r.optional?.length
+		)
+			return false
+		for (let i = 0; i < (this.required?.length ?? 0); i++)
+			if (this.required![i].key !== r.required![i].key) return false
+		for (let i = 0; i < (this.optional?.length ?? 0); i++)
+			if (this.optional![i].key !== r.optional![i].key) return false
+		return holdsSameChildren(this, r) ? true : undefined
 	}
 
 	/** how undeclared keys are constrained, if they are */
