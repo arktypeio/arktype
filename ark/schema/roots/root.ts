@@ -542,20 +542,28 @@ export abstract class BaseRoot<
 				)
 		}
 
-		const operand =
-			io === "root" ? this
-			: io === "in" ? this._in
-			: this._out
+		// an intersection's output is one too, so one that needn't meet a basis isn't written
 		if (
-			operand.is("morph") ||
-			(constraint.implied && !operand.extends(constraint.implied))
+			io !== "out" ||
+			constraint.implied ||
+			!this.is("intersection") ||
+			this.hasAlias
 		) {
-			return throwInvalidOperandError(
-				kind,
-				// a predicate implies no basis, but can't constrain a morph either
-				(constraint.implied ?? $ark.kw.unknown.internal) as never,
-				this as never
-			)
+			const operand =
+				io === "root" ? this
+				: io === "in" ? this._in
+				: this._out
+			if (
+				operand.is("morph") ||
+				(constraint.implied && !operand.extends(constraint.implied))
+			) {
+				return throwInvalidOperandError(
+					kind,
+					// a predicate implies no basis, but can't constrain a morph either
+					(constraint.implied ?? $ark.kw.unknown.internal) as never,
+					this as never
+				)
+			}
 		}
 
 		// a basis has no constraint to meet, and a constraint alone has nothing to reduce
