@@ -168,6 +168,34 @@ The SDK sends clients the JSON Schema from [`~standard.jsonSchema`](/docs/standa
 
 This needs `@modelcontextprotocol/server`, the SDK's second major version. The first, `@modelcontextprotocol/sdk`, accepts only Zod schemas.
 
+To serve it over stdio, connect a transport from `@modelcontextprotocol/server/stdio`:
+
+```ts
+import { McpServer } from "@modelcontextprotocol/server"
+import { StdioServerTransport } from "@modelcontextprotocol/server/stdio"
+
+const server = new McpServer({ name: "greeter", version: "1.0.0" })
+// server.registerTool(...)
+
+await server.connect(new StdioServerTransport())
+```
+
+To serve it from a route handler, like a Next.js App Router route, `createMcpHandler` builds a server for each request, and its `fetch` answers it:
+
+```ts title="app/api/mcp/route.ts"
+import { createMcpHandler, McpServer } from "@modelcontextprotocol/server"
+
+const handler = createMcpHandler(() => {
+	const server = new McpServer({ name: "greeter", version: "1.0.0" })
+	// server.registerTool(...)
+	return server
+})
+
+const serve = (request: Request) => handler.fetch(request)
+
+export { serve as GET, serve as POST, serve as DELETE }
+```
+
 ## AI SDK
 
 The [AI SDK](https://ai-sdk.dev/docs/ai-sdk-core/generating-structured-data) accepts a Type wherever it takes a schema. For structured output:
