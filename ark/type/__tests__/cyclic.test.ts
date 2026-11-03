@@ -1611,19 +1611,27 @@ swap.swap.order[1] must be "on" (was "off")`)
 	})
 
 	it("the first alias reached reports its error", () => {
-		const unsatisfiableAt = (first: string, second: string) =>
-			scope({
-				root: { first, second },
-				inA: { a: "string", self: "inA" },
-				notA: { a: "number", self: "notA" },
-				inB: { b: "string", self: "inB" },
-				notB: { b: "number", self: "notB" }
-			}).export()
+		const operands = {
+			inA: { a: "string", self: "inA" },
+			notA: { a: "number", self: "notA" },
+			inB: { b: "string", self: "inB" },
+			notB: { b: "number", self: "notB" }
+		} as const
 
-		attest(() => unsatisfiableAt("inA & notA", "inB & notB")).throws(
+		attest(() =>
+			scope({
+				root: { first: "inA & notA", second: "inB & notB" },
+				...operands
+			}).export()
+		).throws(
 			"Intersection at a of string and number results in an unsatisfiable type"
 		)
-		attest(() => unsatisfiableAt("inB & notB", "inA & notA")).throws(
+		attest(() =>
+			scope({
+				root: { first: "inB & notB", second: "inA & notA" },
+				...operands
+			}).export()
+		).throws(
 			"Intersection at b of string and number results in an unsatisfiable type"
 		)
 	})

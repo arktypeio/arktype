@@ -1771,7 +1771,9 @@ export const resolveReachedAliases = (root: BaseNode): void => {
 	const reached = new Set<BaseNode>()
 	const aliases: AliasNode[] = []
 	const include = (node: BaseNode): void => {
-		if (node.c.reachedResolved || reached.has(node)) return
+		// nothing there to resolve, and discriminating it can wait until it's checked
+		if ((!node.hasAlias && !node.userCode) || node.c.reachedResolved) return
+		if (reached.has(node)) return
 		reached.add(node)
 		if (node.is("alias")) aliases.push(node)
 		for (let i = 0; i < node.children.length; i++) include(node.children[i])
