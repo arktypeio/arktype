@@ -1031,7 +1031,8 @@ export abstract class BaseNode<
 		if (!this.alters && !(isIoFinal() && this.tfs)) return this as never
 
 		const ioInner: Record<any, unknown> = {}
-		for (const [k, v] of this.kv) {
+		for (const k in this.inner) {
+			const v = this.inner[k]
 			const keySchemaImplementation = this.impl.keys[k]
 
 			if (keySchemaImplementation.reduceIo)
@@ -2053,13 +2054,13 @@ const compileRootApply = (node: BaseRoot): RootApply =>
 
 export const writeInnerJson = (node: BaseNode): JsonObject => {
 	const json: JsonObject = {}
-	for (const [k, v] of node.kv) {
+	for (const k in node.inner) {
 		const keyImpl = node.impl.keys[k]
 		if (keyImpl.unserialized) continue
 		const serialize =
 			keyImpl.serialize ??
 			(keyImpl.child ? serializeListableChild : defaultValueSerializer)
-		json[k] = serialize(v as never)
+		json[k] = serialize((node.inner as Dict)[k] as never)
 	}
 	return (node.impl.fixJson?.(json) as JsonObject | undefined) ?? json
 }
@@ -2074,6 +2075,7 @@ const possiblyCollapse = <allowPrimitive extends boolean>(
 	toKey: string | undefined,
 	allowPrimitive: allowPrimitive
 ): [allowPrimitive] extends [false] ? JsonStructure : Json => {
+	if (toKey === undefined || !(toKey in (json as object))) return json as never
 	const collapsibleKeys = Object.keys(json)
 	if (collapsibleKeys.length === 1 && collapsibleKeys[0] === toKey) {
 		const collapsed = json[toKey]

@@ -1609,4 +1609,22 @@ swap.swap.order[1] must be "on" (was "off")`)
 		)
 		attest("pwned" in globalThis).equals(false)
 	})
+
+	it("the first alias reached reports its error", () => {
+		const unsatisfiableAt = (first: string, second: string) =>
+			scope({
+				root: { first, second },
+				inA: { a: "string", self: "inA" },
+				notA: { a: "number", self: "notA" },
+				inB: { b: "string", self: "inB" },
+				notB: { b: "number", self: "notB" }
+			}).export()
+
+		attest(() => unsatisfiableAt("inA & notA", "inB & notB")).throws(
+			"Intersection at a of string and number results in an unsatisfiable type"
+		)
+		attest(() => unsatisfiableAt("inB & notB", "inA & notA")).throws(
+			"Intersection at b of string and number results in an unsatisfiable type"
+		)
+	})
 })

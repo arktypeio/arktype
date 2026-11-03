@@ -110,12 +110,20 @@ export const nodesById: Record<
 $ark.nodesById = nodesById
 
 // compiled code declares functions by id, so an alias prefix is written as an identifier
-export const registerNodeId = (prefix: string): NodeId => {
-	prefix = prefix.replace(/[^\w$]/g, "_")
+export const registerNodeId = (written: string): NodeId => {
+	const prefix = (idPrefixes[written] ??= idPrefixOf(written))
+	const count = (nodeCountsByPrefix[prefix] ?? 0) + 1
+	nodeCountsByPrefix[prefix] = count
+	return `${prefix}${count}` as NodeId
+}
+
+const idPrefixes: PartialRecord<string, string> = Object.create(null)
+
+const idPrefixOf = (written: string): string => {
+	let prefix = written.replace(/[^\w$]/g, "_")
 	if (/^\d/.test(prefix)) prefix = `_${prefix}`
 	if (/\d$/.test(prefix)) prefix += "_"
-	nodeCountsByPrefix[prefix] ??= 0
-	return `${prefix}${++nodeCountsByPrefix[prefix]!}` as NodeId
+	return prefix
 }
 
 export const parseNode = (ctx: NodeParseContext): BaseNode => {
@@ -140,7 +148,8 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	}
 
 	const inner: dict = {}
-	for (const k of keys) {
+	for (let i = 0; i < keys.length; i++) {
+		const k = keys[i]
 		if (k === "meta") continue
 		const keyImpl = impl.keys[k]
 		if (!keyImpl)
@@ -206,6 +215,8 @@ export const deferAliases = (v: unknown, $: BaseScope): unknown => {
 	return $.node("alias", { reference: v.id }, { reduced: true })
 }
 
+const noChildren: BaseNode[] = []
+
 export type CreateNodeInput = {
 	id: NodeId | undefined
 	alias?: string | undefined
@@ -243,16 +254,19 @@ export const createNode = ({
 		}
 	}
 
-	const children: BaseNode[] = []
-
+	let children: BaseNode[] = noChildren
 	for (const k in inner) {
 		const keyImpl = impl.keys[k]
-		if (keyImpl.child === true) {
-			const listableNode = inner[k] as listable<BaseNode>
-			if (isArray(listableNode)) children.push(...listableNode)
-			else children.push(listableNode)
-		} else if (typeof keyImpl.child === "function")
-			children.push(...keyImpl.child(inner[k] as never))
+		if (!keyImpl.child) continue
+		const value = inner[k] as listable<BaseNode>
+		const held =
+			keyImpl.child === true ?
+				isArray(value) ? value
+				:	[value]
+			:	keyImpl.child(value as never)
+		// held by a union or a list alone, it's that list
+		children =
+			children === noChildren ? (held as BaseNode[]) : children.concat(held)
 	}
 
 	const attachments: UnknownAttachmentsInput = {
@@ -262,8 +276,7 @@ export const createNode = ({
 		inner,
 		meta,
 		metaJson,
-		// copied to its exact length
-		children: children.slice()
+		children
 	}
 
 	const node = composing(() =>
@@ -284,27 +297,24 @@ const nodeKeyOf = (
 	inner: dict,
 	metaJson: JsonObject | undefined
 ): string => {
-	const parts: string[] = [kind]
+	let key: string = kind
 	for (const k in inner) {
 		const v = inner[k]
-		parts.push(
-			`${k}:${
-				impl.keys[k].child === true ?
-					isArray(v) ? `[${idsOf(v as BaseNode[])}]`
-					:	`#${(v as BaseNode).id}`
-				: k === "unit" ? literalKeyOf(v)
-				: valueKeyOf(v)
-			}`
-		)
+		key += `,${k}:${
+			impl.keys[k].child === true ?
+				isArray(v) ? `[${idsOf(v as BaseNode[])}]`
+				:	`#${(v as BaseNode).id}`
+			: k === "unit" ? literalKeyOf(v)
+			: valueKeyOf(v)
+		}`
 	}
 	// an alias inlines a reference that has resolved when it's written
 	if (
 		kind === "alias" &&
 		hasArkKind(nodesById[inner.reference as NodeId], "root")
 	)
-		parts.push("!")
-	if (metaJson) parts.push(JSON.stringify(metaJson))
-	return parts.join()
+		key += ",!"
+	return metaJson ? `${key},${JSON.stringify(metaJson)}` : key
 }
 
 const idsOf = (nodes: readonly BaseNode[]): string => {
