@@ -136,14 +136,22 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 	})
 
 export class UnionNode extends BaseRoot<Union.Declaration> {
-	isBoolean: boolean =
-		this.branches.length === 2 &&
-		this.branches[0].hasUnit(false) &&
-		this.branches[1].hasUnit(true)
+	get isBoolean(): boolean {
+		return (
+			this.branches.length === 2 &&
+			this.branches[0].hasUnit(false) &&
+			this.branches[1].hasUnit(true)
+		)
+	}
 
-	unitBranches = this.branches.filter((n): n is Unit.Node | Morph.Node =>
-		n._in.is("unit")
-	)
+	declare private _unitBranches: (Unit.Node | Morph.Node)[] | undefined
+	get unitBranches(): (Unit.Node | Morph.Node)[] {
+		// only a morph's input can be a unit where it isn't one itself
+		return (this._unitBranches ??= this.branches.filter(
+			(n): n is Unit.Node | Morph.Node =>
+				n.is("unit") || (n.is("morph") && n._in.is("unit"))
+		))
+	}
 
 	// every case node discriminate creates, even for a discriminant it abandons
 	readonly caseNodes: BaseRoot[] = []
