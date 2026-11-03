@@ -6,6 +6,7 @@ import {
 	isNode,
 	isRefinedPattern,
 	madeMorphs,
+	registryName,
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
 	type BaseNode,
@@ -1785,7 +1786,7 @@ ${writeFunction(
 
 	// nodes share json unless it prints a hole
 	readJson(root: BaseRoot): string {
-		const value = `runtime.deepFreeze(${this.writeData(root.json)})`
+		const value = `runtime.deepFreeze(${this.writeData(uncountedJsonOf(root.json))})`
 		this.countBaked(value)
 		if (holdsLocal(root.json)) {
 			return (
@@ -2874,3 +2875,17 @@ const shapeFlags = [
 ] as const
 
 const isAny = (): boolean => true
+
+// a registry name's count is how many values the process named alike before
+// it, so a reference arktype's serializer wrote drops it (a string reading
+// like one is quoted, so it bakes as written)
+const countedReference = new RegExp(
+	`^(${registryName.replace("$", "\\$")}\\.[\\w$]+?)\\$[1-9]\\d*$`
+)
+
+const uncountedJsonOf = (json: unknown): unknown =>
+	typeof json === "string" ? json.replace(countedReference, "$1")
+	: Array.isArray(json) ? json.map(uncountedJsonOf)
+	: hasDomain(json, "object") ?
+		flatMorph(json, (k, v) => [k, uncountedJsonOf(v)])
+	:	json
