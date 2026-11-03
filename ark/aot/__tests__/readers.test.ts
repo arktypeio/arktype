@@ -102,6 +102,28 @@ show()
 		])
 	})
 
+	it("follows a field read an object literal holds", async () => {
+		attest(
+			await bakedFrom({
+				"/node_modules/store/index.js": `const state = {}
+export const keep = schema => {
+	state.v = schema
+}
+export const show = () => {
+	const wrapped = { v1: state.v }
+	console.log(wrapped.v1.description)
+}
+`,
+				"/main.ts": `import { type } from "arktype"
+import { keep, show } from "store"
+
+keep(type("string"))
+show()
+`
+			})
+		).snap(["main.ts:4:6 bakes description (fields)"])
+	})
+
 	it("bakes nothing where its readers only validate", async () => {
 		attest(
 			await bakedFrom({

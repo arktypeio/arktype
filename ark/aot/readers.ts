@@ -891,7 +891,7 @@ class Follow {
 		for (const read of this.readers.fieldReadsOf(key)) {
 			if (owner !== undefined && !this.readers.mayRead(read.module, owner))
 				continue
-			if (read.node.parent?.type === "Property" || isPatternTarget(read.node))
+			if (isPatternTarget(read.node))
 				this.bindPattern(read.node, read.module, fieldHeld)
 			else this.push(read.node, read.module, fieldHeld)
 		}
@@ -1849,9 +1849,11 @@ const propertyOf = (literal: Node, name: string): Node | undefined => {
 	}
 }
 
-// `{ a: x } = o` or `({ a: x }) =>`, binding x
-const isPatternTarget = (node: Node): boolean =>
-	node.parent?.type === "ObjectPattern" || node.parent?.type === "ArrayPattern"
+// e.g. `x` in `const { v: x } = o` or `[x] = a`, but not `{ v: o.v }`
+const isPatternTarget = ({ parent }: Node): boolean =>
+	parent?.type === "ArrayPattern" ||
+	parent?.type === "ObjectPattern" ||
+	(parent?.type === "Property" && parent.parent?.type === "ObjectPattern")
 
 const enclosingFunctionOf = (node: Node): FunctionNode | undefined => {
 	for (let at = node.parent; at; at = at.parent)
