@@ -171,11 +171,17 @@ import {
 	type BindingKind
 } from "./scope.ts"
 import type { ShadowContract } from "./shadow.ts"
-import { flattenBundle, type FlatBundle, type FlatSite } from "./flat.ts"
+import {
+	flattenBundle,
+	readsReplaced,
+	type FlatBundle,
+	type FlatSite
+} from "./flat.ts"
 import {
 	writeKeptMembersMessage,
 	writeLostMessage,
 	writeUnprunedMessage,
+	unseenFlatMessage,
 	writeUnscannedFlatMessage,
 	writeUnseenMessage,
 	type ScannedProgram,
@@ -366,6 +372,9 @@ interface ProgramUsage {
 	written: Record<string, PrecompiledModule>
 	// its units declared in one function, where a one-chunk build pays for it
 	flat?: FlatBundle | undefined
+	// each module it wrote from other code than the scan read, as another
+	// plugin rewrote it, by the source it wrote it from
+	unscanned: Map<string, [source: string, written: PrecompiledModule]>
 	// whether a size build writes the program's nodes as checkers, as is
 	// smaller for the program as a whole
 	combines?: boolean
@@ -591,8 +600,8 @@ export class Precompiler {
 			linked: false,
 			replaced: [],
 			written: false,
-			verifies: false,
-			holders: []
+			holders: [],
+			verifies: false
 		}
 		if (this.mode !== "standalone") return unwritten
 		const plan = this.planProgram(program)
@@ -632,7 +641,8 @@ export class Precompiler {
 			readsAllows,
 			piped,
 			sources: plan.sources,
-			written: {}
+			written: {},
+			unscanned: new Map()
 		}
 		this.usagesByProgram.set(program.key, usage)
 		const wrote = this.writeSmaller(program, plan, usage)
@@ -666,16 +676,17 @@ export class Precompiler {
 			linked,
 			replaced: usage.flat?.replaced ?? [],
 			written: true,
-			verifies:
-				!!dropped.length ||
-				!usage.called ||
-				!usage.readsAllows ||
-				!usage.piped ||
-				narrowsIssues(issues),
 			holders: precompiled.filter(id => {
 				const runtime = planned.get(id)!
 				return runtime.validators.length > 0 || runtime.holdsOther
 			}),
+			// what it leaves out a read it didn't see may need
+			verifies:
+				dropped.length > 0 ||
+				!usage.called ||
+				!usage.readsAllows ||
+				!usage.piped ||
+				narrowsIssues(issues),
 			unpruned,
 			lost: readings.lost.length ? writeLostMessage(readings.lost) : undefined,
 			baked: readings.decisions,
@@ -847,6 +858,8 @@ export class Precompiler {
 	unseenIn(program: ScannedProgram): string | undefined {
 		const usage = this.usagesByProgram.get(program.key)
 		if (!usage) return
+		if (usage.flat && this.readsReplacedIn(program, usage, usage.flat))
+			return unseenFlatMessage
 		const runtimes = new Map<string, RuntimeModule>()
 		for (const id in program.modules) {
 			const { source, transformed, mappings } = program.modules[id]
@@ -896,6 +909,41 @@ export class Precompiler {
 			return unseen("a module reads a validator's allows")
 		if (!usage.piped && used.has("piped"))
 			return unseen("a module passes a validator a traversal")
+	}
+
+	// whether the bundle as built keeps a read of a module the flat function
+	// replaced, where a module another plugin rewrote reads what the scan didn't see
+	private readsReplacedIn(
+		program: ScannedProgram,
+		usage: ProgramUsage,
+		flat: FlatBundle
+	): boolean {
+		const modules = new Map<string, SourceModule>()
+		const virtual = { ...flat.modules }
+		for (const id in program.modules) {
+			const { source } = program.modules[id]
+			const [unscannedSource, unscanned] = usage.unscanned.get(id) ?? []
+			const written =
+				usage.sources[id] === source ? usage.written[id]
+				: unscannedSource === source ? unscanned
+				: undefined
+			if (written) Object.assign(virtual, written.modules)
+			modules.set(id, new SourceModule(id, written?.code ?? source, id))
+		}
+		for (const specifier in virtual) {
+			modules.set(
+				specifier,
+				new SourceModule(`${specifier}.js`, virtual[specifier], specifier)
+			)
+		}
+		return readsReplaced(
+			modules,
+			{
+				entries: [...program.entries, ...program.exposed],
+				resolve: (specifier, importer) => program.targets[importer]?.[specifier]
+			},
+			flat.replaced
+		)
 	}
 
 	// a member members sets is the same whatever the program reads
@@ -1644,18 +1692,28 @@ export class Precompiler {
 		const written = this.writtenIn(program, id, source)
 		if (written) return written
 		const precompiled = this.precompileUnscanned(source, id, mappings, program)
-		const flat =
-			program === undefined ? undefined : (
-				this.usagesByProgram.get(program)?.flat
-			)
+		const usage =
+			program === undefined ? undefined : this.usagesByProgram.get(program)
+		if (!usage?.flat) return precompiled
+		const flat = this.flatUnscannedOf(precompiled, source, id, usage.flat)
+		// as the bundle holds it, which the host checks once it's built
+		usage.unscanned.set(id, [source, flat])
+		return flat
+	}
+
+	// one another plugin rewrote reads the units as the rest do
+	private flatUnscannedOf(
+		precompiled: PrecompiledModule,
+		source: string,
+		id: string,
+		flat: FlatBundle
+	): PrecompiledModule {
 		if (
-			!flat ||
 			!Object.keys(precompiled.modules).some(specifier =>
 				flat.replaced.includes(specifier)
 			)
 		)
 			return precompiled
-		// one another plugin rewrote reads the units as the rest do
 		const site = flat.rewrite(id, precompiled.code, precompiled.modules)
 		if (site) {
 			return flatWrittenOf(

@@ -78,15 +78,7 @@ export const flattenBundle = (
 	const keptIn = (
 		modules: ReadonlyMap<string, SourceModule>,
 		skipped?: ReadonlyMap<SourceModule, Creation[]>
-	) => {
-		const kept = new KeptCode(modules, program.resolve, skipped)
-		for (const module of modules.values()) kept.keepRead(module)
-		for (const id of program.entries) {
-			const entry = modules.get(id)
-			if (entry) kept.keepExports(entry)
-		}
-		return kept
-	}
+	) => keptCodeOf(modules, program, skipped)
 	const kept = keptIn(bundled)
 	const units = unitsOf(modules, parsed, kept)
 	if (!units) return
@@ -308,6 +300,34 @@ export const flattenBundle = (
 		)
 	}
 	return bundle
+}
+
+// whether code the bundler keeps reads a module the function replaced, as a
+// module another plugin rewrote may where it reads a validator its scan didn't
+export const readsReplaced = (
+	modules: ReadonlyMap<string, SourceModule>,
+	program: Pick<FlatProgram, "entries" | "resolve">,
+	replaced: readonly string[]
+): boolean => {
+	const kept = keptCodeOf(modules, program)
+	return replaced.some(specifier => {
+		const module = modules.get(specifier)
+		return !!module && kept.readsFrom(module)
+	})
+}
+
+const keptCodeOf = (
+	modules: ReadonlyMap<string, SourceModule>,
+	program: Pick<FlatProgram, "entries" | "resolve">,
+	skipped?: ReadonlyMap<SourceModule, readonly Creation[]>
+): KeptCode => {
+	const kept = new KeptCode(modules, program.resolve, skipped)
+	for (const module of modules.values()) kept.keepRead(module)
+	for (const id of program.entries) {
+		const entry = modules.get(id)
+		if (entry) kept.keepExports(entry)
+	}
+	return kept
 }
 
 // a site importing what it creates from the flat module, without the
@@ -727,13 +747,16 @@ class KeptCode {
 					this.keep(module, statement)
 				continue
 			}
-			// kept where "default" is read
-			if (
-				statement.type === "ExportDefaultDeclaration" &&
-				(statement.declaration.type === "FunctionDeclaration" ||
-					isPureExpression(statement.declaration, module.source))
-			)
+			// e.g. `export default T`, kept where an import reads it
+			if (statement.type === "ExportDefaultDeclaration") {
+				const { declaration } = statement
+				if (
+					declaration.type !== "FunctionDeclaration" &&
+					!isPureExpression(declaration, module.source)
+				)
+					this.keep(module, statement)
 				continue
+			}
 			if (
 				statement.type === "TSImportEqualsDeclaration" &&
 				statement.moduleReference.type === "TSExternalModuleReference"
@@ -773,6 +796,12 @@ class KeptCode {
 		return !!binding && this.imports.has(binding)
 	}
 
+	readsFrom(module: SourceModule): boolean {
+		for (const key of this.exports)
+			if (key.startsWith(`${module.id}\0`)) return true
+		return false
+	}
+
 	// a module loaded by a specifier it can't read may be any
 	private keepLoaded(specifier: Node, module: SourceModule): void {
 		if (specifier.type === "Literal" && typeof specifier.value === "string") {
@@ -795,9 +824,8 @@ class KeptCode {
 					this.keepExport(target, entry.name)
 				:	this.keepExports(target)
 		}
-		if (entry?.kind === "expression")
-			return this.keep(module, statementOf(entry.node))
-		if (entry || name === "default") return
+		if (entry) return this.keep(module, statementOf(entry.node))
+		if (name === "default") return
 		for (const specifier of module.scopes.starExports) {
 			const target = this.targetOf(specifier, module)
 			if (target) this.keepExport(target, name)

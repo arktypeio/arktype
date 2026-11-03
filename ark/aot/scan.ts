@@ -538,6 +538,9 @@ export const writeUnseenMessage = (
 export const writeUnscannedFlatMessage = (path: string): string =>
 	`A production build declares the units its validators read in one function, as it found reading the bundle's modules first, but it built ${path} from code it didn't read, whose validators would read copies of them. Build again, or set prune: false to build each unit as a module of its own.`
 
+export const unseenFlatMessage =
+	"A production build declares the units its validators read in one function, as it found reading the bundle's modules first, but the bundle it built reads a validator it found no read of, as another plugin wrote or rewrote a module after it read it, and that validator would read copies of them. List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build each unit as a module of its own."
+
 export interface ScannedProgram {
 	// names the bundle, so only its transforms apply what was read
 	key: string
@@ -571,11 +574,11 @@ export interface ScannedUsage {
 	replaced: string[]
 	// whether it wrote each module, for a transform naming the bundle to read
 	written: boolean
+	// each module creating a validator, which only a module reaching it may read
+	holders: string[]
 	// whether it left out anything a read the scan didn't see may need, so the
 	// host reads the bundle as built
 	verifies: boolean
-	// each module creating a validator, which only a module reaching it may read
-	holders: string[]
 	// the warning where it left out no member members leaves to it
 	unpruned?: string | undefined
 	// the warning where it baked every introspection member, having lost track of a read

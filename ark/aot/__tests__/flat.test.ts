@@ -1,7 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { flattenBundle } from "@ark/aot/internal/flat.ts"
-import { writeUnscannedFlatMessage } from "@ark/aot/internal/scan.ts"
+import {
+	unseenFlatMessage,
+	writeUnscannedFlatMessage
+} from "@ark/aot/internal/scan.ts"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { build, type BuildOptions, type Plugin } from "esbuild"
 import {
@@ -445,11 +448,14 @@ console.log(User.allows({ name: "Ada" }), User.assert({ name: "Ada" }))
 	})
 
 	describe("a module a plugin ahead of arktype's rewrote after the scan read it", () => {
-		const rewriting = (rewrite: (code: string) => string): VitePlugin => ({
+		const rewriting = (
+			file: string,
+			rewrite: (code: string) => string
+		): VitePlugin => ({
 			name: "rewriting",
 			enforce: "pre",
 			transform: (code, id) =>
-				id.endsWith("/types.ts") ? rewrite(code) : undefined
+				id.endsWith(`/${file}`) ? rewrite(code) : undefined
 		})
 
 		it("reads the units from the function, writing the helpers that read them anew", async () => {
@@ -457,7 +463,7 @@ console.log(User.allows({ name: "Ada" }), User.assert({ name: "Ada" }))
 			const flat = await viteBundle(opts)
 			// its helpers are written for its source, so they're modules the scan didn't write
 			const rewritten = await viteBundle(opts, [
-				rewriting(code => code.split("\n").join("\n\n"))
+				rewriting("types.ts", code => code.split("\n").join("\n\n"))
 			])
 			attest(run(rewritten)).equals(run(flat))
 			attest(declaredUnits(rewritten)).equals(declaredUnits(flat))
@@ -465,12 +471,28 @@ console.log(User.allows({ name: "Ada" }), User.assert({ name: "Ada" }))
 
 		it("fails where it keeps a validator whose units the scan found no read of", async () => {
 			const result = await viteBundle({}, [
-				rewriting(code => `${code}\nconsole.log(Unread({}))\n`)
+				rewriting("types.ts", code => `${code}\nconsole.log(Unread({}))\n`)
 			]).catch((e: Error) => e)
 			attest(
 				result instanceof Error &&
 					result.message.includes(writeUnscannedFlatMessage("types.ts"))
 			).equals(true)
+		})
+
+		it("fails where another module it reads no unit in keeps such a validator", async () => {
+			// main.ts creates no validator, so it's written as it was, but its
+			// read keeps Unread, which reads copies of Team's units
+			const message = await viteBundle({}, [
+				rewriting(
+					"main.ts",
+					code =>
+						`${code.replace("{ Team, User }", "{ Team, Unread, User }")}\nconsole.log(Unread({ zebra: 5 }) instanceof type.errors)\n`
+				)
+			]).then(
+				() => "",
+				(e: Error) => e.message
+			)
+			attest(message.slice(-unseenFlatMessage.length)).equals(unseenFlatMessage)
 		})
 	})
 
