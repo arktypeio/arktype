@@ -1,7 +1,7 @@
 // prints a stored bigapp result, its standing against rivals and against
 // results/baseline.json: node report.ts <result.json> [baseline.json]
 import { existsSync, readFileSync } from "node:fs"
-import { join } from "node:path"
+import { join, resolve } from "node:path"
 import { median, quantile, signTest } from "../stats.ts"
 
 type Samples = Record<string, number[]>
@@ -127,7 +127,7 @@ export const report = (path: string, baselinePath?: string) => {
 	crossover(stored)
 	const base =
 		baselinePath ?? join(import.meta.dirname, "results", "baseline.json")
-	if (!existsSync(base) || base === path) return
+	if (!existsSync(base) || resolve(base) === resolve(path)) return
 	const baseline: Stored = JSON.parse(readFileSync(base, "utf8"))
 	console.log(`\nagainst baseline ${baseline.commit}: this / baseline`)
 	const ratio = (now: number, then: number) => `${(now / then).toFixed(3)}x`
