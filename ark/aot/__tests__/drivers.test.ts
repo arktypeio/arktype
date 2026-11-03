@@ -10,6 +10,7 @@ import {
 import {
 	configuredThreadMessage,
 	writeTurbopackDependencyMessage,
+	writeChangedSettingsMessage,
 	writeUnansweredResolveMessage,
 	withAllowUnsafe,
 	writeAliasMessage,
@@ -900,6 +901,19 @@ console.log(Value, note, load, await import("#shared/lazy"))
 			])
 			attest(refusedAfter).equals(refused)
 			attest(refused[0]).satisfies(/prints the name of `isLong`/)
+		})
+
+		it("fails once its settings change while Next runs", () => {
+			const dir = writeFixture({
+				"main.ts":
+					'import { type } from "arktype"\n\nexport const T = type("string")\n'
+			})
+			attest(load(dir).out).satisfies(/export const T/)
+			writeFileSync(
+				join(dir, "ark.json"),
+				JSON.stringify({ precompile: { optimize: "size" } })
+			)
+			attest(load(dir).out).equals(writeChangedSettingsMessage("ark.json"))
 		})
 
 		describe("replaces its precompiler when", () => {

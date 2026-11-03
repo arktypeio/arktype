@@ -13,6 +13,9 @@ import type { Rule } from "./diagnostics.ts"
 export const writeUnreadableConfigMessage = (path: string): string =>
 	`The config module ${path} can't be read. Name a module that exists as the build's config.`
 
+export const writeChangedSettingsMessage = (path: string): string =>
+	`The precompile settings in ${path} changed while Next ran, and arktype keeps what it compiled under the earlier ones for the process. Restart \`next dev\` to build with the new settings.`
+
 export const writeUnansweredResolveMessage = (
 	specifier: string,
 	importer: string,

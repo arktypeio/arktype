@@ -1,5 +1,5 @@
 import { realpathSync } from "node:fs"
-import { dirname } from "node:path"
+import { dirname, join } from "node:path"
 import { parseSync } from "oxc-parser"
 import {
 	createKeyedPrecompiler,
@@ -14,6 +14,7 @@ import {
 	refuseArktypeDependencies,
 	refusePrune,
 	resolvePrecompileOptions,
+	settingsFileOf,
 	withSettingsFile
 } from "./settings.ts"
 import {
@@ -30,6 +31,7 @@ import {
 } from "./host.ts"
 import {
 	writeAliasMessage,
+	writeChangedSettingsMessage,
 	writeRuntimeAliasMessage,
 	withAllowUnsafe
 } from "./messages.ts"
@@ -53,12 +55,15 @@ const precompilersByOptions: Record<string, KeyedPrecompiler> = {}
 // ark.json is read once for each option set the loader is given
 const resolvedByOptions: Record<string, PrecompilePluginOptions> = {}
 
+// as each option set first read them, since arktype keeps what it compiled
+// under them for the process
+const settingsByOptions: Record<string, string> = {}
+
 // with ark.json's, where prune: true would be ignored
 const resolvedOptionsOf = (
-	given: PrecompilePluginOptions,
+	set: PrecompilePluginOptions,
 	production: boolean
 ): PrecompilePluginOptions => {
-	const set = withSettingsFile(given)
 	refusePrune(set, "Turbopack")
 	refuseArktypeDependencies(set, "Turbopack")
 	return resolvePrecompileOptions(
@@ -76,8 +81,18 @@ export default function (
 	let opts: PrecompilePluginOptions
 	try {
 		const production = this.mode === "production" || isProductionEnv()
-		opts = resolvedByOptions[`${production}${JSON.stringify(given)}`] ??=
-			resolvedOptionsOf(given, production)
+		const key = `${production}${JSON.stringify(given)}`
+		const set = withSettingsFile(given)
+		const settings = JSON.stringify(set)
+		if ((settingsByOptions[key] ??= settings) !== settings) {
+			const cwd = given.cwd ?? process.cwd()
+			throwBuildError(
+				writeChangedSettingsMessage(
+					printablePathOf(cwd, settingsFileOf(cwd) ?? join(cwd, "ark.json"))
+				)
+			)
+		}
+		opts = resolvedByOptions[key] ??= resolvedOptionsOf(set, production)
 	} catch (e) {
 		return rethrowAsBuildError(e)
 	}
